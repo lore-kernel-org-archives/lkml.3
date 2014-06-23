@@ -1,100 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751374AbaFWHoz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 03:44:55 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:56986 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751099AbaFWHox (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 03:44:53 -0400
-Date: Mon, 23 Jun 2014 08:44:40 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Dave Chinner <david@fromorbit.com>, Jens Axboe <axboe@fb.com>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: [regression] fix 32-bit breakage in block device read(2) (was Re:
- 32-bit bug in iovec iterator changes)
-Message-ID: <20140623074440.GV18016@ZenIV.linux.org.uk>
-References: <20140621035144.GA8526@thunk.org>
- <20140621055306.GP18016@ZenIV.linux.org.uk>
- <20140621230922.GA13188@thunk.org>
- <20140621234913.GQ18016@ZenIV.linux.org.uk>
- <1403395400.2592.4.camel@jarvis.lan>
- <20140622002618.GR18016@ZenIV.linux.org.uk>
- <1403397164.2177.40.camel@dabdike.int.hansenpartnership.com>
- <20140622005352.GS18016@ZenIV.linux.org.uk>
- <20140622010032.GT18016@ZenIV.linux.org.uk>
- <20140622115007.GA5333@thunk.org>
+	id S1751391AbaFWHtF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 03:49:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39069 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750723AbaFWHtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 03:49:03 -0400
+Date: Mon, 23 Jun 2014 09:49:00 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/4] mm: vmscan: remove remains of kswapd-managed
+ zone->all_unreclaimable
+Message-ID: <20140623074900.GB9743@dhcp22.suse.cz>
+References: <1403282030-29915-1-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140622115007.GA5333@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1403282030-29915-1-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 22, 2014 at 07:50:07AM -0400, Theodore Ts'o wrote:
-> On Sun, Jun 22, 2014 at 02:00:32AM +0100, Al Viro wrote:
-> > 
-> > PS: I agree that it's worth careful commenting, obviously, but
-> > before sending it to Linus (*with* comments) I want to get a
-> > confirmation that this one-liner actually fixes what Ted is seeing.
-> > I have reproduced it here, and that change makes the breakage go
-> > away in my testing, but I'd like to make sure that we are seeing the
-> > same thing.  Ted?
+On Fri 20-06-14 12:33:47, Johannes Weiner wrote:
+> shrink_zones() has a special branch to skip the all_unreclaimable()
+> check during hibernation, because a frozen kswapd can't mark a zone
+> unreclaimable.
 > 
-> Hep, that fixes things.  Thanks for explaining what was going on!
+> But ever since 6e543d5780e3 ("mm: vmscan: fix do_try_to_free_pages()
+> livelock"), determining a zone to be unreclaimable is done by directly
+> looking at its scan history and no longer relies on kswapd setting the
+> per-zone flag.
+> 
+> Remove this branch and let shrink_zones() check the reclaimability of
+> the target zones regardless of hibernation state.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-OK, here it is, hopefully with sufficient comments:
-    
-blkdev_read_iter() wants to cap the iov_iter by the amount of
-data remaining to the end of device.  That's what iov_iter_truncate()
-is for (trim iter->count if it's above the given limit).  So far,
-so good, but the argument of iov_iter_truncate() is size_t, so on
-32bit boxen (in case of a large device) we end up with that upper
-limit truncated down to 32 bits *before* comparing it with iter->count.
+This code is really tricky :/
 
-Easily fixed by making iov_iter_truncate() take 64bit argument -
-it does the right thing after such change (we only reach the
-assignment in there when the current value of iter->count is greater
-than the limit, i.e. for anything that would get truncated we don't
-reach the assignment at all) and that argument is not the new
-value of iter->count - it's an upper limit for such.
+But the patch looks good to me.
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-The overhead of passing u64 is not an issue - the thing is inlined,
-so callers passing size_t won't pay any penalty.
+> ---
+>  mm/vmscan.c | 8 --------
+>  1 file changed, 8 deletions(-)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 0f16ffe8eb67..19b5b8016209 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2534,14 +2534,6 @@ out:
+>  	if (sc->nr_reclaimed)
+>  		return sc->nr_reclaimed;
+>  
+> -	/*
+> -	 * As hibernation is going on, kswapd is freezed so that it can't mark
+> -	 * the zone into all_unreclaimable. Thus bypassing all_unreclaimable
+> -	 * check.
+> -	 */
+> -	if (oom_killer_disabled)
+> -		return 0;
+> -
+>  	/* Aborted reclaim to try compaction? don't OOM, then */
+>  	if (aborted_reclaim)
+>  		return 1;
+> -- 
+> 2.0.0
+> 
 
-Reported-by: Theodore Tso <tytso@mit.edu>
-Tested-by: Theodore Tso <tytso@mit.edu>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
----
-
-diff --git a/include/linux/uio.h b/include/linux/uio.h
-index ddfdb53..17ae7e3 100644
---- a/include/linux/uio.h
-+++ b/include/linux/uio.h
-@@ -94,8 +94,20 @@ static inline size_t iov_iter_count(struct iov_iter *i)
- 	return i->count;
- }
- 
--static inline void iov_iter_truncate(struct iov_iter *i, size_t count)
-+/*
-+ * Cap the iov_iter by given limit; note that the second argument is
-+ * *not* the new size - it's upper limit for such.  Passing it a value
-+ * greater than the amount of data in iov_iter is fine - it'll just do
-+ * nothing in that case.
-+ */
-+static inline void iov_iter_truncate(struct iov_iter *i, u64 count)
- {
-+	/*
-+	 * count doesn't have to fit in size_t - comparison extends both
-+	 * operands to u64 here and any value that would be truncated by
-+	 * conversion in assignement is by definition greater than all
-+	 * values of size_t, including old i->count.
-+	 */
- 	if (i->count > count)
- 		i->count = count;
- }
+-- 
+Michal Hocko
+SUSE Labs
