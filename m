@@ -1,100 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753232AbaFWKPq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 06:15:46 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:13870 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752900AbaFWKPo (ORCPT
+	id S1753298AbaFWKST (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 06:18:19 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:56912 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751789AbaFWKSR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 06:15:44 -0400
-X-IronPort-AV: E=Sophos;i="5.00,760,1396972800"; 
-   d="scan'208";a="32282776"
-From: "chenhanxiao@cn.fujitsu.com" <chenhanxiao@cn.fujitsu.com>
-To: Richard Weinberger <richard@nod.at>,
-        "containers@lists.linux-foundation.org" 
-	<containers@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        "Oleg Nesterov" <oleg@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        David Howells <dhowells@redhat.com>,
-        Vasiliy Kulikov <segooon@gmail.com>,
-        "Gotou, Yasunori" <y-goto@jp.fujitsu.com>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
-Subject: RE: [PATCH v2] ns: introduce getnspid syscall
-Thread-Topic: [PATCH v2] ns: introduce getnspid syscall
-Thread-Index: AQHPjHcgU6WUVvoJG0i3h/UNsKvNGJt+dQSQ
-Date: Mon, 23 Jun 2014 10:15:37 +0000
-Message-ID: <5871495633F38949900D2BF2DC04883E54ECC5@G08CNEXMBPEKD02.g08.fujitsu.local>
-References: <1403259512-10510-1-git-send-email-chenhanxiao@cn.fujitsu.com>
- <53A414B2.20108@nod.at>
-In-Reply-To: <53A414B2.20108@nod.at>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.226.240]
-Content-Type: text/plain; charset="gb2312"
+	Mon, 23 Jun 2014 06:18:17 -0400
+Message-ID: <53A7FED3.4@gmail.com>
+Date: Mon, 23 Jun 2014 18:17:55 +0800
+From: zhuyj <zyjzyj2000@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
+To: Cong Wang <xiyou.wangcong@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>
+CC: David Miller <davem@davemloft.net>, Andi Kleen <andi@firstfloor.org>,
+        Linux Kernel Network Developers <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, tom.zanussi@linux.intel.com,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 08/24] net, diet: Make TCP metrics optional
+References: <20140506155703.GA20391@cloud>	<20140506.115941.428706504757835279.davem@davemloft.net>	<20140506164108.GA20536@cloud>	<20140506.131643.994244006906866938.davem@davemloft.net>	<20140506175547.GE20776@cloud> <CAM_iQpUgj7BqpzRL070DEGQ32SWwN68BRgM5DtFqvBLjGGOLQA@mail.gmail.com>
+In-Reply-To: <CAM_iQpUgj7BqpzRL070DEGQ32SWwN68BRgM5DtFqvBLjGGOLQA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s5NAFtGW017604
 
-Hi
+On 05/07/2014 02:33 AM, Cong Wang wrote:
+> On Tue, May 6, 2014 at 10:55 AM,  <josh@joshtriplett.org> wrote:
+>> On Tue, May 06, 2014 at 01:16:43PM -0400, David Miller wrote:
+>>> From: josh@joshtriplett.org
+>>> Date: Tue, 6 May 2014 09:41:08 -0700
+>>>
+>>>> Every KB of RAM costs real money and SoC die area (for eDRAM/eSRAM).
+>>> Another poster commented that 16MB of DRAM would be cheaper than
+>>> the 2MB of ram you have on these boards, probably one that fits
+>>> your size profile is available as well.
+>>>
+>>> 2MB is just a rediculous restriction.
+>> Embedded systems experts disagree with you there; there *are* systems
+>> where the most cost-efficient approach is a few MB (or a few hundred KB)
+>> of non-discrete memory.  We're not talking about socketed memory or even
+>> soldered-down memory; we're talking about entire systems that fit on a
+>> small SoC die.  The space not used by that extra RAM may well be better
+>> spent on CPU optimizations, or some other integrated component.
+>>
+>> Such boards will be built, and many of them will run Linux, despite your
+>> incredulity.  When you're building millions of a board, it's well worth
+>> optimizing software to eliminate components from the bill of materials.
+> So why bothers 3.15+ Linux kernel? Why not use an old kernel e.g. 2.4.x?
+> 2.4.x kernel doesn't have so many new features you want to get rid of here.
+Maybe 2.4.x kernel doesn't have so many new features that we want to use 
+here.
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
-> -----Original Message-----
-> From: Richard Weinberger [mailto:richard@nod.at]
-> Sent: Friday, June 20, 2014 7:02 PM
-> To: Chen, Hanxiao/³Â êÏÏö; containers@lists.linux-foundation.org;
-> linux-kernel@vger.kernel.org
-> Cc: Eric W. Biederman; Serge Hallyn; Daniel P. Berrange; Oleg Nesterov; Al Viro;
-> David Howells; Pavel Emelyanov; Vasiliy Kulikov; Gotou, Yasunori/Îåu ¿µÎÄ;
-> linux-api@vger.kernel.org
-> Subject: Re: [PATCH v2] ns: introduce getnspid syscall
-> 
-> Am 20.06.2014 12:18, schrieb Chen Hanxiao:
-> > We need a direct method of getting the pid inside containers.
-> > If some issues occurred inside container guest, host user
-> > could not know which process is in trouble just by guest pid:
-> > the users of container guest only knew the pid inside containers.
-> > This will bring obstacle for trouble shooting.
-> >
-> > int getnspid(pid_t pid, int fd1, int fd2);
-> >
-> > pid: the pid number need to be translated.
-> >
-> > fd: a file descriptor referring to one of
-> >     the namespace entries in a /proc/[pid]/ns/pid.
-> >     fd1 for destination ns(ns1), where the pid came from.
-> >     fd2 for reference ns(ns2), while fd2 = -2 means for current ns.
-> >
-> > return value:
-> >     >0 : translated pid in ns1(fd1) seen from ns2(fd2).
-> >     <=0: on failure.
-> >
-> 
-> I don't think that adding a new system call for this is a good solution.
-> We need a more generic way. I bet people are interested in more than just PID
-> numbers.
-
-Could you please give some hints on how to expand this interface?
-
-> 
-> I agree with Eric that a procfs solution is more appropriate.
-> 
-
-Procfs is a good solution, but syscall is not bad though.
-Procfs works for me, but that seems could not fit
-Pavel's requirement.
-His opinion is that a syscall is a more generic interface
-than proc files, and  also very helpful.
-And syscall could tell whether a pid lives in a specific pid namespace,
-much convenient than procfs.
-
-Thanks,
-- Chen
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
