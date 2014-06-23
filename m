@@ -1,77 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752437AbaFWSCS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 14:02:18 -0400
-Received: from smtp3-g21.free.fr ([212.27.42.3]:17928 "EHLO smtp3-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751100AbaFWSCR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 14:02:17 -0400
-Message-ID: <53A86B31.8090307@free.fr>
-Date: Mon, 23 Jun 2014 20:00:17 +0200
-From: Martin Peres <martin.peres@free.fr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752786AbaFWSES (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 14:04:18 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:3138 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751210AbaFWSER (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 14:04:17 -0400
+Date: Mon, 23 Jun 2014 14:04:13 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Jiri Kosina <jkosina@suse.cz>,
+        Michal Hocko <mhocko@suse.cz>, Jan Kara <jack@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Dave Anderson <anderson@redhat.com>, Petr Mladek <pmladek@suse.cz>
+Subject: Re: [RFC][PATCH 1/3] trace_seq: Move the trace_seq code to lib/
+Message-ID: <20140623140413.3cebe156@gandalf.local.home>
+In-Reply-To: <1403545094.4418.32.camel@jlt4.sipsolutions.net>
+References: <20140619213329.478113470@goodmis.org>
+	<20140619213952.058255809@goodmis.org>
+	<20140619220607.c6da2540.akpm@linux-foundation.org>
+	<20140620125823.5acb12dd@gandalf.local.home>
+	<1403422685.4418.4.camel@jlt4.sipsolutions.net>
+	<20140623120805.1624e1db@gandalf.local.home>
+	<1403545094.4418.32.camel@jlt4.sipsolutions.net>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Ilia Mirkin <imirkin@alum.mit.edu>
-CC: Greg KH <greg@kroah.com>, kernel list <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Ben Skeggs <bskeggs@redhat.com>, Pavel Machek <pavel@ucw.cz>
-Subject: Re: unparseable, undocumented /sys/class/drm/.../pstate
-References: <20140621180201.GA4621@amd.pavel.ucw.cz>	<CAKb7UvhOCiBHcsB6a0qKBNsC3c9pmb=Wc7zucbBuP6vt-tx2eA@mail.gmail.com>	<20140621194538.GA4903@kroah.com>	<CAKb7UvjhOystpeRy1nQx49Nspve4wHQPb+e7gJQ-RT-HseK4Cw@mail.gmail.com>	<20140623160727.GA19557@kroah.com>	<CAKb7UvhEMg96YzGuA=rxRDrzBhKiVaYMczrAcm4hA_A4jXAW2w@mail.gmail.com>	<20140623163600.GB20939@kroah.com>	<CAKb7Uvgx_1mEPapJF3V5s8vUViGnRGCerkixwdTv_EpHhEozBg@mail.gmail.com>	<53A867DB.90604@free.fr> <CAKb7UvjPc1XGY7tETaMtn2N3ySq01CB6dLubVOZgW+NR_gsYMw@mail.gmail.com>
-In-Reply-To: <CAKb7UvjPc1XGY7tETaMtn2N3ySq01CB6dLubVOZgW+NR_gsYMw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 23/06/2014 19:56, Ilia Mirkin a écrit :
-> On Mon, Jun 23, 2014 at 1:46 PM, Martin Peres <martin.peres@free.fr> wrote:
->> Le 23/06/2014 18:40, Ilia Mirkin a écrit :
->>>
->>> On Mon, Jun 23, 2014 at 12:36 PM, Greg KH <greg@kroah.com> wrote:
->>>>
->>>> On Mon, Jun 23, 2014 at 12:18:51PM -0400, Ilia Mirkin wrote:
->>>> A list of valid "values" that a file can be in is fine if you just then
->>>> write one value back to that file.  That's the one exception, but a
->>>> minor one given the huge number of sysfs files.  Other than that, if you
->>>
->>>
->>> Which is pretty much what the pstate file is. Would it make things
->>> better if we removed the descriptive info while leaving the pstate
->>> file in place?
->>
->>
->> This means we should also create a new sysfs file per performance level too,
->> right? Is there another way for a driver to expose a list in sysfs?
->>
->> Since NVIDIA gives different names to performance levels depending on the
->> card family, we may need to abstract the name away in order to provide some
->> consistency and make listing performance levels easier from a program (may
->> it use readdir() or stat()).
->>
->> Moving the file to debugfs would "fix" the one-value-per-file rule but it
->> would also require users to mount debugfs at boot time in order to write the
->> default configuration they want for PM instead of just changing
->> /etc/sysctl.d/nouveau.conf... On the other hand, I'm not sure we can commit
->> on having a stable ABI on the way we display clocks (unless people take them
->> as a single value and do not try to parse them) as new hardware will alter
->> the semantics of each clock domain, if not drop/split some of them!
->>
->> Whatever we do, it doesn't look like we can find a nice solution that fits
->> every use cases unless we write a userspace program to access this data, but
->> this seems highly overkill...
->
-> I was thinking just having the list of level ids in the pstate file,
-> and then stick the current file into debugfs. That way people retain
-> the ability to see things, as well as use pstate directly for a
-> configured system.
+On Mon, 23 Jun 2014 19:38:14 +0200
+Johannes Berg <johannes@sipsolutions.net> wrote:
 
-In this case, would we still use the * to indicate the current perflvl?
+> On Mon, 2014-06-23 at 12:08 -0400, Steven Rostedt wrote:
+> > On Sun, 22 Jun 2014 09:38:05 +0200
+> > Johannes Berg <johannes@sipsolutions.net> wrote:
+> > 
+> > 
+> > > Looking at the code though, I'm not sure it's a pure optimisation - if
+> > > you do say putc() after a failed puts(), without this code the putc()
+> > > would succeed? I can't tell right now if that's really a problem, but it
+> > > seems you could get some odd behaviour out of it.
+> > 
+> > How would putc() still succeed? We're just talking about the "full"
+> > field. It would still do the length check:
+> > 
+> > 	if (s->len >= (PAGE_SIZE - 1))
+> > 		return 0;
+> 
+> Right, but the puts() could fail if not all of the string fits, and a
+> subsequent putc() might fit.
+> 
 
-Also, are we supposed to output the current perflvl or the current 
-configuration in use? Right now, we configure it to either auto (WIP), 
-perflvl X at all time or perflvl X when on battery and Y when on sector.
-However, when we read pstate, we only get the current perflvl if my 
-memory serves me right. Maybe we should create a r-o file that outputs 
-the current perflvl and keep pstate for storing the configuration.
+Ah! I see what you are saying. You are saying that once you are full
+you need to flush. Honestly, the trace_puts() should check the return.
+Perhaps it wants to try again with a shorter string?
 
+The full flag means that once we hit full, we are done, no more can be
+written till the buffer is flushed.
+
+Is that what we would want from this utility? Or do we want to allow
+the user to try again with a smaller string?
+
+I was thinking of reversing the error code and have the trace_seq_*()
+return 0 as success and the remaining buffer size on error.
+
+-- Steve
