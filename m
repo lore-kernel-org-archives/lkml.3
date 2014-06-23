@@ -1,77 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751909AbaFWBtu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 21:49:50 -0400
-Received: from ozlabs.org ([103.22.144.67]:38223 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751275AbaFWBtt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 21:49:49 -0400
-Date: Mon, 23 Jun 2014 11:49:42 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tadeusz Struk <tadeusz.struk@intel.com>
-Subject: linux-next: build failure after merge of the crypto tree
-Message-ID: <20140623114942.6a937466@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1751406AbaFWCGt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 22:06:49 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:61923 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751115AbaFWCGr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jun 2014 22:06:47 -0400
+Message-ID: <53A78B7C.1050302@huawei.com>
+Date: Mon, 23 Jun 2014 10:05:48 +0800
+From: Xishi Qiu <qiuxishi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/q6Zz=5V_d.m099D7ehHsv1U"; protocol="application/pgp-signature"
+To: Michal Hocko <mhocko@suse.cz>
+CC: Rafael Aquini <aquini@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH 0/8] mm: add page cache limit and reclaim feature
+References: <539EB7D6.8070401@huawei.com> <20140616111422.GA16915@dhcp22.suse.cz> <20140616125040.GA29993@optiplex.redhat.com> <539F9B6C.1080802@huawei.com> <53A3E948.5020701@huawei.com> <20140620153212.GD23115@dhcp22.suse.cz>
+In-Reply-To: <20140620153212.GD23115@dhcp22.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.25.179]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/q6Zz=5V_d.m099D7ehHsv1U
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 2014/6/20 23:32, Michal Hocko wrote:
 
-Hi Herbert,
+> On Fri 20-06-14 15:56:56, Xishi Qiu wrote:
+>> On 2014/6/17 9:35, Xishi Qiu wrote:
+>>
+>>> On 2014/6/16 20:50, Rafael Aquini wrote:
+>>>
+>>>> On Mon, Jun 16, 2014 at 01:14:22PM +0200, Michal Hocko wrote:
+>>>>> On Mon 16-06-14 17:24:38, Xishi Qiu wrote:
+>>>>>> When system(e.g. smart phone) running for a long time, the cache often takes
+>>>>>> a large memory, maybe the free memory is less than 50M, then OOM will happen
+>>>>>> if APP allocate a large order pages suddenly and memory reclaim too slowly. 
+>>>>>
+>>>>> Have you ever seen this to happen? Page cache should be easy to reclaim and
+>>>>> if there is too mach dirty memory then you should be able to tune the
+>>>>> amount by dirty_bytes/ratio knob. If the page allocator falls back to
+>>>>> OOM and there is a lot of page cache then I would call it a bug. I do
+>>>>> not think that limiting the amount of the page cache globally makes
+>>>>> sense. There are Unix systems which offer this feature but I think it is
+>>>>> a bad interface which only papers over the reclaim inefficiency or lack
+>>>>> of other isolations between loads.
+>>>>>
+>>>> +1
+>>>>
+>>>> It would be good if you could show some numbers that serve as evidence
+>>>> of your theory on "excessive" pagecache acting as a trigger to your
+>>>> observed OOMs. I'm assuming, by your 'e.g', you're running a swapless
+>>>> system, so I would think your system OOMs are due to inability to
+>>>> reclaim anon memory, instead of pagecache.
+>>>>
+>>
+>> I asked some colleagues, when the cache takes a large memory, it will not
+>> trigger OOM, but performance regression. 
+>>
+>> It is because that business process do IO high frequency, and this will 
+>> increase page cache. When there is not enough memory, page cache will
+>> be reclaimed first, then alloc a new page, and add it to page cache. This
+>> often takes too much time, and causes performance regression.
+> 
+> I cannot say I would understand the problem you are describing. So the
+> page cache eats the most of the memory and that increases allocation
+> latency for new page cache? Is it because of the direct reclaim?
 
-After merging the crypto tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+Yes, allocation latency causes performance regression.
+
+A user process produces page cache frequently, so free memory is not
+enough after running a long time. Slow path takes much more time because 
+direct reclaim. And kswapd will reclaim memory too, but not much. Thus it
+always triggers slow path. this will cause performance regression.
+
+Thanks,
+Xishi Qiu
+
+> Why kswapd doesn't reclaim the clean pagecache? Or is the memory dirty?
+> 
+
+>> In view of this situation, if we reclaim page cache in circles may be
+>> fix this problem. What do you think?
+> 
+> No, it seems more like either system misconfiguration or a reclaim bug.
 
 
-drivers/crypto/qat/qat_dh895xcc/adf_dh895xcc_hw_data.c:47:31: fatal error: =
-adf_accel_devices.h: No such file or directory
- #include <adf_accel_devices.h>
-                               ^
-drivers/crypto/qat/qat_dh895xcc/adf_isr.c:54:31: fatal error: adf_accel_dev=
-ices.h: No such file or directory
- #include <adf_accel_devices.h>
-                               ^
-drivers/crypto/qat/qat_dh895xcc/adf_drv.c:60:31: fatal error: adf_accel_dev=
-ices.h: No such file or directory
- #include <adf_accel_devices.h>
-                               ^
 
-Caused by commit 7afa232e76ce ("crypto: qat - Intel(R) QAT DH895xcc
-accelerator").
-
-I have used the crypto tree from next-20140620 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/q6Zz=5V_d.m099D7ehHsv1U
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJTp4e7AAoJEMDTa8Ir7ZwVp6cQAIsdfCr660Y70YakIYB6Lr+4
-U3FPdUxw2KbiPSsYwes6ImvU5y/zUkuvazXEIXBPH7S6zx2MTiaBrRFFh8Sag/S1
-Aab7mfjeFAM9ewVstiKbyhoNNIeAmAHfFdmcfKQaXC0LNNPuBjCabs4k10BXHbmC
-3bJhYVzyPU5Uh766HfvneYr3dILDje6bcLZpZDRKCvmJKJuOq9eSE0i1egfwu1+c
-5ep6hzhCbYHUpMd4eiS8dksGP125NViekirEOCOTFP0ZfaN6T5TcIJ35yT8v9Jia
-QL0fIH/5/gBuGpnWey1lUl/y3yE4ymRVDQ9A3pArwXbNzTHBEmkIhmcIKmDObNI6
-mAe5c1LcW1hsJAzHImypL45a1Y7wvKC+8wMluiog8BrdLlOCP4oOla3H8fTVaUlR
-pr6dyL0r48aoZEfLjOhPhqi7ZbnkQYnNOwendlsRf67fbO/i4sNRLA8PH0SK/lv+
-r+R4PruRQonjXtpsUZH67FzZyaguUjLy7yrdCX/kAAuJ+IIYavKY6Wa6By9jppF0
-SwbhhbptovtHDut4eajEoZUNBQEHw1Mw0bBLpVeNOPBc617SvLiNs8GhRixrIZlv
-EChu8VA9ZBZDnuAYLyz9LNqtCJYx1PXvz7UMQodIu+XQnH0dOA5IQifPRNDofrqU
-C0uMAzJeAisjhd4MrAN+
-=QEiN
------END PGP SIGNATURE-----
-
---Sig_/q6Zz=5V_d.m099D7ehHsv1U--
