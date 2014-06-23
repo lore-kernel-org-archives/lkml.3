@@ -1,88 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752701AbaFWHyW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 03:54:22 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:51027 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752653AbaFWHyT (ORCPT
+	id S1752740AbaFWHye (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 03:54:34 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:59899 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752653AbaFWHya (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 03:54:19 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-7c-53a7dd278a7c
+	Mon, 23 Jun 2014 03:54:30 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-dc-53a7dd34d48e
 From: Robert Baldyga <r.baldyga@samsung.com>
 To: balbi@ti.com
 Cc: paulz@synopsys.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org, m.szyprowski@samsung.com,
         andrzej.p@samsung.com, Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH 09/11] usb: dwc2/gadget: delay enabling irq once hardware is
- configured properly
-Date: Mon, 23 Jun 2014 09:51:28 +0200
-Message-id: <1403509890-14103-10-git-send-email-r.baldyga@samsung.com>
+Subject: [PATCH 10/11] usb: dwc2/gadget: assign TX FIFO dynamically
+Date: Mon, 23 Jun 2014 09:51:29 +0200
+Message-id: <1403509890-14103-11-git-send-email-r.baldyga@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1403509890-14103-1-git-send-email-r.baldyga@samsung.com>
 References: <1403509890-14103-1-git-send-email-r.baldyga@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJLMWRmVeSWpSXmKPExsVy+t9jQV31u8uDDVqv8lnMetnOYnHwfr1F
-	8+L1bBaXd81hs1i0rJXZYu2Ru+wW26dMZ7J4cHgnuwOHx/65a9g9+rasYvTYsv8zo8fxG9uZ
-	PD5vkgtgjeKySUnNySxLLdK3S+DKWLf2FUvBc56K4wfeMDUwXuDqYuTkkBAwkbiyoJcNwhaT
-	uHBvPZDNxSEkMJ1RYual91BOO5PEmpcPGEGq2AR0JLZ8nwBmiwgISKx/cYkdpIhZ4ASjRMf/
-	C2CjhAWSJO6v2QtWxCKgKrHl1FIwm1fATaJj2yZmiHVyEiePTWYFsTmB4utvLmQHsYUEXCUW
-	nZ7GPoGRdwEjwypG0dSC5ILipPRcQ73ixNzi0rx0veT83E2M4AB7JrWDcWWDxSFGAQ5GJR5e
-	DbflwUKsiWXFlbmHGCU4mJVEeBsbgEK8KYmVValF+fFFpTmpxYcYpTlYlMR5D7RaBwoJpCeW
-	pGanphakFsFkmTg4pRoYJ11wi36meO/QNwn5lfZLrpukCVz/JzZJ+sadx4+iZ4cdehO9WFtQ
-	8+Q8rvt3stf0b+7ccNDEMKDlacU5+c1v7/Gpf0h4/ZV7YbmiRYHJ3lqZL0wHtZUK5SUfbpHa
-	sfrLsmlP3a4/1spdetUxctaEci7HvP7Nsnpun92Wr/610GNfub9swdZph5RYijMSDbWYi4oT
-	AeGAmIwsAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOLMWRmVeSWpSXmKPExsVy+t9jQV3Tu8uDDQ4zWsx62c5icfB+vUXz
+	4vVsFpd3zWGzWLSsldli7ZG77Bbbp0xnsnhweCe7A4fH/rlr2D36tqxi9Niy/zOjx/Eb25k8
+	Pm+SC2CN4rJJSc3JLEst0rdL4MqYdmUVc8EKqYotyy6zNjC2iXQxcnJICJhInH5+jxXCFpO4
+	cG89WxcjF4eQwHRGiYcXbzKBJIQE2pkkJt9zALHZBHQktnyfwAhiiwgISKx/cYkdpIFZ4ASj
+	RMf/C2wgCWEBZ4nPs66xg9gsAqoSs/5eARvEK+Am0bhuJgvENjmJk8cmg23mBIqvv7mQHWKZ
+	q8Si09PYJzDyLmBkWMUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kRHFzPpHYwrmywOMQowMGo
+	xMOr4bY8WIg1say4MvcQowQHs5IIb2MDUIg3JbGyKrUoP76oNCe1+BCjNAeLkjjvgVbrQCGB
+	9MSS1OzU1ILUIpgsEwenVAMjt/fjrOql+x45uB7atX3WwaftYRenL9vN2T+ps+7D/0xPpg3f
+	yk4EHr1+VeNs1Heh1TIfMvb27X/7R2TtdMulIifme89yEp2W69vFPIOlQbA8h/X9y8cbj3xr
+	/NipJXc5eqf3wnCG20KPFD6/+/TGTFHaP8aRjyeie+ux1ns5uRJh+1QOMC62UGIpzkg01GIu
+	Kk4EAGL+3A8qAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marek Szyprowski <m.szyprowski@samsung.com>
+Because we have not enough memory to have each TX FIFO of size at least 3072
+bytes (the maximum single packet size), we create four FIFOs of lenght 1024,
+and four of length 3072 bytes, and assing them to endpoints dynamically
+according to maxpacket size value of given endpoint.
 
-This patch fixes kernel panic/interrupt storm/etc issues if bootloader
-left s3c-hsotg module in enabled state. Now interrupt handler is enabled
-only after proper configuration of hardware registers.
-
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
 Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
 ---
- drivers/usb/dwc2/gadget.c | 18 +++++++++++-------
- 1 file changed, 11 insertions(+), 7 deletions(-)
+ drivers/usb/dwc2/core.h   |  1 +
+ drivers/usb/dwc2/gadget.c | 48 +++++++++++++++++++++++++++++++++--------------
+ 2 files changed, 35 insertions(+), 14 deletions(-)
 
+diff --git a/drivers/usb/dwc2/core.h b/drivers/usb/dwc2/core.h
+index 067390e..23f7e86 100644
+--- a/drivers/usb/dwc2/core.h
++++ b/drivers/usb/dwc2/core.h
+@@ -197,6 +197,7 @@ struct s3c_hsotg {
+ 	int			fifo_mem;
+ 	unsigned int            dedicated_fifos:1;
+ 	unsigned char           num_of_eps;
++	u32			fifo_map;
+ 
+ 	struct dentry           *debug_root;
+ 	struct dentry           *debug_file;
 diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
-index def4900..3435711 100644
+index 3435711..2a7c014 100644
 --- a/drivers/usb/dwc2/gadget.c
 +++ b/drivers/usb/dwc2/gadget.c
-@@ -3459,13 +3459,6 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
+@@ -184,14 +184,26 @@ static void s3c_hsotg_init_fifo(struct s3c_hsotg *hsotg)
  
- 	hsotg->irq = ret;
+ 	/* start at the end of the GNPTXFSIZ, rounded up */
+ 	addr = 2048 + 1024;
+-	size = 768;
  
--	ret = devm_request_irq(&pdev->dev, hsotg->irq, s3c_hsotg_irq, 0,
--				dev_name(dev), hsotg);
--	if (ret < 0) {
--		dev_err(dev, "cannot claim IRQ\n");
--		goto err_clk;
--	}
--
- 	dev_info(dev, "regs %p, irq %d\n", hsotg->regs, hsotg->irq);
+ 	/*
+ 	 * currently we allocate TX FIFOs for all possible endpoints,
+ 	 * and assume that they are all the same size.
+ 	 */
  
- 	hsotg->gadget.max_speed = USB_SPEED_HIGH;
-@@ -3503,6 +3496,17 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
- 	s3c_hsotg_hw_cfg(hsotg);
- 	s3c_hsotg_init(hsotg);
- 
-+	ret = devm_request_irq(&pdev->dev, hsotg->irq, s3c_hsotg_irq, 0,
-+				dev_name(dev), hsotg);
-+	if (ret < 0) {
-+		s3c_hsotg_phy_disable(hsotg);
-+		clk_disable_unprepare(hsotg->clk);
-+		regulator_bulk_disable(ARRAY_SIZE(hsotg->supplies),
-+				       hsotg->supplies);
-+		dev_err(dev, "cannot claim IRQ\n");
-+		goto err_clk;
-+	}
+-	for (ep = 1; ep <= 15; ep++) {
++	/* 256*4=1024 bytes FIFO length */
++	size = 256;
++	for (ep = 1; ep <= 4; ep++) {
++		val = addr;
++		val |= size << FIFOSIZE_DEPTH_SHIFT;
++		WARN_ONCE(addr + size > hsotg->fifo_mem,
++			  "insufficient fifo memory");
++		addr += size;
 +
- 	/* hsotg->num_of_eps holds number of EPs other than ep0 */
++		writel(val, hsotg->regs + DPTXFSIZN(ep));
++	}
++	/* 768*4=3072 bytes FIFO length */
++	size = 768;
++	for (ep = 5; ep <= 8; ep++) {
+ 		val = addr;
+ 		val |= size << FIFOSIZE_DEPTH_SHIFT;
+ 		WARN_ONCE(addr + size > hsotg->fifo_mem,
+@@ -2440,6 +2452,7 @@ static int s3c_hsotg_ep_enable(struct usb_ep *ep,
+ 	u32 epctrl;
+ 	u32 mps;
+ 	int dir_in;
++	int i, val, size;
+ 	int ret = 0;
  
- 	if (hsotg->num_of_eps == 0) {
+ 	dev_dbg(hsotg->dev,
+@@ -2512,17 +2525,8 @@ static int s3c_hsotg_ep_enable(struct usb_ep *ep,
+ 		break;
+ 
+ 	case USB_ENDPOINT_XFER_INT:
+-		if (dir_in) {
+-			/*
+-			 * Allocate our TxFNum by simply using the index
+-			 * of the endpoint for the moment. We could do
+-			 * something better if the host indicates how
+-			 * many FIFOs we are expecting to use.
+-			 */
+-
++		if (dir_in)
+ 			hs_ep->periodic = 1;
+-			epctrl |= DXEPCTL_TXFNUM(index);
+-		}
+ 
+ 		epctrl |= DXEPCTL_EPTYPE_INTERRUPT;
+ 		break;
+@@ -2536,8 +2540,24 @@ static int s3c_hsotg_ep_enable(struct usb_ep *ep,
+ 	 * if the hardware has dedicated fifos, we must give each IN EP
+ 	 * a unique tx-fifo even if it is non-periodic.
+ 	 */
+-	if (dir_in && hsotg->dedicated_fifos)
+-		epctrl |= DXEPCTL_TXFNUM(index);
++	if (dir_in && hsotg->dedicated_fifos) {
++		size = hs_ep->ep.maxpacket*hs_ep->mc;
++		for (i = 1; i < 8; ++i) {
++			if (hsotg->fifo_map & (1<<i))
++				continue;
++			val = readl(hsotg->regs + DPTXFSIZN(i));
++			val = (val >> FIFOSIZE_DEPTH_SHIFT)*4;
++			if (val < size)
++				continue;
++			hsotg->fifo_map |= 1<<i;
++			break;
++		}
++
++		if (i == 8)
++			return -ENOMEM;
++
++		epctrl |= DXEPCTL_TXFNUM(i);
++	}
+ 
+ 	/* for non control endpoints, set PID to D0 */
+ 	if (index)
 -- 
 1.9.1
 
