@@ -1,65 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752211AbaFWG3x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 02:29:53 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:44953 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751388AbaFWG3v (ORCPT
+	id S1751982AbaFWGdo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 02:33:44 -0400
+Received: from smtprelay0193.hostedemail.com ([216.40.44.193]:43830 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751310AbaFWGdn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 02:29:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <1403487015.18747.23.camel@joe-AO725>
-References: <1403477209-14612-1-git-send-email-minipli@googlemail.com>
-	<1403487015.18747.23.camel@joe-AO725>
-Date: Mon, 23 Jun 2014 08:29:49 +0200
-Message-ID: <CA+rthh8rGQX9pKUC3rGfaguQ+TVXqXqXuUiHzE6Ga0tQE1ch_A@mail.gmail.com>
+	Mon, 23 Jun 2014 02:33:43 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2110:2194:2199:2393:2525:2553:2561:2564:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3872:3873:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:5007:6120:7652:7875:7903:9025:10004:10400:10848:11232:11658:11914:12043:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSB
+X-HE-Tag: chair92_20251b758a73e
+X-Filterd-Recvd-Size: 2626
+Message-ID: <1403505219.18747.37.camel@joe-AO725>
 Subject: Re: [RFC PATCH 0/3] Mark literal strings in __init / __exit code
-From: Mathias Krause <minipli@googlemail.com>
-To: Joe Perches <joe@perches.com>
-Cc: David Daney <david.daney@cavium.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+From: Joe Perches <joe@perches.com>
+To: Mathias Krause <minipli@googlemail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=UTF-8
+Date: Sun, 22 Jun 2014 23:33:39 -0700
+In-Reply-To: <CA+rthh8D=r1kW6iDb0MqfHwA4OW-oXSA+B1AXe-0Cqperz6ZRQ@mail.gmail.com>
+References: <1403477209-14612-1-git-send-email-minipli@googlemail.com>
+	 <1403477762.18747.14.camel@joe-AO725>
+	 <CA+rthh8D=r1kW6iDb0MqfHwA4OW-oXSA+B1AXe-0Cqperz6ZRQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 June 2014 03:30, Joe Perches <joe@perches.com> wrote:
-> On Mon, 2014-06-23 at 00:46 +0200, Mathias Krause wrote:
->> This RFC series tries to address the problem of dangling strings of
->> __init functions after initialization, as well as __exit strings for
->> code not even included in the final kernel image. The code might get
->> freed, but the format strings are not.
->>
->> One solution to the problem might be to declare variables in the code
->> and mark those variables as __initconst. That, though, makes the code
->> ugly, as can be seen, e.g., in drivers/hwmon/w83627ehf.c -- a pile of
->> 'static const char[] __initconst' lines just for the pr_info() call.
->
-> Another solution might be, as David Daney suggested, using
-> gcc 4.5+ plug-ins to extract these format strings and
-> const char * arrays into specific sections automatically.
->
-> https://lkml.org/lkml/2009/7/21/483
->
-> Seems feasible, but there might be a negative of string
-> duplication in multiple sections that would otherwise
-> be consolidated into a single object.
->
+On Mon, 2014-06-23 at 08:23 +0200, Mathias Krause wrote:
+> On 23 June 2014 00:56, Joe Perches <joe@perches.com> wrote:
+> > On Mon, 2014-06-23 at 00:46 +0200, Mathias Krause wrote:
+> >> [...] patch 2 adds some syntactical sugar for the most popular use
+> >> case, by providing pr_<level> alike macros, namely pi_<level> for __init
+> >> code and pe_<level> for __exit code. This hides the use of the marker
+> >> macros behind the commonly known printing functions -- with just a
+> >> single character changed.
+> >>
+> >> Patch 3 exemplarily changes all strings and format strings in
+> >> arch/x86/kernel/acpi/boot.c to use the new macros. It also addresses a
+> >> few styling issues, though. But this already leads to ~1.7 kB of r/o
+> >> data moved to the .init.rodata section, marking it for release after
+> >> init.
+> >>
+> >> [...]
+> >
+> > I once proposed a similar thing.
+> >
+> > https://lkml.org/lkml/2009/7/21/421
+> >
+> > Matt Mackall replied
+> >
+> > https://lkml.org/lkml/2009/7/21/463
+> >
+> 
+> Thanks for the pointers. Have you looked at patch 2 and 3? I don't
+> think it makes the printk() case ugly. In fact, using pi_<level>()
+> should be no less readable then pr_<level>, no?
 
-There is currently no infrastructure for gcc plugins in the kernel
-tree. And using plugins might make the kernel even more depended on a
-particular gcc version, as the plugin API changes with every version.
-In fact, there is none, beside "use every exported function you can
-get your hand on". And that API breaks with each and every new version
-of gcc. This would put quite a bigger maintenance burden on such an
-approach than providing appropriate wrappers, fixing the obvious
-candidates and adding a checkpatch warning.
+I don't think it's particularly less readable, but I
+do think using the plug-in mechanism might be a better
+option as it would need no manual markings at all.
 
-Thanks,
-Mathias
+cheers, Joe
+
