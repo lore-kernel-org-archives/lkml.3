@@ -1,152 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752971AbaFWKw0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 06:52:26 -0400
-Received: from relay.parallels.com ([195.214.232.42]:50049 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751605AbaFWKwY (ORCPT
+	id S1753323AbaFWKyV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 06:54:21 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:47893 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752813AbaFWKyT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 06:52:24 -0400
-Message-ID: <1403520738.3462.11.camel@tkhai>
-Subject: Re: [PATCH 3/3] sched: Rework check_for_tasks()
-From: Kirill Tkhai <ktkhai@parallels.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        <tkhai@yandex.ru>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "Mike Galbraith" <umgwanakikbuti@gmail.com>,
-        Konstantin Khorenko <khorenko@parallels.com>
-Date: Mon, 23 Jun 2014 14:52:18 +0400
-In-Reply-To: <20140623102457.GW19860@laptop.programming.kicks-ass.net>
-References: <20140617130442.29933.54945.stgit@tkhai>
-	 <1403011462.27674.46.camel@tkhai>
-	 <20140623102457.GW19860@laptop.programming.kicks-ass.net>
-Organization: Parallels
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
+	Mon, 23 Jun 2014 06:54:19 -0400
+Message-ID: <53A8071C.8090309@st.com>
+Date: Mon, 23 Jun 2014 12:53:16 +0200
+From: Maxime Coquelin <maxime.coquelin@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.26.172]
+To: Peter Griffin <peter.griffin@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <chris@printf.net>, <ulf.hansson@linaro.org>, <patrice.chotard@st.com>,
+        <srinivas.kandagatla@gmail.com>
+Cc: <kernel@stlinux.com>, <linux-mmc@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v3 09/10] ARM: update multi_v7_defconfig for STI
+References: <1401899424-1365-1-git-send-email-peter.griffin@linaro.org> <1401899424-1365-10-git-send-email-peter.griffin@linaro.org>
+In-Reply-To: <1401899424-1365-10-git-send-email-peter.griffin@linaro.org>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="HOR5cGsoHwLw1fvDJL46tjJwuNhfCgpws"
+X-Originating-IP: [10.201.23.80]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-06-22_03:2014-06-20,2014-06-22,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-В Пн, 23/06/2014 в 12:24 +0200, Peter Zijlstra пишет:
-> On Tue, Jun 17, 2014 at 05:24:22PM +0400, Kirill Tkhai wrote:
-> > 
-> > 1)Iterate throw all of threads in the system.
-> 
-> 	thru
-
-Thanks :)
-
-> 
-> >   Check for all threads, not only for group leaders.
-> > 
-> > 2)Check for p->on_rq instead of p->state and cputime.
-> >   Preempted task in !TASK_RUNNING state  OR just
-> >   created task may be queued, that we want to be
-> >   reported too.
-> > 
-> > 3)Use read_lock() instead of write_lock().
-> >   This function does not change any structures, and
-> >   read_lock() is enough.
-> > 
-> > Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
-> > CC: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> > CC: Mike Galbraith <umgwanakikbuti@gmail.com>
-> > CC: Peter Zijlstra <peterz@infradead.org>
-> > CC: Ingo Molnar <mingo@kernel.org>
-> > ---
-> >  kernel/cpu.c |   33 ++++++++++++++++++++-------------
-> >  1 file changed, 20 insertions(+), 13 deletions(-)
-> > 
-> > diff --git a/kernel/cpu.c b/kernel/cpu.c
-> > index a343bde..81e2a38 100644
-> > --- a/kernel/cpu.c
-> > +++ b/kernel/cpu.c
-> > @@ -274,21 +274,28 @@ void clear_tasks_mm_cpumask(int cpu)
-> >  	rcu_read_unlock();
-> >  }
-> >  
-> > -static inline void check_for_tasks(int cpu)
-> > +static inline void check_for_tasks(int dead_cpu)
-> >  {
-> > -	struct task_struct *p;
-> > -	cputime_t utime, stime;
-> > +	struct task_struct *g, *p;
-> >  
-> > -	write_lock_irq(&tasklist_lock);
-> > -	for_each_process(p) {
-> > -		task_cputime(p, &utime, &stime);
-> > -		if (task_cpu(p) == cpu && p->state == TASK_RUNNING &&
-> > -		    (utime || stime))
-> > -			pr_warn("Task %s (pid = %d) is on cpu %d (state = %ld, flags = %x)\n",
-> > -				p->comm, task_pid_nr(p), cpu,
-> > -				p->state, p->flags);
-> > -	}
-> > -	write_unlock_irq(&tasklist_lock);
-> > +	read_lock_irq(&tasklist_lock);
-> > +	do_each_thread(g, p) {
-> > +		if (!p->on_rq)
-> > +			continue;
-> > +		/*
-> > +		 * We do the check with unlocked task_rq(p)->lock.
-> > +		 * Order the reading to do not warn about a task,
-> > +		 * which was running on this cpu in the past, and
-> > +		 * it's just been woken on another cpu.
-> > +		 */
-> > +		rmb();
-> 
-> 		smp_rmb();
-> 
-> > +		if (task_cpu(p) != dead_cpu)
-> > +			continue;
-> 
-> But because we don't have rq->lock held, we can be in the middle of a
-> wakeup and miss a task.
-> 
-> Then again, I suppose anything without rq->lock can and will miss tasks.
-
-If we use rq->lock it's possible to move check_for_tasks() to kernel/sched/core.c.
-
-And we can leave TASK_RUNNING check for waking tasks. Maybe something like this?
-
-static inline void check_for_tasks(int dead_cpu)
-{
-	struct task_struct *g, *p;
-	struct rq *rq = cpu_rq(dead_cpu);
-
-	read_lock_irq(&tasklist_lock);
-	raw_spin_lock(&rq->lock)
-
-	do_each_thread(g, p) {
-		if (!p->on_rq && p->state != TASK_RUNNING)
-			continue;
-		if (task_cpu(p) != dead_cpu)
-			continue;
-
-		pr_warn("Task %s (pid=%d) is on cpu %d (state=%ld, flags=%x)\n",
-			p->comm, task_pid_nr(p), dead_cpu, p->state, p->flags);
-	} while_each_thread(g, p);
-
-	raw_spin_unlock(&rq->lock)
-	read_unlock_irq(&tasklist_lock);
-}
-
-It still does not give a 100% guarantee... Should we take p->pi_lock for every task?
-
-> > +		pr_warn("Task %s (pid=%d) is on cpu %d (state=%ld, flags=%x)\n",
-> > +			p->comm, task_pid_nr(p), dead_cpu, p->state, p->flags);
-> > +	} while_each_thread(g, p);
-> > +	read_unlock_irq(&tasklist_lock);
-> >  }
-> >  
-> >  struct take_cpu_down_param {
-> > 
-> > 
-> > 
-
-Regards,
-Kirill
+--HOR5cGsoHwLw1fvDJL46tjJwuNhfCgpws
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
 
+
+On 06/04/2014 06:30 PM, Peter Griffin wrote:
+> This patch enables SDHCI STI platform driver.
+>=20
+> Signed-off-by: Peter Griffin <peter.griffin@linaro.org> ---=20
+> arch/arm/configs/multi_v7_defconfig | 1 + 1 file changed, 1
+> insertion(+)
+
+Acked-by: Maxime Coquelin <maxime.coquelin@st.com>
+
+>=20
+> diff --git a/arch/arm/configs/multi_v7_defconfig
+> b/arch/arm/configs/multi_v7_defconfig index d4e8a47..48951fc
+> 100644 --- a/arch/arm/configs/multi_v7_defconfig +++
+> b/arch/arm/configs/multi_v7_defconfig @@ -277,6 +277,7 @@
+> CONFIG_MMC_SDHCI_TEGRA=3Dy CONFIG_MMC_SDHCI_DOVE=3Dy=20
+> CONFIG_MMC_SDHCI_SPEAR=3Dy CONFIG_MMC_SDHCI_BCM_KONA=3Dy=20
+> +CONFIG_MMC_SDHCI_ST=3Dy CONFIG_MMC_OMAP=3Dy CONFIG_MMC_OMAP_HS=3Dy=20
+> CONFIG_MMC_MVSDIO=3Dy
+>=20
+
+
+--HOR5cGsoHwLw1fvDJL46tjJwuNhfCgpws
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTqAccAAoJEMo4jShGhw+JhAsQAJabGblynDfRLIeG3CEVIRaA
+b3osDGHMYdd9sdrVTv6StOnXcqqBUu0Wv3JQqVuEpDWUOmE8bHKFaD+aw+TzNXwo
+WqgIf03PuPOLmRq40EOm8QR/mREJBIMG8DK9lGu8u3yc1A9VJ/mTMEhAocKLRKdf
+0LzKa7HzkTaweciI7iX+x88OJcVuXM+XfHZXo4iN1st0+gF0C0Kuxw2CNG9xl4yn
+87urXkstu5LydtwcsMZaNlgVqBStOc3SmGW8yGZwh/awCv5Noz6uM0iBalTJ4by0
+Bkg0GyarO8rtLsY+o9n+J0tHukfOV/OPSy2TKz8Gu9r6KeTyaiXOG41WaoJj+p55
+Sph061gPCMFaKUUS4nwzTEnr0ctBgmeCt2WTF8F7InlqpvYB3FIg0tkl1yCvzBZs
++bJjPdxYSGN05yl6l2qVO1tbXL/tm27THfgx2gF1PkR973TUzzE2nDrbFY0oiejK
+uNVngzOZF4B3aq2fd88hzVDccj2FRuKnZrvVQV6bxbvAovEjc5Qy0zewWr1HPU2r
+2FBrI4m/hZtDFBqmCv4NPYO7R4HvEh1WYED6TwXKIDTP/P7MjLF7B24hus3yDnBb
+jwvtcLnZIJbzalPKPHozXvUQgYdHRlaagcK9WmID9ccVMkq7oNCyQybSrALMpsQE
+xJYigi0kj1loffStSPKG
+=zZ5P
+-----END PGP SIGNATURE-----
+
+--HOR5cGsoHwLw1fvDJL46tjJwuNhfCgpws--
