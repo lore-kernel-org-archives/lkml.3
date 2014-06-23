@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932154AbaFWNFg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:05:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37254 "EHLO
+	id S932178AbaFWNFj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:05:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37301 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932104AbaFWNF1 (ORCPT
+	with ESMTP id S932148AbaFWNFg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:05:27 -0400
+	Mon, 23 Jun 2014 09:05:36 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Vlastimil Babka <vbabka@suse.cz>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Jean Delvare <jdelvare@suse.de>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        Doug Anderson <dianders@chromium.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 85/93] mm: compaction: reset cached scanner pfn's before reading them
-Date: Mon, 23 Jun 2014 14:03:04 +0100
-Message-Id: <1403528592-2163-86-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 90/93] hwmon: (ntc_thermistor) Fix OF device ID mapping
+Date: Mon, 23 Jun 2014 14:03:09 +0100
+Message-Id: <1403528592-2163-91-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
 References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
@@ -29,78 +29,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlastimil Babka <vbabka@suse.cz>
+From: Jean Delvare <jdelvare@suse.de>
 
-commit d3132e4b83e6bd383c74d716f7281d7c3136089c upstream.
+commit ead82d6792ef5c600d535bca6ec50a4da14ff7c7 upstream.
 
-Compaction caches pfn's for its migrate and free scanners to avoid
-scanning the whole zone each time.  In compact_zone(), the cached values
-are read to set up initial values for the scanners.  There are several
-situations when these cached pfn's are reset to the first and last pfn
-of the zone, respectively.  One of these situations is when a compaction
-has been deferred for a zone and is now being restarted during a direct
-compaction, which is also done in compact_zone().
+The mapping from OF device IDs to platform device IDs is wrong.
+TYPE_NCPXXWB473 is 0, TYPE_NCPXXWL333 is 1, so
+ntc_thermistor_id[TYPE_NCPXXWB473] is { "ncp15wb473", TYPE_NCPXXWB473 }
+while
+ntc_thermistor_id[TYPE_NCPXXWL333] is { "ncp18wb473", TYPE_NCPXXWB473 }.
 
-However, compact_zone() currently reads the cached pfn's *before*
-resetting them.  This means the reset doesn't affect the compaction that
-performs it, and with good chance also subsequent compactions, as
-update_pageblock_skip() is likely to be called and update the cached
-pfn's to those being processed.  Another chance for a successful reset
-is when a direct compaction detects that migration and free scanners
-meet (which has its own problems addressed by another patch) and sets
-update_pageblock_skip flag which kswapd uses to do the reset because it
-goes to sleep.
+So the name is wrong for all but the "ntc,ncp15wb473" entry, and the
+type is wrong for the "ntc,ncp15wl333" entry.
 
-This is clearly a bug that results in non-deterministic behavior, so
-this patch moves the cached pfn reset to be performed *before* the
-values are read.
+So map the entries by index, it is neither elegant nor robust but at
+least it is correct.
 
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Rik van Riel <riel@redhat.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ luis: backported to 3.11: used vbabka's backport for 3.10 ]
+Signed-off-by: Jean Delvare <jdelvare@suse.de>
+Fixes: 9e8269de hwmon: (ntc_thermistor) Add DT with IIO support to NTC thermistor driver
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Cc: Doug Anderson <dianders@chromium.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/compaction.c | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ drivers/hwmon/ntc_thermistor.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 46e2f96454bc..87a815630379 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -949,6 +949,14 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
- 	}
+diff --git a/drivers/hwmon/ntc_thermistor.c b/drivers/hwmon/ntc_thermistor.c
+index 518fc3caff38..2847767e3375 100644
+--- a/drivers/hwmon/ntc_thermistor.c
++++ b/drivers/hwmon/ntc_thermistor.c
+@@ -44,6 +44,7 @@ struct ntc_compensation {
+ 	unsigned int	ohm;
+ };
  
- 	/*
-+	 * Clear pageblock skip if there were failures recently and compaction
-+	 * is about to be retried after being deferred. kswapd does not do
-+	 * this reset as it'll reset the cached information when going to sleep.
-+	 */
-+	if (compaction_restarting(zone, cc->order) && !current_is_kswapd())
-+		__reset_isolation_suitable(zone);
-+
-+	/*
- 	 * Setup to move all movable pages to the end of the zone. Used cached
- 	 * information on where the scanners should start but check that it
- 	 * is initialised by ensuring the values are within zone boundaries.
-@@ -964,14 +972,6 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
- 		zone->compact_cached_migrate_pfn = cc->migrate_pfn;
- 	}
++/* Order matters, ntc_match references the entries by index */
+ static const struct platform_device_id ntc_thermistor_id[] = {
+ 	{ "ncp15wb473", TYPE_NCPXXWB473 },
+ 	{ "ncp18wb473", TYPE_NCPXXWB473 },
+@@ -163,15 +164,15 @@ static int ntc_adc_iio_read(struct ntc_thermistor_platform_data *pdata)
  
--	/*
--	 * Clear pageblock skip if there were failures recently and compaction
--	 * is about to be retried after being deferred. kswapd does not do
--	 * this reset as it'll reset the cached information when going to sleep.
--	 */
--	if (compaction_restarting(zone, cc->order) && !current_is_kswapd())
--		__reset_isolation_suitable(zone);
--
- 	migrate_prep_local();
- 
- 	while ((ret = compact_finished(zone, cc)) == COMPACT_CONTINUE) {
+ static const struct of_device_id ntc_match[] = {
+ 	{ .compatible = "ntc,ncp15wb473",
+-		.data = &ntc_thermistor_id[TYPE_NCPXXWB473] },
++		.data = &ntc_thermistor_id[0] },
+ 	{ .compatible = "ntc,ncp18wb473",
+-		.data = &ntc_thermistor_id[TYPE_NCPXXWB473] },
++		.data = &ntc_thermistor_id[1] },
+ 	{ .compatible = "ntc,ncp21wb473",
+-		.data = &ntc_thermistor_id[TYPE_NCPXXWB473] },
++		.data = &ntc_thermistor_id[2] },
+ 	{ .compatible = "ntc,ncp03wb473",
+-		.data = &ntc_thermistor_id[TYPE_NCPXXWB473] },
++		.data = &ntc_thermistor_id[3] },
+ 	{ .compatible = "ntc,ncp15wl333",
+-		.data = &ntc_thermistor_id[TYPE_NCPXXWL333] },
++		.data = &ntc_thermistor_id[4] },
+ 	{ },
+ };
+ MODULE_DEVICE_TABLE(of, ntc_match);
 -- 
 1.9.1
 
