@@ -1,102 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754358AbaFWRmn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 13:42:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46750 "EHLO mx1.redhat.com"
+	id S1756565AbaFWRsJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 13:48:09 -0400
+Received: from smtp1-g21.free.fr ([212.27.42.1]:47995 "EHLO smtp1-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756633AbaFWRmk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 13:42:40 -0400
-Date: Mon, 23 Jun 2014 13:42:37 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-cc: linux-scsi@vger.kernel.org, target-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] target: fix deadlock on unload
-Message-ID: <alpine.LRH.2.02.1406231329430.8277@file01.intranet.prod.int.rdu2.redhat.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1756440AbaFWRsH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 13:48:07 -0400
+Message-ID: <53A867DB.90604@free.fr>
+Date: Mon, 23 Jun 2014 19:46:03 +0200
+From: Martin Peres <martin.peres@free.fr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Ilia Mirkin <imirkin@alum.mit.edu>, Greg KH <greg@kroah.com>
+CC: kernel list <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Ben Skeggs <bskeggs@redhat.com>, Pavel Machek <pavel@ucw.cz>
+Subject: Re: unparseable, undocumented /sys/class/drm/.../pstate
+References: <20140621180201.GA4621@amd.pavel.ucw.cz> <CAKb7UvhOCiBHcsB6a0qKBNsC3c9pmb=Wc7zucbBuP6vt-tx2eA@mail.gmail.com> <20140621194538.GA4903@kroah.com> <CAKb7UvjhOystpeRy1nQx49Nspve4wHQPb+e7gJQ-RT-HseK4Cw@mail.gmail.com> <20140623160727.GA19557@kroah.com> <CAKb7UvhEMg96YzGuA=rxRDrzBhKiVaYMczrAcm4hA_A4jXAW2w@mail.gmail.com> <20140623163600.GB20939@kroah.com> <CAKb7Uvgx_1mEPapJF3V5s8vUViGnRGCerkixwdTv_EpHhEozBg@mail.gmail.com>
+In-Reply-To: <CAKb7Uvgx_1mEPapJF3V5s8vUViGnRGCerkixwdTv_EpHhEozBg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-target: fix deadlock on unload
+Le 23/06/2014 18:40, Ilia Mirkin a écrit :
+> On Mon, Jun 23, 2014 at 12:36 PM, Greg KH <greg@kroah.com> wrote:
+>> On Mon, Jun 23, 2014 at 12:18:51PM -0400, Ilia Mirkin wrote:
+>> A list of valid "values" that a file can be in is fine if you just then
+>> write one value back to that file.  That's the one exception, but a
+>> minor one given the huge number of sysfs files.  Other than that, if you
+>
+> Which is pretty much what the pstate file is. Would it make things
+> better if we removed the descriptive info while leaving the pstate
+> file in place?
 
-On uniprocessor preemptible kernel, target core deadlocks on unload. The
-following events happen:
-* iscsit_del_np is called
-* it calls send_sig(SIGINT, np->np_thread, 1);
-* the scheduler switches to the np_thread
-* the np_thread is woken up, it sees that kthread_should_stop() returns
-  false, so it doesn't terminate
-* the np_thread clears signals with flush_signals(current); and goes back
-  to sleep in iscsit_accept_np
-* the scheduler switches back to iscsit_del_np
-* iscsit_del_np calls kthread_stop(np->np_thread);
-* the np_thread is waiting in iscsit_accept_np and it doesn't respond to
-  kthread_stop
+This means we should also create a new sysfs file per performance level 
+too, right? Is there another way for a driver to expose a list in sysfs?
 
-The deadlock could be resolved if the administrator sends SIGINT signal to
-the np_thread with killall -INT iscsi_np
+Since NVIDIA gives different names to performance levels depending on 
+the card family, we may need to abstract the name away in order to 
+provide some consistency and make listing performance levels easier from 
+a program (may it use readdir() or stat()).
 
-The reproducible deadlock was introduced in commit
-db6077fd0b7dd41dc6ff18329cec979379071f87, but the thread-stopping code was
-racy even before.
+Moving the file to debugfs would "fix" the one-value-per-file rule but 
+it would also require users to mount debugfs at boot time in order to 
+write the default configuration they want for PM instead of just 
+changing /etc/sysctl.d/nouveau.conf... On the other hand, I'm not sure 
+we can commit on having a stable ABI on the way we display clocks 
+(unless people take them as a single value and do not try to parse them) 
+as new hardware will alter the semantics of each clock domain, if not 
+drop/split some of them!
 
-This patch fixes the problem. Using kthread_should_stop to stop the
-np_thread is unreliable, so we test np_thread_state instead. If
-np_thread_state equals ISCSI_NP_THREAD_SHUTDOWN, the thread exits.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Cc: stable@vger.kernel.org
-
----
- drivers/target/iscsi/iscsi_target_login.c |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
-
-Index: linux-3.14.8/drivers/target/iscsi/iscsi_target_login.c
-===================================================================
---- linux-3.14.8.orig/drivers/target/iscsi/iscsi_target_login.c	2014-06-19 00:10:44.634113370 +0200
-+++ linux-3.14.8/drivers/target/iscsi/iscsi_target_login.c	2014-06-23 19:05:44.887437402 +0200
-@@ -1196,7 +1196,7 @@ old_sess_out:
- static int __iscsi_target_login_thread(struct iscsi_np *np)
- {
- 	u8 *buffer, zero_tsih = 0;
--	int ret = 0, rc, stop;
-+	int ret = 0, rc;
- 	struct iscsi_conn *conn = NULL;
- 	struct iscsi_login *login;
- 	struct iscsi_portal_group *tpg = NULL;
-@@ -1210,6 +1210,9 @@ static int __iscsi_target_login_thread(s
- 	if (np->np_thread_state == ISCSI_NP_THREAD_RESET) {
- 		np->np_thread_state = ISCSI_NP_THREAD_ACTIVE;
- 		complete(&np->np_restart_comp);
-+	} else if (np->np_thread_state == ISCSI_NP_THREAD_SHUTDOWN) {
-+		spin_unlock_bh(&np->np_thread_lock);
-+		goto exit;
- 	} else {
- 		np->np_thread_state = ISCSI_NP_THREAD_ACTIVE;
- 	}
-@@ -1402,10 +1405,8 @@ old_sess_out:
- 	}
- 
- out:
--	stop = kthread_should_stop();
--	/* Wait for another socket.. */
--	if (!stop)
--		return 1;
-+	return 1;
-+
- exit:
- 	iscsi_stop_login_thread_timer(np);
- 	spin_lock_bh(&np->np_thread_lock);
-@@ -1422,7 +1423,7 @@ int iscsi_target_login_thread(void *arg)
- 
- 	allow_signal(SIGINT);
- 
--	while (!kthread_should_stop()) {
-+	while (1) {
- 		ret = __iscsi_target_login_thread(np);
- 		/*
- 		 * We break and exit here unless another sock_accept() call
+Whatever we do, it doesn't look like we can find a nice solution that 
+fits every use cases unless we write a userspace program to access this 
+data, but this seems highly overkill...
