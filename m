@@ -1,87 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755553AbaFWPQb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 11:16:31 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:62235 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754248AbaFWPQ3 (ORCPT
+	id S1755615AbaFWPR2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 11:17:28 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:38567 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753882AbaFWPR0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 11:16:29 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53A844C2.7070804@roeck-us.net>
-Date: Mon, 23 Jun 2014 08:16:18 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 23 Jun 2014 11:17:26 -0400
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Maxime Ripard <maxime.ripard@free-electrons.com>, wim@iguana.be,
-        dbaryshkov@gmail.com, dwmw2@infradead.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, linux-sunxi@googlegroups.com
-Subject: Re: [PATCH v2 1/6] wdt: sunxi: Move restart code to the watchdog
- driver
-References: <1399430664-29091-1-git-send-email-maxime.ripard@free-electrons.com> <20140623103142.GB19730@lukather> <53A83A20.6090800@roeck-us.net> <19870078.UBj78UMBrO@wuerfel>
-In-Reply-To: <19870078.UBj78UMBrO@wuerfel>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140623092650.GE8847@lee--X1>
+References: <1402953143-24681-1-git-send-email-dianders@chromium.org>
+	<20140618092012.GF23945@lee--X1>
+	<CAD=FV=UiA=bsvune6A=wq+zKFq1+pkem0gTa-utxmBB6tKYM=A@mail.gmail.com>
+	<20140623092650.GE8847@lee--X1>
+Date: Mon, 23 Jun 2014 08:17:25 -0700
+X-Google-Sender-Auth: gB-uWWCjLeVlI-M2CGRKfhgXmJw
+Message-ID: <CAD=FV=Xnmd6dPrE2_NZ+Sy7cRjvgqOuQK27OzpBVygY9fwG-pQ@mail.gmail.com>
+Subject: Re: [PATCH] mfd: cros_ec_spi: set wakeup capability
+From: Doug Anderson <dianders@chromium.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2014 07:42 AM, Arnd Bergmann wrote:
-> On Monday 23 June 2014 07:30:56 Guenter Roeck wrote:
->> On 06/23/2014 03:31 AM, Maxime Ripard wrote:
->>> On Thu, May 22, 2014 at 02:12:07PM -0700, Guenter Roeck wrote:
->>>> On Thu, May 22, 2014 at 10:34:44PM +0200, Maxime Ripard wrote:
->>>>> On Mon, May 19, 2014 at 05:04:22PM +0200, Maxime Ripard wrote:
->>>>
->>>> The patches _are_ in my watchdog-next branch and get some coverage from
->>>> both my auto-builders and from Fenguang's build robots, so while they are
->>>> not in linux-next, they are not completely in the dark either.
->>>
->>> So, this patch finally didn't make it into 3.16. Great. Now, we can't
->>> even reboot the boards.
->>>
->>> Given how it's just impossible to get something merged reliably
->>> through the watchdog tree, I guess I should just start merging the
->>> patches through mine?
->>>
+Lee,
+
+On Mon, Jun 23, 2014 at 2:26 AM, Lee Jones <lee.jones@linaro.org> wrote:
+>> Lee (-others),
+>
+> Re-CC'ing the list.
+>
+>> On Wed, Jun 18, 2014 at 2:20 AM, Lee Jones <lee.jones@linaro.org> wrote:
+>> >> From: Prathyush K <prathyush.k@samsung.com>
+>> >>
+>> >> Set the device as wakeup capable and register the wakeup source.
+>> >>
+>> >> Note: Though it makes more sense to have the SPI framework do this,
+>> >> (either via device tree or by board_info)
+>> >> this change is as per an existing mail chain:
+>> >> https://lkml.org/lkml/2009/8/27/291
+>> >>
+>> >> Signed-off-by: Prathyush K <prathyush.k@samsung.com>
+>> >> Signed-off-by: Doug Anderson <dianders@chromium.org>
+>> >> ---
+>> >> Note that I don't have suspend/resume actually working upstream, but I
+>> >> see that /sys/bus/spi/drivers/cros-ec-spi/spi2.0/power/wakeup exists
+>> >> with this patch and doesn't exist without it.
+>> >
+>> > Very well.  Applied, thanks.
 >>
->> You can not really blame Wim here.
->>
->> In this case, I suspect the major reason for not accepting the patch
->> is that I tried to provide a clean method / API for "reset through watchdog
->> subsystem", which went nowhere, in my understanding because someone objected
->> that it would be the wrong thing to do [1] and it didn't get approval /
->> acceptance from the arm maintainers. If it is wrong to reset the board
->> from the watchdog subsystem in a clean way, it is for sure even more wrong
->> to do it as you proposed in your patch.
->>
->> My conclusion therefore is that all board reset code should move back out
->> of the watchdog subsystem, and that we should not accept such code in the
->> future. This is not my personal preference, but I do believe that we should
->> do it in a clean way or not at all.
+>> Thanks for applying!  ...did this go in some non-standard branch?  I
+>> see another of my patches got committed to your "for-mfd-next" tree on
+>> the 19th but I don't see this one...
 >
-> Moved to where?
+> Patience Grasshopper.  When I say that it's applied, it means that I
+> have done so locally only.  After I've collected a few local patches
+> I'll usually then fix them all with with my SoB and push them out to
+> the public MFD tree.
 >
-> I certainly don't want it in the platform directories, and for arm64 we
-> intentionally don't have a place to put this stuff.
->
+> BTW, it's always best to leave the ML in as CC, so others can see the
+> answer to these types of questions.  It may save a few emails a year,
+> but every little helps. :)
 
-I have no idea, but setting the arm reset function pointer from a watchdog
-driver doesn't seem like a good idea either. The arm code _does_ provide
-and expect platform code to set the reset function, so having it in the arm
-code would at least make more sense than expecting some unrelated driver
-code to set it - especially since it is inherently racy [1].
+Thanks!  I know it's super hard to keep track of everything, so I
+figure that it's part of my job as a submitter to help maintainers
+keep track of my patches.  I've definitely had many-a-time where
+someone has said "oops, I forgot about that" or where people were not
+on the same page about what the next steps ought to be.  Sounds like I
+should perhaps tone back and wait a bit longer before I ping about
+things.
 
-> drivers/power/reset would be an option, but then we have to solve the
-> problem of loading two drivers for one device first.
->
-It sounds crazy and may be huge overkill, but one solution for this is
-would be to use mfd to bridge the gap.
+Note: if there's any way you can provide more info to submitters like
+me then it would certainly be appreciated!  In this case I was trying
+hard not to be a noob.  I checked your public git tree and saw patches
+applied that were after the date you sent your last email and didn't
+see this patch.  I definitely don't know your personal workflow, but
+it's good to know that didn't mean the patch was lost.
 
-Guenter
+A few things that would have kept me from sending an email:
 
----
-[1] https://lkml.org/lkml/2014/5/15/838
+* If your email had read: "Applied to low priority fixes" and the
+other email had read "Applied to high priority fixes" then I would
+have understood that there were two queues and wouldn't have been
+concerned.
 
+* If you are able to publish (by pushing) your WIP collection to
+patches to git.kernel.org then I would be able to confirm myself that
+the patch wasn't lost.  If your queue was named something like "WIP"
+then I would also have a good idea that inclusion in that queue isn't
+a guarantee that my patch would land in mainline and I would also be
+able to guess that git hashes were probably not stable there.
+
+
+...anyway, as I said I will try to follow up less often and only ping
+if I see silence for > 2 weeks.
+
+:)
+
+
+-Doug
