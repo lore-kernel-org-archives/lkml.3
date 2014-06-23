@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753898AbaFWNDf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:03:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36681 "EHLO
+	id S1755070AbaFWNhA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:37:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36691 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753713AbaFWNDc (ORCPT
+	with ESMTP id S1753883AbaFWNDe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:03:32 -0400
+	Mon, 23 Jun 2014 09:03:34 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ursula Braun <ursula.braun@de.ibm.com>,
-        Frank Blaschka <frank.blaschka@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 07/93] af_iucv: wrong mapping of sent and confirmed skbs
-Date: Mon, 23 Jun 2014 14:01:46 +0100
-Message-Id: <1403528592-2163-8-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 09/93] perf: Limit perf_event_attr::sample_period to 63 bits
+Date: Mon, 23 Jun 2014 14:01:48 +0100
+Message-Id: <1403528592-2163-10-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
 References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
@@ -29,39 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ursula Braun <ursula.braun@de.ibm.com>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit f5738e2ef88070ef1372e6e718124d88e9abe4ac upstream.
+commit 0819b2e30ccb93edf04876237b6205eef84ec8d2 upstream.
 
-When sending data through IUCV a MESSAGE COMPLETE interrupt
-signals that sent data memory can be freed or reused again.
-With commit f9c41a62bba3f3f7ef3541b2a025e3371bcbba97
-"af_iucv: fix recvmsg by replacing skb_pull() function" the
-MESSAGE COMPLETE callback iucv_callback_txdone() identifies
-the wrong skb as being confirmed, which leads to data corruption.
-This patch fixes the skb mapping logic in iucv_callback_txdone().
+Vince reported that using a large sample_period (one with bit 63 set)
+results in wreckage since while the sample_period is fundamentally
+unsigned (negative periods don't make sense) the way we implement
+things very much rely on signed logic.
 
-Signed-off-by: Ursula Braun <ursula.braun@de.ibm.com>
-Signed-off-by: Frank Blaschka <frank.blaschka@de.ibm.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+So limit sample_period to 63 bits to avoid tripping over this.
+
+Reported-by: Vince Weaver <vincent.weaver@maine.edu>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/n/tip-p25fhunibl4y3qi0zuqmyf4b@git.kernel.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/iucv/af_iucv.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/events/core.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/net/iucv/af_iucv.c b/net/iucv/af_iucv.c
-index c4b7218058b6..1465363a452b 100644
---- a/net/iucv/af_iucv.c
-+++ b/net/iucv/af_iucv.c
-@@ -1829,7 +1829,7 @@ static void iucv_callback_txdone(struct iucv_path *path,
- 		spin_lock_irqsave(&list->lock, flags);
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 9c511b4296db..fe0c665c54d2 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -6816,6 +6816,9 @@ SYSCALL_DEFINE5(perf_event_open,
+ 	if (attr.freq) {
+ 		if (attr.sample_freq > sysctl_perf_event_sample_rate)
+ 			return -EINVAL;
++	} else {
++		if (attr.sample_period & (1ULL << 63))
++			return -EINVAL;
+ 	}
  
- 		while (list_skb != (struct sk_buff *)list) {
--			if (msg->tag != IUCV_SKB_CB(list_skb)->tag) {
-+			if (msg->tag == IUCV_SKB_CB(list_skb)->tag) {
- 				this = list_skb;
- 				break;
- 			}
+ 	/*
 -- 
 1.9.1
 
