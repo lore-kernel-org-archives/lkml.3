@@ -1,75 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753690AbaFWIxx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 04:53:53 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:52837 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753205AbaFWIxu (ORCPT
+	id S1754588AbaFWIwv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 04:52:51 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55544 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752564AbaFWIc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 04:53:50 -0400
-Date: Mon, 23 Jun 2014 09:53:45 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: gnomes@lxorguk.ukuu.org.uk
-Cc: linux-kernel@vger.kernel.org
-Subject: Alan, can you revisit a patch you authored please?
-Message-ID: <20140623085345.GD8847@lee--X1>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 23 Jun 2014 04:32:29 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Nicholas Bellinger <nab@linux-iscsi.org>,
+        Chris Boot <crb@tiger-computing.co.uk>,
+        Philip Gaw <pgaw@darktech.org.uk>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 058/111] target: Fix alua_access_state attribute OOPs for un-configured devices
+Date: Mon, 23 Jun 2014 10:31:33 +0200
+Message-Id: <ca55f49d628c4b9805d6567b45c6cc27503ac32f.1403512281.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
+References: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
+In-Reply-To: <cover.1403512280.git.jslaby@suse.cz>
+References: <cover.1403512280.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-I'm looking at a patch you wrote which can be foudn below at [1].  Are
-you sure it's correct to ignore i.e not return -ENOMEM from
-platform_device_add_data() in pcf50633_probe()?  I believe if
-platform_device_add_data() returns an error we should
-platform_device_put() and return immediately.  Can you tell me if you
-agree.  If you don't, would you mind explaining to me why please?
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Kind regards,
-Lee
+===============
 
-[1]
-commit 18273c5b463d9f98ef81f1a6217a7f4168dd809a
-Author: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Date:   Fri Jul 13 16:43:32 2012 +0100
+commit f1453773514bb8b0bba0716301e8c8f17f8d39c7 upstream.
 
-    mfd: Add missing out of memory check for pcf50633
-    
-    Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?id=44561
-    Reported-by: <rucsoftsec@gmail.com>
-    Cc: Lars-Peter Clausen <lars@metafoo.de>
-    Signed-off-by: Alan Cox <alan@linux.intel.com>
-    Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+This patch fixes a OOPs where an attempt to write to the per-device
+alua_access_state configfs attribute at:
 
-diff --git a/drivers/mfd/pcf50633-core.c b/drivers/mfd/pcf50633-core.c
-index 29c122b..45ce1fb 100644
---- a/drivers/mfd/pcf50633-core.c
-+++ b/drivers/mfd/pcf50633-core.c
-@@ -253,8 +253,13 @@ static int __devinit pcf50633_probe(struct i2c_client *client,
-                }
+  /sys/kernel/config/target/core/$HBA/$DEV/alua/$TG_PT_GP/alua_access_state
+
+results in an NULL pointer dereference when the backend device has not
+yet been configured.
+
+This patch adds an explicit check for DF_CONFIGURED, and fails with
+-ENODEV to avoid this case.
+
+Reported-by: Chris Boot <crb@tiger-computing.co.uk>
+Reported-by: Philip Gaw <pgaw@darktech.org.uk>
+Cc: Chris Boot <crb@tiger-computing.co.uk>
+Cc: Philip Gaw <pgaw@darktech.org.uk>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/target/target_core_configfs.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/drivers/target/target_core_configfs.c b/drivers/target/target_core_configfs.c
+index 82e81c542e43..45d0867853b0 100644
+--- a/drivers/target/target_core_configfs.c
++++ b/drivers/target/target_core_configfs.c
+@@ -2040,6 +2040,11 @@ static ssize_t target_core_alua_tg_pt_gp_store_attr_alua_access_state(
+ 			" tg_pt_gp ID: %hu\n", tg_pt_gp->tg_pt_gp_valid_id);
+ 		return -EINVAL;
+ 	}
++	if (!(dev->dev_flags & DF_CONFIGURED)) {
++		pr_err("Unable to set alua_access_state while device is"
++		       " not configured\n");
++		return -ENODEV;
++	}
  
-                pdev->dev.parent = pcf->dev;
--               platform_device_add_data(pdev, &pdata->reg_init_data[i],
--                                       sizeof(pdata->reg_init_data[i]));
-+               if (platform_device_add_data(pdev, &pdata->reg_init_data[i],
-+                                       sizeof(pdata->reg_init_data[i])) < 0) {
-+                       platform_device_put(pdev);
-+                       dev_err(pcf->dev, "Out of memory for regulator parameters %d\n",
-+                                                                       i);
-+                       continue;
-+               }
-                pcf->regulator_pdev[i] = pdev;
- 
-                platform_device_add(pdev);
-
+ 	ret = kstrtoul(page, 0, &tmp);
+ 	if (ret < 0) {
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+2.0.0
+
