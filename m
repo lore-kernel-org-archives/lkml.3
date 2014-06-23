@@ -1,243 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932267AbaFWNHP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:07:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46855 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932133AbaFWNHJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:07:09 -0400
-Date: Mon, 23 Jun 2014 14:07:05 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+	id S1754977AbaFWNHs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:07:48 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:48486 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932132AbaFWNFe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 09:05:34 -0400
+Date: Mon, 23 Jun 2014 15:05:19 +0200
+From: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        tj@kernel.org, kishon@ti.com, alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-ide@vger.kernel.org, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/4] mm: vmscan: rework compaction-ready signaling in
- direct reclaim
-Message-ID: <20140623130705.GM10819@suse.de>
-References: <1403282030-29915-1-git-send-email-hannes@cmpxchg.org>
- <1403282030-29915-2-git-send-email-hannes@cmpxchg.org>
+Subject: Re: [PATCH v6 1/7] phy: add a driver for the Berlin SATA PHY
+Message-ID: <20140623130519.GA23540@kwain>
+References: <1402914392-6028-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1402914392-6028-2-git-send-email-antoine.tenart@free-electrons.com>
+ <53A0861E.90400@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1403282030-29915-2-git-send-email-hannes@cmpxchg.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53A0861E.90400@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 12:33:48PM -0400, Johannes Weiner wrote:
-> Page reclaim for a higher-order page runs until compaction is ready,
-> then aborts and signals this situation through the return value of
-> shrink_zones().  This is an oddly specific signal to encode in the
-> return value of shrink_zones(), though, and can be quite confusing.
+Sebastian,
+
+On Tue, Jun 17, 2014 at 08:17:02PM +0200, Sebastian Hesselbarth wrote:
+> On 06/16/2014 12:26 PM, Antoine Ténart wrote:
+> > +
+> > +#define PHY_BASE		0x200
 > 
-> Introduce sc->compaction_ready and signal the compactability of the
-> zones out-of-band to free up the return value of shrink_zones() for
-> actual zone reclaimability.
+> Antoine,
 > 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> ---
->  mm/vmscan.c | 67 ++++++++++++++++++++++++++++---------------------------------
->  1 file changed, 31 insertions(+), 36 deletions(-)
+> I gave your Berlin AHCI patches a try on BG2. I finally got it working
+> but BG2 has a different PHY_BASE and need some register fixups.
 > 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 19b5b8016209..ed1efb84c542 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -65,6 +65,9 @@ struct scan_control {
->  	/* Number of pages freed so far during a call to shrink_zones() */
->  	unsigned long nr_reclaimed;
->  
-> +	/* One of the zones is ready for compaction */
-> +	int compaction_ready;
-> +
->  	/* How many pages shrink_list() should reclaim */
->  	unsigned long nr_to_reclaim;
->  
-
-You are not the criminal here but scan_control is larger than it needs
-to be and the stack usage of reclaim has reared its head again.
-
-Add a preparation patch that convert sc->may* and sc->hibernation_mode
-to bool and moves them towards the end of the struct. Then add
-compaction_ready as a bool.
-
-> @@ -2292,15 +2295,11 @@ static void shrink_zone(struct zone *zone, struct scan_control *sc)
->  }
->  
->  /* Returns true if compaction should go ahead for a high-order request */
-> -static inline bool compaction_ready(struct zone *zone, struct scan_control *sc)
-> +static inline bool compaction_ready(struct zone *zone, int order)
->  {
-
-Why did you remove the use of sc->order? In this patch there is only one
-called of compaction_ready and it looks like
-
-                     if (IS_ENABLED(CONFIG_COMPACTION) &&
-                         sc->order > PAGE_ALLOC_COSTLY_ORDER &&
-                         zonelist_zone_idx(z) <= requested_highidx &&
-                         compaction_ready(zone, sc->order)) {
-
-So it's unclear why you changed the signature.
-
-
->  	unsigned long balance_gap, watermark;
->  	bool watermark_ok;
->  
-> -	/* Do not consider compaction for orders reclaim is meant to satisfy */
-> -	if (sc->order <= PAGE_ALLOC_COSTLY_ORDER)
-> -		return false;
-> -
->  	/*
->  	 * Compaction takes time to run and there are potentially other
->  	 * callers using the pages just freed. Continue reclaiming until
-> @@ -2309,18 +2308,18 @@ static inline bool compaction_ready(struct zone *zone, struct scan_control *sc)
->  	 */
->  	balance_gap = min(low_wmark_pages(zone), DIV_ROUND_UP(
->  			zone->managed_pages, KSWAPD_ZONE_BALANCE_GAP_RATIO));
-> -	watermark = high_wmark_pages(zone) + balance_gap + (2UL << sc->order);
-> +	watermark = high_wmark_pages(zone) + balance_gap + (2UL << order);
->  	watermark_ok = zone_watermark_ok_safe(zone, 0, watermark, 0, 0);
->  
->  	/*
->  	 * If compaction is deferred, reclaim up to a point where
->  	 * compaction will have a chance of success when re-enabled
->  	 */
-> -	if (compaction_deferred(zone, sc->order))
-> +	if (compaction_deferred(zone, order))
->  		return watermark_ok;
->  
->  	/* If compaction is not ready to start, keep reclaiming */
-> -	if (!compaction_suitable(zone, sc->order))
-> +	if (!compaction_suitable(zone, order))
->  		return false;
->  
->  	return watermark_ok;
-> @@ -2341,20 +2340,14 @@ static inline bool compaction_ready(struct zone *zone, struct scan_control *sc)
->   *
->   * If a zone is deemed to be full of pinned pages then just give it a light
->   * scan then give up on it.
-> - *
-> - * This function returns true if a zone is being reclaimed for a costly
-> - * high-order allocation and compaction is ready to begin. This indicates to
-> - * the caller that it should consider retrying the allocation instead of
-> - * further reclaim.
->   */
-> -static bool shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
-> +static void shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
->  {
->  	struct zoneref *z;
->  	struct zone *zone;
->  	unsigned long nr_soft_reclaimed;
->  	unsigned long nr_soft_scanned;
->  	unsigned long lru_pages = 0;
-> -	bool aborted_reclaim = false;
->  	struct reclaim_state *reclaim_state = current->reclaim_state;
->  	gfp_t orig_mask;
->  	struct shrink_control shrink = {
-> @@ -2391,22 +2384,24 @@ static bool shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
->  			if (sc->priority != DEF_PRIORITY &&
->  			    !zone_reclaimable(zone))
->  				continue;	/* Let kswapd poll it */
-> -			if (IS_ENABLED(CONFIG_COMPACTION)) {
-> -				/*
-> -				 * If we already have plenty of memory free for
-> -				 * compaction in this zone, don't free any more.
-> -				 * Even though compaction is invoked for any
-> -				 * non-zero order, only frequent costly order
-> -				 * reclamation is disruptive enough to become a
-> -				 * noticeable problem, like transparent huge
-> -				 * page allocations.
-> -				 */
-> -				if ((zonelist_zone_idx(z) <= requested_highidx)
-> -				    && compaction_ready(zone, sc)) {
-> -					aborted_reclaim = true;
-> -					continue;
-> -				}
-> +
-> +			/*
-> +			 * If we already have plenty of memory free
-> +			 * for compaction in this zone, don't free any
-> +			 * more.  Even though compaction is invoked
-> +			 * for any non-zero order, only frequent
-> +			 * costly order reclamation is disruptive
-> +			 * enough to become a noticeable problem, like
-> +			 * transparent huge page allocations.
-> +			 */
-> +			if (IS_ENABLED(CONFIG_COMPACTION) &&
-> +			    sc->order > PAGE_ALLOC_COSTLY_ORDER &&
-> +			    zonelist_zone_idx(z) <= requested_highidx &&
-> +			    compaction_ready(zone, sc->order)) {
-> +				sc->compaction_ready = true;
-> +				continue;
->  			}
-> +
->  			/*
->  			 * This steals pages from memory cgroups over softlimit
->  			 * and returns the number of reclaimed pages and
-> @@ -2444,8 +2439,6 @@ static bool shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
->  	 * promoted it to __GFP_HIGHMEM.
->  	 */
->  	sc->gfp_mask = orig_mask;
-> -
-> -	return aborted_reclaim;
->  }
->  
->  /* All zones in zonelist are unreclaimable? */
-> @@ -2489,7 +2482,6 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
->  {
->  	unsigned long total_scanned = 0;
->  	unsigned long writeback_threshold;
-> -	bool aborted_reclaim;
->  
->  	delayacct_freepages_start();
->  
-> @@ -2500,12 +2492,15 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
->  		vmpressure_prio(sc->gfp_mask, sc->target_mem_cgroup,
->  				sc->priority);
->  		sc->nr_scanned = 0;
-> -		aborted_reclaim = shrink_zones(zonelist, sc);
-> +		shrink_zones(zonelist, sc);
->  
->  		total_scanned += sc->nr_scanned;
->  		if (sc->nr_reclaimed >= sc->nr_to_reclaim)
->  			goto out;
->  
-> +		if (sc->compaction_ready)
-> +			goto out;
-> +
-
-break?
-
-Convert the other one to break as well. out label seems unnecessary in
-this context.
-
->  		/*
->  		 * If we're getting trouble reclaiming, start doing
->  		 * writepage even in laptop mode.
-> @@ -2526,7 +2521,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
->  						WB_REASON_TRY_TO_FREE_PAGES);
->  			sc->may_writepage = 1;
->  		}
-> -	} while (--sc->priority >= 0 && !aborted_reclaim);
-> +	} while (--sc->priority >= 0);
->  
->  out:
->  	delayacct_freepages_end();
-> @@ -2535,7 +2530,7 @@ out:
->  		return sc->nr_reclaimed;
->  
->  	/* Aborted reclaim to try compaction? don't OOM, then */
-> -	if (aborted_reclaim)
-> +	if (sc->compaction_ready)
->  		return 1;
->  
->  	/* top priority shrink_zones still had more to do? don't OOM, then */
-> -- 
-> 2.0.0
+> Please update this patch and the DT bindings to reflect the difference
+> of BG2Q with respect to BG2 as below.
 > 
+> [...]
+> > +
+> > +static const struct of_device_id phy_berlin_sata_of_match[] = {
+> > +	{ .compatible = "marvell,berlin-sata-phy" },
+> 
+> s/marvell,berlin-sata-phy/marvell,berlin2-sata-phy/
+> 
+> and add
+> 
+> marvell,berlin2q-sata-phy
+> 
+> That way it can be applied now without proper support for BG2
+> and I can send patches later.
+
+Sure. I'll just s/marvell,berlin-sata-phy/marvell,berlin2q-sata-phy/ so
+we don't have a non working compatible.
+
+Antoine
 
 -- 
-Mel Gorman
-SUSE Labs
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
