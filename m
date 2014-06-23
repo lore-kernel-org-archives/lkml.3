@@ -1,86 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756878AbaFWULn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 16:11:43 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:50398 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753578AbaFWULl (ORCPT
+	id S1756866AbaFWUPI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 16:15:08 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:53212 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753812AbaFWUPG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 16:11:41 -0400
+	Mon, 23 Jun 2014 16:15:06 -0400
+Date: Mon, 23 Jun 2014 22:15:03 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Ilia Mirkin <imirkin@alum.mit.edu>
+Cc: Greg KH <greg@kroah.com>, kernel list <linux-kernel@vger.kernel.org>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        David Airlie <airlied@linux.ie>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
+Subject: Re: unparseable, undocumented /sys/class/drm/.../pstate
+Message-ID: <20140623201503.GA4551@amd.pavel.ucw.cz>
+References: <20140621180201.GA4621@amd.pavel.ucw.cz>
+ <CAKb7UvhOCiBHcsB6a0qKBNsC3c9pmb=Wc7zucbBuP6vt-tx2eA@mail.gmail.com>
+ <20140621194538.GA4903@kroah.com>
+ <CAKb7UvjhOystpeRy1nQx49Nspve4wHQPb+e7gJQ-RT-HseK4Cw@mail.gmail.com>
+ <20140623130259.GA29809@amd.pavel.ucw.cz>
+ <CAKb7UvhmatCtu2rEHgVOjitN1gAPTsgfaUmA2iOLX2Qwhi+Yxg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <53A884EF.100@wwwdotorg.org>
-References: <1403285183-15926-1-git-send-email-nm@ti.com>
-	<53A884EF.100@wwwdotorg.org>
-Date: Mon, 23 Jun 2014 15:11:40 -0500
-X-Google-Sender-Auth: P63J-hwdM4l6cU9zK5CdfnDKEdw
-Message-ID: <CAGo_u6oMqKBu0PdY915+GHBekbPkSHODwoKafdY-6YcmkLGanA@mail.gmail.com>
-Subject: Re: [PATCH] regulator: palmas: Fix SMPS enable/disable/is_enabled
-From: Nishanth Menon <nm@ti.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>, acourbot@nvidia.com,
-        gnurou@gmail.com, Keerthy <j-keerthy@ti.com>,
-        linux-tegra@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKb7UvhmatCtu2rEHgVOjitN1gAPTsgfaUmA2iOLX2Qwhi+Yxg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 23, 2014 at 2:50 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 06/20/2014 11:26 AM, Nishanth Menon wrote:
->> We use regmap regulator ops to enable/disable and check if regulator
->> is enabled for various SMPS. However, these depend on valid
->> enable_reg, enable_mask and enable_value in regulator descriptor.
->>
->> Currently we do not populate these for SMPS other than SMPS10, this
->> results in spurious results as regmap assumes that the values are
->> valid and ends up reading register 0x0 RTC:SECONDS_REG on Palmas
->> variants that do have RTC! To fix this, we update proper parameters
->> for the descriptor fields.
->>
->> Further, we want to ensure the behavior consistent with logic
->> prior to commit dbabd624d4eec50b6, where, once you do a set_mode,
->> enable/disable ensure the logic remains consistent and configures
->> Palmas to the configuration that we set with set_mode (since the
->> configuration register is common). To do this, we can rely on the
->> regulator core's regulator_register behavior where the regulator
->> descriptor pointer provided by the regulator driver is stored. (no
->> reallocation and copy is done). This lets us update the enable_value
->> post registration, to remain consistent with the mode we configure as
->> part of set_mode.
->>
->> Fixes: dbabd624d4eec50b6 ("regulator: palmas: Reemove open coded functions with helper functions")
->> Reported-by: Alexandre Courbot <acourbot@nvidia.com>
->> Signed-off-by: Nishanth Menon <nm@ti.com>
->
-> Unfortunately, there is still some lingering problem in the original
-> commit. In next-20130623 (and indeed since at least next-20140611),
-> neither the LCD panel or HDMI work on the NVIDIA Dalmore board.
-> Reverting this commit (just for conflicts) and the original problematic
-> commit "regulator: palmas: Reemove open coded functions with helper
-> functions" solves this. I see the following on boot:
->
->> [    3.558776] tegra-dsi 54300000.dsi: cannot get VDD supply
->> [    3.564272] platform 54300000.dsi: Driver tegra-dsi requests probe deferral
->> [    3.571990] tegra-hdmi 54280000.hdmi: failed to get PLL regulator
->> [    3.578377] platform 54280000.hdmi: Driver tegra-hdmi requests probe deferral
->
-> ... but probe deferral never completes, yet with your "remove open coded
-> ..." patch reverted, it all works fine.
->
-> Can you please take another look at the original patch?
+Hi!
 
-Will let keerthy (original patch author) comment on it.
+> >> >> > I guess better interface would be something like
+> >> >> >
+> >> >> > pstate/07/core_clock_min
+> >> >> >           core_clock_max
+> >> >> >           memory_clock_min
+> >> >> >           memory_clock_max
+> >> >> >
+> >> >> > and then pstate/active containing just the number of active state?
+> >
+> >> Could we just say that the format of this file is one-per-line of
+> >>
+> >> level: information-for-the-user
+> >
+> > But it is not.
+> 
+> But it is...
+> 
+> > Management tools will want to parse it, sooner or
+> > later.  What is wrong with solution described above?
+> 
+> It is complex and annoying to the people that will actually use it.
 
-arch/arm/boot/dts/tegra114-dalmore.dts tps65090, avdd_lcd_reg I
-suppose is the path in question?
+grep -r . pstate/ is actually not that bad...
 
-Seems to use drivers/mfd/tps65090.c and
-drivers/regulator/tps65090-regulator.c and not palmas?
-
-Am I looking at the right dts?
-
----
-Regards,
-Nishanth Menon
+And yes, some kind of utility to select right performance level would
+be nice in future... Or maybe not. Perhaps in not so distant future
+kernel will use right performance level for given load...?
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
