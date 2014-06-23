@@ -1,20 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754616AbaFWJMl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 05:12:41 -0400
+	id S1754017AbaFWJM2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 05:12:28 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:56207 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753926AbaFWJMg (ORCPT
+	by vger.kernel.org with ESMTP id S1753905AbaFWJM0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 05:12:36 -0400
+	Mon, 23 Jun 2014 05:12:26 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Bibek Basu <bbasu@nvidia.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: linux-kernel@vger.kernel.org,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 033/111] cpufreq: remove race while accessing cur_policy
-Date: Mon, 23 Jun 2014 10:31:08 +0200
-Message-Id: <3ddbd9a2d572434bd5b63757a70d9532c0027de7.1403512281.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 083/111] rtc: rtc-at91rm9200: fix infinite wait for ACKUPD irq
+Date: Mon, 23 Jun 2014 10:31:58 +0200
+Message-Id: <ba576fd015636729ae6c55bd96f56014c2526571.1403512281.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
 References: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
@@ -24,94 +30,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bibek Basu <bbasu@nvidia.com>
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit c5450db85b828d0c46ac8fc570fb8a51bf07ac40 upstream.
+commit 2fe121e1f5aa3bf31b418a9790db6c400e922291 upstream.
 
-While accessing cur_policy during executing events
-CPUFREQ_GOV_START, CPUFREQ_GOV_STOP, CPUFREQ_GOV_LIMITS,
-same mutex lock is not taken, dbs_data->mutex, which leads
-to race and data corruption while running continious suspend
-resume test. This is seen with ondemand governor with suspend
-resume test using rtcwake.
+The rtc user must wait at least 1 sec between each time/calandar update
+(see atmel's datasheet chapter "Updating Time/Calendar").
 
- Unable to handle kernel NULL pointer dereference at virtual address 00000028
- pgd = ed610000
- [00000028] *pgd=adf11831, *pte=00000000, *ppte=00000000
- Internal error: Oops: 17 [#1] PREEMPT SMP ARM
- Modules linked in: nvhost_vi
- CPU: 1 PID: 3243 Comm: rtcwake Not tainted 3.10.24-gf5cf9e5 #1
- task: ee708040 ti: ed61c000 task.ti: ed61c000
- PC is at cpufreq_governor_dbs+0x400/0x634
- LR is at cpufreq_governor_dbs+0x3f8/0x634
- pc : [<c05652b8>] lr : [<c05652b0>] psr: 600f0013
- sp : ed61dcb0 ip : 000493e0 fp : c1cc14f0
- r10: 00000000 r9 : 00000000 r8 : 00000000
- r7 : eb725280 r6 : c1cc1560 r5 : eb575200 r4 : ebad7740
- r3 : ee708040 r2 : ed61dca8 r1 : 001ebd24 r0 : 00000000
- Flags: nZCv IRQs on FIQs on Mode SVC_32 ISA ARM Segment user
- Control: 10c5387d Table: ad61006a DAC: 00000015
- [<c05652b8>] (cpufreq_governor_dbs+0x400/0x634) from [<c055f700>] (__cpufreq_governor+0x98/0x1b4)
- [<c055f700>] (__cpufreq_governor+0x98/0x1b4) from [<c0560770>] (__cpufreq_set_policy+0x250/0x320)
- [<c0560770>] (__cpufreq_set_policy+0x250/0x320) from [<c0561dcc>] (cpufreq_update_policy+0xcc/0x168)
- [<c0561dcc>] (cpufreq_update_policy+0xcc/0x168) from [<c0561ed0>] (cpu_freq_notify+0x68/0xdc)
- [<c0561ed0>] (cpu_freq_notify+0x68/0xdc) from [<c008eff8>] (notifier_call_chain+0x4c/0x8c)
- [<c008eff8>] (notifier_call_chain+0x4c/0x8c) from [<c008f3d4>] (__blocking_notifier_call_chain+0x50/0x68)
- [<c008f3d4>] (__blocking_notifier_call_chain+0x50/0x68) from [<c008f40c>] (blocking_notifier_call_chain+0x20/0x28)
- [<c008f40c>] (blocking_notifier_call_chain+0x20/0x28) from [<c00aac6c>] (pm_qos_update_bounded_target+0xd8/0x310)
- [<c00aac6c>] (pm_qos_update_bounded_target+0xd8/0x310) from [<c00ab3b0>] (__pm_qos_update_request+0x64/0x70)
- [<c00ab3b0>] (__pm_qos_update_request+0x64/0x70) from [<c004b4b8>] (tegra_pm_notify+0x114/0x134)
- [<c004b4b8>] (tegra_pm_notify+0x114/0x134) from [<c008eff8>] (notifier_call_chain+0x4c/0x8c)
- [<c008eff8>] (notifier_call_chain+0x4c/0x8c) from [<c008f3d4>] (__blocking_notifier_call_chain+0x50/0x68)
- [<c008f3d4>] (__blocking_notifier_call_chain+0x50/0x68) from [<c008f40c>] (blocking_notifier_call_chain+0x20/0x28)
- [<c008f40c>] (blocking_notifier_call_chain+0x20/0x28) from [<c00ac228>] (pm_notifier_call_chain+0x1c/0x34)
- [<c00ac228>] (pm_notifier_call_chain+0x1c/0x34) from [<c00ad38c>] (enter_state+0xec/0x128)
- [<c00ad38c>] (enter_state+0xec/0x128) from [<c00ad400>] (pm_suspend+0x38/0xa4)
- [<c00ad400>] (pm_suspend+0x38/0xa4) from [<c00ac114>] (state_store+0x70/0xc0)
- [<c00ac114>] (state_store+0x70/0xc0) from [<c027b1e8>] (kobj_attr_store+0x14/0x20)
- [<c027b1e8>] (kobj_attr_store+0x14/0x20) from [<c019cd9c>] (sysfs_write_file+0x104/0x184)
- [<c019cd9c>] (sysfs_write_file+0x104/0x184) from [<c0143038>] (vfs_write+0xd0/0x19c)
- [<c0143038>] (vfs_write+0xd0/0x19c) from [<c0143414>] (SyS_write+0x4c/0x78)
- [<c0143414>] (SyS_write+0x4c/0x78) from [<c000f080>] (ret_fast_syscall+0x0/0x30)
- Code: e1a00006 eb084346 e59b0020 e5951024 (e5903028)
- ---[ end trace 0488523c8f6b0f9d ]---
+Use the 1Hz interrupt to update the at91_rtc_upd_rdy flag and wait for
+the at91_rtc_wait_upd_rdy event if the rtc is not ready.
 
-Signed-off-by: Bibek Basu <bbasu@nvidia.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+This patch fixes a deadlock in an uninterruptible wait when the RTC is
+updated more than once every second.  AFAICT the bug is here from the
+beginning, but I think we should at least backport this fix to 3.10 and
+the following longterm and stable releases.
+
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Reported-by: Bryan Evenson <bevenson@melinkcorp.com>
+Tested-by: Bryan Evenson <bevenson@melinkcorp.com>
+Cc: Andrew Victor <linux@maxim.org.za>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/cpufreq/cpufreq_governor.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/rtc/rtc-at91rm9200.c | 16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
-index 0806c31e5764..d10d625e99df 100644
---- a/drivers/cpufreq/cpufreq_governor.c
-+++ b/drivers/cpufreq/cpufreq_governor.c
-@@ -366,6 +366,11 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
- 		break;
+diff --git a/drivers/rtc/rtc-at91rm9200.c b/drivers/rtc/rtc-at91rm9200.c
+index b86eec3ffba8..8ebf09f91fcf 100644
+--- a/drivers/rtc/rtc-at91rm9200.c
++++ b/drivers/rtc/rtc-at91rm9200.c
+@@ -48,6 +48,7 @@ struct at91_rtc_config {
  
- 	case CPUFREQ_GOV_LIMITS:
-+		mutex_lock(&dbs_data->mutex);
-+		if (!cpu_cdbs->cur_policy) {
-+			mutex_unlock(&dbs_data->mutex);
-+			break;
-+		}
- 		mutex_lock(&cpu_cdbs->timer_mutex);
- 		if (policy->max < cpu_cdbs->cur_policy->cur)
- 			__cpufreq_driver_target(cpu_cdbs->cur_policy,
-@@ -375,6 +380,7 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
- 					policy->min, CPUFREQ_RELATION_L);
- 		dbs_check_cpu(dbs_data, cpu);
- 		mutex_unlock(&cpu_cdbs->timer_mutex);
-+		mutex_unlock(&dbs_data->mutex);
- 		break;
- 	}
+ static const struct at91_rtc_config *at91_rtc_config;
+ static DECLARE_COMPLETION(at91_rtc_updated);
++static DECLARE_COMPLETION(at91_rtc_upd_rdy);
+ static unsigned int at91_alarm_year = AT91_RTC_EPOCH;
+ static void __iomem *at91_rtc_regs;
+ static int irq;
+@@ -161,6 +162,8 @@ static int at91_rtc_settime(struct device *dev, struct rtc_time *tm)
+ 		1900 + tm->tm_year, tm->tm_mon, tm->tm_mday,
+ 		tm->tm_hour, tm->tm_min, tm->tm_sec);
+ 
++	wait_for_completion(&at91_rtc_upd_rdy);
++
+ 	/* Stop Time/Calendar from counting */
+ 	cr = at91_rtc_read(AT91_RTC_CR);
+ 	at91_rtc_write(AT91_RTC_CR, cr | AT91_RTC_UPDCAL | AT91_RTC_UPDTIM);
+@@ -183,7 +186,9 @@ static int at91_rtc_settime(struct device *dev, struct rtc_time *tm)
+ 
+ 	/* Restart Time/Calendar */
+ 	cr = at91_rtc_read(AT91_RTC_CR);
++	at91_rtc_write(AT91_RTC_SCCR, AT91_RTC_SECEV);
+ 	at91_rtc_write(AT91_RTC_CR, cr & ~(AT91_RTC_UPDCAL | AT91_RTC_UPDTIM));
++	at91_rtc_write_ier(AT91_RTC_SECEV);
+ 
  	return 0;
+ }
+@@ -290,8 +295,10 @@ static irqreturn_t at91_rtc_interrupt(int irq, void *dev_id)
+ 	if (rtsr) {		/* this interrupt is shared!  Is it ours? */
+ 		if (rtsr & AT91_RTC_ALARM)
+ 			events |= (RTC_AF | RTC_IRQF);
+-		if (rtsr & AT91_RTC_SECEV)
+-			events |= (RTC_UF | RTC_IRQF);
++		if (rtsr & AT91_RTC_SECEV) {
++			complete(&at91_rtc_upd_rdy);
++			at91_rtc_write_idr(AT91_RTC_SECEV);
++		}
+ 		if (rtsr & AT91_RTC_ACKUPD)
+ 			complete(&at91_rtc_updated);
+ 
+@@ -414,6 +421,11 @@ static int __init at91_rtc_probe(struct platform_device *pdev)
+ 	}
+ 	platform_set_drvdata(pdev, rtc);
+ 
++	/* enable SECEV interrupt in order to initialize at91_rtc_upd_rdy
++	 * completion.
++	 */
++	at91_rtc_write_ier(AT91_RTC_SECEV);
++
+ 	dev_info(&pdev->dev, "AT91 Real Time Clock driver.\n");
+ 	return 0;
+ 
 -- 
 2.0.0
 
