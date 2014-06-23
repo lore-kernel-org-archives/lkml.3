@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756247AbaFWQ0s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 12:26:48 -0400
-Received: from alfter.us ([96.126.100.72]:52695 "EHLO alfter.us"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755451AbaFWQ0o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 12:26:44 -0400
-X-Greylist: delayed 402 seconds by postgrey-1.27 at vger.kernel.org; Mon, 23 Jun 2014 12:26:44 EDT
-Message-ID: <89597b8dd96b8e07df45b2b4a7fb0d9b.squirrel@webmail.alfter.us>
-In-Reply-To: <12173493.Olv1pKMOGK@wuerfel>
-References: <12173493.Olv1pKMOGK@wuerfel>
-Date: Mon, 23 Jun 2014 16:19:58 -0000
-Subject: Re: [PATCH] w1: select crc16 library for ds2406
-To: "Arnd Bergmann" <arnd@arndb.de>
-Cc: "Evgeniy Polyakov" <zbr@ioremap.net>, linux-kernel@vger.kernel.org,
-        "Scott Alfter" <scott@alfter.us>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-User-Agent: SquirrelMail/1.4.23 [SVN]
+	id S1756273AbaFWQ1M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 12:27:12 -0400
+Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.220]:13165 "EHLO
+	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755600AbaFWQ1J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 12:27:09 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+yackYocTD1iAi8x+OWi/zfN1cLnBYfssBY9SQMKk8kCovkkmJbh+VP2spQG3tvMeGW7W
+X-RZG-CLASS-ID: mo00
+Date: Mon, 23 Jun 2014 18:27:05 +0200
+From: Olaf Hering <olaf@aepfle.de>
+To: Haiyang Zhang <haiyangz@microsoft.com>
+Cc: Greg KH <greg@kroah.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "davem@davemloft.net" <davem@davemloft.net>
+Subject: Re: [PATCH net-next] hyperv: Add handler for
+ RNDIS_STATUS_NETWORK_CHANGE event
+Message-ID: <20140623162705.GA5957@aepfle.de>
+References: <1403228076-7596-1-git-send-email-haiyangz@microsoft.com>
+ <20140620045704.GA4850@aepfle.de>
+ <20140620051213.GA9960@kroah.com>
+ <ff458d1b896d4a70a32fa7709911274c@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+ <20140623080242.GA16924@aepfle.de>
+ <06b508cbb6b949f4b3e13e7797948e56@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+ <20140623131723.GA7026@aepfle.de>
+ <5fb9ddebb68d456ab87979b5cc3830ec@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Delivery-Agent: TMDA/1.1.12 (Macallan)
-From: Scott Alfter <scott@alfter.us>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <5fb9ddebb68d456ab87979b5cc3830ec@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+User-Agent: Mutt/1.5.22.rev6346 (2013-10-29)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, June 23, 2014 14:31, Arnd Bergmann wrote:
-> commit 94859308a21b "w1: new w1_ds2406 driver" added a new driver
-> that uses the crc16 library, but didn't ensure that the core is
-> there. This adds the necessary Kconfig statements, just like we
-> have it for other w1 drivers.
->
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Scott Alfter <scott@alfter.us>
-> Cc: Evgeniy Polyakov <zbr@ioremap.net>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+On Mon, Jun 23, Haiyang Zhang wrote:
 
-Sounds OK to me...was an oversight on my part. Do I need to put together
-another patchfile, or can this one be combined with the one I've already
-sent in? As an alternative, it's in my kernel tree at
-https://github.com/salfter/adafruit-raspberrypi-linux.
+> I have tried some possibilities, like IF_OPER_DORMANT then IF_OPER_UP with 
+> netdev_state_change() etc. but not able to trigger DHCP review. I will look at this
+> further...
 
-Scott Alfter
-scott@alfter.us
+Is there a link down/up event anyway?
+If the interface is configured to "on hotplug" or "on cable plugged in"
+or whatever the setting name is, the network scripts should do
+something. Even if its not a DHCP renew.
 
+> So, what's the equivalent or similar command to "network restart" on SLES12? Could
+> you update the command line for the usermodehelper when porting this patch to SLES
+> 12?
 
+I see a /sbin/rcnetwork in SLES, which links either to
+'/etc/init.d/network' or 'service'. This could be used as a quick
+workaround.
+
+Olaf
