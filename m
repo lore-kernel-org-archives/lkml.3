@@ -1,114 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752872AbaFWSUd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 14:20:33 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:39397 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752286AbaFWSUc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 14:20:32 -0400
-Date: Mon, 23 Jun 2014 14:20:17 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/4] mm: vmscan: rework compaction-ready signaling in
- direct reclaim
-Message-ID: <20140623182017.GO7331@cmpxchg.org>
-References: <1403282030-29915-1-git-send-email-hannes@cmpxchg.org>
- <1403282030-29915-2-git-send-email-hannes@cmpxchg.org>
- <20140623063637.GB15594@bbox>
+	id S1753137AbaFWSVZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 14:21:25 -0400
+Received: from na01-sn2-obe.ptr.o365filtering.com ([157.55.158.23]:36885 "EHLO
+	na01-sn2-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751210AbaFWSVX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 14:21:23 -0400
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: Olaf Hering <olaf@aepfle.de>
+CC: Greg KH <greg@kroah.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "davem@davemloft.net" <davem@davemloft.net>
+Subject: RE: [PATCH net-next] hyperv: Add handler for
+ RNDIS_STATUS_NETWORK_CHANGE event
+Thread-Topic: [PATCH net-next] hyperv: Add handler for
+ RNDIS_STATUS_NETWORK_CHANGE event
+Thread-Index: AQHPjB+WQKkwvkUXekGWoyJ+QmEz5Zt55UEAgAAEPICAADyUMIAEqgwA///ZfgCAAH5ugP//tltAgAB+poD//6PcsA==
+Date: Mon, 23 Jun 2014 18:21:13 +0000
+Message-ID: <4ee8be5360a44b5abfa6df871ec45527@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+References: <1403228076-7596-1-git-send-email-haiyangz@microsoft.com>
+ <20140620045704.GA4850@aepfle.de> <20140620051213.GA9960@kroah.com>
+ <ff458d1b896d4a70a32fa7709911274c@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+ <20140623080242.GA16924@aepfle.de>
+ <06b508cbb6b949f4b3e13e7797948e56@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+ <20140623131723.GA7026@aepfle.de>
+ <5fb9ddebb68d456ab87979b5cc3830ec@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+ <20140623162705.GA5957@aepfle.de>
+In-Reply-To: <20140623162705.GA5957@aepfle.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.13]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140623063637.GB15594@bbox>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:131.107.159.100;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(377454003)(51704005)(24454002)(13464003)(51914003)(164054003)(199002)(189002)(76482001)(77982001)(64706001)(81342001)(79102001)(19580405001)(83322001)(20776003)(47776003)(46102001)(19580395003)(44976005)(6806004)(66066001)(80022001)(31966008)(23676002)(2009001)(4396001)(81542001)(74662001)(74502001)(97736001)(33646001)(99396002)(93886003)(50466002)(54356999)(106466001)(106116001)(50986999)(76176999)(21056001)(77096999)(83072002)(68736004)(86612001)(92566001)(85326001)(87936001)(2656002)(84676001)(85852003)(24736002)(106276001);DIR:OUT;SFP:1101;SCL:1;SRVR:CH1SR01MB612;H:hybrid.exchange.microsoft.com;FPR:;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 025100C802
+X-OriginatorOrg: msft.ccsctp.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s5NILT1n021438
 
-On Mon, Jun 23, 2014 at 03:36:37PM +0900, Minchan Kim wrote:
-> On Fri, Jun 20, 2014 at 12:33:48PM -0400, Johannes Weiner wrote:
-> > Page reclaim for a higher-order page runs until compaction is ready,
-> > then aborts and signals this situation through the return value of
-> > shrink_zones().  This is an oddly specific signal to encode in the
-> > return value of shrink_zones(), though, and can be quite confusing.
-> > 
-> > Introduce sc->compaction_ready and signal the compactability of the
-> > zones out-of-band to free up the return value of shrink_zones() for
-> > actual zone reclaimability.
-> > 
-> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> Acked-by: Minchan Kim <minchan@kernel.org>
 
-Thanks!
 
-> > @@ -2292,15 +2295,11 @@ static void shrink_zone(struct zone *zone, struct scan_control *sc)
-> >  }
-> >  
-> >  /* Returns true if compaction should go ahead for a high-order request */
-> > -static inline bool compaction_ready(struct zone *zone, struct scan_control *sc)
-> > +static inline bool compaction_ready(struct zone *zone, int order)
-> >  {
-> >  	unsigned long balance_gap, watermark;
-> >  	bool watermark_ok;
-> >  
-> > -	/* Do not consider compaction for orders reclaim is meant to satisfy */
-> > -	if (sc->order <= PAGE_ALLOC_COSTLY_ORDER)
-> > -		return false;
-> > -
-> >  	/*
-> >  	 * Compaction takes time to run and there are potentially other
-> >  	 * callers using the pages just freed. Continue reclaiming until
-
-> > @@ -2391,22 +2384,24 @@ static bool shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
-> >  			if (sc->priority != DEF_PRIORITY &&
-> >  			    !zone_reclaimable(zone))
-> >  				continue;	/* Let kswapd poll it */
-> > -			if (IS_ENABLED(CONFIG_COMPACTION)) {
-> > -				/*
-> > -				 * If we already have plenty of memory free for
-> > -				 * compaction in this zone, don't free any more.
-> > -				 * Even though compaction is invoked for any
-> > -				 * non-zero order, only frequent costly order
-> > -				 * reclamation is disruptive enough to become a
-> > -				 * noticeable problem, like transparent huge
-> > -				 * page allocations.
-> > -				 */
-> > -				if ((zonelist_zone_idx(z) <= requested_highidx)
-> > -				    && compaction_ready(zone, sc)) {
-> > -					aborted_reclaim = true;
-> > -					continue;
-> > -				}
-> > +
-> > +			/*
-> > +			 * If we already have plenty of memory free
-> > +			 * for compaction in this zone, don't free any
-> > +			 * more.  Even though compaction is invoked
-> > +			 * for any non-zero order, only frequent
-> > +			 * costly order reclamation is disruptive
-> > +			 * enough to become a noticeable problem, like
-> > +			 * transparent huge page allocations.
-> > +			 */
-> > +			if (IS_ENABLED(CONFIG_COMPACTION) &&
-> > +			    sc->order > PAGE_ALLOC_COSTLY_ORDER &&
+> -----Original Message-----
+> From: Olaf Hering [mailto:olaf@aepfle.de]
+> Sent: Monday, June 23, 2014 12:27 PM
+> To: Haiyang Zhang
+> Cc: Greg KH; netdev@vger.kernel.org; jasowang@redhat.com; driverdev-
+> devel@linuxdriverproject.org; linux-kernel@vger.kernel.org;
+> davem@davemloft.net
+> Subject: Re: [PATCH net-next] hyperv: Add handler for
+> RNDIS_STATUS_NETWORK_CHANGE event
 > 
-> You are deleting comment sc->order <= PAGE_ALLOC_COSTLY_ORDER which was
-> in compaction_ready. At least, that comment was useful for me to guess
-> the intention. So if you have strong reason to remove that, I'd like to
-> remain it.
+> On Mon, Jun 23, Haiyang Zhang wrote:
+> 
+> > I have tried some possibilities, like IF_OPER_DORMANT then IF_OPER_UP
+> > with
+> > netdev_state_change() etc. but not able to trigger DHCP review. I will
+> > look at this further...
+> 
+> Is there a link down/up event anyway?
+> If the interface is configured to "on hotplug" or "on cable plugged in"
+> or whatever the setting name is, the network scripts should do something. Even
+> if its not a DHCP renew.
 
-There are two separate explanations for aborting reclaim early for
-costly orders:
+Yes, there is a link down/up event from the host, we currently call netif_carrier_off() 
+/ netif_carrier_on() with these events. Will hotplug scripts be triggered by 
+netif_carrier_off/on? Where are the scripts located at (SLES)?
 
-1. /* Do not consider compaction for orders reclaim is meant to satisfy */
+> 
+> > So, what's the equivalent or similar command to "network restart" on
+> > SLES12? Could you update the command line for the usermodehelper when
+> > porting this patch to SLES 12?
+> 
+> I see a /sbin/rcnetwork in SLES, which links either to '/etc/init.d/network' or
+> 'service'. This could be used as a quick workaround.
 
-2. /*
-    * Even though compaction is invoked
-    * for any non-zero order, only frequent
-    * costly order reclamation is disruptive
-    * enough to become a noticeable problem, like
-    * transparent huge page allocations.
-    */
+Thanks for the info!
 
-I thought it makes sense to pick one and go with that, so I went with
-2. and moved the order check out there as well.
+Thanks,
+- Haiyang
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
