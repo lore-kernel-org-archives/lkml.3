@@ -1,51 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752478AbaFWK3E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 06:29:04 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:33114 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751014AbaFWK3C (ORCPT
+	id S1752981AbaFWKb5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 06:31:57 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:43226 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751917AbaFWKbz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 06:29:02 -0400
-Date: Mon, 23 Jun 2014 12:28:50 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Waiman Long <waiman.long@hp.com>, Romanov Arya <romanov.arya@gmail.com>,
-        Pranith Kumar <bobby.prani@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        LKML <linux-kernel@vger.kernel.org>, torvalds@linux-foundation.org
-Subject: Re: [RFC PATCH 1/1] kernel/rcu/tree.c: simplify
- force_quiescent_state()
-Message-ID: <20140623102850.GX19860@laptop.programming.kicks-ass.net>
-References: <539FAE21.7070702@gmail.com>
- <20140617145419.GE4669@linux.vnet.ibm.com>
- <CAJKcOGdUDwdmdkpd0dw5xO9+TK=9W9fvF9Q+f5F_b4R8cEgdTA@mail.gmail.com>
- <53A07336.7030704@hp.com>
- <20140617171116.GH4669@linux.vnet.ibm.com>
- <20140617173717.GA28198@linux.vnet.ibm.com>
+	Mon, 23 Jun 2014 06:31:55 -0400
+Message-ID: <53A80215.5090200@gmail.com>
+Date: Mon, 23 Jun 2014 18:31:49 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140617173717.GA28198@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: David Rientjes <rientjes@google.com>
+CC: Liqin Chen <liqin.linux@gmail.com>, Lennox Wu <lennox.wu@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arch/score/include/uapi/asm/ptrace.h: Add prefix 'SCORE_'
+ for related macros
+References: <53A66000.4010208@gmail.com> <alpine.DEB.2.02.1406230237330.8821@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1406230237330.8821@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 17, 2014 at 10:37:17AM -0700, Paul E. McKenney wrote:
-> Oh, and to answer the implicit question...  A properly configured 4096-CPU
-> system will have two funnel levels, with 64 nodes at the leaf level
-> and a single node at the root level.  If the system is not properly
-> configured, it will have three funnel levels.  The maximum number of
-> funnel levels is four, which would handle more than four million CPUs
-> (sixteen million if properly configured), so we should be good.  ;-)
-> 
-> The larger numbers of levels are intended strictly for testing.  I set
-> CONFIG_RCU_FANOUT_LEAF=2 and CONFIG_RCU_FANOUT=2 on a 16-CPU system just
-> to make sure that I am testing something uglier than what will be running
-> in production.  A large system should have both of these set to 64,
-> though this requires also booting with skew_tick=1 as well.
 
-Right, and I think we talked about this before; the first thing one
-should do is align the RCU fanout masks with the actual machine
-topology. Because currently they can be all over the place.
+On 06/23/2014 05:38 PM, David Rientjes wrote:
+> On Sun, 22 Jun 2014, Chen Gang wrote:
+> 
+>> diff --git a/arch/score/include/uapi/asm/ptrace.h b/arch/score/include/uapi/asm/ptrace.h
+>> index f59771a..7a0ead9 100644
+>> --- a/arch/score/include/uapi/asm/ptrace.h
+>> +++ b/arch/score/include/uapi/asm/ptrace.h
+>> @@ -4,16 +4,16 @@
+>>  #define PTRACE_GETREGS		12
+>>  #define PTRACE_SETREGS		13
+>>  
+>> -#define PC		32
+>> -#define CONDITION	33
+>> -#define ECR		34
+>> -#define EMA		35
+>> -#define CEH		36
+>> -#define CEL		37
+>> -#define COUNTER		38
+>> -#define LDCR		39
+>> -#define STCR		40
+>> -#define PSR		41
+>> +#define SCORE_PC		32
+>> +#define SCORE_CONDITION		33
+>> +#define SCORE_ECR		34
+>> +#define SCORE_EMA		35
+>> +#define SCORE_CEH		36
+>> +#define SOCRE_CEL		37
+> 
+> SOCRE?
+> 
+
+OH, typo issue, thanks.
+
+>> +#define SCORE_COUNTER		38
+>> +#define SCORE_LDCR		39
+>> +#define SCORE_STCR		40
+>> +#define SCORE_PSR		41
+>>  
+>>  #define SINGLESTEP16_INSN	0x7006
+>>  #define SINGLESTEP32_INSN	0x840C8000
+> 
+> This is a uapi header file, what was done to ensure this doesn't introduce 
+> userspace breakage?
+> 
+
+Do you have any new idea for it, since you have question?
+
+
+For me, one solving way is: use "#if defined(__KERNEL__) &&
+defined(__LINUX__)" for check whether need a prefix (e.g. 'SCORE_') for it.
+
+
+Thanks.
+-- 
+Chen Gang
+
+Open, share, and attitude like air, water, and life which God blessed
