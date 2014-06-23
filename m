@@ -1,86 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755679AbaFWNbj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:31:39 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60761 "EHLO
+	id S1755665AbaFWNbh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:31:37 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60774 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754838AbaFWN3j (ORCPT
+	by vger.kernel.org with ESMTP id S1754860AbaFWN3j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Jun 2014 09:29:39 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: linux-kernel@vger.kernel.org
 Cc: jirislaby@gmail.com, Vojtech Pavlik <vojtech@suse.cz>,
         Jiri Kosina <jkosina@suse.cz>, Jiri Slaby <jslaby@suse.cz>,
-        Udo Seidel <udoseidel@gmx.de>
-Subject: [PATCH 06/21] kgr: add Documentation
-Date: Mon, 23 Jun 2014 15:29:20 +0200
-Message-Id: <1403530175-29217-6-git-send-email-jslaby@suse.cz>
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: [PATCH 01/21] ftrace: Add function to find fentry of function
+Date: Mon, 23 Jun 2014 15:29:15 +0200
+Message-Id: <1403530175-29217-1-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1403530175-29217-1-git-send-email-jslaby@suse.cz>
-References: <1403530175-29217-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a text provided by Udo and polished.
+This is needed for kGraft to find a fentry location to be "ftraced".
+We use this to find a place where to jump to a new/old code location.
+
+Note that we use a O(n) algorithm to assert correctness (and
+simplicity). This algorithm can be further optimized to be O(log(n))
+using binary search, but care has to be taken about the first member
+of each entries page. I.e. we cannot use 1:1 what is in
+ftrace_location_range etc.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Udo Seidel <udoseidel@gmx.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
 ---
- Documentation/kgraft.txt | 44 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 44 insertions(+)
- create mode 100644 Documentation/kgraft.txt
+ include/linux/ftrace.h |  1 +
+ kernel/trace/ftrace.c  | 30 ++++++++++++++++++++++++++++++
+ 2 files changed, 31 insertions(+)
 
-diff --git a/Documentation/kgraft.txt b/Documentation/kgraft.txt
-new file mode 100644
-index 000000000000..476beaf35c62
---- /dev/null
-+++ b/Documentation/kgraft.txt
-@@ -0,0 +1,44 @@
-+Live Kernel Patching with kGraft
-+--------------------------------
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 404a686a3644..c142816c2801 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -295,6 +295,7 @@ extern void
+ unregister_ftrace_function_probe_func(char *glob, struct ftrace_probe_ops *ops);
+ extern void unregister_ftrace_function_probe_all(char *glob);
+ 
++extern unsigned long ftrace_function_to_fentry(unsigned long addr);
+ extern int ftrace_text_reserved(const void *start, const void *end);
+ 
+ extern int ftrace_nr_registered_ops(void);
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 5b372e3ed675..f4da441c0125 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -1422,6 +1422,36 @@ ftrace_ops_test(struct ftrace_ops *ops, unsigned long ip, void *regs)
+ 		}				\
+ 	}
+ 
++/**
++ * ftrace_function_to_fentry -- lookup fentry location for a function
++ * @addr: function address to find a fentry in
++ *
++ * Perform a lookup in a list of fentry callsites to find one that fits a
++ * specified function @addr. It returns the corresponding fentry callsite or
++ * zero on failure.
++ */
++unsigned long ftrace_function_to_fentry(unsigned long addr)
++{
++	const struct dyn_ftrace *rec;
++	const struct ftrace_page *pg;
++	unsigned long ret = 0;
 +
-+Written by Udo Seidel <udoseidel at gmx dot de>
-+Based on the Blog entry by Vojtech Pavlik
-+Updated by Jiri Slaby
++	mutex_lock(&ftrace_lock);
++	do_for_each_ftrace_rec(pg, rec) {
++		unsigned long off;
 +
-+June 2014
++		if (!kallsyms_lookup_size_offset(rec->ip, NULL, &off))
++			continue;
++		if (addr + off == rec->ip) {
++			ret = rec->ip;
++			goto end;
++		}
++	} while_for_each_ftrace_rec()
++end:
++	mutex_unlock(&ftrace_lock);
 +
-+kGraft's developement was started by the SUSE Labs. kGraft builds on
-+technologies and ideas that are already present in the kernel: ftrace [1] and
-+its mcount-based reserved space in function headers [2], the INT3/IPI-NMI
-+patching also used in jump labels [3], and RCU-like update of code that does
-+not require stopping the kernel.
-+
-+A kGraft patch is a kernel module and fully relies on the in-kernel module
-+loader to link the new code with the kernel. Thanks to all that, the design
-+can be nicely minimalistic.
-+
-+While kGraft is, by choice, limited to replacing whole functions and constants
-+they reference, this does not limit the set of code patches that can be
-+applied significantly.
-+
-+Use
-+---
-+
-+1) Build a kernel with CONFIG_KGRAFT enabled
-+2) Create a module with a patch
-+   * Look at samples/kgraft/kgraft_patcher.c for an example
-+3) Insert the module from 2) into the booted kernel from 1)
-+4) All processes need to enter the kernel to acknowledge the new state
-+   * This can be done e.g. by sending a non-fatal signal to all processes
-+   * Check /proc/*/kgr_in_progress to check who still needs to be poked
-+5) You should see "kgr succeeded" in dmesg now
-+
-+Enjoy your patched system!
-+
-+
-+References
-+----------
-+
-+[1] Documentation/trace/ftrace.txt
-+[2] Documentation/trace/ftrace-design.txt
-+[3] Documentation/static-keys.txt
++	return ret;
++}
+ 
+ static int ftrace_cmp_recs(const void *a, const void *b)
+ {
 -- 
 2.0.0
 
