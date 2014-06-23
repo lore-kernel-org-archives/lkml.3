@@ -1,42 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753111AbaFWLYn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 07:24:43 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:54849 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752375AbaFWLYm (ORCPT
+	id S1753254AbaFWL27 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 07:28:59 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:58171 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752326AbaFWL26 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 07:24:42 -0400
-From: Sachin Kamat <sachin.kamat@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, kheitke@codeaurora.org, spk.linux@gmail.com
-Subject: [PATCH 1/1] spmi: Remove duplicate inclusion of module.h
-Date: Mon, 23 Jun 2014 16:51:27 +0530
-Message-Id: <1403522487-21197-1-git-send-email-sachin.kamat@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 23 Jun 2014 07:28:58 -0400
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
+        patches@linaro.org, linaro-kernel@lists.linaro.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Joe Perches <joe@perches.com>,
+        linux-doc@vger.kernel.org
+Subject: [PATCH] Documentation: devres: Add devm_kmalloc() et al
+Date: Mon, 23 Jun 2014 12:28:38 +0100
+Message-Id: <1403522918-16509-1-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-module.h was included twice.
+Commit 64c862a83... added new alloc variants to the devres managed
+API. These should be included in the list of managed API found in
+devres.txt.
 
-Signed-off-by: Sachin Kamat <sachin.kamat@samsung.com>
+Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Joe Perches <joe@perches.com>
+Cc: linux-doc@vger.kernel.org
 ---
- drivers/spmi/spmi.c |    1 -
- 1 file changed, 1 deletion(-)
+ Documentation/driver-model/devres.txt | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/spmi/spmi.c b/drivers/spmi/spmi.c
-index 3b5780710d50..1d92f5103ebf 100644
---- a/drivers/spmi/spmi.c
-+++ b/drivers/spmi/spmi.c
-@@ -18,7 +18,6 @@
- #include <linux/of_device.h>
- #include <linux/platform_device.h>
- #include <linux/spmi.h>
--#include <linux/module.h>
- #include <linux/pm_runtime.h>
+diff --git a/Documentation/driver-model/devres.txt b/Documentation/driver-model/devres.txt
+index 1525e30..91f5633 100644
+--- a/Documentation/driver-model/devres.txt
++++ b/Documentation/driver-model/devres.txt
+@@ -234,7 +234,10 @@ certainly invest a bit more effort into libata core layer).
+   -----------------------------
  
- #include <dt-bindings/spmi/spmi.h>
+ MEM
++  devm_kmalloc()
+   devm_kzalloc()
++  devm_kmalloc_array()
++  devm_kcalloc()
+   devm_kfree()
+   devm_kmemdup()
+   devm_get_free_pages()
 -- 
-1.7.9.5
+1.9.3
 
