@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752037AbaFWGXu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 02:23:50 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:49854 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751332AbaFWGXt (ORCPT
+	id S1752121AbaFWG0b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 02:26:31 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45801 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751686AbaFWG03 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 02:23:49 -0400
+	Mon, 23 Jun 2014 02:26:29 -0400
+Date: Mon, 23 Jun 2014 08:26:15 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, dave.hansen@intel.com, ak@linux.intel.com,
+        cl@gentwo.org, umgwanakikbuti@gmail.com
+Subject: Re: [PATCH tip/core/rcu] Reduce overhead of cond_resched() checks
+ for RCU
+Message-ID: <20140623062615.GB19860@laptop.programming.kicks-ass.net>
+References: <20140621025958.GA7185@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <1403477762.18747.14.camel@joe-AO725>
-References: <1403477209-14612-1-git-send-email-minipli@googlemail.com>
-	<1403477762.18747.14.camel@joe-AO725>
-Date: Mon, 23 Jun 2014 08:23:47 +0200
-Message-ID: <CA+rthh8D=r1kW6iDb0MqfHwA4OW-oXSA+B1AXe-0Cqperz6ZRQ@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/3] Mark literal strings in __init / __exit code
-From: Mathias Krause <minipli@googlemail.com>
-To: Joe Perches <joe@perches.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140621025958.GA7185@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 June 2014 00:56, Joe Perches <joe@perches.com> wrote:
-> On Mon, 2014-06-23 at 00:46 +0200, Mathias Krause wrote:
->> [...] patch 2 adds some syntactical sugar for the most popular use
->> case, by providing pr_<level> alike macros, namely pi_<level> for __init
->> code and pe_<level> for __exit code. This hides the use of the marker
->> macros behind the commonly known printing functions -- with just a
->> single character changed.
->>
->> Patch 3 exemplarily changes all strings and format strings in
->> arch/x86/kernel/acpi/boot.c to use the new macros. It also addresses a
->> few styling issues, though. But this already leads to ~1.7 kB of r/o
->> data moved to the .init.rodata section, marking it for release after
->> init.
->>
->> [...]
->
-> I once proposed a similar thing.
->
-> https://lkml.org/lkml/2009/7/21/421
->
-> Matt Mackall replied
->
-> https://lkml.org/lkml/2009/7/21/463
->
+On Fri, Jun 20, 2014 at 07:59:58PM -0700, Paul E. McKenney wrote:
+> Commit ac1bea85781e (Make cond_resched() report RCU quiescent states)
+> fixed a problem where a CPU looping in the kernel with but one runnable
+> task would give RCU CPU stall warnings, even if the in-kernel loop
+> contained cond_resched() calls.  Unfortunately, in so doing, it introduced
+> performance regressions in Anton Blanchard's will-it-scale "open1" test.
+> The problem appears to be not so much the increased cond_resched() path
+> length as an increase in the rate at which grace periods complete, which
+> increased per-update grace-period overhead.
+> 
+> This commit takes a different approach to fixing this bug, mainly by
+> moving the RCU-visible quiescent state from cond_resched() to
+> rcu_note_context_switch(), and by further reducing the check to a
+> simple non-zero test of a single per-CPU variable.  However, this
+> approach requires that the force-quiescent-state processing send
+> resched IPIs to the offending CPUs.  These will be sent only once
+> the grace period has reached an age specified by the boot/sysfs
+> parameter rcutree.jiffies_till_sched_qs, or once the grace period
+> reaches an age halfway to the point at which RCU CPU stall warnings
+> will be emitted, whichever comes first.
 
-Thanks for the pointers. Have you looked at patch 2 and 3? I don't
-think it makes the printk() case ugly. In fact, using pi_<level>()
-should be no less readable then pr_<level>, no?
+Right, and I suppose the force quiescent stuff is triggered from the
+tick, which in turn wakes some of these rcu kthreads, which on UP would
+cause scheduling themselves.
 
-Thanks,
-Mathias
+On the topic of these threads; I recently noticed RCU grew a metric ton
+of them, I found some 75 rcu kthreads on my box, wth up with that?
+
