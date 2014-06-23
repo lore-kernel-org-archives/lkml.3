@@ -1,70 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756683AbaFWR45 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 13:56:57 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:37863 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756541AbaFWR4z (ORCPT
+	id S1756691AbaFWR6c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 13:58:32 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:46499 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751210AbaFWR6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 13:56:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <1403539186.3804.46.camel@hornet>
-References: <1403018494-10264-1-git-send-email-pawel.moll@arm.com>
- <20140620170901.GA12059@leverpostej> <1403532837.3804.29.camel@hornet>
- <CAL_Jsq+6SveWhzWPrtziTJ-tDOFaJV4sXO+r_CEhAZf=tQE6FA@mail.gmail.com> <1403539186.3804.46.camel@hornet>
-From: Rob Herring <robherring2@gmail.com>
-Date: Mon, 23 Jun 2014 12:56:34 -0500
-Message-ID: <CAL_JsqLQTT5N8D_GTDd5YVgr2SSCXtC6EcRQxW2=_-J8Wmsf0g@mail.gmail.com>
-Subject: Re: [PATCH v7 1/2] video: ARM CLCD: Add DT support
-To: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <Mark.Rutland@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 23 Jun 2014 13:58:31 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        "Daniel M. Weeks" <dan@danweeks.net>, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v4] initramfs: Support initrd that is bigger than 2GiB
+Date: Mon, 23 Jun 2014 10:58:08 -0700
+Message-Id: <1403546288-714-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.4.5
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 23, 2014 at 10:59 AM, Pawel Moll <pawel.moll@arm.com> wrote:
-> On Mon, 2014-06-23 at 16:43 +0100, Rob Herring wrote:
->> On Mon, Jun 23, 2014 at 9:13 AM, Pawel Moll <pawel.moll@arm.com> wrote:
->> > On Fri, 2014-06-20 at 18:09 +0100, Mark Rutland wrote:
+When initrd (compressed or not) is used, kernel report data corrupted
+with /dev/ram0.
 
->> >> > +- max-memory-bandwidth: maximum bandwidth in bytes per second that the
->> >> > +   cell's memory interface can handle
->> >>
->> >> When should I set this, given it is optional?
->> >
->> > When there is a (significant) limitation of the bandwidth available for
->> > the cell's memory interface. One will either be told by the soc guys or
->> > will figure it out in the hard way, as we did :-(
->>
->> What are you going to do with this information? b/w is a function of
->> screen size and pixel depth. Are you going to refuse certain configs
->> based on that? Seems like someone doing their own modes should know
->> what they are doing and the limitations.
->>
->> Again, drop it until there is a defined need for this.
->
-> Yes, there is. Use case: PL111 is wired up to a HDMI formatter, which
-> will take everything up to 1080p. This is what a DRM driver (what/if
-> it's ready) will get from the encoder driver (and rightly so). But the
-> chip interconnect limitations is make the chip being able to get 480p at
-> 60Hz tops.
->
-> Or do you want me to add a subnode with timings for all achievable modes
-> instead?
+The root cause:
+During initramfs checking, if it is initrd, it will be transferred to
+/initrd.image with sys_write.
+sys_write only support 2G-4K write, so if the initrd ram is more than
+that, /initrd.image will not complete at all.
 
-I want this solved in a generic way and not something pl111 specific.
-If this is already defined then use it. If not, I would drop this for
-now and get a pl111 binding in place finally.
+Add local xwrite to loop calling sys_write to workaround the
+problem.
 
-Rob
+Also need to use xwrite in write_buffer() to handle:
+image is uncompressed cpio and there is one big file (>2G) in it.
+   unpack_to_rootfs ===> write_buffer ===> actions[]/do_copy
+
+At the same time, we don't need to worry about sys_read/sys_write in
+do_mounts_rd.c::crd_load. As decompressor will have fill/flush and
+local buffer that is smaller than 2G.
+
+Test with uncompressed initrd, and compressed ones with gz, bz2, lzma,xz,
+lzop.
+
+-v2: according to HPA, change name to xwrite.
+-v3: change xwrite to HPA's version. The normal behavior of xwrite(),
+     like fwrite() and write(), is to return the total number of bytes
+     written if any bytes are written at all.
+-v4: change written tyep to ssize_t according to Geert Uytterhoeven.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Acked-by: H. Peter Anvin <hpa@zytor.com>
+
+---
+ init/initramfs.c |   36 ++++++++++++++++++++++++++++++++----
+ 1 file changed, 32 insertions(+), 4 deletions(-)
+
+Index: linux-2.6/init/initramfs.c
+===================================================================
+--- linux-2.6.orig/init/initramfs.c
++++ linux-2.6/init/initramfs.c
+@@ -19,6 +19,29 @@
+ #include <linux/syscalls.h>
+ #include <linux/utime.h>
+ 
++static ssize_t __init xwrite(int fd, const char *p, size_t count)
++{
++	ssize_t out = 0;
++
++	/* sys_write only can write MAX_RW_COUNT aka 2G-4K bytes at most */
++	while (count) {
++		ssize_t rv = sys_write(fd, p, count);
++
++		if (rv < 0) {
++			if (rv == -EINTR || rv == -EAGAIN)
++				continue;
++			return out ? out : rv;
++		} else if (rv == 0)
++			break;
++
++		p += rv;
++		out += rv;
++		count -= rv;
++	}
++
++	return out;
++}
++
+ static __initdata char *message;
+ static void __init error(char *x)
+ {
+@@ -346,7 +369,7 @@ static int __init do_name(void)
+ static int __init do_copy(void)
+ {
+ 	if (count >= body_len) {
+-		sys_write(wfd, victim, body_len);
++		xwrite(wfd, victim, body_len);
+ 		sys_close(wfd);
+ 		do_utime(vcollected, mtime);
+ 		kfree(vcollected);
+@@ -354,7 +377,7 @@ static int __init do_copy(void)
+ 		state = SkipIt;
+ 		return 0;
+ 	} else {
+-		sys_write(wfd, victim, count);
++		xwrite(wfd, victim, count);
+ 		body_len -= count;
+ 		eat(count);
+ 		return 1;
+@@ -603,8 +626,13 @@ static int __init populate_rootfs(void)
+ 		fd = sys_open("/initrd.image",
+ 			      O_WRONLY|O_CREAT, 0700);
+ 		if (fd >= 0) {
+-			sys_write(fd, (char *)initrd_start,
+-					initrd_end - initrd_start);
++			ssize_t written = xwrite(fd, (char *)initrd_start,
++						initrd_end - initrd_start);
++
++			if (written != initrd_end - initrd_start)
++				pr_err("/initrd.image: incomplete write (%zd != %ld)\n",
++				       written, initrd_end - initrd_start);
++
+ 			sys_close(fd);
+ 			free_initrd();
+ 		}
