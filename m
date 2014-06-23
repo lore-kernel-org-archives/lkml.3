@@ -1,98 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752964AbaFWMQd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 08:16:33 -0400
-Received: from mail-bl2lp0211.outbound.protection.outlook.com ([207.46.163.211]:39473
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750820AbaFWMQb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 08:16:31 -0400
-From: Horia Geanta <horia.geanta@freescale.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-CC: <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Horia Geanta <horia.geanta@freescale.com>
-Subject: [PATCH] scripts/kernel-doc: handle object-like macros
-Date: Mon, 23 Jun 2014 15:15:32 +0300
-Message-ID: <1403525732-7653-1-git-send-email-horia.geanta@freescale.com>
-X-Mailer: git-send-email 1.8.3.1
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(189002)(76482001)(87286001)(26826002)(79102001)(47776003)(64706001)(44976005)(77156001)(4396001)(20776003)(104166001)(68736004)(74502001)(36756003)(88136002)(89996001)(102836001)(50226001)(33646001)(19580405001)(99396002)(46102001)(21056001)(83322001)(81342001)(77982001)(19580395003)(106466001)(87936001)(48376002)(92726001)(62966002)(85852003)(85306003)(6806004)(84676001)(81542001)(97736001)(83072002)(92566001)(15975445006)(95666004)(31966008)(93916002)(50986999)(105606002)(50466002)(104016002)(86362001)(80022001)(74662001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB394;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+	id S1753252AbaFWMQz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 08:16:55 -0400
+Received: from e24smtp05.br.ibm.com ([32.104.18.26]:60895 "EHLO
+	e24smtp05.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752501AbaFWMQx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 08:16:53 -0400
+Date: Mon, 23 Jun 2014 09:16:40 -0300
+From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, hariprasad@chelsio.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cxgb4: use dev_port to identify ports
+Message-ID: <20140623121640.GB25780@oc0268524204.ibm.com>
+References: <1403354888-15600-1-git-send-email-cascardo@linux.vnet.ibm.com>
+ <20140622.172307.2305001882391366010.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
-X-Forefront-PRVS: 025100C802
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Horia.Geanta@freescale.com; 
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140622.172307.2305001882391366010.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14062312-1798-0000-0000-000002F43711
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Object-like macros are different than function-like macros:
-https://gcc.gnu.org/onlinedocs/cpp/Object-like-Macros.html
-https://gcc.gnu.org/onlinedocs/cpp/Function-like-Macros.html
+On Sun, Jun 22, 2014 at 05:23:07PM -0700, David Miller wrote:
+> From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+> Date: Sat, 21 Jun 2014 09:48:08 -0300
+> 
+> > Commit 3f85944fe207d0225ef21a2c0951d4946fc9a95d ("net: Add sysfs file
+> > for port number") introduce dev_port to network devices. cxgb4 adapters
+> > have multiple ports on the same PCI function, and used dev_id to
+> > identify those ports. That use was removed by commit
+> > 8c367fcbe6549195d2eb11e62bea233f811aad41 ("cxgb4: Do not set
+> > net_device::dev_id to VI index"), since dev_id should be used only when
+> > devices share the same MAC address.
+> > 
+> > Using dev_port for cxgb4 allows different ports on the same PCI function
+> > to be identified.
+> > 
+> > Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+> 
+> You've made exactly zero effort to explain why the IPV6 issue carefully
+> explained in commit 8c367fcbe6549195d2eb11e62bea233f811aad41 no longer
+> applies.
+> 
+> As far as I can tell, it absolutely does, and therefore this change
+> here should not be made.
+> 
+> I'm not applying this patch, sorry.
+> 
 
-They are not parsed correctly, generating invalid intermediate
-files (xmls) for cases like:
-    #define BIT_MASK    (0xFF << BIT_SHIFT)
-where "OxFF <<" is considered to be parameter type.
+I have set dev_port, not dev_id. This is not a revert of commit
+8c367fcbe6549195d2eb11e62bea233f811aad41.
 
-When parsing, we can differentiate beween these two types of macros by
-checking whether there is at least one whitespace b/w "#define" and
-first opening paranthesis.
+$ git grep dev_port net/ipv6/
+$
 
-Signed-off-by: Horia Geanta <horia.geanta@freescale.com>
----
- scripts/kernel-doc | 15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
+I believe dev_port was introduced exactly to solve the problem dev_id
+was incorrectly being used for.
 
-diff --git a/scripts/kernel-doc b/scripts/kernel-doc
-index da058da413e7..ffd35c9d616a 100755
---- a/scripts/kernel-doc
-+++ b/scripts/kernel-doc
-@@ -2073,6 +2073,7 @@ sub check_return_section {
- sub dump_function($$) {
-     my $prototype = shift;
-     my $file = shift;
-+    my $noret = 0;
- 
-     $prototype =~ s/^static +//;
-     $prototype =~ s/^extern +//;
-@@ -2086,7 +2087,7 @@ sub dump_function($$) {
-     $prototype =~ s/__init_or_module +//;
-     $prototype =~ s/__must_check +//;
-     $prototype =~ s/__weak +//;
--    $prototype =~ s/^#\s*define\s+//; #ak added
-+    my $define = $prototype =~ s/^#\s*define\s+//; #ak added
-     $prototype =~ s/__attribute__\s*\(\([a-z,]*\)\)//;
- 
-     # Yes, this truly is vile.  We are looking for:
-@@ -2105,7 +2106,15 @@ sub dump_function($$) {
-     # - atomic_set (macro)
-     # - pci_match_device, __copy_to_user (long return type)
- 
--    if ($prototype =~ m/^()([a-zA-Z0-9_~:]+)\s*\(([^\(]*)\)/ ||
-+    if ($define && $prototype =~ m/^()([a-zA-Z0-9_~:]+)\s+/) {
-+        # This is an object-like macro, it has no return type and no parameter
-+        # list.
-+        # Function-like macros are not allowed to have spaces between
-+        # declaration_name and opening paranthesis (notice the \s+).
-+        $return_type = $1;
-+        $declaration_name = $2;
-+        $noret = 1;
-+    } elsif ($prototype =~ m/^()([a-zA-Z0-9_~:]+)\s*\(([^\(]*)\)/ ||
- 	$prototype =~ m/^(\w+)\s+([a-zA-Z0-9_~:]+)\s*\(([^\(]*)\)/ ||
- 	$prototype =~ m/^(\w+\s*\*)\s*([a-zA-Z0-9_~:]+)\s*\(([^\(]*)\)/ ||
- 	$prototype =~ m/^(\w+\s+\w+)\s+([a-zA-Z0-9_~:]+)\s*\(([^\(]*)\)/ ||
-@@ -2140,7 +2149,7 @@ sub dump_function($$) {
-         # of warnings goes sufficiently down, the check is only performed in
-         # verbose mode.
-         # TODO: always perform the check.
--        if ($verbose) {
-+        if ($verbose && !$noret) {
-                 check_return_section($file, $declaration_name, $return_type);
-         }
- 
--- 
-1.8.3.1
+Cascardo.
 
