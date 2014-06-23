@@ -1,90 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756327AbaFWQ3X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 12:29:23 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:52339 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755835AbaFWQ3W (ORCPT
+	id S1756360AbaFWQa0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 12:30:26 -0400
+Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:8842 "EHLO
+	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756019AbaFWQaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 12:29:22 -0400
-X-Sasl-enc: TgbG7VscpkkXDNqvcFM04ZnP7owwN18yA/GHyBobafMs 1403540961
-Date: Mon, 23 Jun 2014 12:29:11 -0400
-From: Greg KH <greg@kroah.com>
-To: Haiyang Zhang <haiyangz@microsoft.com>
-Cc: Olaf Hering <olaf@aepfle.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "davem@davemloft.net" <davem@davemloft.net>
-Subject: Re: [PATCH net-next] hyperv: Add handler for
- RNDIS_STATUS_NETWORK_CHANGE event
-Message-ID: <20140623162911.GA20715@kroah.com>
-References: <1403228076-7596-1-git-send-email-haiyangz@microsoft.com>
- <20140620045704.GA4850@aepfle.de>
- <20140620051213.GA9960@kroah.com>
- <ff458d1b896d4a70a32fa7709911274c@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
- <20140623080242.GA16924@aepfle.de>
- <06b508cbb6b949f4b3e13e7797948e56@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
- <20140623131723.GA7026@aepfle.de>
- <5fb9ddebb68d456ab87979b5cc3830ec@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5fb9ddebb68d456ab87979b5cc3830ec@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 23 Jun 2014 12:30:24 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApkHAJhVqFNbskjJ/2dsb2JhbABZgw2rZQUBAQEBAQEFAZk1gQ8XdYQxLyOBGjeIRgHGXheFY4kZhEoEj3KKWpNjg0Q7
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, reiserfs-devel@vger.kernel.org,
+        Jeff Mahoney <jeffm@suse.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] fs/reiserfs/xattr.c: fix blank line missing after declarations
+Date: Mon, 23 Jun 2014 18:29:01 +0200
+Message-Id: <1403540941-10389-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 23, 2014 at 04:09:59PM +0000, Haiyang Zhang wrote:
-> 
-> 
-> > -----Original Message-----
-> > From: Olaf Hering [mailto:olaf@aepfle.de]
-> > Sent: Monday, June 23, 2014 9:17 AM
-> > To: Haiyang Zhang
-> > Cc: Greg KH; netdev@vger.kernel.org; jasowang@redhat.com; driverdev-
-> > devel@linuxdriverproject.org; linux-kernel@vger.kernel.org;
-> > davem@davemloft.net
-> > Subject: Re: [PATCH net-next] hyperv: Add handler for
-> > RNDIS_STATUS_NETWORK_CHANGE event
-> > 
-> > On Mon, Jun 23, Haiyang Zhang wrote:
-> > 
-> > > > I think its reasonable to expect guest config changes on this new
-> > > > kind of host. Would a link-down/link-up event work? I'm sure it
-> > > > will, there is enough code floating around in the guests which handles cable
-> > unplug.
-> > >
-> > > Do you mean netif_carrier_off() / netif_carrier_on()? They are already
-> > > called in the code before this patch, but DHCP renew is not triggered
-> > > by them.
-> > 
-> > I do not know how to simulate a cable unplug. The point is that calling
-> > /etc/init.d/network will fail, at least in SLES12.
-> > Maybe some sort of "DHCP refresh required" event is required?
-> > Maybe the DHCP clients need to renew on cable unplug?
-> > No idea what the solution to the issue really is.
-> 
-> Yes, it will be great if there is such a "DHCP refresh required" event, or DHCP clients
-> are triggered when netif_carrier_off() then netif_carrier_on().
-> 
-> I have tried some possibilities, like IF_OPER_DORMANT then IF_OPER_UP with 
-> netdev_state_change() etc. but not able to trigger DHCP review. I will look at this
-> further...
-> 
-> So, what's the equivalent or similar command to "network restart" on SLES12? Could
-> you update the command line for the usermodehelper when porting this patch to SLES
-> 12?
+Fix checkpatch warning:
 
-Given that this change will fail on all future distro releases, and
-almost all of the community distros today, I don't see how this is
-acceptable at all.  Nor would it be any better if you switch to a
-systemd command line script as well.  You should just work like any
-other network device works in this situation when it comes to
-enabling/disabling the device.  Worse case, just tear down the whole
-network device at suspend time, and recreate it at resume.
+"WARNING: Missing a blank line after declarations"
 
-greg k-h
+Cc: reiserfs-devel@vger.kernel.org
+Cc: Jeff Mahoney <jeffm@suse.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/reiserfs/xattr.c | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+
+diff --git a/fs/reiserfs/xattr.c b/fs/reiserfs/xattr.c
+index ca416d0..fdffe1f 100644
+--- a/fs/reiserfs/xattr.c
++++ b/fs/reiserfs/xattr.c
+@@ -84,6 +84,7 @@ static int xattr_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
+ static int xattr_unlink(struct inode *dir, struct dentry *dentry)
+ {
+ 	int error;
++
+ 	BUG_ON(!mutex_is_locked(&dir->i_mutex));
+ 
+ 	mutex_lock_nested(&dentry->d_inode->i_mutex, I_MUTEX_CHILD);
+@@ -98,6 +99,7 @@ static int xattr_unlink(struct inode *dir, struct dentry *dentry)
+ static int xattr_rmdir(struct inode *dir, struct dentry *dentry)
+ {
+ 	int error;
++
+ 	BUG_ON(!mutex_is_locked(&dir->i_mutex));
+ 
+ 	mutex_lock_nested(&dentry->d_inode->i_mutex, I_MUTEX_CHILD);
+@@ -117,6 +119,7 @@ static struct dentry *open_xa_root(struct super_block *sb, int flags)
+ {
+ 	struct dentry *privroot = REISERFS_SB(sb)->priv_root;
+ 	struct dentry *xaroot;
++
+ 	if (!privroot->d_inode)
+ 		return ERR_PTR(-ENODATA);
+ 
+@@ -127,6 +130,7 @@ static struct dentry *open_xa_root(struct super_block *sb, int flags)
+ 		xaroot = ERR_PTR(-ENODATA);
+ 	else if (!xaroot->d_inode) {
+ 		int err = -ENODATA;
++
+ 		if (xattr_may_create(flags))
+ 			err = xattr_mkdir(privroot->d_inode, xaroot, 0700);
+ 		if (err) {
+@@ -157,6 +161,7 @@ static struct dentry *open_xa_dir(const struct inode *inode, int flags)
+ 	xadir = lookup_one_len(namebuf, xaroot, strlen(namebuf));
+ 	if (!IS_ERR(xadir) && !xadir->d_inode) {
+ 		int err = -ENODATA;
++
+ 		if (xattr_may_create(flags))
+ 			err = xattr_mkdir(xaroot->d_inode, xadir, 0700);
+ 		if (err) {
+@@ -188,6 +193,7 @@ fill_with_dentries(void *buf, const char *name, int namelen, loff_t offset,
+ {
+ 	struct reiserfs_dentry_buf *dbuf = buf;
+ 	struct dentry *dentry;
++
+ 	WARN_ON_ONCE(!mutex_is_locked(&dbuf->xadir->d_inode->i_mutex));
+ 
+ 	if (dbuf->count == ARRAY_SIZE(dbuf->dentries))
+@@ -218,6 +224,7 @@ static void
+ cleanup_dentry_buf(struct reiserfs_dentry_buf *buf)
+ {
+ 	int i;
++
+ 	for (i = 0; i < buf->count; i++)
+ 		if (buf->dentries[i])
+ 			dput(buf->dentries[i]);
+@@ -283,11 +290,13 @@ static int reiserfs_for_each_xattr(struct inode *inode,
+ 		int blocks = JOURNAL_PER_BALANCE_CNT * 2 + 2 +
+ 			     4 * REISERFS_QUOTA_TRANS_BLOCKS(inode->i_sb);
+ 		struct reiserfs_transaction_handle th;
++
+ 		reiserfs_write_lock(inode->i_sb);
+ 		err = journal_begin(&th, inode->i_sb, blocks);
+ 		reiserfs_write_unlock(inode->i_sb);
+ 		if (!err) {
+ 			int jerror;
++
+ 			mutex_lock_nested(&dir->d_parent->d_inode->i_mutex,
+ 					  I_MUTEX_XATTR);
+ 			err = action(dir, data);
+@@ -340,6 +349,7 @@ static int chown_one_xattr(struct dentry *dentry, void *data)
+ int reiserfs_delete_xattrs(struct inode *inode)
+ {
+ 	int err = reiserfs_for_each_xattr(inode, delete_one_xattr, NULL);
++
+ 	if (err)
+ 		reiserfs_warning(inode->i_sb, "jdm-20004",
+ 				 "Couldn't delete all xattrs (%d)\n", err);
+@@ -350,6 +360,7 @@ int reiserfs_delete_xattrs(struct inode *inode)
+ int reiserfs_chown_xattrs(struct inode *inode, struct iattr *attrs)
+ {
+ 	int err = reiserfs_for_each_xattr(inode, chown_one_xattr, attrs);
++
+ 	if (err)
+ 		reiserfs_warning(inode->i_sb, "jdm-20007",
+ 				 "Couldn't chown all xattrs (%d)\n", err);
+@@ -439,6 +450,7 @@ int reiserfs_commit_write(struct file *f, struct page *page,
+ static void update_ctime(struct inode *inode)
+ {
+ 	struct timespec now = current_fs_time(inode->i_sb);
++
+ 	if (inode_unhashed(inode) || !inode->i_nlink ||
+ 	    timespec_equal(&inode->i_ctime, &now))
+ 		return;
+@@ -514,6 +526,7 @@ reiserfs_xattr_set_handle(struct reiserfs_transaction_handle *th,
+ 		size_t chunk;
+ 		size_t skip = 0;
+ 		size_t page_offset = (file_pos & (PAGE_CACHE_SIZE - 1));
++
+ 		if (buffer_size - buffer_pos > PAGE_CACHE_SIZE)
+ 			chunk = PAGE_CACHE_SIZE;
+ 		else
+@@ -530,6 +543,7 @@ reiserfs_xattr_set_handle(struct reiserfs_transaction_handle *th,
+ 
+ 		if (file_pos == 0) {
+ 			struct reiserfs_xattr_header *rxh;
++
+ 			skip = file_pos = sizeof(struct reiserfs_xattr_header);
+ 			if (chunk + skip > PAGE_CACHE_SIZE)
+ 				chunk = PAGE_CACHE_SIZE - skip;
+@@ -659,6 +673,7 @@ reiserfs_xattr_get(struct inode *inode, const char *name, void *buffer,
+ 		size_t chunk;
+ 		char *data;
+ 		size_t skip = 0;
++
+ 		if (isize - file_pos > PAGE_CACHE_SIZE)
+ 			chunk = PAGE_CACHE_SIZE;
+ 		else
+@@ -792,6 +807,7 @@ reiserfs_setxattr(struct dentry *dentry, const char *name, const void *value,
+ int reiserfs_removexattr(struct dentry *dentry, const char *name)
+ {
+ 	const struct xattr_handler *handler;
++
+ 	handler = find_xattr_handler_prefix(dentry->d_sb->s_xattr, name);
+ 
+ 	if (!handler || get_inode_sd_version(dentry->d_inode) == STAT_DATA_V1)
+@@ -813,9 +829,11 @@ static int listxattr_filler(void *buf, const char *name, int namelen,
+ {
+ 	struct listxattr_buf *b = (struct listxattr_buf *)buf;
+ 	size_t size;
++
+ 	if (name[0] != '.' ||
+ 	    (namelen != 1 && (name[1] != '.' || namelen != 2))) {
+ 		const struct xattr_handler *handler;
++
+ 		handler = find_xattr_handler_prefix(b->dentry->d_sb->s_xattr,
+ 						    name);
+ 		if (!handler)	/* Unsupported xattr name */
+@@ -885,6 +903,7 @@ static int create_privroot(struct dentry *dentry)
+ {
+ 	int err;
+ 	struct inode *inode = dentry->d_parent->d_inode;
++
+ 	WARN_ON_ONCE(!mutex_is_locked(&inode->i_mutex));
+ 
+ 	err = xattr_mkdir(inode, dentry, 0700);
+@@ -1015,6 +1034,7 @@ int reiserfs_xattr_init(struct super_block *s, int mount_flags)
+ 		mutex_lock(&privroot->d_inode->i_mutex);
+ 		if (!REISERFS_SB(s)->xattr_root) {
+ 			struct dentry *dentry;
++
+ 			dentry = lookup_one_len(XAROOT_NAME, privroot,
+ 						strlen(XAROOT_NAME));
+ 			if (!IS_ERR(dentry))
+-- 
+1.8.4.5
+
