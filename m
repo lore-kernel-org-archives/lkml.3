@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520AbaFWOSH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 10:18:07 -0400
-Received: from mga11.intel.com ([192.55.52.93]:34147 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753960AbaFWOSF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 10:18:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,530,1400050800"; 
-   d="scan'208";a="559658149"
-Date: Mon, 23 Jun 2014 07:18:03 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Oren Twaig <oren@scalemp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, David Rientjes <rientjes@google.com>,
-        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        Richard Weinberger <richard@nod.at>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Shai Fultheim <shai@scalemp.com>
-Subject: Re: [PATCH] x86, vsmp: Remove is_vsmp_box() from
- apic_is_clustered_box()
-Message-ID: <20140623141803.GC8178@tassilo.jf.intel.com>
-References: <53A7BC92.3080307@scalemp.com>
+	id S1754893AbaFWOTU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 10:19:20 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:49302 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753883AbaFWOTT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 10:19:19 -0400
+Date: Mon, 23 Jun 2014 10:19:17 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Seth Forshee <seth.forshee@canonical.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] trace-cmd: Add missing mode to open() call
+Message-ID: <20140623101917.49037713@gandalf.local.home>
+In-Reply-To: <1403289749-1631-1-git-send-email-seth.forshee@canonical.com>
+References: <1403289749-1631-1-git-send-email-seth.forshee@canonical.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53A7BC92.3080307@scalemp.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 23, 2014 at 08:35:14AM +0300, Oren Twaig wrote:
-> Remove invalid code which caused TSC to be declared as "unstable" on vSMP
-> Foundation box even if it was stable and let the kernel decide for itself.
-> 
-> When a vSMP Foundation box is detected, the function apic_cluster_num() counts
-> the number of APIC clusters found. If more than one found, a multi board
-> configuration is assumed, and TSC marked as unstable. This behavior is
-> incorrect as vSMP Foundation may use processors from single node only, attached
-> to memory of other nodes - and such node may have more than one APIC cluster
-> (typically any recent intel box has more than single APIC_CLUSTERID(x)).
-> 
-> To fix this, we simply remove the code which detects a vSMP Foundation box and
-> affects apic_is_clusted_box() return value. This can be done because later the
-> kernel checks by itself if the TSC is stable using the
-> check_tsc_sync_[source|target]() functions and marks TSC as unstable if needed.
+On Fri, 20 Jun 2014 13:42:29 -0500
+Seth Forshee <seth.forshee@canonical.com> wrote:
 
-Looks good to me. Yes the APIC cluster check is obsolete.
+> touch_file() calls open(2) with O_CREAT but omits the required
+> mode argument. Fix this omission.
+> 
+> Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
 
--andi
+Applied, thanks!
+
+-- Steve
+
+> ---
+>  trace-record.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/trace-record.c b/trace-record.c
+> index d3dd0c5..8438388 100644
+> --- a/trace-record.c
+> +++ b/trace-record.c
+> @@ -1995,7 +1995,7 @@ static void touch_file(const char *file)
+>  {
+>  	int fd;
+>  
+> -	fd = open(file, O_WRONLY | O_CREAT | O_TRUNC);
+> +	fd = open(file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+>  	if (fd < 0)
+>  		die("could not create file %s\n", file);
+>  	close(fd);
+
