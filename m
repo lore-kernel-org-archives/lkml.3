@@ -1,46 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751431AbaFWHNV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 03:13:21 -0400
-Received: from mail.eperm.de ([89.247.134.16]:39149 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751159AbaFWHNU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 03:13:20 -0400
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: kbuild test robot <fengguang.wu@intel.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Cc: kbuild@01.org, linux-kernel@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Rafael Aquini <aquini@redhat.com>
-Subject: [PATCH v2] DRBG: simplify ordering of linked list in drbg_ctr_df
-Date: Mon, 23 Jun 2014 09:10:11 +0200
-Message-ID: <5069712.neqH4zuI9U@myon.chronox.de>
-User-Agent: KMail/4.12.5 (Linux/3.14.8-200.fc20.x86_64; KDE/4.12.5; x86_64; ; )
+	id S1751644AbaFWHOJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 03:14:09 -0400
+Received: from smtprelay2.synopsys.com ([198.182.60.111]:42501 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751159AbaFWHOI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 03:14:08 -0400
+Message-ID: <53A7D3AA.9020100@synopsys.com>
+Date: Mon, 23 Jun 2014 12:43:46 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Newsgroups: gmane.linux.kernel
+To: Peter Zijlstra <peterz@infradead.org>, Davidlohr Bueso <davidlohr@hp.com>
+CC: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arch,locking: Ciao arch_mutex_cpu_relax()
+References: <1403288473.10903.2.camel@buesod1.americas.hpqcorp.net> <20140623065423.GE19860@laptop.programming.kicks-ass.net>
+In-Reply-To: <20140623065423.GE19860@laptop.programming.kicks-ass.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.196.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch superseeds and replaces the initial fix submitted with [1].
-After careful analysis of the code, the anticipated NULL pointer
-deference is caught in drbg_ctr_update which only invokes drbg_ctr_df
-when addtl is not NULL.
+Hi Peter,
 
-This patch is tested with CAVS testing and the test set provided in [2].
+On Monday 23 June 2014 12:24 PM, Peter Zijlstra wrote:
+> On Fri, Jun 20, 2014 at 11:21:13AM -0700, Davidlohr Bueso wrote:
+>> diff --git a/arch/arc/include/asm/processor.h b/arch/arc/include/asm/processor.h
+>> index d99f9b3..8e1bf6b 100644
+>> --- a/arch/arc/include/asm/processor.h
+>> +++ b/arch/arc/include/asm/processor.h
+>> @@ -62,6 +62,8 @@ unsigned long thread_saved_pc(struct task_struct *t);
+>>  #define cpu_relax()	do { } while (0)
+>>  #endif
+>>  
+>> +#define arch_cpu_relax() cpu_relax()
+>> +
+>>  #define copy_segments(tsk, mm)      do { } while (0)
+>>  #define release_segments(mm)        do { } while (0)
+> 
+> I'm not at all sure that cpu_relax() definition ARC has is valid. We
+> rely on cpu_relax() being at least a barrier() all over the place, and
+> it doesn't need to be SMP only. You can have a UP wait loop waiting for
+> an interrupt for example.
+> 
+> Vineet?
 
-[1] https://lkml.org/lkml/2014/6/21/70
-[2] http://www.chronox.de/drbg.html
+Over the years we've not had any trouble with !SMP cpu_relax() being a no-op (and
+barrier version was only required when we hit a hard hang in our our initial SMP
+code). UP busy wait looping would be frowned upon in general.
 
-Stephan Mueller (1):
-  DRBG: simplify ordering of linked list in drbg_ctr_df
+However what we have now is just a code optimization quirk for !SMP since a
+compiler barrier will cause gcc to dump out and reload scratch regs - specially
+for our deep reg file.
 
- crypto/drbg.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+Here's what I get with current UP kernel switching to compiler barrier
 
--- 
-1.9.3
+./scripts/bloat-o-meter vmlinux-pre-cpu-relax  vmlinux | head
+add/remove: 1/0 grow/shrink: 75/5 up/down: 1218/-32 (1186)
+function                                     old     new   delta
+path_init                                    708     826    +118
+sys_semtimedop                              2540    2640    +100
+...
+__slab_alloc.isra.constprop                  564     560      -4
+deactivate_slab                              886     878      -8
+
+So it doesn't look too bad, although I've not run any performance tests. We can
+switch UP to barrier if you feel it is needed semantically.
+
+-Vineet
 
 
