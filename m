@@ -1,60 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751554AbaFWWLX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 18:11:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53575 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751059AbaFWWLW (ORCPT
+	id S1751363AbaFWWTP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 18:19:15 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39817 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750977AbaFWWTN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 18:11:22 -0400
-Date: Mon, 23 Jun 2014 15:11:21 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Josh Hunt <johunt@akamai.com>
-Cc: linux-kernel@vger.kernel.org, jbaron@akamai.com
-Subject: Re: [PATCH] panic: add TAINT_SOFTLOCKUP
-Message-Id: <20140623151121.44f17779004e94ab620b837c@linux-foundation.org>
-In-Reply-To: <1401847955-3345-1-git-send-email-johunt@akamai.com>
-References: <1401847955-3345-1-git-send-email-johunt@akamai.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 23 Jun 2014 18:19:13 -0400
+Date: Mon, 23 Jun 2014 15:18:43 -0700
+From: tip-bot for Andy Lutomirski <tipbot@zytor.com>
+Message-ID: <tip-554086d85e71f30abe46fc014fea31929a7c6a8a@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        luto@amacapital.net, roland@redhat.com, toralf.foerster@gmx.de,
+        tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        luto@amacapital.net, roland@redhat.com, toralf.foerster@gmx.de,
+        tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <e09c499eade6fc321266dd6b54da7beb28d6991c.1403558229.git.luto@amacapital.net>
+References: <e09c499eade6fc321266dd6b54da7beb28d6991c.1403558229.git.luto@amacapital.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86_32, entry: Do syscall exit work on badsys (
+ CVE-2014-4508)
+Git-Commit-ID: 554086d85e71f30abe46fc014fea31929a7c6a8a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  3 Jun 2014 22:12:35 -0400 Josh Hunt <johunt@akamai.com> wrote:
+Commit-ID:  554086d85e71f30abe46fc014fea31929a7c6a8a
+Gitweb:     http://git.kernel.org/tip/554086d85e71f30abe46fc014fea31929a7c6a8a
+Author:     Andy Lutomirski <luto@amacapital.net>
+AuthorDate: Mon, 23 Jun 2014 14:22:15 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Mon, 23 Jun 2014 14:59:26 -0700
 
-> This taint flag will be set if the system has ever entered a softlockup
-> state. Similar to TAINT_WARN it is useful to know whether or not the system
-> has been in a softlockup state when debugging.
-> 
-> ...
->
-> @@ -329,6 +329,7 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
->  
->  		if (softlockup_panic)
->  			panic("softlockup: hung tasks");
-> +		add_taint(TAINT_SOFTLOCKUP, LOCKDEP_STILL_OK);
->  		__this_cpu_write(soft_watchdog_warn, true);
->  	} else
->  		__this_cpu_write(soft_watchdog_warn, false);
+x86_32, entry: Do syscall exit work on badsys (CVE-2014-4508)
 
-Would make more sense to have applied the taint *before* calling
-panic()?
+The bad syscall nr paths are their own incomprehensible route
+through the entry control flow.  Rearrange them to work just like
+syscalls that return -ENOSYS.
 
-diff -puN kernel/watchdog.c~panic-add-taint_softlockup-fix kernel/watchdog.c
---- a/kernel/watchdog.c~panic-add-taint_softlockup-fix
-+++ a/kernel/watchdog.c
-@@ -368,9 +368,9 @@ static enum hrtimer_restart watchdog_tim
- 			smp_mb__after_atomic();
- 		}
+This fixes an OOPS in the audit code when fast-path auditing is
+enabled and sysenter gets a bad syscall nr (CVE-2014-4508).
+
+This has probably been broken since Linux 2.6.27:
+af0575bba0 i386 syscall audit fast-path
+
+Cc: stable@vger.kernel.org
+Cc: Roland McGrath <roland@redhat.com>
+Reported-by: Toralf Förster <toralf.foerster@gmx.de>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Link: http://lkml.kernel.org/r/e09c499eade6fc321266dd6b54da7beb28d6991c.1403558229.git.luto@amacapital.net
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/kernel/entry_32.S | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index f0da82b..dbaa23e 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -423,9 +423,10 @@ sysenter_past_esp:
+ 	jnz sysenter_audit
+ sysenter_do_call:
+ 	cmpl $(NR_syscalls), %eax
+-	jae syscall_badsys
++	jae sysenter_badsys
+ 	call *sys_call_table(,%eax,4)
+ 	movl %eax,PT_EAX(%esp)
++sysenter_after_call:
+ 	LOCKDEP_SYS_EXIT
+ 	DISABLE_INTERRUPTS(CLBR_ANY)
+ 	TRACE_IRQS_OFF
+@@ -675,7 +676,12 @@ END(syscall_fault)
  
-+		add_taint(TAINT_SOFTLOCKUP, LOCKDEP_STILL_OK);
- 		if (softlockup_panic)
- 			panic("softlockup: hung tasks");
--		add_taint(TAINT_SOFTLOCKUP, LOCKDEP_STILL_OK);
- 		__this_cpu_write(soft_watchdog_warn, true);
- 	} else
- 		__this_cpu_write(soft_watchdog_warn, false);
-
+ syscall_badsys:
+ 	movl $-ENOSYS,PT_EAX(%esp)
+-	jmp resume_userspace
++	jmp syscall_exit
++END(syscall_badsys)
++
++sysenter_badsys:
++	movl $-ENOSYS,PT_EAX(%esp)
++	jmp sysenter_after_call
+ END(syscall_badsys)
+ 	CFI_ENDPROC
+ 
