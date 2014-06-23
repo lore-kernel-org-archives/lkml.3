@@ -1,97 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753707AbaFWMpq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 08:45:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10612 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752529AbaFWMpo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 08:45:44 -0400
-Message-ID: <53A8214F.8050505@redhat.com>
-Date: Mon, 23 Jun 2014 13:45:03 +0100
-From: Steven Whitehouse <swhiteho@redhat.com>
+	id S1753813AbaFWMrK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 08:47:10 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:47917 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752542AbaFWMrJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 08:47:09 -0400
+Message-ID: <53A821B7.2000702@linaro.org>
+Date: Mon, 23 Jun 2014 13:46:47 +0100
+From: Daniel Thompson <daniel.thompson@linaro.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: NeilBrown <neilb@suse.de>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>
-CC: linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        Steve French <sfrench@samba.org>, David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH 0/2] Update wait_on_bit functions
-References: <20140623004945.21714.26253.stgit@notabene.brown>
-In-Reply-To: <20140623004945.21714.26253.stgit@notabene.brown>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Tushar Behera <tushar.b@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, jslaby@suse.cz,
+        gregkh@linuxfoundation.org, linux@arm.linux.org.uk
+CC: trblinux@gmail.com
+Subject: Re: [PATCH 2/2] serial: amba-pl010: Use devres APIs
+References: <1403503151-4166-1-git-send-email-tushar.b@samsung.com> <1403503151-4166-3-git-send-email-tushar.b@samsung.com>
+In-Reply-To: <1403503151-4166-3-git-send-email-tushar.b@samsung.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 23/06/14 01:52, NeilBrown wrote:
-> These patches were in 'tip' for a while, but caused conflicts
-> with other changes - both NFS and CIFS added new uses of
-> wait_on_bit functions.
->
-> So here they are again against 3.16-rc2.  Hopefully no new users will
-> be added before -rc3 or -rc4...
->
-> (I hoped to submit this in the rc1 -> rc2 window, but that happened
-> while I was on leave...)
->
-> Thanks,
-> NeilBrown
-Acked-by: Steven Whitehouse <swhiteho@redhat.com>
-
-Steve.
-
+On 23/06/14 06:59, Tushar Behera wrote:
+> Migrating to use devres managed APIs devm_kzalloc, devm_ioremap and
+> devm_clk_get.
+> 
+> Signed-off-by: Tushar Behera <tushar.b@samsung.com>
 > ---
->
-> NeilBrown (2):
->        SCHED: remove proliferation of wait_on_bit action functions.
->        SCHED: allow wait_on_bit_action functions to support a timeout.
->
->
->   Documentation/filesystems/caching/operations.txt |    2
->   drivers/md/dm-bufio.c                            |   41 ++-----
->   drivers/md/dm-snap.c                             |   10 --
->   drivers/media/usb/dvb-usb-v2/dvb_usb_core.c      |   12 --
->   fs/btrfs/extent_io.c                             |   10 --
->   fs/buffer.c                                      |   11 --
->   fs/cifs/connect.c                                |   10 --
->   fs/cifs/file.c                                   |    9 --
->   fs/cifs/inode.c                                  |    6 +
->   fs/cifs/misc.c                                   |    2
->   fs/fs-writeback.c                                |    3 -
->   fs/fscache/cookie.c                              |    7 +
->   fs/fscache/internal.h                            |    2
->   fs/fscache/main.c                                |   18 ---
->   fs/fscache/page.c                                |    4 -
->   fs/gfs2/glock.c                                  |   25 ----
->   fs/gfs2/lock_dlm.c                               |    8 -
->   fs/gfs2/ops_fstype.c                             |   11 --
->   fs/gfs2/recovery.c                               |    8 -
->   fs/gfs2/super.c                                  |    8 -
->   fs/inode.c                                       |    7 -
->   fs/jbd2/transaction.c                            |   10 --
->   fs/nfs/file.c                                    |    4 -
->   fs/nfs/filelayout/filelayoutdev.c                |    4 -
->   fs/nfs/inode.c                                   |    6 +
->   fs/nfs/internal.h                                |    2
->   fs/nfs/nfs4state.c                               |    4 -
->   fs/nfs/pagelist.c                                |   14 +-
->   fs/nfs/pnfs.c                                    |    2
->   fs/nfs/write.c                                   |    4 -
->   include/linux/sunrpc/sched.h                     |    2
->   include/linux/wait.h                             |  125 +++++++++++++++++++++-
->   include/linux/writeback.h                        |    3 -
->   kernel/ptrace.c                                  |    8 -
->   kernel/sched/wait.c                              |   30 ++++-
->   mm/filemap.c                                     |   20 +---
->   mm/ksm.c                                         |    8 -
->   net/bluetooth/hci_core.c                         |    8 -
->   net/sunrpc/sched.c                               |    4 -
->   security/keys/gc.c                               |   11 --
->   security/keys/request_key.c                      |   23 ----
->   41 files changed, 214 insertions(+), 292 deletions(-)
->
+>  drivers/tty/serial/amba-pl010.c |   46 ++++++++++++++-------------------------
+>  1 file changed, 16 insertions(+), 30 deletions(-)
+> 
+> diff --git a/drivers/tty/serial/amba-pl010.c b/drivers/tty/serial/amba-pl010.c
+> index 971af1e..af8deba 100644
+> --- a/drivers/tty/serial/amba-pl010.c
+> +++ b/drivers/tty/serial/amba-pl010.c
+> @@ -46,6 +46,7 @@
+>  #include <linux/amba/serial.h>
+>  #include <linux/clk.h>
+>  #include <linux/slab.h>
+> +#include <linux/io.h>
+>  
+>  #include <asm/io.h>
+
+Adding <linux/io.h> makes including <asm/io.h> redundant.
+
+
+> @@ -688,28 +689,22 @@ static int pl010_probe(struct amba_device *dev, const struct amba_id *id)
+>  		if (amba_ports[i] == NULL)
+>  			break;
+>  
+> -	if (i == ARRAY_SIZE(amba_ports)) {
+> -		ret = -EBUSY;
+> -		goto out;
+> -	}
+> +	if (i == ARRAY_SIZE(amba_ports))
+> +		return -EBUSY;
+>  
+> -	uap = kzalloc(sizeof(struct uart_amba_port), GFP_KERNEL);
+> -	if (!uap) {
+> -		ret = -ENOMEM;
+> -		goto out;
+> -	}
+> +	uap = devm_kzalloc(&dev->dev, sizeof(struct uart_amba_port),
+> +			   GFP_KERNEL);
+> +	if (!uap)
+> +		return -ENOMEM;
+>  
+> -	base = ioremap(dev->res.start, resource_size(&dev->res));
+> -	if (!base) {
+> -		ret = -ENOMEM;
+> -		goto free;
+> -	}
+> +	base = devm_ioremap(&dev->dev, dev->res.start,
+> +			    resource_size(&dev->res));
+> +	if (!base)
+> +		return -ENOMEM;
+>  
+> -	uap->clk = clk_get(&dev->dev, NULL);
+> -	if (IS_ERR(uap->clk)) {
+> -		ret = PTR_ERR(uap->clk);
+> -		goto unmap;
+> -	}
+> +	uap->clk = devm_clk_get(&dev->dev, NULL);
+> +	if (IS_ERR(uap->clk))
+> +		return PTR_ERR(uap->clk);
+>  
+>  	uap->port.dev = &dev->dev;
+>  	uap->port.mapbase = dev->res.start;
+> @@ -727,15 +722,9 @@ static int pl010_probe(struct amba_device *dev, const struct amba_id *id)
+>  
+>  	amba_set_drvdata(dev, uap);
+>  	ret = uart_add_one_port(&amba_reg, &uap->port);
+> -	if (ret) {
+> +	if (ret)
+>  		amba_ports[i] = NULL;
+> -		clk_put(uap->clk);
+> - unmap:
+> -		iounmap(base);
+> - free:
+> -		kfree(uap);
+> -	}
+> - out:
+> +
+>  	return ret;
+>  }
+>  
+> @@ -750,9 +739,6 @@ static int pl010_remove(struct amba_device *dev)
+>  		if (amba_ports[i] == uap)
+>  			amba_ports[i] = NULL;
+>  
+> -	iounmap(uap->port.membase);
+> -	clk_put(uap->clk);
+> -	kfree(uap);
+>  	return 0;
+>  }
+
+Reviewed-by: Daniel Thompson <daniel.thompson@linaro.org>
 
