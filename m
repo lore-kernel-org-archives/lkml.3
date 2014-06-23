@@ -1,85 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754815AbaFWJBt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 05:01:49 -0400
-Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:60013 "EHLO
-	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752905AbaFWJBr (ORCPT
+	id S1754766AbaFWJB1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 05:01:27 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55477 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752462AbaFWIc2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 05:01:47 -0400
-Message-ID: <1403514104.12982.20.camel@x220>
-Subject: [PATCH v2] ARM: mvebu: rename ARM_ERRATA_753970
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        ". Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Mon, 23 Jun 2014 11:01:44 +0200
-In-Reply-To: <20140620205340.GX32514@n2100.arm.linux.org.uk>
-References: <201404052101.19381.arnd@arndb.de>
-	 <201404052104.11363.arnd@arndb.de> <1396777049.30640.9.camel@x220>
-	 <53418889.2050002@free-electrons.com> <1396805315.7723.8.camel@x220>
-	 <1401094871.25902.20.camel@x220>
-	 <20140620202100.GG21711@titan.lakedaemon.net>
-	 <20140620205340.GX32514@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 23 Jun 2014 09:01:44.0605 (UTC) FILETIME=[C1AA9CD0:01CF8EC1]
-X-RcptDomain: vger.kernel.org
+	Mon, 23 Jun 2014 04:32:28 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Ronan Marquet <ronan.marquet@orange.fr>,
+        Takashi Iwai <tiwai@suse.de>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 046/111] ALSA: hda/realtek - Correction of fixup codes for PB V7900 laptop
+Date: Mon, 23 Jun 2014 10:31:21 +0200
+Message-Id: <31c276830276ad8f422d3ad7df2f49ef259e9ecc.1403512281.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
+References: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
+In-Reply-To: <cover.1403512280.git.jslaby@suse.cz>
+References: <cover.1403512280.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ARM_ERRATA_753970 was renamed to PL310_ERRATA_753970 in v3.2, through
-commit fa0ce4035d48 ("ARM: 7162/1: errata: tidy up Kconfig options for
-PL310 errata workarounds"). Two selects were added in v3.15 that still
-use the previous name. Rename these.
+From: Ronan Marquet <ronan.marquet@orange.fr>
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+3.12-stable review patch.  If anyone has any objections, please let me know.
+
+===============
+
+commit e30cf2d2bed3aed74a651c64de323ba26e4ff7d0 upstream.
+
+Correcion of wrong fixup entries add in commit ca8f0424 to replace
+static model quirk for PB V7900 laptop (will model).
+
+[note: the removal of ALC260_FIXUP_HP_PIN_0F chain is also needed as a
+ part of the fix; otherwise the pin is set up wrongly as a headphone,
+ and user-space (PulseAudio) may be wrongly trying to detect the jack
+ state -- tiwai]
+
+Fixes: ca8f04247eaa ('ALSA: hda/realtek - Add the fixup codes for ALC260 model=will')
+Signed-off-by: Ronan Marquet <ronan.marquet@orange.fr>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
-v2: redone on top of next-21040623, and therefor on top of commit
-a641f3a6abce ("ARM: l2c: fix dependencies on PL310 errata symbols").
+ sound/pci/hda/patch_realtek.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-Dropped the "if CACHE_PL310" fragments used in v1. No need to use "if
-CACHE_L2X0" instead. Both CACHE_PL310 and CACHE_L2X0 will be
-(indirectly) selected if MACH_ARMADA_375 or MACH_ARMADA_38X are set.
-
-Tested only with "make ARCH=arm menuconfig". So not compile tested! If
-that's not acceptable please let me know. (I have no access to these
-machines so runtime testing is not possible for me.)
-
-Perhaps we want something similar for v3.15+ stable. But that would
-require a different patch (v1 could probably be used for stable).
-
- arch/arm/mach-mvebu/Kconfig | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/arm/mach-mvebu/Kconfig b/arch/arm/mach-mvebu/Kconfig
-index 955d4a3afabd..8d4cf4fa118a 100644
---- a/arch/arm/mach-mvebu/Kconfig
-+++ b/arch/arm/mach-mvebu/Kconfig
-@@ -33,7 +33,7 @@ config MACH_ARMADA_370
- config MACH_ARMADA_375
- 	bool "Marvell Armada 375 boards" if ARCH_MULTI_V7
- 	select ARM_ERRATA_720789
--	select ARM_ERRATA_753970
-+	select PL310_ERRATA_753970
- 	select ARM_GIC
- 	select ARMADA_375_CLK
- 	select HAVE_ARM_SCU
-@@ -48,7 +48,7 @@ config MACH_ARMADA_375
- config MACH_ARMADA_38X
- 	bool "Marvell Armada 380/385 boards" if ARCH_MULTI_V7
- 	select ARM_ERRATA_720789
--	select ARM_ERRATA_753970
-+	select PL310_ERRATA_753970
- 	select ARM_GIC
- 	select ARMADA_38X_CLK
- 	select HAVE_ARM_SCU
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index d859dd5b99a8..4f9a3f438580 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -1597,12 +1597,10 @@ static const struct hda_fixup alc260_fixups[] = {
+ 	[ALC260_FIXUP_COEF] = {
+ 		.type = HDA_FIXUP_VERBS,
+ 		.v.verbs = (const struct hda_verb[]) {
+-			{ 0x20, AC_VERB_SET_COEF_INDEX, 0x07 },
+-			{ 0x20, AC_VERB_SET_PROC_COEF,  0x3040 },
++			{ 0x1a, AC_VERB_SET_COEF_INDEX, 0x07 },
++			{ 0x1a, AC_VERB_SET_PROC_COEF,  0x3040 },
+ 			{ }
+ 		},
+-		.chained = true,
+-		.chain_id = ALC260_FIXUP_HP_PIN_0F,
+ 	},
+ 	[ALC260_FIXUP_GPIO1] = {
+ 		.type = HDA_FIXUP_VERBS,
 -- 
-1.9.3
+2.0.0
 
