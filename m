@@ -1,52 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752784AbaFWXm0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 19:42:26 -0400
-Received: from mga02.intel.com ([134.134.136.20]:64635 "EHLO mga02.intel.com"
+	id S1753199AbaFWXsN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 19:48:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52153 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750931AbaFWXmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 19:42:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,533,1400050800"; 
-   d="scan'208";a="562162356"
-Message-ID: <53A8BB5A.5090103@intel.com>
-Date: Mon, 23 Jun 2014 16:42:18 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752475AbaFWXsL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 19:48:11 -0400
+Date: Mon, 23 Jun 2014 19:47:59 -0400
+From: Dave Jones <davej@redhat.com>
+To: David Miller <davem@davemloft.net>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, therbert@google.com
+Subject: Re: [GIT] Networking
+Message-ID: <20140623234759.GA19138@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	David Miller <davem@davemloft.net>, torvalds@linux-foundation.org,
+	akpm@linux-foundation.org, netdev@vger.kernel.org,
+	linux-kernel@vger.kernel.org, therbert@google.com
+References: <20140615.193312.2155181077359902619.davem@davemloft.net>
+ <20140616230450.GA12887@redhat.com>
+ <20140616234254.GA15332@redhat.com>
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Qiaowei Ren <qiaowei.ren@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH v6 08/10] x86, mpx: add prctl commands PR_MPX_REGISTER,
- PR_MPX_UNREGISTER
-References: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com> <1403084656-27284-9-git-send-email-qiaowei.ren@intel.com> <53A8874A.3050301@mit.edu> <53A88966.5080400@intel.com> <CALCETrX7B8yxrNgojCR8YNH+6zHX8vq+GMFn0RjdWXdLmhA-Fg@mail.gmail.com>
-In-Reply-To: <CALCETrX7B8yxrNgojCR8YNH+6zHX8vq+GMFn0RjdWXdLmhA-Fg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140616234254.GA15332@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2014 03:00 PM, Andy Lutomirski wrote:
-> Hmm.  How about PR_SET/GET_MPX_BOUNDS_TABLE, to update the kernel's
-> copy.  No fpu magic needed.
-> 
-> This has an added benefit: CRIU will need updating for MPX, and
-> they'll appreciate having the required interface already exist.
-> (They'll want a way to allocate "MPX" memory, too, but that's probably
-> somewhat less important, and it won't result in duplicated
-> functionality.)
+On Mon, Jun 16, 2014 at 07:42:54PM -0400, Dave Jones wrote:
+ > On Mon, Jun 16, 2014 at 07:04:50PM -0400, Dave Jones wrote:
+ >  > On Sun, Jun 15, 2014 at 07:33:12PM -0700, David Miller wrote:
+ >  > 
+ >  >  > 1) Fix checksumming regressions, from Tom Herbert.
+ >  > 
+ >  > Something still not right for me here.
+ >  > After about 5 minutes, I get an oops and then instant reboot/lock up.
+ >  > 
+ >  > I haven't managed to get a trace over usb-serial because it seems to
+ >  > crash before it completes. Hand transcribed one looks like..
+ >  > 
+ >  > rbp: ffff880236403970 r08: 0000000000000000 r09: 0000000000000000
+ >  > r10: 000000000000005a r11: 00000000000002d7 f12: ffff880233000d80
+ >  > r13: ffff8800aa1a6fc2 r14: ffff880233001d40 f15: 00000000ffffac82
+ >  > fs: 0 fs: ffff880236400000 knlGS: 0
+ >  > CS: 10 DS: 0 ES: 0 CR0: 80050033
+ >  > CR2: ffff8800aa1a8000 CR3: 1a0d000 CR4: 407f0
+ >  > Stack:
+ >  >  ffff880236403988 ffffffff81298bbc 00000000000016c0 ffff8802364039e8
+ >  >  ffffffff814ca05a ffff880233001d40 000005a80000e397 ffff880233001680
+ >  >  0000000000000000 0d420685ffffac82 000000000000012a 000000000000004e
+ >  > Call Trace:
+ >  > <IRQ>
+ >  > csum_partial
+ >  > tcp_gso_segment
+ >  > inet_gso_segment
+ >  > ? update_dl_migration
+ >  > skb_mac_gso_segment
+ >  > __skb_gso_segment
+ >  > dev_hard_start_xmit
+ >  > sch_direct_xmit
+ >  > __dev_queue_xmit
+ >  > ? dev_hard_start_xmit
+ >  > dev_queue_xmit
+ >  > ip_finish_output
+ >  > ? ip_output
+ >  > ip_output
+ >  > ip_forward_finish
+ >  > ip_forward
+ >  > ip_rcv_finish
+ >  > ip_rcv
+ >  > __netif_receive_skb_core
+ >  > ? __netif_receive_skb_core
+ >  > ? trace_hardirqs_on
+ >  > __netif_receive_skb
+ >  > netif_receive_skb_internal
+ >  > napi_gro_complete
+ >  > ? napi_gro_complete
+ >  > dev_gro_receive
+ >  > ? dev_gro_receive
+ >  > napi_gro_receive
+ >  > rtl8169_poll
+ >  > net_rx_action
+ >  > __do_softirq
+ >  > irq_exit
+ >  > do_IRQ
+ >  > common_interrupt
+ >  > <EOI>
+ >  > cpuidle_enter_state
+ >  > cpuidle_enter
+ >  > cpu_startup_entry
+ >  > rest_init
+ >  > ? csum_partial_copy_generic
+ >  > start_kernel
+ >  > RIP: do_csum+0x83/0x180
+ >  > 
+ >  > Code: 41 89 d2 74 45 89 d1 45 31 c0 48 89 fa 0f 1f 00 48 03 02 48 13 42
+ >  > 08 48 13 42 10 48 13 42 20 48 13 42 28 48 13 42 30 <48> 13 42 38 4c 11
+ >  > c0 48 83 c2 40 83 e9 01 75 d5 41 83 ea 01 49
+ >  > 
+ >  > All code
+ >  > ========
+ >  >    0:	41 89 d2             	mov    %edx,%r10d
+ >  >    3:	74 45                	je     0x4a
+ >  >    5:	89 d1                	mov    %edx,%ecx
+ >  >    7:	45 31 c0             	xor    %r8d,%r8d
+ >  >    a:	48 89 fa             	mov    %rdi,%rdx
+ >  >    d:	0f 1f 00             	nopl   (%rax)
+ >  >   10:	48 03 02             	add    (%rdx),%rax
+ >  >   13:	48 13 42 08          	adc    0x8(%rdx),%rax
+ >  >   17:	48 13 42 10          	adc    0x10(%rdx),%rax
+ >  >   1b:	48 13 42 20          	adc    0x20(%rdx),%rax
+ >  >   1f:	48 13 42 28          	adc    0x28(%rdx),%rax
+ >  >   23:	48 13 42 30          	adc    0x30(%rdx),%rax
+ >  >   27:*	48 13 42 38          	adc    0x38(%rdx),%rax     <-- trapping instruction
+ >  >   2b:	4c 11 c0             	adc    %r8,%rax
+ >  >   2e:	48 83 c2 40          	add    $0x40,%rdx
+ >  >   32:	83 e9 01             	sub    $0x1,%ecx
+ >  >   35:	75 d5                	jne    0xc
+ >  >   37:	41 83 ea 01          	sub    $0x1,%r10d
+ >  >   3b:	49                   	rex.WB
+ >  > 
+ >  > Typical, rdx and rax had scrolled off the screen.
+ > 
+ > after removing the dump_stack invocations, I noticed that the reason
+ > this is rebooting is probably because right after the initial oops
+ > we hit the WARN_ON at arch/x86/kernel/smp.c:124
+ > 
+ >         if (unlikely(cpu_is_offline(cpu))) {
+ >                 WARN_ON(1);
+ >                 return;
+ >         }
+ > 
+ > lol.
+ > 
+ > Anwyay, before all that nonsense, I now have the top of the oops..
+ > 
+ > BUG: unable to handle kernel paging request at ffff880218c18000
+ > IP: do_csum+0x68
+ > PGD: 2c6a067 PUD: 2c6d067 PMD 23fd1c067 PTE: 80000000218c18060
+ > RAX: 2090539bbf7b28f2 RBX: 00000000acb23d4e RCX: 000000000000000b
+ > RDX: ffff880218c18000 RSI: 0000000000001c62 RDI: ffff880218c16680
+ > 
+ > Maybe also notable here is that the kernel is built with DEBUG_PAGEALLOC on.
 
-I like the idea of the most minimal interface possible.  If the kernel
-ever needed or wanted to cache more of the register setup, we wouldn't
-need to change the interface.  For CRIU, I don't know much about the
-phases of how it sets itself up, but I guess the difference would be
-whether userspace has to do a register save and restore and a prctl() or
-just a plain prctl() with extra arguments.  Doesn't seem fundamentally
-different to me.
+This is still a problem in -rc2.
+Lasts about 5 minutes, then reboots.
 
-BTW, it's not a pointer to a bounds table, it's the bounds directory.
-There are two levels of the tables.
+	Dave
+
