@@ -1,82 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932276AbaFWN3q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:29:46 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60762 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754785AbaFWN3j (ORCPT
+	id S932294AbaFWN3y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:29:54 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:48020 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754944AbaFWN3v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:29:39 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: linux-kernel@vger.kernel.org
-Cc: jirislaby@gmail.com, Vojtech Pavlik <vojtech@suse.cz>,
-        Jiri Kosina <jkosina@suse.cz>, Jiri Slaby <jslaby@suse.cz>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: [PATCH 02/21] ftrace: Make ftrace_is_dead available globally
-Date: Mon, 23 Jun 2014 15:29:16 +0200
-Message-Id: <1403530175-29217-2-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1403530175-29217-1-git-send-email-jslaby@suse.cz>
-References: <1403530175-29217-1-git-send-email-jslaby@suse.cz>
+	Mon, 23 Jun 2014 09:29:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140623130259.GA29809@amd.pavel.ucw.cz>
+References: <20140621180201.GA4621@amd.pavel.ucw.cz>
+	<CAKb7UvhOCiBHcsB6a0qKBNsC3c9pmb=Wc7zucbBuP6vt-tx2eA@mail.gmail.com>
+	<20140621194538.GA4903@kroah.com>
+	<CAKb7UvjhOystpeRy1nQx49Nspve4wHQPb+e7gJQ-RT-HseK4Cw@mail.gmail.com>
+	<20140623130259.GA29809@amd.pavel.ucw.cz>
+Date: Mon, 23 Jun 2014 09:29:51 -0400
+X-Google-Sender-Auth: S0paDUbk8vXnU46-ULB_5HgwdMk
+Message-ID: <CAKb7UvhmatCtu2rEHgVOjitN1gAPTsgfaUmA2iOLX2Qwhi+Yxg@mail.gmail.com>
+Subject: Re: unparseable, undocumented /sys/class/drm/.../pstate
+From: Ilia Mirkin <imirkin@alum.mit.edu>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Greg KH <greg@kroah.com>, kernel list <linux-kernel@vger.kernel.org>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        David Airlie <airlied@linux.ie>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kgr wants to test whether ftrace is OK with patching. If not, we just
-bail out and will not initialize at all.
+On Mon, Jun 23, 2014 at 9:02 AM, Pavel Machek <pavel@ucw.cz> wrote:
+> On Sun 2014-06-22 22:12:14, Ilia Mirkin wrote:
+>> On Sat, Jun 21, 2014 at 3:45 PM, Greg KH <greg@kroah.com> wrote:
+>> > On Sat, Jun 21, 2014 at 02:22:59PM -0400, Ilia Mirkin wrote:
+>> >> On Sat, Jun 21, 2014 at 2:02 PM, Pavel Machek <pavel@ucw.cz> wrote:
+>> >> > Hi!
+>> >> >
+>> >> > AFAICT, pstate file will contain something like
+>> >> >
+>> >> > 07: core 100 MHz memory 123 MHz *
+>> >> > 08: core 100-200 MHz memory 123 MHz
+>> >> >
+>> >> > ...which does not look exactly like one-value-per-file, and I'm pretty
+>> >> > sure userspace will get it wrong if it tries to parse it. Plus, I
+>> >> > don't see required documentation in Documentation/ABI.
+>> >> >
+>> >> > Should we disable it for now, so that userspace does not start
+>> >> > depending on it and we'll not have to maintain it forever?
+>> >> >
+>> >> > I guess better interface would be something like
+>> >> >
+>> >> > pstate/07/core_clock_min
+>> >> >           core_clock_max
+>> >> >           memory_clock_min
+>> >> >           memory_clock_max
+>> >> >
+>> >> > and then pstate/active containing just the number of active state?
+>
+>> Could we just say that the format of this file is one-per-line of
+>>
+>> level: information-for-the-user
+>
+> But it is not.
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
----
- include/linux/ftrace.h | 3 +++
- kernel/trace/trace.h   | 2 --
- 2 files changed, 3 insertions(+), 2 deletions(-)
+But it is...
 
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index c142816c2801..7ba30d4b4909 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -140,6 +140,8 @@ enum ftrace_tracing_type_t {
- /* Current tracing type, default is FTRACE_TYPE_ENTER */
- extern enum ftrace_tracing_type_t ftrace_tracing_type;
- 
-+extern int ftrace_is_dead(void);
-+
- /**
-  * ftrace_stop - stop function tracer.
-  *
-@@ -241,6 +243,7 @@ static inline int ftrace_nr_registered_ops(void)
- 	return 0;
- }
- static inline void clear_ftrace_function(void) { }
-+static inline int ftrace_is_dead(void) { return 0; }
- static inline void ftrace_kill(void) { }
- static inline void ftrace_stop(void) { }
- static inline void ftrace_start(void) { }
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 9258f5a815db..0d96b8990a97 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -824,7 +824,6 @@ static inline int ftrace_trace_task(struct task_struct *task)
- 
- 	return test_tsk_trace_trace(task);
- }
--extern int ftrace_is_dead(void);
- int ftrace_create_function_files(struct trace_array *tr,
- 				 struct dentry *parent);
- void ftrace_destroy_function_files(struct trace_array *tr);
-@@ -837,7 +836,6 @@ static inline int ftrace_trace_task(struct task_struct *task)
- {
- 	return 1;
- }
--static inline int ftrace_is_dead(void) { return 0; }
- static inline int
- ftrace_create_function_files(struct trace_array *tr,
- 			     struct dentry *parent)
--- 
-2.0.0
+> Management tools will want to parse it, sooner or
+> later.  What is wrong with solution described above?
 
+It is complex and annoying to the people that will actually use it.
+
+>
+>> And you can echo a level into it to switch to that level? That seems
+>> like a reasonable ABI to have... would be happy to throw it into a
+>> file somewhere... not sure where though.
+>
+> Documentation/ABI/testing/
+
+Yes, I got that far. And then I became confused.
+
+  -ilia
