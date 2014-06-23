@@ -1,73 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752487AbaFWHx3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 03:53:29 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:19275 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752433AbaFWHx0 (ORCPT
+	id S1752592AbaFWHxl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 03:53:41 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:59134 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752511AbaFWHxh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 03:53:26 -0400
-X-AuditID: cbfee61b-f79f86d00000144c-4c-53a7dcf4fa2d
-From: Robert Baldyga <r.baldyga@samsung.com>
-To: balbi@ti.com
-Cc: paulz@synopsys.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, m.szyprowski@samsung.com,
-        andrzej.p@samsung.com, Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH 05/11] usb: dwc2/gadget: hide some not really needed debug
- messages
-Date: Mon, 23 Jun 2014 09:51:24 +0200
-Message-id: <1403509890-14103-6-git-send-email-r.baldyga@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1403509890-14103-1-git-send-email-r.baldyga@samsung.com>
-References: <1403509890-14103-1-git-send-email-r.baldyga@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJLMWRmVeSWpSXmKPExsVy+t9jQd0vd5YHGzz5KGUx62U7i8XB+/UW
-	zYvXs1lc3jWHzWLRslZmi7VH7rJbbJ8yncniweGd7A4cHvvnrmH36NuyitFjy/7PjB7Hb2xn
-	8vi8SS6ANYrLJiU1J7MstUjfLoEr4+fKW4wFczgr9sy+ztbA+IC9i5GTQ0LARGLbml+MELaY
-	xIV769m6GLk4hASmM0pcW/6QFcJpZ5JYeOgnWAebgI7Elu8TwDpEBAQk1r+4xA5SxCxwglGi
-	4/8FNpCEsECoRPPhJcwgNouAqsTkid/A4rwCrhIfz3xkhVgnJ3Hy2GQwm1PATWL9zYVgC4SA
-	ahadnsY+gZF3ASPDKkbR1ILkguKk9FwjveLE3OLSvHS95PzcTYzgAHsmvYNxVYPFIUYBDkYl
-	Hl4Nt+XBQqyJZcWVuYcYJTiYlUR4GxuAQrwpiZVVqUX58UWlOanFhxilOViUxHkPtloHCgmk
-	J5akZqemFqQWwWSZODilGhjLhW/7VwZHcTcfXOZ9VEr/t/6pR9UMM/NbVZ9I/HwYe+2TZ+S0
-	BbYNnR2a8R3mv5Y6F9XxOFpx7z+cpWbZ/zhvYu83C4ENHy8u5/0Z8126wqz0QFCI4vWmMvet
-	b9rnXRdzus3f65Ww/KBMRrntREYpjrjUCRNr5B9s49sq/2VW3s3/Ba+PXlNiKc5INNRiLipO
-	BAAg6VoaLAIAAA==
+	Mon, 23 Jun 2014 03:53:37 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8; format=flowed
+X-AuditID: cbfec7f4-b7fac6d000006cfe-98-53a7dcfa0a4c
+Content-transfer-encoding: 8BIT
+Message-id: <53A7DCF8.4090108@samsung.com>
+Date: Mon, 23 Jun 2014 11:53:28 +0400
+From: Tarek Dakhran <t.dakhran@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.5.0
+To: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>,
+        linux-samsung-soc@vger.kernel.org
+Cc: Kevin Hilman <khilman@linaro.org>, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "moderated list:ARM/SAMSUNG ARM A..." 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: dts: exynos5410: Fill in CPU clock-frequency
+References: <1403466596-3347-1-git-send-email-afaerber@suse.de>
+In-reply-to: <1403466596-3347-1-git-send-email-afaerber@suse.de>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBLMWRmVeSWpSXmKPExsVy+t/xy7q/7iwPNuiezm7RvKnYYtK6A0wW
+	84+cY7Xof7OQ1eLcq5WMFr0LrrJZfD28gtFi0+NrrBaXd81hs5hxfh+Txe3LvBZLr19kspgw
+	fS2LReveI+wOfB5r5q1h9Ghp7mHzuNzXy+Txd9ULZo+Vy7+weWxa1cnmcefaHjaPzUvqPfq2
+	rGL02Hy62uPzJrkA7igum5TUnMyy1CJ9uwSujC1tH1kLGtkqHrw5w9bA+Iali5GTQ0LARKK7
+	fz4jhC0mceHeerYuRi4OIYGljBI/fn9iA0nwCghK/Jh8D6iBg4NZQF7iyKVskDCzgJnEo5Z1
+	zBD1Hxkldty8xQ5RryXx/MInZhCbRUBV4uWeLYwgvWwC2hJbdniBmKICERKPLwiBVIgIxEj8
+	mvSfCWQMs0A/i8S2HXfB7hEWcJNo3/0BbKSQgL1Ez/39YDdzCjhIbF7RwjiBUWAWkutmIVw3
+	C8l1CxiZVzGKppYmFxQnpeca6hUn5haX5qXrJefnbmKExNaXHYyLj1kdYhTgYFTi4b3htTxY
+	iDWxrLgy9xCjBAezkghvYwNQiDclsbIqtSg/vqg0J7X4ECMTB6dUAyP/x+cpWbUhR/5/iCpZ
+	9CPnWub5FlaBisD+1gkPaoXmS37++2SV/Jqqlnm7tqRzlxtkfHTyMi95oF+w3bXLqIbfItT5
+	ZDJnt9zu+C/6ojq2XgU37574ObHq0CM3b459wR91tzNK8DsYHv12TS7Wk0GFb/uOpToCCzlN
+	t77Y+Y6hr2SvNI/cWSWW4oxEQy3mouJEAM0P1TmLAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marek Szyprowski <m.szyprowski@samsung.com>
+On 06/22/2014 11:49 PM, Andreas Färber wrote:
+> It's 1.6 GHz for the Cortex-A15.
+>
+> Avoids warnings like "/cpus/cpu@0 missing clock-frequency property".
+>
+> Signed-off-by: Andreas Färber <afaerber@suse.de>
+> ---
+>   arch/arm/boot/dts/exynos5410.dtsi | 4 ++++
+>   1 file changed, 4 insertions(+)
+>
+> diff --git a/arch/arm/boot/dts/exynos5410.dtsi b/arch/arm/boot/dts/exynos5410.dtsi
+> index 3839c26..9d0b8cc 100644
+> --- a/arch/arm/boot/dts/exynos5410.dtsi
+> +++ b/arch/arm/boot/dts/exynos5410.dtsi
+> @@ -28,24 +28,28 @@
+>   			device_type = "cpu";
+>   			compatible = "arm,cortex-a15";
+>   			reg = <0x0>;
+> +			clock-frequency = <1600000000>;
+>   
 
-Some DWC2/s3c-hsotg debug messages are really useless for typical user,
-so hide them behind dev_dbg().
+Reviewed-by: Tarek Dakhran<t.dakhran@samsung.com>
 
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
----
- drivers/usb/dwc2/gadget.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
-index 35b4890..95b6dcb 100644
---- a/drivers/usb/dwc2/gadget.c
-+++ b/drivers/usb/dwc2/gadget.c
-@@ -2568,7 +2568,7 @@ static int s3c_hsotg_ep_disable(struct usb_ep *ep)
- 	u32 epctrl_reg;
- 	u32 ctrl;
- 
--	dev_info(hsotg->dev, "%s(ep %p)\n", __func__, ep);
-+	dev_dbg(hsotg->dev, "%s(ep %p)\n", __func__, ep);
- 
- 	if (ep == &hsotg->eps[0].ep) {
- 		dev_err(hsotg->dev, "%s: called for ep0\n", __func__);
-@@ -2626,7 +2626,7 @@ static int s3c_hsotg_ep_dequeue(struct usb_ep *ep, struct usb_request *req)
- 	struct s3c_hsotg *hs = hs_ep->parent;
- 	unsigned long flags;
- 
--	dev_info(hs->dev, "ep_dequeue(%p,%p)\n", ep, req);
-+	dev_dbg(hs->dev, "ep_dequeue(%p,%p)\n", ep, req);
- 
- 	spin_lock_irqsave(&hs->lock, flags);
- 
 -- 
-1.9.1
+Best regards,
+     Tarek Dakhran
 
