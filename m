@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755192AbaFWN1H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:27:07 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36799 "EHLO
+	id S1755402AbaFWN1f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:27:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36793 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754107AbaFWND5 (ORCPT
+	with ESMTP id S1753842AbaFWNDz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:03:57 -0400
+	Mon, 23 Jun 2014 09:03:55 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Shaun Ruffell <sruffell@digium.com>, Ingo Molnar <mingo@kernel.org>,
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 02/93] sched: Sanitize irq accounting madness
-Date: Mon, 23 Jun 2014 14:01:41 +0100
-Message-Id: <1403528592-2163-3-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 24/93] dmaengine: dw: went back to plain {request,free}_irq() calls
+Date: Mon, 23 Jun 2014 14:02:03 +0100
+Message-Id: <1403528592-2163-25-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
 References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
@@ -30,122 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 
-commit 2d513868e2a33e1d5315490ef4c861ee65babd65 upstream.
+commit 97977f7576a89cb9436c000ae703c0d515e748ac upstream.
 
-Russell reported, that irqtime_account_idle_ticks() takes ages due to:
+The commit dbde5c29 "dw_dmac: use devm_* functions to simplify code" turns
+probe function to use devm_* helpers and simultaneously brings a regression. We
+need to ensure irq is disabled, followed by ensuring that don't schedule any
+more tasklets and then its safe to use tasklet_kill().
 
-       for (i = 0; i < ticks; i++)
-               irqtime_account_process_tick(current, 0, rq);
+The free_irq() will ensure that the irq is disabled and also wait till all
+scheduled interrupts are executed by invoking synchronize_irq(). So we need to
+only do tasklet_kill() after invoking free_irq().
 
-It's sad, that this code was written way _AFTER_ the NOHZ idle
-functionality was available. I charge myself guitly for not paying
-attention when that crap got merged with commit abb74cefa ("sched:
-Export ns irqtimes through /proc/stat")
-
-So instead of looping nr_ticks times just apply the whole thing at
-once.
-
-As a side note: The whole cputime_t vs. u64 business in that context
-wants to be cleaned up as well. There is no point in having all these
-back and forth conversions. Lets standardise on u64 nsec for all
-kernel internal accounting and be done with it. Everything else does
-not make sense at all for fine grained accounting. Frederic, can you
-please take care of that?
-
-Reported-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Venkatesh Pallipadi <venki@google.com>
-Cc: Shaun Ruffell <sruffell@digium.com>
-Link: http://lkml.kernel.org/r/alpine.DEB.2.02.1405022307000.6261@ionos.tec.linutronix.de
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/sched/cputime.c | 32 ++++++++++++++++----------------
- 1 file changed, 16 insertions(+), 16 deletions(-)
+ drivers/dma/dw/core.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index 25cc35dd83f4..f4f3e214350e 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -326,50 +326,50 @@ out:
-  * softirq as those do not count in task exec_runtime any more.
-  */
- static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
--						struct rq *rq)
-+					 struct rq *rq, int ticks)
- {
--	cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
-+	cputime_t scaled = cputime_to_scaled(cputime_one_jiffy);
-+	u64 cputime = (__force u64) cputime_one_jiffy;
- 	u64 *cpustat = kcpustat_this_cpu->cpustat;
+diff --git a/drivers/dma/dw/core.c b/drivers/dma/dw/core.c
+index 1292a6eda60f..884b38b52f02 100644
+--- a/drivers/dma/dw/core.c
++++ b/drivers/dma/dw/core.c
+@@ -1563,11 +1563,6 @@ int dw_dma_probe(struct dw_dma_chip *chip, struct dw_dma_platform_data *pdata)
+ 	/* Disable BLOCK interrupts as well */
+ 	channel_clear_bit(dw, MASK.BLOCK, dw->all_chan_mask);
  
- 	if (steal_account_process_tick())
- 		return;
+-	err = devm_request_irq(chip->dev, chip->irq, dw_dma_interrupt,
+-			       IRQF_SHARED, "dw_dmac", dw);
+-	if (err)
+-		return err;
+-
+ 	/* Create a pool of consistent memory blocks for hardware descriptors */
+ 	dw->desc_pool = dmam_pool_create("dw_dmac_desc_pool", chip->dev,
+ 					 sizeof(struct dw_desc), 4, 0);
+@@ -1578,6 +1573,11 @@ int dw_dma_probe(struct dw_dma_chip *chip, struct dw_dma_platform_data *pdata)
  
-+	cputime *= ticks;
-+	scaled *= ticks;
+ 	tasklet_init(&dw->tasklet, dw_dma_tasklet, (unsigned long)dw);
+ 
++	err = request_irq(chip->irq, dw_dma_interrupt, IRQF_SHARED,
++			  "dw_dmac", dw);
++	if (err)
++		return err;
 +
- 	if (irqtime_account_hi_update()) {
--		cpustat[CPUTIME_IRQ] += (__force u64) cputime_one_jiffy;
-+		cpustat[CPUTIME_IRQ] += cputime;
- 	} else if (irqtime_account_si_update()) {
--		cpustat[CPUTIME_SOFTIRQ] += (__force u64) cputime_one_jiffy;
-+		cpustat[CPUTIME_SOFTIRQ] += cputime;
- 	} else if (this_cpu_ksoftirqd() == p) {
- 		/*
- 		 * ksoftirqd time do not get accounted in cpu_softirq_time.
- 		 * So, we have to handle it separately here.
- 		 * Also, p->stime needs to be updated for ksoftirqd.
- 		 */
--		__account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
--					CPUTIME_SOFTIRQ);
-+		__account_system_time(p, cputime, scaled, CPUTIME_SOFTIRQ);
- 	} else if (user_tick) {
--		account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
-+		account_user_time(p, cputime, scaled);
- 	} else if (p == rq->idle) {
--		account_idle_time(cputime_one_jiffy);
-+		account_idle_time(cputime);
- 	} else if (p->flags & PF_VCPU) { /* System time or guest time */
--		account_guest_time(p, cputime_one_jiffy, one_jiffy_scaled);
-+		account_guest_time(p, cputime, scaled);
- 	} else {
--		__account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
--					CPUTIME_SYSTEM);
-+		__account_system_time(p, cputime, scaled,	CPUTIME_SYSTEM);
- 	}
- }
+ 	INIT_LIST_HEAD(&dw->dma.channels);
+ 	for (i = 0; i < nr_channels; i++) {
+ 		struct dw_dma_chan	*dwc = &dw->chan[i];
+@@ -1680,6 +1680,7 @@ int dw_dma_remove(struct dw_dma_chip *chip)
+ 	dw_dma_off(dw);
+ 	dma_async_device_unregister(&dw->dma);
  
- static void irqtime_account_idle_ticks(int ticks)
- {
--	int i;
- 	struct rq *rq = this_rq();
++	free_irq(chip->irq, dw);
+ 	tasklet_kill(&dw->tasklet);
  
--	for (i = 0; i < ticks; i++)
--		irqtime_account_process_tick(current, 0, rq);
-+	irqtime_account_process_tick(current, 0, rq, ticks);
- }
- #else /* CONFIG_IRQ_TIME_ACCOUNTING */
- static inline void irqtime_account_idle_ticks(int ticks) {}
- static inline void irqtime_account_process_tick(struct task_struct *p, int user_tick,
--						struct rq *rq) {}
-+						struct rq *rq, int nr_ticks) {}
- #endif /* CONFIG_IRQ_TIME_ACCOUNTING */
- 
- /*
-@@ -464,7 +464,7 @@ void account_process_tick(struct task_struct *p, int user_tick)
- 		return;
- 
- 	if (sched_clock_irqtime) {
--		irqtime_account_process_tick(p, user_tick, rq);
-+		irqtime_account_process_tick(p, user_tick, rq, 1);
- 		return;
- 	}
- 
+ 	list_for_each_entry_safe(dwc, _dwc, &dw->dma.channels,
 -- 
 1.9.1
 
