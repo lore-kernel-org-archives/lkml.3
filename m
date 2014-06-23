@@ -1,43 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756240AbaFWNxX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:53:23 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:54795 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753886AbaFWNxR (ORCPT
+	id S1756253AbaFWNxh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:53:37 -0400
+Received: from smtp26.sms.unimo.it ([155.185.44.26]:57910 "EHLO
+	smtp26.sms.unimo.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753858AbaFWNxf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:53:17 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: Re: [PATCH 01/22] pci-dma-compat: Add pci_zalloc_consistent helper
-Date: Mon, 23 Jun 2014 15:53:12 +0200
-Message-ID: <4279380.YmNJ3E7DEi@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <2248b3ffe86cd8995a809bf7e2871f38039979c1.1403530604.git.joe@perches.com>
-References: <cover.1403530604.git.joe@perches.com> <2248b3ffe86cd8995a809bf7e2871f38039979c1.1403530604.git.joe@perches.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:zJ2pNbwjJMb3Y0R5iAS3Alpnp3PzXRLeErXOhQQ7buB
- jwd1CeFGX2oWgsstM+dRLRqh7uuOvKltmIN1XNqGv6eqNt+Vvo
- pJr97RcIK02hHv0oxnlFzTJSQQV56fCeRMyg2sYpjORcB7mh1Q
- nd2oH5GDsVVu/OUDRSVgTvl67S9l4smZNtqHT/COq7H28lXKEe
- PnBZILwwzIWGwZFO1FqPRPi+0i+bH6vdKCsPXTvsW66jaz14bb
- 3vZuin1HC+t8rnMALQ3Q8JsukamG5EycXqA9EZ/zn0u/p689h2
- LMjF0qbl5aRxg1pao55+VJTbvFedBo/lsLEPHo0ZhVndGACzPL
- ZeFKcrO6EaLIphQCHv0c=
+	Mon, 23 Jun 2014 09:53:35 -0400
+Subject: Re: [PATCH RFC - TAKE TWO - 00/12] New version of the BFQ I/O Scheduler
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
+Content-Type: text/plain; charset=windows-1252
+From: Paolo Valente <paolo.valente@unimore.it>
+In-Reply-To: <53A24B1C.1070004@kernel.dk>
+Date: Mon, 23 Jun 2014 15:53:09 +0200
+Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        Fabio Checconi <fchecconi@gmail.com>,
+        Arianna Avanzini <avanzini.arianna@gmail.com>,
+        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <8F719638-0CD7-4BD2-8F4F-088913A0EE2D@unimore.it>
+References: <20140528221929.GG1419@htj.dyndns.org> <1401354343-5527-1-git-send-email-paolo.valente@unimore.it> <20140530160712.GG24871@htj.dyndns.org> <538926F6.7080409@kernel.dk> <20140531051635.GA19925@mtj.dyndns.org> <538C8A47.1050502@kernel.dk> <0A5218F8-0215-4B4F-959B-EE5AAEFC164A@unimore.it> <20140619014600.GA20100@mtj.dyndns.org> <53A24B1C.1070004@kernel.dk>
+To: Jens Axboe <axboe@kernel.dk>
+X-Mailer: Apple Mail (2.1878.2)
+UNIMORE-X-SA-Score: -2.9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 23 June 2014 06:41:29 Joe Perches wrote:
-> Add this helper for consistency with pci_zalloc_coherent
-> and the ability to remove unnecessary memset(,0,) uses.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> 
 
-Shouldn't these drivers just use the normal dma-mapping API now?
+Il giorno 19/giu/2014, alle ore 04:29, Jens Axboe <axboe@kernel.dk> ha scritto:
 
-	Arnd
+> On 2014-06-18 18:46, Tejun Heo wrote:
+>> Hello,
+>> 
+>> On Tue, Jun 17, 2014 at 05:55:57PM +0200, Paolo Valente wrote:
+>>> In general, with both a smooth but messy and a sharp but clean
+>>> transformation, there seems to be the following common problems:
+>>> 
+>>> 1) The main benefits highlighted by Jens, i.e., being able to move
+>>> back and forth and easily understand what works and what does not,
+>>> seem to be lost, because, with both solutions, intermediate versions
+>>> would likely have a worse performance than the current version of
+>>> cfq.
+>> 
+>> So, the perfectly smooth and performant transformation is possible,
+>> it'd be great, but I don't really think that'd be the case.  My
+>> opinion is that if the infrastructure pieces can be mostly maintained
+>> while making logical gradual steps it should be fine.  ie. pick
+>> whatever strategy which seems executable, chop down the pieces which
+>> get in the way (ie. tear down all the cfq heuristics if you have to),
+>> transform the base and then build things on top again.  Ensuring that
+>> each step is logical and keeps working should give us enough safety
+>> net, IMO.
+>> 
+>> Jens, what do you think?
+> 
+> I was thinking the same - strip CFQ back down, getting rid of the heuristics, then go forward to BFQ. That should be feasible. You need to find the common core first.
+
+OK, I will try exactly this approach (hoping not to have misunderstood anything).
+Here is, very briefly, the strategy I am thinking about:
+1) In a first, only-destructive phase, bring CFQ back, more or less, to its state
+at the time when BFQ was forked initially, and justify the removal of every heuristic
+and improvement. Depending on how many patches come out during this phase,
+possibly pack them into a first, separate patch series.
+2) In a second, only-constructive phase: (a) turn the stripped-down version of CFQ into
+a flat BFQ-v0, (b) turn the latter into BFQ-v0, and, finally, (c) progressively turn BFQ-v0
+into the last version of BFQ, through the previously-submitted patches. Of course after
+fixing and improving all the involved patches according to the suggestions and corrections
+of Tejun.
+
+I will wait shortly for a possible feedback on this proposal, and, then, if nothing has still to be
+changed or refined, silently start the process.
+
+> 
+>>> 2) bfq, on one side, does not export some of the sysfs parameters of
+>>> cfq, such as slice_sync, and, on the other side, uses other common
+>>> parameters in a different way. For example, bfq turns I/O priorities
+>>> into throughput shares in a different way than cfq does. As a
+>>> consequence, existing configurations may break or behave in
+>>> unexpected ways.
+>> 
+>> This is why I hate exposing internal knobs without layering proper
+>> semantic interpretation on top.  It ends up creating unnecessary
+>> lock-in effect too often just to serve some esoteric cases which
+>> aren't all that useful.  For knobs which don't make any sense for the
+>> new scheduler, the appropriate thing to do would be just making them
+>> noop and generate a warning message when it's written to.
+>> 
+>> As for behavior change for existing users, any change to scheduler
+>> does that.  I don't think it's practical to avoid any changes for that
+>> reason.  I think there already is a pretty solid platform to base
+>> things on and the way forward is making the changes and iterating as
+>> testing goes on and issues get reported.
+> 
+> Completely agree, don't worry about that. It's not like we advertise hard guarantees on the priorities right now, for instance, so as long as the end result isn't orders of magnitude different for the classes/levels, then it'll likely be good enough.
+> 
+> Ditto on the sysfs files, as some of those are likely fairly widely used. But if we warn and do nothing, then that'll allow us to sort out popular uses of it before we (later on) remove the files.
+
+Great, thanks. BTW, most of the ‘internal’ parameters inappropriately exposed by BFQ,
+as noted by Tejun, were exposed just because we forgot to remove them while turning
+the testing version of BFQ into the submitted one. Sorry about that.
+
+Thanks,
+Paolo
+
+> 
+> -- 
+> Jens Axboe
+
+
+--
+Paolo Valente                                                 
+Algogroup
+Dipartimento di Fisica, Informatica e Matematica		
+Via Campi, 213/B
+41125 Modena - Italy        				  
+homepage:  http://algogroup.unimore.it/people/paolo/
+
