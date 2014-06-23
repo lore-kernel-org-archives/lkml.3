@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755267AbaFWNMo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:12:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14227 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755219AbaFWNME (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:12:04 -0400
-From: Daniel Borkmann <dborkman@redhat.com>
-To: davem@davemloft.net
-Cc: netdev@vger.kernel.org, linux@horizon.com, linux-kernel@vger.kernel.org
-Subject: [PATCH net-next 2/3] lib: crc32: Mark test data __initconst
-Date: Mon, 23 Jun 2014 15:11:55 +0200
-Message-Id: <1403529116-18385-3-git-send-email-dborkman@redhat.com>
-In-Reply-To: <1403529116-18385-1-git-send-email-dborkman@redhat.com>
-References: <1403529116-18385-1-git-send-email-dborkman@redhat.com>
+	id S1754810AbaFWNFL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:05:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37153 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754763AbaFWNFI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 09:05:08 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Chris Boot <crb@tiger-computing.co.uk>, Philip Gaw <pgaw@darktech.org.uk>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 72/93] target: Fix alua_access_state attribute OOPs for un-configured devices
+Date: Mon, 23 Jun 2014 14:02:51 +0100
+Message-Id: <1403528592-2163-73-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
+References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: George Spelvin <linux@horizon.com>
+3.11.10.12 -stable review patch.  If anyone has any objections, please let me know.
 
-So it gets discarded after the selftest.
+------------------
 
-Signed-off-by: George Spelvin <linux@horizon.com>
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
+
+commit f1453773514bb8b0bba0716301e8c8f17f8d39c7 upstream.
+
+This patch fixes a OOPs where an attempt to write to the per-device
+alua_access_state configfs attribute at:
+
+  /sys/kernel/config/target/core/$HBA/$DEV/alua/$TG_PT_GP/alua_access_state
+
+results in an NULL pointer dereference when the backend device has not
+yet been configured.
+
+This patch adds an explicit check for DF_CONFIGURED, and fails with
+-ENODEV to avoid this case.
+
+Reported-by: Chris Boot <crb@tiger-computing.co.uk>
+Reported-by: Philip Gaw <pgaw@darktech.org.uk>
+Cc: Chris Boot <crb@tiger-computing.co.uk>
+Cc: Philip Gaw <pgaw@darktech.org.uk>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- lib/crc32.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/target/target_core_configfs.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/lib/crc32.c b/lib/crc32.c
-index 9af30ff..af938ab 100644
---- a/lib/crc32.c
-+++ b/lib/crc32.c
-@@ -344,7 +344,7 @@ EXPORT_SYMBOL(crc32_be);
- #ifdef CONFIG_CRC32_SELFTEST
+diff --git a/drivers/target/target_core_configfs.c b/drivers/target/target_core_configfs.c
+index e4d22933efaf..304811e09649 100644
+--- a/drivers/target/target_core_configfs.c
++++ b/drivers/target/target_core_configfs.c
+@@ -2031,6 +2031,11 @@ static ssize_t target_core_alua_tg_pt_gp_store_attr_alua_access_state(
+ 			" tg_pt_gp ID: %hu\n", tg_pt_gp->tg_pt_gp_valid_id);
+ 		return -EINVAL;
+ 	}
++	if (!(dev->dev_flags & DF_CONFIGURED)) {
++		pr_err("Unable to set alua_access_state while device is"
++		       " not configured\n");
++		return -ENODEV;
++	}
  
- /* 4096 random bytes */
--static u8 __attribute__((__aligned__(8))) test_buf[] =
-+static u8 const __aligned(8) test_buf[] __initconst =
- {
- 	0x5b, 0x85, 0x21, 0xcb, 0x09, 0x68, 0x7d, 0x30,
- 	0xc7, 0x69, 0xd7, 0x30, 0x92, 0xde, 0x59, 0xe4,
-@@ -868,7 +868,7 @@ static struct crc_test {
- 	u32 crc_le;	/* expected crc32_le result */
- 	u32 crc_be;	/* expected crc32_be result */
- 	u32 crc32c_le;	/* expected crc32c_le result */
--} test[] =
-+} const test[] __initconst =
- {
- 	{0x674bf11d, 0x00000038, 0x00000542, 0x0af6d466, 0xd8b6e4c1, 0xf6e93d6c},
- 	{0x35c672c6, 0x0000003a, 0x000001aa, 0xc6d3dfba, 0x28aaf3ad, 0x0fe92aca},
+ 	ret = strict_strtoul(page, 0, &tmp);
+ 	if (ret < 0) {
 -- 
-1.7.11.7
+1.9.1
 
