@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754919AbaFWNGW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:06:22 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37313 "EHLO
+	id S932198AbaFWNHE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:07:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37292 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932148AbaFWNFp (ORCPT
+	with ESMTP id S932133AbaFWNFf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:05:45 -0400
+	Mon, 23 Jun 2014 09:05:35 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+Cc: Jean Delvare <jdelvare@suse.de>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        Doug Anderson <dianders@chromium.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 88/93] perf: Fix race in removing an event
-Date: Mon, 23 Jun 2014 14:03:07 +0100
-Message-Id: <1403528592-2163-89-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 89/93] hwmon: (ntc_thermistor) Fix dependencies
+Date: Mon, 23 Jun 2014 14:03:08 +0100
+Message-Id: <1403528592-2163-90-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
 References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
@@ -29,206 +29,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Jean Delvare <jdelvare@suse.de>
 
-commit 46ce0fe97a6be7532ce6126bb26ce89fed81528c upstream.
+commit 59cf4243e557aa64ab2ef51280454aa1f3828e14 upstream.
 
-When removing a (sibling) event we do:
+In commit 9e8269de, support was added for ntc_thermistor devices being
+declared in the device tree and implemented on top of IIO. With that
+change, a dependency was added to the ntc_thermistor driver:
 
-	raw_spin_lock_irq(&ctx->lock);
-	perf_group_detach(event);
-	raw_spin_unlock_irq(&ctx->lock);
+	depends on (!OF && !IIO) || (OF && IIO)
 
-	<hole>
+This construct has the drawback that the driver can no longer be
+selected when OF is set and IIO isn't, nor when IIO is set and OF is
+not. This is a regression for the original users of the driver.
 
-	perf_remove_from_context(event);
-		raw_spin_lock_irq(&ctx->lock);
-		...
-		raw_spin_unlock_irq(&ctx->lock);
+As the new code depends on IIO and is useless without OF, include it
+only if both are enabled, and set the dependencies accordingly. This
+is clearer, more simple and more correct.
 
-Now, assuming the event is a sibling, it will be 'unreachable' for
-things like ctx_sched_out() because that iterates the
-groups->siblings, and we just unhooked the sibling.
-
-So, if during <hole> we get ctx_sched_out(), it will miss the event
-and not call event_sched_out() on it, leaving it programmed on the
-PMU.
-
-The subsequent perf_remove_from_context() call will find the ctx is
-inactive and only call list_del_event() to remove the event from all
-other lists.
-
-Hereafter we can proceed to free the event; while still programmed!
-
-Close this hole by moving perf_group_detach() inside the same
-ctx->lock region(s) perf_remove_from_context() has.
-
-The condition on inherited events only in __perf_event_exit_task() is
-likely complete crap because non-inherited events are part of groups
-too and we're tearing down just the same. But leave that for another
-patch.
-
-Most-likely-Fixes: e03a9a55b4e ("perf: Change close() semantics for group events")
-Reported-by: Vince Weaver <vincent.weaver@maine.edu>
-Tested-by: Vince Weaver <vincent.weaver@maine.edu>
-Much-staring-at-traces-by: Vince Weaver <vincent.weaver@maine.edu>
-Much-staring-at-traces-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20140505093124.GN17778@laptop.programming.kicks-ass.net
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Jean Delvare <jdelvare@suse.de>
+Fixes: 9e8269de hwmon: (ntc_thermistor) Add DT with IIO support to NTC thermistor driver
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Cc: Doug Anderson <dianders@chromium.org>
 [ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/events/core.c | 47 ++++++++++++++++++++++++++---------------------
- 1 file changed, 26 insertions(+), 21 deletions(-)
+ drivers/hwmon/Kconfig          | 2 +-
+ drivers/hwmon/ntc_thermistor.c | 4 +++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index a59cdc594cda..0c1023c3cfbd 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -1423,6 +1423,11 @@ group_sched_out(struct perf_event *group_event,
- 		cpuctx->exclusive = 0;
+diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+index 1e278380ae9c..9a2713528b7e 100644
+--- a/drivers/hwmon/Kconfig
++++ b/drivers/hwmon/Kconfig
+@@ -959,7 +959,7 @@ config SENSORS_NCT6775
+ 
+ config SENSORS_NTC_THERMISTOR
+ 	tristate "NTC thermistor support"
+-	depends on (!OF && !IIO) || (OF && IIO)
++	depends on !OF || IIO=n || IIO
+ 	help
+ 	  This driver supports NTC thermistors sensor reading and its
+ 	  interpretation. The driver can also monitor the temperature and
+diff --git a/drivers/hwmon/ntc_thermistor.c b/drivers/hwmon/ntc_thermistor.c
+index 4a80a545f393..518fc3caff38 100644
+--- a/drivers/hwmon/ntc_thermistor.c
++++ b/drivers/hwmon/ntc_thermistor.c
+@@ -141,7 +141,7 @@ struct ntc_data {
+ 	char name[PLATFORM_NAME_SIZE];
+ };
+ 
+-#ifdef CONFIG_OF
++#if defined(CONFIG_OF) && IS_ENABLED(CONFIG_IIO)
+ static int ntc_adc_iio_read(struct ntc_thermistor_platform_data *pdata)
+ {
+ 	struct iio_channel *channel = pdata->chan;
+@@ -223,6 +223,8 @@ ntc_thermistor_parse_dt(struct platform_device *pdev)
+ 	return NULL;
  }
  
-+struct remove_event {
-+	struct perf_event *event;
-+	bool detach_group;
-+};
++#define ntc_match	NULL
 +
- /*
-  * Cross CPU call to remove a performance event
-  *
-@@ -1431,12 +1436,15 @@ group_sched_out(struct perf_event *group_event,
-  */
- static int __perf_remove_from_context(void *info)
- {
--	struct perf_event *event = info;
-+	struct remove_event *re = info;
-+	struct perf_event *event = re->event;
- 	struct perf_event_context *ctx = event->ctx;
- 	struct perf_cpu_context *cpuctx = __get_cpu_context(ctx);
- 
- 	raw_spin_lock(&ctx->lock);
- 	event_sched_out(event, cpuctx, ctx);
-+	if (re->detach_group)
-+		perf_group_detach(event);
- 	list_del_event(event, ctx);
- 	if (!ctx->nr_events && cpuctx->task_ctx == ctx) {
- 		ctx->is_active = 0;
-@@ -1461,10 +1469,14 @@ static int __perf_remove_from_context(void *info)
-  * When called from perf_event_exit_task, it's OK because the
-  * context has been detached from its task.
-  */
--static void perf_remove_from_context(struct perf_event *event)
-+static void perf_remove_from_context(struct perf_event *event, bool detach_group)
- {
- 	struct perf_event_context *ctx = event->ctx;
- 	struct task_struct *task = ctx->task;
-+	struct remove_event re = {
-+		.event = event,
-+		.detach_group = detach_group,
-+	};
- 
- 	lockdep_assert_held(&ctx->mutex);
- 
-@@ -1473,12 +1485,12 @@ static void perf_remove_from_context(struct perf_event *event)
- 		 * Per cpu events are removed via an smp call and
- 		 * the removal is always successful.
- 		 */
--		cpu_function_call(event->cpu, __perf_remove_from_context, event);
-+		cpu_function_call(event->cpu, __perf_remove_from_context, &re);
- 		return;
- 	}
- 
- retry:
--	if (!task_function_call(task, __perf_remove_from_context, event))
-+	if (!task_function_call(task, __perf_remove_from_context, &re))
- 		return;
- 
- 	raw_spin_lock_irq(&ctx->lock);
-@@ -1495,6 +1507,8 @@ retry:
- 	 * Since the task isn't running, its safe to remove the event, us
- 	 * holding the ctx->lock ensures the task won't get scheduled in.
- 	 */
-+	if (detach_group)
-+		perf_group_detach(event);
- 	list_del_event(event, ctx);
- 	raw_spin_unlock_irq(&ctx->lock);
- }
-@@ -3204,10 +3218,7 @@ int perf_event_release_kernel(struct perf_event *event)
- 	 *     to trigger the AB-BA case.
- 	 */
- 	mutex_lock_nested(&ctx->mutex, SINGLE_DEPTH_NESTING);
--	raw_spin_lock_irq(&ctx->lock);
--	perf_group_detach(event);
--	raw_spin_unlock_irq(&ctx->lock);
--	perf_remove_from_context(event);
-+	perf_remove_from_context(event, true);
- 	mutex_unlock(&ctx->mutex);
- 
- 	free_event(event);
-@@ -6974,7 +6985,7 @@ SYSCALL_DEFINE5(perf_event_open,
- 		struct perf_event_context *gctx = group_leader->ctx;
- 
- 		mutex_lock(&gctx->mutex);
--		perf_remove_from_context(group_leader);
-+		perf_remove_from_context(group_leader, false);
- 
- 		/*
- 		 * Removing from the context ends up with disabled
-@@ -6984,7 +6995,7 @@ SYSCALL_DEFINE5(perf_event_open,
- 		perf_event__state_init(group_leader);
- 		list_for_each_entry(sibling, &group_leader->sibling_list,
- 				    group_entry) {
--			perf_remove_from_context(sibling);
-+			perf_remove_from_context(sibling, false);
- 			perf_event__state_init(sibling);
- 			put_ctx(gctx);
- 		}
-@@ -7114,7 +7125,7 @@ void perf_pmu_migrate_context(struct pmu *pmu, int src_cpu, int dst_cpu)
- 	mutex_lock(&src_ctx->mutex);
- 	list_for_each_entry_safe(event, tmp, &src_ctx->event_list,
- 				 event_entry) {
--		perf_remove_from_context(event);
-+		perf_remove_from_context(event, false);
- 		put_ctx(src_ctx);
- 		list_add(&event->event_entry, &events);
- 	}
-@@ -7174,13 +7185,7 @@ __perf_event_exit_task(struct perf_event *child_event,
- 			 struct perf_event_context *child_ctx,
- 			 struct task_struct *child)
- {
--	if (child_event->parent) {
--		raw_spin_lock_irq(&child_ctx->lock);
--		perf_group_detach(child_event);
--		raw_spin_unlock_irq(&child_ctx->lock);
--	}
--
--	perf_remove_from_context(child_event);
-+	perf_remove_from_context(child_event, !!child_event->parent);
- 
- 	/*
- 	 * It can happen that the parent exits first, and has events
-@@ -7665,14 +7670,14 @@ static void perf_pmu_rotate_stop(struct pmu *pmu)
- 
- static void __perf_event_exit_context(void *__info)
- {
-+	struct remove_event re = { .detach_group = false };
- 	struct perf_event_context *ctx = __info;
--	struct perf_event *event;
- 
- 	perf_pmu_rotate_stop(ctx->pmu);
- 
- 	rcu_read_lock();
--	list_for_each_entry_rcu(event, &ctx->event_list, event_entry)
--		__perf_remove_from_context(event);
-+	list_for_each_entry_rcu(re.event, &ctx->event_list, event_entry)
-+		__perf_remove_from_context(&re);
- 	rcu_read_unlock();
- }
- 
+ static void ntc_iio_channel_release(struct ntc_thermistor_platform_data *pdata)
+ { }
+ #endif
 -- 
 1.9.1
 
