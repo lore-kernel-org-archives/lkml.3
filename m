@@ -1,101 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756497AbaFWUpJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 16:45:09 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:54316 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755563AbaFWUpH (ORCPT
+	id S1756629AbaFWUtu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 16:49:50 -0400
+Received: from forward9l.mail.yandex.net ([84.201.143.142]:51830 "EHLO
+	forward9l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751580AbaFWUtt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 16:45:07 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-Date: Mon, 23 Jun 2014 22:44:30 +0200
-From: Johan Hovold <johan@kernel.org>
-To: Greg KH <greg@kroah.com>
-Cc: Johan Hovold <johan@kernel.org>,
-        Janne Kanniainen <janne.kanniainen@gmail.com>, jkosina@suse.cz,
-        cooloney@gmail.com, linux-kernel@vger.kernel.org,
-        linux-leds@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH v10] leds: USB: HID: Add support for MSI GT683R led panels
-Message-ID: <20140623204430.GC15945@localhost>
-References: <20140623161723.GA20421@kroah.com>
- <1403543808-8228-1-git-send-email-janne.kanniainen@gmail.com>
- <20140623182324.GA30831@kroah.com>
- <20140623182432.GB30831@kroah.com>
- <20140623193134.GA15945@localhost>
- <20140623194059.GA19615@kroah.com>
- <20140623195212.GB15945@localhost>
- <20140623202448.GB29035@kroah.com>
+	Mon, 23 Jun 2014 16:49:49 -0400
+X-Yandex-Uniq: 9ef9c43b-145b-4ec0-abf6-89f675abf009
+Authentication-Results: smtp8.mail.yandex.net; dkim=pass header.i=@yandex.ru
+Message-ID: <53A892E6.7040905@yandex.ru>
+Date: Tue, 24 Jun 2014 00:49:42 +0400
+From: Kirill Tkhai <tkhai@yandex.ru>
+Reply-To: tkhai@yandex.ru
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140623202448.GB29035@kroah.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: bsegall@google.com, Peter Zijlstra <peterz@infradead.org>
+CC: Kirill Tkhai <ktkhai@parallels.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Konstantin Khorenko <khorenko@parallels.com>, pjt@google.com
+Subject: Re: [PATCH 1/3] sched/fair: Disable runtime_enabled on dying rq
+References: <20140617130442.29933.54945.stgit@tkhai>	<1403011450.27674.44.camel@tkhai>	<20140623100724.GU19860@laptop.programming.kicks-ass.net> <xm2661jr1qmw.fsf@sword-of-the-dawn.mtv.corp.google.com>
+In-Reply-To: <xm2661jr1qmw.fsf@sword-of-the-dawn.mtv.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 23, 2014 at 04:24:48PM -0400, Greg KH wrote:
-> On Mon, Jun 23, 2014 at 09:52:12PM +0200, Johan Hovold wrote:
-> > On Mon, Jun 23, 2014 at 03:40:59PM -0400, Greg KH wrote:
-> > > On Mon, Jun 23, 2014 at 09:31:34PM +0200, Johan Hovold wrote:
-> > > > On Mon, Jun 23, 2014 at 02:24:32PM -0400, Greg KH wrote:
-> > > > > On Mon, Jun 23, 2014 at 02:23:24PM -0400, Greg KH wrote:
-> > > > > > On Mon, Jun 23, 2014 at 08:16:48PM +0300, Janne Kanniainen wrote:
-> > > > > > > +	ret = sysfs_create_group(&led->hdev->dev.kobj, &gt683r_attribute_group);
-> > > > > > > +	if (ret) {
-> > > > > > > +		hid_err(hdev, "failed to create sysfs attributes\n");
-> > > > > > > +		goto fail;
-> > > > > > > +	}
-> > > > > > 
-> > > > > > No, you need to set the attribute group _before_ you call
-> > > > > > led_classdev_register, as that is where the device will be created in
-> > > > > > sysfs.  Surely the other led drivers already do this?  I'm almost afraid
-> > > > > > to go look...
-> > > > > 
-> > > > > Yes, they do it already, set .dev_attr_group and you should be fine.
-> > > > 
-> > > > But this isn't an attribute of the LEDs but rather of the parent HID
-> > > > device that is being probed (the led_mode is common to all three LEDs
-> > > > and thus belongs in the parent device, right?).
-> > > 
-> > > Then that's even worse :(
-> > > 
-> > > The sysfs attribute should be on the class device here for the LED, you
-> > > should not put an attribute on a device you are not the driver for.
-> > 
-> > But this is the driver for the HID device, which then in turn has three
-> > individual LEDs. This particular device isn't really an input device
-> > (the actual keyboard in this case appears to be connected over PS2), but
-> > there are several HID drivers which are primarily input devices with
-> > LEDs as sub-devices (e.g. drivers/hid/hid-lg4ff.c).
+On 23.06.2014 21:29, bsegall@google.com wrote:
+> Peter Zijlstra <peterz@infradead.org> writes:
 > 
-> I don't know the specifics here, but as you just created a class device,
-> why aren't the attributes on that class device?  Shouldn't that be the
-> logical place for it, instead of having them on some "random" other type
-> of device?
+>> On Tue, Jun 17, 2014 at 05:24:10PM +0400, Kirill Tkhai wrote:
+>>> @@ -3790,6 +3803,12 @@ static void __maybe_unused unthrottle_offline_cfs_rqs(struct rq *rq)
+>>>  		cfs_rq->runtime_remaining = 1;
+>>>  		if (cfs_rq_throttled(cfs_rq))
+>>>  			unthrottle_cfs_rq(cfs_rq);
+>>> +
+>>> +		/*
+>>> +		 * Offline rq is schedulable till cpu is completely disabled
+>>> +		 * in take_cpu_down(), so we prevent new cfs throttling here.
+>>> +		 */
+>>> +		cfs_rq->runtime_enabled = 0;
+>>
+>> Does it make sense to clear this before calling unthrottle_cfs_rq()?
+>> Just to make sure they're in the right order..
+> 
+> I believe that order is irrelevant here - I do not believe that
+> unthrottle_cfs_rq(a) can cause a throttle_cfs_rq(a). In fact, I don't
+> see any code that will check it at all from unthrottle, although I might
+> be missing something. It _can_ cause a throttle_cfs_rq(parent_cfs_rq(a)),
+> but that should be fine as long as for_each_leaf_cfs_rq is sorted
+> correctly.
 
-This is a non-standard attribute of this particular laptop. It has three
-individual LEDs that can be enabled separately (using standard LED class
-attributes), but they will all three be in the same "mode" (which here
-apparently means that they can be fully on, vary with the volume(?!), or
-pulse synchronously when enabled).
+I think this is correct. We may change the order just for the hope, that
+anybody will work on it in some way in the future, and this person could
+skip this opaque place. Ok, I don't know how is better :)
 
-If we were to implement this mode attribute as a class attribute,
-changing the mode of of one LED would also change the mode of the other
-two devices (LEDs). Therefore I think it has to be an attribute of the
-parent HID device (that the driver is for).
+> That said, migrate_tasks drops rq->lock, and I /think/ another cpu could
+> wake another task onto this cpu, which could then enqueue_throttle its
+> cfs_rq (which previously had no tasks and thus wasn't on
+> leaf_cfs_rq_list). You certainly could have tg_set_bandwidth come in and
+> turn runtime_enabled on.
 
-> Userspace will never be notified that the attribute is on
-> that device due to the file being created "later", and tools using
-> libudev and the like will be looking at the LED class device, not the
-> "parent" device for any specific LED stuff.
+We mask cpu inactive on CPU_DOWN_PREPARE stage (in sched_cpu_inactive).
+Other cpu is not able to wake a task there after that.
 
-Yeah, that seems to be the case. I doubt anyone will care much about
-this particular custom attribute, but sure, setting the led_mode of the
-HID device from an udev rule could be problematic.
+rq is masked offline in cpuset_cpu_inactive() (during the same stage).
+But priority of sched_cpu_inactive() is higher than priority of
+cpuset_cpu_inactive().
 
-> but if this really is the way that all LED devices work, and userspace
-> programs are expecting this, that's seems odd.
+        CPU_PRI_SCHED_INACTIVE  = INT_MIN + 1,
+        CPU_PRI_CPUSET_INACTIVE = INT_MIN,
 
-Johan
+This guarantees that nobody could use dying_cpu even before we start
+unthrottling. Another cpu will see dying_cpu is inactive.
+
+So, it looks like we are free of this problem.
+
+> I think the general idea of turning runtime_enabled off during offline
+> is fine, ccing pjt to double check.
+
+Thanks,
+	Kirill
