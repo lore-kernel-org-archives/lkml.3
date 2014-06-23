@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755434AbaFWNTP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:19:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37051 "EHLO
+	id S1754548AbaFWNEp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:04:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37037 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754544AbaFWNEq (ORCPT
+	with ESMTP id S1754471AbaFWNEn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:04:46 -0400
+	Mon, 23 Jun 2014 09:04:43 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: NeilBrown <neilb@suse.de>, Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 59/93] md: always set MD_RECOVERY_INTR when aborting a reshape or other "resync".
-Date: Mon, 23 Jun 2014 14:02:38 +0100
-Message-Id: <1403528592-2163-60-git-send-email-luis.henriques@canonical.com>
+Cc: Fabio Baltieri <fabio.baltieri@gmail.com>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 54/93] can: only rename enabled led triggers when changing the netdev name
+Date: Mon, 23 Jun 2014 14:02:33 +0100
+Message-Id: <1403528592-2163-55-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
 References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
@@ -26,47 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Oliver Hartkopp <socketcan@hartkopp.net>
 
-commit 3991b31ea072b070081ca3bfa860a077eda67de5 upstream.
+commit 45fb4f8d81578e0a17c45c4593a3305afbf7a48b upstream.
 
-If mddev->ro is set, md_to_sync will (correctly) abort.
-However in that case MD_RECOVERY_INTR isn't set.
+Commit a1ef7bd9fce8 ("can: rename LED trigger name on netdev renames") renames
+the led trigger names according to the changed netdevice name.
 
-If a RESHAPE had been requested, then ->finish_reshape() will be
-called and it will think the reshape was successful even though
-nothing happened.
+As not every CAN driver supports and initializes the led triggers, checking for
+the CAN private datastructure with safe_candev_priv() in the notifier chain is
+not enough.
 
-Normally a resync will not be requested if ->ro is set, but if an
-array is stopped while a reshape is on-going, then when the array is
-started, the reshape will be restarted.  If the array is also set
-read-only at this point, the reshape will instantly appear to success,
-resulting in data corruption.
+This patch adds a check when CONFIG_CAN_LEDS is enabled and the driver does not
+support led triggers.
 
-Consequently, this patch is suitable for any -stable kernel.
+For stable 3.9+
 
-Signed-off-by: NeilBrown <neilb@suse.de>
+Cc: Fabio Baltieri <fabio.baltieri@gmail.com>
+Signed-off-by: Oliver Hartkopp <socketcan@hartkopp.net>
+Acked-by: Kurt Van Dijck <dev.kurt@vandijck-laurijssen.be>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/md/md.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/net/can/led.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/md/md.c b/drivers/md/md.c
-index 78a848cc106e..c95b77132872 100644
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -7353,8 +7353,10 @@ void md_do_sync(struct md_thread *thread)
- 	/* just incase thread restarts... */
- 	if (test_bit(MD_RECOVERY_DONE, &mddev->recovery))
- 		return;
--	if (mddev->ro) /* never try to sync a read-only array */
-+	if (mddev->ro) {/* never try to sync a read-only array */
-+		set_bit(MD_RECOVERY_INTR, &mddev->recovery);
- 		return;
-+	}
+diff --git a/drivers/net/can/led.c b/drivers/net/can/led.c
+index a3d99a8fd2d1..ab7f1b01be49 100644
+--- a/drivers/net/can/led.c
++++ b/drivers/net/can/led.c
+@@ -97,6 +97,9 @@ static int can_led_notifier(struct notifier_block *nb, unsigned long msg,
+ 	if (!priv)
+ 		return NOTIFY_DONE;
  
- 	if (test_bit(MD_RECOVERY_SYNC, &mddev->recovery)) {
- 		if (test_bit(MD_RECOVERY_CHECK, &mddev->recovery)) {
++	if (!priv->tx_led_trig || !priv->rx_led_trig)
++		return NOTIFY_DONE;
++
+ 	if (msg == NETDEV_CHANGENAME) {
+ 		snprintf(name, sizeof(name), "%s-tx", netdev->name);
+ 		led_trigger_rename_static(name, priv->tx_led_trig);
 -- 
 1.9.1
 
