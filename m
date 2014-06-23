@@ -1,95 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753124AbaFWUyc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 16:54:32 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:50283 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752124AbaFWUya (ORCPT
+	id S1756858AbaFWUzH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 16:55:07 -0400
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:65015 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753356AbaFWUzE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 16:54:30 -0400
-Message-ID: <53A89403.2000206@wwwdotorg.org>
-Date: Mon, 23 Jun 2014 14:54:27 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 23 Jun 2014 16:55:04 -0400
+From: Paul Moore <paul@paul-moore.com>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Stephen Smalley <sds@tycho.nsa.gov>, Eric Paris <eparis@parisplace.org>,
+        James Morris <james.l.morris@oracle.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        Scott J Norton <scott.norton@hp.com>
+Subject: Re: [PATCH v3] selinux: no recursive read_lock of policy_rwlock in security_genfs_sid()
+Date: Mon, 23 Jun 2014 16:54:59 -0400
+Message-ID: <3818251.ImGRKN75XQ@sifl>
+User-Agent: KMail/4.13.2 (Linux/3.14.8-gentoo; KDE/4.13.2; x86_64; ; )
+In-Reply-To: <1403537331-38759-1-git-send-email-Waiman.Long@hp.com>
+References: <1403537331-38759-1-git-send-email-Waiman.Long@hp.com>
 MIME-Version: 1.0
-To: Nishanth Menon <nm@ti.com>
-CC: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>, acourbot@nvidia.com,
-        gnurou@gmail.com, Keerthy <j-keerthy@ti.com>,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH] regulator: palmas: Fix SMPS enable/disable/is_enabled
-References: <1403285183-15926-1-git-send-email-nm@ti.com>	<53A884EF.100@wwwdotorg.org> <CAGo_u6oMqKBu0PdY915+GHBekbPkSHODwoKafdY-6YcmkLGanA@mail.gmail.com> <53A88BF5.9010603@wwwdotorg.org>
-In-Reply-To: <53A88BF5.9010603@wwwdotorg.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2014 02:20 PM, Stephen Warren wrote:
-> On 06/23/2014 02:11 PM, Nishanth Menon wrote:
->> On Mon, Jun 23, 2014 at 2:50 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
->>> On 06/20/2014 11:26 AM, Nishanth Menon wrote:
->>>> We use regmap regulator ops to enable/disable and check if regulator
->>>> is enabled for various SMPS. However, these depend on valid
->>>> enable_reg, enable_mask and enable_value in regulator descriptor.
->>>>
->>>> Currently we do not populate these for SMPS other than SMPS10, this
->>>> results in spurious results as regmap assumes that the values are
->>>> valid and ends up reading register 0x0 RTC:SECONDS_REG on Palmas
->>>> variants that do have RTC! To fix this, we update proper parameters
->>>> for the descriptor fields.
->>>>
->>>> Further, we want to ensure the behavior consistent with logic
->>>> prior to commit dbabd624d4eec50b6, where, once you do a set_mode,
->>>> enable/disable ensure the logic remains consistent and configures
->>>> Palmas to the configuration that we set with set_mode (since the
->>>> configuration register is common). To do this, we can rely on the
->>>> regulator core's regulator_register behavior where the regulator
->>>> descriptor pointer provided by the regulator driver is stored. (no
->>>> reallocation and copy is done). This lets us update the enable_value
->>>> post registration, to remain consistent with the mode we configure as
->>>> part of set_mode.
->>>>
->>>> Fixes: dbabd624d4eec50b6 ("regulator: palmas: Reemove open coded functions with helper functions")
->>>> Reported-by: Alexandre Courbot <acourbot@nvidia.com>
->>>> Signed-off-by: Nishanth Menon <nm@ti.com>
->>>
->>> Unfortunately, there is still some lingering problem in the original
->>> commit. In next-20130623 (and indeed since at least next-20140611),
->>> neither the LCD panel or HDMI work on the NVIDIA Dalmore board.
->>> Reverting this commit (just for conflicts) and the original problematic
->>> commit "regulator: palmas: Reemove open coded functions with helper
->>> functions" solves this. I see the following on boot:
->>>
->>>> [    3.558776] tegra-dsi 54300000.dsi: cannot get VDD supply
->>>> [    3.564272] platform 54300000.dsi: Driver tegra-dsi requests probe deferral
->>>> [    3.571990] tegra-hdmi 54280000.hdmi: failed to get PLL regulator
->>>> [    3.578377] platform 54280000.hdmi: Driver tegra-hdmi requests probe deferral
->>>
->>> ... but probe deferral never completes, yet with your "remove open coded
->>> ..." patch reverted, it all works fine.
->>>
->>> Can you please take another look at the original patch?
->>
->> Will let keerthy (original patch author) comment on it.
->>
->> arch/arm/boot/dts/tegra114-dalmore.dts tps65090, avdd_lcd_reg I
->> suppose is the path in question?
->>
->> Seems to use drivers/mfd/tps65090.c and
->> drivers/regulator/tps65090-regulator.c and not palmas?
->>
->> Am I looking at the right dts?
+On Monday, June 23, 2014 11:28:51 AM Waiman Long wrote:
+> With the introduction of fair queued rwlock, recursive read_lock()
+> may hang the offending process if there is a write_lock() somewhere
+> in between.
 > 
-> Yes, that's the right DTS.
+> With recursive read_lock checking enabled, the following error was
+> reported:
 > 
-> There's both a 65090 and a Palmas on the board. It's probably simpler to
-> look at the HDMI PLL regulator, since the path to the Palmas is more
-> obvious:
-...
+> =============================================
+> [ INFO: possible recursive locking detected ]
+> 3.16.0-rc1 #2 Tainted: G            E
+> ---------------------------------------------
+> load_policy/708 is trying to acquire lock:
+>  (policy_rwlock){.+.+..}, at: [<ffffffff8125b32a>]
+> security_genfs_sid+0x3a/0x170
+> 
+> but task is already holding lock:
+>  (policy_rwlock){.+.+..}, at: [<ffffffff8125b48c>]
+> security_fs_use+0x2c/0x110
+> 
+> other info that might help us debug this:
+>  Possible unsafe locking scenario:
+> 
+>        CPU0
+>        ----
+>   lock(policy_rwlock);
+>   lock(policy_rwlock);
+> 
+> This patch fixes the occurrence of recursive read_lock() of
+> policy_rwlock by adding a helper function __security_genfs_sid()
+> which requires caller to take the lock before calling it. The
+> security_fs_use() was then modified to call the new helper function.
+> 
+> Signed-off-by: Waiman Long <Waiman.Long@hp.com>
 
-I think I found the problem; I sent "[PATCH] regulator: palmas: fix typo
-in enable_reg calculation" with what's probably the fix.
+Applied, thank you.
+
+> diff --git a/security/selinux/ss/services.c b/security/selinux/ss/services.c
+> index 4bca494..2aa9d17 100644
+> --- a/security/selinux/ss/services.c
+> +++ b/security/selinux/ss/services.c
+> @@ -2277,7 +2277,7 @@ out:
+>  }
+> 
+>  /**
+> - * security_genfs_sid - Obtain a SID for a file in a filesystem
+> + * __security_genfs_sid - Helper to obtain a SID for a file in a filesystem
+> * @fstype: filesystem type
+>   * @path: path from root of mount
+>   * @sclass: file security class
+> @@ -2286,11 +2286,13 @@ out:
+>   * Obtain a SID to use for a file in a filesystem that
+>   * cannot support xattr or use a fixed labeling behavior like
+>   * transition SIDs or task SIDs.
+> + *
+> + * The caller must acquire the policy_rwlock before calling this function.
+>   */
+> -int security_genfs_sid(const char *fstype,
+> -		       char *path,
+> -		       u16 orig_sclass,
+> -		       u32 *sid)
+> +static inline int __security_genfs_sid(const char *fstype,
+> +				       char *path,
+> +				       u16 orig_sclass,
+> +				       u32 *sid)
+>  {
+>  	int len;
+>  	u16 sclass;
+> @@ -2301,8 +2303,6 @@ int security_genfs_sid(const char *fstype,
+>  	while (path[0] == '/' && path[1] == '/')
+>  		path++;
+> 
+> -	read_lock(&policy_rwlock);
+> -
+>  	sclass = unmap_class(orig_sclass);
+>  	*sid = SECINITSID_UNLABELED;
+> 
+> @@ -2336,11 +2336,33 @@ int security_genfs_sid(const char *fstype,
+>  	*sid = c->sid[0];
+>  	rc = 0;
+>  out:
+> -	read_unlock(&policy_rwlock);
+>  	return rc;
+>  }
+> 
+>  /**
+> + * security_genfs_sid - Obtain a SID for a file in a filesystem
+> + * @fstype: filesystem type
+> + * @path: path from root of mount
+> + * @sclass: file security class
+> + * @sid: SID for path
+> + *
+> + * Acquire policy_rwlock before calling __security_genfs_sid() and release
+> + * it afterward.
+> + */
+> +int security_genfs_sid(const char *fstype,
+> +		       char *path,
+> +		       u16 orig_sclass,
+> +		       u32 *sid)
+> +{
+> +	int retval;
+> +
+> +	read_lock(&policy_rwlock);
+> +	retval = __security_genfs_sid(fstype, path, orig_sclass, sid);
+> +	read_unlock(&policy_rwlock);
+> +	return retval;
+> +}
+> +
+> +/**
+>   * security_fs_use - Determine how to handle labeling for a filesystem.
+>   * @sb: superblock in question
+>   */
+> @@ -2370,7 +2392,8 @@ int security_fs_use(struct super_block *sb)
+>  		}
+>  		sbsec->sid = c->sid[0];
+>  	} else {
+> -		rc = security_genfs_sid(fstype, "/", SECCLASS_DIR, &sbsec->sid);
+> +		rc = __security_genfs_sid(fstype, "/", SECCLASS_DIR,
+> +					  &sbsec->sid);
+>  		if (rc) {
+>  			sbsec->behavior = SECURITY_FS_USE_NONE;
+>  			rc = 0;
+
+-- 
+paul moore
+www.paul-moore.com
+
