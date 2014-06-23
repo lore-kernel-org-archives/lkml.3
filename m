@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754051AbaFWNDt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:03:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36741 "EHLO
+	id S1754144AbaFWND6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:03:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36790 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753982AbaFWNDo (ORCPT
+	with ESMTP id S1754079AbaFWNDz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:03:44 -0400
+	Mon, 23 Jun 2014 09:03:55 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "J. Bruce Fields" <bfields@redhat.com>,
+Cc: Chen Yucong <slaoub@gmail.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 17/93] nfsd4: remove lockowner when removing lock stateid
-Date: Mon, 23 Jun 2014 14:01:56 +0100
-Message-Id: <1403528592-2163-18-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 19/93] hwpoison, hugetlb: lock_page/unlock_page does not match for handling a free hugepage
+Date: Mon, 23 Jun 2014 14:01:58 +0100
+Message-Id: <1403528592-2163-20-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
 References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
@@ -27,50 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Chen Yucong <slaoub@gmail.com>
 
-commit a1b8ff4c97b4375d21b6d6c45d75877303f61b3b upstream.
+commit b985194c8c0a130ed155b71662e39f7eaea4876f upstream.
 
-The nfsv4 state code has always assumed a one-to-one correspondance
-between lock stateid's and lockowners even if it appears not to in some
-places.
+For handling a free hugepage in memory failure, the race will happen if
+another thread hwpoisoned this hugepage concurrently.  So we need to
+check PageHWPoison instead of !PageHWPoison.
 
-We may actually change that, but for now when FREE_STATEID releases a
-lock stateid it also needs to release the parent lockowner.
+If hwpoison_filter(p) returns true or a race happens, then we need to
+unlock_page(hpage).
 
-Symptoms were a subsequent LOCK crashing in find_lockowner_str when it
-calls same_lockowner_ino on a lockowner that unexpectedly has an empty
-so_stateids list.
-
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Chen Yucong <slaoub@gmail.com>
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Tested-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Reviewed-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/nfsd/nfs4state.c | 11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ mm/memory-failure.c | 15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
 
-diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-index 2a997eb693f7..4858accc4c33 100644
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -3696,9 +3696,16 @@ out:
- static __be32
- nfsd4_free_lock_stateid(struct nfs4_ol_stateid *stp)
- {
--	if (check_for_locks(stp->st_file, lockowner(stp->st_stateowner)))
-+	struct nfs4_lockowner *lo = lockowner(stp->st_stateowner);
-+
-+	if (check_for_locks(stp->st_file, lo))
- 		return nfserr_locks_held;
--	release_lock_stateid(stp);
-+	/*
-+	 * Currently there's a 1-1 lock stateid<->lockowner
-+	 * correspondance, and we have to delete the lockowner when we
-+	 * delete the lock stateid:
-+	 */
-+	unhash_lockowner(lo);
- 	return nfs_ok;
- }
- 
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index a86908134a8f..d3772a6118ee 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1083,15 +1083,16 @@ int memory_failure(unsigned long pfn, int trapno, int flags)
+ 			return 0;
+ 		} else if (PageHuge(hpage)) {
+ 			/*
+-			 * Check "just unpoisoned", "filter hit", and
+-			 * "race with other subpage."
++			 * Check "filter hit" and "race with other subpage."
+ 			 */
+ 			lock_page(hpage);
+-			if (!PageHWPoison(hpage)
+-			    || (hwpoison_filter(p) && TestClearPageHWPoison(p))
+-			    || (p != hpage && TestSetPageHWPoison(hpage))) {
+-				atomic_long_sub(nr_pages, &num_poisoned_pages);
+-				return 0;
++			if (PageHWPoison(hpage)) {
++				if ((hwpoison_filter(p) && TestClearPageHWPoison(p))
++				    || (p != hpage && TestSetPageHWPoison(hpage))) {
++					atomic_long_sub(nr_pages, &num_poisoned_pages);
++					unlock_page(hpage);
++					return 0;
++				}
+ 			}
+ 			set_page_hwpoison_huge_page(hpage);
+ 			res = dequeue_hwpoisoned_huge_page(hpage);
 -- 
 1.9.1
 
