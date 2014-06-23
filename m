@@ -1,107 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752461AbaFWIJq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 04:09:46 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:62965 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750722AbaFWIJo (ORCPT
+	id S1751606AbaFWIPh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 04:15:37 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:40200 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211AbaFWIPe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 04:09:44 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: tglx@linutronix.de
-Cc: linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH V2 4/5] hrtimer: Kick lowres dynticks targets on timer enqueue
-Date: Mon, 23 Jun 2014 13:39:37 +0530
-Message-Id: <3d7ea08ce008698e26bd39fe10f55949391073ab.1403507178.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 2.0.0.rc2
-In-Reply-To: <1403393357-2070-5-git-send-email-fweisbec@gmail.com>
-References: <1403393357-2070-5-git-send-email-fweisbec@gmail.com>
+	Mon, 23 Jun 2014 04:15:34 -0400
+Date: Mon, 23 Jun 2014 09:15:26 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Andreas =?iso-8859-1?Q?F=E4rber?= <afaerber@suse.de>
+Cc: linux-samsung-soc@vger.kernel.org,
+        Stephan van Schaik <stephan@synkhronix.com>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>, Mark Brown <broonie@linaro.org>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/4] Documentation: devicetree: Fix s2mps11 and s5m8767
+ typos
+Message-ID: <20140623081526.GA8847@lee--X1>
+References: <1403486483-4063-1-git-send-email-afaerber@suse.de>
+ <1403486483-4063-2-git-send-email-afaerber@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1403486483-4063-2-git-send-email-afaerber@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In lowres mode, hrtimers are serviced by the tick instead of a clock
-event. It works well as long as the tick stays periodic but we must also
-make sure that the hrtimers are serviced in dynticks mode targets,
-pretty much like timer list timers do.
+On Mon, 23 Jun 2014, Andreas Färber wrote:
 
-Note that all dynticks modes are concerned: get_nohz_timer_target()
-tries not to return remote idle CPUs but there is nothing to prevent
-the elected target from entering dynticks idle mode until we lock its
-base. It's also prefectly legal to enqueue hrtimers on full dynticks CPU.
+> It's LDO2, not LD02.
+> 
+> Signed-off-by: Andreas Färber <afaerber@suse.de>
+> ---
+>  Documentation/devicetree/bindings/mfd/s2mps11.txt                 | 2 +-
+>  Documentation/devicetree/bindings/regulator/s5m8767-regulator.txt | 2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
 
-So there are two requirements to correctly handle dynticks:
+Applied, thanks.
 
-1) On target's tick stop time, we must not delay the next tick further
-   the next hrtimer.
+> diff --git a/Documentation/devicetree/bindings/mfd/s2mps11.txt b/Documentation/devicetree/bindings/mfd/s2mps11.txt
+> index d81ba30..55ab4f4 100644
+> --- a/Documentation/devicetree/bindings/mfd/s2mps11.txt
+> +++ b/Documentation/devicetree/bindings/mfd/s2mps11.txt
+> @@ -81,7 +81,7 @@ as per the datasheet of s2mps11.
+>  		  - valid values for n are:
+>  			- S2MPS11: 1 to 38
+>  			- S2MPS14: 1 to 25
+> -		  - Example: LDO1, LD02, LDO28
+> +		  - Example: LDO1, LDO2, LDO28
+>  	- BUCKn
+>  		  - valid values for n are:
+>  			- S2MPS11: 1 to 10
+> diff --git a/Documentation/devicetree/bindings/regulator/s5m8767-regulator.txt b/Documentation/devicetree/bindings/regulator/s5m8767-regulator.txt
+> index d290988..2019131 100644
+> --- a/Documentation/devicetree/bindings/regulator/s5m8767-regulator.txt
+> +++ b/Documentation/devicetree/bindings/regulator/s5m8767-regulator.txt
+> @@ -86,7 +86,7 @@ as per the datasheet of s5m8767.
+>  
+>  	- LDOn
+>  		  - valid values for n are 1 to 28
+> -		  - Example: LDO1, LD02, LDO28
+> +		  - Example: LDO1, LDO2, LDO28
+>  	- BUCKn
+>  		  - valid values for n are 1 to 9.
+>  		  - Example: BUCK1, BUCK2, BUCK9
 
-2) On hrtimer queue time. If the tick of the target is stopped, we must
-   wake up that CPU such that it sees the new hrtimer and recalculate
-   the next tick accordingly.
-
-The point 1 is well handled currently through get_nohz_timer_interrupt() and
-cmp_next_hrtimer_event().
-
-But the point 2 isn't handled at all.
-
-Fixing this is easy though as we have the necessary API ready for that.
-All we need is to call wake_up_nohz_cpu() on a target when a newly
-enqueued hrtimer requires tick rescheduling, like timer list timer do.
-
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
----
-Hi Thomas,
-
-Frederic is on vacations and so sending it directly.
-
-V1->V2: s/base/new_base as pointed out by Thomas.
-
-Pushed here as well:
-git://git.kernel.org/pub/scm/linux/kernel/git/vireshk/linux.git timers/missing-kick-v2
-
- kernel/hrtimer.c | 27 +++++++++++++++++++--------
- 1 file changed, 19 insertions(+), 8 deletions(-)
-
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 0e32d4e..f900747 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1013,14 +1013,25 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
- 
- 	leftmost = enqueue_hrtimer(timer, new_base);
- 
--	/*
--	 * Only allow reprogramming if the new base is on this CPU.
--	 * (it might still be on another CPU if the timer was pending)
--	 *
--	 * XXX send_remote_softirq() ?
--	 */
--	if (leftmost && new_base->cpu_base == &__get_cpu_var(hrtimer_bases)
--		&& hrtimer_enqueue_reprogram(timer, new_base)) {
-+	if (!leftmost) {
-+		unlock_hrtimer_base(timer, &flags);
-+		return ret;
-+	}
-+
-+	if (!hrtimer_is_hres_active(timer)) {
-+		/*
-+		 * Kick to reschedule the next tick to handle the new timer
-+		 * on dynticks target.
-+		 */
-+		wake_up_nohz_cpu(new_base->cpu_base->cpu);
-+	} else if (new_base->cpu_base == &__get_cpu_var(hrtimer_bases) &&
-+			hrtimer_enqueue_reprogram(timer, new_base)) {
-+		/*
-+		 * Only allow reprogramming if the new base is on this CPU.
-+		 * (it might still be on another CPU if the timer was pending)
-+		 *
-+		 * XXX send_remote_softirq() ?
-+		 */
- 		if (wakeup) {
- 			/*
- 			 * We need to drop cpu_base->lock to avoid a
 -- 
-2.0.0.rc2
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
