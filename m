@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753133AbaFWIex (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 04:34:53 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55650 "EHLO
+	id S1753108AbaFWIew (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 04:34:52 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55663 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752695AbaFWIca (ORCPT
+	by vger.kernel.org with ESMTP id S1752704AbaFWIca (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Jun 2014 04:32:30 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>,
+Cc: linux-kernel@vger.kernel.org, Joe Lawrence <joe.lawrence@stratus.com>,
+        James Bottomley <JBottomley@Parallels.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 077/111] ima: audit log files opened with O_DIRECT flag
-Date: Mon, 23 Jun 2014 10:31:52 +0200
-Message-Id: <e6e3ee68f0906382b0440086b6b33f2bc9adcc0d.1403512281.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 027/111] SCSI: scsi_transport_sas: move bsg destructor into sas_rphy_remove
+Date: Mon, 23 Jun 2014 10:31:02 +0200
+Message-Id: <517e5981c10ff3fe845ace3c2d7e664da72eafdf.1403512281.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
 References: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
@@ -23,160 +24,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+From: Joe Lawrence <joe.lawrence@stratus.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit f9b2a735bdddf836214b5dca74f6ca7712e5a08c upstream.
+commit 6aa6caff30f5dcb9e55b03b9710c30b83750cae5 upstream.
 
-Files are measured or appraised based on the IMA policy.  When a
-file, in policy, is opened with the O_DIRECT flag, a deadlock
-occurs.
+The recent change in sysfs, bcdde7e221a8750f9b62b6d0bd31b72ea4ad9309
+"sysfs: make __sysfs_remove_dir() recursive" revealed an asymmetric
+rphy device creation/deletion sequence in scsi_transport_sas:
 
-The first attempt at resolving this lockdep temporarily removed the
-O_DIRECT flag and restored it, after calculating the hash.  The
-second attempt introduced the O_DIRECT_HAVELOCK flag. Based on this
-flag, do_blockdev_direct_IO() would skip taking the i_mutex a second
-time.  The third attempt, by Dmitry Kasatkin, resolves the i_mutex
-locking issue, by re-introducing the IMA mutex, but uncovered
-another problem.  Reading a file with O_DIRECT flag set, writes
-directly to userspace pages.  A second patch allocates a user-space
-like memory.  This works for all IMA hooks, except ima_file_free(),
-which is called on __fput() to recalculate the file hash.
+  modprobe mpt2sas
+    sas_rphy_add
+      device_add A               rphy->dev
+      device_add B               sas_device transport class
+      device_add C               sas_end_device transport class
+      device_add D               bsg class
 
-Until this last issue is addressed, do not 'collect' the
-measurement for measuring, appraising, or auditing files opened
-with the O_DIRECT flag set.  Based on policy, permit or deny file
-access.  This patch defines a new IMA policy rule option named
-'permit_directio'.  Policy rules could be defined, based on LSM
-or other criteria, to permit specific applications to open files
-with the O_DIRECT flag set.
+  rmmod mpt2sas
+    sas_rphy_delete
+      sas_rphy_remove
+        device_del B
+        device_del C
+        device_del A
+          sysfs_remove_group     recursive sysfs dir removal
+      sas_rphy_free
+        device_del D             warning
 
-Changelog v1:
-- permit or deny file access based IMA policy rules
+  where device A is the parent of B, C, and D.
 
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Acked-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+When sas_rphy_free tries to unregister the bsg request queue (device D
+above), the ensuing sysfs cleanup discovers that its sysfs group has
+already been removed and emits a warning, "sysfs group... not found for
+kobject 'end_device-X:0'".
+
+Since bsg creation is a side effect of sas_rphy_add, move its
+complementary removal call into sas_rphy_remove. This imposes the
+following tear-down order for the devices above: D, B, C, A.
+
+Note the sas_device and sas_end_device transport class devices (B and C
+above) are created and destroyed both via the list match traversal in
+attribute_container_device_trigger, so the order in which they are
+handled is fixed. This is fine as long as they are deleted before their
+parent device.
+
+Signed-off-by: Joe Lawrence <joe.lawrence@stratus.com>
+Acked-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- Documentation/ABI/testing/ima_policy | 2 +-
- security/integrity/ima/ima_api.c     | 9 ++++++++-
- security/integrity/ima/ima_main.c    | 5 ++++-
- security/integrity/ima/ima_policy.c  | 6 +++++-
- security/integrity/integrity.h       | 1 +
- 5 files changed, 19 insertions(+), 4 deletions(-)
+ drivers/scsi/scsi_transport_sas.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/Documentation/ABI/testing/ima_policy b/Documentation/ABI/testing/ima_policy
-index f1c5cc9d17a8..4c3efe434806 100644
---- a/Documentation/ABI/testing/ima_policy
-+++ b/Documentation/ABI/testing/ima_policy
-@@ -23,7 +23,7 @@ Description:
- 				 [fowner]]
- 			lsm:	[[subj_user=] [subj_role=] [subj_type=]
- 				 [obj_user=] [obj_role=] [obj_type=]]
--			option:	[[appraise_type=]]
-+			option:	[[appraise_type=]] [permit_directio]
+diff --git a/drivers/scsi/scsi_transport_sas.c b/drivers/scsi/scsi_transport_sas.c
+index 1b681427dde0..c341f855fadc 100644
+--- a/drivers/scsi/scsi_transport_sas.c
++++ b/drivers/scsi/scsi_transport_sas.c
+@@ -1621,8 +1621,6 @@ void sas_rphy_free(struct sas_rphy *rphy)
+ 	list_del(&rphy->list);
+ 	mutex_unlock(&sas_host->lock);
  
- 		base: 	func:= [BPRM_CHECK][MMAP_CHECK][FILE_CHECK][MODULE_CHECK]
- 			mask:= [MAY_READ] [MAY_WRITE] [MAY_APPEND] [MAY_EXEC]
-diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
-index 1c03e8f1e0e1..4e1529e3a53d 100644
---- a/security/integrity/ima/ima_api.c
-+++ b/security/integrity/ima/ima_api.c
-@@ -140,6 +140,7 @@ int ima_must_measure(struct inode *inode, int mask, int function)
- int ima_collect_measurement(struct integrity_iint_cache *iint,
- 			    struct file *file)
- {
-+	const char *audit_cause = "failed";
- 	struct inode *inode = file_inode(file);
- 	const char *filename = file->f_dentry->d_name.name;
- 	int result = 0;
-@@ -147,6 +148,11 @@ int ima_collect_measurement(struct integrity_iint_cache *iint,
- 	if (!(iint->flags & IMA_COLLECTED)) {
- 		u64 i_version = file_inode(file)->i_version;
+-	sas_bsg_remove(shost, rphy);
+-
+ 	transport_destroy_device(dev);
  
-+		if (file->f_flags & O_DIRECT) {
-+			audit_cause = "failed(directio)";
-+			result = -EACCES;
-+			goto out;
-+		}
- 		iint->ima_xattr.type = IMA_XATTR_DIGEST;
- 		result = ima_calc_file_hash(file, iint->ima_xattr.digest);
- 		if (!result) {
-@@ -154,9 +160,10 @@ int ima_collect_measurement(struct integrity_iint_cache *iint,
- 			iint->flags |= IMA_COLLECTED;
- 		}
+ 	put_device(dev);
+@@ -1681,6 +1679,7 @@ sas_rphy_remove(struct sas_rphy *rphy)
  	}
-+out:
- 	if (result)
- 		integrity_audit_msg(AUDIT_INTEGRITY_DATA, inode,
--				    filename, "collect_data", "failed",
-+				    filename, "collect_data", audit_cause,
- 				    result, 0);
- 	return result;
+ 
+ 	sas_rphy_unlink(rphy);
++	sas_bsg_remove(NULL, rphy);
+ 	transport_remove_device(dev);
+ 	device_del(dev);
  }
-diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-index e9508d5bbfcf..03fb126d215a 100644
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@ -186,8 +186,11 @@ static int process_measurement(struct file *file, const char *filename,
- 	}
- 
- 	rc = ima_collect_measurement(iint, file);
--	if (rc != 0)
-+	if (rc != 0) {
-+		if (file->f_flags & O_DIRECT)
-+			rc = (iint->flags & IMA_PERMIT_DIRECTIO) ? 0 : -EACCES;
- 		goto out_digsig;
-+	}
- 
- 	pathname = !filename ? ima_d_path(&file->f_path, &pathbuf) : filename;
- 	if (!pathname)
-diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-index a9c3d3cd1990..085c4964be99 100644
---- a/security/integrity/ima/ima_policy.c
-+++ b/security/integrity/ima/ima_policy.c
-@@ -351,7 +351,7 @@ enum {
- 	Opt_obj_user, Opt_obj_role, Opt_obj_type,
- 	Opt_subj_user, Opt_subj_role, Opt_subj_type,
- 	Opt_func, Opt_mask, Opt_fsmagic, Opt_uid, Opt_fowner,
--	Opt_appraise_type, Opt_fsuuid
-+	Opt_appraise_type, Opt_fsuuid, Opt_permit_directio
- };
- 
- static match_table_t policy_tokens = {
-@@ -373,6 +373,7 @@ static match_table_t policy_tokens = {
- 	{Opt_uid, "uid=%s"},
- 	{Opt_fowner, "fowner=%s"},
- 	{Opt_appraise_type, "appraise_type=%s"},
-+	{Opt_permit_directio, "permit_directio"},
- 	{Opt_err, NULL}
- };
- 
-@@ -621,6 +622,9 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
- 			else
- 				result = -EINVAL;
- 			break;
-+		case Opt_permit_directio:
-+			entry->flags |= IMA_PERMIT_DIRECTIO;
-+			break;
- 		case Opt_err:
- 			ima_log_string(ab, "UNKNOWN", p);
- 			result = -EINVAL;
-diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
-index c42fb7a70dee..ecbb6f20f46a 100644
---- a/security/integrity/integrity.h
-+++ b/security/integrity/integrity.h
-@@ -30,6 +30,7 @@
- #define IMA_ACTION_FLAGS	0xff000000
- #define IMA_DIGSIG		0x01000000
- #define IMA_DIGSIG_REQUIRED	0x02000000
-+#define IMA_PERMIT_DIRECTIO	0x04000000
- 
- #define IMA_DO_MASK		(IMA_MEASURE | IMA_APPRAISE | IMA_AUDIT | \
- 				 IMA_APPRAISE_SUBMASK)
 -- 
 2.0.0
 
