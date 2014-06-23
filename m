@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755358AbaFWNOy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:14:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37138 "EHLO
+	id S1754742AbaFWNFF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:05:05 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37118 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754714AbaFWNFG (ORCPT
+	with ESMTP id S1754714AbaFWNFC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:05:06 -0400
+	Mon, 23 Jun 2014 09:05:02 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sagi Grimberg <sagig@dev.mellanox.co.il>,
-        Or Gerlitz <ogerlitz@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Will Drewry <wad@chromium.org>, Kees Cook <keescook@chromium.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 65/93] iser-target: Add missing target_put_sess_cmd for ImmedateData failure
-Date: Mon, 23 Jun 2014 14:02:44 +0100
-Message-Id: <1403528592-2163-66-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 68/93] futex-prevent-requeue-pi-on-same-futex.patch futex: Forbid uaddr == uaddr2 in futex_requeue(..., requeue_pi=1)
+Date: Mon, 23 Jun 2014 14:02:47 +0100
+Message-Id: <1403528592-2163-69-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
 References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
@@ -29,45 +29,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 6cc44a6fb46e1ecc1c28125aa8fa34d317aa9ea7 upstream.
+commit e9c243a5a6de0be8e584c604d353412584b592f8 upstream.
 
-This patch addresses a bug where an early exception for SCSI WRITE
-with ImmediateData=Yes was missing the target_put_sess_cmd() call
-to drop the extra se_cmd->cmd_kref reference obtained during the
-normal iscsit_setup_scsi_cmd() codepath execution.
+If uaddr == uaddr2, then we have broken the rule of only requeueing from
+a non-pi futex to a pi futex with this call.  If we attempt this, then
+dangling pointers may be left for rt_waiter resulting in an exploitable
+condition.
 
-This bug was manifesting itself during session shutdown within
-isert_cq_rx_comp_err() where target_wait_for_sess_cmds() would
-end up waiting indefinately for the last se_cmd->cmd_kref put to
-occur for the failed SCSI WRITE + ImmediateData descriptors.
+This change brings futex_requeue() in line with futex_wait_requeue_pi()
+which performs the same check as per commit 6f7b0a2a5c0f ("futex: Forbid
+uaddr == uaddr2 in futex_wait_requeue_pi()")
 
-This fix follows what traditional iscsi-target code already does
-for the same failure case within iscsit_get_immediate_data().
+[ tglx: Compare the resulting keys as well, as uaddrs might be
+  	different depending on the mapping ]
 
-Reported-by: Sagi Grimberg <sagig@dev.mellanox.co.il>
-Cc: Sagi Grimberg <sagig@dev.mellanox.co.il>
-Cc: Or Gerlitz <ogerlitz@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Fixes CVE-2014-3153.
+
+Reported-by: Pinkie Pie
+Signed-off-by: Will Drewry <wad@chromium.org>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reviewed-by: Darren Hart <dvhart@linux.intel.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/infiniband/ulp/isert/ib_isert.c | 2 ++
- 1 file changed, 2 insertions(+)
+ kernel/futex.c | 25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
 
-diff --git a/drivers/infiniband/ulp/isert/ib_isert.c b/drivers/infiniband/ulp/isert/ib_isert.c
-index 224cfbbbc6d3..91e91afba75c 100644
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -965,6 +965,8 @@ sequence_cmd:
+diff --git a/kernel/futex.c b/kernel/futex.c
+index a62447d335ab..83b44e9c26c3 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -1294,6 +1294,13 @@ static int futex_requeue(u32 __user *uaddr1, unsigned int flags,
  
- 	if (!rc && dump_payload == false && unsol_data)
- 		iscsit_set_unsoliticed_dataout(cmd);
-+	else if (dump_payload && imm_data)
-+		target_put_sess_cmd(conn->sess->se_sess, &cmd->se_cmd);
+ 	if (requeue_pi) {
+ 		/*
++		 * Requeue PI only works on two distinct uaddrs. This
++		 * check is only valid for private futexes. See below.
++		 */
++		if (uaddr1 == uaddr2)
++			return -EINVAL;
++
++		/*
+ 		 * requeue_pi requires a pi_state, try to allocate it now
+ 		 * without any locks in case it fails.
+ 		 */
+@@ -1331,6 +1338,15 @@ retry:
+ 	if (unlikely(ret != 0))
+ 		goto out_put_key1;
  
- 	return 0;
- }
++	/*
++	 * The check above which compares uaddrs is not sufficient for
++	 * shared futexes. We need to compare the keys:
++	 */
++	if (requeue_pi && match_futex(&key1, &key2)) {
++		ret = -EINVAL;
++		goto out_put_keys;
++	}
++
+ 	hb1 = hash_futex(&key1);
+ 	hb2 = hash_futex(&key2);
+ 
+@@ -2361,6 +2377,15 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
+ 	if (ret)
+ 		goto out_key2;
+ 
++	/*
++	 * The check above which compares uaddrs is not sufficient for
++	 * shared futexes. We need to compare the keys:
++	 */
++	if (match_futex(&q.key, &key2)) {
++		ret = -EINVAL;
++		goto out_put_keys;
++	}
++
+ 	/* Queue the futex_q, drop the hb lock, wait for wakeup. */
+ 	futex_wait_queue_me(hb, &q, to);
+ 
 -- 
 1.9.1
 
