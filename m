@@ -1,185 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752619AbaFWJ3m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 05:29:42 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:38597 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752191AbaFWJ3k (ORCPT
+	id S1752727AbaFWJaX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 05:30:23 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:43322 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752191AbaFWJaV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 05:29:40 -0400
-X-IronPort-AV: E=Sophos;i="5.00,759,1396972800"; 
-   d="scan'208";a="32280595"
-Message-ID: <53A7F379.7020504@cn.fujitsu.com>
-Date: Mon, 23 Jun 2014 17:29:29 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131030 Thunderbird/17.0.10
+	Mon, 23 Jun 2014 05:30:21 -0400
 MIME-Version: 1.0
-To: Vlastimil Babka <vbabka@suse.cz>
-CC: <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 09/13] mm, compaction: skip buddy pages by their order
- in the migrate scanner
-References: <1403279383-5862-1-git-send-email-vbabka@suse.cz> <1403279383-5862-10-git-send-email-vbabka@suse.cz>
-In-Reply-To: <1403279383-5862-10-git-send-email-vbabka@suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.225.89]
+In-Reply-To: <1403317797-3977-1-git-send-email-yinghai@kernel.org>
+References: <1403317797-3977-1-git-send-email-yinghai@kernel.org>
+Date: Mon, 23 Jun 2014 11:30:19 +0200
+X-Google-Sender-Auth: ac1_LIjMmKU8TEwmp4lUY4GeqQw
+Message-ID: <CAMuHMdVFt-dCnmf3KH6HABdBvN7pzND_vOzpCGvnW9em22LWxw@mail.gmail.com>
+Subject: Re: [PATCH v2] initramfs: Support initrd that is bigger than 2GiB
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        "Daniel M. Weeks" <dan@danweeks.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2014 11:49 PM, Vlastimil Babka wrote:
-> The migration scanner skips PageBuddy pages, but does not consider their order
-> as checking page_order() is generally unsafe without holding the zone->lock,
-> and acquiring the lock just for the check wouldn't be a good tradeoff.
-> 
-> Still, this could avoid some iterations over the rest of the buddy page, and
-> if we are careful, the race window between PageBuddy() check and page_order()
-> is small, and the worst thing that can happen is that we skip too much and miss
-> some isolation candidates. This is not that bad, as compaction can already fail
-> for many other reasons like parallel allocations, and those have much larger
-> race window.
-> 
-> This patch therefore makes the migration scanner obtain the buddy page order
-> and use it to skip the whole buddy page, if the order appears to be in the
-> valid range.
-> 
-> It's important that the page_order() is read only once, so that the value used
-> in the checks and in the pfn calculation is the same. But in theory the
-> compiler can replace the local variable by multiple inlines of page_order().
-> Therefore, the patch introduces page_order_unsafe() that uses ACCESS_ONCE to
-> prevent this.
-> 
-> Testing with stress-highalloc from mmtests shows a 15% reduction in number of
-> pages scanned by migration scanner. This change is also a prerequisite for a
-> later patch which is detecting when a cc->order block of pages contains
-> non-buddy pages that cannot be isolated, and the scanner should thus skip to
-> the next block immediately.
-> 
-> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-> Cc: Minchan Kim <minchan@kernel.org>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> Cc: Michal Nazarewicz <mina86@mina86.com>
-> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: David Rientjes <rientjes@google.com>
+On Sat, Jun 21, 2014 at 4:29 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> --- linux-2.6.orig/init/initramfs.c
+> +++ linux-2.6/init/initramfs.c
+> @@ -19,6 +19,26 @@
+>  #include <linux/syscalls.h>
+>  #include <linux/utime.h>
+>
+> +static long __init xwrite(unsigned int fd, char *p,
+> +                                  size_t count)
 
-Fair enough.
+Shouldn't this return ssize_t instead of long?
 
-Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+> +{
+> +       ssize_t left = count;
+> +       long written;
 
-> ---
->  mm/compaction.c | 36 +++++++++++++++++++++++++++++++-----
->  mm/internal.h   | 16 +++++++++++++++-
->  2 files changed, 46 insertions(+), 6 deletions(-)
-> 
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index 41c7005..df0961b 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -270,8 +270,15 @@ static inline bool compact_should_abort(struct compact_control *cc)
->  static bool suitable_migration_target(struct page *page)
->  {
->  	/* If the page is a large free page, then disallow migration */
-> -	if (PageBuddy(page) && page_order(page) >= pageblock_order)
-> -		return false;
-> +	if (PageBuddy(page)) {
-> +		/*
-> +		 * We are checking page_order without zone->lock taken. But
-> +		 * the only small danger is that we skip a potentially suitable
-> +		 * pageblock, so it's not worth to check order for valid range.
-> +		 */
-> +		if (page_order_unsafe(page) >= pageblock_order)
-> +			return false;
-> +	}
->  
->  	/* If the block is MIGRATE_MOVABLE or MIGRATE_CMA, allow migration */
->  	if (migrate_async_suitable(get_pageblock_migratetype(page)))
-> @@ -591,11 +598,23 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
->  			valid_page = page;
->  
->  		/*
-> -		 * Skip if free. page_order cannot be used without zone->lock
-> -		 * as nothing prevents parallel allocations or buddy merging.
-> +		 * Skip if free. We read page order here without zone lock
-> +		 * which is generally unsafe, but the race window is small and
-> +		 * the worst thing that can happen is that we skip some
-> +		 * potential isolation targets.
->  		 */
-> -		if (PageBuddy(page))
-> +		if (PageBuddy(page)) {
-> +			unsigned long freepage_order = page_order_unsafe(page);
+ssize_t written
+
 > +
-> +			/*
-> +			 * Without lock, we cannot be sure that what we got is
-> +			 * a valid page order. Consider only values in the
-> +			 * valid order range to prevent low_pfn overflow.
-> +			 */
-> +			if (freepage_order > 0 && freepage_order < MAX_ORDER)
-> +				low_pfn += (1UL << freepage_order) - 1;
->  			continue;
-> +		}
->  
->  		/*
->  		 * Check may be lockless but that's ok as we recheck later.
-> @@ -683,6 +702,13 @@ next_pageblock:
->  		low_pfn = ALIGN(low_pfn + 1, pageblock_nr_pages) - 1;
->  	}
->  
-> +	/*
-> +	 * The PageBuddy() check could have potentially brought us outside
-> +	 * the range to be scanned.
-> +	 */
-> +	if (unlikely(low_pfn > end_pfn))
-> +		low_pfn = end_pfn;
+> +       /* sys_write only can write MAX_RW_COUNT aka 2G-4K bytes at most */
+> +       while (left > 0) {
+> +               written = sys_write(fd, p, left);
 > +
->  	acct_isolated(zone, locked, cc);
->  
->  	if (locked)
-> diff --git a/mm/internal.h b/mm/internal.h
-> index 2c187d2..584cd69 100644
-> --- a/mm/internal.h
-> +++ b/mm/internal.h
-> @@ -171,7 +171,8 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
->   * general, page_zone(page)->lock must be held by the caller to prevent the
->   * page from being allocated in parallel and returning garbage as the order.
->   * If a caller does not hold page_zone(page)->lock, it must guarantee that the
-> - * page cannot be allocated or merged in parallel.
-> + * page cannot be allocated or merged in parallel. Alternatively, it must
-> + * handle invalid values gracefully, and use page_order_unsafe() below.
->   */
->  static inline unsigned long page_order(struct page *page)
->  {
-> @@ -179,6 +180,19 @@ static inline unsigned long page_order(struct page *page)
->  	return page_private(page);
->  }
->  
-> +/*
-> + * Like page_order(), but for callers who cannot afford to hold the zone lock.
-> + * PageBuddy() should be checked first by the caller to minimize race window,
-> + * and invalid values must be handled gracefully.
-> + *
-> + * ACCESS_ONCE is used so that if the caller assigns the result into a local
-> + * variable and e.g. tests it for valid range before using, the compiler cannot
-> + * decide to remove the variable and inline the page_private(page) multiple
-> + * times, potentially observing different values in the tests and the actual
-> + * use of the result.
-> + */
-> +#define page_order_unsafe(page)		ACCESS_ONCE(page_private(page))
+> +               if (written <= 0)
+> +                       break;
 > +
->  static inline bool is_cow_mapping(vm_flags_t flags)
+> +               left -= written;
+> +               p += written;
+> +       }
+> +
+> +       return (written < 0) ? written : count;
+> +}
+> +
+>  static __initdata char *message;
+>  static void __init error(char *x)
 >  {
->  	return (flags & (VM_SHARED | VM_MAYWRITE)) == VM_MAYWRITE;
-> 
 
+> @@ -604,8 +624,13 @@ static int __init populate_rootfs(void)
+>                 fd = sys_open("/initrd.image",
+>                               O_WRONLY|O_CREAT, 0700);
+>                 if (fd >= 0) {
+> -                       sys_write(fd, (char *)initrd_start,
+> -                                       initrd_end - initrd_start);
+> +                       long written = xwrite(fd, (char *)initrd_start,
 
--- 
-Thanks.
-Zhang Yanfei
+ssize_t written
+
+> +                                               initrd_end - initrd_start);
+> +
+> +                       if (written != initrd_end - initrd_start)
+> +                               pr_err("/initrd.image: incomplete write (%ld != %ld)\n",
+
+"%zd", once written is ssize_t.
+
+> +                                      written, initrd_end - initrd_start);
+> +
+>                         sys_close(fd);
+>                         free_initrd();
+>                 }
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
