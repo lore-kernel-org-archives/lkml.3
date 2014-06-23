@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754903AbaFWJER (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 05:04:17 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55468 "EHLO
+	id S1754843AbaFWJEP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 05:04:15 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55466 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752447AbaFWIc2 (ORCPT
+	by vger.kernel.org with ESMTP id S1752445AbaFWIc2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Jun 2014 04:32:28 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jean Delvare <jdelvare@suse.de>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 023/111] hwmon: (ntc_thermistor) Fix OF device ID mapping
-Date: Mon, 23 Jun 2014 10:30:58 +0200
-Message-Id: <1b2b80af293d868bdb762fa896d5b851248ba566.1403512281.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 013/111] ARM: perf: hook up perf_sample_event_took around pmu irq handling
+Date: Mon, 23 Jun 2014 10:30:48 +0200
+Message-Id: <22259d1fa4111413d7969bae6ad425fbc7fcf3e1.1403512281.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
 References: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
@@ -24,69 +23,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jean Delvare <jdelvare@suse.de>
+From: Will Deacon <will.deacon@arm.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit ead82d6792ef5c600d535bca6ec50a4da14ff7c7 upstream.
+commit 5f5092e72cc25a6a5785308270e0085b2b2772cc upstream.
 
-The mapping from OF device IDs to platform device IDs is wrong.
-TYPE_NCPXXWB473 is 0, TYPE_NCPXXWL333 is 1, so
-ntc_thermistor_id[TYPE_NCPXXWB473] is { "ncp15wb473", TYPE_NCPXXWB473 }
-while
-ntc_thermistor_id[TYPE_NCPXXWL333] is { "ncp18wb473", TYPE_NCPXXWB473 }.
+Since we indirect all of our PMU IRQ handling through a dispatcher, it's
+trivial to hook up perf_sample_event_took to prevent applications such
+as oprofile from generating interrupt storms due to an unrealisticly
+low sample period.
 
-So the name is wrong for all but the "ntc,ncp15wb473" entry, and the
-type is wrong for the "ntc,ncp15wl333" entry.
-
-So map the entries by index, it is neither elegant nor robust but at
-least it is correct.
-
-Signed-off-by: Jean Delvare <jdelvare@suse.de>
-Fixes: 9e8269de hwmon: (ntc_thermistor) Add DT with IIO support to NTC thermistor driver
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
-Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-Cc: Doug Anderson <dianders@chromium.org>
+Reported-by: Robert Richter <rric@kernel.org>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/hwmon/ntc_thermistor.c | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ arch/arm/kernel/perf_event.c | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/hwmon/ntc_thermistor.c b/drivers/hwmon/ntc_thermistor.c
-index 6b4413ce4d39..e76feb86a1d4 100644
---- a/drivers/hwmon/ntc_thermistor.c
-+++ b/drivers/hwmon/ntc_thermistor.c
-@@ -44,6 +44,7 @@ struct ntc_compensation {
- 	unsigned int	ohm;
- };
+diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+index e186ee1e63f6..de5cd767e4df 100644
+--- a/arch/arm/kernel/perf_event.c
++++ b/arch/arm/kernel/perf_event.c
+@@ -303,11 +303,18 @@ static irqreturn_t armpmu_dispatch_irq(int irq, void *dev)
+ 	struct arm_pmu *armpmu = (struct arm_pmu *) dev;
+ 	struct platform_device *plat_device = armpmu->plat_device;
+ 	struct arm_pmu_platdata *plat = dev_get_platdata(&plat_device->dev);
++	int ret;
++	u64 start_clock, finish_clock;
  
-+/* Order matters, ntc_match references the entries by index */
- static const struct platform_device_id ntc_thermistor_id[] = {
- 	{ "ncp15wb473", TYPE_NCPXXWB473 },
- 	{ "ncp18wb473", TYPE_NCPXXWB473 },
-@@ -163,15 +164,15 @@ static int ntc_adc_iio_read(struct ntc_thermistor_platform_data *pdata)
++	start_clock = sched_clock();
+ 	if (plat && plat->handle_irq)
+-		return plat->handle_irq(irq, dev, armpmu->handle_irq);
++		ret = plat->handle_irq(irq, dev, armpmu->handle_irq);
+ 	else
+-		return armpmu->handle_irq(irq, dev);
++		ret = armpmu->handle_irq(irq, dev);
++	finish_clock = sched_clock();
++
++	perf_sample_event_took(finish_clock - start_clock);
++	return ret;
+ }
  
- static const struct of_device_id ntc_match[] = {
- 	{ .compatible = "ntc,ncp15wb473",
--		.data = &ntc_thermistor_id[TYPE_NCPXXWB473] },
-+		.data = &ntc_thermistor_id[0] },
- 	{ .compatible = "ntc,ncp18wb473",
--		.data = &ntc_thermistor_id[TYPE_NCPXXWB473] },
-+		.data = &ntc_thermistor_id[1] },
- 	{ .compatible = "ntc,ncp21wb473",
--		.data = &ntc_thermistor_id[TYPE_NCPXXWB473] },
-+		.data = &ntc_thermistor_id[2] },
- 	{ .compatible = "ntc,ncp03wb473",
--		.data = &ntc_thermistor_id[TYPE_NCPXXWB473] },
-+		.data = &ntc_thermistor_id[3] },
- 	{ .compatible = "ntc,ncp15wl333",
--		.data = &ntc_thermistor_id[TYPE_NCPXXWL333] },
-+		.data = &ntc_thermistor_id[4] },
- 	{ },
- };
- MODULE_DEVICE_TABLE(of, ntc_match);
+ static void
 -- 
 2.0.0
 
