@@ -1,155 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756858AbaFWUzH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 16:55:07 -0400
-Received: from mail-qg0-f53.google.com ([209.85.192.53]:65015 "EHLO
-	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753356AbaFWUzE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 16:55:04 -0400
-From: Paul Moore <paul@paul-moore.com>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Stephen Smalley <sds@tycho.nsa.gov>, Eric Paris <eparis@parisplace.org>,
-        James Morris <james.l.morris@oracle.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        Scott J Norton <scott.norton@hp.com>
-Subject: Re: [PATCH v3] selinux: no recursive read_lock of policy_rwlock in security_genfs_sid()
-Date: Mon, 23 Jun 2014 16:54:59 -0400
-Message-ID: <3818251.ImGRKN75XQ@sifl>
-User-Agent: KMail/4.13.2 (Linux/3.14.8-gentoo; KDE/4.13.2; x86_64; ; )
-In-Reply-To: <1403537331-38759-1-git-send-email-Waiman.Long@hp.com>
-References: <1403537331-38759-1-git-send-email-Waiman.Long@hp.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1756860AbaFWU5c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 16:57:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18688 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752625AbaFWU5a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 16:57:30 -0400
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Ping Cheng <pinglinux@gmail.com>, Jason Gerecke <killertofu@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linuxwacom-devel@lists.sourceforge.net
+Subject: [PATCH 0/5] Input - wacom: split out pad data from the stylus input device
+Date: Mon, 23 Jun 2014 16:57:14 -0400
+Message-Id: <1403557039-1487-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, June 23, 2014 11:28:51 AM Waiman Long wrote:
-> With the introduction of fair queued rwlock, recursive read_lock()
-> may hang the offending process if there is a write_lock() somewhere
-> in between.
-> 
-> With recursive read_lock checking enabled, the following error was
-> reported:
-> 
-> =============================================
-> [ INFO: possible recursive locking detected ]
-> 3.16.0-rc1 #2 Tainted: G            E
-> ---------------------------------------------
-> load_policy/708 is trying to acquire lock:
->  (policy_rwlock){.+.+..}, at: [<ffffffff8125b32a>]
-> security_genfs_sid+0x3a/0x170
-> 
-> but task is already holding lock:
->  (policy_rwlock){.+.+..}, at: [<ffffffff8125b48c>]
-> security_fs_use+0x2c/0x110
-> 
-> other info that might help us debug this:
->  Possible unsafe locking scenario:
-> 
->        CPU0
->        ----
->   lock(policy_rwlock);
->   lock(policy_rwlock);
-> 
-> This patch fixes the occurrence of recursive read_lock() of
-> policy_rwlock by adding a helper function __security_genfs_sid()
-> which requires caller to take the lock before calling it. The
-> security_fs_use() was then modified to call the new helper function.
-> 
-> Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+Hi,
 
-Applied, thank you.
+This patch series aims at simplifying the handling of Wacom devices from the user
+space point of view. As mentioned in the commit message from 1/5, the pad data
+are interleaved into the stylus input for some devices, and into the touch input
+for others.
 
-> diff --git a/security/selinux/ss/services.c b/security/selinux/ss/services.c
-> index 4bca494..2aa9d17 100644
-> --- a/security/selinux/ss/services.c
-> +++ b/security/selinux/ss/services.c
-> @@ -2277,7 +2277,7 @@ out:
->  }
-> 
->  /**
-> - * security_genfs_sid - Obtain a SID for a file in a filesystem
-> + * __security_genfs_sid - Helper to obtain a SID for a file in a filesystem
-> * @fstype: filesystem type
->   * @path: path from root of mount
->   * @sclass: file security class
-> @@ -2286,11 +2286,13 @@ out:
->   * Obtain a SID to use for a file in a filesystem that
->   * cannot support xattr or use a fixed labeling behavior like
->   * transition SIDs or task SIDs.
-> + *
-> + * The caller must acquire the policy_rwlock before calling this function.
->   */
-> -int security_genfs_sid(const char *fstype,
-> -		       char *path,
-> -		       u16 orig_sclass,
-> -		       u32 *sid)
-> +static inline int __security_genfs_sid(const char *fstype,
-> +				       char *path,
-> +				       u16 orig_sclass,
-> +				       u32 *sid)
->  {
->  	int len;
->  	u16 sclass;
-> @@ -2301,8 +2303,6 @@ int security_genfs_sid(const char *fstype,
->  	while (path[0] == '/' && path[1] == '/')
->  		path++;
-> 
-> -	read_lock(&policy_rwlock);
-> -
->  	sclass = unmap_class(orig_sclass);
->  	*sid = SECINITSID_UNLABELED;
-> 
-> @@ -2336,11 +2336,33 @@ int security_genfs_sid(const char *fstype,
->  	*sid = c->sid[0];
->  	rc = 0;
->  out:
-> -	read_unlock(&policy_rwlock);
->  	return rc;
->  }
-> 
->  /**
-> + * security_genfs_sid - Obtain a SID for a file in a filesystem
-> + * @fstype: filesystem type
-> + * @path: path from root of mount
-> + * @sclass: file security class
-> + * @sid: SID for path
-> + *
-> + * Acquire policy_rwlock before calling __security_genfs_sid() and release
-> + * it afterward.
-> + */
-> +int security_genfs_sid(const char *fstype,
-> +		       char *path,
-> +		       u16 orig_sclass,
-> +		       u32 *sid)
-> +{
-> +	int retval;
-> +
-> +	read_lock(&policy_rwlock);
-> +	retval = __security_genfs_sid(fstype, path, orig_sclass, sid);
-> +	read_unlock(&policy_rwlock);
-> +	return retval;
-> +}
-> +
-> +/**
->   * security_fs_use - Determine how to handle labeling for a filesystem.
->   * @sb: superblock in question
->   */
-> @@ -2370,7 +2392,8 @@ int security_fs_use(struct super_block *sb)
->  		}
->  		sbsec->sid = c->sid[0];
->  	} else {
-> -		rc = security_genfs_sid(fstype, "/", SECCLASS_DIR, &sbsec->sid);
-> +		rc = __security_genfs_sid(fstype, "/", SECCLASS_DIR,
-> +					  &sbsec->sid);
->  		if (rc) {
->  			sbsec->behavior = SECURITY_FS_USE_NONE;
->  			rc = 0;
+It doesn't makes real sense to interleave pad with stylus because pad data are
+not linked to the absolute position of a stylus (or its presence). It is a
+device by itself which should have its own input node.
+
+It will also help the handling of the old Wacom Graphire 4 which shares its
+BTN_LEFT and BTN_RIGHT in its pad and in the mouse.
+
+Again, it's not a problem right now because the user space is currently dealing
+with it, but for the Wayland libinput implementation, having something clear
+will really help.
+
+This patch series does not break current X11 behavior, the only change from the
+user will be that an input device will appear as "Wacom ... Pad pad".
+
+I tried to test/debug it as extensively as possible, but I do not guarantee any
+mistake :(
+
+Tested on:
+- Bamboo 16FG 4x5
+- Bamboo 2FG
+- BambooFun 4x5
+- Bamboo
+- Cintiq 12WX
+- Cintiq 21UX2
+- Cintiq 21UX
+- Cintiq 22HD
+- Cintiq 22HDT
+- Cintiq 24HD
+- DTU2231
+- Graphire3
+- Intuos3 9x12
+- Intuos4 WL
+- Intuos5 touch M
+- Intuos Pro S
+
+Note: this patch series might requesting to apply the patch for input->phys
+I just sent:
+https://patchwork.kernel.org/patch/4404391/
+
+
+Cheers,
+Benjamin
+
+Benjamin Tissoires (5):
+  Input - wacom: create a separate input device for pads
+  Input - wacom: split out the pad device for Intuos/Cintiq
+  Input - wacom: split out the pad device for Bamboos
+  Input - wacom: split out the pad device for DTUS
+  Input - wacom: split out the pad device for Graphire G4 and MO
+
+ drivers/input/tablet/wacom.h     |   2 +
+ drivers/input/tablet/wacom_sys.c |  63 +++++++-
+ drivers/input/tablet/wacom_wac.c | 328 ++++++++++++++++++++++++---------------
+ drivers/input/tablet/wacom_wac.h |   2 +
+ 4 files changed, 259 insertions(+), 136 deletions(-)
 
 -- 
-paul moore
-www.paul-moore.com
+1.9.0
 
