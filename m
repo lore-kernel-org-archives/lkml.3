@@ -1,58 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756538AbaFWRR2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 13:17:28 -0400
-Received: from mga09.intel.com ([134.134.136.24]:23934 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756504AbaFWRRY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 13:17:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,531,1400050800"; 
-   d="scan'208";a="561989818"
-Message-ID: <53A8611F.1000804@intel.com>
-Date: Mon, 23 Jun 2014 10:17:19 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1756555AbaFWRTV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 13:19:21 -0400
+Received: from www.linutronix.de ([62.245.132.108]:45056 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753213AbaFWRTU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 13:19:20 -0400
+Date: Mon, 23 Jun 2014 19:19:03 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Stanislav Fomichev <stfomichev@yandex-team.ru>
+cc: john.stultz@linaro.org, prarit@redhat.com, paul.gortmaker@windriver.com,
+        juri.lelli@gmail.com, ddaney.cavm@gmail.com, mbohan@codeaurora.org,
+        david.vrabel@citrix.com, david.engraf@sysgo.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] hrtimers: calculate expires_next after all timers
+ are executed
+In-Reply-To: <20140623110302.GA20225@stfomichev-desktop.yandex.net>
+Message-ID: <alpine.DEB.2.10.1406231904090.5170@nanos>
+References: <1395067037-20060-1-git-send-email-stfomichev@yandex-team.ru> <alpine.DEB.2.02.1403191149460.18573@ionos.tec.linutronix.de> <20140319141615.GB11081@stfomichev-desktop.yandex.net> <alpine.DEB.2.10.1406221417510.5170@nanos>
+ <20140623110302.GA20225@stfomichev-desktop.yandex.net>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
-CC: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
-        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
-        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        ak@linux.intel.com, cl@gentwo.org, umgwanakikbuti@gmail.com
-Subject: Re: [PATCH tip/core/rcu] Reduce overhead of cond_resched() checks
- for RCU
-References: <20140621025958.GA7185@linux.vnet.ibm.com> <53A85BF9.7030006@intel.com>
-In-Reply-To: <53A85BF9.7030006@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2014 09:55 AM, Dave Hansen wrote:
-> This still has a regression.  Commit 1ed70de (from Paul's git tree),
-> gets a result of 52231880.  If I back up two commits to v3.16-rc1 and
-> revert ac1bea85 (the original culprit) the result goes back up to 57308512.
+On Mon, 23 Jun 2014, Stanislav Fomichev wrote:
+> > 
+> > + * @next:              time of the next event on this clock base
+> > 
+> > What initializes that? It's 0 to begin with.
+> I thought I can skip initialization because I update base->next
+> in the interrupt or in __remove_hrtimer, like:
+> - enqueue_timer, base->next is 0
+
+Right, and that makes inconsistent state. We can do without such
+magic, really.
+
+> - reprogram device
+> - device fires -> hrtimer_interrupt
+> - __run_hrtimer
+> - __remove_hrtimer
+> - if last base->next = KTIME_MAX
+> - otherwise base->next = ktime_sub(hrtimer_get_expires(timer), base->offset)
+>   in hrtimer_interrupt
 > 
-> So something is still going on here.
-> 
-> I'll go back and compare the grace period ages to see if I can tell what
-> is going on.
+> > > @@ -893,6 +895,10 @@ static int enqueue_hrtimer(struct hrtimer *timer,
+> > >  	 */
+> > >  	timer->state |= HRTIMER_STATE_ENQUEUED;
+> > >  
+> > > +	expires = ktime_sub(hrtimer_get_expires(timer), base->offset);
+> > 
+> > This does not work when time gets set and the offset changes. We need
+> > to store the absolute expiry time and subtract the offset at
+> > evaluation time.
 
-RCU_TRACE interferes with the benchmark a little bit, and it lowers the
-delta that the regression causes.  So, evaluate this cautiously.
+> Hm, looking at this code after a while it seems I don't need to update
+> base->next in enqueue_hrtimer. It's enough to set it to KTIME_MAX in
+> __remove_hrtimer or to actual value upon breaking from __run_hrtimer
+> loop in hrtimer_interrupt.
 
-According to rcu_sched/rcugp, the average "age" is:
+Huch? Why don't you need to update in enqueue_hrtimer?
 
-v3.16-rc1, with ac1bea85 reverted:	10.7
-v3.16-rc1, plus e552592e:		 6.1
+That's the whole point of this excercise.
 
-Paul, have you been keeping an eye on rcugp?  Even if I run my system
-with only 10 threads, I still see this basic pattern where the average
-"age" is lower when I see lower performance.  It seems to be a
-reasonable proxy that could be used instead of waiting on me to re-run
-tests.
+hrtimer_interrupt()
 
+ lock(cpu_base)    
 
+ if (not_expired(base0))
+      base0->next = expiry;
+ 
+ if (expired(base1))
+      unlock(cpu_base)			/* remote enqueue */
+					lock(cpu_base)
+      run_timer_fn()    		enqeueue_to(base0)
+					unlock(cpu_base)
+      lock(cpu_base)
+
+ evaluate_base_next()
+
+So in case the enqueued timer is earlier than base0->next, you are
+looking at the wrong data. Same as in the current code and why you
+started to look into this at all.
+
+> > > @@ -929,8 +935,10 @@ static void __remove_hrtimer(struct hrtimer *timer,
+> > >  		}
+> > >  #endif
+> > >  	}
+> > > -	if (!timerqueue_getnext(&base->active))
+> > > +	if (!timerqueue_getnext(&base->active)) {
+> > >  		base->cpu_base->active_bases &= ~(1 << base->index);
+> > > +		base->next = ktime_set(KTIME_SEC_MAX, 0);
+> > > +	}
+> > 
+> > And what updates base->next if there are timers pending?
+> See above, hrtimer_interrupt updates it before breaking or sets to
+> KTIME_MAX in __remove_hrtimer if it's the last one.
+
+See above WHY it does NOT work.
+ 
+> > > +	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++) {
+> > > +		ktime_t expires;
+> > 
+> > So this adds the third incarnation of finding the next expiring timer
+> > to the code. Not really helpful.
+> Didn't really think about all the other places, refactoring may come in
+> another patch.
+
+No, we're not going to add another one in the first place as I know
+how MAY COME works: it translates to NEVER, unless I do it myself.
+
+> > Untested patch which addresses the issues below.
+> Aside from a small nitpick below, looks reasonable, I'll try to run it on a
+> couple of machines.
+> Should I send you a v3 afterwards with the changelog or
+> tested-by would be enough?
+
+Tested-by is fine. I can cobble a changelog together.
+ 
+> > +	while (active) {
+> > +		idx = __ffs(active);
+> > +		active &= ~(1UL << idx);
+> Is there any reason you did that instead of conventional:
+
+I thought about using __ffs before, just never came around it.
+
+Thanks,
+
+	tglx
