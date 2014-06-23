@@ -1,48 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751749AbaFWAme (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 20:42:34 -0400
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:35087 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751534AbaFWAmY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 20:42:24 -0400
-From: James A Shackleford <shack@linux.com>
-To: gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Cc: James A Shackleford <shack@linux.com>
-Subject: [PATCH 4/4] staging: rtl8712: remove unused inline _RND512()
-Date: Sun, 22 Jun 2014 20:27:58 -0400
-Message-Id: <1403483278-7343-4-git-send-email-shack@linux.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1403483278-7343-3-git-send-email-shack@linux.com>
-References: <1403483278-7343-1-git-send-email-shack@linux.com>
- <1403483278-7343-2-git-send-email-shack@linux.com>
- <1403483278-7343-3-git-send-email-shack@linux.com>
+	id S1751272AbaFWAxt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 20:53:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34853 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750823AbaFWAxr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jun 2014 20:53:47 -0400
+From: NeilBrown <neilb@suse.de>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Date: Mon, 23 Jun 2014 10:52:49 +1000
+Subject: [PATCH 0/2] Update wait_on_bit functions
+Cc: linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        Steve French <sfrench@samba.org>, David Howells <dhowells@redhat.com>,
+        Steven Whitehouse <swhiteho@redhat.com>
+Message-ID: <20140623004945.21714.26253.stgit@notabene.brown>
+User-Agent: StGit/0.16
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: James A Shackleford <shack@linux.com>
----
- drivers/staging/rtl8712/osdep_service.h |    5 -----
- 1 file changed, 5 deletions(-)
+These patches were in 'tip' for a while, but caused conflicts
+with other changes - both NFS and CIFS added new uses of
+wait_on_bit functions.
 
-diff --git a/drivers/staging/rtl8712/osdep_service.h b/drivers/staging/rtl8712/osdep_service.h
-index 9316eab..425f0f1 100644
---- a/drivers/staging/rtl8712/osdep_service.h
-+++ b/drivers/staging/rtl8712/osdep_service.h
-@@ -184,10 +184,5 @@ static inline void flush_signals_thread(void)
- 		flush_signals(current);
- }
- 
--static inline u32 _RND512(u32 sz)
--{
--	return ((sz >> 9) + ((sz & 511) ? 1 : 0)) << 9;
--}
--
- #endif
- 
+So here they are again against 3.16-rc2.  Hopefully no new users will
+be added before -rc3 or -rc4...
+
+(I hoped to submit this in the rc1 -> rc2 window, but that happened
+while I was on leave...)
+
+Thanks,
+NeilBrown
+
+---
+
+NeilBrown (2):
+      SCHED: remove proliferation of wait_on_bit action functions.
+      SCHED: allow wait_on_bit_action functions to support a timeout.
+
+
+ Documentation/filesystems/caching/operations.txt |    2 
+ drivers/md/dm-bufio.c                            |   41 ++-----
+ drivers/md/dm-snap.c                             |   10 --
+ drivers/media/usb/dvb-usb-v2/dvb_usb_core.c      |   12 --
+ fs/btrfs/extent_io.c                             |   10 --
+ fs/buffer.c                                      |   11 --
+ fs/cifs/connect.c                                |   10 --
+ fs/cifs/file.c                                   |    9 --
+ fs/cifs/inode.c                                  |    6 +
+ fs/cifs/misc.c                                   |    2 
+ fs/fs-writeback.c                                |    3 -
+ fs/fscache/cookie.c                              |    7 +
+ fs/fscache/internal.h                            |    2 
+ fs/fscache/main.c                                |   18 ---
+ fs/fscache/page.c                                |    4 -
+ fs/gfs2/glock.c                                  |   25 ----
+ fs/gfs2/lock_dlm.c                               |    8 -
+ fs/gfs2/ops_fstype.c                             |   11 --
+ fs/gfs2/recovery.c                               |    8 -
+ fs/gfs2/super.c                                  |    8 -
+ fs/inode.c                                       |    7 -
+ fs/jbd2/transaction.c                            |   10 --
+ fs/nfs/file.c                                    |    4 -
+ fs/nfs/filelayout/filelayoutdev.c                |    4 -
+ fs/nfs/inode.c                                   |    6 +
+ fs/nfs/internal.h                                |    2 
+ fs/nfs/nfs4state.c                               |    4 -
+ fs/nfs/pagelist.c                                |   14 +-
+ fs/nfs/pnfs.c                                    |    2 
+ fs/nfs/write.c                                   |    4 -
+ include/linux/sunrpc/sched.h                     |    2 
+ include/linux/wait.h                             |  125 +++++++++++++++++++++-
+ include/linux/writeback.h                        |    3 -
+ kernel/ptrace.c                                  |    8 -
+ kernel/sched/wait.c                              |   30 ++++-
+ mm/filemap.c                                     |   20 +---
+ mm/ksm.c                                         |    8 -
+ net/bluetooth/hci_core.c                         |    8 -
+ net/sunrpc/sched.c                               |    4 -
+ security/keys/gc.c                               |   11 --
+ security/keys/request_key.c                      |   23 ----
+ 41 files changed, 214 insertions(+), 292 deletions(-)
+
 -- 
-1.7.9.5
+Signature
 
