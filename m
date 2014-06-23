@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754674AbaFWN6u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:58:50 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:22968 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753729AbaFWN6t (ORCPT
+	id S1754822AbaFWOAW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 10:00:22 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:65512 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754031AbaFWOAU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:58:49 -0400
-Date: Mon, 23 Jun 2014 15:57:58 +0200
-From: Daniel Kiper <daniel.kiper@oracle.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        xen-devel@lists.xenproject.org, mjg59@srcf.ucam.org, jeremy@goop.org,
-        matt.fleming@intel.com, ian.campbell@citrix.com,
-        andrew.cooper3@citrix.com, stefano.stabellini@eu.citrix.com,
-        mingo@redhat.com, jbeulich@suse.com, hpa@zytor.com,
-        boris.ostrovsky@oracle.com, tglx@linutronix.de, eshelton@pobox.com
-Subject: Re: [Xen-devel] [PATCH v6 7/9] xen: Put EFI machinery in place
-Message-ID: <20140623135758.GH28489@olila.local.net-space.pl>
-References: <1403299768-9955-1-git-send-email-daniel.kiper@oracle.com>
- <1403299768-9955-8-git-send-email-daniel.kiper@oracle.com>
- <53A7FA0B.4070106@citrix.com>
+	Mon, 23 Jun 2014 10:00:20 -0400
+Message-ID: <53A832FF.1050002@gmail.com>
+Date: Mon, 23 Jun 2014 08:00:31 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53A7FA0B.4070106@citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Stanislav Fomichev <stfomichev@yandex-team.ru>
+CC: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        jolsa@redhat.com, xiaoguangrong@linux.vnet.ibm.com,
+        yangds.fnst@cn.fujitsu.com, adrian.hunter@intel.com,
+        namhyung@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/7] perf trace pagefaults
+References: <1403261389-13423-1-git-send-email-stfomichev@yandex-team.ru> <20140620132105.GE31524@kernel.org> <20140620150318.GK15620@stfomichev-desktop.yandex.net> <20140620152449.GH31524@kernel.org>
+In-Reply-To: <20140620152449.GH31524@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 23, 2014 at 10:57:31AM +0100, David Vrabel wrote:
-> On 20/06/14 22:29, Daniel Kiper wrote:
-> > This patch enables EFI usage under Xen dom0. Standard EFI Linux
-> > Kernel infrastructure cannot be used because it requires direct
-> > access to EFI data and code. However, in dom0 case it is not possible
-> > because above mentioned EFI stuff is fully owned and controlled
-> > by Xen hypervisor. In this case all calls from dom0 to EFI must
-> > be requested via special hypercall which in turn executes relevant
-> > EFI code in behalf of dom0.
-> >
-> > When dom0 kernel boots it checks for EFI availability on a machine.
-> > If it is detected then artificial EFI system table is filled.
-> > Native EFI callas are replaced by functions which mimics them
-> > by calling relevant hypercall. Later pointer to EFI system table
-> > is passed to standard EFI machinery and it continues EFI subsystem
-> > initialization taking into account that there is no direct access
-> > to EFI boot services, runtime, tables, structures, etc. After that
-> > system runs as usual.
+On 6/20/14, 9:24 AM, Arnaldo Carvalho de Melo wrote:
+> Right now it is too simple, but I was starting to work (when you jumped
+> right in with your work making me stop and go on testing/reviewing :) )
+> on making it more generic so that we could defer pretty printing the
+> arguments from sys_enter to sys_exit, when, by then, we would already
+> have an association of a user level pointer in some specific thread to
+> its contents.
 >
-> Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+> This will allow us to to resolve the pathname pointer in things like
+> open() (i.e. not just after that, in the fd syscalls (write, etc)) and
+> as well any other pointer of interest.
+>
+> By librarizing 'builtin-probe.c', that now uses lots of global
+> variables, etc, we would be able to insert probes where we want them to
+> capture the contents of pointers, check if the probes are already in
+> place, use just the ones that we managed to insert (i.e. that were not
+> invalid because the places where we wanted them to be were changed
+> across kernel releases, etc).
+>
+> I.e. no need for actual tracepoints from day one, just wannabe
+> tracepoints using whatever probe inserting gizmo the kprobes_tracer used
+> by 'perf probe' now thinks its best to use.
+>
+> Combine that with using DWARF descriptions (that could be pre cached
+> into something like CTF (the DTrace kind of CTF) or similar) like pahole
+> does and we would mostly automatically do all this work of prettyfing
+> syscall parameters.
+>
+> </handwave>
 
-Thanks for this and second one.
+That was so much handwaving you could keep cool at a World Cup game. :-)
 
-> (With or without the change suggested by Stefano).
+David
 
-I am going to take into account Stefano's idea.
-
-Daniel
