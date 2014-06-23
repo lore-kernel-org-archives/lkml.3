@@ -1,81 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754212AbaFWV7E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 17:59:04 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:37565 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752352AbaFWV66 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 17:58:58 -0400
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Andy Lutomirski <luto@amacapital.net>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Will Drewry <wad@chromium.org>, Julien Tinnes <jln@chromium.org>,
-        David Drysdale <drysdale@google.com>, linux-api@vger.kernel.org,
-        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-mips@linux-mips.org, linux-arch@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: [PATCH v7 1/9] seccomp: create internal mode-setting function
-Date: Mon, 23 Jun 2014 14:58:05 -0700
-Message-Id: <1403560693-21809-2-git-send-email-keescook@chromium.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1403560693-21809-1-git-send-email-keescook@chromium.org>
-References: <1403560693-21809-1-git-send-email-keescook@chromium.org>
-X-HELO: www.outflux.net
+	id S1754900AbaFWV70 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 17:59:26 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:45212 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754633AbaFWV7X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 17:59:23 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Ben Hutchings <ben@decadent.org.uk>, Peter Wu <peter@lekensteyn.nl>,
+        Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCHv3 3/6] rtlwifi/rtl8188ee: Fix media status register mask
+Date: Tue, 24 Jun 2014 00:00:22 +0200
+Message-Id: <1403560822-7778-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In preparation for having other callers of the seccomp mode setting
-logic, split the prctl entry point away from the core logic that performs
-seccomp mode setting.
+bt_msr & 0xfc will never match 0x3. Fix this by using a mask that actually matches the available types.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Reviewed-by: Peter Wu <peter@lekensteyn.nl>
 ---
- kernel/seccomp.c |   16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+ drivers/net/wireless/rtlwifi/rtl8188ee/hw.c  |    2 +-
+ drivers/net/wireless/rtlwifi/rtl8188ee/reg.h |    1 +
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/seccomp.c b/kernel/seccomp.c
-index 301bbc24739c..afb916c7e890 100644
---- a/kernel/seccomp.c
-+++ b/kernel/seccomp.c
-@@ -473,7 +473,7 @@ long prctl_get_seccomp(void)
- }
+diff --git a/drivers/net/wireless/rtlwifi/rtl8188ee/hw.c b/drivers/net/wireless/rtlwifi/rtl8188ee/hw.c
+index 94cd9df..9bdac68 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8188ee/hw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8188ee/hw.c
+@@ -1231,7 +1231,7 @@ static int _rtl88ee_set_media_status(struct ieee80211_hw *hw,
  
- /**
-- * prctl_set_seccomp: configures current->seccomp.mode
-+ * seccomp_set_mode: internal function for setting seccomp mode
-  * @seccomp_mode: requested mode to use
-  * @filter: optional struct sock_fprog for use with SECCOMP_MODE_FILTER
-  *
-@@ -486,7 +486,7 @@ long prctl_get_seccomp(void)
-  *
-  * Returns 0 on success or -EINVAL on failure.
-  */
--long prctl_set_seccomp(unsigned long seccomp_mode, char __user *filter)
-+static long seccomp_set_mode(unsigned long seccomp_mode, char __user *filter)
- {
- 	long ret = -EINVAL;
+ 	rtl_write_byte(rtlpriv, (MSR), bt_msr);
+ 	rtlpriv->cfg->ops->led_control(hw, ledaction);
+-	if ((bt_msr & 0xfc) == MSR_AP)
++	if ((bt_msr & MSR_MASK) == MSR_AP)
+ 		rtl_write_byte(rtlpriv, REG_BCNTCFG + 1, 0x00);
+ 	else
+ 		rtl_write_byte(rtlpriv, REG_BCNTCFG + 1, 0x66);
+diff --git a/drivers/net/wireless/rtlwifi/rtl8188ee/reg.h b/drivers/net/wireless/rtlwifi/rtl8188ee/reg.h
+index 7af85cf..cd7e7a5 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8188ee/reg.h
++++ b/drivers/net/wireless/rtlwifi/rtl8188ee/reg.h
+@@ -411,6 +411,7 @@
+ #define	MSR_ADHOC				0x01
+ #define	MSR_INFRA				0x02
+ #define	MSR_AP					0x03
++#define	MSR_MASK				0x03
  
-@@ -517,3 +517,15 @@ long prctl_set_seccomp(unsigned long seccomp_mode, char __user *filter)
- out:
- 	return ret;
- }
-+
-+/**
-+ * prctl_set_seccomp: configures current->seccomp.mode
-+ * @seccomp_mode: requested mode to use
-+ * @filter: optional struct sock_fprog for use with SECCOMP_MODE_FILTER
-+ *
-+ * Returns 0 on success or -EINVAL on failure.
-+ */
-+long prctl_set_seccomp(unsigned long seccomp_mode, char __user *filter)
-+{
-+	return seccomp_set_mode(seccomp_mode, filter);
-+}
+ #define	RRSR_RSC_OFFSET				21
+ #define	RRSR_SHORT_OFFSET			23
 -- 
-1.7.9.5
+1.7.10.4
 
