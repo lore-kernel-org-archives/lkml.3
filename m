@@ -1,83 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756824AbaFWUcm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 16:32:42 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:51230 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755563AbaFWUck (ORCPT
+	id S1756497AbaFWUpJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 16:45:09 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:54316 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755563AbaFWUpH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 16:32:40 -0400
-Date: Mon, 23 Jun 2014 22:27:34 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: linux-sunxi@googlegroups.com
-Cc: bay@hackerdom.ru, david@hardeman.nu, devicetree@vger.kernel.org,
-        galak@codeaurora.org, grant.likely@linaro.org,
-        ijc+devicetree@hellion.org.uk, james.hogan@imgtec.com,
-        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        m.chehab@samsung.com, mark.rutland@arm.com, pawel.moll@arm.com,
-        rdunlap@infradead.org, robh+dt@kernel.org, sean@mess.org,
-        srinivas.kandagatla@st.com, wingrime@linux-sunxi.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org
-Subject: Re: [linux-sunxi] Re: [PATCH v10 4/5] ARM: sunxi: Add IR controllers
- on A20 to dtsi
-Message-ID: <20140623202734.GN19730@lukather>
-References: <1403348646-31091-1-git-send-email-bay@hackerdom.ru>
- <1403348646-31091-5-git-send-email-bay@hackerdom.ru>
- <20140623130851.GD19730@lukather>
- <7d7d6451-3a26-45dc-aa62-b939fc7889ce@googlegroups.com>
+	Mon, 23 Jun 2014 16:45:07 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Mon, 23 Jun 2014 22:44:30 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Greg KH <greg@kroah.com>
+Cc: Johan Hovold <johan@kernel.org>,
+        Janne Kanniainen <janne.kanniainen@gmail.com>, jkosina@suse.cz,
+        cooloney@gmail.com, linux-kernel@vger.kernel.org,
+        linux-leds@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH v10] leds: USB: HID: Add support for MSI GT683R led panels
+Message-ID: <20140623204430.GC15945@localhost>
+References: <20140623161723.GA20421@kroah.com>
+ <1403543808-8228-1-git-send-email-janne.kanniainen@gmail.com>
+ <20140623182324.GA30831@kroah.com>
+ <20140623182432.GB30831@kroah.com>
+ <20140623193134.GA15945@localhost>
+ <20140623194059.GA19615@kroah.com>
+ <20140623195212.GB15945@localhost>
+ <20140623202448.GB29035@kroah.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="RL02At1kLqUPtqvA"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <7d7d6451-3a26-45dc-aa62-b939fc7889ce@googlegroups.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140623202448.GB29035@kroah.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jun 23, 2014 at 04:24:48PM -0400, Greg KH wrote:
+> On Mon, Jun 23, 2014 at 09:52:12PM +0200, Johan Hovold wrote:
+> > On Mon, Jun 23, 2014 at 03:40:59PM -0400, Greg KH wrote:
+> > > On Mon, Jun 23, 2014 at 09:31:34PM +0200, Johan Hovold wrote:
+> > > > On Mon, Jun 23, 2014 at 02:24:32PM -0400, Greg KH wrote:
+> > > > > On Mon, Jun 23, 2014 at 02:23:24PM -0400, Greg KH wrote:
+> > > > > > On Mon, Jun 23, 2014 at 08:16:48PM +0300, Janne Kanniainen wrote:
+> > > > > > > +	ret = sysfs_create_group(&led->hdev->dev.kobj, &gt683r_attribute_group);
+> > > > > > > +	if (ret) {
+> > > > > > > +		hid_err(hdev, "failed to create sysfs attributes\n");
+> > > > > > > +		goto fail;
+> > > > > > > +	}
+> > > > > > 
+> > > > > > No, you need to set the attribute group _before_ you call
+> > > > > > led_classdev_register, as that is where the device will be created in
+> > > > > > sysfs.  Surely the other led drivers already do this?  I'm almost afraid
+> > > > > > to go look...
+> > > > > 
+> > > > > Yes, they do it already, set .dev_attr_group and you should be fine.
+> > > > 
+> > > > But this isn't an attribute of the LEDs but rather of the parent HID
+> > > > device that is being probed (the led_mode is common to all three LEDs
+> > > > and thus belongs in the parent device, right?).
+> > > 
+> > > Then that's even worse :(
+> > > 
+> > > The sysfs attribute should be on the class device here for the LED, you
+> > > should not put an attribute on a device you are not the driver for.
+> > 
+> > But this is the driver for the HID device, which then in turn has three
+> > individual LEDs. This particular device isn't really an input device
+> > (the actual keyboard in this case appears to be connected over PS2), but
+> > there are several HID drivers which are primarily input devices with
+> > LEDs as sub-devices (e.g. drivers/hid/hid-lg4ff.c).
+> 
+> I don't know the specifics here, but as you just created a class device,
+> why aren't the attributes on that class device?  Shouldn't that be the
+> logical place for it, instead of having them on some "random" other type
+> of device?
 
---RL02At1kLqUPtqvA
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This is a non-standard attribute of this particular laptop. It has three
+individual LEDs that can be enabled separately (using standard LED class
+attributes), but they will all three be in the same "mode" (which here
+apparently means that they can be fully on, vary with the volume(?!), or
+pulse synchronously when enabled).
 
-On Mon, Jun 23, 2014 at 01:08:24PM -0700, =D0=90=D0=BB=D0=B5=D0=BA=D1=81=D0=
-=B0=D0=BD=D0=B4=D1=80 =D0=91=D0=B5=D1=80=D1=81=D0=B5=D0=BD=D0=B5=D0=B2 wrot=
-e:
-> Thanks,
->=20
-> Should I send applied patches in the further versions of this patch set?
+If we were to implement this mode attribute as a class attribute,
+changing the mode of of one LED would also change the mode of the other
+two devices (LEDs). Therefore I think it has to be an attribute of the
+parent HID device (that the driver is for).
 
-No, you don't have to.
+> Userspace will never be notified that the attribute is on
+> that device due to the file being created "later", and tools using
+> libudev and the like will be looking at the LED class device, not the
+> "parent" device for any specific LED stuff.
 
-Maxime
+Yeah, that seems to be the case. I doubt anyone will care much about
+this particular custom attribute, but sure, setting the led_mode of the
+HID device from an udev rule could be problematic.
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+> but if this really is the way that all LED devices work, and userspace
+> programs are expecting this, that's seems odd.
 
---RL02At1kLqUPtqvA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTqI22AAoJEBx+YmzsjxAgtHIP+welE16gbaWWut3XCrNuxOOG
-TETz5zPnbkQDDhg7ccNkFuSwgo/yEXyXPjVMPlFhyv4XoGosagpZy/7u5LdF62xV
-ISyiaTcj+3xLJZ8We5nJ8absRCyBE2pd5h2FIAjy3srCdASdemcq4N8aXAqmAt05
-DqJ9mVcTlss36A55T0q/cu73jfdzISjvaPI+5XPXApj71XWz/hKflkbTN8nETXAA
-Fnh2P2+upAhSZK1JfpnMnJ2Ii80Y26bqRNQNMYbi7eA8Yg9CggHlETsdwUPn6qeM
-hOiFWmTE8xVBUCKlLaXZpP8XiMdi4lfOkQbVvMDoqX9k5whCgcG57bV1Ikbm02+Y
-NSzQgndrut1wXs4skNC2EPe5UcAO/4dj6LO2qfvtU58WzUzXVIL7EXwliWyMy42T
-CZ/4RlIXR7TmAffcsrnfb/iecXQySef0t0HmV/hxxi3hq1jlw6J6+MGzhDrjIvo2
-AZ/zBehyEZWlILpsKkRNCDqGU3zbVXgS8OnQfoD6Xr/t6cLFGLf4buFOPLPiGG5u
-YX6Q4FIK1r9yoYta0d/9e06cXiue3nqs1Jzx4MO2hIdwIZQfxeavAtmrWgcl+wJc
-d3Vw8mLf5k3Lz5QonZjaQX1Q1i4jKSjM8hXZEoLMn677YLnQWA6ccvX7qBGtdcPx
-Ehdws/lmYwWEhm5bKNEn
-=glqK
------END PGP SIGNATURE-----
-
---RL02At1kLqUPtqvA--
+Johan
