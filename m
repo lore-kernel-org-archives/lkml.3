@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754353AbaFWNEZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:04:25 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36922 "EHLO
+	id S932074AbaFWNWZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:22:25 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36939 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754281AbaFWNEU (ORCPT
+	with ESMTP id S1754330AbaFWNEY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:04:20 -0400
+	Mon, 23 Jun 2014 09:04:24 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Martin Peres <martin.peres@free.fr>, Ben Skeggs <bskeggs@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 40/93] powerpc, kexec: Fix "Processor X is stuck" issue during kexec from ST mode
-Date: Mon, 23 Jun 2014 14:02:19 +0100
-Message-Id: <1403528592-2163-41-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 44/93] drm/nouveau/pm/fan: drop the fan lock in fan_update() before rescheduling
+Date: Mon, 23 Jun 2014 14:02:23 +0100
+Message-Id: <1403528592-2163-45-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
 References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,116 +30,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+From: Martin Peres <martin.peres@labri.fr>
 
-commit 011e4b02f1da156ac7fea28a9da878f3c23af739 upstream.
+commit 61679fe153b2b9ea5b5e2ab93305419e85e99a9d upstream.
 
-If we try to perform a kexec when the machine is in ST (Single-Threaded) mode
-(ppc64_cpu --smt=off), the kexec operation doesn't succeed properly, and we
-get the following messages during boot:
+This should fix a deadlock that has been reported to us where fan_update()
+would hold the fan lock and try to grab the alarm_program_lock to reschedule
+an update. On an other CPU, the alarm_program_lock would have been taken
+before calling fan_update(), leading to a deadlock.
 
-[    0.089866] POWER8 performance monitor hardware support registered
-[    0.089985] power8-pmu: PMAO restore workaround active.
-[    5.095419] Processor 1 is stuck.
-[   10.097933] Processor 2 is stuck.
-[   15.100480] Processor 3 is stuck.
-[   20.102982] Processor 4 is stuck.
-[   25.105489] Processor 5 is stuck.
-[   30.108005] Processor 6 is stuck.
-[   35.110518] Processor 7 is stuck.
-[   40.113369] Processor 9 is stuck.
-[   45.115879] Processor 10 is stuck.
-[   50.118389] Processor 11 is stuck.
-[   55.120904] Processor 12 is stuck.
-[   60.123425] Processor 13 is stuck.
-[   65.125970] Processor 14 is stuck.
-[   70.128495] Processor 15 is stuck.
-[   75.131316] Processor 17 is stuck.
+We should Cc: <stable@vger.kernel.org> # 3.9+
 
-Note that only the sibling threads are stuck, while the primary threads (0, 8,
-16 etc) boot just fine. Looking closer at the previous step of kexec, we observe
-that kexec tries to wakeup (bring online) the sibling threads of all the cores,
-before performing kexec:
-
-[ 9464.131231] Starting new kernel
-[ 9464.148507] kexec: Waking offline cpu 1.
-[ 9464.148552] kexec: Waking offline cpu 2.
-[ 9464.148600] kexec: Waking offline cpu 3.
-[ 9464.148636] kexec: Waking offline cpu 4.
-[ 9464.148671] kexec: Waking offline cpu 5.
-[ 9464.148708] kexec: Waking offline cpu 6.
-[ 9464.148743] kexec: Waking offline cpu 7.
-[ 9464.148779] kexec: Waking offline cpu 9.
-[ 9464.148815] kexec: Waking offline cpu 10.
-[ 9464.148851] kexec: Waking offline cpu 11.
-[ 9464.148887] kexec: Waking offline cpu 12.
-[ 9464.148922] kexec: Waking offline cpu 13.
-[ 9464.148958] kexec: Waking offline cpu 14.
-[ 9464.148994] kexec: Waking offline cpu 15.
-[ 9464.149030] kexec: Waking offline cpu 17.
-
-Instrumenting this piece of code revealed that the cpu_up() operation actually
-fails with -EBUSY. Thus, only the primary threads of all the cores are online
-during kexec, and hence this is a sure-shot receipe for disaster, as explained
-in commit e8e5c2155b (powerpc/kexec: Fix orphaned offline CPUs across kexec),
-as well as in the comment above wake_offline_cpus().
-
-It turns out that cpu_up() was returning -EBUSY because the variable
-'cpu_hotplug_disabled' was set to 1; and this disabling of CPU hotplug was done
-by migrate_to_reboot_cpu() inside kernel_kexec().
-
-Now, migrate_to_reboot_cpu() was originally written with the assumption that
-any further code will not need to perform CPU hotplug, since we are anyway in
-the reboot path. However, kexec is clearly not such a case, since we depend on
-onlining CPUs, atleast on powerpc.
-
-So re-enable cpu-hotplug after returning from migrate_to_reboot_cpu() in the
-kexec path, to fix this regression in kexec on powerpc.
-
-Also, wrap the cpu_up() in powerpc kexec code within a WARN_ON(), so that we
-can catch such issues more easily in the future.
-
-Fixes: c97102ba963 (kexec: migrate to reboot cpu)
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Reported-by: Marcin Slusarz <marcin.slusarz@gmail.com>
+Tested-by: Timothée Ravier <tim@siosm.fr>
+Tested-by: Boris Fersing (IRC nick fersingb, no public email address)
+Signed-off-by: Martin Peres <martin.peres@free.fr>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/powerpc/kernel/machine_kexec_64.c | 2 +-
- kernel/kexec.c                         | 8 ++++++++
- 2 files changed, 9 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/nouveau/core/subdev/therm/fan.c | 19 +++++++++++++------
+ 1 file changed, 13 insertions(+), 6 deletions(-)
 
-diff --git a/arch/powerpc/kernel/machine_kexec_64.c b/arch/powerpc/kernel/machine_kexec_64.c
-index 611acdf30096..263e44503138 100644
---- a/arch/powerpc/kernel/machine_kexec_64.c
-+++ b/arch/powerpc/kernel/machine_kexec_64.c
-@@ -237,7 +237,7 @@ static void wake_offline_cpus(void)
- 		if (!cpu_online(cpu)) {
- 			printk(KERN_INFO "kexec: Waking offline cpu %d.\n",
- 			       cpu);
--			cpu_up(cpu);
-+			WARN_ON(cpu_up(cpu));
- 		}
- 	}
- }
-diff --git a/kernel/kexec.c b/kernel/kexec.c
-index 57cc0949b3b8..2ee540f9faaf 100644
---- a/kernel/kexec.c
-+++ b/kernel/kexec.c
-@@ -1684,6 +1684,14 @@ int kernel_kexec(void)
- 		kexec_in_progress = true;
- 		kernel_restart_prepare(NULL);
- 		migrate_to_reboot_cpu();
+diff --git a/drivers/gpu/drm/nouveau/core/subdev/therm/fan.c b/drivers/gpu/drm/nouveau/core/subdev/therm/fan.c
+index c728380d3d62..ea19acd20784 100644
+--- a/drivers/gpu/drm/nouveau/core/subdev/therm/fan.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/therm/fan.c
+@@ -54,8 +54,10 @@ nouveau_fan_update(struct nouveau_fan *fan, bool immediate, int target)
+ 
+ 	/* check that we're not already at the target duty cycle */
+ 	duty = fan->get(therm);
+-	if (duty == target)
+-		goto done;
++	if (duty == target) {
++		spin_unlock_irqrestore(&fan->lock, flags);
++		return 0;
++	}
+ 
+ 	/* smooth out the fanspeed increase/decrease */
+ 	if (!immediate && duty >= 0) {
+@@ -73,8 +75,15 @@ nouveau_fan_update(struct nouveau_fan *fan, bool immediate, int target)
+ 
+ 	nv_debug(therm, "FAN update: %d\n", duty);
+ 	ret = fan->set(therm, duty);
+-	if (ret)
+-		goto done;
++	if (ret) {
++		spin_unlock_irqrestore(&fan->lock, flags);
++		return ret;
++	}
 +
-+		/*
-+		 * migrate_to_reboot_cpu() disables CPU hotplug assuming that
-+		 * no further code needs to use CPU hotplug (which is true in
-+		 * the reboot case). However, the kexec path depends on using
-+		 * CPU hotplug again; so re-enable it here.
-+		 */
-+		cpu_hotplug_enable();
- 		printk(KERN_EMERG "Starting new kernel\n");
- 		machine_shutdown();
++	/* fan speed updated, drop the fan lock before grabbing the
++	 * alarm-scheduling lock and risking a deadlock
++	 */
++	spin_unlock_irqrestore(&fan->lock, flags);
+ 
+ 	/* schedule next fan update, if not at target speed already */
+ 	if (list_empty(&fan->alarm.head) && target != duty) {
+@@ -92,8 +101,6 @@ nouveau_fan_update(struct nouveau_fan *fan, bool immediate, int target)
+ 		ptimer->alarm(ptimer, delay * 1000 * 1000, &fan->alarm);
  	}
+ 
+-done:
+-	spin_unlock_irqrestore(&fan->lock, flags);
+ 	return ret;
+ }
+ 
 -- 
 1.9.1
 
