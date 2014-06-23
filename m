@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752707AbaFWIiK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 04:38:10 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55638 "EHLO
+	id S1753379AbaFWIjq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 04:39:46 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55632 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752684AbaFWIca (ORCPT
+	by vger.kernel.org with ESMTP id S1752676AbaFWIca (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Jun 2014 04:32:30 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Shaun Ruffell <sruffell@digium.com>, Ingo Molnar <mingo@kernel.org>,
+Cc: linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
+        David Woodhouse <David.Woodhouse@intel.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 016/111] sched: Sanitize irq accounting madness
-Date: Mon, 23 Jun 2014 10:30:51 +0200
-Message-Id: <3cca5deb318f36b8dbba60515f46e1927ac7488c.1403512281.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 014/111] iommu/vt-d: Fix missing IOTLB flush in intel_iommu_unmap()
+Date: Mon, 23 Jun 2014 10:30:49 +0200
+Message-Id: <4801cb6ba3527f1cbb2078e23d3fdbe03ebcc7e7.1403512281.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
 References: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
@@ -26,125 +24,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: David Woodhouse <dwmw2@infradead.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 2d513868e2a33e1d5315490ef4c861ee65babd65 upstream.
+This is a small excerpt of the upstream commit
+ea8ea460c9ace60bbb5ac6e5521d637d5c15293d (iommu/vt-d: Clean up and fix
+page table clear/free behaviour).
 
-Russell reported, that irqtime_account_idle_ticks() takes ages due to:
+This missing IOTLB flush was added as a minor, inconsequential bug-fix
+in commit ea8ea460c ("iommu/vt-d: Clean up and fix page table clear/free
+behaviour") in 3.15. It wasn't originally intended for -stable but a
+couple of users have reported issues which turn out to be fixed by
+adding the missing flush.
 
-       for (i = 0; i < ticks; i++)
-               irqtime_account_process_tick(current, 0, rq);
-
-It's sad, that this code was written way _AFTER_ the NOHZ idle
-functionality was available. I charge myself guitly for not paying
-attention when that crap got merged with commit abb74cefa ("sched:
-Export ns irqtimes through /proc/stat")
-
-So instead of looping nr_ticks times just apply the whole thing at
-once.
-
-As a side note: The whole cputime_t vs. u64 business in that context
-wants to be cleaned up as well. There is no point in having all these
-back and forth conversions. Lets standardise on u64 nsec for all
-kernel internal accounting and be done with it. Everything else does
-not make sense at all for fine grained accounting. Frederic, can you
-please take care of that?
-
-Reported-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Venkatesh Pallipadi <venki@google.com>
-Cc: Shaun Ruffell <sruffell@digium.com>
-Link: http://lkml.kernel.org/r/alpine.DEB.2.02.1405022307000.6261@ionos.tec.linutronix.de
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- kernel/sched/cputime.c | 32 ++++++++++++++++----------------
- 1 file changed, 16 insertions(+), 16 deletions(-)
+ drivers/iommu/intel-iommu.c | 18 +++++++++++++++++-
+ 1 file changed, 17 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index 99947919e30b..cfe2f268afaa 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -326,50 +326,50 @@ out:
-  * softirq as those do not count in task exec_runtime any more.
-  */
- static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
--						struct rq *rq)
-+					 struct rq *rq, int ticks)
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index cae5a0866046..911ecb230b5a 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -4117,7 +4117,7 @@ static size_t intel_iommu_unmap(struct iommu_domain *domain,
+ 			     unsigned long iova, size_t size)
  {
--	cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
-+	cputime_t scaled = cputime_to_scaled(cputime_one_jiffy);
-+	u64 cputime = (__force u64) cputime_one_jiffy;
- 	u64 *cpustat = kcpustat_this_cpu->cpustat;
+ 	struct dmar_domain *dmar_domain = domain->priv;
+-	int order;
++	int order, iommu_id;
  
- 	if (steal_account_process_tick())
- 		return;
+ 	order = dma_pte_clear_range(dmar_domain, iova >> VTD_PAGE_SHIFT,
+ 			    (iova + size - 1) >> VTD_PAGE_SHIFT);
+@@ -4125,6 +4125,22 @@ static size_t intel_iommu_unmap(struct iommu_domain *domain,
+ 	if (dmar_domain->max_addr == iova + size)
+ 		dmar_domain->max_addr = iova;
  
-+	cputime *= ticks;
-+	scaled *= ticks;
++	for_each_set_bit(iommu_id, dmar_domain->iommu_bmp, g_num_of_iommus) {
++		struct intel_iommu *iommu = g_iommus[iommu_id];
++		int num, ndomains;
 +
- 	if (irqtime_account_hi_update()) {
--		cpustat[CPUTIME_IRQ] += (__force u64) cputime_one_jiffy;
-+		cpustat[CPUTIME_IRQ] += cputime;
- 	} else if (irqtime_account_si_update()) {
--		cpustat[CPUTIME_SOFTIRQ] += (__force u64) cputime_one_jiffy;
-+		cpustat[CPUTIME_SOFTIRQ] += cputime;
- 	} else if (this_cpu_ksoftirqd() == p) {
- 		/*
- 		 * ksoftirqd time do not get accounted in cpu_softirq_time.
- 		 * So, we have to handle it separately here.
- 		 * Also, p->stime needs to be updated for ksoftirqd.
- 		 */
--		__account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
--					CPUTIME_SOFTIRQ);
-+		__account_system_time(p, cputime, scaled, CPUTIME_SOFTIRQ);
- 	} else if (user_tick) {
--		account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
-+		account_user_time(p, cputime, scaled);
- 	} else if (p == rq->idle) {
--		account_idle_time(cputime_one_jiffy);
-+		account_idle_time(cputime);
- 	} else if (p->flags & PF_VCPU) { /* System time or guest time */
--		account_guest_time(p, cputime_one_jiffy, one_jiffy_scaled);
-+		account_guest_time(p, cputime, scaled);
- 	} else {
--		__account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
--					CPUTIME_SYSTEM);
-+		__account_system_time(p, cputime, scaled,	CPUTIME_SYSTEM);
- 	}
++		/*
++		 * find bit position of dmar_domain
++		 */
++		ndomains = cap_ndoms(iommu->cap);
++		for_each_set_bit(num, iommu->domain_ids, ndomains) {
++			if (iommu->domains[num] == dmar_domain)
++				iommu_flush_iotlb_psi(iommu, num,
++						      iova >> VTD_PAGE_SHIFT,
++						      1 << order, 0);
++		}
++	}
++
+ 	return PAGE_SIZE << order;
  }
- 
- static void irqtime_account_idle_ticks(int ticks)
- {
--	int i;
- 	struct rq *rq = this_rq();
- 
--	for (i = 0; i < ticks; i++)
--		irqtime_account_process_tick(current, 0, rq);
-+	irqtime_account_process_tick(current, 0, rq, ticks);
- }
- #else /* CONFIG_IRQ_TIME_ACCOUNTING */
- static inline void irqtime_account_idle_ticks(int ticks) {}
- static inline void irqtime_account_process_tick(struct task_struct *p, int user_tick,
--						struct rq *rq) {}
-+						struct rq *rq, int nr_ticks) {}
- #endif /* CONFIG_IRQ_TIME_ACCOUNTING */
- 
- /*
-@@ -458,7 +458,7 @@ void account_process_tick(struct task_struct *p, int user_tick)
- 		return;
- 
- 	if (sched_clock_irqtime) {
--		irqtime_account_process_tick(p, user_tick, rq);
-+		irqtime_account_process_tick(p, user_tick, rq, 1);
- 		return;
- 	}
  
 -- 
 2.0.0
