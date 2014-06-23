@@ -1,51 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756879AbaFWUJO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 16:09:14 -0400
-Received: from mga09.intel.com ([134.134.136.24]:61881 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753812AbaFWUJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 16:09:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,532,1400050800"; 
-   d="scan'208";a="562070122"
-Message-ID: <53A88966.5080400@intel.com>
-Date: Mon, 23 Jun 2014 13:09:10 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>, Qiaowei Ren <qiaowei.ren@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>
-CC: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 08/10] x86, mpx: add prctl commands PR_MPX_REGISTER,
- PR_MPX_UNREGISTER
-References: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com> <1403084656-27284-9-git-send-email-qiaowei.ren@intel.com> <53A8874A.3050301@mit.edu>
-In-Reply-To: <53A8874A.3050301@mit.edu>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756891AbaFWUKW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 16:10:22 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:34801 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753812AbaFWUKT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 16:10:19 -0400
+Date: Mon, 23 Jun 2014 13:10:18 -0700 (PDT)
+Message-Id: <20140623.131018.1349792926453695313.davem@davemloft.net>
+To: haiyangz@microsoft.com
+Cc: olaf@aepfle.de, greg@kroah.com, netdev@vger.kernel.org,
+        jasowang@redhat.com, driverdev-devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next] hyperv: Add handler for
+ RNDIS_STATUS_NETWORK_CHANGE event
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <5fb9ddebb68d456ab87979b5cc3830ec@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+References: <06b508cbb6b949f4b3e13e7797948e56@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+	<20140623131723.GA7026@aepfle.de>
+	<5fb9ddebb68d456ab87979b5cc3830ec@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 23 Jun 2014 13:10:19 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2014 01:00 PM, Andy Lutomirski wrote:
-> On 06/18/2014 02:44 AM, Qiaowei Ren wrote:
->> > This patch adds the PR_MPX_REGISTER and PR_MPX_UNREGISTER prctl()
->> > commands. These commands can be used to register and unregister MPX
->> > related resource on the x86 platform.
->> > 
->> > The base of the bounds directory is set into mm_struct during
->> > PR_MPX_REGISTER command execution. This member can be used to
->> > check whether one application is mpx enabled.
-> The register and unregister operations seem to be almost the same thing.
->  How about just PR_SYNC_MPX?
+From: Haiyang Zhang <haiyangz@microsoft.com>
+Date: Mon, 23 Jun 2014 16:09:59 +0000
 
-That wouldn't support a usage model where userspace wanted to keep using
-MPX, but wanted the kernel to butt out and not try to free unused bounds
-tables.  That's not super-important, but it does lose some level of
-flexibility.
+> So, what's the equivalent or similar command to "network restart" on SLES12? Could
+> you update the command line for the usermodehelper when porting this patch to SLES
+> 12?
 
-FWIW, I think it would also be handy to support a PR_MPX_DISABLE prctl
-too.  That way, a wrapper program could set a flag that any children
-could notice if they try a PR_MPX_REGISTER.  That way we could
-software-disable MPX in cases in a process tree where it was not wanted.
+No, you are not going to keep the usermodehelper invocation in your driver
+please remove it.  It is absolutely inappropriate, and I strictly do not want
+to keep it in there because other people will copy it and then we'll have a
+real mess on our hands.
+
