@@ -1,55 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756163AbaFWQSd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 12:18:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50934 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754184AbaFWQSc (ORCPT
+	id S1756198AbaFWQSx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 12:18:53 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:45010 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756167AbaFWQSv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 12:18:32 -0400
-Date: Mon, 23 Jun 2014 12:18:21 -0400
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Tushar Behera <trblinux@gmail.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Tushar Behera <tushar.b@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH] usb: misc: usb3503: Update error code in print message
-Message-ID: <20140623161821.GB20421@kroah.com>
-References: <1403003330-17553-1-git-send-email-tushar.b@samsung.com>
- <53A0256A.2000904@samsung.com>
- <53A7C67F.3080409@gmail.com>
+	Mon, 23 Jun 2014 12:18:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53A7C67F.3080409@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140623160727.GA19557@kroah.com>
+References: <20140621180201.GA4621@amd.pavel.ucw.cz>
+	<CAKb7UvhOCiBHcsB6a0qKBNsC3c9pmb=Wc7zucbBuP6vt-tx2eA@mail.gmail.com>
+	<20140621194538.GA4903@kroah.com>
+	<CAKb7UvjhOystpeRy1nQx49Nspve4wHQPb+e7gJQ-RT-HseK4Cw@mail.gmail.com>
+	<20140623160727.GA19557@kroah.com>
+Date: Mon, 23 Jun 2014 12:18:51 -0400
+X-Google-Sender-Auth: Gj_-PGJ2utEkaEmAxZhqwM2f2DY
+Message-ID: <CAKb7UvhEMg96YzGuA=rxRDrzBhKiVaYMczrAcm4hA_A4jXAW2w@mail.gmail.com>
+Subject: Re: unparseable, undocumented /sys/class/drm/.../pstate
+From: Ilia Mirkin <imirkin@alum.mit.edu>
+To: Greg KH <greg@kroah.com>
+Cc: Pavel Machek <pavel@ucw.cz>, kernel list <linux-kernel@vger.kernel.org>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        David Airlie <airlied@linux.ie>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 23, 2014 at 11:47:35AM +0530, Tushar Behera wrote:
-> On 06/17/2014 04:54 PM, Marek Szyprowski wrote:
-> > Hello,
-> > 
-> > On 2014-06-17 13:08, Tushar Behera wrote:
-> >> 'err' is uninitialized, rather print the error code directly.
-> >>
-> >> This also fixes following warning.
-> >> drivers/usb/misc/usb3503.c: In function ‘usb3503_probe’:
-> >> drivers/usb/misc/usb3503.c:195:11: warning: ‘err’ may be used
-> >> uninitialized
-> >> in this function [-Wmaybe-uninitialized]
-> >>      dev_err(dev, "unable to request refclk (%d)\n", err);
-> >>
-> >> Signed-off-by: Tushar Behera <tushar.b@samsung.com>
-> > 
-> > Acked-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> > 
-> 
-> Greg,
-> 
-> Would you please pick up this patch?
+On Mon, Jun 23, 2014 at 12:07 PM, Greg KH <greg@kroah.com> wrote:
+> On Sun, Jun 22, 2014 at 10:12:14PM -0400, Ilia Mirkin wrote:
+>> On Sat, Jun 21, 2014 at 3:45 PM, Greg KH <greg@kroah.com> wrote:
+>> > On Sat, Jun 21, 2014 at 02:22:59PM -0400, Ilia Mirkin wrote:
+>> >> On Sat, Jun 21, 2014 at 2:02 PM, Pavel Machek <pavel@ucw.cz> wrote:
+>> >> > Hi!
+>> >> >
+>> >> > AFAICT, pstate file will contain something like
+>> >> >
+>> >> > 07: core 100 MHz memory 123 MHz *
+>> >> > 08: core 100-200 MHz memory 123 MHz
+>> >> >
+>> >> > ...which does not look exactly like one-value-per-file, and I'm pretty
+>> >> > sure userspace will get it wrong if it tries to parse it. Plus, I
+>> >> > don't see required documentation in Documentation/ABI.
+>> >> >
+>> >> > Should we disable it for now, so that userspace does not start
+>> >> > depending on it and we'll not have to maintain it forever?
+>> >> >
+>> >> > I guess better interface would be something like
+>> >> >
+>> >> > pstate/07/core_clock_min
+>> >> >           core_clock_max
+>> >> >           memory_clock_min
+>> >> >           memory_clock_max
+>> >> >
+>> >> > and then pstate/active containing just the number of active state?
+>> >> >
+>> >> > Thanks,
+>> >> >                                                                 Pavel
+>> >> >
+>> >> > PS: I have no nvidia, got the news at
+>> >> >
+>> >> > http://www.phoronix.com/scan.php?page=article&item=nouveau_try_linux316&num=2
+>> >>
+>> >> FTR, this file has been in place since 3.13, and there was a different
+>> >> file before it (performance_levels), with a comparable format since
+>> >> much earlier (definitely 3.8, probably earlier). I think it's meant a
+>> >> lot more for people looking at it and echo'ing stuff to it to modify
+>> >> the levels (where supported), than for programs parsing it. Perhaps
+>> >> sysfs is the wrong place for this -- what is the right place? debugfs?
+>> >
+>> > Yes, please move it to debugfs.
+>>
+>> Could we just say that the format of this file is one-per-line of
+>>
+>> level: information-for-the-user
+>>
+>> And you can echo a level into it to switch to that level? That seems
+>> like a reasonable ABI to have... would be happy to throw it into a
+>> file somewhere... not sure where though.
+>
+> sysfs files are "one value per file", that's it.  Do anything other than
+> that, and it can not be in sysfs, sorry.
 
-Give me a chance, it's in my todo queue...
+I think that's a little inconsistent. There are *tons* of files in
+sysfs with multiple values. For example "local_cpulist" which contains
+the string "0-3" for me, the per-connector "modes" file which has a
+list of modes supported, and a "resource" file which has a list of hex
+values (which probably have something to do with PCI resources?). [I
+purposely picked values coming from different parts of the kernel not
+to focus on one subsystem...]
 
+  -ilia
