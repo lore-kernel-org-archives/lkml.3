@@ -1,121 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932271AbaFWQks (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 12:40:48 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:41902 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932216AbaFWQko (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 12:40:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140623163600.GB20939@kroah.com>
-References: <20140621180201.GA4621@amd.pavel.ucw.cz>
-	<CAKb7UvhOCiBHcsB6a0qKBNsC3c9pmb=Wc7zucbBuP6vt-tx2eA@mail.gmail.com>
-	<20140621194538.GA4903@kroah.com>
-	<CAKb7UvjhOystpeRy1nQx49Nspve4wHQPb+e7gJQ-RT-HseK4Cw@mail.gmail.com>
-	<20140623160727.GA19557@kroah.com>
-	<CAKb7UvhEMg96YzGuA=rxRDrzBhKiVaYMczrAcm4hA_A4jXAW2w@mail.gmail.com>
-	<20140623163600.GB20939@kroah.com>
-Date: Mon, 23 Jun 2014 12:40:43 -0400
-X-Google-Sender-Auth: 6qF9tATiYLK7e2Rn1Dqv_ExsSqY
-Message-ID: <CAKb7Uvgx_1mEPapJF3V5s8vUViGnRGCerkixwdTv_EpHhEozBg@mail.gmail.com>
-Subject: Re: unparseable, undocumented /sys/class/drm/.../pstate
-From: Ilia Mirkin <imirkin@alum.mit.edu>
-To: Greg KH <greg@kroah.com>
-Cc: Pavel Machek <pavel@ucw.cz>, kernel list <linux-kernel@vger.kernel.org>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        David Airlie <airlied@linux.ie>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=UTF-8
+	id S932318AbaFWQlA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 12:41:00 -0400
+Received: from mga02.intel.com ([134.134.136.20]:22591 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932216AbaFWQk6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 12:40:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,531,1400050800"; 
+   d="scan'208";a="532774159"
+Subject: Re: [PATCH v2] sched: Fast idling of CPU when system is partially
+ loaded
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>, Jason Low <jason.low2@hp.com>,
+        Davidlohr Bueson <davidlohr@hp.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <20140623125233.GZ19860@laptop.programming.kicks-ass.net>
+References: <1402948127.2970.578.camel@schen9-DESK>
+	 <20140623125233.GZ19860@laptop.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 23 Jun 2014 09:40:45 -0700
+Message-ID: <1403541645.2970.599.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 23, 2014 at 12:36 PM, Greg KH <greg@kroah.com> wrote:
-> On Mon, Jun 23, 2014 at 12:18:51PM -0400, Ilia Mirkin wrote:
->> On Mon, Jun 23, 2014 at 12:07 PM, Greg KH <greg@kroah.com> wrote:
->> > On Sun, Jun 22, 2014 at 10:12:14PM -0400, Ilia Mirkin wrote:
->> >> On Sat, Jun 21, 2014 at 3:45 PM, Greg KH <greg@kroah.com> wrote:
->> >> > On Sat, Jun 21, 2014 at 02:22:59PM -0400, Ilia Mirkin wrote:
->> >> >> On Sat, Jun 21, 2014 at 2:02 PM, Pavel Machek <pavel@ucw.cz> wrote:
->> >> >> > Hi!
->> >> >> >
->> >> >> > AFAICT, pstate file will contain something like
->> >> >> >
->> >> >> > 07: core 100 MHz memory 123 MHz *
->> >> >> > 08: core 100-200 MHz memory 123 MHz
->> >> >> >
->> >> >> > ...which does not look exactly like one-value-per-file, and I'm pretty
->> >> >> > sure userspace will get it wrong if it tries to parse it. Plus, I
->> >> >> > don't see required documentation in Documentation/ABI.
->> >> >> >
->> >> >> > Should we disable it for now, so that userspace does not start
->> >> >> > depending on it and we'll not have to maintain it forever?
->> >> >> >
->> >> >> > I guess better interface would be something like
->> >> >> >
->> >> >> > pstate/07/core_clock_min
->> >> >> >           core_clock_max
->> >> >> >           memory_clock_min
->> >> >> >           memory_clock_max
->> >> >> >
->> >> >> > and then pstate/active containing just the number of active state?
->> >> >> >
->> >> >> > Thanks,
->> >> >> >                                                                 Pavel
->> >> >> >
->> >> >> > PS: I have no nvidia, got the news at
->> >> >> >
->> >> >> > http://www.phoronix.com/scan.php?page=article&item=nouveau_try_linux316&num=2
->> >> >>
->> >> >> FTR, this file has been in place since 3.13, and there was a different
->> >> >> file before it (performance_levels), with a comparable format since
->> >> >> much earlier (definitely 3.8, probably earlier). I think it's meant a
->> >> >> lot more for people looking at it and echo'ing stuff to it to modify
->> >> >> the levels (where supported), than for programs parsing it. Perhaps
->> >> >> sysfs is the wrong place for this -- what is the right place? debugfs?
->> >> >
->> >> > Yes, please move it to debugfs.
->> >>
->> >> Could we just say that the format of this file is one-per-line of
->> >>
->> >> level: information-for-the-user
->> >>
->> >> And you can echo a level into it to switch to that level? That seems
->> >> like a reasonable ABI to have... would be happy to throw it into a
->> >> file somewhere... not sure where though.
->> >
->> > sysfs files are "one value per file", that's it.  Do anything other than
->> > that, and it can not be in sysfs, sorry.
->>
->> I think that's a little inconsistent. There are *tons* of files in
->> sysfs with multiple values. For example "local_cpulist" which contains
->> the string "0-3" for me, the per-connector "modes" file which has a
->> list of modes supported, and a "resource" file which has a list of hex
->> values (which probably have something to do with PCI resources?). [I
->> purposely picked values coming from different parts of the kernel not
->> to focus on one subsystem...]
->
-> A list of valid "values" that a file can be in is fine if you just then
-> write one value back to that file.  That's the one exception, but a
-> minor one given the huge number of sysfs files.  Other than that, if you
+On Mon, 2014-06-23 at 14:52 +0200, Peter Zijlstra wrote:
+> On Mon, Jun 16, 2014 at 12:48:47PM -0700, Tim Chen wrote:
+> > +++ b/kernel/sched/fair.c
+> > @@ -5863,7 +5863,8 @@ static inline int sg_capacity(struct lb_env *env, struct sched_group *group)
+> >   */
+> >  static inline void update_sg_lb_stats(struct lb_env *env,
+> >  			struct sched_group *group, int load_idx,
+> > -			int local_group, struct sg_lb_stats *sgs)
+> > +			int local_group, struct sg_lb_stats *sgs,
+> > +			bool *overload)
+> >  {
+> >  	unsigned long load;
+> >  	int i;
+> > @@ -5881,6 +5882,8 @@ static inline void update_sg_lb_stats(struct lb_env *env,
+> >  
+> >  		sgs->group_load += load;
+> >  		sgs->sum_nr_running += rq->nr_running;
+> > +		if (overload && rq->nr_running > 1)
+> > +			*overload = true;
+> >  #ifdef CONFIG_NUMA_BALANCING
+> >  		sgs->nr_numa_running += rq->nr_numa_running;
+> >  		sgs->nr_preferred_running += rq->nr_preferred_running;
+> > @@ -5991,6 +5994,7 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
+> >  	struct sched_group *sg = env->sd->groups;
+> >  	struct sg_lb_stats tmp_sgs;
+> >  	int load_idx, prefer_sibling = 0;
+> > +	bool overload = false;
+> >  
+> >  	if (child && child->flags & SD_PREFER_SIBLING)
+> >  		prefer_sibling = 1;
+> > @@ -6011,7 +6015,13 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
+> >  				update_group_power(env->sd, env->dst_cpu);
+> >  		}
+> >  
+> > -		update_sg_lb_stats(env, sg, load_idx, local_group, sgs);
+> > +		if (env->sd->parent)
+> > +			update_sg_lb_stats(env, sg, load_idx, local_group, sgs,
+> > +						NULL);
+> > +		else
+> > +			/* gather overload info if we are at root domain */
+> > +			update_sg_lb_stats(env, sg, load_idx, local_group, sgs,
+> > +						&overload);
+> >  
+> >  		if (local_group)
+> >  			goto next_group;
+> > @@ -6045,6 +6055,13 @@ next_group:
+> >  
+> >  	if (env->sd->flags & SD_NUMA)
+> >  		env->fbq_type = fbq_classify_group(&sds->busiest_stat);
+> > +
+> > +	if (!env->sd->parent) {
+> > +		/* update overload indicator if we are at root domain */
+> > +		if (env->dst_rq->rd->overload != overload)
+> > +			env->dst_rq->rd->overload = overload;
+> > +	}
+> > +
+> >  }
+> >  
+> >  /**
+> 
+> So I don't get why we can't do the below; I think Jason tried to ask the
+> same...
+> 
+> Making that overload thing unconditional makes the code simpler and the
+> cost is about the same; it doesn't matter if we test the pointer or
+> ->nr_running, which we've already loaded anyhow.
+> 
+> Also, with only having a single update_sg_lb_stats() callsite GCC can
+> more easily inline the lot.
+> 
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -5886,7 +5886,7 @@ static inline void update_sg_lb_stats(st
+>  
+>  		sgs->group_load += load;
+>  		sgs->sum_nr_running += rq->nr_running;
+> -		if (overload && rq->nr_running > 1)
+> +		if (rq->nr_running > 1)
+>  			*overload = true;
+>  #ifdef CONFIG_NUMA_BALANCING
+>  		sgs->nr_numa_running += rq->nr_numa_running;
+> @@ -6019,13 +6019,7 @@ static inline void update_sd_lb_stats(st
+>  				update_group_capacity(env->sd, env->dst_cpu);
+>  		}
+>  
+> -		if (env->sd->parent)
+> -			update_sg_lb_stats(env, sg, load_idx, local_group, sgs,
+> -						NULL);
+> -		else
+> -			/* gather overload info if we are at root domain */
+> -			update_sg_lb_stats(env, sg, load_idx, local_group, sgs,
+> -						&overload);
+> +		update_sg_lb_stats(env, sg, load_idx, local_group, sgs, &overload);
 
-Which is pretty much what the pstate file is. Would it make things
-better if we removed the descriptive info while leaving the pstate
-file in place?
+With this change, we'll be returning the overload indicator 
+that we don't use for non-root domains, which will be
+extra work in sg_lb_stats as it loops through each rq checking
+the nr_running to update the indicator.  I was hoping to avoid
+that if possible.
 
-> know of exceptions to that rule, please point them out and I will be
-> glad to yell at the developers.
->
-> PCI device resources are binary sysfs files, which are just pass-through
-> files from the firmware/device to userspace, with no parsing done in the
-> kernel.  So that's just a single 'value' as well.
+Tim
 
-$ cat /sys/class/drm/card0/device/resource
-0x00000000f0000000 0x00000000f03fffff 0x0000000000140204
-0x0000000000000000 0x0000000000000000 0x0000000000000000
 
-Doesn't seem like "binary" in the true sense, but perhaps that's close enough.
-
-  -ilia
