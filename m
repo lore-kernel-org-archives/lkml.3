@@ -1,97 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752747AbaFWXGz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 19:06:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58911 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750931AbaFWXGx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 19:06:53 -0400
-Message-ID: <53A8B306.1010903@suse.de>
-Date: Tue, 24 Jun 2014 01:06:46 +0200
-From: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Sachin Kamat <sachin.kamat@samsung.com>
-CC: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Stephan van Schaik <stephan@synkhronix.com>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Doug Anderson <dianders@chromium.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>, Lee Jones <lee.jones@linaro.org>,
-        Mark Brown <broonie@linaro.org>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        "OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        DOCUMENTATION <linux-doc@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/4] Documentation: devicetree: Fix s2mps11 and s5m8767
- typos
-References: <1403486483-4063-1-git-send-email-afaerber@suse.de>	<1403486483-4063-2-git-send-email-afaerber@suse.de> <CAK5sBcGM6TLiMfhktGaeL9hvPFbAXN6mWFq=irWUVHnZi=BWNg@mail.gmail.com>
-In-Reply-To: <CAK5sBcGM6TLiMfhktGaeL9hvPFbAXN6mWFq=irWUVHnZi=BWNg@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1752968AbaFWXHy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 19:07:54 -0400
+Received: from www17.your-server.de ([213.133.104.17]:54361 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751479AbaFWXHx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 19:07:53 -0400
+Message-ID: <1403564870.3091.6.camel@localhost.localdomain>
+Subject: Re: Linux 3.16-rc2
+From: Thomas Meyer <thomas@m3y3r.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Tue, 24 Jun 2014 01:07:50 +0200
+In-Reply-To: <CA+55aFxdAhp-esuGiY4VEugiiwcMJgg1r6fPiR9Fb+HOz_5tLg@mail.gmail.com>
+References: <CA+55aFxdAhp-esuGiY4VEugiiwcMJgg1r6fPiR9Fb+HOz_5tLg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 23.06.2014 05:21, schrieb Sachin Kamat:
-> On Mon, Jun 23, 2014 at 6:51 AM, Andreas Färber <afaerber@suse.de> wrote:
->> It's LDO2, not LD02.
->>
->> Signed-off-by: Andreas Färber <afaerber@suse.de>
->> ---
->>  Documentation/devicetree/bindings/mfd/s2mps11.txt                 | 2 +-
->>  Documentation/devicetree/bindings/regulator/s5m8767-regulator.txt | 2 +-
->>  2 files changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/Documentation/devicetree/bindings/mfd/s2mps11.txt b/Documentation/devicetree/bindings/mfd/s2mps11.txt
->> index d81ba30..55ab4f4 100644
->> --- a/Documentation/devicetree/bindings/mfd/s2mps11.txt
->> +++ b/Documentation/devicetree/bindings/mfd/s2mps11.txt
->> @@ -81,7 +81,7 @@ as per the datasheet of s2mps11.
->>                   - valid values for n are:
->>                         - S2MPS11: 1 to 38
->>                         - S2MPS14: 1 to 25
->> -                 - Example: LDO1, LD02, LDO28
->> +                 - Example: LDO1, LDO2, LDO28
->>         - BUCKn
->>                   - valid values for n are:
->>                         - S2MPS11: 1 to 10
->> diff --git a/Documentation/devicetree/bindings/regulator/s5m8767-regulator.txt b/Documentation/devicetree/bindings/regulator/s5m8767-regulator.txt
->> index d290988..2019131 100644
->> --- a/Documentation/devicetree/bindings/regulator/s5m8767-regulator.txt
->> +++ b/Documentation/devicetree/bindings/regulator/s5m8767-regulator.txt
->> @@ -86,7 +86,7 @@ as per the datasheet of s5m8767.
->>
->>         - LDOn
->>                   - valid values for n are 1 to 28
->> -                 - Example: LDO1, LD02, LDO28
->> +                 - Example: LDO1, LDO2, LDO28
->>         - BUCKn
->>                   - valid values for n are 1 to 9.
->>                   - Example: BUCK1, BUCK2, BUCK9
->> --
+Am Samstag, den 21.06.2014, 19:22 -1000 schrieb Linus Torvalds:
+> It's a day early, but tomorrow ends up being inconvenient for me due
+> to being on the road most of the day, so here you are. These days most
+> people send me their pull requests and patches during the week, so
+> it's not like I expect that a Sunday release would have made much of a
+> difference. And it's also not like I didn't have enough changes for
+> making a rc2 release.
 > 
-> Very keen observation :)
+> Anyway, enough excuses. 3.16-rc2 is out, and contains the usual
+> assortment of fixes all over the map. The most unusual part at this
+> point is how the sparc changes stand out (at almost 40% of the patch
+> by bulk), but they are basically all just sparse warning cleanups.
 > 
-> Reviewed-by: Sachin Kamat <sachin.kamat@samsung.com>
+> Similarly, some Nouveau drm changes standing out size-wise, but again
+> those are largely due to small firmware fixes resulting in big
+> generated changes. The actual real changes are fairly small.
+> 
+> Ignoring those two unusually large changes (in lines), everything else
+> looks fairly normal. There are driver changes, some tooling updates
+> (particularly perf), and various other arch updates (arm, s390,
+> unicore32, x86..). And just misc random stuff all over the place -
+> rtmutex, btrfs, yadda yadda.
+> 
+> The shortlog is not tiny, but small enough to include here, so you can
+> see the details there if you care.
+> 
+> Please do go test it out,
+> 
 
-A font that distinguishes the zero with a dot or dash helps! :)
+the i915 driver is still broken in 3.16-rc2. Resume from ram crashes the
+X server.
 
-I was wondering which character to type, and found two undocumented
-s5m8767_pmic properties downstream (s5m-core,enable-low-jitter and
-s5m-core,device_type = <0x2>), which I then left out.
+First bad commit is:
 
-Cheers,
-Andreas
+# first bad commit: [78f2975eec9faff353a6194e854d3d39907bab68] drm/i915: Move all ring resets before setting the HWS page
 
--- 
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
-GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
+commit 78f2975eec9faff353a6194e854d3d39907bab68
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Wed Apr 2 16:36:07 2014 +0100
+
+    drm/i915: Move all ring resets before setting the HWS page
+    
+    In commit a51435a3137ad8ae75c288c39bd2d8b2696bae8f
+    Author: Naresh Kumar Kachhi <naresh.kumar.kachhi@intel.com>
+    Date:   Wed Mar 12 16:39:40 2014 +0530
+    
+        drm/i915: disable rings before HW status page setup
+    
+    we reordered stopping the rings to do so before we set the HWS register.
+    However, there is an extra workaround for g45 to reset the rings twice,
+    and for consistency we should apply that workaround before setting the
+    HWS to be sure that the rings are truly stopped.
+    
+    Reference: http://lkml.kernel.org/r/20140423202248.GA3621@amd.pavel.ucw.cz
+    Tested-by: Pavel Machek <pavel@ucw.cz>
+    Cc: Naresh Kumar Kachhi <naresh.kumar.kachhi@intel.com>
+    Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+    Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+    Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+    Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+
+Above commit is not revertable anymore on 3.16-rc2 without conflict.
+
+
+
