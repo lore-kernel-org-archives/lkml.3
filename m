@@ -1,140 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755288AbaFWOlW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 10:41:22 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:42035 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754184AbaFWOlU (ORCPT
+	id S1755368AbaFWOne (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 10:43:34 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:65047 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753645AbaFWOnc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 10:41:20 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: linux-kernel@vger.kernel.org
-Cc: Neil Horman <nhorman@tuxdriver.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-scsi@vger.kernel.org,
-        Robert Love <robert.w.love@intel.com>, Vasu Dev <vasu.dev@intel.com>
-Subject: [PATCH] bnx2fc: Improve stats update mechanism
-Date: Mon, 23 Jun 2014 10:41:02 -0400
-Message-Id: <1403534462-21131-1-git-send-email-nhorman@tuxdriver.com>
-X-Mailer: git-send-email 1.8.3.1
-X-Spam-Score: -2.9 (--)
+	Mon, 23 Jun 2014 10:43:32 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Mon, 23 Jun 2014 16:42:55 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Oliver Neukum <oneukum@suse.de>
+Cc: Janne Kanniainen <janne.kanniainen@gmail.com>, jkosina@suse.cz,
+        johan@kernel.org, cooloney@gmail.com, linux-kernel@vger.kernel.org,
+        linux-leds@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH v9] leds: USB: HID: Add support for MSI GT683R led panels
+Message-ID: <20140623144255.GA19911@localhost>
+References: <20140618073950.GC31163@localhost>
+ <1403107502-14106-1-git-send-email-janne.kanniainen@gmail.com>
+ <1403534113.10017.22.camel@linux-fkkt.site>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403534113.10017.22.camel@linux-fkkt.site>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recently had this warning reported:
+On Mon, Jun 23, 2014 at 04:35:13PM +0200, Oliver Neukum wrote:
+> On Wed, 2014-06-18 at 19:05 +0300, Janne Kanniainen wrote:
+> > This driver adds support for USB controlled led panels that exists in
+> > MSI GT683R laptop
+> > 
+> 
+> > +static int gt683r_led_probe(struct hid_device *hdev,
+> > +			const struct hid_device_id *id)
+> > +{
+> > +	int i;
+> > +	int ret;
+> > +	int name_sz;
+> > +	char *name;
+> > +	struct gt683r_led *led;
+> > +
+> > +	led = devm_kzalloc(&hdev->dev, sizeof(*led), GFP_KERNEL);
+> > +	if (!led)
+> > +		return -ENOMEM;
+> > +
+> > +	led->mode = GT683R_LED_NORMAL;
+> > +	led->hdev = hdev;
+> > +	hid_set_drvdata(hdev, led);
+> > +
+> > +	ret = hid_parse(hdev);
+> > +	if (ret) {
+> > +		hid_err(hdev, "hid parsing failed\n");
+> > +		return ret;
+> > +	}
+> > +
+> > +	ret = hid_hw_start(hdev, HID_CONNECT_HIDRAW);
+> > +	if (ret) {
+> > +		hid_err(hdev, "hw start failed\n");
+> > +		return ret;
+> > +	}
+> > +
+> > +	for (i = 0; i < GT683R_LED_COUNT; i++) {
+> > +		name_sz = strlen(dev_name(&hdev->dev)) +
+> > +				strlen(gt683r_panel_names[i]) + 3;
+> > +
+> > +		name = devm_kzalloc(&hdev->dev, name_sz, GFP_KERNEL);
+> > +		if (!name) {
+> > +			ret = -ENOMEM;
+> > +			goto fail;
+> > +		}
+> > +
+> > +		snprintf(name, name_sz, "%s::%s",
+> > +				dev_name(&hdev->dev), gt683r_panel_names[i]);
+> > +		led->led_devs[i].name = name;
+> > +		led->led_devs[i].max_brightness = 1;
+> > +		led->led_devs[i].brightness_set = gt683r_brightness_set;
+> > +		ret = led_classdev_register(&hdev->dev, &led->led_devs[i]);
+> > +		if (ret) {
+> > +			hid_err(hdev, "could not register led device\n");
+> > +			goto fail;
+> > +		}
+> > +	}
+> > +
+> > +	ret = device_create_file(&led->hdev->dev, &dev_attr_leds_mode);
+> > +	if (ret) {
+> > +		hid_err(hdev, "could not make mode attribute file\n");
+> > +		goto fail;
+> > +	}
+> > +
+> 
+> This is the window.
+> 
+> > +	mutex_init(&led->lock);
+> > +	INIT_WORK(&led->work, gt683r_led_work);
+> > +
+> 
+> And here we have a problem. This is a race condition.
+> At this time you've already created the sysfs files. So
+> their methods can be called. They will lock a mutex and/or
+> schedule work that hasn't been initialized.
+> The initialization must be done before anything in sysfs
+> is created. 
 
-[  290.489047] Call Trace:
-[  290.489053]  [<ffffffff8169efec>] dump_stack+0x19/0x1b
-[  290.489055]  [<ffffffff810ac7a9>] __might_sleep+0x179/0x230
-[  290.489057]  [<ffffffff816a4ad5>] mutex_lock_nested+0x55/0x520
-[  290.489061]  [<ffffffffa01b9905>] ? bnx2fc_l2_rcv_thread+0xc5/0x4c0 [bnx2fc]
-[  290.489065]  [<ffffffffa0174c1a>] fc_vport_id_lookup+0x3a/0xa0 [libfc]
-[  290.489068]  [<ffffffffa01b9a6c>] bnx2fc_l2_rcv_thread+0x22c/0x4c0 [bnx2fc]
-[  290.489070]  [<ffffffffa01b9840>] ? bnx2fc_vport_destroy+0x110/0x110 [bnx2fc]
-[  290.489073]  [<ffffffff8109e0cd>] kthread+0xed/0x100
-[  290.489075]  [<ffffffff8109dfe0>] ? insert_kthread_work+0x80/0x80
-[  290.489077]  [<ffffffff816b2fec>] ret_from_fork+0x7c/0xb0
-[  290.489078]  [<ffffffff8109dfe0>] ? insert_kthread_work+0x80/0x80
+Just move the initialisation of the lock and work to the other private
+data initialisations directly after it's allocated.
 
-Its due to the fact that we call a potentially sleeping function from the bnx2fc
-rcv path with preemption disabled (via the get_cpu call embedded in the per-cpu
-variable stats lookup in bnx2fc_l2_rcv_thread.
+Can you send a follow up patch, Janne?
 
-Easy enough fix, we can just move the stats collection later in the function
-where we are sure we won't preempt or sleep.  This also allows us to not have to
-enable pre-emption when doing a per-cpu lookup, since we're certain not to get
-rescheduled.
+Thanks Oliver!
 
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-CC: "James E.J. Bottomley" <JBottomley@parallels.com>
-CC: Christoph Hellwig <hch@infradead.org>
-CC: linux-scsi@vger.kernel.org
-CC: Robert Love <robert.w.love@intel.com>
-CC: Vasu Dev <vasu.dev@intel.com>
----
- drivers/scsi/bnx2fc/bnx2fc_fcoe.c | 16 ++++------------
- 1 file changed, 4 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/scsi/bnx2fc/bnx2fc_fcoe.c b/drivers/scsi/bnx2fc/bnx2fc_fcoe.c
-index 9b94850..475eee5 100644
---- a/drivers/scsi/bnx2fc/bnx2fc_fcoe.c
-+++ b/drivers/scsi/bnx2fc/bnx2fc_fcoe.c
-@@ -516,23 +516,17 @@ static void bnx2fc_recv_frame(struct sk_buff *skb)
- 	skb_pull(skb, sizeof(struct fcoe_hdr));
- 	fr_len = skb->len - sizeof(struct fcoe_crc_eof);
- 
--	stats = per_cpu_ptr(lport->stats, get_cpu());
--	stats->RxFrames++;
--	stats->RxWords += fr_len / FCOE_WORD_TO_BYTE;
--
- 	fp = (struct fc_frame *)skb;
- 	fc_frame_init(fp);
- 	fr_dev(fp) = lport;
- 	fr_sof(fp) = hp->fcoe_sof;
- 	if (skb_copy_bits(skb, fr_len, &crc_eof, sizeof(crc_eof))) {
--		put_cpu();
- 		kfree_skb(skb);
- 		return;
- 	}
- 	fr_eof(fp) = crc_eof.fcoe_eof;
- 	fr_crc(fp) = crc_eof.fcoe_crc32;
- 	if (pskb_trim(skb, fr_len)) {
--		put_cpu();
- 		kfree_skb(skb);
- 		return;
- 	}
-@@ -544,7 +538,6 @@ static void bnx2fc_recv_frame(struct sk_buff *skb)
- 		port = lport_priv(vn_port);
- 		if (!ether_addr_equal(port->data_src_addr, dest_mac)) {
- 			BNX2FC_HBA_DBG(lport, "fpma mismatch\n");
--			put_cpu();
- 			kfree_skb(skb);
- 			return;
- 		}
-@@ -552,7 +545,6 @@ static void bnx2fc_recv_frame(struct sk_buff *skb)
- 	if (fh->fh_r_ctl == FC_RCTL_DD_SOL_DATA &&
- 	    fh->fh_type == FC_TYPE_FCP) {
- 		/* Drop FCP data. We dont this in L2 path */
--		put_cpu();
- 		kfree_skb(skb);
- 		return;
- 	}
-@@ -562,7 +554,6 @@ static void bnx2fc_recv_frame(struct sk_buff *skb)
- 		case ELS_LOGO:
- 			if (ntoh24(fh->fh_s_id) == FC_FID_FLOGI) {
- 				/* drop non-FIP LOGO */
--				put_cpu();
- 				kfree_skb(skb);
- 				return;
- 			}
-@@ -572,22 +563,23 @@ static void bnx2fc_recv_frame(struct sk_buff *skb)
- 
- 	if (fh->fh_r_ctl == FC_RCTL_BA_ABTS) {
- 		/* Drop incoming ABTS */
--		put_cpu();
- 		kfree_skb(skb);
- 		return;
- 	}
- 
-+	stats = per_cpu_ptr(lport->stats, smp_processor_id());
-+	stats->RxFrames++;
-+	stats->RxWords += fr_len / FCOE_WORD_TO_BYTE;
-+
- 	if (le32_to_cpu(fr_crc(fp)) !=
- 			~crc32(~0, skb->data, fr_len)) {
- 		if (stats->InvalidCRCCount < 5)
- 			printk(KERN_WARNING PFX "dropping frame with "
- 			       "CRC error\n");
- 		stats->InvalidCRCCount++;
--		put_cpu();
- 		kfree_skb(skb);
- 		return;
- 	}
--	put_cpu();
- 	fc_exch_recv(lport, fp);
- }
- 
--- 
-1.8.3.1
-
+Johan
