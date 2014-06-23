@@ -1,79 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754142AbaFWIrt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 04:47:49 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:56386 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752981AbaFWIrq (ORCPT
+	id S1754094AbaFWIra (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 04:47:30 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55539 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752581AbaFWIc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 04:47:46 -0400
-Date: Mon, 23 Jun 2014 09:47:41 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Nick Krause <xerofoify@gmail.com>
-Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: Re: Obsolete Bug in file drivers/mfd/pcf50633-core.c
-Message-ID: <20140623084741.GC8847@lee--X1>
-References: <CAPDOMVj1C=ELSrV7fT0PdW+Kxpu6CN+y3TNzbfhH1rzt7uLGnA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAPDOMVj1C=ELSrV7fT0PdW+Kxpu6CN+y3TNzbfhH1rzt7uLGnA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 23 Jun 2014 04:32:29 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Jan Vcelak <jv@fcelda.cz>,
+        Antti Palosaari <crope@iki.fi>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 069/111] rtl28xxu: add USB ID for Genius TVGo DVB-T03
+Date: Mon, 23 Jun 2014 10:31:44 +0200
+Message-Id: <a049936ef3a7a18d0721da7c27835e8bd5577c10.1403512281.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
+References: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
+In-Reply-To: <cover.1403512280.git.jslaby@suse.cz>
+References: <cover.1403512280.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Jun 2014, Nick Krause wrote:
-> There seems to be a obsolete bug in this file that has been reported about
-> a NULL
-> check for  platform_device_add_data() in function pcf50633_probe(). This
-> bug seems
-> to be fixed by the lines I wrote in my comment on Bugzilla. The attached
-> link should
-> give you an idea of if closing this bug is a good idea.
->  https://bugzilla.kernel.org/show_bug.cgi?id=78521
-> <https://bugzilla.kernel.org/show_bug.cgi?id=78521>
-> Thanks Nick
+From: Jan Vcelak <jv@fcelda.cz>
 
-This bug was fixed by Alan Cox 2 years ago:
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-commit 18273c5b463d9f98ef81f1a6217a7f4168dd809a
-Author: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Date:   Fri Jul 13 16:43:32 2012 +0100
+===============
 
-    mfd: Add missing out of memory check for pcf50633
-    
-    Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?id=44561
-    Reported-by: <rucsoftsec@gmail.com>
-    Cc: Lars-Peter Clausen <lars@metafoo.de>
-    Signed-off-by: Alan Cox <alan@linux.intel.com>
-    Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+commit ac298ccdde4fe9b0a966e548a232ff4e8a6b8a31 upstream.
 
-diff --git a/drivers/mfd/pcf50633-core.c b/drivers/mfd/pcf50633-core.c
-index 29c122b..45ce1fb 100644
---- a/drivers/mfd/pcf50633-core.c
-+++ b/drivers/mfd/pcf50633-core.c
-@@ -253,8 +253,13 @@ static int __devinit pcf50633_probe(struct i2c_client *client,
-                }
+0458:707f KYE Systems Corp. (Mouse Systems) TVGo DVB-T03 [RTL2832]
+
+The USB dongle uses RTL2832U demodulator and FC0012 tuner.
+
+Signed-off-by: Jan Vcelak <jv@fcelda.cz>
+Signed-off-by: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/media/usb/dvb-usb-v2/rtl28xxu.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
+index bb8122c17721..62cb601eed3f 100644
+--- a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
++++ b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
+@@ -1392,6 +1392,8 @@ static const struct usb_device_id rtl28xxu_id_table[] = {
+ 		&rtl2832u_props, "Leadtek WinFast DTV Dongle mini", NULL) },
+ 	{ DVB_USB_DEVICE(USB_VID_GTEK, USB_PID_CPYTO_REDI_PC50A,
+ 		&rtl2832u_props, "Crypto ReDi PC 50 A", NULL) },
++	{ DVB_USB_DEVICE(USB_VID_KYE, 0x707f,
++		&rtl2832u_props, "Genius TVGo DVB-T03", NULL) },
  
-                pdev->dev.parent = pcf->dev;
--               platform_device_add_data(pdev, &pdata->reg_init_data[i],
--                                       sizeof(pdata->reg_init_data[i]));
-+               if (platform_device_add_data(pdev, &pdata->reg_init_data[i],
-+                                       sizeof(pdata->reg_init_data[i])) < 0) {
-+                       platform_device_put(pdev);
-+                       dev_err(pcf->dev, "Out of memory for regulator parameters %d\n",
-+                                                                       i);
-+                       continue;
-+               }
-                pcf->regulator_pdev[i] = pdev;
- 
-                platform_device_add(pdev);
-
-
+ 	{ DVB_USB_DEVICE(USB_VID_HANFTEK, 0x0131,
+ 		&rtl2832u_props, "Astrometa DVB-T2", NULL) },
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+2.0.0
+
