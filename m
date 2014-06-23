@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755563AbaFWNa5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:30:57 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60818 "EHLO
+	id S1755694AbaFWNbk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:31:40 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60760 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755040AbaFWN3l (ORCPT
+	by vger.kernel.org with ESMTP id S1754562AbaFWN3j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:29:41 -0400
+	Mon, 23 Jun 2014 09:29:39 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: linux-kernel@vger.kernel.org
 Cc: jirislaby@gmail.com, Vojtech Pavlik <vojtech@suse.cz>,
         Jiri Kosina <jkosina@suse.cz>, Jiri Slaby <jslaby@suse.cz>,
         Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Dipankar Sarma <dipankar@in.ibm.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 09/21] kgr: mark task_safe in some kthreads
-Date: Mon, 23 Jun 2014 15:29:23 +0200
-Message-Id: <1403530175-29217-9-git-send-email-jslaby@suse.cz>
+        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>
+Subject: [PATCH 03/21] kgr: initial code
+Date: Mon, 23 Jun 2014 15:29:17 +0200
+Message-Id: <1403530175-29217-3-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1403530175-29217-1-git-send-email-jslaby@suse.cz>
 References: <1403530175-29217-1-git-send-email-jslaby@suse.cz>
@@ -25,317 +24,652 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Before we enable a kthread support in kGraft, we must make sure all
-kthreads mark themselves as kGraft-safe at some point explicitly.
+From: Jiri Kosina <jkosina@suse.cz>
 
-We do this by injecting kgr_task_safe to the freezer test. There, we
-assume that kthreads are in some predefined state and can expect
-something bad to happen. Hence we switch the kGraft worlds there from
-the old one to the new one. The optimal solution would be to convert
-most of kthreads (that need not be kthreads actually) to workqeues as
-suggested by Tejun. This is an upcoming work that will appear next.
-But until we get there, we use freezer for kGraft that way as is
-presented here.
+Provide initial implementation. We are now able to do ftrace-based
+runtime patching of the kernel code.
 
-Note that there are also some kthreads that do not utilize freezer, so
-we use kgr_task_safe in them explicitly. This happens at locations
-that appear to be safe for the kthreads to switch the worlds.
+In addition to that, we will provide a kgr_patcher module in the next
+patch to test the functionality.
 
-The end result after we migrate kthreads (that need not be kthreads)
-to workqueues is: have only kthreads that contain kgr_task_safe
-explicitly (or using some helper) and nothing else.
+Note that the per-process flag dismisses in later patches where it is
+converted to a single bit in the thread_info.
 
+Limitations/TODOs:
+
+- rmmod of the module that provides the patch is not possible yet
+  (it'd be nice if that'd cause reverse application of the patch)
+- x86_64 only
+
+Additional squashes to this patch:
+jk: add missing Kconfig.kgr
+jk: fixup a header bug
+jk: cleanup comments
+js: port to new mcount infrastructure
+js: order includes
+js: fix for non-KGR (prototype and Kconfig fixes)
+js: fix potential lock imbalance in kgr_patch_code
+js: use insn helper for jmp generation
+js: add \n to a printk
+jk: externally_visible attribute warning fix
+jk: symbol lookup failure handling
+jk: fix race between patching and setting a flag (thanks to bpetkov)
+js: add more sanity checking
+js: handle missing kallsyms gracefully
+js: use correct name, not alias
+js: fix index in cleanup path
+js: clear kgr_in_progress for all syscall paths
+js: cleanup
+js: do the checking in the process context
+js: call kgr_mark_processes outside loop and locks
+jk: convert from raw patching to ftrace API
+jk: depend on regs-saving ftrace
+js: make kgr_init an init_call
+js: use correct offset for stub
+js: use pr_debug
+js: use IS_ENABLED
+js: fix potential memory leak
+js: change names from kgr -> kGraft
+js: fix error handling and return values
+js: use bitops to be atomic
+jk: helpers for task's kgr_in_progress
+js: remove copies of stubs, have only a single instance
+
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org> [devtmpfs]
-Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com> [rcu]
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Dipankar Sarma <dipankar@in.ibm.com>
-Cc: Tejun Heo <tj@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>
 ---
- drivers/base/devtmpfs.c     |  1 +
- drivers/scsi/scsi_error.c   |  2 ++
- drivers/usb/core/hub.c      |  4 ++--
- fs/jbd2/journal.c           |  2 ++
- fs/notify/mark.c            |  5 ++++-
- include/linux/freezer.h     |  2 ++
- kernel/hung_task.c          |  5 ++++-
- kernel/kthread.c            |  3 +++
- kernel/rcu/tree.c           |  6 ++++--
- kernel/rcu/tree_plugin.h    | 10 ++++++++--
- kernel/smpboot.c            |  2 ++
- kernel/workqueue.c          |  3 +++
- mm/huge_memory.c            |  1 +
- net/bluetooth/rfcomm/core.c |  2 ++
- 14 files changed, 40 insertions(+), 8 deletions(-)
+ arch/x86/Kconfig                   |   2 +
+ arch/x86/include/asm/kgraft.h      |  27 +++
+ arch/x86/include/asm/thread_info.h |   1 +
+ arch/x86/kernel/asm-offsets.c      |   1 +
+ arch/x86/kernel/entry_64.S         |   3 +
+ include/linux/kgraft.h             |  85 +++++++++
+ kernel/Kconfig.kgraft              |   7 +
+ kernel/Makefile                    |   1 +
+ kernel/kgraft.c                    | 346 +++++++++++++++++++++++++++++++++++++
+ 9 files changed, 473 insertions(+)
+ create mode 100644 arch/x86/include/asm/kgraft.h
+ create mode 100644 include/linux/kgraft.h
+ create mode 100644 kernel/Kconfig.kgraft
+ create mode 100644 kernel/kgraft.c
 
-diff --git a/drivers/base/devtmpfs.c b/drivers/base/devtmpfs.c
-index 25798db14553..c7d52d1b8c9c 100644
---- a/drivers/base/devtmpfs.c
-+++ b/drivers/base/devtmpfs.c
-@@ -387,6 +387,7 @@ static int devtmpfsd(void *p)
- 	sys_chroot(".");
- 	complete(&setup_done);
- 	while (1) {
-+		kgr_task_safe(current);
- 		spin_lock(&req_lock);
- 		while (requests) {
- 			struct req *req = requests;
-diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
-index cbe38e5e7955..28bc61251e2a 100644
---- a/drivers/scsi/scsi_error.c
-+++ b/drivers/scsi/scsi_error.c
-@@ -2153,6 +2153,8 @@ int scsi_error_handler(void *data)
- 	 * disables signal delivery for the created thread.
- 	 */
- 	while (!kthread_should_stop()) {
-+		kgr_task_safe(current);
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index a8f749ef0fdc..90c45b15b08b 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -131,6 +131,7 @@ config X86
+ 	select HAVE_CC_STACKPROTECTOR
+ 	select GENERIC_CPU_AUTOPROBE
+ 	select HAVE_ARCH_AUDITSYSCALL
++	select HAVE_KGRAFT
+ 
+ config INSTRUCTION_DECODER
+ 	def_bool y
+@@ -267,6 +268,7 @@ config FIX_EARLYCON_MEM
+ 
+ source "init/Kconfig"
+ source "kernel/Kconfig.freezer"
++source "kernel/Kconfig.kgraft"
+ 
+ menu "Processor type and features"
+ 
+diff --git a/arch/x86/include/asm/kgraft.h b/arch/x86/include/asm/kgraft.h
+new file mode 100644
+index 000000000000..5e40ba1a0753
+--- /dev/null
++++ b/arch/x86/include/asm/kgraft.h
+@@ -0,0 +1,27 @@
++/*
++ * kGraft Online Kernel Patching
++ *
++ *  Copyright (c) 2013-2014 SUSE
++ *   Authors: Jiri Kosina
++ *	      Vojtech Pavlik
++ *	      Jiri Slaby
++ */
 +
- 		set_current_state(TASK_INTERRUPTIBLE);
- 		if ((shost->host_failed == 0 && shost->host_eh_scheduled == 0) ||
- 		    shost->host_failed != shost->host_busy) {
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index 21b99b4b4082..85a53488ed3f 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -5070,9 +5070,9 @@ static int hub_thread(void *__unused)
- 
- 	do {
- 		hub_events();
--		wait_event_freezable(khubd_wait,
-+		wait_event_freezable(khubd_wait, ({ kgr_task_safe(current);
- 				!list_empty(&hub_event_list) ||
--				kthread_should_stop());
-+				kthread_should_stop(); }));
- 	} while (!kthread_should_stop() || !list_empty(&hub_event_list));
- 
- 	pr_debug("%s: khubd exiting\n", usbcore_name);
-diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
-index 67b8e303946c..1b9c4c2e014a 100644
---- a/fs/jbd2/journal.c
-+++ b/fs/jbd2/journal.c
-@@ -43,6 +43,7 @@
- #include <linux/backing-dev.h>
- #include <linux/bitops.h>
- #include <linux/ratelimit.h>
-+#include <linux/sched.h>
- 
- #define CREATE_TRACE_POINTS
- #include <trace/events/jbd2.h>
-@@ -260,6 +261,7 @@ loop:
- 			write_lock(&journal->j_state_lock);
- 		}
- 		finish_wait(&journal->j_wait_commit, &wait);
-+		kgr_task_safe(current);
- 	}
- 
- 	jbd_debug(1, "kjournald2 wakes\n");
-diff --git a/fs/notify/mark.c b/fs/notify/mark.c
-index d90deaa08e78..d30a491cacf2 100644
---- a/fs/notify/mark.c
-+++ b/fs/notify/mark.c
-@@ -82,6 +82,7 @@
- #include <linux/kthread.h>
- #include <linux/module.h>
- #include <linux/mutex.h>
-+#include <linux/sched.h>
- #include <linux/slab.h>
- #include <linux/spinlock.h>
- #include <linux/srcu.h>
-@@ -355,7 +356,9 @@ static int fsnotify_mark_destroy(void *ignored)
- 			fsnotify_put_mark(mark);
- 		}
- 
--		wait_event_interruptible(destroy_waitq, !list_empty(&destroy_list));
-+		wait_event_interruptible(destroy_waitq, ({
-+					kgr_task_safe(current);
-+					!list_empty(&destroy_list); }));
- 	}
- 
- 	return 0;
-diff --git a/include/linux/freezer.h b/include/linux/freezer.h
-index 7fd81b8c4897..e08c3bef251b 100644
---- a/include/linux/freezer.h
-+++ b/include/linux/freezer.h
-@@ -61,6 +61,8 @@ static inline bool try_to_freeze_unsafe(void)
- 
- static inline bool try_to_freeze(void)
- {
-+	kgr_task_safe(current);
++/*
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the Free
++ * Software Foundation; either version 2 of the License, or (at your option)
++ * any later version.
++ */
 +
- 	if (!(current->flags & PF_NOFREEZE))
- 		debug_check_no_locks_held();
- 	return try_to_freeze_unsafe();
-diff --git a/kernel/hung_task.c b/kernel/hung_task.c
-index 06db12434d72..3d59261a8e2c 100644
---- a/kernel/hung_task.c
-+++ b/kernel/hung_task.c
-@@ -14,6 +14,7 @@
- #include <linux/kthread.h>
- #include <linux/lockdep.h>
- #include <linux/export.h>
-+#include <linux/sched.h>
- #include <linux/sysctl.h>
- #include <linux/utsname.h>
- #include <trace/events/sched.h>
-@@ -229,8 +230,10 @@ static int watchdog(void *dummy)
- 	for ( ; ; ) {
- 		unsigned long timeout = sysctl_hung_task_timeout_secs;
++#ifndef ASM_KGR_H
++#define ASM_KGR_H
++
++#include <asm/ptrace.h>
++
++static inline void kgr_set_regs_ip(struct pt_regs *regs, unsigned long ip)
++{
++	regs->ip = ip;
++}
++
++#endif
+diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
+index 854053889d4d..e44c8fda9c43 100644
+--- a/arch/x86/include/asm/thread_info.h
++++ b/arch/x86/include/asm/thread_info.h
+@@ -35,6 +35,7 @@ struct thread_info {
+ 	void __user		*sysenter_return;
+ 	unsigned int		sig_on_uaccess_error:1;
+ 	unsigned int		uaccess_err:1;	/* uaccess failed */
++	unsigned long		kgr_in_progress;
+ };
  
--		while (schedule_timeout_interruptible(timeout_jiffies(timeout)))
-+		while (schedule_timeout_interruptible(timeout_jiffies(timeout))) {
-+			kgr_task_safe(current);
- 			timeout = sysctl_hung_task_timeout_secs;
+ #define INIT_THREAD_INFO(tsk)			\
+diff --git a/arch/x86/kernel/asm-offsets.c b/arch/x86/kernel/asm-offsets.c
+index 9f6b9341950f..0db0437967a2 100644
+--- a/arch/x86/kernel/asm-offsets.c
++++ b/arch/x86/kernel/asm-offsets.c
+@@ -32,6 +32,7 @@ void common(void) {
+ 	OFFSET(TI_flags, thread_info, flags);
+ 	OFFSET(TI_status, thread_info, status);
+ 	OFFSET(TI_addr_limit, thread_info, addr_limit);
++	OFFSET(TI_kgr_in_progress, thread_info, kgr_in_progress);
+ 
+ 	BLANK();
+ 	OFFSET(crypto_tfm_ctx_offset, crypto_tfm, __crt_ctx);
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index b25ca969edd2..a7c570abc918 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -409,6 +409,7 @@ GLOBAL(system_call_after_swapgs)
+ 	movq  %rax,ORIG_RAX-ARGOFFSET(%rsp)
+ 	movq  %rcx,RIP-ARGOFFSET(%rsp)
+ 	CFI_REL_OFFSET rip,RIP-ARGOFFSET
++	movq $0, TI_kgr_in_progress+THREAD_INFO(%rsp,RIP-ARGOFFSET)
+ 	testl $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
+ 	jnz tracesys
+ system_call_fastpath:
+@@ -433,6 +434,7 @@ sysret_check:
+ 	LOCKDEP_SYS_EXIT
+ 	DISABLE_INTERRUPTS(CLBR_NONE)
+ 	TRACE_IRQS_OFF
++	movq $0, TI_kgr_in_progress+THREAD_INFO(%rsp,RIP-ARGOFFSET)
+ 	movl TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET),%edx
+ 	andl %edi,%edx
+ 	jnz  sysret_careful
+@@ -555,6 +557,7 @@ GLOBAL(int_ret_from_sys_call)
+ GLOBAL(int_with_check)
+ 	LOCKDEP_SYS_EXIT_IRQ
+ 	GET_THREAD_INFO(%rcx)
++	movq $0, TI_kgr_in_progress(%rcx)
+ 	movl TI_flags(%rcx),%edx
+ 	andl %edi,%edx
+ 	jnz   int_careful
+diff --git a/include/linux/kgraft.h b/include/linux/kgraft.h
+new file mode 100644
+index 000000000000..e87623fe74ad
+--- /dev/null
++++ b/include/linux/kgraft.h
+@@ -0,0 +1,85 @@
++/*
++ * kGraft Online Kernel Patching
++ *
++ *  Copyright (c) 2013-2014 SUSE
++ *   Authors: Jiri Kosina
++ *	      Vojtech Pavlik
++ *	      Jiri Slaby
++ */
++
++/*
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the Free
++ * Software Foundation; either version 2 of the License, or (at your option)
++ * any later version.
++ */
++
++#ifndef LINUX_KGR_H
++#define LINUX_KGR_H
++
++#include <linux/bitops.h>
++#include <linux/ftrace.h>
++#include <linux/sched.h>
++
++#if IS_ENABLED(CONFIG_KGRAFT)
++
++#include <asm/kgraft.h>
++
++#define KGR_TIMEOUT 30
++
++struct kgr_patch {
++	char reserved;
++	const struct kgr_patch_fun {
++		const char *name;
++		const char *new_name;
++
++		void *new_function;
++
++		struct ftrace_ops *ftrace_ops_slow;
++		struct ftrace_ops *ftrace_ops_fast;
++	} *patches[];
++};
++
++/*
++ * data structure holding locations of the source and target function
++ * fentry sites to avoid repeated lookups
++ */
++struct kgr_loc_caches {
++	unsigned long old;
++	unsigned long new;
++};
++
++#define KGR_PATCHED_FUNCTION(_name, _new_function)				\
++	static struct ftrace_ops __kgr_patch_ftrace_ops_slow_ ## _name = {	\
++		.flags = FTRACE_OPS_FL_SAVE_REGS,				\
++	};									\
++	static struct ftrace_ops __kgr_patch_ftrace_ops_fast_ ## _name = {	\
++		.flags = FTRACE_OPS_FL_SAVE_REGS,				\
++	};									\
++	static const struct kgr_patch_fun __kgr_patch_ ## _name = {		\
++		.name = #_name,							\
++		.new_name = #_new_function,					\
++		.new_function = _new_function,					\
++		.ftrace_ops_slow = &__kgr_patch_ftrace_ops_slow_ ## _name,	\
++		.ftrace_ops_fast = &__kgr_patch_ftrace_ops_fast_ ## _name,	\
++	};
++
++#define KGR_PATCH(name)		&__kgr_patch_ ## name
++#define KGR_PATCH_END		NULL
++
++extern int kgr_start_patching(const struct kgr_patch *);
++
++static inline void kgr_mark_task_in_progress(struct task_struct *p)
++{
++	/* This is replaced by thread_flag later. */
++	set_bit(0, &task_thread_info(p)->kgr_in_progress);
++}
++
++static inline bool kgr_task_in_progress(struct task_struct *p)
++{
++	return test_bit(0, &task_thread_info(p)->kgr_in_progress);
++}
++
++#endif /* IS_ENABLED(CONFIG_KGRAFT) */
++
++#endif /* LINUX_KGR_H */
+diff --git a/kernel/Kconfig.kgraft b/kernel/Kconfig.kgraft
+new file mode 100644
+index 000000000000..f38d82c06580
+--- /dev/null
++++ b/kernel/Kconfig.kgraft
+@@ -0,0 +1,7 @@
++config HAVE_KGRAFT
++	bool
++
++config KGRAFT
++	bool "kGraft infrastructure"
++	depends on DYNAMIC_FTRACE_WITH_REGS
++	depends on HAVE_KGRAFT
+diff --git a/kernel/Makefile b/kernel/Makefile
+index f2a8b6246ce9..3b81542a839d 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -28,6 +28,7 @@ obj-y += printk/
+ obj-y += irq/
+ obj-y += rcu/
+ 
++obj-$(CONFIG_KGRAFT) += kgraft.o
+ obj-$(CONFIG_CHECKPOINT_RESTORE) += kcmp.o
+ obj-$(CONFIG_FREEZER) += freezer.o
+ obj-$(CONFIG_PROFILING) += profile.o
+diff --git a/kernel/kgraft.c b/kernel/kgraft.c
+new file mode 100644
+index 000000000000..9b832419e0fd
+--- /dev/null
++++ b/kernel/kgraft.c
+@@ -0,0 +1,346 @@
++/*
++ * kGraft Online Kernel Patching
++ *
++ *  Copyright (c) 2013-2014 SUSE
++ *   Authors: Jiri Kosina
++ *	      Vojtech Pavlik
++ *	      Jiri Slaby
++ */
++
++/*
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the Free
++ * Software Foundation; either version 2 of the License, or (at your option)
++ * any later version.
++ */
++
++#include <linux/ftrace.h>
++#include <linux/kallsyms.h>
++#include <linux/kgraft.h>
++#include <linux/module.h>
++#include <linux/sched.h>
++#include <linux/slab.h>
++#include <linux/sort.h>
++#include <linux/spinlock.h>
++#include <linux/types.h>
++#include <linux/workqueue.h>
++
++static int kgr_patch_code(const struct kgr_patch_fun *patch_fun, bool final);
++static void kgr_work_fn(struct work_struct *work);
++
++static struct workqueue_struct *kgr_wq;
++static DECLARE_DELAYED_WORK(kgr_work, kgr_work_fn);
++static DEFINE_MUTEX(kgr_in_progress_lock);
++static bool kgr_in_progress;
++static bool kgr_initialized;
++static const struct kgr_patch *kgr_patch;
++
++/*
++ * The stub needs to modify the RIP value stored in struct pt_regs
++ * so that ftrace redirects the execution properly.
++ */
++static void kgr_stub_fast(unsigned long ip, unsigned long parent_ip,
++		struct ftrace_ops *ops, struct pt_regs *regs)
++{
++	struct kgr_loc_caches *c = ops->private;
++
++	pr_info("kgr: fast stub: calling new code at %lx\n", c->new);
++	kgr_set_regs_ip(regs, c->new);
++}
++
++static void kgr_stub_slow(unsigned long ip, unsigned long parent_ip,
++		struct ftrace_ops *ops, struct pt_regs *regs)
++{
++	struct kgr_loc_caches *c = ops->private;
++
++	if (kgr_task_in_progress(current) && current->mm) {
++		pr_info("kgr: slow stub: calling old code at %lx\n",
++				c->old);
++		kgr_set_regs_ip(regs, c->old + MCOUNT_INSN_SIZE);
++	} else {
++		pr_info("kgr: slow stub: calling new code at %lx\n",
++				c->new);
++		kgr_set_regs_ip(regs, c->new);
++	}
++}
++
++static bool kgr_still_patching(void)
++{
++	struct task_struct *p;
++	bool failed = false;
++
++	read_lock(&tasklist_lock);
++	for_each_process(p) {
++		/*
++		 * TODO
++		 *   kernel thread codepaths not supported and silently ignored
++		 */
++		if (kgr_task_in_progress(p) && p->mm) {
++			pr_info("pid %d (%s) still in kernel after timeout\n",
++					p->pid, p->comm);
++			failed = true;
 +		}
- 
- 		if (atomic_xchg(&reset_hung_task, 0))
- 			continue;
-diff --git a/kernel/kthread.c b/kernel/kthread.c
-index c2390f41307b..099ff4a07753 100644
---- a/kernel/kthread.c
-+++ b/kernel/kthread.c
-@@ -111,6 +111,8 @@ bool kthread_freezable_should_stop(bool *was_frozen)
- {
- 	bool frozen = false;
- 
-+	kgr_task_safe(current);
++	}
++	read_unlock(&tasklist_lock);
++	return failed;
++}
 +
- 	might_sleep();
- 
- 	if (unlikely(freezing(current)))
-@@ -497,6 +499,7 @@ int kthreadd(void *unused)
- 		if (list_empty(&kthread_create_list))
- 			schedule();
- 		__set_current_state(TASK_RUNNING);
-+		kgr_task_safe(current);
- 
- 		spin_lock(&kthread_create_lock);
- 		while (!list_empty(&kthread_create_list)) {
-diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-index f1ba77363fbb..51acec198818 100644
---- a/kernel/rcu/tree.c
-+++ b/kernel/rcu/tree.c
-@@ -1701,9 +1701,10 @@ static int __noreturn rcu_gp_kthread(void *arg)
- 					       ACCESS_ONCE(rsp->gpnum),
- 					       TPS("reqwait"));
- 			rsp->gp_state = RCU_GP_WAIT_GPS;
--			wait_event_interruptible(rsp->gp_wq,
-+			wait_event_interruptible(rsp->gp_wq, ({
-+						 kgr_task_safe(current);
- 						 ACCESS_ONCE(rsp->gp_flags) &
--						 RCU_GP_FLAG_INIT);
-+						 RCU_GP_FLAG_INIT; }));
- 			/* Locking provides needed memory barrier. */
- 			if (rcu_gp_init(rsp))
- 				break;
-@@ -1735,6 +1736,7 @@ static int __noreturn rcu_gp_kthread(void *arg)
- 					(!ACCESS_ONCE(rnp->qsmask) &&
- 					 !rcu_preempt_blocked_readers_cgp(rnp)),
- 					j);
-+			kgr_task_safe(current);
- 			/* Locking provides needed memory barriers. */
- 			/* If grace period done, leave loop. */
- 			if (!ACCESS_ONCE(rnp->qsmask) &&
-diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-index cbc2c45265e2..ac012deb387b 100644
---- a/kernel/rcu/tree_plugin.h
-+++ b/kernel/rcu/tree_plugin.h
-@@ -27,6 +27,7 @@
- #include <linux/delay.h>
- #include <linux/gfp.h>
- #include <linux/oom.h>
-+#include <linux/sched.h>
- #include <linux/smpboot.h>
- #include "../time/tick-internal.h"
- 
-@@ -1224,7 +1225,8 @@ static int rcu_boost_kthread(void *arg)
- 	for (;;) {
- 		rnp->boost_kthread_status = RCU_KTHREAD_WAITING;
- 		trace_rcu_utilization(TPS("End boost kthread@rcu_wait"));
--		rcu_wait(rnp->boost_tasks || rnp->exp_tasks);
-+		rcu_wait(({ kgr_task_safe(current);
-+					rnp->boost_tasks || rnp->exp_tasks; }));
- 		trace_rcu_utilization(TPS("Start boost kthread@rcu_wait"));
- 		rnp->boost_kthread_status = RCU_KTHREAD_RUNNING;
- 		more2boost = rcu_boost(rnp);
-@@ -2227,11 +2229,15 @@ static int rcu_nocb_kthread(void *arg)
- 
- 	/* Each pass through this loop invokes one batch of callbacks */
- 	for (;;) {
-+		kgr_task_safe(current);
++static void kgr_finalize(void)
++{
++	const struct kgr_patch_fun *const *patch_fun;
 +
- 		/* If not polling, wait for next batch of callbacks. */
- 		if (!rcu_nocb_poll) {
- 			trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu,
- 					    TPS("Sleep"));
--			wait_event_interruptible(rdp->nocb_wq, rdp->nocb_head);
-+			wait_event_interruptible(rdp->nocb_wq, ({
-+						kgr_task_safe(current);
-+						rdp->nocb_head; }));
- 			/* Memory barrier provide by xchg() below. */
- 		} else if (firsttime) {
- 			firsttime = 0;
-diff --git a/kernel/smpboot.c b/kernel/smpboot.c
-index eb89e1807408..9764c83c0ef2 100644
---- a/kernel/smpboot.c
-+++ b/kernel/smpboot.c
-@@ -107,6 +107,8 @@ static int smpboot_thread_fn(void *data)
- 	struct smp_hotplug_thread *ht = td->ht;
- 
- 	while (1) {
-+		kgr_task_safe(current);
++	for (patch_fun = kgr_patch->patches; *patch_fun; patch_fun++) {
++		int ret = kgr_patch_code(*patch_fun, true);
++		/*
++		 * In case any of the symbol resolutions in the set
++		 * has failed, patch all the previously replaced fentry
++		 * callsites back to nops and fail with grace
++		 */
++		if (ret < 0)
++			pr_err("kgr: finalize for %s failed, trying to continue\n",
++					(*patch_fun)->name);
++	}
++}
 +
- 		set_current_state(TASK_INTERRUPTIBLE);
- 		preempt_disable();
- 		if (kthread_should_stop()) {
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 6203d2900877..69222618d3e4 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -2231,6 +2231,7 @@ sleep:
- 	__set_current_state(TASK_INTERRUPTIBLE);
- 	spin_unlock_irq(&pool->lock);
- 	schedule();
-+	kgr_task_safe(current);
- 	goto woke_up;
- }
- 
-@@ -2272,6 +2273,8 @@ static int rescuer_thread(void *__rescuer)
- repeat:
- 	set_current_state(TASK_INTERRUPTIBLE);
- 
-+	kgr_task_safe(current);
++static void kgr_work_fn(struct work_struct *work)
++{
++	if (kgr_still_patching()) {
++		pr_info("kgr failed after timeout (%d), still in degraded mode\n",
++			KGR_TIMEOUT);
++		/* recheck again later */
++		queue_delayed_work(kgr_wq, &kgr_work, KGR_TIMEOUT * HZ);
++		return;
++	}
 +
- 	/*
- 	 * By the time the rescuer is requested to stop, the workqueue
- 	 * shouldn't have any work pending, but @wq->maydays may still have
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index e60837dc785c..fbcff9041fca 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -2699,6 +2699,7 @@ static void khugepaged_do_scan(void)
- 			break;
- 
- 		cond_resched();
-+		kgr_task_safe(current);
- 
- 		if (unlikely(kthread_should_stop() || freezing(current)))
- 			break;
-diff --git a/net/bluetooth/rfcomm/core.c b/net/bluetooth/rfcomm/core.c
-index 754b6fe4f742..65c27adea565 100644
---- a/net/bluetooth/rfcomm/core.c
-+++ b/net/bluetooth/rfcomm/core.c
-@@ -2094,6 +2094,8 @@ static int rfcomm_run(void *unused)
- 		if (kthread_should_stop())
- 			break;
- 
-+		kgr_task_safe(current);
++	/*
++	 * victory, patching finished, put everything back in shape
++	 * with as less performance impact as possible again
++	 */
++	pr_info("kgr succeeded\n");
++	kgr_finalize();
++	mutex_lock(&kgr_in_progress_lock);
++	kgr_in_progress = false;
++	mutex_unlock(&kgr_in_progress_lock);
++}
 +
- 		/* Process stuff */
- 		rfcomm_process_sessions();
- 
++static void kgr_mark_processes(void)
++{
++	struct task_struct *p;
++
++	read_lock(&tasklist_lock);
++	for_each_process(p)
++		kgr_mark_task_in_progress(p);
++	read_unlock(&tasklist_lock);
++}
++
++static unsigned long kgr_get_fentry_loc(const char *f_name)
++{
++	unsigned long orig_addr, fentry_loc;
++	const char *check_name;
++	char check_buf[KSYM_SYMBOL_LEN];
++
++	orig_addr = kallsyms_lookup_name(f_name);
++	if (!orig_addr) {
++		pr_err("kgr: function %s not resolved\n", f_name);
++		return -ENOENT;
++	}
++
++	fentry_loc = ftrace_function_to_fentry(orig_addr);
++	if (!fentry_loc) {
++		pr_err("kgr: fentry_loc not properly resolved\n");
++		return -ENXIO;
++	}
++
++	check_name = kallsyms_lookup(fentry_loc, NULL, NULL, NULL, check_buf);
++	if (strcmp(check_name, f_name)) {
++		pr_err("kgr: we got out of bounds the intended function (%s -> %s)\n",
++				f_name, check_name);
++		return -EINVAL;
++	}
++
++	return fentry_loc;
++}
++
++static int kgr_init_ftrace_ops(const struct kgr_patch_fun *patch_fun)
++{
++	struct kgr_loc_caches *caches;
++	unsigned long fentry_loc;
++	int ret;
++
++	/*
++	 * Initialize the ftrace_ops->private with pointers to the fentry
++	 * sites of both old and new functions. This is used as a
++	 * redirection target in the per-arch stubs.
++	 *
++	 * Beware! -- freeing (once unloading will be implemented)
++	 * will require synchronize_sched() etc.
++	 */
++
++	caches = kmalloc(sizeof(*caches), GFP_KERNEL);
++	if (!caches) {
++		pr_debug("kgr: unable to allocate fentry caches\n");
++		return -ENOMEM;
++	}
++
++	fentry_loc = kgr_get_fentry_loc(patch_fun->new_name);
++	if (IS_ERR_VALUE(fentry_loc)) {
++		pr_debug("kgr: fentry location lookup failed\n");
++		ret = fentry_loc;
++		goto free_caches;
++	}
++	pr_debug("kgr: storing %lx to caches->new for %s\n",
++			fentry_loc, patch_fun->new_name);
++	caches->new = fentry_loc;
++
++	fentry_loc = kgr_get_fentry_loc(patch_fun->name);
++	if (IS_ERR_VALUE(fentry_loc)) {
++		pr_debug("kgr: fentry location lookup failed\n");
++		ret = fentry_loc;
++		goto free_caches;
++	}
++
++	pr_debug("kgr: storing %lx to caches->old for %s\n",
++			fentry_loc, patch_fun->name);
++	caches->old = fentry_loc;
++
++	patch_fun->ftrace_ops_fast->private = caches;
++	patch_fun->ftrace_ops_fast->func = kgr_stub_fast;
++	patch_fun->ftrace_ops_slow->private = caches;
++	patch_fun->ftrace_ops_slow->func = kgr_stub_slow;
++
++	return 0;
++free_caches:
++	kfree(caches);
++	return ret;
++}
++
++static int kgr_patch_code(const struct kgr_patch_fun *patch_fun, bool final)
++{
++	struct ftrace_ops *new_ops;
++	struct kgr_loc_caches *caches;
++	unsigned long fentry_loc;
++	int err;
++
++	/* Choose between slow and fast stub */
++	if (!final) {
++		err = kgr_init_ftrace_ops(patch_fun);
++		if (err)
++			return err;
++		pr_debug("kgr: patching %s to slow stub\n", patch_fun->name);
++		new_ops = patch_fun->ftrace_ops_slow;
++	} else {
++		pr_debug("kgr: patching %s to fast stub\n", patch_fun->name);
++		new_ops = patch_fun->ftrace_ops_fast;
++	}
++
++	/* Flip the switch */
++	caches = new_ops->private;
++	fentry_loc = caches->old;
++	err = ftrace_set_filter_ip(new_ops, fentry_loc, 0, 0);
++	if (err) {
++		pr_debug("kgr: setting filter for %lx (%s) failed\n",
++				caches->old, patch_fun->name);
++		return err;
++	}
++
++	err = register_ftrace_function(new_ops);
++	if (err) {
++		pr_debug("kgr: registering ftrace function for %lx (%s) failed\n",
++				caches->old, patch_fun->name);
++		return err;
++	}
++
++	/*
++	 * Get rid of the slow stub. Having two stubs in the interim is fine,
++	 * the last one always "wins", as it'll be dragged earlier from the
++	 * ftrace hashtable
++	 */
++	if (final) {
++		err = unregister_ftrace_function(patch_fun->ftrace_ops_slow);
++		if (err) {
++			pr_debug("kgr: unregistering ftrace function for %lx (%s) failed with %d\n",
++					fentry_loc, patch_fun->name, err);
++			/* don't fail: we are only slower */
++			return 0;
++		}
++	}
++	pr_debug("kgr: redirection for %lx (%s) done\n", fentry_loc,
++			patch_fun->name);
++
++	return 0;
++}
++
++/**
++ * kgr_start_patching -- the entry for a kgraft patch
++ * @patch: patch to be applied
++ *
++ * Start patching of code that is neither running in IRQ context nor
++ * kernel thread.
++ */
++int kgr_start_patching(const struct kgr_patch *patch)
++{
++	const struct kgr_patch_fun *const *patch_fun;
++
++	if (!kgr_initialized) {
++		pr_err("kgr: can't patch, not initialized\n");
++		return -EINVAL;
++	}
++
++	mutex_lock(&kgr_in_progress_lock);
++	if (kgr_in_progress) {
++		pr_err("kgr: can't patch, another patching not yet finalized\n");
++		mutex_unlock(&kgr_in_progress_lock);
++		return -EAGAIN;
++	}
++
++	for (patch_fun = patch->patches; *patch_fun; patch_fun++) {
++		int ret;
++
++		ret = kgr_patch_code(*patch_fun, false);
++		/*
++		 * In case any of the symbol resolutions in the set
++		 * has failed, patch all the previously replaced fentry
++		 * callsites back to nops and fail with grace
++		 */
++		if (ret < 0) {
++			for (patch_fun--; patch_fun >= patch->patches;
++					patch_fun--)
++				unregister_ftrace_function((*patch_fun)->ftrace_ops_slow);
++			mutex_unlock(&kgr_in_progress_lock);
++			return ret;
++		}
++	}
++	kgr_in_progress = true;
++	kgr_patch = patch;
++	mutex_unlock(&kgr_in_progress_lock);
++
++	kgr_mark_processes();
++
++	/*
++	 * give everyone time to exit kernel, and check after a while
++	 */
++	queue_delayed_work(kgr_wq, &kgr_work, KGR_TIMEOUT * HZ);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(kgr_start_patching);
++
++static int __init kgr_init(void)
++{
++	if (ftrace_is_dead()) {
++		pr_warn("kgr: enabled, but no fentry locations found ... aborting\n");
++		return -ENODEV;
++	}
++
++	kgr_wq = create_singlethread_workqueue("kgraft");
++	if (!kgr_wq) {
++		pr_err("kgr: cannot allocate a work queue, aborting!\n");
++		return -ENOMEM;
++	}
++
++	kgr_initialized = true;
++	pr_info("kgr: successfully initialized\n");
++
++	return 0;
++}
++module_init(kgr_init);
 -- 
 2.0.0
 
