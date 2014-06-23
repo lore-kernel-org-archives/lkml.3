@@ -1,100 +1,283 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751894AbaFWCVZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 22:21:25 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:49755 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751798AbaFWCVQ (ORCPT
+	id S1751996AbaFWCX5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 22:23:57 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:32892 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751299AbaFWCXz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 22:21:16 -0400
-Message-ID: <53A78F14.8070705@hitachi.com>
-Date: Mon, 23 Jun 2014 11:21:08 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Sun, 22 Jun 2014 22:23:55 -0400
+X-Original-SENDERIP: 10.177.220.169
+X-Original-MAILFROM: minchan@kernel.org
+Date: Mon, 23 Jun 2014 11:24:43 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 02/13] mm, compaction: defer each zone individually
+ instead of preferred zone
+Message-ID: <20140623022443.GB12413@bbox>
+References: <1403279383-5862-1-git-send-email-vbabka@suse.cz>
+ <1403279383-5862-3-git-send-email-vbabka@suse.cz>
 MIME-Version: 1.0
-To: Patrick Palka <patrick@parcs.ath.cx>
-Cc: Jiri Olsa <jolsa@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH -tip 1/4] perf/probe: Improve error message for unknown
- member of data structure
-References: <20140606071338.6788.799.stgit@kbuild-fedora.novalocal> <20140606071345.6788.23744.stgit@kbuild-fedora.novalocal> <CA+C-WL8PUOOVZCToS+ExtALKUjsHRrnG7zZCFnJWmnLk7n2+4A@mail.gmail.com>
-In-Reply-To: <CA+C-WL8PUOOVZCToS+ExtALKUjsHRrnG7zZCFnJWmnLk7n2+4A@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1403279383-5862-3-git-send-email-vbabka@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/06/22 3:18), Patrick Palka wrote:
-> On Fri, Jun 6, 2014 at 3:13 AM, Masami Hiramatsu
-> <masami.hiramatsu.pt@hitachi.com> wrote:
->> Improve the error message if we can not find given member in
->> the given structure. Currently perf probe shows a wrong error
->> message as below.
->>
->>   -----
->>   # perf probe getname_flags:65 "result->BOGUS"
->>   result(type:filename) has no member BOGUS.
->>   Failed to find 'result' in this function.
->>     Error: Failed to add events. (-22)
->>   -----
->>
->> The first message is correct, but the second one is not, since
->> we didn't fail to find a variable but fails to find the member
->> of given variable.
->>
->>   -----
->>   # perf probe getname_flags:65 "result->BOGUS"
->>   result(type:filename) has no member BOGUS.
->>     Error: Failed to add events. (-22)
->>   -----
->>
->> With this patch, the error message shows only the first one.
->> And if we really failed to find given variable, it tells us so.
->>
->>   -----
->>   # perf probe getname_flags:65 "BOGUS"
->>   Failed to find 'BOGUS' in this function.
->>     Error: Failed to add events. (-2)
->>   -----
->>
->> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
->> Reported-by: Arnaldo Carvalho de Melo <acme@kernel.org>
->> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
->> Cc: Paul Mackerras <paulus@samba.org>
->> Cc: Ingo Molnar <mingo@redhat.com>
->> Cc: Namhyung Kim <namhyung@kernel.org>
->> Cc: Jiri Olsa <jolsa@redhat.com>
->> ---
->>  tools/perf/util/probe-finder.c |    5 ++---
->>  1 file changed, 2 insertions(+), 3 deletions(-)
->>
->> diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
->> index 9d8eb26..ce8faf4 100644
->> --- a/tools/perf/util/probe-finder.c
->> +++ b/tools/perf/util/probe-finder.c
->> @@ -573,14 +573,13 @@ static int find_variable(Dwarf_Die *sc_die, struct probe_finder *pf)
->>         if (!die_find_variable_at(sc_die, pf->pvar->var, pf->addr, &vr_die)) {
->>                 /* Search again in global variables */
->>                 if (!die_find_variable_at(&pf->cu_die, pf->pvar->var, 0, &vr_die))
->> +                       pr_warning("Failed to find '%s' in this function.\n",
->> +                                  pf->pvar->var);
->>                         ret = -ENOENT;
+On Fri, Jun 20, 2014 at 05:49:32PM +0200, Vlastimil Babka wrote:
+> When direct sync compaction is often unsuccessful, it may become deferred for
+> some time to avoid further useless attempts, both sync and async. Successful
+> high-order allocations un-defer compaction, while further unsuccessful
+> compaction attempts prolong the copmaction deferred period.
 > 
-> It looks like you're missing a pair of braces here.
+> Currently the checking and setting deferred status is performed only on the
+> preferred zone of the allocation that invoked direct compaction. But compaction
+> itself is attempted on all eligible zones in the zonelist, so the behavior is
+> suboptimal and may lead both to scenarios where 1) compaction is attempted
+> uselessly, or 2) where it's not attempted despite good chances of succeeding,
+> as shown on the examples below:
+> 
+> 1) A direct compaction with Normal preferred zone failed and set deferred
+>    compaction for the Normal zone. Another unrelated direct compaction with
+>    DMA32 as preferred zone will attempt to compact DMA32 zone even though
+>    the first compaction attempt also included DMA32 zone.
+> 
+>    In another scenario, compaction with Normal preferred zone failed to compact
+>    Normal zone, but succeeded in the DMA32 zone, so it will not defer
+>    compaction. In the next attempt, it will try Normal zone which will fail
+>    again, instead of skipping Normal zone and trying DMA32 directly.
+> 
+> 2) Kswapd will balance DMA32 zone and reset defer status based on watermarks
+>    looking good. A direct compaction with preferred Normal zone will skip
+>    compaction of all zones including DMA32 because Normal was still deferred.
+>    The allocation might have succeeded in DMA32, but won't.
+> 
+> This patch makes compaction deferring work on individual zone basis instead of
+> preferred zone. For each zone, it checks compaction_deferred() to decide if the
+> zone should be skipped. If watermarks fail after compacting the zone,
+> defer_compaction() is called. The zone where watermarks passed can still be
+> deferred when the allocation attempt is unsuccessful. When allocation is
+> successful, compaction_defer_reset() is called for the zone containing the
+> allocated page. This approach should approximate calling defer_compaction()
+> only on zones where compaction was attempted and did not yield allocated page.
+> There might be corner cases but that is inevitable as long as the decision
+> to stop compacting dues not guarantee that a page will be allocated.
+> 
+> During testing on a two-node machine with a single very small Normal zone on
+> node 1, this patch has improved success rates in stress-highalloc mmtests
+> benchmark. The success here were previously made worse by commit 3a025760fc
+> ("mm: page_alloc: spill to remote nodes before waking kswapd") as kswapd was
+> no longer resetting often enough the deferred compaction for the Normal zone,
+> and DMA32 zones on both nodes were thus not considered for compaction.
+> 
+> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
 
-Oops, right! Thank you very much!
+Nice job!
+
+Acked-by: Minchan Kim <minchan@kernel.org>
+
+Below is just nitpick.
+
+> Cc: Minchan Kim <minchan@kernel.org>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Cc: Michal Nazarewicz <mina86@mina86.com>
+> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: David Rientjes <rientjes@google.com>
+> ---
+>  include/linux/compaction.h |  6 ++++--
+>  mm/compaction.c            | 29 ++++++++++++++++++++++++-----
+>  mm/page_alloc.c            | 33 ++++++++++++++++++---------------
+>  3 files changed, 46 insertions(+), 22 deletions(-)
+> 
+> diff --git a/include/linux/compaction.h b/include/linux/compaction.h
+> index 01e3132..76f9beb 100644
+> --- a/include/linux/compaction.h
+> +++ b/include/linux/compaction.h
+> @@ -22,7 +22,8 @@ extern int sysctl_extfrag_handler(struct ctl_table *table, int write,
+>  extern int fragmentation_index(struct zone *zone, unsigned int order);
+>  extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
+>  			int order, gfp_t gfp_mask, nodemask_t *mask,
+> -			enum migrate_mode mode, bool *contended);
+> +			enum migrate_mode mode, bool *contended, bool *deferred,
+> +			struct zone **candidate_zone);
+>  extern void compact_pgdat(pg_data_t *pgdat, int order);
+>  extern void reset_isolation_suitable(pg_data_t *pgdat);
+>  extern unsigned long compaction_suitable(struct zone *zone, int order);
+> @@ -91,7 +92,8 @@ static inline bool compaction_restarting(struct zone *zone, int order)
+>  #else
+>  static inline unsigned long try_to_compact_pages(struct zonelist *zonelist,
+>  			int order, gfp_t gfp_mask, nodemask_t *nodemask,
+> -			enum migrate_mode mode, bool *contended)
+> +			enum migrate_mode mode, bool *contended, bool *deferred,
+> +			struct zone **candidate_zone)
+>  {
+>  	return COMPACT_CONTINUE;
+>  }
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index 5175019..7c491d0 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -1122,13 +1122,15 @@ int sysctl_extfrag_threshold = 500;
+>   * @nodemask: The allowed nodes to allocate from
+>   * @mode: The migration mode for async, sync light, or sync migration
+>   * @contended: Return value that is true if compaction was aborted due to lock contention
+> - * @page: Optionally capture a free page of the requested order during compaction
+> + * @deferred: Return value that is true if compaction was deferred in all zones
+> + * @candidate_zone: Return the zone where we think allocation should succeed
+>   *
+>   * This is the main entry point for direct page compaction.
+>   */
+>  unsigned long try_to_compact_pages(struct zonelist *zonelist,
+>  			int order, gfp_t gfp_mask, nodemask_t *nodemask,
+> -			enum migrate_mode mode, bool *contended)
+> +			enum migrate_mode mode, bool *contended, bool *deferred,
+> +			struct zone **candidate_zone)
+>  {
+>  	enum zone_type high_zoneidx = gfp_zone(gfp_mask);
+>  	int may_enter_fs = gfp_mask & __GFP_FS;
+> @@ -1142,8 +1144,7 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
+>  	if (!order || !may_enter_fs || !may_perform_io)
+>  		return rc;
+>  
+> -	count_compact_event(COMPACTSTALL);
+> -
+> +	*deferred = true;
+>  #ifdef CONFIG_CMA
+>  	if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
+>  		alloc_flags |= ALLOC_CMA;
+> @@ -1153,16 +1154,34 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
+>  								nodemask) {
+>  		int status;
+>  
+> +		if (compaction_deferred(zone, order))
+> +			continue;
+> +
+> +		*deferred = false;
+> +
+>  		status = compact_zone_order(zone, order, gfp_mask, mode,
+>  						contended);
+>  		rc = max(status, rc);
+>  
+>  		/* If a normal allocation would succeed, stop compacting */
+>  		if (zone_watermark_ok(zone, order, low_wmark_pages(zone), 0,
+> -				      alloc_flags))
+> +				      alloc_flags)) {
+> +			*candidate_zone = zone;
+>  			break;
+> +		} else if (mode != MIGRATE_ASYNC) {
+> +			/*
+> +			 * We think that allocation won't succeed in this zone
+> +			 * so we defer compaction there. If it ends up
+> +			 * succeeding after all, it will be reset.
+> +			 */
+> +			defer_compaction(zone, order);
+> +		}
+>  	}
+>  
+> +	/* If at least one zone wasn't deferred, we count a compaction stall */
+
+I like positive sentence.
+
+        /* Once we tried compaction a zone at least, let's count a compaction stall */
+
+
+> +	if (!*deferred)
+> +		count_compact_event(COMPACTSTALL);
+> +
+>  	return rc;
+>  }
+>  
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index ee92384..6593f79 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -2238,18 +2238,17 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+>  	bool *contended_compaction, bool *deferred_compaction,
+>  	unsigned long *did_some_progress)
+>  {
+> -	if (!order)
+> -		return NULL;
+> +	struct zone *last_compact_zone = NULL;
+>  
+> -	if (compaction_deferred(preferred_zone, order)) {
+> -		*deferred_compaction = true;
+> +	if (!order)
+>  		return NULL;
+> -	}
+>  
+>  	current->flags |= PF_MEMALLOC;
+>  	*did_some_progress = try_to_compact_pages(zonelist, order, gfp_mask,
+>  						nodemask, mode,
+> -						contended_compaction);
+> +						contended_compaction,
+> +						deferred_compaction,
+> +						&last_compact_zone);
+>  	current->flags &= ~PF_MEMALLOC;
+>  
+>  	if (*did_some_progress != COMPACT_SKIPPED) {
+> @@ -2263,27 +2262,31 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+>  				order, zonelist, high_zoneidx,
+>  				alloc_flags & ~ALLOC_NO_WATERMARKS,
+>  				preferred_zone, classzone_idx, migratetype);
+> +
+>  		if (page) {
+> -			preferred_zone->compact_blockskip_flush = false;
+> -			compaction_defer_reset(preferred_zone, order, true);
+> +			struct zone *zone = page_zone(page);
+> +
+> +			zone->compact_blockskip_flush = false;
+> +			compaction_defer_reset(zone, order, true);
+>  			count_vm_event(COMPACTSUCCESS);
+>  			return page;
+>  		}
+>  
+>  		/*
+> +		 * last_compact_zone is where try_to_compact_pages thought
+> +		 * allocation should succeed, so it did not defer compaction.
+> +		 * But now we know that it didn't succeed, so we do the defer.
+> +		 */
+> +		if (last_compact_zone && mode != MIGRATE_ASYNC)
+> +			defer_compaction(last_compact_zone, order);
+> +
+> +		/*
+>  		 * It's bad if compaction run occurs and fails.
+>  		 * The most likely reason is that pages exist,
+>  		 * but not enough to satisfy watermarks.
+>  		 */
+>  		count_vm_event(COMPACTFAIL);
+>  
+> -		/*
+> -		 * As async compaction considers a subset of pageblocks, only
+> -		 * defer if the failure was a sync compaction failure.
+> -		 */
+> -		if (mode != MIGRATE_ASYNC)
+> -			defer_compaction(preferred_zone, order);
+> -
+>  		cond_resched();
+>  	}
+>  
+> -- 
+> 1.8.4.5
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Kind regards,
+Minchan Kim
