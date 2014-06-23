@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751977AbaFWWg3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 18:36:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9127 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750931AbaFWWg2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 18:36:28 -0400
-From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH] PCI: Add bridge DMA alias quirk for Intel 82801
-To: linux-pci@vger.kernel.org
-Cc: bhelgaas@google.com, linux-kernel@vger.kernel.org,
-        Alex Williamson <alex.williamson@redhat.com>
-Date: Mon, 23 Jun 2014 16:36:25 -0600
-Message-ID: <20140623223530.13445.94886.stgit@gimli.home>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1752622AbaFWWlh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 18:41:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53718 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751200AbaFWWlg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 18:41:36 -0400
+Date: Mon, 23 Jun 2014 15:41:34 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: gregkh@linuxfoundation.org, hpa@linux.intel.com,
+        linux-kernel@vger.kernel.org, "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Andrew Lunn <andrew@lunn.ch>, Stephen Warren <swarren@wwwdotorg.org>,
+        Michal Hocko <mhocko@suse.cz>, Petr Mladek <pmladek@suse.cz>,
+        Joe Perches <joe@perches.com>, Arun KS <arunks.linux@gmail.com>,
+        Kees Cook <keescook@chromium.org>, Davidlohr Bueso <davidlohr@hp.com>,
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [PATCH v8 4/4] printk: allow increasing the ring buffer
+ depending on the number of CPUs
+Message-Id: <20140623154134.43ac7ab63896cd9ebcba84b6@linux-foundation.org>
+In-Reply-To: <1403124337-14886-4-git-send-email-mcgrof@do-not-panic.com>
+References: <1403124337-14886-1-git-send-email-mcgrof@do-not-panic.com>
+	<1403124337-14886-4-git-send-email-mcgrof@do-not-panic.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This bridge sometimes shows up as a root complex device and sometimes
-as a discrete PCIe-to-PCI bridge.  Testing indicates that in the
-latter case, we need to enable the PCIe bridge DMA alias quirk.
+On Wed, 18 Jun 2014 13:45:37 -0700 "Luis R. Rodriguez" <mcgrof@do-not-panic.com> wrote:
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Reported-by: Milos Kaurin <milos.kaurin@gmail.com>
-Tested-by: Milos Kaurin <milos.kaurin@gmail.com>
----
+> ...
+>
+> If an increase is required the ring buffer is increased to
+> +	  the next power of 2 that can fit both the minimum kernel ring buffer
+> +	  (LOG_BUF_SHIFT) plus the additional worst case CPU contributions.
+>
+> ...
+>
+> +	log_buf_len_update(cpu_extra + __LOG_BUF_LEN);
+> +}
 
- drivers/pci/quirks.c |    2 ++
- 1 file changed, 2 insertions(+)
+I'd have expected
 
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index 78a7df6..460c354 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -3405,6 +3405,8 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ASMEDIA, 0x1080,
- DECLARE_PCI_FIXUP_HEADER(0x10e3, 0x8113, quirk_use_pcie_bridge_dma_alias);
- /* ITE 8892, https://bugzilla.kernel.org/show_bug.cgi?id=73551 */
- DECLARE_PCI_FIXUP_HEADER(0x1283, 0x8892, quirk_use_pcie_bridge_dma_alias);
-+/* Intel 82801, https://bugzilla.kernel.org/show_bug.cgi?id=44881#c49 */
-+DECLARE_PCI_FIXUP_HEADER(0x8086, 0x244e, quirk_use_pcie_bridge_dma_alias);
- 
- /*
-  * AMD has indicated that the devices below do not support peer-to-peer
+  total_cpu_space = minimum-per-cpu-len * nr_possible_cpus;
+  log_buf_len = max(__LOG_BUF_LEN, total_cpu_space)
 
+but here you added __LOG_BUF_LEN to total_cpu_space and I cannot work
+out why.  
