@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754144AbaFWND6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:03:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36790 "EHLO
+	id S1754222AbaFWNEK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:04:10 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36840 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754079AbaFWNDz (ORCPT
+	with ESMTP id S1752535AbaFWNEE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:03:55 -0400
+	Mon, 23 Jun 2014 09:04:04 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Chen Yucong <slaoub@gmail.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Roger Quadros <rogerq@ti.com>, Kevin Hilman <khilman@linaro.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 19/93] hwpoison, hugetlb: lock_page/unlock_page does not match for handling a free hugepage
-Date: Mon, 23 Jun 2014 14:01:58 +0100
-Message-Id: <1403528592-2163-20-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 29/93] ARM: OMAP4: Fix the boot regression with CPU_IDLE enabled
+Date: Mon, 23 Jun 2014 14:02:08 +0100
+Message-Id: <1403528592-2163-30-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
 References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
@@ -28,56 +30,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chen Yucong <slaoub@gmail.com>
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
 
-commit b985194c8c0a130ed155b71662e39f7eaea4876f upstream.
+commit 4b353a706a86598ba47307c47301c3c428b79e09 upstream.
 
-For handling a free hugepage in memory failure, the race will happen if
-another thread hwpoisoned this hugepage concurrently.  So we need to
-check PageHWPoison instead of !PageHWPoison.
+On OMAP4 panda board, there have been several bug reports about boot
+hang and lock-ups with CPU_IDLE enabled. The root cause of the issue
+is missing interrupts while in idle state. Commit cb7094e8 {cpuidle / omap4 :
+use CPUIDLE_FLAG_TIMER_STOP flag} moved the broadcast notifiers to common
+code for right reasons but on OMAP4 which suffers from a nasty ROM code
+bug with GIC, commit ff999b8a {ARM: OMAP4460: Workaround for ROM bug ..},
+we loose interrupts which leads to issues like lock-up, hangs etc.
 
-If hwpoison_filter(p) returns true or a race happens, then we need to
-unlock_page(hpage).
+Patch reverts commit cb7094 {cpuidle / omap4 : use CPUIDLE_FLAG_TIMER_STOP
+flag} and 54769d6 {cpuidle: OMAP4: remove timer broadcast initialization} to
+avoid the issue. With this change, OMAP4 panda boards, the mentioned
+issues are getting fixed. We no longer loose interrupts which was the cause
+of the regression.
 
-Signed-off-by: Chen Yucong <slaoub@gmail.com>
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Tested-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Reviewed-by: Andi Kleen <ak@linux.intel.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Fixes: cb7094e8 (cpuidle / omap4 : use CPUIDLE_FLAG_TIMER_STOP flag)
+Fixes: ff999b8a (cpuidle: OMAP4: remove timer broadcast initialization)
+Cc: Roger Quadros <rogerq@ti.com>
+Cc: Kevin Hilman <khilman@linaro.org>
+Cc: Tony Lindgren <tony@atomide.com>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+Reported-tested-by: Roger Quadros <rogerq@ti.com>
+Reported-tested-by: Kevin Hilman <khilman@linaro.org>
+Tested-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/memory-failure.c | 15 ++++++++-------
- 1 file changed, 8 insertions(+), 7 deletions(-)
+ arch/arm/mach-omap2/cpuidle44xx.c | 25 +++++++++++++++++++++----
+ 1 file changed, 21 insertions(+), 4 deletions(-)
 
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index a86908134a8f..d3772a6118ee 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -1083,15 +1083,16 @@ int memory_failure(unsigned long pfn, int trapno, int flags)
- 			return 0;
- 		} else if (PageHuge(hpage)) {
- 			/*
--			 * Check "just unpoisoned", "filter hit", and
--			 * "race with other subpage."
-+			 * Check "filter hit" and "race with other subpage."
- 			 */
- 			lock_page(hpage);
--			if (!PageHWPoison(hpage)
--			    || (hwpoison_filter(p) && TestClearPageHWPoison(p))
--			    || (p != hpage && TestSetPageHWPoison(hpage))) {
--				atomic_long_sub(nr_pages, &num_poisoned_pages);
--				return 0;
-+			if (PageHWPoison(hpage)) {
-+				if ((hwpoison_filter(p) && TestClearPageHWPoison(p))
-+				    || (p != hpage && TestSetPageHWPoison(hpage))) {
-+					atomic_long_sub(nr_pages, &num_poisoned_pages);
-+					unlock_page(hpage);
-+					return 0;
-+				}
- 			}
- 			set_page_hwpoison_huge_page(hpage);
- 			res = dequeue_hwpoisoned_huge_page(hpage);
+diff --git a/arch/arm/mach-omap2/cpuidle44xx.c b/arch/arm/mach-omap2/cpuidle44xx.c
+index c443f2e97e10..f98410a257e3 100644
+--- a/arch/arm/mach-omap2/cpuidle44xx.c
++++ b/arch/arm/mach-omap2/cpuidle44xx.c
+@@ -14,6 +14,7 @@
+ #include <linux/cpuidle.h>
+ #include <linux/cpu_pm.h>
+ #include <linux/export.h>
++#include <linux/clockchips.h>
+ 
+ #include <asm/cpuidle.h>
+ #include <asm/proc-fns.h>
+@@ -80,6 +81,7 @@ static int omap_enter_idle_coupled(struct cpuidle_device *dev,
+ 			int index)
+ {
+ 	struct idle_statedata *cx = state_ptr + index;
++	int cpu_id = smp_processor_id();
+ 
+ 	/*
+ 	 * CPU0 has to wait and stay ON until CPU1 is OFF state.
+@@ -104,6 +106,8 @@ static int omap_enter_idle_coupled(struct cpuidle_device *dev,
+ 		}
+ 	}
+ 
++	clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &cpu_id);
++
+ 	/*
+ 	 * Call idle CPU PM enter notifier chain so that
+ 	 * VFP and per CPU interrupt context is saved.
+@@ -147,6 +151,8 @@ static int omap_enter_idle_coupled(struct cpuidle_device *dev,
+ 		(cx->mpu_logic_state == PWRDM_POWER_OFF))
+ 		cpu_cluster_pm_exit();
+ 
++	clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &cpu_id);
++
+ fail:
+ 	cpuidle_coupled_parallel_barrier(dev, &abort_barrier);
+ 	cpu_done[dev->cpu] = false;
+@@ -154,6 +160,16 @@ fail:
+ 	return index;
+ }
+ 
++/*
++ * For each cpu, setup the broadcast timer because local timers
++ * stops for the states above C1.
++ */
++static void omap_setup_broadcast_timer(void *arg)
++{
++	int cpu = smp_processor_id();
++	clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ON, &cpu);
++}
++
+ static struct cpuidle_driver omap4_idle_driver = {
+ 	.name				= "omap4_idle",
+ 	.owner				= THIS_MODULE,
+@@ -171,8 +187,7 @@ static struct cpuidle_driver omap4_idle_driver = {
+ 			/* C2 - CPU0 OFF + CPU1 OFF + MPU CSWR */
+ 			.exit_latency = 328 + 440,
+ 			.target_residency = 960,
+-			.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_COUPLED |
+-			         CPUIDLE_FLAG_TIMER_STOP,
++			.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_COUPLED,
+ 			.enter = omap_enter_idle_coupled,
+ 			.name = "C2",
+ 			.desc = "CPUx OFF, MPUSS CSWR",
+@@ -181,8 +196,7 @@ static struct cpuidle_driver omap4_idle_driver = {
+ 			/* C3 - CPU0 OFF + CPU1 OFF + MPU OSWR */
+ 			.exit_latency = 460 + 518,
+ 			.target_residency = 1100,
+-			.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_COUPLED |
+-			         CPUIDLE_FLAG_TIMER_STOP,
++			.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_COUPLED,
+ 			.enter = omap_enter_idle_coupled,
+ 			.name = "C3",
+ 			.desc = "CPUx OFF, MPUSS OSWR",
+@@ -213,5 +227,8 @@ int __init omap4_idle_init(void)
+ 	if (!cpu_clkdm[0] || !cpu_clkdm[1])
+ 		return -ENODEV;
+ 
++	/* Configure the broadcast timer on each cpu */
++	on_each_cpu(omap_setup_broadcast_timer, NULL, 1);
++
+ 	return cpuidle_register(&omap4_idle_driver, cpu_online_mask);
+ }
 -- 
 1.9.1
 
