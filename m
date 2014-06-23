@@ -1,90 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751348AbaFWH24 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 03:28:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38583 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750722AbaFWH2z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 03:28:55 -0400
-Date: Mon, 23 Jun 2014 09:28:50 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Vlastimil Babka <vbabka@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/4] mm: vmscan: rework compaction-ready signaling in
- direct reclaim
-Message-ID: <20140623072850.GA9743@dhcp22.suse.cz>
-References: <1403282030-29915-1-git-send-email-hannes@cmpxchg.org>
- <1403282030-29915-2-git-send-email-hannes@cmpxchg.org>
- <53A467A3.1050008@suse.cz>
- <20140620202449.GA30849@cmpxchg.org>
+	id S1751502AbaFWHdk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 03:33:40 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:12276 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751099AbaFWHdj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 03:33:39 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 23 Jun 2014 00:23:57 -0700
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>
+CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <gnurou@gmail.com>, Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH 0/2] ARM: tegra: roth: pinmux fixes
+Date: Mon, 23 Jun 2014 16:32:57 +0900
+Message-ID: <1403508779-25896-1-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 2.0.0
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140620202449.GA30849@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 20-06-14 16:24:49, Johannes Weiner wrote:
-[...]
-> From cd48b73fdca9e23aa21f65e9af1f850dbac5ab8e Mon Sep 17 00:00:00 2001
-> From: Johannes Weiner <hannes@cmpxchg.org>
-> Date: Wed, 11 Jun 2014 12:53:59 -0400
-> Subject: [patch] mm: vmscan: rework compaction-ready signaling in direct
->  reclaim
-> 
-> Page reclaim for a higher-order page runs until compaction is ready,
-> then aborts and signals this situation through the return value of
-> shrink_zones().  This is an oddly specific signal to encode in the
-> return value of shrink_zones(), though, and can be quite confusing.
-> 
-> Introduce sc->compaction_ready and signal the compactability of the
-> zones out-of-band to free up the return value of shrink_zones() for
-> actual zone reclaimability.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> Acked-by: Vlastimil Babka <vbabka@suse.cz>
+Two small but important fixes to SHIELD's pinmux configuration.
+The use of invalid properties caused the pinmux to not be applied
+at all. Also the setting for sdmmc clock lines resulted in random
+errors or even the impossibility to probe attached devices.
 
-Very nice. It will help me to get rid off additional hacks for the
-min_limit for memcg. Thanks!
+Alexandre Courbot (2):
+  ARM: tegra: roth: fix unsupported pinmux properties
+  ARM: tegra: roth: enable input on mmc clock pins
 
-One question below
-
-[...]
-> @@ -2500,12 +2492,15 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
->  		vmpressure_prio(sc->gfp_mask, sc->target_mem_cgroup,
->  				sc->priority);
->  		sc->nr_scanned = 0;
-> -		aborted_reclaim = shrink_zones(zonelist, sc);
-> +		shrink_zones(zonelist, sc);
->  
->  		total_scanned += sc->nr_scanned;
->  		if (sc->nr_reclaimed >= sc->nr_to_reclaim)
->  			goto out;
->  
-> +		if (sc->compaction_ready)
-> +			goto out;
-> +
->  		/*
->  		 * If we're getting trouble reclaiming, start doing
->  		 * writepage even in laptop mode.
-> @@ -2526,7 +2521,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
->  						WB_REASON_TRY_TO_FREE_PAGES);
->  			sc->may_writepage = 1;
->  		}
-> -	} while (--sc->priority >= 0 && !aborted_reclaim);
-> +	} while (--sc->priority >= 0);
->  
->  out:
->  	delayacct_freepages_end();
-
-It is not entirely clear to me why we do not need to check and wake up
-flusher threads anymore?
+ arch/arm/boot/dts/tegra114-roth.dts | 10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
 
 -- 
-Michal Hocko
-SUSE Labs
+2.0.0
+
