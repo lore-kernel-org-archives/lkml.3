@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754200AbaFWItD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 04:49:03 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55542 "EHLO
+	id S1754183AbaFWItA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 04:49:00 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55572 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752573AbaFWIc3 (ORCPT
+	by vger.kernel.org with ESMTP id S1752608AbaFWIc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Jun 2014 04:32:29 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Nicholas Bellinger <nab@linux-iscsi.org>,
-        Chris Boot <crb@tiger-computing.co.uk>,
-        Philip Gaw <pgaw@darktech.org.uk>, Hannes Reinecke <hare@suse.de>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 065/111] target: Allow READ_CAPACITY opcode in ALUA Standby access state
-Date: Mon, 23 Jun 2014 10:31:40 +0200
-Message-Id: <bf8af413dcf4591bcc8f823133c4a2355c189458.1403512281.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 092/111] netlink: Only check file credentials for implicit destinations
+Date: Mon, 23 Jun 2014 10:32:07 +0200
+Message-Id: <bf5e2defa6e00fba34118b613d3539f818f84636.1403512281.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
 References: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
@@ -25,59 +24,116 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit e7810c2d2c37fa8e58dda74b00790dab60fe6fba upstream.
+[ Upstream commit 2d7a85f4b06e9c27ff629f07a524c48074f07f81 ]
 
-This patch allows READ_CAPACITY + SAI_READ_CAPACITY_16 opcode
-processing to occur while the associated ALUA group is in Standby
-access state.
+It was possible to get a setuid root or setcap executable to write to
+it's stdout or stderr (which has been set made a netlink socket) and
+inadvertently reconfigure the networking stack.
 
-This is required to avoid host side LUN probe failures during the
-initial scan if an ALUA group has already implicitly changed into
-Standby access state.
+To prevent this we check that both the creator of the socket and
+the currentl applications has permission to reconfigure the network
+stack.
 
-This addresses a bug reported by Chris + Philip using dm-multipath
-+ ESX hosts configured with ALUA multipath.
+Unfortunately this breaks Zebra which always uses sendto/sendmsg
+and creates it's socket without any privileges.
 
-(Drop v3.15 specific set_ascq usage - nab)
+To keep Zebra working don't bother checking if the creator of the
+socket has privilege when a destination address is specified.  Instead
+rely exclusively on the privileges of the sender of the socket.
 
-Reported-by: Chris Boot <crb@tiger-computing.co.uk>
-Reported-by: Philip Gaw <pgaw@darktech.org.uk>
-Cc: Chris Boot <crb@tiger-computing.co.uk>
-Cc: Philip Gaw <pgaw@darktech.org.uk>
-Cc: Hannes Reinecke <hare@suse.de>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Note from Andy: This is exactly Eric's code except for some comment
+clarifications and formatting fixes.  Neither I nor, I think, anyone
+else is thrilled with this approach, but I'm hesitant to wait on a
+better fix since 3.15 is almost here.
+
+Note to stable maintainers: This is a mess.  An earlier series of
+patches in 3.15 fix a rather serious security issue (CVE-2014-0181),
+but they did so in a way that breaks Zebra.  The offending series
+includes:
+
+    commit aa4cf9452f469f16cea8c96283b641b4576d4a7b
+    Author: Eric W. Biederman <ebiederm@xmission.com>
+    Date:   Wed Apr 23 14:28:03 2014 -0700
+
+        net: Add variants of capable for use on netlink messages
+
+If a given kernel version is missing that series of fixes, it's
+probably worth backporting it and this patch.  if that series is
+present, then this fix is critical if you care about Zebra.
+
+Cc: stable@vger.kernel.org
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/target/target_core_alua.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ include/linux/netlink.h  | 7 ++++---
+ net/netlink/af_netlink.c | 7 ++++++-
+ 2 files changed, 10 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/target/target_core_alua.c b/drivers/target/target_core_alua.c
-index 47244102281e..792424ffa53b 100644
---- a/drivers/target/target_core_alua.c
-+++ b/drivers/target/target_core_alua.c
-@@ -409,7 +409,16 @@ static inline int core_alua_state_standby(
- 	case REPORT_LUNS:
- 	case RECEIVE_DIAGNOSTIC:
- 	case SEND_DIAGNOSTIC:
-+	case READ_CAPACITY:
- 		return 0;
-+	case SERVICE_ACTION_IN:
-+		switch (cdb[1] & 0x1f) {
-+		case SAI_READ_CAPACITY_16:
-+			return 0;
-+		default:
-+			*alua_ascq = ASCQ_04H_ALUA_TG_PT_STANDBY;
-+			return 1;
-+		}
- 	case MAINTENANCE_IN:
- 		switch (cdb[1] & 0x1f) {
- 		case MI_REPORT_TARGET_PGS:
+diff --git a/include/linux/netlink.h b/include/linux/netlink.h
+index 8d11541890ff..8b50a62ef98b 100644
+--- a/include/linux/netlink.h
++++ b/include/linux/netlink.h
+@@ -16,9 +16,10 @@ static inline struct nlmsghdr *nlmsg_hdr(const struct sk_buff *skb)
+ }
+ 
+ enum netlink_skb_flags {
+-	NETLINK_SKB_MMAPED	= 0x1,		/* Packet data is mmaped */
+-	NETLINK_SKB_TX		= 0x2,		/* Packet was sent by userspace */
+-	NETLINK_SKB_DELIVERED	= 0x4,		/* Packet was delivered */
++	NETLINK_SKB_MMAPED	= 0x1,	/* Packet data is mmaped */
++	NETLINK_SKB_TX		= 0x2,	/* Packet was sent by userspace */
++	NETLINK_SKB_DELIVERED	= 0x4,	/* Packet was delivered */
++	NETLINK_SKB_DST		= 0x8,	/* Dst set in sendto or sendmsg */
+ };
+ 
+ struct netlink_skb_parms {
+diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
+index 95bc6d298ca4..e6d457c4a4e4 100644
+--- a/net/netlink/af_netlink.c
++++ b/net/netlink/af_netlink.c
+@@ -1365,7 +1365,9 @@ retry:
+ bool __netlink_ns_capable(const struct netlink_skb_parms *nsp,
+ 			struct user_namespace *user_ns, int cap)
+ {
+-	return sk_ns_capable(nsp->sk, user_ns, cap);
++	return ((nsp->flags & NETLINK_SKB_DST) ||
++		file_ns_capable(nsp->sk->sk_socket->file, user_ns, cap)) &&
++		ns_capable(user_ns, cap);
+ }
+ EXPORT_SYMBOL(__netlink_ns_capable);
+ 
+@@ -2285,6 +2287,7 @@ static int netlink_sendmsg(struct kiocb *kiocb, struct socket *sock,
+ 	struct sk_buff *skb;
+ 	int err;
+ 	struct scm_cookie scm;
++	u32 netlink_skb_flags = 0;
+ 
+ 	if (msg->msg_flags&MSG_OOB)
+ 		return -EOPNOTSUPP;
+@@ -2306,6 +2309,7 @@ static int netlink_sendmsg(struct kiocb *kiocb, struct socket *sock,
+ 		if ((dst_group || dst_portid) &&
+ 		    !netlink_allowed(sock, NL_CFG_F_NONROOT_SEND))
+ 			goto out;
++		netlink_skb_flags |= NETLINK_SKB_DST;
+ 	} else {
+ 		dst_portid = nlk->dst_portid;
+ 		dst_group = nlk->dst_group;
+@@ -2335,6 +2339,7 @@ static int netlink_sendmsg(struct kiocb *kiocb, struct socket *sock,
+ 	NETLINK_CB(skb).portid	= nlk->portid;
+ 	NETLINK_CB(skb).dst_group = dst_group;
+ 	NETLINK_CB(skb).creds	= siocb->scm->creds;
++	NETLINK_CB(skb).flags	= netlink_skb_flags;
+ 
+ 	err = -EFAULT;
+ 	if (memcpy_fromiovec(skb_put(skb, len), msg->msg_iov, len)) {
 -- 
 2.0.0
 
