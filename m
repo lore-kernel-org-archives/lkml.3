@@ -1,90 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753279AbaFWSIN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 14:08:13 -0400
-Received: from filter04.dlls.pa.frontiernet.net ([199.224.80.234]:42636 "EHLO
-	filter04.dlls.pa.frontiernet.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750985AbaFWSIM (ORCPT
+	id S1753395AbaFWSIZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 14:08:25 -0400
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:37915 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753308AbaFWSIW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 14:08:12 -0400
-X-Greylist: delayed 351 seconds by postgrey-1.27 at vger.kernel.org; Mon, 23 Jun 2014 14:08:12 EDT
-X-Originating-IP: [50.43.56.229]
-X-Previous-IP: 50.43.56.229
-Message-ID: <1403546524.12008.2.camel@Lunix2.home>
-Subject: Re: [PATCH 08/22] amd: Use pci_zalloc_consistent
-From: Don Fry <pcnet32@frontier.com>
-To: Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Date: Mon, 23 Jun 2014 11:02:04 -0700
-In-Reply-To: <c7cdaa8e080157cdabb92278a4c3beba89b49070.1403530604.git.joe@perches.com>
-References: <cover.1403530604.git.joe@perches.com>
-	 <c7cdaa8e080157cdabb92278a4c3beba89b49070.1403530604.git.joe@perches.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
+	Mon, 23 Jun 2014 14:08:22 -0400
+X-IronPort-AV: E=Sophos;i="5.01,531,1400050800"; 
+   d="scan'208";a="35598372"
+Message-ID: <53A86C63.7020103@broadcom.com>
+Date: Mon, 23 Jun 2014 11:05:23 -0700
+From: Sherman Yin <syin@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Sachin Kamat <sachin.kamat@samsung.com>, <linux-kernel@vger.kernel.org>
+CC: <linus.walleij@linaro.org>, <spk.linux@gmail.com>
+Subject: Re: [PATCH 1/1] pinctrl: bcm281xx: Staticize bcm281xx_pinctrl_probe
+References: <1403523498-3035-1-git-send-email-sachin.kamat@samsung.com>
+In-Reply-To: <1403523498-3035-1-git-send-email-sachin.kamat@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-06-23 at 06:41 -0700, Joe Perches wrote:
-> Remove the now unnecessary memset too.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+Hi Sachin,
+
+Looks good, thanks.  How did you come across the need for this change?
+
+Regards,
+Sherman
+
+On 14-06-23 04:38 AM, Sachin Kamat wrote:
+> bcm281xx_pinctrl_probe is local to this file. Make it static.
+>
+> Signed-off-by: Sachin Kamat <sachin.kamat@samsung.com>
 > ---
->  drivers/net/ethernet/amd/pcnet32.c | 16 ++++++----------
->  1 file changed, 6 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/net/ethernet/amd/pcnet32.c b/drivers/net/ethernet/amd/pcnet32.c
-> index e7cc917..e5e2725 100644
-> --- a/drivers/net/ethernet/amd/pcnet32.c
-> +++ b/drivers/net/ethernet/amd/pcnet32.c
-> @@ -484,15 +484,13 @@ static void pcnet32_realloc_tx_ring(struct net_device *dev,
->  
->  	pcnet32_purge_tx_ring(dev);
->  
-> -	new_tx_ring = pci_alloc_consistent(lp->pci_dev,
-> -					   sizeof(struct pcnet32_tx_head) *
-> -					   (1 << size),
-> -					   &new_ring_dma_addr);
-> +	new_tx_ring = pci_zalloc_consistent(lp->pci_dev,
-> +					    sizeof(struct pcnet32_tx_head) * (1 << size),
-
-This causes the line length to be greater than 80 characters causing
-checkpatch to complain.
-
-> +					    &new_ring_dma_addr);
->  	if (new_tx_ring == NULL) {
->  		netif_err(lp, drv, dev, "Consistent memory allocation failed\n");
->  		return;
->  	}
-> -	memset(new_tx_ring, 0, sizeof(struct pcnet32_tx_head) * (1 << size));
->  
->  	new_dma_addr_list = kcalloc(1 << size, sizeof(dma_addr_t),
->  				    GFP_ATOMIC);
-> @@ -551,15 +549,13 @@ static void pcnet32_realloc_rx_ring(struct net_device *dev,
->  	int new, overlap;
->  	unsigned int entries = 1 << size;
->  
-> -	new_rx_ring = pci_alloc_consistent(lp->pci_dev,
-> -					   sizeof(struct pcnet32_rx_head) *
-> -					   entries,
-> -					   &new_ring_dma_addr);
-> +	new_rx_ring = pci_zalloc_consistent(lp->pci_dev,
-> +					    sizeof(struct pcnet32_rx_head) * entries,
-
-
-This causes the line length to be greater than 80 characters causing
-checkpatch to complain.
-
-> +					    &new_ring_dma_addr);
->  	if (new_rx_ring == NULL) {
->  		netif_err(lp, drv, dev, "Consistent memory allocation failed\n");
->  		return;
->  	}
-> -	memset(new_rx_ring, 0, sizeof(struct pcnet32_rx_head) * entries);
->  
->  	new_dma_addr_list = kcalloc(entries, sizeof(dma_addr_t), GFP_ATOMIC);
->  	if (!new_dma_addr_list)
-
+>   drivers/pinctrl/pinctrl-bcm281xx.c |    2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/pinctrl/pinctrl-bcm281xx.c b/drivers/pinctrl/pinctrl-bcm281xx.c
+> index 3bed792b2c03..c5ca9e633fff 100644
+> --- a/drivers/pinctrl/pinctrl-bcm281xx.c
+> +++ b/drivers/pinctrl/pinctrl-bcm281xx.c
+> @@ -1396,7 +1396,7 @@ static struct pinctrl_desc bcm281xx_pinctrl_desc = {
+>   	.owner = THIS_MODULE,
+>   };
+>
+> -int __init bcm281xx_pinctrl_probe(struct platform_device *pdev)
+> +static int __init bcm281xx_pinctrl_probe(struct platform_device *pdev)
+>   {
+>   	struct bcm281xx_pinctrl_data *pdata = &bcm281xx_pinctrl;
+>   	struct resource *res;
+>
 
