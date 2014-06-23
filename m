@@ -1,61 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753545AbaFWSJv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 14:09:51 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:48536 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753470AbaFWSJu (ORCPT
+	id S1753661AbaFWSJy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 14:09:54 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:58288 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753470AbaFWSJw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 14:09:50 -0400
-X-Sasl-enc: NyEfc6NItw6YtrWayPVVp0bj2b3r1bWpd+MbBQ8WxMVM 1403546988
-Date: Mon, 23 Jun 2014 14:09:37 -0400
-From: Greg KH <greg@kroah.com>
-To: Martin Peres <martin.peres@free.fr>
-Cc: Ilia Mirkin <imirkin@alum.mit.edu>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Ben Skeggs <bskeggs@redhat.com>, Pavel Machek <pavel@ucw.cz>
-Subject: Re: unparseable, undocumented /sys/class/drm/.../pstate
-Message-ID: <20140623180937.GB29494@kroah.com>
-References: <20140621180201.GA4621@amd.pavel.ucw.cz>
- <CAKb7UvhOCiBHcsB6a0qKBNsC3c9pmb=Wc7zucbBuP6vt-tx2eA@mail.gmail.com>
- <20140621194538.GA4903@kroah.com>
- <CAKb7UvjhOystpeRy1nQx49Nspve4wHQPb+e7gJQ-RT-HseK4Cw@mail.gmail.com>
- <20140623160727.GA19557@kroah.com>
- <CAKb7UvhEMg96YzGuA=rxRDrzBhKiVaYMczrAcm4hA_A4jXAW2w@mail.gmail.com>
- <20140623163600.GB20939@kroah.com>
- <CAKb7Uvgx_1mEPapJF3V5s8vUViGnRGCerkixwdTv_EpHhEozBg@mail.gmail.com>
- <53A867DB.90604@free.fr>
+	Mon, 23 Jun 2014 14:09:52 -0400
+Date: Mon, 23 Jun 2014 11:09:45 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Dave Hansen <dave.hansen@intel.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        fweisbec@gmail.com, oleg@redhat.com, ak@linux.intel.com, cl@gentwo.org,
+        umgwanakikbuti@gmail.com
+Subject: Re: [PATCH tip/core/rcu] Reduce overhead of cond_resched() checks
+ for RCU
+Message-ID: <20140623180945.GL4603@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140621025958.GA7185@linux.vnet.ibm.com>
+ <53A85BF9.7030006@intel.com>
+ <53A8611F.1000804@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53A867DB.90604@free.fr>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <53A8611F.1000804@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14062318-1542-0000-0000-000002C5D305
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 23, 2014 at 07:46:03PM +0200, Martin Peres wrote:
-> Le 23/06/2014 18:40, Ilia Mirkin a écrit :
-> >On Mon, Jun 23, 2014 at 12:36 PM, Greg KH <greg@kroah.com> wrote:
-> >>On Mon, Jun 23, 2014 at 12:18:51PM -0400, Ilia Mirkin wrote:
-> >>A list of valid "values" that a file can be in is fine if you just then
-> >>write one value back to that file.  That's the one exception, but a
-> >>minor one given the huge number of sysfs files.  Other than that, if you
-> >
-> >Which is pretty much what the pstate file is. Would it make things
-> >better if we removed the descriptive info while leaving the pstate
-> >file in place?
+On Mon, Jun 23, 2014 at 10:17:19AM -0700, Dave Hansen wrote:
+> On 06/23/2014 09:55 AM, Dave Hansen wrote:
+> > This still has a regression.  Commit 1ed70de (from Paul's git tree),
+> > gets a result of 52231880.  If I back up two commits to v3.16-rc1 and
+> > revert ac1bea85 (the original culprit) the result goes back up to 57308512.
+> > 
+> > So something is still going on here.
+> > 
+> > I'll go back and compare the grace period ages to see if I can tell what
+> > is going on.
 > 
-> This means we should also create a new sysfs file per performance level too,
-> right? Is there another way for a driver to expose a list in sysfs?
+> RCU_TRACE interferes with the benchmark a little bit, and it lowers the
+> delta that the regression causes.  So, evaluate this cautiously.
 
-What exactly are you wanting to export to userspace?  What will
-userspace do with this information?  Why export anything at all?
+RCU_TRACE does increase overhead somewhat, so I would expect somewhat
+less difference with it enabled.  Though I am a bit surprised that the
+overhead of its counters is measurable.  Or is something going on?
 
-Start with defining that, and go from there.
+> According to rcu_sched/rcugp, the average "age" is:
+> 
+> v3.16-rc1, with ac1bea85 reverted:	10.7
+> v3.16-rc1, plus e552592e:		 6.1
+> 
+> Paul, have you been keeping an eye on rcugp?  Even if I run my system
+> with only 10 threads, I still see this basic pattern where the average
+> "age" is lower when I see lower performance.  It seems to be a
+> reasonable proxy that could be used instead of waiting on me to re-run
+> tests.
 
-thanks,
+I do print out GPs/sec when running rcutorture, and they do vary somewhat,
+but mostly with different Kconfig parameter settings.  Plus rcutorture
+ramps up and down, so the GPs/sec is less than what you might see in a
+system running an unvarying workload.  That said, increasing grace-period
+latency is not always good for performance, in fact, I usually get beaten
+up for grace periods completing too quickly rather than too slowly.
+This current issue is one of the rare exceptions, perhaps even the
+only exception.
 
-greg k-h
+So let's see...  The open1 benchmark sits in a loop doing open()
+and close(), and probably spends most of its time in the kernel.
+It doesn't do much context switching.  I am guessing that you don't
+have CONFIG_NO_HZ_FULL=y, or the boot/sysfs parameter would not have
+much effect because then the first quiescent-state-forcing attempt would
+likely finish the grace period.
+
+So, given that short grace periods help other workloads (I have the
+scars to prove it), and given that the patch fixes some real problems,
+and given that the large number for rcutree.jiffies_till_sched_qs got
+us within 3%, shouldn't we consider this issue closed?
+
+							Thanx, Paul
+
