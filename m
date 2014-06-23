@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754857AbaFWSYs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 14:24:48 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:60520 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752848AbaFWSYp (ORCPT
+	id S1753252AbaFWSZS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 14:25:18 -0400
+Received: from g2t2352.austin.hp.com ([15.217.128.51]:6128 "EHLO
+	g2t2352.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752733AbaFWSZQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 14:24:45 -0400
-X-Sasl-enc: BmVjHVKFR9PPBZCySryOT1EXTHhGBnoIZwLzIXmeNtU2 1403547884
-Date: Mon, 23 Jun 2014 14:24:32 -0400
-From: Greg KH <greg@kroah.com>
-To: Janne Kanniainen <janne.kanniainen@gmail.com>
-Cc: johan@kernel.org, jkosina@suse.cz, cooloney@gmail.com,
-        linux-kernel@vger.kernel.org, linux-leds@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [PATCH v10] leds: USB: HID: Add support for MSI GT683R led panels
-Message-ID: <20140623182432.GB30831@kroah.com>
-References: <20140623161723.GA20421@kroah.com>
- <1403543808-8228-1-git-send-email-janne.kanniainen@gmail.com>
- <20140623182324.GA30831@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140623182324.GA30831@kroah.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 23 Jun 2014 14:25:16 -0400
+From: Waiman Long <Waiman.Long@hp.com>
+To: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Scott J Norton <scott.norton@hp.com>,
+        Waiman Long <Waiman.Long@hp.com>
+Subject: [PATCH v4 0/1] lockdep: add support for queued rwlock
+Date: Mon, 23 Jun 2014 14:24:59 -0400
+Message-Id: <1403547900-40658-1-git-send-email-Waiman.Long@hp.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 23, 2014 at 02:23:24PM -0400, Greg KH wrote:
-> On Mon, Jun 23, 2014 at 08:16:48PM +0300, Janne Kanniainen wrote:
-> > +	ret = sysfs_create_group(&led->hdev->dev.kobj, &gt683r_attribute_group);
-> > +	if (ret) {
-> > +		hid_err(hdev, "failed to create sysfs attributes\n");
-> > +		goto fail;
-> > +	}
-> 
-> No, you need to set the attribute group _before_ you call
-> led_classdev_register, as that is where the device will be created in
-> sysfs.  Surely the other led drivers already do this?  I'm almost afraid
-> to go look...
+v3->v4:
+ - Document the new read state and move the conditional compilation code
+   to lockdep.h.
 
-Yes, they do it already, set .dev_attr_group and you should be fine.
+v2->v3:
+ - Add a new read mode (3) for rwlock (used in
+   lock_acquire_shared_cond_recursive()) to avoid conflict with other
+   use cases of lock_acquire_shared_recursive().
 
-thanks,
+v1->v2:
+ - Use less conditional & make it easier to read
 
-greg k-h
+With the merging of qrwlock into 3.16, it was found that the btrfs
+filesystem hanged readily. A fix was devised and merged into rc2 and
+the use of recursive read_lock call was part of the problem.
+
+This patch addes code to the lockdep subsystem to catch this kind of
+recursive read_lock calls in kernel code.
+
+Waiman Long (1):
+  lockdep: restrict the use of recursive read_lock with qrwlock
+
+ include/linux/lockdep.h  |   12 ++++++++++++
+ kernel/locking/lockdep.c |    6 ++++++
+ 2 files changed, 18 insertions(+), 0 deletions(-)
+
