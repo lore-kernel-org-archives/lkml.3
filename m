@@ -1,72 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752122AbaFWHd7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 03:33:59 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:12279 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751533AbaFWHdn (ORCPT
+	id S1752171AbaFWHfI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 03:35:08 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:56576 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750722AbaFWHfH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 03:33:43 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 23 Jun 2014 00:24:01 -0700
-From: Alexandre Courbot <acourbot@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>
-CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <gnurou@gmail.com>, Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH 2/2] ARM: tegra: roth: enable input on mmc clock pins
-Date: Mon, 23 Jun 2014 16:32:59 +0900
-Message-ID: <1403508779-25896-3-git-send-email-acourbot@nvidia.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1403508779-25896-1-git-send-email-acourbot@nvidia.com>
-References: <1403508779-25896-1-git-send-email-acourbot@nvidia.com>
-X-NVConfidentiality: public
+	Mon, 23 Jun 2014 03:35:07 -0400
+Date: Mon, 23 Jun 2014 09:35:00 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Stephane Eranian <eranian@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>, Joe Mario <jmario@redhat.com>,
+        Don Zickus <dzickus@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH 1/2] perf/x86: update Haswell PEBS event constraints
+Message-ID: <20140623073500.GJ19860@laptop.programming.kicks-ass.net>
+References: <1403193509-22393-1-git-send-email-eranian@google.com>
+ <1403193509-22393-2-git-send-email-eranian@google.com>
+ <20140619180028.GU8178@tassilo.jf.intel.com>
+ <CABPqkBTw9wi1LSoqWUYcN2W1fvBYDfsdqkdxDTPQ0rWUEUFLmA@mail.gmail.com>
+ <20140619201801.GV8178@tassilo.jf.intel.com>
+ <CABPqkBRy=u6oyyFV9yC9uOykHbNUdDqDgeQ3XSTpcAfQAyS-+g@mail.gmail.com>
+ <20140619204041.GW8178@tassilo.jf.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140619204041.GW8178@tassilo.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Input had been disabled by mistake on these pins, leading to issues with
-SDIO devices like the Wifi module not being probed or random errors
-occuring on the SD card.
+On Thu, Jun 19, 2014 at 01:40:41PM -0700, Andi Kleen wrote:
+> On Thu, Jun 19, 2014 at 10:31:29PM +0200, Stephane Eranian wrote:
+> > On Thu, Jun 19, 2014 at 10:18 PM, Andi Kleen <ak@linux.intel.com> wrote:
+> > >> I don't quite understand that.
+> > >> You need to know which events support PEBS. You need a table
+> > >
+> > > We're talking about the kernel allowing things here.
+> > > Yes the user still needs to know what supports PEBS, but
+> > > that doesn't concern the kernel.
+> > >
+> > Just need to make sure you don't return bogus information.
+> 
+> GIGO. We only need to prevent security issues.
 
-Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
----
- arch/arm/boot/dts/tegra114-roth.dts | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+> Yes if the user specifies a bogus raw event it will not count.
+> That's fine. The important part is just that nothing ever crashes.
 
-diff --git a/arch/arm/boot/dts/tegra114-roth.dts b/arch/arm/boot/dts/tegra114-roth.dts
-index a67885250f81..ba210c6e189f 100644
---- a/arch/arm/boot/dts/tegra114-roth.dts
-+++ b/arch/arm/boot/dts/tegra114-roth.dts
-@@ -244,7 +244,7 @@
- 				nvidia,function = "sdmmc1";
- 				nvidia,pull = <TEGRA_PIN_PULL_NONE>;
- 				nvidia,tristate = <TEGRA_PIN_DISABLE>;
--				nvidia,enable-input = <TEGRA_PIN_DISABLE>;
-+				nvidia,enable-input = <TEGRA_PIN_ENABLE>;
- 			};
- 			sdmmc1_cmd_pz1 {
- 				nvidia,pins = "sdmmc1_cmd_pz1",
-@@ -262,7 +262,7 @@
- 				nvidia,function = "sdmmc3";
- 				nvidia,pull = <TEGRA_PIN_PULL_NONE>;
- 				nvidia,tristate = <TEGRA_PIN_DISABLE>;
--				nvidia,enable-input = <TEGRA_PIN_DISABLE>;
-+				nvidia,enable-input = <TEGRA_PIN_ENABLE>;
- 			};
- 			sdmmc3_cmd_pa7 {
- 				nvidia,pins = "sdmmc3_cmd_pa7",
-@@ -290,7 +290,7 @@
- 				nvidia,function = "sdmmc4";
- 				nvidia,pull = <TEGRA_PIN_PULL_NONE>;
- 				nvidia,tristate = <TEGRA_PIN_DISABLE>;
--				nvidia,enable-input = <TEGRA_PIN_DISABLE>;
-+				nvidia,enable-input = <TEGRA_PIN_ENABLE>;
- 			};
- 			sdmmc4_cmd_pt7 {
- 				nvidia,pins = "sdmmc4_cmd_pt7",
--- 
-2.0.0
+Right. But IIRC you were previously arguing that we can in fact crash
+the machine with raw PEBS events, as illustrated with the SNB PEBS
+cycles 'event'.
+
+Which is where my strict_pebs patch came from; by default only allow the
+sanitized known-safe list of events, but allow the system administrator
+to disable that test and allow any PEBS event.
 
