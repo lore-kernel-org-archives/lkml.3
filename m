@@ -1,81 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751644AbaFWHOJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 03:14:09 -0400
-Received: from smtprelay2.synopsys.com ([198.182.60.111]:42501 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751159AbaFWHOI (ORCPT
+	id S1752046AbaFWHO5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 03:14:57 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45952 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751475AbaFWHO4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 03:14:08 -0400
-Message-ID: <53A7D3AA.9020100@synopsys.com>
-Date: Mon, 23 Jun 2014 12:43:46 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 23 Jun 2014 03:14:56 -0400
+Date: Mon, 23 Jun 2014 09:14:54 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, jmario@redhat.com, dzickus@redhat.com, jolsa@redhat.com,
+        acme@redhat.com
+Subject: Re: [PATCH 1/2] perf/x86: update Haswell PEBS event constraints
+Message-ID: <20140623071454.GI19860@laptop.programming.kicks-ass.net>
+References: <1403193509-22393-1-git-send-email-eranian@google.com>
+ <1403193509-22393-2-git-send-email-eranian@google.com>
+ <20140619180028.GU8178@tassilo.jf.intel.com>
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel
-To: Peter Zijlstra <peterz@infradead.org>, Davidlohr Bueso <davidlohr@hp.com>
-CC: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arch,locking: Ciao arch_mutex_cpu_relax()
-References: <1403288473.10903.2.camel@buesod1.americas.hpqcorp.net> <20140623065423.GE19860@laptop.programming.kicks-ass.net>
-In-Reply-To: <20140623065423.GE19860@laptop.programming.kicks-ass.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.196.93]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140619180028.GU8178@tassilo.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+On Thu, Jun 19, 2014 at 11:00:28AM -0700, Andi Kleen wrote:
+> However these days I'm actually thinking of just getting
+> rid of the detailed table except for PREC_DIST. All the PEBS
+> controls should be noops if the event does not support PEBS
 
-On Monday 23 June 2014 12:24 PM, Peter Zijlstra wrote:
-> On Fri, Jun 20, 2014 at 11:21:13AM -0700, Davidlohr Bueso wrote:
->> diff --git a/arch/arc/include/asm/processor.h b/arch/arc/include/asm/processor.h
->> index d99f9b3..8e1bf6b 100644
->> --- a/arch/arc/include/asm/processor.h
->> +++ b/arch/arc/include/asm/processor.h
->> @@ -62,6 +62,8 @@ unsigned long thread_saved_pc(struct task_struct *t);
->>  #define cpu_relax()	do { } while (0)
->>  #endif
->>  
->> +#define arch_cpu_relax() cpu_relax()
->> +
->>  #define copy_segments(tsk, mm)      do { } while (0)
->>  #define release_segments(mm)        do { } while (0)
-> 
-> I'm not at all sure that cpu_relax() definition ARC has is valid. We
-> rely on cpu_relax() being at least a barrier() all over the place, and
-> it doesn't need to be SMP only. You can have a UP wait loop waiting for
-> an interrupt for example.
-> 
-> Vineet?
+I had something like the below stuck on the 'look more at later' list
+and later never really ever happened.
 
-Over the years we've not had any trouble with !SMP cpu_relax() being a no-op (and
-barrier version was only required when we hit a hard hang in our our initial SMP
-code). UP busy wait looping would be frowned upon in general.
+---
+ arch/x86/kernel/cpu/perf_event.c          |  3 +++
+ arch/x86/kernel/cpu/perf_event.h          |  1 +
+ arch/x86/kernel/cpu/perf_event_intel.c    | 19 ++++++++++++++--
+ arch/x86/kernel/cpu/perf_event_intel_ds.c | 38 +++++++++++++++++--------------
+ 4 files changed, 42 insertions(+), 19 deletions(-)
 
-However what we have now is just a code optimization quirk for !SMP since a
-compiler barrier will cause gcc to dump out and reload scratch regs - specially
-for our deep reg file.
-
-Here's what I get with current UP kernel switching to compiler barrier
-
-./scripts/bloat-o-meter vmlinux-pre-cpu-relax  vmlinux | head
-add/remove: 1/0 grow/shrink: 75/5 up/down: 1218/-32 (1186)
-function                                     old     new   delta
-path_init                                    708     826    +118
-sys_semtimedop                              2540    2640    +100
-...
-__slab_alloc.isra.constprop                  564     560      -4
-deactivate_slab                              886     878      -8
-
-So it doesn't look too bad, although I've not run any performance tests. We can
-switch UP to barrier if you feel it is needed semantically.
-
--Vineet
-
-
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index ae407f7226c8..f42405c9868b 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1541,6 +1541,7 @@ static int __init init_hw_perf_events(void)
+ 	pr_cont("%s PMU driver.\n", x86_pmu.name);
+ 
+ 	x86_pmu.attr_rdpmc = 1; /* enable userspace RDPMC usage by default */
++	x86_pmu.attr_strict_pebs = 1;
+ 
+ 	for (quirk = x86_pmu.quirks; quirk; quirk = quirk->next)
+ 		quirk->func();
+@@ -1855,9 +1856,11 @@ static ssize_t set_attr_rdpmc(struct device *cdev,
+ }
+ 
+ static DEVICE_ATTR(rdpmc, S_IRUSR | S_IWUSR, get_attr_rdpmc, set_attr_rdpmc);
++static DEVICE_BOOL_ATTR(strict_pebs, S_IRUSR | S_IWUSR, x86_pmu.attr_strict_pebs);
+ 
+ static struct attribute *x86_pmu_attrs[] = {
+ 	&dev_attr_rdpmc.attr,
++	&dev_attr_strict_pebs.attr.attr,
+ 	NULL,
+ };
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index 3b2f9bdd974b..a11eeab9b611 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -413,6 +413,7 @@ struct x86_pmu {
+ 	 */
+ 	int		attr_rdpmc_broken;
+ 	int		attr_rdpmc;
++	bool		attr_strict_pebs;
+ 	struct attribute **format_attrs;
+ 	struct attribute **event_attrs;
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index aa333d966886..6e68f3dc9a30 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1729,6 +1729,12 @@ static void intel_pebs_aliases_snb(struct perf_event *event)
+ 	}
+ }
+ 
++#define ARCH_PERFMON_STRICT_PEBS	\
++	(ARCH_PERFMON_EVENTSEL_ANY   |	\
++	 ARCH_PERFMON_EVENTSEL_CMASK |	\
++	 ARCH_PERFMON_EVENTSEL_EDGE  |	\
++	 ARCH_PERFMON_EVENTSEL_INV)
++
+ static int intel_pmu_hw_config(struct perf_event *event)
+ {
+ 	int ret = x86_pmu_hw_config(event);
+@@ -1736,8 +1742,17 @@ static int intel_pmu_hw_config(struct perf_event *event)
+ 	if (ret)
+ 		return ret;
+ 
+-	if (event->attr.precise_ip && x86_pmu.pebs_aliases)
+-		x86_pmu.pebs_aliases(event);
++	if (event->attr.precise_ip) {
++		if ((event->attr.config & INTEL_ARCH_EVENT_MASK) == 0x0000)
++			return -EINVAL;
++
++		if ((event->attr.config & ARCH_PERFMON_STRICT_PEBS) &&
++		    (x86_pmu.attr_strict_pebs || !capable(CAP_SYS_ADMIN)))
++			return -EINVAL;
++
++		if (x86_pmu.pebs_aliases)
++			x86_pmu.pebs_aliases(event);
++	}
+ 
+ 	if (intel_pmu_needs_lbr_smpl(event)) {
+ 		ret = intel_pmu_setup_lbr_filter(event);
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index ae96cfa5eddd..36b1f2afa61c 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -540,6 +540,7 @@ struct event_constraint intel_core2_pebs_event_constraints[] = {
+ 	INTEL_UEVENT_CONSTRAINT(0x00c5, 0x1), /* BR_INST_RETIRED.MISPRED */
+ 	INTEL_UEVENT_CONSTRAINT(0x1fc7, 0x1), /* SIMD_INST_RETURED.ANY */
+ 	INTEL_EVENT_CONSTRAINT(0xcb, 0x1),    /* MEM_LOAD_RETIRED.* */
++	INTEL_UEVENT_CONSTRAINT(0x0000, 0x1), /* generic PEBS mask */
+ 	EVENT_CONSTRAINT_END
+ };
+ 
+@@ -547,6 +548,7 @@ struct event_constraint intel_atom_pebs_event_constraints[] = {
+ 	INTEL_UEVENT_CONSTRAINT(0x00c0, 0x1), /* INST_RETIRED.ANY */
+ 	INTEL_UEVENT_CONSTRAINT(0x00c5, 0x1), /* MISPREDICTED_BRANCH_RETIRED */
+ 	INTEL_EVENT_CONSTRAINT(0xcb, 0x1),    /* MEM_LOAD_RETIRED.* */
++	INTEL_UEVENT_CONSTRAINT(0x0000, 0x1), /* generic PEBS mask */
+ 	EVENT_CONSTRAINT_END
+ };
+ 
+@@ -573,6 +575,7 @@ struct event_constraint intel_slm_pebs_event_constraints[] = {
+ 	INTEL_UEVENT_CONSTRAINT(0xf7c5, 0x1), /* BR_INST_MISP_RETIRED.RETURN_PS */
+ 	INTEL_UEVENT_CONSTRAINT(0xfbc5, 0x1), /* BR_INST_MISP_RETIRED.IND_CALL_PS */
+ 	INTEL_UEVENT_CONSTRAINT(0xfec5, 0x1), /* BR_INST_MISP_RETIRED.TAKEN_JCC_PS */
++	INTEL_UEVENT_CONSTRAINT(0x0000, 0x1), /* generic PEBS mask */
+ 	EVENT_CONSTRAINT_END
+ };
+ 
+@@ -588,6 +591,7 @@ struct event_constraint intel_nehalem_pebs_event_constraints[] = {
+ 	INTEL_UEVENT_CONSTRAINT(0x20c8, 0xf), /* ITLB_MISS_RETIRED */
+ 	INTEL_EVENT_CONSTRAINT(0xcb, 0xf),    /* MEM_LOAD_RETIRED.* */
+ 	INTEL_EVENT_CONSTRAINT(0xf7, 0xf),    /* FP_ASSIST.* */
++	INTEL_UEVENT_CONSTRAINT(0x0000, 0xf), /* generic PEBS mask */
+ 	EVENT_CONSTRAINT_END
+ };
+ 
+@@ -603,6 +607,7 @@ struct event_constraint intel_westmere_pebs_event_constraints[] = {
+ 	INTEL_UEVENT_CONSTRAINT(0x20c8, 0xf), /* ITLB_MISS_RETIRED */
+ 	INTEL_EVENT_CONSTRAINT(0xcb, 0xf),    /* MEM_LOAD_RETIRED.* */
+ 	INTEL_EVENT_CONSTRAINT(0xf7, 0xf),    /* FP_ASSIST.* */
++	INTEL_UEVENT_CONSTRAINT(0x0000, 0xf), /* generic PEBS mask */
+ 	EVENT_CONSTRAINT_END
+ };
+ 
+@@ -619,6 +624,7 @@ struct event_constraint intel_snb_pebs_event_constraints[] = {
+ 	INTEL_EVENT_CONSTRAINT(0xd2, 0xf),    /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
+ 	INTEL_EVENT_CONSTRAINT(0xd3, 0xf),    /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.* */
+ 	INTEL_UEVENT_CONSTRAINT(0x02d4, 0xf), /* MEM_LOAD_UOPS_MISC_RETIRED.LLC_MISS */
++	INTEL_UEVENT_CONSTRAINT(0x0000, 0xf), /* generic PEBS mask */
+ 	EVENT_CONSTRAINT_END
+ };
+ 
+@@ -634,42 +640,36 @@ struct event_constraint intel_ivb_pebs_event_constraints[] = {
+         INTEL_EVENT_CONSTRAINT(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
+         INTEL_EVENT_CONSTRAINT(0xd2, 0xf),    /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
+         INTEL_EVENT_CONSTRAINT(0xd3, 0xf),    /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.* */
++	INTEL_UEVENT_CONSTRAINT(0x0000, 0xf), /* generic PEBS mask */
+         EVENT_CONSTRAINT_END
+ };
+ 
+ struct event_constraint intel_hsw_pebs_event_constraints[] = {
+ 	INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
+-	INTEL_PST_HSW_CONSTRAINT(0x01c2, 0xf), /* UOPS_RETIRED.ALL */
++	INTEL_PST_HSW_CONSTRAINT(0x01c2, 0xf),/* UOPS_RETIRED.ALL */
+ 	INTEL_UEVENT_CONSTRAINT(0x02c2, 0xf), /* UOPS_RETIRED.RETIRE_SLOTS */
+ 	INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
+ 	INTEL_UEVENT_CONSTRAINT(0x01c5, 0xf), /* BR_MISP_RETIRED.CONDITIONAL */
+ 	INTEL_UEVENT_CONSTRAINT(0x04c5, 0xf), /* BR_MISP_RETIRED.ALL_BRANCHES */
+ 	INTEL_UEVENT_CONSTRAINT(0x20c5, 0xf), /* BR_MISP_RETIRED.NEAR_TAKEN */
+ 	INTEL_PLD_CONSTRAINT(0x01cd, 0x8),    /* MEM_TRANS_RETIRED.* */
+-	/* MEM_UOPS_RETIRED.STLB_MISS_LOADS */
+-	INTEL_UEVENT_CONSTRAINT(0x11d0, 0xf),
+-	/* MEM_UOPS_RETIRED.STLB_MISS_STORES */
+-	INTEL_UEVENT_CONSTRAINT(0x12d0, 0xf),
++	INTEL_UEVENT_CONSTRAINT(0x11d0, 0xf), /* MEM_UOPS_RETIRED.STLB_MISS_LOADS */
++	INTEL_UEVENT_CONSTRAINT(0x12d0, 0xf), /* MEM_UOPS_RETIRED.STLB_MISS_STORES */
+ 	INTEL_UEVENT_CONSTRAINT(0x21d0, 0xf), /* MEM_UOPS_RETIRED.LOCK_LOADS */
+ 	INTEL_UEVENT_CONSTRAINT(0x41d0, 0xf), /* MEM_UOPS_RETIRED.SPLIT_LOADS */
+-	/* MEM_UOPS_RETIRED.SPLIT_STORES */
+-	INTEL_UEVENT_CONSTRAINT(0x42d0, 0xf),
++	INTEL_UEVENT_CONSTRAINT(0x42d0, 0xf), /* MEM_UOPS_RETIRED.SPLIT_STORES */
+ 	INTEL_UEVENT_CONSTRAINT(0x81d0, 0xf), /* MEM_UOPS_RETIRED.ALL_LOADS */
+-	INTEL_PST_HSW_CONSTRAINT(0x82d0, 0xf), /* MEM_UOPS_RETIRED.ALL_STORES */
++	INTEL_PST_HSW_CONSTRAINT(0x82d0, 0xf),/* MEM_UOPS_RETIRED.ALL_STORES */
+ 	INTEL_UEVENT_CONSTRAINT(0x01d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L1_HIT */
+ 	INTEL_UEVENT_CONSTRAINT(0x02d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L2_HIT */
+ 	INTEL_UEVENT_CONSTRAINT(0x04d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L3_HIT */
+-	/* MEM_LOAD_UOPS_RETIRED.HIT_LFB */
+-	INTEL_UEVENT_CONSTRAINT(0x40d1, 0xf),
+-	/* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_MISS */
+-	INTEL_UEVENT_CONSTRAINT(0x01d2, 0xf),
+-	/* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_HIT */
+-	INTEL_UEVENT_CONSTRAINT(0x02d2, 0xf),
+-	/* MEM_LOAD_UOPS_LLC_MISS_RETIRED.LOCAL_DRAM */
+-	INTEL_UEVENT_CONSTRAINT(0x01d3, 0xf),
++	INTEL_UEVENT_CONSTRAINT(0x40d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.HIT_LFB */
++	INTEL_UEVENT_CONSTRAINT(0x01d2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_MISS */
++	INTEL_UEVENT_CONSTRAINT(0x02d2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_HIT */
++	INTEL_UEVENT_CONSTRAINT(0x01d3, 0xf), /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.LOCAL_DRAM */
+ 	INTEL_UEVENT_CONSTRAINT(0x04c8, 0xf), /* HLE_RETIRED.Abort */
+ 	INTEL_UEVENT_CONSTRAINT(0x04c9, 0xf), /* RTM_RETIRED.Abort */
+-
++	INTEL_UEVENT_CONSTRAINT(0x0000, 0xf), /* generic PEBS mask */
+ 	EVENT_CONSTRAINT_END
+ };
+ 
+@@ -686,6 +686,10 @@ struct event_constraint *intel_pebs_constraints(struct perf_event *event)
+ 				event->hw.flags |= c->flags;
+ 				return c;
+ 			}
++			if (!x86_pmu.attr_strict_pebs &&
++			    capable(CAP_SYS_ADMIN) &&
++			    !c->code)
++				return c;
+ 		}
+ 	}
+ 
