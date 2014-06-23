@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754504AbaFWNEl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:04:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37010 "EHLO
+	id S1754684AbaFWNEy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:04:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37078 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754425AbaFWNEi (ORCPT
+	with ESMTP id S1754634AbaFWNEw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:04:38 -0400
+	Mon, 23 Jun 2014 09:04:52 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Ronan Marquet <ronan.marquet@orange.fr>, Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 53/93] USB: Avoid runtime suspend loops for HCDs that can't handle suspend/resume
-Date: Mon, 23 Jun 2014 14:02:32 +0100
-Message-Id: <1403528592-2163-54-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 63/93] ALSA: hda/realtek - Correction of fixup codes for PB V7900 laptop
+Date: Mon, 23 Jun 2014 14:02:42 +0100
+Message-Id: <1403528592-2163-64-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
 References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
@@ -28,90 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Ronan Marquet <ronan.marquet@orange.fr>
 
-commit 8ef42ddd9a53b73e6fc3934278710c27f80f324f upstream.
+commit e30cf2d2bed3aed74a651c64de323ba26e4ff7d0 upstream.
 
-Not all host controller drivers have bus-suspend and bus-resume
-methods.  When one doesn't, it will cause problems if runtime PM is
-enabled in the kernel.  The PM core will attempt to suspend the
-controller's root hub, the suspend will fail because there is no
-bus-suspend routine, and a -EBUSY error code will be returned to the
-PM core.  This will cause the suspend attempt to be repeated shortly
-thereafter, in a never-ending loop.
+Correcion of wrong fixup entries add in commit ca8f0424 to replace
+static model quirk for PB V7900 laptop (will model).
 
-Part of the problem is that the original error code -ENOENT gets
-changed to -EBUSY in usb_runtime_suspend(), on the grounds that the PM
-core will interpret -ENOENT as meaning that the root hub has gotten
-into a runtime-PM error state.  While this change is appropriate for
-real USB devices, it's not such a good idea for a root hub.  In fact,
-considering the root hub to be in a runtime-PM error state would not
-be far from the truth.  Therefore this patch updates
-usb_runtime_suspend() so that it adjusts error codes only for
-non-root-hub devices.
+[note: the removal of ALC260_FIXUP_HP_PIN_0F chain is also needed as a
+ part of the fix; otherwise the pin is set up wrongly as a headphone,
+ and user-space (PulseAudio) may be wrongly trying to detect the jack
+ state -- tiwai]
 
-Furthermore, the patch attempts to prevent the problem from occurring
-in the first place by not enabling runtime PM by default for root hubs
-whose host controller driver doesn't have bus_suspend and bus_resume
-methods.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Will Deacon <will.deacon@arm.com>
-Tested-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Fixes: ca8f04247eaa ('ALSA: hda/realtek - Add the fixup codes for ALC260 model=will')
+Signed-off-by: Ronan Marquet <ronan.marquet@orange.fr>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/core/driver.c |  9 ++++++---
- drivers/usb/core/hub.c    | 15 +++++++++++++--
- 2 files changed, 19 insertions(+), 5 deletions(-)
+ sound/pci/hda/patch_realtek.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/usb/core/driver.c b/drivers/usb/core/driver.c
-index 5c592c0364ae..86894faad404 100644
---- a/drivers/usb/core/driver.c
-+++ b/drivers/usb/core/driver.c
-@@ -1754,10 +1754,13 @@ int usb_runtime_suspend(struct device *dev)
- 	if (status == -EAGAIN || status == -EBUSY)
- 		usb_mark_last_busy(udev);
- 
--	/* The PM core reacts badly unless the return code is 0,
--	 * -EAGAIN, or -EBUSY, so always return -EBUSY on an error.
-+	/*
-+	 * The PM core reacts badly unless the return code is 0,
-+	 * -EAGAIN, or -EBUSY, so always return -EBUSY on an error
-+	 * (except for root hubs, because they don't suspend through
-+	 * an upstream port like other USB devices).
- 	 */
--	if (status != 0)
-+	if (status != 0 && udev->parent)
- 		return -EBUSY;
- 	return status;
- }
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index 5c75492ea8f4..5e0925a01475 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -1683,8 +1683,19 @@ static int hub_probe(struct usb_interface *intf, const struct usb_device_id *id)
- 	 */
- 	pm_runtime_set_autosuspend_delay(&hdev->dev, 0);
- 
--	/* Hubs have proper suspend/resume support. */
--	usb_enable_autosuspend(hdev);
-+	/*
-+	 * Hubs have proper suspend/resume support, except for root hubs
-+	 * where the controller driver doesn't have bus_suspend and
-+	 * bus_resume methods.
-+	 */
-+	if (hdev->parent) {		/* normal device */
-+		usb_enable_autosuspend(hdev);
-+	} else {			/* root hub */
-+		const struct hc_driver *drv = bus_to_hcd(hdev->bus)->driver;
-+
-+		if (drv->bus_suspend && drv->bus_resume)
-+			usb_enable_autosuspend(hdev);
-+	}
- 
- 	if (hdev->level == MAX_TOPO_LEVEL) {
- 		dev_err(&intf->dev,
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index 2d20f930e2f8..f11d5e9f7a9c 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -1594,12 +1594,10 @@ static const struct hda_fixup alc260_fixups[] = {
+ 	[ALC260_FIXUP_COEF] = {
+ 		.type = HDA_FIXUP_VERBS,
+ 		.v.verbs = (const struct hda_verb[]) {
+-			{ 0x20, AC_VERB_SET_COEF_INDEX, 0x07 },
+-			{ 0x20, AC_VERB_SET_PROC_COEF,  0x3040 },
++			{ 0x1a, AC_VERB_SET_COEF_INDEX, 0x07 },
++			{ 0x1a, AC_VERB_SET_PROC_COEF,  0x3040 },
+ 			{ }
+ 		},
+-		.chained = true,
+-		.chain_id = ALC260_FIXUP_HP_PIN_0F,
+ 	},
+ 	[ALC260_FIXUP_GPIO1] = {
+ 		.type = HDA_FIXUP_VERBS,
 -- 
 1.9.1
 
