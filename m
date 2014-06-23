@@ -1,86 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357AbaFWLJz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 07:09:55 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:39224 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751308AbaFWLJy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 07:09:54 -0400
-Date: Mon, 23 Jun 2014 12:09:38 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Mark Salter <msalter@redhat.com>
-Cc: Will Deacon <Will.Deacon@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arm64: make CONFIG_ZONE_DMA user settable
-Message-ID: <20140623110937.GB15907@arm.com>
-References: <1403499924-11214-1-git-send-email-msalter@redhat.com>
+	id S1753472AbaFWLKc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 07:10:32 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:43249 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752500AbaFWLKb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 07:10:31 -0400
+Message-ID: <53A80B1D.3020706@ti.com>
+Date: Mon, 23 Jun 2014 14:10:21 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1403499924-11214-1-git-send-email-msalter@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Himangi Saraogi <himangi774@gmail.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: <julia.lawall@lip6.fr>
+Subject: Re: [PATCH] video: Introduce the use of the managed version of kzalloc
+References: <20140525104035.GA3187@himangi-Dell>
+In-Reply-To: <20140525104035.GA3187@himangi-Dell>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="JWG6uHdO0NfmX0nWaJSvdptEhLxSMPAXL"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 23, 2014 at 06:05:24AM +0100, Mark Salter wrote:
-> Commit 19e7640d1f (arm64: Replace ZONE_DMA32 with ZONE_DMA)
-> moves support for 32-bit DMA addressing into ZONE_DMA and renames
-> CONFIG_ZONE_DMA32 to CONFIG_ZONE_DMA.
-> 
-> Commit 2d5a5612bc (arm64: Limit the CMA buffer to 32-bit if ZONE_DMA)
-> forces the CMA buffer to be 32-bit addressable if CONFIG_ZONE_DMA is
-> defined.
-> 
-> These two patches pose a problem for platforms which have no 32-bit
-> addressable DRAM.
+--JWG6uHdO0NfmX0nWaJSvdptEhLxSMPAXL
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-It's actually the bus/dma address that needs to be 32-bit rather than
-the DRAM as seen by the CPU (which can be beyond 32-bit like the
-Keystone platform).
+On 25/05/14 13:40, Himangi Saraogi wrote:
+> This patch moves data allocated using kzalloc to managed data allocated=
 
-> If CONFIG_ZONE_DMA is turned on for such platforms,
-> CMA is unable to reserve a buffer for allocations. CONFIG_ZONE_DMA is
-> not user settable however, so there is no way to turn it off without
-> editing arch/arm64/Kconfig. Even if one edits Kconfig to turn off
-> CONFIG_ZONE_DMA, the kernel fails to build with such a config:
-> 
->   arch/arm64/mm/init.c: In function ‘zone_sizes_init’:
->   arch/arm64/mm/init.c:76:13: error: ‘ZONE_DMA’ undeclared (first use in this function)
->      zone_size[ZONE_DMA] = max_dma - min;
->                ^
-> 
-> This patch makes CONFIG_ZONE_DMA user settable and fixes the kernel
-> build when it is turned off.
+> using devm_kzalloc and cleans now unnecessary kfrees in probe and remov=
+e
+> functions. Also, linux/device.h is added to make sure the devm_*()
+> routine declarations are unambiguously available. The function
+> mddi_dummy_remove is removed as it is no longer required after
+> removing the kfree. The variable ret is also done away with.
 
-The reason I left CONFIG_ZONE_DMA not user settable is because on arm64
-we aim for single Image by default. So ZONE_DMA would most likely be
-needed on at least one platform. Even with ZONE_DMA it's just a guess
-without proper system topology description. dma_to_phys() just takes a
-NULL argument for device when trying to guess the physical address for a
-32-bit DMA mask (and 32-bit devices may have some physical offset wired
-already).
+Thanks, queued for 3.17.
 
-With the CMA fix, does the kernel work properly with a zero sized DMA
-zone? Any GFP_DMA allocations will fail, including the swiotlb bounce
-buffer. It may be fine if no devices require 32-bit DMA memory but I
-wonder whether on such platforms it would be better to simply add
-all the memory to ZONE_DMA.
+ Tomi
 
-Which gets us back to finding a way for describing such system topology
-in hardware. We may be able to find a way with DT but unlikely for ACPI.
 
-My proposal (in the absence of any kind of description) is to still
-create a ZONE_DMA if we have DMA memory below 32-bit, otherwise just add
-everything (>32-bit) to ZONE_DMA. Basically an extension from your CMA
-patch, make dma_phys_limit static in that file and set it to
-memblock_end_of_DRAM() if no 32-bit DMA. Re-use it in the
-zone_sizes_init() function for ZONE_DMA (maybe with a pr_info for no
-32-bit only DMA zone).
 
--- 
-Catalin
+--JWG6uHdO0NfmX0nWaJSvdptEhLxSMPAXL
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTqAsdAAoJEPo9qoy8lh71HoIP/jjfRRoIC5UYY0X4snZy3s7m
+mXo+JkjCLqu9st0gVfeXGXdoDqHh7t1/d5NQYo/Zvnv5niVHucvEVsrpsxzCXW7L
+8/fdA2EfCqwfOXyT7BgQtc2bZ5kBeRDwLnE0stpo0Mc5SB2enq1ozdO9d1RzgEOX
+m47WvOEL5se7NkjJgXxB7SmB5pfBBJoBiNA2dgCclLvgcrclda2A8cMrolVUlXs3
+xEzAf7r2cBx8kqBHy4l5pNrP56+hi9JQtKWyXAQeyjhb6UjnlcVzAmSd91E+k6G/
+LLqJp4DgU3QKX6ldXFx8OSWv7FCFQ4bt2iDbHqWxLTQVbqMz2PJbW4RBS7KoRkXC
+j/BpBCo84lxtOJs1tvp4aHJ7AZFHZdixRXwp7j9tPCEYLQokSod+MslpCJ7l/5Ds
+PUy4aoWbkpPZiWrOkoaCRnx2CsTiNJLA7r3uetAW5epw4Vo61vYAq1djOMyFRYJN
+baGaJNBoySwsf0PnNCsxyaeJTQB2WJHKwax/9s8pMGx4+JTmPNmkYUEBiIkpFdIL
+3oRVAhPEBgfMKhbtysEXLsBbr4fsR+Il5f7s3zfIEtgc45W6GSOSjG0B7DV1JbEK
+91zkTrFZMaBHyUg21iSV6csJA58OtspRIVdeWqgPwLTBP9V5HHcrD36XZ4hYRwqX
+YyG1/Q0DrMNLOi+UyF9l
+=N0uc
+-----END PGP SIGNATURE-----
+
+--JWG6uHdO0NfmX0nWaJSvdptEhLxSMPAXL--
