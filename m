@@ -1,68 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754956AbaFWVXY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 17:23:24 -0400
-Received: from ns1.pc-advies.be ([83.149.101.17]:40687 "EHLO
-	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751407AbaFWVXX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 17:23:23 -0400
-Date: Mon, 23 Jun 2014 23:16:10 +0200
-From: Wim Van Sebroeck <wim@iguana.be>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Guenter Roeck <linux@roeck-us.net>, Arnd Bergmann <arnd@arndb.de>,
-        dbaryshkov@gmail.com, dwmw2@infradead.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, linux-sunxi@googlegroups.com
-Subject: Re: [PATCH v2 1/6] wdt: sunxi: Move restart code to the watchdog driver
-Message-ID: <20140623211610.GB28120@spo001.leaseweb.com>
-References: <1399430664-29091-1-git-send-email-maxime.ripard@free-electrons.com> <1399430664-29091-2-git-send-email-maxime.ripard@free-electrons.com> <20140507213318.GA2105@roeck-us.net> <20140515091123.GQ29258@lukather> <20140519150422.GA27329@lukather> <20140522203444.GE27329@lukather> <20140522213943.7649e304@alan.etchedpixels.co.uk>
+	id S1752821AbaFWV3N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 17:29:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63436 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751212AbaFWV3L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 17:29:11 -0400
+Message-ID: <1403558870.755.60.camel@deneb.redhat.com>
+Subject: Re: [PATCH] rtc: ia64: allow other architectures to use EFI RTC
+From: Mark Salter <msalter@redhat.com>
+To: Alessandro Zummo <a.zummo@towertech.it>
+Cc: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        linux-ia64@vger.kernel.org, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org
+Date: Mon, 23 Jun 2014 17:27:50 -0400
+In-Reply-To: <1402685430-32591-1-git-send-email-msalter@redhat.com>
+References: <1402685430-32591-1-git-send-email-msalter@redhat.com>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140522213943.7649e304@alan.etchedpixels.co.uk>
-User-Agent: Mutt/1.4.1i
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+Ping.
 
-> On Thu, 22 May 2014 22:34:44 +0200
-> Maxime Ripard <maxime.ripard@free-electrons.com> wrote:
+On Fri, 2014-06-13 at 14:50 -0400, Mark Salter wrote:
+> Currently, the rtc-efi driver is restricted to ia64 only.
+> Newer architectures with EFI support may want to also use
+> that driver. This patch moves the platform device setup
+> from ia64 into drivers/rtc and allow any architecture with
+> CONFIG_EFI=y to use the rtc-efi driver.
 > 
-> > On Mon, May 19, 2014 at 05:04:22PM +0200, Maxime Ripard wrote:
-> > > On Thu, May 15, 2014 at 11:11:23AM +0200, Maxime Ripard wrote:
-> > > > On Wed, May 07, 2014 at 02:33:18PM -0700, Guenter Roeck wrote:
-> > > > > On Tue, May 06, 2014 at 09:44:19PM -0500, Maxime Ripard wrote:
-> > > > > > Most of the watchdog code is duplicated between the machine restart code and
-> > > > > > the watchdog driver. Add the restart hook to the watchdog driver, to be able to
-> > > > > > remove it from the machine code eventually.
-> > > > > > 
-> > > > > > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> > > > > > Acked-by: Arnd Bergmann <arnd@arndb.de>
-> > > > > 
-> > > > > Reviewed-by: Guenter Roeck <linux@roeck-us.net>
-> > > > 
-> > > > Wim, do you have any comment on this one?
-> > > 
-> > > Ping?
-> > > 
-> > > It would be really great to see this in 3.16, and we get quite close
-> > > to the end of ARM's merge window.
-> > 
-> > Ping?
-> > 
-> > Guenter, since you seem to be the only responsive, may I suggest that
-> > you start merging patches and do a pull request to either Wim or Linus
-> > directly during the merge window?
+> Signed-off-by: Mark Salter <msalter@redhat.com>
+> ---
+>  arch/ia64/kernel/time.c        | 15 ---------------
+>  drivers/rtc/Kconfig            |  2 +-
+>  drivers/rtc/Makefile           |  4 ++++
+>  drivers/rtc/rtc-efi-platform.c | 30 ++++++++++++++++++++++++++++++
+>  4 files changed, 35 insertions(+), 16 deletions(-)
+>  create mode 100644 drivers/rtc/rtc-efi-platform.c
 > 
-> I've yet to see anyone explain why this is an improvement over the
-> current situation ?
+> diff --git a/arch/ia64/kernel/time.c b/arch/ia64/kernel/time.c
+> index 71c52bc..a149c67 100644
+> --- a/arch/ia64/kernel/time.c
+> +++ b/arch/ia64/kernel/time.c
+> @@ -384,21 +384,6 @@ static struct irqaction timer_irqaction = {
+>  	.name =		"timer"
+>  };
+>  
+> -static struct platform_device rtc_efi_dev = {
+> -	.name = "rtc-efi",
+> -	.id = -1,
+> -};
+> -
+> -static int __init rtc_init(void)
+> -{
+> -	if (platform_device_register(&rtc_efi_dev) < 0)
+> -		printk(KERN_ERR "unable to register rtc device...\n");
+> -
+> -	/* not necessarily an error */
+> -	return 0;
+> -}
+> -module_init(rtc_init);
+> -
+>  void read_persistent_clock(struct timespec *ts)
+>  {
+>  	efi_gettimeofday(ts);
+> diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+> index 0754f5c..4478a59 100644
+> --- a/drivers/rtc/Kconfig
+> +++ b/drivers/rtc/Kconfig
+> @@ -789,7 +789,7 @@ config RTC_DRV_DA9063
+>  
+>  config RTC_DRV_EFI
+>  	tristate "EFI RTC"
+> -	depends on IA64
+> +	depends on EFI
+>  	help
+>  	  If you say yes here you will get support for the EFI
+>  	  Real Time Clock.
+> diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+> index 70347d0..f1dfc36 100644
+> --- a/drivers/rtc/Makefile
+> +++ b/drivers/rtc/Makefile
+> @@ -10,6 +10,10 @@ obj-$(CONFIG_RTC_SYSTOHC)	+= systohc.o
+>  obj-$(CONFIG_RTC_CLASS)		+= rtc-core.o
+>  rtc-core-y			:= class.o interface.o
+>  
+> +ifdef CONFIG_RTC_DRV_EFI
+> +rtc-core-y			+= rtc-efi-platform.o
+> +endif
+> +
+>  rtc-core-$(CONFIG_RTC_INTF_DEV)	+= rtc-dev.o
+>  rtc-core-$(CONFIG_RTC_INTF_PROC) += rtc-proc.o
+>  rtc-core-$(CONFIG_RTC_INTF_SYSFS) += rtc-sysfs.o
+> diff --git a/drivers/rtc/rtc-efi-platform.c b/drivers/rtc/rtc-efi-platform.c
+> new file mode 100644
+> index 0000000..1a7f890
+> --- /dev/null
+> +++ b/drivers/rtc/rtc-efi-platform.c
+> @@ -0,0 +1,30 @@
+> +/*
+> + * Moved from arch/ia64/kernel/time.c
+> + *
+> + * Copyright (C) 1998-2003 Hewlett-Packard Co
+> + *	Stephane Eranian <eranian@hpl.hp.com>
+> + *	David Mosberger <davidm@hpl.hp.com>
+> + * Copyright (C) 1999 Don Dugger <don.dugger@intel.com>
+> + * Copyright (C) 1999-2000 VA Linux Systems
+> + * Copyright (C) 1999-2000 Walt Drummond <drummond@valinux.com>
+> + */
+> +#include <linux/init.h>
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/efi.h>
+> +#include <linux/platform_device.h>
+> +
+> +static struct platform_device rtc_efi_dev = {
+> +	.name = "rtc-efi",
+> +	.id = -1,
+> +};
+> +
+> +static int __init rtc_init(void)
+> +{
+> +	if (platform_device_register(&rtc_efi_dev) < 0)
+> +		pr_err("unable to register rtc device...\n");
+> +
+> +	/* not necessarily an error */
+> +	return 0;
+> +}
+> +module_init(rtc_init);
 
-To move forward: can you share your objections with us again?
-
-Thanks,
-Wim.
 
