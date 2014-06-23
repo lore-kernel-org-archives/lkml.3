@@ -1,43 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756891AbaFWUKW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 16:10:22 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:34801 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753812AbaFWUKT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 16:10:19 -0400
-Date: Mon, 23 Jun 2014 13:10:18 -0700 (PDT)
-Message-Id: <20140623.131018.1349792926453695313.davem@davemloft.net>
-To: haiyangz@microsoft.com
-Cc: olaf@aepfle.de, greg@kroah.com, netdev@vger.kernel.org,
-        jasowang@redhat.com, driverdev-devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next] hyperv: Add handler for
- RNDIS_STATUS_NETWORK_CHANGE event
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <5fb9ddebb68d456ab87979b5cc3830ec@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-References: <06b508cbb6b949f4b3e13e7797948e56@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-	<20140623131723.GA7026@aepfle.de>
-	<5fb9ddebb68d456ab87979b5cc3830ec@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 23 Jun 2014 13:10:19 -0700 (PDT)
+	id S1756908AbaFWUKz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 16:10:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21564 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753812AbaFWUKx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 16:10:53 -0400
+Date: Mon, 23 Jun 2014 22:11:42 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-doc@vger.kernel.org, linux-mips@linux-mips.org,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        x86@kernel.org, xen-devel@lists.xenproject.org,
+        iommu@lists.linux-foundation.org, linux-ide@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH 1/3] PCI/MSI: Add pci_enable_msi_partial()
+Message-ID: <20140623201141.GA30956@dhcp-26-207.brq.redhat.com>
+References: <cover.1402405331.git.agordeev@redhat.com>
+ <4fef62a2e647a7c38e9f2a1ea4244b3506a85e2b.1402405331.git.agordeev@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4fef62a2e647a7c38e9f2a1ea4244b3506a85e2b.1402405331.git.agordeev@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Haiyang Zhang <haiyangz@microsoft.com>
-Date: Mon, 23 Jun 2014 16:09:59 +0000
+Hi Bjorn,
 
-> So, what's the equivalent or similar command to "network restart" on SLES12? Could
-> you update the command line for the usermodehelper when porting this patch to SLES
-> 12?
+Any feedback?
 
-No, you are not going to keep the usermodehelper invocation in your driver
-please remove it.  It is absolutely inappropriate, and I strictly do not want
-to keep it in there because other people will copy it and then we'll have a
-real mess on our hands.
+Thanks!
 
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
