@@ -1,110 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752434AbaFWKAq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 06:00:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41870 "EHLO mx2.suse.de"
+	id S1752366AbaFWKFD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 06:05:03 -0400
+Received: from nbd.name ([46.4.11.11]:38699 "EHLO nbd.name"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751014AbaFWKAp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 06:00:45 -0400
-Date: Mon, 23 Jun 2014 11:00:41 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Minchan Kim <minchan@kernel.org>, Chen Yucong <slaoub@gmail.com>,
-        hannes@cmpxchg.org, mhocko@suse.cz, riel@redhat.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm/vmscan.c: fix an implementation flaw in proportional
- scanning
-Message-ID: <20140623100040.GH10819@suse.de>
-References: <1402980902-6345-1-git-send-email-slaoub@gmail.com>
- <20140618152751.283deda95257cc32ccea8f20@linux-foundation.org>
- <1403136272.12954.4.camel@debian>
- <20140618174001.a5de7668.akpm@linux-foundation.org>
- <20140619010239.GA2071@bbox>
- <20140619131322.1ab89e3380bf2eed477f9030@linux-foundation.org>
+	id S1751122AbaFWKFA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 06:05:00 -0400
+Message-ID: <53A7FBB2.2050703@openwrt.org>
+Date: Mon, 23 Jun 2014 12:04:34 +0200
+From: Felix Fietkau <nbd@openwrt.org>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20140619131322.1ab89e3380bf2eed477f9030@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Johannes Berg <johannes@sipsolutions.net>
+CC: Rostislav Lisovy <lisovy@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michal Sojka <sojkam1@fel.cvut.cz>, s.sander@nordsys.de,
+        jan-niklas.meier@volkswagen.de,
+        Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
+Subject: Re: [PATCH 2/2] cfg80211: Use 5MHz bandwidth by default when checking
+ usable channels
+References: <1397565476-4348-1-git-send-email-rostislav.lisovy@fel.cvut.cz>	 <1397565476-4348-3-git-send-email-rostislav.lisovy@fel.cvut.cz>	 <53A6C0FF.9090104@openwrt.org> <1403514536.4418.6.camel@jlt4.sipsolutions.net>
+In-Reply-To: <1403514536.4418.6.camel@jlt4.sipsolutions.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 01:13:22PM -0700, Andrew Morton wrote:
-> On Thu, 19 Jun 2014 10:02:39 +0900 Minchan Kim <minchan@kernel.org> wrote:
+On 2014-06-23 11:08, Johannes Berg wrote:
+> On Sun, 2014-06-22 at 13:41 +0200, Felix Fietkau wrote:
+>> On 2014-04-15 14:37, Rostislav Lisovy wrote:
+>> > Current code checks if the 20MHz bandwidth is allowed for
+>> > particular channel -- if it is not, the channel is disabled.
+>> > Since we need to use 5/10 MHz channels, this code is modified in
+>> > the way that the default bandwidth to check is 5MHz. If the
+>> > maximum bandwidth allowed by the channel is smaller than 5MHz,
+>> > the channel is disabled. Otherwise the channel is used and the
+>> > flags are set according to the bandwidth allowed by the channel.
+>> > 
+>> > Signed-off-by: Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
 > 
-> > > > @@ -2057,8 +2057,7 @@ out:
-> > > >  static void shrink_lruvec(struct lruvec *lruvec, struct scan_control
-> > > > *sc)
-> > > >  {
-> > > >         unsigned long nr[NR_LRU_LISTS];
-> > > > -       unsigned long targets[NR_LRU_LISTS];
-> > > > -       unsigned long nr_to_scan;
-> > > > +       unsigned long file_target, anon_target;
-> > > > 
-> > > > >From the above snippet, we can know that the "percent" locals come from
-> > > > targets[NR_LRU_LISTS]. So this fix does not increase the stack.
-> > > 
-> > > OK.  But I expect the stack use could be decreased by using more
-> > > complex expressions.
-> > 
-> > I didn't look at this patch yet but want to say.
-> > 
-> > The expression is not easy to follow since several people already
-> > confused/discuss/fixed a bit so I'd like to put more concern to clarity
-> > rather than stack footprint.
+>> This change causes a regression and needs to be reverted or fixed.
 > 
-> That code is absolutely awful :( It's terribly difficult to work out
-> what the design is - what the code is actually setting out to achieve. 
-> One is reduced to trying to reverse-engineer the intent from the
-> implementation and that becomes near impossible when the
-> implementation has bugs!
+> Noted, I've reverted it in mac80211.git.
 > 
-> Look at this miserable comment:
+>> It leaves Channel 12 enabled for US regdomain and does not prevent
+>> bringing up AP mode on it (IEEE80211_CHAN_NO_20MHZ does not get set).
 > 
-> 		/*
-> 		 * For kswapd and memcg, reclaim at least the number of pages
-> 		 * requested. Ensure that the anon and file LRUs are scanned
-> 		 * proportionally what was requested by get_scan_count(). We
-> 		 * stop reclaiming one LRU and reduce the amount scanning
-> 		 * proportional to the original scan target.
-> 		 */
-> 
-> 
-> > For kswapd and memcg, reclaim at least the number of pages
-> > requested.
-> 
-> *why*?
-> 
+> I'm not sure this makes sense - CHAN_NO_20MHZ shouldn't get set on that
+> channel? It should be disabled for other reasons for AP mode - e.g.
+> NO_IR.
+I was thinking it could be valid in AP mode for 5 MHz operation.
 
-At the time of writing the intention was to reduce direct reclaim stall
-latency in the global case. Initially the following block was above it
-
-                /*
-                 * For global direct reclaim, reclaim only the number of pages
-                 * requested. Less care is taken to scan proportionally as it
-                 * is more important to minimise direct reclaim stall latency
-                 * than it is to properly age the LRU lists.
-                 */
-                if (global_reclaim(sc) && !current_is_kswapd())
-                        break;
-
-When that comment was removed then the remaining comment is less clear.
-
-
-> > Ensure that the anon and file LRUs are scanned
-> > proportionally what was requested by get_scan_count().
-> 
-> Ungramattical.  Lacks specificity.  Fails to explain *why*.
-> 
-
-In the normal case, file/anon LRUs are scanned at a rate proportional
-to the value of vm.swappiness. get_scan_count() calculates the number of
-pages to scan from each LRU taking into account additional factors such
-as the availability of swap. When the requested number of pages have been
-reclaimed we adjust to scan targets to minimise the number of pages scanned
-while maintaining the ratio of file/anon pages that are scanned.
-
--- 
-Mel Gorman
-SUSE Labs
+- Felix
