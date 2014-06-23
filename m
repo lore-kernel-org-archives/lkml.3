@@ -1,95 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751363AbaFWWTP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 18:19:15 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39817 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750977AbaFWWTN (ORCPT
+	id S1751730AbaFWWT0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 18:19:26 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:34727 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751205AbaFWWTO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 18:19:13 -0400
-Date: Mon, 23 Jun 2014 15:18:43 -0700
-From: tip-bot for Andy Lutomirski <tipbot@zytor.com>
-Message-ID: <tip-554086d85e71f30abe46fc014fea31929a7c6a8a@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        luto@amacapital.net, roland@redhat.com, toralf.foerster@gmx.de,
-        tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        luto@amacapital.net, roland@redhat.com, toralf.foerster@gmx.de,
-        tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <e09c499eade6fc321266dd6b54da7beb28d6991c.1403558229.git.luto@amacapital.net>
-References: <e09c499eade6fc321266dd6b54da7beb28d6991c.1403558229.git.luto@amacapital.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86_32, entry: Do syscall exit work on badsys (
- CVE-2014-4508)
-Git-Commit-ID: 554086d85e71f30abe46fc014fea31929a7c6a8a
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 23 Jun 2014 18:19:14 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Tomasz Figa <tomasz.figa@gmail.com>, Wolfram Sang <wsa@the-dreams.de>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        naveen krishna <ch.naveen@samsung.com>,
+        Jingoo Han <jg1.han@samsung.com>, Jean Delvare <jdelvare@suse.de>,
+        Simon Glass <sjg@google.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Masanari Iida <standby24x7@gmail.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        "linux-i2c\@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] i2c: exynos5: Properly use the "noirq" variants of suspend/resume
+References: <1403155273-1057-1-git-send-email-dianders@chromium.org>
+	<7h8uosyc3k.fsf@paris.lan>
+	<CAD=FV=XxNVmF+N5HF4SnZoJRJvkSUkpEx6ct4v2gtmAQ9n28-Q@mail.gmail.com>
+	<7hwqcbs166.fsf@paris.lan>
+	<CAD=FV=Uz9O0i2gmuk2+BHa-Tksvyxv0+MTi2UEjVREAMNCK7Ug@mail.gmail.com>
+	<7h7g4brx6w.fsf@paris.lan>
+	<CAD=FV=VmPMf6tCNmKJ1o5J7PyAXoU8fb6+s+Fkv18FH2WaQp7A@mail.gmail.com>
+	<53A4CADA.4030002@gmail.com>
+	<CAD=FV=VkxA01eEFiXSp+c+GDuVJi7TctAdnyrMggk1gRw6BStQ@mail.gmail.com>
+Date: Mon, 23 Jun 2014 15:19:11 -0700
+In-Reply-To: <CAD=FV=VkxA01eEFiXSp+c+GDuVJi7TctAdnyrMggk1gRw6BStQ@mail.gmail.com>
+	(Doug Anderson's message of "Mon, 23 Jun 2014 15:01:39 -0700")
+Message-ID: <7ha993p8v4.fsf@paris.lan>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  554086d85e71f30abe46fc014fea31929a7c6a8a
-Gitweb:     http://git.kernel.org/tip/554086d85e71f30abe46fc014fea31929a7c6a8a
-Author:     Andy Lutomirski <luto@amacapital.net>
-AuthorDate: Mon, 23 Jun 2014 14:22:15 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 23 Jun 2014 14:59:26 -0700
+Doug Anderson <dianders@chromium.org> writes:
 
-x86_32, entry: Do syscall exit work on badsys (CVE-2014-4508)
+[...]
 
-The bad syscall nr paths are their own incomprehensible route
-through the entry control flow.  Rearrange them to work just like
-syscalls that return -ENOSYS.
+> On Fri, Jun 20, 2014 at 4:59 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+>>
+>> I'm not sure noirq is going to work correctly, at least not with current
+>> callbacks. I can see a call to clk_prepare_enable() there which needs to
+>> acquire a mutex.
+>
+> Nice catch, thanks!  :)
+>
+> OK, looking at that now.  Interestingly this doesn't seem to cause us
+> problems in our ChromeOS 3.8 tree.  I just tried enabling:
+>   CONFIG_DEBUG_ATOMIC_SLEEP=y
+>
+> ...and confirmed that I got it on right:
+>
+> # zgrep -i atomic /proc/config.gz
+> CONFIG_DEBUG_ATOMIC_SLEEP=y
+>
+> I can suspend/resume with no problems.  My bet is that it works fine because:
+>
+> * resume_noirq is not considered "atomic" in the sense enforced by
+> CONFIG_DEBUG_ATOMIC_SLEEP (at least not in 3.8--I haven't tried on
+> ToT)
 
-This fixes an OOPS in the audit code when fast-path auditing is
-enabled and sysenter gets a bad syscall nr (CVE-2014-4508).
+The reason is because "noirq" in the suspend/resume path actually means
+no *device* IRQs for that specific device.
 
-This has probably been broken since Linux 2.6.27:
-af0575bba0 i386 syscall audit fast-path
+It's often assumed that the "noirq" callbacks are called with *all*
+interrupts disabled, but that's not the case.  Only the IRQs for that
+specific device are disabled when its noirq callbacks run.
 
-Cc: stable@vger.kernel.org
-Cc: Roland McGrath <roland@redhat.com>
-Reported-by: Toralf Förster <toralf.foerster@gmx.de>
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Link: http://lkml.kernel.org/r/e09c499eade6fc321266dd6b54da7beb28d6991c.1403558229.git.luto@amacapital.net
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/entry_32.S | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index f0da82b..dbaa23e 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -423,9 +423,10 @@ sysenter_past_esp:
- 	jnz sysenter_audit
- sysenter_do_call:
- 	cmpl $(NR_syscalls), %eax
--	jae syscall_badsys
-+	jae sysenter_badsys
- 	call *sys_call_table(,%eax,4)
- 	movl %eax,PT_EAX(%esp)
-+sysenter_after_call:
- 	LOCKDEP_SYS_EXIT
- 	DISABLE_INTERRUPTS(CLBR_ANY)
- 	TRACE_IRQS_OFF
-@@ -675,7 +676,12 @@ END(syscall_fault)
- 
- syscall_badsys:
- 	movl $-ENOSYS,PT_EAX(%esp)
--	jmp resume_userspace
-+	jmp syscall_exit
-+END(syscall_badsys)
-+
-+sysenter_badsys:
-+	movl $-ENOSYS,PT_EAX(%esp)
-+	jmp sysenter_after_call
- END(syscall_badsys)
- 	CFI_ENDPROC
- 
+Kevin
