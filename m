@@ -1,74 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502AbaFWJAY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 05:00:24 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:49214 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751708AbaFWJAT (ORCPT
+	id S1753033AbaFWIzL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 04:55:11 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55519 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752539AbaFWIc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 05:00:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140623084254.GK19860@laptop.programming.kicks-ass.net>
-References: <1403193509-22393-1-git-send-email-eranian@google.com>
-	<1403193509-22393-3-git-send-email-eranian@google.com>
-	<20140623084254.GK19860@laptop.programming.kicks-ass.net>
-Date: Mon, 23 Jun 2014 11:00:18 +0200
-Message-ID: <CABPqkBTXvBwwQ1vWkfQRtq7=GxS_KyE94wSOxPaBCffeJ7yc+A@mail.gmail.com>
-Subject: Re: [PATCH 2/2] perf/x86: fix constraints for load latency and
- precise events
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Joe Mario <jmario@redhat.com>, Don Zickus <dzickus@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 23 Jun 2014 04:32:29 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Brian Healy <healybrian@gmail.com>,
+        Antti Palosaari <crope@iki.fi>, Jiri Slaby <jslaby@suse.cz>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.12 071/111] rtl28xxu: add 1b80:d395 Peak DVB-T USB
+Date: Mon, 23 Jun 2014 10:31:46 +0200
+Message-Id: <0b7106f039378ab4f7dfabfc41c92ae124775513.1403512281.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
+References: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
+In-Reply-To: <cover.1403512280.git.jslaby@suse.cz>
+References: <cover.1403512280.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter,
+From: Brian Healy <healybrian@gmail.com>
 
-On Mon, Jun 23, 2014 at 10:42 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, Jun 19, 2014 at 05:58:29PM +0200, Stephane Eranian wrote:
->> The load latency does not have to be constrained to counter 3
->> on any of SNB, IVB, HSW. It operates fine on any PEBS-capable
->> counter.
->>
->> The precise store event for SNB, IVB needs to be on counter 3.
->> But on Haswell, precise store is implemented differently and
->> the constraint is not needed anymore, so we remove it.
->>
->> The artificial constraint on counter 3 was used to ease
->> scheduling because the load latency events rely on an
->> extra MSR which is shared for all the counters. But
->> perf_events has an infrastructure to handle shared_regs
->> and does not need to constrain the load latency event to
->> a single counter. It was already using that infrastructure
->> with the constraint on counter 3. By eliminating the constraint
->> on load latency, it becomes possible to measure loads and stores
->> precisely without multiplexing.
->
-> So that all makes sense, except why did they pick the same constraint to
-> begin with? If they'd picked cnt2 for ll and cnt3 (as per the hardware
-> constraint) for st, this would've already been possible right?
->
-I don't know why they did it this way. I think somehow, it is believe that
-ll and st cannot be captured together (and putting both on cnt3 enforces
-that). But when it seems to be working fine. If someone from Intel can
-confirm this is okay/not okay then we can revisit.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-> Except of course, that the SDM states that no other PEBS event should be
-> active when using ll; we don't enforce that (although userspace could
-> request exclusive). What about this constraint? Is the SDM wrong about
-> this?
+===============
 
-For LL this is usually the case if you assume a single measurement is
-active. But in system-wide on a shared system, it is possible to have
-other events active on the same CPU. I have not tried that to see the
-impact on ll.
+commit 9ca24ae4083665bda38da45f4b5dc9bbaf936bc0 upstream.
 
-You can say the same with PREC_DIST which up until HSW needs to be
-taken alone, i.e., no other event active. We don't enforce that either, it would
-cause problems with the NMI watchdog.
+Add USB ID for Peak DVB-T USB.
+
+[crope@iki.fi: fix Brian email address and indentation]
+Signed-off-by: Brian Healy <healybrian@gmail.com>
+Signed-off-by: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+---
+ drivers/media/usb/dvb-usb-v2/rtl28xxu.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
+index ad85db6c87a5..a1dfadd6e788 100644
+--- a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
++++ b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
+@@ -1396,6 +1396,8 @@ static const struct usb_device_id rtl28xxu_id_table[] = {
+ 		&rtl2832u_props, "Crypto ReDi PC 50 A", NULL) },
+ 	{ DVB_USB_DEVICE(USB_VID_KYE, 0x707f,
+ 		&rtl2832u_props, "Genius TVGo DVB-T03", NULL) },
++	{ DVB_USB_DEVICE(USB_VID_KWORLD_2, 0xd395,
++		&rtl2832u_props, "Peak DVB-T USB", NULL) },
+ 
+ 	/* RTL2832P devices: */
+ 	{ DVB_USB_DEVICE(USB_VID_HANFTEK, 0x0131,
+-- 
+2.0.0
+
