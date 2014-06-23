@@ -1,136 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752821AbaFWV3N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 17:29:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63436 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751212AbaFWV3L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 17:29:11 -0400
-Message-ID: <1403558870.755.60.camel@deneb.redhat.com>
-Subject: Re: [PATCH] rtc: ia64: allow other architectures to use EFI RTC
-From: Mark Salter <msalter@redhat.com>
-To: Alessandro Zummo <a.zummo@towertech.it>
-Cc: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        linux-ia64@vger.kernel.org, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org
-Date: Mon, 23 Jun 2014 17:27:50 -0400
-In-Reply-To: <1402685430-32591-1-git-send-email-msalter@redhat.com>
-References: <1402685430-32591-1-git-send-email-msalter@redhat.com>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752518AbaFWVgR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 17:36:17 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:47144 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751212AbaFWVgQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 17:36:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <53A583DC.504@ahsoftware.de>
+References: <20140611230127.GA28066@griso.site>
+	<CANcMJZDqAmdFLYq2LW60zU_d05Pv8tcYE1Nb=ftZcj5UukxqaA@mail.gmail.com>
+	<53A583DC.504@ahsoftware.de>
+Date: Mon, 23 Jun 2014 14:36:15 -0700
+Message-ID: <CALAqxLUYbp9qXpFusw=Nteqht33Lz9ch5g6Ptv1cMoFEgC+M9Q@mail.gmail.com>
+Subject: Re: rtc/hctosys.c Problem during kernel boot
+From: John Stultz <john.stultz@linaro.org>
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: John Whitmore <arigead@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alessandro Zummo <a.zummo@towertech.it>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping.
+On Sat, Jun 21, 2014 at 6:08 AM, Alexander Holler <holler@ahsoftware.de> wrote:
+> Am 12.06.2014 01:53, schrieb John Stultz:
+>
+>> You can read some of the previous discussion here:
+>> https://lkml.org/lkml/2013/6/17/533
+>>
+>> I'd be very interested in patches to resolve this!
+>
+>
+> And the silence as response to my repost of my already working patches just
+> proved that isn't true.
 
-On Fri, 2014-06-13 at 14:50 -0400, Mark Salter wrote:
-> Currently, the rtc-efi driver is restricted to ia64 only.
-> Newer architectures with EFI support may want to also use
-> that driver. This patch moves the platform device setup
-> from ia64 into drivers/rtc and allow any architecture with
-> CONFIG_EFI=y to use the rtc-efi driver.
-> 
-> Signed-off-by: Mark Salter <msalter@redhat.com>
-> ---
->  arch/ia64/kernel/time.c        | 15 ---------------
->  drivers/rtc/Kconfig            |  2 +-
->  drivers/rtc/Makefile           |  4 ++++
->  drivers/rtc/rtc-efi-platform.c | 30 ++++++++++++++++++++++++++++++
->  4 files changed, 35 insertions(+), 16 deletions(-)
->  create mode 100644 drivers/rtc/rtc-efi-platform.c
-> 
-> diff --git a/arch/ia64/kernel/time.c b/arch/ia64/kernel/time.c
-> index 71c52bc..a149c67 100644
-> --- a/arch/ia64/kernel/time.c
-> +++ b/arch/ia64/kernel/time.c
-> @@ -384,21 +384,6 @@ static struct irqaction timer_irqaction = {
->  	.name =		"timer"
->  };
->  
-> -static struct platform_device rtc_efi_dev = {
-> -	.name = "rtc-efi",
-> -	.id = -1,
-> -};
-> -
-> -static int __init rtc_init(void)
-> -{
-> -	if (platform_device_register(&rtc_efi_dev) < 0)
-> -		printk(KERN_ERR "unable to register rtc device...\n");
-> -
-> -	/* not necessarily an error */
-> -	return 0;
-> -}
-> -module_init(rtc_init);
-> -
->  void read_persistent_clock(struct timespec *ts)
->  {
->  	efi_gettimeofday(ts);
-> diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-> index 0754f5c..4478a59 100644
-> --- a/drivers/rtc/Kconfig
-> +++ b/drivers/rtc/Kconfig
-> @@ -789,7 +789,7 @@ config RTC_DRV_DA9063
->  
->  config RTC_DRV_EFI
->  	tristate "EFI RTC"
-> -	depends on IA64
-> +	depends on EFI
->  	help
->  	  If you say yes here you will get support for the EFI
->  	  Real Time Clock.
-> diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
-> index 70347d0..f1dfc36 100644
-> --- a/drivers/rtc/Makefile
-> +++ b/drivers/rtc/Makefile
-> @@ -10,6 +10,10 @@ obj-$(CONFIG_RTC_SYSTOHC)	+= systohc.o
->  obj-$(CONFIG_RTC_CLASS)		+= rtc-core.o
->  rtc-core-y			:= class.o interface.o
->  
-> +ifdef CONFIG_RTC_DRV_EFI
-> +rtc-core-y			+= rtc-efi-platform.o
-> +endif
-> +
->  rtc-core-$(CONFIG_RTC_INTF_DEV)	+= rtc-dev.o
->  rtc-core-$(CONFIG_RTC_INTF_PROC) += rtc-proc.o
->  rtc-core-$(CONFIG_RTC_INTF_SYSFS) += rtc-sysfs.o
-> diff --git a/drivers/rtc/rtc-efi-platform.c b/drivers/rtc/rtc-efi-platform.c
-> new file mode 100644
-> index 0000000..1a7f890
-> --- /dev/null
-> +++ b/drivers/rtc/rtc-efi-platform.c
-> @@ -0,0 +1,30 @@
-> +/*
-> + * Moved from arch/ia64/kernel/time.c
-> + *
-> + * Copyright (C) 1998-2003 Hewlett-Packard Co
-> + *	Stephane Eranian <eranian@hpl.hp.com>
-> + *	David Mosberger <davidm@hpl.hp.com>
-> + * Copyright (C) 1999 Don Dugger <don.dugger@intel.com>
-> + * Copyright (C) 1999-2000 VA Linux Systems
-> + * Copyright (C) 1999-2000 Walt Drummond <drummond@valinux.com>
-> + */
-> +#include <linux/init.h>
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/efi.h>
-> +#include <linux/platform_device.h>
-> +
-> +static struct platform_device rtc_efi_dev = {
-> +	.name = "rtc-efi",
-> +	.id = -1,
-> +};
-> +
-> +static int __init rtc_init(void)
-> +{
-> +	if (platform_device_register(&rtc_efi_dev) < 0)
-> +		pr_err("unable to register rtc device...\n");
-> +
-> +	/* not necessarily an error */
-> +	return 0;
-> +}
-> +module_init(rtc_init);
+You put in your patches the following:
+"Besides discussing possible *real* bugs, I don't care what any person
+ (including maintainers) will request. I'm fine with these patches (I'm
+ using them since a year) and I don't play remote keyboard or
+ patch ping-pong. If someone want changes I suggest he gets responsible
+ for them himself and just puts a patch on top of my patches. And in any
+ case, feel free to completely ignore these patches."
 
+I've pointed out problems with your patchset earlier, and you refuse
+to address them. That's totally your prerogative, and that's fine, but
+I don't know how I should respond here.
 
+I agree that there is an issue here that your patches try to address,
+which needs to be fixed, but I'm hoping John Whitmore might be able to
+read the discussion and either rework your patches or write his own to
+address the issue without the problems in your patch I pointed out.
+
+I've removed the rest of your anti-maintainer rant here, but I will
+say that I do very much understand that the upstream kernel community
+process can be frustrating at times. I have myself had to start over
+many many times on patches when maintainers request, and sometimes my
+patches don't ever make it past the bar for acceptance. So I very much
+do see this from both sides, and despite my frustration, I appreciate
+that folks are looking over my patches carefully for design and
+maintenance issues, because without the high standards, the kernel
+code would be in much worse shape.
+
+Similarly I appreciate your continued participation here, even if its
+just to resend your patches and provide more context to others wanting
+to solve the issue properly. But it might be better not get into
+personal tangents, and instead focus on the technical merits and
+issues with the potential approaches.
+
+thanks
+-john
