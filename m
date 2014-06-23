@@ -1,87 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753594AbaFWVEc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 17:04:32 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:61959 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752628AbaFWVEb (ORCPT
+	id S1754032AbaFWVEp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 17:04:45 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:39879 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752821AbaFWVEn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 17:04:31 -0400
+	Mon, 23 Jun 2014 17:04:43 -0400
 MIME-Version: 1.0
-In-Reply-To: <CALCETrXhmLGvD0ff2HhRmL33UnYvb7eEbEqREANLYYDTJcwN7Q@mail.gmail.com>
-References: <539F1C59.6070308@gmx.de>
-	<CAFLxGvyqPzbmfz1-WxP7z02=V-V5=p5b09HYPOFOS7Qj8eUHGw@mail.gmail.com>
-	<CALCETrXqjHPvKw=wcdnxQWO0Y140B=a0E7eh4+PoERvU=z909w@mail.gmail.com>
-	<539F297F.7010904@nod.at>
-	<CALCETrU+TmaEjPSHz1LwQJvVDp8fqoDs3O4b+3gS_ewthiwnMA@mail.gmail.com>
-	<539F2B2D.6050105@gmx.de>
-	<CALCETrVw6f7iy4qTMgSt8k9N4rOWJ_mm9LbrtVZ9YFORacriSQ@mail.gmail.com>
-	<539F3077.7040005@gmx.de>
-	<CALCETrUUC6g_y4nJkSYo7MrKB8ehyXgnnuBHxGCDrq1d4zp2BQ@mail.gmail.com>
-	<539F35A0.2050002@gmx.de>
-	<CALCETrVseO=n6TH-msfTHRqB-OMPs_32nRELVYc=V1ZDmvFXVA@mail.gmail.com>
-	<539F567F.2050802@gmx.de>
-	<539F5702.5050104@nod.at>
-	<CALCETrW7U4AHG-a9oPbOt31z3wgzhjSu8b+yGpdM4+vNinKgsA@mail.gmail.com>
-	<539F6646.4040605@zytor.com>
-	<CALCETrXhmLGvD0ff2HhRmL33UnYvb7eEbEqREANLYYDTJcwN7Q@mail.gmail.com>
-Date: Mon, 23 Jun 2014 17:04:30 -0400
-X-Google-Sender-Auth: PRnup_iMfhF_8fJOVvtZi-Y68rM
-Message-ID: <CA+5PVA70nFS8JZkL0-Q-1HjFHT5NA04275_M4WstjQMrpT+hrQ@mail.gmail.com>
-Subject: Re: 3.15: kernel BUG at kernel/auditsc.c:1525!
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Richard Weinberger <richard@nod.at>,
+In-Reply-To: <53A88DE4.8050107@intel.com>
+References: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com>
+ <1403084656-27284-3-git-send-email-qiaowei.ren@intel.com> <53A884B2.5070702@mit.edu>
+ <53A88806.1060908@intel.com> <CALCETrXYZZiZsDiUvvZd0636+qHP9a0sHTN6wt_ZKjvLaeeBzw@mail.gmail.com>
+ <53A88DE4.8050107@intel.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 23 Jun 2014 14:04:22 -0700
+Message-ID: <CALCETrWBbkFzQR3tz1TphqxiGYycvzrFrKc=ghzMynbem=d7rg@mail.gmail.com>
+Subject: Re: [PATCH v6 02/10] x86, mpx: add MPX specific mmap interface
+To: Dave Hansen <dave.hansen@intel.com>
+Cc: Qiaowei Ren <qiaowei.ren@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         X86 ML <x86@kernel.org>,
-        =?ISO-8859-1?Q?Toralf_F=F6rster?= <toralf.foerster@gmx.de>,
-        Eric Paris <eparis@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 11:41 AM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Mon, Jun 16, 2014 at 2:48 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 06/16/2014 02:35 PM, Andy Lutomirski wrote:
->>>
->>> To hpa, etc:  It appears that entry_32.S is missing any call to the
->>> audit exit hook on the badsys path.  If I'm diagnosing this bug report
->>> correctly, this causes OOPSes.
->>>
->>> The the world at large: it's increasingly apparent that no one (except
->>> maybe the blackhats) has ever scrutinized the syscall auditing code.
->>> This is two old severe bugs in the code that have probably been there
->>> for a long time.
->>>
->>
->> Yes, the audit code is a total mess.
->>
->>> The bad syscall nr paths are their own incomprehensible route
->>> through the entry control flow.  Rearrange them to work just like
->>> syscalls that return -ENOSYS.
->>
->> I have to admit... it sort of lends itself to a solution like this:
->>
->>         /* For the 64-bit case, analogous code for 32 bits */
->>         movl $__NR_syscall_max+1,%ecx   # *Not* __NR_syscall_max
->>         cmpq %rcx,%rax
->>         cmovae %rcx,%rax
->>         movq %r10,%rcx
->>         call *sys_call_table(,%rax,8)
->>
->> ... and having an extra (invalid) system call slot in the syscall table
->> beyond the end instead of branching off separately.
->>
->> (Note: we could use either cmova or cmovae, and either the 32- or 64-bit
->> form... the reason why is left as an exercise to the reader.)
+On Mon, Jun 23, 2014 at 1:28 PM, Dave Hansen <dave.hansen@intel.com> wrote:
+> On 06/23/2014 01:06 PM, Andy Lutomirski wrote:
+>> Can the new vm_operation "name" be use for this?  The magic "always
+>> written to core dumps" feature might need to be reconsidered.
 >
-> This is CVE-2014-4508, and it's probably worth fixing.
+> One thing I'd like to avoid is an MPX vma getting merged with a non-MPX
+> vma.  I don't see any code to prevent two VMAs with different
+> vm_ops->names from getting merged.  That seems like a bit of a design
+> oversight for ->name.  Right?
+
+AFAIK there are no ->name users that don't also set ->close, for
+exactly that reason.  I'd be okay with adding a check for ->name, too.
+
+Hmm.  If MPX vmas had a real struct file attached, this would all come
+for free.  Maybe vmas with non-default vm_ops and file != NULL should
+never be mergeable?
+
 >
-> Is my patch good?  I can resent and cc stable if needed.
+> Thinking out loud a bit... There are also some more complicated but more
+> performant cleanup mechanisms that I'd like to go after in the future.
+> Given a page, we might want to figure out if it is an MPX page or not.
+> I wonder if we'll ever collide with some other user of vm_ops->name.  It
+> looks fairly narrowly used at the moment, but would this keep us from
+> putting these pages on, say, a tmpfs mount?  Doesn't look that way at
+> the moment.
 
-I'm planning on picking this up for Fedora tomorrow unless someone
-screams it's the wrong fix.  Honestly though, it would be nice to get
-an indication either way.
+You could always check the vm_ops pointer to see if it's MPX.
 
-josh
+One feature I've wanted: a way to have special per-process vmas that
+can be easily found.  For example, I want to be able to efficiently
+find out where the vdso and vvar vmas are.  I don't think this is
+currently supported.
+
+--Andy
