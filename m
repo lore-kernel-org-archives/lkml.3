@@ -1,152 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753199AbaFWXsN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 19:48:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52153 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752475AbaFWXsL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 19:48:11 -0400
-Date: Mon, 23 Jun 2014 19:47:59 -0400
-From: Dave Jones <davej@redhat.com>
-To: David Miller <davem@davemloft.net>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, therbert@google.com
-Subject: Re: [GIT] Networking
-Message-ID: <20140623234759.GA19138@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	David Miller <davem@davemloft.net>, torvalds@linux-foundation.org,
-	akpm@linux-foundation.org, netdev@vger.kernel.org,
-	linux-kernel@vger.kernel.org, therbert@google.com
-References: <20140615.193312.2155181077359902619.davem@davemloft.net>
- <20140616230450.GA12887@redhat.com>
- <20140616234254.GA15332@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140616234254.GA15332@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753470AbaFWXsr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 19:48:47 -0400
+Received: from smtprelay0167.hostedemail.com ([216.40.44.167]:53868 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752012AbaFWXsp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 19:48:45 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:967:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2525:2560:2563:2682:2685:2828:2859:2899:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3353:3770:3865:3866:3867:3868:3870:3871:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:5007:6119:7652:7875:7903:7904:8599:8985:8987:9015:9025:10004:10400:10848:11026:11232:11473:11658:11914:12043:12114:12438:12517:12519:12740:13069:13071:13161:13229:13311:13357:21060,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: walk66_2f31e8720214f
+X-Filterd-Recvd-Size: 2284
+Message-ID: <1403567322.20657.14.camel@joe-AO725>
+Subject: Re: [PATCH 00/22] Add and use pci_zalloc_consistent
+From: Joe Perches <joe@perches.com>
+To: Julian Calaby <julian.calaby@gmail.com>,
+        Julia Lawall <julia.lawall@lip6.fr>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 23 Jun 2014 16:48:42 -0700
+In-Reply-To: <CAGRGNgVD2f0S-v8YZ-qABEhDJAwk5pp71FU9uLR8aSZ+DhABjg@mail.gmail.com>
+References: <cover.1403530604.git.joe@perches.com>
+	 <20140623172512.GA1390@garbanzo.do-not-panic.com>
+	 <1403550809.15811.13.camel@joe-AO725>
+	 <CAGRGNgVD2f0S-v8YZ-qABEhDJAwk5pp71FU9uLR8aSZ+DhABjg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 16, 2014 at 07:42:54PM -0400, Dave Jones wrote:
- > On Mon, Jun 16, 2014 at 07:04:50PM -0400, Dave Jones wrote:
- >  > On Sun, Jun 15, 2014 at 07:33:12PM -0700, David Miller wrote:
- >  > 
- >  >  > 1) Fix checksumming regressions, from Tom Herbert.
- >  > 
- >  > Something still not right for me here.
- >  > After about 5 minutes, I get an oops and then instant reboot/lock up.
- >  > 
- >  > I haven't managed to get a trace over usb-serial because it seems to
- >  > crash before it completes. Hand transcribed one looks like..
- >  > 
- >  > rbp: ffff880236403970 r08: 0000000000000000 r09: 0000000000000000
- >  > r10: 000000000000005a r11: 00000000000002d7 f12: ffff880233000d80
- >  > r13: ffff8800aa1a6fc2 r14: ffff880233001d40 f15: 00000000ffffac82
- >  > fs: 0 fs: ffff880236400000 knlGS: 0
- >  > CS: 10 DS: 0 ES: 0 CR0: 80050033
- >  > CR2: ffff8800aa1a8000 CR3: 1a0d000 CR4: 407f0
- >  > Stack:
- >  >  ffff880236403988 ffffffff81298bbc 00000000000016c0 ffff8802364039e8
- >  >  ffffffff814ca05a ffff880233001d40 000005a80000e397 ffff880233001680
- >  >  0000000000000000 0d420685ffffac82 000000000000012a 000000000000004e
- >  > Call Trace:
- >  > <IRQ>
- >  > csum_partial
- >  > tcp_gso_segment
- >  > inet_gso_segment
- >  > ? update_dl_migration
- >  > skb_mac_gso_segment
- >  > __skb_gso_segment
- >  > dev_hard_start_xmit
- >  > sch_direct_xmit
- >  > __dev_queue_xmit
- >  > ? dev_hard_start_xmit
- >  > dev_queue_xmit
- >  > ip_finish_output
- >  > ? ip_output
- >  > ip_output
- >  > ip_forward_finish
- >  > ip_forward
- >  > ip_rcv_finish
- >  > ip_rcv
- >  > __netif_receive_skb_core
- >  > ? __netif_receive_skb_core
- >  > ? trace_hardirqs_on
- >  > __netif_receive_skb
- >  > netif_receive_skb_internal
- >  > napi_gro_complete
- >  > ? napi_gro_complete
- >  > dev_gro_receive
- >  > ? dev_gro_receive
- >  > napi_gro_receive
- >  > rtl8169_poll
- >  > net_rx_action
- >  > __do_softirq
- >  > irq_exit
- >  > do_IRQ
- >  > common_interrupt
- >  > <EOI>
- >  > cpuidle_enter_state
- >  > cpuidle_enter
- >  > cpu_startup_entry
- >  > rest_init
- >  > ? csum_partial_copy_generic
- >  > start_kernel
- >  > RIP: do_csum+0x83/0x180
- >  > 
- >  > Code: 41 89 d2 74 45 89 d1 45 31 c0 48 89 fa 0f 1f 00 48 03 02 48 13 42
- >  > 08 48 13 42 10 48 13 42 20 48 13 42 28 48 13 42 30 <48> 13 42 38 4c 11
- >  > c0 48 83 c2 40 83 e9 01 75 d5 41 83 ea 01 49
- >  > 
- >  > All code
- >  > ========
- >  >    0:	41 89 d2             	mov    %edx,%r10d
- >  >    3:	74 45                	je     0x4a
- >  >    5:	89 d1                	mov    %edx,%ecx
- >  >    7:	45 31 c0             	xor    %r8d,%r8d
- >  >    a:	48 89 fa             	mov    %rdi,%rdx
- >  >    d:	0f 1f 00             	nopl   (%rax)
- >  >   10:	48 03 02             	add    (%rdx),%rax
- >  >   13:	48 13 42 08          	adc    0x8(%rdx),%rax
- >  >   17:	48 13 42 10          	adc    0x10(%rdx),%rax
- >  >   1b:	48 13 42 20          	adc    0x20(%rdx),%rax
- >  >   1f:	48 13 42 28          	adc    0x28(%rdx),%rax
- >  >   23:	48 13 42 30          	adc    0x30(%rdx),%rax
- >  >   27:*	48 13 42 38          	adc    0x38(%rdx),%rax     <-- trapping instruction
- >  >   2b:	4c 11 c0             	adc    %r8,%rax
- >  >   2e:	48 83 c2 40          	add    $0x40,%rdx
- >  >   32:	83 e9 01             	sub    $0x1,%ecx
- >  >   35:	75 d5                	jne    0xc
- >  >   37:	41 83 ea 01          	sub    $0x1,%r10d
- >  >   3b:	49                   	rex.WB
- >  > 
- >  > Typical, rdx and rax had scrolled off the screen.
- > 
- > after removing the dump_stack invocations, I noticed that the reason
- > this is rebooting is probably because right after the initial oops
- > we hit the WARN_ON at arch/x86/kernel/smp.c:124
- > 
- >         if (unlikely(cpu_is_offline(cpu))) {
- >                 WARN_ON(1);
- >                 return;
- >         }
- > 
- > lol.
- > 
- > Anwyay, before all that nonsense, I now have the top of the oops..
- > 
- > BUG: unable to handle kernel paging request at ffff880218c18000
- > IP: do_csum+0x68
- > PGD: 2c6a067 PUD: 2c6d067 PMD 23fd1c067 PTE: 80000000218c18060
- > RAX: 2090539bbf7b28f2 RBX: 00000000acb23d4e RCX: 000000000000000b
- > RDX: ffff880218c18000 RSI: 0000000000001c62 RDI: ffff880218c16680
- > 
- > Maybe also notable here is that the kernel is built with DEBUG_PAGEALLOC on.
+(Adding Julia Lawall and removing almost all other cc's)
 
-This is still a problem in -rc2.
-Lasts about 5 minutes, then reboots.
+On Tue, 2014-06-24 at 09:27 +1000, Julian Calaby wrote:
+> Hi Joe,
 
-	Dave
+Hello Julian.
+
+> > $ cat ./scripts/coccinelle/api/alloc/pci_zalloc_consistent.cocci
+> > ///
+> > /// Use pci_zalloc_consistent rather than
+> > ///     pci_alloc_consistent followed by memset with 0
+> > ///
+> > /// This considers some simple cases that are common and easy to validate
+> > /// Note in particular that there are no ...s in the rule, so all of the
+> > /// matched code has to be contiguous
+> > ///
+> > /// Blatantly cribbed from: scripts/coccinelle/api/alloc/kzalloc-simple.cocci
+> >
+> > @@
+> > type T, T2;
+> > expression x;
+> > expression E1,E2,E3;
+> > statement S;
+> > @@
+> >
+> > - x = (T)pci_alloc_consistent(E1,E2,E3);
+> > + x = pci_zalloc_consistent(E1,E2,E3);
+> >   if ((x==NULL) || ...) S
+> > - memset((T2)x,0,E2);
+> 
+> I don't know much about SmPL, but wouldn't having that if statement
+> there reduce your matches?
+
+No, not really.
+
+Almost none of the pci_alloc_consistent calls
+do not have a test for failure immediately after
+them.
+
+Coccinelle is a very cool code transformation tool,
+quite useful for these sorts of patch conversions.
+
+http://coccinelle.lip6.fr/documentation.php
+
 
