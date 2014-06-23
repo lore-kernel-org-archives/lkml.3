@@ -1,97 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807AbaFWHyw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 03:54:52 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:60800 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752778AbaFWHyu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 03:54:50 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-56-53a7dd484436
-From: Robert Baldyga <r.baldyga@samsung.com>
-To: balbi@ti.com
-Cc: paulz@synopsys.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, m.szyprowski@samsung.com,
-        andrzej.p@samsung.com, Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH 11/11] usb: dwc2/gadget: disable clock when it's not needed
-Date: Mon, 23 Jun 2014 09:51:30 +0200
-Message-id: <1403509890-14103-12-git-send-email-r.baldyga@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1403509890-14103-1-git-send-email-r.baldyga@samsung.com>
-References: <1403509890-14103-1-git-send-email-r.baldyga@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOLMWRmVeSWpSXmKPExsVy+t9jQV3Pu8uDDfZZW8x62c5icfB+vUXz
-	4vVsFpd3zWGzWLSsldli7ZG77Bbbp0xnsnhweCe7A4fH/rlr2D36tqxi9Niy/zOjx/Eb25k8
-	Pm+SC2CN4rJJSc3JLEst0rdL4Mq4fHg6W8FSvoork7axNzDe5e5i5OSQEDCRuHv4CiOELSZx
-	4d56ti5GLg4hgemMEsf6OtlBEkIC7UwSS35mgthsAjoSW75PAGsQERCQWP/iEjtIA7PACUaJ
-	jv8X2EASwgLeErsPbGcCsVkEVCUmLpnOAmLzCrhJ7NqyE2qbnMTJY5NZQWxOoPj6mwuhlrlK
-	LDo9jX0CI+8CRoZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmbGMHB9UxqB+PKBotDjAIcjEo8
-	vBpuy4OFWBPLiitzDzFKcDArifA2NgCFeFMSK6tSi/Lji0pzUosPMUpzsCiJ8x5otQ4UEkhP
-	LEnNTk0tSC2CyTJxcEo1MEqE//NlOL9l+S0B/6tGi5ZGHTjxKlnKb1KlR8bXt5PVX1b0T1We
-	vOvp1LMf4sNu6M4zd1G8KN91b5OO+nMJ/i6p75qvc/3/5uYu+BlyKFI7+KSbTdu9fYkJkzf/
-	XFsXq8Ae4XNmt1Jip+jh5ifMVe/9S1TucxevCeaMPLTg9SOzlmZexikGq5VYijMSDbWYi4oT
-	AdgP83oqAgAA
+	id S1752834AbaFWHyz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 03:54:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16936 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752778AbaFWHyx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 03:54:53 -0400
+From: Jiri Olsa <jolsa@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH 1/2] perf tools: Fix segfault in cumulative.callchain report
+Date: Mon, 23 Jun 2014 09:54:35 +0200
+Message-Id: <1403510076-3917-2-git-send-email-jolsa@kernel.org>
+In-Reply-To: <1403510076-3917-1-git-send-email-jolsa@kernel.org>
+References: <1403510076-3917-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When device is stopped or suspended clock is not needed so we
-can disable it for this time.
+When cumulative callchain mode is on, we could get samples with
+with no actual hits. This breaks the assumption of the annotation
+code, that each sample has annotation counts allocated and leads
+to segfault.
 
-Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+Fixing this by additional checks for annotation stats.
+
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1402821332-12419-1-git-send-email-jolsa@kernel.org
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- drivers/usb/dwc2/gadget.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ tools/perf/ui/browsers/hists.c | 21 ++++++++++++++++-----
+ 1 file changed, 16 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
-index 2a7c014..0523bc3 100644
---- a/drivers/usb/dwc2/gadget.c
-+++ b/drivers/usb/dwc2/gadget.c
-@@ -2884,6 +2884,8 @@ static int s3c_hsotg_udc_start(struct usb_gadget *gadget,
- 	hsotg->gadget.dev.of_node = hsotg->dev->of_node;
- 	hsotg->gadget.speed = USB_SPEED_UNKNOWN;
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index 52c03fb..04a229a 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -17,6 +17,7 @@
+ #include "../util.h"
+ #include "../ui.h"
+ #include "map.h"
++#include "annotate.h"
  
-+	clk_enable(hsotg->clk);
+ struct hist_browser {
+ 	struct ui_browser   b;
+@@ -1593,13 +1594,18 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+ 					 bi->to.sym->name) > 0)
+ 				annotate_t = nr_options++;
+ 		} else {
+-
+ 			if (browser->selection != NULL &&
+ 			    browser->selection->sym != NULL &&
+-			    !browser->selection->map->dso->annotate_warned &&
+-				asprintf(&options[nr_options], "Annotate %s",
+-					 browser->selection->sym->name) > 0)
+-				annotate = nr_options++;
++			    !browser->selection->map->dso->annotate_warned) {
++				struct annotation *notes;
 +
- 	ret = regulator_bulk_enable(ARRAY_SIZE(hsotg->supplies),
- 				    hsotg->supplies);
- 	if (ret) {
-@@ -2932,6 +2934,8 @@ static int s3c_hsotg_udc_stop(struct usb_gadget *gadget,
- 
- 	regulator_bulk_disable(ARRAY_SIZE(hsotg->supplies), hsotg->supplies);
- 
-+	clk_disable(hsotg->clk);
++				notes = symbol__annotation(browser->selection->sym);
 +
- 	return 0;
- }
++				if (notes->src &&
++				    asprintf(&options[nr_options], "Annotate %s",
++						 browser->selection->sym->name) > 0)
++					annotate = nr_options++;
++			}
+ 		}
  
-@@ -2963,8 +2967,10 @@ static int s3c_hsotg_pullup(struct usb_gadget *gadget, int is_on)
- 	spin_lock_irqsave(&hsotg->lock, flags);
- 	if (is_on) {
- 		s3c_hsotg_phy_enable(hsotg);
-+		clk_enable(hsotg->clk);
- 		s3c_hsotg_core_init(hsotg);
- 	} else {
-+		clk_disable(hsotg->clk);
- 		s3c_hsotg_phy_disable(hsotg);
- 	}
+ 		if (thread != NULL &&
+@@ -1656,6 +1662,7 @@ retry_popup_menu:
  
-@@ -3640,6 +3646,7 @@ static int s3c_hsotg_suspend(struct platform_device *pdev, pm_message_t state)
+ 		if (choice == annotate || choice == annotate_t || choice == annotate_f) {
+ 			struct hist_entry *he;
++			struct annotation *notes;
+ 			int err;
+ do_annotate:
+ 			if (!objdump_path && perf_session_env__lookup_objdump(env))
+@@ -1679,6 +1686,10 @@ do_annotate:
+ 				he->ms.map = he->branch_info->to.map;
+ 			}
  
- 		ret = regulator_bulk_disable(ARRAY_SIZE(hsotg->supplies),
- 					     hsotg->supplies);
-+		clk_disable(hsotg->clk);
- 	}
- 
- 	return ret;
-@@ -3654,6 +3661,8 @@ static int s3c_hsotg_resume(struct platform_device *pdev)
- 	if (hsotg->driver) {
- 		dev_info(hsotg->dev, "resuming usb gadget %s\n",
- 			 hsotg->driver->driver.name);
++			notes = symbol__annotation(he->ms.sym);
++			if (!notes->src)
++				continue;
 +
-+		clk_enable(hsotg->clk);
- 		ret = regulator_bulk_enable(ARRAY_SIZE(hsotg->supplies),
- 				      hsotg->supplies);
- 	}
+ 			/*
+ 			 * Don't let this be freed, say, by hists__decay_entry.
+ 			 */
 -- 
-1.9.1
+1.8.3.1
 
