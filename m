@@ -1,316 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755776AbaFWP5A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 11:57:00 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48139 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755596AbaFWP46 (ORCPT
+	id S1755937AbaFWP55 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 11:57:57 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:39684 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755057AbaFWP54 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 11:56:58 -0400
-Date: Mon, 23 Jun 2014 17:56:50 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Waiman.Long@hp.com, tglx@linutronix.de, mingo@kernel.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        paolo.bonzini@gmail.com, boris.ostrovsky@oracle.com,
-        paulmck@linux.vnet.ibm.com, riel@redhat.com,
-        torvalds@linux-foundation.org, raghavendra.kt@linux.vnet.ibm.com,
-        david.vrabel@citrix.com, oleg@redhat.com, gleb@redhat.com,
-        scott.norton@hp.com, chegu_vinod@hp.com
-Subject: Re: [PATCH 01/11] qspinlock: A simple generic 4-byte queue spinlock
-Message-ID: <20140623155650.GF19860@laptop.programming.kicks-ass.net>
-References: <20140615124657.264658593@chello.nl>
- <20140615130152.912524881@chello.nl>
- <20140616204918.GA26140@laptop.dumpdata.com>
+	Mon, 23 Jun 2014 11:57:56 -0400
+Date: Mon, 23 Jun 2014 08:57:50 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Waiman Long <waiman.long@hp.com>, Romanov Arya <romanov.arya@gmail.com>,
+        Pranith Kumar <bobby.prani@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        LKML <linux-kernel@vger.kernel.org>, torvalds@linux-foundation.org
+Subject: Re: [RFC PATCH 1/1] kernel/rcu/tree.c: simplify
+ force_quiescent_state()
+Message-ID: <20140623155750.GD4603@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <539FAE21.7070702@gmail.com>
+ <20140617145419.GE4669@linux.vnet.ibm.com>
+ <CAJKcOGdUDwdmdkpd0dw5xO9+TK=9W9fvF9Q+f5F_b4R8cEgdTA@mail.gmail.com>
+ <53A07336.7030704@hp.com>
+ <20140617171116.GH4669@linux.vnet.ibm.com>
+ <20140617173717.GA28198@linux.vnet.ibm.com>
+ <20140623102850.GX19860@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140616204918.GA26140@laptop.dumpdata.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140623102850.GX19860@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14062315-0928-0000-0000-000002DBD795
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 16, 2014 at 04:49:18PM -0400, Konrad Rzeszutek Wilk wrote:
-> > Index: linux-2.6/kernel/locking/mcs_spinlock.h
-> > ===================================================================
-> > --- linux-2.6.orig/kernel/locking/mcs_spinlock.h
-> > +++ linux-2.6/kernel/locking/mcs_spinlock.h
-> > @@ -17,6 +17,7 @@
-> >  struct mcs_spinlock {
-> >  	struct mcs_spinlock *next;
-> >  	int locked; /* 1 if lock acquired */
-> > +	int count;
+On Mon, Jun 23, 2014 at 12:28:50PM +0200, Peter Zijlstra wrote:
+> On Tue, Jun 17, 2014 at 10:37:17AM -0700, Paul E. McKenney wrote:
+> > Oh, and to answer the implicit question...  A properly configured 4096-CPU
+> > system will have two funnel levels, with 64 nodes at the leaf level
+> > and a single node at the root level.  If the system is not properly
+> > configured, it will have three funnel levels.  The maximum number of
+> > funnel levels is four, which would handle more than four million CPUs
+> > (sixteen million if properly configured), so we should be good.  ;-)
+> > 
+> > The larger numbers of levels are intended strictly for testing.  I set
+> > CONFIG_RCU_FANOUT_LEAF=2 and CONFIG_RCU_FANOUT=2 on a 16-CPU system just
+> > to make sure that I am testing something uglier than what will be running
+> > in production.  A large system should have both of these set to 64,
+> > though this requires also booting with skew_tick=1 as well.
 > 
-> This could use a comment.
+> Right, and I think we talked about this before; the first thing one
+> should do is align the RCU fanout masks with the actual machine
+> topology. Because currently they can be all over the place.
 
-like so?
+And we also talked before about how it would make a lot more sense to
+align the CPU numbering with the actual machine topology, as that would
+fix the problem in one place.  But either way, in the particular case
+of the RCU fanout, does anyone have any real data showing that this is
+a real problem?  Given that the rcu_node accesses are quite a ways off
+of any fastpath, I remain skeptical.
 
-	int count; /* nesting count, see qspinlock.c */
+							Thanx, Paul
 
-
-> > +static inline u32 encode_tail(int cpu, int idx)
-> > +{
-> > +	u32 tail;
-> > +
-> > +	tail  = (cpu + 1) << _Q_TAIL_CPU_OFFSET;
-> > +	tail |= idx << _Q_TAIL_IDX_OFFSET; /* assume < 4 */
-> 
-> Should there an
-> 
-> ASSSERT (idx < 4)
-> 
-> just in case we screw up somehow (I can't figure out how, but
-> that is partially why ASSERTS are added).
-
-#ifdef CONFIG_DEBUG_SPINLOCK
-	BUG_ON(idx > 3);
-#endif
-
-might do, I suppose.
-
-> > +/**
-> > + * queue_spin_lock_slowpath - acquire the queue spinlock
-> > + * @lock: Pointer to queue spinlock structure
-> > + * @val: Current value of the queue spinlock 32-bit word
-> > + *
-> > + * (queue tail, lock bit)
-> 
-> Except it is not a lock bit. It is a lock uint8_t.
-
-It is indeed, although that's an accident of implementation. I could do
-s/bit// and not mention the entire storage angle at all?
-
-> Is the queue tail at this point the composite of 'cpu|idx'?
-
-Yes, as per {en,de}code_tail() above.
-
-> > + *
-> > + *              fast      :    slow                                  :    unlock
-> > + *                        :                                          :
-> > + * uncontended  (0,0)   --:--> (0,1) --------------------------------:--> (*,0)
-> > + *                        :       | ^--------.                    /  :
-> > + *                        :       v           \                   |  :
-> > + * uncontended            :    (n,x) --+--> (n,0)                 |  :
-> 
-> So many CPUn come in right? Is 'n' for the number of CPUs?
-
-Nope, 'n' for any one specific tail, in particular the first one to
-arrive. This is the 'uncontended queue' case as per the label, so we
-need a named value for the first, in order to distinguish between the
-state to the right (same tail, but unlocked) and the state below
-(different tail).
-
-> > + *   queue                :       | ^--'                          |  :
-> > + *                        :       v                               |  :
-> > + * contended              :    (*,x) --+--> (*,0) -----> (*,1) ---'  :
-> > + *   queue                :         ^--'                             :
-> 
-> And here um, what are the '*' for? Are they the four different
-> types of handlers that can be nested? So task, sofitrq, hardisk, and
-> nmi?
-
-'*' as in wildcard, any tail, specifically not 'n'.
-
-> > +void queue_spin_lock_slowpath(struct qspinlock *lock, u32 val)
-> > +{
-> > +	struct mcs_spinlock *prev, *next, *node;
-> > +	u32 new, old, tail;
-> > +	int idx;
-> > +
-> > +	BUILD_BUG_ON(CONFIG_NR_CPUS >= (1U << _Q_TAIL_CPU_BITS));
-> > +
-> > +	node = this_cpu_ptr(&mcs_nodes[0]);
-> > +	idx = node->count++;
-> 
-> If this is the first time we enter this, wouldn't idx end up
-> being 1?
-
-Nope, postfix ++ returns first and increments later.
-
-> > +	tail = encode_tail(smp_processor_id(), idx);
-> > +
-> > +	node += idx;
-> 
-> Meaning we end up skipping the 'mcs_nodes[0]' one altogether - even
-> on the first 'level' (task, softirq, hardirq, nmi)? Won't that
-> cause us to blow past the array when we are nested at the nmi
-> handler?
-
-Seeing how its all static storage, which is automagically initialized to
-0, combined with the postfix ++ (as opposed to the prefix ++) we should
-be getting 0 here.
-
-> > +	node->locked = 0;
-> > +	node->next = NULL;
-> > +
-> > +	/*
-> > +	 * trylock || xchg(lock, node)
-> > +	 *
-> > +	 * 0,0 -> 0,1 ; trylock
-> > +	 * p,x -> n,x ; prev = xchg(lock, node)
-> 
-> I looked at that for 10 seconds and I was not sure what you meant.
-> Is this related to the MCS document you had pointed to? It would help
-> if you mention that the comments follow the document. (But they
-> don't seem to)
-> 
-> I presume what you mean is that if we are the next after the
-> lock-holder we need only to update the 'next' (or the
-> composite value of smp_processor_idx | idx) to point to us.
-> 
-> As in, swap the 'L' with 'I' (looking at the doc)
-
-They are the 'tail','lock' tuples, so this composite atomic operation
-completes either:
-
-  0,0 -> 0,1  -- we had no tail, not locked; into: no tail, locked.
-
-OR
-
-  p,x -> n,x  -- tail was p; into: tail is n; preserving locked.
-
-> > +	 */
-> > +	for (;;) {
-> > +		new = _Q_LOCKED_VAL;
-> > +		if (val)
-> 
-> Could you add a comment here, like this:
-> 
-> /*
->  * N.B. Initially 'val' will have some value (as we are called
->  * after the _Q_LOCKED_VAL could not be set by queue_spin_lock).
->  * But on subsequent iterations, either the lock holder will
->  * decrement the val (queue_spin_unlock - to zero) and we
->  * needn't to record our status in the queue as we have set the
->  * Q_LOCKED_VAL (new) and are the lock holder. Or we are next
->  * in line and need to record our 'next' (aka, smp_processor_id() | idx)
->  * position. */
->  */
-
-The idea was that:
-
-  0,0 -> 0,1
-  p,x -> n,x
-
-Completely covers what this composite atomic does.
-
-> > +			new = tail | (val & _Q_LOCKED_MASK);
-> > +
-> > +		old = atomic_cmpxchg(&lock->val, val, new);
-> > +		if (old == val)
-> > +			break;
-> > +
-> > +		val = old;
-> > +	}
-> > +
-> > +	/*
-> > +	 * we won the trylock; forget about queueing.
-> > +	 */
-> > +	if (new == _Q_LOCKED_VAL)
-> > +		goto release;
-> > +
-> > +	/*
-> > +	 * if there was a previous node; link it and wait.
-> > +	 */
-> > +	if (old & ~_Q_LOCKED_MASK) {
-> > +		prev = decode_tail(old);
-> > +		ACCESS_ONCE(prev->next) = node;
-> > +
-> > +		arch_mcs_spin_lock_contended(&node->locked);
-> > +	}
-> > +
-> > +	/*
-> > +	 * we're at the head of the waitqueue, wait for the owner to go away.
-> > +	 *
-> > +	 * *,x -> *,0
-> > +	 */
-> > +	while ((val = atomic_read(&lock->val)) & _Q_LOCKED_MASK)
-> > +		cpu_relax();
-> > +
-> > +	/*
-> > +	 * claim the lock:
-> > +	 *
-> > +	 * n,0 -> 0,1 : lock, uncontended
-> > +	 * *,0 -> *,1 : lock, contended
-> > +	 */
-> > +	for (;;) {
-> > +		new = _Q_LOCKED_VAL;
-> > +		if (val != tail)
-> > +			new |= val;
-> 
-> You lost me here. If we are at the head of the queue, and the owner
-> has called queue_spin_unlock (hence made us get out of the 'val = atomic_read'
-> loop, how can val != tail?
-
-Remember:
-
-> > +	tail = encode_tail(smp_processor_id(), idx);
-
-So if value != tail, that means the tail pointer doesn't point to us
-anymore, another cpu/idx queued itself and is now last.
-
-> I suspect it has something to do with the comment, but I am still unsure
-> what it means.
-> 
-> Could you help a bit in explaining it in English please?
-
-(refer to the state diagram, if we count states left->right,
-top->bottom, then this is: 5->2 or 7->8
-
- n,0 -> 0,1:
-
-   the lock is free and the tail points to the first queued; this means
-   that unqueueing implies wiping the tail, at the same time, acquire
-   the lock.
-
- *,0 -> *,1:
-
-   the lock is free and the tail doesn't point to the first queued; this
-   means that unqueueing doesn't touch the tail pointer but only sets
-   the lock.
-
-> > +
-> > +		old = atomic_cmpxchg(&lock->val, val, new);
-> > +		if (old == val)
-> > +			break;
-> > +
-> > +		val = old;
-> > +	}
-> > +
-> > +	/*
-> > +	 * contended path; wait for next, release.
-> > +	 */
-> > +	if (new != _Q_LOCKED_VAL) {
-> 
-> Hm, wouldn't it be just easier to do a 'goto restart' where
-> restart label points at the first loop statement? Ah never
-> mind - we have already inserted ourselves in the previous's
-> node.
-> 
-> But that is confusing - we have done: "prev->next = node;"
-> 
-> And then exited out of 'val = atomic_read(&lock->val))' which
-> suggests that queue_spin_unlock has called us. How can we be
-> contended again?
-
-We're not contended again; we're in the 'contended queued' case, which
-means that 'tail' didn't point to us anymore, in that case, we must kick
-our next node such that it will now drop out of
-arch_mcs_spin_lock_contended() and goes wait on the 'locked' state.
-
-So what we do here is wait for 'node->next' to be set; it might still be
-NULL if the other cpu is between:
-
-  prev = xchg(lock->tail, node);
-
-and:
-
-  prev->next = node;
-
-Once we observe the next node, we call arch_mcs_spin_unlock_contended()
-on it, which sets its mcs_spinlock::locked and makes the new 'top of
-queue' drop out of arch_mcs_spin_lock_contended and spin on the 'locked'
-state as said above.
