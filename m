@@ -1,35 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752230AbaFWDHZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 23:07:25 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:39911 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751299AbaFWDHY (ORCPT
+	id S1751880AbaFWDK3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 23:10:29 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:35230 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751145AbaFWDK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 23:07:24 -0400
-Message-ID: <53A799E5.7040609@gmail.com>
-Date: Mon, 23 Jun 2014 11:07:17 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Sun, 22 Jun 2014 23:10:28 -0400
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>, Lennox Wu <lennox.wu@gmail.com>
-CC: Liqin Chen <liqin.linux@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <53A70420.4010005@roeck-us.net>
+References: <53A66000.4010208@gmail.com>
+	<CAF0htA7jReHGSL+K_rh9CMN_Wsyy=nL-TsN3T2L+FQUpAEXyrg@mail.gmail.com>
+	<53A70420.4010005@roeck-us.net>
+Date: Mon, 23 Jun 2014 11:10:27 +0800
+Message-ID: <CAF0htA7oo9EO8E1JDXyuDZaDUkUAxASKuHtR63KE5WsGyDV+fQ@mail.gmail.com>
 Subject: Re: [PATCH] arch/score/include/uapi/asm/ptrace.h: Add prefix 'SCORE_'
  for related macros
-References: <53A66000.4010208@gmail.com> <CAF0htA7jReHGSL+K_rh9CMN_Wsyy=nL-TsN3T2L+FQUpAEXyrg@mail.gmail.com> <53A70420.4010005@roeck-us.net>
-In-Reply-To: <53A70420.4010005@roeck-us.net>
+From: Lennox Wu <lennox.wu@gmail.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Chen Gang <gang.chen.5i5j@gmail.com>, Liqin Chen <liqin.linux@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2014 12:28 AM, Guenter Roeck wrote:
+Yes, it's the reason we still thank Chen's checking.
+Arbitrary configurations except the default configure are not
+guaranteed to pass compiling.
+To discover combinations which doesn't make sense might weast Chen's time.
+
+Best,
+Lennox
+
+2014-06-23 0:28 GMT+08:00 Guenter Roeck <linux@roeck-us.net>:
 > On 06/22/2014 01:09 AM, Lennox Wu wrote:
+>>
 >> Hi Chen,
->> Do you find other modules except device modules cause issues of
->> compiling?
+>> Do you find other modules except device modules cause issues of compiling?
 >> The applications of Score are limited. Acutally, some errors never occur
 >> in the limited applications, for example, the conbination consists of
 >> Score and the timer of SuperH. I'm not sure we should handle this kind
@@ -38,7 +46,7 @@ On 06/23/2014 12:28 AM, Guenter Roeck wrote:
 >> with Score, we will do it.
 >> However, we still thanks for your check.
 >>
-> 
+>
 > Other architectures don't care about buildability of allmodconfig or
 > allyesconfig
 > (arm is a good [or maybe bad] example), so it is for sure not mandatory.
@@ -46,24 +54,14 @@ On 06/23/2014 12:28 AM, Guenter Roeck wrote:
 > doing it for you - may prevent problems down the road, so while not
 > mandatory
 > I consider it a useful goal to achieve.
-> 
-> If there is a driver which doesn't make sense to build at all, such as
-> the SuperH
-> timer driver mentioned above, it can always be excluded from building
-> with Kconfig.
+>
+> If there is a driver which doesn't make sense to build at all, such as the
+> SuperH
+> timer driver mentioned above, it can always be excluded from building with
+> Kconfig.
 > If that causes opposition for some reason, you can still ignore that it
 > fails
 > to build.
-> 
-
-Yeah, what Guenter said is fine to me.
-
-Although allmodconfig is not mandatory, it is still a useful goal to
-achieve.
-
-
-Thanks.
--- 
-Chen Gang
-
-Open, share, and attitude like air, water, and life which God blessed
+>
+> Guenter
+>
