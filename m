@@ -1,849 +1,279 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755107AbaFWJNZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 05:13:25 -0400
-Received: from acledge1.advantech.com.tw ([61.58.41.197]:54589 "EHLO
-	acledge1.advantech.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755071AbaFWJNS (ORCPT
+	id S1755138AbaFWJNq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 05:13:46 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:32477 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755120AbaFWJNn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 05:13:18 -0400
-From: Wei-Chun Pan <weichun.pan@advantech.com.tw>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Jean Delvare <jdelvare@suse.de>, Guenter Roeck <linux@roeck-us.net>,
-        Wolfram Sang <wsa@the-dreams.de>
-CC: "Louis.Lu" <Louis.Lu@advantech.com.tw>, "Neo.Lo" <neo.lo@advantech.com.tw>,
-        "Hank.Peng" <Hank.Peng@advantech.com.tw>,
-        "Kevin.Ong" <Kevin.Ong@advantech.com.tw>,
-        <linux-kernel@vger.kernel.org>,
-        Wei-Chun Pan <weichun.pan@advantech.com.tw>
-Subject: [PATCH 4/5] hwmon: (imanager2) Add support for IT8516/18/28
-Date: Mon, 23 Jun 2014 01:39:51 -0700
-Message-ID: <1403512792-19100-4-git-send-email-weichun.pan@advantech.com.tw>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403512792-19100-1-git-send-email-weichun.pan@advantech.com.tw>
-References: <1403512792-19100-1-git-send-email-weichun.pan@advantech.com.tw>
+	Mon, 23 Jun 2014 05:13:43 -0400
+X-IronPort-AV: E=Sophos;i="5.00,759,1396972800"; 
+   d="scan'208";a="32279529"
+Message-ID: <53A7EFBD.1040709@cn.fujitsu.com>
+Date: Mon, 23 Jun 2014 17:13:33 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131030 Thunderbird/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain
-X-StopIT: No
+To: Vlastimil Babka <vbabka@suse.cz>
+CC: <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 06/13] mm, compaction: periodically drop lock and restore
+ IRQs in scanners
+References: <1403279383-5862-1-git-send-email-vbabka@suse.cz> <1403279383-5862-7-git-send-email-vbabka@suse.cz>
+In-Reply-To: <1403279383-5862-7-git-send-email-vbabka@suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.225.89]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Wei-Chun Pan <weichun.pan@advantech.com.tw>
----
- drivers/hwmon/Kconfig         |   5 +
- drivers/hwmon/Makefile        |   1 +
- drivers/hwmon/imanager2_hwm.c | 773 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 779 insertions(+)
- create mode 100644 drivers/hwmon/imanager2_hwm.c
+On 06/20/2014 11:49 PM, Vlastimil Babka wrote:
+> Compaction scanners regularly check for lock contention and need_resched()
+> through the compact_checklock_irqsave() function. However, if there is no
+> contention, the lock can be held and IRQ disabled for potentially long time.
+> 
+> This has been addressed by commit b2eef8c0d0 ("mm: compaction: minimise the
+> time IRQs are disabled while isolating pages for migration") for the migration
+> scanner. However, the refactoring done by commit 748446bb6b ("mm: compaction:
+> acquire the zone->lru_lock as late as possible") has changed the conditions so
+> that the lock is dropped only when there's contention on the lock or
+> need_resched() is true. Also, need_resched() is checked only when the lock is
+> already held. The comment "give a chance to irqs before checking need_resched"
+> is therefore misleading, as IRQs remain disabled when the check is done.
+> 
+> This patch restores the behavior intended by commit b2eef8c0d0 and also tries
+> to better balance and make more deterministic the time spent by checking for
+> contention vs the time the scanners might run between the checks. It also
+> avoids situations where checking has not been done often enough before. The
+> result should be avoiding both too frequent and too infrequent contention
+> checking, and especially the potentially long-running scans with IRQs disabled
+> and no checking of need_resched() or for fatal signal pending, which can happen
+> when many consecutive pages or pageblocks fail the preliminary tests and do not
+> reach the later call site to compact_checklock_irqsave(), as explained below.
+> 
+> Before the patch:
+> 
+> In the migration scanner, compact_checklock_irqsave() was called each loop, if
+> reached. If not reached, some lower-frequency checking could still be done if
+> the lock was already held, but this would not result in aborting contended
+> async compaction until reaching compact_checklock_irqsave() or end of
+> pageblock. In the free scanner, it was similar but completely without the
+> periodical checking, so lock can be potentially held until reaching the end of
+> pageblock.
+> 
+> After the patch, in both scanners:
+> 
+> The periodical check is done as the first thing in the loop on each
+> SWAP_CLUSTER_MAX aligned pfn, using the new compact_unlock_should_abort()
+> function, which always unlocks the lock (if locked) and aborts async compaction
+> if scheduling is needed. It also aborts any type of compaction when a fatal
+> signal is pending.
+> 
+> The compact_checklock_irqsave() function is replaced with a slightly different
+> compact_trylock_irqsave(). The biggest difference is that the function is not
+> called at all if the lock is already held. The periodical need_resched()
+> checking is left solely to compact_unlock_should_abort(). The lock contention
+> avoidance for async compaction is achieved by the periodical unlock by
+> compact_unlock_should_abort() and by using trylock in compact_trylock_irqsave()
+> and aborting when trylock fails. Sync compaction does not use trylock.
+> 
+> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+> Cc: Minchan Kim <minchan@kernel.org>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Michal Nazarewicz <mina86@mina86.com>
+> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: David Rientjes <rientjes@google.com>
 
-diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index bc196f4..7524fc3 100644
---- a/drivers/hwmon/Kconfig
-+++ b/drivers/hwmon/Kconfig
-@@ -39,6 +39,11 @@ config HWMON_DEBUG_CHIP
- 
- comment "Native drivers"
- 
-+config SENSORS_IMANAGER2
-+	tristate "Support for Advantech iManager2 EC H.W. Monitor"
-+	select MFD_CORE
-+	depends on MFD_IMANAGER2
-+
- config SENSORS_AB8500
- 	tristate "AB8500 thermal monitoring"
- 	depends on AB8500_GPADC && AB8500_BM
-diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-index c48f987..a2c8f07 100644
---- a/drivers/hwmon/Makefile
-+++ b/drivers/hwmon/Makefile
-@@ -146,6 +146,7 @@ obj-$(CONFIG_SENSORS_W83L785TS)	+= w83l785ts.o
- obj-$(CONFIG_SENSORS_W83L786NG)	+= w83l786ng.o
- obj-$(CONFIG_SENSORS_WM831X)	+= wm831x-hwmon.o
- obj-$(CONFIG_SENSORS_WM8350)	+= wm8350-hwmon.o
-+obj-$(CONFIG_SENSORS_IMANAGER2)	+= imanager2_hwm.o
- 
- obj-$(CONFIG_PMBUS)		+= pmbus/
- 
-diff --git a/drivers/hwmon/imanager2_hwm.c b/drivers/hwmon/imanager2_hwm.c
-new file mode 100644
-index 0000000..ae7508c
---- /dev/null
-+++ b/drivers/hwmon/imanager2_hwm.c
-@@ -0,0 +1,773 @@
-+/*
-+ * imanager2_hwm.c - HW Monitoring interface for Advantech EC IT8516/18/28
-+ * Copyright (C) 2014  Richard Vidal-Dorsch <richard.dorsch@advantech.com>
-+ *
-+ * This program is free software: you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation, either version 3 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/hwmon.h>
-+#include <linux/hwmon-sysfs.h>
-+#include <linux/mfd/advantech/imanager2.h>
-+
-+#define DRV_NAME	"imanager2_hwm"
-+#define DRV_VERSION	"4.0.1"
-+
-+/* ADC */
-+#define EC_ADC_RESOLUTION_MAX	0x03FF	/* 10-bit */
-+#define EC_ADC_VALUE_MAX	3000	/* max: 3000 mV or mA */
-+
-+/* Thermal */
-+#define EC_THERMAL_ZONE_MAX	4
-+
-+enum thermaltype {
-+	none,
-+	sys1,
-+	cpu,
-+	sys3,
-+	sys2,
-+};
-+
-+struct ec_thermalzone {
-+	u8 channel,
-+	   addr,
-+	   cmd,
-+	   status,
-+	   fancode,
-+	   temp;
-+};
-+
-+/* Tacho */
-+#define EC_MAX_IO_FAN	3
-+
-+/* Voltage */
-+struct volt_item {
-+	u8 did;
-+	const char *name;
-+	int factor;
-+	bool visible;
-+};
-+
-+static struct volt_item ec_volt_table[] = {
-+	{
-+		.did = adcmosbat,
-+		.name = "BAT CMOS",
-+	},
-+	{
-+		.did = adcbat,
-+		.name = "BAT",
-+	},
-+	{
-+		.did = adc5vs0,
-+		.name = "5V S0",
-+	},
-+	{
-+		.did = adv5vs5,
-+		.name = "5V S5",
-+	},
-+	{
-+		.did = adc33vs0,
-+		.name = "3V3 S0",
-+	},
-+	{
-+		.did = adc33vs5,
-+		.name = "3V3 S5",
-+	},
-+	{
-+		.did = adv12vs0,
-+		.name = "12V S0",
-+	},
-+	{
-+		.did = adcvcorea,
-+		.name = "Vcore A",
-+	},
-+	{
-+		.did = adcvcoreb,
-+		.name = "Vcore B",
-+	},
-+	{
-+		.did = adcdc,
-+		.name = "DC",
-+	},
-+	{
-+		.did = adcdcstby,
-+		.name = "DC Standby",
-+	},
-+	{
-+		.did = adcdcother,
-+		.name = "DC Other",
-+	},
-+};
-+
-+static int imanager2_volt_get_value_by_io(struct imanager2 *ec, int index,
-+					  u8 *buf)
-+{
-+	u8 item = ec->table.devid2itemnum[ec_volt_table[index].did];
-+	u8 pin = ec->table.pinnum[item];
-+	u8 portnum;
-+	int ret;
-+
-+	ret = imanager2_io_read(EC_CMD_ADC_INDEX, pin, &portnum, 1);
-+	if (ret)
-+		return ret;
-+	if (portnum == EC_ERROR)
-+		return -ENXIO;
-+
-+	ret = imanager2_io_read_byte_without_offset(EC_CMD_ADC_READ_LSB,
-+						    &buf[1]);
-+	if (ret)
-+		return ret;
-+
-+	ret = imanager2_io_read_byte_without_offset(EC_CMD_ADC_READ_MSB,
-+						    &buf[0]);
-+
-+	return ret;
-+}
-+
-+static int imanager2_volt_get_value(struct imanager2 *ec, int index,
-+				    u32 *volt_mvolt)
-+{
-+	int ret;
-+	u8 tmp[2];
-+
-+	mutex_lock(&ec->lock);
-+
-+	if (ec->flag & EC_FLAG_MAILBOX)
-+		ret = imanager2_read_mailbox_buffer(ec,
-+						    EC_CMD_MAILBOX_READ_HW_PIN,
-+						    ec_volt_table[index].did,
-+						    tmp, 2);
-+	else
-+		ret = imanager2_volt_get_value_by_io(ec, index, tmp);
-+
-+	mutex_unlock(&ec->lock);
-+
-+	if (ret)
-+		return ret;
-+
-+	*volt_mvolt = (((tmp[0] << 8) | tmp[1]) & EC_ADC_RESOLUTION_MAX) *
-+		      ec_volt_table[index].factor *
-+		      DIV_ROUND_CLOSEST(EC_ADC_VALUE_MAX,
-+					EC_ADC_RESOLUTION_MAX);
-+
-+	return 0;
-+}
-+
-+static void imanager2_volt_init(struct imanager2 *ec)
-+{
-+	u8 did;
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(ec_volt_table); i++) {
-+		did = ec_volt_table[i].did;
-+
-+		if (ec->table.devid2itemnum[did] != EC_TABLE_ITEM_UNUSED) {
-+			ec_volt_table[i].factor = 1;
-+			ec_volt_table[i].visible = true;
-+		} else if (ec->table.devid2itemnum[did + 1] !=
-+			   EC_TABLE_ITEM_UNUSED) {
-+			ec_volt_table[i].did += 1;
-+			ec_volt_table[i].factor = 2;
-+			ec_volt_table[i].visible = true;
-+		} else if (ec->table.devid2itemnum[did + 2] !=
-+			   EC_TABLE_ITEM_UNUSED) {
-+			ec_volt_table[i].did += 2;
-+			ec_volt_table[i].factor = 10;
-+			ec_volt_table[i].visible = true;
-+		} else {
-+			ec_volt_table[i].visible = false;
-+		}
-+	}
-+}
-+
-+static ssize_t show_in(struct device *dev, struct device_attribute *dev_attr,
-+		       char *buf)
-+{
-+	struct imanager2 *ec = dev_get_drvdata(dev);
-+	u32 val;
-+	int ret = imanager2_volt_get_value(ec,
-+					   to_sensor_dev_attr(dev_attr)->index,
-+					   &val);
-+	if (ret)
-+		return ret;
-+
-+	return sprintf(buf, "%u\n", val);
-+}
-+
-+static ssize_t show_in_label(struct device *dev,
-+			     struct device_attribute *dev_attr, char *buf)
-+{
-+	return sprintf(buf, "%s\n",
-+		       ec_volt_table[to_sensor_dev_attr(dev_attr)->index].name);
-+}
-+
-+static SENSOR_DEVICE_ATTR(in0_input, S_IRUGO, show_in, NULL, 0);
-+static SENSOR_DEVICE_ATTR(in1_input, S_IRUGO, show_in, NULL, 1);
-+static SENSOR_DEVICE_ATTR(in2_input, S_IRUGO, show_in, NULL, 2);
-+static SENSOR_DEVICE_ATTR(in3_input, S_IRUGO, show_in, NULL, 3);
-+static SENSOR_DEVICE_ATTR(in4_input, S_IRUGO, show_in, NULL, 4);
-+static SENSOR_DEVICE_ATTR(in5_input, S_IRUGO, show_in, NULL, 5);
-+static SENSOR_DEVICE_ATTR(in6_input, S_IRUGO, show_in, NULL, 6);
-+static SENSOR_DEVICE_ATTR(in7_input, S_IRUGO, show_in, NULL, 7);
-+static SENSOR_DEVICE_ATTR(in8_input, S_IRUGO, show_in, NULL, 8);
-+static SENSOR_DEVICE_ATTR(in9_input, S_IRUGO, show_in, NULL, 9);
-+static SENSOR_DEVICE_ATTR(in10_input, S_IRUGO, show_in, NULL, 10);
-+static SENSOR_DEVICE_ATTR(in11_input, S_IRUGO, show_in, NULL, 11);
-+
-+static SENSOR_DEVICE_ATTR(in0_label, S_IRUGO, show_in_label, NULL, 0);
-+static SENSOR_DEVICE_ATTR(in1_label, S_IRUGO, show_in_label, NULL, 1);
-+static SENSOR_DEVICE_ATTR(in2_label, S_IRUGO, show_in_label, NULL, 2);
-+static SENSOR_DEVICE_ATTR(in3_label, S_IRUGO, show_in_label, NULL, 3);
-+static SENSOR_DEVICE_ATTR(in4_label, S_IRUGO, show_in_label, NULL, 4);
-+static SENSOR_DEVICE_ATTR(in5_label, S_IRUGO, show_in_label, NULL, 5);
-+static SENSOR_DEVICE_ATTR(in6_label, S_IRUGO, show_in_label, NULL, 6);
-+static SENSOR_DEVICE_ATTR(in7_label, S_IRUGO, show_in_label, NULL, 7);
-+static SENSOR_DEVICE_ATTR(in8_label, S_IRUGO, show_in_label, NULL, 8);
-+static SENSOR_DEVICE_ATTR(in9_label, S_IRUGO, show_in_label, NULL, 9);
-+static SENSOR_DEVICE_ATTR(in10_label, S_IRUGO, show_in_label, NULL, 10);
-+static SENSOR_DEVICE_ATTR(in11_label, S_IRUGO, show_in_label, NULL, 11);
-+
-+static struct attribute *imanager2_volt_attrs[] = {
-+	&sensor_dev_attr_in0_label.dev_attr.attr,
-+	&sensor_dev_attr_in0_input.dev_attr.attr,
-+
-+	&sensor_dev_attr_in1_label.dev_attr.attr,
-+	&sensor_dev_attr_in1_input.dev_attr.attr,
-+
-+	&sensor_dev_attr_in2_label.dev_attr.attr,
-+	&sensor_dev_attr_in2_input.dev_attr.attr,
-+
-+	&sensor_dev_attr_in3_label.dev_attr.attr,
-+	&sensor_dev_attr_in3_input.dev_attr.attr,
-+
-+	&sensor_dev_attr_in4_label.dev_attr.attr,
-+	&sensor_dev_attr_in4_input.dev_attr.attr,
-+
-+	&sensor_dev_attr_in5_label.dev_attr.attr,
-+	&sensor_dev_attr_in5_input.dev_attr.attr,
-+
-+	&sensor_dev_attr_in6_label.dev_attr.attr,
-+	&sensor_dev_attr_in6_input.dev_attr.attr,
-+
-+	&sensor_dev_attr_in7_label.dev_attr.attr,
-+	&sensor_dev_attr_in7_input.dev_attr.attr,
-+
-+	&sensor_dev_attr_in8_label.dev_attr.attr,
-+	&sensor_dev_attr_in8_input.dev_attr.attr,
-+
-+	&sensor_dev_attr_in9_label.dev_attr.attr,
-+	&sensor_dev_attr_in9_input.dev_attr.attr,
-+
-+	&sensor_dev_attr_in10_label.dev_attr.attr,
-+	&sensor_dev_attr_in10_input.dev_attr.attr,
-+
-+	&sensor_dev_attr_in11_label.dev_attr.attr,
-+	&sensor_dev_attr_in11_input.dev_attr.attr,
-+
-+	NULL
-+};
-+
-+static umode_t imanager2_volt_mode(struct kobject *kobj, struct attribute *attr,
-+				   int index)
-+{
-+	struct device_attribute *dev_attr;
-+
-+	dev_attr = container_of(attr, struct device_attribute, attr);
-+	if (!ec_volt_table[to_sensor_dev_attr(dev_attr)->index].visible)
-+		return 0;
-+
-+	return attr->mode;
-+}
-+
-+static const struct attribute_group imanager2_volt_group = {
-+	.attrs = imanager2_volt_attrs,
-+	.is_visible = imanager2_volt_mode,
-+};
-+
-+/* Current */
-+struct curr_item {
-+	const u8 did;
-+	const char *name;
-+	bool visible;
-+};
-+
-+static struct curr_item ec_curr_table[] = {
-+	{
-+		.did = adccurrent,
-+		.name = "IMON"
-+	},
-+};
-+
-+static int imanager2_curr_get_value(struct imanager2 *ec, int index,
-+				    u32 *curr_mamp)
-+{
-+	int ret;
-+	u8 tmp[5];
-+	u16 value, factor;
-+	u32 baseunit = 1;
-+
-+	mutex_lock(&ec->lock);
-+	ret = imanager2_read_mailbox_buffer(ec, EC_CMD_MAILBOX_READ_HW_PIN,
-+					    ec_curr_table[index].did, tmp,
-+					    ARRAY_SIZE(tmp));
-+	mutex_unlock(&ec->lock);
-+
-+	if (ret)
-+		return ret;
-+
-+	value = ((tmp[0] << 8) | tmp[1]) & EC_ADC_RESOLUTION_MAX;
-+	factor = (tmp[2] << 8) | tmp[3];
-+
-+	while (tmp[4]++)
-+		baseunit *= 10;
-+
-+	*curr_mamp = DIV_ROUND_CLOSEST(value * baseunit * EC_ADC_VALUE_MAX,
-+				       EC_ADC_RESOLUTION_MAX * factor);
-+
-+	return 0;
-+}
-+
-+static void imanager2_curr_init(struct imanager2 *ec)
-+{
-+	u8 did;
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(ec_curr_table); i++) {
-+		did = ec_curr_table[i].did;
-+		if (ec->table.devid2itemnum[did] != EC_TABLE_ITEM_UNUSED)
-+			ec_curr_table[i].visible = ec->flag & EC_FLAG_MAILBOX;
-+		else
-+			ec_curr_table[i].visible = false;
-+	}
-+}
-+
-+static ssize_t show_curr(struct device *dev, struct device_attribute *dev_attr,
-+			 char *buf)
-+{
-+	struct imanager2 *ec = dev_get_drvdata(dev);
-+	u32 val;
-+	int ret = imanager2_curr_get_value(ec,
-+					   to_sensor_dev_attr(dev_attr)->index,
-+					   &val);
-+	if (ret)
-+		return ret;
-+
-+	return sprintf(buf, "%u\n", val);
-+}
-+
-+static ssize_t show_curr_label(struct device *dev,
-+			       struct device_attribute *dev_attr, char *buf)
-+{
-+	return sprintf(buf, "%s\n",
-+		       ec_curr_table[to_sensor_dev_attr(dev_attr)->index].name);
-+}
-+
-+static SENSOR_DEVICE_ATTR(curr1_input, S_IRUGO, show_curr, NULL, 0);
-+static SENSOR_DEVICE_ATTR(curr1_label, S_IRUGO, show_curr_label, NULL, 0);
-+
-+static struct attribute *imanager2_curr_attrs[] = {
-+	&sensor_dev_attr_curr1_label.dev_attr.attr,
-+	&sensor_dev_attr_curr1_input.dev_attr.attr,
-+
-+	NULL
-+};
-+
-+static umode_t imanager2_curr_mode(struct kobject *kobj, struct attribute *attr,
-+				   int index)
-+{
-+	struct device_attribute *dev_attr;
-+
-+	dev_attr = container_of(attr, struct device_attribute, attr);
-+	if (!ec_curr_table[to_sensor_dev_attr(dev_attr)->index].visible)
-+		return 0;
-+
-+	return attr->mode;
-+}
-+
-+static const struct attribute_group imanager2_curr_group = {
-+	.attrs = imanager2_curr_attrs,
-+	.is_visible = imanager2_curr_mode,
-+};
-+
-+/* Temperature */
-+struct temp_item {
-+	const char *name;
-+	const u8 zonetype_value;
-+	u8 zonetype_acpireg;
-+	bool visible;
-+};
-+
-+static struct temp_item ec_temp_table[] = {
-+	{
-+		.name = "Temp SYS",
-+		.zonetype_value = sys1,
-+		.zonetype_acpireg = EC_ACPIRAM_ADDR_LOCAL_TEMPERATURE(1)
-+	},
-+	{
-+		.name = "Temp CPU",
-+		.zonetype_value = cpu,
-+		.zonetype_acpireg = EC_ACPIRAM_ADDR_REMOTE_TEMPERATURE(1)
-+	},
-+	{
-+		.name = "Temp SYS3",
-+		.zonetype_value = sys3,
-+		.zonetype_acpireg = EC_ACPIRAM_ADDR_LOCAL_TEMPERATURE(2)
-+	},
-+	{
-+		.name = "Temp SYS2",
-+		.zonetype_value = sys2,
-+		.zonetype_acpireg = EC_ACPIRAM_ADDR_REMOTE_TEMPERATURE(2)
-+	},
-+};
-+
-+static int imanager2_temp_get_value(struct imanager2 *ec, int index,
-+				    s32 *temp_mcelsius)
-+{
-+	int ret;
-+	s8 tmp;
-+
-+	mutex_lock(&ec->lock);
-+	ret = imanager2_acpiram_read_byte(ec,
-+					  ec_temp_table[index].zonetype_acpireg,
-+					  (u8 *)&tmp);
-+	mutex_unlock(&ec->lock);
-+
-+	if (ret)
-+		return ret;
-+
-+	*temp_mcelsius = tmp * 1000;
-+
-+	return 0;
-+}
-+
-+static void imanager2_temp_init(struct imanager2 *ec)
-+{
-+	int i, thm, ret;
-+	u8 tmltype, smbid, fanid;
-+	struct ec_thermalzone zone;
-+
-+	for (i = 0; i < ARRAY_SIZE(ec_temp_table); i++)
-+		ec_temp_table[i].visible = false;
-+
-+	for (thm = 0; thm < EC_THERMAL_ZONE_MAX; thm++) {
-+		mutex_lock(&ec->lock);
-+
-+		if (ec->flag & EC_FLAG_MAILBOX) {
-+			int len = sizeof(struct ec_thermalzone);
-+			ret = imanager2_read_thermalzone(ec, thm, &smbid,
-+							 &fanid, (u8 *)&zone,
-+							 &len);
-+		} else {
-+			ret = imanager2_io_read(
-+				EC_CMD_HWRAM_READ,
-+				EC_HWRAM_ADDR_THERMAL_SOURCE_SMB_STATUS(thm),
-+				&zone.status, 1);
-+		}
-+
-+		mutex_unlock(&ec->lock);
-+
-+		if (ret)
-+			continue;
-+
-+		tmltype = (zone.status >> 5);
-+
-+		for (i = 0; i < ARRAY_SIZE(ec_temp_table); i++) {
-+			if (tmltype == ec_temp_table[i].zonetype_value) {
-+				ec_temp_table[i].visible = true;
-+				break;
-+			}
-+		}
-+	}
-+}
-+
-+static ssize_t show_temp(struct device *dev, struct device_attribute *dev_attr,
-+			 char *buf)
-+{
-+	struct imanager2 *ec = dev_get_drvdata(dev);
-+	s32 val;
-+	int ret = imanager2_temp_get_value(ec,
-+					   to_sensor_dev_attr(dev_attr)->index,
-+					   &val);
-+	if (ret)
-+		return ret;
-+
-+	return sprintf(buf, "%d\n", val);
-+}
-+
-+static ssize_t show_temp_label(struct device *dev,
-+			       struct device_attribute *dev_attr, char *buf)
-+{
-+	return sprintf(buf, "%s\n",
-+		       ec_temp_table[to_sensor_dev_attr(dev_attr)->index].name);
-+}
-+
-+static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO, show_temp, NULL, 0);
-+static SENSOR_DEVICE_ATTR(temp2_input, S_IRUGO, show_temp, NULL, 1);
-+static SENSOR_DEVICE_ATTR(temp3_input, S_IRUGO, show_temp, NULL, 2);
-+static SENSOR_DEVICE_ATTR(temp4_input, S_IRUGO, show_temp, NULL, 3);
-+
-+static SENSOR_DEVICE_ATTR(temp1_label, S_IRUGO, show_temp_label, NULL, 0);
-+static SENSOR_DEVICE_ATTR(temp2_label, S_IRUGO, show_temp_label, NULL, 1);
-+static SENSOR_DEVICE_ATTR(temp3_label, S_IRUGO, show_temp_label, NULL, 2);
-+static SENSOR_DEVICE_ATTR(temp4_label, S_IRUGO, show_temp_label, NULL, 3);
-+
-+static struct attribute *imanager2_temp_attrs[] = {
-+	&sensor_dev_attr_temp1_label.dev_attr.attr,
-+	&sensor_dev_attr_temp1_input.dev_attr.attr,
-+
-+	&sensor_dev_attr_temp2_label.dev_attr.attr,
-+	&sensor_dev_attr_temp2_input.dev_attr.attr,
-+
-+	&sensor_dev_attr_temp3_label.dev_attr.attr,
-+	&sensor_dev_attr_temp3_input.dev_attr.attr,
-+
-+	&sensor_dev_attr_temp4_label.dev_attr.attr,
-+	&sensor_dev_attr_temp4_input.dev_attr.attr,
-+
-+	NULL
-+};
-+
-+static umode_t imanager2_temp_mode(struct kobject *kobj, struct attribute *attr,
-+				   int index)
-+{
-+	struct device_attribute *dev_attr;
-+
-+	dev_attr = container_of(attr, struct device_attribute, attr);
-+	if (!ec_temp_table[to_sensor_dev_attr(dev_attr)->index].visible)
-+		return 0;
-+
-+	return attr->mode;
-+}
-+
-+static const struct attribute_group imanager2_temp_group = {
-+	.attrs = imanager2_temp_attrs,
-+	.is_visible = imanager2_temp_mode,
-+};
-+
-+/* Fan Speed */
-+struct fan_item {
-+	const u8 did;
-+	const char *name;
-+	u8 fspeed_acpireg;
-+	bool visible;
-+};
-+
-+static struct fan_item ec_fan_table[] = {
-+	{
-+		.did = tacho0,
-+		.name = "Fan CPU",
-+		.fspeed_acpireg = 0,
-+		.visible = false
-+	},
-+	{
-+		.did = tacho1,
-+		.name = "Fan SYS",
-+		.fspeed_acpireg = 0,
-+		.visible = false
-+	},
-+	{
-+		.did = tacho2,
-+		.name = "Fan SYS2",
-+		.fspeed_acpireg = 0,
-+		.visible = false
-+	},
-+};
-+
-+static int imanager2_fan_get_value(struct imanager2 *ec, int index,
-+				   u32 *speed_rpm)
-+{
-+	int ret;
-+	u8 tmp[2];
-+
-+	mutex_lock(&ec->lock);
-+
-+	if (ec->flag & EC_FLAG_MAILBOX)
-+		ret =
-+		    imanager2_read_mailbox_buffer(ec,
-+						  EC_CMD_MAILBOX_READ_HW_PIN,
-+						  ec_fan_table[index].did, tmp,
-+						  2);
-+	else
-+		ret = imanager2_io_read(EC_CMD_ACPIRAM_READ,
-+					ec_fan_table[index].fspeed_acpireg, tmp,
-+					2);
-+
-+	mutex_unlock(&ec->lock);
-+
-+	if (ret)
-+		return ret;
-+
-+	if (tmp[0] == 0xFF && tmp[1] == 0xFF)
-+		return -ENODEV;
-+
-+	*speed_rpm = (tmp[0] << 8) | tmp[1];
-+
-+	return 0;
-+}
-+
-+#define EC_FANCTROL_SPEEDSRC_MASK	0x30
-+
-+static int imanager2_fan_item_init_by_io(struct imanager2 *ec, int fnum)
-+{
-+	int i, ret;
-+	u8 tmp;
-+
-+	mutex_lock(&ec->lock);
-+	ret =
-+	    imanager2_io_read(EC_CMD_HWRAM_READ,
-+			      EC_HWRAM_ADDR_FAN_CONTROL(fnum), &tmp, 1);
-+	mutex_unlock(&ec->lock);
-+
-+	if (ret)
-+		return ret;
-+
-+	i = ((tmp & EC_FANCTROL_SPEEDSRC_MASK) >> 4) - 1;
-+	if (i < 0)
-+		return -ENODEV;
-+
-+	/* Unnecessary set again if it has been set. */
-+	if (ec_fan_table[i].visible)
-+		return 0;
-+
-+	ec_fan_table[i].fspeed_acpireg = EC_ACPIRAM_ADDR_FAN_SPEED_BASE(i);
-+	ec_fan_table[i].visible = true;
-+
-+	return 0;
-+}
-+
-+static void imanager2_fan_init(struct imanager2 *ec)
-+{
-+	int i;
-+
-+	if (ec->flag & EC_FLAG_MAILBOX) {
-+		for (i = 0; i < ARRAY_SIZE(ec_fan_table); i++)
-+			ec_fan_table[i].visible =
-+			    ec->table.devid2itemnum[ec_fan_table[i].did] !=
-+			    EC_TABLE_ITEM_UNUSED;
-+	} else {
-+		int fnum;
-+
-+		for (i = 0; i < ARRAY_SIZE(ec_fan_table); i++)
-+			ec_fan_table[i].visible = false;
-+
-+		for (fnum = 0; fnum < EC_MAX_IO_FAN; fnum++) {
-+			if (imanager2_fan_item_init_by_io(ec, fnum))
-+				continue;
-+		}
-+	}
-+}
-+
-+static ssize_t show_fan(struct device *dev, struct device_attribute *dev_attr,
-+			char *buf)
-+{
-+	struct imanager2 *ec = dev_get_drvdata(dev);
-+	u32 val;
-+	int ret = imanager2_fan_get_value(ec,
-+					  to_sensor_dev_attr(dev_attr)->index,
-+					  &val);
-+	if (ret)
-+		return ret;
-+
-+	return sprintf(buf, "%u\n", val);
-+}
-+
-+static ssize_t show_fan_label(struct device *dev,
-+			      struct device_attribute *dev_attr, char *buf)
-+{
-+	return sprintf(buf, "%s\n",
-+		       ec_fan_table[to_sensor_dev_attr(dev_attr)->index].name);
-+}
-+
-+static SENSOR_DEVICE_ATTR(fan1_input, S_IRUGO, show_fan, NULL, 0);
-+static SENSOR_DEVICE_ATTR(fan2_input, S_IRUGO, show_fan, NULL, 1);
-+static SENSOR_DEVICE_ATTR(fan3_input, S_IRUGO, show_fan, NULL, 2);
-+
-+static SENSOR_DEVICE_ATTR(fan1_label, S_IRUGO, show_fan_label, NULL, 0);
-+static SENSOR_DEVICE_ATTR(fan2_label, S_IRUGO, show_fan_label, NULL, 1);
-+static SENSOR_DEVICE_ATTR(fan3_label, S_IRUGO, show_fan_label, NULL, 2);
-+
-+static struct attribute *imanager2_fan_attrs[] = {
-+	&sensor_dev_attr_fan1_label.dev_attr.attr,
-+	&sensor_dev_attr_fan1_input.dev_attr.attr,
-+
-+	&sensor_dev_attr_fan2_label.dev_attr.attr,
-+	&sensor_dev_attr_fan2_input.dev_attr.attr,
-+
-+	&sensor_dev_attr_fan3_label.dev_attr.attr,
-+	&sensor_dev_attr_fan3_input.dev_attr.attr,
-+
-+	NULL
-+};
-+
-+static umode_t imanager2_fan_mode(struct kobject *kobj, struct attribute *attr,
-+				  int index)
-+{
-+	struct device_attribute *dev_attr;
-+
-+	dev_attr = container_of(attr, struct device_attribute, attr);
-+	if (!ec_fan_table[to_sensor_dev_attr(dev_attr)->index].visible)
-+		return 0;
-+
-+	return attr->mode;
-+}
-+
-+static const struct attribute_group imanager2_fan_group = {
-+	.attrs = imanager2_fan_attrs,
-+	.is_visible = imanager2_fan_mode,
-+};
-+
-+/* Module */
-+static const struct attribute_group *imanager2_hwmon_groups[] = {
-+	&imanager2_volt_group,
-+	&imanager2_curr_group,
-+	&imanager2_temp_group,
-+	&imanager2_fan_group,
-+	NULL
-+};
-+
-+static int imanager2_hwmon_probe(struct platform_device *pdev)
-+{
-+	struct device *hwmon_dev;
-+	struct imanager2 *hwmon_ec = pdev->dev.parent->platform_data;
-+
-+	imanager2_volt_init(hwmon_ec);
-+	imanager2_curr_init(hwmon_ec);
-+	imanager2_temp_init(hwmon_ec);
-+	imanager2_fan_init(hwmon_ec);
-+
-+	hwmon_dev = devm_hwmon_device_register_with_groups(
-+					&pdev->dev, "imanager2", hwmon_ec,
-+					imanager2_hwmon_groups);
-+
-+	if (IS_ERR(hwmon_dev))
-+		return PTR_ERR(hwmon_dev);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver imanager2_hwmon_driver = {
-+	.probe = imanager2_hwmon_probe,
-+	.driver = {
-+		.owner = THIS_MODULE,
-+		.name = DRV_NAME,
-+	},
-+};
-+
-+module_platform_driver(imanager2_hwmon_driver);
-+
-+MODULE_AUTHOR("Richard Vidal-Dorsch <richard.dorsch at advantech.com>");
-+MODULE_DESCRIPTION("HW Monitoring interface for Advantech EC IT8516/18/28");
-+MODULE_LICENSE("GPL");
-+MODULE_VERSION(DRV_VERSION);
+Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+
+> ---
+>  mm/compaction.c | 114 ++++++++++++++++++++++++++++++++++++--------------------
+>  1 file changed, 73 insertions(+), 41 deletions(-)
+> 
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index e8cfac9..40da812 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -180,54 +180,72 @@ static void update_pageblock_skip(struct compact_control *cc,
+>  }
+>  #endif /* CONFIG_COMPACTION */
+>  
+> -enum compact_contended should_release_lock(spinlock_t *lock)
+> +/*
+> + * Compaction requires the taking of some coarse locks that are potentially
+> + * very heavily contended. For async compaction, back out if the lock cannot
+> + * be taken immediately. For sync compaction, spin on the lock if needed.
+> + *
+> + * Returns true if the lock is held
+> + * Returns false if the lock is not held and compaction should abort
+> + */
+> +static bool compact_trylock_irqsave(spinlock_t *lock,
+> +			unsigned long *flags, struct compact_control *cc)
+>  {
+> -	if (spin_is_contended(lock))
+> -		return COMPACT_CONTENDED_LOCK;
+> -	else if (need_resched())
+> -		return COMPACT_CONTENDED_SCHED;
+> -	else
+> -		return COMPACT_CONTENDED_NONE;
+> +	if (cc->mode == MIGRATE_ASYNC) {
+> +		if (!spin_trylock_irqsave(lock, *flags)) {
+> +			cc->contended = COMPACT_CONTENDED_LOCK;
+> +			return false;
+> +		}
+> +	} else {
+> +		spin_lock_irqsave(lock, *flags);
+> +	}
+> +
+> +	return true;
+>  }
+>  
+>  /*
+>   * Compaction requires the taking of some coarse locks that are potentially
+> - * very heavily contended. Check if the process needs to be scheduled or
+> - * if the lock is contended. For async compaction, back out in the event
+> - * if contention is severe. For sync compaction, schedule.
+> + * very heavily contended. The lock should be periodically unlocked to avoid
+> + * having disabled IRQs for a long time, even when there is nobody waiting on
+> + * the lock. It might also be that allowing the IRQs will result in
+> + * need_resched() becoming true. If scheduling is needed, async compaction
+> + * aborts. Sync compaction schedules.
+> + * Either compaction type will also abort if a fatal signal is pending.
+> + * In either case if the lock was locked, it is dropped and not regained.
+>   *
+> - * Returns true if the lock is held.
+> - * Returns false if the lock is released and compaction should abort
+> + * Returns true if compaction should abort due to fatal signal pending, or
+> + *		async compaction due to need_resched()
+> + * Returns false when compaction can continue (sync compaction might have
+> + *		scheduled)
+>   */
+> -static bool compact_checklock_irqsave(spinlock_t *lock, unsigned long *flags,
+> -				      bool locked, struct compact_control *cc)
+> +static bool compact_unlock_should_abort(spinlock_t *lock,
+> +		unsigned long flags, bool *locked, struct compact_control *cc)
+>  {
+> -	enum compact_contended contended = should_release_lock(lock);
+> +	if (*locked) {
+> +		spin_unlock_irqrestore(lock, flags);
+> +		*locked = false;
+> +	}
+>  
+> -	if (contended) {
+> -		if (locked) {
+> -			spin_unlock_irqrestore(lock, *flags);
+> -			locked = false;
+> -		}
+> +	if (fatal_signal_pending(current)) {
+> +		cc->contended = COMPACT_CONTENDED_SCHED;
+> +		return true;
+> +	}
+>  
+> -		/* async aborts if taking too long or contended */
+> +	if (need_resched()) {
+>  		if (cc->mode == MIGRATE_ASYNC) {
+> -			cc->contended = contended;
+> -			return false;
+> +			cc->contended = COMPACT_CONTENDED_SCHED;
+> +			return true;
+>  		}
+> -
+>  		cond_resched();
+>  	}
+>  
+> -	if (!locked)
+> -		spin_lock_irqsave(lock, *flags);
+> -	return true;
+> +	return false;
+>  }
+>  
+>  /*
+>   * Aside from avoiding lock contention, compaction also periodically checks
+>   * need_resched() and either schedules in sync compaction or aborts async
+> - * compaction. This is similar to what compact_checklock_irqsave() does, but
+> + * compaction. This is similar to what compact_unlock_should_abort() does, but
+>   * is used where no lock is concerned.
+>   *
+>   * Returns false when no scheduling was needed, or sync compaction scheduled.
+> @@ -286,6 +304,16 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+>  		int isolated, i;
+>  		struct page *page = cursor;
+>  
+> +		/*
+> +		 * Periodically drop the lock (if held) regardless of its
+> +		 * contention, to give chance to IRQs. Abort async compaction
+> +		 * if contended.
+> +		 */
+> +		if (!(blockpfn % SWAP_CLUSTER_MAX)
+> +		    && compact_unlock_should_abort(&cc->zone->lock, flags,
+> +								&locked, cc))
+> +			break;
+> +
+>  		nr_scanned++;
+>  		if (!pfn_valid_within(blockpfn))
+>  			goto isolate_fail;
+> @@ -303,8 +331,9 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+>  		 * spin on the lock and we acquire the lock as late as
+>  		 * possible.
+>  		 */
+> -		locked = compact_checklock_irqsave(&cc->zone->lock, &flags,
+> -								locked, cc);
+> +		if (!locked)
+> +			locked = compact_trylock_irqsave(&cc->zone->lock,
+> +								&flags, cc);
+>  		if (!locked)
+>  			break;
+>  
+> @@ -506,13 +535,15 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+>  
+>  	/* Time to isolate some pages for migration */
+>  	for (; low_pfn < end_pfn; low_pfn++) {
+> -		/* give a chance to irqs before checking need_resched() */
+> -		if (locked && !(low_pfn % SWAP_CLUSTER_MAX)) {
+> -			if (should_release_lock(&zone->lru_lock)) {
+> -				spin_unlock_irqrestore(&zone->lru_lock, flags);
+> -				locked = false;
+> -			}
+> -		}
+> +		/*
+> +		 * Periodically drop the lock (if held) regardless of its
+> +		 * contention, to give chance to IRQs. Abort async compaction
+> +		 * if contended.
+> +		 */
+> +		if (!(low_pfn % SWAP_CLUSTER_MAX)
+> +		    && compact_unlock_should_abort(&zone->lru_lock, flags,
+> +								&locked, cc))
+> +			break;
+>  
+>  		/*
+>  		 * migrate_pfn does not necessarily start aligned to a
+> @@ -592,10 +623,11 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+>  		    page_count(page) > page_mapcount(page))
+>  			continue;
+>  
+> -		/* Check if it is ok to still hold the lock */
+> -		locked = compact_checklock_irqsave(&zone->lru_lock, &flags,
+> -								locked, cc);
+> -		if (!locked || fatal_signal_pending(current))
+> +		/* If the lock is not held, try to take it */
+> +		if (!locked)
+> +			locked = compact_trylock_irqsave(&zone->lru_lock,
+> +								&flags, cc);
+> +		if (!locked)
+>  			break;
+>  
+>  		/* Recheck PageLRU and PageTransHuge under lock */
+> 
+
+
 -- 
-1.9.1
-
+Thanks.
+Zhang Yanfei
