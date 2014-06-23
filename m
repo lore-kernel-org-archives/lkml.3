@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752329AbaFWBc4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 21:32:56 -0400
-Received: from linuxhacker.ru ([217.76.32.60]:39772 "EHLO fiona.linuxhacker.ru"
+	id S1752102AbaFWBct (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 21:32:49 -0400
+Received: from linuxhacker.ru ([217.76.32.60]:39736 "EHLO fiona.linuxhacker.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752206AbaFWBcy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 21:32:54 -0400
+	id S1751461AbaFWBcp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jun 2014 21:32:45 -0400
 From: Oleg Drokin <green@linuxhacker.ru>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Cc: Andriy Skulysh <Andriy_Skulysh@xyratex.com>,
-        Oleg Drokin <oleg.drokin@intel.com>
-Subject: [PATCH 12/18] staging/lustre/osc: osc_extent_truncate()) ASSERTION( !ext->oe_urgent ) failed
-Date: Sun, 22 Jun 2014 21:32:16 -0400
-Message-Id: <1403487142-4880-13-git-send-email-green@linuxhacker.ru>
+Cc: Oleg Drokin <green@linuxhacker.ru>, Oleg Drokin <oleg.drokin@intel.com>
+Subject: [PATCH 02/18] staging/lustre/ptlrpc: Protect request buffer changing
+Date: Sun, 22 Jun 2014 21:32:06 -0400
+Message-Id: <1403487142-4880-3-git-send-email-green@linuxhacker.ru>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1403487142-4880-1-git-send-email-green@linuxhacker.ru>
 References: <1403487142-4880-1-git-send-email-green@linuxhacker.ru>
@@ -21,51 +20,156 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andriy Skulysh <Andriy_Skulysh@xyratex.com>
+*_enlarge_reqbuf class of functions can change request body location
+for a request that's already in replay list, as such a parallel
+traverser of the list (after_reply -> ptlrpc_free_committed) might
+access freed and scrambled memory causing assertion.
 
-The bug was caused by race between truncate & fsync.
-osc_extent_wait() doesn't takes into account oe_trunc_pending
-during setting oe_urgent. The race arises after
-osc_object_unlock().
-osc_extent_wait() should ignore extents with oe_trunc_pending
-while waiting for OES_INV. osc_cache_truncate_end() will set
-oe_urgent and call osc_io_unplug_async()
+Since all such users only can get to this request under imp_lock, take
+imp_lock to protect against them in *_enlarge_reqbuf
 
-Signed-off-by: Andriy Skulysh <Andriy_Skulysh@xyratex.com>
-Reviewed-on: http://review.whamcloud.com/10204
-Xyratex-bug-id: LELUS-239
-Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-4852
-Reviewed-by: Jinshan Xiong <jinshan.xiong@intel.com>
 Signed-off-by: Oleg Drokin <oleg.drokin@intel.com>
+Reviewed-on: http://review.whamcloud.com/10074
+Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-3333
+Reviewed-by: Mike Pershin <mike.pershin@intel.com>
+Reviewed-by: Andreas Dilger <andreas.dilger@intel.com>
 ---
- drivers/staging/lustre/lustre/osc/osc_cache.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/staging/lustre/lustre/ptlrpc/gss/sec_gss.c | 29 ++++++++++++++++++++++
+ drivers/staging/lustre/lustre/ptlrpc/sec_null.c    | 11 ++++++++
+ drivers/staging/lustre/lustre/ptlrpc/sec_plain.c   | 12 +++++++++
+ 3 files changed, 52 insertions(+)
 
-diff --git a/drivers/staging/lustre/lustre/osc/osc_cache.c b/drivers/staging/lustre/lustre/osc/osc_cache.c
-index 00f38ee..f075b69 100644
---- a/drivers/staging/lustre/lustre/osc/osc_cache.c
-+++ b/drivers/staging/lustre/lustre/osc/osc_cache.c
-@@ -871,7 +871,8 @@ static int osc_extent_wait(const struct lu_env *env, struct osc_extent *ext,
- 	LASSERT(sanity_check_nolock(ext) == 0);
- 	/* `Kick' this extent only if the caller is waiting for it to be
- 	 * written out. */
--	if (state == OES_INV && !ext->oe_urgent && !ext->oe_hp) {
-+	if (state == OES_INV && !ext->oe_urgent && !ext->oe_hp &&
-+	    !ext->oe_trunc_pending) {
- 		if (ext->oe_state == OES_ACTIVE) {
- 			ext->oe_urgent = 1;
- 		} else if (ext->oe_state == OES_CACHE) {
-@@ -922,8 +923,8 @@ static int osc_extent_truncate(struct osc_extent *ext, pgoff_t trunc_index,
- 	int		    rc       = 0;
+diff --git a/drivers/staging/lustre/lustre/ptlrpc/gss/sec_gss.c b/drivers/staging/lustre/lustre/ptlrpc/gss/sec_gss.c
+index 383601c..ef44e09 100644
+--- a/drivers/staging/lustre/lustre/ptlrpc/gss/sec_gss.c
++++ b/drivers/staging/lustre/lustre/ptlrpc/gss/sec_gss.c
+@@ -1687,12 +1687,24 @@ int gss_enlarge_reqbuf_intg(struct ptlrpc_sec *sec,
+ 		if (newbuf == NULL)
+ 			return -ENOMEM;
  
- 	LASSERT(sanity_check(ext) == 0);
--	LASSERT(ext->oe_state == OES_TRUNC);
--	LASSERT(!ext->oe_urgent);
-+	EASSERT(ext->oe_state == OES_TRUNC, ext);
-+	EASSERT(!ext->oe_urgent, ext);
++		/* Must lock this, so that otherwise unprotected change of
++		 * rq_reqmsg is not racing with parallel processing of
++		 * imp_replay_list traversing threads. See LU-3333
++		 * This is a bandaid at best, we really need to deal with this
++		 * in request enlarging code before unpacking that's already
++		 * there */
++		if (req->rq_import)
++			spin_lock(&req->rq_import->imp_lock);
++
+ 		memcpy(newbuf, req->rq_reqbuf, req->rq_reqbuf_len);
  
- 	/* Request new lu_env.
- 	 * We can't use that env from osc_cache_truncate_start() because
+ 		OBD_FREE_LARGE(req->rq_reqbuf, req->rq_reqbuf_len);
+ 		req->rq_reqbuf = newbuf;
+ 		req->rq_reqbuf_len = newbuf_size;
+ 		req->rq_reqmsg = lustre_msg_buf(req->rq_reqbuf, 1, 0);
++
++		if (req->rq_import)
++			spin_unlock(&req->rq_import->imp_lock);
+ 	}
+ 
+ 	/* do enlargement, from wrapper to embedded, from end to begin */
+@@ -1753,6 +1765,8 @@ int gss_enlarge_reqbuf_priv(struct ptlrpc_sec *sec,
+ 		if (newclrbuf_size + newcipbuf_size <= req->rq_reqbuf_len) {
+ 			void *src, *dst;
+ 
++			if (req->rq_import)
++				spin_lock(&req->rq_import->imp_lock);
+ 			/* move clear text backward. */
+ 			src = req->rq_clrbuf;
+ 			dst = (char *) req->rq_reqbuf + newcipbuf_size;
+@@ -1762,6 +1776,9 @@ int gss_enlarge_reqbuf_priv(struct ptlrpc_sec *sec,
+ 			req->rq_clrbuf = (struct lustre_msg *) dst;
+ 			req->rq_clrbuf_len = newclrbuf_size;
+ 			req->rq_reqmsg = lustre_msg_buf(req->rq_clrbuf, 0, 0);
++
++			if (req->rq_import)
++				spin_unlock(&req->rq_import->imp_lock);
+ 		} else {
+ 			/* sadly we have to split out the clear buffer */
+ 			LASSERT(req->rq_reqbuf_len >= newcipbuf_size);
+@@ -1776,6 +1793,15 @@ int gss_enlarge_reqbuf_priv(struct ptlrpc_sec *sec,
+ 		if (newclrbuf == NULL)
+ 			return -ENOMEM;
+ 
++		/* Must lock this, so that otherwise unprotected change of
++		 * rq_reqmsg is not racing with parallel processing of
++		 * imp_replay_list traversing threads. See LU-3333
++		 * This is a bandaid at best, we really need to deal with this
++		 * in request enlarging code before unpacking that's already
++		 * there */
++		if (req->rq_import)
++			spin_lock(&req->rq_import->imp_lock);
++
+ 		memcpy(newclrbuf, req->rq_clrbuf, req->rq_clrbuf_len);
+ 
+ 		if (req->rq_reqbuf == NULL ||
+@@ -1788,6 +1814,9 @@ int gss_enlarge_reqbuf_priv(struct ptlrpc_sec *sec,
+ 		req->rq_clrbuf = newclrbuf;
+ 		req->rq_clrbuf_len = newclrbuf_size;
+ 		req->rq_reqmsg = lustre_msg_buf(req->rq_clrbuf, 0, 0);
++
++		if (req->rq_import)
++			spin_unlock(&req->rq_import->imp_lock);
+ 	}
+ 
+ 	_sptlrpc_enlarge_msg_inplace(req->rq_clrbuf, 0, newmsg_size);
+diff --git a/drivers/staging/lustre/lustre/ptlrpc/sec_null.c b/drivers/staging/lustre/lustre/ptlrpc/sec_null.c
+index ff1137f..ac967cb 100644
+--- a/drivers/staging/lustre/lustre/ptlrpc/sec_null.c
++++ b/drivers/staging/lustre/lustre/ptlrpc/sec_null.c
+@@ -260,11 +260,22 @@ int null_enlarge_reqbuf(struct ptlrpc_sec *sec,
+ 		if (newbuf == NULL)
+ 			return -ENOMEM;
+ 
++		/* Must lock this, so that otherwise unprotected change of
++		 * rq_reqmsg is not racing with parallel processing of
++		 * imp_replay_list traversing threads. See LU-3333
++		 * This is a bandaid at best, we really need to deal with this
++		 * in request enlarging code before unpacking that's already
++		 * there */
++		if (req->rq_import)
++			spin_lock(&req->rq_import->imp_lock);
+ 		memcpy(newbuf, req->rq_reqbuf, req->rq_reqlen);
+ 
+ 		OBD_FREE_LARGE(req->rq_reqbuf, req->rq_reqbuf_len);
+ 		req->rq_reqbuf = req->rq_reqmsg = newbuf;
+ 		req->rq_reqbuf_len = alloc_size;
++
++		if (req->rq_import)
++			spin_unlock(&req->rq_import->imp_lock);
+ 	}
+ 
+ 	_sptlrpc_enlarge_msg_inplace(req->rq_reqmsg, segment, newsize);
+diff --git a/drivers/staging/lustre/lustre/ptlrpc/sec_plain.c b/drivers/staging/lustre/lustre/ptlrpc/sec_plain.c
+index 416401b..12c6cef 100644
+--- a/drivers/staging/lustre/lustre/ptlrpc/sec_plain.c
++++ b/drivers/staging/lustre/lustre/ptlrpc/sec_plain.c
+@@ -669,6 +669,15 @@ int plain_enlarge_reqbuf(struct ptlrpc_sec *sec,
+ 		if (newbuf == NULL)
+ 			return -ENOMEM;
+ 
++		/* Must lock this, so that otherwise unprotected change of
++		 * rq_reqmsg is not racing with parallel processing of
++		 * imp_replay_list traversing threads. See LU-3333
++		 * This is a bandaid at best, we really need to deal with this
++		 * in request enlarging code before unpacking that's already
++		 * there */
++		if (req->rq_import)
++			spin_lock(&req->rq_import->imp_lock);
++
+ 		memcpy(newbuf, req->rq_reqbuf, req->rq_reqbuf_len);
+ 
+ 		OBD_FREE_LARGE(req->rq_reqbuf, req->rq_reqbuf_len);
+@@ -676,6 +685,9 @@ int plain_enlarge_reqbuf(struct ptlrpc_sec *sec,
+ 		req->rq_reqbuf_len = newbuf_size;
+ 		req->rq_reqmsg = lustre_msg_buf(req->rq_reqbuf,
+ 						PLAIN_PACK_MSG_OFF, 0);
++
++		if (req->rq_import)
++			spin_unlock(&req->rq_import->imp_lock);
+ 	}
+ 
+ 	_sptlrpc_enlarge_msg_inplace(req->rq_reqbuf, PLAIN_PACK_MSG_OFF,
 -- 
 1.9.0
 
