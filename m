@@ -1,130 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755071AbaFWNNx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:13:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37160 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754686AbaFWNFJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:05:09 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Thomas Gleixner <tglx@linutronix.de>, Kees Cook <keescook@chromium.org>,
-        Will Drewry <wad@chromium.org>, Darren Hart <dvhart@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 70/93] futex: Always cleanup owner tid in unlock_pi
-Date: Mon, 23 Jun 2014 14:02:49 +0100
-Message-Id: <1403528592-2163-71-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
-References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	id S1755332AbaFWNOP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:14:15 -0400
+Received: from mga09.intel.com ([134.134.136.24]:16744 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755311AbaFWNOM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 09:14:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,530,1400050800"; 
+   d="scan'208";a="532677987"
+Message-ID: <1403529246.4686.6.camel@rzhang1-toshiba>
+Subject: Re: [BUG] rc1 and rc2: Laptop unusable: on boot,screen black
+ instead of native resolution
+From: Zhang Rui <rui.zhang@intel.com>
+To: Martin Kepplinger <martink@posteo.de>
+Cc: "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "lenb@kernel.org" <lenb@kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-media@vger.kernel.org
+Date: Mon, 23 Jun 2014 21:14:06 +0800
+In-Reply-To: <53A81BF7.3030207@posteo.de>
+References: <53A6E72A.9090000@posteo.de>
+	 <744357E9AAD1214791ACBA4B0B90926301379B97@SHSMSX101.ccr.corp.intel.com>
+	 <53A81BF7.3030207@posteo.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.12 -stable review patch.  If anyone has any objections, please let me know.
+On Mon, 2014-06-23 at 14:22 +0200, Martin Kepplinger wrote:
+> Am 2014-06-23 03:10, schrieb Zhang, Rui:
+> > 
+> > 
+> >> -----Original Message-----
+> >> From: Martin Kepplinger [mailto:martink@posteo.de]
+> >> Sent: Sunday, June 22, 2014 10:25 PM
+> >> To: Zhang, Rui
+> >> Cc: rjw@rjwysocki.net; lenb@kernel.org; linux-acpi@vger.kernel.org;
+> >> linux-kernel@vger.kernel.org
+> >> Subject: [BUG] rc1 and rc2: Laptop unusable: on boot,screen black
+> >> instead of native resolution
+> >> Importance: High
+> >>
+> >> Since 3.16-rc1 my laptop's just goes black while booting, instead of
+> >> switching to native screen resolution and showing me the starting
+> >> system there. It's an Acer TravelMate B113 with i915 driver and
+> >> acer_wmi. It stays black and is unusable.
+> >>
+This looks like a duplicate of
+https://bugzilla.kernel.org/show_bug.cgi?id=78601
 
-------------------
+thanks,
+rui
+> >> Do you have other people complain about that? Bisecting didn't lead to
+> >> a good result. I could be wrong but I somehow suspect the mistake to be
+> >> somewhere in commit 99678ed73a50d2df8b5f3c801e29e9b7a3e5aa85
+> >>
+> > In order to confirm if the problem is introduced by the above commit,
+> > why not checkout the kernel just before and after this commit and see if the problem exists?
+> > 
+> > Thanks,
+> > rui
+> > 
+> So maybe I was wrong. d27050641e9bc056446deb0814e7ba1aa7911f5a is still
+> good and aaeb2554337217dfa4eac2fcc90da7be540b9a73 is the fist bad one.
+> This is a big v4l merge. I added the linux-media list in cc now.
+> 
+> What could be the problem here?
+> 
+> > 
+> >> There is nothing unusual in the kernel log.
+> >>
+> >> This is quite unusual for an -rc2. Hence my question. I'm happy to test
+> >> changes.
+> >>
+> >>                                      martin
+> >> --
+> >> Martin Kepplinger
+> >> e-mail        martink AT posteo DOT at
+> >> chat (XMPP)   martink AT jabber DOT at
+> 
 
-From: Thomas Gleixner <tglx@linutronix.de>
-
-commit 13fbca4c6ecd96ec1a1cfa2e4f2ce191fe928a5e upstream.
-
-If the owner died bit is set at futex_unlock_pi, we currently do not
-cleanup the user space futex.  So the owner TID of the current owner
-(the unlocker) persists.  That's observable inconsistant state,
-especially when the ownership of the pi state got transferred.
-
-Clean it up unconditionally.
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Will Drewry <wad@chromium.org>
-Cc: Darren Hart <dvhart@linux.intel.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- kernel/futex.c | 40 ++++++++++++++++++----------------------
- 1 file changed, 18 insertions(+), 22 deletions(-)
-
-diff --git a/kernel/futex.c b/kernel/futex.c
-index d467b4972470..6edcc9aa0dfe 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -904,6 +904,7 @@ static int wake_futex_pi(u32 __user *uaddr, u32 uval, struct futex_q *this)
- 	struct task_struct *new_owner;
- 	struct futex_pi_state *pi_state = this->pi_state;
- 	u32 uninitialized_var(curval), newval;
-+	int ret = 0;
- 
- 	if (!pi_state)
- 		return -EINVAL;
-@@ -927,23 +928,19 @@ static int wake_futex_pi(u32 __user *uaddr, u32 uval, struct futex_q *this)
- 		new_owner = this->task;
- 
- 	/*
--	 * We pass it to the next owner. (The WAITERS bit is always
--	 * kept enabled while there is PI state around. We must also
--	 * preserve the owner died bit.)
-+	 * We pass it to the next owner. The WAITERS bit is always
-+	 * kept enabled while there is PI state around. We cleanup the
-+	 * owner died bit, because we are the owner.
- 	 */
--	if (!(uval & FUTEX_OWNER_DIED)) {
--		int ret = 0;
--
--		newval = FUTEX_WAITERS | task_pid_vnr(new_owner);
-+	newval = FUTEX_WAITERS | task_pid_vnr(new_owner);
- 
--		if (cmpxchg_futex_value_locked(&curval, uaddr, uval, newval))
--			ret = -EFAULT;
--		else if (curval != uval)
--			ret = -EINVAL;
--		if (ret) {
--			raw_spin_unlock(&pi_state->pi_mutex.wait_lock);
--			return ret;
--		}
-+	if (cmpxchg_futex_value_locked(&curval, uaddr, uval, newval))
-+		ret = -EFAULT;
-+	else if (curval != uval)
-+		ret = -EINVAL;
-+	if (ret) {
-+		raw_spin_unlock(&pi_state->pi_mutex.wait_lock);
-+		return ret;
- 	}
- 
- 	raw_spin_lock_irq(&pi_state->owner->pi_lock);
-@@ -2188,9 +2185,10 @@ retry:
- 	/*
- 	 * To avoid races, try to do the TID -> 0 atomic transition
- 	 * again. If it succeeds then we can return without waking
--	 * anyone else up:
-+	 * anyone else up. We only try this if neither the waiters nor
-+	 * the owner died bit are set.
- 	 */
--	if (!(uval & FUTEX_OWNER_DIED) &&
-+	if (!(uval & ~FUTEX_TID_MASK) &&
- 	    cmpxchg_futex_value_locked(&uval, uaddr, vpid, 0))
- 		goto pi_faulted;
- 	/*
-@@ -2222,11 +2220,9 @@ retry:
- 	/*
- 	 * No waiters - kernel unlocks the futex:
- 	 */
--	if (!(uval & FUTEX_OWNER_DIED)) {
--		ret = unlock_futex_pi(uaddr, uval);
--		if (ret == -EFAULT)
--			goto pi_faulted;
--	}
-+	ret = unlock_futex_pi(uaddr, uval);
-+	if (ret == -EFAULT)
-+		goto pi_faulted;
- 
- out_unlock:
- 	spin_unlock(&hb->lock);
--- 
-1.9.1
 
