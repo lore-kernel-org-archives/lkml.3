@@ -1,94 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755006AbaFWOcj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 10:32:39 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:53253 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754281AbaFWOci (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 10:32:38 -0400
-Message-ID: <53A83AA0.2050203@windriver.com>
-Date: Mon, 23 Jun 2014 10:33:04 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] init: make rootdelay=N consistent with rootwait behaviour
-References: <1401904895-18791-1-git-send-email-paul.gortmaker@windriver.com> <20140617152020.f23032953c83b621ded3901e@linux-foundation.org>
-In-Reply-To: <20140617152020.f23032953c83b621ded3901e@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1754665AbaFWOfS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 10:35:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49781 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753881AbaFWOfQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 10:35:16 -0400
+Message-ID: <1403534113.10017.22.camel@linux-fkkt.site>
+Subject: Re: [PATCH v9] leds: USB: HID: Add support for MSI GT683R led panels
+From: Oliver Neukum <oneukum@suse.de>
+To: Janne Kanniainen <janne.kanniainen@gmail.com>
+Cc: jkosina@suse.cz, johan@kernel.org, cooloney@gmail.com,
+        linux-kernel@vger.kernel.org, linux-leds@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-input@vger.kernel.org
+Date: Mon, 23 Jun 2014 16:35:13 +0200
+In-Reply-To: <1403107502-14106-1-git-send-email-janne.kanniainen@gmail.com>
+References: <20140618073950.GC31163@localhost>
+	 <1403107502-14106-1-git-send-email-janne.kanniainen@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.56.57]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14-06-17 06:20 PM, Andrew Morton wrote:
-> On Wed, 4 Jun 2014 14:01:35 -0400 Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
+On Wed, 2014-06-18 at 19:05 +0300, Janne Kanniainen wrote:
+> This driver adds support for USB controlled led panels that exists in
+> MSI GT683R laptop
 > 
->> Currently rootdelay=N and rootwait behave differently (aside
->> from the obvious unbounded wait duration) because they are
->> at different places in the init sequence.
->>
->> The difference manifests itself for md devices because the
->> call to md_run_setup() lives between rootdelay and rootwait,
->> so if you try to use rootdelay=20 to try and allow a slow
->> RAID0 array to assemble, you get this:
->>
->> [    4.526011] sd 6:0:0:0: [sdc] Attached SCSI removable disk
->> [   22.972079] md: Waiting for all devices to be available before autodetect
->>
->> i.e. you've achieved nothing other than delaying the probing
->> 20s, when what you wanted was a 20s delay _after_ the probing
->> for md devices was initiated.
->>
->> Here we move the rootdelay code to be right beside the rootwait
->> code, so that their behaviour is consistent.
->>
->> It should be noted that in doing so, the actions based on the
->> saved_root_name[0] and initrd_load() were previously put on
->> hold by rootdelay=N and now currently will not be delayed.
->> However, I think consistent behaviour is more important than
->> matching historical behaviour of delaying the above two operations.
-> 
-> hm.  There may be good reasons for inserting a delay between scsi init
-> and MD init - give things time to settle down before MD starts playing
-> with the disks?  And I think your patch takes away that option?
 
-In theory, md should never need that, since as per the message above,
-MD does a wait_for_device_probe().  I was trying to get a wait inserted
-between md0 creation and mount of root, which failed as noted.
+> +static int gt683r_led_probe(struct hid_device *hdev,
+> +			const struct hid_device_id *id)
+> +{
+> +	int i;
+> +	int ret;
+> +	int name_sz;
+> +	char *name;
+> +	struct gt683r_led *led;
+> +
+> +	led = devm_kzalloc(&hdev->dev, sizeof(*led), GFP_KERNEL);
+> +	if (!led)
+> +		return -ENOMEM;
+> +
+> +	led->mode = GT683R_LED_NORMAL;
+> +	led->hdev = hdev;
+> +	hid_set_drvdata(hdev, led);
+> +
+> +	ret = hid_parse(hdev);
+> +	if (ret) {
+> +		hid_err(hdev, "hid parsing failed\n");
+> +		return ret;
+> +	}
+> +
+> +	ret = hid_hw_start(hdev, HID_CONNECT_HIDRAW);
+> +	if (ret) {
+> +		hid_err(hdev, "hw start failed\n");
+> +		return ret;
+> +	}
+> +
+> +	for (i = 0; i < GT683R_LED_COUNT; i++) {
+> +		name_sz = strlen(dev_name(&hdev->dev)) +
+> +				strlen(gt683r_panel_names[i]) + 3;
+> +
+> +		name = devm_kzalloc(&hdev->dev, name_sz, GFP_KERNEL);
+> +		if (!name) {
+> +			ret = -ENOMEM;
+> +			goto fail;
+> +		}
+> +
+> +		snprintf(name, name_sz, "%s::%s",
+> +				dev_name(&hdev->dev), gt683r_panel_names[i]);
+> +		led->led_devs[i].name = name;
+> +		led->led_devs[i].max_brightness = 1;
+> +		led->led_devs[i].brightness_set = gt683r_brightness_set;
+> +		ret = led_classdev_register(&hdev->dev, &led->led_devs[i]);
+> +		if (ret) {
+> +			hid_err(hdev, "could not register led device\n");
+> +			goto fail;
+> +		}
+> +	}
+> +
+> +	ret = device_create_file(&led->hdev->dev, &dev_attr_leds_mode);
+> +	if (ret) {
+> +		hid_err(hdev, "could not make mode attribute file\n");
+> +		goto fail;
+> +	}
+> +
 
-> 
-> The kernel-parameters.txt documentation for these things is rather
-> vague.  We have three distinct phases, I think?
-> 
-> a) scsi init
-> b) [md init]
-> c) root mount
-> 
-> It's not terribly clear where rootdelay and rootwait are operating and
-> I expect there are gaps in the implementation anyway.
-> 
-> Do you think it's worth cleaning and clearing all this up in some fashion?
+This is the window.
 
-Sure. Not clear how though.  One option would be to deprecate rootwait
-in favour of rootdelay=-1 (or rootdelay=0) as an indication that the
-user wants infinite wait.  That still means only one delay point in
-your a-b-c chain above though, but I'm hoping that is OK.  Other ideas?
+> +	mutex_init(&led->lock);
+> +	INIT_WORK(&led->work, gt683r_led_work);
+> +
 
-> 
-> The whole thing is a bit of an admission of failure anyway, isn't it? 
-> Why should the kernel ever need to perform arbitrary dopey delays like
-> this?  Are we working around unresolved underlying bugs?
+And here we have a problem. This is a race condition.
+At this time you've already created the sysfs files. So
+their methods can be called. They will lock a mutex and/or
+schedule work that hasn't been initialized.
+The initialization must be done before anything in sysfs
+is created. 
 
-Well to be fair, I'd agree with the above.  I was trying it as a last
-ditch attempt to fix an unrelated issue (and imagine that, it failed to
-fix anything) but in that attempt, I noted the glaring inconsistency
-between rootdelay= and rootwait.
+> +	return 0;
+> +
+> +fail:
+> +	for (i = i - 1; i >= 0; i--)
+> +		led_classdev_unregister(&led->led_devs[i]);
+> +	hid_hw_stop(hdev);
+> +	return ret;
+> +}
+> +
 
-Paul.
---
+Sorry for noticing this thread late.
 
-> 
+	Regards
+		Oliver
+
+
