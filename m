@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755402AbaFWN1f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:27:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36793 "EHLO
+	id S1754085AbaFWNDy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:03:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36764 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753842AbaFWNDz (ORCPT
+	with ESMTP id S1753842AbaFWNDv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:03:55 -0400
+	Mon, 23 Jun 2014 09:03:51 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
+Cc: Florian Westphal <fw@strlen.de>, Pablo Neira Ayuso <pablo@netfilter.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 24/93] dmaengine: dw: went back to plain {request,free}_irq() calls
-Date: Mon, 23 Jun 2014 14:02:03 +0100
-Message-Id: <1403528592-2163-25-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 21/93] netfilter: ipv4: defrag: set local_df flag on defragmented skb
+Date: Mon, 23 Jun 2014 14:02:00 +0100
+Message-Id: <1403528592-2163-22-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
 References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
@@ -28,62 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+From: Florian Westphal <fw@strlen.de>
 
-commit 97977f7576a89cb9436c000ae703c0d515e748ac upstream.
+commit 895162b1101b3ea5db08ca6822ae9672717efec0 upstream.
 
-The commit dbde5c29 "dw_dmac: use devm_* functions to simplify code" turns
-probe function to use devm_* helpers and simultaneously brings a regression. We
-need to ensure irq is disabled, followed by ensuring that don't schedule any
-more tasklets and then its safe to use tasklet_kill().
+else we may fail to forward skb even if original fragments do fit
+outgoing link mtu:
 
-The free_irq() will ensure that the irq is disabled and also wait till all
-scheduled interrupts are executed by invoking synchronize_irq(). So we need to
-only do tasklet_kill() after invoking free_irq().
+1. remote sends 2k packets in two 1000 byte frags, DF set
+2. we want to forward but only see '2k > mtu and DF set'
+3. we then send icmp error saying that outgoing link is 1500
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+But original sender never sent a packet that would not fit
+the outgoing link.
+
+Setting local_df makes outgoing path test size vs.
+IPCB(skb)->frag_max_size, so we will still send the correct
+error in case the largest original size did not fit
+outgoing link mtu.
+
+Reported-by: Maxime Bizon <mbizon@freebox.fr>
+Suggested-by: Maxime Bizon <mbizon@freebox.fr>
+Fixes: 5f2d04f1f9 (ipv4: fix path MTU discovery with connection tracking)
+Signed-off-by: Florian Westphal <fw@strlen.de>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/dma/dw/core.c | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ net/ipv4/netfilter/nf_defrag_ipv4.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/dma/dw/core.c b/drivers/dma/dw/core.c
-index 1292a6eda60f..884b38b52f02 100644
---- a/drivers/dma/dw/core.c
-+++ b/drivers/dma/dw/core.c
-@@ -1563,11 +1563,6 @@ int dw_dma_probe(struct dw_dma_chip *chip, struct dw_dma_platform_data *pdata)
- 	/* Disable BLOCK interrupts as well */
- 	channel_clear_bit(dw, MASK.BLOCK, dw->all_chan_mask);
+diff --git a/net/ipv4/netfilter/nf_defrag_ipv4.c b/net/ipv4/netfilter/nf_defrag_ipv4.c
+index 742815518b0f..4cfb3bd1677c 100644
+--- a/net/ipv4/netfilter/nf_defrag_ipv4.c
++++ b/net/ipv4/netfilter/nf_defrag_ipv4.c
+@@ -22,7 +22,6 @@
+ #endif
+ #include <net/netfilter/nf_conntrack_zones.h>
  
--	err = devm_request_irq(chip->dev, chip->irq, dw_dma_interrupt,
--			       IRQF_SHARED, "dw_dmac", dw);
--	if (err)
--		return err;
--
- 	/* Create a pool of consistent memory blocks for hardware descriptors */
- 	dw->desc_pool = dmam_pool_create("dw_dmac_desc_pool", chip->dev,
- 					 sizeof(struct dw_desc), 4, 0);
-@@ -1578,6 +1573,11 @@ int dw_dma_probe(struct dw_dma_chip *chip, struct dw_dma_platform_data *pdata)
+-/* Returns new sk_buff, or NULL */
+ static int nf_ct_ipv4_gather_frags(struct sk_buff *skb, u_int32_t user)
+ {
+ 	int err;
+@@ -33,8 +32,10 @@ static int nf_ct_ipv4_gather_frags(struct sk_buff *skb, u_int32_t user)
+ 	err = ip_defrag(skb, user);
+ 	local_bh_enable();
  
- 	tasklet_init(&dw->tasklet, dw_dma_tasklet, (unsigned long)dw);
+-	if (!err)
++	if (!err) {
+ 		ip_send_check(ip_hdr(skb));
++		skb->local_df = 1;
++	}
  
-+	err = request_irq(chip->irq, dw_dma_interrupt, IRQF_SHARED,
-+			  "dw_dmac", dw);
-+	if (err)
-+		return err;
-+
- 	INIT_LIST_HEAD(&dw->dma.channels);
- 	for (i = 0; i < nr_channels; i++) {
- 		struct dw_dma_chan	*dwc = &dw->chan[i];
-@@ -1680,6 +1680,7 @@ int dw_dma_remove(struct dw_dma_chip *chip)
- 	dw_dma_off(dw);
- 	dma_async_device_unregister(&dw->dma);
- 
-+	free_irq(chip->irq, dw);
- 	tasklet_kill(&dw->tasklet);
- 
- 	list_for_each_entry_safe(dwc, _dwc, &dw->dma.channels,
+ 	return err;
+ }
 -- 
 1.9.1
 
