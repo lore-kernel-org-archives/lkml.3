@@ -1,60 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755162AbaFWJOY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 05:14:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40829 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753088AbaFWJOV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 05:14:21 -0400
-Date: Mon, 23 Jun 2014 11:14:18 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Greg Thelen <gthelen@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] memcg: remove lookup_cgroup_page() prototype
-Message-ID: <20140623091418.GE9743@dhcp22.suse.cz>
-References: <1403217136-4863-1-git-send-email-gthelen@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403217136-4863-1-git-send-email-gthelen@google.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1755173AbaFWJOr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 05:14:47 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:56207 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753905AbaFWJMa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 05:12:30 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 062/111] fs,userns: Change inode_capable to capable_wrt_inode_uidgid
+Date: Mon, 23 Jun 2014 10:31:37 +0200
+Message-Id: <2246a472bce19c0d373fb5488a0e612e3328ce0a.1403512281.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
+References: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
+In-Reply-To: <cover.1403512280.git.jslaby@suse.cz>
+References: <cover.1403512280.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 19-06-14 15:32:16, Greg Thelen wrote:
-> 6b208e3f6e35 ("mm: memcg: remove unused node/section info from
-> pc->flags") deleted the lookup_cgroup_page() function but left a
-> prototype for it.
-> 
-> Kill the vestigial prototype.
-> 
-> Signed-off-by: Greg Thelen <gthelen@google.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-> ---
->  include/linux/page_cgroup.h | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
-> index 777a524716db..0ff470de3c12 100644
-> --- a/include/linux/page_cgroup.h
-> +++ b/include/linux/page_cgroup.h
-> @@ -42,7 +42,6 @@ static inline void __init page_cgroup_init(void)
->  #endif
->  
->  struct page_cgroup *lookup_page_cgroup(struct page *page);
-> -struct page *lookup_cgroup_page(struct page_cgroup *pc);
->  
->  #define TESTPCGFLAG(uname, lname)			\
->  static inline int PageCgroup##uname(struct page_cgroup *pc)	\
-> -- 
-> 2.0.0.526.g5318336
-> 
+===============
 
+commit 23adbe12ef7d3d4195e80800ab36b37bee28cd03 upstream.
+
+The kernel has no concept of capabilities with respect to inodes; inodes
+exist independently of namespaces.  For example, inode_capable(inode,
+CAP_LINUX_IMMUTABLE) would be nonsense.
+
+This patch changes inode_capable to check for uid and gid mappings and
+renames it to capable_wrt_inode_uidgid, which should make it more
+obvious what it does.
+
+Fixes CVE-2014-4014.
+
+Cc: Theodore Ts'o <tytso@mit.edu>
+Cc: Serge Hallyn <serge.hallyn@ubuntu.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Dave Chinner <david@fromorbit.com>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ fs/attr.c                  |  8 ++++----
+ fs/inode.c                 | 10 +++++++---
+ fs/namei.c                 | 11 ++++++-----
+ fs/xfs/xfs_ioctl.c         |  2 +-
+ include/linux/capability.h |  2 +-
+ kernel/capability.c        | 20 ++++++++------------
+ 6 files changed, 27 insertions(+), 26 deletions(-)
+
+diff --git a/fs/attr.c b/fs/attr.c
+index 8dd5825ec708..66fa6251c398 100644
+--- a/fs/attr.c
++++ b/fs/attr.c
+@@ -50,14 +50,14 @@ int inode_change_ok(const struct inode *inode, struct iattr *attr)
+ 	if ((ia_valid & ATTR_UID) &&
+ 	    (!uid_eq(current_fsuid(), inode->i_uid) ||
+ 	     !uid_eq(attr->ia_uid, inode->i_uid)) &&
+-	    !inode_capable(inode, CAP_CHOWN))
++	    !capable_wrt_inode_uidgid(inode, CAP_CHOWN))
+ 		return -EPERM;
+ 
+ 	/* Make sure caller can chgrp. */
+ 	if ((ia_valid & ATTR_GID) &&
+ 	    (!uid_eq(current_fsuid(), inode->i_uid) ||
+ 	    (!in_group_p(attr->ia_gid) && !gid_eq(attr->ia_gid, inode->i_gid))) &&
+-	    !inode_capable(inode, CAP_CHOWN))
++	    !capable_wrt_inode_uidgid(inode, CAP_CHOWN))
+ 		return -EPERM;
+ 
+ 	/* Make sure a caller can chmod. */
+@@ -67,7 +67,7 @@ int inode_change_ok(const struct inode *inode, struct iattr *attr)
+ 		/* Also check the setgid bit! */
+ 		if (!in_group_p((ia_valid & ATTR_GID) ? attr->ia_gid :
+ 				inode->i_gid) &&
+-		    !inode_capable(inode, CAP_FSETID))
++		    !capable_wrt_inode_uidgid(inode, CAP_FSETID))
+ 			attr->ia_mode &= ~S_ISGID;
+ 	}
+ 
+@@ -160,7 +160,7 @@ void setattr_copy(struct inode *inode, const struct iattr *attr)
+ 		umode_t mode = attr->ia_mode;
+ 
+ 		if (!in_group_p(inode->i_gid) &&
+-		    !inode_capable(inode, CAP_FSETID))
++		    !capable_wrt_inode_uidgid(inode, CAP_FSETID))
+ 			mode &= ~S_ISGID;
+ 		inode->i_mode = mode;
+ 	}
+diff --git a/fs/inode.c b/fs/inode.c
+index b33ba8e021cc..1e6e8468f2d8 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -1808,14 +1808,18 @@ EXPORT_SYMBOL(inode_init_owner);
+  * inode_owner_or_capable - check current task permissions to inode
+  * @inode: inode being checked
+  *
+- * Return true if current either has CAP_FOWNER to the inode, or
+- * owns the file.
++ * Return true if current either has CAP_FOWNER in a namespace with the
++ * inode owner uid mapped, or owns the file.
+  */
+ bool inode_owner_or_capable(const struct inode *inode)
+ {
++	struct user_namespace *ns;
++
+ 	if (uid_eq(current_fsuid(), inode->i_uid))
+ 		return true;
+-	if (inode_capable(inode, CAP_FOWNER))
++
++	ns = current_user_ns();
++	if (ns_capable(ns, CAP_FOWNER) && kuid_has_mapping(ns, inode->i_uid))
+ 		return true;
+ 	return false;
+ }
+diff --git a/fs/namei.c b/fs/namei.c
+index 187cacf1c83c..338d08b7eae2 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -321,10 +321,11 @@ int generic_permission(struct inode *inode, int mask)
+ 
+ 	if (S_ISDIR(inode->i_mode)) {
+ 		/* DACs are overridable for directories */
+-		if (inode_capable(inode, CAP_DAC_OVERRIDE))
++		if (capable_wrt_inode_uidgid(inode, CAP_DAC_OVERRIDE))
+ 			return 0;
+ 		if (!(mask & MAY_WRITE))
+-			if (inode_capable(inode, CAP_DAC_READ_SEARCH))
++			if (capable_wrt_inode_uidgid(inode,
++						     CAP_DAC_READ_SEARCH))
+ 				return 0;
+ 		return -EACCES;
+ 	}
+@@ -334,7 +335,7 @@ int generic_permission(struct inode *inode, int mask)
+ 	 * at least one exec bit set.
+ 	 */
+ 	if (!(mask & MAY_EXEC) || (inode->i_mode & S_IXUGO))
+-		if (inode_capable(inode, CAP_DAC_OVERRIDE))
++		if (capable_wrt_inode_uidgid(inode, CAP_DAC_OVERRIDE))
+ 			return 0;
+ 
+ 	/*
+@@ -342,7 +343,7 @@ int generic_permission(struct inode *inode, int mask)
+ 	 */
+ 	mask &= MAY_READ | MAY_WRITE | MAY_EXEC;
+ 	if (mask == MAY_READ)
+-		if (inode_capable(inode, CAP_DAC_READ_SEARCH))
++		if (capable_wrt_inode_uidgid(inode, CAP_DAC_READ_SEARCH))
+ 			return 0;
+ 
+ 	return -EACCES;
+@@ -2404,7 +2405,7 @@ static inline int check_sticky(struct inode *dir, struct inode *inode)
+ 		return 0;
+ 	if (uid_eq(dir->i_uid, fsuid))
+ 		return 0;
+-	return !inode_capable(inode, CAP_FOWNER);
++	return !capable_wrt_inode_uidgid(inode, CAP_FOWNER);
+ }
+ 
+ /*
+diff --git a/fs/xfs/xfs_ioctl.c b/fs/xfs/xfs_ioctl.c
+index 8c8ef246c6b4..52b5375faedc 100644
+--- a/fs/xfs/xfs_ioctl.c
++++ b/fs/xfs/xfs_ioctl.c
+@@ -1133,7 +1133,7 @@ xfs_ioctl_setattr(
+ 		 * cleared upon successful return from chown()
+ 		 */
+ 		if ((ip->i_d.di_mode & (S_ISUID|S_ISGID)) &&
+-		    !inode_capable(VFS_I(ip), CAP_FSETID))
++		    !capable_wrt_inode_uidgid(VFS_I(ip), CAP_FSETID))
+ 			ip->i_d.di_mode &= ~(S_ISUID|S_ISGID);
+ 
+ 		/*
+diff --git a/include/linux/capability.h b/include/linux/capability.h
+index a6ee1f9a5018..84b13ad67c1c 100644
+--- a/include/linux/capability.h
++++ b/include/linux/capability.h
+@@ -210,7 +210,7 @@ extern bool has_ns_capability_noaudit(struct task_struct *t,
+ 				      struct user_namespace *ns, int cap);
+ extern bool capable(int cap);
+ extern bool ns_capable(struct user_namespace *ns, int cap);
+-extern bool inode_capable(const struct inode *inode, int cap);
++extern bool capable_wrt_inode_uidgid(const struct inode *inode, int cap);
+ extern bool file_ns_capable(const struct file *file, struct user_namespace *ns, int cap);
+ 
+ /* audit system wants to get cap info from files as well */
+diff --git a/kernel/capability.c b/kernel/capability.c
+index 4e66bf9275b0..788653b97430 100644
+--- a/kernel/capability.c
++++ b/kernel/capability.c
+@@ -433,23 +433,19 @@ bool capable(int cap)
+ EXPORT_SYMBOL(capable);
+ 
+ /**
+- * inode_capable - Check superior capability over inode
++ * capable_wrt_inode_uidgid - Check nsown_capable and uid and gid mapped
+  * @inode: The inode in question
+  * @cap: The capability in question
+  *
+- * Return true if the current task has the given superior capability
+- * targeted at it's own user namespace and that the given inode is owned
+- * by the current user namespace or a child namespace.
+- *
+- * Currently we check to see if an inode is owned by the current
+- * user namespace by seeing if the inode's owner maps into the
+- * current user namespace.
+- *
++ * Return true if the current task has the given capability targeted at
++ * its own user namespace and that the given inode's uid and gid are
++ * mapped into the current user namespace.
+  */
+-bool inode_capable(const struct inode *inode, int cap)
++bool capable_wrt_inode_uidgid(const struct inode *inode, int cap)
+ {
+ 	struct user_namespace *ns = current_user_ns();
+ 
+-	return ns_capable(ns, cap) && kuid_has_mapping(ns, inode->i_uid);
++	return ns_capable(ns, cap) && kuid_has_mapping(ns, inode->i_uid) &&
++		kgid_has_mapping(ns, inode->i_gid);
+ }
+-EXPORT_SYMBOL(inode_capable);
++EXPORT_SYMBOL(capable_wrt_inode_uidgid);
 -- 
-Michal Hocko
-SUSE Labs
+2.0.0
+
