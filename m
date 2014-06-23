@@ -1,81 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932239AbaFWUZE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 16:25:04 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54768 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754116AbaFWUZB (ORCPT
+	id S932350AbaFWUZX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 16:25:23 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:64121 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932089AbaFWUZU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 16:25:01 -0400
-X-Sasl-enc: x78htByHSKfGSAzBZEi0sij1hXQpncTuM2KxAzlXoF1n 1403555099
-Date: Mon, 23 Jun 2014 16:24:48 -0400
-From: Greg KH <greg@kroah.com>
-To: Johan Hovold <johan@kernel.org>
-Cc: Janne Kanniainen <janne.kanniainen@gmail.com>, jkosina@suse.cz,
-        cooloney@gmail.com, linux-kernel@vger.kernel.org,
-        linux-leds@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH v10] leds: USB: HID: Add support for MSI GT683R led panels
-Message-ID: <20140623202448.GB29035@kroah.com>
-References: <20140623161723.GA20421@kroah.com>
- <1403543808-8228-1-git-send-email-janne.kanniainen@gmail.com>
- <20140623182324.GA30831@kroah.com>
- <20140623182432.GB30831@kroah.com>
- <20140623193134.GA15945@localhost>
- <20140623194059.GA19615@kroah.com>
- <20140623195212.GB15945@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140623195212.GB15945@localhost>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 23 Jun 2014 16:25:20 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: dts: kirkwood: fix phy-connection-type for Guruplug
+Date: Mon, 23 Jun 2014 22:25:15 +0200
+Message-Id: <1403555115-13111-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 23, 2014 at 09:52:12PM +0200, Johan Hovold wrote:
-> On Mon, Jun 23, 2014 at 03:40:59PM -0400, Greg KH wrote:
-> > On Mon, Jun 23, 2014 at 09:31:34PM +0200, Johan Hovold wrote:
-> > > On Mon, Jun 23, 2014 at 02:24:32PM -0400, Greg KH wrote:
-> > > > On Mon, Jun 23, 2014 at 02:23:24PM -0400, Greg KH wrote:
-> > > > > On Mon, Jun 23, 2014 at 08:16:48PM +0300, Janne Kanniainen wrote:
-> > > > > > +	ret = sysfs_create_group(&led->hdev->dev.kobj, &gt683r_attribute_group);
-> > > > > > +	if (ret) {
-> > > > > > +		hid_err(hdev, "failed to create sysfs attributes\n");
-> > > > > > +		goto fail;
-> > > > > > +	}
-> > > > > 
-> > > > > No, you need to set the attribute group _before_ you call
-> > > > > led_classdev_register, as that is where the device will be created in
-> > > > > sysfs.  Surely the other led drivers already do this?  I'm almost afraid
-> > > > > to go look...
-> > > > 
-> > > > Yes, they do it already, set .dev_attr_group and you should be fine.
-> > > 
-> > > But this isn't an attribute of the LEDs but rather of the parent HID
-> > > device that is being probed (the led_mode is common to all three LEDs
-> > > and thus belongs in the parent device, right?).
-> > 
-> > Then that's even worse :(
-> > 
-> > The sysfs attribute should be on the class device here for the LED, you
-> > should not put an attribute on a device you are not the driver for.
-> 
-> But this is the driver for the HID device, which then in turn has three
-> individual LEDs. This particular device isn't really an input device
-> (the actual keyboard in this case appears to be connected over PS2), but
-> there are several HID drivers which are primarily input devices with
-> LEDs as sub-devices (e.g. drivers/hid/hid-lg4ff.c).
+Commit eeb845459a72e792a959278b858f9c417e9995bd
+ ("ARM: dts: kirkwood: set Guruplug phy-connection-type to rgmii-id")
+added phy-connection-type properties to ethernet PHY nodes.
 
-I don't know the specifics here, but as you just created a class device,
-why aren't the attributes on that class device?  Shouldn't that be the
-logical place for it, instead of having them on some "random" other type
-of device?  Userspace will never be notified that the attribute is on
-that device due to the file being created "later", and tools using
-libudev and the like will be looking at the LED class device, not the
-"parent" device for any specific LED stuff.
+Actually, the property has to be set for the ethernet port node instead.
+Fix it by moving the corresponding properties to the correct nodes.
 
-but if this really is the way that all LED devices work, and userspace
-programs are expecting this, that's seems odd.
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+Jason,
 
-greg k-h
+this should go in as a fix for v3.16 where above commit appeared first.
+
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+Cc: Kumar Gala <galak@codeaurora.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: devicetree@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ arch/arm/boot/dts/kirkwood-guruplug-server-plus.dts | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/kirkwood-guruplug-server-plus.dts b/arch/arm/boot/dts/kirkwood-guruplug-server-plus.dts
+index c5a1fc75c7a3..b2d9834bf458 100644
+--- a/arch/arm/boot/dts/kirkwood-guruplug-server-plus.dts
++++ b/arch/arm/boot/dts/kirkwood-guruplug-server-plus.dts
+@@ -105,7 +105,6 @@
+ 		compatible = "ethernet-phy-id0141.0cb0",
+ 		             "ethernet-phy-ieee802.3-c22";
+ 		reg = <0>;
+-		phy-connection-type = "rgmii-id";
+ 	};
+ 
+ 	ethphy1: ethernet-phy@1 {
+@@ -113,7 +112,6 @@
+ 		compatible = "ethernet-phy-id0141.0cb0",
+ 		             "ethernet-phy-ieee802.3-c22";
+ 		reg = <1>;
+-		phy-connection-type = "rgmii-id";
+ 	};
+ };
+ 
+@@ -121,6 +119,7 @@
+ 	status = "okay";
+ 	ethernet0-port@0 {
+ 		phy-handle = <&ethphy0>;
++		phy-connection-type = "rgmii-id";
+ 	};
+ };
+ 
+@@ -128,5 +127,6 @@
+ 	status = "okay";
+ 	ethernet1-port@0 {
+ 		phy-handle = <&ethphy1>;
++		phy-connection-type = "rgmii-id";
+ 	};
+ };
+-- 
+2.0.0
+
