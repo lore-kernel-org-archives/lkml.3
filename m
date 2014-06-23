@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751391AbaFWHtF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 03:49:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39069 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750723AbaFWHtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 03:49:03 -0400
-Date: Mon, 23 Jun 2014 09:49:00 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/4] mm: vmscan: remove remains of kswapd-managed
- zone->all_unreclaimable
-Message-ID: <20140623074900.GB9743@dhcp22.suse.cz>
-References: <1403282030-29915-1-git-send-email-hannes@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403282030-29915-1-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751516AbaFWHvy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 03:51:54 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:60106 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751122AbaFWHvx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 03:51:53 -0400
+X-AuditID: cbfee61b-f79f86d00000144c-ab-53a7dc964115
+From: Robert Baldyga <r.baldyga@samsung.com>
+To: balbi@ti.com
+Cc: paulz@synopsys.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, m.szyprowski@samsung.com,
+        andrzej.p@samsung.com, Robert Baldyga <r.baldyga@samsung.com>
+Subject: [PATCH 00/11] usb: dwc2/gadget: fix series
+Date: Mon, 23 Jun 2014 09:51:19 +0200
+Message-id: <1403509890-14103-1-git-send-email-r.baldyga@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgluLIzCtJLcpLzFFi42I5/e+xoO60O8uDDe5/lrWY9bKdxeLg/XqL
+	5sXr2Swu75rDZrFoWSuzxdojd9kttk+ZzmTx4PBOdgcOj/1z17B79G1ZxeixZf9nRo/jN7Yz
+	eXzeJBfAGsVlk5Kak1mWWqRvl8CV0bNyE0vBb46KrmsuDYxz2LsYOTkkBEwkHiz8wgphi0lc
+	uLeerYuRi0NIYDqjxIz57YwQTjuTxNKTHYwgVWwCOhJbvk8As0UEBCTWv7jEDlLELHCCUaLj
+	/wU2kISwgLHE+eOrWUBsFgFViWUbFoHFeQVcJe6+nccMsU5O4uSxyawTGLkXMDKsYhRNLUgu
+	KE5KzzXSK07MLS7NS9dLzs/dxAgOl2fSOxhXNVgcYhTgYFTi4dVwWx4sxJpYVlyZe4hRgoNZ
+	SYS3sQEoxJuSWFmVWpQfX1Sak1p8iFGag0VJnPdgq3WgkEB6YklqdmpqQWoRTJaJg1OqgXH2
+	dN9tU+3CS3h7XdhuVF76ZHR4ntE9bda7v4K/Ts67nNyZt2+CbsK+Ce2HlmcmL1Xf2Tj92+rV
+	yqF1M/4oqtx7eWjTTH2DAv0FAT69m3v1NbZfVT6lqfauyvWOrjkz66KXf8TP71OcJCoaxe4b
+	rn74lEnBpan/k6/Z/pri/PLW+rJvPZZvPqxQYinOSDTUYi4qTgQANoKgiRMCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 20-06-14 12:33:47, Johannes Weiner wrote:
-> shrink_zones() has a special branch to skip the all_unreclaimable()
-> check during hibernation, because a frozen kswapd can't mark a zone
-> unreclaimable.
-> 
-> But ever since 6e543d5780e3 ("mm: vmscan: fix do_try_to_free_pages()
-> livelock"), determining a zone to be unreclaimable is done by directly
-> looking at its scan history and no longer relies on kswapd setting the
-> per-zone flag.
-> 
-> Remove this branch and let shrink_zones() check the reclaimability of
-> the target zones regardless of hibernation state.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Hello,
 
-This code is really tricky :/
+This patchset contains fixes for dwc2 gadget driver. It touches PHY,
+FIFO configuration, initialization sequence and adds many other small fixes.
 
-But the patch looks good to me.
-Acked-by: Michal Hocko <mhocko@suse.cz>
+Best regards
+Robert Baldyga
+Samsung R&D Institute Poland
 
-> ---
->  mm/vmscan.c | 8 --------
->  1 file changed, 8 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 0f16ffe8eb67..19b5b8016209 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2534,14 +2534,6 @@ out:
->  	if (sc->nr_reclaimed)
->  		return sc->nr_reclaimed;
->  
-> -	/*
-> -	 * As hibernation is going on, kswapd is freezed so that it can't mark
-> -	 * the zone into all_unreclaimable. Thus bypassing all_unreclaimable
-> -	 * check.
-> -	 */
-> -	if (oom_killer_disabled)
-> -		return 0;
-> -
->  	/* Aborted reclaim to try compaction? don't OOM, then */
->  	if (aborted_reclaim)
->  		return 1;
-> -- 
-> 2.0.0
-> 
+Andrzej Pietrasiewicz (1):
+  usb: dwc2/gadget: Fix comment text
+
+Kamil Debski (3):
+  usb: dwc2/gadget: fix phy disable sequence
+  usb: dwc2/gadget: fix phy initialization sequence
+  usb: dwc2/gadget: move phy bus legth initialization
+
+Marek Szyprowski (5):
+  usb: dwc2/gadget: hide some not really needed debug messages
+  usb: dwc2/gadget: ensure that all fifos have correct memory buffers
+  usb: dwc2/gadget: break infinite loop in endpoint disable code
+  usb: dwc2/gadget: do not call disconnect method in pullup
+  usb: dwc2/gadget: delay enabling irq once hardware is configured
+    properly
+
+Robert Baldyga (2):
+  usb: dwc2/gadget: assign TX FIFO dynamically
+  usb: dwc2/gadget: disable clock when it's not needed
+
+ drivers/usb/dwc2/core.h   |   2 +
+ drivers/usb/dwc2/gadget.c | 150 ++++++++++++++++++++++++++++------------------
+ 2 files changed, 93 insertions(+), 59 deletions(-)
 
 -- 
-Michal Hocko
-SUSE Labs
+1.9.1
+
