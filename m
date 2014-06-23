@@ -1,78 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754020AbaFWVxY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 17:53:24 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:60877 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753721AbaFWVxW (ORCPT
+	id S1753623AbaFWVw6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 17:52:58 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:62880 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752352AbaFWVw4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 17:53:22 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18sRu6Gj5I6ojCnEGOpE/JT/tNo4qe3GLo=
-X-DKIM: OpenDKIM Filter v2.0.1 titan D82A5597BFD
-Date: Mon, 23 Jun 2014 17:53:09 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        sergei.shtylyov@cogentembedded.com,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org,
+	Mon, 23 Jun 2014 17:52:56 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Ben Hutchings <ben@decadent.org.uk>, Peter Wu <peter@lekensteyn.nl>,
+        Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: mvebu: Fix the improper use of the compatible
- string armada38x using a wildcard
-Message-ID: <20140623215309.GD10202@titan.lakedaemon.net>
-References: <1403533011-21339-1-git-send-email-gregory.clement@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403533011-21339-1-git-send-email-gregory.clement@free-electrons.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Subject: [PATCHv3 2/6] rtlwifi/rtl8192c[eu]: Fix media status register mask
+Date: Mon, 23 Jun 2014 23:53:55 +0200
+Message-Id: <1403560436-7662-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 23, 2014 at 04:16:51PM +0200, Gregory CLEMENT wrote:
-> Wildcards in compatible strings should be avoid. "marvell,armada38x"
-> was recently introduced but was not yet used.
-> 
-> The armada 385 SoC is a superset of the armada 380 SoC (with more CPUs
-> and more PCIe slots). So this patch replaces the use of
-> "marvell,armada38x" by the "marvell,armada380" string.
-> 
-> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-> ---
-> Hi,
-> 
-> This fix should be merged in 3.16 and maybe sent as a fix for 3.15
-> too.
-> 
-> The initial patch (ARM: mvebu: Fix missing binding documentation for
-> Armada 38x) was re-written after the review about the use of the
-> wildcards here:
-> http://thread.gmane.org/gmane.linux.kernel/1728755/focus=79339 and
-> there:
-> http://thread.gmane.org/gmane.linux.ports.arm.kernel/334225/focus=334311
-> 
-> 
-> Thanks,
-> Gregory
-> 
->  Documentation/devicetree/bindings/arm/armada-38x.txt | 14 ++++++++++++--
->  arch/arm/boot/dts/armada-380.dtsi                    |  2 +-
->  arch/arm/boot/dts/armada-385-db.dts                  |  2 +-
->  arch/arm/boot/dts/armada-385-rd.dts                  |  2 +-
->  arch/arm/boot/dts/armada-385.dtsi                    |  2 +-
->  arch/arm/boot/dts/armada-38x.dtsi                    |  2 +-
->  6 files changed, 17 insertions(+), 7 deletions(-)
+bt_msr & 0xfc will never match 0x3. Fix this by using a mask that actually matches the available types.
 
-Applied to mvebu/dt with Andrew's Ack.
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Reviewed-by: Peter Wu <peter@lekensteyn.nl>
+---
+ drivers/net/wireless/rtlwifi/rtl8192ce/hw.c  |    2 +-
+ drivers/net/wireless/rtlwifi/rtl8192ce/reg.h |    1 +
+ drivers/net/wireless/rtlwifi/rtl8192cu/hw.c  |    2 +-
+ 3 files changed, 3 insertions(+), 2 deletions(-)
 
-thx,
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c b/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
+index 55adf04..5050938 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
+@@ -1206,7 +1206,7 @@ static int _rtl92ce_set_media_status(struct ieee80211_hw *hw,
+ 
+ 	rtl_write_byte(rtlpriv, (MSR), bt_msr);
+ 	rtlpriv->cfg->ops->led_control(hw, ledaction);
+-	if ((bt_msr & 0xfc) == MSR_AP)
++	if ((bt_msr & MSR_MASK) == MSR_AP)
+ 		rtl_write_byte(rtlpriv, REG_BCNTCFG + 1, 0x00);
+ 	else
+ 		rtl_write_byte(rtlpriv, REG_BCNTCFG + 1, 0x66);
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192ce/reg.h b/drivers/net/wireless/rtlwifi/rtl8192ce/reg.h
+index ed703a1..dc8460c 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192ce/reg.h
++++ b/drivers/net/wireless/rtlwifi/rtl8192ce/reg.h
+@@ -375,6 +375,7 @@
+ #define	MSR_ADHOC				0x01
+ #define	MSR_INFRA				0x02
+ #define	MSR_AP					0x03
++#define	MSR_MASK				0x03
+ 
+ #define	RRSR_RSC_OFFSET				21
+ #define	RRSR_SHORT_OFFSET			23
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c b/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
+index 07cb06d..87c0a27 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
+@@ -1360,7 +1360,7 @@ static int _rtl92cu_set_media_status(struct ieee80211_hw *hw,
+ 	}
+ 	rtl_write_byte(rtlpriv, (MSR), bt_msr);
+ 	rtlpriv->cfg->ops->led_control(hw, ledaction);
+-	if ((bt_msr & 0xfc) == MSR_AP)
++	if ((bt_msr & MSR_MASK) == MSR_AP)
+ 		rtl_write_byte(rtlpriv, REG_BCNTCFG + 1, 0x00);
+ 	else
+ 		rtl_write_byte(rtlpriv, REG_BCNTCFG + 1, 0x66);
+-- 
+1.7.10.4
 
-Jason.
