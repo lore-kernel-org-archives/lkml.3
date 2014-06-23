@@ -1,149 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752740AbaFWHye (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 03:54:34 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:59899 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752653AbaFWHya (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 03:54:30 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-dc-53a7dd34d48e
-From: Robert Baldyga <r.baldyga@samsung.com>
-To: balbi@ti.com
-Cc: paulz@synopsys.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, m.szyprowski@samsung.com,
-        andrzej.p@samsung.com, Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH 10/11] usb: dwc2/gadget: assign TX FIFO dynamically
-Date: Mon, 23 Jun 2014 09:51:29 +0200
-Message-id: <1403509890-14103-11-git-send-email-r.baldyga@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1403509890-14103-1-git-send-email-r.baldyga@samsung.com>
-References: <1403509890-14103-1-git-send-email-r.baldyga@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOLMWRmVeSWpSXmKPExsVy+t9jQV3Tu8uDDQ4zWsx62c5icfB+vUXz
-	4vVsFpd3zWGzWLSsldli7ZG77Bbbp0xnsnhweCe7A4fH/rlr2D36tqxi9Niy/zOjx/Eb25k8
-	Pm+SC2CN4rJJSc3JLEst0rdL4MqYdmUVc8EKqYotyy6zNjC2iXQxcnJICJhInH5+jxXCFpO4
-	cG89WxcjF4eQwHRGiYcXbzKBJIQE2pkkJt9zALHZBHQktnyfwAhiiwgISKx/cYkdpIFZ4ASj
-	RMf/C2wgCWEBZ4nPs66xg9gsAqoSs/5eARvEK+Am0bhuJgvENjmJk8cmg23mBIqvv7mQHWKZ
-	q8Si09PYJzDyLmBkWMUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kRHFzPpHYwrmywOMQowMGo
-	xMOr4bY8WIg1say4MvcQowQHs5IIb2MDUIg3JbGyKrUoP76oNCe1+BCjNAeLkjjvgVbrQCGB
-	9MSS1OzU1ILUIpgsEwenVAMjt/fjrOql+x45uB7atX3WwaftYRenL9vN2T+ps+7D/0xPpg3f
-	yk4EHr1+VeNs1Heh1TIfMvb27X/7R2TtdMulIifme89yEp2W69vFPIOlQbA8h/X9y8cbj3xr
-	/NipJXc5eqf3wnCG20KPFD6/+/TGTFHaP8aRjyeie+ux1ns5uRJh+1QOMC62UGIpzkg01GIu
-	Kk4EAGL+3A8qAgAA
+	id S1752779AbaFWHyt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 03:54:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61393 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752636AbaFWHys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 03:54:48 -0400
+From: Jiri Olsa <jolsa@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Simon Que <sque@chromium.org>,
+        Jiri Olsa <jolsa@kernel.org>
+Subject: [PATCH 2/2] perf symbols: Get kernel start address by symbol name
+Date: Mon, 23 Jun 2014 09:54:36 +0200
+Message-Id: <1403510076-3917-3-git-send-email-jolsa@kernel.org>
+In-Reply-To: <1403510076-3917-1-git-send-email-jolsa@kernel.org>
+References: <1403510076-3917-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because we have not enough memory to have each TX FIFO of size at least 3072
-bytes (the maximum single packet size), we create four FIFOs of lenght 1024,
-and four of length 3072 bytes, and assing them to endpoints dynamically
-according to maxpacket size value of given endpoint.
+From: Simon Que <sque@chromium.org>
 
-Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+The function machine__get_kernel_start_addr() was taking the first symbol
+of kallsyms as the start address. This is incorrect in certain cases
+where the first symbol is something at 0, while the actual kernel
+functions begin at a later point (e.g. 0x80200000).
+
+This patch fixes machine__get_kernel_start_addr() to search for the
+symbol "_text" or "_stext", which marks the beginning of kernel mapping.
+This was already being done in machine__create_kernel_maps(). Thus, this
+patch is just a refactor, to move that code into
+machine__get_kernel_start_addr().
+
+Signed-off-by: Simon Que <sque@chromium.org>
+Link: http://lkml.kernel.org/r/1402943529-13244-1-git-send-email-sque@chromium.org
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- drivers/usb/dwc2/core.h   |  1 +
- drivers/usb/dwc2/gadget.c | 48 +++++++++++++++++++++++++++++++++--------------
- 2 files changed, 35 insertions(+), 14 deletions(-)
+ tools/perf/util/machine.c | 54 +++++++++++++++++++----------------------------
+ 1 file changed, 22 insertions(+), 32 deletions(-)
 
-diff --git a/drivers/usb/dwc2/core.h b/drivers/usb/dwc2/core.h
-index 067390e..23f7e86 100644
---- a/drivers/usb/dwc2/core.h
-+++ b/drivers/usb/dwc2/core.h
-@@ -197,6 +197,7 @@ struct s3c_hsotg {
- 	int			fifo_mem;
- 	unsigned int            dedicated_fifos:1;
- 	unsigned char           num_of_eps;
-+	u32			fifo_map;
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 0e5fea9..c73e1fc 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -496,18 +496,6 @@ struct process_args {
+ 	u64 start;
+ };
  
- 	struct dentry           *debug_root;
- 	struct dentry           *debug_file;
-diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
-index 3435711..2a7c014 100644
---- a/drivers/usb/dwc2/gadget.c
-+++ b/drivers/usb/dwc2/gadget.c
-@@ -184,14 +184,26 @@ static void s3c_hsotg_init_fifo(struct s3c_hsotg *hsotg)
- 
- 	/* start at the end of the GNPTXFSIZ, rounded up */
- 	addr = 2048 + 1024;
--	size = 768;
- 
- 	/*
- 	 * currently we allocate TX FIFOs for all possible endpoints,
- 	 * and assume that they are all the same size.
- 	 */
- 
--	for (ep = 1; ep <= 15; ep++) {
-+	/* 256*4=1024 bytes FIFO length */
-+	size = 256;
-+	for (ep = 1; ep <= 4; ep++) {
-+		val = addr;
-+		val |= size << FIFOSIZE_DEPTH_SHIFT;
-+		WARN_ONCE(addr + size > hsotg->fifo_mem,
-+			  "insufficient fifo memory");
-+		addr += size;
-+
-+		writel(val, hsotg->regs + DPTXFSIZN(ep));
-+	}
-+	/* 768*4=3072 bytes FIFO length */
-+	size = 768;
-+	for (ep = 5; ep <= 8; ep++) {
- 		val = addr;
- 		val |= size << FIFOSIZE_DEPTH_SHIFT;
- 		WARN_ONCE(addr + size > hsotg->fifo_mem,
-@@ -2440,6 +2452,7 @@ static int s3c_hsotg_ep_enable(struct usb_ep *ep,
- 	u32 epctrl;
- 	u32 mps;
- 	int dir_in;
-+	int i, val, size;
- 	int ret = 0;
- 
- 	dev_dbg(hsotg->dev,
-@@ -2512,17 +2525,8 @@ static int s3c_hsotg_ep_enable(struct usb_ep *ep,
- 		break;
- 
- 	case USB_ENDPOINT_XFER_INT:
--		if (dir_in) {
--			/*
--			 * Allocate our TxFNum by simply using the index
--			 * of the endpoint for the moment. We could do
--			 * something better if the host indicates how
--			 * many FIFOs we are expecting to use.
--			 */
+-static int symbol__in_kernel(void *arg, const char *name,
+-			     char type __maybe_unused, u64 start)
+-{
+-	struct process_args *args = arg;
 -
-+		if (dir_in)
- 			hs_ep->periodic = 1;
--			epctrl |= DXEPCTL_TXFNUM(index);
--		}
+-	if (strchr(name, '['))
+-		return 0;
+-
+-	args->start = start;
+-	return 1;
+-}
+-
+ static void machine__get_kallsyms_filename(struct machine *machine, char *buf,
+ 					   size_t bufsz)
+ {
+@@ -517,27 +505,41 @@ static void machine__get_kallsyms_filename(struct machine *machine, char *buf,
+ 		scnprintf(buf, bufsz, "%s/proc/kallsyms", machine->root_dir);
+ }
  
- 		epctrl |= DXEPCTL_EPTYPE_INTERRUPT;
- 		break;
-@@ -2536,8 +2540,24 @@ static int s3c_hsotg_ep_enable(struct usb_ep *ep,
- 	 * if the hardware has dedicated fifos, we must give each IN EP
- 	 * a unique tx-fifo even if it is non-periodic.
- 	 */
--	if (dir_in && hsotg->dedicated_fifos)
--		epctrl |= DXEPCTL_TXFNUM(index);
-+	if (dir_in && hsotg->dedicated_fifos) {
-+		size = hs_ep->ep.maxpacket*hs_ep->mc;
-+		for (i = 1; i < 8; ++i) {
-+			if (hsotg->fifo_map & (1<<i))
-+				continue;
-+			val = readl(hsotg->regs + DPTXFSIZN(i));
-+			val = (val >> FIFOSIZE_DEPTH_SHIFT)*4;
-+			if (val < size)
-+				continue;
-+			hsotg->fifo_map |= 1<<i;
+-/* Figure out the start address of kernel map from /proc/kallsyms */
+-static u64 machine__get_kernel_start_addr(struct machine *machine)
++const char *ref_reloc_sym_names[] = {"_text", "_stext", NULL};
++
++/* Figure out the start address of kernel map from /proc/kallsyms.
++ * Returns the name of the start symbol in *symbol_name. Pass in NULL as
++ * symbol_name if it's not that important.
++ */
++static u64 machine__get_kernel_start_addr(struct machine *machine,
++					  const char **symbol_name)
+ {
+ 	char filename[PATH_MAX];
+-	struct process_args args;
++	int i;
++	const char *name;
++	u64 addr = 0;
+ 
+ 	machine__get_kallsyms_filename(machine, filename, PATH_MAX);
+ 
+ 	if (symbol__restricted_filename(filename, "/proc/kallsyms"))
+ 		return 0;
+ 
+-	if (kallsyms__parse(filename, &args, symbol__in_kernel) <= 0)
+-		return 0;
++	for (i = 0; (name = ref_reloc_sym_names[i]) != NULL; i++) {
++		addr = kallsyms__get_function_start(filename, name);
++		if (addr)
 +			break;
-+		}
-+
-+		if (i == 8)
-+			return -ENOMEM;
-+
-+		epctrl |= DXEPCTL_TXFNUM(i);
 +	}
++
++	if (symbol_name)
++		*symbol_name = name;
  
- 	/* for non control endpoints, set PID to D0 */
- 	if (index)
+-	return args.start;
++	return addr;
+ }
+ 
+ int __machine__create_kernel_maps(struct machine *machine, struct dso *kernel)
+ {
+ 	enum map_type type;
+-	u64 start = machine__get_kernel_start_addr(machine);
++	u64 start = machine__get_kernel_start_addr(machine, NULL);
+ 
+ 	for (type = 0; type < MAP__NR_TYPES; ++type) {
+ 		struct kmap *kmap;
+@@ -852,23 +854,11 @@ static int machine__create_modules(struct machine *machine)
+ 	return 0;
+ }
+ 
+-const char *ref_reloc_sym_names[] = {"_text", "_stext", NULL};
+-
+ int machine__create_kernel_maps(struct machine *machine)
+ {
+ 	struct dso *kernel = machine__get_kernel(machine);
+-	char filename[PATH_MAX];
+ 	const char *name;
+-	u64 addr = 0;
+-	int i;
+-
+-	machine__get_kallsyms_filename(machine, filename, PATH_MAX);
+-
+-	for (i = 0; (name = ref_reloc_sym_names[i]) != NULL; i++) {
+-		addr = kallsyms__get_function_start(filename, name);
+-		if (addr)
+-			break;
+-	}
++	u64 addr = machine__get_kernel_start_addr(machine, &name);
+ 	if (!addr)
+ 		return -1;
+ 
 -- 
-1.9.1
+1.8.3.1
 
