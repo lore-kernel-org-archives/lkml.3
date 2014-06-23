@@ -1,184 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752931AbaFWIfu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 04:35:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39848 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751407AbaFWIfs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 04:35:48 -0400
-Date: Mon, 23 Jun 2014 10:35:44 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 3/4] mm: vmscan: remove all_unreclaimable()
-Message-ID: <20140623083544.GC9743@dhcp22.suse.cz>
-References: <1403282030-29915-1-git-send-email-hannes@cmpxchg.org>
- <1403282030-29915-3-git-send-email-hannes@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403282030-29915-3-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753326AbaFWIgS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 04:36:18 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55621 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752685AbaFWIca (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 04:32:30 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Tejun Heo <tj@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 038/111] libata: Blacklist queued trim for Crucial M500
+Date: Mon, 23 Jun 2014 10:31:13 +0200
+Message-Id: <dc99f5d68db77e0536074c394c71dd89d96899d1.1403512281.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
+References: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
+In-Reply-To: <cover.1403512280.git.jslaby@suse.cz>
+References: <cover.1403512280.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 20-06-14 12:33:49, Johannes Weiner wrote:
-> Direct reclaim currently calls shrink_zones() to reclaim all members
-> of a zonelist, and if that wasn't successful it does another pass
-> through the same zonelist to check overall reclaimability.
-> 
-> Just check reclaimability in shrink_zones() directly and propagate the
-> result through the return value.  Then remove all_unreclaimable().
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
 
-Heh, I was really looking for the return value and abuse it for the
-memcg low/min reclaim purposes. I will find a way...
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+===============
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+commit 3b8d2676d15d6b2326757adb66b70a9cd6650373 upstream.
 
-> ---
->  mm/vmscan.c | 48 +++++++++++++++++++++++-------------------------
->  1 file changed, 23 insertions(+), 25 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index ed1efb84c542..d0bc1a209746 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2244,9 +2244,10 @@ static inline bool should_continue_reclaim(struct zone *zone,
->  	}
->  }
->  
-> -static void shrink_zone(struct zone *zone, struct scan_control *sc)
-> +static unsigned long shrink_zone(struct zone *zone, struct scan_control *sc)
->  {
->  	unsigned long nr_reclaimed, nr_scanned;
-> +	unsigned long zone_reclaimed = 0;
->  
->  	do {
->  		struct mem_cgroup *root = sc->target_mem_cgroup;
-> @@ -2290,8 +2291,12 @@ static void shrink_zone(struct zone *zone, struct scan_control *sc)
->  			   sc->nr_scanned - nr_scanned,
->  			   sc->nr_reclaimed - nr_reclaimed);
->  
-> +		zone_reclaimed += sc->nr_reclaimed - nr_reclaimed;
-> +
->  	} while (should_continue_reclaim(zone, sc->nr_reclaimed - nr_reclaimed,
->  					 sc->nr_scanned - nr_scanned, sc));
-> +
-> +	return zone_reclaimed;
->  }
->  
->  /* Returns true if compaction should go ahead for a high-order request */
-> @@ -2340,8 +2345,10 @@ static inline bool compaction_ready(struct zone *zone, int order)
->   *
->   * If a zone is deemed to be full of pinned pages then just give it a light
->   * scan then give up on it.
-> + *
-> + * Returns whether the zones overall are reclaimable or not.
->   */
-> -static void shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
-> +static bool shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
->  {
->  	struct zoneref *z;
->  	struct zone *zone;
-> @@ -2354,6 +2361,7 @@ static void shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
->  		.gfp_mask = sc->gfp_mask,
->  	};
->  	enum zone_type requested_highidx = gfp_zone(sc->gfp_mask);
-> +	bool all_unreclaimable = true;
->  
->  	/*
->  	 * If the number of buffer_heads in the machine exceeds the maximum
-> @@ -2368,6 +2376,8 @@ static void shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
->  
->  	for_each_zone_zonelist_nodemask(zone, z, zonelist,
->  					gfp_zone(sc->gfp_mask), sc->nodemask) {
-> +		unsigned long zone_reclaimed = 0;
-> +
->  		if (!populated_zone(zone))
->  			continue;
->  		/*
-> @@ -2414,10 +2424,15 @@ static void shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
->  						&nr_soft_scanned);
->  			sc->nr_reclaimed += nr_soft_reclaimed;
->  			sc->nr_scanned += nr_soft_scanned;
-> +			zone_reclaimed += nr_soft_reclaimed;
->  			/* need some check for avoid more shrink_zone() */
->  		}
->  
-> -		shrink_zone(zone, sc);
-> +		zone_reclaimed += shrink_zone(zone, sc);
-> +
-> +		if (zone_reclaimed ||
-> +		    (global_reclaim(sc) && zone_reclaimable(zone)))
-> +			all_unreclaimable = false;
->  	}
->  
->  	/*
-> @@ -2439,26 +2454,8 @@ static void shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
->  	 * promoted it to __GFP_HIGHMEM.
->  	 */
->  	sc->gfp_mask = orig_mask;
-> -}
->  
-> -/* All zones in zonelist are unreclaimable? */
-> -static bool all_unreclaimable(struct zonelist *zonelist,
-> -		struct scan_control *sc)
-> -{
-> -	struct zoneref *z;
-> -	struct zone *zone;
-> -
-> -	for_each_zone_zonelist_nodemask(zone, z, zonelist,
-> -			gfp_zone(sc->gfp_mask), sc->nodemask) {
-> -		if (!populated_zone(zone))
-> -			continue;
-> -		if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
-> -			continue;
-> -		if (zone_reclaimable(zone))
-> -			return false;
-> -	}
-> -
-> -	return true;
-> +	return !all_unreclaimable;
->  }
->  
->  /*
-> @@ -2482,6 +2479,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
->  {
->  	unsigned long total_scanned = 0;
->  	unsigned long writeback_threshold;
-> +	bool zones_reclaimable;
->  
->  	delayacct_freepages_start();
->  
-> @@ -2492,7 +2490,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
->  		vmpressure_prio(sc->gfp_mask, sc->target_mem_cgroup,
->  				sc->priority);
->  		sc->nr_scanned = 0;
-> -		shrink_zones(zonelist, sc);
-> +		zones_reclaimable = shrink_zones(zonelist, sc);
->  
->  		total_scanned += sc->nr_scanned;
->  		if (sc->nr_reclaimed >= sc->nr_to_reclaim)
-> @@ -2533,8 +2531,8 @@ out:
->  	if (sc->compaction_ready)
->  		return 1;
->  
-> -	/* top priority shrink_zones still had more to do? don't OOM, then */
-> -	if (global_reclaim(sc) && !all_unreclaimable(zonelist, sc))
-> +	/* Any of the zones still reclaimable?  Don't OOM. */
-> +	if (zones_reclaimable)
->  		return 1;
->  
->  	return 0;
-> -- 
-> 2.0.0
-> 
+Queued trim only works for some users with MU05 firmware.  Revert to
+blacklisting all firmware versions.
 
+Introduced by commit d121f7d0cbb8 ("libata: Update queued trim blacklist
+for M5x0 drives") which this effectively reverts, while retaining the
+blacklisting of M550.
+
+See
+
+    https://bugzilla.kernel.org/show_bug.cgi?id=71371
+
+for reports of trouble with MU05 firmware.
+
+Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Tejun Heo <tj@kernel.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/ata/libata-core.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+index d7f00adbc374..d2eb9df3da3d 100644
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -4224,10 +4224,10 @@ static const struct ata_blacklist_entry ata_device_blacklist [] = {
+ 	{ "PIONEER DVD-RW  DVR-216D",	NULL,	ATA_HORKAGE_NOSETXFER },
+ 
+ 	/* devices that don't properly handle queued TRIM commands */
+-	{ "Micron_M500*",		"MU0[1-4]*",	ATA_HORKAGE_NO_NCQ_TRIM, },
+-	{ "Crucial_CT???M500SSD*",	"MU0[1-4]*",	ATA_HORKAGE_NO_NCQ_TRIM, },
+-	{ "Micron_M550*",		NULL,		ATA_HORKAGE_NO_NCQ_TRIM, },
+-	{ "Crucial_CT???M550SSD*",	NULL,		ATA_HORKAGE_NO_NCQ_TRIM, },
++	{ "Micron_M500*",		NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
++	{ "Crucial_CT???M500SSD*",	NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
++	{ "Micron_M550*",		NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
++	{ "Crucial_CT???M550SSD*",	NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
+ 
+ 	/*
+ 	 * Some WD SATA-I drives spin up and down erratically when the link
 -- 
-Michal Hocko
-SUSE Labs
+2.0.0
+
