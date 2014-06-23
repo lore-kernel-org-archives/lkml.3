@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754028AbaFWNDr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:03:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36734 "EHLO
+	id S1754007AbaFWNDq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:03:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36736 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753893AbaFWNDn (ORCPT
+	with ESMTP id S1753981AbaFWNDo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:03:43 -0400
+	Mon, 23 Jun 2014 09:03:44 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stephane Grosjean <s.grosjean@peak-system.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
+Cc: =?UTF-8?q?J=C3=A9r=C3=B4me=20Glisse?= <jglisse@redhat.com>,
+        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 16/93] can: peak_pci: prevent use after free at netdev removal
-Date: Mon, 23 Jun 2014 14:01:55 +0100
-Message-Id: <1403528592-2163-17-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 15/93] drm/radeon: avoid segfault on device open when accel is not working.
+Date: Mon, 23 Jun 2014 14:01:54 +0100
+Message-Id: <1403528592-2163-16-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
 References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,71 +31,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephane Grosjean <s.grosjean@peak-system.com>
+From: =?UTF-8?q?J=C3=A9r=C3=B4me=20Glisse?= <jglisse@redhat.com>
 
-commit 0b5a958cf4df3a5cd578b861471e62138f55c85e upstream.
+commit 24f47acc78b0ab5e2201f859fe1f693ae90c7c83 upstream.
 
-As remarked by Christopher R. Baker in his post at
+When accel is not working on device with virtual address space radeon
+segfault because the ib buffer is NULL and trying to map it inside the
+virtual address space trigger segfault. This patch only map the ib
+buffer if accel is working.
 
-http://marc.info/?l=linux-can&m=139707295706465&w=2
-
-there's a possibility for an use after free condition at device removal.
-
-This simplified patch introduces an additional variable to prevent the issue.
-Thanks for catching this.
-
-Reported-by: Christopher R. Baker <cbaker@rec.ri.cmu.edu>
-Signed-off-by: Stephane Grosjean <s.grosjean@peak-system.com>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Jérôme Glisse <jglisse@redhat.com>
+Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Christian König <christian.koenig@amd.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/can/sja1000/peak_pci.c | 14 +++++++++-----
- 1 file changed, 9 insertions(+), 5 deletions(-)
+ drivers/gpu/drm/radeon/radeon_kms.c | 57 +++++++++++++++++++------------------
+ 1 file changed, 30 insertions(+), 27 deletions(-)
 
-diff --git a/drivers/net/can/sja1000/peak_pci.c b/drivers/net/can/sja1000/peak_pci.c
-index 6b6f0ad75090..7042f5faddd7 100644
---- a/drivers/net/can/sja1000/peak_pci.c
-+++ b/drivers/net/can/sja1000/peak_pci.c
-@@ -551,7 +551,7 @@ static int peak_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
- {
- 	struct sja1000_priv *priv;
- 	struct peak_pci_chan *chan;
--	struct net_device *dev;
-+	struct net_device *dev, *prev_dev;
- 	void __iomem *cfg_base, *reg_base;
- 	u16 sub_sys_id, icr;
- 	int i, err, channels;
-@@ -687,11 +687,13 @@ failure_remove_channels:
- 	writew(0x0, cfg_base + PITA_ICR + 2);
+diff --git a/drivers/gpu/drm/radeon/radeon_kms.c b/drivers/gpu/drm/radeon/radeon_kms.c
+index 82b87108457c..a6fb24a773e8 100644
+--- a/drivers/gpu/drm/radeon/radeon_kms.c
++++ b/drivers/gpu/drm/radeon/radeon_kms.c
+@@ -504,28 +504,29 @@ int radeon_driver_open_kms(struct drm_device *dev, struct drm_file *file_priv)
  
- 	chan = NULL;
--	for (dev = pci_get_drvdata(pdev); dev; dev = chan->prev_dev) {
--		unregister_sja1000dev(dev);
--		free_sja1000dev(dev);
-+	for (dev = pci_get_drvdata(pdev); dev; dev = prev_dev) {
- 		priv = netdev_priv(dev);
- 		chan = priv->priv;
-+		prev_dev = chan->prev_dev;
-+
-+		unregister_sja1000dev(dev);
-+		free_sja1000dev(dev);
+ 		radeon_vm_init(rdev, &fpriv->vm);
+ 
+-		r = radeon_bo_reserve(rdev->ring_tmp_bo.bo, false);
+-		if (r) {
+-			radeon_vm_fini(rdev, &fpriv->vm);
+-			kfree(fpriv);
+-			return r;
+-		}
++		if (rdev->accel_working) {
++			r = radeon_bo_reserve(rdev->ring_tmp_bo.bo, false);
++			if (r) {
++				radeon_vm_fini(rdev, &fpriv->vm);
++				kfree(fpriv);
++				return r;
++			}
+ 
+-		/* map the ib pool buffer read only into
+-		 * virtual address space */
+-		bo_va = radeon_vm_bo_add(rdev, &fpriv->vm,
+-					 rdev->ring_tmp_bo.bo);
+-		r = radeon_vm_bo_set_addr(rdev, bo_va, RADEON_VA_IB_OFFSET,
+-					  RADEON_VM_PAGE_READABLE |
+-					  RADEON_VM_PAGE_SNOOPED);
+-
+-		radeon_bo_unreserve(rdev->ring_tmp_bo.bo);
+-		if (r) {
+-			radeon_vm_fini(rdev, &fpriv->vm);
+-			kfree(fpriv);
+-			return r;
+-		}
++			/* map the ib pool buffer read only into
++			 * virtual address space */
++			bo_va = radeon_vm_bo_add(rdev, &fpriv->vm,
++						 rdev->ring_tmp_bo.bo);
++			r = radeon_vm_bo_set_addr(rdev, bo_va, RADEON_VA_IB_OFFSET,
++						  RADEON_VM_PAGE_READABLE |
++						  RADEON_VM_PAGE_SNOOPED);
+ 
++			radeon_bo_unreserve(rdev->ring_tmp_bo.bo);
++			if (r) {
++				radeon_vm_fini(rdev, &fpriv->vm);
++				kfree(fpriv);
++				return r;
++			}
++		}
+ 		file_priv->driver_priv = fpriv;
  	}
+ 	return 0;
+@@ -550,13 +551,15 @@ void radeon_driver_postclose_kms(struct drm_device *dev,
+ 		struct radeon_bo_va *bo_va;
+ 		int r;
  
- 	/* free any PCIeC resources too */
-@@ -725,10 +727,12 @@ static void peak_pci_remove(struct pci_dev *pdev)
+-		r = radeon_bo_reserve(rdev->ring_tmp_bo.bo, false);
+-		if (!r) {
+-			bo_va = radeon_vm_bo_find(&fpriv->vm,
+-						  rdev->ring_tmp_bo.bo);
+-			if (bo_va)
+-				radeon_vm_bo_rmv(rdev, bo_va);
+-			radeon_bo_unreserve(rdev->ring_tmp_bo.bo);
++		if (rdev->accel_working) {
++			r = radeon_bo_reserve(rdev->ring_tmp_bo.bo, false);
++			if (!r) {
++				bo_va = radeon_vm_bo_find(&fpriv->vm,
++							  rdev->ring_tmp_bo.bo);
++				if (bo_va)
++					radeon_vm_bo_rmv(rdev, bo_va);
++				radeon_bo_unreserve(rdev->ring_tmp_bo.bo);
++			}
+ 		}
  
- 	/* Loop over all registered devices */
- 	while (1) {
-+		struct net_device *prev_dev = chan->prev_dev;
-+
- 		dev_info(&pdev->dev, "removing device %s\n", dev->name);
- 		unregister_sja1000dev(dev);
- 		free_sja1000dev(dev);
--		dev = chan->prev_dev;
-+		dev = prev_dev;
- 
- 		if (!dev) {
- 			/* do that only for first channel */
+ 		radeon_vm_fini(rdev, &fpriv->vm);
 -- 
 1.9.1
 
