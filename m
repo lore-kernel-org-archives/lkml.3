@@ -1,24 +1,27 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932202AbaFULzg (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Sat, 21 Jun 2014 07:55:36 -0400
-Received: from mail-in-16.arcor-online.net ([151.189.21.56]:51809 "EHLO
-	mail-in-16.arcor-online.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752476AbaFULzf (ORCPT
+	id S1756676AbaFWRoM (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Mon, 23 Jun 2014 13:44:12 -0400
+Received: from mail-qa0-f66.google.com ([209.85.216.66]:44841 "EHLO
+	mail-qa0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754824AbaFWRoL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 07:55:35 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-01.arcor-online.net 257725A63E
-Date: Sat, 21 Jun 2014 13:55:32 +0200 (CEST)
-From: jabusch@arcor.de
-To: wilsff1969@hotmail.com
-Message-ID: <1402478710.262122.1403351732120.JavaMail.ngmail@webmail24.arcor-online.net>
-Subject: wonga fast loans dear valued customer find the attached file
+	Mon, 23 Jun 2014 13:44:11 -0400
 MIME-Version: 1.0
+Reply-To: akifa-rahim@hotmail.com
+Date: Mon, 23 Jun 2014 17:44:10 +0000
+X-Google-Sender-Auth: xXZ0ZiEn4y-PCQSeqNB5q5ZzJfY
+Message-ID: <CADR9DTvEmCm33WhAYgzssdBZ=OKpSUP235+6FAnCf9=N6bWD6Q@mail.gmail.com>
+Subject: hello
+From: akifa rahim <akifa-rahim@hotmail.com>
+To: undisclosed-recipients:;
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-ngMessageSubType: MessageSubType_MAIL
-X-WebmailclientIP: 105.236.63.166
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-wonga fast loans dear valued customer find the attached file
+-- 
+How are you doing sir? I see you a mature person that is why i
+contacted you. I have an important business proposal for you that will
+be of benefit to both of us. It will be my pleasure if you can contact
+me privately on (akifa-rahim@hotmail.com) I will be waiting on your
+swift response. Thanks
