@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755768AbaFWNh7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:37:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36671 "EHLO
+	id S1755537AbaFWNh6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:37:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36672 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753835AbaFWND3 (ORCPT
+	with ESMTP id S1753838AbaFWND3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Jun 2014 09:03:29 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johannes Berg <johannes.berg@intel.com>,
+Cc: Johan Hovold <jhovold@gmail.com>, "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 06/93] mac80211: fix on-channel remain-on-channel
-Date: Mon, 23 Jun 2014 14:01:45 +0100
-Message-Id: <1403528592-2163-7-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 04/93] net: cpsw: fix null dereference at probe
+Date: Mon, 23 Jun 2014 14:01:43 +0100
+Message-Id: <1403528592-2163-5-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
 References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
@@ -27,104 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit b4b177a5556a686909e643f1e9b6434c10de079f upstream.
+commit 6954cc1f238199e971ec905c5cc87120806ac981 upstream.
 
-Jouni reported that if a remain-on-channel was active on the
-same channel as the current operating channel, then the ROC
-would start, but any frames transmitted using mgmt-tx on the
-same channel would get delayed until after the ROC.
+Fix null-pointer dereference at probe when the mdio platform device is
+missing (e.g. when it has been disabled in DT).
 
-The reason for this is that the ROC starts, but doesn't have
-any handling for "remain on the same channel", so it stops
-the interface queues. The later mgmt-tx then puts the frame
-on the interface queues (since it's on the current operating
-channel) and thus they get delayed until after the ROC.
-
-To fix this, add some logic to handle remaining on the same
-channel specially and not stop the queues etc. in this case.
-This not only fixes the bug but also improves behaviour in
-this case as data frames etc. can continue to flow.
-
-Reported-by: Jouni Malinen <j@w1.fi>
-Tested-by: Jouni Malinen <j@w1.fi>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/mac80211/ieee80211_i.h |  1 +
- net/mac80211/offchannel.c  | 27 ++++++++++++++++++++-------
- 2 files changed, 21 insertions(+), 7 deletions(-)
+ drivers/net/ethernet/ti/cpsw.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/net/mac80211/ieee80211_i.h b/net/mac80211/ieee80211_i.h
-index 735349bd9a07..18e16d05292b 100644
---- a/net/mac80211/ieee80211_i.h
-+++ b/net/mac80211/ieee80211_i.h
-@@ -312,6 +312,7 @@ struct ieee80211_roc_work {
- 
- 	bool started, abort, hw_begun, notified;
- 	bool to_be_freed;
-+	bool on_channel;
- 
- 	unsigned long hw_start_time;
- 
-diff --git a/net/mac80211/offchannel.c b/net/mac80211/offchannel.c
-index 11d3f227e11e..e554a246e52c 100644
---- a/net/mac80211/offchannel.c
-+++ b/net/mac80211/offchannel.c
-@@ -333,7 +333,7 @@ void ieee80211_sw_roc_work(struct work_struct *work)
- 		container_of(work, struct ieee80211_roc_work, work.work);
- 	struct ieee80211_sub_if_data *sdata = roc->sdata;
- 	struct ieee80211_local *local = sdata->local;
--	bool started;
-+	bool started, on_channel;
- 
- 	mutex_lock(&local->mtx);
- 
-@@ -354,14 +354,26 @@ void ieee80211_sw_roc_work(struct work_struct *work)
- 	if (!roc->started) {
- 		struct ieee80211_roc_work *dep;
- 
--		/* start this ROC */
--		ieee80211_offchannel_stop_vifs(local);
-+		WARN_ON(local->use_chanctx);
-+
-+		/* If actually operating on the desired channel (with at least
-+		 * 20 MHz channel width) don't stop all the operations but still
-+		 * treat it as though the ROC operation started properly, so
-+		 * other ROC operations won't interfere with this one.
-+		 */
-+		roc->on_channel = roc->chan == local->_oper_chandef.chan &&
-+				  local->_oper_chandef.width != NL80211_CHAN_WIDTH_5 &&
-+				  local->_oper_chandef.width != NL80211_CHAN_WIDTH_10;
- 
--		/* switch channel etc */
-+		/* start this ROC */
- 		ieee80211_recalc_idle(local);
- 
--		local->tmp_channel = roc->chan;
--		ieee80211_hw_config(local, 0);
-+		if (!roc->on_channel) {
-+			ieee80211_offchannel_stop_vifs(local);
-+
-+			local->tmp_channel = roc->chan;
-+			ieee80211_hw_config(local, 0);
+diff --git a/drivers/net/ethernet/ti/cpsw.c b/drivers/net/ethernet/ti/cpsw.c
+index 22a7a4336211..04b39c155c6a 100644
+--- a/drivers/net/ethernet/ti/cpsw.c
++++ b/drivers/net/ethernet/ti/cpsw.c
+@@ -1548,6 +1548,10 @@ static int cpsw_probe_dt(struct cpsw_platform_data *data,
+ 		mdio_node = of_find_node_by_phandle(be32_to_cpup(parp));
+ 		phyid = be32_to_cpup(parp+1);
+ 		mdio = of_find_device_by_node(mdio_node);
++		if (!mdio) {
++			pr_err("Missing mdio platform device\n");
++			return -EINVAL;
 +		}
+ 		snprintf(slave_data->phy_id, sizeof(slave_data->phy_id),
+ 			 PHY_ID_FMT, mdio->name, phyid);
  
- 		/* tell userspace or send frame */
- 		ieee80211_handle_roc_started(roc);
-@@ -380,9 +392,10 @@ void ieee80211_sw_roc_work(struct work_struct *work)
-  finish:
- 		list_del(&roc->list);
- 		started = roc->started;
-+		on_channel = roc->on_channel;
- 		ieee80211_roc_notify_destroy(roc, !roc->abort);
- 
--		if (started) {
-+		if (started && !on_channel) {
- 			ieee80211_flush_queues(local, NULL);
- 
- 			local->tmp_channel = NULL;
 -- 
 1.9.1
 
