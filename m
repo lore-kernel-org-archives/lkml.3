@@ -1,195 +1,290 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752067AbaFWGzf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 02:55:35 -0400
-Received: from dns-bn1lp0143.outbound.protection.outlook.com ([207.46.163.143]:43694
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751332AbaFWGzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 02:55:33 -0400
-From: Ruchika Gupta <ruchika.gupta@freescale.com>
-To: <linux-crypto@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <herbert@gondor.apana.org.au>
-CC: <davem@davemloft.net>, <alexandru.porosanu@freescale.com>,
-        <horia.geanta@freescale.com>, <grant.likely@linaro.org>,
-        <NiteshNarayanLal@freescale.com>, <thierry.reding@gmail.com>,
-        <rob.herring@calxeda.com>, <kim.phillips@freescale.com>,
-        <dan.carpenter@oracle.com>,
-        Ruchika Gupta <ruchika.gupta@freescale.com>
-Subject: [PATCH] crypto:caam - Configuration for platforms with virtualization enabled in CAAM
-Date: Mon, 23 Jun 2014 17:42:33 +0530
-Message-ID: <1403525553-17170-1-git-send-email-ruchika.gupta@freescale.com>
-X-Mailer: git-send-email 1.8.1.4
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199002)(79102001)(31966008)(50986999)(105606002)(20776003)(47776003)(64706001)(80022001)(92566001)(46102001)(92726001)(2201001)(74502001)(106466001)(104166001)(85306003)(33646001)(74662001)(4396001)(95666004)(104016002)(48376002)(77156001)(83322001)(19580405001)(19580395003)(44976005)(6806004)(77982001)(102836001)(50466002)(68736004)(15975445006)(36756003)(93916002)(26826002)(86362001)(83072002)(85852003)(87286001)(81342001)(62966002)(575784001)(84676001)(21056001)(50226001)(99396002)(97736001)(89996001)(88136002)(87936001)(76482001)(81542001);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB333;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+	id S1752105AbaFWG6O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 02:58:14 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:42954 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751580AbaFWG6N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 02:58:13 -0400
+X-IronPort-AV: E=Sophos;i="5.00,759,1396972800"; 
+   d="scan'208";a="32272410"
+Message-ID: <53A7CFF5.8050209@cn.fujitsu.com>
+Date: Mon, 23 Jun 2014 14:57:57 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131030 Thunderbird/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 025100C802
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=ruchika.gupta@freescale.com; 
-X-OriginatorOrg: freescale.com
+To: Vlastimil Babka <vbabka@suse.cz>
+CC: <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 04/13] mm, compaction: move pageblock checks up from
+ isolate_migratepages_range()
+References: <1403279383-5862-1-git-send-email-vbabka@suse.cz> <1403279383-5862-5-git-send-email-vbabka@suse.cz>
+In-Reply-To: <1403279383-5862-5-git-send-email-vbabka@suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.225.89]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For platforms with virtualization enabled
+On 06/20/2014 11:49 PM, Vlastimil Babka wrote:
+> isolate_migratepages_range() is the main function of the compaction scanner,
+> called either on a single pageblock by isolate_migratepages() during regular
+> compaction, or on an arbitrary range by CMA's __alloc_contig_migrate_range().
+> It currently perfoms two pageblock-wide compaction suitability checks, and
+> because of the CMA callpath, it tracks if it crossed a pageblock boundary in
+> order to repeat those checks.
+> 
+> However, closer inspection shows that those checks are always true for CMA:
+> - isolation_suitable() is true because CMA sets cc->ignore_skip_hint to true
+> - migrate_async_suitable() check is skipped because CMA uses sync compaction
+> 
+> We can therefore move the checks to isolate_migratepages(), reducing variables
+> and simplifying isolate_migratepages_range(). The update_pageblock_skip()
+> function also no longer needs set_unsuitable parameter.
+> 
+> Furthermore, going back to compact_zone() and compact_finished() when pageblock
+> is unsuitable is wasteful - the checks are meant to skip pageblocks quickly.
+> The patch therefore also introduces a simple loop into isolate_migratepages()
+> so that it does not return immediately on pageblock checks, but keeps going
+> until isolate_migratepages_range() gets called once. Similarily to
+> isolate_freepages(), the function periodically checks if it needs to reschedule
+> or abort async compaction.
+> 
+> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+> Cc: Minchan Kim <minchan@kernel.org>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Cc: Michal Nazarewicz <mina86@mina86.com>
+> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: David Rientjes <rientjes@google.com>
 
-    1. The job ring registers can be written to only is the job ring has been
-       started i.e STARTR bit in JRSTART register is 1
+I think this is a good clean-up to make code more clear.
 
-    2. For DECO's under direct software control, with virtualization enabled
-       PL, BMT, ICID and SDID values need to be provided. These are provided by
-       selecting a Job ring in start mode whose parameters would be used for the
-       DECO access programming.
+Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 
-Signed-off-by: Ruchika Gupta <ruchika.gupta@freescale.com>
----
-The current patch  used the 32 bit register comp_params_ms defined in another patch.
-The link of patch thsi patch is depnedent on is given below:
- crypto: caam - Correct definition of registers in memory map
-(https://lkml.org/lkml/2014/6/23/3)	
+Only a tiny nit-pick below.
 
- drivers/crypto/caam/ctrl.c   | 39 +++++++++++++++++++++++++++++++++++++++
- drivers/crypto/caam/intern.h |  1 +
- drivers/crypto/caam/regs.h   | 18 ++++++++++++++++--
- 3 files changed, 56 insertions(+), 2 deletions(-)
+> ---
+>  mm/compaction.c | 112 +++++++++++++++++++++++++++++---------------------------
+>  1 file changed, 59 insertions(+), 53 deletions(-)
+> 
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index 3064a7f..ebe30c9 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -132,7 +132,7 @@ void reset_isolation_suitable(pg_data_t *pgdat)
+>   */
+>  static void update_pageblock_skip(struct compact_control *cc,
+>  			struct page *page, unsigned long nr_isolated,
+> -			bool set_unsuitable, bool migrate_scanner)
+> +			bool migrate_scanner)
+>  {
+>  	struct zone *zone = cc->zone;
+>  	unsigned long pfn;
+> @@ -146,12 +146,7 @@ static void update_pageblock_skip(struct compact_control *cc,
+>  	if (nr_isolated)
+>  		return;
+>  
+> -	/*
+> -	 * Only skip pageblocks when all forms of compaction will be known to
+> -	 * fail in the near future.
+> -	 */
+> -	if (set_unsuitable)
+> -		set_pageblock_skip(page);
+> +	set_pageblock_skip(page);
+>  
+>  	pfn = page_to_pfn(page);
+>  
+> @@ -180,7 +175,7 @@ static inline bool isolation_suitable(struct compact_control *cc,
+>  
+>  static void update_pageblock_skip(struct compact_control *cc,
+>  			struct page *page, unsigned long nr_isolated,
+> -			bool set_unsuitable, bool migrate_scanner)
+> +			bool migrate_scanner)
+>  {
+>  }
+>  #endif /* CONFIG_COMPACTION */
+> @@ -345,8 +340,7 @@ isolate_fail:
+>  
+>  	/* Update the pageblock-skip if the whole pageblock was scanned */
+>  	if (blockpfn == end_pfn)
+> -		update_pageblock_skip(cc, valid_page, total_isolated, true,
+> -				      false);
+> +		update_pageblock_skip(cc, valid_page, total_isolated, false);
+>  
+>  	count_compact_events(COMPACTFREE_SCANNED, nr_scanned);
+>  	if (total_isolated)
+> @@ -474,14 +468,12 @@ unsigned long
+>  isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+>  		unsigned long low_pfn, unsigned long end_pfn, bool unevictable)
+>  {
+> -	unsigned long last_pageblock_nr = 0, pageblock_nr;
+>  	unsigned long nr_scanned = 0, nr_isolated = 0;
+>  	struct list_head *migratelist = &cc->migratepages;
+>  	struct lruvec *lruvec;
+>  	unsigned long flags;
+>  	bool locked = false;
+>  	struct page *page = NULL, *valid_page = NULL;
+> -	bool set_unsuitable = true;
+>  	const isolate_mode_t mode = (cc->mode == MIGRATE_ASYNC ?
+>  					ISOLATE_ASYNC_MIGRATE : 0) |
+>  				    (unevictable ? ISOLATE_UNEVICTABLE : 0);
+> @@ -545,28 +537,6 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+>  		if (!valid_page)
+>  			valid_page = page;
+>  
+> -		/* If isolation recently failed, do not retry */
+> -		pageblock_nr = low_pfn >> pageblock_order;
+> -		if (last_pageblock_nr != pageblock_nr) {
+> -			int mt;
+> -
+> -			last_pageblock_nr = pageblock_nr;
+> -			if (!isolation_suitable(cc, page))
+> -				goto next_pageblock;
+> -
+> -			/*
+> -			 * For async migration, also only scan in MOVABLE
+> -			 * blocks. Async migration is optimistic to see if
+> -			 * the minimum amount of work satisfies the allocation
+> -			 */
+> -			mt = get_pageblock_migratetype(page);
+> -			if (cc->mode == MIGRATE_ASYNC &&
+> -			    !migrate_async_suitable(mt)) {
+> -				set_unsuitable = false;
+> -				goto next_pageblock;
+> -			}
+> -		}
+> -
+>  		/*
+>  		 * Skip if free. page_order cannot be used without zone->lock
+>  		 * as nothing prevents parallel allocations or buddy merging.
+> @@ -668,8 +638,7 @@ next_pageblock:
+>  	 * if the whole pageblock was scanned without isolating any page.
+>  	 */
+>  	if (low_pfn == end_pfn)
+> -		update_pageblock_skip(cc, valid_page, nr_isolated,
+> -				      set_unsuitable, true);
+> +		update_pageblock_skip(cc, valid_page, nr_isolated, true);
+>  
+>  	trace_mm_compaction_isolate_migratepages(nr_scanned, nr_isolated);
+>  
+> @@ -840,34 +809,74 @@ typedef enum {
+>  } isolate_migrate_t;
+>  
+>  /*
+> - * Isolate all pages that can be migrated from the block pointed to by
+> - * the migrate scanner within compact_control.
+> + * Isolate all pages that can be migrated from the first suitable block,
+> + * starting at the block pointed to by the migrate scanner pfn within
+> + * compact_control.
+>   */
+>  static isolate_migrate_t isolate_migratepages(struct zone *zone,
+>  					struct compact_control *cc)
+>  {
+>  	unsigned long low_pfn, end_pfn;
+> +	struct page *page;
+>  
+> -	/* Do not scan outside zone boundaries */
+> -	low_pfn = max(cc->migrate_pfn, zone->zone_start_pfn);
+> +	/* Start at where we last stopped, or beginning of the zone */
+> +	low_pfn = cc->migrate_pfn;
 
-diff --git a/drivers/crypto/caam/ctrl.c b/drivers/crypto/caam/ctrl.c
-index 066a4d4..7acaaa4 100644
---- a/drivers/crypto/caam/ctrl.c
-+++ b/drivers/crypto/caam/ctrl.c
-@@ -88,6 +88,14 @@ static inline int run_descriptor_deco0(struct device *ctrldev, u32 *desc,
- 
- 	/* Set the bit to request direct access to DECO0 */
- 	topregs = (struct caam_full __iomem *)ctrlpriv->ctrl;
-+
-+	if (ctrlpriv->virt_en == 1)
-+		setbits32(&topregs->ctrl.deco_rsr, DECORSR_JR0);
-+
-+	while (!(rd_reg32(&topregs->ctrl.deco_rsr) & DECORSR_VALID) &&
-+	       --timeout)
-+		cpu_relax();
-+
- 	setbits32(&topregs->ctrl.deco_rq, DECORR_RQD0ENABLE);
- 
- 	while (!(rd_reg32(&topregs->ctrl.deco_rq) & DECORR_DEN0) &&
-@@ -130,6 +138,9 @@ static inline int run_descriptor_deco0(struct device *ctrldev, u32 *desc,
- 	*status = rd_reg32(&topregs->deco.op_status_hi) &
- 		  DECO_OP_STATUS_HI_ERR_MASK;
- 
-+	if (ctrlpriv->virt_en == 1)
-+		clrbits32(&topregs->ctrl.deco_rsr, DECORSR_JR0);
-+
- 	/* Mark the DECO as free */
- 	clrbits32(&topregs->ctrl.deco_rq, DECORR_RQD0ENABLE);
- 
-@@ -378,6 +389,7 @@ static int caam_probe(struct platform_device *pdev)
- #ifdef CONFIG_DEBUG_FS
- 	struct caam_perfmon *perfmon;
- #endif
-+	u32 scfgr, comp_params;
- 	u32 cha_vid_ls;
- 
- 	ctrlpriv = devm_kzalloc(&pdev->dev, sizeof(struct caam_drv_private),
-@@ -412,6 +424,33 @@ static int caam_probe(struct platform_device *pdev)
- 	setbits32(&topregs->ctrl.mcr, MCFGR_WDENABLE |
- 		  (sizeof(dma_addr_t) == sizeof(u64) ? MCFGR_LONG_PTR : 0));
- 
-+	/*
-+	 *  Read the Compile Time paramters and SCFGR to determine
-+	 * if Virtualization is enabled for this platform
-+	 */
-+	comp_params = rd_reg32(&topregs->ctrl.perfmon.comp_parms_ms);
-+	scfgr = rd_reg32(&topregs->ctrl.scfgr);
-+
-+	ctrlpriv->virt_en = 0;
-+	if (comp_params & CTPR_MS_VIRT_EN_INCL) {
-+		/* VIRT_EN_INCL = 1 & VIRT_EN_POR = 1 or
-+		 * VIRT_EN_INCL = 1 & VIRT_EN_POR = 0 & SCFGR_VIRT_EN = 1
-+		 */
-+		if ((comp_params & CTPR_MS_VIRT_EN_POR) ||
-+		    (!(comp_params & CTPR_MS_VIRT_EN_POR) &&
-+		       (scfgr & SCFGR_VIRT_EN)))
-+				ctrlpriv->virt_en = 1;
-+	} else {
-+		/* VIRT_EN_INCL = 0 && VIRT_EN_POR_VALUE = 1 */
-+		if (comp_params & CTPR_MS_VIRT_EN_POR)
-+				ctrlpriv->virt_en = 1;
-+	}
-+
-+	if (ctrlpriv->virt_en == 1)
-+		setbits32(&topregs->ctrl.jrstart, JRSTART_JR0_START |
-+			  JRSTART_JR1_START | JRSTART_JR2_START |
-+			  JRSTART_JR3_START);
-+
- 	if (sizeof(dma_addr_t) == sizeof(u64))
- 		if (of_device_is_compatible(nprop, "fsl,sec-v5.0"))
- 			dma_set_mask(dev, DMA_BIT_MASK(40));
-diff --git a/drivers/crypto/caam/intern.h b/drivers/crypto/caam/intern.h
-index 6d85fcc..97363db 100644
---- a/drivers/crypto/caam/intern.h
-+++ b/drivers/crypto/caam/intern.h
-@@ -82,6 +82,7 @@ struct caam_drv_private {
- 	u8 total_jobrs;		/* Total Job Rings in device */
- 	u8 qi_present;		/* Nonzero if QI present in device */
- 	int secvio_irq;		/* Security violation interrupt number */
-+	int virt_en;		/* Virtualization enabled in CAAM */
- 
- #define	RNG4_MAX_HANDLES 2
- 	/* RNG4 block */
-diff --git a/drivers/crypto/caam/regs.h b/drivers/crypto/caam/regs.h
-index 7bb898d..69e3562 100644
---- a/drivers/crypto/caam/regs.h
-+++ b/drivers/crypto/caam/regs.h
-@@ -176,6 +176,8 @@ struct caam_perfmon {
- 	u32 cha_rev_ls;		/* CRNR - CHA Rev No. Least significant half*/
- #define CTPR_MS_QI_SHIFT	25
- #define CTPR_MS_QI_MASK		(0x1ull << CTPR_MS_QI_SHIFT)
-+#define CTPR_MS_VIRT_EN_INCL	0x00000001
-+#define CTPR_MS_VIRT_EN_POR	0x00000002
- 	u32 comp_parms_ms;	/* CTPR - Compile Parameters Register	*/
- 	u32 comp_parms_ls;	/* CTPR - Compile Parameters Register	*/
- 	u64 rsvd1[2];
-@@ -309,9 +311,12 @@ struct caam_ctrl {
- 	/* Bus Access Configuration Section			010-11f */
- 	/* Read/Writable                                                */
- 	struct masterid jr_mid[4];	/* JRxLIODNR - JobR LIODN setup */
--	u32 rsvd3[12];
-+	u32 rsvd3[11];
-+	u32 jrstart;			/* JRSTART - Job Ring Start Register */
- 	struct masterid rtic_mid[4];	/* RTICxLIODNR - RTIC LIODN setup */
--	u32 rsvd4[7];
-+	u32 rsvd4[5];
-+	u32 deco_rsr;			/* DECORSR - Deco Request Source */
-+	u32 rsvd11;
- 	u32 deco_rq;			/* DECORR - DECO Request */
- 	struct partid deco_mid[5];	/* DECOxLIODNR - 1 per DECO */
- 	u32 rsvd5[22];
-@@ -352,7 +357,10 @@ struct caam_ctrl {
- #define MCFGR_DMA_RESET		0x10000000
- #define MCFGR_LONG_PTR		0x00010000 /* Use >32-bit desc addressing */
- #define SCFGR_RDBENABLE		0x00000400
-+#define SCFGR_VIRT_EN		0x00008000
- #define DECORR_RQD0ENABLE	0x00000001 /* Enable DECO0 for direct access */
-+#define DECORSR_JR0		0x00000001 /* JR to supply TZ, SDID, ICID */
-+#define DECORSR_VALID		0x80000000
- #define DECORR_DEN0		0x00010000 /* DECO0 available for access*/
- 
- /* AXI read cache control */
-@@ -370,6 +378,12 @@ struct caam_ctrl {
- #define MCFGR_AXIPRI		0x00000008 /* Assert AXI priority sideband */
- #define MCFGR_BURST_64		0x00000001 /* Max burst size */
- 
-+/* JRSTART register offsets */
-+#define JRSTART_JR0_START       0x00000001 /* Start Job ring 0 */
-+#define JRSTART_JR1_START       0x00000002 /* Start Job ring 1 */
-+#define JRSTART_JR2_START       0x00000004 /* Start Job ring 2 */
-+#define JRSTART_JR3_START       0x00000008 /* Start Job ring 3 */
-+
- /*
-  * caam_job_ring - direct job ring setup
-  * 1-4 possible per instantiation, base + 1000/2000/3000/4000
+This is ok since cc->migrate_pfn has been restricted to be inside the zone.
+But the comment here maybe confusing...
+
+Thanks.
+
+>  
+>  	/* Only scan within a pageblock boundary */
+>  	end_pfn = ALIGN(low_pfn + 1, pageblock_nr_pages);
+>  
+> -	/* Do not cross the free scanner or scan within a memory hole */
+> -	if (end_pfn > cc->free_pfn || !pfn_valid(low_pfn)) {
+> -		cc->migrate_pfn = end_pfn;
+> -		return ISOLATE_NONE;
+> -	}
+> +	/*
+> +	 * Iterate over whole pageblocks until we find the first suitable.
+> +	 * Do not cross the free scanner.
+> +	 */
+> +	for (; end_pfn <= cc->free_pfn;
+> +			low_pfn = end_pfn, end_pfn += pageblock_nr_pages) {
+> +
+> +		/*
+> +		 * This can potentially iterate a massively long zone with
+> +		 * many pageblocks unsuitable, so periodically check if we
+> +		 * need to schedule, or even abort async compaction.
+> +		 */
+> +		if (!(low_pfn % (SWAP_CLUSTER_MAX * pageblock_nr_pages))
+> +						&& compact_should_abort(cc))
+> +			break;
+>  
+> -	/* Perform the isolation */
+> -	low_pfn = isolate_migratepages_range(zone, cc, low_pfn, end_pfn, false);
+> -	if (!low_pfn || cc->contended)
+> -		return ISOLATE_ABORT;
+> +		/* Do not scan within a memory hole */
+> +		if (!pfn_valid(low_pfn))
+> +			continue;
+> +
+> +		page = pfn_to_page(low_pfn);
+> +		/* If isolation recently failed, do not retry */
+> +		if (!isolation_suitable(cc, page))
+> +			continue;
+>  
+> +		/*
+> +		 * For async compaction, also only scan in MOVABLE blocks.
+> +		 * Async compaction is optimistic to see if the minimum amount
+> +		 * of work satisfies the allocation.
+> +		 */
+> +		if (cc->mode == MIGRATE_ASYNC &&
+> +		    !migrate_async_suitable(get_pageblock_migratetype(page)))
+> +			continue;
+> +
+> +		/* Perform the isolation */
+> +		low_pfn = isolate_migratepages_range(zone, cc, low_pfn,
+> +								end_pfn, false);
+> +		if (!low_pfn || cc->contended)
+> +			return ISOLATE_ABORT;
+> +
+> +		/*
+> +		 * Either we isolated something and proceed with migration. Or
+> +		 * we failed and compact_zone should decide if we should
+> +		 * continue or not.
+> +		 */
+> +		break;
+> +	}
+> +
+> +	/* Record where migration scanner will be restarted */
+>  	cc->migrate_pfn = low_pfn;
+>  
+> -	return ISOLATE_SUCCESS;
+> +	return cc->nr_migratepages ? ISOLATE_SUCCESS : ISOLATE_NONE;
+>  }
+>  
+>  static int compact_finished(struct zone *zone,
+> @@ -1040,9 +1049,6 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+>  			;
+>  		}
+>  
+> -		if (!cc->nr_migratepages)
+> -			continue;
+> -
+>  		err = migrate_pages(&cc->migratepages, compaction_alloc,
+>  				compaction_free, (unsigned long)cc, cc->mode,
+>  				MR_COMPACTION);
+> 
+
+
 -- 
-1.8.1.4
-
+Thanks.
+Zhang Yanfei
