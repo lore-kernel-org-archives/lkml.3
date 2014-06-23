@@ -1,75 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755129AbaFWNPo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:15:44 -0400
-Received: from ozlabs.org ([103.22.144.67]:44093 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752787AbaFWNPm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:15:42 -0400
-Date: Mon, 23 Jun 2014 23:15:31 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tadeusz Struk <tadeusz.struk@intel.com>
-Subject: Re: linux-next: build failure after merge of the crypto tree
-Message-ID: <20140623231531.26c67841@canb.auug.org.au>
-In-Reply-To: <20140623122747.GA21213@gondor.apana.org.au>
-References: <20140623114942.6a937466@canb.auug.org.au>
-	<20140623122747.GA21213@gondor.apana.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/kIw4ZiB1vFNer6GCZoFjEbd"; protocol="application/pgp-signature"
+	id S1755376AbaFWNP6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:15:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37107 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754690AbaFWNE7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 09:04:59 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Roland Dreier <roland@purestorage.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 66/93] iscsi-target: Fix wrong buffer / buffer overrun in iscsi_change_param_value()
+Date: Mon, 23 Jun 2014 14:02:45 +0100
+Message-Id: <1403528592-2163-67-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
+References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/kIw4ZiB1vFNer6GCZoFjEbd
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+3.11.10.12 -stable review patch.  If anyone has any objections, please let me know.
 
-Hi Herbert,
+------------------
 
-On Mon, 23 Jun 2014 20:27:47 +0800 Herbert Xu <herbert@gondor.apana.org.au>=
- wrote:
->
-> That's weird as it built correctly here.  This looks like a
-> make/gcc issue as the missing header file is meant to be found
-> with an additional -I.
->=20
-> Could you do a make V=3D1 for me and show me what the gcc command-line
-> looks like?
+From: Roland Dreier <roland@purestorage.com>
 
-Not until tomorrow.  In the mean time, could you try it with an
-external object dir i.e. "make O=3D..."
+commit 79d59d08082dd0a0a18f8ceb78c99f9f321d72aa upstream.
 
-If that breaks, I think you need to change CURDIR to srcdir or some
-such ...
+In non-leading connection login, iscsi_login_non_zero_tsih_s1() calls
+iscsi_change_param_value() with the buffer it uses to hold the login
+PDU, not a temporary buffer.  This leads to the login header getting
+corrupted and login failing for non-leading connections in MC/S.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Fix this by adding a wrapper iscsi_change_param_sprintf() that handles
+the temporary buffer itself to avoid confusion.  Also handle sending a
+reject in case of failure in the wrapper, which lets the calling code
+get quite a bit smaller and easier to read.
 
---Sig_/kIw4ZiB1vFNer6GCZoFjEbd
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+Finally, bump the size of the temporary buffer from 32 to 64 bytes to be
+safe, since "MaxRecvDataSegmentLength=" by itself is 25 bytes; with a
+trailing NUL, a value >= 1M will lead to a buffer overrun.  (This isn't
+the default but we don't need to run right at the ragged edge here)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Reported-by: Santosh Kulkarni <santosh.kulkarni@calsoftinc.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+[ luis: backported to 3.11:
+  - use ISCSI_TPG_S macros
+  - drop last chunk in iscsi_login_zero_tsih_s2 function ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/target/iscsi/iscsi_target_login.c | 57 +++++++++++++++----------------
+ 1 file changed, 28 insertions(+), 29 deletions(-)
 
-iQIcBAEBCAAGBQJTqCh6AAoJEMDTa8Ir7ZwVBSUP/Atj1EXxH7+hhr+GkialxE72
-ZPbXFUcKINbyUURlxRZOhlFYrRy9/rGatt14p72nHOX0Z//G9kACO9WsJDZx8W34
-py3Ln65cQ1brKAj4rxqcQuMB4iJDj6Bp0VU/ZMt5jcdnSZFzKaL2/SSgWOVMpoc3
-ypXgU8tyhOqzvl7durPYWKOBNNLzUhHpqX+SzQHYsYa3rOqpaMADY+Ra45/fd9zz
-LPRvoeBzhamKTYT+7qs/3baRo6ndFpZBHgYx4ouQ/BmHhcSzjnyLT4g4aSVRJex/
-4pgJDUc4FJKMaZgO8agqqtt7uPXk7toJa2/VdwupAiJY6ZdHW8NL58D4soWogXaG
-jrAAjFPxI/+vtKMBYvrZ5JBtkXctiEtSQ6owSxE15j5FyRiBPCvI5nWCZs4YhBKg
-3RjtH5b6gTKJfKMAs9fMqclnjiTy7kBONjfu5rx+bWgwVyY2vTKdl+FFNGvjWKfr
-qdHz1ElD9Cf94BtrGd2syguprY+TAUcDVQpOwc5yxK/dt9usenyiEpvZn95oHLf0
-9m4tuVzr9GZ5g3q7o6cwOefWn+VpOcd9MMr6YzQHYma+69BCw+yyPP9hVQLZb63H
-BFStxVrkva63g0Az+SZJMsw9z/+2SFBn2OwVe/HSv4LnLYVQIDFCM1SIXLNomIZb
-jvVlB8nc+4u6e7OSxc2h
-=ORUO
------END PGP SIGNATURE-----
+diff --git a/drivers/target/iscsi/iscsi_target_login.c b/drivers/target/iscsi/iscsi_target_login.c
+index bc788c52b6cc..6627bc7655f4 100644
+--- a/drivers/target/iscsi/iscsi_target_login.c
++++ b/drivers/target/iscsi/iscsi_target_login.c
+@@ -250,6 +250,28 @@ static void iscsi_login_set_conn_values(
+ 	mutex_unlock(&auth_id_lock);
+ }
+ 
++static __printf(2, 3) int iscsi_change_param_sprintf(
++	struct iscsi_conn *conn,
++	const char *fmt, ...)
++{
++	va_list args;
++	unsigned char buf[64];
++
++	memset(buf, 0, sizeof buf);
++
++	va_start(args, fmt);
++	vsnprintf(buf, sizeof buf, fmt, args);
++	va_end(args);
++
++	if (iscsi_change_param_value(buf, conn->param_list, 0) < 0) {
++		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
++				ISCSI_LOGIN_STATUS_NO_RESOURCES);
++		return -1;
++	}
++
++	return 0;
++}
++
+ /*
+  *	This is the leading connection of a new session,
+  *	or session reinstatement.
+@@ -339,7 +361,6 @@ static int iscsi_login_zero_tsih_s2(
+ {
+ 	struct iscsi_node_attrib *na;
+ 	struct iscsi_session *sess = conn->sess;
+-	unsigned char buf[32];
+ 	bool iser = false;
+ 
+ 	sess->tpg = conn->tpg;
+@@ -380,26 +401,16 @@ static int iscsi_login_zero_tsih_s2(
+ 	 *
+ 	 * In our case, we have already located the struct iscsi_tiqn at this point.
+ 	 */
+-	memset(buf, 0, 32);
+-	sprintf(buf, "TargetPortalGroupTag=%hu", ISCSI_TPG_S(sess)->tpgt);
+-	if (iscsi_change_param_value(buf, conn->param_list, 0) < 0) {
+-		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
+-				ISCSI_LOGIN_STATUS_NO_RESOURCES);
++	if (iscsi_change_param_sprintf(conn, "TargetPortalGroupTag=%hu", ISCSI_TPG_S(sess)->tpgt))
+ 		return -1;
+-	}
+ 
+ 	/*
+ 	 * Workaround for Initiators that have broken connection recovery logic.
+ 	 *
+ 	 * "We would really like to get rid of this." Linux-iSCSI.org team
+ 	 */
+-	memset(buf, 0, 32);
+-	sprintf(buf, "ErrorRecoveryLevel=%d", na->default_erl);
+-	if (iscsi_change_param_value(buf, conn->param_list, 0) < 0) {
+-		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
+-				ISCSI_LOGIN_STATUS_NO_RESOURCES);
++	if (iscsi_change_param_sprintf(conn, "ErrorRecoveryLevel=%d", na->default_erl))
+ 		return -1;
+-	}
+ 
+ 	if (iscsi_login_disable_FIM_keys(conn->param_list, conn) < 0)
+ 		return -1;
+@@ -411,12 +422,9 @@ static int iscsi_login_zero_tsih_s2(
+ 		unsigned long mrdsl, off;
+ 		int rc;
+ 
+-		sprintf(buf, "RDMAExtensions=Yes");
+-		if (iscsi_change_param_value(buf, conn->param_list, 0) < 0) {
+-			iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
+-				ISCSI_LOGIN_STATUS_NO_RESOURCES);
++		if (iscsi_change_param_sprintf(conn, "RDMAExtensions=Yes"))
+ 			return -1;
+-		}
++
+ 		/*
+ 		 * Make MaxRecvDataSegmentLength PAGE_SIZE aligned for
+ 		 * Immediate Data + Unsolicitied Data-OUT if necessary..
+@@ -446,12 +454,8 @@ static int iscsi_login_zero_tsih_s2(
+ 		pr_warn("Aligning ISER MaxRecvDataSegmentLength: %lu down"
+ 			" to PAGE_SIZE\n", mrdsl);
+ 
+-		sprintf(buf, "MaxRecvDataSegmentLength=%lu\n", mrdsl);
+-		if (iscsi_change_param_value(buf, conn->param_list, 0) < 0) {
+-			iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
+-				ISCSI_LOGIN_STATUS_NO_RESOURCES);
++		if (iscsi_change_param_sprintf(conn, "MaxRecvDataSegmentLength=%lu\n", mrdsl))
+ 			return -1;
+-		}
+ 	}
+ 
+ 	return 0;
+@@ -593,13 +597,8 @@ static int iscsi_login_non_zero_tsih_s2(
+ 	 *
+ 	 * In our case, we have already located the struct iscsi_tiqn at this point.
+ 	 */
+-	memset(buf, 0, 32);
+-	sprintf(buf, "TargetPortalGroupTag=%hu", ISCSI_TPG_S(sess)->tpgt);
+-	if (iscsi_change_param_value(buf, conn->param_list, 0) < 0) {
+-		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
+-				ISCSI_LOGIN_STATUS_NO_RESOURCES);
++	if (iscsi_change_param_sprintf(conn, "TargetPortalGroupTag=%hu", ISCSI_TPG_S(sess)->tpgt))
+ 		return -1;
+-	}
+ 
+ 	return iscsi_login_disable_FIM_keys(conn->param_list, conn);
+ }
+-- 
+1.9.1
 
---Sig_/kIw4ZiB1vFNer6GCZoFjEbd--
