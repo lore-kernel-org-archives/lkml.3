@@ -1,79 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755825AbaFWNi5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:38:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36643 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753718AbaFWNDW (ORCPT
+	id S1755407AbaFWNkb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:40:31 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:40041 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753888AbaFWNk1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:03:22 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Eliad Peller <eliadx.peller@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 01/93] cfg80211: free sme on connection failures
-Date: Mon, 23 Jun 2014 14:01:40 +0100
-Message-Id: <1403528592-2163-2-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
-References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Mon, 23 Jun 2014 09:40:27 -0400
+From: Raphael Poggi <poggi.raph@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, Raphael Poggi <poggi.raph@gmail.com>
+Subject: [PATCH] staging: lirc: fix coding style problems
+Date: Mon, 23 Jun 2014 15:40:59 +0200
+Message-Id: <1403530859-3341-1-git-send-email-poggi.raph@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.12 -stable review patch.  If anyone has any objections, please let me know.
+This patch fix some coding style problems.
 
-------------------
-
-From: Eliad Peller <eliad@wizery.com>
-
-commit c1fbb258846dfc425507a093922d2d001e54c3ea upstream.
-
-cfg80211 is notified about connection failures by
-__cfg80211_connect_result() call. However, this
-function currently does not free cfg80211 sme.
-
-This results in hanging connection attempts in some cases
-
-e.g. when mac80211 authentication attempt is denied,
-we have this function call:
-ieee80211_rx_mgmt_auth() -> cfg80211_rx_mlme_mgmt() ->
-cfg80211_process_auth() -> cfg80211_sme_rx_auth() ->
-__cfg80211_connect_result()
-
-but cfg80211_sme_free() is never get called.
-
-Fixes: ceca7b712 ("cfg80211: separate internal SME implementation")
-Signed-off-by: Eliad Peller <eliadx.peller@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Raphaël Poggi <poggi.raph@gmail.com>
 ---
- net/wireless/sme.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/media/lirc/lirc_imon.c |   13 +++++--------
+ 1 file changed, 5 insertions(+), 8 deletions(-)
 
-diff --git a/net/wireless/sme.c b/net/wireless/sme.c
-index 20e86a95dc4e..2f844eec9c6d 100644
---- a/net/wireless/sme.c
-+++ b/net/wireless/sme.c
-@@ -242,7 +242,6 @@ void cfg80211_conn_work(struct work_struct *work)
- 					NULL, 0, NULL, 0,
- 					WLAN_STATUS_UNSPECIFIED_FAILURE,
- 					false, NULL);
--			cfg80211_sme_free(wdev);
- 		}
- 		wdev_unlock(wdev);
- 	}
-@@ -646,6 +645,7 @@ void __cfg80211_connect_result(struct net_device *dev, const u8 *bssid,
- 			cfg80211_unhold_bss(bss_from_pub(bss));
- 			cfg80211_put_bss(wdev->wiphy, bss);
- 		}
-+		cfg80211_sme_free(wdev);
- 		return;
+diff --git a/drivers/staging/media/lirc/lirc_imon.c b/drivers/staging/media/lirc/lirc_imon.c
+index a5b62ee..31d5c6b 100644
+--- a/drivers/staging/media/lirc/lirc_imon.c
++++ b/drivers/staging/media/lirc/lirc_imon.c
+@@ -189,6 +189,7 @@ MODULE_PARM_DESC(debug, "Debug messages: 0=no, 1=yes(default: no)");
+ static void free_imon_context(struct imon_context *context)
+ {
+ 	struct device *dev = context->driver->dev;
++
+ 	usb_free_urb(context->tx_urb);
+ 	usb_free_urb(context->rx_urb);
+ 	lirc_buffer_free(context->driver->rbuf);
+@@ -481,8 +482,6 @@ static void usb_tx_callback(struct urb *urb)
+ 	/* notify waiters that write has finished */
+ 	atomic_set(&context->tx.busy, 0);
+ 	complete(&context->tx.finished);
+-
+-	return;
+ }
+ 
+ /**
+@@ -547,7 +546,6 @@ static void ir_close(void *data)
  	}
  
+ 	mutex_unlock(&context->ctx_lock);
+-	return;
+ }
+ 
+ /**
+@@ -572,7 +570,6 @@ static void submit_data(struct imon_context *context)
+ 
+ 	lirc_buffer_write(context->driver->rbuf, buf);
+ 	wake_up(&context->driver->rbuf->wait_poll);
+-	return;
+ }
+ 
+ static inline int tv2int(const struct timeval *a, const struct timeval *b)
+@@ -626,8 +623,8 @@ static void imon_incoming_packet(struct imon_context *context,
+ 	if (debug) {
+ 		dev_info(dev, "raw packet: ");
+ 		for (i = 0; i < len; ++i)
+-			printk("%02x ", buf[i]);
+-		printk("\n");
++			dev_dbg(dev, "%02x ", buf[i]);
++		dev_dbg(dev, "\n");
+ 	}
+ 
+ 	/*
+@@ -656,6 +653,7 @@ static void imon_incoming_packet(struct imon_context *context,
+ 		mask = 0x80;
+ 		for (bit = 0; bit < 8; ++bit) {
+ 			int curr_bit = !(buf[octet] & mask);
++
+ 			if (curr_bit != context->rx.prev_bit) {
+ 				if (context->rx.count) {
+ 					submit_data(context);
+@@ -707,8 +705,6 @@ static void usb_rx_callback(struct urb *urb)
+ 	}
+ 
+ 	usb_submit_urb(context->rx_urb, GFP_ATOMIC);
+-
+-	return;
+ }
+ 
+ /**
+@@ -775,6 +771,7 @@ static int imon_probe(struct usb_interface *interface,
+ 		struct usb_endpoint_descriptor *ep;
+ 		int ep_dir;
+ 		int ep_type;
++
+ 		ep = &iface_desc->endpoint[i].desc;
+ 		ep_dir = ep->bEndpointAddress & USB_ENDPOINT_DIR_MASK;
+ 		ep_type = ep->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK;
 -- 
-1.9.1
+1.7.9.5
 
