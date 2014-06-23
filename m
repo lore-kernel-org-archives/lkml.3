@@ -1,191 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754753AbaFWJRl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 05:17:41 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:28944 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752007AbaFWJRj (ORCPT
+	id S1754084AbaFWJSZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 05:18:25 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:53671 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751560AbaFWJSY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 05:17:39 -0400
-X-IronPort-AV: E=Sophos;i="5.00,759,1396972800"; 
-   d="scan'208";a="32279779"
-Message-ID: <53A7F0AA.2070000@cn.fujitsu.com>
-Date: Mon, 23 Jun 2014 17:17:30 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131030 Thunderbird/17.0.10
+	Mon, 23 Jun 2014 05:18:24 -0400
+Date: Mon, 23 Jun 2014 11:18:18 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Michal Nazarewicz <mina86@mina86.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: tsc: get rid of custom DIV_ROUND
+Message-ID: <20140623091818.GO19860@laptop.programming.kicks-ass.net>
+References: <1403143116-21755-1-git-send-email-mina86@mina86.com>
 MIME-Version: 1.0
-To: Vlastimil Babka <vbabka@suse.cz>
-CC: <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 08/13] mm, compaction: remember position within pageblock
- in free pages scanner
-References: <1403279383-5862-1-git-send-email-vbabka@suse.cz> <1403279383-5862-9-git-send-email-vbabka@suse.cz>
-In-Reply-To: <1403279383-5862-9-git-send-email-vbabka@suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.225.89]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403143116-21755-1-git-send-email-mina86@mina86.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2014 11:49 PM, Vlastimil Babka wrote:
-> Unlike the migration scanner, the free scanner remembers the beginning of the
-> last scanned pageblock in cc->free_pfn. It might be therefore rescanning pages
-> uselessly when called several times during single compaction. This might have
-> been useful when pages were returned to the buddy allocator after a failed
-> migration, but this is no longer the case.
-> 
-> This patch changes the meaning of cc->free_pfn so that if it points to a
-> middle of a pageblock, that pageblock is scanned only from cc->free_pfn to the
-> end. isolate_freepages_block() will record the pfn of the last page it looked
-> at, which is then used to update cc->free_pfn.
-> 
-> In the mmtests stress-highalloc benchmark, this has resulted in lowering the
-> ratio between pages scanned by both scanners, from 2.5 free pages per migrate
-> page, to 2.25 free pages per migrate page, without affecting success rates.
-> 
-> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-> Acked-by: David Rientjes <rientjes@google.com>
-> Cc: Minchan Kim <minchan@kernel.org>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> Cc: Michal Nazarewicz <mina86@mina86.com>
-> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+On Thu, Jun 19, 2014 at 03:58:36AM +0200, Michal Nazarewicz wrote:
+> When invoced for positive values, DIV_ROUND macro defined in
+> arch/x86/kernel/tsc.c behaves exactly like DIV_ROUND_CLOSEST from
+> include/linux/kernel.h file, so remove the custom macro in favour
+> of the shared one.
 
-Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+See, I knew we'd had one. _CLOSEST is a dumb postfix though, its the
+default whenever people talk of rounding.
 
+> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
 > ---
->  mm/compaction.c | 40 +++++++++++++++++++++++++++++++---------
->  1 file changed, 31 insertions(+), 9 deletions(-)
+>  arch/x86/kernel/tsc.c | 6 ++----
+>  1 file changed, 2 insertions(+), 4 deletions(-)
 > 
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index 9f6e857..41c7005 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -287,7 +287,7 @@ static bool suitable_migration_target(struct page *page)
->   * (even though it may still end up isolating some pages).
->   */
->  static unsigned long isolate_freepages_block(struct compact_control *cc,
-> -				unsigned long blockpfn,
-> +				unsigned long *start_pfn,
->  				unsigned long end_pfn,
->  				struct list_head *freelist,
->  				bool strict)
-> @@ -296,6 +296,7 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
->  	struct page *cursor, *valid_page = NULL;
->  	unsigned long flags;
->  	bool locked = false;
-> +	unsigned long blockpfn = *start_pfn;
->  
->  	cursor = pfn_to_page(blockpfn);
->  
-> @@ -369,6 +370,9 @@ isolate_fail:
->  			break;
->  	}
->  
-> +	/* Record how far we have got within the block */
-> +	*start_pfn = blockpfn;
-> +
->  	trace_mm_compaction_isolate_freepages(nr_scanned, total_isolated);
->  
->  	/*
-> @@ -413,6 +417,9 @@ isolate_freepages_range(struct compact_control *cc,
->  	LIST_HEAD(freelist);
->  
->  	for (pfn = start_pfn; pfn < end_pfn; pfn += isolated) {
-> +		/* Protect pfn from changing by isolate_freepages_block */
-> +		unsigned long isolate_start_pfn = pfn;
-> +
->  		if (!pfn_valid(pfn) || cc->zone != page_zone(pfn_to_page(pfn)))
->  			break;
->  
-> @@ -423,8 +430,8 @@ isolate_freepages_range(struct compact_control *cc,
->  		block_end_pfn = ALIGN(pfn + 1, pageblock_nr_pages);
->  		block_end_pfn = min(block_end_pfn, end_pfn);
->  
-> -		isolated = isolate_freepages_block(cc, pfn, block_end_pfn,
-> -						   &freelist, true);
-> +		isolated = isolate_freepages_block(cc, &isolate_start_pfn,
-> +						block_end_pfn, &freelist, true);
->  
->  		/*
->  		 * In strict mode, isolate_freepages_block() returns 0 if
-> @@ -708,6 +715,7 @@ static void isolate_freepages(struct zone *zone,
->  {
->  	struct page *page;
->  	unsigned long block_start_pfn;	/* start of current pageblock */
-> +	unsigned long isolate_start_pfn; /* exact pfn we start at */
->  	unsigned long block_end_pfn;	/* end of current pageblock */
->  	unsigned long low_pfn;	     /* lowest pfn scanner is able to scan */
->  	int nr_freepages = cc->nr_freepages;
-> @@ -716,14 +724,15 @@ static void isolate_freepages(struct zone *zone,
->  	/*
->  	 * Initialise the free scanner. The starting point is where we last
->  	 * successfully isolated from, zone-cached value, or the end of the
-> -	 * zone when isolating for the first time. We need this aligned to
-> -	 * the pageblock boundary, because we do
-> +	 * zone when isolating for the first time. For looping we also need
-> +	 * this pfn aligned down to the pageblock boundary, because we do
->  	 * block_start_pfn -= pageblock_nr_pages in the for loop.
->  	 * For ending point, take care when isolating in last pageblock of a
->  	 * a zone which ends in the middle of a pageblock.
->  	 * The low boundary is the end of the pageblock the migration scanner
->  	 * is using.
->  	 */
-> +	isolate_start_pfn = cc->free_pfn;
->  	block_start_pfn = cc->free_pfn & ~(pageblock_nr_pages-1);
->  	block_end_pfn = min(block_start_pfn + pageblock_nr_pages,
->  						zone_end_pfn(zone));
-> @@ -736,7 +745,8 @@ static void isolate_freepages(struct zone *zone,
->  	 */
->  	for (; block_start_pfn >= low_pfn && cc->nr_migratepages > nr_freepages;
->  				block_end_pfn = block_start_pfn,
-> -				block_start_pfn -= pageblock_nr_pages) {
-> +				block_start_pfn -= pageblock_nr_pages,
-> +				isolate_start_pfn = block_start_pfn) {
->  		unsigned long isolated;
->  
->  		/*
-> @@ -770,13 +780,25 @@ static void isolate_freepages(struct zone *zone,
->  		if (!isolation_suitable(cc, page))
->  			continue;
->  
-> -		/* Found a block suitable for isolating free pages from */
-> -		cc->free_pfn = block_start_pfn;
-> -		isolated = isolate_freepages_block(cc, block_start_pfn,
-> +		/* Found a block suitable for isolating free pages from. */
-> +		isolated = isolate_freepages_block(cc, &isolate_start_pfn,
->  					block_end_pfn, freelist, false);
->  		nr_freepages += isolated;
->  
->  		/*
-> +		 * Remember where the free scanner should restart next time,
-> +		 * which is where isolate_freepages_block() left off.
-> +		 * But if it scanned the whole pageblock, isolate_start_pfn
-> +		 * now points at block_end_pfn, which is the start of the next
-> +		 * pageblock.
-> +		 * In that case we will however want to restart at the start
-> +		 * of the previous pageblock.
-> +		 */
-> +		cc->free_pfn = (isolate_start_pfn < block_end_pfn) ?
-> +				isolate_start_pfn :
-> +				block_start_pfn - pageblock_nr_pages;
-> +
-> +		/*
->  		 * Set a flag that we successfully isolated in this pageblock.
->  		 * In the next loop iteration, zone->compact_cached_free_pfn
->  		 * will not be updated and thus it will effectively contain the
+>  No changes after compilation:
 > 
+>  $ ll tsc.o.*
+>  -rw------- 1 mpn eng 46497 Jun 19 03:54 tsc.o.after
+>  -rw------- 1 mpn eng 46497 Jun 19 03:55 tsc.o.before
+>  $ objdump -d tsc.o.before >tsc.s.before
+>  $ objdump -d tsc.o.after >tsc.s.after
+>  $ diff -u tsc.s.before tsc.s.after
+>  --- tsc.s.before	2014-06-19 03:56:54.880545041 +0200
+>  +++ tsc.s.after	2014-06-19 03:56:54.884545079 +0200
+>  @@ -1,5 +1,5 @@
+>   
+>  -tsc.o.before:     file format elf64-x86-64
+>  +tsc.o.after:     file format elf64-x86-64
+>   
+>   
+>   Disassembly of section .text:
+>  $
 
+This diff in a diff totally confused patch.
 
--- 
-Thanks.
-Zhang Yanfei
+Applies when I remove that.
