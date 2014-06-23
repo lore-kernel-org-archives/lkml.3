@@ -1,77 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755041AbaFWOU7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 10:20:59 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:56881 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754488AbaFWOU5 (ORCPT
+	id S1755243AbaFWOVs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 10:21:48 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:49986 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753890AbaFWOVr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 10:20:57 -0400
-From: Raphael Poggi <poggi.raph@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, Raphael Poggi <raphael.poggi@erocca.com>,
-        =?UTF-8?q?Rapha=C3=ABl=20Poggi?= <poggi.raph@gmail.com>
-Subject: [PATCH 2/2] staging: lirc: remove return void function
-Date: Mon, 23 Jun 2014 16:21:21 +0200
-Message-Id: <1403533281-8091-2-git-send-email-poggi.raph@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1403533281-8091-1-git-send-email-poggi.raph@gmail.com>
-References: <1403533281-8091-1-git-send-email-poggi.raph@gmail.com>
+	Mon, 23 Jun 2014 10:21:47 -0400
+Date: Mon, 23 Jun 2014 16:21:39 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Kirill Tkhai <ktkhai@parallels.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        tkhai@yandex.ru, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Konstantin Khorenko <khorenko@parallels.com>
+Subject: Re: [PATCH 3/3] sched: Rework check_for_tasks()
+Message-ID: <20140623142139.GD19860@laptop.programming.kicks-ass.net>
+References: <20140617130442.29933.54945.stgit@tkhai>
+ <1403011462.27674.46.camel@tkhai>
+ <20140623102457.GW19860@laptop.programming.kicks-ass.net>
+ <1403520738.3462.11.camel@tkhai>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403520738.3462.11.camel@tkhai>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Raphael Poggi <raphael.poggi@erocca.com>
+On Mon, Jun 23, 2014 at 02:52:18PM +0400, Kirill Tkhai wrote:
+> > Then again, I suppose anything without rq->lock can and will miss tasks.
+> 
+> If we use rq->lock it's possible to move check_for_tasks() to kernel/sched/core.c.
+> 
+> And we can leave TASK_RUNNING check for waking tasks. Maybe something like this?
+> 
+> static inline void check_for_tasks(int dead_cpu)
+> {
+> 	struct task_struct *g, *p;
+> 	struct rq *rq = cpu_rq(dead_cpu);
+> 
+> 	read_lock_irq(&tasklist_lock);
+> 	raw_spin_lock(&rq->lock)
+> 
+> 	do_each_thread(g, p) {
+> 		if (!p->on_rq && p->state != TASK_RUNNING)
+> 			continue;
+> 		if (task_cpu(p) != dead_cpu)
+> 			continue;
+> 
+> 		pr_warn("Task %s (pid=%d) is on cpu %d (state=%ld, flags=%x)\n",
+> 			p->comm, task_pid_nr(p), dead_cpu, p->state, p->flags);
+> 	} while_each_thread(g, p);
+> 
+> 	raw_spin_unlock(&rq->lock)
+> 	read_unlock_irq(&tasklist_lock);
+> }
+> 
+> It still does not give a 100% guarantee... Should we take p->pi_lock for every task?
 
-This patch fix checkpath "WARNING: void function return statements are not generally useful".
-The removed return were useless in that case.
+seeing how rq->lock nests inside of ->pi_lock that's going to be
+somewhat icky.
 
-Signed-off-by: Raphaël Poggi <poggi.raph@gmail.com>
----
- drivers/staging/media/lirc/lirc_imon.c |    6 ------
- 1 file changed, 6 deletions(-)
+I think we can live with a false negative, given how much people run
+this nonsense it'll trigger eventually.
 
-diff --git a/drivers/staging/media/lirc/lirc_imon.c b/drivers/staging/media/lirc/lirc_imon.c
-index f8c3375..96c76b3 100644
---- a/drivers/staging/media/lirc/lirc_imon.c
-+++ b/drivers/staging/media/lirc/lirc_imon.c
-@@ -482,8 +482,6 @@ static void usb_tx_callback(struct urb *urb)
- 	/* notify waiters that write has finished */
- 	atomic_set(&context->tx.busy, 0);
- 	complete(&context->tx.finished);
--
--	return;
- }
- 
- /**
-@@ -548,7 +546,6 @@ static void ir_close(void *data)
- 	}
- 
- 	mutex_unlock(&context->ctx_lock);
--	return;
- }
- 
- /**
-@@ -573,7 +570,6 @@ static void submit_data(struct imon_context *context)
- 
- 	lirc_buffer_write(context->driver->rbuf, buf);
- 	wake_up(&context->driver->rbuf->wait_poll);
--	return;
- }
- 
- static inline int tv2int(const struct timeval *a, const struct timeval *b)
-@@ -709,8 +705,6 @@ static void usb_rx_callback(struct urb *urb)
- 	}
- 
- 	usb_submit_urb(context->rx_urb, GFP_ATOMIC);
--
--	return;
- }
- 
- /**
--- 
-1.7.9.5
+False positives would be bad though :-)
 
+So I think we can keep your original (lock-free) proposal.
