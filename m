@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755869AbaFWNkm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:40:42 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:48847 "EHLO
+	id S1755900AbaFWNkp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:40:45 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:48830 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754557AbaFWNki (ORCPT
+	with ESMTP id S1754070AbaFWNkg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:40:38 -0400
+	Mon, 23 Jun 2014 09:40:36 -0400
 From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
 	<antoine.tenart@free-electrons.com>
 To: sebastian.hesselbarth@gmail.com, tj@kernel.org, kishon@ti.com
@@ -17,9 +17,9 @@ Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?=
         jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
         linux-ide@vger.kernel.org, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v7 4/7] ata: ahci_platform: add a generic AHCI compatible
-Date: Mon, 23 Jun 2014 15:39:40 +0200
-Message-Id: <1403530783-17180-5-git-send-email-antoine.tenart@free-electrons.com>
+Subject: [PATCH v7 2/7] Documentation: bindings: add the Berlin SATA PHY
+Date: Mon, 23 Jun 2014 15:39:38 +0200
+Message-Id: <1403530783-17180-3-git-send-email-antoine.tenart@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403530783-17180-1-git-send-email-antoine.tenart@free-electrons.com>
 References: <1403530783-17180-1-git-send-email-antoine.tenart@free-electrons.com>
@@ -30,28 +30,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ahci_platform driver is a generic driver using the libahci_platform
-functions. Add a generic compatible to avoid having an endless list of
-compatibles with no differences for the same driver.
+The Berlin SATA PHY drives the PHY related to the SATA interface. Add
+the corresponding documentation.
 
 Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
 ---
- drivers/ata/ahci_platform.c | 2 ++
- 1 file changed, 2 insertions(+)
+ .../devicetree/bindings/phy/berlin-sata-phy.txt          | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/phy/berlin-sata-phy.txt
 
-diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
-index ebe505c17763..a30cecd68609 100644
---- a/drivers/ata/ahci_platform.c
-+++ b/drivers/ata/ahci_platform.c
-@@ -78,6 +78,8 @@ static SIMPLE_DEV_PM_OPS(ahci_pm_ops, ahci_platform_suspend,
- 			 ahci_platform_resume);
- 
- static const struct of_device_id ahci_of_match[] = {
-+	{ .compatible = "generic-ahci", },
-+	/* Keep the following compatibles for device tree compatibility */
- 	{ .compatible = "snps,spear-ahci", },
- 	{ .compatible = "snps,exynos5440-ahci", },
- 	{ .compatible = "ibm,476gtr-ahci", },
+diff --git a/Documentation/devicetree/bindings/phy/berlin-sata-phy.txt b/Documentation/devicetree/bindings/phy/berlin-sata-phy.txt
+new file mode 100644
+index 000000000000..c61616e03931
+--- /dev/null
++++ b/Documentation/devicetree/bindings/phy/berlin-sata-phy.txt
+@@ -0,0 +1,16 @@
++Berlin SATA PHY
++---------------
++
++Required properties:
++- compatible: should be "marvell,berlin2q-sata-phy"
++- phy-cells: from the generic PHY bindings, must be 1
++- reg: address and length of the register
++- clocks: reference to the clock entry
++
++Example:
++	sata_phy: phy@f7e900a0 {
++		compatible = "marvell,berlin2q-sata-phy";
++		reg = <0xf7e900a0 0x200>;
++		clocks = <&chip CLKID_SATA>;
++		#phy-cells = <1>;
++	};
 -- 
 1.9.1
 
