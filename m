@@ -1,52 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756334AbaFWQfJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 12:35:09 -0400
-Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:47675 "EHLO
-	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755742AbaFWQfF (ORCPT
+	id S1756399AbaFWQf2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 12:35:28 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:41578 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756375AbaFWQf0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 12:35:05 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApkHABBWqFNbskjJ/2dsb2JhbABZgw2rZQUBAQEBAQEFAZk1gQ8XdYQxLyOBGjeIRgHEIheFY4kZHYQtBJpMk2ODRDs
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>, linux-omap@vger.kernel.org
-Subject: [PATCH 1/1] sound/soc/omap/mcbsp.c: remove unnecessary null test before kfree
-Date: Mon, 23 Jun 2014 18:33:41 +0200
-Message-Id: <1403541221-10619-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	Mon, 23 Jun 2014 12:35:26 -0400
+Date: Mon, 23 Jun 2014 18:35:14 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Waiman.Long@hp.com, tglx@linutronix.de, mingo@kernel.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        paolo.bonzini@gmail.com, boris.ostrovsky@oracle.com,
+        paulmck@linux.vnet.ibm.com, riel@redhat.com,
+        torvalds@linux-foundation.org, raghavendra.kt@linux.vnet.ibm.com,
+        david.vrabel@citrix.com, oleg@redhat.com, gleb@redhat.com,
+        scott.norton@hp.com, chegu_vinod@hp.com
+Subject: Re: [PATCH 03/11] qspinlock: Add pending bit
+Message-ID: <20140623163514.GI19860@laptop.programming.kicks-ass.net>
+References: <20140615124657.264658593@chello.nl>
+ <20140615130153.196728583@chello.nl>
+ <20140617203615.GA29634@laptop.dumpdata.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20140617203615.GA29634@laptop.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix checkpatch warning:
-WARNING: kfree(NULL) is safe this check is probably not required
+On Tue, Jun 17, 2014 at 04:36:15PM -0400, Konrad Rzeszutek Wilk wrote:
+> On Sun, Jun 15, 2014 at 02:47:00PM +0200, Peter Zijlstra wrote:
+> > Because the qspinlock needs to touch a second cacheline; add a pending
+> > bit and allow a single in-word spinner before we punt to the second
+> > cacheline.
+> 
+> Could you add this in the description please:
+> 
+> And by second cacheline we mean the local 'node'. That is the:
+> mcs_nodes[0] and mcs_nodes[idx]
 
-Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Jarkko Nikula <jarkko.nikula@bitmer.com>
-Cc: linux-omap@vger.kernel.org
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- sound/soc/omap/mcbsp.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Those should be the very same cacheline :), but yes, I can add something
+like that.
 
-diff --git a/sound/soc/omap/mcbsp.c b/sound/soc/omap/mcbsp.c
-index 86c7538..68a1252 100644
---- a/sound/soc/omap/mcbsp.c
-+++ b/sound/soc/omap/mcbsp.c
-@@ -621,8 +621,7 @@ void omap_mcbsp_free(struct omap_mcbsp *mcbsp)
- 	mcbsp->reg_cache = NULL;
- 	spin_unlock(&mcbsp->lock);
- 
--	if (reg_cache)
--		kfree(reg_cache);
-+	kfree(reg_cache);
- }
- 
- /*
--- 
-1.8.4.5
+> Perhaps it might be better then to split this in the header file
+> as this is trying to not be a slowpath code - but rather - a
+> pre-slow-path-lets-try-if-we can do another cmpxchg in case
+> the unlocker has just unlocked itself.
+> 
+> So something like:
+> 
+> diff --git a/include/asm-generic/qspinlock.h b/include/asm-generic/qspinlock.h
+> index e8a7ae8..29cc9c7 100644
+> --- a/include/asm-generic/qspinlock.h
+> +++ b/include/asm-generic/qspinlock.h
+> @@ -75,11 +75,21 @@ extern void queue_spin_lock_slowpath(struct qspinlock *lock, u32 val);
+>   */
+>  static __always_inline void queue_spin_lock(struct qspinlock *lock)
+>  {
+> -	u32 val;
+> +	u32 val, new;
+>  
+>  	val = atomic_cmpxchg(&lock->val, 0, _Q_LOCKED_VAL);
+>  	if (likely(val == 0))
+>  		return;
+> +
+> +	/* One more attempt - but if we fail mark it as pending. */
+> +	if (val == _Q_LOCKED_VAL) {
+> +		new = Q_LOCKED_VAL |_Q_PENDING_VAL;
+> +
+> +		old = atomic_cmpxchg(&lock->val, val, new);
+> +		if (old == _Q_LOCKED_VAL) /* YEEY! */
+> +			return;
+> +		val = old;
+> +	}
+>  	queue_spin_lock_slowpath(lock, val);
+>  }
 
+I think that's too big for an inline function.
