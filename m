@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756547AbaFWQhI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 12:37:08 -0400
-Received: from smtprelay0118.hostedemail.com ([216.40.44.118]:38807 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756460AbaFWQgF (ORCPT
+	id S1756570AbaFWQiN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 12:38:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51301 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755656AbaFWQiM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 12:36:05 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1345:1359:1437:1534:1539:1568:1711:1714:1730:1747:1777:1792:2197:2199:2393:2559:2562:3138:3139:3140:3141:3142:3865:3866:3868:3872:4321:4605:5007:6261:10004:10026:10848:11232:11658:11914:12043:12517:12519:12555:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: quill58_34dc51d7e1f25
-X-Filterd-Recvd-Size: 1553
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jean Delvare <jdelvare@suse.de>, Andy Whitcroft <apw@canonical.com>,
+	Mon, 23 Jun 2014 12:38:12 -0400
+Date: Mon, 23 Jun 2014 12:38:00 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Scott Alfter <scott@alfter.us>
+Cc: Arnd Bergmann <arnd@arndb.de>, Evgeniy Polyakov <zbr@ioremap.net>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4] checkpatch: Change blank line after declaration type to "LINE_SPACING"
-Date: Mon, 23 Jun 2014 09:35:54 -0700
-Message-Id: <17f831b83d32613174f63d5b7a33f72bd5a0fd85.1403541113.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
-In-Reply-To: <cover.1403541113.git.joe@perches.com>
-References: <cover.1403541113.git.joe@perches.com>
+Subject: Re: [PATCH] w1: select crc16 library for ds2406
+Message-ID: <20140623163800.GA21280@kroah.com>
+References: <12173493.Olv1pKMOGK@wuerfel>
+ <89597b8dd96b8e07df45b2b4a7fb0d9b.squirrel@webmail.alfter.us>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <89597b8dd96b8e07df45b2b4a7fb0d9b.squirrel@webmail.alfter.us>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make it consistent with the other missing or multiple blank line tests.
+On Mon, Jun 23, 2014 at 04:19:58PM -0000, Scott Alfter wrote:
+> On Mon, June 23, 2014 14:31, Arnd Bergmann wrote:
+> > commit 94859308a21b "w1: new w1_ds2406 driver" added a new driver
+> > that uses the crc16 library, but didn't ensure that the core is
+> > there. This adds the necessary Kconfig statements, just like we
+> > have it for other w1 drivers.
+> >
+> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> > Cc: Scott Alfter <scott@alfter.us>
+> > Cc: Evgeniy Polyakov <zbr@ioremap.net>
+> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
+> Sounds OK to me...was an oversight on my part. Do I need to put together
+> another patchfile, or can this one be combined with the one I've already
+> sent in? As an alternative, it's in my kernel tree at
+> https://github.com/salfter/adafruit-raspberrypi-linux.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- scripts/checkpatch.pl | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I'll take it as-is, I can't do anything with some random github tree :)
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 3d6dea6..9795844 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2351,7 +2351,7 @@ sub process {
- 		      $sline =~ /^\+\s+\(?\s*(?:$Compare|$Assignment|$Operators)/) &&
- 			# indentation of previous and current line are the same
- 		    (($prevline =~ /\+(\s+)\S/) && $sline =~ /^\+$1\S/)) {
--			WARN("SPACING",
-+			WARN("LINE_SPACING",
- 			     "Missing a blank line after declarations\n" . $hereprev);
- 		}
- 
--- 
-1.8.1.2.459.gbcd45b4.dirty
+thanks,
 
+greg k-h
