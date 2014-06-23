@@ -1,65 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753726AbaFWVrl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 17:47:41 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:41118 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753289AbaFWVrU (ORCPT
+	id S1754048AbaFWVsB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 17:48:01 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:58599 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753242AbaFWVr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 17:47:20 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Ben Hutchings <ben@decadent.org.uk>, Peter Wu <peter@lekensteyn.nl>,
-        Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCHv3 1/6] rtlwifi/rtl8192de: Fix media status register mask
-Date: Mon, 23 Jun 2014 23:48:17 +0200
-Message-Id: <1403560098-7520-2-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1403560098-7520-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1403560098-7520-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	Mon, 23 Jun 2014 17:47:59 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53A8A084.3000005@roeck-us.net>
+Date: Mon, 23 Jun 2014 14:47:48 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Wim Van Sebroeck <wim@iguana.be>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+CC: Arnd Bergmann <arnd@arndb.de>, dbaryshkov@gmail.com, dwmw2@infradead.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, linux-sunxi@googlegroups.com
+Subject: Re: [PATCH v2 1/6] wdt: sunxi: Move restart code to the watchdog
+ driver
+References: <1399430664-29091-1-git-send-email-maxime.ripard@free-electrons.com> <1399430664-29091-2-git-send-email-maxime.ripard@free-electrons.com> <20140507213318.GA2105@roeck-us.net> <20140515091123.GQ29258@lukather> <20140519150422.GA27329@lukather> <20140522203444.GE27329@lukather> <20140522211207.GA28704@roeck-us.net> <20140623103142.GB19730@lukather> <53A83A20.6090800@roeck-us.net> <20140623154934.GG19730@lukather> <20140623213046.GR22347@spo001.leaseweb.com>
+In-Reply-To: <20140623213046.GR22347@spo001.leaseweb.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-bt_msr & 0xfc will never match 0x3. Fix this by using a mask that actually matches the available types.
+On 06/23/2014 02:30 PM, Wim Van Sebroeck wrote:
+> Hi All,
+>
+>> On Mon, Jun 23, 2014 at 07:30:56AM -0700, Guenter Roeck wrote:
+>>>>> The patches _are_ in my watchdog-next branch and get some coverage from
+>>>>> both my auto-builders and from Fenguang's build robots, so while they are
+>>>>> not in linux-next, they are not completely in the dark either.
+>>>>
+>>>> So, this patch finally didn't make it into 3.16. Great. Now, we can't
+>>>> even reboot the boards.
+>>>>
+>>>> Given how it's just impossible to get something merged reliably
+>>>> through the watchdog tree, I guess I should just start merging the
+>>>> patches through mine?
+>>>>
+>>>
+>>> You can not really blame Wim here.
+>>>
+>>> In this case, I suspect the major reason for not accepting the patch
+>>> is that I tried to provide a clean method / API for "reset through watchdog
+>>> subsystem", which went nowhere, in my understanding because someone objected
+>>> that it would be the wrong thing to do [1] and it didn't get approval /
+>>> acceptance from the arm maintainers. If it is wrong to reset the board
+>>> from the watchdog subsystem in a clean way, it is for sure even more wrong
+>>> to do it as you proposed in your patch.
+>>>
+>>> My conclusion therefore is that all board reset code should move back out
+>>> of the watchdog subsystem, and that we should not accept such code in the
+>>> future. This is not my personal preference, but I do believe that we should
+>>> do it in a clean way or not at all.
+>>
+>> Well, considering that this patch isn't depending on your reboot API
+>> set, and that Wim never either commented on this patch, your reboot
+>> API patchset or your pull request to say that he was not willing to
+>> merge this, there's still a huge failure to communicate.
+>>
+>> I'm fine with any technical reason, let's debate on that. But the
+>> point is there has been no debate at all, only silence from his side.
+>>
+>> I have been told some patches would be merged and I merged through my
+>> tree some patches that were depending on this one based on that
+>> assumption.
+>>
+>> And now, we have a regression.
+>>
+>> Anyway... I guess I should just revert some commits now.
+>>
+>
+> To continue the discussion: I would like to add an excerpt from drivers/watchdog/alim7101_wdt.c
+> /*
+>   *      Notifier for system down
+>   */
+>
+> static int wdt_notify_sys(struct notifier_block *this,
+>                                          unsigned long code, void *unused)
+> {
+>          if (code == SYS_DOWN || code == SYS_HALT)
+>                  wdt_turnoff();
+>
+>          if (code == SYS_RESTART) {
+>                  /*
+>                   * Cobalt devices have no way of rebooting themselves other
+>                   * than getting the watchdog to pull reset, so we restart the
+>                   * watchdog on reboot with no heartbeat
+>                   */
+>                  wdt_change(WDT_ENABLE);
+>                  pr_info("Watchdog timer is now enabled with no heartbeat - should reboot in ~1 second\n");
+>          }
+>          return NOTIFY_DONE;
+> }
+>
+> For some systems the watchdog is the only way to reboot... So where we should put it, is not trivial neither...
+>
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Reviewed-by: Peter Wu <peter@lekensteyn.nl>
----
- drivers/net/wireless/rtlwifi/rtl8192de/hw.c  |    2 +-
- drivers/net/wireless/rtlwifi/rtl8192de/reg.h |    1 +
- 2 files changed, 2 insertions(+), 1 deletion(-)
+Agreed. The above definitely doesn't look like a good solution to me.
 
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192de/hw.c b/drivers/net/wireless/rtlwifi/rtl8192de/hw.c
-index 2b08671..280c3da 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192de/hw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192de/hw.c
-@@ -1128,7 +1128,7 @@ static int _rtl92de_set_media_status(struct ieee80211_hw *hw,
- 	}
- 	rtl_write_byte(rtlpriv, REG_CR + 2, bt_msr);
- 	rtlpriv->cfg->ops->led_control(hw, ledaction);
--	if ((bt_msr & 0xfc) == MSR_AP)
-+	if ((bt_msr & MSR_MASK) == MSR_AP)
- 		rtl_write_byte(rtlpriv, REG_BCNTCFG + 1, 0x00);
- 	else
- 		rtl_write_byte(rtlpriv, REG_BCNTCFG + 1, 0x66);
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192de/reg.h b/drivers/net/wireless/rtlwifi/rtl8192de/reg.h
-index 7f29b8d..315a298 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192de/reg.h
-+++ b/drivers/net/wireless/rtlwifi/rtl8192de/reg.h
-@@ -369,6 +369,7 @@
- #define	MSR_ADHOC			0x01
- #define	MSR_INFRA			0x02
- #define	MSR_AP				0x03
-+#define	MSR_MASK			0x03
- 
- /* 6. Adaptive Control Registers  (Offset: 0x0160 - 0x01CF) */
- /* ----------------------------------------------------- */
--- 
-1.7.10.4
+Guenter
 
