@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754355AbaFWI6H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 04:58:07 -0400
+	id S1754458AbaFWI6O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 04:58:14 -0400
 Received: from acledge3.advantech.com.tw ([219.90.3.242]:49011 "EHLO
 	acledge3.advantech.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752857AbaFWI6E (ORCPT
+	with ESMTP id S1752710AbaFWI6H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 04:58:04 -0400
+	Mon, 23 Jun 2014 04:58:07 -0400
 From: Wei-Chun Pan <weichun.pan@advantech.com.tw>
 To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
         Jean Delvare <jdelvare@suse.de>, Guenter Roeck <linux@roeck-us.net>,
@@ -16,10 +16,12 @@ CC: "Louis.Lu" <Louis.Lu@advantech.com.tw>, "Neo.Lo" <neo.lo@advantech.com.tw>,
         "Kevin.Ong" <Kevin.Ong@advantech.com.tw>,
         <linux-kernel@vger.kernel.org>,
         Wei-Chun Pan <weichun.pan@advantech.com.tw>
-Subject: [PATCH 1/5] mfd: imanager2: Add defines support for IT8516/18/28
-Date: Mon, 23 Jun 2014 01:39:48 -0700
-Message-ID: <1403512792-19100-1-git-send-email-weichun.pan@advantech.com.tw>
+Subject: [PATCH 3/5] mfd: imanager2: Add Core supports for IT8516/18/28
+Date: Mon, 23 Jun 2014 01:39:50 -0700
+Message-ID: <1403512792-19100-3-git-send-email-weichun.pan@advantech.com.tw>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403512792-19100-1-git-send-email-weichun.pan@advantech.com.tw>
+References: <1403512792-19100-1-git-send-email-weichun.pan@advantech.com.tw>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-StopIT: No
@@ -29,20 +31,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Wei-Chun Pan <weichun.pan@advantech.com.tw>
 ---
- include/linux/mfd/advantech/imanager2.h    |  59 +++++
- include/linux/mfd/advantech/imanager2_ec.h | 391 +++++++++++++++++++++++++++++
- 2 files changed, 450 insertions(+)
- create mode 100644 include/linux/mfd/advantech/imanager2.h
- create mode 100644 include/linux/mfd/advantech/imanager2_ec.h
+ drivers/mfd/Kconfig          |   6 +
+ drivers/mfd/Makefile         |   2 +
+ drivers/mfd/imanager2_core.c | 276 +++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 284 insertions(+)
+ create mode 100644 drivers/mfd/imanager2_core.c
 
-diff --git a/include/linux/mfd/advantech/imanager2.h b/include/linux/mfd/advantech/imanager2.h
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 3383412..48b063f 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -10,6 +10,12 @@ config MFD_CORE
+ 	select IRQ_DOMAIN
+ 	default n
+ 
++config MFD_IMANAGER2
++	tristate "Support for Advantech iManager2 EC ICs"
++	select MFD_CORE
++	help
++	  Support for Advantech iManager2 EC ICs
++
+ config MFD_CS5535
+ 	tristate "AMD CS5535 and CS5536 southbridge core functions"
+ 	select MFD_CORE
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index 2851275..10c64ae 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -166,3 +166,5 @@ obj-$(CONFIG_MFD_RETU)		+= retu-mfd.o
+ obj-$(CONFIG_MFD_AS3711)	+= as3711.o
+ obj-$(CONFIG_MFD_AS3722)	+= as3722.o
+ obj-$(CONFIG_MFD_STW481X)	+= stw481x.o
++imanager2-objs			:= imanager2_core.o imanager2_ec.o
++obj-$(CONFIG_MFD_IMANAGER2)	+= imanager2.o
+diff --git a/drivers/mfd/imanager2_core.c b/drivers/mfd/imanager2_core.c
 new file mode 100644
-index 0000000..80808d1
+index 0000000..1a45f09
 --- /dev/null
-+++ b/include/linux/mfd/advantech/imanager2.h
-@@ -0,0 +1,59 @@
++++ b/drivers/mfd/imanager2_core.c
+@@ -0,0 +1,276 @@
 +/*
-+ * imanager2.h - MFD chip information defines of Advantech EC IT8516/18/28
++ * imanager2_core.c - MFD core driver of Advantech EC IT8516/18/28
 + * Copyright (C) 2014  Richard Vidal-Dorsch <richard.dorsch@advantech.com>
 + *
 + * This program is free software: you can redistribute it and/or modify
@@ -59,444 +88,264 @@ index 0000000..80808d1
 + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
 +
-+#ifndef __IMANAGER2_H__
-+#define __IMANAGER2_H__
++#include <linux/module.h>
++#include <linux/mfd/core.h>
++#include <linux/mfd/advantech/imanager2.h>
 +
-+#include <linux/mutex.h>
-+#include "imanager2_ec.h"
++#define DRV_NAME	"imanager2"
++#define DRV_VERSION	"4.0.1"
 +
-+#define EC_FLAG_IO		0
-+#define EC_FLAG_IO_MAILBOX	(1 << 0)
-+#define EC_FLAG_MAILBOX		(1 << 1)
-+
-+enum chips {
-+	it8516 = 0x8516,
-+	it8518 = 0x8518,
-+	it8528 = 0x8528,
++static struct mfd_cell imanager2_cells[] = {
++	{.name = "imanager2_hwm",},
++	{.name = "imanager2_i2c",},
 +};
 +
-+struct ec_table {
-+	u8 devid2itemnum[EC_MAX_DEVICE_ID_NUM];
-+	u8 pinnum[EC_MAX_ITEM_NUM];
-+	u8 devid[EC_MAX_ITEM_NUM];
-+	u8 active_polarity[EC_MAX_ITEM_NUM];
-+};
++static int imanager2_authentication(struct imanager2 *ec)
++{
++	u8 tmp;
++	int ret;
 +
-+struct ec_version {
-+	u16 kernel_ver, chip_code, proj_id, proj_ver;
-+};
++	mutex_lock(&ec->lock);
 +
-+struct ec_version_info {
-+	char prj_name[EC_MAX_LEN_PROJECT_NAME + 1];	/* strlen + '\0' */
-+	struct ec_version version;
-+};
++	if (inb(EC_IO_PORT_CMD) == 0xFF && inb(EC_IO_PORT_DATA) == 0xFF) {
++		ret = -ENODEV;
++		goto unlock;
++	}
 +
-+struct imanager2 {
-+	u16 id;
-+	u32 flag;
-+	struct mutex lock;	/* protects io */
-+	struct ec_version_info info;
-+	struct ec_table table;
-+};
++	if (inb(EC_IO_PORT_CMD) & OBF_MASK)
++		inb(EC_IO_PORT_DATA);	/* initial OBF */
 +
-+#endif /* __IMANAGER2_H__ */
-diff --git a/include/linux/mfd/advantech/imanager2_ec.h b/include/linux/mfd/advantech/imanager2_ec.h
-new file mode 100644
-index 0000000..fd03de5
---- /dev/null
-+++ b/include/linux/mfd/advantech/imanager2_ec.h
-@@ -0,0 +1,391 @@
-+/*
-+ * imanager2_ec.h - MFD driver defines of Advantech EC IT8516/18/28
-+ * Copyright (C) 2014  Richard Vidal-Dorsch <richard.dorsch@advantech.com>
-+ *
-+ * This program is free software: you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation, either version 3 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
++	if (outb_after_ibc(EC_IO_PORT_CMD, EC_CMD_AUTHENTICATION)) {
++		ret = -ENODEV;
++		goto unlock;
++	}
 +
-+#ifndef __IMANAGER2_EC_H__
-+#define __IMANAGER2_EC_H__
++	ret = inb_after_obf(&tmp);
 +
-+/*
-+ * Definition
-+ */
-+#define EC_SIO_CMD		0x29C
-+#define EC_SIO_DATA		0x29D
++unlock:
++	mutex_unlock(&ec->lock);
 +
-+/* Access Mailbox */
-+#define EC_IO_PORT_CMD		0x29A
-+#define EC_IO_PORT_DATA		0x299
++	if (ret)
++		return ret;
 +
-+#define EC_IO_CMD_READ_OFFSET	0xA0
-+#define EC_IO_CMD_WRITE_OFFSET	0x50
++	if (tmp != 0x95)
++		return -ENODEV;
 +
-+#define EC_ITE_PORT_OFS		0x29E
-+#define EC_ITE_PORT_DATA	0x29F
++	return 0;
++}
 +
-+#define EC_TABLE_ITEM_UNUSED	0xFF
-+#define EC_TABLE_DID_NODEV	0x00
-+#define EC_TABLE_HWP_NODEV	0xFF
-+#define EC_TABLE_NOITEM		0xFF
++#define EC_ITE_CHIPID_H8	0x20
++#define EC_ITE_CHIPID_L8	0x21
 +
-+#define EC_ERROR		0xFF
++static int imanager2_get_chip_type(struct imanager2 *ec)
++{
++	mutex_lock(&ec->lock);
 +
-+#define EC_RAM_BANK_SIZE	32	/* 32 bytes size for each bank. */
-+#define EC_RAM_BUFFER_SIZE	256	/* 32 bytes * 8 banks = 256 bytes */
++	outb(EC_ITE_CHIPID_H8, EC_SIO_CMD);
++	ec->id = inb(EC_SIO_DATA) << 8;
++	outb(EC_ITE_CHIPID_L8, EC_SIO_CMD);
++	ec->id |= inb(EC_SIO_DATA);
 +
-+#define EC_CMD_AUTHENTICATION	0x30
-+#define EC_MAX_ITEM_NUM		32
-+#define EC_MAX_DEVICE_ID_NUM	0xFF
-+#define EC_MAX_LEN_PROJECT_NAME	8
-+#define EC_MAX_LEN_FW_VERSION	9
++	mutex_unlock(&ec->lock);
++
++	switch (ec->id) {
++	case it8516:
++	case it8518:
++		ec->flag = EC_FLAG_IO;
++		break;
++	case it8528:
++		ec->flag |= EC_FLAG_IO_MAILBOX;
++		break;
++	default:
++		return -ENODEV;
++	}
++
++	return 0;
++}
 +
 +/*
-+ * CMD - IO
++ * EC provides IO channel and ITE mailbox ways to access mailbox. IO channel is
++ * a common way to access mailbox, but IET mailbox way is much faster than IO
++ * channel. We prefer ITE mailbox if firmware supports. Source kernel code
++ * X11_05 the first firmware version that supports ITE mailbox.
 + */
-+/* ADC */
-+#define EC_CMD_ADC_INDEX				0x15
-+#define EC_CMD_ADC_READ_LSB				0x16
-+#define EC_CMD_ADC_READ_MSB				0x1F
-+/* HW Control Table */
-+#define EC_CMD_HWCTRLTABLE_INDEX			0x20
-+#define EC_CMD_HWCTRLTABLE_GET_PIN_NUM			0x21
-+#define EC_CMD_HWCTRLTABLE_GET_DEVICE_ID		0x22
-+#define EC_CMD_HWCTRLTABLE_GET_PIN_ACTIVE_POLARITY	0x23
-+/* ACPI RAM */
-+#define EC_CMD_ACPIRAM_READ				0x80
-+#define EC_CMD_ACPIRAM_WRITE				0x81
-+/* Extend RAM */
-+#define EC_CMD_EXTRAM_READ				0x86
-+#define EC_CMD_EXTRAM_WRITE				0x87
-+/* HW RAM */
-+#define EC_CMD_HWRAM_READ				0x88
-+#define EC_CMD_HWRAM_WRITE				0x89
-+/* SMB I2C */
-+#define EC_CMD_SMB_INDEX				0x8A
-+#define EC_CMD_SMB_DEVICE_ADDR				0x8B
-+#define EC_CMD_ENABLE_CHANNEL_I2C			0x8C
-+#define EC_CMD_DISABLE_CHANNEL_I2C			0x8D
-+#define EC_CMD_SETUP_SMBUS_FREQUENCY			0x8E
++#define EC_CHIPFW_SUPP_ITEMAILBOX	0x1105
 +
-+/*
-+ * ACPI RAM Address Table
-+ */
-+/* n = 1 ~ 2 */
-+#define EC_ACPIRAM_ADDR_TEMPERATURE_BASE(n)	(0x60 + 3 * ((n) - 1))
-+#define	EC_ACPIRAM_ADDR_LOCAL_TEMPERATURE(n) \
-+				EC_ACPIRAM_ADDR_TEMPERATURE_BASE(n)
-+#define	EC_ACPIRAM_ADDR_REMOTE_TEMPERATURE(n) \
-+				(EC_ACPIRAM_ADDR_TEMPERATURE_BASE(n) + 1)
-+#define	EC_ACPIRAM_ADDR_WARNING_TEMPERATURE(n)\
-+				(EC_ACPIRAM_ADDR_TEMPERATURE_BASE(n) + 2)
++static int imanager2_get_info(struct imanager2 *ec)
++{
++	int ret;
++	u8 *tmp = (u8 *)&ec->info.version.kernel_ver;
 +
-+/* N = 0 ~ 2 */
-+#define EC_ACPIRAM_ADDR_FAN_SPEED_BASE(N)	(0x70 + 2 * (N))
++	mutex_lock(&ec->lock);
 +
-+#define EC_ACPIRAM_ADDR_KERNEL_MAJOR_VERSION	0xF8
-+#define EC_ACPIRAM_ADDR_CHIP_VENDOR_CODE	0xFA
-+#define EC_ACPIRAM_ADDR_PROJECT_NAME_CODE	0xFC
-+#define EC_ACPIRAM_ADDR_FIRMWARE_MAJOR_VERSION	0xFE
++	ret = imanager2_io_read(EC_CMD_ACPIRAM_READ,
++				EC_ACPIRAM_ADDR_KERNEL_MAJOR_VERSION, &tmp[0],
++				2);
 +
-+/*
-+ * HW RAM Address Table
-+ */
-+/* SMBus Control RAM */
-+#define EC_HWRAM_ADDR_SMB_PROTOCOL	0x00
-+#define EC_HWRAM_ADDR_SMB_STATUS	0x01
-+#define EC_HWRAM_ADDR_SMB_ADDRESS	0x02
-+#define EC_HWRAM_ADDR_SMB_CMD		0x03
-+#define EC_HWRAM_ADDR_SMB_DATA(N)	(0x04 + (N))	/* N: 0 ~ 31 */
-+#define EC_HWRAM_ADDR_SMB_BLOCKCNT	0x24
-+#define EC_HWRAM_ADDR_SMB_SELECTOR	0x2B
-+#define EC_HWRAM_ADDR_SMB_I2CCTL	0x2C
-+/* Thermal Source Control RAM 0xB0-0xC7 (N: 0 ~ 3) */
-+#define EC_HWRAM_ADDR_THERMAL_SOURCE_BASE_ADDR(N)	(0xB0 + 6 * (N))
-+#define EC_HWRAM_ADDR_THERMAL_SOURCE_SMB_CHANNEL(N) \
-+				EC_HWRAM_ADDR_THERMAL_SOURCE_BASE_ADDR(N)
-+#define EC_HWRAM_ADDR_THERMAL_SOURCE_SMB_ADDR(N) \
-+				(EC_HWRAM_ADDR_THERMAL_SOURCE_BASE_ADDR(N) + 1)
-+#define EC_HWRAM_ADDR_THERMAL_SOURCE_SMB_CMD(N)	 \
-+				(EC_HWRAM_ADDR_THERMAL_SOURCE_BASE_ADDR(N) + 2)
-+#define EC_HWRAM_ADDR_THERMAL_SOURCE_SMB_STATUS(N) \
-+				(EC_HWRAM_ADDR_THERMAL_SOURCE_BASE_ADDR(N) + 3)
-+#define EC_HWRAM_ADDR_THERMAL_SOURCE_SMB_FAN_CODE(N) \
-+				(EC_HWRAM_ADDR_THERMAL_SOURCE_BASE_ADDR(N) + 4)
-+#define EC_HWRAM_ADDR_THERMAL_SOURCE_SMB_TEMPERATURE(N) \
-+				(EC_HWRAM_ADDR_THERMAL_SOURCE_BASE_ADDR(N) + 5)
-+/* Fan Control 0xD0-0xEF (N: 0 ~ 3) */
-+#define EC_HWRAM_ADDR_FAN_BASE_ADDR(N)	(0xD0 + 0x10 * (N))
-+#define EC_HWRAM_ADDR_FAN_CODE(N)	EC_HWRAM_ADDR_FAN_BASE_ADDR(N)
-+#define EC_HWRAM_ADDR_FAN_STATUS(N)	(EC_HWRAM_ADDR_FAN_BASE_ADDR(N) + 1)
-+#define EC_HWRAM_ADDR_FAN_CONTROL(N)	(EC_HWRAM_ADDR_FAN_BASE_ADDR(N) + 2)
-+#define EC_HWRAM_ADDR_FAN_TEMP_HI(N)	(EC_HWRAM_ADDR_FAN_BASE_ADDR(N) + 3)
-+#define EC_HWRAM_ADDR_FAN_TEMP_LO(N)	(EC_HWRAM_ADDR_FAN_BASE_ADDR(N) + 4)
-+#define EC_HWRAM_ADDR_FAN_TEMP_LOSTOP(N) \
-+					(EC_HWRAM_ADDR_FAN_BASE_ADDR(N) + 5)
-+#define EC_HWRAM_ADDR_FAN_PWM_HI(N)	(EC_HWRAM_ADDR_FAN_BASE_ADDR(N) + 6)
-+#define EC_HWRAM_ADDR_FAN_PWM_LO(N)	(EC_HWRAM_ADDR_FAN_BASE_ADDR(N) + 7)
++	if (ret)
++		goto unlock;
 +
-+/*
-+ * OFS - Mailbox
-+ */
-+/* Mailbox Structure */
-+#define EC_MAILBOX_OFFSET_CMD		0x00
-+#define EC_MAILBOX_OFFSET_STATUS	0x01
-+#define EC_MAILBOX_OFFSET_PARA		0x02
-+#define EC_MAILBOX_OFFSET_DAT(N)	(0x03 + (N))	/* N = 0x00 ~ 0x2C */
-+/* SMBus & I2C */
-+#define EC_MAILBOX_OFFSET_SMBI2C_ADDR	EC_MAILBOX_OFFSET_DAT(0x00)
-+#define EC_MAILBOX_OFFSET_SMBI2C_CMD	EC_MAILBOX_OFFSET_DAT(0x01)
-+#define EC_MAILBOX_OFFSET_SMBI2C_RLEN	EC_MAILBOX_OFFSET_DAT(0x02)
-+#define EC_MAILBOX_OFFSET_SMBI2C_WLEN	EC_MAILBOX_OFFSET_DAT(0x03)
-+#define EC_MAILBOX_OFFSET_SMBI2C_DAT(N)	EC_MAILBOX_OFFSET_DAT(0x04 + (N))
-+#define EC_MAILBOX_SMBI2C_DATA_LENGTH	41	/* 0x04 ~ 0x2C */
++	if (ec->info.version.kernel_ver >= EC_CHIPFW_SUPP_ITEMAILBOX) {
++		ec->flag |= EC_FLAG_MAILBOX;
++		ret = imanager2_get_firmware_version_and_project_name(
++						ec, ec->info.prj_name,
++						&ec->info.version.kernel_ver,
++						&ec->info.version.chip_code,
++						&ec->info.version.proj_id,
++						&ec->info.version.proj_ver);
++	} else {
++		ec->flag &= ~EC_FLAG_MAILBOX;
++		ret = imanager2_io_read(EC_CMD_ACPIRAM_READ,
++					EC_ACPIRAM_ADDR_KERNEL_MAJOR_VERSION,
++					&tmp[0], sizeof(struct ec_version));
++	}
++unlock:
++	mutex_unlock(&ec->lock);
 +
-+/*
-+ * CMD - Mailbox
-+ */
-+/* SMBus/I2C */
-+#define EC_CMD_MALLBOX_I2C_WRITEREAD_WITH_READ_BUFFER		0x01
-+#define EC_CMD_MALLBOX_SMBUS_WRITE_QUICK			0x02
-+#define EC_CMD_MALLBOX_SMBUS_READ_QUICK				0x03
-+#define EC_CMD_MALLBOX_SMBUS_SEND_BYTE				0x04
-+#define EC_CMD_MALLBOX_SMBUS_RECEIVE_BYTE			0x05
-+#define EC_CMD_MALLBOX_SMBUS_WRITE_BYTE				0x06
-+#define EC_CMD_MALLBOX_SMBUS_READ_BYTE				0x07
-+#define EC_CMD_MALLBOX_SMBUS_WRITE_WORD				0x08
-+#define EC_CMD_MALLBOX_SMBUS_READ_WORD				0x09
-+#define EC_CMD_MALLBOX_SMBUS_WRITE_BLOCK			0x0A
-+#define EC_CMD_MALLBOX_SMBUS_READ_BLOCK				0x0B
-+#define EC_CMD_MALLBOX_I2C_READ_WRITE				0x0E
-+#define EC_CMD_MALLBOX_I2C_WRITE_READ				0x0F
-+/* GPIO */
-+#define EC_CMD_MAILBOX_READ_HW_PIN				0x11
-+#define EC_CMD_MAILBOX_WRITE_HW_PIN				0x12
-+/* Storage */
-+#define EC_CMD_MAILBOX_ENABLE_ALL_EC_ACCESS			0x1D
-+#define EC_CMD_MAILBOX_READ_EC_RAM				0x1E
-+#define EC_CMD_MAILBOX_WRITE_EC_RAM				0x1F
-+/* OTHERS */
-+#define EC_CMD_MAILBOX_READ_NYNAMIC_TABLE			0x20
-+/* SMBus */
-+#define EC_CMD_MAILBOX_GET_SMBUS_FREQUENCY			0x34
-+#define EC_CMD_MAILBOX_SET_SMBUS_FREQUENCY			0x35
-+/* FAN */
-+#define EC_CMD_MAILBOX_READ_FAN_CONTROL				0x40
-+#define EC_CMD_MAILBOX_WRITE_FAN_CONTROL			0x41
-+/* Thermal Protect */
-+#define EC_CMD_MAILBOX_READ_THERMAL_SOURCE			0x42
-+#define EC_CMD_MAILBOX_WRITE_THERMAL_SOURCE			0x43
-+/* Storage */
-+#define EC_CMD_MALLBOX_CLEAR_256_BYTES_BUFFER			0xC0
-+#define EC_CMD_MALLBOX_READ_256_BYTES_BUFFER			0xC1
-+#define EC_CMD_MALLBOX_WRITE_256_BYTES_BUFFER			0xC2
-+#define EC_CMD_MALLBOX_READ_EEPROM_DATA_FROM_256_BYTES_BUFFER	0xC3
-+#define EC_CMD_MALLBOX_WRITE_256_BYTES_BUFFER_INTO_EEPROM_DATA	0xC4
-+/* General Mailbox Command */
-+#define EC_CMD_MAILBOX_GET_FIRMWARE_VERSION_AND_PROJECT_NAME	0xF0
-+#define EC_CMD_MAILBOX_CLEAR_ALL				0xFF
++	return ret;
++}
 +
-+/*
-+ * Status - Mailbox
-+ */
-+#define EC_MAILBOX_STATUS_FAIL		0x00
-+#define EC_MAILBOX_STATUS_SUCCESS	0x01
++static int imanager2_device_initial_by_mailbox(struct imanager2 *ec)
++{
++	int i, ret;
 +
-+/*
-+ * PARA - Mailbox
-+ */
-+/* RAM Type */
-+#define EC_RAM_BANK_ACPI	0x01
-+#define EC_RAM_BANK_HW		0x02
-+#define EC_RAM_BANK_EXT		0x03
-+#define EC_RAM_BANK_BUFFER	0x06
-+/* Dynamic Type */
-+#define EC_DYNAMIC_DEVICE_ID	0x00
-+#define EC_DYNAMIC_HW_PIN	0x01
-+#define EC_DYNAMIC_POLARITY	0x02
++	mutex_lock(&ec->lock);
++	ret = imanager2_get_dynamic_table(ec, ec->table.devid,
++					  ec->table.pinnum, NULL);
++	mutex_unlock(&ec->lock);
 +
-+/*
-+ * Functions - Mailbox
-+ */
-+struct imanager2;
++	if (ret)
++		return ret;
 +
-+/* command = 0x20 */
-+int imanager2_get_dynamic_table(struct imanager2 *ec, u8 *did, u8 *hwpin,
-+				u8 *pol);
-+/* command = 0x42 */
-+int imanager2_read_thermalzone(struct imanager2 *ec, u8 zone, u8 *smbid,
-+			       u8 *fanid, u8 *buf, int *len);
-+/* command = 0xC0 */
-+int imanager2_clear_buffer_ram(struct imanager2 *ec);
-+/* command = 0xC1 */
-+int imanager2_read_buffer_ram(struct imanager2 *ec, u8 *data, int len);
-+/* command = 0x1E */
-+int imanager2_read_ram(struct imanager2 *ec, u8 bank, u8 offset, u8 *buf,
-+		       u8 len);
-+/* command = 0x1F */
-+int imanager2_write_ram(struct imanager2 *ec, u8 bank, u8 offset, u8 *buf,
-+			u8 len);
-+/* command = 0xF0 */
-+int imanager2_get_firmware_version_and_project_name(struct imanager2 *ec,
-+						    u8 *prj_name,
-+						    u16 *kernel_ver,
-+						    u16 *chip_code,
-+						    u16 *proj_id,
-+						    u16 *proj_ver);
-+/* command = 0xFF */
-+int imanager2_clear_mailbox(struct imanager2 *ec);
++	for (i = 0; i < EC_MAX_ITEM_NUM; i++) {
++		if (ec->table.devid[i] == EC_TABLE_DID_NODEV)
++			break;
 +
-+/*
-+ * Functions - basic
-+ */
-+/* ITE mailbox available */
-+#define OBF_MASK	(1 << 0)
-+#define IBF_MASK	(1 << 1)
-+int inb_after_obf(u8 *data);
-+int outb_after_ibc(u16 port, u8 data);
-+int imanager2_read_mailbox_buffer(struct imanager2 *ec, u8 cmd, u8 para,
-+				  u8 *data, int len);
-+int imanager2_write_mailbox_buffer(struct imanager2 *ec, u8 cmd, u8 para,
-+				   u8 *data, int len);
-+/* only IO chennel available */
-+int imanager2_io_read(u8 command, u8 offset, u8 *buf, u8 len);
-+int imanager2_io_write(u8 command, u8 offset, u8 *buf, u8 len);
-+int imanager2_io_read_byte_without_offset(u8 command, u8 *value);
-+/* ITE Mailbox & IO chennel */
-+int imanager2_acpiram_read_byte(struct imanager2 *ec, u8 addr, u8 *value);
-+int imanager2_acpiram_write_byte(struct imanager2 *ec, u8 addr, u8 value);
-+int imanager2_hwram_read_byte(struct imanager2 *ec, u8 addr, u8 *value);
-+int imanager2_hwram_write_byte(struct imanager2 *ec, u8 addr, u8 value);
-+int imanager2_smbus_transmit_routine(struct imanager2 *ec, u8 did, u8 protocol,
-+				     u8 addr, u8 cmd, u8 *wdata, u8 wlen,
-+				     u8 *rdata, u8 *rlen);
++		ec->table.devid2itemnum[ec->table.devid[i]] = i;
++	}
 +
-+/*
-+ * Device ID
-+ */
-+enum ec_device_id {
-+	/* GPIO */
-+	altgpio0 = 0x10,	/* 0x10 */
-+	altgpio1,
-+	altgpio2,
-+	altgpio3,
-+	altgpio4,
-+	altgpio5,
-+	altgpio6,
-+	altgpio7,
-+	/* GPIO - Button */
-+	btn0,
-+	btn1,
-+	btn2,
-+	btn3,
-+	btn4,
-+	btn5,
-+	btn6,
-+	btn7,
-+	/* PWM - Fan */
-+	cpufan_2p,		/* 0x20 */
-+	cpufan_4p,
-+	sysfan1_2p,
-+	sysfan1_4p,
-+	sysfan2_2p,
-+	sysfan2_4p,
-+	/* PWM - Brightness Control */
-+	pwmbrightness,
-+	/* PWM - System Speaker */
-+	pwmbeep,
-+	/* SMBus */
-+	smboem0,
-+	smboem1,
-+	smboem2,
-+	smbeeprom,
-+	smbthermal0,
-+	smbthermal1,
-+	smbsecurityeep,
-+	i2coem,
-+	/* DAC - Speaker */
-+	dacspeaker,		/* 0x30 */
-+	/* SMBus */
-+	smbeep2k = 0x38,
-+	oemeep,
-+	oemeep2k,
-+	peci,
-+	smboem3,
-+	smblink,
-+	smbslv,
-+	/* GPIO - LED */
-+	powerled = 0x40,	/* 0x40 */
-+	batledg,
-+	oemled0,
-+	oemled1,
-+	oemled2,
-+	batledr,
-+	/* SMBus - Smart Battery */
-+	smartbat1 = 0x48,
-+	smartbat2,
-+	/* ADC */
-+	adcmosbat = 0x50,	/* 0x50 */
-+	adcmosbatx2,
-+	adcmosbatx10,
-+	adcbat,
-+	adcbatx2,
-+	adcbatx10,
-+	adc5vs0,
-+	adc5vs0x2,
-+	adc5vs0x10,
-+	adv5vs5,
-+	adv5vs5x2,
-+	adv5vs5x10,
-+	adc33vs0,
-+	adc33vs0x2,
-+	adc33vs0x10,
-+	adc33vs5,
-+	adc33vs5x2,		/* 0x60 */
-+	adc33vs5x10,
-+	adv12vs0,
-+	adv12vs0x2,
-+	adv12vs0x10,
-+	adcvcorea,
-+	adcvcoreax2,
-+	adcvcoreax10,
-+	adcvcoreb,
-+	adcvcorebx2,
-+	adcvcorebx10,
-+	adcdc,
-+	adcdcx2,
-+	adcdcx10,
-+	adcdcstby,
-+	adcdcstbyx2,
-+	adcdcstbyx10,		/* 0x70 */
-+	adcdcother,
-+	adcdcotherx2,
-+	adcdcotherx10,
-+	adccurrent,
-+	/* IRQ - Watchdog */
-+	wdirq = 0x78,
-+	/* GPIO - Watchdog */
-+	wdnmi,
-+	/* Tacho - Fan */
-+	tacho0 = 0x80,		/* 0x80 */
-+	tacho1,
-+	tacho2,
-+	/* PWM - Brightness Control */
-+	pwmbrightness2 = 0x88,
-+	/* GPIO - Backlight Control */
-+	brionoff1,
-+	brionoff2,
-+};
++	return 0;
++}
 +
-+#endif /* __IMANAGER2_EC_H__ */
++static int imanager2_device_initial_by_io(struct imanager2 *ec)
++{
++	int i, ret;
++	u8 tmp;
++
++	mutex_lock(&ec->lock);
++
++	for (i = 0; i < EC_MAX_ITEM_NUM; i++) {
++		ret = imanager2_io_read(EC_CMD_HWCTRLTABLE_INDEX, i, &tmp, 1);
++		if (ret)
++			break;
++		if (tmp == EC_TABLE_NOITEM)
++			break;
++
++		imanager2_io_read_byte_without_offset
++		    (EC_CMD_HWCTRLTABLE_GET_PIN_NUM, &ec->table.pinnum[i]);
++		imanager2_io_read_byte_without_offset
++		    (EC_CMD_HWCTRLTABLE_GET_DEVICE_ID, &ec->table.devid[i]);
++
++		if (ec->table.devid[i] == EC_TABLE_DID_NODEV)
++			continue;
++
++		ec->table.devid2itemnum[ec->table.devid[i]] = i;
++	}
++
++	mutex_unlock(&ec->lock);
++
++	if (i < EC_MAX_ITEM_NUM) {
++		memset(&ec->table.devid[i], EC_TABLE_DID_NODEV,
++		       EC_MAX_ITEM_NUM - i);
++		memset(&ec->table.pinnum[i], EC_TABLE_HWP_NODEV,
++		       EC_MAX_ITEM_NUM - i);
++	}
++
++	return ret;
++}
++
++static int imanager2_build_device_table(struct imanager2 *ec)
++{
++	memset(&ec->table.devid2itemnum[0], EC_TABLE_ITEM_UNUSED,
++	       ARRAY_SIZE(ec->table.devid2itemnum));
++
++	if (ec->flag & EC_FLAG_MAILBOX)
++		return imanager2_device_initial_by_mailbox(ec);
++	else
++		return imanager2_device_initial_by_io(ec);
++}
++
++static struct platform_device *ec_pdev;
++
++static int __init imanager2_mfd_device_init(void)
++{
++	struct imanager2 ec = { 0 };
++	int ret;
++
++	mutex_init(&ec.lock);
++
++	ret = imanager2_authentication(&ec);
++	if (ret)
++		return ret;
++
++	ret = imanager2_get_chip_type(&ec);
++	if (ret)
++		return ret;
++
++	ret = imanager2_get_info(&ec);
++	if (ret)
++		return ret;
++
++	ret = imanager2_build_device_table(&ec);
++	if (ret)
++		return ret;
++
++	ec_pdev = platform_device_alloc(DRV_NAME, PLATFORM_DEVID_AUTO);
++	if (!ec_pdev)
++		return -ENOMEM;
++
++	if (!devm_request_region(&ec_pdev->dev, EC_IO_PORT_DATA, 2, DRV_NAME))
++		return -EIO;
++
++	if (!devm_request_region(&ec_pdev->dev, EC_ITE_PORT_OFS, 2, DRV_NAME))
++		return -EIO;
++
++	ret = platform_device_add_data(ec_pdev, &ec, sizeof(struct imanager2));
++	if (ret)
++		goto exit_device_put;
++
++	ret = platform_device_add(ec_pdev);
++	if (ret)
++		goto exit_device_put;
++
++	ret = mfd_add_devices(&ec_pdev->dev, -1, imanager2_cells,
++			      ARRAY_SIZE(imanager2_cells), NULL, -1, NULL);
++	if (ret)
++		goto exit_device_unregister;
++
++	return 0;
++
++exit_device_unregister:
++	platform_device_unregister(ec_pdev);
++exit_device_put:
++	platform_device_put(ec_pdev);
++
++	return ret;
++}
++
++static void __exit imanager2_mfd_device_exit(void)
++{
++	mfd_remove_devices(&ec_pdev->dev);
++	platform_device_unregister(ec_pdev);
++}
++
++module_init(imanager2_mfd_device_init);
++module_exit(imanager2_mfd_device_exit);
++
++MODULE_AUTHOR("Richard Vidal-Dorsch <richard.dorsch at advantech.com>");
++MODULE_DESCRIPTION("iManager2 platform device definitions v" DRV_VERSION);
++MODULE_LICENSE("GPL");
++MODULE_VERSION(DRV_VERSION);
 -- 
 1.9.1
 
