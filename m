@@ -1,182 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751914AbaFWGqy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 02:46:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11556 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751159AbaFWGqw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 02:46:52 -0400
-Date: Mon, 23 Jun 2014 09:47:00 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Ming Lei <ming.lei@canonical.com>, Jens Axboe <axboe@kernel.dk>,
-        linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        linux-api@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        Stefan Hajnoczi <stefanha@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: Re: [PATCH v1 2/2] block: virtio-blk: support multi virt queues per
- virtio-blk device
-Message-ID: <20140623064700.GA13810@redhat.com>
-References: <1403278181-28455-1-git-send-email-ming.lei@canonical.com>
- <1403278181-28455-3-git-send-email-ming.lei@canonical.com>
- <20140622102448.GB17067@redhat.com>
- <20140623034251.GR4453@dastard>
+	id S1752140AbaFWGrx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 02:47:53 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:48804 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751843AbaFWGrw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 02:47:52 -0400
+X-Original-SENDERIP: 10.177.220.169
+X-Original-MAILFROM: minchan@kernel.org
+Date: Mon, 23 Jun 2014 15:48:40 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [patch 3/4] mm: vmscan: remove all_unreclaimable()
+Message-ID: <20140623064840.GC15594@bbox>
+References: <1403282030-29915-1-git-send-email-hannes@cmpxchg.org>
+ <1403282030-29915-3-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140623034251.GR4453@dastard>
+In-Reply-To: <1403282030-29915-3-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 23, 2014 at 01:42:51PM +1000, Dave Chinner wrote:
-> On Sun, Jun 22, 2014 at 01:24:48PM +0300, Michael S. Tsirkin wrote:
-> > On Fri, Jun 20, 2014 at 11:29:40PM +0800, Ming Lei wrote:
-> > > @@ -24,8 +26,8 @@ static struct workqueue_struct *virtblk_wq;
-> > >  struct virtio_blk
-> > >  {
-> > >  	struct virtio_device *vdev;
-> > > -	struct virtqueue *vq;
-> > > -	spinlock_t vq_lock;
-> > > +	struct virtqueue *vq[MAX_NUM_VQ];
-> > > +	spinlock_t vq_lock[MAX_NUM_VQ];
-> > 
-> > array of struct {
-> >     *vq;
-> >     spinlock_t lock;
-> > }
-> > would use more memory but would get us better locality.
-> > It might even make sense to add padding to avoid
-> > cacheline sharing between two unrelated VQs.
-> > Want to try?
+On Fri, Jun 20, 2014 at 12:33:49PM -0400, Johannes Weiner wrote:
+> Direct reclaim currently calls shrink_zones() to reclaim all members
+> of a zonelist, and if that wasn't successful it does another pass
+> through the same zonelist to check overall reclaimability.
 > 
-> It's still false sharing because the queue objects share cachelines.
-> To operate without contention they have to be physically separated
-> from each other like so:
+> Just check reclaimability in shrink_zones() directly and propagate the
+> result through the return value.  Then remove all_unreclaimable().
 > 
-> struct vq {
-> 	struct virtqueue	*q;
-> 	spinlock_t		lock;
-> } ____cacheline_aligned_in_smp;
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Minchan Kim <minchan@kernel.org>
 
-Exacly, that's what I meant by padding above.
-
-> struct some_other_struct {
-> 	....
-> 	struct vq	vq[MAX_NUM_VQ];
-> 	....
-> };
+> ---
+>  mm/vmscan.c | 48 +++++++++++++++++++++++-------------------------
+>  1 file changed, 23 insertions(+), 25 deletions(-)
 > 
-> This keeps locality to objects within a queue, but separates each
-> queue onto it's own cacheline....
-> 
-> Cheers,
-> 
-> Dave.
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index ed1efb84c542..d0bc1a209746 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2244,9 +2244,10 @@ static inline bool should_continue_reclaim(struct zone *zone,
+>  	}
+>  }
+>  
+> -static void shrink_zone(struct zone *zone, struct scan_control *sc)
+> +static unsigned long shrink_zone(struct zone *zone, struct scan_control *sc)
+>  {
+>  	unsigned long nr_reclaimed, nr_scanned;
+> +	unsigned long zone_reclaimed = 0;
+>  
+>  	do {
+>  		struct mem_cgroup *root = sc->target_mem_cgroup;
+> @@ -2290,8 +2291,12 @@ static void shrink_zone(struct zone *zone, struct scan_control *sc)
+>  			   sc->nr_scanned - nr_scanned,
+>  			   sc->nr_reclaimed - nr_reclaimed);
+>  
+> +		zone_reclaimed += sc->nr_reclaimed - nr_reclaimed;
+> +
+>  	} while (should_continue_reclaim(zone, sc->nr_reclaimed - nr_reclaimed,
+>  					 sc->nr_scanned - nr_scanned, sc));
+> +
+> +	return zone_reclaimed;
+>  }
+>  
+>  /* Returns true if compaction should go ahead for a high-order request */
+> @@ -2340,8 +2345,10 @@ static inline bool compaction_ready(struct zone *zone, int order)
+>   *
+>   * If a zone is deemed to be full of pinned pages then just give it a light
+>   * scan then give up on it.
+> + *
+> + * Returns whether the zones overall are reclaimable or not.
+>   */
+> -static void shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
+> +static bool shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
+>  {
+>  	struct zoneref *z;
+>  	struct zone *zone;
+> @@ -2354,6 +2361,7 @@ static void shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
+>  		.gfp_mask = sc->gfp_mask,
+>  	};
+>  	enum zone_type requested_highidx = gfp_zone(sc->gfp_mask);
+> +	bool all_unreclaimable = true;
+>  
+>  	/*
+>  	 * If the number of buffer_heads in the machine exceeds the maximum
+> @@ -2368,6 +2376,8 @@ static void shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
+>  
+>  	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+>  					gfp_zone(sc->gfp_mask), sc->nodemask) {
+> +		unsigned long zone_reclaimed = 0;
+> +
+>  		if (!populated_zone(zone))
+>  			continue;
+>  		/*
+> @@ -2414,10 +2424,15 @@ static void shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
+>  						&nr_soft_scanned);
+>  			sc->nr_reclaimed += nr_soft_reclaimed;
+>  			sc->nr_scanned += nr_soft_scanned;
+> +			zone_reclaimed += nr_soft_reclaimed;
+>  			/* need some check for avoid more shrink_zone() */
+>  		}
+>  
+> -		shrink_zone(zone, sc);
+> +		zone_reclaimed += shrink_zone(zone, sc);
+> +
+> +		if (zone_reclaimed ||
+> +		    (global_reclaim(sc) && zone_reclaimable(zone)))
+> +			all_unreclaimable = false;
+>  	}
+>  
+>  	/*
+> @@ -2439,26 +2454,8 @@ static void shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
+>  	 * promoted it to __GFP_HIGHMEM.
+>  	 */
+>  	sc->gfp_mask = orig_mask;
+> -}
+>  
+> -/* All zones in zonelist are unreclaimable? */
+> -static bool all_unreclaimable(struct zonelist *zonelist,
+> -		struct scan_control *sc)
+> -{
+> -	struct zoneref *z;
+> -	struct zone *zone;
+> -
+> -	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+> -			gfp_zone(sc->gfp_mask), sc->nodemask) {
+> -		if (!populated_zone(zone))
+> -			continue;
+> -		if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
+> -			continue;
+> -		if (zone_reclaimable(zone))
+> -			return false;
+> -	}
+> -
+> -	return true;
+> +	return !all_unreclaimable;
+>  }
+>  
+>  /*
+> @@ -2482,6 +2479,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+>  {
+>  	unsigned long total_scanned = 0;
+>  	unsigned long writeback_threshold;
+> +	bool zones_reclaimable;
+>  
+>  	delayacct_freepages_start();
+>  
+> @@ -2492,7 +2490,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+>  		vmpressure_prio(sc->gfp_mask, sc->target_mem_cgroup,
+>  				sc->priority);
+>  		sc->nr_scanned = 0;
+> -		shrink_zones(zonelist, sc);
+> +		zones_reclaimable = shrink_zones(zonelist, sc);
+>  
+>  		total_scanned += sc->nr_scanned;
+>  		if (sc->nr_reclaimed >= sc->nr_to_reclaim)
+> @@ -2533,8 +2531,8 @@ out:
+>  	if (sc->compaction_ready)
+>  		return 1;
+>  
+> -	/* top priority shrink_zones still had more to do? don't OOM, then */
+> -	if (global_reclaim(sc) && !all_unreclaimable(zonelist, sc))
+> +	/* Any of the zones still reclaimable?  Don't OOM. */
+> +	if (zones_reclaimable)
+>  		return 1;
+>  
+>  	return 0;
 > -- 
-> Dave Chinner
-> david@fromorbit.com
+> 2.0.0
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-To reduce the amount of memory wasted, we could add
-the lock in the VQ itself.
-Wastes 8 bytes of memory for devices which don't need it, but
-we can save it elsewhere (e.g. get rid of the list and
-the priv pointer).
-
-How's this?  Your patch would go on top.
-Care benchmarking and telling us whether it makes sense?
-If yes please let me know and I'll send an official patchset.
-
--->
-
-virtio-blk: move spinlock to vq itself
-
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-
---
-
-diff --git a/include/linux/virtio.h b/include/linux/virtio.h
-index b46671e..0951b21 100644
---- a/include/linux/virtio.h
-+++ b/include/linux/virtio.h
-@@ -19,6 +19,7 @@
-  * @priv: a pointer for the virtqueue implementation to use.
-  * @index: the zero-based ordinal number for this queue.
-  * @num_free: number of elements we expect to be able to fit.
-+ * @lock: lock for optional use by devices. If used, devices must initialize it.
-  *
-  * A note on @num_free: with indirect buffers, each buffer needs one
-  * element in the queue, otherwise a buffer will need one element per
-@@ -31,6 +32,7 @@ struct virtqueue {
- 	struct virtio_device *vdev;
- 	unsigned int index;
- 	unsigned int num_free;
-+	spinlock_t lock;
- 	void *priv;
- };
- 
-diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-index f63d358..a3cdc19 100644
---- a/drivers/block/virtio_blk.c
-+++ b/drivers/block/virtio_blk.c
-@@ -25,7 +25,6 @@ struct virtio_blk
- {
- 	struct virtio_device *vdev;
- 	struct virtqueue *vq;
--	spinlock_t vq_lock;
- 
- 	/* The disk structure for the kernel. */
- 	struct gendisk *disk;
-@@ -137,7 +136,7 @@ static void virtblk_done(struct virtqueue *vq)
- 	unsigned long flags;
- 	unsigned int len;
- 
--	spin_lock_irqsave(&vblk->vq_lock, flags);
-+	spin_lock_irqsave(&vblk->vq->lock, flags);
- 	do {
- 		virtqueue_disable_cb(vq);
- 		while ((vbr = virtqueue_get_buf(vblk->vq, &len)) != NULL) {
-@@ -151,7 +150,7 @@ static void virtblk_done(struct virtqueue *vq)
- 	/* In case queue is stopped waiting for more buffers. */
- 	if (req_done)
- 		blk_mq_start_stopped_hw_queues(vblk->disk->queue, true);
--	spin_unlock_irqrestore(&vblk->vq_lock, flags);
-+	spin_unlock_irqrestore(&vblk->vq->lock, flags);
- }
- 
- static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
-@@ -202,12 +201,12 @@ static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
- 			vbr->out_hdr.type |= VIRTIO_BLK_T_IN;
- 	}
- 
--	spin_lock_irqsave(&vblk->vq_lock, flags);
-+	spin_lock_irqsave(&vblk->vq->lock, flags);
- 	err = __virtblk_add_req(vblk->vq, vbr, vbr->sg, num);
- 	if (err) {
- 		virtqueue_kick(vblk->vq);
- 		blk_mq_stop_hw_queue(hctx);
--		spin_unlock_irqrestore(&vblk->vq_lock, flags);
-+		spin_unlock_irqrestore(&vblk->vq->lock, flags);
- 		/* Out of mem doesn't actually happen, since we fall back
- 		 * to direct descriptors */
- 		if (err == -ENOMEM || err == -ENOSPC)
-@@ -217,7 +216,7 @@ static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
- 
- 	if (last && virtqueue_kick_prepare(vblk->vq))
- 		notify = true;
--	spin_unlock_irqrestore(&vblk->vq_lock, flags);
-+	spin_unlock_irqrestore(&vblk->vq->lock, flags);
- 
- 	if (notify)
- 		virtqueue_notify(vblk->vq);
-@@ -551,7 +550,7 @@ static int virtblk_probe(struct virtio_device *vdev)
- 	err = init_vq(vblk);
- 	if (err)
- 		goto out_free_vblk;
--	spin_lock_init(&vblk->vq_lock);
-+	spin_lock_init(&vblk->vq->lock);
- 
- 	/* FIXME: How many partitions?  How long is a piece of string? */
- 	vblk->disk = alloc_disk(1 << PART_BITS);
-
-
+-- 
+Kind regards,
+Minchan Kim
