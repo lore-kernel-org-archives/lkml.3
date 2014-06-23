@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754630AbaFWNEu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:04:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37042 "EHLO
+	id S1755081AbaFWNRV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:17:21 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37073 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754511AbaFWNEo (ORCPT
+	with ESMTP id S1754425AbaFWNEu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:04:44 -0400
+	Mon, 23 Jun 2014 09:04:50 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alexej Starschenko <starschenko@gmail.com>,
-        Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 57/93] USB: serial: option: add support for Novatel E371 PCIe card
-Date: Mon, 23 Jun 2014 14:02:36 +0100
-Message-Id: <1403528592-2163-58-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 62/93] ALSA: hda/analog - Fix silent output on ASUS A8JN
+Date: Mon, 23 Jun 2014 14:02:41 +0100
+Message-Id: <1403528592-2163-63-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
 References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
@@ -29,60 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexej Starschenko <starschenko@gmail.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 8a61ba3a47ac39f660702aa66a172185dd605a86 upstream.
+commit 598e306184d26fa1d546334f2eb370b4d94a4ad3 upstream.
 
-Adds product ID for the Novatel E371 PCI Express Mini Card.
+ASUS A8JN with AD1986A codec seems following the normal EAPD in the
+normal order (0 = off, 1 = on) unlike other machines with AD1986A.
+Apply the workaround used for Toshiba laptop that showed the same
+problem.
 
-$ lsusb
-Bus 001 Device 024: ID 1410:9011 Novatel Wireless
-
-$ usb-devices
-T:  Bus=01 Lev=01 Prnt=01 Port=03 Cnt=01 Dev#= 24 Spd=480 MxCh= 0
-D:  Ver= 2.00 Cls=ef(misc ) Sub=02 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=1410 ProdID=9011 Rev=00.03
-S:  Manufacturer=Novatel Wireless, Inc.
-S:  Product=Novatel Wireless HSPA
-S:  SerialNumber=012773002115811
-C:  #Ifs= 6 Cfg#= 1 Atr=e0 MxPwr=500mA
-I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-I:  If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-I:  If#= 3 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-I:  If#= 6 Alt= 0 #EPs= 1 Cls=02(commc) Sub=06 Prot=00 Driver=cdc_ether
-I:  If#= 7 Alt= 1 #EPs= 2 Cls=0a(data ) Sub=00 Prot=00 Driver=cdc_ether
-
-Tested with kernel 3.2.0.
-
-Signed-off-by: Alexej Starschenko <starschenko@gmail.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=75041
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/option.c | 2 ++
- 1 file changed, 2 insertions(+)
+ sound/pci/hda/patch_analog.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index f213ee978516..948a19f0cdf7 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -161,6 +161,7 @@ static void option_instat_callback(struct urb *urb);
- #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_FULLSPEED	0x9000
- #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_HIGHSPEED	0x9001
- #define NOVATELWIRELESS_PRODUCT_E362		0x9010
-+#define NOVATELWIRELESS_PRODUCT_E371		0x9011
- #define NOVATELWIRELESS_PRODUCT_G2		0xA010
- #define NOVATELWIRELESS_PRODUCT_MC551		0xB001
+diff --git a/sound/pci/hda/patch_analog.c b/sound/pci/hda/patch_analog.c
+index 570bce096759..c1432027e2ff 100644
+--- a/sound/pci/hda/patch_analog.c
++++ b/sound/pci/hda/patch_analog.c
+@@ -1235,6 +1235,7 @@ static const struct hda_fixup ad1986a_fixups[] = {
+ };
  
-@@ -1012,6 +1013,7 @@ static const struct usb_device_id option_ids[] = {
- 	/* Novatel Ovation MC551 a.k.a. Verizon USB551L */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_MC551, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_E362, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_E371, 0xff, 0xff, 0xff) },
- 
- 	{ USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_H01) },
- 	{ USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_H01A) },
+ static const struct snd_pci_quirk ad1986a_fixup_tbl[] = {
++	SND_PCI_QUIRK(0x1043, 0x1447, "ASUS A8JN", AD1986A_FIXUP_EAPD),
+ 	SND_PCI_QUIRK(0x17aa, 0x2066, "Lenovo N100", AD1986A_FIXUP_INV_JACK_DETECT),
+ 	SND_PCI_QUIRK(0x1179, 0xff40, "Toshiba Satellite L40", AD1986A_FIXUP_EAPD),
+ 	{}
 -- 
 1.9.1
 
