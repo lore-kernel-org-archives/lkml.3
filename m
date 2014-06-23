@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754321AbaFWNEX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:04:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36924 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754282AbaFWNEU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754292AbaFWNEU (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 23 Jun 2014 09:04:20 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36897 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754249AbaFWNEQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 09:04:16 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Marek=20Ol=C5=A1=C3=A1k?= <marek.olsak@amd.com>,
+Cc: Rabin Vincent <rabin@rab.in>, Russell King <rmk+kernel@arm.linux.org.uk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 42/93] drm/radeon: don't allow RADEON_GEM_DOMAIN_CPU for command submission
-Date: Mon, 23 Jun 2014 14:02:21 +0100
-Message-Id: <1403528592-2163-43-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 35/93] ARM: 8064/1: fix v7-M signal return
+Date: Mon, 23 Jun 2014 14:02:14 +0100
+Message-Id: <1403528592-2163-36-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
 References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
@@ -30,37 +30,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Marek=20Ol=C5=A1=C3=A1k?= <marek.olsak@amd.com>
+From: Rabin Vincent <rabin@rab.in>
 
-commit ec65da385d46f63740c1c9230b891a6dcbd64c71 upstream.
+commit 483a6c9d447f625b991fa04a1530493d893984db upstream.
 
-It hangs the hardware.
+According to the ARM ARM, the behaviour is UNPREDICTABLE if the PC read
+from the exception return stack is not half word aligned.  See the
+pseudo code for ExceptionReturn() and PopStack().
 
-Signed-off-by: Marek Olšák <marek.olsak@amd.com>
-Reviewed-by: Christian König <christian.koenig@amd.com>
-[ luis: backported to 3.11: adjusted context ]
+The signal handler's address has the bit 0 set, and setup_return()
+directly writes this to regs->ARM_pc.  Current hardware happens to
+discard this bit, but QEMU's emulation doesn't and this makes processes
+crash.  Mask out bit 0 before the exception return in order to get
+predictable behaviour.
+
+Fixes: 19c4d593f0b4 ("ARM: ARMv7-M: Add support for exception handling")
+
+Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Signed-off-by: Rabin Vincent <rabin@rab.in>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/radeon_cs.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ arch/arm/kernel/entry-header.S | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_cs.c b/drivers/gpu/drm/radeon/radeon_cs.c
-index 41b170d25c08..ff35fa18d7ed 100644
---- a/drivers/gpu/drm/radeon/radeon_cs.c
-+++ b/drivers/gpu/drm/radeon/radeon_cs.c
-@@ -96,6 +96,12 @@ static int radeon_cs_parser_relocs(struct radeon_cs_parser *p)
- 			uint32_t domain = r->write_domain ?
- 				r->write_domain : r->read_domains;
+diff --git a/arch/arm/kernel/entry-header.S b/arch/arm/kernel/entry-header.S
+index de23a9beed13..b527a79f73f1 100644
+--- a/arch/arm/kernel/entry-header.S
++++ b/arch/arm/kernel/entry-header.S
+@@ -132,6 +132,10 @@
+ 	orrne	r5, V7M_xPSR_FRAMEPTRALIGN
+ 	biceq	r5, V7M_xPSR_FRAMEPTRALIGN
  
-+			if (domain & RADEON_GEM_DOMAIN_CPU) {
-+				DRM_ERROR("RADEON_GEM_DOMAIN_CPU is not valid "
-+					  "for command submission\n");
-+				return -EINVAL;
-+			}
++	@ ensure bit 0 is cleared in the PC, otherwise behaviour is
++	@ unpredictable
++	bic	r4, #1
 +
- 			p->relocs[i].lobj.domain = domain;
- 			if (domain == RADEON_GEM_DOMAIN_VRAM)
- 				domain |= RADEON_GEM_DOMAIN_GTT;
+ 	@ write basic exception frame
+ 	stmdb	r2!, {r1, r3-r5}
+ 	ldmia	sp, {r1, r3-r5}
 -- 
 1.9.1
 
