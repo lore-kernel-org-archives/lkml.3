@@ -1,71 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755243AbaFWOVs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 10:21:48 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:49986 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753890AbaFWOVr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 10:21:47 -0400
-Date: Mon, 23 Jun 2014 16:21:39 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Kirill Tkhai <ktkhai@parallels.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        tkhai@yandex.ru, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Konstantin Khorenko <khorenko@parallels.com>
-Subject: Re: [PATCH 3/3] sched: Rework check_for_tasks()
-Message-ID: <20140623142139.GD19860@laptop.programming.kicks-ass.net>
-References: <20140617130442.29933.54945.stgit@tkhai>
- <1403011462.27674.46.camel@tkhai>
- <20140623102457.GW19860@laptop.programming.kicks-ass.net>
- <1403520738.3462.11.camel@tkhai>
+	id S1755250AbaFWOWF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 10:22:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49450 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753890AbaFWOWD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 10:22:03 -0400
+Date: Mon, 23 Jun 2014 15:21:59 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Max Asbock <masbock@linux.vnet.ibm.com>
+Cc: rostedt@goodmis.org, mingo@redhat.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Patch] tracing: tell mm_migrate_pages event about numa_misplaced
+Message-ID: <20140623142159.GP10819@suse.de>
+References: <1403290156.4484.10.camel@oc3432500282.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <1403520738.3462.11.camel@tkhai>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1403290156.4484.10.camel@oc3432500282.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 23, 2014 at 02:52:18PM +0400, Kirill Tkhai wrote:
-> > Then again, I suppose anything without rq->lock can and will miss tasks.
+On Fri, Jun 20, 2014 at 11:49:16AM -0700, Max Asbock wrote:
 > 
-> If we use rq->lock it's possible to move check_for_tasks() to kernel/sched/core.c.
+> The mm_migrate_pages trace event reports a reason for the migration, typically as a
+> symbolic string. The exception is the reason MR_NUMA_MISPLACED for which it just displays
+> the numeric value:
+> mm_migrate_pages: nr_succeeded=1 nr_failed=0 mode=MIGRATE_ASYNC reason=0x5
 > 
-> And we can leave TASK_RUNNING check for waking tasks. Maybe something like this?
+> This patch makes the output consistent by introducing a string value for MR_NUMA_MISPLACED.
+> The event is then reported as:
+> mm_migrate_pages: nr_succeeded=1 nr_failed=0 mode=MIGRATE_ASYNC reason=numa_misplaced
 > 
-> static inline void check_for_tasks(int dead_cpu)
-> {
-> 	struct task_struct *g, *p;
-> 	struct rq *rq = cpu_rq(dead_cpu);
-> 
-> 	read_lock_irq(&tasklist_lock);
-> 	raw_spin_lock(&rq->lock)
-> 
-> 	do_each_thread(g, p) {
-> 		if (!p->on_rq && p->state != TASK_RUNNING)
-> 			continue;
-> 		if (task_cpu(p) != dead_cpu)
-> 			continue;
-> 
-> 		pr_warn("Task %s (pid=%d) is on cpu %d (state=%ld, flags=%x)\n",
-> 			p->comm, task_pid_nr(p), dead_cpu, p->state, p->flags);
-> 	} while_each_thread(g, p);
-> 
-> 	raw_spin_unlock(&rq->lock)
-> 	read_unlock_irq(&tasklist_lock);
-> }
-> 
-> It still does not give a 100% guarantee... Should we take p->pi_lock for every task?
+> Signed-off-by: Max Asbock <masbock@linux.vnet.ibm.com>
 
-seeing how rq->lock nests inside of ->pi_lock that's going to be
-somewhat icky.
+Acked-by: Mel Gorman <mgorman@suse.de>
 
-I think we can live with a false negative, given how much people run
-this nonsense it'll trigger eventually.
-
-False positives would be bad though :-)
-
-So I think we can keep your original (lock-free) proposal.
+-- 
+Mel Gorman
+SUSE Labs
