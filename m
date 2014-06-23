@@ -1,94 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932350AbaFWUZX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 16:25:23 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:64121 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932089AbaFWUZU (ORCPT
+	id S1756352AbaFWU02 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 16:26:28 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33766 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755379AbaFWU00 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 16:25:20 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: dts: kirkwood: fix phy-connection-type for Guruplug
-Date: Mon, 23 Jun 2014 22:25:15 +0200
-Message-Id: <1403555115-13111-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Mon, 23 Jun 2014 16:26:26 -0400
+X-Sasl-enc: +XPZPlDScEE6lKMXS5YA6zYFiDCRr9M+qTmlEB57wRqm 1403555186
+Date: Mon, 23 Jun 2014 16:26:15 -0400
+From: Greg KH <greg@kroah.com>
+To: Ilia Mirkin <imirkin@alum.mit.edu>
+Cc: Pavel Machek <pavel@ucw.cz>, kernel list <linux-kernel@vger.kernel.org>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        David Airlie <airlied@linux.ie>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
+Subject: Re: unparseable, undocumented /sys/class/drm/.../pstate
+Message-ID: <20140623202615.GA29199@kroah.com>
+References: <20140621180201.GA4621@amd.pavel.ucw.cz>
+ <CAKb7UvhOCiBHcsB6a0qKBNsC3c9pmb=Wc7zucbBuP6vt-tx2eA@mail.gmail.com>
+ <20140621194538.GA4903@kroah.com>
+ <CAKb7UvjhOystpeRy1nQx49Nspve4wHQPb+e7gJQ-RT-HseK4Cw@mail.gmail.com>
+ <20140623130259.GA29809@amd.pavel.ucw.cz>
+ <CAKb7UvhmatCtu2rEHgVOjitN1gAPTsgfaUmA2iOLX2Qwhi+Yxg@mail.gmail.com>
+ <20140623201503.GA4551@amd.pavel.ucw.cz>
+ <CAKb7UvjU+MvW+rXi8488GE64Exuxj3+H5V+E8fzfL5fTb1CGMA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKb7UvjU+MvW+rXi8488GE64Exuxj3+H5V+E8fzfL5fTb1CGMA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit eeb845459a72e792a959278b858f9c417e9995bd
- ("ARM: dts: kirkwood: set Guruplug phy-connection-type to rgmii-id")
-added phy-connection-type properties to ethernet PHY nodes.
+On Mon, Jun 23, 2014 at 04:18:39PM -0400, Ilia Mirkin wrote:
+> On Mon, Jun 23, 2014 at 4:15 PM, Pavel Machek <pavel@ucw.cz> wrote:
+> > Hi!
+> >
+> >> >> >> > I guess better interface would be something like
+> >> >> >> >
+> >> >> >> > pstate/07/core_clock_min
+> >> >> >> >           core_clock_max
+> >> >> >> >           memory_clock_min
+> >> >> >> >           memory_clock_max
+> >> >> >> >
+> >> >> >> > and then pstate/active containing just the number of active state?
+> >> >
+> >> >> Could we just say that the format of this file is one-per-line of
+> >> >>
+> >> >> level: information-for-the-user
+> >> >
+> >> > But it is not.
+> >>
+> >> But it is...
+> >>
+> >> > Management tools will want to parse it, sooner or
+> >> > later.  What is wrong with solution described above?
+> >>
+> >> It is complex and annoying to the people that will actually use it.
+> >
+> > grep -r . pstate/ is actually not that bad...
+> 
+> While that's a clever trick that anyone who's done a bunch of stuff
+> with sysfs knows, I doubt the average linux user could come up with
+> that on their own. I know I didn't.
 
-Actually, the property has to be set for the ethernet port node instead.
-Fix it by moving the corresponding properties to the correct nodes.
+That's fine, why would an "average" Linux user ever need to poke around
+in sysfs?  Again, please describe what you are wanting to have exported
+to userspace, and what userspace is supposed to do with that
+information, before worrying about the actual sysfs file layout.
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
----
-Jason,
-
-this should go in as a fix for v3.16 where above commit appeared first.
-
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-Cc: Kumar Gala <galak@codeaurora.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: devicetree@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- arch/arm/boot/dts/kirkwood-guruplug-server-plus.dts | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/arm/boot/dts/kirkwood-guruplug-server-plus.dts b/arch/arm/boot/dts/kirkwood-guruplug-server-plus.dts
-index c5a1fc75c7a3..b2d9834bf458 100644
---- a/arch/arm/boot/dts/kirkwood-guruplug-server-plus.dts
-+++ b/arch/arm/boot/dts/kirkwood-guruplug-server-plus.dts
-@@ -105,7 +105,6 @@
- 		compatible = "ethernet-phy-id0141.0cb0",
- 		             "ethernet-phy-ieee802.3-c22";
- 		reg = <0>;
--		phy-connection-type = "rgmii-id";
- 	};
- 
- 	ethphy1: ethernet-phy@1 {
-@@ -113,7 +112,6 @@
- 		compatible = "ethernet-phy-id0141.0cb0",
- 		             "ethernet-phy-ieee802.3-c22";
- 		reg = <1>;
--		phy-connection-type = "rgmii-id";
- 	};
- };
- 
-@@ -121,6 +119,7 @@
- 	status = "okay";
- 	ethernet0-port@0 {
- 		phy-handle = <&ethphy0>;
-+		phy-connection-type = "rgmii-id";
- 	};
- };
- 
-@@ -128,5 +127,6 @@
- 	status = "okay";
- 	ethernet1-port@0 {
- 		phy-handle = <&ethphy1>;
-+		phy-connection-type = "rgmii-id";
- 	};
- };
--- 
-2.0.0
-
+greg k-h
