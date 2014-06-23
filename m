@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932321AbaFWTwu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 15:52:50 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:34263 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932121AbaFWTws (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 15:52:48 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-Date: Mon, 23 Jun 2014 21:52:12 +0200
-From: Johan Hovold <johan@kernel.org>
-To: Greg KH <greg@kroah.com>
-Cc: Johan Hovold <johan@kernel.org>,
-        Janne Kanniainen <janne.kanniainen@gmail.com>, jkosina@suse.cz,
-        cooloney@gmail.com, linux-kernel@vger.kernel.org,
-        linux-leds@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH v10] leds: USB: HID: Add support for MSI GT683R led panels
-Message-ID: <20140623195212.GB15945@localhost>
-References: <20140623161723.GA20421@kroah.com>
- <1403543808-8228-1-git-send-email-janne.kanniainen@gmail.com>
- <20140623182324.GA30831@kroah.com>
- <20140623182432.GB30831@kroah.com>
- <20140623193134.GA15945@localhost>
- <20140623194059.GA19615@kroah.com>
+	id S1756772AbaFWTxK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 15:53:10 -0400
+Received: from mail-bn1lp0141.outbound.protection.outlook.com ([207.46.163.141]:13163
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756731AbaFWTxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 15:53:08 -0400
+Message-ID: <1403553015.9081.7.camel@linux-builds1>
+Subject: Re: [PATCH V2] In the Denali NAND controller driver, use 8 bytes
+ for READID command.
+From: Dinh Nguyen <dinguyen@altera.com>
+To: Graham Moore <grmoore@altera.com>
+CC: <ggrahammoore@gmail.com>, David Woodhouse <dwmw2@infradead.org>,
+        "Brian Norris" <computersforpeace@gmail.com>,
+        <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Alan Tull <atull@altera.com>,
+        "Yves Vandervennet" <rocket.yvanderv@gmail.com>
+Date: Mon, 23 Jun 2014 14:50:15 -0500
+In-Reply-To: <1403551270-31873-1-git-send-email-grmoore@altera.com>
+References: <1403551270-31873-1-git-send-email-grmoore@altera.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140623194059.GA19615@kroah.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(377424004)(51704005)(199002)(189002)(24454002)(99396002)(4396001)(85852003)(77156001)(83072002)(88136002)(50986999)(76176999)(89996001)(76482001)(50226001)(97736001)(92566001)(92726001)(86362001)(93916002)(21056001)(50466002)(64706001)(79102001)(23676002)(20776003)(77982001)(68736004)(87286001)(19580395003)(19580405001)(44976005)(87936001)(83322001)(84676001)(80022001)(46102001)(95666004)(6806004)(85306003)(106466001)(105596002)(31966008)(104166001)(103116003)(102836001)(77096002)(33716001)(81542001)(62966002)(74662001)(74502001)(33646001)(81342001);DIR:OUT;SFP:;SCL:1;SRVR:BN1BFFO11HUB030;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-OriginatorOrg: altera.onmicrosoft.com
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 025100C802
+Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
+ smtp.mailfrom=dinguyen@altera.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 23, 2014 at 03:40:59PM -0400, Greg KH wrote:
-> On Mon, Jun 23, 2014 at 09:31:34PM +0200, Johan Hovold wrote:
-> > On Mon, Jun 23, 2014 at 02:24:32PM -0400, Greg KH wrote:
-> > > On Mon, Jun 23, 2014 at 02:23:24PM -0400, Greg KH wrote:
-> > > > On Mon, Jun 23, 2014 at 08:16:48PM +0300, Janne Kanniainen wrote:
-> > > > > +	ret = sysfs_create_group(&led->hdev->dev.kobj, &gt683r_attribute_group);
-> > > > > +	if (ret) {
-> > > > > +		hid_err(hdev, "failed to create sysfs attributes\n");
-> > > > > +		goto fail;
-> > > > > +	}
-> > > > 
-> > > > No, you need to set the attribute group _before_ you call
-> > > > led_classdev_register, as that is where the device will be created in
-> > > > sysfs.  Surely the other led drivers already do this?  I'm almost afraid
-> > > > to go look...
-> > > 
-> > > Yes, they do it already, set .dev_attr_group and you should be fine.
-> > 
-> > But this isn't an attribute of the LEDs but rather of the parent HID
-> > device that is being probed (the led_mode is common to all three LEDs
-> > and thus belongs in the parent device, right?).
-> 
-> Then that's even worse :(
-> 
-> The sysfs attribute should be on the class device here for the LED, you
-> should not put an attribute on a device you are not the driver for.
+Hi Graham,
 
-But this is the driver for the HID device, which then in turn has three
-individual LEDs. This particular device isn't really an input device
-(the actual keyboard in this case appears to be connected over PS2), but
-there are several HID drivers which are primarily input devices with
-LEDs as sub-devices (e.g. drivers/hid/hid-lg4ff.c).
+On Mon, 2014-06-23 at 14:21 -0500, Graham Moore wrote:
+> The Denali NAND driver reads only 5 bytes of ID, but some Hynix and Samsung
+> have size parameters in the 6th byte.  As a result, the page and oob size
+> for a Hynix H27UAG8T2B were calculated incorrectly and the driver failed to
+> load.
+> 
+> The solution is to read 8 bytes of ID, as expected by the nand framework.
+> 
+> Signed-off-by: Graham Moore <grmoore@altera.com>
+> --
+> V2: Increase size of id_bytes array to 8.
+> ---
+>  drivers/mtd/nand/denali.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
 
-Johan
+Your commit header should have "mtd: denali:"
+
+i.e: "mtd: denali: use 8 bytes for READID command"
+
+Dinh
+
