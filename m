@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932246AbaFWNF6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:05:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37315 "EHLO
+	id S932224AbaFWNFr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:05:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37310 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932198AbaFWNFz (ORCPT
+	with ESMTP id S932198AbaFWNFo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:05:55 -0400
+	Mon, 23 Jun 2014 09:05:44 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Andy Lutomirski <luto@amacapital.net>,
+Cc: Andy Lutomirski <luto@amacapital.net>, Eric Paris <eparis@redhat.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 91/93] fs,userns: Change inode_capable to capable_wrt_inode_uidgid
-Date: Mon, 23 Jun 2014 14:03:10 +0100
-Message-Id: <1403528592-2163-92-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 92/93] auditsc: audit_krule mask accesses need bounds checking
+Date: Mon, 23 Jun 2014 14:03:11 +0100
+Message-Id: <1403528592-2163-93-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
 References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
@@ -33,191 +30,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andy Lutomirski <luto@amacapital.net>
 
-commit 23adbe12ef7d3d4195e80800ab36b37bee28cd03 upstream.
+commit a3c54931199565930d6d84f4c3456f6440aefd41 upstream.
 
-The kernel has no concept of capabilities with respect to inodes; inodes
-exist independently of namespaces.  For example, inode_capable(inode,
-CAP_LINUX_IMMUTABLE) would be nonsense.
+Fixes an easy DoS and possible information disclosure.
 
-This patch changes inode_capable to check for uid and gid mappings and
-renames it to capable_wrt_inode_uidgid, which should make it more
-obvious what it does.
+This does nothing about the broken state of x32 auditing.
 
-Fixes CVE-2014-4014.
+eparis: If the admin has enabled auditd and has specifically loaded
+audit rules.  This bug has been around since before git.  Wow...
 
-Cc: Theodore Ts'o <tytso@mit.edu>
-Cc: Serge Hallyn <serge.hallyn@ubuntu.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Dave Chinner <david@fromorbit.com>
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Eric Paris <eparis@redhat.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ luis: backported to 3.11: based on 3.10 backport ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/attr.c                  |  8 ++++----
- fs/inode.c                 | 10 +++++++---
- fs/namei.c                 | 11 ++++++-----
- include/linux/capability.h |  2 +-
- kernel/capability.c        | 18 +++++++-----------
- 5 files changed, 25 insertions(+), 24 deletions(-)
+ kernel/auditsc.c | 27 ++++++++++++++++++---------
+ 1 file changed, 18 insertions(+), 9 deletions(-)
 
-diff --git a/fs/attr.c b/fs/attr.c
-index 8dd5825ec708..66fa6251c398 100644
---- a/fs/attr.c
-+++ b/fs/attr.c
-@@ -50,14 +50,14 @@ int inode_change_ok(const struct inode *inode, struct iattr *attr)
- 	if ((ia_valid & ATTR_UID) &&
- 	    (!uid_eq(current_fsuid(), inode->i_uid) ||
- 	     !uid_eq(attr->ia_uid, inode->i_uid)) &&
--	    !inode_capable(inode, CAP_CHOWN))
-+	    !capable_wrt_inode_uidgid(inode, CAP_CHOWN))
- 		return -EPERM;
+diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+index 3b79a47ddb13..979c00bf24aa 100644
+--- a/kernel/auditsc.c
++++ b/kernel/auditsc.c
+@@ -733,6 +733,22 @@ static enum audit_state audit_filter_task(struct task_struct *tsk, char **key)
+ 	return AUDIT_BUILD_CONTEXT;
+ }
  
- 	/* Make sure caller can chgrp. */
- 	if ((ia_valid & ATTR_GID) &&
- 	    (!uid_eq(current_fsuid(), inode->i_uid) ||
- 	    (!in_group_p(attr->ia_gid) && !gid_eq(attr->ia_gid, inode->i_gid))) &&
--	    !inode_capable(inode, CAP_CHOWN))
-+	    !capable_wrt_inode_uidgid(inode, CAP_CHOWN))
- 		return -EPERM;
- 
- 	/* Make sure a caller can chmod. */
-@@ -67,7 +67,7 @@ int inode_change_ok(const struct inode *inode, struct iattr *attr)
- 		/* Also check the setgid bit! */
- 		if (!in_group_p((ia_valid & ATTR_GID) ? attr->ia_gid :
- 				inode->i_gid) &&
--		    !inode_capable(inode, CAP_FSETID))
-+		    !capable_wrt_inode_uidgid(inode, CAP_FSETID))
- 			attr->ia_mode &= ~S_ISGID;
- 	}
- 
-@@ -160,7 +160,7 @@ void setattr_copy(struct inode *inode, const struct iattr *attr)
- 		umode_t mode = attr->ia_mode;
- 
- 		if (!in_group_p(inode->i_gid) &&
--		    !inode_capable(inode, CAP_FSETID))
-+		    !capable_wrt_inode_uidgid(inode, CAP_FSETID))
- 			mode &= ~S_ISGID;
- 		inode->i_mode = mode;
- 	}
-diff --git a/fs/inode.c b/fs/inode.c
-index d6dfb09c8280..28f29a2b42a4 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -1839,14 +1839,18 @@ EXPORT_SYMBOL(inode_init_owner);
-  * inode_owner_or_capable - check current task permissions to inode
-  * @inode: inode being checked
-  *
-- * Return true if current either has CAP_FOWNER to the inode, or
-- * owns the file.
-+ * Return true if current either has CAP_FOWNER in a namespace with the
-+ * inode owner uid mapped, or owns the file.
-  */
- bool inode_owner_or_capable(const struct inode *inode)
- {
-+	struct user_namespace *ns;
++static int audit_in_mask(const struct audit_krule *rule, unsigned long val)
++{
++	int word, bit;
 +
- 	if (uid_eq(current_fsuid(), inode->i_uid))
- 		return true;
--	if (inode_capable(inode, CAP_FOWNER))
++	if (val > 0xffffffff)
++		return false;
 +
-+	ns = current_user_ns();
-+	if (ns_capable(ns, CAP_FOWNER) && kuid_has_mapping(ns, inode->i_uid))
- 		return true;
- 	return false;
- }
-diff --git a/fs/namei.c b/fs/namei.c
-index b8f1f7f6c75a..2a2d0236f82a 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -321,10 +321,11 @@ int generic_permission(struct inode *inode, int mask)
++	word = AUDIT_WORD(val);
++	if (word >= AUDIT_BITMASK_SIZE)
++		return false;
++
++	bit = AUDIT_BIT(val);
++
++	return rule->mask[word] & bit;
++}
++
+ /* At syscall entry and exit time, this filter is called if the
+  * audit_state is not low enough that auditing cannot take place, but is
+  * also not high enough that we already know we have to write an audit
+@@ -750,11 +766,8 @@ static enum audit_state audit_filter_syscall(struct task_struct *tsk,
  
- 	if (S_ISDIR(inode->i_mode)) {
- 		/* DACs are overridable for directories */
--		if (inode_capable(inode, CAP_DAC_OVERRIDE))
-+		if (capable_wrt_inode_uidgid(inode, CAP_DAC_OVERRIDE))
- 			return 0;
- 		if (!(mask & MAY_WRITE))
--			if (inode_capable(inode, CAP_DAC_READ_SEARCH))
-+			if (capable_wrt_inode_uidgid(inode,
-+						     CAP_DAC_READ_SEARCH))
- 				return 0;
- 		return -EACCES;
- 	}
-@@ -334,7 +335,7 @@ int generic_permission(struct inode *inode, int mask)
- 	 * at least one exec bit set.
- 	 */
- 	if (!(mask & MAY_EXEC) || (inode->i_mode & S_IXUGO))
--		if (inode_capable(inode, CAP_DAC_OVERRIDE))
-+		if (capable_wrt_inode_uidgid(inode, CAP_DAC_OVERRIDE))
- 			return 0;
+ 	rcu_read_lock();
+ 	if (!list_empty(list)) {
+-		int word = AUDIT_WORD(ctx->major);
+-		int bit  = AUDIT_BIT(ctx->major);
+-
+ 		list_for_each_entry_rcu(e, list, list) {
+-			if ((e->rule.mask[word] & bit) == bit &&
++			if (audit_in_mask(&e->rule, ctx->major) &&
+ 			    audit_filter_rules(tsk, &e->rule, ctx, NULL,
+ 					       &state, false)) {
+ 				rcu_read_unlock();
+@@ -774,20 +787,16 @@ static enum audit_state audit_filter_syscall(struct task_struct *tsk,
+ static int audit_filter_inode_name(struct task_struct *tsk,
+ 				   struct audit_names *n,
+ 				   struct audit_context *ctx) {
+-	int word, bit;
+ 	int h = audit_hash_ino((u32)n->ino);
+ 	struct list_head *list = &audit_inode_hash[h];
+ 	struct audit_entry *e;
+ 	enum audit_state state;
  
- 	/*
-@@ -342,7 +343,7 @@ int generic_permission(struct inode *inode, int mask)
- 	 */
- 	mask &= MAY_READ | MAY_WRITE | MAY_EXEC;
- 	if (mask == MAY_READ)
--		if (inode_capable(inode, CAP_DAC_READ_SEARCH))
-+		if (capable_wrt_inode_uidgid(inode, CAP_DAC_READ_SEARCH))
- 			return 0;
- 
- 	return -EACCES;
-@@ -2198,7 +2199,7 @@ static inline int check_sticky(struct inode *dir, struct inode *inode)
+-	word = AUDIT_WORD(ctx->major);
+-	bit  = AUDIT_BIT(ctx->major);
+-
+ 	if (list_empty(list))
  		return 0;
- 	if (uid_eq(dir->i_uid, fsuid))
- 		return 0;
--	return !inode_capable(inode, CAP_FOWNER);
-+	return !capable_wrt_inode_uidgid(inode, CAP_FOWNER);
- }
  
- /*
-diff --git a/include/linux/capability.h b/include/linux/capability.h
-index d9a4f7f40f32..15f90929fb51 100644
---- a/include/linux/capability.h
-+++ b/include/linux/capability.h
-@@ -211,7 +211,7 @@ extern bool has_ns_capability_noaudit(struct task_struct *t,
- extern bool capable(int cap);
- extern bool ns_capable(struct user_namespace *ns, int cap);
- extern bool nsown_capable(int cap);
--extern bool inode_capable(const struct inode *inode, int cap);
-+extern bool capable_wrt_inode_uidgid(const struct inode *inode, int cap);
- extern bool file_ns_capable(const struct file *file, struct user_namespace *ns, int cap);
- 
- /* audit system wants to get cap info from files as well */
-diff --git a/kernel/capability.c b/kernel/capability.c
-index f6c2ce5701e1..d52eecc0942b 100644
---- a/kernel/capability.c
-+++ b/kernel/capability.c
-@@ -445,22 +445,18 @@ bool nsown_capable(int cap)
- }
- 
- /**
-- * inode_capable - Check superior capability over inode
-+ * capable_wrt_inode_uidgid - Check nsown_capable and uid and gid mapped
-  * @inode: The inode in question
-  * @cap: The capability in question
-  *
-- * Return true if the current task has the given superior capability
-- * targeted at it's own user namespace and that the given inode is owned
-- * by the current user namespace or a child namespace.
-- *
-- * Currently we check to see if an inode is owned by the current
-- * user namespace by seeing if the inode's owner maps into the
-- * current user namespace.
-- *
-+ * Return true if the current task has the given capability targeted at
-+ * its own user namespace and that the given inode's uid and gid are
-+ * mapped into the current user namespace.
-  */
--bool inode_capable(const struct inode *inode, int cap)
-+bool capable_wrt_inode_uidgid(const struct inode *inode, int cap)
- {
- 	struct user_namespace *ns = current_user_ns();
- 
--	return ns_capable(ns, cap) && kuid_has_mapping(ns, inode->i_uid);
-+	return ns_capable(ns, cap) && kuid_has_mapping(ns, inode->i_uid) &&
-+		kgid_has_mapping(ns, inode->i_gid);
- }
+ 	list_for_each_entry_rcu(e, list, list) {
+-		if ((e->rule.mask[word] & bit) == bit &&
++		if (audit_in_mask(&e->rule, ctx->major) &&
+ 		    audit_filter_rules(tsk, &e->rule, ctx, n, &state, false)) {
+ 			ctx->current_state = state;
+ 			return 1;
 -- 
 1.9.1
 
