@@ -1,75 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754115AbaFWOi0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 10:38:26 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:35153 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753645AbaFWOiY (ORCPT
+	id S1754877AbaFWOku (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 10:40:50 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:42022 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753882AbaFWOks (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 10:38:24 -0400
-Message-ID: <1403534300.7341.6.camel@lolumad>
-Subject: Re: [PATCH 2/2] cfg80211: Use 5MHz bandwidth by default when
- checking usable channels
-From: Rostislav Lisovy <lisovy@gmail.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michal Sojka <sojkam1@fel.cvut.cz>, s.sander@nordsys.de,
-        jan-niklas.meier@volkswagen.de,
-        Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
-Date: Mon, 23 Jun 2014 16:38:20 +0200
-In-Reply-To: <1403517938.4418.16.camel@jlt4.sipsolutions.net>
-References: <1397565476-4348-1-git-send-email-rostislav.lisovy@fel.cvut.cz>
-	 <1397565476-4348-3-git-send-email-rostislav.lisovy@fel.cvut.cz>
-	 <53A6C0FF.9090104@openwrt.org>
-	 <1403514536.4418.6.camel@jlt4.sipsolutions.net>
-	 <53A7FBB2.2050703@openwrt.org>
-	 <1403517938.4418.16.camel@jlt4.sipsolutions.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 23 Jun 2014 10:40:48 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: linux-kernel@vger.kernel.org
+Cc: Neil Horman <nhorman@tuxdriver.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-scsi@vger.kernel.org,
+        Robert Love <robert.w.love@intel.com>, Vasu Dev <vasu.dev@intel.com>
+Subject: [PATCH] fc: ensure scan_work isn't active when freeing fc_rport
+Date: Mon, 23 Jun 2014 10:40:25 -0400
+Message-Id: <1403534425-21092-1-git-send-email-nhorman@tuxdriver.com>
+X-Mailer: git-send-email 1.8.3.1
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-06-23 at 12:05 +0200, Johannes Berg wrote:
-> On Mon, 2014-06-23 at 12:04 +0200, Felix Fietkau wrote:
-> > On 2014-06-23 11:08, Johannes Berg wrote:
-> > > On Sun, 2014-06-22 at 13:41 +0200, Felix Fietkau wrote:
-> > >> On 2014-04-15 14:37, Rostislav Lisovy wrote:
-> > >> > Current code checks if the 20MHz bandwidth is allowed for
-> > >> > particular channel -- if it is not, the channel is disabled.
-> > >> > Since we need to use 5/10 MHz channels, this code is modified in
-> > >> > the way that the default bandwidth to check is 5MHz. If the
-> > >> > maximum bandwidth allowed by the channel is smaller than 5MHz,
-> > >> > the channel is disabled. Otherwise the channel is used and the
-> > >> > flags are set according to the bandwidth allowed by the channel.
-> > >> > 
-> > >> > Signed-off-by: Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
-> > > 
-> > >> This change causes a regression and needs to be reverted or fixed.
-> > > 
-> > > Noted, I've reverted it in mac80211.git.
-> > > 
-> > >> It leaves Channel 12 enabled for US regdomain and does not prevent
-> > >> bringing up AP mode on it (IEEE80211_CHAN_NO_20MHZ does not get set).
-> > > 
-> > > I'm not sure this makes sense - CHAN_NO_20MHZ shouldn't get set on that
-> > > channel? It should be disabled for other reasons for AP mode - e.g.
-> > > NO_IR.
-> > I was thinking it could be valid in AP mode for 5 MHz operation.
-> 
-> Huh, ok, maybe. I guess Rostislav can look into the details :)
-> 
+debugfs caught this:
+WARNING: at lib/debugobjects.c:260 debug_print_object+0x83/0xa0()
+ODEBUG: free active (active state 0) object type: work_struct
+hint: fc_scsi_scan_rport+0x0/0xd0 [scsi_transport_fc]
+ CPU: 1 PID: 184 Comm: kworker/1:1 Tainted: G        W
+--------------   3.10.0-123.el7.x86_64.debug #1
+Hardware name: HP ProLiant DL120 G7, BIOS J01 07/01/2013
+Workqueue: fc_wq_5 fc_rport_final_delete [scsi_transport_fc]
+Call Trace:
+[<ffffffff8169efec>] dump_stack+0x19/0x1b
+[<ffffffff8106cbd1>] warn_slowpath_common+0x61/0x80
+[<ffffffff8106cc4c>] warn_slowpath_fmt+0x5c/0x80
+[<ffffffff8133e003>] debug_print_object+0x83/0xa0
+[<ffffffffa04e2f40>] ? fc_parse_wwn+0x100/0x100
 
-I am a bit confused right now. The regression is that the channel used
-to be completely disabled and now it is not? The regulatory restrictions
-prohibit the 20MHz BW for this channel but 5MHz BW is alright?
+[<ffffffff8133f23b>] debug_check_no_obj_freed+0x22b/0x270
+[<ffffffffa04e127e>] ? fc_rport_dev_release+0x1e/0x30
+[<ffffffff811db3e9>] kfree+0xd9/0x2d0
+[<ffffffffa04e127e>] fc_rport_dev_release+0x1e/0x30
+[<ffffffff81428032>] device_release+0x32/0xa0
+[<ffffffff8132701e>] kobject_release+0x7e/0x1b0
+[<ffffffff81326ed8>] kobject_put+0x28/0x60
+[<ffffffff81428397>] put_device+0x17/0x20
+[<ffffffffa04e5025>] fc_rport_final_delete+0x165/0x210
+[<ffffffff810959b0>] process_one_work+0x220/0x710
+[<ffffffff81095944>] ? process_one_work+0x1b4/0x710
+[<ffffffff81095fbb>] worker_thread+0x11b/0x3a0
+[<ffffffff81095ea0>] ? process_one_work+0x710/0x710
+[<ffffffff8109e0cd>] kthread+0xed/0x100
+[<ffffffff8109dfe0>] ? insert_kthread_work+0x80/0x80
+[<ffffffff816b2fec>] ret_from_fork+0x7c/0xb0
+[<ffffffff8109dfe0>] ? insert_kthread_work+0x80/0x80
 
-(I am out of office for the next few days, thus I am unfortunately
-unable to write/test any code.)
+Seems to be because the scan_work work_struct might be active when the housing
+fc_rport struct gets freed.  Ensure that we cancel it prior to freeing the rport
 
-Rostislav;
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+CC: "James E.J. Bottomley" <JBottomley@parallels.com>
+CC: Christoph Hellwig <hch@infradead.org>
+CC: linux-scsi@vger.kernel.org
+CC: Robert Love <robert.w.love@intel.com>
+CC: Vasu Dev <vasu.dev@intel.com>
+---
+ drivers/scsi/scsi_transport_fc.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/scsi/scsi_transport_fc.c b/drivers/scsi/scsi_transport_fc.c
+index 4628fd5..5bd552c 100644
+--- a/drivers/scsi/scsi_transport_fc.c
++++ b/drivers/scsi/scsi_transport_fc.c
+@@ -2548,6 +2548,7 @@ fc_rport_final_delete(struct work_struct *work)
+ 			fc_flush_devloss(shost);
+ 		if (!cancel_delayed_work(&rport->dev_loss_work))
+ 			fc_flush_devloss(shost);
++		cancel_work_sync(&rport->scan_work);
+ 		spin_lock_irqsave(shost->host_lock, flags);
+ 		rport->flags &= ~FC_RPORT_DEVLOSS_PENDING;
+ 	}
+-- 
+1.8.3.1
 
