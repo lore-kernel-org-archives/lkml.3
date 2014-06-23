@@ -1,75 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752786AbaFWSES (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 14:04:18 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:3138 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751210AbaFWSER (ORCPT
+	id S1752918AbaFWSEz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 14:04:55 -0400
+Received: from forward-corp1g.mail.yandex.net ([95.108.253.251]:58636 "EHLO
+	forward-corp1g.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751210AbaFWSEy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 14:04:17 -0400
-Date: Mon, 23 Jun 2014 14:04:13 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Kosina <jkosina@suse.cz>,
-        Michal Hocko <mhocko@suse.cz>, Jan Kara <jack@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Dave Anderson <anderson@redhat.com>, Petr Mladek <pmladek@suse.cz>
-Subject: Re: [RFC][PATCH 1/3] trace_seq: Move the trace_seq code to lib/
-Message-ID: <20140623140413.3cebe156@gandalf.local.home>
-In-Reply-To: <1403545094.4418.32.camel@jlt4.sipsolutions.net>
-References: <20140619213329.478113470@goodmis.org>
-	<20140619213952.058255809@goodmis.org>
-	<20140619220607.c6da2540.akpm@linux-foundation.org>
-	<20140620125823.5acb12dd@gandalf.local.home>
-	<1403422685.4418.4.camel@jlt4.sipsolutions.net>
-	<20140623120805.1624e1db@gandalf.local.home>
-	<1403545094.4418.32.camel@jlt4.sipsolutions.net>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Mon, 23 Jun 2014 14:04:54 -0400
+X-Yandex-Uniq: f2218227-b348-45c9-b2c3-2c842100aa91
+Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+Date: Mon, 23 Jun 2014 22:04:43 +0400
+From: Stanislav Fomichev <stfomichev@yandex-team.ru>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: john.stultz@linaro.org, prarit@redhat.com, paul.gortmaker@windriver.com,
+        juri.lelli@gmail.com, ddaney.cavm@gmail.com, mbohan@codeaurora.org,
+        david.vrabel@citrix.com, david.engraf@sysgo.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] hrtimers: calculate expires_next after all timers are
+ executed
+Message-ID: <20140623180443.GD20225@stfomichev-desktop.yandex.net>
+References: <1395067037-20060-1-git-send-email-stfomichev@yandex-team.ru>
+ <alpine.DEB.2.02.1403191149460.18573@ionos.tec.linutronix.de>
+ <20140319141615.GB11081@stfomichev-desktop.yandex.net>
+ <alpine.DEB.2.10.1406221417510.5170@nanos>
+ <20140623110302.GA20225@stfomichev-desktop.yandex.net>
+ <alpine.DEB.2.10.1406231904090.5170@nanos>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1406231904090.5170@nanos>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Jun 2014 19:38:14 +0200
-Johannes Berg <johannes@sipsolutions.net> wrote:
+> So in case the enqueued timer is earlier than base0->next, you are
+> looking at the wrong data. Same as in the current code and why you
+> started to look into this at all.
+Right, even if we do a local enqueue from higher base timer into lower base we
+still need to update base->next in the enqueue.
 
-> On Mon, 2014-06-23 at 12:08 -0400, Steven Rostedt wrote:
-> > On Sun, 22 Jun 2014 09:38:05 +0200
-> > Johannes Berg <johannes@sipsolutions.net> wrote:
-> > 
-> > 
-> > > Looking at the code though, I'm not sure it's a pure optimisation - if
-> > > you do say putc() after a failed puts(), without this code the putc()
-> > > would succeed? I can't tell right now if that's really a problem, but it
-> > > seems you could get some odd behaviour out of it.
-> > 
-> > How would putc() still succeed? We're just talking about the "full"
-> > field. It would still do the length check:
-> > 
-> > 	if (s->len >= (PAGE_SIZE - 1))
-> > 		return 0;
+> See above WHY it does NOT work.
+It works, but without reprogramming in __remove_hrtimer we can end up with a
+spurious tick which will just rearm clockdev and do no useful work.
+At least no stall :-/
+
+> No, we're not going to add another one in the first place as I know
+> how MAY COME works: it translates to NEVER, unless I do it myself.
+I'm fine with that, the point I'm trying to make is that I didn't even think
+about any cleanup/refactoring in the first place, I just tried to get an
+issue fixed and get some feedback. It's even better if we can also do a
+cleanup in the process.
+
+> > > Untested patch which addresses the issues below.
+> > Aside from a small nitpick below, looks reasonable, I'll try to run it on a
+> > couple of machines.
+> > Should I send you a v3 afterwards with the changelog or
+> > tested-by would be enough?
 > 
-> Right, but the puts() could fail if not all of the string fits, and a
-> subsequent putc() might fit.
+> Tested-by is fine. I can cobble a changelog together.
+Ok, I have a couple of machines running for ~5 hours without any visible
+issues, but let's give it at least a day.
+
+> > > +	while (active) {
+> > > +		idx = __ffs(active);
+> > > +		active &= ~(1UL << idx);
+> > Is there any reason you did that instead of conventional:
 > 
-
-Ah! I see what you are saying. You are saying that once you are full
-you need to flush. Honestly, the trace_puts() should check the return.
-Perhaps it wants to try again with a shorter string?
-
-The full flag means that once we hit full, we are done, no more can be
-written till the buffer is flushed.
-
-Is that what we would want from this utility? Or do we want to allow
-the user to try again with a smaller string?
-
-I was thinking of reversing the error code and have the trace_seq_*()
-return 0 as success and the remaining buffer size on error.
-
--- Steve
+> I thought about using __ffs before, just never came around it.
+Nothing against it, seems totally legit, just looks inconsistent.
+Now we have one place where we do __ffs stuff and other places where we
+do for(;HRTIMER_MAX_CLOCK_BASES;).
