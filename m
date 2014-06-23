@@ -1,84 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932220AbaFWTtw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 15:49:52 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:56112 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932130AbaFWTtv (ORCPT
+	id S932280AbaFWTuO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 15:50:14 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:50488 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932130AbaFWTuL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 15:49:51 -0400
-Message-ID: <53A884DE.8090008@codeaurora.org>
-Date: Mon, 23 Jun 2014 12:49:50 -0700
-From: Subbaraman Narayanamurthy <subbaram@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Mon, 23 Jun 2014 15:50:11 -0400
+Message-ID: <53A884EF.100@wwwdotorg.org>
+Date: Mon, 23 Jun 2014 13:50:07 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: tglx@linutronix.de
-CC: linux-kernel@vger.kernel.org
-Subject: kernel BUG at kernel/smpboot.c:134
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Nishanth Menon <nm@ti.com>
+CC: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        acourbot@nvidia.com, gnurou@gmail.com, j-keerthy@ti.com,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCH] regulator: palmas: Fix SMPS enable/disable/is_enabled
+References: <1403285183-15926-1-git-send-email-nm@ti.com>
+In-Reply-To: <1403285183-15926-1-git-send-email-nm@ti.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-While stressing the CPU hotplug path, sometimes we hit the problem as shown below. Kernel is based off 3.10 and has the commit "f2530dc71cf082" already.
+On 06/20/2014 11:26 AM, Nishanth Menon wrote:
+> We use regmap regulator ops to enable/disable and check if regulator
+> is enabled for various SMPS. However, these depend on valid
+> enable_reg, enable_mask and enable_value in regulator descriptor.
+> 
+> Currently we do not populate these for SMPS other than SMPS10, this
+> results in spurious results as regmap assumes that the values are
+> valid and ends up reading register 0x0 RTC:SECONDS_REG on Palmas
+> variants that do have RTC! To fix this, we update proper parameters
+> for the descriptor fields.
+> 
+> Further, we want to ensure the behavior consistent with logic
+> prior to commit dbabd624d4eec50b6, where, once you do a set_mode,
+> enable/disable ensure the logic remains consistent and configures
+> Palmas to the configuration that we set with set_mode (since the
+> configuration register is common). To do this, we can rely on the
+> regulator core's regulator_register behavior where the regulator
+> descriptor pointer provided by the regulator driver is stored. (no
+> reallocation and copy is done). This lets us update the enable_value
+> post registration, to remain consistent with the mode we configure as
+> part of set_mode.
+> 
+> Fixes: dbabd624d4eec50b6 ("regulator: palmas: Reemove open coded functions with helper functions")
+> Reported-by: Alexandre Courbot <acourbot@nvidia.com>
+> Signed-off-by: Nishanth Menon <nm@ti.com>
 
-[57056.416774] ------------[ cut here ]------------
-[57056.489232] ksoftirqd/1 (14): undefined instruction: pc=c01931e8
-[57056.489245] Code: e594a000 eb085236 e15a0000 0a000000 (e7f001f2)
-[57056.489259] ------------[ cut here ]------------
-[57056.492840] kernel BUG at kernel/smpboot.c:134!
-[57056.513236] Internal error: Oops - BUG: 0 [#1] PREEMPT SMP ARM
-[57056.519055] Modules linked in: wlan(O) mhi(O)
-[57056.523394] CPU: 0 PID: 14 Comm: ksoftirqd/1 Tainted: G        W  O
-3.10.0-g3677c61-00008-g180c060 #1
-[57056.532595] task: f0c8b000 ti: f0e78000 task.ti: f0e78000
-[57056.537991] PC is at smpboot_thread_fn+0x124/0x218
-[57056.542750] LR is at smpboot_thread_fn+0x11c/0x218
-[57056.547528] pc : [<c01931e8>]    lr : [<c01931e0>]    psr: 200f0013
-[57056.547528] sp : f0e79f30  ip : 00000000  fp : 00000000
-[57056.558983] r10: 00000001  r9 : 00000000  r8 : f0e78000
-[57056.564192] r7 : 00000001  r6 : c1195758  r5 : f0e78000  r4 : f0e5fd00
-[57056.570701] r3 : 00000001  r2 : f0e79f20  r1 : 00000000  r0 : 00000000
+Unfortunately, there is still some lingering problem in the original
+commit. In next-20130623 (and indeed since at least next-20140611),
+neither the LCD panel or HDMI work on the NVIDIA Dalmore board.
+Reverting this commit (just for conflicts) and the original problematic
+commit "regulator: palmas: Reemove open coded functions with helper
+functions" solves this. I see the following on boot:
 
-Flow of events looks like below.
+> [    3.558776] tegra-dsi 54300000.dsi: cannot get VDD supply
+> [    3.564272] platform 54300000.dsi: Driver tegra-dsi requests probe deferral
+> [    3.571990] tegra-hdmi 54280000.hdmi: failed to get PLL regulator
+> [    3.578377] platform 54280000.hdmi: Driver tegra-hdmi requests probe deferral
 
-ksoftirqd/2                   migration/2                 cpu_up task
-----------                   --------------               ----------------
+... but probe deferral never completes, yet with your "remove open coded
+..." patch reverted, it all works fine.
 
-smpboot_thread_fn()
-  kthread_parkme()
-   complete(&self->parked)
-    spin_unlock_irq()
-     preempt_schedule()
-     __schedule()
-                              migrate_tasks(2)
-  <migrate to CPU 0>
-                                                           __kthread_unpark(ksoftirqd/2)
-                                                            test_and_clear_bit(KTHREAD_IS_PARKED,&kthread->flags)
-                                                            __kthread_bind(k,kthread->cpu,TASK_PARKED);
-   schedule()
-                                                            wake_up_state(k,TASK_PARKED);
-   __set_current_state(TASK_PARKED);
-   clear_bit(KTHREAD_IS_PARKED, &self->flags);
-   __set_current_state(TASK_RUNNING);
-  ...
-  set_current_state(TASK_INTERRUPTIBLE);
-  preempt_disable();
-  ...
-  BUG_ON(td->cpu != smp_processor_id())
-
-While debugging with adding a BUG_ON() in remote_cpu_softirq_notify (for CPU_DEAD action), at a particular instance,I could confirm that the "ksoftirqd" (for the CPU which is bought down) is not in parked state (512) but in running state (0).
-
-If the thread is not in parked state when the CPU is bought up again, then __kthread_bind() can fail making the kthread to run on a wrong CPU. Is it possible that this can happen because of the following potential race condition?
-
-In __kthread_parkme, just after completing the parked completion, before the ksoftirqd task has been scheduled again, it can go into running state because it got woken up by the wake_up_process() from kthread_park().
-
-Thanks,
-Subbaraman
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+Can you please take another look at the original patch?
