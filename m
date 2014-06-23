@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756863AbaFWUIM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 16:08:12 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:58070 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753812AbaFWUIJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 16:08:09 -0400
+	id S1756879AbaFWUJO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 16:09:14 -0400
+Received: from mga09.intel.com ([134.134.136.24]:61881 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753812AbaFWUJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 16:09:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,532,1400050800"; 
+   d="scan'208";a="562070122"
+Message-ID: <53A88966.5080400@intel.com>
+Date: Mon, 23 Jun 2014 13:09:10 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <1403280836-26943-2-git-send-email-alvin.chen@intel.com>
-References: <1403280836-26943-1-git-send-email-alvin.chen@intel.com> <1403280836-26943-2-git-send-email-alvin.chen@intel.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 23 Jun 2014 14:07:47 -0600
-Message-ID: <CAErSpo7NW=3yLNY0XXLKVTqSqL=qbNEx_vp-583=32pY1Y=6TQ@mail.gmail.com>
-Subject: Re: [PATCH] mmc: sdhci-pci: Quark SDIO host controller supporting
-To: "Chen, Alvin" <alvin.chen@intel.com>
-Cc: Chris Ball <chris@printf.net>, linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Andy Lutomirski <luto@amacapital.net>, Qiaowei Ren <qiaowei.ren@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>
+CC: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 08/10] x86, mpx: add prctl commands PR_MPX_REGISTER,
+ PR_MPX_UNREGISTER
+References: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com> <1403084656-27284-9-git-send-email-qiaowei.ren@intel.com> <53A8874A.3050301@mit.edu>
+In-Reply-To: <53A8874A.3050301@mit.edu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 10:13 AM, Chen, Alvin <alvin.chen@intel.com> wrote:
-> From: Derek Browne <Derek.Browne@intel.com>
->
-> On Intel Quark, there is a SDIO host controller. This patch is added to
-> enable the SDIO host controller.
->
-> Signed-off-by: Derek Browne <Derek.Browne@intel.com>
-> Signed-off-by: Alvin (Weike) Chen <alvin.chen@intel.com>
-> ---
->  drivers/mmc/host/sdhci-pci.c |   12 ++++++++++++
->  include/linux/pci_ids.h      |    2 ++
+On 06/23/2014 01:00 PM, Andy Lutomirski wrote:
+> On 06/18/2014 02:44 AM, Qiaowei Ren wrote:
+>> > This patch adds the PR_MPX_REGISTER and PR_MPX_UNREGISTER prctl()
+>> > commands. These commands can be used to register and unregister MPX
+>> > related resource on the x86 platform.
+>> > 
+>> > The base of the bounds directory is set into mm_struct during
+>> > PR_MPX_REGISTER command execution. This member can be used to
+>> > check whether one application is mpx enabled.
+> The register and unregister operations seem to be almost the same thing.
+>  How about just PR_SYNC_MPX?
 
-Please read the comment at the top of pci_ids.h:
+That wouldn't support a usage model where userspace wanted to keep using
+MPX, but wanted the kernel to butt out and not try to free unused bounds
+tables.  That's not super-important, but it does lose some level of
+flexibility.
 
- *      Do not add new entries to this file unless the definitions
- *      are shared between multiple drivers.
-
-If the ID you're adding is shared, please mention the sharing in your changelog.
-
-> --- a/include/linux/pci_ids.h
-> +++ b/include/linux/pci_ids.h
-> @@ -2557,6 +2557,7 @@
->  #define PCI_DEVICE_ID_INTEL_MFD_EMMC0  0x0823
->  #define PCI_DEVICE_ID_INTEL_MFD_EMMC1  0x0824
->  #define PCI_DEVICE_ID_INTEL_MRST_SD2   0x084F
-> +#define PCI_DEVICE_ID_INTEL_QUARK_ILB  0x095E
-
-This ID doesn't appear to be used at all.
-
->  #define PCI_DEVICE_ID_INTEL_I960       0x0960
->  #define PCI_DEVICE_ID_INTEL_I960RM     0x0962
->  #define PCI_DEVICE_ID_INTEL_CENTERTON_ILB      0x0c60
-> @@ -2579,6 +2580,7 @@
->  #define PCI_DEVICE_ID_INTEL_82840_HB   0x1a21
->  #define PCI_DEVICE_ID_INTEL_82845_HB   0x1a30
->  #define PCI_DEVICE_ID_INTEL_IOAT       0x1a38
-> +#define PCI_DEVICE_ID_INTEL_QRK_SD     0x08A7
->  #define PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MIN        0x1c41
->  #define PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MAX        0x1c5f
->  #define PCI_DEVICE_ID_INTEL_PATSBURG_LPC_0     0x1d40
-> --
-> 1.7.9.5
->
+FWIW, I think it would also be handy to support a PR_MPX_DISABLE prctl
+too.  That way, a wrapper program could set a flag that any children
+could notice if they try a PR_MPX_REGISTER.  That way we could
+software-disable MPX in cases in a process tree where it was not wanted.
