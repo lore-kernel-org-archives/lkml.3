@@ -1,46 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754443AbaFWVtd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 17:49:33 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:35383 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754328AbaFWVtc (ORCPT
+	id S1754869AbaFWVu0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 17:50:26 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:41093 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754596AbaFWVuY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 17:49:32 -0400
-Date: Mon, 23 Jun 2014 14:49:30 -0700 (PDT)
-Message-Id: <20140623.144930.2077608308662590493.davem@davemloft.net>
-To: joe@perches.com
-Cc: linux-kernel@vger.kernel.org, linux-atm-general@lists.sourceforge.net,
-        netdev@vger.kernel.org, iss_storagedev@hp.com,
-        linux-crypto@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-rdma@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-wireless@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-eata@i-connect.net, devel@driverdev.osuosl.org,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCH 00/22] Add and use pci_zalloc_consistent
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <cover.1403530604.git.joe@perches.com>
-References: <cover.1403530604.git.joe@perches.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Mon, 23 Jun 2014 17:50:24 -0400
+Message-ID: <1403559665.25108.6.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v7] x86: initialize secondary CPU only if master CPU
+ will wait for it
+From: Toshi Kani <toshi.kani@hp.com>
+To: Igor Mammedov <imammedo@redhat.com>
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, xen-devel@lists.xenproject.org
+Date: Mon, 23 Jun 2014 15:41:05 -0600
+In-Reply-To: <1403266991-12233-1-git-send-email-imammedo@redhat.com>
+References: <1403266991-12233-1-git-send-email-imammedo@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 23 Jun 2014 14:49:31 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Mon, 23 Jun 2014 06:41:28 -0700
-
-> Adding the helper reduces object code size as well as overall
-> source size line count.
+On Fri, 2014-06-20 at 14:23 +0200, Igor Mammedov wrote:
+> Hang is observed on virtual machines during CPU hotplug,
+> especially in big guests with many CPUs. (It reproducible
+> more often if host is over-committed).
 > 
-> It's also consistent with all the various zalloc mechanisms
-> in the kernel.
+> It happens because master CPU gives up waiting on
+> secondary CPU and allows it to run wild. As result
+> AP causes locking or crashing system. For example
+> as described here: https://lkml.org/lkml/2014/3/6/257
 > 
-> Done with a simple cocci script and some typing.
+> If master CPU have sent STARTUP IPI successfully,
+> and AP signalled to master CPU that it's ready
+> to start initialization, make master CPU wait
+> indefinitely till AP is onlined.
+> To ensure that AP won't ever run wild, make it
+> wait at early startup till master CPU confirms its
+> intention to wait for AP. If AP doesn't respond in 10
+> seconds, the master CPU will timeout and cancel
+> AP onlining.
+> 
+> Signed-off-by: Igor Mammedov <imammedo@redhat.com>
+> ---
+> v7:
+>  - fix stuck boot with non SMP config
+>  - fix stuck paravirtual Xen SMP boot with more than 1VCPU
+>    and CPU hotplug
+> v6:
+>  - no changes
+> v5:
+>  - add smp_mb() after clearing cpu_initialized_mask in do_boot_cpu()
+>  - add 10 sec timeout description into commit message.
+> v4:
+>  - move commont code in cpu_init() for x32/x64 in shared
+>    helper function wait_formaster_cpu()
+>  - add WARN_ON(cpumask_test_and_set_cpu(cpu, cpu_initialized_mask))
+>    to wait_formaster_cpu()
+> v3:
+>  - leave timeouts in do_boot_cpu(), so that master CPU
+>    won't hang if AP doesn't respond, use cpu_initialized_mask
+>    as a way for AP to signal to master CPU that it's ready
+>    to start initialzation.
+> v2:
+>  - ammend comment in cpu_init()
+> ---
+>  arch/x86/kernel/cpu/common.c |   29 ++++++++-----
+>  arch/x86/kernel/smpboot.c    |   99 +++++++++++++-----------------------------
+>  arch/x86/xen/smp.c           |    2 +
+>  3 files changed, 51 insertions(+), 79 deletions(-)
 
-For networking bits:
+For the changes under arch/x86/kernel (I'm not familiar with Xen):
 
-Acked-by: David S. Miller <davem@davemloft.net>
+Acked-by: Toshi Kani <toshi.kani@hp.com>
+
+Thanks,
+-Toshi
+
+
+
+
