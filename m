@@ -1,63 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752192AbaFWH6r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 03:58:47 -0400
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:57004 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751100AbaFWH6p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 03:58:45 -0400
-Message-ID: <1403510323.12982.5.camel@x220>
-Subject: Re: [PATCH] ARM: mvebu: rename ARM_ERRATA_753970
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Date: Mon, 23 Jun 2014 09:58:43 +0200
-In-Reply-To: <20140620211012.GP21711@titan.lakedaemon.net>
-References: <201404052101.19381.arnd@arndb.de>
-	 <201404052104.11363.arnd@arndb.de> <1396777049.30640.9.camel@x220>
-	 <53418889.2050002@free-electrons.com> <1396805315.7723.8.camel@x220>
-	 <1401094871.25902.20.camel@x220>
-	 <20140620202100.GG21711@titan.lakedaemon.net>
-	 <1403296977.16903.10.camel@x41>
-	 <20140620211012.GP21711@titan.lakedaemon.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 23 Jun 2014 07:58:43.0596 (UTC) FILETIME=[F4026CC0:01CF8EB8]
-X-RcptDomain: vger.kernel.org
+	id S1752355AbaFWH7a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 03:59:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51678 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752276AbaFWH73 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 03:59:29 -0400
+From: Jiri Olsa <jolsa@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        Jiri Olsa <jolsa@kernel.org>
+Subject: [PATCH 3/7] tools lib traceevent: Add back in kvm plugins nested_vmexit events
+Date: Mon, 23 Jun 2014 09:59:14 +0200
+Message-Id: <1403510358-4573-4-git-send-email-jolsa@kernel.org>
+In-Reply-To: <1403510358-4573-1-git-send-email-jolsa@kernel.org>
+References: <1403510358-4573-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-06-20 at 17:10 -0400, Jason Cooper wrote:
-> On Fri, Jun 20, 2014 at 10:42:57PM +0200, Paul Bolle wrote:
-> > Jason Cooper schreef op vr 20-06-2014 om 16:21 [-0400]:
-> > > It looks like rmk just added a patch to fixing the selection of the
-> > > erratas.  Could you please take a look and either rebase or drop this
-> > > patch?
-> > 
-> > Sure, no problem. What tree should I check?
-> 
-> It's
-> 
->   a641f3a6abce ARM: l2c: fix dependencies on PL310 errata symbols
-> 
-> in Russell's fixes branch:
-> 
->   http://ftp.arm.linux.org.uk/pub/linux/arm/kernel/git-cur/linux-arm.git fixes
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Thanks. That commit landed in linux-next in next-20140620. It addresses
-all comments I made, below the --- marker, in
-https://lkml.org/lkml/2014/5/26/103 . It makes it a bit easier to reason
-about the PL310_ERRATA_* symbols. I hope to submit a v2 soon.
+The nested vmexit events were removed from the backport from trace-cmd because
+they were considered buggy. They have since been updated in trace-cmd but
+are still missing from the traceevent library. Add back in the buggy
+version to be able to backport the fixes.
 
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/20140613021157.291421941@goodmis.org
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+---
+ tools/lib/traceevent/plugin_kvm.c | 41 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
 
-Paul Bolle
+diff --git a/tools/lib/traceevent/plugin_kvm.c b/tools/lib/traceevent/plugin_kvm.c
+index 2d7d1d7..0d43783 100644
+--- a/tools/lib/traceevent/plugin_kvm.c
++++ b/tools/lib/traceevent/plugin_kvm.c
+@@ -326,6 +326,35 @@ static int kvm_emulate_insn_handler(struct trace_seq *s,
+ 	return 0;
+ }
+ 
++
++static int kvm_nested_vmexit_inject_handler(struct trace_seq *s, struct pevent_record *record,
++					    struct event_format *event, void *context)
++{
++	unsigned long long val;
++
++	pevent_print_num_field(s, " rip %0x016llx", event, "rip", record, 1);
++
++	if (pevent_get_field_val(s, event, "exit_code", record, &val, 1) < 0)
++		return -1;
++
++	trace_seq_printf(s, "reason %s", find_exit_reason(2, val));
++
++	pevent_print_num_field(s, " ext_inf1: %0x016llx", event, "exit_info1", record, 1);
++	pevent_print_num_field(s, " ext_inf2: %0x016llx", event, "exit_info2", record, 1);
++	pevent_print_num_field(s, " ext_int: %0x016llx", event, "exit_int_info", record, 1);
++	pevent_print_num_field(s, " ext_int_err: %0x016llx", event, "exit_int_info_err", record, 1);
++
++	return 0;
++}
++
++static int kvm_nested_vmexit_handler(struct trace_seq *s, struct pevent_record *record,
++				     struct event_format *event, void *context)
++{
++	pevent_print_num_field(s, " rip %0x016llx", event, "rip", record, 1);
++
++	return kvm_nested_vmexit_inject_handler(s, record, event, context);
++}
++
+ union kvm_mmu_page_role {
+ 	unsigned word;
+ 	struct {
+@@ -422,6 +451,12 @@ int PEVENT_PLUGIN_LOADER(struct pevent *pevent)
+ 	pevent_register_event_handler(pevent, -1, "kvm", "kvm_emulate_insn",
+ 				      kvm_emulate_insn_handler, NULL);
+ 
++	pevent_register_event_handler(pevent, -1, "kvm", "kvm_nested_vmexit",
++				      kvm_nested_vmexit_handler, NULL);
++
++	pevent_register_event_handler(pevent, -1, "kvm", "kvm_nested_vmexit_inject",
++				      kvm_nested_vmexit_inject_handler, NULL);
++
+ 	pevent_register_event_handler(pevent, -1, "kvmmmu", "kvm_mmu_get_page",
+ 				      kvm_mmu_get_page_handler, NULL);
+ 
+@@ -456,6 +491,12 @@ void PEVENT_PLUGIN_UNLOADER(struct pevent *pevent)
+ 	pevent_unregister_event_handler(pevent, -1, "kvm", "kvm_emulate_insn",
+ 					kvm_emulate_insn_handler, NULL);
+ 
++	pevent_unregister_event_handler(pevent, -1, "kvm", "kvm_nested_vmexit",
++					kvm_nested_vmexit_handler, NULL);
++
++	pevent_unregister_event_handler(pevent, -1, "kvm", "kvm_nested_vmexit_inject",
++					kvm_nested_vmexit_inject_handler, NULL);
++
+ 	pevent_unregister_event_handler(pevent, -1, "kvmmmu", "kvm_mmu_get_page",
+ 					kvm_mmu_get_page_handler, NULL);
+ 
+-- 
+1.8.3.1
 
