@@ -1,61 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932196AbaFWNrg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:47:36 -0400
-Received: from smtprelay0170.hostedemail.com ([216.40.44.170]:50799 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756025AbaFWNme (ORCPT
+	id S1755450AbaFWNr6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:47:58 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:28769 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754316AbaFWNrz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:42:34 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:800:960:968:973:988:989:1260:1345:1359:1437:1534:1541:1711:1714:1730:1747:1777:1792:2194:2199:2393:2559:2562:3138:3139:3140:3141:3142:3351:3865:4250:4321:4419:4605:5007:6119:6261:8603:9592:10004:10026:10848:11026:11657:11658:11914:12043:12114:12438:12517:12519:12555:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: trip95_8a80e1a44ad19
-X-Filterd-Recvd-Size: 1905
-From: Joe Perches <joe@perches.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jay Cliburn <jcliburn@gmail.com>, Chris Snook <chris.snook@gmail.com>,
-        netdev@vger.kernel.org
-Subject: [PATCH 09/22] atl1e: Use pci_zalloc_consistent
-Date: Mon, 23 Jun 2014 06:41:37 -0700
-Message-Id: <f5d819ba5c42a3379c94bef8a95410bdd2a88360.1403530604.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
-In-Reply-To: <cover.1403530604.git.joe@perches.com>
-References: <cover.1403530604.git.joe@perches.com>
+	Mon, 23 Jun 2014 09:47:55 -0400
+Message-ID: <1403531263.3804.6.camel@hornet>
+Subject: Re: [PATCH v7 1/2] video: ARM CLCD: Add DT support
+From: Pawel Moll <pawel.moll@arm.com>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>, devicetree@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Date: Mon, 23 Jun 2014 14:47:43 +0100
+In-Reply-To: <53A809D4.90800@ti.com>
+References: <1403018494-10264-1-git-send-email-pawel.moll@arm.com>
+	 <53A809D4.90800@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the now unnecessary memset too.
+On Mon, 2014-06-23 at 14:04 +0300, Tomi Valkeinen wrote:
+> I can queue this to fbdev tree, but how do you want to handle the second
+> patch? I think these two patches are independent, so the second patch
+> could go via arm-soc tree (or whichever is the normal route for those
+> .dts file changes). I'd prefer that option.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/net/ethernet/atheros/atl1e/atl1e_main.c | 7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+That's exactly what I had on mind. I'll handle the dts changes when the
+time is right.
 
-diff --git a/drivers/net/ethernet/atheros/atl1e/atl1e_main.c b/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
-index 4345332..316e0c3 100644
---- a/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
-+++ b/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
-@@ -831,17 +831,14 @@ static int atl1e_setup_ring_resources(struct atl1e_adapter *adapter)
- 	/* real ring DMA buffer */
- 
- 	size = adapter->ring_size;
--	adapter->ring_vir_addr = pci_alloc_consistent(pdev,
--			adapter->ring_size, &adapter->ring_dma);
--
-+	adapter->ring_vir_addr = pci_zalloc_consistent(pdev, adapter->ring_size,
-+						       &adapter->ring_dma);
- 	if (adapter->ring_vir_addr == NULL) {
- 		netdev_err(adapter->netdev,
- 			   "pci_alloc_consistent failed, size = D%d\n", size);
- 		return -ENOMEM;
- 	}
- 
--	memset(adapter->ring_vir_addr, 0, adapter->ring_size);
--
- 	rx_page_desc = rx_ring->rx_page_desc;
- 
- 	/* Init TPD Ring */
--- 
-1.8.1.2.459.gbcd45b4.dirty
+Thanks!
+
+Pawel
 
