@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754653AbaFWIw4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 04:52:56 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55536 "EHLO
+	id S1754626AbaFWIwy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 04:52:54 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55532 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752556AbaFWIc3 (ORCPT
+	by vger.kernel.org with ESMTP id S1752554AbaFWIc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Jun 2014 04:32:29 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jan Vcelak <jv@fcelda.cz>,
-        Antti Palosaari <crope@iki.fi>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 070/111] rtl28xxu: add chipset version comments into device list
-Date: Mon, 23 Jun 2014 10:31:45 +0200
-Message-Id: <be7a9c317efde7bad3198f789d37df8ab1ed59db.1403512281.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 037/111] drm/i915: Only copy back the modified fields to userspace from execbuffer
+Date: Mon, 23 Jun 2014 10:31:12 +0200
+Message-Id: <f1daac894b130d348c81bd5e9206edde8354e528.1403512281.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
 References: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
@@ -25,50 +23,117 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Vcelak <jv@fcelda.cz>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 60aa4c6fa5723af72cff154a5cd33ac4995d1e0a upstream.
+commit 9aab8bff7aa3bee567213ad3c1fdfb217bb980a2 upstream.
 
-Signed-off-by: Jan Vcelak <jv@fcelda.cz>
-Signed-off-by: Antti Palosaari <crope@iki.fi>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+We only want to modifiy a single field in the userspace view of the
+execbuffer command buffer, so explicitly change that rather than copy
+everything back again.
+
+This serves two purposes:
+
+1. The single fields are much cheaper to copy (constant size so the
+copy uses special case code) and much smaller than the whole array.
+
+2. We modify the array for internal use that need to be masked from
+the user.
+
+Note: We need this backported since without it the next bugfix will
+blow up when userspace recycles batchbuffers and relocations.
+
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/media/usb/dvb-usb-v2/rtl28xxu.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/gpu/drm/i915/i915_gem_execbuffer.c | 54 ++++++++++++++++++------------
+ 1 file changed, 32 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
-index 62cb601eed3f..ad85db6c87a5 100644
---- a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
-+++ b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
-@@ -1343,6 +1343,7 @@ static const struct dvb_usb_device_properties rtl2832u_props = {
- };
+diff --git a/drivers/gpu/drm/i915/i915_gem_execbuffer.c b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+index bf345777ae9f..c08287f8bbf4 100644
+--- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
++++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+@@ -674,9 +674,9 @@ i915_gem_execbuffer_relocate_slow(struct drm_device *dev,
+ 		 * relocations were valid.
+ 		 */
+ 		for (j = 0; j < exec[i].relocation_count; j++) {
+-			if (copy_to_user(&user_relocs[j].presumed_offset,
+-					 &invalid_offset,
+-					 sizeof(invalid_offset))) {
++			if (__copy_to_user(&user_relocs[j].presumed_offset,
++					   &invalid_offset,
++					   sizeof(invalid_offset))) {
+ 				ret = -EFAULT;
+ 				mutex_lock(&dev->struct_mutex);
+ 				goto err;
+@@ -1211,18 +1211,21 @@ i915_gem_execbuffer(struct drm_device *dev, void *data,
+ 	ret = i915_gem_do_execbuffer(dev, data, file, &exec2, exec2_list,
+ 				     &dev_priv->gtt.base);
+ 	if (!ret) {
++		struct drm_i915_gem_exec_object __user *user_exec_list =
++			to_user_ptr(args->buffers_ptr);
++
+ 		/* Copy the new buffer offsets back to the user's exec list. */
+-		for (i = 0; i < args->buffer_count; i++)
+-			exec_list[i].offset = exec2_list[i].offset;
+-		/* ... and back out to userspace */
+-		ret = copy_to_user(to_user_ptr(args->buffers_ptr),
+-				   exec_list,
+-				   sizeof(*exec_list) * args->buffer_count);
+-		if (ret) {
+-			ret = -EFAULT;
+-			DRM_DEBUG("failed to copy %d exec entries "
+-				  "back to user (%d)\n",
+-				  args->buffer_count, ret);
++		for (i = 0; i < args->buffer_count; i++) {
++			ret = __copy_to_user(&user_exec_list[i].offset,
++					     &exec2_list[i].offset,
++					     sizeof(user_exec_list[i].offset));
++			if (ret) {
++				ret = -EFAULT;
++				DRM_DEBUG("failed to copy %d exec entries "
++					  "back to user (%d)\n",
++					  args->buffer_count, ret);
++				break;
++			}
+ 		}
+ 	}
  
- static const struct usb_device_id rtl28xxu_id_table[] = {
-+	/* RTL2831U devices: */
- 	{ DVB_USB_DEVICE(USB_VID_REALTEK, USB_PID_REALTEK_RTL2831U,
- 		&rtl2831u_props, "Realtek RTL2831U reference design", NULL) },
- 	{ DVB_USB_DEVICE(USB_VID_WIDEVIEW, USB_PID_FREECOM_DVBT,
-@@ -1350,6 +1351,7 @@ static const struct usb_device_id rtl28xxu_id_table[] = {
- 	{ DVB_USB_DEVICE(USB_VID_WIDEVIEW, USB_PID_FREECOM_DVBT_2,
- 		&rtl2831u_props, "Freecom USB2.0 DVB-T", NULL) },
+@@ -1270,14 +1273,21 @@ i915_gem_execbuffer2(struct drm_device *dev, void *data,
+ 				     &dev_priv->gtt.base);
+ 	if (!ret) {
+ 		/* Copy the new buffer offsets back to the user's exec list. */
+-		ret = copy_to_user(to_user_ptr(args->buffers_ptr),
+-				   exec2_list,
+-				   sizeof(*exec2_list) * args->buffer_count);
+-		if (ret) {
+-			ret = -EFAULT;
+-			DRM_DEBUG("failed to copy %d exec entries "
+-				  "back to user (%d)\n",
+-				  args->buffer_count, ret);
++		struct drm_i915_gem_exec_object2 *user_exec_list =
++				   to_user_ptr(args->buffers_ptr);
++		int i;
++
++		for (i = 0; i < args->buffer_count; i++) {
++			ret = __copy_to_user(&user_exec_list[i].offset,
++					     &exec2_list[i].offset,
++					     sizeof(user_exec_list[i].offset));
++			if (ret) {
++				ret = -EFAULT;
++				DRM_DEBUG("failed to copy %d exec entries "
++					  "back to user\n",
++					  args->buffer_count);
++				break;
++			}
+ 		}
+ 	}
  
-+	/* RTL2832U devices: */
- 	{ DVB_USB_DEVICE(USB_VID_REALTEK, 0x2832,
- 		&rtl2832u_props, "Realtek RTL2832U reference design", NULL) },
- 	{ DVB_USB_DEVICE(USB_VID_REALTEK, 0x2838,
-@@ -1395,6 +1397,7 @@ static const struct usb_device_id rtl28xxu_id_table[] = {
- 	{ DVB_USB_DEVICE(USB_VID_KYE, 0x707f,
- 		&rtl2832u_props, "Genius TVGo DVB-T03", NULL) },
- 
-+	/* RTL2832P devices: */
- 	{ DVB_USB_DEVICE(USB_VID_HANFTEK, 0x0131,
- 		&rtl2832u_props, "Astrometa DVB-T2", NULL) },
- 	{ }
 -- 
 2.0.0
 
