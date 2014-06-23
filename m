@@ -1,89 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752006AbaFWMH2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 08:07:28 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:45226 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750820AbaFWMH0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 08:07:26 -0400
-Message-ID: <53A81879.6000303@ti.com>
-Date: Mon, 23 Jun 2014 15:07:21 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-CC: <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers/video/fbdev/sis: Add missing else
-References: <1403294397-18262-1-git-send-email-linux@rasmusvillemoes.dk>
-In-Reply-To: <1403294397-18262-1-git-send-email-linux@rasmusvillemoes.dk>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="GAu8huONB3Xeet53rHcwbmfgNafpiEiGj"
+	id S1752700AbaFWMIr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 08:08:47 -0400
+Received: from mail-yk0-f175.google.com ([209.85.160.175]:51102 "EHLO
+	mail-yk0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751066AbaFWMIq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 08:08:46 -0400
+From: Vincent Heuken <me@vincentheuken.com>
+To: liodot@gmail.com, charrer@alacritech.com, gregkh@linuxfoundation.org,
+        matlackdavid@gmail.com, peter.p.waskiewicz.jr@intel.com,
+        rashika.kheria@gmail.com, monamagarwal123@gmail.com, joe@perches.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Vincent Heuken <me@vincentheuken.com>
+Subject: [PATCH] Staging: slicoss: fixed frivolous else statement  warnings in slicoss.c
+Date: Mon, 23 Jun 2014 05:09:18 -0700
+Message-Id: <1403525358-15747-1-git-send-email-me@vincentheuken.com>
+X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---GAu8huONB3Xeet53rHcwbmfgNafpiEiGj
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+This is a patch for the slicoss.c file that fixes four instances
+of the following warning:
+WARNING: else is not generally useful after a break or return
 
-On 20/06/14 22:59, Rasmus Villemoes wrote:
-> The surrounding code and the fact that the previous two if's are
-> rendered useless without this "else" (since SIS_340=3D=3D55 and XGI_20=3D=
-=3D75
-> are greater than SIS_661=3D=3D15) suggests that the "else" is indeed
-> missing.
->=20
-> Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-> ---
->  drivers/video/fbdev/sis/init.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->=20
-> diff --git a/drivers/video/fbdev/sis/init.c b/drivers/video/fbdev/sis/i=
-nit.c
-> index bd40f5e..dfe3eb7 100644
-> --- a/drivers/video/fbdev/sis/init.c
-> +++ b/drivers/video/fbdev/sis/init.c
-> @@ -1511,7 +1511,7 @@ SiS_Get310DRAMType(struct SiS_Private *SiS_Pr)
->        } else if(SiS_Pr->ChipType >=3D SIS_340) {
->  	 /* TODO */
->  	 data =3D 0;
-> -      } if(SiS_Pr->ChipType >=3D SIS_661) {
-> +      } else if(SiS_Pr->ChipType >=3D SIS_661) {
->  	 if(SiS_Pr->SiS_ROMNew) {
->  	    data =3D ((SiS_GetReg(SiS_Pr->SiS_P3d4,0x78) & 0xc0) >> 6);
->  	 } else {
->=20
+Signed-off-by: Vincent Heuken <me@vincentheuken.com>
+---
+ drivers/staging/slicoss/slicoss.c | 22 ++++++++++++----------
+ 1 file changed, 12 insertions(+), 10 deletions(-)
 
-I agree. Queued for 3.17.
+diff --git a/drivers/staging/slicoss/slicoss.c b/drivers/staging/slicoss/slicoss.c
+index 48841e7..50ece29 100644
+--- a/drivers/staging/slicoss/slicoss.c
++++ b/drivers/staging/slicoss/slicoss.c
+@@ -740,9 +740,9 @@ static bool slic_mac_filter(struct adapter *adapter,
+ 		if (opts & MAC_BCAST) {
+ 			adapter->rcv_broadcasts++;
+ 			return true;
+-		} else {
+-			return false;
+ 		}
++
++		return false;
+ 	}
+ 
+ 	if (is_multicast_ether_addr(ether_frame->ether_dhost)) {
+@@ -763,10 +763,11 @@ static bool slic_mac_filter(struct adapter *adapter,
+ 				}
+ 				mcaddr = mcaddr->next;
+ 			}
+-			return false;
+-		} else {
++
+ 			return false;
+ 		}
++
++		return false;
+ 	}
+ 	if (opts & MAC_DIRECTED) {
+ 		adapter->rcv_unicasts++;
+@@ -2714,9 +2715,10 @@ static int slic_card_init(struct sliccard *card, struct adapter *adapter)
+ 			dev_err(&adapter->pcidev->dev,
+ 				"Failed to allocate DMA memory for EEPROM.\n");
+ 			return -ENOMEM;
+-		} else {
+-			memset(peeprom, 0, sizeof(struct slic_eeprom));
+ 		}
++
++		memset(peeprom, 0, sizeof(struct slic_eeprom));
++
+ 		slic_reg32_write(&slic_regs->slic_icr, ICR_INT_OFF, FLUSH);
+ 		mdelay(1);
+ 		pshmem = (struct slic_shmem *)(unsigned long)
+@@ -2751,11 +2753,11 @@ static int slic_card_init(struct sliccard *card, struct adapter *adapter)
+ 
+ 					slic_upr_request_complete(adapter, 0);
+ 					break;
+-				} else {
+-					adapter->pshmem->isr = 0;
+-					slic_reg32_write(&slic_regs->slic_isr,
+-							 0, FLUSH);
+ 				}
++
++				adapter->pshmem->isr = 0;
++				slic_reg32_write(&slic_regs->slic_isr,
++						 0, FLUSH);
+ 			} else {
+ 				mdelay(1);
+ 				i++;
+-- 
+2.0.0
 
- Tomi
-
-
-
---GAu8huONB3Xeet53rHcwbmfgNafpiEiGj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTqBh5AAoJEPo9qoy8lh71EHkP/3QPIScgF0K+3ccY9itYiYtc
-PeRBJeKgQhKxwUjlgPdxQU3ej7GKeMbgBAZZIr2oPzOm/MQrNl23Y22RzxLXMfzu
-vNbjMZKaSuexPmLtTGtJ1FbyMCYr4lJ926slVW0QnuGhPoRGN9g0kE3A0GHHYyV6
-SQWn2wzwtdyHzcPRRuPdVXHD4VkVte/c8P5RjuPzrRArasb60ACKm73psarBDFLA
-vjhFOpPjgLKd/MN43x7uoaHq+s53/y4AYEvdXMubP/pW+LChONAdw/Zj6XhYG40k
-as8rX1wUbjzCnd8SiCcxk2cD6sNNqTJzlfzOqswGuvFzV/mlvSYbgdXjdyvUU8uB
-ga6oOPg/zeBVDFCMPRKcynEdhOt/p6LeZLI3KpO2qqdYqqvc6mEQvkqChSOPvy2y
-/r5yLWCAeMBx62uyyhxi7Z+S80yXODNs4vHsrz2Nej6Nf/IIfoIED3+vyxUJKxvj
-lsgHnZ0UUud027/mY+vS516mHTBsy0VRYPjQAi8x4Yi5mGUdEcrR/1xQaBK2WTa2
-4MVdRhBS88yvfnujtWJQWjZhCrYHKAgptNLlZH1tI9yk6zHCA97P3Z0INEIXveg5
-g4P83UHUYGto+S1zFIRlbfIYUX+8jnx9fxgigjTlkLxmZjo+/rP+/t2WR69SO+gY
-jZxJe9YW125ggJPa90kk
-=XC1M
------END PGP SIGNATURE-----
-
---GAu8huONB3Xeet53rHcwbmfgNafpiEiGj--
