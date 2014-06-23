@@ -1,51 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752203AbaFWDFW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 23:05:22 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:33592 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751392AbaFWDFS (ORCPT
+	id S1752230AbaFWDHZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 23:07:25 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:39911 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751299AbaFWDHY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 23:05:18 -0400
-X-Original-SENDERIP: 10.177.220.169
-X-Original-MAILFROM: minchan@kernel.org
-Date: Mon, 23 Jun 2014 12:06:05 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 11/13] mm, compaction: pass gfp mask to compact_control
-Message-ID: <20140623030605.GF12413@bbox>
-References: <1403279383-5862-1-git-send-email-vbabka@suse.cz>
- <1403279383-5862-12-git-send-email-vbabka@suse.cz>
+	Sun, 22 Jun 2014 23:07:24 -0400
+Message-ID: <53A799E5.7040609@gmail.com>
+Date: Mon, 23 Jun 2014 11:07:17 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1403279383-5862-12-git-send-email-vbabka@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Guenter Roeck <linux@roeck-us.net>, Lennox Wu <lennox.wu@gmail.com>
+CC: Liqin Chen <liqin.linux@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arch/score/include/uapi/asm/ptrace.h: Add prefix 'SCORE_'
+ for related macros
+References: <53A66000.4010208@gmail.com> <CAF0htA7jReHGSL+K_rh9CMN_Wsyy=nL-TsN3T2L+FQUpAEXyrg@mail.gmail.com> <53A70420.4010005@roeck-us.net>
+In-Reply-To: <53A70420.4010005@roeck-us.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 05:49:41PM +0200, Vlastimil Babka wrote:
-> From: David Rientjes <rientjes@google.com>
+On 06/23/2014 12:28 AM, Guenter Roeck wrote:
+> On 06/22/2014 01:09 AM, Lennox Wu wrote:
+>> Hi Chen,
+>> Do you find other modules except device modules cause issues of
+>> compiling?
+>> The applications of Score are limited. Acutally, some errors never occur
+>> in the limited applications, for example, the conbination consists of
+>> Score and the timer of SuperH. I'm not sure we should handle this kind
+>> of error.
+>> If the rule is that we should make sure "all" modules can be compiled
+>> with Score, we will do it.
+>> However, we still thanks for your check.
+>>
 > 
-> struct compact_control currently converts the gfp mask to a migratetype, but we
-> need the entire gfp mask in a follow-up patch.
+> Other architectures don't care about buildability of allmodconfig or
+> allyesconfig
+> (arm is a good [or maybe bad] example), so it is for sure not mandatory.
+> On the other side, fixing such problems - especially when you have someone
+> doing it for you - may prevent problems down the road, so while not
+> mandatory
+> I consider it a useful goal to achieve.
 > 
-> Pass the entire gfp mask as part of struct compact_control.
+> If there is a driver which doesn't make sense to build at all, such as
+> the SuperH
+> timer driver mentioned above, it can always be excluded from building
+> with Kconfig.
+> If that causes opposition for some reason, you can still ignore that it
+> fails
+> to build.
 > 
-> Signed-off-by: David Rientjes <rientjes@google.com>
-> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
 
-Acked-by: Minchan Kim <minchan@kernel.org>
+Yeah, what Guenter said is fine to me.
 
+Although allmodconfig is not mandatory, it is still a useful goal to
+achieve.
+
+
+Thanks.
 -- 
-Kind regards,
-Minchan Kim
+Chen Gang
+
+Open, share, and attitude like air, water, and life which God blessed
