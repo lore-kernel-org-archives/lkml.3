@@ -1,57 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752680AbaFWJ3t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 05:29:49 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:55860 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752191AbaFWJ3q (ORCPT
+	id S1752619AbaFWJ3m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 05:29:42 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:38597 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752191AbaFWJ3k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 05:29:46 -0400
-Date: Mon, 23 Jun 2014 02:29:42 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: =?UTF-8?Q?Uwe_Kleine-K=C3=B6nig?= <u.kleine-koenig@pengutronix.de>
-cc: Konstantin Khlebnikov <koct9i@gmail.com>,
-        "Yann E. MORIN" <yann.morin.1998@free.fr>,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kconfig: plug false-positive warning in get_prompt_str()
- seen with gcc-4.9
-In-Reply-To: <20140623054813.GG13440@pengutronix.de>
-Message-ID: <alpine.DEB.2.02.1406230228370.8821@chino.kir.corp.google.com>
-References: <20140525164751.28577.74072.stgit@zurg> <20140623054813.GG13440@pengutronix.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 23 Jun 2014 05:29:40 -0400
+X-IronPort-AV: E=Sophos;i="5.00,759,1396972800"; 
+   d="scan'208";a="32280595"
+Message-ID: <53A7F379.7020504@cn.fujitsu.com>
+Date: Mon, 23 Jun 2014 17:29:29 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131030 Thunderbird/17.0.10
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="531381512-1459598461-1403515783=:8821"
+To: Vlastimil Babka <vbabka@suse.cz>
+CC: <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 09/13] mm, compaction: skip buddy pages by their order
+ in the migrate scanner
+References: <1403279383-5862-1-git-send-email-vbabka@suse.cz> <1403279383-5862-10-git-send-email-vbabka@suse.cz>
+In-Reply-To: <1403279383-5862-10-git-send-email-vbabka@suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.225.89]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---531381512-1459598461-1403515783=:8821
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-
-On Mon, 23 Jun 2014, Uwe Kleine-König wrote:
-
-> > scripts/kconfig/menu.c: In function ‘get_symbol_str’:
-> > scripts/kconfig/menu.c:590:18: warning: ‘jump’ may be used uninitialized in this function [-Wmaybe-uninitialized]
-> >      jump->offset = strlen(r->s);
-> >                   ^
-> > scripts/kconfig/menu.c:551:19: note: ‘jump’ was declared here
-> >   struct jump_key *jump;
-> >                    ^
+On 06/20/2014 11:49 PM, Vlastimil Babka wrote:
+> The migration scanner skips PageBuddy pages, but does not consider their order
+> as checking page_order() is generally unsafe without holding the zone->lock,
+> and acquiring the lock just for the check wouldn't be a good tradeoff.
 > 
-> I'm seeing that problem with a 4.8.2 toolchain on next-20140623 with
-> ARCH=arm, too.
+> Still, this could avoid some iterations over the rest of the buddy page, and
+> if we are careful, the race window between PageBuddy() check and page_order()
+> is small, and the worst thing that can happen is that we skip too much and miss
+> some isolation candidates. This is not that bad, as compaction can already fail
+> for many other reasons like parallel allocations, and those have much larger
+> race window.
 > 
-> Maybe better use uninitialized_var? And point out the commit that
-> introduced the issue please.
+> This patch therefore makes the migration scanner obtain the buddy page order
+> and use it to skip the whole buddy page, if the order appears to be in the
+> valid range.
+> 
+> It's important that the page_order() is read only once, so that the value used
+> in the checks and in the pfn calculation is the same. But in theory the
+> compiler can replace the local variable by multiple inlines of page_order().
+> Therefore, the patch introduces page_order_unsafe() that uses ACCESS_ONCE to
+> prevent this.
+> 
+> Testing with stress-highalloc from mmtests shows a 15% reduction in number of
+> pages scanned by migration scanner. This change is also a prerequisite for a
+> later patch which is detecting when a cc->order block of pages contains
+> non-buddy pages that cannot be isolated, and the scanner should thus skip to
+> the next block immediately.
+> 
+> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+> Cc: Minchan Kim <minchan@kernel.org>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Cc: Michal Nazarewicz <mina86@mina86.com>
+> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: David Rientjes <rientjes@google.com>
+
+Fair enough.
+
+Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+
+> ---
+>  mm/compaction.c | 36 +++++++++++++++++++++++++++++++-----
+>  mm/internal.h   | 16 +++++++++++++++-
+>  2 files changed, 46 insertions(+), 6 deletions(-)
+> 
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index 41c7005..df0961b 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -270,8 +270,15 @@ static inline bool compact_should_abort(struct compact_control *cc)
+>  static bool suitable_migration_target(struct page *page)
+>  {
+>  	/* If the page is a large free page, then disallow migration */
+> -	if (PageBuddy(page) && page_order(page) >= pageblock_order)
+> -		return false;
+> +	if (PageBuddy(page)) {
+> +		/*
+> +		 * We are checking page_order without zone->lock taken. But
+> +		 * the only small danger is that we skip a potentially suitable
+> +		 * pageblock, so it's not worth to check order for valid range.
+> +		 */
+> +		if (page_order_unsafe(page) >= pageblock_order)
+> +			return false;
+> +	}
+>  
+>  	/* If the block is MIGRATE_MOVABLE or MIGRATE_CMA, allow migration */
+>  	if (migrate_async_suitable(get_pageblock_migratetype(page)))
+> @@ -591,11 +598,23 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+>  			valid_page = page;
+>  
+>  		/*
+> -		 * Skip if free. page_order cannot be used without zone->lock
+> -		 * as nothing prevents parallel allocations or buddy merging.
+> +		 * Skip if free. We read page order here without zone lock
+> +		 * which is generally unsafe, but the race window is small and
+> +		 * the worst thing that can happen is that we skip some
+> +		 * potential isolation targets.
+>  		 */
+> -		if (PageBuddy(page))
+> +		if (PageBuddy(page)) {
+> +			unsigned long freepage_order = page_order_unsafe(page);
+> +
+> +			/*
+> +			 * Without lock, we cannot be sure that what we got is
+> +			 * a valid page order. Consider only values in the
+> +			 * valid order range to prevent low_pfn overflow.
+> +			 */
+> +			if (freepage_order > 0 && freepage_order < MAX_ORDER)
+> +				low_pfn += (1UL << freepage_order) - 1;
+>  			continue;
+> +		}
+>  
+>  		/*
+>  		 * Check may be lockless but that's ok as we recheck later.
+> @@ -683,6 +702,13 @@ next_pageblock:
+>  		low_pfn = ALIGN(low_pfn + 1, pageblock_nr_pages) - 1;
+>  	}
+>  
+> +	/*
+> +	 * The PageBuddy() check could have potentially brought us outside
+> +	 * the range to be scanned.
+> +	 */
+> +	if (unlikely(low_pfn > end_pfn))
+> +		low_pfn = end_pfn;
+> +
+>  	acct_isolated(zone, locked, cc);
+>  
+>  	if (locked)
+> diff --git a/mm/internal.h b/mm/internal.h
+> index 2c187d2..584cd69 100644
+> --- a/mm/internal.h
+> +++ b/mm/internal.h
+> @@ -171,7 +171,8 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+>   * general, page_zone(page)->lock must be held by the caller to prevent the
+>   * page from being allocated in parallel and returning garbage as the order.
+>   * If a caller does not hold page_zone(page)->lock, it must guarantee that the
+> - * page cannot be allocated or merged in parallel.
+> + * page cannot be allocated or merged in parallel. Alternatively, it must
+> + * handle invalid values gracefully, and use page_order_unsafe() below.
+>   */
+>  static inline unsigned long page_order(struct page *page)
+>  {
+> @@ -179,6 +180,19 @@ static inline unsigned long page_order(struct page *page)
+>  	return page_private(page);
+>  }
+>  
+> +/*
+> + * Like page_order(), but for callers who cannot afford to hold the zone lock.
+> + * PageBuddy() should be checked first by the caller to minimize race window,
+> + * and invalid values must be handled gracefully.
+> + *
+> + * ACCESS_ONCE is used so that if the caller assigns the result into a local
+> + * variable and e.g. tests it for valid range before using, the compiler cannot
+> + * decide to remove the variable and inline the page_private(page) multiple
+> + * times, potentially observing different values in the tests and the actual
+> + * use of the result.
+> + */
+> +#define page_order_unsafe(page)		ACCESS_ONCE(page_private(page))
+> +
+>  static inline bool is_cow_mapping(vm_flags_t flags)
+>  {
+>  	return (flags & (VM_SHARED | VM_MAYWRITE)) == VM_MAYWRITE;
 > 
 
-If the compiler can't figure out if a variable is always intialized before 
-its referenced, then it indicates the code is poorly written and isn't 
-clear to the code reader either.  uninitialized_var() would be a lazy way 
-to solve this particular issue.
---531381512-1459598461-1403515783=:8821--
+
+-- 
+Thanks.
+Zhang Yanfei
