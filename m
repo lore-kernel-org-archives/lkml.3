@@ -1,111 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753054AbaFWJe4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 05:34:56 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59242 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752998AbaFWJex (ORCPT
+	id S1752983AbaFWJeu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 05:34:50 -0400
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:53195 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752953AbaFWJes (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 05:34:53 -0400
-Date: Mon, 23 Jun 2014 02:34:41 -0700
-From: tip-bot for Viresh Kumar <tipbot@zytor.com>
-Message-ID: <tip-9e1e01dd79ac4cf936623399abe57dfba4528ae6@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        fweisbec@gmail.com, viresh.kumar@linaro.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, viresh.kumar@linaro.org, tglx@linutronix.de
-In-Reply-To: <1403393357-2070-6-git-send-email-fweisbec@gmail.com>
-References: <1403393357-2070-6-git-send-email-fweisbec@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] hrtimer: Remove hrtimer_enqueue_reprogram()
-Git-Commit-ID: 9e1e01dd79ac4cf936623399abe57dfba4528ae6
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Mon, 23 Jun 2014 05:34:48 -0400
+Message-ID: <1403516086.12982.35.camel@x220>
+Subject: Re: [PATCH v2] ARM: mvebu: rename ARM_ERRATA_753970
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Mon, 23 Jun 2014 11:34:46 +0200
+In-Reply-To: <20140623090714.GH32514@n2100.arm.linux.org.uk>
+References: <201404052101.19381.arnd@arndb.de>
+	 <201404052104.11363.arnd@arndb.de> <1396777049.30640.9.camel@x220>
+	 <53418889.2050002@free-electrons.com> <1396805315.7723.8.camel@x220>
+	 <1401094871.25902.20.camel@x220>
+	 <20140620202100.GG21711@titan.lakedaemon.net>
+	 <20140620205340.GX32514@n2100.arm.linux.org.uk>
+	 <1403514104.12982.20.camel@x220>
+	 <20140623090714.GH32514@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 23 Jun 2014 09:34:46.0133 (UTC) FILETIME=[5EBFCA50:01CF8EC6]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9e1e01dd79ac4cf936623399abe57dfba4528ae6
-Gitweb:     http://git.kernel.org/tip/9e1e01dd79ac4cf936623399abe57dfba4528ae6
-Author:     Viresh Kumar <viresh.kumar@linaro.org>
-AuthorDate: Sun, 22 Jun 2014 01:29:17 +0200
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 23 Jun 2014 11:23:47 +0200
+On Mon, 2014-06-23 at 10:07 +0100, Russell King - ARM Linux wrote:
+> On Mon, Jun 23, 2014 at 11:01:44AM +0200, Paul Bolle wrote:
+> > Dropped the "if CACHE_PL310" fragments used in v1. No need to use "if
+> > CACHE_L2X0" instead. Both CACHE_PL310 and CACHE_L2X0 will be
+> > (indirectly) selected if MACH_ARMADA_375 or MACH_ARMADA_38X are set.
+> 
+> Yes there is.  We've recently seen the selection of CACHE_L2X0 be removed
+> from platforms, while leaving the selection of the errata behind.  The
+> result is Kconfig warnings.  My commit above ensures that this doesn't
+> happen in the future by adding the proper dependencies onto those errata
+> selects.
 
-hrtimer: Remove hrtimer_enqueue_reprogram()
+The entries I touched read (in summary):
+config MACH_MVEBU_V7
+        bool
+        select CACHE_L2X0
 
-We call hrtimer_enqueue_reprogram() only when we are in high resolution
-mode now so we don't need to check that again in hrtimer_enqueue_reprogram().
+config MACH_ARMADA_370
+        bool "Marvell Armada 370 boards" if ARCH_MULTI_V7
+        select MACH_MVEBU_V7
+        help
+          [...].
 
-Once the check is removed, hrtimer_enqueue_reprogram() turns to be an
-useless wrapper over hrtimer_reprogram() and can be dropped.
+config MACH_ARMADA_375
+        bool "Marvell Armada 375 boards" if ARCH_MULTI_V7
+        select MACH_MVEBU_V7
+        help
+          [...].
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Link: http://lkml.kernel.org/r/1403393357-2070-6-git-send-email-fweisbec@gmail.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/time/hrtimer.c | 23 ++++++++---------------
- 1 file changed, 8 insertions(+), 15 deletions(-)
+So the choice I faced was between: 
+- using "select PL310_ERRATA_753970 if CACHE_L2X0": that matches all
+  current occurrences of "select PL310_ERRATA_*" but adds a superfluous
+  dependency on CACHE_L2X0
+- using just "select PL310_ERRATA_753970": sufficient, but will break
+  if CACHE_L2X0 isn't selected through MACH_MVEBU_V7 anymore.
 
-diff --git a/kernel/time/hrtimer.c b/kernel/time/hrtimer.c
-index f900747..66a6dc1 100644
---- a/kernel/time/hrtimer.c
-+++ b/kernel/time/hrtimer.c
-@@ -602,6 +602,11 @@ hrtimer_force_reprogram(struct hrtimer_cpu_base *cpu_base, int skip_equal)
-  * timers, we have to check, whether it expires earlier than the timer for
-  * which the clock event device was armed.
-  *
-+ * Note, that in case the state has HRTIMER_STATE_CALLBACK set, no reprogramming
-+ * and no expiry check happens. The timer gets enqueued into the rbtree. The
-+ * reprogramming and expiry check is done in the hrtimer_interrupt or in the
-+ * softirq.
-+ *
-  * Called with interrupts disabled and base->cpu_base.lock held
-  */
- static int hrtimer_reprogram(struct hrtimer *timer,
-@@ -662,18 +667,6 @@ static inline void hrtimer_init_hres(struct hrtimer_cpu_base *base)
- 	base->hres_active = 0;
- }
- 
--/*
-- * When High resolution timers are active, try to reprogram. Note, that in case
-- * the state has HRTIMER_STATE_CALLBACK set, no reprogramming and no expiry
-- * check happens. The timer gets enqueued into the rbtree. The reprogramming
-- * and expiry check is done in the hrtimer_interrupt or in the softirq.
-- */
--static inline int hrtimer_enqueue_reprogram(struct hrtimer *timer,
--					    struct hrtimer_clock_base *base)
--{
--	return base->cpu_base->hres_active && hrtimer_reprogram(timer, base);
--}
--
- static inline ktime_t hrtimer_update_base(struct hrtimer_cpu_base *base)
- {
- 	ktime_t *offs_real = &base->clock_base[HRTIMER_BASE_REALTIME].offset;
-@@ -755,8 +748,8 @@ static inline int hrtimer_is_hres_enabled(void) { return 0; }
- static inline int hrtimer_switch_to_hres(void) { return 0; }
- static inline void
- hrtimer_force_reprogram(struct hrtimer_cpu_base *base, int skip_equal) { }
--static inline int hrtimer_enqueue_reprogram(struct hrtimer *timer,
--					    struct hrtimer_clock_base *base)
-+static inline int hrtimer_reprogram(struct hrtimer *timer,
-+				    struct hrtimer_clock_base *base)
- {
- 	return 0;
- }
-@@ -1025,7 +1018,7 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
- 		 */
- 		wake_up_nohz_cpu(new_base->cpu_base->cpu);
- 	} else if (new_base->cpu_base == &__get_cpu_var(hrtimer_bases) &&
--			hrtimer_enqueue_reprogram(timer, new_base)) {
-+			hrtimer_reprogram(timer, new_base)) {
- 		/*
- 		 * Only allow reprogramming if the new base is on this CPU.
- 		 * (it might still be on another CPU if the timer was pending)
+I chose to just "select PL310_ERRATA_753970" but adding "if CACHE_L2X0"
+is fine with me too.
+
+> Please do the same.
+
+Will do later today.
+
+Thanks,
+
+
+Paul Bolle
+
