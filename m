@@ -1,60 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752836AbaFWJja (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 05:39:30 -0400
-Received: from mga14.intel.com ([192.55.52.115]:5039 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752597AbaFWJj2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 05:39:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,529,1400050800"; 
-   d="scan'208";a="551927515"
-Date: Mon, 23 Jun 2014 17:39:25 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Jet Chen <jet.chen@intel.com>, LKP <lkp@01.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [clockevents] WARNING: CPU: 0 PID: 0 at
- kernel/time/tick-oneshot.c:32 tick_stop_event()
-Message-ID: <20140623093925.GA1454@localhost>
-References: <53A7E357.5040800@intel.com>
- <CAKohpomtHuXP0Q9QnWvJj1d2O=AewMR+nVNE3N_KFJkMpcCHYA@mail.gmail.com>
+	id S1752656AbaFWJmV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 05:42:21 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:44199 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751222AbaFWJmT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 05:42:19 -0400
+Date: Mon, 23 Jun 2014 11:42:03 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
+        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de
+Subject: Re: [patch 12/13] mm: memcontrol: rewrite charge API
+Message-ID: <20140623094203.GG14781@pengutronix.de>
+References: <1403124045-24361-1-git-send-email-hannes@cmpxchg.org>
+ <1403124045-24361-13-git-send-email-hannes@cmpxchg.org>
+ <20140623061526.GH13440@pengutronix.de>
+ <20140623093052.GG9743@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <CAKohpomtHuXP0Q9QnWvJj1d2O=AewMR+nVNE3N_KFJkMpcCHYA@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140623093052.GG9743@dhcp22.suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Viresh,
-
-On Mon, Jun 23, 2014 at 02:02:25PM +0530, Viresh Kumar wrote:
-> On 23 June 2014 13:50, Jet Chen <jet.chen@intel.com> wrote:
-> > Hi Viresh,
-> >
-> > 0day kernel testing robot got the below dmesg and the first bad commit is
-> >
-> > git://git.linaro.org/people/vireshk/linux tick/ONESHOT-STOPPED
+On Mon, Jun 23, 2014 at 11:30:52AM +0200, Michal Hocko wrote:
+> On Mon 23-06-14 08:15:26, Uwe Kleine-König wrote:
+> > Hello,
+> > 
+> > On Wed, Jun 18, 2014 at 04:40:44PM -0400, Johannes Weiner wrote:
+> > > The memcg charge API charges pages before they are rmapped - i.e. have
+> > > an actual "type" - and so every callsite needs its own set of charge
+> > > and uncharge functions to know what type is being operated on.  Worse,
+> > > uncharge has to happen from a context that is still type-specific,
+> > > rather than at the end of the page's lifetime with exclusive access,
+> > > and so requires a lot of synchronization.
+> > > ...
+> > 
+> > this patch made it into next-20140623 as 5e49555277df (mm: memcontrol: rewrite
+> > charge API) and it makes efm32_defconfig (ARCH=arm) fail with:
+> > 
+> >   CC      mm/swap.o
+> > mm/swap.c: In function 'lru_cache_add_active_or_unevictable':
+> > mm/swap.c:719:2: error: implicit declaration of function 'TestSetPageMlocked' [-Werror=implicit-function-declaration]
+> >   if (!TestSetPageMlocked(page)) {
+> >   ^
+> > cc1: some warnings being treated as errors
+> > scripts/Makefile.build:257: recipe for target 'mm/swap.o' failed
+> > make[3]: *** [mm/swap.o] Error 1
+> > Makefile:1471: recipe for target 'mm/swap.o' failed
+> > 
+> > imx_v4_v5_defconfig works, so probably the thing that makes
+> > efm32_defconfig fail is CONFIG_MMU=n.
 > 
-> Hi Jet/Fengguang,
-> 
-> Why did your scripts Cc'd LKML for this report? It never used to
-> happen for my trees Atleast.
+> Fix is here:
+> http://marc.info/?l=linux-mm&m=140330132521104
+Thanks for the link.
 
-Yeah our build error reports are mostly private emails. However we do
-CC LKML for runtime regressions - because there is no easy way for us
-to tell whether the reported regression has reached more people.
+I have another problem that makes my machine fail to boot but at least
+this patch makes next compilable again for me.
 
-> These patches haven't been posted to LKML yet and sending
-> reports there for these wouldn't be good for their fate :)
+Thanks
+Uwe
 
-Sorry if it hurts. :)
-
-> Anyway, will look at what broke. Thanks.
-
-Thank you!
-
-Cheers,
-Fengguang
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
