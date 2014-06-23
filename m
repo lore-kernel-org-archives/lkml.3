@@ -1,124 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754382AbaFWIwC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 04:52:02 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55570 "EHLO
+	id S1753164AbaFWIw5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 04:52:57 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55535 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752610AbaFWIc3 (ORCPT
+	by vger.kernel.org with ESMTP id S1752555AbaFWIc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Jun 2014 04:32:29 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 089/111] net: Add variants of capable for use on on sockets
-Date: Mon, 23 Jun 2014 10:32:04 +0200
-Message-Id: <8c91777bd4951c1f1ad59842fe4d208f94a97dfe.1403512281.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 041/111] xhci: delete endpoints from bandwidth list before freeing whole device
+Date: Mon, 23 Jun 2014 10:31:16 +0200
+Message-Id: <1f405c3d18c969477fa07f0f55cedd71d946e34e.1403512281.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
 References: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
 In-Reply-To: <cover.1403512280.git.jslaby@suse.cz>
 References: <cover.1403512280.git.jslaby@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit a3b299da869d6e78cf42ae0b1b41797bcb8c5e4b ]
+commit 5dc2808c4729bf080487e61b80ee04e0fdb12a37 upstream.
 
-sk_net_capable - The common case, operations that are safe in a network namespace.
-sk_capable - Operations that are not known to be safe in a network namespace
-sk_ns_capable - The general case for special cases.
+Lists of endpoints are stored for bandwidth calculation for roothub ports.
+Make sure we remove all endpoints from the list before the whole device,
+containing its endpoints list_head stuctures, is freed.
 
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This used to be done in the wrong order in xhci_mem_cleanup(),
+and triggered an oops in resume from S4 (hibernate).
+
+Tested-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- include/net/sock.h |  5 +++++
- net/core/sock.c    | 49 +++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 54 insertions(+)
+ drivers/usb/host/xhci-mem.c | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index 6e2c4901a477..4aa873a6267f 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -2275,6 +2275,11 @@ extern int sock_get_timestampns(struct sock *, struct timespec __user *);
- extern int sock_recv_errqueue(struct sock *sk, struct msghdr *msg, int len,
- 			      int level, int type);
+diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
+index 49b8bd063fab..4483e6a307c0 100644
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -1722,6 +1722,16 @@ void xhci_mem_cleanup(struct xhci_hcd *xhci)
+ 		kfree(cur_cd);
+ 	}
  
-+bool sk_ns_capable(const struct sock *sk,
-+		   struct user_namespace *user_ns, int cap);
-+bool sk_capable(const struct sock *sk, int cap);
-+bool sk_net_capable(const struct sock *sk, int cap);
++	num_ports = HCS_MAX_PORTS(xhci->hcs_params1);
++	for (i = 0; i < num_ports; i++) {
++		struct xhci_interval_bw_table *bwt = &xhci->rh_bw[i].bw_table;
++		for (j = 0; j < XHCI_MAX_INTERVAL; j++) {
++			struct list_head *ep = &bwt->interval_bw[j].endpoints;
++			while (!list_empty(ep))
++				list_del_init(ep->next);
++		}
++	}
 +
- /*
-  *	Enable debug/info messages
-  */
-diff --git a/net/core/sock.c b/net/core/sock.c
-index ec228a30e7dc..f9ec2f5be1c0 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -145,6 +145,55 @@
- static DEFINE_MUTEX(proto_list_mutex);
- static LIST_HEAD(proto_list);
+ 	for (i = 1; i < MAX_HC_SLOTS; ++i)
+ 		xhci_free_virt_device(xhci, i);
  
-+/**
-+ * sk_ns_capable - General socket capability test
-+ * @sk: Socket to use a capability on or through
-+ * @user_ns: The user namespace of the capability to use
-+ * @cap: The capability to use
-+ *
-+ * Test to see if the opener of the socket had when the socket was
-+ * created and the current process has the capability @cap in the user
-+ * namespace @user_ns.
-+ */
-+bool sk_ns_capable(const struct sock *sk,
-+		   struct user_namespace *user_ns, int cap)
-+{
-+	return file_ns_capable(sk->sk_socket->file, user_ns, cap) &&
-+		ns_capable(user_ns, cap);
-+}
-+EXPORT_SYMBOL(sk_ns_capable);
-+
-+/**
-+ * sk_capable - Socket global capability test
-+ * @sk: Socket to use a capability on or through
-+ * @cap: The global capbility to use
-+ *
-+ * Test to see if the opener of the socket had when the socket was
-+ * created and the current process has the capability @cap in all user
-+ * namespaces.
-+ */
-+bool sk_capable(const struct sock *sk, int cap)
-+{
-+	return sk_ns_capable(sk, &init_user_ns, cap);
-+}
-+EXPORT_SYMBOL(sk_capable);
-+
-+/**
-+ * sk_net_capable - Network namespace socket capability test
-+ * @sk: Socket to use a capability on or through
-+ * @cap: The capability to use
-+ *
-+ * Test to see if the opener of the socket had when the socke was created
-+ * and the current process has the capability @cap over the network namespace
-+ * the socket is a member of.
-+ */
-+bool sk_net_capable(const struct sock *sk, int cap)
-+{
-+	return sk_ns_capable(sk, sock_net(sk)->user_ns, cap);
-+}
-+EXPORT_SYMBOL(sk_net_capable);
-+
-+
- #ifdef CONFIG_MEMCG_KMEM
- int mem_cgroup_sockets_init(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
- {
+@@ -1757,16 +1767,6 @@ void xhci_mem_cleanup(struct xhci_hcd *xhci)
+ 	if (!xhci->rh_bw)
+ 		goto no_bw;
+ 
+-	num_ports = HCS_MAX_PORTS(xhci->hcs_params1);
+-	for (i = 0; i < num_ports; i++) {
+-		struct xhci_interval_bw_table *bwt = &xhci->rh_bw[i].bw_table;
+-		for (j = 0; j < XHCI_MAX_INTERVAL; j++) {
+-			struct list_head *ep = &bwt->interval_bw[j].endpoints;
+-			while (!list_empty(ep))
+-				list_del_init(ep->next);
+-		}
+-	}
+-
+ 	for (i = 0; i < num_ports; i++) {
+ 		struct xhci_tt_bw_info *tt, *n;
+ 		list_for_each_entry_safe(tt, n, &xhci->rh_bw[i].tts, tt_list) {
 -- 
 2.0.0
 
