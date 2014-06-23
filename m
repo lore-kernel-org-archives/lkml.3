@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755359AbaFWPkR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 11:40:17 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:59029 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751211AbaFWPkP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 11:40:15 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53A84A51.8070507@roeck-us.net>
-Date: Mon, 23 Jun 2014 08:40:01 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1755695AbaFWPnL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 11:43:11 -0400
+Received: from imap.thunk.org ([74.207.234.97]:53444 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753909AbaFWPnJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 11:43:09 -0400
+Date: Mon, 23 Jun 2014 11:43:02 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Dave Chinner <david@fromorbit.com>, Jens Axboe <axboe@fb.com>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: [regression] fix 32-bit breakage in block device read(2) (was
+ Re: 32-bit bug in iovec iterator changes)
+Message-ID: <20140623154302.GC14887@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Al Viro <viro@ZenIV.linux.org.uk>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	James Bottomley <James.Bottomley@HansenPartnership.com>,
+	Dave Chinner <david@fromorbit.com>, Jens Axboe <axboe@fb.com>,
+	linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+References: <20140621055306.GP18016@ZenIV.linux.org.uk>
+ <20140621230922.GA13188@thunk.org>
+ <20140621234913.GQ18016@ZenIV.linux.org.uk>
+ <1403395400.2592.4.camel@jarvis.lan>
+ <20140622002618.GR18016@ZenIV.linux.org.uk>
+ <1403397164.2177.40.camel@dabdike.int.hansenpartnership.com>
+ <20140622005352.GS18016@ZenIV.linux.org.uk>
+ <20140622010032.GT18016@ZenIV.linux.org.uk>
+ <20140622115007.GA5333@thunk.org>
+ <20140623074440.GV18016@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Maxime Ripard <maxime.ripard@free-electrons.com>, wim@iguana.be,
-        dbaryshkov@gmail.com, dwmw2@infradead.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, linux-sunxi@googlegroups.com
-Subject: Re: [PATCH v2 1/6] wdt: sunxi: Move restart code to the watchdog
- driver
-References: <1399430664-29091-1-git-send-email-maxime.ripard@free-electrons.com> <19870078.UBj78UMBrO@wuerfel> <53A844C2.7070804@roeck-us.net> <4880375.uMKpQASVMt@wuerfel>
-In-Reply-To: <4880375.uMKpQASVMt@wuerfel>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140623074440.GV18016@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2014 08:35 AM, Arnd Bergmann wrote:
-> On Monday 23 June 2014 08:16:18 Guenter Roeck wrote:
->>> Moved to where?
->>>
->>> I certainly don't want it in the platform directories, and for arm64 we
->>> intentionally don't have a place to put this stuff.
->>>
->>
->> I have no idea, but setting the arm reset function pointer from a watchdog
->> driver doesn't seem like a good idea either. The arm code _does_ provide
->> and expect platform code to set the reset function, so having it in the arm
->> code would at least make more sense than expecting some unrelated driver
->> code to set it - especially since it is inherently racy [1].
->
-> I don't think the race is inherent. We could solve the multiple registration
-> problem and the unload problem using a notifier chain. If there are actually
-> cases where we expect to see multiple reboot functions to be present in the
-> system, we could go one step further and have a priority associated with
-> it, so we try the best function first and fall back to soft_restart()
-> if everything else fails.
->
+On Mon, Jun 23, 2014 at 08:44:40AM +0100, Al Viro wrote:
+> 
+> OK, here it is, hopefully with sufficient comments:
 
-You mean something like a restart notifier, which would be called from
-architecture code (and replace the arm reset function pointer) ?
-Yes, that sounds like a possible solution.
+The comments look really good.  I assume you'll get this to
+Linus in time for 3.16-rc3?
 
-Guenter
+Many thanks!!
 
-
+					- Ted
