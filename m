@@ -1,147 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755924AbaFWWCD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 18:02:03 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:50316 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753871AbaFWV7A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 17:59:00 -0400
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Andy Lutomirski <luto@amacapital.net>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Will Drewry <wad@chromium.org>, Julien Tinnes <jln@chromium.org>,
-        David Drysdale <drysdale@google.com>, linux-api@vger.kernel.org,
-        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-mips@linux-mips.org, linux-arch@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: [PATCH v7 9/9] MIPS: add seccomp syscall
-Date: Mon, 23 Jun 2014 14:58:13 -0700
-Message-Id: <1403560693-21809-10-git-send-email-keescook@chromium.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1403560693-21809-1-git-send-email-keescook@chromium.org>
-References: <1403560693-21809-1-git-send-email-keescook@chromium.org>
-X-HELO: www.outflux.net
+	id S1754420AbaFWWE0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 18:04:26 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:54506 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752782AbaFWWEY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 18:04:24 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Ben Hutchings <ben@decadent.org.uk>, Peter Wu <peter@lekensteyn.nl>,
+        Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCHv3 4/6] rtlwifi/rtl8723ae: Replace magic number by macro
+Date: Tue, 24 Jun 2014 00:05:24 +0200
+Message-Id: <1403561124-7889-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wires up the new seccomp syscall.
+For consistency with other drivers, replace a magic number by a macro.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Reviewed-by: Peter Wu <peter@lekensteyn.nl>
 ---
- arch/mips/include/uapi/asm/unistd.h |   15 +++++++++------
- arch/mips/kernel/scall32-o32.S      |    1 +
- arch/mips/kernel/scall64-64.S       |    1 +
- arch/mips/kernel/scall64-n32.S      |    1 +
- arch/mips/kernel/scall64-o32.S      |    1 +
- 5 files changed, 13 insertions(+), 6 deletions(-)
+ drivers/net/wireless/rtlwifi/rtl8723ae/hw.c  |    2 +-
+ drivers/net/wireless/rtlwifi/rtl8723ae/reg.h |    1 +
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/arch/mips/include/uapi/asm/unistd.h b/arch/mips/include/uapi/asm/unistd.h
-index 5805414777e0..9bc13eaf9d67 100644
---- a/arch/mips/include/uapi/asm/unistd.h
-+++ b/arch/mips/include/uapi/asm/unistd.h
-@@ -372,16 +372,17 @@
- #define __NR_sched_setattr		(__NR_Linux + 349)
- #define __NR_sched_getattr		(__NR_Linux + 350)
- #define __NR_renameat2			(__NR_Linux + 351)
-+#define __NR_seccomp			(__NR_Linux + 352)
+diff --git a/drivers/net/wireless/rtlwifi/rtl8723ae/hw.c b/drivers/net/wireless/rtlwifi/rtl8723ae/hw.c
+index 65c9e80..8f50ace 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8723ae/hw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8723ae/hw.c
+@@ -1109,7 +1109,7 @@ static int _rtl8723ae_set_media_status(struct ieee80211_hw *hw,
  
- /*
-  * Offset of the last Linux o32 flavoured syscall
-  */
--#define __NR_Linux_syscalls		351
-+#define __NR_Linux_syscalls		352
+ 	rtl_write_byte(rtlpriv, (MSR), bt_msr);
+ 	rtlpriv->cfg->ops->led_control(hw, ledaction);
+-	if ((bt_msr & 0x03) == MSR_AP)
++	if ((bt_msr & MSR_MASK) == MSR_AP)
+ 		rtl_write_byte(rtlpriv, REG_BCNTCFG + 1, 0x00);
+ 	else
+ 		rtl_write_byte(rtlpriv, REG_BCNTCFG + 1, 0x66);
+diff --git a/drivers/net/wireless/rtlwifi/rtl8723ae/reg.h b/drivers/net/wireless/rtlwifi/rtl8723ae/reg.h
+index 64376b3..ce2c66f 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8723ae/reg.h
++++ b/drivers/net/wireless/rtlwifi/rtl8723ae/reg.h
+@@ -361,6 +361,7 @@
+ #define	MSR_ADHOC				0x01
+ #define	MSR_INFRA				0x02
+ #define	MSR_AP					0x03
++#define	MSR_MASK				0x03
  
- #endif /* _MIPS_SIM == _MIPS_SIM_ABI32 */
- 
- #define __NR_O32_Linux			4000
--#define __NR_O32_Linux_syscalls		351
-+#define __NR_O32_Linux_syscalls		352
- 
- #if _MIPS_SIM == _MIPS_SIM_ABI64
- 
-@@ -701,16 +702,17 @@
- #define __NR_sched_setattr		(__NR_Linux + 309)
- #define __NR_sched_getattr		(__NR_Linux + 310)
- #define __NR_renameat2			(__NR_Linux + 311)
-+#define __NR_seccomp			(__NR_Linux + 312)
- 
- /*
-  * Offset of the last Linux 64-bit flavoured syscall
-  */
--#define __NR_Linux_syscalls		311
-+#define __NR_Linux_syscalls		312
- 
- #endif /* _MIPS_SIM == _MIPS_SIM_ABI64 */
- 
- #define __NR_64_Linux			5000
--#define __NR_64_Linux_syscalls		311
-+#define __NR_64_Linux_syscalls		312
- 
- #if _MIPS_SIM == _MIPS_SIM_NABI32
- 
-@@ -1034,15 +1036,16 @@
- #define __NR_sched_setattr		(__NR_Linux + 313)
- #define __NR_sched_getattr		(__NR_Linux + 314)
- #define __NR_renameat2			(__NR_Linux + 315)
-+#define __NR_seccomp			(__NR_Linux + 316)
- 
- /*
-  * Offset of the last N32 flavoured syscall
-  */
--#define __NR_Linux_syscalls		315
-+#define __NR_Linux_syscalls		316
- 
- #endif /* _MIPS_SIM == _MIPS_SIM_NABI32 */
- 
- #define __NR_N32_Linux			6000
--#define __NR_N32_Linux_syscalls		315
-+#define __NR_N32_Linux_syscalls		316
- 
- #endif /* _UAPI_ASM_UNISTD_H */
-diff --git a/arch/mips/kernel/scall32-o32.S b/arch/mips/kernel/scall32-o32.S
-index 3245474f19d5..ab02d14f1b5c 100644
---- a/arch/mips/kernel/scall32-o32.S
-+++ b/arch/mips/kernel/scall32-o32.S
-@@ -578,3 +578,4 @@ EXPORT(sys_call_table)
- 	PTR	sys_sched_setattr
- 	PTR	sys_sched_getattr		/* 4350 */
- 	PTR	sys_renameat2
-+	PTR	sys_seccomp
-diff --git a/arch/mips/kernel/scall64-64.S b/arch/mips/kernel/scall64-64.S
-index be2fedd4ae33..010dccf128ec 100644
---- a/arch/mips/kernel/scall64-64.S
-+++ b/arch/mips/kernel/scall64-64.S
-@@ -431,4 +431,5 @@ EXPORT(sys_call_table)
- 	PTR	sys_sched_setattr
- 	PTR	sys_sched_getattr		/* 5310 */
- 	PTR	sys_renameat2
-+	PTR	sys_seccomp
- 	.size	sys_call_table,.-sys_call_table
-diff --git a/arch/mips/kernel/scall64-n32.S b/arch/mips/kernel/scall64-n32.S
-index c1dbcda4b816..c3b3b6525df5 100644
---- a/arch/mips/kernel/scall64-n32.S
-+++ b/arch/mips/kernel/scall64-n32.S
-@@ -424,4 +424,5 @@ EXPORT(sysn32_call_table)
- 	PTR	sys_sched_setattr
- 	PTR	sys_sched_getattr
- 	PTR	sys_renameat2			/* 6315 */
-+	PTR	sys_seccomp
- 	.size	sysn32_call_table,.-sysn32_call_table
-diff --git a/arch/mips/kernel/scall64-o32.S b/arch/mips/kernel/scall64-o32.S
-index f1343ccd7ed7..bb1550b1f501 100644
---- a/arch/mips/kernel/scall64-o32.S
-+++ b/arch/mips/kernel/scall64-o32.S
-@@ -557,4 +557,5 @@ EXPORT(sys32_call_table)
- 	PTR	sys_sched_setattr
- 	PTR	sys_sched_getattr		/* 4350 */
- 	PTR	sys_renameat2
-+	PTR	sys_seccomp
- 	.size	sys32_call_table,.-sys32_call_table
+ #define	RRSR_RSC_OFFSET				21
+ #define	RRSR_SHORT_OFFSET			23
 -- 
-1.7.9.5
+1.7.10.4
 
