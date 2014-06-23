@@ -1,61 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755579AbaFWOrB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 10:47:01 -0400
-Received: from mailer11.incnets.com ([210.6.92.70]:46405 "EHLO
-	mailer11.incnets.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754060AbaFWOq4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 10:46:56 -0400
-X-Greylist: delayed 751 seconds by postgrey-1.27 at vger.kernel.org; Mon, 23 Jun 2014 10:46:53 EDT
-X-IMSS-HAND-OFF-DIRECTIVE: mailer1.incnets.com:25
-Message-Id: <201406231432.s5NEWE5x031789@comx2.bbmail.com.hk>
-Reply-To: <payingroll446@yahoo.com.hk>
-From: "Carmen Rofriguez" <carlfern@canada-11.com>
-Subject: You've won a Prize
-Date: Mon, 23 Jun 2014 16:33:22 +0200
+	id S1755636AbaFWOrP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 10:47:15 -0400
+Received: from mx02.posteo.de ([89.146.194.165]:44478 "EHLO posteo.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755103AbaFWOrL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 10:47:11 -0400
+Message-ID: <53A83DC7.1010606@posteo.de>
+Date: Mon, 23 Jun 2014 16:46:31 +0200
+From: Martin Kepplinger <martink@posteo.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Icedove/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
+To: Zhang Rui <rui.zhang@intel.com>
+CC: "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "lenb@kernel.org" <lenb@kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-media@vger.kernel.org
+Subject: Re: [BUG] rc1 and rc2: Laptop unusable: on boot,screen black instead
+ of native resolution
+References: <53A6E72A.9090000@posteo.de>	 <744357E9AAD1214791ACBA4B0B90926301379B97@SHSMSX101.ccr.corp.intel.com>	 <53A81BF7.3030207@posteo.de> <1403529246.4686.6.camel@rzhang1-toshiba>
+In-Reply-To: <1403529246.4686.6.camel@rzhang1-toshiba>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-To: undisclosed-recipients:;
-X-TM-AS-MML: No
-X-TM-AS-Product-Ver: IMSVA-8.2.0.1520-7.5.0.1017-20774.006
-X-TM-AS-Result: Yes-63.042-9.9-31-11
-X-imss-scan-details: Yes-63.042-9.9-31-11
-X-TMASE-Version: IMSVA-8.2.0.1520-7.5.1017-20774.006
-X-TMASE-Result: 11-63.042100-5.000000
-X-TMASE-MatchedRID: U43YD7H1LvwRPK94zGeeOfQajs/YwumptFUPJ1VnKs2/VMpdeVRg8LZ7
-	YVc7OjVNI4csr4/LS3rj5XP6/QlRnRs3HhsYPx0mSDkh6bW+bccgT/sXtGXrfzLZyQk29Rf4umO
-	OleoAqLMnjbhMfV8BCKSfnt131aznTNghyEVqPyri2718A0M9ucSSYvOBTYp6rXsuOyHQb8WjxY
-	yRBa/qJX3mXSdV7KK4yuTF8T1PYBo0eSTnmYZTDV67qWU6gzsGEB1G0MdVOTUTEC0P9PvYRt0H8
-	LFZNFG7IZvq5SQOuBYkXStADkL0Kg==
-X-Out-Spam: TRUE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You've won a Prize
-MICROSOFT IBERICA SL"
-YOU 'VE WON.
-ATTN:MICROSOFT IBERICA SL
-Your email has won (EUR244,000,00)
-(TWO HUNDRED AND FOURTY FOUR THOUSAND EURO)
-Batch number:XL73276498AM
-Ref number:QR352899526KC
-This is a millennium scientific computer game in which
-email addresses were used.It is a promotional program aimed at
-encouraging internet users,therefore you do not need to buy ticket to enter
-for it.
-For further development,clarification and procedure please
-Contact:Dr Eduardo Sanchez (Foreign Service Manager
-Email contact:payingroll446@yahoo.com.hk
+Am 2014-06-23 15:14, schrieb Zhang Rui:
+> On Mon, 2014-06-23 at 14:22 +0200, Martin Kepplinger wrote:
+>> Am 2014-06-23 03:10, schrieb Zhang, Rui:
+>>>
+>>>
+>>>> -----Original Message-----
+>>>> From: Martin Kepplinger [mailto:martink@posteo.de]
+>>>> Sent: Sunday, June 22, 2014 10:25 PM
+>>>> To: Zhang, Rui
+>>>> Cc: rjw@rjwysocki.net; lenb@kernel.org; linux-acpi@vger.kernel.org;
+>>>> linux-kernel@vger.kernel.org
+>>>> Subject: [BUG] rc1 and rc2: Laptop unusable: on boot,screen black
+>>>> instead of native resolution
+>>>> Importance: High
+>>>>
+>>>> Since 3.16-rc1 my laptop's just goes black while booting, instead of
+>>>> switching to native screen resolution and showing me the starting
+>>>> system there. It's an Acer TravelMate B113 with i915 driver and
+>>>> acer_wmi. It stays black and is unusable.
+>>>>
+> This looks like a duplicate of
+> https://bugzilla.kernel.org/show_bug.cgi?id=78601
+> 
+> thanks,
+> rui
+I'm not sure about that. I have no problem with v3.15 and the screen
+goes black way before a display manager is started. It's right after the
+kernel loaded and usually the screen is set to native resolution.
 
-Regards
-Carmen Rodriguez
-Lottery Co-ordinator
+Bisect told me aaeb2554337217dfa4eac2fcc90da7be540b9a73 as the first bad
+one. Although, checking that out and running it, works good. not sure if
+that makes sense.
+
+>>>> Do you have other people complain about that? Bisecting didn't lead to
+>>>> a good result. I could be wrong but I somehow suspect the mistake to be
+>>>> somewhere in commit 99678ed73a50d2df8b5f3c801e29e9b7a3e5aa85
+>>>>
+>>> In order to confirm if the problem is introduced by the above commit,
+>>> why not checkout the kernel just before and after this commit and see if the problem exists?
+>>>
+>>> Thanks,
+>>> rui
+>>>
+>> So maybe I was wrong. d27050641e9bc056446deb0814e7ba1aa7911f5a is still
+>> good and aaeb2554337217dfa4eac2fcc90da7be540b9a73 is the fist bad one.
+>> This is a big v4l merge. I added the linux-media list in cc now.
+>>
+>> What could be the problem here?
+>>
+>>>
+>>>> There is nothing unusual in the kernel log.
+>>>>
+>>>> This is quite unusual for an -rc2. Hence my question. I'm happy to test
+>>>> changes.
+>>>>
+>>>>                                      martin
+>>>> --
+>>>> Martin Kepplinger
+>>>> e-mail        martink AT posteo DOT at
+>>>> chat (XMPP)   martink AT jabber DOT at
+>>
+> 
+> 
 
