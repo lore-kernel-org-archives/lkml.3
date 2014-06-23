@@ -1,63 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755646AbaFWNbg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:31:36 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60776 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754876AbaFWN3j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:29:39 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: linux-kernel@vger.kernel.org
-Cc: jirislaby@gmail.com, Vojtech Pavlik <vojtech@suse.cz>,
-        Jiri Kosina <jkosina@suse.cz>, Jiri Slaby <jslaby@suse.cz>,
-        Udo Seidel <udoseidel@gmx.de>
-Subject: [PATCH 05/21] kgr: update Kconfig documentation
-Date: Mon, 23 Jun 2014 15:29:19 +0200
-Message-Id: <1403530175-29217-5-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1403530175-29217-1-git-send-email-jslaby@suse.cz>
-References: <1403530175-29217-1-git-send-email-jslaby@suse.cz>
+	id S1755484AbaFWNc2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:32:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47949 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754410AbaFWNc0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 09:32:26 -0400
+Date: Mon, 23 Jun 2014 14:32:21 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 3/4] mm: vmscan: remove all_unreclaimable()
+Message-ID: <20140623133221.GN10819@suse.de>
+References: <1403282030-29915-1-git-send-email-hannes@cmpxchg.org>
+ <1403282030-29915-3-git-send-email-hannes@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1403282030-29915-3-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is based on Udo's text which was augmented in this patch.
+On Fri, Jun 20, 2014 at 12:33:49PM -0400, Johannes Weiner wrote:
+> Direct reclaim currently calls shrink_zones() to reclaim all members
+> of a zonelist, and if that wasn't successful it does another pass
+> through the same zonelist to check overall reclaimability.
+> 
+> Just check reclaimability in shrink_zones() directly and propagate the
+> result through the return value.  Then remove all_unreclaimable().
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> ---
+>  mm/vmscan.c | 48 +++++++++++++++++++++++-------------------------
+>  1 file changed, 23 insertions(+), 25 deletions(-)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index ed1efb84c542..d0bc1a209746 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2244,9 +2244,10 @@ static inline bool should_continue_reclaim(struct zone *zone,
+>  	}
+>  }
+>  
+> -static void shrink_zone(struct zone *zone, struct scan_control *sc)
+> +static unsigned long shrink_zone(struct zone *zone, struct scan_control *sc)
+>  {
+>  	unsigned long nr_reclaimed, nr_scanned;
+> +	unsigned long zone_reclaimed = 0;
+>  
+>  	do {
+>  		struct mem_cgroup *root = sc->target_mem_cgroup;
+> @@ -2290,8 +2291,12 @@ static void shrink_zone(struct zone *zone, struct scan_control *sc)
+>  			   sc->nr_scanned - nr_scanned,
+>  			   sc->nr_reclaimed - nr_reclaimed);
+>  
+> +		zone_reclaimed += sc->nr_reclaimed - nr_reclaimed;
+> +
+>  	} while (should_continue_reclaim(zone, sc->nr_reclaimed - nr_reclaimed,
+>  					 sc->nr_scanned - nr_scanned, sc));
+> +
+> +	return zone_reclaimed;
+>  }
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Udo Seidel <udoseidel@gmx.de>
-Cc: Vojtech Pavlik <vojtech@suse.cz>
----
- kernel/Kconfig.kgraft | 3 +++
- samples/Kconfig       | 4 ++++
- 2 files changed, 7 insertions(+)
+You do not actually need a counter here because all that matters is that
+a page got reclaimed. It could just as easily have been
 
-diff --git a/kernel/Kconfig.kgraft b/kernel/Kconfig.kgraft
-index f38d82c06580..bead93646071 100644
---- a/kernel/Kconfig.kgraft
-+++ b/kernel/Kconfig.kgraft
-@@ -5,3 +5,6 @@ config KGRAFT
- 	bool "kGraft infrastructure"
- 	depends on DYNAMIC_FTRACE_WITH_REGS
- 	depends on HAVE_KGRAFT
-+	help
-+	  Select this to enable kGraft online kernel patching. The
-+	  runtime price is zero, so it is safe to say Y here.
-diff --git a/samples/Kconfig b/samples/Kconfig
-index b33a397dfc58..12848d1bd8c5 100644
---- a/samples/Kconfig
-+++ b/samples/Kconfig
-@@ -58,6 +58,10 @@ config SAMPLE_KDB
- config SAMPLE_KGRAFT_PATCHER
- 	tristate "Build kGraft patcher example -- loadable modules only"
- 	depends on KGRAFT && m
-+	help
-+	  Sample code to replace sys_iopl() and sys_capable() via
-+	  kGraft. This is only for presentation purposes. It is safe to
-+	  say Y here.
- 
- config SAMPLE_RPMSG_CLIENT
- 	tristate "Build rpmsg client sample -- loadable modules only"
+bool zone_reclaimable = false;
+
+...
+
+if (sc->nr_reclaimed - nr_reclaimed)
+	zone_reclaimable = true;
+
+...
+
+return zone_reclaimable
+
+so that zone[s]_reclaimable is always a boolean and not sometimes a boolean
+and sometimes a counter.
+
+
+>  
+>  /* Returns true if compaction should go ahead for a high-order request */
+> @@ -2340,8 +2345,10 @@ static inline bool compaction_ready(struct zone *zone, int order)
+>   *
+>   * If a zone is deemed to be full of pinned pages then just give it a light
+>   * scan then give up on it.
+> + *
+> + * Returns whether the zones overall are reclaimable or not.
+>   */
+
+Returns true if a zone was reclaimable
+
+> -static void shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
+> +static bool shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
+>  {
+>  	struct zoneref *z;
+>  	struct zone *zone;
+> @@ -2354,6 +2361,7 @@ static void shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
+>  		.gfp_mask = sc->gfp_mask,
+>  	};
+>  	enum zone_type requested_highidx = gfp_zone(sc->gfp_mask);
+> +	bool all_unreclaimable = true;
+>  
+>  	/*
+>  	 * If the number of buffer_heads in the machine exceeds the maximum
+> @@ -2368,6 +2376,8 @@ static void shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
+>  
+>  	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+>  					gfp_zone(sc->gfp_mask), sc->nodemask) {
+> +		unsigned long zone_reclaimed = 0;
+> +
+>  		if (!populated_zone(zone))
+>  			continue;
+>  		/*
+> @@ -2414,10 +2424,15 @@ static void shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
+>  						&nr_soft_scanned);
+>  			sc->nr_reclaimed += nr_soft_reclaimed;
+>  			sc->nr_scanned += nr_soft_scanned;
+> +			zone_reclaimed += nr_soft_reclaimed;
+>  			/* need some check for avoid more shrink_zone() */
+>  		}
+>  
+> -		shrink_zone(zone, sc);
+> +		zone_reclaimed += shrink_zone(zone, sc);
+> +
+> +		if (zone_reclaimed ||
+> +		    (global_reclaim(sc) && zone_reclaimable(zone)))
+> +			all_unreclaimable = false;
+>  	}
+>  
+
+This is where you don't need the counter as such. It could just as
+easily have been
+
+bool reclaimable = false;
+....
+if (shrink_zone(zone, sc))
+	reclaimable = true;
+
+if (!reclaimable && global_reclaim(sc) && zone_reclaimable(zone))
+	reclaimable = true;
+
+return reclaimable;
+
+It doesn't matter as such, it's just zone_reclaimed is implemented as a
+counter but not used as one.
+
+>  	/*
+> @@ -2439,26 +2454,8 @@ static void shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
+>  	 * promoted it to __GFP_HIGHMEM.
+>  	 */
+>  	sc->gfp_mask = orig_mask;
+> -}
+>  
+> -/* All zones in zonelist are unreclaimable? */
+> -static bool all_unreclaimable(struct zonelist *zonelist,
+> -		struct scan_control *sc)
+> -{
+> -	struct zoneref *z;
+> -	struct zone *zone;
+> -
+> -	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+> -			gfp_zone(sc->gfp_mask), sc->nodemask) {
+> -		if (!populated_zone(zone))
+> -			continue;
+> -		if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
+> -			continue;
+> -		if (zone_reclaimable(zone))
+> -			return false;
+> -	}
+> -
+> -	return true;
+> +	return !all_unreclaimable;
+>  }
+>  
+>  /*
+> @@ -2482,6 +2479,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+>  {
+>  	unsigned long total_scanned = 0;
+>  	unsigned long writeback_threshold;
+> +	bool zones_reclaimable;
+>  
+>  	delayacct_freepages_start();
+>  
+> @@ -2492,7 +2490,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+>  		vmpressure_prio(sc->gfp_mask, sc->target_mem_cgroup,
+>  				sc->priority);
+>  		sc->nr_scanned = 0;
+> -		shrink_zones(zonelist, sc);
+> +		zones_reclaimable = shrink_zones(zonelist, sc);
+>  
+>  		total_scanned += sc->nr_scanned;
+>  		if (sc->nr_reclaimed >= sc->nr_to_reclaim)
+> @@ -2533,8 +2531,8 @@ out:
+>  	if (sc->compaction_ready)
+>  		return 1;
+>  
+> -	/* top priority shrink_zones still had more to do? don't OOM, then */
+> -	if (global_reclaim(sc) && !all_unreclaimable(zonelist, sc))
+> +	/* Any of the zones still reclaimable?  Don't OOM. */
+> +	if (zones_reclaimable)
+>  		return 1;
+>  
+>  	return 0;
+> -- 
+> 2.0.0
+> 
+
 -- 
-2.0.0
-
+Mel Gorman
+SUSE Labs
