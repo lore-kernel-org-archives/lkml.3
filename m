@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755603AbaFWNbd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:31:33 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60767 "EHLO
+	id S1755588AbaFWNbb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:31:31 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60769 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754966AbaFWN3j (ORCPT
+	by vger.kernel.org with ESMTP id S1754987AbaFWN3j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Jun 2014 09:29:39 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: linux-kernel@vger.kernel.org
 Cc: jirislaby@gmail.com, Vojtech Pavlik <vojtech@suse.cz>,
-        Jiri Kosina <jkosina@suse.cz>, Jiri Slaby <jslaby@suse.cz>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: [PATCH 08/21] kgr: sched.h, introduce kgr_task_safe helper
-Date: Mon, 23 Jun 2014 15:29:22 +0200
-Message-Id: <1403530175-29217-8-git-send-email-jslaby@suse.cz>
+        Jiri Kosina <jkosina@suse.cz>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 17/21] kgr: exercise non-present function
+Date: Mon, 23 Jun 2014 15:29:31 +0200
+Message-Id: <1403530175-29217-17-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1403530175-29217-1-git-send-email-jslaby@suse.cz>
 References: <1403530175-29217-1-git-send-email-jslaby@suse.cz>
@@ -24,36 +21,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To be used from some kthreads.
+This is to test the newly added functionality: non-fatal patching of
+yet unknown functions.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
 ---
- include/linux/sched.h | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ samples/kgraft/kgraft_patcher.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 306f4f0c987a..6bc2d63a59c4 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2974,6 +2974,15 @@ static inline void mm_init_owner(struct mm_struct *mm, struct task_struct *p)
+diff --git a/samples/kgraft/kgraft_patcher.c b/samples/kgraft/kgraft_patcher.c
+index 5d02a908bc26..e96eef840397 100644
+--- a/samples/kgraft/kgraft_patcher.c
++++ b/samples/kgraft/kgraft_patcher.c
+@@ -63,10 +63,17 @@ static bool new_capable(int cap)
  }
- #endif /* CONFIG_MEMCG */
+ KGR_PATCHED_FUNCTION(capable, new_capable, true);
  
-+#if IS_ENABLED(CONFIG_KGRAFT)
-+static inline void kgr_task_safe(struct task_struct *p)
++static void new_function(unsigned long data)
 +{
-+	clear_bit(0, &task_thread_info(p)->kgr_in_progress);
++	pr_info("kgr-patcher: %s\n", __func__);
 +}
-+#else
-+static inline void kgr_task_safe(struct task_struct *p) { }
-+#endif /* IS_ENABLED(CONFIG_KGRAFT) */
++KGR_PATCHED_FUNCTION(unknown_function, new_function, false);
 +
- static inline unsigned long task_rlimit(const struct task_struct *tsk,
- 		unsigned int limit)
- {
+ static struct kgr_patch patch = {
+ 	.patches = {
+ 		KGR_PATCH(SyS_iopl),
+ 		KGR_PATCH(capable),
++		KGR_PATCH(unknown_function),
+ 		KGR_PATCH_END
+ 	}
+ };
 -- 
 2.0.0
 
