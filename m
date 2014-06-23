@@ -1,151 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753041AbaFWIiS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 04:38:18 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55607 "EHLO
+	id S1753013AbaFWIiQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 04:38:16 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55623 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752661AbaFWIca (ORCPT
+	by vger.kernel.org with ESMTP id S1752677AbaFWIca (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Jun 2014 04:32:30 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Vlastimil Babka <vbabka@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: linux-kernel@vger.kernel.org, Helmut Schaa <helmut.schaa@googlemail.com>,
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 011/111] mm: compaction: detect when scanners meet in isolate_freepages
-Date: Mon, 23 Jun 2014 10:30:46 +0200
-Message-Id: <316625576df236aff72dbdb2be1c374e73c769d7.1403512280.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 001/111] ath9k: Fix sequence number assignment for non-data frames
+Date: Mon, 23 Jun 2014 10:30:36 +0200
+Message-Id: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
-In-Reply-To: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
-References: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
 In-Reply-To: <cover.1403512280.git.jslaby@suse.cz>
 References: <cover.1403512280.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vlastimil Babka <vbabka@suse.cz>
+From: Helmut Schaa <helmut.schaa@googlemail.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 7ed695e069c3cbea5e1fd08f84a04536da91f584 upstream.
+commit 5998be879719384af2014b79697eed6e38ee2706 upstream.
 
-Compaction of a zone is finished when the migrate scanner (which begins
-at the zone's lowest pfn) meets the free page scanner (which begins at
-the zone's highest pfn).  This is detected in compact_zone() and in the
-case of direct compaction, the compact_blockskip_flush flag is set so
-that kswapd later resets the cached scanner pfn's, and a new compaction
-may again start at the zone's borders.
+Since commit 558ff225de80ac95b132d3a115ddadcd64498b4f (ath9k: fix
+ps-poll responses under a-mpdu sessions) non-data frames would have
+gotten a sequence number from a TIDs sequence counter instead of
+using the global sequence counter.
 
-The meeting of the scanners can happen during either scanner's activity.
-However, it may currently fail to be detected when it occurs in the free
-page scanner, due to two problems.  First, isolate_freepages() keeps
-free_pfn at the highest block where it isolated pages from, for the
-purposes of not missing the pages that are returned back to allocator
-when migration fails.  Second, failing to isolate enough free pages due
-to scanners meeting results in -ENOMEM being returned by
-migrate_pages(), which makes compact_zone() bail out immediately without
-calling compact_finished() that would detect scanners meeting.
+This can lead to instable connections.
 
-This failure to detect scanners meeting might result in repeated
-attempts at compaction of a zone that keep starting from the cached
-pfn's close to the meeting point, and quickly failing through the
--ENOMEM path, without the cached pfns being reset, over and over.  This
-has been observed (through additional tracepoints) in the third phase of
-the mmtests stress-highalloc benchmark, where the allocator runs on an
-otherwise idle system.  The problem was observed in the DMA32 zone,
-which was used as a fallback to the preferred Normal zone, but on the
-4GB system it was actually the largest zone.  The problem is even
-amplified for such fallback zone - the deferred compaction logic, which
-could (after being fixed by a previous patch) reset the cached scanner
-pfn's, is only applied to the preferred zone and not for the fallbacks.
+To fix this only select the correct TID if we are processing a
+data frame. Furthermore, prevent non-data frames to get a sequence
+number from a TID sequence counter by adding a check to
+ath_tx_setup_buffer.
 
-The problem in the third phase of the benchmark was further amplified by
-commit 81c0a2bb515f ("mm: page_alloc: fair zone allocator policy") which
-resulted in a non-deterministic regression of the allocation success
-rate from ~85% to ~65%.  This occurs in about half of benchmark runs,
-making bisection problematic.  It is unlikely that the commit itself is
-buggy, but it should put more pressure on the DMA32 zone during phases 1
-and 2, which may leave it more fragmented in phase 3 and expose the bugs
-that this patch fixes.
-
-The fix is to make scanners meeting in isolate_freepage() stay that way,
-and to check in compact_zone() for scanners meeting when migrate_pages()
-returns -ENOMEM.  The result is that compact_finished() also detects
-scanners meeting and sets the compact_blockskip_flush flag to make
-kswapd reset the scanner pfn's.
-
-The results in stress-highalloc benchmark show that the "regression" by
-commit 81c0a2bb515f in phase 3 no longer occurs, and phase 1 and 2
-allocation success rates are also significantly improved.
-
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: Helmut Schaa <helmut.schaa@googlemail.com>
+Acked-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- mm/compaction.c | 19 +++++++++++++++----
- 1 file changed, 15 insertions(+), 4 deletions(-)
+ drivers/net/wireless/ath/ath9k/xmit.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index c2082d8674b3..2b01acee43cd 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -667,7 +667,7 @@ static void isolate_freepages(struct zone *zone,
- 	 * is the end of the pageblock the migration scanner is using.
- 	 */
- 	pfn = cc->free_pfn;
--	low_pfn = cc->migrate_pfn + pageblock_nr_pages;
-+	low_pfn = ALIGN(cc->migrate_pfn + 1, pageblock_nr_pages);
+diff --git a/drivers/net/wireless/ath/ath9k/xmit.c b/drivers/net/wireless/ath/ath9k/xmit.c
+index 00e3f49fcf9b..7514b1ad9abd 100644
+--- a/drivers/net/wireless/ath/ath9k/xmit.c
++++ b/drivers/net/wireless/ath/ath9k/xmit.c
+@@ -2078,7 +2078,7 @@ static struct ath_buf *ath_tx_setup_buffer(struct ath_softc *sc,
  
- 	/*
- 	 * Take care that if the migration scanner is at the end of the zone
-@@ -683,7 +683,7 @@ static void isolate_freepages(struct zone *zone,
- 	 * pages on cc->migratepages. We stop searching if the migrate
- 	 * and free page scanners meet or enough free pages are isolated.
- 	 */
--	for (; pfn > low_pfn && cc->nr_migratepages > nr_freepages;
-+	for (; pfn >= low_pfn && cc->nr_migratepages > nr_freepages;
- 					pfn -= pageblock_nr_pages) {
- 		unsigned long isolated;
+ 	ATH_TXBUF_RESET(bf);
  
-@@ -745,7 +745,14 @@ static void isolate_freepages(struct zone *zone,
- 	/* split_free_page does not map the pages */
- 	map_pages(freelist);
+-	if (tid) {
++	if (tid && ieee80211_is_data_present(hdr->frame_control)) {
+ 		fragno = le16_to_cpu(hdr->seq_ctrl) & IEEE80211_SCTL_FRAG;
+ 		seqno = tid->seq_next;
+ 		hdr->seq_ctrl = cpu_to_le16(tid->seq_next << IEEE80211_SEQ_SEQ_SHIFT);
+@@ -2201,7 +2201,7 @@ int ath_tx_start(struct ieee80211_hw *hw, struct sk_buff *skb,
+ 		txq->stopped = true;
+ 	}
  
--	cc->free_pfn = high_pfn;
-+	/*
-+	 * If we crossed the migrate scanner, we want to keep it that way
-+	 * so that compact_finished() may detect this
-+	 */
-+	if (pfn < low_pfn)
-+		cc->free_pfn = max(pfn, zone->zone_start_pfn);
-+	else
-+		cc->free_pfn = high_pfn;
- 	cc->nr_freepages = nr_freepages;
- }
+-	if (txctl->an)
++	if (txctl->an && ieee80211_is_data_present(hdr->frame_control))
+ 		tid = ath_get_skb_tid(sc, txctl->an, skb);
  
-@@ -1010,7 +1017,11 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
- 		if (err) {
- 			putback_movable_pages(&cc->migratepages);
- 			cc->nr_migratepages = 0;
--			if (err == -ENOMEM) {
-+			/*
-+			 * migrate_pages() may return -ENOMEM when scanners meet
-+			 * and we want compact_finished() to detect it
-+			 */
-+			if (err == -ENOMEM && cc->free_pfn > cc->migrate_pfn) {
- 				ret = COMPACT_PARTIAL;
- 				goto out;
- 			}
+ 	if (info->flags & IEEE80211_TX_CTL_PS_RESPONSE) {
 -- 
 2.0.0
 
