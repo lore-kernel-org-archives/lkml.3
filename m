@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755387AbaFWNQo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:16:44 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37084 "EHLO
+	id S1754630AbaFWNEu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:04:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37042 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754471AbaFWNEx (ORCPT
+	with ESMTP id S1754511AbaFWNEo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:04:53 -0400
+	Mon, 23 Jun 2014 09:04:44 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>,
+Cc: Alexej Starschenko <starschenko@gmail.com>,
+        Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 64/93] ALSA: hda/realtek - Fix COEF widget NID for ALC260 replacer fixup
-Date: Mon, 23 Jun 2014 14:02:43 +0100
-Message-Id: <1403528592-2163-65-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 57/93] USB: serial: option: add support for Novatel E371 PCIe card
+Date: Mon, 23 Jun 2014 14:02:36 +0100
+Message-Id: <1403528592-2163-58-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
 References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
@@ -27,37 +29,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Alexej Starschenko <starschenko@gmail.com>
 
-commit 192a98e280e560510a62aca8cfa83b4ae7c095bb upstream.
+commit 8a61ba3a47ac39f660702aa66a172185dd605a86 upstream.
 
-The conversion to a fixup table for Replacer model with ALC260 in
-commit 20f7d928 took the wrong widget NID for COEF setups.  Namely,
-NID 0x1a should have been used instead of NID 0x20, which is the
-common node for all Realtek codecs but ALC260.
+Adds product ID for the Novatel E371 PCI Express Mini Card.
 
-Fixes: 20f7d928fa6e ('ALSA: hda/realtek - Replace ALC260 model=replacer with the auto-parser')
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+$ lsusb
+Bus 001 Device 024: ID 1410:9011 Novatel Wireless
+
+$ usb-devices
+T:  Bus=01 Lev=01 Prnt=01 Port=03 Cnt=01 Dev#= 24 Spd=480 MxCh= 0
+D:  Ver= 2.00 Cls=ef(misc ) Sub=02 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=1410 ProdID=9011 Rev=00.03
+S:  Manufacturer=Novatel Wireless, Inc.
+S:  Product=Novatel Wireless HSPA
+S:  SerialNumber=012773002115811
+C:  #Ifs= 6 Cfg#= 1 Atr=e0 MxPwr=500mA
+I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
+I:  If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
+I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
+I:  If#= 3 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
+I:  If#= 6 Alt= 0 #EPs= 1 Cls=02(commc) Sub=06 Prot=00 Driver=cdc_ether
+I:  If#= 7 Alt= 1 #EPs= 2 Cls=0a(data ) Sub=00 Prot=00 Driver=cdc_ether
+
+Tested with kernel 3.2.0.
+
+Signed-off-by: Alexej Starschenko <starschenko@gmail.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/pci/hda/patch_realtek.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/serial/option.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index f11d5e9f7a9c..cdb307f2e028 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -1612,8 +1612,8 @@ static const struct hda_fixup alc260_fixups[] = {
- 	[ALC260_FIXUP_REPLACER] = {
- 		.type = HDA_FIXUP_VERBS,
- 		.v.verbs = (const struct hda_verb[]) {
--			{ 0x20, AC_VERB_SET_COEF_INDEX, 0x07 },
--			{ 0x20, AC_VERB_SET_PROC_COEF,  0x3050 },
-+			{ 0x1a, AC_VERB_SET_COEF_INDEX, 0x07 },
-+			{ 0x1a, AC_VERB_SET_PROC_COEF,  0x3050 },
- 			{ }
- 		},
- 		.chained = true,
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index f213ee978516..948a19f0cdf7 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -161,6 +161,7 @@ static void option_instat_callback(struct urb *urb);
+ #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_FULLSPEED	0x9000
+ #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_HIGHSPEED	0x9001
+ #define NOVATELWIRELESS_PRODUCT_E362		0x9010
++#define NOVATELWIRELESS_PRODUCT_E371		0x9011
+ #define NOVATELWIRELESS_PRODUCT_G2		0xA010
+ #define NOVATELWIRELESS_PRODUCT_MC551		0xB001
+ 
+@@ -1012,6 +1013,7 @@ static const struct usb_device_id option_ids[] = {
+ 	/* Novatel Ovation MC551 a.k.a. Verizon USB551L */
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_MC551, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_E362, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_E371, 0xff, 0xff, 0xff) },
+ 
+ 	{ USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_H01) },
+ 	{ USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_H01A) },
 -- 
 1.9.1
 
