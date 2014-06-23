@@ -1,27 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755427AbaFWNSp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:18:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37063 "EHLO
+	id S1755434AbaFWNTP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:19:15 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37051 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754506AbaFWNEs (ORCPT
+	with ESMTP id S1754544AbaFWNEq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:04:48 -0400
+	Mon, 23 Jun 2014 09:04:46 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 58/93] USB: cdc-wdm: properly include types.h
-Date: Mon, 23 Jun 2014 14:02:37 +0100
-Message-Id: <1403528592-2163-59-git-send-email-luis.henriques@canonical.com>
+Cc: NeilBrown <neilb@suse.de>, Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 59/93] md: always set MD_RECOVERY_INTR when aborting a reshape or other "resync".
+Date: Mon, 23 Jun 2014 14:02:38 +0100
+Message-Id: <1403528592-2163-60-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
 References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,34 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+From: NeilBrown <neilb@suse.de>
 
-commit 7ac3764fcafc06e72e1a79a9d998b9fdd900b2a6 upstream.
+commit 3991b31ea072b070081ca3bfa860a077eda67de5 upstream.
 
-The file include/uapi/linux/usb/cdc-wdm.h uses a __u16 so it needs to
-include types.h as well to make the build system happy.
+If mddev->ro is set, md_to_sync will (correctly) abort.
+However in that case MD_RECOVERY_INTR isn't set.
 
-Fixes: 3edce1cf813a ("USB: cdc-wdm: implement IOCTL_WDM_MAX_COMMAND")
-Cc: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+If a RESHAPE had been requested, then ->finish_reshape() will be
+called and it will think the reshape was successful even though
+nothing happened.
+
+Normally a resync will not be requested if ->ro is set, but if an
+array is stopped while a reshape is on-going, then when the array is
+started, the reshape will be restarted.  If the array is also set
+read-only at this point, the reshape will instantly appear to success,
+resulting in data corruption.
+
+Consequently, this patch is suitable for any -stable kernel.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/uapi/linux/usb/cdc-wdm.h | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/md/md.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/include/uapi/linux/usb/cdc-wdm.h b/include/uapi/linux/usb/cdc-wdm.h
-index f03134feebd6..0dc132e75030 100644
---- a/include/uapi/linux/usb/cdc-wdm.h
-+++ b/include/uapi/linux/usb/cdc-wdm.h
-@@ -9,6 +9,8 @@
- #ifndef _UAPI__LINUX_USB_CDC_WDM_H
- #define _UAPI__LINUX_USB_CDC_WDM_H
+diff --git a/drivers/md/md.c b/drivers/md/md.c
+index 78a848cc106e..c95b77132872 100644
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -7353,8 +7353,10 @@ void md_do_sync(struct md_thread *thread)
+ 	/* just incase thread restarts... */
+ 	if (test_bit(MD_RECOVERY_DONE, &mddev->recovery))
+ 		return;
+-	if (mddev->ro) /* never try to sync a read-only array */
++	if (mddev->ro) {/* never try to sync a read-only array */
++		set_bit(MD_RECOVERY_INTR, &mddev->recovery);
+ 		return;
++	}
  
-+#include <linux/types.h>
-+
- /*
-  * This IOCTL is used to retrieve the wMaxCommand for the device,
-  * defining the message limit for both reading and writing.
+ 	if (test_bit(MD_RECOVERY_SYNC, &mddev->recovery)) {
+ 		if (test_bit(MD_RECOVERY_CHECK, &mddev->recovery)) {
 -- 
 1.9.1
 
