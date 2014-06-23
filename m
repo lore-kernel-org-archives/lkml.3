@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754938AbaFWNLU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:11:20 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37189 "EHLO
+	id S1755207AbaFWNLX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:11:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37170 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754813AbaFWNFN (ORCPT
+	with ESMTP id S1754801AbaFWNFL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:05:13 -0400
+	Mon, 23 Jun 2014 09:05:11 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Oleg Nesterov <oleg@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 78/93] KVM: async_pf: mm->mm_users can not pin apf->mm
-Date: Mon, 23 Jun 2014 14:02:57 +0100
-Message-Id: <1403528592-2163-79-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 73/93] mm: rmap: fix use-after-free in __put_anon_vma
+Date: Mon, 23 Jun 2014 14:02:52 +0100
+Message-Id: <1403528592-2163-74-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
 References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
@@ -27,67 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
 
-commit 41c22f626254b9dc0376928cae009e73d1b6a49a upstream.
+commit 624483f3ea82598ab0f62f1bdb9177f531ab1892 upstream.
 
-get_user_pages(mm) is simply wrong if mm->mm_users == 0 and exit_mmap/etc
-was already called (or is in progress), mm->mm_count can only pin mm->pgd
-and mm_struct itself.
+While working address sanitizer for kernel I've discovered
+use-after-free bug in __put_anon_vma.
 
-Change kvm_setup_async_pf/async_pf_execute to inc/dec mm->mm_users.
+For the last anon_vma, anon_vma->root freed before child anon_vma.
+Later in anon_vma_free(anon_vma) we are referencing to already freed
+anon_vma->root to check rwsem.
 
-kvm_create_vm/kvm_destroy_vm play with ->mm_count too but this case looks
-fine at first glance, it seems that this ->mm is only used to verify that
-current->mm == kvm->mm.
+This fixes it by freeing the child anon_vma before freeing
+anon_vma->root.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- virt/kvm/async_pf.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ mm/rmap.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/virt/kvm/async_pf.c b/virt/kvm/async_pf.c
-index b197950ac4d5..595226d5ccb5 100644
---- a/virt/kvm/async_pf.c
-+++ b/virt/kvm/async_pf.c
-@@ -87,7 +87,7 @@ static void async_pf_execute(struct work_struct *work)
- 	if (waitqueue_active(&vcpu->wq))
- 		wake_up_interruptible(&vcpu->wq);
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 54935c5c9d60..f23ea5f31a31 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -1684,10 +1684,9 @@ void __put_anon_vma(struct anon_vma *anon_vma)
+ {
+ 	struct anon_vma *root = anon_vma->root;
  
--	mmdrop(mm);
-+	mmput(mm);
- 	kvm_put_kvm(vcpu->kvm);
++	anon_vma_free(anon_vma);
+ 	if (root != anon_vma && atomic_dec_and_test(&root->refcount))
+ 		anon_vma_free(root);
+-
+-	anon_vma_free(anon_vma);
  }
  
-@@ -100,7 +100,7 @@ void kvm_clear_async_pf_completion_queue(struct kvm_vcpu *vcpu)
- 				   typeof(*work), queue);
- 		list_del(&work->queue);
- 		if (cancel_work_sync(&work->work)) {
--			mmdrop(work->mm);
-+			mmput(work->mm);
- 			kvm_put_kvm(vcpu->kvm); /* == work->vcpu->kvm */
- 			kmem_cache_free(async_pf_cache, work);
- 		}
-@@ -169,7 +169,7 @@ int kvm_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn,
- 	work->addr = gfn_to_hva(vcpu->kvm, gfn);
- 	work->arch = *arch;
- 	work->mm = current->mm;
--	atomic_inc(&work->mm->mm_count);
-+	atomic_inc(&work->mm->mm_users);
- 	kvm_get_kvm(work->vcpu->kvm);
- 
- 	/* this can't really happen otherwise gfn_to_pfn_async
-@@ -187,7 +187,7 @@ int kvm_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn,
- 	return 1;
- retry_sync:
- 	kvm_put_kvm(work->vcpu->kvm);
--	mmdrop(work->mm);
-+	mmput(work->mm);
- 	kmem_cache_free(async_pf_cache, work);
- 	return 0;
- }
+ #ifdef CONFIG_MIGRATION
 -- 
 1.9.1
 
