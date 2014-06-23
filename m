@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753286AbaFWIgO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 04:36:14 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55653 "EHLO
+	id S1753266AbaFWIgN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 04:36:13 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55651 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752687AbaFWIca (ORCPT
+	by vger.kernel.org with ESMTP id S1752692AbaFWIca (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Jun 2014 04:32:30 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        Kent Overstreet <kmo@daterainc.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, Tejun Heo <tj@kernel.org>,
+Cc: linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 055/111] percpu-refcount: fix usage of this_cpu_ops
-Date: Mon, 23 Jun 2014 10:31:30 +0200
-Message-Id: <eed37ca3ef2da47c30cc0402f44e1992d4142983.1403512281.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 086/111] evm: prohibit userspace writing 'security.evm' HMAC value
+Date: Mon, 23 Jun 2014 10:32:01 +0200
+Message-Id: <f422f975187e23c15cf8be951490623428659eba.1403512281.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
 References: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
@@ -25,74 +23,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sebastian Ott <sebott@linux.vnet.ibm.com>
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 0c36b390a546055b6815d4b93a2c9fed4d980ffb upstream.
+commit 2fb1c9a4f2dbc2f0bd2431c7fa64d0b5483864e4 upstream.
 
-The percpu-refcount infrastructure uses the underscore variants of
-this_cpu_ops in order to modify percpu reference counters.
-(e.g. __this_cpu_inc()).
+Calculating the 'security.evm' HMAC value requires access to the
+EVM encrypted key.  Only the kernel should have access to it.  This
+patch prevents userspace tools(eg. setfattr, cp --preserve=xattr)
+from setting/modifying the 'security.evm' HMAC value directly.
 
-However the underscore variants do not atomically update the percpu
-variable, instead they may be implemented using read-modify-write
-semantics (more than one instruction).  Therefore it is only safe to
-use the underscore variant if the context is always the same (process,
-softirq, or hardirq). Otherwise it is possible to lose updates.
-
-This problem is something that Sebastian has seen within the aio
-subsystem which uses percpu refcounters both in process and softirq
-context leading to reference counts that never dropped to zeroes; even
-though the number of "get" and "put" calls matched.
-
-Fix this by using the non-underscore this_cpu_ops variant which
-provides correct per cpu atomic semantics and fixes the corrupted
-reference counts.
-
-Cc: Kent Overstreet <kmo@daterainc.com>
-Reported-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-References: http://lkml.kernel.org/g/alpine.LFD.2.11.1406041540520.21183@denkbrett
+Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- include/linux/percpu-refcount.h | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ security/integrity/evm/evm_main.c | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/percpu-refcount.h b/include/linux/percpu-refcount.h
-index 95961f0bf62d..0afb48fd449d 100644
---- a/include/linux/percpu-refcount.h
-+++ b/include/linux/percpu-refcount.h
-@@ -110,7 +110,7 @@ static inline void percpu_ref_get(struct percpu_ref *ref)
- 	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
- 
- 	if (likely(REF_STATUS(pcpu_count) == PCPU_REF_PTR))
--		__this_cpu_inc(*pcpu_count);
-+		this_cpu_inc(*pcpu_count);
- 	else
- 		atomic_inc(&ref->count);
- 
-@@ -139,7 +139,7 @@ static inline bool percpu_ref_tryget(struct percpu_ref *ref)
- 	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
- 
- 	if (likely(REF_STATUS(pcpu_count) == PCPU_REF_PTR)) {
--		__this_cpu_inc(*pcpu_count);
-+		this_cpu_inc(*pcpu_count);
- 		ret = true;
- 	}
- 
-@@ -164,7 +164,7 @@ static inline void percpu_ref_put(struct percpu_ref *ref)
- 	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
- 
- 	if (likely(REF_STATUS(pcpu_count) == PCPU_REF_PTR))
--		__this_cpu_dec(*pcpu_count);
-+		this_cpu_dec(*pcpu_count);
- 	else if (unlikely(atomic_dec_and_test(&ref->count)))
- 		ref->release(ref);
- 
+diff --git a/security/integrity/evm/evm_main.c b/security/integrity/evm/evm_main.c
+index af9b6852f4e1..9add08a2be02 100644
+--- a/security/integrity/evm/evm_main.c
++++ b/security/integrity/evm/evm_main.c
+@@ -285,12 +285,20 @@ out:
+  * @xattr_value: pointer to the new extended attribute value
+  * @xattr_value_len: pointer to the new extended attribute value length
+  *
+- * Updating 'security.evm' requires CAP_SYS_ADMIN privileges and that
+- * the current value is valid.
++ * Before allowing the 'security.evm' protected xattr to be updated,
++ * verify the existing value is valid.  As only the kernel should have
++ * access to the EVM encrypted key needed to calculate the HMAC, prevent
++ * userspace from writing HMAC value.  Writing 'security.evm' requires
++ * requires CAP_SYS_ADMIN privileges.
+  */
+ int evm_inode_setxattr(struct dentry *dentry, const char *xattr_name,
+ 		       const void *xattr_value, size_t xattr_value_len)
+ {
++	const struct evm_ima_xattr_data *xattr_data = xattr_value;
++
++	if ((strcmp(xattr_name, XATTR_NAME_EVM) == 0)
++	    && (xattr_data->type == EVM_XATTR_HMAC))
++		return -EPERM;
+ 	return evm_protect_xattr(dentry, xattr_name, xattr_value,
+ 				 xattr_value_len);
+ }
 -- 
 2.0.0
 
