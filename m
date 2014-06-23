@@ -1,63 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754822AbaFWOAW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 10:00:22 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:65512 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754031AbaFWOAU (ORCPT
+	id S1754445AbaFWODg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 10:03:36 -0400
+Received: from smtprelay0037.hostedemail.com ([216.40.44.37]:33264 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753393AbaFWODd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 10:00:20 -0400
-Message-ID: <53A832FF.1050002@gmail.com>
-Date: Mon, 23 Jun 2014 08:00:31 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Stanislav Fomichev <stfomichev@yandex-team.ru>
-CC: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
-        jolsa@redhat.com, xiaoguangrong@linux.vnet.ibm.com,
-        yangds.fnst@cn.fujitsu.com, adrian.hunter@intel.com,
-        namhyung@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/7] perf trace pagefaults
-References: <1403261389-13423-1-git-send-email-stfomichev@yandex-team.ru> <20140620132105.GE31524@kernel.org> <20140620150318.GK15620@stfomichev-desktop.yandex.net> <20140620152449.GH31524@kernel.org>
-In-Reply-To: <20140620152449.GH31524@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 23 Jun 2014 10:03:33 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:968:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1568:1593:1594:1711:1714:1730:1747:1777:1792:2393:2551:2553:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3866:3867:3868:4250:4321:5007:7652:10004:10400:10848:11026:11232:11658:11914:12050:12114:12517:12519:12740:13069:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: love24_1eb7fc15d0947
+X-Filterd-Recvd-Size: 1313
+Message-ID: <1403532208.18747.58.camel@joe-AO725>
+Subject: Re: [PATCH 01/22] pci-dma-compat: Add pci_zalloc_consistent helper
+From: Joe Perches <joe@perches.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Date: Mon, 23 Jun 2014 07:03:28 -0700
+In-Reply-To: <4279380.YmNJ3E7DEi@wuerfel>
+References: <cover.1403530604.git.joe@perches.com>
+	 <2248b3ffe86cd8995a809bf7e2871f38039979c1.1403530604.git.joe@perches.com>
+	 <4279380.YmNJ3E7DEi@wuerfel>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/20/14, 9:24 AM, Arnaldo Carvalho de Melo wrote:
-> Right now it is too simple, but I was starting to work (when you jumped
-> right in with your work making me stop and go on testing/reviewing :) )
-> on making it more generic so that we could defer pretty printing the
-> arguments from sys_enter to sys_exit, when, by then, we would already
-> have an association of a user level pointer in some specific thread to
-> its contents.
->
-> This will allow us to to resolve the pathname pointer in things like
-> open() (i.e. not just after that, in the fd syscalls (write, etc)) and
-> as well any other pointer of interest.
->
-> By librarizing 'builtin-probe.c', that now uses lots of global
-> variables, etc, we would be able to insert probes where we want them to
-> capture the contents of pointers, check if the probes are already in
-> place, use just the ones that we managed to insert (i.e. that were not
-> invalid because the places where we wanted them to be were changed
-> across kernel releases, etc).
->
-> I.e. no need for actual tracepoints from day one, just wannabe
-> tracepoints using whatever probe inserting gizmo the kprobes_tracer used
-> by 'perf probe' now thinks its best to use.
->
-> Combine that with using DWARF descriptions (that could be pre cached
-> into something like CTF (the DTrace kind of CTF) or similar) like pahole
-> does and we would mostly automatically do all this work of prettyfing
-> syscall parameters.
->
-> </handwave>
+On Mon, 2014-06-23 at 15:53 +0200, Arnd Bergmann wrote:
+> On Monday 23 June 2014 06:41:29 Joe Perches wrote:
+> > Add this helper for consistency with pci_zalloc_coherent
+> > and the ability to remove unnecessary memset(,0,) uses.
 
-That was so much handwaving you could keep cool at a World Cup game. :-)
+> Shouldn't these drivers just use the normal dma-mapping API now?
 
-David
+Maybe.  I wouldn't mind.
+
+They do seem to have a trivial bit of unnecessary overhead for 
+
+hwdev == NULL ? NULL : &hwdev->dev
+
 
