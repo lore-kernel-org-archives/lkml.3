@@ -1,113 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754742AbaFWNFF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:05:05 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37118 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754714AbaFWNFC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:05:02 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Will Drewry <wad@chromium.org>, Kees Cook <keescook@chromium.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 68/93] futex-prevent-requeue-pi-on-same-futex.patch futex: Forbid uaddr == uaddr2 in futex_requeue(..., requeue_pi=1)
-Date: Mon, 23 Jun 2014 14:02:47 +0100
-Message-Id: <1403528592-2163-69-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
-References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	id S1755129AbaFWNPo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:15:44 -0400
+Received: from ozlabs.org ([103.22.144.67]:44093 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752787AbaFWNPm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 09:15:42 -0400
+Date: Mon, 23 Jun 2014 23:15:31 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tadeusz Struk <tadeusz.struk@intel.com>
+Subject: Re: linux-next: build failure after merge of the crypto tree
+Message-ID: <20140623231531.26c67841@canb.auug.org.au>
+In-Reply-To: <20140623122747.GA21213@gondor.apana.org.au>
+References: <20140623114942.6a937466@canb.auug.org.au>
+	<20140623122747.GA21213@gondor.apana.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/kIw4ZiB1vFNer6GCZoFjEbd"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.12 -stable review patch.  If anyone has any objections, please let me know.
+--Sig_/kIw4ZiB1vFNer6GCZoFjEbd
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+Hi Herbert,
 
-From: Thomas Gleixner <tglx@linutronix.de>
+On Mon, 23 Jun 2014 20:27:47 +0800 Herbert Xu <herbert@gondor.apana.org.au>=
+ wrote:
+>
+> That's weird as it built correctly here.  This looks like a
+> make/gcc issue as the missing header file is meant to be found
+> with an additional -I.
+>=20
+> Could you do a make V=3D1 for me and show me what the gcc command-line
+> looks like?
 
-commit e9c243a5a6de0be8e584c604d353412584b592f8 upstream.
+Not until tomorrow.  In the mean time, could you try it with an
+external object dir i.e. "make O=3D..."
 
-If uaddr == uaddr2, then we have broken the rule of only requeueing from
-a non-pi futex to a pi futex with this call.  If we attempt this, then
-dangling pointers may be left for rt_waiter resulting in an exploitable
-condition.
+If that breaks, I think you need to change CURDIR to srcdir or some
+such ...
 
-This change brings futex_requeue() in line with futex_wait_requeue_pi()
-which performs the same check as per commit 6f7b0a2a5c0f ("futex: Forbid
-uaddr == uaddr2 in futex_wait_requeue_pi()")
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-[ tglx: Compare the resulting keys as well, as uaddrs might be
-  	different depending on the mapping ]
+--Sig_/kIw4ZiB1vFNer6GCZoFjEbd
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-Fixes CVE-2014-3153.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Reported-by: Pinkie Pie
-Signed-off-by: Will Drewry <wad@chromium.org>
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Reviewed-by: Darren Hart <dvhart@linux.intel.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- kernel/futex.c | 25 +++++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
+iQIcBAEBCAAGBQJTqCh6AAoJEMDTa8Ir7ZwVBSUP/Atj1EXxH7+hhr+GkialxE72
+ZPbXFUcKINbyUURlxRZOhlFYrRy9/rGatt14p72nHOX0Z//G9kACO9WsJDZx8W34
+py3Ln65cQ1brKAj4rxqcQuMB4iJDj6Bp0VU/ZMt5jcdnSZFzKaL2/SSgWOVMpoc3
+ypXgU8tyhOqzvl7durPYWKOBNNLzUhHpqX+SzQHYsYa3rOqpaMADY+Ra45/fd9zz
+LPRvoeBzhamKTYT+7qs/3baRo6ndFpZBHgYx4ouQ/BmHhcSzjnyLT4g4aSVRJex/
+4pgJDUc4FJKMaZgO8agqqtt7uPXk7toJa2/VdwupAiJY6ZdHW8NL58D4soWogXaG
+jrAAjFPxI/+vtKMBYvrZ5JBtkXctiEtSQ6owSxE15j5FyRiBPCvI5nWCZs4YhBKg
+3RjtH5b6gTKJfKMAs9fMqclnjiTy7kBONjfu5rx+bWgwVyY2vTKdl+FFNGvjWKfr
+qdHz1ElD9Cf94BtrGd2syguprY+TAUcDVQpOwc5yxK/dt9usenyiEpvZn95oHLf0
+9m4tuVzr9GZ5g3q7o6cwOefWn+VpOcd9MMr6YzQHYma+69BCw+yyPP9hVQLZb63H
+BFStxVrkva63g0Az+SZJMsw9z/+2SFBn2OwVe/HSv4LnLYVQIDFCM1SIXLNomIZb
+jvVlB8nc+4u6e7OSxc2h
+=ORUO
+-----END PGP SIGNATURE-----
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index a62447d335ab..83b44e9c26c3 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -1294,6 +1294,13 @@ static int futex_requeue(u32 __user *uaddr1, unsigned int flags,
- 
- 	if (requeue_pi) {
- 		/*
-+		 * Requeue PI only works on two distinct uaddrs. This
-+		 * check is only valid for private futexes. See below.
-+		 */
-+		if (uaddr1 == uaddr2)
-+			return -EINVAL;
-+
-+		/*
- 		 * requeue_pi requires a pi_state, try to allocate it now
- 		 * without any locks in case it fails.
- 		 */
-@@ -1331,6 +1338,15 @@ retry:
- 	if (unlikely(ret != 0))
- 		goto out_put_key1;
- 
-+	/*
-+	 * The check above which compares uaddrs is not sufficient for
-+	 * shared futexes. We need to compare the keys:
-+	 */
-+	if (requeue_pi && match_futex(&key1, &key2)) {
-+		ret = -EINVAL;
-+		goto out_put_keys;
-+	}
-+
- 	hb1 = hash_futex(&key1);
- 	hb2 = hash_futex(&key2);
- 
-@@ -2361,6 +2377,15 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
- 	if (ret)
- 		goto out_key2;
- 
-+	/*
-+	 * The check above which compares uaddrs is not sufficient for
-+	 * shared futexes. We need to compare the keys:
-+	 */
-+	if (match_futex(&q.key, &key2)) {
-+		ret = -EINVAL;
-+		goto out_put_keys;
-+	}
-+
- 	/* Queue the futex_q, drop the hb lock, wait for wakeup. */
- 	futex_wait_queue_me(hb, &q, to);
- 
--- 
-1.9.1
-
+--Sig_/kIw4ZiB1vFNer6GCZoFjEbd--
