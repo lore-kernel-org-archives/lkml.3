@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932130AbaFWNFd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:05:33 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37265 "EHLO
+	id S1755016AbaFWNIH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:08:07 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37280 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932106AbaFWNF3 (ORCPT
+	with ESMTP id S932119AbaFWNFd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:05:29 -0400
+	Mon, 23 Jun 2014 09:05:33 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Vlastimil Babka <vbabka@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Markos Chandras <markos.chandras@imgtec.com>, linux-mips@linux-mips.org,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Ben Hutchings <ben@decadent.org.uk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 86/93] mm: compaction: detect when scanners meet in isolate_freepages
-Date: Mon, 23 Jun 2014 14:03:05 +0100
-Message-Id: <1403528592-2163-87-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 87/93] MIPS: asm: thread_info: Add _TIF_SECCOMP flag
+Date: Mon, 23 Jun 2014 14:03:06 +0100
+Message-Id: <1403528592-2163-88-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
 References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
@@ -30,122 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlastimil Babka <vbabka@suse.cz>
+From: Markos Chandras <markos.chandras@imgtec.com>
 
-commit 7ed695e069c3cbea5e1fd08f84a04536da91f584 upstream.
+commit 137f7df8cead00688524c82360930845396b8a21 upstream.
 
-Compaction of a zone is finished when the migrate scanner (which begins
-at the zone's lowest pfn) meets the free page scanner (which begins at
-the zone's highest pfn).  This is detected in compact_zone() and in the
-case of direct compaction, the compact_blockskip_flush flag is set so
-that kswapd later resets the cached scanner pfn's, and a new compaction
-may again start at the zone's borders.
+Add _TIF_SECCOMP flag to _TIF_WORK_SYSCALL_ENTRY to indicate
+that the system call needs to be checked against a seccomp filter.
 
-The meeting of the scanners can happen during either scanner's activity.
-However, it may currently fail to be detected when it occurs in the free
-page scanner, due to two problems.  First, isolate_freepages() keeps
-free_pfn at the highest block where it isolated pages from, for the
-purposes of not missing the pages that are returned back to allocator
-when migration fails.  Second, failing to isolate enough free pages due
-to scanners meeting results in -ENOMEM being returned by
-migrate_pages(), which makes compact_zone() bail out immediately without
-calling compact_finished() that would detect scanners meeting.
-
-This failure to detect scanners meeting might result in repeated
-attempts at compaction of a zone that keep starting from the cached
-pfn's close to the meeting point, and quickly failing through the
--ENOMEM path, without the cached pfns being reset, over and over.  This
-has been observed (through additional tracepoints) in the third phase of
-the mmtests stress-highalloc benchmark, where the allocator runs on an
-otherwise idle system.  The problem was observed in the DMA32 zone,
-which was used as a fallback to the preferred Normal zone, but on the
-4GB system it was actually the largest zone.  The problem is even
-amplified for such fallback zone - the deferred compaction logic, which
-could (after being fixed by a previous patch) reset the cached scanner
-pfn's, is only applied to the preferred zone and not for the fallbacks.
-
-The problem in the third phase of the benchmark was further amplified by
-commit 81c0a2bb515f ("mm: page_alloc: fair zone allocator policy") which
-resulted in a non-deterministic regression of the allocation success
-rate from ~85% to ~65%.  This occurs in about half of benchmark runs,
-making bisection problematic.  It is unlikely that the commit itself is
-buggy, but it should put more pressure on the DMA32 zone during phases 1
-and 2, which may leave it more fragmented in phase 3 and expose the bugs
-that this patch fixes.
-
-The fix is to make scanners meeting in isolate_freepage() stay that way,
-and to check in compact_zone() for scanners meeting when migrate_pages()
-returns -ENOMEM.  The result is that compact_finished() also detects
-scanners meeting and sets the compact_blockskip_flush flag to make
-kswapd reset the scanner pfn's.
-
-The results in stress-highalloc benchmark show that the "regression" by
-commit 81c0a2bb515f in phase 3 no longer occurs, and phase 1 and 2
-allocation success rates are also significantly improved.
-
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ luis: backported to 3.11: based on vbabka's backport for 3.10 ]
+Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
+Reviewed-by: Paul Burton <paul.burton@imgtec.com>
+Reviewed-by: James Hogan <james.hogan@imgtec.com>
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/6405/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Cc: Ben Hutchings <ben@decadent.org.uk>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/compaction.c | 19 +++++++++++++++----
- 1 file changed, 15 insertions(+), 4 deletions(-)
+ arch/mips/include/asm/thread_info.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 87a815630379..fb797a32362f 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -671,7 +671,7 @@ static void isolate_freepages(struct zone *zone,
- 	 * is using.
- 	 */
- 	pfn = cc->free_pfn & ~(pageblock_nr_pages-1);
--	low_pfn = cc->migrate_pfn + pageblock_nr_pages;
-+	low_pfn = ALIGN(cc->migrate_pfn + 1, pageblock_nr_pages);
+diff --git a/arch/mips/include/asm/thread_info.h b/arch/mips/include/asm/thread_info.h
+index 61215a34acc6..897cd58407c8 100644
+--- a/arch/mips/include/asm/thread_info.h
++++ b/arch/mips/include/asm/thread_info.h
+@@ -134,7 +134,7 @@ static inline struct thread_info *current_thread_info(void)
+ #define _TIF_LOAD_WATCH		(1<<TIF_LOAD_WATCH)
  
- 	/*
- 	 * Take care that if the migration scanner is at the end of the zone
-@@ -687,7 +687,7 @@ static void isolate_freepages(struct zone *zone,
- 	 * pages on cc->migratepages. We stop searching if the migrate
- 	 * and free page scanners meet or enough free pages are isolated.
- 	 */
--	for (; pfn > low_pfn && cc->nr_migratepages > nr_freepages;
-+	for (; pfn >= low_pfn && cc->nr_migratepages > nr_freepages;
- 					pfn -= pageblock_nr_pages) {
- 		unsigned long isolated;
- 		unsigned long end_pfn;
-@@ -740,7 +740,14 @@ static void isolate_freepages(struct zone *zone,
- 	/* split_free_page does not map the pages */
- 	map_pages(freelist);
+ #define _TIF_WORK_SYSCALL_ENTRY	(_TIF_NOHZ | _TIF_SYSCALL_TRACE |	\
+-				 _TIF_SYSCALL_AUDIT)
++				 _TIF_SYSCALL_AUDIT | _TIF_SECCOMP)
  
--	cc->free_pfn = high_pfn;
-+	/*
-+	 * If we crossed the migrate scanner, we want to keep it that way
-+	 * so that compact_finished() may detect this
-+	 */
-+	if (pfn < low_pfn)
-+		cc->free_pfn = max(pfn, zone->zone_start_pfn);
-+	else
-+		cc->free_pfn = high_pfn;
- 	cc->nr_freepages = nr_freepages;
- }
- 
-@@ -1005,7 +1012,11 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
- 		if (err) {
- 			putback_movable_pages(&cc->migratepages);
- 			cc->nr_migratepages = 0;
--			if (err == -ENOMEM) {
-+			/*
-+			 * migrate_pages() may return -ENOMEM when scanners meet
-+			 * and we want compact_finished() to detect it
-+			 */
-+			if (err == -ENOMEM && cc->free_pfn > cc->migrate_pfn) {
- 				ret = COMPACT_PARTIAL;
- 				goto out;
- 			}
+ /* work to do in syscall_trace_leave() */
+ #define _TIF_WORK_SYSCALL_EXIT	(_TIF_NOHZ | _TIF_SYSCALL_TRACE |	\
 -- 
 1.9.1
 
