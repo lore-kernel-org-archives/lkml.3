@@ -1,70 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752613AbaFWXUn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 19:20:43 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:43287 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750931AbaFWXUk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 19:20:40 -0400
+	id S1752925AbaFWXVL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 19:21:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59262 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751437AbaFWXVJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 19:21:09 -0400
+Date: Tue, 24 Jun 2014 01:21:07 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Francois Romieu <romieu@fr.zoreil.com>
+Cc: cocci@systeme.lip6.fr, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: SmPL for automatic request_firmware_nowait() conversion
+Message-ID: <20140623232107.GB27687@wotan.suse.de>
+References: <20140621015714.GX4841@wotan.suse.de> <20140621105205.GA31611@electric-eye.fr.zoreil.com>
 MIME-Version: 1.0
-In-Reply-To: <53A8B306.1010903@suse.de>
-References: <1403486483-4063-1-git-send-email-afaerber@suse.de>
-	<1403486483-4063-2-git-send-email-afaerber@suse.de>
-	<CAK5sBcGM6TLiMfhktGaeL9hvPFbAXN6mWFq=irWUVHnZi=BWNg@mail.gmail.com>
-	<53A8B306.1010903@suse.de>
-Date: Mon, 23 Jun 2014 16:20:39 -0700
-X-Google-Sender-Auth: Pj2ccq1lYhh72O1vvbJaKk_ig9k
-Message-ID: <CAD=FV=Wvu9WzTACovCjmOsce7KUStfAH7PX8rgROA0007HrahA@mail.gmail.com>
-Subject: Re: [PATCH 1/4] Documentation: devicetree: Fix s2mps11 and s5m8767 typos
-From: Doug Anderson <dianders@chromium.org>
-To: =?UTF-8?Q?Andreas_F=C3=A4rber?= <afaerber@suse.de>
-Cc: Sachin Kamat <sachin.kamat@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Stephan van Schaik <stephan@synkhronix.com>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>, Lee Jones <lee.jones@linaro.org>,
-        Mark Brown <broonie@linaro.org>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        "OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        DOCUMENTATION <linux-doc@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140621105205.GA31611@electric-eye.fr.zoreil.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andreas,
+On Sat, Jun 21, 2014 at 12:52:05PM +0200, Francois Romieu wrote:
+> Luis R. Rodriguez <mcgrof@suse.com> :
+> > I was just porting over an ethernet driver [0] to use request_firmware_nowait()
+> > since firmware loading seems can take over a minute on one device, while
+> > at it I noticed no other ethernet drivers yet use this API so figure
+> > this may be a trend coming if devices are getting as complex as cxgb4.
+> > The cxgb4 driver happens to even use the firmware API 3 times!
+> 
+> There should be no problem for the firmware requests issued through
+> ethtool in cxgb4.
 
-On Mon, Jun 23, 2014 at 4:06 PM, Andreas Färber <afaerber@suse.de> wrote:
-> I was wondering which character to type, and found two undocumented
-> s5m8767_pmic properties downstream (s5m-core,enable-low-jitter and
-> s5m-core,device_type = <0x2>), which I then left out.
+OK.
 
-I don't know much about "s5m-core,device_type", but I doubt it's
-needed.  You can see <http://crosreview.com/42202> for details.  I
-haven't looked but I'd bet that we just get this from the compatible
-string now.
+> 
+> [...]
+> > netdev: how worthy is this effort?
+> 
+> Biased comment below :o)
+> 
+> I'm wondering the benefit of automatic API changes when it could be argued
+> that the symptoms call for driver dependant code rework.
 
-I did do a (very!) quick look and I see that low-jitter was originally
-implemented in the local 3.4 kernel at <http://crosreview.com/43624>.
-...and the local 3.8 kernel at <http://crosreview.com/66037>.
+I should have elaborated a bit more on motivation. Tons of drivers don't use
+request_firmware_nowait() which means boot time is increased given that probe
+won't complete until firmware loading completes. The cxgb4 driver is a good
+example of one that takes quite a bit of time so learning that firmware loading
+can take over a minute seemed to beg a rework to use request_firmware_nowait().
+Note that in the worst case if udev is present in the worst case if the firmware
+is not present loading can take up to timeout * num CPUs [0], but work is
+underway to try to remove udev firmware loading support [1]. Regardless
+then the current approach seemed to beg a rework.
 
-NOTE: it's pretty important to make sure low-jitter is turned on for
-Chromebooks if you actually want full functionality.  At least on
-exynos5250-snow (with the max77686 PMIC) you'd get occasional (and
-very strange and very hard to debug) TPM errors if you didn't have
-low-jitter.  The TPM is part of the security model on Chromebooks and
-you might have a hard time accessing the encrypted parts of the disk
-without it.
+[0] https://lkml.org/lkml/2013/10/23/264
+[1] http://comments.gmane.org/gmane.comp.sysutils.systemd.devel/19440
 
+> The 60 seconds delay is kind of a pavlovian signal: one can bet that the
+> driver includes a request_firmware in its probe method. So does cxgb4.
 
--Doug
+The kernel's timeout is 60 seconds, and this is static, but lets be clear
+that there is a difference between the timeout for reading the firmware
+from the filesystem and actually dumping the firmware onto the device
+by the driver and ensuring that the driver is done poking at it. The
+kernel timeout is for the kernel reading it and tossing it back to the
+driver.
+
+> I still believe in the old school "request firmware from net_device_ops.open".
+> I've been happy with it since f1e02ed109df5f99abf942b8ccc99960cb09dd38.
+
+I was actually in the hopes a suitable transormation can be designed
+to put a wait_for_completion() in say ndo_init(). I was looking to
+see if a tranformation can be generalized of course if the above
+observations on probe() is something desirable to be addressed.
+
+> This kind of rework may not be trivial for cxgb4. Please get code tested on
+> real hardware (modular/monolithic build, with/without firmware, etc.) as I
+> won't argue against your crusade for cxgb4.
+
+OK I'll look for hardware but if some folks already have it and are
+interesed in some parts of this patch set my hope was that it can be
+slightly modified to move the wait_for_completion() to an ndo_init() then
+as well. That would really put better use of the API.
+
+> Asynchronous firmware loading provides a rather nice high level API but
+> it's imho not the essence of network devices firmware loading problems.
+
+Agreed.
+
+  Luis
