@@ -1,107 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752834AbaFWHyz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 03:54:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16936 "EHLO mx1.redhat.com"
+	id S1752051AbaFWHzl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 03:55:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42690 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752778AbaFWHyx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 03:54:53 -0400
+	id S1752783AbaFWHyv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 03:54:51 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 1/2] perf tools: Fix segfault in cumulative.callchain report
-Date: Mon, 23 Jun 2014 09:54:35 +0200
-Message-Id: <1403510076-3917-2-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1403510076-3917-1-git-send-email-jolsa@kernel.org>
-References: <1403510076-3917-1-git-send-email-jolsa@kernel.org>
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Simon Que <sque@chromium.org>,
+        Jiri Olsa <jolsa@kernel.org>
+Subject: [GIT PULL 0/2] perf/urgent fixes
+Date: Mon, 23 Jun 2014 09:54:34 +0200
+Message-Id: <1403510076-3917-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When cumulative callchain mode is on, we could get samples with
-with no actual hits. This breaks the assumption of the annotation
-code, that each sample has annotation counts allocated and leads
-to segfault.
+hi Ingo,
+please consider pulling
 
-Fixing this by additional checks for annotation stats.
+thanks,
+jirka
 
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-Acked-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1402821332-12419-1-git-send-email-jolsa@kernel.org
+
+The following changes since commit cf230918cda19532e4a5cc4f0d5c82fa7e5e94f6:
+
+  Merge branch 'perf/core' into perf/urgent, to pick up the latest fixes (2014-06-14 14:10:08 +0200)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git tags/perf-urgent-for-mingo
+
+for you to fetch changes up to a93f0e551af9e194db38bfe16001e17a3a1d189a:
+
+  perf symbols: Get kernel start address by symbol name (2014-06-20 09:34:22 +0200)
+
+----------------------------------------------------------------
+perf/urgent fixes:
+
+. Fix kernel start address lookup in report code (Simon Que)
+
+. Fix segfault in cumulative.callchain report (Jiri Olsa)
+
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
----
- tools/perf/ui/browsers/hists.c | 21 ++++++++++++++++-----
- 1 file changed, 16 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 52c03fb..04a229a 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -17,6 +17,7 @@
- #include "../util.h"
- #include "../ui.h"
- #include "map.h"
-+#include "annotate.h"
- 
- struct hist_browser {
- 	struct ui_browser   b;
-@@ -1593,13 +1594,18 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 					 bi->to.sym->name) > 0)
- 				annotate_t = nr_options++;
- 		} else {
--
- 			if (browser->selection != NULL &&
- 			    browser->selection->sym != NULL &&
--			    !browser->selection->map->dso->annotate_warned &&
--				asprintf(&options[nr_options], "Annotate %s",
--					 browser->selection->sym->name) > 0)
--				annotate = nr_options++;
-+			    !browser->selection->map->dso->annotate_warned) {
-+				struct annotation *notes;
-+
-+				notes = symbol__annotation(browser->selection->sym);
-+
-+				if (notes->src &&
-+				    asprintf(&options[nr_options], "Annotate %s",
-+						 browser->selection->sym->name) > 0)
-+					annotate = nr_options++;
-+			}
- 		}
- 
- 		if (thread != NULL &&
-@@ -1656,6 +1662,7 @@ retry_popup_menu:
- 
- 		if (choice == annotate || choice == annotate_t || choice == annotate_f) {
- 			struct hist_entry *he;
-+			struct annotation *notes;
- 			int err;
- do_annotate:
- 			if (!objdump_path && perf_session_env__lookup_objdump(env))
-@@ -1679,6 +1686,10 @@ do_annotate:
- 				he->ms.map = he->branch_info->to.map;
- 			}
- 
-+			notes = symbol__annotation(he->ms.sym);
-+			if (!notes->src)
-+				continue;
-+
- 			/*
- 			 * Don't let this be freed, say, by hists__decay_entry.
- 			 */
--- 
-1.8.3.1
+----------------------------------------------------------------
+Jiri Olsa (1):
+      perf tools: Fix segfault in cumulative.callchain report
 
+Simon Que (1):
+      perf symbols: Get kernel start address by symbol name
+
+ tools/perf/ui/browsers/hists.c | 21 ++++++++++++----
+ tools/perf/util/machine.c      | 54 +++++++++++++++++-------------------------
+ 2 files changed, 38 insertions(+), 37 deletions(-)
