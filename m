@@ -1,85 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755053AbaFWJNA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 05:13:00 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:53071 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753536AbaFWJM6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 05:12:58 -0400
-Date: Mon, 23 Jun 2014 11:12:43 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tony Lu <zlu@tilera.com>
-Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: Re: [BUG] perf: can not resolve symbols for forked threads
-Message-ID: <20140623091243.GN19860@laptop.programming.kicks-ass.net>
-References: <BAB94DBB0E89D8409949BC28AC95914C5D762567@USMAExch1.tad.internal.tilera.com>
+	id S1755162AbaFWJOY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 05:14:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40829 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753088AbaFWJOV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 05:14:21 -0400
+Date: Mon, 23 Jun 2014 11:14:18 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] memcg: remove lookup_cgroup_page() prototype
+Message-ID: <20140623091418.GE9743@dhcp22.suse.cz>
+References: <1403217136-4863-1-git-send-email-gthelen@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BAB94DBB0E89D8409949BC28AC95914C5D762567@USMAExch1.tad.internal.tilera.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1403217136-4863-1-git-send-email-gthelen@google.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 07:39:42AM +0000, Tony Lu wrote:
-> Hi
+On Thu 19-06-14 15:32:16, Greg Thelen wrote:
+> 6b208e3f6e35 ("mm: memcg: remove unused node/section info from
+> pc->flags") deleted the lookup_cgroup_page() function but left a
+> prototype for it.
 > 
-> I got the below output that shows perf can not resolve symbols for
-> forked threads. I did a system-wide collection from all CPUs after the
-> application hello run.
-
-There's no fork() in... :-)
-
-> #include <pthread.h>
-> #include <stdio.h>
-> #include <stdlib.h>
-> #include <unistd.h>
-> #define NUM_THREADS     5
+> Kill the vestigial prototype.
 > 
-> void foo(void)
-> {
->   long i = 1000000000;
->   while (i--) {
->     ;
->   }
-> }
+> Signed-off-by: Greg Thelen <gthelen@google.com>
+
+Acked-by: Michal Hocko <mhocko@suse.cz>
+
+> ---
+>  include/linux/page_cgroup.h | 1 -
+>  1 file changed, 1 deletion(-)
 > 
-> void *PrintHello(void *threadid)
-> {
->    long tid;
->    tid = (long)threadid;
->    printf("Hello World! It's me, thread #%ld!\n", tid);
->    foo();
->    pthread_exit(NULL);
-> }
+> diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
+> index 777a524716db..0ff470de3c12 100644
+> --- a/include/linux/page_cgroup.h
+> +++ b/include/linux/page_cgroup.h
+> @@ -42,7 +42,6 @@ static inline void __init page_cgroup_init(void)
+>  #endif
+>  
+>  struct page_cgroup *lookup_page_cgroup(struct page *page);
+> -struct page *lookup_cgroup_page(struct page_cgroup *pc);
+>  
+>  #define TESTPCGFLAG(uname, lname)			\
+>  static inline int PageCgroup##uname(struct page_cgroup *pc)	\
+> -- 
+> 2.0.0.526.g5318336
 > 
-> int main(int argc, char *argv[])
-> {
->    pthread_t threads[NUM_THREADS];
->    int rc;
->    long t;
->    for(t=0;t<NUM_THREADS;t++){
->      printf("In main: creating thread %ld\n", t);
->      rc = pthread_create(&threads[t], NULL, PrintHello, (void *)t);
->      if (rc){
->        printf("ERROR; return code from pthread_create() is %d\n", rc);
->        exit(-1);
->        }
->      }
-> 
->    /* Last thing that main() should do */
->    pthread_exit(NULL);
-> }
 
-That pthread_exit() is the problem; this results in:
-
-29456 pts/23   Zl     0:00          |               \_ [hello] <defunct>
-
-You want to wait for the threads to complete using pthread_join().
-
-I suspect the defunct state hides the process.
+-- 
+Michal Hocko
+SUSE Labs
