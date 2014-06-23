@@ -1,217 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755484AbaFWNc2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:32:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47949 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754410AbaFWNc0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:32:26 -0400
-Date: Mon, 23 Jun 2014 14:32:21 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 3/4] mm: vmscan: remove all_unreclaimable()
-Message-ID: <20140623133221.GN10819@suse.de>
-References: <1403282030-29915-1-git-send-email-hannes@cmpxchg.org>
- <1403282030-29915-3-git-send-email-hannes@cmpxchg.org>
+	id S1754330AbaFWNcg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:32:36 -0400
+Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:46286
+	"EHLO mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754462AbaFWNcc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 09:32:32 -0400
+Date: Mon, 23 Jun 2014 15:32:30 +0200
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: "chenhanxiao@cn.fujitsu.com" <chenhanxiao@cn.fujitsu.com>
+Cc: Richard Weinberger <richard@nod.at>,
+        "containers@lists.linux-foundation.org" 
+	<containers@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        Oleg Nesterov <oleg@redhat.com>, David Howells <dhowells@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH v2] ns: introduce getnspid syscall
+Message-ID: <20140623133230.GA31817@mail.hallyn.com>
+References: <1403259512-10510-1-git-send-email-chenhanxiao@cn.fujitsu.com>
+ <53A414B2.20108@nod.at>
+ <5871495633F38949900D2BF2DC04883E54ECC5@G08CNEXMBPEKD02.g08.fujitsu.local>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1403282030-29915-3-git-send-email-hannes@cmpxchg.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5871495633F38949900D2BF2DC04883E54ECC5@G08CNEXMBPEKD02.g08.fujitsu.local>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 12:33:49PM -0400, Johannes Weiner wrote:
-> Direct reclaim currently calls shrink_zones() to reclaim all members
-> of a zonelist, and if that wasn't successful it does another pass
-> through the same zonelist to check overall reclaimability.
+Quoting chenhanxiao@cn.fujitsu.com (chenhanxiao@cn.fujitsu.com):
+> Hi
 > 
-> Just check reclaimability in shrink_zones() directly and propagate the
-> result through the return value.  Then remove all_unreclaimable().
+> > -----Original Message-----
+> > From: Richard Weinberger [mailto:richard@nod.at]
+> > Sent: Friday, June 20, 2014 7:02 PM
+> > To: Chen, Hanxiao/陈 晗霄; containers@lists.linux-foundation.org;
+> > linux-kernel@vger.kernel.org
+> > Cc: Eric W. Biederman; Serge Hallyn; Daniel P. Berrange; Oleg Nesterov; Al Viro;
+> > David Howells; Pavel Emelyanov; Vasiliy Kulikov; Gotou, Yasunori/五島 康文;
+> > linux-api@vger.kernel.org
+> > Subject: Re: [PATCH v2] ns: introduce getnspid syscall
+> > 
+> > Am 20.06.2014 12:18, schrieb Chen Hanxiao:
+> > > We need a direct method of getting the pid inside containers.
+> > > If some issues occurred inside container guest, host user
+> > > could not know which process is in trouble just by guest pid:
+> > > the users of container guest only knew the pid inside containers.
+> > > This will bring obstacle for trouble shooting.
+> > >
+> > > int getnspid(pid_t pid, int fd1, int fd2);
+> > >
+> > > pid: the pid number need to be translated.
+> > >
+> > > fd: a file descriptor referring to one of
+> > >     the namespace entries in a /proc/[pid]/ns/pid.
+> > >     fd1 for destination ns(ns1), where the pid came from.
+> > >     fd2 for reference ns(ns2), while fd2 = -2 means for current ns.
+> > >
+> > > return value:
+> > >     >0 : translated pid in ns1(fd1) seen from ns2(fd2).
+> > >     <=0: on failure.
+> > >
+> > 
+> > I don't think that adding a new system call for this is a good solution.
+> > We need a more generic way. I bet people are interested in more than just PID
+> > numbers.
 > 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> ---
->  mm/vmscan.c | 48 +++++++++++++++++++++++-------------------------
->  1 file changed, 23 insertions(+), 25 deletions(-)
+> Could you please give some hints on how to expand this interface?
 > 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index ed1efb84c542..d0bc1a209746 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2244,9 +2244,10 @@ static inline bool should_continue_reclaim(struct zone *zone,
->  	}
->  }
->  
-> -static void shrink_zone(struct zone *zone, struct scan_control *sc)
-> +static unsigned long shrink_zone(struct zone *zone, struct scan_control *sc)
->  {
->  	unsigned long nr_reclaimed, nr_scanned;
-> +	unsigned long zone_reclaimed = 0;
->  
->  	do {
->  		struct mem_cgroup *root = sc->target_mem_cgroup;
-> @@ -2290,8 +2291,12 @@ static void shrink_zone(struct zone *zone, struct scan_control *sc)
->  			   sc->nr_scanned - nr_scanned,
->  			   sc->nr_reclaimed - nr_reclaimed);
->  
-> +		zone_reclaimed += sc->nr_reclaimed - nr_reclaimed;
-> +
->  	} while (should_continue_reclaim(zone, sc->nr_reclaimed - nr_reclaimed,
->  					 sc->nr_scanned - nr_scanned, sc));
-> +
-> +	return zone_reclaimed;
->  }
-
-You do not actually need a counter here because all that matters is that
-a page got reclaimed. It could just as easily have been
-
-bool zone_reclaimable = false;
-
-...
-
-if (sc->nr_reclaimed - nr_reclaimed)
-	zone_reclaimable = true;
-
-...
-
-return zone_reclaimable
-
-so that zone[s]_reclaimable is always a boolean and not sometimes a boolean
-and sometimes a counter.
-
-
->  
->  /* Returns true if compaction should go ahead for a high-order request */
-> @@ -2340,8 +2345,10 @@ static inline bool compaction_ready(struct zone *zone, int order)
->   *
->   * If a zone is deemed to be full of pinned pages then just give it a light
->   * scan then give up on it.
-> + *
-> + * Returns whether the zones overall are reclaimable or not.
->   */
-
-Returns true if a zone was reclaimable
-
-> -static void shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
-> +static bool shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
->  {
->  	struct zoneref *z;
->  	struct zone *zone;
-> @@ -2354,6 +2361,7 @@ static void shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
->  		.gfp_mask = sc->gfp_mask,
->  	};
->  	enum zone_type requested_highidx = gfp_zone(sc->gfp_mask);
-> +	bool all_unreclaimable = true;
->  
->  	/*
->  	 * If the number of buffer_heads in the machine exceeds the maximum
-> @@ -2368,6 +2376,8 @@ static void shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
->  
->  	for_each_zone_zonelist_nodemask(zone, z, zonelist,
->  					gfp_zone(sc->gfp_mask), sc->nodemask) {
-> +		unsigned long zone_reclaimed = 0;
-> +
->  		if (!populated_zone(zone))
->  			continue;
->  		/*
-> @@ -2414,10 +2424,15 @@ static void shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
->  						&nr_soft_scanned);
->  			sc->nr_reclaimed += nr_soft_reclaimed;
->  			sc->nr_scanned += nr_soft_scanned;
-> +			zone_reclaimed += nr_soft_reclaimed;
->  			/* need some check for avoid more shrink_zone() */
->  		}
->  
-> -		shrink_zone(zone, sc);
-> +		zone_reclaimed += shrink_zone(zone, sc);
-> +
-> +		if (zone_reclaimed ||
-> +		    (global_reclaim(sc) && zone_reclaimable(zone)))
-> +			all_unreclaimable = false;
->  	}
->  
-
-This is where you don't need the counter as such. It could just as
-easily have been
-
-bool reclaimable = false;
-....
-if (shrink_zone(zone, sc))
-	reclaimable = true;
-
-if (!reclaimable && global_reclaim(sc) && zone_reclaimable(zone))
-	reclaimable = true;
-
-return reclaimable;
-
-It doesn't matter as such, it's just zone_reclaimed is implemented as a
-counter but not used as one.
-
->  	/*
-> @@ -2439,26 +2454,8 @@ static void shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
->  	 * promoted it to __GFP_HIGHMEM.
->  	 */
->  	sc->gfp_mask = orig_mask;
-> -}
->  
-> -/* All zones in zonelist are unreclaimable? */
-> -static bool all_unreclaimable(struct zonelist *zonelist,
-> -		struct scan_control *sc)
-> -{
-> -	struct zoneref *z;
-> -	struct zone *zone;
-> -
-> -	for_each_zone_zonelist_nodemask(zone, z, zonelist,
-> -			gfp_zone(sc->gfp_mask), sc->nodemask) {
-> -		if (!populated_zone(zone))
-> -			continue;
-> -		if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
-> -			continue;
-> -		if (zone_reclaimable(zone))
-> -			return false;
-> -	}
-> -
-> -	return true;
-> +	return !all_unreclaimable;
->  }
->  
->  /*
-> @@ -2482,6 +2479,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
->  {
->  	unsigned long total_scanned = 0;
->  	unsigned long writeback_threshold;
-> +	bool zones_reclaimable;
->  
->  	delayacct_freepages_start();
->  
-> @@ -2492,7 +2490,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
->  		vmpressure_prio(sc->gfp_mask, sc->target_mem_cgroup,
->  				sc->priority);
->  		sc->nr_scanned = 0;
-> -		shrink_zones(zonelist, sc);
-> +		zones_reclaimable = shrink_zones(zonelist, sc);
->  
->  		total_scanned += sc->nr_scanned;
->  		if (sc->nr_reclaimed >= sc->nr_to_reclaim)
-> @@ -2533,8 +2531,8 @@ out:
->  	if (sc->compaction_ready)
->  		return 1;
->  
-> -	/* top priority shrink_zones still had more to do? don't OOM, then */
-> -	if (global_reclaim(sc) && !all_unreclaimable(zonelist, sc))
-> +	/* Any of the zones still reclaimable?  Don't OOM. */
-> +	if (zones_reclaimable)
->  		return 1;
->  
->  	return 0;
-> -- 
-> 2.0.0
+> > 
+> > I agree with Eric that a procfs solution is more appropriate.
+> > 
 > 
+> Procfs is a good solution, but syscall is not bad though.
 
--- 
-Mel Gorman
-SUSE Labs
+I might be inclined to agree, except that in this case you are still
+needing mounted procfs anyway to get the proc/$pid/ns/pid fds.
+
+I'm sorry, I've not been watching this thread, so this probably has been
+considered and decided against, but I'm going to ask anyway.  Keeping
+in mind both checkpoint-restart and and introspection for use in a
+setns'd commend, why not make it
+
+pid_t getnspid(pid_t query_pid, pid_t observer_pid)
+
+which returns the process id of query_pid as seen from observer_pid's
+pidns?
+
+
+> Procfs works for me, but that seems could not fit
+> Pavel's requirement.
+> His opinion is that a syscall is a more generic interface
+> than proc files, and  also very helpful.
+> And syscall could tell whether a pid lives in a specific pid namespace,
+> much convenient than procfs.
+> 
+> Thanks,
+> - Chen
+
+> _______________________________________________
+> Containers mailing list
+> Containers@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/containers
+
