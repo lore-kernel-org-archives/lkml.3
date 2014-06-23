@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755252AbaFWNSX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:18:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37068 "EHLO
+	id S1754576AbaFWNEr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:04:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37038 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754582AbaFWNEs (ORCPT
+	with ESMTP id S1754506AbaFWNEn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:04:48 -0400
+	Mon, 23 Jun 2014 09:04:43 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: NeilBrown <neilb@suse.de>, Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 61/93] md: always set MD_RECOVERY_INTR when interrupting a reshape thread.
-Date: Mon, 23 Jun 2014 14:02:40 +0100
-Message-Id: <1403528592-2163-62-git-send-email-luis.henriques@canonical.com>
+Cc: Ludovic Drolez <ldrolez@debian.org>, Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 55/93] USB: io_ti: fix firmware download on big-endian machines (part 2)
+Date: Mon, 23 Jun 2014 14:02:34 +0100
+Message-Id: <1403528592-2163-56-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
 References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
@@ -26,51 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 2ac295a544dcae9299cba13ce250419117ae7fd1 upstream.
+commit c03890ff5e24a4bf59059f2d179f427559b7330a upstream.
 
-Commit 8313b8e57f55b15e5b7f7fc5d1630bbf686a9a97
-   md: fix problem when adding device to read-only array with bitmap.
+A recent patch that purported to fix firmware download on big-endian
+machines failed to add the corresponding sparse annotation to the
+i2c-header. This was reported by the kbuild test robot.
 
-added a called to md_reap_sync_thread() which cause a reshape thread
-to be interrupted (in particular, it could cause md_thread() to never even
-call md_do_sync()).
-However it didn't set MD_RECOVERY_INTR so ->finish_reshape() would not
-know that the reshape didn't complete.
+Adding the appropriate annotation revealed another endianess bug related
+to the i2c-header Size-field in a code path that is exercised when the
+firmware is actually being downloaded (and not just verified and left
+untouched unless older than the firmware at hand).
 
-This only happens when mddev->ro is set and normally reshape threads
-don't run in that situation.  But raid5 and raid10 can start a reshape
-thread during "run" is the array is in the middle of a reshape.
-They do this even if ->ro is set.
+This patch adds the required sparse annotation to the i2c-header and
+makes sure that the Size-field is sent in little-endian byte order
+during firmware download also on big-endian machines.
 
-So it is best to set MD_RECOVERY_INTR before abortingg the
-sync thread, just in case.
+Note that this patch is only compile-tested, but that there is no
+functional change for little-endian systems.
 
-Though it rare for this to trigger a problem it can cause data corruption
-because the reshape isn't finished properly.
-So it is suitable for any stable which the offending commit was applied to.
-(3.2 or later)
-
-Fixes: 8313b8e57f55b15e5b7f7fc5d1630bbf686a9a97
-Signed-off-by: NeilBrown <neilb@suse.de>
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
+Cc: Ludovic Drolez <ldrolez@debian.org>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/md/md.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/io_ti.c      | 2 +-
+ drivers/usb/serial/io_usbvend.h | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/md/md.c b/drivers/md/md.c
-index c95b77132872..2d3111ba445c 100644
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -7809,6 +7809,7 @@ void md_check_recovery(struct mddev *mddev)
- 			/* There is no thread, but we need to call
- 			 * ->spare_active and clear saved_raid_disk
- 			 */
-+			set_bit(MD_RECOVERY_INTR, &mddev->recovery);
- 			md_reap_sync_thread(mddev);
- 			clear_bit(MD_RECOVERY_NEEDED, &mddev->recovery);
- 			goto unlock;
+diff --git a/drivers/usb/serial/io_ti.c b/drivers/usb/serial/io_ti.c
+index 95dd14927aab..b36f6ee77d1e 100644
+--- a/drivers/usb/serial/io_ti.c
++++ b/drivers/usb/serial/io_ti.c
+@@ -835,7 +835,7 @@ static int build_i2c_fw_hdr(__u8 *header, struct device *dev)
+ 	firmware_rec =  (struct ti_i2c_firmware_rec*)i2c_header->Data;
+ 
+ 	i2c_header->Type	= I2C_DESC_TYPE_FIRMWARE_BLANK;
+-	i2c_header->Size	= (__u16)buffer_size;
++	i2c_header->Size	= cpu_to_le16(buffer_size);
+ 	i2c_header->CheckSum	= cs;
+ 	firmware_rec->Ver_Major	= OperationalMajorVersion;
+ 	firmware_rec->Ver_Minor	= OperationalMinorVersion;
+diff --git a/drivers/usb/serial/io_usbvend.h b/drivers/usb/serial/io_usbvend.h
+index 51f83fbb73bb..6f6a856bc37c 100644
+--- a/drivers/usb/serial/io_usbvend.h
++++ b/drivers/usb/serial/io_usbvend.h
+@@ -594,7 +594,7 @@ struct edge_boot_descriptor {
+ 
+ struct ti_i2c_desc {
+ 	__u8	Type;			// Type of descriptor
+-	__u16	Size;			// Size of data only not including header
++	__le16	Size;			// Size of data only not including header
+ 	__u8	CheckSum;		// Checksum (8 bit sum of data only)
+ 	__u8	Data[0];		// Data starts here
+ } __attribute__((packed));
 -- 
 1.9.1
 
