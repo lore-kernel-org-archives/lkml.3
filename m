@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754253AbaFWNEQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:04:16 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36874 "EHLO
+	id S1754415AbaFWNEb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:04:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36945 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752535AbaFWNEL (ORCPT
+	with ESMTP id S1754350AbaFWNEZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:04:11 -0400
+	Mon, 23 Jun 2014 09:04:25 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Emil Goode <emilgoode@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Olof Johansson <olof@lixom.net>,
+Cc: Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 32/93] ARM: imx: fix error handling in ipu device registration
-Date: Mon, 23 Jun 2014 14:02:11 +0100
-Message-Id: <1403528592-2163-33-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 43/93] audit: restore order of tty and ses fields in log output
+Date: Mon, 23 Jun 2014 14:02:22 +0100
+Message-Id: <1403528592-2163-44-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
 References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,38 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emil Goode <emilgoode@gmail.com>
+From: Richard Guy Briggs <rgb@redhat.com>
 
-commit d1d70e5dc2cfa9047bb935c41ba808ebb8135696 upstream.
+commit 2f2ad1013322c8f6c40fc6dafdbd32442fa730ad upstream.
 
-If we fail to allocate struct platform_device pdev we
-dereference it after the goto label err.
+When being refactored from audit_log_start() to audit_log_task_info(), in
+commit e23eb920 the tty and ses fields in the log output got transposed.
+Restore to original order to avoid breaking search tools.
 
-This bug was found using coccinelle.
-
-Fixes: afa77ef (ARM: mx3: dynamically allocate "ipu-core" devices)
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
-Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-Signed-off-by: Shawn Guo <shawn.guo@freescale.com>
-Signed-off-by: Olof Johansson <olof@lixom.net>
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+Signed-off-by: Eric Paris <eparis@redhat.com>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/mach-imx/devices/platform-ipu-core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/audit.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-imx/devices/platform-ipu-core.c b/arch/arm/mach-imx/devices/platform-ipu-core.c
-index fc4dd7cedc11..6bd7c3f37ac0 100644
---- a/arch/arm/mach-imx/devices/platform-ipu-core.c
-+++ b/arch/arm/mach-imx/devices/platform-ipu-core.c
-@@ -77,7 +77,7 @@ struct platform_device *__init imx_alloc_mx3_camera(
+diff --git a/kernel/audit.c b/kernel/audit.c
+index aea9a1963e79..50512d11a445 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -1615,7 +1615,7 @@ void audit_log_task_info(struct audit_buffer *ab, struct task_struct *tsk)
+ 	audit_log_format(ab,
+ 			 " ppid=%d pid=%d auid=%u uid=%u gid=%u"
+ 			 " euid=%u suid=%u fsuid=%u"
+-			 " egid=%u sgid=%u fsgid=%u ses=%u tty=%s",
++			 " egid=%u sgid=%u fsgid=%u tty=%s ses=%u",
+ 			 task_ppid_nr(tsk),
+ 			 tsk->pid,
+ 			 from_kuid(&init_user_ns, audit_get_loginuid(tsk)),
+@@ -1627,7 +1627,7 @@ void audit_log_task_info(struct audit_buffer *ab, struct task_struct *tsk)
+ 			 from_kgid(&init_user_ns, cred->egid),
+ 			 from_kgid(&init_user_ns, cred->sgid),
+ 			 from_kgid(&init_user_ns, cred->fsgid),
+-			 audit_get_sessionid(tsk), tty);
++			 tty, audit_get_sessionid(tsk));
  
- 	pdev = platform_device_alloc("mx3-camera", 0);
- 	if (!pdev)
--		goto err;
-+		return ERR_PTR(-ENOMEM);
- 
- 	pdev->dev.dma_mask = kmalloc(sizeof(*pdev->dev.dma_mask), GFP_KERNEL);
- 	if (!pdev->dev.dma_mask)
+ 	get_task_comm(name, tsk);
+ 	audit_log_format(ab, " comm=");
 -- 
 1.9.1
 
