@@ -1,301 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756386AbaFWQxN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 12:53:13 -0400
-Received: from demumfd002.nsn-inter.net ([93.183.12.31]:44807 "EHLO
-	demumfd002.nsn-inter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756096AbaFWQxK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 12:53:10 -0400
-X-Greylist: delayed 1420 seconds by postgrey-1.27 at vger.kernel.org; Mon, 23 Jun 2014 12:53:08 EDT
-Message-ID: <53A85549.7040809@nsn.com>
-Date: Mon, 23 Jun 2014 18:26:49 +0200
-From: Alexander Sverdlin <alexander.sverdlin@nsn.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1756339AbaFWQz0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 12:55:26 -0400
+Received: from mga02.intel.com ([134.134.136.20]:5666 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753546AbaFWQzY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 12:55:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,531,1400050800"; 
+   d="scan'208";a="561979251"
+Message-ID: <53A85BF9.7030006@intel.com>
+Date: Mon, 23 Jun 2014 09:55:21 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: ext Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>
-CC: Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>, Joel Becker <jlbec@evilplan.org>,
-        devicetree@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
-        linux-i2c@vger.kernel.org, Mark Brown <broonie@kernel.org>,
-        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pete Popov <pete.popov@konsulko.com>,
-        Dan Malek <dan.malek@konsulko.com>,
-        Georgi Vlaev <georgi.vlaev@konsulko.com>,
-        Pantelis Antoniou <panto@antoniou-consulting.com>
-Subject: Re: [PATCH 5/6] OF: Utility helper functions for dynamic nodes
-References: <1403430039-15085-1-git-send-email-pantelis.antoniou@konsulko.com> <1403430039-15085-6-git-send-email-pantelis.antoniou@konsulko.com>
-In-Reply-To: <1403430039-15085-6-git-send-email-pantelis.antoniou@konsulko.com>
-Content-Type: text/plain; charset=UTF-8
+To: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
+CC: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
+        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
+        ak@linux.intel.com, cl@gentwo.org, umgwanakikbuti@gmail.com
+Subject: Re: [PATCH tip/core/rcu] Reduce overhead of cond_resched() checks
+ for RCU
+References: <20140621025958.GA7185@linux.vnet.ibm.com>
+In-Reply-To: <20140621025958.GA7185@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-purgate-type: clean
-X-purgate-Ad: Categorized by eleven eXpurgate (R) http://www.eleven.de
-X-purgate: clean
-X-purgate: This mail is considered clean (visit http://www.eleven.de for further information)
-X-purgate-size: 8290
-X-purgate-ID: 151667::1403540816-00007A71-C5C94495/0/0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Pantelis!
+This still has a regression.  Commit 1ed70de (from Paul's git tree),
+gets a result of 52231880.  If I back up two commits to v3.16-rc1 and
+revert ac1bea85 (the original culprit) the result goes back up to 57308512.
 
-On 22/06/14 11:40, ext Pantelis Antoniou wrote:
-> Introduce helper functions for working with the live DT tree,
-> all of them related to dynamically adding/removing nodes and
-> properties.
-> 
-> __of_copy_property() copies a property dynamically
-> __of_create_empty_node() creates an empty node
-> 
-> Bug fix about prop->len == 0 by Ionut Nicu <ioan.nicu.ext@nsn.com>
+So something is still going on here.
 
-Are you sure about this? (see below...)
- 
-> Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-> ---
->  drivers/of/Makefile |   2 +-
->  drivers/of/util.c   | 141 ++++++++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/of.h  |  42 ++++++++++++++++
->  3 files changed, 184 insertions(+), 1 deletion(-)
->  create mode 100644 drivers/of/util.c
-> 
-> diff --git a/drivers/of/Makefile b/drivers/of/Makefile
-> index 099b1fb..734d3e2 100644
-> --- a/drivers/of/Makefile
-> +++ b/drivers/of/Makefile
-> @@ -1,4 +1,4 @@
-> -obj-y = base.o device.o platform.o
-> +obj-y = base.o device.o platform.o util.o
->  obj-$(CONFIG_OF_FLATTREE) += fdt.o
->  obj-$(CONFIG_OF_EARLY_FLATTREE) += fdt_address.o
->  obj-$(CONFIG_OF_PROMTREE) += pdt.o
-> diff --git a/drivers/of/util.c b/drivers/of/util.c
-> new file mode 100644
-> index 0000000..f4211f8
-> --- /dev/null
-> +++ b/drivers/of/util.c
-> @@ -0,0 +1,141 @@
-> +/*
-> + * Utility functions for working with device tree(s)
-> + *
-> + * Copyright (C) 2012 Pantelis Antoniou <panto@antoniou-consulting.com>
-> + * Copyright (C) 2012 Texas Instruments Inc.
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * version 2 as published by the Free Software Foundation.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/of.h>
-> +#include <linux/of_device.h>
-> +#include <linux/string.h>
-> +#include <linux/ctype.h>
-> +#include <linux/errno.h>
-> +#include <linux/string.h>
-> +#include <linux/slab.h>
-> +#include <linux/err.h>
-> +
-> +/**
-> + * __of_copy_property - Copy a property dynamically.
-> + * @prop:	Property to copy
-> + * @allocflags:	Allocation flags (typically pass GFP_KERNEL)
-> + * @propflags:	Property flags
-> + *
-> + * Copy a property by dynamically allocating the memory of both the
-> + * property stucture and the property name & contents. The property's
-> + * flags have the OF_DYNAMIC bit set so that we can differentiate between
-> + * dynamically allocated properties and not.
-> + * Returns the newly allocated property or NULL on out of memory error.
-> + */
-> +struct property *__of_copy_property(const struct property *prop,
-> +		gfp_t allocflags, unsigned long propflags)
-> +{
-> +	struct property *propn;
-> +
-> +	propn = kzalloc(sizeof(*prop), allocflags);
-> +	if (propn == NULL)
-> +		return NULL;
-> +
-> +	propn->_flags = propflags;
-> +
-> +	if (of_property_check_flag(propn, OF_ALLOCNAME)) {
-> +		propn->name = kstrdup(prop->name, allocflags);
-> +		if (propn->name == NULL)
-> +			goto err_fail_name;
-> +	} else
-> +		propn->name = prop->name;
-> +
-> +	if (prop->length > 0) {
-        ^^^^^^^^^^^^^^^^^^^^^
-Seems, that length==0 case will still produce value==NULL results,
-which will brake some checks in the kernel... Or am I missing something in
-the new version?
+I'll go back and compare the grace period ages to see if I can tell what
+is going on.
+
+--
+
+root@bigbox:~/will-it-scale# ./open1_processes -t 160 -s30
+testcase:Separate file open/close
+warmup
+min:319787 max:386071 total:57464989
+min:307235 max:351905 total:53289241
+min:291765 max:342439 total:51364514
+min:297948 max:349214 total:52552745
+min:294950 max:340132 total:51586179
+min:290791 max:339958 total:50793238
+measurement
+min:298851 max:346868 total:51951469
+min:292879 max:340704 total:50817269
+min:305768 max:347381 total:52655149
+min:301046 max:345616 total:52449584
+min:300428 max:345293 total:52021166
+min:293404 max:337973 total:51012206
+min:303569 max:348191 total:52713179
+min:305523 max:357448 total:53707053
+min:307040 max:356937 total:53271883
+min:302134 max:347923 total:52477496
+min:297823 max:340488 total:51884417
+min:286981 max:338246 total:50496850
+min:295920 max:349405 total:51792563
+min:302749 max:343780 total:52305074
+min:298497 max:345208 total:52035318
+min:291393 max:332195 total:50163093
+min:303561 max:353396 total:52983515
+min:301613 max:352988 total:53029200
+min:300693 max:343726 total:52057334
+min:296801 max:352408 total:52028824
+min:304834 max:358236 total:53526191
+min:297933 max:338351 total:51578481
+min:299571 max:341679 total:51817941
+min:308225 max:354075 total:53760098
+min:296262 max:346965 total:51856596
+min:309196 max:356432 total:53455141
+min:295604 max:341814 total:51449366
+min:296931 max:345961 total:52051944
+min:300533 max:350304 total:52652951
+min:299887 max:350764 total:52955064
+average:52231880
+root@bigbox:~/will-it-scale# uname -a
+Linux bigbox 3.16.0-rc1-00002-g1ed70de #176 SMP Mon Jun 23 09:04:02 PDT
+2014 x86_64 x86_64 x86_64 GNU/Linux
 
 
-> +		if (of_property_check_flag(propn, OF_ALLOCVALUE)) {
-> +			propn->value = kmalloc(prop->length, allocflags);
-> +			if (propn->value == NULL)
-> +				goto err_fail_value;
-> +			memcpy(propn->value, prop->value, prop->length);
-> +		} else
-> +			propn->value = prop->value;
-> +
-> +		propn->length = prop->length;
-> +	}
-> +
-> +	/* mark the property as dynamic */
-> +	of_property_set_flag(propn, OF_DYNAMIC);
-> +
-> +	return propn;
-> +
-> +err_fail_value:
-> +	if (of_property_check_flag(propn, OF_ALLOCNAME))
-> +		kfree(propn->name);
-> +err_fail_name:
-> +	kfree(propn);
-> +	return NULL;
-> +}
-> +
-> +/**
-> + * __of_create_empty_node - Create an empty device node dynamically.
-> + * @name:	Name of the new device node
-> + * @type:	Type of the new device node
-> + * @full_name:	Full name of the new device node
-> + * @phandle:	Phandle of the new device node
-> + * @allocflags:	Allocation flags (typically pass GFP_KERNEL)
-> + * @nodeflags:	Node flags
-> + *
-> + * Create an empty device tree node, suitable for further modification.
-> + * The node data are dynamically allocated and all the node flags
-> + * have the OF_DYNAMIC & OF_DETACHED bits set.
-> + * Returns the newly allocated node or NULL on out of memory error.
-> + */
-> +struct device_node *__of_create_empty_node(
-> +		const char *name, const char *type, const char *full_name,
-> +		phandle phandle, gfp_t allocflags, unsigned long nodeflags)
-> +{
-> +	struct device_node *node;
-> +
-> +	node = kzalloc(sizeof(*node), allocflags);
-> +	if (node == NULL)
-> +		return NULL;
-> +
-> +	node->_flags = nodeflags;
-> +
-> +	if (of_node_check_flag(node, OF_ALLOCNAME)) {
-> +		node->name = kstrdup(name, allocflags);
-> +		if (node->name == NULL)
-> +			goto err_free_node;
-> +	} else
-> +		node->name = name;
-> +
-> +	if (of_node_check_flag(node, OF_ALLOCTYPE)) {
-> +		node->type = kstrdup(type, allocflags);
-> +		if (node->type == NULL)
-> +			goto err_free_name;
-> +	} else
-> +		node->type = type;
-> +
-> +	if (of_node_check_flag(node, OF_ALLOCFULL)) {
-> +		node->full_name = kstrdup(full_name, allocflags);
-> +		if (node->full_name == NULL)
-> +			goto err_free_type;
-> +	} else
-> +		node->full_name = full_name;
-> +
-> +	node->phandle = phandle;
-> +	of_node_set_flag(node, OF_DYNAMIC);
-> +	of_node_set_flag(node, OF_DETACHED);
-> +
-> +	of_node_init(node);
-> +
-> +	return node;
-> +err_free_type:
-> +	if (of_node_check_flag(node, OF_ALLOCTYPE))
-> +		kfree(node->type);
-> +err_free_name:
-> +	if (of_node_check_flag(node, OF_ALLOCNAME))
-> +		kfree(node->name);
-> +err_free_node:
-> +	kfree(node);
-> +	return NULL;
-> +}
-> diff --git a/include/linux/of.h b/include/linux/of.h
-> index 5e4e1b3..d381eb5 100644
-> --- a/include/linux/of.h
-> +++ b/include/linux/of.h
-> @@ -211,6 +211,15 @@ static inline unsigned long of_read_ulong(const __be32 *cell, int size)
->  #define OF_DYNAMIC	1 /* node and properties were allocated via kmalloc */
->  #define OF_DETACHED	2 /* node has been detached from the device tree */
->  #define OF_POPULATED	3 /* device already created for the node */
-> +#define OF_ALLOCNAME	4 /* name was kmalloc-ed */
-> +#define OF_ALLOCTYPE	5 /* type was kmalloc-ed */
-> +#define OF_ALLOCFULL	6 /* full_name was kmalloc-ed */
-> +#define OF_ALLOCVALUE	7 /* value was kmalloc-ed */
-> +
-> +#define OF_NODE_ALLOCALL \
-> +	((1 << OF_ALLOCNAME) | (1 << OF_ALLOCTYPE) | (1 << OF_ALLOCFULL))
-> +#define OF_PROP_ALLOCALL \
-> +	((1 << OF_ALLOCNAME) | (1 << OF_ALLOCVALUE))
->  
->  #define OF_IS_DYNAMIC(x) test_bit(OF_DYNAMIC, &x->_flags)
->  #define OF_MARK_DYNAMIC(x) set_bit(OF_DYNAMIC, &x->_flags)
-> @@ -824,4 +833,37 @@ typedef void (*of_init_fn_1)(struct device_node *);
->  #define OF_DECLARE_2(table, name, compat, fn) \
->  		_OF_DECLARE(table, name, compat, fn, of_init_fn_2)
->  
-> +/**
-> + * General utilities for working with live trees.
-> + *
-> + * All functions with two leading underscores operate
-> + * without taking node references, so you either have to
-> + * own the devtree lock or work on detached trees only.
-> + */
-> +
-> +#ifdef CONFIG_OF
-> +
-> +struct property *__of_copy_property(const struct property *prop,
-> +		gfp_t allocflags, unsigned long propflags);
-> +struct device_node *__of_create_empty_node(const char *name,
-> +		const char *type, const char *full_name,
-> +		phandle phandle, gfp_t allocflags, unsigned long nodeflags);
-> +
-> +#else /* !CONFIG_OF */
-> +
-> +static inline struct property *__of_copy_property(const struct property *prop,
-> +		gfp_t allocflags, unsigned long propflags)
-> +{
-> +	return NULL;
-> +}
-> +
-> +static inline struct device_node *__of_create_empty_node(const char *name,
-> +		const char *type, const char *full_name,
-> +		phandle phandle, gfp_t allocflags, unsigned long nodeflags)
-> +{
-> +	return NULL;
-> +}
-> +
-> +#endif	/* !CONFIG_OF */
-> +
->  #endif /* _LINUX_OF_H */
-> 
-
--- 
-Best regards,
-Alexander Sverdlin.
+root@bigbox:~/will-it-scale# ./open1_processes -t 160 -s 30
+testcase:Separate file open/close
+warmup
+min:346853 max:416035 total:62412724
+min:281766 max:344178 total:52207349
+min:311187 max:374918 total:57149451
+min:326309 max:391061 total:60200366
+min:310327 max:375619 total:56744357
+min:323336 max:393415 total:59619164
+measurement
+min:323934 max:393718 total:59665843
+min:307247 max:368313 total:55681436
+min:318210 max:378048 total:57849321
+min:314494 max:383884 total:57741073
+min:316497 max:385223 total:58565045
+min:320490 max:397636 total:59003133
+min:318695 max:391712 total:57789360
+min:304368 max:378540 total:56412216
+min:314609 max:384462 total:58298008
+min:317235 max:384205 total:58812490
+min:323556 max:388014 total:59468492
+min:301011 max:362664 total:55381779
+min:301113 max:364712 total:55375445
+min:311730 max:369336 total:56640530
+min:316951 max:381341 total:58649244
+min:317077 max:383943 total:58132878
+min:316970 max:390127 total:59039489
+min:315895 max:375937 total:57404755
+min:295500 max:346523 total:53086962
+min:310882 max:371923 total:56612144
+min:321837 max:390544 total:59651640
+min:303481 max:368716 total:56135908
+min:306437 max:367658 total:56388659
+min:307343 max:373645 total:56893136
+min:298703 max:358090 total:54152268
+min:319162 max:386583 total:58999429
+min:304881 max:361968 total:55286607
+min:311034 max:381100 total:57846182
+min:312786 max:378270 total:57964383
+min:311740 max:367481 total:56327526
+average:57308512
+root@bigbox:~/will-it-scale# uname -a
+Linux bigbox 3.16.0-rc1-dirty #177 SMP Mon Jun 23 09:13:59 PDT 2014
+x86_64 x86_64 x86_64 GNU/Linux
