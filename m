@@ -1,134 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755784AbaFWPri (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 11:47:38 -0400
-Received: from shelob.surriel.com ([74.92.59.67]:54888 "EHLO
+	id S1755951AbaFWPrr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 11:47:47 -0400
+Received: from shelob.surriel.com ([74.92.59.67]:54897 "EHLO
 	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753909AbaFWPrh (ORCPT
+	with ESMTP id S1755928AbaFWPro (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 11:47:37 -0400
+	Mon, 23 Jun 2014 11:47:44 -0400
 From: riel@redhat.com
 To: linux-kernel@vger.kernel.org
-Cc: chegu_vinod@hp.com, peterz@infradead.com, mgorman@suse.de,
-        mingo@kernel.org
-Subject: [PATCH 5/7] sched,numa: examine a task move when examining a task swap
-Date: Mon, 23 Jun 2014 11:41:33 -0400
-Message-Id: <1403538095-31256-6-git-send-email-riel@redhat.com>
+Cc: peterz@infradead.org, mingo@kernel.org, chegu_vinod@hp.com,
+        mgorman@suse.de
+Subject: [PATCH 2/7] sched,numa: move power adjustment into load_too_imbalanced
+Date: Mon, 23 Jun 2014 11:46:13 -0400
+Message-Id: <1403538378-31571-2-git-send-email-riel@redhat.com>
 X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1403538095-31256-1-git-send-email-riel@redhat.com>
-References: <1403538095-31256-1-git-send-email-riel@redhat.com>
+In-Reply-To: <1403538378-31571-1-git-send-email-riel@redhat.com>
+References: <1403538378-31571-1-git-send-email-riel@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rik van Riel <riel@redhat.com>
 
-Running "perf bench numa mem -0 -m -P 1000 -p 8 -t 20" on a 4
-node system results in 160 runnable threads on a system with 80
-CPU threads.
+Currently the NUMA code scales the load on each node with the
+amount of CPU power available on that node, but it does not
+apply any adjustment to the load of the task that is being
+moved over.
 
-Once a process has nearly converged, with 39 threads on one node
-and 1 thread on another node, the remaining thread will be unable
-to migrate to its preferred node through a task swap.
+On systems with SMT/HT, this results in a task being weighed
+much more heavily than a CPU core, and a task move that would
+even out the load between nodes being disallowed.
 
-However, a simple task move would make the workload converge,
-witout causing an imbalance.
+The correct thing is to apply the power correction to the
+numbers after we have first applied the move of the tasks'
+loads to them.
 
-Test for this unlikely occurrence, and attempt a task move to
-the preferred nid when it happens.
+This also allows us to do the power correction with a multiplication,
+rather than a division.
 
- # Running main, "perf bench numa mem -p 8 -t 20 -0 -m -P 1000"
-
- ###
- # 160 tasks will execute (on 4 nodes, 80 CPUs):
- #         -1x     0MB global  shared mem operations
- #         -1x  1000MB process shared mem operations
- #         -1x     0MB thread  local  mem operations
- ###
-
- ###
- #
- #    0.0%  [0.2 mins]  0/0   1/1  36/2   0/0  [36/3 ] l:  0-0   (  0) {0-2}
- #    0.0%  [0.3 mins] 43/3  37/2  39/2  41/3  [ 6/10] l:  0-1   (  1) {1-2}
- #    0.0%  [0.4 mins] 42/3  38/2  40/2  40/2  [ 4/9 ] l:  1-2   (  1) [50.0%] {1-2}
- #    0.0%  [0.6 mins] 41/3  39/2  40/2  40/2  [ 2/9 ] l:  2-4   (  2) [50.0%] {1-2}
- #    0.0%  [0.7 mins] 40/2  40/2  40/2  40/2  [ 0/8 ] l:  3-5   (  2) [40.0%] (  41.8s converged)
-
-Without this patch, this same perf bench numa mem run had to
-rely on the scheduler load balancer to first balance out the
-load (moving a random task), before a task swap could complete
-the NUMA convergence.
-
-The load balancer does not normally take action unless the load
-difference exceeds 25%. Convergence times of over half an hour
-have been observed without this patch.
-
-With this patch, the NUMA balancing code will simply migrate the
-task, if that does not cause an imbalance.
-
-Also skip examining a CPU in detail if the improvement on that CPU
-is no more than the best we already have.
+Also drop two function arguments for load_too_unbalanced, since it
+takes various factors from env already.
 
 Signed-off-by: Rik van Riel <riel@redhat.com>
 ---
- kernel/sched/fair.c | 23 +++++++++++++++++++++--
- 1 file changed, 21 insertions(+), 2 deletions(-)
+ kernel/sched/fair.c | 39 ++++++++++++++++++++++++---------------
+ 1 file changed, 24 insertions(+), 15 deletions(-)
 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 2eb845c..d525451 100644
+index 4a58e79..612c963 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -1155,6 +1155,7 @@ static void task_numa_compare(struct task_numa_env *env,
- 	long src_load, dst_load;
- 	long load;
- 	long imp = env->p->numa_group ? groupimp : taskimp;
-+	long moveimp = imp;
+@@ -1062,7 +1062,6 @@ static void update_numa_stats(struct numa_stats *ns, int nid)
+ 	if (!cpus)
+ 		return;
  
- 	rcu_read_lock();
- 	cur = ACCESS_ONCE(dst_rq->curr);
-@@ -1201,7 +1202,7 @@ static void task_numa_compare(struct task_numa_env *env,
- 		}
+-	ns->load = (ns->load * SCHED_CAPACITY_SCALE) / ns->compute_capacity;
+ 	ns->task_capacity =
+ 		DIV_ROUND_CLOSEST(ns->compute_capacity, SCHED_CAPACITY_SCALE);
+ 	ns->has_free_capacity = (ns->nr_running < ns->task_capacity);
+@@ -1096,18 +1095,30 @@ static void task_numa_assign(struct task_numa_env *env,
+ 	env->best_cpu = env->dst_cpu;
+ }
+ 
+-static bool load_too_imbalanced(long orig_src_load, long orig_dst_load,
+-				long src_load, long dst_load,
++static bool load_too_imbalanced(long src_load, long dst_load,
+ 				struct task_numa_env *env)
+ {
+ 	long imb, old_imb;
++	long orig_src_load, orig_dst_load;
++	long src_capacity, dst_capacity;
++
++	/*
++	 * The load is corrected for the CPU capacity available on each node.
++	 *
++	 * src_load        dst_load
++	 * ------------ vs ---------
++	 * src_capacity    dst_capacity
++	 */
++	src_capacity = env->src_stats.compute_capacity;
++	dst_capacity = env->dst_stats.compute_capacity;
+ 
+ 	/* We care about the slope of the imbalance, not the direction. */
+ 	if (dst_load < src_load)
+ 		swap(dst_load, src_load);
+ 
+ 	/* Is the difference below the threshold? */
+-	imb = dst_load * 100 - src_load * env->imbalance_pct;
++	imb = dst_load * src_capacity * 100 -
++	      src_load * dst_capacity * env->imbalance_pct;
+ 	if (imb <= 0)
+ 		return false;
+ 
+@@ -1115,10 +1126,14 @@ static bool load_too_imbalanced(long orig_src_load, long orig_dst_load,
+ 	 * The imbalance is above the allowed threshold.
+ 	 * Compare it with the old imbalance.
+ 	 */
++	orig_src_load = env->src_stats.load;
++	orig_dst_load = env->dst_stats.load;
++
+ 	if (orig_dst_load < orig_src_load)
+ 		swap(orig_dst_load, orig_src_load);
+ 
+-	old_imb = orig_dst_load * 100 - orig_src_load * env->imbalance_pct;
++	old_imb = orig_dst_load * src_capacity * 100 -
++		  orig_src_load * dst_capacity * env->imbalance_pct;
+ 
+ 	/* Would this change make things worse? */
+ 	return (imb > old_imb);
+@@ -1136,8 +1151,7 @@ static void task_numa_compare(struct task_numa_env *env,
+ 	struct rq *src_rq = cpu_rq(env->src_cpu);
+ 	struct rq *dst_rq = cpu_rq(env->dst_cpu);
+ 	struct task_struct *cur;
+-	long orig_src_load, src_load;
+-	long orig_dst_load, dst_load;
++	long src_load, dst_load;
+ 	long load;
+ 	long imp = (groupimp > 0) ? groupimp : taskimp;
+ 
+@@ -1211,13 +1225,9 @@ static void task_numa_compare(struct task_numa_env *env,
+ 	 * In the overloaded case, try and keep the load balanced.
+ 	 */
+ balance:
+-	orig_dst_load = env->dst_stats.load;
+-	orig_src_load = env->src_stats.load;
+-
+-	/* XXX missing capacity terms */
+ 	load = task_h_load(env->p);
+-	dst_load = orig_dst_load + load;
+-	src_load = orig_src_load - load;
++	dst_load = env->dst_stats.load + load;
++	src_load = env->src_stats.load - load;
+ 
+ 	if (cur) {
+ 		load = task_h_load(cur);
+@@ -1225,8 +1235,7 @@ static void task_numa_compare(struct task_numa_env *env,
+ 		src_load += load;
  	}
  
--	if (imp < env->best_imp)
-+	if (imp <= env->best_imp && moveimp <= env->best_imp)
+-	if (load_too_imbalanced(orig_src_load, orig_dst_load,
+-				src_load, dst_load, env))
++	if (load_too_imbalanced(src_load, dst_load, env))
  		goto unlock;
  
- 	if (!cur) {
-@@ -1214,7 +1215,8 @@ static void task_numa_compare(struct task_numa_env *env,
- 	}
- 
- 	/* Balance doesn't matter much if we're running a task per cpu */
--	if (src_rq->nr_running == 1 && dst_rq->nr_running == 1)
-+	if (imp > env->best_imp && src_rq->nr_running == 1 &&
-+			dst_rq->nr_running == 1)
- 		goto assign;
- 
- 	/*
-@@ -1230,6 +1232,23 @@ static void task_numa_compare(struct task_numa_env *env,
- 	src_load += effective_load(tg, env->src_cpu, -load, -load);
- 	dst_load += effective_load(tg, env->dst_cpu, load, load);
- 
-+	if (moveimp > imp && moveimp > env->best_imp) {
-+		/*
-+		 * If the improvement from just moving env->p direction is
-+		 * better than swapping tasks around, check if a move is
-+		 * possible. Store a slightly smaller score than moveimp,
-+		 * so an actually idle CPU will win.
-+		 */
-+		if (!load_too_imbalanced(src_load, dst_load, env)) {
-+			imp = moveimp - 1;
-+			cur = NULL;
-+			goto assign;
-+		}
-+	}
-+
-+	if (imp <= env->best_imp)
-+		goto unlock;
-+
- 	if (cur) {
- 		/* Cur moves in the opposite direction. */
- 		load = task_h_load(cur);
+ assign:
 -- 
 1.8.5.3
 
