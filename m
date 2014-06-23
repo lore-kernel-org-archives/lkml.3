@@ -1,63 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756624AbaFWR3U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 13:29:20 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:56207 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755721AbaFWR3P (ORCPT
+	id S1756504AbaFWRdP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 13:33:15 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:47392 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755721AbaFWRdN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 13:29:15 -0400
-From: bsegall@google.com
+	Mon, 23 Jun 2014 13:33:13 -0400
+Date: Mon, 23 Jun 2014 10:33:08 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: Peter Zijlstra <peterz@infradead.org>
-Cc: Kirill Tkhai <ktkhai@parallels.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>, tkhai@yandex.ru,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Konstantin Khorenko <khorenko@parallels.com>, pjt@google.com
-Subject: Re: [PATCH 1/3] sched/fair: Disable runtime_enabled on dying rq
-References: <20140617130442.29933.54945.stgit@tkhai>
-	<1403011450.27674.44.camel@tkhai>
-	<20140623100724.GU19860@laptop.programming.kicks-ass.net>
-Date: Mon, 23 Jun 2014 10:29:11 -0700
-In-Reply-To: <20140623100724.GU19860@laptop.programming.kicks-ass.net> (Peter
-	Zijlstra's message of "Mon, 23 Jun 2014 12:07:24 +0200")
-Message-ID: <xm2661jr1qmw.fsf@sword-of-the-dawn.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+Cc: Waiman Long <waiman.long@hp.com>, Romanov Arya <romanov.arya@gmail.com>,
+        Pranith Kumar <bobby.prani@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        LKML <linux-kernel@vger.kernel.org>, torvalds@linux-foundation.org
+Subject: Re: [RFC PATCH 1/1] kernel/rcu/tree.c: simplify
+ force_quiescent_state()
+Message-ID: <20140623173308.GA3550@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <539FAE21.7070702@gmail.com>
+ <20140617145419.GE4669@linux.vnet.ibm.com>
+ <CAJKcOGdUDwdmdkpd0dw5xO9+TK=9W9fvF9Q+f5F_b4R8cEgdTA@mail.gmail.com>
+ <53A07336.7030704@hp.com>
+ <20140617171116.GH4669@linux.vnet.ibm.com>
+ <20140617173717.GA28198@linux.vnet.ibm.com>
+ <20140623102850.GX19860@laptop.programming.kicks-ass.net>
+ <20140623155750.GD4603@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140623155750.GD4603@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14062317-6688-0000-0000-000002C40870
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra <peterz@infradead.org> writes:
+On Mon, Jun 23, 2014 at 08:57:50AM -0700, Paul E. McKenney wrote:
+> On Mon, Jun 23, 2014 at 12:28:50PM +0200, Peter Zijlstra wrote:
+> > On Tue, Jun 17, 2014 at 10:37:17AM -0700, Paul E. McKenney wrote:
+> > > Oh, and to answer the implicit question...  A properly configured 4096-CPU
+> > > system will have two funnel levels, with 64 nodes at the leaf level
+> > > and a single node at the root level.  If the system is not properly
+> > > configured, it will have three funnel levels.  The maximum number of
+> > > funnel levels is four, which would handle more than four million CPUs
+> > > (sixteen million if properly configured), so we should be good.  ;-)
+> > > 
+> > > The larger numbers of levels are intended strictly for testing.  I set
+> > > CONFIG_RCU_FANOUT_LEAF=2 and CONFIG_RCU_FANOUT=2 on a 16-CPU system just
+> > > to make sure that I am testing something uglier than what will be running
+> > > in production.  A large system should have both of these set to 64,
+> > > though this requires also booting with skew_tick=1 as well.
+> > 
+> > Right, and I think we talked about this before; the first thing one
+> > should do is align the RCU fanout masks with the actual machine
+> > topology. Because currently they can be all over the place.
+> 
+> And we also talked before about how it would make a lot more sense to
+> align the CPU numbering with the actual machine topology, as that would
+> fix the problem in one place.  But either way, in the particular case
+> of the RCU fanout, does anyone have any real data showing that this is
+> a real problem?  Given that the rcu_node accesses are quite a ways off
+> of any fastpath, I remain skeptical.
 
-> On Tue, Jun 17, 2014 at 05:24:10PM +0400, Kirill Tkhai wrote:
->> @@ -3790,6 +3803,12 @@ static void __maybe_unused unthrottle_offline_cfs_rqs(struct rq *rq)
->>  		cfs_rq->runtime_remaining = 1;
->>  		if (cfs_rq_throttled(cfs_rq))
->>  			unthrottle_cfs_rq(cfs_rq);
->> +
->> +		/*
->> +		 * Offline rq is schedulable till cpu is completely disabled
->> +		 * in take_cpu_down(), so we prevent new cfs throttling here.
->> +		 */
->> +		cfs_rq->runtime_enabled = 0;
->
-> Does it make sense to clear this before calling unthrottle_cfs_rq()?
-> Just to make sure they're in the right order..
+And one way to test for this is to set CONFIG_RCU_FANOUT to the number of
+cores in a socket (or to the number of hardware threads per socket for
+systems that number their hardware threads consecutively), then specify
+CONFIG_RCU_FANOUT_EXACT=y.  This will align the rcu_node structures with
+the sockets.  If the number of cores/threads per socket is too large,
+you can of course use a smaller number that exactly divides the number
+of cores/threads per socket.
 
-I believe that order is irrelevant here - I do not believe that
-unthrottle_cfs_rq(a) can cause a throttle_cfs_rq(a). In fact, I don't
-see any code that will check it at all from unthrottle, although I might
-be missing something. It _can_ cause a throttle_cfs_rq(parent_cfs_rq(a)),
-but that should be fine as long as for_each_leaf_cfs_rq is sorted
-correctly.
+If this does turn out to improve performance, I would be happy to create
+a boot parameter for CONFIG_RCU_FANOUT, perhaps also some mechanism to
+allow the architecture to tell RCU what the fanout should be.
 
-That said, migrate_tasks drops rq->lock, and I /think/ another cpu could
-wake another task onto this cpu, which could then enqueue_throttle its
-cfs_rq (which previously had no tasks and thus wasn't on
-leaf_cfs_rq_list). You certainly could have tg_set_bandwidth come in and
-turn runtime_enabled on.
+							Thanx, Paul
 
-I think the general idea of turning runtime_enabled off during offline
-is fine, ccing pjt to double check.
