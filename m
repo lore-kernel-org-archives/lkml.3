@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754136AbaFWIrd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 04:47:33 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55561 "EHLO
+	id S1754117AbaFWIrc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 04:47:32 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55530 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752577AbaFWIc3 (ORCPT
+	by vger.kernel.org with ESMTP id S1752571AbaFWIc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Jun 2014 04:32:29 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Paul Walmsley <paul@pwsan.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 029/111] ARM: omap5: hwmod_data: Correct IDLEMODE for McPDM
-Date: Mon, 23 Jun 2014 10:31:04 +0200
-Message-Id: <d0c827e617439816bab3a434835be8a68b66a570.1403512281.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Michal Schmidt <mschmidt@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 094/111] netlink: rate-limit leftover bytes warning and print process name
+Date: Mon, 23 Jun 2014 10:32:09 +0200
+Message-Id: <ec2ab4bc695981aac49a33317c9d8b541f2babd1.1403512281.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
 References: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
@@ -23,37 +23,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+From: Michal Schmidt <mschmidt@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 0f9e19ad88eee820f517b85531b555a0fa73e7e4 upstream.
+[ Upstream commit bfc5184b69cf9eeb286137640351c650c27f118a ]
 
-McPDM need to be configured to NO_IDLE mode when it is in used otherwise
-vital clocks will be gated which results 'slow motion' audio playback.
+Any process is able to send netlink messages with leftover bytes.
+Make the warning rate-limited to prevent too much log spam.
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Signed-off-by: Paul Walmsley <paul@pwsan.com>
+The warning is supposed to help find userspace bugs, so print the
+triggering command name to implicate the buggy program.
+
+[v2: Use pr_warn_ratelimited instead of printk_ratelimited.]
+
+Signed-off-by: Michal Schmidt <mschmidt@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/arm/mach-omap2/omap_hwmod_54xx_data.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ lib/nlattr.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/omap_hwmod_54xx_data.c b/arch/arm/mach-omap2/omap_hwmod_54xx_data.c
-index cde415570e04..6bbb1e679e30 100644
---- a/arch/arm/mach-omap2/omap_hwmod_54xx_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_54xx_data.c
-@@ -895,7 +895,7 @@ static struct omap_hwmod omap54xx_mcpdm_hwmod = {
- 	 * current exception.
- 	 */
+diff --git a/lib/nlattr.c b/lib/nlattr.c
+index fc6754720ced..10ad042d01be 100644
+--- a/lib/nlattr.c
++++ b/lib/nlattr.c
+@@ -201,8 +201,8 @@ int nla_parse(struct nlattr **tb, int maxtype, const struct nlattr *head,
+ 	}
  
--	.flags		= HWMOD_EXT_OPT_MAIN_CLK,
-+	.flags		= HWMOD_EXT_OPT_MAIN_CLK | HWMOD_SWSUP_SIDLE,
- 	.main_clk	= "pad_clks_ck",
- 	.prcm = {
- 		.omap4 = {
+ 	if (unlikely(rem > 0))
+-		printk(KERN_WARNING "netlink: %d bytes leftover after parsing "
+-		       "attributes.\n", rem);
++		pr_warn_ratelimited("netlink: %d bytes leftover after parsing attributes in process `%s'.\n",
++				    rem, current->comm);
+ 
+ 	err = 0;
+ errout:
 -- 
 2.0.0
 
