@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756524AbaFWQgh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 12:36:37 -0400
-Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:56196 "EHLO
-	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755212AbaFWQgd (ORCPT
+	id S1756547AbaFWQhI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 12:37:08 -0400
+Received: from smtprelay0118.hostedemail.com ([216.40.44.118]:38807 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756460AbaFWQgF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 12:36:33 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApsHANNWqFNbskjJ/2dsb2JhbABZgw2rZQUBAQEBAQEFAZF1h0CBDxd1hAsCUyOBCRE3iEYBxCUXhWOJGR2ELQSXZoJmk2ODRDs
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Miklos Szeredi <miklos@szeredi.hu>,
-        fuse-devel@lists.sourceforge.net
-Subject: [PATCH 1/1] fs/fuse/file.c: replace count*size kzalloc by kcalloc
-Date: Mon, 23 Jun 2014 18:35:15 +0200
-Message-Id: <1403541315-10698-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	Mon, 23 Jun 2014 12:36:05 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1345:1359:1437:1534:1539:1568:1711:1714:1730:1747:1777:1792:2197:2199:2393:2559:2562:3138:3139:3140:3141:3142:3865:3866:3868:3872:4321:4605:5007:6261:10004:10026:10848:11232:11658:11914:12043:12517:12519:12555:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: quill58_34dc51d7e1f25
+X-Filterd-Recvd-Size: 1553
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jean Delvare <jdelvare@suse.de>, Andy Whitcroft <apw@canonical.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3/4] checkpatch: Change blank line after declaration type to "LINE_SPACING"
+Date: Mon, 23 Jun 2014 09:35:54 -0700
+Message-Id: <17f831b83d32613174f63d5b7a33f72bd5a0fd85.1403541113.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
+In-Reply-To: <cover.1403541113.git.joe@perches.com>
+References: <cover.1403541113.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kcalloc manages count*sizeof overflow.
+Make it consistent with the other missing or multiple blank line tests.
 
-Cc: Miklos Szeredi <miklos@szeredi.hu>
-Cc: fuse-devel@lists.sourceforge.net
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
- fs/fuse/file.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ scripts/checkpatch.pl | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-index 6e16dad..ce7d55c 100644
---- a/fs/fuse/file.c
-+++ b/fs/fuse/file.c
-@@ -1955,8 +1955,8 @@ static int fuse_writepages(struct address_space *mapping,
- 	data.ff = NULL;
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 3d6dea6..9795844 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -2351,7 +2351,7 @@ sub process {
+ 		      $sline =~ /^\+\s+\(?\s*(?:$Compare|$Assignment|$Operators)/) &&
+ 			# indentation of previous and current line are the same
+ 		    (($prevline =~ /\+(\s+)\S/) && $sline =~ /^\+$1\S/)) {
+-			WARN("SPACING",
++			WARN("LINE_SPACING",
+ 			     "Missing a blank line after declarations\n" . $hereprev);
+ 		}
  
- 	err = -ENOMEM;
--	data.orig_pages = kzalloc(sizeof(struct page *) *
--				  FUSE_MAX_PAGES_PER_REQ,
-+	data.orig_pages = kcalloc(FUSE_MAX_PAGES_PER_REQ,
-+				  sizeof(struct page *),
- 				  GFP_NOFS);
- 	if (!data.orig_pages)
- 		goto out;
 -- 
-1.8.4.5
+1.8.1.2.459.gbcd45b4.dirty
 
