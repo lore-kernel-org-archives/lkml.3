@@ -1,119 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754665AbaFWOfS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 10:35:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49781 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753881AbaFWOfQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 10:35:16 -0400
-Message-ID: <1403534113.10017.22.camel@linux-fkkt.site>
-Subject: Re: [PATCH v9] leds: USB: HID: Add support for MSI GT683R led panels
-From: Oliver Neukum <oneukum@suse.de>
-To: Janne Kanniainen <janne.kanniainen@gmail.com>
-Cc: jkosina@suse.cz, johan@kernel.org, cooloney@gmail.com,
-        linux-kernel@vger.kernel.org, linux-leds@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-input@vger.kernel.org
-Date: Mon, 23 Jun 2014 16:35:13 +0200
-In-Reply-To: <1403107502-14106-1-git-send-email-janne.kanniainen@gmail.com>
-References: <20140618073950.GC31163@localhost>
-	 <1403107502-14106-1-git-send-email-janne.kanniainen@gmail.com>
+	id S1754115AbaFWOi0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 10:38:26 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:35153 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753645AbaFWOiY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 10:38:24 -0400
+Message-ID: <1403534300.7341.6.camel@lolumad>
+Subject: Re: [PATCH 2/2] cfg80211: Use 5MHz bandwidth by default when
+ checking usable channels
+From: Rostislav Lisovy <lisovy@gmail.com>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michal Sojka <sojkam1@fel.cvut.cz>, s.sander@nordsys.de,
+        jan-niklas.meier@volkswagen.de,
+        Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
+Date: Mon, 23 Jun 2014 16:38:20 +0200
+In-Reply-To: <1403517938.4418.16.camel@jlt4.sipsolutions.net>
+References: <1397565476-4348-1-git-send-email-rostislav.lisovy@fel.cvut.cz>
+	 <1397565476-4348-3-git-send-email-rostislav.lisovy@fel.cvut.cz>
+	 <53A6C0FF.9090104@openwrt.org>
+	 <1403514536.4418.6.camel@jlt4.sipsolutions.net>
+	 <53A7FBB2.2050703@openwrt.org>
+	 <1403517938.4418.16.camel@jlt4.sipsolutions.net>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.2 
+X-Mailer: Evolution 3.8.4-0ubuntu1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-06-18 at 19:05 +0300, Janne Kanniainen wrote:
-> This driver adds support for USB controlled led panels that exists in
-> MSI GT683R laptop
+On Mon, 2014-06-23 at 12:05 +0200, Johannes Berg wrote:
+> On Mon, 2014-06-23 at 12:04 +0200, Felix Fietkau wrote:
+> > On 2014-06-23 11:08, Johannes Berg wrote:
+> > > On Sun, 2014-06-22 at 13:41 +0200, Felix Fietkau wrote:
+> > >> On 2014-04-15 14:37, Rostislav Lisovy wrote:
+> > >> > Current code checks if the 20MHz bandwidth is allowed for
+> > >> > particular channel -- if it is not, the channel is disabled.
+> > >> > Since we need to use 5/10 MHz channels, this code is modified in
+> > >> > the way that the default bandwidth to check is 5MHz. If the
+> > >> > maximum bandwidth allowed by the channel is smaller than 5MHz,
+> > >> > the channel is disabled. Otherwise the channel is used and the
+> > >> > flags are set according to the bandwidth allowed by the channel.
+> > >> > 
+> > >> > Signed-off-by: Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
+> > > 
+> > >> This change causes a regression and needs to be reverted or fixed.
+> > > 
+> > > Noted, I've reverted it in mac80211.git.
+> > > 
+> > >> It leaves Channel 12 enabled for US regdomain and does not prevent
+> > >> bringing up AP mode on it (IEEE80211_CHAN_NO_20MHZ does not get set).
+> > > 
+> > > I'm not sure this makes sense - CHAN_NO_20MHZ shouldn't get set on that
+> > > channel? It should be disabled for other reasons for AP mode - e.g.
+> > > NO_IR.
+> > I was thinking it could be valid in AP mode for 5 MHz operation.
+> 
+> Huh, ok, maybe. I guess Rostislav can look into the details :)
 > 
 
-> +static int gt683r_led_probe(struct hid_device *hdev,
-> +			const struct hid_device_id *id)
-> +{
-> +	int i;
-> +	int ret;
-> +	int name_sz;
-> +	char *name;
-> +	struct gt683r_led *led;
-> +
-> +	led = devm_kzalloc(&hdev->dev, sizeof(*led), GFP_KERNEL);
-> +	if (!led)
-> +		return -ENOMEM;
-> +
-> +	led->mode = GT683R_LED_NORMAL;
-> +	led->hdev = hdev;
-> +	hid_set_drvdata(hdev, led);
-> +
-> +	ret = hid_parse(hdev);
-> +	if (ret) {
-> +		hid_err(hdev, "hid parsing failed\n");
-> +		return ret;
-> +	}
-> +
-> +	ret = hid_hw_start(hdev, HID_CONNECT_HIDRAW);
-> +	if (ret) {
-> +		hid_err(hdev, "hw start failed\n");
-> +		return ret;
-> +	}
-> +
-> +	for (i = 0; i < GT683R_LED_COUNT; i++) {
-> +		name_sz = strlen(dev_name(&hdev->dev)) +
-> +				strlen(gt683r_panel_names[i]) + 3;
-> +
-> +		name = devm_kzalloc(&hdev->dev, name_sz, GFP_KERNEL);
-> +		if (!name) {
-> +			ret = -ENOMEM;
-> +			goto fail;
-> +		}
-> +
-> +		snprintf(name, name_sz, "%s::%s",
-> +				dev_name(&hdev->dev), gt683r_panel_names[i]);
-> +		led->led_devs[i].name = name;
-> +		led->led_devs[i].max_brightness = 1;
-> +		led->led_devs[i].brightness_set = gt683r_brightness_set;
-> +		ret = led_classdev_register(&hdev->dev, &led->led_devs[i]);
-> +		if (ret) {
-> +			hid_err(hdev, "could not register led device\n");
-> +			goto fail;
-> +		}
-> +	}
-> +
-> +	ret = device_create_file(&led->hdev->dev, &dev_attr_leds_mode);
-> +	if (ret) {
-> +		hid_err(hdev, "could not make mode attribute file\n");
-> +		goto fail;
-> +	}
-> +
+I am a bit confused right now. The regression is that the channel used
+to be completely disabled and now it is not? The regulatory restrictions
+prohibit the 20MHz BW for this channel but 5MHz BW is alright?
 
-This is the window.
+(I am out of office for the next few days, thus I am unfortunately
+unable to write/test any code.)
 
-> +	mutex_init(&led->lock);
-> +	INIT_WORK(&led->work, gt683r_led_work);
-> +
-
-And here we have a problem. This is a race condition.
-At this time you've already created the sysfs files. So
-their methods can be called. They will lock a mutex and/or
-schedule work that hasn't been initialized.
-The initialization must be done before anything in sysfs
-is created. 
-
-> +	return 0;
-> +
-> +fail:
-> +	for (i = i - 1; i >= 0; i--)
-> +		led_classdev_unregister(&led->led_devs[i]);
-> +	hid_hw_stop(hdev);
-> +	return ret;
-> +}
-> +
-
-Sorry for noticing this thread late.
-
-	Regards
-		Oliver
-
+Rostislav;
 
