@@ -1,78 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932251AbaFWUSl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 16:18:41 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:61855 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755071AbaFWUSk (ORCPT
+	id S932310AbaFWUUL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 16:20:11 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:52347 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755488AbaFWUUJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 16:18:40 -0400
+	Mon, 23 Jun 2014 16:20:09 -0400
+Message-ID: <53A88BF5.9010603@wwwdotorg.org>
+Date: Mon, 23 Jun 2014 14:20:05 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <20140623201503.GA4551@amd.pavel.ucw.cz>
-References: <20140621180201.GA4621@amd.pavel.ucw.cz>
-	<CAKb7UvhOCiBHcsB6a0qKBNsC3c9pmb=Wc7zucbBuP6vt-tx2eA@mail.gmail.com>
-	<20140621194538.GA4903@kroah.com>
-	<CAKb7UvjhOystpeRy1nQx49Nspve4wHQPb+e7gJQ-RT-HseK4Cw@mail.gmail.com>
-	<20140623130259.GA29809@amd.pavel.ucw.cz>
-	<CAKb7UvhmatCtu2rEHgVOjitN1gAPTsgfaUmA2iOLX2Qwhi+Yxg@mail.gmail.com>
-	<20140623201503.GA4551@amd.pavel.ucw.cz>
-Date: Mon, 23 Jun 2014 16:18:39 -0400
-X-Google-Sender-Auth: -DR2vDDXEe2ZSUSPS71_fqvf1uw
-Message-ID: <CAKb7UvjU+MvW+rXi8488GE64Exuxj3+H5V+E8fzfL5fTb1CGMA@mail.gmail.com>
-Subject: Re: unparseable, undocumented /sys/class/drm/.../pstate
-From: Ilia Mirkin <imirkin@alum.mit.edu>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Greg KH <greg@kroah.com>, kernel list <linux-kernel@vger.kernel.org>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        David Airlie <airlied@linux.ie>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
+To: Nishanth Menon <nm@ti.com>
+CC: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>, acourbot@nvidia.com,
+        gnurou@gmail.com, Keerthy <j-keerthy@ti.com>,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCH] regulator: palmas: Fix SMPS enable/disable/is_enabled
+References: <1403285183-15926-1-git-send-email-nm@ti.com>	<53A884EF.100@wwwdotorg.org> <CAGo_u6oMqKBu0PdY915+GHBekbPkSHODwoKafdY-6YcmkLGanA@mail.gmail.com>
+In-Reply-To: <CAGo_u6oMqKBu0PdY915+GHBekbPkSHODwoKafdY-6YcmkLGanA@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 23, 2014 at 4:15 PM, Pavel Machek <pavel@ucw.cz> wrote:
-> Hi!
->
->> >> >> > I guess better interface would be something like
->> >> >> >
->> >> >> > pstate/07/core_clock_min
->> >> >> >           core_clock_max
->> >> >> >           memory_clock_min
->> >> >> >           memory_clock_max
->> >> >> >
->> >> >> > and then pstate/active containing just the number of active state?
->> >
->> >> Could we just say that the format of this file is one-per-line of
->> >>
->> >> level: information-for-the-user
->> >
->> > But it is not.
+On 06/23/2014 02:11 PM, Nishanth Menon wrote:
+> On Mon, Jun 23, 2014 at 2:50 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>> On 06/20/2014 11:26 AM, Nishanth Menon wrote:
+>>> We use regmap regulator ops to enable/disable and check if regulator
+>>> is enabled for various SMPS. However, these depend on valid
+>>> enable_reg, enable_mask and enable_value in regulator descriptor.
+>>>
+>>> Currently we do not populate these for SMPS other than SMPS10, this
+>>> results in spurious results as regmap assumes that the values are
+>>> valid and ends up reading register 0x0 RTC:SECONDS_REG on Palmas
+>>> variants that do have RTC! To fix this, we update proper parameters
+>>> for the descriptor fields.
+>>>
+>>> Further, we want to ensure the behavior consistent with logic
+>>> prior to commit dbabd624d4eec50b6, where, once you do a set_mode,
+>>> enable/disable ensure the logic remains consistent and configures
+>>> Palmas to the configuration that we set with set_mode (since the
+>>> configuration register is common). To do this, we can rely on the
+>>> regulator core's regulator_register behavior where the regulator
+>>> descriptor pointer provided by the regulator driver is stored. (no
+>>> reallocation and copy is done). This lets us update the enable_value
+>>> post registration, to remain consistent with the mode we configure as
+>>> part of set_mode.
+>>>
+>>> Fixes: dbabd624d4eec50b6 ("regulator: palmas: Reemove open coded functions with helper functions")
+>>> Reported-by: Alexandre Courbot <acourbot@nvidia.com>
+>>> Signed-off-by: Nishanth Menon <nm@ti.com>
 >>
->> But it is...
+>> Unfortunately, there is still some lingering problem in the original
+>> commit. In next-20130623 (and indeed since at least next-20140611),
+>> neither the LCD panel or HDMI work on the NVIDIA Dalmore board.
+>> Reverting this commit (just for conflicts) and the original problematic
+>> commit "regulator: palmas: Reemove open coded functions with helper
+>> functions" solves this. I see the following on boot:
 >>
->> > Management tools will want to parse it, sooner or
->> > later.  What is wrong with solution described above?
+>>> [    3.558776] tegra-dsi 54300000.dsi: cannot get VDD supply
+>>> [    3.564272] platform 54300000.dsi: Driver tegra-dsi requests probe deferral
+>>> [    3.571990] tegra-hdmi 54280000.hdmi: failed to get PLL regulator
+>>> [    3.578377] platform 54280000.hdmi: Driver tegra-hdmi requests probe deferral
 >>
->> It is complex and annoying to the people that will actually use it.
->
-> grep -r . pstate/ is actually not that bad...
+>> ... but probe deferral never completes, yet with your "remove open coded
+>> ..." patch reverted, it all works fine.
+>>
+>> Can you please take another look at the original patch?
+> 
+> Will let keerthy (original patch author) comment on it.
+> 
+> arch/arm/boot/dts/tegra114-dalmore.dts tps65090, avdd_lcd_reg I
+> suppose is the path in question?
+> 
+> Seems to use drivers/mfd/tps65090.c and
+> drivers/regulator/tps65090-regulator.c and not palmas?
+> 
+> Am I looking at the right dts?
 
-While that's a clever trick that anyone who's done a bunch of stuff
-with sysfs knows, I doubt the average linux user could come up with
-that on their own. I know I didn't.
+Yes, that's the right DTS.
 
->
-> And yes, some kind of utility to select right performance level would
-> be nice in future... Or maybe not. Perhaps in not so distant future
-> kernel will use right performance level for given load...?
+There's both a 65090 and a Palmas on the board. It's probably simpler to
+look at the HDMI PLL regulator, since the path to the Palmas is more
+obvious:
 
-Eventually yes. Currently switching between levels varies from
-unsupported to unreliable depending on the hardware (as in, hangs the
-card, or does otherwise-not-great things). Automatic switching
-requires regular switching to be reliable :) [And the performance
-counters that are presently being worked on to be able to tell the
-card load.]
+/ {
+	host1x@50000000 {
+		hdmi@54280000 {
+			pll-supply = <&palmas_smps3_reg>;
+...
+	i2c@7000d000 {
+		palmas: tps65913@58 {
+			compatible = "ti,palmas";
+			pmic {
+				compatible = "ti,tps65913-pmic",
+						"ti,palmas-pmic";
+				regulators {
+					palmas_smps3_reg: smps3 {
 
-  -ilia
