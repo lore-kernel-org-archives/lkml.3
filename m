@@ -1,70 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752063AbaFWIA3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 04:00:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11241 "EHLO mx1.redhat.com"
+	id S1752803AbaFWIA0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 04:00:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1524 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752375AbaFWH7e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752377AbaFWH7e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Jun 2014 03:59:34 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>, Jiri Olsa <jolsa@kernel.org>
-Subject: [GIT PULL 0/7] perf/core improvements and fixes
-Date: Mon, 23 Jun 2014 09:59:11 +0200
-Message-Id: <1403510358-4573-1-git-send-email-jolsa@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Jiri Olsa <jolsa@kernel.org>
+Subject: [PATCH 7/7] tools lib traceevent: Clean up format of args in jbd2 plugin
+Date: Mon, 23 Jun 2014 09:59:18 +0200
+Message-Id: <1403510358-4573-8-git-send-email-jolsa@kernel.org>
+In-Reply-To: <1403510358-4573-1-git-send-email-jolsa@kernel.org>
+References: <1403510358-4573-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi Ingo,
-please consider pulling
+From: Steven Rostedt <rostedt@goodmis.org>
 
-thanks,
-jirka
+While synchronizing what's in trace-cmd vs what's in perf, I came
+across a change that was made when entering the jbd2 plugin into
+the tools/lib/traceevent directory. For example, one of the function
+prototypes went from:
 
+unsigned long long process_jbd2_dev_to_name(struct trace_seq *s,
+					    unsigned long long *args)
 
-The following changes since commit 4ba96195051be30160af6d5f5f83f9a055ab1f23:
+to:
 
-  Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf into perf/core (2014-06-13 08:19:06 +0200)
+static unsigned long long
+process_jbd2_dev_to_name(struct trace_seq *s,
+			 unsigned long long *args)
 
-are available in the git repository at:
+I can understand the line break after the long long, but there's no
+reason to keep args on a separate line.
 
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git tags/perf-core-for-mingo
-
-for you to fetch changes up to 1545d8aca9ac1cb3f503fb9c29543d539d99c7af:
-
-  tools lib traceevent: Clean up format of args in jbd2 plugin (2014-06-19 18:18:37 +0200)
-
-----------------------------------------------------------------
-perf/core improvements and fixes:
-
-. Updates from trace-cmd for traceevent plugin_kvm plus args cleanup (Steven Rostedt, Jan Kiszka)
-
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/20140612204144.018410d4@gandalf.local.home
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+---
+ tools/lib/traceevent/plugin_jbd2.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-----------------------------------------------------------------
-Jan Kiszka (3):
-      tools lib traceevent: Report unknown VMX exit reasons with code
-      tools lib traceevent: Factor out print_exit_reason in kvm plugin
-      tools lib traceevent: Fix and cleanup kvm_nested_vmexit tracepoints
+diff --git a/tools/lib/traceevent/plugin_jbd2.c b/tools/lib/traceevent/plugin_jbd2.c
+index 0db714c..5c23d5b 100644
+--- a/tools/lib/traceevent/plugin_jbd2.c
++++ b/tools/lib/traceevent/plugin_jbd2.c
+@@ -30,8 +30,7 @@
+ #define MINOR(dev)	((unsigned int) ((dev) & MINORMASK))
+ 
+ static unsigned long long
+-process_jbd2_dev_to_name(struct trace_seq *s,
+-			 unsigned long long *args)
++process_jbd2_dev_to_name(struct trace_seq *s, unsigned long long *args)
+ {
+ 	unsigned int dev = args[0];
+ 
+@@ -40,8 +39,7 @@ process_jbd2_dev_to_name(struct trace_seq *s,
+ }
+ 
+ static unsigned long long
+-process_jiffies_to_msecs(struct trace_seq *s,
+-			 unsigned long long *args)
++process_jiffies_to_msecs(struct trace_seq *s, unsigned long long *args)
+ {
+ 	unsigned long long jiffies = args[0];
+ 
+-- 
+1.8.3.1
 
-Steven Rostedt (3):
-      tools lib traceevent: Fix format in plugin_kvm
-      tools lib traceevent: Clean up format of args in cfg80211 plugin
-      tools lib traceevent: Clean up format of args in jbd2 plugin
-
-Steven Rostedt (Red Hat) (1):
-      tools lib traceevent: Add back in kvm plugins nested_vmexit events
-
- tools/lib/traceevent/plugin_cfg80211.c |  3 +-
- tools/lib/traceevent/plugin_jbd2.c     |  6 ++--
- tools/lib/traceevent/plugin_kvm.c      | 64 +++++++++++++++++++++++++++++-----
- 3 files changed, 59 insertions(+), 14 deletions(-)
