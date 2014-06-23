@@ -1,78 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755165AbaFWNKl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:10:41 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:48546 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751066AbaFWNKi (ORCPT
+	id S1754938AbaFWNLU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:11:20 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37189 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754813AbaFWNFN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:10:38 -0400
-Date: Mon, 23 Jun 2014 15:08:51 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Alexander Bersenev <bay@hackerdom.ru>
-Cc: linux-sunxi@googlegroups.com, david@hardeman.nu,
-        devicetree@vger.kernel.org, galak@codeaurora.org,
-        grant.likely@linaro.org, ijc+devicetree@hellion.org.uk,
-        james.hogan@imgtec.com, linux-arm-kernel@lists.infradead.org,
-        linux@arm.linux.org.uk, m.chehab@samsung.com, mark.rutland@arm.com,
-        pawel.moll@arm.com, rdunlap@infradead.org, robh+dt@kernel.org,
-        sean@mess.org, srinivas.kandagatla@st.com, wingrime@linux-sunxi.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH v10 4/5] ARM: sunxi: Add IR controllers on A20 to dtsi
-Message-ID: <20140623130851.GD19730@lukather>
-References: <1403348646-31091-1-git-send-email-bay@hackerdom.ru>
- <1403348646-31091-5-git-send-email-bay@hackerdom.ru>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7HhoQoqNsng1reXT"
-Content-Disposition: inline
-In-Reply-To: <1403348646-31091-5-git-send-email-bay@hackerdom.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 23 Jun 2014 09:05:13 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Oleg Nesterov <oleg@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 78/93] KVM: async_pf: mm->mm_users can not pin apf->mm
+Date: Mon, 23 Jun 2014 14:02:57 +0100
+Message-Id: <1403528592-2163-79-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
+References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.11.10.12 -stable review patch.  If anyone has any objections, please let me know.
 
---7HhoQoqNsng1reXT
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+------------------
 
-On Sat, Jun 21, 2014 at 05:04:05PM +0600, Alexander Bersenev wrote:
-> This patch adds records for two IR controllers on A20
->=20
-> Signed-off-by: Alexander Bersenev <bay@hackerdom.ru>
-> Signed-off-by: Alexsey Shestacov <wingrime@linux-sunxi.org>
+From: Oleg Nesterov <oleg@redhat.com>
 
-Applied, thanks.
+commit 41c22f626254b9dc0376928cae009e73d1b6a49a upstream.
 
-Maxime
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+get_user_pages(mm) is simply wrong if mm->mm_users == 0 and exit_mmap/etc
+was already called (or is in progress), mm->mm_count can only pin mm->pgd
+and mm_struct itself.
 
---7HhoQoqNsng1reXT
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Change kvm_setup_async_pf/async_pf_execute to inc/dec mm->mm_users.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+kvm_create_vm/kvm_destroy_vm play with ->mm_count too but this case looks
+fine at first glance, it seems that this ->mm is only used to verify that
+current->mm == kvm->mm.
 
-iQIcBAEBAgAGBQJTqCbjAAoJEBx+YmzsjxAgansQAJAJkczQFVnm5tbY91NHYuAv
-1UT+ia5Zg88dAgN6jbLYCJENcM1AuEMQ0fGMUulz9P8QtBviIz63u38XUc/YUEZP
-AIc07soXJ65DvIq6LNIdoDEg2/sBCFGukxi5lJoMuhupmOgyAP+ycCy/gVD7dRWC
-5Ok9OQwzeNjB6R9FRch17jiPpYIu6WIDhAzr7J7kEqVANtdp5qNqiw2kDGFump4g
-YF0jqh+vmVfTmDhNTDkg9JBIXJpVicz8Wg3HFNnqOditoOPd9BArh2oqlmUcTMU6
-0tv4i063+d60ZhViVLyHkBkLF+npTfnTrAo/3k6O56BsCSwrOdb9Cwke0cE17yZ5
-JuFErqHa//HNpUd3PohC6MfMt4FRqpGyg3tcbkC7P9H/j+lo/9EZIsybhRCwj0Kk
-Q9V2oz+OeWljj/v2H9zfDzf7Lmmoa3J4bIXfHC4Jk1iQMN8ydI4nGj0FNOJ2fJR9
-Fnt1rYdLdUjmXEgCMBA2sLMBQHdoRp7yNr1z37qsFfLCAZObVGlCnZ6qQVcAlMSZ
-xcTX7ZSF/hnW2ZEqabdFjew7syh63604GNyd9xbeWdxoF3sZMeYqdo6mOgZbOtvP
-7ngaDoTs0Z3Zci+cg+gwEW8Hmo27O5Lc/JVS/2qK3UtnQrKPM+5KbZJIg8wbZWiv
-ESrMe3DxfUuLsNWdHwAu
-=Go7l
------END PGP SIGNATURE-----
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ virt/kvm/async_pf.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---7HhoQoqNsng1reXT--
+diff --git a/virt/kvm/async_pf.c b/virt/kvm/async_pf.c
+index b197950ac4d5..595226d5ccb5 100644
+--- a/virt/kvm/async_pf.c
++++ b/virt/kvm/async_pf.c
+@@ -87,7 +87,7 @@ static void async_pf_execute(struct work_struct *work)
+ 	if (waitqueue_active(&vcpu->wq))
+ 		wake_up_interruptible(&vcpu->wq);
+ 
+-	mmdrop(mm);
++	mmput(mm);
+ 	kvm_put_kvm(vcpu->kvm);
+ }
+ 
+@@ -100,7 +100,7 @@ void kvm_clear_async_pf_completion_queue(struct kvm_vcpu *vcpu)
+ 				   typeof(*work), queue);
+ 		list_del(&work->queue);
+ 		if (cancel_work_sync(&work->work)) {
+-			mmdrop(work->mm);
++			mmput(work->mm);
+ 			kvm_put_kvm(vcpu->kvm); /* == work->vcpu->kvm */
+ 			kmem_cache_free(async_pf_cache, work);
+ 		}
+@@ -169,7 +169,7 @@ int kvm_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn,
+ 	work->addr = gfn_to_hva(vcpu->kvm, gfn);
+ 	work->arch = *arch;
+ 	work->mm = current->mm;
+-	atomic_inc(&work->mm->mm_count);
++	atomic_inc(&work->mm->mm_users);
+ 	kvm_get_kvm(work->vcpu->kvm);
+ 
+ 	/* this can't really happen otherwise gfn_to_pfn_async
+@@ -187,7 +187,7 @@ int kvm_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn,
+ 	return 1;
+ retry_sync:
+ 	kvm_put_kvm(work->vcpu->kvm);
+-	mmdrop(work->mm);
++	mmput(work->mm);
+ 	kmem_cache_free(async_pf_cache, work);
+ 	return 0;
+ }
+-- 
+1.9.1
+
