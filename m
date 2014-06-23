@@ -1,122 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756049AbaFWPuH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 11:50:07 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:49698 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756027AbaFWPuF (ORCPT
+	id S1756088AbaFWPuT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 11:50:19 -0400
+Received: from shelob.surriel.com ([74.92.59.67]:54963 "EHLO
+	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754824AbaFWPuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 11:50:05 -0400
-Date: Mon, 23 Jun 2014 17:49:34 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: wim@iguana.be, Arnd Bergmann <arnd@arndb.de>, dbaryshkov@gmail.com,
-        dwmw2@infradead.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org,
-        linux-sunxi@googlegroups.com
-Subject: Re: [PATCH v2 1/6] wdt: sunxi: Move restart code to the watchdog
- driver
-Message-ID: <20140623154934.GG19730@lukather>
-References: <1399430664-29091-1-git-send-email-maxime.ripard@free-electrons.com>
- <1399430664-29091-2-git-send-email-maxime.ripard@free-electrons.com>
- <20140507213318.GA2105@roeck-us.net>
- <20140515091123.GQ29258@lukather>
- <20140519150422.GA27329@lukather>
- <20140522203444.GE27329@lukather>
- <20140522211207.GA28704@roeck-us.net>
- <20140623103142.GB19730@lukather>
- <53A83A20.6090800@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="HkfZ6fDZyisrdUtK"
-Content-Disposition: inline
-In-Reply-To: <53A83A20.6090800@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 23 Jun 2014 11:50:13 -0400
+From: riel@redhat.com
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@kernel.org, chegu_vinod@hp.com,
+        mgorman@suse.de
+Subject: [PATCH 5/7] sched,numa: examine a task move when examining a task swap
+Date: Mon, 23 Jun 2014 11:46:16 -0400
+Message-Id: <1403538378-31571-5-git-send-email-riel@redhat.com>
+X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1403538378-31571-1-git-send-email-riel@redhat.com>
+References: <1403538378-31571-1-git-send-email-riel@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Rik van Riel <riel@redhat.com>
 
---HkfZ6fDZyisrdUtK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Running "perf bench numa mem -0 -m -P 1000 -p 8 -t 20" on a 4
+node system results in 160 runnable threads on a system with 80
+CPU threads.
 
-On Mon, Jun 23, 2014 at 07:30:56AM -0700, Guenter Roeck wrote:
-> >>The patches _are_ in my watchdog-next branch and get some coverage from
-> >>both my auto-builders and from Fenguang's build robots, so while they a=
-re
-> >>not in linux-next, they are not completely in the dark either.
-> >
-> >So, this patch finally didn't make it into 3.16. Great. Now, we can't
-> >even reboot the boards.
-> >
-> >Given how it's just impossible to get something merged reliably
-> >through the watchdog tree, I guess I should just start merging the
-> >patches through mine?
-> >
->=20
-> You can not really blame Wim here.
->=20
-> In this case, I suspect the major reason for not accepting the patch
-> is that I tried to provide a clean method / API for "reset through watchd=
-og
-> subsystem", which went nowhere, in my understanding because someone objec=
-ted
-> that it would be the wrong thing to do [1] and it didn't get approval /
-> acceptance from the arm maintainers. If it is wrong to reset the board
-> from the watchdog subsystem in a clean way, it is for sure even more wrong
-> to do it as you proposed in your patch.
->=20
-> My conclusion therefore is that all board reset code should move back out
-> of the watchdog subsystem, and that we should not accept such code in the
-> future. This is not my personal preference, but I do believe that we shou=
-ld
-> do it in a clean way or not at all.
+Once a process has nearly converged, with 39 threads on one node
+and 1 thread on another node, the remaining thread will be unable
+to migrate to its preferred node through a task swap.
 
-Well, considering that this patch isn't depending on your reboot API
-set, and that Wim never either commented on this patch, your reboot
-API patchset or your pull request to say that he was not willing to
-merge this, there's still a huge failure to communicate.
+However, a simple task move would make the workload converge,
+witout causing an imbalance.
 
-I'm fine with any technical reason, let's debate on that. But the
-point is there has been no debate at all, only silence from his side.
+Test for this unlikely occurrence, and attempt a task move to
+the preferred nid when it happens.
 
-I have been told some patches would be merged and I merged through my
-tree some patches that were depending on this one based on that
-assumption.
+ # Running main, "perf bench numa mem -p 8 -t 20 -0 -m -P 1000"
 
-And now, we have a regression.
+ ###
+ # 160 tasks will execute (on 4 nodes, 80 CPUs):
+ #         -1x     0MB global  shared mem operations
+ #         -1x  1000MB process shared mem operations
+ #         -1x     0MB thread  local  mem operations
+ ###
 
-Anyway... I guess I should just revert some commits now.
+ ###
+ #
+ #    0.0%  [0.2 mins]  0/0   1/1  36/2   0/0  [36/3 ] l:  0-0   (  0) {0-2}
+ #    0.0%  [0.3 mins] 43/3  37/2  39/2  41/3  [ 6/10] l:  0-1   (  1) {1-2}
+ #    0.0%  [0.4 mins] 42/3  38/2  40/2  40/2  [ 4/9 ] l:  1-2   (  1) [50.0%] {1-2}
+ #    0.0%  [0.6 mins] 41/3  39/2  40/2  40/2  [ 2/9 ] l:  2-4   (  2) [50.0%] {1-2}
+ #    0.0%  [0.7 mins] 40/2  40/2  40/2  40/2  [ 0/8 ] l:  3-5   (  2) [40.0%] (  41.8s converged)
 
-Maxime
+Without this patch, this same perf bench numa mem run had to
+rely on the scheduler load balancer to first balance out the
+load (moving a random task), before a task swap could complete
+the NUMA convergence.
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+The load balancer does not normally take action unless the load
+difference exceeds 25%. Convergence times of over half an hour
+have been observed without this patch.
 
---HkfZ6fDZyisrdUtK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+With this patch, the NUMA balancing code will simply migrate the
+task, if that does not cause an imbalance.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Also skip examining a CPU in detail if the improvement on that CPU
+is no more than the best we already have.
 
-iQIcBAEBAgAGBQJTqEyOAAoJEBx+YmzsjxAg77QP/1zJd1jlu929H8oX+wfrF0sk
-bsjm/c0w4Z18EkL8vIlzhisz6HJMl9FHw/Un+kO6zKkOnHDetr64xYGjitzc3ySR
-+gSY9vrGwE9hY+0mkuzgxvvZwBEqyKQTywxb/K8XAZFPiZEFY6+6RBpw+ukolkx4
-MFbABXONF8HPmdKkIAeoTpzU/CCpw268P2RgGWQ2CB4luqW2IHnahPbzQ330XpS4
-1GJB1D+D77sI0pDtYSq4Zh6tY5TcCiCJ8kZh3EBFgLYC4aLwns1987d6LRhRNwKJ
-PGgyUiFRdx3RKBTmy1a1BpdPkLpcPAvo3FtwzBXrre7QDF7fTBMRItOmtR61ibjs
-9FxOHgH/yy/rpuMVHM4UHEpRKAAAW+PDWMWCspTl9XKMcY7c07yRUorkHBwOuuwM
-PbeJank8wz32M2suRt+LPCOzoP9W8S0D276GNceWGn8J8fs5h4PQ6vE2iX7H9kDS
-1Jz34LjZ26K1J0ryUksdWjnY+VsjVSF7VBssf6OIe5TCcBb8nhYdTC+fScMUVMFQ
-24WnWg4JUKYDZycP2PgnlZqxqYPyS3Ch98VrE7bOEUwecTzY0q8eDhm4jD8Tm6av
-EDqofh251Qk7DZnZ3+uyPKJEX1iJ48Ma9pihYoTLm2fA+LqVhMnnmFvEZG/Jo4Vm
-Iy5Dhr/Xk6RLZEDfiTyp
-=KVeb
------END PGP SIGNATURE-----
+Signed-off-by: Rik van Riel <riel@redhat.com>
+---
+ kernel/sched/fair.c | 23 +++++++++++++++++++++--
+ 1 file changed, 21 insertions(+), 2 deletions(-)
 
---HkfZ6fDZyisrdUtK--
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 2eb845c..d525451 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1155,6 +1155,7 @@ static void task_numa_compare(struct task_numa_env *env,
+ 	long src_load, dst_load;
+ 	long load;
+ 	long imp = env->p->numa_group ? groupimp : taskimp;
++	long moveimp = imp;
+ 
+ 	rcu_read_lock();
+ 	cur = ACCESS_ONCE(dst_rq->curr);
+@@ -1201,7 +1202,7 @@ static void task_numa_compare(struct task_numa_env *env,
+ 		}
+ 	}
+ 
+-	if (imp < env->best_imp)
++	if (imp <= env->best_imp && moveimp <= env->best_imp)
+ 		goto unlock;
+ 
+ 	if (!cur) {
+@@ -1214,7 +1215,8 @@ static void task_numa_compare(struct task_numa_env *env,
+ 	}
+ 
+ 	/* Balance doesn't matter much if we're running a task per cpu */
+-	if (src_rq->nr_running == 1 && dst_rq->nr_running == 1)
++	if (imp > env->best_imp && src_rq->nr_running == 1 &&
++			dst_rq->nr_running == 1)
+ 		goto assign;
+ 
+ 	/*
+@@ -1230,6 +1232,23 @@ static void task_numa_compare(struct task_numa_env *env,
+ 	src_load += effective_load(tg, env->src_cpu, -load, -load);
+ 	dst_load += effective_load(tg, env->dst_cpu, load, load);
+ 
++	if (moveimp > imp && moveimp > env->best_imp) {
++		/*
++		 * If the improvement from just moving env->p direction is
++		 * better than swapping tasks around, check if a move is
++		 * possible. Store a slightly smaller score than moveimp,
++		 * so an actually idle CPU will win.
++		 */
++		if (!load_too_imbalanced(src_load, dst_load, env)) {
++			imp = moveimp - 1;
++			cur = NULL;
++			goto assign;
++		}
++	}
++
++	if (imp <= env->best_imp)
++		goto unlock;
++
+ 	if (cur) {
+ 		/* Cur moves in the opposite direction. */
+ 		load = task_h_load(cur);
+-- 
+1.8.5.3
+
