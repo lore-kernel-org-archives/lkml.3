@@ -1,75 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755302AbaFWPOk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 11:14:40 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:50684 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751212AbaFWPOi (ORCPT
+	id S1755553AbaFWPQb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 11:16:31 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:62235 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754248AbaFWPQ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 11:14:38 -0400
-Date: Mon, 23 Jun 2014 17:14:30 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        pjt@google.com, kosaki.motohiro@jp.fujitsu.com
-Subject: Re: [patch] sched: Fix
- clock_gettime(CLOCK_[PROCESS/THREAD]_CPUTIME_ID) monotonicity
-Message-ID: <20140623151430.GE19860@laptop.programming.kicks-ass.net>
-References: <1402910212.16584.4.camel@marge.simpson.net>
+	Mon, 23 Jun 2014 11:16:29 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53A844C2.7070804@roeck-us.net>
+Date: Mon, 23 Jun 2014 08:16:18 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402910212.16584.4.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Maxime Ripard <maxime.ripard@free-electrons.com>, wim@iguana.be,
+        dbaryshkov@gmail.com, dwmw2@infradead.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, linux-sunxi@googlegroups.com
+Subject: Re: [PATCH v2 1/6] wdt: sunxi: Move restart code to the watchdog
+ driver
+References: <1399430664-29091-1-git-send-email-maxime.ripard@free-electrons.com> <20140623103142.GB19730@lukather> <53A83A20.6090800@roeck-us.net> <19870078.UBj78UMBrO@wuerfel>
+In-Reply-To: <19870078.UBj78UMBrO@wuerfel>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 16, 2014 at 11:16:52AM +0200, Mike Galbraith wrote:
-> (disregard patch of same name from that enterprise weenie;)
-> 
-> If a task has been dequeued, it has been accounted.  Do not project
-> cycles that may or may not ever be accounted to a dequeued task, as
-> that may make clock_gettime() both inaccurate and non-monotonic.
-> 
-> Protect update_rq_clock() from slight TSC skew while at it.
-> 
-> Signed-off-by: 	Mike Galbraith <umgwanakikbuti@gmail.com>
-> ---
->  kernel/sched/core.c |   13 +++++++++++--
->  1 file changed, 11 insertions(+), 2 deletions(-)
-> 
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -144,6 +144,8 @@ void update_rq_clock(struct rq *rq)
->  		return;
->  
->  	delta = sched_clock_cpu(cpu_of(rq)) - rq->clock;
-> +	if (delta < 0)
-> +		return;
->  	rq->clock += delta;
->  	update_rq_clock_task(rq, delta);
->  }
+On 06/23/2014 07:42 AM, Arnd Bergmann wrote:
+> On Monday 23 June 2014 07:30:56 Guenter Roeck wrote:
+>> On 06/23/2014 03:31 AM, Maxime Ripard wrote:
+>>> On Thu, May 22, 2014 at 02:12:07PM -0700, Guenter Roeck wrote:
+>>>> On Thu, May 22, 2014 at 10:34:44PM +0200, Maxime Ripard wrote:
+>>>>> On Mon, May 19, 2014 at 05:04:22PM +0200, Maxime Ripard wrote:
+>>>>
+>>>> The patches _are_ in my watchdog-next branch and get some coverage from
+>>>> both my auto-builders and from Fenguang's build robots, so while they are
+>>>> not in linux-next, they are not completely in the dark either.
+>>>
+>>> So, this patch finally didn't make it into 3.16. Great. Now, we can't
+>>> even reboot the boards.
+>>>
+>>> Given how it's just impossible to get something merged reliably
+>>> through the watchdog tree, I guess I should just start merging the
+>>> patches through mine?
+>>>
+>>
+>> You can not really blame Wim here.
+>>
+>> In this case, I suspect the major reason for not accepting the patch
+>> is that I tried to provide a clean method / API for "reset through watchdog
+>> subsystem", which went nowhere, in my understanding because someone objected
+>> that it would be the wrong thing to do [1] and it didn't get approval /
+>> acceptance from the arm maintainers. If it is wrong to reset the board
+>> from the watchdog subsystem in a clean way, it is for sure even more wrong
+>> to do it as you proposed in your patch.
+>>
+>> My conclusion therefore is that all board reset code should move back out
+>> of the watchdog subsystem, and that we should not accept such code in the
+>> future. This is not my personal preference, but I do believe that we should
+>> do it in a clean way or not at all.
+>
+> Moved to where?
+>
+> I certainly don't want it in the platform directories, and for arm64 we
+> intentionally don't have a place to put this stuff.
+>
 
-Have you actually observed this? If TSC is stable this should not
-happen, if TSC is not stable we should be using kernel/sched/clock.c
-which should also avoid this, because while sched_clock_cpu(x) -
-sched_clock_cpu(y) < 0 is possible, sched_clock_cpu(x) -
-sched_clock_cpu(x) should always be >= 0.
+I have no idea, but setting the arm reset function pointer from a watchdog
+driver doesn't seem like a good idea either. The arm code _does_ provide
+and expect platform code to set the reset function, so having it in the arm
+code would at least make more sense than expecting some unrelated driver
+code to set it - especially since it is inherently racy [1].
 
-I suppose it can happen when the TSC gets screwed and we haven't
-switched to the slow path yet.
+> drivers/power/reset would be an option, but then we have to solve the
+> problem of loading two drivers for one device first.
+>
+It sounds crazy and may be huge overkill, but one solution for this is
+would be to use mfd to bridge the gap.
 
-> @@ -2533,7 +2535,12 @@ static u64 do_task_delta_exec(struct tas
->  {
->  	u64 ns = 0;
->  
-> -	if (task_current(rq, p)) {
-> +	/*
-> +	 * Must be ->curr, ->on_cpu _and_ ->on_rq.  If dequeued, we
-> +	 * would project cycles that may never be accounted to this
-> +	 * thread, breaking clock_gettime().
-> +	 */
-> +	if (task_current(rq, p) && p->on_cpu && p->on_rq) {
+Guenter
 
-do we still need ->on_cpu in this case?
+---
+[1] https://lkml.org/lkml/2014/5/15/838
+
