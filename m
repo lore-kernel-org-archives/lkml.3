@@ -1,77 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753625AbaFWXaU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 19:30:20 -0400
-Received: from mga02.intel.com ([134.134.136.20]:62898 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753221AbaFWXaT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 19:30:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,533,1400050800"; 
-   d="scan'208";a="562158562"
-Message-ID: <53A8B884.6000600@intel.com>
-Date: Mon, 23 Jun 2014 16:30:12 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1753700AbaFWXb0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 19:31:26 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:40721 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752260AbaFWXbX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 19:31:23 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Kukjin Kim <kgene.kim@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        naveen krishna <ch.naveen@samsung.com>,
+        Jingoo Han <jg1.han@samsung.com>, Jean Delvare <jdelvare@suse.de>,
+        Simon Glass <sjg@google.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Masanari Iida <standby24x7@gmail.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        "linux-i2c\@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] i2c: exynos5: Properly use the "noirq" variants of suspend/resume
+References: <1403155273-1057-1-git-send-email-dianders@chromium.org>
+	<7h8uosyc3k.fsf@paris.lan>
+	<CAD=FV=XxNVmF+N5HF4SnZoJRJvkSUkpEx6ct4v2gtmAQ9n28-Q@mail.gmail.com>
+	<7hwqcbs166.fsf@paris.lan>
+	<CAD=FV=Uz9O0i2gmuk2+BHa-Tksvyxv0+MTi2UEjVREAMNCK7Ug@mail.gmail.com>
+	<7h7g4brx6w.fsf@paris.lan>
+	<CAD=FV=VmPMf6tCNmKJ1o5J7PyAXoU8fb6+s+Fkv18FH2WaQp7A@mail.gmail.com>
+	<7h38evp8ng.fsf@paris.lan>
+	<CAD=FV=VBcWC2Z2WCmsiZUPCrakqrdd9Cd6QL9TLYS4c23+sMkA@mail.gmail.com>
+Date: Mon, 23 Jun 2014 16:31:21 -0700
+In-Reply-To: <CAD=FV=VBcWC2Z2WCmsiZUPCrakqrdd9Cd6QL9TLYS4c23+sMkA@mail.gmail.com>
+	(Doug Anderson's message of "Mon, 23 Jun 2014 15:42:01 -0700")
+Message-ID: <7hwqc7nqye.fsf@paris.lan>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, oleg@redhat.com, ak@linux.intel.com, cl@gentwo.org,
-        umgwanakikbuti@gmail.com
-Subject: Re: [PATCH tip/core/rcu] Reduce overhead of cond_resched() checks
- for RCU
-References: <20140621025958.GA7185@linux.vnet.ibm.com> <53A85BF9.7030006@intel.com> <53A8611F.1000804@intel.com> <20140623180945.GL4603@linux.vnet.ibm.com>
-In-Reply-To: <20140623180945.GL4603@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2014 11:09 AM, Paul E. McKenney wrote:
-> So let's see...  The open1 benchmark sits in a loop doing open()
-> and close(), and probably spends most of its time in the kernel.
-> It doesn't do much context switching.  I am guessing that you don't
-> have CONFIG_NO_HZ_FULL=y, or the boot/sysfs parameter would not have
-> much effect because then the first quiescent-state-forcing attempt would
-> likely finish the grace period.
-> 
-> So, given that short grace periods help other workloads (I have the
-> scars to prove it), and given that the patch fixes some real problems,
+Doug Anderson <dianders@chromium.org> writes:
 
-I'm not arguing that short grace periods _can_ help some workloads, or
-that one is better than the other.  The patch in question changes
-existing behavior by shortening grace periods.  This change of existing
-behavior removes some of the benefits that my system gets out of RCU.  I
-suspect this affects a lot more systems, but my core cout makes it
-easier to see.
+> Kevin,
+>
+> On Mon, Jun 23, 2014 at 3:23 PM, Kevin Hilman <khilman@linaro.org> wrote:
+>>> So I guess in this case the truly correct way to handle it is:
+>>>
+>>> 1. i2c controller should have Runtime PM even though (as per the code
+>>> now) there's nothing you can do to it to save power under normal
+>>> circumstances.  So the runtime "suspend" code would be a no-op.
+>>>
+>>> 2. When the i2c controller is told to runtime resume, it should
+>>> double-check if a full SoC poweroff has happened since the last time
+>>> it checked.  In this case it should reinit its hardware.
+>>>
+>>> 3. If the i2c controller gets a full "resume" callback then it should
+>>> also reinit the hardware just so it's not sitting in a half-configured
+>>> state until the first peripheral uses it.
+>>>
+>>> If later someone finds a way to power gate the i2c controller when no
+>>> active transfers are going (and we actually save non-trivial power
+>>> doing this) then we've got a nice place to put that code.
+>>>
+>>> NOTE: Unless we can actually save power by power gating the i2c
+>>> peripheral when there are no active transfers, we would also just have
+>>> the i2c_xfer() init the hardware if needed.  Maybe that's kinda gross,
+>>> though.
+>>
+>> Yes, this is how we manage the i2c controller on OMAP.
+>>
+>> Essentially, between every xfer, the hw is disabled and can potentially
+>> lose context, so eveery xfer requires a hw init.  We use the runtime PM
+>> "autosuspend" feature so that it stays alive for X milliseconds so
+>> bursty i2c xfers are not punished.
+>>
+>> Have a look at drivers/i2c/busses/i2c-omap.c.
+>>
+>> You'll notice there are not callbacks for system suspend/resume, it's
+>> only doing runtime PM.
+>
+> OK, cool!  That might be a bit too aggressive of a change for what I
+> can take on right now.  I've filed http://crbug.com/388007 to see if
+> Samsung can take a look at this.
 
-Perhaps I'm misunderstanding the original patch's intent, but it seemed
-to me to be working around an overactive debug message.  While often a
-_useful_ debug message, it was firing falsely in the case being
-addressed in the patch.
+Sure.  While I think moving to runtime PM is the right thing to do, that
+alone shouldn't block this patch.
 
-> and given that the large number for rcutree.jiffies_till_sched_qs got
-> us within 3%, shouldn't we consider this issue closed?
-
-With the default value for the tunable, the regression is still solidly
-over 10%.  I think we can have a reasonable argument about it once the
-default delta is down to the small single digits.
-
-One more thing I just realized: this isn't a scalability problem, at
-least with rcutree.jiffies_till_sched_qs=12.  There's a pretty
-consistent delta in throughput throughout the entire range of threads
-from 1->160.  See the "processes" column in the data files:
-
-plain 3.15:
-> https://www.sr71.net/~dave/intel/willitscale/systems/bigbox/3.15/open1.csv
-e552592e0383bc:
-> https://www.sr71.net/~dave/intel/willitscale/systems/bigbox/3.16.0-rc1-pf2/open1.csv
-
-or visually:
-
-> https://www.sr71.net/~dave/intel/array-join.html?1=willitscale/systems/bigbox/3.15&2=willitscale/systems/bigbox/3.16.0-rc1-pf2&hide=linear,threads_idle,processes_idle
+Kevin
