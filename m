@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754415AbaFWNEb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:04:31 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36945 "EHLO
+	id S1754504AbaFWNEl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:04:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37010 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754350AbaFWNEZ (ORCPT
+	with ESMTP id S1754425AbaFWNEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:04:25 -0400
+	Mon, 23 Jun 2014 09:04:38 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>,
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 43/93] audit: restore order of tty and ses fields in log output
-Date: Mon, 23 Jun 2014 14:02:22 +0100
-Message-Id: <1403528592-2163-44-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 53/93] USB: Avoid runtime suspend loops for HCDs that can't handle suspend/resume
+Date: Mon, 23 Jun 2014 14:02:32 +0100
+Message-Id: <1403528592-2163-54-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
 References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
@@ -27,44 +28,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Guy Briggs <rgb@redhat.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 2f2ad1013322c8f6c40fc6dafdbd32442fa730ad upstream.
+commit 8ef42ddd9a53b73e6fc3934278710c27f80f324f upstream.
 
-When being refactored from audit_log_start() to audit_log_task_info(), in
-commit e23eb920 the tty and ses fields in the log output got transposed.
-Restore to original order to avoid breaking search tools.
+Not all host controller drivers have bus-suspend and bus-resume
+methods.  When one doesn't, it will cause problems if runtime PM is
+enabled in the kernel.  The PM core will attempt to suspend the
+controller's root hub, the suspend will fail because there is no
+bus-suspend routine, and a -EBUSY error code will be returned to the
+PM core.  This will cause the suspend attempt to be repeated shortly
+thereafter, in a never-ending loop.
 
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-Signed-off-by: Eric Paris <eparis@redhat.com>
-[ luis: backported to 3.11: adjusted context ]
+Part of the problem is that the original error code -ENOENT gets
+changed to -EBUSY in usb_runtime_suspend(), on the grounds that the PM
+core will interpret -ENOENT as meaning that the root hub has gotten
+into a runtime-PM error state.  While this change is appropriate for
+real USB devices, it's not such a good idea for a root hub.  In fact,
+considering the root hub to be in a runtime-PM error state would not
+be far from the truth.  Therefore this patch updates
+usb_runtime_suspend() so that it adjusts error codes only for
+non-root-hub devices.
+
+Furthermore, the patch attempts to prevent the problem from occurring
+in the first place by not enabling runtime PM by default for root hubs
+whose host controller driver doesn't have bus_suspend and bus_resume
+methods.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Will Deacon <will.deacon@arm.com>
+Tested-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/audit.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/core/driver.c |  9 ++++++---
+ drivers/usb/core/hub.c    | 15 +++++++++++++--
+ 2 files changed, 19 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/audit.c b/kernel/audit.c
-index aea9a1963e79..50512d11a445 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -1615,7 +1615,7 @@ void audit_log_task_info(struct audit_buffer *ab, struct task_struct *tsk)
- 	audit_log_format(ab,
- 			 " ppid=%d pid=%d auid=%u uid=%u gid=%u"
- 			 " euid=%u suid=%u fsuid=%u"
--			 " egid=%u sgid=%u fsgid=%u ses=%u tty=%s",
-+			 " egid=%u sgid=%u fsgid=%u tty=%s ses=%u",
- 			 task_ppid_nr(tsk),
- 			 tsk->pid,
- 			 from_kuid(&init_user_ns, audit_get_loginuid(tsk)),
-@@ -1627,7 +1627,7 @@ void audit_log_task_info(struct audit_buffer *ab, struct task_struct *tsk)
- 			 from_kgid(&init_user_ns, cred->egid),
- 			 from_kgid(&init_user_ns, cred->sgid),
- 			 from_kgid(&init_user_ns, cred->fsgid),
--			 audit_get_sessionid(tsk), tty);
-+			 tty, audit_get_sessionid(tsk));
+diff --git a/drivers/usb/core/driver.c b/drivers/usb/core/driver.c
+index 5c592c0364ae..86894faad404 100644
+--- a/drivers/usb/core/driver.c
++++ b/drivers/usb/core/driver.c
+@@ -1754,10 +1754,13 @@ int usb_runtime_suspend(struct device *dev)
+ 	if (status == -EAGAIN || status == -EBUSY)
+ 		usb_mark_last_busy(udev);
  
- 	get_task_comm(name, tsk);
- 	audit_log_format(ab, " comm=");
+-	/* The PM core reacts badly unless the return code is 0,
+-	 * -EAGAIN, or -EBUSY, so always return -EBUSY on an error.
++	/*
++	 * The PM core reacts badly unless the return code is 0,
++	 * -EAGAIN, or -EBUSY, so always return -EBUSY on an error
++	 * (except for root hubs, because they don't suspend through
++	 * an upstream port like other USB devices).
+ 	 */
+-	if (status != 0)
++	if (status != 0 && udev->parent)
+ 		return -EBUSY;
+ 	return status;
+ }
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index 5c75492ea8f4..5e0925a01475 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -1683,8 +1683,19 @@ static int hub_probe(struct usb_interface *intf, const struct usb_device_id *id)
+ 	 */
+ 	pm_runtime_set_autosuspend_delay(&hdev->dev, 0);
+ 
+-	/* Hubs have proper suspend/resume support. */
+-	usb_enable_autosuspend(hdev);
++	/*
++	 * Hubs have proper suspend/resume support, except for root hubs
++	 * where the controller driver doesn't have bus_suspend and
++	 * bus_resume methods.
++	 */
++	if (hdev->parent) {		/* normal device */
++		usb_enable_autosuspend(hdev);
++	} else {			/* root hub */
++		const struct hc_driver *drv = bus_to_hcd(hdev->bus)->driver;
++
++		if (drv->bus_suspend && drv->bus_resume)
++			usb_enable_autosuspend(hdev);
++	}
+ 
+ 	if (hdev->level == MAX_TOPO_LEVEL) {
+ 		dev_err(&intf->dev,
 -- 
 1.9.1
 
