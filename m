@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755261AbaFWNMK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:12:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58959 "EHLO mx1.redhat.com"
+	id S1755267AbaFWNMo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:12:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14227 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755239AbaFWNMF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:12:05 -0400
+	id S1755219AbaFWNME (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 09:12:04 -0400
 From: Daniel Borkmann <dborkman@redhat.com>
 To: davem@davemloft.net
 Cc: netdev@vger.kernel.org, linux@horizon.com, linux-kernel@vger.kernel.org
-Subject: [PATCH net-next 3/3] lib: crc32: Add some additional __pure annotations
-Date: Mon, 23 Jun 2014 15:11:56 +0200
-Message-Id: <1403529116-18385-4-git-send-email-dborkman@redhat.com>
+Subject: [PATCH net-next 2/3] lib: crc32: Mark test data __initconst
+Date: Mon, 23 Jun 2014 15:11:55 +0200
+Message-Id: <1403529116-18385-3-git-send-email-dborkman@redhat.com>
 In-Reply-To: <1403529116-18385-1-git-send-email-dborkman@redhat.com>
 References: <1403529116-18385-1-git-send-email-dborkman@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -20,52 +20,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: George Spelvin <linux@horizon.com>
 
-In case they help the compiler.
+So it gets discarded after the selftest.
 
 Signed-off-by: George Spelvin <linux@horizon.com>
 Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
 ---
- include/linux/crc32.h | 6 +++---
- lib/crc32.c           | 2 +-
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ lib/crc32.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/crc32.h b/include/linux/crc32.h
-index edf34e8..9e8a032 100644
---- a/include/linux/crc32.h
-+++ b/include/linux/crc32.h
-@@ -8,8 +8,8 @@
- #include <linux/types.h>
- #include <linux/bitrev.h>
- 
--extern u32  crc32_le(u32 crc, unsigned char const *p, size_t len);
--extern u32  crc32_be(u32 crc, unsigned char const *p, size_t len);
-+u32 __pure crc32_le(u32 crc, unsigned char const *p, size_t len);
-+u32 __pure crc32_be(u32 crc, unsigned char const *p, size_t len);
- 
- /**
-  * crc32_le_combine - Combine two crc32 check values into one. For two
-@@ -36,7 +36,7 @@ static inline u32 crc32_le_combine(u32 crc1, u32 crc2, size_t len2)
- 	return crc32_le_shift(crc1, len2) ^ crc2;
- }
- 
--extern u32  __crc32c_le(u32 crc, unsigned char const *p, size_t len);
-+u32 __pure __crc32c_le(u32 crc, unsigned char const *p, size_t len);
- 
- /**
-  * __crc32c_le_combine - Combine two crc32c check values into one. For two
 diff --git a/lib/crc32.c b/lib/crc32.c
-index af938ab..9a907d4 100644
+index 9af30ff..af938ab 100644
 --- a/lib/crc32.c
 +++ b/lib/crc32.c
-@@ -53,7 +53,7 @@ MODULE_LICENSE("GPL");
- #if CRC_LE_BITS > 8 || CRC_BE_BITS > 8
+@@ -344,7 +344,7 @@ EXPORT_SYMBOL(crc32_be);
+ #ifdef CONFIG_CRC32_SELFTEST
  
- /* implements slicing-by-4 or slicing-by-8 algorithm */
--static inline u32
-+static inline u32 __pure
- crc32_body(u32 crc, unsigned char const *buf, size_t len, const u32 (*tab)[256])
+ /* 4096 random bytes */
+-static u8 __attribute__((__aligned__(8))) test_buf[] =
++static u8 const __aligned(8) test_buf[] __initconst =
  {
- # ifdef __LITTLE_ENDIAN
+ 	0x5b, 0x85, 0x21, 0xcb, 0x09, 0x68, 0x7d, 0x30,
+ 	0xc7, 0x69, 0xd7, 0x30, 0x92, 0xde, 0x59, 0xe4,
+@@ -868,7 +868,7 @@ static struct crc_test {
+ 	u32 crc_le;	/* expected crc32_le result */
+ 	u32 crc_be;	/* expected crc32_be result */
+ 	u32 crc32c_le;	/* expected crc32c_le result */
+-} test[] =
++} const test[] __initconst =
+ {
+ 	{0x674bf11d, 0x00000038, 0x00000542, 0x0af6d466, 0xd8b6e4c1, 0xf6e93d6c},
+ 	{0x35c672c6, 0x0000003a, 0x000001aa, 0xc6d3dfba, 0x28aaf3ad, 0x0fe92aca},
 -- 
 1.7.11.7
 
