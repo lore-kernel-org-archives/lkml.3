@@ -1,81 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756504AbaFWRdP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 13:33:15 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:47392 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755721AbaFWRdN (ORCPT
+	id S1756604AbaFWReI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 13:34:08 -0400
+Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:36383 "EHLO
+	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756157AbaFWReG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 13:33:13 -0400
-Date: Mon, 23 Jun 2014 10:33:08 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Waiman Long <waiman.long@hp.com>, Romanov Arya <romanov.arya@gmail.com>,
-        Pranith Kumar <bobby.prani@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        LKML <linux-kernel@vger.kernel.org>, torvalds@linux-foundation.org
-Subject: Re: [RFC PATCH 1/1] kernel/rcu/tree.c: simplify
- force_quiescent_state()
-Message-ID: <20140623173308.GA3550@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <539FAE21.7070702@gmail.com>
- <20140617145419.GE4669@linux.vnet.ibm.com>
- <CAJKcOGdUDwdmdkpd0dw5xO9+TK=9W9fvF9Q+f5F_b4R8cEgdTA@mail.gmail.com>
- <53A07336.7030704@hp.com>
- <20140617171116.GH4669@linux.vnet.ibm.com>
- <20140617173717.GA28198@linux.vnet.ibm.com>
- <20140623102850.GX19860@laptop.programming.kicks-ass.net>
- <20140623155750.GD4603@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140623155750.GD4603@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14062317-6688-0000-0000-000002C40870
+	Mon, 23 Jun 2014 13:34:06 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApkHALBjqFNbskjJ/2dsb2JhbABZgw2rZwUBAQEBAQEFAZk1gQ8XdYQxLyOBGjeIRgHETReFY4kZHYQtBJpMk2ODRDs
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, "David S. Miller" <davem@davemloft.net>,
+        Grant Likely <grant.likely@linaro.org>, netdev@vger.kernel.org,
+        Joe Perches <joe@perches.com>
+Subject: [PATCH V2] net/dsa/dsa.c: remove unnecessary null test before kfree
+Date: Mon, 23 Jun 2014 19:32:47 +0200
+Message-Id: <1403544767-12438-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 23, 2014 at 08:57:50AM -0700, Paul E. McKenney wrote:
-> On Mon, Jun 23, 2014 at 12:28:50PM +0200, Peter Zijlstra wrote:
-> > On Tue, Jun 17, 2014 at 10:37:17AM -0700, Paul E. McKenney wrote:
-> > > Oh, and to answer the implicit question...  A properly configured 4096-CPU
-> > > system will have two funnel levels, with 64 nodes at the leaf level
-> > > and a single node at the root level.  If the system is not properly
-> > > configured, it will have three funnel levels.  The maximum number of
-> > > funnel levels is four, which would handle more than four million CPUs
-> > > (sixteen million if properly configured), so we should be good.  ;-)
-> > > 
-> > > The larger numbers of levels are intended strictly for testing.  I set
-> > > CONFIG_RCU_FANOUT_LEAF=2 and CONFIG_RCU_FANOUT=2 on a 16-CPU system just
-> > > to make sure that I am testing something uglier than what will be running
-> > > in production.  A large system should have both of these set to 64,
-> > > though this requires also booting with skew_tick=1 as well.
-> > 
-> > Right, and I think we talked about this before; the first thing one
-> > should do is align the RCU fanout masks with the actual machine
-> > topology. Because currently they can be all over the place.
-> 
-> And we also talked before about how it would make a lot more sense to
-> align the CPU numbering with the actual machine topology, as that would
-> fix the problem in one place.  But either way, in the particular case
-> of the RCU fanout, does anyone have any real data showing that this is
-> a real problem?  Given that the rcu_node accesses are quite a ways off
-> of any fastpath, I remain skeptical.
+Fix checkpatch warning:
+WARNING: kfree(NULL) is safe this check is probably not required
 
-And one way to test for this is to set CONFIG_RCU_FANOUT to the number of
-cores in a socket (or to the number of hardware threads per socket for
-systems that number their hardware threads consecutively), then specify
-CONFIG_RCU_FANOUT_EXACT=y.  This will align the rcu_node structures with
-the sockets.  If the number of cores/threads per socket is too large,
-you can of course use a smaller number that exactly divides the number
-of cores/threads per socket.
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: netdev@vger.kernel.org
+Cc: Joe Perches <joe@perches.com>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+V2: Use more appropriate subject (suggested by Joe Perches).
 
-If this does turn out to improve performance, I would be happy to create
-a boot parameter for CONFIG_RCU_FANOUT, perhaps also some mechanism to
-allow the architecture to tell RCU what the fanout should be.
+ net/dsa/dsa.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-							Thanx, Paul
+diff --git a/net/dsa/dsa.c b/net/dsa/dsa.c
+index 5db37ce..0a49632 100644
+--- a/net/dsa/dsa.c
++++ b/net/dsa/dsa.c
+@@ -351,8 +351,7 @@ static void dsa_of_free_platform_data(struct dsa_platform_data *pd)
+ 	for (i = 0; i < pd->nr_chips; i++) {
+ 		port_index = 0;
+ 		while (port_index < DSA_MAX_PORTS) {
+-			if (pd->chip[i].port_names[port_index])
+-				kfree(pd->chip[i].port_names[port_index]);
++			kfree(pd->chip[i].port_names[port_index]);
+ 			port_index++;
+ 		}
+ 		kfree(pd->chip[i].rtable);
+-- 
+1.8.4.5
 
