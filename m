@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752826AbaFWIyf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 04:54:35 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55514 "EHLO
+	id S1753946AbaFWIze (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 04:55:34 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55491 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752549AbaFWIc3 (ORCPT
+	by vger.kernel.org with ESMTP id S1752486AbaFWIc2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 04:32:29 -0400
+	Mon, 23 Jun 2014 04:32:28 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Markos Chandras <markos.chandras@imgtec.com>,
-        linux-mips@linux-mips.org, Ralf Baechle <ralf@linux-mips.org>,
+Cc: linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 007/111] MIPS: asm: thread_info: Add _TIF_SECCOMP flag
-Date: Mon, 23 Jun 2014 10:30:42 +0200
-Message-Id: <649066ce296368e2733ce1d4005f10dc673a9e8f.1403512280.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 042/111] Staging: speakup: Move pasting into a work item
+Date: Mon, 23 Jun 2014 10:31:17 +0200
+Message-Id: <e71e310b30ccd69a206412668a6335a682b4e869.1403512281.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
 References: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
@@ -24,41 +23,132 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markos Chandras <markos.chandras@imgtec.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 137f7df8cead00688524c82360930845396b8a21 upstream.
+commit d7500135802ca55b3f4e01a16544e8b34082f8c3 upstream.
 
-Add _TIF_SECCOMP flag to _TIF_WORK_SYSCALL_ENTRY to indicate
-that the system call needs to be checked against a seccomp filter.
+Input is handled in softirq context, but when pasting we may
+need to sleep.  speakup_paste_selection() currently tries to
+bodge this by busy-waiting if in_atomic(), but that doesn't
+help because the ldisc may also sleep.
 
-Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
-Reviewed-by: Paul Burton <paul.burton@imgtec.com>
-Reviewed-by: James Hogan <james.hogan@imgtec.com>
-Cc: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/6405/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+For bonus breakage, speakup_paste_selection() changes the
+state of current, even though it's not running in process
+context.
+
+Move it into a work item and make sure to cancel it on exit.
+
+References: https://bugs.debian.org/735202
+References: https://bugs.debian.org/744015
+Reported-by: Paul Gevers <elbrus@debian.org>
+Reported-and-tested-by: Jarek Czekalski <jarekczek@poczta.onet.pl>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/mips/include/asm/thread_info.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/speakup/main.c      |  1 +
+ drivers/staging/speakup/selection.c | 38 +++++++++++++++++++++++++++++++------
+ drivers/staging/speakup/speakup.h   |  1 +
+ 3 files changed, 34 insertions(+), 6 deletions(-)
 
-diff --git a/arch/mips/include/asm/thread_info.h b/arch/mips/include/asm/thread_info.h
-index 61215a34acc6..897cd58407c8 100644
---- a/arch/mips/include/asm/thread_info.h
-+++ b/arch/mips/include/asm/thread_info.h
-@@ -134,7 +134,7 @@ static inline struct thread_info *current_thread_info(void)
- #define _TIF_LOAD_WATCH		(1<<TIF_LOAD_WATCH)
+diff --git a/drivers/staging/speakup/main.c b/drivers/staging/speakup/main.c
+index 14079c4949a8..2239fddd8d1c 100644
+--- a/drivers/staging/speakup/main.c
++++ b/drivers/staging/speakup/main.c
+@@ -2220,6 +2220,7 @@ static void __exit speakup_exit(void)
+ 	unregister_keyboard_notifier(&keyboard_notifier_block);
+ 	unregister_vt_notifier(&vt_notifier_block);
+ 	speakup_unregister_devsynth();
++	speakup_cancel_paste();
+ 	del_timer(&cursor_timer);
+ 	kthread_stop(speakup_task);
+ 	speakup_task = NULL;
+diff --git a/drivers/staging/speakup/selection.c b/drivers/staging/speakup/selection.c
+index f0fb00392d6b..f67941e78e4a 100644
+--- a/drivers/staging/speakup/selection.c
++++ b/drivers/staging/speakup/selection.c
+@@ -4,6 +4,8 @@
+ #include <linux/sched.h>
+ #include <linux/device.h> /* for dev_warn */
+ #include <linux/selection.h>
++#include <linux/workqueue.h>
++#include <asm/cmpxchg.h>
  
- #define _TIF_WORK_SYSCALL_ENTRY	(_TIF_NOHZ | _TIF_SYSCALL_TRACE |	\
--				 _TIF_SYSCALL_AUDIT)
-+				 _TIF_SYSCALL_AUDIT | _TIF_SECCOMP)
+ #include "speakup.h"
  
- /* work to do in syscall_trace_leave() */
- #define _TIF_WORK_SYSCALL_EXIT	(_TIF_NOHZ | _TIF_SYSCALL_TRACE |	\
+@@ -121,20 +123,24 @@ int speakup_set_selection(struct tty_struct *tty)
+ 	return 0;
+ }
+ 
+-/* TODO: move to some helper thread, probably.  That'd fix having to check for
+- * in_atomic().  */
+-int speakup_paste_selection(struct tty_struct *tty)
++struct speakup_paste_work {
++	struct work_struct work;
++	struct tty_struct *tty;
++};
++
++static void __speakup_paste_selection(struct work_struct *work)
+ {
++	struct speakup_paste_work *spw =
++		container_of(work, struct speakup_paste_work, work);
++	struct tty_struct *tty = xchg(&spw->tty, NULL);
+ 	struct vc_data *vc = (struct vc_data *) tty->driver_data;
+ 	int pasted = 0, count;
+ 	DECLARE_WAITQUEUE(wait, current);
++
+ 	add_wait_queue(&vc->paste_wait, &wait);
+ 	while (sel_buffer && sel_buffer_lth > pasted) {
+ 		set_current_state(TASK_INTERRUPTIBLE);
+ 		if (test_bit(TTY_THROTTLED, &tty->flags)) {
+-			if (in_atomic())
+-				/* if we are in an interrupt handler, abort */
+-				break;
+ 			schedule();
+ 			continue;
+ 		}
+@@ -146,6 +152,26 @@ int speakup_paste_selection(struct tty_struct *tty)
+ 	}
+ 	remove_wait_queue(&vc->paste_wait, &wait);
+ 	current->state = TASK_RUNNING;
++	tty_kref_put(tty);
++}
++
++static struct speakup_paste_work speakup_paste_work = {
++	.work = __WORK_INITIALIZER(speakup_paste_work.work,
++				   __speakup_paste_selection)
++};
++
++int speakup_paste_selection(struct tty_struct *tty)
++{
++	if (cmpxchg(&speakup_paste_work.tty, NULL, tty) != NULL)
++		return -EBUSY;
++
++	tty_kref_get(tty);
++	schedule_work_on(WORK_CPU_UNBOUND, &speakup_paste_work.work);
+ 	return 0;
+ }
+ 
++void speakup_cancel_paste(void)
++{
++	cancel_work_sync(&speakup_paste_work.work);
++	tty_kref_put(speakup_paste_work.tty);
++}
+diff --git a/drivers/staging/speakup/speakup.h b/drivers/staging/speakup/speakup.h
+index 0126f714821a..74fe72429b2d 100644
+--- a/drivers/staging/speakup/speakup.h
++++ b/drivers/staging/speakup/speakup.h
+@@ -77,6 +77,7 @@ extern void synth_buffer_clear(void);
+ extern void speakup_clear_selection(void);
+ extern int speakup_set_selection(struct tty_struct *tty);
+ extern int speakup_paste_selection(struct tty_struct *tty);
++extern void speakup_cancel_paste(void);
+ extern void speakup_register_devsynth(void);
+ extern void speakup_unregister_devsynth(void);
+ extern void synth_write(const char *buf, size_t count);
 -- 
 2.0.0
 
