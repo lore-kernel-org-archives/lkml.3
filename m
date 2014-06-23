@@ -1,59 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752171AbaFWHfI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 03:35:08 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:56576 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750722AbaFWHfH (ORCPT
+	id S1751374AbaFWHoz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 03:44:55 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:56986 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751099AbaFWHox (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 03:35:07 -0400
-Date: Mon, 23 Jun 2014 09:35:00 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Stephane Eranian <eranian@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>, Joe Mario <jmario@redhat.com>,
-        Don Zickus <dzickus@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH 1/2] perf/x86: update Haswell PEBS event constraints
-Message-ID: <20140623073500.GJ19860@laptop.programming.kicks-ass.net>
-References: <1403193509-22393-1-git-send-email-eranian@google.com>
- <1403193509-22393-2-git-send-email-eranian@google.com>
- <20140619180028.GU8178@tassilo.jf.intel.com>
- <CABPqkBTw9wi1LSoqWUYcN2W1fvBYDfsdqkdxDTPQ0rWUEUFLmA@mail.gmail.com>
- <20140619201801.GV8178@tassilo.jf.intel.com>
- <CABPqkBRy=u6oyyFV9yC9uOykHbNUdDqDgeQ3XSTpcAfQAyS-+g@mail.gmail.com>
- <20140619204041.GW8178@tassilo.jf.intel.com>
+	Mon, 23 Jun 2014 03:44:53 -0400
+Date: Mon, 23 Jun 2014 08:44:40 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Dave Chinner <david@fromorbit.com>, Jens Axboe <axboe@fb.com>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: [regression] fix 32-bit breakage in block device read(2) (was Re:
+ 32-bit bug in iovec iterator changes)
+Message-ID: <20140623074440.GV18016@ZenIV.linux.org.uk>
+References: <20140621035144.GA8526@thunk.org>
+ <20140621055306.GP18016@ZenIV.linux.org.uk>
+ <20140621230922.GA13188@thunk.org>
+ <20140621234913.GQ18016@ZenIV.linux.org.uk>
+ <1403395400.2592.4.camel@jarvis.lan>
+ <20140622002618.GR18016@ZenIV.linux.org.uk>
+ <1403397164.2177.40.camel@dabdike.int.hansenpartnership.com>
+ <20140622005352.GS18016@ZenIV.linux.org.uk>
+ <20140622010032.GT18016@ZenIV.linux.org.uk>
+ <20140622115007.GA5333@thunk.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140619204041.GW8178@tassilo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140622115007.GA5333@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 01:40:41PM -0700, Andi Kleen wrote:
-> On Thu, Jun 19, 2014 at 10:31:29PM +0200, Stephane Eranian wrote:
-> > On Thu, Jun 19, 2014 at 10:18 PM, Andi Kleen <ak@linux.intel.com> wrote:
-> > >> I don't quite understand that.
-> > >> You need to know which events support PEBS. You need a table
-> > >
-> > > We're talking about the kernel allowing things here.
-> > > Yes the user still needs to know what supports PEBS, but
-> > > that doesn't concern the kernel.
-> > >
-> > Just need to make sure you don't return bogus information.
+On Sun, Jun 22, 2014 at 07:50:07AM -0400, Theodore Ts'o wrote:
+> On Sun, Jun 22, 2014 at 02:00:32AM +0100, Al Viro wrote:
+> > 
+> > PS: I agree that it's worth careful commenting, obviously, but
+> > before sending it to Linus (*with* comments) I want to get a
+> > confirmation that this one-liner actually fixes what Ted is seeing.
+> > I have reproduced it here, and that change makes the breakage go
+> > away in my testing, but I'd like to make sure that we are seeing the
+> > same thing.  Ted?
 > 
-> GIGO. We only need to prevent security issues.
+> Hep, that fixes things.  Thanks for explaining what was going on!
 
-> Yes if the user specifies a bogus raw event it will not count.
-> That's fine. The important part is just that nothing ever crashes.
+OK, here it is, hopefully with sufficient comments:
+    
+blkdev_read_iter() wants to cap the iov_iter by the amount of
+data remaining to the end of device.  That's what iov_iter_truncate()
+is for (trim iter->count if it's above the given limit).  So far,
+so good, but the argument of iov_iter_truncate() is size_t, so on
+32bit boxen (in case of a large device) we end up with that upper
+limit truncated down to 32 bits *before* comparing it with iter->count.
 
-Right. But IIRC you were previously arguing that we can in fact crash
-the machine with raw PEBS events, as illustrated with the SNB PEBS
-cycles 'event'.
+Easily fixed by making iov_iter_truncate() take 64bit argument -
+it does the right thing after such change (we only reach the
+assignment in there when the current value of iter->count is greater
+than the limit, i.e. for anything that would get truncated we don't
+reach the assignment at all) and that argument is not the new
+value of iter->count - it's an upper limit for such.
 
-Which is where my strict_pebs patch came from; by default only allow the
-sanitized known-safe list of events, but allow the system administrator
-to disable that test and allow any PEBS event.
+The overhead of passing u64 is not an issue - the thing is inlined,
+so callers passing size_t won't pay any penalty.
 
+Reported-by: Theodore Tso <tytso@mit.edu>
+Tested-by: Theodore Tso <tytso@mit.edu>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+---
+
+diff --git a/include/linux/uio.h b/include/linux/uio.h
+index ddfdb53..17ae7e3 100644
+--- a/include/linux/uio.h
++++ b/include/linux/uio.h
+@@ -94,8 +94,20 @@ static inline size_t iov_iter_count(struct iov_iter *i)
+ 	return i->count;
+ }
+ 
+-static inline void iov_iter_truncate(struct iov_iter *i, size_t count)
++/*
++ * Cap the iov_iter by given limit; note that the second argument is
++ * *not* the new size - it's upper limit for such.  Passing it a value
++ * greater than the amount of data in iov_iter is fine - it'll just do
++ * nothing in that case.
++ */
++static inline void iov_iter_truncate(struct iov_iter *i, u64 count)
+ {
++	/*
++	 * count doesn't have to fit in size_t - comparison extends both
++	 * operands to u64 here and any value that would be truncated by
++	 * conversion in assignement is by definition greater than all
++	 * values of size_t, including old i->count.
++	 */
+ 	if (i->count > count)
+ 		i->count = count;
+ }
