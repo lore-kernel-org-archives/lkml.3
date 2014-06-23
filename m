@@ -1,64 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753591AbaFWIkm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 04:40:42 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55596 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752650AbaFWIca (ORCPT
+	id S1753672AbaFWIlR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 04:41:17 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:51471 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753584AbaFWIkn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 04:32:30 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 050/111] USB: cdc-wdm: properly include types.h
-Date: Mon, 23 Jun 2014 10:31:25 +0200
-Message-Id: <1507358d93f24d74ba28704347873666e2b629e8.1403512281.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
-References: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
-In-Reply-To: <cover.1403512280.git.jslaby@suse.cz>
-References: <cover.1403512280.git.jslaby@suse.cz>
+	Mon, 23 Jun 2014 04:40:43 -0400
 MIME-Version: 1.0
+In-Reply-To: <20140616201004.GA18240@himangi-Dell>
+References: <20140616201004.GA18240@himangi-Dell>
+Date: Mon, 23 Jun 2014 10:40:41 +0200
+X-Google-Sender-Auth: 6huBeMCH5iyty1KKVxR7RGcr7pE
+Message-ID: <CAMuHMdVMy6-QPS+JcFQO8LH-BnzjmcaaD_c005WrWqsJ3GQ7Fw@mail.gmail.com>
+Subject: Re: [PATCH] zorro: use ARRAY_SIZE
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Himangi Saraogi <himangi774@gmail.com>
+Cc: linux-m68k <linux-m68k@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Julia Lawall <julia.lawall@lip6.fr>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+On Mon, Jun 16, 2014 at 10:10 PM, Himangi Saraogi <himangi774@gmail.com> wrote:
+> ARRAY_SIZE is more concise to use when the size of an array is divided
+> by the size of its type or the size of its first element.
+>
+> The Coccinelle semantic patch that makes this change is as follows:
+>
+> // <smpl>
+> @@
+> type T;
+> T[] E;
+> @@
+>
+> - (sizeof(E)/sizeof(T))
+> + ARRAY_SIZE(E)
+> // </smpl>
+>
+>
+> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+Thanks!
 
-===============
+Will apply and queue for v3.17.
+I also converted the MANUF definition a few lines above:
 
-commit 7ac3764fcafc06e72e1a79a9d998b9fdd900b2a6 upstream.
+-#define MANUF( manuf, name )           { 0x##manuf,
+sizeof(__prods_##manuf) / sizeof(struct zorro_prod_info),
+__manufstr_##manuf, __prods_##manuf },
++#define MANUF( manuf, name )           { 0x##manuf,
+ARRAY_SIZE(__prods_##manuf), __manufstr_##manuf, __prods_##manuf },
 
-The file include/uapi/linux/usb/cdc-wdm.h uses a __u16 so it needs to
-include types.h as well to make the build system happy.
+> ---
+>  drivers/zorro/names.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/zorro/names.c b/drivers/zorro/names.c
+> index 6f3fd99..4ccbcc9 100644
+> --- a/drivers/zorro/names.c
+> +++ b/drivers/zorro/names.c
+> @@ -52,7 +52,7 @@ static struct zorro_manuf_info __initdata zorro_manuf_list[] = {
+>  #include "devlist.h"
+>  };
+>
+> -#define MANUFS (sizeof(zorro_manuf_list)/sizeof(struct zorro_manuf_info))
+> +#define MANUFS ARRAY_SIZE(zorro_manuf_list)
+>
+>  void __init zorro_name_device(struct zorro_dev *dev)
+>  {
 
-Fixes: 3edce1cf813a ("USB: cdc-wdm: implement IOCTL_WDM_MAX_COMMAND")
-Cc: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- include/uapi/linux/usb/cdc-wdm.h | 2 ++
- 1 file changed, 2 insertions(+)
+Gr{oetje,eeting}s,
 
-diff --git a/include/uapi/linux/usb/cdc-wdm.h b/include/uapi/linux/usb/cdc-wdm.h
-index f03134feebd6..0dc132e75030 100644
---- a/include/uapi/linux/usb/cdc-wdm.h
-+++ b/include/uapi/linux/usb/cdc-wdm.h
-@@ -9,6 +9,8 @@
- #ifndef _UAPI__LINUX_USB_CDC_WDM_H
- #define _UAPI__LINUX_USB_CDC_WDM_H
- 
-+#include <linux/types.h>
-+
- /*
-  * This IOCTL is used to retrieve the wMaxCommand for the device,
-  * defining the message limit for both reading and writing.
--- 
-2.0.0
+                        Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
