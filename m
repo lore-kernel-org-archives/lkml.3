@@ -1,97 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756741AbaFWUcb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 16:32:31 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:62152 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754504AbaFWUca (ORCPT
+	id S1756824AbaFWUcm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 16:32:42 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:51230 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755563AbaFWUck (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 16:32:30 -0400
+	Mon, 23 Jun 2014 16:32:40 -0400
+Date: Mon, 23 Jun 2014 22:27:34 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: linux-sunxi@googlegroups.com
+Cc: bay@hackerdom.ru, david@hardeman.nu, devicetree@vger.kernel.org,
+        galak@codeaurora.org, grant.likely@linaro.org,
+        ijc+devicetree@hellion.org.uk, james.hogan@imgtec.com,
+        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        m.chehab@samsung.com, mark.rutland@arm.com, pawel.moll@arm.com,
+        rdunlap@infradead.org, robh+dt@kernel.org, sean@mess.org,
+        srinivas.kandagatla@st.com, wingrime@linux-sunxi.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org
+Subject: Re: [linux-sunxi] Re: [PATCH v10 4/5] ARM: sunxi: Add IR controllers
+ on A20 to dtsi
+Message-ID: <20140623202734.GN19730@lukather>
+References: <1403348646-31091-1-git-send-email-bay@hackerdom.ru>
+ <1403348646-31091-5-git-send-email-bay@hackerdom.ru>
+ <20140623130851.GD19730@lukather>
+ <7d7d6451-3a26-45dc-aa62-b939fc7889ce@googlegroups.com>
 MIME-Version: 1.0
-In-Reply-To: <20140623202615.GA29199@kroah.com>
-References: <20140621180201.GA4621@amd.pavel.ucw.cz>
-	<CAKb7UvhOCiBHcsB6a0qKBNsC3c9pmb=Wc7zucbBuP6vt-tx2eA@mail.gmail.com>
-	<20140621194538.GA4903@kroah.com>
-	<CAKb7UvjhOystpeRy1nQx49Nspve4wHQPb+e7gJQ-RT-HseK4Cw@mail.gmail.com>
-	<20140623130259.GA29809@amd.pavel.ucw.cz>
-	<CAKb7UvhmatCtu2rEHgVOjitN1gAPTsgfaUmA2iOLX2Qwhi+Yxg@mail.gmail.com>
-	<20140623201503.GA4551@amd.pavel.ucw.cz>
-	<CAKb7UvjU+MvW+rXi8488GE64Exuxj3+H5V+E8fzfL5fTb1CGMA@mail.gmail.com>
-	<20140623202615.GA29199@kroah.com>
-Date: Mon, 23 Jun 2014 16:32:29 -0400
-X-Google-Sender-Auth: MZvoZ0ssd6aOi6j57nUjrRJRIDE
-Message-ID: <CAKb7UvjtQccXkGZGtAk6+FA2v+SL9ud4Rjz35jFq6=kdbJKXGA@mail.gmail.com>
-Subject: Re: unparseable, undocumented /sys/class/drm/.../pstate
-From: Ilia Mirkin <imirkin@alum.mit.edu>
-To: Greg KH <greg@kroah.com>
-Cc: Pavel Machek <pavel@ucw.cz>, kernel list <linux-kernel@vger.kernel.org>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        David Airlie <airlied@linux.ie>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="RL02At1kLqUPtqvA"
+Content-Disposition: inline
+In-Reply-To: <7d7d6451-3a26-45dc-aa62-b939fc7889ce@googlegroups.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 23, 2014 at 4:26 PM, Greg KH <greg@kroah.com> wrote:
-> On Mon, Jun 23, 2014 at 04:18:39PM -0400, Ilia Mirkin wrote:
->> On Mon, Jun 23, 2014 at 4:15 PM, Pavel Machek <pavel@ucw.cz> wrote:
->> > Hi!
->> >
->> >> >> >> > I guess better interface would be something like
->> >> >> >> >
->> >> >> >> > pstate/07/core_clock_min
->> >> >> >> >           core_clock_max
->> >> >> >> >           memory_clock_min
->> >> >> >> >           memory_clock_max
->> >> >> >> >
->> >> >> >> > and then pstate/active containing just the number of active state?
->> >> >
->> >> >> Could we just say that the format of this file is one-per-line of
->> >> >>
->> >> >> level: information-for-the-user
->> >> >
->> >> > But it is not.
->> >>
->> >> But it is...
->> >>
->> >> > Management tools will want to parse it, sooner or
->> >> > later.  What is wrong with solution described above?
->> >>
->> >> It is complex and annoying to the people that will actually use it.
->> >
->> > grep -r . pstate/ is actually not that bad...
->>
->> While that's a clever trick that anyone who's done a bunch of stuff
->> with sysfs knows, I doubt the average linux user could come up with
->> that on their own. I know I didn't.
->
-> That's fine, why would an "average" Linux user ever need to poke around
-> in sysfs?  Again, please describe what you are wanting to have exported
-> to userspace, and what userspace is supposed to do with that
-> information, before worrying about the actual sysfs file layout.
 
-It would be nice to allow the end-user to switch between performance
-levels on the card.
+--RL02At1kLqUPtqvA
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-A particular card exposes some number of levels (well, a particular
-card's VBIOS), identified by a value between 0-254 (usually identified
-as a 2-char hex string). Each level has various information associated
-with it, like timing parameters for various bits of the card, as well
-as some more user-friendly concepts like "memory clock speed" etc.
+On Mon, Jun 23, 2014 at 01:08:24PM -0700, =D0=90=D0=BB=D0=B5=D0=BA=D1=81=D0=
+=B0=D0=BD=D0=B4=D1=80 =D0=91=D0=B5=D1=80=D1=81=D0=B5=D0=BD=D0=B5=D0=B2 wrot=
+e:
+> Thanks,
+>=20
+> Should I send applied patches in the further versions of this patch set?
 
-The card's current state may or may not correspond to one of the
-predefined levels; often-times the VBIOS initializes the card into
-some non-level state. This state may also be of some interest to the
-user.
+No, you don't have to.
 
-We can't switch to arbitrary speeds, only the defined ones (because of
-the various other timing parameters). The level ids don't carry too
-much semantic value (higher usually means faster though), so it would
-additionally be nice to tell the user some of the more user-friendly
-information about each level. Different hardware versions will be able
-to expose different types of information (but always in <name> <clock
-speed/range> pairs).
+Maxime
 
-  -ilia
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--RL02At1kLqUPtqvA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTqI22AAoJEBx+YmzsjxAgtHIP+welE16gbaWWut3XCrNuxOOG
+TETz5zPnbkQDDhg7ccNkFuSwgo/yEXyXPjVMPlFhyv4XoGosagpZy/7u5LdF62xV
+ISyiaTcj+3xLJZ8We5nJ8absRCyBE2pd5h2FIAjy3srCdASdemcq4N8aXAqmAt05
+DqJ9mVcTlss36A55T0q/cu73jfdzISjvaPI+5XPXApj71XWz/hKflkbTN8nETXAA
+Fnh2P2+upAhSZK1JfpnMnJ2Ii80Y26bqRNQNMYbi7eA8Yg9CggHlETsdwUPn6qeM
+hOiFWmTE8xVBUCKlLaXZpP8XiMdi4lfOkQbVvMDoqX9k5whCgcG57bV1Ikbm02+Y
+NSzQgndrut1wXs4skNC2EPe5UcAO/4dj6LO2qfvtU58WzUzXVIL7EXwliWyMy42T
+CZ/4RlIXR7TmAffcsrnfb/iecXQySef0t0HmV/hxxi3hq1jlw6J6+MGzhDrjIvo2
+AZ/zBehyEZWlILpsKkRNCDqGU3zbVXgS8OnQfoD6Xr/t6cLFGLf4buFOPLPiGG5u
+YX6Q4FIK1r9yoYta0d/9e06cXiue3nqs1Jzx4MO2hIdwIZQfxeavAtmrWgcl+wJc
+d3Vw8mLf5k3Lz5QonZjaQX1Q1i4jKSjM8hXZEoLMn677YLnQWA6ccvX7qBGtdcPx
+Ehdws/lmYwWEhm5bKNEn
+=glqK
+-----END PGP SIGNATURE-----
+
+--RL02At1kLqUPtqvA--
