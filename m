@@ -1,57 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755364AbaFWSqD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 14:46:03 -0400
-Received: from smtprelay.synopsys.com ([198.182.60.111]:52256 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752850AbaFWSqA convert rfc822-to-8bit (ORCPT
+	id S1755407AbaFWSqm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 14:46:42 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:60676 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753200AbaFWSqk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 14:46:00 -0400
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-To: Robert Baldyga <r.baldyga@samsung.com>, "balbi@ti.com" <balbi@ti.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
-        "andrzej.p@samsung.com" <andrzej.p@samsung.com>
-Subject: RE: [PATCH 00/11] usb: dwc2/gadget: fix series
-Thread-Topic: [PATCH 00/11] usb: dwc2/gadget: fix series
-Thread-Index: AQHPjrf/5TpNhxxKqkauGTRu27XYeZt/Bepw
-Date: Mon, 23 Jun 2014 18:45:59 +0000
-Message-ID: <A2CA0424C0A6F04399FB9E1CD98E0304844B9CED@US01WEMBX2.internal.synopsys.com>
-References: <1403509890-14103-1-git-send-email-r.baldyga@samsung.com>
-In-Reply-To: <1403509890-14103-1-git-send-email-r.baldyga@samsung.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.9.64.241]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 23 Jun 2014 14:46:40 -0400
+Message-ID: <53A8760D.8080106@wwwdotorg.org>
+Date: Mon, 23 Jun 2014 12:46:37 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
+To: Alexandre Courbot <acourbot@nvidia.com>,
+        Thierry Reding <thierry.reding@gmail.com>
+CC: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gnurou@gmail.com
+Subject: Re: [PATCH 0/2] ARM: tegra: roth: pinmux fixes
+References: <1403508779-25896-1-git-send-email-acourbot@nvidia.com>
+In-Reply-To: <1403508779-25896-1-git-send-email-acourbot@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Robert Baldyga [mailto:r.baldyga@samsung.com]
-> Sent: Monday, June 23, 2014 12:51 AM
-> 
-> Hello,
-> 
-> This patchset contains fixes for dwc2 gadget driver. It touches PHY,
-> FIFO configuration, initialization sequence and adds many other small fixes.
+On 06/23/2014 01:32 AM, Alexandre Courbot wrote:
+> Two small but important fixes to SHIELD's pinmux configuration.
+> The use of invalid properties caused the pinmux to not be applied
+> at all. Also the setting for sdmmc clock lines resulted in random
+> errors or even the impossibility to probe attached devices.
 
-Hi Robert,
-
-I have a couple of questions/suggestions on patches #6 and #10. Other
-than that,
-
-for the entire series,
-Acked-by: Paul Zimmerman <paulz@synopsys.com>
-
-I think we should also have Felipe's ACK for the parts that concern the
-PHY framework and the gadget API.
-
--- 
-Paul
-
+It might be nice to add Roth's pinmux to:
+https://github.com/NVIDIA/tegra-pinmux-scripts
