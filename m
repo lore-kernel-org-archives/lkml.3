@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755301AbaFWNhb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:37:31 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36687 "EHLO
+	id S1755768AbaFWNh7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:37:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36671 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753878AbaFWNDd (ORCPT
+	with ESMTP id S1753835AbaFWND3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:03:33 -0400
+	Mon, 23 Jun 2014 09:03:29 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Johannes Berg <johannes.berg@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 08/93] net: filter: s390: fix JIT address randomization
-Date: Mon, 23 Jun 2014 14:01:47 +0100
-Message-Id: <1403528592-2163-9-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 06/93] mac80211: fix on-channel remain-on-channel
+Date: Mon, 23 Jun 2014 14:01:45 +0100
+Message-Id: <1403528592-2163-7-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
 References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
@@ -28,64 +27,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit e84d2f8d2ae33c8215429824e1ecf24cbca9645e upstream.
+commit b4b177a5556a686909e643f1e9b6434c10de079f upstream.
 
-This is the s390 variant of Alexei's JIT bug fix.
-(patch description below stolen from Alexei's patch)
+Jouni reported that if a remain-on-channel was active on the
+same channel as the current operating channel, then the ROC
+would start, but any frames transmitted using mgmt-tx on the
+same channel would get delayed until after the ROC.
 
-bpf_alloc_binary() adds 128 bytes of room to JITed program image
-and rounds it up to the nearest page size. If image size is close
-to page size (like 4000), it is rounded to two pages:
-round_up(4000 + 4 + 128) == 8192
-then 'hole' is computed as 8192 - (4000 + 4) = 4188
-If prandom_u32() % hole selects a number >= PAGE_SIZE - sizeof(*header)
-then kernel will crash during bpf_jit_free():
+The reason for this is that the ROC starts, but doesn't have
+any handling for "remain on the same channel", so it stops
+the interface queues. The later mgmt-tx then puts the frame
+on the interface queues (since it's on the current operating
+channel) and thus they get delayed until after the ROC.
 
-kernel BUG at arch/x86/mm/pageattr.c:887!
-Call Trace:
- [<ffffffff81037285>] change_page_attr_set_clr+0x135/0x460
- [<ffffffff81694cc0>] ? _raw_spin_unlock_irq+0x30/0x50
- [<ffffffff810378ff>] set_memory_rw+0x2f/0x40
- [<ffffffffa01a0d8d>] bpf_jit_free_deferred+0x2d/0x60
- [<ffffffff8106bf98>] process_one_work+0x1d8/0x6a0
- [<ffffffff8106bf38>] ? process_one_work+0x178/0x6a0
- [<ffffffff8106c90c>] worker_thread+0x11c/0x370
+To fix this, add some logic to handle remaining on the same
+channel specially and not stop the queues etc. in this case.
+This not only fixes the bug but also improves behaviour in
+this case as data frames etc. can continue to flow.
 
-since bpf_jit_free() does:
-  unsigned long addr = (unsigned long)fp->bpf_func & PAGE_MASK;
-  struct bpf_binary_header *header = (void *)addr;
-to compute start address of 'bpf_binary_header'
-and header->pages will pass junk to:
-  set_memory_rw(addr, header->pages);
-
-Fix it by making sure that &header->image[prandom_u32() % hole] and &header
-are in the same page.
-
-Fixes: aa2d2c73c21f2 ("s390/bpf,jit: address randomize and write protect jit code")
-
-Reported-by: Alexei Starovoitov <ast@plumgrid.com>
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Jouni Malinen <j@w1.fi>
+Tested-by: Jouni Malinen <j@w1.fi>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/s390/net/bpf_jit_comp.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/mac80211/ieee80211_i.h |  1 +
+ net/mac80211/offchannel.c  | 27 ++++++++++++++++++++-------
+ 2 files changed, 21 insertions(+), 7 deletions(-)
 
-diff --git a/arch/s390/net/bpf_jit_comp.c b/arch/s390/net/bpf_jit_comp.c
-index 8ccd6a669804..63c527eb096f 100644
---- a/arch/s390/net/bpf_jit_comp.c
-+++ b/arch/s390/net/bpf_jit_comp.c
-@@ -811,7 +811,7 @@ static struct bpf_binary_header *bpf_alloc_binary(unsigned int bpfsize,
- 		return NULL;
- 	memset(header, 0, sz);
- 	header->pages = sz / PAGE_SIZE;
--	hole = sz - (bpfsize + sizeof(*header));
-+	hole = min(sz - (bpfsize + sizeof(*header)), PAGE_SIZE - sizeof(*header));
- 	/* Insert random number of illegal instructions before BPF code
- 	 * and make sure the first instruction starts at an even address.
- 	 */
+diff --git a/net/mac80211/ieee80211_i.h b/net/mac80211/ieee80211_i.h
+index 735349bd9a07..18e16d05292b 100644
+--- a/net/mac80211/ieee80211_i.h
++++ b/net/mac80211/ieee80211_i.h
+@@ -312,6 +312,7 @@ struct ieee80211_roc_work {
+ 
+ 	bool started, abort, hw_begun, notified;
+ 	bool to_be_freed;
++	bool on_channel;
+ 
+ 	unsigned long hw_start_time;
+ 
+diff --git a/net/mac80211/offchannel.c b/net/mac80211/offchannel.c
+index 11d3f227e11e..e554a246e52c 100644
+--- a/net/mac80211/offchannel.c
++++ b/net/mac80211/offchannel.c
+@@ -333,7 +333,7 @@ void ieee80211_sw_roc_work(struct work_struct *work)
+ 		container_of(work, struct ieee80211_roc_work, work.work);
+ 	struct ieee80211_sub_if_data *sdata = roc->sdata;
+ 	struct ieee80211_local *local = sdata->local;
+-	bool started;
++	bool started, on_channel;
+ 
+ 	mutex_lock(&local->mtx);
+ 
+@@ -354,14 +354,26 @@ void ieee80211_sw_roc_work(struct work_struct *work)
+ 	if (!roc->started) {
+ 		struct ieee80211_roc_work *dep;
+ 
+-		/* start this ROC */
+-		ieee80211_offchannel_stop_vifs(local);
++		WARN_ON(local->use_chanctx);
++
++		/* If actually operating on the desired channel (with at least
++		 * 20 MHz channel width) don't stop all the operations but still
++		 * treat it as though the ROC operation started properly, so
++		 * other ROC operations won't interfere with this one.
++		 */
++		roc->on_channel = roc->chan == local->_oper_chandef.chan &&
++				  local->_oper_chandef.width != NL80211_CHAN_WIDTH_5 &&
++				  local->_oper_chandef.width != NL80211_CHAN_WIDTH_10;
+ 
+-		/* switch channel etc */
++		/* start this ROC */
+ 		ieee80211_recalc_idle(local);
+ 
+-		local->tmp_channel = roc->chan;
+-		ieee80211_hw_config(local, 0);
++		if (!roc->on_channel) {
++			ieee80211_offchannel_stop_vifs(local);
++
++			local->tmp_channel = roc->chan;
++			ieee80211_hw_config(local, 0);
++		}
+ 
+ 		/* tell userspace or send frame */
+ 		ieee80211_handle_roc_started(roc);
+@@ -380,9 +392,10 @@ void ieee80211_sw_roc_work(struct work_struct *work)
+  finish:
+ 		list_del(&roc->list);
+ 		started = roc->started;
++		on_channel = roc->on_channel;
+ 		ieee80211_roc_notify_destroy(roc, !roc->abort);
+ 
+-		if (started) {
++		if (started && !on_channel) {
+ 			ieee80211_flush_queues(local, NULL);
+ 
+ 			local->tmp_channel = NULL;
 -- 
 1.9.1
 
