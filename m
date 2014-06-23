@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932084AbaFWNFX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:05:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37222 "EHLO
+	id S1755110AbaFWNJc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:09:32 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37233 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754877AbaFWNFV (ORCPT
+	with ESMTP id S1754880AbaFWNFW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:05:21 -0400
+	Mon, 23 Jun 2014 09:05:22 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ben Hutchings <ben@decadent.org.uk>,
+Cc: Sagi Grimberg <sagig@dev.mellanox.co.il>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 81/93] skbuff: skb_segment: orphan frags before copying
-Date: Mon, 23 Jun 2014 14:03:00 +0100
-Message-Id: <1403528592-2163-82-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 83/93] iser-target: Fix multi network portal shutdown regression
+Date: Mon, 23 Jun 2014 14:03:02 +0100
+Message-Id: <1403528592-2163-84-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
 References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
@@ -29,45 +28,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 1fd819ecb90cc9b822cd84d3056ddba315d3340f upstream.
+commit 2363d196686e44c0158929e7cf96c8589a24a81b upstream.
 
-skb_segment copies frags around, so we need
-to copy them carefully to avoid accessing
-user memory after reporting completion to userspace
-through a callback.
+This patch fixes a iser-target specific regression introduced in
+v3.15-rc6 with:
 
-skb_segment doesn't normally happen on datapath:
-TSO needs to be disabled - so disabling zero copy
-in this case does not look like a big deal.
+commit 14f4b54fe38f3a8f8392a50b951c8aa43b63687a
+Author: Sagi Grimberg <sagig@mellanox.com>
+Date:   Tue Apr 29 13:13:47 2014 +0300
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[bwh: Backported to 3.2.  As skb_segment() only supports page-frags *or* a
- frag list, there is no need for the additional frag_skb pointer or the
- preparatory renaming.]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+    Target/iscsi,iser: Avoid accepting transport connections during stop stage
+
+where the change to set iscsi_np->enabled = false within
+iscsit_clear_tpg_np_login_thread() meant that a iscsi_np with
+two iscsi_tpg_np exports would have it's parent iscsi_np set
+to a disabled state, even if other iscsi_tpg_np exports still
+existed.
+
+This patch changes iscsit_clear_tpg_np_login_thread() to only
+set iscsi_np->enabled = false when shutdown = true, and also
+changes iscsit_del_np() to set iscsi_np->enabled = true when
+iscsi_np->np_exports is non zero.
+
+(Fix up context changes for v3.10.y - nab)
+
+Cc: Sagi Grimberg <sagig@dev.mellanox.co.il>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+[ luis: backported to 3.11: Used nab's backport to 3.10 ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/core/skbuff.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/target/iscsi/iscsi_target.c     |  1 +
+ drivers/target/iscsi/iscsi_target_tpg.c | 10 ++++++----
+ 2 files changed, 7 insertions(+), 4 deletions(-)
 
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index abcad83cece3..39766e4077d6 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -2838,6 +2838,9 @@ struct sk_buff *skb_segment(struct sk_buff *skb, netdev_features_t features)
- 		skb_shinfo(nskb)->tx_flags = skb_shinfo(skb)->tx_flags & SKBTX_SHARED_FRAG;
+diff --git a/drivers/target/iscsi/iscsi_target.c b/drivers/target/iscsi/iscsi_target.c
+index 9c3852720bd1..2681183abca6 100644
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -460,6 +460,7 @@ int iscsit_del_np(struct iscsi_np *np)
+ 	spin_lock_bh(&np->np_thread_lock);
+ 	np->np_exports--;
+ 	if (np->np_exports) {
++		np->enabled = true;
+ 		spin_unlock_bh(&np->np_thread_lock);
+ 		return 0;
+ 	}
+diff --git a/drivers/target/iscsi/iscsi_target_tpg.c b/drivers/target/iscsi/iscsi_target_tpg.c
+index 7ac798db3f78..75a4e83842c2 100644
+--- a/drivers/target/iscsi/iscsi_target_tpg.c
++++ b/drivers/target/iscsi/iscsi_target_tpg.c
+@@ -175,14 +175,16 @@ void iscsit_put_tpg(struct iscsi_portal_group *tpg)
  
- 		while (pos < offset + len && i < nfrags) {
-+			if (unlikely(skb_orphan_frags(skb, GFP_ATOMIC)))
-+				goto err;
-+
- 			*frag = skb_shinfo(skb)->frags[i];
- 			__skb_frag_ref(frag);
- 			size = skb_frag_size(frag);
+ static void iscsit_clear_tpg_np_login_thread(
+ 	struct iscsi_tpg_np *tpg_np,
+-	struct iscsi_portal_group *tpg)
++	struct iscsi_portal_group *tpg,
++	bool shutdown)
+ {
+ 	if (!tpg_np->tpg_np) {
+ 		pr_err("struct iscsi_tpg_np->tpg_np is NULL!\n");
+ 		return;
+ 	}
+ 
+-	tpg_np->tpg_np->enabled = false;
++	if (shutdown)
++		tpg_np->tpg_np->enabled = false;
+ 	iscsit_reset_np_thread(tpg_np->tpg_np, tpg_np, tpg);
+ }
+ 
+@@ -198,7 +200,7 @@ void iscsit_clear_tpg_np_login_threads(
+ 			continue;
+ 		}
+ 		spin_unlock(&tpg->tpg_np_lock);
+-		iscsit_clear_tpg_np_login_thread(tpg_np, tpg);
++		iscsit_clear_tpg_np_login_thread(tpg_np, tpg, false);
+ 		spin_lock(&tpg->tpg_np_lock);
+ 	}
+ 	spin_unlock(&tpg->tpg_np_lock);
+@@ -521,7 +523,7 @@ static int iscsit_tpg_release_np(
+ 	struct iscsi_portal_group *tpg,
+ 	struct iscsi_np *np)
+ {
+-	iscsit_clear_tpg_np_login_thread(tpg_np, tpg);
++	iscsit_clear_tpg_np_login_thread(tpg_np, tpg, true);
+ 
+ 	pr_debug("CORE[%s] - Removed Network Portal: %s:%hu,%hu on %s\n",
+ 		tpg->tpg_tiqn->tiqn, np->np_ip, np->np_port, tpg->tpgt,
 -- 
 1.9.1
 
