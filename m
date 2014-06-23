@@ -1,90 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753818AbaFWLfO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 07:35:14 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:53135 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753348AbaFWLfM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 07:35:12 -0400
-Message-ID: <53A810E9.4070707@ti.com>
-Date: Mon, 23 Jun 2014 14:35:05 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753656AbaFWLiF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 07:38:05 -0400
+Received: from casper.infradead.org ([85.118.1.10]:47042 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751917AbaFWLiD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 07:38:03 -0400
+Date: Mon, 23 Jun 2014 13:37:59 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Andi Kleen <ak@linux.intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>, Joe Mario <jmario@redhat.com>,
+        Don Zickus <dzickus@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH 1/2] perf/x86: update Haswell PEBS event constraints
+Message-ID: <20140623113759.GD13930@laptop.programming.kicks-ass.net>
+References: <1403193509-22393-1-git-send-email-eranian@google.com>
+ <1403193509-22393-2-git-send-email-eranian@google.com>
+ <20140619180028.GU8178@tassilo.jf.intel.com>
+ <20140623071454.GI19860@laptop.programming.kicks-ass.net>
+ <CABPqkBTXNuKQKd-jFhAphmKnQ8PTdD7iQ66oYe7Uao_05rP8pw@mail.gmail.com>
 MIME-Version: 1.0
-To: Fabian Frederick <fabf@skynet.be>, <linux-kernel@vger.kernel.org>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-Subject: Re: [PATCH 1/1] drivers/video/fbdev/sis/sis_main.c: remove unnecessary
- test on unsigned value
-References: <1402516440-20554-1-git-send-email-fabf@skynet.be>
-In-Reply-To: <1402516440-20554-1-git-send-email-fabf@skynet.be>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="S2H6sdCBVgATSNQV21w5sbkGdG05vuglk"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBTXNuKQKd-jFhAphmKnQ8PTdD7iQ66oYe7Uao_05rP8pw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---S2H6sdCBVgATSNQV21w5sbkGdG05vuglk
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Mon, Jun 23, 2014 at 10:06:43AM +0200, Stephane Eranian wrote:
+> > @@ -1736,8 +1742,17 @@ static int intel_pmu_hw_config(struct perf_event *event)
+> >         if (ret)
+> >                 return ret;
+> >
+> > -       if (event->attr.precise_ip && x86_pmu.pebs_aliases)
+> > -               x86_pmu.pebs_aliases(event);
+> > +       if (event->attr.precise_ip) {
+> > +               if ((event->attr.config & INTEL_ARCH_EVENT_MASK) == 0x0000)
+> > +                       return -EINVAL;
+> > +
+> > +               if ((event->attr.config & ARCH_PERFMON_STRICT_PEBS) &&
+> > +                   (x86_pmu.attr_strict_pebs || !capable(CAP_SYS_ADMIN)))
+> > +                       return -EINVAL;
+> > +
+> I don't think filters work with any PEBS events. The event captured
+> does not qualify
+> for any of the filters (root or non-root).
 
-On 11/06/14 22:54, Fabian Frederick wrote:
-> unsigned value is never < 0
->=20
-> Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-> Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
-> ---
->  drivers/video/fbdev/sis/sis_main.c | 4 ----
->  1 file changed, 4 deletions(-)
->=20
-> diff --git a/drivers/video/fbdev/sis/sis_main.c b/drivers/video/fbdev/s=
-is/sis_main.c
-> index 22ad028..3f12a2d 100644
-> --- a/drivers/video/fbdev/sis/sis_main.c
-> +++ b/drivers/video/fbdev/sis/sis_main.c
-> @@ -1572,10 +1572,6 @@ sisfb_check_var(struct fb_var_screeninfo *var, s=
-truct fb_info *info)
->  	/* Adapt RGB settings */
->  	sisfb_bpp_to_var(ivideo, var);
-> =20
-> -	/* Sanity check for offsets */
-> -	if(var->xoffset < 0) var->xoffset =3D 0;
-> -	if(var->yoffset < 0) var->yoffset =3D 0;
-> -
->  	if(var->xres > var->xres_virtual)
->  		var->xres_virtual =3D var->xres;
-> =20
->=20
+Filters? You mean the inv,cmask etc? Well, we have the Intel provided
+'cycle' events that use them, so exposing them makes sense and allows
+such experimentation when we need another such alias.
 
-Thanks, queued for 3.17.
+> > +               if (x86_pmu.pebs_aliases)
+> > +                       x86_pmu.pebs_aliases(event);
+> > +       }
+> >
+> >         if (intel_pmu_needs_lbr_smpl(event)) {
+> >                 ret = intel_pmu_setup_lbr_filter(event);
+> > diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> > index ae96cfa5eddd..36b1f2afa61c 100644
+> > --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> > +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> > @@ -540,6 +540,7 @@ struct event_constraint intel_core2_pebs_event_constraints[] = {
+> >         INTEL_UEVENT_CONSTRAINT(0x00c5, 0x1), /* BR_INST_RETIRED.MISPRED */
+> >         INTEL_UEVENT_CONSTRAINT(0x1fc7, 0x1), /* SIMD_INST_RETURED.ANY */
+> >         INTEL_EVENT_CONSTRAINT(0xcb, 0x1),    /* MEM_LOAD_RETIRED.* */
+> > +       INTEL_UEVENT_CONSTRAINT(0x0000, 0x1), /* generic PEBS mask */
+> >         EVENT_CONSTRAINT_END
+> >  };
+> >
+> You probably need  to explain that 0x0000 MUST be the last event in
+> each table, i.e., catch all
+> event.
 
- Tomi
+Yeah, probably ;-) Alternatively we could make PEBS_CONSTRAINT_END that
+includes it or so.
 
-
-
---S2H6sdCBVgATSNQV21w5sbkGdG05vuglk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTqBDpAAoJEPo9qoy8lh71g2QP/jaIZKHPBEPkkAESL/BSQ/0n
-8y0OlObmRndjQK8OpWGTGfqMf0EYAyz73I9xIUo8sRvUvucHkLGOD0GG7HbtDfjk
-PXKbVLba2I7p/YESkg/upzgi81bB2X8T3iEG9l7DXua09y8S0iAJ9kBjQ/jeWeM2
-m/TWtfHjM3tDZ9+kJObYI8ybKIVUHxdC4rbX7bR7KLrTu+iJcJ8jvP3jJLP5MBKV
-Ei91/39KZNl/G1brVLLKR4GTFjxDFf4FiBy7T68UO9VQuTcSqBtB5RyEAhtXUsnX
-C2ezxOpIZJtXQWygYGQcEuo8T0T5cGkgX0Ih8NtMofHF40Q+dCdWstITQXJPKmsP
-I/FeECJ1YjZ7N7X5cqzdiPSR3q06pvbLLzOU16TD44JnFK7TllRtLe3Zumd3vy6e
-10pbpNWT8vxgbMPB9oWO/p8Niwp+REg4wqzaIANUtPHipZBzd4gUu7eJlTYgQG8a
-ifqK3WKdXlDucVsWa5qy5cGHa0MkJ8/YEhtjXcr/aKScHDQ5MsJnLYrOnA+Scn0K
-boq7I9xB35RxVAeqNQsDbVPD7FCxXKLzyl8BUl0gV6HOE1JMYX0gga3ghQi1+1yI
-3PSs2GZBmgpKvqBoLgiSfOnQnJ3ogMJs2mYYIYZAti7PXo88WsduG20lfn081VeZ
-3kp+OIsKyLjx0dPrC+Tj
-=IlsZ
------END PGP SIGNATURE-----
-
---S2H6sdCBVgATSNQV21w5sbkGdG05vuglk--
+Like said (possibly in another email) this patch was a very quick draft
+and I don't think I've even ran it, it was on the todo pile..
