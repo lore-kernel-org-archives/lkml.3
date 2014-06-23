@@ -1,93 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755843AbaFWO6y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 10:58:54 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:63494 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754328AbaFWO6w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 10:58:52 -0400
-Message-ID: <1403535525.10968.7.camel@lolumad>
-Subject: Re: [PATCH 2/2] cfg80211: Use 5MHz bandwidth by default when
- checking usable channels
-From: Rostislav Lisovy <lisovy@gmail.com>
-To: Felix Fietkau <nbd@openwrt.org>
-Cc: Johannes Berg <johannes@sipsolutions.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michal Sojka <sojkam1@fel.cvut.cz>, s.sander@nordsys.de,
-        jan-niklas.meier@volkswagen.de,
-        Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
-Date: Mon, 23 Jun 2014 16:58:45 +0200
-In-Reply-To: <53A83DE1.4050106@openwrt.org>
-References: <1397565476-4348-1-git-send-email-rostislav.lisovy@fel.cvut.cz>
-		 <1397565476-4348-3-git-send-email-rostislav.lisovy@fel.cvut.cz>
-		 <53A6C0FF.9090104@openwrt.org>
-		 <1403514536.4418.6.camel@jlt4.sipsolutions.net>
-		 <53A7FBB2.2050703@openwrt.org>
-		 <1403517938.4418.16.camel@jlt4.sipsolutions.net>
-	 <1403534300.7341.6.camel@lolumad> <53A83DE1.4050106@openwrt.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755153AbaFWPIe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 11:08:34 -0400
+Received: from vps0.lunn.ch ([178.209.37.122]:34706 "EHLO vps0.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751212AbaFWPIc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 11:08:32 -0400
+Date: Mon, 23 Jun 2014 17:04:07 +0200
+From: Andrew Lunn <andrew@lunn.ch>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        sergei.shtylyov@cogentembedded.com,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: mvebu: Fix the improper use of the compatible
+ string armada38x using a wildcard
+Message-ID: <20140623150407.GA6553@lunn.ch>
+References: <1403533011-21339-1-git-send-email-gregory.clement@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403533011-21339-1-git-send-email-gregory.clement@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-06-23 at 16:46 +0200, Felix Fietkau wrote:
-> On 2014-06-23 16:38, Rostislav Lisovy wrote:
-> > On Mon, 2014-06-23 at 12:05 +0200, Johannes Berg wrote:
-> >> On Mon, 2014-06-23 at 12:04 +0200, Felix Fietkau wrote:
-> >> > On 2014-06-23 11:08, Johannes Berg wrote:
-> >> > > On Sun, 2014-06-22 at 13:41 +0200, Felix Fietkau wrote:
-> >> > >> On 2014-04-15 14:37, Rostislav Lisovy wrote:
-> >> > >> > Current code checks if the 20MHz bandwidth is allowed for
-> >> > >> > particular channel -- if it is not, the channel is disabled.
-> >> > >> > Since we need to use 5/10 MHz channels, this code is modified in
-> >> > >> > the way that the default bandwidth to check is 5MHz. If the
-> >> > >> > maximum bandwidth allowed by the channel is smaller than 5MHz,
-> >> > >> > the channel is disabled. Otherwise the channel is used and the
-> >> > >> > flags are set according to the bandwidth allowed by the channel.
-> >> > >> > 
-> >> > >> > Signed-off-by: Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
-> >> > > 
-> >> > >> This change causes a regression and needs to be reverted or fixed.
-> >> > > 
-> >> > > Noted, I've reverted it in mac80211.git.
-> >> > > 
-> >> > >> It leaves Channel 12 enabled for US regdomain and does not prevent
-> >> > >> bringing up AP mode on it (IEEE80211_CHAN_NO_20MHZ does not get set).
-> >> > > 
-> >> > > I'm not sure this makes sense - CHAN_NO_20MHZ shouldn't get set on that
-> >> > > channel? It should be disabled for other reasons for AP mode - e.g.
-> >> > > NO_IR.
-> >> > I was thinking it could be valid in AP mode for 5 MHz operation.
-> >> 
-> >> Huh, ok, maybe. I guess Rostislav can look into the details :)
-> >> 
-> > 
-> > I am a bit confused right now. The regression is that the channel used
-> > to be completely disabled and now it is not? The regulatory restrictions
-> > prohibit the 20MHz BW for this channel but 5MHz BW is alright?
-> Correct. The matching rule is this:
->         (2402 - 2472 @ 40), (N/A, 30), (N/A)
+On Mon, Jun 23, 2014 at 04:16:51PM +0200, Gregory CLEMENT wrote:
+> Wildcards in compatible strings should be avoid. "marvell,armada38x"
+> was recently introduced but was not yet used.
 > 
-> Channel 11 (2462 MHz) is allowed, because 2472 MHz is below the limit.
-> Channel 12 (2467 MHz) is not allowed, because 2477 MHz is too high.
+> The armada 385 SoC is a superset of the armada 380 SoC (with more CPUs
+> and more PCIe slots). So this patch replaces the use of
+> "marvell,armada38x" by the "marvell,armada380" string.
 > 
-> With your change, Channel 12 was enabled and usable for AP mode.
+> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
 
-Thank you Felix, this makes sense.
+Acked-by: Andrew Lunn <andrew@lunn.ch>
 
-I think the issue is the call
-  bw_fits = reg_does_bw_fit(fr, center_freq, MHZ_TO_KHZ(5));
-which checks if "2467 + 5" is equal or less than 2472 (which indeed is),
-when the result is true, the maximum allowed BW (max_bandwidth_khz) is
-wrongly used on that particular channel.
-
-I hope I will send a fix on Friday.
-
-Rostislav;
-
-
+> ---
+> Hi,
+> 
+> This fix should be merged in 3.16 and maybe sent as a fix for 3.15
+> too.
+> 
+> The initial patch (ARM: mvebu: Fix missing binding documentation for
+> Armada 38x) was re-written after the review about the use of the
+> wildcards here:
+> http://thread.gmane.org/gmane.linux.kernel/1728755/focus=79339 and
+> there:
+> http://thread.gmane.org/gmane.linux.ports.arm.kernel/334225/focus=334311
+> 
+> 
+> Thanks,
+> Gregory
+> 
+>  Documentation/devicetree/bindings/arm/armada-38x.txt | 14 ++++++++++++--
+>  arch/arm/boot/dts/armada-380.dtsi                    |  2 +-
+>  arch/arm/boot/dts/armada-385-db.dts                  |  2 +-
+>  arch/arm/boot/dts/armada-385-rd.dts                  |  2 +-
+>  arch/arm/boot/dts/armada-385.dtsi                    |  2 +-
+>  arch/arm/boot/dts/armada-38x.dtsi                    |  2 +-
+>  6 files changed, 17 insertions(+), 7 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/armada-38x.txt b/Documentation/devicetree/bindings/arm/armada-38x.txt
+> index 11f2330a6554..ad9f8ed4d9bd 100644
+> --- a/Documentation/devicetree/bindings/arm/armada-38x.txt
+> +++ b/Documentation/devicetree/bindings/arm/armada-38x.txt
+> @@ -6,5 +6,15 @@ following property:
+>  
+>  Required root node property:
+>  
+> - - compatible: must contain either "marvell,armada380" or
+> -   "marvell,armada385" depending on the variant of the SoC being used.
+> + - compatible: must contain "marvell,armada380"
+> +
+> +In addition, boards using the Marvell Armada 385 SoC shall have the
+> +following property before the previous one:
+> +
+> +Required root node property:
+> +
+> +compatible: must contain "marvell,armada385"
+> +
+> +Example:
+> +
+> +compatible = "marvell,a385-rd", "marvell,armada385", "marvell,armada380";
+> diff --git a/arch/arm/boot/dts/armada-380.dtsi b/arch/arm/boot/dts/armada-380.dtsi
+> index e69bc6759c39..4173a8ab34e7 100644
+> --- a/arch/arm/boot/dts/armada-380.dtsi
+> +++ b/arch/arm/boot/dts/armada-380.dtsi
+> @@ -16,7 +16,7 @@
+>  
+>  / {
+>  	model = "Marvell Armada 380 family SoC";
+> -	compatible = "marvell,armada380", "marvell,armada38x";
+> +	compatible = "marvell,armada380";
+>  
+>  	cpus {
+>  		#address-cells = <1>;
+> diff --git a/arch/arm/boot/dts/armada-385-db.dts b/arch/arm/boot/dts/armada-385-db.dts
+> index ff9637dd8d0f..4be6a2838a41 100644
+> --- a/arch/arm/boot/dts/armada-385-db.dts
+> +++ b/arch/arm/boot/dts/armada-385-db.dts
+> @@ -16,7 +16,7 @@
+>  
+>  / {
+>  	model = "Marvell Armada 385 Development Board";
+> -	compatible = "marvell,a385-db", "marvell,armada385", "marvell,armada38x";
+> +	compatible = "marvell,a385-db", "marvell,armada385", "marvell,armada380";
+>  
+>  	chosen {
+>  		bootargs = "console=ttyS0,115200 earlyprintk";
+> diff --git a/arch/arm/boot/dts/armada-385-rd.dts b/arch/arm/boot/dts/armada-385-rd.dts
+> index 40893255a3f0..aaca2861dc87 100644
+> --- a/arch/arm/boot/dts/armada-385-rd.dts
+> +++ b/arch/arm/boot/dts/armada-385-rd.dts
+> @@ -17,7 +17,7 @@
+>  
+>  / {
+>  	model = "Marvell Armada 385 Reference Design";
+> -	compatible = "marvell,a385-rd", "marvell,armada385", "marvell,armada38x";
+> +	compatible = "marvell,a385-rd", "marvell,armada385", "marvell,armada380";
+>  
+>  	chosen {
+>  		bootargs = "console=ttyS0,115200 earlyprintk";
+> diff --git a/arch/arm/boot/dts/armada-385.dtsi b/arch/arm/boot/dts/armada-385.dtsi
+> index f011009bf4cf..6283d7912f71 100644
+> --- a/arch/arm/boot/dts/armada-385.dtsi
+> +++ b/arch/arm/boot/dts/armada-385.dtsi
+> @@ -16,7 +16,7 @@
+>  
+>  / {
+>  	model = "Marvell Armada 385 family SoC";
+> -	compatible = "marvell,armada385", "marvell,armada38x";
+> +	compatible = "marvell,armada385", "marvell,armada380";
+>  
+>  	cpus {
+>  		#address-cells = <1>;
+> diff --git a/arch/arm/boot/dts/armada-38x.dtsi b/arch/arm/boot/dts/armada-38x.dtsi
+> index 3de364e81b52..689fa1a46728 100644
+> --- a/arch/arm/boot/dts/armada-38x.dtsi
+> +++ b/arch/arm/boot/dts/armada-38x.dtsi
+> @@ -20,7 +20,7 @@
+>  
+>  / {
+>  	model = "Marvell Armada 38x family SoC";
+> -	compatible = "marvell,armada38x";
+> +	compatible = "marvell,armada380";
+>  
+>  	aliases {
+>  		gpio0 = &gpio0;
+> -- 
+> 1.8.1.2
+> 
