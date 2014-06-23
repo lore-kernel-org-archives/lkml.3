@@ -1,80 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752726AbaFWBff (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 21:35:35 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:49306 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751675AbaFWBfd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 21:35:33 -0400
-Message-ID: <53A7845F.40404@gmail.com>
-Date: Mon, 23 Jun 2014 09:35:27 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>, anton@tuxera.com
-CC: linux-ntfs-dev@lists.sourceforge.net,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Liqin Chen <liqin.linux@gmail.com>,
-        "lennox.wu@gmail.com >> Lennox Wu" <lennox.wu@gmail.com>
-Subject: [PATCH] fs/ntfs: Use '%tx' instead of '%zx'
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752153AbaFWBcv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 21:32:51 -0400
+Received: from linuxhacker.ru ([217.76.32.60]:39754 "EHLO fiona.linuxhacker.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752083AbaFWBct (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jun 2014 21:32:49 -0400
+From: Oleg Drokin <green@linuxhacker.ru>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Cc: Cheng Shao <cheng_shao@xyratex.com>, Oleg Drokin <oleg.drokin@intel.com>
+Subject: [PATCH 09/18] staging/lustre/mgc: replace hard-coded MGC_ENQUEUE_LIMIT value
+Date: Sun, 22 Jun 2014 21:32:13 -0400
+Message-Id: <1403487142-4880-10-git-send-email-green@linuxhacker.ru>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1403487142-4880-1-git-send-email-green@linuxhacker.ru>
+References: <1403487142-4880-1-git-send-email-green@linuxhacker.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For subtraction between 2 pointers, the result's type is 'ptrdiff_t', so
-need use '%tx' instead of '%zx'.
+From: Cheng Shao <cheng_shao@xyratex.com>
 
-The related warning (allmodconfig under unicore32):
+During client mount, the client will send an LDLM_ENQUEUE request to
+MGS with send delay set to MGC_ENQUEUE_LIMIT, which is hard coded to
+50 seconds. On the other hand, the interval for pinger is deduced from
+obd_timeout. When obd_timeout is configured for a longer period of
+time, so does the pinger. We know that connecting to the secondary MGS
+node is triggered by the pinger. Now that we have a longer interval,
+the pinger will not be able to try the secondary before the
+LDLM_ENQUEUE request fails the mount using the same delay limit.
 
-    CC [M]  fs/ntfs/compress.o
-  fs/ntfs/compress.c: In function 'ntfs_decompress':
-  fs/ntfs/compress.c:207:2: warning: format '%zx' expects argument of type 'size_t', but argument 5 has type 'long int' [-Wformat=]
-    ntfs_debug("Beginning sub-block at offset = 0x%zx in the cb.",
-    ^
-    CC [M]  fs/ntfs/dir.o
-  fs/ntfs/dir.c: In function 'ntfs_readdir':
-  fs/ntfs/dir.c:1197:3: warning: format '%zx' expects argument of type 'size_t', but argument 5 has type 'long int' [-Wformat=]
-     ntfs_debug("In index root, offset 0x%zx.", (u8*)ie - (u8*)ir);
-     ^
+This code change will replace the hard-coded send delay being
+mentioned above with a value that is long enough to give the client a
+chance to connect to the secondary MGS if exists.
 
-Also let the related code match linux kernel styles which is found by
-'scripts/checkpatch.pl'.
-
-
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+Signed-off-by: Cheng Shao <cheng_shao@xyratex.com>
+Reviewed-on: http://review.whamcloud.com/9217
+Xyratex-bug-id: MRP-1516
+Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-4582
+Reviewed-by: Ryan Haasken <haasken@cray.com>
+Reviewed-by: Dmitry Eremin <dmitry.eremin@intel.com>
+Signed-off-by: Oleg Drokin <oleg.drokin@intel.com>
 ---
- fs/ntfs/compress.c | 2 +-
- fs/ntfs/dir.c      | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/staging/lustre/lustre/mgc/mgc_request.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/fs/ntfs/compress.c b/fs/ntfs/compress.c
-index f82498c..2ba8280 100644
---- a/fs/ntfs/compress.c
-+++ b/fs/ntfs/compress.c
-@@ -204,7 +204,7 @@ static int ntfs_decompress(struct page *dest_pages[], int *dest_index,
+diff --git a/drivers/staging/lustre/lustre/mgc/mgc_request.c b/drivers/staging/lustre/lustre/mgc/mgc_request.c
+index a806aef..28960f9 100644
+--- a/drivers/staging/lustre/lustre/mgc/mgc_request.c
++++ b/drivers/staging/lustre/lustre/mgc/mgc_request.c
+@@ -950,7 +950,10 @@ static int mgc_blocking_ast(struct ldlm_lock *lock, struct ldlm_lock_desc *desc,
+ }
  
- 	ntfs_debug("Entering, cb_size = 0x%x.", cb_size);
- do_next_sb:
--	ntfs_debug("Beginning sub-block at offset = 0x%zx in the cb.",
-+	ntfs_debug("Beginning sub-block at offset = 0x%tx in the cb.",
- 			cb - cb_start);
- 	/*
- 	 * Have we reached the end of the compression block or the end of the
-diff --git a/fs/ntfs/dir.c b/fs/ntfs/dir.c
-index 9e38daf..2d3c32d 100644
---- a/fs/ntfs/dir.c
-+++ b/fs/ntfs/dir.c
-@@ -1194,7 +1194,7 @@ static int ntfs_readdir(struct file *file, struct dir_context *actor)
- 	 * or signals an error (both covered by the rc test).
- 	 */
- 	for (;; ie = (INDEX_ENTRY*)((u8*)ie + le16_to_cpu(ie->length))) {
--		ntfs_debug("In index root, offset 0x%zx.", (u8*)ie - (u8*)ir);
-+		ntfs_debug("In index root, offset 0x%tx.", (u8 *)ie - (u8 *)ir);
- 		/* Bounds checks. */
- 		if (unlikely((u8*)ie < (u8*)ir || (u8*)ie +
- 				sizeof(INDEX_ENTRY_HEADER) > index_end ||
+ /* Not sure where this should go... */
+-#define  MGC_ENQUEUE_LIMIT 50
++/* This is the timeout value for MGS_CONNECT request plus a ping interval, such
++ * that we can have a chance to try the secondary MGS if any. */
++#define  MGC_ENQUEUE_LIMIT (INITIAL_CONNECT_TIMEOUT + (AT_OFF ? 0 : at_min) \
++				+ PING_INTERVAL)
+ #define  MGC_TARGET_REG_LIMIT 10
+ #define  MGC_SEND_PARAM_LIMIT 10
+ 
 -- 
-1.9.2.459.g68773ac
+1.9.0
+
