@@ -1,99 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754652AbaFWNk3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:40:29 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:48821 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753842AbaFWNk1 (ORCPT
+	id S1755576AbaFWNwG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:52:06 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60929 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754205AbaFWNwC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:40:27 -0400
-From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: sebastian.hesselbarth@gmail.com, tj@kernel.org, kishon@ti.com
-Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-ide@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v7 0/7] ARM: berlin: add AHCI support
-Date: Mon, 23 Jun 2014 15:39:36 +0200
-Message-Id: <1403530783-17180-1-git-send-email-antoine.tenart@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Mon, 23 Jun 2014 09:52:02 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: linux-kernel@vger.kernel.org
+Cc: jirislaby@gmail.com, Vojtech Pavlik <vojtech@suse.cz>,
+        Jiri Kosina <jkosina@suse.cz>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 00/21] kGraft
+Date: Mon, 23 Jun 2014 15:51:59 +0200
+Message-Id: <1403531519-29731-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1403530175-29217-1-git-send-email-jslaby@suse.cz>
+References: <1403530175-29217-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series adds the support for Berlin SoC AHCI controller. The
-controller allows to use the SATA host interface and, for example, the
-eSATA port on the BG2Q.
+Hi,
 
-The series adds a PHY driver to control the two SATA ports available,
-and adds a generic compatible to use the existing ahci_platform driver.
+this is the second round of RFC on kGraft, the linux kernel online
+patching developed at SUSE.
 
-Also enable the eSATA interface on the BG2Q DMP.
+The patches are posted as a reply to this email and can be also
+obtained as a whole tree at:
+https://git.kernel.org/cgit/linux/kernel/git/jirislaby/kgraft.git/log/?h=kgraft
 
-Changes since v6:
-        - added the 'clocks' property and support in the PHY driver
-        - updated the PHY compatible
+Jiri Kosina (4):
+  kgr: initial code
+  kgr: x86: refuse to build without fentry support
+  kgr: add procfs interface for per-process 'kgr_in_progress'
+  kgr: make a per-process 'in progress' flag a single bit
 
-Changes since v5:
-        - rebased on top of v3.16-rc1
-        - added the 'clocks' property in the sata node
+Jiri Slaby (12):
+  ftrace: Add function to find fentry of function
+  ftrace: Make ftrace_is_dead available globally
+  kgr: add testing kgraft patch
+  kgr: update Kconfig documentation
+  kgr: add Documentation
+  kgr: trigger the first check earlier
+  kgr: sched.h, introduce kgr_task_safe helper
+  kgr: mark task_safe in some kthreads
+  kgr: kthreads support
+  kgr: handle irqs
+  kgr: add tools
+  kgr: add MAINTAINERS entry
 
-Changes since v4:
-        - updated PHY driver as tristate
-        - handled the case were no SATA port is enabled
-        - updated the compatible to a generic one
-        - cosmetic fixups
+Jiri Kosina (6):
+  kgr: initial code
+  kgr: x86: refuse to build without fentry support
+  kgr: add procfs interface for per-process 'kgr_in_progress'
+  kgr: make a per-process 'in progress' flag a single bit
+  kgr: expose global 'in_progress' state through procfs
+  kgr: x86: optimize handling of CPU-bound tasks
 
-Changes since v3:
-        - moved all PHY operations to the PHY driver
-        - removed PHY sub-nodes
-        - removed the custom Berlin AHCI driver and switched to
-          ahci_platform
-        - added multiple PHYs support to the libahci_platform
+Jiri Slaby (14):
+  ftrace: Add function to find fentry of function
+  ftrace: Make ftrace_is_dead available globally
+  kgr: add testing kgraft patch
+  kgr: update Kconfig documentation
+  kgr: add Documentation
+  kgr: trigger the first check earlier
+  kgr: sched.h, introduce kgr_task_safe helper
+  kgr: mark task_safe in some kthreads
+  kgr: kthreads support
+  kgr: handle irqs
+  kgr: add MAINTAINERS entry
+  kgr: add support for missing functions
+  kgr: exercise non-present function
+  kgr: fix race of stub and patching
 
-Changes since v2:
-        - modeled each PHY as a sub-node
-        - cosmetic fixups
+Libor Pechacek (1):
+  kgr: rephrase the "kGraft failed" message
 
-Changes since v1:
-        - added a PHY driver, allowing to enable each port
-          individually and removed the 'force-port-map' property
-	- made the drivers a bit less magic :)
-        - wrote a function to select and configure registers in the
-          AHCI driver
-        - removed BG2 / BG2CD nodes
-
-Antoine Ténart (7):
-  phy: add a driver for the Berlin SATA PHY
-  Documentation: bindings: add the Berlin SATA PHY
-  ata: libahci: allow to use multiple PHYs
-  ata: ahci_platform: add a generic AHCI compatible
-  Documentation: bindings: document the sub-nodes AHCI bindings
-  ARM: berlin: add the AHCI node for the BG2Q
-  ARM: berlin: enable the eSATA interface on the BG2Q DMP
-
- .../devicetree/bindings/ata/ahci-platform.txt      |  37 ++++
- .../devicetree/bindings/phy/berlin-sata-phy.txt    |  16 ++
- arch/arm/boot/dts/berlin2q-marvell-dmp.dts         |   8 +
- arch/arm/boot/dts/berlin2q.dtsi                    |  29 +++
- drivers/ata/ahci.h                                 |   3 +-
- drivers/ata/ahci_platform.c                        |   2 +
- drivers/ata/libahci.c                              |   7 +
- drivers/ata/libahci_platform.c                     | 170 +++++++++++---
- drivers/phy/Kconfig                                |   7 +
- drivers/phy/Makefile                               |   1 +
- drivers/phy/phy-berlin-sata.c                      | 246 +++++++++++++++++++++
- 11 files changed, 490 insertions(+), 36 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/phy/berlin-sata-phy.txt
- create mode 100644 drivers/phy/phy-berlin-sata.c
+ Documentation/kgraft.txt           |  44 ++++
+ MAINTAINERS                        |   9 +
+ arch/x86/Kconfig                   |   2 +
+ arch/x86/include/asm/kgraft.h      |  61 ++++++
+ arch/x86/include/asm/thread_info.h |   6 +-
+ arch/x86/kernel/entry_64.S         |   9 +
+ drivers/base/devtmpfs.c            |   1 +
+ drivers/scsi/scsi_error.c          |   2 +
+ drivers/usb/core/hub.c             |   4 +-
+ fs/jbd2/journal.c                  |   2 +
+ fs/notify/mark.c                   |   5 +-
+ fs/proc/base.c                     |  11 +
+ include/linux/freezer.h            |   2 +
+ include/linux/ftrace.h             |   4 +
+ include/linux/kgraft.h             |  90 ++++++++
+ include/linux/sched.h              |   9 +
+ kernel/Kconfig.kgraft              |  10 +
+ kernel/Makefile                    |   1 +
+ kernel/hung_task.c                 |   5 +-
+ kernel/kgraft.c                    | 430 +++++++++++++++++++++++++++++++++++++
+ kernel/kthread.c                   |   3 +
+ kernel/rcu/tree.c                  |   6 +-
+ kernel/rcu/tree_plugin.h           |  10 +-
+ kernel/smpboot.c                   |   2 +
+ kernel/trace/ftrace.c              |  30 +++
+ kernel/trace/trace.h               |   2 -
+ kernel/workqueue.c                 |   3 +
+ mm/huge_memory.c                   |   1 +
+ net/bluetooth/rfcomm/core.c        |   2 +
+ samples/Kconfig                    |   8 +
+ samples/Makefile                   |   3 +-
+ samples/kgraft/Makefile            |   1 +
+ samples/kgraft/kgraft_patcher.c    |  99 +++++++++
+ 33 files changed, 864 insertions(+), 13 deletions(-)
+ create mode 100644 Documentation/kgraft.txt
+ create mode 100644 arch/x86/include/asm/kgraft.h
+ create mode 100644 include/linux/kgraft.h
+ create mode 100644 kernel/Kconfig.kgraft
+ create mode 100644 kernel/kgraft.c
+ create mode 100644 samples/kgraft/Makefile
+ create mode 100644 samples/kgraft/kgraft_patcher.c
 
 -- 
-1.9.1
+2.0.0
 
