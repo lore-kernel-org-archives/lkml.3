@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755172AbaFWN0E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:26:04 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36849 "EHLO
+	id S932164AbaFWN0c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:26:32 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36842 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754147AbaFWNEG (ORCPT
+	with ESMTP id S1752608AbaFWNEE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:04:06 -0400
+	Mon, 23 Jun 2014 09:04:04 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Lucas Stach <l.stach@pengutronix.de>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 31/93] cpufreq: cpu0: drop wrong devm usage
-Date: Mon, 23 Jun 2014 14:02:10 +0100
-Message-Id: <1403528592-2163-32-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 26/93] Input: synaptics - add min/max quirk for the ThinkPad W540
+Date: Mon, 23 Jun 2014 14:02:05 +0100
+Message-Id: <1403528592-2163-27-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
 References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
@@ -28,80 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lucas Stach <l.stach@pengutronix.de>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit e3beb0ac521d50d158a9d253373eae8421ac3998 upstream.
+commit 0b5fe736fe923f1f5e05413878d5990e92ffbdf5 upstream.
 
-This driver is using devres managed calls incorrectly, giving the cpu0
-device as first parameter instead of the cpufreq platform device.
-This results in resources not being freed if the cpufreq platform device
-is unbound, for example if probing has to be deferred for a missing
-regulator.
+https://bugzilla.redhat.com/show_bug.cgi?id=1096436
 
-Signed-off-by: Lucas Stach <l.stach@pengutronix.de>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-[ luis: backported to 3.11:
-  - use regulator_get() instead of regulator_get_optional() ]
+Tested-and-reported-by: ajayr@bigfoot.com
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/cpufreq/cpufreq-cpu0.c | 16 +++++++++++-----
- 1 file changed, 11 insertions(+), 5 deletions(-)
+ drivers/input/mouse/synaptics.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
-index ad1fde277661..37e2e77bb21f 100644
---- a/drivers/cpufreq/cpufreq-cpu0.c
-+++ b/drivers/cpufreq/cpufreq-cpu0.c
-@@ -197,7 +197,7 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
- 	cpu_dev = &pdev->dev;
- 	cpu_dev->of_node = np;
- 
--	cpu_reg = devm_regulator_get(cpu_dev, "cpu0");
-+	cpu_reg = regulator_get(cpu_dev, "cpu0");
- 	if (IS_ERR(cpu_reg)) {
- 		/*
- 		 * If cpu0 regulator supply node is present, but regulator is
-@@ -213,23 +213,23 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
- 		cpu_reg = NULL;
- 	}
- 
--	cpu_clk = devm_clk_get(cpu_dev, NULL);
-+	cpu_clk = clk_get(cpu_dev, NULL);
- 	if (IS_ERR(cpu_clk)) {
- 		ret = PTR_ERR(cpu_clk);
- 		pr_err("failed to get cpu0 clock: %d\n", ret);
--		goto out_put_node;
-+		goto out_put_reg;
- 	}
- 
- 	ret = of_init_opp_table(cpu_dev);
- 	if (ret) {
- 		pr_err("failed to init OPP table: %d\n", ret);
--		goto out_put_node;
-+		goto out_put_clk;
- 	}
- 
- 	ret = opp_init_cpufreq_table(cpu_dev, &freq_table);
- 	if (ret) {
- 		pr_err("failed to init cpufreq table: %d\n", ret);
--		goto out_put_node;
-+		goto out_put_clk;
- 	}
- 
- 	of_property_read_u32(np, "voltage-tolerance", &voltage_tolerance);
-@@ -274,6 +274,12 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
- 
- out_free_table:
- 	opp_free_cpufreq_table(cpu_dev, &freq_table);
-+out_put_clk:
-+	if (!IS_ERR(cpu_clk))
-+		clk_put(cpu_clk);
-+out_put_reg:
-+	if (!IS_ERR(cpu_reg))
-+		regulator_put(cpu_reg);
- out_put_node:
- 	of_node_put(np);
- out_put_parent:
+diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+index d60c9b7ad1b8..b1c473a65b2c 100644
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -1563,6 +1563,14 @@ static const struct dmi_system_id min_max_dmi_table[] __initconst = {
+ 		.driver_data = (int []){1024, 5112, 2024, 4832},
+ 	},
+ 	{
++		/* Lenovo ThinkPad W540 */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad W540"),
++		},
++		.driver_data = (int []){1024, 5112, 2024, 4832},
++	},
++	{
+ 		/* Lenovo Yoga S1 */
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
 -- 
 1.9.1
 
