@@ -1,21 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755194AbaFWNUO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:20:14 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37007 "EHLO
+	id S1755300AbaFWNUm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:20:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37000 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754454AbaFWNEh (ORCPT
+	with ESMTP id S1754433AbaFWNEg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:04:37 -0400
+	Mon, 23 Jun 2014 09:04:36 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Harald Freudenberger <freude@linux.vnet.ibm.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
+Cc: Thomas Gleixner <tglx@linutronix.de>, Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Darren Hart <darren@dvhart.com>,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Clark Williams <williams@redhat.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Carlos ODonell <carlos@redhat.com>, Jakub Jelinek <jakub@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 51/93] crypto: s390 - fix aes,des ctr mode concurrency finding.
-Date: Mon, 23 Jun 2014 14:02:30 +0100
-Message-Id: <1403528592-2163-52-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 28/93] futex: Prevent attaching to kernel threads
+Date: Mon, 23 Jun 2014 14:02:07 +0100
+Message-Id: <1403528592-2163-29-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
 References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
@@ -28,52 +38,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Harald Freudenberger <freude@linux.vnet.ibm.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 3901c1124ec5099254a9396085f7798153a7293f upstream.
+commit f0d71b3dcb8332f7971b5f2363632573e6d9486a upstream.
 
-An additional testcase found an issue with the last
-series of patches applied: the fallback solution may
-not save the iv value after operation. This very small
-fix just makes sure the iv is copied back to the
-walk/desc struct.
+We happily allow userspace to declare a random kernel thread to be the
+owner of a user space PI futex.
 
-Signed-off-by: Harald Freudenberger <freude@linux.vnet.ibm.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Found while analysing the fallout of Dave Jones syscall fuzzer.
+
+We also should validate the thread group for private futexes and find
+some fast way to validate whether the "alleged" owner has RW access on
+the file which backs the SHM, but that's a separate issue.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Darren Hart <darren@dvhart.com>
+Cc: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Clark Williams <williams@redhat.com>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Roland McGrath <roland@hack.frob.com>
+Cc: Carlos ODonell <carlos@redhat.com>
+Cc: Jakub Jelinek <jakub@redhat.com>
+Cc: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Link: http://lkml.kernel.org/r/20140512201701.194824402@linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/s390/crypto/aes_s390.c | 3 +++
- arch/s390/crypto/des_s390.c | 3 +++
- 2 files changed, 6 insertions(+)
+ kernel/futex.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/arch/s390/crypto/aes_s390.c b/arch/s390/crypto/aes_s390.c
-index 2a245b55bb71..fd104db9cea1 100644
---- a/arch/s390/crypto/aes_s390.c
-+++ b/arch/s390/crypto/aes_s390.c
-@@ -818,6 +818,9 @@ static int ctr_aes_crypt(struct blkcipher_desc *desc, long func,
- 		else
- 			memcpy(walk->iv, ctrptr, AES_BLOCK_SIZE);
- 		spin_unlock(&ctrblk_lock);
-+	} else {
-+		if (!nbytes)
-+			memcpy(walk->iv, ctrptr, AES_BLOCK_SIZE);
- 	}
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 3e876641f4af..a62447d335ab 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -667,6 +667,11 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
+ 	if (!p)
+ 		return -ESRCH;
+ 
++	if (!p->mm) {
++		put_task_struct(p);
++		return -EPERM;
++	}
++
  	/*
- 	 * final block may be < AES_BLOCK_SIZE, copy only nbytes
-diff --git a/arch/s390/crypto/des_s390.c b/arch/s390/crypto/des_s390.c
-index 2d96e68febb2..f2d6cccddcf8 100644
---- a/arch/s390/crypto/des_s390.c
-+++ b/arch/s390/crypto/des_s390.c
-@@ -429,6 +429,9 @@ static int ctr_desall_crypt(struct blkcipher_desc *desc, long func,
- 		else
- 			memcpy(walk->iv, ctrptr, DES_BLOCK_SIZE);
- 		spin_unlock(&ctrblk_lock);
-+	} else {
-+		if (!nbytes)
-+			memcpy(walk->iv, ctrptr, DES_BLOCK_SIZE);
- 	}
- 	/* final block may be < DES_BLOCK_SIZE, copy only nbytes */
- 	if (nbytes) {
+ 	 * We need to look at the task state flags to figure out,
+ 	 * whether the task is exiting. To protect against the do_exit
 -- 
 1.9.1
 
