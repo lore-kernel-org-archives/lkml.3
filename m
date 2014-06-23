@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932202AbaFWN2R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:28:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36780 "EHLO
+	id S1754028AbaFWNDr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:03:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36734 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753982AbaFWNDx (ORCPT
+	with ESMTP id S1753893AbaFWNDn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:03:53 -0400
+	Mon, 23 Jun 2014 09:03:43 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
+Cc: Stephane Grosjean <s.grosjean@peak-system.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 10/93] perf: Prevent false warning in perf_swevent_add
-Date: Mon, 23 Jun 2014 14:01:49 +0100
-Message-Id: <1403528592-2163-11-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 16/93] can: peak_pci: prevent use after free at netdev removal
+Date: Mon, 23 Jun 2014 14:01:55 +0100
+Message-Id: <1403528592-2163-17-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
 References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
@@ -32,123 +28,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Stephane Grosjean <s.grosjean@peak-system.com>
 
-commit 39af6b1678afa5880dda7e375cf3f9d395087f6d upstream.
+commit 0b5a958cf4df3a5cd578b861471e62138f55c85e upstream.
 
-The perf cpu offline callback takes down all cpu context
-events and releases swhash->swevent_hlist.
+As remarked by Christopher R. Baker in his post at
 
-This could race with task context software event being just
-scheduled on this cpu via perf_swevent_add while cpu hotplug
-code already cleaned up event's data.
+http://marc.info/?l=linux-can&m=139707295706465&w=2
 
-The race happens in the gap between the cpu notifier code
-and the cpu being actually taken down. Note that only cpu
-ctx events are terminated in the perf cpu hotplug code.
+there's a possibility for an use after free condition at device removal.
 
-It's easily reproduced with:
-  $ perf record -e faults perf bench sched pipe
+This simplified patch introduces an additional variable to prevent the issue.
+Thanks for catching this.
 
-while putting one of the cpus offline:
-  # echo 0 > /sys/devices/system/cpu/cpu1/online
-
-Console emits following warning:
-  WARNING: CPU: 1 PID: 2845 at kernel/events/core.c:5672 perf_swevent_add+0x18d/0x1a0()
-  Modules linked in:
-  CPU: 1 PID: 2845 Comm: sched-pipe Tainted: G        W    3.14.0+ #256
-  Hardware name: Intel Corporation Montevina platform/To be filled by O.E.M., BIOS AMVACRB1.86C.0066.B00.0805070703 05/07/2008
-   0000000000000009 ffff880077233ab8 ffffffff81665a23 0000000000200005
-   0000000000000000 ffff880077233af8 ffffffff8104732c 0000000000000046
-   ffff88007467c800 0000000000000002 ffff88007a9cf2a0 0000000000000001
-  Call Trace:
-   [<ffffffff81665a23>] dump_stack+0x4f/0x7c
-   [<ffffffff8104732c>] warn_slowpath_common+0x8c/0xc0
-   [<ffffffff8104737a>] warn_slowpath_null+0x1a/0x20
-   [<ffffffff8110fb3d>] perf_swevent_add+0x18d/0x1a0
-   [<ffffffff811162ae>] event_sched_in.isra.75+0x9e/0x1f0
-   [<ffffffff8111646a>] group_sched_in+0x6a/0x1f0
-   [<ffffffff81083dd5>] ? sched_clock_local+0x25/0xa0
-   [<ffffffff811167e6>] ctx_sched_in+0x1f6/0x450
-   [<ffffffff8111757b>] perf_event_sched_in+0x6b/0xa0
-   [<ffffffff81117a4b>] perf_event_context_sched_in+0x7b/0xc0
-   [<ffffffff81117ece>] __perf_event_task_sched_in+0x43e/0x460
-   [<ffffffff81096f1e>] ? put_lock_stats.isra.18+0xe/0x30
-   [<ffffffff8107b3c8>] finish_task_switch+0xb8/0x100
-   [<ffffffff8166a7de>] __schedule+0x30e/0xad0
-   [<ffffffff81172dd2>] ? pipe_read+0x3e2/0x560
-   [<ffffffff8166b45e>] ? preempt_schedule_irq+0x3e/0x70
-   [<ffffffff8166b45e>] ? preempt_schedule_irq+0x3e/0x70
-   [<ffffffff8166b464>] preempt_schedule_irq+0x44/0x70
-   [<ffffffff816707f0>] retint_kernel+0x20/0x30
-   [<ffffffff8109e60a>] ? lockdep_sys_exit+0x1a/0x90
-   [<ffffffff812a4234>] lockdep_sys_exit_thunk+0x35/0x67
-   [<ffffffff81679321>] ? sysret_check+0x5/0x56
-
-Fixing this by tracking the cpu hotplug state and displaying
-the WARN only if current cpu is initialized properly.
-
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1396861448-10097-1-git-send-email-jolsa@redhat.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reported-by: Christopher R. Baker <cbaker@rec.ri.cmu.edu>
+Signed-off-by: Stephane Grosjean <s.grosjean@peak-system.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/events/core.c | 13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ drivers/net/can/sja1000/peak_pci.c | 14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index fe0c665c54d2..a59cdc594cda 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -5233,6 +5233,9 @@ struct swevent_htable {
+diff --git a/drivers/net/can/sja1000/peak_pci.c b/drivers/net/can/sja1000/peak_pci.c
+index 6b6f0ad75090..7042f5faddd7 100644
+--- a/drivers/net/can/sja1000/peak_pci.c
++++ b/drivers/net/can/sja1000/peak_pci.c
+@@ -551,7 +551,7 @@ static int peak_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+ {
+ 	struct sja1000_priv *priv;
+ 	struct peak_pci_chan *chan;
+-	struct net_device *dev;
++	struct net_device *dev, *prev_dev;
+ 	void __iomem *cfg_base, *reg_base;
+ 	u16 sub_sys_id, icr;
+ 	int i, err, channels;
+@@ -687,11 +687,13 @@ failure_remove_channels:
+ 	writew(0x0, cfg_base + PITA_ICR + 2);
  
- 	/* Recursion avoidance in each contexts */
- 	int				recursion[PERF_NR_CONTEXTS];
+ 	chan = NULL;
+-	for (dev = pci_get_drvdata(pdev); dev; dev = chan->prev_dev) {
+-		unregister_sja1000dev(dev);
+-		free_sja1000dev(dev);
++	for (dev = pci_get_drvdata(pdev); dev; dev = prev_dev) {
+ 		priv = netdev_priv(dev);
+ 		chan = priv->priv;
++		prev_dev = chan->prev_dev;
 +
-+	/* Keeps track of cpu being initialized/exited */
-+	bool				online;
- };
++		unregister_sja1000dev(dev);
++		free_sja1000dev(dev);
+ 	}
  
- static DEFINE_PER_CPU(struct swevent_htable, swevent_htable);
-@@ -5479,8 +5482,14 @@ static int perf_swevent_add(struct perf_event *event, int flags)
- 	hwc->state = !(flags & PERF_EF_START);
+ 	/* free any PCIeC resources too */
+@@ -725,10 +727,12 @@ static void peak_pci_remove(struct pci_dev *pdev)
  
- 	head = find_swevent_head(swhash, event);
--	if (WARN_ON_ONCE(!head))
-+	if (!head) {
-+		/*
-+		 * We can race with cpu hotplug code. Do not
-+		 * WARN if the cpu just got unplugged.
-+		 */
-+		WARN_ON_ONCE(swhash->online);
- 		return -EINVAL;
-+	}
+ 	/* Loop over all registered devices */
+ 	while (1) {
++		struct net_device *prev_dev = chan->prev_dev;
++
+ 		dev_info(&pdev->dev, "removing device %s\n", dev->name);
+ 		unregister_sja1000dev(dev);
+ 		free_sja1000dev(dev);
+-		dev = chan->prev_dev;
++		dev = prev_dev;
  
- 	hlist_add_head_rcu(&event->hlist_entry, head);
- 
-@@ -7633,6 +7642,7 @@ static void perf_event_init_cpu(int cpu)
- 	struct swevent_htable *swhash = &per_cpu(swevent_htable, cpu);
- 
- 	mutex_lock(&swhash->hlist_mutex);
-+	swhash->online = true;
- 	if (swhash->hlist_refcount > 0) {
- 		struct swevent_hlist *hlist;
- 
-@@ -7690,6 +7700,7 @@ static void perf_event_exit_cpu(int cpu)
- 	perf_event_exit_cpu_context(cpu);
- 
- 	mutex_lock(&swhash->hlist_mutex);
-+	swhash->online = false;
- 	swevent_hlist_release(swhash);
- 	mutex_unlock(&swhash->hlist_mutex);
- }
+ 		if (!dev) {
+ 			/* do that only for first channel */
 -- 
 1.9.1
 
