@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755537AbaFWNh6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:37:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36672 "EHLO
+	id S1755791AbaFWNig (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:38:36 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36669 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753838AbaFWND3 (ORCPT
+	with ESMTP id S1753715AbaFWND2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:03:29 -0400
+	Mon, 23 Jun 2014 09:03:28 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <jhovold@gmail.com>, "David S. Miller" <davem@davemloft.net>,
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 04/93] net: cpsw: fix null dereference at probe
-Date: Mon, 23 Jun 2014 14:01:43 +0100
-Message-Id: <1403528592-2163-5-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 03/93] sched: Use CPUPRI_NR_PRIORITIES instead of MAX_RT_PRIO in cpupri check
+Date: Mon, 23 Jun 2014 14:01:42 +0100
+Message-Id: <1403528592-2163-4-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
 References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
@@ -27,35 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 6954cc1f238199e971ec905c5cc87120806ac981 upstream.
+commit 6227cb00cc120f9a43ce8313bb0475ddabcb7d01 upstream.
 
-Fix null-pointer dereference at probe when the mdio platform device is
-missing (e.g. when it has been disabled in DT).
+The check at the beginning of cpupri_find() makes sure that the task_pri
+variable does not exceed the cp->pri_to_cpu array length. But that length
+is CPUPRI_NR_PRIORITIES not MAX_RT_PRIO, where it will miss the last two
+priorities in that array.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+As task_pri is computed from convert_prio() which should never be bigger
+than CPUPRI_NR_PRIORITIES, if the check should cause a panic if it is
+hit.
+
+Reported-by: Mike Galbraith <umgwanakikbuti@gmail.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1397015410.5212.13.camel@marge.simpson.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/ti/cpsw.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ kernel/sched/cpupri.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/ti/cpsw.c b/drivers/net/ethernet/ti/cpsw.c
-index 22a7a4336211..04b39c155c6a 100644
---- a/drivers/net/ethernet/ti/cpsw.c
-+++ b/drivers/net/ethernet/ti/cpsw.c
-@@ -1548,6 +1548,10 @@ static int cpsw_probe_dt(struct cpsw_platform_data *data,
- 		mdio_node = of_find_node_by_phandle(be32_to_cpup(parp));
- 		phyid = be32_to_cpup(parp+1);
- 		mdio = of_find_device_by_node(mdio_node);
-+		if (!mdio) {
-+			pr_err("Missing mdio platform device\n");
-+			return -EINVAL;
-+		}
- 		snprintf(slave_data->phy_id, sizeof(slave_data->phy_id),
- 			 PHY_ID_FMT, mdio->name, phyid);
+diff --git a/kernel/sched/cpupri.c b/kernel/sched/cpupri.c
+index 8b836b376d91..3031bac8aa3e 100644
+--- a/kernel/sched/cpupri.c
++++ b/kernel/sched/cpupri.c
+@@ -70,8 +70,7 @@ int cpupri_find(struct cpupri *cp, struct task_struct *p,
+ 	int idx = 0;
+ 	int task_pri = convert_prio(p->prio);
  
+-	if (task_pri >= MAX_RT_PRIO)
+-		return 0;
++	BUG_ON(task_pri >= CPUPRI_NR_PRIORITIES);
+ 
+ 	for (idx = 0; idx < task_pri; idx++) {
+ 		struct cpupri_vec *vec  = &cp->pri_to_cpu[idx];
 -- 
 1.9.1
 
