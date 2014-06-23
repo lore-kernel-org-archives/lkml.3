@@ -1,81 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754604AbaFWJGG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 05:06:06 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55458 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752434AbaFWIc2 (ORCPT
+	id S1755004AbaFWJHY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 05:07:24 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:38805 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754980AbaFWJHW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 04:32:28 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        George McCollister <george.mccollister@gmail.com>,
-        Johan Hovold <jhovold@gmail.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 048/111] USB: ftdi_sio: add NovaTech OrionLXm product ID
-Date: Mon, 23 Jun 2014 10:31:23 +0200
-Message-Id: <05fabc1b425e984177f602fc7e3c9b453373567a.1403512281.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
-References: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
-In-Reply-To: <cover.1403512280.git.jslaby@suse.cz>
-References: <cover.1403512280.git.jslaby@suse.cz>
+	Mon, 23 Jun 2014 05:07:22 -0400
+Date: Mon, 23 Jun 2014 10:07:14 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] ARM: mvebu: rename ARM_ERRATA_753970
+Message-ID: <20140623090714.GH32514@n2100.arm.linux.org.uk>
+References: <201404052101.19381.arnd@arndb.de> <201404052104.11363.arnd@arndb.de> <1396777049.30640.9.camel@x220> <53418889.2050002@free-electrons.com> <1396805315.7723.8.camel@x220> <1401094871.25902.20.camel@x220> <20140620202100.GG21711@titan.lakedaemon.net> <20140620205340.GX32514@n2100.arm.linux.org.uk> <1403514104.12982.20.camel@x220>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403514104.12982.20.camel@x220>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: George McCollister <george.mccollister@gmail.com>
+It's nice to be ignored...
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On Mon, Jun 23, 2014 at 11:01:44AM +0200, Paul Bolle wrote:
+> ARM_ERRATA_753970 was renamed to PL310_ERRATA_753970 in v3.2, through
+> commit fa0ce4035d48 ("ARM: 7162/1: errata: tidy up Kconfig options for
+> PL310 errata workarounds"). Two selects were added in v3.15 that still
+> use the previous name. Rename these.
+> 
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> v2: redone on top of next-21040623, and therefor on top of commit
+> a641f3a6abce ("ARM: l2c: fix dependencies on PL310 errata symbols").
 
-===============
+And you obviously didn't read the commit or understand it.
 
-commit d0839d757e6294921c31b1c4ca4f1dcc5df63bcd upstream.
+> Dropped the "if CACHE_PL310" fragments used in v1. No need to use "if
+> CACHE_L2X0" instead. Both CACHE_PL310 and CACHE_L2X0 will be
+> (indirectly) selected if MACH_ARMADA_375 or MACH_ARMADA_38X are set.
 
-The NovaTech OrionLXm uses an onboard FTDI serial converter for JTAG and
-console access.
+Yes there is.  We've recently seen the selection of CACHE_L2X0 be removed
+from platforms, while leaving the selection of the errata behind.  The
+result is Kconfig warnings.  My commit above ensures that this doesn't
+happen in the future by adding the proper dependencies onto those errata
+selects.
 
-Here is the lsusb output:
-Bus 004 Device 123: ID 0403:7c90 Future Technology Devices
-International, Ltd
+Please do the same.
 
-Signed-off-by: George McCollister <george.mccollister@gmail.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/usb/serial/ftdi_sio.c     | 2 ++
- drivers/usb/serial/ftdi_sio_ids.h | 5 +++++
- 2 files changed, 7 insertions(+)
+NAK.
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index c94be8c051c0..503c89e18187 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -581,6 +581,8 @@ static struct usb_device_id id_table_combined [] = {
- 	{ USB_DEVICE(FTDI_VID, FTDI_TAVIR_STK500_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_TIAO_UMPA_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
-+	{ USB_DEVICE(FTDI_VID, FTDI_NT_ORIONLXM_PID),
-+		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
- 	/*
- 	 * ELV devices:
- 	 */
-diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-index 993c93df6874..500474c48f4b 100644
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -538,6 +538,11 @@
-  */
- #define FTDI_TIAO_UMPA_PID	0x8a98	/* TIAO/DIYGADGET USB Multi-Protocol Adapter */
- 
-+/*
-+ * NovaTech product ids (FTDI_VID)
-+ */
-+#define FTDI_NT_ORIONLXM_PID	0x7c90	/* OrionLXm Substation Automation Platform */
-+
- 
- /********************************/
- /** third-party VID/PID combos **/
 -- 
-2.0.0
-
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
