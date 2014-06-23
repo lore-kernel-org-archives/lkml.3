@@ -1,57 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756192AbaFWTPz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 15:15:55 -0400
-Received: from smtprelay0201.hostedemail.com ([216.40.44.201]:44551 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756012AbaFWTPy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 15:15:54 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:960:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3873:3874:4321:5007:6119:7652:8603:10004:10400:10848:11026:11232:11657:11658:11914:12043:12114:12296:12438:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: pin26_8a913d1f1145e
-X-Filterd-Recvd-Size: 1783
-Message-ID: <1403550950.15811.15.camel@joe-AO725>
-Subject: Re: [PATCH 08/22] amd: Use pci_zalloc_consistent
-From: Joe Perches <joe@perches.com>
-To: Don Fry <pcnet32@frontier.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Date: Mon, 23 Jun 2014 12:15:50 -0700
-In-Reply-To: <1403546524.12008.2.camel@Lunix2.home>
-References: <cover.1403530604.git.joe@perches.com>
-	 <c7cdaa8e080157cdabb92278a4c3beba89b49070.1403530604.git.joe@perches.com>
-	 <1403546524.12008.2.camel@Lunix2.home>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
+	id S1756311AbaFWTQy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 15:16:54 -0400
+Received: from mga09.intel.com ([134.134.136.24]:47770 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755558AbaFWTQx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 15:16:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,532,1400050800"; 
+   d="scan'208";a="532852746"
+Subject: [PATCH v4] sched: Fast idling of CPU when system is partially
+ loaded
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Davidlohr Bueso <davidlohr@hp.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jason Low <jason.low2@hp.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 23 Jun 2014 12:16:49 -0700
+Message-ID: <1403551009.2970.613.camel@schen9-DESK>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-06-23 at 11:02 -0700, Don Fry wrote:
-> On Mon, 2014-06-23 at 06:41 -0700, Joe Perches wrote:
-> > Remove the now unnecessary memset too.
-[]
-> > diff --git a/drivers/net/ethernet/amd/pcnet32.c b/drivers/net/ethernet/amd/pcnet32.c
-[]
-> > @@ -484,15 +484,13 @@ static void pcnet32_realloc_tx_ring(struct net_device *dev,
-> >  
-> >  	pcnet32_purge_tx_ring(dev);
-> >  
-> > -	new_tx_ring = pci_alloc_consistent(lp->pci_dev,
-> > -					   sizeof(struct pcnet32_tx_head) *
-> > -					   (1 << size),
-> > -					   &new_ring_dma_addr);
-> > +	new_tx_ring = pci_zalloc_consistent(lp->pci_dev,
-> > +					    sizeof(struct pcnet32_tx_head) * (1 << size),
-> 
-> This causes the line length to be greater than 80 characters causing
-> checkpatch to complain.
+Thanks to the review from Jason, Andi and Peter. I've updated
+the code as Peter suggested with simplified logic.
 
-Which doesn't bother me a whit.
-I prefer the multiply on the same line.
+When a system is lightly loaded (i.e. no more than 1 job per cpu),
+attempt to pull job to a cpu before putting it to idle is unnecessary and
+can be skipped.  This patch adds an indicator so the scheduler can know
+when there's no more than 1 active job is on any CPU in the system to
+skip needless job pulls.
 
-If you prefer 80 columns that strongly though,
-let me know.
+On a 4 socket machine with a request/response kind of workload from
+clients, we saw about 0.13 msec delay when we go through a full load
+balance to try pull job from all the other cpus.  While 0.1 msec was
+spent on processing the request and generating a response, the 0.13 msec
+load balance overhead was actually more than the actual work being done.
+This overhead can be skipped much of the time for lightly loaded systems.
+
+With this patch, we tested with a netperf request/response workload that
+has the server busy with half the cpus in a 4 socket system.  We found
+the patch eliminated 75% of the load balance attempts before idling a cpu.
+
+The overhead of setting/clearing the indicator is low as we already gather
+the necessary info while we call add_nr_running and update_sd_lb_stats.
+We switch to full load balance load immediately if any cpu got more than
+one job on its run queue in add_nr_running.  We'll clear the indicator
+to avoid load balance when we detect no cpu's have more than one job
+when we scan the work queues in update_sg_lb_stats.  We are aggressive
+in turning on the load balance and opportunistic in skipping the load
+balance.
+
+Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+Acked-by: Jason Low <jason.low2@hp.com>
+---
+Change Log:
+v4:
+1. Remove an unnecessary check of root domain before updating local
+copy of overload indicator.
+ 
+v3:
+1. Simplify the logic to call sg_lb_stats from update_sd_lb_stats. 
+
+v2:
+1. Moved check of whether load balance is required to idle_balance.
+2. Use more direct access to root domain.
+
+ kernel/sched/fair.c  | 21 ++++++++++++++++++---
+ kernel/sched/sched.h | 10 ++++++++--
+ 2 files changed, 26 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index fea7d33..7dfe2ad 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5867,7 +5867,8 @@ static inline int sg_capacity_factor(struct lb_env *env, struct sched_group *gro
+  */
+ static inline void update_sg_lb_stats(struct lb_env *env,
+ 			struct sched_group *group, int load_idx,
+-			int local_group, struct sg_lb_stats *sgs)
++			int local_group, struct sg_lb_stats *sgs,
++			bool *overload)
+ {
+ 	unsigned long load;
+ 	int i;
+@@ -5885,6 +5886,10 @@ static inline void update_sg_lb_stats(struct lb_env *env,
+ 
+ 		sgs->group_load += load;
+ 		sgs->sum_nr_running += rq->nr_running;
++
++		if (rq->nr_running > 1)
++			*overload = true;
++
+ #ifdef CONFIG_NUMA_BALANCING
+ 		sgs->nr_numa_running += rq->nr_numa_running;
+ 		sgs->nr_preferred_running += rq->nr_preferred_running;
+@@ -5995,6 +6000,7 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
+ 	struct sched_group *sg = env->sd->groups;
+ 	struct sg_lb_stats tmp_sgs;
+ 	int load_idx, prefer_sibling = 0;
++	bool overload = false;
+ 
+ 	if (child && child->flags & SD_PREFER_SIBLING)
+ 		prefer_sibling = 1;
+@@ -6015,7 +6021,8 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
+ 				update_group_capacity(env->sd, env->dst_cpu);
+ 		}
+ 
+-		update_sg_lb_stats(env, sg, load_idx, local_group, sgs);
++		update_sg_lb_stats(env, sg, load_idx, local_group, sgs,
++						&overload);
+ 
+ 		if (local_group)
+ 			goto next_group;
+@@ -6049,6 +6056,13 @@ next_group:
+ 
+ 	if (env->sd->flags & SD_NUMA)
+ 		env->fbq_type = fbq_classify_group(&sds->busiest_stat);
++
++	if (!env->sd->parent) {
++		/* update overload indicator if we are at root domain */
++		if (env->dst_rq->rd->overload != overload)
++			env->dst_rq->rd->overload = overload;
++	}
++
+ }
+ 
+ /**
+@@ -6767,7 +6781,8 @@ static int idle_balance(struct rq *this_rq)
+ 	 */
+ 	this_rq->idle_stamp = rq_clock(this_rq);
+ 
+-	if (this_rq->avg_idle < sysctl_sched_migration_cost) {
++	if (this_rq->avg_idle < sysctl_sched_migration_cost ||
++	    !this_rq->rd->overload) {
+ 		rcu_read_lock();
+ 		sd = rcu_dereference_check_sched_domain(this_rq->sd);
+ 		if (sd)
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 31cc02e..6d25f1d 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -477,6 +477,9 @@ struct root_domain {
+ 	cpumask_var_t span;
+ 	cpumask_var_t online;
+ 
++	/* Indicate more than one runnable task for any CPU */
++	bool overload;
++
+ 	/*
+ 	 * The bit corresponding to a CPU gets set here if such CPU has more
+ 	 * than one runnable -deadline task (as it is below for RT tasks).
+@@ -1218,15 +1221,18 @@ static inline void add_nr_running(struct rq *rq, unsigned count)
+ 
+ 	rq->nr_running = prev_nr + count;
+ 
+-#ifdef CONFIG_NO_HZ_FULL
+ 	if (prev_nr < 2 && rq->nr_running >= 2) {
++		if (!rq->rd->overload)
++			rq->rd->overload = true;
++
++#ifdef CONFIG_NO_HZ_FULL
+ 		if (tick_nohz_full_cpu(rq->cpu)) {
+ 			/* Order rq->nr_running write against the IPI */
+ 			smp_wmb();
+ 			smp_send_reschedule(rq->cpu);
+ 		}
+-       }
+ #endif
++	}
+ }
+ 
+ static inline void sub_nr_running(struct rq *rq, unsigned count)
+-- 
+1.7.11.7
+
 
