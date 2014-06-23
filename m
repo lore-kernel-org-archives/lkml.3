@@ -1,55 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756808AbaFWTsq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 15:48:46 -0400
-Received: from mail.unilider.com.br ([189.3.122.2]:34401 "EHLO
-	mail.unilider.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756790AbaFWTsn convert rfc822-to-8bit (ORCPT
+	id S932120AbaFWTtM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 15:49:12 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:36660 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756812AbaFWTtK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 15:48:43 -0400
-X-Greylist: delayed 1101 seconds by postgrey-1.27 at vger.kernel.org; Mon, 23 Jun 2014 15:48:42 EDT
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 23 Jun 2014 15:49:10 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+X-Google-Original-From: Andy Lutomirski <luto@mit.edu>
+Message-ID: <53A884B2.5070702@mit.edu>
+Date: Mon, 23 Jun 2014 12:49:06 -0700
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: Dear: Account User
-To: Recipients <jose.stutz@unilider.com.br>
-From: Helpdesk <jose.stutz@unilider.com.br>
-Date: Mon, 23 Jun 2014 20:06:02 +0100
-Reply-To: No-relpy@mail.unilider.com.br
-Message-Id: <20140623191458.8A1CC42A3B@mail.unilider.com.br>
-X-KLMS-Rule-ID: 1
-X-KLMS-Message-Action: clean
-X-KLMS-AntiSpam-Lua-Profiles: 62952 [Jun 23 2014]
-X-KLMS-AntiSpam-Version: 5.3.6
-X-KLMS-AntiSpam-Envelope-From: jose.stutz@unilider.com.br
-X-KLMS-AntiSpam-Spf: none
-X-KLMS-AntiSpam-Rate: 25
-X-KLMS-AntiSpam-Status: not_detected
-X-KLMS-AntiSpam-Method: none
-X-KLMS-AntiSpam-Moebius-Timestamps: 2985461, 0, 0
-X-KLMS-AntiSpam-Info: {TO: forged address, i.e. recipient, investors, public, etc.}, {DNS response errors}
-X-KLMS-AntiSpam-Interceptor-Info: scan successful
-X-KLMS-AntiPhishing: Clean, 2014/06/23 10:02:41
-X-KLMS-AntiVirus: Kaspersky Security 8.0 for Linux Mail Server, version 8.0.1.705, bases: 2014/06/23 01:14:00 #8342356; khse: 2014-03-12 13:55:01
-X-KLMS-AntiVirus-Status: Clean, skipped
+To: Qiaowei Ren <qiaowei.ren@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>
+CC: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Linux MM <linux-mm@kvack.org>
+Subject: Re: [PATCH v6 02/10] x86, mpx: add MPX specific mmap interface
+References: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com> <1403084656-27284-3-git-send-email-qiaowei.ren@intel.com>
+In-Reply-To: <1403084656-27284-3-git-send-email-qiaowei.ren@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Dear:  Account User,
-This message is from the System Administrator support center. Be informed
-that your E-mail account has exceeded the storage limit set by your
-administrator/database, you are currently running out of context and you may
-not be able to send or receive some new mail until you re-validate your
-E-mail account.
-To prevent your email account from been closed, re-validate your mailbox
-below please click and visit this site of lick: >>>>
- http://304036.livecity.me/  and Please enter tentative password to
-proceed  Secured detail. your tentative password is (7027)
-Your account shall remain active after you have successfully confirmed your
-account details. Thank you for your swift response to this notification we
-apologize for any inconvenience.
-We appreciate your continued help and support.
-Regards,
-SYSTEM ADMINISTRATOR HELPDESK TEAM 2014
+On 06/18/2014 02:44 AM, Qiaowei Ren wrote:
+> This patch adds one MPX specific mmap interface, which only handles
+> mpx related maps, including bounds table and bounds directory.
+> 
+> In order to track MPX specific memory usage, this interface is added
+> to stick new vm_flag VM_MPX in the vma_area_struct when create a
+> bounds table or bounds directory.
+
+I imagine the linux-mm people would want to think about any new vm flag.
+ Why is this needed?
+
+> 
+> Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
+> ---
+>  arch/x86/Kconfig           |    4 +++
+>  arch/x86/include/asm/mpx.h |   38 ++++++++++++++++++++++++++++
+>  arch/x86/mm/Makefile       |    2 +
+>  arch/x86/mm/mpx.c          |   58 ++++++++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 102 insertions(+), 0 deletions(-)
+>  create mode 100644 arch/x86/include/asm/mpx.h
+>  create mode 100644 arch/x86/mm/mpx.c
+> 
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index 25d2c6f..0194790 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -237,6 +237,10 @@ config HAVE_INTEL_TXT
+>  	def_bool y
+>  	depends on INTEL_IOMMU && ACPI
+>  
+> +config X86_INTEL_MPX
+> +	def_bool y
+> +	depends on CPU_SUP_INTEL
+> +
+>  config X86_32_SMP
+>  	def_bool y
+>  	depends on X86_32 && SMP
+> diff --git a/arch/x86/include/asm/mpx.h b/arch/x86/include/asm/mpx.h
+> new file mode 100644
+> index 0000000..5725ac4
+> --- /dev/null
+> +++ b/arch/x86/include/asm/mpx.h
+> @@ -0,0 +1,38 @@
+> +#ifndef _ASM_X86_MPX_H
+> +#define _ASM_X86_MPX_H
+> +
+> +#include <linux/types.h>
+> +#include <asm/ptrace.h>
+> +
+> +#ifdef CONFIG_X86_64
+> +
+> +/* upper 28 bits [47:20] of the virtual address in 64-bit used to
+> + * index into bounds directory (BD).
+> + */
+> +#define MPX_BD_ENTRY_OFFSET	28
+> +#define MPX_BD_ENTRY_SHIFT	3
+> +/* bits [19:3] of the virtual address in 64-bit used to index into
+> + * bounds table (BT).
+> + */
+> +#define MPX_BT_ENTRY_OFFSET	17
+> +#define MPX_BT_ENTRY_SHIFT	5
+> +#define MPX_IGN_BITS		3
+> +
+> +#else
+> +
+> +#define MPX_BD_ENTRY_OFFSET	20
+> +#define MPX_BD_ENTRY_SHIFT	2
+> +#define MPX_BT_ENTRY_OFFSET	10
+> +#define MPX_BT_ENTRY_SHIFT	4
+> +#define MPX_IGN_BITS		2
+> +
+> +#endif
+> +
+> +#define MPX_BD_SIZE_BYTES (1UL<<(MPX_BD_ENTRY_OFFSET+MPX_BD_ENTRY_SHIFT))
+> +#define MPX_BT_SIZE_BYTES (1UL<<(MPX_BT_ENTRY_OFFSET+MPX_BT_ENTRY_SHIFT))
+> +
+> +#define MPX_BNDSTA_ERROR_CODE	0x3
+> +
+> +unsigned long mpx_mmap(unsigned long len);
+> +
+> +#endif /* _ASM_X86_MPX_H */
+> diff --git a/arch/x86/mm/Makefile b/arch/x86/mm/Makefile
+> index 6a19ad9..ecfdc46 100644
+> --- a/arch/x86/mm/Makefile
+> +++ b/arch/x86/mm/Makefile
+> @@ -30,3 +30,5 @@ obj-$(CONFIG_ACPI_NUMA)		+= srat.o
+>  obj-$(CONFIG_NUMA_EMU)		+= numa_emulation.o
+>  
+>  obj-$(CONFIG_MEMTEST)		+= memtest.o
+> +
+> +obj-$(CONFIG_X86_INTEL_MPX)	+= mpx.o
+> diff --git a/arch/x86/mm/mpx.c b/arch/x86/mm/mpx.c
+> new file mode 100644
+> index 0000000..546c5d1
+> --- /dev/null
+> +++ b/arch/x86/mm/mpx.c
+> @@ -0,0 +1,58 @@
+> +#include <linux/kernel.h>
+> +#include <linux/syscalls.h>
+> +#include <asm/mpx.h>
+> +#include <asm/mman.h>
+> +#include <linux/sched/sysctl.h>
+> +
+> +/*
+> + * this is really a simplified "vm_mmap". it only handles mpx
+> + * related maps, including bounds table and bounds directory.
+> + *
+> + * here we can stick new vm_flag VM_MPX in the vma_area_struct
+> + * when create a bounds table or bounds directory, in order to
+> + * track MPX specific memory.
+> + */
+> +unsigned long mpx_mmap(unsigned long len)
+> +{
+> +	unsigned long ret;
+> +	unsigned long addr, pgoff;
+> +	struct mm_struct *mm = current->mm;
+> +	vm_flags_t vm_flags;
+> +
+> +	/* Only bounds table and bounds directory can be allocated here */
+> +	if (len != MPX_BD_SIZE_BYTES && len != MPX_BT_SIZE_BYTES)
+> +		return -EINVAL;
+> +
+> +	down_write(&mm->mmap_sem);
+> +
+> +	/* Too many mappings? */
+> +	if (mm->map_count > sysctl_max_map_count) {
+> +		ret = -ENOMEM;
+> +		goto out;
+> +	}
+> +
+> +	/* Obtain the address to map to. we verify (or select) it and ensure
+> +	 * that it represents a valid section of the address space.
+> +	 */
+> +	addr = get_unmapped_area(NULL, 0, len, 0, MAP_ANONYMOUS | MAP_PRIVATE);
+> +	if (addr & ~PAGE_MASK) {
+> +		ret = addr;
+> +		goto out;
+> +	}
+> +
+> +	vm_flags = VM_READ | VM_WRITE | VM_MPX |
+> +			mm->def_flags | VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC;
+> +
+> +	/* Make bounds tables and bouds directory unlocked. */
+> +	if (vm_flags & VM_LOCKED)
+> +		vm_flags &= ~VM_LOCKED;
+
+Why?  I would expect MCL_FUTURE to lock these.
+
+--Andy
