@@ -1,75 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752997AbaFWIc6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 04:32:58 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55636 "EHLO
+	id S1752974AbaFWIc5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 04:32:57 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55550 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752938AbaFWIcu (ORCPT
+	by vger.kernel.org with ESMTP id S1752444AbaFWIck (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 04:32:50 -0400
+	Mon, 23 Jun 2014 04:32:40 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Rabin Vincent <rabin@rab.in>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 032/111] ARM: 8064/1: fix v7-M signal return
-Date: Mon, 23 Jun 2014 10:31:07 +0200
-Message-Id: <ae87686e2c356aba851817e804bd4fc4023b6468.1403512281.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Cong Wang <cwang@twopensource.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        stephen hemminger <stephen@networkplumber.org>,
+        Pravin B Shelar <pshelar@nicira.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 110/111] vxlan: use dev->needed_headroom instead of dev->hard_header_len
+Date: Mon, 23 Jun 2014 10:32:25 +0200
+Message-Id: <0067390aaa904826fbc3fa4b0ee2bcd01ac3b7e9.1403512281.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
 References: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
 In-Reply-To: <cover.1403512280.git.jslaby@suse.cz>
 References: <cover.1403512280.git.jslaby@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rabin Vincent <rabin@rab.in>
+From: Cong Wang <cwang@twopensource.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 483a6c9d447f625b991fa04a1530493d893984db upstream.
+[ Upstream commit 2853af6a2ea1a8ed09b09dd4fb578e7f435e8d34 ]
 
-According to the ARM ARM, the behaviour is UNPREDICTABLE if the PC read
-from the exception return stack is not half word aligned.  See the
-pseudo code for ExceptionReturn() and PopStack().
+When we mirror packets from a vxlan tunnel to other device,
+the mirror device should see the same packets (that is, without
+outer header). Because vxlan tunnel sets dev->hard_header_len,
+tcf_mirred() resets mac header back to outer mac, the mirror device
+actually sees packets with outer headers
 
-The signal handler's address has the bit 0 set, and setup_return()
-directly writes this to regs->ARM_pc.  Current hardware happens to
-discard this bit, but QEMU's emulation doesn't and this makes processes
-crash.  Mask out bit 0 before the exception return in order to get
-predictable behaviour.
+Vxlan tunnel should set dev->needed_headroom instead of
+dev->hard_header_len, like what other ip tunnels do. This fixes
+the above problem.
 
-Fixes: 19c4d593f0b4 ("ARM: ARMv7-M: Add support for exception handling")
-
-Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-Signed-off-by: Rabin Vincent <rabin@rab.in>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: stephen hemminger <stephen@networkplumber.org>
+Cc: Pravin B Shelar <pshelar@nicira.com>
+Signed-off-by: Cong Wang <cwang@twopensource.com>
+Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/arm/kernel/entry-header.S | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/net/vxlan.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/kernel/entry-header.S b/arch/arm/kernel/entry-header.S
-index 39f89fbd5111..88c6babeb0b5 100644
---- a/arch/arm/kernel/entry-header.S
-+++ b/arch/arm/kernel/entry-header.S
-@@ -132,6 +132,10 @@
- 	orrne	r5, V7M_xPSR_FRAMEPTRALIGN
- 	biceq	r5, V7M_xPSR_FRAMEPTRALIGN
+diff --git a/drivers/net/vxlan.c b/drivers/net/vxlan.c
+index 4ecdf3c22bc6..aa2590a33754 100644
+--- a/drivers/net/vxlan.c
++++ b/drivers/net/vxlan.c
+@@ -2157,9 +2157,9 @@ static void vxlan_setup(struct net_device *dev)
+ 	eth_hw_addr_random(dev);
+ 	ether_setup(dev);
+ 	if (vxlan->default_dst.remote_ip.sa.sa_family == AF_INET6)
+-		dev->hard_header_len = ETH_HLEN + VXLAN6_HEADROOM;
++		dev->needed_headroom = ETH_HLEN + VXLAN6_HEADROOM;
+ 	else
+-		dev->hard_header_len = ETH_HLEN + VXLAN_HEADROOM;
++		dev->needed_headroom = ETH_HLEN + VXLAN_HEADROOM;
  
-+	@ ensure bit 0 is cleared in the PC, otherwise behaviour is
-+	@ unpredictable
-+	bic	r4, #1
-+
- 	@ write basic exception frame
- 	stmdb	r2!, {r1, r3-r5}
- 	ldmia	sp, {r1, r3-r5}
+ 	dev->netdev_ops = &vxlan_netdev_ops;
+ 	dev->destructor = free_netdev;
+@@ -2540,8 +2540,7 @@ static int vxlan_newlink(struct net *net, struct net_device *dev,
+ 		if (!tb[IFLA_MTU])
+ 			dev->mtu = lowerdev->mtu - (use_ipv6 ? VXLAN6_HEADROOM : VXLAN_HEADROOM);
+ 
+-		/* update header length based on lower device */
+-		dev->hard_header_len = lowerdev->hard_header_len +
++		dev->needed_headroom = lowerdev->hard_header_len +
+ 				       (use_ipv6 ? VXLAN6_HEADROOM : VXLAN_HEADROOM);
+ 	}
+ 
 -- 
 2.0.0
 
