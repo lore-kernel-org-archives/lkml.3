@@ -1,79 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754434AbaFWNzt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:55:49 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:37679 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753720AbaFWNzr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:55:47 -0400
-Date: Mon, 23 Jun 2014 15:54:46 +0200
-From: Daniel Kiper <daniel.kiper@oracle.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: andrew.cooper3@citrix.com, david.vrabel@citrix.com,
-        ian.campbell@citrix.com, stefano.stabellini@eu.citrix.com,
-        jeremy@goop.org, matt.fleming@intel.com, x86@kernel.org,
-        tglx@linutronix.de, xen-devel@lists.xenproject.org,
-        boris.ostrovsky@oracle.com, konrad.wilk@oracle.com, eshelton@pobox.com,
-        mingo@redhat.com, mjg59@srcf.ucam.org, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hpa@zytor.com, tony.luck@intel.com,
-        fenghua.yu@intel.com, linux-ia64@vger.kernel.org
-Subject: Re: [PATCH v6 1/9] efi: Use early_mem*() instead of early_io*()
-Message-ID: <20140623135446.GG28489@olila.local.net-space.pl>
-References: <1403299768-9955-1-git-send-email-daniel.kiper@oracle.com>
- <1403299768-9955-2-git-send-email-daniel.kiper@oracle.com>
- <53A7F104020000780001C4BE@mail.emea.novell.com>
+	id S1754211AbaFWN5h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:57:37 -0400
+Received: from linode.aoot.com ([69.164.194.13]:46846 "EHLO linode.aoot.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753285AbaFWN5g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 09:57:36 -0400
+Message-ID: <53A8324E.5030200@opengridcomputing.com>
+Date: Mon, 23 Jun 2014 08:57:34 -0500
+From: Steve Wise <swise@opengridcomputing.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53A7F104020000780001C4BE@mail.emea.novell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+To: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org
+CC: Tom Tucker <tom@opengridcomputing.com>, Roland Dreier <roland@kernel.org>,
+        Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Faisal Latif <faisal.latif@intel.com>, linux-rdma@vger.kernel.org
+Subject: Re: [PATCH 05/22] infiniband: Use pci_zalloc_consistent
+References: <cover.1403530604.git.joe@perches.com> <ed5fb1adbe665a8e4a4e18bc316bab261bc55556.1403530604.git.joe@perches.com>
+In-Reply-To: <ed5fb1adbe665a8e4a4e18bc316bab261bc55556.1403530604.git.joe@perches.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am CC'ing IA-64 guys.
+For the amso1100 change...
 
-On Mon, Jun 23, 2014 at 08:19:00AM +0100, Jan Beulich wrote:
-> >>> On 20.06.14 at 23:29, <daniel.kiper@oracle.com> wrote:
-> > --- a/drivers/firmware/efi/efi.c
-> > +++ b/drivers/firmware/efi/efi.c
-> > @@ -298,7 +298,7 @@ int __init efi_config_init(efi_config_table_type_t *arch_tables)
-> >  			if (table64 >> 32) {
-> >  				pr_cont("\n");
-> >  				pr_err("Table located above 4GB, disabling EFI.\n");
-> > -				early_iounmap(config_tables,
-> > +				early_memunmap(config_tables,
-> >  					       efi.systab->nr_tables * sz);
-> >  				return -EINVAL;
-> >  			}
-> > @@ -314,7 +314,7 @@ int __init efi_config_init(efi_config_table_type_t *arch_tables)
-> >  		tablep += sz;
-> >  	}
-> >  	pr_cont("\n");
-> > -	early_iounmap(config_tables, efi.systab->nr_tables * sz);
-> > +	early_memunmap(config_tables, efi.systab->nr_tables * sz);
-> >
-> >  	set_bit(EFI_CONFIG_TABLES, &efi.flags);
-> >
->
-> If these two changes are really deemed necessary (there's the
-> implied assumption currently in place that early_iounmap() can
-> undo early_memremap() mappings), then ia64 will need a
-> definition added for early_memunmap() or its build will break.
-
-I know that early_memunmap() == early_iounmap() in general. However,
-I think that it is less confusing if use relevant functions in pairs
-(i.e. early_memremap() with early_memunmap(), ...) than mix them up.
-
-We have following choices here:
-  - leave early_iounmap() as is in drivers/firmware/efi/efi.c
-    (arch/x86/platform/efi/efi.c:early_iounmap() -> early_memunmap()
-    changes should be left as is),
-  - include asm/early_ioremap.h in arch/ia64/include/asm/io.h
-    (as I can see the same think is done for x86 and arm64).
-
-I prefer second solution but I do not insist.
-
-Daniel
+Acked-by: Steve Wise <swise@opengridcomputing.com>
