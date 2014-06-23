@@ -1,167 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756702AbaFWTk4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 15:40:56 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:60311 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756131AbaFWTkz convert rfc822-to-8bit (ORCPT
+	id S1756723AbaFWTlO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 15:41:14 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41158 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756707AbaFWTlL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 15:40:55 -0400
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Mark Salter <msalter@redhat.com>
-Cc: David Rientjes <rientjes@google.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCHv3] mm: page_alloc: fix CMA area initialisation when pageblock >
- MAX_ORDER
-In-Reply-To: <1403285834.755.39.camel@deneb.redhat.com>
-Organization: http://mina86.com/
-References: <1402522435-13884-1-git-send-email-msalter@redhat.com> <alpine.DEB.2.02.1406111557030.27885@chino.kir.corp.google.com> <xa1t61jzwfo6.fsf@mina86.com> <1403201524.32688.62.camel@deneb.redhat.com> <xa1tfvj01z57.fsf@mina86.com> <1403285834.755.39.camel@deneb.redhat.com>
-User-Agent: Notmuch/0.17+15~gb65ca8e (http://notmuchmail.org) Emacs/24.4.50.1 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-X-Hashcash: 1:20:140623:rientjes@google.com::VEwdXL/6J/yHCQxz:0000000000000000000000000000000000000000001BA3
-X-Hashcash: 1:20:140623:linux-arm-kernel@lists.infradead.org::S5AY1H9JKI1caRT+:00000000000000000000000001a8X
-X-Hashcash: 1:20:140623:catalin.marinas@arm.com::cIbUpVMbRCElCi0E:000000000000000000000000000000000000002geg
-X-Hashcash: 1:20:140623:msalter@redhat.com::NRmP3aUyruLDsVgV:00000000000000000000000000000000000000000004Jfs
-X-Hashcash: 1:20:140623:linux-kernel@vger.kernel.org::LkCcWgfbGcmc8AnV:0000000000000000000000000000000004YeL
-X-Hashcash: 1:20:140623:m.szyprowski@samsung.com::PBJFOdlNM/AE8Rr+:0000000000000000000000000000000000000C2Xn
-Date: Mon, 23 Jun 2014 21:40:47 +0200
-Message-ID: <xa1tegyfv2gw.fsf@mina86.com>
+	Mon, 23 Jun 2014 15:41:11 -0400
+X-Sasl-enc: W+LWXFmJmSOi/uJ1k/hfaC4PIuqpMKciY1Z2mRQFakFG 1403552470
+Date: Mon, 23 Jun 2014 15:40:59 -0400
+From: Greg KH <greg@kroah.com>
+To: Johan Hovold <johan@kernel.org>
+Cc: Janne Kanniainen <janne.kanniainen@gmail.com>, jkosina@suse.cz,
+        cooloney@gmail.com, linux-kernel@vger.kernel.org,
+        linux-leds@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH v10] leds: USB: HID: Add support for MSI GT683R led panels
+Message-ID: <20140623194059.GA19615@kroah.com>
+References: <20140623161723.GA20421@kroah.com>
+ <1403543808-8228-1-git-send-email-janne.kanniainen@gmail.com>
+ <20140623182324.GA30831@kroah.com>
+ <20140623182432.GB30831@kroah.com>
+ <20140623193134.GA15945@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140623193134.GA15945@localhost>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With a kernel configured with ARM64_64K_PAGES && !TRANSPARENT_HUGEPAGE,
-the following is triggered at early boot:
+On Mon, Jun 23, 2014 at 09:31:34PM +0200, Johan Hovold wrote:
+> On Mon, Jun 23, 2014 at 02:24:32PM -0400, Greg KH wrote:
+> > On Mon, Jun 23, 2014 at 02:23:24PM -0400, Greg KH wrote:
+> > > On Mon, Jun 23, 2014 at 08:16:48PM +0300, Janne Kanniainen wrote:
+> > > > +	ret = sysfs_create_group(&led->hdev->dev.kobj, &gt683r_attribute_group);
+> > > > +	if (ret) {
+> > > > +		hid_err(hdev, "failed to create sysfs attributes\n");
+> > > > +		goto fail;
+> > > > +	}
+> > > 
+> > > No, you need to set the attribute group _before_ you call
+> > > led_classdev_register, as that is where the device will be created in
+> > > sysfs.  Surely the other led drivers already do this?  I'm almost afraid
+> > > to go look...
+> > 
+> > Yes, they do it already, set .dev_attr_group and you should be fine.
+> 
+> But this isn't an attribute of the LEDs but rather of the parent HID
+> device that is being probed (the led_mode is common to all three LEDs
+> and thus belongs in the parent device, right?).
 
-  SMP: Total of 8 processors activated.
-  devtmpfs: initialized
-  Unable to handle kernel NULL pointer dereference at virtual address 00000008
-  pgd = fffffe0000050000
-  [00000008] *pgd=00000043fba00003, *pmd=00000043fba00003, *pte=00e0000078010407
-  Internal error: Oops: 96000006 [#1] SMP
-  Modules linked in:
-  CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.15.0-rc864k+ #44
-  task: fffffe03bc040000 ti: fffffe03bc080000 task.ti: fffffe03bc080000
-  PC is at __list_add+0x10/0xd4
-  LR is at free_one_page+0x270/0x638
-  ...
-  Call trace:
-  [<fffffe00003ee970>] __list_add+0x10/0xd4
-  [<fffffe000019c478>] free_one_page+0x26c/0x638
-  [<fffffe000019c8c8>] __free_pages_ok.part.52+0x84/0xbc
-  [<fffffe000019d5e8>] __free_pages+0x74/0xbc
-  [<fffffe0000c01350>] init_cma_reserved_pageblock+0xe8/0x104
-  [<fffffe0000c24de0>] cma_init_reserved_areas+0x190/0x1e4
-  [<fffffe0000090418>] do_one_initcall+0xc4/0x154
-  [<fffffe0000bf0a50>] kernel_init_freeable+0x204/0x2a8
-  [<fffffe00007520a0>] kernel_init+0xc/0xd4
+Then that's even worse :(
 
-This happens because init_cma_reserved_pageblock() calls
-__free_one_page() with pageblock_order as page order but it is bigger
-han MAX_ORDER.  This in turn causes accesses past zone->free_list[].
+The sysfs attribute should be on the class device here for the LED, you
+should not put an attribute on a device you are not the driver for.
 
-Fix the problem by changing init_cma_reserved_pageblock() such that it
-splits pageblock into individual MAX_ORDER pages if pageblock is
-bigger than a MAX_ORDER page.
-
-In cases where !CONFIG_HUGETLB_PAGE_SIZE_VARIABLE, which is all
-architectures expect for ia64, powerpc and tile at the moment, the
-“pageblock_order > MAX_ORDER” condition will be optimised out since
-both sides of the operator are constants.  In cases where pageblock
-size is variable, the performance degradation should not be
-significant anyway since init_cma_reserved_pageblock() is called
-only at boot time at most MAX_CMA_AREAS times which by default is
-eight.
-
-Cc: stable@vger.kernel.org
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-Reported-by: Mark Salter <msalter@redhat.com>
-Tested-by: Christopher Covington <cov@codeaurora.org>
----
- mm/page_alloc.c | 16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
-
- Mark Salter wrote:
- > I ended up needing this (on top of your patch) to get the system to
- > boot.  Each MAX_ORDER-1 group needs the refcount and migratetype set
- > so that __free_pages does the right thing.
- >
- > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
- > index 02fb1ed..a7ca6cc 100644
- > --- a/mm/page_alloc.c
- > +++ b/mm/page_alloc.c
- > @@ -799,17 +799,18 @@ void __init init_cma_reserved_pageblock(struct page *page)
- >  		set_page_count(p, 0);
- >  	} while (++p, --i);
- >  
- > -	set_page_refcounted(page);
- > -	set_pageblock_migratetype(page, MIGRATE_CMA);
- > -
- > -	if (pageblock_order > MAX_ORDER) {
- > -		i = pageblock_order - MAX_ORDER;
- > +	if (pageblock_order >= MAX_ORDER) {
- > +		i = pageblock_order - MAX_ORDER + 1;
- >  		i = 1 << i;
- >  		p = page;
- >  		do {
- > -			__free_pages(p, MAX_ORDER);
- > +			set_page_refcounted(p);
- > +			set_pageblock_migratetype(p, MIGRATE_CMA);
- > +			__free_pages(p, MAX_ORDER - 1);
- >  		} while (p += MAX_ORDER_NR_PAGES, --i);
- >  	} else {
- > +		set_page_refcounted(page);
- > +		set_pageblock_migratetype(page, MIGRATE_CMA);
- >  		__free_pages(page, pageblock_order);
- >  	}
-
- This is kinda embarrassing, dunno how I missed that.
-
- But each page actually does not need to have migratetype set, does it?
- All of those pages are in a single pageblock so a single call
- suffices.  If you track set_pageblock_migratetype down to pfn_to_bitidx
- there is:
-
-	return (pfn >> pageblock_order) * NR_PAGEBLOCK_BITS;
-
- so for pfns inside of a pageblock, they get truncated.  Or did I miss
- yet another thing?
-
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index ee92384..fef9614 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -816,9 +816,21 @@ void __init init_cma_reserved_pageblock(struct page *page)
- 		set_page_count(p, 0);
- 	} while (++p, --i);
- 
--	set_page_refcounted(page);
- 	set_pageblock_migratetype(page, MIGRATE_CMA);
--	__free_pages(page, pageblock_order);
-+
-+	if (pageblock_order >= MAX_ORDER) {
-+		i = pageblock_nr_pages;
-+		p = page;
-+		do {
-+			set_page_refcounted(p);
-+			__free_pages(p, MAX_ORDER - 1);
-+			p += MAX_ORDER_NR_PAGES;
-+		} while (i -= MAX_ORDER_NR_PAGES);
-+	} else {
-+		set_page_refcounted(page);
-+		__free_pages(page, pageblock_order);
-+	}
-+
- 	adjust_managed_page_count(page, pageblock_nr_pages);
- }
- #endif
--- 
-2.0.0.526.g5318336
+greg k-h
