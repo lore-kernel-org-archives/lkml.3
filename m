@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756131AbaFWNnA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:43:00 -0400
-Received: from smtprelay0062.hostedemail.com ([216.40.44.62]:54265 "EHLO
+	id S1756102AbaFWNmz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:42:55 -0400
+Received: from smtprelay0188.hostedemail.com ([216.40.44.188]:45059 "EHLO
 	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756103AbaFWNm4 (ORCPT
+	by vger.kernel.org with ESMTP id S1756074AbaFWNmu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:42:56 -0400
+	Mon, 23 Jun 2014 09:42:50 -0400
 X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 10,1,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:69:196:355:379:541:800:960:968:973:982:988:989:1260:1345:1359:1437:1534:1542:1622:1711:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3352:3865:4321:4419:4605:5007:6119:6261:7903:8603:9592:10004:10026:10848:11026:11232:11473:11657:11658:11914:12043:12114:12296:12438:12517:12519:12555,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: fork10_8db0cca117347
-X-Filterd-Recvd-Size: 3030
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:800:960:966:968:973:988:989:1260:1345:1359:1437:1534:1542:1711:1730:1747:1777:1792:2194:2196:2199:2200:2393:2559:2562:2729:3138:3139:3140:3141:3142:3352:3865:3866:3867:4225:4250:4321:4385:4419:4605:5007:6119:6261:8603:9592:10004:10026:10848:11026:11473:11657:11658:11914:12043:12114:12296:12438:12517:12519:12555,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: lead59_8cb806731cd3b
+X-Filterd-Recvd-Size: 3414
 From: Joe Perches <joe@perches.com>
 To: linux-kernel@vger.kernel.org
-Cc: Stanislav Yakovlev <stas.yakovlev@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org
-Subject: [PATCH 15/22] ipw2100: Use pci_zalloc_consistent
-Date: Mon, 23 Jun 2014 06:41:43 -0700
-Message-Id: <300ca978edde7122af48aae0f6de0d06730c5fbc.1403530604.git.joe@perches.com>
+Cc: Manish Chopra <manish.chopra@qlogic.com>,
+        Sony Chacko <sony.chacko@qlogic.com>,
+        Rajesh Borundia <rajesh.borundia@qlogic.com>,
+        Shahed Shaikh <shahed.shaikh@qlogic.com>,
+        Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>,
+        Ron Mercer <ron.mercer@qlogic.com>, linux-driver@qlogic.com,
+        netdev@vger.kernel.org
+Subject: [PATCH 13/22] qlogic: Use pci_zalloc_consistent
+Date: Mon, 23 Jun 2014 06:41:41 -0700
+Message-Id: <5aceec27b2390a68fb96d31fc5753d9b58d82627.1403530604.git.joe@perches.com>
 X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 In-Reply-To: <cover.1403530604.git.joe@perches.com>
 References: <cover.1403530604.git.joe@perches.com>
@@ -30,67 +34,63 @@ Remove the now unnecessary memset too.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/wireless/ipw2x00/ipw2100.c | 16 +++++-----------
- 1 file changed, 5 insertions(+), 11 deletions(-)
+ drivers/net/ethernet/qlogic/netxen/netxen_nic_ctx.c |  4 +---
+ drivers/net/ethernet/qlogic/qlge/qlge_main.c        | 11 +++++------
+ 2 files changed, 6 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/net/wireless/ipw2x00/ipw2100.c b/drivers/net/wireless/ipw2x00/ipw2100.c
-index dfc6dfc..1ab8e50 100644
---- a/drivers/net/wireless/ipw2x00/ipw2100.c
-+++ b/drivers/net/wireless/ipw2x00/ipw2100.c
-@@ -3449,8 +3449,9 @@ static int ipw2100_msg_allocate(struct ipw2100_priv *priv)
- 		return -ENOMEM;
+diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic_ctx.c b/drivers/net/ethernet/qlogic/netxen/netxen_nic_ctx.c
+index 6f6be57..b8d5270 100644
+--- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_ctx.c
++++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_ctx.c
+@@ -129,14 +129,12 @@ netxen_get_minidump_template(struct netxen_adapter *adapter)
+ 		return NX_RCODE_INVALID_ARGS;
+ 	}
  
- 	for (i = 0; i < IPW_COMMAND_POOL_SIZE; i++) {
--		v = pci_alloc_consistent(priv->pci_dev,
--					 sizeof(struct ipw2100_cmd_header), &p);
-+		v = pci_zalloc_consistent(priv->pci_dev,
-+					  sizeof(struct ipw2100_cmd_header),
-+					  &p);
- 		if (!v) {
- 			printk(KERN_ERR DRV_NAME ": "
- 			       "%s: PCI alloc failed for msg "
-@@ -3459,8 +3460,6 @@ static int ipw2100_msg_allocate(struct ipw2100_priv *priv)
- 			break;
- 		}
- 
--		memset(v, 0, sizeof(struct ipw2100_cmd_header));
+-	addr = pci_alloc_consistent(adapter->pdev, size, &md_template_addr);
 -
- 		priv->msg_buffers[i].type = COMMAND;
- 		priv->msg_buffers[i].info.c_struct.cmd =
- 		    (struct ipw2100_cmd_header *)v;
-@@ -4336,16 +4335,12 @@ static int status_queue_allocate(struct ipw2100_priv *priv, int entries)
- 	IPW_DEBUG_INFO("enter\n");
- 
- 	q->size = entries * sizeof(struct ipw2100_status);
--	q->drv =
--	    (struct ipw2100_status *)pci_alloc_consistent(priv->pci_dev,
--							  q->size, &q->nic);
-+	q->drv = pci_zalloc_consistent(priv->pci_dev, q->size, &q->nic);
- 	if (!q->drv) {
- 		IPW_DEBUG_WARNING("Can not allocate status queue.\n");
++	addr = pci_zalloc_consistent(adapter->pdev, size, &md_template_addr);
+ 	if (!addr) {
+ 		dev_err(&adapter->pdev->dev, "Unable to allocate dmable memory for template.\n");
  		return -ENOMEM;
  	}
  
--	memset(q->drv, 0, q->size);
--
- 	IPW_DEBUG_INFO("exit\n");
- 
+-	memset(addr, 0, size);
+ 	memset(&cmd, 0, sizeof(cmd));
+ 	memset(&cmd.rsp, 1, sizeof(struct _cdrp_cmd));
+ 	cmd.req.cmd = NX_CDRP_CMD_GET_TEMP_HDR;
+diff --git a/drivers/net/ethernet/qlogic/qlge/qlge_main.c b/drivers/net/ethernet/qlogic/qlge/qlge_main.c
+index b40050e..d836ace 100644
+--- a/drivers/net/ethernet/qlogic/qlge/qlge_main.c
++++ b/drivers/net/ethernet/qlogic/qlge/qlge_main.c
+@@ -2727,23 +2727,22 @@ static void ql_free_shadow_space(struct ql_adapter *qdev)
+ static int ql_alloc_shadow_space(struct ql_adapter *qdev)
+ {
+ 	qdev->rx_ring_shadow_reg_area =
+-	    pci_alloc_consistent(qdev->pdev,
+-				 PAGE_SIZE, &qdev->rx_ring_shadow_reg_dma);
++		pci_zalloc_consistent(qdev->pdev, PAGE_SIZE,
++				      &qdev->rx_ring_shadow_reg_dma);
+ 	if (qdev->rx_ring_shadow_reg_area == NULL) {
+ 		netif_err(qdev, ifup, qdev->ndev,
+ 			  "Allocation of RX shadow space failed.\n");
+ 		return -ENOMEM;
+ 	}
+-	memset(qdev->rx_ring_shadow_reg_area, 0, PAGE_SIZE);
++
+ 	qdev->tx_ring_shadow_reg_area =
+-	    pci_alloc_consistent(qdev->pdev, PAGE_SIZE,
+-				 &qdev->tx_ring_shadow_reg_dma);
++		pci_zalloc_consistent(qdev->pdev, PAGE_SIZE,
++				      &qdev->tx_ring_shadow_reg_dma);
+ 	if (qdev->tx_ring_shadow_reg_area == NULL) {
+ 		netif_err(qdev, ifup, qdev->ndev,
+ 			  "Allocation of TX shadow space failed.\n");
+ 		goto err_wqp_sh_area;
+ 	}
+-	memset(qdev->tx_ring_shadow_reg_area, 0, PAGE_SIZE);
  	return 0;
-@@ -4374,13 +4369,12 @@ static int bd_queue_allocate(struct ipw2100_priv *priv,
  
- 	q->entries = entries;
- 	q->size = entries * sizeof(struct ipw2100_bd);
--	q->drv = pci_alloc_consistent(priv->pci_dev, q->size, &q->nic);
-+	q->drv = pci_zalloc_consistent(priv->pci_dev, q->size, &q->nic);
- 	if (!q->drv) {
- 		IPW_DEBUG_INFO
- 		    ("can't allocate shared memory for buffer descriptors\n");
- 		return -ENOMEM;
- 	}
--	memset(q->drv, 0, q->size);
- 
- 	IPW_DEBUG_INFO("exit\n");
- 
+ err_wqp_sh_area:
 -- 
 1.8.1.2.459.gbcd45b4.dirty
 
