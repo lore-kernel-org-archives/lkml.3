@@ -1,182 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932107AbaFWNen (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:34:43 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60765 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754806AbaFWN3j (ORCPT
+	id S1753952AbaFWNDl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:03:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36714 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753926AbaFWNDj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:29:39 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: linux-kernel@vger.kernel.org
-Cc: jirislaby@gmail.com, Vojtech Pavlik <vojtech@suse.cz>,
-        Jiri Kosina <jkosina@suse.cz>, Jiri Slaby <jslaby@suse.cz>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: [PATCH 04/21] kgr: add testing kgraft patch
-Date: Mon, 23 Jun 2014 15:29:18 +0200
-Message-Id: <1403530175-29217-4-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1403530175-29217-1-git-send-email-jslaby@suse.cz>
-References: <1403530175-29217-1-git-send-email-jslaby@suse.cz>
+	Mon, 23 Jun 2014 09:03:39 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Alex Deucher <alexander.deucher@amd.com>,
+        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 13/93] drm/radeon: handle non-VGA class pci devices with ATRM
+Date: Mon, 23 Jun 2014 14:01:52 +0100
+Message-Id: <1403528592-2163-14-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
+References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is intended to be a presentation of the kGraft engine, so it is
-placed into samples/ directory.
+3.11.10.12 -stable review patch.  If anyone has any objections, please let me know.
 
-It patches two chosen functions sys_iopl() and sys_capable() to print
-a message in addition to the original functionality.
+------------------
 
-js: fix filename in Makefile (thanks mmarek)
+From: Alex Deucher <alexdeucher@gmail.com>
 
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
+commit d8ade3526b2aa0505132c404c05a38b73ea15490 upstream.
+
+Newer PX systems have non-VGA pci class dGPUs.  Update
+the ATRM fetch method to handle those cases.
+
+bug:
+https://bugzilla.kernel.org/show_bug.cgi?id=75401
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Christian König <christian.koenig@amd.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- samples/Kconfig                 |  4 ++
- samples/Makefile                |  3 +-
- samples/kgraft/Makefile         |  1 +
- samples/kgraft/kgraft_patcher.c | 92 +++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 99 insertions(+), 1 deletion(-)
- create mode 100644 samples/kgraft/Makefile
- create mode 100644 samples/kgraft/kgraft_patcher.c
+ drivers/gpu/drm/radeon/radeon_bios.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-diff --git a/samples/Kconfig b/samples/Kconfig
-index 6181c2cc9ca0..b33a397dfc58 100644
---- a/samples/Kconfig
-+++ b/samples/Kconfig
-@@ -55,6 +55,10 @@ config SAMPLE_KDB
- 	  Build an example of how to dynamically add the hello
- 	  command to the kdb shell.
+diff --git a/drivers/gpu/drm/radeon/radeon_bios.c b/drivers/gpu/drm/radeon/radeon_bios.c
+index 061b227dae0c..b131520521e4 100644
+--- a/drivers/gpu/drm/radeon/radeon_bios.c
++++ b/drivers/gpu/drm/radeon/radeon_bios.c
+@@ -196,6 +196,20 @@ static bool radeon_atrm_get_bios(struct radeon_device *rdev)
+ 		}
+ 	}
  
-+config SAMPLE_KGRAFT_PATCHER
-+	tristate "Build kGraft patcher example -- loadable modules only"
-+	depends on KGRAFT && m
++	if (!found) {
++		while ((pdev = pci_get_class(PCI_CLASS_DISPLAY_OTHER << 8, pdev)) != NULL) {
++			dhandle = ACPI_HANDLE(&pdev->dev);
++			if (!dhandle)
++				continue;
 +
- config SAMPLE_RPMSG_CLIENT
- 	tristate "Build rpmsg client sample -- loadable modules only"
- 	depends on RPMSG && m
-diff --git a/samples/Makefile b/samples/Makefile
-index 1a60c62e2045..a0d1626bd5bb 100644
---- a/samples/Makefile
-+++ b/samples/Makefile
-@@ -1,4 +1,5 @@
- # Makefile for Linux samples code
++			status = acpi_get_handle(dhandle, "ATRM", &atrm_handle);
++			if (!ACPI_FAILURE(status)) {
++				found = true;
++				break;
++			}
++		}
++	}
++
+ 	if (!found)
+ 		return false;
  
- obj-$(CONFIG_SAMPLES)	+= kobject/ kprobes/ trace_events/ \
--			   hw_breakpoint/ kfifo/ kdb/ hidraw/ rpmsg/ seccomp/
-+			   hw_breakpoint/ kfifo/ kdb/ kgraft/ \
-+			   hidraw/ rpmsg/ seccomp/
-diff --git a/samples/kgraft/Makefile b/samples/kgraft/Makefile
-new file mode 100644
-index 000000000000..888a332c3148
---- /dev/null
-+++ b/samples/kgraft/Makefile
-@@ -0,0 +1 @@
-+obj-$(CONFIG_SAMPLE_KGRAFT_PATCHER) += kgraft_patcher.o
-diff --git a/samples/kgraft/kgraft_patcher.c b/samples/kgraft/kgraft_patcher.c
-new file mode 100644
-index 000000000000..abb0c05bf739
---- /dev/null
-+++ b/samples/kgraft/kgraft_patcher.c
-@@ -0,0 +1,92 @@
-+/*
-+ * kgraft_patcher -- just kick the kGraft infrastructure for test
-+ *
-+ * We patch two (arbitrarily chosen) functions at once...
-+ *
-+ *  Copyright (c) 2013-2014 SUSE
-+ *   Authors: Jiri Kosina
-+ *	      Vojtech Pavlik
-+ *	      Jiri Slaby
-+ */
-+
-+/*
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the Free
-+ * Software Foundation; either version 2 of the License, or (at your option)
-+ * any later version.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/kgraft.h>
-+#include <linux/kallsyms.h>
-+#include <linux/sched.h>
-+#include <linux/types.h>
-+#include <linux/capability.h>
-+#include <linux/ptrace.h>
-+
-+#include <asm/processor.h>
-+
-+/*
-+ * This all should be autogenerated from the patched sources
-+ */
-+
-+asmlinkage long kgr_new_sys_iopl(unsigned int level)
-+{
-+	struct pt_regs *regs = current_pt_regs();
-+	unsigned int old = (regs->flags >> 12) & 3;
-+	struct thread_struct *t = &current->thread;
-+
-+	printk(KERN_DEBUG "kgr-patcher: this is a new sys_iopl()\n");
-+
-+	if (level > 3)
-+		return -EINVAL;
-+	/* Trying to gain more privileges? */
-+	if (level > old) {
-+		if (!capable(CAP_SYS_RAWIO))
-+			return -EPERM;
-+	}
-+	regs->flags = (regs->flags & ~X86_EFLAGS_IOPL) | (level << 12);
-+	t->iopl = level << 12;
-+	set_iopl_mask(t->iopl);
-+
-+	return 0;
-+}
-+KGR_PATCHED_FUNCTION(SyS_iopl, kgr_new_sys_iopl);
-+
-+static bool new_capable(int cap)
-+{
-+	printk(KERN_DEBUG "kgr-patcher: this is a new capable()\n");
-+
-+	return ns_capable(&init_user_ns, cap);
-+}
-+KGR_PATCHED_FUNCTION(capable, new_capable);
-+
-+static const struct kgr_patch patch = {
-+	.patches = {
-+		KGR_PATCH(SyS_iopl),
-+		KGR_PATCH(capable),
-+		KGR_PATCH_END
-+	}
-+};
-+
-+static int __init kgr_patcher_init(void)
-+{
-+	/* removing not supported */
-+	__module_get(THIS_MODULE);
-+	kgr_start_patching(&patch);
-+	return 0;
-+}
-+
-+static void __exit kgr_patcher_cleanup(void)
-+{
-+	/* extra care needs to be taken when freeing ftrace_ops->private */
-+	pr_err("removing now buggy!\n");
-+}
-+
-+module_init(kgr_patcher_init);
-+module_exit(kgr_patcher_cleanup);
-+
-+MODULE_LICENSE("GPL");
-+
 -- 
-2.0.0
+1.9.1
 
