@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752812AbaFWIce (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 04:32:34 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55452 "EHLO
+	id S1752766AbaFWIcc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 04:32:32 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55455 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752433AbaFWIc2 (ORCPT
+	by vger.kernel.org with ESMTP id S1752341AbaFWIc2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Jun 2014 04:32:28 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Heinz Mauelshagen <heinzm@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 034/111] dm cache: always split discards on cache block boundaries
-Date: Mon, 23 Jun 2014 10:31:09 +0200
-Message-Id: <3ae4e547f5106b3610ff4e2ead70e4b6263477c2.1403512281.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, NeilBrown <neilb@suse.de>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 040/111] md: always set MD_RECOVERY_INTR when interrupting a reshape thread.
+Date: Mon, 23 Jun 2014 10:31:15 +0200
+Message-Id: <ab41ac4c4983f4d7d21e5801d601be34df0b58db.1403512281.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
 References: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
@@ -23,39 +23,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Heinz Mauelshagen <heinzm@redhat.com>
+From: NeilBrown <neilb@suse.de>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit f1daa838e861ae1a0fb7cd9721a21258430fcc8c upstream.
+commit 2ac295a544dcae9299cba13ce250419117ae7fd1 upstream.
 
-The DM cache target cannot cope with discards that span multiple cache
-blocks, so each discard bio that spans more than one cache block must
-get split by the DM core.
+Commit 8313b8e57f55b15e5b7f7fc5d1630bbf686a9a97
+   md: fix problem when adding device to read-only array with bitmap.
 
-Signed-off-by: Heinz Mauelshagen <heinzm@redhat.com>
-Acked-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+added a called to md_reap_sync_thread() which cause a reshape thread
+to be interrupted (in particular, it could cause md_thread() to never even
+call md_do_sync()).
+However it didn't set MD_RECOVERY_INTR so ->finish_reshape() would not
+know that the reshape didn't complete.
+
+This only happens when mddev->ro is set and normally reshape threads
+don't run in that situation.  But raid5 and raid10 can start a reshape
+thread during "run" is the array is in the middle of a reshape.
+They do this even if ->ro is set.
+
+So it is best to set MD_RECOVERY_INTR before abortingg the
+sync thread, just in case.
+
+Though it rare for this to trigger a problem it can cause data corruption
+because the reshape isn't finished properly.
+So it is suitable for any stable which the offending commit was applied to.
+(3.2 or later)
+
+Fixes: 8313b8e57f55b15e5b7f7fc5d1630bbf686a9a97
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/md/dm-cache-target.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/md/md.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/md/dm-cache-target.c b/drivers/md/dm-cache-target.c
-index d64bf7d6c8fe..0cf3700bfe9e 100644
---- a/drivers/md/dm-cache-target.c
-+++ b/drivers/md/dm-cache-target.c
-@@ -1932,6 +1932,8 @@ static int cache_create(struct cache_args *ca, struct cache **result)
- 	ti->num_discard_bios = 1;
- 	ti->discards_supported = true;
- 	ti->discard_zeroes_data_unsupported = true;
-+	/* Discard bios must be split on a block boundary */
-+	ti->split_discard_bios = true;
- 
- 	cache->features = ca->features;
- 	ti->per_bio_data_size = get_per_bio_data_size(cache);
+diff --git a/drivers/md/md.c b/drivers/md/md.c
+index f167b82e7218..c98e681fc9fc 100644
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -7827,6 +7827,7 @@ void md_check_recovery(struct mddev *mddev)
+ 			/* There is no thread, but we need to call
+ 			 * ->spare_active and clear saved_raid_disk
+ 			 */
++			set_bit(MD_RECOVERY_INTR, &mddev->recovery);
+ 			md_reap_sync_thread(mddev);
+ 			clear_bit(MD_RECOVERY_NEEDED, &mddev->recovery);
+ 			goto unlock;
 -- 
 2.0.0
 
