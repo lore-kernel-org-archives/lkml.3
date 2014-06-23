@@ -1,132 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753447AbaFWMwy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 08:52:54 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:59189 "EHLO
+	id S1753623AbaFWMxS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 08:53:18 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:59216 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751066AbaFWMww (ORCPT
+	with ESMTP id S1751388AbaFWMxR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 08:52:52 -0400
-Date: Mon, 23 Jun 2014 14:52:33 +0200
+	Mon, 23 Jun 2014 08:53:17 -0400
+Date: Mon, 23 Jun 2014 14:53:09 +0200
 From: Peter Zijlstra <peterz@infradead.org>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>, Jason Low <jason.low2@hp.com>,
-        Davidlohr Bueson <davidlohr@hp.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] sched: Fast idling of CPU when system is partially
- loaded
-Message-ID: <20140623125233.GZ19860@laptop.programming.kicks-ass.net>
-References: <1402948127.2970.578.camel@schen9-DESK>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [GIT PULL] nohz: Move nohz kick out of scheduler IPI, v9
+Message-ID: <20140623125309.GA19860@laptop.programming.kicks-ass.net>
+References: <1402935790-19860-1-git-send-email-fweisbec@gmail.com>
+ <20140618164841.GA19204@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1402948127.2970.578.camel@schen9-DESK>
+In-Reply-To: <20140618164841.GA19204@gmail.com>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 16, 2014 at 12:48:47PM -0700, Tim Chen wrote:
-> +++ b/kernel/sched/fair.c
-> @@ -5863,7 +5863,8 @@ static inline int sg_capacity(struct lb_env *env, struct sched_group *group)
->   */
->  static inline void update_sg_lb_stats(struct lb_env *env,
->  			struct sched_group *group, int load_idx,
-> -			int local_group, struct sg_lb_stats *sgs)
-> +			int local_group, struct sg_lb_stats *sgs,
-> +			bool *overload)
->  {
->  	unsigned long load;
->  	int i;
-> @@ -5881,6 +5882,8 @@ static inline void update_sg_lb_stats(struct lb_env *env,
->  
->  		sgs->group_load += load;
->  		sgs->sum_nr_running += rq->nr_running;
-> +		if (overload && rq->nr_running > 1)
-> +			*overload = true;
->  #ifdef CONFIG_NUMA_BALANCING
->  		sgs->nr_numa_running += rq->nr_numa_running;
->  		sgs->nr_preferred_running += rq->nr_preferred_running;
-> @@ -5991,6 +5994,7 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
->  	struct sched_group *sg = env->sd->groups;
->  	struct sg_lb_stats tmp_sgs;
->  	int load_idx, prefer_sibling = 0;
-> +	bool overload = false;
->  
->  	if (child && child->flags & SD_PREFER_SIBLING)
->  		prefer_sibling = 1;
-> @@ -6011,7 +6015,13 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
->  				update_group_power(env->sd, env->dst_cpu);
->  		}
->  
-> -		update_sg_lb_stats(env, sg, load_idx, local_group, sgs);
-> +		if (env->sd->parent)
-> +			update_sg_lb_stats(env, sg, load_idx, local_group, sgs,
-> +						NULL);
-> +		else
-> +			/* gather overload info if we are at root domain */
-> +			update_sg_lb_stats(env, sg, load_idx, local_group, sgs,
-> +						&overload);
->  
->  		if (local_group)
->  			goto next_group;
-> @@ -6045,6 +6055,13 @@ next_group:
->  
->  	if (env->sd->flags & SD_NUMA)
->  		env->fbq_type = fbq_classify_group(&sds->busiest_stat);
-> +
-> +	if (!env->sd->parent) {
-> +		/* update overload indicator if we are at root domain */
-> +		if (env->dst_rq->rd->overload != overload)
-> +			env->dst_rq->rd->overload = overload;
-> +	}
-> +
->  }
->  
->  /**
+On Wed, Jun 18, 2014 at 06:48:41PM +0200, Ingo Molnar wrote:
+> 
+> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > Please pull the timers/nohz-irq-work-v7 branch that can be found at:
+> > 
+> 
+> Pulled, thanks a lot Frederic!
 
-So I don't get why we can't do the below; I think Jason tried to ask the
-same...
-
-Making that overload thing unconditional makes the code simpler and the
-cost is about the same; it doesn't matter if we test the pointer or
-->nr_running, which we've already loaded anyhow.
-
-Also, with only having a single update_sg_lb_stats() callsite GCC can
-more easily inline the lot.
-
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -5886,7 +5886,7 @@ static inline void update_sg_lb_stats(st
- 
- 		sgs->group_load += load;
- 		sgs->sum_nr_running += rq->nr_running;
--		if (overload && rq->nr_running > 1)
-+		if (rq->nr_running > 1)
- 			*overload = true;
- #ifdef CONFIG_NUMA_BALANCING
- 		sgs->nr_numa_running += rq->nr_numa_running;
-@@ -6019,13 +6019,7 @@ static inline void update_sd_lb_stats(st
- 				update_group_capacity(env->sd, env->dst_cpu);
- 		}
- 
--		if (env->sd->parent)
--			update_sg_lb_stats(env, sg, load_idx, local_group, sgs,
--						NULL);
--		else
--			/* gather overload info if we are at root domain */
--			update_sg_lb_stats(env, sg, load_idx, local_group, sgs,
--						&overload);
-+		update_sg_lb_stats(env, sg, load_idx, local_group, sgs, &overload);
- 
- 		if (local_group)
- 			goto next_group;
-@@ -6065,7 +6059,6 @@ static inline void update_sd_lb_stats(st
- 		if (env->dst_rq->rd->overload != overload)
- 			env->dst_rq->rd->overload = overload;
- 	}
--
- }
- 
- /**
+Ingo, the previous version had one of your machines fall over, is that
+machine good now?
