@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754197AbaFWNEJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:04:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36805 "EHLO
+	id S1754170AbaFWNEH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:04:07 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36807 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753799AbaFWND5 (ORCPT
+	with ESMTP id S1754116AbaFWND5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Jun 2014 09:03:57 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>, Paul Walmsley <paul@pwsan.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 20/93] mm/memory-failure.c: fix memory leak by race between poison and unpoison
-Date: Mon, 23 Jun 2014 14:01:59 +0100
-Message-Id: <1403528592-2163-21-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 25/93] ARM: omap5: hwmod_data: Correct IDLEMODE for McPDM
+Date: Mon, 23 Jun 2014 14:02:04 +0100
+Message-Id: <1403528592-2163-26-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
 References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
@@ -30,43 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 
-commit 3e030ecc0fc7de10fd0da10c1c19939872a31717 upstream.
+commit 0f9e19ad88eee820f517b85531b555a0fa73e7e4 upstream.
 
-When a memory error happens on an in-use page or (free and in-use)
-hugepage, the victim page is isolated with its refcount set to one.
+McPDM need to be configured to NO_IDLE mode when it is in used otherwise
+vital clocks will be gated which results 'slow motion' audio playback.
 
-When you try to unpoison it later, unpoison_memory() calls put_page()
-for it twice in order to bring the page back to free page pool (buddy or
-free hugepage list).  However, if another memory error occurs on the
-page which we are unpoisoning, memory_failure() returns without
-releasing the refcount which was incremented in the same call at first,
-which results in memory leak and unconsistent num_poisoned_pages
-statistics.  This patch fixes it.
-
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Signed-off-by: Paul Walmsley <paul@pwsan.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/memory-failure.c | 2 ++
- 1 file changed, 2 insertions(+)
+ arch/arm/mach-omap2/omap_hwmod_54xx_data.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index d3772a6118ee..9a5150d2e937 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -1153,6 +1153,8 @@ int memory_failure(unsigned long pfn, int trapno, int flags)
+diff --git a/arch/arm/mach-omap2/omap_hwmod_54xx_data.c b/arch/arm/mach-omap2/omap_hwmod_54xx_data.c
+index 3c70f5c1860f..a3400d826a7e 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_54xx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_54xx_data.c
+@@ -863,7 +863,7 @@ static struct omap_hwmod omap54xx_mcpdm_hwmod = {
+ 	 * current exception.
  	 */
- 	if (!PageHWPoison(p)) {
- 		printk(KERN_ERR "MCE %#lx: just unpoisoned\n", pfn);
-+		atomic_long_sub(nr_pages, &num_poisoned_pages);
-+		put_page(hpage);
- 		res = 0;
- 		goto out;
- 	}
+ 
+-	.flags		= HWMOD_EXT_OPT_MAIN_CLK,
++	.flags		= HWMOD_EXT_OPT_MAIN_CLK | HWMOD_SWSUP_SIDLE,
+ 	.main_clk	= "pad_clks_ck",
+ 	.prcm = {
+ 		.omap4 = {
 -- 
 1.9.1
 
