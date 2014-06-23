@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753946AbaFWIze (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 04:55:34 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55491 "EHLO
+	id S1753851AbaFWIzd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 04:55:33 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55493 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752486AbaFWIc2 (ORCPT
+	by vger.kernel.org with ESMTP id S1752488AbaFWIc2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Jun 2014 04:32:28 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 042/111] Staging: speakup: Move pasting into a work item
-Date: Mon, 23 Jun 2014 10:31:17 +0200
-Message-Id: <e71e310b30ccd69a206412668a6335a682b4e869.1403512281.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 078/111] skbuff: skb_segment: s/frag/nskb_frag/
+Date: Mon, 23 Jun 2014 10:31:53 +0200
+Message-Id: <e7fb29afa611ca364a8f6e26af2128db2a7d7ff0.1403512281.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
 References: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
@@ -23,132 +23,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: "Michael S. Tsirkin" <mst@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit d7500135802ca55b3f4e01a16544e8b34082f8c3 upstream.
+[ Upstream commit 8cb19905e9287a93ce7c2cbbdf742a060b00e219 ]
 
-Input is handled in softirq context, but when pasting we may
-need to sleep.  speakup_paste_selection() currently tries to
-bodge this by busy-waiting if in_atomic(), but that doesn't
-help because the ldisc may also sleep.
+frag points at nskb, so name it appropriately
 
-For bonus breakage, speakup_paste_selection() changes the
-state of current, even though it's not running in process
-context.
-
-Move it into a work item and make sure to cancel it on exit.
-
-References: https://bugs.debian.org/735202
-References: https://bugs.debian.org/744015
-Reported-by: Paul Gevers <elbrus@debian.org>
-Reported-and-tested-by: Jarek Czekalski <jarekczek@poczta.onet.pl>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/staging/speakup/main.c      |  1 +
- drivers/staging/speakup/selection.c | 38 +++++++++++++++++++++++++++++++------
- drivers/staging/speakup/speakup.h   |  1 +
- 3 files changed, 34 insertions(+), 6 deletions(-)
+ net/core/skbuff.c | 18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/staging/speakup/main.c b/drivers/staging/speakup/main.c
-index 14079c4949a8..2239fddd8d1c 100644
---- a/drivers/staging/speakup/main.c
-+++ b/drivers/staging/speakup/main.c
-@@ -2220,6 +2220,7 @@ static void __exit speakup_exit(void)
- 	unregister_keyboard_notifier(&keyboard_notifier_block);
- 	unregister_vt_notifier(&vt_notifier_block);
- 	speakup_unregister_devsynth();
-+	speakup_cancel_paste();
- 	del_timer(&cursor_timer);
- 	kthread_stop(speakup_task);
- 	speakup_task = NULL;
-diff --git a/drivers/staging/speakup/selection.c b/drivers/staging/speakup/selection.c
-index f0fb00392d6b..f67941e78e4a 100644
---- a/drivers/staging/speakup/selection.c
-+++ b/drivers/staging/speakup/selection.c
-@@ -4,6 +4,8 @@
- #include <linux/sched.h>
- #include <linux/device.h> /* for dev_warn */
- #include <linux/selection.h>
-+#include <linux/workqueue.h>
-+#include <asm/cmpxchg.h>
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index f69f2ed1dbc3..9e99761b0211 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -2753,7 +2753,7 @@ struct sk_buff *skb_segment(struct sk_buff *skb, netdev_features_t features)
  
- #include "speakup.h"
+ 	do {
+ 		struct sk_buff *nskb;
+-		skb_frag_t *frag;
++		skb_frag_t *nskb_frag;
+ 		int hsize;
+ 		int size;
  
-@@ -121,20 +123,24 @@ int speakup_set_selection(struct tty_struct *tty)
- 	return 0;
- }
- 
--/* TODO: move to some helper thread, probably.  That'd fix having to check for
-- * in_atomic().  */
--int speakup_paste_selection(struct tty_struct *tty)
-+struct speakup_paste_work {
-+	struct work_struct work;
-+	struct tty_struct *tty;
-+};
-+
-+static void __speakup_paste_selection(struct work_struct *work)
- {
-+	struct speakup_paste_work *spw =
-+		container_of(work, struct speakup_paste_work, work);
-+	struct tty_struct *tty = xchg(&spw->tty, NULL);
- 	struct vc_data *vc = (struct vc_data *) tty->driver_data;
- 	int pasted = 0, count;
- 	DECLARE_WAITQUEUE(wait, current);
-+
- 	add_wait_queue(&vc->paste_wait, &wait);
- 	while (sel_buffer && sel_buffer_lth > pasted) {
- 		set_current_state(TASK_INTERRUPTIBLE);
- 		if (test_bit(TTY_THROTTLED, &tty->flags)) {
--			if (in_atomic())
--				/* if we are in an interrupt handler, abort */
--				break;
- 			schedule();
+@@ -2853,7 +2853,7 @@ struct sk_buff *skb_segment(struct sk_buff *skb, netdev_features_t features)
  			continue;
  		}
-@@ -146,6 +152,26 @@ int speakup_paste_selection(struct tty_struct *tty)
- 	}
- 	remove_wait_queue(&vc->paste_wait, &wait);
- 	current->state = TASK_RUNNING;
-+	tty_kref_put(tty);
-+}
-+
-+static struct speakup_paste_work speakup_paste_work = {
-+	.work = __WORK_INITIALIZER(speakup_paste_work.work,
-+				   __speakup_paste_selection)
-+};
-+
-+int speakup_paste_selection(struct tty_struct *tty)
-+{
-+	if (cmpxchg(&speakup_paste_work.tty, NULL, tty) != NULL)
-+		return -EBUSY;
-+
-+	tty_kref_get(tty);
-+	schedule_work_on(WORK_CPU_UNBOUND, &speakup_paste_work.work);
- 	return 0;
- }
  
-+void speakup_cancel_paste(void)
-+{
-+	cancel_work_sync(&speakup_paste_work.work);
-+	tty_kref_put(speakup_paste_work.tty);
-+}
-diff --git a/drivers/staging/speakup/speakup.h b/drivers/staging/speakup/speakup.h
-index 0126f714821a..74fe72429b2d 100644
---- a/drivers/staging/speakup/speakup.h
-+++ b/drivers/staging/speakup/speakup.h
-@@ -77,6 +77,7 @@ extern void synth_buffer_clear(void);
- extern void speakup_clear_selection(void);
- extern int speakup_set_selection(struct tty_struct *tty);
- extern int speakup_paste_selection(struct tty_struct *tty);
-+extern void speakup_cancel_paste(void);
- extern void speakup_register_devsynth(void);
- extern void speakup_unregister_devsynth(void);
- extern void synth_write(const char *buf, size_t count);
+-		frag = skb_shinfo(nskb)->frags;
++		nskb_frag = skb_shinfo(nskb)->frags;
+ 
+ 		skb_copy_from_linear_data_offset(skb, offset,
+ 						 skb_put(nskb, hsize), hsize);
+@@ -2881,13 +2881,13 @@ struct sk_buff *skb_segment(struct sk_buff *skb, netdev_features_t features)
+ 				goto err;
+ 			}
+ 
+-			*frag = *skb_frag;
+-			__skb_frag_ref(frag);
+-			size = skb_frag_size(frag);
++			*nskb_frag = *skb_frag;
++			__skb_frag_ref(nskb_frag);
++			size = skb_frag_size(nskb_frag);
+ 
+ 			if (pos < offset) {
+-				frag->page_offset += offset - pos;
+-				skb_frag_size_sub(frag, offset - pos);
++				nskb_frag->page_offset += offset - pos;
++				skb_frag_size_sub(nskb_frag, offset - pos);
+ 			}
+ 
+ 			skb_shinfo(nskb)->nr_frags++;
+@@ -2897,11 +2897,11 @@ struct sk_buff *skb_segment(struct sk_buff *skb, netdev_features_t features)
+ 				skb_frag++;
+ 				pos += size;
+ 			} else {
+-				skb_frag_size_sub(frag, pos + size - (offset + len));
++				skb_frag_size_sub(nskb_frag, pos + size - (offset + len));
+ 				goto skip_fraglist;
+ 			}
+ 
+-			frag++;
++			nskb_frag++;
+ 		}
+ 
+ skip_fraglist:
 -- 
 2.0.0
 
