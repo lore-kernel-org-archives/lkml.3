@@ -1,123 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753257AbaFWKfR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 06:35:17 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:47865 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752335AbaFWKfP (ORCPT
+	id S1753314AbaFWKkt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 06:40:49 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:1827 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753103AbaFWKkr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 06:35:15 -0400
-Date: Mon, 23 Jun 2014 12:31:42 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: wim@iguana.be, Guenter Roeck <linux@roeck-us.net>
-Cc: Arnd Bergmann <arnd@arndb.de>, dbaryshkov@gmail.com, dwmw2@infradead.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, linux-sunxi@googlegroups.com
-Subject: Re: [PATCH v2 1/6] wdt: sunxi: Move restart code to the watchdog
- driver
-Message-ID: <20140623103142.GB19730@lukather>
-References: <1399430664-29091-1-git-send-email-maxime.ripard@free-electrons.com>
- <1399430664-29091-2-git-send-email-maxime.ripard@free-electrons.com>
- <20140507213318.GA2105@roeck-us.net>
- <20140515091123.GQ29258@lukather>
- <20140519150422.GA27329@lukather>
- <20140522203444.GE27329@lukather>
- <20140522211207.GA28704@roeck-us.net>
+	Mon, 23 Jun 2014 06:40:47 -0400
+X-IronPort-AV: E=Sophos;i="5.00,760,1396972800"; 
+   d="scan'208";a="32283612"
+Message-ID: <53A80424.8030105@cn.fujitsu.com>
+Date: Mon, 23 Jun 2014 18:40:36 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131030 Thunderbird/17.0.10
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rsGyAQ90QqnfMsmV"
-Content-Disposition: inline
-In-Reply-To: <20140522211207.GA28704@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Vlastimil Babka <vbabka@suse.cz>
+CC: "Kirill A. Shutemov" <kirill@shutemov.name>, <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 01/13] mm, THP: don't hold mmap_sem in khugepaged when
+ allocating THP
+References: <1403279383-5862-1-git-send-email-vbabka@suse.cz> <1403279383-5862-2-git-send-email-vbabka@suse.cz> <20140620174533.GA9635@node.dhcp.inet.fi> <53A7BD91.8020802@cn.fujitsu.com> <53A7F8DC.8090106@suse.cz>
+In-Reply-To: <53A7F8DC.8090106@suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.225.89]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/23/2014 05:52 PM, Vlastimil Babka wrote:
+> On 06/23/2014 07:39 AM, Zhang Yanfei wrote:
+>> Hello
+>>
+>> On 06/21/2014 01:45 AM, Kirill A. Shutemov wrote:
+>>> On Fri, Jun 20, 2014 at 05:49:31PM +0200, Vlastimil Babka wrote:
+>>>> When allocating huge page for collapsing, khugepaged currently holds mmap_sem
+>>>> for reading on the mm where collapsing occurs. Afterwards the read lock is
+>>>> dropped before write lock is taken on the same mmap_sem.
+>>>>
+>>>> Holding mmap_sem during whole huge page allocation is therefore useless, the
+>>>> vma needs to be rechecked after taking the write lock anyway. Furthemore, huge
+>>>> page allocation might involve a rather long sync compaction, and thus block
+>>>> any mmap_sem writers and i.e. affect workloads that perform frequent m(un)map
+>>>> or mprotect oterations.
+>>>>
+>>>> This patch simply releases the read lock before allocating a huge page. It
+>>>> also deletes an outdated comment that assumed vma must be stable, as it was
+>>>> using alloc_hugepage_vma(). This is no longer true since commit 9f1b868a13
+>>>> ("mm: thp: khugepaged: add policy for finding target node").
+>>>
+>>> There is no point in touching ->mmap_sem in khugepaged_alloc_page() at
+>>> all. Please, move up_read() outside khugepaged_alloc_page().
+>>>
+> 
+> Well there's also currently no point in passing several parameters to khugepaged_alloc_page(). So I could clean it up as well, but I imagine later we would perhaps reintroduce them back, as I don't think the current situation is ideal for at least two reasons.
+> 
+> 1. If you read commit 9f1b868a13 ("mm: thp: khugepaged: add policy for finding target node"), it's based on a report where somebody found that mempolicy is not observed properly when collapsing THP's. But the 'policy' introduced by the commit isn't based on real mempolicy, it might just under certain conditions results in an interleave, which happens to be what the reporter was trying.
+> 
+> So ideally, it should be making node allocation decisions based on where the original 4KB pages are located. For example, allocate a THP only if all the 4KB pages are on the same node. That would also automatically obey any policy that has lead to the allocation of those 4KB pages.
+> 
+> And for this, it will need again the parameters and mmap_sem in read mode. It would be however still a good idea to drop mmap_sem before the allocation itself, since compaction/reclaim might take some time...
+> 
+> 2. (less related) I'd expect khugepaged to first allocate a hugepage and then scan for collapsing. Yes there's khugepaged_prealloc_page, but that only does something on !NUMA systems and these are not the future.
+> Although I don't have the data, I expect allocating a hugepage is a bigger issue than finding something that could be collapsed. So why scan for collapsing if in the end I cannot allocate a hugepage? And if I really cannot find something to collapse, would e.g. caching a single hugepage per node be a big hit? Also, if there's really nothing to collapse, then it means khugepaged won't compact. And since khugepaged is becoming the only source of sync compaction that doesn't give up easily and tries to e.g. migrate movable pages out of unmovable pageblocks, this might have bad effects on fragmentation.
+> I believe this could be done smarter.
+> 
+>> I might be wrong. If we up_read in khugepaged_scan_pmd(), then if we round again
+>> do the for loop to get the next vma and handle it. Does we do this without holding
+>> the mmap_sem in any mode?
+>>
+>> And if the loop end, we have another up_read in breakouterloop. What if we have
+>> released the mmap_sem in collapse_huge_page()?
+> 
+> collapse_huge_page() is only called from khugepaged_scan_pmd() in the if (ret) condition. And khugepaged_scan_mm_slot() has similar if (ret) for the return value of khugepaged_scan_pmd() to break out of the loop (and not doing up_read() again). So I think this is correct and moving up_read from khugepaged_alloc_page() to collapse_huge_page() wouldn't
+> change this?
 
---rsGyAQ90QqnfMsmV
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Ah, right.
 
-On Thu, May 22, 2014 at 02:12:07PM -0700, Guenter Roeck wrote:
-> On Thu, May 22, 2014 at 10:34:44PM +0200, Maxime Ripard wrote:
-> > On Mon, May 19, 2014 at 05:04:22PM +0200, Maxime Ripard wrote:
-> > > On Thu, May 15, 2014 at 11:11:23AM +0200, Maxime Ripard wrote:
-> > > > On Wed, May 07, 2014 at 02:33:18PM -0700, Guenter Roeck wrote:
-> > > > > On Tue, May 06, 2014 at 09:44:19PM -0500, Maxime Ripard wrote:
-> > > > > > Most of the watchdog code is duplicated between the machine res=
-tart code and
-> > > > > > the watchdog driver. Add the restart hook to the watchdog drive=
-r, to be able to
-> > > > > > remove it from the machine code eventually.
-> > > > > >=20
-> > > > > > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> > > > > > Acked-by: Arnd Bergmann <arnd@arndb.de>
-> > > > >=20
-> > > > > Reviewed-by: Guenter Roeck <linux@roeck-us.net>
-> > > >=20
-> > > > Wim, do you have any comment on this one?
-> > >=20
-> > > Ping?
-> > >=20
-> > > It would be really great to see this in 3.16, and we get quite close
-> > > to the end of ARM's merge window.
-> >=20
-> > Ping?
-> >=20
-> > Guenter, since you seem to be the only responsive, may I suggest that
-> > you start merging patches and do a pull request to either Wim or Linus
-> > directly during the merge window?
-> >=20
-> I had prepared a pull request for Wim last weekend or so, but then there
-> were more patches piling in and I got distracted, so I didn't have time
-> to actually send it. I'll try again this weekend ... the kids should be
-> busy learning for their finals, and I'll have Friday and Monday off
-> from work, so I should be able to find the time.
->=20
-> As for sending patches to Linus directly, well, Wim is the watchdog maint=
-ainer.
-> I manage to upset enough people, and would not want to add Wim to the lis=
-t.
->=20
-> The patches _are_ in my watchdog-next branch and get some coverage from
-> both my auto-builders and from Fenguang's build robots, so while they are
-> not in linux-next, they are not completely in the dark either.
+> 
+> 
+> .
+> 
 
-So, this patch finally didn't make it into 3.16. Great. Now, we can't
-even reboot the boards.
 
-Given how it's just impossible to get something merged reliably
-through the watchdog tree, I guess I should just start merging the
-patches through mine?
-
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---rsGyAQ90QqnfMsmV
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTqAIOAAoJEBx+YmzsjxAgMVcP/0+y55rqc1cy3QDovncKP+S/
-CIGgk14dF+sgBuE/3KDsDTElb81Qi0htwFJaGic5wpN1AT+LzsGvsKmGvLa3rfCI
-OSniWkDBlWMDTjE/sUdaquxVffiH0tRoOUkJgsviNDm46rN02oWYeUXTGAi+p6cp
-gCwLH8Y4XepAtvNtwedEbbScRB1T/WdMYEXwXwnozB1mEZ/Al8jnn53I9NoZtNWb
-vmPfsJuCsV8rA2rHBmPP8XcWqdokLcP0UixXTb5nsXaRBUuNym14qbP1WZLnNu44
-UdWkJVcHhQLLrd0edMISeh9hAPtJYCbdRwQExFojROeFtlbIwWa0l8Jix27dQBPH
-JsfFoWURcKsRXs5pLaU2Dnpftw1+mXRopLgxoige6USpeiXicoQskylDtbjMPW/Z
-sHgVyj5Q/4xUe5DUN4zEPy1aKxWtS8enSZpPYGDWkXcHXfE60bglw9/lm52wJ4eu
-kUNar9O7khCd+ziw4w1su4HpbmwlNapFcMl8r5yz0YYznOTwSFeY+D/ROYcQOQ3H
-pBATD+DaEM3btqK/zZsIORl7QaDD6Fji2H/QQ6ux9cxri940Oei1xn1OAP0iWQj/
-bh3fKqI6n6M/4Qda+gxtf6hPZhGLSK+vDcERi+okMdT4BkxuwwJuWOZVBByr1B7x
-jawKxeY//RrfWAhMK+Xq
-=ptEC
------END PGP SIGNATURE-----
-
---rsGyAQ90QqnfMsmV--
+-- 
+Thanks.
+Zhang Yanfei
