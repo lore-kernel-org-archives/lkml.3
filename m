@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752255AbaFWBcy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 21:32:54 -0400
-Received: from linuxhacker.ru ([217.76.32.60]:39751 "EHLO fiona.linuxhacker.ru"
+	id S1752201AbaFWBcw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 21:32:52 -0400
+Received: from linuxhacker.ru ([217.76.32.60]:39753 "EHLO fiona.linuxhacker.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752028AbaFWBct (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752051AbaFWBct (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 22 Jun 2014 21:32:49 -0400
 From: Oleg Drokin <green@linuxhacker.ru>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Cc: Bobi Jam <bobijam.xu@intel.com>, Oleg Drokin <oleg.drokin@intel.com>
-Subject: [PATCH 07/18] staging/lustre/osc: get rid of old checksum initial value
-Date: Sun, 22 Jun 2014 21:32:11 -0400
-Message-Id: <1403487142-4880-8-git-send-email-green@linuxhacker.ru>
+Cc: Andriy Skulysh <Andriy_Skulysh@xyratex.com>,
+        Oleg Drokin <oleg.drokin@intel.com>
+Subject: [PATCH 06/18] staging/lustre/mgc: mgc import reconnect race
+Date: Sun, 22 Jun 2014 21:32:10 -0400
+Message-Id: <1403487142-4880-7-git-send-email-green@linuxhacker.ru>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1403487142-4880-1-git-send-email-green@linuxhacker.ru>
 References: <1403487142-4880-1-git-send-email-green@linuxhacker.ru>
@@ -20,40 +21,167 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bobi Jam <bobijam.xu@intel.com>
+From: Andriy Skulysh <Andriy_Skulysh@xyratex.com>
 
-Old code residue assumes initial checksum value as ~0, and relies on
-that to check whether OST server has calculated bulk data checksum.
-That is not the case anymore.
+mgc import can be reconnected by pinger or
+ptlrpc_reconnect_import().
+ptlrpc_invalidate_import() isn't protected against
+alteration of imp_invalid state. Import can be
+reconnected by pinger which makes imp_invalid
+equal to false. Thus LASSERT(imp->imp_invalid) fails
+in ptlrpc_invalidate_import().
 
-Signed-off-by: Bobi Jam <bobijam.xu@intel.com>
-Reviewed-on: http://review.whamcloud.com/10354
-Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-4937
-Reviewed-by: Andreas Dilger <andreas.dilger@intel.com>
-Reviewed-by: Bob Glossman <bob.glossman@intel.com>
+It is safe to call ptlrpc_invalidate_import() when
+import is deactivated, but ptlrpc_reconnect_import() doesn't
+deactivate it.
+Let's use only pinger when available to reconnect import
+
+Signed-off-by: Andriy Skulysh <Andriy_Skulysh@xyratex.com>
+Reviewed-on: http://review.whamcloud.com/9967
+Xyratex-bug-id: MRP-1746
+Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-4913
+Reviewed-by: Mike Pershin <mike.pershin@intel.com>
+Reviewed-by: Lai Siyao <lai.siyao@intel.com>
 Signed-off-by: Oleg Drokin <oleg.drokin@intel.com>
 ---
- drivers/staging/lustre/lustre/osc/osc_request.c | 7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+ drivers/staging/lustre/lustre/obdclass/obd_mount.c | 13 ++-----
+ drivers/staging/lustre/lustre/ptlrpc/import.c      | 41 +++++++++++++++++-----
+ drivers/staging/lustre/lustre/ptlrpc/pinger.c      |  5 +++
+ 3 files changed, 40 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/staging/lustre/lustre/osc/osc_request.c b/drivers/staging/lustre/lustre/osc/osc_request.c
-index 5804104..90e8912 100644
---- a/drivers/staging/lustre/lustre/osc/osc_request.c
-+++ b/drivers/staging/lustre/lustre/osc/osc_request.c
-@@ -1570,12 +1570,7 @@ static int osc_brw_fini_request(struct ptlrpc_request *req, int rc)
- 			router = libcfs_nid2str(req->rq_bulk->bd_sender);
+diff --git a/drivers/staging/lustre/lustre/obdclass/obd_mount.c b/drivers/staging/lustre/lustre/obdclass/obd_mount.c
+index a034aee..03d9a6a 100644
+--- a/drivers/staging/lustre/lustre/obdclass/obd_mount.c
++++ b/drivers/staging/lustre/lustre/obdclass/obd_mount.c
+@@ -219,7 +219,6 @@ int lustre_start_mgc(struct super_block *sb)
+ 	lnet_nid_t nid;
+ 	char *mgcname = NULL, *niduuid = NULL, *mgssec = NULL;
+ 	char *ptr;
+-	int recov_bk;
+ 	int rc = 0, i = 0, j, len;
+ 
+ 	LASSERT(lsi->lsi_lmd);
+@@ -269,6 +268,8 @@ int lustre_start_mgc(struct super_block *sb)
+ 
+ 	obd = class_name2obd(mgcname);
+ 	if (obd && !obd->obd_stopping) {
++		int recov_bk;
++
+ 		rc = obd_set_info_async(NULL, obd->obd_self_export,
+ 					strlen(KEY_MGSSEC), KEY_MGSSEC,
+ 					strlen(mgssec), mgssec, NULL);
+@@ -429,16 +430,6 @@ int lustre_start_mgc(struct super_block *sb)
+ 	   so we know when we can get rid of the mgc. */
+ 	atomic_set(&obd->u.cli.cl_mgc_refcount, 1);
+ 
+-	/* Try all connections, but only once. */
+-	recov_bk = 1;
+-	rc = obd_set_info_async(NULL, obd->obd_self_export,
+-				sizeof(KEY_INIT_RECOV_BACKUP),
+-				KEY_INIT_RECOV_BACKUP,
+-				sizeof(recov_bk), &recov_bk, NULL);
+-	if (rc)
+-		/* nonfatal */
+-		CWARN("can't set %s %d\n", KEY_INIT_RECOV_BACKUP, rc);
+-
+ 	/* We connect to the MGS at setup, and don't disconnect until cleanup */
+ 	data->ocd_connect_flags = OBD_CONNECT_VERSION | OBD_CONNECT_AT |
+ 				  OBD_CONNECT_FULL20 | OBD_CONNECT_IMP_RECOV |
+diff --git a/drivers/staging/lustre/lustre/ptlrpc/import.c b/drivers/staging/lustre/lustre/ptlrpc/import.c
+index 8573f32..b4def8a 100644
+--- a/drivers/staging/lustre/lustre/ptlrpc/import.c
++++ b/drivers/staging/lustre/lustre/ptlrpc/import.c
+@@ -275,6 +275,7 @@ void ptlrpc_invalidate_import(struct obd_import *imp)
+ 	if (!imp->imp_invalid || imp->imp_obd->obd_no_recov)
+ 		ptlrpc_deactivate_import(imp);
+ 
++	CFS_FAIL_TIMEOUT(OBD_FAIL_MGS_CONNECT_NET, 3 * cfs_fail_val / 2);
+ 	LASSERT(imp->imp_invalid);
+ 
+ 	/* Wait forever until inflight == 0. We really can't do it another
+@@ -392,6 +393,19 @@ void ptlrpc_activate_import(struct obd_import *imp)
+ }
+ EXPORT_SYMBOL(ptlrpc_activate_import);
+ 
++static void ptlrpc_pinger_force(struct obd_import *imp)
++{
++	CDEBUG(D_HA, "%s: waking up pinger s:%s\n", obd2cli_tgt(imp->imp_obd),
++	       ptlrpc_import_state_name(imp->imp_state));
++
++	spin_lock(&imp->imp_lock);
++	imp->imp_force_verify = 1;
++	spin_unlock(&imp->imp_lock);
++
++	if (imp->imp_state != LUSTRE_IMP_CONNECTING)
++		ptlrpc_pinger_wake_up();
++}
++
+ void ptlrpc_fail_import(struct obd_import *imp, __u32 conn_cnt)
+ {
+ 	LASSERT(!imp->imp_dlm_fake);
+@@ -406,20 +420,30 @@ void ptlrpc_fail_import(struct obd_import *imp, __u32 conn_cnt)
+ 			ptlrpc_deactivate_import(imp);
  		}
  
--		if (server_cksum == ~0 && rc > 0) {
--			CERROR("Protocol error: server %s set the 'checksum' "
--			       "bit, but didn't send a checksum.  Not fatal, "
--			       "but please notify on http://bugs.whamcloud.com/\n",
--			       libcfs_nid2str(peer->nid));
--		} else if (server_cksum != client_cksum) {
-+		if (server_cksum != client_cksum) {
- 			LCONSOLE_ERROR_MSG(0x133, "%s: BAD READ CHECKSUM: from "
- 					   "%s%s%s inode "DFID" object "DOSTID
- 					   " extent ["LPU64"-"LPU64"]\n",
+-		CDEBUG(D_HA, "%s: waking up pinger\n",
+-		       obd2cli_tgt(imp->imp_obd));
+-
+-		spin_lock(&imp->imp_lock);
+-		imp->imp_force_verify = 1;
+-		spin_unlock(&imp->imp_lock);
+-
+-		ptlrpc_pinger_wake_up();
++		ptlrpc_pinger_force(imp);
+ 	}
+ }
+ EXPORT_SYMBOL(ptlrpc_fail_import);
+ 
+ int ptlrpc_reconnect_import(struct obd_import *imp)
+ {
++#ifdef ENABLE_PINGER
++	struct l_wait_info lwi;
++	int secs = cfs_time_seconds(obd_timeout);
++	int rc;
++
++	ptlrpc_pinger_force(imp);
++
++	CDEBUG(D_HA, "%s: recovery started, waiting %u seconds\n",
++	       obd2cli_tgt(imp->imp_obd), secs);
++
++	lwi = LWI_TIMEOUT(secs, NULL, NULL);
++	rc = l_wait_event(imp->imp_recovery_waitq,
++			  !ptlrpc_import_in_recovery(imp), &lwi);
++	CDEBUG(D_HA, "%s: recovery finished s:%s\n", obd2cli_tgt(imp->imp_obd),
++	       ptlrpc_import_state_name(imp->imp_state));
++	return rc;
++#else
+ 	ptlrpc_set_import_discon(imp, 0);
+ 	/* Force a new connect attempt */
+ 	ptlrpc_invalidate_import(imp);
+@@ -444,6 +468,7 @@ int ptlrpc_reconnect_import(struct obd_import *imp)
+ 	/* Attempt a new connect */
+ 	ptlrpc_recover_import(imp, NULL, 0);
+ 	return 0;
++#endif
+ }
+ EXPORT_SYMBOL(ptlrpc_reconnect_import);
+ 
+diff --git a/drivers/staging/lustre/lustre/ptlrpc/pinger.c b/drivers/staging/lustre/lustre/ptlrpc/pinger.c
+index 38099d9..2898087 100644
+--- a/drivers/staging/lustre/lustre/ptlrpc/pinger.c
++++ b/drivers/staging/lustre/lustre/ptlrpc/pinger.c
+@@ -224,6 +224,11 @@ static void ptlrpc_pinger_process_import(struct obd_import *imp,
+ 		       "or recovery disabled: %s)\n",
+ 		       imp->imp_obd->obd_uuid.uuid, obd2cli_tgt(imp->imp_obd),
+ 		       ptlrpc_import_state_name(level));
++		if (force) {
++			spin_lock(&imp->imp_lock);
++			imp->imp_force_verify = 1;
++			spin_unlock(&imp->imp_lock);
++		}
+ 	} else if ((imp->imp_pingable && !suppress) || force_next || force) {
+ 		ptlrpc_ping(imp);
+ 	}
 -- 
 1.9.0
 
