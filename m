@@ -1,180 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752977AbaFWVqQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 17:46:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53351 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751392AbaFWVqP (ORCPT
+	id S1753556AbaFWVrV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 17:47:21 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:45192 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752286AbaFWVrT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 17:46:15 -0400
-Date: Mon, 23 Jun 2014 14:46:14 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dan Streetman <ddstreet@ieee.org>
-Cc: Seth Jennings <sjennings@variantweb.net>, Minchan Kim <minchan@kernel.org>,
-        Weijie Yang <weijie.yang@samsung.com>, Nitin Gupta <ngupta@vflare.org>,
-        Bob Liu <bob.liu@oracle.com>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv4 3/6] mm/zpool: implement common zpool api to
- zbud/zsmalloc
-Message-Id: <20140623144614.d4549fa0aecb03b7b8044bc7@linux-foundation.org>
-In-Reply-To: <1401747586-11861-4-git-send-email-ddstreet@ieee.org>
-References: <1400958369-3588-1-git-send-email-ddstreet@ieee.org>
-	<1401747586-11861-1-git-send-email-ddstreet@ieee.org>
-	<1401747586-11861-4-git-send-email-ddstreet@ieee.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 23 Jun 2014 17:47:19 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Ben Hutchings <ben@decadent.org.uk>, Peter Wu <peter@lekensteyn.nl>,
+        Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCHv3 0/6] rtlwifi: Fix incorrect MSR mask
+Date: Mon, 23 Jun 2014 23:48:16 +0200
+Message-Id: <1403560098-7520-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  2 Jun 2014 18:19:43 -0400 Dan Streetman <ddstreet@ieee.org> wrote:
+An error was found in many rtlwifi drivers where an invalid mask was used,
+(bt_msr & 0xfc) will never match 0x3. This has been corrected by supplying
+a valid mask as a macro. Drivers which did not have this bug are still
+modified for consistency.
 
-> Add zpool api.
-> 
-> zpool provides an interface for memory storage, typically of compressed
-> memory.  Users can select what backend to use; currently the only
-> implementations are zbud, a low density implementation with up to
-> two compressed pages per storage page, and zsmalloc, a higher density
-> implementation with multiple compressed pages per storage page.
-> 
-> ...
->
-> +/**
-> + * zpool_create_pool() - Create a new zpool
-> + * @type	The type of the zpool to create (e.g. zbud, zsmalloc)
-> + * @flags	What GFP flags should be used when the zpool allocates memory.
-> + * @ops		The optional ops callback.
-> + *
-> + * This creates a new zpool of the specified type.  The zpool will use the
-> + * given flags when allocating any memory.  If the ops param is NULL, then
-> + * the created zpool will not be shrinkable.
-> + *
-> + * Returns: New zpool on success, NULL on failure.
-> + */
-> +struct zpool *zpool_create_pool(char *type, gfp_t flags,
-> +			struct zpool_ops *ops);
+Rickard Strandqvist (1):
+  rtlwifi: Fix media status register mask AND Replace magic number by macro
 
-It is unconventional to document the API in the .h file.  It's better
-to put the documentation where people expect to find it.
+ drivers/net/wireless/rtlwifi/rtl8188ee/hw.c  |    2 +-
+ drivers/net/wireless/rtlwifi/rtl8188ee/reg.h |    1 +
+ drivers/net/wireless/rtlwifi/rtl8192ce/hw.c  |    2 +-
+ drivers/net/wireless/rtlwifi/rtl8192ce/reg.h |    1 +
+ drivers/net/wireless/rtlwifi/rtl8192cu/hw.c  |    2 +-
+ drivers/net/wireless/rtlwifi/rtl8192de/hw.c  |    2 +-
+ drivers/net/wireless/rtlwifi/rtl8192de/reg.h |    1 +
+ drivers/net/wireless/rtlwifi/rtl8723ae/hw.c  |    2 +-
+ drivers/net/wireless/rtlwifi/rtl8723ae/reg.h |    1 +
+ drivers/net/wireless/rtlwifi/rtl8723be/hw.c  |    2 +-
+ drivers/net/wireless/rtlwifi/rtl8723be/reg.h |    1 +
+ drivers/staging/rtl8821ae/rtl8821ae/hw.c     |    2 +-
+ drivers/staging/rtl8821ae/rtl8821ae/reg.h    |    1 +
+ 13 files changed, 13 insertions(+), 7 deletions(-)
 
-It's irritating for me (for example) because this kernel convention has
-permitted me to train my tags system to ignore prototypes in headers. 
-But if I want to find the zpool_create_pool documentation I will need
-to jump through hoops.
-
-> 
-> ...
->
-> +int zpool_evict(void *pool, unsigned long handle)
-> +{
-> +	struct zpool *zpool;
-> +
-> +	spin_lock(&pools_lock);
-> +	list_for_each_entry(zpool, &pools_head, list) {
-> +		if (zpool->pool == pool) {
-> +			spin_unlock(&pools_lock);
-
-This is racy against zpool_unregister_driver().
-
-> +			if (!zpool->ops || !zpool->ops->evict)
-> +				return -EINVAL;
-> +			return zpool->ops->evict(zpool, handle);
-> +		}
-> +	}
-> +	spin_unlock(&pools_lock);
-> +
-> +	return -ENOENT;
-> +}
-> +EXPORT_SYMBOL(zpool_evict);
-> +
-> +static struct zpool_driver *zpool_get_driver(char *type)
-
-In kernel convention, "get" implies "take a reference upon".  A better
-name would be zpool_find_driver or zpool_lookup_driver.
-
-This is especially important because the code appears to need a
-for-real zpool_get_driver to fix the races!
-
-> 
-> ...
->
-> +
-> +struct zpool *zpool_create_pool(char *type, gfp_t flags,
-> +			struct zpool_ops *ops)
-> +{
-> +	struct zpool_driver *driver;
-> +	struct zpool *zpool;
-> +
-> +	pr_info("creating pool type %s\n", type);
-> +
-> +	spin_lock(&drivers_lock);
-> +	driver = zpool_get_driver(type);
-> +	spin_unlock(&drivers_lock);
-
-Racy against unregister.  Can be solved with a standard get/put
-refcounting implementation.  Or perhaps a big fat mutex.
-
-> +	if (!driver) {
-> +		request_module(type);
-> +		spin_lock(&drivers_lock);
-> +		driver = zpool_get_driver(type);
-> +		spin_unlock(&drivers_lock);
-> +	}
-> +
-> +	if (!driver) {
-> +		pr_err("no driver for type %s\n", type);
-> +		return NULL;
-> +	}
-> +
-> +	zpool = kmalloc(sizeof(*zpool), GFP_KERNEL);
-> +	if (!zpool) {
-> +		pr_err("couldn't create zpool - out of memory\n");
-> +		return NULL;
-> +	}
-> +
-> +	zpool->type = driver->type;
-> +	zpool->driver = driver;
-> +	zpool->pool = driver->create(flags, ops);
-> +	zpool->ops = ops;
-> +
-> +	if (!zpool->pool) {
-> +		pr_err("couldn't create %s pool\n", type);
-> +		kfree(zpool);
-> +		return NULL;
-> +	}
-> +
-> +	pr_info("created %s pool\n", type);
-> +
-> +	spin_lock(&pools_lock);
-> +	list_add(&zpool->list, &pools_head);
-> +	spin_unlock(&pools_lock);
-> +
-> +	return zpool;
-> +}
-> 
-> ...
->
-> +void zpool_destroy_pool(struct zpool *zpool)
-> +{
-> +	pr_info("destroying pool type %s\n", zpool->type);
-> +
-> +	spin_lock(&pools_lock);
-> +	list_del(&zpool->list);
-> +	spin_unlock(&pools_lock);
-> +	zpool->driver->destroy(zpool->pool);
-> +	kfree(zpool);
-> +}
-
-What are the lifecycle rules here?  How do we know that nobody else can
-be concurrently using this pool?
-
-> 
-> ...
->
+-- 
+1.7.10.4
 
