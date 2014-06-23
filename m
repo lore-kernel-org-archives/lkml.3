@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755346AbaFWS5j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 14:57:39 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48798 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753017AbaFWS5i (ORCPT
+	id S1755450AbaFWS5n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 14:57:43 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:63312 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753099AbaFWS5k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 14:57:38 -0400
-Date: Mon, 23 Jun 2014 20:57:35 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Waiman Long <waiman.long@hp.com>, Romanov Arya <romanov.arya@gmail.com>,
-        Pranith Kumar <bobby.prani@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        LKML <linux-kernel@vger.kernel.org>, torvalds@linux-foundation.org
-Subject: Re: [RFC PATCH 1/1] kernel/rcu/tree.c: simplify
- force_quiescent_state()
-Message-ID: <20140623185735.GJ13930@laptop.programming.kicks-ass.net>
-References: <539FAE21.7070702@gmail.com>
- <20140617145419.GE4669@linux.vnet.ibm.com>
- <CAJKcOGdUDwdmdkpd0dw5xO9+TK=9W9fvF9Q+f5F_b4R8cEgdTA@mail.gmail.com>
- <53A07336.7030704@hp.com>
- <20140617171116.GH4669@linux.vnet.ibm.com>
- <20140617173717.GA28198@linux.vnet.ibm.com>
- <20140623102850.GX19860@laptop.programming.kicks-ass.net>
- <20140623155750.GD4603@linux.vnet.ibm.com>
- <20140623173308.GA3550@linux.vnet.ibm.com>
+	Mon, 23 Jun 2014 14:57:40 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Allen Yu <alleny@nvidia.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-pm\@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] PM / Runtime: let rpm_resume fail if rpm disabled and device suspended.
+References: <Pine.LNX.4.44L0.1406210913470.26962-100000@netrider.rowland.org>
+Date: Mon, 23 Jun 2014 11:57:37 -0700
+In-Reply-To: <Pine.LNX.4.44L0.1406210913470.26962-100000@netrider.rowland.org>
+	(Alan Stern's message of "Sat, 21 Jun 2014 09:34:28 -0400 (EDT)")
+Message-ID: <7hk387pi72.fsf@paris.lan>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140623173308.GA3550@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 23, 2014 at 10:33:08AM -0700, Paul E. McKenney wrote:
-> On Mon, Jun 23, 2014 at 08:57:50AM -0700, Paul E. McKenney wrote:
-> > On Mon, Jun 23, 2014 at 12:28:50PM +0200, Peter Zijlstra wrote:
-> > > On Tue, Jun 17, 2014 at 10:37:17AM -0700, Paul E. McKenney wrote:
-> > > > Oh, and to answer the implicit question...  A properly configured 4096-CPU
-> > > > system will have two funnel levels, with 64 nodes at the leaf level
-> > > > and a single node at the root level.  If the system is not properly
-> > > > configured, it will have three funnel levels.  The maximum number of
-> > > > funnel levels is four, which would handle more than four million CPUs
-> > > > (sixteen million if properly configured), so we should be good.  ;-)
-> > > > 
-> > > > The larger numbers of levels are intended strictly for testing.  I set
-> > > > CONFIG_RCU_FANOUT_LEAF=2 and CONFIG_RCU_FANOUT=2 on a 16-CPU system just
-> > > > to make sure that I am testing something uglier than what will be running
-> > > > in production.  A large system should have both of these set to 64,
-> > > > though this requires also booting with skew_tick=1 as well.
-> > > 
-> > > Right, and I think we talked about this before; the first thing one
-> > > should do is align the RCU fanout masks with the actual machine
-> > > topology. Because currently they can be all over the place.
-> > 
-> > And we also talked before about how it would make a lot more sense to
-> > align the CPU numbering with the actual machine topology, as that would
-> > fix the problem in one place.  But either way, in the particular case
-> > of the RCU fanout, does anyone have any real data showing that this is
-> > a real problem?  Given that the rcu_node accesses are quite a ways off
-> > of any fastpath, I remain skeptical.
-> 
-> And one way to test for this is to set CONFIG_RCU_FANOUT to the number of
-> cores in a socket (or to the number of hardware threads per socket for
-> systems that number their hardware threads consecutively), then specify
-> CONFIG_RCU_FANOUT_EXACT=y.  This will align the rcu_node structures with
-> the sockets.  If the number of cores/threads per socket is too large,
-> you can of course use a smaller number that exactly divides the number
-> of cores/threads per socket.
+Alan Stern <stern@rowland.harvard.edu> writes:
 
-Typical Intel cpu numbering is [0..n) for SMT0 and [n..2*n) for SMT1, so
-that'll fall flat on its face at try 1.
+[...]
+
+> What we really need to figure out is how to tell the PM core which
+> devices may safely have their runtime callbacks invoked during system
+> suspend.  For those devices, the core can avoid calling
+> pm_runtime_disable() during the suspend_late phase.  That would address
+> your requirements, right?
+
+Yes, and something I've attempted a few times over the years, most
+recently during the introduction of the pm_runtime_force* functions[1],
+which I thought was again an attempt to work around this issue.
+
+I don't think Rafael has ever been too thrilled with that idea
+(including the last time[2]), but I think we're to a point now that we
+have to manage this somehow.
+
+My attempt to let the bus/subsystem/pm_domain set a flag might be
+too simplistic, but I do agree we do need som way to tell the PM core
+that runtime PM callbacks are (still) safe.
+
+Kevin
+
+[1] http://marc.info/?l=linux-pm&m=139343222014989&w=2
+[2] http://marc.info/?l=linux-pm&m=139346327619875&w=2
