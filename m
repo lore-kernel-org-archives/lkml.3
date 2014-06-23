@@ -1,161 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755196AbaFWJPq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 05:15:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40759 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753882AbaFWJMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 05:12:24 -0400
-Date: Mon, 23 Jun 2014 11:12:20 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 4/4] mm: vmscan: move swappiness out of scan_control
-Message-ID: <20140623091220.GD9743@dhcp22.suse.cz>
-References: <1403282030-29915-1-git-send-email-hannes@cmpxchg.org>
- <1403282030-29915-4-git-send-email-hannes@cmpxchg.org>
+	id S1753869AbaFWJQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 05:16:27 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:8993 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753295AbaFWJQY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 05:16:24 -0400
+X-IronPort-AV: E=Sophos;i="5.00,759,1396972800"; 
+   d="scan'208";a="32279715"
+Message-ID: <53A7F05F.5060508@cn.fujitsu.com>
+Date: Mon, 23 Jun 2014 17:16:15 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131030 Thunderbird/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403282030-29915-4-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Vlastimil Babka <vbabka@suse.cz>
+CC: <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 07/13] mm, compaction: skip rechecks when lock was
+ already held
+References: <1403279383-5862-1-git-send-email-vbabka@suse.cz> <1403279383-5862-8-git-send-email-vbabka@suse.cz>
+In-Reply-To: <1403279383-5862-8-git-send-email-vbabka@suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.225.89]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 20-06-14 12:33:50, Johannes Weiner wrote:
-> Swappiness is determined for each scanned memcg individually in
-> shrink_zone() and is not a parameter that applies throughout the
-> reclaim scan.  Move it out of struct scan_control to prevent
-> accidental use of a stale value.
+On 06/20/2014 11:49 PM, Vlastimil Babka wrote:
+> Compaction scanners try to lock zone locks as late as possible by checking
+> many page or pageblock properties opportunistically without lock and skipping
+> them if not unsuitable. For pages that pass the initial checks, some properties
+> have to be checked again safely under lock. However, if the lock was already
+> held from a previous iteration in the initial checks, the rechecks are
+> unnecessary.
+> 
+> This patch therefore skips the rechecks when the lock was already held. This is
+> now possible to do, since we don't (potentially) drop and reacquire the lock
+> between the initial checks and the safe rechecks anymore.
+> 
+> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+> Acked-by: Minchan Kim <minchan@kernel.org>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Michal Nazarewicz <mina86@mina86.com>
+> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Rik van Riel <riel@redhat.com>
+> Acked-by: David Rientjes <rientjes@google.com>
 
-Yes, putting it into scan_control was a quick&dirty temporal
-solution.  I was thinking about something like lruvec_swappiness
-(lruvec->mem_cgroup_per_zone->mem_cgroup) and stick it into
-get_scan_count but what you have here is better because the swappiness
-has memcg scope rather than lruvec.
-
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-
-Acked-by: Michal Hocko <mhocko@suse.cz>
+Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 
 > ---
->  mm/vmscan.c | 27 +++++++++++++--------------
->  1 file changed, 13 insertions(+), 14 deletions(-)
+>  mm/compaction.c | 53 +++++++++++++++++++++++++++++++----------------------
+>  1 file changed, 31 insertions(+), 22 deletions(-)
 > 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index d0bc1a209746..757e2a8dbf58 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -89,9 +89,6 @@ struct scan_control {
->  	/* Scan (total_size >> priority) pages at once */
->  	int priority;
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index 40da812..9f6e857 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -324,22 +324,30 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+>  			goto isolate_fail;
 >  
-> -	/* anon vs. file LRUs scanning "ratio" */
-> -	int swappiness;
-> -
->  	/*
->  	 * The memory cgroup that hit its limit and as a result is the
->  	 * primary target of this reclaim invocation.
-> @@ -1868,8 +1865,8 @@ enum scan_balance {
->   * nr[0] = anon inactive pages to scan; nr[1] = anon active pages to scan
->   * nr[2] = file inactive pages to scan; nr[3] = file active pages to scan
->   */
-> -static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
-> -			   unsigned long *nr)
-> +static void get_scan_count(struct lruvec *lruvec, int swappiness,
-> +			   struct scan_control *sc, unsigned long *nr)
->  {
->  	struct zone_reclaim_stat *reclaim_stat = &lruvec->reclaim_stat;
->  	u64 fraction[2];
-> @@ -1912,7 +1909,7 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
->  	 * using the memory controller's swap limit feature would be
->  	 * too expensive.
->  	 */
-> -	if (!global_reclaim(sc) && !sc->swappiness) {
-> +	if (!global_reclaim(sc) && !swappiness) {
->  		scan_balance = SCAN_FILE;
->  		goto out;
->  	}
-> @@ -1922,7 +1919,7 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
->  	 * system is close to OOM, scan both anon and file equally
->  	 * (unless the swappiness setting disagrees with swapping).
->  	 */
-> -	if (!sc->priority && sc->swappiness) {
-> +	if (!sc->priority && swappiness) {
->  		scan_balance = SCAN_EQUAL;
->  		goto out;
->  	}
-> @@ -1965,7 +1962,7 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
->  	 * With swappiness at 100, anonymous and file have the same priority.
->  	 * This scanning priority is essentially the inverse of IO cost.
->  	 */
-> -	anon_prio = sc->swappiness;
-> +	anon_prio = swappiness;
->  	file_prio = 200 - anon_prio;
+>  		/*
+> -		 * The zone lock must be held to isolate freepages.
+> -		 * Unfortunately this is a very coarse lock and can be
+> -		 * heavily contended if there are parallel allocations
+> -		 * or parallel compactions. For async compaction do not
+> -		 * spin on the lock and we acquire the lock as late as
+> -		 * possible.
+> +		 * If we already hold the lock, we can skip some rechecking.
+> +		 * Note that if we hold the lock now, checked_pageblock was
+> +		 * already set in some previous iteration (or strict is true),
+> +		 * so it is correct to skip the suitable migration target
+> +		 * recheck as well.
+>  		 */
+> -		if (!locked)
+> +		if (!locked) {
+> +			/*
+> +			 * The zone lock must be held to isolate freepages.
+> +			 * Unfortunately this is a very coarse lock and can be
+> +			 * heavily contended if there are parallel allocations
+> +			 * or parallel compactions. For async compaction do not
+> +			 * spin on the lock and we acquire the lock as late as
+> +			 * possible.
+> +			 */
+>  			locked = compact_trylock_irqsave(&cc->zone->lock,
+>  								&flags, cc);
+> -		if (!locked)
+> -			break;
+> +			if (!locked)
+> +				break;
 >  
->  	/*
-> @@ -2055,7 +2052,8 @@ out:
->  /*
->   * This is a basic per-zone page freer.  Used by both kswapd and direct reclaim.
->   */
-> -static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
-> +static void shrink_lruvec(struct lruvec *lruvec, int swappiness,
-> +			  struct scan_control *sc)
->  {
->  	unsigned long nr[NR_LRU_LISTS];
->  	unsigned long targets[NR_LRU_LISTS];
-> @@ -2066,7 +2064,7 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
->  	struct blk_plug plug;
->  	bool scan_adjusted;
+> -		/* Recheck this is a buddy page under lock */
+> -		if (!PageBuddy(page))
+> -			goto isolate_fail;
+> +			/* Recheck this is a buddy page under lock */
+> +			if (!PageBuddy(page))
+> +				goto isolate_fail;
+> +		}
 >  
-> -	get_scan_count(lruvec, sc, nr);
-> +	get_scan_count(lruvec, swappiness, sc, nr);
+>  		/* Found a free page, break it into order-0 pages */
+>  		isolated = split_free_page(page);
+> @@ -623,19 +631,20 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+>  		    page_count(page) > page_mapcount(page))
+>  			continue;
 >  
->  	/* Record the original scan target for proportional adjustments later */
->  	memcpy(targets, nr, sizeof(nr));
-> @@ -2263,11 +2261,12 @@ static unsigned long shrink_zone(struct zone *zone, struct scan_control *sc)
->  		memcg = mem_cgroup_iter(root, NULL, &reclaim);
->  		do {
->  			struct lruvec *lruvec;
-> +			int swappiness;
+> -		/* If the lock is not held, try to take it */
+> -		if (!locked)
+> +		/* If we already hold the lock, we can skip some rechecking */
+> +		if (!locked) {
+>  			locked = compact_trylock_irqsave(&zone->lru_lock,
+>  								&flags, cc);
+> -		if (!locked)
+> -			break;
+> +			if (!locked)
+> +				break;
 >  
->  			lruvec = mem_cgroup_zone_lruvec(zone, memcg);
-> +			swappiness = mem_cgroup_swappiness(memcg);
+> -		/* Recheck PageLRU and PageTransHuge under lock */
+> -		if (!PageLRU(page))
+> -			continue;
+> -		if (PageTransHuge(page)) {
+> -			low_pfn += (1 << compound_order(page)) - 1;
+> -			continue;
+> +			/* Recheck PageLRU and PageTransHuge under lock */
+> +			if (!PageLRU(page))
+> +				continue;
+> +			if (PageTransHuge(page)) {
+> +				low_pfn += (1 << compound_order(page)) - 1;
+> +				continue;
+> +			}
+>  		}
 >  
-> -			sc->swappiness = mem_cgroup_swappiness(memcg);
-> -			shrink_lruvec(lruvec, sc);
-> +			shrink_lruvec(lruvec, swappiness, sc);
->  
->  			/*
->  			 * Direct reclaim and kswapd have to scan all memory
-> @@ -2714,10 +2713,10 @@ unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *memcg,
->  		.may_swap = !noswap,
->  		.order = 0,
->  		.priority = 0,
-> -		.swappiness = mem_cgroup_swappiness(memcg),
->  		.target_mem_cgroup = memcg,
->  	};
->  	struct lruvec *lruvec = mem_cgroup_zone_lruvec(zone, memcg);
-> +	int swappiness = mem_cgroup_swappiness(memcg);
->  
->  	sc.gfp_mask = (gfp_mask & GFP_RECLAIM_MASK) |
->  			(GFP_HIGHUSER_MOVABLE & ~GFP_RECLAIM_MASK);
-> @@ -2733,7 +2732,7 @@ unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *memcg,
->  	 * will pick up pages from other mem cgroup's as well. We hack
->  	 * the priority and make it zero.
->  	 */
-> -	shrink_lruvec(lruvec, &sc);
-> +	shrink_lruvec(lruvec, swappiness, &sc);
->  
->  	trace_mm_vmscan_memcg_softlimit_reclaim_end(sc.nr_reclaimed);
->  
-> -- 
-> 2.0.0
+>  		lruvec = mem_cgroup_page_lruvec(page, zone);
 > 
 
+
 -- 
-Michal Hocko
-SUSE Labs
+Thanks.
+Zhang Yanfei
