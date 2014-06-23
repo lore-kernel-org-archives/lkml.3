@@ -1,62 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372AbaFWMLz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 08:11:55 -0400
-Received: from mga01.intel.com ([192.55.52.88]:35399 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752902AbaFWMLa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 08:11:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,530,1400050800"; 
-   d="scan'208";a="551977501"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>,
-        Alexander Usyskin <alexander.usyskin@intel.com>
-Subject: [char-misc-next 2/3 V2] mei: sysfs: add Documentation mei class attributes
-Date: Mon, 23 Jun 2014 15:10:36 +0300
-Message-Id: <1403525437-4745-3-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1403525437-4745-1-git-send-email-tomas.winkler@intel.com>
-References: <1403525437-4745-1-git-send-email-tomas.winkler@intel.com>
+	id S1753432AbaFWMNU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 08:13:20 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:33927 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751695AbaFWMNT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 08:13:19 -0400
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
+        Weijie Yang <weijie.yang@samsung.com>, linux-kernel@vger.kernel.org,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Subject: [PATCH 0/2] zram: trivial cleanup and `struct table' rename
+Date: Mon, 23 Jun 2014 21:12:41 +0900
+Message-Id: <1403525563-7549-1-git-send-email-sergey.senozhatsky@gmail.com>
+X-Mailer: git-send-email 2.0.0.548.ge727dec
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add sysfs attributes Documentation entries
-for /sys/class/mei
+Hello,
 
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
----
-V2: remove default device
- Documentation/ABI/testing/sysfs-class-mei | 16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
- create mode 100644 Documentation/ABI/testing/sysfs-class-mei
+Two trivial patches. One kill off unused define in zram
+header, the other one rename `struct table'.
 
-diff --git a/Documentation/ABI/testing/sysfs-class-mei b/Documentation/ABI/testing/sysfs-class-mei
-new file mode 100644
-index 0000000..0ec8b81
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-class-mei
-@@ -0,0 +1,16 @@
-+What:		/sys/class/mei/
-+Date:		May 2014
-+KernelVersion:	3.17
-+Contact:	Tomas Winkler <tomas.winkler@intel.com>
-+Description:
-+		The mei/ class sub-directory belongs to mei device class
-+
-+
-+What:		/sys/class/mei/meiN/
-+Date:		May 2014
-+KernelVersion:	3.17
-+Contact:	Tomas Winkler <tomas.winkler@intel.com>
-+Description:
-+		The /sys/class/mei/meiN directory is created for
-+		each probed mei device
-+
+P.S. These two patches are against ZRAM with Weijie Yang's
+"zram: remove global tb_lock with fine grain lock" being
+applied. If you decided to hold on with the patch in
+question I'll resend against base ZRAM.
+
+Sergey Senozhatsky (2):
+  zram: rename struct `table' to `zram_table_entry'
+  zram: remove unused SECTOR_SIZE define
+
+ drivers/block/zram/zram_drv.h | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
 -- 
-1.9.3
+2.0.0.421.g5428530
 
