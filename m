@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753105AbaFWJfP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 05:35:15 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:40719 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753080AbaFWJfM (ORCPT
+	id S1752570AbaFWJih (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 05:38:37 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:47922 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751859AbaFWJif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 05:35:12 -0400
-Date: Mon, 23 Jun 2014 02:35:09 -0700 (PDT)
+	Mon, 23 Jun 2014 05:38:35 -0400
+Date: Mon, 23 Jun 2014 02:38:32 -0700 (PDT)
 From: David Rientjes <rientjes@google.com>
 X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Fabian Frederick <fabf@skynet.be>
-cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        Damien Wyart <damien.wyart@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/1] Revert "block: add __init to
- blkcg_policy_register"
-In-Reply-To: <1403352321-6353-1-git-send-email-fabf@skynet.be>
-Message-ID: <alpine.DEB.2.02.1406230234170.8821@chino.kir.corp.google.com>
-References: <1403352321-6353-1-git-send-email-fabf@skynet.be>
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+cc: Liqin Chen <liqin.linux@gmail.com>, Lennox Wu <lennox.wu@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arch/score/include/uapi/asm/ptrace.h: Add prefix 'SCORE_'
+ for related macros
+In-Reply-To: <53A66000.4010208@gmail.com>
+Message-ID: <alpine.DEB.2.02.1406230237330.8821@chino.kir.corp.google.com>
+References: <53A66000.4010208@gmail.com>
 User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -26,64 +25,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 21 Jun 2014, Fabian Frederick wrote:
+On Sun, 22 Jun 2014, Chen Gang wrote:
 
-> This reverts commit a2d445d44000
-> 
-> Adding __init to blkcg_policy_register makes it unreliable when
-> loading cfq at runtime.
-> 
-> (Similar problem to b5097e956a4d "block: add __init to elv_register"
->  reported by Damien Wyart).
-> 
-> Cc: Jens Axboe <axboe@kernel.dk>
-> Cc: Damien Wyart <damien.wyart@gmail.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
-> ---
->  block/blk-cgroup.c | 2 +-
->  block/blk-cgroup.h | 4 ++--
->  2 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-> index 069bc20..9f5bce3 100644
-> --- a/block/blk-cgroup.c
-> +++ b/block/blk-cgroup.c
-> @@ -1093,7 +1093,7 @@ EXPORT_SYMBOL_GPL(blkcg_deactivate_policy);
->   * Register @pol with blkcg core.  Might sleep and @pol may be modified on
->   * successful registration.  Returns 0 on success and -errno on failure.
->   */
-> -int __init blkcg_policy_register(struct blkcg_policy *pol)
-> +int blkcg_policy_register(struct blkcg_policy *pol)
->  {
->  	int i, ret;
+> diff --git a/arch/score/include/uapi/asm/ptrace.h b/arch/score/include/uapi/asm/ptrace.h
+> index f59771a..7a0ead9 100644
+> --- a/arch/score/include/uapi/asm/ptrace.h
+> +++ b/arch/score/include/uapi/asm/ptrace.h
+> @@ -4,16 +4,16 @@
+>  #define PTRACE_GETREGS		12
+>  #define PTRACE_SETREGS		13
 >  
+> -#define PC		32
+> -#define CONDITION	33
+> -#define ECR		34
+> -#define EMA		35
+> -#define CEH		36
+> -#define CEL		37
+> -#define COUNTER		38
+> -#define LDCR		39
+> -#define STCR		40
+> -#define PSR		41
+> +#define SCORE_PC		32
+> +#define SCORE_CONDITION		33
+> +#define SCORE_ECR		34
+> +#define SCORE_EMA		35
+> +#define SCORE_CEH		36
+> +#define SOCRE_CEL		37
 
-This is the second such revert from you for __init annotations, have you 
-double checked all the other patches you've sent?
+SOCRE?
 
-> diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
-> index cbb7f94..d692b29 100644
-> --- a/block/blk-cgroup.h
-> +++ b/block/blk-cgroup.h
-> @@ -145,7 +145,7 @@ void blkcg_drain_queue(struct request_queue *q);
->  void blkcg_exit_queue(struct request_queue *q);
+> +#define SCORE_COUNTER		38
+> +#define SCORE_LDCR		39
+> +#define SCORE_STCR		40
+> +#define SCORE_PSR		41
 >  
->  /* Blkio controller policy registration */
-> -int __init blkcg_policy_register(struct blkcg_policy *pol);
-> +int blkcg_policy_register(struct blkcg_policy *pol);
->  void blkcg_policy_unregister(struct blkcg_policy *pol);
->  int blkcg_activate_policy(struct request_queue *q,
->  			  const struct blkcg_policy *pol);
-> @@ -580,7 +580,7 @@ static inline struct blkcg_gq *blkg_lookup(struct blkcg *blkcg, void *key) { ret
->  static inline int blkcg_init_queue(struct request_queue *q) { return 0; }
->  static inline void blkcg_drain_queue(struct request_queue *q) { }
->  static inline void blkcg_exit_queue(struct request_queue *q) { }
-> -static inline int __init blkcg_policy_register(struct blkcg_policy *pol) { return 0; }
-> +static inline int blkcg_policy_register(struct blkcg_policy *pol) { return 0; }
+>  #define SINGLESTEP16_INSN	0x7006
+>  #define SINGLESTEP32_INSN	0x840C8000
 
-Why would you have marked an inline function as __init in the first place?
-
->  static inline void blkcg_policy_unregister(struct blkcg_policy *pol) { }
->  static inline int blkcg_activate_policy(struct request_queue *q,
->  					const struct blkcg_policy *pol) { return 0; }
+This is a uapi header file, what was done to ensure this doesn't introduce 
+userspace breakage?
