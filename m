@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754672AbaFWJPX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 05:15:23 -0400
+	id S1755216AbaFWJPr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 05:15:47 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:56207 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753806AbaFWJM1 (ORCPT
+	by vger.kernel.org with ESMTP id S1753875AbaFWJMY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 05:12:27 -0400
+	Mon, 23 Jun 2014 05:12:24 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Bryan Evenson <bevenson@melinkcorp.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Mark Roszko <mark.roszko@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>,
         Andrew Morton <akpm@linux-foundation.org>,
+        "Gautham R. Shenoy" <ego@linux.vnet.ibm.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
+        Michael wang <wangyun@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Toshi Kani <toshi.kani@hp.com>, Ingo Molnar <mingo@kernel.org>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 111/111] ARM: at91: fix at91_sysirq_mask_rtc for sam9x5 SoCs
-Date: Mon, 23 Jun 2014 10:32:26 +0200
-Message-Id: <8d8a2761521c01f70f79fdc69d8209f98ecd9458.1403512281.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 035/111] sched: Fix hotplug vs. set_cpus_allowed_ptr()
+Date: Mon, 23 Jun 2014 10:31:10 +0200
+Message-Id: <774f680a78bd9ac6ccac097e7826632e506046a9.1403512281.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
 References: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
@@ -31,79 +32,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 9dcc87fec8947308e0111c65dcd881e6aa5b1673 upstream.
+commit 6acbfb96976fc3350e30d964acb1dbbdf876d55e upstream.
 
-sam9x5 SoCs have the following errata:
- "RTC: Interrupt Mask Register cannot be used
-  Interrupt Mask Register read always returns 0."
+Lai found that:
 
-Hence we should not rely on what IMR claims about already masked IRQs
-and just disable all IRQs.
+  WARNING: CPU: 1 PID: 13 at arch/x86/kernel/smp.c:124 native_smp_send_reschedule+0x2d/0x4b()
+  ...
+  migration_cpu_stop+0x1d/0x22
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Reported-by: Bryan Evenson <bevenson@melinkcorp.com>
-Reviewed-by: Johan Hovold <johan@hovold.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Bryan Evenson <bevenson@melinkcorp.com>
-Cc: Andrew Victor <linux@maxim.org.za>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Cc: Mark Roszko <mark.roszko@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+was caused by set_cpus_allowed_ptr() assuming that cpu_active_mask is
+always a sub-set of cpu_online_mask.
+
+This isn't true since 5fbd036b552f ("sched: Cleanup cpu_active madness").
+
+So set active and online at the same time to avoid this particular
+problem.
+
+Fixes: 5fbd036b552f ("sched: Cleanup cpu_active madness")
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Gautham R. Shenoy <ego@linux.vnet.ibm.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Michael wang <wangyun@linux.vnet.ibm.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Toshi Kani <toshi.kani@hp.com>
+Link: http://lkml.kernel.org/r/53758B12.8060609@cn.fujitsu.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/arm/mach-at91/sysirq_mask.c | 22 +++++++++++++---------
- 1 file changed, 13 insertions(+), 9 deletions(-)
+ kernel/cpu.c        | 6 ++++--
+ kernel/sched/core.c | 1 -
+ 2 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/mach-at91/sysirq_mask.c b/arch/arm/mach-at91/sysirq_mask.c
-index 2ba694f9626b..f8bc3511a8c8 100644
---- a/arch/arm/mach-at91/sysirq_mask.c
-+++ b/arch/arm/mach-at91/sysirq_mask.c
-@@ -25,24 +25,28 @@
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index d7f07a2da5a6..92599d897125 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -695,10 +695,12 @@ void set_cpu_present(unsigned int cpu, bool present)
  
- #include "generic.h"
- 
--#define AT91_RTC_IDR	0x24	/* Interrupt Disable Register */
--#define AT91_RTC_IMR	0x28	/* Interrupt Mask Register */
-+#define AT91_RTC_IDR		0x24	/* Interrupt Disable Register */
-+#define AT91_RTC_IMR		0x28	/* Interrupt Mask Register */
-+#define AT91_RTC_IRQ_MASK	0x1f	/* Available IRQs mask */
- 
- void __init at91_sysirq_mask_rtc(u32 rtc_base)
+ void set_cpu_online(unsigned int cpu, bool online)
  {
- 	void __iomem *base;
--	u32 mask;
- 
- 	base = ioremap(rtc_base, 64);
- 	if (!base)
- 		return;
- 
--	mask = readl_relaxed(base + AT91_RTC_IMR);
--	if (mask) {
--		pr_info("AT91: Disabling rtc irq\n");
--		writel_relaxed(mask, base + AT91_RTC_IDR);
--		(void)readl_relaxed(base + AT91_RTC_IMR);	/* flush */
--	}
-+	/*
-+	 * sam9x5 SoCs have the following errata:
-+	 * "RTC: Interrupt Mask Register cannot be used
-+	 *  Interrupt Mask Register read always returns 0."
-+	 *
-+	 * Hence we're not relying on IMR values to disable
-+	 * interrupts.
-+	 */
-+	writel_relaxed(AT91_RTC_IRQ_MASK, base + AT91_RTC_IDR);
-+	(void)readl_relaxed(base + AT91_RTC_IMR);	/* flush */
- 
- 	iounmap(base);
+-	if (online)
++	if (online) {
+ 		cpumask_set_cpu(cpu, to_cpumask(cpu_online_bits));
+-	else
++		cpumask_set_cpu(cpu, to_cpumask(cpu_active_bits));
++	} else {
+ 		cpumask_clear_cpu(cpu, to_cpumask(cpu_online_bits));
++	}
  }
+ 
+ void set_cpu_active(unsigned int cpu, bool active)
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index a494ace683e3..07039cba59d9 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4726,7 +4726,6 @@ static int sched_cpu_active(struct notifier_block *nfb,
+ 				      unsigned long action, void *hcpu)
+ {
+ 	switch (action & ~CPU_TASKS_FROZEN) {
+-	case CPU_STARTING:
+ 	case CPU_DOWN_FAILED:
+ 		set_cpu_active((long)hcpu, true);
+ 		return NOTIFY_OK;
 -- 
 2.0.0
 
