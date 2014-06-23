@@ -1,170 +1,340 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754499AbaFWI7X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 04:59:23 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:58320 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754287AbaFWI7V (ORCPT
+	id S1754516AbaFWI73 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 04:59:29 -0400
+Received: from acledge3.advantech.com.tw ([219.90.3.242]:49182 "EHLO
+	acledge3.advantech.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754287AbaFWI7Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 04:59:21 -0400
-Message-ID: <1403513950.4136.34.camel@paszta.hi.pengutronix.de>
-Subject: Re: [RFC PATCH] mfd: syscon: add child device support
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Rob Herring <robherring2@gmail.com>
-Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Lee Jones <lee.jones@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>
-Date: Mon, 23 Jun 2014 10:59:10 +0200
-In-Reply-To: <CAL_JsqLjyNQfjs4cDf8Eh1WeVGauym=qbF_pEAMu7ASVMqaccg@mail.gmail.com>
-References: <1401198917-16077-1-git-send-email-p.zabel@pengutronix.de>
-	 <CAL_JsqLjyNQfjs4cDf8Eh1WeVGauym=qbF_pEAMu7ASVMqaccg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 23 Jun 2014 04:59:25 -0400
+From: Wei-Chun Pan <weichun.pan@advantech.com.tw>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Jean Delvare <jdelvare@suse.de>, Guenter Roeck <linux@roeck-us.net>,
+        Wolfram Sang <wsa@the-dreams.de>
+CC: "Louis.Lu" <Louis.Lu@advantech.com.tw>, "Neo.Lo" <neo.lo@advantech.com.tw>,
+        "Hank.Peng" <Hank.Peng@advantech.com.tw>,
+        "Kevin.Ong" <Kevin.Ong@advantech.com.tw>,
+        <linux-kernel@vger.kernel.org>,
+        Wei-Chun Pan <weichun.pan@advantech.com.tw>
+Subject: [PATCH 5/5] i2c: imanager2: add support for IT8516/18/28
+Date: Mon, 23 Jun 2014 01:39:52 -0700
+Message-ID: <1403512792-19100-5-git-send-email-weichun.pan@advantech.com.tw>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403512792-19100-1-git-send-email-weichun.pan@advantech.com.tw>
+References: <1403512792-19100-1-git-send-email-weichun.pan@advantech.com.tw>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-StopIT: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rob,
+Signed-off-by: Wei-Chun Pan <weichun.pan@advantech.com.tw>
+---
+ drivers/i2c/busses/Kconfig         |   8 ++
+ drivers/i2c/busses/Makefile        |   1 +
+ drivers/i2c/busses/imanager2_i2c.c | 261 +++++++++++++++++++++++++++++++++++++
+ 3 files changed, 270 insertions(+)
+ create mode 100644 drivers/i2c/busses/imanager2_i2c.c
 
-Am Dienstag, den 17.06.2014, 11:57 -0500 schrieb Rob Herring:
-> On Tue, May 27, 2014 at 8:55 AM, Philipp Zabel <p.zabel@pengutronix.de> wrote:
-> > For devices which have a complete register for themselves, it is possible to
-> > place them next to the syscon device with overlapping reg ranges. The same is
-> 
-> We want to avoid overlapping ranges.
->
-> > not possible for devices which only occupy bitfields in registers shared with
-> > other users.
-> 
-> You are addressing the latter case here?
-
-Yes, exactly. Although this patch would make it possible to also use
-child nodes in the former case.
-
-> > For devices that are completely controlled by bitfields in the syscon address
-> > range, such as multiplexers or voltage regulators, allow to put child devices
-> > into the syscon device node.
-> >
-> > Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-> > ---
-> >  Documentation/devicetree/bindings/mfd/syscon.txt | 11 +++++++++++
-> >  drivers/mfd/syscon.c                             |  2 ++
-> >  2 files changed, 13 insertions(+)
-> >
-> > diff --git a/Documentation/devicetree/bindings/mfd/syscon.txt b/Documentation/devicetree/bindings/mfd/syscon.txt
-> > index fe8150b..a7e11d5 100644
-> > --- a/Documentation/devicetree/bindings/mfd/syscon.txt
-> > +++ b/Documentation/devicetree/bindings/mfd/syscon.txt
-> > @@ -9,10 +9,21 @@ using a specific compatible value), interrogate the node (or associated
-> >  OS driver) to determine the location of the registers, and access the
-> >  registers directly.
-> >
-> > +Optionally, devices that are only controlled through single syscon
-> > +registers or bitfields can also be added as child nodes to the syscon
-> > +device node. These devices can implicitly assume their parent node
-> > +as syscon provider without referencing it explicitly via phandle.
-> > +In this case, the syscon node should have #address-cells = <1> and
-> > +#size-cells = <0> and no ranges property.
-> > +
-> 
-> I'd like to see an example.
-
-My indented use case is the the i.MX6 IOMUXC that mainly does pin
-control, but also has a set of general purpose registers (GPR) that
-among others control the LVDS encoder and some video input and output
-multiplexers.
-Also the i.MX6 ANATOP driver does a similar thing already by misusing
-the "simple-bus" compatible to probe its child regulator devices.
-
-The LVDS display bridge (LDB) has its own register in the IOMUXC GPR
-region and is currently described as an overlapping region in imx53.dts:
-
-	iomuxc: iomuxc@53fa8000 {
-		reg = <0x53fa8000 0x4000>;
-	};
-	gpr: iomuxc-gpr@53fa8000 {
-		compatible = "syscon";
-		reg = <0x53fa8000 0xc>;
-	};
-	ldb: ldb@53fa8008 {
-		reg = <0x53fa8008 0x4>;
-		gpr = <&gpr>;
-	};
-
-The ldb reg property is not used, the ldb driver is accessing its
-register through the iomuxc-gpr regmap, found via the phandle.
-In imx6qdl.dtsi the ldb reg property isn't even there. I'd like to move
-the ldb node into the gpr node and add a few multiplexers there:
-
-	gpr: iomuxc-gpr@020e0000 {
-		compatible = "syscon";
-		reg = <0x020e0000 0x38>;
-		ldb: ldb@020e0008 {
-			/* gpr = <&gpr>; <-- deprecated */
-		};
-		mipi_ipu1_mux {
-			reg = <0x04>;
-			bit-mask = <1>;
-			bit-shift = <19>;
-		};
-		mipi_ipu1_mux {
-			reg = <0x04>;
-			bit-mask = <1>;
-			bit-shift = <20>;
-		};
-	};
-	iomuxc: iomuxc@020e0000 {
-		reg = <0x020e0000 0x4000>;
-	};
-
-I'd  like to describe this in the device tree because these multiplexers
-are at different positions and connect different nodes on i.MX6Q and
-i.MX6DL (and are missing on i.MX53). The connections would use the graph
-bindings documented in Documentation/devicetree/bindings/graph.txt.
-
->  What does reg in the child contain? The register address?
-> What if the child device needs 3 bitfields from 3 different registers?
-
-Good question. I'd use the register address. The reg(ister) / bit-mask /
-bit-shift property pattern is already used by the keystone-pll clock
-bindings.
-Given your point about multiple bitfields, maybe this should be binding
-specific. The i.MX6 ANATOP bindings use custom properties for this:
-
-	anatop: anatop@020c8000 {
-		/* I'd like to get rid of the simple-bus here: */
-		compatible = "syscon", "simple-bus";
-		reg = <0x020c8000 0x1000>;
-		regulator-1p1@110 {
-			compatible = "fsl,anatop-regulator";
-			anatop-reg-offset = <0x110>;
-			anatop-vol-bit-shift = <8>;
-			anatop-vol-bit-width = <5>;
-			anatop-min-bit-val = <4>;
-			anatop-min-voltage = <800000>;
-			anatop-max-voltage = <1375000>;
-		};
-		/* ... */
-	};
-
-> It seems to me that you could then want to describe every single
-> bitfield of a block in the DT. That seems like too much information in
-> DT much like trying to describe every single clock in DT.
-
-See above. Often there are other reasons already to describe the child
-nodes in the device tree anyway, such as regulators, or video nodes that
-need to be linked to other nodes using the graph bindings. In those
-cases it would be very useful to just use the same nodes to probe the
-devices.
-
-regards
-Philipp
+diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+index c94db1c..8aad058 100644
+--- a/drivers/i2c/busses/Kconfig
++++ b/drivers/i2c/busses/Kconfig
+@@ -8,6 +8,14 @@ menu "I2C Hardware Bus support"
+ comment "PC SMBus host controller drivers"
+ 	depends on PCI
+ 
++config I2C_IMANAGER2
++	tristate "Support for Advantech iManager2 EC I2C"
++	select MFD_CORE
++	select MFD_IMANAGER2
++	depends on I2C=y
++	help
++	  Support for the Advantech iManager2 EC I2C.
++
+ config I2C_ALI1535
+ 	tristate "ALI 1535"
+ 	depends on PCI
+diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
+index 18d18ff..8a2a26b 100644
+--- a/drivers/i2c/busses/Makefile
++++ b/drivers/i2c/busses/Makefile
+@@ -82,6 +82,7 @@ obj-$(CONFIG_I2C_OCTEON)	+= i2c-octeon.o
+ obj-$(CONFIG_I2C_XILINX)	+= i2c-xiic.o
+ obj-$(CONFIG_I2C_XLR)		+= i2c-xlr.o
+ obj-$(CONFIG_I2C_RCAR)		+= i2c-rcar.o
++obj-$(CONFIG_I2C_IMANAGER2)	+= imanager2_i2c.o
+ 
+ # External I2C/SMBus adapter drivers
+ obj-$(CONFIG_I2C_DIOLAN_U2C)	+= i2c-diolan-u2c.o
+diff --git a/drivers/i2c/busses/imanager2_i2c.c b/drivers/i2c/busses/imanager2_i2c.c
+new file mode 100644
+index 0000000..bb83155
+--- /dev/null
++++ b/drivers/i2c/busses/imanager2_i2c.c
+@@ -0,0 +1,261 @@
++/*
++ * imanager2_i2c.c - I2C interface for Advantech EC IT8516/18/28 driver
++ * Copyright (C) 2014  Richard Vidal-Dorsch <richard.dorsch@advantech.com>
++ *
++ * This program is free software: you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation, either version 3 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/i2c.h>
++#include <linux/mfd/advantech/imanager2.h>
++
++#define DRV_NAME	"imanager2_i2c"
++#define DRV_VERSION	"4.0.1"
++
++#define EC_I2C_SMB_DEV_MAX	8
++
++struct imanager2_i2c {
++	struct i2c_adapter adapter;
++	struct imanager2 *ec;
++	enum ec_device_id did;
++};
++
++struct imanager2_i2c_drv {
++	struct imanager2_i2c *devs[EC_I2C_SMB_DEV_MAX];
++	int devcount;
++};
++
++static int imanager2_smb_access(struct i2c_adapter *adap, u16 addr,
++				unsigned short flags, char read_write,
++				u8 command, int size,
++				union i2c_smbus_data *data)
++{
++	struct imanager2_i2c *i2cdev = i2c_get_adapdata(adap);
++	int ret;
++	u8 protocol = 0, *wdata = NULL, wlen = 0, *rdata = NULL, *rlen = NULL;
++	u8 buf[EC_MAILBOX_SMBI2C_DATA_LENGTH];
++
++	addr <<= 1;
++
++	switch (size) {
++	case I2C_SMBUS_QUICK:
++		if (read_write == I2C_SMBUS_WRITE)
++			protocol = EC_CMD_MALLBOX_SMBUS_WRITE_QUICK;
++		else
++			protocol = EC_CMD_MALLBOX_SMBUS_READ_QUICK;
++		break;
++	case I2C_SMBUS_BYTE:
++		if (read_write == I2C_SMBUS_WRITE) {
++			protocol = EC_CMD_MALLBOX_SMBUS_SEND_BYTE;
++			wdata = &data->byte;
++			wlen = 1;
++		} else {
++			protocol = EC_CMD_MALLBOX_SMBUS_RECEIVE_BYTE;
++			rdata = &data->byte;
++			*rlen = 1;
++		}
++		break;
++	case I2C_SMBUS_BYTE_DATA:
++		if (read_write == I2C_SMBUS_WRITE) {
++			protocol = EC_CMD_MALLBOX_SMBUS_WRITE_BYTE;
++			wdata = &data->byte;
++			wlen = 1;
++		} else {
++			protocol = EC_CMD_MALLBOX_SMBUS_READ_BYTE;
++			rdata = &data->byte;
++			*rlen = 1;
++		}
++		break;
++	case I2C_SMBUS_WORD_DATA:
++		if (read_write == I2C_SMBUS_WRITE) {
++			protocol = EC_CMD_MALLBOX_SMBUS_WRITE_WORD;
++			wdata = (u8 *)&data->word;
++			wlen = 2;
++		} else {
++			protocol = EC_CMD_MALLBOX_SMBUS_READ_WORD;
++			rdata = (u8 *)&data->word;
++			*rlen = 2;
++		}
++		break;
++	case I2C_SMBUS_BLOCK_DATA:
++		if (read_write == I2C_SMBUS_WRITE) {
++			protocol = EC_CMD_MALLBOX_SMBUS_WRITE_BLOCK;
++			wdata = (u8 *)&data->block[1];
++			wlen = data->block[0];
++		} else {
++			protocol = EC_CMD_MALLBOX_SMBUS_READ_BLOCK;
++			rdata = (u8 *)&data->block[1];
++			*rlen = data->block[0];
++		}
++		break;
++	case I2C_SMBUS_I2C_BLOCK_DATA:
++		if (read_write == I2C_SMBUS_WRITE) {
++			int i;
++
++			buf[0] = command;
++			for (i = 0; i < data->block[0]; i++)
++				buf[i + 1] = data->block[i + 1];
++			protocol = EC_CMD_MALLBOX_I2C_WRITE_READ;
++			wdata = buf;
++			wlen = data->block[0] + 1;
++		} else {
++			int i;
++
++			buf[0] = command;
++			for (i = 0; i < data->block[0]; i++)
++				buf[i + 1] = data->block[i + 1];
++
++			protocol = EC_CMD_MALLBOX_I2C_READ_WRITE;
++			rdata = buf;
++			*rlen = data->block[0] + 1;
++		}
++		break;
++	default:
++		ret = -EINVAL;
++	}
++
++	mutex_lock(&i2cdev->ec->lock);
++	ret = imanager2_smbus_transmit_routine(i2cdev->ec, i2cdev->did,
++					       protocol, (u8) addr, command,
++					       wdata, wlen, rdata, rlen);
++	mutex_unlock(&i2cdev->ec->lock);
++
++	return ret;
++}
++
++static u32 imanager2_smb_i2c_func(struct i2c_adapter *adap)
++{
++	return I2C_FUNC_SMBUS_QUICK | I2C_FUNC_SMBUS_BYTE |
++	       I2C_FUNC_SMBUS_BYTE_DATA | I2C_FUNC_SMBUS_WORD_DATA |
++	       I2C_FUNC_SMBUS_BLOCK_DATA | I2C_FUNC_SMBUS_I2C_BLOCK;
++}
++
++static const struct i2c_algorithm imanager2_algorithm = {
++	.smbus_xfer = imanager2_smb_access,
++	.functionality = imanager2_smb_i2c_func
++};
++
++static u32 imanager2_smb_io_i2c_func(struct i2c_adapter *adap)
++{
++	/* IO chennel access way has no I2C block protocol */
++	return I2C_FUNC_SMBUS_QUICK | I2C_FUNC_SMBUS_BYTE |
++	       I2C_FUNC_SMBUS_BYTE_DATA | I2C_FUNC_SMBUS_WORD_DATA |
++	       I2C_FUNC_SMBUS_BLOCK_DATA;
++}
++
++static const struct i2c_algorithm imanager2_io_algorithm = {
++	.smbus_xfer = imanager2_smb_access,
++	.functionality = imanager2_smb_io_i2c_func
++};
++
++struct i2c_item {
++	const u8 did;
++	const char *name;
++};
++
++static struct i2c_item imanager2_i2c_table[] = {
++	{smboem0, "iManager2 SMBus0"},
++	{smboem1, "iManager2 SMBus1"},
++	{smboem2, "iManager2 SMBus2"},
++	{smbthermal0, "iManager2 Thermal0"},
++	{smbthermal1, "iManager2 Thermal1"},
++	{i2coem, "iManager2 I2COEM"}
++};
++
++static struct imanager2_i2c *add_i2c_adapter(struct device *dev, int index)
++{
++	struct imanager2_i2c *i2cdev;
++
++	i2cdev = devm_kzalloc(dev, sizeof(struct imanager2_i2c), GFP_KERNEL);
++	if (!i2cdev)
++		return NULL;
++
++	i2cdev->did = imanager2_i2c_table[index].did;
++	i2cdev->ec = dev->parent->platform_data;
++	i2cdev->adapter.owner = THIS_MODULE;
++	i2cdev->adapter.class = I2C_CLASS_HWMON | I2C_CLASS_SPD;
++	if (i2cdev->ec->flag & EC_FLAG_MAILBOX)
++		i2cdev->adapter.algo = &imanager2_algorithm;
++	else
++		i2cdev->adapter.algo = &imanager2_io_algorithm;
++	i2cdev->adapter.dev.parent = dev;
++	i2cdev->adapter.retries = 3;
++	i2c_set_adapdata(&i2cdev->adapter, i2cdev);
++
++	snprintf(i2cdev->adapter.name, sizeof(i2cdev->adapter.name),
++		 imanager2_i2c_table[index].name);
++
++	if (i2c_add_adapter(&i2cdev->adapter))
++		return NULL;
++
++	return i2cdev;
++}
++
++static int imanager2_i2c_probe(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct imanager2 *ec = dev->parent->platform_data;
++	struct imanager2_i2c_drv *drvdata;
++	int i;
++
++	drvdata =
++	    devm_kzalloc(dev, sizeof(struct imanager2_i2c_drv), GFP_KERNEL);
++
++	if (!drvdata)
++		return -ENOMEM;
++
++	platform_set_drvdata(pdev, drvdata);
++
++	drvdata->devcount = 0;
++	for (i = 0; i < ARRAY_SIZE(imanager2_i2c_table); i++)
++		if (ec->table.devid2itemnum[imanager2_i2c_table[i].did] !=
++		    EC_TABLE_ITEM_UNUSED) {
++			struct imanager2_i2c *i2cdev = add_i2c_adapter(dev, i);
++			if (i2cdev) {
++				drvdata->devs[drvdata->devcount] = i2cdev;
++				drvdata->devcount++;
++			}
++		}
++
++	return 0;
++}
++
++static int imanager2_i2c_remove(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct imanager2_i2c_drv *drvdata = dev_get_drvdata(dev);
++	int i;
++
++	for (i = 0; i < drvdata->devcount; i++)
++		i2c_del_adapter(&drvdata->devs[i]->adapter);
++
++	return 0;
++}
++
++static struct platform_driver imanager2_i2c_driver = {
++	.probe = imanager2_i2c_probe,
++	.remove = imanager2_i2c_remove,
++	.driver = {
++		.owner = THIS_MODULE,
++		.name = DRV_NAME,
++	},
++};
++
++module_platform_driver(imanager2_i2c_driver);
++
++MODULE_AUTHOR("Richard Vidal-Dorsch <richard.dorsch at advantech.com>");
++MODULE_DESCRIPTION("I2C interface for Advantech EC IT8516/18/28 driver");
++MODULE_LICENSE("GPL");
++MODULE_VERSION(DRV_VERSION);
+-- 
+1.9.1
 
