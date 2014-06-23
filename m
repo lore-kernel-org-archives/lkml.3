@@ -1,86 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756180AbaFWQ0n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 12:26:43 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:40811 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755600AbaFWQ0m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 12:26:42 -0400
-Date: Mon, 23 Jun 2014 18:26:22 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Waiman.Long@hp.com, tglx@linutronix.de, mingo@kernel.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        paolo.bonzini@gmail.com, boris.ostrovsky@oracle.com,
-        paulmck@linux.vnet.ibm.com, riel@redhat.com,
-        torvalds@linux-foundation.org, raghavendra.kt@linux.vnet.ibm.com,
-        david.vrabel@citrix.com, oleg@redhat.com, gleb@redhat.com,
-        scott.norton@hp.com, chegu_vinod@hp.com
-Subject: Re: [PATCH 01/11] qspinlock: A simple generic 4-byte queue spinlock
-Message-ID: <20140623162622.GH19860@laptop.programming.kicks-ass.net>
-References: <20140615124657.264658593@chello.nl>
- <20140615130152.912524881@chello.nl>
- <20140617200531.GB27242@laptop.dumpdata.com>
+	id S1756247AbaFWQ0s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 12:26:48 -0400
+Received: from alfter.us ([96.126.100.72]:52695 "EHLO alfter.us"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755451AbaFWQ0o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 12:26:44 -0400
+X-Greylist: delayed 402 seconds by postgrey-1.27 at vger.kernel.org; Mon, 23 Jun 2014 12:26:44 EDT
+Message-ID: <89597b8dd96b8e07df45b2b4a7fb0d9b.squirrel@webmail.alfter.us>
+In-Reply-To: <12173493.Olv1pKMOGK@wuerfel>
+References: <12173493.Olv1pKMOGK@wuerfel>
+Date: Mon, 23 Jun 2014 16:19:58 -0000
+Subject: Re: [PATCH] w1: select crc16 library for ds2406
+To: "Arnd Bergmann" <arnd@arndb.de>
+Cc: "Evgeniy Polyakov" <zbr@ioremap.net>, linux-kernel@vger.kernel.org,
+        "Scott Alfter" <scott@alfter.us>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+User-Agent: SquirrelMail/1.4.23 [SVN]
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140617200531.GB27242@laptop.dumpdata.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain;charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Delivery-Agent: TMDA/1.1.12 (Macallan)
+From: Scott Alfter <scott@alfter.us>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 17, 2014 at 04:05:31PM -0400, Konrad Rzeszutek Wilk wrote:
-> > + * The basic principle of a queue-based spinlock can best be understood
-> > + * by studying a classic queue-based spinlock implementation called the
-> > + * MCS lock. The paper below provides a good description for this kind
-> > + * of lock.
-> > + *
-> > + * http://www.cise.ufl.edu/tr/DOC/REP-1992-71.pdf
-> > + *
-> > + * This queue spinlock implementation is based on the MCS lock, however to make
-> > + * it fit the 4 bytes we assume spinlock_t to be, and preserve its existing
-> > + * API, we must modify it some.
-> > + *
-> > + * In particular; where the traditional MCS lock consists of a tail pointer
-> > + * (8 bytes) and needs the next pointer (another 8 bytes) of its own node to
-> > + * unlock the next pending (next->locked), we compress both these: {tail,
-> > + * next->locked} into a single u32 value.
-> > + *
-> > + * Since a spinlock disables recursion of its own context and there is a limit
-> > + * to the contexts that can nest; namely: task, softirq, hardirq, nmi, we can
-> > + * encode the tail as and index indicating this context and a cpu number.
-> > + *
-> > + * We can further change the first spinner to spin on a bit in the lock word
-> > + * instead of its node; whereby avoiding the need to carry a node from lock to
-> > + * unlock, and preserving API.
-> 
-> You also made changes (compared to the MCS) in that the unlock path is not
-> spinning waiting for the successor and that the job of passing the lock
-> is not done in the unlock path either.
-> 
-> Instead all of that is now done in the path of the lock acquirer logic. 
-> 
-> Could you update the comment to say that please?
+On Mon, June 23, 2014 14:31, Arnd Bergmann wrote:
+> commit 94859308a21b "w1: new w1_ds2406 driver" added a new driver
+> that uses the crc16 library, but didn't ensure that the core is
+> there. This adds the necessary Kconfig statements, just like we
+> have it for other w1 drivers.
+>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Scott Alfter <scott@alfter.us>
+> Cc: Evgeniy Polyakov <zbr@ioremap.net>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-I _think_ I know what you mean.. So that is actually implied by the last
-paragraph, but I suppose I can make it explicit; something like:
+Sounds OK to me...was an oversight on my part. Do I need to put together
+another patchfile, or can this one be combined with the one I've already
+sent in? As an alternative, it's in my kernel tree at
+https://github.com/salfter/adafruit-raspberrypi-linux.
 
-  *
-  * Another way to look at it is:
-  *
-  *  lock(tail,locked)
-  *    struct mcs_spinlock node;
-  *    mcs_spin_lock(tail, &node);
-  *    test-and-set locked;
-  *    mcs_spin_unlock(tail, &node);
-  *
-  *  unlock(tail,locked)
-  *    clear locked
-  *
-  * Where we have compressed (tail,locked) into a single u32 word.
+Scott Alfter
+scott@alfter.us
 
 
