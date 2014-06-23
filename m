@@ -1,49 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755141AbaFWNyX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:54:23 -0400
-Received: from smtprelay0060.hostedemail.com ([216.40.44.60]:46599 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753806AbaFWNyV (ORCPT
+	id S1754434AbaFWNzt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:55:49 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:37679 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753720AbaFWNzr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:54:21 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3350:3622:3867:3868:3871:3873:4321:5007:7652:10004:10400:10848:11026:11232:11657:11658:11914:12043:12296:12438:12517:12519:12740:13069:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: touch54_5fe967dac6020
-X-Filterd-Recvd-Size: 1450
-Message-ID: <1403531657.18747.53.camel@joe-AO725>
-Subject: Re: [PATCH] staging: lirc: fix coding style problems
-From: Joe Perches <joe@perches.com>
-To: Raphael Poggi <poggi.raph@gmail.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Date: Mon, 23 Jun 2014 06:54:17 -0700
-In-Reply-To: <1403530859-3341-1-git-send-email-poggi.raph@gmail.com>
-References: <1403530859-3341-1-git-send-email-poggi.raph@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 23 Jun 2014 09:55:47 -0400
+Date: Mon, 23 Jun 2014 15:54:46 +0200
+From: Daniel Kiper <daniel.kiper@oracle.com>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: andrew.cooper3@citrix.com, david.vrabel@citrix.com,
+        ian.campbell@citrix.com, stefano.stabellini@eu.citrix.com,
+        jeremy@goop.org, matt.fleming@intel.com, x86@kernel.org,
+        tglx@linutronix.de, xen-devel@lists.xenproject.org,
+        boris.ostrovsky@oracle.com, konrad.wilk@oracle.com, eshelton@pobox.com,
+        mingo@redhat.com, mjg59@srcf.ucam.org, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hpa@zytor.com, tony.luck@intel.com,
+        fenghua.yu@intel.com, linux-ia64@vger.kernel.org
+Subject: Re: [PATCH v6 1/9] efi: Use early_mem*() instead of early_io*()
+Message-ID: <20140623135446.GG28489@olila.local.net-space.pl>
+References: <1403299768-9955-1-git-send-email-daniel.kiper@oracle.com>
+ <1403299768-9955-2-git-send-email-daniel.kiper@oracle.com>
+ <53A7F104020000780001C4BE@mail.emea.novell.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53A7F104020000780001C4BE@mail.emea.novell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-06-23 at 15:40 +0200, Raphael Poggi wrote:
-> This patch fix some coding style problems.
-[]
-> diff --git a/drivers/staging/media/lirc/lirc_imon.c b/drivers/staging/media/lirc/lirc_imon.c
-[]
-> @@ -626,8 +623,8 @@ static void imon_incoming_packet(struct imon_context *context,
->  	if (debug) {
->  		dev_info(dev, "raw packet: ");
->  		for (i = 0; i < len; ++i)
-> -			printk("%02x ", buf[i]);
-> -		printk("\n");
-> +			dev_dbg(dev, "%02x ", buf[i]);
-> +		dev_dbg(dev, "\n");
+I am CC'ing IA-64 guys.
 
-This chunk is not correct and causes output problems.
+On Mon, Jun 23, 2014 at 08:19:00AM +0100, Jan Beulich wrote:
+> >>> On 20.06.14 at 23:29, <daniel.kiper@oracle.com> wrote:
+> > --- a/drivers/firmware/efi/efi.c
+> > +++ b/drivers/firmware/efi/efi.c
+> > @@ -298,7 +298,7 @@ int __init efi_config_init(efi_config_table_type_t *arch_tables)
+> >  			if (table64 >> 32) {
+> >  				pr_cont("\n");
+> >  				pr_err("Table located above 4GB, disabling EFI.\n");
+> > -				early_iounmap(config_tables,
+> > +				early_memunmap(config_tables,
+> >  					       efi.systab->nr_tables * sz);
+> >  				return -EINVAL;
+> >  			}
+> > @@ -314,7 +314,7 @@ int __init efi_config_init(efi_config_table_type_t *arch_tables)
+> >  		tablep += sz;
+> >  	}
+> >  	pr_cont("\n");
+> > -	early_iounmap(config_tables, efi.systab->nr_tables * sz);
+> > +	early_memunmap(config_tables, efi.systab->nr_tables * sz);
+> >
+> >  	set_bit(EFI_CONFIG_TABLES, &efi.flags);
+> >
+>
+> If these two changes are really deemed necessary (there's the
+> implied assumption currently in place that early_iounmap() can
+> undo early_memremap() mappings), then ia64 will need a
+> definition added for early_memunmap() or its build will break.
 
-These printks should either use pr_cont or
-you want to use something like print_hex_dump
+I know that early_memunmap() == early_iounmap() in general. However,
+I think that it is less confusing if use relevant functions in pairs
+(i.e. early_memremap() with early_memunmap(), ...) than mix them up.
 
+We have following choices here:
+  - leave early_iounmap() as is in drivers/firmware/efi/efi.c
+    (arch/x86/platform/efi/efi.c:early_iounmap() -> early_memunmap()
+    changes should be left as is),
+  - include asm/early_ioremap.h in arch/ia64/include/asm/io.h
+    (as I can see the same think is done for x86 and arm64).
 
+I prefer second solution but I do not insist.
+
+Daniel
