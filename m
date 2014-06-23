@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754483AbaFWNEj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:04:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36985 "EHLO
+	id S1754450AbaFWNEh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:04:37 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36986 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754421AbaFWNEd (ORCPT
+	with ESMTP id S1754422AbaFWNEd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Jun 2014 09:04:33 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
+Cc: Wenkai Du <wenkai.du@intel.com>, Wolfram Sang <wsa@the-dreams.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 49/93] genirq: Provide irq_force_affinity fallback for non-SMP
-Date: Mon, 23 Jun 2014 14:02:28 +0100
-Message-Id: <1403528592-2163-50-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 50/93] i2c: designware: Mask all interrupts during i2c controller enable
+Date: Mon, 23 Jun 2014 14:02:29 +0100
+Message-Id: <1403528592-2163-51-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
 References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
@@ -29,50 +27,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arnd Bergmann <arnd@arndb.de>
+From: "Du, Wenkai" <wenkai.du@intel.com>
 
-commit 4c88d7f9b0d5fb0588c3386be62115cc2eaa8f9f upstream.
+commit 47bb27e78867997040a228328f2a631c3c7f2c82 upstream.
 
-Patch 01f8fa4f01d "genirq: Allow forcing cpu affinity of interrupts" added
-an irq_force_affinity() function, and 30ccf03b4a6 "clocksource: Exynos_mct:
-Use irq_force_affinity() in cpu bringup" subsequently uses it. However, the
-driver can be used with CONFIG_SMP disabled, but the function declaration
-is only available for CONFIG_SMP, leading to this build error:
+There have been "i2c_designware 80860F41:00: controller timed out" errors
+on a number of Baytrail platforms. The issue is caused by incorrect value in
+Interrupt Mask Register (DW_IC_INTR_MASK)  when i2c core is being enabled.
+This causes call to __i2c_dw_enable() to immediately start the transfer which
+leads to timeout. There are 3 failure modes observed:
 
-drivers/clocksource/exynos_mct.c:431:3: error: implicit declaration of function 'irq_force_affinity' [-Werror=implicit-function-declaration]
-   irq_force_affinity(mct_irqs[MCT_L0_IRQ + cpu], cpumask_of(cpu));
+1. Failure in S0 to S3 resume path
 
-This patch introduces a dummy helper function for the non-SMP case
-that always returns success, to get rid of the build error.
-Since the patches causing the problem are marked for stable backports,
-this one should be as well.
+The default value after reset for DW_IC_INTR_MASK is 0x8ff. When we start
+the first transaction after resuming from system sleep, TX_EMPTY interrupt
+is already unmasked because of the hardware default.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
-Link: http://lkml.kernel.org/r/5619084.0zmrrIUZLV@wuerfel
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+2. Failure in normal operational path
+
+This failure happens rarely and is hard to reproduce. Debug trace showed that
+DW_IC_INTR_MASK had value of 0x254 when failure occurred, which meant
+TX_EMPTY was unmasked.
+
+3. Failure in S3 to S0 suspend path
+
+This failure also happens rarely and is hard to reproduce. Adding debug trace
+that read DW_IC_INTR_MASK made this failure not reproducible. But from ISR
+call trace we could conclude TX_EMPTY was unmasked when problem occurred.
+
+The patch masks all interrupts before the controller is enabled to resolve the
+faulty DW_IC_INTR_MASK conditions.
+
+Signed-off-by: Wenkai Du <wenkai.du@intel.com>
+Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+[wsa: improved the comment and removed typo in commit msg]
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/linux/interrupt.h | 5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/i2c/busses/i2c-designware-core.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-index e8401d092732..6de0f2c14ec0 100644
---- a/include/linux/interrupt.h
-+++ b/include/linux/interrupt.h
-@@ -308,6 +308,11 @@ static inline int irq_set_affinity(unsigned int irq, const struct cpumask *m)
- 	return -EINVAL;
- }
+diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
+index ad46616de29e..dac1de324b9c 100644
+--- a/drivers/i2c/busses/i2c-designware-core.c
++++ b/drivers/i2c/busses/i2c-designware-core.c
+@@ -393,6 +393,9 @@ static void i2c_dw_xfer_init(struct dw_i2c_dev *dev)
+ 		ic_con &= ~DW_IC_CON_10BITADDR_MASTER;
+ 	dw_writel(dev, ic_con, DW_IC_CON);
  
-+static inline int irq_force_affinity(unsigned int irq, const struct cpumask *cpumask)
-+{
-+	return 0;
-+}
++	/* enforce disabled interrupts (due to HW issues) */
++	i2c_dw_disable_int(dev);
 +
- static inline int irq_can_set_affinity(unsigned int irq)
- {
- 	return 0;
+ 	/* Enable the adapter */
+ 	__i2c_dw_enable(dev, true);
+ 
 -- 
 1.9.1
 
