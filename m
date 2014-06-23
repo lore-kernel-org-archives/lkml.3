@@ -1,71 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751752AbaFWDAT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 23:00:19 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:48335 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750823AbaFWDAR (ORCPT
+	id S1751964AbaFWDDk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 23:03:40 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:35999 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751281AbaFWDDj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 23:00:17 -0400
-Message-ID: <53A7983A.9000105@gmail.com>
-Date: Mon, 23 Jun 2014 11:00:10 +0800
+	Sun, 22 Jun 2014 23:03:39 -0400
+Message-ID: <53A79905.9020007@gmail.com>
+Date: Mon, 23 Jun 2014 11:03:33 +0800
 From: Chen Gang <gang.chen.5i5j@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>, Anton Altaparmakov <anton@tuxera.com>
-CC: linux-ntfs-dev@lists.sourceforge.net,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Liqin Chen <liqin.linux@gmail.com>,
-        "lennox.wu@gmail.com >> Lennox Wu" <lennox.wu@gmail.com>
-Subject: Re: [PATCH] fs/ntfs: Use '%tx' instead of '%zx'
-References: <53A7845F.40404@gmail.com> <1403487989.18747.30.camel@joe-AO725>
-In-Reply-To: <1403487989.18747.30.camel@joe-AO725>
+To: Guenter Roeck <linux@roeck-us.net>, Liqin Chen <liqin.linux@gmail.com>,
+        Lennox Wu <lennox.wu@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arch/score/include/uapi/asm/ptrace.h: Add prefix 'SCORE_'
+ for related macros
+References: <53A66000.4010208@gmail.com> <53A6669B.1010701@roeck-us.net> <53A66A92.9040106@gmail.com> <53A6EDF6.2030203@roeck-us.net> <53A6EFEC.1020207@roeck-us.net>
+In-Reply-To: <53A6EFEC.1020207@roeck-us.net>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 06/23/2014 09:46 AM, Joe Perches wrote:
-> Please make sure to cc the specific maintainer
+On 06/22/2014 11:02 PM, Guenter Roeck wrote:
+> On 06/22/2014 07:53 AM, Guenter Roeck wrote:
+>> I did that, and managed to build gcc.
+>>
+>> However, when trying to compile score defconfig, I get internal
+>> compiler errors in cc1
+>> when compiling drivers/tty/tty_mutex.o and block/elevator.o.
+>>
+>>   CC      block/elevator.o
+>> score-elf-gcc: internal compiler error: Segmentation fault (program cc1)
+>> 0x40c073 execute
+>>      ../../gcc/gcc/gcc.c:2848
+>> Please submit a full bug report,
+>> with preprocessed source if appropriate.
+>> Please include the complete backtrace with any bug report.
+>> See <http://gcc.gnu.org/bugs.html> for instructions.
+>> make[1]: *** [block/elevator.o] Error 4
+>> make: *** [block/elevator.o] Error 2
+>>
+>> Do you see that as well ?
+>>
+>> This is with
+>>
+>> GNU assembler version 2.24.51 (score-elf) using BFD version (GNU
+>> Binutils) 2.24.51.20140622
+>>
+>> and gcc configured with:
+>>
+>> Configured with: ../gcc/configure --prefix=/opt/kernel/score
+>> --program-prefix=score-elf- \
+>> --target=score-elf --without-header --disable-nls --enable-languages=c
+>> --disable-threads \
+>> --disable-shared --enable-werror=no
+>> target_configargs=enable_vtable_verify=yes \
+>> --enable-obsolete --disable-libssp --disable-libquadmath
+>>
+>> Tip of gcc source is commit d8686b0aa945a, tip of binutils source is
+>> commit d17c74c1d41.
+>> Your assembler fix is included in this version of binutils.
+>>
 > 
-> $ ./scripts/get_maintainer.pl -f fs/ntfs/
-> Anton Altaparmakov <anton@tuxera.com> (supporter:NTFS FILESYSTEM)
-> linux-ntfs-dev@lists.sourceforge.net (open list:NTFS FILESYSTEM)
-> linux-kernel@vger.kernel.org (open list)
+> Never mind, turns out I get score:defconfig to compile when using the
+> tip of the gcc 4.9 branch.
 > 
-> (cc'ing Anton)
+> Guenter
 > 
 
-Yes, I have sent to specific maintainer.
-
-
-> btw Anton, it seems ntfs_debug does not terminate
-> messages with a "\n".  That means that messages
-> could be interleaved with other output.
-> 
-> Maybe this patch as well as Chen Gang's below should be applied
-> ---
->  fs/ntfs/debug.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/fs/ntfs/debug.c b/fs/ntfs/debug.c
-> index dd6103c..1e824f0 100644
-> --- a/fs/ntfs/debug.c
-> +++ b/fs/ntfs/debug.c
-> @@ -126,7 +126,8 @@ void __ntfs_debug (const char *file, int line, const char *function,
->  	va_start(args, fmt);
->  	vaf.fmt = fmt;
->  	vaf.va = &args;
-> -	pr_debug("(%s, %d): %s(): %pV", file, line, flen ? function : "", &vaf);
-> +	pr_debug("(%s, %d): %s(): %pV\n",
-> +		 file, line, flen ? function : "", &vaf);
->  	va_end(args);
->  }
->  
-
-Hmm... at least, the patch above is fine to me.
+OK, I shall try defconfig for it (originally, I try allmodconfig, not
+find this issue), and try to solve it, hope (although I am not quite
+sure), I can finish within this month (2014-06-30).
 
 
 Thanks.
