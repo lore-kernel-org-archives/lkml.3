@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754044AbaFWXfz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 19:35:55 -0400
-Received: from mga14.intel.com ([192.55.52.115]:56218 "EHLO mga14.intel.com"
+	id S1752784AbaFWXm0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 19:42:26 -0400
+Received: from mga02.intel.com ([134.134.136.20]:64635 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753864AbaFWXfx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 19:35:53 -0400
+	id S1750931AbaFWXmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 19:42:25 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="356846789"
-Message-ID: <53A8B9D2.8090705@linux.intel.com>
-Date: Tue, 24 Jun 2014 07:35:46 +0800
-From: "Li, Aubrey" <aubrey.li@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+X-IronPort-AV: E=Sophos;i="5.01,533,1400050800"; 
+   d="scan'208";a="562162356"
+Message-ID: <53A8BB5A.5090103@intel.com>
+Date: Mon, 23 Jun 2014 16:42:18 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-CC: "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] GPIO button wth wakeup attribute is supposed to wake
- the system up
-References: <53A2340D.9030503@linux.intel.com> <20140619114006.72ac8e06@alan.etchedpixels.co.uk>
-In-Reply-To: <20140619114006.72ac8e06@alan.etchedpixels.co.uk>
+To: Andy Lutomirski <luto@amacapital.net>
+CC: "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Qiaowei Ren <qiaowei.ren@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH v6 08/10] x86, mpx: add prctl commands PR_MPX_REGISTER,
+ PR_MPX_UNREGISTER
+References: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com> <1403084656-27284-9-git-send-email-qiaowei.ren@intel.com> <53A8874A.3050301@mit.edu> <53A88966.5080400@intel.com> <CALCETrX7B8yxrNgojCR8YNH+6zHX8vq+GMFn0RjdWXdLmhA-Fg@mail.gmail.com>
+In-Reply-To: <CALCETrX7B8yxrNgojCR8YNH+6zHX8vq+GMFn0RjdWXdLmhA-Fg@mail.gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping...
+On 06/23/2014 03:00 PM, Andy Lutomirski wrote:
+> Hmm.  How about PR_SET/GET_MPX_BOUNDS_TABLE, to update the kernel's
+> copy.  No fpu magic needed.
+> 
+> This has an added benefit: CRIU will need updating for MPX, and
+> they'll appreciate having the required interface already exist.
+> (They'll want a way to allocate "MPX" memory, too, but that's probably
+> somewhat less important, and it won't result in duplicated
+> functionality.)
 
-On 2014/6/19 18:40, One Thousand Gnomes wrote:
-> On Thu, 19 Jun 2014 08:51:25 +0800
-> "Li, Aubrey" <aubrey.li@linux.intel.com> wrote:
-> 
->> When the wakeup attribute is set, the GPIO button is capable of
->> waking up the system from sleep states, including the "freeze"
->> sleep state.  For that to work, its driver needs to pass the
->> IRQF_NO_SUSPEND flag to devm_request_any_context_irq(), or the
->> interrupt will be disabled by suspend_device_irqs() and the
->> system won't be woken up by it from the "freeze" sleep state.
->>
->> The suspend_device_irqs() routine is a workaround for drivers
->> that mishandle interrupts triggered when the devices handled
->> by them are suspended, so it is safe to use IRQF_NO_SUSPEND in
->> all drivers that don't have that problem.
->>
->> The affected/tested machines include Dell Venue 11 Pro and Asus T100TA.
->>
->> Signed-off-by: Aubrey Li <aubrey.li@linux.intel.com>
->> Reviewed-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> Reviewed-by: Alan Cox <alan@linux.intel.com>
-> 
-> 
-> 
+I like the idea of the most minimal interface possible.  If the kernel
+ever needed or wanted to cache more of the register setup, we wouldn't
+need to change the interface.  For CRIU, I don't know much about the
+phases of how it sets itself up, but I guess the difference would be
+whether userspace has to do a register save and restore and a prctl() or
+just a plain prctl() with extra arguments.  Doesn't seem fundamentally
+different to me.
 
+BTW, it's not a pointer to a bounds table, it's the bounds directory.
+There are two levels of the tables.
