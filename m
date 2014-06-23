@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754302AbaFWIvA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 04:51:00 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55538 "EHLO
+	id S1753653AbaFWIu7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 04:50:59 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55550 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752570AbaFWIc3 (ORCPT
+	by vger.kernel.org with ESMTP id S1752565AbaFWIc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Jun 2014 04:32:29 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 053/111] usb: pci-quirks: Prevent Sony VAIO t-series from switching usb ports
-Date: Mon, 23 Jun 2014 10:31:28 +0200
-Message-Id: <ed7a0e4033fce15bec2424f3c6a7a5531e8b3203.1403512281.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Jiri Pirko <jiri@resnulli.us>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 098/111] team: fix mtu setting
+Date: Mon, 23 Jun 2014 10:32:13 +0200
+Message-Id: <14bf635b2a49a67862fbc3ea2db76a5cef3a8bba.1403512281.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
 References: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
@@ -24,48 +23,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
+From: Jiri Pirko <jiri@resnulli.us>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit b38f09ccc3fd453180e96273bf3f34083c30809a upstream.
+[ Upstream commit 9d0d68faea6962d62dd501cd6e71ce5cc8ed262b ]
 
-Sony VAIO t-series machines are not capable of switching usb2 ports over
-from Intel EHCI to xHCI controller. If tried the USB2 port will be left
-unconnected and unusable.
+Now it is not possible to set mtu to team device which has a port
+enslaved to it. The reason is that when team_change_mtu() calls
+dev_set_mtu() for port device, notificator for NETDEV_PRECHANGEMTU
+event is called and team_device_event() returns NOTIFY_BAD forbidding
+the change. So fix this by returning NOTIFY_DONE here in case team is
+changing mtu in team_change_mtu().
 
-This patch should be backported to stable kernels as old as 3.12,
-that contain the commit 26b76798e0507429506b93cd49f8c4cfdab06896
-"Intel xhci: refactor EHCI/xHCI port switching"
-
-Reported-by: Jorge <xxopxe@gmail.com>
-Tested-by: Jorge <xxopxe@gmail.com>
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Introduced-by: 3d249d4c "net: introduce ethernet teaming device"
+Signed-off-by: Jiri Pirko <jiri@resnulli.us>
+Acked-by: Flavio Leitner <fbl@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/usb/host/pci-quirks.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/net/team/team.c | 7 ++++++-
+ include/linux/if_team.h | 1 +
+ 2 files changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
-index 463156d03140..f8763cc9d301 100644
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -836,6 +836,13 @@ void usb_enable_intel_xhci_ports(struct pci_dev *xhci_pdev)
- 	bool		ehci_found = false;
- 	struct pci_dev	*companion = NULL;
+diff --git a/drivers/net/team/team.c b/drivers/net/team/team.c
+index 6327df255404..5c245d1fc79c 100644
+--- a/drivers/net/team/team.c
++++ b/drivers/net/team/team.c
+@@ -1725,6 +1725,7 @@ static int team_change_mtu(struct net_device *dev, int new_mtu)
+ 	 * to traverse list in reverse under rcu_read_lock
+ 	 */
+ 	mutex_lock(&team->lock);
++	team->port_mtu_change_allowed = true;
+ 	list_for_each_entry(port, &team->port_list, list) {
+ 		err = dev_set_mtu(port->dev, new_mtu);
+ 		if (err) {
+@@ -1733,6 +1734,7 @@ static int team_change_mtu(struct net_device *dev, int new_mtu)
+ 			goto unwind;
+ 		}
+ 	}
++	team->port_mtu_change_allowed = false;
+ 	mutex_unlock(&team->lock);
  
-+	/* Sony VAIO t-series with subsystem device ID 90a8 is not capable of
-+	 * switching ports from EHCI to xHCI
-+	 */
-+	if (xhci_pdev->subsystem_vendor == PCI_VENDOR_ID_SONY &&
-+	    xhci_pdev->subsystem_device == 0x90a8)
-+		return;
-+
- 	/* make sure an intel EHCI controller exists */
- 	for_each_pci_dev(companion) {
- 		if (companion->class == PCI_CLASS_SERIAL_USB_EHCI &&
+ 	dev->mtu = new_mtu;
+@@ -1742,6 +1744,7 @@ static int team_change_mtu(struct net_device *dev, int new_mtu)
+ unwind:
+ 	list_for_each_entry_continue_reverse(port, &team->port_list, list)
+ 		dev_set_mtu(port->dev, dev->mtu);
++	team->port_mtu_change_allowed = false;
+ 	mutex_unlock(&team->lock);
+ 
+ 	return err;
+@@ -2861,7 +2864,9 @@ static int team_device_event(struct notifier_block *unused,
+ 		break;
+ 	case NETDEV_CHANGEMTU:
+ 		/* Forbid to change mtu of underlaying device */
+-		return NOTIFY_BAD;
++		if (!port->team->port_mtu_change_allowed)
++			return NOTIFY_BAD;
++		break;
+ 	case NETDEV_PRE_TYPE_CHANGE:
+ 		/* Forbid to change type of underlaying device */
+ 		return NOTIFY_BAD;
+diff --git a/include/linux/if_team.h b/include/linux/if_team.h
+index a899dc24be15..a6aa970758a2 100644
+--- a/include/linux/if_team.h
++++ b/include/linux/if_team.h
+@@ -194,6 +194,7 @@ struct team {
+ 	bool user_carrier_enabled;
+ 	bool queue_override_enabled;
+ 	struct list_head *qom_lists; /* array of queue override mapping lists */
++	bool port_mtu_change_allowed;
+ 	struct {
+ 		unsigned int count;
+ 		unsigned int interval; /* in ms */
 -- 
 2.0.0
 
