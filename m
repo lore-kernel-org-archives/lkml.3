@@ -1,138 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756322AbaFWQpc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 12:45:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44190 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756137AbaFWQpa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 12:45:30 -0400
-Date: Mon, 23 Jun 2014 18:43:21 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+	id S1756366AbaFWQpi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 12:45:38 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:45493 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756336AbaFWQpf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 12:45:35 -0400
+Date: Mon, 23 Jun 2014 09:45:29 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Christoph Lameter <cl@gentwo.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, tglx@linutronix.de, rostedt@goodmis.org,
         dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, sbw@mit.edu, Andi Kleen <ak@linux.intel.com>,
-        Christoph Lameter <cl@gentwo.org>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [PATCH RFC tip/core/rcu 1/5] rcu: Reduce overhead of
-	cond_resched() checks for RCU
-Message-ID: <20140623164321.GA5543@redhat.com>
-References: <20140620183249.GA6325@linux.vnet.ibm.com> <1403289203-6371-1-git-send-email-paulmck@linux.vnet.ibm.com>
+        fweisbec@gmail.com, oleg@redhat.com, dave.hansen@intel.com,
+        ak@linux.intel.com, umgwanakikbuti@gmail.com
+Subject: Re: [PATCH tip/core/rcu] Reduce overhead of cond_resched() checks
+ for RCU
+Message-ID: <20140623164529.GE4603@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140621025958.GA7185@linux.vnet.ibm.com>
+ <20140623062615.GB19860@laptop.programming.kicks-ass.net>
+ <alpine.DEB.2.11.1406230848540.2892@gentwo.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1403289203-6371-1-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <alpine.DEB.2.11.1406230848540.2892@gentwo.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14062316-9332-0000-0000-0000012C5141
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20, Paul E. McKenney wrote:
->
-> This commit takes a different approach to fixing this bug, mainly by
-> avoiding having cond_resched() do an RCU-visible quiescent state unless
-> there is a grace period that has been in flight for a significant period
-> of time.  This commit also reduces the common-case cond_resched() overhead
-> to a check of a single per-CPU variable.
+On Mon, Jun 23, 2014 at 08:51:08AM -0500, Christoph Lameter wrote:
+> On Mon, 23 Jun 2014, Peter Zijlstra wrote:
+> 
+> > On the topic of these threads; I recently noticed RCU grew a metric ton
+> > of them, I found some 75 rcu kthreads on my box, wth up with that?
+> 
+> Would kworker threads work for rcu? That would also avoid the shifting
+> around of RCU threads for NOHZ configurations (which seems to have to be
+> done manually right now). The kworker subsystem work that allows
+> restriction to non NOHZ hardware threads would then also allow the
+> shifting of the rcu threads which would simplify the whole endeavor.
 
-I can't say I fully understand this change, but I think it is fine.
-Just a really stupid question below.
+Short term, I am planning to use a different method to automate the
+binding of the rcuo kthreads to housekeeping CPUs, but longer term,
+it might well make a lot of sense to move to workqueues and the kworker
+threads.
 
-> +void rcu_resched(void)
-> +{
-> +	unsigned long flags;
-> +	struct rcu_data *rdp;
-> +	struct rcu_dynticks *rdtp;
-> +	int resched_mask;
-> +	struct rcu_state *rsp;
-> +
-> +	local_irq_save(flags);
-> +
-> +	/*
-> +	 * Yes, we can lose flag-setting operations.  This is OK, because
-> +	 * the flag will be set again after some delay.
-> +	 */
-> +	resched_mask = raw_cpu_read(rcu_cond_resched_mask);
-> +	raw_cpu_write(rcu_cond_resched_mask, 0);
-> +
-> +	/* Find the flavor that needs a quiescent state. */
-> +	for_each_rcu_flavor(rsp) {
-> +		rdp = raw_cpu_ptr(rsp->rda);
-> +		if (!(resched_mask & rsp->flavor_mask))
-> +			continue;
-> +		smp_mb(); /* ->flavor_mask before ->cond_resched_completed. */
-> +		if (ACCESS_ONCE(rdp->mynode->completed) !=
-> +		    ACCESS_ONCE(rdp->cond_resched_completed))
-> +			continue;
-
-Probably the comment above mb() meant "rcu_cond_resched_mask before
-->cond_resched_completed" ? Otherwise I can't see why do we need any
-barrier.
-
-> @@ -893,13 +946,20 @@ static int rcu_implicit_dynticks_qs(struct rcu_data *rdp,
->  	}
->
->  	/*
-> -	 * There is a possibility that a CPU in adaptive-ticks state
-> -	 * might run in the kernel with the scheduling-clock tick disabled
-> -	 * for an extended time period.  Invoke rcu_kick_nohz_cpu() to
-> -	 * force the CPU to restart the scheduling-clock tick in this
-> -	 * CPU is in this state.
-> +	 * A CPU running for an extended time within the kernel can
-> +	 * delay RCU grace periods.  When the CPU is in NO_HZ_FULL mode,
-> +	 * even context-switching back and forth between a pair of
-> +	 * in-kernel CPU-bound tasks cannot advance grace periods.
-> +	 * So if the grace period is old enough, make the CPU pay attention.
->  	 */
-> -	rcu_kick_nohz_cpu(rdp->cpu);
-> +	if (ULONG_CMP_GE(jiffies, rdp->rsp->gp_start + 7)) {
-> +		rcrmp = &per_cpu(rcu_cond_resched_mask, rdp->cpu);
-> +		ACCESS_ONCE(rdp->cond_resched_completed) =
-> +			ACCESS_ONCE(rdp->mynode->completed);
-> +		smp_mb(); /* ->cond_resched_completed before *rcrmp. */
-> +		ACCESS_ONCE(*rcrmp) =
-> +			ACCESS_ONCE(*rcrmp) + rdp->rsp->flavor_mask;
-> +	}
-
-OK, in this case I guess we need a full barrier because we need to read
-rcu_cond_resched_mask before updating it...
-
-But, I am just curious, is there any reason to use ACCESS_ONCE() twice?
-
-	ACCESS_ONCE(*rcrmp) |= rdp->rsp->flavor_mask;
-
-or even
-
-	ACCESS_ONCE(per_cpu(rcu_cond_resched_mask, rdp->cpu)) |=
-		rdp->rsp->flavor_mask;
-
-should equally work, or ACCESS_ONCE() can't be used to RMW ?
-
-(and in fact at least the 2nd ACCESS_ONCE() (load) looks unnecessary anyway
- because of smp_mb() above).
-
-
-Once again, of course I am not arguing if there is no "real" reason and you
-just prefer it this way. But the kernel has more and more ACESS_ONCE() users
-and sometime I simply do not understand why it is needed. For example,
-cyc2ns_write_end().
-
-Or even INIT_LIST_HEAD_RCU(). The comment in list_splice_init_rcu() says:
-
-	/*
-	 * "first" and "last" tracking list, so initialize it.  RCU readers
-	 * have access to this list, so we must use INIT_LIST_HEAD_RCU()
-	 * instead of INIT_LIST_HEAD().
-	 */
-
-	INIT_LIST_HEAD_RCU(list);
-
-but we are going to call synchronize_rcu() or something similar, this should
-act as compiler barrier too?
-
-Oleg.
+							Thanx, Paul
 
