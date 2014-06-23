@@ -1,78 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752601AbaFWW5s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 18:57:48 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40228 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750962AbaFWW5q (ORCPT
+	id S1752286AbaFWXER (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 19:04:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53887 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750931AbaFWXEQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 18:57:46 -0400
-Date: Mon, 23 Jun 2014 15:57:34 -0700
-From: tip-bot for Andy Lutomirski <tipbot@zytor.com>
-Message-ID: <tip-6ba19a670c8b604e9802d30b511e6a4778118592@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, luto@amacapital.net, hpa@zytor.com,
-        mingo@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, luto@amacapital.net,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1eb40ad923acde2e18357ef2832867432e70ac42.1403361010.git.luto@amacapital.net>
-References: <1eb40ad923acde2e18357ef2832867432e70ac42.1403361010.git.luto@amacapital.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86_32, signal: Fix vdso rt_sigreturn
-Git-Commit-ID: 6ba19a670c8b604e9802d30b511e6a4778118592
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Mon, 23 Jun 2014 19:04:16 -0400
+Date: Mon, 23 Jun 2014 16:04:14 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: David Rientjes <rientjes@google.com>, Ian Kent <raven@themaw.net>,
+        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
+        Thorsten Diehl <thorsten.diehl@de.ibm.com>,
+        Andrea Righi <andrea@betterlinux.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] /proc/stat vs. failed order-4 allocation
+Message-Id: <20140623160414.f64bcfbfc3f40b4844552427@linux-foundation.org>
+In-Reply-To: <20140621091058.GC3463@osiris>
+References: <1402909492-36486-1-git-send-email-heiko.carstens@de.ibm.com>
+	<20140618142931.857d57fe0007a361404f6cab@linux-foundation.org>
+	<20140621091058.GC3463@osiris>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6ba19a670c8b604e9802d30b511e6a4778118592
-Gitweb:     http://git.kernel.org/tip/6ba19a670c8b604e9802d30b511e6a4778118592
-Author:     Andy Lutomirski <luto@amacapital.net>
-AuthorDate: Sat, 21 Jun 2014 07:31:55 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 23 Jun 2014 15:54:42 -0700
+On Sat, 21 Jun 2014 11:10:58 +0200 Heiko Carstens <heiko.carstens@de.ibm.com> wrote:
 
-x86_32, signal: Fix vdso rt_sigreturn
+> On Wed, Jun 18, 2014 at 02:29:31PM -0700, Andrew Morton wrote:
+> > On Mon, 16 Jun 2014 11:04:50 +0200 Heiko Carstens <heiko.carstens@de.ibm.com> wrote:
+> > 
+> > > These two patches are supposed to "fix" failed order-4 memory
+> > > allocations which have been observed when reading /proc/stat.
+> > > The problem has been observed on s390 as well as on x86.
+> > > 
+> > > To address the problem change the seq_file memory allocations to
+> > > fallback to use vmalloc, so that allocations also work if memory
+> > > is fragmented.
+> > > 
+> > > This approach seems to be simpler and less intrusive than changing
+> > > /proc/stat to use an interator. Also it "fixes" other users as well,
+> > > which use seq_file's single_open() interface.
+> > 
+> > Yes, those changes look pretty simple and effective.
+> > 
+> > I'm unclear on how urgent these fixes are.  I semi-randomly tagged them
+> > for 3.16 with a -stable backport, but that could be changed?
+> 
+> I assume tagged for 3.16 means you intend to get it merged before 3.16
+> gets released?
+> If so, then that would be fine with me.
 
-This commit:
+um, actually, no, sorry, I meant merge for 3.17-rc1 with a -stable backport.
 
-    commit 6f121e548f83674ab4920a4e60afb58d4f61b829
-    Author: Andy Lutomirski <luto@amacapital.net>
-    Date:   Mon May 5 12:19:34 2014 -0700
-
-        x86, vdso: Reimplement vdso.so preparation in build-time C
-
-Contained this obvious typo:
-
--               restorer = VDSO32_SYMBOL(current->mm->context.vdso, rt_sigreturn);
-+               restorer = current->mm->context.vdso +
-+                       selected_vdso32->sym___kernel_sigreturn;
-
-Note the missing 'rt_' in the new code.  Fix it.
-
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Link: http://lkml.kernel.org/r/1eb40ad923acde2e18357ef2832867432e70ac42.1403361010.git.luto@amacapital.net
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/signal.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
-index a0da58d..2851d63 100644
---- a/arch/x86/kernel/signal.c
-+++ b/arch/x86/kernel/signal.c
-@@ -363,7 +363,7 @@ static int __setup_rt_frame(int sig, struct ksignal *ksig,
- 
- 		/* Set up to return from userspace.  */
- 		restorer = current->mm->context.vdso +
--			selected_vdso32->sym___kernel_sigreturn;
-+			selected_vdso32->sym___kernel_rt_sigreturn;
- 		if (ksig->ka.sa.sa_flags & SA_RESTORER)
- 			restorer = ksig->ka.sa.sa_restorer;
- 		put_user_ex(restorer, &frame->pretcode);
+We can do 3.16 of course, but for what reasons?
