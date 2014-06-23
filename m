@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755937AbaFWP55 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 11:57:57 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:39684 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755057AbaFWP54 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 11:57:56 -0400
-Date: Mon, 23 Jun 2014 08:57:50 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+	id S1756014AbaFWP62 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 11:58:28 -0400
+Received: from mga09.intel.com ([134.134.136.24]:2674 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754357AbaFWP61 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 11:58:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,530,1400050800"; 
+   d="scan'208";a="561950309"
+From: Andi Kleen <andi@firstfloor.org>
 To: Peter Zijlstra <peterz@infradead.org>
-Cc: Waiman Long <waiman.long@hp.com>, Romanov Arya <romanov.arya@gmail.com>,
-        Pranith Kumar <bobby.prani@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        LKML <linux-kernel@vger.kernel.org>, torvalds@linux-foundation.org
-Subject: Re: [RFC PATCH 1/1] kernel/rcu/tree.c: simplify
- force_quiescent_state()
-Message-ID: <20140623155750.GD4603@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <539FAE21.7070702@gmail.com>
- <20140617145419.GE4669@linux.vnet.ibm.com>
- <CAJKcOGdUDwdmdkpd0dw5xO9+TK=9W9fvF9Q+f5F_b4R8cEgdTA@mail.gmail.com>
- <53A07336.7030704@hp.com>
- <20140617171116.GH4669@linux.vnet.ibm.com>
- <20140617173717.GA28198@linux.vnet.ibm.com>
- <20140623102850.GX19860@laptop.programming.kicks-ass.net>
+Cc: "Liang\, Kan" <kan.liang@intel.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm\@vger.kernel.org" <kvm@vger.kernel.org>,
+        "Kleen\, Andi" <andi.kleen@intel.com>
+Subject: Re: [PATCH 1/2] perf: ignore LBR and offcore_rsp.
+References: <37D7C6CF3E00A74B8858931C1DB2F0770148F513@SHSMSX103.ccr.corp.intel.com>
+	<20140623092917.GQ19860@laptop.programming.kicks-ass.net>
+Date: Mon, 23 Jun 2014 08:56:44 -0700
+In-Reply-To: <20140623092917.GQ19860@laptop.programming.kicks-ass.net> (Peter
+	Zijlstra's message of "Mon, 23 Jun 2014 11:29:17 +0200")
+Message-ID: <878uon8vr7.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140623102850.GX19860@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14062315-0928-0000-0000-000002DBD795
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 23, 2014 at 12:28:50PM +0200, Peter Zijlstra wrote:
-> On Tue, Jun 17, 2014 at 10:37:17AM -0700, Paul E. McKenney wrote:
-> > Oh, and to answer the implicit question...  A properly configured 4096-CPU
-> > system will have two funnel levels, with 64 nodes at the leaf level
-> > and a single node at the root level.  If the system is not properly
-> > configured, it will have three funnel levels.  The maximum number of
-> > funnel levels is four, which would handle more than four million CPUs
-> > (sixteen million if properly configured), so we should be good.  ;-)
-> > 
-> > The larger numbers of levels are intended strictly for testing.  I set
-> > CONFIG_RCU_FANOUT_LEAF=2 and CONFIG_RCU_FANOUT=2 on a 16-CPU system just
-> > to make sure that I am testing something uglier than what will be running
-> > in production.  A large system should have both of these set to 64,
-> > though this requires also booting with skew_tick=1 as well.
-> 
-> Right, and I think we talked about this before; the first thing one
-> should do is align the RCU fanout masks with the actual machine
-> topology. Because currently they can be all over the place.
+Peter Zijlstra <peterz@infradead.org> writes:
 
-And we also talked before about how it would make a lot more sense to
-align the CPU numbering with the actual machine topology, as that would
-fix the problem in one place.  But either way, in the particular case
-of the RCU fanout, does anyone have any real data showing that this is
-a real problem?  Given that the rcu_node accesses are quite a ways off
-of any fastpath, I remain skeptical.
+>
+> So I really hate this patch, it makes the code hideous. Also, its a
+> death by a thousand cuts adding endless branches in this code.
 
-							Thanx, Paul
+FWIW compared to the cost of a RDMSR (which is a very complex operation
+for the CPU) the cost of a predicted branch is nearly in the noise.
 
+>
+> Also, the offcore part is retarded, just make sure extra_reg isn't set.
+>
+> As to the LBR, just make it so that we avoid calling the LBR code to
+> begin with; ideally without adding extra code to fast paths.
+
+You mean check once at initialization time.
+
+I'm not sure that would handle all cases unfortunately.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
