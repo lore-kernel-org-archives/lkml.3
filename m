@@ -1,104 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753653AbaFWIu7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 04:50:59 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55550 "EHLO
+	id S1754431AbaFWIwF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 04:52:05 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55556 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752565AbaFWIc3 (ORCPT
+	by vger.kernel.org with ESMTP id S1752603AbaFWIc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Jun 2014 04:32:29 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jiri Pirko <jiri@resnulli.us>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 098/111] team: fix mtu setting
-Date: Mon, 23 Jun 2014 10:32:13 +0200
-Message-Id: <14bf635b2a49a67862fbc3ea2db76a5cef3a8bba.1403512281.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Paul Walmsley <paul@pwsan.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 030/111] ARM: OMAP3: clock: Back-propagate rate change from cam_mclk to dpll4_m5 on all OMAP3 platforms
+Date: Mon, 23 Jun 2014 10:31:05 +0200
+Message-Id: <7e84ef36ae2501e1155e9011ead7e59aadd0910d.1403512281.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
 References: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
 In-Reply-To: <cover.1403512280.git.jslaby@suse.cz>
 References: <cover.1403512280.git.jslaby@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Pirko <jiri@resnulli.us>
+From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit 9d0d68faea6962d62dd501cd6e71ce5cc8ed262b ]
+commit 98d7e1aee6dd534f468993f8c6a1bc730d4cfa81 upstream.
 
-Now it is not possible to set mtu to team device which has a port
-enslaved to it. The reason is that when team_change_mtu() calls
-dev_set_mtu() for port device, notificator for NETDEV_PRECHANGEMTU
-event is called and team_device_event() returns NOTIFY_BAD forbidding
-the change. So fix this by returning NOTIFY_DONE here in case team is
-changing mtu in team_change_mtu().
+Commit 7b2e1277598e4187c9be3e61fd9b0f0423f97986 ("ARM: OMAP3: clock:
+Back-propagate rate change from cam_mclk to dpll4_m5") enabled clock
+rate back-propagation from cam_mclk do dpll4_m5 on OMAP3630 only.
+Perform back-propagation on other OMAP3 platforms as well.
 
-Introduced-by: 3d249d4c "net: introduce ethernet teaming device"
-Signed-off-by: Jiri Pirko <jiri@resnulli.us>
-Acked-by: Flavio Leitner <fbl@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Jean-Philippe François <jp.francois@cynove.com>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Paul Walmsley <paul@pwsan.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/net/team/team.c | 7 ++++++-
- include/linux/if_team.h | 1 +
- 2 files changed, 7 insertions(+), 1 deletion(-)
+ arch/arm/mach-omap2/cclock3xxx_data.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/team/team.c b/drivers/net/team/team.c
-index 6327df255404..5c245d1fc79c 100644
---- a/drivers/net/team/team.c
-+++ b/drivers/net/team/team.c
-@@ -1725,6 +1725,7 @@ static int team_change_mtu(struct net_device *dev, int new_mtu)
- 	 * to traverse list in reverse under rcu_read_lock
- 	 */
- 	mutex_lock(&team->lock);
-+	team->port_mtu_change_allowed = true;
- 	list_for_each_entry(port, &team->port_list, list) {
- 		err = dev_set_mtu(port->dev, new_mtu);
- 		if (err) {
-@@ -1733,6 +1734,7 @@ static int team_change_mtu(struct net_device *dev, int new_mtu)
- 			goto unwind;
- 		}
- 	}
-+	team->port_mtu_change_allowed = false;
- 	mutex_unlock(&team->lock);
+diff --git a/arch/arm/mach-omap2/cclock3xxx_data.c b/arch/arm/mach-omap2/cclock3xxx_data.c
+index 334b76745900..9128b2553ca5 100644
+--- a/arch/arm/mach-omap2/cclock3xxx_data.c
++++ b/arch/arm/mach-omap2/cclock3xxx_data.c
+@@ -418,7 +418,8 @@ static struct clk_hw_omap dpll4_m5x2_ck_hw = {
+ 	.clkdm_name	= "dpll4_clkdm",
+ };
  
- 	dev->mtu = new_mtu;
-@@ -1742,6 +1744,7 @@ static int team_change_mtu(struct net_device *dev, int new_mtu)
- unwind:
- 	list_for_each_entry_continue_reverse(port, &team->port_list, list)
- 		dev_set_mtu(port->dev, dev->mtu);
-+	team->port_mtu_change_allowed = false;
- 	mutex_unlock(&team->lock);
+-DEFINE_STRUCT_CLK(dpll4_m5x2_ck, dpll4_m5x2_ck_parent_names, dpll4_m5x2_ck_ops);
++DEFINE_STRUCT_CLK_FLAGS(dpll4_m5x2_ck, dpll4_m5x2_ck_parent_names,
++			dpll4_m5x2_ck_ops, CLK_SET_RATE_PARENT);
  
- 	return err;
-@@ -2861,7 +2864,9 @@ static int team_device_event(struct notifier_block *unused,
- 		break;
- 	case NETDEV_CHANGEMTU:
- 		/* Forbid to change mtu of underlaying device */
--		return NOTIFY_BAD;
-+		if (!port->team->port_mtu_change_allowed)
-+			return NOTIFY_BAD;
-+		break;
- 	case NETDEV_PRE_TYPE_CHANGE:
- 		/* Forbid to change type of underlaying device */
- 		return NOTIFY_BAD;
-diff --git a/include/linux/if_team.h b/include/linux/if_team.h
-index a899dc24be15..a6aa970758a2 100644
---- a/include/linux/if_team.h
-+++ b/include/linux/if_team.h
-@@ -194,6 +194,7 @@ struct team {
- 	bool user_carrier_enabled;
- 	bool queue_override_enabled;
- 	struct list_head *qom_lists; /* array of queue override mapping lists */
-+	bool port_mtu_change_allowed;
- 	struct {
- 		unsigned int count;
- 		unsigned int interval; /* in ms */
+ static struct clk dpll4_m5x2_ck_3630 = {
+ 	.name		= "dpll4_m5x2_ck",
 -- 
 2.0.0
 
