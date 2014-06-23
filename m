@@ -1,70 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752922AbaFWW2f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 18:28:35 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:64024 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751437AbaFWW2d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 18:28:33 -0400
-Message-ID: <53A8AA0E.8070705@ti.com>
-Date: Mon, 23 Jun 2014 17:28:30 -0500
-From: Nishanth Menon <nm@ti.com>
-Reply-To: nm@ti.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753045AbaFWWaI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 18:30:08 -0400
+Received: from lekensteyn.nl ([178.21.112.251]:60294 "EHLO lekensteyn.nl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751870AbaFWWaG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 18:30:06 -0400
+From: Peter Wu <peter@lekensteyn.nl>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCHv3 6/6] drivers/staging/rtl8821ae: replace magic number by macro
+Date: Tue, 24 Jun 2014 00:29:54 +0200
+Message-ID: <1455413.BevQxGKhmu@al>
+User-Agent: KMail/4.13.2 (Linux/3.15.0-rc8-custom-00058-gd2cfd31; KDE/4.13.2; x86_64; ; )
+In-Reply-To: <1403561511-8117-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1403561511-8117-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
-CC: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
-        Alex Courbot <gnurou@gmail.com>, Keerthy <j-keerthy@ti.com>,
-        linux-omap@vger.kernel.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH] regulator: palmas: fix typo in enable_reg calculation
-References: <1403556805-22824-1-git-send-email-swarren@wwwdotorg.org>
-In-Reply-To: <1403556805-22824-1-git-send-email-swarren@wwwdotorg.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Spam-Score: 0.0 (/)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2014 03:53 PM, Stephen Warren wrote:
-> From: Stephen Warren <swarren@nvidia.com>
->
-> When setting up .enable_reg for an SMPS regulator, presumably we should
-> call PALMAS_BASE_TO_REG(PALMAS_SMPS_BASE, ...) rather than using
-> LDO_BASE. This change makes the LCD panel and HDMI work again on the
-> NVIDIA Dalmore board anyway.
->
-> Cc: Alex Courbot <gnurou@gmail.com>
-> Cc: Keerthy <j-keerthy@ti.com>
-> Cc: Nishanth Menon <nm@ti.com>
-> Cc: linux-omap@vger.kernel.org
-> Cc: linux-tegra@vger.kernel.org
-> Fixes: 318dbb02b50c ("regulator: palmas: Fix SMPS enable/disable/is_enabled")
-> Fixes: dbabd624d4eec50b6 ("regulator: palmas: Reemove open coded functions with helper functions")
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+(staging drivers are handled by Greg KH, cc'ing him)
+
+On Tuesday 24 June 2014 00:11:51 Rickard Strandqvist wrote:
+> For consistency with other drivers, replace a magic number by a macro.
+> 
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> Reviewed-by: Peter Wu <peter@lekensteyn.nl>
 > ---
->   drivers/regulator/palmas-regulator.c | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
-> index 3c861d5f9245..93b4ad842901 100644
-> --- a/drivers/regulator/palmas-regulator.c
-> +++ b/drivers/regulator/palmas-regulator.c
-> @@ -970,7 +970,7 @@ static int palmas_regulators_probe(struct platform_device *pdev)
->   					PALMAS_SMPS12_CTRL_MODE_ACTIVE_MASK;
->
->   			pmic->desc[id].enable_reg =
-> -					PALMAS_BASE_TO_REG(PALMAS_LDO_BASE,
-> +					PALMAS_BASE_TO_REG(PALMAS_SMPS_BASE,
->   						palmas_regs_info[id].ctrl_addr);
->   			pmic->desc[id].enable_mask =
->   					PALMAS_SMPS12_CTRL_MODE_ACTIVE_MASK;
->
+>  drivers/staging/rtl8821ae/rtl8821ae/hw.c  |    2 +-
+>  drivers/staging/rtl8821ae/rtl8821ae/reg.h |    1 +
+>  2 files changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/staging/rtl8821ae/rtl8821ae/hw.c b/drivers/staging/rtl8821ae/rtl8821ae/hw.c
+> index 1b8583b..1aa1661 100644
+> --- a/drivers/staging/rtl8821ae/rtl8821ae/hw.c
+> +++ b/drivers/staging/rtl8821ae/rtl8821ae/hw.c
+> @@ -1623,7 +1623,7 @@ static int _rtl8821ae_set_media_status(struct ieee80211_hw *hw,
+>  
+>  	rtl_write_byte(rtlpriv, (MSR), bt_msr);
+>  	rtlpriv->cfg->ops->led_control(hw, ledaction);
+> -	if ((bt_msr & ~0xfc) == MSR_AP)
+> +	if ((bt_msr & MSR_MASK) == MSR_AP)
+>  		rtl_write_byte(rtlpriv, REG_BCNTCFG + 1, 0x00);
+>  	else
+>  		rtl_write_byte(rtlpriv, REG_BCNTCFG + 1, 0x66);
+> diff --git a/drivers/staging/rtl8821ae/rtl8821ae/reg.h b/drivers/staging/rtl8821ae/rtl8821ae/reg.h
+> index beffb42..4cb3ca9 100644
+> --- a/drivers/staging/rtl8821ae/rtl8821ae/reg.h
+> +++ b/drivers/staging/rtl8821ae/rtl8821ae/reg.h
+> @@ -431,6 +431,7 @@
+>  #define	MSR_ADHOC					0x01
+>  #define	MSR_INFRA					0x02
+>  #define	MSR_AP						0x03
+> +#define	MSR_MASK					0x03
+>  
+>  #define	RRSR_RSC_OFFSET				21
+>  #define	RRSR_SHORT_OFFSET			23
+> 
 
-
-Uggh... my bad..
-
-Thanks for catching this.
-
-Acked-by: Nishanth Menon <nm@ti.com>
