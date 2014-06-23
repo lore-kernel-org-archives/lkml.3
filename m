@@ -1,57 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751831AbaFWBrd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 21:47:33 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:44813 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751145AbaFWBrb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 21:47:31 -0400
-X-IronPort-AV: E=Sophos;i="5.00,758,1396972800"; 
-   d="scan'208";a="32261780"
-Message-ID: <53A78770.7080108@cn.fujitsu.com>
-Date: Mon, 23 Jun 2014 09:48:32 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1751909AbaFWBtu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 21:49:50 -0400
+Received: from ozlabs.org ([103.22.144.67]:38223 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751275AbaFWBtt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jun 2014 21:49:49 -0400
+Date: Mon, 23 Jun 2014 11:49:42 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tadeusz Struk <tadeusz.struk@intel.com>
+Subject: linux-next: build failure after merge of the crypto tree
+Message-ID: <20140623114942.6a937466@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Gleb Natapov <gleb@kernel.org>, <pbonzini@redhat.com>,
-        <tglx@linutronix.de>, <mingo@redhat.com>, <hpa@zytor.com>,
-        <mgorman@suse.de>, <yinghai@kernel.org>,
-        <isimatu.yasuaki@jp.fujitsu.com>, <guz.fnst@cn.fujitsu.com>,
-        <laijs@cn.fujitsu.com>, <kvm@vger.kernel.org>, <linux-mm@kvack.org>,
-        <x86@kernel.org>, <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi.kivity@gmail.com>, Tang Chen <tangchen@cn.fujitsu.com>
-Subject: Re: [RFC PATCH 1/1] Move two pinned pages to non-movable node in
- kvm.
-References: <1403070600-6083-1-git-send-email-tangchen@cn.fujitsu.com> <20140618061230.GA10948@minantech.com> <53A136C4.5070206@cn.fujitsu.com> <20140619092031.GA429@minantech.com> <20140619190024.GA3887@amt.cnet> <20140620111509.GE20764@minantech.com> <20140620125326.GA22283@amt.cnet> <20140620142622.GA28698@minantech.com> <20140620203146.GA6580@amt.cnet> <20140620203903.GA7838@amt.cnet>
-In-Reply-To: <20140620203903.GA7838@amt.cnet>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.99]
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/q6Zz=5V_d.m099D7ehHsv1U"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marcelo, Gleb,
+--Sig_/q6Zz=5V_d.m099D7ehHsv1U
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Sorry for the delayed reply and thanks for the advices.
+Hi Herbert,
 
-On 06/21/2014 04:39 AM, Marcelo Tosatti wrote:
-> On Fri, Jun 20, 2014 at 05:31:46PM -0300, Marcelo Tosatti wrote:
->>> IIRC your shadow page pinning patch series support flushing of ptes
->>> by mmu notifier by forcing MMU reload and, as a result, faulting in of
->>> pinned pages during next entry.  Your patch series does not pin pages
->>> by elevating their page count.
->>
->> No but PEBS series does and its required to stop swap-out
->> of the page.
->
-> Well actually no because of mmu notifiers.
->
-> Tang, can you implement mmu notifiers for the other breaker of
-> mem hotplug ?
+After merging the crypto tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-I'll try the mmu notifier idea and send a patch soon.
 
-Thanks.
+drivers/crypto/qat/qat_dh895xcc/adf_dh895xcc_hw_data.c:47:31: fatal error: =
+adf_accel_devices.h: No such file or directory
+ #include <adf_accel_devices.h>
+                               ^
+drivers/crypto/qat/qat_dh895xcc/adf_isr.c:54:31: fatal error: adf_accel_dev=
+ices.h: No such file or directory
+ #include <adf_accel_devices.h>
+                               ^
+drivers/crypto/qat/qat_dh895xcc/adf_drv.c:60:31: fatal error: adf_accel_dev=
+ices.h: No such file or directory
+ #include <adf_accel_devices.h>
+                               ^
+
+Caused by commit 7afa232e76ce ("crypto: qat - Intel(R) QAT DH895xcc
+accelerator").
+
+I have used the crypto tree from next-20140620 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/q6Zz=5V_d.m099D7ehHsv1U
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJTp4e7AAoJEMDTa8Ir7ZwVp6cQAIsdfCr660Y70YakIYB6Lr+4
+U3FPdUxw2KbiPSsYwes6ImvU5y/zUkuvazXEIXBPH7S6zx2MTiaBrRFFh8Sag/S1
+Aab7mfjeFAM9ewVstiKbyhoNNIeAmAHfFdmcfKQaXC0LNNPuBjCabs4k10BXHbmC
+3bJhYVzyPU5Uh766HfvneYr3dILDje6bcLZpZDRKCvmJKJuOq9eSE0i1egfwu1+c
+5ep6hzhCbYHUpMd4eiS8dksGP125NViekirEOCOTFP0ZfaN6T5TcIJ35yT8v9Jia
+QL0fIH/5/gBuGpnWey1lUl/y3yE4ymRVDQ9A3pArwXbNzTHBEmkIhmcIKmDObNI6
+mAe5c1LcW1hsJAzHImypL45a1Y7wvKC+8wMluiog8BrdLlOCP4oOla3H8fTVaUlR
+pr6dyL0r48aoZEfLjOhPhqi7ZbnkQYnNOwendlsRf67fbO/i4sNRLA8PH0SK/lv+
+r+R4PruRQonjXtpsUZH67FzZyaguUjLy7yrdCX/kAAuJ+IIYavKY6Wa6By9jppF0
+SwbhhbptovtHDut4eajEoZUNBQEHw1Mw0bBLpVeNOPBc617SvLiNs8GhRixrIZlv
+EChu8VA9ZBZDnuAYLyz9LNqtCJYx1PXvz7UMQodIu+XQnH0dOA5IQifPRNDofrqU
+C0uMAzJeAisjhd4MrAN+
+=QEiN
+-----END PGP SIGNATURE-----
+
+--Sig_/q6Zz=5V_d.m099D7ehHsv1U--
