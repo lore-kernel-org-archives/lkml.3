@@ -1,110 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756515AbaFWQgQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 12:36:16 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:45892 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756499AbaFWQgM (ORCPT
+	id S1756478AbaFWQgH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 12:36:07 -0400
+Received: from smtprelay0157.hostedemail.com ([216.40.44.157]:52884 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756377AbaFWQgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 12:36:12 -0400
-X-Sasl-enc: VwTCmBwYC4SuEeTQrv6lUr1OUf72e2q2+iicPSe33Zu3 1403541370
-Date: Mon, 23 Jun 2014 12:36:00 -0400
-From: Greg KH <greg@kroah.com>
-To: Ilia Mirkin <imirkin@alum.mit.edu>
-Cc: Pavel Machek <pavel@ucw.cz>, kernel list <linux-kernel@vger.kernel.org>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        David Airlie <airlied@linux.ie>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
-Subject: Re: unparseable, undocumented /sys/class/drm/.../pstate
-Message-ID: <20140623163600.GB20939@kroah.com>
-References: <20140621180201.GA4621@amd.pavel.ucw.cz>
- <CAKb7UvhOCiBHcsB6a0qKBNsC3c9pmb=Wc7zucbBuP6vt-tx2eA@mail.gmail.com>
- <20140621194538.GA4903@kroah.com>
- <CAKb7UvjhOystpeRy1nQx49Nspve4wHQPb+e7gJQ-RT-HseK4Cw@mail.gmail.com>
- <20140623160727.GA19557@kroah.com>
- <CAKb7UvhEMg96YzGuA=rxRDrzBhKiVaYMczrAcm4hA_A4jXAW2w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKb7UvhEMg96YzGuA=rxRDrzBhKiVaYMczrAcm4hA_A4jXAW2w@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 23 Jun 2014 12:36:04 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1345:1359:1437:1534:1541:1711:1730:1747:1777:1792:2198:2199:2393:2559:2562:3138:3139:3140:3141:3142:3352:3653:3876:3877:4321:5007:6114:6261:6642:10004:10026:10848:11026:11658:11914:12517:12519:12555:13095:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: heat14_3461b5fd5cb1d
+X-Filterd-Recvd-Size: 1933
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jean Delvare <jdelvare@suse.de>, Andy Whitcroft <apw@canonical.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/4] checkpatch: Add a multiple blank lines test
+Date: Mon, 23 Jun 2014 09:35:53 -0700
+Message-Id: <c069ba9c948d974761a0f50e63e0c364d66cfa9d.1403541113.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
+In-Reply-To: <cover.1403541113.git.joe@perches.com>
+References: <cover.1403541113.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 23, 2014 at 12:18:51PM -0400, Ilia Mirkin wrote:
-> On Mon, Jun 23, 2014 at 12:07 PM, Greg KH <greg@kroah.com> wrote:
-> > On Sun, Jun 22, 2014 at 10:12:14PM -0400, Ilia Mirkin wrote:
-> >> On Sat, Jun 21, 2014 at 3:45 PM, Greg KH <greg@kroah.com> wrote:
-> >> > On Sat, Jun 21, 2014 at 02:22:59PM -0400, Ilia Mirkin wrote:
-> >> >> On Sat, Jun 21, 2014 at 2:02 PM, Pavel Machek <pavel@ucw.cz> wrote:
-> >> >> > Hi!
-> >> >> >
-> >> >> > AFAICT, pstate file will contain something like
-> >> >> >
-> >> >> > 07: core 100 MHz memory 123 MHz *
-> >> >> > 08: core 100-200 MHz memory 123 MHz
-> >> >> >
-> >> >> > ...which does not look exactly like one-value-per-file, and I'm pretty
-> >> >> > sure userspace will get it wrong if it tries to parse it. Plus, I
-> >> >> > don't see required documentation in Documentation/ABI.
-> >> >> >
-> >> >> > Should we disable it for now, so that userspace does not start
-> >> >> > depending on it and we'll not have to maintain it forever?
-> >> >> >
-> >> >> > I guess better interface would be something like
-> >> >> >
-> >> >> > pstate/07/core_clock_min
-> >> >> >           core_clock_max
-> >> >> >           memory_clock_min
-> >> >> >           memory_clock_max
-> >> >> >
-> >> >> > and then pstate/active containing just the number of active state?
-> >> >> >
-> >> >> > Thanks,
-> >> >> >                                                                 Pavel
-> >> >> >
-> >> >> > PS: I have no nvidia, got the news at
-> >> >> >
-> >> >> > http://www.phoronix.com/scan.php?page=article&item=nouveau_try_linux316&num=2
-> >> >>
-> >> >> FTR, this file has been in place since 3.13, and there was a different
-> >> >> file before it (performance_levels), with a comparable format since
-> >> >> much earlier (definitely 3.8, probably earlier). I think it's meant a
-> >> >> lot more for people looking at it and echo'ing stuff to it to modify
-> >> >> the levels (where supported), than for programs parsing it. Perhaps
-> >> >> sysfs is the wrong place for this -- what is the right place? debugfs?
-> >> >
-> >> > Yes, please move it to debugfs.
-> >>
-> >> Could we just say that the format of this file is one-per-line of
-> >>
-> >> level: information-for-the-user
-> >>
-> >> And you can echo a level into it to switch to that level? That seems
-> >> like a reasonable ABI to have... would be happy to throw it into a
-> >> file somewhere... not sure where though.
-> >
-> > sysfs files are "one value per file", that's it.  Do anything other than
-> > that, and it can not be in sysfs, sorry.
-> 
-> I think that's a little inconsistent. There are *tons* of files in
-> sysfs with multiple values. For example "local_cpulist" which contains
-> the string "0-3" for me, the per-connector "modes" file which has a
-> list of modes supported, and a "resource" file which has a list of hex
-> values (which probably have something to do with PCI resources?). [I
-> purposely picked values coming from different parts of the kernel not
-> to focus on one subsystem...]
+Multiple consecutive blank lines waste screen space.
+Emit a --strict only message with these blank lines.
 
-A list of valid "values" that a file can be in is fine if you just then
-write one value back to that file.  That's the one exception, but a
-minor one given the huge number of sysfs files.  Other than that, if you
-know of exceptions to that rule, please point them out and I will be
-glad to yell at the developers.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ scripts/checkpatch.pl | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-PCI device resources are binary sysfs files, which are just pass-through
-files from the firmware/device to userspace, with no parsing done in the
-kernel.  So that's just a single 'value' as well.
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 4bb4218..3d6dea6 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -1642,6 +1642,8 @@ sub process {
+ 
+ 	my $non_utf8_charset = 0;
+ 
++	my $last_blank_line = 0;
++
+ 	our @report = ();
+ 	our $cnt_lines = 0;
+ 	our $cnt_error = 0;
+@@ -2306,6 +2308,15 @@ sub process {
+ 			    "Please use a blank line after function/struct/union/enum declarations\n" . $hereprev);
+ 		}
+ 
++# check for multiple consecutive blank lines
++		if ($prevline =~ /^[\+ ]\s*$/ &&
++		    $line =~ /^\+\s*$/ &&
++		    $last_blank_line != ($linenr - 1)) {
++			CHK("LINE_SPACING",
++			    "Please don't use multiple blank lines\n" . $hereprev);
++			$last_blank_line = $linenr;
++		}
++
+ # check for missing blank lines after declarations
+ 		if ($sline =~ /^\+\s+\S/ &&			#Not at char 1
+ 			# actual declarations
+-- 
+1.8.1.2.459.gbcd45b4.dirty
 
-greg k-h
