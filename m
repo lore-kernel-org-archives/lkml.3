@@ -1,95 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751525AbaFWHZS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 03:25:18 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:34291 "EHLO bear.ext.ti.com"
+	id S1751348AbaFWH24 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 03:28:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38583 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751310AbaFWHZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 03:25:16 -0400
-Message-ID: <53A7D5C4.6090201@ti.com>
-Date: Mon, 23 Jun 2014 12:52:44 +0530
-From: Sricharan R <r.sricharan@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	id S1750722AbaFWH2z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 03:28:55 -0400
+Date: Mon, 23 Jun 2014 09:28:50 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Vlastimil Babka <vbabka@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/4] mm: vmscan: rework compaction-ready signaling in
+ direct reclaim
+Message-ID: <20140623072850.GA9743@dhcp22.suse.cz>
+References: <1403282030-29915-1-git-send-email-hannes@cmpxchg.org>
+ <1403282030-29915-2-git-send-email-hannes@cmpxchg.org>
+ <53A467A3.1050008@suse.cz>
+ <20140620202449.GA30849@cmpxchg.org>
 MIME-Version: 1.0
-To: Jason Cooper <jason@lakedaemon.net>
-CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <tony@atomide.com>, <santosh.shilimkar@ti.com>, <nm@ti.com>,
-        <rnayak@ti.com>, <linux@arm.linux.org.uk>, <tglx@linutronix.de>,
-        <joe@perches.com>
-Subject: Re: [PATCH V3 16/16] irqchip: crossbar: allow for quirky hardware
- with direct hardwiring of GIC
-References: <1402917796-31574-1-git-send-email-r.sricharan@ti.com> <1402917796-31574-17-git-send-email-r.sricharan@ti.com> <20140621025723.GF21711@titan.lakedaemon.net>
-In-Reply-To: <20140621025723.GF21711@titan.lakedaemon.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140620202449.GA30849@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jason,
+On Fri 20-06-14 16:24:49, Johannes Weiner wrote:
+[...]
+> From cd48b73fdca9e23aa21f65e9af1f850dbac5ab8e Mon Sep 17 00:00:00 2001
+> From: Johannes Weiner <hannes@cmpxchg.org>
+> Date: Wed, 11 Jun 2014 12:53:59 -0400
+> Subject: [patch] mm: vmscan: rework compaction-ready signaling in direct
+>  reclaim
+> 
+> Page reclaim for a higher-order page runs until compaction is ready,
+> then aborts and signals this situation through the return value of
+> shrink_zones().  This is an oddly specific signal to encode in the
+> return value of shrink_zones(), though, and can be quite confusing.
+> 
+> Introduce sc->compaction_ready and signal the compactability of the
+> zones out-of-band to free up the return value of shrink_zones() for
+> actual zone reclaimability.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> Acked-by: Vlastimil Babka <vbabka@suse.cz>
 
-On Saturday 21 June 2014 08:27 AM, Jason Cooper wrote:
-> On Mon, Jun 16, 2014 at 04:53:16PM +0530, Sricharan R wrote:
->> From: Nishanth Menon <nm@ti.com>
->>
->> On certain platforms such as DRA7, SPIs 0, 1, 2, 3, 5, 6, 10, 131,
->> 132, 133 are direct wired to hardware blocks bypassing crossbar.
->> This quirky implementation is *NOT* supposed to be the expectation
->> of crossbar hardware usage. However, these are already marked in our
->> description of the hardware with SKIP and RESERVED where appropriate.
->>
->> Unfortunately, we need to be able to refer to these hardwired IRQs.
->> So, to request these, crossbar driver can use the existing information
->> from it's table that these SKIP/RESERVED maps are direct wired sources
->> and generic allocation/programming of crossbar should be avoided.
->>
->> Signed-off-by: Nishanth Menon <nm@ti.com>
->> Signed-off-by: Sricharan R <r.sricharan@ti.com>
->> ---
->>  .../devicetree/bindings/arm/omap/crossbar.txt      |   12 ++++++++++--
->>  drivers/irqchip/irq-crossbar.c                     |   20 ++++++++++++++++++--
->>  2 files changed, 28 insertions(+), 4 deletions(-)
->>
->> diff --git a/Documentation/devicetree/bindings/arm/omap/crossbar.txt b/Documentation/devicetree/bindings/arm/omap/crossbar.txt
->> index 8210ea4..438ccab 100644
->> --- a/Documentation/devicetree/bindings/arm/omap/crossbar.txt
->> +++ b/Documentation/devicetree/bindings/arm/omap/crossbar.txt
->> @@ -42,8 +42,10 @@ Documentation/devicetree/bindings/arm/gic.txt for further details.
->>  
->>  An interrupt consumer on an SoC using crossbar will use:
->>  	interrupts = <GIC_SPI request_number interrupt_level>
->> -request number shall be between 0 to that described by
->> -"ti,max-crossbar-sources"
->> +When the request number is between 0 to that described by
->> +"ti,max-crossbar-sources", it is assumed to be a crossbar mapping. If the
->> +request_number is greater than "ti,max-crossbar-sources", then it is mapped as a
->> +quirky hardware mapping direct to GIC.
->>  
->>  Example:
->>  	device_x@0x4a023000 {
->> @@ -51,3 +53,9 @@ Example:
->>  		interrupts = <GIC_SPI 8 IRQ_TYPE_LEVEL_HIGH>;
->>  		...
->>  	};
->> +
->> +	device_y@0x4a033000 {
->> +		/* Direct mapped GIC SPI 1 used */
->> +		interrupts = <GIC_SPI 401 IRQ_TYPE_LEVEL_HIGH>;
-> 
-> Ideally, I'd like to see a macro here so that it's clear that we crossed
-> a magic threshold. eg:
-> 
-> #define MAX_SOURCES     400
-> #define DIRECT_IRQ(irq) (MAX_SOURCES + irq)
-> ...
-> 		interrupts = <GIC_SPI DIRECT_IRQ(1) IRQ_TYPE_LEVEL_HIGH>;
-> 
-> and, then:
-> 
-> 		ti,max-crossbar-sources = <MAX_SOURCES>;
-> 
- Ok, thats more good for readability. Will add that macro then.
+Very nice. It will help me to get rid off additional hacks for the
+min_limit for memcg. Thanks!
 
-Regards,
- Sricharan
+One question below
+
+[...]
+> @@ -2500,12 +2492,15 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+>  		vmpressure_prio(sc->gfp_mask, sc->target_mem_cgroup,
+>  				sc->priority);
+>  		sc->nr_scanned = 0;
+> -		aborted_reclaim = shrink_zones(zonelist, sc);
+> +		shrink_zones(zonelist, sc);
+>  
+>  		total_scanned += sc->nr_scanned;
+>  		if (sc->nr_reclaimed >= sc->nr_to_reclaim)
+>  			goto out;
+>  
+> +		if (sc->compaction_ready)
+> +			goto out;
+> +
+>  		/*
+>  		 * If we're getting trouble reclaiming, start doing
+>  		 * writepage even in laptop mode.
+> @@ -2526,7 +2521,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+>  						WB_REASON_TRY_TO_FREE_PAGES);
+>  			sc->may_writepage = 1;
+>  		}
+> -	} while (--sc->priority >= 0 && !aborted_reclaim);
+> +	} while (--sc->priority >= 0);
+>  
+>  out:
+>  	delayacct_freepages_end();
+
+It is not entirely clear to me why we do not need to check and wake up
+flusher threads anymore?
+
+-- 
+Michal Hocko
+SUSE Labs
