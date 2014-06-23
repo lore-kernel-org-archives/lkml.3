@@ -1,77 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756652AbaFWR4J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 13:56:09 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:46486 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756541AbaFWR4H convert rfc822-to-8bit (ORCPT
+	id S1756683AbaFWR45 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 13:56:57 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:37863 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756541AbaFWR4z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 13:56:07 -0400
+	Mon, 23 Jun 2014 13:56:55 -0400
 MIME-Version: 1.0
-In-Reply-To: <53A867DB.90604@free.fr>
-References: <20140621180201.GA4621@amd.pavel.ucw.cz>
-	<CAKb7UvhOCiBHcsB6a0qKBNsC3c9pmb=Wc7zucbBuP6vt-tx2eA@mail.gmail.com>
-	<20140621194538.GA4903@kroah.com>
-	<CAKb7UvjhOystpeRy1nQx49Nspve4wHQPb+e7gJQ-RT-HseK4Cw@mail.gmail.com>
-	<20140623160727.GA19557@kroah.com>
-	<CAKb7UvhEMg96YzGuA=rxRDrzBhKiVaYMczrAcm4hA_A4jXAW2w@mail.gmail.com>
-	<20140623163600.GB20939@kroah.com>
-	<CAKb7Uvgx_1mEPapJF3V5s8vUViGnRGCerkixwdTv_EpHhEozBg@mail.gmail.com>
-	<53A867DB.90604@free.fr>
-Date: Mon, 23 Jun 2014 13:56:06 -0400
-X-Google-Sender-Auth: SDsJNkEW5Q879uBuFm2IaHaQ57c
-Message-ID: <CAKb7UvjPc1XGY7tETaMtn2N3ySq01CB6dLubVOZgW+NR_gsYMw@mail.gmail.com>
-Subject: Re: unparseable, undocumented /sys/class/drm/.../pstate
-From: Ilia Mirkin <imirkin@alum.mit.edu>
-To: Martin Peres <martin.peres@free.fr>
-Cc: Greg KH <greg@kroah.com>, kernel list <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Ben Skeggs <bskeggs@redhat.com>, Pavel Machek <pavel@ucw.cz>
+In-Reply-To: <1403539186.3804.46.camel@hornet>
+References: <1403018494-10264-1-git-send-email-pawel.moll@arm.com>
+ <20140620170901.GA12059@leverpostej> <1403532837.3804.29.camel@hornet>
+ <CAL_Jsq+6SveWhzWPrtziTJ-tDOFaJV4sXO+r_CEhAZf=tQE6FA@mail.gmail.com> <1403539186.3804.46.camel@hornet>
+From: Rob Herring <robherring2@gmail.com>
+Date: Mon, 23 Jun 2014 12:56:34 -0500
+Message-ID: <CAL_JsqLQTT5N8D_GTDd5YVgr2SSCXtC6EcRQxW2=_-J8Wmsf0g@mail.gmail.com>
+Subject: Re: [PATCH v7 1/2] video: ARM CLCD: Add DT support
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <Mark.Rutland@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 23, 2014 at 1:46 PM, Martin Peres <martin.peres@free.fr> wrote:
-> Le 23/06/2014 18:40, Ilia Mirkin a écrit :
->>
->> On Mon, Jun 23, 2014 at 12:36 PM, Greg KH <greg@kroah.com> wrote:
->>>
->>> On Mon, Jun 23, 2014 at 12:18:51PM -0400, Ilia Mirkin wrote:
->>> A list of valid "values" that a file can be in is fine if you just then
->>> write one value back to that file.  That's the one exception, but a
->>> minor one given the huge number of sysfs files.  Other than that, if you
->>
->>
->> Which is pretty much what the pstate file is. Would it make things
->> better if we removed the descriptive info while leaving the pstate
->> file in place?
->
->
-> This means we should also create a new sysfs file per performance level too,
-> right? Is there another way for a driver to expose a list in sysfs?
->
-> Since NVIDIA gives different names to performance levels depending on the
-> card family, we may need to abstract the name away in order to provide some
-> consistency and make listing performance levels easier from a program (may
-> it use readdir() or stat()).
->
-> Moving the file to debugfs would "fix" the one-value-per-file rule but it
-> would also require users to mount debugfs at boot time in order to write the
-> default configuration they want for PM instead of just changing
-> /etc/sysctl.d/nouveau.conf... On the other hand, I'm not sure we can commit
-> on having a stable ABI on the way we display clocks (unless people take them
-> as a single value and do not try to parse them) as new hardware will alter
-> the semantics of each clock domain, if not drop/split some of them!
->
-> Whatever we do, it doesn't look like we can find a nice solution that fits
-> every use cases unless we write a userspace program to access this data, but
-> this seems highly overkill...
+On Mon, Jun 23, 2014 at 10:59 AM, Pawel Moll <pawel.moll@arm.com> wrote:
+> On Mon, 2014-06-23 at 16:43 +0100, Rob Herring wrote:
+>> On Mon, Jun 23, 2014 at 9:13 AM, Pawel Moll <pawel.moll@arm.com> wrote:
+>> > On Fri, 2014-06-20 at 18:09 +0100, Mark Rutland wrote:
 
-I was thinking just having the list of level ids in the pstate file,
-and then stick the current file into debugfs. That way people retain
-the ability to see things, as well as use pstate directly for a
-configured system.
+>> >> > +- max-memory-bandwidth: maximum bandwidth in bytes per second that the
+>> >> > +   cell's memory interface can handle
+>> >>
+>> >> When should I set this, given it is optional?
+>> >
+>> > When there is a (significant) limitation of the bandwidth available for
+>> > the cell's memory interface. One will either be told by the soc guys or
+>> > will figure it out in the hard way, as we did :-(
+>>
+>> What are you going to do with this information? b/w is a function of
+>> screen size and pixel depth. Are you going to refuse certain configs
+>> based on that? Seems like someone doing their own modes should know
+>> what they are doing and the limitations.
+>>
+>> Again, drop it until there is a defined need for this.
+>
+> Yes, there is. Use case: PL111 is wired up to a HDMI formatter, which
+> will take everything up to 1080p. This is what a DRM driver (what/if
+> it's ready) will get from the encoder driver (and rightly so). But the
+> chip interconnect limitations is make the chip being able to get 480p at
+> 60Hz tops.
+>
+> Or do you want me to add a subnode with timings for all achievable modes
+> instead?
 
-  -ilia
+I want this solved in a generic way and not something pl111 specific.
+If this is already defined then use it. If not, I would drop this for
+now and get a pl111 binding in place finally.
+
+Rob
