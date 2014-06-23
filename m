@@ -1,114 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752869AbaFWKOp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 06:14:45 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:62179 "EHLO
+	id S1753232AbaFWKPq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 06:15:46 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:13870 "EHLO
 	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752565AbaFWKOo convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752900AbaFWKPo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 06:14:44 -0400
+	Mon, 23 Jun 2014 06:15:44 -0400
 X-IronPort-AV: E=Sophos;i="5.00,760,1396972800"; 
-   d="scan'208";a="32282713"
-Message-ID: <53A7FE82.3070303@cn.fujitsu.com>
-Date: Mon, 23 Jun 2014 18:16:34 +0800
-From: Miao Xie <miaox@cn.fujitsu.com>
-Reply-To: <miaox@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+   d="scan'208";a="32282776"
+From: "chenhanxiao@cn.fujitsu.com" <chenhanxiao@cn.fujitsu.com>
+To: Richard Weinberger <richard@nod.at>,
+        "containers@lists.linux-foundation.org" 
+	<containers@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        "Oleg Nesterov" <oleg@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        David Howells <dhowells@redhat.com>,
+        Vasiliy Kulikov <segooon@gmail.com>,
+        "Gotou, Yasunori" <y-goto@jp.fujitsu.com>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
+Subject: RE: [PATCH v2] ns: introduce getnspid syscall
+Thread-Topic: [PATCH v2] ns: introduce getnspid syscall
+Thread-Index: AQHPjHcgU6WUVvoJG0i3h/UNsKvNGJt+dQSQ
+Date: Mon, 23 Jun 2014 10:15:37 +0000
+Message-ID: <5871495633F38949900D2BF2DC04883E54ECC5@G08CNEXMBPEKD02.g08.fujitsu.local>
+References: <1403259512-10510-1-git-send-email-chenhanxiao@cn.fujitsu.com>
+ <53A414B2.20108@nod.at>
+In-Reply-To: <53A414B2.20108@nod.at>
+Accept-Language: zh-CN, en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.167.226.240]
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>, Chris Mason <clm@fb.com>,
-        Josef Bacik <jbacik@fb.com>
-CC: <linux-btrfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Btrfs: Refactor btrfs_lock_cluster() to kill compiler
- warning
-References: <1403440209-13370-1-git-send-email-geert@linux-m68k.org>
-In-Reply-To: <1403440209-13370-1-git-send-email-geert@linux-m68k.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [10.167.226.169]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s5NAFtGW017604
 
-On Sun, 22 Jun 2014 14:30:09 +0200, Geert Uytterhoeven wrote:
-> fs/btrfs/extent-tree.c: In function â€˜btrfs_lock_clusterâ€™:
-> fs/btrfs/extent-tree.c:6399: warning: â€˜used_bgâ€™ may be used uninitialized in this function
+Hi
+
+> -----Original Message-----
+> From: Richard Weinberger [mailto:richard@nod.at]
+> Sent: Friday, June 20, 2014 7:02 PM
+> To: Chen, Hanxiao/³Â êÏÏö; containers@lists.linux-foundation.org;
+> linux-kernel@vger.kernel.org
+> Cc: Eric W. Biederman; Serge Hallyn; Daniel P. Berrange; Oleg Nesterov; Al Viro;
+> David Howells; Pavel Emelyanov; Vasiliy Kulikov; Gotou, Yasunori/Îåu ¿µÎÄ;
+> linux-api@vger.kernel.org
+> Subject: Re: [PATCH v2] ns: introduce getnspid syscall
 > 
->   - Replace "again: ... goto again;" by standard C "while (1) { ... }",
->   - Move block not processed during the first iteration of the loop to the
->     end of the loop, which allows to kill the "locked" variable,
+> Am 20.06.2014 12:18, schrieb Chen Hanxiao:
+> > We need a direct method of getting the pid inside containers.
+> > If some issues occurred inside container guest, host user
+> > could not know which process is in trouble just by guest pid:
+> > the users of container guest only knew the pid inside containers.
+> > This will bring obstacle for trouble shooting.
+> >
+> > int getnspid(pid_t pid, int fd1, int fd2);
+> >
+> > pid: the pid number need to be translated.
+> >
+> > fd: a file descriptor referring to one of
+> >     the namespace entries in a /proc/[pid]/ns/pid.
+> >     fd1 for destination ns(ns1), where the pid came from.
+> >     fd2 for reference ns(ns2), while fd2 = -2 means for current ns.
+> >
+> > return value:
+> >     >0 : translated pid in ns1(fd1) seen from ns2(fd2).
+> >     <=0: on failure.
+> >
 > 
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> I don't think that adding a new system call for this is a good solution.
+> We need a more generic way. I bet people are interested in more than just PID
+> numbers.
 
-Looks good to me.
+Could you please give some hints on how to expand this interface?
 
-Reviewed-and-Tested-by: Miao Xie <miaox@cn.fujitsu.com>
-
-> ---
-> Please review, compile tested only.
-> ---
->  fs/btrfs/extent-tree.c | 42 ++++++++++++++++++++----------------------
->  1 file changed, 20 insertions(+), 22 deletions(-)
 > 
-> diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
-> index 99c253918208..e151c4a73d7b 100644
-> --- a/fs/btrfs/extent-tree.c
-> +++ b/fs/btrfs/extent-tree.c
-> @@ -6397,36 +6397,34 @@ btrfs_lock_cluster(struct btrfs_block_group_cache *block_group,
->  		   int delalloc)
->  {
->  	struct btrfs_block_group_cache *used_bg;
-> -	bool locked = false;
-> -again:
-> +
->  	spin_lock(&cluster->refill_lock);
-> -	if (locked) {
-> -		if (used_bg == cluster->block_group)
-> -			return used_bg;
-> +	while (1) {
-> +		used_bg = cluster->block_group;
-> +		if (!used_bg)
-> +			return NULL;
->  
-> -		up_read(&used_bg->data_rwsem);
-> -		btrfs_put_block_group(used_bg);
-> -	}
-> +		if (used_bg == block_group)
-> +			return used_bg;
->  
-> -	used_bg = cluster->block_group;
-> -	if (!used_bg)
-> -		return NULL;
-> +		btrfs_get_block_group(used_bg);
->  
-> -	if (used_bg == block_group)
-> -		return used_bg;
-> +		if (!delalloc)
-> +			return used_bg;
->  
-> -	btrfs_get_block_group(used_bg);
-> +		if (down_read_trylock(&used_bg->data_rwsem))
-> +			return used_bg;
->  
-> -	if (!delalloc)
-> -		return used_bg;
-> +		spin_unlock(&cluster->refill_lock);
-> +		down_read(&used_bg->data_rwsem);
->  
-> -	if (down_read_trylock(&used_bg->data_rwsem))
-> -		return used_bg;
-> +		spin_lock(&cluster->refill_lock);
-> +		if (used_bg == cluster->block_group)
-> +			return used_bg;
->  
-> -	spin_unlock(&cluster->refill_lock);
-> -	down_read(&used_bg->data_rwsem);
-> -	locked = true;
-> -	goto again;
-> +		up_read(&used_bg->data_rwsem);
-> +		btrfs_put_block_group(used_bg);
-> +	}
->  }
->  
->  static inline void
+> I agree with Eric that a procfs solution is more appropriate.
 > 
 
+Procfs is a good solution, but syscall is not bad though.
+Procfs works for me, but that seems could not fit
+Pavel's requirement.
+His opinion is that a syscall is a more generic interface
+than proc files, and  also very helpful.
+And syscall could tell whether a pid lives in a specific pid namespace,
+much convenient than procfs.
+
+Thanks,
+- Chen
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
