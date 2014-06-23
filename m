@@ -1,437 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752935AbaFWUuG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 16:50:06 -0400
-Received: from mail-pd0-f202.google.com ([209.85.192.202]:55442 "EHLO
-	mail-pd0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756647AbaFWUuB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 16:50:01 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Tomasz Figa <tomasz.figa@gmail.com>, sjg@chromium.org, olof@lixom.net,
-        javier.martinez@collabora.co.uk, ch.naveen@samsung.com,
-        swarren@wwwdotorg.org, khilman@linaro.org, ajaynumb@gmail.com,
-        rahul.sharma@samsung.com, tushar.b@samsung.com,
-        Doug Anderson <dianders@chromium.org>, ben-linux@fluff.org,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] ARM: dts: Add cros_ec to exynos5420-peach-pit and exynos5800-peach-pi
-Date: Mon, 23 Jun 2014 13:49:36 -0700
-Message-Id: <1403556576-8038-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.0.0.526.g5318336
+	id S1755082AbaFWUvt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 16:51:49 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:60504 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751409AbaFWUvr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 16:51:47 -0400
+Date: Mon, 23 Jun 2014 13:51:43 -0700
+From: Patrick McLean <chutzpah@gentoo.org>
+To: tip-bot for Rik van Riel <tipbot@zytor.com>
+Cc: linux-tip-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hpa@zytor.com, mingo@kernel.org, torvalds@linux-foundation.org,
+        kirill.shutemov@linux.intel.com, peterz@infradead.org,
+        hannes@cmpxchg.org, n-horiguchi@ah.jp.nec.com, riel@redhat.com,
+        akpm@linux-foundation.org, mgorman@suse.de, sunil.k.pandey@intel.com,
+        tglx@linutronix.de, stable@vger.kernel.org
+Subject: Re: [tip:sched/core] mm/numa: Remove BUG_ON() in
+ __handle_mm_fault()
+Message-ID: <20140623135143.0b2f8646@gentoo.org>
+In-Reply-To: <tip-107437febd495a50e2cd09c81bbaa84d30e57b07@git.kernel.org>
+References: <20140429153615.2d72098e@annuminas.surriel.com>
+	<tip-107437febd495a50e2cd09c81bbaa84d30e57b07@git.kernel.org>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds cros_ec to exynos5420-peach-pit and exynos5800-peach-pi,
-including:
-* The keyboard
-* The i2c tunnel
-* The tps65090 under the i2c tunnel
-* The battery under the i2c tunnel
+On Thu, 8 May 2014 03:43:19 -0700
 
-To add extra motivation, it should be noted that tps65090 is one of
-the things needed to get display-related FETs turned on for pit and
-pi.
+Could this please be included in 3.14 and 3.15 stable as well.
 
-Note that this relies on a few outstanding changes:
-* Needs (spi: s3c64xx: fix broken "cs_gpios" usage in the driver) and
-  (spi: s3c64xx: for DT platofrms always get the chipselect info from
-  DT node) to work properly and match the documented bindings.  See
-  <https://patchwork.kernel.org/patch/4346701/> and
-  <https://patchwork.kernel.org/patch/4346711/>
+tip-bot for Rik van Riel <tipbot@zytor.com> wrote:
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
-Tested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
----
-Changes in v2:
-- Now just one patch since mfd patch landed.
-- Rebased to ToT linux-next
-
- arch/arm/boot/dts/exynos5420-peach-pit.dts | 145 +++++++++++++++++++++++++++++
- arch/arm/boot/dts/exynos5800-peach-pi.dts  | 145 +++++++++++++++++++++++++++++
- 2 files changed, 290 insertions(+)
-
-diff --git a/arch/arm/boot/dts/exynos5420-peach-pit.dts b/arch/arm/boot/dts/exynos5420-peach-pit.dts
-index 7649982..581f385 100644
---- a/arch/arm/boot/dts/exynos5420-peach-pit.dts
-+++ b/arch/arm/boot/dts/exynos5420-peach-pit.dts
-@@ -25,6 +25,11 @@
- 		"google,pit", "google,peach","samsung,exynos5420",
- 		"samsung,exynos5";
- 
-+	aliases {
-+		/* Assign 20 so we don't get confused w/ builtin ones */
-+		i2c20 = "/spi@12d40000/cros-ec@0/i2c-tunnel";
-+	};
-+
- 	backlight {
- 		compatible = "pwm-backlight";
- 		pwms = <&pwm 0 1000000 0>;
-@@ -87,6 +92,13 @@
- 		pinctrl-0 = <&usb301_vbus_en>;
- 		enable-active-high;
- 	};
-+
-+	vbat: fixed-regulator {
-+		compatible = "regulator-fixed";
-+		regulator-name = "vbat-supply";
-+		regulator-boot-on;
-+		regulator-always-on;
-+	};
- };
- 
- &dp {
-@@ -231,6 +243,20 @@
- 		samsung,pin-drv = <0>;
- 	};
- 
-+	ec_irq: ec-irq {
-+		samsung,pins = "gpx1-5";
-+		samsung,pin-function = <0>;
-+		samsung,pin-pud = <0>;
-+		samsung,pin-drv = <0>;
-+	};
-+
-+	tps65090_irq: tps65090-irq {
-+		samsung,pins = "gpx2-5";
-+		samsung,pin-function = <0>;
-+		samsung,pin-pud = <0>;
-+		samsung,pin-drv = <0>;
-+	};
-+
- 	dp_hpd_gpio: dp_hpd_gpio {
- 		samsung,pins = "gpx2-6";
- 		samsung,pin-function = <0>;
-@@ -247,6 +273,19 @@
- };
- 
- &pinctrl_3 {
-+	/* Drive SPI lines at x2 for better integrity */
-+	spi2-bus {
-+		samsung,pin-drv = <2>;
-+	};
-+
-+	/* Drive SPI chip select at x2 for better integrity */
-+	ec_spi_cs: ec-spi-cs {
-+		samsung,pins = "gpb1-2";
-+		samsung,pin-function = <1>;
-+		samsung,pin-pud = <0>;
-+		samsung,pin-drv = <2>;
-+	};
-+
- 	usb300_vbus_en: usb300-vbus-en {
- 		samsung,pins = "gph0-0";
- 		samsung,pin-function = <1>;
-@@ -266,6 +305,111 @@
- 	status = "okay";
- };
- 
-+&spi_2 {
-+	status = "okay";
-+	num-cs = <1>;
-+	samsung,spi-src-clk = <0>;
-+	cs-gpios = <&gpb1 2 0>;
-+
-+	cros_ec: cros-ec@0 {
-+		compatible = "google,cros-ec-spi";
-+		interrupt-parent = <&gpx1>;
-+		interrupts = <5 0>;
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&ec_spi_cs &ec_irq>;
-+		reg = <0>;
-+		spi-max-frequency = <3125000>;
-+
-+		controller-data {
-+			samsung,spi-feedback-delay = <1>;
-+		};
-+
-+		i2c-tunnel {
-+			compatible = "google,cros-ec-i2c-tunnel";
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			google,remote-bus = <0>;
-+
-+			battery: sbs-battery@b {
-+				compatible = "sbs,sbs-battery";
-+				reg = <0xb>;
-+				sbs,poll-retry-count = <1>;
-+				sbs,i2c-retry-count = <2>;
-+			};
-+
-+			power-regulator@48 {
-+				compatible = "ti,tps65090";
-+				reg = <0x48>;
-+
-+				/*
-+				 * Config irq to disable internal pulls
-+				 * even though we run in polling mode.
-+				 */
-+				pinctrl-names = "default";
-+				pinctrl-0 = <&tps65090_irq>;
-+
-+				vsys1-supply = <&vbat>;
-+				vsys2-supply = <&vbat>;
-+				vsys3-supply = <&vbat>;
-+				infet1-supply = <&vbat>;
-+				infet2-supply = <&vbat>;
-+				infet3-supply = <&vbat>;
-+				infet4-supply = <&vbat>;
-+				infet5-supply = <&vbat>;
-+				infet6-supply = <&vbat>;
-+				infet7-supply = <&vbat>;
-+				vsys-l1-supply = <&vbat>;
-+				vsys-l2-supply = <&vbat>;
-+
-+				regulators {
-+					dcdc1 {
-+						ti,enable-ext-control;
-+					};
-+					dcdc2 {
-+						ti,enable-ext-control;
-+					};
-+					dcdc3 {
-+						ti,enable-ext-control;
-+					};
-+					fet1 {
-+						regulator-name = "vcd_led";
-+					};
-+					tps65090_fet2: fet2 {
-+						regulator-name = "video_mid";
-+						regulator-always-on;
-+					};
-+					fet3 {
-+						regulator-name = "wwan_r";
-+						regulator-always-on;
-+					};
-+					fet4 {
-+						regulator-name = "sdcard";
-+						regulator-always-on;
-+					};
-+					fet5 {
-+						regulator-name = "camout";
-+					};
-+					fet6 {
-+						regulator-name = "lcd_vdd";
-+					};
-+					tps65090_fet7: fet7 {
-+						regulator-name = "video_mid_1a";
-+						regulator-always-on;
-+					};
-+					ldo1 {
-+					};
-+					ldo2 {
-+					};
-+				};
-+
-+				charger {
-+					compatible = "ti,tps65090-charger";
-+				};
-+			};
-+		};
-+	};
-+};
-+
- &uart_3 {
- 	status = "okay";
- };
-@@ -287,3 +431,4 @@
- 	timeout-sec = <32>;
- };
- 
-+#include "cros-ec-keyboard.dtsi"
-diff --git a/arch/arm/boot/dts/exynos5800-peach-pi.dts b/arch/arm/boot/dts/exynos5800-peach-pi.dts
-index 2c2c137..b2dc290 100644
---- a/arch/arm/boot/dts/exynos5800-peach-pi.dts
-+++ b/arch/arm/boot/dts/exynos5800-peach-pi.dts
-@@ -23,6 +23,11 @@
- 		"google,pi", "google,peach", "samsung,exynos5800",
- 		"samsung,exynos5";
- 
-+	aliases {
-+		/* Assign 20 so we don't get confused w/ builtin ones */
-+		i2c20 = "/spi@12d40000/cros-ec@0/i2c-tunnel";
-+	};
-+
- 	backlight {
- 		compatible = "pwm-backlight";
- 		pwms = <&pwm 0 1000000 0>;
-@@ -85,6 +90,13 @@
- 		pinctrl-0 = <&usb301_vbus_en>;
- 		enable-active-high;
- 	};
-+
-+	vbat: fixed-regulator {
-+		compatible = "regulator-fixed";
-+		regulator-name = "vbat-supply";
-+		regulator-boot-on;
-+		regulator-always-on;
-+	};
- };
- 
- &dp {
-@@ -229,6 +241,20 @@
- 		samsung,pin-drv = <0>;
- 	};
- 
-+	ec_irq: ec-irq {
-+		samsung,pins = "gpx1-5";
-+		samsung,pin-function = <0>;
-+		samsung,pin-pud = <0>;
-+		samsung,pin-drv = <0>;
-+	};
-+
-+	tps65090_irq: tps65090-irq {
-+		samsung,pins = "gpx2-5";
-+		samsung,pin-function = <0>;
-+		samsung,pin-pud = <0>;
-+		samsung,pin-drv = <0>;
-+	};
-+
- 	dp_hpd_gpio: dp_hpd_gpio {
- 		samsung,pins = "gpx2-6";
- 		samsung,pin-function = <0>;
-@@ -245,6 +271,19 @@
- };
- 
- &pinctrl_3 {
-+	/* Drive SPI lines at x2 for better integrity */
-+	spi2-bus {
-+		samsung,pin-drv = <2>;
-+	};
-+
-+	/* Drive SPI chip select at x2 for better integrity */
-+	ec_spi_cs: ec-spi-cs {
-+		samsung,pins = "gpb1-2";
-+		samsung,pin-function = <1>;
-+		samsung,pin-pud = <0>;
-+		samsung,pin-drv = <2>;
-+	};
-+
- 	usb300_vbus_en: usb300-vbus-en {
- 		samsung,pins = "gph0-0";
- 		samsung,pin-function = <1>;
-@@ -264,6 +303,111 @@
- 	status = "okay";
- };
- 
-+&spi_2 {
-+	status = "okay";
-+	num-cs = <1>;
-+	samsung,spi-src-clk = <0>;
-+	cs-gpios = <&gpb1 2 0>;
-+
-+	cros_ec: cros-ec@0 {
-+		compatible = "google,cros-ec-spi";
-+		interrupt-parent = <&gpx1>;
-+		interrupts = <5 0>;
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&ec_spi_cs &ec_irq>;
-+		reg = <0>;
-+		spi-max-frequency = <3125000>;
-+
-+		controller-data {
-+			samsung,spi-feedback-delay = <1>;
-+		};
-+
-+		i2c-tunnel {
-+			compatible = "google,cros-ec-i2c-tunnel";
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			google,remote-bus = <0>;
-+
-+			battery: sbs-battery@b {
-+				compatible = "sbs,sbs-battery";
-+				reg = <0xb>;
-+				sbs,poll-retry-count = <1>;
-+				sbs,i2c-retry-count = <2>;
-+			};
-+
-+			power-regulator@48 {
-+				compatible = "ti,tps65090";
-+				reg = <0x48>;
-+
-+				/*
-+				 * Config irq to disable internal pulls
-+				 * even though we run in polling mode.
-+				 */
-+				pinctrl-names = "default";
-+				pinctrl-0 = <&tps65090_irq>;
-+
-+				vsys1-supply = <&vbat>;
-+				vsys2-supply = <&vbat>;
-+				vsys3-supply = <&vbat>;
-+				infet1-supply = <&vbat>;
-+				infet2-supply = <&vbat>;
-+				infet3-supply = <&vbat>;
-+				infet4-supply = <&vbat>;
-+				infet5-supply = <&vbat>;
-+				infet6-supply = <&vbat>;
-+				infet7-supply = <&vbat>;
-+				vsys-l1-supply = <&vbat>;
-+				vsys-l2-supply = <&vbat>;
-+
-+				regulators {
-+					dcdc1 {
-+						ti,enable-ext-control;
-+					};
-+					dcdc2 {
-+						ti,enable-ext-control;
-+					};
-+					dcdc3 {
-+						ti,enable-ext-control;
-+					};
-+					fet1 {
-+						regulator-name = "vcd_led";
-+					};
-+					tps65090_fet2: fet2 {
-+						regulator-name = "video_mid";
-+						regulator-always-on;
-+					};
-+					fet3 {
-+						regulator-name = "wwan_r";
-+						regulator-always-on;
-+					};
-+					fet4 {
-+						regulator-name = "sdcard";
-+						regulator-always-on;
-+					};
-+					fet5 {
-+						regulator-name = "camout";
-+					};
-+					fet6 {
-+						regulator-name = "lcd_vdd";
-+					};
-+					tps65090_fet7: fet7 {
-+						regulator-name = "video_mid_1a";
-+						regulator-always-on;
-+					};
-+					ldo1 {
-+					};
-+					ldo2 {
-+					};
-+				};
-+
-+				charger {
-+					compatible = "ti,tps65090-charger";
-+				};
-+			};
-+		};
-+	};
-+};
-+
- &uart_3 {
- 	status = "okay";
- };
-@@ -285,3 +429,4 @@
- 	timeout-sec = <32>;
- };
- 
-+#include "cros-ec-keyboard.dtsi"
--- 
-2.0.0.526.g5318336
+> Commit-ID:  107437febd495a50e2cd09c81bbaa84d30e57b07
+> Gitweb:
+> http://git.kernel.org/tip/107437febd495a50e2cd09c81bbaa84d30e57b07
+> Author:     Rik van Riel <riel@redhat.com> AuthorDate: Tue, 29 Apr
+> 2014 15:36:15 -0400 Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Wed, 7 May 2014 13:33:48 +0200
+> 
+> mm/numa: Remove BUG_ON() in __handle_mm_fault()
+> 
+> Changing PTEs and PMDs to pte_numa & pmd_numa is done with the
+> mmap_sem held for reading, which means a pmd can be instantiated
+> and turned into a numa one while __handle_mm_fault() is examining
+> the value of old_pmd.
+> 
+> If that happens, __handle_mm_fault() should just return and let
+> the page fault retry, instead of throwing an oops. This is
+> handled by the test for pmd_trans_huge(*pmd) below.
+> 
+> Signed-off-by: Rik van Riel <riel@redhat.com>
+> Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Reported-by: Sunil Pandey <sunil.k.pandey@intel.com>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: linux-mm@kvack.org
+> Cc: lwoodman@redhat.com
+> Cc: dave.hansen@intel.com
+> Link:
+> http://lkml.kernel.org/r/20140429153615.2d72098e@annuminas.surriel.com
+> Signed-off-by: Ingo Molnar <mingo@kernel.org> ---
+>  mm/memory.c | 3 ---
+>  1 file changed, 3 deletions(-)
+> 
+> diff --git a/mm/memory.c b/mm/memory.c
+> index d0f0bef..9c2dc65 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -3900,9 +3900,6 @@ static int __handle_mm_fault(struct mm_struct
+> *mm, struct vm_area_struct *vma, }
+>  	}
+>  
+> -	/* THP should already have been handled */
+> -	BUG_ON(pmd_numa(*pmd));
+> -
+>  	/*
+>  	 * Use __pte_alloc instead of pte_alloc_map, because we can't
+>  	 * run pte_offset_map on the pmd, if an huge pmd could
+> --
+> To unsubscribe from this list: send the line "unsubscribe
+> linux-kernel" in the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
