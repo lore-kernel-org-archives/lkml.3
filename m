@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755110AbaFWNJc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:09:32 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37233 "EHLO
+	id S1754875AbaFWNFT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:05:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37174 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754880AbaFWNFW (ORCPT
+	with ESMTP id S1754808AbaFWNFL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:05:22 -0400
+	Mon, 23 Jun 2014 09:05:11 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sagi Grimberg <sagig@dev.mellanox.co.il>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 83/93] iser-target: Fix multi network portal shutdown regression
-Date: Mon, 23 Jun 2014 14:03:02 +0100
-Message-Id: <1403528592-2163-84-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 74/93] usb: cdc-wdm: export cdc-wdm uapi header
+Date: Mon, 23 Jun 2014 14:02:53 +0100
+Message-Id: <1403528592-2163-75-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
 References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,94 +31,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
 
-commit 2363d196686e44c0158929e7cf96c8589a24a81b upstream.
+commit 7d1896360f4d055d68565ef8ed56a677580f1a39 upstream.
 
-This patch fixes a iser-target specific regression introduced in
-v3.15-rc6 with:
+The include/uapi/linux/usb/cdc-wdm.h header defines cdc-wdm
+userspace APIs and should be exported by make headers_install.
 
-commit 14f4b54fe38f3a8f8392a50b951c8aa43b63687a
-Author: Sagi Grimberg <sagig@mellanox.com>
-Date:   Tue Apr 29 13:13:47 2014 +0300
-
-    Target/iscsi,iser: Avoid accepting transport connections during stop stage
-
-where the change to set iscsi_np->enabled = false within
-iscsit_clear_tpg_np_login_thread() meant that a iscsi_np with
-two iscsi_tpg_np exports would have it's parent iscsi_np set
-to a disabled state, even if other iscsi_tpg_np exports still
-existed.
-
-This patch changes iscsit_clear_tpg_np_login_thread() to only
-set iscsi_np->enabled = false when shutdown = true, and also
-changes iscsit_del_np() to set iscsi_np->enabled = true when
-iscsi_np->np_exports is non zero.
-
-(Fix up context changes for v3.10.y - nab)
-
-Cc: Sagi Grimberg <sagig@dev.mellanox.co.il>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-[ luis: backported to 3.11: Used nab's backport to 3.10 ]
+Fixes: 3edce1cf813a ("USB: cdc-wdm: implement IOCTL_WDM_MAX_COMMAND")
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/target/iscsi/iscsi_target.c     |  1 +
- drivers/target/iscsi/iscsi_target_tpg.c | 10 ++++++----
- 2 files changed, 7 insertions(+), 4 deletions(-)
+ include/uapi/linux/usb/Kbuild | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/target/iscsi/iscsi_target.c b/drivers/target/iscsi/iscsi_target.c
-index 9c3852720bd1..2681183abca6 100644
---- a/drivers/target/iscsi/iscsi_target.c
-+++ b/drivers/target/iscsi/iscsi_target.c
-@@ -460,6 +460,7 @@ int iscsit_del_np(struct iscsi_np *np)
- 	spin_lock_bh(&np->np_thread_lock);
- 	np->np_exports--;
- 	if (np->np_exports) {
-+		np->enabled = true;
- 		spin_unlock_bh(&np->np_thread_lock);
- 		return 0;
- 	}
-diff --git a/drivers/target/iscsi/iscsi_target_tpg.c b/drivers/target/iscsi/iscsi_target_tpg.c
-index 7ac798db3f78..75a4e83842c2 100644
---- a/drivers/target/iscsi/iscsi_target_tpg.c
-+++ b/drivers/target/iscsi/iscsi_target_tpg.c
-@@ -175,14 +175,16 @@ void iscsit_put_tpg(struct iscsi_portal_group *tpg)
- 
- static void iscsit_clear_tpg_np_login_thread(
- 	struct iscsi_tpg_np *tpg_np,
--	struct iscsi_portal_group *tpg)
-+	struct iscsi_portal_group *tpg,
-+	bool shutdown)
- {
- 	if (!tpg_np->tpg_np) {
- 		pr_err("struct iscsi_tpg_np->tpg_np is NULL!\n");
- 		return;
- 	}
- 
--	tpg_np->tpg_np->enabled = false;
-+	if (shutdown)
-+		tpg_np->tpg_np->enabled = false;
- 	iscsit_reset_np_thread(tpg_np->tpg_np, tpg_np, tpg);
- }
- 
-@@ -198,7 +200,7 @@ void iscsit_clear_tpg_np_login_threads(
- 			continue;
- 		}
- 		spin_unlock(&tpg->tpg_np_lock);
--		iscsit_clear_tpg_np_login_thread(tpg_np, tpg);
-+		iscsit_clear_tpg_np_login_thread(tpg_np, tpg, false);
- 		spin_lock(&tpg->tpg_np_lock);
- 	}
- 	spin_unlock(&tpg->tpg_np_lock);
-@@ -521,7 +523,7 @@ static int iscsit_tpg_release_np(
- 	struct iscsi_portal_group *tpg,
- 	struct iscsi_np *np)
- {
--	iscsit_clear_tpg_np_login_thread(tpg_np, tpg);
-+	iscsit_clear_tpg_np_login_thread(tpg_np, tpg, true);
- 
- 	pr_debug("CORE[%s] - Removed Network Portal: %s:%hu,%hu on %s\n",
- 		tpg->tpg_tiqn->tiqn, np->np_ip, np->np_port, tpg->tpgt,
+diff --git a/include/uapi/linux/usb/Kbuild b/include/uapi/linux/usb/Kbuild
+index 6cb4ea826834..4cc4d6e7e523 100644
+--- a/include/uapi/linux/usb/Kbuild
++++ b/include/uapi/linux/usb/Kbuild
+@@ -1,6 +1,7 @@
+ # UAPI Header export list
+ header-y += audio.h
+ header-y += cdc.h
++header-y += cdc-wdm.h
+ header-y += ch11.h
+ header-y += ch9.h
+ header-y += functionfs.h
 -- 
 1.9.1
 
