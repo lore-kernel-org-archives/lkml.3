@@ -1,22 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755016AbaFWNIH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:08:07 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37280 "EHLO
+	id S1755067AbaFWNIm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:08:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37242 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932119AbaFWNFd (ORCPT
+	with ESMTP id S1754877AbaFWNFZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:05:33 -0400
+	Mon, 23 Jun 2014 09:05:25 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Markos Chandras <markos.chandras@imgtec.com>, linux-mips@linux-mips.org,
-        Ralf Baechle <ralf@linux-mips.org>,
+Cc: Rik van Riel <riel@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        Masayoshi Mizuma <m.mizuma@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Ben Hutchings <ben@decadent.org.uk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 87/93] MIPS: asm: thread_info: Add _TIF_SECCOMP flag
-Date: Mon, 23 Jun 2014 14:03:06 +0100
-Message-Id: <1403528592-2163-88-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 79/93] mm/page-writeback.c: fix divide by zero in pos_ratio_polynom
+Date: Mon, 23 Jun 2014 14:02:58 +0100
+Message-Id: <1403528592-2163-80-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
 References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
@@ -29,39 +35,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Markos Chandras <markos.chandras@imgtec.com>
+From: Rik van Riel <riel@redhat.com>
 
-commit 137f7df8cead00688524c82360930845396b8a21 upstream.
+commit d5c9fde3dae750889168807038243ff36431d276 upstream.
 
-Add _TIF_SECCOMP flag to _TIF_WORK_SYSCALL_ENTRY to indicate
-that the system call needs to be checked against a seccomp filter.
+It is possible for "limit - setpoint + 1" to equal zero, after getting
+truncated to a 32 bit variable, and resulting in a divide by zero error.
 
-Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
-Reviewed-by: Paul Burton <paul.burton@imgtec.com>
-Reviewed-by: James Hogan <james.hogan@imgtec.com>
-Cc: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/6405/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
-Cc: Ben Hutchings <ben@decadent.org.uk>
-[ luis: backported to 3.11: adjusted context ]
+Using the fully 64 bit divide functions avoids this problem.  It also
+will cause pos_ratio_polynom() to return the correct value when
+(setpoint - limit) exceeds 2^32.
+
+Also uninline pos_ratio_polynom, at Andrew's request.
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Cc: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+Cc: Luiz Capitulino <lcapitulino@redhat.com>
+Cc: Masayoshi Mizuma <m.mizuma@jp.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[bwh: Backported to 3.2:
+ Adjust context - pos_ratio_polynom() is not a separate function]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/mips/include/asm/thread_info.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/page-writeback.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/mips/include/asm/thread_info.h b/arch/mips/include/asm/thread_info.h
-index 61215a34acc6..897cd58407c8 100644
---- a/arch/mips/include/asm/thread_info.h
-+++ b/arch/mips/include/asm/thread_info.h
-@@ -134,7 +134,7 @@ static inline struct thread_info *current_thread_info(void)
- #define _TIF_LOAD_WATCH		(1<<TIF_LOAD_WATCH)
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index 7298e741ae35..ad494ae5703f 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -689,7 +689,7 @@ static unsigned long bdi_position_ratio(struct backing_dev_info *bdi,
+ 	 *     => fast response on large errors; small oscillation near setpoint
+ 	 */
+ 	setpoint = (freerun + limit) / 2;
+-	x = div_s64(((s64)setpoint - (s64)dirty) << RATELIMIT_CALC_SHIFT,
++	x = div64_s64(((s64)setpoint - (s64)dirty) << RATELIMIT_CALC_SHIFT,
+ 		    limit - setpoint + 1);
+ 	pos_ratio = x;
+ 	pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
+@@ -755,7 +755,7 @@ static unsigned long bdi_position_ratio(struct backing_dev_info *bdi,
+ 	x_intercept = bdi_setpoint + span;
  
- #define _TIF_WORK_SYSCALL_ENTRY	(_TIF_NOHZ | _TIF_SYSCALL_TRACE |	\
--				 _TIF_SYSCALL_AUDIT)
-+				 _TIF_SYSCALL_AUDIT | _TIF_SECCOMP)
- 
- /* work to do in syscall_trace_leave() */
- #define _TIF_WORK_SYSCALL_EXIT	(_TIF_NOHZ | _TIF_SYSCALL_TRACE |	\
+ 	if (bdi_dirty < x_intercept - span / 4) {
+-		pos_ratio = div_u64(pos_ratio * (x_intercept - bdi_dirty),
++		pos_ratio = div64_u64(pos_ratio * (x_intercept - bdi_dirty),
+ 				    x_intercept - bdi_setpoint + 1);
+ 	} else
+ 		pos_ratio /= 4;
 -- 
 1.9.1
 
