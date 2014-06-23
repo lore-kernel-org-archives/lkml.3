@@ -1,28 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756102AbaFWNmz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:42:55 -0400
-Received: from smtprelay0188.hostedemail.com ([216.40.44.188]:45059 "EHLO
+	id S1756153AbaFWNnG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:43:06 -0400
+Received: from smtprelay0030.hostedemail.com ([216.40.44.30]:33797 "EHLO
 	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756074AbaFWNmu (ORCPT
+	by vger.kernel.org with ESMTP id S1756129AbaFWNnB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:42:50 -0400
+	Mon, 23 Jun 2014 09:43:01 -0400
 X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:800:960:966:968:973:988:989:1260:1345:1359:1437:1534:1542:1711:1730:1747:1777:1792:2194:2196:2199:2200:2393:2559:2562:2729:3138:3139:3140:3141:3142:3352:3865:3866:3867:4225:4250:4321:4385:4419:4605:5007:6119:6261:8603:9592:10004:10026:10848:11026:11473:11657:11658:11914:12043:12114:12296:12438:12517:12519:12555,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: lead59_8cb806731cd3b
-X-Filterd-Recvd-Size: 3414
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:800:960:968:973:988:989:1260:1345:1359:1437:1534:1541:1711:1730:1747:1777:1792:2194:2199:2393:2559:2562:2729:3138:3139:3140:3141:3142:3352:3865:4225:4250:4321:4419:4605:5007:6261:9592:10004:10026:10848:11026:11657:11658:11914:12043:12114:12438:12517:12519:12555:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: word87_8e5fa79106d4d
+X-Filterd-Recvd-Size: 2444
 From: Joe Perches <joe@perches.com>
 To: linux-kernel@vger.kernel.org
-Cc: Manish Chopra <manish.chopra@qlogic.com>,
-        Sony Chacko <sony.chacko@qlogic.com>,
-        Rajesh Borundia <rajesh.borundia@qlogic.com>,
-        Shahed Shaikh <shahed.shaikh@qlogic.com>,
-        Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>,
-        Ron Mercer <ron.mercer@qlogic.com>, linux-driver@qlogic.com,
-        netdev@vger.kernel.org
-Subject: [PATCH 13/22] qlogic: Use pci_zalloc_consistent
-Date: Mon, 23 Jun 2014 06:41:41 -0700
-Message-Id: <5aceec27b2390a68fb96d31fc5753d9b58d82627.1403530604.git.joe@perches.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org
+Subject: [PATCH 17/22] rtl818x: Use pci_zalloc_consistent
+Date: Mon, 23 Jun 2014 06:41:45 -0700
+Message-Id: <b4cf2aa62c7bec157a3e7079cdebe0670cdcba7c.1403530604.git.joe@perches.com>
 X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 In-Reply-To: <cover.1403530604.git.joe@perches.com>
 References: <cover.1403530604.git.joe@perches.com>
@@ -34,63 +29,49 @@ Remove the now unnecessary memset too.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/ethernet/qlogic/netxen/netxen_nic_ctx.c |  4 +---
- drivers/net/ethernet/qlogic/qlge/qlge_main.c        | 11 +++++------
- 2 files changed, 6 insertions(+), 9 deletions(-)
+ drivers/net/wireless/rtl818x/rtl8180/dev.c | 11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic_ctx.c b/drivers/net/ethernet/qlogic/netxen/netxen_nic_ctx.c
-index 6f6be57..b8d5270 100644
---- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_ctx.c
-+++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_ctx.c
-@@ -129,14 +129,12 @@ netxen_get_minidump_template(struct netxen_adapter *adapter)
- 		return NX_RCODE_INVALID_ARGS;
- 	}
+diff --git a/drivers/net/wireless/rtl818x/rtl8180/dev.c b/drivers/net/wireless/rtl818x/rtl8180/dev.c
+index 1e25929..7577e01 100644
+--- a/drivers/net/wireless/rtl818x/rtl8180/dev.c
++++ b/drivers/net/wireless/rtl818x/rtl8180/dev.c
+@@ -964,16 +964,13 @@ static int rtl8180_init_rx_ring(struct ieee80211_hw *dev)
+ 	else
+ 		priv->rx_ring_sz = sizeof(struct rtl8180_rx_desc);
  
--	addr = pci_alloc_consistent(adapter->pdev, size, &md_template_addr);
+-	priv->rx_ring = pci_alloc_consistent(priv->pdev,
+-					     priv->rx_ring_sz * 32,
+-					     &priv->rx_ring_dma);
 -
-+	addr = pci_zalloc_consistent(adapter->pdev, size, &md_template_addr);
- 	if (!addr) {
- 		dev_err(&adapter->pdev->dev, "Unable to allocate dmable memory for template.\n");
++	priv->rx_ring = pci_zalloc_consistent(priv->pdev, priv->rx_ring_sz * 32,
++					      &priv->rx_ring_dma);
+ 	if (!priv->rx_ring || (unsigned long)priv->rx_ring & 0xFF) {
+ 		wiphy_err(dev->wiphy, "Cannot allocate RX ring\n");
  		return -ENOMEM;
  	}
  
--	memset(addr, 0, size);
- 	memset(&cmd, 0, sizeof(cmd));
- 	memset(&cmd.rsp, 1, sizeof(struct _cdrp_cmd));
- 	cmd.req.cmd = NX_CDRP_CMD_GET_TEMP_HDR;
-diff --git a/drivers/net/ethernet/qlogic/qlge/qlge_main.c b/drivers/net/ethernet/qlogic/qlge/qlge_main.c
-index b40050e..d836ace 100644
---- a/drivers/net/ethernet/qlogic/qlge/qlge_main.c
-+++ b/drivers/net/ethernet/qlogic/qlge/qlge_main.c
-@@ -2727,23 +2727,22 @@ static void ql_free_shadow_space(struct ql_adapter *qdev)
- static int ql_alloc_shadow_space(struct ql_adapter *qdev)
- {
- 	qdev->rx_ring_shadow_reg_area =
--	    pci_alloc_consistent(qdev->pdev,
--				 PAGE_SIZE, &qdev->rx_ring_shadow_reg_dma);
-+		pci_zalloc_consistent(qdev->pdev, PAGE_SIZE,
-+				      &qdev->rx_ring_shadow_reg_dma);
- 	if (qdev->rx_ring_shadow_reg_area == NULL) {
- 		netif_err(qdev, ifup, qdev->ndev,
- 			  "Allocation of RX shadow space failed.\n");
+-	memset(priv->rx_ring, 0, priv->rx_ring_sz * 32);
+ 	priv->rx_idx = 0;
+ 
+ 	for (i = 0; i < 32; i++) {
+@@ -1032,14 +1029,14 @@ static int rtl8180_init_tx_ring(struct ieee80211_hw *dev,
+ 	dma_addr_t dma;
+ 	int i;
+ 
+-	ring = pci_alloc_consistent(priv->pdev, sizeof(*ring) * entries, &dma);
++	ring = pci_zalloc_consistent(priv->pdev, sizeof(*ring) * entries,
++				     &dma);
+ 	if (!ring || (unsigned long)ring & 0xFF) {
+ 		wiphy_err(dev->wiphy, "Cannot allocate TX ring (prio = %d)\n",
+ 			  prio);
  		return -ENOMEM;
  	}
--	memset(qdev->rx_ring_shadow_reg_area, 0, PAGE_SIZE);
-+
- 	qdev->tx_ring_shadow_reg_area =
--	    pci_alloc_consistent(qdev->pdev, PAGE_SIZE,
--				 &qdev->tx_ring_shadow_reg_dma);
-+		pci_zalloc_consistent(qdev->pdev, PAGE_SIZE,
-+				      &qdev->tx_ring_shadow_reg_dma);
- 	if (qdev->tx_ring_shadow_reg_area == NULL) {
- 		netif_err(qdev, ifup, qdev->ndev,
- 			  "Allocation of TX shadow space failed.\n");
- 		goto err_wqp_sh_area;
- 	}
--	memset(qdev->tx_ring_shadow_reg_area, 0, PAGE_SIZE);
- 	return 0;
  
- err_wqp_sh_area:
+-	memset(ring, 0, sizeof(*ring)*entries);
+ 	priv->tx_ring[prio].desc = ring;
+ 	priv->tx_ring[prio].dma = dma;
+ 	priv->tx_ring[prio].idx = 0;
 -- 
 1.8.1.2.459.gbcd45b4.dirty
 
