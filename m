@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754085AbaFWNDy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:03:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36764 "EHLO
+	id S932174AbaFWN1z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:27:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36783 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753842AbaFWNDv (ORCPT
+	with ESMTP id S1754067AbaFWNDy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:03:51 -0400
+	Mon, 23 Jun 2014 09:03:54 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Florian Westphal <fw@strlen.de>, Pablo Neira Ayuso <pablo@netfilter.org>,
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 21/93] netfilter: ipv4: defrag: set local_df flag on defragmented skb
-Date: Mon, 23 Jun 2014 14:02:00 +0100
-Message-Id: <1403528592-2163-22-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 23/93] dma: dw: allow shared interrupts
+Date: Mon, 23 Jun 2014 14:02:02 +0100
+Message-Id: <1403528592-2163-24-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
 References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
@@ -27,59 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Westphal <fw@strlen.de>
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 
-commit 895162b1101b3ea5db08ca6822ae9672717efec0 upstream.
+commit 3783cef876e0f24e93a11f1a76cc0b3fe7ea8d94 upstream.
 
-else we may fail to forward skb even if original fragments do fit
-outgoing link mtu:
+In the PC world is quite possible that devices are sharing the same interrupt
+line. The patch prepares dw_dmac driver to such cases.
 
-1. remote sends 2k packets in two 1000 byte frags, DF set
-2. we want to forward but only see '2k > mtu and DF set'
-3. we then send icmp error saying that outgoing link is 1500
-
-But original sender never sent a packet that would not fit
-the outgoing link.
-
-Setting local_df makes outgoing path test size vs.
-IPCB(skb)->frag_max_size, so we will still send the correct
-error in case the largest original size did not fit
-outgoing link mtu.
-
-Reported-by: Maxime Bizon <mbizon@freebox.fr>
-Suggested-by: Maxime Bizon <mbizon@freebox.fr>
-Fixes: 5f2d04f1f9 (ipv4: fix path MTU discovery with connection tracking)
-Signed-off-by: Florian Westphal <fw@strlen.de>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ipv4/netfilter/nf_defrag_ipv4.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/dma/dw/core.c | 13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
-diff --git a/net/ipv4/netfilter/nf_defrag_ipv4.c b/net/ipv4/netfilter/nf_defrag_ipv4.c
-index 742815518b0f..4cfb3bd1677c 100644
---- a/net/ipv4/netfilter/nf_defrag_ipv4.c
-+++ b/net/ipv4/netfilter/nf_defrag_ipv4.c
-@@ -22,7 +22,6 @@
- #endif
- #include <net/netfilter/nf_conntrack_zones.h>
- 
--/* Returns new sk_buff, or NULL */
- static int nf_ct_ipv4_gather_frags(struct sk_buff *skb, u_int32_t user)
+diff --git a/drivers/dma/dw/core.c b/drivers/dma/dw/core.c
+index eea479c12173..1292a6eda60f 100644
+--- a/drivers/dma/dw/core.c
++++ b/drivers/dma/dw/core.c
+@@ -644,10 +644,13 @@ static void dw_dma_tasklet(unsigned long data)
+ static irqreturn_t dw_dma_interrupt(int irq, void *dev_id)
  {
- 	int err;
-@@ -33,8 +32,10 @@ static int nf_ct_ipv4_gather_frags(struct sk_buff *skb, u_int32_t user)
- 	err = ip_defrag(skb, user);
- 	local_bh_enable();
+ 	struct dw_dma *dw = dev_id;
+-	u32 status;
++	u32 status = dma_readl(dw, STATUS_INT);
  
--	if (!err)
-+	if (!err) {
- 		ip_send_check(ip_hdr(skb));
-+		skb->local_df = 1;
-+	}
+-	dev_vdbg(dw->dma.dev, "%s: status=0x%x\n", __func__,
+-			dma_readl(dw, STATUS_INT));
++	dev_vdbg(dw->dma.dev, "%s: status=0x%x\n", __func__, status);
++
++	/* Check if we have any interrupt from the DMAC */
++	if (!status)
++		return IRQ_NONE;
  
- 	return err;
- }
+ 	/*
+ 	 * Just disable the interrupts. We'll turn them back on in the
+@@ -1560,8 +1563,8 @@ int dw_dma_probe(struct dw_dma_chip *chip, struct dw_dma_platform_data *pdata)
+ 	/* Disable BLOCK interrupts as well */
+ 	channel_clear_bit(dw, MASK.BLOCK, dw->all_chan_mask);
+ 
+-	err = devm_request_irq(chip->dev, chip->irq, dw_dma_interrupt, 0,
+-			       "dw_dmac", dw);
++	err = devm_request_irq(chip->dev, chip->irq, dw_dma_interrupt,
++			       IRQF_SHARED, "dw_dmac", dw);
+ 	if (err)
+ 		return err;
+ 
 -- 
 1.9.1
 
