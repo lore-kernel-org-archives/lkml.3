@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932238AbaFWN3o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:29:44 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60784 "EHLO
+	id S1755393AbaFWN3m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:29:42 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60759 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754776AbaFWN3i (ORCPT
+	by vger.kernel.org with ESMTP id S1754524AbaFWN3i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Jun 2014 09:29:38 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: linux-kernel@vger.kernel.org
 Cc: jirislaby@gmail.com, Vojtech Pavlik <vojtech@suse.cz>,
-        Jiri Kosina <jkosina@suse.cz>, Jiri Slaby <jslaby@suse.cz>,
-        Michael Matz <matz@suse.de>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: [PATCH 13/21] kgr: x86: refuse to build without fentry support
-Date: Mon, 23 Jun 2014 15:29:27 +0200
-Message-Id: <1403530175-29217-13-git-send-email-jslaby@suse.cz>
+        Jiri Kosina <jkosina@suse.cz>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 21/21] kgr: x86: optimize handling of CPU-bound tasks
+Date: Mon, 23 Jun 2014 15:29:35 +0200
+Message-Id: <1403530175-29217-21-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1403530175-29217-1-git-send-email-jslaby@suse.cz>
 References: <1403530175-29217-1-git-send-email-jslaby@suse.cz>
@@ -26,54 +23,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiri Kosina <jkosina@suse.cz>
 
-The only reliable way for function redirection through ftrace_ops (when
-modifying pt_regs->rip in the handler) is fentry.
+Processes which are running in userspace at the time of patching can
+be immediately marked as "migrated" to the new universe, as they are
+provably outside the kernel and would have their 'in_progress' flag
+cleared upon (eventual) kernel entry anyway.
 
-The alternative -- mcount -- is problematic in several ways. Namely the
-caller's function prologue (that has already been executed by the time
-mcount callsite has been reached) is not known to the callee, and can be
-completely incompatible to the calee, resulting in a havoc on return from
-the function.
+This eliminates the need to send a SIGSTOP/SIGCONT signal (or perform
+any kind of alternative handling that would force the tasks to go
+through the kernel) to such tasks. This allows the tasks to run
+completely undisturbed by the patching.
 
-fentry doesn't suffer from this, as it's located at the very beginning of
-the function, even before prologue has been executed, and therefore callee
-is the owner of both function prologue and epilogue.
+We do this by looking at the task's stack trace. This is suboptimal
+and perhaps ugly solution but we have not find any other easy way
+without interrupting the task's computation. I.e. we are aware of IPIs
+and looking at stored regs for example. If anyone can come up with an
+idea how to dig out the process' state (whether running in user space
+or not) from task_struct or such, please draw faster and shoot this
+one dead.
 
-Fixing mcount to properly fix everything up would be non-trivial, and
-Steven is not in favor of doing that.
-
-Both kGraft and upstream kernel (patch to be submitted) should error out
-when this unsupported and non-working configuration is detected.
-
-According to Michael Matz, the -mfentry gcc option is x86 specific. Other
-architectures insert the respective profile calls before the prologue by
-default.
+js: remove unneeded headers
+js: cleanup
 
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Michael Matz <matz@suse.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
 ---
- arch/x86/include/asm/kgraft.h | 4 ++++
- 1 file changed, 4 insertions(+)
+ arch/x86/include/asm/kgraft.h | 30 ++++++++++++++++++++++++++++++
+ kernel/kgraft.c               |  3 +++
+ 2 files changed, 33 insertions(+)
 
 diff --git a/arch/x86/include/asm/kgraft.h b/arch/x86/include/asm/kgraft.h
-index 5e40ba1a0753..6fc57a85d12c 100644
+index 6fc57a85d12c..3b13738f3665 100644
 --- a/arch/x86/include/asm/kgraft.h
 +++ b/arch/x86/include/asm/kgraft.h
-@@ -17,6 +17,10 @@
- #ifndef ASM_KGR_H
- #define ASM_KGR_H
+@@ -22,10 +22,40 @@
+ #endif
  
-+#ifndef CC_USING_FENTRY
-+#error Your compiler has to support -mfentry for kGraft to work on x86
-+#endif
-+
  #include <asm/ptrace.h>
++#include <linux/stacktrace.h>
  
  static inline void kgr_set_regs_ip(struct pt_regs *regs, unsigned long ip)
+ {
+ 	regs->ip = ip;
+ }
+ 
++#ifdef CONFIG_STACKTRACE
++/*
++ * Tasks which are running in userspace after the patching has been started
++ * can immediately be marked as migrated to the new universe.
++ *
++ * If this function returns non-zero (i.e. also when error happens), the task
++ * needs to be migrated using kgraft lazy mechanism.
++ */
++static inline bool kgr_needs_lazy_migration(struct task_struct *p)
++{
++	unsigned long s[3];
++	struct stack_trace t = {
++		.nr_entries = 0,
++		.skip = 0,
++		.max_entries = 3,
++		.entries = s,
++	};
++
++	save_stack_trace_tsk(p, &t);
++
++	return t.nr_entries > 2;
++}
++#else
++static inline bool kgr_needs_lazy_migration(struct task_struct *p)
++{
++	return true;
++}
++#endif
++
+ #endif
+diff --git a/kernel/kgraft.c b/kernel/kgraft.c
+index c4b1777604e1..f13a4c081bd4 100644
+--- a/kernel/kgraft.c
++++ b/kernel/kgraft.c
+@@ -150,6 +150,9 @@ static void kgr_handle_processes(void)
+ 			 */
+ 			wake_up_process(p);
+ 		}
++		/* mark tasks wandering in userspace as already migrated */
++		if (!kgr_needs_lazy_migration(p))
++			kgr_task_safe(p);
+ 	}
+ 	read_unlock(&tasklist_lock);
+ }
 -- 
 2.0.0
 
