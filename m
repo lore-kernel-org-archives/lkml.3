@@ -1,28 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753276AbaFWJzh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 05:55:37 -0400
-Received: from mail06.syd.iprimus.net.au ([210.50.76.229]:7220 "EHLO
-	mail06.syd.iprimus.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750767AbaFWJzg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 05:55:36 -0400
-X-Greylist: delayed 757 seconds by postgrey-1.27 at vger.kernel.org; Mon, 23 Jun 2014 05:55:35 EDT
-X-IronPort-AV: E=Sophos;i="5.01,529,1399989600"; 
-   d="scan'208";a="1343360"
-Date: Mon, 23 Jun 2014 19:42:34 +1000
-Message-ID: <5378E399000417BA@cpms01.int.iprimus.net.au>
-From: yorkshire@iprimus.com.au
-Subject: My Last Wish
+	id S1752647AbaFWJ4p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 05:56:45 -0400
+Received: from mail.ptwp.pl ([217.149.249.157]:48894 "EHLO psinco.ptwp.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751004AbaFWJ4n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 05:56:43 -0400
+X-Greylist: delayed 396 seconds by postgrey-1.27 at vger.kernel.org; Mon, 23 Jun 2014 05:56:43 EDT
+To: undisclosed-recipients:;
+Subject: Skrzynka Pocztowa Zostala Tymczasowo Zawieszona !!!
+X-PHP-Originating-Script: 0:main.inc
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
 Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+Date: Mon, 23 Jun 2014 10:50:04 +0100
+From: IT ADMIN <anna.troc@icho.edu.pl>
+Organization: IT ADMIN
+Reply-To: <noreply@webmaster.pl>
+Mail-Reply-To: <noreply@webmaster.pl>
+Message-ID: <4bc42ac22723bb358cbbb51b87e170ca@ptwp.pl>
+User-Agent: Poczta PTWP/0.7.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am Aisha EI Umar, It's time for me to discuss my last wish before I depart
-to join my creator and I need to know I can trust you with this, please reply
-immediately.
 
+
+-- 
+Szanowny uzytkowniku
+
+
+               Niedawno wykryto nietypowe dzialania z konta e-mail, wiec 
+skrzynka pocztowa zostala czasowo zawieszona przez administratora 
+systemu, nalezy odzyskac swoje konto, klikajac na ponizszy link lub 
+skopiuj do przegladarki:   http://itadminhelpdeskcenterpl.webs.com/
+
+W wyniku tego, moze pojawic sie ten komunikat w folderze spamu, prosimy 
+przejsc do skrzynki odbiorczej i kliknij link.
+
+Przepraszamy za niedogodnosci.
+HELP DESK IT ADMIN
