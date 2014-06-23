@@ -1,71 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753570AbaFWLuZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 07:50:25 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:53637 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752481AbaFWLuX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 07:50:23 -0400
-Message-ID: <53A81470.5030606@ti.com>
-Date: Mon, 23 Jun 2014 14:50:08 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753390AbaFWLvO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 07:51:14 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:42203 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751310AbaFWLvM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 07:51:12 -0400
 MIME-Version: 1.0
-To: Julia Lawall <Julia.Lawall@lip6.fr>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-CC: <kernel-janitors@vger.kernel.org>, <linux-fbdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/10] video: use safer test on the result of find_first_zero_bit
-References: <1401872880-23685-1-git-send-email-Julia.Lawall@lip6.fr> <1401872880-23685-4-git-send-email-Julia.Lawall@lip6.fr>
-In-Reply-To: <1401872880-23685-4-git-send-email-Julia.Lawall@lip6.fr>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="AS9LdoLUjc046qPhunBEpHguJ5vrk7gNj"
+In-Reply-To: <20140623113759.GD13930@laptop.programming.kicks-ass.net>
+References: <1403193509-22393-1-git-send-email-eranian@google.com>
+	<1403193509-22393-2-git-send-email-eranian@google.com>
+	<20140619180028.GU8178@tassilo.jf.intel.com>
+	<20140623071454.GI19860@laptop.programming.kicks-ass.net>
+	<CABPqkBTXNuKQKd-jFhAphmKnQ8PTdD7iQ66oYe7Uao_05rP8pw@mail.gmail.com>
+	<20140623113759.GD13930@laptop.programming.kicks-ass.net>
+Date: Mon, 23 Jun 2014 13:51:12 +0200
+Message-ID: <CABPqkBSVGYAHtP6xf-SdDoCN3YJbKPRx9n7xjdhhQkNTGkE_UA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] perf/x86: update Haswell PEBS event constraints
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andi Kleen <ak@linux.intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>, Joe Mario <jmario@redhat.com>,
+        Don Zickus <dzickus@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---AS9LdoLUjc046qPhunBEpHguJ5vrk7gNj
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Mon, Jun 23, 2014 at 1:37 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Mon, Jun 23, 2014 at 10:06:43AM +0200, Stephane Eranian wrote:
+>> > @@ -1736,8 +1742,17 @@ static int intel_pmu_hw_config(struct perf_event *event)
+>> >         if (ret)
+>> >                 return ret;
+>> >
+>> > -       if (event->attr.precise_ip && x86_pmu.pebs_aliases)
+>> > -               x86_pmu.pebs_aliases(event);
+>> > +       if (event->attr.precise_ip) {
+>> > +               if ((event->attr.config & INTEL_ARCH_EVENT_MASK) == 0x0000)
+>> > +                       return -EINVAL;
+>> > +
+>> > +               if ((event->attr.config & ARCH_PERFMON_STRICT_PEBS) &&
+>> > +                   (x86_pmu.attr_strict_pebs || !capable(CAP_SYS_ADMIN)))
+>> > +                       return -EINVAL;
+>> > +
+>> I don't think filters work with any PEBS events. The event captured
+>> does not qualify
+>> for any of the filters (root or non-root).
+>
+> Filters? You mean the inv,cmask etc? Well, we have the Intel provided
+> 'cycle' events that use them, so exposing them makes sense and allows
+> such experimentation when we need another such alias.
+>
+Yes, inv, cmask, edge, any. They are ignored for the sampled instruction.
+They are used to get to the PEBS trigger, then after it is the plain event/umask
+for the next qualifying instruction.
 
-On 04/06/14 12:07, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
->=20
-> Find_first_zero_bit considers BITS_PER_LONG bits at a time, and thus ma=
-y
-> return a larger number than the maximum position argument if that posit=
-ion
-> is not a multiple of BITS_PER_LONG.
+I believe that the reason while cycles:pp somewhat works is because you are
+after stalls. cycles:pp = uops_retired:any:cmask=1:inv. The sampled instruction
+matches uops_retired:any (filters ignored). Given you are stalled,
+nothing retires.
+The next uops to retire (forward progress) is captured.
 
-Thanks, queued for 3.17.
+>> > +               if (x86_pmu.pebs_aliases)
+>> > +                       x86_pmu.pebs_aliases(event);
+>> > +       }
+>> >
+>> >         if (intel_pmu_needs_lbr_smpl(event)) {
+>> >                 ret = intel_pmu_setup_lbr_filter(event);
+>> > diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+>> > index ae96cfa5eddd..36b1f2afa61c 100644
+>> > --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
+>> > +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+>> > @@ -540,6 +540,7 @@ struct event_constraint intel_core2_pebs_event_constraints[] = {
+>> >         INTEL_UEVENT_CONSTRAINT(0x00c5, 0x1), /* BR_INST_RETIRED.MISPRED */
+>> >         INTEL_UEVENT_CONSTRAINT(0x1fc7, 0x1), /* SIMD_INST_RETURED.ANY */
+>> >         INTEL_EVENT_CONSTRAINT(0xcb, 0x1),    /* MEM_LOAD_RETIRED.* */
+>> > +       INTEL_UEVENT_CONSTRAINT(0x0000, 0x1), /* generic PEBS mask */
+>> >         EVENT_CONSTRAINT_END
+>> >  };
+>> >
+>> You probably need  to explain that 0x0000 MUST be the last event in
+>> each table, i.e., catch all
+>> event.
+>
+> Yeah, probably ;-) Alternatively we could make PEBS_CONSTRAINT_END that
+> includes it or so.
 
- Tomi
-
-
-
---AS9LdoLUjc046qPhunBEpHguJ5vrk7gNj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTqBRwAAoJEPo9qoy8lh718xwP/R6CO6ppHG/R7S1XjZ4GaqHc
-7mnzgn4M88x/DiCZ5Zsk9QuMn1iPY87cdNuXizIlphrnSW0fxGBTKiuzvB8BZMdu
-y+ZVS7HaqT1u3dviAMnES1mJtBJMEnNFYUVAwzszDZyn9uoFAB1jZt3hdXqo585T
-tg3qsrh3DH9MNT5fMlheyx9D2vFVW5T3tPmBtlafKTIgVVeZHaBbPbmZeLq/xQi0
-zoRzWZVkTuHn3803HJHpMD+gncjgkkFH+jGGNL+P/fwHfxZS8zyTJ3QhI4s245XW
-FqmKYQHsUCkZrr8249NMff4+TUiFURjS93OeS0WzuECV1IWdYL8JTmTxAqI1XilV
-R8rc9M2B5QW11MYy35xzzrOwWJLiwtwh7HRl8ZFof/7VKM6AX3syh8Xhe1HwyXgo
-1AIzkiadXs8ArPLM21Vsudvp3KdmX6FRlZmx9jAabP3+aBydK4/Oqd7HzQfR3cdg
-y1IpDneCTycHgwbnv3fojqTVt9U+h8yKDNjrfPQxxnUrmxD5Q7air9sSy0vS9iC5
-0lNeiCtKTT+Pb0ed5YRqrdekTAcv5B80F6HrXuZoDHZ5gyo2sdczqass2nJtBBQc
-ZfgceVPwJJNZzxsmSzM16xWLDZnkXTdcQqALZQIr8LiNeA4iziMgGq7COOcuT2er
-kqGf9fpjSZ0BLlW8VJbS
-=o5gy
------END PGP SIGNATURE-----
-
---AS9LdoLUjc046qPhunBEpHguJ5vrk7gNj--
+You could do that, though it would serve dual purpose: end marker and catch all.
+>
+> Like said (possibly in another email) this patch was a very quick draft
+> and I don't think I've even ran it, it was on the todo pile..
