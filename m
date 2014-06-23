@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752658AbaFWH7g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 03:59:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50586 "EHLO mx1.redhat.com"
+	id S1752552AbaFWH7e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 03:59:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17122 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752374AbaFWH7b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 03:59:31 -0400
+	id S1752375AbaFWH7c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 03:59:32 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Jan Kiszka <jan.kiszka@siemens.com>,
         Steven Rostedt <rostedt@goodmis.org>, Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCH 1/7] tools lib traceevent: Report unknown VMX exit reasons with code
-Date: Mon, 23 Jun 2014 09:59:12 +0200
-Message-Id: <1403510358-4573-2-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 2/7] tools lib traceevent: Factor out print_exit_reason in kvm plugin
+Date: Mon, 23 Jun 2014 09:59:13 +0200
+Message-Id: <1403510358-4573-3-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1403510358-4573-1-git-send-email-jolsa@kernel.org>
 References: <1403510358-4573-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,53 +21,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jan Kiszka <jan.kiszka@siemens.com>
 
-Allows to parse the result even if the KVM plugin does not yet
-understand a specific exit code.
+We will reuse it for nested vmexit tracepoints.
 
-Link: http://lkml.kernel.org/r/5207446F.1090703@web.de
+Link: http://lkml.kernel.org/r/619c418c8af87f03027b8c8013b0443996605700.1388855989.git.jan.kiszka@web.de
 
 Acked-by: Namhyung Kim <namhyung@kernel.org>
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/lib/traceevent/plugin_kvm.c | 12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ tools/lib/traceevent/plugin_kvm.c | 17 +++++++++++++----
+ 1 file changed, 13 insertions(+), 4 deletions(-)
 
 diff --git a/tools/lib/traceevent/plugin_kvm.c b/tools/lib/traceevent/plugin_kvm.c
-index 9e0e8c6..3e61220 100644
+index 3e61220..2d7d1d7 100644
 --- a/tools/lib/traceevent/plugin_kvm.c
 +++ b/tools/lib/traceevent/plugin_kvm.c
-@@ -240,9 +240,8 @@ static const char *find_exit_reason(unsigned isa, int val)
- 	for (i = 0; strings[i].val >= 0; i++)
- 		if (strings[i].val == val)
- 			break;
--	if (strings[i].str)
--		return strings[i].str;
--	return "UNKNOWN";
-+
-+	return strings[i].str;
+@@ -244,15 +244,14 @@ static const char *find_exit_reason(unsigned isa, int val)
+ 	return strings[i].str;
  }
  
- static int kvm_exit_handler(struct trace_seq *s, struct pevent_record *record,
-@@ -251,6 +250,7 @@ static int kvm_exit_handler(struct trace_seq *s, struct pevent_record *record,
+-static int kvm_exit_handler(struct trace_seq *s, struct pevent_record *record,
+-			    struct event_format *event, void *context)
++static int print_exit_reason(struct trace_seq *s, struct pevent_record *record,
++			     struct event_format *event, const char *field)
+ {
  	unsigned long long isa;
  	unsigned long long val;
- 	unsigned long long info1 = 0, info2 = 0;
-+	const char *reason;
+-	unsigned long long info1 = 0, info2 = 0;
+ 	const char *reason;
  
- 	if (pevent_get_field_val(s, event, "exit_reason", record, &val, 1) < 0)
+-	if (pevent_get_field_val(s, event, "exit_reason", record, &val, 1) < 0)
++	if (pevent_get_field_val(s, event, field, record, &val, 1) < 0)
  		return -1;
-@@ -258,7 +258,11 @@ static int kvm_exit_handler(struct trace_seq *s, struct pevent_record *record,
- 	if (pevent_get_field_val(s, event, "isa", record, &isa, 0) < 0)
- 		isa = 1;
  
--	trace_seq_printf(s, "reason %s", find_exit_reason(isa, val));
-+	reason = find_exit_reason(isa, val);
-+	if (reason)
-+		trace_seq_printf(s, "reason %s", reason);
-+	else
-+		trace_seq_printf(s, "reason UNKNOWN (%llu)", val);
+ 	if (pevent_get_field_val(s, event, "isa", record, &isa, 0) < 0)
+@@ -263,6 +262,16 @@ static int kvm_exit_handler(struct trace_seq *s, struct pevent_record *record,
+ 		trace_seq_printf(s, "reason %s", reason);
+ 	else
+ 		trace_seq_printf(s, "reason UNKNOWN (%llu)", val);
++	return 0;
++}
++
++static int kvm_exit_handler(struct trace_seq *s, struct pevent_record *record,
++			    struct event_format *event, void *context)
++{
++	unsigned long long info1 = 0, info2 = 0;
++
++	if (print_exit_reason(s, record, event, "exit_reason") < 0)
++		return -1;
  
  	pevent_print_num_field(s, " rip 0x%lx", event, "guest_rip", record, 1);
  
