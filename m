@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753952AbaFWNDl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:03:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36714 "EHLO
+	id S1755449AbaFWNga (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:36:30 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36720 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753926AbaFWNDj (ORCPT
+	with ESMTP id S1753929AbaFWNDk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:03:39 -0400
+	Mon, 23 Jun 2014 09:03:40 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Alex Deucher <alexander.deucher@amd.com>,
         =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 13/93] drm/radeon: handle non-VGA class pci devices with ATRM
-Date: Mon, 23 Jun 2014 14:01:52 +0100
-Message-Id: <1403528592-2163-14-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 14/93] drm/radeon: fix register typo on si
+Date: Mon, 23 Jun 2014 14:01:53 +0100
+Message-Id: <1403528592-2163-15-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
 References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
@@ -33,46 +33,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexdeucher@gmail.com>
 
-commit d8ade3526b2aa0505132c404c05a38b73ea15490 upstream.
+commit 4955bb073f1be6dd884b5d10041ba4bade6495bf upstream.
 
-Newer PX systems have non-VGA pci class dGPUs.  Update
-the ATRM fetch method to handle those cases.
-
-bug:
-https://bugzilla.kernel.org/show_bug.cgi?id=75401
+Probably a copy paste typo.
 
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Christian König <christian.koenig@amd.com>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/radeon_bios.c | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ drivers/gpu/drm/radeon/sid.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_bios.c b/drivers/gpu/drm/radeon/radeon_bios.c
-index 061b227dae0c..b131520521e4 100644
---- a/drivers/gpu/drm/radeon/radeon_bios.c
-+++ b/drivers/gpu/drm/radeon/radeon_bios.c
-@@ -196,6 +196,20 @@ static bool radeon_atrm_get_bios(struct radeon_device *rdev)
- 		}
- 	}
+diff --git a/drivers/gpu/drm/radeon/sid.h b/drivers/gpu/drm/radeon/sid.h
+index 0b55877c26b4..ff027425fe98 100644
+--- a/drivers/gpu/drm/radeon/sid.h
++++ b/drivers/gpu/drm/radeon/sid.h
+@@ -102,8 +102,8 @@
+ #define	CG_SPLL_FUNC_CNTL_4				0x60c
  
-+	if (!found) {
-+		while ((pdev = pci_get_class(PCI_CLASS_DISPLAY_OTHER << 8, pdev)) != NULL) {
-+			dhandle = ACPI_HANDLE(&pdev->dev);
-+			if (!dhandle)
-+				continue;
-+
-+			status = acpi_get_handle(dhandle, "ATRM", &atrm_handle);
-+			if (!ACPI_FAILURE(status)) {
-+				found = true;
-+				break;
-+			}
-+		}
-+	}
-+
- 	if (!found)
- 		return false;
+ #define	SPLL_CNTL_MODE					0x618
+-#	define SPLL_REFCLK_SEL(x)			((x) << 8)
+-#	define SPLL_REFCLK_SEL_MASK			0xFF00
++#	define SPLL_REFCLK_SEL(x)			((x) << 26)
++#	define SPLL_REFCLK_SEL_MASK			(3 << 26)
  
+ #define	CG_SPLL_SPREAD_SPECTRUM				0x620
+ #define		SSEN					(1 << 0)
 -- 
 1.9.1
 
