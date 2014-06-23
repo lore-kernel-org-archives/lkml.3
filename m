@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754183AbaFWItA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 04:49:00 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55572 "EHLO
+	id S1753698AbaFWIs5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 04:48:57 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:55559 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752608AbaFWIc3 (ORCPT
+	by vger.kernel.org with ESMTP id S1752589AbaFWIc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Jun 2014 04:32:29 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Lutomirski <luto@amacapital.net>,
+Cc: linux-kernel@vger.kernel.org, Yuchung Cheng <ycheng@google.com>,
+        Neal Cardwell <ncardwell@google.com>,
         "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 092/111] netlink: Only check file credentials for implicit destinations
-Date: Mon, 23 Jun 2014 10:32:07 +0200
-Message-Id: <bf5e2defa6e00fba34118b613d3539f818f84636.1403512281.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 099/111] tcp: fix cwnd undo on DSACK in F-RTO
+Date: Mon, 23 Jun 2014 10:32:14 +0200
+Message-Id: <dc4d3702659539dc9bdebf3bb4cfd4187c1cc9c5.1403512281.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
 References: <55d5f044a1fc96a74e4470e318c0a24f27a9ab7e.1403512280.git.jslaby@suse.cz>
@@ -24,116 +24,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: Yuchung Cheng <ycheng@google.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit 2d7a85f4b06e9c27ff629f07a524c48074f07f81 ]
+[ Upstream commit 0cfa5c07d6d1d7f8e710fc671c5ba1ce85e09fa4 ]
 
-It was possible to get a setuid root or setcap executable to write to
-it's stdout or stderr (which has been set made a netlink socket) and
-inadvertently reconfigure the networking stack.
+This bug is discovered by an recent F-RTO issue on tcpm list
+https://www.ietf.org/mail-archive/web/tcpm/current/msg08794.html
 
-To prevent this we check that both the creator of the socket and
-the currentl applications has permission to reconfigure the network
-stack.
+The bug is that currently F-RTO does not use DSACK to undo cwnd in
+certain cases: upon receiving an ACK after the RTO retransmission in
+F-RTO, and the ACK has DSACK indicating the retransmission is spurious,
+the sender only calls tcp_try_undo_loss() if some never retransmisted
+data is sacked (FLAG_ORIG_DATA_SACKED).
 
-Unfortunately this breaks Zebra which always uses sendto/sendmsg
-and creates it's socket without any privileges.
+The correct behavior is to unconditionally call tcp_try_undo_loss so
+the DSACK information is used properly to undo the cwnd reduction.
 
-To keep Zebra working don't bother checking if the creator of the
-socket has privilege when a destination address is specified.  Instead
-rely exclusively on the privileges of the sender of the socket.
-
-Note from Andy: This is exactly Eric's code except for some comment
-clarifications and formatting fixes.  Neither I nor, I think, anyone
-else is thrilled with this approach, but I'm hesitant to wait on a
-better fix since 3.15 is almost here.
-
-Note to stable maintainers: This is a mess.  An earlier series of
-patches in 3.15 fix a rather serious security issue (CVE-2014-0181),
-but they did so in a way that breaks Zebra.  The offending series
-includes:
-
-    commit aa4cf9452f469f16cea8c96283b641b4576d4a7b
-    Author: Eric W. Biederman <ebiederm@xmission.com>
-    Date:   Wed Apr 23 14:28:03 2014 -0700
-
-        net: Add variants of capable for use on netlink messages
-
-If a given kernel version is missing that series of fixes, it's
-probably worth backporting it and this patch.  if that series is
-present, then this fix is critical if you care about Zebra.
-
-Cc: stable@vger.kernel.org
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Yuchung Cheng <ycheng@google.com>
+Signed-off-by: Neal Cardwell <ncardwell@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- include/linux/netlink.h  | 7 ++++---
- net/netlink/af_netlink.c | 7 ++++++-
- 2 files changed, 10 insertions(+), 4 deletions(-)
+ net/ipv4/tcp_input.c | 11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/netlink.h b/include/linux/netlink.h
-index 8d11541890ff..8b50a62ef98b 100644
---- a/include/linux/netlink.h
-+++ b/include/linux/netlink.h
-@@ -16,9 +16,10 @@ static inline struct nlmsghdr *nlmsg_hdr(const struct sk_buff *skb)
- }
+diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
+index 068c8fb0d158..0e8af08a98fc 100644
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -2633,13 +2633,12 @@ static void tcp_process_loss(struct sock *sk, int flag, bool is_dupack)
+ 	bool recovered = !before(tp->snd_una, tp->high_seq);
  
- enum netlink_skb_flags {
--	NETLINK_SKB_MMAPED	= 0x1,		/* Packet data is mmaped */
--	NETLINK_SKB_TX		= 0x2,		/* Packet was sent by userspace */
--	NETLINK_SKB_DELIVERED	= 0x4,		/* Packet was delivered */
-+	NETLINK_SKB_MMAPED	= 0x1,	/* Packet data is mmaped */
-+	NETLINK_SKB_TX		= 0x2,	/* Packet was sent by userspace */
-+	NETLINK_SKB_DELIVERED	= 0x4,	/* Packet was delivered */
-+	NETLINK_SKB_DST		= 0x8,	/* Dst set in sendto or sendmsg */
- };
- 
- struct netlink_skb_parms {
-diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
-index 95bc6d298ca4..e6d457c4a4e4 100644
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -1365,7 +1365,9 @@ retry:
- bool __netlink_ns_capable(const struct netlink_skb_parms *nsp,
- 			struct user_namespace *user_ns, int cap)
- {
--	return sk_ns_capable(nsp->sk, user_ns, cap);
-+	return ((nsp->flags & NETLINK_SKB_DST) ||
-+		file_ns_capable(nsp->sk->sk_socket->file, user_ns, cap)) &&
-+		ns_capable(user_ns, cap);
- }
- EXPORT_SYMBOL(__netlink_ns_capable);
- 
-@@ -2285,6 +2287,7 @@ static int netlink_sendmsg(struct kiocb *kiocb, struct socket *sock,
- 	struct sk_buff *skb;
- 	int err;
- 	struct scm_cookie scm;
-+	u32 netlink_skb_flags = 0;
- 
- 	if (msg->msg_flags&MSG_OOB)
- 		return -EOPNOTSUPP;
-@@ -2306,6 +2309,7 @@ static int netlink_sendmsg(struct kiocb *kiocb, struct socket *sock,
- 		if ((dst_group || dst_portid) &&
- 		    !netlink_allowed(sock, NL_CFG_F_NONROOT_SEND))
- 			goto out;
-+		netlink_skb_flags |= NETLINK_SKB_DST;
- 	} else {
- 		dst_portid = nlk->dst_portid;
- 		dst_group = nlk->dst_group;
-@@ -2335,6 +2339,7 @@ static int netlink_sendmsg(struct kiocb *kiocb, struct socket *sock,
- 	NETLINK_CB(skb).portid	= nlk->portid;
- 	NETLINK_CB(skb).dst_group = dst_group;
- 	NETLINK_CB(skb).creds	= siocb->scm->creds;
-+	NETLINK_CB(skb).flags	= netlink_skb_flags;
- 
- 	err = -EFAULT;
- 	if (memcpy_fromiovec(skb_put(skb, len), msg->msg_iov, len)) {
+ 	if (tp->frto) { /* F-RTO RFC5682 sec 3.1 (sack enhanced version). */
+-		if (flag & FLAG_ORIG_SACK_ACKED) {
+-			/* Step 3.b. A timeout is spurious if not all data are
+-			 * lost, i.e., never-retransmitted data are (s)acked.
+-			 */
+-			tcp_try_undo_loss(sk, true);
++		/* Step 3.b. A timeout is spurious if not all data are
++		 * lost, i.e., never-retransmitted data are (s)acked.
++		 */
++		if (tcp_try_undo_loss(sk, flag & FLAG_ORIG_SACK_ACKED))
+ 			return;
+-		}
++
+ 		if (after(tp->snd_nxt, tp->high_seq) &&
+ 		    (flag & FLAG_DATA_SACKED || is_dupack)) {
+ 			tp->frto = 0; /* Loss was real: 2nd part of step 3.a */
 -- 
 2.0.0
 
