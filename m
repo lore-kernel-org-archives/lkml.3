@@ -1,74 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755706AbaFWOr2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 10:47:28 -0400
-Received: from nbd.name ([46.4.11.11]:38747 "EHLO nbd.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755648AbaFWOrZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 10:47:25 -0400
-Message-ID: <53A83DE1.4050106@openwrt.org>
-Date: Mon, 23 Jun 2014 16:46:57 +0200
-From: Felix Fietkau <nbd@openwrt.org>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1754730AbaFWOy7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 10:54:59 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:60647 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753715AbaFWOy5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 10:54:57 -0400
+Date: Mon, 23 Jun 2014 06:33:41 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, dave.hansen@intel.com, ak@linux.intel.com,
+        cl@gentwo.org, umgwanakikbuti@gmail.com
+Subject: Re: [PATCH tip/core/rcu] Reduce overhead of cond_resched() checks
+ for RCU
+Message-ID: <20140623133341.GA4603@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140621025958.GA7185@linux.vnet.ibm.com>
+ <20140623062615.GB19860@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Rostislav Lisovy <lisovy@gmail.com>,
-        Johannes Berg <johannes@sipsolutions.net>
-CC: "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michal Sojka <sojkam1@fel.cvut.cz>, s.sander@nordsys.de,
-        jan-niklas.meier@volkswagen.de,
-        Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
-Subject: Re: [PATCH 2/2] cfg80211: Use 5MHz bandwidth by default when checking
- usable channels
-References: <1397565476-4348-1-git-send-email-rostislav.lisovy@fel.cvut.cz>	 <1397565476-4348-3-git-send-email-rostislav.lisovy@fel.cvut.cz>	 <53A6C0FF.9090104@openwrt.org>	 <1403514536.4418.6.camel@jlt4.sipsolutions.net>	 <53A7FBB2.2050703@openwrt.org>	 <1403517938.4418.16.camel@jlt4.sipsolutions.net> <1403534300.7341.6.camel@lolumad>
-In-Reply-To: <1403534300.7341.6.camel@lolumad>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140623062615.GB19860@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14062314-1542-0000-0000-000002C4824A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-06-23 16:38, Rostislav Lisovy wrote:
-> On Mon, 2014-06-23 at 12:05 +0200, Johannes Berg wrote:
->> On Mon, 2014-06-23 at 12:04 +0200, Felix Fietkau wrote:
->> > On 2014-06-23 11:08, Johannes Berg wrote:
->> > > On Sun, 2014-06-22 at 13:41 +0200, Felix Fietkau wrote:
->> > >> On 2014-04-15 14:37, Rostislav Lisovy wrote:
->> > >> > Current code checks if the 20MHz bandwidth is allowed for
->> > >> > particular channel -- if it is not, the channel is disabled.
->> > >> > Since we need to use 5/10 MHz channels, this code is modified in
->> > >> > the way that the default bandwidth to check is 5MHz. If the
->> > >> > maximum bandwidth allowed by the channel is smaller than 5MHz,
->> > >> > the channel is disabled. Otherwise the channel is used and the
->> > >> > flags are set according to the bandwidth allowed by the channel.
->> > >> > 
->> > >> > Signed-off-by: Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
->> > > 
->> > >> This change causes a regression and needs to be reverted or fixed.
->> > > 
->> > > Noted, I've reverted it in mac80211.git.
->> > > 
->> > >> It leaves Channel 12 enabled for US regdomain and does not prevent
->> > >> bringing up AP mode on it (IEEE80211_CHAN_NO_20MHZ does not get set).
->> > > 
->> > > I'm not sure this makes sense - CHAN_NO_20MHZ shouldn't get set on that
->> > > channel? It should be disabled for other reasons for AP mode - e.g.
->> > > NO_IR.
->> > I was thinking it could be valid in AP mode for 5 MHz operation.
->> 
->> Huh, ok, maybe. I guess Rostislav can look into the details :)
->> 
+On Mon, Jun 23, 2014 at 08:26:15AM +0200, Peter Zijlstra wrote:
+> On Fri, Jun 20, 2014 at 07:59:58PM -0700, Paul E. McKenney wrote:
+> > Commit ac1bea85781e (Make cond_resched() report RCU quiescent states)
+> > fixed a problem where a CPU looping in the kernel with but one runnable
+> > task would give RCU CPU stall warnings, even if the in-kernel loop
+> > contained cond_resched() calls.  Unfortunately, in so doing, it introduced
+> > performance regressions in Anton Blanchard's will-it-scale "open1" test.
+> > The problem appears to be not so much the increased cond_resched() path
+> > length as an increase in the rate at which grace periods complete, which
+> > increased per-update grace-period overhead.
+> > 
+> > This commit takes a different approach to fixing this bug, mainly by
+> > moving the RCU-visible quiescent state from cond_resched() to
+> > rcu_note_context_switch(), and by further reducing the check to a
+> > simple non-zero test of a single per-CPU variable.  However, this
+> > approach requires that the force-quiescent-state processing send
+> > resched IPIs to the offending CPUs.  These will be sent only once
+> > the grace period has reached an age specified by the boot/sysfs
+> > parameter rcutree.jiffies_till_sched_qs, or once the grace period
+> > reaches an age halfway to the point at which RCU CPU stall warnings
+> > will be emitted, whichever comes first.
 > 
-> I am a bit confused right now. The regression is that the channel used
-> to be completely disabled and now it is not? The regulatory restrictions
-> prohibit the 20MHz BW for this channel but 5MHz BW is alright?
-Correct. The matching rule is this:
-        (2402 - 2472 @ 40), (N/A, 30), (N/A)
+> Right, and I suppose the force quiescent stuff is triggered from the
+> tick, which in turn wakes some of these rcu kthreads, which on UP would
+> cause scheduling themselves.
 
-Channel 11 (2462 MHz) is allowed, because 2472 MHz is below the limit.
-Channel 12 (2467 MHz) is not allowed, because 2477 MHz is too high.
+Yep, which is another reason why this commit only affects TREE_RCU and
+TREE_PREEMPT_RCU, not TINY_RCU.
 
-With your change, Channel 12 was enabled and usable for AP mode.
+> On the topic of these threads; I recently noticed RCU grew a metric ton
+> of them, I found some 75 rcu kthreads on my box, wth up with that?
 
-- Felix
+The most likely cause of a recent increase would be if you now have
+CONFIG_RCU_NOCB_CPU_ALL=y, which would give you a pair of kthreads per
+CPU for callback offloading.  Plus an additional kthread per CPU (for
+a total of three new kthreads per CPU) for CONFIG_PREEMPT=y.  These would
+be the rcuo kthreads.
+
+Are they causing you trouble?
+
+							Thanx, Paul
+
