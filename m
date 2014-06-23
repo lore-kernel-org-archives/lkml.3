@@ -1,44 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472AbaFWLKc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 07:10:32 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:43249 "EHLO bear.ext.ti.com"
+	id S1753536AbaFWLLt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 07:11:49 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52373 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752500AbaFWLKb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 07:10:31 -0400
-Message-ID: <53A80B1D.3020706@ti.com>
-Date: Mon, 23 Jun 2014 14:10:21 +0300
+	id S1752443AbaFWLLr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 07:11:47 -0400
+Message-ID: <53A80B6B.5060805@ti.com>
+Date: Mon, 23 Jun 2014 14:11:39 +0300
 From: Tomi Valkeinen <tomi.valkeinen@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Himangi Saraogi <himangi774@gmail.com>,
+To: Emil Goode <emilgoode@gmail.com>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: <julia.lawall@lip6.fr>
-Subject: Re: [PATCH] video: Introduce the use of the managed version of kzalloc
-References: <20140525104035.GA3187@himangi-Dell>
-In-Reply-To: <20140525104035.GA3187@himangi-Dell>
+        Jingoo Han <jg1.han@samsung.com>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>
+CC: <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <kernel-janitors@vger.kernel.org>
+Subject: Re: [PATCH] video: Remove kfree call since devm_kzalloc() is used
+References: <1403301037-10699-1-git-send-email-emilgoode@gmail.com>
+In-Reply-To: <1403301037-10699-1-git-send-email-emilgoode@gmail.com>
 X-Enigmail-Version: 1.6
 Content-Type: multipart/signed; micalg=pgp-sha1;
 	protocol="application/pgp-signature";
-	boundary="JWG6uHdO0NfmX0nWaJSvdptEhLxSMPAXL"
+	boundary="6EvHtPagVnHAXSSuAF098foJG355qadOV"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---JWG6uHdO0NfmX0nWaJSvdptEhLxSMPAXL
+--6EvHtPagVnHAXSSuAF098foJG355qadOV
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: quoted-printable
 
-On 25/05/14 13:40, Himangi Saraogi wrote:
-> This patch moves data allocated using kzalloc to managed data allocated=
-
-> using devm_kzalloc and cleans now unnecessary kfrees in probe and remov=
-e
-> functions. Also, linux/device.h is added to make sure the devm_*()
-> routine declarations are unambiguously available. The function
-> mddi_dummy_remove is removed as it is no longer required after
-> removing the kfree. The variable ret is also done away with.
+On 21/06/14 00:50, Emil Goode wrote:
+> We use devm_kzalloc() to allocate memory for the struct vt8500lcd_info
+> pointer fbi, so there is no need to free it in vt8500lcd_remove().
+>=20
+> Signed-off-by: Emil Goode <emilgoode@gmail.com>
+> ---
+>  drivers/video/fbdev/vt8500lcdfb.c |    2 --
+>  1 file changed, 2 deletions(-)
+>=20
+> diff --git a/drivers/video/fbdev/vt8500lcdfb.c b/drivers/video/fbdev/vt=
+8500lcdfb.c
+> index a8f2b28..a1134c3 100644
+> --- a/drivers/video/fbdev/vt8500lcdfb.c
+> +++ b/drivers/video/fbdev/vt8500lcdfb.c
+> @@ -474,8 +474,6 @@ static int vt8500lcd_remove(struct platform_device =
+*pdev)
+>  	res =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>  	release_mem_region(res->start, resource_size(res));
+> =20
+> -	kfree(fbi);
+> -
+>  	return 0;
+>  }
+> =20
+>=20
 
 Thanks, queued for 3.17.
 
@@ -46,7 +64,7 @@ Thanks, queued for 3.17.
 
 
 
---JWG6uHdO0NfmX0nWaJSvdptEhLxSMPAXL
+--6EvHtPagVnHAXSSuAF098foJG355qadOV
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: OpenPGP digital signature
 Content-Disposition: attachment; filename="signature.asc"
@@ -54,19 +72,19 @@ Content-Disposition: attachment; filename="signature.asc"
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAEBAgAGBQJTqAsdAAoJEPo9qoy8lh71HoIP/jjfRRoIC5UYY0X4snZy3s7m
-mXo+JkjCLqu9st0gVfeXGXdoDqHh7t1/d5NQYo/Zvnv5niVHucvEVsrpsxzCXW7L
-8/fdA2EfCqwfOXyT7BgQtc2bZ5kBeRDwLnE0stpo0Mc5SB2enq1ozdO9d1RzgEOX
-m47WvOEL5se7NkjJgXxB7SmB5pfBBJoBiNA2dgCclLvgcrclda2A8cMrolVUlXs3
-xEzAf7r2cBx8kqBHy4l5pNrP56+hi9JQtKWyXAQeyjhb6UjnlcVzAmSd91E+k6G/
-LLqJp4DgU3QKX6ldXFx8OSWv7FCFQ4bt2iDbHqWxLTQVbqMz2PJbW4RBS7KoRkXC
-j/BpBCo84lxtOJs1tvp4aHJ7AZFHZdixRXwp7j9tPCEYLQokSod+MslpCJ7l/5Ds
-PUy4aoWbkpPZiWrOkoaCRnx2CsTiNJLA7r3uetAW5epw4Vo61vYAq1djOMyFRYJN
-baGaJNBoySwsf0PnNCsxyaeJTQB2WJHKwax/9s8pMGx4+JTmPNmkYUEBiIkpFdIL
-3oRVAhPEBgfMKhbtysEXLsBbr4fsR+Il5f7s3zfIEtgc45W6GSOSjG0B7DV1JbEK
-91zkTrFZMaBHyUg21iSV6csJA58OtspRIVdeWqgPwLTBP9V5HHcrD36XZ4hYRwqX
-YyG1/Q0DrMNLOi+UyF9l
-=N0uc
+iQIcBAEBAgAGBQJTqAtrAAoJEPo9qoy8lh715A0P/jQAOK46n0TJVCFnPESUagp7
+mDo9pIf/SocVGK5iMOdn1/vgUZoK9e+4DL0IfYyZvrklmRABUQtM3jk9HQittrHe
+3WmMQjqLdWaxdUXt47zJQqYQIw+53VQ3HUng/OEiDL1XCIYBZTRnJEoYnzSmIVTg
+cCkwv3zX2KLGjkAxRbKWVCJTUv45+w3ZyJs/6C/Qzx4LRXjZ/HGfkyz9x8LDk98u
+E0T9dN1+zkxcr4Zx8CuQBzIR3aWvF43JGUxIiSHT6eh50yWe78bEIM03be8PjNOQ
+WrxhAIG10VSKAdwzG8RoG9f41+5cW5j7GoWUE9x5hhHVHHHGdFjEFGhtULtSG/wc
+tcWMhipgRRy9UWAVN65qplim1aFttb7W30QcoChUrbzHIEUYvDBSfix4Cx6+Qana
+UxOzSxCBK4Sqcjj0sK0UZtutd5kSP2UjcYea9a2rsf4B52RZbD378Rm8iybE78fv
+nHixicROfXydkL5ZxvGHdCKrR/QKqk5+5jSCRdkxqa2MoQJNqvjainxb/P7q7O95
+Z8iphhfump6bTRuU4LW15sYta5wMZ+zA4nhzWMm9tlop+YERobRyUnk09sKnv5Cj
+19B28IFjdqLPzsj6OeEf1YyJtTqlwpM7t/jsN0A21JbQAyy6auCBQMF+blDsrc3B
+8+utDo4jZg+OlMV8mSAI
+=ZtRV
 -----END PGP SIGNATURE-----
 
---JWG6uHdO0NfmX0nWaJSvdptEhLxSMPAXL--
+--6EvHtPagVnHAXSSuAF098foJG355qadOV--
