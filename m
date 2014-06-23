@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752319AbaFWJeE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 05:34:04 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59207 "EHLO
+	id S1752661AbaFWJeS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 05:34:18 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59215 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751126AbaFWJeB (ORCPT
+	with ESMTP id S1751308AbaFWJeN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 05:34:01 -0400
-Date: Mon, 23 Jun 2014 02:33:48 -0700
+	Mon, 23 Jun 2014 05:34:13 -0400
+Date: Mon, 23 Jun 2014 02:34:01 -0700
 From: tip-bot for Viresh Kumar <tipbot@zytor.com>
-Message-ID: <tip-d6f93829811a3e74f58e3c3823d507411eed651a@git.kernel.org>
+Message-ID: <tip-9f6d9baaa8ca94b48aea495261cadaf2967c7784@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         fweisbec@gmail.com, viresh.kumar@linaro.org, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         fweisbec@gmail.com, viresh.kumar@linaro.org, tglx@linutronix.de
-In-Reply-To: <1403393357-2070-2-git-send-email-fweisbec@gmail.com>
-References: <1403393357-2070-2-git-send-email-fweisbec@gmail.com>
+In-Reply-To: <1403393357-2070-3-git-send-email-fweisbec@gmail.com>
+References: <1403393357-2070-3-git-send-email-fweisbec@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] timer: Store cpu-number in struct tvec_base
-Git-Commit-ID: d6f93829811a3e74f58e3c3823d507411eed651a
+Subject: [tip:timers/core] timer: Kick dynticks targets on mod_timer*()
+  calls
+Git-Commit-ID: 9f6d9baaa8ca94b48aea495261cadaf2967c7784
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,56 +32,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d6f93829811a3e74f58e3c3823d507411eed651a
-Gitweb:     http://git.kernel.org/tip/d6f93829811a3e74f58e3c3823d507411eed651a
+Commit-ID:  9f6d9baaa8ca94b48aea495261cadaf2967c7784
+Gitweb:     http://git.kernel.org/tip/9f6d9baaa8ca94b48aea495261cadaf2967c7784
 Author:     Viresh Kumar <viresh.kumar@linaro.org>
-AuthorDate: Sun, 22 Jun 2014 01:29:13 +0200
+AuthorDate: Sun, 22 Jun 2014 01:29:14 +0200
 Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 23 Jun 2014 11:23:46 +0200
+CommitDate: Mon, 23 Jun 2014 11:23:47 +0200
 
-timer: Store cpu-number in struct tvec_base
+timer: Kick dynticks targets on mod_timer*() calls
 
-Timers are serviced by the tick. But when a timer is enqueued on a
-dynticks target, we need to kick it in order to make it reconsider the
-next tick to schedule to correctly handle the timer's expiring time.
+When a timer is enqueued or modified on a dynticks target, that CPU
+must re-evaluate the next tick to service that timer.
 
-Now while this kick is correctly performed for add_timer_on(), the
-mod_timer*() family has been a bit neglected.
+The tick re-evaluation is performed by an IPI kick on the target.
+Now while we correctly call wake_up_nohz_cpu() from add_timer_on(), the
+mod_timer*() API family doesn't support so well dynticks targets.
 
-To prepare for fixing this, we need internal_add_timer() to be able to
-resolve the CPU target associated to a timer's object 'base' so that the
-kick can be centralized there.
+The reason for this is likely that __mod_timer() isn't supposed to
+select an idle target for a timer, unless that target is the current
+CPU, in which case a dynticks idle kick isn't actually needed.
 
-This can't be passed as an argument as not all the callers know the CPU
-number of a timer's base. So lets store it in the struct tvec_base to
-resolve the CPU without much overhead. It is set once for good at every
-CPU's first boot.
+But there is a small race window lurking behind that assumption: the
+elected target has all the time to turn dynticks idle between the call
+to get_nohz_timer_target() and the locking of its base. Hence a risk
+that we enqueue a timer on a dynticks idle destination without kicking
+it. As a result, the timer might be serviced too late in the future.
+
+Also a target elected by __mod_timer() can be in full dynticks mode
+and thus require to be kicked as well. And unlike idle dynticks, this
+concern both local and remote targets.
+
+To fix this whole issue, lets centralize the dynticks kick to
+internal_add_timer() so that it is well handled for all sort of timer
+enqueue. Even timer migration is concerned so that a full dynticks target
+is correctly kicked as needed when timers are migrating to it.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Link: http://lkml.kernel.org/r/1403393357-2070-2-git-send-email-fweisbec@gmail.com
+Link: http://lkml.kernel.org/r/1403393357-2070-3-git-send-email-fweisbec@gmail.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/time/timer.c | 2 ++
- 1 file changed, 2 insertions(+)
+ kernel/time/timer.c | 32 ++++++++++++++++----------------
+ 1 file changed, 16 insertions(+), 16 deletions(-)
 
 diff --git a/kernel/time/timer.c b/kernel/time/timer.c
-index 3bb01a3..9e5f4f2 100644
+index 9e5f4f2..aca5dfe 100644
 --- a/kernel/time/timer.c
 +++ b/kernel/time/timer.c
-@@ -82,6 +82,7 @@ struct tvec_base {
- 	unsigned long next_timer;
- 	unsigned long active_timers;
- 	unsigned long all_timers;
-+	int cpu;
- 	struct tvec_root tv1;
- 	struct tvec tv2;
- 	struct tvec tv3;
-@@ -1568,6 +1569,7 @@ static int init_timers_cpu(int cpu)
- 		}
- 		spin_lock_init(&base->lock);
- 		tvec_base_done[cpu] = 1;
-+		base->cpu = cpu;
- 	} else {
- 		base = per_cpu(tvec_bases, cpu);
+@@ -410,6 +410,22 @@ static void internal_add_timer(struct tvec_base *base, struct timer_list *timer)
+ 			base->next_timer = timer->expires;
  	}
+ 	base->all_timers++;
++
++	/*
++	 * Check whether the other CPU is in dynticks mode and needs
++	 * to be triggered to reevaluate the timer wheel.
++	 * We are protected against the other CPU fiddling
++	 * with the timer by holding the timer base lock. This also
++	 * makes sure that a CPU on the way to stop its tick can not
++	 * evaluate the timer wheel.
++	 *
++	 * Spare the IPI for deferrable timers on idle targets though.
++	 * The next busy ticks will take care of it. Except full dynticks
++	 * require special care against races with idle_cpu(), lets deal
++	 * with that later.
++	 */
++	if (!tbase_get_deferrable(base) || tick_nohz_full_cpu(base->cpu))
++		wake_up_nohz_cpu(base->cpu);
+ }
+ 
+ #ifdef CONFIG_TIMER_STATS
+@@ -949,22 +965,6 @@ void add_timer_on(struct timer_list *timer, int cpu)
+ 	timer_set_base(timer, base);
+ 	debug_activate(timer, timer->expires);
+ 	internal_add_timer(base, timer);
+-	/*
+-	 * Check whether the other CPU is in dynticks mode and needs
+-	 * to be triggered to reevaluate the timer wheel.
+-	 * We are protected against the other CPU fiddling
+-	 * with the timer by holding the timer base lock. This also
+-	 * makes sure that a CPU on the way to stop its tick can not
+-	 * evaluate the timer wheel.
+-	 *
+-	 * Spare the IPI for deferrable timers on idle targets though.
+-	 * The next busy ticks will take care of it. Except full dynticks
+-	 * require special care against races with idle_cpu(), lets deal
+-	 * with that later.
+-	 */
+-	if (!tbase_get_deferrable(timer->base) || tick_nohz_full_cpu(cpu))
+-		wake_up_nohz_cpu(cpu);
+-
+ 	spin_unlock_irqrestore(&base->lock, flags);
+ }
+ EXPORT_SYMBOL_GPL(add_timer_on);
