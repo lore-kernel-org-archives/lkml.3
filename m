@@ -1,49 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932214AbaFWQkm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 12:40:42 -0400
-Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:60157 "EHLO
-	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755721AbaFWQkl (ORCPT
+	id S932271AbaFWQks (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 12:40:48 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:41902 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932216AbaFWQko (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 12:40:41 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApsHADhXqFNbskjJ/2dsb2JhbABZgw2rZQUBAQEBAQEFAZF1h0CBDxd1hAsCUyOBCRE3iEYBxCUXhWOINWQdhC0EhGMDkwCCZpNjg0Q7gTE
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Jaegeuk Kim <jaegeuk.kim@samsung.com>,
-        linux-f2fs-devel@lists.sourceforge.net
-Subject: [PATCH 1/1] fs/f2fs/segment.c: replace count*size kzalloc by kcalloc
-Date: Mon, 23 Jun 2014 18:39:15 +0200
-Message-Id: <1403541555-10803-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	Mon, 23 Jun 2014 12:40:44 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140623163600.GB20939@kroah.com>
+References: <20140621180201.GA4621@amd.pavel.ucw.cz>
+	<CAKb7UvhOCiBHcsB6a0qKBNsC3c9pmb=Wc7zucbBuP6vt-tx2eA@mail.gmail.com>
+	<20140621194538.GA4903@kroah.com>
+	<CAKb7UvjhOystpeRy1nQx49Nspve4wHQPb+e7gJQ-RT-HseK4Cw@mail.gmail.com>
+	<20140623160727.GA19557@kroah.com>
+	<CAKb7UvhEMg96YzGuA=rxRDrzBhKiVaYMczrAcm4hA_A4jXAW2w@mail.gmail.com>
+	<20140623163600.GB20939@kroah.com>
+Date: Mon, 23 Jun 2014 12:40:43 -0400
+X-Google-Sender-Auth: 6qF9tATiYLK7e2Rn1Dqv_ExsSqY
+Message-ID: <CAKb7Uvgx_1mEPapJF3V5s8vUViGnRGCerkixwdTv_EpHhEozBg@mail.gmail.com>
+Subject: Re: unparseable, undocumented /sys/class/drm/.../pstate
+From: Ilia Mirkin <imirkin@alum.mit.edu>
+To: Greg KH <greg@kroah.com>
+Cc: Pavel Machek <pavel@ucw.cz>, kernel list <linux-kernel@vger.kernel.org>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        David Airlie <airlied@linux.ie>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kcalloc manages count*sizeof overflow.
+On Mon, Jun 23, 2014 at 12:36 PM, Greg KH <greg@kroah.com> wrote:
+> On Mon, Jun 23, 2014 at 12:18:51PM -0400, Ilia Mirkin wrote:
+>> On Mon, Jun 23, 2014 at 12:07 PM, Greg KH <greg@kroah.com> wrote:
+>> > On Sun, Jun 22, 2014 at 10:12:14PM -0400, Ilia Mirkin wrote:
+>> >> On Sat, Jun 21, 2014 at 3:45 PM, Greg KH <greg@kroah.com> wrote:
+>> >> > On Sat, Jun 21, 2014 at 02:22:59PM -0400, Ilia Mirkin wrote:
+>> >> >> On Sat, Jun 21, 2014 at 2:02 PM, Pavel Machek <pavel@ucw.cz> wrote:
+>> >> >> > Hi!
+>> >> >> >
+>> >> >> > AFAICT, pstate file will contain something like
+>> >> >> >
+>> >> >> > 07: core 100 MHz memory 123 MHz *
+>> >> >> > 08: core 100-200 MHz memory 123 MHz
+>> >> >> >
+>> >> >> > ...which does not look exactly like one-value-per-file, and I'm pretty
+>> >> >> > sure userspace will get it wrong if it tries to parse it. Plus, I
+>> >> >> > don't see required documentation in Documentation/ABI.
+>> >> >> >
+>> >> >> > Should we disable it for now, so that userspace does not start
+>> >> >> > depending on it and we'll not have to maintain it forever?
+>> >> >> >
+>> >> >> > I guess better interface would be something like
+>> >> >> >
+>> >> >> > pstate/07/core_clock_min
+>> >> >> >           core_clock_max
+>> >> >> >           memory_clock_min
+>> >> >> >           memory_clock_max
+>> >> >> >
+>> >> >> > and then pstate/active containing just the number of active state?
+>> >> >> >
+>> >> >> > Thanks,
+>> >> >> >                                                                 Pavel
+>> >> >> >
+>> >> >> > PS: I have no nvidia, got the news at
+>> >> >> >
+>> >> >> > http://www.phoronix.com/scan.php?page=article&item=nouveau_try_linux316&num=2
+>> >> >>
+>> >> >> FTR, this file has been in place since 3.13, and there was a different
+>> >> >> file before it (performance_levels), with a comparable format since
+>> >> >> much earlier (definitely 3.8, probably earlier). I think it's meant a
+>> >> >> lot more for people looking at it and echo'ing stuff to it to modify
+>> >> >> the levels (where supported), than for programs parsing it. Perhaps
+>> >> >> sysfs is the wrong place for this -- what is the right place? debugfs?
+>> >> >
+>> >> > Yes, please move it to debugfs.
+>> >>
+>> >> Could we just say that the format of this file is one-per-line of
+>> >>
+>> >> level: information-for-the-user
+>> >>
+>> >> And you can echo a level into it to switch to that level? That seems
+>> >> like a reasonable ABI to have... would be happy to throw it into a
+>> >> file somewhere... not sure where though.
+>> >
+>> > sysfs files are "one value per file", that's it.  Do anything other than
+>> > that, and it can not be in sysfs, sorry.
+>>
+>> I think that's a little inconsistent. There are *tons* of files in
+>> sysfs with multiple values. For example "local_cpulist" which contains
+>> the string "0-3" for me, the per-connector "modes" file which has a
+>> list of modes supported, and a "resource" file which has a list of hex
+>> values (which probably have something to do with PCI resources?). [I
+>> purposely picked values coming from different parts of the kernel not
+>> to focus on one subsystem...]
+>
+> A list of valid "values" that a file can be in is fine if you just then
+> write one value back to that file.  That's the one exception, but a
+> minor one given the huge number of sysfs files.  Other than that, if you
 
-Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: linux-f2fs-devel@lists.sourceforge.net
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/f2fs/segment.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Which is pretty much what the pstate file is. Would it make things
+better if we removed the descriptive info while leaving the pstate
+file in place?
 
-diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-index f25f0e0..96f51d4 100644
---- a/fs/f2fs/segment.c
-+++ b/fs/f2fs/segment.c
-@@ -1702,7 +1702,7 @@ static int build_curseg(struct f2fs_sb_info *sbi)
- 	struct curseg_info *array;
- 	int i;
- 
--	array = kzalloc(sizeof(*array) * NR_CURSEG_TYPE, GFP_KERNEL);
-+	array = kcalloc(NR_CURSEG_TYPE, sizeof(*array), GFP_KERNEL);
- 	if (!array)
- 		return -ENOMEM;
- 
--- 
-1.8.4.5
+> know of exceptions to that rule, please point them out and I will be
+> glad to yell at the developers.
+>
+> PCI device resources are binary sysfs files, which are just pass-through
+> files from the firmware/device to userspace, with no parsing done in the
+> kernel.  So that's just a single 'value' as well.
 
+$ cat /sys/class/drm/card0/device/resource
+0x00000000f0000000 0x00000000f03fffff 0x0000000000140204
+0x0000000000000000 0x0000000000000000 0x0000000000000000
+
+Doesn't seem like "binary" in the true sense, but perhaps that's close enough.
+
+  -ilia
