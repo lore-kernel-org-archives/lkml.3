@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754607AbaFWNEt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 09:04:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37033 "EHLO
+	id S1755252AbaFWNSX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 09:18:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37068 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754425AbaFWNEn (ORCPT
+	with ESMTP id S1754582AbaFWNEs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 09:04:43 -0400
+	Mon, 23 Jun 2014 09:04:48 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ben Hutchings <ben@decadent.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 52/93] Staging: speakup: Move pasting into a work item
-Date: Mon, 23 Jun 2014 14:02:31 +0100
-Message-Id: <1403528592-2163-53-git-send-email-luis.henriques@canonical.com>
+Cc: NeilBrown <neilb@suse.de>, Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 61/93] md: always set MD_RECOVERY_INTR when interrupting a reshape thread.
+Date: Mon, 23 Jun 2014 14:02:40 +0100
+Message-Id: <1403528592-2163-62-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
 References: <1403528592-2163-1-git-send-email-luis.henriques@canonical.com>
@@ -28,129 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: NeilBrown <neilb@suse.de>
 
-commit d7500135802ca55b3f4e01a16544e8b34082f8c3 upstream.
+commit 2ac295a544dcae9299cba13ce250419117ae7fd1 upstream.
 
-Input is handled in softirq context, but when pasting we may
-need to sleep.  speakup_paste_selection() currently tries to
-bodge this by busy-waiting if in_atomic(), but that doesn't
-help because the ldisc may also sleep.
+Commit 8313b8e57f55b15e5b7f7fc5d1630bbf686a9a97
+   md: fix problem when adding device to read-only array with bitmap.
 
-For bonus breakage, speakup_paste_selection() changes the
-state of current, even though it's not running in process
-context.
+added a called to md_reap_sync_thread() which cause a reshape thread
+to be interrupted (in particular, it could cause md_thread() to never even
+call md_do_sync()).
+However it didn't set MD_RECOVERY_INTR so ->finish_reshape() would not
+know that the reshape didn't complete.
 
-Move it into a work item and make sure to cancel it on exit.
+This only happens when mddev->ro is set and normally reshape threads
+don't run in that situation.  But raid5 and raid10 can start a reshape
+thread during "run" is the array is in the middle of a reshape.
+They do this even if ->ro is set.
 
-References: https://bugs.debian.org/735202
-References: https://bugs.debian.org/744015
-Reported-by: Paul Gevers <elbrus@debian.org>
-Reported-and-tested-by: Jarek Czekalski <jarekczek@poczta.onet.pl>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+So it is best to set MD_RECOVERY_INTR before abortingg the
+sync thread, just in case.
+
+Though it rare for this to trigger a problem it can cause data corruption
+because the reshape isn't finished properly.
+So it is suitable for any stable which the offending commit was applied to.
+(3.2 or later)
+
+Fixes: 8313b8e57f55b15e5b7f7fc5d1630bbf686a9a97
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/staging/speakup/main.c      |  1 +
- drivers/staging/speakup/selection.c | 38 +++++++++++++++++++++++++++++++------
- drivers/staging/speakup/speakup.h   |  1 +
- 3 files changed, 34 insertions(+), 6 deletions(-)
+ drivers/md/md.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/staging/speakup/main.c b/drivers/staging/speakup/main.c
-index 14079c4949a8..2239fddd8d1c 100644
---- a/drivers/staging/speakup/main.c
-+++ b/drivers/staging/speakup/main.c
-@@ -2220,6 +2220,7 @@ static void __exit speakup_exit(void)
- 	unregister_keyboard_notifier(&keyboard_notifier_block);
- 	unregister_vt_notifier(&vt_notifier_block);
- 	speakup_unregister_devsynth();
-+	speakup_cancel_paste();
- 	del_timer(&cursor_timer);
- 	kthread_stop(speakup_task);
- 	speakup_task = NULL;
-diff --git a/drivers/staging/speakup/selection.c b/drivers/staging/speakup/selection.c
-index f0fb00392d6b..f67941e78e4a 100644
---- a/drivers/staging/speakup/selection.c
-+++ b/drivers/staging/speakup/selection.c
-@@ -4,6 +4,8 @@
- #include <linux/sched.h>
- #include <linux/device.h> /* for dev_warn */
- #include <linux/selection.h>
-+#include <linux/workqueue.h>
-+#include <asm/cmpxchg.h>
- 
- #include "speakup.h"
- 
-@@ -121,20 +123,24 @@ int speakup_set_selection(struct tty_struct *tty)
- 	return 0;
- }
- 
--/* TODO: move to some helper thread, probably.  That'd fix having to check for
-- * in_atomic().  */
--int speakup_paste_selection(struct tty_struct *tty)
-+struct speakup_paste_work {
-+	struct work_struct work;
-+	struct tty_struct *tty;
-+};
-+
-+static void __speakup_paste_selection(struct work_struct *work)
- {
-+	struct speakup_paste_work *spw =
-+		container_of(work, struct speakup_paste_work, work);
-+	struct tty_struct *tty = xchg(&spw->tty, NULL);
- 	struct vc_data *vc = (struct vc_data *) tty->driver_data;
- 	int pasted = 0, count;
- 	DECLARE_WAITQUEUE(wait, current);
-+
- 	add_wait_queue(&vc->paste_wait, &wait);
- 	while (sel_buffer && sel_buffer_lth > pasted) {
- 		set_current_state(TASK_INTERRUPTIBLE);
- 		if (test_bit(TTY_THROTTLED, &tty->flags)) {
--			if (in_atomic())
--				/* if we are in an interrupt handler, abort */
--				break;
- 			schedule();
- 			continue;
- 		}
-@@ -146,6 +152,26 @@ int speakup_paste_selection(struct tty_struct *tty)
- 	}
- 	remove_wait_queue(&vc->paste_wait, &wait);
- 	current->state = TASK_RUNNING;
-+	tty_kref_put(tty);
-+}
-+
-+static struct speakup_paste_work speakup_paste_work = {
-+	.work = __WORK_INITIALIZER(speakup_paste_work.work,
-+				   __speakup_paste_selection)
-+};
-+
-+int speakup_paste_selection(struct tty_struct *tty)
-+{
-+	if (cmpxchg(&speakup_paste_work.tty, NULL, tty) != NULL)
-+		return -EBUSY;
-+
-+	tty_kref_get(tty);
-+	schedule_work_on(WORK_CPU_UNBOUND, &speakup_paste_work.work);
- 	return 0;
- }
- 
-+void speakup_cancel_paste(void)
-+{
-+	cancel_work_sync(&speakup_paste_work.work);
-+	tty_kref_put(speakup_paste_work.tty);
-+}
-diff --git a/drivers/staging/speakup/speakup.h b/drivers/staging/speakup/speakup.h
-index 0126f714821a..74fe72429b2d 100644
---- a/drivers/staging/speakup/speakup.h
-+++ b/drivers/staging/speakup/speakup.h
-@@ -77,6 +77,7 @@ extern void synth_buffer_clear(void);
- extern void speakup_clear_selection(void);
- extern int speakup_set_selection(struct tty_struct *tty);
- extern int speakup_paste_selection(struct tty_struct *tty);
-+extern void speakup_cancel_paste(void);
- extern void speakup_register_devsynth(void);
- extern void speakup_unregister_devsynth(void);
- extern void synth_write(const char *buf, size_t count);
+diff --git a/drivers/md/md.c b/drivers/md/md.c
+index c95b77132872..2d3111ba445c 100644
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -7809,6 +7809,7 @@ void md_check_recovery(struct mddev *mddev)
+ 			/* There is no thread, but we need to call
+ 			 * ->spare_active and clear saved_raid_disk
+ 			 */
++			set_bit(MD_RECOVERY_INTR, &mddev->recovery);
+ 			md_reap_sync_thread(mddev);
+ 			clear_bit(MD_RECOVERY_NEEDED, &mddev->recovery);
+ 			goto unlock;
 -- 
 1.9.1
 
