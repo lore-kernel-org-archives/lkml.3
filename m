@@ -1,62 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754084AbaFWJSZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 05:18:25 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:53671 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751560AbaFWJSY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 05:18:24 -0400
-Date: Mon, 23 Jun 2014 11:18:18 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Michal Nazarewicz <mina86@mina86.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: tsc: get rid of custom DIV_ROUND
-Message-ID: <20140623091818.GO19860@laptop.programming.kicks-ass.net>
-References: <1403143116-21755-1-git-send-email-mina86@mina86.com>
+	id S1754773AbaFWJTT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 05:19:19 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:60697 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751014AbaFWJTQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 05:19:16 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Chema Gonzalez'" <chema@google.com>,
+        Alexei Starovoitov <ast@plumgrid.com>
+CC: Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        "Jiri Olsa" <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v2 net-next 0/2] split BPF out of core networking
+Thread-Topic: [PATCH v2 net-next 0/2] split BPF out of core networking
+Thread-Index: AQHPjKbK6dVMO1jaiEqNK8n4efRtEJt+baHA
+Date: Mon, 23 Jun 2014 09:18:42 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1726087E@AcuExch.aculab.com>
+References: <1401692506-7796-1-git-send-email-ast@plumgrid.com>
+	<538C3C94.3080206@redhat.com>
+	<CAMEtUuzkjZCsReWH9cZs8AU0mJjZH9YOdCBTWusxe6-NZ9mQ=g@mail.gmail.com>
+	<538CAEA6.4060307@redhat.com>
+	<CAMEtUuwxJOgYgFjg9deQZOffeg6-JUGZXZ1Rj344eQmriQ0F0Q@mail.gmail.com>
+	<538D8DAA.7090105@redhat.com>
+	<CAMEtUuw8uyCGeLeUB0PXm5cCpqcsjPLZt6y9FcKjapbVPjWTuw@mail.gmail.com>
+	<538E319B.3000606@redhat.com>
+	<CAMEtUuzsHJioXZtuGje6UmwZmcmDZEn8PdkkYanA9j1sp242+Q@mail.gmail.com>
+	<CA+ZOOTOfq705CbUjx9ppw4gLxJ8JFCaFsphwhAS+NskHVjd86Q@mail.gmail.com>
+	<CAMEtUuxU_FKL4TJ2wJtOngean2RjjJxBbYpxNjJQKjA7HtU2Bg@mail.gmail.com>
+ <CA+ZOOTOjRmj-C0tncH=j4ZJj8aMMVF1RLK-gQiSB6RG=G5Xo7w@mail.gmail.com>
+In-Reply-To: <CA+ZOOTOjRmj-C0tncH=j4ZJj8aMMVF1RLK-gQiSB6RG=G5Xo7w@mail.gmail.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403143116-21755-1-git-send-email-mina86@mina86.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s5N9JMoG017121
 
-On Thu, Jun 19, 2014 at 03:58:36AM +0200, Michal Nazarewicz wrote:
-> When invoced for positive values, DIV_ROUND macro defined in
-> arch/x86/kernel/tsc.c behaves exactly like DIV_ROUND_CLOSEST from
-> include/linux/kernel.h file, so remove the custom macro in favour
-> of the shared one.
-
-See, I knew we'd had one. _CLOSEST is a dumb postfix though, its the
-default whenever people talk of rounding.
-
-> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-> ---
->  arch/x86/kernel/tsc.c | 6 ++----
->  1 file changed, 2 insertions(+), 4 deletions(-)
+From: Chema Gonzalez
+...
+> 4.5. BPF_ST|BPF_MEM
+> Operation: *(size *) (dst_reg + off16) = imm32
 > 
->  No changes after compilation:
+> This insn encodes 2 immediate values (the offset and the imm32 value)
+> in the insn, and actually forces the sock_filter_int 64-bit struct to
+> have both a 16-bit offset field and a 32-bit immediate field). In
+> fact, it's the only instructions that uses .off and .imm at the same
+> time (for all other instructions, at least one of the fields is always
+> 0).
 > 
->  $ ll tsc.o.*
->  -rw------- 1 mpn eng 46497 Jun 19 03:54 tsc.o.after
->  -rw------- 1 mpn eng 46497 Jun 19 03:55 tsc.o.before
->  $ objdump -d tsc.o.before >tsc.s.before
->  $ objdump -d tsc.o.after >tsc.s.after
->  $ diff -u tsc.s.before tsc.s.after
->  --- tsc.s.before	2014-06-19 03:56:54.880545041 +0200
->  +++ tsc.s.after	2014-06-19 03:56:54.884545079 +0200
->  @@ -1,5 +1,5 @@
->   
->  -tsc.o.before:     file format elf64-x86-64
->  +tsc.o.after:     file format elf64-x86-64
->   
->   
->   Disassembly of section .text:
->  $
+> This did not exist in classic BPF (where BPF_ST|BPF_MEM actually did
+> "mem[pc->k] = A;"). In fact, it's rare to find an ISA that allows
+> encoding 2 immediate values in a single insn. My impression (after
+> checking the x86 JIT implementation, which works on the eBPF code) is
+> that this was added as an x86 optimization, because x86 allows
+> encoding 2 values (offset and immediate) by using the displacement and
+> immediate suffixes. I wonder whether the ISA would be more readable if
+> we did this in 2 insn, one to put dst_reg+off16 in a temporary
+> register, and the second a simpler BPF_STX|BPF_MEM. Then we could use
+> the same space for the immediate and offset fields.
 
-This diff in a diff totally confused patch.
+One option is to add code to the x86 JIT to detect the two instruction
+sequence and generate a single instruction.
 
-Applies when I remove that.
+Thinks further, the JIT might be easier to write if there is a temporary
+register that is defined to be only valid for the next instruction (or two).
+Then the JIT can completely optimise away any assignments to it without
+requiring a full analysis of the entire program.
+
+	David
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
