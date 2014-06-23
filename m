@@ -1,88 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755940AbaFWQHj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 12:07:39 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:55422 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753835AbaFWQHi (ORCPT
+	id S1756018AbaFWQIJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 12:08:09 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:23489 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755251AbaFWQII (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 12:07:38 -0400
-X-Sasl-enc: v2154CZirzbGwE/9d7lILu6ywlCGEwYeTTJOVSpuxwRi 1403539657
-Date: Mon, 23 Jun 2014 12:07:27 -0400
-From: Greg KH <greg@kroah.com>
-To: Ilia Mirkin <imirkin@alum.mit.edu>
-Cc: Pavel Machek <pavel@ucw.cz>, kernel list <linux-kernel@vger.kernel.org>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        David Airlie <airlied@linux.ie>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
-Subject: Re: unparseable, undocumented /sys/class/drm/.../pstate
-Message-ID: <20140623160727.GA19557@kroah.com>
-References: <20140621180201.GA4621@amd.pavel.ucw.cz>
- <CAKb7UvhOCiBHcsB6a0qKBNsC3c9pmb=Wc7zucbBuP6vt-tx2eA@mail.gmail.com>
- <20140621194538.GA4903@kroah.com>
- <CAKb7UvjhOystpeRy1nQx49Nspve4wHQPb+e7gJQ-RT-HseK4Cw@mail.gmail.com>
+	Mon, 23 Jun 2014 12:08:08 -0400
+Date: Mon, 23 Jun 2014 12:08:05 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Jiri Kosina <jkosina@suse.cz>,
+        Michal Hocko <mhocko@suse.cz>, Jan Kara <jack@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Dave Anderson <anderson@redhat.com>, Petr Mladek <pmladek@suse.cz>
+Subject: Re: [RFC][PATCH 1/3] trace_seq: Move the trace_seq code to lib/
+Message-ID: <20140623120805.1624e1db@gandalf.local.home>
+In-Reply-To: <1403422685.4418.4.camel@jlt4.sipsolutions.net>
+References: <20140619213329.478113470@goodmis.org>
+	<20140619213952.058255809@goodmis.org>
+	<20140619220607.c6da2540.akpm@linux-foundation.org>
+	<20140620125823.5acb12dd@gandalf.local.home>
+	<1403422685.4418.4.camel@jlt4.sipsolutions.net>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKb7UvjhOystpeRy1nQx49Nspve4wHQPb+e7gJQ-RT-HseK4Cw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 22, 2014 at 10:12:14PM -0400, Ilia Mirkin wrote:
-> On Sat, Jun 21, 2014 at 3:45 PM, Greg KH <greg@kroah.com> wrote:
-> > On Sat, Jun 21, 2014 at 02:22:59PM -0400, Ilia Mirkin wrote:
-> >> On Sat, Jun 21, 2014 at 2:02 PM, Pavel Machek <pavel@ucw.cz> wrote:
-> >> > Hi!
-> >> >
-> >> > AFAICT, pstate file will contain something like
-> >> >
-> >> > 07: core 100 MHz memory 123 MHz *
-> >> > 08: core 100-200 MHz memory 123 MHz
-> >> >
-> >> > ...which does not look exactly like one-value-per-file, and I'm pretty
-> >> > sure userspace will get it wrong if it tries to parse it. Plus, I
-> >> > don't see required documentation in Documentation/ABI.
-> >> >
-> >> > Should we disable it for now, so that userspace does not start
-> >> > depending on it and we'll not have to maintain it forever?
-> >> >
-> >> > I guess better interface would be something like
-> >> >
-> >> > pstate/07/core_clock_min
-> >> >           core_clock_max
-> >> >           memory_clock_min
-> >> >           memory_clock_max
-> >> >
-> >> > and then pstate/active containing just the number of active state?
-> >> >
-> >> > Thanks,
-> >> >                                                                 Pavel
-> >> >
-> >> > PS: I have no nvidia, got the news at
-> >> >
-> >> > http://www.phoronix.com/scan.php?page=article&item=nouveau_try_linux316&num=2
-> >>
-> >> FTR, this file has been in place since 3.13, and there was a different
-> >> file before it (performance_levels), with a comparable format since
-> >> much earlier (definitely 3.8, probably earlier). I think it's meant a
-> >> lot more for people looking at it and echo'ing stuff to it to modify
-> >> the levels (where supported), than for programs parsing it. Perhaps
-> >> sysfs is the wrong place for this -- what is the right place? debugfs?
-> >
-> > Yes, please move it to debugfs.
-> 
-> Could we just say that the format of this file is one-per-line of
-> 
-> level: information-for-the-user
-> 
-> And you can echo a level into it to switch to that level? That seems
-> like a reasonable ABI to have... would be happy to throw it into a
-> file somewhere... not sure where though.
+On Sun, 22 Jun 2014 09:38:05 +0200
+Johannes Berg <johannes@sipsolutions.net> wrote:
 
-sysfs files are "one value per file", that's it.  Do anything other than
-that, and it can not be in sysfs, sorry.
 
-greg k-h
+> Looking at the code though, I'm not sure it's a pure optimisation - if
+> you do say putc() after a failed puts(), without this code the putc()
+> would succeed? I can't tell right now if that's really a problem, but it
+> seems you could get some odd behaviour out of it.
+
+How would putc() still succeed? We're just talking about the "full"
+field. It would still do the length check:
+
+	if (s->len >= (PAGE_SIZE - 1))
+		return 0;
+
+-- Steve
