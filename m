@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965265AbaFXQcO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:32:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32918 "EHLO
+	id S965298AbaFXQck (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:32:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32904 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932290AbaFXPxv (ORCPT
+	with ESMTP id S1755777AbaFXPxq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:53:51 -0400
+	Tue, 24 Jun 2014 11:53:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 09/68] net: Add variants of capable for use on on sockets
-Date: Tue, 24 Jun 2014 11:50:28 -0400
-Message-Id: <20140624154724.341658724@linuxfoundation.org>
+        Mimi Zohar <zohar@linux.vnet.ibm.com>
+Subject: [PATCH 3.14 06/68] evm: prohibit userspace writing security.evm HMAC value
+Date: Tue, 24 Jun 2014 11:50:25 -0400
+Message-Id: <20140624154724.208182324@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154723.907894814@linuxfoundation.org>
 References: <20140624154723.907894814@linuxfoundation.org>
@@ -29,93 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 
-[ Upstream commit a3b299da869d6e78cf42ae0b1b41797bcb8c5e4b ]
+commit 2fb1c9a4f2dbc2f0bd2431c7fa64d0b5483864e4 upstream.
 
-sk_net_capable - The common case, operations that are safe in a network namespace.
-sk_capable - Operations that are not known to be safe in a network namespace
-sk_ns_capable - The general case for special cases.
+Calculating the 'security.evm' HMAC value requires access to the
+EVM encrypted key.  Only the kernel should have access to it.  This
+patch prevents userspace tools(eg. setfattr, cp --preserve=xattr)
+from setting/modifying the 'security.evm' HMAC value directly.
 
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/net/sock.h |    5 +++++
- net/core/sock.c    |   49 +++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 54 insertions(+)
 
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -2278,6 +2278,11 @@ int sock_get_timestampns(struct sock *,
- int sock_recv_errqueue(struct sock *sk, struct msghdr *msg, int len, int level,
- 		       int type);
- 
-+bool sk_ns_capable(const struct sock *sk,
-+		   struct user_namespace *user_ns, int cap);
-+bool sk_capable(const struct sock *sk, int cap);
-+bool sk_net_capable(const struct sock *sk, int cap);
-+
- /*
-  *	Enable debug/info messages
+---
+ security/integrity/evm/evm_main.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+--- a/security/integrity/evm/evm_main.c
++++ b/security/integrity/evm/evm_main.c
+@@ -285,12 +285,20 @@ out:
+  * @xattr_value: pointer to the new extended attribute value
+  * @xattr_value_len: pointer to the new extended attribute value length
+  *
+- * Updating 'security.evm' requires CAP_SYS_ADMIN privileges and that
+- * the current value is valid.
++ * Before allowing the 'security.evm' protected xattr to be updated,
++ * verify the existing value is valid.  As only the kernel should have
++ * access to the EVM encrypted key needed to calculate the HMAC, prevent
++ * userspace from writing HMAC value.  Writing 'security.evm' requires
++ * requires CAP_SYS_ADMIN privileges.
   */
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -145,6 +145,55 @@
- static DEFINE_MUTEX(proto_list_mutex);
- static LIST_HEAD(proto_list);
- 
-+/**
-+ * sk_ns_capable - General socket capability test
-+ * @sk: Socket to use a capability on or through
-+ * @user_ns: The user namespace of the capability to use
-+ * @cap: The capability to use
-+ *
-+ * Test to see if the opener of the socket had when the socket was
-+ * created and the current process has the capability @cap in the user
-+ * namespace @user_ns.
-+ */
-+bool sk_ns_capable(const struct sock *sk,
-+		   struct user_namespace *user_ns, int cap)
-+{
-+	return file_ns_capable(sk->sk_socket->file, user_ns, cap) &&
-+		ns_capable(user_ns, cap);
-+}
-+EXPORT_SYMBOL(sk_ns_capable);
-+
-+/**
-+ * sk_capable - Socket global capability test
-+ * @sk: Socket to use a capability on or through
-+ * @cap: The global capbility to use
-+ *
-+ * Test to see if the opener of the socket had when the socket was
-+ * created and the current process has the capability @cap in all user
-+ * namespaces.
-+ */
-+bool sk_capable(const struct sock *sk, int cap)
-+{
-+	return sk_ns_capable(sk, &init_user_ns, cap);
-+}
-+EXPORT_SYMBOL(sk_capable);
-+
-+/**
-+ * sk_net_capable - Network namespace socket capability test
-+ * @sk: Socket to use a capability on or through
-+ * @cap: The capability to use
-+ *
-+ * Test to see if the opener of the socket had when the socke was created
-+ * and the current process has the capability @cap over the network namespace
-+ * the socket is a member of.
-+ */
-+bool sk_net_capable(const struct sock *sk, int cap)
-+{
-+	return sk_ns_capable(sk, sock_net(sk)->user_ns, cap);
-+}
-+EXPORT_SYMBOL(sk_net_capable);
-+
-+
- #ifdef CONFIG_MEMCG_KMEM
- int mem_cgroup_sockets_init(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
+ int evm_inode_setxattr(struct dentry *dentry, const char *xattr_name,
+ 		       const void *xattr_value, size_t xattr_value_len)
  {
++	const struct evm_ima_xattr_data *xattr_data = xattr_value;
++
++	if ((strcmp(xattr_name, XATTR_NAME_EVM) == 0)
++	    && (xattr_data->type == EVM_XATTR_HMAC))
++		return -EPERM;
+ 	return evm_protect_xattr(dentry, xattr_name, xattr_value,
+ 				 xattr_value_len);
+ }
 
 
