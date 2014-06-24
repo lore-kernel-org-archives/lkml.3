@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755120AbaFXPvy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:51:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60819 "EHLO
+	id S1755086AbaFXPvv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:51:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60814 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755088AbaFXPvw (ORCPT
+	with ESMTP id S1754596AbaFXPvs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:51:52 -0400
+	Tue, 24 Jun 2014 11:51:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Don A. Bailey" <donb@securitymouse.com>
-Subject: [PATCH 3.4 26/26] lzo: properly check for overruns
-Date: Tue, 24 Jun 2014 11:50:49 -0400
-Message-Id: <20140624154620.731380954@linuxfoundation.org>
+        "Markus F.X.J. Oberhumer" <markus@oberhumer.com>
+Subject: [PATCH 3.4 24/26] lib/lzo: Rename lzo1x_decompress.c to lzo1x_decompress_safe.c
+Date: Tue, 24 Jun 2014 11:50:47 -0400
+Message-Id: <20140624154620.642038372@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154619.499002156@linuxfoundation.org>
 References: <20140624154619.499002156@linuxfoundation.org>
@@ -28,178 +28,559 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+From: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>
 
-commit 206a81c18401c0cde6e579164f752c4b147324ce upstream.
+commit b6bec26cea948148a9420e7a0ac337f925de49e7 upstream.
 
-The lzo decompressor can, if given some really crazy data, possibly
-overrun some variable types.  Modify the checking logic to properly
-detect overruns before they happen.
+Rename the source file to match the function name and thereby
+also make room for a possible future even slightly faster
+"non-safe" decompressor version.
 
-Reported-by: "Don A. Bailey" <donb@securitymouse.com>
-Tested-by: "Don A. Bailey" <donb@securitymouse.com>
+Signed-off-by: Markus F.X.J. Oberhumer <markus@oberhumer.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- lib/lzo/lzo1x_decompress_safe.c |   62 ++++++++++++++++++++++++++--------------
- 1 file changed, 41 insertions(+), 21 deletions(-)
+ lib/decompress_unlzo.c          |    2 
+ lib/lzo/Makefile                |    2 
+ lib/lzo/lzo1x_decompress.c      |  255 ----------------------------------------
+ lib/lzo/lzo1x_decompress_safe.c |  255 ++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 257 insertions(+), 257 deletions(-)
 
---- a/lib/lzo/lzo1x_decompress_safe.c
+--- a/lib/decompress_unlzo.c
++++ b/lib/decompress_unlzo.c
+@@ -31,7 +31,7 @@
+  */
+ 
+ #ifdef STATIC
+-#include "lzo/lzo1x_decompress.c"
++#include "lzo/lzo1x_decompress_safe.c"
+ #else
+ #include <linux/decompress/unlzo.h>
+ #endif
+--- a/lib/lzo/Makefile
++++ b/lib/lzo/Makefile
+@@ -1,5 +1,5 @@
+ lzo_compress-objs := lzo1x_compress.o
+-lzo_decompress-objs := lzo1x_decompress.o
++lzo_decompress-objs := lzo1x_decompress_safe.o
+ 
+ obj-$(CONFIG_LZO_COMPRESS) += lzo_compress.o
+ obj-$(CONFIG_LZO_DECOMPRESS) += lzo_decompress.o
+--- a/lib/lzo/lzo1x_decompress.c
++++ /dev/null
+@@ -1,255 +0,0 @@
+-/*
+- *  LZO1X Decompressor from MiniLZO
+- *
+- *  Copyright (C) 1996-2005 Markus F.X.J. Oberhumer <markus@oberhumer.com>
+- *
+- *  The full LZO package can be found at:
+- *  http://www.oberhumer.com/opensource/lzo/
+- *
+- *  Changed for kernel use by:
+- *  Nitin Gupta <nitingupta910@gmail.com>
+- *  Richard Purdie <rpurdie@openedhand.com>
+- */
+-
+-#ifndef STATIC
+-#include <linux/module.h>
+-#include <linux/kernel.h>
+-#endif
+-
+-#include <asm/unaligned.h>
+-#include <linux/lzo.h>
+-#include "lzodefs.h"
+-
+-#define HAVE_IP(x, ip_end, ip) ((size_t)(ip_end - ip) < (x))
+-#define HAVE_OP(x, op_end, op) ((size_t)(op_end - op) < (x))
+-#define HAVE_LB(m_pos, out, op) (m_pos < out || m_pos >= op)
+-
+-#define COPY4(dst, src)	\
+-		put_unaligned(get_unaligned((const u32 *)(src)), (u32 *)(dst))
+-
+-int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
+-			unsigned char *out, size_t *out_len)
+-{
+-	const unsigned char * const ip_end = in + in_len;
+-	unsigned char * const op_end = out + *out_len;
+-	const unsigned char *ip = in, *m_pos;
+-	unsigned char *op = out;
+-	size_t t;
+-
+-	*out_len = 0;
+-
+-	if (*ip > 17) {
+-		t = *ip++ - 17;
+-		if (t < 4)
+-			goto match_next;
+-		if (HAVE_OP(t, op_end, op))
+-			goto output_overrun;
+-		if (HAVE_IP(t + 1, ip_end, ip))
+-			goto input_overrun;
+-		do {
+-			*op++ = *ip++;
+-		} while (--t > 0);
+-		goto first_literal_run;
+-	}
+-
+-	while ((ip < ip_end)) {
+-		t = *ip++;
+-		if (t >= 16)
+-			goto match;
+-		if (t == 0) {
+-			if (HAVE_IP(1, ip_end, ip))
+-				goto input_overrun;
+-			while (*ip == 0) {
+-				t += 255;
+-				ip++;
+-				if (HAVE_IP(1, ip_end, ip))
+-					goto input_overrun;
+-			}
+-			t += 15 + *ip++;
+-		}
+-		if (HAVE_OP(t + 3, op_end, op))
+-			goto output_overrun;
+-		if (HAVE_IP(t + 4, ip_end, ip))
+-			goto input_overrun;
+-
+-		COPY4(op, ip);
+-		op += 4;
+-		ip += 4;
+-		if (--t > 0) {
+-			if (t >= 4) {
+-				do {
+-					COPY4(op, ip);
+-					op += 4;
+-					ip += 4;
+-					t -= 4;
+-				} while (t >= 4);
+-				if (t > 0) {
+-					do {
+-						*op++ = *ip++;
+-					} while (--t > 0);
+-				}
+-			} else {
+-				do {
+-					*op++ = *ip++;
+-				} while (--t > 0);
+-			}
+-		}
+-
+-first_literal_run:
+-		t = *ip++;
+-		if (t >= 16)
+-			goto match;
+-		m_pos = op - (1 + M2_MAX_OFFSET);
+-		m_pos -= t >> 2;
+-		m_pos -= *ip++ << 2;
+-
+-		if (HAVE_LB(m_pos, out, op))
+-			goto lookbehind_overrun;
+-
+-		if (HAVE_OP(3, op_end, op))
+-			goto output_overrun;
+-		*op++ = *m_pos++;
+-		*op++ = *m_pos++;
+-		*op++ = *m_pos;
+-
+-		goto match_done;
+-
+-		do {
+-match:
+-			if (t >= 64) {
+-				m_pos = op - 1;
+-				m_pos -= (t >> 2) & 7;
+-				m_pos -= *ip++ << 3;
+-				t = (t >> 5) - 1;
+-				if (HAVE_LB(m_pos, out, op))
+-					goto lookbehind_overrun;
+-				if (HAVE_OP(t + 3 - 1, op_end, op))
+-					goto output_overrun;
+-				goto copy_match;
+-			} else if (t >= 32) {
+-				t &= 31;
+-				if (t == 0) {
+-					if (HAVE_IP(1, ip_end, ip))
+-						goto input_overrun;
+-					while (*ip == 0) {
+-						t += 255;
+-						ip++;
+-						if (HAVE_IP(1, ip_end, ip))
+-							goto input_overrun;
+-					}
+-					t += 31 + *ip++;
+-				}
+-				m_pos = op - 1;
+-				m_pos -= get_unaligned_le16(ip) >> 2;
+-				ip += 2;
+-			} else if (t >= 16) {
+-				m_pos = op;
+-				m_pos -= (t & 8) << 11;
+-
+-				t &= 7;
+-				if (t == 0) {
+-					if (HAVE_IP(1, ip_end, ip))
+-						goto input_overrun;
+-					while (*ip == 0) {
+-						t += 255;
+-						ip++;
+-						if (HAVE_IP(1, ip_end, ip))
+-							goto input_overrun;
+-					}
+-					t += 7 + *ip++;
+-				}
+-				m_pos -= get_unaligned_le16(ip) >> 2;
+-				ip += 2;
+-				if (m_pos == op)
+-					goto eof_found;
+-				m_pos -= 0x4000;
+-			} else {
+-				m_pos = op - 1;
+-				m_pos -= t >> 2;
+-				m_pos -= *ip++ << 2;
+-
+-				if (HAVE_LB(m_pos, out, op))
+-					goto lookbehind_overrun;
+-				if (HAVE_OP(2, op_end, op))
+-					goto output_overrun;
+-
+-				*op++ = *m_pos++;
+-				*op++ = *m_pos;
+-				goto match_done;
+-			}
+-
+-			if (HAVE_LB(m_pos, out, op))
+-				goto lookbehind_overrun;
+-			if (HAVE_OP(t + 3 - 1, op_end, op))
+-				goto output_overrun;
+-
+-			if (t >= 2 * 4 - (3 - 1) && (op - m_pos) >= 4) {
+-				COPY4(op, m_pos);
+-				op += 4;
+-				m_pos += 4;
+-				t -= 4 - (3 - 1);
+-				do {
+-					COPY4(op, m_pos);
+-					op += 4;
+-					m_pos += 4;
+-					t -= 4;
+-				} while (t >= 4);
+-				if (t > 0)
+-					do {
+-						*op++ = *m_pos++;
+-					} while (--t > 0);
+-			} else {
+-copy_match:
+-				*op++ = *m_pos++;
+-				*op++ = *m_pos++;
+-				do {
+-					*op++ = *m_pos++;
+-				} while (--t > 0);
+-			}
+-match_done:
+-			t = ip[-2] & 3;
+-			if (t == 0)
+-				break;
+-match_next:
+-			if (HAVE_OP(t, op_end, op))
+-				goto output_overrun;
+-			if (HAVE_IP(t + 1, ip_end, ip))
+-				goto input_overrun;
+-
+-			*op++ = *ip++;
+-			if (t > 1) {
+-				*op++ = *ip++;
+-				if (t > 2)
+-					*op++ = *ip++;
+-			}
+-
+-			t = *ip++;
+-		} while (ip < ip_end);
+-	}
+-
+-	*out_len = op - out;
+-	return LZO_E_EOF_NOT_FOUND;
+-
+-eof_found:
+-	*out_len = op - out;
+-	return (ip == ip_end ? LZO_E_OK :
+-		(ip < ip_end ? LZO_E_INPUT_NOT_CONSUMED : LZO_E_INPUT_OVERRUN));
+-input_overrun:
+-	*out_len = op - out;
+-	return LZO_E_INPUT_OVERRUN;
+-
+-output_overrun:
+-	*out_len = op - out;
+-	return LZO_E_OUTPUT_OVERRUN;
+-
+-lookbehind_overrun:
+-	*out_len = op - out;
+-	return LZO_E_LOOKBEHIND_OVERRUN;
+-}
+-#ifndef STATIC
+-EXPORT_SYMBOL_GPL(lzo1x_decompress_safe);
+-
+-MODULE_LICENSE("GPL");
+-MODULE_DESCRIPTION("LZO1X Decompressor");
+-
+-#endif
+--- /dev/null
 +++ b/lib/lzo/lzo1x_decompress_safe.c
-@@ -19,11 +19,31 @@
- #include <linux/lzo.h>
- #include "lzodefs.h"
- 
--#define HAVE_IP(x)      ((size_t)(ip_end - ip) >= (size_t)(x))
--#define HAVE_OP(x)      ((size_t)(op_end - op) >= (size_t)(x))
--#define NEED_IP(x)      if (!HAVE_IP(x)) goto input_overrun
--#define NEED_OP(x)      if (!HAVE_OP(x)) goto output_overrun
--#define TEST_LB(m_pos)  if ((m_pos) < out) goto lookbehind_overrun
-+#define HAVE_IP(t, x)					\
-+	(((size_t)(ip_end - ip) >= (size_t)(t + x)) &&	\
-+	 (((t + x) >= t) && ((t + x) >= x)))
+@@ -0,0 +1,255 @@
++/*
++ *  LZO1X Decompressor from MiniLZO
++ *
++ *  Copyright (C) 1996-2005 Markus F.X.J. Oberhumer <markus@oberhumer.com>
++ *
++ *  The full LZO package can be found at:
++ *  http://www.oberhumer.com/opensource/lzo/
++ *
++ *  Changed for kernel use by:
++ *  Nitin Gupta <nitingupta910@gmail.com>
++ *  Richard Purdie <rpurdie@openedhand.com>
++ */
 +
-+#define HAVE_OP(t, x)					\
-+	(((size_t)(op_end - op) >= (size_t)(t + x)) &&	\
-+	 (((t + x) >= t) && ((t + x) >= x)))
++#ifndef STATIC
++#include <linux/module.h>
++#include <linux/kernel.h>
++#endif
 +
-+#define NEED_IP(t, x)					\
-+	do {						\
-+		if (!HAVE_IP(t, x))			\
-+			goto input_overrun;		\
-+	} while (0)
++#include <asm/unaligned.h>
++#include <linux/lzo.h>
++#include "lzodefs.h"
 +
-+#define NEED_OP(t, x)					\
-+	do {						\
-+		if (!HAVE_OP(t, x))			\
-+			goto output_overrun;		\
-+	} while (0)
++#define HAVE_IP(x, ip_end, ip) ((size_t)(ip_end - ip) < (x))
++#define HAVE_OP(x, op_end, op) ((size_t)(op_end - op) < (x))
++#define HAVE_LB(m_pos, out, op) (m_pos < out || m_pos >= op)
 +
-+#define TEST_LB(m_pos)					\
-+	do {						\
-+		if ((m_pos) < out)			\
-+			goto lookbehind_overrun;	\
-+	} while (0)
- 
- int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
- 			  unsigned char *out, size_t *out_len)
-@@ -58,14 +78,14 @@ int lzo1x_decompress_safe(const unsigned
- 					while (unlikely(*ip == 0)) {
- 						t += 255;
- 						ip++;
--						NEED_IP(1);
-+						NEED_IP(1, 0);
- 					}
- 					t += 15 + *ip++;
- 				}
- 				t += 3;
- copy_literal_run:
- #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
--				if (likely(HAVE_IP(t + 15) && HAVE_OP(t + 15))) {
-+				if (likely(HAVE_IP(t, 15) && HAVE_OP(t, 15))) {
- 					const unsigned char *ie = ip + t;
- 					unsigned char *oe = op + t;
- 					do {
-@@ -81,8 +101,8 @@ copy_literal_run:
- 				} else
- #endif
- 				{
--					NEED_OP(t);
--					NEED_IP(t + 3);
-+					NEED_OP(t, 0);
-+					NEED_IP(t, 3);
- 					do {
- 						*op++ = *ip++;
- 					} while (--t > 0);
-@@ -95,7 +115,7 @@ copy_literal_run:
- 				m_pos -= t >> 2;
- 				m_pos -= *ip++ << 2;
- 				TEST_LB(m_pos);
--				NEED_OP(2);
-+				NEED_OP(2, 0);
- 				op[0] = m_pos[0];
- 				op[1] = m_pos[1];
- 				op += 2;
-@@ -119,10 +139,10 @@ copy_literal_run:
- 				while (unlikely(*ip == 0)) {
- 					t += 255;
- 					ip++;
--					NEED_IP(1);
-+					NEED_IP(1, 0);
- 				}
- 				t += 31 + *ip++;
--				NEED_IP(2);
-+				NEED_IP(2, 0);
- 			}
- 			m_pos = op - 1;
- 			next = get_unaligned_le16(ip);
-@@ -137,10 +157,10 @@ copy_literal_run:
- 				while (unlikely(*ip == 0)) {
- 					t += 255;
- 					ip++;
--					NEED_IP(1);
-+					NEED_IP(1, 0);
- 				}
- 				t += 7 + *ip++;
--				NEED_IP(2);
-+				NEED_IP(2, 0);
- 			}
- 			next = get_unaligned_le16(ip);
- 			ip += 2;
-@@ -154,7 +174,7 @@ copy_literal_run:
- #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
- 		if (op - m_pos >= 8) {
- 			unsigned char *oe = op + t;
--			if (likely(HAVE_OP(t + 15))) {
-+			if (likely(HAVE_OP(t, 15))) {
- 				do {
- 					COPY8(op, m_pos);
- 					op += 8;
-@@ -164,7 +184,7 @@ copy_literal_run:
- 					m_pos += 8;
- 				} while (op < oe);
- 				op = oe;
--				if (HAVE_IP(6)) {
-+				if (HAVE_IP(6, 0)) {
- 					state = next;
- 					COPY4(op, ip);
- 					op += next;
-@@ -172,7 +192,7 @@ copy_literal_run:
- 					continue;
- 				}
- 			} else {
--				NEED_OP(t);
-+				NEED_OP(t, 0);
- 				do {
- 					*op++ = *m_pos++;
- 				} while (op < oe);
-@@ -181,7 +201,7 @@ copy_literal_run:
- #endif
- 		{
- 			unsigned char *oe = op + t;
--			NEED_OP(t);
-+			NEED_OP(t, 0);
- 			op[0] = m_pos[0];
- 			op[1] = m_pos[1];
- 			op += 2;
-@@ -194,15 +214,15 @@ match_next:
- 		state = next;
- 		t = next;
- #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
--		if (likely(HAVE_IP(6) && HAVE_OP(4))) {
-+		if (likely(HAVE_IP(6, 0) && HAVE_OP(4, 0))) {
- 			COPY4(op, ip);
- 			op += t;
- 			ip += t;
- 		} else
- #endif
- 		{
--			NEED_IP(t + 3);
--			NEED_OP(t);
-+			NEED_IP(t, 3);
-+			NEED_OP(t, 0);
- 			while (t > 0) {
- 				*op++ = *ip++;
- 				t--;
++#define COPY4(dst, src)	\
++		put_unaligned(get_unaligned((const u32 *)(src)), (u32 *)(dst))
++
++int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
++			unsigned char *out, size_t *out_len)
++{
++	const unsigned char * const ip_end = in + in_len;
++	unsigned char * const op_end = out + *out_len;
++	const unsigned char *ip = in, *m_pos;
++	unsigned char *op = out;
++	size_t t;
++
++	*out_len = 0;
++
++	if (*ip > 17) {
++		t = *ip++ - 17;
++		if (t < 4)
++			goto match_next;
++		if (HAVE_OP(t, op_end, op))
++			goto output_overrun;
++		if (HAVE_IP(t + 1, ip_end, ip))
++			goto input_overrun;
++		do {
++			*op++ = *ip++;
++		} while (--t > 0);
++		goto first_literal_run;
++	}
++
++	while ((ip < ip_end)) {
++		t = *ip++;
++		if (t >= 16)
++			goto match;
++		if (t == 0) {
++			if (HAVE_IP(1, ip_end, ip))
++				goto input_overrun;
++			while (*ip == 0) {
++				t += 255;
++				ip++;
++				if (HAVE_IP(1, ip_end, ip))
++					goto input_overrun;
++			}
++			t += 15 + *ip++;
++		}
++		if (HAVE_OP(t + 3, op_end, op))
++			goto output_overrun;
++		if (HAVE_IP(t + 4, ip_end, ip))
++			goto input_overrun;
++
++		COPY4(op, ip);
++		op += 4;
++		ip += 4;
++		if (--t > 0) {
++			if (t >= 4) {
++				do {
++					COPY4(op, ip);
++					op += 4;
++					ip += 4;
++					t -= 4;
++				} while (t >= 4);
++				if (t > 0) {
++					do {
++						*op++ = *ip++;
++					} while (--t > 0);
++				}
++			} else {
++				do {
++					*op++ = *ip++;
++				} while (--t > 0);
++			}
++		}
++
++first_literal_run:
++		t = *ip++;
++		if (t >= 16)
++			goto match;
++		m_pos = op - (1 + M2_MAX_OFFSET);
++		m_pos -= t >> 2;
++		m_pos -= *ip++ << 2;
++
++		if (HAVE_LB(m_pos, out, op))
++			goto lookbehind_overrun;
++
++		if (HAVE_OP(3, op_end, op))
++			goto output_overrun;
++		*op++ = *m_pos++;
++		*op++ = *m_pos++;
++		*op++ = *m_pos;
++
++		goto match_done;
++
++		do {
++match:
++			if (t >= 64) {
++				m_pos = op - 1;
++				m_pos -= (t >> 2) & 7;
++				m_pos -= *ip++ << 3;
++				t = (t >> 5) - 1;
++				if (HAVE_LB(m_pos, out, op))
++					goto lookbehind_overrun;
++				if (HAVE_OP(t + 3 - 1, op_end, op))
++					goto output_overrun;
++				goto copy_match;
++			} else if (t >= 32) {
++				t &= 31;
++				if (t == 0) {
++					if (HAVE_IP(1, ip_end, ip))
++						goto input_overrun;
++					while (*ip == 0) {
++						t += 255;
++						ip++;
++						if (HAVE_IP(1, ip_end, ip))
++							goto input_overrun;
++					}
++					t += 31 + *ip++;
++				}
++				m_pos = op - 1;
++				m_pos -= get_unaligned_le16(ip) >> 2;
++				ip += 2;
++			} else if (t >= 16) {
++				m_pos = op;
++				m_pos -= (t & 8) << 11;
++
++				t &= 7;
++				if (t == 0) {
++					if (HAVE_IP(1, ip_end, ip))
++						goto input_overrun;
++					while (*ip == 0) {
++						t += 255;
++						ip++;
++						if (HAVE_IP(1, ip_end, ip))
++							goto input_overrun;
++					}
++					t += 7 + *ip++;
++				}
++				m_pos -= get_unaligned_le16(ip) >> 2;
++				ip += 2;
++				if (m_pos == op)
++					goto eof_found;
++				m_pos -= 0x4000;
++			} else {
++				m_pos = op - 1;
++				m_pos -= t >> 2;
++				m_pos -= *ip++ << 2;
++
++				if (HAVE_LB(m_pos, out, op))
++					goto lookbehind_overrun;
++				if (HAVE_OP(2, op_end, op))
++					goto output_overrun;
++
++				*op++ = *m_pos++;
++				*op++ = *m_pos;
++				goto match_done;
++			}
++
++			if (HAVE_LB(m_pos, out, op))
++				goto lookbehind_overrun;
++			if (HAVE_OP(t + 3 - 1, op_end, op))
++				goto output_overrun;
++
++			if (t >= 2 * 4 - (3 - 1) && (op - m_pos) >= 4) {
++				COPY4(op, m_pos);
++				op += 4;
++				m_pos += 4;
++				t -= 4 - (3 - 1);
++				do {
++					COPY4(op, m_pos);
++					op += 4;
++					m_pos += 4;
++					t -= 4;
++				} while (t >= 4);
++				if (t > 0)
++					do {
++						*op++ = *m_pos++;
++					} while (--t > 0);
++			} else {
++copy_match:
++				*op++ = *m_pos++;
++				*op++ = *m_pos++;
++				do {
++					*op++ = *m_pos++;
++				} while (--t > 0);
++			}
++match_done:
++			t = ip[-2] & 3;
++			if (t == 0)
++				break;
++match_next:
++			if (HAVE_OP(t, op_end, op))
++				goto output_overrun;
++			if (HAVE_IP(t + 1, ip_end, ip))
++				goto input_overrun;
++
++			*op++ = *ip++;
++			if (t > 1) {
++				*op++ = *ip++;
++				if (t > 2)
++					*op++ = *ip++;
++			}
++
++			t = *ip++;
++		} while (ip < ip_end);
++	}
++
++	*out_len = op - out;
++	return LZO_E_EOF_NOT_FOUND;
++
++eof_found:
++	*out_len = op - out;
++	return (ip == ip_end ? LZO_E_OK :
++		(ip < ip_end ? LZO_E_INPUT_NOT_CONSUMED : LZO_E_INPUT_OVERRUN));
++input_overrun:
++	*out_len = op - out;
++	return LZO_E_INPUT_OVERRUN;
++
++output_overrun:
++	*out_len = op - out;
++	return LZO_E_OUTPUT_OVERRUN;
++
++lookbehind_overrun:
++	*out_len = op - out;
++	return LZO_E_LOOKBEHIND_OVERRUN;
++}
++#ifndef STATIC
++EXPORT_SYMBOL_GPL(lzo1x_decompress_safe);
++
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("LZO1X Decompressor");
++
++#endif
 
 
