@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753384AbaFXKIM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 06:08:12 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:55540 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752293AbaFXKHA (ORCPT
+	id S1752644AbaFXKLK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 06:11:10 -0400
+Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:54314 "EHLO
+	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751206AbaFXKLI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 06:07:00 -0400
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Don Mullis <don.mullis@gmail.com>, Dave Chinner <david@fromorbit.com>
-Cc: linux-kernel@vger.kernel.org, Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Subject: [PATCH v2 1/4] lib: list_sort_test(): Return -ENOMEM when allocation fails
-Date: Tue, 24 Jun 2014 12:06:28 +0200
-Message-Id: <1403604392-23259-2-git-send-email-linux@rasmusvillemoes.dk>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1403604392-23259-1-git-send-email-linux@rasmusvillemoes.dk>
-References: <1403604392-23259-1-git-send-email-linux@rasmusvillemoes.dk>
+	Tue, 24 Jun 2014 06:11:08 -0400
+Message-ID: <1403604665.1960.14.camel@x220>
+Subject: [PATCH] USB: remove CONFIG_USB_PERSIST from Documentation
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Randy Dunlap <rdunlap@infradead.org>
+Cc: linux-usb@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 24 Jun 2014 12:11:05 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 24 Jun 2014 10:11:05.0752 (UTC) FILETIME=[9C510180:01CF8F94]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
----
- lib/list_sort.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+CONFIG_USB_PERSIST was removed in v2.6.26. Remove a reference to it from
+Documentation. That reference was a bit odd to begin with.
 
-diff --git a/lib/list_sort.c b/lib/list_sort.c
-index 1183fa7..291412a 100644
---- a/lib/list_sort.c
-+++ b/lib/list_sort.c
-@@ -207,7 +207,7 @@ static int __init cmp(void *priv, struct list_head *a, struct list_head *b)
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+"[...] under certain circumstances [...]"? Is that about
+USB_QUIRK_RESET_RESUME? Anyhow, I feel this paragraph needs more work,
+but that would require quite a bit of hand-holding. Perhaps Alan or Greg
+would like to hold my hand here...
+
+ Documentation/usb/power-management.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Documentation/usb/power-management.txt b/Documentation/usb/power-management.txt
+index 1392b61d6ebe..90dc927f0e1e 100644
+--- a/Documentation/usb/power-management.txt
++++ b/Documentation/usb/power-management.txt
+@@ -304,7 +304,7 @@ using the USB Persist facility.)
  
- static int __init list_sort_test(void)
- {
--	int i, count = 1, err = -EINVAL;
-+	int i, count = 1, err = -ENOMEM;
- 	struct debug_el *el;
- 	struct list_head *cur, *tmp;
- 	LIST_HEAD(head);
-@@ -239,6 +239,7 @@ static int __init list_sort_test(void)
- 
- 	list_sort(NULL, &head, cmp);
- 
-+	err = -EINVAL;
- 	for (cur = head.next; cur->next != &head; cur = cur->next) {
- 		struct debug_el *el1;
- 		int cmp_result;
+ The reset_resume method is used by the USB Persist facility (see
+ Documentation/usb/persist.txt) and it can also be used under certain
+-circumstances when CONFIG_USB_PERSIST is not enabled.  Currently, if a
++circumstances when that facility is not enabled.  Currently, if a
+ device is reset during a resume and the driver does not have a
+ reset_resume method, the driver won't receive any notification about
+ the resume.  Later kernels will call the driver's disconnect method;
 -- 
-1.9.2
+1.9.3
 
