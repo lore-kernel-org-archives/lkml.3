@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754696AbaFXUao (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:30:44 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47589 "EHLO
+	id S1756606AbaFXUqF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:46:05 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47634 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754201AbaFXUah (ORCPT
+	with ESMTP id S1754488AbaFXUam (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:30:37 -0400
+	Tue, 24 Jun 2014 16:30:42 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sascha Hauer <s.hauer@pengutronix.de>, Olof Johansson <olof@lixom.net>,
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, linaro-kernel@lists.linaro.org,
+        linaro-networking@linaro.org, fweisbec@gmail.com,
+        arvind.chauhan@arm.com, Thomas Gleixner <tglx@linutronix.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 10/65] ARM: dts: i.MX53: Fix ipu register space size
-Date: Tue, 24 Jun 2014 13:29:30 -0700
-Message-Id: <1403641825-12825-11-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 12/65] hrtimer: Set expiry time before switch_hrtimer_base()
+Date: Tue, 24 Jun 2014 13:29:32 -0700
+Message-Id: <1403641825-12825-13-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
 References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
@@ -27,34 +29,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sascha Hauer <s.hauer@pengutronix.de>
+From: Viresh Kumar <viresh.kumar@linaro.org>
 
-commit 6d66da89bf4422c0a0693627fb3e25f74af50f92 upstream.
+commit 84ea7fe37908254c3bd90910921f6e1045c1747a upstream.
 
-The IPU register space is 128MB, not 2GB.
+switch_hrtimer_base() calls hrtimer_check_target() which ensures that
+we do not migrate a timer to a remote cpu if the timer expires before
+the current programmed expiry time on that remote cpu.
 
-Fixes: abed9a6bf2bb 'ARM i.MX53: Add IPU support'
-Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
-Acked-by: Shawn Guo <shawn.guo@freescale.com>
-Signed-off-by: Olof Johansson <olof@lixom.net>
+But __hrtimer_start_range_ns() calls switch_hrtimer_base() before the
+new expiry time is set. So the sanity check in hrtimer_check_target()
+is operating on stale or even uninitialized data.
+
+Update expiry time before calling switch_hrtimer_base().
+
+[ tglx: Rewrote changelog once again ]
+
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linaro-kernel@lists.linaro.org
+Cc: linaro-networking@linaro.org
+Cc: fweisbec@gmail.com
+Cc: arvind.chauhan@arm.com
+Link: http://lkml.kernel.org/r/81999e148745fc51bbcd0615823fbab9b2e87e23.1399882253.git.viresh.kumar@linaro.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/boot/dts/imx53.dtsi | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/hrtimer.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/boot/dts/imx53.dtsi b/arch/arm/boot/dts/imx53.dtsi
-index edc3f1e..9a5a1e1 100644
---- a/arch/arm/boot/dts/imx53.dtsi
-+++ b/arch/arm/boot/dts/imx53.dtsi
-@@ -70,7 +70,7 @@
- 		ipu: ipu@18000000 {
- 			#crtc-cells = <1>;
- 			compatible = "fsl,imx53-ipu";
--			reg = <0x18000000 0x080000000>;
-+			reg = <0x18000000 0x08000000>;
- 			interrupts = <11 10>;
- 		};
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index 9873816..20e88af 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -980,11 +980,8 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
+ 	/* Remove an active timer from the queue: */
+ 	ret = remove_hrtimer(timer, base);
  
+-	/* Switch the timer base, if necessary: */
+-	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
+-
+ 	if (mode & HRTIMER_MODE_REL) {
+-		tim = ktime_add_safe(tim, new_base->get_time());
++		tim = ktime_add_safe(tim, base->get_time());
+ 		/*
+ 		 * CONFIG_TIME_LOW_RES is a temporary way for architectures
+ 		 * to signal that they simply return xtime in
+@@ -999,6 +996,9 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
+ 
+ 	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
+ 
++	/* Switch the timer base, if necessary: */
++	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
++
+ 	timer_stats_hrtimer_set_start_info(timer);
+ 
+ 	leftmost = enqueue_hrtimer(timer, new_base);
 -- 
 1.9.1
 
