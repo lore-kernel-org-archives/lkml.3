@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755403AbaFXUb5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:31:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47737 "EHLO
+	id S1755451AbaFXUcL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:32:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47747 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755358AbaFXUbz (ORCPT
+	with ESMTP id S1753982AbaFXUcH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:31:55 -0400
+	Tue, 24 Jun 2014 16:32:07 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ludovic Drolez <ldrolez@debian.org>, Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 53/65] USB: io_ti: fix firmware download on big-endian machines (part 2)
-Date: Tue, 24 Jun 2014 13:30:13 -0700
-Message-Id: <1403641825-12825-54-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 40/65] mm/memory-failure.c: fix memory leak by race between poison and unpoison
+Date: Tue, 24 Jun 2014 13:30:00 -0700
+Message-Id: <1403641825-12825-41-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
 References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
@@ -28,62 +30,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-commit c03890ff5e24a4bf59059f2d179f427559b7330a upstream.
+commit 3e030ecc0fc7de10fd0da10c1c19939872a31717 upstream.
 
-A recent patch that purported to fix firmware download on big-endian
-machines failed to add the corresponding sparse annotation to the
-i2c-header. This was reported by the kbuild test robot.
+When a memory error happens on an in-use page or (free and in-use)
+hugepage, the victim page is isolated with its refcount set to one.
 
-Adding the appropriate annotation revealed another endianess bug related
-to the i2c-header Size-field in a code path that is exercised when the
-firmware is actually being downloaded (and not just verified and left
-untouched unless older than the firmware at hand).
+When you try to unpoison it later, unpoison_memory() calls put_page()
+for it twice in order to bring the page back to free page pool (buddy or
+free hugepage list).  However, if another memory error occurs on the
+page which we are unpoisoning, memory_failure() returns without
+releasing the refcount which was incremented in the same call at first,
+which results in memory leak and unconsistent num_poisoned_pages
+statistics.  This patch fixes it.
 
-This patch adds the required sparse annotation to the i2c-header and
-makes sure that the Size-field is sent in little-endian byte order
-during firmware download also on big-endian machines.
-
-Note that this patch is only compile-tested, but that there is no
-functional change for little-endian systems.
-
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
-Cc: Ludovic Drolez <ldrolez@debian.org>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ kamal: backport to 3.8-stable: no renamed mce_bad_pages ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/io_ti.c      | 2 +-
- drivers/usb/serial/io_usbvend.h | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ mm/memory-failure.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/usb/serial/io_ti.c b/drivers/usb/serial/io_ti.c
-index ce5bcf9..883c89b 100644
---- a/drivers/usb/serial/io_ti.c
-+++ b/drivers/usb/serial/io_ti.c
-@@ -894,7 +894,7 @@ static int build_i2c_fw_hdr(__u8 *header, struct device *dev)
- 	firmware_rec =  (struct ti_i2c_firmware_rec*)i2c_header->Data;
- 
- 	i2c_header->Type	= I2C_DESC_TYPE_FIRMWARE_BLANK;
--	i2c_header->Size	= (__u16)buffer_size;
-+	i2c_header->Size	= cpu_to_le16(buffer_size);
- 	i2c_header->CheckSum	= cs;
- 	firmware_rec->Ver_Major	= OperationalMajorVersion;
- 	firmware_rec->Ver_Minor	= OperationalMinorVersion;
-diff --git a/drivers/usb/serial/io_usbvend.h b/drivers/usb/serial/io_usbvend.h
-index 51f83fb..6f6a856 100644
---- a/drivers/usb/serial/io_usbvend.h
-+++ b/drivers/usb/serial/io_usbvend.h
-@@ -594,7 +594,7 @@ struct edge_boot_descriptor {
- 
- struct ti_i2c_desc {
- 	__u8	Type;			// Type of descriptor
--	__u16	Size;			// Size of data only not including header
-+	__le16	Size;			// Size of data only not including header
- 	__u8	CheckSum;		// Checksum (8 bit sum of data only)
- 	__u8	Data[0];		// Data starts here
- } __attribute__((packed));
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index 12b57b7..d3ed748 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1124,6 +1124,8 @@ int memory_failure(unsigned long pfn, int trapno, int flags)
+ 	 */
+ 	if (!PageHWPoison(p)) {
+ 		printk(KERN_ERR "MCE %#lx: just unpoisoned\n", pfn);
++		atomic_long_sub(nr_pages, &mce_bad_pages);
++		put_page(hpage);
+ 		res = 0;
+ 		goto out;
+ 	}
 -- 
 1.9.1
 
