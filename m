@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932768AbaFXQSl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:18:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33138 "EHLO
+	id S932784AbaFXQS5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:18:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33131 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755938AbaFXPzJ (ORCPT
+	with ESMTP id S1755928AbaFXPzG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:55:09 -0400
+	Tue, 24 Jun 2014 11:55:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Don A. Bailey" <donb@securitymouse.com>
-Subject: [PATCH 3.14 59/68] lz4: ensure length does not wrap
-Date: Tue, 24 Jun 2014 11:51:18 -0400
-Message-Id: <20140624154726.633879539@linuxfoundation.org>
+        Mario Schuknecht <mario.schuknecht@dresearch-fe.de>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.14 53/68] staging: iio: tsl2x7x_core: fix proximity treshold
+Date: Tue, 24 Jun 2014 11:51:12 -0400
+Message-Id: <20140624154726.356109338@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154723.907894814@linuxfoundation.org>
 References: <20140624154723.907894814@linuxfoundation.org>
@@ -28,31 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+From: Mario Schuknecht <mario.schuknecht@dresearch-fe.de>
 
-commit 206204a1162b995e2185275167b22468c00d6b36 upstream.
+commit c404618cd06dad771495fe1cf9d5a63b5664f65f upstream.
 
-Given some pathologically compressed data, lz4 could possibly decide to
-wrap a few internal variables, causing unknown things to happen.  Catch
-this before the wrapping happens and abort the decompression.
+Consider high byte of proximity min and max treshold in function
+'tsl2x7x_chip_on'. So far, the high byte was not set.
 
-Reported-by: "Don A. Bailey" <donb@securitymouse.com>
+Signed-off-by: Mario Schuknecht <mario.schuknecht@dresearch-fe.de>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- lib/lz4/lz4_decompress.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/staging/iio/light/tsl2x7x_core.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/lib/lz4/lz4_decompress.c
-+++ b/lib/lz4/lz4_decompress.c
-@@ -72,6 +72,8 @@ static int lz4_uncompress(const char *so
- 			len = *ip++;
- 			for (; len == 255; length += 255)
- 				len = *ip++;
-+			if (unlikely(length > (size_t)(length + len)))
-+				goto _output_error;
- 			length += len;
- 		}
+--- a/drivers/staging/iio/light/tsl2x7x_core.c
++++ b/drivers/staging/iio/light/tsl2x7x_core.c
+@@ -667,9 +667,13 @@ static int tsl2x7x_chip_on(struct iio_de
+ 	chip->tsl2x7x_config[TSL2X7X_PRX_COUNT] =
+ 			chip->tsl2x7x_settings.prox_pulse_count;
+ 	chip->tsl2x7x_config[TSL2X7X_PRX_MINTHRESHLO] =
+-	chip->tsl2x7x_settings.prox_thres_low;
++			(chip->tsl2x7x_settings.prox_thres_low) & 0xFF;
++	chip->tsl2x7x_config[TSL2X7X_PRX_MINTHRESHHI] =
++			(chip->tsl2x7x_settings.prox_thres_low >> 8) & 0xFF;
+ 	chip->tsl2x7x_config[TSL2X7X_PRX_MAXTHRESHLO] =
+-			chip->tsl2x7x_settings.prox_thres_high;
++			(chip->tsl2x7x_settings.prox_thres_high) & 0xFF;
++	chip->tsl2x7x_config[TSL2X7X_PRX_MAXTHRESHHI] =
++			(chip->tsl2x7x_settings.prox_thres_high >> 8) & 0xFF;
  
+ 	/* and make sure we're not already on */
+ 	if (chip->tsl2x7x_chip_status == TSL2X7X_CHIP_WORKING) {
 
 
