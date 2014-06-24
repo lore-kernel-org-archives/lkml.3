@@ -1,109 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754309AbaFXVEA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 17:04:00 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:55327 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751211AbaFXVD6 (ORCPT
+	id S1754167AbaFXVFy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 17:05:54 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:37712 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752322AbaFXVFv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 17:03:58 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>, Kumar Gala <galak@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v2 1/2] ARM: dts: msm: Add 8921 PMIC to ssbi bus
-Date: Tue, 24 Jun 2014 14:03:53 -0700
-Message-Id: <1403643834-4484-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
+	Tue, 24 Jun 2014 17:05:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <1403598315-1429-1-git-send-email-vgupta@synopsys.com>
+References: <1403598315-1429-1-git-send-email-vgupta@synopsys.com>
+From: Rob Herring <robherring2@gmail.com>
+Date: Tue, 24 Jun 2014 16:05:30 -0500
+Message-ID: <CAL_JsqJF-a3K+dUHpwgSLNrwZTHLp2uj44bZaNboVpTtc8a-RA@mail.gmail.com>
+Subject: Re: [PATCH v2 REBASED 00/10] Generic earlyconsole for ARC UART Driver
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Paul Bolle <pebolle@tiscali.nl>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        Francois.Bedard@synopsys.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the PMIC and the sub-devices that are currently supported in
-the kernel to the DT.
+On Tue, Jun 24, 2014 at 3:25 AM, Vineet Gupta
+<Vineet.Gupta1@synopsys.com> wrote:
+> Hi,
+>
+> This is slightly modified repost of series posted last week
+> http://www.spinics.net/lists/linux-serial/msg12884.html
+>
+> This series switches ARC UART from custom earlyprintk support to generic
+> earlycon (many thanks to Rob for doing that). And also build on Grant's recent
+> work for using DT stdout-path as default console.
+>
+> The motivation is to get rid of the early platform code, which in turn
+> would help consolidate the init code across several ARC platforms.
+>
+> First 3 patches are general cleanup/refactoring, not necesarily related to
+> earlycon.
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- arch/arm/boot/dts/qcom-msm8960-cdp.dts | 15 ++++++++++++++
- arch/arm/boot/dts/qcom-msm8960.dtsi    | 37 ++++++++++++++++++++++++++++++++++
- 2 files changed, 52 insertions(+)
+Other than my comment on patch 6:
 
-diff --git a/arch/arm/boot/dts/qcom-msm8960-cdp.dts b/arch/arm/boot/dts/qcom-msm8960-cdp.dts
-index 8f75cc4c8340..8b10812c0cda 100644
---- a/arch/arm/boot/dts/qcom-msm8960-cdp.dts
-+++ b/arch/arm/boot/dts/qcom-msm8960-cdp.dts
-@@ -1,3 +1,5 @@
-+#include <dt-bindings/input/input.h>
-+
- #include "qcom-msm8960.dtsi"
- 
- / {
-@@ -14,3 +16,16 @@
- 		};
- 	};
- };
-+
-+&pmicintc {
-+	keypad@148 {
-+		linux,keymap = <
-+			MATRIX_KEY(0, 0, KEY_VOLUMEUP)
-+			MATRIX_KEY(0, 1, KEY_VOLUMEDOWN)
-+			MATRIX_KEY(0, 2, KEY_CAMERA_FOCUS)
-+			MATRIX_KEY(0, 3, KEY_CAMERA)
-+			>;
-+		keypad,num-rows = <1>;
-+		keypad,num-columns = <5>;
-+	};
-+};
-diff --git a/arch/arm/boot/dts/qcom-msm8960.dtsi b/arch/arm/boot/dts/qcom-msm8960.dtsi
-index 5303e53e34dc..2f677247744d 100644
---- a/arch/arm/boot/dts/qcom-msm8960.dtsi
-+++ b/arch/arm/boot/dts/qcom-msm8960.dtsi
-@@ -143,6 +143,43 @@
- 			compatible = "qcom,ssbi";
- 			reg = <0x500000 0x1000>;
- 			qcom,controller-type = "pmic-arbiter";
-+
-+			pmicintc: pmic@0 {
-+				compatible = "qcom,pm8921";
-+				interrupt-parent = <&msmgpio>;
-+				interrupts = <104 8>;
-+				#interrupt-cells = <2>;
-+				interrupt-controller;
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+
-+				pwrkey@1c {
-+					compatible = "qcom,pm8921-pwrkey";
-+					reg = <0x1c>;
-+					interrupt-parent = <&pmicintc>;
-+					interrupts = <50 1>, <51 1>;
-+					debounce = <15625>;
-+					pull-up;
-+				};
-+
-+				keypad@148 {
-+					compatible = "qcom,pm8921-keypad";
-+					reg = <0x148>;
-+					interrupt-parent = <&pmicintc>;
-+					interrupts = <74 1>, <75 1>;
-+					debounce = <15>;
-+					scan-delay = <32>;
-+					row-hold = <91500>;
-+				};
-+
-+				rtc@11d {
-+					compatible = "qcom,pm8921-rtc";
-+					interrupt-parent = <&pmicintc>;
-+					interrupts = <39 1>;
-+					reg = <0x11d>;
-+					allow-set-time;
-+				};
-+			};
- 		};
- 
- 		rng@1a500000 {
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Reviewed-by: Rob Herring <robh@kernel.org>
 
+>
+> v2 <- v1
+> --------
+> * Rebased on linux-next: 20140623
+> * Patch 9 split into 9 and 10 for driver/platform changes
+> * Patch 10 also uses the DT stdout-path so no need for console=
+>
+>
+> Thx,
+> -Vineet
+>
+>
+> Vineet Gupta (10):
+>   serial/arc: use uart_console_write() helper
+>   serial/arc: Refactor by referencing to uart_port where possible
+>   serial/arc: Remove the workaround for legacy ISS
+>   serial/arc: Use generic earlycon infrastructure
+>   serial/arc: remove earlyprintk support and switch to earlycon
+>   serial/arc: remove last remanants of platform data
+>   serial/arc: inline the probe helper
+>   ARC: [arcfpga] RIP early uart platform device stuff
+>   serial/arc: Enable DT based earlycon
+>   ARC: [arcfpga] stdout-path now suffices for earlycon/console
+>
+>  arch/arc/boot/dts/angel4.dts     |   3 +-
+>  arch/arc/plat-arcfpga/Kconfig    |   7 -
+>  arch/arc/plat-arcfpga/platform.c |  97 +-----------
+>  drivers/tty/serial/Kconfig       |   1 +
+>  drivers/tty/serial/arc_uart.c    | 329 ++++++++++++++-------------------------
+>  5 files changed, 123 insertions(+), 314 deletions(-)
+>
+> --
+> 1.8.3.2
+>
