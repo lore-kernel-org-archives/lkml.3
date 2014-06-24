@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756069AbaFXPzr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:55:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33224 "EHLO
+	id S965605AbaFXQM2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:12:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33254 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964879AbaFXPzj (ORCPT
+	with ESMTP id S1756073AbaFXPzt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:55:39 -0400
+	Tue, 24 Jun 2014 11:55:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Popov <ixaphire@qrator.net>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.15 15/61] ipip, sit: fix ipv4_{update_pmtu,redirect} calls
-Date: Tue, 24 Jun 2014 11:50:58 -0400
-Message-Id: <20140624154953.462596980@linuxfoundation.org>
+        Tom Gundersen <teg@jklm.no>, "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.15 08/61] net: tunnels - enable module autoloading
+Date: Tue, 24 Jun 2014 11:50:51 -0400
+Message-Id: <20140624154953.147984442@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154952.751713761@linuxfoundation.org>
 References: <20140624154952.751713761@linuxfoundation.org>
@@ -29,57 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Popov <ixaphire@qrator.net>
+From: Tom Gundersen <teg@jklm.no>
 
-[ Upstream commit 2346829e641b804ece9ac9298136b56d9567c278 ]
+[ Upstream commit f98f89a0104454f35a62d681683c844f6dbf4043 ]
 
-ipv4_{update_pmtu,redirect} were called with tunnel's ifindex (t->dev is a
-tunnel netdevice). It caused wrong route lookup and failure of pmtu update or
-redirect. We should use the same ifindex that we use in ip_route_output_* in
-*tunnel_xmit code. It is t->parms.link .
+Enable the module alias hookup to allow tunnel modules to be autoloaded on demand.
 
-Signed-off-by: Dmitry Popov <ixaphire@qrator.net>
+This is in line with how most other netdev kinds work, and will allow userspace
+to create tunnels without having CAP_SYS_MODULE.
+
+Signed-off-by: Tom Gundersen <teg@jklm.no>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/ipip.c |    4 ++--
- net/ipv6/sit.c  |    4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ net/ipv4/ipip.c       |    1 +
+ net/ipv6/ip6_tunnel.c |    1 +
+ net/ipv6/sit.c        |    1 +
+ 3 files changed, 3 insertions(+)
 
 --- a/net/ipv4/ipip.c
 +++ b/net/ipv4/ipip.c
-@@ -149,13 +149,13 @@ static int ipip_err(struct sk_buff *skb,
+@@ -486,4 +486,5 @@ static void __exit ipip_fini(void)
+ module_init(ipip_init);
+ module_exit(ipip_fini);
+ MODULE_LICENSE("GPL");
++MODULE_ALIAS_RTNL_LINK("ipip");
+ MODULE_ALIAS_NETDEV("tunl0");
+--- a/net/ipv6/ip6_tunnel.c
++++ b/net/ipv6/ip6_tunnel.c
+@@ -61,6 +61,7 @@
+ MODULE_AUTHOR("Ville Nuorvala");
+ MODULE_DESCRIPTION("IPv6 tunneling device");
+ MODULE_LICENSE("GPL");
++MODULE_ALIAS_RTNL_LINK("ip6tnl");
+ MODULE_ALIAS_NETDEV("ip6tnl0");
  
- 	if (type == ICMP_DEST_UNREACH && code == ICMP_FRAG_NEEDED) {
- 		ipv4_update_pmtu(skb, dev_net(skb->dev), info,
--				 t->dev->ifindex, 0, IPPROTO_IPIP, 0);
-+				 t->parms.link, 0, IPPROTO_IPIP, 0);
- 		err = 0;
- 		goto out;
- 	}
- 
- 	if (type == ICMP_REDIRECT) {
--		ipv4_redirect(skb, dev_net(skb->dev), t->dev->ifindex, 0,
-+		ipv4_redirect(skb, dev_net(skb->dev), t->parms.link, 0,
- 			      IPPROTO_IPIP, 0);
- 		err = 0;
- 		goto out;
+ #ifdef IP6_TNL_DEBUG
 --- a/net/ipv6/sit.c
 +++ b/net/ipv6/sit.c
-@@ -560,12 +560,12 @@ static int ipip6_err(struct sk_buff *skb
- 
- 	if (type == ICMP_DEST_UNREACH && code == ICMP_FRAG_NEEDED) {
- 		ipv4_update_pmtu(skb, dev_net(skb->dev), info,
--				 t->dev->ifindex, 0, IPPROTO_IPV6, 0);
-+				 t->parms.link, 0, IPPROTO_IPV6, 0);
- 		err = 0;
- 		goto out;
- 	}
- 	if (type == ICMP_REDIRECT) {
--		ipv4_redirect(skb, dev_net(skb->dev), t->dev->ifindex, 0,
-+		ipv4_redirect(skb, dev_net(skb->dev), t->parms.link, 0,
- 			      IPPROTO_IPV6, 0);
- 		err = 0;
- 		goto out;
+@@ -1828,4 +1828,5 @@ xfrm_tunnel_failed:
+ module_init(sit_init);
+ module_exit(sit_cleanup);
+ MODULE_LICENSE("GPL");
++MODULE_ALIAS_RTNL_LINK("sit");
+ MODULE_ALIAS_NETDEV("sit0");
 
 
