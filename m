@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964981AbaFXP4E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:56:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33283 "EHLO
+	id S965068AbaFXP40 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:56:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33347 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964962AbaFXP4A (ORCPT
+	with ESMTP id S965051AbaFXP4X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:56:00 -0400
+	Tue, 24 Jun 2014 11:56:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Xiao Jin <jin.xiao@intel.com>, Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.15 28/61] USB: cdc-acm: fix broken runtime suspend
-Date: Tue, 24 Jun 2014 11:51:11 -0400
-Message-Id: <20140624154954.053014519@linuxfoundation.org>
+        Xufeng Zhang <xufeng.zhang@windriver.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.15 18/61] sctp: Fix sk_ack_backlog wrap-around problem
+Date: Tue, 24 Jun 2014 11:51:01 -0400
+Message-Id: <20140624154953.595896444@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154952.751713761@linuxfoundation.org>
 References: <20140624154952.751713761@linuxfoundation.org>
@@ -28,125 +31,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Xufeng Zhang <xufeng.zhang@windriver.com>
 
-commit 140cb81ac8c625942a1d695875932c615767a526 upstream.
+[ Upstream commit d3217b15a19a4779c39b212358a5c71d725822ee ]
 
-The current ACM runtime-suspend implementation is broken in several
-ways:
+Consider the scenario:
+For a TCP-style socket, while processing the COOKIE_ECHO chunk in
+sctp_sf_do_5_1D_ce(), after it has passed a series of sanity check,
+a new association would be created in sctp_unpack_cookie(), but afterwards,
+some processing maybe failed, and sctp_association_free() will be called to
+free the previously allocated association, in sctp_association_free(),
+sk_ack_backlog value is decremented for this socket, since the initial
+value for sk_ack_backlog is 0, after the decrement, it will be 65535,
+a wrap-around problem happens, and if we want to establish new associations
+afterward in the same socket, ABORT would be triggered since sctp deem the
+accept queue as full.
+Fix this issue by only decrementing sk_ack_backlog for associations in
+the endpoint's list.
 
-Firstly, it buffers only the first write request being made while
-suspended -- any further writes are silently dropped.
-
-Secondly, writes being dropped also leak write urbs, which are never
-reclaimed (until the device is unbound).
-
-Thirdly, even the single buffered write is not cleared at shutdown
-(which may happen before the device is resumed), something which can
-lead to another urb leak as well as a PM usage-counter leak.
-
-Fix this by implementing a delayed-write queue using urb anchors and
-making sure to discard the queue properly at shutdown.
-
-Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
-that support remote wakeup")
-
-Reported-by: Xiao Jin <jin.xiao@intel.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Fix-suggested-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
+Acked-by: Daniel Borkmann <dborkman@redhat.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/usb/class/cdc-acm.c |   32 ++++++++++++++++++++++----------
- drivers/usb/class/cdc-acm.h |    2 +-
- 2 files changed, 23 insertions(+), 11 deletions(-)
+ net/sctp/associola.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -573,6 +573,8 @@ static void acm_port_destruct(struct tty
- static void acm_port_shutdown(struct tty_port *port)
- {
- 	struct acm *acm = container_of(port, struct acm, port);
-+	struct urb *urb;
-+	struct acm_wb *wb;
- 	int i;
+--- a/net/sctp/associola.c
++++ b/net/sctp/associola.c
+@@ -330,7 +330,7 @@ void sctp_association_free(struct sctp_a
+ 	/* Only real associations count against the endpoint, so
+ 	 * don't bother for if this is a temporary association.
+ 	 */
+-	if (!asoc->temp) {
++	if (!list_empty(&asoc->asocs)) {
+ 		list_del(&asoc->asocs);
  
- 	dev_dbg(&acm->control->dev, "%s\n", __func__);
-@@ -581,6 +583,16 @@ static void acm_port_shutdown(struct tty
- 	if (!acm->disconnected) {
- 		usb_autopm_get_interface(acm->control);
- 		acm_set_control(acm, acm->ctrlout = 0);
-+
-+		for (;;) {
-+			urb = usb_get_from_anchor(&acm->delayed);
-+			if (!urb)
-+				break;
-+			wb = urb->context;
-+			wb->use = 0;
-+			usb_autopm_put_interface_async(acm->control);
-+		}
-+
- 		usb_kill_urb(acm->ctrlurb);
- 		for (i = 0; i < ACM_NW; i++)
- 			usb_kill_urb(acm->wb[i].urb);
-@@ -648,12 +660,9 @@ static int acm_tty_write(struct tty_stru
- 
- 	usb_autopm_get_interface_async(acm->control);
- 	if (acm->susp_count) {
--		if (!acm->delayed_wb)
--			acm->delayed_wb = wb;
--		else
--			usb_autopm_put_interface_async(acm->control);
-+		usb_anchor_urb(wb->urb, &acm->delayed);
- 		spin_unlock_irqrestore(&acm->write_lock, flags);
--		return count;	/* A white lie */
-+		return count;
- 	}
- 	usb_mark_last_busy(acm->dev);
- 
-@@ -1269,6 +1278,7 @@ made_compressed_probe:
- 		acm->bInterval = epread->bInterval;
- 	tty_port_init(&acm->port);
- 	acm->port.ops = &acm_port_ops;
-+	init_usb_anchor(&acm->delayed);
- 
- 	buf = usb_alloc_coherent(usb_dev, ctrlsize, GFP_KERNEL, &acm->ctrl_dma);
- 	if (!buf) {
-@@ -1539,7 +1549,7 @@ static int acm_suspend(struct usb_interf
- static int acm_resume(struct usb_interface *intf)
- {
- 	struct acm *acm = usb_get_intfdata(intf);
--	struct acm_wb *wb;
-+	struct urb *urb;
- 	int rv = 0;
- 
- 	spin_lock_irq(&acm->read_lock);
-@@ -1551,10 +1561,12 @@ static int acm_resume(struct usb_interfa
- 	if (test_bit(ASYNCB_INITIALIZED, &acm->port.flags)) {
- 		rv = usb_submit_urb(acm->ctrlurb, GFP_ATOMIC);
- 
--		if (acm->delayed_wb) {
--			wb = acm->delayed_wb;
--			acm->delayed_wb = NULL;
--			acm_start_wb(acm, wb);
-+		for (;;) {
-+			urb = usb_get_from_anchor(&acm->delayed);
-+			if (!urb)
-+				break;
-+
-+			acm_start_wb(acm, urb->context);
- 		}
- 
- 		/*
---- a/drivers/usb/class/cdc-acm.h
-+++ b/drivers/usb/class/cdc-acm.h
-@@ -120,7 +120,7 @@ struct acm {
- 	unsigned int throttled:1;			/* actually throttled */
- 	unsigned int throttle_req:1;			/* throttle requested */
- 	u8 bInterval;
--	struct acm_wb *delayed_wb;			/* write queued for a device about to be woken */
-+	struct usb_anchor delayed;			/* writes queued for a device about to be woken */
- };
- 
- #define CDC_DATA_INTERFACE_TYPE	0x0a
+ 		/* Decrement the backlog value for a TCP-style listening
 
 
