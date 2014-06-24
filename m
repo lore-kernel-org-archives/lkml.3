@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965023AbaFXQR1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:17:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33171 "EHLO
+	id S964857AbaFXPzS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:55:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33147 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755990AbaFXPzV (ORCPT
+	with ESMTP id S1755935AbaFXPzN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:55:21 -0400
+	Tue, 24 Jun 2014 11:55:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.14 65/68] ALSA: control: Fix replacing user controls
-Date: Tue, 24 Jun 2014 11:51:24 -0400
-Message-Id: <20140624154726.941661379@linuxfoundation.org>
+        Zhang Dongxing <dongxing.zhang@intel.com>,
+        xiaoming wang <xiaoming.wang@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.14 60/68] ALSA: compress: Cancel the optimization of compiler and fix the size of struct for all platform.
+Date: Tue, 24 Jun 2014 11:51:19 -0400
+Message-Id: <20140624154726.685516062@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154723.907894814@linuxfoundation.org>
 References: <20140624154723.907894814@linuxfoundation.org>
@@ -29,88 +30,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: "Wang, Xiaoming" <xiaoming.wang@intel.com>
 
-commit 82262a46627bebb0febcc26664746c25cef08563 upstream.
+commit 2bd0ae464a6cf7363bbf72c8545e0aa43caa57f0 upstream.
 
-There are two issues with the current implementation for replacing user
-controls. The first is that the code does not check if the control is actually a
-user control and neither does it check if the control is owned by the process
-that tries to remove it. That allows userspace applications to remove arbitrary
-controls, which can cause a user after free if a for example a driver does not
-expect a control to be removed from under its feed.
+Cancel the optimization of compiler for struct snd_compr_avail
+which size will be 0x1c in 32bit kernel while 0x20 in 64bit
+kernel under the optimizer. That will make compaction between
+32bit and 64bit. So add packed to fix the size of struct
+snd_compr_avail to 0x1c for all platform.
 
-The second issue is that on one hand when a control is replaced the
-user_ctl_count limit is not checked and on the other hand the user_ctl_count is
-increased (even though the number of user controls does not change). This allows
-userspace, once the user_ctl_count limit as been reached, to repeatedly replace
-a control until user_ctl_count overflows. Once that happens new controls can be
-added effectively bypassing the user_ctl_count limit.
-
-Both issues can be fixed by instead of open-coding the removal of the control
-that is to be replaced to use snd_ctl_remove_user_ctl(). This function does
-proper permission checks as well as decrements user_ctl_count after the control
-has been removed.
-
-Note that by using snd_ctl_remove_user_ctl() the check which returns -EBUSY at
-beginning of the function if the control already exists is removed. This is not
-a problem though since the check is quite useless, because the lock that is
-protecting the control list is released between the check and before adding the
-new control to the list, which means that it is possible that a different
-control with the same settings is added to the list after the check. Luckily
-there is another check that is done while holding the lock in snd_ctl_add(), so
-we'll rely on that to make sure that the same control is not added twice.
-
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Acked-by: Jaroslav Kysela <perex@perex.cz>
+Signed-off-by: Zhang Dongxing <dongxing.zhang@intel.com>
+Signed-off-by: xiaoming wang <xiaoming.wang@intel.com>
+Acked-by: Vinod Koul <vinod.koul@intel.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/core/control.c |   25 +++++++++----------------
- 1 file changed, 9 insertions(+), 16 deletions(-)
+ include/uapi/sound/compress_offload.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/core/control.c
-+++ b/sound/core/control.c
-@@ -1155,8 +1155,6 @@ static int snd_ctl_elem_add(struct snd_c
- 	struct user_element *ue;
- 	int idx, err;
+--- a/include/uapi/sound/compress_offload.h
++++ b/include/uapi/sound/compress_offload.h
+@@ -80,7 +80,7 @@ struct snd_compr_tstamp {
+ struct snd_compr_avail {
+ 	__u64 avail;
+ 	struct snd_compr_tstamp tstamp;
+-};
++} __attribute__((packed));
  
--	if (!replace && card->user_ctl_count >= MAX_USER_CONTROLS)
--		return -ENOMEM;
- 	if (info->count < 1)
- 		return -EINVAL;
- 	access = info->access == 0 ? SNDRV_CTL_ELEM_ACCESS_READWRITE :
-@@ -1165,21 +1163,16 @@ static int snd_ctl_elem_add(struct snd_c
- 				 SNDRV_CTL_ELEM_ACCESS_TLV_READWRITE));
- 	info->id.numid = 0;
- 	memset(&kctl, 0, sizeof(kctl));
--	down_write(&card->controls_rwsem);
--	_kctl = snd_ctl_find_id(card, &info->id);
--	err = 0;
--	if (_kctl) {
--		if (replace)
--			err = snd_ctl_remove(card, _kctl);
--		else
--			err = -EBUSY;
--	} else {
--		if (replace)
--			err = -ENOENT;
-+
-+	if (replace) {
-+		err = snd_ctl_remove_user_ctl(file, &info->id);
-+		if (err)
-+			return err;
- 	}
--	up_write(&card->controls_rwsem);
--	if (err < 0)
--		return err;
-+
-+	if (card->user_ctl_count >= MAX_USER_CONTROLS)
-+		return -ENOMEM;
-+
- 	memcpy(&kctl.id, &info->id, sizeof(info->id));
- 	kctl.count = info->owner ? info->owner : 1;
- 	access |= SNDRV_CTL_ELEM_ACCESS_USER;
+ enum snd_compr_direction {
+ 	SND_COMPRESS_PLAYBACK = 0,
 
 
