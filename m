@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755512AbaFXUce (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:32:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47765 "EHLO
+	id S1755535AbaFXUcm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:32:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47780 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753200AbaFXUcc (ORCPT
+	with ESMTP id S1753200AbaFXUck (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:32:32 -0400
+	Tue, 24 Jun 2014 16:32:40 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "J. Bruce Fields" <bfields@redhat.com>,
+Cc: Lior Amsalem <alior@marvell.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Dan Williams <dan.j.williams@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 37/65] nfsd4: warn on finding lockowner without stateid's
-Date: Tue, 24 Jun 2014 13:29:57 -0700
-Message-Id: <1403641825-12825-38-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 38/65] dma: mv_xor: Flush descriptors before activating a channel
+Date: Tue, 24 Jun 2014 13:29:58 -0700
+Message-Id: <1403641825-12825-39-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
 References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
@@ -27,34 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
 
-commit 27b11428b7de097c42f205beabb1764f4365443b upstream.
+commit 5a9a55bf9157d3490b0c8c4c81d4708602c26e07 upstream.
 
-The current code assumes a one-to-one lockowner<->lock stateid
-correspondance.
+We need to use writel() instead of writel_relaxed() when starting
+a channel, to ensure all the descriptors have been flushed before
+the activation.
 
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+While at it, remove the unneeded read-modify-write and make the
+code simpler.
+
+Signed-off-by: Lior Amsalem <alior@marvell.com>
+Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+[ kamal: backport to 3.8-stable: context ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/nfsd/nfs4state.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/dma/mv_xor.c | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
-diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-index 6acaeed..d5e1349 100644
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -3971,6 +3971,10 @@ static bool same_lockowner_ino(struct nfs4_lockowner *lo, struct inode *inode, c
+diff --git a/drivers/dma/mv_xor.c b/drivers/dma/mv_xor.c
+index e17fad0..f7f1028 100644
+--- a/drivers/dma/mv_xor.c
++++ b/drivers/dma/mv_xor.c
+@@ -224,12 +224,10 @@ static void mv_set_mode(struct mv_xor_chan *chan,
  
- 	if (!same_owner_str(&lo->lo_owner, owner, clid))
- 		return false;
-+	if (list_empty(&lo->lo_owner.so_stateids)) {
-+		WARN_ON_ONCE(1);
-+		return false;
-+	}
- 	lst = list_first_entry(&lo->lo_owner.so_stateids,
- 			       struct nfs4_ol_stateid, st_perstateowner);
- 	return lst->st_file->fi_inode == inode;
+ static void mv_chan_activate(struct mv_xor_chan *chan)
+ {
+-	u32 activation;
+-
+ 	dev_dbg(mv_chan_to_devp(chan), " activate chan.\n");
+-	activation = __raw_readl(XOR_ACTIVATION(chan));
+-	activation |= 0x1;
+-	__raw_writel(activation, XOR_ACTIVATION(chan));
++
++	/* writel ensures all descriptors are flushed before activation */
++	writel(BIT(0), XOR_ACTIVATION(chan));
+ }
+ 
+ static char mv_chan_is_busy(struct mv_xor_chan *chan)
 -- 
 1.9.1
 
