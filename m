@@ -1,277 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754478AbaFXOmh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 10:42:37 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:11951 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754365AbaFXOmT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 10:42:19 -0400
-X-IronPort-AV: E=Sophos;i="5.01,538,1400025600"; 
-   d="scan'208";a="146559608"
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-To: Steffen Klassert <steffen.klassert@secunet.com>,
-        Fan Du <fan.du@windriver.com>, Mathias Krause <minipli@googlemail.com>,
-        Daniel Borkmann <dborkman@redhat.com>
-CC: Zoltan Kiss <zoltan.kiss@citrix.com>,
-        "David S. Miller" <davem@davemloft.net>, Thomas Graf <tgraf@suug.ch>,
-        Joe Perches <joe@perches.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
-Subject: [PATCH net-next] pktgen: Fill the payload optionally with a pattern
-Date: Tue, 24 Jun 2014 15:42:08 +0100
-Message-ID: <1403620928-4514-1-git-send-email-zoltan.kiss@citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.80.118.114]
-X-DLP: MIA2
+	id S1754529AbaFXOnV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 10:43:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11130 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753789AbaFXOnT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 10:43:19 -0400
+Message-ID: <1403620984.16078.18.camel@ul30vt.home>
+Subject: Re: [PATCH] vfio: Fix endianness handling for emulated BARs
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Alexey Kardashevskiy <aik@ozlabs.ru>
+Cc: Alexander Graf <agraf@suse.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
+Date: Tue, 24 Jun 2014 08:43:04 -0600
+In-Reply-To: <53A98C38.8020205@ozlabs.ru>
+References: <1403091391-31780-1-git-send-email-aik@ozlabs.ru>
+			 <1403116512.3707.175.camel@ul30vt.home> <53A233E9.6030006@ozlabs.ru>
+			 <53A241F6.9010307@ozlabs.ru> <53A25D74.5000804@ozlabs.ru>
+			 <1403234514.3707.278.camel@ul30vt.home>
+	 <1403305961.4587.66.camel@pasglop>	 <53A94EBD.101@ozlabs.ru>
+	 <53A955F5.6050801@suse.de>	 <53A9741B.1040500@ozlabs.ru>
+	 <53A97486.4070604@suse.de>	 <53A976B7.3070709@ozlabs.ru>
+	 <53A97BA9.4020702@suse.de> <1403619685.16078.15.camel@ul30vt.home>
+	 <53A98C38.8020205@ozlabs.ru>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduces a new flag called PATTERN, which puts a non-periodic, predicatble
-pattern into the payload. This was useful to reproduce an otherwise intermittent
-bug in xen-netback [1], where checksum checking doesn't help.
-The pattern is a repetition of " %lu", a series of increasing numbers divided by
-space. The value of the number is the size of the preceding payload area. E.g.
-" 1 3 5"..." 1000 1005 1010"
-If the pattern is used, every frag will have its own page, unlike before, so it
-needs more memory.
+On Wed, 2014-06-25 at 00:33 +1000, Alexey Kardashevskiy wrote:
+> On 06/25/2014 12:21 AM, Alex Williamson wrote:
+> > On Tue, 2014-06-24 at 15:22 +0200, Alexander Graf wrote:
+> >> On 24.06.14 15:01, Alexey Kardashevskiy wrote:
+> >>> On 06/24/2014 10:52 PM, Alexander Graf wrote:
+> >>>> On 24.06.14 14:50, Alexey Kardashevskiy wrote:
+> >>>>> On 06/24/2014 08:41 PM, Alexander Graf wrote:
+> >>>>>> On 24.06.14 12:11, Alexey Kardashevskiy wrote:
+> >>>>>>> On 06/21/2014 09:12 AM, Benjamin Herrenschmidt wrote:
+> >>>>>>>> On Thu, 2014-06-19 at 21:21 -0600, Alex Williamson wrote:
+> >>>>>>>>
+> >>>>>>>>> Working on big endian being an accident may be a matter of perspective
+> >>>>>>>>     :-)
+> >>>>>>>>
+> >>>>>>>>> The comment remains that this patch doesn't actually fix anything except
+> >>>>>>>>> the overhead on big endian systems doing redundant byte swapping and
+> >>>>>>>>> maybe the philosophy that vfio regions are little endian.
+> >>>>>>>> Yes, that works by accident because technically VFIO is a transport and
+> >>>>>>>> thus shouldn't perform any endian swapping of any sort, which remains
+> >>>>>>>> the responsibility of the end driver which is the only one to know
+> >>>>>>>> whether a given BAR location is a a register or some streaming data
+> >>>>>>>> and in the former case whether it's LE or BE (some PCI devices are BE
+> >>>>>>>> even ! :-)
+> >>>>>>>>
+> >>>>>>>> But yes, in the end, it works with the dual "cancelling" swaps and the
+> >>>>>>>> overhead of those swaps is probably drowned in the noise of the syscall
+> >>>>>>>> overhead.
+> >>>>>>>>
+> >>>>>>>>> I'm still not a fan of iowrite vs iowritebe, there must be something we
+> >>>>>>>>> can use that doesn't have an implicit swap.
+> >>>>>>>> Sadly there isn't ... In the old day we didn't even have the "be"
+> >>>>>>>> variant and readl/writel style accessors still don't have them either
+> >>>>>>>> for all archs.
+> >>>>>>>>
+> >>>>>>>> There is __raw_readl/writel but here the semantics are much more than
+> >>>>>>>> just "don't swap", they also don't have memory barriers (which means
+> >>>>>>>> they are essentially useless to most drivers unless those are platform
+> >>>>>>>> specific drivers which know exactly what they are doing, or in the rare
+> >>>>>>>> cases such as accessing a framebuffer which we know never have side
+> >>>>>>>> effects).
+> >>>>>>>>
+> >>>>>>>>>     Calling it iowrite*_native is also an abuse of the namespace.
+> >>>>>>>>>     Next thing we know some common code
+> >>>>>>>>> will legitimately use that name.
+> >>>>>>>> I might make sense to those definitions into a common header. There have
+> >>>>>>>> been a handful of cases in the past that wanted that sort of "native
+> >>>>>>>> byte order" MMIOs iirc (though don't ask me for examples, I can't really
+> >>>>>>>> remember).
+> >>>>>>>>
+> >>>>>>>>>     If we do need to define an alias
+> >>>>>>>>> (which I'd like to avoid) it should be something like vfio_iowrite32.
+> >>>>>>> Ping?
+> >>>>>>>
+> >>>>>>> We need to make a decision whether to move those xxx_native() helpers
+> >>>>>>> somewhere (where?) or leave the patch as is (as we figured out that
+> >>>>>>> iowriteXX functions implement barriers and we cannot just use raw
+> >>>>>>> accessors) and fix commit log to explain everything.
+> >>>>>> Is there actually any difference in generated code with this patch applied
+> >>>>>> and without? I would hope that iowrite..() is inlined and cancels out the
+> >>>>>> cpu_to_le..() calls that are also inlined?
+> >>>>> iowrite32 is a non-inline function so conversions take place so are the
+> >>>>> others. And sorry but I fail to see why this matters. We are not trying to
+> >>>>> accelerate things, we are removing redundant operations which confuse
+> >>>>> people who read the code.
+> >>>> The confusion depends on where you're coming from. If you happen to know
+> >>>> that "iowrite32" writes in LE, then the LE conversion makes a lot of sense.
+> >>> It was like this (and this is just confusing):
+> >>>
+> >>> iowrite32(le32_to_cpu(val), io + off);
+> >>>
+> >>> What would make sense (according to you and I would understand this) is this:
+> >>>
+> >>> iowrite32(cpu_to_le32(val), io + off);
+> >>>
+> >>>
+> >>> Or I missed your point, did I?
+> >>
+> >> No, you didn't miss it. I think for people who know how iowrite32() 
+> >> works the above is obvious. I find the fact that iowrite32() writes in 
+> >> LE always pretty scary though ;).
+> >>
+> >> So IMHO we should either create new, generic iowrite helpers that don't 
+> >> do any endian swapping at all or do iowrite32(cpu_to_le32(val)) calls.
+> > 
+> > I'm one of those people for whom iowrite32(le32_to_cpu(val)) makes sense
+> 
+> 
+> I do not understand why @val is considered LE here and need to be converted
+> to CPU. Really. I truly believe it should be cpu_to_le32().
 
-[1] 5837574: xen-netback: Fix grant ref resolution in RX path
+Because iowrite32 is defined to take a cpu byte order value and write it
+as little endian.
 
-Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Thomas Graf <tgraf@suug.ch>
-Cc: Joe Perches <joe@perches.com>
-Cc: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xenproject.org
+> > and keeps the byte order consistent regardless of the platform, while
+> > iowrite32(val) or iowrite32be(val) makes me scratch my head and try to
+> > remember that the byte swaps are a nop on the given platforms.  As Ben
+> > noted, a native, no-swap ioread/write doesn't exist, but perhaps should.
+> > I'd prefer an attempt be made to make it exist before adding
+> > vfio-specific macros.  vfio is arguably doing the right thing here given
+> > the functions available.  Thanks,
+> 
+> 
 
----
- net/core/pktgen.c |  131 +++++++++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 118 insertions(+), 13 deletions(-)
 
-diff --git a/net/core/pktgen.c b/net/core/pktgen.c
-index 0304f98..69eb482 100644
---- a/net/core/pktgen.c
-+++ b/net/core/pktgen.c
-@@ -201,6 +201,7 @@
- #define F_QUEUE_MAP_CPU (1<<14)	/* queue map mirrors smp_processor_id() */
- #define F_NODE          (1<<15)	/* Node memory alloc*/
- #define F_UDPCSUM       (1<<16)	/* Include UDP checksum */
-+#define F_PATTERN       (1<<17)	/* Fill the payload with a pattern */
- 
- /* Thread control flag bits */
- #define T_STOP        (1<<0)	/* Stop run */
-@@ -255,7 +256,7 @@ struct pktgen_dev {
- 	int max_pkt_size;
- 	int pkt_overhead;	/* overhead for MPLS, VLANs, IPSEC etc */
- 	int nfrags;
--	struct page *page;
-+	struct page *pages[MAX_SKB_FRAGS];
- 	u64 delay;		/* nano-seconds */
- 
- 	__u64 count;		/* Default No packets to send */
-@@ -1127,11 +1128,13 @@ static ssize_t pktgen_if_write(struct file *file,
- 		i += len;
- 
- 		if (node_possible(value)) {
-+			int j;
- 			pkt_dev->node = value;
- 			sprintf(pg_result, "OK: node=%d", pkt_dev->node);
--			if (pkt_dev->page) {
--				put_page(pkt_dev->page);
--				pkt_dev->page = NULL;
-+			for (j = 0; j < MAX_SKB_FRAGS; ++j)
-+				if (pkt_dev->pages[j]) {
-+					put_page(pkt_dev->pages[j]);
-+					pkt_dev->pages[j] = NULL;
- 			}
- 		}
- 		else
-@@ -1242,6 +1245,12 @@ static ssize_t pktgen_if_write(struct file *file,
- 		else if (strcmp(f, "!UDPCSUM") == 0)
- 			pkt_dev->flags &= ~F_UDPCSUM;
- 
-+		else if (strcmp(f, "PATTERN") == 0)
-+			pkt_dev->flags |= F_PATTERN;
-+
-+		else if (strcmp(f, "!PATTERN") == 0)
-+			pkt_dev->flags &= ~F_PATTERN;
-+
- 		else {
- 			sprintf(pg_result,
- 				"Flag -:%s:- unknown\nAvailable flags, (prepend ! to un-set flag):\n%s",
-@@ -2623,17 +2632,90 @@ static inline __be16 build_tci(unsigned int id, unsigned int cfi,
- 	return htons(id | (cfi << 12) | (prio << 13));
- }
- 
-+/* Max number of digits. The sizeof equals to log base 2^8 (UINT_MAX), multiply
-+ * with 3 is a cheap, rounded up conversion to log10
-+ */
-+#define UINT_MAX_DIGITS (3*sizeof(unsigned long)+1)
-+
-+/* Fill the buffer up with a pattern
-+ * buf - pointer to buffer
-+ * bufsize - size of the buffer
-+ * start - starting value for the pattern
-+ * incomplete - pointer to the offset inside the pattern, or 0 if none
-+ *
-+ * The pattern is a repetition of " %lu", a series of increasing numbers divided
-+ * by space. The value of the number is "start" plus the size of the preceding
-+ * space. E.g. if start is 1000, it starts like " 1000 1005 1010".
-+ * If the last number doesn't fit, it gets truncated, and the number of leading
-+ * characters is saved into incomplete. It can be passed then to the next call
-+ * with the next buffer, and the pattern looks contiguous over scattered
-+ * buffers.
-+ * It returns "start" plus the offset of the byte after the last full
-+ * pattern write.
-+ */
-+static unsigned long pattern_to_packet(char *buf,
-+				       int bufsize,
-+				       unsigned long start,
-+				       unsigned int *incomplete)
-+{
-+	int len;
-+	/* Only used when the pattern doesn't align to the buffer */
-+	char temp[UINT_MAX_DIGITS];
-+
-+	if (*incomplete) {
-+		int copylen;
-+
-+		len = snprintf(temp, UINT_MAX_DIGITS, " %lu", start);
-+		copylen = len - *incomplete;
-+		if (copylen > bufsize) {
-+			/* The continuation of this number couldn't fit here */
-+			copylen = bufsize;
-+			*incomplete += bufsize;
-+		} else {
-+			*incomplete = 0;
-+			start += len;
-+		}
-+		memcpy(buf, temp + *incomplete, copylen);
-+		bufsize -= copylen;
-+		buf += copylen;
-+	}
-+
-+	while (bufsize > 0) {
-+		len = snprintf(buf, bufsize, " %lu", start);
-+		/* The last number doesn't fit, remember where it was truncated.
-+		 */
-+		if (len >= bufsize) {
-+			/* snprintf always add a trailing zero */
-+			len = snprintf(temp, UINT_MAX_DIGITS, " %lu", start);
-+			memcpy(buf, temp, bufsize);
-+			*incomplete = len - bufsize;
-+			return start;
-+		}
-+		bufsize -= len;
-+		start += len;
-+		buf += len;
-+	}
-+	return start;
-+}
-+
- static void pktgen_finalize_skb(struct pktgen_dev *pkt_dev, struct sk_buff *skb,
- 				int datalen)
- {
- 	struct timeval timestamp;
- 	struct pktgen_hdr *pgh;
-+	unsigned long offset = 0;
-+	unsigned int incomplete = 0;
- 
- 	pgh = (struct pktgen_hdr *)skb_put(skb, sizeof(*pgh));
- 	datalen -= sizeof(*pgh);
- 
- 	if (pkt_dev->nfrags <= 0) {
--		memset(skb_put(skb, datalen), 0, datalen);
-+		if (pkt_dev->flags & F_PATTERN)
-+			offset = pattern_to_packet(skb_put(skb, datalen),
-+						   datalen, offset,
-+						   &incomplete);
-+		else
-+			memset(skb_put(skb, datalen), 0, datalen);
- 	} else {
- 		int frags = pkt_dev->nfrags;
- 		int i, len;
-@@ -2644,7 +2726,12 @@ static void pktgen_finalize_skb(struct pktgen_dev *pkt_dev, struct sk_buff *skb,
- 			frags = MAX_SKB_FRAGS;
- 		len = datalen - frags * PAGE_SIZE;
- 		if (len > 0) {
--			memset(skb_put(skb, len), 0, len);
-+			if (pkt_dev->flags & F_PATTERN)
-+				offset = pattern_to_packet(skb_put(skb, len),
-+							   len, offset,
-+							   &incomplete);
-+			else
-+				memset(skb_put(skb, len), 0, len);
- 			datalen = frags * PAGE_SIZE;
- 		}
- 
-@@ -2652,17 +2739,28 @@ static void pktgen_finalize_skb(struct pktgen_dev *pkt_dev, struct sk_buff *skb,
- 		frag_len = (datalen/frags) < PAGE_SIZE ?
- 			   (datalen/frags) : PAGE_SIZE;
- 		while (datalen > 0) {
--			if (unlikely(!pkt_dev->page)) {
-+			int fragpage;
-+			gfp_t flags = GFP_KERNEL;
-+
-+			if (pkt_dev->flags & F_PATTERN) {
-+				fragpage = i;
-+			} else {
-+				fragpage = 0;
-+				flags |= __GFP_ZERO;
-+			}
-+
-+			if (unlikely(!pkt_dev->pages[fragpage])) {
- 				int node = numa_node_id();
- 
- 				if (pkt_dev->node >= 0 && (pkt_dev->flags & F_NODE))
- 					node = pkt_dev->node;
--				pkt_dev->page = alloc_pages_node(node, GFP_KERNEL | __GFP_ZERO, 0);
--				if (!pkt_dev->page)
-+				pkt_dev->pages[fragpage] = alloc_pages_node(node, flags, 0);
-+				if (!pkt_dev->pages[fragpage])
- 					break;
- 			}
--			get_page(pkt_dev->page);
--			skb_frag_set_page(skb, i, pkt_dev->page);
-+			get_page(pkt_dev->pages[fragpage]);
-+			skb_frag_set_page(skb, i, pkt_dev->pages[fragpage]);
-+
- 			skb_shinfo(skb)->frags[i].page_offset = 0;
- 			/*last fragment, fill rest of data*/
- 			if (i == (frags - 1))
-@@ -2671,6 +2769,10 @@ static void pktgen_finalize_skb(struct pktgen_dev *pkt_dev, struct sk_buff *skb,
- 			else
- 				skb_frag_size_set(&skb_shinfo(skb)->frags[i], frag_len);
- 			datalen -= skb_frag_size(&skb_shinfo(skb)->frags[i]);
-+			if (pkt_dev->flags & F_PATTERN)
-+				offset = pattern_to_packet(skb_frag_address(&skb_shinfo(skb)->frags[i]),
-+							   skb_frag_size(&skb_shinfo(skb)->frags[i]),
-+							   offset, &incomplete);
- 			skb->len += skb_frag_size(&skb_shinfo(skb)->frags[i]);
- 			skb->data_len += skb_frag_size(&skb_shinfo(skb)->frags[i]);
- 			i++;
-@@ -3685,6 +3787,8 @@ static void _rem_dev_from_if_list(struct pktgen_thread *t,
- static int pktgen_remove_device(struct pktgen_thread *t,
- 				struct pktgen_dev *pkt_dev)
- {
-+	int i;
-+
- 	pr_debug("remove_device pkt_dev=%p\n", pkt_dev);
- 
- 	if (pkt_dev->running) {
-@@ -3710,8 +3814,9 @@ static int pktgen_remove_device(struct pktgen_thread *t,
- 	free_SAs(pkt_dev);
- #endif
- 	vfree(pkt_dev->flows);
--	if (pkt_dev->page)
--		put_page(pkt_dev->page);
-+	for (i = 0; i < MAX_SKB_FRAGS; ++i)
-+		if (pkt_dev->pages[i])
-+			put_page(pkt_dev->pages[i]);
- 	kfree(pkt_dev);
- 	return 0;
- }
+
