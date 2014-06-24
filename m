@@ -1,126 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753827AbaFXOVl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 10:21:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63362 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752539AbaFXOVk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 10:21:40 -0400
-Message-ID: <1403619685.16078.15.camel@ul30vt.home>
-Subject: Re: [PATCH] vfio: Fix endianness handling for emulated BARs
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Alexander Graf <agraf@suse.de>
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
-Date: Tue, 24 Jun 2014 08:21:25 -0600
-In-Reply-To: <53A97BA9.4020702@suse.de>
-References: <1403091391-31780-1-git-send-email-aik@ozlabs.ru>
-		 <1403116512.3707.175.camel@ul30vt.home> <53A233E9.6030006@ozlabs.ru>
-		 <53A241F6.9010307@ozlabs.ru> <53A25D74.5000804@ozlabs.ru>
-		 <1403234514.3707.278.camel@ul30vt.home> <1403305961.4587.66.camel@pasglop>
-	 <53A94EBD.101@ozlabs.ru> <53A955F5.6050801@suse.de>
-	 <53A9741B.1040500@ozlabs.ru> <53A97486.4070604@suse.de>
-	 <53A976B7.3070709@ozlabs.ru> <53A97BA9.4020702@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
+	id S1753966AbaFXOWZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 10:22:25 -0400
+Received: from prod-mail-xrelay07.akamai.com ([72.246.2.115]:34069 "EHLO
+	prod-mail-xrelay07.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753248AbaFXOWX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 10:22:23 -0400
+Message-ID: <53A9899C.9040005@akamai.com>
+Date: Tue, 24 Jun 2014 09:22:20 -0500
+From: Josh Hunt <johunt@akamai.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Baron, Jason" <jbaron@akamai.com>
+Subject: Re: [PATCH] panic: add TAINT_SOFTLOCKUP
+References: <1401847955-3345-1-git-send-email-johunt@akamai.com>	<20140623151121.44f17779004e94ab620b837c@linux-foundation.org>	<53A8ADEC.6070406@akamai.com> <20140623155118.e2446a6110a9889454db2386@linux-foundation.org>
+In-Reply-To: <20140623155118.e2446a6110a9889454db2386@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-06-24 at 15:22 +0200, Alexander Graf wrote:
-> On 24.06.14 15:01, Alexey Kardashevskiy wrote:
-> > On 06/24/2014 10:52 PM, Alexander Graf wrote:
-> >> On 24.06.14 14:50, Alexey Kardashevskiy wrote:
-> >>> On 06/24/2014 08:41 PM, Alexander Graf wrote:
-> >>>> On 24.06.14 12:11, Alexey Kardashevskiy wrote:
-> >>>>> On 06/21/2014 09:12 AM, Benjamin Herrenschmidt wrote:
-> >>>>>> On Thu, 2014-06-19 at 21:21 -0600, Alex Williamson wrote:
-> >>>>>>
-> >>>>>>> Working on big endian being an accident may be a matter of perspective
-> >>>>>>     :-)
-> >>>>>>
-> >>>>>>> The comment remains that this patch doesn't actually fix anything except
-> >>>>>>> the overhead on big endian systems doing redundant byte swapping and
-> >>>>>>> maybe the philosophy that vfio regions are little endian.
-> >>>>>> Yes, that works by accident because technically VFIO is a transport and
-> >>>>>> thus shouldn't perform any endian swapping of any sort, which remains
-> >>>>>> the responsibility of the end driver which is the only one to know
-> >>>>>> whether a given BAR location is a a register or some streaming data
-> >>>>>> and in the former case whether it's LE or BE (some PCI devices are BE
-> >>>>>> even ! :-)
-> >>>>>>
-> >>>>>> But yes, in the end, it works with the dual "cancelling" swaps and the
-> >>>>>> overhead of those swaps is probably drowned in the noise of the syscall
-> >>>>>> overhead.
-> >>>>>>
-> >>>>>>> I'm still not a fan of iowrite vs iowritebe, there must be something we
-> >>>>>>> can use that doesn't have an implicit swap.
-> >>>>>> Sadly there isn't ... In the old day we didn't even have the "be"
-> >>>>>> variant and readl/writel style accessors still don't have them either
-> >>>>>> for all archs.
-> >>>>>>
-> >>>>>> There is __raw_readl/writel but here the semantics are much more than
-> >>>>>> just "don't swap", they also don't have memory barriers (which means
-> >>>>>> they are essentially useless to most drivers unless those are platform
-> >>>>>> specific drivers which know exactly what they are doing, or in the rare
-> >>>>>> cases such as accessing a framebuffer which we know never have side
-> >>>>>> effects).
-> >>>>>>
-> >>>>>>>     Calling it iowrite*_native is also an abuse of the namespace.
-> >>>>>>>     Next thing we know some common code
-> >>>>>>> will legitimately use that name.
-> >>>>>> I might make sense to those definitions into a common header. There have
-> >>>>>> been a handful of cases in the past that wanted that sort of "native
-> >>>>>> byte order" MMIOs iirc (though don't ask me for examples, I can't really
-> >>>>>> remember).
-> >>>>>>
-> >>>>>>>     If we do need to define an alias
-> >>>>>>> (which I'd like to avoid) it should be something like vfio_iowrite32.
-> >>>>> Ping?
-> >>>>>
-> >>>>> We need to make a decision whether to move those xxx_native() helpers
-> >>>>> somewhere (where?) or leave the patch as is (as we figured out that
-> >>>>> iowriteXX functions implement barriers and we cannot just use raw
-> >>>>> accessors) and fix commit log to explain everything.
-> >>>> Is there actually any difference in generated code with this patch applied
-> >>>> and without? I would hope that iowrite..() is inlined and cancels out the
-> >>>> cpu_to_le..() calls that are also inlined?
-> >>> iowrite32 is a non-inline function so conversions take place so are the
-> >>> others. And sorry but I fail to see why this matters. We are not trying to
-> >>> accelerate things, we are removing redundant operations which confuse
-> >>> people who read the code.
-> >> The confusion depends on where you're coming from. If you happen to know
-> >> that "iowrite32" writes in LE, then the LE conversion makes a lot of sense.
-> > It was like this (and this is just confusing):
-> >
-> > iowrite32(le32_to_cpu(val), io + off);
-> >
-> > What would make sense (according to you and I would understand this) is this:
-> >
-> > iowrite32(cpu_to_le32(val), io + off);
-> >
-> >
-> > Or I missed your point, did I?
-> 
-> No, you didn't miss it. I think for people who know how iowrite32() 
-> works the above is obvious. I find the fact that iowrite32() writes in 
-> LE always pretty scary though ;).
-> 
-> So IMHO we should either create new, generic iowrite helpers that don't 
-> do any endian swapping at all or do iowrite32(cpu_to_le32(val)) calls.
+On 06/23/2014 05:51 PM, Andrew Morton wrote:
+> On Mon, 23 Jun 2014 17:45:00 -0500 Josh Hunt <johunt@akamai.com> wrote:
+>
+>> On 06/23/2014 05:11 PM, Andrew Morton wrote:
+>>> On Tue,  3 Jun 2014 22:12:35 -0400 Josh Hunt <johunt@akamai.com> wrote:
+>>>
+>>>> This taint flag will be set if the system has ever entered a softlockup
+>>>> state. Similar to TAINT_WARN it is useful to know whether or not the system
+>>>> has been in a softlockup state when debugging.
+>>>>
+>>>> ...
+>>>>
+>>>> @@ -329,6 +329,7 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+>>>>
+>>>>    		if (softlockup_panic)
+>>>>    			panic("softlockup: hung tasks");
+>>>> +		add_taint(TAINT_SOFTLOCKUP, LOCKDEP_STILL_OK);
+>>>>    		__this_cpu_write(soft_watchdog_warn, true);
+>>>>    	} else
+>>>>    		__this_cpu_write(soft_watchdog_warn, false);
+>>>
+>>> Would make more sense to have applied the taint *before* calling
+>>> panic()?
+>>
+>> Andrew
+>>
+>> Yep, that's a good call. Thanks. Do you want me to send a v2 or did you
+>> take care of it?
+>
+> I fixed it up.
+>
+>> In addition to adding the softlockup taint flag, do you think it'd be
+>> reasonable to add another flag for page allocation failures? I think
+>> it'd be nice to be able to account for these conditions somehow without
+>> having to parse dmesg, etc. As with the softlockup flag, it's helpful to
+>> know if your system had encountered a page allocation failure at some
+>> point before the crash or whatever you're debugging.
+>
+> I don't know, really.  Allocation failures are often an expected thing
+> as drivers try to work out how much memory they can allocate.  Those
+> things can be screened out by testing __GFP_NOWARN.  GFP_ATOMIC
+> failures should probably be ignored, except for when they shouldn't.
+> But even then, allocation failures are somewhat common.  And recency is
+> a concern: an allocation failure 10 minutes ago is unlikely to be
+> relevant.
+>
+> But that's just me waving hands around.  I'd be interested to hear from
+> people whose kernels crash more often than mine, and from those whose
+> job is to support them (ie distro people?).
+>
 
-I'm one of those people for whom iowrite32(le32_to_cpu(val)) makes sense
-and keeps the byte order consistent regardless of the platform, while
-iowrite32(val) or iowrite32be(val) makes me scratch my head and try to
-remember that the byte swaps are a nop on the given platforms.  As Ben
-noted, a native, no-swap ioread/write doesn't exist, but perhaps should.
-I'd prefer an attempt be made to make it exist before adding
-vfio-specific macros.  vfio is arguably doing the right thing here given
-the functions available.  Thanks,
+Anyone you'd suggest adding to this thread to get other feedback about 
+tracking page allocation failures? I could also spin up a patch and cc them.
 
-Alex
-
+Thanks
+Josh
