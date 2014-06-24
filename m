@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965019AbaFXQvy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:51:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60811 "EHLO
+	id S964897AbaFXQwc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:52:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60802 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755038AbaFXPvq (ORCPT
+	with ESMTP id S1754689AbaFXPvn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:51:46 -0400
+	Tue, 24 Jun 2014 11:51:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.4 23/26] ALSA: control: Make sure that id->index does not overflow
-Date: Tue, 24 Jun 2014 11:50:46 -0400
-Message-Id: <20140624154620.597923994@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.4 16/26] USB: cdc-acm: fix runtime PM imbalance at shutdown
+Date: Tue, 24 Jun 2014 11:50:39 -0400
+Message-Id: <20140624154620.281738893@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154619.499002156@linuxfoundation.org>
 References: <20140624154619.499002156@linuxfoundation.org>
@@ -29,37 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 883a1d49f0d77d30012f114b2e19fc141beb3e8e upstream.
+commit 5292afa657d0e790b7479ad8eef9450c1e040b3d upstream.
 
-The ALSA control code expects that the range of assigned indices to a control is
-continuous and does not overflow. Currently there are no checks to enforce this.
-If a control with a overflowing index range is created that control becomes
-effectively inaccessible and unremovable since snd_ctl_find_id() will not be
-able to find it. This patch adds a check that makes sure that controls with a
-overflowing index range can not be created.
+Make sure only to decrement the PM counters if they were actually
+incremented.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Acked-by: Jaroslav Kysela <perex@perex.cz>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Note that the USB PM counter, but not necessarily the driver core PM
+counter, is reset when the interface is unbound.
+
+Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
+that support remote wakeup")
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/core/control.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/class/cdc-acm.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/sound/core/control.c
-+++ b/sound/core/control.c
-@@ -341,6 +341,9 @@ int snd_ctl_add(struct snd_card *card, s
- 	if (snd_BUG_ON(!card || !kcontrol->info))
- 		goto error;
- 	id = kcontrol->id;
-+	if (id.index > UINT_MAX - kcontrol->count)
-+		goto error;
-+
- 	down_write(&card->controls_rwsem);
- 	if (snd_ctl_find_id(card, &id)) {
- 		up_write(&card->controls_rwsem);
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -623,12 +623,13 @@ static void acm_port_shutdown(struct tty
+ 	struct urb *urb;
+ 	struct acm_wb *wb;
+ 	int i;
++	int pm_err;
+ 
+ 	dev_dbg(&acm->control->dev, "%s\n", __func__);
+ 
+ 	mutex_lock(&acm->mutex);
+ 	if (!acm->disconnected) {
+-		usb_autopm_get_interface(acm->control);
++		pm_err = usb_autopm_get_interface(acm->control);
+ 		acm_set_control(acm, acm->ctrlout = 0);
+ 
+ 		for (;;) {
+@@ -646,7 +647,8 @@ static void acm_port_shutdown(struct tty
+ 		for (i = 0; i < acm->rx_buflimit; i++)
+ 			usb_kill_urb(acm->read_urbs[i]);
+ 		acm->control->needs_remote_wakeup = 0;
+-		usb_autopm_put_interface(acm->control);
++		if (!pm_err)
++			usb_autopm_put_interface(acm->control);
+ 	}
+ 	mutex_unlock(&acm->mutex);
+ }
 
 
