@@ -1,48 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754873AbaFXSYB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 14:24:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2738 "EHLO mx1.redhat.com"
+	id S1754097AbaFXS0i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 14:26:38 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54862 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752513AbaFXSX7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 14:23:59 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Benjamin LaHaise <bcrl@kvack.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, security@kernel.org,
-        linux-aio@kvack.org, linux-kernel@vger.kernel.org,
-        Mateusz Guzik <mguzik@redhat.com>, Petr Matousek <pmatouse@redhat.com>,
-        Kent Overstreet <kmo@daterainc.com>, stable@vger.kernel.org
-Subject: Re: [PATCH 2/2] aio: fix kernel memory disclosure in io_getevents() introduced in v3.10
-References: <cover.1403632276.git.bcrl@kvack.org>
-	<edfbbf388f293d70bf4b7c0bc38774d05e6f711a.1403632276.git.bcrl@kvack.org>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 24 Jun 2014 14:23:20 -0400
-In-Reply-To: <edfbbf388f293d70bf4b7c0bc38774d05e6f711a.1403632276.git.bcrl@kvack.org>
-	(Benjamin LaHaise's message of "Tue, 24 Jun 2014 14:02:17 -0400")
-Message-ID: <x4961jqb207.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1752845AbaFXS0h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 14:26:37 -0400
+Message-ID: <53A9C2C3.7050508@zytor.com>
+Date: Tue, 24 Jun 2014 11:26:11 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Andy Lutomirski <luto@amacapital.net>, Ingo Molnar <mingo@kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Subject: Re: [tip:x86/urgent] x86/vdso: Discard the __bug_table section
+References: <2a5bebff42defd8a5e81d96f7dc00f21143c80e8.1403129369.git.luto@amacapital.net> <tip-5f56e7167e6d438324fcba87018255d81e201383@git.kernel.org> <20140622084754.GA15094@gmail.com> <CALCETrW_U7z7RC-D5+Ji+PQd73nR-=xQGH5uieb7y3Z7yzYPRw@mail.gmail.com> <CALCETrXohybf=Lk70j=hVG1zaAQ-mw8CVo6P59xjM2qsc-p+Gg@mail.gmail.com>
+In-Reply-To: <CALCETrXohybf=Lk70j=hVG1zaAQ-mw8CVo6P59xjM2qsc-p+Gg@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Benjamin LaHaise <bcrl@kvack.org> writes:
+On 06/24/2014 11:19 AM, Andy Lutomirski wrote:
+>>>
+>>> One of the recent x86/urgent vdso commits causes this build failure:
+>>>
+>>>  Error: too many copied sections (max = 13)
+>>
+>> I can't reproduce this with your config, which suggestes a binutils
+>> issue, which is annoying.  Can you tell me what version of ld you're
+>> using and send me the output of:
+>>
+>> for i in arch/x86/vdso/*.so.dbg; do echo $i; eu-readelf -S $i; done
+> 
+> Ping!
+> 
+> The current state of this is obviously not so good, but I don't know
+> how to proceed.
+> 
 
-> A kernel memory disclosure was introduced in aio_read_events_ring() in v3.10
-> by commit a31ad380bed817aa25f8830ad23e1a0480fef797.  The changes made to
-> aio_read_events_ring() failed to correctly limit the index into
-> ctx->ring_pages[], allowing an attacked to cause the subsequent kmap() of
-> an arbitrary page with a copy_to_user() to copy the contents into userspace.
-> This vulnerability has been assigned CVE-2014-0206.  Thanks to Mateusz and
-> Petr for disclosing this issue.
->
-> This patch applies to v3.12+.  A separate backport is needed for 3.10/3.11.
+We used to have this kind of problems with PHDRs, where ld would guess
+how much space it would need, somehow guess wrong, and fall on its face.
 
-Note that a 3.10 backport will need to remove this line from free_ioctx
-as well:
-                atomic_sub(avail, &ctx->reqs_active);
+I think we want to actually print the number that we are trying to copy
+in addition to the maximum, and I also noticed the test looks wrong.
+Thus I would like to propose the following patch as a diagnostic:
 
-Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
+diff --git a/arch/x86/vdso/vdso2c.h b/arch/x86/vdso/vdso2c.h
+index f42e2ddc663d..94158e100f26 100644
+--- a/arch/x86/vdso/vdso2c.h
++++ b/arch/x86/vdso/vdso2c.h
+@@ -99,8 +99,9 @@ static void BITSFUNC(copy_section)(struct
+BITSFUNC(fake_sections) *out,
+        if (!copy)
+                return;
+
+-       if (out->count >= out->max_count)
+-               fail("too many copied sections (max = %d)\n",
+out->max_count);
++       if (out->count > out->max_count)
++               fail("too many copied sections (max = %d, need = %d)\n",
++                    out->max_count, out->count);
+
+        if (in_idx == out->in_shstrndx)
+                out->out_shstrndx = out->count;
+
+Does anyone have any objection?  Andy, I presume I am correct that =>
+should be > there?
+
+	-hpa
