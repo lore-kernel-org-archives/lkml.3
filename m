@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965633AbaFXQNT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:13:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33240 "EHLO
+	id S965644AbaFXQNn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:13:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33233 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964918AbaFXPzo (ORCPT
+	with ESMTP id S964904AbaFXPzm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:55:44 -0400
+	Tue, 24 Jun 2014 11:55:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>
-Subject: [PATCH 3.15 05/61] ima: introduce ima_kernel_read()
-Date: Tue, 24 Jun 2014 11:50:48 -0400
-Message-Id: <20140624154953.017089162@linuxfoundation.org>
+        Alexey Preobrazhensky <preobr@google.com>,
+        dormando <dormando@rydia.ne>, Eric Dumazet <edumazet@google.com>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.15 17/61] ipv4: fix a race in ip4_datagram_release_cb()
+Date: Tue, 24 Jun 2014 11:51:00 -0400
+Message-Id: <20140624154953.552744467@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154952.751713761@linuxfoundation.org>
 References: <20140624154952.751713761@linuxfoundation.org>
@@ -30,169 +31,178 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
+From: Eric Dumazet <edumazet@google.com>
 
-commit 0430e49b6e7c6b5e076be8fefdee089958c9adad upstream.
+[ Upstream commit 9709674e68646cee5a24e3000b3558d25412203a ]
 
-Commit 8aac62706 "move exit_task_namespaces() outside of exit_notify"
-introduced the kernel opps since the kernel v3.10, which happens when
-Apparmor and IMA-appraisal are enabled at the same time.
+Alexey gave a AddressSanitizer[1] report that finally gave a good hint
+at where was the origin of various problems already reported by Dormando
+in the past [2]
 
-----------------------------------------------------------------------
-[  106.750167] BUG: unable to handle kernel NULL pointer dereference at
-0000000000000018
-[  106.750221] IP: [<ffffffff811ec7da>] our_mnt+0x1a/0x30
-[  106.750241] PGD 0
-[  106.750254] Oops: 0000 [#1] SMP
-[  106.750272] Modules linked in: cuse parport_pc ppdev bnep rfcomm
-bluetooth rpcsec_gss_krb5 nfsd auth_rpcgss nfs_acl nfs lockd sunrpc
-fscache dm_crypt intel_rapl x86_pkg_temp_thermal intel_powerclamp
-kvm_intel snd_hda_codec_hdmi kvm crct10dif_pclmul crc32_pclmul
-ghash_clmulni_intel aesni_intel aes_x86_64 glue_helper lrw gf128mul
-ablk_helper cryptd snd_hda_codec_realtek dcdbas snd_hda_intel
-snd_hda_codec snd_hwdep snd_pcm snd_page_alloc snd_seq_midi
-snd_seq_midi_event snd_rawmidi psmouse snd_seq microcode serio_raw
-snd_timer snd_seq_device snd soundcore video lpc_ich coretemp mac_hid lp
-parport mei_me mei nbd hid_generic e1000e usbhid ahci ptp hid libahci
-pps_core
-[  106.750658] CPU: 6 PID: 1394 Comm: mysqld Not tainted 3.13.0-rc7-kds+ #15
-[  106.750673] Hardware name: Dell Inc. OptiPlex 9010/0M9KCM, BIOS A08
-09/19/2012
-[  106.750689] task: ffff8800de804920 ti: ffff880400fca000 task.ti:
-ffff880400fca000
-[  106.750704] RIP: 0010:[<ffffffff811ec7da>]  [<ffffffff811ec7da>]
-our_mnt+0x1a/0x30
-[  106.750725] RSP: 0018:ffff880400fcba60  EFLAGS: 00010286
-[  106.750738] RAX: 0000000000000000 RBX: 0000000000000100 RCX:
-ffff8800d51523e7
-[  106.750764] RDX: ffffffffffffffea RSI: ffff880400fcba34 RDI:
-ffff880402d20020
-[  106.750791] RBP: ffff880400fcbae0 R08: 0000000000000000 R09:
-0000000000000001
-[  106.750817] R10: 0000000000000000 R11: 0000000000000001 R12:
-ffff8800d5152300
-[  106.750844] R13: ffff8803eb8df510 R14: ffff880400fcbb28 R15:
-ffff8800d51523e7
-[  106.750871] FS:  0000000000000000(0000) GS:ffff88040d200000(0000)
-knlGS:0000000000000000
-[  106.750910] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  106.750935] CR2: 0000000000000018 CR3: 0000000001c0e000 CR4:
-00000000001407e0
-[  106.750962] Stack:
-[  106.750981]  ffffffff813434eb ffff880400fcbb20 ffff880400fcbb18
-0000000000000000
-[  106.751037]  ffff8800de804920 ffffffff8101b9b9 0001800000000000
-0000000000000100
-[  106.751093]  0000010000000000 0000000000000002 000000000000000e
-ffff8803eb8df500
-[  106.751149] Call Trace:
-[  106.751172]  [<ffffffff813434eb>] ? aa_path_name+0x2ab/0x430
-[  106.751199]  [<ffffffff8101b9b9>] ? sched_clock+0x9/0x10
-[  106.751225]  [<ffffffff8134a68d>] aa_path_perm+0x7d/0x170
-[  106.751250]  [<ffffffff8101b945>] ? native_sched_clock+0x15/0x80
-[  106.751276]  [<ffffffff8134aa73>] aa_file_perm+0x33/0x40
-[  106.751301]  [<ffffffff81348c5e>] common_file_perm+0x8e/0xb0
-[  106.751327]  [<ffffffff81348d78>] apparmor_file_permission+0x18/0x20
-[  106.751355]  [<ffffffff8130c853>] security_file_permission+0x23/0xa0
-[  106.751382]  [<ffffffff811c77a2>] rw_verify_area+0x52/0xe0
-[  106.751407]  [<ffffffff811c789d>] vfs_read+0x6d/0x170
-[  106.751432]  [<ffffffff811cda31>] kernel_read+0x41/0x60
-[  106.751457]  [<ffffffff8134fd45>] ima_calc_file_hash+0x225/0x280
-[  106.751483]  [<ffffffff8134fb52>] ? ima_calc_file_hash+0x32/0x280
-[  106.751509]  [<ffffffff8135022d>] ima_collect_measurement+0x9d/0x160
-[  106.751536]  [<ffffffff810b552d>] ? trace_hardirqs_on+0xd/0x10
-[  106.751562]  [<ffffffff8134f07c>] ? ima_file_free+0x6c/0xd0
-[  106.751587]  [<ffffffff81352824>] ima_update_xattr+0x34/0x60
-[  106.751612]  [<ffffffff8134f0d0>] ima_file_free+0xc0/0xd0
-[  106.751637]  [<ffffffff811c9635>] __fput+0xd5/0x300
-[  106.751662]  [<ffffffff811c98ae>] ____fput+0xe/0x10
-[  106.751687]  [<ffffffff81086774>] task_work_run+0xc4/0xe0
-[  106.751712]  [<ffffffff81066fad>] do_exit+0x2bd/0xa90
-[  106.751738]  [<ffffffff8173c958>] ? retint_swapgs+0x13/0x1b
-[  106.751763]  [<ffffffff8106780c>] do_group_exit+0x4c/0xc0
-[  106.751788]  [<ffffffff81067894>] SyS_exit_group+0x14/0x20
-[  106.751814]  [<ffffffff8174522d>] system_call_fastpath+0x1a/0x1f
-[  106.751839] Code: c3 0f 1f 44 00 00 55 48 89 e5 e8 22 fe ff ff 5d c3
-0f 1f 44 00 00 55 65 48 8b 04 25 c0 c9 00 00 48 8b 80 28 06 00 00 48 89
-e5 5d <48> 8b 40 18 48 39 87 c0 00 00 00 0f 94 c0 c3 0f 1f 80 00 00 00
-[  106.752185] RIP  [<ffffffff811ec7da>] our_mnt+0x1a/0x30
-[  106.752214]  RSP <ffff880400fcba60>
-[  106.752236] CR2: 0000000000000018
-[  106.752258] ---[ end trace 3c520748b4732721 ]---
-----------------------------------------------------------------------
+Problem comes from the fact that UDP can have a lockless TX path, and
+concurrent threads can manipulate sk_dst_cache, while another thread,
+is holding socket lock and calls __sk_dst_set() in
+ip4_datagram_release_cb() (this was added in linux-3.8)
 
-The reason for the oops is that IMA-appraisal uses "kernel_read()" when
-file is closed. kernel_read() honors LSM security hook which calls
-Apparmor handler, which uses current->nsproxy->mnt_ns. The 'guilty'
-commit changed the order of cleanup code so that nsproxy->mnt_ns was
-not already available for Apparmor.
+It seems that all we need to do is to use sk_dst_check() and
+sk_dst_set() so that all the writers hold same spinlock
+(sk->sk_dst_lock) to prevent corruptions.
 
-Discussion about the issue with Al Viro and Eric W. Biederman suggested
-that kernel_read() is too high-level for IMA. Another issue, except
-security checking, that was identified is mandatory locking. kernel_read
-honors it as well and it might prevent IMA from calculating necessary hash.
-It was suggested to use simplified version of the function without security
-and locking checks.
+TCP stack do not need this protection, as all sk_dst_cache writers hold
+the socket lock.
 
-This patch introduces special version ima_kernel_read(), which skips security
-and mandatory locking checking. It prevents the kernel oops to happen.
+[1]
+https://code.google.com/p/address-sanitizer/wiki/AddressSanitizerForKernel
 
-Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
-Suggested-by: Eric W. Biederman <ebiederm@xmission.com>
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+AddressSanitizer: heap-use-after-free in ipv4_dst_check
+Read of size 2 by thread T15453:
+ [<ffffffff817daa3a>] ipv4_dst_check+0x1a/0x90 ./net/ipv4/route.c:1116
+ [<ffffffff8175b789>] __sk_dst_check+0x89/0xe0 ./net/core/sock.c:531
+ [<ffffffff81830a36>] ip4_datagram_release_cb+0x46/0x390 ??:0
+ [<ffffffff8175eaea>] release_sock+0x17a/0x230 ./net/core/sock.c:2413
+ [<ffffffff81830882>] ip4_datagram_connect+0x462/0x5d0 ??:0
+ [<ffffffff81846d06>] inet_dgram_connect+0x76/0xd0 ./net/ipv4/af_inet.c:534
+ [<ffffffff817580ac>] SYSC_connect+0x15c/0x1c0 ./net/socket.c:1701
+ [<ffffffff817596ce>] SyS_connect+0xe/0x10 ./net/socket.c:1682
+ [<ffffffff818b0a29>] system_call_fastpath+0x16/0x1b
+./arch/x86/kernel/entry_64.S:629
+
+Freed by thread T15455:
+ [<ffffffff8178d9b8>] dst_destroy+0xa8/0x160 ./net/core/dst.c:251
+ [<ffffffff8178de25>] dst_release+0x45/0x80 ./net/core/dst.c:280
+ [<ffffffff818304c1>] ip4_datagram_connect+0xa1/0x5d0 ??:0
+ [<ffffffff81846d06>] inet_dgram_connect+0x76/0xd0 ./net/ipv4/af_inet.c:534
+ [<ffffffff817580ac>] SYSC_connect+0x15c/0x1c0 ./net/socket.c:1701
+ [<ffffffff817596ce>] SyS_connect+0xe/0x10 ./net/socket.c:1682
+ [<ffffffff818b0a29>] system_call_fastpath+0x16/0x1b
+./arch/x86/kernel/entry_64.S:629
+
+Allocated by thread T15453:
+ [<ffffffff8178d291>] dst_alloc+0x81/0x2b0 ./net/core/dst.c:171
+ [<ffffffff817db3b7>] rt_dst_alloc+0x47/0x50 ./net/ipv4/route.c:1406
+ [<     inlined    >] __ip_route_output_key+0x3e8/0xf70
+__mkroute_output ./net/ipv4/route.c:1939
+ [<ffffffff817dde08>] __ip_route_output_key+0x3e8/0xf70 ./net/ipv4/route.c:2161
+ [<ffffffff817deb34>] ip_route_output_flow+0x14/0x30 ./net/ipv4/route.c:2249
+ [<ffffffff81830737>] ip4_datagram_connect+0x317/0x5d0 ??:0
+ [<ffffffff81846d06>] inet_dgram_connect+0x76/0xd0 ./net/ipv4/af_inet.c:534
+ [<ffffffff817580ac>] SYSC_connect+0x15c/0x1c0 ./net/socket.c:1701
+ [<ffffffff817596ce>] SyS_connect+0xe/0x10 ./net/socket.c:1682
+ [<ffffffff818b0a29>] system_call_fastpath+0x16/0x1b
+./arch/x86/kernel/entry_64.S:629
+
+[2]
+<4>[196727.311203] general protection fault: 0000 [#1] SMP
+<4>[196727.311224] Modules linked in: xt_TEE xt_dscp xt_DSCP macvlan bridge coretemp crc32_pclmul ghash_clmulni_intel gpio_ich microcode ipmi_watchdog ipmi_devintf sb_edac edac_core lpc_ich mfd_core tpm_tis tpm tpm_bios ipmi_si ipmi_msghandler isci igb libsas i2c_algo_bit ixgbe ptp pps_core mdio
+<4>[196727.311333] CPU: 17 PID: 0 Comm: swapper/17 Not tainted 3.10.26 #1
+<4>[196727.311344] Hardware name: Supermicro X9DRi-LN4+/X9DR3-LN4+/X9DRi-LN4+/X9DR3-LN4+, BIOS 3.0 07/05/2013
+<4>[196727.311364] task: ffff885e6f069700 ti: ffff885e6f072000 task.ti: ffff885e6f072000
+<4>[196727.311377] RIP: 0010:[<ffffffff815f8c7f>]  [<ffffffff815f8c7f>] ipv4_dst_destroy+0x4f/0x80
+<4>[196727.311399] RSP: 0018:ffff885effd23a70  EFLAGS: 00010282
+<4>[196727.311409] RAX: dead000000200200 RBX: ffff8854c398ecc0 RCX: 0000000000000040
+<4>[196727.311423] RDX: dead000000100100 RSI: dead000000100100 RDI: dead000000200200
+<4>[196727.311437] RBP: ffff885effd23a80 R08: ffffffff815fd9e0 R09: ffff885d5a590800
+<4>[196727.311451] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
+<4>[196727.311464] R13: ffffffff81c8c280 R14: 0000000000000000 R15: ffff880e85ee16ce
+<4>[196727.311510] FS:  0000000000000000(0000) GS:ffff885effd20000(0000) knlGS:0000000000000000
+<4>[196727.311554] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+<4>[196727.311581] CR2: 00007a46751eb000 CR3: 0000005e65688000 CR4: 00000000000407e0
+<4>[196727.311625] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+<4>[196727.311669] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+<4>[196727.311713] Stack:
+<4>[196727.311733]  ffff8854c398ecc0 ffff8854c398ecc0 ffff885effd23ab0 ffffffff815b7f42
+<4>[196727.311784]  ffff88be6595bc00 ffff8854c398ecc0 0000000000000000 ffff8854c398ecc0
+<4>[196727.311834]  ffff885effd23ad0 ffffffff815b86c6 ffff885d5a590800 ffff8816827821c0
+<4>[196727.311885] Call Trace:
+<4>[196727.311907]  <IRQ>
+<4>[196727.311912]  [<ffffffff815b7f42>] dst_destroy+0x32/0xe0
+<4>[196727.311959]  [<ffffffff815b86c6>] dst_release+0x56/0x80
+<4>[196727.311986]  [<ffffffff81620bd5>] tcp_v4_do_rcv+0x2a5/0x4a0
+<4>[196727.312013]  [<ffffffff81622b5a>] tcp_v4_rcv+0x7da/0x820
+<4>[196727.312041]  [<ffffffff815fd9e0>] ? ip_rcv_finish+0x360/0x360
+<4>[196727.312070]  [<ffffffff815de02d>] ? nf_hook_slow+0x7d/0x150
+<4>[196727.312097]  [<ffffffff815fd9e0>] ? ip_rcv_finish+0x360/0x360
+<4>[196727.312125]  [<ffffffff815fda92>] ip_local_deliver_finish+0xb2/0x230
+<4>[196727.312154]  [<ffffffff815fdd9a>] ip_local_deliver+0x4a/0x90
+<4>[196727.312183]  [<ffffffff815fd799>] ip_rcv_finish+0x119/0x360
+<4>[196727.312212]  [<ffffffff815fe00b>] ip_rcv+0x22b/0x340
+<4>[196727.312242]  [<ffffffffa0339680>] ? macvlan_broadcast+0x160/0x160 [macvlan]
+<4>[196727.312275]  [<ffffffff815b0c62>] __netif_receive_skb_core+0x512/0x640
+<4>[196727.312308]  [<ffffffff811427fb>] ? kmem_cache_alloc+0x13b/0x150
+<4>[196727.312338]  [<ffffffff815b0db1>] __netif_receive_skb+0x21/0x70
+<4>[196727.312368]  [<ffffffff815b0fa1>] netif_receive_skb+0x31/0xa0
+<4>[196727.312397]  [<ffffffff815b1ae8>] napi_gro_receive+0xe8/0x140
+<4>[196727.312433]  [<ffffffffa00274f1>] ixgbe_poll+0x551/0x11f0 [ixgbe]
+<4>[196727.312463]  [<ffffffff815fe00b>] ? ip_rcv+0x22b/0x340
+<4>[196727.312491]  [<ffffffff815b1691>] net_rx_action+0x111/0x210
+<4>[196727.312521]  [<ffffffff815b0db1>] ? __netif_receive_skb+0x21/0x70
+<4>[196727.312552]  [<ffffffff810519d0>] __do_softirq+0xd0/0x270
+<4>[196727.312583]  [<ffffffff816cef3c>] call_softirq+0x1c/0x30
+<4>[196727.312613]  [<ffffffff81004205>] do_softirq+0x55/0x90
+<4>[196727.312640]  [<ffffffff81051c85>] irq_exit+0x55/0x60
+<4>[196727.312668]  [<ffffffff816cf5c3>] do_IRQ+0x63/0xe0
+<4>[196727.312696]  [<ffffffff816c5aaa>] common_interrupt+0x6a/0x6a
+<4>[196727.312722]  <EOI>
+<1>[196727.313071] RIP  [<ffffffff815f8c7f>] ipv4_dst_destroy+0x4f/0x80
+<4>[196727.313100]  RSP <ffff885effd23a70>
+<4>[196727.313377] ---[ end trace 64b3f14fae0f2e29 ]---
+<0>[196727.380908] Kernel panic - not syncing: Fatal exception in interrupt
+
+Reported-by: Alexey Preobrazhensky <preobr@google.com>
+Reported-by: dormando <dormando@rydia.ne>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Fixes: 8141ed9fcedb2 ("ipv4: Add a socket release callback for datagram sockets")
+Cc: Steffen Klassert <steffen.klassert@secunet.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- security/integrity/ima/ima_crypto.c |   32 +++++++++++++++++++++++++++++++-
- 1 file changed, 31 insertions(+), 1 deletion(-)
+ net/ipv4/datagram.c |   20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
 
---- a/security/integrity/ima/ima_crypto.c
-+++ b/security/integrity/ima/ima_crypto.c
-@@ -27,6 +27,36 @@
+--- a/net/ipv4/datagram.c
++++ b/net/ipv4/datagram.c
+@@ -86,18 +86,26 @@ out:
+ }
+ EXPORT_SYMBOL(ip4_datagram_connect);
  
- static struct crypto_shash *ima_shash_tfm;
- 
-+/**
-+ * ima_kernel_read - read file content
-+ *
-+ * This is a function for reading file content instead of kernel_read().
-+ * It does not perform locking checks to ensure it cannot be blocked.
-+ * It does not perform security checks because it is irrelevant for IMA.
-+ *
++/* Because UDP xmit path can manipulate sk_dst_cache without holding
++ * socket lock, we need to use sk_dst_set() here,
++ * even if we own the socket lock.
 + */
-+static int ima_kernel_read(struct file *file, loff_t offset,
-+			   char *addr, unsigned long count)
-+{
-+	mm_segment_t old_fs;
-+	char __user *buf = addr;
-+	ssize_t ret;
-+
-+	if (!(file->f_mode & FMODE_READ))
-+		return -EBADF;
-+	if (!file->f_op->read && !file->f_op->aio_read)
-+		return -EINVAL;
-+
-+	old_fs = get_fs();
-+	set_fs(get_ds());
-+	if (file->f_op->read)
-+		ret = file->f_op->read(file, buf, count, &offset);
-+	else
-+		ret = do_sync_read(file, buf, count, &offset);
-+	set_fs(old_fs);
-+	return ret;
-+}
-+
- int ima_init_crypto(void)
+ void ip4_datagram_release_cb(struct sock *sk)
  {
- 	long rc;
-@@ -104,7 +134,7 @@ static int ima_calc_file_hash_tfm(struct
- 	while (offset < i_size) {
- 		int rbuf_len;
+ 	const struct inet_sock *inet = inet_sk(sk);
+ 	const struct ip_options_rcu *inet_opt;
+ 	__be32 daddr = inet->inet_daddr;
++	struct dst_entry *dst;
+ 	struct flowi4 fl4;
+ 	struct rtable *rt;
  
--		rbuf_len = kernel_read(file, offset, rbuf, PAGE_SIZE);
-+		rbuf_len = ima_kernel_read(file, offset, rbuf, PAGE_SIZE);
- 		if (rbuf_len < 0) {
- 			rc = rbuf_len;
- 			break;
+-	if (! __sk_dst_get(sk) || __sk_dst_check(sk, 0))
+-		return;
+-
+ 	rcu_read_lock();
++
++	dst = __sk_dst_get(sk);
++	if (!dst || !dst->obsolete || dst->ops->check(dst, 0)) {
++		rcu_read_unlock();
++		return;
++	}
+ 	inet_opt = rcu_dereference(inet->inet_opt);
+ 	if (inet_opt && inet_opt->opt.srr)
+ 		daddr = inet_opt->opt.faddr;
+@@ -105,8 +113,10 @@ void ip4_datagram_release_cb(struct sock
+ 				   inet->inet_saddr, inet->inet_dport,
+ 				   inet->inet_sport, sk->sk_protocol,
+ 				   RT_CONN_FLAGS(sk), sk->sk_bound_dev_if);
+-	if (!IS_ERR(rt))
+-		__sk_dst_set(sk, &rt->dst);
++
++	dst = !IS_ERR(rt) ? &rt->dst : NULL;
++	sk_dst_set(sk, dst);
++
+ 	rcu_read_unlock();
+ }
+ EXPORT_SYMBOL_GPL(ip4_datagram_release_cb);
 
 
