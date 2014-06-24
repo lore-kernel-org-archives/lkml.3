@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751349AbaFXFFk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 01:05:40 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:58000 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750806AbaFXFFj (ORCPT
+	id S1751579AbaFXFGI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 01:06:08 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:54068 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750712AbaFXFGF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 01:05:39 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53A90718.4050401@roeck-us.net>
-Date: Mon, 23 Jun 2014 22:05:28 -0700
-From: Guenter Roeck <linux@roeck-us.net>
+	Tue, 24 Jun 2014 01:06:05 -0400
+Message-ID: <53A90735.7050506@ti.com>
+Date: Tue, 24 Jun 2014 10:35:57 +0530
+From: Sekhar Nori <nsekhar@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org,
-        Vincent Guittot <vincent.guittot@linaro.org>
-Subject: Re: [PATCH] powerpc: Fix build warning
-References: <1402677499-28289-1-git-send-email-linux@roeck-us.net> <1403584501.4587.153.camel@pasglop>
-In-Reply-To: <1403584501.4587.153.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Paul Walmsley <paul@pwsan.com>
+CC: Roger Quadros <rogerq@ti.com>, <tony@atomide.com>, <rnayak@ti.com>,
+        <nm@ti.com>, <kishon@ti.com>, <george.cherian@ti.com>, <balbi@ti.com>,
+        <balajitk@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/2] ARM: DRA7: hwmod: fixes for 3.16
+References: <1403093816-10960-1-git-send-email-rogerq@ti.com> <alpine.DEB.2.02.1406230450460.27636@utopia.booyaka.com> <53A83DAC.6050504@ti.com> <alpine.DEB.2.02.1406231634210.29849@utopia.booyaka.com>
+In-Reply-To: <alpine.DEB.2.02.1406231634210.29849@utopia.booyaka.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2014 09:35 PM, Benjamin Herrenschmidt wrote:
-> On Fri, 2014-06-13 at 09:38 -0700, Guenter Roeck wrote:
->> If compiled with W=1, the following warning is seen in powerpc builds.
+On Monday 23 June 2014 10:04 PM, Paul Walmsley wrote:
+> On Mon, 23 Jun 2014, Sekhar Nori wrote:
+> 
+>> On Monday 23 June 2014 10:27 AM, Paul Walmsley wrote:
+>>> Hi Roger
+>>>
+>>> On Wed, 18 Jun 2014, Roger Quadros wrote:
+>>>
+>>>> These patches add the missing OCP2SCP3 module and fixup the SATA hwmod
+>>>> for DRA7 SoC. Both patches are tested on 3.16-rc1.
+>>>
+>>> Could you please post a quick serial capture of a boot log for these 
+>>> patches, as Felipe has done for other patches?
 >>
->> arch/powerpc/kernel/smp.c:750:18: warning:
->> 	type qualifiers ignored on function return type
->> static const int powerpc_smt_flags(void)
->>                   ^
+>> Roger is OOO so posting the logs on his behalf.
 >>
->> This is caused by a function returning 'const int', which doesn't
->> make sense to gcc. Drop 'const' to fix the problem.
->
-> This breaks the 64-bit build:
->
-> arch/powerpc/kernel/smp.c:764:2: error: initialization from incompatible pointer type [-Werror]
-> arch/powerpc/kernel/smp.c:764:2: error: (near initialization for 'powerpc_topology[0].sd_flags') [-Werror]
->
-> It appears that the generic definition in sched.h has this function
-> defined as const int, so that needs to be fixed too along with all
-> instances in all archs.
->
+>> $ git log -3
+>> 3e0ca738 4 minutes ago  (HEAD) ARM: DRA7: hwmod: Add OCP2SCP3 module
+>> 9961b81 4 minutes ago  ARM: DRA7: hwmod: Fixup SATA hwmod
+>> 7171511 7 days ago  (v3.16-rc1, linus-git/master) Linux 3.16-rc1
+>>
+>> Attached is the minicom capture.
+> 
+> Thanks, so can I add your Tested-by: ?
 
-https://lkml.org/lkml/2014/6/12/743
+Sure Paul.
 
-Guenter
+Tested-by: Sekhar Nori <nsekhar@ti.com>
 
+Thanks,
+Sekhar
