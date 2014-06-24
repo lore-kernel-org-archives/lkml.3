@@ -1,79 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753570AbaFXA3o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 20:29:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59970 "EHLO mx2.suse.de"
+	id S1754099AbaFXAb6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 20:31:58 -0400
+Received: from mail.phunq.net ([184.71.0.62]:39916 "EHLO starbase.phunq.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751330AbaFXA3n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 20:29:43 -0400
-Date: Tue, 24 Jun 2014 02:29:41 +0200
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: Casey Leedom <leedom@chelsio.com>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, hariprasad@chelsio.com,
-        poswald@suse.com, santosh@chelsio.com, jcheung@suse.com,
-        dchang@suse.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFT 0/3] cxgb4: use request_firmware_nowait()
-Message-ID: <20140624002941.GD27687@wotan.suse.de>
-References: <1403311181-9328-1-git-send-email-mcgrof@do-not-panic.com> <53A87AC8.7010305@chelsio.com>
+	id S1751330AbaFXAb5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 20:31:57 -0400
+From: Daniel Phillips <daniel@phunq.net>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        =?utf-8?B?THVrw6HFoSBDemVybmVy?= <lczerner@redhat.com>,
+        Pavel Machek <pavel@ucw.cz>, Dave Chinner <david@fromorbit.com>,
+        <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC] Tux3 for review
+Date: Mon, 23 Jun 2014 17:31:49 -0700
+User-Agent: Trojita/0.4.1; Qt/4.8.6; X11; Linux; Ubuntu 14.04 LTS
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53A87AC8.7010305@chelsio.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Message-ID: <69617b30-fb3e-4c35-9106-8a88d7cbdd98@phunq.net>
+In-Reply-To: <20140622183450.GC5333@thunk.org>
+References: <20140613103216.GA4589@amd.pavel.ucw.cz>
+ <02d3b094-808c-4b17-903d-1280d451704b@phunq.net>
+ <20140613202039.GA23872@amd.pavel.ucw.cz>
+ <b67e55e1-af54-4f34-802c-95749771aca4@phunq.net>
+ <1402932354.2197.61.camel@dabdike.int.hansenpartnership.com>
+ <20140619082129.GA4309@xo-6d-61-c0.localdomain>
+ <alpine.LFD.2.00.1406191117240.2182@localhost.localdomain>
+ <ad0baf8f-091f-45d0-8d9f-f72d78d0d1ff@phunq.net>
+ <1403378941.2177.24.camel@dabdike.int.hansenpartnership.com>
+ <e475a747-2f33-4c43-b6bd-98df2e57099a@phunq.net>
+ <20140622183450.GC5333@thunk.org>
+Organization: tux3.org
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 23, 2014 at 12:06:48PM -0700, Casey Leedom wrote:
->   I've looked through the patch and I might be wrong, but it appears that 
-> all the uses of the asynchronous request_firmware_nowait() are followed 
-> immediately by wait_for_completion() calls which essentially would be the 
-> same as the previous code with an added layer of mechanism.  Am I missing 
-> something?
+On Sunday, June 22, 2014 11:34:50 AM PDT, Theodore Ts'o wrote:
+> On Sat, Jun 21, 2014 at 08:32:03PM -0700, Daniel Phillips wrote:
+>>> That's a bit disingenuous: the concern has always been how page forking
+>>> interacted with writeback.  It's not new, it was one of the major 
+things
+>>> brought up at LSF 14 months ago, so you weren't just assigned this.
+>> 
+>> [citation needed]
+>
+> http://lwn.net/Articles/548091/
 
-No you're right and I frailed to mention my original goal really is to
-see if we can instead move that to ndo_init().
+Thank you Ted, and also thank you for providing an example worth emulating
+of collegial behavior on LKML.
 
->   We do have a problem with initialization of multiple adapters with 
-> external PHYs since, for each adapter we can check to see if the main 
-> adapter firmware needs updating, and then load the PHY firmware.  If the 
-> main firmware needs updating on more than one adapter, the combined time to 
-> update each adapter's main firmware plus load the PHY firmware can exceed 
-> some Distribution's default limits for a driver module's load time (since 
-> the kernel seems to be processing the PCI Probe of each device 
-> sequentially).
+Regards,
 
-I noticed that for configuration updates it is optional for these configuration
-updates to exist, in which case then if udev is enabled the driver will wait
-quite a long time unncessarily. To fix that it seems request_firmware_direct()
-would be better.
-
->   It seems to me that it's unfortunate that the limit isn't on a per device 
-> basis since a system could have an arbitrary number of devices managed by a 
-> driver module. 
-
-The timeout is for the amount of time it takes the kernel to get the firemware,
-not for device initialization, so its unclear to me that the 60 timeout thing
-is actually causing an issue here.
-
-> Also, it might be useful if there was a way for the driver 
-> module to "tell" the timeout mechanism that forward progress _is_ being 
-> made so it doesn't blow away the driver module load.
-
-Indeed if this is actually needed, but believe the issue here for the
-huge delays might be instead the lack of not using request_firmware_direct()
-and actual device initialization time, which I do not believe we penalize,
-we should be penalizing only the amount of time it takes either the
-kernel or udev to read the firmware from the filesystem.
-
->  And maybe, if I'm 
-> right regarding the sequential nature of the introduction of devices to 
-> driver modules, it might make sense for a driver module to be able to 
-> "tell" the kernel that it has no per-device dependencies and multiple 
-> devices may be probed simultaneously ...
-
-What if just configuration updates use request_firmware_direct() and
-for the actual firmware which is required a request_firmware_nowait()
-with a proper wait_for_completion() on the ndo_init() ?
-
-  Luis
+Daniel
