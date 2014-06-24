@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753173AbaFXKAd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 06:00:33 -0400
-Received: from mirror2.csie.ntu.edu.tw ([140.112.30.76]:41917 "EHLO
+	id S1753028AbaFXKAY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 06:00:24 -0400
+Received: from mirror2.csie.ntu.edu.tw ([140.112.30.76]:41907 "EHLO
 	mirror2.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752917AbaFXKAb (ORCPT
+	with ESMTP id S1752168AbaFXKAU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 06:00:31 -0400
+	Tue, 24 Jun 2014 06:00:20 -0400
 From: Chen-Yu Tsai <wens@csie.org>
 To: Maxime Ripard <maxime.ripard@free-electrons.com>,
         Mike Turquette <mturquette@linaro.org>,
@@ -14,9 +14,9 @@ To: Maxime Ripard <maxime.ripard@free-electrons.com>,
 Cc: Chen-Yu Tsai <wens@csie.org>, linux-arm-kernel@lists.infradead.org,
         devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-sunxi@googlegroups.com
-Subject: [PATCH v3 3/6] clk: sunxi: Support factor clocks with N factor starting not from 0
-Date: Tue, 24 Jun 2014 17:59:37 +0800
-Message-Id: <1403603980-31101-4-git-send-email-wens@csie.org>
+Subject: [PATCH v3 6/6] ARM: sun8i: Add basic clock nodes to the DTSI
+Date: Tue, 24 Jun 2014 17:59:40 +0800
+Message-Id: <1403603980-31101-7-git-send-email-wens@csie.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1403603980-31101-1-git-send-email-wens@csie.org>
 References: <1403603980-31101-1-git-send-email-wens@csie.org>
@@ -24,43 +24,140 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PLLs on newer Allwinner SoC's, such as the A31 and A23, have a
-N multiplier factor that starts from 1, not 0.
-
-This patch adds an option to the factor clk driver's config data
-structures to specify the base value of N.
+Now that we have support for sun8i specific clocks in the driver,
+add the corresponding clock nodes to the DTSI.
 
 Signed-off-by: Chen-Yu Tsai <wens@csie.org>
 ---
- drivers/clk/sunxi/clk-factors.c | 2 +-
- drivers/clk/sunxi/clk-factors.h | 1 +
- 2 files changed, 2 insertions(+), 1 deletion(-)
+ arch/arm/boot/dts/sun8i-a23.dtsi | 115 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 115 insertions(+)
 
-diff --git a/drivers/clk/sunxi/clk-factors.c b/drivers/clk/sunxi/clk-factors.c
-index 3806d97..2057c8a 100644
---- a/drivers/clk/sunxi/clk-factors.c
-+++ b/drivers/clk/sunxi/clk-factors.c
-@@ -62,7 +62,7 @@ static unsigned long clk_factors_recalc_rate(struct clk_hw *hw,
- 		p = FACTOR_GET(config->pshift, config->pwidth, reg);
+diff --git a/arch/arm/boot/dts/sun8i-a23.dtsi b/arch/arm/boot/dts/sun8i-a23.dtsi
+index ac5f69a..559ab08 100644
+--- a/arch/arm/boot/dts/sun8i-a23.dtsi
++++ b/arch/arm/boot/dts/sun8i-a23.dtsi
+@@ -64,6 +64,121 @@
+ 			clock-frequency = <32768>;
+ 			clock-output-names = "osc32k";
+ 		};
++
++		pll1: clk@01c20000 {
++			#clock-cells = <0>;
++			compatible = "allwinner,sun8i-a23-pll1-clk";
++			reg = <0x01c20000 0x4>;
++			clocks = <&osc24M>;
++			clock-output-names = "pll1";
++		};
++
++		/* dummy clock until actually implemented */
++		pll6: pll6_clk {
++			#clock-cells = <0>;
++			compatible = "fixed-clock";
++			clock-frequency = <600000000>;
++			clock-output-names = "pll6";
++		};
++
++		cpu: cpu_clk@01c20050 {
++			#clock-cells = <0>;
++			compatible = "allwinner,sun4i-a10-cpu-clk";
++			reg = <0x01c20050 0x4>;
++
++			/*
++			 * PLL1 is listed twice here.
++			 * While it looks suspicious, it's actually documented
++			 * that way both in the datasheet and in the code from
++			 * Allwinner.
++			 */
++			clocks = <&osc32k>, <&osc24M>, <&pll1>, <&pll1>;
++			clock-output-names = "cpu";
++		};
++
++		axi: axi_clk@01c20050 {
++			#clock-cells = <0>;
++			compatible = "allwinner,sun4i-a10-axi-clk";
++			reg = <0x01c20050 0x4>;
++			clocks = <&cpu>;
++			clock-output-names = "axi";
++		};
++
++		ahb1_mux: ahb1_mux_clk@01c20054 {
++			#clock-cells = <0>;
++			compatible = "allwinner,sun6i-a31-ahb1-mux-clk";
++			reg = <0x01c20054 0x4>;
++			clocks = <&osc32k>, <&osc24M>, <&axi>, <&pll6>;
++			clock-output-names = "ahb1_mux";
++		};
++
++		ahb1: ahb1_clk@01c20054 {
++			#clock-cells = <0>;
++			compatible = "allwinner,sun4i-a10-ahb-clk";
++			reg = <0x01c20054 0x4>;
++			clocks = <&ahb1_mux>;
++			clock-output-names = "ahb1";
++		};
++
++		apb1: apb1_clk@01c20054 {
++			#clock-cells = <0>;
++			compatible = "allwinner,sun4i-a10-apb0-clk";
++			reg = <0x01c20054 0x4>;
++			clocks = <&ahb1>;
++			clock-output-names = "apb1";
++		};
++
++		ahb1_gates: clk@01c20060 {
++			#clock-cells = <1>;
++			compatible = "allwinner,sun8i-a23-ahb1-gates-clk";
++			reg = <0x01c20060 0x8>;
++			clocks = <&ahb1>;
++			clock-output-names = "ahb1_mipidsi", "ahb1_dma",
++					"ahb1_mmc0", "ahb1_mmc1", "ahb1_mmc2",
++					"ahb1_nand", "ahb1_sdram",
++					"ahb1_hstimer", "ahb1_spi0",
++					"ahb1_spi1", "ahb1_otg", "ahb1_ehci",
++					"ahb1_ohci", "ahb1_ve", "ahb1_lcd",
++					"ahb1_csi", "ahb1_be",	"ahb1_fe",
++					"ahb1_gpu", "ahb1_spinlock",
++					"ahb1_drc";
++		};
++
++		apb1_gates: clk@01c20068 {
++			#clock-cells = <1>;
++			compatible = "allwinner,sun8i-a23-apb1-gates-clk";
++			reg = <0x01c20068 0x4>;
++			clocks = <&apb1>;
++			clock-output-names = "apb1_codec", "apb1_pio",
++					"apb1_daudio0",	"apb1_daudio1";
++		};
++
++		apb2_mux: apb2_mux_clk@01c20058 {
++			#clock-cells = <0>;
++			compatible = "allwinner,sun4i-a10-apb1-mux-clk";
++			reg = <0x01c20058 0x4>;
++			clocks = <&osc32k>, <&osc24M>, <&pll6>, <&pll6>;
++			clock-output-names = "apb2_mux";
++		};
++
++		apb2: apb2_clk@01c20058 {
++			#clock-cells = <0>;
++			compatible = "allwinner,sun6i-a31-apb2-div-clk";
++			reg = <0x01c20058 0x4>;
++			clocks = <&apb2_mux>;
++			clock-output-names = "apb2";
++		};
++
++		apb2_gates: clk@01c2006c {
++			#clock-cells = <1>;
++			compatible = "allwinner,sun8i-a23-apb2-gates-clk";
++			reg = <0x01c2006c 0x4>;
++			clocks = <&apb2>;
++			clock-output-names = "apb2_i2c0", "apb2_i2c1",
++					"apb2_i2c2", "apb2_uart0",
++					"apb2_uart1", "apb2_uart2",
++					"apb2_uart3", "apb2_uart4";
++		};
+ 	};
  
- 	/* Calculate the rate */
--	rate = (parent_rate * n * (k + 1) >> p) / (m + 1);
-+	rate = (parent_rate * (n + config->n_start) * (k + 1) >> p) / (m + 1);
- 
- 	return rate;
- }
-diff --git a/drivers/clk/sunxi/clk-factors.h b/drivers/clk/sunxi/clk-factors.h
-index 02e1a43..d2d0efa 100644
---- a/drivers/clk/sunxi/clk-factors.h
-+++ b/drivers/clk/sunxi/clk-factors.h
-@@ -15,6 +15,7 @@ struct clk_factors_config {
- 	u8 mwidth;
- 	u8 pshift;
- 	u8 pwidth;
-+	u8 n_start;
- };
- 
- struct clk_factors {
+ 	soc@01c00000 {
 -- 
 2.0.0
 
