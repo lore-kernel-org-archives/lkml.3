@@ -1,114 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932568AbaFXQOB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:14:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33220 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964895AbaFXPzh (ORCPT
+	id S932591AbaFXQOY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:14:24 -0400
+Received: from 99-65-72-227.uvs.sntcca.sbcglobal.net ([99.65.72.227]:42987
+	"EHLO stargate3.asicdesigners.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S964884AbaFXPzg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:55:37 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.15 14/61] net: force a list_del() in unregister_netdevice_many()
-Date: Tue, 24 Jun 2014 11:50:57 -0400
-Message-Id: <20140624154953.421275794@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <20140624154952.751713761@linuxfoundation.org>
-References: <20140624154952.751713761@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 24 Jun 2014 11:55:36 -0400
+Message-ID: <53A99F71.2060308@chelsio.com>
+Date: Tue, 24 Jun 2014 08:55:29 -0700
+From: Casey Leedom <leedom@chelsio.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: "Luis R. Rodriguez" <mcgrof@suse.com>
+CC: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, hariprasad@chelsio.com,
+        poswald@suse.com, santosh@chelsio.com, jcheung@suse.com,
+        dchang@suse.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFT 0/3] cxgb4: use request_firmware_nowait()
+References: <1403311181-9328-1-git-send-email-mcgrof@do-not-panic.com> <53A87AC8.7010305@chelsio.com> <20140624002941.GD27687@wotan.suse.de>
+In-Reply-To: <20140624002941.GD27687@wotan.suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.15-stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+On 06/23/14 17:29, Luis R. Rodriguez wrote:
+> On Mon, Jun 23, 2014 at 12:06:48PM -0700, Casey Leedom wrote:
+>>    I've looked through the patch and I might be wrong, but it appears that
+>> all the uses of the asynchronous request_firmware_nowait() are followed
+>> immediately by wait_for_completion() calls which essentially would be the
+>> same as the previous code with an added layer of mechanism.  Am I missing
+>> something?
+> No you're right and I frailed to mention my original goal really is to
+> see if we can instead move that to ndo_init().
 
-From: Eric Dumazet <edumazet@google.com>
+   Okay, thanks for confirming that.  I thought I was being very stupid.
 
-[ Upstream commit 87757a917b0b3c0787e0563c679762152be81312 ]
+   The problem I think with ndo_init() is that comes off a Network 
+Device (struct net_device) and you can't have Network Devices till you 
+talk to the adpater, discover how many ports you have, what their MAC 
+Addresses are, etc.  And of course you'd then have to be prepared for an 
+ndo_init() call on every instantiated Network Device on an adapter and 
+only do the device initialization for the first (while holding off any 
+and all activity on the others), etc.  All doable but a bit more 
+complicated than doing this at Device Probe time.
 
-unregister_netdevice_many() API is error prone and we had too
-many bugs because of dangling LIST_HEAD on stacks.
+>>    We do have a problem with initialization of multiple adapters with
+>> external PHYs since, for each adapter we can check to see if the main
+>> adapter firmware needs updating, and then load the PHY firmware.  If the
+>> main firmware needs updating on more than one adapter, the combined time to
+>> update each adapter's main firmware plus load the PHY firmware can exceed
+>> some Distribution's default limits for a driver module's load time (since
+>> the kernel seems to be processing the PCI Probe of each device
+>> sequentially).
+> I noticed that for configuration updates it is optional for these configuration
+> updates to exist, in which case then if udev is enabled the driver will wait
+> quite a long time unncessarily. To fix that it seems request_firmware_direct()
+> would be better.
 
-See commit f87e6f47933e3e ("net: dont leave active on stack LIST_HEAD")
+   Hhmmm, I'm unfamiliar with all of this.  I hadn't looked that far 
+under the covers of request_firmware() to know that any of these 
+variants existed, what their semantics were and when one over the other 
+was the preferred API.
 
-In fact, instead of making sure no caller leaves an active list_head,
-just force a list_del() in the callee. No one seems to need to access
-the list after unregister_netdevice_many()
+>>    It seems to me that it's unfortunate that the limit isn't on a per device
+>> basis since a system could have an arbitrary number of devices managed by a
+>> driver module.
+> The timeout is for the amount of time it takes the kernel to get the firemware,
+> not for device initialization, so its unclear to me that the 60 timeout thing
+> is actually causing an issue here.
 
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/macvlan.c |    1 -
- net/core/dev.c        |    5 ++++-
- net/core/rtnetlink.c  |    1 -
- net/mac80211/iface.c  |    1 -
- 4 files changed, 4 insertions(+), 4 deletions(-)
+   Are you sure about that?  I just loaded firmware on two of my 
+T4-based adapters and each took about 15 seconds to complete.  The 
+firmware is ~0.5MB and needs to be written to the on-adapter FLASH. The 
+PHY firmware takes a bit less but not a lot.  Add that to the time to do 
+general adapter initialization and you're cruising close to 1 minute for 
+two adapters ...  Thus, my comment that whatever timeout is present 
+should really be per-adapter based ... and it would be nice if the 
+driver could inform the kernel as to the expected maximum device probe 
+initialization time so we didn't have to have a huge inappropriate 
+timeout for all devices ...
 
---- a/drivers/net/macvlan.c
-+++ b/drivers/net/macvlan.c
-@@ -1036,7 +1036,6 @@ static int macvlan_device_event(struct n
- 		list_for_each_entry_safe(vlan, next, &port->vlans, list)
- 			vlan->dev->rtnl_link_ops->dellink(vlan->dev, &list_kill);
- 		unregister_netdevice_many(&list_kill);
--		list_del(&list_kill);
- 		break;
- 	case NETDEV_PRE_TYPE_CHANGE:
- 		/* Forbid underlaying device to change its type. */
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -6613,6 +6613,9 @@ EXPORT_SYMBOL(unregister_netdevice_queue
- /**
-  *	unregister_netdevice_many - unregister many devices
-  *	@head: list of devices
-+ *
-+ *  Note: As most callers use a stack allocated list_head,
-+ *  we force a list_del() to make sure stack wont be corrupted later.
-  */
- void unregister_netdevice_many(struct list_head *head)
- {
-@@ -6622,6 +6625,7 @@ void unregister_netdevice_many(struct li
- 		rollback_registered_many(head);
- 		list_for_each_entry(dev, head, unreg_list)
- 			net_set_todo(dev);
-+		list_del(head);
- 	}
- }
- EXPORT_SYMBOL(unregister_netdevice_many);
-@@ -7077,7 +7081,6 @@ static void __net_exit default_device_ex
- 		}
- 	}
- 	unregister_netdevice_many(&dev_kill_list);
--	list_del(&dev_kill_list);
- 	rtnl_unlock();
- }
- 
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -1744,7 +1744,6 @@ static int rtnl_dellink(struct sk_buff *
- 
- 	ops->dellink(dev, &list_kill);
- 	unregister_netdevice_many(&list_kill);
--	list_del(&list_kill);
- 	return 0;
- }
- 
---- a/net/mac80211/iface.c
-+++ b/net/mac80211/iface.c
-@@ -1758,7 +1758,6 @@ void ieee80211_remove_interfaces(struct
- 	}
- 	mutex_unlock(&local->iflist_mtx);
- 	unregister_netdevice_many(&unreg_list);
--	list_del(&unreg_list);
- 
- 	list_for_each_entry_safe(sdata, tmp, &wdev_list, list) {
- 		list_del(&sdata->list);
+>> Also, it might be useful if there was a way for the driver
+>> module to "tell" the timeout mechanism that forward progress _is_ being
+>> made so it doesn't blow away the driver module load.
+> Indeed if this is actually needed, but believe the issue here for the
+> huge delays might be instead the lack of not using request_firmware_direct()
+> and actual device initialization time, which I do not believe we penalize,
+> we should be penalizing only the amount of time it takes either the
+> kernel or udev to read the firmware from the filesystem.
 
+   If you want I can time the actual phases of loading new firmware: 
+request_firmware(), writing it to FLASH, release_firmware() ...
 
+>>   And maybe, if I'm
+>> right regarding the sequential nature of the introduction of devices to
+>> driver modules, it might make sense for a driver module to be able to
+>> "tell" the kernel that it has no per-device dependencies and multiple
+>> devices may be probed simultaneously ...
+> What if just configuration updates use request_firmware_direct() and
+> for the actual firmware which is required a request_firmware_nowait()
+> with a proper wait_for_completion() on the ndo_init() ?
+
+   I'm not quite sure I understand what you're asking here.  The cxgb4 
+driver attaches to the firmware in the probe() stage and, if the 
+firmware is older then the supported version, upgrades the firmware and 
+RESETs the device.  Then, for adapters with external PHYs (10Gb/s BT 
+predominantly), the same process can happen for the PHY firmware (or on 
+some adapters which have no PHY-attached FLASH, this happens for every 
+driver load).  It's conceivable that we could defer the PHY firmware 
+load till the first ndo_open() but we'd still be stuck with the 
+seemingly broken idea that a simple timeout for a driver module load is 
+good enough when what we seem to need is a timeout per device ...
+
+Casey
