@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965168AbaFXP4r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:56:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33406 "EHLO
+	id S1756259AbaFXQBK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:01:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33414 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965051AbaFXP4o (ORCPT
+	with ESMTP id S965171AbaFXP4s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:56:44 -0400
+	Tue, 24 Jun 2014 11:56:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Erik Habbinga <Erik.Habbinga@schneider-electric.com>,
-        Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>
-Subject: [PATCH 3.15 41/61] iio:adc:max1363 incorrect resolutions for max11604, max11605, max11610 and max11611.
-Date: Tue, 24 Jun 2014 11:51:24 -0400
-Message-Id: <20140624154954.657060600@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.15 33/61] USB: cdc-acm: fix failed open not being detected
+Date: Tue, 24 Jun 2014 11:51:16 -0400
+Message-Id: <20140624154954.288766205@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154952.751713761@linuxfoundation.org>
 References: <20140624154952.751713761@linuxfoundation.org>
@@ -29,64 +28,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jonathan Cameron <jic23@kernel.org>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit a91a73c8b39a6b8bcc53fafa5372c65387c81233 upstream.
+commit 8727bf689a77a79816065e23a7a58a474ad544f9 upstream.
 
-Reported-by: Erik Habbinga <Erik.Habbinga@schneider-electric.com>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
-Acked-by: Hartmut Knaack <knaack.h@gmx.de>
+Fix errors during open not being returned to userspace. Specifically,
+failed control-line manipulations or control or read urb submissions
+would not be detected.
+
+Fixes: 7fb57a019f94 ("USB: cdc-acm: Fix potential deadlock (lockdep
+warning)")
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iio/adc/max1363.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ drivers/usb/class/cdc-acm.c |   14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
---- a/drivers/iio/adc/max1363.c
-+++ b/drivers/iio/adc/max1363.c
-@@ -1252,8 +1252,8 @@ static const struct max1363_chip_info ma
- 		.num_modes = ARRAY_SIZE(max1238_mode_list),
- 		.default_mode = s0to11,
- 		.info = &max1238_info,
--		.channels = max1238_channels,
--		.num_channels = ARRAY_SIZE(max1238_channels),
-+		.channels = max1038_channels,
-+		.num_channels = ARRAY_SIZE(max1038_channels),
- 	},
- 	[max11605] = {
- 		.bits = 8,
-@@ -1262,8 +1262,8 @@ static const struct max1363_chip_info ma
- 		.num_modes = ARRAY_SIZE(max1238_mode_list),
- 		.default_mode = s0to11,
- 		.info = &max1238_info,
--		.channels = max1238_channels,
--		.num_channels = ARRAY_SIZE(max1238_channels),
-+		.channels = max1038_channels,
-+		.num_channels = ARRAY_SIZE(max1038_channels),
- 	},
- 	[max11606] = {
- 		.bits = 10,
-@@ -1312,8 +1312,8 @@ static const struct max1363_chip_info ma
- 		.num_modes = ARRAY_SIZE(max1238_mode_list),
- 		.default_mode = s0to11,
- 		.info = &max1238_info,
--		.channels = max1238_channels,
--		.num_channels = ARRAY_SIZE(max1238_channels),
-+		.channels = max1138_channels,
-+		.num_channels = ARRAY_SIZE(max1138_channels),
- 	},
- 	[max11611] = {
- 		.bits = 10,
-@@ -1322,8 +1322,8 @@ static const struct max1363_chip_info ma
- 		.num_modes = ARRAY_SIZE(max1238_mode_list),
- 		.default_mode = s0to11,
- 		.info = &max1238_info,
--		.channels = max1238_channels,
--		.num_channels = ARRAY_SIZE(max1238_channels),
-+		.channels = max1138_channels,
-+		.num_channels = ARRAY_SIZE(max1138_channels),
- 	},
- 	[max11612] = {
- 		.bits = 12,
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -525,17 +525,17 @@ static int acm_port_activate(struct tty_
+ 	acm->control->needs_remote_wakeup = 1;
+ 
+ 	acm->ctrlurb->dev = acm->dev;
+-	if (usb_submit_urb(acm->ctrlurb, GFP_KERNEL)) {
++	retval = usb_submit_urb(acm->ctrlurb, GFP_KERNEL);
++	if (retval) {
+ 		dev_err(&acm->control->dev,
+ 			"%s - usb_submit_urb(ctrl irq) failed\n", __func__);
+ 		goto error_submit_urb;
+ 	}
+ 
+ 	acm->ctrlout = ACM_CTRL_DTR | ACM_CTRL_RTS;
+-	if (acm_set_control(acm, acm->ctrlout) < 0 &&
+-	    (acm->ctrl_caps & USB_CDC_CAP_LINE)) {
++	retval = acm_set_control(acm, acm->ctrlout);
++	if (retval < 0 && (acm->ctrl_caps & USB_CDC_CAP_LINE))
+ 		goto error_set_control;
+-	}
+ 
+ 	/*
+ 	 * Unthrottle device in case the TTY was closed while throttled.
+@@ -545,7 +545,8 @@ static int acm_port_activate(struct tty_
+ 	acm->throttle_req = 0;
+ 	spin_unlock_irq(&acm->read_lock);
+ 
+-	if (acm_submit_read_urbs(acm, GFP_KERNEL))
++	retval = acm_submit_read_urbs(acm, GFP_KERNEL);
++	if (retval)
+ 		goto error_submit_read_urbs;
+ 
+ 	usb_autopm_put_interface(acm->control);
+@@ -564,7 +565,8 @@ error_submit_urb:
+ error_get_interface:
+ disconnected:
+ 	mutex_unlock(&acm->mutex);
+-	return retval;
++
++	return usb_translate_errors(retval);
+ }
+ 
+ static void acm_port_destruct(struct tty_port *port)
 
 
