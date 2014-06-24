@@ -1,113 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753231AbaFXNWy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 09:22:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43938 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751407AbaFXNWx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 09:22:53 -0400
-Message-ID: <53A97BA9.4020702@suse.de>
-Date: Tue, 24 Jun 2014 15:22:49 +0200
-From: Alexander Graf <agraf@suse.de>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753319AbaFXNYP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 09:24:15 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:54080 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751132AbaFXNYN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 09:24:13 -0400
+Message-ID: <53A97BF6.1060203@gmail.com>
+Date: Tue, 24 Jun 2014 21:24:06 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Alexey Kardashevskiy <aik@ozlabs.ru>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Alex Williamson <alex.williamson@redhat.com>
-CC: linuxppc-dev@lists.ozlabs.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
-Subject: Re: [PATCH] vfio: Fix endianness handling for emulated BARs
-References: <1403091391-31780-1-git-send-email-aik@ozlabs.ru>	 <1403116512.3707.175.camel@ul30vt.home> <53A233E9.6030006@ozlabs.ru>	 <53A241F6.9010307@ozlabs.ru> <53A25D74.5000804@ozlabs.ru>	 <1403234514.3707.278.camel@ul30vt.home> <1403305961.4587.66.camel@pasglop> <53A94EBD.101@ozlabs.ru> <53A955F5.6050801@suse.de> <53A9741B.1040500@ozlabs.ru> <53A97486.4070604@suse.de> <53A976B7.3070709@ozlabs.ru>
-In-Reply-To: <53A976B7.3070709@ozlabs.ru>
-Content-Type: text/plain; charset=KOI8-R; format=flowed
+To: Guenter Roeck <linux@roeck-us.net>, Liqin Chen <liqin.linux@gmail.com>,
+        Lennox Wu <lennox.wu@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arch/score/include/uapi/asm/ptrace.h: Add prefix 'SCORE_'
+ for related macros
+References: <53A66000.4010208@gmail.com> <53A6669B.1010701@roeck-us.net> <53A66A92.9040106@gmail.com> <53A6EDF6.2030203@roeck-us.net> <53A6EFEC.1020207@roeck-us.net> <53A79905.9020007@gmail.com>
+In-Reply-To: <53A79905.9020007@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/23/2014 11:03 AM, Chen Gang wrote:
+> On 06/22/2014 11:02 PM, Guenter Roeck wrote:
+>> On 06/22/2014 07:53 AM, Guenter Roeck wrote:
+>>> I did that, and managed to build gcc.
+>>>
+>>> However, when trying to compile score defconfig, I get internal
+>>> compiler errors in cc1
+>>> when compiling drivers/tty/tty_mutex.o and block/elevator.o.
+>>>
+>>>   CC      block/elevator.o
+>>> score-elf-gcc: internal compiler error: Segmentation fault (program cc1)
+>>> 0x40c073 execute
+>>>      ../../gcc/gcc/gcc.c:2848
+>>> Please submit a full bug report,
+>>> with preprocessed source if appropriate.
+>>> Please include the complete backtrace with any bug report.
+>>> See <http://gcc.gnu.org/bugs.html> for instructions.
+>>> make[1]: *** [block/elevator.o] Error 4
+>>> make: *** [block/elevator.o] Error 2
+>>>
+>>> Do you see that as well ?
+>>>
+>>> This is with
+>>>
+>>> GNU assembler version 2.24.51 (score-elf) using BFD version (GNU
+>>> Binutils) 2.24.51.20140622
+>>>
+>>> and gcc configured with:
+>>>
+>>> Configured with: ../gcc/configure --prefix=/opt/kernel/score
+>>> --program-prefix=score-elf- \
+>>> --target=score-elf --without-header --disable-nls --enable-languages=c
+>>> --disable-threads \
+>>> --disable-shared --enable-werror=no
+>>> target_configargs=enable_vtable_verify=yes \
+>>> --enable-obsolete --disable-libssp --disable-libquadmath
+>>>
+>>> Tip of gcc source is commit d8686b0aa945a, tip of binutils source is
+>>> commit d17c74c1d41.
+>>> Your assembler fix is included in this version of binutils.
+>>>
 
-On 24.06.14 15:01, Alexey Kardashevskiy wrote:
-> On 06/24/2014 10:52 PM, Alexander Graf wrote:
->> On 24.06.14 14:50, Alexey Kardashevskiy wrote:
->>> On 06/24/2014 08:41 PM, Alexander Graf wrote:
->>>> On 24.06.14 12:11, Alexey Kardashevskiy wrote:
->>>>> On 06/21/2014 09:12 AM, Benjamin Herrenschmidt wrote:
->>>>>> On Thu, 2014-06-19 at 21:21 -0600, Alex Williamson wrote:
->>>>>>
->>>>>>> Working on big endian being an accident may be a matter of perspective
->>>>>>     :-)
->>>>>>
->>>>>>> The comment remains that this patch doesn't actually fix anything except
->>>>>>> the overhead on big endian systems doing redundant byte swapping and
->>>>>>> maybe the philosophy that vfio regions are little endian.
->>>>>> Yes, that works by accident because technically VFIO is a transport and
->>>>>> thus shouldn't perform any endian swapping of any sort, which remains
->>>>>> the responsibility of the end driver which is the only one to know
->>>>>> whether a given BAR location is a a register or some streaming data
->>>>>> and in the former case whether it's LE or BE (some PCI devices are BE
->>>>>> even ! :-)
->>>>>>
->>>>>> But yes, in the end, it works with the dual "cancelling" swaps and the
->>>>>> overhead of those swaps is probably drowned in the noise of the syscall
->>>>>> overhead.
->>>>>>
->>>>>>> I'm still not a fan of iowrite vs iowritebe, there must be something we
->>>>>>> can use that doesn't have an implicit swap.
->>>>>> Sadly there isn't ... In the old day we didn't even have the "be"
->>>>>> variant and readl/writel style accessors still don't have them either
->>>>>> for all archs.
->>>>>>
->>>>>> There is __raw_readl/writel but here the semantics are much more than
->>>>>> just "don't swap", they also don't have memory barriers (which means
->>>>>> they are essentially useless to most drivers unless those are platform
->>>>>> specific drivers which know exactly what they are doing, or in the rare
->>>>>> cases such as accessing a framebuffer which we know never have side
->>>>>> effects).
->>>>>>
->>>>>>>     Calling it iowrite*_native is also an abuse of the namespace.
->>>>>>>     Next thing we know some common code
->>>>>>> will legitimately use that name.
->>>>>> I might make sense to those definitions into a common header. There have
->>>>>> been a handful of cases in the past that wanted that sort of "native
->>>>>> byte order" MMIOs iirc (though don't ask me for examples, I can't really
->>>>>> remember).
->>>>>>
->>>>>>>     If we do need to define an alias
->>>>>>> (which I'd like to avoid) it should be something like vfio_iowrite32.
->>>>> Ping?
->>>>>
->>>>> We need to make a decision whether to move those xxx_native() helpers
->>>>> somewhere (where?) or leave the patch as is (as we figured out that
->>>>> iowriteXX functions implement barriers and we cannot just use raw
->>>>> accessors) and fix commit log to explain everything.
->>>> Is there actually any difference in generated code with this patch applied
->>>> and without? I would hope that iowrite..() is inlined and cancels out the
->>>> cpu_to_le..() calls that are also inlined?
->>> iowrite32 is a non-inline function so conversions take place so are the
->>> others. And sorry but I fail to see why this matters. We are not trying to
->>> accelerate things, we are removing redundant operations which confuse
->>> people who read the code.
->> The confusion depends on where you're coming from. If you happen to know
->> that "iowrite32" writes in LE, then the LE conversion makes a lot of sense.
-> It was like this (and this is just confusing):
->
-> iowrite32(le32_to_cpu(val), io + off);
->
-> What would make sense (according to you and I would understand this) is this:
->
-> iowrite32(cpu_to_le32(val), io + off);
->
->
-> Or I missed your point, did I?
+Can we repeated this issue, or it is random?  I have try it use my
+current gcc version, it has no issue.
 
-No, you didn't miss it. I think for people who know how iowrite32() 
-works the above is obvious. I find the fact that iowrite32() writes in 
-LE always pretty scary though ;).
+If it can be repeated in the latest version, I shall use version compine
+(and try step by step) to fix it.
 
-So IMHO we should either create new, generic iowrite helpers that don't 
-do any endian swapping at all or do iowrite32(cpu_to_le32(val)) calls.
+If real random issue, if possible, please help repeated and generate
+coredump file, and put it to a place to let me get back for analysing.
 
 
-Alex
+Thanks.
 
+>>
+>> Never mind, turns out I get score:defconfig to compile when using the
+>> tip of the gcc 4.9 branch.
+>>
+>> Guenter
+>>
+> 
+> OK, I shall try defconfig for it (originally, I try allmodconfig, not
+> find this issue), and try to solve it, hope (although I am not quite
+> sure), I can finish within this month (2014-06-30).
+> 
+> 
+> Thanks.
+> 
+
+-- 
+Chen Gang
+
+Open, share, and attitude like air, water, and life which God blessed
