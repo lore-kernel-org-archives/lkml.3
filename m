@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932688AbaFXQam (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:30:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32929 "EHLO
+	id S965174AbaFXQbB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:31:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32925 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932280AbaFXPxz (ORCPT
+	with ESMTP id S932325AbaFXPxy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:53:55 -0400
+	Tue, 24 Jun 2014 11:53:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
         Andy Lutomirski <luto@amacapital.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 12/68] netlink: Only check file credentials for implicit destinations
-Date: Tue, 24 Jun 2014 11:50:31 -0400
-Message-Id: <20140624154724.473621110@linuxfoundation.org>
+Subject: [PATCH 3.14 11/68] net: Use netlink_ns_capable to verify the permisions of netlink messages
+Date: Tue, 24 Jun 2014 11:50:30 -0400
+Message-Id: <20140624154724.431186437@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154723.907894814@linuxfoundation.org>
 References: <20140624154723.907894814@linuxfoundation.org>
@@ -32,105 +32,392 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-[ Upstream commit 2d7a85f4b06e9c27ff629f07a524c48074f07f81 ]
+[ Upstream commit 90f62cf30a78721641e08737bda787552428061e ]
 
-It was possible to get a setuid root or setcap executable to write to
-it's stdout or stderr (which has been set made a netlink socket) and
-inadvertently reconfigure the networking stack.
+It is possible by passing a netlink socket to a more privileged
+executable and then to fool that executable into writing to the socket
+data that happens to be valid netlink message to do something that
+privileged executable did not intend to do.
 
-To prevent this we check that both the creator of the socket and
-the currentl applications has permission to reconfigure the network
-stack.
+To keep this from happening replace bare capable and ns_capable calls
+with netlink_capable, netlink_net_calls and netlink_ns_capable calls.
+Which act the same as the previous calls except they verify that the
+opener of the socket had the desired permissions as well.
 
-Unfortunately this breaks Zebra which always uses sendto/sendmsg
-and creates it's socket without any privileges.
-
-To keep Zebra working don't bother checking if the creator of the
-socket has privilege when a destination address is specified.  Instead
-rely exclusively on the privileges of the sender of the socket.
-
-Note from Andy: This is exactly Eric's code except for some comment
-clarifications and formatting fixes.  Neither I nor, I think, anyone
-else is thrilled with this approach, but I'm hesitant to wait on a
-better fix since 3.15 is almost here.
-
-Note to stable maintainers: This is a mess.  An earlier series of
-patches in 3.15 fix a rather serious security issue (CVE-2014-0181),
-but they did so in a way that breaks Zebra.  The offending series
-includes:
-
-    commit aa4cf9452f469f16cea8c96283b641b4576d4a7b
-    Author: Eric W. Biederman <ebiederm@xmission.com>
-    Date:   Wed Apr 23 14:28:03 2014 -0700
-
-        net: Add variants of capable for use on netlink messages
-
-If a given kernel version is missing that series of fixes, it's
-probably worth backporting it and this patch.  if that series is
-present, then this fix is critical if you care about Zebra.
-
-Cc: stable@vger.kernel.org
+Reported-by: Andy Lutomirski <luto@amacapital.net>
 Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/linux/netlink.h  |    7 ++++---
- net/netlink/af_netlink.c |    7 ++++++-
- 2 files changed, 10 insertions(+), 4 deletions(-)
+ crypto/crypto_user.c            |    2 +-
+ drivers/connector/cn_proc.c     |    2 +-
+ drivers/scsi/scsi_netlink.c     |    2 +-
+ kernel/audit.c                  |    4 ++--
+ net/can/gw.c                    |    4 ++--
+ net/core/rtnetlink.c            |   20 +++++++++++---------
+ net/dcb/dcbnl.c                 |    2 +-
+ net/decnet/dn_dev.c             |    4 ++--
+ net/decnet/dn_fib.c             |    4 ++--
+ net/decnet/netfilter/dn_rtmsg.c |    2 +-
+ net/netfilter/nfnetlink.c       |    2 +-
+ net/netlink/genetlink.c         |    2 +-
+ net/packet/diag.c               |    2 +-
+ net/phonet/pn_netlink.c         |    8 ++++----
+ net/sched/act_api.c             |    2 +-
+ net/sched/cls_api.c             |    2 +-
+ net/sched/sch_api.c             |    6 +++---
+ net/tipc/netlink.c              |    2 +-
+ net/xfrm/xfrm_user.c            |    2 +-
+ 19 files changed, 38 insertions(+), 36 deletions(-)
 
---- a/include/linux/netlink.h
-+++ b/include/linux/netlink.h
-@@ -16,9 +16,10 @@ static inline struct nlmsghdr *nlmsg_hdr
+--- a/crypto/crypto_user.c
++++ b/crypto/crypto_user.c
+@@ -466,7 +466,7 @@ static int crypto_user_rcv_msg(struct sk
+ 	type -= CRYPTO_MSG_BASE;
+ 	link = &crypto_dispatch[type];
+ 
+-	if (!capable(CAP_NET_ADMIN))
++	if (!netlink_capable(skb, CAP_NET_ADMIN))
+ 		return -EPERM;
+ 
+ 	if ((type == (CRYPTO_MSG_GETALG - CRYPTO_MSG_BASE) &&
+--- a/drivers/connector/cn_proc.c
++++ b/drivers/connector/cn_proc.c
+@@ -369,7 +369,7 @@ static void cn_proc_mcast_ctl(struct cn_
+ 		return;
+ 
+ 	/* Can only change if privileged. */
+-	if (!capable(CAP_NET_ADMIN)) {
++	if (!__netlink_ns_capable(nsp, &init_user_ns, CAP_NET_ADMIN)) {
+ 		err = EPERM;
+ 		goto out;
+ 	}
+--- a/drivers/scsi/scsi_netlink.c
++++ b/drivers/scsi/scsi_netlink.c
+@@ -77,7 +77,7 @@ scsi_nl_rcv_msg(struct sk_buff *skb)
+ 			goto next_msg;
+ 		}
+ 
+-		if (!capable(CAP_SYS_ADMIN)) {
++		if (!netlink_capable(skb, CAP_SYS_ADMIN)) {
+ 			err = -EPERM;
+ 			goto next_msg;
+ 		}
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -639,13 +639,13 @@ static int audit_netlink_ok(struct sk_bu
+ 	case AUDIT_TTY_SET:
+ 	case AUDIT_TRIM:
+ 	case AUDIT_MAKE_EQUIV:
+-		if (!capable(CAP_AUDIT_CONTROL))
++		if (!netlink_capable(skb, CAP_AUDIT_CONTROL))
+ 			err = -EPERM;
+ 		break;
+ 	case AUDIT_USER:
+ 	case AUDIT_FIRST_USER_MSG ... AUDIT_LAST_USER_MSG:
+ 	case AUDIT_FIRST_USER_MSG2 ... AUDIT_LAST_USER_MSG2:
+-		if (!capable(CAP_AUDIT_WRITE))
++		if (!netlink_capable(skb, CAP_AUDIT_WRITE))
+ 			err = -EPERM;
+ 		break;
+ 	default:  /* bad msg */
+--- a/net/can/gw.c
++++ b/net/can/gw.c
+@@ -804,7 +804,7 @@ static int cgw_create_job(struct sk_buff
+ 	u8 limhops = 0;
+ 	int err = 0;
+ 
+-	if (!capable(CAP_NET_ADMIN))
++	if (!netlink_capable(skb, CAP_NET_ADMIN))
+ 		return -EPERM;
+ 
+ 	if (nlmsg_len(nlh) < sizeof(*r))
+@@ -893,7 +893,7 @@ static int cgw_remove_job(struct sk_buff
+ 	u8 limhops = 0;
+ 	int err = 0;
+ 
+-	if (!capable(CAP_NET_ADMIN))
++	if (!netlink_capable(skb, CAP_NET_ADMIN))
+ 		return -EPERM;
+ 
+ 	if (nlmsg_len(nlh) < sizeof(*r))
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -1428,7 +1428,8 @@ static int do_set_master(struct net_devi
+ 	return 0;
  }
  
- enum netlink_skb_flags {
--	NETLINK_SKB_MMAPED	= 0x1,		/* Packet data is mmaped */
--	NETLINK_SKB_TX		= 0x2,		/* Packet was sent by userspace */
--	NETLINK_SKB_DELIVERED	= 0x4,		/* Packet was delivered */
-+	NETLINK_SKB_MMAPED	= 0x1,	/* Packet data is mmaped */
-+	NETLINK_SKB_TX		= 0x2,	/* Packet was sent by userspace */
-+	NETLINK_SKB_DELIVERED	= 0x4,	/* Packet was delivered */
-+	NETLINK_SKB_DST		= 0x8,	/* Dst set in sendto or sendmsg */
- };
- 
- struct netlink_skb_parms {
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -1373,7 +1373,9 @@ retry:
- bool __netlink_ns_capable(const struct netlink_skb_parms *nsp,
- 			struct user_namespace *user_ns, int cap)
+-static int do_setlink(struct net_device *dev, struct ifinfomsg *ifm,
++static int do_setlink(const struct sk_buff *skb,
++		      struct net_device *dev, struct ifinfomsg *ifm,
+ 		      struct nlattr **tb, char *ifname, int modified)
  {
--	return sk_ns_capable(nsp->sk, user_ns, cap);
-+	return ((nsp->flags & NETLINK_SKB_DST) ||
-+		file_ns_capable(nsp->sk->sk_socket->file, user_ns, cap)) &&
-+		ns_capable(user_ns, cap);
+ 	const struct net_device_ops *ops = dev->netdev_ops;
+@@ -1440,7 +1441,7 @@ static int do_setlink(struct net_device
+ 			err = PTR_ERR(net);
+ 			goto errout;
+ 		}
+-		if (!ns_capable(net->user_ns, CAP_NET_ADMIN)) {
++		if (!netlink_ns_capable(skb, net->user_ns, CAP_NET_ADMIN)) {
+ 			err = -EPERM;
+ 			goto errout;
+ 		}
+@@ -1694,7 +1695,7 @@ static int rtnl_setlink(struct sk_buff *
+ 	if (err < 0)
+ 		goto errout;
+ 
+-	err = do_setlink(dev, ifm, tb, ifname, 0);
++	err = do_setlink(skb, dev, ifm, tb, ifname, 0);
+ errout:
+ 	return err;
  }
- EXPORT_SYMBOL(__netlink_ns_capable);
+@@ -1811,7 +1812,8 @@ err:
+ }
+ EXPORT_SYMBOL(rtnl_create_link);
  
-@@ -2293,6 +2295,7 @@ static int netlink_sendmsg(struct kiocb
- 	struct sk_buff *skb;
+-static int rtnl_group_changelink(struct net *net, int group,
++static int rtnl_group_changelink(const struct sk_buff *skb,
++		struct net *net, int group,
+ 		struct ifinfomsg *ifm,
+ 		struct nlattr **tb)
+ {
+@@ -1820,7 +1822,7 @@ static int rtnl_group_changelink(struct
+ 
+ 	for_each_netdev(net, dev) {
+ 		if (dev->group == group) {
+-			err = do_setlink(dev, ifm, tb, NULL, 0);
++			err = do_setlink(skb, dev, ifm, tb, NULL, 0);
+ 			if (err < 0)
+ 				return err;
+ 		}
+@@ -1962,12 +1964,12 @@ replay:
+ 				modified = 1;
+ 			}
+ 
+-			return do_setlink(dev, ifm, tb, ifname, modified);
++			return do_setlink(skb, dev, ifm, tb, ifname, modified);
+ 		}
+ 
+ 		if (!(nlh->nlmsg_flags & NLM_F_CREATE)) {
+ 			if (ifm->ifi_index == 0 && tb[IFLA_GROUP])
+-				return rtnl_group_changelink(net,
++				return rtnl_group_changelink(skb, net,
+ 						nla_get_u32(tb[IFLA_GROUP]),
+ 						ifm, tb);
+ 			return -ENODEV;
+@@ -2354,7 +2356,7 @@ static int rtnl_fdb_del(struct sk_buff *
+ 	int err = -EINVAL;
+ 	__u8 *addr;
+ 
+-	if (!capable(CAP_NET_ADMIN))
++	if (!netlink_capable(skb, CAP_NET_ADMIN))
+ 		return -EPERM;
+ 
+ 	err = nlmsg_parse(nlh, sizeof(*ndm), tb, NDA_MAX, NULL);
+@@ -2806,7 +2808,7 @@ static int rtnetlink_rcv_msg(struct sk_b
+ 	sz_idx = type>>2;
+ 	kind = type&3;
+ 
+-	if (kind != 2 && !ns_capable(net->user_ns, CAP_NET_ADMIN))
++	if (kind != 2 && !netlink_net_capable(skb, CAP_NET_ADMIN))
+ 		return -EPERM;
+ 
+ 	if (kind == 2 && nlh->nlmsg_flags&NLM_F_DUMP) {
+--- a/net/dcb/dcbnl.c
++++ b/net/dcb/dcbnl.c
+@@ -1669,7 +1669,7 @@ static int dcb_doit(struct sk_buff *skb,
+ 	struct nlmsghdr *reply_nlh = NULL;
+ 	const struct reply_func *fn;
+ 
+-	if ((nlh->nlmsg_type == RTM_SETDCB) && !capable(CAP_NET_ADMIN))
++	if ((nlh->nlmsg_type == RTM_SETDCB) && !netlink_capable(skb, CAP_NET_ADMIN))
+ 		return -EPERM;
+ 
+ 	ret = nlmsg_parse(nlh, sizeof(*dcb), tb, DCB_ATTR_MAX,
+--- a/net/decnet/dn_dev.c
++++ b/net/decnet/dn_dev.c
+@@ -574,7 +574,7 @@ static int dn_nl_deladdr(struct sk_buff
+ 	struct dn_ifaddr __rcu **ifap;
+ 	int err = -EINVAL;
+ 
+-	if (!capable(CAP_NET_ADMIN))
++	if (!netlink_capable(skb, CAP_NET_ADMIN))
+ 		return -EPERM;
+ 
+ 	if (!net_eq(net, &init_net))
+@@ -618,7 +618,7 @@ static int dn_nl_newaddr(struct sk_buff
+ 	struct dn_ifaddr *ifa;
  	int err;
- 	struct scm_cookie scm;
-+	u32 netlink_skb_flags = 0;
  
- 	if (msg->msg_flags&MSG_OOB)
+-	if (!capable(CAP_NET_ADMIN))
++	if (!netlink_capable(skb, CAP_NET_ADMIN))
+ 		return -EPERM;
+ 
+ 	if (!net_eq(net, &init_net))
+--- a/net/decnet/dn_fib.c
++++ b/net/decnet/dn_fib.c
+@@ -505,7 +505,7 @@ static int dn_fib_rtm_delroute(struct sk
+ 	struct nlattr *attrs[RTA_MAX+1];
+ 	int err;
+ 
+-	if (!capable(CAP_NET_ADMIN))
++	if (!netlink_capable(skb, CAP_NET_ADMIN))
+ 		return -EPERM;
+ 
+ 	if (!net_eq(net, &init_net))
+@@ -530,7 +530,7 @@ static int dn_fib_rtm_newroute(struct sk
+ 	struct nlattr *attrs[RTA_MAX+1];
+ 	int err;
+ 
+-	if (!capable(CAP_NET_ADMIN))
++	if (!netlink_capable(skb, CAP_NET_ADMIN))
+ 		return -EPERM;
+ 
+ 	if (!net_eq(net, &init_net))
+--- a/net/decnet/netfilter/dn_rtmsg.c
++++ b/net/decnet/netfilter/dn_rtmsg.c
+@@ -107,7 +107,7 @@ static inline void dnrmg_receive_user_sk
+ 	if (nlh->nlmsg_len < sizeof(*nlh) || skb->len < nlh->nlmsg_len)
+ 		return;
+ 
+-	if (!capable(CAP_NET_ADMIN))
++	if (!netlink_capable(skb, CAP_NET_ADMIN))
+ 		RCV_SKB_FAIL(-EPERM);
+ 
+ 	/* Eventually we might send routing messages too */
+--- a/net/netfilter/nfnetlink.c
++++ b/net/netfilter/nfnetlink.c
+@@ -367,7 +367,7 @@ static void nfnetlink_rcv(struct sk_buff
+ 	    skb->len < nlh->nlmsg_len)
+ 		return;
+ 
+-	if (!ns_capable(net->user_ns, CAP_NET_ADMIN)) {
++	if (!netlink_net_capable(skb, CAP_NET_ADMIN)) {
+ 		netlink_ack(skb, nlh, -EPERM);
+ 		return;
+ 	}
+--- a/net/netlink/genetlink.c
++++ b/net/netlink/genetlink.c
+@@ -561,7 +561,7 @@ static int genl_family_rcv_msg(struct ge
  		return -EOPNOTSUPP;
-@@ -2314,6 +2317,7 @@ static int netlink_sendmsg(struct kiocb
- 		if ((dst_group || dst_portid) &&
- 		    !netlink_allowed(sock, NL_CFG_F_NONROOT_SEND))
- 			goto out;
-+		netlink_skb_flags |= NETLINK_SKB_DST;
- 	} else {
- 		dst_portid = nlk->dst_portid;
- 		dst_group = nlk->dst_group;
-@@ -2343,6 +2347,7 @@ static int netlink_sendmsg(struct kiocb
- 	NETLINK_CB(skb).portid	= nlk->portid;
- 	NETLINK_CB(skb).dst_group = dst_group;
- 	NETLINK_CB(skb).creds	= siocb->scm->creds;
-+	NETLINK_CB(skb).flags	= netlink_skb_flags;
  
- 	err = -EFAULT;
- 	if (memcpy_fromiovec(skb_put(skb, len), msg->msg_iov, len)) {
+ 	if ((ops->flags & GENL_ADMIN_PERM) &&
+-	    !capable(CAP_NET_ADMIN))
++	    !netlink_capable(skb, CAP_NET_ADMIN))
+ 		return -EPERM;
+ 
+ 	if ((nlh->nlmsg_flags & NLM_F_DUMP) == NLM_F_DUMP) {
+--- a/net/packet/diag.c
++++ b/net/packet/diag.c
+@@ -194,7 +194,7 @@ static int packet_diag_dump(struct sk_bu
+ 
+ 	net = sock_net(skb->sk);
+ 	req = nlmsg_data(cb->nlh);
+-	may_report_filterinfo = ns_capable(net->user_ns, CAP_NET_ADMIN);
++	may_report_filterinfo = netlink_net_capable(cb->skb, CAP_NET_ADMIN);
+ 
+ 	mutex_lock(&net->packet.sklist_lock);
+ 	sk_for_each(sk, &net->packet.sklist) {
+--- a/net/phonet/pn_netlink.c
++++ b/net/phonet/pn_netlink.c
+@@ -70,10 +70,10 @@ static int addr_doit(struct sk_buff *skb
+ 	int err;
+ 	u8 pnaddr;
+ 
+-	if (!capable(CAP_NET_ADMIN))
++	if (!netlink_capable(skb, CAP_NET_ADMIN))
+ 		return -EPERM;
+ 
+-	if (!capable(CAP_SYS_ADMIN))
++	if (!netlink_capable(skb, CAP_SYS_ADMIN))
+ 		return -EPERM;
+ 
+ 	ASSERT_RTNL();
+@@ -233,10 +233,10 @@ static int route_doit(struct sk_buff *sk
+ 	int err;
+ 	u8 dst;
+ 
+-	if (!capable(CAP_NET_ADMIN))
++	if (!netlink_capable(skb, CAP_NET_ADMIN))
+ 		return -EPERM;
+ 
+-	if (!capable(CAP_SYS_ADMIN))
++	if (!netlink_capable(skb, CAP_SYS_ADMIN))
+ 		return -EPERM;
+ 
+ 	ASSERT_RTNL();
+--- a/net/sched/act_api.c
++++ b/net/sched/act_api.c
+@@ -908,7 +908,7 @@ static int tc_ctl_action(struct sk_buff
+ 	u32 portid = skb ? NETLINK_CB(skb).portid : 0;
+ 	int ret = 0, ovr = 0;
+ 
+-	if ((n->nlmsg_type != RTM_GETACTION) && !capable(CAP_NET_ADMIN))
++	if ((n->nlmsg_type != RTM_GETACTION) && !netlink_capable(skb, CAP_NET_ADMIN))
+ 		return -EPERM;
+ 
+ 	ret = nlmsg_parse(n, sizeof(struct tcamsg), tca, TCA_ACT_MAX, NULL);
+--- a/net/sched/cls_api.c
++++ b/net/sched/cls_api.c
+@@ -134,7 +134,7 @@ static int tc_ctl_tfilter(struct sk_buff
+ 	int err;
+ 	int tp_created = 0;
+ 
+-	if ((n->nlmsg_type != RTM_GETTFILTER) && !capable(CAP_NET_ADMIN))
++	if ((n->nlmsg_type != RTM_GETTFILTER) && !netlink_capable(skb, CAP_NET_ADMIN))
+ 		return -EPERM;
+ 
+ replay:
+--- a/net/sched/sch_api.c
++++ b/net/sched/sch_api.c
+@@ -1084,7 +1084,7 @@ static int tc_get_qdisc(struct sk_buff *
+ 	struct Qdisc *p = NULL;
+ 	int err;
+ 
+-	if ((n->nlmsg_type != RTM_GETQDISC) && !capable(CAP_NET_ADMIN))
++	if ((n->nlmsg_type != RTM_GETQDISC) && !netlink_capable(skb, CAP_NET_ADMIN))
+ 		return -EPERM;
+ 
+ 	err = nlmsg_parse(n, sizeof(*tcm), tca, TCA_MAX, NULL);
+@@ -1151,7 +1151,7 @@ static int tc_modify_qdisc(struct sk_buf
+ 	struct Qdisc *q, *p;
+ 	int err;
+ 
+-	if (!capable(CAP_NET_ADMIN))
++	if (!netlink_capable(skb, CAP_NET_ADMIN))
+ 		return -EPERM;
+ 
+ replay:
+@@ -1491,7 +1491,7 @@ static int tc_ctl_tclass(struct sk_buff
+ 	u32 qid;
+ 	int err;
+ 
+-	if ((n->nlmsg_type != RTM_GETTCLASS) && !capable(CAP_NET_ADMIN))
++	if ((n->nlmsg_type != RTM_GETTCLASS) && !netlink_capable(skb, CAP_NET_ADMIN))
+ 		return -EPERM;
+ 
+ 	err = nlmsg_parse(n, sizeof(*tcm), tca, TCA_MAX, NULL);
+--- a/net/tipc/netlink.c
++++ b/net/tipc/netlink.c
+@@ -47,7 +47,7 @@ static int handle_cmd(struct sk_buff *sk
+ 	int hdr_space = nlmsg_total_size(GENL_HDRLEN + TIPC_GENL_HDRLEN);
+ 	u16 cmd;
+ 
+-	if ((req_userhdr->cmd & 0xC000) && (!capable(CAP_NET_ADMIN)))
++	if ((req_userhdr->cmd & 0xC000) && (!netlink_capable(skb, CAP_NET_ADMIN)))
+ 		cmd = TIPC_CMD_NOT_NET_ADMIN;
+ 	else
+ 		cmd = req_userhdr->cmd;
+--- a/net/xfrm/xfrm_user.c
++++ b/net/xfrm/xfrm_user.c
+@@ -2350,7 +2350,7 @@ static int xfrm_user_rcv_msg(struct sk_b
+ 	link = &xfrm_dispatch[type];
+ 
+ 	/* All operations require privileges, even GET */
+-	if (!ns_capable(net->user_ns, CAP_NET_ADMIN))
++	if (!netlink_net_capable(skb, CAP_NET_ADMIN))
+ 		return -EPERM;
+ 
+ 	if ((type == (XFRM_MSG_GETSA - XFRM_MSG_BASE) ||
 
 
