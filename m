@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755318AbaFXUbq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:31:46 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47716 "EHLO
+	id S1755403AbaFXUb5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:31:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47737 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752864AbaFXUbn (ORCPT
+	with ESMTP id S1755358AbaFXUbz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:31:43 -0400
+	Tue, 24 Jun 2014 16:31:55 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Ludovic Drolez <ldrolez@debian.org>, Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 50/65] powerpc: Fix 64 bit builds with binutils 2.24
-Date: Tue, 24 Jun 2014 13:30:10 -0700
-Message-Id: <1403641825-12825-51-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 53/65] USB: io_ti: fix firmware download on big-endian machines (part 2)
+Date: Tue, 24 Jun 2014 13:30:13 -0700
+Message-Id: <1403641825-12825-54-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
 References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
@@ -28,84 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 7998eb3dc700aaf499f93f50b3d77da834ef9e1d upstream.
+commit c03890ff5e24a4bf59059f2d179f427559b7330a upstream.
 
-With binutils 2.24, various 64 bit builds fail with relocation errors
-such as
+A recent patch that purported to fix firmware download on big-endian
+machines failed to add the corresponding sparse annotation to the
+i2c-header. This was reported by the kbuild test robot.
 
-arch/powerpc/kernel/built-in.o: In function `exc_debug_crit_book3e':
-	(.text+0x165ee): relocation truncated to fit: R_PPC64_ADDR16_HI
-	against symbol `interrupt_base_book3e' defined in .text section
-	in arch/powerpc/kernel/built-in.o
-arch/powerpc/kernel/built-in.o: In function `exc_debug_crit_book3e':
-	(.text+0x16602): relocation truncated to fit: R_PPC64_ADDR16_HI
-	against symbol `interrupt_end_book3e' defined in .text section
-	in arch/powerpc/kernel/built-in.o
+Adding the appropriate annotation revealed another endianess bug related
+to the i2c-header Size-field in a code path that is exercised when the
+firmware is actually being downloaded (and not just verified and left
+untouched unless older than the firmware at hand).
 
-The assembler maintainer says:
+This patch adds the required sparse annotation to the i2c-header and
+makes sure that the Size-field is sent in little-endian byte order
+during firmware download also on big-endian machines.
 
- I changed the ABI, something that had to be done but unfortunately
- happens to break the booke kernel code.  When building up a 64-bit
- value with lis, ori, shl, oris, ori or similar sequences, you now
- should use @high and @higha in place of @h and @ha.  @h and @ha
- (and their associated relocs R_PPC64_ADDR16_HI and R_PPC64_ADDR16_HA)
- now report overflow if the value is out of 32-bit signed range.
- ie. @h and @ha assume you're building a 32-bit value. This is needed
- to report out-of-range -mcmodel=medium toc pointer offsets in @toc@h
- and @toc@ha expressions, and for consistency I did the same for all
- other @h and @ha relocs.
+Note that this patch is only compile-tested, but that there is no
+functional change for little-endian systems.
 
-Replacing @h with @high in one strategic location fixes the relocation
-errors. This has to be done conditionally since the assembler either
-supports @h or @high but not both.
-
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
+Cc: Ludovic Drolez <ldrolez@debian.org>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/powerpc/Makefile              | 4 +++-
- arch/powerpc/include/asm/ppc_asm.h | 7 ++++++-
- 2 files changed, 9 insertions(+), 2 deletions(-)
+ drivers/usb/serial/io_ti.c      | 2 +-
+ drivers/usb/serial/io_usbvend.h | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/powerpc/Makefile b/arch/powerpc/Makefile
-index b639852..d47e1df 100644
---- a/arch/powerpc/Makefile
-+++ b/arch/powerpc/Makefile
-@@ -79,7 +79,9 @@ CFLAGS-$(CONFIG_POWER7_CPU) += $(call cc-option,-mcpu=power7)
+diff --git a/drivers/usb/serial/io_ti.c b/drivers/usb/serial/io_ti.c
+index ce5bcf9..883c89b 100644
+--- a/drivers/usb/serial/io_ti.c
++++ b/drivers/usb/serial/io_ti.c
+@@ -894,7 +894,7 @@ static int build_i2c_fw_hdr(__u8 *header, struct device *dev)
+ 	firmware_rec =  (struct ti_i2c_firmware_rec*)i2c_header->Data;
  
- CFLAGS-$(CONFIG_TUNE_CELL) += $(call cc-option,-mtune=cell)
+ 	i2c_header->Type	= I2C_DESC_TYPE_FIRMWARE_BLANK;
+-	i2c_header->Size	= (__u16)buffer_size;
++	i2c_header->Size	= cpu_to_le16(buffer_size);
+ 	i2c_header->CheckSum	= cs;
+ 	firmware_rec->Ver_Major	= OperationalMajorVersion;
+ 	firmware_rec->Ver_Minor	= OperationalMinorVersion;
+diff --git a/drivers/usb/serial/io_usbvend.h b/drivers/usb/serial/io_usbvend.h
+index 51f83fb..6f6a856 100644
+--- a/drivers/usb/serial/io_usbvend.h
++++ b/drivers/usb/serial/io_usbvend.h
+@@ -594,7 +594,7 @@ struct edge_boot_descriptor {
  
--KBUILD_CPPFLAGS	+= -Iarch/$(ARCH)
-+asinstr := $(call as-instr,lis 9$(comma)foo@high,-DHAVE_AS_ATHIGH=1)
-+
-+KBUILD_CPPFLAGS	+= -Iarch/$(ARCH) $(asinstr)
- KBUILD_AFLAGS	+= -Iarch/$(ARCH)
- KBUILD_CFLAGS	+= -msoft-float -pipe -Iarch/$(ARCH) $(CFLAGS-y)
- CPP		= $(CC) -E $(KBUILD_CFLAGS)
-diff --git a/arch/powerpc/include/asm/ppc_asm.h b/arch/powerpc/include/asm/ppc_asm.h
-index ea2a86e..ce5ad32 100644
---- a/arch/powerpc/include/asm/ppc_asm.h
-+++ b/arch/powerpc/include/asm/ppc_asm.h
-@@ -309,11 +309,16 @@ n:
-  *      ld	rY,ADDROFF(name)(rX)
-  */
- #ifdef __powerpc64__
-+#ifdef HAVE_AS_ATHIGH
-+#define __AS_ATHIGH high
-+#else
-+#define __AS_ATHIGH h
-+#endif
- #define LOAD_REG_IMMEDIATE(reg,expr)		\
- 	lis     reg,(expr)@highest;		\
- 	ori     reg,reg,(expr)@higher;	\
- 	rldicr  reg,reg,32,31;		\
--	oris    reg,reg,(expr)@h;		\
-+	oris    reg,reg,(expr)@__AS_ATHIGH;	\
- 	ori     reg,reg,(expr)@l;
- 
- #define LOAD_REG_ADDR(reg,name)			\
+ struct ti_i2c_desc {
+ 	__u8	Type;			// Type of descriptor
+-	__u16	Size;			// Size of data only not including header
++	__le16	Size;			// Size of data only not including header
+ 	__u8	CheckSum;		// Checksum (8 bit sum of data only)
+ 	__u8	Data[0];		// Data starts here
+ } __attribute__((packed));
 -- 
 1.9.1
 
