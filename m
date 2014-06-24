@@ -1,120 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753950AbaFXOFL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 10:05:11 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:51723 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752643AbaFXOFJ (ORCPT
+	id S1753972AbaFXOGq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 10:06:46 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:33409 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752593AbaFXOGo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 10:05:09 -0400
-Date: Tue, 24 Jun 2014 10:05:08 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Chen, Alvin" <alvin.chen@intel.com>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Boon Leong Ong <boon.leong.ong@intel.com>
-Subject: Re: [PATCH] USB: ehci-pci: USB host controller support for Intel
- Quark X1000
-In-Reply-To: <1403625103-28078-2-git-send-email-alvin.chen@intel.com>
-Message-ID: <Pine.LNX.4.44L0.1406240959270.990-100000@iolanthe.rowland.org>
+	Tue, 24 Jun 2014 10:06:44 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Mathias Nyman'" <mathias.nyman@linux.intel.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: RE: [PATCH 1/5] xhci: Use correct SLOT ID when handling a reset
+ device command
+Thread-Topic: [PATCH 1/5] xhci: Use correct SLOT ID when handling a reset
+ device command
+Thread-Index: AQHPj7T3A3v0NA89pUGB6GqHs8HeqJuASw/w
+Date: Tue, 24 Jun 2014 14:06:05 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D17263160@AcuExch.aculab.com>
+References: <1403618059-24533-1-git-send-email-mathias.nyman@linux.intel.com>
+ <1403619322-24704-1-git-send-email-mathias.nyman@linux.intel.com>
+In-Reply-To: <1403619322-24704-1-git-send-email-mathias.nyman@linux.intel.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Jun 2014, Chen, Alvin wrote:
-
-> From: Bryan O'Donoghue <bryan.odonoghue@intel.com>
+From: Of Mathias Nyman
+> Command completion events normally include command completion status,
+> SLOT_ID, and a pointer to the original command. Reset device command
+> completion SLOT_ID may be zero according to xhci specs 4.6.11.
 > 
-> This patch is to enable USB host controller for Intel Quark X1000. Add pci quirks
-> to adjust the packet buffer in/out threshold value, and ensure EHCI packet buffer
-> i/o threshold value is reconfigured to half.
-
-What is the packet buffer in/out threshold value and why does it need
-to be reconfigured to half?
-
-> Signed-off-by: Bryan O'Donoghue <bryan.odonoghue@intel.com>
-> Signed-off-by: Alvin (Weike) Chen <alvin.chen@intel.com>
+> VIA controllers set the SLOT_ID to zero, triggering a WARN_ON in the
+> command completion handler.
+> 
+> Use the SLOT ID found from the original command instead.
+> 
+> This patch should be applied to stable kernels since 3.13 that contain
+> the commit 20e7acb13ff48fbc884d5918c3697c27de63922a
+> "xhci: use completion event's slot id rather than dig it out of command"
+> 
+> Cc: stable@vger.kernel.org # 3.13
+> Reported-by: Saran Neti <sarannmr@gmail.com>
+> Tested-by: Saran Neti <sarannmr@gmail.com>
+> Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
 > ---
->  drivers/usb/host/ehci-pci.c   |    4 ++++
->  drivers/usb/host/pci-quirks.c |   42 +++++++++++++++++++++++++++++++++++++++++
->  drivers/usb/host/pci-quirks.h |    2 ++
->  3 files changed, 48 insertions(+)
+>  drivers/usb/host/xhci-ring.c | 7 +++++--
+>  1 file changed, 5 insertions(+), 2 deletions(-)
 > 
-> diff --git a/drivers/usb/host/ehci-pci.c b/drivers/usb/host/ehci-pci.c
-> index 3e86bf4..33cfa23 100644
-> --- a/drivers/usb/host/ehci-pci.c
-> +++ b/drivers/usb/host/ehci-pci.c
-> @@ -50,6 +50,10 @@ static int ehci_pci_reinit(struct ehci_hcd *ehci, struct pci_dev *pdev)
->  	if (!retval)
->  		ehci_dbg(ehci, "MWI active\n");
->  
-> +	/* Reset the threshold limit */
-> +	if(unlikely(usb_is_intel_qrk(pdev)))
-> +		usb_set_qrk_bulk_thresh(pdev);
-> +
->  	return 0;
->  }
->  
-> diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
-> index 00661d3..1ea8803 100644
-> --- a/drivers/usb/host/pci-quirks.c
-> +++ b/drivers/usb/host/pci-quirks.c
-> @@ -823,6 +823,48 @@ static int handshake(void __iomem *ptr, u32 mask, u32 done,
->  	return -ETIMEDOUT;
->  }
->  
-> +#define PCI_DEVICE_ID_INTEL_QUARK_X1000_SOC		0x0939
-> +bool usb_is_intel_qrk(struct pci_dev *pdev)
-> +{
-> +	return pdev->vendor == PCI_VENDOR_ID_INTEL &&
-> +		pdev->device == PCI_DEVICE_ID_INTEL_QUARK_X1000_SOC;
-> +
-> +}
-> +EXPORT_SYMBOL_GPL(usb_is_intel_qrk);
-> +
-> +#define EHCI_INSNREG01		0x84
-> +#define EHCI_INSNREG01_THRESH	0x007F007F	/* Threshold value */
-> +void usb_set_qrk_bulk_thresh(struct pci_dev *pdev)
-> +{
-> +	void __iomem *base, *op_reg_base;
-> +	u8 cap_length;
-> +	u32 val;
-> +
-> +	if (!mmio_resource_enabled(pdev, 0))
-> +		return;
-> +
-> +	base = pci_ioremap_bar(pdev, 0);
-> +	if (base == NULL)
-> +		return;
-> +
-> +	cap_length = readb(base);
-> +	op_reg_base = base + cap_length;
-> +
-> +	val = readl(op_reg_base + EHCI_INSNREG01);
-> +	dev_printk(KERN_INFO, &pdev->dev, "INSNREG01 is 0x%08x\n", val);
-> +
-> +	val = EHCI_INSNREG01_THRESH;
-> +
-> +	writel(val, op_reg_base + EHCI_INSNREG01);
-> +
-> +	val = readl(op_reg_base + EHCI_INSNREG01);
-> +	dev_printk(KERN_INFO, &pdev->dev, "INSNREG01 is 0x%08x\n", val);
+> diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
+> index d67ff71..71657d3 100644
+> --- a/drivers/usb/host/xhci-ring.c
+> +++ b/drivers/usb/host/xhci-ring.c
+> @@ -1433,8 +1433,11 @@ static void handle_cmd_completion(struct xhci_hcd *xhci,
+>  		xhci_handle_cmd_reset_ep(xhci, slot_id, cmd_trb, cmd_comp_code);
+>  		break;
+>  	case TRB_RESET_DEV:
+> -		WARN_ON(slot_id != TRB_TO_SLOT_ID(
+> -				le32_to_cpu(cmd_trb->generic.field[3])));
+> +		/* SLOT_ID field in reset device cmd completion event TRB is 0.
 
-What good will these log messages do anybody?  Is there any reason not 
-to make them debug messages?  Or even leave them out entirely, since 
-you pretty much know beforehand what they're going to say?
+Minor nit...
+Surely is would be better to say 'is undefined' or 'may be zero'.
 
-> +
-> +	iounmap(base);
-> +
-> +}
-> +EXPORT_SYMBOL_GPL(usb_set_qrk_bulk_thresh);
+	David
 
-None of this material belongs in pci-quirks.c.  Please move it into 
-ehci-pci.c.
 
-Alan Stern
 
