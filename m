@@ -1,61 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753716AbaFXODZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 10:03:25 -0400
-Received: from mga11.intel.com ([192.55.52.93]:24941 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753421AbaFXODX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 10:03:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,538,1400050800"; 
-   d="scan'208";a="560222422"
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
-To: <gregkh@linuxfoundation.org>
-Cc: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <dan.j.williams@intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>, stable@vger.kernel.org
-Subject: [PATCH 2/5] xhci: correct burst count field for isoc transfers on 1.0 xhci hosts
-Date: Tue, 24 Jun 2014 17:14:41 +0300
-Message-Id: <1403619322-24704-2-git-send-email-mathias.nyman@linux.intel.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1403619322-24704-1-git-send-email-mathias.nyman@linux.intel.com>
-References: <1403618059-24533-1-git-send-email-mathias.nyman@linux.intel.com>
- <1403619322-24704-1-git-send-email-mathias.nyman@linux.intel.com>
+	id S1753853AbaFXODo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 10:03:44 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:42210 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753478AbaFXODm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 10:03:42 -0400
+MIME-Version: 1.0
+In-Reply-To: <1403618295.4230.13.camel@weser.hi.pengutronix.de>
+References: <1403603667-11302-1-git-send-email-acourbot@nvidia.com>
+ <1403603667-11302-3-git-send-email-acourbot@nvidia.com> <20140624100220.GK32514@n2100.arm.linux.org.uk>
+ <53A953E6.2030503@nvidia.com> <53A95910.20104@nvidia.com> <CAAVeFu+rbCViC87kYCLfxGV18iYq=Pa0ABb+L=iNiYPLn+mR8Q@mail.gmail.com>
+ <53A96EC5.3030701@canonical.com> <1403616338.4230.8.camel@weser.hi.pengutronix.de>
+ <CAAVeFuLcC30BdWierY8Bg0vBmfNCaB=Qs34h790jGB=BRYvGAg@mail.gmail.com> <1403618295.4230.13.camel@weser.hi.pengutronix.de>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Tue, 24 Jun 2014 23:03:21 +0900
+Message-ID: <CAAVeFuKMVHFXU02CZUHEfHfWOq6pDavF0SXogzmnwuAk2K3-zw@mail.gmail.com>
+Subject: Re: [Nouveau] [PATCH v2 2/3] drm/ttm: introduce dma cache sync helpers
+To: Lucas Stach <l.stach@pengutronix.de>
+Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The transfer burst count (TBC) field in xhci 1.0 hosts should be set
-to the number of bursts needed to transfer all packets in a isoc TD.
-Supported values are 0-2 (1 to 3 bursts per service interval).
+On Tue, Jun 24, 2014 at 10:58 PM, Lucas Stach <l.stach@pengutronix.de> wrote:
+> Am Dienstag, den 24.06.2014, 22:52 +0900 schrieb Alexandre Courbot:
+>> On Tue, Jun 24, 2014 at 10:25 PM, Lucas Stach <l.stach@pengutronix.de> wrote:
+>> > Am Dienstag, den 24.06.2014, 14:27 +0200 schrieb Maarten Lankhorst:
+>> >> op 24-06-14 14:23, Alexandre Courbot schreef:
+>> >> > On Tue, Jun 24, 2014 at 7:55 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+>> >> >> On 06/24/2014 07:33 PM, Alexandre Courbot wrote:
+>> >> >>> On 06/24/2014 07:02 PM, Russell King - ARM Linux wrote:
+>> >> >>>> On Tue, Jun 24, 2014 at 06:54:26PM +0900, Alexandre Courbot wrote:
+>> >> >>>>> From: Lucas Stach <dev@lynxeye.de>
+>> >> >>>>>
+>> >> >>>>> On architectures for which access to GPU memory is non-coherent,
+>> >> >>>>> caches need to be flushed and invalidated explicitly at the
+>> >> >>>>> appropriate places. Introduce two small helpers to make things
+>> >> >>>>> easy for TTM-based drivers.
+>> >> >>>>
+>> >> >>>> Have you run this with DMA API debugging enabled?  I suspect you haven't,
+>> >> >>>> and I recommend that you do.
+>> >> >>>
+>> >> >>> # cat /sys/kernel/debug/dma-api/error_count
+>> >> >>> 162621
+>> >> >>>
+>> >> >>> (╯°□°）╯︵ ┻━┻)
+>> >> >>
+>> >> >> *puts table back on its feet*
+>> >> >>
+>> >> >> So, yeah - TTM memory is not allocated using the DMA API, hence we cannot
+>> >> >> use the DMA API to sync it. Thanks Russell for pointing it out.
+>> >> >>
+>> >> >> The only alternative I see here is to flush the CPU caches when syncing for
+>> >> >> the device, and invalidate them for the other direction. Of course if the
+>> >> >> device has caches on its side as well the opposite operation must also be
+>> >> >> done for it. Guess the only way is to handle it all by ourselves here. :/
+>> >> > ... and it really sucks. Basically if we cannot use the DMA API here
+>> >> > we will lose the convenience of having a portable API that does just
+>> >> > the right thing for the underlying platform. Without it we would have
+>> >> > to duplicate arm_iommu_sync_single_for_cpu/device() and we would only
+>> >> > have support for ARM.
+>> >> >
+>> >> > The usage of the DMA API that we are doing might be illegal, but in
+>> >> > essence it does exactly what we need - at least for ARM. What are the
+>> >> > alternatives?
+>> >> Convert TTM to use the dma api? :-)
+>> >
+>> > Actually TTM already has a page alloc backend using the DMA API. It's
+>> > just not used for the standard case right now.
+>>
+>> Indeed, and Nouveau even already makes use of it if CONFIG_SWIOTLB is
+>> set apparently.
+>>
+>> > I would argue that we should just use this page allocator (which has the
+>> > side effect of getting pages from CMA if available -> you are actually
+>> > free to change the caching) and do away with the other allocator in the
+>> > ARM case.
+>>
+>> Mm? Does it mean that CMA memory is not mapped into lowmem? That would
+>> certainly help in the present case, but I wonder how useful it will be
+>> once the iommu support is in place. Will also need to consider
+>> performance of such coherent memory for e.g. user-space mappings.
+>>
+>> Anyway, I will experiment a bit with this tomorrow, thanks!
+>
+> CMA memory is reserved before the lowmem section mapping is set up. It
+> is then mapped with individual 4k pages before giving it back to the
+> buddy allocator.
+> This means CMA pages in use by the kernel are mapped into lowmem, but
+> they are actually unmapped from lowmem once you allocate them as DMA
+> memory.
 
-Formula for TBC calculation is given in xhci spec section 4.11.2.3:
-TBC = roundup( Transfer Descriptor Packet Count / Max Burst Size +1 ) - 1
-
-This patch should be applied to stable kernels since 3.0 that contain
-the commit 5cd43e33b9519143f06f507dd7cbee6b7a621885
-"xhci 1.0: Set transfer burst count field."
-
-Cc: stable@vger.kernel.org # 3.0
-Suggested-by: ShiChun Ma <masc2008@qq.com>
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
----
- drivers/usb/host/xhci-ring.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
-index 71657d3..749fc68 100644
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -3537,7 +3537,7 @@ static unsigned int xhci_get_burst_count(struct xhci_hcd *xhci,
- 		return 0;
- 
- 	max_burst = urb->ep->ss_ep_comp.bMaxBurst;
--	return roundup(total_packet_count, max_burst + 1) - 1;
-+	return DIV_ROUND_UP(total_packet_count, max_burst + 1) - 1;
- }
- 
- /*
--- 
-1.8.3.2
-
+Thanks for the explanation. I really need to spend more time studying
+the DMA allocator. I wonder if all this is already explained somewhere
+in Documentation/ ?
