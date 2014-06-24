@@ -1,36 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753389AbaFXKOj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 06:14:39 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:33901 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751206AbaFXKOi convert rfc822-to-8bit (ORCPT
+	id S1752998AbaFXKQx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 06:16:53 -0400
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:44072 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752014AbaFXKQw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 06:14:38 -0400
-Date: Tue, 24 Jun 2014 10:03:47 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: mingo@redhat.com, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH] sched/idle: Drop !! while calculating 'broadcast'
-Message-ID: <20140624080347.GL13930@laptop.programming.kicks-ass.net>
-References: <0dfbe2976aa108c53e08d3477ea90f6360c1f54c.1403584026.git.viresh.kumar@linaro.org>
+	Tue, 24 Jun 2014 06:16:52 -0400
+Date: Tue, 24 Jun 2014 11:16:45 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Andrew Bresticker <abrestic@chromium.org>, swarren@wwwdotorg.org,
+        olof@lixom.net, Sonny Rao <sonnyrao@chromium.org>,
+        linux-samsung-soc@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Bill Richardson <wfrichar@chromium.org>, sjg@chromium.org,
+        Wolfram Sang <wsa@the-dreams.de>, broonie@kernel.org,
+        sameo@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 02/10] mfd: cros_ec: Allow static din/dout buffers
+ with cros_ec_register()
+Message-ID: <20140624101645.GG13803@lee--X1>
+References: <1403115247-8853-1-git-send-email-dianders@chromium.org>
+ <1403115247-8853-3-git-send-email-dianders@chromium.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <0dfbe2976aa108c53e08d3477ea90f6360c1f54c.1403584026.git.viresh.kumar@linaro.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1403115247-8853-3-git-send-email-dianders@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 24, 2014 at 10:01:01AM +0530, Viresh Kumar wrote:
-> We don't need 'broadcast' to be set to 'zero or one', but to 'zero or non-zero'
-> and so the extra operation to convert it to 'zero or one' can be skipped.
-> 
-> Also change type of 'broadcast' to unsigned int, i.e. type of
-> drv->states[*].flags.
+On Wed, 18 Jun 2014, Doug Anderson wrote:
 
-All true; but does it change anything? That is, does your compiler
-generate better code because of this?
+> From: Bill Richardson <wfrichar@chromium.org>
+> 
+> The lower-level driver may want to provide its own buffers. If so,
+> there's no need to allocate new ones.  This already happens to work
+> just fine (since we check for size of 0 and use devm allocation), but
+> it's good to document it.
+> 
+> [dianders: Resolved conflicts; documented that no code changes needed
+> on mainline]
+> 
+> Signed-off-by: Bill Richardson <wfrichar@chromium.org>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> Reviewed-by: Simon Glass <sjg@chromium.org>
+> ---
+> Changes in v2: None
+> 
+>  include/linux/mfd/cros_ec.h | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+
+Acked-by: Lee Jones <lee.jones@linaro.org>
+
+> diff --git a/include/linux/mfd/cros_ec.h b/include/linux/mfd/cros_ec.h
+> index 7e9fe6e..2ee3190 100644
+> --- a/include/linux/mfd/cros_ec.h
+> +++ b/include/linux/mfd/cros_ec.h
+> @@ -68,8 +68,8 @@ struct cros_ec_msg {
+>   * We use this alignment to keep ARM and x86 happy. Probably word
+>   * alignment would be OK, there might be a small performance advantage
+>   * to using dword.
+> - * @din_size: size of din buffer
+> - * @dout_size: size of dout buffer
+> + * @din_size: size of din buffer to allocate (zero to use static din)
+> + * @dout_size: size of dout buffer to allocate (zero to use static dout)
+>   * @command_send: send a command
+>   * @command_recv: receive a command
+>   * @ec_name: name of EC device (e.g. 'chromeos-ec')
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
