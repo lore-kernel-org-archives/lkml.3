@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754087AbaFXOEA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 10:04:00 -0400
-Received: from mga01.intel.com ([192.55.52.88]:9069 "EHLO mga01.intel.com"
+	id S1754118AbaFXOES (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 10:04:18 -0400
+Received: from mga11.intel.com ([192.55.52.93]:25083 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753886AbaFXOD6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 10:03:58 -0400
+	id S1753886AbaFXOEO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 10:04:14 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,538,1400050800"; 
-   d="scan'208";a="560222739"
+   d="scan'208";a="560222845"
 From: Mathias Nyman <mathias.nyman@linux.intel.com>
 To: <gregkh@linuxfoundation.org>
 Cc: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <dan.j.williams@intel.com>, Julius Werner <jwerner@chromium.org>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: [PATCH 3/5] usb: xhci: Correct last context entry calculation for Configure Endpoint
-Date: Tue, 24 Jun 2014 17:14:42 +0300
-Message-Id: <1403619322-24704-3-git-send-email-mathias.nyman@linux.intel.com>
+        <dan.j.williams@intel.com>, Lu Baolu <baolu.lu@linux.intel.com>,
+        stable@vger.kernel.org, Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [PATCH 4/5] xhci: clear root port wake on bits if controller isn't wake-up capable
+Date: Tue, 24 Jun 2014 17:14:43 +0300
+Message-Id: <1403619322-24704-4-git-send-email-mathias.nyman@linux.intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1403619322-24704-1-git-send-email-mathias.nyman@linux.intel.com>
 References: <1403618059-24533-1-git-send-email-mathias.nyman@linux.intel.com>
@@ -25,148 +25,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julius Werner <jwerner@chromium.org>
+From: Lu Baolu <baolu.lu@linux.intel.com>
 
-The current XHCI driver recalculates the Context Entries field in the
-Slot Context on every add_endpoint() and drop_endpoint() call. In the
-case of drop_endpoint(), it seems to assume that the add_flags will
-always contain every endpoint for the new configuration, which is not
-necessarily correct if you don't make assumptions about how the USB core
-uses the add_endpoint/drop_endpoint interface (add_flags only contains
-endpoints that are new additions in the new configuration).
+When xHCI PCI host is suspended, if do_wakeup is false in xhci_pci_suspend,
+xhci_bus_suspend needs to clear all root port wake on bits. Otherwise some Intel
+platforms may get a spurious wakeup, even if PCI PME# is disabled.
 
-Furthermore, EP0_FLAG is not consistently set in add_flags throughout
-the lifetime of a device. This means that when all endpoints are
-dropped, the Context Entries field can be set to 0 (which is invalid and
-may cause a Parameter Error) or -1 (which is interpreted as 31 and
-causes the driver to keep using the old, incorrect value).
+This patch should be back-ported to kernels as old as 2.6.37, that
+contains the commit 9777e3ce907d4cb5a513902a87ecd03b52499569
+"USB: xHCI: bus power management implementation".
 
-The only surefire way to set this field right is to also take all
-existing endpoints into account, and to force the value to 1 (meaning
-only EP0 is active) if no other endpoint is found. This patch implements
-that as a single step in the final check_bandwidth() call and removes
-the intermediary calculations from add_endpoint() and drop_endpoint().
-
-Signed-off-by: Julius Werner <jwerner@chromium.org>
+Cc: stable@vger.kernel.org # 2.6.37
+Signed-off-by: Lu Baolu <baolu.lu@linux.intel.com>
 Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
 ---
- drivers/usb/host/xhci.c | 51 +++++++++++++++++--------------------------------
- 1 file changed, 18 insertions(+), 33 deletions(-)
+ drivers/usb/host/xhci-hub.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 2b8d9a2..013aabb 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -1582,12 +1582,10 @@ int xhci_drop_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
- 	struct xhci_hcd *xhci;
- 	struct xhci_container_ctx *in_ctx, *out_ctx;
- 	struct xhci_input_control_ctx *ctrl_ctx;
--	struct xhci_slot_ctx *slot_ctx;
--	unsigned int last_ctx;
- 	unsigned int ep_index;
- 	struct xhci_ep_ctx *ep_ctx;
- 	u32 drop_flag;
--	u32 new_add_flags, new_drop_flags, new_slot_info;
-+	u32 new_add_flags, new_drop_flags;
- 	int ret;
+diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
+index 2b998c6..aa79e87 100644
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -22,6 +22,7 @@
  
- 	ret = xhci_check_args(hcd, udev, ep, 1, true, __func__);
-@@ -1634,24 +1632,13 @@ int xhci_drop_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
- 	ctrl_ctx->add_flags &= cpu_to_le32(~drop_flag);
- 	new_add_flags = le32_to_cpu(ctrl_ctx->add_flags);
  
--	last_ctx = xhci_last_valid_endpoint(le32_to_cpu(ctrl_ctx->add_flags));
--	slot_ctx = xhci_get_slot_ctx(xhci, in_ctx);
--	/* Update the last valid endpoint context, if we deleted the last one */
--	if ((le32_to_cpu(slot_ctx->dev_info) & LAST_CTX_MASK) >
--	    LAST_CTX(last_ctx)) {
--		slot_ctx->dev_info &= cpu_to_le32(~LAST_CTX_MASK);
--		slot_ctx->dev_info |= cpu_to_le32(LAST_CTX(last_ctx));
--	}
--	new_slot_info = le32_to_cpu(slot_ctx->dev_info);
--
- 	xhci_endpoint_zero(xhci, xhci->devs[udev->slot_id], ep);
+ #include <linux/slab.h>
++#include <linux/device.h>
+ #include <asm/unaligned.h>
  
--	xhci_dbg(xhci, "drop ep 0x%x, slot id %d, new drop flags = %#x, new add flags = %#x, new slot info = %#x\n",
-+	xhci_dbg(xhci, "drop ep 0x%x, slot id %d, new drop flags = %#x, new add flags = %#x\n",
- 			(unsigned int) ep->desc.bEndpointAddress,
- 			udev->slot_id,
- 			(unsigned int) new_drop_flags,
--			(unsigned int) new_add_flags,
--			(unsigned int) new_slot_info);
-+			(unsigned int) new_add_flags);
- 	return 0;
- }
- 
-@@ -1674,11 +1661,9 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
- 	struct xhci_hcd *xhci;
- 	struct xhci_container_ctx *in_ctx, *out_ctx;
- 	unsigned int ep_index;
--	struct xhci_slot_ctx *slot_ctx;
- 	struct xhci_input_control_ctx *ctrl_ctx;
- 	u32 added_ctxs;
--	unsigned int last_ctx;
--	u32 new_add_flags, new_drop_flags, new_slot_info;
-+	u32 new_add_flags, new_drop_flags;
- 	struct xhci_virt_device *virt_dev;
- 	int ret = 0;
- 
-@@ -1693,7 +1678,6 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
- 		return -ENODEV;
- 
- 	added_ctxs = xhci_get_endpoint_flag(&ep->desc);
--	last_ctx = xhci_last_valid_endpoint(added_ctxs);
- 	if (added_ctxs == SLOT_FLAG || added_ctxs == EP0_FLAG) {
- 		/* FIXME when we have to issue an evaluate endpoint command to
- 		 * deal with ep0 max packet size changing once we get the
-@@ -1759,24 +1743,14 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
- 	 */
- 	new_drop_flags = le32_to_cpu(ctrl_ctx->drop_flags);
- 
--	slot_ctx = xhci_get_slot_ctx(xhci, in_ctx);
--	/* Update the last valid endpoint context, if we just added one past */
--	if ((le32_to_cpu(slot_ctx->dev_info) & LAST_CTX_MASK) <
--	    LAST_CTX(last_ctx)) {
--		slot_ctx->dev_info &= cpu_to_le32(~LAST_CTX_MASK);
--		slot_ctx->dev_info |= cpu_to_le32(LAST_CTX(last_ctx));
--	}
--	new_slot_info = le32_to_cpu(slot_ctx->dev_info);
--
- 	/* Store the usb_device pointer for later use */
- 	ep->hcpriv = udev;
- 
--	xhci_dbg(xhci, "add ep 0x%x, slot id %d, new drop flags = %#x, new add flags = %#x, new slot info = %#x\n",
-+	xhci_dbg(xhci, "add ep 0x%x, slot id %d, new drop flags = %#x, new add flags = %#x\n",
- 			(unsigned int) ep->desc.bEndpointAddress,
- 			udev->slot_id,
- 			(unsigned int) new_drop_flags,
--			(unsigned int) new_add_flags,
--			(unsigned int) new_slot_info);
-+			(unsigned int) new_add_flags);
- 	return 0;
- }
- 
-@@ -2746,8 +2720,19 @@ int xhci_check_bandwidth(struct usb_hcd *hcd, struct usb_device *udev)
- 		ret = 0;
- 		goto command_cleanup;
- 	}
--	xhci_dbg(xhci, "New Input Control Context:\n");
-+	/* Fix up Context Entries field. Minimum value is EP0 == BIT(1). */
- 	slot_ctx = xhci_get_slot_ctx(xhci, virt_dev->in_ctx);
-+	for (i = 31; i >= 1; i--) {
-+		__le32 le32 = cpu_to_le32(BIT(i));
+ #include "xhci.h"
+@@ -1139,7 +1140,9 @@ int xhci_bus_suspend(struct usb_hcd *hcd)
+ 		 * including the USB 3.0 roothub, but only if CONFIG_PM_RUNTIME
+ 		 * is enabled, so also enable remote wake here.
+ 		 */
+-		if (hcd->self.root_hub->do_remote_wakeup) {
++		if (hcd->self.root_hub->do_remote_wakeup
++				&& device_may_wakeup(hcd->self.controller)) {
 +
-+		if ((virt_dev->eps[i-1].ring && !(ctrl_ctx->drop_flags & le32))
-+		    || (ctrl_ctx->add_flags & le32) || i == 1) {
-+			slot_ctx->dev_info &= cpu_to_le32(~LAST_CTX_MASK);
-+			slot_ctx->dev_info |= cpu_to_le32(LAST_CTX(i));
-+			break;
-+		}
-+	}
-+	xhci_dbg(xhci, "New Input Control Context:\n");
- 	xhci_dbg_ctx(xhci, virt_dev->in_ctx,
- 		     LAST_CTX_TO_EP_NUM(le32_to_cpu(slot_ctx->dev_info)));
- 
+ 			if (t1 & PORT_CONNECT) {
+ 				t2 |= PORT_WKOC_E | PORT_WKDISC_E;
+ 				t2 &= ~PORT_WKCONN_E;
 -- 
 1.8.3.2
 
