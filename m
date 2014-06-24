@@ -1,89 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753821AbaFXWkE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 18:40:04 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:45556 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753282AbaFXWj7 (ORCPT
+	id S1752573AbaFXWny (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 18:43:54 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:54755 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751211AbaFXWnw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 18:39:59 -0400
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-To: tiwai@suse.de, chunkeey@googlemail.com, leedom@chelsio.com,
-        cocci@systeme.lip6.fr
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, "Luis R. Rodriguez" <mcgrof@suse.com>,
-        Philip Oswald <poswald@suse.com>,
-        Santosh Rastapur <santosh@chelsio.com>,
-        Jeffrey Cheung <jcheung@suse.com>, David Chang <dchang@suse.com>,
-        Hariprasad Shenai <hariprasad@chelsio.com>
-Subject: [PATCH 2/3] cxgb4: make configuration load use request_firmware_direct()
-Date: Tue, 24 Jun 2014 15:39:42 -0700
-Message-Id: <1403649583-12707-3-git-send-email-mcgrof@do-not-panic.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403649583-12707-1-git-send-email-mcgrof@do-not-panic.com>
-References: <1403649583-12707-1-git-send-email-mcgrof@do-not-panic.com>
+	Tue, 24 Jun 2014 18:43:52 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Jani Nikula <jani.nikula@linux.intel.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Imre Deak <imre.deak@intel.com>
+Subject: Re: linux-next: Tree for Jun 19 (drm/i915)
+Date: Wed, 25 Jun 2014 01:01:36 +0200
+Message-ID: <9626816.NOau5dZfmB@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <87y4wm8reh.fsf@intel.com>
+References: <20140619161632.58b442e4@canb.auug.org.au> <53A31CDA.20207@infradead.org> <87y4wm8reh.fsf@intel.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
+On Tuesday, June 24, 2014 02:43:02 PM Jani Nikula wrote:
+> On Thu, 19 Jun 2014, Randy Dunlap <rdunlap@infradead.org> wrote:
+> > On 06/18/14 23:16, Stephen Rothwell wrote:
+> >> Hi all,
+> >> 
+> >> The powerpc allyesconfig is again broken more than usual.
+> >> 
+> >> Changes since 20140618:
+> >> 
+> >
+> > on i386:
+> >
+> > CONFIG_ACPI is not enabled.
+> >
+> >   CC      drivers/gpu/drm/i915/i915_drv.o
+> > ../drivers/gpu/drm/i915/i915_drv.c: In function 'i915_drm_freeze':
+> > ../drivers/gpu/drm/i915/i915_drv.c:547:2: error: implicit declaration of function 'acpi_target_system_state' [-Werror=implicit-function-declaration]
+> > ../drivers/gpu/drm/i915/i915_drv.c:547:36: error: 'ACPI_STATE_S3' undeclared (first use in this function)
+> > ../drivers/gpu/drm/i915/i915_drv.c:547:36: note: each undeclared identifier is reported only once for each function it appears in
+> >   CC      net/dccp/qpolicy.o
+> > cc1: some warnings being treated as errors
+> > make[5]: *** [drivers/gpu/drm/i915/i915_drv.o] Error 1
+> 
+> Thanks for the report, we'll fix it.
+> 
+> Can anyone explain why include/linux/acpi_bus.h has #ifdef
+> CONFIG_ACPI_SLEEP and conditional build for a dummy inline version of
+> acpi_target_system_state(), *but* that does not get included or used if
+> CONFIG_ACPI=n? Additionally, the combination of CONFIG_ACPI=y and
+> CONFIG_ACPI_SLEEP=n does not seem to work at all.
 
-cxgb4 uses request_firmware() 3 times, one for firmware, one for
-optional configuration files and another for ethtools flash. Since the
-configuration update is optional on devices that don't have a
-configuration file update it means we'd wait unnecessarily for the
-extra udev timeout, which by default is 60 seconds. Avoid this
-extra delay.
+These two things look like bugs to me.  Most likely not tested thoruoughly
+enough.
 
-This was found with the following SmPL patch.
+> So we'll really have to sprinkle #ifdef CONFIG_ACPI all over, instead of
+> neatly using the dummy versions that someone has gone through the
+> trouble of adding?
 
-@ firmware_not_critical @
-expression cf;
-expression config_file;
-expression dev;
-int ret;
-identifier l;
-statement S;
-@@
+No, we don't have to.
 
--	ret = request_firmware(&cf, config_file, dev);
-+	ret = request_firmware_direct(&cf, config_file, dev);
-	if (ret < 0) {
-		... when != goto l;
-		    when != return ret;
-		    when any
-	} else {
-		...
-		release_firmware(cf);
-		...
-	}
-
-Cc: Philip Oswald <poswald@suse.com>
-Cc: Santosh Rastapur <santosh@chelsio.com>
-Cc: Jeffrey Cheung <jcheung@suse.com>
-Cc: David Chang <dchang@suse.com>
-Cc: Casey Leedom <leedom@chelsio.com>
-Cc: Hariprasad Shenai <hariprasad@chelsio.com>
-Cc: Takashi Iwai <tiwai@suse.de>
-Cc: cocci@systeme.lip6.fr
-Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
----
- drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c b/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
-index 02a0ebf..bd57177 100644
---- a/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
-+++ b/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
-@@ -4999,7 +4999,7 @@ static int adap_init0_config(struct adapter *adapter, int reset)
- 		goto bye;
- 	}
- 
--	ret = request_firmware(&cf, fw_config_file, adapter->pdev_dev);
-+	ret = request_firmware_direct(&cf, fw_config_file, adapter->pdev_dev);
- 	if (ret < 0) {
- 		config_name = "On FLASH";
- 		mtype = FW_MEMTYPE_CF_FLASH;
--- 
-2.0.0
+Rafael
 
