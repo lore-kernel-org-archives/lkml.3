@@ -1,65 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752654AbaFXJZR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 05:25:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38082 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751774AbaFXJZP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 05:25:15 -0400
-Date: Tue, 24 Jun 2014 11:25:11 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Lei Li <lilei@linux.vnet.ibm.com>
-Cc: cgroups@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Documentation: remove remove_from_page_cache note
-Message-ID: <20140624092511.GC15337@dhcp22.suse.cz>
-References: <1403601462-32167-1-git-send-email-lilei@linux.vnet.ibm.com>
+	id S1752510AbaFXJ2t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 05:28:49 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:53620 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751407AbaFXJ2r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 05:28:47 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Guenter Roeck <linux@roeck-us.net>, Wim Van Sebroeck <wim@iguana.be>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-watchdog@vger.kernel.org, dbaryshkov@gmail.com,
+        linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
+        dwmw2@infradead.org
+Subject: Re: [PATCH v2 1/6] wdt: sunxi: Move restart code to the watchdog driver
+Date: Tue, 24 Jun 2014 11:27:45 +0200
+Message-ID: <20298828.cYNPnTRxWX@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <53A8A084.3000005@roeck-us.net>
+References: <1399430664-29091-1-git-send-email-maxime.ripard@free-electrons.com> <20140623213046.GR22347@spo001.leaseweb.com> <53A8A084.3000005@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403601462-32167-1-git-send-email-lilei@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:Ei8yeDbaQZor1Xob69BOlPKvoSS7WsGyDVWUcWwXBd/
+ a841SmgXR65jP73OU8pXR5E0txNJYyhs8FYUDk+hLT6do7sqQc
+ 95gF7NHKZkPVcJh9WVx6pvT6DWuVSJdZgiF2t87ovGjaB7Sb/d
+ NNen4oOzKY4D79HP/mT85T5C8ygxLMtdumxzQonn99OAslz+x6
+ puu/lZoTYsUjb6mXcSXg4rm4hDZaqlwIG8Kquci9lEECWaLX4S
+ N3xYMijBMaRIl5YZTCvRS7UCXVK39RAUPtk3jv5DhqLXgjDMGT
+ vM60I4QHN/6GAracqknDZ7tI3J7o2W5KFRoOpjMEIwWyJHruFs
+ Xu0pk38Ho4ddX1sicqE8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 24-06-14 17:17:42, Lei Li wrote:
-> Remove this note as remove_from_page_cache has been renamed to
-> delete_from_page_cache since Commit 702cfbf9 ("mm: goodbye
-> remove_from_page_cache()"), and it doesn't serve any useful
-> purpose.
+On Monday 23 June 2014 14:47:48 Guenter Roeck wrote:
+> > To continue the discussion: I would like to add an excerpt from drivers/watchdog/alim7101_wdt.c
+> > /*
+> >   *      Notifier for system down
+> >   */
+> >
+> > static int wdt_notify_sys(struct notifier_block *this,
+> >                                          unsigned long code, void *unused)
+> > {
+> >          if (code == SYS_DOWN || code == SYS_HALT)
+> >                  wdt_turnoff();
+> >
+> >          if (code == SYS_RESTART) {
+> >                  /*
+> >                   * Cobalt devices have no way of rebooting themselves other
+> >                   * than getting the watchdog to pull reset, so we restart the
+> >                   * watchdog on reboot with no heartbeat
+> >                   */
+> >                  wdt_change(WDT_ENABLE);
+> >                  pr_info("Watchdog timer is now enabled with no heartbeat - should reboot in ~1 second\n");
+> >          }
+> >          return NOTIFY_DONE;
+> > }
+> >
+> > For some systems the watchdog is the only way to reboot... So where we should put it, is not trivial neither...
+> >
 > 
-> Signed-off-by: Lei Li <lilei@linux.vnet.ibm.com>
-
-I am not sure how up-to-date the file is but this small clean up will
-not hurt.
-
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
-> ---
->  Documentation/cgroups/memcg_test.txt | 2 --
->  1 file changed, 2 deletions(-)
+> Agreed. The above definitely doesn't look like a good solution to me.
 > 
-> diff --git a/Documentation/cgroups/memcg_test.txt b/Documentation/cgroups/memcg_test.txt
-> index 8870b02..67c11a3 100644
-> --- a/Documentation/cgroups/memcg_test.txt
-> +++ b/Documentation/cgroups/memcg_test.txt
-> @@ -82,8 +82,6 @@ Under below explanation, we assume CONFIG_MEM_RES_CTRL_SWAP=y.
->  	- add_to_page_cache_locked().
->  
->  	The logic is very clear. (About migration, see below)
-> -	Note: __remove_from_page_cache() is called by remove_from_page_cache()
-> -	and __remove_mapping().
->  
->  6. Shmem(tmpfs) Page Cache
->  	The best way to understand shmem's page state transition is to read
-> -- 
-> 1.8.5.3
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe cgroups" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
--- 
-Michal Hocko
-SUSE Labs
+Right, at the very least, it should be a separate notifier: the existing
+reboot_notifier is meant for things that need to happen /before/ reboot,
+so adding something in there to actually trigger the reboot is by definition
+racy against the other notifiers that may or may not get called after
+this one.
+
+	Arnd
