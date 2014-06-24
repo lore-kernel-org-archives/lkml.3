@@ -1,70 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754838AbaFXSB5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 14:01:57 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:35017 "EHLO kanga.kvack.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751590AbaFXSBz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 14:01:55 -0400
-Date: Tue, 24 Jun 2014 14:01:54 -0400
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>, security@kernel.org
-Cc: linux-aio@kvack.org, linux-kernel@vger.kernel.org,
-        Mateusz Guzik <mguzik@redhat.com>, Petr Matousek <pmatouse@redhat.com>,
-        Kent Overstreet <kmo@daterainc.com>, Jeff Moyer <jmoyer@redhat.com>,
-        stable@vger.kernel.org
-Subject: [PATCH 1/2] aio: fix aio request leak when events are reaped by userspace
-Message-ID: <f8567a3845ac05bb28f3c1b478ef752762bd39ef.1403632276.git.bcrl@kvack.org>
-References: <cover.1403632276.git.bcrl@kvack.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1403632276.git.bcrl@kvack.org>
-User-Agent: Mutt/1.4.2.2i
+	id S1754887AbaFXSCK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 14:02:10 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:61991 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752650AbaFXSCF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 14:02:05 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140624165216.GA29272@redhat.com>
+References: <1403560693-21809-1-git-send-email-keescook@chromium.org>
+	<1403560693-21809-4-git-send-email-keescook@chromium.org>
+	<20140624165216.GA29272@redhat.com>
+Date: Tue, 24 Jun 2014 11:02:04 -0700
+X-Google-Sender-Auth: VjwTwMiWAlt1LW-P62uIPo62kpo
+Message-ID: <CAGXu5j+G8qAkGD7H=3R2iw2ZTqZSrMPa2f=czoEjwSW5wKqUWQ@mail.gmail.com>
+Subject: Re: [PATCH v7 3/9] seccomp: introduce writer locking
+From: Kees Cook <keescook@chromium.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Andy Lutomirski <luto@amacapital.net>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The aio cleanups and optimizations by kmo that were merged into the 3.10
-tree added a regression for userspace event reaping.  Specifically, the
-reference counts are not decremented if the event is reaped in userspace,
-leading to the application being unable to submit further aio requests.
-This patch applies to 3.12+.  A separate backport is required for 3.10/3.11.
-This issue was uncovered as part of CVE-2014-0206.
+On Tue, Jun 24, 2014 at 9:52 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> Kees,
+>
+> I am still trying to force myself to read and try to understand what
+> this series does ;) Just a minor nit so far.
 
-Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
-Cc: stable@vger.kernel.org
-Cc: Kent Overstreet <kmo@daterainc.com>
-Cc: Mateusz Guzik <mguzik@redhat.com>
-Cc: Petr Matousek <pmatouse@redhat.com>
----
- fs/aio.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+The use-case this solves is when a userspace process does not control
+(or know) when a thread is spawned (e.g. via shared library init, or
+LD_PRELOAD) but wants to make sure seccomp filters have been applied
+to it. Specifically, Chrome, when loading some proprietary graphics
+drivers, will have those drivers spawning threads before there has
+been an ability to call seccomp. While some games can be played to get
+ahead of it, it's not always possible, or racey, depending on the
+drivers. With seccomp thread-sync, we can be certain that all threads
+have had the filter applied.
 
-diff --git a/fs/aio.c b/fs/aio.c
-index 4f078c0..6a9c7e4 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -1021,6 +1021,7 @@ void aio_complete(struct kiocb *iocb, long res, long res2)
- 
- 	/* everything turned out well, dispose of the aiocb. */
- 	kiocb_free(iocb);
-+	put_reqs_available(ctx, 1);
- 
- 	/*
- 	 * We have to order our ring_info tail store above and test
-@@ -1100,8 +1101,6 @@ static long aio_read_events_ring(struct kioctx *ctx,
- 	flush_dcache_page(ctx->ring_pages[0]);
- 
- 	pr_debug("%li  h%u t%u\n", ret, head, tail);
--
--	put_reqs_available(ctx, ret);
- out:
- 	mutex_unlock(&ctx->ring_lock);
- 
+>
+> On 06/23, Kees Cook wrote:
+>>
+>> @@ -1142,6 +1168,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+>>  {
+>>       int retval;
+>>       struct task_struct *p;
+>> +     unsigned long irqflags;
+>>
+>>       if ((clone_flags & (CLONE_NEWNS|CLONE_FS)) == (CLONE_NEWNS|CLONE_FS))
+>>               return ERR_PTR(-EINVAL);
+>> @@ -1196,7 +1223,6 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+>>               goto fork_out;
+>>
+>>       ftrace_graph_init_task(p);
+>> -     get_seccomp_filter(p);
+>>
+>>       rt_mutex_init_task(p);
+>>
+>> @@ -1434,7 +1460,13 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+>>               p->parent_exec_id = current->self_exec_id;
+>>       }
+>>
+>> -     spin_lock(&current->sighand->siglock);
+>> +     spin_lock_irqsave(&current->sighand->siglock, irqflags);
+>> +
+>> +     /*
+>> +      * Copy seccomp details explicitly here, in case they were changed
+>> +      * before holding tasklist_lock.
+>> +      */
+>> +     copy_seccomp(p);
+>>
+>>       /*
+>>        * Process group and session signals need to be delivered to just the
+>> @@ -1446,7 +1478,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+>>       */
+>>       recalc_sigpending();
+>>       if (signal_pending(current)) {
+>> -             spin_unlock(&current->sighand->siglock);
+>> +             spin_unlock_irqrestore(&current->sighand->siglock, irqflags);
+>>               write_unlock_irq(&tasklist_lock);
+>>               retval = -ERESTARTNOINTR;
+>>               goto bad_fork_free_pid;
+>> @@ -1486,7 +1518,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+>>       }
+>>
+>>       total_forks++;
+>> -     spin_unlock(&current->sighand->siglock);
+>> +     spin_unlock_irqrestore(&current->sighand->siglock, irqflags);
+>>       write_unlock_irq(&tasklist_lock);
+>>       proc_fork_connector(p);
+>>       cgroup_post_fork(p);
+>
+> It seems that the only change copy_process() needs is copy_seccomp() under the locks.
+> Everythinh else (irqflags games) looks obviously unneeded?
+
+I got irq lock dep warnings without these changes. If they're
+unneeded, that's totally fine by me, but some change (either this or
+markings to keep lockdep happy) is needed.
+
+>> @@ -524,6 +528,9 @@ static long seccomp_set_mode(unsigned long seccomp_mode, char __user *filter)
+>>       }
+>>  #endif
+>>
+>> +     if (unlikely(!lock_task_sighand(current, &irqflags)))
+>> +             goto out_free;
+>> +
+>
+> Unless this task is exiting (namely, it has already called exit_notify()),
+> lock_task_sighand(current) must not fail. Looks like you can simply do
+> spin_lock_irq(->siglock).
+
+Okay. I wasn't sure if I needed to be extra careful here or not. I
+opted for just using lock_task_sighand since that seemed to be the
+most used. :)
+
+-Kees
+
 -- 
-1.8.2.1
-
-
--- 
-"Thought is the essence of where you are now."
+Kees Cook
+Chrome OS Security
