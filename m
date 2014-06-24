@@ -1,64 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752435AbaFXWap (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 18:30:45 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:51024 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751211AbaFXWan (ORCPT
+	id S1752501AbaFXWeG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 18:34:06 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:49053 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211AbaFXWeE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 18:30:43 -0400
-Date: Tue, 24 Jun 2014 15:30:41 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [patch] mm, vmalloc: constify allocation mask
-Message-ID: <alpine.DEB.2.02.1406241527030.29176@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 24 Jun 2014 18:34:04 -0400
+Message-ID: <53A9FCDB.6060805@cogentembedded.com>
+Date: Wed, 25 Jun 2014 02:34:03 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Julius Werner <jwerner@chromium.org>,
+        Vivek Gautam <gautam.vivek@samsung.com>
+CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        kishon <kishon@ti.com>, Mathias Nyman <mathias.nyman@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: Re: [PATCH 2/4] usb: host: xhci-plat: Add support to get PHYs
+References: <1402056736-12674-1-git-send-email-gautam.vivek@samsung.com>	<1402056736-12674-3-git-send-email-gautam.vivek@samsung.com> <CAODwPW-2tbDht8P=KsTyTyeBivFtFMiyCpxd0QFa-cUSRTpJjQ@mail.gmail.com>
+In-Reply-To: <CAODwPW-2tbDht8P=KsTyTyeBivFtFMiyCpxd0QFa-cUSRTpJjQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tmp_mask in the __vmalloc_area_node() iteration never changes so it can be 
-moved into function scope and marked with const.  This causes the movl and 
-orl to only be done once per call rather than area->nr_pages times.
+Hello.
 
-nested_gfp can also be marked const.
+On 06/10/2014 12:22 AM, Julius Werner wrote:
 
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- mm/vmalloc.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+>> diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
+>> index 9ffecd5..453d89e 100644
+>> --- a/drivers/usb/host/xhci.h
+>> +++ b/drivers/usb/host/xhci.h
+>> @@ -1582,6 +1582,9 @@ struct xhci_hcd {
+>>          u32                     port_status_u0;
+>>   /* Compliance Mode Timer Triggered every 2 seconds */
+>>   #define COMP_MODE_RCVRY_MSECS 2000
+>> +       /* phys for the controller */
+>> +       struct phy              *phy2_gen;
+>> +       struct phy              *phy3_gen;
+>>   };
 
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -1566,7 +1566,8 @@ static void *__vmalloc_area_node(struct vm_struct *area, gfp_t gfp_mask,
- 	const int order = 0;
- 	struct page **pages;
- 	unsigned int nr_pages, array_size, i;
--	gfp_t nested_gfp = (gfp_mask & GFP_RECLAIM_MASK) | __GFP_ZERO;
-+	const gfp_t nested_gfp = (gfp_mask & GFP_RECLAIM_MASK) | __GFP_ZERO;
-+	const gfp_t alloc_mask = gfp_mask | __GFP_NOWARN;
- 
- 	nr_pages = get_vm_area_size(area) >> PAGE_SHIFT;
- 	array_size = (nr_pages * sizeof(struct page *));
-@@ -1589,12 +1590,11 @@ static void *__vmalloc_area_node(struct vm_struct *area, gfp_t gfp_mask,
- 
- 	for (i = 0; i < area->nr_pages; i++) {
- 		struct page *page;
--		gfp_t tmp_mask = gfp_mask | __GFP_NOWARN;
- 
- 		if (node == NUMA_NO_NODE)
--			page = alloc_page(tmp_mask);
-+			page = alloc_page(alloc_mask);
- 		else
--			page = alloc_pages_node(node, tmp_mask, order);
-+			page = alloc_pages_node(node, alloc_mask, order);
- 
- 		if (unlikely(!page)) {
- 			/* Successfully allocated i pages, free them in __vunmap() */
+> I don't think adding new variables here and restricting most of this
+> logic to xhci-plat.c (in the next patch) is the best way to do it.
+
+    Indeed.
+
+> There's no conceptual reason why other host controllers (e.g. xhci-pci
+> or even EHCI) could not have a similar need to tune their PHY after
+> reset. PHYs are universal to all host controllers.
+
+> There is already a 'phy' member in struct usb_hcd which I think is
+> mostly unused right now. I think it would be much less
+> confusing/redundant to reuse that member for this purpose (you could
+> still set it up from xhci_plat_probe(), and then call it from
+> hcd_bus_resume() or something like that).
+
+    That member has type 'struct usb_phy *' while here we have 'struct phy *' 
+-- feel the difference.
+    I have already tried adding 'struct phy *gen_phy' to 'struct usb_hcd', 
+however Greg wasn't eager to pick that up so far. Here's the last posting of 
+my patch:
+
+http://marc.info/?l=linux-usb&m=140145917506582
+
+WBR, Sergei
+
