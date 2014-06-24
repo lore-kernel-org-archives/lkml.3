@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932808AbaFXQtt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:49:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60854 "EHLO
+	id S964867AbaFXQuM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:50:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60849 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755197AbaFXPwD (ORCPT
+	with ESMTP id S1754717AbaFXPwB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:52:03 -0400
+	Tue, 24 Jun 2014 11:52:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 13/52] net: fix inet_getid() and ipv6_select_ident() bugs
-Date: Tue, 24 Jun 2014 11:50:28 -0400
-Message-Id: <20140624154714.295706499@linuxfoundation.org>
+        Tom Gundersen <teg@jklm.no>, "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 12/52] net: tunnels - enable module autoloading
+Date: Tue, 24 Jun 2014 11:50:27 -0400
+Message-Id: <20140624154714.241105305@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154713.428945460@linuxfoundation.org>
 References: <20140624154713.428945460@linuxfoundation.org>
@@ -29,84 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Tom Gundersen <teg@jklm.no>
 
-[ Upstream commit 39c36094d78c39e038c1e499b2364e13bce36f54 ]
+[ Upstream commit f98f89a0104454f35a62d681683c844f6dbf4043 ]
 
-I noticed we were sending wrong IPv4 ID in TCP flows when MTU discovery
-is disabled.
-Note how GSO/TSO packets do not have monotonically incrementing ID.
+Enable the module alias hookup to allow tunnel modules to be autoloaded on demand.
 
-06:37:41.575531 IP (id 14227, proto: TCP (6), length: 4396)
-06:37:41.575534 IP (id 14272, proto: TCP (6), length: 65212)
-06:37:41.575544 IP (id 14312, proto: TCP (6), length: 57972)
-06:37:41.575678 IP (id 14317, proto: TCP (6), length: 7292)
-06:37:41.575683 IP (id 14361, proto: TCP (6), length: 63764)
+This is in line with how most other netdev kinds work, and will allow userspace
+to create tunnels without having CAP_SYS_MODULE.
 
-It appears I introduced this bug in linux-3.1.
-
-inet_getid() must return the old value of peer->ip_id_count,
-not the new one.
-
-Lets revert this part, and remove the prevention of
-a null identification field in IPv6 Fragment Extension Header,
-which is dubious and not even done properly.
-
-Fixes: 87c48fa3b463 ("ipv6: make fragment identifications less predictable")
-Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Tom Gundersen <teg@jklm.no>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/net/inetpeer.h |    9 +--------
- net/ipv6/output_core.c |   11 +++--------
- 2 files changed, 4 insertions(+), 16 deletions(-)
+ net/ipv4/ipip.c       |    1 +
+ net/ipv6/ip6_tunnel.c |    1 +
+ net/ipv6/sit.c        |    1 +
+ 3 files changed, 3 insertions(+)
 
---- a/include/net/inetpeer.h
-+++ b/include/net/inetpeer.h
-@@ -178,16 +178,9 @@ static inline void inet_peer_refcheck(co
- /* can be called with or without local BH being disabled */
- static inline int inet_getid(struct inet_peer *p, int more)
- {
--	int old, new;
- 	more++;
- 	inet_peer_refcheck(p);
--	do {
--		old = atomic_read(&p->ip_id_count);
--		new = old + more;
--		if (!new)
--			new = 1;
--	} while (atomic_cmpxchg(&p->ip_id_count, old, new) != old);
--	return new;
-+	return atomic_add_return(more, &p->ip_id_count) - more;
- }
+--- a/net/ipv4/ipip.c
++++ b/net/ipv4/ipip.c
+@@ -483,4 +483,5 @@ static void __exit ipip_fini(void)
+ module_init(ipip_init);
+ module_exit(ipip_fini);
+ MODULE_LICENSE("GPL");
++MODULE_ALIAS_RTNL_LINK("ipip");
+ MODULE_ALIAS_NETDEV("tunl0");
+--- a/net/ipv6/ip6_tunnel.c
++++ b/net/ipv6/ip6_tunnel.c
+@@ -61,6 +61,7 @@
+ MODULE_AUTHOR("Ville Nuorvala");
+ MODULE_DESCRIPTION("IPv6 tunneling device");
+ MODULE_LICENSE("GPL");
++MODULE_ALIAS_RTNL_LINK("ip6tnl");
+ MODULE_ALIAS_NETDEV("ip6tnl0");
  
- #endif /* _NET_INETPEER_H */
---- a/net/ipv6/output_core.c
-+++ b/net/ipv6/output_core.c
-@@ -9,7 +9,7 @@
- void ipv6_select_ident(struct frag_hdr *fhdr, struct rt6_info *rt)
- {
- 	static atomic_t ipv6_fragmentation_id;
--	int old, new;
-+	int ident;
- 
- #if IS_ENABLED(CONFIG_IPV6)
- 	if (rt && !(rt->dst.flags & DST_NOPEER)) {
-@@ -25,13 +25,8 @@ void ipv6_select_ident(struct frag_hdr *
- 		}
- 	}
- #endif
--	do {
--		old = atomic_read(&ipv6_fragmentation_id);
--		new = old + 1;
--		if (!new)
--			new = 1;
--	} while (atomic_cmpxchg(&ipv6_fragmentation_id, old, new) != old);
--	fhdr->identification = htonl(new);
-+	ident = atomic_inc_return(&ipv6_fragmentation_id);
-+	fhdr->identification = htonl(ident);
- }
- EXPORT_SYMBOL(ipv6_select_ident);
- 
+ #ifdef IP6_TNL_DEBUG
+--- a/net/ipv6/sit.c
++++ b/net/ipv6/sit.c
+@@ -1654,4 +1654,5 @@ xfrm_tunnel_failed:
+ module_init(sit_init);
+ module_exit(sit_cleanup);
+ MODULE_LICENSE("GPL");
++MODULE_ALIAS_RTNL_LINK("sit");
+ MODULE_ALIAS_NETDEV("sit0");
 
 
