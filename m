@@ -1,46 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752095AbaFXGix (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 02:38:53 -0400
-Received: from gate.crashing.org ([63.228.1.57]:35180 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751823AbaFXGiw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 02:38:52 -0400
-Message-ID: <1403591911.4587.162.camel@pasglop>
-Subject: Re: [PATCH] powerpc: Fix build warning
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org,
-        Vincent Guittot <vincent.guittot@linaro.org>
-Date: Tue, 24 Jun 2014 16:38:31 +1000
-In-Reply-To: <53A91449.6010701@roeck-us.net>
-References: <1402677499-28289-1-git-send-email-linux@roeck-us.net>
-	 <1403584501.4587.153.camel@pasglop> <53A90718.4050401@roeck-us.net>
-	 <1403588053.4587.160.camel@pasglop> <53A91449.6010701@roeck-us.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2 
-Mime-Version: 1.0
+	id S1751817AbaFXGnb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 02:43:31 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:50871 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751332AbaFXGn3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 02:43:29 -0400
+Message-ID: <53A91E09.7050603@gmail.com>
+Date: Tue, 24 Jun 2014 12:13:21 +0530
+From: Tushar Behera <trblinux@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Doug Anderson <dianders@chromium.org>, Kukjin Kim <kgene.kim@samsung.com>
+CC: mark.rutland@arm.com, Tomasz Figa <tomasz.figa@gmail.com>,
+        linux-samsung-soc@vger.kernel.org, linux@arm.linux.org.uk,
+        ijc+devicetree@hellion.org.uk, devicetree@vger.kernel.org,
+        khilman@linaro.org, pawel.moll@arm.com, swarren@wwwdotorg.org,
+        tushar.b@samsung.com, olof@lixom.net, robh+dt@kernel.org,
+        ben-linux@fluff.org, ch.naveen@samsung.com,
+        linux-arm-kernel@lists.infradead.org, rahul.sharma@samsung.com,
+        sjg@chromium.org, linux-kernel@vger.kernel.org, galak@codeaurora.org,
+        ajaynumb@gmail.com, javier.martinez@collabora.co.uk
+Subject: Re: [PATCH v2] ARM: dts: Add cros_ec to exynos5420-peach-pit and
+ exynos5800-peach-pi
+References: <1403556576-8038-1-git-send-email-dianders@chromium.org>
+In-Reply-To: <1403556576-8038-1-git-send-email-dianders@chromium.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-06-23 at 23:01 -0700, Guenter Roeck wrote:
-> I thought that only happens if a const is dropped, but maybe not.
+On 06/24/2014 02:19 AM, Doug Anderson wrote:
+> This adds cros_ec to exynos5420-peach-pit and exynos5800-peach-pi,
+> including:
+> * The keyboard
+> * The i2c tunnel
+> * The tps65090 under the i2c tunnel
+> * The battery under the i2c tunnel
 > 
-> Sigh. Much easier to break something than to fix it. That would mean
-> to get approval
-> from at least three maintainers, and all that to get rid of a warning.
-> I don't
-> really have time for that. Let's just forget about it and live with
-> the warning.
+> To add extra motivation, it should be noted that tps65090 is one of
+> the things needed to get display-related FETs turned on for pit and
+> pi.
+> 
+> Note that this relies on a few outstanding changes:
+> * Needs (spi: s3c64xx: fix broken "cs_gpios" usage in the driver) and
+>   (spi: s3c64xx: for DT platofrms always get the chipselect info from
+>   DT node) to work properly and match the documented bindings.  See
+>   <https://patchwork.kernel.org/patch/4346701/> and
+>   <https://patchwork.kernel.org/patch/4346711/>
+> 
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> Tested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 
-Well you have my tentative approval :) And trivial ones like that don't
-really need the respective maintainers to respond really, I forget
-regularly and they still go upstream.
+Along with the dependency patches on next-20140623, tested keyboard on
+Peach-Pi board.
 
-Cheers,
-Ben.
+Tested-by: Tushar Behera <tushar.b@samsung.com>
 
+Some comments below.
 
+> ---
+> Changes in v2:
+> - Now just one patch since mfd patch landed.
+> - Rebased to ToT linux-next
+> 
+>  arch/arm/boot/dts/exynos5420-peach-pit.dts | 145 +++++++++++++++++++++++++++++
+>  arch/arm/boot/dts/exynos5800-peach-pi.dts  | 145 +++++++++++++++++++++++++++++
+>  2 files changed, 290 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/exynos5420-peach-pit.dts b/arch/arm/boot/dts/exynos5420-peach-pit.dts
+> index 7649982..581f385 100644
+> --- a/arch/arm/boot/dts/exynos5420-peach-pit.dts
+> +++ b/arch/arm/boot/dts/exynos5420-peach-pit.dts
+
+> +				regulators {
+> +					dcdc1 {
+> +						ti,enable-ext-control;
+> +					};
+> +					dcdc2 {
+> +						ti,enable-ext-control;
+> +					};
+> +					dcdc3 {
+> +						ti,enable-ext-control;
+> +					};
+> +					fet1 {
+
+"tps65090_fet1: fet1 {" ?
+
+> +						regulator-name = "vcd_led";
+> +					};
+> +					tps65090_fet2: fet2 {
+
+I would suggest we add similar labels to fet1, fet3, fet4, fet5 and fet6
+also. That way it would be easy to reference them in subsequent DT nodes.
+
+Same comment for Peach-Pi dts file too.
+
+-- 
+Tushar Behera
