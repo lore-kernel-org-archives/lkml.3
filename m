@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755535AbaFXUcm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:32:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47780 "EHLO
+	id S1755642AbaFXUcz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:32:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47807 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753200AbaFXUck (ORCPT
+	with ESMTP id S1755594AbaFXUcw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:32:40 -0400
+	Tue, 24 Jun 2014 16:32:52 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Lior Amsalem <alior@marvell.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Dan Williams <dan.j.williams@intel.com>,
+Cc: Chen Yucong <slaoub@gmail.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 38/65] dma: mv_xor: Flush descriptors before activating a channel
-Date: Tue, 24 Jun 2014 13:29:58 -0700
-Message-Id: <1403641825-12825-39-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 39/65] hwpoison, hugetlb: lock_page/unlock_page does not match for handling a free hugepage
+Date: Tue, 24 Jun 2014 13:29:59 -0700
+Message-Id: <1403641825-12825-40-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
 References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
@@ -29,46 +28,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+From: Chen Yucong <slaoub@gmail.com>
 
-commit 5a9a55bf9157d3490b0c8c4c81d4708602c26e07 upstream.
+commit b985194c8c0a130ed155b71662e39f7eaea4876f upstream.
 
-We need to use writel() instead of writel_relaxed() when starting
-a channel, to ensure all the descriptors have been flushed before
-the activation.
+For handling a free hugepage in memory failure, the race will happen if
+another thread hwpoisoned this hugepage concurrently.  So we need to
+check PageHWPoison instead of !PageHWPoison.
 
-While at it, remove the unneeded read-modify-write and make the
-code simpler.
+If hwpoison_filter(p) returns true or a race happens, then we need to
+unlock_page(hpage).
 
-Signed-off-by: Lior Amsalem <alior@marvell.com>
-Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-[ kamal: backport to 3.8-stable: context ]
+Signed-off-by: Chen Yucong <slaoub@gmail.com>
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Tested-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Reviewed-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ kamal: backport to 3.8-stable: no renamed mce_bad_pages ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/dma/mv_xor.c | 8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ mm/memory-failure.c | 15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/dma/mv_xor.c b/drivers/dma/mv_xor.c
-index e17fad0..f7f1028 100644
---- a/drivers/dma/mv_xor.c
-+++ b/drivers/dma/mv_xor.c
-@@ -224,12 +224,10 @@ static void mv_set_mode(struct mv_xor_chan *chan,
- 
- static void mv_chan_activate(struct mv_xor_chan *chan)
- {
--	u32 activation;
--
- 	dev_dbg(mv_chan_to_devp(chan), " activate chan.\n");
--	activation = __raw_readl(XOR_ACTIVATION(chan));
--	activation |= 0x1;
--	__raw_writel(activation, XOR_ACTIVATION(chan));
-+
-+	/* writel ensures all descriptors are flushed before activation */
-+	writel(BIT(0), XOR_ACTIVATION(chan));
- }
- 
- static char mv_chan_is_busy(struct mv_xor_chan *chan)
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index c6e4dd3..12b57b7 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1063,15 +1063,16 @@ int memory_failure(unsigned long pfn, int trapno, int flags)
+ 			return 0;
+ 		} else if (PageHuge(hpage)) {
+ 			/*
+-			 * Check "just unpoisoned", "filter hit", and
+-			 * "race with other subpage."
++			 * Check "filter hit" and "race with other subpage."
+ 			 */
+ 			lock_page(hpage);
+-			if (!PageHWPoison(hpage)
+-			    || (hwpoison_filter(p) && TestClearPageHWPoison(p))
+-			    || (p != hpage && TestSetPageHWPoison(hpage))) {
+-				atomic_long_sub(nr_pages, &mce_bad_pages);
+-				return 0;
++			if (PageHWPoison(hpage)) {
++				if ((hwpoison_filter(p) && TestClearPageHWPoison(p))
++				    || (p != hpage && TestSetPageHWPoison(hpage))) {
++					atomic_long_sub(nr_pages, &mce_bad_pages);
++					unlock_page(hpage);
++					return 0;
++				}
+ 			}
+ 			set_page_hwpoison_huge_page(hpage);
+ 			res = dequeue_hwpoisoned_huge_page(hpage);
 -- 
 1.9.1
 
