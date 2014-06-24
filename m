@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755439AbaFXPwe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:52:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60910 "EHLO
+	id S1755415AbaFXPwc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:52:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60907 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754707AbaFXPw2 (ORCPT
+	with ESMTP id S1755350AbaFXPw0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:52:28 -0400
+	Tue, 24 Jun 2014 11:52:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 19/52] net: force a list_del() in unregister_netdevice_many()
-Date: Tue, 24 Jun 2014 11:50:34 -0400
-Message-Id: <20140624154714.639041760@linuxfoundation.org>
+        Tejas Vaykole <tejas.vaykole@calsoftinc.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.10 02/52] iscsi-target: Reject mutual authentication with reflected CHAP_C
+Date: Tue, 24 Jun 2014 11:50:17 -0400
+Message-Id: <20140624154713.587224218@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154713.428945460@linuxfoundation.org>
 References: <20140624154713.428945460@linuxfoundation.org>
@@ -29,86 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-[ Upstream commit 87757a917b0b3c0787e0563c679762152be81312 ]
+commit 1d2b60a5545942b1376cb48c1d55843d71e3a08f upstream.
 
-unregister_netdevice_many() API is error prone and we had too
-many bugs because of dangling LIST_HEAD on stacks.
+This patch adds an explicit check in chap_server_compute_md5() to ensure
+the CHAP_C value received from the initiator during mutual authentication
+does not match the original CHAP_C provided by the target.
 
-See commit f87e6f47933e3e ("net: dont leave active on stack LIST_HEAD")
+This is in line with RFC-3720, section 8.2.1:
 
-In fact, instead of making sure no caller leaves an active list_head,
-just force a list_del() in the callee. No one seems to need to access
-the list after unregister_netdevice_many()
+   Originators MUST NOT reuse the CHAP challenge sent by the Responder
+   for the other direction of a bidirectional authentication.
+   Responders MUST check for this condition and close the iSCSI TCP
+   connection if it occurs.
 
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Tejas Vaykole <tejas.vaykole@calsoftinc.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/macvlan.c |    1 -
- net/core/dev.c        |    5 ++++-
- net/core/rtnetlink.c  |    1 -
- net/mac80211/iface.c  |    1 -
- 4 files changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/net/macvlan.c
-+++ b/drivers/net/macvlan.c
-@@ -961,7 +961,6 @@ static int macvlan_device_event(struct n
- 		list_for_each_entry_safe(vlan, next, &port->vlans, list)
- 			vlan->dev->rtnl_link_ops->dellink(vlan->dev, &list_kill);
- 		unregister_netdevice_many(&list_kill);
--		list_del(&list_kill);
- 		break;
- 	case NETDEV_PRE_TYPE_CHANGE:
- 		/* Forbid underlaying device to change its type. */
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -5827,6 +5827,9 @@ EXPORT_SYMBOL(unregister_netdevice_queue
- /**
-  *	unregister_netdevice_many - unregister many devices
-  *	@head: list of devices
-+ *
-+ *  Note: As most callers use a stack allocated list_head,
-+ *  we force a list_del() to make sure stack wont be corrupted later.
-  */
- void unregister_netdevice_many(struct list_head *head)
- {
-@@ -5836,6 +5839,7 @@ void unregister_netdevice_many(struct li
- 		rollback_registered_many(head);
- 		list_for_each_entry(dev, head, unreg_list)
- 			net_set_todo(dev);
-+		list_del(head);
+---
+ drivers/target/iscsi/iscsi_target_auth.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+--- a/drivers/target/iscsi/iscsi_target_auth.c
++++ b/drivers/target/iscsi/iscsi_target_auth.c
+@@ -316,6 +316,16 @@ static int chap_server_compute_md5(
+ 		goto out;
  	}
- }
- EXPORT_SYMBOL(unregister_netdevice_many);
-@@ -6252,7 +6256,6 @@ static void __net_exit default_device_ex
- 		}
- 	}
- 	unregister_netdevice_many(&dev_kill_list);
--	list_del(&dev_kill_list);
- 	rtnl_unlock();
- }
- 
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -1601,7 +1601,6 @@ static int rtnl_dellink(struct sk_buff *
- 
- 	ops->dellink(dev, &list_kill);
- 	unregister_netdevice_many(&list_kill);
--	list_del(&list_kill);
- 	return 0;
- }
- 
---- a/net/mac80211/iface.c
-+++ b/net/mac80211/iface.c
-@@ -1746,7 +1746,6 @@ void ieee80211_remove_interfaces(struct
- 	}
- 	mutex_unlock(&local->iflist_mtx);
- 	unregister_netdevice_many(&unreg_list);
--	list_del(&unreg_list);
- 
- 	list_for_each_entry_safe(sdata, tmp, &wdev_list, list) {
- 		list_del(&sdata->list);
+ 	/*
++	 * During mutual authentication, the CHAP_C generated by the
++	 * initiator must not match the original CHAP_C generated by
++	 * the target.
++	 */
++	if (!memcmp(challenge_binhex, chap->challenge, CHAP_CHALLENGE_LENGTH)) {
++		pr_err("initiator CHAP_C matches target CHAP_C, failing"
++		       " login attempt\n");
++		goto out;
++	}
++	/*
+ 	 * Generate CHAP_N and CHAP_R for mutual authentication.
+ 	 */
+ 	tfm = crypto_alloc_hash("md5", 0, CRYPTO_ALG_ASYNC);
 
 
