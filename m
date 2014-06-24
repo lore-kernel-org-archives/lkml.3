@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756020AbaFXPzY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:55:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33166 "EHLO
+	id S1755760AbaFXQQw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:16:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33176 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755102AbaFXPzT (ORCPT
+	with ESMTP id S1756002AbaFXPzX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:55:19 -0400
+	Tue, 24 Jun 2014 11:55:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Lars-Peter Clausen <lars@metafoo.de>, Jaroslav Kysela <perex@perex.cz>,
         Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.14 64/68] ALSA: control: Protect user controls against concurrent access
-Date: Tue, 24 Jun 2014 11:51:23 -0400
-Message-Id: <20140624154726.895017347@linuxfoundation.org>
+Subject: [PATCH 3.14 66/68] ALSA: control: Dont access controls outside of protected regions
+Date: Tue, 24 Jun 2014 11:51:25 -0400
+Message-Id: <20140624154726.994489695@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154723.907894814@linuxfoundation.org>
 References: <20140624154723.907894814@linuxfoundation.org>
@@ -31,15 +31,11 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit 07f4d9d74a04aa7c72c5dae0ef97565f28f17b92 upstream.
+commit fd9f26e4eca5d08a27d12c0933fceef76ed9663d upstream.
 
-The user-control put and get handlers as well as the tlv do not protect against
-concurrent access from multiple threads. Since the state of the control is not
-updated atomically it is possible that either two write operations or a write
-and a read operation race against each other. Both can lead to arbitrary memory
-disclosure. This patch introduces a new lock that protects user-controls from
-concurrent access. Since applications typically access controls sequentially
-than in parallel a single lock per card should be fine.
+A control that is visible on the card->controls list can be freed at any time.
+This means we must not access any of its memory while not holding the
+controls_rw_lock. Otherwise we risk a use after free access.
 
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 Acked-by: Jaroslav Kysela <perex@perex.cz>
@@ -47,111 +43,71 @@ Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/sound/core.h |    2 ++
- sound/core/control.c |   31 +++++++++++++++++++++++++------
- sound/core/init.c    |    1 +
- 3 files changed, 28 insertions(+), 6 deletions(-)
+ sound/core/control.c |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
---- a/include/sound/core.h
-+++ b/include/sound/core.h
-@@ -121,6 +121,8 @@ struct snd_card {
- 	int user_ctl_count;		/* count of all user controls */
- 	struct list_head controls;	/* all controls for this card */
- 	struct list_head ctl_files;	/* active control files */
-+	struct mutex user_ctl_lock;	/* protects user controls against
-+					   concurrent access */
- 
- 	struct snd_info_entry *proc_root;	/* root for soundcard specific files */
- 	struct snd_info_entry *proc_id;	/* the card id */
 --- a/sound/core/control.c
 +++ b/sound/core/control.c
-@@ -992,6 +992,7 @@ static int snd_ctl_elem_unlock(struct sn
- 
- struct user_element {
- 	struct snd_ctl_elem_info info;
-+	struct snd_card *card;
- 	void *elem_data;		/* element data */
- 	unsigned long elem_data_size;	/* size of element data in bytes */
- 	void *tlv_data;			/* TLV data */
-@@ -1035,7 +1036,9 @@ static int snd_ctl_elem_user_get(struct
+@@ -331,6 +331,7 @@ int snd_ctl_add(struct snd_card *card, s
  {
- 	struct user_element *ue = kcontrol->private_data;
+ 	struct snd_ctl_elem_id id;
+ 	unsigned int idx;
++	unsigned int count;
+ 	int err = -EINVAL;
  
-+	mutex_lock(&ue->card->user_ctl_lock);
- 	memcpy(&ucontrol->value, ue->elem_data, ue->elem_data_size);
-+	mutex_unlock(&ue->card->user_ctl_lock);
+ 	if (! kcontrol)
+@@ -359,8 +360,9 @@ int snd_ctl_add(struct snd_card *card, s
+ 	card->controls_count += kcontrol->count;
+ 	kcontrol->id.numid = card->last_numid + 1;
+ 	card->last_numid += kcontrol->count;
++	count = kcontrol->count;
+ 	up_write(&card->controls_rwsem);
+-	for (idx = 0; idx < kcontrol->count; idx++, id.index++, id.numid++)
++	for (idx = 0; idx < count; idx++, id.index++, id.numid++)
+ 		snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_ADD, &id);
  	return 0;
- }
  
-@@ -1044,10 +1047,12 @@ static int snd_ctl_elem_user_put(struct
+@@ -389,6 +391,7 @@ int snd_ctl_replace(struct snd_card *car
+ 		    bool add_on_replace)
  {
- 	int change;
- 	struct user_element *ue = kcontrol->private_data;
--	
-+
-+	mutex_lock(&ue->card->user_ctl_lock);
- 	change = memcmp(&ucontrol->value, ue->elem_data, ue->elem_data_size) != 0;
- 	if (change)
- 		memcpy(ue->elem_data, &ucontrol->value, ue->elem_data_size);
-+	mutex_unlock(&ue->card->user_ctl_lock);
- 	return change;
- }
+ 	struct snd_ctl_elem_id id;
++	unsigned int count;
+ 	unsigned int idx;
+ 	struct snd_kcontrol *old;
+ 	int ret;
+@@ -424,8 +427,9 @@ add:
+ 	card->controls_count += kcontrol->count;
+ 	kcontrol->id.numid = card->last_numid + 1;
+ 	card->last_numid += kcontrol->count;
++	count = kcontrol->count;
+ 	up_write(&card->controls_rwsem);
+-	for (idx = 0; idx < kcontrol->count; idx++, id.index++, id.numid++)
++	for (idx = 0; idx < count; idx++, id.index++, id.numid++)
+ 		snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_ADD, &id);
+ 	return 0;
  
-@@ -1067,19 +1072,32 @@ static int snd_ctl_elem_user_tlv(struct
- 		new_data = memdup_user(tlv, size);
- 		if (IS_ERR(new_data))
- 			return PTR_ERR(new_data);
-+		mutex_lock(&ue->card->user_ctl_lock);
- 		change = ue->tlv_data_size != size;
- 		if (!change)
- 			change = memcmp(ue->tlv_data, new_data, size);
- 		kfree(ue->tlv_data);
- 		ue->tlv_data = new_data;
- 		ue->tlv_data_size = size;
-+		mutex_unlock(&ue->card->user_ctl_lock);
- 	} else {
--		if (! ue->tlv_data_size || ! ue->tlv_data)
--			return -ENXIO;
--		if (size < ue->tlv_data_size)
--			return -ENOSPC;
-+		int ret = 0;
-+
-+		mutex_lock(&ue->card->user_ctl_lock);
-+		if (!ue->tlv_data_size || !ue->tlv_data) {
-+			ret = -ENXIO;
-+			goto err_unlock;
-+		}
-+		if (size < ue->tlv_data_size) {
-+			ret = -ENOSPC;
-+			goto err_unlock;
-+		}
- 		if (copy_to_user(tlv, ue->tlv_data, ue->tlv_data_size))
--			return -EFAULT;
-+			ret = -EFAULT;
-+err_unlock:
-+		mutex_unlock(&ue->card->user_ctl_lock);
-+		if (ret)
-+			return ret;
+@@ -898,9 +902,9 @@ static int snd_ctl_elem_write(struct snd
+ 			result = kctl->put(kctl, control);
+ 		}
+ 		if (result > 0) {
++			struct snd_ctl_elem_id id = control->id;
+ 			up_read(&card->controls_rwsem);
+-			snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_VALUE,
+-				       &control->id);
++			snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_VALUE, &id);
+ 			return 0;
+ 		}
  	}
- 	return change;
- }
-@@ -1211,6 +1229,7 @@ static int snd_ctl_elem_add(struct snd_c
- 	ue = kzalloc(sizeof(struct user_element) + private_size, GFP_KERNEL);
- 	if (ue == NULL)
- 		return -ENOMEM;
-+	ue->card = card;
- 	ue->info = *info;
- 	ue->info.access = 0;
- 	ue->elem_data = (char *)ue + sizeof(*ue);
---- a/sound/core/init.c
-+++ b/sound/core/init.c
-@@ -218,6 +218,7 @@ int snd_card_create(int idx, const char
- 	INIT_LIST_HEAD(&card->devices);
- 	init_rwsem(&card->controls_rwsem);
- 	rwlock_init(&card->ctl_files_rwlock);
-+	mutex_init(&card->user_ctl_lock);
- 	INIT_LIST_HEAD(&card->controls);
- 	INIT_LIST_HEAD(&card->ctl_files);
- 	spin_lock_init(&card->files_lock);
+@@ -1334,8 +1338,9 @@ static int snd_ctl_tlv_ioctl(struct snd_
+ 		}
+ 		err = kctl->tlv.c(kctl, op_flag, tlv.length, _tlv->tlv);
+ 		if (err > 0) {
++			struct snd_ctl_elem_id id = kctl->id;
+ 			up_read(&card->controls_rwsem);
+-			snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_TLV, &kctl->id);
++			snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_TLV, &id);
+ 			return 0;
+ 		}
+ 	} else {
 
 
