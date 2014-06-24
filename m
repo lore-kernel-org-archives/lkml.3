@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030192AbaFXQhS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:37:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32830 "EHLO
+	id S965325AbaFXQhQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:37:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32835 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932146AbaFXPxX (ORCPT
+	with ESMTP id S1752167AbaFXPxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:53:23 -0400
+	Tue, 24 Jun 2014 11:53:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Lars-Peter Clausen <lars@metafoo.de>, Jaroslav Kysela <perex@perex.cz>,
         Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 50/52] ALSA: control: Dont access controls outside of protected regions
-Date: Tue, 24 Jun 2014 11:51:05 -0400
-Message-Id: <20140624154716.461030124@linuxfoundation.org>
+Subject: [PATCH 3.10 51/52] ALSA: control: Handle numid overflow
+Date: Tue, 24 Jun 2014 11:51:06 -0400
+Message-Id: <20140624154716.517729634@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154713.428945460@linuxfoundation.org>
 References: <20140624154713.428945460@linuxfoundation.org>
@@ -31,11 +31,16 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit fd9f26e4eca5d08a27d12c0933fceef76ed9663d upstream.
+commit ac902c112d90a89e59916f751c2745f4dbdbb4bd upstream.
 
-A control that is visible on the card->controls list can be freed at any time.
-This means we must not access any of its memory while not holding the
-controls_rw_lock. Otherwise we risk a use after free access.
+Each control gets automatically assigned its numids when the control is created.
+The allocation is done by incrementing the numid by the amount of allocated
+numids per allocation. This means that excessive creation and destruction of
+controls (e.g. via SNDRV_CTL_IOCTL_ELEM_ADD/REMOVE) can cause the id to
+eventually overflow. Currently when this happens for the control that caused the
+overflow kctl->id.numid + kctl->count will also over flow causing it to be
+smaller than kctl->id.numid. Most of the code assumes that this is something
+that can not happen, so we need to make sure that it won't happen
 
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 Acked-by: Jaroslav Kysela <perex@perex.cz>
@@ -43,71 +48,21 @@ Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/core/control.c |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ sound/core/control.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
 --- a/sound/core/control.c
 +++ b/sound/core/control.c
-@@ -331,6 +331,7 @@ int snd_ctl_add(struct snd_card *card, s
+@@ -289,6 +289,10 @@ static bool snd_ctl_remove_numid_conflic
  {
- 	struct snd_ctl_elem_id id;
- 	unsigned int idx;
-+	unsigned int count;
- 	int err = -EINVAL;
+ 	struct snd_kcontrol *kctl;
  
- 	if (! kcontrol)
-@@ -359,8 +360,9 @@ int snd_ctl_add(struct snd_card *card, s
- 	card->controls_count += kcontrol->count;
- 	kcontrol->id.numid = card->last_numid + 1;
- 	card->last_numid += kcontrol->count;
-+	count = kcontrol->count;
- 	up_write(&card->controls_rwsem);
--	for (idx = 0; idx < kcontrol->count; idx++, id.index++, id.numid++)
-+	for (idx = 0; idx < count; idx++, id.index++, id.numid++)
- 		snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_ADD, &id);
- 	return 0;
- 
-@@ -389,6 +391,7 @@ int snd_ctl_replace(struct snd_card *car
- 		    bool add_on_replace)
- {
- 	struct snd_ctl_elem_id id;
-+	unsigned int count;
- 	unsigned int idx;
- 	struct snd_kcontrol *old;
- 	int ret;
-@@ -424,8 +427,9 @@ add:
- 	card->controls_count += kcontrol->count;
- 	kcontrol->id.numid = card->last_numid + 1;
- 	card->last_numid += kcontrol->count;
-+	count = kcontrol->count;
- 	up_write(&card->controls_rwsem);
--	for (idx = 0; idx < kcontrol->count; idx++, id.index++, id.numid++)
-+	for (idx = 0; idx < count; idx++, id.index++, id.numid++)
- 		snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_ADD, &id);
- 	return 0;
- 
-@@ -898,9 +902,9 @@ static int snd_ctl_elem_write(struct snd
- 			result = kctl->put(kctl, control);
- 		}
- 		if (result > 0) {
-+			struct snd_ctl_elem_id id = control->id;
- 			up_read(&card->controls_rwsem);
--			snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_VALUE,
--				       &control->id);
-+			snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_VALUE, &id);
- 			return 0;
- 		}
- 	}
-@@ -1334,8 +1338,9 @@ static int snd_ctl_tlv_ioctl(struct snd_
- 		}
- 		err = kctl->tlv.c(kctl, op_flag, tlv.length, _tlv->tlv);
- 		if (err > 0) {
-+			struct snd_ctl_elem_id id = kctl->id;
- 			up_read(&card->controls_rwsem);
--			snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_TLV, &kctl->id);
-+			snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_TLV, &id);
- 			return 0;
- 		}
- 	} else {
++	/* Make sure that the ids assigned to the control do not wrap around */
++	if (card->last_numid >= UINT_MAX - count)
++		card->last_numid = 0;
++
+ 	list_for_each_entry(kctl, &card->controls, list) {
+ 		if (kctl->id.numid < card->last_numid + 1 + count &&
+ 		    kctl->id.numid + kctl->count > card->last_numid + 1) {
 
 
