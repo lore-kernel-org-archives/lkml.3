@@ -1,57 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753338AbaFXTUI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 15:20:08 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:40515 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752599AbaFXTUE (ORCPT
+	id S1754402AbaFXTVX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 15:21:23 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:56458 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751413AbaFXTVV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 15:20:04 -0400
-Message-ID: <53A9CF5F.6040806@bjorling.me>
-Date: Tue, 24 Jun 2014 21:19:59 +0200
-From: Matias Bjorling <m@bjorling.me>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 24 Jun 2014 15:21:21 -0400
 MIME-Version: 1.0
-To: Keith Busch <keith.busch@intel.com>
-CC: willy@linux.intel.com, sbradshaw@micron.com, axboe@fb.com,
-        tom.leiming@gmail.com, hch@infradead.org, linux-kernel@vger.kernel.org,
-        linux-nvme@lists.infradead.org
-Subject: Re: [PATCH v8] NVMe: convert to blk-mq
-References: <1402661396-19207-1-git-send-email-m@bjorling.me> <1402661396-19207-2-git-send-email-m@bjorling.me> <alpine.LRH.2.03.1406160931400.4699@AMR>
-In-Reply-To: <alpine.LRH.2.03.1406160931400.4699@AMR>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140624191815.GA3623@redhat.com>
+References: <1403560693-21809-1-git-send-email-keescook@chromium.org>
+ <1403560693-21809-5-git-send-email-keescook@chromium.org> <20140624191815.GA3623@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 24 Jun 2014 12:20:59 -0700
+Message-ID: <CALCETrVgpP=zOtiQafVgcic2T95TdEM5DTvHYXWTbcZ14xBqHQ@mail.gmail.com>
+Subject: Re: [PATCH v7 4/9] seccomp: move no_new_privs into seccomp
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Kees Cook <keescook@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        Linux API <linux-api@vger.kernel.org>, X86 ML <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Den 16-06-2014 17:57, Keith Busch skrev:
-> On Fri, 13 Jun 2014, Matias Bjørling wrote:
->> This converts the current NVMe driver to utilize the blk-mq layer.
->
->> static void nvme_reset_notify(struct pci_dev *pdev, bool prepare)
->> {
->> -       struct nvme_dev *dev = pci_get_drvdata(pdev);
->> +    struct nvme_dev *dev = pci_get_drvdata(pdev);
+On Tue, Jun 24, 2014 at 12:18 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 06/23, Kees Cook wrote:
 >>
->> -       if (prepare)
->> -               nvme_dev_shutdown(dev);
->> -       else
->> -               nvme_dev_resume(dev);
->> +    spin_lock(&dev_list_lock);
->> +    if (prepare)
->> +        list_del_init(&dev->node);
->> +    else
->> +        list_add(&dev->node, &dev_list);
->> +    spin_unlock(&dev_list_lock);
->> }
->> +        if (nvme_create_queue(dev->queues[i], i))
->>             break;
->> }
+>> --- a/include/linux/seccomp.h
+>> +++ b/include/linux/seccomp.h
+>> @@ -3,6 +3,8 @@
+>>
+>>  #include <uapi/linux/seccomp.h>
+>>
+>> +#define SECCOMP_FLAG_NO_NEW_PRIVS    0       /* task may not gain privs */
+>> +
+>>  #ifdef CONFIG_SECCOMP
+>>
+>>  #include <linux/thread_info.h>
+>> @@ -16,6 +18,7 @@ struct seccomp_filter;
+>>   *         system calls available to a process.
+>>   * @filter: must always point to a valid seccomp-filter or NULL as it is
+>>   *          accessed without locking during system call entry.
+>> + * @flags: flags under task->sighand->siglock lock
+>>   *
+>>   *          @filter must only be accessed from the context of current as there
+>>   *          is no read locking.
+>> @@ -23,6 +26,7 @@ struct seccomp_filter;
+>>  struct seccomp {
+>>       int mode;
+>>       struct seccomp_filter *filter;
+>> +     unsigned long flags;
+>>  };
+>>
+>>  extern int __secure_computing(int);
+>> @@ -51,7 +55,9 @@ static inline int seccomp_mode(struct seccomp *s)
+>>
+>>  #include <linux/errno.h>
+>>
+>> -struct seccomp { };
+>> +struct seccomp {
+>> +     unsigned long flags;
+>> +};
 >
-> The above change was just error injection test code so you can cause
-> a device to become unresponsive and trigger the timeout handling.
+> A bit messy ;)
 >
-> This latest is otherwise stable on my dev machine.
+> I am wondering if we can simply do
+>
+>         static inline bool current_no_new_privs(void)
+>         {
+>                 if (current->no_new_privs)
+>                         return true;
+>
+>         #ifdef CONFIG_SECCOMP
+>                 if (test_thread_flag(TIF_SECCOMP))
+>                         return true;
+>         #endif
 
-May I add an Acked-by from you?
+Nope -- privileged users can enable seccomp w/o nnp.
+
+--Andy
