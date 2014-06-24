@@ -1,120 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754847AbaFXTqG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 15:46:06 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:47854 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753578AbaFXTqC (ORCPT
+	id S1752800AbaFXTsw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 15:48:52 -0400
+Received: from mailout1.w2.samsung.com ([211.189.100.11]:41796 "EHLO
+	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750762AbaFXTsu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 15:46:02 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140624183024.GA1258@redhat.com>
-References: <1403560693-21809-1-git-send-email-keescook@chromium.org>
-	<1403560693-21809-4-git-send-email-keescook@chromium.org>
-	<20140624183024.GA1258@redhat.com>
-Date: Tue, 24 Jun 2014 12:46:01 -0700
-X-Google-Sender-Auth: DvLfigLX9yAwX06Up2bO3zGXK9Y
-Message-ID: <CAGXu5j+Khz+HH3QvfNWa3FdUspTEf-xLchBMLyCC_QN42xpLZA@mail.gmail.com>
-Subject: Re: [PATCH v7 3/9] seccomp: introduce writer locking
-From: Kees Cook <keescook@chromium.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Andy Lutomirski <luto@amacapital.net>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
-        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 24 Jun 2014 15:48:50 -0400
+X-AuditID: cbfec37b-b7fbe6d000006742-86-53a9d620a8e9
+Message-id: <53A9D61E.1040702@samsung.com>
+Date: Tue, 24 Jun 2014 13:48:46 -0600
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.6.0
+MIME-version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux@roeck-us.net, satoru.takeuchi@gmail.com, stable@vger.kernel.org,
+        shuah Khan <shuah.kh@samsung.com>
+Subject: Re: [PATCH 3.10 00/52] 3.10.45-stable review
+References: <20140624154713.428945460@linuxfoundation.org>
+In-reply-to: <20140624154713.428945460@linuxfoundation.org>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.134.222]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrHLMWRmVeSWpSXmKPExsVy+t9hX12FayuDDSZNNLGYs34Nm0Xz4vVs
+	Fpd3zWGzeLLwDJPF1FMTWCwWbHzEaPGo7y27A7vHzll32T1OzPjN4rF/7hog93sDu8fnTXIB
+	rFFcNimpOZllqUX6dglcGQtvGRUcY6u49GcOcwPjLNYuRk4OCQETifeX/rNA2GISF+6tZ+ti
+	5OIQEljGKDHr+CVWCKeXSWL6lXlQzjZGiW3fPwGVcXDwCmhJ7J4N1s0ioCqx+fgUJhCbTUBd
+	4vPrHewgtpCAnETTktXMILaoQITEgb5nYJt5BQQlfky+B9YrIhAssfbrQkaQ+cwCqxglZh7/
+	C5YQFjCVWPbsIAvILiEBK4lzG4NBwpwC1hITj2wCm88sYCbxqGUdM4QtL7F5zVtmiL3KEn8u
+	n2KC+ExZ4smU84wTGEVmIVk9C0n7LCTtCxiZVzGKlRYnFxQnpadWGOkVJ+YWl+al6yXn525i
+	hMRR9Q7Gu19tDjEKcDAq8fBemL0yWIg1say4MvcQowQHs5IIr2k3UIg3JbGyKrUoP76oNCe1
+	+BAjEwenVAMjs3P06rq+GRPfBGVKV2R+m/XuytRPe1R1Ug9uzPi4/MrMRvNqJt14hQXdNwNU
+	xUOVPtavvnDn3uQnr0ILfTa+j3aU+ZNZ+zZ10p+zm+Of1pwMj7tzZZcK2yWLjVzzKhvcGvr3
+	fvB93aAiLBi0oMfGWSd1XkXw3zMv3dJUbwXaPPp+5Jgt1zM5JZbijERDLeai4kQAa2iS74EC	AAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 24, 2014 at 11:30 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> I am puzzled by the usage of smp_load_acquire(),
-
-It was recommended by Andy Lutomirski in preference to ACCESS_ONCE().
-
-> On 06/23, Kees Cook wrote:
->>
->>  static u32 seccomp_run_filters(int syscall)
->>  {
->> -     struct seccomp_filter *f;
->> +     struct seccomp_filter *f = smp_load_acquire(&current->seccomp.filter);
->>       struct seccomp_data sd;
->>       u32 ret = SECCOMP_RET_ALLOW;
->>
->>       /* Ensure unexpected behavior doesn't result in failing open. */
->> -     if (WARN_ON(current->seccomp.filter == NULL))
->> +     if (WARN_ON(f == NULL))
->>               return SECCOMP_RET_KILL;
->>
->>       populate_seccomp_data(&sd);
->> @@ -186,9 +186,8 @@ static u32 seccomp_run_filters(int syscall)
->>        * All filters in the list are evaluated and the lowest BPF return
->>        * value always takes priority (ignoring the DATA).
->>        */
->> -     for (f = current->seccomp.filter; f; f = f->prev) {
->> +     for (; f; f = smp_load_acquire(&f->prev)) {
->>               u32 cur_ret = SK_RUN_FILTER(f->prog, (void *)&sd);
->> -
->>               if ((cur_ret & SECCOMP_RET_ACTION) < (ret & SECCOMP_RET_ACTION))
->>                       ret = cur_ret;
+On 06/24/2014 09:50 AM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.10.45 release.
+> There are 52 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
 >
-> OK, in this case the 1st one is probably fine, altgough it is not
-> clear to me why it is better than read_barrier_depends().
+> Responses should be made by Thu Jun 26 15:46:59 UTC 2014.
+> Anything received after that time might be too late.
 >
-> But why do we need a 2nd one inside the loop? And if we actually need
-> it (I don't think so) then why it is safe to use f->prog without
-> load_acquire ?
-
-You're right -- it should not be possible for for any of the ->prev
-pointers to change.
-
->>  void get_seccomp_filter(struct task_struct *tsk)
->>  {
->> -     struct seccomp_filter *orig = tsk->seccomp.filter;
->> +     struct seccomp_filter *orig = smp_load_acquire(&tsk->seccomp.filter);
->>       if (!orig)
->>               return;
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.45-rc1.gz
+> and the diffstat can be found below.
 >
-> This one looks unneeded.
+> thanks,
 >
-> First of all, afaics atomic_inc() should work correctly without any barriers,
-> otherwise it is buggy. But even this doesn't matter.
+> greg k-h
 >
-> With this changes get_seccomp_filter() must be called under ->siglock, it can't
-> race with add-filter and thus tsk->seccomp.filter should be stable.
 
-Excellent point, yes. I'll remove that.
+Compiled and booted on my test system. No dmesg regressions.
 
->>       /* Reference count is bounded by the number of total processes. */
->> @@ -361,7 +364,7 @@ void put_seccomp_filter(struct task_struct *tsk)
->>       /* Clean up single-reference branches iteratively. */
->>       while (orig && atomic_dec_and_test(&orig->usage)) {
->>               struct seccomp_filter *freeme = orig;
->> -             orig = orig->prev;
->> +             orig = smp_load_acquire(&orig->prev);
->>               seccomp_filter_free(freeme);
->>       }
->
-> This one looks unneeded too. And note that this patch does not add
-> smp_load_acquire() to read tsk->seccomp.filter.
-
-Hrm, yes, that should get added.
-
-> atomic_dec_and_test() adds mb(), we do not need more barriers to access
-> ->prev ?
-
-Right, same situation as the run_filters loop. Thanks!
-
--Kees
+-- Shuah
 
 -- 
-Kees Cook
-Chrome OS Security
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
