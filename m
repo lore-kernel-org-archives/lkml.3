@@ -1,93 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753732AbaFXKjz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 06:39:55 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:27183 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752081AbaFXKjy (ORCPT
+	id S1753900AbaFXKkA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 06:40:00 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:50713 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753739AbaFXKj5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 06:39:54 -0400
-Message-ID: <53A9556D.3000003@arm.com>
-Date: Tue, 24 Jun 2014 11:39:41 +0100
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Tue, 24 Jun 2014 06:39:57 -0400
+Date: Tue, 24 Jun 2014 12:39:36 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jiri Olsa <jolsa@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCH 2/3] perf: Do not allow optimized switch for non-cloned
+ events
+Message-ID: <20140624103936.GK19860@laptop.programming.kicks-ass.net>
+References: <1403598026-2310-1-git-send-email-jolsa@kernel.org>
+ <1403598026-2310-2-git-send-email-jolsa@kernel.org>
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>,
-        Kim Phillips <kim.phillips@freescale.com>
-CC: Christoffer Dall <christoffer.dall@linaro.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Eric Auger <eric.auger@linaro.org>,
-        Kim Phillips <kim.phillips@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Antonios Motakis <a.motakis@virtualopensystems.com>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/2] ARM: KVM: user_mem_abort: support stage 2 MMIO page
- mapping
-References: <1395785294-2545-1-git-send-email-kim.phillips@linaro.org> <1395785294-2545-2-git-send-email-kim.phillips@linaro.org> <20140506180448.GH3066@lvm> <87bnvaotei.fsf@approximate.cambridge.arm.com> <20140507145557.GJ3066@lvm> <20140624102327.GA9121@arm.com>
-In-Reply-To: <20140624102327.GA9121@arm.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403598026-2310-2-git-send-email-jolsa@kernel.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/06/14 11:23, Will Deacon wrote:
-> On Wed, May 07, 2014 at 03:55:57PM +0100, Christoffer Dall wrote:
->> On Wed, May 07, 2014 at 10:00:21AM +0100, Marc Zyngier wrote:
->>> On Tue, May 06 2014 at  7:04:48 pm BST, Christoffer Dall <christoffer.dall@linaro.org> wrote:
->>>> On Tue, Mar 25, 2014 at 05:08:14PM -0500, Kim Phillips wrote:
->>>>> Use the correct memory type for device MMIO mappings: PAGE_S2_DEVICE.
->>>>>
->>>>> Signed-off-by: Kim Phillips <kim.phillips@linaro.org>
->>>>> ---
->>>>>  arch/arm/kvm/mmu.c | 11 ++++++++---
->>>>>  1 file changed, 8 insertions(+), 3 deletions(-)
+On Tue, Jun 24, 2014 at 10:20:25AM +0200, Jiri Olsa wrote:
+> From: Jiri Olsa <jolsa@redhat.com>
 > 
-> [...]
+> The context check in perf_event_context_sched_out allows
+> non-cloned context to be part of the optimized schedule
+> out switch.
 > 
->>>> I think this looks reasonable.
->>>>
->>>> Acked-by: Christoffer Dall <christoffer.dall@linaro.org>
->>>
->>> I feel like I'm missing some context here, and the commit message is way
->>> too terse for me to make sense of it.
->>>
->>> So far, we can only get into user_mem_abort on a Stage-2 fault
->>> (translation or permission) for memory. How can we suddenly get here for
->>> a *device* fault? Do we get a special kind of memslot?
->>>
->>> I'm not saying the patch does anything wrong, but I'd like to understand
->>> the rationale behind it. On its own, it doesn't make much sense.
->>>
->> Think device passthrough.  There's nothing preventing user space from
->> setting up a memory region to point to device memory (through VFIO or
->> /dev/mem).  If that's done, we should enforce device memory properties
->> so writes don't linger around in the cache to be written some time later
->> when that device memory potentially doesn't belong to the VM anymore.
->>
->> This is just one tiny piece of all of them to make device passthrough
->> work, and we could hold off with this patch until we have something more
->> complete.  On the other hand, we need to start somewhere, and this is
->> hardly intrusive and is functionally correct even though you don't have
->> a full device passthrough setup.
+> This could move non-cloned context into another workload
+> child. Once this child exits, the context is closed and
+> leaves all original (parent) events in closed state.
 > 
-> Please can you queue this patch up? I need it for my VFIO work, where I'm
-> registering the PCI BARs using KVM_SET_USER_MEMORY_REGION.
+> Any other new cloned event will have closed state and not
+> measure anything. And probably causing other odd bugs.
 > 
-> Without this, I'd have to trap all accesses and do pread/pwrite from
-> kvmtool instead of mmaping the regions straight through.
+> Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> Cc: David Ahern <dsahern@gmail.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+> ---
+>  kernel/events/core.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/kernel/events/core.c b/kernel/events/core.c
+> index d968008..4e3618e 100644
+> --- a/kernel/events/core.c
+> +++ b/kernel/events/core.c
+> @@ -2319,7 +2319,7 @@ static void perf_event_context_sched_out(struct task_struct *task, int ctxn,
+>  	next_parent = rcu_dereference(next_ctx->parent_ctx);
+>  
+>  	/* If neither context have a parent context; they cannot be clones. */
+> -	if (!parent && !next_parent)
+> +	if (!parent || !next_parent)
+>  		goto unlock;
+>  
+>  	if (next_parent == ctx || next_ctx == parent || next_parent == parent) {
 
-I'm afraid there as been quite a bit of churn in this department, and
-the patch doesn't apply any more.
+Ohh, nice, good catch!
 
-Kim, any chance you could respin this patch on top of mainline?
-
-Thanks,
-
-	M.
--- 
-Jazz is not dead. It just smells funny...
+Thanks
