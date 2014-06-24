@@ -1,106 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754122AbaFXWzi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 18:55:38 -0400
-Received: from 99-65-72-227.uvs.sntcca.sbcglobal.net ([99.65.72.227]:43524
-	"EHLO stargate3.asicdesigners.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751855AbaFXWzg convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 18:55:36 -0400
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
-Subject: Re: [PATCH 2/3] cxgb4: make configuration load use request_firmware_direct()
-From: Casey Leedom <leedom@chelsio.com>
-In-Reply-To: <1403649583-12707-3-git-send-email-mcgrof@do-not-panic.com>
-Date: Tue, 24 Jun 2014 15:54:44 -0700
-Cc: tiwai@suse.de, chunkeey@googlemail.com, cocci@systeme.lip6.fr,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, "Luis R. Rodriguez" <mcgrof@suse.com>,
-        Philip Oswald <poswald@suse.com>,
-        Santosh Rastapur <santosh@chelsio.com>,
-        Jeffrey Cheung <jcheung@suse.com>, David Chang <dchang@suse.com>,
-        Hariprasad Shenai <hariprasad@chelsio.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <D46B557B-AF4A-4E60-8D83-6181D406C64F@chelsio.com>
-References: <1403649583-12707-1-git-send-email-mcgrof@do-not-panic.com> <1403649583-12707-3-git-send-email-mcgrof@do-not-panic.com>
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-X-Mailer: Apple Mail (2.1878.2)
+	id S1753564AbaFXW7V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 18:59:21 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:56919 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752256AbaFXW7S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 18:59:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAC5m3Bwj1HEWSQd7rx6Zn5vbUPKFqeT_X0PL3mAxRw0FNkK=QQ@mail.gmail.com>
+References: <1402464739-19044-1-git-send-email-tushar.b@samsung.com>
+	<1402464739-19044-2-git-send-email-tushar.b@samsung.com>
+	<7ha99jjspt.fsf@paris.lan>
+	<CAC5m3Bwj1HEWSQd7rx6Zn5vbUPKFqeT_X0PL3mAxRw0FNkK=QQ@mail.gmail.com>
+Date: Tue, 24 Jun 2014 15:59:17 -0700
+Message-ID: <CAD=FV=VP4-+B6oV8Skb3rxxPRbOWmzu=6PJbWbxCU=86ZvRuYQ@mail.gmail.com>
+Subject: Re: [PATCH 1/3] clk: exynos-audss: Keep the parent of mout_audss
+ always enabled
+From: Doug Anderson <dianders@google.com>
+To: Tushar Behera <tushar.b@samsung.com>
+Cc: Kevin Hilman <khilman@linaro.org>, lkml <linux-kernel@vger.kernel.org>,
+        ML Devicetree <devicetree@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        ML Arch-Arm <linux-arm-kernel@lists.infradead.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Shaik Ameer Basha <shaik.ameer@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[[ Hopefully this makes it through to the kernel.org lists -- I’m using the Mac OS/X Mailer and it’s not clear how to force it not to use HTML format. -- Casey ]]
+Tushar,
 
-  So does request_firmware_direct() only fail if the requested file is not present on the file system or does it fail in other cases as well?
+On Thu, Jun 12, 2014 at 12:40 AM, Tushar Behera <tushar.b@samsung.com> wrote:
+> On Wed, Jun 11, 2014 at 10:20 PM, Kevin Hilman <khilman@linaro.org> wrote:
+>> Tushar Behera <tushar.b@samsung.com> writes:
+>>
+>>> When the output clock of AUDSS mux is disabled, we are getting kernel
+>>> oops while doing a clk_get() on other clocks provided by AUDSS.
+>>>
+>>> Though user manual doesn't specify this dependency, we came across
+>>> this issue while disabling the parent of AUDSS mux clocks.
+>>>
+>>> Keeping the parents of AUDSS mux always enabled fixes this issue.
+>>
+>> While this patch works (and fixes the boot problem for me), it seems
+>> like it's papering over the real problem.
+>>
+>
+> Thanks for testing.
+>
+>> Seems like the right fix is actually modelling the clocks properly so
+>> that enabling a child clock ensures that the parent is also enabled.
+>>
+>
+> Patch 2/3 was to ensure we have proper clock tree defined for
+> Exynos5420. While testing with audio disabled, that patch alone fixed
+> the issue. But when audio was enabled (and hence I2S0 was trying to
+> access the clocks), we got some kernel oops during late booting, hence
+> I came up this solution.
+>
+> The solution might be a little half-baked because of the urgency to
+> push the fix, but will try to dig more into the issue on Monday when I
+> resume office.
 
-  If it’s the former, then the change to cxgb4 is fine.
+Which Monday were you referring to?  ;)
 
-  But if it’s the latter, then it’s definitely not okay.  While the driver _can_ continue running without the local on-disk Firmware Configuration File, that file can be used to significantly change the behavior and capabilities of the adapter and is user-customizable.  If a user makes changes to the local on-disk Firmware Configuration File and these are randomly silently ignored this will lead to highly annoying support issues.
+...but in all seriousness do you have an official status update on
+this patch?  It seems as if it's not needed and all you need is
+<https://patchwork.kernel.org/patch/4333581/>, but it would be nice to
+get an official confirmation.
 
-Casey
+Thanks!
 
-
-On Jun 24, 2014, at 3:39 PM, Luis R. Rodriguez <mcgrof@do-not-panic.com> wrote:
-
-> From: "Luis R. Rodriguez" <mcgrof@suse.com>
-> 
-> cxgb4 uses request_firmware() 3 times, one for firmware, one for
-> optional configuration files and another for ethtools flash. Since the
-> configuration update is optional on devices that don't have a
-> configuration file update it means we'd wait unnecessarily for the
-> extra udev timeout, which by default is 60 seconds. Avoid this
-> extra delay.
-> 
-> This was found with the following SmPL patch.
-> 
-> @ firmware_not_critical @
-> expression cf;
-> expression config_file;
-> expression dev;
-> int ret;
-> identifier l;
-> statement S;
-> @@
-> 
-> -	ret = request_firmware(&cf, config_file, dev);
-> +	ret = request_firmware_direct(&cf, config_file, dev);
-> 	if (ret < 0) {
-> 		... when != goto l;
-> 		    when != return ret;
-> 		    when any
-> 	} else {
-> 		...
-> 		release_firmware(cf);
-> 		...
-> 	}
-> 
-> Cc: Philip Oswald <poswald@suse.com>
-> Cc: Santosh Rastapur <santosh@chelsio.com>
-> Cc: Jeffrey Cheung <jcheung@suse.com>
-> Cc: David Chang <dchang@suse.com>
-> Cc: Casey Leedom <leedom@chelsio.com>
-> Cc: Hariprasad Shenai <hariprasad@chelsio.com>
-> Cc: Takashi Iwai <tiwai@suse.de>
-> Cc: cocci@systeme.lip6.fr
-> Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
-> ---
-> drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c | 2 +-
-> 1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c b/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
-> index 02a0ebf..bd57177 100644
-> --- a/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
-> +++ b/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
-> @@ -4999,7 +4999,7 @@ static int adap_init0_config(struct adapter *adapter, int reset)
->  		goto bye;
->  	}
-> 
-> -	ret = request_firmware(&cf, fw_config_file, adapter->pdev_dev);
-> +	ret = request_firmware_direct(&cf, fw_config_file, adapter->pdev_dev);
->  	if (ret < 0) {
->  		config_name = "On FLASH";
->  		mtype = FW_MEMTYPE_CF_FLASH;
-> -- 
-> 2.0.0
-> 
-
+-Doug
