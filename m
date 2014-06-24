@@ -1,85 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752349AbaFXGoP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 02:44:15 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:39333 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752281AbaFXGoN (ORCPT
+	id S1752450AbaFXGqx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 02:46:53 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:49420 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751365AbaFXGqw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 02:44:13 -0400
+	Tue, 24 Jun 2014 02:46:52 -0400
+X-Original-SENDERIP: 10.177.220.145
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Tue, 24 Jun 2014 15:51:27 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Michael Ellerman <mpe@ellerman.id.au>
+Cc: Andrew Morton <akpm@osdl.org>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org, kvm@vger.kernel.org, agraf@suse.de,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH] powerpc/kvm: Fix build break with
+ CONFIG_KVM_BOOK3S_64_HV=y
+Message-ID: <20140624065127.GA4836@js1304-P5Q-DELUXE>
+References: <1403591807-9550-1-git-send-email-mpe@ellerman.id.au>
 MIME-Version: 1.0
-In-Reply-To: <b0dfcba4-7319-4687-a455-bfcddf61b7d1@BN1AFFO11FD028.protection.gbl>
-References: <b0dfcba4-7319-4687-a455-bfcddf61b7d1@BN1AFFO11FD028.protection.gbl>
-Date: Tue, 24 Jun 2014 12:14:10 +0530
-Message-ID: <CALHRZup3_eFiw8iSJJmxy0dHDeHLnb2fAfRtKPTW1UQ2U+cEig@mail.gmail.com>
-Subject: Re: [PATCH v3 1/2] usb: doc: udc-xilinx: Add devicetree bindings
-From: sundeep subbaraya <sundeep.lkml@gmail.com>
-To: Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>
-Cc: "balbi@ti.com" <balbi@ti.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Michal Simek <michals@xilinx.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403591807-9550-1-git-send-email-mpe@ellerman.id.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping
-
-Thanks,
-Sundeep.B.S.
-
-On Tue, Jun 10, 2014 at 5:34 PM,  <subbaraya.sundeep.bhatta@xilinx.com> wrote:
-> From: Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>
->
-> Add devicetree bindings for Xilinx axi udc driver.
->
-> Signed-off-by: Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>
+On Tue, Jun 24, 2014 at 04:36:47PM +1000, Michael Ellerman wrote:
+> Commit e58e263 "PPC, KVM, CMA: use general CMA reserved area management
+> framework" in next-20140624 removed arch/powerpc/kvm/book3s_hv_cma.c but
+> neglected to update the Makefile, thus breaking the build.
+> 
+> Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
 > ---
-> Changes for v3:
->         - None
-> Changes for v2:
->         - replaced xlnx,include-dma with xlnx,has-builtin-dma
->
->  .../devicetree/bindings/usb/udc-xilinx.txt         |   20 ++++++++++++++++++++
->  1 files changed, 20 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/usb/udc-xilinx.txt
->
-> diff --git a/Documentation/devicetree/bindings/usb/udc-xilinx.txt b/Documentation/devicetree/bindings/usb/udc-xilinx.txt
-> new file mode 100644
-> index 0000000..7c24fac
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/usb/udc-xilinx.txt
-> @@ -0,0 +1,20 @@
-> +Xilinx AXI USB2 device controller
-> +
-> +Required properties:
-> +- compatible           : Should be "xlnx,axi-usb2-device-4.00.a"
-> +- reg                  : Physical base address and size of the Axi USB2
-> +                         device registers map.
-> +- interrupts           : Property with a value describing the interrupt
-> +                         number.
-> +- interrupt-parent     : Must be core interrupt controller
-> +- xlnx,include-dma     : if DMA is included
-> +
-> +Example:
-> +               axi-usb2-device@42e00000 {
-> +                        compatible = "xlnx,axi-usb2-device-4.00.a";
-> +                        interrupt-parent = <0x1>;
-> +                        interrupts = <0x0 0x39 0x1>;
-> +                        reg = <0x42e00000 0x10000>;
-> +                        xlnx,has-builtin-dma;
-> +                };
-> +
-> --
-> 1.7.4
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> Hi Andrew,
+> 
+> This is in your akpm-current and is breaking some of the builds for
+> powerpc in linux-next. Squashing this fix into the original patch would
+> be best for us.
+> 
+
+I sent really same patch 10 minutes ago. :)
+
+Thanks.
