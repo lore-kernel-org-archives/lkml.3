@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932412AbaFXQso (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:48:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60873 "EHLO
+	id S932751AbaFXQtI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:49:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60867 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755236AbaFXPwM (ORCPT
+	with ESMTP id S1755227AbaFXPwI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:52:12 -0400
+	Tue, 24 Jun 2014 11:52:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>
-Subject: [PATCH 3.10 04/52] evm: prohibit userspace writing security.evm HMAC value
-Date: Tue, 24 Jun 2014 11:50:19 -0400
-Message-Id: <20140624154713.715581916@linuxfoundation.org>
+        Alexei Starovoitov <ast@plumgrid.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 16/52] net: filter: fix typo in sparc BPF JIT
+Date: Tue, 24 Jun 2014 11:50:31 -0400
+Message-Id: <20140624154714.463712871@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154713.428945460@linuxfoundation.org>
 References: <20140624154713.428945460@linuxfoundation.org>
@@ -28,46 +29,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+From: Alexei Starovoitov <ast@plumgrid.com>
 
-commit 2fb1c9a4f2dbc2f0bd2431c7fa64d0b5483864e4 upstream.
+[ Upstream commit 569810d1e3278907264f5b115281fca3f0038d53 ]
 
-Calculating the 'security.evm' HMAC value requires access to the
-EVM encrypted key.  Only the kernel should have access to it.  This
-patch prevents userspace tools(eg. setfattr, cp --preserve=xattr)
-from setting/modifying the 'security.evm' HMAC value directly.
+fix typo in sparc codegen for SKF_AD_IFINDEX and SKF_AD_HATYPE
+classic BPF extensions
 
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Fixes: 2809a2087cc4 ("net: filter: Just In Time compiler for sparc")
+Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- security/integrity/evm/evm_main.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ arch/sparc/net/bpf_jit_comp.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/security/integrity/evm/evm_main.c
-+++ b/security/integrity/evm/evm_main.c
-@@ -275,12 +275,20 @@ static int evm_protect_xattr(struct dent
-  * @xattr_value: pointer to the new extended attribute value
-  * @xattr_value_len: pointer to the new extended attribute value length
-  *
-- * Updating 'security.evm' requires CAP_SYS_ADMIN privileges and that
-- * the current value is valid.
-+ * Before allowing the 'security.evm' protected xattr to be updated,
-+ * verify the existing value is valid.  As only the kernel should have
-+ * access to the EVM encrypted key needed to calculate the HMAC, prevent
-+ * userspace from writing HMAC value.  Writing 'security.evm' requires
-+ * requires CAP_SYS_ADMIN privileges.
-  */
- int evm_inode_setxattr(struct dentry *dentry, const char *xattr_name,
- 		       const void *xattr_value, size_t xattr_value_len)
- {
-+	const struct evm_ima_xattr_data *xattr_data = xattr_value;
-+
-+	if ((strcmp(xattr_name, XATTR_NAME_EVM) == 0)
-+	    && (xattr_data->type == EVM_XATTR_HMAC))
-+		return -EPERM;
- 	return evm_protect_xattr(dentry, xattr_name, xattr_value,
- 				 xattr_value_len);
- }
+--- a/arch/sparc/net/bpf_jit_comp.c
++++ b/arch/sparc/net/bpf_jit_comp.c
+@@ -83,9 +83,9 @@ static void bpf_flush_icache(void *start
+ #define BNE		(F2(0, 2) | CONDNE)
+ 
+ #ifdef CONFIG_SPARC64
+-#define BNE_PTR		(F2(0, 1) | CONDNE | (2 << 20))
++#define BE_PTR		(F2(0, 1) | CONDE | (2 << 20))
+ #else
+-#define BNE_PTR		BNE
++#define BE_PTR		BNE
+ #endif
+ 
+ #define SETHI(K, REG)	\
+@@ -600,7 +600,7 @@ void bpf_jit_compile(struct sk_filter *f
+ 			case BPF_S_ANC_IFINDEX:
+ 				emit_skb_loadptr(dev, r_A);
+ 				emit_cmpi(r_A, 0);
+-				emit_branch(BNE_PTR, cleanup_addr + 4);
++				emit_branch(BE_PTR, cleanup_addr + 4);
+ 				emit_nop();
+ 				emit_load32(r_A, struct net_device, ifindex, r_A);
+ 				break;
+@@ -613,7 +613,7 @@ void bpf_jit_compile(struct sk_filter *f
+ 			case BPF_S_ANC_HATYPE:
+ 				emit_skb_loadptr(dev, r_A);
+ 				emit_cmpi(r_A, 0);
+-				emit_branch(BNE_PTR, cleanup_addr + 4);
++				emit_branch(BE_PTR, cleanup_addr + 4);
+ 				emit_nop();
+ 				emit_load16(r_A, struct net_device, type, r_A);
+ 				break;
 
 
