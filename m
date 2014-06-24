@@ -1,81 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756826AbaFXUvg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:51:36 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:37058 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755915AbaFXUs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:48:58 -0400
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Oleg Nesterov <oleg@redhat.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
-        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
-        linux-api@vger.kernel.org, x86@kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
-        linux-arch@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: [PATCH v8 1/9] seccomp: create internal mode-setting function
-Date: Tue, 24 Jun 2014 13:48:05 -0700
-Message-Id: <1403642893-23107-2-git-send-email-keescook@chromium.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1403642893-23107-1-git-send-email-keescook@chromium.org>
-References: <1403642893-23107-1-git-send-email-keescook@chromium.org>
-X-HELO: www.outflux.net
+	id S1754267AbaFXUah (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:30:37 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47505 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752874AbaFXUae (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 16:30:34 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: NeilBrown <neilb@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 05/65] md: avoid possible spinning md thread at shutdown.
+Date: Tue, 24 Jun 2014 13:29:25 -0700
+Message-Id: <1403641825-12825-6-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
+References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In preparation for having other callers of the seccomp mode setting
-logic, split the prctl entry point away from the core logic that performs
-seccomp mode setting.
+3.8.13.25 -stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
+------------------
+
+From: NeilBrown <neilb@suse.de>
+
+commit 0f62fb220aa4ebabe8547d3a9ce4a16d3c045f21 upstream.
+
+If an md array with externally managed metadata (e.g. DDF or IMSM)
+is in use, then we should not set safemode==2 at shutdown because:
+
+1/ this is ineffective: user-space need to be involved in any 'safemode' handling,
+2/ The safemode management code doesn't cope with safemode==2 on external metadata
+   and md_check_recover enters an infinite loop.
+
+Even at shutdown, an infinite-looping process can be problematic, so this
+could cause shutdown to hang.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/seccomp.c |   16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+ drivers/md/md.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/seccomp.c b/kernel/seccomp.c
-index 301bbc24739c..afb916c7e890 100644
---- a/kernel/seccomp.c
-+++ b/kernel/seccomp.c
-@@ -473,7 +473,7 @@ long prctl_get_seccomp(void)
- }
- 
- /**
-- * prctl_set_seccomp: configures current->seccomp.mode
-+ * seccomp_set_mode: internal function for setting seccomp mode
-  * @seccomp_mode: requested mode to use
-  * @filter: optional struct sock_fprog for use with SECCOMP_MODE_FILTER
-  *
-@@ -486,7 +486,7 @@ long prctl_get_seccomp(void)
-  *
-  * Returns 0 on success or -EINVAL on failure.
-  */
--long prctl_set_seccomp(unsigned long seccomp_mode, char __user *filter)
-+static long seccomp_set_mode(unsigned long seccomp_mode, char __user *filter)
- {
- 	long ret = -EINVAL;
- 
-@@ -517,3 +517,15 @@ long prctl_set_seccomp(unsigned long seccomp_mode, char __user *filter)
- out:
- 	return ret;
- }
-+
-+/**
-+ * prctl_set_seccomp: configures current->seccomp.mode
-+ * @seccomp_mode: requested mode to use
-+ * @filter: optional struct sock_fprog for use with SECCOMP_MODE_FILTER
-+ *
-+ * Returns 0 on success or -EINVAL on failure.
-+ */
-+long prctl_set_seccomp(unsigned long seccomp_mode, char __user *filter)
-+{
-+	return seccomp_set_mode(seccomp_mode, filter);
-+}
+diff --git a/drivers/md/md.c b/drivers/md/md.c
+index 8e27791..cb8f03a 100644
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -8441,7 +8441,8 @@ static int md_notify_reboot(struct notifier_block *this,
+ 		if (mddev_trylock(mddev)) {
+ 			if (mddev->pers)
+ 				__md_stop_writes(mddev);
+-			mddev->safemode = 2;
++			if (mddev->persistent)
++				mddev->safemode = 2;
+ 			mddev_unlock(mddev);
+ 		}
+ 		need_delay = 1;
 -- 
-1.7.9.5
+1.9.1
 
