@@ -1,208 +1,429 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932400AbaFXPyK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:54:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32949 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753824AbaFXPyC (ORCPT
+	id S932379AbaFXPyA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:54:00 -0400
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:63650 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932271AbaFXPxs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:54:02 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexey Preobrazhensky <preobr@google.com>,
-        dormando <dormando@rydia.ne>, Eric Dumazet <edumazet@google.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 29/68] ipv4: fix a race in ip4_datagram_release_cb()
-Date: Tue, 24 Jun 2014 11:50:48 -0400
-Message-Id: <20140624154725.233498715@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <20140624154723.907894814@linuxfoundation.org>
-References: <20140624154723.907894814@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 24 Jun 2014 11:53:48 -0400
+Date: Tue, 24 Jun 2014 11:53:45 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Daniel Thompson <daniel.thompson@linaro.org>
+cc: Russell King <linux@arm.linux.org.uk>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kgdb-bugreport@lists.sourceforge.net, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Colin Cross <ccross@android.com>, kernel-team@android.com,
+        Rob Herring <robherring2@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH v6 3/4] ARM: Move some macros from entry-armv to
+ entry-header
+In-Reply-To: <1403623097-1153-4-git-send-email-daniel.thompson@linaro.org>
+Message-ID: <alpine.LFD.2.11.1406241153020.16842@knanqh.ubzr>
+References: <1403174303-25456-1-git-send-email-daniel.thompson@linaro.org> <1403623097-1153-1-git-send-email-daniel.thompson@linaro.org> <1403623097-1153-4-git-send-email-daniel.thompson@linaro.org>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+On Tue, 24 Jun 2014, Daniel Thompson wrote:
 
-------------------
+> From: Anton Vorontsov <anton.vorontsov@linaro.org>
+> 
+> Just move the macros into header file as we would want to use them for
+> KGDB FIQ entry code.
+> 
+> The following macros were moved:
+> 
+>  - svc_entry
+>  - usr_entry
+>  - kuser_cmpxchg_check
+>  - vector_stub
+> 
+> To make kuser_cmpxchg_check actually work across different files, we
+> also have to make kuser_cmpxchg64_fixup global.
+> 
+> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+> Signed-off-by: John Stultz <john.stultz@linaro.org>
+> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Nicolas Pitre <nico@linaro.org>
+> Cc: Catalin Marinas <catalin.marinas@arm.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
 
-From: Eric Dumazet <edumazet@google.com>
-
-[ Upstream commit 9709674e68646cee5a24e3000b3558d25412203a ]
-
-Alexey gave a AddressSanitizer[1] report that finally gave a good hint
-at where was the origin of various problems already reported by Dormando
-in the past [2]
-
-Problem comes from the fact that UDP can have a lockless TX path, and
-concurrent threads can manipulate sk_dst_cache, while another thread,
-is holding socket lock and calls __sk_dst_set() in
-ip4_datagram_release_cb() (this was added in linux-3.8)
-
-It seems that all we need to do is to use sk_dst_check() and
-sk_dst_set() so that all the writers hold same spinlock
-(sk->sk_dst_lock) to prevent corruptions.
-
-TCP stack do not need this protection, as all sk_dst_cache writers hold
-the socket lock.
-
-[1]
-https://code.google.com/p/address-sanitizer/wiki/AddressSanitizerForKernel
-
-AddressSanitizer: heap-use-after-free in ipv4_dst_check
-Read of size 2 by thread T15453:
- [<ffffffff817daa3a>] ipv4_dst_check+0x1a/0x90 ./net/ipv4/route.c:1116
- [<ffffffff8175b789>] __sk_dst_check+0x89/0xe0 ./net/core/sock.c:531
- [<ffffffff81830a36>] ip4_datagram_release_cb+0x46/0x390 ??:0
- [<ffffffff8175eaea>] release_sock+0x17a/0x230 ./net/core/sock.c:2413
- [<ffffffff81830882>] ip4_datagram_connect+0x462/0x5d0 ??:0
- [<ffffffff81846d06>] inet_dgram_connect+0x76/0xd0 ./net/ipv4/af_inet.c:534
- [<ffffffff817580ac>] SYSC_connect+0x15c/0x1c0 ./net/socket.c:1701
- [<ffffffff817596ce>] SyS_connect+0xe/0x10 ./net/socket.c:1682
- [<ffffffff818b0a29>] system_call_fastpath+0x16/0x1b
-./arch/x86/kernel/entry_64.S:629
-
-Freed by thread T15455:
- [<ffffffff8178d9b8>] dst_destroy+0xa8/0x160 ./net/core/dst.c:251
- [<ffffffff8178de25>] dst_release+0x45/0x80 ./net/core/dst.c:280
- [<ffffffff818304c1>] ip4_datagram_connect+0xa1/0x5d0 ??:0
- [<ffffffff81846d06>] inet_dgram_connect+0x76/0xd0 ./net/ipv4/af_inet.c:534
- [<ffffffff817580ac>] SYSC_connect+0x15c/0x1c0 ./net/socket.c:1701
- [<ffffffff817596ce>] SyS_connect+0xe/0x10 ./net/socket.c:1682
- [<ffffffff818b0a29>] system_call_fastpath+0x16/0x1b
-./arch/x86/kernel/entry_64.S:629
-
-Allocated by thread T15453:
- [<ffffffff8178d291>] dst_alloc+0x81/0x2b0 ./net/core/dst.c:171
- [<ffffffff817db3b7>] rt_dst_alloc+0x47/0x50 ./net/ipv4/route.c:1406
- [<     inlined    >] __ip_route_output_key+0x3e8/0xf70
-__mkroute_output ./net/ipv4/route.c:1939
- [<ffffffff817dde08>] __ip_route_output_key+0x3e8/0xf70 ./net/ipv4/route.c:2161
- [<ffffffff817deb34>] ip_route_output_flow+0x14/0x30 ./net/ipv4/route.c:2249
- [<ffffffff81830737>] ip4_datagram_connect+0x317/0x5d0 ??:0
- [<ffffffff81846d06>] inet_dgram_connect+0x76/0xd0 ./net/ipv4/af_inet.c:534
- [<ffffffff817580ac>] SYSC_connect+0x15c/0x1c0 ./net/socket.c:1701
- [<ffffffff817596ce>] SyS_connect+0xe/0x10 ./net/socket.c:1682
- [<ffffffff818b0a29>] system_call_fastpath+0x16/0x1b
-./arch/x86/kernel/entry_64.S:629
-
-[2]
-<4>[196727.311203] general protection fault: 0000 [#1] SMP
-<4>[196727.311224] Modules linked in: xt_TEE xt_dscp xt_DSCP macvlan bridge coretemp crc32_pclmul ghash_clmulni_intel gpio_ich microcode ipmi_watchdog ipmi_devintf sb_edac edac_core lpc_ich mfd_core tpm_tis tpm tpm_bios ipmi_si ipmi_msghandler isci igb libsas i2c_algo_bit ixgbe ptp pps_core mdio
-<4>[196727.311333] CPU: 17 PID: 0 Comm: swapper/17 Not tainted 3.10.26 #1
-<4>[196727.311344] Hardware name: Supermicro X9DRi-LN4+/X9DR3-LN4+/X9DRi-LN4+/X9DR3-LN4+, BIOS 3.0 07/05/2013
-<4>[196727.311364] task: ffff885e6f069700 ti: ffff885e6f072000 task.ti: ffff885e6f072000
-<4>[196727.311377] RIP: 0010:[<ffffffff815f8c7f>]  [<ffffffff815f8c7f>] ipv4_dst_destroy+0x4f/0x80
-<4>[196727.311399] RSP: 0018:ffff885effd23a70  EFLAGS: 00010282
-<4>[196727.311409] RAX: dead000000200200 RBX: ffff8854c398ecc0 RCX: 0000000000000040
-<4>[196727.311423] RDX: dead000000100100 RSI: dead000000100100 RDI: dead000000200200
-<4>[196727.311437] RBP: ffff885effd23a80 R08: ffffffff815fd9e0 R09: ffff885d5a590800
-<4>[196727.311451] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
-<4>[196727.311464] R13: ffffffff81c8c280 R14: 0000000000000000 R15: ffff880e85ee16ce
-<4>[196727.311510] FS:  0000000000000000(0000) GS:ffff885effd20000(0000) knlGS:0000000000000000
-<4>[196727.311554] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-<4>[196727.311581] CR2: 00007a46751eb000 CR3: 0000005e65688000 CR4: 00000000000407e0
-<4>[196727.311625] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-<4>[196727.311669] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-<4>[196727.311713] Stack:
-<4>[196727.311733]  ffff8854c398ecc0 ffff8854c398ecc0 ffff885effd23ab0 ffffffff815b7f42
-<4>[196727.311784]  ffff88be6595bc00 ffff8854c398ecc0 0000000000000000 ffff8854c398ecc0
-<4>[196727.311834]  ffff885effd23ad0 ffffffff815b86c6 ffff885d5a590800 ffff8816827821c0
-<4>[196727.311885] Call Trace:
-<4>[196727.311907]  <IRQ>
-<4>[196727.311912]  [<ffffffff815b7f42>] dst_destroy+0x32/0xe0
-<4>[196727.311959]  [<ffffffff815b86c6>] dst_release+0x56/0x80
-<4>[196727.311986]  [<ffffffff81620bd5>] tcp_v4_do_rcv+0x2a5/0x4a0
-<4>[196727.312013]  [<ffffffff81622b5a>] tcp_v4_rcv+0x7da/0x820
-<4>[196727.312041]  [<ffffffff815fd9e0>] ? ip_rcv_finish+0x360/0x360
-<4>[196727.312070]  [<ffffffff815de02d>] ? nf_hook_slow+0x7d/0x150
-<4>[196727.312097]  [<ffffffff815fd9e0>] ? ip_rcv_finish+0x360/0x360
-<4>[196727.312125]  [<ffffffff815fda92>] ip_local_deliver_finish+0xb2/0x230
-<4>[196727.312154]  [<ffffffff815fdd9a>] ip_local_deliver+0x4a/0x90
-<4>[196727.312183]  [<ffffffff815fd799>] ip_rcv_finish+0x119/0x360
-<4>[196727.312212]  [<ffffffff815fe00b>] ip_rcv+0x22b/0x340
-<4>[196727.312242]  [<ffffffffa0339680>] ? macvlan_broadcast+0x160/0x160 [macvlan]
-<4>[196727.312275]  [<ffffffff815b0c62>] __netif_receive_skb_core+0x512/0x640
-<4>[196727.312308]  [<ffffffff811427fb>] ? kmem_cache_alloc+0x13b/0x150
-<4>[196727.312338]  [<ffffffff815b0db1>] __netif_receive_skb+0x21/0x70
-<4>[196727.312368]  [<ffffffff815b0fa1>] netif_receive_skb+0x31/0xa0
-<4>[196727.312397]  [<ffffffff815b1ae8>] napi_gro_receive+0xe8/0x140
-<4>[196727.312433]  [<ffffffffa00274f1>] ixgbe_poll+0x551/0x11f0 [ixgbe]
-<4>[196727.312463]  [<ffffffff815fe00b>] ? ip_rcv+0x22b/0x340
-<4>[196727.312491]  [<ffffffff815b1691>] net_rx_action+0x111/0x210
-<4>[196727.312521]  [<ffffffff815b0db1>] ? __netif_receive_skb+0x21/0x70
-<4>[196727.312552]  [<ffffffff810519d0>] __do_softirq+0xd0/0x270
-<4>[196727.312583]  [<ffffffff816cef3c>] call_softirq+0x1c/0x30
-<4>[196727.312613]  [<ffffffff81004205>] do_softirq+0x55/0x90
-<4>[196727.312640]  [<ffffffff81051c85>] irq_exit+0x55/0x60
-<4>[196727.312668]  [<ffffffff816cf5c3>] do_IRQ+0x63/0xe0
-<4>[196727.312696]  [<ffffffff816c5aaa>] common_interrupt+0x6a/0x6a
-<4>[196727.312722]  <EOI>
-<1>[196727.313071] RIP  [<ffffffff815f8c7f>] ipv4_dst_destroy+0x4f/0x80
-<4>[196727.313100]  RSP <ffff885effd23a70>
-<4>[196727.313377] ---[ end trace 64b3f14fae0f2e29 ]---
-<0>[196727.380908] Kernel panic - not syncing: Fatal exception in interrupt
-
-Reported-by: Alexey Preobrazhensky <preobr@google.com>
-Reported-by: dormando <dormando@rydia.ne>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Fixes: 8141ed9fcedb2 ("ipv4: Add a socket release callback for datagram sockets")
-Cc: Steffen Klassert <steffen.klassert@secunet.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/datagram.c |   20 +++++++++++++++-----
- 1 file changed, 15 insertions(+), 5 deletions(-)
-
---- a/net/ipv4/datagram.c
-+++ b/net/ipv4/datagram.c
-@@ -86,18 +86,26 @@ out:
- }
- EXPORT_SYMBOL(ip4_datagram_connect);
- 
-+/* Because UDP xmit path can manipulate sk_dst_cache without holding
-+ * socket lock, we need to use sk_dst_set() here,
-+ * even if we own the socket lock.
-+ */
- void ip4_datagram_release_cb(struct sock *sk)
- {
- 	const struct inet_sock *inet = inet_sk(sk);
- 	const struct ip_options_rcu *inet_opt;
- 	__be32 daddr = inet->inet_daddr;
-+	struct dst_entry *dst;
- 	struct flowi4 fl4;
- 	struct rtable *rt;
- 
--	if (! __sk_dst_get(sk) || __sk_dst_check(sk, 0))
--		return;
--
- 	rcu_read_lock();
-+
-+	dst = __sk_dst_get(sk);
-+	if (!dst || !dst->obsolete || dst->ops->check(dst, 0)) {
-+		rcu_read_unlock();
-+		return;
-+	}
- 	inet_opt = rcu_dereference(inet->inet_opt);
- 	if (inet_opt && inet_opt->opt.srr)
- 		daddr = inet_opt->opt.faddr;
-@@ -105,8 +113,10 @@ void ip4_datagram_release_cb(struct sock
- 				   inet->inet_saddr, inet->inet_dport,
- 				   inet->inet_sport, sk->sk_protocol,
- 				   RT_CONN_FLAGS(sk), sk->sk_bound_dev_if);
--	if (!IS_ERR(rt))
--		__sk_dst_set(sk, &rt->dst);
-+
-+	dst = !IS_ERR(rt) ? &rt->dst : NULL;
-+	sk_dst_set(sk, dst);
-+
- 	rcu_read_unlock();
- }
- EXPORT_SYMBOL_GPL(ip4_datagram_release_cb);
+Acked-by: Nicolas Pitre <nico@linaro.org>
 
 
+> ---
+>  arch/arm/kernel/entry-armv.S   | 151 +------------------------------------
+>  arch/arm/kernel/entry-header.S | 164 +++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 165 insertions(+), 150 deletions(-)
+> 
+> diff --git a/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
+> index 52a949a..4172cd6 100644
+> --- a/arch/arm/kernel/entry-armv.S
+> +++ b/arch/arm/kernel/entry-armv.S
+> @@ -140,53 +140,6 @@ ENDPROC(__und_invalid)
+>   * SVC mode handlers
+>   */
+>  
+> -#if defined(CONFIG_AEABI) && (__LINUX_ARM_ARCH__ >= 5)
+> -#define SPFIX(code...) code
+> -#else
+> -#define SPFIX(code...)
+> -#endif
+> -
+> -	.macro	svc_entry, stack_hole=0
+> - UNWIND(.fnstart		)
+> - UNWIND(.save {r0 - pc}		)
+> -	sub	sp, sp, #(S_FRAME_SIZE + \stack_hole - 4)
+> -#ifdef CONFIG_THUMB2_KERNEL
+> - SPFIX(	str	r0, [sp]	)	@ temporarily saved
+> - SPFIX(	mov	r0, sp		)
+> - SPFIX(	tst	r0, #4		)	@ test original stack alignment
+> - SPFIX(	ldr	r0, [sp]	)	@ restored
+> -#else
+> - SPFIX(	tst	sp, #4		)
+> -#endif
+> - SPFIX(	subeq	sp, sp, #4	)
+> -	stmia	sp, {r1 - r12}
+> -
+> -	ldmia	r0, {r3 - r5}
+> -	add	r7, sp, #S_SP - 4	@ here for interlock avoidance
+> -	mov	r6, #-1			@  ""  ""      ""       ""
+> -	add	r2, sp, #(S_FRAME_SIZE + \stack_hole - 4)
+> - SPFIX(	addeq	r2, r2, #4	)
+> -	str	r3, [sp, #-4]!		@ save the "real" r0 copied
+> -					@ from the exception stack
+> -
+> -	mov	r3, lr
+> -
+> -	@
+> -	@ We are now ready to fill in the remaining blanks on the stack:
+> -	@
+> -	@  r2 - sp_svc
+> -	@  r3 - lr_svc
+> -	@  r4 - lr_<exception>, already fixed up for correct return/restart
+> -	@  r5 - spsr_<exception>
+> -	@  r6 - orig_r0 (see pt_regs definition in ptrace.h)
+> -	@
+> -	stmia	r7, {r2 - r6}
+> -
+> -#ifdef CONFIG_TRACE_IRQFLAGS
+> -	bl	trace_hardirqs_off
+> -#endif
+> -	.endm
+> -
+>  	.align	5
+>  __dabt_svc:
+>  	svc_entry
+> @@ -306,73 +259,8 @@ ENDPROC(__pabt_svc)
+>  
+>  /*
+>   * User mode handlers
+> - *
+> - * EABI note: sp_svc is always 64-bit aligned here, so should S_FRAME_SIZE
+>   */
+>  
+> -#if defined(CONFIG_AEABI) && (__LINUX_ARM_ARCH__ >= 5) && (S_FRAME_SIZE & 7)
+> -#error "sizeof(struct pt_regs) must be a multiple of 8"
+> -#endif
+> -
+> -	.macro	usr_entry
+> - UNWIND(.fnstart	)
+> - UNWIND(.cantunwind	)	@ don't unwind the user space
+> -	sub	sp, sp, #S_FRAME_SIZE
+> - ARM(	stmib	sp, {r1 - r12}	)
+> - THUMB(	stmia	sp, {r0 - r12}	)
+> -
+> -	ldmia	r0, {r3 - r5}
+> -	add	r0, sp, #S_PC		@ here for interlock avoidance
+> -	mov	r6, #-1			@  ""  ""     ""        ""
+> -
+> -	str	r3, [sp]		@ save the "real" r0 copied
+> -					@ from the exception stack
+> -
+> -	@
+> -	@ We are now ready to fill in the remaining blanks on the stack:
+> -	@
+> -	@  r4 - lr_<exception>, already fixed up for correct return/restart
+> -	@  r5 - spsr_<exception>
+> -	@  r6 - orig_r0 (see pt_regs definition in ptrace.h)
+> -	@
+> -	@ Also, separately save sp_usr and lr_usr
+> -	@
+> -	stmia	r0, {r4 - r6}
+> - ARM(	stmdb	r0, {sp, lr}^			)
+> - THUMB(	store_user_sp_lr r0, r1, S_SP - S_PC	)
+> -
+> -	@
+> -	@ Enable the alignment trap while in kernel mode
+> -	@
+> -	alignment_trap r0, .LCcralign
+> -
+> -	@
+> -	@ Clear FP to mark the first stack frame
+> -	@
+> -	zero_fp
+> -
+> -#ifdef CONFIG_IRQSOFF_TRACER
+> -	bl	trace_hardirqs_off
+> -#endif
+> -	ct_user_exit save = 0
+> -	.endm
+> -
+> -	.macro	kuser_cmpxchg_check
+> -#if !defined(CONFIG_CPU_32v6K) && defined(CONFIG_KUSER_HELPERS) && \
+> -    !defined(CONFIG_NEEDS_SYSCALL_FOR_CMPXCHG)
+> -#ifndef CONFIG_MMU
+> -#warning "NPTL on non MMU needs fixing"
+> -#else
+> -	@ Make sure our user space atomic helper is restarted
+> -	@ if it was interrupted in a critical region.  Here we
+> -	@ perform a quick test inline since it should be false
+> -	@ 99.9999% of the time.  The rest is done out of line.
+> -	cmp	r4, #TASK_SIZE
+> -	blhs	kuser_cmpxchg64_fixup
+> -#endif
+> -#endif
+> -	.endm
+> -
+>  	.align	5
+>  __dabt_usr:
+>  	usr_entry
+> @@ -823,6 +711,7 @@ __kuser_cmpxchg64:				@ 0xffff0f60
+>  	ldmfd	sp!, {r4, r5, r6, pc}
+>  
+>  	.text
+> +	.global kuser_cmpxchg64_fixup
+>  kuser_cmpxchg64_fixup:
+>  	@ Called from kuser_cmpxchg_fixup.
+>  	@ r4 = address of interrupted insn (must be preserved).
+> @@ -964,44 +853,6 @@ __kuser_helper_end:
+>   * SP points to a minimal amount of processor-private memory, the address
+>   * of which is copied into r0 for the mode specific abort handler.
+>   */
+> -	.macro	vector_stub, name, mode, correction=0
+> -	.align	5
+> -
+> -vector_\name:
+> -	.if \correction
+> -	sub	lr, lr, #\correction
+> -	.endif
+> -
+> -	@
+> -	@ Save r0, lr_<exception> (parent PC) and spsr_<exception>
+> -	@ (parent CPSR)
+> -	@
+> -	stmia	sp, {r0, lr}		@ save r0, lr
+> -	mrs	lr, spsr
+> -	str	lr, [sp, #8]		@ save spsr
+> -
+> -	@
+> -	@ Prepare for SVC32 mode.  IRQs remain disabled.
+> -	@
+> -	mrs	r0, cpsr
+> -	eor	r0, r0, #(\mode ^ SVC_MODE | PSR_ISETSTATE)
+> -	msr	spsr_cxsf, r0
+> -
+> -	@
+> -	@ the branch table must immediately follow this code
+> -	@
+> -	and	lr, lr, #0x0f
+> - THUMB(	adr	r0, 1f			)
+> - THUMB(	ldr	lr, [r0, lr, lsl #2]	)
+> -	mov	r0, sp
+> - ARM(	ldr	lr, [pc, lr, lsl #2]	)
+> -	movs	pc, lr			@ branch to handler in SVC mode
+> -ENDPROC(vector_\name)
+> -
+> -	.align	2
+> -	@ handler addresses follow this label
+> -1:
+> -	.endm
+>  
+>  	.section .stubs, "ax", %progbits
+>  __stubs_start:
+> diff --git a/arch/arm/kernel/entry-header.S b/arch/arm/kernel/entry-header.S
+> index 5d702f8..eb2c426 100644
+> --- a/arch/arm/kernel/entry-header.S
+> +++ b/arch/arm/kernel/entry-header.S
+> @@ -356,3 +356,167 @@ scno	.req	r7		@ syscall number
+>  tbl	.req	r8		@ syscall table pointer
+>  why	.req	r8		@ Linux syscall (!= 0)
+>  tsk	.req	r9		@ current thread_info
+> +
+> +/*
+> + * SVC mode handler macros
+> + */
+> +
+> +#if defined(CONFIG_AEABI) && (__LINUX_ARM_ARCH__ >= 5)
+> +#define SPFIX(code...) code
+> +#else
+> +#define SPFIX(code...)
+> +#endif
+> +
+> +	.macro	svc_entry, stack_hole=0
+> + UNWIND(.fnstart		)
+> + UNWIND(.save {r0 - pc}		)
+> +	sub	sp, sp, #(S_FRAME_SIZE + \stack_hole - 4)
+> +#ifdef CONFIG_THUMB2_KERNEL
+> + SPFIX(	str	r0, [sp]	)	@ temporarily saved
+> + SPFIX(	mov	r0, sp		)
+> + SPFIX(	tst	r0, #4		)	@ test original stack alignment
+> + SPFIX(	ldr	r0, [sp]	)	@ restored
+> +#else
+> + SPFIX(	tst	sp, #4		)
+> +#endif
+> + SPFIX(	subeq	sp, sp, #4	)
+> +	stmia	sp, {r1 - r12}
+> +
+> +	ldmia	r0, {r3 - r5}
+> +	add	r7, sp, #S_SP - 4	@ here for interlock avoidance
+> +	mov	r6, #-1			@  ""  ""      ""       ""
+> +	add	r2, sp, #(S_FRAME_SIZE + \stack_hole - 4)
+> + SPFIX(	addeq	r2, r2, #4	)
+> +	str	r3, [sp, #-4]!		@ save the "real" r0 copied
+> +					@ from the exception stack
+> +
+> +	mov	r3, lr
+> +
+> +	@
+> +	@ We are now ready to fill in the remaining blanks on the stack:
+> +	@
+> +	@  r2 - sp_svc
+> +	@  r3 - lr_svc
+> +	@  r4 - lr_<exception>, already fixed up for correct return/restart
+> +	@  r5 - spsr_<exception>
+> +	@  r6 - orig_r0 (see pt_regs definition in ptrace.h)
+> +	@
+> +	stmia	r7, {r2 - r6}
+> +
+> +#ifdef CONFIG_TRACE_IRQFLAGS
+> +	bl	trace_hardirqs_off
+> +#endif
+> +	.endm
+> +
+> +/*
+> + * User mode handler macros
+> + *
+> + * EABI note: sp_svc is always 64-bit aligned here, so should S_FRAME_SIZE
+> + */
+> +
+> +#if defined(CONFIG_AEABI) && (__LINUX_ARM_ARCH__ >= 5) && (S_FRAME_SIZE & 7)
+> +#error "sizeof(struct pt_regs) must be a multiple of 8"
+> +#endif
+> +
+> +	.macro	usr_entry
+> + UNWIND(.fnstart	)
+> + UNWIND(.cantunwind	)	@ don't unwind the user space
+> +	sub	sp, sp, #S_FRAME_SIZE
+> + ARM(	stmib	sp, {r1 - r12}	)
+> + THUMB(	stmia	sp, {r0 - r12}	)
+> +
+> +	ldmia	r0, {r3 - r5}
+> +	add	r0, sp, #S_PC		@ here for interlock avoidance
+> +	mov	r6, #-1			@  ""  ""     ""        ""
+> +
+> +	str	r3, [sp]		@ save the "real" r0 copied
+> +					@ from the exception stack
+> +
+> +	@
+> +	@ We are now ready to fill in the remaining blanks on the stack:
+> +	@
+> +	@  r4 - lr_<exception>, already fixed up for correct return/restart
+> +	@  r5 - spsr_<exception>
+> +	@  r6 - orig_r0 (see pt_regs definition in ptrace.h)
+> +	@
+> +	@ Also, separately save sp_usr and lr_usr
+> +	@
+> +	stmia	r0, {r4 - r6}
+> + ARM(	stmdb	r0, {sp, lr}^			)
+> + THUMB(	store_user_sp_lr r0, r1, S_SP - S_PC	)
+> +
+> +	@
+> +	@ Enable the alignment trap while in kernel mode
+> +	@
+> +	alignment_trap r0, .LCcralign
+> +
+> +	@
+> +	@ Clear FP to mark the first stack frame
+> +	@
+> +	zero_fp
+> +
+> +#ifdef CONFIG_IRQSOFF_TRACER
+> +	bl	trace_hardirqs_off
+> +#endif
+> +	ct_user_exit save = 0
+> +	.endm
+> +
+> +	.macro	kuser_cmpxchg_check
+> +#if !defined(CONFIG_CPU_32v6K) && defined(CONFIG_KUSER_HELPERS) && \
+> +    !defined(CONFIG_NEEDS_SYSCALL_FOR_CMPXCHG)
+> +#ifndef CONFIG_MMU
+> +#warning "NPTL on non MMU needs fixing"
+> +#else
+> +	@ Make sure our user space atomic helper is restarted
+> +	@ if it was interrupted in a critical region.  Here we
+> +	@ perform a quick test inline since it should be false
+> +	@ 99.9999% of the time.  The rest is done out of line.
+> +	cmp	r4, #TASK_SIZE
+> +	blhs	kuser_cmpxchg64_fixup
+> +#endif
+> +#endif
+> +	.endm
+> +
+> +/*
+> + * Vector stubs macro.
+> + */
+> +	.macro	vector_stub, name, mode, correction=0
+> +	.align	5
+> +
+> +vector_\name:
+> +	.if \correction
+> +	sub	lr, lr, #\correction
+> +	.endif
+> +
+> +	@
+> +	@ Save r0, lr_<exception> (parent PC) and spsr_<exception>
+> +	@ (parent CPSR)
+> +	@
+> +	stmia	sp, {r0, lr}		@ save r0, lr
+> +	mrs	lr, spsr
+> +	str	lr, [sp, #8]		@ save spsr
+> +
+> +	@
+> +	@ Prepare for SVC32 mode.  IRQs remain disabled.
+> +	@
+> +	mrs	r0, cpsr
+> +	eor	r0, r0, #(\mode ^ SVC_MODE | PSR_ISETSTATE)
+> +	msr	spsr_cxsf, r0
+> +
+> +	@
+> +	@ the branch table must immediately follow this code
+> +	@
+> +	and	lr, lr, #0x0f
+> + THUMB(	adr	r0, 1f			)
+> + THUMB(	ldr	lr, [r0, lr, lsl #2]	)
+> +	mov	r0, sp
+> + ARM(	ldr	lr, [pc, lr, lsl #2]	)
+> +	movs	pc, lr			@ branch to handler in SVC mode
+> +ENDPROC(vector_\name)
+> +
+> +	.align	2
+> +	@ handler addresses follow this label
+> +1:
+> +	.endm
+> +
+> +
+> -- 
+> 1.9.3
+> 
