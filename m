@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932137AbaFXUiA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:38:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47908 "EHLO
+	id S932186AbaFXUie (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:38:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47896 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755994AbaFXUdw (ORCPT
+	with ESMTP id S1755870AbaFXUds (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:33:52 -0400
+	Tue, 24 Jun 2014 16:33:48 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <jhovold@gmail.com>, "David S. Miller" <davem@davemloft.net>,
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 29/65] net: cpsw: fix null dereference at probe
-Date: Tue, 24 Jun 2014 13:29:49 -0700
-Message-Id: <1403641825-12825-30-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 28/65] sched: Use CPUPRI_NR_PRIORITIES instead of MAX_RT_PRIO in cpupri check
+Date: Tue, 24 Jun 2014 13:29:48 -0700
+Message-Id: <1403641825-12825-29-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
 References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
@@ -27,35 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 6954cc1f238199e971ec905c5cc87120806ac981 upstream.
+commit 6227cb00cc120f9a43ce8313bb0475ddabcb7d01 upstream.
 
-Fix null-pointer dereference at probe when the mdio platform device is
-missing (e.g. when it has been disabled in DT).
+The check at the beginning of cpupri_find() makes sure that the task_pri
+variable does not exceed the cp->pri_to_cpu array length. But that length
+is CPUPRI_NR_PRIORITIES not MAX_RT_PRIO, where it will miss the last two
+priorities in that array.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+As task_pri is computed from convert_prio() which should never be bigger
+than CPUPRI_NR_PRIORITIES, if the check should cause a panic if it is
+hit.
+
+Reported-by: Mike Galbraith <umgwanakikbuti@gmail.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1397015410.5212.13.camel@marge.simpson.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/ethernet/ti/cpsw.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ kernel/sched/cpupri.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/ti/cpsw.c b/drivers/net/ethernet/ti/cpsw.c
-index 3b1be52..06d2e09 100644
---- a/drivers/net/ethernet/ti/cpsw.c
-+++ b/drivers/net/ethernet/ti/cpsw.c
-@@ -1119,6 +1119,10 @@ static int cpsw_probe_dt(struct cpsw_platform_data *data,
- 		mdio_node = of_find_node_by_phandle(be32_to_cpup(parp));
- 		phyid = be32_to_cpup(parp+1);
- 		mdio = of_find_device_by_node(mdio_node);
-+		if (!mdio) {
-+			pr_err("Missing mdio platform device\n");
-+			return -EINVAL;
-+		}
- 		snprintf(slave_data->phy_id, sizeof(slave_data->phy_id),
- 			 PHY_ID_FMT, mdio->name, phyid);
+diff --git a/kernel/sched/cpupri.c b/kernel/sched/cpupri.c
+index 23aa789..8ea0f2e 100644
+--- a/kernel/sched/cpupri.c
++++ b/kernel/sched/cpupri.c
+@@ -68,8 +68,7 @@ int cpupri_find(struct cpupri *cp, struct task_struct *p,
+ 	int idx = 0;
+ 	int task_pri = convert_prio(p->prio);
  
+-	if (task_pri >= MAX_RT_PRIO)
+-		return 0;
++	BUG_ON(task_pri >= CPUPRI_NR_PRIORITIES);
+ 
+ 	for (idx = 0; idx < task_pri; idx++) {
+ 		struct cpupri_vec *vec  = &cp->pri_to_cpu[idx];
 -- 
 1.9.1
 
