@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932508AbaFXQ0d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:26:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32990 "EHLO
+	id S932424AbaFXPyQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:54:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32980 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932404AbaFXPyR (ORCPT
+	with ESMTP id S932404AbaFXPyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:54:17 -0400
+	Tue, 24 Jun 2014 11:54:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 26/68] net: force a list_del() in unregister_netdevice_many()
-Date: Tue, 24 Jun 2014 11:50:45 -0400
-Message-Id: <20140624154725.096272615@linuxfoundation.org>
+Subject: [PATCH 3.14 23/68] net: filter: fix typo in sparc BPF JIT
+Date: Tue, 24 Jun 2014 11:50:42 -0400
+Message-Id: <20140624154724.960482143@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154723.907894814@linuxfoundation.org>
 References: <20140624154723.907894814@linuxfoundation.org>
@@ -29,86 +29,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Alexei Starovoitov <ast@plumgrid.com>
 
-[ Upstream commit 87757a917b0b3c0787e0563c679762152be81312 ]
+[ Upstream commit 569810d1e3278907264f5b115281fca3f0038d53 ]
 
-unregister_netdevice_many() API is error prone and we had too
-many bugs because of dangling LIST_HEAD on stacks.
+fix typo in sparc codegen for SKF_AD_IFINDEX and SKF_AD_HATYPE
+classic BPF extensions
 
-See commit f87e6f47933e3e ("net: dont leave active on stack LIST_HEAD")
-
-In fact, instead of making sure no caller leaves an active list_head,
-just force a list_del() in the callee. No one seems to need to access
-the list after unregister_netdevice_many()
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
+Fixes: 2809a2087cc4 ("net: filter: Just In Time compiler for sparc")
+Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/macvlan.c |    1 -
- net/core/dev.c        |    5 ++++-
- net/core/rtnetlink.c  |    1 -
- net/mac80211/iface.c  |    1 -
- 4 files changed, 4 insertions(+), 4 deletions(-)
+ arch/sparc/net/bpf_jit_comp.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/net/macvlan.c
-+++ b/drivers/net/macvlan.c
-@@ -1043,7 +1043,6 @@ static int macvlan_device_event(struct n
- 		list_for_each_entry_safe(vlan, next, &port->vlans, list)
- 			vlan->dev->rtnl_link_ops->dellink(vlan->dev, &list_kill);
- 		unregister_netdevice_many(&list_kill);
--		list_del(&list_kill);
- 		break;
- 	case NETDEV_PRE_TYPE_CHANGE:
- 		/* Forbid underlaying device to change its type. */
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -6548,6 +6548,9 @@ EXPORT_SYMBOL(unregister_netdevice_queue
- /**
-  *	unregister_netdevice_many - unregister many devices
-  *	@head: list of devices
-+ *
-+ *  Note: As most callers use a stack allocated list_head,
-+ *  we force a list_del() to make sure stack wont be corrupted later.
-  */
- void unregister_netdevice_many(struct list_head *head)
- {
-@@ -6557,6 +6560,7 @@ void unregister_netdevice_many(struct li
- 		rollback_registered_many(head);
- 		list_for_each_entry(dev, head, unreg_list)
- 			net_set_todo(dev);
-+		list_del(head);
- 	}
- }
- EXPORT_SYMBOL(unregister_netdevice_many);
-@@ -7012,7 +7016,6 @@ static void __net_exit default_device_ex
- 		}
- 	}
- 	unregister_netdevice_many(&dev_kill_list);
--	list_del(&dev_kill_list);
- 	rtnl_unlock();
- }
+--- a/arch/sparc/net/bpf_jit_comp.c
++++ b/arch/sparc/net/bpf_jit_comp.c
+@@ -83,9 +83,9 @@ static void bpf_flush_icache(void *start
+ #define BNE		(F2(0, 2) | CONDNE)
  
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -1735,7 +1735,6 @@ static int rtnl_dellink(struct sk_buff *
+ #ifdef CONFIG_SPARC64
+-#define BNE_PTR		(F2(0, 1) | CONDNE | (2 << 20))
++#define BE_PTR		(F2(0, 1) | CONDE | (2 << 20))
+ #else
+-#define BNE_PTR		BNE
++#define BE_PTR		BNE
+ #endif
  
- 	ops->dellink(dev, &list_kill);
- 	unregister_netdevice_many(&list_kill);
--	list_del(&list_kill);
- 	return 0;
- }
- 
---- a/net/mac80211/iface.c
-+++ b/net/mac80211/iface.c
-@@ -1761,7 +1761,6 @@ void ieee80211_remove_interfaces(struct
- 	}
- 	mutex_unlock(&local->iflist_mtx);
- 	unregister_netdevice_many(&unreg_list);
--	list_del(&unreg_list);
- 
- 	list_for_each_entry_safe(sdata, tmp, &wdev_list, list) {
- 		list_del(&sdata->list);
+ #define SETHI(K, REG)	\
+@@ -600,7 +600,7 @@ void bpf_jit_compile(struct sk_filter *f
+ 			case BPF_S_ANC_IFINDEX:
+ 				emit_skb_loadptr(dev, r_A);
+ 				emit_cmpi(r_A, 0);
+-				emit_branch(BNE_PTR, cleanup_addr + 4);
++				emit_branch(BE_PTR, cleanup_addr + 4);
+ 				emit_nop();
+ 				emit_load32(r_A, struct net_device, ifindex, r_A);
+ 				break;
+@@ -613,7 +613,7 @@ void bpf_jit_compile(struct sk_filter *f
+ 			case BPF_S_ANC_HATYPE:
+ 				emit_skb_loadptr(dev, r_A);
+ 				emit_cmpi(r_A, 0);
+-				emit_branch(BNE_PTR, cleanup_addr + 4);
++				emit_branch(BE_PTR, cleanup_addr + 4);
+ 				emit_nop();
+ 				emit_load16(r_A, struct net_device, type, r_A);
+ 				break;
 
 
