@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754366AbaFXVSJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 17:18:09 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:60565 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751419AbaFXVSG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 17:18:06 -0400
-Date: Tue, 24 Jun 2014 23:18:02 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Richard Weinberger <richard@nod.at>,
-        X86 ML <x86@kernel.org>, Eric Paris <eparis@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "security@kernel.org" <security@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>,
-        stable <stable@vger.kernel.org>, Roland McGrath <roland@redhat.com>
-Subject: Re: [PATCH] x86_32,entry: Do syscall exit work on badsys
- (CVE-2014-4508)
-Message-ID: <20140624211802.GC15068@pd.tnic>
-References: <CA+5PVA70nFS8JZkL0-Q-1HjFHT5NA04275_M4WstjQMrpT+hrQ@mail.gmail.com>
- <e09c499eade6fc321266dd6b54da7beb28d6991c.1403558229.git.luto@amacapital.net>
- <20140624105108.GG4439@pd.tnic>
- <CALCETrUStJFrCJBO-QRzn7mbdUgbnFgzYNspiVKORMsU6DMDKw@mail.gmail.com>
+	id S1754490AbaFXVSy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 17:18:54 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:32940 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754138AbaFXVSw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 17:18:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CALCETrUStJFrCJBO-QRzn7mbdUgbnFgzYNspiVKORMsU6DMDKw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [80.196.35.44]
+In-Reply-To: <alpine.LRH.2.03.1406241419080.4699@AMR>
+References: <1402661396-19207-1-git-send-email-m@bjorling.me>
+	<1402661396-19207-2-git-send-email-m@bjorling.me>
+	<alpine.LRH.2.03.1406160931400.4699@AMR>
+	<53A9CF5F.6040806@bjorling.me>
+	<alpine.LRH.2.03.1406241419080.4699@AMR>
+Date: Tue, 24 Jun 2014 23:18:51 +0200
+Message-ID: <CAOu_J6mz=eeimXAsQ0Mj=tya+eHpwUoiG69=XPWbSEuRO1AwjA@mail.gmail.com>
+Subject: Re: [PATCH v8] NVMe: convert to blk-mq
+From: =?UTF-8?Q?Matias_Bj=C3=B8rling?= <m@bjorling.me>
+To: Keith Busch <keith.busch@intel.com>
+Cc: Matthew Wilcox <willy@linux.intel.com>,
+        "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com>,
+        Jens Axboe <axboe@fb.com>, Ming Lei <tom.leiming@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-nvme <linux-nvme@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 24, 2014 at 01:53:25PM -0700, Andy Lutomirski wrote:
-> It confirms my sense that no one knows how to test this stuff :-/
-> It's pretty clear that no one has ever extensively hammered it.
+On Tue, Jun 24, 2014 at 10:33 PM, Keith Busch <keith.busch@intel.com> wrote:
+> On Tue, 24 Jun 2014, Matias Bjorling wrote:
+>>
+>> Den 16-06-2014 17:57, Keith Busch skrev:
+>>>
+>>> This latest is otherwise stable on my dev machine.
+>>
+>>
+>> May I add an Acked-by from you?
+>
+>
+> Totally up to Willy, but my feeling is "not just yet". I see the value
+> this driver provides, but I would need to give this to a customer and
+> hear their results before adding an "ack". It maybe a couple more weeks
+> before they'll be able to try it.
 
-Someone might've known at some point but who knows who knew. :-)
+I was hoping to get an OK before that, to make sure it is picked up
+for the 3.17 release.
 
-> I wonder how much could be effectively rewritten in C. I'm thinking of
-> redoing most of the entry work in C, but that won't help here.
-
-Whatever you do, you'll have to do testing yourself, I'm afraid, here
-too. And then, after the patch is long committed and forgotten, someone
-would resurface complaining that it breaks some obscure use case.
-
-Eeh, the sad life of a kernel developer. :-\
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Should I pack it up in a specific way to help it along?
