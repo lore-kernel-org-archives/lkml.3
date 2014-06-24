@@ -1,77 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754156AbaFXOxX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 10:53:23 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:61912 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753918AbaFXOxW (ORCPT
+	id S1754230AbaFXO6f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 10:58:35 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:54897 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753248AbaFXO6d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 10:53:22 -0400
-From: Ming Lei <tom.leiming@gmail.com>
-To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Cc: Ming Lei <tom.leiming@gmail.com>
-Subject: [PATCH] blk-mq: run hw queue asynchronously in blk_mq_start_hw_queues
-Date: Tue, 24 Jun 2014 22:53:08 +0800
-Message-Id: <1403621588-25109-1-git-send-email-tom.leiming@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 24 Jun 2014 10:58:33 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jim Davis <jim.epost@gmail.com>
+Cc: sfr@canb.auug.org.au, linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, sbkim73@samsung.com,
+        sameo@linux.intel.com, lee.jones@linaro.org, grant.likely@linaro.org,
+        robh+dt@kernel.org, devicetree <devicetree@vger.kernel.org>
+Subject: Re: randconfig build error with next-20140624, in drivers/mfd/sec-core.c
+Date: Tue, 24 Jun 2014 16:57:59 +0200
+Message-ID: <29237234.T7oGEGKuvp@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CA+r1ZhhFYip3Jp2c3d8tNpD-vK8Pkf7DzrKTtk6Gy8uOOO3Ucw@mail.gmail.com>
+References: <CA+r1ZhhFYip3Jp2c3d8tNpD-vK8Pkf7DzrKTtk6Gy8uOOO3Ucw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:Qvj/wZEauaL99P9ZIsl2dmtsISq+h/CI+dY5X1hoGQb
+ xKM7eOlQeXb6ByLi4JlnaMqhGME7d3+LhztMnvJN8sk7cL8EH8
+ Hy4L+RIwClHmCGJbSvaw1ojKFwULJXmTBNSs9dkOLMUrx/lLZF
+ ktqOK/1mtgRqraKdBqFnW5co6cDzept8ftsNHxMfZe8XzQdAd1
+ i3tqZ9vwsBc8AB4zXGyvtSLkyFMxq/TVxCQIYnwhyeKORT/Npn
+ PtGgBg6/Nk8WvZaRjzroqr2ilGpa83je/3W575ulDQUXcPo5FJ
+ 4mfz6QnuM7yJYM5EP2Y4iJ+3TkMnqnrLykvTS4HlzktCMOB/w9
+ 3dMqnLPU4OKAwfm2o+xo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From API view, it isn't good to run all hw queues synchronously
-in one context, since it isn't correct for multi hw queue case.
+On Tuesday 24 June 2014 07:39:04 Jim Davis wrote:
+> Building with the attached random configuration file,
+> 
+> drivers/built-in.o: In function `sec_pmic_suspend':
+> sec-core.c:(.text+0x31e02c): undefined reference to `regulator_suspend_prepare'
+> make: *** [vmlinux] Error 1
 
-So this patch adds 'async' parameter to blk_mq_start_hw_queue(),
-and make blk_mq_start_hw_queues() to run hw queues asynchronously
-at default.
+Reported-by: Jim Davis <jim.epost@gmail.com>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-Signed-off-by: Ming Lei <tom.leiming@gmail.com>
----
- block/blk-mq.c         |    6 +++---
- include/linux/blk-mq.h |    2 +-
- 2 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/block/blk-mq.c b/block/blk-mq.c
-index 0ef2dc7..f83eacd 100644
---- a/block/blk-mq.c
-+++ b/block/blk-mq.c
-@@ -873,12 +873,12 @@ void blk_mq_stop_hw_queues(struct request_queue *q)
- }
- EXPORT_SYMBOL(blk_mq_stop_hw_queues);
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 207c433..1caa3c5 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -582,7 +582,7 @@ config MFD_RC5T583
  
--void blk_mq_start_hw_queue(struct blk_mq_hw_ctx *hctx)
-+void blk_mq_start_hw_queue(struct blk_mq_hw_ctx *hctx, bool async)
- {
- 	clear_bit(BLK_MQ_S_STOPPED, &hctx->state);
- 
- 	preempt_disable();
--	__blk_mq_run_hw_queue(hctx);
-+	blk_mq_run_hw_queue(hctx, async);
- 	preempt_enable();
- }
- EXPORT_SYMBOL(blk_mq_start_hw_queue);
-@@ -889,7 +889,7 @@ void blk_mq_start_hw_queues(struct request_queue *q)
- 	int i;
- 
- 	queue_for_each_hw_ctx(q, hctx, i)
--		blk_mq_start_hw_queue(hctx);
-+		blk_mq_start_hw_queue(hctx, true);
- }
- EXPORT_SYMBOL(blk_mq_start_hw_queues);
- 
-diff --git a/include/linux/blk-mq.h b/include/linux/blk-mq.h
-index eb726b9..49e84b5 100644
---- a/include/linux/blk-mq.h
-+++ b/include/linux/blk-mq.h
-@@ -169,7 +169,7 @@ void blk_mq_kick_requeue_list(struct request_queue *q);
- void blk_mq_complete_request(struct request *rq);
- 
- void blk_mq_stop_hw_queue(struct blk_mq_hw_ctx *hctx);
--void blk_mq_start_hw_queue(struct blk_mq_hw_ctx *hctx);
-+void blk_mq_start_hw_queue(struct blk_mq_hw_ctx *hctx, bool async);
- void blk_mq_stop_hw_queues(struct request_queue *q);
- void blk_mq_start_hw_queues(struct request_queue *q);
- void blk_mq_start_stopped_hw_queues(struct request_queue *q, bool async);
--- 
-1.7.9.5
+ config MFD_SEC_CORE
+ 	bool "SAMSUNG Electronics PMIC Series Support"
+-	depends on I2C=y
++	depends on I2C=y && REGULATOR
+ 	select MFD_CORE
+ 	select REGMAP_I2C
+ 	select REGMAP_IRQ
 
