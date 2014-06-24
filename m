@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755325AbaFXPwU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:52:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60882 "EHLO
+	id S1755302AbaFXPwS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:52:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60878 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755274AbaFXPwQ (ORCPT
+	with ESMTP id S1755207AbaFXPwO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:52:16 -0400
+	Tue, 24 Jun 2014 11:52:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Lutomirski <luto@amacapital.net>,
         "Eric W. Biederman" <ebiederm@xmission.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 06/52] net: Move the permission check in sock_diag_put_filterinfo to packet_diag_dump
-Date: Tue, 24 Jun 2014 11:50:21 -0400
-Message-Id: <20140624154713.818706672@linuxfoundation.org>
+Subject: [PATCH 3.10 05/52] netlink: Rename netlink_capable netlink_allowed
+Date: Tue, 24 Jun 2014 11:50:20 -0400
+Message-Id: <20140624154713.761605464@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154713.428945460@linuxfoundation.org>
 References: <20140624154713.428945460@linuxfoundation.org>
@@ -32,95 +31,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-[ Upstream commit a53b72c83a4216f2eb883ed45a0cbce014b8e62d ]
+[ Upstream commit 5187cd055b6e81fc6526109456f8b20623148d5f ]
 
-The permission check in sock_diag_put_filterinfo is wrong, and it is so removed
-from it's sources it is not clear why it is wrong.  Move the computation
-into packet_diag_dump and pass a bool of the result into sock_diag_filterinfo.
+netlink_capable is a static internal function in af_netlink.c and we
+have better uses for the name netlink_capable.
 
-This does not yet correct the capability check but instead simply moves it to make
-it clear what is going on.
-
-Reported-by: Andy Lutomirski <luto@amacapital.net>
 Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/linux/sock_diag.h |    2 +-
- net/core/sock_diag.c      |    4 ++--
- net/packet/diag.c         |    7 ++++++-
- 3 files changed, 9 insertions(+), 4 deletions(-)
+ net/netlink/af_netlink.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/include/linux/sock_diag.h
-+++ b/include/linux/sock_diag.h
-@@ -23,7 +23,7 @@ int sock_diag_check_cookie(void *sk, __u
- void sock_diag_save_cookie(void *sk, __u32 *cookie);
- 
- int sock_diag_put_meminfo(struct sock *sk, struct sk_buff *skb, int attr);
--int sock_diag_put_filterinfo(struct sock *sk,
-+int sock_diag_put_filterinfo(bool may_report_filterinfo, struct sock *sk,
- 			     struct sk_buff *skb, int attrtype);
- 
- #endif
---- a/net/core/sock_diag.c
-+++ b/net/core/sock_diag.c
-@@ -49,7 +49,7 @@ int sock_diag_put_meminfo(struct sock *s
+--- a/net/netlink/af_netlink.c
++++ b/net/netlink/af_netlink.c
+@@ -1219,7 +1219,7 @@ retry:
+ 	return err;
  }
- EXPORT_SYMBOL_GPL(sock_diag_put_meminfo);
  
--int sock_diag_put_filterinfo(struct sock *sk,
-+int sock_diag_put_filterinfo(bool may_report_filterinfo, struct sock *sk,
- 			     struct sk_buff *skb, int attrtype)
+-static inline int netlink_capable(const struct socket *sock, unsigned int flag)
++static inline int netlink_allowed(const struct socket *sock, unsigned int flag)
  {
- 	struct nlattr *attr;
-@@ -57,7 +57,7 @@ int sock_diag_put_filterinfo(struct sock
- 	unsigned int len;
- 	int err = 0;
+ 	return (nl_table[sock->sk->sk_protocol].flags & flag) ||
+ 		ns_capable(sock_net(sock->sk)->user_ns, CAP_NET_ADMIN);
+@@ -1287,7 +1287,7 @@ static int netlink_bind(struct socket *s
  
--	if (!ns_capable(sock_net(sk)->user_ns, CAP_NET_ADMIN)) {
-+	if (!may_report_filterinfo) {
- 		nla_reserve(skb, attrtype, 0);
- 		return 0;
- 	}
---- a/net/packet/diag.c
-+++ b/net/packet/diag.c
-@@ -127,6 +127,7 @@ static int pdiag_put_fanout(struct packe
+ 	/* Only superuser is allowed to listen multicasts */
+ 	if (nladdr->nl_groups) {
+-		if (!netlink_capable(sock, NL_CFG_F_NONROOT_RECV))
++		if (!netlink_allowed(sock, NL_CFG_F_NONROOT_RECV))
+ 			return -EPERM;
+ 		err = netlink_realloc_groups(sk);
+ 		if (err)
+@@ -1349,7 +1349,7 @@ static int netlink_connect(struct socket
+ 		return -EINVAL;
  
- static int sk_diag_fill(struct sock *sk, struct sk_buff *skb,
- 			struct packet_diag_req *req,
-+			bool may_report_filterinfo,
- 			struct user_namespace *user_ns,
- 			u32 portid, u32 seq, u32 flags, int sk_ino)
- {
-@@ -171,7 +172,8 @@ static int sk_diag_fill(struct sock *sk,
- 		goto out_nlmsg_trim;
+ 	/* Only superuser is allowed to send multicasts */
+-	if (nladdr->nl_groups && !netlink_capable(sock, NL_CFG_F_NONROOT_SEND))
++	if (nladdr->nl_groups && !netlink_allowed(sock, NL_CFG_F_NONROOT_SEND))
+ 		return -EPERM;
  
- 	if ((req->pdiag_show & PACKET_SHOW_FILTER) &&
--	    sock_diag_put_filterinfo(sk, skb, PACKET_DIAG_FILTER))
-+	    sock_diag_put_filterinfo(may_report_filterinfo, sk, skb,
-+				     PACKET_DIAG_FILTER))
- 		goto out_nlmsg_trim;
- 
- 	return nlmsg_end(skb, nlh);
-@@ -187,9 +189,11 @@ static int packet_diag_dump(struct sk_bu
- 	struct packet_diag_req *req;
- 	struct net *net;
- 	struct sock *sk;
-+	bool may_report_filterinfo;
- 
- 	net = sock_net(skb->sk);
- 	req = nlmsg_data(cb->nlh);
-+	may_report_filterinfo = ns_capable(net->user_ns, CAP_NET_ADMIN);
- 
- 	mutex_lock(&net->packet.sklist_lock);
- 	sk_for_each(sk, &net->packet.sklist) {
-@@ -199,6 +203,7 @@ static int packet_diag_dump(struct sk_bu
- 			goto next;
- 
- 		if (sk_diag_fill(sk, skb, req,
-+				 may_report_filterinfo,
- 				 sk_user_ns(NETLINK_CB(cb->skb).sk),
- 				 NETLINK_CB(cb->skb).portid,
- 				 cb->nlh->nlmsg_seq, NLM_F_MULTI,
+ 	if (!nlk->portid)
+@@ -1921,7 +1921,7 @@ static int netlink_setsockopt(struct soc
+ 		break;
+ 	case NETLINK_ADD_MEMBERSHIP:
+ 	case NETLINK_DROP_MEMBERSHIP: {
+-		if (!netlink_capable(sock, NL_CFG_F_NONROOT_RECV))
++		if (!netlink_allowed(sock, NL_CFG_F_NONROOT_RECV))
+ 			return -EPERM;
+ 		err = netlink_realloc_groups(sk);
+ 		if (err)
+@@ -2072,7 +2072,7 @@ static int netlink_sendmsg(struct kiocb
+ 		dst_group = ffs(addr->nl_groups);
+ 		err =  -EPERM;
+ 		if ((dst_group || dst_portid) &&
+-		    !netlink_capable(sock, NL_CFG_F_NONROOT_SEND))
++		    !netlink_allowed(sock, NL_CFG_F_NONROOT_SEND))
+ 			goto out;
+ 	} else {
+ 		dst_portid = nlk->dst_portid;
 
 
