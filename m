@@ -1,84 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753965AbaFXXzE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 19:55:04 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:55132 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751963AbaFXXzB (ORCPT
+	id S1752704AbaFXX4G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 19:56:06 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:35057 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211AbaFXX4E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 19:55:01 -0400
+	Tue, 24 Jun 2014 19:56:04 -0400
 MIME-Version: 1.0
-In-Reply-To: <1403650817-21641-1-git-send-email-benchan@chromium.org>
-References: <1403650817-21641-1-git-send-email-benchan@chromium.org>
-Date: Tue, 24 Jun 2014 16:55:00 -0700
-X-Google-Sender-Auth: Ew9HiDbn-tloOk_N5jrjQN8AufI
-Message-ID: <CAGXu5j+gntXQQdC4aOiH9mOTv5rEqXqbQ1rt2XN_BkWznLR=7A@mail.gmail.com>
-Subject: Re: [PATCH] MIPS: ZBOOT: implement stack protector in compressed boot phase
-From: Kees Cook <keescook@chromium.org>
-To: Ben Chan <benchan@chromium.org>
-Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Olof Johansson <olofj@chromium.org>
+In-Reply-To: <9E0BE1322F2F2246BD820DA9FC397ADE016AF41C@shsmsx102.ccr.corp.intel.com>
+References: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com>
+ <1403084656-27284-3-git-send-email-qiaowei.ren@intel.com> <53A884B2.5070702@mit.edu>
+ <53A88806.1060908@intel.com> <CALCETrXYZZiZsDiUvvZd0636+qHP9a0sHTN6wt_ZKjvLaeeBzw@mail.gmail.com>
+ <53A88DE4.8050107@intel.com> <CALCETrWBbkFzQR3tz1TphqxiGYycvzrFrKc=ghzMynbem=d7rg@mail.gmail.com>
+ <9E0BE1322F2F2246BD820DA9FC397ADE016AF41C@shsmsx102.ccr.corp.intel.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 24 Jun 2014 16:55:41 -0700
+Message-ID: <CALCETrX+iS5N8bCUm_O-1E4GPu4oG-SuFJoJjx_+S054K9-6pw@mail.gmail.com>
+Subject: Re: [PATCH v6 02/10] x86, mpx: add MPX specific mmap interface
+To: "Ren, Qiaowei" <qiaowei.ren@intel.com>
+Cc: "Hansen, Dave" <dave.hansen@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 24, 2014 at 4:00 PM, Ben Chan <benchan@chromium.org> wrote:
-> This patch implements the stack protector code in MIPS compressed boot
-> phase based on the same code added to arm in commit
-> 8779657d29c0ebcc0c94ede4df2f497baf1b563f "stackprotector: Introduce
-> CONFIG_CC_STACKPROTECTOR_STRONG" by Kees Cook <keescook@chromium.org>
+On Mon, Jun 23, 2014 at 10:53 PM, Ren, Qiaowei <qiaowei.ren@intel.com> wrote:
+> On 2014-06-24, Andy Lutomirski wrote:
+>>> On 06/23/2014 01:06 PM, Andy Lutomirski wrote:
+>>>> Can the new vm_operation "name" be use for this?  The magic "always
+>>>> written to core dumps" feature might need to be reconsidered.
+>>>
+>>> One thing I'd like to avoid is an MPX vma getting merged with a
+>>> non-MPX vma.  I don't see any code to prevent two VMAs with
+>>> different vm_ops->names from getting merged.  That seems like a bit
+>>> of a design oversight for ->name.  Right?
+>>
+>> AFAIK there are no ->name users that don't also set ->close, for
+>> exactly that reason.  I'd be okay with adding a check for ->name, too.
+>>
+>> Hmm.  If MPX vmas had a real struct file attached, this would all come
+>> for free. Maybe vmas with non-default vm_ops and file != NULL should
+>> never be mergeable?
+>>
+>>>
+>>> Thinking out loud a bit... There are also some more complicated but
+>>> more performant cleanup mechanisms that I'd like to go after in the future.
+>>> Given a page, we might want to figure out if it is an MPX page or not.
+>>> I wonder if we'll ever collide with some other user of vm_ops->name.
+>>> It looks fairly narrowly used at the moment, but would this keep us
+>>> from putting these pages on, say, a tmpfs mount?  Doesn't look that
+>>> way at the moment.
+>>
+>> You could always check the vm_ops pointer to see if it's MPX.
+>>
+>> One feature I've wanted: a way to have special per-process vmas that
+>> can be easily found.  For example, I want to be able to efficiently
+>> find out where the vdso and vvar vmas are.  I don't think this is currently supported.
+>>
+> Andy, if you add a check for ->name to avoid the MPX vmas merged with non-MPX vmas, I guess the work flow should be as follow (use _install_special_mapping to get a new vma):
 >
-> Signed-off-by: Ben Chan <benchan@chromium.org>
-> Cc: Kees Cook <keescook@chromium.org>
-> Cc: Olof Johansson <olofj@chromium.org>
-> ---
->  arch/mips/boot/compressed/decompress.c | 14 ++++++++++++++
->  1 file changed, 14 insertions(+)
+> unsigned long mpx_mmap(unsigned long len)
+> {
+>     ......
+>     static struct vm_special_mapping mpx_mapping = {
+>         .name = "[mpx]",
+>         .pages = no_pages,
+>     };
 >
-> diff --git a/arch/mips/boot/compressed/decompress.c b/arch/mips/boot/compressed/decompress.c
-> index c00c4dd..b49c7ad 100644
-> --- a/arch/mips/boot/compressed/decompress.c
-> +++ b/arch/mips/boot/compressed/decompress.c
-> @@ -67,10 +67,24 @@ void error(char *x)
->  #include "../../../../lib/decompress_unxz.c"
->  #endif
+>     .......
+>     vma = _install_special_mapping(mm, addr, len, vm_flags, &mpx_mapping);
+>     ......
+> }
 >
-> +unsigned long __stack_chk_guard;
-> +
-> +void __stack_chk_guard_setup(void)
-> +{
-> +       __stack_chk_guard = 0x000a0dff;
-> +}
-> +
-> +void __stack_chk_fail(void)
-> +{
-> +       error("stack-protector: Kernel stack is corrupted\n");
-> +}
-> +
->  void decompress_kernel(unsigned long boot_heap_start)
->  {
->         unsigned long zimage_start, zimage_size;
->
-> +       __stack_chk_guard_setup();
-> +
->         zimage_start = (unsigned long)(&__image_begin);
->         zimage_size = (unsigned long)(&__image_end) -
->             (unsigned long)(&__image_begin);
-> --
-> 2.0.0.526.g5318336
+> Then, we could check the ->name to see if the VMA is MPX specific. Right?
 
-Yup, that looks correct to me. As in the ARM case, gathering entropy
-for the canary here is overkill, so this is sufficient to build and
-provide basic canary support in the decompression phase of boot.
+Does this actually create a vma backed with real memory?  Doesn't this
+need to go through anon_vma or something?  _install_special_mapping
+completely prevents merging.
 
-Reviewed-by: Kees Cook <keescook@chromium.org>
+Possibly silly question: would it make more sense to just create one
+giant vma for the MPX tables and only populate pieces of it as needed?
+ This wouldn't work for 32-bit code, but maybe we don't care.  (I see
+no reason why it couldn't work for x32, though.)
 
-Thanks!
+(I don't really understand how anonymous memory works at all.  I'm not
+an mm person.)
 
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
+--Andy
