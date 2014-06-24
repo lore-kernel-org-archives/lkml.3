@@ -1,46 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753941AbaFXOQY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 10:16:24 -0400
-Received: from mail-by2lp0241.outbound.protection.outlook.com ([207.46.163.241]:36665
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753680AbaFXOQX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 10:16:23 -0400
-From: Varun Sethi <Varun.Sethi@freescale.com>
-To: <iommu@lists.linux-foundation.org>, <joro@8bytes.org>,
-        <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <alex.williamson@redhat.com>
-CC: Varun Sethi <Varun.Sethi@freescale.com>
-Subject: [PATCH 0/3] iommu/fsl: Fixes for the PAMU driver. 
-Date: Tue, 24 Jun 2014 19:27:14 +0530
-Message-ID: <1403618237-26248-1-git-send-email-Varun.Sethi@freescale.com>
-X-Mailer: git-send-email 1.7.9.5
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199002)(68736004)(93916002)(97736001)(86362001)(48376002)(77982001)(79102001)(50986999)(44976005)(46102001)(83322001)(6806004)(31966008)(74502001)(74662001)(50466002)(76482001)(84676001)(77156001)(64706001)(105606002)(83072002)(21056001)(26826002)(47776003)(20776003)(4396001)(89996001)(92566001)(2201001)(80022001)(85852003)(104166001)(102836001)(50226001)(95666004)(85306003)(104016002)(81342001)(87936001)(87286001)(62966002)(99396002)(81542001)(106466001)(88136002)(92726001)(36756003)(2101003);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB470;H:tx30smr01.am.freescale.net;FPR:;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 02524402D6
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Varun.Sethi@freescale.com; 
-X-OriginatorOrg: freescale.com
+	id S1753705AbaFXORw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 10:17:52 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:45168 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752217AbaFXORv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 10:17:51 -0400
+Message-ID: <1403618295.4230.13.camel@weser.hi.pengutronix.de>
+Subject: Re: [Nouveau] [PATCH v2 2/3] drm/ttm: introduce dma cache sync
+ helpers
+From: Lucas Stach <l.stach@pengutronix.de>
+To: Alexandre Courbot <gnurou@gmail.com>
+Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Tue, 24 Jun 2014 15:58:15 +0200
+In-Reply-To: <CAAVeFuLcC30BdWierY8Bg0vBmfNCaB=Qs34h790jGB=BRYvGAg@mail.gmail.com>
+References: <1403603667-11302-1-git-send-email-acourbot@nvidia.com>
+	 <1403603667-11302-3-git-send-email-acourbot@nvidia.com>
+	 <20140624100220.GK32514@n2100.arm.linux.org.uk>
+	 <53A953E6.2030503@nvidia.com> <53A95910.20104@nvidia.com>
+	 <CAAVeFu+rbCViC87kYCLfxGV18iYq=Pa0ABb+L=iNiYPLn+mR8Q@mail.gmail.com>
+	 <53A96EC5.3030701@canonical.com>
+	 <1403616338.4230.8.camel@weser.hi.pengutronix.de>
+	 <CAAVeFuLcC30BdWierY8Bg0vBmfNCaB=Qs34h790jGB=BRYvGAg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:fa0f:41ff:fe58:4010
+X-SA-Exim-Mail-From: l.stach@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set contains fixes for the PAMU driver. 
-The patches are based on 3.16-rc1.
+Am Dienstag, den 24.06.2014, 22:52 +0900 schrieb Alexandre Courbot:
+> On Tue, Jun 24, 2014 at 10:25 PM, Lucas Stach <l.stach@pengutronix.de> wrote:
+> > Am Dienstag, den 24.06.2014, 14:27 +0200 schrieb Maarten Lankhorst:
+> >> op 24-06-14 14:23, Alexandre Courbot schreef:
+> >> > On Tue, Jun 24, 2014 at 7:55 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+> >> >> On 06/24/2014 07:33 PM, Alexandre Courbot wrote:
+> >> >>> On 06/24/2014 07:02 PM, Russell King - ARM Linux wrote:
+> >> >>>> On Tue, Jun 24, 2014 at 06:54:26PM +0900, Alexandre Courbot wrote:
+> >> >>>>> From: Lucas Stach <dev@lynxeye.de>
+> >> >>>>>
+> >> >>>>> On architectures for which access to GPU memory is non-coherent,
+> >> >>>>> caches need to be flushed and invalidated explicitly at the
+> >> >>>>> appropriate places. Introduce two small helpers to make things
+> >> >>>>> easy for TTM-based drivers.
+> >> >>>>
+> >> >>>> Have you run this with DMA API debugging enabled?  I suspect you haven't,
+> >> >>>> and I recommend that you do.
+> >> >>>
+> >> >>> # cat /sys/kernel/debug/dma-api/error_count
+> >> >>> 162621
+> >> >>>
+> >> >>> (╯°□°）╯︵ ┻━┻)
+> >> >>
+> >> >> *puts table back on its feet*
+> >> >>
+> >> >> So, yeah - TTM memory is not allocated using the DMA API, hence we cannot
+> >> >> use the DMA API to sync it. Thanks Russell for pointing it out.
+> >> >>
+> >> >> The only alternative I see here is to flush the CPU caches when syncing for
+> >> >> the device, and invalidate them for the other direction. Of course if the
+> >> >> device has caches on its side as well the opposite operation must also be
+> >> >> done for it. Guess the only way is to handle it all by ourselves here. :/
+> >> > ... and it really sucks. Basically if we cannot use the DMA API here
+> >> > we will lose the convenience of having a portable API that does just
+> >> > the right thing for the underlying platform. Without it we would have
+> >> > to duplicate arm_iommu_sync_single_for_cpu/device() and we would only
+> >> > have support for ARM.
+> >> >
+> >> > The usage of the DMA API that we are doing might be illegal, but in
+> >> > essence it does exactly what we need - at least for ARM. What are the
+> >> > alternatives?
+> >> Convert TTM to use the dma api? :-)
+> >
+> > Actually TTM already has a page alloc backend using the DMA API. It's
+> > just not used for the standard case right now.
+> 
+> Indeed, and Nouveau even already makes use of it if CONFIG_SWIOTLB is
+> set apparently.
+> 
+> > I would argue that we should just use this page allocator (which has the
+> > side effect of getting pages from CMA if available -> you are actually
+> > free to change the caching) and do away with the other allocator in the
+> > ARM case.
+> 
+> Mm? Does it mean that CMA memory is not mapped into lowmem? That would
+> certainly help in the present case, but I wonder how useful it will be
+> once the iommu support is in place. Will also need to consider
+> performance of such coherent memory for e.g. user-space mappings.
+> 
+> Anyway, I will experiment a bit with this tomorrow, thanks!
 
-Varun Sethi (3):
-  Fix PAMU window size check. 
-  Fix the device domain attach condition.
-  Fix the error condition during iommu group creation.
+CMA memory is reserved before the lowmem section mapping is set up. It
+is then mapped with individual 4k pages before giving it back to the
+buddy allocator.
+This means CMA pages in use by the kernel are mapped into lowmem, but
+they are actually unmapped from lowmem once you allocate them as DMA
+memory.
 
- drivers/iommu/fsl_pamu.c        |    8 ++++----
- drivers/iommu/fsl_pamu_domain.c |   19 +++++++++----------
- 2 files changed, 13 insertions(+), 14 deletions(-)
+Regards,
+Lucas
 
 -- 
-1.7.9.5
+Pengutronix e.K.             | Lucas Stach                 |
+Industrial Linux Solutions   | http://www.pengutronix.de/  |
 
