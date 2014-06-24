@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965046AbaFXQxn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:53:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60782 "EHLO
+	id S932878AbaFXQyE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:54:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60771 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754855AbaFXPve (ORCPT
+	with ESMTP id S1754829AbaFXPvb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:51:34 -0400
+	Tue, 24 Jun 2014 11:51:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.4 11/26] USB: cdc-acm: fix write and resume race
-Date: Tue, 24 Jun 2014 11:50:34 -0400
-Message-Id: <20140624154620.046757206@linuxfoundation.org>
+        Michal Schmidt <mschmidt@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.4 09/26] netlink: rate-limit leftover bytes warning and print process name
+Date: Tue, 24 Jun 2014 11:50:32 -0400
+Message-Id: <20140624154619.941227265@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154619.499002156@linuxfoundation.org>
 References: <20140624154619.499002156@linuxfoundation.org>
@@ -28,79 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Michal Schmidt <mschmidt@redhat.com>
 
-commit e144ed28bed10684f9aaec6325ed974d53f76110 upstream.
+[ Upstream commit bfc5184b69cf9eeb286137640351c650c27f118a ]
 
-Fix race between write() and resume() due to improper locking that could
-lead to writes being reordered.
+Any process is able to send netlink messages with leftover bytes.
+Make the warning rate-limited to prevent too much log spam.
 
-Resume must be done atomically and susp_count be protected by the
-write_lock in order to prevent racing with write(). This could otherwise
-lead to writes being reordered if write() grabs the write_lock after
-susp_count is decremented, but before the delayed urb is submitted.
+The warning is supposed to help find userspace bugs, so print the
+triggering command name to implicate the buggy program.
 
-Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
-that support remote wakeup")
+[v2: Use pr_warn_ratelimited instead of printk_ratelimited.]
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Michal Schmidt <mschmidt@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/usb/class/cdc-acm.c |   23 +++++++++--------------
- 1 file changed, 9 insertions(+), 14 deletions(-)
+ lib/nlattr.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -1468,27 +1468,20 @@ static int acm_resume(struct usb_interfa
- 	struct acm *acm = usb_get_intfdata(intf);
- 	struct acm_wb *wb;
- 	int rv = 0;
--	int cnt;
+--- a/lib/nlattr.c
++++ b/lib/nlattr.c
+@@ -13,6 +13,7 @@
+ #include <linux/skbuff.h>
+ #include <linux/string.h>
+ #include <linux/types.h>
++#include <linux/ratelimit.h>
+ #include <net/netlink.h>
  
- 	spin_lock_irq(&acm->read_lock);
--	acm->susp_count -= 1;
--	cnt = acm->susp_count;
--	spin_unlock_irq(&acm->read_lock);
-+	spin_lock(&acm->write_lock);
- 
--	if (cnt)
--		return 0;
-+	if (--acm->susp_count)
-+		goto out;
- 
- 	if (test_bit(ASYNCB_INITIALIZED, &acm->port.flags)) {
--		rv = usb_submit_urb(acm->ctrlurb, GFP_NOIO);
-+		rv = usb_submit_urb(acm->ctrlurb, GFP_ATOMIC);
- 
--		spin_lock_irq(&acm->write_lock);
- 		if (acm->delayed_wb) {
- 			wb = acm->delayed_wb;
- 			acm->delayed_wb = NULL;
--			spin_unlock_irq(&acm->write_lock);
- 			acm_start_wb(acm, wb);
--		} else {
--			spin_unlock_irq(&acm->write_lock);
- 		}
- 
- 		/*
-@@ -1496,12 +1489,14 @@ static int acm_resume(struct usb_interfa
- 		 * do the write path at all cost
- 		 */
- 		if (rv < 0)
--			goto err_out;
-+			goto out;
- 
--		rv = acm_submit_read_urbs(acm, GFP_NOIO);
-+		rv = acm_submit_read_urbs(acm, GFP_ATOMIC);
+ static const u16 nla_attr_minlen[NLA_TYPE_MAX+1] = {
+@@ -197,8 +198,8 @@ int nla_parse(struct nlattr **tb, int ma
  	}
-+out:
-+	spin_unlock(&acm->write_lock);
-+	spin_unlock_irq(&acm->read_lock);
  
--err_out:
- 	return rv;
- }
+ 	if (unlikely(rem > 0))
+-		printk(KERN_WARNING "netlink: %d bytes leftover after parsing "
+-		       "attributes.\n", rem);
++		pr_warn_ratelimited("netlink: %d bytes leftover after parsing attributes in process `%s'.\n",
++				    rem, current->comm);
  
+ 	err = 0;
+ errout:
 
 
