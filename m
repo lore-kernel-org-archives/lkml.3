@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755234AbaFXPwJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:52:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60857 "EHLO
+	id S1755382AbaFXPwZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:52:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60897 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755207AbaFXPwF (ORCPT
+	with ESMTP id S1755350AbaFXPwW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:52:05 -0400
+	Tue, 24 Jun 2014 11:52:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Pirko <jiri@resnulli.us>, Flavio Leitner <fbl@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 14/52] team: fix mtu setting
-Date: Tue, 24 Jun 2014 11:50:29 -0400
-Message-Id: <20140624154714.361580796@linuxfoundation.org>
+Subject: [PATCH 3.10 10/52] netlink: Only check file credentials for implicit destinations
+Date: Tue, 24 Jun 2014 11:50:25 -0400
+Message-Id: <20140624154714.084057748@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154713.428945460@linuxfoundation.org>
 References: <20140624154713.428945460@linuxfoundation.org>
@@ -29,73 +30,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Pirko <jiri@resnulli.us>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-[ Upstream commit 9d0d68faea6962d62dd501cd6e71ce5cc8ed262b ]
+[ Upstream commit 2d7a85f4b06e9c27ff629f07a524c48074f07f81 ]
 
-Now it is not possible to set mtu to team device which has a port
-enslaved to it. The reason is that when team_change_mtu() calls
-dev_set_mtu() for port device, notificator for NETDEV_PRECHANGEMTU
-event is called and team_device_event() returns NOTIFY_BAD forbidding
-the change. So fix this by returning NOTIFY_DONE here in case team is
-changing mtu in team_change_mtu().
+It was possible to get a setuid root or setcap executable to write to
+it's stdout or stderr (which has been set made a netlink socket) and
+inadvertently reconfigure the networking stack.
 
-Introduced-by: 3d249d4c "net: introduce ethernet teaming device"
-Signed-off-by: Jiri Pirko <jiri@resnulli.us>
-Acked-by: Flavio Leitner <fbl@redhat.com>
+To prevent this we check that both the creator of the socket and
+the currentl applications has permission to reconfigure the network
+stack.
+
+Unfortunately this breaks Zebra which always uses sendto/sendmsg
+and creates it's socket without any privileges.
+
+To keep Zebra working don't bother checking if the creator of the
+socket has privilege when a destination address is specified.  Instead
+rely exclusively on the privileges of the sender of the socket.
+
+Note from Andy: This is exactly Eric's code except for some comment
+clarifications and formatting fixes.  Neither I nor, I think, anyone
+else is thrilled with this approach, but I'm hesitant to wait on a
+better fix since 3.15 is almost here.
+
+Note to stable maintainers: This is a mess.  An earlier series of
+patches in 3.15 fix a rather serious security issue (CVE-2014-0181),
+but they did so in a way that breaks Zebra.  The offending series
+includes:
+
+    commit aa4cf9452f469f16cea8c96283b641b4576d4a7b
+    Author: Eric W. Biederman <ebiederm@xmission.com>
+    Date:   Wed Apr 23 14:28:03 2014 -0700
+
+        net: Add variants of capable for use on netlink messages
+
+If a given kernel version is missing that series of fixes, it's
+probably worth backporting it and this patch.  if that series is
+present, then this fix is critical if you care about Zebra.
+
+Cc: stable@vger.kernel.org
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/team/team.c |    7 ++++++-
- include/linux/if_team.h |    1 +
- 2 files changed, 7 insertions(+), 1 deletion(-)
+ include/linux/netlink.h  |    7 ++++---
+ net/netlink/af_netlink.c |    7 ++++++-
+ 2 files changed, 10 insertions(+), 4 deletions(-)
 
---- a/drivers/net/team/team.c
-+++ b/drivers/net/team/team.c
-@@ -1542,6 +1542,7 @@ static int team_change_mtu(struct net_de
- 	 * to traverse list in reverse under rcu_read_lock
- 	 */
- 	mutex_lock(&team->lock);
-+	team->port_mtu_change_allowed = true;
- 	list_for_each_entry(port, &team->port_list, list) {
- 		err = dev_set_mtu(port->dev, new_mtu);
- 		if (err) {
-@@ -1550,6 +1551,7 @@ static int team_change_mtu(struct net_de
- 			goto unwind;
- 		}
- 	}
-+	team->port_mtu_change_allowed = false;
- 	mutex_unlock(&team->lock);
+--- a/include/linux/netlink.h
++++ b/include/linux/netlink.h
+@@ -16,9 +16,10 @@ static inline struct nlmsghdr *nlmsg_hdr
+ }
  
- 	dev->mtu = new_mtu;
-@@ -1559,6 +1561,7 @@ static int team_change_mtu(struct net_de
- unwind:
- 	list_for_each_entry_continue_reverse(port, &team->port_list, list)
- 		dev_set_mtu(port->dev, dev->mtu);
-+	team->port_mtu_change_allowed = false;
- 	mutex_unlock(&team->lock);
- 
- 	return err;
-@@ -2678,7 +2681,9 @@ static int team_device_event(struct noti
- 		break;
- 	case NETDEV_CHANGEMTU:
- 		/* Forbid to change mtu of underlaying device */
--		return NOTIFY_BAD;
-+		if (!port->team->port_mtu_change_allowed)
-+			return NOTIFY_BAD;
-+		break;
- 	case NETDEV_PRE_TYPE_CHANGE:
- 		/* Forbid to change type of underlaying device */
- 		return NOTIFY_BAD;
---- a/include/linux/if_team.h
-+++ b/include/linux/if_team.h
-@@ -193,6 +193,7 @@ struct team {
- 	bool user_carrier_enabled;
- 	bool queue_override_enabled;
- 	struct list_head *qom_lists; /* array of queue override mapping lists */
-+	bool port_mtu_change_allowed;
- 	long mode_priv[TEAM_MODE_PRIV_LONGS];
+ enum netlink_skb_flags {
+-	NETLINK_SKB_MMAPED	= 0x1,		/* Packet data is mmaped */
+-	NETLINK_SKB_TX		= 0x2,		/* Packet was sent by userspace */
+-	NETLINK_SKB_DELIVERED	= 0x4,		/* Packet was delivered */
++	NETLINK_SKB_MMAPED	= 0x1,	/* Packet data is mmaped */
++	NETLINK_SKB_TX		= 0x2,	/* Packet was sent by userspace */
++	NETLINK_SKB_DELIVERED	= 0x4,	/* Packet was delivered */
++	NETLINK_SKB_DST		= 0x8,	/* Dst set in sendto or sendmsg */
  };
  
+ struct netlink_skb_parms {
+--- a/net/netlink/af_netlink.c
++++ b/net/netlink/af_netlink.c
+@@ -1232,7 +1232,9 @@ retry:
+ bool __netlink_ns_capable(const struct netlink_skb_parms *nsp,
+ 			struct user_namespace *user_ns, int cap)
+ {
+-	return sk_ns_capable(nsp->sk, user_ns, cap);
++	return ((nsp->flags & NETLINK_SKB_DST) ||
++		file_ns_capable(nsp->sk->sk_socket->file, user_ns, cap)) &&
++		ns_capable(user_ns, cap);
+ }
+ EXPORT_SYMBOL(__netlink_ns_capable);
+ 
+@@ -2118,6 +2120,7 @@ static int netlink_sendmsg(struct kiocb
+ 	struct sk_buff *skb;
+ 	int err;
+ 	struct scm_cookie scm;
++	u32 netlink_skb_flags = 0;
+ 
+ 	if (msg->msg_flags&MSG_OOB)
+ 		return -EOPNOTSUPP;
+@@ -2139,6 +2142,7 @@ static int netlink_sendmsg(struct kiocb
+ 		if ((dst_group || dst_portid) &&
+ 		    !netlink_allowed(sock, NL_CFG_F_NONROOT_SEND))
+ 			goto out;
++		netlink_skb_flags |= NETLINK_SKB_DST;
+ 	} else {
+ 		dst_portid = nlk->dst_portid;
+ 		dst_group = nlk->dst_group;
+@@ -2168,6 +2172,7 @@ static int netlink_sendmsg(struct kiocb
+ 	NETLINK_CB(skb).portid	= nlk->portid;
+ 	NETLINK_CB(skb).dst_group = dst_group;
+ 	NETLINK_CB(skb).creds	= siocb->scm->creds;
++	NETLINK_CB(skb).flags	= netlink_skb_flags;
+ 
+ 	err = -EFAULT;
+ 	if (memcpy_fromiovec(skb_put(skb, len), msg->msg_iov, len)) {
 
 
