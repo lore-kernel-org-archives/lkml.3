@@ -1,22 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755198AbaFXUbK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:31:10 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47683 "EHLO
+	id S1755240AbaFXUbf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:31:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47703 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755135AbaFXUbH (ORCPT
+	with ESMTP id S1755208AbaFXUbd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:31:07 -0400
+	Tue, 24 Jun 2014 16:31:33 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Darren Hart <dvhart@linux.intel.com>, Kees Cook <keescook@chromium.org>,
-        Will Drewry <wad@chromium.org>, Thomas Gleixner <tglx@linutronix.de>,
+Cc: Thomas Gleixner <tglx@linutronix.de>, Dave Jones <davej@redhat.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Darren Hart <darren@dvhart.com>,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Clark Williams <williams@redhat.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Carlos ODonell <carlos@redhat.com>, Jakub Jelinek <jakub@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 61/65] futex: Validate atomic acquisition in futex_lock_pi_atomic()
-Date: Tue, 24 Jun 2014 13:30:21 -0700
-Message-Id: <1403641825-12825-62-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 43/65] futex: Add another early deadlock detection check
+Date: Tue, 24 Jun 2014 13:30:03 -0700
+Message-Id: <1403641825-12825-44-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
 References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
@@ -31,56 +40,163 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Thomas Gleixner <tglx@linutronix.de>
 
-commit b3eaa9fc5cd0a4d74b18f6b8dc617aeaf1873270 upstream.
+commit 866293ee54227584ffcb4a42f69c1f365974ba7f upstream.
 
-We need to protect the atomic acquisition in the kernel against rogue
-user space which sets the user space futex to 0, so the kernel side
-acquisition succeeds while there is existing state in the kernel
-associated to the real owner.
+Dave Jones trinity syscall fuzzer exposed an issue in the deadlock
+detection code of rtmutex:
+  http://lkml.kernel.org/r/20140429151655.GA14277@redhat.com
 
-Verify whether the futex has waiters associated with kernel state.  If
-it has, return -EINVAL.  The state is corrupted already, so no point in
-cleaning it up.  Subsequent calls will fail as well.  Not our problem.
+That underlying issue has been fixed with a patch to the rtmutex code,
+but the futex code must not call into rtmutex in that case because
+    - it can detect that issue early
+    - it avoids a different and more complex fixup for backing out
 
-[ tglx: Use futex_top_waiter() and explain why we do not need to try
-  	restoring the already corrupted user space state. ]
+If the user space variable got manipulated to 0x80000000 which means
+no lock holder, but the waiters bit set and an active pi_state in the
+kernel is found we can figure out the recursive locking issue by
+looking at the pi_state owner. If that is the current task, then we
+can safely return -EDEADLK.
 
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Will Drewry <wad@chromium.org>
+The check should have been added in commit 59fa62451 (futex: Handle
+futex_pi OWNER_DIED take over correctly) already, but I did not see
+the above issue caused by user space manipulation back then.
+
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Darren Hart <darren@dvhart.com>
+Cc: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Clark Williams <williams@redhat.com>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Roland McGrath <roland@hack.frob.com>
+Cc: Carlos ODonell <carlos@redhat.com>
+Cc: Jakub Jelinek <jakub@redhat.com>
+Cc: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Link: http://lkml.kernel.org/r/20140512201701.097349971@linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/futex.c | 14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+ kernel/futex.c | 47 ++++++++++++++++++++++++++++++++++-------------
+ 1 file changed, 34 insertions(+), 13 deletions(-)
 
 diff --git a/kernel/futex.c b/kernel/futex.c
-index c845054..10e53ad 100644
+index e564a9a..50a0244 100644
 --- a/kernel/futex.c
 +++ b/kernel/futex.c
-@@ -758,10 +758,18 @@ retry:
- 		return -EDEADLK;
+@@ -590,7 +590,8 @@ void exit_pi_state_list(struct task_struct *curr)
  
- 	/*
--	 * Surprise - we got the lock. Just return to userspace:
-+	 * Surprise - we got the lock, but we do not trust user space at all.
+ static int
+ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
+-		union futex_key *key, struct futex_pi_state **ps)
++		union futex_key *key, struct futex_pi_state **ps,
++		struct task_struct *task)
+ {
+ 	struct futex_pi_state *pi_state = NULL;
+ 	struct futex_q *this, *next;
+@@ -634,6 +635,16 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
+ 					return -EINVAL;
+ 			}
+ 
++			/*
++			 * Protect against a corrupted uval. If uval
++			 * is 0x80000000 then pid is 0 and the waiter
++			 * bit is set. So the deadlock check in the
++			 * calling code has failed and we did not fall
++			 * into the check above due to !pid.
++			 */
++			if (task && pi_state->owner == task)
++				return -EDEADLK;
++
+ 			atomic_inc(&pi_state->refcount);
+ 			*ps = pi_state;
+ 
+@@ -783,7 +794,7 @@ retry:
+ 	 * We dont have the lock. Look up the PI state (or create it if
+ 	 * we are the first waiter):
  	 */
--	if (unlikely(!curval))
--		return 1;
-+	if (unlikely(!curval)) {
-+		/*
-+		 * We verify whether there is kernel state for this
-+		 * futex. If not, we can safely assume, that the 0 ->
-+		 * TID transition is correct. If state exists, we do
-+		 * not bother to fixup the user space state as it was
-+		 * corrupted already.
-+		 */
-+		return futex_top_waiter(hb, key) ? -EINVAL : 1;
+-	ret = lookup_pi_state(uval, hb, key, ps);
++	ret = lookup_pi_state(uval, hb, key, ps, task);
+ 
+ 	if (unlikely(ret)) {
+ 		switch (ret) {
+@@ -1193,7 +1204,7 @@ void requeue_pi_wake_futex(struct futex_q *q, union futex_key *key,
+  *
+  * Returns:
+  *  0 - failed to acquire the lock atomicly
+- *  1 - acquired the lock
++ * >0 - acquired the lock, return value is vpid of the top_waiter
+  * <0 - error
+  */
+ static int futex_proxy_trylock_atomic(u32 __user *pifutex,
+@@ -1204,7 +1215,7 @@ static int futex_proxy_trylock_atomic(u32 __user *pifutex,
+ {
+ 	struct futex_q *top_waiter = NULL;
+ 	u32 curval;
+-	int ret;
++	int ret, vpid;
+ 
+ 	if (get_futex_value_locked(&curval, pifutex))
+ 		return -EFAULT;
+@@ -1232,11 +1243,13 @@ static int futex_proxy_trylock_atomic(u32 __user *pifutex,
+ 	 * the contended case or if set_waiters is 1.  The pi_state is returned
+ 	 * in ps in contended cases.
+ 	 */
++	vpid = task_pid_vnr(top_waiter->task);
+ 	ret = futex_lock_pi_atomic(pifutex, hb2, key2, ps, top_waiter->task,
+ 				   set_waiters);
+-	if (ret == 1)
++	if (ret == 1) {
+ 		requeue_pi_wake_futex(top_waiter, key2, hb2);
+-
++		return vpid;
 +	}
+ 	return ret;
+ }
  
- 	uval = curval;
+@@ -1268,7 +1281,6 @@ static int futex_requeue(u32 __user *uaddr1, unsigned int flags,
+ 	struct futex_hash_bucket *hb1, *hb2;
+ 	struct plist_head *head1;
+ 	struct futex_q *this, *next;
+-	u32 curval2;
  
+ 	if (requeue_pi) {
+ 		/*
+@@ -1354,16 +1366,25 @@ retry_private:
+ 		 * At this point the top_waiter has either taken uaddr2 or is
+ 		 * waiting on it.  If the former, then the pi_state will not
+ 		 * exist yet, look it up one more time to ensure we have a
+-		 * reference to it.
++		 * reference to it. If the lock was taken, ret contains the
++		 * vpid of the top waiter task.
+ 		 */
+-		if (ret == 1) {
++		if (ret > 0) {
+ 			WARN_ON(pi_state);
+ 			drop_count++;
+ 			task_count++;
+-			ret = get_futex_value_locked(&curval2, uaddr2);
+-			if (!ret)
+-				ret = lookup_pi_state(curval2, hb2, &key2,
+-						      &pi_state);
++			/*
++			 * If we acquired the lock, then the user
++			 * space value of uaddr2 should be vpid. It
++			 * cannot be changed by the top waiter as it
++			 * is blocked on hb2 lock if it tries to do
++			 * so. If something fiddled with it behind our
++			 * back the pi state lookup might unearth
++			 * it. So we rather use the known value than
++			 * rereading and handing potential crap to
++			 * lookup_pi_state.
++			 */
++			ret = lookup_pi_state(ret, hb2, &key2, &pi_state, NULL);
+ 		}
+ 
+ 		switch (ret) {
 -- 
 1.9.1
 
