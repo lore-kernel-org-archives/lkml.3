@@ -1,68 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751161AbaFXByc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 21:54:32 -0400
-Received: from mga02.intel.com ([134.134.136.20]:62543 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750827AbaFXByb convert rfc822-to-8bit (ORCPT
+	id S1751165AbaFXCT7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 22:19:59 -0400
+Received: from cpanel09.rubas.ch ([195.182.222.79]:37276 "EHLO
+	cpanel09.rubas.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751014AbaFXCT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 21:54:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,534,1400050800"; 
-   d="scan'208";a="562210976"
-From: "Ren, Qiaowei" <qiaowei.ren@intel.com>
-To: Andy Lutomirski <luto@amacapital.net>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "Hansen, Dave" <dave.hansen@intel.com>
-CC: "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v6 04/10] x86, mpx: hook #BR exception handler to
- allocate bound tables
-Thread-Topic: [PATCH v6 04/10] x86, mpx: hook #BR exception handler to
- allocate bound tables
-Thread-Index: AQHPitp1GK5+vOkvwEyRhjxb8GKmZpt+niYAgADni8A=
-Date: Tue, 24 Jun 2014 01:53:18 +0000
-Message-ID: <9E0BE1322F2F2246BD820DA9FC397ADE016AF270@shsmsx102.ccr.corp.intel.com>
-References: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com>
- <1403084656-27284-5-git-send-email-qiaowei.ren@intel.com>
- <53A88606.2050108@mit.edu>
-In-Reply-To: <53A88606.2050108@mit.edu>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 23 Jun 2014 22:19:58 -0400
+From: =?UTF-8?q?J=C3=BCrg=20Billeter?= <j@bitron.ch>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>
+Cc: Magnus Damm <damm@opensource.se>, linux-gpio@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        =?UTF-8?q?J=C3=BCrg=20Billeter?= <j@bitron.ch>
+Subject: [PATCH] gpio: rcar: clamp returned value to [0,1]
+Date: Tue, 24 Jun 2014 04:19:50 +0200
+Message-Id: <1403576390-28381-1-git-send-email-j@bitron.ch>
+X-Mailer: git-send-email 2.0.0
 MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - cpanel09.rubas.ch
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - bitron.ch
+X-Get-Message-Sender-Via: cpanel09.rubas.ch: authenticated_id: juerg@bitron.ch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-06-24, Andy Lutomirski wrote:
-> On 06/18/2014 02:44 AM, Qiaowei Ren wrote:
->> +	/*
->> +	 * The error code field of the BNDSTATUS register communicates status
->> +	 * information of a bound range exception #BR or operation involving
->> +	 * bound directory.
->> +	 */
->> +	switch (status & MPX_BNDSTA_ERROR_CODE) {
->> +	case 2:
->> +		/*
->> +		 * Bound directory has invalid entry.
->> +		 * No signal will be sent to the user space.
-> 
-> This comment is a lie.
-> 
-Hmm, thanks. 
+While it will be clamped to bool by gpiolib, let's make this sane
+in the driver as well.
 
->> +		 */
->> +		if (do_mpx_bt_fault(xsave_buf))
->> +			force_sig(SIGBUS, tsk);
-> 
-> Would it make sense to assign and use a new si_code value here?
-> 
-There is a new si_code SEGV_BNDERR for bounds violation reported by MPX. But in this case, it is mainly due to the failure caused by allocation of bounds table. I guess it is not necessary to add another new si_code value.
+Signed-off-by: Jürg Billeter <j@bitron.ch>
+---
+ drivers/gpio/gpio-rcar.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Thanks,
-Qiaowei
+diff --git a/drivers/gpio/gpio-rcar.c b/drivers/gpio/gpio-rcar.c
+index 0c9f803..7c62121 100644
+--- a/drivers/gpio/gpio-rcar.c
++++ b/drivers/gpio/gpio-rcar.c
+@@ -240,9 +240,9 @@ static int gpio_rcar_get(struct gpio_chip *chip, unsigned offset)
+ 	/* testing on r8a7790 shows that INDT does not show correct pin state
+ 	 * when configured as output, so use OUTDT in case of output pins */
+ 	if (gpio_rcar_read(gpio_to_priv(chip), INOUTSEL) & bit)
+-		return (int)(gpio_rcar_read(gpio_to_priv(chip), OUTDT) & bit);
++		return !!(gpio_rcar_read(gpio_to_priv(chip), OUTDT) & bit);
+ 	else
+-		return (int)(gpio_rcar_read(gpio_to_priv(chip), INDT) & bit);
++		return !!(gpio_rcar_read(gpio_to_priv(chip), INDT) & bit);
+ }
+ 
+ static void gpio_rcar_set(struct gpio_chip *chip, unsigned offset, int value)
+-- 
+2.0.0
+
