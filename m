@@ -1,121 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753705AbaFXORw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 10:17:52 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:45168 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752217AbaFXORv (ORCPT
+	id S1753847AbaFXOTV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 10:19:21 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:46141 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752337AbaFXOTU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 10:17:51 -0400
-Message-ID: <1403618295.4230.13.camel@weser.hi.pengutronix.de>
-Subject: Re: [Nouveau] [PATCH v2 2/3] drm/ttm: introduce dma cache sync
- helpers
-From: Lucas Stach <l.stach@pengutronix.de>
-To: Alexandre Courbot <gnurou@gmail.com>
-Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Tue, 24 Jun 2014 15:58:15 +0200
-In-Reply-To: <CAAVeFuLcC30BdWierY8Bg0vBmfNCaB=Qs34h790jGB=BRYvGAg@mail.gmail.com>
-References: <1403603667-11302-1-git-send-email-acourbot@nvidia.com>
-	 <1403603667-11302-3-git-send-email-acourbot@nvidia.com>
-	 <20140624100220.GK32514@n2100.arm.linux.org.uk>
-	 <53A953E6.2030503@nvidia.com> <53A95910.20104@nvidia.com>
-	 <CAAVeFu+rbCViC87kYCLfxGV18iYq=Pa0ABb+L=iNiYPLn+mR8Q@mail.gmail.com>
-	 <53A96EC5.3030701@canonical.com>
-	 <1403616338.4230.8.camel@weser.hi.pengutronix.de>
-	 <CAAVeFuLcC30BdWierY8Bg0vBmfNCaB=Qs34h790jGB=BRYvGAg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
+	Tue, 24 Jun 2014 10:19:20 -0400
+Date: Tue, 24 Jun 2014 15:19:14 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Alan, can you revisit a patch you authored please?
+Message-ID: <20140624141914.GP13803@lee--X1>
+References: <20140623085345.GD8847@lee--X1>
+ <20140624133611.62e4c3b7@alan.etchedpixels.co.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:fa0f:41ff:fe58:4010
-X-SA-Exim-Mail-From: l.stach@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20140624133611.62e4c3b7@alan.etchedpixels.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, den 24.06.2014, 22:52 +0900 schrieb Alexandre Courbot:
-> On Tue, Jun 24, 2014 at 10:25 PM, Lucas Stach <l.stach@pengutronix.de> wrote:
-> > Am Dienstag, den 24.06.2014, 14:27 +0200 schrieb Maarten Lankhorst:
-> >> op 24-06-14 14:23, Alexandre Courbot schreef:
-> >> > On Tue, Jun 24, 2014 at 7:55 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
-> >> >> On 06/24/2014 07:33 PM, Alexandre Courbot wrote:
-> >> >>> On 06/24/2014 07:02 PM, Russell King - ARM Linux wrote:
-> >> >>>> On Tue, Jun 24, 2014 at 06:54:26PM +0900, Alexandre Courbot wrote:
-> >> >>>>> From: Lucas Stach <dev@lynxeye.de>
-> >> >>>>>
-> >> >>>>> On architectures for which access to GPU memory is non-coherent,
-> >> >>>>> caches need to be flushed and invalidated explicitly at the
-> >> >>>>> appropriate places. Introduce two small helpers to make things
-> >> >>>>> easy for TTM-based drivers.
-> >> >>>>
-> >> >>>> Have you run this with DMA API debugging enabled?  I suspect you haven't,
-> >> >>>> and I recommend that you do.
-> >> >>>
-> >> >>> # cat /sys/kernel/debug/dma-api/error_count
-> >> >>> 162621
-> >> >>>
-> >> >>> (╯°□°）╯︵ ┻━┻)
-> >> >>
-> >> >> *puts table back on its feet*
-> >> >>
-> >> >> So, yeah - TTM memory is not allocated using the DMA API, hence we cannot
-> >> >> use the DMA API to sync it. Thanks Russell for pointing it out.
-> >> >>
-> >> >> The only alternative I see here is to flush the CPU caches when syncing for
-> >> >> the device, and invalidate them for the other direction. Of course if the
-> >> >> device has caches on its side as well the opposite operation must also be
-> >> >> done for it. Guess the only way is to handle it all by ourselves here. :/
-> >> > ... and it really sucks. Basically if we cannot use the DMA API here
-> >> > we will lose the convenience of having a portable API that does just
-> >> > the right thing for the underlying platform. Without it we would have
-> >> > to duplicate arm_iommu_sync_single_for_cpu/device() and we would only
-> >> > have support for ARM.
-> >> >
-> >> > The usage of the DMA API that we are doing might be illegal, but in
-> >> > essence it does exactly what we need - at least for ARM. What are the
-> >> > alternatives?
-> >> Convert TTM to use the dma api? :-)
-> >
-> > Actually TTM already has a page alloc backend using the DMA API. It's
-> > just not used for the standard case right now.
+On Tue, 24 Jun 2014, One Thousand Gnomes wrote:
+> On Mon, 23 Jun 2014 09:53:45 +0100
+> Lee Jones <lee.jones@linaro.org> wrote:
 > 
-> Indeed, and Nouveau even already makes use of it if CONFIG_SWIOTLB is
-> set apparently.
+> > Hi Alan,
+> > 
+> > I'm looking at a patch you wrote which can be foudn below at [1].  Are
+> > you sure it's correct to ignore i.e not return -ENOMEM from
+> > platform_device_add_data() in pcf50633_probe()?  I believe if
+> > platform_device_add_data() returns an error we should
+> > platform_device_put() and return immediately.  Can you tell me if you
+> > agree.  If you don't, would you mind explaining to me why please?
 > 
-> > I would argue that we should just use this page allocator (which has the
-> > side effect of getting pages from CMA if available -> you are actually
-> > free to change the caching) and do away with the other allocator in the
-> > ARM case.
-> 
-> Mm? Does it mean that CMA memory is not mapped into lowmem? That would
-> certainly help in the present case, but I wonder how useful it will be
-> once the iommu support is in place. Will also need to consider
-> performance of such coherent memory for e.g. user-space mappings.
-> 
-> Anyway, I will experiment a bit with this tomorrow, thanks!
+> I made the change to maximise the chance of things booting up ok, but I
+> agree, its a pointless exercise. If we fail to add the data we should
+> just chuck it.
 
-CMA memory is reserved before the lowmem section mapping is set up. It
-is then mapped with individual 4k pages before giving it back to the
-buddy allocator.
-This means CMA pages in use by the kernel are mapped into lowmem, but
-they are actually unmapped from lowmem once you allocate them as DMA
-memory.
-
-Regards,
-Lucas
+Thanks Alan, I'll get a patch out shortly.
 
 -- 
-Pengutronix e.K.             | Lucas Stach                 |
-Industrial Linux Solutions   | http://www.pengutronix.de/  |
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
