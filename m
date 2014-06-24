@@ -1,75 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392AbaFXMKp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 08:10:45 -0400
-Received: from mail.phunq.net ([184.71.0.62]:46274 "EHLO starbase.phunq.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752673AbaFXMKo convert rfc822-to-8bit (ORCPT
+	id S1753464AbaFXMLZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 08:11:25 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:39494
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752484AbaFXMLY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 08:10:44 -0400
-From: Daniel Phillips <daniel@phunq.net>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Pavel Machek <pavel@ucw.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        <linux-fsdevel@vger.kernel.org>, Dave Chinner <david@fromorbit.com>
-Subject: Re: [RFC] Tux3 for review
-Date: Tue, 24 Jun 2014 05:10:36 -0700
-User-Agent: Trojita/0.4.1; Qt/4.8.6; X11; Linux; Ubuntu 14.04 LTS
+	Tue, 24 Jun 2014 08:11:24 -0400
+X-IronPort-AV: E=Sophos;i="5.01,537,1400018400"; 
+   d="scan'208";a="68649310"
+Date: Tue, 24 Jun 2014 14:11:22 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Joe Perches <joe@perches.com>
+cc: Julian Calaby <julian.calaby@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/22] Add and use pci_zalloc_consistent
+In-Reply-To: <1403594158.29061.10.camel@joe-AO725>
+Message-ID: <alpine.DEB.2.10.1406241411040.3312@hadrien>
+References: <cover.1403530604.git.joe@perches.com>  <20140623172512.GA1390@garbanzo.do-not-panic.com>  <1403550809.15811.13.camel@joe-AO725>  <CAGRGNgVD2f0S-v8YZ-qABEhDJAwk5pp71FU9uLR8aSZ+DhABjg@mail.gmail.com>  <1403567322.20657.14.camel@joe-AO725> 
+ <alpine.DEB.2.10.1406240714220.2659@hadrien> <1403594158.29061.10.camel@joe-AO725>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Message-ID: <18a3e3b6-9b41-4ce1-90a6-ae0c3c0c88c8@phunq.net>
-In-Reply-To: <1403610735.3140.32.camel@dabdike>
-References: <1402932354.2197.61.camel@dabdike.int.hansenpartnership.com>
- <20140619082129.GA4309@xo-6d-61-c0.localdomain>
- <alpine.LFD.2.00.1406191117240.2182@localhost.localdomain>
- <ad0baf8f-091f-45d0-8d9f-f72d78d0d1ff@phunq.net>
- <1403378941.2177.24.camel@dabdike.int.hansenpartnership.com>
- <e475a747-2f33-4c43-b6bd-98df2e57099a@phunq.net>
- <1403448187.1949.9.camel@jarvis.lan>
- <522aee97-34e7-4adc-adf2-c9b73aa0ef36@phunq.net>
- <1403584890.3140.18.camel@dabdike>
- <79582b70-6111-49f5-a1a9-f5701854e199@phunq.net>
- <20140624105940.GH14887@thunk.org>
- <3dd5be85-278b-4e20-a6c2-1e042dab2bef@phunq.net>
- <1403610735.3140.32.camel@dabdike>
-Organization: tux3.org
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, June 24, 2014 4:52:15 AM PDT, James Bottomley wrote:
-> On Tue, 2014-06-24 at 04:27 -0700, Daniel Phillips wrote:
->> I emphatically disagree that it is premature for asking Tux3 to be
->> merged. You might think so, but I do not. While I do not begrudge
->> you your opinion, Linux did not get to the dominant position it has
->> today by being shy about merging new functionality early. Did we
->> suddenly lose our mojo just at Tux3 merge time?
+
+
+On Tue, 24 Jun 2014, Joe Perches wrote:
+
+> On Tue, 2014-06-24 at 07:24 +0200, Julia Lawall wrote
+> > On Mon, 23 Jun 2014, Joe Perches wrote:
+> > > > > $ cat ./scripts/coccinelle/api/alloc/pci_zalloc_consistent.cocci
+> > > > > ///
+> > > > > /// Use pci_zalloc_consistent rather than
+> > > > > ///     pci_alloc_consistent followed by memset with 0
+> > > > > ///
+> > > > > /// This considers some simple cases that are common and easy to validate
+> > > > > /// Note in particular that there are no ...s in the rule, so all of the
+> > > > > /// matched code has to be contiguous
+> > > > > ///
+> > > > > /// Blatantly cribbed from: scripts/coccinelle/api/alloc/kzalloc-simple.cocci
+> > > > >
+> > > > > @@
+> > > > > type T, T2;
+> > > > > expression x;
+> > > > > expression E1,E2,E3;
+> > > > > statement S;
+> > > > > @@
+> > > > >
+> > > > > - x = (T)pci_alloc_consistent(E1,E2,E3);
+> > > > > + x = pci_zalloc_consistent(E1,E2,E3);
+> > > > >   if ((x==NULL) || ...) S
+> > > > > - memset((T2)x,0,E2);
+> > > >
+> > > > I don't know much about SmPL, but wouldn't having that if statement
+> > > > there reduce your matches?
+> > >
+> > > No, not really.
+> > >
+> > > Almost none of the pci_alloc_consistent calls
+> > > do not have a test for failure immediately after
+> > > them.
 >
-> But you've agreed to go the core hooks route, the patches for which
-> aren't yet ready, so what is there actually to review and merge until
-> the patches appear?
+> > Do not or do?
+>
+> Sorry, English double negative.
+>
+> As far as I know, almost every instance of pci_alloc_consistent
+> is followed by an if.
+>
+> Exceptions exist in:
+>
+> drivers/isdn/hardware/eicon/divasmain.c
+> drivers/staging/slicoss/slicoss.c
+> drivers/tty/synclink_gt.c
+>
+> There might be others, but I didn't look too hard.
+>
+> > The advantage of the if is that you are sure that nothing strange happens
+> > to x between alloc and memset.  But a problem can be that sometimes people
+> > allocate two things, and then do error checking for both of them.  Then
+> > you rule would not match.  Or the set the return variable to an error code
+> > before doing the check rather than in the if branch.
+> >
+> > You could put the following between the malloc and the memset in stead of
+> > the if.
+> >
+> > ... when != ( f(...,x,...) | <+...x...+> = E3 )
+> >     when != ( while(...) S | for(...;...;...) S )
+> >
+> > This has given reasonable results for kmalloc and memset.
+>
+> Thanks for that.
+>
+> It might be nice to add that to the kzalloc example
+> in scripts/coccinelle
 
-If Linus asks for a Tux3 pull first thing tomorrow we will agree to
-it, perfect core patches or not. This is because we are confident
-that all remaining API issues and code duplication issues are
-solvable in the usual Linux way. The Tux3 tree exactly as posted
-builds and runs passing well. We do not feel ashamed of it at all,
-quite the contrary.
+I will do that.  Thanks.
 
-Mind you, we know that everybody is looking forward to a lively
-discussion about page forking, as well they should. But it does not
-really matter whether that takes place before or after merge. You
-know as well as I do that we are collectively smart enough to make
-it work, and you probably understand by now why it is worth making
-it work. Further, we think it already works, both by analysis and
-empirical results of our stress testing.
-
-If you have a _specific_ example of an API issue that is not solvable
-in the usual Linux way, please share it.
-
-Regards,
-
-Daniel
+julia
