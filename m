@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756897AbaFXUxj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:53:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47580 "EHLO
+	id S1756971AbaFXUyi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:54:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47548 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754075AbaFXUag (ORCPT
+	with ESMTP id S1753302AbaFXUaf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:30:36 -0400
+	Tue, 24 Jun 2014 16:30:35 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Wenkai Du <wenkai.du@intel.com>, Wolfram Sang <wsa@the-dreams.de>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 20/65] i2c: designware: Mask all interrupts during i2c controller enable
-Date: Tue, 24 Jun 2014 13:29:40 -0700
-Message-Id: <1403641825-12825-21-git-send-email-kamal@canonical.com>
+Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        Mark Brown <broonie@linaro.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 16/65] ASoC: wm8962: Update register CLASS_D_CONTROL_1 to be non-volatile
+Date: Tue, 24 Jun 2014 13:29:36 -0700
+Message-Id: <1403641825-12825-17-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
 References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
@@ -27,60 +27,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Du, Wenkai" <wenkai.du@intel.com>
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 
-commit 47bb27e78867997040a228328f2a631c3c7f2c82 upstream.
+commit 44330ab516c15dda8a1e660eeaf0003f84e43e3f upstream.
 
-There have been "i2c_designware 80860F41:00: controller timed out" errors
-on a number of Baytrail platforms. The issue is caused by incorrect value in
-Interrupt Mask Register (DW_IC_INTR_MASK)  when i2c core is being enabled.
-This causes call to __i2c_dw_enable() to immediately start the transfer which
-leads to timeout. There are 3 failure modes observed:
+The register CLASS_D_CONTROL_1 is marked as volatile because it contains
+a bit, DAC_MUTE, which is also mirrored in the ADC_DAC_CONTROL_1
+register. This causes problems for the "Speaker Switch" control, which
+will report an error if the CODEC is suspended because it relies on a
+volatile register.
 
-1. Failure in S0 to S3 resume path
+To resolve this issue mark CLASS_D_CONTROL_1 as non-volatile and
+manually keep the register cache in sync by updating both bits when
+changing the mute status.
 
-The default value after reset for DW_IC_INTR_MASK is 0x8ff. When we start
-the first transaction after resuming from system sleep, TX_EMPTY interrupt
-is already unmasked because of the hardware default.
-
-2. Failure in normal operational path
-
-This failure happens rarely and is hard to reproduce. Debug trace showed that
-DW_IC_INTR_MASK had value of 0x254 when failure occurred, which meant
-TX_EMPTY was unmasked.
-
-3. Failure in S3 to S0 suspend path
-
-This failure also happens rarely and is hard to reproduce. Adding debug trace
-that read DW_IC_INTR_MASK made this failure not reproducible. But from ISR
-call trace we could conclude TX_EMPTY was unmasked when problem occurred.
-
-The patch masks all interrupts before the controller is enabled to resolve the
-faulty DW_IC_INTR_MASK conditions.
-
-Signed-off-by: Wenkai Du <wenkai.du@intel.com>
-Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-[wsa: improved the comment and removed typo in commit msg]
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Reported-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Tested-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/i2c/busses/i2c-designware-core.c | 3 +++
- 1 file changed, 3 insertions(+)
+ sound/soc/codecs/wm8962.c | 15 ++++++++++++---
+ sound/soc/codecs/wm8962.h |  4 ++++
+ 2 files changed, 16 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
-index bf8ce32..4a35605 100644
---- a/drivers/i2c/busses/i2c-designware-core.c
-+++ b/drivers/i2c/busses/i2c-designware-core.c
-@@ -358,6 +358,9 @@ static void i2c_dw_xfer_init(struct dw_i2c_dev *dev)
- 		ic_con &= ~DW_IC_CON_10BITADDR_MASTER;
- 	dw_writel(dev, ic_con, DW_IC_CON);
+diff --git a/sound/soc/codecs/wm8962.c b/sound/soc/codecs/wm8962.c
+index df54650..7976c9a 100644
+--- a/sound/soc/codecs/wm8962.c
++++ b/sound/soc/codecs/wm8962.c
+@@ -153,6 +153,7 @@ static struct reg_default wm8962_reg[] = {
+ 	{ 40, 0x0000 },   /* R40    - SPKOUTL volume */
+ 	{ 41, 0x0000 },   /* R41    - SPKOUTR volume */
  
-+	/* enforce disabled interrupts (due to HW issues) */
-+	i2c_dw_disable_int(dev);
++	{ 49, 0x0010 },   /* R49    - Class D Control 1 */
+ 	{ 51, 0x0003 },   /* R51    - Class D Control 2 */
+ 
+ 	{ 56, 0x0506 },   /* R56    - Clocking 4 */
+@@ -794,7 +795,6 @@ static bool wm8962_volatile_register(struct device *dev, unsigned int reg)
+ 	case WM8962_ALC2:
+ 	case WM8962_THERMAL_SHUTDOWN_STATUS:
+ 	case WM8962_ADDITIONAL_CONTROL_4:
+-	case WM8962_CLASS_D_CONTROL_1:
+ 	case WM8962_DC_SERVO_6:
+ 	case WM8962_INTERRUPT_STATUS_1:
+ 	case WM8962_INTERRUPT_STATUS_2:
+@@ -2903,13 +2903,22 @@ static int wm8962_set_fll(struct snd_soc_codec *codec, int fll_id, int source,
+ static int wm8962_mute(struct snd_soc_dai *dai, int mute)
+ {
+ 	struct snd_soc_codec *codec = dai->codec;
+-	int val;
++	int val, ret;
+ 
+ 	if (mute)
+-		val = WM8962_DAC_MUTE;
++		val = WM8962_DAC_MUTE | WM8962_DAC_MUTE_ALT;
+ 	else
+ 		val = 0;
+ 
++	/**
++	 * The DAC mute bit is mirrored in two registers, update both to keep
++	 * the register cache consistent.
++	 */
++	ret = snd_soc_update_bits(codec, WM8962_CLASS_D_CONTROL_1,
++				  WM8962_DAC_MUTE_ALT, val);
++	if (ret < 0)
++		return ret;
 +
- 	/* Enable the adapter */
- 	dw_writel(dev, 1, DW_IC_ENABLE);
- 
+ 	return snd_soc_update_bits(codec, WM8962_ADC_DAC_CONTROL_1,
+ 				   WM8962_DAC_MUTE, val);
+ }
+diff --git a/sound/soc/codecs/wm8962.h b/sound/soc/codecs/wm8962.h
+index a1a5d52..910aafd 100644
+--- a/sound/soc/codecs/wm8962.h
++++ b/sound/soc/codecs/wm8962.h
+@@ -1954,6 +1954,10 @@
+ #define WM8962_SPKOUTL_ENA_MASK                 0x0040  /* SPKOUTL_ENA */
+ #define WM8962_SPKOUTL_ENA_SHIFT                     6  /* SPKOUTL_ENA */
+ #define WM8962_SPKOUTL_ENA_WIDTH                     1  /* SPKOUTL_ENA */
++#define WM8962_DAC_MUTE_ALT                     0x0010  /* DAC_MUTE */
++#define WM8962_DAC_MUTE_ALT_MASK                0x0010  /* DAC_MUTE */
++#define WM8962_DAC_MUTE_ALT_SHIFT                    4  /* DAC_MUTE */
++#define WM8962_DAC_MUTE_ALT_WIDTH                    1  /* DAC_MUTE */
+ #define WM8962_SPKOUTL_PGA_MUTE                 0x0002  /* SPKOUTL_PGA_MUTE */
+ #define WM8962_SPKOUTL_PGA_MUTE_MASK            0x0002  /* SPKOUTL_PGA_MUTE */
+ #define WM8962_SPKOUTL_PGA_MUTE_SHIFT                1  /* SPKOUTL_PGA_MUTE */
 -- 
 1.9.1
 
