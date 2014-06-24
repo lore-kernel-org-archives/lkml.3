@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755080AbaFXAdn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 20:33:43 -0400
-Received: from mail-bn1blp0182.outbound.protection.outlook.com ([207.46.163.182]:50402
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753523AbaFXAdP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 20:33:15 -0400
-X-WSS-ID: 0N7NDJ7-08-AXV-02
-X-M-MSG: 
-From: <suravee.suthikulpanit@amd.com>
-To: <marc.zyngier@arm.com>, <Catalin.Marinas@arm.com>, <Will.Deacon@arm.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-pci@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-Subject: [PATCH 1/2] arm/gic: Add binding probe for GIC400
-Date: Mon, 23 Jun 2014 19:32:59 -0500
-Message-ID: <1403569980-12913-2-git-send-email-suravee.suthikulpanit@amd.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1403569980-12913-1-git-send-email-suravee.suthikulpanit@amd.com>
-References: <1403569980-12913-1-git-send-email-suravee.suthikulpanit@amd.com>
+	id S1755319AbaFXAee (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 20:34:34 -0400
+Received: from fgwmail.fujitsu.co.jp ([164.71.1.133]:56563 "EHLO
+	fgwmail.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753537AbaFXAed (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 20:34:33 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <53A8C76A.4060207@jp.fujitsu.com>
+Date: Tue, 24 Jun 2014 09:33:46 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(189002)(199002)(97736001)(44976005)(87936001)(77982001)(76176999)(62966002)(102836001)(74662001)(99396002)(81542001)(105586002)(83322001)(85306003)(64706001)(31966008)(79102001)(50466002)(92566001)(93916002)(76482001)(74502001)(19580395003)(47776003)(46102001)(101416001)(85852003)(92726001)(88136002)(48376002)(86152002)(19580405001)(36756003)(95666004)(50226001)(81342001)(50986999)(4396001)(104166001)(20776003)(77156001)(77096002)(106466001)(83072002)(89996001)(84676001)(68736004)(87286001)(80022001)(2201001)(33646001)(21056001)(86362001)(53416004);DIR:OUT;SFP:;SCL:1;SRVR:CY1PR0201MB0921;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 02524402D6
-Authentication-Results: spf=none (sender IP is 165.204.84.222)
- smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+To: Toshi Kani <toshi.kani@hp.com>
+CC: <akpm@linux-foundation.org>, <tglx@linutronix.de>, <mingo@redhat.com>,
+        <hpa@zytor.com>, <tangchen@cn.fujitsu.com>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>, <x86@kernel.org>,
+        <guz.fnst@cn.fujitsu.com>, <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [PATCH 1/2] x86,mem-hotplug: pass sync_global_pgds() a correct
+ argument in remove_pagetable()
+References: <53A132E2.9000605@jp.fujitsu.com>	 <53A1339E.2000000@jp.fujitsu.com> <1403288831.25108.0.camel@misato.fc.hp.com>
+In-Reply-To: <1403288831.25108.0.camel@misato.fc.hp.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+(2014/06/21 3:27), Toshi Kani wrote:
+> On Wed, 2014-06-18 at 15:37 +0900, Yasuaki Ishimatsu wrote:
+>> remove_pagetable() gets start argument and passes the argument to
+>> sync_global_pgds(). In this case, the argument must not be modified.
+>> If the argument is modified and passed to sync_global_pgds(),
+>> sync_global_pgds() does not correctly synchronize PGD to PGD entries
+>> of all processes MM since synchronized range of memory [start, end]
+>> is wrong.
+>>
+>> Unfortunately the start argument is modified in remove_pagetable().
+>> So this patch fixes the issue.
+>>
+>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>
 
-Add new Irqchip declaration for GIC400. This was mentioned in
-gic binding documentation, but there is not code to support it.
+> Acked-by: Toshi Kani <toshi.kani@hp.com>
 
-Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
----
- drivers/irqchip/irq-gic.c | 2 ++
- 1 file changed, 2 insertions(+)
+Thank you for your review.
 
-diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index 7e11c9d..adc86de 100644
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -1071,6 +1071,8 @@ gic_of_init(struct device_node *node, struct device_node *parent)
- 	gic_cnt++;
- 	return 0;
- }
-+
-+IRQCHIP_DECLARE(arm_gic_400, "arm,gic-400", gic_of_init);
- IRQCHIP_DECLARE(cortex_a15_gic, "arm,cortex-a15-gic", gic_of_init);
- IRQCHIP_DECLARE(cortex_a9_gic, "arm,cortex-a9-gic", gic_of_init);
- IRQCHIP_DECLARE(msm_8660_qgic, "qcom,msm-8660-qgic", gic_of_init);
--- 
-1.9.0
+Thanks,
+Yasuak Ishimatsu
+
+>
+> Thanks,
+> -Toshi
+>
+>
+
 
