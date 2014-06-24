@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964830AbaFXPyl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:54:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33059 "EHLO
+	id S964846AbaFXPyt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:54:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33083 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964811AbaFXPyh (ORCPT
+	with ESMTP id S1755857AbaFXPyq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:54:37 -0400
+	Tue, 24 Jun 2014 11:54:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.14 40/68] USB: cdc-acm: fix write and resume race
-Date: Tue, 24 Jun 2014 11:50:59 -0400
-Message-Id: <20140624154725.729673629@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.14 55/68] iio: adc: at91: signedness bug in at91_adc_get_trigger_value_by_name()
+Date: Tue, 24 Jun 2014 11:51:14 -0400
+Message-Id: <20140624154726.442889432@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154723.907894814@linuxfoundation.org>
 References: <20140624154723.907894814@linuxfoundation.org>
@@ -28,79 +30,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit e144ed28bed10684f9aaec6325ed974d53f76110 upstream.
+commit 4f3bcd878f1d3c730fe00f619b7260c6125d49eb upstream.
 
-Fix race between write() and resume() due to improper locking that could
-lead to writes being reordered.
+at91_adc_get_trigger_value_by_name() was returning -ENOMEM truncated to
+a positive u8 and that doesn't work.  I've changed it to int and
+refactored it to preserve the error code.
 
-Resume must be done atomically and susp_count be protected by the
-write_lock in order to prevent racing with write(). This could otherwise
-lead to writes being reordered if write() grabs the write_lock after
-susp_count is decremented, but before the delayed urb is submitted.
-
-Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
-that support remote wakeup")
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Tested-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/class/cdc-acm.c |   23 +++++++++--------------
- 1 file changed, 9 insertions(+), 14 deletions(-)
+ drivers/iio/adc/at91_adc.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -1539,27 +1539,20 @@ static int acm_resume(struct usb_interfa
- 	struct acm *acm = usb_get_intfdata(intf);
- 	struct acm_wb *wb;
- 	int rv = 0;
--	int cnt;
- 
- 	spin_lock_irq(&acm->read_lock);
--	acm->susp_count -= 1;
--	cnt = acm->susp_count;
--	spin_unlock_irq(&acm->read_lock);
-+	spin_lock(&acm->write_lock);
- 
--	if (cnt)
--		return 0;
-+	if (--acm->susp_count)
-+		goto out;
- 
- 	if (test_bit(ASYNCB_INITIALIZED, &acm->port.flags)) {
--		rv = usb_submit_urb(acm->ctrlurb, GFP_NOIO);
-+		rv = usb_submit_urb(acm->ctrlurb, GFP_ATOMIC);
- 
--		spin_lock_irq(&acm->write_lock);
- 		if (acm->delayed_wb) {
- 			wb = acm->delayed_wb;
- 			acm->delayed_wb = NULL;
--			spin_unlock_irq(&acm->write_lock);
- 			acm_start_wb(acm, wb);
--		} else {
--			spin_unlock_irq(&acm->write_lock);
- 		}
- 
- 		/*
-@@ -1567,12 +1560,14 @@ static int acm_resume(struct usb_interfa
- 		 * do the write path at all cost
- 		 */
- 		if (rv < 0)
--			goto err_out;
-+			goto out;
- 
--		rv = acm_submit_read_urbs(acm, GFP_NOIO);
-+		rv = acm_submit_read_urbs(acm, GFP_ATOMIC);
- 	}
-+out:
-+	spin_unlock(&acm->write_lock);
-+	spin_unlock_irq(&acm->read_lock);
- 
--err_out:
- 	return rv;
+--- a/drivers/iio/adc/at91_adc.c
++++ b/drivers/iio/adc/at91_adc.c
+@@ -322,12 +322,11 @@ static int at91_adc_channel_init(struct
+ 	return idev->num_channels;
  }
  
+-static u8 at91_adc_get_trigger_value_by_name(struct iio_dev *idev,
++static int at91_adc_get_trigger_value_by_name(struct iio_dev *idev,
+ 					     struct at91_adc_trigger *triggers,
+ 					     const char *trigger_name)
+ {
+ 	struct at91_adc_state *st = iio_priv(idev);
+-	u8 value = 0;
+ 	int i;
+ 
+ 	for (i = 0; i < st->trigger_number; i++) {
+@@ -340,15 +339,16 @@ static u8 at91_adc_get_trigger_value_by_
+ 			return -ENOMEM;
+ 
+ 		if (strcmp(trigger_name, name) == 0) {
+-			value = triggers[i].value;
+ 			kfree(name);
+-			break;
++			if (triggers[i].value == 0)
++				return -EINVAL;
++			return triggers[i].value;
+ 		}
+ 
+ 		kfree(name);
+ 	}
+ 
+-	return value;
++	return -EINVAL;
+ }
+ 
+ static int at91_adc_configure_trigger(struct iio_trigger *trig, bool state)
+@@ -358,14 +358,14 @@ static int at91_adc_configure_trigger(st
+ 	struct iio_buffer *buffer = idev->buffer;
+ 	struct at91_adc_reg_desc *reg = st->registers;
+ 	u32 status = at91_adc_readl(st, reg->trigger_register);
+-	u8 value;
++	int value;
+ 	u8 bit;
+ 
+ 	value = at91_adc_get_trigger_value_by_name(idev,
+ 						   st->trigger_list,
+ 						   idev->trig->name);
+-	if (value == 0)
+-		return -EINVAL;
++	if (value < 0)
++		return value;
+ 
+ 	if (state) {
+ 		st->buffer = kmalloc(idev->scan_bytes, GFP_KERNEL);
 
 
