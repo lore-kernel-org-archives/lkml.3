@@ -1,75 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751951AbaFXHZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 03:25:26 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:36127 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751231AbaFXHZZ (ORCPT
+	id S1751693AbaFXHcE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 03:32:04 -0400
+Received: from mail-pa0-f66.google.com ([209.85.220.66]:43772 "EHLO
+	mail-pa0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751098AbaFXHcC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 03:25:25 -0400
-X-Auth-Info: uljASq7ZkCqtqY+H2xS7hzHpIwLIB5zpGWyrhmutZdk=
-From: Heiko Schocher <hs@denx.de>
-To: linux-mtd@lists.infradead.org
-Cc: Heiko Schocher <hs@denx.de>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Richard Weinberger <richard@nod.at>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Mike Snitzer <snitzer@redhat.com>, Wolfgang Denk <wd@denx.de>,
+	Tue, 24 Jun 2014 03:32:02 -0400
+MIME-Version: 1.0
+From: Osmond Sun <osmond.sun@gmail.com>
+Date: Tue, 24 Jun 2014 15:31:41 +0800
+Message-ID: <CABJ8ys8VxRwgges=bfFCXN51rQQQM3kgdfRP-TtZuOrP+UrcgQ@mail.gmail.com>
+Subject: [PATCH] cifs: set null to username and iocharset after being freed
+To: sfrench@samba.org
+Cc: linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] ubi: fix correct rb_tree node comparison in add_vol
-Date: Tue, 24 Jun 2014 09:25:18 +0200
-Message-Id: <1403594718-20595-1-git-send-email-hs@denx.de>
-X-Mailer: git-send-email 1.8.3.1
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 604b592e6fd3c98f21435e1181ba7723ffc24715 ("UBI: fix rb_tree node comparison in add_map")
+In function 'expand_dfs_referral' the volume_info->iocharset and
+volume_info->username was used after being freed by calling
+cleanup_volume_info_contents. Set null to username and iocharset
+after being freed.
 
-introduced problems with attaching ubi fastmap images,
-created with older kernel.
-
-As in ubi_find_av() from attach.c is
-[...]
-                if (vol_id > av->vol_id)
-                        p = p->rb_left;
-                else
-                        p = p->rb_right;
-
-sync this logic also in add_vol() with this.
-
-With this patch attaching older ubi images works again.
-
-Signed-off-by: Heiko Schocher <hs@denx.de>
-
+Signed-off-by: Osmond Sun <osmond.sun@gmail.com>
 ---
+ fs/cifs/connect.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Cc: Richard Weinberger <richard@nod.at>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Brian Norris <computersforpeace@gmail.com>
-Cc: Mike Snitzer <snitzer@redhat.com>
-Cc: Wolfgang Denk <wd@denx.de>
-Cc: linux-mtd@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
+diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
+index 20d75b8..2586a34 100644
+--- a/fs/cifs/connect.c
++++ b/fs/cifs/connect.c
+@@ -3251,10 +3251,12 @@ static void
+ cleanup_volume_info_contents(struct smb_vol *volume_info)
+ {
+  kfree(volume_info->username);
++ volume_info->username = NULL;
+  kzfree(volume_info->password);
+  kfree(volume_info->UNC);
+  kfree(volume_info->domainname);
+  kfree(volume_info->iocharset);
++ volume_info->iocharset = NULL;
+  kfree(volume_info->prepath);
+ }
 
- drivers/mtd/ubi/fastmap.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/mtd/ubi/fastmap.c b/drivers/mtd/ubi/fastmap.c
-index b04e7d0..72f39da 100644
---- a/drivers/mtd/ubi/fastmap.c
-+++ b/drivers/mtd/ubi/fastmap.c
-@@ -125,7 +125,7 @@ static struct ubi_ainf_volume *add_vol(struct ubi_attach_info *ai, int vol_id,
- 		parent = *p;
- 		av = rb_entry(parent, struct ubi_ainf_volume, rb);
- 
--		if (vol_id < av->vol_id)
-+		if (vol_id > av->vol_id)
- 			p = &(*p)->rb_left;
- 		else
- 			p = &(*p)->rb_right;
 -- 
-1.8.3.1
-
+1.9.0
