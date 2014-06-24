@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756681AbaFXUrt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:47:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47624 "EHLO
+	id S1756414AbaFXUsj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:48:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47613 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754319AbaFXUai (ORCPT
+	with ESMTP id S1754287AbaFXUah (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:30:38 -0400
+	Tue, 24 Jun 2014 16:30:37 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Dave Jones <davej@redhat.com>,
-        David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Anthony Iliopoulos <anthony.iliopoulos@huawei.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 11/65] mm, thp: close race between mremap() and split_huge_page()
-Date: Tue, 24 Jun 2014 13:29:31 -0700
-Message-Id: <1403641825-12825-12-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 19/65] x86, mm, hugetlb: Add missing TLB page invalidation for hugetlb_cow()
+Date: Tue, 24 Jun 2014 13:29:39 -0700
+Message-Id: <1403641825-12825-20-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
 References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
@@ -31,73 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+From: Anthony Iliopoulos <anthony.iliopoulos@huawei.com>
 
-commit dd18dbc2d42af75fffa60c77e0f02220bc329829 upstream.
+commit 9844f5462392b53824e8b86726e7c33b5ecbb676 upstream.
 
-It's critical for split_huge_page() (and migration) to catch and freeze
-all PMDs on rmap walk.  It gets tricky if there's concurrent fork() or
-mremap() since usually we copy/move page table entries on dup_mm() or
-move_page_tables() without rmap lock taken.  To get it work we rely on
-rmap walk order to not miss any entry.  We expect to see destination VMA
-after source one to work correctly.
+The invalidation is required in order to maintain proper semantics
+under CoW conditions. In scenarios where a process clones several
+threads, a thread operating on a core whose DTLB entry for a
+particular hugepage has not been invalidated, will be reading from
+the hugepage that belongs to the forked child process, even after
+hugetlb_cow().
 
-But after switching rmap implementation to interval tree it's not always
-possible to preserve expected walk order.
+The thread will not see the updated page as long as the stale DTLB
+entry remains cached, the thread attempts to write into the page,
+the child process exits, or the thread gets migrated to a different
+processor.
 
-It works fine for dup_mm() since new VMA has the same vma_start_pgoff()
-/ vma_last_pgoff() and explicitly insert dst VMA after src one with
-vma_interval_tree_insert_after().
-
-But on move_vma() destination VMA can be merged into adjacent one and as
-result shifted left in interval tree.  Fortunately, we can detect the
-situation and prevent race with rmap walk by moving page table entries
-under rmap lock.  See commit 38a76013ad80.
-
-Problem is that we miss the lock when we move transhuge PMD.  Most
-likely this bug caused the crash[1].
-
-[1] http://thread.gmane.org/gmane.linux.kernel.mm/96473
-
-Fixes: 108d6642ad81 ("mm anon rmap: remove anon_vma_moveto_tail")
-
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Acked-by: Michel Lespinasse <walken@google.com>
-Cc: Dave Jones <davej@redhat.com>
-Cc: David Miller <davem@davemloft.net>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Anthony Iliopoulos <anthony.iliopoulos@huawei.com>
+Link: http://lkml.kernel.org/r/20140514092948.GA17391@server-36.huawei.corp
+Suggested-by: Shay Goikhman <shay.goikhman@huawei.com>
+Acked-by: Dave Hansen <dave.hansen@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/mremap.c | 9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ arch/x86/include/asm/hugetlb.h | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/mm/mremap.c b/mm/mremap.c
-index 7b26643..e251eaf 100644
---- a/mm/mremap.c
-+++ b/mm/mremap.c
-@@ -174,10 +174,17 @@ unsigned long move_page_tables(struct vm_area_struct *vma,
- 			break;
- 		if (pmd_trans_huge(*old_pmd)) {
- 			int err = 0;
--			if (extent == HPAGE_PMD_SIZE)
-+			if (extent == HPAGE_PMD_SIZE) {
-+				VM_BUG_ON(vma->vm_file || !vma->anon_vma);
-+				/* See comment in move_ptes() */
-+				if (need_rmap_locks)
-+					anon_vma_lock_write(vma->anon_vma);
- 				err = move_huge_pmd(vma, new_vma, old_addr,
- 						    new_addr, old_end,
- 						    old_pmd, new_pmd);
-+				if (need_rmap_locks)
-+					anon_vma_unlock_write(vma->anon_vma);
-+			}
- 			if (err > 0) {
- 				need_flush = true;
- 				continue;
+diff --git a/arch/x86/include/asm/hugetlb.h b/arch/x86/include/asm/hugetlb.h
+index bdd35db..78ba03b 100644
+--- a/arch/x86/include/asm/hugetlb.h
++++ b/arch/x86/include/asm/hugetlb.h
+@@ -51,6 +51,7 @@ static inline pte_t huge_ptep_get_and_clear(struct mm_struct *mm,
+ static inline void huge_ptep_clear_flush(struct vm_area_struct *vma,
+ 					 unsigned long addr, pte_t *ptep)
+ {
++	ptep_clear_flush(vma, addr, ptep);
+ }
+ 
+ static inline int huge_pte_none(pte_t pte)
 -- 
 1.9.1
 
