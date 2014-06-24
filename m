@@ -1,84 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752394AbaFXHgM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 03:36:12 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:57338 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751259AbaFXHgL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 03:36:11 -0400
-Message-ID: <53A92A5B.4070403@linux.vnet.ibm.com>
-Date: Tue, 24 Jun 2014 15:35:55 +0800
-From: Lei Li <lilei@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752480AbaFXHhF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 03:37:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35509 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751326AbaFXHhD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 03:37:03 -0400
+Date: Tue, 24 Jun 2014 09:36:59 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Xishi Qiu <qiuxishi@huawei.com>
+Cc: Rafael Aquini <aquini@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH 0/8] mm: add page cache limit and reclaim feature
+Message-ID: <20140624073659.GA15337@dhcp22.suse.cz>
+References: <539EB7D6.8070401@huawei.com>
+ <20140616111422.GA16915@dhcp22.suse.cz>
+ <20140616125040.GA29993@optiplex.redhat.com>
+ <539F9B6C.1080802@huawei.com>
+ <53A3E948.5020701@huawei.com>
+ <20140620153212.GD23115@dhcp22.suse.cz>
+ <53A78B7C.1050302@huawei.com>
+ <20140623112955.GL9743@dhcp22.suse.cz>
+ <53A8E19C.40809@huawei.com>
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: hannes@cmpxchg.org, tj@kernel.org, akpm@linux-foundation.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org
-Subject: Re: [PATCH] Documentation: Update remove_from_page_cache with delete_from_page_cache
-References: <1403514679-24632-1-git-send-email-lilei@linux.vnet.ibm.com> <20140623092305.GF9743@dhcp22.suse.cz>
-In-Reply-To: <20140623092305.GF9743@dhcp22.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14062407-5564-0000-0000-00000E8FA556
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53A8E19C.40809@huawei.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue 24-06-14 10:25:32, Xishi Qiu wrote:
+> On 2014/6/23 19:29, Michal Hocko wrote:
+[...]
+> > This doesn't make much sense to me. So you have a problem with latency
+> > caused by direct reclaim so you add a new way of direct page cache
+> > reclaim.
+> > 
+> >> A user process produces page cache frequently, so free memory is not
+> >> enough after running a long time. Slow path takes much more time because 
+> >> direct reclaim. And kswapd will reclaim memory too, but not much. Thus it
+> >> always triggers slow path. this will cause performance regression.
+> > 
+> > If I were you I would focus on why the reclaim doesn't catch up with the
+> > page cache users. The mechanism you are proposing in unacceptable.
+> 
+> Hi Michal,
+> 
+> Do you mean why the reclaim is slower than page cache increase?
+> 
+> I think there are two reasons:
+> 1. kswapd and direct_reclaim will be triggered only when there is not 
+> enough memory(e.g. __alloc_pages_slowpath()). That means it will not 
+> reclaim when memory is enough(e.g. get_page_from_freelist()).
 
-On 06/23/2014 05:23 PM, Michal Hocko wrote:
-> On Mon 23-06-14 17:11:19, Lei Li wrote:
->> remove_from_page_cache has been renamed to delete_from_page_cache
->> since Commit 702cfbf9 ("mm: goodbye remove_from_page_cache()"), adapt
->> to it in Memcg documentation.
->>
->> Signed-off-by: Lei Li <lilei@linux.vnet.ibm.com>
-> This conflicts with the current mmotm tree because of Johannes' {un}charge rewrite.
-> Anyway the comment is not up-to-date anyway. __delete_from_page_cache is
-> called from more places and I do not see quite a good reason why to keep
-> this in the documentation.
-> I would just remove this note as it doesn't serve any useful purpose.
+Yeah and that is the whole point. If you want to start to reclaim earlier
+because you need a bigger pillow for the free memory for sudden memory
+pressure then increase min_free_kbytes.
 
-Thanks for your reply.
-Just take a quick look at Johannes' patch of rewriting uncharge API. I'll
-resend a patch with the note removed.
+> 2. __alloc_pages_direct_reclaim
+> 	try_to_free_pages
+> 		nr_to_reclaim = SWAP_CLUSTER_MAX
+> And "#define SWAP_CLUSTER_MAX 32UL", that means it expect to reclaim 32
+> pages. It is too few, if we alloc 2^10 pages in one time.
 
+Maybe _userspace_ allocates that much of memory but it is not faulted
+in/allocated by kernel in one shot. Besides that at the time you enter
+direct reclaim kswapd should be reclaiming memory to balance zones.
+So reclaiming SWAP_CLUSTER_MAX from the direct reclaim shouldn't
+matter that much. If it does then show us some numbers to prove it.
+SWAP_CLUSTER_MAX is kind of arbitrary number but I haven't seen any
+reclaim regression becuse of this value being too small AFAIR.
 
-Thanks,
-
-Lei
-
->
->> ---
->>   Documentation/cgroups/memcg_test.txt | 4 ++--
->>   1 file changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/Documentation/cgroups/memcg_test.txt b/Documentation/cgroups/memcg_test.txt
->> index 80ac454..b2d6ccc 100644
->> --- a/Documentation/cgroups/memcg_test.txt
->> +++ b/Documentation/cgroups/memcg_test.txt
->> @@ -171,10 +171,10 @@ Under below explanation, we assume CONFIG_MEM_RES_CTRL_SWAP=y.
->>   	- add_to_page_cache_locked().
->>   
->>   	uncharged at
->> -	- __remove_from_page_cache().
->> +	- __delete_from_page_cache().
->>   
->>   	The logic is very clear. (About migration, see below)
->> -	Note: __remove_from_page_cache() is called by remove_from_page_cache()
->> +	Note: __delete_from_page_cache() is called by delete_from_page_cache()
->>   	and __remove_mapping().
->>   
->>   6. Shmem(tmpfs) Page Cache
->> -- 
->> 1.8.5.3
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
+-- 
+Michal Hocko
+SUSE Labs
