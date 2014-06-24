@@ -1,105 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752806AbaFXBHl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 21:07:41 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:20533 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752668AbaFXBHk (ORCPT
+	id S1752962AbaFXBMz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 21:12:55 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:33624 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751066AbaFXBMy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 21:07:40 -0400
-X-IronPort-AV: E=Sophos;i="5.00,765,1396972800"; 
-   d="scan'208";a="32322892"
-Message-ID: <53A8CF4B.90300@cn.fujitsu.com>
-Date: Tue, 24 Jun 2014 09:07:23 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131030 Thunderbird/17.0.10
+	Mon, 23 Jun 2014 21:12:54 -0400
+X-Original-SENDERIP: 10.178.33.69
+X-Original-MAILFROM: gioh.kim@lge.com
+Message-ID: <53A8D092.4040801@lge.com>
+Date: Tue, 24 Jun 2014 10:12:50 +0900
+From: Gioh Kim <gioh.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Vlastimil Babka <vbabka@suse.cz>, <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 05/13] mm, compaction: report compaction as contended
- only due to lock contention
-References: <1403279383-5862-1-git-send-email-vbabka@suse.cz> <1403279383-5862-6-git-send-email-vbabka@suse.cz> <20140623013903.GA12413@bbox> <53A7EB9B.5000406@cn.fujitsu.com> <20140623233507.GF15594@bbox>
-In-Reply-To: <20140623233507.GF15594@bbox>
-Content-Type: text/plain; charset="UTF-8"
+To: Michal Nazarewicz <mina86@mina86.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+CC: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Mel Gorman <mgorman@suse.de>,
+        =?EUC-KR?B?wMywx8ij?= <gunho.lee@lge.com>
+Subject: [RFC] CMA page migration failure due to buffers on bh_lru
+Content-Type: text/plain; charset=EUC-KR
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.225.89]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Minchan
 
-Thank you for your explain. Actually, I read the kernel with an old
-version. The latest upstream kernel has the behaviour like you described
-below. Oops, how long didn't I follow the buddy allocator change.
+Hello,
 
-Thanks.
+I am trying to apply CMA feature for my platform.
+My kernel version, 3.10.x, is not allocating memory from CMA area so that I applied
+a Joonsoo Kim's patch (https://lkml.org/lkml/2014/5/28/64).
+Now my platform can use CMA area effectively.
 
-On 06/24/2014 07:35 AM, Minchan Kim wrote:
->>> Anyway, most big concern is that you are changing current behavior as
->>> > > I said earlier.
->>> > > 
->>> > > Old behavior in THP page fault when it consumes own timeslot was just
->>> > > abort and fallback 4K page but with your patch, new behavior is
->>> > > take a rest when it founds need_resched and goes to another round with
->>> > > async, not sync compaction. I'm not sure we need another round with
->>> > > async compaction at the cost of increasing latency rather than fallback
->>> > > 4 page.
->> > 
->> > I don't see the new behavior works like what you said. If need_resched
->> > is true, it calls cond_resched() and after a rest it just breaks the loop.
->> > Why there is another round with async compact?
-> One example goes
-> 
-> Old:
-> page fault
-> huge page allocation
-> __alloc_pages_slowpath
-> __alloc_pages_direct_compact
-> compact_zone_order
->         isolate_migratepages
->         compact_checklock_irqsave
->                 need_resched is true
->                 cc->contended = true;
->         return ISOLATE_ABORT
-> return COMPACT_PARTIAL with *contented = cc.contended;
-> COMPACTFAIL
-> if (contended_compaction && gfp_mask & __GFP_NO_KSWAPD)
->         goto nopage;
-> 
-> New:
-> 
-> page fault
-> huge page allocation
-> __alloc_pages_slowpath
-> __alloc_pages_direct_compact
-> compact_zone_order
->         isolate_migratepages
->         compact_unlock_should_abort
->                 need_resched is true
->                 cc->contended = COMPACT_CONTENDED_SCHED;
->                 return true;
->         return ISOLATE_ABORT
-> return COMPACT_PARTIAL with *contended = cc.contended == COMPACT_CONTENDED_LOCK (1)
-> COMPACTFAIL
-> if (contended_compaction && gfp_mask & __GFP_NO_KSWAPD)
->         no goto nopage because contended_compaction was false by (1)
-> 
-> __alloc_pages_direct_reclaim
-> if (should_alloc_retry)
-> else
->         __alloc_pages_direct_compact again with ASYNC_MODE
->                         
-> 
+But I have many failures to allocate memory from CMA area.
+I found the same situation to Laura Abbott's patch descrbing, https://lkml.org/lkml/2012/8/31/313,
+that releases buffer-heads attached at CPU's LRU list.
 
+If Joonsoo's patch is applied and/or CMA feature is applied more and more,
+buffer-heads problem is going to be serious definitely.
 
--- 
-Thanks.
-Zhang Yanfei
+Please look into the Laura's patch again.
+I think it must be applied with Joonsoo's patch.
+
