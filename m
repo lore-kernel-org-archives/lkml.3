@@ -1,70 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755044AbaFXVHB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 17:07:01 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:49568 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753936AbaFXVHA (ORCPT
+	id S1754319AbaFXVJf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 17:09:35 -0400
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:41552 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751136AbaFXVJd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 17:07:00 -0400
+	Tue, 24 Jun 2014 17:09:33 -0400
+Date: Tue, 24 Jun 2014 17:09:30 -0400
+From: Tejun Heo <tj@kernel.org>
+To: shirishpargaonkar@gmail.com
+Cc: linux-kernel@vger.kernel.org, vgoyal@redhat.com,
+        Shirish Pargaonkar <spargaonkar@suse.com>
+Subject: Re: [PATCH] blkio: Release blkg infrastructure only after last
+ policy is deactivated.
+Message-ID: <20140624210930.GD14909@htj.dyndns.org>
+References: <1403549545-6535-1-git-send-email-spargaonkar@suse.com>
 MIME-Version: 1.0
-In-Reply-To: <1403643440.29061.56.camel@joe-AO725>
-References: <1403477209-14612-1-git-send-email-minipli@googlemail.com>
-	<1403477762.18747.14.camel@joe-AO725>
-	<CA+rthh8D=r1kW6iDb0MqfHwA4OW-oXSA+B1AXe-0Cqperz6ZRQ@mail.gmail.com>
-	<1403505219.18747.37.camel@joe-AO725>
-	<87egyeqt03.fsf@rasmusvillemoes.dk>
-	<CA+rthh8XwC80hq8z07k+=0J7MDA6tUtLff+J=qMuzYqTNyLKww@mail.gmail.com>
-	<1403638620.29061.35.camel@joe-AO725>
-	<CA+rthh9qGpkicfR+C7Qz1uOF4HUaVANVyq6YaH_Rx-80L_-YvQ@mail.gmail.com>
-	<1403641843.29061.51.camel@joe-AO725>
-	<CA+rthh89rYOyUd58vJO_0Nu_j+zrAMwUYSitRbT=MVoz9pO5Lw@mail.gmail.com>
-	<1403643440.29061.56.camel@joe-AO725>
-Date: Tue, 24 Jun 2014 23:06:58 +0200
-Message-ID: <CA+rthh9gKVWix4E0ENPFBXgUMpjnb8_+aeNUi3iZpAnqzo8C1w@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/3] Mark literal strings in __init / __exit code
-From: Mathias Krause <minipli@googlemail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403549545-6535-1-git-send-email-spargaonkar@suse.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 June 2014 22:57, Joe Perches <joe@perches.com> wrote:
-> On Tue, 2014-06-24 at 22:41 +0200, Mathias Krause wrote:
->> there is more to optimize
->> if one is patient enough ;)
->
-> Ever thus.
->
->> And all of those strings should be in the .rodata section, now. But
->> why you're asking?
->
-> Because now they will be duplicated in .rodata
-> and the __init section no?
+Hello,
 
-No. A string marked with __init_str() will only life in the
-.init.rodata section. No duplication.
+On Mon, Jun 23, 2014 at 01:52:25PM -0500, shirishpargaonkar@gmail.com wrote:
+> From: Shirish Pargaonkar <spargaonkar@suse.com>
+> 
+> Release blkg infrastructure only after last policy is deactivated
+> (i.e. let blkg_destroy_all() be called only from blkcg_deactivate_policy())
+> 
+> Otherwise, module can oops because root_blkg gets assigned NULL during
+> cleanup and we attempt draining the service queues via root_blkg afterwords.
 
->> Yes. My vanilla vmlinux build has quite a lot of copies of "off" in
->> it. But I doubt any linker would merge those. Does LTO do so?
->
-> I would expect that duplicated strings in
-> separate sections would not be merged.
+I'm not sure this fix makes sense.  Cleanup path oopses on an already
+freed resource.  How can the solution be not freeing?  Why not simply
+make blkcg_drain_queue() bail if the blkgs are all destroyed?  The
+whole thing is fully synchronized with the queuelock, right?
 
-I do hope so, too! :D Because if strings in .rodata would be merged
-with ones in .init.rodata the former would be dangling when the latter
-are freed after initialization.
-Having duplicated strings in .rodata and .init.rodata is also no
-problem as the latter will be freed.
+Can you please also cc Jens when you post the next iteration?
 
-Regards,
-Mathias
+Thanks.
+
+-- 
+tejun
