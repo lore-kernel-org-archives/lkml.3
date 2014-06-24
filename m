@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755898AbaFXQib (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:38:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32819 "EHLO
+	id S932662AbaFXQis (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:38:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32811 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932111AbaFXPxU (ORCPT
+	with ESMTP id S932091AbaFXPxQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:53:20 -0400
+	Tue, 24 Jun 2014 11:53:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 48/52] ALSA: control: Protect user controls against concurrent access
-Date: Tue, 24 Jun 2014 11:51:03 -0400
-Message-Id: <20140624154716.364734580@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.10 41/52] iio: adc: at91: signedness bug in at91_adc_get_trigger_value_by_name()
+Date: Tue, 24 Jun 2014 11:50:56 -0400
+Message-Id: <20140624154715.955856930@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154713.428945460@linuxfoundation.org>
 References: <20140624154713.428945460@linuxfoundation.org>
@@ -29,129 +30,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 07f4d9d74a04aa7c72c5dae0ef97565f28f17b92 upstream.
+commit 4f3bcd878f1d3c730fe00f619b7260c6125d49eb upstream.
 
-The user-control put and get handlers as well as the tlv do not protect against
-concurrent access from multiple threads. Since the state of the control is not
-updated atomically it is possible that either two write operations or a write
-and a read operation race against each other. Both can lead to arbitrary memory
-disclosure. This patch introduces a new lock that protects user-controls from
-concurrent access. Since applications typically access controls sequentially
-than in parallel a single lock per card should be fine.
+at91_adc_get_trigger_value_by_name() was returning -ENOMEM truncated to
+a positive u8 and that doesn't work.  I've changed it to int and
+refactored it to preserve the error code.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Acked-by: Jaroslav Kysela <perex@perex.cz>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Tested-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/sound/core.h |    2 ++
- sound/core/control.c |   31 +++++++++++++++++++++++++------
- sound/core/init.c    |    1 +
- 3 files changed, 28 insertions(+), 6 deletions(-)
+ drivers/iio/adc/at91_adc.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
---- a/include/sound/core.h
-+++ b/include/sound/core.h
-@@ -120,6 +120,8 @@ struct snd_card {
- 	int user_ctl_count;		/* count of all user controls */
- 	struct list_head controls;	/* all controls for this card */
- 	struct list_head ctl_files;	/* active control files */
-+	struct mutex user_ctl_lock;	/* protects user controls against
-+					   concurrent access */
- 
- 	struct snd_info_entry *proc_root;	/* root for soundcard specific files */
- 	struct snd_info_entry *proc_id;	/* the card id */
---- a/sound/core/control.c
-+++ b/sound/core/control.c
-@@ -992,6 +992,7 @@ static int snd_ctl_elem_unlock(struct sn
- 
- struct user_element {
- 	struct snd_ctl_elem_info info;
-+	struct snd_card *card;
- 	void *elem_data;		/* element data */
- 	unsigned long elem_data_size;	/* size of element data in bytes */
- 	void *tlv_data;			/* TLV data */
-@@ -1035,7 +1036,9 @@ static int snd_ctl_elem_user_get(struct
- {
- 	struct user_element *ue = kcontrol->private_data;
- 
-+	mutex_lock(&ue->card->user_ctl_lock);
- 	memcpy(&ucontrol->value, ue->elem_data, ue->elem_data_size);
-+	mutex_unlock(&ue->card->user_ctl_lock);
- 	return 0;
+--- a/drivers/iio/adc/at91_adc.c
++++ b/drivers/iio/adc/at91_adc.c
+@@ -161,12 +161,11 @@ static int at91_adc_channel_init(struct
+ 	return idev->num_channels;
  }
  
-@@ -1044,10 +1047,12 @@ static int snd_ctl_elem_user_put(struct
+-static u8 at91_adc_get_trigger_value_by_name(struct iio_dev *idev,
++static int at91_adc_get_trigger_value_by_name(struct iio_dev *idev,
+ 					     struct at91_adc_trigger *triggers,
+ 					     const char *trigger_name)
  {
- 	int change;
- 	struct user_element *ue = kcontrol->private_data;
--	
-+
-+	mutex_lock(&ue->card->user_ctl_lock);
- 	change = memcmp(&ucontrol->value, ue->elem_data, ue->elem_data_size) != 0;
- 	if (change)
- 		memcpy(ue->elem_data, &ucontrol->value, ue->elem_data_size);
-+	mutex_unlock(&ue->card->user_ctl_lock);
- 	return change;
- }
+ 	struct at91_adc_state *st = iio_priv(idev);
+-	u8 value = 0;
+ 	int i;
  
-@@ -1067,19 +1072,32 @@ static int snd_ctl_elem_user_tlv(struct
- 		new_data = memdup_user(tlv, size);
- 		if (IS_ERR(new_data))
- 			return PTR_ERR(new_data);
-+		mutex_lock(&ue->card->user_ctl_lock);
- 		change = ue->tlv_data_size != size;
- 		if (!change)
- 			change = memcmp(ue->tlv_data, new_data, size);
- 		kfree(ue->tlv_data);
- 		ue->tlv_data = new_data;
- 		ue->tlv_data_size = size;
-+		mutex_unlock(&ue->card->user_ctl_lock);
- 	} else {
--		if (! ue->tlv_data_size || ! ue->tlv_data)
--			return -ENXIO;
--		if (size < ue->tlv_data_size)
--			return -ENOSPC;
-+		int ret = 0;
-+
-+		mutex_lock(&ue->card->user_ctl_lock);
-+		if (!ue->tlv_data_size || !ue->tlv_data) {
-+			ret = -ENXIO;
-+			goto err_unlock;
-+		}
-+		if (size < ue->tlv_data_size) {
-+			ret = -ENOSPC;
-+			goto err_unlock;
-+		}
- 		if (copy_to_user(tlv, ue->tlv_data, ue->tlv_data_size))
--			return -EFAULT;
-+			ret = -EFAULT;
-+err_unlock:
-+		mutex_unlock(&ue->card->user_ctl_lock);
-+		if (ret)
-+			return ret;
+ 	for (i = 0; i < st->trigger_number; i++) {
+@@ -179,15 +178,16 @@ static u8 at91_adc_get_trigger_value_by_
+ 			return -ENOMEM;
+ 
+ 		if (strcmp(trigger_name, name) == 0) {
+-			value = triggers[i].value;
+ 			kfree(name);
+-			break;
++			if (triggers[i].value == 0)
++				return -EINVAL;
++			return triggers[i].value;
+ 		}
+ 
+ 		kfree(name);
  	}
- 	return change;
+ 
+-	return value;
++	return -EINVAL;
  }
-@@ -1211,6 +1229,7 @@ static int snd_ctl_elem_add(struct snd_c
- 	ue = kzalloc(sizeof(struct user_element) + private_size, GFP_KERNEL);
- 	if (ue == NULL)
- 		return -ENOMEM;
-+	ue->card = card;
- 	ue->info = *info;
- 	ue->info.access = 0;
- 	ue->elem_data = (char *)ue + sizeof(*ue);
---- a/sound/core/init.c
-+++ b/sound/core/init.c
-@@ -208,6 +208,7 @@ int snd_card_create(int idx, const char
- 	INIT_LIST_HEAD(&card->devices);
- 	init_rwsem(&card->controls_rwsem);
- 	rwlock_init(&card->ctl_files_rwlock);
-+	mutex_init(&card->user_ctl_lock);
- 	INIT_LIST_HEAD(&card->controls);
- 	INIT_LIST_HEAD(&card->ctl_files);
- 	spin_lock_init(&card->files_lock);
+ 
+ static int at91_adc_configure_trigger(struct iio_trigger *trig, bool state)
+@@ -197,14 +197,14 @@ static int at91_adc_configure_trigger(st
+ 	struct iio_buffer *buffer = idev->buffer;
+ 	struct at91_adc_reg_desc *reg = st->registers;
+ 	u32 status = at91_adc_readl(st, reg->trigger_register);
+-	u8 value;
++	int value;
+ 	u8 bit;
+ 
+ 	value = at91_adc_get_trigger_value_by_name(idev,
+ 						   st->trigger_list,
+ 						   idev->trig->name);
+-	if (value == 0)
+-		return -EINVAL;
++	if (value < 0)
++		return value;
+ 
+ 	if (state) {
+ 		st->buffer = kmalloc(idev->scan_bytes, GFP_KERNEL);
 
 
