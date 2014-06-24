@@ -1,89 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754607AbaFXPf0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:35:26 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:33376 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753032AbaFXPfY (ORCPT
+	id S1754393AbaFXPiW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:38:22 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55807 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753125AbaFXPiU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:35:24 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-6f-53a99ab9b028
-From: Kamil Debski <k.debski@samsung.com>
-To: "'Daniel Drake'" <drake@endlessm.com>
-Cc: linux-kernel@vger.kernel.org,
-        "'linux-samsung-soc'" <linux-samsung-soc@vger.kernel.org>,
-        linux-usb@vger.kernel.org, kishon@ti.com,
-        Tomasz Figa <t.figa@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>, gautam.vivek@samsung.com
-References: <1403614495-9291-1-git-send-email-k.debski@samsung.com>
- <CAD8Lp441832-ZVV8FQChEXcLqVpZqygv3iaF95_SfZOH_xkFPg@mail.gmail.com>
-In-reply-to: <CAD8Lp441832-ZVV8FQChEXcLqVpZqygv3iaF95_SfZOH_xkFPg@mail.gmail.com>
-Subject: RE: [PATCH] phy: phy-samsung-usb2: Change phy power on/power off
- sequence
-Date: Tue, 24 Jun 2014 17:35:20 +0200
-Message-id: <074a01cf8fc1$e906f0c0$bb14d240$%debski@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac+Pvj+QwVR3nYVBSCO1eRglxyupmwAAsf0g
-Content-language: pl
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLLMWRmVeSWpSXmKPExsVy+t/xa7o7Z60MNthwmM/i0fzHzBZtVw6y
-	W1x42sNmcXnXHDaLGef3MVksWtbKbLH2yF12i/UzXrM4cHgs+p7l0bdlFaPH8RvbmTw+b5IL
-	YInisklJzcksSy3St0vgyri/tIu5YD13xd2HO1kaGP9zdDFyckgImEicPbeOEcIWk7hwbz1b
-	FyMXh5DAUkaJN+0LoZwGJol/+5aydzFycLAJaEqsuucB0iAioC6xcMVjFpAaZoFPjBJdezpY
-	IRq6GCU6ln1hB6niFAiW+Lm5BaxZWCBE4t7SbJAwi4CqxLmvV5lAbF4BB4kTO1tYIWxBiR+T
-	77GAlDMDLZgyJRckzCwgL7F5zVtmkLAEUPjRX10QU0TASOLDq1SIChGJuw3PWScwCs1CMmcW
-	wpxZSObMQtKxgJFlFaNoamlyQXFSeq6hXnFibnFpXrpecn7uJkZIlHzZwbj4mNUhRgEORiUe
-	3gu7VgQLsSaWFVfmHmKU4GBWEuE17V4ZLMSbklhZlVqUH19UmpNafIiRiYNTqoExYn38248y
-	hba2f2Punj+z/NGrxBuu3VpLf9SV//jz5vv53b9WVayIWl3EXuaWv6kjc3lWpzHTK/8rnxi9
-	ayzCeLQdZMV2yYf/F33z2Tvr/6q0eecMQ5kPrer/+czJ5oFsXmL+75zfO9PyiiYzp9t9mvR+
-	U09Pdrzu1jphpvPPdh4ryj4ky3BeiaU4I9FQi7moOBEAH92c7nACAAA=
+	Tue, 24 Jun 2014 11:38:20 -0400
+Date: Tue, 24 Jun 2014 16:38:12 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Robert Jarzmik <robert.jarzmik@free.fr>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20140624153812.GT23300@sirena.org.uk>
+References: <1402757665-15102-1-git-send-email-robert.jarzmik@free.fr>
+ <20140617144323.GU5099@sirena.org.uk>
+ <87oaxrs5wb.fsf@free.fr>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9r3HF47jptiQlX4s"
+Content-Disposition: inline
+In-Reply-To: <87oaxrs5wb.fsf@free.fr>
+X-Cookie: But it does move!
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] regulator: max1586 add device-tree support
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
 
-> From: Daniel Drake [mailto:drake@endlessm.com]
-> Sent: Tuesday, June 24, 2014 5:09 PM
-> 
-> On Tue, Jun 24, 2014 at 1:54 PM, Kamil Debski <k.debski@samsung.com>
-> wrote:
-> > The Exynos4412 USB 2.0 PHY hardware differs from the description
-> > provided in the documentation. Some register bits have different
-> > function. This patch fixes the defines of register bits and changes
-> > the way how phys are powered on and off.
-> 
-> I guess this replaces the patch titled "drivers: phy: exynos4x12-phy:
-> fix HSIC1 power on/off sequence"
+--9r3HF47jptiQlX4s
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Yes, indeed it replaces this patch. I did some more research on how the
-hardware actually behaves.
+On Tue, Jun 17, 2014 at 09:16:52PM +0200, Robert Jarzmik wrote:
+> Mark Brown <broonie@kernel.org> writes:
+> > On Sat, Jun 14, 2014 at 04:54:24PM +0200, Robert Jarzmik wrote:
 
-> 
-> Tested on ODROID-U2. Seems to be working as well as the previous patch:
+> >> +	matched = of_regulator_match(dev, np, rmatch, ARRAY_SIZE(rmatch));
+> >> +	of_node_put(np);
+> >> +	if (matched <= 0)
+> >> +		return matched;
 
-Thank you very much for testing.
+> > Why is this treating zero as an error?  We should be able to at least
+> > report the current state of regulators even if none are configured in
+> > the device tree.
 
-> - Internal SMSC hub works on boot and after reboot, tested with USB
-> mouse
-> - Internal SMSC ethernet device works on boot, but disappears upon
-> reboot. (same as previous patch, also reproduced by Marek)
+> Euh how so an error ?
 
-By reboot I guess that you mean typing "reboot" or by using SysRq magic
-and not power cycling?
+> If 0 is returned, this means no regulators are found in device-tree. It's not an
+> error, it's a lack of regulators (ie. no Output_V3 and no Output_V6), and no
+> more handling is necessary in this function, while returning "ok", ie 0 ...
 
-If so, I had experienced the same symptoms. I guess that the Ethernet
-chip is not reset properly and fails to enumerate without power cycling
-(it's nRESET pin is connected to P3V3).
+OK, so there's just nothing to do in that case.  That's fine, but it's
+just not at all clear from the code.  A comment would help.
 
-I found that removing regulator-always-on from buck8_reg: BUCK8 in the
-dts file fixes this problem.
+> As for the "state report", this max1586 doesn't report anything, it cannot even
+> be queried about the current voltage, sic ...
 
-Best wishes,
--- 
-Kamil Debski
-Samsung R&D Institute Poland
+It can't?  That's unfortunate, though I was able to turn up a datasheet
+which appears to support that.
 
+> If you want me to modify this bit I need a bit more of an explanation to
+> understand.
 
+Where the driver is doing unusual things if they are actually sensible
+then the change needs to be clearer about why.
+
+--9r3HF47jptiQlX4s
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJTqZthAAoJELSic+t+oim9Fz8P/3emk2uOeeFB7ylGHAa942DQ
+9A0tfjtpqeWiae0JkYfUFfZ0ZtagqiJ1OwEHJH+6ccQM1bRtff1+RHSs32N90FDv
+B7J0VPzAhCLnOwI9gO/gvebdQx5Ig0LYeVHAAishl7a9nE4JDgNziMchXuI/BCJr
+6W1qVgq6Dzgi5KcnyAjEkqY1sj/qfRENhCfoLps/X+V0U5xPr9pNavG9O7zTOz0L
+mvLJWz2vkpzkgLhNVEoi7T2G5/lRfbZcOy44yu492tbpvZV5cJpH0LYEYW0AtXEE
+Lf+319qluANzwalsrG1QA58wVSsWcO06kLSw43NSj6eO/8XE2hsnLMTCUvUM27f8
++cNRmfdf2rAXeczivFqjABgStTLgaJtYwLVwzGkzC4wGXGRmR7MRM6lGTHYwEc24
+PlBG00NAc/R/XPbviX4y3Vv9PgKFQbCMH8IiOYEj08yPf6esqf/IMRj/Ld5tVPWL
+ohDxAtB68kao4ev/W1l6i5VSBQS7f/1WmpMYHHAIYOhZ2xxGQdK2nul5RlirqJsc
+Pap8aPi1bRde0HSL3e5YKBUPELRto2iDnKLdMBMkKdOmxq/ISKGwgexNGrixF047
+DElPDJSOPRSohZ8YOSFuHQuZhHs9MEpVilTVwwUlxI3R4RBG3ehkVW+j2rNOIRRf
+nkXQouG7qRruKK04QcLT
+=10eV
+-----END PGP SIGNATURE-----
+
+--9r3HF47jptiQlX4s--
