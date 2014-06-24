@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755601AbaFXUcv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:32:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47801 "EHLO
+	id S1755686AbaFXUdE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:33:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47813 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755553AbaFXUct (ORCPT
+	with ESMTP id S1755656AbaFXUdB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:32:49 -0400
+	Tue, 24 Jun 2014 16:33:01 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Paul Walmsley <paul@pwsan.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 41/65] ARM: OMAP3: clock: Back-propagate rate change from cam_mclk to dpll4_m5 on all OMAP3 platforms
-Date: Tue, 24 Jun 2014 13:30:01 -0700
-Message-Id: <1403641825-12825-42-git-send-email-kamal@canonical.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 52/65] USB: Avoid runtime suspend loops for HCDs that can't handle suspend/resume
+Date: Tue, 24 Jun 2014 13:30:12 -0700
+Message-Id: <1403641825-12825-53-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
 References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,37 +28,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 98d7e1aee6dd534f468993f8c6a1bc730d4cfa81 upstream.
+commit 8ef42ddd9a53b73e6fc3934278710c27f80f324f upstream.
 
-Commit 7b2e1277598e4187c9be3e61fd9b0f0423f97986 ("ARM: OMAP3: clock:
-Back-propagate rate change from cam_mclk to dpll4_m5") enabled clock
-rate back-propagation from cam_mclk do dpll4_m5 on OMAP3630 only.
-Perform back-propagation on other OMAP3 platforms as well.
+Not all host controller drivers have bus-suspend and bus-resume
+methods.  When one doesn't, it will cause problems if runtime PM is
+enabled in the kernel.  The PM core will attempt to suspend the
+controller's root hub, the suspend will fail because there is no
+bus-suspend routine, and a -EBUSY error code will be returned to the
+PM core.  This will cause the suspend attempt to be repeated shortly
+thereafter, in a never-ending loop.
 
-Reported-by: Jean-Philippe François <jp.francois@cynove.com>
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Paul Walmsley <paul@pwsan.com>
+Part of the problem is that the original error code -ENOENT gets
+changed to -EBUSY in usb_runtime_suspend(), on the grounds that the PM
+core will interpret -ENOENT as meaning that the root hub has gotten
+into a runtime-PM error state.  While this change is appropriate for
+real USB devices, it's not such a good idea for a root hub.  In fact,
+considering the root hub to be in a runtime-PM error state would not
+be far from the truth.  Therefore this patch updates
+usb_runtime_suspend() so that it adjusts error codes only for
+non-root-hub devices.
+
+Furthermore, the patch attempts to prevent the problem from occurring
+in the first place by not enabling runtime PM by default for root hubs
+whose host controller driver doesn't have bus_suspend and bus_resume
+methods.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Will Deacon <will.deacon@arm.com>
+Tested-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/mach-omap2/cclock3xxx_data.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/core/driver.c |  9 ++++++---
+ drivers/usb/core/hub.c    | 15 +++++++++++++--
+ 2 files changed, 19 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/cclock3xxx_data.c b/arch/arm/mach-omap2/cclock3xxx_data.c
-index 6ef8758..622c912 100644
---- a/arch/arm/mach-omap2/cclock3xxx_data.c
-+++ b/arch/arm/mach-omap2/cclock3xxx_data.c
-@@ -418,7 +418,8 @@ static struct clk_hw_omap dpll4_m5x2_ck_hw = {
- 	.clkdm_name	= "dpll4_clkdm",
- };
+diff --git a/drivers/usb/core/driver.c b/drivers/usb/core/driver.c
+index 693bc89..839aeae 100644
+--- a/drivers/usb/core/driver.c
++++ b/drivers/usb/core/driver.c
+@@ -1747,10 +1747,13 @@ int usb_runtime_suspend(struct device *dev)
+ 	if (status == -EAGAIN || status == -EBUSY)
+ 		usb_mark_last_busy(udev);
  
--DEFINE_STRUCT_CLK(dpll4_m5x2_ck, dpll4_m5x2_ck_parent_names, dpll4_m5x2_ck_ops);
-+DEFINE_STRUCT_CLK_FLAGS(dpll4_m5x2_ck, dpll4_m5x2_ck_parent_names,
-+			dpll4_m5x2_ck_ops, CLK_SET_RATE_PARENT);
+-	/* The PM core reacts badly unless the return code is 0,
+-	 * -EAGAIN, or -EBUSY, so always return -EBUSY on an error.
++	/*
++	 * The PM core reacts badly unless the return code is 0,
++	 * -EAGAIN, or -EBUSY, so always return -EBUSY on an error
++	 * (except for root hubs, because they don't suspend through
++	 * an upstream port like other USB devices).
+ 	 */
+-	if (status != 0)
++	if (status != 0 && udev->parent)
+ 		return -EBUSY;
+ 	return status;
+ }
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index 7662300..4a9f4dc 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -1725,8 +1725,19 @@ static int hub_probe(struct usb_interface *intf, const struct usb_device_id *id)
+ 	 */
+ 	pm_runtime_set_autosuspend_delay(&hdev->dev, 0);
  
- static struct clk dpll4_m5x2_ck_3630 = {
- 	.name		= "dpll4_m5x2_ck",
+-	/* Hubs have proper suspend/resume support. */
+-	usb_enable_autosuspend(hdev);
++	/*
++	 * Hubs have proper suspend/resume support, except for root hubs
++	 * where the controller driver doesn't have bus_suspend and
++	 * bus_resume methods.
++	 */
++	if (hdev->parent) {		/* normal device */
++		usb_enable_autosuspend(hdev);
++	} else {			/* root hub */
++		const struct hc_driver *drv = bus_to_hcd(hdev->bus)->driver;
++
++		if (drv->bus_suspend && drv->bus_resume)
++			usb_enable_autosuspend(hdev);
++	}
+ 
+ 	if (hdev->level == MAX_TOPO_LEVEL) {
+ 		dev_err(&intf->dev,
 -- 
 1.9.1
 
