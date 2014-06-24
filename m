@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756527AbaFXUm2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:42:28 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47785 "EHLO
+	id S1756530AbaFXUmq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:42:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47772 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753372AbaFXUcl (ORCPT
+	with ESMTP id S1753918AbaFXUce (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:32:41 -0400
+	Tue, 24 Jun 2014 16:32:34 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 47/65] ALSA: hda - Fix onboard audio on Intel H97/Z97 chipsets
-Date: Tue, 24 Jun 2014 13:30:07 -0700
-Message-Id: <1403641825-12825-48-git-send-email-kamal@canonical.com>
+Cc: "J. Bruce Fields" <bfields@redhat.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 36/65] nfsd4: remove lockowner when removing lock stateid
+Date: Tue, 24 Jun 2014 13:29:56 -0700
+Message-Id: <1403641825-12825-37-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
 References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
@@ -26,36 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 77f07800cb456bed6e5c345e6e4e83e8eda62437 upstream.
+commit a1b8ff4c97b4375d21b6d6c45d75877303f61b3b upstream.
 
-The recent Intel H97/Z97 chipsets need the similar setups like other
-Intel chipsets for snooping, etc.  Especially without snooping, the
-audio playback stutters or gets corrupted.  This fix patch just adds
-the corresponding PCI ID entry with the proper flags.
+The nfsv4 state code has always assumed a one-to-one correspondance
+between lock stateid's and lockowners even if it appears not to in some
+places.
 
-Reported-and-tested-by: Arthur Borsboom <arthurborsboom@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+We may actually change that, but for now when FREE_STATEID releases a
+lock stateid it also needs to release the parent lockowner.
+
+Symptoms were a subsequent LOCK crashing in find_lockowner_str when it
+calls same_lockowner_ino on a lockowner that unexpectedly has an empty
+so_stateids list.
+
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/pci/hda/hda_intel.c | 3 +++
- 1 file changed, 3 insertions(+)
+ fs/nfsd/nfs4state.c | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
-index c142402..570c284 100644
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -3620,6 +3620,9 @@ static DEFINE_PCI_DEVICE_TABLE(azx_ids) = {
- 	/* Lynx Point */
- 	{ PCI_DEVICE(0x8086, 0x8c20),
- 	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_INTEL_PCH },
-+	/* 9 Series */
-+	{ PCI_DEVICE(0x8086, 0x8ca0),
-+	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_INTEL_PCH },
- 	/* Lynx Point-LP */
- 	{ PCI_DEVICE(0x8086, 0x9c20),
- 	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_INTEL_PCH },
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index b2142f9..6acaeed 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -3511,9 +3511,16 @@ out:
+ static __be32
+ nfsd4_free_lock_stateid(struct nfs4_ol_stateid *stp)
+ {
+-	if (check_for_locks(stp->st_file, lockowner(stp->st_stateowner)))
++	struct nfs4_lockowner *lo = lockowner(stp->st_stateowner);
++
++	if (check_for_locks(stp->st_file, lo))
+ 		return nfserr_locks_held;
+-	release_lock_stateid(stp);
++	/*
++	 * Currently there's a 1-1 lock stateid<->lockowner
++	 * correspondance, and we have to delete the lockowner when we
++	 * delete the lock stateid:
++	 */
++	unhash_lockowner(lo);
+ 	return nfs_ok;
+ }
+ 
 -- 
 1.9.1
 
