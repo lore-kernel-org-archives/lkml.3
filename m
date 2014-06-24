@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754228AbaFXRyq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 13:54:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39128 "EHLO mx1.redhat.com"
+	id S1754692AbaFXR4R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 13:56:17 -0400
+Received: from mga14.intel.com ([192.55.52.115]:42539 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751607AbaFXRyn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 13:54:43 -0400
-Date: Tue, 24 Jun 2014 19:08:00 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
-        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
-        linux-api@vger.kernel.org, x86@kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
-        linux-arch@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: Re: [PATCH v7 7/9] seccomp: implement SECCOMP_FILTER_FLAG_TSYNC
-Message-ID: <20140624170800.GA30480@redhat.com>
-References: <1403560693-21809-1-git-send-email-keescook@chromium.org> <1403560693-21809-8-git-send-email-keescook@chromium.org>
+	id S1753372AbaFXR4O convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 13:56:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,539,1400050800"; 
+   d="scan'208";a="552665821"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Daniel Kiper <daniel.kiper@oracle.com>, Jan Beulich <JBeulich@suse.com>
+CC: "andrew.cooper3@citrix.com" <andrew.cooper3@citrix.com>,
+        "david.vrabel@citrix.com" <david.vrabel@citrix.com>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "stefano.stabellini@eu.citrix.com" <stefano.stabellini@eu.citrix.com>,
+        "jeremy@goop.org" <jeremy@goop.org>,
+        "Fleming, Matt" <matt.fleming@intel.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
+        "boris.ostrovsky@oracle.com" <boris.ostrovsky@oracle.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "eshelton@pobox.com" <eshelton@pobox.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "mjg59@srcf.ucam.org" <mjg59@srcf.ucam.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@zytor.com" <hpa@zytor.com>, "Yu, Fenghua" <fenghua.yu@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>
+Subject: RE: [PATCH v6 1/9] efi: Use early_mem*() instead of early_io*()
+Thread-Topic: [PATCH v6 1/9] efi: Use early_mem*() instead of early_io*()
+Thread-Index: AQHPjurJMvi1kjppck6FTiWu5qFFH5uAjAbw
+Date: Tue, 24 Jun 2014 17:56:09 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F32846B97@ORSMSX114.amr.corp.intel.com>
+References: <1403299768-9955-1-git-send-email-daniel.kiper@oracle.com>
+ <1403299768-9955-2-git-send-email-daniel.kiper@oracle.com>
+ <53A7F104020000780001C4BE@mail.emea.novell.com>
+ <20140623135446.GG28489@olila.local.net-space.pl>
+In-Reply-To: <20140623135446.GG28489@olila.local.net-space.pl>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403560693-21809-8-git-send-email-keescook@chromium.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23, Kees Cook wrote:
->
-> +static pid_t seccomp_can_sync_threads(void)
-> +{
-> +	struct task_struct *thread, *caller;
-> +
-> +	BUG_ON(write_can_lock(&tasklist_lock));
-> +	BUG_ON(!spin_is_locked(&current->sighand->siglock));
-> +
-> +	if (current->seccomp.mode != SECCOMP_MODE_FILTER)
-> +		return -EACCES;
-> +
-> +	/* Validate all threads being eligible for synchronization. */
-> +	thread = caller = current;
-> +	for_each_thread(caller, thread) {
+> I am CC'ing IA-64 guys.
 
-You only need to initialize "caller" for for_each_thread(). Same for
-seccomp_sync_threads().
+The *_unmap() functions are no-op on ia64 - because we have mappings for everything all the time
+- the *_map() functions just need to compute the proper address to use to get the right attributes
+(so we don't mix and match cacheable and uncachable access to the same address). But there is
+nothing to tear down afterwards.
 
-> @@ -586,6 +701,17 @@ static long seccomp_set_mode_filter(unsigned int flags,
->  	if (IS_ERR(prepared))
->  		return PTR_ERR(prepared);
->
-> +	/*
-> +	 * If we're doing thread sync, we must hold tasklist_lock
-> +	 * to make sure seccomp filter changes are stable on threads
-> +	 * entering or leaving the task list. And we must take it
-> +	 * before the sighand lock to avoid deadlocking.
-> +	 */
-> +	if (flags & SECCOMP_FILTER_FLAG_TSYNC)
-> +		write_lock_irqsave(&tasklist_lock, taskflags);
-> +	else
-> +		__acquire(&tasklist_lock); /* keep sparse happy */
-> +
+I do tend to agree with Daniel that is seems odd to setup the mapping with one class of function
+and then tear it down with another.
 
-Why? ->siglock should be enough, it seems.
-
-It obviously does not protect the global process list, but *sync_threads()
-only care about current's thread group list, no?
-
-Oleg.
+-Tony
 
