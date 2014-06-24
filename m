@@ -1,160 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754307AbaFXPvF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:51:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60708 "EHLO
+	id S1754792AbaFXPvV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:51:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60735 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752574AbaFXPvD (ORCPT
+	with ESMTP id S1754483AbaFXPvT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:51:03 -0400
+	Tue, 24 Jun 2014 11:51:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: [PATCH 3.4 00/26] 3.4.95-stable review
-Date: Tue, 24 Jun 2014 11:50:23 -0400
-Message-Id: <20140624154619.499002156@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Xufeng Zhang <xufeng.zhang@windriver.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.4 06/26] sctp: Fix sk_ack_backlog wrap-around problem
+Date: Tue, 24 Jun 2014 11:50:29 -0400
+Message-Id: <20140624154619.796802129@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
+In-Reply-To: <20140624154619.499002156@linuxfoundation.org>
+References: <20140624154619.499002156@linuxfoundation.org>
 User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.4.95 release.
-There are 26 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Thu Jun 26 15:46:05 UTC 2014.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.95-rc1.gz
-and the diffstat can be found below.
+From: Xufeng Zhang <xufeng.zhang@windriver.com>
 
-thanks,
+[ Upstream commit d3217b15a19a4779c39b212358a5c71d725822ee ]
 
-greg k-h
+Consider the scenario:
+For a TCP-style socket, while processing the COOKIE_ECHO chunk in
+sctp_sf_do_5_1D_ce(), after it has passed a series of sanity check,
+a new association would be created in sctp_unpack_cookie(), but afterwards,
+some processing maybe failed, and sctp_association_free() will be called to
+free the previously allocated association, in sctp_association_free(),
+sk_ack_backlog value is decremented for this socket, since the initial
+value for sk_ack_backlog is 0, after the decrement, it will be 65535,
+a wrap-around problem happens, and if we want to establish new associations
+afterward in the same socket, ABORT would be triggered since sctp deem the
+accept queue as full.
+Fix this issue by only decrementing sk_ack_backlog for associations in
+the endpoint's list.
 
--------------
-Pseudo-Shortlog of commits:
+Fix-suggested-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
+Acked-by: Daniel Borkmann <dborkman@redhat.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/sctp/associola.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.4.95-rc1
-
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    lzo: properly check for overruns
-
-Markus F.X.J. Oberhumer <markus@oberhumer.com>
-    lib/lzo: Update LZO compression to current upstream version
-
-Markus F.X.J. Oberhumer <markus@oberhumer.com>
-    lib/lzo: Rename lzo1x_decompress.c to lzo1x_decompress_safe.c
-
-Lars-Peter Clausen <lars@metafoo.de>
-    ALSA: control: Make sure that id->index does not overflow
-
-Lars-Peter Clausen <lars@metafoo.de>
-    ALSA: control: Handle numid overflow
-
-Lars-Peter Clausen <lars@metafoo.de>
-    ALSA: control: Don't access controls outside of protected regions
-
-Lars-Peter Clausen <lars@metafoo.de>
-    ALSA: control: Fix replacing user controls
-
-Lars-Peter Clausen <lars@metafoo.de>
-    ALSA: control: Protect user controls against concurrent access
-
-Kailang Yang <kailang@realtek.com>
-    ALSA: hda/realtek - Add support of ALC891 codec
-
-Thomas Gleixner <tglx@linutronix.de>
-    nohz: Fix another inconsistency between CONFIG_NO_HZ=n and nohz=off
-
-Johan Hovold <jhovold@gmail.com>
-    USB: cdc-acm: fix runtime PM imbalance at shutdown
-
-Johan Hovold <jhovold@gmail.com>
-    USB: cdc-acm: fix I/O after failed open
-
-Johan Hovold <jhovold@gmail.com>
-    USB: cdc-acm: fix shutdown and suspend race
-
-Johan Hovold <jhovold@gmail.com>
-    USB: cdc-acm: fix runtime PM for control messages
-
-Johan Hovold <jhovold@gmail.com>
-    USB: cdc-acm: fix broken runtime suspend
-
-Johan Hovold <jhovold@gmail.com>
-    USB: cdc-acm: fix write and resume race
-
-Johan Hovold <jhovold@gmail.com>
-    USB: cdc-acm: fix write and suspend race
-
-Michal Schmidt <mschmidt@redhat.com>
-    netlink: rate-limit leftover bytes warning and print process name
-
-Wei Yang <weiyang@linux.vnet.ibm.com>
-    net/mlx4_core: Preserve pci_dev_data after __mlx4_remove_one()
-
-Wei Yang <weiyang@linux.vnet.ibm.com>
-    mlx4_core: Stash PCI ID driver_data in mlx4_priv structure
-
-Xufeng Zhang <xufeng.zhang@windriver.com>
-    sctp: Fix sk_ack_backlog wrap-around problem
-
-Jiri Pirko <jiri@resnulli.us>
-    team: fix mtu setting
-
-Eric Dumazet <edumazet@google.com>
-    net: fix inet_getid() and ipv6_select_ident() bugs
-
-Tom Gundersen <teg@jklm.no>
-    net: tunnels - enable module autoloading
-
-Mimi Zohar <zohar@linux.vnet.ibm.com>
-    evm: prohibit userspace writing 'security.evm' HMAC value
-
-Nicholas Bellinger <nab@linux-iscsi.org>
-    iscsi-target: Reject mutual authentication with reflected CHAP_C
-
-
--------------
-
-Diffstat:
-
- Makefile                                  |   4 +-
- drivers/net/ethernet/mellanox/mlx4/main.c | 172 ++++++++-------
- drivers/net/ethernet/mellanox/mlx4/mlx4.h |   7 +
- drivers/net/team/team.c                   |   7 +-
- drivers/target/iscsi/iscsi_target_auth.c  |  10 +
- drivers/usb/class/cdc-acm.c               |  96 +++++----
- drivers/usb/class/cdc-acm.h               |   2 +-
- include/linux/if_team.h                   |   1 +
- include/linux/lzo.h                       |  15 +-
- include/net/inetpeer.h                    |   9 +-
- include/sound/core.h                      |   2 +
- kernel/time/tick-sched.c                  |   4 +-
- lib/decompress_unlzo.c                    |   2 +-
- lib/lzo/Makefile                          |   2 +-
- lib/lzo/lzo1x_compress.c                  | 335 +++++++++++++++++-------------
- lib/lzo/lzo1x_decompress.c                | 255 -----------------------
- lib/lzo/lzo1x_decompress_safe.c           | 257 +++++++++++++++++++++++
- lib/lzo/lzodefs.h                         |  38 +++-
- lib/nlattr.c                              |   5 +-
- net/ipv4/ipip.c                           |   1 +
- net/ipv6/ip6_output.c                     |  11 +-
- net/ipv6/ip6_tunnel.c                     |   1 +
- net/ipv6/sit.c                            |   1 +
- net/sctp/associola.c                      |   2 +-
- security/integrity/evm/evm_main.c         |  12 +-
- sound/core/control.c                      |  78 ++++---
- sound/core/init.c                         |   1 +
- sound/pci/hda/patch_realtek.c             |   1 +
- 28 files changed, 748 insertions(+), 583 deletions(-)
+--- a/net/sctp/associola.c
++++ b/net/sctp/associola.c
+@@ -389,7 +389,7 @@ void sctp_association_free(struct sctp_a
+ 	/* Only real associations count against the endpoint, so
+ 	 * don't bother for if this is a temporary association.
+ 	 */
+-	if (!asoc->temp) {
++	if (!list_empty(&asoc->asocs)) {
+ 		list_del(&asoc->asocs);
+ 
+ 		/* Decrement the backlog value for a TCP-style listening
 
 
