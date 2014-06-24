@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752718AbaFXInL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 04:43:11 -0400
-Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:54391 "EHLO
-	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751855AbaFXInI (ORCPT
+	id S1751819AbaFXInZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 04:43:25 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:55838 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751026AbaFXInW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 04:43:08 -0400
-Message-ID: <1403599386.1960.3.camel@x220>
-Subject: [PATCH] [TRIVIAL] fs: Fix comment typo 'CONFIG_LBADF'
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Date: Tue, 24 Jun 2014 10:43:06 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 24 Jun 2014 08:43:06.0324 (UTC) FILETIME=[51883940:01CF8F88]
-X-RcptDomain: vger.kernel.org
+	Tue, 24 Jun 2014 04:43:22 -0400
+From: Sachin Kamat <sachin.kamat@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: sbkim73@samsung.com, lgirdwood@gmail.com, broonie@kernel.org,
+        spk.linux@gmail.com
+Subject: [PATCH 1/1] regulator: s5m8767: Remove unused variable
+Date: Tue, 24 Jun 2014 14:10:04 +0530
+Message-Id: <1403599204-5975-1-git-send-email-sachin.kamat@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
- fs/stack.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+'size' is not used in the function. Remove it.
 
-diff --git a/fs/stack.c b/fs/stack.c
-index 5b5388250e29..a54e33ed10f1 100644
---- a/fs/stack.c
-+++ b/fs/stack.c
-@@ -44,7 +44,7 @@ void fsstack_copy_inode_size(struct inode *dst, struct inode *src)
- 	 * include/linux/fs.h).  We don't necessarily hold i_mutex when this
- 	 * is called, so take i_lock for that case.
- 	 *
--	 * And if CONFIG_LBADF (on 32-bit), continue our effort to keep the
-+	 * And if CONFIG_LBDAF (on 32-bit), continue our effort to keep the
- 	 * two halves of i_blocks in sync despite SMP or PREEMPT: use i_lock
- 	 * for that case too, and do both at once by combining the tests.
- 	 *
+Signed-off-by: Sachin Kamat <sachin.kamat@samsung.com>
+---
+ drivers/regulator/s5m8767.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/drivers/regulator/s5m8767.c b/drivers/regulator/s5m8767.c
+index c79af943a5c0..0ab5cbeeb797 100644
+--- a/drivers/regulator/s5m8767.c
++++ b/drivers/regulator/s5m8767.c
+@@ -686,7 +686,7 @@ static int s5m8767_pmic_probe(struct platform_device *pdev)
+ 	struct sec_platform_data *pdata = iodev->pdata;
+ 	struct regulator_config config = { };
+ 	struct s5m8767_info *s5m8767;
+-	int i, ret, size, buck_init;
++	int i, ret, buck_init;
+ 
+ 	if (!pdata) {
+ 		dev_err(pdev->dev.parent, "Platform data not supplied\n");
+@@ -725,8 +725,6 @@ static int s5m8767_pmic_probe(struct platform_device *pdev)
+ 	if (!s5m8767)
+ 		return -ENOMEM;
+ 
+-	size = sizeof(struct regulator_dev *) * (S5M8767_REG_MAX - 2);
+-
+ 	s5m8767->dev = &pdev->dev;
+ 	s5m8767->iodev = iodev;
+ 	s5m8767->num_regulators = pdata->num_regulators;
 -- 
-1.9.3
+1.7.9.5
 
