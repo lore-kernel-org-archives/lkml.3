@@ -1,112 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965250AbaFXQ5N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:57:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60725 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754681AbaFXPvP (ORCPT
+	id S965439AbaFXQ52 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:57:28 -0400
+Received: from forward-corp1e.mail.yandex.net ([77.88.60.199]:48277 "EHLO
+	forward-corp1e.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S964864AbaFXQ50 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:51:15 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+	Tue, 24 Jun 2014 12:57:26 -0400
+X-Yandex-Uniq: e11e4595-6a91-4faf-b23b-ef3b97325e3b
+Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+Date: Tue, 24 Jun 2014 20:57:12 +0400
+From: Stanislav Fomichev <stfomichev@yandex-team.ru>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 04/26] net: fix inet_getid() and ipv6_select_ident() bugs
-Date: Tue, 24 Jun 2014 11:50:27 -0400
-Message-Id: <20140624154619.706235756@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <20140624154619.499002156@linuxfoundation.org>
-References: <20140624154619.499002156@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        acme@kernel.org, namhyung@kernel.org, artagnon@gmail.com,
+        rusty@rustcorp.com.au, bp@suse.de, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH v4 0/4] perf timechart io mode
+Message-ID: <20140624165712.GA10114@stfomichev-desktop.yandex.net>
+References: <1403260191-10079-1-git-send-email-stfomichev@yandex-team.ru>
+ <20140624084113.GC31390@krava.redhat.com>
+ <20140624091022.GE20225@stfomichev-desktop.yandex.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140624091022.GE20225@stfomichev-desktop.yandex.net>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Jun 24, 2014 at 01:10:22PM +0400, Stanislav Fomichev wrote:
+> > hum, got this when trying:
+> > 
+> > [jolsa@krava perf]$ sudo ./perf timechart record -I
+> > ^C[ perf record: Woken up 2 times to write data ]
+> > [ perf record: Captured and wrote 1.071 MB perf.data (~46806 samples) ]
+> > [jolsa@krava perf]$ ./perf timechart
+> > Invalid previous event (non-zero)!
+> > 0x113f80 [0x8]: failed to process type: 68
+> Hm, I added a bunch of consistency checks which I couldn't actually hit
+> myself. Nice work :-) Can I get you perf.data?
 
-------------------
+For some reason, in Jiri's trace we see exit from sys_read with 2,
+and then again exit from sys_read with -EAGAIN:
+            xterm 32028 [000] 43390.908909: syscalls:sys_enter_read: fd: 0x00000004, buf: 0x02076e8c, count: 0x0
+            xterm 32028 [000] 43390.908917: syscalls:sys_exit_read: 0x2
+            xterm 32028 [000] 43390.908982: syscalls:sys_exit_read: 0xfffffffffffffff5
 
-From: Eric Dumazet <edumazet@google.com>
-
-[ Upstream commit 39c36094d78c39e038c1e499b2364e13bce36f54 ]
-
-I noticed we were sending wrong IPv4 ID in TCP flows when MTU discovery
-is disabled.
-Note how GSO/TSO packets do not have monotonically incrementing ID.
-
-06:37:41.575531 IP (id 14227, proto: TCP (6), length: 4396)
-06:37:41.575534 IP (id 14272, proto: TCP (6), length: 65212)
-06:37:41.575544 IP (id 14312, proto: TCP (6), length: 57972)
-06:37:41.575678 IP (id 14317, proto: TCP (6), length: 7292)
-06:37:41.575683 IP (id 14361, proto: TCP (6), length: 63764)
-
-It appears I introduced this bug in linux-3.1.
-
-inet_getid() must return the old value of peer->ip_id_count,
-not the new one.
-
-Lets revert this part, and remove the prevention of
-a null identification field in IPv6 Fragment Extension Header,
-which is dubious and not even done properly.
-
-Fixes: 87c48fa3b463 ("ipv6: make fragment identifications less predictable")
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/net/inetpeer.h |    9 +--------
- net/ipv6/ip6_output.c  |   11 +++--------
- 2 files changed, 4 insertions(+), 16 deletions(-)
-
---- a/include/net/inetpeer.h
-+++ b/include/net/inetpeer.h
-@@ -114,16 +114,9 @@ static inline void inet_peer_refcheck(co
- /* can be called with or without local BH being disabled */
- static inline int inet_getid(struct inet_peer *p, int more)
- {
--	int old, new;
- 	more++;
- 	inet_peer_refcheck(p);
--	do {
--		old = atomic_read(&p->ip_id_count);
--		new = old + more;
--		if (!new)
--			new = 1;
--	} while (atomic_cmpxchg(&p->ip_id_count, old, new) != old);
--	return new;
-+	return atomic_add_return(more, &p->ip_id_count) - more;
- }
- 
- #endif /* _NET_INETPEER_H */
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -611,7 +611,7 @@ int ip6_find_1stfragopt(struct sk_buff *
- void ipv6_select_ident(struct frag_hdr *fhdr, struct rt6_info *rt)
- {
- 	static atomic_t ipv6_fragmentation_id;
--	int old, new;
-+	int ident;
- 
- 	if (rt && !(rt->dst.flags & DST_NOPEER)) {
- 		struct inet_peer *peer;
-@@ -624,13 +624,8 @@ void ipv6_select_ident(struct frag_hdr *
- 			return;
- 		}
- 	}
--	do {
--		old = atomic_read(&ipv6_fragmentation_id);
--		new = old + 1;
--		if (!new)
--			new = 1;
--	} while (atomic_cmpxchg(&ipv6_fragmentation_id, old, new) != old);
--	fhdr->identification = htonl(new);
-+	ident = atomic_inc_return(&ipv6_fragmentation_id);
-+	fhdr->identification = htonl(ident);
- }
- 
- int ip6_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
-
-
+I'm not sure how it is possible (either we lost sys_enter, or timestamp
+of seconds -EAGAIN is wrong?). I think we might just convert this error
+to a warning (we couldn't reproduce it again).
+Should I resend the whole series (preferred) or add another patch on
+top?
