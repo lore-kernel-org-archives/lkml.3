@@ -1,124 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752840AbaFXH42 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 03:56:28 -0400
-Received: from mga03.intel.com ([143.182.124.21]:14840 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751365AbaFXH4Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 03:56:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,536,1400050800"; 
-   d="scan'208";a="449200654"
-From: "Chen, Alvin" <alvin.chen@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Boon Leong Ong <boon.leong.ong@intel.com>
-Subject: [PATCH] USB: ehci-pci: USB host controller support for Intel Quark X1000
-Date: Tue, 24 Jun 2014 08:51:43 -0700
-Message-Id: <1403625103-28078-2-git-send-email-alvin.chen@intel.com>
+	id S1751945AbaFXIJl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 04:09:41 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:42442 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751415AbaFXIJi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 04:09:38 -0400
+From: Wei Yang <weiyang@linux.vnet.ibm.com>
+To: clameter@sgi.com, cl@linux.com, akpm@linux-foundation.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Cc: Wei Yang <weiyang@linux.vnet.ibm.com>
+Subject: [PATCH] slub: reduce duplicate creation on the first object
+Date: Tue, 24 Jun 2014 16:08:55 +0800
+Message-Id: <1403597335-5465-1-git-send-email-weiyang@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1403625103-28078-1-git-send-email-alvin.chen@intel.com>
-References: <1403625103-28078-1-git-send-email-alvin.chen@intel.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14062408-5140-0000-0000-0000055F26CE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bryan O'Donoghue <bryan.odonoghue@intel.com>
+When a kmem_cache is created with ctor, each object in the kmem_cache will be
+initialized before ready to use. While in slub implementation, the first
+object will be initialized twice.
 
-This patch is to enable USB host controller for Intel Quark X1000. Add pci quirks
-to adjust the packet buffer in/out threshold value, and ensure EHCI packet buffer
-i/o threshold value is reconfigured to half.
+This patch reduces the duplication of initialization of the first object.
 
-Signed-off-by: Bryan O'Donoghue <bryan.odonoghue@intel.com>
-Signed-off-by: Alvin (Weike) Chen <alvin.chen@intel.com>
+Fix commit 7656c72b: SLUB: add macros for scanning objects in a slab.
+
+Signed-off-by: Wei Yang <weiyang@linux.vnet.ibm.com>
 ---
- drivers/usb/host/ehci-pci.c   |    4 ++++
- drivers/usb/host/pci-quirks.c |   42 +++++++++++++++++++++++++++++++++++++++++
- drivers/usb/host/pci-quirks.h |    2 ++
- 3 files changed, 48 insertions(+)
+ mm/slub.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/usb/host/ehci-pci.c b/drivers/usb/host/ehci-pci.c
-index 3e86bf4..33cfa23 100644
---- a/drivers/usb/host/ehci-pci.c
-+++ b/drivers/usb/host/ehci-pci.c
-@@ -50,6 +50,10 @@ static int ehci_pci_reinit(struct ehci_hcd *ehci, struct pci_dev *pdev)
- 	if (!retval)
- 		ehci_dbg(ehci, "MWI active\n");
+diff --git a/mm/slub.c b/mm/slub.c
+index b2b0473..beefd45 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -1433,7 +1433,7 @@ static struct page *new_slab(struct kmem_cache *s, gfp_t flags, int node)
+ 		memset(start, POISON_INUSE, PAGE_SIZE << order);
  
-+	/* Reset the threshold limit */
-+	if(unlikely(usb_is_intel_qrk(pdev)))
-+		usb_set_qrk_bulk_thresh(pdev);
-+
- 	return 0;
- }
- 
-diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
-index 00661d3..1ea8803 100644
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -823,6 +823,48 @@ static int handshake(void __iomem *ptr, u32 mask, u32 done,
- 	return -ETIMEDOUT;
- }
- 
-+#define PCI_DEVICE_ID_INTEL_QUARK_X1000_SOC		0x0939
-+bool usb_is_intel_qrk(struct pci_dev *pdev)
-+{
-+	return pdev->vendor == PCI_VENDOR_ID_INTEL &&
-+		pdev->device == PCI_DEVICE_ID_INTEL_QUARK_X1000_SOC;
-+
-+}
-+EXPORT_SYMBOL_GPL(usb_is_intel_qrk);
-+
-+#define EHCI_INSNREG01		0x84
-+#define EHCI_INSNREG01_THRESH	0x007F007F	/* Threshold value */
-+void usb_set_qrk_bulk_thresh(struct pci_dev *pdev)
-+{
-+	void __iomem *base, *op_reg_base;
-+	u8 cap_length;
-+	u32 val;
-+
-+	if (!mmio_resource_enabled(pdev, 0))
-+		return;
-+
-+	base = pci_ioremap_bar(pdev, 0);
-+	if (base == NULL)
-+		return;
-+
-+	cap_length = readb(base);
-+	op_reg_base = base + cap_length;
-+
-+	val = readl(op_reg_base + EHCI_INSNREG01);
-+	dev_printk(KERN_INFO, &pdev->dev, "INSNREG01 is 0x%08x\n", val);
-+
-+	val = EHCI_INSNREG01_THRESH;
-+
-+	writel(val, op_reg_base + EHCI_INSNREG01);
-+
-+	val = readl(op_reg_base + EHCI_INSNREG01);
-+	dev_printk(KERN_INFO, &pdev->dev, "INSNREG01 is 0x%08x\n", val);
-+
-+	iounmap(base);
-+
-+}
-+EXPORT_SYMBOL_GPL(usb_set_qrk_bulk_thresh);
-+
- /*
-  * Intel's Panther Point chipset has two host controllers (EHCI and xHCI) that
-  * share some number of ports.  These ports can be switched between either
-diff --git a/drivers/usb/host/pci-quirks.h b/drivers/usb/host/pci-quirks.h
-index c622ddf..617c22b 100644
---- a/drivers/usb/host/pci-quirks.h
-+++ b/drivers/usb/host/pci-quirks.h
-@@ -14,6 +14,8 @@ void usb_amd_quirk_pll_enable(void);
- void usb_enable_intel_xhci_ports(struct pci_dev *xhci_pdev);
- void usb_disable_xhci_ports(struct pci_dev *xhci_pdev);
- void sb800_prefetch(struct device *dev, int on);
-+bool usb_is_intel_qrk(struct pci_dev *pdev);
-+void usb_set_qrk_bulk_thresh(struct pci_dev *pdev);
- #else
- struct pci_dev;
- static inline void usb_amd_quirk_pll_disable(void) {}
+ 	last = start;
+-	for_each_object(p, s, start, page->objects) {
++	for_each_object(p, s, start + s->size, page->objects - 1) {
+ 		setup_object(s, page, last);
+ 		set_freepointer(s, last, p);
+ 		last = p;
 -- 
 1.7.9.5
 
