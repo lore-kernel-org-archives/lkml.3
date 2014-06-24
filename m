@@ -1,105 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752338AbaFXHQE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 03:16:04 -0400
-Received: from smtprelay0164.hostedemail.com ([216.40.44.164]:55773 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752166AbaFXHQC (ORCPT
+	id S1751533AbaFXHRd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 03:17:33 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:55047 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751121AbaFXHRc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 03:16:02 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:2899:3138:3139:3140:3141:3142:3355:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4321:4362:5007:7652:7875:7903:7904:10004:10400:10848:11026:11232:11473:11658:11914:12043:12114:12438:12517:12519:12679:12740:13019:13161:13229:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: kiss82_1748502398031
-X-Filterd-Recvd-Size: 3327
-Message-ID: <1403594158.29061.10.camel@joe-AO725>
-Subject: Re: [PATCH 00/22] Add and use pci_zalloc_consistent
-From: Joe Perches <joe@perches.com>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: Julian Calaby <julian.calaby@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 24 Jun 2014 00:15:58 -0700
-In-Reply-To: <alpine.DEB.2.10.1406240714220.2659@hadrien>
-References: <cover.1403530604.git.joe@perches.com>
-	 <20140623172512.GA1390@garbanzo.do-not-panic.com>
-	 <1403550809.15811.13.camel@joe-AO725>
-	 <CAGRGNgVD2f0S-v8YZ-qABEhDJAwk5pp71FU9uLR8aSZ+DhABjg@mail.gmail.com>
-	 <1403567322.20657.14.camel@joe-AO725>
-	 <alpine.DEB.2.10.1406240714220.2659@hadrien>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 24 Jun 2014 03:17:32 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Stanislav Fomichev <stfomichev@yandex-team.ru>, a.p.zijlstra@chello.nl,
+        paulus@samba.org, mingo@redhat.com, dsahern@gmail.com,
+        jolsa@redhat.com, xiaoguangrong@linux.vnet.ibm.com,
+        yangds.fnst@cn.fujitsu.com, adrian.hunter@intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/7] perf trace pagefaults
+References: <1403261389-13423-1-git-send-email-stfomichev@yandex-team.ru>
+	<20140620132105.GE31524@kernel.org>
+Date: Tue, 24 Jun 2014 16:17:25 +0900
+In-Reply-To: <20140620132105.GE31524@kernel.org> (Arnaldo Carvalho de Melo's
+	message of "Fri, 20 Jun 2014 10:21:05 -0300")
+Message-ID: <87wqc66aka.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-06-24 at 07:24 +0200, Julia Lawall wrote
-> On Mon, 23 Jun 2014, Joe Perches wrote:
-> > > > $ cat ./scripts/coccinelle/api/alloc/pci_zalloc_consistent.cocci
-> > > > ///
-> > > > /// Use pci_zalloc_consistent rather than
-> > > > ///     pci_alloc_consistent followed by memset with 0
-> > > > ///
-> > > > /// This considers some simple cases that are common and easy to validate
-> > > > /// Note in particular that there are no ...s in the rule, so all of the
-> > > > /// matched code has to be contiguous
-> > > > ///
-> > > > /// Blatantly cribbed from: scripts/coccinelle/api/alloc/kzalloc-simple.cocci
-> > > >
-> > > > @@
-> > > > type T, T2;
-> > > > expression x;
-> > > > expression E1,E2,E3;
-> > > > statement S;
-> > > > @@
-> > > >
-> > > > - x = (T)pci_alloc_consistent(E1,E2,E3);
-> > > > + x = pci_zalloc_consistent(E1,E2,E3);
-> > > >   if ((x==NULL) || ...) S
-> > > > - memset((T2)x,0,E2);
-> > >
-> > > I don't know much about SmPL, but wouldn't having that if statement
-> > > there reduce your matches?
-> >
-> > No, not really.
-> >
-> > Almost none of the pci_alloc_consistent calls
-> > do not have a test for failure immediately after
-> > them.
+Hi Arnaldo and Stanislav,
 
-> Do not or do?
+On Fri, 20 Jun 2014 10:21:05 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Fri, Jun 20, 2014 at 02:49:42PM +0400, Stanislav Fomichev escreveu:
+>> This patch series adds support for pagefaults tracing to 'perf trace' command.
+>> It seems this feature was planned by Namhyung Kim (http://events.linuxfoundation.org/images/stories/pdf/klf2012_n_kim.pdf page 17/28)
+>> but I couldn't find any prior patches/discussion and started from scratch.
+>
+> Just to clarify here, those slides came from slides I made and in turn
+> the whole idea about pagefaults tracing I got from the trace prototype
+> that Thomas Gleixner implemented in his 'trace'  utility, described
+> here:
+>
+>   Announcing a new utility: 'trace'
+>   http://lwn.net/Articles/415728/
 
-Sorry, English double negative.
+Right, I asked to Arnaldo to suggest some cool topics to introduce in
+KLF 2012 and that was it.   I had nothing with the features. :)
 
-As far as I know, almost every instance of pci_alloc_consistent
-is followed by an if.
+Keep going nice works, guys!
 
-Exceptions exist in:
-
-drivers/isdn/hardware/eicon/divasmain.c 
-drivers/staging/slicoss/slicoss.c
-drivers/tty/synclink_gt.c
-
-There might be others, but I didn't look too hard.
-
-> The advantage of the if is that you are sure that nothing strange happens
-> to x between alloc and memset.  But a problem can be that sometimes people
-> allocate two things, and then do error checking for both of them.  Then
-> you rule would not match.  Or the set the return variable to an error code
-> before doing the check rather than in the if branch.
-> 
-> You could put the following between the malloc and the memset in stead of
-> the if.
-> 
-> ... when != ( f(...,x,...) | <+...x...+> = E3 )
->     when != ( while(...) S | for(...;...;...) S )
-> 
-> This has given reasonable results for kmalloc and memset.
-
-Thanks for that.
-
-It might be nice to add that to the kzalloc example
-in scripts/coccinelle
-
-
-
+Thanks,
+Namhyung
