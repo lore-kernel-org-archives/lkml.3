@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965090AbaFXP4b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:56:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33356 "EHLO
+	id S1756538AbaFXQDX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:03:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33372 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965065AbaFXP40 (ORCPT
+	with ESMTP id S965079AbaFXP4a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:56:26 -0400
+	Tue, 24 Jun 2014 11:56:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
         Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.15 43/61] iio: adc: checking for NULL instead of IS_ERR() in probe
-Date: Tue, 24 Jun 2014 11:51:26 -0400
-Message-Id: <20140624154954.742618212@linuxfoundation.org>
+Subject: [PATCH 3.15 46/61] iio: Fix endianness issue in ak8975_read_axis()
+Date: Tue, 24 Jun 2014 11:51:29 -0400
+Message-Id: <20140624154954.882984018@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154952.751713761@linuxfoundation.org>
 References: <20140624154952.751713761@linuxfoundation.org>
@@ -29,33 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Peter Meerwald <pmeerw@pmeerw.net>
 
-commit e94f62e79f7f63a68574ee5e76c19837ec12f3db upstream.
+commit 8ba42fb7b17649c9ab5b5e79d4e90370a0b4645e upstream.
 
-mcb_request_mem() returns an ERR_PTR(), it doesn't return NULL.
+i2c_smbus_read_word_data() does host endian conversion already,
+no need for le16_to_cpu()
 
-Fixes: 74aeac4da66f ('iio: adc: Add MEN 16z188 ADC driver')
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Peter Meerwald <pmeerw@pmeerw.net>
 Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iio/adc/men_z188_adc.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/iio/magnetometer/ak8975.c |    9 +--------
+ 1 file changed, 1 insertion(+), 8 deletions(-)
 
---- a/drivers/iio/adc/men_z188_adc.c
-+++ b/drivers/iio/adc/men_z188_adc.c
-@@ -121,8 +121,8 @@ static int men_z188_probe(struct mcb_dev
- 	indio_dev->num_channels = ARRAY_SIZE(z188_adc_iio_channels);
+--- a/drivers/iio/magnetometer/ak8975.c
++++ b/drivers/iio/magnetometer/ak8975.c
+@@ -352,8 +352,6 @@ static int ak8975_read_axis(struct iio_d
+ {
+ 	struct ak8975_data *data = iio_priv(indio_dev);
+ 	struct i2c_client *client = data->client;
+-	u16 meas_reg;
+-	s16 raw;
+ 	int ret;
  
- 	mem = mcb_request_mem(dev, "z188-adc");
--	if (!mem)
--		return -ENOMEM;
-+	if (IS_ERR(mem))
-+		return PTR_ERR(mem);
+ 	mutex_lock(&data->lock);
+@@ -401,16 +399,11 @@ static int ak8975_read_axis(struct iio_d
+ 		dev_err(&client->dev, "Read axis data fails\n");
+ 		goto exit;
+ 	}
+-	meas_reg = ret;
  
- 	adc->base = ioremap(mem->start, resource_size(mem));
- 	if (adc->base == NULL)
+ 	mutex_unlock(&data->lock);
+ 
+-	/* Endian conversion of the measured values. */
+-	raw = (s16) (le16_to_cpu(meas_reg));
+-
+ 	/* Clamp to valid range. */
+-	raw = clamp_t(s16, raw, -4096, 4095);
+-	*val = raw;
++	*val = clamp_t(s16, ret, -4096, 4095);
+ 	return IIO_VAL_INT;
+ 
+ exit:
 
 
