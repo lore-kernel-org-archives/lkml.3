@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755623AbaFXPw5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:52:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60995 "EHLO
+	id S1756332AbaFXQlY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:41:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32768 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755597AbaFXPwz (ORCPT
+	with ESMTP id S1755612AbaFXPw5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:52:55 -0400
+	Tue, 24 Jun 2014 11:52:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Don A. Bailey" <donb@securitymouse.com>
-Subject: [PATCH 3.10 43/52] lzo: properly check for overruns
-Date: Tue, 24 Jun 2014 11:50:58 -0400
-Message-Id: <20140624154716.057651039@linuxfoundation.org>
+        Michal Hocko <mhocko@suse.cz>, Borislav Petkov <bp@alien8.de>,
+        Thomas Gleixner <tglx@linutronix.de>, Rui Xiang <rui.xiang@huawei.com>
+Subject: [PATCH 3.10 44/52] nohz: Fix another inconsistency between CONFIG_NO_HZ=n and nohz=off
+Date: Tue, 24 Jun 2014 11:50:59 -0400
+Message-Id: <20140624154716.124452652@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154713.428945460@linuxfoundation.org>
 References: <20140624154713.428945460@linuxfoundation.org>
@@ -28,178 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 206a81c18401c0cde6e579164f752c4b147324ce upstream.
+commit 0e576acbc1d9600cf2d9b4a141a2554639959d50 upstream.
 
-The lzo decompressor can, if given some really crazy data, possibly
-overrun some variable types.  Modify the checking logic to properly
-detect overruns before they happen.
+If CONFIG_NO_HZ=n tick_nohz_get_sleep_length() returns NSEC_PER_SEC/HZ.
 
-Reported-by: "Don A. Bailey" <donb@securitymouse.com>
-Tested-by: "Don A. Bailey" <donb@securitymouse.com>
+If CONFIG_NO_HZ=y and the nohz functionality is disabled via the
+command line option "nohz=off" or not enabled due to missing hardware
+support, then tick_nohz_get_sleep_length() returns 0. That happens
+because ts->sleep_length is never set in that case.
+
+Set it to NSEC_PER_SEC/HZ when the NOHZ mode is inactive.
+
+Reported-by: Michal Hocko <mhocko@suse.cz>
+Reported-by: Borislav Petkov <bp@alien8.de>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Rui Xiang <rui.xiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- lib/lzo/lzo1x_decompress_safe.c |   62 ++++++++++++++++++++++++++--------------
- 1 file changed, 41 insertions(+), 21 deletions(-)
+ kernel/time/tick-sched.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/lib/lzo/lzo1x_decompress_safe.c
-+++ b/lib/lzo/lzo1x_decompress_safe.c
-@@ -19,11 +19,31 @@
- #include <linux/lzo.h>
- #include "lzodefs.h"
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -720,8 +720,10 @@ static bool can_stop_idle_tick(int cpu,
+ 		return false;
+ 	}
  
--#define HAVE_IP(x)      ((size_t)(ip_end - ip) >= (size_t)(x))
--#define HAVE_OP(x)      ((size_t)(op_end - op) >= (size_t)(x))
--#define NEED_IP(x)      if (!HAVE_IP(x)) goto input_overrun
--#define NEED_OP(x)      if (!HAVE_OP(x)) goto output_overrun
--#define TEST_LB(m_pos)  if ((m_pos) < out) goto lookbehind_overrun
-+#define HAVE_IP(t, x)					\
-+	(((size_t)(ip_end - ip) >= (size_t)(t + x)) &&	\
-+	 (((t + x) >= t) && ((t + x) >= x)))
-+
-+#define HAVE_OP(t, x)					\
-+	(((size_t)(op_end - op) >= (size_t)(t + x)) &&	\
-+	 (((t + x) >= t) && ((t + x) >= x)))
-+
-+#define NEED_IP(t, x)					\
-+	do {						\
-+		if (!HAVE_IP(t, x))			\
-+			goto input_overrun;		\
-+	} while (0)
-+
-+#define NEED_OP(t, x)					\
-+	do {						\
-+		if (!HAVE_OP(t, x))			\
-+			goto output_overrun;		\
-+	} while (0)
-+
-+#define TEST_LB(m_pos)					\
-+	do {						\
-+		if ((m_pos) < out)			\
-+			goto lookbehind_overrun;	\
-+	} while (0)
+-	if (unlikely(ts->nohz_mode == NOHZ_MODE_INACTIVE))
++	if (unlikely(ts->nohz_mode == NOHZ_MODE_INACTIVE)) {
++		ts->sleep_length = (ktime_t) { .tv64 = NSEC_PER_SEC/HZ };
+ 		return false;
++	}
  
- int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
- 			  unsigned char *out, size_t *out_len)
-@@ -58,14 +78,14 @@ int lzo1x_decompress_safe(const unsigned
- 					while (unlikely(*ip == 0)) {
- 						t += 255;
- 						ip++;
--						NEED_IP(1);
-+						NEED_IP(1, 0);
- 					}
- 					t += 15 + *ip++;
- 				}
- 				t += 3;
- copy_literal_run:
- #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
--				if (likely(HAVE_IP(t + 15) && HAVE_OP(t + 15))) {
-+				if (likely(HAVE_IP(t, 15) && HAVE_OP(t, 15))) {
- 					const unsigned char *ie = ip + t;
- 					unsigned char *oe = op + t;
- 					do {
-@@ -81,8 +101,8 @@ copy_literal_run:
- 				} else
- #endif
- 				{
--					NEED_OP(t);
--					NEED_IP(t + 3);
-+					NEED_OP(t, 0);
-+					NEED_IP(t, 3);
- 					do {
- 						*op++ = *ip++;
- 					} while (--t > 0);
-@@ -95,7 +115,7 @@ copy_literal_run:
- 				m_pos -= t >> 2;
- 				m_pos -= *ip++ << 2;
- 				TEST_LB(m_pos);
--				NEED_OP(2);
-+				NEED_OP(2, 0);
- 				op[0] = m_pos[0];
- 				op[1] = m_pos[1];
- 				op += 2;
-@@ -119,10 +139,10 @@ copy_literal_run:
- 				while (unlikely(*ip == 0)) {
- 					t += 255;
- 					ip++;
--					NEED_IP(1);
-+					NEED_IP(1, 0);
- 				}
- 				t += 31 + *ip++;
--				NEED_IP(2);
-+				NEED_IP(2, 0);
- 			}
- 			m_pos = op - 1;
- 			next = get_unaligned_le16(ip);
-@@ -137,10 +157,10 @@ copy_literal_run:
- 				while (unlikely(*ip == 0)) {
- 					t += 255;
- 					ip++;
--					NEED_IP(1);
-+					NEED_IP(1, 0);
- 				}
- 				t += 7 + *ip++;
--				NEED_IP(2);
-+				NEED_IP(2, 0);
- 			}
- 			next = get_unaligned_le16(ip);
- 			ip += 2;
-@@ -154,7 +174,7 @@ copy_literal_run:
- #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
- 		if (op - m_pos >= 8) {
- 			unsigned char *oe = op + t;
--			if (likely(HAVE_OP(t + 15))) {
-+			if (likely(HAVE_OP(t, 15))) {
- 				do {
- 					COPY8(op, m_pos);
- 					op += 8;
-@@ -164,7 +184,7 @@ copy_literal_run:
- 					m_pos += 8;
- 				} while (op < oe);
- 				op = oe;
--				if (HAVE_IP(6)) {
-+				if (HAVE_IP(6, 0)) {
- 					state = next;
- 					COPY4(op, ip);
- 					op += next;
-@@ -172,7 +192,7 @@ copy_literal_run:
- 					continue;
- 				}
- 			} else {
--				NEED_OP(t);
-+				NEED_OP(t, 0);
- 				do {
- 					*op++ = *m_pos++;
- 				} while (op < oe);
-@@ -181,7 +201,7 @@ copy_literal_run:
- #endif
- 		{
- 			unsigned char *oe = op + t;
--			NEED_OP(t);
-+			NEED_OP(t, 0);
- 			op[0] = m_pos[0];
- 			op[1] = m_pos[1];
- 			op += 2;
-@@ -194,15 +214,15 @@ match_next:
- 		state = next;
- 		t = next;
- #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
--		if (likely(HAVE_IP(6) && HAVE_OP(4))) {
-+		if (likely(HAVE_IP(6, 0) && HAVE_OP(4, 0))) {
- 			COPY4(op, ip);
- 			op += t;
- 			ip += t;
- 		} else
- #endif
- 		{
--			NEED_IP(t + 3);
--			NEED_OP(t);
-+			NEED_IP(t, 3);
-+			NEED_OP(t, 0);
- 			while (t > 0) {
- 				*op++ = *ip++;
- 				t--;
+ 	if (need_resched())
+ 		return false;
 
 
