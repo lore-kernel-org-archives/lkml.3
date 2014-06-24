@@ -1,91 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754303AbaFXS1Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 14:27:24 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59378 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753712AbaFXS1X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 14:27:23 -0400
-Date: Tue, 24 Jun 2014 19:27:08 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Andy Gross <agross@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] pinctrl: msm: Add msm8960 definitions
-Message-ID: <20140624182708.GA29789@leverpostej>
-References: <1403633766-25796-1-git-send-email-bjorn.andersson@sonymobile.com>
+	id S1754479AbaFXS3v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 14:29:51 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54895 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753728AbaFXS3t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 14:29:49 -0400
+Message-ID: <53A9C391.6030409@zytor.com>
+Date: Tue, 24 Jun 2014 11:29:37 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403633766-25796-1-git-send-email-bjorn.andersson@sonymobile.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ingo Molnar <mingo@kernel.org>, luto@amacapital.net,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com
+CC: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86/vdso: Discard the __bug_table section
+References: <2a5bebff42defd8a5e81d96f7dc00f21143c80e8.1403129369.git.luto@amacapital.net> <tip-5f56e7167e6d438324fcba87018255d81e201383@git.kernel.org> <20140622084754.GA15094@gmail.com>
+In-Reply-To: <20140622084754.GA15094@gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/mixed;
+ boundary="------------060901090601010703060005"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 24, 2014 at 07:16:06PM +0100, Bjorn Andersson wrote:
-> Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-> ---
+This is a multi-part message in MIME format.
+--------------060901090601010703060005
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+
+On 06/22/2014 01:47 AM, Ingo Molnar wrote:
 > 
-> Changes since v1:
->  - Deduplicated functions for alternative pins
+> * tip-bot for Andy Lutomirski <tipbot@zytor.com> wrote:
 > 
->  .../bindings/pinctrl/qcom,msm8960-pinctrl.txt      |  103 ++
->  drivers/pinctrl/Kconfig                            |    8 +
->  drivers/pinctrl/Makefile                           |    1 +
->  drivers/pinctrl/pinctrl-msm8960.c                  | 1146 ++++++++++++++++++++
->  4 files changed, 1258 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/pinctrl/qcom,msm8960-pinctrl.txt
->  create mode 100644 drivers/pinctrl/pinctrl-msm8960.c
+>> Commit-ID:  5f56e7167e6d438324fcba87018255d81e201383
+>> Gitweb:     http://git.kernel.org/tip/5f56e7167e6d438324fcba87018255d81e201383
+>> Author:     Andy Lutomirski <luto@amacapital.net>
+>> AuthorDate: Wed, 18 Jun 2014 15:59:46 -0700
+>> Committer:  H. Peter Anvin <hpa@linux.intel.com>
+>> CommitDate: Thu, 19 Jun 2014 15:44:51 -0700
+>>
+>> x86/vdso: Discard the __bug_table section
+>>
+>> It serves no purpose in user code.
+>>
+>> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+>> Link: http://lkml.kernel.org/r/2a5bebff42defd8a5e81d96f7dc00f21143c80e8.1403129369.git.luto@amacapital.net
+>> Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+>> ---
+>>  arch/x86/vdso/vdso-layout.lds.S | 1 +
+>>  1 file changed, 1 insertion(+)
 > 
-> diff --git a/Documentation/devicetree/bindings/pinctrl/qcom,msm8960-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/qcom,msm8960-pinctrl.txt
-> new file mode 100644
-> index 0000000..6e79eea
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/pinctrl/qcom,msm8960-pinctrl.txt
-> @@ -0,0 +1,103 @@
-> +Qualcomm MSM8960 TLMM block
-> +
-> +Required properties:
-> +- compatible: "qcom,msm8960-pinctrl"
-> +- reg: Should be the base address and length of the TLMM block.
-> +- interrupts: Should be the parent IRQ of the TLMM block.
-> +- interrupt-controller: Marks the device node as an interrupt controller.
-> +- #interrupt-cells: Should be two.
+> One of the recent x86/urgent vdso commits causes this build failure:
+> 
+>  Error: too many copied sections (max = 13)
+>  make[2]: *** [arch/x86/vdso/vdso-image-64.c] Error 1
+>  make[1]: *** [arch/x86/vdso] Error 2
+>  make: *** [arch/x86] Error 2
+> 
+> with the attached config.
+> 
 
-There should be a description of valid values for the two cells of an
-interrupt-specifier.
+Hi Ingo,
 
-> +- gpio-controller: Marks the device node as a GPIO controller.
-> +- #gpio-cells : Should be two.
-> +                The first cell is the gpio pin number and the
-> +                second cell is used for optional parameters.
+Could you try this with the attached patch?
 
-And what are those optional parameters?
+	-hpa
 
-[...]
 
-> +Example:
-> +
-> +       msmgpio: pinctrl@800000 {
-> +               compatible = "qcom,msm8960-pinctrl";
-> +               reg = <0x800000 0x4000>;
-> +
-> +               gpio-controller;
-> +               #gpio-cells = <2>;
-> +               interrupt-controller;
-> +               #interrupt-cells = <2>;
-> +                interrupts = <0 32 0x4>;
-> +
-> +               pinctrl-names = "default";
-> +               pinctrl-0 = <&debug_uart>;
 
-The fact that the pinctrl block itself supports pinctrl properties was
-not described above.
+--------------060901090601010703060005
+Content-Type: text/x-patch;
+ name="0001-x86-vdso-Make-vdso2c-print-the-number-of-sections-ne.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-x86-vdso-Make-vdso2c-print-the-number-of-sections-ne.pa";
+ filename*1="tch"
 
-Thanks,
-Mark.
+>From e28dc3efe8a8880206e90886cc12649f87fa1848 Mon Sep 17 00:00:00 2001
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Tue, 24 Jun 2014 11:26:18 -0700
+Subject: [PATCH] x86/vdso: Make vdso2c print the number of sections needed on
+ error
+
+If we run out of space for section, at least make the error message
+print the amount of space we need so we can actually diagnose it.
+Furthermore, the test should be > instead of >= (it is okay to have
+exactly the maximum number of sections.)
+
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Cc: Andy Lutomirski <luto@amacapital.net>
+Link: http://lkml.kernel.org/r/20140622084754.GA15094@gmail.com
+---
+ arch/x86/vdso/vdso2c.h | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/vdso/vdso2c.h b/arch/x86/vdso/vdso2c.h
+index f42e2ddc663d..94158e100f26 100644
+--- a/arch/x86/vdso/vdso2c.h
++++ b/arch/x86/vdso/vdso2c.h
+@@ -99,8 +99,9 @@ static void BITSFUNC(copy_section)(struct BITSFUNC(fake_sections) *out,
+ 	if (!copy)
+ 		return;
+ 
+-	if (out->count >= out->max_count)
+-		fail("too many copied sections (max = %d)\n", out->max_count);
++	if (out->count > out->max_count)
++		fail("too many copied sections (max = %d, need = %d)\n",
++		     out->max_count, out->count);
+ 
+ 	if (in_idx == out->in_shstrndx)
+ 		out->out_shstrndx = out->count;
+-- 
+1.9.3
+
+
+--------------060901090601010703060005--
