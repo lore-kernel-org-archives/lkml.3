@@ -1,56 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754022AbaFXTPN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 15:15:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43533 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751456AbaFXTPL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 15:15:11 -0400
-Date: Tue, 24 Jun 2014 15:14:54 -0400
-From: Rik van Riel <riel@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: chegu_vinod@hp.com, peterz@infradead.com, mgorman@suse.de,
-        mingo@kernel.org
-Subject: [PATCH 9/7] sched,numa: remove task_h_load from task_numa_compare
-Message-ID: <20140624151454.2a05082e@annuminas.surriel.com>
-In-Reply-To: <1403538095-31256-1-git-send-email-riel@redhat.com>
-References: <1403538095-31256-1-git-send-email-riel@redhat.com>
-Organization: Red Hat, Inc.
+	id S1752574AbaFXTS3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 15:18:29 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:38716 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751024AbaFXTS0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 15:18:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CALCETrV=nAuWi8_Xj6KnJ6P1Yiaw36+n50-gHKaTgea4yH85Eg@mail.gmail.com>
+References: <1403560693-21809-1-git-send-email-keescook@chromium.org>
+	<20140623220150.GM5412@outflux.net>
+	<CALCETrV=nAuWi8_Xj6KnJ6P1Yiaw36+n50-gHKaTgea4yH85Eg@mail.gmail.com>
+Date: Tue, 24 Jun 2014 12:18:25 -0700
+X-Google-Sender-Auth: JX7tRFJh7_m8ndSDjRqFzOyR43o
+Message-ID: <CAGXu5j+E1DVp+BDwTaTdexcOhPC=COE+uHXtj7yGdi2ewkrTTA@mail.gmail.com>
+Subject: Re: [PATCH v7 1/1] man-pages: seccomp.2: document syscall
+From: Kees Cook <keescook@chromium.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Will Drewry <wad@chromium.org>, Julien Tinnes <jln@chromium.org>,
+        David Drysdale <drysdale@google.com>,
+        Linux API <linux-api@vger.kernel.org>, X86 ML <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function effective_load already makes the calculations that
-task_h_load makes. Making them twice can throw off the calculations,
-and is generally a bad idea.
+On Tue, Jun 24, 2014 at 11:06 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Mon, Jun 23, 2014 at 3:01 PM, Kees Cook <keescook@chromium.org> wrote:
+>> Combines documentation from prctl, and in-kernel seccomp_filter.txt,
+>> along with new details specific to the new syscall.
+>>
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>> ---
+>>  man2/seccomp.2 |  333 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>>  1 file changed, 333 insertions(+)
+>>  create mode 100644 man2/seccomp.2
+>>
+>> diff --git a/man2/seccomp.2 b/man2/seccomp.2
+>> new file mode 100644
+>> index 0000000..de7fbf7
+>> --- /dev/null
+>> +++ b/man2/seccomp.2
+>> @@ -0,0 +1,333 @@
+>> +.\" Copyright (C) 2014 Kees Cook <keescook@chromium.org>
+>> +.\" and Copyright (C) 2012 Will Drewry <wad@chromium.org>
+>> +.\" and Copyright (C) 2008 Michael Kerrisk <mtk.manpages@gmail.com>
+>> +.\"
+>> +.\" %%%LICENSE_START(VERBATIM)
+>> +.\" Permission is granted to make and distribute verbatim copies of this
+>> +.\" manual provided the copyright notice and this permission notice are
+>> +.\" preserved on all copies.
+>> +.\"
+>> +.\" Permission is granted to copy and distribute modified versions of this
+>> +.\" manual under the conditions for verbatim copying, provided that the
+>> +.\" entire resulting derived work is distributed under the terms of a
+>> +.\" permission notice identical to this one.
+>> +.\"
+>> +.\" Since the Linux kernel and libraries are constantly changing, this
+>> +.\" manual page may be incorrect or out-of-date.  The author(s) assume no
+>> +.\" responsibility for errors or omissions, or for damages resulting from
+>> +.\" the use of the information contained herein.  The author(s) may not
+>> +.\" have taken the same level of care in the production of this manual,
+>> +.\" which is licensed free of charge, as they might when working
+>> +.\" professionally.
+>> +.\"
+>> +.\" Formatted or processed versions of this manual, if unaccompanied by
+>> +.\" the source, must acknowledge the copyright and authors of this work.
+>> +.\" %%%LICENSE_END
+>> +.\"
+>> +.TH SECCOMP 2 2014-06-23 "Linux" "Linux Programmer's Manual"
+>> +.SH NAME
+>> +seccomp \-
+>> +operate on Secure Computing state of the process
+>> +.SH SYNOPSIS
+>> +.nf
+>> +.B #include <linux/seccomp.h>
+>> +.B #include <linux/filter.h>
+>> +.B #include <linux/audit.h>
+>> +.B #include <linux/signal.h>
+>> +.B #include <sys/ptrace.h>
+>> +
+>> +.BI "int seccomp(unsigned int " operation ", unsigned int " flags ,
+>> +.BI "            unsigned char *" args );
+>
+> At the very least, shouldn't this be void *args?
 
-Signed-off-by: Rik van Riel <riel@redhat.com>
----
- kernel/sched/fair.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Yeah, good point. Fixed for the next version...
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 1aaa3b4..318a275 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1227,7 +1227,7 @@ static void task_numa_compare(struct task_numa_env *env,
- 	dst_load = env->dst_stats.load;
- 
- 	/* Calculate the effect of moving env->p from src to dst. */
--	load = task_h_load(env->p);
-+	load = env->p->se.load.weight;
- 	tg = task_group(env->p);
- 	src_load += effective_load(tg, env->src_cpu, -load, -load);
- 	dst_load += effective_load(tg, env->dst_cpu, load, load);
-@@ -1251,7 +1251,7 @@ static void task_numa_compare(struct task_numa_env *env,
- 
- 	if (cur) {
- 		/* Cur moves in the opposite direction. */
--		load = task_h_load(cur);
-+		load = cur->se.load.weight;
- 		tg = task_group(cur);
- 		src_load += effective_load(tg, env->src_cpu, load, load);
- 		dst_load += effective_load(tg, env->dst_cpu, -load, -load);
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
