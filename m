@@ -1,271 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754100AbaFXWuZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 18:50:25 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:60070 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754001AbaFXWuU (ORCPT
+	id S1754308AbaFXWvU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 18:51:20 -0400
+Received: from mail-ig0-f170.google.com ([209.85.213.170]:56440 "EHLO
+	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752773AbaFXWvQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 18:50:20 -0400
-From: Alexis Berlemont <alexis.berlemont@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexis Berlemont <alexis.berlemont@gmail.com>, jolsa@redhat.com,
-        dsahern@gmail.com, mingo@kernel.org, sam@ravnborg.org, mmarek@suse.cz,
-        namhyung@kernel.org
-Subject: [PATCH 07/13] perf kbuild: remove legacy demangle-related build variables
-Date: Wed, 25 Jun 2014 00:47:54 +0200
-Message-Id: <1403650080-3130-8-git-send-email-alexis.berlemont@gmail.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1403650080-3130-1-git-send-email-alexis.berlemont@gmail.com>
-References: <1403650080-3130-1-git-send-email-alexis.berlemont@gmail.com>
-In-Reply-To: <CAMesUR4175wXt-Pov8Yu-ke7KG4FRaBCTYouCs=jK3n0CWi3zw@mail.gmail.com>
-References: <CAMesUR4175wXt-Pov8Yu-ke7KG4FRaBCTYouCs=jK3n0CWi3zw@mail.gmail.com>
+	Tue, 24 Jun 2014 18:51:16 -0400
+Date: Tue, 24 Jun 2014 15:51:13 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Guenter Roeck <linux@roeck-us.net>
+cc: Chen Gang <gang.chen.5i5j@gmail.com>, Liqin Chen <liqin.linux@gmail.com>,
+        Lennox Wu <lennox.wu@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] rch/score/include/uapi/asm/ptrace.h: Add prefix
+ 'SCORE_' for related macros
+In-Reply-To: <53A98F6F.4080503@roeck-us.net>
+Message-ID: <alpine.DEB.2.02.1406241549430.29176@chino.kir.corp.google.com>
+References: <53A9783C.7050206@gmail.com> <53A98F6F.4080503@roeck-us.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove NO_DEMANGLE (replaced by CONFIG_DEMANGLE)
-Remove HAVE_LIBBFD_SUPPORT (replaced by CONFIG_LIBBFD)
-Remove HAVE_CPLUS_DEMANGLE_SUPPORT (replaced by CONFIG_LIBIBERTY_ONLY)
----
- tools/perf/Kconfig                    | 36 +++++++++++++++++++++------
- tools/perf/config/Makefile            | 46 ++++++++++++++++++-----------------
- tools/perf/config/Makefile.fix-legacy |  4 ---
- tools/perf/util/srcline.c             |  8 +++---
- tools/perf/util/symbol.h              | 25 +++++++++++++------
- 5 files changed, 75 insertions(+), 44 deletions(-)
+On Tue, 24 Jun 2014, Guenter Roeck wrote:
 
-diff --git a/tools/perf/Kconfig b/tools/perf/Kconfig
-index eb59567..026ef67 100644
---- a/tools/perf/Kconfig
-+++ b/tools/perf/Kconfig
-@@ -225,6 +225,35 @@ config LIBPYTHON
-         ---help---
- 	  Libpython dependency needed by the perf script feature.
- 
-+config TIMERFD
-+	bool "Timer via file descriptor"
-+	default y
-+        ---help---
-+	  Timer via file descriptor
-+
-+config DEMANGLE
-+	bool "Demangle symbols"
-+	default y
-+        ---help---
-+	  Enable demangling so as to display human-readable
-+	  symbols. This option is convenient with C++ programs.
-+
-+choice DEMANGLE_DEPS
-+       prompt "Demangle dependency(ies)"
-+       depends on DEMANGLE
-+       default LIBBFD
-+
-+config LIBBFD
-+	bool "BFD + libiberty libraries"
-+        ---help---
-+	  Binary File Descriptor and libiberty libraries
-+
-+config LIBIBERTY_ONLY
-+	bool "Libiberty only"
-+        ---help---
-+	  Libiberty
-+endchoice
-+
- choice
- 	prompt "Elf library"
- 	default LIBELF
-@@ -266,13 +295,6 @@ config NUMA
- 	  The library libnuma offers facilities to configure NUMA
- 	  policies supported by the linux kernel.
- 
--config DEMANGLE
--	bool "Demangle symbols"
--	default y
--        ---help---
--	  Enable demangling so as to display human-readable
--	  symbols. This option is convenient with C++ programs.
--
- config BIONIC
- 	bool "Bionic support"
- 	default n
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index f23185a..9168a21 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -545,33 +545,36 @@ ifeq ($(feature-libbfd), 1)
-   endif
- endif
- 
--ifdef NO_DEMANGLE
--  CFLAGS += -DNO_DEMANGLE
--else
--  ifdef HAVE_CPLUS_DEMANGLE_SUPPORT
--    EXTLIBS += -liberty
--    CFLAGS += -DHAVE_CPLUS_DEMANGLE_SUPPORT
--  else
--    ifneq ($(feature-libbfd), 1)
--      ifneq ($(feature-liberty), 1)
--        ifneq ($(feature-liberty-z), 1)
--          # we dont have neither HAVE_CPLUS_DEMANGLE_SUPPORT
--          # or any of 'bfd iberty z' trinity
--          ifeq ($(feature-cplus-demangle), 1)
--            EXTLIBS += -liberty
--            CFLAGS += -DHAVE_CPLUS_DEMANGLE_SUPPORT
--          else
--            msg := $(warning No bfd.h/libbfd found, install binutils-dev[el]/zlib-static to gain symbol demangling)
--            CFLAGS += -DNO_DEMANGLE
--          endif
-+ifdef CONFIG_LIBBFD
-+  ifneq ($(feature-libbfd), 1)
-+    # TODO: there might be an issue here: feature-liberty and
-+    # feature-liberty-z cannot be set; they can be set only if
-+    # feature-libbfd is set
-+    ifneq ($(feature-liberty), 1)
-+      ifneq ($(feature-liberty-z), 1)
-+        # we dont have neither HAVE_CPLUS_DEMANGLE_SUPPORT
-+        # or any of 'bfd iberty z' trinity
-+        ifeq ($(feature-cplus-demangle), 1)
-+          EXTLIBS += -liberty
-+          $(shell $(KCONFIG_SCRIPT) -d CONFIG_LIBBFD)
-+          $(shell $(KCONFIG_SCRIPT) -e CONFIG_LIBIBERTY_ONLY)
-+        else
-+          msg := $(warning No bfd.h/libbfd found, install binutils-dev[el]/zlib-static to gain symbol demangling)
-+          $(shell $(KCONFIG_SCRIPT) -d CONFIG_DEMANGLE)
-         endif
-       endif
-     endif
-   endif
- endif
- 
--ifneq ($(filter -lbfd,$(EXTLIBS)),)
--  CFLAGS += -DHAVE_LIBBFD_SUPPORT
-+ifdef CONFIG_LIBIBERTY_ONLY
-+  $(call feature_check,cplus-demangle)
-+  ifeq ($(feature-cplus-demangle), 1)
-+    EXTLIBS += -liberty
-+  else
-+    msg := $(warning No libiberty found, install binutils-dev[el]/zlib-static to gain symbol demangling)
-+    $(shell $(KCONFIG_SCRIPT) -d CONFIG_DEMANGLE)
-+  endif
- endif
- 
- ifndef NO_BACKTRACE
-@@ -759,7 +762,6 @@ all:
- 	$(call store,NO_LIBUNWIND)
- 	$(call store,NO_LIBPERL)
- 	$(call store,NO_LIBPYTHON)
--	$(call store,NO_DEMANGLE)
- 	$(call store,NO_LIBELF)
- 	$(call store,NO_LIBUNWIND)
- 	$(call store,NO_BACKTRACE)
-diff --git a/tools/perf/config/Makefile.fix-legacy b/tools/perf/config/Makefile.fix-legacy
-index ca219e7..64dbb1a 100644
---- a/tools/perf/config/Makefile.fix-legacy
-+++ b/tools/perf/config/Makefile.fix-legacy
-@@ -9,10 +9,6 @@ ifndef CONFIG_LIBPYTHON
- NO_LIBPYTHON := 1
- endif
- 
--ifndef CONFIG_DEMANGLE
--NO_DEMANGLE := 1
--endif
--
- ifndef CONFIG_LIBELF
- NO_LIBELF := 1
- endif
-diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
-index f3e4bc5..38df8f4 100644
---- a/tools/perf/util/srcline.c
-+++ b/tools/perf/util/srcline.c
-@@ -4,11 +4,13 @@
- 
- #include <linux/kernel.h>
- 
-+#include "generated/autoconf.h"
-+
- #include "util/dso.h"
- #include "util/util.h"
- #include "util/debug.h"
- 
--#ifdef HAVE_LIBBFD_SUPPORT
-+#ifdef CONFIG_LIBBFD
- 
- /*
-  * Implement addr2line using libbfd.
-@@ -189,7 +191,7 @@ void dso__free_a2l(struct dso *dso)
- 	dso->a2l = NULL;
- }
- 
--#else /* HAVE_LIBBFD_SUPPORT */
-+#else /* !CONFIG_LIBBFD */
- 
- static int addr2line(const char *dso_name, unsigned long addr,
- 		     char **file, unsigned int *line_nr,
-@@ -242,7 +244,7 @@ void dso__free_a2l(struct dso *dso __maybe_unused)
- {
- }
- 
--#endif /* HAVE_LIBBFD_SUPPORT */
-+#endif /* CONFIG_LIBBFD */
- 
- /*
-  * Number of addr2line failures (without success) before disabling it for that
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 615c752..508d317 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -1,6 +1,8 @@
- #ifndef __PERF_SYMBOL
- #define __PERF_SYMBOL 1
- 
-+#include "generated/autoconf.h"
-+
- #include <linux/types.h>
- #include <stdbool.h>
- #include <stdint.h>
-@@ -22,26 +24,33 @@
- 
- #include "dso.h"
- 
--#ifdef HAVE_CPLUS_DEMANGLE_SUPPORT
-+#ifdef CONFIG_DEMANGLE
-+
-+#ifdef CONFIG_LIBBFD
-+
-+#define PACKAGE 'perf'
-+#include <bfd.h>
-+
-+#elif defined(CONFIG_LIBIBERTY_ONLY)
- extern char *cplus_demangle(const char *, int);
- 
- static inline char *bfd_demangle(void __maybe_unused *v, const char *c, int i)
- {
- 	return cplus_demangle(c, i);
- }
--#else
--#ifdef NO_DEMANGLE
-+
-+#else /* Unknown dependency */
-+#error "Inconsistent demangling configuration"
-+#endif
-+
-+#else /* !CONFIG_DEMANGLE */
- static inline char *bfd_demangle(void __maybe_unused *v,
- 				 const char __maybe_unused *c,
- 				 int __maybe_unused i)
- {
- 	return NULL;
- }
--#else
--#define PACKAGE 'perf'
--#include <bfd.h>
--#endif
--#endif
-+#endif /* CONFIG_DEMANGLE */
- 
- /*
-  * libelf 0.8.x and earlier do not support ELF_C_READ_MMAP;
--- 
-1.9.3
+> > diff --git a/arch/score/include/uapi/asm/ptrace.h
+> > b/arch/score/include/uapi/asm/ptrace.h
+> > index f59771a..56e2de0 100644
+> > --- a/arch/score/include/uapi/asm/ptrace.h
+> > +++ b/arch/score/include/uapi/asm/ptrace.h
+> > @@ -4,16 +4,29 @@
+> >   #define PTRACE_GETREGS		12
+> >   #define PTRACE_SETREGS		13
+> > 
+> > -#define PC		32
+> > -#define CONDITION	33
+> > -#define ECR		34
+> > -#define EMA		35
+> > -#define CEH		36
+> > -#define CEL		37
+> > -#define COUNTER		38
+> > -#define LDCR		39
+> > -#define STCR		40
+> > -#define PSR		41
+> > +#if !defined(__KERNEL__) || !defined(__linux__)
+> > +#define PC			32
+> > +#define CONDITION		33
+> > +#define ECR			34
+> > +#define EMA			35
+> > +#define CEH			36
+> > +#define CEL			37
+> > +#define COUNTER			38
+> > +#define LDCR			39
+> > +#define STCR			40
+> > +#define PSR			41
+> > +#else
+> > +#define SCORE_PC		32
+> > +#define SCORE_CONDITION		33
+> > +#define SCORE_ECR		34
+> > +#define SCORE_EMA		35
+> > +#define SCORE_CEH		36
+> > +#define SCORE_CEL		37
+> > +#define SCORE_COUNTER		38
+> > +#define SCORE_LDCR		39
+> > +#define SCORE_STCR		40
+> > +#define SCORE_PSR		41
+> > +#endif
+> > 
+> >   #define SINGLESTEP16_INSN	0x7006
+> >   #define SINGLESTEP32_INSN	0x840C8000
+> > 
+> That looks weird ... not sure if that is a good solution either.
+> 
+> Are those defines actually used anywhere ? They don't seem to be used in the
+> kernel.
+> 
+> Side note - an 'a' got missing in your headline.
+> And I'd suggest to abbreviate it to something like
+> 	score/uapi: ptrace.h:
+> 
 
+Besides checking whether they are used in the kernel or not, I presume we 
+would need to be fairly confident there are actual userspace usecases for 
+these that require the change.  It begs the question of why these 
+constants are too generic to be in the kernel but are acceptable in the 
+set of userspace applications in the world.
