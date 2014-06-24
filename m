@@ -1,98 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755805AbaFXUde (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:33:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47832 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755707AbaFXUdM (ORCPT
+	id S1755983AbaFXUds (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:33:48 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:60569 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755905AbaFXUdp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:33:12 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Stephane Grosjean <s.grosjean@peak-system.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 35/65] can: peak_pci: prevent use after free at netdev removal
-Date: Tue, 24 Jun 2014 13:29:55 -0700
-Message-Id: <1403641825-12825-36-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
-References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Tue, 24 Jun 2014 16:33:45 -0400
+Message-ID: <53A9E0A5.5040402@wwwdotorg.org>
+Date: Tue, 24 Jun 2014 14:33:41 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
+Subject: Re: [PATCH 2/6] irq_work: Implement remote queueing
+References: <1402413309-3415-1-git-send-email-fweisbec@gmail.com> <1402413309-3415-3-git-send-email-fweisbec@gmail.com>
+In-Reply-To: <1402413309-3415-3-git-send-email-fweisbec@gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.25 -stable review patch.  If anyone has any objections, please let me know.
+On 06/10/2014 09:15 AM, Frederic Weisbecker wrote:
+> irq work currently only supports local callbacks. However its code
+> is mostly ready to run remote callbacks and we have some potential user.
+> 
+> The full nohz subsystem currently open codes its own remote irq work
+> on top of the scheduler ipi when it wants a CPU to reevaluate its next
+> tick. However this ad hoc solution bloats the scheduler IPI.
+> 
+> Lets just extend the irq work subsystem to support remote queuing on top
+> of the generic SMP IPI to handle this kind of user. This shouldn't add
+> noticeable overhead.
 
-------------------
+I'm running next-20140624 on an ARM system, and this patch causes CPU
+hot(un)plug to Oops for me; the following fires:
 
-From: Stephane Grosjean <s.grosjean@peak-system.com>
+void irq_work_run(void)
+{
+	BUG_ON(!in_irq());
 
-commit 0b5a958cf4df3a5cd578b861471e62138f55c85e upstream.
+I found that Linus's master (8b8f5d971584 "Merge tag 'compress-3.16-rc3'
+of git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core")
+works fine. I found that this commit inside the tip(?) tree works fine
+(478850160636 "irq_work: Implement remote queueing"). However, if I
+merge the two together, I hit that BUG_ON.
 
-As remarked by Christopher R. Baker in his post at
+I think the issue is:
 
-http://marc.info/?l=linux-can&m=139707295706465&w=2
+This commit adds a call from
+generic_smp_call_function_single_interrupt() to irq_work_run().
 
-there's a possibility for an use after free condition at device removal.
-
-This simplified patch introduces an additional variable to prevent the issue.
-Thanks for catching this.
-
-Reported-by: Christopher R. Baker <cbaker@rec.ri.cmu.edu>
-Signed-off-by: Stephane Grosjean <s.grosjean@peak-system.com>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/net/can/sja1000/peak_pci.c | 14 +++++++++-----
- 1 file changed, 9 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/net/can/sja1000/peak_pci.c b/drivers/net/can/sja1000/peak_pci.c
-index d84888f..1a18a0c 100644
---- a/drivers/net/can/sja1000/peak_pci.c
-+++ b/drivers/net/can/sja1000/peak_pci.c
-@@ -555,7 +555,7 @@ static int peak_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
- {
- 	struct sja1000_priv *priv;
- 	struct peak_pci_chan *chan;
--	struct net_device *dev;
-+	struct net_device *dev, *prev_dev;
- 	void __iomem *cfg_base, *reg_base;
- 	u16 sub_sys_id, icr;
- 	int i, err, channels;
-@@ -691,11 +691,13 @@ failure_remove_channels:
- 	writew(0x0, cfg_base + PITA_ICR + 2);
- 
- 	chan = NULL;
--	for (dev = pci_get_drvdata(pdev); dev; dev = chan->prev_dev) {
--		unregister_sja1000dev(dev);
--		free_sja1000dev(dev);
-+	for (dev = pci_get_drvdata(pdev); dev; dev = prev_dev) {
- 		priv = netdev_priv(dev);
- 		chan = priv->priv;
-+		prev_dev = chan->prev_dev;
-+
-+		unregister_sja1000dev(dev);
-+		free_sja1000dev(dev);
- 	}
- 
- 	/* free any PCIeC resources too */
-@@ -729,10 +731,12 @@ static void peak_pci_remove(struct pci_dev *pdev)
- 
- 	/* Loop over all registered devices */
- 	while (1) {
-+		struct net_device *prev_dev = chan->prev_dev;
-+
- 		dev_info(&pdev->dev, "removing device %s\n", dev->name);
- 		unregister_sja1000dev(dev);
- 		free_sja1000dev(dev);
--		dev = chan->prev_dev;
-+		dev = prev_dev;
- 
- 		if (!dev) {
- 			/* do that only for first channel */
--- 
-1.9.1
-
+Srivatsa's patch adds a call from hotplug_cfd() to
+flush_smp_call_function_queue() to, which I imagine happens in
+non-interrupt context. Note that this patch moves most of the body of
+generic_smp_call_function_single_interrupt() into
+flush_smp_call_function_queue().
