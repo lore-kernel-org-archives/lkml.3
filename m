@@ -1,62 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030274AbaFXQnX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:43:23 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:59832 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753450AbaFXQnU (ORCPT
+	id S932727AbaFXQnt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:43:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60950 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755468AbaFXPwk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 12:43:20 -0400
-Message-ID: <53A9AAA1.4030005@collabora.co.uk>
-Date: Tue, 24 Jun 2014 18:43:13 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Tue, 24 Jun 2014 11:52:40 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Xufeng Zhang <xufeng.zhang@windriver.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 22/52] sctp: Fix sk_ack_backlog wrap-around problem
+Date: Tue, 24 Jun 2014 11:50:37 -0400
+Message-Id: <20140624154714.813728056@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <20140624154713.428945460@linuxfoundation.org>
+References: <20140624154713.428945460@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
-        Daniel Stone <daniels@collabora.com>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 07/10] regulator: Add driver for Maxim 77802 PMIC regulators
-References: <1402941758-11216-1-git-send-email-javier.martinez@collabora.co.uk> <1402941758-11216-8-git-send-email-javier.martinez@collabora.co.uk> <20140616192500.GJ5099@sirena.org.uk> <53A01D54.10506@collabora.co.uk> <20140617141254.GP5099@sirena.org.uk> <53A06749.1010606@collabora.co.uk> <20140621204026.GH22657@sirena.org.uk> <53A7F339.7050608@collabora.co.uk> <20140623094734.GV24291@sirena.org.uk>
-In-Reply-To: <20140623094734.GV24291@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Mark,
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-On 06/23/2014 11:47 AM, Mark Brown wrote:
-> On Mon, Jun 23, 2014 at 11:28:25AM +0200, Javier Martinez Canillas wrote:
->> On 06/21/2014 10:40 PM, Mark Brown wrote:
-> 
->> > That's not really relevant here - I'm asking if the regulators get their
->> > own supplies rather than if anything uses them.
-> 
->> Sorry if I keep misunderstanding your question but the regulators in this PMIC
->> don't have a parent supply/regulator node.
-> 
-> They should, I'm pretty sure the device does actually regulate one
-> supply into another.
-> 
+------------------
 
-Thanks a lot for the clarification. This was not evident to me when I read the
-PMIC datasheet and because both the max77xxx Chrome OS 3.8 and mainline max77686
-drivers used a simplistic model of the power scheme.
+From: Xufeng Zhang <xufeng.zhang@windriver.com>
 
-But Doug confirmed to me that some regulators on this PMIC do indeed use others
-regulators as a power supply so I'll change this in the next version of the
-patch-set.
+[ Upstream commit d3217b15a19a4779c39b212358a5c71d725822ee ]
 
-Best regards,
-Javier
+Consider the scenario:
+For a TCP-style socket, while processing the COOKIE_ECHO chunk in
+sctp_sf_do_5_1D_ce(), after it has passed a series of sanity check,
+a new association would be created in sctp_unpack_cookie(), but afterwards,
+some processing maybe failed, and sctp_association_free() will be called to
+free the previously allocated association, in sctp_association_free(),
+sk_ack_backlog value is decremented for this socket, since the initial
+value for sk_ack_backlog is 0, after the decrement, it will be 65535,
+a wrap-around problem happens, and if we want to establish new associations
+afterward in the same socket, ABORT would be triggered since sctp deem the
+accept queue as full.
+Fix this issue by only decrementing sk_ack_backlog for associations in
+the endpoint's list.
+
+Fix-suggested-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
+Acked-by: Daniel Borkmann <dborkman@redhat.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/sctp/associola.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/net/sctp/associola.c
++++ b/net/sctp/associola.c
+@@ -387,7 +387,7 @@ void sctp_association_free(struct sctp_a
+ 	/* Only real associations count against the endpoint, so
+ 	 * don't bother for if this is a temporary association.
+ 	 */
+-	if (!asoc->temp) {
++	if (!list_empty(&asoc->asocs)) {
+ 		list_del(&asoc->asocs);
+ 
+ 		/* Decrement the backlog value for a TCP-style listening
+
+
