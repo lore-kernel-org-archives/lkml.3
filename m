@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755105AbaFXPzG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:55:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33121 "EHLO
+	id S1755959AbaFXPzK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:55:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33135 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755908AbaFXPzC (ORCPT
+	with ESMTP id S1755935AbaFXPzI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:55:02 -0400
+	Tue, 24 Jun 2014 11:55:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.14 51/68] ASoC: tlv320aci3x: Fix custom snd_soc_dapm_put_volsw_aic3x() function
-Date: Tue, 24 Jun 2014 11:51:10 -0400
-Message-Id: <20140624154726.261782760@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.14 44/68] USB: cdc-acm: fix potential urb leak and PM imbalance in write
+Date: Tue, 24 Jun 2014 11:51:03 -0400
+Message-Id: <20140624154725.923629923@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154723.907894814@linuxfoundation.org>
 References: <20140624154723.907894814@linuxfoundation.org>
@@ -29,35 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit e6c111fac4464e3f4bf7b3802b517dafc80f8e0f upstream.
+commit 183a45087d126d126e8dd1d9b2602fc129dff9ad upstream.
 
-For some unknown reason the parameters for snd_soc_test_bits() were in wrong
-order:
-It was:
-snd_soc_test_bits(codec, val, mask, reg); /* WRONG!!! */
-while it should be:
-snd_soc_test_bits(codec, reg, mask, val);
+Make sure to check return value of autopm get in write() in order to
+avoid urb leak and PM counter imbalance on errors.
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
+that support remote wakeup")
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/tlv320aic3x.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/class/cdc-acm.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/sound/soc/codecs/tlv320aic3x.c
-+++ b/sound/soc/codecs/tlv320aic3x.c
-@@ -169,7 +169,7 @@ static int snd_soc_dapm_put_volsw_aic3x(
- 	mask <<= shift;
- 	val <<= shift;
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -666,7 +666,13 @@ static int acm_tty_write(struct tty_stru
+ 	memcpy(wb->buf, buf, count);
+ 	wb->len = count;
  
--	change = snd_soc_test_bits(codec, val, mask, reg);
-+	change = snd_soc_test_bits(codec, reg, mask, val);
- 	if (change) {
- 		update.kcontrol = kcontrol;
- 		update.reg = reg;
+-	usb_autopm_get_interface_async(acm->control);
++	stat = usb_autopm_get_interface_async(acm->control);
++	if (stat) {
++		wb->use = 0;
++		spin_unlock_irqrestore(&acm->write_lock, flags);
++		return stat;
++	}
++
+ 	if (acm->susp_count) {
+ 		usb_anchor_urb(wb->urb, &acm->delayed);
+ 		spin_unlock_irqrestore(&acm->write_lock, flags);
 
 
