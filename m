@@ -1,46 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751314AbaFXClV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 22:41:21 -0400
-Received: from prod-mail-xrelay02.akamai.com ([72.246.2.14]:35971 "EHLO
-	prod-mail-xrelay02.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751014AbaFXClU (ORCPT
+	id S1751200AbaFXCxT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 22:53:19 -0400
+Received: from mga03.intel.com ([143.182.124.21]:10338 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750827AbaFXCxS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 22:41:20 -0400
-Message-ID: <53A8E548.9060008@akamai.com>
-Date: Mon, 23 Jun 2014 22:41:12 -0400
-From: Jason Baron <jbaron@akamai.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: "andi@firstfloor.org" <andi@firstfloor.org>,
+	Mon, 23 Jun 2014 22:53:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,535,1400050800"; 
+   d="scan'208";a="449111299"
+From: "Ren, Qiaowei" <qiaowei.ren@intel.com>
+To: Andy Lutomirski <luto@amacapital.net>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "Hansen, Dave" <dave.hansen@intel.com>
+CC: "x86@kernel.org" <x86@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "peterz@infradead.org" <peterz@infradead.org>
-Subject: Re: [PATCH 0/3] static keys: fix test/set races
-References: <cover.1372457176.git.jbaron@akamai.com> <20140623222802.4900881c@gandalf.local.home>
-In-Reply-To: <20140623222802.4900881c@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Linux MM <linux-mm@kvack.org>
+Subject: RE: [PATCH v6 02/10] x86, mpx: add MPX specific mmap interface
+Thread-Topic: [PATCH v6 02/10] x86, mpx: add MPX specific mmap interface
+Thread-Index: AQHPitp0g7xixZVNTkiLN9tFeBCqMZt+nJAAgAD2LmA=
+Date: Tue, 24 Jun 2014 02:53:12 +0000
+Message-ID: <9E0BE1322F2F2246BD820DA9FC397ADE016AF2DB@shsmsx102.ccr.corp.intel.com>
+References: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com>
+ <1403084656-27284-3-git-send-email-qiaowei.ren@intel.com>
+ <53A884B2.5070702@mit.edu>
+In-Reply-To: <53A884B2.5070702@mit.edu>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2014 10:28 PM, Steven Rostedt wrote:
-> Cleaning out my INBOX I found this patch series. It seems to have been
-> forgotten about. It ended up with Ingo and Peter agreeing with the way
-> things should be done and I thought Jason was going to send an update.
-> But that seems to never have happened.
->
-> Does this patch series still look legit? Should we pursue it?
->
-> -- Steve
+On 2014-06-24, Andy Lutomirski wrote:
+>> +	/* Make bounds tables and bouds directory unlocked. */
+>> +	if (vm_flags & VM_LOCKED)
+>> +		vm_flags &= ~VM_LOCKED;
+> 
+> Why?  I would expect MCL_FUTURE to lock these.
+> 
+Andy, I was just a little confused about LOCKED & POPULATE earlier and I thought VM_LOCKED is not necessary for MPX specific bounds tables. Now, this checking should be removed, and there should be mm_populate() for VM_LOCKED case after mmap_region():
 
-Hi Steve,
-
-I still think its a reasonable addition - I'll re-post later
-this week for comments.
+   if (!IS_ERR_VALUE(addr) && (vm_flags & VM_LOCKED))
+       mm_populate(addr, len);
 
 Thanks,
+Qiaowei
 
--Jason
