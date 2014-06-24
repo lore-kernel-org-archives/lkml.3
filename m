@@ -1,44 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753321AbaFXAKt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 20:10:49 -0400
-Received: from mga02.intel.com ([134.134.136.20]:14802 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752327AbaFXAKs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 20:10:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,533,1400050800"; 
-   d="scan'208";a="562173371"
-Message-ID: <53A8C1EF.7030309@intel.com>
-Date: Mon, 23 Jun 2014 17:10:23 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1753688AbaFXAMP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 20:12:15 -0400
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:52386 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752597AbaFXAMN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 20:12:13 -0400
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Qiaowei Ren <qiaowei.ren@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [PATCH v6 08/10] x86, mpx: add prctl commands PR_MPX_REGISTER,
- PR_MPX_UNREGISTER
-References: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com> <1403084656-27284-9-git-send-email-qiaowei.ren@intel.com> <53A8874A.3050301@mit.edu> <53A88966.5080400@intel.com> <CALCETrX7B8yxrNgojCR8YNH+6zHX8vq+GMFn0RjdWXdLmhA-Fg@mail.gmail.com> <53A8BB5A.5090103@intel.com> <CALCETrVXn5HAcifiU1TnGUckNz8g7ZEw1FeMjLwVCpd6G+pq3g@mail.gmail.com>
-In-Reply-To: <CALCETrVXn5HAcifiU1TnGUckNz8g7ZEw1FeMjLwVCpd6G+pq3g@mail.gmail.com>
+In-Reply-To: <1403556805-22824-1-git-send-email-swarren@wwwdotorg.org>
+References: <1403556805-22824-1-git-send-email-swarren@wwwdotorg.org>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Tue, 24 Jun 2014 09:11:52 +0900
+Message-ID: <CAAVeFuJxb0vvfcebZtoQwYQzK7S03NR5OasK1mV11ZUBtt4c+g@mail.gmail.com>
+Subject: Re: [PATCH] regulator: palmas: fix typo in enable_reg calculation
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>, Keerthy <j-keerthy@ti.com>,
+        Nishanth Menon <nm@ti.com>, linux-omap@vger.kernel.org,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2014 05:01 PM, Andy Lutomirski wrote:
-> I suspect that the existence of the get operation matters more.  What
-> if the checkpointed process has the cached copy out of sync with the
-> register copy?  More realistically, what if the checkpointed process
-> doesn't want to use kernel MPX assistance at all?  CRIU won't be able
-> to detect this with the current proposed interface.
+On Tue, Jun 24, 2014 at 5:53 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> From: Stephen Warren <swarren@nvidia.com>
+>
+> When setting up .enable_reg for an SMPS regulator, presumably we should
+> call PALMAS_BASE_TO_REG(PALMAS_SMPS_BASE, ...) rather than using
+> LDO_BASE. This change makes the LCD panel and HDMI work again on the
+> NVIDIA Dalmore board anyway.
 
-That's fair criticism.
+Tested-by: Alexandre Courbot <acourbot@nvidia.com>
 
-Pavel, do you have any concrete suggestions on what kind of interface
-would be nice for checkpoint/restart?  Or is this something you will
-just tackle down the road some other way?
+Interestingly the first fix was enough for Tegra Note 7's panel -
+probably due to the fact the panel was already on when the kernel took
+over.
