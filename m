@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756414AbaFXUsj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:48:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47613 "EHLO
+	id S1755905AbaFXUsi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:48:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47615 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754287AbaFXUah (ORCPT
+	with ESMTP id S1751136AbaFXUai (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:30:37 -0400
+	Tue, 24 Jun 2014 16:30:38 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Anthony Iliopoulos <anthony.iliopoulos@huawei.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
+Cc: Antti Palosaari <crope@iki.fi>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 19/65] x86, mm, hugetlb: Add missing TLB page invalidation for hugetlb_cow()
-Date: Tue, 24 Jun 2014 13:29:39 -0700
-Message-Id: <1403641825-12825-20-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 02/65] [media] fc2580: fix tuning failure on 32-bit arch
+Date: Tue, 24 Jun 2014 13:29:22 -0700
+Message-Id: <1403641825-12825-3-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
 References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
@@ -28,44 +28,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anthony Iliopoulos <anthony.iliopoulos@huawei.com>
+From: Antti Palosaari <crope@iki.fi>
 
-commit 9844f5462392b53824e8b86726e7c33b5ecbb676 upstream.
+commit 8845cc6415ec28ef8d57b3fb81c75ef9bce69c5f upstream.
 
-The invalidation is required in order to maintain proper semantics
-under CoW conditions. In scenarios where a process clones several
-threads, a thread operating on a core whose DTLB entry for a
-particular hugepage has not been invalidated, will be reading from
-the hugepage that belongs to the forked child process, even after
-hugetlb_cow().
+There was some frequency calculation overflows which caused tuning
+failure on 32-bit architecture. Use 64-bit numbers where needed in
+order to avoid calculation overflows.
 
-The thread will not see the updated page as long as the stale DTLB
-entry remains cached, the thread attempts to write into the page,
-the child process exits, or the thread gets migrated to a different
-processor.
+Thanks for the Finnish person, who asked remain anonymous, reporting,
+testing and suggesting the fix.
 
-Signed-off-by: Anthony Iliopoulos <anthony.iliopoulos@huawei.com>
-Link: http://lkml.kernel.org/r/20140514092948.GA17391@server-36.huawei.corp
-Suggested-by: Shay Goikhman <shay.goikhman@huawei.com>
-Acked-by: Dave Hansen <dave.hansen@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/include/asm/hugetlb.h | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/media/tuners/fc2580.c      | 6 +++---
+ drivers/media/tuners/fc2580_priv.h | 1 +
+ 2 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/include/asm/hugetlb.h b/arch/x86/include/asm/hugetlb.h
-index bdd35db..78ba03b 100644
---- a/arch/x86/include/asm/hugetlb.h
-+++ b/arch/x86/include/asm/hugetlb.h
-@@ -51,6 +51,7 @@ static inline pte_t huge_ptep_get_and_clear(struct mm_struct *mm,
- static inline void huge_ptep_clear_flush(struct vm_area_struct *vma,
- 					 unsigned long addr, pte_t *ptep)
- {
-+	ptep_clear_flush(vma, addr, ptep);
- }
+diff --git a/drivers/media/tuners/fc2580.c b/drivers/media/tuners/fc2580.c
+index 81f38aa..dbf8dfe 100644
+--- a/drivers/media/tuners/fc2580.c
++++ b/drivers/media/tuners/fc2580.c
+@@ -178,7 +178,7 @@ static int fc2580_set_params(struct dvb_frontend *fe)
  
- static inline int huge_pte_none(pte_t pte)
+ 	f_ref = 2UL * priv->cfg->clock / r_val;
+ 	n_val = div_u64_rem(f_vco, f_ref, &k_val);
+-	k_val_reg = 1UL * k_val * (1 << 20) / f_ref;
++	k_val_reg = div_u64(1ULL * k_val * (1 << 20), f_ref);
+ 
+ 	ret = fc2580_wr_reg(priv, 0x18, r18_val | ((k_val_reg >> 16) & 0xff));
+ 	if (ret < 0)
+@@ -331,8 +331,8 @@ static int fc2580_set_params(struct dvb_frontend *fe)
+ 	if (ret < 0)
+ 		goto err;
+ 
+-	ret = fc2580_wr_reg(priv, 0x37, 1UL * priv->cfg->clock * \
+-			fc2580_if_filter_lut[i].mul / 1000000000);
++	ret = fc2580_wr_reg(priv, 0x37, div_u64(1ULL * priv->cfg->clock *
++			fc2580_if_filter_lut[i].mul, 1000000000));
+ 	if (ret < 0)
+ 		goto err;
+ 
+diff --git a/drivers/media/tuners/fc2580_priv.h b/drivers/media/tuners/fc2580_priv.h
+index be38a9e..646c994 100644
+--- a/drivers/media/tuners/fc2580_priv.h
++++ b/drivers/media/tuners/fc2580_priv.h
+@@ -22,6 +22,7 @@
+ #define FC2580_PRIV_H
+ 
+ #include "fc2580.h"
++#include <linux/math64.h>
+ 
+ struct fc2580_reg_val {
+ 	u8 reg;
 -- 
 1.9.1
 
