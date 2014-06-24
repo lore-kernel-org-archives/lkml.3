@@ -1,26 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755177AbaFXPv7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:51:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60827 "EHLO
+	id S1755234AbaFXPwJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:52:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60857 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755111AbaFXPv4 (ORCPT
+	with ESMTP id S1755207AbaFXPwF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:51:56 -0400
+	Tue, 24 Jun 2014 11:52:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Bryan Evenson <bevenson@melinkcorp.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 01/52] rtc: rtc-at91rm9200: fix infinite wait for ACKUPD irq
-Date: Tue, 24 Jun 2014 11:50:16 -0400
-Message-Id: <20140624154713.533414076@linuxfoundation.org>
+        Jiri Pirko <jiri@resnulli.us>, Flavio Leitner <fbl@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 14/52] team: fix mtu setting
+Date: Tue, 24 Jun 2014 11:50:29 -0400
+Message-Id: <20140624154714.361580796@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154713.428945460@linuxfoundation.org>
 References: <20140624154713.428945460@linuxfoundation.org>
@@ -35,89 +29,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+From: Jiri Pirko <jiri@resnulli.us>
 
-commit 2fe121e1f5aa3bf31b418a9790db6c400e922291 upstream.
+[ Upstream commit 9d0d68faea6962d62dd501cd6e71ce5cc8ed262b ]
 
-The rtc user must wait at least 1 sec between each time/calandar update
-(see atmel's datasheet chapter "Updating Time/Calendar").
+Now it is not possible to set mtu to team device which has a port
+enslaved to it. The reason is that when team_change_mtu() calls
+dev_set_mtu() for port device, notificator for NETDEV_PRECHANGEMTU
+event is called and team_device_event() returns NOTIFY_BAD forbidding
+the change. So fix this by returning NOTIFY_DONE here in case team is
+changing mtu in team_change_mtu().
 
-Use the 1Hz interrupt to update the at91_rtc_upd_rdy flag and wait for
-the at91_rtc_wait_upd_rdy event if the rtc is not ready.
-
-This patch fixes a deadlock in an uninterruptible wait when the RTC is
-updated more than once every second.  AFAICT the bug is here from the
-beginning, but I think we should at least backport this fix to 3.10 and
-the following longterm and stable releases.
-
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Reported-by: Bryan Evenson <bevenson@melinkcorp.com>
-Tested-by: Bryan Evenson <bevenson@melinkcorp.com>
-Cc: Andrew Victor <linux@maxim.org.za>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Introduced-by: 3d249d4c "net: introduce ethernet teaming device"
+Signed-off-by: Jiri Pirko <jiri@resnulli.us>
+Acked-by: Flavio Leitner <fbl@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/rtc/rtc-at91rm9200.c |   16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+ drivers/net/team/team.c |    7 ++++++-
+ include/linux/if_team.h |    1 +
+ 2 files changed, 7 insertions(+), 1 deletion(-)
 
---- a/drivers/rtc/rtc-at91rm9200.c
-+++ b/drivers/rtc/rtc-at91rm9200.c
-@@ -49,6 +49,7 @@ struct at91_rtc_config {
- 
- static const struct at91_rtc_config *at91_rtc_config;
- static DECLARE_COMPLETION(at91_rtc_updated);
-+static DECLARE_COMPLETION(at91_rtc_upd_rdy);
- static unsigned int at91_alarm_year = AT91_RTC_EPOCH;
- static void __iomem *at91_rtc_regs;
- static int irq;
-@@ -162,6 +163,8 @@ static int at91_rtc_settime(struct devic
- 		1900 + tm->tm_year, tm->tm_mon, tm->tm_mday,
- 		tm->tm_hour, tm->tm_min, tm->tm_sec);
- 
-+	wait_for_completion(&at91_rtc_upd_rdy);
-+
- 	/* Stop Time/Calendar from counting */
- 	cr = at91_rtc_read(AT91_RTC_CR);
- 	at91_rtc_write(AT91_RTC_CR, cr | AT91_RTC_UPDCAL | AT91_RTC_UPDTIM);
-@@ -184,7 +187,9 @@ static int at91_rtc_settime(struct devic
- 
- 	/* Restart Time/Calendar */
- 	cr = at91_rtc_read(AT91_RTC_CR);
-+	at91_rtc_write(AT91_RTC_SCCR, AT91_RTC_SECEV);
- 	at91_rtc_write(AT91_RTC_CR, cr & ~(AT91_RTC_UPDCAL | AT91_RTC_UPDTIM));
-+	at91_rtc_write_ier(AT91_RTC_SECEV);
- 
- 	return 0;
- }
-@@ -291,8 +296,10 @@ static irqreturn_t at91_rtc_interrupt(in
- 	if (rtsr) {		/* this interrupt is shared!  Is it ours? */
- 		if (rtsr & AT91_RTC_ALARM)
- 			events |= (RTC_AF | RTC_IRQF);
--		if (rtsr & AT91_RTC_SECEV)
--			events |= (RTC_UF | RTC_IRQF);
-+		if (rtsr & AT91_RTC_SECEV) {
-+			complete(&at91_rtc_upd_rdy);
-+			at91_rtc_write_idr(AT91_RTC_SECEV);
-+		}
- 		if (rtsr & AT91_RTC_ACKUPD)
- 			complete(&at91_rtc_updated);
- 
-@@ -415,6 +422,11 @@ static int __init at91_rtc_probe(struct
+--- a/drivers/net/team/team.c
++++ b/drivers/net/team/team.c
+@@ -1542,6 +1542,7 @@ static int team_change_mtu(struct net_de
+ 	 * to traverse list in reverse under rcu_read_lock
+ 	 */
+ 	mutex_lock(&team->lock);
++	team->port_mtu_change_allowed = true;
+ 	list_for_each_entry(port, &team->port_list, list) {
+ 		err = dev_set_mtu(port->dev, new_mtu);
+ 		if (err) {
+@@ -1550,6 +1551,7 @@ static int team_change_mtu(struct net_de
+ 			goto unwind;
+ 		}
  	}
- 	platform_set_drvdata(pdev, rtc);
++	team->port_mtu_change_allowed = false;
+ 	mutex_unlock(&team->lock);
  
-+	/* enable SECEV interrupt in order to initialize at91_rtc_upd_rdy
-+	 * completion.
-+	 */
-+	at91_rtc_write_ier(AT91_RTC_SECEV);
-+
- 	dev_info(&pdev->dev, "AT91 Real Time Clock driver.\n");
- 	return 0;
+ 	dev->mtu = new_mtu;
+@@ -1559,6 +1561,7 @@ static int team_change_mtu(struct net_de
+ unwind:
+ 	list_for_each_entry_continue_reverse(port, &team->port_list, list)
+ 		dev_set_mtu(port->dev, dev->mtu);
++	team->port_mtu_change_allowed = false;
+ 	mutex_unlock(&team->lock);
+ 
+ 	return err;
+@@ -2678,7 +2681,9 @@ static int team_device_event(struct noti
+ 		break;
+ 	case NETDEV_CHANGEMTU:
+ 		/* Forbid to change mtu of underlaying device */
+-		return NOTIFY_BAD;
++		if (!port->team->port_mtu_change_allowed)
++			return NOTIFY_BAD;
++		break;
+ 	case NETDEV_PRE_TYPE_CHANGE:
+ 		/* Forbid to change type of underlaying device */
+ 		return NOTIFY_BAD;
+--- a/include/linux/if_team.h
++++ b/include/linux/if_team.h
+@@ -193,6 +193,7 @@ struct team {
+ 	bool user_carrier_enabled;
+ 	bool queue_override_enabled;
+ 	struct list_head *qom_lists; /* array of queue override mapping lists */
++	bool port_mtu_change_allowed;
+ 	long mode_priv[TEAM_MODE_PRIV_LONGS];
+ };
  
 
 
