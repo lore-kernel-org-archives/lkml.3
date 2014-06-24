@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754968AbaFXPyz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:54:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33099 "EHLO
+	id S1755105AbaFXPzG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:55:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33121 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755857AbaFXPyv (ORCPT
+	with ESMTP id S1755908AbaFXPzC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:54:51 -0400
+	Tue, 24 Jun 2014 11:55:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.14 46/68] USB: cdc-acm: fix runtime PM imbalance at shutdown
-Date: Tue, 24 Jun 2014 11:51:05 -0400
-Message-Id: <20140624154726.018120713@linuxfoundation.org>
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.14 51/68] ASoC: tlv320aci3x: Fix custom snd_soc_dapm_put_volsw_aic3x() function
+Date: Tue, 24 Jun 2014 11:51:10 -0400
+Message-Id: <20140624154726.261782760@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154723.907894814@linuxfoundation.org>
 References: <20140624154723.907894814@linuxfoundation.org>
@@ -28,52 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 
-commit 5292afa657d0e790b7479ad8eef9450c1e040b3d upstream.
+commit e6c111fac4464e3f4bf7b3802b517dafc80f8e0f upstream.
 
-Make sure only to decrement the PM counters if they were actually
-incremented.
+For some unknown reason the parameters for snd_soc_test_bits() were in wrong
+order:
+It was:
+snd_soc_test_bits(codec, val, mask, reg); /* WRONG!!! */
+while it should be:
+snd_soc_test_bits(codec, reg, mask, val);
 
-Note that the USB PM counter, but not necessarily the driver core PM
-counter, is reset when the interface is unbound.
-
-Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
-that support remote wakeup")
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/class/cdc-acm.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ sound/soc/codecs/tlv320aic3x.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -587,12 +587,13 @@ static void acm_port_shutdown(struct tty
- 	struct urb *urb;
- 	struct acm_wb *wb;
- 	int i;
-+	int pm_err;
+--- a/sound/soc/codecs/tlv320aic3x.c
++++ b/sound/soc/codecs/tlv320aic3x.c
+@@ -169,7 +169,7 @@ static int snd_soc_dapm_put_volsw_aic3x(
+ 	mask <<= shift;
+ 	val <<= shift;
  
- 	dev_dbg(&acm->control->dev, "%s\n", __func__);
- 
- 	mutex_lock(&acm->mutex);
- 	if (!acm->disconnected) {
--		usb_autopm_get_interface(acm->control);
-+		pm_err = usb_autopm_get_interface(acm->control);
- 		acm_set_control(acm, acm->ctrlout = 0);
- 
- 		for (;;) {
-@@ -610,7 +611,8 @@ static void acm_port_shutdown(struct tty
- 		for (i = 0; i < acm->rx_buflimit; i++)
- 			usb_kill_urb(acm->read_urbs[i]);
- 		acm->control->needs_remote_wakeup = 0;
--		usb_autopm_put_interface(acm->control);
-+		if (!pm_err)
-+			usb_autopm_put_interface(acm->control);
- 	}
- 	mutex_unlock(&acm->mutex);
- }
+-	change = snd_soc_test_bits(codec, val, mask, reg);
++	change = snd_soc_test_bits(codec, reg, mask, val);
+ 	if (change) {
+ 		update.kcontrol = kcontrol;
+ 		update.reg = reg;
 
 
