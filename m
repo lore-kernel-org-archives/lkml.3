@@ -1,114 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753523AbaFXVnE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 17:43:04 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:35694 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752526AbaFXVmr (ORCPT
+	id S1753643AbaFXVnp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 17:43:45 -0400
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:57194 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750974AbaFXVno (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 17:42:47 -0400
-From: Emil Goode <emilgoode@gmail.com>
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Jiri Kosina <jkosina@suse.cz>, Hans Verkuil <hans.verkuil@cisco.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
-Subject: [PATCH 2/2] [media] Cleanup line > 80 character violations
-Date: Tue, 24 Jun 2014 23:42:28 +0200
-Message-Id: <1403646148-25385-2-git-send-email-emilgoode@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1403646148-25385-1-git-send-email-emilgoode@gmail.com>
-References: <1403646148-25385-1-git-send-email-emilgoode@gmail.com>
+	Tue, 24 Jun 2014 17:43:44 -0400
+Date: Tue, 24 Jun 2014 17:43:40 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, vgoyal@redhat.com,
+        Shirish Pargaonkar <spargaonkar@suse.com>, axboe@kernel.dk
+Subject: Re: [PATCH] blkio: Release blkg infrastructure only after last
+ policy is deactivated.
+Message-ID: <20140624214340.GE14909@htj.dyndns.org>
+References: <1403549545-6535-1-git-send-email-spargaonkar@suse.com>
+ <20140624210930.GD14909@htj.dyndns.org>
+ <CADT32eJPAty_yGA5UGZV9h7XHN_8Sn70v1vhRRn7+URvU+URGA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CADT32eJPAty_yGA5UGZV9h7XHN_8Sn70v1vhRRn7+URvU+URGA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This cleans up some line over 80 character violations.
+Hello,
 
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
----
- drivers/media/dvb-frontends/stb6100_cfg.h |   12 ++++++++----
- drivers/media/dvb-frontends/tda8261_cfg.h |    9 ++++++---
- 2 files changed, 14 insertions(+), 7 deletions(-)
+On Tue, Jun 24, 2014 at 04:37:58PM -0500, Shirish Pargaonkar wrote:
+> When we start from blk_cleanup_queue(), we put request queue in bypass mode,
+> drain it (and service queues), and then destroy blkcgs (explicitly)
+> 
+> When we start from blk_release_queue(), we do not drain first and then
+> destroy blkcgs.  So if we destroy blkcg and then call (implicitly) and
+> bail out of
+> blk_drain_queue, we would not have drained the service queues which
+> is not what we want.
 
-diff --git a/drivers/media/dvb-frontends/stb6100_cfg.h b/drivers/media/dvb-frontends/stb6100_cfg.h
-index 0e10ad89..6edc153 100644
---- a/drivers/media/dvb-frontends/stb6100_cfg.h
-+++ b/drivers/media/dvb-frontends/stb6100_cfg.h
-@@ -27,7 +27,8 @@ static int stb6100_get_frequency(struct dvb_frontend *fe, u32 *frequency)
- 	int err = 0;
- 
- 	if (tuner_ops->get_state) {
--		if ((err = tuner_ops->get_state(fe, DVBFE_TUNER_FREQUENCY, &t_state)) < 0) {
-+		err = tuner_ops->get_state(fe, DVBFE_TUNER_FREQUENCY, &t_state);
-+		if (err < 0) {
- 			printk("%s: Invalid parameter\n", __func__);
- 			return err;
- 		}
-@@ -46,7 +47,8 @@ static int stb6100_set_frequency(struct dvb_frontend *fe, u32 frequency)
- 	t_state.frequency = frequency;
- 
- 	if (tuner_ops->set_state) {
--		if ((err = tuner_ops->set_state(fe, DVBFE_TUNER_FREQUENCY, &t_state)) < 0) {
-+		err = tuner_ops->set_state(fe, DVBFE_TUNER_FREQUENCY, &t_state);
-+		if (err < 0) {
- 			printk("%s: Invalid parameter\n", __func__);
- 			return err;
- 		}
-@@ -62,7 +64,8 @@ static int stb6100_get_bandwidth(struct dvb_frontend *fe, u32 *bandwidth)
- 	int err = 0;
- 
- 	if (tuner_ops->get_state) {
--		if ((err = tuner_ops->get_state(fe, DVBFE_TUNER_BANDWIDTH, &t_state)) < 0) {
-+		err = tuner_ops->get_state(fe, DVBFE_TUNER_BANDWIDTH, &t_state);
-+		if (err < 0) {
- 			printk("%s: Invalid parameter\n", __func__);
- 			return err;
- 		}
-@@ -81,7 +84,8 @@ static int stb6100_set_bandwidth(struct dvb_frontend *fe, u32 bandwidth)
- 	t_state.bandwidth = bandwidth;
- 
- 	if (tuner_ops->set_state) {
--		if ((err = tuner_ops->set_state(fe, DVBFE_TUNER_BANDWIDTH, &t_state)) < 0) {
-+		err = tuner_ops->set_state(fe, DVBFE_TUNER_BANDWIDTH, &t_state);
-+		if (err < 0) {
- 			printk("%s: Invalid parameter\n", __func__);
- 			return err;
- 		}
-diff --git a/drivers/media/dvb-frontends/tda8261_cfg.h b/drivers/media/dvb-frontends/tda8261_cfg.h
-index 7de65c3..04a19e1 100644
---- a/drivers/media/dvb-frontends/tda8261_cfg.h
-+++ b/drivers/media/dvb-frontends/tda8261_cfg.h
-@@ -25,7 +25,8 @@ static int tda8261_get_frequency(struct dvb_frontend *fe, u32 *frequency)
- 	int err = 0;
- 
- 	if (tuner_ops->get_state) {
--		if ((err = tuner_ops->get_state(fe, DVBFE_TUNER_FREQUENCY, &t_state)) < 0) {
-+		err = tuner_ops->get_state(fe, DVBFE_TUNER_FREQUENCY, &t_state);
-+		if (err < 0) {
- 			printk("%s: Invalid parameter\n", __func__);
- 			return err;
- 		}
-@@ -45,7 +46,8 @@ static int tda8261_set_frequency(struct dvb_frontend *fe, u32 frequency)
- 	t_state.frequency = frequency;
- 
- 	if (tuner_ops->set_state) {
--		if ((err = tuner_ops->set_state(fe, DVBFE_TUNER_FREQUENCY, &t_state)) < 0) {
-+		err = tuner_ops->set_state(fe, DVBFE_TUNER_FREQUENCY, &t_state);
-+		if (err < 0) {
- 			printk("%s: Invalid parameter\n", __func__);
- 			return err;
- 		}
-@@ -62,7 +64,8 @@ static int tda8261_get_bandwidth(struct dvb_frontend *fe, u32 *bandwidth)
- 	int err = 0;
- 
- 	if (tuner_ops->get_state) {
--		if ((err = tuner_ops->get_state(fe, DVBFE_TUNER_BANDWIDTH, &t_state)) < 0) {
-+		err = tuner_ops->get_state(fe, DVBFE_TUNER_BANDWIDTH, &t_state);
-+		if (err < 0) {
- 			printk("%s: Invalid parameter\n", __func__);
- 			return err;
- 		}
+I'm not really following you.  What do you mean "when we start from
+blk_release_queue()"?  blk_release_queue() is called after the last
+put which can only follow blk_cleanup_queue() if the queue is fully
+initialized.  The queue is already in bypass mode and fully drained by
+the time control reaches blk_release_queue().  Module [un]load
+re-invoking the path doesn't change anything.
+
+> I do not see any harm in waiting till end to release blkcgs (as I understand).
+
+Well, the harm there is not freeing those blkgs unless all the blkcg
+policies are unloaded which is usually never on most systems.
+
+Thanks.
+
 -- 
-1.7.10.4
-
+tejun
