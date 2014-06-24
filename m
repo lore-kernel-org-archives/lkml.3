@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755319AbaFXAee (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 20:34:34 -0400
-Received: from fgwmail.fujitsu.co.jp ([164.71.1.133]:56563 "EHLO
-	fgwmail.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753537AbaFXAed (ORCPT
+	id S1753871AbaFXAjn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 20:39:43 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:33995 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753193AbaFXAjm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 20:34:33 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <53A8C76A.4060207@jp.fujitsu.com>
-Date: Tue, 24 Jun 2014 09:33:46 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 23 Jun 2014 20:39:42 -0400
+Date: Mon, 23 Jun 2014 17:39:34 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Dave Hansen <dave.hansen@intel.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        fweisbec@gmail.com, oleg@redhat.com, ak@linux.intel.com, cl@gentwo.org,
+        umgwanakikbuti@gmail.com
+Subject: Re: [PATCH tip/core/rcu] Reduce overhead of cond_resched() checks
+ for RCU
+Message-ID: <20140624003934.GR4603@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140621025958.GA7185@linux.vnet.ibm.com>
+ <53A85BF9.7030006@intel.com>
+ <53A8611F.1000804@intel.com>
+ <20140623180945.GL4603@linux.vnet.ibm.com>
+ <53A8B884.6000600@intel.com>
+ <20140624001519.GO4603@linux.vnet.ibm.com>
+ <53A8C44E.7050000@intel.com>
 MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: <akpm@linux-foundation.org>, <tglx@linutronix.de>, <mingo@redhat.com>,
-        <hpa@zytor.com>, <tangchen@cn.fujitsu.com>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>, <x86@kernel.org>,
-        <guz.fnst@cn.fujitsu.com>, <zhangyanfei@cn.fujitsu.com>
-Subject: Re: [PATCH 1/2] x86,mem-hotplug: pass sync_global_pgds() a correct
- argument in remove_pagetable()
-References: <53A132E2.9000605@jp.fujitsu.com>	 <53A1339E.2000000@jp.fujitsu.com> <1403288831.25108.0.camel@misato.fc.hp.com>
-In-Reply-To: <1403288831.25108.0.camel@misato.fc.hp.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53A8C44E.7050000@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14062400-3532-0000-0000-000002ACA683
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/06/21 3:27), Toshi Kani wrote:
-> On Wed, 2014-06-18 at 15:37 +0900, Yasuaki Ishimatsu wrote:
->> remove_pagetable() gets start argument and passes the argument to
->> sync_global_pgds(). In this case, the argument must not be modified.
->> If the argument is modified and passed to sync_global_pgds(),
->> sync_global_pgds() does not correctly synchronize PGD to PGD entries
->> of all processes MM since synchronized range of memory [start, end]
->> is wrong.
->>
->> Unfortunately the start argument is modified in remove_pagetable().
->> So this patch fixes the issue.
->>
->> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->
+On Mon, Jun 23, 2014 at 05:20:30PM -0700, Dave Hansen wrote:
+> On 06/23/2014 05:15 PM, Paul E. McKenney wrote:
+> > Just out of curiosity, how many CPUs does your system have?  80?
+> > If 160, looks like something bad is happening at 80.
+> 
+> 80 cores, 160 threads.  >80 processes/threads is where we start using
+> the second thread on the cores.  The tasks are also pinned to
+> hyperthread pairs, so they disturb each other, and the scheduler moves
+> them between threads on occasion which causes extra noise.
 
-> Acked-by: Toshi Kani <toshi.kani@hp.com>
+OK, that could explain the near flattening of throughput near 80
+processes.  Is 3.16.0-rc1-pf2 with the two RCU patches?  If so, is the
+new sysfs parameter at its default value?
 
-Thank you for your review.
-
-Thanks,
-Yasuak Ishimatsu
-
->
-> Thanks,
-> -Toshi
->
->
-
+							Thanx, Paul
 
