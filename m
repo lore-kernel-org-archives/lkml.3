@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754881AbaFXPvc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:51:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60766 "EHLO
+	id S1754945AbaFXPvi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:51:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60785 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754855AbaFXPv3 (ORCPT
+	with ESMTP id S1754875AbaFXPvg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:51:29 -0400
+	Tue, 24 Jun 2014 11:51:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.4 21/26] ALSA: control: Dont access controls outside of protected regions
-Date: Tue, 24 Jun 2014 11:50:44 -0400
-Message-Id: <20140624154620.511454083@linuxfoundation.org>
+        Xiao Jin <jin.xiao@intel.com>, Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.4 12/26] USB: cdc-acm: fix broken runtime suspend
+Date: Tue, 24 Jun 2014 11:50:35 -0400
+Message-Id: <20140624154620.097062196@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154619.499002156@linuxfoundation.org>
 References: <20140624154619.499002156@linuxfoundation.org>
@@ -29,85 +28,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit fd9f26e4eca5d08a27d12c0933fceef76ed9663d upstream.
+commit 140cb81ac8c625942a1d695875932c615767a526 upstream.
 
-A control that is visible on the card->controls list can be freed at any time.
-This means we must not access any of its memory while not holding the
-controls_rw_lock. Otherwise we risk a use after free access.
+The current ACM runtime-suspend implementation is broken in several
+ways:
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Acked-by: Jaroslav Kysela <perex@perex.cz>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Firstly, it buffers only the first write request being made while
+suspended -- any further writes are silently dropped.
+
+Secondly, writes being dropped also leak write urbs, which are never
+reclaimed (until the device is unbound).
+
+Thirdly, even the single buffered write is not cleared at shutdown
+(which may happen before the device is resumed), something which can
+lead to another urb leak as well as a PM usage-counter leak.
+
+Fix this by implementing a delayed-write queue using urb anchors and
+making sure to discard the queue properly at shutdown.
+
+Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
+that support remote wakeup")
+
+Reported-by: Xiao Jin <jin.xiao@intel.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/core/control.c |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ drivers/usb/class/cdc-acm.c |   32 ++++++++++++++++++++++----------
+ drivers/usb/class/cdc-acm.h |    2 +-
+ 2 files changed, 23 insertions(+), 11 deletions(-)
 
---- a/sound/core/control.c
-+++ b/sound/core/control.c
-@@ -329,6 +329,7 @@ int snd_ctl_add(struct snd_card *card, s
- {
- 	struct snd_ctl_elem_id id;
- 	unsigned int idx;
-+	unsigned int count;
- 	int err = -EINVAL;
- 
- 	if (! kcontrol)
-@@ -357,8 +358,9 @@ int snd_ctl_add(struct snd_card *card, s
- 	card->controls_count += kcontrol->count;
- 	kcontrol->id.numid = card->last_numid + 1;
- 	card->last_numid += kcontrol->count;
-+	count = kcontrol->count;
- 	up_write(&card->controls_rwsem);
--	for (idx = 0; idx < kcontrol->count; idx++, id.index++, id.numid++)
-+	for (idx = 0; idx < count; idx++, id.index++, id.numid++)
- 		snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_ADD, &id);
- 	return 0;
- 
-@@ -387,6 +389,7 @@ int snd_ctl_replace(struct snd_card *car
- 		    bool add_on_replace)
- {
- 	struct snd_ctl_elem_id id;
-+	unsigned int count;
- 	unsigned int idx;
- 	struct snd_kcontrol *old;
- 	int ret;
-@@ -422,8 +425,9 @@ add:
- 	card->controls_count += kcontrol->count;
- 	kcontrol->id.numid = card->last_numid + 1;
- 	card->last_numid += kcontrol->count;
-+	count = kcontrol->count;
- 	up_write(&card->controls_rwsem);
--	for (idx = 0; idx < kcontrol->count; idx++, id.index++, id.numid++)
-+	for (idx = 0; idx < count; idx++, id.index++, id.numid++)
- 		snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_ADD, &id);
- 	return 0;
- 
-@@ -894,9 +898,9 @@ static int snd_ctl_elem_write(struct snd
- 			result = kctl->put(kctl, control);
- 		}
- 		if (result > 0) {
-+			struct snd_ctl_elem_id id = control->id;
- 			up_read(&card->controls_rwsem);
--			snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_VALUE,
--				       &control->id);
-+			snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_VALUE, &id);
- 			return 0;
- 		}
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -234,12 +234,9 @@ static int acm_write_start(struct acm *a
+ 							acm->susp_count);
+ 	usb_autopm_get_interface_async(acm->control);
+ 	if (acm->susp_count) {
+-		if (!acm->delayed_wb)
+-			acm->delayed_wb = wb;
+-		else
+-			usb_autopm_put_interface_async(acm->control);
++		usb_anchor_urb(wb->urb, &acm->delayed);
+ 		spin_unlock_irqrestore(&acm->write_lock, flags);
+-		return 0;	/* A white lie */
++		return 0;
  	}
-@@ -1330,8 +1334,9 @@ static int snd_ctl_tlv_ioctl(struct snd_
+ 	usb_mark_last_busy(acm->dev);
+ 
+@@ -610,6 +607,8 @@ static void acm_port_destruct(struct tty
+ static void acm_port_shutdown(struct tty_port *port)
+ {
+ 	struct acm *acm = container_of(port, struct acm, port);
++	struct urb *urb;
++	struct acm_wb *wb;
+ 	int i;
+ 
+ 	dev_dbg(&acm->control->dev, "%s\n", __func__);
+@@ -618,6 +617,16 @@ static void acm_port_shutdown(struct tty
+ 	if (!acm->disconnected) {
+ 		usb_autopm_get_interface(acm->control);
+ 		acm_set_control(acm, acm->ctrlout = 0);
++
++		for (;;) {
++			urb = usb_get_from_anchor(&acm->delayed);
++			if (!urb)
++				break;
++			wb = urb->context;
++			wb->use = 0;
++			usb_autopm_put_interface_async(acm->control);
++		}
++
+ 		usb_kill_urb(acm->ctrlurb);
+ 		for (i = 0; i < ACM_NW; i++)
+ 			usb_kill_urb(acm->wb[i].urb);
+@@ -1211,6 +1220,7 @@ made_compressed_probe:
+ 		acm->bInterval = epread->bInterval;
+ 	tty_port_init(&acm->port);
+ 	acm->port.ops = &acm_port_ops;
++	init_usb_anchor(&acm->delayed);
+ 
+ 	buf = usb_alloc_coherent(usb_dev, ctrlsize, GFP_KERNEL, &acm->ctrl_dma);
+ 	if (!buf) {
+@@ -1466,7 +1476,7 @@ static int acm_suspend(struct usb_interf
+ static int acm_resume(struct usb_interface *intf)
+ {
+ 	struct acm *acm = usb_get_intfdata(intf);
+-	struct acm_wb *wb;
++	struct urb *urb;
+ 	int rv = 0;
+ 
+ 	spin_lock_irq(&acm->read_lock);
+@@ -1478,10 +1488,12 @@ static int acm_resume(struct usb_interfa
+ 	if (test_bit(ASYNCB_INITIALIZED, &acm->port.flags)) {
+ 		rv = usb_submit_urb(acm->ctrlurb, GFP_ATOMIC);
+ 
+-		if (acm->delayed_wb) {
+-			wb = acm->delayed_wb;
+-			acm->delayed_wb = NULL;
+-			acm_start_wb(acm, wb);
++		for (;;) {
++			urb = usb_get_from_anchor(&acm->delayed);
++			if (!urb)
++				break;
++
++			acm_start_wb(acm, urb->context);
  		}
- 		err = kctl->tlv.c(kctl, op_flag, tlv.length, _tlv->tlv);
- 		if (err > 0) {
-+			struct snd_ctl_elem_id id = kctl->id;
- 			up_read(&card->controls_rwsem);
--			snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_TLV, &kctl->id);
-+			snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_TLV, &id);
- 			return 0;
- 		}
- 	} else {
+ 
+ 		/*
+--- a/drivers/usb/class/cdc-acm.h
++++ b/drivers/usb/class/cdc-acm.h
+@@ -117,7 +117,7 @@ struct acm {
+ 	unsigned int throttled:1;			/* actually throttled */
+ 	unsigned int throttle_req:1;			/* throttle requested */
+ 	u8 bInterval;
+-	struct acm_wb *delayed_wb;			/* write queued for a device about to be woken */
++	struct usb_anchor delayed;			/* writes queued for a device about to be woken */
+ };
+ 
+ #define CDC_DATA_INTERFACE_TYPE	0x0a
 
 
