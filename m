@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965385AbaFXQHq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:07:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33287 "EHLO
+	id S1030181AbaFXQIS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:08:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33281 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964967AbaFXP4C (ORCPT
+	with ESMTP id S1755371AbaFXPz6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:56:02 -0400
+	Tue, 24 Jun 2014 11:55:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.15 29/61] USB: cdc-acm: fix runtime PM for control messages
-Date: Tue, 24 Jun 2014 11:51:12 -0400
-Message-Id: <20140624154954.097244504@linuxfoundation.org>
+        Michal Schmidt <mschmidt@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.15 19/61] rtnetlink: fix userspace API breakage for iproute2 < v3.9.0
+Date: Tue, 24 Jun 2014 11:51:02 -0400
+Message-Id: <20140624154953.640369615@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154952.751713761@linuxfoundation.org>
 References: <20140624154952.751713761@linuxfoundation.org>
@@ -28,49 +29,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Michal Schmidt <mschmidt@redhat.com>
 
-commit bae3f4c53585e9a170da9436e0f06919874bda9a upstream.
+[ Upstream commit e5eca6d41f53db48edd8cf88a3f59d2c30227f8e ]
 
-Fix runtime PM handling of control messages by adding the required PM
-counter operations.
+When running RHEL6 userspace on a current upstream kernel, "ip link"
+fails to show VF information.
 
-Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
-that support remote wakeup")
+The reason is a kernel<->userspace API change introduced by commit
+88c5b5ce5cb57 ("rtnetlink: Call nlmsg_parse() with correct header length"),
+after which the kernel does not see iproute2's IFLA_EXT_MASK attribute
+in the netlink request.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+iproute2 adjusted for the API change in its commit 63338dca4513
+("libnetlink: Use ifinfomsg instead of rtgenmsg in rtnl_wilddump_req_filter").
+
+The problem has been noticed before:
+http://marc.info/?l=linux-netdev&m=136692296022182&w=2
+(Subject: Re: getting VF link info seems to be broken in 3.9-rc8)
+
+We can do better than tell those with old userspace to upgrade. We can
+recognize the old iproute2 in the kernel by checking the netlink message
+length. Even when including the IFLA_EXT_MASK attribute, its netlink
+message is shorter than struct ifinfomsg.
+
+With this patch "ip link" shows VF information in both old and new
+iproute2 versions.
+
+Signed-off-by: Michal Schmidt <mschmidt@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/usb/class/cdc-acm.c |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ net/core/rtnetlink.c |   22 ++++++++++++++++++----
+ 1 file changed, 18 insertions(+), 4 deletions(-)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -122,13 +122,23 @@ static void acm_release_minor(struct acm
- static int acm_ctrl_msg(struct acm *acm, int request, int value,
- 							void *buf, int len)
- {
--	int retval = usb_control_msg(acm->dev, usb_sndctrlpipe(acm->dev, 0),
-+	int retval;
-+
-+	retval = usb_autopm_get_interface(acm->control);
-+	if (retval)
-+		return retval;
-+
-+	retval = usb_control_msg(acm->dev, usb_sndctrlpipe(acm->dev, 0),
- 		request, USB_RT_ACM, value,
- 		acm->control->altsetting[0].desc.bInterfaceNumber,
- 		buf, len, 5000);
-+
- 	dev_dbg(&acm->control->dev,
- 			"%s - rq 0x%02x, val %#x, len %#x, result %d\n",
- 			__func__, request, value, len, retval);
-+
-+	usb_autopm_put_interface(acm->control);
-+
- 	return retval < 0 ? retval : 0;
- }
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -1234,6 +1234,7 @@ static int rtnl_dump_ifinfo(struct sk_bu
+ 	struct nlattr *tb[IFLA_MAX+1];
+ 	u32 ext_filter_mask = 0;
+ 	int err;
++	int hdrlen;
  
+ 	s_h = cb->args[0];
+ 	s_idx = cb->args[1];
+@@ -1241,8 +1242,17 @@ static int rtnl_dump_ifinfo(struct sk_bu
+ 	rcu_read_lock();
+ 	cb->seq = net->dev_base_seq;
+ 
+-	if (nlmsg_parse(cb->nlh, sizeof(struct ifinfomsg), tb, IFLA_MAX,
+-			ifla_policy) >= 0) {
++	/* A hack to preserve kernel<->userspace interface.
++	 * The correct header is ifinfomsg. It is consistent with rtnl_getlink.
++	 * However, before Linux v3.9 the code here assumed rtgenmsg and that's
++	 * what iproute2 < v3.9.0 used.
++	 * We can detect the old iproute2. Even including the IFLA_EXT_MASK
++	 * attribute, its netlink message is shorter than struct ifinfomsg.
++	 */
++	hdrlen = nlmsg_len(cb->nlh) < sizeof(struct ifinfomsg) ?
++		 sizeof(struct rtgenmsg) : sizeof(struct ifinfomsg);
++
++	if (nlmsg_parse(cb->nlh, hdrlen, tb, IFLA_MAX, ifla_policy) >= 0) {
+ 
+ 		if (tb[IFLA_EXT_MASK])
+ 			ext_filter_mask = nla_get_u32(tb[IFLA_EXT_MASK]);
+@@ -2094,9 +2104,13 @@ static u16 rtnl_calcit(struct sk_buff *s
+ 	struct nlattr *tb[IFLA_MAX+1];
+ 	u32 ext_filter_mask = 0;
+ 	u16 min_ifinfo_dump_size = 0;
++	int hdrlen;
++
++	/* Same kernel<->userspace interface hack as in rtnl_dump_ifinfo. */
++	hdrlen = nlmsg_len(nlh) < sizeof(struct ifinfomsg) ?
++		 sizeof(struct rtgenmsg) : sizeof(struct ifinfomsg);
+ 
+-	if (nlmsg_parse(nlh, sizeof(struct ifinfomsg), tb, IFLA_MAX,
+-			ifla_policy) >= 0) {
++	if (nlmsg_parse(nlh, hdrlen, tb, IFLA_MAX, ifla_policy) >= 0) {
+ 		if (tb[IFLA_EXT_MASK])
+ 			ext_filter_mask = nla_get_u32(tb[IFLA_EXT_MASK]);
+ 	}
 
 
