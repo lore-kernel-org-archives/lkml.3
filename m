@@ -1,89 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753815AbaFXXaL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 19:30:11 -0400
-Received: from fgwmail.fujitsu.co.jp ([164.71.1.133]:53399 "EHLO
-	fgwmail.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753274AbaFXXaG (ORCPT
+	id S1754138AbaFXXbN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 19:31:13 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:60941 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753210AbaFXXbL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 19:30:06 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <53AA09C0.4090109@jp.fujitsu.com>
-Date: Wed, 25 Jun 2014 08:29:04 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 24 Jun 2014 19:31:11 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53AA0A34.8080300@roeck-us.net>
+Date: Tue, 24 Jun 2014 16:31:00 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: <akpm@linux-foundation.org>, <tglx@linutronix.de>, <mingo@redhat.com>,
-        <hpa@zytor.com>, <tangchen@cn.fujitsu.com>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>, <x86@kernel.org>,
-        <guz.fnst@cn.fujitsu.com>, <zhangyanfei@cn.fujitsu.com>
-Subject: Re: [PATCH 2/2] x86,mem-hotplug: modify PGD entry when removing memory
-References: <53A132E2.9000605@jp.fujitsu.com>		 <53A133ED.2090005@jp.fujitsu.com>	 <1403289003.25108.3.camel@misato.fc.hp.com>	 <53A8C6F6.2060906@jp.fujitsu.com> <1403622753.25108.12.camel@misato.fc.hp.com>
-In-Reply-To: <1403622753.25108.12.camel@misato.fc.hp.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.15 00/61] 3.15.2-stable review
+References: <20140624154952.751713761@linuxfoundation.org>
+In-Reply-To: <20140624154952.751713761@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/06/25 0:12), Toshi Kani wrote:
-> On Tue, 2014-06-24 at 09:31 +0900, Yasuaki Ishimatsu wrote:
->> (2014/06/21 3:30), Toshi Kani wrote:
->>> On Wed, 2014-06-18 at 15:38 +0900, Yasuaki Ishimatsu wrote:
->>>    :
->>>> @@ -186,7 +186,12 @@ void sync_global_pgds(unsigned long start, unsigned long end)
->>>>    		const pgd_t *pgd_ref = pgd_offset_k(address);
->>>>    		struct page *page;
->>>>
->>>> -		if (pgd_none(*pgd_ref))
->>>> +		/*
->>>> +		 * When it is called after memory hot remove, pgd_none()
->>>> +		 * returns true. In this case (removed == 1), we must clear
->>>> +		 * the PGD entries in the local PGD level page.
->>>> +		 */
->>>> +		if (pgd_none(*pgd_ref) && !removed)
->>>>    			continue;
->>>>
->>>>    		spin_lock(&pgd_lock);
->>>> @@ -199,12 +204,18 @@ void sync_global_pgds(unsigned long start, unsigned long end)
->>>>    			pgt_lock = &pgd_page_get_mm(page)->page_table_lock;
->>>>    			spin_lock(pgt_lock);
->>>>
->>>> -			if (pgd_none(*pgd))
->>>> -				set_pgd(pgd, *pgd_ref);
->>>> -			else
->>
->>>> +			if (!pgd_none(*pgd_ref) && !pgd_none(*pgd))
->>>>    				BUG_ON(pgd_page_vaddr(*pgd)
->>>>    				       != pgd_page_vaddr(*pgd_ref));
->>>>
->>>> +			if (removed) {
->>>
->>> Shouldn't this condition be "else if"?
->>
->> The first if sentence checks whether PGDs hit to BUG_ON. And the second
->> if sentence checks whether the function was called after hot-removing memory.
->> I think that the first if sentence and the second if sentence check different
->> things. So I think the condition should be "if" sentence.
+On 06/24/2014 08:50 AM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.15.2 release.
+> There are 61 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
 >
-> When the 1st if sentence is true, you have no additional operation and
-> the 2nd if sentence is redundant. But I agree that the two ifs can be
-> logically separated. So:
+> Responses should be made by Thu Jun 26 15:49:36 UTC 2014.
+> Anything received after that time might be too late.
 >
 
-> Acked-by: Toshi Kani <toshi.kani@hp.com>
+Build results:
+	total: 144 pass: 136 skipped: 5 fail: 3
+Failed builds:
+	powerpc:allmodconfig (binutils 2.23)
+	powerpc:allmodconfig (binutils 2.24)
+	unicore32:defconfig
 
-Thank you for your review.
+Qemu tests all passed.
 
-Thanks,
-Yasuaki Ishimatsu
+Results are as expected. Again, unicore32:defconfig would be an easy fix if so desired.
 
->
-> Thanks,
-> -Toshi
->
+Details are available at http://server.roeck-us.net:8010/builders.
 
+Guenter
 
