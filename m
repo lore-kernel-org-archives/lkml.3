@@ -1,114 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753100AbaFXNBw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 09:01:52 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:53222 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751530AbaFXNBu (ORCPT
+	id S1753012AbaFXNIU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 09:08:20 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:54665 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751206AbaFXNIT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 09:01:50 -0400
-Message-ID: <53A976B7.3070709@ozlabs.ru>
-Date: Tue, 24 Jun 2014 23:01:43 +1000
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 24 Jun 2014 09:08:19 -0400
+Message-ID: <53A9783C.7050206@gmail.com>
+Date: Tue, 24 Jun 2014 21:08:12 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Alexander Graf <agraf@suse.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Alex Williamson <alex.williamson@redhat.com>
-CC: linuxppc-dev@lists.ozlabs.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
-Subject: Re: [PATCH] vfio: Fix endianness handling for emulated BARs
-References: <1403091391-31780-1-git-send-email-aik@ozlabs.ru>	 <1403116512.3707.175.camel@ul30vt.home> <53A233E9.6030006@ozlabs.ru>	 <53A241F6.9010307@ozlabs.ru> <53A25D74.5000804@ozlabs.ru>	 <1403234514.3707.278.camel@ul30vt.home> <1403305961.4587.66.camel@pasglop> <53A94EBD.101@ozlabs.ru> <53A955F5.6050801@suse.de> <53A9741B.1040500@ozlabs.ru> <53A97486.4070604@suse.de>
-In-Reply-To: <53A97486.4070604@suse.de>
-Content-Type: text/plain; charset=KOI8-R
+To: Liqin Chen <liqin.linux@gmail.com>, Lennox Wu <lennox.wu@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        Guenter Roeck <linux@roeck-us.net>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] rch/score/include/uapi/asm/ptrace.h: Add prefix 'SCORE_'
+ for related macros
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24/2014 10:52 PM, Alexander Graf wrote:
-> 
-> On 24.06.14 14:50, Alexey Kardashevskiy wrote:
->> On 06/24/2014 08:41 PM, Alexander Graf wrote:
->>> On 24.06.14 12:11, Alexey Kardashevskiy wrote:
->>>> On 06/21/2014 09:12 AM, Benjamin Herrenschmidt wrote:
->>>>> On Thu, 2014-06-19 at 21:21 -0600, Alex Williamson wrote:
->>>>>
->>>>>> Working on big endian being an accident may be a matter of perspective
->>>>>    :-)
->>>>>
->>>>>> The comment remains that this patch doesn't actually fix anything except
->>>>>> the overhead on big endian systems doing redundant byte swapping and
->>>>>> maybe the philosophy that vfio regions are little endian.
->>>>> Yes, that works by accident because technically VFIO is a transport and
->>>>> thus shouldn't perform any endian swapping of any sort, which remains
->>>>> the responsibility of the end driver which is the only one to know
->>>>> whether a given BAR location is a a register or some streaming data
->>>>> and in the former case whether it's LE or BE (some PCI devices are BE
->>>>> even ! :-)
->>>>>
->>>>> But yes, in the end, it works with the dual "cancelling" swaps and the
->>>>> overhead of those swaps is probably drowned in the noise of the syscall
->>>>> overhead.
->>>>>
->>>>>> I'm still not a fan of iowrite vs iowritebe, there must be something we
->>>>>> can use that doesn't have an implicit swap.
->>>>> Sadly there isn't ... In the old day we didn't even have the "be"
->>>>> variant and readl/writel style accessors still don't have them either
->>>>> for all archs.
->>>>>
->>>>> There is __raw_readl/writel but here the semantics are much more than
->>>>> just "don't swap", they also don't have memory barriers (which means
->>>>> they are essentially useless to most drivers unless those are platform
->>>>> specific drivers which know exactly what they are doing, or in the rare
->>>>> cases such as accessing a framebuffer which we know never have side
->>>>> effects).
->>>>>
->>>>>>    Calling it iowrite*_native is also an abuse of the namespace.
->>>>>>    Next thing we know some common code
->>>>>> will legitimately use that name.
->>>>> I might make sense to those definitions into a common header. There have
->>>>> been a handful of cases in the past that wanted that sort of "native
->>>>> byte order" MMIOs iirc (though don't ask me for examples, I can't really
->>>>> remember).
->>>>>
->>>>>>    If we do need to define an alias
->>>>>> (which I'd like to avoid) it should be something like vfio_iowrite32.
->>>> Ping?
->>>>
->>>> We need to make a decision whether to move those xxx_native() helpers
->>>> somewhere (where?) or leave the patch as is (as we figured out that
->>>> iowriteXX functions implement barriers and we cannot just use raw
->>>> accessors) and fix commit log to explain everything.
->>> Is there actually any difference in generated code with this patch applied
->>> and without? I would hope that iowrite..() is inlined and cancels out the
->>> cpu_to_le..() calls that are also inlined?
->> iowrite32 is a non-inline function so conversions take place so are the
->> others. And sorry but I fail to see why this matters. We are not trying to
->> accelerate things, we are removing redundant operations which confuse
->> people who read the code.
-> 
-> The confusion depends on where you're coming from. If you happen to know
-> that "iowrite32" writes in LE, then the LE conversion makes a lot of sense.
+'COUNTER' and other same kind macros are too common to use, and easy to
+get conflict with other modules. So add prefix for them.
 
-It was like this (and this is just confusing):
+And it is UAPI, so only change it within linux kernel.
 
-iowrite32(le32_to_cpu(val), io + off);
+The related warning (allmodconfig with score):
 
-What would make sense (according to you and I would understand this) is this:
-
-iowrite32(cpu_to_le32(val), io + off);
+    CC [M]  drivers/md/raid1.o
+  In file included from drivers/md/raid1.c:42:0:
+  drivers/md/bitmap.h:93:0: warning: "COUNTER" redefined
+   #define COUNTER(x) (((bitmap_counter_t) x) & COUNTER_MAX)
+   ^
+  In file included from ./arch/score/include/asm/ptrace.h:4:0,
+                   from include/linux/sched.h:31,
+                   from include/linux/blkdev.h:4,
+                   from drivers/md/raid1.c:36:
+  ./arch/score/include/uapi/asm/ptrace.h:13:0: note: this is the location of the previous definition
+   #define COUNTER  38
 
 
-Or I missed your point, did I?
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+---
+ arch/score/include/uapi/asm/ptrace.h | 33 +++++++++++++++++++++++----------
+ 1 file changed, 23 insertions(+), 10 deletions(-)
 
-
-> I don't have a strong feeling either way though and will let Alex decide on
-> the path forward :)
-
-It would probably help if you picked the side :)
-
-
+diff --git a/arch/score/include/uapi/asm/ptrace.h b/arch/score/include/uapi/asm/ptrace.h
+index f59771a..56e2de0 100644
+--- a/arch/score/include/uapi/asm/ptrace.h
++++ b/arch/score/include/uapi/asm/ptrace.h
+@@ -4,16 +4,29 @@
+ #define PTRACE_GETREGS		12
+ #define PTRACE_SETREGS		13
+ 
+-#define PC		32
+-#define CONDITION	33
+-#define ECR		34
+-#define EMA		35
+-#define CEH		36
+-#define CEL		37
+-#define COUNTER		38
+-#define LDCR		39
+-#define STCR		40
+-#define PSR		41
++#if !defined(__KERNEL__) || !defined(__linux__)
++#define PC			32
++#define CONDITION		33
++#define ECR			34
++#define EMA			35
++#define CEH			36
++#define CEL			37
++#define COUNTER			38
++#define LDCR			39
++#define STCR			40
++#define PSR			41
++#else
++#define SCORE_PC		32
++#define SCORE_CONDITION		33
++#define SCORE_ECR		34
++#define SCORE_EMA		35
++#define SCORE_CEH		36
++#define SCORE_CEL		37
++#define SCORE_COUNTER		38
++#define SCORE_LDCR		39
++#define SCORE_STCR		40
++#define SCORE_PSR		41
++#endif
+ 
+ #define SINGLESTEP16_INSN	0x7006
+ #define SINGLESTEP32_INSN	0x840C8000
 -- 
-Alexey
+1.9.2.459.g68773ac
