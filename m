@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755451AbaFXUcL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:32:11 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47747 "EHLO
+	id S1755483AbaFXUcS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:32:18 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47753 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753982AbaFXUcH (ORCPT
+	with ESMTP id S1753994AbaFXUcL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:32:07 -0400
+	Tue, 24 Jun 2014 16:32:11 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
+Cc: Peter Zijlstra <peterz@infradead.org>, Dario Faggioli <raistlin@linux.it>,
+        linux-man <linux-man@vger.kernel.org>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Juri Lelli <juri.lelli@gmail.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 40/65] mm/memory-failure.c: fix memory leak by race between poison and unpoison
-Date: Tue, 24 Jun 2014 13:30:00 -0700
-Message-Id: <1403641825-12825-41-git-send-email-kamal@canonical.com>
+        Ingo Molnar <mingo@kernel.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 46/65] sched/deadline: Change sched_getparam() behaviour vs SCHED_DEADLINE
+Date: Tue, 24 Jun 2014 13:30:06 -0700
+Message-Id: <1403641825-12825-47-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
 References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
@@ -30,44 +31,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit 3e030ecc0fc7de10fd0da10c1c19939872a31717 upstream.
+commit ce5f7f8200ca2504f6f290044393d73ca314965a upstream.
 
-When a memory error happens on an in-use page or (free and in-use)
-hugepage, the victim page is isolated with its refcount set to one.
+The way we read POSIX one should only call sched_getparam() when
+sched_getscheduler() returns either SCHED_FIFO or SCHED_RR.
 
-When you try to unpoison it later, unpoison_memory() calls put_page()
-for it twice in order to bring the page back to free page pool (buddy or
-free hugepage list).  However, if another memory error occurs on the
-page which we are unpoisoning, memory_failure() returns without
-releasing the refcount which was incremented in the same call at first,
-which results in memory leak and unconsistent num_poisoned_pages
-statistics.  This patch fixes it.
+Given that we currently return sched_param::sched_priority=0 for all
+others, extend the same behaviour to SCHED_DEADLINE.
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ kamal: backport to 3.8-stable: no renamed mce_bad_pages ]
+Requested-by: Michael Kerrisk <mtk.manpages@gmail.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Acked-by: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: Dario Faggioli <raistlin@linux.it>
+Cc: linux-man <linux-man@vger.kernel.org>
+Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Cc: Juri Lelli <juri.lelli@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/20140512205034.GH13467@laptop.programming.kicks-ass.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+[ kamal: backport to 3.8-stable: context ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/memory-failure.c | 2 ++
- 1 file changed, 2 insertions(+)
+ kernel/sched/core.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index 12b57b7..d3ed748 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -1124,6 +1124,8 @@ int memory_failure(unsigned long pfn, int trapno, int flags)
- 	 */
- 	if (!PageHWPoison(p)) {
- 		printk(KERN_ERR "MCE %#lx: just unpoisoned\n", pfn);
-+		atomic_long_sub(nr_pages, &mce_bad_pages);
-+		put_page(hpage);
- 		res = 0;
- 		goto out;
- 	}
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 5e2f7c3..8188769 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4039,7 +4039,7 @@ SYSCALL_DEFINE1(sched_getscheduler, pid_t, pid)
+  */
+ SYSCALL_DEFINE2(sched_getparam, pid_t, pid, struct sched_param __user *, param)
+ {
+-	struct sched_param lp;
++	struct sched_param lp = { .sched_priority = 0 };
+ 	struct task_struct *p;
+ 	int retval;
+ 
+@@ -4056,7 +4056,8 @@ SYSCALL_DEFINE2(sched_getparam, pid_t, pid, struct sched_param __user *, param)
+ 	if (retval)
+ 		goto out_unlock;
+ 
+-	lp.sched_priority = p->rt_priority;
++	if (task_has_rt_policy(p))
++		lp.sched_priority = p->rt_priority;
+ 	rcu_read_unlock();
+ 
+ 	/*
 -- 
 1.9.1
 
