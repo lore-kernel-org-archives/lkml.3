@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964924AbaFXQ2E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:28:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32964 "EHLO
+	id S964951AbaFXQ21 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:28:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32961 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932271AbaFXPyH (ORCPT
+	with ESMTP id S1755799AbaFXPyG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:54:07 -0400
+	Tue, 24 Jun 2014 11:54:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yuchung Cheng <ycheng@google.com>,
-        Neal Cardwell <ncardwell@google.com>,
+        Michal Schmidt <mschmidt@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 20/68] tcp: fix cwnd undo on DSACK in F-RTO
-Date: Tue, 24 Jun 2014 11:50:39 -0400
-Message-Id: <20140624154724.819101418@linuxfoundation.org>
+Subject: [PATCH 3.14 31/68] rtnetlink: fix userspace API breakage for iproute2 < v3.9.0
+Date: Tue, 24 Jun 2014 11:50:50 -0400
+Message-Id: <20140624154725.321797194@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154723.907894814@linuxfoundation.org>
 References: <20140624154723.907894814@linuxfoundation.org>
@@ -30,50 +29,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yuchung Cheng <ycheng@google.com>
+From: Michal Schmidt <mschmidt@redhat.com>
 
-[ Upstream commit 0cfa5c07d6d1d7f8e710fc671c5ba1ce85e09fa4 ]
+[ Upstream commit e5eca6d41f53db48edd8cf88a3f59d2c30227f8e ]
 
-This bug is discovered by an recent F-RTO issue on tcpm list
-https://www.ietf.org/mail-archive/web/tcpm/current/msg08794.html
+When running RHEL6 userspace on a current upstream kernel, "ip link"
+fails to show VF information.
 
-The bug is that currently F-RTO does not use DSACK to undo cwnd in
-certain cases: upon receiving an ACK after the RTO retransmission in
-F-RTO, and the ACK has DSACK indicating the retransmission is spurious,
-the sender only calls tcp_try_undo_loss() if some never retransmisted
-data is sacked (FLAG_ORIG_DATA_SACKED).
+The reason is a kernel<->userspace API change introduced by commit
+88c5b5ce5cb57 ("rtnetlink: Call nlmsg_parse() with correct header length"),
+after which the kernel does not see iproute2's IFLA_EXT_MASK attribute
+in the netlink request.
 
-The correct behavior is to unconditionally call tcp_try_undo_loss so
-the DSACK information is used properly to undo the cwnd reduction.
+iproute2 adjusted for the API change in its commit 63338dca4513
+("libnetlink: Use ifinfomsg instead of rtgenmsg in rtnl_wilddump_req_filter").
 
-Signed-off-by: Yuchung Cheng <ycheng@google.com>
-Signed-off-by: Neal Cardwell <ncardwell@google.com>
+The problem has been noticed before:
+http://marc.info/?l=linux-netdev&m=136692296022182&w=2
+(Subject: Re: getting VF link info seems to be broken in 3.9-rc8)
+
+We can do better than tell those with old userspace to upgrade. We can
+recognize the old iproute2 in the kernel by checking the netlink message
+length. Even when including the IFLA_EXT_MASK attribute, its netlink
+message is shorter than struct ifinfomsg.
+
+With this patch "ip link" shows VF information in both old and new
+iproute2 versions.
+
+Signed-off-by: Michal Schmidt <mschmidt@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_input.c |   11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+ net/core/rtnetlink.c |   22 ++++++++++++++++++----
+ 1 file changed, 18 insertions(+), 4 deletions(-)
 
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -2683,13 +2683,12 @@ static void tcp_process_loss(struct sock
- 	bool recovered = !before(tp->snd_una, tp->high_seq);
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -1166,6 +1166,7 @@ static int rtnl_dump_ifinfo(struct sk_bu
+ 	struct nlattr *tb[IFLA_MAX+1];
+ 	u32 ext_filter_mask = 0;
+ 	int err;
++	int hdrlen;
  
- 	if (tp->frto) { /* F-RTO RFC5682 sec 3.1 (sack enhanced version). */
--		if (flag & FLAG_ORIG_SACK_ACKED) {
--			/* Step 3.b. A timeout is spurious if not all data are
--			 * lost, i.e., never-retransmitted data are (s)acked.
--			 */
--			tcp_try_undo_loss(sk, true);
-+		/* Step 3.b. A timeout is spurious if not all data are
-+		 * lost, i.e., never-retransmitted data are (s)acked.
-+		 */
-+		if (tcp_try_undo_loss(sk, flag & FLAG_ORIG_SACK_ACKED))
- 			return;
--		}
+ 	s_h = cb->args[0];
+ 	s_idx = cb->args[1];
+@@ -1173,8 +1174,17 @@ static int rtnl_dump_ifinfo(struct sk_bu
+ 	rcu_read_lock();
+ 	cb->seq = net->dev_base_seq;
+ 
+-	if (nlmsg_parse(cb->nlh, sizeof(struct ifinfomsg), tb, IFLA_MAX,
+-			ifla_policy) >= 0) {
++	/* A hack to preserve kernel<->userspace interface.
++	 * The correct header is ifinfomsg. It is consistent with rtnl_getlink.
++	 * However, before Linux v3.9 the code here assumed rtgenmsg and that's
++	 * what iproute2 < v3.9.0 used.
++	 * We can detect the old iproute2. Even including the IFLA_EXT_MASK
++	 * attribute, its netlink message is shorter than struct ifinfomsg.
++	 */
++	hdrlen = nlmsg_len(cb->nlh) < sizeof(struct ifinfomsg) ?
++		 sizeof(struct rtgenmsg) : sizeof(struct ifinfomsg);
 +
- 		if (after(tp->snd_nxt, tp->high_seq) &&
- 		    (flag & FLAG_DATA_SACKED || is_dupack)) {
- 			tp->frto = 0; /* Loss was real: 2nd part of step 3.a */
++	if (nlmsg_parse(cb->nlh, hdrlen, tb, IFLA_MAX, ifla_policy) >= 0) {
+ 
+ 		if (tb[IFLA_EXT_MASK])
+ 			ext_filter_mask = nla_get_u32(tb[IFLA_EXT_MASK]);
+@@ -2085,9 +2095,13 @@ static u16 rtnl_calcit(struct sk_buff *s
+ 	struct nlattr *tb[IFLA_MAX+1];
+ 	u32 ext_filter_mask = 0;
+ 	u16 min_ifinfo_dump_size = 0;
++	int hdrlen;
++
++	/* Same kernel<->userspace interface hack as in rtnl_dump_ifinfo. */
++	hdrlen = nlmsg_len(nlh) < sizeof(struct ifinfomsg) ?
++		 sizeof(struct rtgenmsg) : sizeof(struct ifinfomsg);
+ 
+-	if (nlmsg_parse(nlh, sizeof(struct ifinfomsg), tb, IFLA_MAX,
+-			ifla_policy) >= 0) {
++	if (nlmsg_parse(nlh, hdrlen, tb, IFLA_MAX, ifla_policy) >= 0) {
+ 		if (tb[IFLA_EXT_MASK])
+ 			ext_filter_mask = nla_get_u32(tb[IFLA_EXT_MASK]);
+ 	}
 
 
