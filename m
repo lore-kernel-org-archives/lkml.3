@@ -1,51 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753589AbaFXKnq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 06:43:46 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:50655 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752217AbaFXKno (ORCPT
+	id S1753493AbaFXKrW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 06:47:22 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53944 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751407AbaFXKrT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 06:43:44 -0400
-From: Punit Agrawal <punit.agrawal@arm.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Eduardo Valentin <edubezval@gmail.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>
-Subject: Re: [PATCH] thermal: Bind cooling devices with the correct arguments
-References: <1401789598-14967-1-git-send-email-punit.agrawal@arm.com>
-	<9hh61jzsuq1.fsf@arm.com> <53A2100C.6080701@codeaurora.org>
-Date: Tue, 24 Jun 2014 11:43:35 +0100
-In-Reply-To: <53A2100C.6080701@codeaurora.org> (Stephen Boyd's message of
-	"Wed, 18 Jun 2014 15:17:48 -0700")
-Message-ID: <9hhegyevb8o.fsf@arm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Tue, 24 Jun 2014 06:47:19 -0400
+Date: Tue, 24 Jun 2014 11:47:14 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Heiko =?utf-8?Q?St=C3=BCbner?= <heiko@sntech.de>
+Cc: addy ke <addy.ke@rock-chips.com>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "huangtao@rock-chips.com" <huangtao@rock-chips.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "yzq@rock-chips.com" <yzq@rock-chips.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
+        "kever.yang@rock-chips.com" <kever.yang@rock-chips.com>,
+        "zyw@rock-chips.com" <zyw@rock-chips.com>,
+        "xjq@rock-chips.com" <xjq@rock-chips.com>,
+        "zhenfu.fang@rock-chips.com" <zhenfu.fang@rock-chips.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "cf@rock-chips.com" <cf@rock-chips.com>,
+        "hj@rock-chips.com" <hj@rock-chips.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/2] documentation: add rockchip spi documentation
+Message-ID: <20140624104714.GF5856@leverpostej>
+References: <1403582324-9485-1-git-send-email-addy.ke@rock-chips.com>
+ <1403582324-9485-2-git-send-email-addy.ke@rock-chips.com>
+ <20140624101802.GE5856@leverpostej>
+ <2324491.URDIcWcjph@diego>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <2324491.URDIcWcjph@diego>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Boyd <sboyd@codeaurora.org> writes:
+On Tue, Jun 24, 2014 at 11:32:21AM +0100, Heiko Stübner wrote:
+> Am Dienstag, 24. Juni 2014, 11:18:02 schrieb Mark Rutland:
+> > On Tue, Jun 24, 2014 at 04:58:43AM +0100, addy ke wrote:
+> > > Signed-off-by: addy ke <addy.ke@rock-chips.com>
+> > > ---
+> > > 
+> > >  .../devicetree/bindings/spi/spi-rockchip.txt       | 51
+> > >  ++++++++++++++++++++++ 1 file changed, 51 insertions(+)
+> > >  create mode 100644 Documentation/devicetree/bindings/spi/spi-rockchip.txt
+> > > 
+> > > diff --git a/Documentation/devicetree/bindings/spi/spi-rockchip.txt
+> > > b/Documentation/devicetree/bindings/spi/spi-rockchip.txt new file mode
+> > > 100644
+> > > index 0000000..ce9c881
+> > > --- /dev/null
+> > > +++ b/Documentation/devicetree/bindings/spi/spi-rockchip.txt
+> > > @@ -0,0 +1,51 @@
+> > > +* Rockchip SPI Controller
+> > > +
+> > > +The Rockchip SPI controller is used to interface with various devices
+> > > such as flash +and display controllers using the SPI communication
+> > > interface.
+> > > +
+> > > +Required SoC Specific Properties:
+> > > +
+> > > +- compatible: should be one of the following.
+> > > +    - rockchip,rk3066-spi: for rk3066, rk3188 and rk3288 platforms.
+> > 
+> > Are you sure you don't want specifc strings for rk3188 and rk3288 (in
+> > addtion to the common "rockchip,rk3066-spi")?
+> 
+> Wasn't the convention that "later" platforms that are compatible to an earlier 
+> one, reuse this compatible string instead of introducing a new one?
 
-> On 06/17/14 03:20, Punit Agrawal wrote:
->> Ping?
->>
->> Punit Agrawal <punit.agrawal@arm.com> writes:
->>
->>> When binding cooling devices to thermal zones created from the device
->>> tree the minimum and maximum cooling states are in the wrong order
->>> leading to failure to bind.
->>>
->>> Fix the order of cooling states in the call to
->>> thermal_zone_bind_cooling_device to fix this.
->>>
->>> Cc:Zhang Rui <rui.zhang@intel.com>
->>> Signed-off-by: Punit Agrawal <punit.agrawal@arm.com>
->
-> Ah I ran into the same problem while testing out some thermal DT stuff.
->
-> Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+That's why I said in addition to the common one. I'd only expect the
+driver to look for "rockchip,rk3066-spi", but a DTB could have:
 
-Thanks Stephen!
+	compatible = "rockchip,rk3188-spi", "rockchip,rk3066-spi";
 
-Rui, can you pick this patch?
+Seeding the DTBs with the extra strings early makes it more likely that
+we can rely on them later. If we don't happen to need them they only
+clutter some DTBs.
+
+> From what I've heard so far, the specific spi controller got introduced with 
+> the rk3066 [earlier SoCs used a different implementation] and didn't change for 
+> rk3188 and rk3288. Addy may be able to verify this.
+> 
+> 
+> > > +- reg: physical base address of the controller and length of memory
+> > > mapped
+> > > +       region.
+> > > +- interrupts: The interrupt number to the cpu. The interrupt specifier
+> > > format +              depends on the interrupt controller.
+> > > +- clocks: Must contain an entry for each entry in clock-names.
+> > > +- clock-names: Shall be "spiclk" for the transfer-clock, and "apb_pclk"
+> > > for +			   the peripheral clock.
+> > > +
+> > > +Optional properties:
+> > > +- dmas: DMA specifiers for tx and rx dma. See the DMA client binding,
+> > > +		Documentation/devicetree/bindings/dma/dma.txt
+> > > +- dma-names: DMA request names should include "tx" and "rx" if present.
+> > > +
+> > > +Example:
+> > > +
+> > > +- SoC Specific Portion:
+> > > +
+> > > +	spi0: spi@ff110000 {
+> > > +		compatible = "rockchip,rockchip-spi";
+> > 
+> > This does not match the description of the compatible property.
+> > 
+> > > +		reg = <0xff110000 0x1000>;
+> > > +		dmas = <&pdma1 11>, <&pdma1 12>;
+> > > +		dma-names = "tx", "rx";
+> > > +		#address-cells = <1>;
+> > > +		#size-cells = <0>;
+> > 
+> > These weren't mentioned.
+> > 
+> > > +		interrupts = <GIC_SPI 44 IRQ_TYPE_LEVEL_HIGH>;
+> > > +		pinctrl-names = "default";
+> > > +		pinctrl-0 = <&spi0_clk &spi0_tx &spi0_rx &spi0_cs0 &spi0_cs1>;
+> > 
+> > pinctrl was not mentioned.
+> > 
+> > > +		clocks = <&cru SCLK_SPI0>, <&cru PCLK_SPI0>;
+> > > +		clock-names = "spiclk", "apb_pclk";
+> > > +		status = "disabled";
+> > 
+> > Any reason for the status?
+> 
+> I guess to have the spi controller only be enabled when a board is using it as 
+> below. But it may be an implementation detail which could be omitted from the 
+> binding doc.
+
+Yes please :)
+
+> 
+> > 
+> > > +	};
+> > > +
+> > > +- Board Specific Portion:
+> > > +
+> > > +	&spi0 {
+> > > +		status = "okay";
+> > > +		spi_test@00 {
+> > > +			compatible = "rockchip,spi_test";
+> > 
+> > Huh?
+> 
+> SPI declares it's devices similar to i2c, so while the example might profit 
+> from a more casual device, I'm not exactly sure what is the problem here.
+
+Sure. Given that this is a known pattern for SPI controllers, do we need
+this in each binding doc?
+
+Mark.
