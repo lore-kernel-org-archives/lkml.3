@@ -1,54 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752865AbaFXMez (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 08:34:55 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:48671 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751774AbaFXMex (ORCPT
+	id S1753186AbaFXMfJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 08:35:09 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:65409 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752949AbaFXMfG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 08:34:53 -0400
-Date: Tue, 24 Jun 2014 13:33:08 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Dave Chinner <david@fromorbit.com>, Jens Axboe <axboe@fb.com>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: [regression] fix 32-bit breakage in block device read(2) (was
- Re: 32-bit bug in iovec iterator changes)
-Message-ID: <20140624133308.623d256d@alan.etchedpixels.co.uk>
-In-Reply-To: <20140623154302.GC14887@thunk.org>
-References: <20140621055306.GP18016@ZenIV.linux.org.uk>
-	<20140621230922.GA13188@thunk.org>
-	<20140621234913.GQ18016@ZenIV.linux.org.uk>
-	<1403395400.2592.4.camel@jarvis.lan>
-	<20140622002618.GR18016@ZenIV.linux.org.uk>
-	<1403397164.2177.40.camel@dabdike.int.hansenpartnership.com>
-	<20140622005352.GS18016@ZenIV.linux.org.uk>
-	<20140622010032.GT18016@ZenIV.linux.org.uk>
-	<20140622115007.GA5333@thunk.org>
-	<20140623074440.GV18016@ZenIV.linux.org.uk>
-	<20140623154302.GC14887@thunk.org>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Tue, 24 Jun 2014 08:35:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1403612280.29711.115.camel@marge.simpson.net>
+References: <0dfbe2976aa108c53e08d3477ea90f6360c1f54c.1403584026.git.viresh.kumar@linaro.org>
+	<20140624080347.GL13930@laptop.programming.kicks-ass.net>
+	<1403612280.29711.115.camel@marge.simpson.net>
+Date: Tue, 24 Jun 2014 18:05:04 +0530
+Message-ID: <CAKohponybcMZ36EM+FQTNU3_WVHoKC+PWDpnd_4qKSzqrPb2=g@mail.gmail.com>
+Subject: Re: [PATCH] sched/idle: Drop !! while calculating 'broadcast'
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Jun 2014 11:43:02 -0400
-"Theodore Ts'o" <tytso@mit.edu> wrote:
+On 24 June 2014 17:48, Mike Galbraith <umgwanakikbuti@gmail.com> wrote:
+> x86_64 gcc-4.8.3 made 1 less instruction, a shift.
 
-> On Mon, Jun 23, 2014 at 08:44:40AM +0100, Al Viro wrote:
-> > 
-> > OK, here it is, hopefully with sufficient comments:
-> 
-> The comments look really good.  I assume you'll get this to
-> Linus in time for 3.16-rc3?
+I thought about doing this test for x86 as well, and over-estimated
+compilers intelligence. I must have done it :)
 
-Fixes the 32GB 'can't partition' bug I reported too.
-
-Alan
+And finally this patch is worth more than I originally estimated :)
