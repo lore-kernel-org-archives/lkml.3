@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752535AbaFXHsm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 03:48:42 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:52476 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751257AbaFXHsl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 03:48:41 -0400
-Message-ID: <53A92D49.9060306@ti.com>
-Date: Tue, 24 Jun 2014 10:48:25 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752589AbaFXHtF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 03:49:05 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:44980 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752555AbaFXHtD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 03:49:03 -0400
+Date: Tue, 24 Jun 2014 11:48:53 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+CC: <akpm@linux-foundation.org>, <cl@linux.com>, <rientjes@google.com>,
+        <penberg@kernel.org>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
+Subject: Re: [PATCH -mm v3 8/8] slab: do not keep free objects/slabs on dead
+ memcg caches
+Message-ID: <20140624074853.GB18121@esperanza>
+References: <cover.1402602126.git.vdavydov@parallels.com>
+ <a985aec824cd35df381692fca83f7a8debc80305.1402602126.git.vdavydov@parallels.com>
+ <20140624073840.GC4836@js1304-P5Q-DELUXE>
 MIME-Version: 1.0
-To: Fabian Frederick <fabf@skynet.be>, <linux-kernel@vger.kernel.org>
-CC: Jarkko Nikula <jarkko.nikula@bitmer.com>, <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH 1/1] sound/soc/omap/mcbsp.c: remove unnecessary null test
- before kfree
-References: <1403541221-10619-1-git-send-email-fabf@skynet.be>
-In-Reply-To: <1403541221-10619-1-git-send-email-fabf@skynet.be>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140624073840.GC4836@js1304-P5Q-DELUXE>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Fabian,
-
-On 06/23/2014 07:33 PM, Fabian Frederick wrote:
-> Fix checkpatch warning:
-> WARNING: kfree(NULL) is safe this check is probably not required
-
-can you send the same patch to alsa-devel with subject:
-ASoC: mcbsp:  remove unnecessary null test before kfree
-
-You can add my:
-Acked-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-
+On Tue, Jun 24, 2014 at 04:38:41PM +0900, Joonsoo Kim wrote:
+> On Fri, Jun 13, 2014 at 12:38:22AM +0400, Vladimir Davydov wrote:
+> > @@ -3462,6 +3474,17 @@ static inline void __cache_free(struct kmem_cache *cachep, void *objp,
+> >  
+> >  	kmemcheck_slab_free(cachep, objp, cachep->object_size);
+> >  
+> > +#ifdef CONFIG_MEMCG_KMEM
+> > +	if (unlikely(!ac)) {
+> > +		int nodeid = page_to_nid(virt_to_page(objp));
+> > +
+> > +		spin_lock(&cachep->node[nodeid]->list_lock);
+> > +		free_block(cachep, &objp, 1, nodeid);
+> > +		spin_unlock(&cachep->node[nodeid]->list_lock);
+> > +		return;
+> > +	}
+> > +#endif
+> > +
 > 
-> Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> Cc: Jarkko Nikula <jarkko.nikula@bitmer.com>
-> Cc: linux-omap@vger.kernel.org
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
-> ---
->  sound/soc/omap/mcbsp.c | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/sound/soc/omap/mcbsp.c b/sound/soc/omap/mcbsp.c
-> index 86c7538..68a1252 100644
-> --- a/sound/soc/omap/mcbsp.c
-> +++ b/sound/soc/omap/mcbsp.c
-> @@ -621,8 +621,7 @@ void omap_mcbsp_free(struct omap_mcbsp *mcbsp)
->  	mcbsp->reg_cache = NULL;
->  	spin_unlock(&mcbsp->lock);
->  
-> -	if (reg_cache)
-> -		kfree(reg_cache);
-> +	kfree(reg_cache);
->  }
->  
->  /*
-> 
+> And, please document intention of this code. :)
 
+Sure.
 
--- 
-Péter
+> And, you said that this way of implementation would be slow because
+> there could be many object in dead caches and this implementation
+> needs node spin_lock on each object freeing. Is it no problem now?
+
+It may be :(
+
+> If you have any performance data about this implementation and
+> alternative one, could you share it?
+
+I haven't (shame on me!). I'll do some testing today and send you the
+results.
+
+Thanks.
