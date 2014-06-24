@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755276AbaFXUbm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:31:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47710 "EHLO
+	id S1755356AbaFXUby (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:31:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47730 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752864AbaFXUbj (ORCPT
+	with ESMTP id S1752864AbaFXUbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:31:39 -0400
+	Tue, 24 Jun 2014 16:31:52 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+Cc: Ben Hutchings <ben@decadent.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 42/65] Input: synaptics - add min/max quirk for the ThinkPad W540
-Date: Tue, 24 Jun 2014 13:30:02 -0700
-Message-Id: <1403641825-12825-43-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 51/65] Staging: speakup: Move pasting into a work item
+Date: Tue, 24 Jun 2014 13:30:11 -0700
+Message-Id: <1403641825-12825-52-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
 References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
@@ -28,39 +28,129 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 0b5fe736fe923f1f5e05413878d5990e92ffbdf5 upstream.
+commit d7500135802ca55b3f4e01a16544e8b34082f8c3 upstream.
 
-https://bugzilla.redhat.com/show_bug.cgi?id=1096436
+Input is handled in softirq context, but when pasting we may
+need to sleep.  speakup_paste_selection() currently tries to
+bodge this by busy-waiting if in_atomic(), but that doesn't
+help because the ldisc may also sleep.
 
-Tested-and-reported-by: ajayr@bigfoot.com
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+For bonus breakage, speakup_paste_selection() changes the
+state of current, even though it's not running in process
+context.
+
+Move it into a work item and make sure to cancel it on exit.
+
+References: https://bugs.debian.org/735202
+References: https://bugs.debian.org/744015
+Reported-by: Paul Gevers <elbrus@debian.org>
+Reported-and-tested-by: Jarek Czekalski <jarekczek@poczta.onet.pl>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/input/mouse/synaptics.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/staging/speakup/main.c      |  1 +
+ drivers/staging/speakup/selection.c | 38 +++++++++++++++++++++++++++++++------
+ drivers/staging/speakup/speakup.h   |  1 +
+ 3 files changed, 34 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-index cee28f8..fd569be 100644
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -1537,6 +1537,14 @@ static const struct dmi_system_id min_max_dmi_table[] __initconst = {
- 		.driver_data = (int []){1024, 5112, 2024, 4832},
- 	},
- 	{
-+		/* Lenovo ThinkPad W540 */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-+			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad W540"),
-+		},
-+		.driver_data = (int []){1024, 5112, 2024, 4832},
-+	},
-+	{
- 		/* Lenovo Yoga S1 */
- 		.matches = {
- 			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+diff --git a/drivers/staging/speakup/main.c b/drivers/staging/speakup/main.c
+index 463d125..192218a 100644
+--- a/drivers/staging/speakup/main.c
++++ b/drivers/staging/speakup/main.c
+@@ -2219,6 +2219,7 @@ static void __exit speakup_exit(void)
+ 	unregister_keyboard_notifier(&keyboard_notifier_block);
+ 	unregister_vt_notifier(&vt_notifier_block);
+ 	speakup_unregister_devsynth();
++	speakup_cancel_paste();
+ 	del_timer(&cursor_timer);
+ 	kthread_stop(speakup_task);
+ 	speakup_task = NULL;
+diff --git a/drivers/staging/speakup/selection.c b/drivers/staging/speakup/selection.c
+index d6558fa..a29fbdd 100644
+--- a/drivers/staging/speakup/selection.c
++++ b/drivers/staging/speakup/selection.c
+@@ -3,6 +3,8 @@
+ #include <linux/interrupt.h>
+ #include <linux/sched.h>
+ #include <linux/selection.h>
++#include <linux/workqueue.h>
++#include <asm/cmpxchg.h>
+ 
+ #include "speakup.h"
+ 
+@@ -121,20 +123,24 @@ int speakup_set_selection(struct tty_struct *tty)
+ 	return 0;
+ }
+ 
+-/* TODO: move to some helper thread, probably.  That'd fix having to check for
+- * in_atomic().  */
+-int speakup_paste_selection(struct tty_struct *tty)
++struct speakup_paste_work {
++	struct work_struct work;
++	struct tty_struct *tty;
++};
++
++static void __speakup_paste_selection(struct work_struct *work)
+ {
++	struct speakup_paste_work *spw =
++		container_of(work, struct speakup_paste_work, work);
++	struct tty_struct *tty = xchg(&spw->tty, NULL);
+ 	struct vc_data *vc = (struct vc_data *) tty->driver_data;
+ 	int pasted = 0, count;
+ 	DECLARE_WAITQUEUE(wait, current);
++
+ 	add_wait_queue(&vc->paste_wait, &wait);
+ 	while (sel_buffer && sel_buffer_lth > pasted) {
+ 		set_current_state(TASK_INTERRUPTIBLE);
+ 		if (test_bit(TTY_THROTTLED, &tty->flags)) {
+-			if (in_atomic())
+-				/* if we are in an interrupt handler, abort */
+-				break;
+ 			schedule();
+ 			continue;
+ 		}
+@@ -146,6 +152,26 @@ int speakup_paste_selection(struct tty_struct *tty)
+ 	}
+ 	remove_wait_queue(&vc->paste_wait, &wait);
+ 	current->state = TASK_RUNNING;
++	tty_kref_put(tty);
++}
++
++static struct speakup_paste_work speakup_paste_work = {
++	.work = __WORK_INITIALIZER(speakup_paste_work.work,
++				   __speakup_paste_selection)
++};
++
++int speakup_paste_selection(struct tty_struct *tty)
++{
++	if (cmpxchg(&speakup_paste_work.tty, NULL, tty) != NULL)
++		return -EBUSY;
++
++	tty_kref_get(tty);
++	schedule_work_on(WORK_CPU_UNBOUND, &speakup_paste_work.work);
+ 	return 0;
+ }
+ 
++void speakup_cancel_paste(void)
++{
++	cancel_work_sync(&speakup_paste_work.work);
++	tty_kref_put(speakup_paste_work.tty);
++}
+diff --git a/drivers/staging/speakup/speakup.h b/drivers/staging/speakup/speakup.h
+index 22f0fbb..cfbd88c 100644
+--- a/drivers/staging/speakup/speakup.h
++++ b/drivers/staging/speakup/speakup.h
+@@ -84,6 +84,7 @@ extern void synth_buffer_clear(void);
+ extern void speakup_clear_selection(void);
+ extern int speakup_set_selection(struct tty_struct *tty);
+ extern int speakup_paste_selection(struct tty_struct *tty);
++extern void speakup_cancel_paste(void);
+ extern void speakup_register_devsynth(void);
+ extern void speakup_unregister_devsynth(void);
+ extern void synth_write(const char *buf, size_t count);
 -- 
 1.9.1
 
