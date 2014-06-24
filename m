@@ -1,67 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754767AbaFXRei (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 13:34:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3240 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754598AbaFXReg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 13:34:36 -0400
-Date: Tue, 24 Jun 2014 12:58:21 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 04/13] mm, compaction: move pageblock checks up from
- isolate_migratepages_range()
-Message-ID: <20140624165821.GC18289@nhori.bos.redhat.com>
-References: <1403279383-5862-1-git-send-email-vbabka@suse.cz>
- <1403279383-5862-5-git-send-email-vbabka@suse.cz>
- <20140624045252.GA18289@nhori.bos.redhat.com>
- <53A99A88.1040500@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53A99A88.1040500@suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754841AbaFXRg3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 13:36:29 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:55151 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751370AbaFXRg2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 13:36:28 -0400
+From: =?windows-1252?Q?Lu=EDs_Tani=E7a?= <matallui@gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
+Subject: [PERF_EVENT 3.11] Group Multiplexing not Working Properly
+Date: Tue, 24 Jun 2014 18:36:20 +0100
+Message-Id: <DDD31947-22E6-44DB-9969-D73D35BB9659@gmail.com>
+Cc: peterz@infradead.org, eranian@google.com
+To: linux-kernel@vger.kernel.org
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
+X-Mailer: Apple Mail (2.1878.2)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 24, 2014 at 05:34:32PM +0200, Vlastimil Babka wrote:
-> On 06/24/2014 06:52 AM, Naoya Horiguchi wrote:
-> >>-	low_pfn = isolate_migratepages_range(zone, cc, low_pfn, end_pfn, false);
-> >>-	if (!low_pfn || cc->contended)
-> >>-		return ISOLATE_ABORT;
-> >>+		/* Do not scan within a memory hole */
-> >>+		if (!pfn_valid(low_pfn))
-> >>+			continue;
-> >>+
-> >>+		page = pfn_to_page(low_pfn);
-> >
-> >Can we move (page_zone != zone) check here as isolate_freepages() does?
-> 
-> Duplicate perhaps, not sure about move.
+Hi,
 
-Sorry for my unclearness.
-I meant that we had better do this check in per-pageblock loop (as the free
-scanner does) instead of in per-pfn loop (as we do now.)
+I am trying to configure 8 events in a machine which supports only 4 (so, using multiplexing). I tried different approaches:
 
-> Does CMA make sure that all pages
-> are in the same zone?
+	1) Configure 8 events independently (works as expected)
+	2) Configure 2 event-sets of 4 events each in counting mode (works as expected)
+	3) Configure 2 event-sets of 4 events each in sampling mode (not working right)
 
-It seems not, CMA just specifies start pfn and end pfn, so it can cover
-multiple zones.
-And we also have a case of node overlapping as commented in commit dc9086004
-"mm: compaction: check for overlapping nodes during isolation for migration".
-So we need this check in compaction side.
+In case 3) I also tried different approaches:
 
-Thanks,
-Naoya Horiguchi
+	3.a) 1 ring-buffer for each event-set and a callback for the POLL signal
+		- only the first ring-buffer was detecting samples
+		- the second ring-buffer was empty
 
-> Common sense tells me it would be useless otherwise,
-> but I haven't checked if we can rely on it.
+	3.b) 1 ring-buffer shared between event-sets (using PERF_EVENT_IOC_SET_OUTPUT)
+		- both event-sets were writing to the ring-buffer
+		- 1st event-set only writes 2 samples while 2nd event-set writes like 20+ samples
+		- samples from 1st event-set report time_enabled=time_running while samples from 2nd don’t
+
+Moreover, in both cases the wakeup_events parameter is not working.
+I believe there must be some programming bugs in perf_event while profiling in sampling mode with multiple event-sets (groups).
+
+Regards,
+matallui
+
+
