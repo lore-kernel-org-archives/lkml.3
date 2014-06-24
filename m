@@ -1,59 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754600AbaFXPs4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:48:56 -0400
-Received: from smtprelay0099.hostedemail.com ([216.40.44.99]:45750 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751582AbaFXPsm (ORCPT
+	id S1754307AbaFXPvF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:51:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60708 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752574AbaFXPvD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:48:42 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2693:2828:3138:3139:3140:3141:3142:3352:3622:3868:3871:4321:5007:7652:7875:10004:10400:10848:11026:11232:11658:11914:12043:12296:12517:12519:12740:13069:13161:13229:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: grass47_85d685a7bac2a
-X-Filterd-Recvd-Size: 1675
-Message-ID: <1403624918.29061.16.camel@joe-AO725>
-Subject: Re: [PATCH 1/1] ar7: replace mac address parsing
-From: Joe Perches <joe@perches.com>
-To: Daniel Walter <dwalter@google.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 24 Jun 2014 08:48:38 -0700
-In-Reply-To: <20140624153959.GA19564@google.com>
-References: <20140624153959.GA19564@google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 24 Jun 2014 11:51:03 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: [PATCH 3.4 00/26] 3.4.95-stable review
+Date: Tue, 24 Jun 2014 11:50:23 -0400
+Message-Id: <20140624154619.499002156@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.0
+User-Agent: quilt/0.63-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-06-24 at 16:39 +0100, Daniel Walter wrote:
-> Replace sscanf() with mac_pton().
-[]
-> diff --git a/arch/mips/ar7/platform.c b/arch/mips/ar7/platform.c
-[]
-> @@ -307,10 +307,7 @@ static void __init cpmac_get_mac(int instance, unsigned char *dev_addr)
->  	}
->  
->  	if (mac) {
-> -		if (sscanf(mac, "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",
-> -					&dev_addr[0], &dev_addr[1],
-> -					&dev_addr[2], &dev_addr[3],
-> -					&dev_addr[4], &dev_addr[5]) != 6) {
-> +		if (!mac_pton(mac, dev_addr)) {
+This is the start of the stable review cycle for the 3.4.95 release.
+There are 26 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-There is a slight functional change with this conversion.
+Responses should be made by Thu Jun 26 15:46:05 UTC 2014.
+Anything received after that time might be too late.
 
-mac_pton is strict about leading 0's and requires a 17 char strlen.
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.95-rc1.gz
+and the diffstat can be found below.
 
-sscanf will accept 0:1:2:3:4:5, mac_pton will not.
+thanks,
 
->  			pr_warning("cannot parse mac address, "
->  					"using random address\n");
+greg k-h
 
-could be coalesced and pr_warn
+-------------
+Pseudo-Shortlog of commits:
 
-			pr_warn("cannot parse mac address - using random address\n");
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.4.95-rc1
+
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    lzo: properly check for overruns
+
+Markus F.X.J. Oberhumer <markus@oberhumer.com>
+    lib/lzo: Update LZO compression to current upstream version
+
+Markus F.X.J. Oberhumer <markus@oberhumer.com>
+    lib/lzo: Rename lzo1x_decompress.c to lzo1x_decompress_safe.c
+
+Lars-Peter Clausen <lars@metafoo.de>
+    ALSA: control: Make sure that id->index does not overflow
+
+Lars-Peter Clausen <lars@metafoo.de>
+    ALSA: control: Handle numid overflow
+
+Lars-Peter Clausen <lars@metafoo.de>
+    ALSA: control: Don't access controls outside of protected regions
+
+Lars-Peter Clausen <lars@metafoo.de>
+    ALSA: control: Fix replacing user controls
+
+Lars-Peter Clausen <lars@metafoo.de>
+    ALSA: control: Protect user controls against concurrent access
+
+Kailang Yang <kailang@realtek.com>
+    ALSA: hda/realtek - Add support of ALC891 codec
+
+Thomas Gleixner <tglx@linutronix.de>
+    nohz: Fix another inconsistency between CONFIG_NO_HZ=n and nohz=off
+
+Johan Hovold <jhovold@gmail.com>
+    USB: cdc-acm: fix runtime PM imbalance at shutdown
+
+Johan Hovold <jhovold@gmail.com>
+    USB: cdc-acm: fix I/O after failed open
+
+Johan Hovold <jhovold@gmail.com>
+    USB: cdc-acm: fix shutdown and suspend race
+
+Johan Hovold <jhovold@gmail.com>
+    USB: cdc-acm: fix runtime PM for control messages
+
+Johan Hovold <jhovold@gmail.com>
+    USB: cdc-acm: fix broken runtime suspend
+
+Johan Hovold <jhovold@gmail.com>
+    USB: cdc-acm: fix write and resume race
+
+Johan Hovold <jhovold@gmail.com>
+    USB: cdc-acm: fix write and suspend race
+
+Michal Schmidt <mschmidt@redhat.com>
+    netlink: rate-limit leftover bytes warning and print process name
+
+Wei Yang <weiyang@linux.vnet.ibm.com>
+    net/mlx4_core: Preserve pci_dev_data after __mlx4_remove_one()
+
+Wei Yang <weiyang@linux.vnet.ibm.com>
+    mlx4_core: Stash PCI ID driver_data in mlx4_priv structure
+
+Xufeng Zhang <xufeng.zhang@windriver.com>
+    sctp: Fix sk_ack_backlog wrap-around problem
+
+Jiri Pirko <jiri@resnulli.us>
+    team: fix mtu setting
+
+Eric Dumazet <edumazet@google.com>
+    net: fix inet_getid() and ipv6_select_ident() bugs
+
+Tom Gundersen <teg@jklm.no>
+    net: tunnels - enable module autoloading
+
+Mimi Zohar <zohar@linux.vnet.ibm.com>
+    evm: prohibit userspace writing 'security.evm' HMAC value
+
+Nicholas Bellinger <nab@linux-iscsi.org>
+    iscsi-target: Reject mutual authentication with reflected CHAP_C
+
+
+-------------
+
+Diffstat:
+
+ Makefile                                  |   4 +-
+ drivers/net/ethernet/mellanox/mlx4/main.c | 172 ++++++++-------
+ drivers/net/ethernet/mellanox/mlx4/mlx4.h |   7 +
+ drivers/net/team/team.c                   |   7 +-
+ drivers/target/iscsi/iscsi_target_auth.c  |  10 +
+ drivers/usb/class/cdc-acm.c               |  96 +++++----
+ drivers/usb/class/cdc-acm.h               |   2 +-
+ include/linux/if_team.h                   |   1 +
+ include/linux/lzo.h                       |  15 +-
+ include/net/inetpeer.h                    |   9 +-
+ include/sound/core.h                      |   2 +
+ kernel/time/tick-sched.c                  |   4 +-
+ lib/decompress_unlzo.c                    |   2 +-
+ lib/lzo/Makefile                          |   2 +-
+ lib/lzo/lzo1x_compress.c                  | 335 +++++++++++++++++-------------
+ lib/lzo/lzo1x_decompress.c                | 255 -----------------------
+ lib/lzo/lzo1x_decompress_safe.c           | 257 +++++++++++++++++++++++
+ lib/lzo/lzodefs.h                         |  38 +++-
+ lib/nlattr.c                              |   5 +-
+ net/ipv4/ipip.c                           |   1 +
+ net/ipv6/ip6_output.c                     |  11 +-
+ net/ipv6/ip6_tunnel.c                     |   1 +
+ net/ipv6/sit.c                            |   1 +
+ net/sctp/associola.c                      |   2 +-
+ security/integrity/evm/evm_main.c         |  12 +-
+ sound/core/control.c                      |  78 ++++---
+ sound/core/init.c                         |   1 +
+ sound/pci/hda/patch_realtek.c             |   1 +
+ 28 files changed, 748 insertions(+), 583 deletions(-)
 
 
