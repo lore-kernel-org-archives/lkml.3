@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756721AbaFXQgs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:36:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32862 "EHLO
+	id S932142AbaFXPxW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:53:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32814 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932176AbaFXPxc (ORCPT
+	with ESMTP id S1751598AbaFXPxS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:53:32 -0400
+	Tue, 24 Jun 2014 11:53:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Glanzmann <thomas@glanzmann.de>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.14 02/68] target: Fix NULL pointer dereference for XCOPY in target_put_sess_cmd
-Date: Tue, 24 Jun 2014 11:50:21 -0400
-Message-Id: <20140624154724.027746209@linuxfoundation.org>
+        Xiao Jin <jin.xiao@intel.com>, Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.10 32/52] USB: cdc-acm: fix broken runtime suspend
+Date: Tue, 24 Jun 2014 11:50:47 -0400
+Message-Id: <20140624154715.411417928@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
-In-Reply-To: <20140624154723.907894814@linuxfoundation.org>
-References: <20140624154723.907894814@linuxfoundation.org>
+In-Reply-To: <20140624154713.428945460@linuxfoundation.org>
+References: <20140624154713.428945460@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,54 +24,129 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 0ed6e189e3f6ac3a25383ed5cc8b0ac24c9b97b7 upstream.
+commit 140cb81ac8c625942a1d695875932c615767a526 upstream.
 
-This patch fixes a NULL pointer dereference regression bug that was
-introduced with:
+The current ACM runtime-suspend implementation is broken in several
+ways:
 
-commit 1e1110c43b1cda9fe77fc4a04835e460550e6b3c
-Author: Mikulas Patocka <mpatocka@redhat.com>
-Date:   Sat May 17 06:49:22 2014 -0400
+Firstly, it buffers only the first write request being made while
+suspended -- any further writes are silently dropped.
 
-    target: fix memory leak on XCOPY
+Secondly, writes being dropped also leak write urbs, which are never
+reclaimed (until the device is unbound).
 
-Now that target_put_sess_cmd() -> kref_put_spinlock_irqsave() is
-called with a valid se_cmd->cmd_kref, a NULL pointer dereference
-is triggered because the XCOPY passthrough commands don't have
-an associated se_session pointer.
+Thirdly, even the single buffered write is not cleared at shutdown
+(which may happen before the device is resumed), something which can
+lead to another urb leak as well as a PM usage-counter leak.
 
-To address this bug, go ahead and checking for a NULL se_sess pointer
-within target_put_sess_cmd(), and call se_cmd->se_tfo->release_cmd()
-to release the XCOPY's xcopy_pt_cmd memory.
+Fix this by implementing a delayed-write queue using urb anchors and
+making sure to discard the queue properly at shutdown.
 
-Reported-by: Thomas Glanzmann <thomas@glanzmann.de>
-Cc: Thomas Glanzmann <thomas@glanzmann.de>
-Cc: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
+that support remote wakeup")
+
+Reported-by: Xiao Jin <jin.xiao@intel.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_transport.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/usb/class/cdc-acm.c |   32 ++++++++++++++++++++++----------
+ drivers/usb/class/cdc-acm.h |    2 +-
+ 2 files changed, 23 insertions(+), 11 deletions(-)
 
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -2342,6 +2342,10 @@ static void target_release_cmd_kref(stru
-  */
- int target_put_sess_cmd(struct se_session *se_sess, struct se_cmd *se_cmd)
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -233,12 +233,9 @@ static int acm_write_start(struct acm *a
+ 							acm->susp_count);
+ 	usb_autopm_get_interface_async(acm->control);
+ 	if (acm->susp_count) {
+-		if (!acm->delayed_wb)
+-			acm->delayed_wb = wb;
+-		else
+-			usb_autopm_put_interface_async(acm->control);
++		usb_anchor_urb(wb->urb, &acm->delayed);
+ 		spin_unlock_irqrestore(&acm->write_lock, flags);
+-		return 0;	/* A white lie */
++		return 0;
+ 	}
+ 	usb_mark_last_busy(acm->dev);
+ 
+@@ -591,6 +588,8 @@ static void acm_port_destruct(struct tty
+ static void acm_port_shutdown(struct tty_port *port)
  {
-+	if (!se_sess) {
-+		se_cmd->se_tfo->release_cmd(se_cmd);
-+		return 1;
-+	}
- 	return kref_put_spinlock_irqsave(&se_cmd->cmd_kref, target_release_cmd_kref,
- 			&se_sess->sess_cmd_lock);
- }
+ 	struct acm *acm = container_of(port, struct acm, port);
++	struct urb *urb;
++	struct acm_wb *wb;
+ 	int i;
+ 
+ 	dev_dbg(&acm->control->dev, "%s\n", __func__);
+@@ -599,6 +598,16 @@ static void acm_port_shutdown(struct tty
+ 	if (!acm->disconnected) {
+ 		usb_autopm_get_interface(acm->control);
+ 		acm_set_control(acm, acm->ctrlout = 0);
++
++		for (;;) {
++			urb = usb_get_from_anchor(&acm->delayed);
++			if (!urb)
++				break;
++			wb = urb->context;
++			wb->use = 0;
++			usb_autopm_put_interface_async(acm->control);
++		}
++
+ 		usb_kill_urb(acm->ctrlurb);
+ 		for (i = 0; i < ACM_NW; i++)
+ 			usb_kill_urb(acm->wb[i].urb);
+@@ -1190,6 +1199,7 @@ made_compressed_probe:
+ 		acm->bInterval = epread->bInterval;
+ 	tty_port_init(&acm->port);
+ 	acm->port.ops = &acm_port_ops;
++	init_usb_anchor(&acm->delayed);
+ 
+ 	buf = usb_alloc_coherent(usb_dev, ctrlsize, GFP_KERNEL, &acm->ctrl_dma);
+ 	if (!buf) {
+@@ -1459,7 +1469,7 @@ static int acm_suspend(struct usb_interf
+ static int acm_resume(struct usb_interface *intf)
+ {
+ 	struct acm *acm = usb_get_intfdata(intf);
+-	struct acm_wb *wb;
++	struct urb *urb;
+ 	int rv = 0;
+ 
+ 	spin_lock_irq(&acm->read_lock);
+@@ -1471,10 +1481,12 @@ static int acm_resume(struct usb_interfa
+ 	if (test_bit(ASYNCB_INITIALIZED, &acm->port.flags)) {
+ 		rv = usb_submit_urb(acm->ctrlurb, GFP_ATOMIC);
+ 
+-		if (acm->delayed_wb) {
+-			wb = acm->delayed_wb;
+-			acm->delayed_wb = NULL;
+-			acm_start_wb(acm, wb);
++		for (;;) {
++			urb = usb_get_from_anchor(&acm->delayed);
++			if (!urb)
++				break;
++
++			acm_start_wb(acm, urb->context);
+ 		}
+ 
+ 		/*
+--- a/drivers/usb/class/cdc-acm.h
++++ b/drivers/usb/class/cdc-acm.h
+@@ -117,7 +117,7 @@ struct acm {
+ 	unsigned int throttled:1;			/* actually throttled */
+ 	unsigned int throttle_req:1;			/* throttle requested */
+ 	u8 bInterval;
+-	struct acm_wb *delayed_wb;			/* write queued for a device about to be woken */
++	struct usb_anchor delayed;			/* writes queued for a device about to be woken */
+ };
+ 
+ #define CDC_DATA_INTERFACE_TYPE	0x0a
 
 
