@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756645AbaFXQGP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:06:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33308 "EHLO
+	id S965003AbaFXP4K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:56:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33294 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964962AbaFXP4L (ORCPT
+	with ESMTP id S964962AbaFXP4F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:56:11 -0400
+	Tue, 24 Jun 2014 11:56:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>, David Held <drheld@google.com>,
-        Shawn Bohrer <sbohrer@rgmadvisors.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.15 21/61] udp: ipv4: do not waste time in __udp4_lib_mcast_demux_lookup
-Date: Tue, 24 Jun 2014 11:51:04 -0400
-Message-Id: <20140624154953.727609079@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.15 31/61] USB: cdc-acm: fix potential urb leak and PM imbalance in write
+Date: Tue, 24 Jun 2014 11:51:14 -0400
+Message-Id: <20140624154954.188616113@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154952.751713761@linuxfoundation.org>
 References: <20140624154952.751713761@linuxfoundation.org>
@@ -30,44 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-[ Upstream commit 63c6f81cdde58c41da62a8d8a209592e42a0203e ]
+commit 183a45087d126d126e8dd1d9b2602fc129dff9ad upstream.
 
-Its too easy to add thousand of UDP sockets on a particular bucket,
-and slow down an innocent multicast receiver.
+Make sure to check return value of autopm get in write() in order to
+avoid urb leak and PM counter imbalance on errors.
 
-Early demux is supposed to be an optimization, we should avoid spending
-too much time in it.
+Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
+that support remote wakeup")
 
-It is interesting to note __udp4_lib_demux_lookup() only tries to
-match first socket in the chain.
-
-10 is the threshold we already have in __udp4_lib_lookup() to switch
-to secondary hash.
-
-Fixes: 421b3885bf6d5 ("udp: ipv4: Add udp early demux")
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Reported-by: David Held <drheld@google.com>
-Cc: Shawn Bohrer <sbohrer@rgmadvisors.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/udp.c |    4 ++++
- 1 file changed, 4 insertions(+)
 
---- a/net/ipv4/udp.c
-+++ b/net/ipv4/udp.c
-@@ -1834,6 +1834,10 @@ static struct sock *__udp4_lib_mcast_dem
- 	unsigned int count, slot = udp_hashfn(net, hnum, udp_table.mask);
- 	struct udp_hslot *hslot = &udp_table.hash[slot];
+---
+ drivers/usb/class/cdc-acm.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -668,7 +668,13 @@ static int acm_tty_write(struct tty_stru
+ 	memcpy(wb->buf, buf, count);
+ 	wb->len = count;
  
-+	/* Do not bother scanning a too big list */
-+	if (hslot->count > 10)
-+		return NULL;
+-	usb_autopm_get_interface_async(acm->control);
++	stat = usb_autopm_get_interface_async(acm->control);
++	if (stat) {
++		wb->use = 0;
++		spin_unlock_irqrestore(&acm->write_lock, flags);
++		return stat;
++	}
 +
- 	rcu_read_lock();
- begin:
- 	count = 0;
+ 	if (acm->susp_count) {
+ 		usb_anchor_urb(wb->urb, &acm->delayed);
+ 		spin_unlock_irqrestore(&acm->write_lock, flags);
 
 
