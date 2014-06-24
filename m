@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751597AbaFXHMK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 03:12:10 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:57958 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750844AbaFXHMH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 03:12:07 -0400
-Message-ID: <53A9248D.8020902@linaro.org>
-Date: Tue, 24 Jun 2014 15:11:09 +0800
-From: "kefeng.wang" <kefeng.wang@linaro.org>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Hans de Goede <hdegoede@redhat.com>,
-        Zhangfei Gao <zhangfei.gao@linaro.org>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, wangkefeng.wang@huawei.com,
-        xuwei5@hisilicon.com
-Subject: Re: [PATCH] ahci: disable ncq feature for hisilicon sata
-References: <1398416351-30567-1-git-send-email-kefeng.wang@linaro.org> <20140514170757.GD15690@htj.dyndns.org> <5396D529.308@linaro.org> <5396D8C9.6020607@linaro.org> <53970E81.1070608@redhat.com>
-In-Reply-To: <53970E81.1070608@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752191AbaFXHMW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 03:12:22 -0400
+Received: from ozlabs.org ([103.22.144.67]:41700 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751917AbaFXHMU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 03:12:20 -0400
+Message-ID: <1403593937.14956.4.camel@concordia>
+Subject: Re: [PATCH] powerpc/kvm: Fix build break with
+ CONFIG_KVM_BOOK3S_64_HV=y
+From: Michael Ellerman <mpe@ellerman.id.au>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@osdl.org>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org, kvm@vger.kernel.org, agraf@suse.de,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Tue, 24 Jun 2014 17:12:17 +1000
+In-Reply-To: <20140624065127.GA4836@js1304-P5Q-DELUXE>
+References: <1403591807-9550-1-git-send-email-mpe@ellerman.id.au>
+	 <20140624065127.GA4836@js1304-P5Q-DELUXE>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-6-10 21:56, Hans de Goede wrote:
-> Hi Kefeng,
+On Tue, 2014-06-24 at 15:51 +0900, Joonsoo Kim wrote:
+> On Tue, Jun 24, 2014 at 04:36:47PM +1000, Michael Ellerman wrote:
+> > Commit e58e263 "PPC, KVM, CMA: use general CMA reserved area management
+> > framework" in next-20140624 removed arch/powerpc/kvm/book3s_hv_cma.c but
+> > neglected to update the Makefile, thus breaking the build.
+> > 
+> > Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
+> > ---
+> > 
+> > Hi Andrew,
+> > 
+> > This is in your akpm-current and is breaking some of the builds for
+> > powerpc in linux-next. Squashing this fix into the original patch would
+> > be best for us.
+> > 
 > 
-> On 06/10/2014 12:07 PM, kefeng.wang wrote:
->> Hi Tejun,
->>
->> I have a question, the hip04 and hix5hd2 soc use the old version of IP, but they
->> also have a new version of IP which support FBS and NCQ, and now the new one is
->> used by a new soc. How can I distinguish them, use "hisilicon,hisi-ahci-vX" or just
->> add "generic-ahci" string for the IP which is conformant with spec and has
->> no special customization and issue? Any advices, thanks.
-> 
-> Please use "hisilicon,hisi-ahci-vX", this way it will be easier to add any
-> special behavior in case this turns out to be necessary later.
+> I sent really same patch 10 minutes ago. :)
 
-OK, thanks for your guidance. If necessary, we will use hisi-ahci-vX for hisi's IP.
+Haha, oh well, I should have had a coffee instead :)
 
-Hi Tejun, could you merger this patch please? thanks.
+cheers
 
-Regards,
-Kefeng
-
-> 
-> Regards,
-> 
-> Hans
-> 
 
