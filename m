@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932360AbaFXPx5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:53:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32913 "EHLO
+	id S932633AbaFXQaE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:30:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32934 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932282AbaFXPxt (ORCPT
+	with ESMTP id S932353AbaFXPx5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:53:49 -0400
+	Tue, 24 Jun 2014 11:53:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Lutomirski <luto@amacapital.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 08/68] net: Move the permission check in sock_diag_put_filterinfo to packet_diag_dump
-Date: Tue, 24 Jun 2014 11:50:27 -0400
-Message-Id: <20140624154724.297367941@linuxfoundation.org>
+        Tejas Vaykole <tejas.vaykole@calsoftinc.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.14 03/68] iscsi-target: Reject mutual authentication with reflected CHAP_C
+Date: Tue, 24 Jun 2014 11:50:22 -0400
+Message-Id: <20140624154724.072033120@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154723.907894814@linuxfoundation.org>
 References: <20140624154723.907894814@linuxfoundation.org>
@@ -30,97 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-[ Upstream commit a53b72c83a4216f2eb883ed45a0cbce014b8e62d ]
+commit 1d2b60a5545942b1376cb48c1d55843d71e3a08f upstream.
 
-The permission check in sock_diag_put_filterinfo is wrong, and it is so removed
-from it's sources it is not clear why it is wrong.  Move the computation
-into packet_diag_dump and pass a bool of the result into sock_diag_filterinfo.
+This patch adds an explicit check in chap_server_compute_md5() to ensure
+the CHAP_C value received from the initiator during mutual authentication
+does not match the original CHAP_C provided by the target.
 
-This does not yet correct the capability check but instead simply moves it to make
-it clear what is going on.
+This is in line with RFC-3720, section 8.2.1:
 
-Reported-by: Andy Lutomirski <luto@amacapital.net>
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+   Originators MUST NOT reuse the CHAP challenge sent by the Responder
+   for the other direction of a bidirectional authentication.
+   Responders MUST check for this condition and close the iSCSI TCP
+   connection if it occurs.
+
+Reported-by: Tejas Vaykole <tejas.vaykole@calsoftinc.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/linux/sock_diag.h |    2 +-
- net/core/sock_diag.c      |    4 ++--
- net/packet/diag.c         |    7 ++++++-
- 3 files changed, 9 insertions(+), 4 deletions(-)
 
---- a/include/linux/sock_diag.h
-+++ b/include/linux/sock_diag.h
-@@ -23,7 +23,7 @@ int sock_diag_check_cookie(void *sk, __u
- void sock_diag_save_cookie(void *sk, __u32 *cookie);
- 
- int sock_diag_put_meminfo(struct sock *sk, struct sk_buff *skb, int attr);
--int sock_diag_put_filterinfo(struct sock *sk,
-+int sock_diag_put_filterinfo(bool may_report_filterinfo, struct sock *sk,
- 			     struct sk_buff *skb, int attrtype);
- 
- #endif
---- a/net/core/sock_diag.c
-+++ b/net/core/sock_diag.c
-@@ -49,7 +49,7 @@ int sock_diag_put_meminfo(struct sock *s
- }
- EXPORT_SYMBOL_GPL(sock_diag_put_meminfo);
- 
--int sock_diag_put_filterinfo(struct sock *sk,
-+int sock_diag_put_filterinfo(bool may_report_filterinfo, struct sock *sk,
- 			     struct sk_buff *skb, int attrtype)
- {
- 	struct nlattr *attr;
-@@ -57,7 +57,7 @@ int sock_diag_put_filterinfo(struct sock
- 	unsigned int len;
- 	int err = 0;
- 
--	if (!ns_capable(sock_net(sk)->user_ns, CAP_NET_ADMIN)) {
-+	if (!may_report_filterinfo) {
- 		nla_reserve(skb, attrtype, 0);
- 		return 0;
+---
+ drivers/target/iscsi/iscsi_target_auth.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+--- a/drivers/target/iscsi/iscsi_target_auth.c
++++ b/drivers/target/iscsi/iscsi_target_auth.c
+@@ -314,6 +314,16 @@ static int chap_server_compute_md5(
+ 		goto out;
  	}
---- a/net/packet/diag.c
-+++ b/net/packet/diag.c
-@@ -128,6 +128,7 @@ static int pdiag_put_fanout(struct packe
- 
- static int sk_diag_fill(struct sock *sk, struct sk_buff *skb,
- 			struct packet_diag_req *req,
-+			bool may_report_filterinfo,
- 			struct user_namespace *user_ns,
- 			u32 portid, u32 seq, u32 flags, int sk_ino)
- {
-@@ -172,7 +173,8 @@ static int sk_diag_fill(struct sock *sk,
- 		goto out_nlmsg_trim;
- 
- 	if ((req->pdiag_show & PACKET_SHOW_FILTER) &&
--	    sock_diag_put_filterinfo(sk, skb, PACKET_DIAG_FILTER))
-+	    sock_diag_put_filterinfo(may_report_filterinfo, sk, skb,
-+				     PACKET_DIAG_FILTER))
- 		goto out_nlmsg_trim;
- 
- 	return nlmsg_end(skb, nlh);
-@@ -188,9 +190,11 @@ static int packet_diag_dump(struct sk_bu
- 	struct packet_diag_req *req;
- 	struct net *net;
- 	struct sock *sk;
-+	bool may_report_filterinfo;
- 
- 	net = sock_net(skb->sk);
- 	req = nlmsg_data(cb->nlh);
-+	may_report_filterinfo = ns_capable(net->user_ns, CAP_NET_ADMIN);
- 
- 	mutex_lock(&net->packet.sklist_lock);
- 	sk_for_each(sk, &net->packet.sklist) {
-@@ -200,6 +204,7 @@ static int packet_diag_dump(struct sk_bu
- 			goto next;
- 
- 		if (sk_diag_fill(sk, skb, req,
-+				 may_report_filterinfo,
- 				 sk_user_ns(NETLINK_CB(cb->skb).sk),
- 				 NETLINK_CB(cb->skb).portid,
- 				 cb->nlh->nlmsg_seq, NLM_F_MULTI,
+ 	/*
++	 * During mutual authentication, the CHAP_C generated by the
++	 * initiator must not match the original CHAP_C generated by
++	 * the target.
++	 */
++	if (!memcmp(challenge_binhex, chap->challenge, CHAP_CHALLENGE_LENGTH)) {
++		pr_err("initiator CHAP_C matches target CHAP_C, failing"
++		       " login attempt\n");
++		goto out;
++	}
++	/*
+ 	 * Generate CHAP_N and CHAP_R for mutual authentication.
+ 	 */
+ 	tfm = crypto_alloc_hash("md5", 0, CRYPTO_ALG_ASYNC);
 
 
