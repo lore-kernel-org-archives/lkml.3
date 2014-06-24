@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753990AbaFXQUy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:20:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33102 "EHLO
+	id S1755024AbaFXQVQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:21:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33091 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754304AbaFXPyx (ORCPT
+	with ESMTP id S964837AbaFXPys (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:54:53 -0400
+	Tue, 24 Jun 2014 11:54:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 3.14 47/68] Drivers: hv: balloon: Ensure pressure reports are posted regularly
-Date: Tue, 24 Jun 2014 11:51:06 -0400
-Message-Id: <20140624154726.061192069@linuxfoundation.org>
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.14 56/68] iio: Fix endianness issue in ak8975_read_axis()
+Date: Tue, 24 Jun 2014 11:51:15 -0400
+Message-Id: <20140624154726.487596166@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154723.907894814@linuxfoundation.org>
 References: <20140624154723.907894814@linuxfoundation.org>
@@ -28,114 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Peter Meerwald <pmeerw@pmeerw.net>
 
-commit ae339336dc950b9b05e7ccd3565dd3e8781c06d9 upstream.
+commit 8ba42fb7b17649c9ab5b5e79d4e90370a0b4645e upstream.
 
-The current code posts periodic memory pressure status from a dedicated thread.
-Under some conditions, especially when we are releasing a lot of memory into
-the guest, we may not send timely pressure reports back to the host. Fix this
-issue by reporting pressure in all contexts that can be active in this driver.
+i2c_smbus_read_word_data() does host endian conversion already,
+no need for le16_to_cpu()
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Peter Meerwald <pmeerw@pmeerw.net>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hv/hv_balloon.c |   29 ++++++++++++++++++++++++++---
- 1 file changed, 26 insertions(+), 3 deletions(-)
+ drivers/iio/magnetometer/ak8975.c |    9 +--------
+ 1 file changed, 1 insertion(+), 8 deletions(-)
 
---- a/drivers/hv/hv_balloon.c
-+++ b/drivers/hv/hv_balloon.c
-@@ -19,6 +19,7 @@
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
- 
- #include <linux/kernel.h>
-+#include <linux/jiffies.h>
- #include <linux/mman.h>
- #include <linux/delay.h>
- #include <linux/init.h>
-@@ -459,6 +460,11 @@ static bool do_hot_add;
-  */
- static uint pressure_report_delay = 45;
- 
-+/*
-+ * The last time we posted a pressure report to host.
-+ */
-+static unsigned long last_post_time;
-+
- module_param(hot_add, bool, (S_IRUGO | S_IWUSR));
- MODULE_PARM_DESC(hot_add, "If set attempt memory hot_add");
- 
-@@ -542,6 +548,7 @@ struct hv_dynmem_device {
- 
- static struct hv_dynmem_device dm_device;
- 
-+static void post_status(struct hv_dynmem_device *dm);
- #ifdef CONFIG_MEMORY_HOTPLUG
- 
- static void hv_bring_pgs_online(unsigned long start_pfn, unsigned long size)
-@@ -612,7 +619,7 @@ static void hv_mem_hot_add(unsigned long
- 		 * have not been "onlined" within the allowed time.
- 		 */
- 		wait_for_completion_timeout(&dm_device.ol_waitevent, 5*HZ);
--
-+		post_status(&dm_device);
- 	}
- 
- 	return;
-@@ -951,11 +958,17 @@ static void post_status(struct hv_dynmem
+--- a/drivers/iio/magnetometer/ak8975.c
++++ b/drivers/iio/magnetometer/ak8975.c
+@@ -352,8 +352,6 @@ static int ak8975_read_axis(struct iio_d
  {
- 	struct dm_status status;
- 	struct sysinfo val;
-+	unsigned long now = jiffies;
-+	unsigned long last_post = last_post_time;
+ 	struct ak8975_data *data = iio_priv(indio_dev);
+ 	struct i2c_client *client = data->client;
+-	u16 meas_reg;
+-	s16 raw;
+ 	int ret;
  
- 	if (pressure_report_delay > 0) {
- 		--pressure_report_delay;
- 		return;
+ 	mutex_lock(&data->lock);
+@@ -401,16 +399,11 @@ static int ak8975_read_axis(struct iio_d
+ 		dev_err(&client->dev, "Read axis data fails\n");
+ 		goto exit;
  	}
-+
-+	if (!time_after(now, (last_post_time + HZ)))
-+		return;
-+
- 	si_meminfo(&val);
- 	memset(&status, 0, sizeof(struct dm_status));
- 	status.hdr.type = DM_STATUS_REPORT;
-@@ -983,6 +996,14 @@ static void post_status(struct hv_dynmem
- 	if (status.hdr.trans_id != atomic_read(&trans_id))
- 		return;
+-	meas_reg = ret;
  
-+	/*
-+	 * If the last post time that we sampled has changed,
-+	 * we have raced, don't post the status.
-+	 */
-+	if (last_post != last_post_time)
-+		return;
-+
-+	last_post_time = jiffies;
- 	vmbus_sendpacket(dm->dev->channel, &status,
- 				sizeof(struct dm_status),
- 				(unsigned long)NULL,
-@@ -1117,7 +1138,7 @@ static void balloon_up(struct work_struc
+ 	mutex_unlock(&data->lock);
  
- 			if (ret == -EAGAIN)
- 				msleep(20);
+-	/* Endian conversion of the measured values. */
+-	raw = (s16) (le16_to_cpu(meas_reg));
 -
-+			post_status(&dm_device);
- 		} while (ret == -EAGAIN);
+ 	/* Clamp to valid range. */
+-	raw = clamp_t(s16, raw, -4096, 4095);
+-	*val = raw;
++	*val = clamp_t(s16, ret, -4096, 4095);
+ 	return IIO_VAL_INT;
  
- 		if (ret) {
-@@ -1144,8 +1165,10 @@ static void balloon_down(struct hv_dynme
- 	struct dm_unballoon_response resp;
- 	int i;
- 
--	for (i = 0; i < range_count; i++)
-+	for (i = 0; i < range_count; i++) {
- 		free_balloon_pages(dm, &range_array[i]);
-+		post_status(&dm_device);
-+	}
- 
- 	if (req->more_pages == 1)
- 		return;
+ exit:
 
 
