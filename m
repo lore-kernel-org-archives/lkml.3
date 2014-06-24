@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754523AbaFXUam (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:30:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47588 "EHLO
+	id S1755998AbaFXUqm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:46:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47627 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754165AbaFXUah (ORCPT
+	with ESMTP id S1754404AbaFXUak (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:30:37 -0400
+	Tue, 24 Jun 2014 16:30:40 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: =?UTF-8?q?Salva=20Peir=C3=B3?= <speiro@ai2.upv.es>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 08/65] ACPI / blacklist: Add dmi_enable_osi_linux quirk for Asus EEE PC 1015PX
-Date: Tue, 24 Jun 2014 13:29:28 -0700
-Message-Id: <1403641825-12825-9-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 04/65] [media] media-device: fix infoleak in ioctl media_enum_entities()
+Date: Tue, 24 Jun 2014 13:29:24 -0700
+Message-Id: <1403641825-12825-5-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
 References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,50 +31,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: =?UTF-8?q?Salva=20Peir=C3=B3?= <speiro@ai2.upv.es>
 
-commit f6e6e1b9fee88c90586787b71dc49bb3ce62bb89 upstream.
+commit e6a623460e5fc960ac3ee9f946d3106233fd28d8 upstream.
 
-Without this this EEE PC exports a non working WMI interface, with this it
-exports a working "good old" eeepc_laptop interface, fixing brightness control
-not working as well as rfkill being stuck in a permanent wireless blocked
-state.
+This fixes CVE-2014-1739.
 
-This is not an ideal way to fix this, but various attempts to fix this
-otherwise have failed, see:
-
-References: https://bugzilla.redhat.com/show_bug.cgi?id=1067181
-Reported-and-tested-by: lou.cardone@gmail.com
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Salva Peiró <speiro@ai2.upv.es>
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/acpi/blacklist.c | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ drivers/media/media-device.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/acpi/blacklist.c b/drivers/acpi/blacklist.c
-index cb96296..76da257 100644
---- a/drivers/acpi/blacklist.c
-+++ b/drivers/acpi/blacklist.c
-@@ -327,6 +327,19 @@ static struct dmi_system_id acpi_osi_dmi_table[] __initdata = {
- 		     DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T500"),
- 		},
- 	},
-+	/*
-+	 * Without this this EEEpc exports a non working WMI interface, with
-+	 * this it exports a working "good old" eeepc_laptop interface, fixing
-+	 * both brightness control, and rfkill not working.
-+	 */
-+	{
-+	.callback = dmi_enable_osi_linux,
-+	.ident = "Asus EEE PC 1015PX",
-+	.matches = {
-+		     DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK Computer INC."),
-+		     DMI_MATCH(DMI_PRODUCT_NAME, "1015PX"),
-+		},
-+	},
- 	{}
- };
+diff --git a/drivers/media/media-device.c b/drivers/media/media-device.c
+index d01fcb7..e8af209 100644
+--- a/drivers/media/media-device.c
++++ b/drivers/media/media-device.c
+@@ -92,6 +92,7 @@ static long media_device_enum_entities(struct media_device *mdev,
+ 	struct media_entity *ent;
+ 	struct media_entity_desc u_ent;
+ 
++	memset(&u_ent, 0, sizeof(u_ent));
+ 	if (copy_from_user(&u_ent.id, &uent->id, sizeof(u_ent.id)))
+ 		return -EFAULT;
  
 -- 
 1.9.1
