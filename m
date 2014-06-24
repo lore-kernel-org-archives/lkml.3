@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756336AbaFXQBt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:01:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33409 "EHLO
+	id S1756406AbaFXQCU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:02:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33396 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965156AbaFXP4q (ORCPT
+	with ESMTP id S965131AbaFXP4l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:56:46 -0400
+	Tue, 24 Jun 2014 11:56:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mario Schuknecht <mario.schuknecht@dresearch-fe.de>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.15 42/61] staging: iio: tsl2x7x_core: fix proximity treshold
-Date: Tue, 24 Jun 2014 11:51:25 -0400
-Message-Id: <20140624154954.700802359@linuxfoundation.org>
+        Liam Girdwood <liam.r.girdwood@linux.intel.com>,
+        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.15 39/61] ASoC: max98090: Fix reset at resume time
+Date: Tue, 24 Jun 2014 11:51:22 -0400
+Message-Id: <20140624154954.567366708@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154952.751713761@linuxfoundation.org>
 References: <20140624154952.751713761@linuxfoundation.org>
@@ -29,38 +30,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mario Schuknecht <mario.schuknecht@dresearch-fe.de>
+From: Liam Girdwood <liam.r.girdwood@linux.intel.com>
 
-commit c404618cd06dad771495fe1cf9d5a63b5664f65f upstream.
+commit 25b4ab430f8e166c9b63f4db28e7e812d5a59396 upstream.
 
-Consider high byte of proximity min and max treshold in function
-'tsl2x7x_chip_on'. So far, the high byte was not set.
+Reset needs to wait 20ms before other codec IO is performed. This wait
+was not being performed. Fix this by making sure the reset register is not
+restored with the cache, but use the manual reset method in resume with
+the wait.
 
-Signed-off-by: Mario Schuknecht <mario.schuknecht@dresearch-fe.de>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Signed-off-by: Liam Girdwood <liam.r.girdwood@linux.intel.com>
+Signed-off-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/iio/light/tsl2x7x_core.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ sound/soc/codecs/max98090.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/staging/iio/light/tsl2x7x_core.c
-+++ b/drivers/staging/iio/light/tsl2x7x_core.c
-@@ -667,9 +667,13 @@ static int tsl2x7x_chip_on(struct iio_de
- 	chip->tsl2x7x_config[TSL2X7X_PRX_COUNT] =
- 			chip->tsl2x7x_settings.prox_pulse_count;
- 	chip->tsl2x7x_config[TSL2X7X_PRX_MINTHRESHLO] =
--	chip->tsl2x7x_settings.prox_thres_low;
-+			(chip->tsl2x7x_settings.prox_thres_low) & 0xFF;
-+	chip->tsl2x7x_config[TSL2X7X_PRX_MINTHRESHHI] =
-+			(chip->tsl2x7x_settings.prox_thres_low >> 8) & 0xFF;
- 	chip->tsl2x7x_config[TSL2X7X_PRX_MAXTHRESHLO] =
--			chip->tsl2x7x_settings.prox_thres_high;
-+			(chip->tsl2x7x_settings.prox_thres_high) & 0xFF;
-+	chip->tsl2x7x_config[TSL2X7X_PRX_MAXTHRESHHI] =
-+			(chip->tsl2x7x_settings.prox_thres_high >> 8) & 0xFF;
+--- a/sound/soc/codecs/max98090.c
++++ b/sound/soc/codecs/max98090.c
+@@ -255,6 +255,7 @@ static struct reg_default max98090_reg[]
+ static bool max98090_volatile_register(struct device *dev, unsigned int reg)
+ {
+ 	switch (reg) {
++	case M98090_REG_SOFTWARE_RESET:
+ 	case M98090_REG_DEVICE_STATUS:
+ 	case M98090_REG_JACK_STATUS:
+ 	case M98090_REG_REVISION_ID:
+@@ -2373,6 +2374,8 @@ static int max98090_runtime_resume(struc
  
- 	/* and make sure we're not already on */
- 	if (chip->tsl2x7x_chip_status == TSL2X7X_CHIP_WORKING) {
+ 	regcache_cache_only(max98090->regmap, false);
+ 
++	max98090_reset(max98090);
++
+ 	regcache_sync(max98090->regmap);
+ 
+ 	return 0;
 
 
