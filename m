@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932662AbaFXQis (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:38:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32811 "EHLO
+	id S932085AbaFXPxM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:53:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32790 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932091AbaFXPxQ (ORCPT
+	with ESMTP id S1755722AbaFXPxJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:53:16 -0400
+	Tue, 24 Jun 2014 11:53:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.10 41/52] iio: adc: at91: signedness bug in at91_adc_get_trigger_value_by_name()
-Date: Tue, 24 Jun 2014 11:50:56 -0400
-Message-Id: <20140624154715.955856930@linuxfoundation.org>
+        "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 3.10 37/52] Drivers: hv: balloon: Ensure pressure reports are posted regularly
+Date: Tue, 24 Jun 2014 11:50:52 -0400
+Message-Id: <20140624154715.682595749@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154713.428945460@linuxfoundation.org>
 References: <20140624154713.428945460@linuxfoundation.org>
@@ -30,77 +28,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit 4f3bcd878f1d3c730fe00f619b7260c6125d49eb upstream.
+commit ae339336dc950b9b05e7ccd3565dd3e8781c06d9 upstream.
 
-at91_adc_get_trigger_value_by_name() was returning -ENOMEM truncated to
-a positive u8 and that doesn't work.  I've changed it to int and
-refactored it to preserve the error code.
+The current code posts periodic memory pressure status from a dedicated thread.
+Under some conditions, especially when we are releasing a lot of memory into
+the guest, we may not send timely pressure reports back to the host. Fix this
+issue by reporting pressure in all contexts that can be active in this driver.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Tested-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iio/adc/at91_adc.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ drivers/hv/hv_balloon.c |   29 ++++++++++++++++++++++++++---
+ 1 file changed, 26 insertions(+), 3 deletions(-)
 
---- a/drivers/iio/adc/at91_adc.c
-+++ b/drivers/iio/adc/at91_adc.c
-@@ -161,12 +161,11 @@ static int at91_adc_channel_init(struct
- 	return idev->num_channels;
- }
+--- a/drivers/hv/hv_balloon.c
++++ b/drivers/hv/hv_balloon.c
+@@ -19,6 +19,7 @@
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
  
--static u8 at91_adc_get_trigger_value_by_name(struct iio_dev *idev,
-+static int at91_adc_get_trigger_value_by_name(struct iio_dev *idev,
- 					     struct at91_adc_trigger *triggers,
- 					     const char *trigger_name)
- {
- 	struct at91_adc_state *st = iio_priv(idev);
--	u8 value = 0;
- 	int i;
+ #include <linux/kernel.h>
++#include <linux/jiffies.h>
+ #include <linux/mman.h>
+ #include <linux/delay.h>
+ #include <linux/init.h>
+@@ -459,6 +460,11 @@ static bool do_hot_add;
+  */
+ static uint pressure_report_delay = 45;
  
- 	for (i = 0; i < st->trigger_number; i++) {
-@@ -179,15 +178,16 @@ static u8 at91_adc_get_trigger_value_by_
- 			return -ENOMEM;
++/*
++ * The last time we posted a pressure report to host.
++ */
++static unsigned long last_post_time;
++
+ module_param(hot_add, bool, (S_IRUGO | S_IWUSR));
+ MODULE_PARM_DESC(hot_add, "If set attempt memory hot_add");
  
- 		if (strcmp(trigger_name, name) == 0) {
--			value = triggers[i].value;
- 			kfree(name);
--			break;
-+			if (triggers[i].value == 0)
-+				return -EINVAL;
-+			return triggers[i].value;
- 		}
+@@ -542,6 +548,7 @@ struct hv_dynmem_device {
  
- 		kfree(name);
+ static struct hv_dynmem_device dm_device;
+ 
++static void post_status(struct hv_dynmem_device *dm);
+ #ifdef CONFIG_MEMORY_HOTPLUG
+ 
+ static void hv_bring_pgs_online(unsigned long start_pfn, unsigned long size)
+@@ -612,7 +619,7 @@ static void hv_mem_hot_add(unsigned long
+ 		 * have not been "onlined" within the allowed time.
+ 		 */
+ 		wait_for_completion_timeout(&dm_device.ol_waitevent, 5*HZ);
+-
++		post_status(&dm_device);
  	}
  
--	return value;
-+	return -EINVAL;
- }
+ 	return;
+@@ -951,11 +958,17 @@ static void post_status(struct hv_dynmem
+ {
+ 	struct dm_status status;
+ 	struct sysinfo val;
++	unsigned long now = jiffies;
++	unsigned long last_post = last_post_time;
  
- static int at91_adc_configure_trigger(struct iio_trigger *trig, bool state)
-@@ -197,14 +197,14 @@ static int at91_adc_configure_trigger(st
- 	struct iio_buffer *buffer = idev->buffer;
- 	struct at91_adc_reg_desc *reg = st->registers;
- 	u32 status = at91_adc_readl(st, reg->trigger_register);
--	u8 value;
-+	int value;
- 	u8 bit;
+ 	if (pressure_report_delay > 0) {
+ 		--pressure_report_delay;
+ 		return;
+ 	}
++
++	if (!time_after(now, (last_post_time + HZ)))
++		return;
++
+ 	si_meminfo(&val);
+ 	memset(&status, 0, sizeof(struct dm_status));
+ 	status.hdr.type = DM_STATUS_REPORT;
+@@ -983,6 +996,14 @@ static void post_status(struct hv_dynmem
+ 	if (status.hdr.trans_id != atomic_read(&trans_id))
+ 		return;
  
- 	value = at91_adc_get_trigger_value_by_name(idev,
- 						   st->trigger_list,
- 						   idev->trig->name);
--	if (value == 0)
--		return -EINVAL;
-+	if (value < 0)
-+		return value;
++	/*
++	 * If the last post time that we sampled has changed,
++	 * we have raced, don't post the status.
++	 */
++	if (last_post != last_post_time)
++		return;
++
++	last_post_time = jiffies;
+ 	vmbus_sendpacket(dm->dev->channel, &status,
+ 				sizeof(struct dm_status),
+ 				(unsigned long)NULL,
+@@ -1117,7 +1138,7 @@ static void balloon_up(struct work_struc
  
- 	if (state) {
- 		st->buffer = kmalloc(idev->scan_bytes, GFP_KERNEL);
+ 			if (ret == -EAGAIN)
+ 				msleep(20);
+-
++			post_status(&dm_device);
+ 		} while (ret == -EAGAIN);
+ 
+ 		if (ret) {
+@@ -1144,8 +1165,10 @@ static void balloon_down(struct hv_dynme
+ 	struct dm_unballoon_response resp;
+ 	int i;
+ 
+-	for (i = 0; i < range_count; i++)
++	for (i = 0; i < range_count; i++) {
+ 		free_balloon_pages(dm, &range_array[i]);
++		post_status(&dm_device);
++	}
+ 
+ 	if (req->more_pages == 1)
+ 		return;
 
 
