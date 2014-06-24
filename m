@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965127AbaFXP4h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:56:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33379 "EHLO
+	id S965148AbaFXP4n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:56:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33388 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965051AbaFXP4e (ORCPT
+	with ESMTP id S965051AbaFXP4j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:56:34 -0400
+	Tue, 24 Jun 2014 11:56:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.15 35/61] USB: cdc-acm: fix runtime PM imbalance at shutdown
-Date: Tue, 24 Jun 2014 11:51:18 -0400
-Message-Id: <20140624154954.386354753@linuxfoundation.org>
+        Lars-Peter Clausen <lars@metafoo.de>, Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.15 38/61] ASoC: dapm: Make sure to always update the DAPM graph in _put_volsw()
+Date: Tue, 24 Jun 2014 11:51:21 -0400
+Message-Id: <20140624154954.523131249@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154952.751713761@linuxfoundation.org>
 References: <20140624154952.751713761@linuxfoundation.org>
@@ -28,52 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit 5292afa657d0e790b7479ad8eef9450c1e040b3d upstream.
+commit c9e065c27fe9b81e5d6e7681d77a24f7b9616675 upstream.
 
-Make sure only to decrement the PM counters if they were actually
-incremented.
+When using auto-muted controls it may happen that the register value will not
+change when changing a control from enabled to disabled (since the control might
+be physically disabled due to the auto-muting). We have to make sure to still
+update the DAPM graph and disconnect the mixer input.
 
-Note that the USB PM counter, but not necessarily the driver core PM
-counter, is reset when the interface is unbound.
-
-Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
-that support remote wakeup")
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Fixes: commit 5729507 ("ASoC: dapm: Implement mixer input auto-disable")
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/class/cdc-acm.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ sound/soc/soc-dapm.c |   23 ++++++++++-------------
+ 1 file changed, 10 insertions(+), 13 deletions(-)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -590,12 +590,13 @@ static void acm_port_shutdown(struct tty
- 	struct urb *urb;
- 	struct acm_wb *wb;
- 	int i;
-+	int pm_err;
+--- a/sound/soc/soc-dapm.c
++++ b/sound/soc/soc-dapm.c
+@@ -2857,22 +2857,19 @@ int snd_soc_dapm_put_volsw(struct snd_kc
+ 	mutex_lock_nested(&card->dapm_mutex, SND_SOC_DAPM_CLASS_RUNTIME);
  
- 	dev_dbg(&acm->control->dev, "%s\n", __func__);
+ 	change = dapm_kcontrol_set_value(kcontrol, val);
+-
+-	if (reg != SND_SOC_NOPM) {
+-		mask = mask << shift;
+-		val = val << shift;
+-
+-		change = snd_soc_test_bits(codec, reg, mask, val);
+-	}
+-
+ 	if (change) {
+ 		if (reg != SND_SOC_NOPM) {
+-			update.kcontrol = kcontrol;
+-			update.reg = reg;
+-			update.mask = mask;
+-			update.val = val;
++			mask = mask << shift;
++			val = val << shift;
++
++			if (snd_soc_test_bits(codec, reg, mask, val)) {
++				update.kcontrol = kcontrol;
++				update.reg = reg;
++				update.mask = mask;
++				update.val = val;
++				card->update = &update;
++			}
  
- 	mutex_lock(&acm->mutex);
- 	if (!acm->disconnected) {
--		usb_autopm_get_interface(acm->control);
-+		pm_err = usb_autopm_get_interface(acm->control);
- 		acm_set_control(acm, acm->ctrlout = 0);
+-			card->update = &update;
+ 		}
  
- 		for (;;) {
-@@ -613,7 +614,8 @@ static void acm_port_shutdown(struct tty
- 		for (i = 0; i < acm->rx_buflimit; i++)
- 			usb_kill_urb(acm->read_urbs[i]);
- 		acm->control->needs_remote_wakeup = 0;
--		usb_autopm_put_interface(acm->control);
-+		if (!pm_err)
-+			usb_autopm_put_interface(acm->control);
- 	}
- 	mutex_unlock(&acm->mutex);
- }
+ 		ret = soc_dapm_mixer_update_power(card, kcontrol, connect);
 
 
