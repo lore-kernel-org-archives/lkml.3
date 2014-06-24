@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965276AbaFXQjg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:39:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32794 "EHLO
+	id S1755721AbaFXPxJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:53:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32784 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755728AbaFXPxL (ORCPT
+	with ESMTP id S1755658AbaFXPxG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:53:11 -0400
+	Tue, 24 Jun 2014 11:53:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Liam Girdwood <liam.r.girdwood@linux.intel.com>,
-        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.10 38/52] ASoC: max98090: Fix reset at resume time
-Date: Tue, 24 Jun 2014 11:50:53 -0400
-Message-Id: <20140624154715.742436027@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.10 35/52] USB: cdc-acm: fix I/O after failed open
+Date: Tue, 24 Jun 2014 11:50:50 -0400
+Message-Id: <20140624154715.568757552@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154713.428945460@linuxfoundation.org>
 References: <20140624154713.428945460@linuxfoundation.org>
@@ -30,42 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Liam Girdwood <liam.r.girdwood@linux.intel.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 25b4ab430f8e166c9b63f4db28e7e812d5a59396 upstream.
+commit e4c36076c2a6195ec62c35b03c3fde84d0087dc8 upstream.
 
-Reset needs to wait 20ms before other codec IO is performed. This wait
-was not being performed. Fix this by making sure the reset register is not
-restored with the cache, but use the manual reset method in resume with
-the wait.
+Make sure to kill any already submitted read urbs on read-urb submission
+failures in open in order to prevent doing I/O for a closed port.
 
-Signed-off-by: Liam Girdwood <liam.r.girdwood@linux.intel.com>
-Signed-off-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Fixes: 088c64f81284 ("USB: cdc-acm: re-write read processing")
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/max98090.c |    3 +++
+ drivers/usb/class/cdc-acm.c |    3 +++
  1 file changed, 3 insertions(+)
 
---- a/sound/soc/codecs/max98090.c
-+++ b/sound/soc/codecs/max98090.c
-@@ -255,6 +255,7 @@ static struct reg_default max98090_reg[]
- static bool max98090_volatile_register(struct device *dev, unsigned int reg)
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -523,6 +523,7 @@ static int acm_port_activate(struct tty_
  {
- 	switch (reg) {
-+	case M98090_REG_SOFTWARE_RESET:
- 	case M98090_REG_DEVICE_STATUS:
- 	case M98090_REG_JACK_STATUS:
- 	case M98090_REG_REVISION_ID:
-@@ -2343,6 +2344,8 @@ static int max98090_runtime_resume(struc
+ 	struct acm *acm = container_of(port, struct acm, port);
+ 	int retval = -ENODEV;
++	int i;
  
- 	regcache_cache_only(max98090->regmap, false);
+ 	dev_dbg(&acm->control->dev, "%s\n", __func__);
  
-+	max98090_reset(max98090);
-+
- 	regcache_sync(max98090->regmap);
- 
+@@ -571,6 +572,8 @@ static int acm_port_activate(struct tty_
  	return 0;
+ 
+ error_submit_read_urbs:
++	for (i = 0; i < acm->rx_buflimit; i++)
++		usb_kill_urb(acm->read_urbs[i]);
+ 	acm->ctrlout = 0;
+ 	acm_set_control(acm, acm->ctrlout);
+ error_set_control:
 
 
