@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964869AbaFXQ1l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:27:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32968 "EHLO
+	id S1755803AbaFXPyG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:54:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32944 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932387AbaFXPyJ (ORCPT
+	with ESMTP id S932383AbaFXPyA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:54:09 -0400
+	Tue, 24 Jun 2014 11:54:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
-        Simon Horman <horms+renesas@verge.net.au>,
+        Shradha Shah <sshah@solarflare.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 21/68] sh_eth: use RNC mode for packet reception
-Date: Tue, 24 Jun 2014 11:50:40 -0400
-Message-Id: <20140624154724.864312901@linuxfoundation.org>
+Subject: [PATCH 3.14 28/68] sfc: PIO:Restrict to 64bit arch and use 64-bit writes.
+Date: Tue, 24 Jun 2014 11:50:47 -0400
+Message-Id: <20140624154725.187405978@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154723.907894814@linuxfoundation.org>
 References: <20140624154723.907894814@linuxfoundation.org>
@@ -32,117 +29,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Dooks <ben.dooks@codethink.co.uk>
+From: Jon Cooper <jcooper@solarflare.com>
 
-[ Upstream commit 530aa2d0d9d55ab2775d47621ddf4b5b15bc1110 ]
+[ Upstream commit daf37b556e437ec1ea1a597dcfeff338068380e1 ]
 
-The current behaviour of the sh_eth driver is not to use the RNC bit
-for the receive ring. This means that every packet recieved is not only
-generating an IRQ but it also stops the receive ring DMA as well until
-the driver re-enables it after unloading the packet.
+Fixes:ee45fd92c739
+("sfc: Use TX PIO for sufficiently small packets")
 
-This means that a number of the following errors are generated due to
-the receive packet FIFO overflowing due to nowhere to put packets:
+The linux net driver uses memcpy_toio() in order to copy into
+the PIO buffers.
+Even on a 64bit machine this causes 32bit accesses to a write-
+combined memory region.
+There are hardware limitations that mean that only 64bit
+naturally aligned accesses are safe in all cases.
+Due to being write-combined memory region two 32bit accesses
+may be coalesced to form a 64bit non 64bit aligned access.
+Solution was to open-code the memory copy routines using pointers
+and to only enable PIO for x86_64 machines.
 
-	net eth0: Receive FIFO Overflow
+Not tested on platforms other than x86_64 because this patch
+disables the PIO feature on other platforms.
+Compile-tested on x86 to ensure that works.
 
-Since feedback from Yoshihiro Shimoda shows that every supported LSI
-for this driver should have the bit enabled it seems the best way is
-to remove the RMCR default value from the per-system data and just
-write it when initialising the RMCR value. This is discussed in
-the message (http://www.spinics.net/lists/netdev/msg284912.html).
+The WARN_ON_ONCE() code in the previous version of this patch
+has been moved into the internal sfc debug driver as the
+assertion was unnecessary in the upstream kernel code.
 
-I have tested the RMCR_RNC configuration with NFS root filesystem and
-the driver has not failed yet.  There are further test reports from
-Sergei Shtylov and others for both the R8A7790 and R8A7791.
+This bug fix applies to v3.13 and v3.14 stable branches.
 
-There is also feedback fron Cao Minh Hiep[1] which reports the
-same issue in (http://comments.gmane.org/gmane.linux.network/316285)
-showing this fixes issues with losing UDP datagrams under iperf.
-
-Tested-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
-Acked-by: Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
-Acked-by: Simon Horman <horms+renesas@verge.net.au>
+Signed-off-by: Shradha Shah <sshah@solarflare.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/renesas/sh_eth.c |   11 ++---------
- drivers/net/ethernet/renesas/sh_eth.h |    2 --
- 2 files changed, 2 insertions(+), 11 deletions(-)
+ drivers/net/ethernet/sfc/io.h |    7 +++++++
+ drivers/net/ethernet/sfc/tx.c |   22 +++++++++++++++++-----
+ 2 files changed, 24 insertions(+), 5 deletions(-)
 
---- a/drivers/net/ethernet/renesas/sh_eth.c
-+++ b/drivers/net/ethernet/renesas/sh_eth.c
-@@ -539,7 +539,6 @@ static struct sh_eth_cpu_data sh7757_dat
- 	.register_type	= SH_ETH_REG_FAST_SH4,
+--- a/drivers/net/ethernet/sfc/io.h
++++ b/drivers/net/ethernet/sfc/io.h
+@@ -66,10 +66,17 @@
+ #define EFX_USE_QWORD_IO 1
+ #endif
  
- 	.eesipr_value	= DMAC_M_RFRMER | DMAC_M_ECI | 0x003fffff,
--	.rmcr_value	= RMCR_RNC,
++/* Hardware issue requires that only 64-bit naturally aligned writes
++ * are seen by hardware. Its not strictly necessary to restrict to
++ * x86_64 arch, but done for safety since unusual write combining behaviour
++ * can break PIO.
++ */
++#ifdef CONFIG_X86_64
+ /* PIO is a win only if write-combining is possible */
+ #ifdef ARCH_HAS_IOREMAP_WC
+ #define EFX_USE_PIO 1
+ #endif
++#endif
  
- 	.tx_check	= EESR_FTC | EESR_CND | EESR_DLC | EESR_CD | EESR_RTO,
- 	.eesr_err_check	= EESR_TWB | EESR_TABT | EESR_RABT | EESR_RFE |
-@@ -617,7 +616,6 @@ static struct sh_eth_cpu_data sh7757_dat
- 			  EESR_RFE | EESR_RDE | EESR_RFRMER | EESR_TFE |
- 			  EESR_TDE | EESR_ECI,
- 	.fdr_value	= 0x0000072f,
--	.rmcr_value	= RMCR_RNC,
- 
- 	.irq_flags	= IRQF_SHARED,
- 	.apr		= 1,
-@@ -745,7 +743,6 @@ static struct sh_eth_cpu_data r8a7740_da
- 			  EESR_RFE | EESR_RDE | EESR_RFRMER | EESR_TFE |
- 			  EESR_TDE | EESR_ECI,
- 	.fdr_value	= 0x0000070f,
--	.rmcr_value	= RMCR_RNC,
- 
- 	.apr		= 1,
- 	.mpr		= 1,
-@@ -777,7 +774,6 @@ static struct sh_eth_cpu_data r7s72100_d
- 			  EESR_RFE | EESR_RDE | EESR_RFRMER | EESR_TFE |
- 			  EESR_TDE | EESR_ECI,
- 	.fdr_value	= 0x0000070f,
--	.rmcr_value	= RMCR_RNC,
- 
- 	.no_psr		= 1,
- 	.apr		= 1,
-@@ -826,9 +822,6 @@ static void sh_eth_set_default_cpu_data(
- 	if (!cd->fdr_value)
- 		cd->fdr_value = DEFAULT_FDR_INIT;
- 
--	if (!cd->rmcr_value)
--		cd->rmcr_value = DEFAULT_RMCR_VALUE;
--
- 	if (!cd->tx_check)
- 		cd->tx_check = DEFAULT_TX_CHECK;
- 
-@@ -1281,8 +1274,8 @@ static int sh_eth_dev_init(struct net_de
- 	sh_eth_write(ndev, mdp->cd->fdr_value, FDR);
- 	sh_eth_write(ndev, 0, TFTR);
- 
--	/* Frame recv control */
--	sh_eth_write(ndev, mdp->cd->rmcr_value, RMCR);
-+	/* Frame recv control (enable multiple-packets per rx irq) */
-+	sh_eth_write(ndev, RMCR_RNC, RMCR);
- 
- 	sh_eth_write(ndev, DESC_I_RINT8 | DESC_I_RINT5 | DESC_I_TINT2, TRSCER);
- 
---- a/drivers/net/ethernet/renesas/sh_eth.h
-+++ b/drivers/net/ethernet/renesas/sh_eth.h
-@@ -320,7 +320,6 @@ enum TD_STS_BIT {
- enum RMCR_BIT {
- 	RMCR_RNC = 0x00000001,
+ #ifdef EFX_USE_QWORD_IO
+ static inline void _efx_writeq(struct efx_nic *efx, __le64 value,
+--- a/drivers/net/ethernet/sfc/tx.c
++++ b/drivers/net/ethernet/sfc/tx.c
+@@ -189,6 +189,18 @@ struct efx_short_copy_buffer {
+ 	u8 buf[L1_CACHE_BYTES];
  };
--#define DEFAULT_RMCR_VALUE	0x00000000
  
- /* ECMR */
- enum FELIC_MODE_BIT {
-@@ -467,7 +466,6 @@ struct sh_eth_cpu_data {
- 	unsigned long fdr_value;
- 	unsigned long fcftr_value;
- 	unsigned long rpadir_value;
--	unsigned long rmcr_value;
++/* Copy in explicit 64-bit writes. */
++static void efx_memcpy_64(void __iomem *dest, void *src, size_t len)
++{
++	u64 *src64 = src;
++	u64 __iomem *dest64 = dest;
++	size_t l64 = len / 8;
++	size_t i;
++
++	for (i = 0; i < l64; i++)
++		writeq(src64[i], &dest64[i]);
++}
++
+ /* Copy to PIO, respecting that writes to PIO buffers must be dword aligned.
+  * Advances piobuf pointer. Leaves additional data in the copy buffer.
+  */
+@@ -198,7 +210,7 @@ static void efx_memcpy_toio_aligned(stru
+ {
+ 	int block_len = len & ~(sizeof(copy_buf->buf) - 1);
  
- 	/* interrupt checking mask */
- 	unsigned long tx_check;
+-	memcpy_toio(*piobuf, data, block_len);
++	efx_memcpy_64(*piobuf, data, block_len);
+ 	*piobuf += block_len;
+ 	len -= block_len;
+ 
+@@ -230,7 +242,7 @@ static void efx_memcpy_toio_aligned_cb(s
+ 		if (copy_buf->used < sizeof(copy_buf->buf))
+ 			return;
+ 
+-		memcpy_toio(*piobuf, copy_buf->buf, sizeof(copy_buf->buf));
++		efx_memcpy_64(*piobuf, copy_buf->buf, sizeof(copy_buf->buf));
+ 		*piobuf += sizeof(copy_buf->buf);
+ 		data += copy_to_buf;
+ 		len -= copy_to_buf;
+@@ -245,7 +257,7 @@ static void efx_flush_copy_buffer(struct
+ {
+ 	/* if there's anything in it, write the whole buffer, including junk */
+ 	if (copy_buf->used)
+-		memcpy_toio(piobuf, copy_buf->buf, sizeof(copy_buf->buf));
++		efx_memcpy_64(piobuf, copy_buf->buf, sizeof(copy_buf->buf));
+ }
+ 
+ /* Traverse skb structure and copy fragments in to PIO buffer.
+@@ -304,8 +316,8 @@ efx_enqueue_skb_pio(struct efx_tx_queue
+ 		 */
+ 		BUILD_BUG_ON(L1_CACHE_BYTES >
+ 			     SKB_DATA_ALIGN(sizeof(struct skb_shared_info)));
+-		memcpy_toio(tx_queue->piobuf, skb->data,
+-			    ALIGN(skb->len, L1_CACHE_BYTES));
++		efx_memcpy_64(tx_queue->piobuf, skb->data,
++			      ALIGN(skb->len, L1_CACHE_BYTES));
+ 	}
+ 
+ 	EFX_POPULATE_QWORD_5(buffer->option,
 
 
