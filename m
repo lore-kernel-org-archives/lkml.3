@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965148AbaFXP4n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:56:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33388 "EHLO
+	id S965244AbaFXP5B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:57:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33445 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965051AbaFXP4j (ORCPT
+	with ESMTP id S965210AbaFXP46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:56:39 -0400
+	Tue, 24 Jun 2014 11:56:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>, Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.15 38/61] ASoC: dapm: Make sure to always update the DAPM graph in _put_volsw()
-Date: Tue, 24 Jun 2014 11:51:21 -0400
-Message-Id: <20140624154954.523131249@linuxfoundation.org>
+        Zhang Dongxing <dongxing.zhang@intel.com>,
+        xiaoming wang <xiaoming.wang@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.15 50/61] ALSA: compress: Cancel the optimization of compiler and fix the size of struct for all platform.
+Date: Tue, 24 Jun 2014 11:51:33 -0400
+Message-Id: <20140624154955.070701541@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154952.751713761@linuxfoundation.org>
 References: <20140624154952.751713761@linuxfoundation.org>
@@ -28,58 +30,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: "Wang, Xiaoming" <xiaoming.wang@intel.com>
 
-commit c9e065c27fe9b81e5d6e7681d77a24f7b9616675 upstream.
+commit 2bd0ae464a6cf7363bbf72c8545e0aa43caa57f0 upstream.
 
-When using auto-muted controls it may happen that the register value will not
-change when changing a control from enabled to disabled (since the control might
-be physically disabled due to the auto-muting). We have to make sure to still
-update the DAPM graph and disconnect the mixer input.
+Cancel the optimization of compiler for struct snd_compr_avail
+which size will be 0x1c in 32bit kernel while 0x20 in 64bit
+kernel under the optimizer. That will make compaction between
+32bit and 64bit. So add packed to fix the size of struct
+snd_compr_avail to 0x1c for all platform.
 
-Fixes: commit 5729507 ("ASoC: dapm: Implement mixer input auto-disable")
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Zhang Dongxing <dongxing.zhang@intel.com>
+Signed-off-by: xiaoming wang <xiaoming.wang@intel.com>
+Acked-by: Vinod Koul <vinod.koul@intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/soc-dapm.c |   23 ++++++++++-------------
- 1 file changed, 10 insertions(+), 13 deletions(-)
+ include/uapi/sound/compress_offload.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/soc/soc-dapm.c
-+++ b/sound/soc/soc-dapm.c
-@@ -2857,22 +2857,19 @@ int snd_soc_dapm_put_volsw(struct snd_kc
- 	mutex_lock_nested(&card->dapm_mutex, SND_SOC_DAPM_CLASS_RUNTIME);
+--- a/include/uapi/sound/compress_offload.h
++++ b/include/uapi/sound/compress_offload.h
+@@ -80,7 +80,7 @@ struct snd_compr_tstamp {
+ struct snd_compr_avail {
+ 	__u64 avail;
+ 	struct snd_compr_tstamp tstamp;
+-};
++} __attribute__((packed));
  
- 	change = dapm_kcontrol_set_value(kcontrol, val);
--
--	if (reg != SND_SOC_NOPM) {
--		mask = mask << shift;
--		val = val << shift;
--
--		change = snd_soc_test_bits(codec, reg, mask, val);
--	}
--
- 	if (change) {
- 		if (reg != SND_SOC_NOPM) {
--			update.kcontrol = kcontrol;
--			update.reg = reg;
--			update.mask = mask;
--			update.val = val;
-+			mask = mask << shift;
-+			val = val << shift;
-+
-+			if (snd_soc_test_bits(codec, reg, mask, val)) {
-+				update.kcontrol = kcontrol;
-+				update.reg = reg;
-+				update.mask = mask;
-+				update.val = val;
-+				card->update = &update;
-+			}
- 
--			card->update = &update;
- 		}
- 
- 		ret = soc_dapm_mixer_update_power(card, kcontrol, connect);
+ enum snd_compr_direction {
+ 	SND_COMPRESS_PLAYBACK = 0,
 
 
