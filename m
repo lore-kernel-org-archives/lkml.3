@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932101AbaFXUek (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:34:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47985 "EHLO
+	id S1756243AbaFXUed (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:34:33 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47973 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932077AbaFXUeg (ORCPT
+	with ESMTP id S1756161AbaFXUe3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:34:36 -0400
+	Tue, 24 Jun 2014 16:34:29 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
+Cc: Marcel Apfelbaum <marcel.a@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 31/65] perf: Prevent false warning in perf_swevent_add
-Date: Tue, 24 Jun 2014 13:29:51 -0700
-Message-Id: <1403641825-12825-32-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 25/65] PCI: shpchp: Check bridge's secondary (not primary) bus speed
+Date: Tue, 24 Jun 2014 13:29:45 -0700
+Message-Id: <1403641825-12825-26-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
 References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
@@ -32,123 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Marcel Apfelbaum <marcel.a@redhat.com>
 
-commit 39af6b1678afa5880dda7e375cf3f9d395087f6d upstream.
+commit 93fa9d32670f5592c8e56abc9928fc194e1e72fc upstream.
 
-The perf cpu offline callback takes down all cpu context
-events and releases swhash->swevent_hlist.
+When a new device is added below a hotplug bridge, the bridge's secondary
+bus speed and the device's bus speed must match.  The shpchp driver
+previously checked the bridge's *primary* bus speed, not the secondary bus
+speed.
 
-This could race with task context software event being just
-scheduled on this cpu via perf_swevent_add while cpu hotplug
-code already cleaned up event's data.
+This caused hot-add errors like:
 
-The race happens in the gap between the cpu notifier code
-and the cpu being actually taken down. Note that only cpu
-ctx events are terminated in the perf cpu hotplug code.
+  shpchp 0000:00:03.0: Speed of bus ff and adapter 0 mismatch
 
-It's easily reproduced with:
-  $ perf record -e faults perf bench sched pipe
+Check the secondary bus speed instead.
 
-while putting one of the cpus offline:
-  # echo 0 > /sys/devices/system/cpu/cpu1/online
-
-Console emits following warning:
-  WARNING: CPU: 1 PID: 2845 at kernel/events/core.c:5672 perf_swevent_add+0x18d/0x1a0()
-  Modules linked in:
-  CPU: 1 PID: 2845 Comm: sched-pipe Tainted: G        W    3.14.0+ #256
-  Hardware name: Intel Corporation Montevina platform/To be filled by O.E.M., BIOS AMVACRB1.86C.0066.B00.0805070703 05/07/2008
-   0000000000000009 ffff880077233ab8 ffffffff81665a23 0000000000200005
-   0000000000000000 ffff880077233af8 ffffffff8104732c 0000000000000046
-   ffff88007467c800 0000000000000002 ffff88007a9cf2a0 0000000000000001
-  Call Trace:
-   [<ffffffff81665a23>] dump_stack+0x4f/0x7c
-   [<ffffffff8104732c>] warn_slowpath_common+0x8c/0xc0
-   [<ffffffff8104737a>] warn_slowpath_null+0x1a/0x20
-   [<ffffffff8110fb3d>] perf_swevent_add+0x18d/0x1a0
-   [<ffffffff811162ae>] event_sched_in.isra.75+0x9e/0x1f0
-   [<ffffffff8111646a>] group_sched_in+0x6a/0x1f0
-   [<ffffffff81083dd5>] ? sched_clock_local+0x25/0xa0
-   [<ffffffff811167e6>] ctx_sched_in+0x1f6/0x450
-   [<ffffffff8111757b>] perf_event_sched_in+0x6b/0xa0
-   [<ffffffff81117a4b>] perf_event_context_sched_in+0x7b/0xc0
-   [<ffffffff81117ece>] __perf_event_task_sched_in+0x43e/0x460
-   [<ffffffff81096f1e>] ? put_lock_stats.isra.18+0xe/0x30
-   [<ffffffff8107b3c8>] finish_task_switch+0xb8/0x100
-   [<ffffffff8166a7de>] __schedule+0x30e/0xad0
-   [<ffffffff81172dd2>] ? pipe_read+0x3e2/0x560
-   [<ffffffff8166b45e>] ? preempt_schedule_irq+0x3e/0x70
-   [<ffffffff8166b45e>] ? preempt_schedule_irq+0x3e/0x70
-   [<ffffffff8166b464>] preempt_schedule_irq+0x44/0x70
-   [<ffffffff816707f0>] retint_kernel+0x20/0x30
-   [<ffffffff8109e60a>] ? lockdep_sys_exit+0x1a/0x90
-   [<ffffffff812a4234>] lockdep_sys_exit_thunk+0x35/0x67
-   [<ffffffff81679321>] ? sysret_check+0x5/0x56
-
-Fixing this by tracking the cpu hotplug state and displaying
-the WARN only if current cpu is initialized properly.
-
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1396861448-10097-1-git-send-email-jolsa@redhat.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+[bhelgaas: changelog]
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=75251
+Fixes: 3749c51ac6c1 ("PCI: Make current and maximum bus speeds part of the PCI core")
+Signed-off-by: Marcel Apfelbaum <marcel.a@redhat.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/events/core.c | 13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ drivers/pci/hotplug/shpchp_ctrl.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 8472f66..9640b61 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -4965,6 +4965,9 @@ struct swevent_htable {
+diff --git a/drivers/pci/hotplug/shpchp_ctrl.c b/drivers/pci/hotplug/shpchp_ctrl.c
+index 5849927..6efc2ec 100644
+--- a/drivers/pci/hotplug/shpchp_ctrl.c
++++ b/drivers/pci/hotplug/shpchp_ctrl.c
+@@ -282,8 +282,8 @@ static int board_added(struct slot *p_slot)
+ 		return WRONG_BUS_FREQUENCY;
+ 	}
  
- 	/* Recursion avoidance in each contexts */
- 	int				recursion[PERF_NR_CONTEXTS];
-+
-+	/* Keeps track of cpu being initialized/exited */
-+	bool				online;
- };
+-	bsp = ctrl->pci_dev->bus->cur_bus_speed;
+-	msp = ctrl->pci_dev->bus->max_bus_speed;
++	bsp = ctrl->pci_dev->subordinate->cur_bus_speed;
++	msp = ctrl->pci_dev->subordinate->max_bus_speed;
  
- static DEFINE_PER_CPU(struct swevent_htable, swevent_htable);
-@@ -5212,8 +5215,14 @@ static int perf_swevent_add(struct perf_event *event, int flags)
- 	hwc->state = !(flags & PERF_EF_START);
- 
- 	head = find_swevent_head(swhash, event);
--	if (WARN_ON_ONCE(!head))
-+	if (!head) {
-+		/*
-+		 * We can race with cpu hotplug code. Do not
-+		 * WARN if the cpu just got unplugged.
-+		 */
-+		WARN_ON_ONCE(swhash->online);
- 		return -EINVAL;
-+	}
- 
- 	hlist_add_head_rcu(&event->hlist_entry, head);
- 
-@@ -7307,6 +7316,7 @@ static void __cpuinit perf_event_init_cpu(int cpu)
- 	struct swevent_htable *swhash = &per_cpu(swevent_htable, cpu);
- 
- 	mutex_lock(&swhash->hlist_mutex);
-+	swhash->online = true;
- 	if (swhash->hlist_refcount > 0) {
- 		struct swevent_hlist *hlist;
- 
-@@ -7364,6 +7374,7 @@ static void perf_event_exit_cpu(int cpu)
- 	perf_event_exit_cpu_context(cpu);
- 
- 	mutex_lock(&swhash->hlist_mutex);
-+	swhash->online = false;
- 	swevent_hlist_release(swhash);
- 	mutex_unlock(&swhash->hlist_mutex);
- }
+ 	/* Check if there are other slots or devices on the same bus */
+ 	if (!list_empty(&ctrl->pci_dev->subordinate->devices))
 -- 
 1.9.1
 
