@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965325AbaFXQhQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:37:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32835 "EHLO
+	id S1030207AbaFXQiB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:38:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32826 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752167AbaFXPxZ (ORCPT
+	with ESMTP id S932132AbaFXPxV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:53:25 -0400
+	Tue, 24 Jun 2014 11:53:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Lars-Peter Clausen <lars@metafoo.de>, Jaroslav Kysela <perex@perex.cz>,
         Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 51/52] ALSA: control: Handle numid overflow
-Date: Tue, 24 Jun 2014 11:51:06 -0400
-Message-Id: <20140624154716.517729634@linuxfoundation.org>
+Subject: [PATCH 3.10 49/52] ALSA: control: Fix replacing user controls
+Date: Tue, 24 Jun 2014 11:51:04 -0400
+Message-Id: <20140624154716.411682375@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154713.428945460@linuxfoundation.org>
 References: <20140624154713.428945460@linuxfoundation.org>
@@ -31,16 +31,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit ac902c112d90a89e59916f751c2745f4dbdbb4bd upstream.
+commit 82262a46627bebb0febcc26664746c25cef08563 upstream.
 
-Each control gets automatically assigned its numids when the control is created.
-The allocation is done by incrementing the numid by the amount of allocated
-numids per allocation. This means that excessive creation and destruction of
-controls (e.g. via SNDRV_CTL_IOCTL_ELEM_ADD/REMOVE) can cause the id to
-eventually overflow. Currently when this happens for the control that caused the
-overflow kctl->id.numid + kctl->count will also over flow causing it to be
-smaller than kctl->id.numid. Most of the code assumes that this is something
-that can not happen, so we need to make sure that it won't happen
+There are two issues with the current implementation for replacing user
+controls. The first is that the code does not check if the control is actually a
+user control and neither does it check if the control is owned by the process
+that tries to remove it. That allows userspace applications to remove arbitrary
+controls, which can cause a user after free if a for example a driver does not
+expect a control to be removed from under its feed.
+
+The second issue is that on one hand when a control is replaced the
+user_ctl_count limit is not checked and on the other hand the user_ctl_count is
+increased (even though the number of user controls does not change). This allows
+userspace, once the user_ctl_count limit as been reached, to repeatedly replace
+a control until user_ctl_count overflows. Once that happens new controls can be
+added effectively bypassing the user_ctl_count limit.
+
+Both issues can be fixed by instead of open-coding the removal of the control
+that is to be replaced to use snd_ctl_remove_user_ctl(). This function does
+proper permission checks as well as decrements user_ctl_count after the control
+has been removed.
+
+Note that by using snd_ctl_remove_user_ctl() the check which returns -EBUSY at
+beginning of the function if the control already exists is removed. This is not
+a problem though since the check is quite useless, because the lock that is
+protecting the control list is released between the check and before adding the
+new control to the list, which means that it is possible that a different
+control with the same settings is added to the list after the check. Luckily
+there is another check that is done while holding the lock in snd_ctl_add(), so
+we'll rely on that to make sure that the same control is not added twice.
 
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 Acked-by: Jaroslav Kysela <perex@perex.cz>
@@ -48,21 +67,50 @@ Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/core/control.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ sound/core/control.c |   25 +++++++++----------------
+ 1 file changed, 9 insertions(+), 16 deletions(-)
 
 --- a/sound/core/control.c
 +++ b/sound/core/control.c
-@@ -289,6 +289,10 @@ static bool snd_ctl_remove_numid_conflic
- {
- 	struct snd_kcontrol *kctl;
+@@ -1155,8 +1155,6 @@ static int snd_ctl_elem_add(struct snd_c
+ 	struct user_element *ue;
+ 	int idx, err;
  
-+	/* Make sure that the ids assigned to the control do not wrap around */
-+	if (card->last_numid >= UINT_MAX - count)
-+		card->last_numid = 0;
+-	if (!replace && card->user_ctl_count >= MAX_USER_CONTROLS)
+-		return -ENOMEM;
+ 	if (info->count < 1)
+ 		return -EINVAL;
+ 	access = info->access == 0 ? SNDRV_CTL_ELEM_ACCESS_READWRITE :
+@@ -1165,21 +1163,16 @@ static int snd_ctl_elem_add(struct snd_c
+ 				 SNDRV_CTL_ELEM_ACCESS_TLV_READWRITE));
+ 	info->id.numid = 0;
+ 	memset(&kctl, 0, sizeof(kctl));
+-	down_write(&card->controls_rwsem);
+-	_kctl = snd_ctl_find_id(card, &info->id);
+-	err = 0;
+-	if (_kctl) {
+-		if (replace)
+-			err = snd_ctl_remove(card, _kctl);
+-		else
+-			err = -EBUSY;
+-	} else {
+-		if (replace)
+-			err = -ENOENT;
 +
- 	list_for_each_entry(kctl, &card->controls, list) {
- 		if (kctl->id.numid < card->last_numid + 1 + count &&
- 		    kctl->id.numid + kctl->count > card->last_numid + 1) {
++	if (replace) {
++		err = snd_ctl_remove_user_ctl(file, &info->id);
++		if (err)
++			return err;
+ 	}
+-	up_write(&card->controls_rwsem);
+-	if (err < 0)
+-		return err;
++
++	if (card->user_ctl_count >= MAX_USER_CONTROLS)
++		return -ENOMEM;
++
+ 	memcpy(&kctl.id, &info->id, sizeof(info->id));
+ 	kctl.count = info->owner ? info->owner : 1;
+ 	access |= SNDRV_CTL_ELEM_ACCESS_USER;
 
 
