@@ -1,84 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755147AbaFXSjm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 14:39:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23582 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755008AbaFXSjj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 14:39:39 -0400
-Date: Tue, 24 Jun 2014 20:37:49 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Andy Lutomirski <luto@amacapital.net>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
-        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH v7 7/9] seccomp: implement SECCOMP_FILTER_FLAG_TSYNC
-Message-ID: <20140624183749.GC1258@redhat.com>
-References: <1403560693-21809-1-git-send-email-keescook@chromium.org> <1403560693-21809-8-git-send-email-keescook@chromium.org> <20140624172753.GA31435@redhat.com> <CAGXu5jKoDEXffJqFSjhO+D=5toJOA=KAomi+LQOahPDYKFbEdg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5jKoDEXffJqFSjhO+D=5toJOA=KAomi+LQOahPDYKFbEdg@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755218AbaFXSkG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 14:40:06 -0400
+Received: from smtprelay0150.hostedemail.com ([216.40.44.150]:42340 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755174AbaFXSkE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 14:40:04 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:41:355:379:541:800:960:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3350:3867:3868:3872:4321:5007:7652:9592:10004:10400:10848:11026:11658:11914:12517:12519:12555:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: brass71_1d6c004cee40a
+X-Filterd-Recvd-Size: 1429
+Message-ID: <1403635200.29061.26.camel@joe-AO725>
+Subject: [PATCH] kernel.h: Remove deprecated pack_hex_byte
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 24 Jun 2014 11:40:00 -0700
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24, Kees Cook wrote:
->
-> On Tue, Jun 24, 2014 at 10:27 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> > On 06/23, Kees Cook wrote:
-> >>
-> >> +static pid_t seccomp_can_sync_threads(void)
-> >> +{
-> >> +     struct task_struct *thread, *caller;
-> >> +
-> >> +     BUG_ON(write_can_lock(&tasklist_lock));
-> >> +     BUG_ON(!spin_is_locked(&current->sighand->siglock));
-> >> +
-> >> +     if (current->seccomp.mode != SECCOMP_MODE_FILTER)
-> >> +             return -EACCES;
-> >> +
-> >> +     /* Validate all threads being eligible for synchronization. */
-> >> +     thread = caller = current;
-> >> +     for_each_thread(caller, thread) {
-> >> +             pid_t failed;
-> >> +
-> >> +             if (thread->seccomp.mode == SECCOMP_MODE_DISABLED ||
-> >> +                 (thread->seccomp.mode == SECCOMP_MODE_FILTER &&
-> >> +                  is_ancestor(thread->seccomp.filter,
-> >> +                              caller->seccomp.filter)))
-> >> +                     continue;
-> >> +
-> >> +             /* Return the first thread that cannot be synchronized. */
-> >> +             failed = task_pid_vnr(thread);
-> >> +             /* If the pid cannot be resolved, then return -ESRCH */
-> >> +             if (failed == 0)
-> >> +                     failed = -ESRCH;
-> >
-> > forgot to mention, task_pid_vnr() can't fail. sighand->siglock is held,
-> > for_each_thread() can't see a thread which has passed unhash_process().
->
-> Certainly good to know, but I'd be much more comfortable leaving this
-> check as-is. Having "failed" return with "0" would be very very bad
-> (userspace would think the filter had been successfully applied, etc).
-> I'd rather stay highly defensive here.
+It's been nearly 3 years now since commit 55036ba76b2d
+("lib: rename pack_hex_byte() to hex_byte_pack()") so it's
+time to remove this deprecated and unused static inline.
 
-OK, agreed. Although in this case I'd suggest
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ include/linux/kernel.h | 5 -----
+ 1 file changed, 5 deletions(-)
 
-		if (WARN_ON(failed == 0))
-			failed = -ESRCH;
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 44649e0..2416c82 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -493,11 +493,6 @@ static inline char *hex_byte_pack_upper(char *buf, u8 byte)
+ 	return buf;
+ }
+ 
+-static inline char * __deprecated pack_hex_byte(char *buf, u8 byte)
+-{
+-	return hex_byte_pack(buf, byte);
+-}
+-
+ extern int hex_to_bin(char ch);
+ extern int __must_check hex2bin(u8 *dst, const char *src, size_t count);
+ 
 
-but I won't insist.
-
-Oleg.
 
