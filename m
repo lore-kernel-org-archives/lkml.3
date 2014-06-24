@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751197AbaFXEVF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 00:21:05 -0400
-Received: from smtprelay4.synopsys.com ([198.182.44.111]:50550 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750802AbaFXEVE (ORCPT
+	id S1751160AbaFXEbK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 00:31:10 -0400
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:59857 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750709AbaFXEbJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 00:21:04 -0400
-Message-ID: <53A8FCA3.8000107@synopsys.com>
-Date: Tue, 24 Jun 2014 09:50:51 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Tony Breeds <tony@bakeyournoodle.com>
-CC: lkml <linux-kernel@vger.kernel.org>,
-        Anton Kolesov <Anton.Kolesov@synopsys.com>
-Subject: Re: ARC cross compiler hosting on kernel.org
-References: <5285B64E.7030507@synopsys.com>
-In-Reply-To: <5285B64E.7030507@synopsys.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.196.93]
+	Tue, 24 Jun 2014 00:31:09 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: mingo@redhat.com, peterz@infradead.org
+Cc: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH] sched/idle: Drop !! while calculating 'broadcast'
+Date: Tue, 24 Jun 2014 10:01:01 +0530
+Message-Id: <0dfbe2976aa108c53e08d3477ea90f6360c1f54c.1403584026.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 2.0.0.rc2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony,
+We don't need 'broadcast' to be set to 'zero or one', but to 'zero or non-zero'
+and so the extra operation to convert it to 'zero or one' can be skipped.
 
-On Friday 15 November 2013 11:21 AM, Vineet Gupta wrote:
-> Hi Tony,
-> 
-> Can you please host a ARC cross compiler on
-> https://www.kernel.org/pub/tools/crosstool
-> 
-> Mainline buildroot supports ARC (alas that build system doesn't generate a
-> relocatable toolchain).
-> 
-> Or you can simply use our homegrown build-system to checkout and build tools
-> (which can even do a relocatable toolchain provided you have patchelf installed)
-> 
-> git clone git@github.com:foss-for-synopsys-dwc-arc-processors/toolchain.git
-> cd toolchain
-> ./build-all.sh --auto-checkout --auto-pull --rel-rpaths --no-elf32 \
-> --target-cflags "-gdwarf-2"
-> 
-> ARC defconfig requires an INITRAMFS at a relative path. You can either disable it
-> (I have a patch queued up for a !RAMFS defconfig too).
-> 
-> Let me know if you run into any issues.
-> 
-> Thx,
-> -Vineet
-> 
+Also change type of 'broadcast' to unsigned int, i.e. type of
+drv->states[*].flags.
 
-Can you please look at this one or let me know who could help with this.
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+Rebased over: 3.16-rc2.
 
-Thx,
--Vineet
+ kernel/sched/idle.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
+index cf009fb..9f1608f 100644
+--- a/kernel/sched/idle.c
++++ b/kernel/sched/idle.c
+@@ -79,7 +79,7 @@ static void cpuidle_idle_call(void)
+ 	struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
+ 	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
+ 	int next_state, entered_state;
+-	bool broadcast;
++	unsigned int broadcast;
+ 
+ 	/*
+ 	 * Check if the idle task must be rescheduled. If it is the
+@@ -135,7 +135,7 @@ use_default:
+ 		goto exit_idle;
+ 	}
+ 
+-	broadcast = !!(drv->states[next_state].flags & CPUIDLE_FLAG_TIMER_STOP);
++	broadcast = drv->states[next_state].flags & CPUIDLE_FLAG_TIMER_STOP;
+ 
+ 	/*
+ 	 * Tell the time framework to switch to a broadcast timer
+-- 
+2.0.0.rc2
+
