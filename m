@@ -1,100 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753319AbaFXNYP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 09:24:15 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:54080 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751132AbaFXNYN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 09:24:13 -0400
-Message-ID: <53A97BF6.1060203@gmail.com>
-Date: Tue, 24 Jun 2014 21:24:06 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753552AbaFXNYo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 09:24:44 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:37675 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753361AbaFXNYm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 09:24:42 -0400
+Date: Tue, 24 Jun 2014 15:24:39 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: x86-ml <x86@kernel.org>
+Cc: Tony Luck <tony.luck@intel.com>, lkml <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] 2 RAS fixes for 3.17, refreshed
+Message-ID: <20140624132439.GH4439@pd.tnic>
+References: <20140622164603.GA3385@pd.tnic>
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>, Liqin Chen <liqin.linux@gmail.com>,
-        Lennox Wu <lennox.wu@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arch/score/include/uapi/asm/ptrace.h: Add prefix 'SCORE_'
- for related macros
-References: <53A66000.4010208@gmail.com> <53A6669B.1010701@roeck-us.net> <53A66A92.9040106@gmail.com> <53A6EDF6.2030203@roeck-us.net> <53A6EFEC.1020207@roeck-us.net> <53A79905.9020007@gmail.com>
-In-Reply-To: <53A79905.9020007@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140622164603.GA3385@pd.tnic>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2014 11:03 AM, Chen Gang wrote:
-> On 06/22/2014 11:02 PM, Guenter Roeck wrote:
->> On 06/22/2014 07:53 AM, Guenter Roeck wrote:
->>> I did that, and managed to build gcc.
->>>
->>> However, when trying to compile score defconfig, I get internal
->>> compiler errors in cc1
->>> when compiling drivers/tty/tty_mutex.o and block/elevator.o.
->>>
->>>   CC      block/elevator.o
->>> score-elf-gcc: internal compiler error: Segmentation fault (program cc1)
->>> 0x40c073 execute
->>>      ../../gcc/gcc/gcc.c:2848
->>> Please submit a full bug report,
->>> with preprocessed source if appropriate.
->>> Please include the complete backtrace with any bug report.
->>> See <http://gcc.gnu.org/bugs.html> for instructions.
->>> make[1]: *** [block/elevator.o] Error 4
->>> make: *** [block/elevator.o] Error 2
->>>
->>> Do you see that as well ?
->>>
->>> This is with
->>>
->>> GNU assembler version 2.24.51 (score-elf) using BFD version (GNU
->>> Binutils) 2.24.51.20140622
->>>
->>> and gcc configured with:
->>>
->>> Configured with: ../gcc/configure --prefix=/opt/kernel/score
->>> --program-prefix=score-elf- \
->>> --target=score-elf --without-header --disable-nls --enable-languages=c
->>> --disable-threads \
->>> --disable-shared --enable-werror=no
->>> target_configargs=enable_vtable_verify=yes \
->>> --enable-obsolete --disable-libssp --disable-libquadmath
->>>
->>> Tip of gcc source is commit d8686b0aa945a, tip of binutils source is
->>> commit d17c74c1d41.
->>> Your assembler fix is included in this version of binutils.
->>>
-
-Can we repeated this issue, or it is random?  I have try it use my
-current gcc version, it has no issue.
-
-If it can be repeated in the latest version, I shall use version compine
-(and try step by step) to fix it.
-
-If real random issue, if possible, please help repeated and generate
-coredump file, and put it to a place to let me get back for analysing.
-
-
-Thanks.
-
->>
->> Never mind, turns out I get score:defconfig to compile when using the
->> tip of the gcc 4.9 branch.
->>
->> Guenter
->>
+On Sun, Jun 22, 2014 at 06:46:03PM +0200, Borislav Petkov wrote:
+> Hi guys,
 > 
-> OK, I shall try defconfig for it (originally, I try allmodconfig, not
-> find this issue), and try to solve it, hope (although I am not quite
-> sure), I can finish within this month (2014-06-30).
-> 
-> 
-> Thanks.
-> 
+> please queue this for 3.17. We had it ready earlier but decided to delay
+> it for an extra testing period.
+
+Actually, ignore that one. Here's a new pull request adding a fix for an
+issue BorisO reported. All non-critical stuff for 3.17.
+
+Please pull,
+thanks.
+
+---
+The following changes since commit a497c3ba1d97fc69c1e78e7b96435ba8c2cb42ee:
+
+  Linux 3.16-rc2 (2014-06-21 19:02:54 -1000)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/ras_for_3.17
+
+for you to fetch changes up to 27c934158c5be0bebfb2970da521b9d9efc0058b:
+
+  x86, MCE: Robustify mcheck_init_device (2014-06-24 15:17:01 +0200)
+
+----------------------------------------------------------------
+CPU_POST_DEAD is one of thorns in the path to getting CPU hotplug
+seriously cleaned up. Kill its incarnation here in the MCE code.
+
+Also, robustify mcheck_init_device() wrt CPU hotplug.
+
+----------------------------------------------------------------
+Borislav Petkov (2):
+      x86, MCE: Kill CPU_POST_DEAD
+      x86, MCE: Robustify mcheck_init_device
+
+ arch/x86/kernel/cpu/mcheck/mce.c | 19 ++++++++++---------
+ 1 file changed, 10 insertions(+), 9 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index bb92f38153b2..4fc57975acc1 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -2385,6 +2385,10 @@ mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
+ 			threshold_cpu_callback(action, cpu);
+ 		mce_device_remove(cpu);
+ 		mce_intel_hcpu_update(cpu);
++
++		/* intentionally ignoring frozen here */
++		if (!(action & CPU_TASKS_FROZEN))
++			cmci_rediscover();
+ 		break;
+ 	case CPU_DOWN_PREPARE:
+ 		smp_call_function_single(cpu, mce_disable_cpu, &action, 1);
+@@ -2396,11 +2400,6 @@ mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
+ 		break;
+ 	}
+ 
+-	if (action == CPU_POST_DEAD) {
+-		/* intentionally ignoring frozen here */
+-		cmci_rediscover();
+-	}
+-
+ 	return NOTIFY_OK;
+ }
+ 
+@@ -2451,6 +2450,12 @@ static __init int mcheck_init_device(void)
+ 	for_each_online_cpu(i) {
+ 		err = mce_device_create(i);
+ 		if (err) {
++			/*
++			 * Register notifier anyway (and do not unreg it) so
++			 * that we don't leave undeleted timers, see notifier
++			 * callback above.
++			 */
++			__register_hotcpu_notifier(&mce_cpu_notifier);
+ 			cpu_notifier_register_done();
+ 			goto err_device_create;
+ 		}
+@@ -2471,10 +2476,6 @@ static __init int mcheck_init_device(void)
+ err_register:
+ 	unregister_syscore_ops(&mce_syscore_ops);
+ 
+-	cpu_notifier_register_begin();
+-	__unregister_hotcpu_notifier(&mce_cpu_notifier);
+-	cpu_notifier_register_done();
+-
+ err_device_create:
+ 	/*
+ 	 * We didn't keep track of which devices were created above, but
 
 -- 
-Chen Gang
+Regards/Gruss,
+    Boris.
 
-Open, share, and attitude like air, water, and life which God blessed
+Sent from a fat crate under my desk. Formatting is fine.
+--
