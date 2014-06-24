@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030247AbaFXQk3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:40:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32781 "EHLO
+	id S965334AbaFXQky (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:40:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32778 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755665AbaFXPxE (ORCPT
+	with ESMTP id S1755660AbaFXPxD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:53:04 -0400
+	Tue, 24 Jun 2014 11:53:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.10 34/52] USB: cdc-acm: fix shutdown and suspend race
-Date: Tue, 24 Jun 2014 11:50:49 -0400
-Message-Id: <20140624154715.515339967@linuxfoundation.org>
+        Kailang Yang <kailang@realtek.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.10 46/52] ALSA: hda/realtek - Add support of ALC891 codec
+Date: Tue, 24 Jun 2014 11:51:01 -0400
+Message-Id: <20140624154716.236452596@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154713.428945460@linuxfoundation.org>
 References: <20140624154713.428945460@linuxfoundation.org>
@@ -28,35 +28,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Kailang Yang <kailang@realtek.com>
 
-commit ed797074031a37bb9bf4a70952fffc606b77274d upstream.
+commit b6c5fbad16aa5026f508093a8d651c25e1cb6179 upstream.
 
-We should stop I/O unconditionally at suspend rather than rely on the
-tty-port initialised flag (which is set prior to stopping I/O during
-shutdown) in order to prevent suspend returning with URBs still active.
+New codec support for ALC891.
 
-Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
-that support remote wakeup")
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Kailang Yang <kailang@realtek.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/class/cdc-acm.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ sound/pci/hda/patch_realtek.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -1470,8 +1470,7 @@ static int acm_suspend(struct usb_interf
- 	if (cnt)
- 		return 0;
- 
--	if (test_bit(ASYNCB_INITIALIZED, &acm->port.flags))
--		stop_data_traffic(acm);
-+	stop_data_traffic(acm);
- 
- 	return 0;
- }
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -4664,6 +4664,7 @@ static const struct hda_codec_preset snd
+ 	{ .id = 0x10ec0670, .name = "ALC670", .patch = patch_alc662 },
+ 	{ .id = 0x10ec0671, .name = "ALC671", .patch = patch_alc662 },
+ 	{ .id = 0x10ec0680, .name = "ALC680", .patch = patch_alc680 },
++	{ .id = 0x10ec0867, .name = "ALC891", .patch = patch_alc882 },
+ 	{ .id = 0x10ec0880, .name = "ALC880", .patch = patch_alc880 },
+ 	{ .id = 0x10ec0882, .name = "ALC882", .patch = patch_alc882 },
+ 	{ .id = 0x10ec0883, .name = "ALC883", .patch = patch_alc882 },
 
 
