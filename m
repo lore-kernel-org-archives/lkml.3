@@ -1,93 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754101AbaFXTUJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 15:20:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20318 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752607AbaFXTUF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 15:20:05 -0400
-Date: Tue, 24 Jun 2014 21:18:15 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
-        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
-        linux-api@vger.kernel.org, x86@kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
-        linux-arch@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: Re: [PATCH v7 4/9] seccomp: move no_new_privs into seccomp
-Message-ID: <20140624191815.GA3623@redhat.com>
-References: <1403560693-21809-1-git-send-email-keescook@chromium.org> <1403560693-21809-5-git-send-email-keescook@chromium.org>
+	id S1753338AbaFXTUI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 15:20:08 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:40515 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752599AbaFXTUE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 15:20:04 -0400
+Message-ID: <53A9CF5F.6040806@bjorling.me>
+Date: Tue, 24 Jun 2014 21:19:59 +0200
+From: Matias Bjorling <m@bjorling.me>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403560693-21809-5-git-send-email-keescook@chromium.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Keith Busch <keith.busch@intel.com>
+CC: willy@linux.intel.com, sbradshaw@micron.com, axboe@fb.com,
+        tom.leiming@gmail.com, hch@infradead.org, linux-kernel@vger.kernel.org,
+        linux-nvme@lists.infradead.org
+Subject: Re: [PATCH v8] NVMe: convert to blk-mq
+References: <1402661396-19207-1-git-send-email-m@bjorling.me> <1402661396-19207-2-git-send-email-m@bjorling.me> <alpine.LRH.2.03.1406160931400.4699@AMR>
+In-Reply-To: <alpine.LRH.2.03.1406160931400.4699@AMR>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23, Kees Cook wrote:
+Den 16-06-2014 17:57, Keith Busch skrev:
+> On Fri, 13 Jun 2014, Matias Bjørling wrote:
+>> This converts the current NVMe driver to utilize the blk-mq layer.
 >
-> --- a/include/linux/seccomp.h
-> +++ b/include/linux/seccomp.h
-> @@ -3,6 +3,8 @@
+>> static void nvme_reset_notify(struct pci_dev *pdev, bool prepare)
+>> {
+>> -       struct nvme_dev *dev = pci_get_drvdata(pdev);
+>> +    struct nvme_dev *dev = pci_get_drvdata(pdev);
+>>
+>> -       if (prepare)
+>> -               nvme_dev_shutdown(dev);
+>> -       else
+>> -               nvme_dev_resume(dev);
+>> +    spin_lock(&dev_list_lock);
+>> +    if (prepare)
+>> +        list_del_init(&dev->node);
+>> +    else
+>> +        list_add(&dev->node, &dev_list);
+>> +    spin_unlock(&dev_list_lock);
+>> }
+>> +        if (nvme_create_queue(dev->queues[i], i))
+>>             break;
+>> }
 >
->  #include <uapi/linux/seccomp.h>
+> The above change was just error injection test code so you can cause
+> a device to become unresponsive and trigger the timeout handling.
 >
-> +#define SECCOMP_FLAG_NO_NEW_PRIVS	0	/* task may not gain privs */
-> +
->  #ifdef CONFIG_SECCOMP
->
->  #include <linux/thread_info.h>
-> @@ -16,6 +18,7 @@ struct seccomp_filter;
->   *         system calls available to a process.
->   * @filter: must always point to a valid seccomp-filter or NULL as it is
->   *          accessed without locking during system call entry.
-> + * @flags: flags under task->sighand->siglock lock
->   *
->   *          @filter must only be accessed from the context of current as there
->   *          is no read locking.
-> @@ -23,6 +26,7 @@ struct seccomp_filter;
->  struct seccomp {
->  	int mode;
->  	struct seccomp_filter *filter;
-> +	unsigned long flags;
->  };
->
->  extern int __secure_computing(int);
-> @@ -51,7 +55,9 @@ static inline int seccomp_mode(struct seccomp *s)
->
->  #include <linux/errno.h>
->
-> -struct seccomp { };
-> +struct seccomp {
-> +	unsigned long flags;
-> +};
+> This latest is otherwise stable on my dev machine.
 
-A bit messy ;)
-
-I am wondering if we can simply do
-
-	static inline bool current_no_new_privs(void)
-	{
-		if (current->no_new_privs)
-			return true;
-
-	#ifdef CONFIG_SECCOMP
-		if (test_thread_flag(TIF_SECCOMP))
-			return true;
-	#endif
-
-		return false;
-
-	     return test_bit(SECCOMP_FLAG_NO_NEW_PRIVS, &p->seccomp.flags);
-	}
-
-instead ?
-
-Oleg.
-
+May I add an Acked-by from you?
