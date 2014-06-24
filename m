@@ -1,45 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752802AbaFXVqp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 17:46:45 -0400
-Received: from gate.crashing.org ([63.228.1.57]:56128 "EHLO gate.crashing.org"
+	id S1753425AbaFXVrO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 17:47:14 -0400
+Received: from mga09.intel.com ([134.134.136.24]:65429 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751206AbaFXVqo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 17:46:44 -0400
-Message-ID: <1403646374.4587.178.camel@pasglop>
-Subject: Re: [PATCH] vfio: Fix endianness handling for emulated BARs
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Alexander Graf <agraf@suse.de>
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        linuxppc-dev@lists.ozlabs.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
-Date: Wed, 25 Jun 2014 07:46:14 +1000
-In-Reply-To: <53A955F5.6050801@suse.de>
-References: <1403091391-31780-1-git-send-email-aik@ozlabs.ru>
-	 <1403116512.3707.175.camel@ul30vt.home> <53A233E9.6030006@ozlabs.ru>
-	 <53A241F6.9010307@ozlabs.ru> <53A25D74.5000804@ozlabs.ru>
-	 <1403234514.3707.278.camel@ul30vt.home> <1403305961.4587.66.camel@pasglop>
-	 <53A94EBD.101@ozlabs.ru> <53A955F5.6050801@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752014AbaFXVrN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 17:47:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,540,1400050800"; 
+   d="scan'208";a="562849401"
+Date: Tue, 24 Jun 2014 15:47:11 -0600 (MDT)
+From: Keith Busch <keith.busch@intel.com>
+X-X-Sender: vmware@localhost.localdom
+To: =?ISO-8859-15?Q?Matias_Bj=F8rling?= <m@bjorling.me>
+cc: Keith Busch <keith.busch@intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com>,
+        Jens Axboe <axboe@fb.com>, Ming Lei <tom.leiming@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-nvme <linux-nvme@lists.infradead.org>
+Subject: Re: [PATCH v8] NVMe: convert to blk-mq
+In-Reply-To: <CAOu_J6mz=eeimXAsQ0Mj=tya+eHpwUoiG69=XPWbSEuRO1AwjA@mail.gmail.com>
+Message-ID: <alpine.LRH.2.03.1406241531350.4699@AMR>
+References: <1402661396-19207-1-git-send-email-m@bjorling.me> <1402661396-19207-2-git-send-email-m@bjorling.me> <alpine.LRH.2.03.1406160931400.4699@AMR> <53A9CF5F.6040806@bjorling.me> <alpine.LRH.2.03.1406241419080.4699@AMR>
+ <CAOu_J6mz=eeimXAsQ0Mj=tya+eHpwUoiG69=XPWbSEuRO1AwjA@mail.gmail.com>
+User-Agent: Alpine 2.03 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1839136328-1403646432=:4699"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-06-24 at 12:41 +0200, Alexander Graf wrote:
-> Is there actually any difference in generated code with this patch 
-> applied and without? I would hope that iowrite..() is inlined and 
-> cancels out the cpu_to_le..() calls that are also inlined?
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-No, the former uses byteswapping asm, the compiler can't "cancel" it
-out, but the overhead of the additional byteswap might not be
-measurable.
+--8323328-1839136328-1403646432=:4699
+Content-Type: TEXT/PLAIN; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8BIT
 
-Cheers,
-Ben.
+On Tue, 24 Jun 2014, Matias Bjørling wrote:
+> On Tue, Jun 24, 2014 at 10:33 PM, Keith Busch <keith.busch@intel.com> wrote:
+>> On Tue, 24 Jun 2014, Matias Bjorling wrote:
+>>> Den 16-06-2014 17:57, Keith Busch skrev:
+>>>>
+>>>> This latest is otherwise stable on my dev machine.
+>>>
+>>> May I add an Acked-by from you?
+>>
+>> Totally up to Willy, but my feeling is "not just yet". I see the value
+>> this driver provides, but I would need to give this to a customer and
+>> hear their results before adding an "ack". It maybe a couple more weeks
+>> before they'll be able to try it.
+>
+> I was hoping to get an OK before that, to make sure it is picked up
+> for the 3.17 release.
+>
+> Should I pack it up in a specific way to help it along?
 
-
+I think what you're doing is the right way to go. I trust you removed
+the test code from your next iteration, and this does pass my tests on my
+machine... I was just hoping to hear what some other people with better
+macro level benchmarking abilities would say. So okay, you can put my
+"Acked-by" on this, but I don't have all the performance numbers yet.
+--8323328-1839136328-1403646432=:4699--
