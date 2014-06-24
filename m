@@ -1,45 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755888AbaFXRB7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 13:01:59 -0400
-Received: from forward-corp1f.mail.yandex.net ([95.108.130.40]:49545 "EHLO
-	forward-corp1f.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753656AbaFXRB6 (ORCPT
+	id S1754660AbaFXRDz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 13:03:55 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:45733 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752392AbaFXRDx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 13:01:58 -0400
-X-Yandex-Uniq: d9e4953f-4e8a-4551-a9b9-2e3d6b343a3c
-Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
-Date: Tue, 24 Jun 2014 21:01:53 +0400
-From: Stanislav Fomichev <stfomichev@yandex-team.ru>
-To: linux-kernel@vger.kernel.org
-Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
-        acme@kernel.org, namhyung@kernel.org, artagnon@gmail.com,
-        rusty@rustcorp.com.au, bp@suse.de, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH v4 0/4] perf timechart io mode
-Message-ID: <20140624170153.GC10114@stfomichev-desktop.yandex.net>
-References: <1403260191-10079-1-git-send-email-stfomichev@yandex-team.ru>
- <20140624084113.GC31390@krava.redhat.com>
- <20140624091022.GE20225@stfomichev-desktop.yandex.net>
- <20140624165712.GA10114@stfomichev-desktop.yandex.net>
+	Tue, 24 Jun 2014 13:03:53 -0400
+From: bsegall@google.com
+To: Kirill Tkhai <ktkhai@parallels.com>
+Cc: <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, <tkhai@yandex.ru>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "Mike Galbraith" <umgwanakikbuti@gmail.com>, <khorenko@parallels.com>,
+        Paul Turner <pjt@google.com>
+Subject: Re: [PATCH v2 1/3] sched/fair: Disable runtime_enabled on dying rq
+References: <20140624074148.8738.57690.stgit@tkhai>
+	<1403596432.3462.26.camel@tkhai>
+Date: Tue, 24 Jun 2014 10:03:51 -0700
+In-Reply-To: <1403596432.3462.26.camel@tkhai> (Kirill Tkhai's message of "Tue,
+	24 Jun 2014 11:53:52 +0400")
+Message-ID: <xm26wqc6z1c8.fsf@sword-of-the-dawn.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140624165712.GA10114@stfomichev-desktop.yandex.net>
-User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> For some reason, in Jiri's trace we see exit from sys_read with 2,
-> and then again exit from sys_read with -EAGAIN:
->             xterm 32028 [000] 43390.908909: syscalls:sys_enter_read: fd: 0x00000004, buf: 0x02076e8c, count: 0x0
->             xterm 32028 [000] 43390.908917: syscalls:sys_exit_read: 0x2
->             xterm 32028 [000] 43390.908982: syscalls:sys_exit_read: 0xfffffffffffffff5
-> 
-> I'm not sure how it is possible (either we lost sys_enter, or timestamp
-> of seconds -EAGAIN is wrong?). I think we might just convert this error
-> to a warning (we couldn't reproduce it again).
-> Should I resend the whole series (preferred) or add another patch on
-> top?
+Kirill Tkhai <ktkhai@parallels.com> writes:
 
-Or probably left it as is, because perf.data is really weird...
+> We kill rq->rd on the CPU_DOWN_PREPARE stage:
+>
+> 	cpuset_cpu_inactive -> cpuset_update_active_cpus -> partition_sched_domains ->
+> 	-> cpu_attach_domain -> rq_attach_root -> set_rq_offline
+>
+> This unthrottles all throttled cfs_rqs.
+>
+> But the cpu is still able to call schedule() till
+>
+> 	take_cpu_down->__cpu_disable()
+>
+> is called from stop_machine.
+>
+> This case the tasks from just unthrottled cfs_rqs are pickable
+> in a standard scheduler way, and they are picked by dying cpu.
+> The cfs_rqs becomes throttled again, and migrate_tasks()
+> in migration_call skips their tasks (one more unthrottle
+> in migrate_tasks()->CPU_DYING does not happen, because rq->rd
+> is already NULL).
+>
+> Patch sets runtime_enabled to zero. This guarantees, the runtime
+> is not accounted, and the cfs_rqs won't exceed given
+> cfs_rq->runtime_remaining = 1, and tasks will be pickable
+> in migrate_tasks(). runtime_enabled is recalculated again
+> when rq becomes online again.
+>
+> Ben Segall also noticed, we always enable runtime in
+> tg_set_cfs_bandwidth(). Actually, we should do that for online
+> cpus only. To fix that, we check if a cpu is online when
+> its rq is locked. This guarantees we do not have races with
+> set_rq_offline(), which also requires rq->lock.
+>
+> v2: Fix race with tg_set_cfs_bandwidth().
+>     Move cfs_rq->runtime_enabled=0 above unthrottle_cfs_rq().
+>
+> Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+> CC: Konstantin Khorenko <khorenko@parallels.com>
+> CC: Ben Segall <bsegall@google.com>
+> CC: Paul Turner <pjt@google.com>
+> CC: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> CC: Mike Galbraith <umgwanakikbuti@gmail.com>
+> CC: Peter Zijlstra <peterz@infradead.org>
+> CC: Ingo Molnar <mingo@kernel.org>
+> ---
+>  kernel/sched/core.c |   15 +++++++++++----
+>  kernel/sched/fair.c |   22 ++++++++++++++++++++++
+>  2 files changed, 33 insertions(+), 4 deletions(-)
+>
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 7f3063c..707a3c5 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -7842,11 +7842,18 @@ static int tg_set_cfs_bandwidth(struct task_group *tg, u64 period, u64 quota)
+>  		struct rq *rq = cfs_rq->rq;
+>  
+>  		raw_spin_lock_irq(&rq->lock);
+> -		cfs_rq->runtime_enabled = runtime_enabled;
+> -		cfs_rq->runtime_remaining = 0;
+> +		/*
+> +		 * Do not enable runtime on offline runqueues. We specially
+> +		 * make it disabled in unthrottle_offline_cfs_rqs().
+> +		 */
+> +		if (cpu_online(i)) {
+> +			cfs_rq->runtime_enabled = runtime_enabled;
+> +			cfs_rq->runtime_remaining = 0;
+> +
+> +			if (cfs_rq->throttled)
+> +				unthrottle_cfs_rq(cfs_rq);
+> +		}
+
+We can just do for_each_online_cpu, yes? Also we probably need
+get_online_cpus/put_online_cpus, and/or want cpu_active_mask instead
+right?
