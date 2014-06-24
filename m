@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932309AbaFXPxw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:53:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32909 "EHLO
+	id S965265AbaFXQcO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:32:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32918 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932279AbaFXPxs (ORCPT
+	with ESMTP id S932290AbaFXPxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:53:48 -0400
+	Tue, 24 Jun 2014 11:53:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         "Eric W. Biederman" <ebiederm@xmission.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 07/68] netlink: Rename netlink_capable netlink_allowed
-Date: Tue, 24 Jun 2014 11:50:26 -0400
-Message-Id: <20140624154724.253832788@linuxfoundation.org>
+Subject: [PATCH 3.14 09/68] net: Add variants of capable for use on on sockets
+Date: Tue, 24 Jun 2014 11:50:28 -0400
+Message-Id: <20140624154724.341658724@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154723.907894814@linuxfoundation.org>
 References: <20140624154723.907894814@linuxfoundation.org>
@@ -31,64 +31,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-[ Upstream commit 5187cd055b6e81fc6526109456f8b20623148d5f ]
+[ Upstream commit a3b299da869d6e78cf42ae0b1b41797bcb8c5e4b ]
 
-netlink_capable is a static internal function in af_netlink.c and we
-have better uses for the name netlink_capable.
+sk_net_capable - The common case, operations that are safe in a network namespace.
+sk_capable - Operations that are not known to be safe in a network namespace
+sk_ns_capable - The general case for special cases.
 
 Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/netlink/af_netlink.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ include/net/sock.h |    5 +++++
+ net/core/sock.c    |   49 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 54 insertions(+)
 
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -1360,7 +1360,7 @@ retry:
- 	return err;
- }
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -2278,6 +2278,11 @@ int sock_get_timestampns(struct sock *,
+ int sock_recv_errqueue(struct sock *sk, struct msghdr *msg, int len, int level,
+ 		       int type);
  
--static inline int netlink_capable(const struct socket *sock, unsigned int flag)
-+static inline int netlink_allowed(const struct socket *sock, unsigned int flag)
++bool sk_ns_capable(const struct sock *sk,
++		   struct user_namespace *user_ns, int cap);
++bool sk_capable(const struct sock *sk, int cap);
++bool sk_net_capable(const struct sock *sk, int cap);
++
+ /*
+  *	Enable debug/info messages
+  */
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -145,6 +145,55 @@
+ static DEFINE_MUTEX(proto_list_mutex);
+ static LIST_HEAD(proto_list);
+ 
++/**
++ * sk_ns_capable - General socket capability test
++ * @sk: Socket to use a capability on or through
++ * @user_ns: The user namespace of the capability to use
++ * @cap: The capability to use
++ *
++ * Test to see if the opener of the socket had when the socket was
++ * created and the current process has the capability @cap in the user
++ * namespace @user_ns.
++ */
++bool sk_ns_capable(const struct sock *sk,
++		   struct user_namespace *user_ns, int cap)
++{
++	return file_ns_capable(sk->sk_socket->file, user_ns, cap) &&
++		ns_capable(user_ns, cap);
++}
++EXPORT_SYMBOL(sk_ns_capable);
++
++/**
++ * sk_capable - Socket global capability test
++ * @sk: Socket to use a capability on or through
++ * @cap: The global capbility to use
++ *
++ * Test to see if the opener of the socket had when the socket was
++ * created and the current process has the capability @cap in all user
++ * namespaces.
++ */
++bool sk_capable(const struct sock *sk, int cap)
++{
++	return sk_ns_capable(sk, &init_user_ns, cap);
++}
++EXPORT_SYMBOL(sk_capable);
++
++/**
++ * sk_net_capable - Network namespace socket capability test
++ * @sk: Socket to use a capability on or through
++ * @cap: The capability to use
++ *
++ * Test to see if the opener of the socket had when the socke was created
++ * and the current process has the capability @cap over the network namespace
++ * the socket is a member of.
++ */
++bool sk_net_capable(const struct sock *sk, int cap)
++{
++	return sk_ns_capable(sk, sock_net(sk)->user_ns, cap);
++}
++EXPORT_SYMBOL(sk_net_capable);
++
++
+ #ifdef CONFIG_MEMCG_KMEM
+ int mem_cgroup_sockets_init(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
  {
- 	return (nl_table[sock->sk->sk_protocol].flags & flag) ||
- 		ns_capable(sock_net(sock->sk)->user_ns, CAP_NET_ADMIN);
-@@ -1428,7 +1428,7 @@ static int netlink_bind(struct socket *s
- 
- 	/* Only superuser is allowed to listen multicasts */
- 	if (nladdr->nl_groups) {
--		if (!netlink_capable(sock, NL_CFG_F_NONROOT_RECV))
-+		if (!netlink_allowed(sock, NL_CFG_F_NONROOT_RECV))
- 			return -EPERM;
- 		err = netlink_realloc_groups(sk);
- 		if (err)
-@@ -1490,7 +1490,7 @@ static int netlink_connect(struct socket
- 		return -EINVAL;
- 
- 	if ((nladdr->nl_groups || nladdr->nl_pid) &&
--	    !netlink_capable(sock, NL_CFG_F_NONROOT_SEND))
-+	    !netlink_allowed(sock, NL_CFG_F_NONROOT_SEND))
- 		return -EPERM;
- 
- 	if (!nlk->portid)
-@@ -2096,7 +2096,7 @@ static int netlink_setsockopt(struct soc
- 		break;
- 	case NETLINK_ADD_MEMBERSHIP:
- 	case NETLINK_DROP_MEMBERSHIP: {
--		if (!netlink_capable(sock, NL_CFG_F_NONROOT_RECV))
-+		if (!netlink_allowed(sock, NL_CFG_F_NONROOT_RECV))
- 			return -EPERM;
- 		err = netlink_realloc_groups(sk);
- 		if (err)
-@@ -2247,7 +2247,7 @@ static int netlink_sendmsg(struct kiocb
- 		dst_group = ffs(addr->nl_groups);
- 		err =  -EPERM;
- 		if ((dst_group || dst_portid) &&
--		    !netlink_capable(sock, NL_CFG_F_NONROOT_SEND))
-+		    !netlink_allowed(sock, NL_CFG_F_NONROOT_SEND))
- 			goto out;
- 	} else {
- 		dst_portid = nlk->dst_portid;
 
 
