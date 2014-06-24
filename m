@@ -1,94 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754860AbaFXSGp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 14:06:45 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:36990 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754177AbaFXSGm (ORCPT
+	id S1753814AbaFXSJP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 14:09:15 -0400
+Received: from mout.kundenserver.de ([212.227.126.130]:56356 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753122AbaFXSJM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 14:06:42 -0400
+	Tue, 24 Jun 2014 14:09:12 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Jim Davis <jim.epost@gmail.com>, sfr@canb.auug.org.au,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, sbkim73@samsung.com,
+        sameo@linux.intel.com, grant.likely@linaro.org, robh+dt@kernel.org,
+        devicetree <devicetree@vger.kernel.org>
+Subject: mfd: sec-core requires regulators
+Date: Tue, 24 Jun 2014 20:09:07 +0200
+Message-ID: <6906564.1ehoeq1QjB@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140624154833.GR13803@lee--X1>
+References: <CA+r1ZhhFYip3Jp2c3d8tNpD-vK8Pkf7DzrKTtk6Gy8uOOO3Ucw@mail.gmail.com> <29237234.T7oGEGKuvp@wuerfel> <20140624154833.GR13803@lee--X1>
 MIME-Version: 1.0
-In-Reply-To: <20140623220150.GM5412@outflux.net>
-References: <1403560693-21809-1-git-send-email-keescook@chromium.org> <20140623220150.GM5412@outflux.net>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 24 Jun 2014 11:06:20 -0700
-Message-ID: <CALCETrV=nAuWi8_Xj6KnJ6P1Yiaw36+n50-gHKaTgea4yH85Eg@mail.gmail.com>
-Subject: Re: [PATCH v7 1/1] man-pages: seccomp.2: document syscall
-To: Kees Cook <keescook@chromium.org>
-Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Will Drewry <wad@chromium.org>, Julien Tinnes <jln@chromium.org>,
-        David Drysdale <drysdale@google.com>,
-        Linux API <linux-api@vger.kernel.org>, X86 ML <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:mVH1L0JDBPPwC4LKpb85Kcrwocz9Sx8IrRgwKIm3a3f
+ 5jn66CKb8HRgRu+o4SZyo6WVdH2XBnUtJGx6IbtwlqtbV0350g
+ 1n/BTVlqVbTxgcxa7fF4vJFUrWHcxx8YpAnzncbuW8mc77/HM5
+ b3902VIi7+fucbznFAHiJJV6HVOC76AFKs081QPDsJBNxxqmQt
+ MUs/yDpWg/NVsKidqB7gxhyeZjtDsF6Q5KwApy04gQ/EPcatjA
+ GJ8KAYKsou1PJ0vq+4IKI3CCgDr36pgS1TlrpaSYJyGmtrmt48
+ Z5xVrvJgeflIjOb8BW1OH1UYs//xig/XOmatd5n5Og/Gv4PfLr
+ l9rjiUkytaTuQAvA96kA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 23, 2014 at 3:01 PM, Kees Cook <keescook@chromium.org> wrote:
-> Combines documentation from prctl, and in-kernel seccomp_filter.txt,
-> along with new details specific to the new syscall.
->
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> ---
->  man2/seccomp.2 |  333 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 333 insertions(+)
->  create mode 100644 man2/seccomp.2
->
-> diff --git a/man2/seccomp.2 b/man2/seccomp.2
-> new file mode 100644
-> index 0000000..de7fbf7
-> --- /dev/null
-> +++ b/man2/seccomp.2
-> @@ -0,0 +1,333 @@
-> +.\" Copyright (C) 2014 Kees Cook <keescook@chromium.org>
-> +.\" and Copyright (C) 2012 Will Drewry <wad@chromium.org>
-> +.\" and Copyright (C) 2008 Michael Kerrisk <mtk.manpages@gmail.com>
-> +.\"
-> +.\" %%%LICENSE_START(VERBATIM)
-> +.\" Permission is granted to make and distribute verbatim copies of this
-> +.\" manual provided the copyright notice and this permission notice are
-> +.\" preserved on all copies.
-> +.\"
-> +.\" Permission is granted to copy and distribute modified versions of this
-> +.\" manual under the conditions for verbatim copying, provided that the
-> +.\" entire resulting derived work is distributed under the terms of a
-> +.\" permission notice identical to this one.
-> +.\"
-> +.\" Since the Linux kernel and libraries are constantly changing, this
-> +.\" manual page may be incorrect or out-of-date.  The author(s) assume no
-> +.\" responsibility for errors or omissions, or for damages resulting from
-> +.\" the use of the information contained herein.  The author(s) may not
-> +.\" have taken the same level of care in the production of this manual,
-> +.\" which is licensed free of charge, as they might when working
-> +.\" professionally.
-> +.\"
-> +.\" Formatted or processed versions of this manual, if unaccompanied by
-> +.\" the source, must acknowledge the copyright and authors of this work.
-> +.\" %%%LICENSE_END
-> +.\"
-> +.TH SECCOMP 2 2014-06-23 "Linux" "Linux Programmer's Manual"
-> +.SH NAME
-> +seccomp \-
-> +operate on Secure Computing state of the process
-> +.SH SYNOPSIS
-> +.nf
-> +.B #include <linux/seccomp.h>
-> +.B #include <linux/filter.h>
-> +.B #include <linux/audit.h>
-> +.B #include <linux/signal.h>
-> +.B #include <sys/ptrace.h>
-> +
-> +.BI "int seccomp(unsigned int " operation ", unsigned int " flags ,
-> +.BI "            unsigned char *" args );
+The newly added sec-core mfd module calls the regulator_suspend_prepare()
+function, which is only available if the regulator API is provided. This
+matches the usage of the driver, so we can just add a Kconfig dependency.
 
-At the very least, shouldn't this be void *args?
+Reported-by: Jim Davis <jim.epost@gmail.com>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
---Andy
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 207c433..1caa3c5 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -582,7 +582,7 @@ config MFD_RC5T583
+ 
+ config MFD_SEC_CORE
+        bool "SAMSUNG Electronics PMIC Series Support"
+-       depends on I2C=y
++       depends on I2C=y && REGULATOR
+        select MFD_CORE
+        select REGMAP_I2C
+        select REGMAP_IRQ
