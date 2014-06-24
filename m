@@ -1,118 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754479AbaFXS3v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 14:29:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54895 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753728AbaFXS3t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 14:29:49 -0400
-Message-ID: <53A9C391.6030409@zytor.com>
-Date: Tue, 24 Jun 2014 11:29:37 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>, luto@amacapital.net,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com
-CC: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86/vdso: Discard the __bug_table section
-References: <2a5bebff42defd8a5e81d96f7dc00f21143c80e8.1403129369.git.luto@amacapital.net> <tip-5f56e7167e6d438324fcba87018255d81e201383@git.kernel.org> <20140622084754.GA15094@gmail.com>
-In-Reply-To: <20140622084754.GA15094@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/mixed;
- boundary="------------060901090601010703060005"
+	id S1754894AbaFXSaX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 14:30:23 -0400
+Received: from smtprelay0054.hostedemail.com ([216.40.44.54]:38828 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754550AbaFXSaV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 14:30:21 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3865:3866:3871:4321:4605:5007:7652:7875:10004:10400:10848:11026:11658:11914:12517:12519:12555:13019:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: sky39_757d4d6bd12a
+X-Filterd-Recvd-Size: 2285
+Message-ID: <1403634048.29061.23.camel@joe-AO725>
+Subject: [trivial PATCH net-next] mac_pton: Use bool not int return
+From: Joe Perches <joe@perches.com>
+To: David Miller <davem@davemloft.net>
+Cc: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 24 Jun 2014 11:20:48 -0700
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------060901090601010703060005
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Use bool instead of int as the return type.
 
-On 06/22/2014 01:47 AM, Ingo Molnar wrote:
-> 
-> * tip-bot for Andy Lutomirski <tipbot@zytor.com> wrote:
-> 
->> Commit-ID:  5f56e7167e6d438324fcba87018255d81e201383
->> Gitweb:     http://git.kernel.org/tip/5f56e7167e6d438324fcba87018255d81e201383
->> Author:     Andy Lutomirski <luto@amacapital.net>
->> AuthorDate: Wed, 18 Jun 2014 15:59:46 -0700
->> Committer:  H. Peter Anvin <hpa@linux.intel.com>
->> CommitDate: Thu, 19 Jun 2014 15:44:51 -0700
->>
->> x86/vdso: Discard the __bug_table section
->>
->> It serves no purpose in user code.
->>
->> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
->> Link: http://lkml.kernel.org/r/2a5bebff42defd8a5e81d96f7dc00f21143c80e8.1403129369.git.luto@amacapital.net
->> Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
->> ---
->>  arch/x86/vdso/vdso-layout.lds.S | 1 +
->>  1 file changed, 1 insertion(+)
-> 
-> One of the recent x86/urgent vdso commits causes this build failure:
-> 
->  Error: too many copied sections (max = 13)
->  make[2]: *** [arch/x86/vdso/vdso-image-64.c] Error 1
->  make[1]: *** [arch/x86/vdso] Error 2
->  make: *** [arch/x86] Error 2
-> 
-> with the attached config.
-> 
+All uses are tested with !.
 
-Hi Ingo,
-
-Could you try this with the attached patch?
-
-	-hpa
-
-
-
---------------060901090601010703060005
-Content-Type: text/x-patch;
- name="0001-x86-vdso-Make-vdso2c-print-the-number-of-sections-ne.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-x86-vdso-Make-vdso2c-print-the-number-of-sections-ne.pa";
- filename*1="tch"
-
->From e28dc3efe8a8880206e90886cc12649f87fa1848 Mon Sep 17 00:00:00 2001
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Tue, 24 Jun 2014 11:26:18 -0700
-Subject: [PATCH] x86/vdso: Make vdso2c print the number of sections needed on
- error
-
-If we run out of space for section, at least make the error message
-print the amount of space we need so we can actually diagnose it.
-Furthermore, the test should be > instead of >= (it is okay to have
-exactly the maximum number of sections.)
-
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Cc: Andy Lutomirski <luto@amacapital.net>
-Link: http://lkml.kernel.org/r/20140622084754.GA15094@gmail.com
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
- arch/x86/vdso/vdso2c.h | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ include/linux/kernel.h |  2 +-
+ lib/net_utils.c        | 10 +++++-----
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/vdso/vdso2c.h b/arch/x86/vdso/vdso2c.h
-index f42e2ddc663d..94158e100f26 100644
---- a/arch/x86/vdso/vdso2c.h
-+++ b/arch/x86/vdso/vdso2c.h
-@@ -99,8 +99,9 @@ static void BITSFUNC(copy_section)(struct BITSFUNC(fake_sections) *out,
- 	if (!copy)
- 		return;
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 44649e0..112a6f5 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -501,7 +501,7 @@ static inline char * __deprecated pack_hex_byte(char *buf, u8 byte)
+ extern int hex_to_bin(char ch);
+ extern int __must_check hex2bin(u8 *dst, const char *src, size_t count);
  
--	if (out->count >= out->max_count)
--		fail("too many copied sections (max = %d)\n", out->max_count);
-+	if (out->count > out->max_count)
-+		fail("too many copied sections (max = %d, need = %d)\n",
-+		     out->max_count, out->count);
+-int mac_pton(const char *s, u8 *mac);
++bool mac_pton(const char *s, u8 *mac);
  
- 	if (in_idx == out->in_shstrndx)
- 		out->out_shstrndx = out->count;
--- 
-1.9.3
+ /*
+  * General tracing related utility functions - trace_printk(),
+diff --git a/lib/net_utils.c b/lib/net_utils.c
+index 2e3c52c..148fc6e 100644
+--- a/lib/net_utils.c
++++ b/lib/net_utils.c
+@@ -3,24 +3,24 @@
+ #include <linux/ctype.h>
+ #include <linux/kernel.h>
+ 
+-int mac_pton(const char *s, u8 *mac)
++bool mac_pton(const char *s, u8 *mac)
+ {
+ 	int i;
+ 
+ 	/* XX:XX:XX:XX:XX:XX */
+ 	if (strlen(s) < 3 * ETH_ALEN - 1)
+-		return 0;
++		return false;
+ 
+ 	/* Don't dirty result unless string is valid MAC. */
+ 	for (i = 0; i < ETH_ALEN; i++) {
+ 		if (!isxdigit(s[i * 3]) || !isxdigit(s[i * 3 + 1]))
+-			return 0;
++			return false;
+ 		if (i != ETH_ALEN - 1 && s[i * 3 + 2] != ':')
+-			return 0;
++			return false;
+ 	}
+ 	for (i = 0; i < ETH_ALEN; i++) {
+ 		mac[i] = (hex_to_bin(s[i * 3]) << 4) | hex_to_bin(s[i * 3 + 1]);
+ 	}
+-	return 1;
++	return true;
+ }
+ EXPORT_SYMBOL(mac_pton);
 
 
---------------060901090601010703060005--
+
