@@ -1,80 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753844AbaFXOPk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 10:15:40 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:51734 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753728AbaFXOPi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 10:15:38 -0400
-Date: Tue, 24 Jun 2014 10:15:37 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Paul Bolle <pebolle@tiscali.nl>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-api@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Documentation: sysfs-bus-usb: update power/persist
- description
-In-Reply-To: <1403602404.1960.7.camel@x220>
-Message-ID: <Pine.LNX.4.44L0.1406241010160.990-100000@iolanthe.rowland.org>
+	id S1753941AbaFXOQY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 10:16:24 -0400
+Received: from mail-by2lp0241.outbound.protection.outlook.com ([207.46.163.241]:36665
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753680AbaFXOQX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 10:16:23 -0400
+From: Varun Sethi <Varun.Sethi@freescale.com>
+To: <iommu@lists.linux-foundation.org>, <joro@8bytes.org>,
+        <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <alex.williamson@redhat.com>
+CC: Varun Sethi <Varun.Sethi@freescale.com>
+Subject: [PATCH 0/3] iommu/fsl: Fixes for the PAMU driver. 
+Date: Tue, 24 Jun 2014 19:27:14 +0530
+Message-ID: <1403618237-26248-1-git-send-email-Varun.Sethi@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199002)(68736004)(93916002)(97736001)(86362001)(48376002)(77982001)(79102001)(50986999)(44976005)(46102001)(83322001)(6806004)(31966008)(74502001)(74662001)(50466002)(76482001)(84676001)(77156001)(64706001)(105606002)(83072002)(21056001)(26826002)(47776003)(20776003)(4396001)(89996001)(92566001)(2201001)(80022001)(85852003)(104166001)(102836001)(50226001)(95666004)(85306003)(104016002)(81342001)(87936001)(87286001)(62966002)(99396002)(81542001)(106466001)(88136002)(92726001)(36756003)(2101003);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB470;H:tx30smr01.am.freescale.net;FPR:;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 02524402D6
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Varun.Sethi@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Jun 2014, Paul Bolle wrote:
+This patch set contains fixes for the PAMU driver. 
+The patches are based on 3.16-rc1.
 
-> There's no power/persist file for hubs. And CONFIG_USB_PERSIST was
-> removed in v2.6.26. Update the description of power/persist accordingly.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> I don't know anything about USB-Persist. Could Greg and Alan please
-> check whether the new description does actually match reality?
+Varun Sethi (3):
+  Fix PAMU window size check. 
+  Fix the device domain attach condition.
+  Fix the error condition during iommu group creation.
 
-Not exactly.  More details below.
+ drivers/iommu/fsl_pamu.c        |    8 ++++----
+ drivers/iommu/fsl_pamu_domain.c |   19 +++++++++----------
+ 2 files changed, 13 insertions(+), 14 deletions(-)
 
->  Documentation/ABI/stable/sysfs-bus-usb | 14 +++++++-------
->  1 file changed, 7 insertions(+), 7 deletions(-)
-> 
-> diff --git a/Documentation/ABI/stable/sysfs-bus-usb b/Documentation/ABI/stable/sysfs-bus-usb
-> index a6b685724740..a61d04b8fc78 100644
-> --- a/Documentation/ABI/stable/sysfs-bus-usb
-> +++ b/Documentation/ABI/stable/sysfs-bus-usb
-> @@ -3,13 +3,13 @@ Date:		May 2007
->  KernelVersion:	2.6.23
->  Contact:	Alan Stern <stern@rowland.harvard.edu>
->  Description:
-> -		If CONFIG_USB_PERSIST is set, then each USB device directory
-> -		will contain a file named power/persist.  The file holds a
-> -		boolean value (0 or 1) indicating whether or not the
-> -		"USB-Persist" facility is enabled for the device.  Since the
-> -		facility is inherently dangerous, it is disabled by default
-> -		for all devices except hubs.  For more information, see
-> -		Documentation/usb/persist.txt.
-> +		USB device directories for all devices except hubs will contain
-> +		a file named power/persist.  The file holds a boolean value (0
-> +		or 1) indicating whether or not the "USB-Persist" facility is
-> +		enabled for the device.  Since the facility is inherently
-> +		dangerous, it is disabled by default.  For hubs this facility is
-> +		always enabled making the file pointless.  For more information,
-> +		see Documentation/usb/persist.txt.
-
-Instead of depending on CONFIG_USB_PERSIST, the power/persist attribute
-depends on CONFIG_PM.  But pointing that out would be redundant, since
-the power/ device directory itself doesn't exist unless CONFIG_PM is
-enabled.
-
-The default value for the persist facility depends on the setting of 
-CONFIG_USB_DEFAULT_PERSIST.  If that symbol is set then persist is 
-enabled by default for all devices, except those which have the 
-USB_QUIRK_RESET flag set (meaning that they will morph or change modes 
-when reset).  If the symbol is not set then persist is enabled by 
-default only for hubs.
-
-Thanks for the documentation update.
-
-Alan Stern
+-- 
+1.7.9.5
 
