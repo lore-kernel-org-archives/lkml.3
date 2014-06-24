@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754414AbaFXPZi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:25:38 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55781 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753032AbaFXPZh (ORCPT
+	id S1754510AbaFXP0R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:26:17 -0400
+Received: from mail-wi0-f195.google.com ([209.85.212.195]:39609 "EHLO
+	mail-wi0-f195.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753998AbaFXP0P convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:25:37 -0400
-Date: Tue, 24 Jun 2014 16:25:33 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Sachin Kamat <sachin.kamat@samsung.com>
-Cc: linux-kernel@vger.kernel.org, lgirdwood@gmail.com, spk.linux@gmail.com,
-        anilkumar@ti.com, j-keerthy@ti.com
-Message-ID: <20140624152533.GQ23300@sirena.org.uk>
-References: <1403598556-22536-1-git-send-email-sachin.kamat@samsung.com>
- <1403598556-22536-2-git-send-email-sachin.kamat@samsung.com>
+	Tue, 24 Jun 2014 11:26:15 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="eLe8FOcWSbbyMVJD"
-Content-Disposition: inline
-In-Reply-To: <1403598556-22536-2-git-send-email-sachin.kamat@samsung.com>
-X-Cookie: But it does move!
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/2] regulator: tps65218: Fix build warnings
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Reply-To: zaynah.arabiya1@gmail.com
+Date: Tue, 24 Jun 2014 17:26:13 +0200
+X-Google-Sender-Auth: iaubjLQsuOpRxksest5WcRuKuUs
+Message-ID: <CAKe7FbyiK7-ue8qmes0fB=j_DcyXNt1iBxAyR8qftooz3JQdMw@mail.gmail.com>
+Subject: PLEASE TREAT AS URGENT
+From: Zaynah Arabiya <zaynah.arabiya1@gmail.com>
+To: undisclosed-recipients:;
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Dear Friend
 
---eLe8FOcWSbbyMVJD
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I am Mrs. Zaynah S Arabiya, A widow to Late Mr. Omar Zongo Arabiya; I
+am 63 years old I’m  suffering for cancer  and From all indications my
+condition is really Worse I have visited so money doctors it's quite
+obvious that I won't make it any longer according to my doctor’s
+because I’m badly affected.
 
-On Tue, Jun 24, 2014 at 01:59:16PM +0530, Sachin Kamat wrote:
-> rdev_get_id() returns an int. Convert rid to type int to avoid the
-> following warnings:
-> drivers/regulator/tps65218-regulator.c:132:10: warning: comparison of unsigned expression < 0 is always false [-Wtype-limits]
-> drivers/regulator/tps65218-regulator.c:146:10: warning: comparison of unsigned expression < 0 is always false [-Wtype-limits]
+This is because my cancer stage has gotten to a very bad stage. My
+late husband was killed many years ago because of his wealth and it
+was his brother who sponsored assassin to eliminate my husband and
+during the period of our marriage we couldn’t produce any child.  I
+inherited all his businesses and now I noticed that my condition is
+not improving positively but rather it gets worsen day by day I
+decided to divide all my Wealth as my contribution to Charity and to
+sponsor churches all over the world I selected you after visiting the
+internet and I have prayed with it. I am willing to introduce the sum
+of USD $7. 8 Million Dollars to you and your duty is carry on the
+assignment and make sure this dream comes to materialize , the less
+privileged, churches, Orphans/ orphanages and widows, and to
+Propagating the word of God to ensure that the house of God is
+maintained. Your have only 30 percent of the total money others
+remaining 70 percent goes for the needy as was writing about
 
-Applied, thanks.
+I took this decision upon myself because I don't have any child that
+will inherit this money and my late husband relatives are very wicked
+and they don’t fear God and I don't want my husband's hard earned
+money to be misused by the people who don’t care for others, Please I
+want you to know that this fund was deposited in a BANK for security
+purpose once I hears from I will pass an  instruction to my late
+husband’s lawyer he will file application to the BANK for the release
+of the fund to you I will send you by email the full contact of the
+lawyer to carry on the process  to receive the money in your account.
+Contact me immediately via the this email ID
+(zaynah.arabiya1@gmail.com) Pls note, delay will give me room to
+continue searching for another God fearing person that will agree to
+handle the project
 
---eLe8FOcWSbbyMVJD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJTqZhpAAoJELSic+t+oim9B0sQAJSmaBvlXTToAXGZWSLdURez
-Hnm2R3SZVSGoa1BD3KqKZZg/ZRsb8iRDKDZFtvBNAeggnY4Oa371YmhVdU022Rqz
-ysXki6zz1k21IZFQwcbWDHHCDYRMnCpgZtybuqRr2Z7IR/B689bvPHBnvHXkg1Gx
-MIUkFgBRcmUKN1GrHjuH7yj396/J6dzm5l2Qj5vD//5gojISIGcfhzyMB5bfQwwn
-8HRcoeSSmIt7SvkS9Dr+t/lSnAhMLZixFpMi6GVOJWkQ3ssXqd1790XzDnUxzhTm
-QaTRlHrjWz5eIPKU/9wZZFQS/RhM6YjtYEmgk3Cwdt5LpKzIzwx+od6gLGdyqOhq
-ub9mPJSoilTFTiwzFXPJkNVp6R9zYcDoMokjaOy1Fq1V5eHbX20FSl+uzRg4uCI4
-kJiekteTtYEMMiQ6ZIsbPt7SYdSRMHBkLf/y3JdAtj8rqU5lQSSIx3BNZ9Wp3AAL
-qoqHGeHPcpVQoSCU9RJAU+PdTyIxjaknB/cNO3Wk2NRYZLZPoFyWIOtS4aVz2Pw3
-dP+oaUbu4nn3PPfNkXEP3j/FdbwUsQkyUtloOOZlyEtraxx4a8J2L3YnGHJb5yj+
-5PSquwmU0WMhLyMnD8Hv5EmvNzvcMEpcDCLcV1ILJXL3KKhrNMuRc6lHmpaB8ZpB
-V7n527D4XVIXcQx9EEft
-=jtR1
------END PGP SIGNATURE-----
-
---eLe8FOcWSbbyMVJD--
+Regards
+Mrs. Zaynah Arabiya
