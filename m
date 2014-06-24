@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755817AbaFXPyV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:54:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32976 "EHLO
+	id S964830AbaFXPyl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:54:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33059 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932399AbaFXPyL (ORCPT
+	with ESMTP id S964811AbaFXPyh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:54:11 -0400
+	Tue, 24 Jun 2014 11:54:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 22/68] sh_eth: fix SH7619/771x support
-Date: Tue, 24 Jun 2014 11:50:41 -0400
-Message-Id: <20140624154724.915129965@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.14 40/68] USB: cdc-acm: fix write and resume race
+Date: Tue, 24 Jun 2014 11:50:59 -0400
+Message-Id: <20140624154725.729673629@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154723.907894814@linuxfoundation.org>
 References: <20140624154723.907894814@linuxfoundation.org>
@@ -30,52 +28,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-[ Upstream commit d8b0426af5b67973585712c9af36b86f6ea97815 ]
+commit e144ed28bed10684f9aaec6325ed974d53f76110 upstream.
 
-Commit 4a55530f38e4 (net: sh_eth: modify the definitions of register) managed
-to leave out the E-DMAC register entries in sh_eth_offset_fast_sh3_sh2[], thus
-totally breaking SH7619/771x support.  Add the missing entries using  the data
-from before that commit.
+Fix race between write() and resume() due to improper locking that could
+lead to writes being reordered.
 
-Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Acked-by: Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Resume must be done atomically and susp_count be protected by the
+write_lock in order to prevent racing with write(). This could otherwise
+lead to writes being reordered if write() grabs the write_lock after
+susp_count is decremented, but before the delayed urb is submitted.
+
+Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
+that support remote wakeup")
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/renesas/sh_eth.c |   21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
 
---- a/drivers/net/ethernet/renesas/sh_eth.c
-+++ b/drivers/net/ethernet/renesas/sh_eth.c
-@@ -301,6 +301,27 @@ static const u16 sh_eth_offset_fast_sh4[
- };
+---
+ drivers/usb/class/cdc-acm.c |   23 +++++++++--------------
+ 1 file changed, 9 insertions(+), 14 deletions(-)
+
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -1539,27 +1539,20 @@ static int acm_resume(struct usb_interfa
+ 	struct acm *acm = usb_get_intfdata(intf);
+ 	struct acm_wb *wb;
+ 	int rv = 0;
+-	int cnt;
  
- static const u16 sh_eth_offset_fast_sh3_sh2[SH_ETH_MAX_REGISTER_OFFSET] = {
-+	[EDMR]		= 0x0000,
-+	[EDTRR]		= 0x0004,
-+	[EDRRR]		= 0x0008,
-+	[TDLAR]		= 0x000c,
-+	[RDLAR]		= 0x0010,
-+	[EESR]		= 0x0014,
-+	[EESIPR]	= 0x0018,
-+	[TRSCER]	= 0x001c,
-+	[RMFCR]		= 0x0020,
-+	[TFTR]		= 0x0024,
-+	[FDR]		= 0x0028,
-+	[RMCR]		= 0x002c,
-+	[EDOCR]		= 0x0030,
-+	[FCFTR]		= 0x0034,
-+	[RPADIR]	= 0x0038,
-+	[TRIMD]		= 0x003c,
-+	[RBWAR]		= 0x0040,
-+	[RDFAR]		= 0x0044,
-+	[TBRAR]		= 0x004c,
-+	[TDFAR]		= 0x0050,
-+
- 	[ECMR]		= 0x0160,
- 	[ECSR]		= 0x0164,
- 	[ECSIPR]	= 0x0168,
+ 	spin_lock_irq(&acm->read_lock);
+-	acm->susp_count -= 1;
+-	cnt = acm->susp_count;
+-	spin_unlock_irq(&acm->read_lock);
++	spin_lock(&acm->write_lock);
+ 
+-	if (cnt)
+-		return 0;
++	if (--acm->susp_count)
++		goto out;
+ 
+ 	if (test_bit(ASYNCB_INITIALIZED, &acm->port.flags)) {
+-		rv = usb_submit_urb(acm->ctrlurb, GFP_NOIO);
++		rv = usb_submit_urb(acm->ctrlurb, GFP_ATOMIC);
+ 
+-		spin_lock_irq(&acm->write_lock);
+ 		if (acm->delayed_wb) {
+ 			wb = acm->delayed_wb;
+ 			acm->delayed_wb = NULL;
+-			spin_unlock_irq(&acm->write_lock);
+ 			acm_start_wb(acm, wb);
+-		} else {
+-			spin_unlock_irq(&acm->write_lock);
+ 		}
+ 
+ 		/*
+@@ -1567,12 +1560,14 @@ static int acm_resume(struct usb_interfa
+ 		 * do the write path at all cost
+ 		 */
+ 		if (rv < 0)
+-			goto err_out;
++			goto out;
+ 
+-		rv = acm_submit_read_urbs(acm, GFP_NOIO);
++		rv = acm_submit_read_urbs(acm, GFP_ATOMIC);
+ 	}
++out:
++	spin_unlock(&acm->write_lock);
++	spin_unlock_irq(&acm->read_lock);
+ 
+-err_out:
+ 	return rv;
+ }
+ 
 
 
