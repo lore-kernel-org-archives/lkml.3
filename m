@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756483AbaFXUwO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:52:14 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47612 "EHLO
+	id S1756915AbaFXUxl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:53:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47578 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754311AbaFXUah (ORCPT
+	with ESMTP id S1753985AbaFXUag (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:30:37 -0400
+	Tue, 24 Jun 2014 16:30:36 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 07/65] genirq: Provide irq_force_affinity fallback for non-SMP
-Date: Tue, 24 Jun 2014 13:29:27 -0700
-Message-Id: <1403641825-12825-8-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 17/65] [media] V4L2: ov7670: fix a wrong index, potentially Oopsing the kernel from user-space
+Date: Tue, 24 Jun 2014 13:29:37 -0700
+Message-Id: <1403641825-12825-18-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
 References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
@@ -29,50 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arnd Bergmann <arnd@arndb.de>
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 
-commit 4c88d7f9b0d5fb0588c3386be62115cc2eaa8f9f upstream.
+commit cfece5857ca51d1dcdb157017aba226f594e9dcf upstream.
 
-Patch 01f8fa4f01d "genirq: Allow forcing cpu affinity of interrupts" added
-an irq_force_affinity() function, and 30ccf03b4a6 "clocksource: Exynos_mct:
-Use irq_force_affinity() in cpu bringup" subsequently uses it. However, the
-driver can be used with CONFIG_SMP disabled, but the function declaration
-is only available for CONFIG_SMP, leading to this build error:
+Commit 75e2bdad8901a0b599e01a96229be922eef1e488 "ov7670: allow
+configuration of image size, clock speed, and I/O method" uses a wrong
+index to iterate an array. Apart from being wrong, it also uses an
+unchecked value from user-space, which can cause access to unmapped
+memory in the kernel, triggered by a normal desktop user with rights to
+use V4L2 devices.
 
-drivers/clocksource/exynos_mct.c:431:3: error: implicit declaration of function 'irq_force_affinity' [-Werror=implicit-function-declaration]
-   irq_force_affinity(mct_irqs[MCT_L0_IRQ + cpu], cpumask_of(cpu));
-
-This patch introduces a dummy helper function for the non-SMP case
-that always returns success, to get rid of the build error.
-Since the patches causing the problem are marked for stable backports,
-this one should be as well.
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
-Link: http://lkml.kernel.org/r/5619084.0zmrrIUZLV@wuerfel
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Acked-by: Jonathan Corbet <corbet@lwn.net>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+[ kamal: backport to 3.8-stable: context ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/linux/interrupt.h | 5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/media/i2c/ov7670.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-index e8401d0..6de0f2c 100644
---- a/include/linux/interrupt.h
-+++ b/include/linux/interrupt.h
-@@ -308,6 +308,11 @@ static inline int irq_set_affinity(unsigned int irq, const struct cpumask *m)
- 	return -EINVAL;
- }
- 
-+static inline int irq_force_affinity(unsigned int irq, const struct cpumask *cpumask)
-+{
-+	return 0;
-+}
-+
- static inline int irq_can_set_affinity(unsigned int irq)
- {
- 	return 0;
+diff --git a/drivers/media/i2c/ov7670.c b/drivers/media/i2c/ov7670.c
+index e7c82b2..8b272e8 100644
+--- a/drivers/media/i2c/ov7670.c
++++ b/drivers/media/i2c/ov7670.c
+@@ -937,7 +937,7 @@ static int ov7670_enum_framesizes(struct v4l2_subdev *sd,
+ 	 * windows that fall outside that.
+ 	 */
+ 	for (i = 0; i < N_WIN_SIZES; i++) {
+-		struct ov7670_win_size *win = &ov7670_win_sizes[index];
++		struct ov7670_win_size *win = &ov7670_win_sizes[i];
+ 		if (info->min_width && win->width < info->min_width)
+ 			continue;
+ 		if (info->min_height && win->height < info->min_height)
 -- 
 1.9.1
 
