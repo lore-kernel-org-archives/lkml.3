@@ -1,93 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751308AbaFXDAI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 23:00:08 -0400
-Received: from mga01.intel.com ([192.55.52.88]:52981 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751144AbaFXDAG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 23:00:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,535,1400050800"; 
-   d="asc'?scan'208";a="552321426"
-Date: Tue, 24 Jun 2014 10:59:44 +0800
-From: Zhenyu Wang <zhenyuw@linux.intel.com>
-To: Tiejun Chen <tiejun.chen@intel.com>
-Cc: daniel.vetter@ffwll.ch, jani.nikula@linux.intel.com, airlied@linux.ie,
-        intel-gfx@lists.freedesktop.org, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        qemu-devel@nongnu.org
-Subject: Re: [Intel-gfx] [RFC][PATCH] gpu:drm:i915:intel_detect_pch: back to
- check devfn instead of check class type
-Message-ID: <20140624025944.GJ1045@zhen-hp.sh.intel.com>
-Reply-To: Zhenyu Wang <zhenyuw@linux.intel.com>
-References: <1403171631-3452-1-git-send-email-tiejun.chen@intel.com>
+	id S1751389AbaFXDDa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 23:03:30 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:63426 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750827AbaFXDD3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 23:03:29 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AsBSALLpqFN5LC2vPGdsb2JhbABagw2DSKgiBpk1AYEKFwQBAQEBODWDfAcBAQQBJxMcIwULCBsJJQ8FJQMHGhOFSYJxB8QTFxaFTYkZB4MtgRYEmkuXOCs
+Date: Tue, 24 Jun 2014 13:02:40 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Austin Schuh <austin@peloton-tech.com>
+Cc: xfs <xfs@oss.sgi.com>, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>
+Subject: On-stack work item completion race? (was Re: XFS crash?)
+Message-ID: <20140624030240.GB9508@dastard>
+References: <20140305233551.GK6851@dastard>
+ <CANGgnMb=2dYGQO4K36pQ9LEb8E4rT6S_VskLF+n=ndd0_kJr_g@mail.gmail.com>
+ <CANGgnMa80WwQ8zSkL52yYegmQURVQeZiBFv41=FQXMZJ_NaEDw@mail.gmail.com>
+ <20140513034647.GA5421@dastard>
+ <CANGgnMZ0q9uE3NHj2i0SBK1d0vdKLx7QBJeFNb+YwP-5EAmejQ@mail.gmail.com>
+ <20140513063943.GQ26353@dastard>
+ <CANGgnMYn++1++UyX+D2d9GxPxtytpQJv0ThFwdxM-yX7xDWqiA@mail.gmail.com>
+ <20140513090321.GR26353@dastard>
+ <CANGgnMZqQc_NeaDpO_aX+bndmHrQ9VWo9mkfxhPBkRD-J=N6sQ@mail.gmail.com>
+ <CANGgnMZ8OwzfBj5m9H7c6q2yahGhU7oFZLsJfVxnWoqZExkZmQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WVXhfWX7iGQecmy9"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1403171631-3452-1-git-send-email-tiejun.chen@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CANGgnMZ8OwzfBj5m9H7c6q2yahGhU7oFZLsJfVxnWoqZExkZmQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+[Adding Tejun and lkml to the cc list]
 
---WVXhfWX7iGQecmy9
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Jun 23, 2014 at 01:05:54PM -0700, Austin Schuh wrote:
+> I found 1 bug in XFS which I fixed, and I've uncovered something else that
+> I'm not completely sure how to fix.
+> 
+> In xfs_bmapi_allocate, you create a completion, and use that to wait until
+> the work has finished.  Occasionally, I'm seeing a case where I get a
+> context switch after the completion has been completed, but before the
+> workqueue has finished doing it's internal book-keeping.  This results in
+> the work being deleted before the workqueue is done using it, corrupting
+> the internal data structures.  I fixed it by waiting using flush_work and
+> removing the completion entirely.
+> 
+> --- a/fs/xfs/xfs_bmap_util.c        2014-06-23 12:59:10.008678410 -0700
+> +++ b/fs/xfs/xfs_bmap_util.c      2014-06-23 12:59:14.116678239 -0700
+> @@ -263,7 +263,6 @@
+>         current_set_flags_nested(&pflags, PF_FSTRANS);
+> 
+>         args->result = __xfs_bmapi_allocate(args);
+> -       complete(args->done);
+> 
+>         current_restore_flags_nested(&pflags, PF_FSTRANS);
+>  }
+> @@ -277,16 +276,13 @@
+>  xfs_bmapi_allocate(
+>         struct xfs_bmalloca     *args)
+>  {
+> -       DECLARE_COMPLETION_ONSTACK(done);
+> -
+>         if (!args->stack_switch)
+>                 return __xfs_bmapi_allocate(args);
+> 
+> 
+> -       args->done = &done;
+>         INIT_WORK_ONSTACK(&args->work, xfs_bmapi_allocate_worker);
+>         queue_work(xfs_alloc_wq, &args->work);
+> -       wait_for_completion(&done);
+> +       flush_work(&args->work);
+>         destroy_work_on_stack(&args->work);
+>         return args->result;
+>  }
+> --- a/fs/xfs/xfs_bmap_util.h        2014-06-23 12:59:10.008678410 -0700
+> +++ b/fs/xfs/xfs_bmap_util.h      2014-06-23 12:59:11.708678340 -0700
+> @@ -57,7 +57,6 @@
+>         char                    conv;   /* overwriting unwritten extents */
+>         char                    stack_switch;
+>         int                     flags;
+> -       struct completion       *done;
+>         struct work_struct      work;
+>         int                     result;
+>  };
 
-On 2014.06.19 17:53:51 +0800, Tiejun Chen wrote:
-> Originally the reason to probe ISA bridge instead of Dev31:Fun0
-> is to make graphics device passthrough work easy for VMM, that
-> only need to expose ISA bridge to let driver know the real
-> hardware underneath. This is a requirement from virtualization
-> team. Especially in that virtualized environments, XEN, there
-> is irrelevant ISA bridge in the system with that legacy qemu
-> version specific to xen, qemu-xen-traditional. So to work
-> reliably, we should scan through all the ISA bridge devices
-> and check for the first match, instead of only checking the
-> first one.
->=20
-> But actually, qemu-xen-traditional, is always enumerated with
-> Dev31:Fun0, 00:1f.0 as follows:
->=20
-> hw/pt-graphics.c:
->=20
-> intel_pch_init()
->     |
->     + pci_isa_bridge_init(bus, PCI_DEVFN(0x1f, 0), ...);
->=20
-> so this mean that isa bridge is still represented with Dev31:Func0
-> like the native OS. Furthermore, currently we're pushing VGA
-> passthrough support into qemu upstream, and with some discussion,
-> we wouldn't set the bridge class type and just expose this devfn.
->=20
-> So we just go back to check devfn to make life normal.
->=20
-> Signed-off-by: Tiejun Chen <tiejun.chen@intel.com>
+Ok, that's a surprise. However, I can't see how using flush_work()
+solves that underlying context switch problem, because it's
+implemented the same way:
 
-This was added historically when supporting graphics device passthrough.
-Looks qemu upstream can't accept multiple ISA bridge and our PCH is always
-on device 31: func0 as far as I know. Looks good to me.
+bool flush_work(struct work_struct *work)
+{
+        struct wq_barrier barr;
 
-Reviewed-by: Zhenyu Wang <zhenyuw@linux.intel.com>=20
+        lock_map_acquire(&work->lockdep_map);
+        lock_map_release(&work->lockdep_map);
 
---=20
-Open Source Technology Center, Intel ltd.
+        if (start_flush_work(work, &barr)) {
+                wait_for_completion(&barr.done);
+                destroy_work_on_stack(&barr.work);
+                return true;
+        } else {
+                return false;
+        }
+}
 
-$gpg --keyserver wwwkeys.pgp.net --recv-keys 4D781827
+start_flush_work() is effectively a special queue_work()
+implementation, so if if it's not safe to call complete() from the
+workqueue as the above patch implies then this code has the same
+problem.
 
---WVXhfWX7iGQecmy9
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Tejun - is this "do it yourself completion" a known issue w.r.t.
+workqueues? I can't find any documentation that says "don't do
+that" so...?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+A quick grep also shows up the same queue_work/wait_for_completion
+pattern in arch/x86/kernel/hpet.c, drivers/md/dm-thin.c,
+fs/fs-writeback.c, drivers/block/drbd/drbd_main.c....
 
-iEYEARECAAYFAlOo6aAACgkQsQQaM014GCfsmwCdH/Yhg7VTwHZf+Jrry3AMg9fE
-jvIAnjqw/ia/2ySLY9IyoNKpOjKsdTPh
-=9D1i
------END PGP SIGNATURE-----
+> I enabled event tracing (and added a new event which lists the number of
+> workers running in a queue whenever that is changed).
+> 
+> To me, it looks like work is scheduled from irq/44-ahci-273 that will
+> acquire an inode lock.  scp-3986 then acquires the lock, and then goes and
+> schedules work.  That work is then scheduled behind the work from
+> irq/44-ahci-273 in the same pool.  The first work blocks waiting on the
+> lock, and scp-3986 won't finish and release that lock until the second work
+> gets run.
 
---WVXhfWX7iGQecmy9--
+IOWs, scp takes an inode lock and queues work to the xfs_alloc_wq,
+then schedules. Then a kworker runs an xfs-data work item, which
+tries to take the inode lock and blocks.
+
+As I understand it, what then happens is that the workqueue code
+grabs another kworker thread and runs the next work item in it's
+queue. IOWs, work items can block, but doing that does not prevent
+execution of other work items queued on other work queues or even on
+the same work queue. Tejun, did I get that correct?
+
+Hence the work on the xfs-data queue will block until another
+kworker processes the item on the xfs-alloc-wq which means progress
+is made and the inode gets unlocked. Then the kworker for the work
+on the xfs-data queue will get the lock, complete it's work and
+everything has resolved itself.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
