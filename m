@@ -1,45 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965141AbaFXQyT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:54:19 -0400
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:52694 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754855AbaFXQyR (ORCPT
+	id S1754853AbaFXPv3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:51:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60755 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754829AbaFXPvZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 12:54:17 -0400
-Message-ID: <1403628854.1960.21.camel@x220>
-Subject: Re: [PATCH] Documentation: sysfs-bus-usb: update power/persist
- description
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-api@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 24 Jun 2014 18:54:14 +0200
-In-Reply-To: <Pine.LNX.4.44L0.1406241010160.990-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1406241010160.990-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 24 Jun 2014 16:54:14.0751 (UTC) FILETIME=[EE1556F0:01CF8FCC]
-X-RcptDomain: vger.kernel.org
+	Tue, 24 Jun 2014 11:51:25 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Lars-Peter Clausen <lars@metafoo.de>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.4 19/26] ALSA: control: Protect user controls against concurrent access
+Date: Tue, 24 Jun 2014 11:50:42 -0400
+Message-Id: <20140624154620.416632922@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <20140624154619.499002156@linuxfoundation.org>
+References: <20140624154619.499002156@linuxfoundation.org>
+User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-06-24 at 10:15 -0400, Alan Stern wrote:
-> The default value for the persist facility depends on the setting of 
-> CONFIG_USB_DEFAULT_PERSIST.  If that symbol is set then persist is 
-> enabled by default for all devices, except those which have the 
-> USB_QUIRK_RESET flag set (meaning that they will morph or change modes 
-> when reset).  If the symbol is not set then persist is enabled by 
-> default only for hubs.
-> 
-> Thanks for the documentation update.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-You do expect a v2 updated to reflect your comments, don't you?
+------------------
 
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-Paul Bolle 
+commit 07f4d9d74a04aa7c72c5dae0ef97565f28f17b92 upstream.
+
+The user-control put and get handlers as well as the tlv do not protect against
+concurrent access from multiple threads. Since the state of the control is not
+updated atomically it is possible that either two write operations or a write
+and a read operation race against each other. Both can lead to arbitrary memory
+disclosure. This patch introduces a new lock that protects user-controls from
+concurrent access. Since applications typically access controls sequentially
+than in parallel a single lock per card should be fine.
+
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Acked-by: Jaroslav Kysela <perex@perex.cz>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ include/sound/core.h |    2 ++
+ sound/core/control.c |   31 +++++++++++++++++++++++++------
+ sound/core/init.c    |    1 +
+ 3 files changed, 28 insertions(+), 6 deletions(-)
+
+--- a/include/sound/core.h
++++ b/include/sound/core.h
+@@ -120,6 +120,8 @@ struct snd_card {
+ 	int user_ctl_count;		/* count of all user controls */
+ 	struct list_head controls;	/* all controls for this card */
+ 	struct list_head ctl_files;	/* active control files */
++	struct mutex user_ctl_lock;	/* protects user controls against
++					   concurrent access */
+ 
+ 	struct snd_info_entry *proc_root;	/* root for soundcard specific files */
+ 	struct snd_info_entry *proc_id;	/* the card id */
+--- a/sound/core/control.c
++++ b/sound/core/control.c
+@@ -988,6 +988,7 @@ static int snd_ctl_elem_unlock(struct sn
+ 
+ struct user_element {
+ 	struct snd_ctl_elem_info info;
++	struct snd_card *card;
+ 	void *elem_data;		/* element data */
+ 	unsigned long elem_data_size;	/* size of element data in bytes */
+ 	void *tlv_data;			/* TLV data */
+@@ -1031,7 +1032,9 @@ static int snd_ctl_elem_user_get(struct
+ {
+ 	struct user_element *ue = kcontrol->private_data;
+ 
++	mutex_lock(&ue->card->user_ctl_lock);
+ 	memcpy(&ucontrol->value, ue->elem_data, ue->elem_data_size);
++	mutex_unlock(&ue->card->user_ctl_lock);
+ 	return 0;
+ }
+ 
+@@ -1040,10 +1043,12 @@ static int snd_ctl_elem_user_put(struct
+ {
+ 	int change;
+ 	struct user_element *ue = kcontrol->private_data;
+-	
++
++	mutex_lock(&ue->card->user_ctl_lock);
+ 	change = memcmp(&ucontrol->value, ue->elem_data, ue->elem_data_size) != 0;
+ 	if (change)
+ 		memcpy(ue->elem_data, &ucontrol->value, ue->elem_data_size);
++	mutex_unlock(&ue->card->user_ctl_lock);
+ 	return change;
+ }
+ 
+@@ -1063,19 +1068,32 @@ static int snd_ctl_elem_user_tlv(struct
+ 		new_data = memdup_user(tlv, size);
+ 		if (IS_ERR(new_data))
+ 			return PTR_ERR(new_data);
++		mutex_lock(&ue->card->user_ctl_lock);
+ 		change = ue->tlv_data_size != size;
+ 		if (!change)
+ 			change = memcmp(ue->tlv_data, new_data, size);
+ 		kfree(ue->tlv_data);
+ 		ue->tlv_data = new_data;
+ 		ue->tlv_data_size = size;
++		mutex_unlock(&ue->card->user_ctl_lock);
+ 	} else {
+-		if (! ue->tlv_data_size || ! ue->tlv_data)
+-			return -ENXIO;
+-		if (size < ue->tlv_data_size)
+-			return -ENOSPC;
++		int ret = 0;
++
++		mutex_lock(&ue->card->user_ctl_lock);
++		if (!ue->tlv_data_size || !ue->tlv_data) {
++			ret = -ENXIO;
++			goto err_unlock;
++		}
++		if (size < ue->tlv_data_size) {
++			ret = -ENOSPC;
++			goto err_unlock;
++		}
+ 		if (copy_to_user(tlv, ue->tlv_data, ue->tlv_data_size))
+-			return -EFAULT;
++			ret = -EFAULT;
++err_unlock:
++		mutex_unlock(&ue->card->user_ctl_lock);
++		if (ret)
++			return ret;
+ 	}
+ 	return change;
+ }
+@@ -1207,6 +1225,7 @@ static int snd_ctl_elem_add(struct snd_c
+ 	ue = kzalloc(sizeof(struct user_element) + private_size, GFP_KERNEL);
+ 	if (ue == NULL)
+ 		return -ENOMEM;
++	ue->card = card;
+ 	ue->info = *info;
+ 	ue->info.access = 0;
+ 	ue->elem_data = (char *)ue + sizeof(*ue);
+--- a/sound/core/init.c
++++ b/sound/core/init.c
+@@ -208,6 +208,7 @@ int snd_card_create(int idx, const char
+ 	INIT_LIST_HEAD(&card->devices);
+ 	init_rwsem(&card->controls_rwsem);
+ 	rwlock_init(&card->ctl_files_rwlock);
++	mutex_init(&card->user_ctl_lock);
+ 	INIT_LIST_HEAD(&card->controls);
+ 	INIT_LIST_HEAD(&card->ctl_files);
+ 	spin_lock_init(&card->files_lock);
 
 
