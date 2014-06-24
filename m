@@ -1,70 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754275AbaFXTte (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 15:49:34 -0400
-Received: from mailout3.w2.samsung.com ([211.189.100.13]:60194 "EHLO
-	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750853AbaFXTtd (ORCPT
+	id S1754186AbaFXTuI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 15:50:08 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:58473 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752186AbaFXTuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 15:49:33 -0400
-X-AuditID: cbfec37d-b7fbf6d000005712-ab-53a9d64b0523
-Message-id: <53A9D649.7010504@samsung.com>
-Date: Tue, 24 Jun 2014 13:49:29 -0600
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.6.0
-MIME-version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux@roeck-us.net, satoru.takeuchi@gmail.com, stable@vger.kernel.org,
-        Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [PATCH 3.14 00/68] 3.14.9-stable review
-References: <20140624154723.907894814@linuxfoundation.org>
-In-reply-to: <20140624154723.907894814@linuxfoundation.org>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.134.222]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrALMWRmVeSWpSXmKPExsVy+t9hP13vayuDDWYv0LOYs34Nm0Xz4vVs
-	Fpd3zWGzeLLwDJPF1FMTWCwWbHzEaPGo7y27A7vHzll32T1OzPjN4rF/7hog93sDu8fnTXIB
-	rFFcNimpOZllqUX6dglcGZM3fWEtOMJWcWzHQuYGxhmsXYycHBICJhIP/2xkgbDFJC7cW8/W
-	xcjFISSwjFHiesMTRginl0ni3sHHUM42Romnn58zgbTwCmhJ7Ox7ANbOIqAq8envDmYQm01A
-	XeLz6x3sILaQgJxE05LVYHFRgQiJA33PWCF6BSV+TL4H1isiECyx9utCsAXMAquAVl9ezgaS
-	EAa6b+rfqywQg6wk/kz4DTSIg4NTwFpix+kkkDCzgJnEo5Z1zBC2vMTmNW+ZIcqVJf5cPsUE
-	8ZqyxJMp5xknMIrMQrJ6FpL2WUjaFzAyr2IUKy1OLihOSk+tMNErTswtLs1L10vOz93ECIml
-	2h2M97/aHGIU4GBU4uGtmLkyWIg1say4MvcQowQHs5IIr2k3UIg3JbGyKrUoP76oNCe1+BAj
-	EwenVANjrfvVtsKHRr233tY3uS2/xZx8IbrgZpaK38Njpnf2zGfVmMsnqLGnJoBPei3T4qs7
-	Digubn/WH+EycRNLiEWe2MlT/B3FnZxmCVE3clVXnc/c6qWRWZU/KedqhODNn+xnT+zNLPx9
-	v8zYO3H7WdE779uVzed4JunKrJFtC/n/4DmvmOUiP2MlluKMREMt5qLiRADwhBMDgwIAAA==
+	Tue, 24 Jun 2014 15:50:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <CALCETrU9x05ADgz9JToiw_BuCPz1h0xmOh=1R3eojL9far1aEA@mail.gmail.com>
+References: <1403560693-21809-1-git-send-email-keescook@chromium.org>
+	<1403560693-21809-5-git-send-email-keescook@chromium.org>
+	<20140624191815.GA3623@redhat.com>
+	<CALCETrVgpP=zOtiQafVgcic2T95TdEM5DTvHYXWTbcZ14xBqHQ@mail.gmail.com>
+	<20140624193055.GA4482@redhat.com>
+	<CALCETrU9x05ADgz9JToiw_BuCPz1h0xmOh=1R3eojL9far1aEA@mail.gmail.com>
+Date: Tue, 24 Jun 2014 12:50:02 -0700
+X-Google-Sender-Auth: Fg6ZM_azFWW4XQ6zDsbyHxkkglo
+Message-ID: <CAGXu5jJjuNmf=FRzUPMChvL4D_xkg034pUbRAbaK38f37GYC0A@mail.gmail.com>
+Subject: Re: [PATCH v7 4/9] seccomp: move no_new_privs into seccomp
+From: Kees Cook <keescook@chromium.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        Linux API <linux-api@vger.kernel.org>, X86 ML <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24/2014 09:50 AM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.14.9 release.
-> There are 68 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
+On Tue, Jun 24, 2014 at 12:34 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Tue, Jun 24, 2014 at 12:30 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+>> On 06/24, Andy Lutomirski wrote:
+>>>
+>>> On Tue, Jun 24, 2014 at 12:18 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+>>> >>
+>>> >> -struct seccomp { };
+>>> >> +struct seccomp {
+>>> >> +     unsigned long flags;
+>>> >> +};
+>>> >
+>>> > A bit messy ;)
+>>> >
+>>> > I am wondering if we can simply do
+>>> >
+>>> >         static inline bool current_no_new_privs(void)
+>>> >         {
+>>> >                 if (current->no_new_privs)
+>>> >                         return true;
+>>> >
+>>> >         #ifdef CONFIG_SECCOMP
+>>> >                 if (test_thread_flag(TIF_SECCOMP))
+>>> >                         return true;
+>>> >         #endif
+>>>
+>>> Nope -- privileged users can enable seccomp w/o nnp.
+>>
+>> Indeed, I am stupid.
+>>
+>> Still it would be nice to cleanup this somehow. The new member is only
+>> used as a previous ->no_new_privs, just it is long to allow the concurent
+>> set/get. Logically it doesn't even belong to seccomp{}.
 >
-> Responses should be made by Thu Jun 26 15:47:04 UTC 2014.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.14.9-rc1.gz
-> and the diffstat can be found below.
->
-> thanks,
->
-> greg k-h
->
+> We could add an unsigned long atomic flags field to task_struct.
 
-Compiled and booted on my test system. No dmesg regressions.
+I thought that had gotten shot down originally, but given the current
+state of the patch series, it would be effectively identical, since my
+earlier attempt at keeping sizes the same (with alternate accessors)
+was too messy. I will change this as well.
 
--- Shuah
+> Grr.  Why isn't there an unsigned *int* atomic bitmask type?  Even u64
+> would be better.  unsigned long is useless.
+
+Useless beyond 32 bits. ;)
+
+-Kees
 
 -- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+Kees Cook
+Chrome OS Security
