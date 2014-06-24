@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692AbaFXJMZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 05:12:25 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:48024 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752533AbaFXJMX (ORCPT
+	id S1752138AbaFXJRy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 05:17:54 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:50135 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751560AbaFXJRw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 05:12:23 -0400
-From: Sachin Kamat <sachin.kamat@samsung.com>
-To: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: davidb@codeaurora.org, lee.jones@linaro.org, spk.linux@gmail.com
-Subject: [PATCH 1/1] mfd: pm8921-core: Remove unused variable
-Date: Tue, 24 Jun 2014 14:39:07 +0530
-Message-Id: <1403600947-17790-1-git-send-email-sachin.kamat@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Tue, 24 Jun 2014 05:17:52 -0400
+From: Lei Li <lilei@linux.vnet.ibm.com>
+To: mhocko@suse.cz
+Cc: cgroups@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Lei Li <lilei@linux.vnet.ibm.com>
+Subject: [PATCH] Documentation: remove remove_from_page_cache note
+Date: Tue, 24 Jun 2014 17:17:42 +0800
+Message-Id: <1403601462-32167-1-git-send-email-lilei@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.5.3
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14062409-1396-0000-0000-00000518AE93
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-‘irq_bit’ is unused in the function. Remove it.
+Remove this note as remove_from_page_cache has been renamed to
+delete_from_page_cache since Commit 702cfbf9 ("mm: goodbye
+remove_from_page_cache()"), and it doesn't serve any useful
+purpose.
 
-Signed-off-by: Sachin Kamat <sachin.kamat@samsung.com>
+Signed-off-by: Lei Li <lilei@linux.vnet.ibm.com>
 ---
-Compile tested.
----
- drivers/mfd/pm8921-core.c |    4 ----
- 1 file changed, 4 deletions(-)
+ Documentation/cgroups/memcg_test.txt | 2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/drivers/mfd/pm8921-core.c b/drivers/mfd/pm8921-core.c
-index 959513803542..39904f77c049 100644
---- a/drivers/mfd/pm8921-core.c
-+++ b/drivers/mfd/pm8921-core.c
-@@ -186,11 +186,9 @@ static void pm8xxx_irq_mask_ack(struct irq_data *d)
- {
- 	struct pm_irq_chip *chip = irq_data_get_irq_chip_data(d);
- 	unsigned int pmirq = irqd_to_hwirq(d);
--	int	irq_bit;
- 	u8	block, config;
+diff --git a/Documentation/cgroups/memcg_test.txt b/Documentation/cgroups/memcg_test.txt
+index 8870b02..67c11a3 100644
+--- a/Documentation/cgroups/memcg_test.txt
++++ b/Documentation/cgroups/memcg_test.txt
+@@ -82,8 +82,6 @@ Under below explanation, we assume CONFIG_MEM_RES_CTRL_SWAP=y.
+ 	- add_to_page_cache_locked().
  
- 	block = pmirq / 8;
--	irq_bit = pmirq % 8;
+ 	The logic is very clear. (About migration, see below)
+-	Note: __remove_from_page_cache() is called by remove_from_page_cache()
+-	and __remove_mapping().
  
- 	config = chip->config[pmirq] | PM_IRQF_MASK_ALL | PM_IRQF_CLR;
- 	pm8xxx_config_irq(chip, block, config);
-@@ -200,11 +198,9 @@ static void pm8xxx_irq_unmask(struct irq_data *d)
- {
- 	struct pm_irq_chip *chip = irq_data_get_irq_chip_data(d);
- 	unsigned int pmirq = irqd_to_hwirq(d);
--	int	irq_bit;
- 	u8	block, config;
- 
- 	block = pmirq / 8;
--	irq_bit = pmirq % 8;
- 
- 	config = chip->config[pmirq];
- 	pm8xxx_config_irq(chip, block, config);
+ 6. Shmem(tmpfs) Page Cache
+ 	The best way to understand shmem's page state transition is to read
 -- 
-1.7.9.5
+1.8.5.3
 
