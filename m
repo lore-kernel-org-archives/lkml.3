@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932686AbaFXQoa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:44:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60944 "EHLO
+	id S1756507AbaFXQow (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:44:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60936 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755418AbaFXPwi (ORCPT
+	with ESMTP id S1755440AbaFXPwf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:52:38 -0400
+	Tue, 24 Jun 2014 11:52:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexey Preobrazhensky <preobr@google.com>,
-        dormando <dormando@rydia.ne>, Eric Dumazet <edumazet@google.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 21/52] ipv4: fix a race in ip4_datagram_release_cb()
-Date: Tue, 24 Jun 2014 11:50:36 -0400
-Message-Id: <20140624154714.768140154@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.10 31/52] USB: cdc-acm: fix write and resume race
+Date: Tue, 24 Jun 2014 11:50:46 -0400
+Message-Id: <20140624154715.359607960@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154713.428945460@linuxfoundation.org>
 References: <20140624154713.428945460@linuxfoundation.org>
@@ -31,178 +28,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-[ Upstream commit 9709674e68646cee5a24e3000b3558d25412203a ]
+commit e144ed28bed10684f9aaec6325ed974d53f76110 upstream.
 
-Alexey gave a AddressSanitizer[1] report that finally gave a good hint
-at where was the origin of various problems already reported by Dormando
-in the past [2]
+Fix race between write() and resume() due to improper locking that could
+lead to writes being reordered.
 
-Problem comes from the fact that UDP can have a lockless TX path, and
-concurrent threads can manipulate sk_dst_cache, while another thread,
-is holding socket lock and calls __sk_dst_set() in
-ip4_datagram_release_cb() (this was added in linux-3.8)
+Resume must be done atomically and susp_count be protected by the
+write_lock in order to prevent racing with write(). This could otherwise
+lead to writes being reordered if write() grabs the write_lock after
+susp_count is decremented, but before the delayed urb is submitted.
 
-It seems that all we need to do is to use sk_dst_check() and
-sk_dst_set() so that all the writers hold same spinlock
-(sk->sk_dst_lock) to prevent corruptions.
+Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
+that support remote wakeup")
 
-TCP stack do not need this protection, as all sk_dst_cache writers hold
-the socket lock.
-
-[1]
-https://code.google.com/p/address-sanitizer/wiki/AddressSanitizerForKernel
-
-AddressSanitizer: heap-use-after-free in ipv4_dst_check
-Read of size 2 by thread T15453:
- [<ffffffff817daa3a>] ipv4_dst_check+0x1a/0x90 ./net/ipv4/route.c:1116
- [<ffffffff8175b789>] __sk_dst_check+0x89/0xe0 ./net/core/sock.c:531
- [<ffffffff81830a36>] ip4_datagram_release_cb+0x46/0x390 ??:0
- [<ffffffff8175eaea>] release_sock+0x17a/0x230 ./net/core/sock.c:2413
- [<ffffffff81830882>] ip4_datagram_connect+0x462/0x5d0 ??:0
- [<ffffffff81846d06>] inet_dgram_connect+0x76/0xd0 ./net/ipv4/af_inet.c:534
- [<ffffffff817580ac>] SYSC_connect+0x15c/0x1c0 ./net/socket.c:1701
- [<ffffffff817596ce>] SyS_connect+0xe/0x10 ./net/socket.c:1682
- [<ffffffff818b0a29>] system_call_fastpath+0x16/0x1b
-./arch/x86/kernel/entry_64.S:629
-
-Freed by thread T15455:
- [<ffffffff8178d9b8>] dst_destroy+0xa8/0x160 ./net/core/dst.c:251
- [<ffffffff8178de25>] dst_release+0x45/0x80 ./net/core/dst.c:280
- [<ffffffff818304c1>] ip4_datagram_connect+0xa1/0x5d0 ??:0
- [<ffffffff81846d06>] inet_dgram_connect+0x76/0xd0 ./net/ipv4/af_inet.c:534
- [<ffffffff817580ac>] SYSC_connect+0x15c/0x1c0 ./net/socket.c:1701
- [<ffffffff817596ce>] SyS_connect+0xe/0x10 ./net/socket.c:1682
- [<ffffffff818b0a29>] system_call_fastpath+0x16/0x1b
-./arch/x86/kernel/entry_64.S:629
-
-Allocated by thread T15453:
- [<ffffffff8178d291>] dst_alloc+0x81/0x2b0 ./net/core/dst.c:171
- [<ffffffff817db3b7>] rt_dst_alloc+0x47/0x50 ./net/ipv4/route.c:1406
- [<     inlined    >] __ip_route_output_key+0x3e8/0xf70
-__mkroute_output ./net/ipv4/route.c:1939
- [<ffffffff817dde08>] __ip_route_output_key+0x3e8/0xf70 ./net/ipv4/route.c:2161
- [<ffffffff817deb34>] ip_route_output_flow+0x14/0x30 ./net/ipv4/route.c:2249
- [<ffffffff81830737>] ip4_datagram_connect+0x317/0x5d0 ??:0
- [<ffffffff81846d06>] inet_dgram_connect+0x76/0xd0 ./net/ipv4/af_inet.c:534
- [<ffffffff817580ac>] SYSC_connect+0x15c/0x1c0 ./net/socket.c:1701
- [<ffffffff817596ce>] SyS_connect+0xe/0x10 ./net/socket.c:1682
- [<ffffffff818b0a29>] system_call_fastpath+0x16/0x1b
-./arch/x86/kernel/entry_64.S:629
-
-[2]
-<4>[196727.311203] general protection fault: 0000 [#1] SMP
-<4>[196727.311224] Modules linked in: xt_TEE xt_dscp xt_DSCP macvlan bridge coretemp crc32_pclmul ghash_clmulni_intel gpio_ich microcode ipmi_watchdog ipmi_devintf sb_edac edac_core lpc_ich mfd_core tpm_tis tpm tpm_bios ipmi_si ipmi_msghandler isci igb libsas i2c_algo_bit ixgbe ptp pps_core mdio
-<4>[196727.311333] CPU: 17 PID: 0 Comm: swapper/17 Not tainted 3.10.26 #1
-<4>[196727.311344] Hardware name: Supermicro X9DRi-LN4+/X9DR3-LN4+/X9DRi-LN4+/X9DR3-LN4+, BIOS 3.0 07/05/2013
-<4>[196727.311364] task: ffff885e6f069700 ti: ffff885e6f072000 task.ti: ffff885e6f072000
-<4>[196727.311377] RIP: 0010:[<ffffffff815f8c7f>]  [<ffffffff815f8c7f>] ipv4_dst_destroy+0x4f/0x80
-<4>[196727.311399] RSP: 0018:ffff885effd23a70  EFLAGS: 00010282
-<4>[196727.311409] RAX: dead000000200200 RBX: ffff8854c398ecc0 RCX: 0000000000000040
-<4>[196727.311423] RDX: dead000000100100 RSI: dead000000100100 RDI: dead000000200200
-<4>[196727.311437] RBP: ffff885effd23a80 R08: ffffffff815fd9e0 R09: ffff885d5a590800
-<4>[196727.311451] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
-<4>[196727.311464] R13: ffffffff81c8c280 R14: 0000000000000000 R15: ffff880e85ee16ce
-<4>[196727.311510] FS:  0000000000000000(0000) GS:ffff885effd20000(0000) knlGS:0000000000000000
-<4>[196727.311554] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-<4>[196727.311581] CR2: 00007a46751eb000 CR3: 0000005e65688000 CR4: 00000000000407e0
-<4>[196727.311625] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-<4>[196727.311669] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-<4>[196727.311713] Stack:
-<4>[196727.311733]  ffff8854c398ecc0 ffff8854c398ecc0 ffff885effd23ab0 ffffffff815b7f42
-<4>[196727.311784]  ffff88be6595bc00 ffff8854c398ecc0 0000000000000000 ffff8854c398ecc0
-<4>[196727.311834]  ffff885effd23ad0 ffffffff815b86c6 ffff885d5a590800 ffff8816827821c0
-<4>[196727.311885] Call Trace:
-<4>[196727.311907]  <IRQ>
-<4>[196727.311912]  [<ffffffff815b7f42>] dst_destroy+0x32/0xe0
-<4>[196727.311959]  [<ffffffff815b86c6>] dst_release+0x56/0x80
-<4>[196727.311986]  [<ffffffff81620bd5>] tcp_v4_do_rcv+0x2a5/0x4a0
-<4>[196727.312013]  [<ffffffff81622b5a>] tcp_v4_rcv+0x7da/0x820
-<4>[196727.312041]  [<ffffffff815fd9e0>] ? ip_rcv_finish+0x360/0x360
-<4>[196727.312070]  [<ffffffff815de02d>] ? nf_hook_slow+0x7d/0x150
-<4>[196727.312097]  [<ffffffff815fd9e0>] ? ip_rcv_finish+0x360/0x360
-<4>[196727.312125]  [<ffffffff815fda92>] ip_local_deliver_finish+0xb2/0x230
-<4>[196727.312154]  [<ffffffff815fdd9a>] ip_local_deliver+0x4a/0x90
-<4>[196727.312183]  [<ffffffff815fd799>] ip_rcv_finish+0x119/0x360
-<4>[196727.312212]  [<ffffffff815fe00b>] ip_rcv+0x22b/0x340
-<4>[196727.312242]  [<ffffffffa0339680>] ? macvlan_broadcast+0x160/0x160 [macvlan]
-<4>[196727.312275]  [<ffffffff815b0c62>] __netif_receive_skb_core+0x512/0x640
-<4>[196727.312308]  [<ffffffff811427fb>] ? kmem_cache_alloc+0x13b/0x150
-<4>[196727.312338]  [<ffffffff815b0db1>] __netif_receive_skb+0x21/0x70
-<4>[196727.312368]  [<ffffffff815b0fa1>] netif_receive_skb+0x31/0xa0
-<4>[196727.312397]  [<ffffffff815b1ae8>] napi_gro_receive+0xe8/0x140
-<4>[196727.312433]  [<ffffffffa00274f1>] ixgbe_poll+0x551/0x11f0 [ixgbe]
-<4>[196727.312463]  [<ffffffff815fe00b>] ? ip_rcv+0x22b/0x340
-<4>[196727.312491]  [<ffffffff815b1691>] net_rx_action+0x111/0x210
-<4>[196727.312521]  [<ffffffff815b0db1>] ? __netif_receive_skb+0x21/0x70
-<4>[196727.312552]  [<ffffffff810519d0>] __do_softirq+0xd0/0x270
-<4>[196727.312583]  [<ffffffff816cef3c>] call_softirq+0x1c/0x30
-<4>[196727.312613]  [<ffffffff81004205>] do_softirq+0x55/0x90
-<4>[196727.312640]  [<ffffffff81051c85>] irq_exit+0x55/0x60
-<4>[196727.312668]  [<ffffffff816cf5c3>] do_IRQ+0x63/0xe0
-<4>[196727.312696]  [<ffffffff816c5aaa>] common_interrupt+0x6a/0x6a
-<4>[196727.312722]  <EOI>
-<1>[196727.313071] RIP  [<ffffffff815f8c7f>] ipv4_dst_destroy+0x4f/0x80
-<4>[196727.313100]  RSP <ffff885effd23a70>
-<4>[196727.313377] ---[ end trace 64b3f14fae0f2e29 ]---
-<0>[196727.380908] Kernel panic - not syncing: Fatal exception in interrupt
-
-Reported-by: Alexey Preobrazhensky <preobr@google.com>
-Reported-by: dormando <dormando@rydia.ne>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Fixes: 8141ed9fcedb2 ("ipv4: Add a socket release callback for datagram sockets")
-Cc: Steffen Klassert <steffen.klassert@secunet.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/datagram.c |   20 +++++++++++++++-----
- 1 file changed, 15 insertions(+), 5 deletions(-)
 
---- a/net/ipv4/datagram.c
-+++ b/net/ipv4/datagram.c
-@@ -86,18 +86,26 @@ out:
- }
- EXPORT_SYMBOL(ip4_datagram_connect);
+---
+ drivers/usb/class/cdc-acm.c |   23 +++++++++--------------
+ 1 file changed, 9 insertions(+), 14 deletions(-)
+
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -1461,27 +1461,20 @@ static int acm_resume(struct usb_interfa
+ 	struct acm *acm = usb_get_intfdata(intf);
+ 	struct acm_wb *wb;
+ 	int rv = 0;
+-	int cnt;
  
-+/* Because UDP xmit path can manipulate sk_dst_cache without holding
-+ * socket lock, we need to use sk_dst_set() here,
-+ * even if we own the socket lock.
-+ */
- void ip4_datagram_release_cb(struct sock *sk)
- {
- 	const struct inet_sock *inet = inet_sk(sk);
- 	const struct ip_options_rcu *inet_opt;
- 	__be32 daddr = inet->inet_daddr;
-+	struct dst_entry *dst;
- 	struct flowi4 fl4;
- 	struct rtable *rt;
+ 	spin_lock_irq(&acm->read_lock);
+-	acm->susp_count -= 1;
+-	cnt = acm->susp_count;
+-	spin_unlock_irq(&acm->read_lock);
++	spin_lock(&acm->write_lock);
  
--	if (! __sk_dst_get(sk) || __sk_dst_check(sk, 0))
--		return;
--
- 	rcu_read_lock();
-+
-+	dst = __sk_dst_get(sk);
-+	if (!dst || !dst->obsolete || dst->ops->check(dst, 0)) {
-+		rcu_read_unlock();
-+		return;
-+	}
- 	inet_opt = rcu_dereference(inet->inet_opt);
- 	if (inet_opt && inet_opt->opt.srr)
- 		daddr = inet_opt->opt.faddr;
-@@ -105,8 +113,10 @@ void ip4_datagram_release_cb(struct sock
- 				   inet->inet_saddr, inet->inet_dport,
- 				   inet->inet_sport, sk->sk_protocol,
- 				   RT_CONN_FLAGS(sk), sk->sk_bound_dev_if);
--	if (!IS_ERR(rt))
--		__sk_dst_set(sk, &rt->dst);
-+
-+	dst = !IS_ERR(rt) ? &rt->dst : NULL;
-+	sk_dst_set(sk, dst);
-+
- 	rcu_read_unlock();
+-	if (cnt)
+-		return 0;
++	if (--acm->susp_count)
++		goto out;
+ 
+ 	if (test_bit(ASYNCB_INITIALIZED, &acm->port.flags)) {
+-		rv = usb_submit_urb(acm->ctrlurb, GFP_NOIO);
++		rv = usb_submit_urb(acm->ctrlurb, GFP_ATOMIC);
+ 
+-		spin_lock_irq(&acm->write_lock);
+ 		if (acm->delayed_wb) {
+ 			wb = acm->delayed_wb;
+ 			acm->delayed_wb = NULL;
+-			spin_unlock_irq(&acm->write_lock);
+ 			acm_start_wb(acm, wb);
+-		} else {
+-			spin_unlock_irq(&acm->write_lock);
+ 		}
+ 
+ 		/*
+@@ -1489,12 +1482,14 @@ static int acm_resume(struct usb_interfa
+ 		 * do the write path at all cost
+ 		 */
+ 		if (rv < 0)
+-			goto err_out;
++			goto out;
+ 
+-		rv = acm_submit_read_urbs(acm, GFP_NOIO);
++		rv = acm_submit_read_urbs(acm, GFP_ATOMIC);
+ 	}
++out:
++	spin_unlock(&acm->write_lock);
++	spin_unlock_irq(&acm->read_lock);
+ 
+-err_out:
+ 	return rv;
  }
- EXPORT_SYMBOL_GPL(ip4_datagram_release_cb);
+ 
 
 
