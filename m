@@ -1,21 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964846AbaFXPyt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:54:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33083 "EHLO
+	id S964809AbaFXPyh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:54:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33038 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755857AbaFXPyq (ORCPT
+	with ESMTP id S1754287AbaFXPyc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:54:46 -0400
+	Tue, 24 Jun 2014 11:54:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.14 55/68] iio: adc: at91: signedness bug in at91_adc_get_trigger_value_by_name()
-Date: Tue, 24 Jun 2014 11:51:14 -0400
-Message-Id: <20140624154726.442889432@linuxfoundation.org>
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Bryan Evenson <bevenson@melinkcorp.com>,
+        Johan Hovold <johan@hovold.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Mark Roszko <mark.roszko@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 37/68] ARM: at91: fix at91_sysirq_mask_rtc for sam9x5 SoCs
+Date: Tue, 24 Jun 2014 11:50:56 -0400
+Message-Id: <20140624154725.599746653@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154723.907894814@linuxfoundation.org>
 References: <20140624154723.907894814@linuxfoundation.org>
@@ -30,77 +37,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 
-commit 4f3bcd878f1d3c730fe00f619b7260c6125d49eb upstream.
+commit 9dcc87fec8947308e0111c65dcd881e6aa5b1673 upstream.
 
-at91_adc_get_trigger_value_by_name() was returning -ENOMEM truncated to
-a positive u8 and that doesn't work.  I've changed it to int and
-refactored it to preserve the error code.
+sam9x5 SoCs have the following errata:
+ "RTC: Interrupt Mask Register cannot be used
+  Interrupt Mask Register read always returns 0."
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Tested-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Hence we should not rely on what IMR claims about already masked IRQs
+and just disable all IRQs.
+
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Reported-by: Bryan Evenson <bevenson@melinkcorp.com>
+Reviewed-by: Johan Hovold <johan@hovold.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Bryan Evenson <bevenson@melinkcorp.com>
+Cc: Andrew Victor <linux@maxim.org.za>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Cc: Mark Roszko <mark.roszko@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iio/adc/at91_adc.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ arch/arm/mach-at91/sysirq_mask.c |   22 +++++++++++++---------
+ 1 file changed, 13 insertions(+), 9 deletions(-)
 
---- a/drivers/iio/adc/at91_adc.c
-+++ b/drivers/iio/adc/at91_adc.c
-@@ -322,12 +322,11 @@ static int at91_adc_channel_init(struct
- 	return idev->num_channels;
- }
+--- a/arch/arm/mach-at91/sysirq_mask.c
++++ b/arch/arm/mach-at91/sysirq_mask.c
+@@ -25,24 +25,28 @@
  
--static u8 at91_adc_get_trigger_value_by_name(struct iio_dev *idev,
-+static int at91_adc_get_trigger_value_by_name(struct iio_dev *idev,
- 					     struct at91_adc_trigger *triggers,
- 					     const char *trigger_name)
+ #include "generic.h"
+ 
+-#define AT91_RTC_IDR	0x24	/* Interrupt Disable Register */
+-#define AT91_RTC_IMR	0x28	/* Interrupt Mask Register */
++#define AT91_RTC_IDR		0x24	/* Interrupt Disable Register */
++#define AT91_RTC_IMR		0x28	/* Interrupt Mask Register */
++#define AT91_RTC_IRQ_MASK	0x1f	/* Available IRQs mask */
+ 
+ void __init at91_sysirq_mask_rtc(u32 rtc_base)
  {
- 	struct at91_adc_state *st = iio_priv(idev);
--	u8 value = 0;
- 	int i;
+ 	void __iomem *base;
+-	u32 mask;
  
- 	for (i = 0; i < st->trigger_number; i++) {
-@@ -340,15 +339,16 @@ static u8 at91_adc_get_trigger_value_by_
- 			return -ENOMEM;
+ 	base = ioremap(rtc_base, 64);
+ 	if (!base)
+ 		return;
  
- 		if (strcmp(trigger_name, name) == 0) {
--			value = triggers[i].value;
- 			kfree(name);
--			break;
-+			if (triggers[i].value == 0)
-+				return -EINVAL;
-+			return triggers[i].value;
- 		}
+-	mask = readl_relaxed(base + AT91_RTC_IMR);
+-	if (mask) {
+-		pr_info("AT91: Disabling rtc irq\n");
+-		writel_relaxed(mask, base + AT91_RTC_IDR);
+-		(void)readl_relaxed(base + AT91_RTC_IMR);	/* flush */
+-	}
++	/*
++	 * sam9x5 SoCs have the following errata:
++	 * "RTC: Interrupt Mask Register cannot be used
++	 *  Interrupt Mask Register read always returns 0."
++	 *
++	 * Hence we're not relying on IMR values to disable
++	 * interrupts.
++	 */
++	writel_relaxed(AT91_RTC_IRQ_MASK, base + AT91_RTC_IDR);
++	(void)readl_relaxed(base + AT91_RTC_IMR);	/* flush */
  
- 		kfree(name);
- 	}
- 
--	return value;
-+	return -EINVAL;
+ 	iounmap(base);
  }
- 
- static int at91_adc_configure_trigger(struct iio_trigger *trig, bool state)
-@@ -358,14 +358,14 @@ static int at91_adc_configure_trigger(st
- 	struct iio_buffer *buffer = idev->buffer;
- 	struct at91_adc_reg_desc *reg = st->registers;
- 	u32 status = at91_adc_readl(st, reg->trigger_register);
--	u8 value;
-+	int value;
- 	u8 bit;
- 
- 	value = at91_adc_get_trigger_value_by_name(idev,
- 						   st->trigger_list,
- 						   idev->trig->name);
--	if (value == 0)
--		return -EINVAL;
-+	if (value < 0)
-+		return value;
- 
- 	if (state) {
- 		st->buffer = kmalloc(idev->scan_bytes, GFP_KERNEL);
 
 
