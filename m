@@ -1,121 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753552AbaFXNYo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 09:24:44 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:37675 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753361AbaFXNYm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 09:24:42 -0400
-Date: Tue, 24 Jun 2014 15:24:39 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: x86-ml <x86@kernel.org>
-Cc: Tony Luck <tony.luck@intel.com>, lkml <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] 2 RAS fixes for 3.17, refreshed
-Message-ID: <20140624132439.GH4439@pd.tnic>
-References: <20140622164603.GA3385@pd.tnic>
+	id S1753720AbaFXNY6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 09:24:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59600 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753641AbaFXNY4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 09:24:56 -0400
+Date: Tue, 24 Jun 2014 09:24:44 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Chen, Alvin" <alvin.chen@intel.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Boon Leong Ong <boon.leong.ong@intel.com>
+Subject: Re: [PATCH] USB: ehci-pci: USB host controller support for Intel
+ Quark X1000
+Message-ID: <20140624132444.GA1215@kroah.com>
+References: <1403625103-28078-1-git-send-email-alvin.chen@intel.com>
+ <1403625103-28078-2-git-send-email-alvin.chen@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140622164603.GA3385@pd.tnic>
+In-Reply-To: <1403625103-28078-2-git-send-email-alvin.chen@intel.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 22, 2014 at 06:46:03PM +0200, Borislav Petkov wrote:
-> Hi guys,
+On Tue, Jun 24, 2014 at 08:51:43AM -0700, Chen, Alvin wrote:
+> From: Bryan O'Donoghue <bryan.odonoghue@intel.com>
 > 
-> please queue this for 3.17. We had it ready earlier but decided to delay
-> it for an extra testing period.
+> This patch is to enable USB host controller for Intel Quark X1000. Add pci quirks
+> to adjust the packet buffer in/out threshold value, and ensure EHCI packet buffer
+> i/o threshold value is reconfigured to half.
+> 
+> Signed-off-by: Bryan O'Donoghue <bryan.odonoghue@intel.com>
+> Signed-off-by: Alvin (Weike) Chen <alvin.chen@intel.com>
+> ---
+>  drivers/usb/host/ehci-pci.c   |    4 ++++
+>  drivers/usb/host/pci-quirks.c |   42 +++++++++++++++++++++++++++++++++++++++++
+>  drivers/usb/host/pci-quirks.h |    2 ++
+>  3 files changed, 48 insertions(+)
+> 
+> diff --git a/drivers/usb/host/ehci-pci.c b/drivers/usb/host/ehci-pci.c
+> index 3e86bf4..33cfa23 100644
+> --- a/drivers/usb/host/ehci-pci.c
+> +++ b/drivers/usb/host/ehci-pci.c
+> @@ -50,6 +50,10 @@ static int ehci_pci_reinit(struct ehci_hcd *ehci, struct pci_dev *pdev)
+>  	if (!retval)
+>  		ehci_dbg(ehci, "MWI active\n");
+>  
+> +	/* Reset the threshold limit */
+> +	if(unlikely(usb_is_intel_qrk(pdev)))
 
-Actually, ignore that one. Here's a new pull request adding a fix for an
-issue BorisO reported. All non-critical stuff for 3.17.
+Why unlikely()?  Have you measured a speed difference here?  And this is
+a _very_ slow path, what does that speed difference you measured help
+with?
 
-Please pull,
-thanks.
+thanks,
 
----
-The following changes since commit a497c3ba1d97fc69c1e78e7b96435ba8c2cb42ee:
-
-  Linux 3.16-rc2 (2014-06-21 19:02:54 -1000)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/ras_for_3.17
-
-for you to fetch changes up to 27c934158c5be0bebfb2970da521b9d9efc0058b:
-
-  x86, MCE: Robustify mcheck_init_device (2014-06-24 15:17:01 +0200)
-
-----------------------------------------------------------------
-CPU_POST_DEAD is one of thorns in the path to getting CPU hotplug
-seriously cleaned up. Kill its incarnation here in the MCE code.
-
-Also, robustify mcheck_init_device() wrt CPU hotplug.
-
-----------------------------------------------------------------
-Borislav Petkov (2):
-      x86, MCE: Kill CPU_POST_DEAD
-      x86, MCE: Robustify mcheck_init_device
-
- arch/x86/kernel/cpu/mcheck/mce.c | 19 ++++++++++---------
- 1 file changed, 10 insertions(+), 9 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index bb92f38153b2..4fc57975acc1 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -2385,6 +2385,10 @@ mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
- 			threshold_cpu_callback(action, cpu);
- 		mce_device_remove(cpu);
- 		mce_intel_hcpu_update(cpu);
-+
-+		/* intentionally ignoring frozen here */
-+		if (!(action & CPU_TASKS_FROZEN))
-+			cmci_rediscover();
- 		break;
- 	case CPU_DOWN_PREPARE:
- 		smp_call_function_single(cpu, mce_disable_cpu, &action, 1);
-@@ -2396,11 +2400,6 @@ mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
- 		break;
- 	}
- 
--	if (action == CPU_POST_DEAD) {
--		/* intentionally ignoring frozen here */
--		cmci_rediscover();
--	}
--
- 	return NOTIFY_OK;
- }
- 
-@@ -2451,6 +2450,12 @@ static __init int mcheck_init_device(void)
- 	for_each_online_cpu(i) {
- 		err = mce_device_create(i);
- 		if (err) {
-+			/*
-+			 * Register notifier anyway (and do not unreg it) so
-+			 * that we don't leave undeleted timers, see notifier
-+			 * callback above.
-+			 */
-+			__register_hotcpu_notifier(&mce_cpu_notifier);
- 			cpu_notifier_register_done();
- 			goto err_device_create;
- 		}
-@@ -2471,10 +2476,6 @@ static __init int mcheck_init_device(void)
- err_register:
- 	unregister_syscore_ops(&mce_syscore_ops);
- 
--	cpu_notifier_register_begin();
--	__unregister_hotcpu_notifier(&mce_cpu_notifier);
--	cpu_notifier_register_done();
--
- err_device_create:
- 	/*
- 	 * We didn't keep track of which devices were created above, but
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+greg k-h
