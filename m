@@ -1,50 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752138AbaFXJRy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 05:17:54 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:50135 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751560AbaFXJRw (ORCPT
+	id S1752427AbaFXJSR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 05:18:17 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52705 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751360AbaFXJSN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 05:17:52 -0400
-From: Lei Li <lilei@linux.vnet.ibm.com>
-To: mhocko@suse.cz
-Cc: cgroups@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Lei Li <lilei@linux.vnet.ibm.com>
-Subject: [PATCH] Documentation: remove remove_from_page_cache note
-Date: Tue, 24 Jun 2014 17:17:42 +0800
-Message-Id: <1403601462-32167-1-git-send-email-lilei@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.5.3
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14062409-1396-0000-0000-00000518AE93
+	Tue, 24 Jun 2014 05:18:13 -0400
+Date: Tue, 24 Jun 2014 10:18:08 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Olav Haugan <ohaugan@codeaurora.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Rob Herring <robherring2@gmail.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Kumar Gala <galak@codeaurora.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Cho KyongHo <pullip.cho@samsung.com>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Hiroshi Doyu <hdoyu@nvidia.com>
+Subject: Re: [PATCH v2] devicetree: Add generic IOMMU device tree bindings
+Message-ID: <20140624091808.GC26013@arm.com>
+References: <1400877218-4113-1-git-send-email-thierry.reding@gmail.com>
+ <CAL_JsqKumG1PSFoVfeGpLLG+MjXFeF4aUjun=vv1BJpaxk0Byg@mail.gmail.com>
+ <4545972.cM7IP1qTXQ@wuerfel>
+ <53A4C0C9.2050908@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53A4C0C9.2050908@codeaurora.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove this note as remove_from_page_cache has been renamed to
-delete_from_page_cache since Commit 702cfbf9 ("mm: goodbye
-remove_from_page_cache()"), and it doesn't serve any useful
-purpose.
+On Sat, Jun 21, 2014 at 12:16:25AM +0100, Olav Haugan wrote:
+> On 5/30/2014 12:06 PM, Arnd Bergmann wrote:
+> > On Friday 30 May 2014 08:16:05 Rob Herring wrote:
+> >> Presumably the ID would be the streamID on ARM's SMMU. How would a
+> >> master with 8 streamIDs be described? This is what Calxeda midway has
+> >> for SATA and I would expect that to be somewhat common. Either you
+> >> need some ID masking or you'll have lots of duplication when you have
+> >> windows.
+> > 
+> > I don't understand the problem. If you have stream IDs 0 through 7,
+> > you would have
+> > 
+> > 	master@a {
+> > 		...
+> > 		iommus = <&smmu 0>;
+> > 	};
+> > 
+> > 	master@b {
+> > 		...
+> > 		iommus = <&smmu 1;
+> > 	};
+> > 
+> > 	...
+> > 
+> > 	master@12 {
+> > 		...
+> > 		iommus = <&smmu 7;
+> > 	};
+> > 
+> > and you don't need a window at all. Why would you need a mask of
+> > some sort?
+> 
+> We have multiple-master SMMUs and each master emits a variable number of
+> StreamIDs. However, we have to apply a mask (the ARM SMMU spec allows
+> for this) to the StreamIDs due to limited number of StreamID 2 Context
+> Bank entries in the SMMU. If my understanding is correct we would
+> represent this in the DT like this:
+> 
+> 	iommu {
+> 		#address-cells = <2>;
+> 		#size-cells = <0>;
+> 	};
+> 
+> 	master@a {
+> 		...
+> 		iommus = <&iommu StreamID0 MASK0>,
+> 			 <&iommu StreamID1 MASK1>,
+> 			 <&iommu StreamID2 MASK2>;
+> 	};
 
-Signed-off-by: Lei Li <lilei@linux.vnet.ibm.com>
----
- Documentation/cgroups/memcg_test.txt | 2 --
- 1 file changed, 2 deletions(-)
+Stupid question, but why not simply describe the masked IDs? What use does
+the `raw' ID have to Linux?
 
-diff --git a/Documentation/cgroups/memcg_test.txt b/Documentation/cgroups/memcg_test.txt
-index 8870b02..67c11a3 100644
---- a/Documentation/cgroups/memcg_test.txt
-+++ b/Documentation/cgroups/memcg_test.txt
-@@ -82,8 +82,6 @@ Under below explanation, we assume CONFIG_MEM_RES_CTRL_SWAP=y.
- 	- add_to_page_cache_locked().
- 
- 	The logic is very clear. (About migration, see below)
--	Note: __remove_from_page_cache() is called by remove_from_page_cache()
--	and __remove_mapping().
- 
- 6. Shmem(tmpfs) Page Cache
- 	The best way to understand shmem's page state transition is to read
--- 
-1.8.5.3
-
+Will
