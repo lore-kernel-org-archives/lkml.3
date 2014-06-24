@@ -1,136 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751215AbaFXElN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 00:41:13 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:47263 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750709AbaFXElL (ORCPT
+	id S1751562AbaFXEle (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 00:41:34 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:38720 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751155AbaFXEld (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 00:41:11 -0400
-Message-ID: <1403584858.6510.5.camel@debian>
-Subject: Re: [PATCH] mm:kswapd: clean up the kswapd
-From: Chen Yucong <slaoub@gmail.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: hannes@cmpxchg.org, mhocko@suse.cz, riel@redhat.com,
-        akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 24 Jun 2014 12:40:58 +0800
-In-Reply-To: <20140623111914.GK10819@suse.de>
-References: <1403500494-5110-1-git-send-email-slaoub@gmail.com>
-	 <20140623111914.GK10819@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	Tue, 24 Jun 2014 00:41:33 -0400
+Message-ID: <1403584890.3140.18.camel@dabdike>
+Subject: Re: [RFC] Tux3 for review
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Daniel Phillips <daniel@phunq.net>
+Cc: Pavel Machek <pavel@ucw.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org
+Date: Tue, 24 Jun 2014 00:41:30 -0400
+In-Reply-To: <522aee97-34e7-4adc-adf2-c9b73aa0ef36@phunq.net>
+References: <5376B273.7000800@partner.samsung.com>
+	 <20140518235555.GC18954@dastard> <537AA802.408@phunq.net>
+	 <20140520031802.GF18954@dastard> <20140613103216.GA4589@amd.pavel.ucw.cz>
+	 <02d3b094-808c-4b17-903d-1280d451704b@phunq.net>
+	 <20140613202039.GA23872@amd.pavel.ucw.cz>
+	 <b67e55e1-af54-4f34-802c-95749771aca4@phunq.net>
+	 <1402932354.2197.61.camel@dabdike.int.hansenpartnership.com>
+	 <20140619082129.GA4309@xo-6d-61-c0.localdomain>
+	 <alpine.LFD.2.00.1406191117240.2182@localhost.localdomain>
+	 <ad0baf8f-091f-45d0-8d9f-f72d78d0d1ff@phunq.net>
+	 <1403378941.2177.24.camel@dabdike.int.hansenpartnership.com>
+	 <e475a747-2f33-4c43-b6bd-98df2e57099a@phunq.net>
+	 <1403448187.1949.9.camel@jarvis.lan>
+	 <522aee97-34e7-4adc-adf2-c9b73aa0ef36@phunq.net>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.12.2 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-06-23 at 12:19 +0100, Mel Gorman wrote:
-> On Mon, Jun 23, 2014 at 01:14:54PM +0800, Chen Yucong wrote:
-> > According to the commit 215ddd66 (mm: vmscan: only read new_classzone_idx from
-> > pgdat when reclaiming successfully) and the commit d2ebd0f6b (kswapd: avoid
-> > unnecessary rebalance after an unsuccessful balancing), we can use a boolean
-> > variable for replace balanced_* variables, which makes the kswapd more clarify.
-> > 
-> > Signed-off-by: Chen Yucong <slaoub@gmail.com>
+On Mon, 2014-06-23 at 17:27 -0700, Daniel Phillips wrote:
+> On Sunday, June 22, 2014 7:43:07 AM PDT, James Bottomley wrote:
+> > On Sat, 2014-06-21 at 20:32 -0700, Daniel Phillips wrote:
+> >> On Saturday, June 21, 2014 12:29:01 PM PDT, James Bottomley wrote:
+> >>> That's a bit disingenuous: the concern has always been how page forking
+> >>> interacted with writeback.  It's not new, it was one of the major 
+> things
+> >>> brought up at LSF 14 months ago, so you weren't just assigned this.
+> >  ...
+> >> 
+> >> [citation needed]
+> >
+> > Really?  I was there; I remember and it's in my notes of the discussion.
+> > However, it's also in Jon's at paragraph 6 if you need to refer to
+> > something to refresh your memory.
 > 
-> I think this is just churning code for the sake of it. It's not any
-> easier to understand as a result of the modification and does not appear
-> to be a preparation for a follow-on patch that addresses a bug.
+> You have such a wonderfully charismatic way of providing citations.
+
+Well, it's factual, as I presume you have now discovered.
+
+> > However, when it was spotted isn't the issue; how we add tux3 without a
+> > large maintenance burden on writeback is, as I carefully explained in
+> > the rest of the email you cut.
 > 
-Anyway, there are some palaces that still need to be cleaned in
-`kswapd'.
+> You are doing a fine job of proving to the world that LKML has become
+> a toxic waste dump. CC to LKML removed for obvious reasons.
 
-thx!
-cyc
+Please don't drop the Mailing list cc; that's where the debate actually
+happens and where others can see it.
 
+>  Please let this be the end of the unhelpful rhetoric that does none of us any
+> good, especially you.
 
-Subject: [PATCH] mm:kswapd: clean up the kswapd
+Telling you factually what the issue is isn't rhetoric.  Your Ad Hominem
+reply, of course, is rhetoric but I don't need to bother engaging with
+your rhetorical technique because I'm still arguing the facts: proving
+that page forking can be integrated into writeback without adding to the
+maintenance burden is a big issue for tux3.  We're all still waiting for
+the patches you were going to produce showing how this could be done.
 
-The type of variables(order, new_order, and balanced_order) has some
-flaws.
-According to the `order' argument for kswapd_try_to_sleep() and
-balance_pgdat(),
-they should be defined as `int' rather than `unsigned long' or
-`unsigned'.
-This patch also does minimal cleanup, which makes the kswapd more
-clarify.
+James
 
-Signed-off-by: Chen Yucong <slaoub@gmail.com>
----
- mm/vmscan.c |   33 ++++++++++++++++++---------------
- 1 file changed, 18 insertions(+), 15 deletions(-)
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index a8ffe4e..1b2576d 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -3332,8 +3332,8 @@ static void kswapd_try_to_sleep(pg_data_t *pgdat,
-int order, int classzone_idx)
-  */
- static int kswapd(void *p)
- {
--	unsigned long order, new_order;
--	unsigned balanced_order;
-+	int order, new_order;
-+	int balanced_order;
- 	int classzone_idx, new_classzone_idx;
- 	int balanced_classzone_idx;
- 	pg_data_t *pgdat = (pg_data_t*)p;
-@@ -3371,34 +3371,37 @@ static int kswapd(void *p)
- 	balanced_classzone_idx = classzone_idx;
- 	for ( ; ; ) {
- 		bool ret;
-+		bool sleep = true;
- 
- 		/*
- 		 * If the last balance_pgdat was unsuccessful it's unlikely a
- 		 * new request of a similar or harder type will succeed soon
- 		 * so consider going to sleep on the basis we reclaimed at
- 		 */
--		if (balanced_classzone_idx >= new_classzone_idx &&
--					balanced_order == new_order) {
-+		if (balanced_classzone_idx >= classzone_idx &&
-+					balanced_order == order) {
- 			new_order = pgdat->kswapd_max_order;
- 			new_classzone_idx = pgdat->classzone_idx;
--			pgdat->kswapd_max_order =  0;
-+			pgdat->kswapd_max_order = 0;
- 			pgdat->classzone_idx = pgdat->nr_zones - 1;
-+
-+			if (order < new_order ||
-+					classzone_idx > new_classzone_idx) {
-+				/*
-+				 * Don't sleep if someone wants a larger 'order'
-+				 * allocation or has tighter zone constraints
-+				 */
-+				order = new_order;
-+				classzone_idx = new_classzone_idx;
-+				sleep = false;
-+			}
- 		}
- 
--		if (order < new_order || classzone_idx > new_classzone_idx) {
--			/*
--			 * Don't sleep if someone wants a larger 'order'
--			 * allocation or has tigher zone constraints
--			 */
--			order = new_order;
--			classzone_idx = new_classzone_idx;
--		} else {
-+		if (sleep) {
- 			kswapd_try_to_sleep(pgdat, balanced_order,
- 						balanced_classzone_idx);
- 			order = pgdat->kswapd_max_order;
- 			classzone_idx = pgdat->classzone_idx;
--			new_order = order;
--			new_classzone_idx = classzone_idx;
- 			pgdat->kswapd_max_order = 0;
- 			pgdat->classzone_idx = pgdat->nr_zones - 1;
- 		}
--- 
-1.7.10.4
-
-  
 
