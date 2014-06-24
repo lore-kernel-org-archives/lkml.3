@@ -1,127 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030229AbaFXQJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:09:56 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:17343 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965173AbaFXQJi (ORCPT
+	id S965515AbaFXQKU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:10:20 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:58473 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965173AbaFXQKP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 12:09:38 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-95-53a9a2be4759
-From: Tomasz Figa <t.figa@samsung.com>
-To: linux-samsung-soc@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        Pankaj Dubey <pankaj.dubey@samsung.com>,
-        Rahul Sharma <rahul.sharma@samsung.com>,
-        Mark Brown <broonie@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Daniel Drake <drake@endlessm.com>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Tomasz Figa <t.figa@samsung.com>
-Subject: [PATCH v2 4/4] ARM: dts: exynos: Update PMU node with CLKOUT related
- data
-Date: Tue, 24 Jun 2014 18:08:27 +0200
-Message-id: <1403626107-12073-5-git-send-email-t.figa@samsung.com>
-X-Mailer: git-send-email 1.9.3
-In-reply-to: <1403626107-12073-1-git-send-email-t.figa@samsung.com>
-References: <1403626107-12073-1-git-send-email-t.figa@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNLMWRmVeSWpSXmKPExsVy+t/xK7r7Fq0MNrh/jMNi6sMnbBaP5j9m
-	tuhdcJXNYtPja6wWl3fNYbOYcX4fk8XaI3fZLZZev8hk8XTCRTaLRVu/sFtMWXSY1aJ17xF2
-	i8Nv2lkt1s94zWKxatcfRgd+jzXz1jB6LPqe5bFz1l12j02rOtk87lzbw+axeUm9R9+WVYwe
-	nzfJBXBEcdmkpOZklqUW6dslcGXc3b2WvWC6WMWcM/PZGhivC3UxcnBICJhIPP1e3cXICWSK
-	SVy4t56ti5GLQ0hgKaPExMV7GSGcPiaJxwvXsYNUsQmoSXxueMQGYosIqEp8blvADlLELLCA
-	RWLjq5lgRcICIRK32vaC2SxARS+evgJr4BVwkriyfg0rxDo5id5tb5hBbE4BZ4lJxw6B1QgB
-	1SzfO59xAiPvAkaGVYyiqaXJBcVJ6blGesWJucWleel6yfm5mxghAfx1B+PSY1aHGAU4GJV4
-	eCt2rAgWYk0sK67MPcQowcGsJMJr2r0yWIg3JbGyKrUoP76oNCe1+BAjEwenVAMjs8Dp/Yq1
-	zGeWpsuV6s6/8tvoqX3c2n8PGV0i3FanT9z0MeO1QaxBqLvVPsE309NtnkYsva6W6VjZKr/u
-	/MydjycKZFn1CX/a/6e7quDST0arT18WcCa67P+2UrWl/6Ww83aZg6b/uBvav7wKP8Ld97tH
-	SsXsROGC5pjpt/lYg5SYUu61X/+gxFKckWioxVxUnAgAqkK+6z4CAAA=
+	Tue, 24 Jun 2014 12:10:15 -0400
+Message-ID: <53A9A290.7020407@ti.com>
+Date: Tue, 24 Jun 2014 12:08:48 -0400
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Pratyush Anand <pratyush.anand@st.com>, Arnd Bergmann <arnd@arndb.de>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Jingoo Han <jg1.han@samsung.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Mohit KUMAR DCG <Mohit.KUMAR@st.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Marek Vasut <marex@denx.de>, Russell King <linux@arm.linux.org.uk>,
+        Pawel Moll <pawel.moll@arm.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ABRAHAM KISHON VIJAY <kishon@ti.com>,
+        Richard Zhu <r65037@freescale.com>, Rob Herring <robh+dt@kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>
+Subject: Re: Re: [PATCH v2 0/8] Add Keystone PCIe controller driver
+References: <20140623053249.GD2666@pratyush-vbox> <53A85ACE.9070506@ti.com>
+In-Reply-To: <53A85ACE.9070506@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch extends nodes of PMU system controller on Exynos4210, 4x12,
-5250 and 5420 SoCs with newly defined properties used by Exynos CLKOUT
-driver.
+Pratyush,
 
-Signed-off-by: Tomasz Figa <t.figa@samsung.com>
----
- arch/arm/boot/dts/exynos4210.dtsi | 10 ++++++++++
- arch/arm/boot/dts/exynos4x12.dtsi |  7 +++++++
- arch/arm/boot/dts/exynos5250.dtsi |  3 +++
- arch/arm/boot/dts/exynos5420.dtsi |  3 +++
- 4 files changed, 23 insertions(+)
+On 06/23/2014 12:50 PM, Santosh Shilimkar wrote:
+>
+>
+>
+> -------- Original Message --------
+> Subject: Re: [PATCH v2 0/8] Add Keystone PCIe controller driver
+> On Sat, Jun 21, 2014 at 03:05:30AM +0800, Arnd Bergmann wrote:
+>> On Friday 20 June 2014 13:11:37 Santosh Shilimkar wrote:
+>
+>>>>
+>>> Arnd suggestion was to have the version 3.65 code in generic place since
+>>> its IP specific and just in case some other vendor using the same version
+>>> can leverage the code.
+>
+> Sorry, I do not follow PCIe mailing list these days, doing something else
+> now. So coming to this topic a bit delayed.
+>
+My Apologies for the email format as I mysteriously lost this email and
+had to resort to a forwarded email to respond to this.
 
-diff --git a/arch/arm/boot/dts/exynos4210.dtsi b/arch/arm/boot/dts/exynos4210.dtsi
-index ee3001f..97ea7a9 100644
---- a/arch/arm/boot/dts/exynos4210.dtsi
-+++ b/arch/arm/boot/dts/exynos4210.dtsi
-@@ -31,6 +31,16 @@
- 		pinctrl2 = &pinctrl_2;
- 	};
- 
-+	pmu_system_controller: system-controller@10020000 {
-+		clock-names = "clkout0", "clkout1", "clkout2", "clkout3",
-+				"clkout4", "clkout8", "clkout9";
-+		clocks = <&clock CLK_OUT_DMC>, <&clock CLK_OUT_TOP>,
-+			<&clock CLK_OUT_LEFTBUS>, <&clock CLK_OUT_RIGHTBUS>,
-+			<&clock CLK_OUT_CPU>, <&clock CLK_XXTI>,
-+			<&clock CLK_XUSBXTI>;
-+		#clock-cells = <1>;
-+	};
-+
- 	sysram@02020000 {
- 		compatible = "mmio-sram";
- 		reg = <0x02020000 0x20000>;
-diff --git a/arch/arm/boot/dts/exynos4x12.dtsi b/arch/arm/boot/dts/exynos4x12.dtsi
-index c5a943d..de1f9c7 100644
---- a/arch/arm/boot/dts/exynos4x12.dtsi
-+++ b/arch/arm/boot/dts/exynos4x12.dtsi
-@@ -139,6 +139,13 @@
- 
- 	pmu_system_controller: system-controller@10020000 {
- 		compatible = "samsung,exynos4212-pmu", "syscon";
-+		clock-names = "clkout0", "clkout1", "clkout2", "clkout3",
-+				"clkout4", "clkout8", "clkout9";
-+		clocks = <&clock CLK_OUT_DMC>, <&clock CLK_OUT_TOP>,
-+			<&clock CLK_OUT_LEFTBUS>, <&clock CLK_OUT_RIGHTBUS>,
-+			<&clock CLK_OUT_CPU>, <&clock CLK_XXTI>,
-+			<&clock CLK_XUSBXTI>;
-+		#clock-cells = <1>;
- 	};
- 
- 	g2d@10800000 {
-diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
-index 834fb5a..492e1ef 100644
---- a/arch/arm/boot/dts/exynos5250.dtsi
-+++ b/arch/arm/boot/dts/exynos5250.dtsi
-@@ -191,6 +191,9 @@
- 	pmu_system_controller: system-controller@10040000 {
- 		compatible = "samsung,exynos5250-pmu", "syscon";
- 		reg = <0x10040000 0x5000>;
-+		clock-names = "clkout16";
-+		clocks = <&clock CLK_FIN_PLL>;
-+		#clock-cells = <1>;
- 	};
- 
- 	sysreg_system_controller: syscon@10050000 {
-diff --git a/arch/arm/boot/dts/exynos5420.dtsi b/arch/arm/boot/dts/exynos5420.dtsi
-index e385322..481beec 100644
---- a/arch/arm/boot/dts/exynos5420.dtsi
-+++ b/arch/arm/boot/dts/exynos5420.dtsi
-@@ -724,6 +724,9 @@
- 	pmu_system_controller: system-controller@10040000 {
- 		compatible = "samsung,exynos5420-pmu", "syscon";
- 		reg = <0x10040000 0x5000>;
-+		clock-names = "clkout16";
-+		clocks = <&clock CLK_FIN_PLL>;
-+		#clock-cells = <1>;
- 	};
- 
- 	sysreg_system_controller: syscon@10050000 {
--- 
-1.9.3
+Let us have the discussion on this thread as I lost the original emails.
+>>>
+>>> Concern here seems toe really those name of the files. I can't think of
+>>> any other appropriate name.
+>>
+>> We should definitely keep the version in the DT "compatible" strings
+>> wherever we know it. Regarding a better file name, I have no idea.
+>
+> In my opinion, we do not need any of dw-v3_65 files, as code in these
+> files will not be usable by other vendors.
+>
+> Anything which is implemented in application space, will not be same
+> across all IP users. For example, MSI0_IRQ_ENABLE_SET has been defined
+> at offset 0x108 in keystone PCIe application space.Other vendor may
+> not have this register at the same offset. Moreover, other vendors are
+> not even obliged to implement MSI Enable signals in same way, so
+> internal bit definition of the register may change.
+>
+> Therefore code is not reusable if all register offset and bit
+> definitions are not same across vendors. So, in case of DW driver none
+> of the code which are accessed using va_app_base should go to common
+> area.
+>
+
+I think based on the response far on this issue, it is best to keep
+the Application specific code as part of Keystone driver and in
+future if there is any driver that has similar application register
+implemented. we can refactor the code and re-use.
+
+My V3 will revert back to implementation similar to RFC. Also since this
+is individual h/w specific, there is no no need for a compatibility as
+well. Will use keystone specific compatibility string for this.
+
+Arnd, hope this is fine. Please respond if you still think a 
+compatibility string is needed.
+
+Murali
+
+> Pratyush
+>
+>>
+>> 	Arnd
+>
+>
 
