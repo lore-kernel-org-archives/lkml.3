@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756202AbaFXUeX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:34:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47948 "EHLO
+	id S1756274AbaFXUef (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:34:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47980 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756161AbaFXUeU (ORCPT
+	with ESMTP id S1756207AbaFXUeb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:34:20 -0400
+	Tue, 24 Jun 2014 16:34:31 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Shaun Ruffell <sruffell@digium.com>, Ingo Molnar <mingo@kernel.org>,
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 27/65] sched: Sanitize irq accounting madness
-Date: Tue, 24 Jun 2014 13:29:47 -0700
-Message-Id: <1403641825-12825-28-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 24/65] x86-64, modify_ldt: Make support for 16-bit segments a runtime option
+Date: Tue, 24 Jun 2014 13:29:44 -0700
+Message-Id: <1403641825-12825-25-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
 References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
@@ -30,121 +27,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 2d513868e2a33e1d5315490ef4c861ee65babd65 upstream.
+commit fa81511bb0bbb2b1aace3695ce869da9762624ff upstream.
 
-Russell reported, that irqtime_account_idle_ticks() takes ages due to:
+Checkin:
 
-       for (i = 0; i < ticks; i++)
-               irqtime_account_process_tick(current, 0, rq);
+b3b42ac2cbae x86-64, modify_ldt: Ban 16-bit segments on 64-bit kernels
 
-It's sad, that this code was written way _AFTER_ the NOHZ idle
-functionality was available. I charge myself guitly for not paying
-attention when that crap got merged with commit abb74cefa ("sched:
-Export ns irqtimes through /proc/stat")
+disabled 16-bit segments on 64-bit kernels due to an information
+leak.  However, it does seem that people are genuinely using Wine to
+run old 16-bit Windows programs on Linux.
 
-So instead of looping nr_ticks times just apply the whole thing at
-once.
+A proper fix for this ("espfix64") is coming in the upcoming merge
+window, but as a temporary fix, create a sysctl to allow the
+administrator to re-enable support for 16-bit segments.
 
-As a side note: The whole cputime_t vs. u64 business in that context
-wants to be cleaned up as well. There is no point in having all these
-back and forth conversions. Lets standardise on u64 nsec for all
-kernel internal accounting and be done with it. Everything else does
-not make sense at all for fine grained accounting. Frederic, can you
-please take care of that?
+It adds a "/proc/sys/abi/ldt16" sysctl that defaults to zero (off). If
+you hit this issue and care about your old Windows program more than
+you care about a kernel stack address information leak, you can do
 
-Reported-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Venkatesh Pallipadi <venki@google.com>
-Cc: Shaun Ruffell <sruffell@digium.com>
-Link: http://lkml.kernel.org/r/alpine.DEB.2.02.1405022307000.6261@ionos.tec.linutronix.de
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+   echo 1 > /proc/sys/abi/ldt16
+
+as root (add it to your startup scripts), and you should be ok.
+
+The sysctl table is only added if you have COMPAT support enabled on
+x86-64, but I assume anybody who runs old windows binaries very much
+does that ;)
+
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Link: http://lkml.kernel.org/r/CA%2B55aFw9BPoD10U1LfHbOMpHWZkvJTkMcfCs9s3urPr1YyWBxw@mail.gmail.com
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/sched/cputime.c | 32 ++++++++++++++++----------------
- 1 file changed, 16 insertions(+), 16 deletions(-)
+ arch/x86/kernel/ldt.c        | 4 +++-
+ arch/x86/vdso/vdso32-setup.c | 8 ++++++++
+ 2 files changed, 11 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index 293b202..bead889 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -341,50 +341,50 @@ out:
-  * softirq as those do not count in task exec_runtime any more.
-  */
- static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
--						struct rq *rq)
-+					 struct rq *rq, int ticks)
- {
--	cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
-+	cputime_t scaled = cputime_to_scaled(cputime_one_jiffy);
-+	u64 cputime = (__force u64) cputime_one_jiffy;
- 	u64 *cpustat = kcpustat_this_cpu->cpustat;
+diff --git a/arch/x86/kernel/ldt.c b/arch/x86/kernel/ldt.c
+index af1d14a..dcbbaa1 100644
+--- a/arch/x86/kernel/ldt.c
++++ b/arch/x86/kernel/ldt.c
+@@ -20,6 +20,8 @@
+ #include <asm/mmu_context.h>
+ #include <asm/syscalls.h>
  
- 	if (steal_account_process_tick())
- 		return;
- 
-+	cputime *= ticks;
-+	scaled *= ticks;
++int sysctl_ldt16 = 0;
 +
- 	if (irqtime_account_hi_update()) {
--		cpustat[CPUTIME_IRQ] += (__force u64) cputime_one_jiffy;
-+		cpustat[CPUTIME_IRQ] += cputime;
- 	} else if (irqtime_account_si_update()) {
--		cpustat[CPUTIME_SOFTIRQ] += (__force u64) cputime_one_jiffy;
-+		cpustat[CPUTIME_SOFTIRQ] += cputime;
- 	} else if (this_cpu_ksoftirqd() == p) {
- 		/*
- 		 * ksoftirqd time do not get accounted in cpu_softirq_time.
- 		 * So, we have to handle it separately here.
- 		 * Also, p->stime needs to be updated for ksoftirqd.
- 		 */
--		__account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
--					CPUTIME_SOFTIRQ);
-+		__account_system_time(p, cputime, scaled, CPUTIME_SOFTIRQ);
- 	} else if (user_tick) {
--		account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
-+		account_user_time(p, cputime, scaled);
- 	} else if (p == rq->idle) {
--		account_idle_time(cputime_one_jiffy);
-+		account_idle_time(cputime);
- 	} else if (p->flags & PF_VCPU) { /* System time or guest time */
--		account_guest_time(p, cputime_one_jiffy, one_jiffy_scaled);
-+		account_guest_time(p, cputime, scaled);
- 	} else {
--		__account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
--					CPUTIME_SYSTEM);
-+		__account_system_time(p, cputime, scaled,	CPUTIME_SYSTEM);
- 	}
- }
- 
- static void irqtime_account_idle_ticks(int ticks)
+ #ifdef CONFIG_SMP
+ static void flush_ldt(void *current_mm)
  {
--	int i;
- 	struct rq *rq = this_rq();
- 
--	for (i = 0; i < ticks; i++)
--		irqtime_account_process_tick(current, 0, rq);
-+	irqtime_account_process_tick(current, 0, rq, ticks);
- }
- #else /* CONFIG_IRQ_TIME_ACCOUNTING */
- static void irqtime_account_idle_ticks(int ticks) {}
- static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
--						struct rq *rq) {}
-+						struct rq *rq, int nr_ticks) {}
- #endif /* CONFIG_IRQ_TIME_ACCOUNTING */
+@@ -234,7 +236,7 @@ static int write_ldt(void __user *ptr, unsigned long bytecount, int oldmode)
+ 	 * IRET leaking the high bits of the kernel stack address.
+ 	 */
+ #ifdef CONFIG_X86_64
+-	if (!ldt_info.seg_32bit) {
++	if (!ldt_info.seg_32bit && !sysctl_ldt16) {
+ 		error = -EINVAL;
+ 		goto out_unlock;
+ 	}
+diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
+index 0faad64..0f134c7 100644
+--- a/arch/x86/vdso/vdso32-setup.c
++++ b/arch/x86/vdso/vdso32-setup.c
+@@ -41,6 +41,7 @@ enum {
+ #ifdef CONFIG_X86_64
+ #define vdso_enabled			sysctl_vsyscall32
+ #define arch_setup_additional_pages	syscall32_setup_pages
++extern int sysctl_ldt16;
+ #endif
  
  /*
-@@ -398,7 +398,7 @@ void account_process_tick(struct task_struct *p, int user_tick)
- 	struct rq *rq = this_rq();
- 
- 	if (sched_clock_irqtime) {
--		irqtime_account_process_tick(p, user_tick, rq);
-+		irqtime_account_process_tick(p, user_tick, rq, 1);
- 		return;
- 	}
+@@ -380,6 +381,13 @@ static ctl_table abi_table2[] = {
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dointvec
+ 	},
++	{
++		.procname	= "ldt16",
++		.data		= &sysctl_ldt16,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec
++	},
+ 	{}
+ };
  
 -- 
 1.9.1
