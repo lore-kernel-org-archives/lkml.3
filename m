@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965187AbaFXP4u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:56:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33400 "EHLO
+	id S965226AbaFXP45 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:56:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33431 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965146AbaFXP4n (ORCPT
+	with ESMTP id S965210AbaFXP4z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:56:43 -0400
+	Tue, 24 Jun 2014 11:56:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.15 40/61] ASoC: tlv320aci3x: Fix custom snd_soc_dapm_put_volsw_aic3x() function
-Date: Tue, 24 Jun 2014 11:51:23 -0400
-Message-Id: <20140624154954.615268701@linuxfoundation.org>
+        Hugh Dickins <hughd@google.com>, Lukas Czerner <lczerner@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.15 60/61] tmpfs: ZERO_RANGE and COLLAPSE_RANGE not currently supported
+Date: Tue, 24 Jun 2014 11:51:43 -0400
+Message-Id: <20140624154955.524094918@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154952.751713761@linuxfoundation.org>
 References: <20140624154952.751713761@linuxfoundation.org>
@@ -29,35 +30,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+From: Hugh Dickins <hughd@google.com>
 
-commit e6c111fac4464e3f4bf7b3802b517dafc80f8e0f upstream.
+commit 13ace4d0d9db40e10ecd66dfda14e297571be813 upstream.
 
-For some unknown reason the parameters for snd_soc_test_bits() were in wrong
-order:
-It was:
-snd_soc_test_bits(codec, val, mask, reg); /* WRONG!!! */
-while it should be:
-snd_soc_test_bits(codec, reg, mask, val);
+I was well aware of FALLOC_FL_ZERO_RANGE and FALLOC_FL_COLLAPSE_RANGE
+support being added to fallocate(); but didn't realize until now that I
+had been too stupid to future-proof shmem_fallocate() against new
+additions.  -EOPNOTSUPP instead of going on to ordinary fallocation.
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Reviewed-by: Lukas Czerner <lczerner@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/tlv320aic3x.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/shmem.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/sound/soc/codecs/tlv320aic3x.c
-+++ b/sound/soc/codecs/tlv320aic3x.c
-@@ -169,7 +169,7 @@ static int snd_soc_dapm_put_volsw_aic3x(
- 	mask <<= shift;
- 	val <<= shift;
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -1728,6 +1728,9 @@ static long shmem_fallocate(struct file
+ 	pgoff_t start, index, end;
+ 	int error;
  
--	change = snd_soc_test_bits(codec, val, mask, reg);
-+	change = snd_soc_test_bits(codec, reg, mask, val);
- 	if (change) {
- 		update.kcontrol = kcontrol;
- 		update.reg = reg;
++	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE))
++		return -EOPNOTSUPP;
++
+ 	mutex_lock(&inode->i_mutex);
+ 
+ 	if (mode & FALLOC_FL_PUNCH_HOLE) {
 
 
