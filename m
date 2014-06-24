@@ -1,73 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489AbaFXV6l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 17:58:41 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:58199 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752040AbaFXV6j (ORCPT
+	id S1753601AbaFXV7l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 17:59:41 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:57460 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751598AbaFXV7j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 17:58:39 -0400
-Date: Tue, 24 Jun 2014 23:58:28 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: "Luis R. Rodriguez" <mcgrof@suse.com>
-Cc: cocci@systeme.lip6.fr, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: SmPL for automatic request_firmware_nowait() conversion
-Message-ID: <20140624215828.GA14124@electric-eye.fr.zoreil.com>
-References: <20140621015714.GX4841@wotan.suse.de>
- <20140621105205.GA31611@electric-eye.fr.zoreil.com>
- <20140623232107.GB27687@wotan.suse.de>
+	Tue, 24 Jun 2014 17:59:39 -0400
+Date: Tue, 24 Jun 2014 14:59:37 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Maksym Planeta <mcsim.planeta@gmail.com>
+cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Thomas Knauth <thomas.knauth@gmx.de>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sysctl: Add a feature to drop caches selectively
+In-Reply-To: <1403626213-7691-1-git-send-email-mcsim.planeta@gmail.com>
+Message-ID: <alpine.DEB.2.02.1406241458140.29176@chino.kir.corp.google.com>
+References: <1403626213-7691-1-git-send-email-mcsim.planeta@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140623232107.GB27687@wotan.suse.de>
-X-Organisation: Land of Sunshine Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Luis R. Rodriguez <mcgrof@suse.com> :
-> On Sat, Jun 21, 2014 at 12:52:05PM +0200, Francois Romieu wrote:
-> > Luis R. Rodriguez <mcgrof@suse.com> :
-[...]
-> Note that in the worst case if udev is present in the worst case if the
-> firmware is not present loading can take up to timeout * num CPUs [0],
-> but work is underway to try to remove udev firmware loading support [1].
-> Regardless then the current approach seemed to beg a rework.
+On Tue, 24 Jun 2014, Maksym Planeta wrote:
+
+> To clean the page cache one can use /proc/sys/vm/drop_caches. But this
+> drops the whole page cache. In contrast to that sdrop_caches enables
+> ability to drop the page cache selectively by path string.
 > 
-> [0] https://lkml.org/lkml/2013/10/23/264
-> [1] http://comments.gmane.org/gmane.comp.sysutils.systemd.devel/19440
+> Suggested-by: Thomas Knauth <thomas.knauth@gmx.de>
+> Signed-off-by: Maksym Planeta <mcsim.planeta@gmail.com>
 
-Thanks for the pointers.
+Could you include some information in the commit message about why this is 
+useful?  Specifically, why you want to drop pagecache only from a specific 
+path.
 
-I can't help thinking that there's a bit of sensationalism in the
-timeout * num CPUs argument though. :o)
-
-[...]
-> The kernel's timeout is 60 seconds, and this is static, but lets be clear
-> that there is a difference between the timeout for reading the firmware
-> from the filesystem and actually dumping the firmware onto the device
-> by the driver and ensuring that the driver is done poking at it. The
-> kernel timeout is for the kernel reading it and tossing it back to the
-> driver.
-
-You are right.
-
-[...]
-> I was actually in the hopes a suitable transormation can be designed
-> to put a wait_for_completion() in say ndo_init(). I was looking to
-> see if a tranformation can be generalized of course if the above
-> observations on probe() is something desirable to be addressed.
-
-register_netdev is commonly called at the end of the probe method. probe()
-would thus schedule an async firmware loading, fly, then wait_for_completion()
-through register_netdev->ndo_init(). If so there won't be much gain.
-
-There could be more gain with a wait_for_completion() in ndo_open()
-but probe() + ndo_open() would still hit any fw read/poke/complete wall.
-
-It can be done but it will imvho require a lot of driver dependant work.
-
--- 
-Ueimor
+The name of the sysctl is also quite non-descriptive.
