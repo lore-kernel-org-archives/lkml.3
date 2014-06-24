@@ -1,61 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754774AbaFXTVv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 15:21:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18515 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754185AbaFXTVW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 15:21:22 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Benjamin LaHaise <bcrl@kvack.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, security@kernel.org,
-        linux-aio@kvack.org, linux-kernel@vger.kernel.org,
-        Mateusz Guzik <mguzik@redhat.com>, Petr Matousek <pmatouse@redhat.com>,
-        Kent Overstreet <kmo@daterainc.com>, stable@vger.kernel.org
-Subject: Re: [PATCH 2/2] aio: fix kernel memory disclosure in io_getevents() introduced in v3.10
-References: <cover.1403632276.git.bcrl@kvack.org>
-	<edfbbf388f293d70bf4b7c0bc38774d05e6f711a.1403632276.git.bcrl@kvack.org>
-	<x4961jqb207.fsf@segfault.boston.devel.redhat.com>
-	<20140624183918.GM23137@kvack.org>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 24 Jun 2014 15:21:14 -0400
-In-Reply-To: <20140624183918.GM23137@kvack.org> (Benjamin LaHaise's message of
-	"Tue, 24 Jun 2014 14:39:18 -0400")
-Message-ID: <x49ha3a866t.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1752135AbaFXT0s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 15:26:48 -0400
+Received: from forward4l.mail.yandex.net ([84.201.143.137]:58183 "EHLO
+	forward4l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750853AbaFXT0r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 15:26:47 -0400
+X-Yandex-Uniq: 449aa291-3a17-49c2-a1b6-7622f22e8d0e
+Authentication-Results: smtp11.mail.yandex.net; dkim=pass header.i=@yandex.ru
+Message-ID: <53A9D0F1.5080305@yandex.ru>
+Date: Tue, 24 Jun 2014 23:26:41 +0400
+From: Kirill Tkhai <tkhai@yandex.ru>
+Reply-To: tkhai@yandex.ru
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: bsegall@google.com
+CC: Kirill Tkhai <ktkhai@parallels.com>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>, khorenko@parallels.com,
+        Paul Turner <pjt@google.com>
+Subject: Re: [PATCH v2 1/3] sched/fair: Disable runtime_enabled on dying rq
+References: <20140624074148.8738.57690.stgit@tkhai>	<1403596432.3462.26.camel@tkhai>	<xm26wqc6z1c8.fsf@sword-of-the-dawn.mtv.corp.google.com>	<53A9CB23.1080708@yandex.ru> <xm26pphyyvbl.fsf@sword-of-the-dawn.mtv.corp.google.com>
+In-Reply-To: <xm26pphyyvbl.fsf@sword-of-the-dawn.mtv.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Benjamin LaHaise <bcrl@kvack.org> writes:
+On 24.06.2014 23:13, bsegall@google.com wrote:
+> Kirill Tkhai <tkhai@yandex.ru> writes:
+> 
+>> On 24.06.2014 21:03, bsegall@google.com wrote:
+>>> Kirill Tkhai <ktkhai@parallels.com> writes:
+>>>
+>>>> We kill rq->rd on the CPU_DOWN_PREPARE stage:
+>>>>
+>>>> 	cpuset_cpu_inactive -> cpuset_update_active_cpus -> partition_sched_domains ->
+>>>> 	-> cpu_attach_domain -> rq_attach_root -> set_rq_offline
+>>>>
+>>>> This unthrottles all throttled cfs_rqs.
+>>>>
+>>>> But the cpu is still able to call schedule() till
+>>>>
+>>>> 	take_cpu_down->__cpu_disable()
+>>>>
+>>>> is called from stop_machine.
+>>>>
+>>>> This case the tasks from just unthrottled cfs_rqs are pickable
+>>>> in a standard scheduler way, and they are picked by dying cpu.
+>>>> The cfs_rqs becomes throttled again, and migrate_tasks()
+>>>> in migration_call skips their tasks (one more unthrottle
+>>>> in migrate_tasks()->CPU_DYING does not happen, because rq->rd
+>>>> is already NULL).
+>>>>
+>>>> Patch sets runtime_enabled to zero. This guarantees, the runtime
+>>>> is not accounted, and the cfs_rqs won't exceed given
+>>>> cfs_rq->runtime_remaining = 1, and tasks will be pickable
+>>>> in migrate_tasks(). runtime_enabled is recalculated again
+>>>> when rq becomes online again.
+>>>>
+>>>> Ben Segall also noticed, we always enable runtime in
+>>>> tg_set_cfs_bandwidth(). Actually, we should do that for online
+>>>> cpus only. To fix that, we check if a cpu is online when
+>>>> its rq is locked. This guarantees we do not have races with
+>>>> set_rq_offline(), which also requires rq->lock.
+>>>>
+>>>> v2: Fix race with tg_set_cfs_bandwidth().
+>>>>     Move cfs_rq->runtime_enabled=0 above unthrottle_cfs_rq().
+>>>>
+>>>> Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+>>>> CC: Konstantin Khorenko <khorenko@parallels.com>
+>>>> CC: Ben Segall <bsegall@google.com>
+>>>> CC: Paul Turner <pjt@google.com>
+>>>> CC: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+>>>> CC: Mike Galbraith <umgwanakikbuti@gmail.com>
+>>>> CC: Peter Zijlstra <peterz@infradead.org>
+>>>> CC: Ingo Molnar <mingo@kernel.org>
+>>>> ---
+>>>>  kernel/sched/core.c |   15 +++++++++++----
+>>>>  kernel/sched/fair.c |   22 ++++++++++++++++++++++
+>>>>  2 files changed, 33 insertions(+), 4 deletions(-)
+>>>>
+>>>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+>>>> index 7f3063c..707a3c5 100644
+>>>> --- a/kernel/sched/core.c
+>>>> +++ b/kernel/sched/core.c
+>>>> @@ -7842,11 +7842,18 @@ static int tg_set_cfs_bandwidth(struct task_group *tg, u64 period, u64 quota)
+>>>>  		struct rq *rq = cfs_rq->rq;
+>>>>  
+>>>>  		raw_spin_lock_irq(&rq->lock);
+>>>> -		cfs_rq->runtime_enabled = runtime_enabled;
+>>>> -		cfs_rq->runtime_remaining = 0;
+>>>> +		/*
+>>>> +		 * Do not enable runtime on offline runqueues. We specially
+>>>> +		 * make it disabled in unthrottle_offline_cfs_rqs().
+>>>> +		 */
+>>>> +		if (cpu_online(i)) {
+>>>> +			cfs_rq->runtime_enabled = runtime_enabled;
+>>>> +			cfs_rq->runtime_remaining = 0;
+>>>> +
+>>>> +			if (cfs_rq->throttled)
+>>>> +				unthrottle_cfs_rq(cfs_rq);
+>>>> +		}
+>>>
+>>> We can just do for_each_online_cpu, yes? Also we probably need
+>>> get_online_cpus/put_online_cpus, and/or want cpu_active_mask instead
+>>> right?
+>>>
+>>
+>> Yes, we can use for_each_online_cpu/for_each_active_cpu with
+>> get_online_cpus() taken. But it adds one more lock dependence.
+>> This looks worse for me.
+> 
+> I mean, you need get_online_cpus anyway - cpu_online is just a test
+> against the same mask that for_each_online_cpu uses, and without taking
+> the lock you can still race with offlining and reset runtime_enabled.
+> 
 
-> On Tue, Jun 24, 2014 at 02:23:20PM -0400, Jeff Moyer wrote:
->> Benjamin LaHaise <bcrl@kvack.org> writes:
->> 
->> > A kernel memory disclosure was introduced in aio_read_events_ring() in v3.10
->> > by commit a31ad380bed817aa25f8830ad23e1a0480fef797.  The changes made to
->> > aio_read_events_ring() failed to correctly limit the index into
->> > ctx->ring_pages[], allowing an attacked to cause the subsequent kmap() of
->> > an arbitrary page with a copy_to_user() to copy the contents into userspace.
->> > This vulnerability has been assigned CVE-2014-0206.  Thanks to Mateusz and
->> > Petr for disclosing this issue.
->> >
->> > This patch applies to v3.12+.  A separate backport is needed for 3.10/3.11.
->> 
->> Note that a 3.10 backport will need to remove this line from free_ioctx
->> as well:
->>                 atomic_sub(avail, &ctx->reqs_active);
->> 
->> Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
->
-> Can you post the backport for 3.10 so the -stable folks have something they 
-> can use that was tested?  Cheers,
-
-Sure thing.
-
-Cheers,
-Jeff
+Oh, I see. Thanks.
