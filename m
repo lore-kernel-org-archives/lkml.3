@@ -1,75 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751642AbaFXGKK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 02:10:10 -0400
-Received: from mail-qg0-f52.google.com ([209.85.192.52]:35325 "EHLO
-	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750838AbaFXGKI (ORCPT
+	id S1751877AbaFXGOI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 02:14:08 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:25736 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750838AbaFXGOH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 02:10:08 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAODwPW-2tbDht8P=KsTyTyeBivFtFMiyCpxd0QFa-cUSRTpJjQ@mail.gmail.com>
-References: <1402056736-12674-1-git-send-email-gautam.vivek@samsung.com>
-	<1402056736-12674-3-git-send-email-gautam.vivek@samsung.com>
-	<CAODwPW-2tbDht8P=KsTyTyeBivFtFMiyCpxd0QFa-cUSRTpJjQ@mail.gmail.com>
-Date: Tue, 24 Jun 2014 11:40:07 +0530
-X-Google-Sender-Auth: nexfpgdfZ8i8HrSCHzV6aE4fCKk
-Message-ID: <CAFp+6iHUX0jn0xW6ijXmRpgXodp43_mBtVxnCcOb2H6duHvigQ@mail.gmail.com>
-Subject: Re: [PATCH 2/4] usb: host: xhci-plat: Add support to get PHYs
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: Julius Werner <jwerner@chromium.org>
-Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        kishon <kishon@ti.com>, Mathias Nyman <mathias.nyman@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 24 Jun 2014 02:14:07 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-48-53a9172b3a7a
+From: Chao Yu <chao2.yu@samsung.com>
+To: Jaegeuk Kim <jaegeuk@kernel.org>, Changman Lee <cm224.lee@samsung.com>
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] f2fs: release new entry page correctly in error path of
+ f2fs_rename
+Date: Tue, 24 Jun 2014 14:13:13 +0800
+Message-id: <001601cf8f73$7f4e4280$7deac780$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac+PcRYH1pv4DLW5SeOgIDtcEPDppQ==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKLMWRmVeSWpSXmKPExsVy+t9jAV0d8ZXBBps/sVhc29fIZPFk/Sxm
+	i0uL3C327D3JYnF51xw2B1aPTas62Tx2L/jM5NG3ZRWjx+dNcgEsUVw2Kak5mWWpRfp2CVwZ
+	OzadYS9oZK34c/UXUwNjF0sXIweHhICJRNM65y5GTiBTTOLCvfVsILaQwCJGiV/35LoYuYDs
+	H4wS869NYARJsAmoSCzv+M8EYosIeElM2n+CBcRmFsiUuNc0gxnEFhaIkuh9/wRsEIuAqsTH
+	I5vBenkFLCVmHFrAAmELSvyYfA+qV0ti/c7jTBC2vMTmNW+ZIQ5SkNhx9jUjyJ0iAnoSkyfY
+	Q5SIS2w8cotlAqPALCSTZiGZNAvJpFlIWhYwsqxiFE0tSC4oTkrPNdQrTswtLs1L10vOz93E
+	CA7sZ1I7GFc2WBxiFOBgVOLhZfBfESzEmlhWXJl7iFGCg1lJhNfyC1CINyWxsiq1KD++qDQn
+	tfgQozQHi5I474FW60AhgfTEktTs1NSC1CKYLBMHp1QDI59Ruefnf1XLA24qqlxQvc7492bb
+	gtAe+3yurqT7izUF91qovbujN01SWjz0i/dTl7WvedxmTFeyvrmSR39ug9Bftw08Vxe1u079
+	L7/uVPXyH8Wr1l2c9Gb1lO1ccziOfBKJqwiR+vOhLG+G6pnssK8FwgFHJObsC+wym3F2fq09
+	V9z0TcExnUosxRmJhlrMRcWJAFV8IX5oAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This patch correct releasing code of new_page to avoid BUG_ON in error patch of
+f2fs_rename.
 
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+---
+ fs/f2fs/namei.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-On Tue, Jun 10, 2014 at 1:52 AM, Julius Werner <jwerner@chromium.org> wrote:
->> diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
->> index 9ffecd5..453d89e 100644
->> --- a/drivers/usb/host/xhci.h
->> +++ b/drivers/usb/host/xhci.h
->> @@ -1582,6 +1582,9 @@ struct xhci_hcd {
->>         u32                     port_status_u0;
->>  /* Compliance Mode Timer Triggered every 2 seconds */
->>  #define COMP_MODE_RCVRY_MSECS 2000
->> +       /* phys for the controller */
->> +       struct phy              *phy2_gen;
->> +       struct phy              *phy3_gen;
->>  };
->
-> I don't think adding new variables here and restricting most of this
-> logic to xhci-plat.c (in the next patch) is the best way to do it.
-> There's no conceptual reason why other host controllers (e.g. xhci-pci
-> or even EHCI) could not have a similar need to tune their PHY after
-> reset. PHYs are universal to all host controllers.
->
-> There is already a 'phy' member in struct usb_hcd which I think is
-> mostly unused right now. I think it would be much less
-> confusing/redundant to reuse that member for this purpose (you could
-> still set it up from xhci_plat_probe(), and then call it from
-> hcd_bus_resume() or something like that). Since XHCI host controllers
-> already conveniently have two struct usb_hcd (one for 2.0 and one for
-> 3.0), you can cleanly store references to your two PHYs in there.
-
-Ok, i will look into the suggested approach, and raise flag in case i
-have doubts.
-
-
-
+diff --git a/fs/f2fs/namei.c b/fs/f2fs/namei.c
+index 0d55517..f17e34c 100644
+--- a/fs/f2fs/namei.c
++++ b/fs/f2fs/namei.c
+@@ -475,7 +475,8 @@ static int f2fs_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 	return 0;
+ 
+ put_out_dir:
+-	f2fs_put_page(new_page, 1);
++	kunmap(new_page);
++	f2fs_put_page(new_page, 0);
+ out_dir:
+ 	if (old_dir_entry) {
+ 		kunmap(old_dir_page);
 -- 
-Best Regards
-Vivek Gautam
-Samsung R&D Institute, Bangalore
-India
+1.7.9.5
+
+
