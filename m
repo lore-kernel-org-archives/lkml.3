@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755983AbaFXUds (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:33:48 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:60569 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755905AbaFXUdp (ORCPT
+	id S1756040AbaFXUdy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:33:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47902 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755905AbaFXUdu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:33:45 -0400
-Message-ID: <53A9E0A5.5040402@wwwdotorg.org>
-Date: Tue, 24 Jun 2014 14:33:41 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Subject: Re: [PATCH 2/6] irq_work: Implement remote queueing
-References: <1402413309-3415-1-git-send-email-fweisbec@gmail.com> <1402413309-3415-3-git-send-email-fweisbec@gmail.com>
-In-Reply-To: <1402413309-3415-3-git-send-email-fweisbec@gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 24 Jun 2014 16:33:50 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 59/65] ALSA: hda/realtek - Fix COEF widget NID for ALC260 replacer fixup
+Date: Tue, 24 Jun 2014 13:30:19 -0700
+Message-Id: <1403641825-12825-60-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
+References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2014 09:15 AM, Frederic Weisbecker wrote:
-> irq work currently only supports local callbacks. However its code
-> is mostly ready to run remote callbacks and we have some potential user.
-> 
-> The full nohz subsystem currently open codes its own remote irq work
-> on top of the scheduler ipi when it wants a CPU to reevaluate its next
-> tick. However this ad hoc solution bloats the scheduler IPI.
-> 
-> Lets just extend the irq work subsystem to support remote queuing on top
-> of the generic SMP IPI to handle this kind of user. This shouldn't add
-> noticeable overhead.
+3.8.13.25 -stable review patch.  If anyone has any objections, please let me know.
 
-I'm running next-20140624 on an ARM system, and this patch causes CPU
-hot(un)plug to Oops for me; the following fires:
+------------------
 
-void irq_work_run(void)
-{
-	BUG_ON(!in_irq());
+From: Takashi Iwai <tiwai@suse.de>
 
-I found that Linus's master (8b8f5d971584 "Merge tag 'compress-3.16-rc3'
-of git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core")
-works fine. I found that this commit inside the tip(?) tree works fine
-(478850160636 "irq_work: Implement remote queueing"). However, if I
-merge the two together, I hit that BUG_ON.
+commit 192a98e280e560510a62aca8cfa83b4ae7c095bb upstream.
 
-I think the issue is:
+The conversion to a fixup table for Replacer model with ALC260 in
+commit 20f7d928 took the wrong widget NID for COEF setups.  Namely,
+NID 0x1a should have been used instead of NID 0x20, which is the
+common node for all Realtek codecs but ALC260.
 
-This commit adds a call from
-generic_smp_call_function_single_interrupt() to irq_work_run().
+Fixes: 20f7d928fa6e ('ALSA: hda/realtek - Replace ALC260 model=replacer with the auto-parser')
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ sound/pci/hda/patch_realtek.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Srivatsa's patch adds a call from hotplug_cfd() to
-flush_smp_call_function_queue() to, which I imagine happens in
-non-interrupt context. Note that this patch moves most of the body of
-generic_smp_call_function_single_interrupt() into
-flush_smp_call_function_queue().
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index 805d79f..6cc07f0 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -4945,8 +4945,8 @@ static const struct alc_fixup alc260_fixups[] = {
+ 	[ALC260_FIXUP_REPLACER] = {
+ 		.type = ALC_FIXUP_VERBS,
+ 		.v.verbs = (const struct hda_verb[]) {
+-			{ 0x20, AC_VERB_SET_COEF_INDEX, 0x07 },
+-			{ 0x20, AC_VERB_SET_PROC_COEF,  0x3050 },
++			{ 0x1a, AC_VERB_SET_COEF_INDEX, 0x07 },
++			{ 0x1a, AC_VERB_SET_PROC_COEF,  0x3050 },
+ 			{ }
+ 		},
+ 		.chained = true,
+-- 
+1.9.1
+
