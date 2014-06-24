@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752335AbaFXGSl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 02:18:41 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:35204 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751456AbaFXGSj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 02:18:39 -0400
-From: Daniel Jeong <gshark.jeong@gmail.com>
-To: Jingoo Han <jg1.han@samsung.com>, Bryan Wu <cooloney@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Randy Dunlap <rdunlap@infradead.org>
-Cc: Daniel Jeong <daniel.jeong@ti.com>, <linux-kernel@vger.kernel.org>,
-        <linux-fbdev@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, Daniel Jeong <gshark.jeong@gmail.com>
-Subject: [RFC v2 2/2] backlight: device tree: add new tps611xx backlight driver
-Date: Tue, 24 Jun 2014 15:17:54 +0900
-Message-Id: <1403590674-14361-3-git-send-email-gshark.jeong@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1403590674-14361-1-git-send-email-gshark.jeong@gmail.com>
-References: <1403590674-14361-1-git-send-email-gshark.jeong@gmail.com>
+	id S1751634AbaFXGhJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 02:37:09 -0400
+Received: from ozlabs.org ([103.22.144.67]:48995 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751121AbaFXGhI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 02:37:08 -0400
+From: Michael Ellerman <mpe@ellerman.id.au>
+To: Andrew Morton <akpm@osdl.org>
+Cc: <linux-kernel@vger.kernel.org>, <linuxppc-dev@ozlabs.org>,
+        <kvm@vger.kernel.org>, iamjoonsoo.kim@lge.com, agraf@suse.de,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: [PATCH] powerpc/kvm: Fix build break with CONFIG_KVM_BOOK3S_64_HV=y
+Date: Tue, 24 Jun 2014 16:36:47 +1000
+Message-Id: <1403591807-9550-1-git-send-email-mpe@ellerman.id.au>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit is about tps611xx device tree documentation.
+Commit e58e263 "PPC, KVM, CMA: use general CMA reserved area management
+framework" in next-20140624 removed arch/powerpc/kvm/book3s_hv_cma.c but
+neglected to update the Makefile, thus breaking the build.
 
-Signed-off-by: Daniel Jeong <gshark.jeong@gmail.com>
+Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
 ---
- .../video/backlight/tps611xx-backlight.txt         |   16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/video/backlight/tps611xx-backlight.txt
 
-diff --git a/Documentation/devicetree/bindings/video/backlight/tps611xx-backlight.txt b/Documentation/devicetree/bindings/video/backlight/tps611xx-backlight.txt
-new file mode 100644
-index 0000000..01f110d
---- /dev/null
-+++ b/Documentation/devicetree/bindings/video/backlight/tps611xx-backlight.txt
-@@ -0,0 +1,16 @@
-+TPS611xx family of backlight driver based on EasyScale.
-+
-+It supports tps61158, tps61161, tps61163 and tps61165.
-+
-+Required properties:
-+- compatible: "ti,tps61158_bl", "ti,tps61161_bl", "ti,tps61163_bl", "ti,tps61165_bl"
-+- rfa_en: enable request for acknowledge. ( 0 : disable , 1 : enable )
-+- en_gpio_num: gpio number for en pin.
-+
-+Example:
-+
-+	backlight {
-+		compatible = "ti,tps61163_bl";
-+		rfa_en = <1>;
-+		en_gpio_num = <45>;
-+	};
+Hi Andrew,
+
+This is in your akpm-current and is breaking some of the builds for
+powerpc in linux-next. Squashing this fix into the original patch would
+be best for us.
+
+cheers
+
+ arch/powerpc/kvm/Makefile | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/arch/powerpc/kvm/Makefile b/arch/powerpc/kvm/Makefile
+index ce569b6..72905c3 100644
+--- a/arch/powerpc/kvm/Makefile
++++ b/arch/powerpc/kvm/Makefile
+@@ -90,7 +90,6 @@ kvm-book3s_64-builtin-objs-$(CONFIG_KVM_BOOK3S_64_HANDLER) += \
+ 	book3s_hv_rm_mmu.o \
+ 	book3s_hv_ras.o \
+ 	book3s_hv_builtin.o \
+-	book3s_hv_cma.o \
+ 	$(kvm-book3s_64-builtin-xics-objs-y)
+ endif
+ 
 -- 
-1.7.9.5
+1.9.1
 
