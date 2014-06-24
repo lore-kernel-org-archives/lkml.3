@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755356AbaFXUby (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:31:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47730 "EHLO
+	id S1755318AbaFXUbq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:31:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47716 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752864AbaFXUbw (ORCPT
+	with ESMTP id S1752864AbaFXUbn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:31:52 -0400
+	Tue, 24 Jun 2014 16:31:43 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ben Hutchings <ben@decadent.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Guenter Roeck <linux@roeck-us.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 51/65] Staging: speakup: Move pasting into a work item
-Date: Tue, 24 Jun 2014 13:30:11 -0700
-Message-Id: <1403641825-12825-52-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 50/65] powerpc: Fix 64 bit builds with binutils 2.24
+Date: Tue, 24 Jun 2014 13:30:10 -0700
+Message-Id: <1403641825-12825-51-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
 References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
@@ -28,129 +28,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit d7500135802ca55b3f4e01a16544e8b34082f8c3 upstream.
+commit 7998eb3dc700aaf499f93f50b3d77da834ef9e1d upstream.
 
-Input is handled in softirq context, but when pasting we may
-need to sleep.  speakup_paste_selection() currently tries to
-bodge this by busy-waiting if in_atomic(), but that doesn't
-help because the ldisc may also sleep.
+With binutils 2.24, various 64 bit builds fail with relocation errors
+such as
 
-For bonus breakage, speakup_paste_selection() changes the
-state of current, even though it's not running in process
-context.
+arch/powerpc/kernel/built-in.o: In function `exc_debug_crit_book3e':
+	(.text+0x165ee): relocation truncated to fit: R_PPC64_ADDR16_HI
+	against symbol `interrupt_base_book3e' defined in .text section
+	in arch/powerpc/kernel/built-in.o
+arch/powerpc/kernel/built-in.o: In function `exc_debug_crit_book3e':
+	(.text+0x16602): relocation truncated to fit: R_PPC64_ADDR16_HI
+	against symbol `interrupt_end_book3e' defined in .text section
+	in arch/powerpc/kernel/built-in.o
 
-Move it into a work item and make sure to cancel it on exit.
+The assembler maintainer says:
 
-References: https://bugs.debian.org/735202
-References: https://bugs.debian.org/744015
-Reported-by: Paul Gevers <elbrus@debian.org>
-Reported-and-tested-by: Jarek Czekalski <jarekczek@poczta.onet.pl>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+ I changed the ABI, something that had to be done but unfortunately
+ happens to break the booke kernel code.  When building up a 64-bit
+ value with lis, ori, shl, oris, ori or similar sequences, you now
+ should use @high and @higha in place of @h and @ha.  @h and @ha
+ (and their associated relocs R_PPC64_ADDR16_HI and R_PPC64_ADDR16_HA)
+ now report overflow if the value is out of 32-bit signed range.
+ ie. @h and @ha assume you're building a 32-bit value. This is needed
+ to report out-of-range -mcmodel=medium toc pointer offsets in @toc@h
+ and @toc@ha expressions, and for consistency I did the same for all
+ other @h and @ha relocs.
+
+Replacing @h with @high in one strategic location fixes the relocation
+errors. This has to be done conditionally since the assembler either
+supports @h or @high but not both.
+
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/staging/speakup/main.c      |  1 +
- drivers/staging/speakup/selection.c | 38 +++++++++++++++++++++++++++++++------
- drivers/staging/speakup/speakup.h   |  1 +
- 3 files changed, 34 insertions(+), 6 deletions(-)
+ arch/powerpc/Makefile              | 4 +++-
+ arch/powerpc/include/asm/ppc_asm.h | 7 ++++++-
+ 2 files changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/speakup/main.c b/drivers/staging/speakup/main.c
-index 463d125..192218a 100644
---- a/drivers/staging/speakup/main.c
-+++ b/drivers/staging/speakup/main.c
-@@ -2219,6 +2219,7 @@ static void __exit speakup_exit(void)
- 	unregister_keyboard_notifier(&keyboard_notifier_block);
- 	unregister_vt_notifier(&vt_notifier_block);
- 	speakup_unregister_devsynth();
-+	speakup_cancel_paste();
- 	del_timer(&cursor_timer);
- 	kthread_stop(speakup_task);
- 	speakup_task = NULL;
-diff --git a/drivers/staging/speakup/selection.c b/drivers/staging/speakup/selection.c
-index d6558fa..a29fbdd 100644
---- a/drivers/staging/speakup/selection.c
-+++ b/drivers/staging/speakup/selection.c
-@@ -3,6 +3,8 @@
- #include <linux/interrupt.h>
- #include <linux/sched.h>
- #include <linux/selection.h>
-+#include <linux/workqueue.h>
-+#include <asm/cmpxchg.h>
+diff --git a/arch/powerpc/Makefile b/arch/powerpc/Makefile
+index b639852..d47e1df 100644
+--- a/arch/powerpc/Makefile
++++ b/arch/powerpc/Makefile
+@@ -79,7 +79,9 @@ CFLAGS-$(CONFIG_POWER7_CPU) += $(call cc-option,-mcpu=power7)
  
- #include "speakup.h"
+ CFLAGS-$(CONFIG_TUNE_CELL) += $(call cc-option,-mtune=cell)
  
-@@ -121,20 +123,24 @@ int speakup_set_selection(struct tty_struct *tty)
- 	return 0;
- }
+-KBUILD_CPPFLAGS	+= -Iarch/$(ARCH)
++asinstr := $(call as-instr,lis 9$(comma)foo@high,-DHAVE_AS_ATHIGH=1)
++
++KBUILD_CPPFLAGS	+= -Iarch/$(ARCH) $(asinstr)
+ KBUILD_AFLAGS	+= -Iarch/$(ARCH)
+ KBUILD_CFLAGS	+= -msoft-float -pipe -Iarch/$(ARCH) $(CFLAGS-y)
+ CPP		= $(CC) -E $(KBUILD_CFLAGS)
+diff --git a/arch/powerpc/include/asm/ppc_asm.h b/arch/powerpc/include/asm/ppc_asm.h
+index ea2a86e..ce5ad32 100644
+--- a/arch/powerpc/include/asm/ppc_asm.h
++++ b/arch/powerpc/include/asm/ppc_asm.h
+@@ -309,11 +309,16 @@ n:
+  *      ld	rY,ADDROFF(name)(rX)
+  */
+ #ifdef __powerpc64__
++#ifdef HAVE_AS_ATHIGH
++#define __AS_ATHIGH high
++#else
++#define __AS_ATHIGH h
++#endif
+ #define LOAD_REG_IMMEDIATE(reg,expr)		\
+ 	lis     reg,(expr)@highest;		\
+ 	ori     reg,reg,(expr)@higher;	\
+ 	rldicr  reg,reg,32,31;		\
+-	oris    reg,reg,(expr)@h;		\
++	oris    reg,reg,(expr)@__AS_ATHIGH;	\
+ 	ori     reg,reg,(expr)@l;
  
--/* TODO: move to some helper thread, probably.  That'd fix having to check for
-- * in_atomic().  */
--int speakup_paste_selection(struct tty_struct *tty)
-+struct speakup_paste_work {
-+	struct work_struct work;
-+	struct tty_struct *tty;
-+};
-+
-+static void __speakup_paste_selection(struct work_struct *work)
- {
-+	struct speakup_paste_work *spw =
-+		container_of(work, struct speakup_paste_work, work);
-+	struct tty_struct *tty = xchg(&spw->tty, NULL);
- 	struct vc_data *vc = (struct vc_data *) tty->driver_data;
- 	int pasted = 0, count;
- 	DECLARE_WAITQUEUE(wait, current);
-+
- 	add_wait_queue(&vc->paste_wait, &wait);
- 	while (sel_buffer && sel_buffer_lth > pasted) {
- 		set_current_state(TASK_INTERRUPTIBLE);
- 		if (test_bit(TTY_THROTTLED, &tty->flags)) {
--			if (in_atomic())
--				/* if we are in an interrupt handler, abort */
--				break;
- 			schedule();
- 			continue;
- 		}
-@@ -146,6 +152,26 @@ int speakup_paste_selection(struct tty_struct *tty)
- 	}
- 	remove_wait_queue(&vc->paste_wait, &wait);
- 	current->state = TASK_RUNNING;
-+	tty_kref_put(tty);
-+}
-+
-+static struct speakup_paste_work speakup_paste_work = {
-+	.work = __WORK_INITIALIZER(speakup_paste_work.work,
-+				   __speakup_paste_selection)
-+};
-+
-+int speakup_paste_selection(struct tty_struct *tty)
-+{
-+	if (cmpxchg(&speakup_paste_work.tty, NULL, tty) != NULL)
-+		return -EBUSY;
-+
-+	tty_kref_get(tty);
-+	schedule_work_on(WORK_CPU_UNBOUND, &speakup_paste_work.work);
- 	return 0;
- }
- 
-+void speakup_cancel_paste(void)
-+{
-+	cancel_work_sync(&speakup_paste_work.work);
-+	tty_kref_put(speakup_paste_work.tty);
-+}
-diff --git a/drivers/staging/speakup/speakup.h b/drivers/staging/speakup/speakup.h
-index 22f0fbb..cfbd88c 100644
---- a/drivers/staging/speakup/speakup.h
-+++ b/drivers/staging/speakup/speakup.h
-@@ -84,6 +84,7 @@ extern void synth_buffer_clear(void);
- extern void speakup_clear_selection(void);
- extern int speakup_set_selection(struct tty_struct *tty);
- extern int speakup_paste_selection(struct tty_struct *tty);
-+extern void speakup_cancel_paste(void);
- extern void speakup_register_devsynth(void);
- extern void speakup_unregister_devsynth(void);
- extern void synth_write(const char *buf, size_t count);
+ #define LOAD_REG_ADDR(reg,name)			\
 -- 
 1.9.1
 
