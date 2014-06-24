@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756915AbaFXUxl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:53:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47578 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753985AbaFXUag (ORCPT
+	id S1756927AbaFXUxu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:53:50 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:51554 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753985AbaFXUxq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:30:36 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 17/65] [media] V4L2: ov7670: fix a wrong index, potentially Oopsing the kernel from user-space
-Date: Tue, 24 Jun 2014 13:29:37 -0700
-Message-Id: <1403641825-12825-18-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
-References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Tue, 24 Jun 2014 16:53:46 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140624105108.GG4439@pd.tnic>
+References: <CA+5PVA70nFS8JZkL0-Q-1HjFHT5NA04275_M4WstjQMrpT+hrQ@mail.gmail.com>
+ <e09c499eade6fc321266dd6b54da7beb28d6991c.1403558229.git.luto@amacapital.net> <20140624105108.GG4439@pd.tnic>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 24 Jun 2014 13:53:25 -0700
+Message-ID: <CALCETrUStJFrCJBO-QRzn7mbdUgbnFgzYNspiVKORMsU6DMDKw@mail.gmail.com>
+Subject: Re: [PATCH] x86_32,entry: Do syscall exit work on badsys (CVE-2014-4508)
+To: Borislav Petkov <bp@alien8.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Richard Weinberger <richard@nod.at>,
+        X86 ML <x86@kernel.org>, Eric Paris <eparis@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "security@kernel.org" <security@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        =?UTF-8?Q?Toralf_F=C3=B6rster?= <toralf.foerster@gmx.de>,
+        stable <stable@vger.kernel.org>, Roland McGrath <roland@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.25 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, Jun 24, 2014 at 3:51 AM, Borislav Petkov <bp@alien8.de> wrote:
+> On Mon, Jun 23, 2014 at 02:22:15PM -0700, Andy Lutomirski wrote:
+>> The bad syscall nr paths are their own incomprehensible route
+>> through the entry control flow.  Rearrange them to work just like
+>> syscalls that return -ENOSYS.
+>>
+>> This fixes an OOPS in the audit code when fast-path auditing is
+>> enabled and sysenter gets a bad syscall nr (CVE-2014-4508).
+>>
+>> This has probably been broken since Linux 2.6.27:
+>> af0575bba0 i386 syscall audit fast-path
+>>
+>> Cc: stable@vger.kernel.org
+>> Cc: Roland McGrath <roland@redhat.com>
+>> Reported-by: Toralf Förster <toralf.foerster@gmx.de>
+>> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+>> ---
+>>
+>> I realize that the syscall audit fast path and badsys code, on 32-bit
+>> x86 no less, is possibly one of the least fun things in the kernel to
+>> review, but this is still a real security bug and should get fixed :(
+>>
+>> So I'm cc-ing a bunch of people and maybe someone will review it.
+>
+> Well, AFAICS, you're rerouting execution so that the audit stuff gets
+> properly "unwound" before returning to userspace. Which makes sense to
+> me.
+>
+> Would it really work in all possible cases and isn't it causing any
+> other problems?
+>
+> No friggin' idea - it would need extensive hammering to confirm it is ok
+> IMHO.
+>
+> HTH.
 
-------------------
+It confirms my sense that no one knows how to test this stuff :-/
+It's pretty clear that no one has ever extensively hammered it.
 
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+I wonder how much could be effectively rewritten in C.  I'm thinking
+of redoing most of the entry work in C, but that won't help here.
 
-commit cfece5857ca51d1dcdb157017aba226f594e9dcf upstream.
-
-Commit 75e2bdad8901a0b599e01a96229be922eef1e488 "ov7670: allow
-configuration of image size, clock speed, and I/O method" uses a wrong
-index to iterate an array. Apart from being wrong, it also uses an
-unchecked value from user-space, which can cause access to unmapped
-memory in the kernel, triggered by a normal desktop user with rights to
-use V4L2 devices.
-
-Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Acked-by: Jonathan Corbet <corbet@lwn.net>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-[ kamal: backport to 3.8-stable: context ]
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/media/i2c/ov7670.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/media/i2c/ov7670.c b/drivers/media/i2c/ov7670.c
-index e7c82b2..8b272e8 100644
---- a/drivers/media/i2c/ov7670.c
-+++ b/drivers/media/i2c/ov7670.c
-@@ -937,7 +937,7 @@ static int ov7670_enum_framesizes(struct v4l2_subdev *sd,
- 	 * windows that fall outside that.
- 	 */
- 	for (i = 0; i < N_WIN_SIZES; i++) {
--		struct ov7670_win_size *win = &ov7670_win_sizes[index];
-+		struct ov7670_win_size *win = &ov7670_win_sizes[i];
- 		if (info->min_width && win->width < info->min_width)
- 			continue;
- 		if (info->min_height && win->height < info->min_height)
--- 
-1.9.1
-
+--Andy
