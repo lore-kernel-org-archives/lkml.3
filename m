@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965050AbaFXP4W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:56:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33336 "EHLO
+	id S1756594AbaFXQEd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:04:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33344 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756118AbaFXP4R (ORCPT
+	with ESMTP id S1754232AbaFXP4V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:56:17 -0400
+	Tue, 24 Jun 2014 11:56:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        James Hogan <james.hogan@imgtec.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        kvm@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
-        linux-mips@linux-mips.org, Sanjay Lal <sanjayl@kymasys.com>
-Subject: [PATCH 3.15 25/61] MIPS: KVM: Allocate at least 16KB for exception handlers
-Date: Tue, 24 Jun 2014 11:51:08 -0400
-Message-Id: <20140624154953.916793194@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.15 27/61] USB: cdc-acm: fix write and resume race
+Date: Tue, 24 Jun 2014 11:51:10 -0400
+Message-Id: <20140624154954.009828597@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154952.751713761@linuxfoundation.org>
 References: <20140624154952.751713761@linuxfoundation.org>
@@ -31,50 +28,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Hogan <james.hogan@imgtec.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 7006e2dfda9adfa40251093604db76d7e44263b3 upstream.
+commit e144ed28bed10684f9aaec6325ed974d53f76110 upstream.
 
-Each MIPS KVM guest has its own copy of the KVM exception vector. This
-contains the TLB refill exception handler at offset 0x000, the general
-exception handler at offset 0x180, and interrupt exception handlers at
-offset 0x200 in case Cause_IV=1. A common handler is copied to offset
-0x2000 and offset 0x3000 is used for temporarily storing k1 during entry
-from guest.
+Fix race between write() and resume() due to improper locking that could
+lead to writes being reordered.
 
-However the amount of memory allocated for this purpose is calculated as
-0x200 rounded up to the next page boundary, which is insufficient if 4KB
-pages are in use. This can lead to the common handler at offset 0x2000
-being overwritten and infinitely recursive exceptions on the next exit
-from the guest.
+Resume must be done atomically and susp_count be protected by the
+write_lock in order to prevent racing with write(). This could otherwise
+lead to writes being reordered if write() grabs the write_lock after
+susp_count is decremented, but before the delayed urb is submitted.
 
-Increase the minimum size from 0x200 to 0x4000 to cover the full use of
-the page.
+Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
+that support remote wakeup")
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Gleb Natapov <gleb@kernel.org>
-Cc: kvm@vger.kernel.org
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-mips@linux-mips.org
-Cc: Sanjay Lal <sanjayl@kymasys.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/kvm/kvm_mips.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/class/cdc-acm.c |   23 +++++++++--------------
+ 1 file changed, 9 insertions(+), 14 deletions(-)
 
---- a/arch/mips/kvm/kvm_mips.c
-+++ b/arch/mips/kvm/kvm_mips.c
-@@ -304,7 +304,7 @@ struct kvm_vcpu *kvm_arch_vcpu_create(st
- 	if (cpu_has_veic || cpu_has_vint) {
- 		size = 0x200 + VECTORSPACING * 64;
- 	} else {
--		size = 0x200;
-+		size = 0x4000;
- 	}
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -1541,27 +1541,20 @@ static int acm_resume(struct usb_interfa
+ 	struct acm *acm = usb_get_intfdata(intf);
+ 	struct acm_wb *wb;
+ 	int rv = 0;
+-	int cnt;
  
- 	/* Save Linux EBASE */
+ 	spin_lock_irq(&acm->read_lock);
+-	acm->susp_count -= 1;
+-	cnt = acm->susp_count;
+-	spin_unlock_irq(&acm->read_lock);
++	spin_lock(&acm->write_lock);
+ 
+-	if (cnt)
+-		return 0;
++	if (--acm->susp_count)
++		goto out;
+ 
+ 	if (test_bit(ASYNCB_INITIALIZED, &acm->port.flags)) {
+-		rv = usb_submit_urb(acm->ctrlurb, GFP_NOIO);
++		rv = usb_submit_urb(acm->ctrlurb, GFP_ATOMIC);
+ 
+-		spin_lock_irq(&acm->write_lock);
+ 		if (acm->delayed_wb) {
+ 			wb = acm->delayed_wb;
+ 			acm->delayed_wb = NULL;
+-			spin_unlock_irq(&acm->write_lock);
+ 			acm_start_wb(acm, wb);
+-		} else {
+-			spin_unlock_irq(&acm->write_lock);
+ 		}
+ 
+ 		/*
+@@ -1569,12 +1562,14 @@ static int acm_resume(struct usb_interfa
+ 		 * do the write path at all cost
+ 		 */
+ 		if (rv < 0)
+-			goto err_out;
++			goto out;
+ 
+-		rv = acm_submit_read_urbs(acm, GFP_NOIO);
++		rv = acm_submit_read_urbs(acm, GFP_ATOMIC);
+ 	}
++out:
++	spin_unlock(&acm->write_lock);
++	spin_unlock_irq(&acm->read_lock);
+ 
+-err_out:
+ 	return rv;
+ }
+ 
 
 
