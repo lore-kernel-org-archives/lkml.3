@@ -1,109 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753853AbaFXODo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 10:03:44 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:42210 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753478AbaFXODm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 10:03:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <1403618295.4230.13.camel@weser.hi.pengutronix.de>
-References: <1403603667-11302-1-git-send-email-acourbot@nvidia.com>
- <1403603667-11302-3-git-send-email-acourbot@nvidia.com> <20140624100220.GK32514@n2100.arm.linux.org.uk>
- <53A953E6.2030503@nvidia.com> <53A95910.20104@nvidia.com> <CAAVeFu+rbCViC87kYCLfxGV18iYq=Pa0ABb+L=iNiYPLn+mR8Q@mail.gmail.com>
- <53A96EC5.3030701@canonical.com> <1403616338.4230.8.camel@weser.hi.pengutronix.de>
- <CAAVeFuLcC30BdWierY8Bg0vBmfNCaB=Qs34h790jGB=BRYvGAg@mail.gmail.com> <1403618295.4230.13.camel@weser.hi.pengutronix.de>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Tue, 24 Jun 2014 23:03:21 +0900
-Message-ID: <CAAVeFuKMVHFXU02CZUHEfHfWOq6pDavF0SXogzmnwuAk2K3-zw@mail.gmail.com>
-Subject: Re: [Nouveau] [PATCH v2 2/3] drm/ttm: introduce dma cache sync helpers
-To: Lucas Stach <l.stach@pengutronix.de>
-Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1754087AbaFXOEA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 10:04:00 -0400
+Received: from mga01.intel.com ([192.55.52.88]:9069 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753886AbaFXOD6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 10:03:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,538,1400050800"; 
+   d="scan'208";a="560222739"
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
+To: <gregkh@linuxfoundation.org>
+Cc: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <dan.j.williams@intel.com>, Julius Werner <jwerner@chromium.org>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [PATCH 3/5] usb: xhci: Correct last context entry calculation for Configure Endpoint
+Date: Tue, 24 Jun 2014 17:14:42 +0300
+Message-Id: <1403619322-24704-3-git-send-email-mathias.nyman@linux.intel.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1403619322-24704-1-git-send-email-mathias.nyman@linux.intel.com>
+References: <1403618059-24533-1-git-send-email-mathias.nyman@linux.intel.com>
+ <1403619322-24704-1-git-send-email-mathias.nyman@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 24, 2014 at 10:58 PM, Lucas Stach <l.stach@pengutronix.de> wrote:
-> Am Dienstag, den 24.06.2014, 22:52 +0900 schrieb Alexandre Courbot:
->> On Tue, Jun 24, 2014 at 10:25 PM, Lucas Stach <l.stach@pengutronix.de> wrote:
->> > Am Dienstag, den 24.06.2014, 14:27 +0200 schrieb Maarten Lankhorst:
->> >> op 24-06-14 14:23, Alexandre Courbot schreef:
->> >> > On Tue, Jun 24, 2014 at 7:55 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
->> >> >> On 06/24/2014 07:33 PM, Alexandre Courbot wrote:
->> >> >>> On 06/24/2014 07:02 PM, Russell King - ARM Linux wrote:
->> >> >>>> On Tue, Jun 24, 2014 at 06:54:26PM +0900, Alexandre Courbot wrote:
->> >> >>>>> From: Lucas Stach <dev@lynxeye.de>
->> >> >>>>>
->> >> >>>>> On architectures for which access to GPU memory is non-coherent,
->> >> >>>>> caches need to be flushed and invalidated explicitly at the
->> >> >>>>> appropriate places. Introduce two small helpers to make things
->> >> >>>>> easy for TTM-based drivers.
->> >> >>>>
->> >> >>>> Have you run this with DMA API debugging enabled?  I suspect you haven't,
->> >> >>>> and I recommend that you do.
->> >> >>>
->> >> >>> # cat /sys/kernel/debug/dma-api/error_count
->> >> >>> 162621
->> >> >>>
->> >> >>> (╯°□°）╯︵ ┻━┻)
->> >> >>
->> >> >> *puts table back on its feet*
->> >> >>
->> >> >> So, yeah - TTM memory is not allocated using the DMA API, hence we cannot
->> >> >> use the DMA API to sync it. Thanks Russell for pointing it out.
->> >> >>
->> >> >> The only alternative I see here is to flush the CPU caches when syncing for
->> >> >> the device, and invalidate them for the other direction. Of course if the
->> >> >> device has caches on its side as well the opposite operation must also be
->> >> >> done for it. Guess the only way is to handle it all by ourselves here. :/
->> >> > ... and it really sucks. Basically if we cannot use the DMA API here
->> >> > we will lose the convenience of having a portable API that does just
->> >> > the right thing for the underlying platform. Without it we would have
->> >> > to duplicate arm_iommu_sync_single_for_cpu/device() and we would only
->> >> > have support for ARM.
->> >> >
->> >> > The usage of the DMA API that we are doing might be illegal, but in
->> >> > essence it does exactly what we need - at least for ARM. What are the
->> >> > alternatives?
->> >> Convert TTM to use the dma api? :-)
->> >
->> > Actually TTM already has a page alloc backend using the DMA API. It's
->> > just not used for the standard case right now.
->>
->> Indeed, and Nouveau even already makes use of it if CONFIG_SWIOTLB is
->> set apparently.
->>
->> > I would argue that we should just use this page allocator (which has the
->> > side effect of getting pages from CMA if available -> you are actually
->> > free to change the caching) and do away with the other allocator in the
->> > ARM case.
->>
->> Mm? Does it mean that CMA memory is not mapped into lowmem? That would
->> certainly help in the present case, but I wonder how useful it will be
->> once the iommu support is in place. Will also need to consider
->> performance of such coherent memory for e.g. user-space mappings.
->>
->> Anyway, I will experiment a bit with this tomorrow, thanks!
->
-> CMA memory is reserved before the lowmem section mapping is set up. It
-> is then mapped with individual 4k pages before giving it back to the
-> buddy allocator.
-> This means CMA pages in use by the kernel are mapped into lowmem, but
-> they are actually unmapped from lowmem once you allocate them as DMA
-> memory.
+From: Julius Werner <jwerner@chromium.org>
 
-Thanks for the explanation. I really need to spend more time studying
-the DMA allocator. I wonder if all this is already explained somewhere
-in Documentation/ ?
+The current XHCI driver recalculates the Context Entries field in the
+Slot Context on every add_endpoint() and drop_endpoint() call. In the
+case of drop_endpoint(), it seems to assume that the add_flags will
+always contain every endpoint for the new configuration, which is not
+necessarily correct if you don't make assumptions about how the USB core
+uses the add_endpoint/drop_endpoint interface (add_flags only contains
+endpoints that are new additions in the new configuration).
+
+Furthermore, EP0_FLAG is not consistently set in add_flags throughout
+the lifetime of a device. This means that when all endpoints are
+dropped, the Context Entries field can be set to 0 (which is invalid and
+may cause a Parameter Error) or -1 (which is interpreted as 31 and
+causes the driver to keep using the old, incorrect value).
+
+The only surefire way to set this field right is to also take all
+existing endpoints into account, and to force the value to 1 (meaning
+only EP0 is active) if no other endpoint is found. This patch implements
+that as a single step in the final check_bandwidth() call and removes
+the intermediary calculations from add_endpoint() and drop_endpoint().
+
+Signed-off-by: Julius Werner <jwerner@chromium.org>
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+---
+ drivers/usb/host/xhci.c | 51 +++++++++++++++++--------------------------------
+ 1 file changed, 18 insertions(+), 33 deletions(-)
+
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index 2b8d9a2..013aabb 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -1582,12 +1582,10 @@ int xhci_drop_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
+ 	struct xhci_hcd *xhci;
+ 	struct xhci_container_ctx *in_ctx, *out_ctx;
+ 	struct xhci_input_control_ctx *ctrl_ctx;
+-	struct xhci_slot_ctx *slot_ctx;
+-	unsigned int last_ctx;
+ 	unsigned int ep_index;
+ 	struct xhci_ep_ctx *ep_ctx;
+ 	u32 drop_flag;
+-	u32 new_add_flags, new_drop_flags, new_slot_info;
++	u32 new_add_flags, new_drop_flags;
+ 	int ret;
+ 
+ 	ret = xhci_check_args(hcd, udev, ep, 1, true, __func__);
+@@ -1634,24 +1632,13 @@ int xhci_drop_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
+ 	ctrl_ctx->add_flags &= cpu_to_le32(~drop_flag);
+ 	new_add_flags = le32_to_cpu(ctrl_ctx->add_flags);
+ 
+-	last_ctx = xhci_last_valid_endpoint(le32_to_cpu(ctrl_ctx->add_flags));
+-	slot_ctx = xhci_get_slot_ctx(xhci, in_ctx);
+-	/* Update the last valid endpoint context, if we deleted the last one */
+-	if ((le32_to_cpu(slot_ctx->dev_info) & LAST_CTX_MASK) >
+-	    LAST_CTX(last_ctx)) {
+-		slot_ctx->dev_info &= cpu_to_le32(~LAST_CTX_MASK);
+-		slot_ctx->dev_info |= cpu_to_le32(LAST_CTX(last_ctx));
+-	}
+-	new_slot_info = le32_to_cpu(slot_ctx->dev_info);
+-
+ 	xhci_endpoint_zero(xhci, xhci->devs[udev->slot_id], ep);
+ 
+-	xhci_dbg(xhci, "drop ep 0x%x, slot id %d, new drop flags = %#x, new add flags = %#x, new slot info = %#x\n",
++	xhci_dbg(xhci, "drop ep 0x%x, slot id %d, new drop flags = %#x, new add flags = %#x\n",
+ 			(unsigned int) ep->desc.bEndpointAddress,
+ 			udev->slot_id,
+ 			(unsigned int) new_drop_flags,
+-			(unsigned int) new_add_flags,
+-			(unsigned int) new_slot_info);
++			(unsigned int) new_add_flags);
+ 	return 0;
+ }
+ 
+@@ -1674,11 +1661,9 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
+ 	struct xhci_hcd *xhci;
+ 	struct xhci_container_ctx *in_ctx, *out_ctx;
+ 	unsigned int ep_index;
+-	struct xhci_slot_ctx *slot_ctx;
+ 	struct xhci_input_control_ctx *ctrl_ctx;
+ 	u32 added_ctxs;
+-	unsigned int last_ctx;
+-	u32 new_add_flags, new_drop_flags, new_slot_info;
++	u32 new_add_flags, new_drop_flags;
+ 	struct xhci_virt_device *virt_dev;
+ 	int ret = 0;
+ 
+@@ -1693,7 +1678,6 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
+ 		return -ENODEV;
+ 
+ 	added_ctxs = xhci_get_endpoint_flag(&ep->desc);
+-	last_ctx = xhci_last_valid_endpoint(added_ctxs);
+ 	if (added_ctxs == SLOT_FLAG || added_ctxs == EP0_FLAG) {
+ 		/* FIXME when we have to issue an evaluate endpoint command to
+ 		 * deal with ep0 max packet size changing once we get the
+@@ -1759,24 +1743,14 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
+ 	 */
+ 	new_drop_flags = le32_to_cpu(ctrl_ctx->drop_flags);
+ 
+-	slot_ctx = xhci_get_slot_ctx(xhci, in_ctx);
+-	/* Update the last valid endpoint context, if we just added one past */
+-	if ((le32_to_cpu(slot_ctx->dev_info) & LAST_CTX_MASK) <
+-	    LAST_CTX(last_ctx)) {
+-		slot_ctx->dev_info &= cpu_to_le32(~LAST_CTX_MASK);
+-		slot_ctx->dev_info |= cpu_to_le32(LAST_CTX(last_ctx));
+-	}
+-	new_slot_info = le32_to_cpu(slot_ctx->dev_info);
+-
+ 	/* Store the usb_device pointer for later use */
+ 	ep->hcpriv = udev;
+ 
+-	xhci_dbg(xhci, "add ep 0x%x, slot id %d, new drop flags = %#x, new add flags = %#x, new slot info = %#x\n",
++	xhci_dbg(xhci, "add ep 0x%x, slot id %d, new drop flags = %#x, new add flags = %#x\n",
+ 			(unsigned int) ep->desc.bEndpointAddress,
+ 			udev->slot_id,
+ 			(unsigned int) new_drop_flags,
+-			(unsigned int) new_add_flags,
+-			(unsigned int) new_slot_info);
++			(unsigned int) new_add_flags);
+ 	return 0;
+ }
+ 
+@@ -2746,8 +2720,19 @@ int xhci_check_bandwidth(struct usb_hcd *hcd, struct usb_device *udev)
+ 		ret = 0;
+ 		goto command_cleanup;
+ 	}
+-	xhci_dbg(xhci, "New Input Control Context:\n");
++	/* Fix up Context Entries field. Minimum value is EP0 == BIT(1). */
+ 	slot_ctx = xhci_get_slot_ctx(xhci, virt_dev->in_ctx);
++	for (i = 31; i >= 1; i--) {
++		__le32 le32 = cpu_to_le32(BIT(i));
++
++		if ((virt_dev->eps[i-1].ring && !(ctrl_ctx->drop_flags & le32))
++		    || (ctrl_ctx->add_flags & le32) || i == 1) {
++			slot_ctx->dev_info &= cpu_to_le32(~LAST_CTX_MASK);
++			slot_ctx->dev_info |= cpu_to_le32(LAST_CTX(i));
++			break;
++		}
++	}
++	xhci_dbg(xhci, "New Input Control Context:\n");
+ 	xhci_dbg_ctx(xhci, virt_dev->in_ctx,
+ 		     LAST_CTX_TO_EP_NUM(le32_to_cpu(slot_ctx->dev_info)));
+ 
+-- 
+1.8.3.2
+
