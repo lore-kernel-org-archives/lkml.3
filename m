@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752544AbaFXPxF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:53:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32773 "EHLO
+	id S1030247AbaFXQk3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:40:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32781 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755599AbaFXPxB (ORCPT
+	with ESMTP id S1755665AbaFXPxE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:53:01 -0400
+	Tue, 24 Jun 2014 11:53:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Zhang Dongxing <dongxing.zhang@intel.com>,
-        xiaoming wang <xiaoming.wang@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 45/52] ALSA: compress: Cancel the optimization of compiler and fix the size of struct for all platform.
-Date: Tue, 24 Jun 2014 11:51:00 -0400
-Message-Id: <20140624154716.187384290@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.10 34/52] USB: cdc-acm: fix shutdown and suspend race
+Date: Tue, 24 Jun 2014 11:50:49 -0400
+Message-Id: <20140624154715.515339967@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154713.428945460@linuxfoundation.org>
 References: <20140624154713.428945460@linuxfoundation.org>
@@ -30,36 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Wang, Xiaoming" <xiaoming.wang@intel.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 2bd0ae464a6cf7363bbf72c8545e0aa43caa57f0 upstream.
+commit ed797074031a37bb9bf4a70952fffc606b77274d upstream.
 
-Cancel the optimization of compiler for struct snd_compr_avail
-which size will be 0x1c in 32bit kernel while 0x20 in 64bit
-kernel under the optimizer. That will make compaction between
-32bit and 64bit. So add packed to fix the size of struct
-snd_compr_avail to 0x1c for all platform.
+We should stop I/O unconditionally at suspend rather than rely on the
+tty-port initialised flag (which is set prior to stopping I/O during
+shutdown) in order to prevent suspend returning with URBs still active.
 
-Signed-off-by: Zhang Dongxing <dongxing.zhang@intel.com>
-Signed-off-by: xiaoming wang <xiaoming.wang@intel.com>
-Acked-by: Vinod Koul <vinod.koul@intel.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
+that support remote wakeup")
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/uapi/sound/compress_offload.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/class/cdc-acm.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/include/uapi/sound/compress_offload.h
-+++ b/include/uapi/sound/compress_offload.h
-@@ -80,7 +80,7 @@ struct snd_compr_tstamp {
- struct snd_compr_avail {
- 	__u64 avail;
- 	struct snd_compr_tstamp tstamp;
--};
-+} __attribute__((packed));
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -1470,8 +1470,7 @@ static int acm_suspend(struct usb_interf
+ 	if (cnt)
+ 		return 0;
  
- enum snd_compr_direction {
- 	SND_COMPRESS_PLAYBACK = 0,
+-	if (test_bit(ASYNCB_INITIALIZED, &acm->port.flags))
+-		stop_data_traffic(acm);
++	stop_data_traffic(acm);
+ 
+ 	return 0;
+ }
 
 
