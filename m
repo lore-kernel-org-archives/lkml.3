@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932747AbaFXQSS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:18:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33151 "EHLO
+	id S932768AbaFXQSl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:18:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33138 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755971AbaFXPzP (ORCPT
+	with ESMTP id S1755938AbaFXPzJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:55:15 -0400
+	Tue, 24 Jun 2014 11:55:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kailang Yang <kailang@realtek.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.14 61/68] ALSA: hda/realtek - Add support of ALC891 codec
-Date: Tue, 24 Jun 2014 11:51:20 -0400
-Message-Id: <20140624154726.735197821@linuxfoundation.org>
+        "Don A. Bailey" <donb@securitymouse.com>
+Subject: [PATCH 3.14 59/68] lz4: ensure length does not wrap
+Date: Tue, 24 Jun 2014 11:51:18 -0400
+Message-Id: <20140624154726.633879539@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154723.907894814@linuxfoundation.org>
 References: <20140624154723.907894814@linuxfoundation.org>
@@ -28,29 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kailang Yang <kailang@realtek.com>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-commit b6c5fbad16aa5026f508093a8d651c25e1cb6179 upstream.
+commit 206204a1162b995e2185275167b22468c00d6b36 upstream.
 
-New codec support for ALC891.
+Given some pathologically compressed data, lz4 could possibly decide to
+wrap a few internal variables, causing unknown things to happen.  Catch
+this before the wrapping happens and abort the decompression.
 
-Signed-off-by: Kailang Yang <kailang@realtek.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Reported-by: "Don A. Bailey" <donb@securitymouse.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    1 +
- 1 file changed, 1 insertion(+)
+ lib/lz4/lz4_decompress.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -5536,6 +5536,7 @@ static const struct hda_codec_preset snd
- 	{ .id = 0x10ec0670, .name = "ALC670", .patch = patch_alc662 },
- 	{ .id = 0x10ec0671, .name = "ALC671", .patch = patch_alc662 },
- 	{ .id = 0x10ec0680, .name = "ALC680", .patch = patch_alc680 },
-+	{ .id = 0x10ec0867, .name = "ALC891", .patch = patch_alc882 },
- 	{ .id = 0x10ec0880, .name = "ALC880", .patch = patch_alc880 },
- 	{ .id = 0x10ec0882, .name = "ALC882", .patch = patch_alc882 },
- 	{ .id = 0x10ec0883, .name = "ALC883", .patch = patch_alc882 },
+--- a/lib/lz4/lz4_decompress.c
++++ b/lib/lz4/lz4_decompress.c
+@@ -72,6 +72,8 @@ static int lz4_uncompress(const char *so
+ 			len = *ip++;
+ 			for (; len == 255; length += 255)
+ 				len = *ip++;
++			if (unlikely(length > (size_t)(length + len)))
++				goto _output_error;
+ 			length += len;
+ 		}
+ 
 
 
