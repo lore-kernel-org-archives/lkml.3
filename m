@@ -1,123 +1,251 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932658AbaFXQQR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:16:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33188 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756025AbaFXPz2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:55:28 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Bryan Evenson <bevenson@melinkcorp.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.15 01/61] rtc: rtc-at91rm9200: fix infinite wait for ACKUPD irq
-Date: Tue, 24 Jun 2014 11:50:44 -0400
-Message-Id: <20140624154952.824274476@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <20140624154952.751713761@linuxfoundation.org>
-References: <20140624154952.751713761@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	id S932681AbaFXQQe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:16:34 -0400
+Received: from mga02.intel.com ([134.134.136.20]:16189 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932661AbaFXQQc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 12:16:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,539,1400050800"; 
+   d="scan'208";a="562587054"
+Subject: Re: [PATCH v4] sched: Fast idling of CPU when system is partially
+ loaded
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Davidlohr Bueso <davidlohr@hp.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jason Low <jason.low2@hp.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <1403551009.2970.613.camel@schen9-DESK>
+References: <1403551009.2970.613.camel@schen9-DESK>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 24 Jun 2014 09:15:51 -0700
+Message-ID: <1403626551.2970.626.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.15-stable review patch.  If anyone has any objections, please let me know.
+On Mon, 2014-06-23 at 12:16 -0700, Tim Chen wrote:
+> Thanks to the review from Jason, Andi and Peter. I've updated
+> the code as Peter suggested with simplified logic.
+> 
+> When a system is lightly loaded (i.e. no more than 1 job per cpu),
+> attempt to pull job to a cpu before putting it to idle is unnecessary and
+> can be skipped.  This patch adds an indicator so the scheduler can know
+> when there's no more than 1 active job is on any CPU in the system to
+> skip needless job pulls.
+> 
+> On a 4 socket machine with a request/response kind of workload from
+> clients, we saw about 0.13 msec delay when we go through a full load
+> balance to try pull job from all the other cpus.  While 0.1 msec was
+> spent on processing the request and generating a response, the 0.13 msec
+> load balance overhead was actually more than the actual work being done.
+> This overhead can be skipped much of the time for lightly loaded systems.
+> 
+> With this patch, we tested with a netperf request/response workload that
+> has the server busy with half the cpus in a 4 socket system.  We found
+> the patch eliminated 75% of the load balance attempts before idling a cpu.
+> 
+> The overhead of setting/clearing the indicator is low as we already gather
+> the necessary info while we call add_nr_running and update_sd_lb_stats.
+> We switch to full load balance load immediately if any cpu got more than
+> one job on its run queue in add_nr_running.  We'll clear the indicator
+> to avoid load balance when we detect no cpu's have more than one job
+> when we scan the work queues in update_sg_lb_stats.  We are aggressive
+> in turning on the load balance and opportunistic in skipping the load
+> balance.
+> 
+> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+> Acked-by: Jason Low <jason.low2@hp.com>
 
-------------------
+Peter,
 
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+I need to fixup the code of updating the indicator under
+the CONFIG_SMP compile flag.  
 
-commit 2fe121e1f5aa3bf31b418a9790db6c400e922291 upstream.
+Also attached a complete updated patch.
 
-The rtc user must wait at least 1 sec between each time/calandar update
-(see atmel's datasheet chapter "Updating Time/Calendar").
+Thanks.
 
-Use the 1Hz interrupt to update the at91_rtc_upd_rdy flag and wait for
-the at91_rtc_wait_upd_rdy event if the rtc is not ready.
+Tim
 
-This patch fixes a deadlock in an uninterruptible wait when the RTC is
-updated more than once every second.  AFAICT the bug is here from the
-beginning, but I think we should at least backport this fix to 3.10 and
-the following longterm and stable releases.
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 6d25f1d..d051712 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -1222,9 +1222,10 @@ static inline void add_nr_running(struct rq *rq, unsigned count)
+ 	rq->nr_running = prev_nr + count;
+ 
+ 	if (prev_nr < 2 && rq->nr_running >= 2) {
++#ifdef CONFIG_SMP
+ 		if (!rq->rd->overload)
+ 			rq->rd->overload = true;
+-
++#endif
+ #ifdef CONFIG_NO_HZ_FULL
+ 		if (tick_nohz_full_cpu(rq->cpu)) {
+ 			/* Order rq->nr_running write against the IPI */
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Reported-by: Bryan Evenson <bevenson@melinkcorp.com>
-Tested-by: Bryan Evenson <bevenson@melinkcorp.com>
-Cc: Andrew Victor <linux@maxim.org.za>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
+
+The complete updated patch is attached below:
 ---
- drivers/rtc/rtc-at91rm9200.c |   16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+>From 8716a50c85f98a92d2240da923ef4ae9a9719bbe Mon Sep 17 00:00:00 2001
+Message-Id: <8716a50c85f98a92d2240da923ef4ae9a9719bbe.1403625949.git.tim.c.chen@linux.intel.com>
+From: Tim Chen <tim.c.chen@linux.intel.com>
+Date: Thu, 12 Jun 2014 11:28:38 -0700
+Subject: [PATCH v5] sched: Fast idling of CPU when system is partially loaded
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Davidlohr Bueso <davidlohr@hp.com>, Alex Shi <alex.shi@linaro.org>, Andi Kleen <andi@firstfloor.org>, Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>, Peter Hurley <peter@hurleysoftware.com>, Thomas Gleixner <tglx@linutronix.de>, Paul E.McKenney <paulmck@linux.vnet.ibm.com>, Jason Low <jason.low2@hp.com>, linux-kernel@vger.kernel.org
 
---- a/drivers/rtc/rtc-at91rm9200.c
-+++ b/drivers/rtc/rtc-at91rm9200.c
-@@ -48,6 +48,7 @@ struct at91_rtc_config {
+When a system is lightly loaded (i.e. no more than 1 job per cpu),
+attempt to pull job to a cpu before putting it to idle is unnecessary and
+can be skipped.  This patch adds an indicator so the scheduler can know
+when there's no more than 1 active job is on any CPU in the system to
+skip needless job pulls.
+
+On a 4 socket machine with a request/response kind of workload from
+clients, we saw about 0.13 msec delay when we go through a full load
+balance to try pull job from all the other cpus.  While 0.1 msec was
+spent on processing the request and generating a response, the 0.13 msec
+load balance overhead was actually more than the actual work being done.
+This overhead can be skipped much of the time for lightly loaded systems.
+
+With this patch, we tested with a netperf request/response workload that
+has the server busy with half the cpus in a 4 socket system.  We found
+the patch eliminated 75% of the load balance attempts before idling a cpu.
+
+The overhead of setting/clearing the indicator is low as we already gather
+the necessary info while we call add_nr_running and update_sd_lb_stats.
+We switch to full load balance load immediately if any cpu got more than
+one job on its run queue in add_nr_running.  We'll clear the indicator
+to avoid load balance when we detect no cpu's have more than one job
+when we scan the work queues in update_sg_lb_stats.  We are aggressive
+in turning on the load balance and opportunistic in skipping the load
+balance.
+
+Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+Acked-by: Jason Low <jason.low2@hp.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+---
+ kernel/sched/fair.c  | 21 ++++++++++++++++++---
+ kernel/sched/sched.h | 11 +++++++++--
+ 2 files changed, 27 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index fea7d33..7dfe2ad 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5867,7 +5867,8 @@ static inline int sg_capacity_factor(struct lb_env *env, struct sched_group *gro
+  */
+ static inline void update_sg_lb_stats(struct lb_env *env,
+ 			struct sched_group *group, int load_idx,
+-			int local_group, struct sg_lb_stats *sgs)
++			int local_group, struct sg_lb_stats *sgs,
++			bool *overload)
+ {
+ 	unsigned long load;
+ 	int i;
+@@ -5885,6 +5886,10 @@ static inline void update_sg_lb_stats(struct lb_env *env,
  
- static const struct at91_rtc_config *at91_rtc_config;
- static DECLARE_COMPLETION(at91_rtc_updated);
-+static DECLARE_COMPLETION(at91_rtc_upd_rdy);
- static unsigned int at91_alarm_year = AT91_RTC_EPOCH;
- static void __iomem *at91_rtc_regs;
- static int irq;
-@@ -161,6 +162,8 @@ static int at91_rtc_settime(struct devic
- 		1900 + tm->tm_year, tm->tm_mon, tm->tm_mday,
- 		tm->tm_hour, tm->tm_min, tm->tm_sec);
- 
-+	wait_for_completion(&at91_rtc_upd_rdy);
+ 		sgs->group_load += load;
+ 		sgs->sum_nr_running += rq->nr_running;
 +
- 	/* Stop Time/Calendar from counting */
- 	cr = at91_rtc_read(AT91_RTC_CR);
- 	at91_rtc_write(AT91_RTC_CR, cr | AT91_RTC_UPDCAL | AT91_RTC_UPDTIM);
-@@ -183,7 +186,9 @@ static int at91_rtc_settime(struct devic
- 
- 	/* Restart Time/Calendar */
- 	cr = at91_rtc_read(AT91_RTC_CR);
-+	at91_rtc_write(AT91_RTC_SCCR, AT91_RTC_SECEV);
- 	at91_rtc_write(AT91_RTC_CR, cr & ~(AT91_RTC_UPDCAL | AT91_RTC_UPDTIM));
-+	at91_rtc_write_ier(AT91_RTC_SECEV);
- 
- 	return 0;
- }
-@@ -290,8 +295,10 @@ static irqreturn_t at91_rtc_interrupt(in
- 	if (rtsr) {		/* this interrupt is shared!  Is it ours? */
- 		if (rtsr & AT91_RTC_ALARM)
- 			events |= (RTC_AF | RTC_IRQF);
--		if (rtsr & AT91_RTC_SECEV)
--			events |= (RTC_UF | RTC_IRQF);
-+		if (rtsr & AT91_RTC_SECEV) {
-+			complete(&at91_rtc_upd_rdy);
-+			at91_rtc_write_idr(AT91_RTC_SECEV);
-+		}
- 		if (rtsr & AT91_RTC_ACKUPD)
- 			complete(&at91_rtc_updated);
- 
-@@ -413,6 +420,11 @@ static int __init at91_rtc_probe(struct
- 		return PTR_ERR(rtc);
- 	platform_set_drvdata(pdev, rtc);
- 
-+	/* enable SECEV interrupt in order to initialize at91_rtc_upd_rdy
-+	 * completion.
-+	 */
-+	at91_rtc_write_ier(AT91_RTC_SECEV);
++		if (rq->nr_running > 1)
++			*overload = true;
 +
- 	dev_info(&pdev->dev, "AT91 Real Time Clock driver.\n");
- 	return 0;
+ #ifdef CONFIG_NUMA_BALANCING
+ 		sgs->nr_numa_running += rq->nr_numa_running;
+ 		sgs->nr_preferred_running += rq->nr_preferred_running;
+@@ -5995,6 +6000,7 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
+ 	struct sched_group *sg = env->sd->groups;
+ 	struct sg_lb_stats tmp_sgs;
+ 	int load_idx, prefer_sibling = 0;
++	bool overload = false;
+ 
+ 	if (child && child->flags & SD_PREFER_SIBLING)
+ 		prefer_sibling = 1;
+@@ -6015,7 +6021,8 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
+ 				update_group_capacity(env->sd, env->dst_cpu);
+ 		}
+ 
+-		update_sg_lb_stats(env, sg, load_idx, local_group, sgs);
++		update_sg_lb_stats(env, sg, load_idx, local_group, sgs,
++						&overload);
+ 
+ 		if (local_group)
+ 			goto next_group;
+@@ -6049,6 +6056,13 @@ next_group:
+ 
+ 	if (env->sd->flags & SD_NUMA)
+ 		env->fbq_type = fbq_classify_group(&sds->busiest_stat);
++
++	if (!env->sd->parent) {
++		/* update overload indicator if we are at root domain */
++		if (env->dst_rq->rd->overload != overload)
++			env->dst_rq->rd->overload = overload;
++	}
++
  }
+ 
+ /**
+@@ -6767,7 +6781,8 @@ static int idle_balance(struct rq *this_rq)
+ 	 */
+ 	this_rq->idle_stamp = rq_clock(this_rq);
+ 
+-	if (this_rq->avg_idle < sysctl_sched_migration_cost) {
++	if (this_rq->avg_idle < sysctl_sched_migration_cost ||
++	    !this_rq->rd->overload) {
+ 		rcu_read_lock();
+ 		sd = rcu_dereference_check_sched_domain(this_rq->sd);
+ 		if (sd)
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 31cc02e..d051712 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -477,6 +477,9 @@ struct root_domain {
+ 	cpumask_var_t span;
+ 	cpumask_var_t online;
+ 
++	/* Indicate more than one runnable task for any CPU */
++	bool overload;
++
+ 	/*
+ 	 * The bit corresponding to a CPU gets set here if such CPU has more
+ 	 * than one runnable -deadline task (as it is below for RT tasks).
+@@ -1218,15 +1221,19 @@ static inline void add_nr_running(struct rq *rq, unsigned count)
+ 
+ 	rq->nr_running = prev_nr + count;
+ 
+-#ifdef CONFIG_NO_HZ_FULL
+ 	if (prev_nr < 2 && rq->nr_running >= 2) {
++#ifdef CONFIG_SMP
++		if (!rq->rd->overload)
++			rq->rd->overload = true;
++#endif
++#ifdef CONFIG_NO_HZ_FULL
+ 		if (tick_nohz_full_cpu(rq->cpu)) {
+ 			/* Order rq->nr_running write against the IPI */
+ 			smp_wmb();
+ 			smp_send_reschedule(rq->cpu);
+ 		}
+-       }
+ #endif
++	}
+ }
+ 
+ static inline void sub_nr_running(struct rq *rq, unsigned count)
+-- 
+1.7.11.7
+
+
 
 
