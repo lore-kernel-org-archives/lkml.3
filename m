@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751971AbaFXHTK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 03:19:10 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38183 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751179AbaFXHTI (ORCPT
+	id S1752462AbaFXHTV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 03:19:21 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:41832 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752014AbaFXHTS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 03:19:08 -0400
+	Tue, 24 Jun 2014 03:19:18 -0400
 From: Daniel Jeong <gshark.jeong@gmail.com>
 To: Jingoo Han <jg1.han@samsung.com>, Bryan Wu <cooloney@gmail.com>,
         Lee Jones <lee.jones@linaro.org>,
@@ -17,33 +17,46 @@ To: Jingoo Han <jg1.han@samsung.com>, Bryan Wu <cooloney@gmail.com>,
 Cc: Daniel Jeong <daniel.jeong@ti.com>, <linux-kernel@vger.kernel.org>,
         <linux-fbdev@vger.kernel.org>, <devicetree@vger.kernel.org>,
         <linux-doc@vger.kernel.org>, Daniel Jeong <gshark.jeong@gmail.com>
-Subject: [RFC v3 0/2]  backlight: add new tps611xx backlight driver
-Date: Tue, 24 Jun 2014 16:18:48 +0900
-Message-Id: <1403594330-15387-1-git-send-email-gshark.jeong@gmail.com>
+Subject: [RFC v3 2/2] backlight: device tree: add new tps611xx backlight driver
+Date: Tue, 24 Jun 2014 16:18:50 +0900
+Message-Id: <1403594330-15387-3-git-send-email-gshark.jeong@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1403594330-15387-1-git-send-email-gshark.jeong@gmail.com>
+References: <1403594330-15387-1-git-send-email-gshark.jeong@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver a general version for tps611xx backlgiht chips of TI.
-It supports tps61158, tps61161, tps61163 and tps61165 backlight driver
-based on EasyScale protocol.
+This commit is about tps611xx device tree documentation.
 
-Daniel Jeong (2):
-  backlight
-  backlight: add new tps611xx backlight device tree support      This
-    commit is tps611xx device tree documentation.
-
- .../video/backlight/tps611xx-backlight.txt         |   16 +
- drivers/video/backlight/Kconfig                    |    7 +
- drivers/video/backlight/Makefile                   |    1 +
- drivers/video/backlight/tps611xx_bl.c              |  494 ++++++++++++++++++++
- include/linux/platform_data/tps611xx_bl.h          |   31 ++
- 5 files changed, 549 insertions(+)
+Signed-off-by: Daniel Jeong <gshark.jeong@gmail.com>
+---
+ .../video/backlight/tps611xx-backlight.txt         |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
  create mode 100644 Documentation/devicetree/bindings/video/backlight/tps611xx-backlight.txt
- create mode 100644 drivers/video/backlight/tps611xx_bl.c
- create mode 100644 include/linux/platform_data/tps611xx_bl.h
 
+diff --git a/Documentation/devicetree/bindings/video/backlight/tps611xx-backlight.txt b/Documentation/devicetree/bindings/video/backlight/tps611xx-backlight.txt
+new file mode 100644
+index 0000000..01f110d
+--- /dev/null
++++ b/Documentation/devicetree/bindings/video/backlight/tps611xx-backlight.txt
+@@ -0,0 +1,16 @@
++TPS611xx family of backlight driver based on EasyScale.
++
++It supports tps61158, tps61161, tps61163 and tps61165.
++
++Required properties:
++- compatible: "ti,tps61158_bl", "ti,tps61161_bl", "ti,tps61163_bl", "ti,tps61165_bl"
++- rfa_en: enable request for acknowledge. ( 0 : disable , 1 : enable )
++- en_gpio_num: gpio number for en pin.
++
++Example:
++
++	backlight {
++		compatible = "ti,tps61163_bl";
++		rfa_en = <1>;
++		en_gpio_num = <45>;
++	};
 -- 
 1.7.9.5
 
