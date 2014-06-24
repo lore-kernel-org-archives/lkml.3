@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752500AbaFXIXG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 04:23:06 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:62702 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751326AbaFXIXE (ORCPT
+	id S1752699AbaFXIZj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 04:25:39 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:60860 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751560AbaFXIZi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 04:23:04 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-61-53a935628ac5
-Message-id: <53A9342D.3060400@samsung.com>
-Date: Tue, 24 Jun 2014 12:17:49 +0400
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.6.0
-MIME-version: 1.0
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org, tetra2005@gmail.com, preobr@google.com,
-        dvyukov@google.com, kcc@google.com, koct9i@gmail.com
-Subject: Re: [PATCH] lib: idr: fix out-of-bounds pointer dereference
-References: <1403530628-32306-1-git-send-email-a.ryabinin@samsung.com>
- <53A8D3B0.8090004@cn.fujitsu.com> <53A91125.8020203@samsung.com>
- <53A92D50.3050507@cn.fujitsu.com>
-In-reply-to: <53A92D50.3050507@cn.fujitsu.com>
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBLMWRmVeSWpSXmKPExsVy+t/xq7pJpiuDDVZ3mFvMWb+GzWLCwzZ2
-	i+3P3jJZrOx8wGqxYnUbq8XlXXPYLPatPM9k8e7ZZGaLX8uPMjpwevw/OInZY+esu+weCzaV
-	emxa1cnmcWLGbxaPz5vkAtiiuGxSUnMyy1KL9O0SuDJ2PDzEUvCUq6Jj93vmBsaDHF2MnBwS
-	AiYSvVfPsEHYYhIX7q0Hsrk4hASWMkr8e7iZHSQhJNDMJDH/jEQXIwcHr4CWxJFVmiAmi4Cq
-	xJ3/4SAVbAJ6Ev9mbQcbIyoQIXGg7xkriM0rICjxY/I9FpByEQENiStHwkCmMwucYJRY+msa
-	K0hcWMBF4s/aZIhFaxklzn/WBbE5gUbeb7gLNpJZQF1i0rxFzBC2vMTmNW+ZJzAKzEKyYRaS
-	sllIyhYwMq9iFE0tTS4oTkrPNdIrTswtLs1L10vOz93ECAn9rzsYlx6zOsQowMGoxMNbsWNF
-	sBBrYllxZe4hRgkOZiUR3mK1lcFCvCmJlVWpRfnxRaU5qcWHGJk4OKUaGOMjee2mdSypXMD3
-	/HTM+xe/WWTOn18yZ4aL59td7bpf+QOELRV3ehw/PsfAMXfXyuBi34q877ZlPLEid97M85k/
-	P7I4NtfSw2niXfukJ61m05e92ihYw2p+NmnZubb9oU9rNCbeNp7dyjP5ZneT4FwJR1nbya17
-	9t+bfFvkQuQZ4atPFjEttlNiKc5INNRiLipOBACali5QWwIAAA==
+	Tue, 24 Jun 2014 04:25:38 -0400
+Date: Tue, 24 Jun 2014 12:25:26 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+CC: <akpm@linux-foundation.org>, <cl@linux.com>, <rientjes@google.com>,
+        <penberg@kernel.org>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
+Subject: Re: [PATCH -mm v3 7/8] slub: make dead memcg caches discard free
+ slabs immediately
+Message-ID: <20140624082526.GD18121@esperanza>
+References: <cover.1402602126.git.vdavydov@parallels.com>
+ <d4608a7a00080a51740d747703af5462f1255176.1402602126.git.vdavydov@parallels.com>
+ <20140624075011.GD4836@js1304-P5Q-DELUXE>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140624075011.GD4836@js1304-P5Q-DELUXE>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24/14 11:48, Lai Jiangshan wrote:
+On Tue, Jun 24, 2014 at 04:50:11PM +0900, Joonsoo Kim wrote:
+> On Fri, Jun 13, 2014 at 12:38:21AM +0400, Vladimir Davydov wrote:
+> > @@ -3409,6 +3417,9 @@ int __kmem_cache_shrink(struct kmem_cache *s)
+> >  		kmalloc(sizeof(struct list_head) * objects, GFP_KERNEL);
+> >  	unsigned long flags;
+> >  
+> > +	if (memcg_cache_dead(s))
+> > +		s->min_partial = 0;
+> > +
+> >  	if (!slabs_by_inuse) {
+> >  		/*
+> >  		 * Do not fail shrinking empty slabs if allocation of the
 > 
-> 326cf0f0f308 ("idr: fix top layer handling") enlarged the pa array.
-> But the additional "+1" space is only used in id-allocation, it is free
-> in other usage, (paa may point to the additional "+1" space, but not dereference it).
-> so you can reuse it.
-> 
-> In the 3 functions your patch touched:
-> -	struct idr_layer ***paa = &pa[0];
-> +	struct idr_layer ***paa = &pa[1];
-> 
+> I think that you should move down n->nr_partial test after holding the
+> lock in __kmem_cache_shrink(). Access to n->nr_partial without node lock
+> is racy and you can see wrong value. It results in skipping to free empty
+> slab so your destroying logic could fail.
 
-Yeah, I thought about such change, but decided this will look very confusing.
-Though, this could be made less confusing with good comment why we are assigning
-pointer to second element.
-I'm think that we should also initialize pa[0] in such case, to avoid possible kmemchek's report
-about uninitialized memory read.
+You're right! Will fix this.
 
-> 
-> I don't reject your patch, I had review it.
-> 
-> Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> 
-> The reason why I'm still muttering here is that I wish a simple solution
-> to fix the problem. And:
-> 1) your patch also makes use of the additional "+1" @pa space: *++paa = p
-> 2) your patch may slight enlarge the function body.
-> 3) I think you patch reduces the readability a little although the idr code
->    itself is already shit.
-> 
+And there seems to be the same problem in SLAB, where we check
+node->slabs_free list emptiness w/o holding node->list_lock (see
+drain_freelist) while it can be modified concurrently by free_block.
+This will be fixed automatically after we make __kmem_cache_shrink unset
+node->free_limit (which must be done under the lock) though.
 
-I have no strong opinion about what change is better. They both looks shitty to me.
-The best solution here would be to rewrite this whole code from scratch.
-
+Thank you!
