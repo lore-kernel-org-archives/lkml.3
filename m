@@ -1,39 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753678AbaFXTcd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 15:32:33 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:47549 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750860AbaFXTca (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 15:32:30 -0400
-Message-ID: <53A9D24B.4040301@wwwdotorg.org>
-Date: Tue, 24 Jun 2014 13:32:27 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1754296AbaFXTct (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 15:32:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64204 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753968AbaFXTco (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 15:32:44 -0400
+Date: Tue, 24 Jun 2014 21:30:55 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Kees Cook <keescook@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        Linux API <linux-api@vger.kernel.org>, X86 ML <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH v7 4/9] seccomp: move no_new_privs into seccomp
+Message-ID: <20140624193055.GA4482@redhat.com>
+References: <1403560693-21809-1-git-send-email-keescook@chromium.org> <1403560693-21809-5-git-send-email-keescook@chromium.org> <20140624191815.GA3623@redhat.com> <CALCETrVgpP=zOtiQafVgcic2T95TdEM5DTvHYXWTbcZ14xBqHQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Mikko Perttunen <mperttunen@nvidia.com>, thierry.reding@gmail.com,
-        tj@kernel.org, pdeschrijver@nvidia.com
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-ide@vger.kernel.org
-Subject: Re: [PATCH v2 5/7] clk: tegra: Add SATA clocks to Tegra124 initialization
- table
-References: <1403101406-15439-1-git-send-email-mperttunen@nvidia.com> <1403101406-15439-6-git-send-email-mperttunen@nvidia.com>
-In-Reply-To: <1403101406-15439-6-git-send-email-mperttunen@nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrVgpP=zOtiQafVgcic2T95TdEM5DTvHYXWTbcZ14xBqHQ@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2014 08:23 AM, Mikko Perttunen wrote:
-> This adds two clocks, SATA and SATA_OOB, to the Tegra124 clock initialization
-> table. The clocks are needed for working SATA support.
+On 06/24, Andy Lutomirski wrote:
+>
+> On Tue, Jun 24, 2014 at 12:18 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> >>
+> >> -struct seccomp { };
+> >> +struct seccomp {
+> >> +     unsigned long flags;
+> >> +};
+> >
+> > A bit messy ;)
+> >
+> > I am wondering if we can simply do
+> >
+> >         static inline bool current_no_new_privs(void)
+> >         {
+> >                 if (current->no_new_privs)
+> >                         return true;
+> >
+> >         #ifdef CONFIG_SECCOMP
+> >                 if (test_thread_flag(TIF_SECCOMP))
+> >                         return true;
+> >         #endif
+>
+> Nope -- privileged users can enable seccomp w/o nnp.
 
-Acked-by: Stephen Warren <swarren@nvidia.com>
-(When I wrote that for v1, it applied to both patches 4 and 5, not just
-patch 4)
+Indeed, I am stupid.
 
-Peter, can you please pick up patches 4 and 5, and get them into
-linux-next. Thanks.
+Still it would be nice to cleanup this somehow. The new member is only
+used as a previous ->no_new_privs, just it is long to allow the concurent
+set/get. Logically it doesn't even belong to seccomp{}.
+
+Oleg.
+
