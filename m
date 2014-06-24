@@ -1,71 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756323AbaFXU5u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:57:50 -0400
-Received: from smtpfb1-g21.free.fr ([212.27.42.9]:54294 "EHLO
-	smtpfb1-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750711AbaFXU5t (ORCPT
+	id S1756562AbaFXU6i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:58:38 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:46716 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754367AbaFXU6f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:57:49 -0400
-From: Clement Calmels <clement.calmels@free.fr>
-To: Larry Finger <Larry.Finger@lwfinger.net>,
-        Jes Sorensen <Jes.Sorensen@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-wireless@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Cc: =?UTF-8?q?Cl=C3=A9ment=20Calmels?= <clement.calmels@free.fr>
-Subject: [PATCH] staging: rtl8723au: fix sparse warning
-Date: Tue, 24 Jun 2014 22:57:54 +0200
-Message-Id: <1403643474-7991-1-git-send-email-clement.calmels@free.fr>
-X-Mailer: git-send-email 2.0.0
+	Tue, 24 Jun 2014 16:58:35 -0400
+Date: Tue, 24 Jun 2014 16:58:32 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: David Rientjes <rientjes@google.com>, Gu Zheng <guz.fnst@cn.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Cgroups <cgroups@vger.kernel.org>, stable@vger.kernel.org
+Subject: Re: [PATCH] mm/mempolicy: fix sleeping function called from invalid
+ context
+Message-ID: <20140624205832.GB14909@htj.dyndns.org>
+References: <53902A44.50005@cn.fujitsu.com>
+ <20140605132339.ddf6df4a0cf5c14d17eb8691@linux-foundation.org>
+ <539192F1.7050308@cn.fujitsu.com>
+ <alpine.DEB.2.02.1406081539140.21744@chino.kir.corp.google.com>
+ <539574F1.2060701@cn.fujitsu.com>
+ <alpine.DEB.2.02.1406090209460.24247@chino.kir.corp.google.com>
+ <53967465.7070908@huawei.com>
+ <20140620210137.GA2059@mtj.dyndns.org>
+ <53A8E23C.4050103@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53A8E23C.4050103@huawei.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Clément Calmels <clement.calmels@free.fr>
+Hello,
 
-Found running sparse on the rtl8723au driver.
+On Tue, Jun 24, 2014 at 10:28:12AM +0800, Li Zefan wrote:
+> > I don't think the suggested patch breaks anything more than it was
+> > broken before and we should probably apply it for the time being.  Li?
+> 
+> Yeah, we should apply Gu Zheng's patch any way.
 
-  CHECK   drivers/staging/rtl8723au/core/rtw_cmd.c
-drivers/staging/rtl8723au/core/rtw_cmd.c:1479:54: warning: incorrect type in argument 2 (different base types)
-drivers/staging/rtl8723au/core/rtw_cmd.c:1479:54:    expected int [signed] gfp
-drivers/staging/rtl8723au/core/rtw_cmd.c:1479:54:    got restricted gfp_t
+Gu Zheng, can you please respin the patch with updated explanation on
+the temporary nature of the change.  I'll apply it once Li acks it.
 
-Signed-off-by: Clement Calmels <clement.calmels@free.fr>
----
- drivers/staging/rtl8723au/core/rtw_mlme.c    | 2 +-
- drivers/staging/rtl8723au/include/rtw_mlme.h | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+Thanks.
 
-diff --git a/drivers/staging/rtl8723au/core/rtw_mlme.c b/drivers/staging/rtl8723au/core/rtw_mlme.c
-index 7170258..c6f4e47 100644
---- a/drivers/staging/rtl8723au/core/rtw_mlme.c
-+++ b/drivers/staging/rtl8723au/core/rtw_mlme.c
-@@ -125,7 +125,7 @@ void rtw_free_mlme_priv23a(struct mlme_priv *pmlmepriv)
- 	rtw23a_free_mlme_priv_ie_data(pmlmepriv);
- }
- 
--struct wlan_network *rtw_alloc_network(struct mlme_priv *pmlmepriv, int gfp)
-+struct wlan_network *rtw_alloc_network(struct mlme_priv *pmlmepriv, gfp_t gfp)
- {
- 	struct wlan_network *pnetwork;
- 
-diff --git a/drivers/staging/rtl8723au/include/rtw_mlme.h b/drivers/staging/rtl8723au/include/rtw_mlme.h
-index 4d327ba..f798078 100644
---- a/drivers/staging/rtl8723au/include/rtw_mlme.h
-+++ b/drivers/staging/rtl8723au/include/rtw_mlme.h
-@@ -344,7 +344,7 @@ void rtw23a_free_mlme_priv_ie_data(struct mlme_priv *pmlmepriv);
- 
- void _rtw_free_mlme_priv23a(struct mlme_priv *pmlmepriv);
- 
--struct wlan_network *rtw_alloc_network(struct mlme_priv *pmlmepriv, int gfp);
-+struct wlan_network *rtw_alloc_network(struct mlme_priv *pmlmepriv, gfp_t gfp);
- 
- int rtw_if_up23a(struct rtw_adapter *padapter);
- 
 -- 
-2.0.0
-
+tejun
