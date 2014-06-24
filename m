@@ -1,72 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753980AbaFXOum (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 10:50:42 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:61513 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753678AbaFXOuk (ORCPT
+	id S1754069AbaFXOwJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 10:52:09 -0400
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:42550 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753918AbaFXOwG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 10:50:40 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-Date: Tue, 24 Jun 2014 16:50:03 +0200
-From: Johan Hovold <johan@kernel.org>
-To: =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>
-Cc: Johan Hovold <johan@kernel.org>, Greg KH <greg@kroah.com>,
-        Janne Kanniainen <janne.kanniainen@gmail.com>, jkosina@suse.cz,
-        cooloney@gmail.com, linux-kernel@vger.kernel.org,
-        linux-leds@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH v10] leds: USB: HID: Add support for MSI GT683R led panels
-Message-ID: <20140624145003.GA6607@localhost>
-References: <20140623161723.GA20421@kroah.com>
- <1403543808-8228-1-git-send-email-janne.kanniainen@gmail.com>
- <20140623182324.GA30831@kroah.com>
- <20140623182432.GB30831@kroah.com>
- <20140623193134.GA15945@localhost>
- <20140623194059.GA19615@kroah.com>
- <20140623195212.GB15945@localhost>
- <20140623202448.GB29035@kroah.com>
- <20140623204430.GC15945@localhost>
- <871tuewizw.fsf@nemi.mork.no>
+	Tue, 24 Jun 2014 10:52:06 -0400
+Date: Tue, 24 Jun 2014 15:51:53 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] phy: miphy365x: Add Device Tree bindings for the
+ MiPHY365x
+Message-ID: <20140624145153.GQ13803@lee--X1>
+References: <1400766819-22286-1-git-send-email-lee.jones@linaro.org>
+ <6599289.0ZjjaMbRqj@wuerfel>
+ <20140624124634.GO13803@lee--X1>
+ <4274516.nCpbjAuUJp@wuerfel>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <871tuewizw.fsf@nemi.mork.no>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <4274516.nCpbjAuUJp@wuerfel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 24, 2014 at 03:10:43PM +0200, Bjørn Mork wrote:
-> Johan Hovold <johan@kernel.org> writes:
+On Tue, 24 Jun 2014, Arnd Bergmann wrote:
+> On Tuesday 24 June 2014 13:46:34 Lee Jones wrote:
+> > > > > > converting all addresses to to resources so drivers can easily pull
+> > > > > > them out using platform_get_resource() and friends.  Pushing the reg
+> > > > > 
+> > > > > right. Can't we use of_address_to_resource here?
+> > > > 
+> > > > We could, but that would be an extra layer.  We'd be pulling the
+> > > > address, putting it into a resource, then pulling it from the resource
+> > > > for use.  If we're going to be pulling addresses out manually, we're
+> > > > probably better off using of_get_address().  But again, we're just
+> > > > carrying out functionality which is already provided by the
+> > > > framework.
+> > > 
+> > > there is also of_ioremap().
+> > 
+> > Isn't this SPARK only?  And doesn't it require a populated resource?  
+> > Which is what I'm saying is the issue here i.e. we don't have one.
 > 
-> > This is a non-standard attribute of this particular laptop. It has three
-> > individual LEDs that can be enabled separately (using standard LED class
-> > attributes), but they will all three be in the same "mode" (which here
-> > apparently means that they can be fully on, vary with the volume(?!), or
-> > pulse synchronously when enabled).
-> >
-> > If we were to implement this mode attribute as a class attribute,
-> > changing the mode of of one LED would also change the mode of the other
-> > two devices (LEDs).
+> Sorry, I meant of_iomap(). I think it's only for historic reaons
+> that we have both. Probably of_iomap started out on powerpc with
+> the same intention as the sparc of_ioremap.
 > 
-> Document this behaviour and it becomes a feature.
+> of_iomap does not require a resource, just an index.
 
-Yeah, you're right. That is probably the best way to handle this.
+Ah, this sounds like a better solution.  I'll have a play, thanks.
 
-Janne, could you send two separate patches on top of v9 that fixes the
-use-before-initialisation (reported by Oliver) and moves the led_mode
-attribute from the parent HID device to the led-class devices (thereby
-fixing the race reported by Greg)?
-
-As the "led_"-prefix will then be redundant, you should probably rename
-the attribute as "msi_mode" or similar (just "mode" might be too
-generic).
-
-Remember to update the ABI documentation as well, including mentioning
-the fact that changing the mode of one LED will update the mode of its
-two sibling devices as well (as suggested by Bjørn).
-
-Thanks,
-Johan
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org â”‚ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
