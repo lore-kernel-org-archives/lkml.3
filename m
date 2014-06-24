@@ -1,63 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753645AbaFXOKl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 10:10:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59969 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753224AbaFXOKk (ORCPT
+	id S1753880AbaFXOLG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 10:11:06 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:44579 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753782AbaFXOLE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 10:10:40 -0400
-Date: Tue, 24 Jun 2014 10:10:28 -0400
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Mathias Nyman <mathias.nyman@linux.intel.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dan.j.williams@intel.com, Julius Werner <jwerner@chromium.org>
-Subject: Re: [PATCH 3/5] usb: xhci: Correct last context entry calculation
- for Configure Endpoint
-Message-ID: <20140624141028.GA2844@kroah.com>
-References: <1403618059-24533-1-git-send-email-mathias.nyman@linux.intel.com>
- <1403619322-24704-1-git-send-email-mathias.nyman@linux.intel.com>
- <1403619322-24704-3-git-send-email-mathias.nyman@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403619322-24704-3-git-send-email-mathias.nyman@linux.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 24 Jun 2014 10:11:04 -0400
+Message-ID: <1403616338.4230.8.camel@weser.hi.pengutronix.de>
+Subject: Re: [Nouveau] [PATCH v2 2/3] drm/ttm: introduce dma cache sync
+ helpers
+From: Lucas Stach <l.stach@pengutronix.de>
+To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Cc: Alexandre Courbot <gnurou@gmail.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Tue, 24 Jun 2014 15:25:38 +0200
+In-Reply-To: <53A96EC5.3030701@canonical.com>
+References: <1403603667-11302-1-git-send-email-acourbot@nvidia.com>
+	 <1403603667-11302-3-git-send-email-acourbot@nvidia.com>
+	 <20140624100220.GK32514@n2100.arm.linux.org.uk>
+	 <53A953E6.2030503@nvidia.com> <53A95910.20104@nvidia.com>
+	 <CAAVeFu+rbCViC87kYCLfxGV18iYq=Pa0ABb+L=iNiYPLn+mR8Q@mail.gmail.com>
+	 <53A96EC5.3030701@canonical.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:fa0f:41ff:fe58:4010
+X-SA-Exim-Mail-From: l.stach@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 24, 2014 at 05:14:42PM +0300, Mathias Nyman wrote:
-> From: Julius Werner <jwerner@chromium.org>
-> 
-> The current XHCI driver recalculates the Context Entries field in the
-> Slot Context on every add_endpoint() and drop_endpoint() call. In the
-> case of drop_endpoint(), it seems to assume that the add_flags will
-> always contain every endpoint for the new configuration, which is not
-> necessarily correct if you don't make assumptions about how the USB core
-> uses the add_endpoint/drop_endpoint interface (add_flags only contains
-> endpoints that are new additions in the new configuration).
-> 
-> Furthermore, EP0_FLAG is not consistently set in add_flags throughout
-> the lifetime of a device. This means that when all endpoints are
-> dropped, the Context Entries field can be set to 0 (which is invalid and
-> may cause a Parameter Error) or -1 (which is interpreted as 31 and
-> causes the driver to keep using the old, incorrect value).
-> 
-> The only surefire way to set this field right is to also take all
-> existing endpoints into account, and to force the value to 1 (meaning
-> only EP0 is active) if no other endpoint is found. This patch implements
-> that as a single step in the final check_bandwidth() call and removes
-> the intermediary calculations from add_endpoint() and drop_endpoint().
-> 
-> Signed-off-by: Julius Werner <jwerner@chromium.org>
-> Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-> ---
->  drivers/usb/host/xhci.c | 51 +++++++++++++++++--------------------------------
->  1 file changed, 18 insertions(+), 33 deletions(-)
+Am Dienstag, den 24.06.2014, 14:27 +0200 schrieb Maarten Lankhorst:
+> op 24-06-14 14:23, Alexandre Courbot schreef:
+> > On Tue, Jun 24, 2014 at 7:55 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+> >> On 06/24/2014 07:33 PM, Alexandre Courbot wrote:
+> >>> On 06/24/2014 07:02 PM, Russell King - ARM Linux wrote:
+> >>>> On Tue, Jun 24, 2014 at 06:54:26PM +0900, Alexandre Courbot wrote:
+> >>>>> From: Lucas Stach <dev@lynxeye.de>
+> >>>>>
+> >>>>> On architectures for which access to GPU memory is non-coherent,
+> >>>>> caches need to be flushed and invalidated explicitly at the
+> >>>>> appropriate places. Introduce two small helpers to make things
+> >>>>> easy for TTM-based drivers.
+> >>>>
+> >>>> Have you run this with DMA API debugging enabled?  I suspect you haven't,
+> >>>> and I recommend that you do.
+> >>>
+> >>> # cat /sys/kernel/debug/dma-api/error_count
+> >>> 162621
+> >>>
+> >>> (╯°□°）╯︵ ┻━┻)
+> >>
+> >> *puts table back on its feet*
+> >>
+> >> So, yeah - TTM memory is not allocated using the DMA API, hence we cannot
+> >> use the DMA API to sync it. Thanks Russell for pointing it out.
+> >>
+> >> The only alternative I see here is to flush the CPU caches when syncing for
+> >> the device, and invalidate them for the other direction. Of course if the
+> >> device has caches on its side as well the opposite operation must also be
+> >> done for it. Guess the only way is to handle it all by ourselves here. :/
+> > ... and it really sucks. Basically if we cannot use the DMA API here
+> > we will lose the convenience of having a portable API that does just
+> > the right thing for the underlying platform. Without it we would have
+> > to duplicate arm_iommu_sync_single_for_cpu/device() and we would only
+> > have support for ARM.
+> >
+> > The usage of the DMA API that we are doing might be illegal, but in
+> > essence it does exactly what we need - at least for ARM. What are the
+> > alternatives?
+> Convert TTM to use the dma api? :-)
 
-Is this something for older (i.e. stable) kernels?
+Actually TTM already has a page alloc backend using the DMA API. It's
+just not used for the standard case right now.
 
-thanks,
+I would argue that we should just use this page allocator (which has the
+side effect of getting pages from CMA if available -> you are actually
+free to change the caching) and do away with the other allocator in the
+ARM case.
 
-greg k-h
+Regards,
+Lucas
+-- 
+Pengutronix e.K.             | Lucas Stach                 |
+Industrial Linux Solutions   | http://www.pengutronix.de/  |
+
