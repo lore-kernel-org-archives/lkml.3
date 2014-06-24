@@ -1,84 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754983AbaFXShf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 14:37:35 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:51548 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753849AbaFXSha (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 14:37:30 -0400
+	id S1754765AbaFXShd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 14:37:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54686 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752593AbaFXShb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 14:37:31 -0400
+Date: Tue, 24 Jun 2014 20:35:50 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Andy Lutomirski <luto@amacapital.net>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH v7 3/9] seccomp: introduce writer locking
+Message-ID: <20140624183550.GB1258@redhat.com>
+References: <1403560693-21809-1-git-send-email-keescook@chromium.org> <1403560693-21809-4-git-send-email-keescook@chromium.org> <20140624165216.GA29272@redhat.com> <CAGXu5j+G8qAkGD7H=3R2iw2ZTqZSrMPa2f=czoEjwSW5wKqUWQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <53A9C2C3.7050508@zytor.com>
-References: <2a5bebff42defd8a5e81d96f7dc00f21143c80e8.1403129369.git.luto@amacapital.net>
- <tip-5f56e7167e6d438324fcba87018255d81e201383@git.kernel.org>
- <20140622084754.GA15094@gmail.com> <CALCETrW_U7z7RC-D5+Ji+PQd73nR-=xQGH5uieb7y3Z7yzYPRw@mail.gmail.com>
- <CALCETrXohybf=Lk70j=hVG1zaAQ-mw8CVo6P59xjM2qsc-p+Gg@mail.gmail.com> <53A9C2C3.7050508@zytor.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 24 Jun 2014 11:37:08 -0700
-Message-ID: <CALCETrX8xJQwm=Cp63xSWsmsF1EXB9pPkZ46rX1u49f0oCfxfw@mail.gmail.com>
-Subject: Re: [tip:x86/urgent] x86/vdso: Discard the __bug_table section
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGXu5j+G8qAkGD7H=3R2iw2ZTqZSrMPa2f=czoEjwSW5wKqUWQ@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 24, 2014 at 11:26 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 06/24/2014 11:19 AM, Andy Lutomirski wrote:
->>>>
->>>> One of the recent x86/urgent vdso commits causes this build failure:
->>>>
->>>>  Error: too many copied sections (max = 13)
->>>
->>> I can't reproduce this with your config, which suggestes a binutils
->>> issue, which is annoying.  Can you tell me what version of ld you're
->>> using and send me the output of:
->>>
->>> for i in arch/x86/vdso/*.so.dbg; do echo $i; eu-readelf -S $i; done
->>
->> Ping!
->>
->> The current state of this is obviously not so good, but I don't know
->> how to proceed.
->>
+On 06/24, Kees Cook wrote:
 >
-> We used to have this kind of problems with PHDRs, where ld would guess
-> how much space it would need, somehow guess wrong, and fall on its face.
+> On Tue, Jun 24, 2014 at 9:52 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> > Kees,
+> >
+> > I am still trying to force myself to read and try to understand what
+> > this series does ;) Just a minor nit so far.
 >
-> I think we want to actually print the number that we are trying to copy
-> in addition to the maximum, and I also noticed the test looks wrong.
-> Thus I would like to propose the following patch as a diagnostic:
->
-> diff --git a/arch/x86/vdso/vdso2c.h b/arch/x86/vdso/vdso2c.h
-> index f42e2ddc663d..94158e100f26 100644
-> --- a/arch/x86/vdso/vdso2c.h
-> +++ b/arch/x86/vdso/vdso2c.h
-> @@ -99,8 +99,9 @@ static void BITSFUNC(copy_section)(struct
-> BITSFUNC(fake_sections) *out,
->         if (!copy)
->                 return;
->
-> -       if (out->count >= out->max_count)
-> -               fail("too many copied sections (max = %d)\n",
-> out->max_count);
-> +       if (out->count > out->max_count)
-> +               fail("too many copied sections (max = %d, need = %d)\n",
-> +                    out->max_count, out->count);
->
+> The use-case this solves is when a userspace process does not control
+> (or know) when a thread is spawned (e.g. via shared library init, or
+> LD_PRELOAD) but wants to make sure seccomp filters have been applied
+> to it.
 
-I think the old test was correct: we haven't incremented count yet
-(it's a couple lines below), so count is the zero-based index to which
-we're writing.
+Yes, thanks, I understand this. But the details are not clear to me so
+far, I'll try to re-read this series later.
 
-I thought of doing the need = %d thing, but I think that the output is
-a foregone conclusion: count == max_count + 1 when this fails.  A list
-of all the section names would be more interesting, but eu-readelf -S
-will tell is that.
+> >> @@ -1142,6 +1168,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+> >>  {
+> >>       int retval;
+> >>       struct task_struct *p;
+> >> +     unsigned long irqflags;
+> >>
+> >>       if ((clone_flags & (CLONE_NEWNS|CLONE_FS)) == (CLONE_NEWNS|CLONE_FS))
+> >>               return ERR_PTR(-EINVAL);
+> >> @@ -1196,7 +1223,6 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+> >>               goto fork_out;
+> >>
+> >>       ftrace_graph_init_task(p);
+> >> -     get_seccomp_filter(p);
+> >>
+> >>       rt_mutex_init_task(p);
+> >>
+> >> @@ -1434,7 +1460,13 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+> >>               p->parent_exec_id = current->self_exec_id;
+> >>       }
+> >>
+> >> -     spin_lock(&current->sighand->siglock);
+> >> +     spin_lock_irqsave(&current->sighand->siglock, irqflags);
+> >> +
+> >> +     /*
+> >> +      * Copy seccomp details explicitly here, in case they were changed
+> >> +      * before holding tasklist_lock.
+> >> +      */
+> >> +     copy_seccomp(p);
+> >>
+> >>       /*
+> >>        * Process group and session signals need to be delivered to just the
+> >> @@ -1446,7 +1478,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+> >>       */
+> >>       recalc_sigpending();
+> >>       if (signal_pending(current)) {
+> >> -             spin_unlock(&current->sighand->siglock);
+> >> +             spin_unlock_irqrestore(&current->sighand->siglock, irqflags);
+> >>               write_unlock_irq(&tasklist_lock);
+> >>               retval = -ERESTARTNOINTR;
+> >>               goto bad_fork_free_pid;
+> >> @@ -1486,7 +1518,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+> >>       }
+> >>
+> >>       total_forks++;
+> >> -     spin_unlock(&current->sighand->siglock);
+> >> +     spin_unlock_irqrestore(&current->sighand->siglock, irqflags);
+> >>       write_unlock_irq(&tasklist_lock);
+> >>       proc_fork_connector(p);
+> >>       cgroup_post_fork(p);
+> >
+> > It seems that the only change copy_process() needs is copy_seccomp() under the locks.
+> > Everythinh else (irqflags games) looks obviously unneeded?
+>
+> I got irq lock dep warnings without these changes.
 
---Andy
+With or without your patches? Could you show the waring?
+
+> If they're
+> unneeded, that's totally fine by me, but some change (either this or
+> markings to keep lockdep happy) is needed.
+
+Yes, we need to understand what what happens...
+
+Oleg.
+
