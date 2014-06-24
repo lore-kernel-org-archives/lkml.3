@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965059AbaFXQPn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:15:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33201 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756049AbaFXPza (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756050AbaFXPza (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 24 Jun 2014 11:55:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33183 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755935AbaFXPz0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 11:55:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Glanzmann <thomas@glanzmann.de>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.15 02/61] target: Fix NULL pointer dereference for XCOPY in target_put_sess_cmd
-Date: Tue, 24 Jun 2014 11:50:45 -0400
-Message-Id: <20140624154952.879386077@linuxfoundation.org>
+        "Don A. Bailey" <donb@securitymouse.com>
+Subject: [PATCH 3.14 58/68] lzo: properly check for overruns
+Date: Tue, 24 Jun 2014 11:51:17 -0400
+Message-Id: <20140624154726.585383963@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
-In-Reply-To: <20140624154952.751713761@linuxfoundation.org>
-References: <20140624154952.751713761@linuxfoundation.org>
+In-Reply-To: <20140624154723.907894814@linuxfoundation.org>
+References: <20140624154723.907894814@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,54 +24,182 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.15-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-commit 0ed6e189e3f6ac3a25383ed5cc8b0ac24c9b97b7 upstream.
+commit 206a81c18401c0cde6e579164f752c4b147324ce upstream.
 
-This patch fixes a NULL pointer dereference regression bug that was
-introduced with:
+The lzo decompressor can, if given some really crazy data, possibly
+overrun some variable types.  Modify the checking logic to properly
+detect overruns before they happen.
 
-commit 1e1110c43b1cda9fe77fc4a04835e460550e6b3c
-Author: Mikulas Patocka <mpatocka@redhat.com>
-Date:   Sat May 17 06:49:22 2014 -0400
-
-    target: fix memory leak on XCOPY
-
-Now that target_put_sess_cmd() -> kref_put_spinlock_irqsave() is
-called with a valid se_cmd->cmd_kref, a NULL pointer dereference
-is triggered because the XCOPY passthrough commands don't have
-an associated se_session pointer.
-
-To address this bug, go ahead and checking for a NULL se_sess pointer
-within target_put_sess_cmd(), and call se_cmd->se_tfo->release_cmd()
-to release the XCOPY's xcopy_pt_cmd memory.
-
-Reported-by: Thomas Glanzmann <thomas@glanzmann.de>
-Cc: Thomas Glanzmann <thomas@glanzmann.de>
-Cc: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Reported-by: "Don A. Bailey" <donb@securitymouse.com>
+Tested-by: "Don A. Bailey" <donb@securitymouse.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_transport.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ lib/lzo/lzo1x_decompress_safe.c |   62 ++++++++++++++++++++++++++--------------
+ 1 file changed, 41 insertions(+), 21 deletions(-)
 
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -2407,6 +2407,10 @@ static void target_release_cmd_kref(stru
-  */
- int target_put_sess_cmd(struct se_session *se_sess, struct se_cmd *se_cmd)
- {
-+	if (!se_sess) {
-+		se_cmd->se_tfo->release_cmd(se_cmd);
-+		return 1;
-+	}
- 	return kref_put_spinlock_irqsave(&se_cmd->cmd_kref, target_release_cmd_kref,
- 			&se_sess->sess_cmd_lock);
- }
+--- a/lib/lzo/lzo1x_decompress_safe.c
++++ b/lib/lzo/lzo1x_decompress_safe.c
+@@ -19,11 +19,31 @@
+ #include <linux/lzo.h>
+ #include "lzodefs.h"
+ 
+-#define HAVE_IP(x)      ((size_t)(ip_end - ip) >= (size_t)(x))
+-#define HAVE_OP(x)      ((size_t)(op_end - op) >= (size_t)(x))
+-#define NEED_IP(x)      if (!HAVE_IP(x)) goto input_overrun
+-#define NEED_OP(x)      if (!HAVE_OP(x)) goto output_overrun
+-#define TEST_LB(m_pos)  if ((m_pos) < out) goto lookbehind_overrun
++#define HAVE_IP(t, x)					\
++	(((size_t)(ip_end - ip) >= (size_t)(t + x)) &&	\
++	 (((t + x) >= t) && ((t + x) >= x)))
++
++#define HAVE_OP(t, x)					\
++	(((size_t)(op_end - op) >= (size_t)(t + x)) &&	\
++	 (((t + x) >= t) && ((t + x) >= x)))
++
++#define NEED_IP(t, x)					\
++	do {						\
++		if (!HAVE_IP(t, x))			\
++			goto input_overrun;		\
++	} while (0)
++
++#define NEED_OP(t, x)					\
++	do {						\
++		if (!HAVE_OP(t, x))			\
++			goto output_overrun;		\
++	} while (0)
++
++#define TEST_LB(m_pos)					\
++	do {						\
++		if ((m_pos) < out)			\
++			goto lookbehind_overrun;	\
++	} while (0)
+ 
+ int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
+ 			  unsigned char *out, size_t *out_len)
+@@ -58,14 +78,14 @@ int lzo1x_decompress_safe(const unsigned
+ 					while (unlikely(*ip == 0)) {
+ 						t += 255;
+ 						ip++;
+-						NEED_IP(1);
++						NEED_IP(1, 0);
+ 					}
+ 					t += 15 + *ip++;
+ 				}
+ 				t += 3;
+ copy_literal_run:
+ #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+-				if (likely(HAVE_IP(t + 15) && HAVE_OP(t + 15))) {
++				if (likely(HAVE_IP(t, 15) && HAVE_OP(t, 15))) {
+ 					const unsigned char *ie = ip + t;
+ 					unsigned char *oe = op + t;
+ 					do {
+@@ -81,8 +101,8 @@ copy_literal_run:
+ 				} else
+ #endif
+ 				{
+-					NEED_OP(t);
+-					NEED_IP(t + 3);
++					NEED_OP(t, 0);
++					NEED_IP(t, 3);
+ 					do {
+ 						*op++ = *ip++;
+ 					} while (--t > 0);
+@@ -95,7 +115,7 @@ copy_literal_run:
+ 				m_pos -= t >> 2;
+ 				m_pos -= *ip++ << 2;
+ 				TEST_LB(m_pos);
+-				NEED_OP(2);
++				NEED_OP(2, 0);
+ 				op[0] = m_pos[0];
+ 				op[1] = m_pos[1];
+ 				op += 2;
+@@ -119,10 +139,10 @@ copy_literal_run:
+ 				while (unlikely(*ip == 0)) {
+ 					t += 255;
+ 					ip++;
+-					NEED_IP(1);
++					NEED_IP(1, 0);
+ 				}
+ 				t += 31 + *ip++;
+-				NEED_IP(2);
++				NEED_IP(2, 0);
+ 			}
+ 			m_pos = op - 1;
+ 			next = get_unaligned_le16(ip);
+@@ -137,10 +157,10 @@ copy_literal_run:
+ 				while (unlikely(*ip == 0)) {
+ 					t += 255;
+ 					ip++;
+-					NEED_IP(1);
++					NEED_IP(1, 0);
+ 				}
+ 				t += 7 + *ip++;
+-				NEED_IP(2);
++				NEED_IP(2, 0);
+ 			}
+ 			next = get_unaligned_le16(ip);
+ 			ip += 2;
+@@ -154,7 +174,7 @@ copy_literal_run:
+ #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+ 		if (op - m_pos >= 8) {
+ 			unsigned char *oe = op + t;
+-			if (likely(HAVE_OP(t + 15))) {
++			if (likely(HAVE_OP(t, 15))) {
+ 				do {
+ 					COPY8(op, m_pos);
+ 					op += 8;
+@@ -164,7 +184,7 @@ copy_literal_run:
+ 					m_pos += 8;
+ 				} while (op < oe);
+ 				op = oe;
+-				if (HAVE_IP(6)) {
++				if (HAVE_IP(6, 0)) {
+ 					state = next;
+ 					COPY4(op, ip);
+ 					op += next;
+@@ -172,7 +192,7 @@ copy_literal_run:
+ 					continue;
+ 				}
+ 			} else {
+-				NEED_OP(t);
++				NEED_OP(t, 0);
+ 				do {
+ 					*op++ = *m_pos++;
+ 				} while (op < oe);
+@@ -181,7 +201,7 @@ copy_literal_run:
+ #endif
+ 		{
+ 			unsigned char *oe = op + t;
+-			NEED_OP(t);
++			NEED_OP(t, 0);
+ 			op[0] = m_pos[0];
+ 			op[1] = m_pos[1];
+ 			op += 2;
+@@ -194,15 +214,15 @@ match_next:
+ 		state = next;
+ 		t = next;
+ #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+-		if (likely(HAVE_IP(6) && HAVE_OP(4))) {
++		if (likely(HAVE_IP(6, 0) && HAVE_OP(4, 0))) {
+ 			COPY4(op, ip);
+ 			op += t;
+ 			ip += t;
+ 		} else
+ #endif
+ 		{
+-			NEED_IP(t + 3);
+-			NEED_OP(t);
++			NEED_IP(t, 3);
++			NEED_OP(t, 0);
+ 			while (t > 0) {
+ 				*op++ = *ip++;
+ 				t--;
 
 
