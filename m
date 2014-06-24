@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755859AbaFXUdk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:33:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47863 "EHLO
+	id S1755775AbaFXUjn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:39:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47867 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755818AbaFXUdi (ORCPT
+	with ESMTP id S1755820AbaFXUdk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:33:38 -0400
+	Tue, 24 Jun 2014 16:33:40 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Emil Goode <emilgoode@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Olof Johansson <olof@lixom.net>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 45/65] ARM: imx: fix error handling in ipu device registration
-Date: Tue, 24 Jun 2014 13:30:05 -0700
-Message-Id: <1403641825-12825-46-git-send-email-kamal@canonical.com>
+Cc: Chris Boot <crb@tiger-computing.co.uk>, Philip Gaw <pgaw@darktech.org.uk>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 64/65] target: Fix alua_access_state attribute OOPs for un-configured devices
+Date: Tue, 24 Jun 2014 13:30:24 -0700
+Message-Id: <1403641825-12825-65-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
 References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,38 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emil Goode <emilgoode@gmail.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit d1d70e5dc2cfa9047bb935c41ba808ebb8135696 upstream.
+commit f1453773514bb8b0bba0716301e8c8f17f8d39c7 upstream.
 
-If we fail to allocate struct platform_device pdev we
-dereference it after the goto label err.
+This patch fixes a OOPs where an attempt to write to the per-device
+alua_access_state configfs attribute at:
 
-This bug was found using coccinelle.
+  /sys/kernel/config/target/core/$HBA/$DEV/alua/$TG_PT_GP/alua_access_state
 
-Fixes: afa77ef (ARM: mx3: dynamically allocate "ipu-core" devices)
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
-Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-Signed-off-by: Shawn Guo <shawn.guo@freescale.com>
-Signed-off-by: Olof Johansson <olof@lixom.net>
+results in an NULL pointer dereference when the backend device has not
+yet been configured.
+
+This patch adds an explicit check for DF_CONFIGURED, and fails with
+-ENODEV to avoid this case.
+
+Reported-by: Chris Boot <crb@tiger-computing.co.uk>
+Reported-by: Philip Gaw <pgaw@darktech.org.uk>
+Cc: Chris Boot <crb@tiger-computing.co.uk>
+Cc: Philip Gaw <pgaw@darktech.org.uk>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/mach-imx/devices/platform-ipu-core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/target/target_core_configfs.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/arch/arm/mach-imx/devices/platform-ipu-core.c b/arch/arm/mach-imx/devices/platform-ipu-core.c
-index fc4dd7c..6bd7c3f 100644
---- a/arch/arm/mach-imx/devices/platform-ipu-core.c
-+++ b/arch/arm/mach-imx/devices/platform-ipu-core.c
-@@ -77,7 +77,7 @@ struct platform_device *__init imx_alloc_mx3_camera(
+diff --git a/drivers/target/target_core_configfs.c b/drivers/target/target_core_configfs.c
+index 4efb61b..f13014b 100644
+--- a/drivers/target/target_core_configfs.c
++++ b/drivers/target/target_core_configfs.c
+@@ -2023,6 +2023,11 @@ static ssize_t target_core_alua_tg_pt_gp_store_attr_alua_access_state(
+ 			" tg_pt_gp ID: %hu\n", tg_pt_gp->tg_pt_gp_valid_id);
+ 		return -EINVAL;
+ 	}
++	if (!(dev->dev_flags & DF_CONFIGURED)) {
++		pr_err("Unable to set alua_access_state while device is"
++		       " not configured\n");
++		return -ENODEV;
++	}
  
- 	pdev = platform_device_alloc("mx3-camera", 0);
- 	if (!pdev)
--		goto err;
-+		return ERR_PTR(-ENOMEM);
- 
- 	pdev->dev.dma_mask = kmalloc(sizeof(*pdev->dev.dma_mask), GFP_KERNEL);
- 	if (!pdev->dev.dma_mask)
+ 	ret = strict_strtoul(page, 0, &tmp);
+ 	if (ret < 0) {
 -- 
 1.9.1
 
