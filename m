@@ -1,80 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755115AbaFXSF0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 14:05:26 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:64348 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754611AbaFXSFX (ORCPT
+	id S1755195AbaFXSFh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 14:05:37 -0400
+Received: from smtp11.smtpout.orange.fr ([80.12.242.133]:37981 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754596AbaFXSFe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 14:05:23 -0400
+	Tue, 24 Jun 2014 14:05:34 -0400
+X-ME-Helo: beldin
+X-ME-Date: Tue, 24 Jun 2014 20:05:31 +0200
+X-ME-IP: 109.214.175.13
+From: Robert Jarzmik <robert.jarzmik@free.fr>
+To: Mark Brown <broonie@kernel.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] regulator: max1586 add device-tree support
+References: <1402757665-15102-1-git-send-email-robert.jarzmik@free.fr>
+	<20140617144323.GU5099@sirena.org.uk> <87oaxrs5wb.fsf@free.fr>
+	<20140624153812.GT23300@sirena.org.uk>
+X-URL: http://belgarath.falguerolles.org/
+Date: Tue, 24 Jun 2014 20:05:30 +0200
+In-Reply-To: <20140624153812.GT23300@sirena.org.uk> (Mark Brown's message of
+	"Tue, 24 Jun 2014 16:38:12 +0100")
+Message-ID: <877g46tc7p.fsf@free.fr>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20140624172753.GA31435@redhat.com>
-References: <1403560693-21809-1-git-send-email-keescook@chromium.org>
-	<1403560693-21809-8-git-send-email-keescook@chromium.org>
-	<20140624172753.GA31435@redhat.com>
-Date: Tue, 24 Jun 2014 11:05:22 -0700
-X-Google-Sender-Auth: 2Ce6EZN27Vjg_CpBPv3-BetKv9k
-Message-ID: <CAGXu5jKoDEXffJqFSjhO+D=5toJOA=KAomi+LQOahPDYKFbEdg@mail.gmail.com>
-Subject: Re: [PATCH v7 7/9] seccomp: implement SECCOMP_FILTER_FLAG_TSYNC
-From: Kees Cook <keescook@chromium.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Andy Lutomirski <luto@amacapital.net>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
-        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 24, 2014 at 10:27 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 06/23, Kees Cook wrote:
->>
->> +static pid_t seccomp_can_sync_threads(void)
->> +{
->> +     struct task_struct *thread, *caller;
->> +
->> +     BUG_ON(write_can_lock(&tasklist_lock));
->> +     BUG_ON(!spin_is_locked(&current->sighand->siglock));
->> +
->> +     if (current->seccomp.mode != SECCOMP_MODE_FILTER)
->> +             return -EACCES;
->> +
->> +     /* Validate all threads being eligible for synchronization. */
->> +     thread = caller = current;
->> +     for_each_thread(caller, thread) {
->> +             pid_t failed;
->> +
->> +             if (thread->seccomp.mode == SECCOMP_MODE_DISABLED ||
->> +                 (thread->seccomp.mode == SECCOMP_MODE_FILTER &&
->> +                  is_ancestor(thread->seccomp.filter,
->> +                              caller->seccomp.filter)))
->> +                     continue;
->> +
->> +             /* Return the first thread that cannot be synchronized. */
->> +             failed = task_pid_vnr(thread);
->> +             /* If the pid cannot be resolved, then return -ESRCH */
->> +             if (failed == 0)
->> +                     failed = -ESRCH;
+Mark Brown <broonie@kernel.org> writes:
+
+> On Tue, Jun 17, 2014 at 09:16:52PM +0200, Robert Jarzmik wrote:
+>> Mark Brown <broonie@kernel.org> writes:
+>> > On Sat, Jun 14, 2014 at 04:54:24PM +0200, Robert Jarzmik wrote:
 >
-> forgot to mention, task_pid_vnr() can't fail. sighand->siglock is held,
-> for_each_thread() can't see a thread which has passed unhash_process().
+>> >> +	matched = of_regulator_match(dev, np, rmatch, ARRAY_SIZE(rmatch));
+>> >> +	of_node_put(np);
+>> >> +	if (matched <= 0)
+>> >> +		return matched;
+>
+>> > Why is this treating zero as an error?  We should be able to at least
+>> > report the current state of regulators even if none are configured in
+>> > the device tree.
+>
+>> Euh how so an error ?
+>
+>> If 0 is returned, this means no regulators are found in device-tree. It's not an
+>> error, it's a lack of regulators (ie. no Output_V3 and no Output_V6), and no
+>> more handling is necessary in this function, while returning "ok", ie 0 ...
+>
+> OK, so there's just nothing to do in that case.  That's fine, but it's
+> just not at all clear from the code.  A comment would help.
+OK, no problem.
 
-Certainly good to know, but I'd be much more comfortable leaving this
-check as-is. Having "failed" return with "0" would be very very bad
-(userspace would think the filter had been successfully applied, etc).
-I'd rather stay highly defensive here.
+>
+>> As for the "state report", this max1586 doesn't report anything, it cannot even
+>> be queried about the current voltage, sic ...
+>
+> It can't?  That's unfortunate, though I was able to turn up a datasheet
+> which appears to support that.
+Oh really ? Well, tell me where you read it.
 
--Kees
+My personal reading from the Max1586 specs is (page 21, chapter "Serial Interface") :
+    The LSB of the address word is the read/write (R/W) bit.
+    R/W indicates whether the master is writing or reading
+    (RD/W 0 = write, RD/W 1 = read). The MAX1586/
+    MAX1587 only support the SEND BYTE format; there-
+    fore, RD/W is required to be 0.
+
+I'm wondering if you have this sentence in your datasheet too.
+
+>> If you want me to modify this bit I need a bit more of an explanation to
+>> understand.
+>
+> Where the driver is doing unusual things if they are actually sensible
+> then the change needs to be clearer about why.
+So would a comment like this address your comment ?
+
+	/* Either matched < 0 and return the error. Or matched is 0 which means
+	 * no init data was found, ie. no regulator is configured, and return 0
+	 * to caller, stating neither error nor any matched regulator.
+	 */
+
+	if (matched <= 0)
+		return matched;
+
+Cheers.
 
 -- 
-Kees Cook
-Chrome OS Security
+Robert
