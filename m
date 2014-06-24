@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755953AbaFXQfe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:35:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32880 "EHLO
+	id S965271AbaFXQfw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:35:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32872 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754197AbaFXPxi (ORCPT
+	with ESMTP id S932214AbaFXPxf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:53:38 -0400
+	Tue, 24 Jun 2014 11:53:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sven Wegener <sven.wegener@stealer.net>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 14/68] ipv6: Fix regression caused by efe4208 in udp_v6_mcast_next()
-Date: Tue, 24 Jun 2014 11:50:33 -0400
-Message-Id: <20140624154724.560945425@linuxfoundation.org>
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>
+Subject: [PATCH 3.14 04/68] ima: audit log files opened with O_DIRECT flag
+Date: Tue, 24 Jun 2014 11:50:23 -0400
+Message-Id: <20140624154724.115525720@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154723.907894814@linuxfoundation.org>
 References: <20140624154723.907894814@linuxfoundation.org>
@@ -30,49 +29,147 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sven Wegener <sven.wegener@stealer.net>
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 
-[ Upstream commit 3bfdc59a6c24608ed23e903f670aaf5f58c7a6f3 ]
+commit f9b2a735bdddf836214b5dca74f6ca7712e5a08c upstream.
 
-Commit efe4208 ("ipv6: make lookups simpler and faster") introduced a
-regression in udp_v6_mcast_next(), resulting in multicast packets not
-reaching the destination sockets under certain conditions.
+Files are measured or appraised based on the IMA policy.  When a
+file, in policy, is opened with the O_DIRECT flag, a deadlock
+occurs.
 
-The packet's IPv6 addresses are wrongly compared to the IPv6 addresses
-from the function's socket argument, which indicates the starting point
-for looping, instead of the loop variable. If the addresses from the
-first socket do not match the packet's addresses, no socket in the list
-will match.
+The first attempt at resolving this lockdep temporarily removed the
+O_DIRECT flag and restored it, after calculating the hash.  The
+second attempt introduced the O_DIRECT_HAVELOCK flag. Based on this
+flag, do_blockdev_direct_IO() would skip taking the i_mutex a second
+time.  The third attempt, by Dmitry Kasatkin, resolves the i_mutex
+locking issue, by re-introducing the IMA mutex, but uncovered
+another problem.  Reading a file with O_DIRECT flag set, writes
+directly to userspace pages.  A second patch allocates a user-space
+like memory.  This works for all IMA hooks, except ima_file_free(),
+which is called on __fput() to recalculate the file hash.
 
-Signed-off-by: Sven Wegener <sven.wegener@stealer.net>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Until this last issue is addressed, do not 'collect' the
+measurement for measuring, appraising, or auditing files opened
+with the O_DIRECT flag set.  Based on policy, permit or deny file
+access.  This patch defines a new IMA policy rule option named
+'permit_directio'.  Policy rules could be defined, based on LSM
+or other criteria, to permit specific applications to open files
+with the O_DIRECT flag set.
+
+Changelog v1:
+- permit or deny file access based IMA policy rules
+
+Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Acked-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv6/udp.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/net/ipv6/udp.c
-+++ b/net/ipv6/udp.c
-@@ -716,15 +716,15 @@ static struct sock *udp_v6_mcast_next(st
- 				if (inet->inet_dport != rmt_port)
- 					continue;
- 			}
--			if (!ipv6_addr_any(&sk->sk_v6_daddr) &&
--			    !ipv6_addr_equal(&sk->sk_v6_daddr, rmt_addr))
-+			if (!ipv6_addr_any(&s->sk_v6_daddr) &&
-+			    !ipv6_addr_equal(&s->sk_v6_daddr, rmt_addr))
- 				continue;
+---
+ Documentation/ABI/testing/ima_policy |    2 +-
+ security/integrity/ima/ima_api.c     |   10 +++++++++-
+ security/integrity/ima/ima_main.c    |    5 ++++-
+ security/integrity/ima/ima_policy.c  |    6 +++++-
+ security/integrity/integrity.h       |    1 +
+ 5 files changed, 20 insertions(+), 4 deletions(-)
+
+--- a/Documentation/ABI/testing/ima_policy
++++ b/Documentation/ABI/testing/ima_policy
+@@ -23,7 +23,7 @@ Description:
+ 				 [fowner]]
+ 			lsm:	[[subj_user=] [subj_role=] [subj_type=]
+ 				 [obj_user=] [obj_role=] [obj_type=]]
+-			option:	[[appraise_type=]]
++			option:	[[appraise_type=]] [permit_directio]
  
- 			if (s->sk_bound_dev_if && s->sk_bound_dev_if != dif)
- 				continue;
+ 		base: 	func:= [BPRM_CHECK][MMAP_CHECK][FILE_CHECK][MODULE_CHECK]
+ 			mask:= [MAY_READ] [MAY_WRITE] [MAY_APPEND] [MAY_EXEC]
+--- a/security/integrity/ima/ima_api.c
++++ b/security/integrity/ima/ima_api.c
+@@ -199,6 +199,7 @@ int ima_collect_measurement(struct integ
+ 			    struct evm_ima_xattr_data **xattr_value,
+ 			    int *xattr_len)
+ {
++	const char *audit_cause = "failed";
+ 	struct inode *inode = file_inode(file);
+ 	const char *filename = file->f_dentry->d_name.name;
+ 	int result = 0;
+@@ -213,6 +214,12 @@ int ima_collect_measurement(struct integ
+ 	if (!(iint->flags & IMA_COLLECTED)) {
+ 		u64 i_version = file_inode(file)->i_version;
  
--			if (!ipv6_addr_any(&sk->sk_v6_rcv_saddr)) {
--				if (!ipv6_addr_equal(&sk->sk_v6_rcv_saddr, loc_addr))
-+			if (!ipv6_addr_any(&s->sk_v6_rcv_saddr)) {
-+				if (!ipv6_addr_equal(&s->sk_v6_rcv_saddr, loc_addr))
- 					continue;
- 			}
- 			if (!inet6_mc_check(s, loc_addr, rmt_addr))
++		if (file->f_flags & O_DIRECT) {
++			audit_cause = "failed(directio)";
++			result = -EACCES;
++			goto out;
++		}
++
+ 		/* use default hash algorithm */
+ 		hash.hdr.algo = ima_hash_algo;
+ 
+@@ -233,9 +240,10 @@ int ima_collect_measurement(struct integ
+ 				result = -ENOMEM;
+ 		}
+ 	}
++out:
+ 	if (result)
+ 		integrity_audit_msg(AUDIT_INTEGRITY_DATA, inode,
+-				    filename, "collect_data", "failed",
++				    filename, "collect_data", audit_cause,
+ 				    result, 0);
+ 	return result;
+ }
+--- a/security/integrity/ima/ima_main.c
++++ b/security/integrity/ima/ima_main.c
+@@ -217,8 +217,11 @@ static int process_measurement(struct fi
+ 		xattr_ptr = &xattr_value;
+ 
+ 	rc = ima_collect_measurement(iint, file, xattr_ptr, &xattr_len);
+-	if (rc != 0)
++	if (rc != 0) {
++		if (file->f_flags & O_DIRECT)
++			rc = (iint->flags & IMA_PERMIT_DIRECTIO) ? 0 : -EACCES;
+ 		goto out_digsig;
++	}
+ 
+ 	pathname = !filename ? ima_d_path(&file->f_path, &pathbuf) : filename;
+ 	if (!pathname)
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -351,7 +351,7 @@ enum {
+ 	Opt_obj_user, Opt_obj_role, Opt_obj_type,
+ 	Opt_subj_user, Opt_subj_role, Opt_subj_type,
+ 	Opt_func, Opt_mask, Opt_fsmagic, Opt_uid, Opt_fowner,
+-	Opt_appraise_type, Opt_fsuuid
++	Opt_appraise_type, Opt_fsuuid, Opt_permit_directio
+ };
+ 
+ static match_table_t policy_tokens = {
+@@ -373,6 +373,7 @@ static match_table_t policy_tokens = {
+ 	{Opt_uid, "uid=%s"},
+ 	{Opt_fowner, "fowner=%s"},
+ 	{Opt_appraise_type, "appraise_type=%s"},
++	{Opt_permit_directio, "permit_directio"},
+ 	{Opt_err, NULL}
+ };
+ 
+@@ -621,6 +622,9 @@ static int ima_parse_rule(char *rule, st
+ 			else
+ 				result = -EINVAL;
+ 			break;
++		case Opt_permit_directio:
++			entry->flags |= IMA_PERMIT_DIRECTIO;
++			break;
+ 		case Opt_err:
+ 			ima_log_string(ab, "UNKNOWN", p);
+ 			result = -EINVAL;
+--- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -30,6 +30,7 @@
+ #define IMA_ACTION_FLAGS	0xff000000
+ #define IMA_DIGSIG		0x01000000
+ #define IMA_DIGSIG_REQUIRED	0x02000000
++#define IMA_PERMIT_DIRECTIO	0x04000000
+ 
+ #define IMA_DO_MASK		(IMA_MEASURE | IMA_APPRAISE | IMA_AUDIT | \
+ 				 IMA_APPRAISE_SUBMASK)
 
 
