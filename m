@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755760AbaFXQQw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:16:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33176 "EHLO
+	id S1755997AbaFXPzV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:55:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33144 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756002AbaFXPzX (ORCPT
+	with ESMTP id S1755963AbaFXPzL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:55:23 -0400
+	Tue, 24 Jun 2014 11:55:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Lars-Peter Clausen <lars@metafoo.de>, Jaroslav Kysela <perex@perex.cz>,
         Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.14 66/68] ALSA: control: Dont access controls outside of protected regions
-Date: Tue, 24 Jun 2014 11:51:25 -0400
-Message-Id: <20140624154726.994489695@linuxfoundation.org>
+Subject: [PATCH 3.14 68/68] ALSA: control: Make sure that id->index does not overflow
+Date: Tue, 24 Jun 2014 11:51:27 -0400
+Message-Id: <20140624154727.108093773@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154723.907894814@linuxfoundation.org>
 References: <20140624154723.907894814@linuxfoundation.org>
@@ -31,11 +31,14 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit fd9f26e4eca5d08a27d12c0933fceef76ed9663d upstream.
+commit 883a1d49f0d77d30012f114b2e19fc141beb3e8e upstream.
 
-A control that is visible on the card->controls list can be freed at any time.
-This means we must not access any of its memory while not holding the
-controls_rw_lock. Otherwise we risk a use after free access.
+The ALSA control code expects that the range of assigned indices to a control is
+continuous and does not overflow. Currently there are no checks to enforce this.
+If a control with a overflowing index range is created that control becomes
+effectively inaccessible and unremovable since snd_ctl_find_id() will not be
+able to find it. This patch adds a check that makes sure that controls with a
+overflowing index range can not be created.
 
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 Acked-by: Jaroslav Kysela <perex@perex.cz>
@@ -43,71 +46,20 @@ Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/core/control.c |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ sound/core/control.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
 --- a/sound/core/control.c
 +++ b/sound/core/control.c
-@@ -331,6 +331,7 @@ int snd_ctl_add(struct snd_card *card, s
- {
- 	struct snd_ctl_elem_id id;
- 	unsigned int idx;
-+	unsigned int count;
- 	int err = -EINVAL;
- 
- 	if (! kcontrol)
-@@ -359,8 +360,9 @@ int snd_ctl_add(struct snd_card *card, s
- 	card->controls_count += kcontrol->count;
- 	kcontrol->id.numid = card->last_numid + 1;
- 	card->last_numid += kcontrol->count;
-+	count = kcontrol->count;
- 	up_write(&card->controls_rwsem);
--	for (idx = 0; idx < kcontrol->count; idx++, id.index++, id.numid++)
-+	for (idx = 0; idx < count; idx++, id.index++, id.numid++)
- 		snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_ADD, &id);
- 	return 0;
- 
-@@ -389,6 +391,7 @@ int snd_ctl_replace(struct snd_card *car
- 		    bool add_on_replace)
- {
- 	struct snd_ctl_elem_id id;
-+	unsigned int count;
- 	unsigned int idx;
- 	struct snd_kcontrol *old;
- 	int ret;
-@@ -424,8 +427,9 @@ add:
- 	card->controls_count += kcontrol->count;
- 	kcontrol->id.numid = card->last_numid + 1;
- 	card->last_numid += kcontrol->count;
-+	count = kcontrol->count;
- 	up_write(&card->controls_rwsem);
--	for (idx = 0; idx < kcontrol->count; idx++, id.index++, id.numid++)
-+	for (idx = 0; idx < count; idx++, id.index++, id.numid++)
- 		snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_ADD, &id);
- 	return 0;
- 
-@@ -898,9 +902,9 @@ static int snd_ctl_elem_write(struct snd
- 			result = kctl->put(kctl, control);
- 		}
- 		if (result > 0) {
-+			struct snd_ctl_elem_id id = control->id;
- 			up_read(&card->controls_rwsem);
--			snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_VALUE,
--				       &control->id);
-+			snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_VALUE, &id);
- 			return 0;
- 		}
- 	}
-@@ -1334,8 +1338,9 @@ static int snd_ctl_tlv_ioctl(struct snd_
- 		}
- 		err = kctl->tlv.c(kctl, op_flag, tlv.length, _tlv->tlv);
- 		if (err > 0) {
-+			struct snd_ctl_elem_id id = kctl->id;
- 			up_read(&card->controls_rwsem);
--			snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_TLV, &kctl->id);
-+			snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_TLV, &id);
- 			return 0;
- 		}
- 	} else {
+@@ -343,6 +343,9 @@ int snd_ctl_add(struct snd_card *card, s
+ 	if (snd_BUG_ON(!card || !kcontrol->info))
+ 		goto error;
+ 	id = kcontrol->id;
++	if (id.index > UINT_MAX - kcontrol->count)
++		goto error;
++
+ 	down_write(&card->controls_rwsem);
+ 	if (snd_ctl_find_id(card, &id)) {
+ 		up_write(&card->controls_rwsem);
 
 
