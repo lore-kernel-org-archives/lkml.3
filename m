@@ -1,64 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753639AbaFXOZx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 10:25:53 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:51741 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752179AbaFXOZv (ORCPT
+	id S1753981AbaFXObO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 10:31:14 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:43587 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751821AbaFXObM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 10:25:51 -0400
-Date: Tue, 24 Jun 2014 10:25:51 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Paul Bolle <pebolle@tiscali.nl>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Randy Dunlap <rdunlap@infradead.org>, <linux-usb@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] USB: remove CONFIG_USB_PERSIST from Documentation
-In-Reply-To: <1403604665.1960.14.camel@x220>
-Message-ID: <Pine.LNX.4.44L0.1406241017250.990-100000@iolanthe.rowland.org>
+	Tue, 24 Jun 2014 10:31:12 -0400
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Joe Perches <joe@perches.com>
+Cc: Mathias Krause <minipli@googlemail.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [RFC PATCH 0/3] Mark literal strings in __init / __exit code
+Organization: D03
+References: <1403477209-14612-1-git-send-email-minipli@googlemail.com>
+	<1403477762.18747.14.camel@joe-AO725>
+	<CA+rthh8D=r1kW6iDb0MqfHwA4OW-oXSA+B1AXe-0Cqperz6ZRQ@mail.gmail.com>
+	<1403505219.18747.37.camel@joe-AO725>
+X-Hashcash: 1:20:140624:tglx@linutronix.de::UnTl3PUtyVrCXN7y:00000000000000000000000000000000000000000000QW0
+X-Hashcash: 1:20:140624:rostedt@goodmis.org::iRVyzTln+Oq8KdDO:0000000000000000000000000000000000000000000Vc1
+X-Hashcash: 1:20:140624:joe@perches.com::Rn8Bdt4rU6CvbDDP:000P2/
+X-Hashcash: 1:20:140624:hpa@zytor.com::08YpDYRhvBVPnusi:00001Jea
+X-Hashcash: 1:20:140624:minipli@googlemail.com::QSfu9jf64HmJlhpP:00000000000000000000000000000000000000024Ng
+X-Hashcash: 1:20:140624:akpm@linux-foundation.org::Zns8clLwOkwXOBPq:0000000000000000000000000000000000001Wtm
+X-Hashcash: 1:20:140624:linux-kernel@vger.kernel.org::DhqgsY381+WwgJf/:0000000000000000000000000000000004hCu
+X-Hashcash: 1:20:140624:rjw@rjwysocki.net::bQmHrFggLFo5vkJA:000000000000000000000000000000000000000000007Nxi
+X-Hashcash: 1:20:140624:mingo@redhat.com::JN2QYVO32msxB0s0:05ucf
+X-Hashcash: 1:20:140624:gregkh@linuxfoundation.org::ISjVn5DbkufVxdlQ:0000000000000000000000000000000000093HJ
+Date: Tue, 24 Jun 2014 16:31:08 +0200
+In-Reply-To: <1403505219.18747.37.camel@joe-AO725> (Joe Perches's message of
+	"Sun, 22 Jun 2014 23:33:39 -0700")
+Message-ID: <87egyeqt03.fsf@rasmusvillemoes.dk>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Jun 2014, Paul Bolle wrote:
+Joe Perches <joe@perches.com> writes:
 
-> CONFIG_USB_PERSIST was removed in v2.6.26. Remove a reference to it from
-> Documentation. That reference was a bit odd to begin with.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> "[...] under certain circumstances [...]"? Is that about
-> USB_QUIRK_RESET_RESUME? Anyhow, I feel this paragraph needs more work,
-> but that would require quite a bit of hand-holding. Perhaps Alan or Greg
-> would like to hold my hand here...
-> 
->  Documentation/usb/power-management.txt | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/Documentation/usb/power-management.txt b/Documentation/usb/power-management.txt
-> index 1392b61d6ebe..90dc927f0e1e 100644
-> --- a/Documentation/usb/power-management.txt
-> +++ b/Documentation/usb/power-management.txt
-> @@ -304,7 +304,7 @@ using the USB Persist facility.)
->  
->  The reset_resume method is used by the USB Persist facility (see
->  Documentation/usb/persist.txt) and it can also be used under certain
-> -circumstances when CONFIG_USB_PERSIST is not enabled.  Currently, if a
-> +circumstances when that facility is not enabled.  Currently, if a
->  device is reset during a resume and the driver does not have a
->  reset_resume method, the driver won't receive any notification about
->  the resume.  Later kernels will call the driver's disconnect method;
+> On Mon, 2014-06-23 at 08:23 +0200, Mathias Krause wrote:
+>> On 23 June 2014 00:56, Joe Perches <joe@perches.com> wrote:
+>> > On Mon, 2014-06-23 at 00:46 +0200, Mathias Krause wrote:
+>> >> [...] patch 2 adds some syntactical sugar for the most popular use
+>> >> case, by providing pr_<level> alike macros, namely pi_<level> for __init
+>> >> code and pe_<level> for __exit code. This hides the use of the marker
+>> >> macros behind the commonly known printing functions -- with just a
+>> >> single character changed.
+>> >>
+>> >> Patch 3 exemplarily changes all strings and format strings in
+>> >> arch/x86/kernel/acpi/boot.c to use the new macros. It also addresses a
+>> >> few styling issues, though. But this already leads to ~1.7 kB of r/o
+>> >> data moved to the .init.rodata section, marking it for release after
+>> >> init.
+>> >>
+>> >> [...]
+>> >
+>> > I once proposed a similar thing.
+>> >
+>> > https://lkml.org/lkml/2009/7/21/421
+>> >
+>> > Matt Mackall replied
+>> >
+>> > https://lkml.org/lkml/2009/7/21/463
+>> >
+>> 
+>> Thanks for the pointers. Have you looked at patch 2 and 3? I don't
+>> think it makes the printk() case ugly. In fact, using pi_<level>()
+>> should be no less readable then pr_<level>, no?
+>
+> I don't think it's particularly less readable, but I
+> do think using the plug-in mechanism might be a better
+> option as it would need no manual markings at all.
 
-I don't remember what the "certain circumstances" referred to 
-originally.  Right now, if the USB_QUIRK_RESET_RESUME quirk is set 
-(meaning that the device can't reset properly so it always has to be 
-reset-resumed) then persist will be used even if it isn't enabled.
+gcc already seems to contain infrastructure for this kind of thing, so
+maybe it doesn't even require a plugin, but simply a little coordination
+with the gcc folks. This snippet from gcc internals seems relevant:
 
-Also, that "Later kernels" thing has already arrived.  I believe it was 
-implemented in 2.6.35.
+-- Target Hook: section * TARGET_ASM_FUNCTION_RODATA_SECTION (tree
+          DECL)
+     Return the readonly data section associated with 'DECL_SECTION_NAME
+     (DECL)'.  The default version of this function selects
+     '.gnu.linkonce.r.name' if the function's section is
+     '.gnu.linkonce.t.name', '.rodata.name' if function is in
+     '.text.name', and the normal readonly-data section otherwise.
 
-Alan Stern
-
+Rasmus
