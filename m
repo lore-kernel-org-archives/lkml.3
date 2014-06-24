@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756040AbaFXUdy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:33:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47902 "EHLO
+	id S1756076AbaFXUeA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:34:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47921 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755905AbaFXUdu (ORCPT
+	with ESMTP id S1755905AbaFXUd5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:33:50 -0400
+	Tue, 24 Jun 2014 16:33:57 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 59/65] ALSA: hda/realtek - Fix COEF widget NID for ALC260 replacer fixup
-Date: Tue, 24 Jun 2014 13:30:19 -0700
-Message-Id: <1403641825-12825-60-git-send-email-kamal@canonical.com>
+Cc: Wolfram Sang <wsa+renesas@sang-engineering.com>,
+        Wolfram Sang <wsa@the-dreams.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 22/65] i2c: rcar: bail out on zero length transfers
+Date: Tue, 24 Jun 2014 13:29:42 -0700
+Message-Id: <1403641825-12825-23-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
 References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
@@ -26,37 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Wolfram Sang <wsa+renesas@sang-engineering.com>
 
-commit 192a98e280e560510a62aca8cfa83b4ae7c095bb upstream.
+commit d7653964c590ba846aa11a8f6edf409773cbc492 upstream.
 
-The conversion to a fixup table for Replacer model with ALC260 in
-commit 20f7d928 took the wrong widget NID for COEF setups.  Namely,
-NID 0x1a should have been used instead of NID 0x20, which is the
-common node for all Realtek codecs but ALC260.
+This hardware does not support zero length transfers. Instead, the
+driver does one (random) byte transfers currently with undefined results
+for the slaves. We now bail out.
 
-Fixes: 20f7d928fa6e ('ALSA: hda/realtek - Replace ALC260 model=replacer with the auto-parser')
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Wolfram Sang <wsa+renesas@sang-engineering.com>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/pci/hda/patch_realtek.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/i2c/busses/i2c-rcar.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index 805d79f..6cc07f0 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -4945,8 +4945,8 @@ static const struct alc_fixup alc260_fixups[] = {
- 	[ALC260_FIXUP_REPLACER] = {
- 		.type = ALC_FIXUP_VERBS,
- 		.v.verbs = (const struct hda_verb[]) {
--			{ 0x20, AC_VERB_SET_COEF_INDEX, 0x07 },
--			{ 0x20, AC_VERB_SET_PROC_COEF,  0x3050 },
-+			{ 0x1a, AC_VERB_SET_COEF_INDEX, 0x07 },
-+			{ 0x1a, AC_VERB_SET_PROC_COEF,  0x3050 },
- 			{ }
- 		},
- 		.chained = true,
+diff --git a/drivers/i2c/busses/i2c-rcar.c b/drivers/i2c/busses/i2c-rcar.c
+index 9bd4d73..9ef4a88 100644
+--- a/drivers/i2c/busses/i2c-rcar.c
++++ b/drivers/i2c/busses/i2c-rcar.c
+@@ -541,6 +541,12 @@ static int rcar_i2c_master_xfer(struct i2c_adapter *adap,
+ 
+ 	ret = -EINVAL;
+ 	for (i = 0; i < num; i++) {
++		/* This HW can't send STOP after address phase */
++		if (msgs[i].len == 0) {
++			ret = -EOPNOTSUPP;
++			break;
++		}
++
+ 		/*-------------- spin lock -----------------*/
+ 		spin_lock_irqsave(&priv->lock, flags);
+ 
+@@ -605,7 +611,8 @@ static int rcar_i2c_master_xfer(struct i2c_adapter *adap,
+ 
+ static u32 rcar_i2c_func(struct i2c_adapter *adap)
+ {
+-	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
++	/* This HW can't do SMBUS_QUICK and NOSTART */
++	return I2C_FUNC_I2C | (I2C_FUNC_SMBUS_EMUL & ~I2C_FUNC_SMBUS_QUICK);
+ }
+ 
+ static const struct i2c_algorithm rcar_i2c_algo = {
 -- 
 1.9.1
 
