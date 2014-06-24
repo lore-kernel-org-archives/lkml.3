@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756505AbaFXQlq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:41:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60991 "EHLO
+	id S1754520AbaFXPww (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:52:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60978 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755586AbaFXPwy (ORCPT
+	with ESMTP id S1755548AbaFXPws (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:52:54 -0400
+	Tue, 24 Jun 2014 11:52:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.10 42/52] iio: Fix endianness issue in ak8975_read_axis()
-Date: Tue, 24 Jun 2014 11:50:57 -0400
-Message-Id: <20140624154715.997699255@linuxfoundation.org>
+        Yang Zhang <yang.z.zhang@intel.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.10 27/52] KVM: lapic: sync highest ISR to hardware apic on EOI
+Date: Tue, 24 Jun 2014 11:50:42 -0400
+Message-Id: <20140624154715.122018086@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154713.428945460@linuxfoundation.org>
 References: <20140624154713.428945460@linuxfoundation.org>
@@ -29,49 +29,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Meerwald <pmeerw@pmeerw.net>
+From: Paolo Bonzini <pbonzini@redhat.com>
 
-commit 8ba42fb7b17649c9ab5b5e79d4e90370a0b4645e upstream.
+commit fc57ac2c9ca8109ea97fcc594f4be436944230cc upstream.
 
-i2c_smbus_read_word_data() does host endian conversion already,
-no need for le16_to_cpu()
+When Hyper-V enlightenments are in effect, Windows prefers to issue an
+Hyper-V MSR write to issue an EOI rather than an x2apic MSR write.
+The Hyper-V MSR write is not handled by the processor, and besides
+being slower, this also causes bugs with APIC virtualization.  The
+reason is that on EOI the processor will modify the highest in-service
+interrupt (SVI) field of the VMCS, as explained in section 29.1.4 of
+the SDM; every other step in EOI virtualization is already done by
+apic_send_eoi or on VM entry, but this one is missing.
 
-Signed-off-by: Peter Meerwald <pmeerw@pmeerw.net>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+We need to do the same, and be careful not to muck with the isr_count
+and highest_isr_cache fields that are unused when virtual interrupt
+delivery is enabled.
+
+Reviewed-by: Yang Zhang <yang.z.zhang@intel.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iio/magnetometer/ak8975.c |    9 +--------
- 1 file changed, 1 insertion(+), 8 deletions(-)
+ arch/x86/kvm/lapic.c |   62 +++++++++++++++++++++++++++++++++++----------------
+ 1 file changed, 43 insertions(+), 19 deletions(-)
 
---- a/drivers/iio/magnetometer/ak8975.c
-+++ b/drivers/iio/magnetometer/ak8975.c
-@@ -276,8 +276,6 @@ static int ak8975_read_axis(struct iio_d
+--- a/arch/x86/kvm/lapic.c
++++ b/arch/x86/kvm/lapic.c
+@@ -370,6 +370,8 @@ static inline void apic_clear_irr(int ve
+ 
+ static inline void apic_set_isr(int vec, struct kvm_lapic *apic)
  {
- 	struct ak8975_data *data = iio_priv(indio_dev);
- 	struct i2c_client *client = data->client;
--	u16 meas_reg;
--	s16 raw;
- 	int ret;
++	/* Note that we never get here with APIC virtualization enabled.  */
++
+ 	if (!__apic_test_and_set_vector(vec, apic->regs + APIC_ISR))
+ 		++apic->isr_count;
+ 	BUG_ON(apic->isr_count > MAX_APIC_VECTOR);
+@@ -381,12 +383,48 @@ static inline void apic_set_isr(int vec,
+ 	apic->highest_isr_cache = vec;
+ }
  
- 	mutex_lock(&data->lock);
-@@ -322,16 +320,11 @@ static int ak8975_read_axis(struct iio_d
- 		dev_err(&client->dev, "Read axis data fails\n");
- 		goto exit;
- 	}
--	meas_reg = ret;
++static inline int apic_find_highest_isr(struct kvm_lapic *apic)
++{
++	int result;
++
++	/*
++	 * Note that isr_count is always 1, and highest_isr_cache
++	 * is always -1, with APIC virtualization enabled.
++	 */
++	if (!apic->isr_count)
++		return -1;
++	if (likely(apic->highest_isr_cache != -1))
++		return apic->highest_isr_cache;
++
++	result = find_highest_vector(apic->regs + APIC_ISR);
++	ASSERT(result == -1 || result >= 16);
++
++	return result;
++}
++
+ static inline void apic_clear_isr(int vec, struct kvm_lapic *apic)
+ {
+-	if (__apic_test_and_clear_vector(vec, apic->regs + APIC_ISR))
++	struct kvm_vcpu *vcpu;
++	if (!__apic_test_and_clear_vector(vec, apic->regs + APIC_ISR))
++		return;
++
++	vcpu = apic->vcpu;
++
++	/*
++	 * We do get here for APIC virtualization enabled if the guest
++	 * uses the Hyper-V APIC enlightenment.  In this case we may need
++	 * to trigger a new interrupt delivery by writing the SVI field;
++	 * on the other hand isr_count and highest_isr_cache are unused
++	 * and must be left alone.
++	 */
++	if (unlikely(kvm_apic_vid_enabled(vcpu->kvm)))
++		kvm_x86_ops->hwapic_isr_update(vcpu->kvm,
++					       apic_find_highest_isr(apic));
++	else {
+ 		--apic->isr_count;
+-	BUG_ON(apic->isr_count < 0);
+-	apic->highest_isr_cache = -1;
++		BUG_ON(apic->isr_count < 0);
++		apic->highest_isr_cache = -1;
++	}
+ }
  
- 	mutex_unlock(&data->lock);
+ int kvm_lapic_find_highest_irr(struct kvm_vcpu *vcpu)
+@@ -466,22 +504,6 @@ static void pv_eoi_clr_pending(struct kv
+ 	__clear_bit(KVM_APIC_PV_EOI_PENDING, &vcpu->arch.apic_attention);
+ }
  
--	/* Endian conversion of the measured values. */
--	raw = (s16) (le16_to_cpu(meas_reg));
+-static inline int apic_find_highest_isr(struct kvm_lapic *apic)
+-{
+-	int result;
 -
- 	/* Clamp to valid range. */
--	raw = clamp_t(s16, raw, -4096, 4095);
--	*val = raw;
-+	*val = clamp_t(s16, ret, -4096, 4095);
- 	return IIO_VAL_INT;
+-	/* Note that isr_count is always 1 with vid enabled */
+-	if (!apic->isr_count)
+-		return -1;
+-	if (likely(apic->highest_isr_cache != -1))
+-		return apic->highest_isr_cache;
+-
+-	result = find_highest_vector(apic->regs + APIC_ISR);
+-	ASSERT(result == -1 || result >= 16);
+-
+-	return result;
+-}
+-
+ void kvm_apic_update_tmr(struct kvm_vcpu *vcpu, u32 *tmr)
+ {
+ 	struct kvm_lapic *apic = vcpu->arch.apic;
+@@ -1619,6 +1641,8 @@ int kvm_get_apic_interrupt(struct kvm_vc
+ 	int vector = kvm_apic_has_interrupt(vcpu);
+ 	struct kvm_lapic *apic = vcpu->arch.apic;
  
- exit:
++	/* Note that we never get here with APIC virtualization enabled.  */
++
+ 	if (vector == -1)
+ 		return -1;
+ 
 
 
