@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755855AbaFXPyq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:54:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33073 "EHLO
+	id S1756104AbaFXQVq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:21:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33077 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754287AbaFXPym (ORCPT
+	with ESMTP id S1755835AbaFXPyo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:54:42 -0400
+	Tue, 24 Jun 2014 11:54:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.14 45/68] USB: cdc-acm: fix I/O after failed open
-Date: Tue, 24 Jun 2014 11:51:04 -0400
-Message-Id: <20140624154725.974245598@linuxfoundation.org>
+        Robert Hodaszi <robert.hodaszi@digi.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Marek Vasut <marex@denx.de>, Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.14 54/68] iio: mxs-lradc: fix divider
+Date: Tue, 24 Jun 2014 11:51:13 -0400
+Message-Id: <20140624154726.399692395@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154723.907894814@linuxfoundation.org>
 References: <20140624154723.907894814@linuxfoundation.org>
@@ -28,39 +30,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Robert Hodaszi <robert.hodaszi@digi.com>
 
-commit e4c36076c2a6195ec62c35b03c3fde84d0087dc8 upstream.
+commit 19bc4981a213d0c5b0e1e8b08815c0b26f01ec54 upstream.
 
-Make sure to kill any already submitted read urbs on read-urb submission
-failures in open in order to prevent doing I/O for a closed port.
+All channels' single measurement are happening on CH 0. So enabling / disabling
+the divider once is not enough, because it has impact on all channels.
 
-Fixes: 088c64f81284 ("USB: cdc-acm: re-write read processing")
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Set only a flag, then check this on each measurement, and enable / disable the
+divider as required.
+
+Signed-off-by: Robert Hodaszi <robert.hodaszi@digi.com>
+Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Acked-by: Marek Vasut <marex@denx.de>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/class/cdc-acm.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/staging/iio/adc/mxs-lradc.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -506,6 +506,7 @@ static int acm_port_activate(struct tty_
- {
- 	struct acm *acm = container_of(port, struct acm, port);
- 	int retval = -ENODEV;
-+	int i;
+--- a/drivers/staging/iio/adc/mxs-lradc.c
++++ b/drivers/staging/iio/adc/mxs-lradc.c
+@@ -846,6 +846,14 @@ static int mxs_lradc_read_single(struct
+ 			LRADC_CTRL1);
+ 	mxs_lradc_reg_clear(lradc, 0xff, LRADC_CTRL0);
  
- 	dev_dbg(&acm->control->dev, "%s\n", __func__);
- 
-@@ -554,6 +555,8 @@ static int acm_port_activate(struct tty_
- 	return 0;
- 
- error_submit_read_urbs:
-+	for (i = 0; i < acm->rx_buflimit; i++)
-+		usb_kill_urb(acm->read_urbs[i]);
- 	acm->ctrlout = 0;
- 	acm_set_control(acm, acm->ctrlout);
- error_set_control:
++	/* Enable / disable the divider per requirement */
++	if (test_bit(chan, &lradc->is_divided))
++		mxs_lradc_reg_set(lradc, 1 << LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET,
++			LRADC_CTRL2);
++	else
++		mxs_lradc_reg_clear(lradc,
++			1 << LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET, LRADC_CTRL2);
++
+ 	/* Clean the slot's previous content, then set new one. */
+ 	mxs_lradc_reg_clear(lradc, LRADC_CTRL4_LRADCSELECT_MASK(0), LRADC_CTRL4);
+ 	mxs_lradc_reg_set(lradc, chan, LRADC_CTRL4);
+@@ -964,15 +972,11 @@ static int mxs_lradc_write_raw(struct ii
+ 		if (val == scale_avail[MXS_LRADC_DIV_DISABLED].integer &&
+ 		    val2 == scale_avail[MXS_LRADC_DIV_DISABLED].nano) {
+ 			/* divider by two disabled */
+-			writel(1 << LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET,
+-			       lradc->base + LRADC_CTRL2 + STMP_OFFSET_REG_CLR);
+ 			clear_bit(chan->channel, &lradc->is_divided);
+ 			ret = 0;
+ 		} else if (val == scale_avail[MXS_LRADC_DIV_ENABLED].integer &&
+ 			   val2 == scale_avail[MXS_LRADC_DIV_ENABLED].nano) {
+ 			/* divider by two enabled */
+-			writel(1 << LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET,
+-			       lradc->base + LRADC_CTRL2 + STMP_OFFSET_REG_SET);
+ 			set_bit(chan->channel, &lradc->is_divided);
+ 			ret = 0;
+ 		}
 
 
