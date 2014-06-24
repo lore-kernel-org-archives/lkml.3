@@ -1,69 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751658AbaFXFyL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 01:54:11 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:42951 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751098AbaFXFyJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 01:54:09 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@kernel.org>,
-        mitake@dcl.info.waseda.ac.jp, Aswin Chandramouleeswaran <aswin@hp.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/9] perf bench: Add --repeat option
-References: <1402942467-10671-1-git-send-email-davidlohr@hp.com>
-	<1402942467-10671-2-git-send-email-davidlohr@hp.com>
-	<877g4d8lye.fsf@sejong.aot.lge.com>
-	<1403178338.20417.6.camel@buesod1.americas.hpqcorp.net>
-	<CAM9d7cgPhffEX3-AKnXtzgxeT_21hPBjWDsAT1LPu6S=T9VZ_A@mail.gmail.com>
-	<1403233437.1581.5.camel@buesod1.americas.hpqcorp.net>
-Date: Tue, 24 Jun 2014 14:54:07 +0900
-In-Reply-To: <1403233437.1581.5.camel@buesod1.americas.hpqcorp.net> (Davidlohr
-	Bueso's message of "Thu, 19 Jun 2014 20:03:57 -0700")
-Message-ID: <87a9927szk.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1751845AbaFXF6T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 01:58:19 -0400
+Received: from mga11.intel.com ([192.55.52.93]:52866 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751155AbaFXF6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 01:58:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,536,1400050800"; 
+   d="scan'208";a="552373529"
+From: "Ren, Qiaowei" <qiaowei.ren@intel.com>
+To: Andy Lutomirski <luto@amacapital.net>,
+        "Hansen, Dave" <dave.hansen@intel.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>
+Subject: RE: [PATCH v6 02/10] x86, mpx: add MPX specific mmap interface
+Thread-Topic: [PATCH v6 02/10] x86, mpx: add MPX specific mmap interface
+Thread-Index: AQHPitp0g7xixZVNTkiLN9tFeBCqMZt+nJAAgAAD+ACAAADtgIAABhEAgAAKEgCAARYTkA==
+Date: Tue, 24 Jun 2014 05:53:46 +0000
+Message-ID: <9E0BE1322F2F2246BD820DA9FC397ADE016AF41C@shsmsx102.ccr.corp.intel.com>
+References: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com>
+ <1403084656-27284-3-git-send-email-qiaowei.ren@intel.com>
+ <53A884B2.5070702@mit.edu> <53A88806.1060908@intel.com>
+ <CALCETrXYZZiZsDiUvvZd0636+qHP9a0sHTN6wt_ZKjvLaeeBzw@mail.gmail.com>
+ <53A88DE4.8050107@intel.com>
+ <CALCETrWBbkFzQR3tz1TphqxiGYycvzrFrKc=ghzMynbem=d7rg@mail.gmail.com>
+In-Reply-To: <CALCETrWBbkFzQR3tz1TphqxiGYycvzrFrKc=ghzMynbem=d7rg@mail.gmail.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s5O5wTim025211
 
-Hi Davidlohr,
-
-On Thu, 19 Jun 2014 20:03:57 -0700, Davidlohr Bueso wrote:
-> On Thu, 2014-06-19 at 23:51 +0000, Namhyung Kim wrote:
->> Hi Davidlohr,
+On 2014-06-24, Andy Lutomirski wrote:
+>> On 06/23/2014 01:06 PM, Andy Lutomirski wrote:
+>>> Can the new vm_operation "name" be use for this?  The magic "always
+>>> written to core dumps" feature might need to be reconsidered.
 >> 
->> On Thu, Jun 19, 2014 at 11:45 AM, Davidlohr Bueso <davidlohr@hp.com> wrote:
->> > Hi Namhyung,
->> >
->> > On Thu, 2014-06-19 at 15:14 +0900, Namhyung Kim wrote:
->> >> By adding a top-level option, I think it should be applied to all
->> >> benchmaks - but I guess it only supports sched messaging and futex,
->> >> right?
->> >
->> > Yes, for now only those. While there is opportunity for others to use it
->> > as well (perhaps shed-pipe & memcpy/memset), I don't think *all*
->> > benchmarks need multiple runs, ie: numa.
+>> One thing I'd like to avoid is an MPX vma getting merged with a
+>> non-MPX vma.  I don't see any code to prevent two VMAs with
+>> different vm_ops->names from getting merged.  That seems like a bit
+>> of a design oversight for ->name.  Right?
+> 
+> AFAIK there are no ->name users that don't also set ->close, for
+> exactly that reason.  I'd be okay with adding a check for ->name, too.
+> 
+> Hmm.  If MPX vmas had a real struct file attached, this would all come
+> for free. Maybe vmas with non-default vm_ops and file != NULL should
+> never be mergeable?
+> 
 >> 
->> Hmm.. but it'd make users confusing if one runs the numa benchmark
->> with -r 5 option but it only do a single run..
->
-> Yeah, it crossed my mind. For that to be addressed, we would have to
-> come up with a way to determine if the argument was passed, and just
-> inform the user that it is not [currently(?)] supported. Some
-> alternatives would be to (i) explicitly document it, and/or (ii) print
-> out the amount of runs that will be made and if that option is
-> supported. All in all I think we need a better infrastructure for such
-> things. 
+>> Thinking out loud a bit... There are also some more complicated but
+>> more performant cleanup mechanisms that I'd like to go after in the future.
+>> Given a page, we might want to figure out if it is an MPX page or not.
+>> I wonder if we'll ever collide with some other user of vm_ops->name.
+>> It looks fairly narrowly used at the moment, but would this keep us
+>> from putting these pages on, say, a tmpfs mount?  Doesn't look that
+>> way at the moment.
+> 
+> You could always check the vm_ops pointer to see if it's MPX.
+> 
+> One feature I've wanted: a way to have special per-process vmas that
+> can be easily found.  For example, I want to be able to efficiently
+> find out where the vdso and vvar vmas are.  I don't think this is currently supported.
+> 
+Andy, if you add a check for ->name to avoid the MPX vmas merged with non-MPX vmas, I guess the work flow should be as follow (use _install_special_mapping to get a new vma):
 
-I think we don't need to prevent users if she really wants to run a
-benchmark multiple times.  So how about supporting it for all benchmarks
-but providing sane per-benchmark defaults (i.e. 1 for numa, 5 for sched)?
+unsigned long mpx_mmap(unsigned long len)
+{
+    ......
+    static struct vm_special_mapping mpx_mapping = {
+        .name = "[mpx]",
+        .pages = no_pages,
+    };
+
+    .......
+    vma = _install_special_mapping(mm, addr, len, vm_flags, &mpx_mapping);
+    ......
+}
+
+Then, we could check the ->name to see if the VMA is MPX specific. Right?
 
 Thanks,
-Namhyung
+Qiaowei
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
