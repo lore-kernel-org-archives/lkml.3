@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756014AbaFXUnY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:43:24 -0400
-Received: from mga02.intel.com ([134.134.136.20]:30505 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751222AbaFXUnU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:43:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,540,1400050800"; 
-   d="scan'208";a="562817951"
-Message-ID: <53A9E2E4.5010600@intel.com>
-Date: Tue, 24 Jun 2014 13:43:16 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, oleg@redhat.com, ak@linux.intel.com, cl@gentwo.org,
-        umgwanakikbuti@gmail.com
-Subject: Re: [PATCH tip/core/rcu] Reduce overhead of cond_resched() checks
- for RCU
-References: <20140621025958.GA7185@linux.vnet.ibm.com> <53A85BF9.7030006@intel.com> <53A8611F.1000804@intel.com> <20140623180945.GL4603@linux.vnet.ibm.com> <53A8B884.6000600@intel.com> <20140624001519.GO4603@linux.vnet.ibm.com> <53A8C44E.7050000@intel.com> <20140624003934.GR4603@linux.vnet.ibm.com>
-In-Reply-To: <20140624003934.GR4603@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756539AbaFXUnv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:43:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47722 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755284AbaFXUbq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 16:31:46 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 49/65] Input: synaptics - T540p - unify with other LEN0034 models
+Date: Tue, 24 Jun 2014 13:30:09 -0700
+Message-Id: <1403641825-12825-50-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
+References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2014 05:39 PM, Paul E. McKenney wrote:
-> On Mon, Jun 23, 2014 at 05:20:30PM -0700, Dave Hansen wrote:
->> On 06/23/2014 05:15 PM, Paul E. McKenney wrote:
->>> Just out of curiosity, how many CPUs does your system have?  80?
->>> If 160, looks like something bad is happening at 80.
->>
->> 80 cores, 160 threads.  >80 processes/threads is where we start using
->> the second thread on the cores.  The tasks are also pinned to
->> hyperthread pairs, so they disturb each other, and the scheduler moves
->> them between threads on occasion which causes extra noise.
-> 
-> OK, that could explain the near flattening of throughput near 80
-> processes.  Is 3.16.0-rc1-pf2 with the two RCU patches?  If so, is the
-> new sysfs parameter at its default value?
+3.8.13.25 -stable review patch.  If anyone has any objections, please let me know.
 
-Here's 3.16-rc1 with e552592e applied and jiffies_till_sched_qs=12 vs. 3.15:
+------------------
 
-> https://www.sr71.net/~dave/intel/bb.html?2=3.16.0-rc1-paultry2-jtsq12&1=3.15
+From: Hans de Goede <hdegoede@redhat.com>
 
-3.16-rc1 is actually in the lead up until the end when we're filling up
-the hyperthreads.  The same pattern holds when comparing
-3.16-rc1+e552592e to 3.16-rc1 with ac1bea8 reverted:
+commit 6d396ede224dc596d92d7cab433713536e68916c upstream.
 
-> https://www.sr71.net/~dave/intel/bb.html?2=3.16.0-rc1-paultry2-jtsq12&1=3.16.0-rc1-wrevert
+The T540p has a touchpad with pnp-id LEN0034, all the models with this
+pnp-id have the same min/max values, except the T540p where the values are
+slightly off. Fix them to be identical.
 
-So, the current situation is generally _better_ than 3.15, except during
-the noisy ranges of the test where hyperthreading and the scheduler are
-coming in to play.  I made the mistake of doing all my spot-checks at
-the 160-thread number, which honestly wasn't the best point to be
-looking at.
+This is a preparation patch for simplifying the quirk table.
 
-At this point, I'm satisfied with how e552592e is dealing with the
-original regression.  Thanks for all the prompt attention on this one, Paul.
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/input/mouse/synaptics.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+index fd569be..b242b82 100644
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -1526,7 +1526,7 @@ static const struct dmi_system_id min_max_dmi_table[] __initconst = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+ 			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T540"),
+ 		},
+-		.driver_data = (int []){1024, 5056, 2058, 4832},
++		.driver_data = (int []){1024, 5112, 2024, 4832},
+ 	},
+ 	{
+ 		/* Lenovo ThinkPad L540 */
+-- 
+1.9.1
+
