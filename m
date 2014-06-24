@@ -1,94 +1,285 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756193AbaFXUkO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:40:14 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47852 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755780AbaFXUdd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:33:33 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Thomas Gleixner <tglx@linutronix.de>, Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Darren Hart <darren@dvhart.com>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Clark Williams <williams@redhat.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Carlos ODonell <carlos@redhat.com>, Jakub Jelinek <jakub@redhat.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 44/65] futex: Prevent attaching to kernel threads
-Date: Tue, 24 Jun 2014 13:30:04 -0700
-Message-Id: <1403641825-12825-45-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
-References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	id S1756270AbaFXUke (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:40:34 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:6683 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753733AbaFXUka (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 16:40:30 -0400
+X-IronPort-AV: E=Sophos;i="5.01,540,1400025600"; 
+   d="scan'208";a="146968732"
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+To: Steffen Klassert <steffen.klassert@secunet.com>,
+        Mathias Krause <minipli@googlemail.com>,
+        Daniel Borkmann <dborkman@redhat.com>
+CC: Zoltan Kiss <zoltan.kiss@citrix.com>,
+        "David S. Miller" <davem@davemloft.net>, Thomas Graf <tgraf@suug.ch>,
+        Joe Perches <joe@perches.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
+Subject: [PATCH net-next] pktgen: Fill the payload optionally with a pattern
+Date: Tue, 24 Jun 2014 21:40:15 +0100
+Message-ID: <1403642415-9560-1-git-send-email-zoltan.kiss@citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.80.118.114]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.25 -stable review patch.  If anyone has any objections, please let me know.
+Introduces a new flag called PATTERN, which puts a non-periodic, predicatble
+pattern into the payload. This was useful to reproduce an otherwise intermittent
+bug in xen-netback [1], where checksum checking doesn't help.
+The pattern is a repetition of " %lu", a series of increasing numbers divided by
+space. The value of the number is the size of the preceding payload area. E.g.
+" 1 3 5"..." 1000 1005 1010"
+If the pattern is used, every frag will have its own page, unlike before, so it
+needs more memory.
 
-------------------
+[1] 5837574: xen-netback: Fix grant ref resolution in RX path
 
-From: Thomas Gleixner <tglx@linutronix.de>
-
-commit f0d71b3dcb8332f7971b5f2363632573e6d9486a upstream.
-
-We happily allow userspace to declare a random kernel thread to be the
-owner of a user space PI futex.
-
-Found while analysing the fallout of Dave Jones syscall fuzzer.
-
-We also should validate the thread group for private futexes and find
-some fast way to validate whether the "alleged" owner has RW access on
-the file which backs the SHM, but that's a separate issue.
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Darren Hart <darren@dvhart.com>
-Cc: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Clark Williams <williams@redhat.com>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Roland McGrath <roland@hack.frob.com>
-Cc: Carlos ODonell <carlos@redhat.com>
-Cc: Jakub Jelinek <jakub@redhat.com>
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Link: http://lkml.kernel.org/r/20140512201701.194824402@linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Thomas Graf <tgraf@suug.ch>
+Cc: Joe Perches <joe@perches.com>
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: xen-devel@lists.xenproject.org
 ---
- kernel/futex.c | 5 +++++
- 1 file changed, 5 insertions(+)
+v2: some bugfixes for pattern_to_packet, as my upcoming patch revealed some
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 50a0244..ef88446 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -662,6 +662,11 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
- 	if (!p)
- 		return -ESRCH;
+ net/core/pktgen.c |  139 ++++++++++++++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 126 insertions(+), 13 deletions(-)
+
+diff --git a/net/core/pktgen.c b/net/core/pktgen.c
+index 0304f98..253b83d 100644
+--- a/net/core/pktgen.c
++++ b/net/core/pktgen.c
+@@ -201,6 +201,7 @@
+ #define F_QUEUE_MAP_CPU (1<<14)	/* queue map mirrors smp_processor_id() */
+ #define F_NODE          (1<<15)	/* Node memory alloc*/
+ #define F_UDPCSUM       (1<<16)	/* Include UDP checksum */
++#define F_PATTERN       (1<<17)	/* Fill the payload with a pattern */
  
-+	if (!p->mm) {
-+		put_task_struct(p);
-+		return -EPERM;
+ /* Thread control flag bits */
+ #define T_STOP        (1<<0)	/* Stop run */
+@@ -255,7 +256,7 @@ struct pktgen_dev {
+ 	int max_pkt_size;
+ 	int pkt_overhead;	/* overhead for MPLS, VLANs, IPSEC etc */
+ 	int nfrags;
+-	struct page *page;
++	struct page *pages[MAX_SKB_FRAGS];
+ 	u64 delay;		/* nano-seconds */
+ 
+ 	__u64 count;		/* Default No packets to send */
+@@ -1127,11 +1128,13 @@ static ssize_t pktgen_if_write(struct file *file,
+ 		i += len;
+ 
+ 		if (node_possible(value)) {
++			int j;
+ 			pkt_dev->node = value;
+ 			sprintf(pg_result, "OK: node=%d", pkt_dev->node);
+-			if (pkt_dev->page) {
+-				put_page(pkt_dev->page);
+-				pkt_dev->page = NULL;
++			for (j = 0; j < MAX_SKB_FRAGS; ++j)
++				if (pkt_dev->pages[j]) {
++					put_page(pkt_dev->pages[j]);
++					pkt_dev->pages[j] = NULL;
+ 			}
+ 		}
+ 		else
+@@ -1242,6 +1245,12 @@ static ssize_t pktgen_if_write(struct file *file,
+ 		else if (strcmp(f, "!UDPCSUM") == 0)
+ 			pkt_dev->flags &= ~F_UDPCSUM;
+ 
++		else if (strcmp(f, "PATTERN") == 0)
++			pkt_dev->flags |= F_PATTERN;
++
++		else if (strcmp(f, "!PATTERN") == 0)
++			pkt_dev->flags &= ~F_PATTERN;
++
+ 		else {
+ 			sprintf(pg_result,
+ 				"Flag -:%s:- unknown\nAvailable flags, (prepend ! to un-set flag):\n%s",
+@@ -2623,17 +2632,98 @@ static inline __be16 build_tci(unsigned int id, unsigned int cfi,
+ 	return htons(id | (cfi << 12) | (prio << 13));
+ }
+ 
++/* Max number of digits. The sizeof equals to log base 2^8 (UINT_MAX), multiply
++ * with 3 is a cheap, rounded up conversion to log10
++ */
++#define UINT_MAX_DIGITS (3*sizeof(unsigned long)+1)
++
++/* Fill the buffer up with a pattern
++ * buf - pointer to buffer
++ * bufsize - size of the buffer
++ * start - starting value for the pattern
++ * incomplete - pointer to the offset inside the pattern, or 0 if none
++ *
++ * The pattern is a repetition of " %lu", a series of increasing numbers divided
++ * by space. The value of the number is "start" plus the size of the preceding
++ * space. E.g. if start is 1000, it starts like " 1000 1005 1010".
++ * If the last number doesn't fit, it gets truncated, and the number of leading
++ * characters is saved into incomplete. It can be passed then to the next call
++ * with the next buffer, and the pattern looks contiguous over scattered
++ * buffers.
++ * It returns "start" plus the offset of the byte after the last full
++ * pattern write.
++ */
++static unsigned long pattern_to_packet(char *buf,
++				       int bufsize,
++				       unsigned long start,
++				       unsigned int *incomplete)
++{
++	int len;
++	/* Only used when the pattern doesn't align to the buffer */
++	char temp[UINT_MAX_DIGITS];
++
++	if (*incomplete) {
++		int copylen, offset = *incomplete;
++
++		len = snprintf(temp, sizeof(temp), " %lu", start);
++		copylen = len - *incomplete;
++		if (copylen > bufsize) {
++			/* The continuation of this number couldn't fit here */
++			copylen = bufsize;
++			*incomplete += bufsize;
++		} else {
++			*incomplete = 0;
++			start += len;
++		}
++		memcpy(buf, temp + offset, copylen);
++		bufsize -= copylen;
++		buf += copylen;
 +	}
 +
- 	/*
- 	 * We need to look at the task state flags to figure out,
- 	 * whether the task is exiting. To protect against the do_exit
--- 
-1.9.1
-
++	while (bufsize > 0) {
++		len = snprintf(buf, bufsize, " %lu", start);
++		/* The last number doesn't fit, remember where it was truncated.
++		 */
++		if (len >= bufsize) {
++			/* snprintf always add a trailing zero, but actually we
++			 * need the last digit there
++			 */
++			len = snprintf(temp, sizeof(temp), " %lu", start);
++			memcpy(buf, temp, bufsize);
++			/* If the last number just fit without the trailing
++			 * zero, the next buffer can continue from an increased
++			 * offset.
++			 */
++			if (len == bufsize)
++				start += len;
++			*incomplete = bufsize;
++			return start;
++		}
++		bufsize -= len;
++		start += len;
++		buf += len;
++	}
++	return start;
++}
++
+ static void pktgen_finalize_skb(struct pktgen_dev *pkt_dev, struct sk_buff *skb,
+ 				int datalen)
+ {
+ 	struct timeval timestamp;
+ 	struct pktgen_hdr *pgh;
++	unsigned long offset = 0;
++	unsigned int incomplete = 0;
+ 
+ 	pgh = (struct pktgen_hdr *)skb_put(skb, sizeof(*pgh));
+ 	datalen -= sizeof(*pgh);
+ 
+ 	if (pkt_dev->nfrags <= 0) {
+-		memset(skb_put(skb, datalen), 0, datalen);
++		if (pkt_dev->flags & F_PATTERN)
++			offset = pattern_to_packet(skb_put(skb, datalen),
++						   datalen, offset,
++						   &incomplete);
++		else
++			memset(skb_put(skb, datalen), 0, datalen);
+ 	} else {
+ 		int frags = pkt_dev->nfrags;
+ 		int i, len;
+@@ -2644,7 +2734,12 @@ static void pktgen_finalize_skb(struct pktgen_dev *pkt_dev, struct sk_buff *skb,
+ 			frags = MAX_SKB_FRAGS;
+ 		len = datalen - frags * PAGE_SIZE;
+ 		if (len > 0) {
+-			memset(skb_put(skb, len), 0, len);
++			if (pkt_dev->flags & F_PATTERN)
++				offset = pattern_to_packet(skb_put(skb, len),
++							   len, offset,
++							   &incomplete);
++			else
++				memset(skb_put(skb, len), 0, len);
+ 			datalen = frags * PAGE_SIZE;
+ 		}
+ 
+@@ -2652,17 +2747,28 @@ static void pktgen_finalize_skb(struct pktgen_dev *pkt_dev, struct sk_buff *skb,
+ 		frag_len = (datalen/frags) < PAGE_SIZE ?
+ 			   (datalen/frags) : PAGE_SIZE;
+ 		while (datalen > 0) {
+-			if (unlikely(!pkt_dev->page)) {
++			int fragpage;
++			gfp_t flags = GFP_KERNEL;
++
++			if (pkt_dev->flags & F_PATTERN) {
++				fragpage = i;
++			} else {
++				fragpage = 0;
++				flags |= __GFP_ZERO;
++			}
++
++			if (unlikely(!pkt_dev->pages[fragpage])) {
+ 				int node = numa_node_id();
+ 
+ 				if (pkt_dev->node >= 0 && (pkt_dev->flags & F_NODE))
+ 					node = pkt_dev->node;
+-				pkt_dev->page = alloc_pages_node(node, GFP_KERNEL | __GFP_ZERO, 0);
+-				if (!pkt_dev->page)
++				pkt_dev->pages[fragpage] = alloc_pages_node(node, flags, 0);
++				if (!pkt_dev->pages[fragpage])
+ 					break;
+ 			}
+-			get_page(pkt_dev->page);
+-			skb_frag_set_page(skb, i, pkt_dev->page);
++			get_page(pkt_dev->pages[fragpage]);
++			skb_frag_set_page(skb, i, pkt_dev->pages[fragpage]);
++
+ 			skb_shinfo(skb)->frags[i].page_offset = 0;
+ 			/*last fragment, fill rest of data*/
+ 			if (i == (frags - 1))
+@@ -2671,6 +2777,10 @@ static void pktgen_finalize_skb(struct pktgen_dev *pkt_dev, struct sk_buff *skb,
+ 			else
+ 				skb_frag_size_set(&skb_shinfo(skb)->frags[i], frag_len);
+ 			datalen -= skb_frag_size(&skb_shinfo(skb)->frags[i]);
++			if (pkt_dev->flags & F_PATTERN)
++				offset = pattern_to_packet(skb_frag_address(&skb_shinfo(skb)->frags[i]),
++							   skb_frag_size(&skb_shinfo(skb)->frags[i]),
++							   offset, &incomplete);
+ 			skb->len += skb_frag_size(&skb_shinfo(skb)->frags[i]);
+ 			skb->data_len += skb_frag_size(&skb_shinfo(skb)->frags[i]);
+ 			i++;
+@@ -3685,6 +3795,8 @@ static void _rem_dev_from_if_list(struct pktgen_thread *t,
+ static int pktgen_remove_device(struct pktgen_thread *t,
+ 				struct pktgen_dev *pkt_dev)
+ {
++	int i;
++
+ 	pr_debug("remove_device pkt_dev=%p\n", pkt_dev);
+ 
+ 	if (pkt_dev->running) {
+@@ -3710,8 +3822,9 @@ static int pktgen_remove_device(struct pktgen_thread *t,
+ 	free_SAs(pkt_dev);
+ #endif
+ 	vfree(pkt_dev->flows);
+-	if (pkt_dev->page)
+-		put_page(pkt_dev->page);
++	for (i = 0; i < MAX_SKB_FRAGS; ++i)
++		if (pkt_dev->pages[i])
++			put_page(pkt_dev->pages[i]);
+ 	kfree(pkt_dev);
+ 	return 0;
+ }
