@@ -1,98 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753048AbaFXLyy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 07:54:54 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:45537 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752392AbaFXLyv (ORCPT
+	id S1753253AbaFXL6I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 07:58:08 -0400
+Received: from mail.fireflyinternet.com ([87.106.93.118]:50421 "EHLO
+	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752392AbaFXL6G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 07:54:51 -0400
-Message-ID: <1403610880.26821.10.camel@hornet>
-Subject: Re: [PATCH v7 1/2] video: ARM CLCD: Add DT support
-From: Pawel Moll <pawel.moll@arm.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Mark Rutland <Mark.Rutland@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Tue, 24 Jun 2014 12:54:40 +0100
-In-Reply-To: <CAL_JsqLQTT5N8D_GTDd5YVgr2SSCXtC6EcRQxW2=_-J8Wmsf0g@mail.gmail.com>
-References: <1403018494-10264-1-git-send-email-pawel.moll@arm.com>
-	 <20140620170901.GA12059@leverpostej> <1403532837.3804.29.camel@hornet>
-	 <CAL_Jsq+6SveWhzWPrtziTJ-tDOFaJV4sXO+r_CEhAZf=tQE6FA@mail.gmail.com>
-	 <1403539186.3804.46.camel@hornet>
-	 <CAL_JsqLQTT5N8D_GTDd5YVgr2SSCXtC6EcRQxW2=_-J8Wmsf0g@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 24 Jun 2014 07:58:06 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.65.138;
+Date: Tue, 24 Jun 2014 12:57:53 +0100
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: Jani Nikula <jani.nikula@linux.intel.com>
+Cc: Thomas Meyer <thomas@m3y3r.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [Intel-gfx] Linux 3.16-rc2
+Message-ID: <20140624115753.GD17674@nuc-i3427.alporthouse.com>
+Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
+	Jani Nikula <jani.nikula@linux.intel.com>,
+	Thomas Meyer <thomas@m3y3r.de>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	"intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <CA+55aFxdAhp-esuGiY4VEugiiwcMJgg1r6fPiR9Fb+HOz_5tLg@mail.gmail.com>
+ <1403564870.3091.6.camel@localhost.localdomain>
+ <871tuea7nz.fsf@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <871tuea7nz.fsf@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-06-23 at 18:56 +0100, Rob Herring wrote:
-> On Mon, Jun 23, 2014 at 10:59 AM, Pawel Moll <pawel.moll@arm.com> wrote:
-> > On Mon, 2014-06-23 at 16:43 +0100, Rob Herring wrote:
-> >> On Mon, Jun 23, 2014 at 9:13 AM, Pawel Moll <pawel.moll@arm.com> wrote:
-> >> > On Fri, 2014-06-20 at 18:09 +0100, Mark Rutland wrote:
+On Tue, Jun 24, 2014 at 02:06:24PM +0300, Jani Nikula wrote:
+> On Tue, 24 Jun 2014, Thomas Meyer <thomas@m3y3r.de> wrote:
+> > the i915 driver is still broken in 3.16-rc2. Resume from ram crashes the
+> > X server.
 > 
-> >> >> > +- max-memory-bandwidth: maximum bandwidth in bytes per second that the
-> >> >> > +   cell's memory interface can handle
-> >> >>
-> >> >> When should I set this, given it is optional?
-> >> >
-> >> > When there is a (significant) limitation of the bandwidth available for
-> >> > the cell's memory interface. One will either be told by the soc guys or
-> >> > will figure it out in the hard way, as we did :-(
-> >>
-> >> What are you going to do with this information? b/w is a function of
-> >> screen size and pixel depth. Are you going to refuse certain configs
-> >> based on that? Seems like someone doing their own modes should know
-> >> what they are doing and the limitations.
-> >>
-> >> Again, drop it until there is a defined need for this.
-> >
-> > Yes, there is. Use case: PL111 is wired up to a HDMI formatter, which
-> > will take everything up to 1080p. This is what a DRM driver (what/if
-> > it's ready) will get from the encoder driver (and rightly so). But the
-> > chip interconnect limitations is make the chip being able to get 480p at
-> > 60Hz tops.
-> >
-> > Or do you want me to add a subnode with timings for all achievable modes
-> > instead?
+> This is not new to 3.16-rc2; apparently we've had it since v3.15-rc4
+> [1]. Also related [2].
 > 
-> I want this solved in a generic way and not something pl111 specific.
-> If this is already defined then use it. If not, I would drop this for
-> now and get a pl111 binding in place finally.
+> Chris, any fresh ideas?
 
-Hardware limitation on bandwidth available to a memory interface is
-definitely not a PL111 specific phenomenon, and I don't know how can be
-it described in a more generic way than a number of bytes per second.
-Grepping through existing bindings, it turned out that it's not the
-first time the problem is being solved. "ti,am33x-tilcdc" defines this:
+Nope. The bug is https://bugs.freedesktop.org/show_bug.cgi?id=76554
+everything we know and have tried is there. Which is not much more than
+at time of the original incarnation:
 
- - max-bandwidth: The maximum pixels per second that the memory
-   interface / lcd controller combination can sustain
- 
-Don't know that hardware, but in my case "pixels" doesn't cut. On
-V2P-CA9 I have a choice of 640x480 32bpp or 1024x768 16bpp, 1024x768
-32bpp won't work. The driver must know this somehow and you can't work
-out the memory color model from display timings. So, to summarize - this
-property is here to stay, or the binding is useless from my perspective.
+commit 50aa253d820ad4577e2231202f2c8fd89f9dc4e6
+Author: Keith Packard <keithp@keithp.com>
+Date:   Tue Oct 14 17:20:35 2008 -0700
 
-I'll post v9 in a second, replacing the pl11x-specific framebuffer
-property with the "memory-region" phandle (I don't see how "dma-regions"
-would fit here), especially as the "reserved-memory" examples cites a
-use case identical to mine. Fortunately all I had to do code-wise was
-reverting a single function to a version from September 2013 and
-changing a compatible string.
+    i915: Fix up ring initialization to cover G45 oddities
+    
+    G45 appears quite sensitive to ring initialization register writes,
+    sometimes leaving the HEAD register with the START register contents. Check
+    to make sure HEAD is reset correctly when START is written, and fix it up,
+    screaming loudly.
+-Chris
 
-Pawel
-
+-- 
+Chris Wilson, Intel Open Source Technology Centre
