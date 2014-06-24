@@ -1,75 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754938AbaFXSbF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 14:31:05 -0400
-Received: from mail-by2lp0241.outbound.protection.outlook.com ([207.46.163.241]:25531
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753296AbaFXSbD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 14:31:03 -0400
-From: Varun Sethi <Varun.Sethi@freescale.com>
-To: <iommu@lists.linux-foundation.org>, <joro@8bytes.org>,
-        <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <alex.williamson@redhat.com>
-CC: Varun Sethi <Varun.Sethi@freescale.com>
-Subject: [PATCH 3/3] iommu/fsl: Fix the error condition during iommu group
-Date: Tue, 24 Jun 2014 19:27:17 +0530
-Message-ID: <1403618237-26248-4-git-send-email-Varun.Sethi@freescale.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1403618237-26248-1-git-send-email-Varun.Sethi@freescale.com>
-References: <1403618237-26248-1-git-send-email-Varun.Sethi@freescale.com>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(189002)(104016002)(95666004)(85306003)(76176999)(26826002)(50986999)(102836001)(105606002)(106466001)(97736001)(84676001)(77156001)(50226001)(81342001)(44976005)(89996001)(19580395003)(83322001)(19580405001)(79102001)(6806004)(68736004)(21056001)(85852003)(83072002)(77982001)(4396001)(86362001)(99396002)(2201001)(92726001)(92566001)(93916002)(20776003)(87936001)(87286001)(47776003)(88136002)(46102001)(50466002)(74502001)(36756003)(64706001)(80022001)(104166001)(74662001)(48376002)(81542001)(76482001)(62966002)(31966008)(2101003);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR03MB086;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+	id S1755014AbaFXScc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 14:32:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33291 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751307AbaFXSc3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 14:32:29 -0400
+Date: Tue, 24 Jun 2014 20:30:24 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        linux-api@vger.kernel.org, x86@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
+        linux-arch@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: Re: [PATCH v7 3/9] seccomp: introduce writer locking
+Message-ID: <20140624183024.GA1258@redhat.com>
+References: <1403560693-21809-1-git-send-email-keescook@chromium.org> <1403560693-21809-4-git-send-email-keescook@chromium.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
-X-Forefront-PRVS: 02524402D6
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Varun.Sethi@freescale.com; 
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403560693-21809-4-git-send-email-keescook@chromium.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Earlier PTR_ERR was being returned even if group was set to null.
-Now, we explicitly set an ERR_PTR value in case the group  pointer is
-NULL.
+I am puzzled by the usage of smp_load_acquire(),
 
-Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
----
- drivers/iommu/fsl_pamu_domain.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+On 06/23, Kees Cook wrote:
+>
+>  static u32 seccomp_run_filters(int syscall)
+>  {
+> -	struct seccomp_filter *f;
+> +	struct seccomp_filter *f = smp_load_acquire(&current->seccomp.filter);
+>  	struct seccomp_data sd;
+>  	u32 ret = SECCOMP_RET_ALLOW;
+>  
+>  	/* Ensure unexpected behavior doesn't result in failing open. */
+> -	if (WARN_ON(current->seccomp.filter == NULL))
+> +	if (WARN_ON(f == NULL))
+>  		return SECCOMP_RET_KILL;
+>  
+>  	populate_seccomp_data(&sd);
+> @@ -186,9 +186,8 @@ static u32 seccomp_run_filters(int syscall)
+>  	 * All filters in the list are evaluated and the lowest BPF return
+>  	 * value always takes priority (ignoring the DATA).
+>  	 */
+> -	for (f = current->seccomp.filter; f; f = f->prev) {
+> +	for (; f; f = smp_load_acquire(&f->prev)) {
+>  		u32 cur_ret = SK_RUN_FILTER(f->prog, (void *)&sd);
+> -
+>  		if ((cur_ret & SECCOMP_RET_ACTION) < (ret & SECCOMP_RET_ACTION))
+>  			ret = cur_ret;
 
-diff --git a/drivers/iommu/fsl_pamu_domain.c b/drivers/iommu/fsl_pamu_domain.c
-index 54060d1..af47648 100644
---- a/drivers/iommu/fsl_pamu_domain.c
-+++ b/drivers/iommu/fsl_pamu_domain.c
-@@ -1037,12 +1037,15 @@ root_bus:
- 			group = get_shared_pci_device_group(pdev);
- 	}
- 
-+	if (!group)
-+		group = ERR_PTR(-ENODEV);
-+
- 	return group;
- }
- 
- static int fsl_pamu_add_device(struct device *dev)
- {
--	struct iommu_group *group = NULL;
-+	struct iommu_group *group = ERR_PTR(-ENODEV);
- 	struct pci_dev *pdev;
- 	const u32 *prop;
- 	int ret, len;
-@@ -1065,7 +1068,7 @@ static int fsl_pamu_add_device(struct device *dev)
- 			group = get_device_iommu_group(dev);
- 	}
- 
--	if (!group || IS_ERR(group))
-+	if (IS_ERR(group))
- 		return PTR_ERR(group);
- 
- 	ret = iommu_group_add_device(group, dev);
--- 
-1.7.9.5
+OK, in this case the 1st one is probably fine, altgough it is not
+clear to me why it is better than read_barrier_depends().
+
+But why do we need a 2nd one inside the loop? And if we actually need
+it (I don't think so) then why it is safe to use f->prog without
+load_acquire ?
+
+>  void get_seccomp_filter(struct task_struct *tsk)
+>  {
+> -	struct seccomp_filter *orig = tsk->seccomp.filter;
+> +	struct seccomp_filter *orig = smp_load_acquire(&tsk->seccomp.filter);
+>  	if (!orig)
+>  		return;
+
+This one looks unneeded.
+
+First of all, afaics atomic_inc() should work correctly without any barriers,
+otherwise it is buggy. But even this doesn't matter.
+
+With this changes get_seccomp_filter() must be called under ->siglock, it can't
+race with add-filter and thus tsk->seccomp.filter should be stable.
+
+>  	/* Reference count is bounded by the number of total processes. */
+> @@ -361,7 +364,7 @@ void put_seccomp_filter(struct task_struct *tsk)
+>  	/* Clean up single-reference branches iteratively. */
+>  	while (orig && atomic_dec_and_test(&orig->usage)) {
+>  		struct seccomp_filter *freeme = orig;
+> -		orig = orig->prev;
+> +		orig = smp_load_acquire(&orig->prev);
+>  		seccomp_filter_free(freeme);
+>  	}
+
+This one looks unneeded too. And note that this patch does not add
+smp_load_acquire() to read tsk->seccomp.filter.
+
+atomic_dec_and_test() adds mb(), we do not need more barriers to access
+->prev ?
+
+Oleg.
 
