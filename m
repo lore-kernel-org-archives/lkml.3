@@ -1,59 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751579AbaFXFGI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 01:06:08 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:54068 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750712AbaFXFGF (ORCPT
+	id S1751210AbaFXFYx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 01:24:53 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:37751 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750710AbaFXFYw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 01:06:05 -0400
-Message-ID: <53A90735.7050506@ti.com>
-Date: Tue, 24 Jun 2014 10:35:57 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 24 Jun 2014 01:24:52 -0400
+X-IronPort-AV: E=Sophos;i="5.01,535,1400018400"; 
+   d="scan'208";a="81731191"
+Date: Tue, 24 Jun 2014 07:24:43 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Joe Perches <joe@perches.com>
+cc: Julian Calaby <julian.calaby@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/22] Add and use pci_zalloc_consistent
+In-Reply-To: <1403567322.20657.14.camel@joe-AO725>
+Message-ID: <alpine.DEB.2.10.1406240714220.2659@hadrien>
+References: <cover.1403530604.git.joe@perches.com>  <20140623172512.GA1390@garbanzo.do-not-panic.com>  <1403550809.15811.13.camel@joe-AO725>  <CAGRGNgVD2f0S-v8YZ-qABEhDJAwk5pp71FU9uLR8aSZ+DhABjg@mail.gmail.com> <1403567322.20657.14.camel@joe-AO725>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Paul Walmsley <paul@pwsan.com>
-CC: Roger Quadros <rogerq@ti.com>, <tony@atomide.com>, <rnayak@ti.com>,
-        <nm@ti.com>, <kishon@ti.com>, <george.cherian@ti.com>, <balbi@ti.com>,
-        <balajitk@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2] ARM: DRA7: hwmod: fixes for 3.16
-References: <1403093816-10960-1-git-send-email-rogerq@ti.com> <alpine.DEB.2.02.1406230450460.27636@utopia.booyaka.com> <53A83DAC.6050504@ti.com> <alpine.DEB.2.02.1406231634210.29849@utopia.booyaka.com>
-In-Reply-To: <alpine.DEB.2.02.1406231634210.29849@utopia.booyaka.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 23 June 2014 10:04 PM, Paul Walmsley wrote:
-> On Mon, 23 Jun 2014, Sekhar Nori wrote:
-> 
->> On Monday 23 June 2014 10:27 AM, Paul Walmsley wrote:
->>> Hi Roger
->>>
->>> On Wed, 18 Jun 2014, Roger Quadros wrote:
->>>
->>>> These patches add the missing OCP2SCP3 module and fixup the SATA hwmod
->>>> for DRA7 SoC. Both patches are tested on 3.16-rc1.
->>>
->>> Could you please post a quick serial capture of a boot log for these 
->>> patches, as Felipe has done for other patches?
->>
->> Roger is OOO so posting the logs on his behalf.
->>
->> $ git log -3
->> 3e0ca738 4 minutes ago  (HEAD) ARM: DRA7: hwmod: Add OCP2SCP3 module
->> 9961b81 4 minutes ago  ARM: DRA7: hwmod: Fixup SATA hwmod
->> 7171511 7 days ago  (v3.16-rc1, linus-git/master) Linux 3.16-rc1
->>
->> Attached is the minicom capture.
-> 
-> Thanks, so can I add your Tested-by: ?
 
-Sure Paul.
 
-Tested-by: Sekhar Nori <nsekhar@ti.com>
+On Mon, 23 Jun 2014, Joe Perches wrote:
 
-Thanks,
-Sekhar
+> (Adding Julia Lawall and removing almost all other cc's)
+>
+> On Tue, 2014-06-24 at 09:27 +1000, Julian Calaby wrote:
+> > Hi Joe,
+>
+> Hello Julian.
+>
+> > > $ cat ./scripts/coccinelle/api/alloc/pci_zalloc_consistent.cocci
+> > > ///
+> > > /// Use pci_zalloc_consistent rather than
+> > > ///     pci_alloc_consistent followed by memset with 0
+> > > ///
+> > > /// This considers some simple cases that are common and easy to validate
+> > > /// Note in particular that there are no ...s in the rule, so all of the
+> > > /// matched code has to be contiguous
+> > > ///
+> > > /// Blatantly cribbed from: scripts/coccinelle/api/alloc/kzalloc-simple.cocci
+> > >
+> > > @@
+> > > type T, T2;
+> > > expression x;
+> > > expression E1,E2,E3;
+> > > statement S;
+> > > @@
+> > >
+> > > - x = (T)pci_alloc_consistent(E1,E2,E3);
+> > > + x = pci_zalloc_consistent(E1,E2,E3);
+> > >   if ((x==NULL) || ...) S
+> > > - memset((T2)x,0,E2);
+> >
+> > I don't know much about SmPL, but wouldn't having that if statement
+> > there reduce your matches?
+>
+> No, not really.
+>
+> Almost none of the pci_alloc_consistent calls
+> do not have a test for failure immediately after
+> them.
+
+Do not or do?
+
+The advantage of the if is that you are sure that nothing strange happens
+to x between alloc and memset.  But a problem can be that sometimes people
+allocate two things, and then do error checking for both of them.  Then
+you rule would not match.  Or the set the return variable to an error code
+before doing the check rather than in the if branch.
+
+You could put the following between the malloc and the memset in stead of
+the if.
+
+... when != ( f(...,x,...) | <+...x...+> = E3 )
+    when != ( while(...) S | for(...;...;...) S )
+
+This has given reasonable results for kmalloc and memset.
+
+julia
+
+> Coccinelle is a very cool code transformation tool,
+> quite useful for these sorts of patch conversions.
+>
+> http://coccinelle.lip6.fr/documentation.php
+>
+>
+>
