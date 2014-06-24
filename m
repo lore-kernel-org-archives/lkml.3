@@ -1,213 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932638AbaFXQPO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:15:14 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:46974 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754912AbaFXQPK (ORCPT
+	id S965059AbaFXQPn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:15:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33201 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756049AbaFXPza (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 12:15:10 -0400
-From: Maksym Planeta <mcsim.planeta@gmail.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Thomas Knauth <thomas.knauth@gmx.de>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Maksym Planeta <mcsim.planeta@gmail.com>
-Subject: [PATCH] sysctl: Add a feature to drop caches selectively
-Date: Tue, 24 Jun 2014 18:10:13 +0200
-Message-Id: <1403626213-7691-1-git-send-email-mcsim.planeta@gmail.com>
+	Tue, 24 Jun 2014 11:55:30 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Thomas Glanzmann <thomas@glanzmann.de>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.15 02/61] target: Fix NULL pointer dereference for XCOPY in target_put_sess_cmd
+Date: Tue, 24 Jun 2014 11:50:45 -0400
+Message-Id: <20140624154952.879386077@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
+In-Reply-To: <20140624154952.751713761@linuxfoundation.org>
+References: <20140624154952.751713761@linuxfoundation.org>
+User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To clean the page cache one can use /proc/sys/vm/drop_caches. But this
-drops the whole page cache. In contrast to that sdrop_caches enables
-ability to drop the page cache selectively by path string.
+3.15-stable review patch.  If anyone has any objections, please let me know.
 
-Suggested-by: Thomas Knauth <thomas.knauth@gmx.de>
-Signed-off-by: Maksym Planeta <mcsim.planeta@gmail.com>
+------------------
+
+From: Nicholas Bellinger <nab@linux-iscsi.org>
+
+commit 0ed6e189e3f6ac3a25383ed5cc8b0ac24c9b97b7 upstream.
+
+This patch fixes a NULL pointer dereference regression bug that was
+introduced with:
+
+commit 1e1110c43b1cda9fe77fc4a04835e460550e6b3c
+Author: Mikulas Patocka <mpatocka@redhat.com>
+Date:   Sat May 17 06:49:22 2014 -0400
+
+    target: fix memory leak on XCOPY
+
+Now that target_put_sess_cmd() -> kref_put_spinlock_irqsave() is
+called with a valid se_cmd->cmd_kref, a NULL pointer dereference
+is triggered because the XCOPY passthrough commands don't have
+an associated se_session pointer.
+
+To address this bug, go ahead and checking for a NULL se_sess pointer
+within target_put_sess_cmd(), and call se_cmd->se_tfo->release_cmd()
+to release the XCOPY's xcopy_pt_cmd memory.
+
+Reported-by: Thomas Glanzmann <thomas@glanzmann.de>
+Cc: Thomas Glanzmann <thomas@glanzmann.de>
+Cc: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- Documentation/sysctl/vm.txt |  15 ++++++
- fs/Makefile                 |   2 +-
- fs/sdrop_caches.c           | 124 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 140 insertions(+), 1 deletion(-)
- create mode 100644 fs/sdrop_caches.c
+ drivers/target/target_core_transport.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
-index bd4b34c..faad01d 100644
---- a/Documentation/sysctl/vm.txt
-+++ b/Documentation/sysctl/vm.txt
-@@ -28,6 +28,7 @@ Currently, these files are in /proc/sys/vm:
- - dirty_ratio
- - dirty_writeback_centisecs
- - drop_caches
-+- sdrop_caches
- - extfrag_threshold
- - hugepages_treat_as_movable
- - hugetlb_shm_group
-@@ -211,6 +212,20 @@ with your system.  To disable them, echo 4 (bit 3) into drop_caches.
- 
- ==============================================================
- 
-+sdrop_caches
-+
-+Writing to this will cause the kernel to drop clean caches starting from
-+specified path.
-+
-+To free pagecache of a file:
-+	echo /home/user/file > /proc/sys/vm/sdrop_caches
-+To free pagecache of a directory and all files in it.
-+	echo /home/user/directly > /proc/sys/vm/sdrop_caches
-+
-+Restrictions are the same as for drop_caches.
-+
-+==============================================================
-+
- extfrag_threshold
- 
- This parameter affects whether the kernel will compact memory or direct
-diff --git a/fs/Makefile b/fs/Makefile
-index 4030cbf..366c7b9 100644
---- a/fs/Makefile
-+++ b/fs/Makefile
-@@ -44,7 +44,7 @@ obj-$(CONFIG_FS_MBCACHE)	+= mbcache.o
- obj-$(CONFIG_FS_POSIX_ACL)	+= posix_acl.o
- obj-$(CONFIG_NFS_COMMON)	+= nfs_common/
- obj-$(CONFIG_COREDUMP)		+= coredump.o
--obj-$(CONFIG_SYSCTL)		+= drop_caches.o
-+obj-$(CONFIG_SYSCTL)		+= drop_caches.o sdrop_caches.o
- 
- obj-$(CONFIG_FHANDLE)		+= fhandle.o
- 
-diff --git a/fs/sdrop_caches.c b/fs/sdrop_caches.c
-new file mode 100644
-index 0000000..c193655
---- /dev/null
-+++ b/fs/sdrop_caches.c
-@@ -0,0 +1,124 @@
-+/*
-+ * Implement the manual selective drop pagecache function
-+ */
-+
-+#include <linux/module.h>
-+
-+
-+#include <linux/kernel.h>
-+#include <linux/proc_fs.h>
-+#include <linux/string.h>
-+#include <linux/vmalloc.h>
-+#include <linux/uaccess.h>
-+#include <linux/mm.h>
-+#include <linux/fs.h>
-+#include <linux/writeback.h>
-+#include <linux/sysctl.h>
-+#include <linux/gfp.h>
-+#include <linux/limits.h>
-+#include <linux/namei.h>
-+
-+static void clean_mapping(struct dentry *dentry)
-+{
-+	struct inode *inode = dentry->d_inode;
-+
-+	if (!inode)
-+		return;
-+
-+	if ((inode->i_state & (I_FREEING|I_WILL_FREE|I_NEW)) ||
-+	    (inode->i_mapping->nrpages == 0)) {
-+		return;
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -2407,6 +2407,10 @@ static void target_release_cmd_kref(stru
+  */
+ int target_put_sess_cmd(struct se_session *se_sess, struct se_cmd *se_cmd)
+ {
++	if (!se_sess) {
++		se_cmd->se_tfo->release_cmd(se_cmd);
++		return 1;
 +	}
-+
-+	invalidate_mapping_pages(inode->i_mapping, 0, -1);
-+}
-+
-+static void clean_all_dentries_locked(struct dentry *dentry)
-+{
-+	struct dentry *child;
-+
-+	list_for_each_entry(child, &dentry->d_subdirs, d_u.d_child) {
-+		clean_all_dentries_locked(child);
-+	}
-+
-+	clean_mapping(dentry);
-+}
-+
-+static void clean_all_dentries(struct dentry *dentry)
-+{
-+	spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
-+	clean_all_dentries_locked(dentry);
-+	spin_unlock(&dentry->d_lock);
-+}
-+
-+static int drop_pagecache(const char * __user filename)
-+{
-+	unsigned int lookup_flags = LOOKUP_FOLLOW;
-+	struct path path;
-+	int error;
-+
-+retry:
-+	error = user_path_at(AT_FDCWD, filename, lookup_flags, &path);
-+	if (!error) {
-+		/* clean */
-+		clean_all_dentries(path.dentry);
-+	}
-+	if (retry_estale(error, lookup_flags)) {
-+		lookup_flags |= LOOKUP_REVAL;
-+		goto retry;
-+	}
-+	return error;
-+}
-+
-+static int sdrop_ctl_handler(struct ctl_table *table, int write,
-+			     void __user *buffer, size_t *lenp, loff_t *ppos)
-+{
-+	char __user *pathname = buffer + *lenp - 1;
-+
-+	put_user('\0', pathname);
-+
-+	if (!write)
-+		return 0;
-+
-+	return drop_pagecache(buffer);
-+}
-+
-+static struct ctl_path vm_path[] = { { .procname = "vm", }, { } };
-+static struct ctl_table sdrop_ctl_table[] = {
-+	{
-+		.procname = "sdrop_caches",
-+		.mode = 0644,
-+		.proc_handler = sdrop_ctl_handler,
-+	},
-+	{ }
-+};
-+
-+static struct ctl_table_header *sdrop_proc_entry;
-+
-+/* Init function called on module entry */
-+int sdrop_init(void)
-+{
-+	int ret = 0;
-+
-+	sdrop_proc_entry = register_sysctl_paths(vm_path, sdrop_ctl_table);
-+
-+	if (sdrop_proc_entry == NULL) {
-+		ret = -ENOMEM;
-+		pr_err("sdrop_caches: Couldn't create proc entry\n");
-+	}
-+
-+	return ret;
-+}
-+
-+/* Cleanup function called on module exit */
-+void sdrop_cleanup(void)
-+{
-+	unregister_sysctl_table(sdrop_proc_entry);
-+}
-+
-+module_init(sdrop_init);
-+module_exit(sdrop_cleanup);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("Selective pagecache drop module");
-+MODULE_AUTHOR("Maksym Planeta");
--- 
-2.0.0
+ 	return kref_put_spinlock_irqsave(&se_cmd->cmd_kref, target_release_cmd_kref,
+ 			&se_sess->sess_cmd_lock);
+ }
+
 
