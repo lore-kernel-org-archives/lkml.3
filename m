@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752049AbaFXWZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 18:25:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37328 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750985AbaFXWZZ (ORCPT
+	id S1752435AbaFXWap (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 18:30:45 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:51024 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211AbaFXWan (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 18:25:25 -0400
-Date: Tue, 24 Jun 2014 15:25:24 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH] mm/vmalloc.c: add a schedule point to vmalloc()
-Message-Id: <20140624152524.f65d62a08538a63b3dc96838@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.02.1406241517560.29176@chino.kir.corp.google.com>
-References: <1403618407.3796.15.camel@edumazet-glaptop2.roam.corp.google.com>
-	<alpine.DEB.2.02.1406241517560.29176@chino.kir.corp.google.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 24 Jun 2014 18:30:43 -0400
+Date: Tue, 24 Jun 2014 15:30:41 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [patch] mm, vmalloc: constify allocation mask
+Message-ID: <alpine.DEB.2.02.1406241527030.29176@chino.kir.corp.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Jun 2014 15:18:57 -0700 (PDT) David Rientjes <rientjes@google.com> wrote:
+tmp_mask in the __vmalloc_area_node() iteration never changes so it can be 
+moved into function scope and marked with const.  This causes the movl and 
+orl to only be done once per call rather than area->nr_pages times.
 
-> On Tue, 24 Jun 2014, Eric Dumazet wrote:
-> 
-> > diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-> > index f64632b67196..05a145ed1332 100644
-> > --- a/mm/vmalloc.c
-> > +++ b/mm/vmalloc.c
-> > @@ -1602,6 +1602,7 @@ static void *__vmalloc_area_node(struct vm_struct *area, gfp_t gfp_mask,
-> >  			goto fail;
-> >  		}
-> >  		area->pages[i] = page;
-> > +		cond_resched();
-> >  	}
-> >  
-> >  	if (map_vm_area(area, prot, &pages))
-> 
-> Now that we pass the gfp mask into vmalloc() and all allocations aren't 
-> inherently GFP_KERNEL, I think this should only be done for (gfp_mask & 
-> __GFP_WAIT).
+nested_gfp can also be marked const.
 
-spose so.
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ mm/vmalloc.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/mm/vmalloc.c~mm-vmallocc-add-a-schedule-point-to-vmalloc-fix
-+++ a/mm/vmalloc.c
-@@ -1602,7 +1602,8 @@ static void *__vmalloc_area_node(struct
- 			goto fail;
- 		}
- 		area->pages[i] = page;
--		cond_resched();
-+		if (gfp_mask & __GFP_WAIT)
-+			cond_resched();
- 	}
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -1566,7 +1566,8 @@ static void *__vmalloc_area_node(struct vm_struct *area, gfp_t gfp_mask,
+ 	const int order = 0;
+ 	struct page **pages;
+ 	unsigned int nr_pages, array_size, i;
+-	gfp_t nested_gfp = (gfp_mask & GFP_RECLAIM_MASK) | __GFP_ZERO;
++	const gfp_t nested_gfp = (gfp_mask & GFP_RECLAIM_MASK) | __GFP_ZERO;
++	const gfp_t alloc_mask = gfp_mask | __GFP_NOWARN;
  
- 	if (map_vm_area(area, prot, &pages))
-
-
+ 	nr_pages = get_vm_area_size(area) >> PAGE_SHIFT;
+ 	array_size = (nr_pages * sizeof(struct page *));
+@@ -1589,12 +1590,11 @@ static void *__vmalloc_area_node(struct vm_struct *area, gfp_t gfp_mask,
+ 
+ 	for (i = 0; i < area->nr_pages; i++) {
+ 		struct page *page;
+-		gfp_t tmp_mask = gfp_mask | __GFP_NOWARN;
+ 
+ 		if (node == NUMA_NO_NODE)
+-			page = alloc_page(tmp_mask);
++			page = alloc_page(alloc_mask);
+ 		else
+-			page = alloc_pages_node(node, tmp_mask, order);
++			page = alloc_pages_node(node, alloc_mask, order);
+ 
+ 		if (unlikely(!page)) {
+ 			/* Successfully allocated i pages, free them in __vunmap() */
