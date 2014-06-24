@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753579AbaFXWj5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 18:39:57 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:36733 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752895AbaFXWjy (ORCPT
+	id S1753933AbaFXWkI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 18:40:08 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:33052 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753799AbaFXWkE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 18:39:54 -0400
+	Tue, 24 Jun 2014 18:40:04 -0400
 From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 To: tiwai@suse.de, chunkeey@googlemail.com, leedom@chelsio.com,
         cocci@systeme.lip6.fr
 Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         gregkh@linuxfoundation.org, "Luis R. Rodriguez" <mcgrof@suse.com>,
-        Tony Olech <tony.olech@elandigitalsystems.com>,
-        linux-mmc@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: [PATCH 1/3] mmc: vub300: use request_firmware_direct() for pseudo code
-Date: Tue, 24 Jun 2014 15:39:41 -0700
-Message-Id: <1403649583-12707-2-git-send-email-mcgrof@do-not-panic.com>
+        linux-wireless@vger.kernel.org
+Subject: [PATCH 3/3] p54: use request_firmware_direct() for optional EEPROM override
+Date: Tue, 24 Jun 2014 15:39:43 -0700
+Message-Id: <1403649583-12707-4-git-send-email-mcgrof@do-not-panic.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403649583-12707-1-git-send-email-mcgrof@do-not-panic.com>
 References: <1403649583-12707-1-git-send-email-mcgrof@do-not-panic.com>
@@ -26,10 +25,12 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Luis R. Rodriguez" <mcgrof@suse.com>
 
-vub300 uses the request_firmware() API for downloading
-pseudo code twice and if this fails its not considered fatal.
-Avoid letting the request linger 60 seconds because of udev if
-one of the requests fails by explicitly skipping the udev helper.
+The p54 driver uses request_firmware() twice, once for actual
+firmware and then another time for an optional user overide on
+EEPROM, 3826.eeprom. The custom EEPROM  is optional but if not
+present we'll introduce an extra lag of 60 seconds with udev
+present. Annotate we don't want udev nonsense here to avoid
+the lag in case its not present.
 
 This was found with the following SmPL patch.
 
@@ -54,35 +55,28 @@ statement S;
 		...
 	}
 
-Cc: Tony Olech <tony.olech@elandigitalsystems.com>
-Cc: linux-mmc@vger.kernel.org
-Cc: linux-usb@vger.kernel.org
 Cc: Takashi Iwai <tiwai@suse.de>
+Cc: Christian Lamparter <chunkeey@googlemail.com>
+Cc: linux-wireless@vger.kernel.org
 Cc: cocci@systeme.lip6.fr
 Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
 ---
- drivers/mmc/host/vub300.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/net/wireless/p54/p54spi.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/mmc/host/vub300.c b/drivers/mmc/host/vub300.c
-index 4262296..15eeaff 100644
---- a/drivers/mmc/host/vub300.c
-+++ b/drivers/mmc/host/vub300.c
-@@ -1378,11 +1378,12 @@ static void download_offload_pseudocode(struct vub300_mmc_host *vub300)
- 	snprintf(vub300->vub_name + l, sizeof(vub300->vub_name) - l, ".bin");
- 	dev_info(&vub300->udev->dev, "requesting offload firmware %s\n",
- 		 vub300->vub_name);
--	retval = request_firmware(&fw, vub300->vub_name, &card->dev);
-+	retval = request_firmware_direct(&fw, vub300->vub_name, &card->dev);
- 	if (retval < 0) {
- 		strncpy(vub300->vub_name, "vub_default.bin",
- 			sizeof(vub300->vub_name));
--		retval = request_firmware(&fw, vub300->vub_name, &card->dev);
-+		retval = request_firmware_direct(&fw, vub300->vub_name,
-+						 &card->dev);
- 		if (retval < 0) {
- 			strncpy(vub300->vub_name,
- 				"no SDIO offload firmware found",
+diff --git a/drivers/net/wireless/p54/p54spi.c b/drivers/net/wireless/p54/p54spi.c
+index de15171..63de5ee 100644
+--- a/drivers/net/wireless/p54/p54spi.c
++++ b/drivers/net/wireless/p54/p54spi.c
+@@ -193,7 +193,7 @@ static int p54spi_request_eeprom(struct ieee80211_hw *dev)
+ 	/* allow users to customize their eeprom.
+ 	 */
+ 
+-	ret = request_firmware(&eeprom, "3826.eeprom", &priv->spi->dev);
++	ret = request_firmware_direct(&eeprom, "3826.eeprom", &priv->spi->dev);
+ 	if (ret < 0) {
+ #ifdef CONFIG_P54_SPI_DEFAULT_EEPROM
+ 		dev_info(&priv->spi->dev, "loading default eeprom...\n");
 -- 
 2.0.0
 
