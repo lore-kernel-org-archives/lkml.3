@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753871AbaFXAjn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 20:39:43 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:33995 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753193AbaFXAjm (ORCPT
+	id S1754021AbaFXApn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 20:45:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54327 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753318AbaFXApm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 20:39:42 -0400
-Date: Mon, 23 Jun 2014 17:39:34 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Dave Hansen <dave.hansen@intel.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, oleg@redhat.com, ak@linux.intel.com, cl@gentwo.org,
-        umgwanakikbuti@gmail.com
-Subject: Re: [PATCH tip/core/rcu] Reduce overhead of cond_resched() checks
- for RCU
-Message-ID: <20140624003934.GR4603@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140621025958.GA7185@linux.vnet.ibm.com>
- <53A85BF9.7030006@intel.com>
- <53A8611F.1000804@intel.com>
- <20140623180945.GL4603@linux.vnet.ibm.com>
- <53A8B884.6000600@intel.com>
- <20140624001519.GO4603@linux.vnet.ibm.com>
- <53A8C44E.7050000@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53A8C44E.7050000@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14062400-3532-0000-0000-000002ACA683
+	Mon, 23 Jun 2014 20:45:42 -0400
+Date: Mon, 23 Jun 2014 17:45:33 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Luis R. Rodriguez" <mcgrof@suse.com>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, gregkh@linuxfoundation.org,
+        hpa@linux.intel.com, linux-kernel@vger.kernel.org,
+        Andrew Lunn <andrew@lunn.ch>, Stephen Warren <swarren@wwwdotorg.org>,
+        Michal Hocko <mhocko@suse.cz>, Petr Mladek <pmladek@suse.cz>,
+        Joe Perches <joe@perches.com>, Arun KS <arunks.linux@gmail.com>,
+        Kees Cook <keescook@chromium.org>, Davidlohr Bueso <davidlohr@hp.com>,
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [PATCH v8 4/4] printk: allow increasing the ring buffer
+ depending on the number of CPUs
+Message-Id: <20140623174533.88663e64.akpm@linux-foundation.org>
+In-Reply-To: <20140624002050.GC27687@wotan.suse.de>
+References: <1403124337-14886-1-git-send-email-mcgrof@do-not-panic.com>
+	<1403124337-14886-4-git-send-email-mcgrof@do-not-panic.com>
+	<20140623154134.43ac7ab63896cd9ebcba84b6@linux-foundation.org>
+	<20140624002050.GC27687@wotan.suse.de>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 23, 2014 at 05:20:30PM -0700, Dave Hansen wrote:
-> On 06/23/2014 05:15 PM, Paul E. McKenney wrote:
-> > Just out of curiosity, how many CPUs does your system have?  80?
-> > If 160, looks like something bad is happening at 80.
+On Tue, 24 Jun 2014 02:20:50 +0200 "Luis R. Rodriguez" <mcgrof@suse.com> wrote:
+
+> On Mon, Jun 23, 2014 at 03:41:34PM -0700, Andrew Morton wrote:
+> > On Wed, 18 Jun 2014 13:45:37 -0700 "Luis R. Rodriguez" <mcgrof@do-not-panic.com> wrote:
+> > 
+> > > ...
+> > >
+> > > If an increase is required the ring buffer is increased to
+> > > +	  the next power of 2 that can fit both the minimum kernel ring buffer
+> > > +	  (LOG_BUF_SHIFT) plus the additional worst case CPU contributions.
+> > >
+> > > ...
+> > >
+> > > +	log_buf_len_update(cpu_extra + __LOG_BUF_LEN);
+> > > +}
+> > 
+> > I'd have expected
+> > 
+> >   total_cpu_space = minimum-per-cpu-len * nr_possible_cpus;
+> >   log_buf_len = max(__LOG_BUF_LEN, total_cpu_space)
+> > 
+> > but here you added __LOG_BUF_LEN to total_cpu_space and I cannot work
+> > out why.  
+> > .
 > 
-> 80 cores, 160 threads.  >80 processes/threads is where we start using
-> the second thread on the cores.  The tasks are also pinned to
-> hyperthread pairs, so they disturb each other, and the scheduler moves
-> them between threads on occasion which causes extra noise.
+> Ah, because its cpu_extra, not total_cpu_space that is being
+> computed, the goal was to see how much extra junk on the
+> worst case a CPU might contribute. The __LOG_BUF_LEN is the
+> default size, so we combine both.
 
-OK, that could explain the near flattening of throughput near 80
-processes.  Is 3.16.0-rc1-pf2 with the two RCU patches?  If so, is the
-new sysfs parameter at its default value?
-
-							Thanx, Paul
-
+Well...  why?  Isn't it simpler and more direct to say "I want at least
+32k per CPU"?
