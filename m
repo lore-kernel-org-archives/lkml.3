@@ -1,251 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932681AbaFXQQe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:16:34 -0400
-Received: from mga02.intel.com ([134.134.136.20]:16189 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932661AbaFXQQc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 12:16:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,539,1400050800"; 
-   d="scan'208";a="562587054"
-Subject: Re: [PATCH v4] sched: Fast idling of CPU when system is partially
- loaded
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Davidlohr Bueso <davidlohr@hp.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jason Low <jason.low2@hp.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <1403551009.2970.613.camel@schen9-DESK>
-References: <1403551009.2970.613.camel@schen9-DESK>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 24 Jun 2014 09:15:51 -0700
-Message-ID: <1403626551.2970.626.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1756020AbaFXPzY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:55:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33166 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755102AbaFXPzT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 11:55:19 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Lars-Peter Clausen <lars@metafoo.de>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.14 64/68] ALSA: control: Protect user controls against concurrent access
+Date: Tue, 24 Jun 2014 11:51:23 -0400
+Message-Id: <20140624154726.895017347@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <20140624154723.907894814@linuxfoundation.org>
+References: <20140624154723.907894814@linuxfoundation.org>
+User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-06-23 at 12:16 -0700, Tim Chen wrote:
-> Thanks to the review from Jason, Andi and Peter. I've updated
-> the code as Peter suggested with simplified logic.
-> 
-> When a system is lightly loaded (i.e. no more than 1 job per cpu),
-> attempt to pull job to a cpu before putting it to idle is unnecessary and
-> can be skipped.  This patch adds an indicator so the scheduler can know
-> when there's no more than 1 active job is on any CPU in the system to
-> skip needless job pulls.
-> 
-> On a 4 socket machine with a request/response kind of workload from
-> clients, we saw about 0.13 msec delay when we go through a full load
-> balance to try pull job from all the other cpus.  While 0.1 msec was
-> spent on processing the request and generating a response, the 0.13 msec
-> load balance overhead was actually more than the actual work being done.
-> This overhead can be skipped much of the time for lightly loaded systems.
-> 
-> With this patch, we tested with a netperf request/response workload that
-> has the server busy with half the cpus in a 4 socket system.  We found
-> the patch eliminated 75% of the load balance attempts before idling a cpu.
-> 
-> The overhead of setting/clearing the indicator is low as we already gather
-> the necessary info while we call add_nr_running and update_sd_lb_stats.
-> We switch to full load balance load immediately if any cpu got more than
-> one job on its run queue in add_nr_running.  We'll clear the indicator
-> to avoid load balance when we detect no cpu's have more than one job
-> when we scan the work queues in update_sg_lb_stats.  We are aggressive
-> in turning on the load balance and opportunistic in skipping the load
-> balance.
-> 
-> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
-> Acked-by: Jason Low <jason.low2@hp.com>
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-Peter,
+------------------
 
-I need to fixup the code of updating the indicator under
-the CONFIG_SMP compile flag.  
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-Also attached a complete updated patch.
+commit 07f4d9d74a04aa7c72c5dae0ef97565f28f17b92 upstream.
 
-Thanks.
+The user-control put and get handlers as well as the tlv do not protect against
+concurrent access from multiple threads. Since the state of the control is not
+updated atomically it is possible that either two write operations or a write
+and a read operation race against each other. Both can lead to arbitrary memory
+disclosure. This patch introduces a new lock that protects user-controls from
+concurrent access. Since applications typically access controls sequentially
+than in parallel a single lock per card should be fine.
 
-Tim
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Acked-by: Jaroslav Kysela <perex@perex.cz>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 6d25f1d..d051712 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -1222,9 +1222,10 @@ static inline void add_nr_running(struct rq *rq, unsigned count)
- 	rq->nr_running = prev_nr + count;
+---
+ include/sound/core.h |    2 ++
+ sound/core/control.c |   31 +++++++++++++++++++++++++------
+ sound/core/init.c    |    1 +
+ 3 files changed, 28 insertions(+), 6 deletions(-)
+
+--- a/include/sound/core.h
++++ b/include/sound/core.h
+@@ -121,6 +121,8 @@ struct snd_card {
+ 	int user_ctl_count;		/* count of all user controls */
+ 	struct list_head controls;	/* all controls for this card */
+ 	struct list_head ctl_files;	/* active control files */
++	struct mutex user_ctl_lock;	/* protects user controls against
++					   concurrent access */
  
- 	if (prev_nr < 2 && rq->nr_running >= 2) {
-+#ifdef CONFIG_SMP
- 		if (!rq->rd->overload)
- 			rq->rd->overload = true;
--
-+#endif
- #ifdef CONFIG_NO_HZ_FULL
- 		if (tick_nohz_full_cpu(rq->cpu)) {
- 			/* Order rq->nr_running write against the IPI */
-
-
-
-The complete updated patch is attached below:
----
->From 8716a50c85f98a92d2240da923ef4ae9a9719bbe Mon Sep 17 00:00:00 2001
-Message-Id: <8716a50c85f98a92d2240da923ef4ae9a9719bbe.1403625949.git.tim.c.chen@linux.intel.com>
-From: Tim Chen <tim.c.chen@linux.intel.com>
-Date: Thu, 12 Jun 2014 11:28:38 -0700
-Subject: [PATCH v5] sched: Fast idling of CPU when system is partially loaded
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Davidlohr Bueso <davidlohr@hp.com>, Alex Shi <alex.shi@linaro.org>, Andi Kleen <andi@firstfloor.org>, Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>, Peter Hurley <peter@hurleysoftware.com>, Thomas Gleixner <tglx@linutronix.de>, Paul E.McKenney <paulmck@linux.vnet.ibm.com>, Jason Low <jason.low2@hp.com>, linux-kernel@vger.kernel.org
-
-When a system is lightly loaded (i.e. no more than 1 job per cpu),
-attempt to pull job to a cpu before putting it to idle is unnecessary and
-can be skipped.  This patch adds an indicator so the scheduler can know
-when there's no more than 1 active job is on any CPU in the system to
-skip needless job pulls.
-
-On a 4 socket machine with a request/response kind of workload from
-clients, we saw about 0.13 msec delay when we go through a full load
-balance to try pull job from all the other cpus.  While 0.1 msec was
-spent on processing the request and generating a response, the 0.13 msec
-load balance overhead was actually more than the actual work being done.
-This overhead can be skipped much of the time for lightly loaded systems.
-
-With this patch, we tested with a netperf request/response workload that
-has the server busy with half the cpus in a 4 socket system.  We found
-the patch eliminated 75% of the load balance attempts before idling a cpu.
-
-The overhead of setting/clearing the indicator is low as we already gather
-the necessary info while we call add_nr_running and update_sd_lb_stats.
-We switch to full load balance load immediately if any cpu got more than
-one job on its run queue in add_nr_running.  We'll clear the indicator
-to avoid load balance when we detect no cpu's have more than one job
-when we scan the work queues in update_sg_lb_stats.  We are aggressive
-in turning on the load balance and opportunistic in skipping the load
-balance.
-
-Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
-Acked-by: Jason Low <jason.low2@hp.com>
-Acked-by: Rik van Riel <riel@redhat.com>
----
- kernel/sched/fair.c  | 21 ++++++++++++++++++---
- kernel/sched/sched.h | 11 +++++++++--
- 2 files changed, 27 insertions(+), 5 deletions(-)
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index fea7d33..7dfe2ad 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -5867,7 +5867,8 @@ static inline int sg_capacity_factor(struct lb_env *env, struct sched_group *gro
-  */
- static inline void update_sg_lb_stats(struct lb_env *env,
- 			struct sched_group *group, int load_idx,
--			int local_group, struct sg_lb_stats *sgs)
-+			int local_group, struct sg_lb_stats *sgs,
-+			bool *overload)
+ 	struct snd_info_entry *proc_root;	/* root for soundcard specific files */
+ 	struct snd_info_entry *proc_id;	/* the card id */
+--- a/sound/core/control.c
++++ b/sound/core/control.c
+@@ -992,6 +992,7 @@ static int snd_ctl_elem_unlock(struct sn
+ 
+ struct user_element {
+ 	struct snd_ctl_elem_info info;
++	struct snd_card *card;
+ 	void *elem_data;		/* element data */
+ 	unsigned long elem_data_size;	/* size of element data in bytes */
+ 	void *tlv_data;			/* TLV data */
+@@ -1035,7 +1036,9 @@ static int snd_ctl_elem_user_get(struct
  {
- 	unsigned long load;
- 	int i;
-@@ -5885,6 +5886,10 @@ static inline void update_sg_lb_stats(struct lb_env *env,
+ 	struct user_element *ue = kcontrol->private_data;
  
- 		sgs->group_load += load;
- 		sgs->sum_nr_running += rq->nr_running;
-+
-+		if (rq->nr_running > 1)
-+			*overload = true;
-+
- #ifdef CONFIG_NUMA_BALANCING
- 		sgs->nr_numa_running += rq->nr_numa_running;
- 		sgs->nr_preferred_running += rq->nr_preferred_running;
-@@ -5995,6 +6000,7 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
- 	struct sched_group *sg = env->sd->groups;
- 	struct sg_lb_stats tmp_sgs;
- 	int load_idx, prefer_sibling = 0;
-+	bool overload = false;
- 
- 	if (child && child->flags & SD_PREFER_SIBLING)
- 		prefer_sibling = 1;
-@@ -6015,7 +6021,8 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
- 				update_group_capacity(env->sd, env->dst_cpu);
- 		}
- 
--		update_sg_lb_stats(env, sg, load_idx, local_group, sgs);
-+		update_sg_lb_stats(env, sg, load_idx, local_group, sgs,
-+						&overload);
- 
- 		if (local_group)
- 			goto next_group;
-@@ -6049,6 +6056,13 @@ next_group:
- 
- 	if (env->sd->flags & SD_NUMA)
- 		env->fbq_type = fbq_classify_group(&sds->busiest_stat);
-+
-+	if (!env->sd->parent) {
-+		/* update overload indicator if we are at root domain */
-+		if (env->dst_rq->rd->overload != overload)
-+			env->dst_rq->rd->overload = overload;
-+	}
-+
++	mutex_lock(&ue->card->user_ctl_lock);
+ 	memcpy(&ucontrol->value, ue->elem_data, ue->elem_data_size);
++	mutex_unlock(&ue->card->user_ctl_lock);
+ 	return 0;
  }
  
- /**
-@@ -6767,7 +6781,8 @@ static int idle_balance(struct rq *this_rq)
- 	 */
- 	this_rq->idle_stamp = rq_clock(this_rq);
- 
--	if (this_rq->avg_idle < sysctl_sched_migration_cost) {
-+	if (this_rq->avg_idle < sysctl_sched_migration_cost ||
-+	    !this_rq->rd->overload) {
- 		rcu_read_lock();
- 		sd = rcu_dereference_check_sched_domain(this_rq->sd);
- 		if (sd)
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 31cc02e..d051712 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -477,6 +477,9 @@ struct root_domain {
- 	cpumask_var_t span;
- 	cpumask_var_t online;
- 
-+	/* Indicate more than one runnable task for any CPU */
-+	bool overload;
+@@ -1044,10 +1047,12 @@ static int snd_ctl_elem_user_put(struct
+ {
+ 	int change;
+ 	struct user_element *ue = kcontrol->private_data;
+-	
 +
- 	/*
- 	 * The bit corresponding to a CPU gets set here if such CPU has more
- 	 * than one runnable -deadline task (as it is below for RT tasks).
-@@ -1218,15 +1221,19 @@ static inline void add_nr_running(struct rq *rq, unsigned count)
- 
- 	rq->nr_running = prev_nr + count;
- 
--#ifdef CONFIG_NO_HZ_FULL
- 	if (prev_nr < 2 && rq->nr_running >= 2) {
-+#ifdef CONFIG_SMP
-+		if (!rq->rd->overload)
-+			rq->rd->overload = true;
-+#endif
-+#ifdef CONFIG_NO_HZ_FULL
- 		if (tick_nohz_full_cpu(rq->cpu)) {
- 			/* Order rq->nr_running write against the IPI */
- 			smp_wmb();
- 			smp_send_reschedule(rq->cpu);
- 		}
--       }
- #endif
-+	}
++	mutex_lock(&ue->card->user_ctl_lock);
+ 	change = memcmp(&ucontrol->value, ue->elem_data, ue->elem_data_size) != 0;
+ 	if (change)
+ 		memcpy(ue->elem_data, &ucontrol->value, ue->elem_data_size);
++	mutex_unlock(&ue->card->user_ctl_lock);
+ 	return change;
  }
  
- static inline void sub_nr_running(struct rq *rq, unsigned count)
--- 
-1.7.11.7
-
-
+@@ -1067,19 +1072,32 @@ static int snd_ctl_elem_user_tlv(struct
+ 		new_data = memdup_user(tlv, size);
+ 		if (IS_ERR(new_data))
+ 			return PTR_ERR(new_data);
++		mutex_lock(&ue->card->user_ctl_lock);
+ 		change = ue->tlv_data_size != size;
+ 		if (!change)
+ 			change = memcmp(ue->tlv_data, new_data, size);
+ 		kfree(ue->tlv_data);
+ 		ue->tlv_data = new_data;
+ 		ue->tlv_data_size = size;
++		mutex_unlock(&ue->card->user_ctl_lock);
+ 	} else {
+-		if (! ue->tlv_data_size || ! ue->tlv_data)
+-			return -ENXIO;
+-		if (size < ue->tlv_data_size)
+-			return -ENOSPC;
++		int ret = 0;
++
++		mutex_lock(&ue->card->user_ctl_lock);
++		if (!ue->tlv_data_size || !ue->tlv_data) {
++			ret = -ENXIO;
++			goto err_unlock;
++		}
++		if (size < ue->tlv_data_size) {
++			ret = -ENOSPC;
++			goto err_unlock;
++		}
+ 		if (copy_to_user(tlv, ue->tlv_data, ue->tlv_data_size))
+-			return -EFAULT;
++			ret = -EFAULT;
++err_unlock:
++		mutex_unlock(&ue->card->user_ctl_lock);
++		if (ret)
++			return ret;
+ 	}
+ 	return change;
+ }
+@@ -1211,6 +1229,7 @@ static int snd_ctl_elem_add(struct snd_c
+ 	ue = kzalloc(sizeof(struct user_element) + private_size, GFP_KERNEL);
+ 	if (ue == NULL)
+ 		return -ENOMEM;
++	ue->card = card;
+ 	ue->info = *info;
+ 	ue->info.access = 0;
+ 	ue->elem_data = (char *)ue + sizeof(*ue);
+--- a/sound/core/init.c
++++ b/sound/core/init.c
+@@ -218,6 +218,7 @@ int snd_card_create(int idx, const char
+ 	INIT_LIST_HEAD(&card->devices);
+ 	init_rwsem(&card->controls_rwsem);
+ 	rwlock_init(&card->ctl_files_rwlock);
++	mutex_init(&card->user_ctl_lock);
+ 	INIT_LIST_HEAD(&card->controls);
+ 	INIT_LIST_HEAD(&card->ctl_files);
+ 	spin_lock_init(&card->files_lock);
 
 
