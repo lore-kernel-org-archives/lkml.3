@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753819AbaFXWoi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 18:44:38 -0400
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:51550 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752714AbaFXWog (ORCPT
+	id S1754063AbaFXWot (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 18:44:49 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:59388 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752714AbaFXWon (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 18:44:36 -0400
-Date: Tue, 24 Jun 2014 15:44:33 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Wang Sheng-Hui <shhuiw@gmail.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Andi Kleen <ak@linux.intel.com>,
-        Vladimir Cernov <gg.kaspersky@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
-Subject: Re: [PATCH] mm: update the description for madvise_remove
-In-Reply-To: <53A9116B.9030004@gmail.com>
-Message-ID: <alpine.DEB.2.02.1406241542040.29176@chino.kir.corp.google.com>
-References: <53A9116B.9030004@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 24 Jun 2014 18:44:43 -0400
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH 0/2] ARM: at91: remove phy fixup for sama5d3xek boards
+Date: Wed, 25 Jun 2014 00:44:36 +0200
+Message-Id: <1403649878-28242-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Jun 2014, Wang Sheng-Hui wrote:
+Hello,
 
-> 
-> Currently, we have more filesystems supporting fallocate, e.g
-> ext4/btrfs. Remove the outdated comment for madvise_remove.
-> 
-> Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
-> ---
->  mm/madvise.c | 3 ---
->  1 file changed, 3 deletions(-)
-> 
-> diff --git a/mm/madvise.c b/mm/madvise.c
-> index a402f8f..0938b30 100644
-> --- a/mm/madvise.c
-> +++ b/mm/madvise.c
-> @@ -292,9 +292,6 @@ static long madvise_dontneed(struct vm_area_struct *vma,
->  /*
->   * Application wants to free up the pages and associated backing store.
->   * This is effectively punching a hole into the middle of a file.
-> - *
-> - * NOTE: Currently, only shmfs/tmpfs is supported for this operation.
-> - * Other filesystems return -ENOSYS.
->   */
->  static long madvise_remove(struct vm_area_struct *vma,
->                                 struct vm_area_struct **prev,
+This patch removes a board specific hook for sama5d3xek boards from the
+sama5d3 generic DT board file.
 
-[For those without context: this patch has been merged into the -mm tree.]
+This hook (which register a phy fixup configuring board specific delays
+in the ksz9021 ethernet phy) is now replaced by the appropriate DT
+properties definitions in the sama5d3xcm.dtsi file.
 
-This reference also exists in the man-page for madvise(2), are you 
-planning on removing it as well?
+Best Regards,
+
+Boris
+
+Boris BREZILLON (2):
+  ARM: at91/dt: describe rgmii ethernet phy connected to sama5d3xek
+    boards
+  ARM: at91: remove phy fixup for sama5d3xek boards
+
+ arch/arm/boot/dts/sama5d3xcm.dtsi   | 16 ++++++++++++++++
+ arch/arm/mach-at91/board-dt-sama5.c | 22 ----------------------
+ 2 files changed, 16 insertions(+), 22 deletions(-)
+
+-- 
+1.8.3.2
+
