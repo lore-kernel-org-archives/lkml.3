@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755565AbaFXUct (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:32:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47794 "EHLO
+	id S1756527AbaFXUm2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:42:28 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47785 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753200AbaFXUcr (ORCPT
+	with ESMTP id S1753372AbaFXUcl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:32:47 -0400
+	Tue, 24 Jun 2014 16:32:41 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 48/65] ARM: 8051/1: put_user: fix possible data corruption in put_user
-Date: Tue, 24 Jun 2014 13:30:08 -0700
-Message-Id: <1403641825-12825-49-git-send-email-kamal@canonical.com>
+Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 47/65] ALSA: hda - Fix onboard audio on Intel H97/Z97 chipsets
+Date: Tue, 24 Jun 2014 13:30:07 -0700
+Message-Id: <1403641825-12825-48-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
 References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
@@ -28,39 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 537094b64b229bf3ad146042f83e74cf6abe59df upstream.
+commit 77f07800cb456bed6e5c345e6e4e83e8eda62437 upstream.
 
-According to arm procedure call standart r2 register is call-cloberred.
-So after the result of x expression was put into r2 any following
-function call in p may overwrite r2. To fix this, the result of p
-expression must be saved to the temporary variable before the
-assigment x expression to __r2.
+The recent Intel H97/Z97 chipsets need the similar setups like other
+Intel chipsets for snooping, etc.  Especially without snooping, the
+audio playback stutters or gets corrupted.  This fix patch just adds
+the corresponding PCI ID entry with the proper flags.
 
-Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
-Reviewed-by: Nicolas Pitre <nico@linaro.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Reported-and-tested-by: Arthur Borsboom <arthurborsboom@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/include/asm/uaccess.h | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ sound/pci/hda/hda_intel.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/arch/arm/include/asm/uaccess.h b/arch/arm/include/asm/uaccess.h
-index 7e1f760..20e1c99 100644
---- a/arch/arm/include/asm/uaccess.h
-+++ b/arch/arm/include/asm/uaccess.h
-@@ -164,8 +164,9 @@ extern int __put_user_8(void *, unsigned long long);
- #define __put_user_check(x,p)							\
- 	({								\
- 		unsigned long __limit = current_thread_info()->addr_limit - 1; \
-+		const typeof(*(p)) __user *__tmp_p = (p);		\
- 		register const typeof(*(p)) __r2 asm("r2") = (x);	\
--		register const typeof(*(p)) __user *__p asm("r0") = (p);\
-+		register const typeof(*(p)) __user *__p asm("r0") = __tmp_p; \
- 		register unsigned long __l asm("r1") = __limit;		\
- 		register int __e asm("r0");				\
- 		switch (sizeof(*(__p))) {				\
+diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
+index c142402..570c284 100644
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -3620,6 +3620,9 @@ static DEFINE_PCI_DEVICE_TABLE(azx_ids) = {
+ 	/* Lynx Point */
+ 	{ PCI_DEVICE(0x8086, 0x8c20),
+ 	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_INTEL_PCH },
++	/* 9 Series */
++	{ PCI_DEVICE(0x8086, 0x8ca0),
++	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_INTEL_PCH },
+ 	/* Lynx Point-LP */
+ 	{ PCI_DEVICE(0x8086, 0x9c20),
+ 	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_INTEL_PCH },
 -- 
 1.9.1
 
