@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932142AbaFXPxW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:53:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32814 "EHLO
+	id S1030192AbaFXQhS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:37:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32830 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751598AbaFXPxS (ORCPT
+	with ESMTP id S932146AbaFXPxX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:53:18 -0400
+	Tue, 24 Jun 2014 11:53:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Xiao Jin <jin.xiao@intel.com>, Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.10 32/52] USB: cdc-acm: fix broken runtime suspend
-Date: Tue, 24 Jun 2014 11:50:47 -0400
-Message-Id: <20140624154715.411417928@linuxfoundation.org>
+        Lars-Peter Clausen <lars@metafoo.de>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.10 50/52] ALSA: control: Dont access controls outside of protected regions
+Date: Tue, 24 Jun 2014 11:51:05 -0400
+Message-Id: <20140624154716.461030124@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154713.428945460@linuxfoundation.org>
 References: <20140624154713.428945460@linuxfoundation.org>
@@ -28,125 +29,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit 140cb81ac8c625942a1d695875932c615767a526 upstream.
+commit fd9f26e4eca5d08a27d12c0933fceef76ed9663d upstream.
 
-The current ACM runtime-suspend implementation is broken in several
-ways:
+A control that is visible on the card->controls list can be freed at any time.
+This means we must not access any of its memory while not holding the
+controls_rw_lock. Otherwise we risk a use after free access.
 
-Firstly, it buffers only the first write request being made while
-suspended -- any further writes are silently dropped.
-
-Secondly, writes being dropped also leak write urbs, which are never
-reclaimed (until the device is unbound).
-
-Thirdly, even the single buffered write is not cleared at shutdown
-(which may happen before the device is resumed), something which can
-lead to another urb leak as well as a PM usage-counter leak.
-
-Fix this by implementing a delayed-write queue using urb anchors and
-making sure to discard the queue properly at shutdown.
-
-Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
-that support remote wakeup")
-
-Reported-by: Xiao Jin <jin.xiao@intel.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Acked-by: Jaroslav Kysela <perex@perex.cz>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/class/cdc-acm.c |   32 ++++++++++++++++++++++----------
- drivers/usb/class/cdc-acm.h |    2 +-
- 2 files changed, 23 insertions(+), 11 deletions(-)
+ sound/core/control.c |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -233,12 +233,9 @@ static int acm_write_start(struct acm *a
- 							acm->susp_count);
- 	usb_autopm_get_interface_async(acm->control);
- 	if (acm->susp_count) {
--		if (!acm->delayed_wb)
--			acm->delayed_wb = wb;
--		else
--			usb_autopm_put_interface_async(acm->control);
-+		usb_anchor_urb(wb->urb, &acm->delayed);
- 		spin_unlock_irqrestore(&acm->write_lock, flags);
--		return 0;	/* A white lie */
-+		return 0;
- 	}
- 	usb_mark_last_busy(acm->dev);
- 
-@@ -591,6 +588,8 @@ static void acm_port_destruct(struct tty
- static void acm_port_shutdown(struct tty_port *port)
+--- a/sound/core/control.c
++++ b/sound/core/control.c
+@@ -331,6 +331,7 @@ int snd_ctl_add(struct snd_card *card, s
  {
- 	struct acm *acm = container_of(port, struct acm, port);
-+	struct urb *urb;
-+	struct acm_wb *wb;
- 	int i;
+ 	struct snd_ctl_elem_id id;
+ 	unsigned int idx;
++	unsigned int count;
+ 	int err = -EINVAL;
  
- 	dev_dbg(&acm->control->dev, "%s\n", __func__);
-@@ -599,6 +598,16 @@ static void acm_port_shutdown(struct tty
- 	if (!acm->disconnected) {
- 		usb_autopm_get_interface(acm->control);
- 		acm_set_control(acm, acm->ctrlout = 0);
-+
-+		for (;;) {
-+			urb = usb_get_from_anchor(&acm->delayed);
-+			if (!urb)
-+				break;
-+			wb = urb->context;
-+			wb->use = 0;
-+			usb_autopm_put_interface_async(acm->control);
-+		}
-+
- 		usb_kill_urb(acm->ctrlurb);
- 		for (i = 0; i < ACM_NW; i++)
- 			usb_kill_urb(acm->wb[i].urb);
-@@ -1190,6 +1199,7 @@ made_compressed_probe:
- 		acm->bInterval = epread->bInterval;
- 	tty_port_init(&acm->port);
- 	acm->port.ops = &acm_port_ops;
-+	init_usb_anchor(&acm->delayed);
+ 	if (! kcontrol)
+@@ -359,8 +360,9 @@ int snd_ctl_add(struct snd_card *card, s
+ 	card->controls_count += kcontrol->count;
+ 	kcontrol->id.numid = card->last_numid + 1;
+ 	card->last_numid += kcontrol->count;
++	count = kcontrol->count;
+ 	up_write(&card->controls_rwsem);
+-	for (idx = 0; idx < kcontrol->count; idx++, id.index++, id.numid++)
++	for (idx = 0; idx < count; idx++, id.index++, id.numid++)
+ 		snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_ADD, &id);
+ 	return 0;
  
- 	buf = usb_alloc_coherent(usb_dev, ctrlsize, GFP_KERNEL, &acm->ctrl_dma);
- 	if (!buf) {
-@@ -1459,7 +1469,7 @@ static int acm_suspend(struct usb_interf
- static int acm_resume(struct usb_interface *intf)
+@@ -389,6 +391,7 @@ int snd_ctl_replace(struct snd_card *car
+ 		    bool add_on_replace)
  {
- 	struct acm *acm = usb_get_intfdata(intf);
--	struct acm_wb *wb;
-+	struct urb *urb;
- 	int rv = 0;
+ 	struct snd_ctl_elem_id id;
++	unsigned int count;
+ 	unsigned int idx;
+ 	struct snd_kcontrol *old;
+ 	int ret;
+@@ -424,8 +427,9 @@ add:
+ 	card->controls_count += kcontrol->count;
+ 	kcontrol->id.numid = card->last_numid + 1;
+ 	card->last_numid += kcontrol->count;
++	count = kcontrol->count;
+ 	up_write(&card->controls_rwsem);
+-	for (idx = 0; idx < kcontrol->count; idx++, id.index++, id.numid++)
++	for (idx = 0; idx < count; idx++, id.index++, id.numid++)
+ 		snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_ADD, &id);
+ 	return 0;
  
- 	spin_lock_irq(&acm->read_lock);
-@@ -1471,10 +1481,12 @@ static int acm_resume(struct usb_interfa
- 	if (test_bit(ASYNCB_INITIALIZED, &acm->port.flags)) {
- 		rv = usb_submit_urb(acm->ctrlurb, GFP_ATOMIC);
- 
--		if (acm->delayed_wb) {
--			wb = acm->delayed_wb;
--			acm->delayed_wb = NULL;
--			acm_start_wb(acm, wb);
-+		for (;;) {
-+			urb = usb_get_from_anchor(&acm->delayed);
-+			if (!urb)
-+				break;
-+
-+			acm_start_wb(acm, urb->context);
+@@ -898,9 +902,9 @@ static int snd_ctl_elem_write(struct snd
+ 			result = kctl->put(kctl, control);
  		}
- 
- 		/*
---- a/drivers/usb/class/cdc-acm.h
-+++ b/drivers/usb/class/cdc-acm.h
-@@ -117,7 +117,7 @@ struct acm {
- 	unsigned int throttled:1;			/* actually throttled */
- 	unsigned int throttle_req:1;			/* throttle requested */
- 	u8 bInterval;
--	struct acm_wb *delayed_wb;			/* write queued for a device about to be woken */
-+	struct usb_anchor delayed;			/* writes queued for a device about to be woken */
- };
- 
- #define CDC_DATA_INTERFACE_TYPE	0x0a
+ 		if (result > 0) {
++			struct snd_ctl_elem_id id = control->id;
+ 			up_read(&card->controls_rwsem);
+-			snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_VALUE,
+-				       &control->id);
++			snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_VALUE, &id);
+ 			return 0;
+ 		}
+ 	}
+@@ -1334,8 +1338,9 @@ static int snd_ctl_tlv_ioctl(struct snd_
+ 		}
+ 		err = kctl->tlv.c(kctl, op_flag, tlv.length, _tlv->tlv);
+ 		if (err > 0) {
++			struct snd_ctl_elem_id id = kctl->id;
+ 			up_read(&card->controls_rwsem);
+-			snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_TLV, &kctl->id);
++			snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_TLV, &id);
+ 			return 0;
+ 		}
+ 	} else {
 
 
