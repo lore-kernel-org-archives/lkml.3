@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756526AbaFXQCo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:02:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33382 "EHLO
+	id S965105AbaFXP4d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:56:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33363 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965111AbaFXP4g (ORCPT
+	with ESMTP id S965051AbaFXP42 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:56:36 -0400
+	Tue, 24 Jun 2014 11:56:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 3.15 36/61] Drivers: hv: balloon: Ensure pressure reports are posted regularly
-Date: Tue, 24 Jun 2014 11:51:19 -0400
-Message-Id: <20140624154954.432145185@linuxfoundation.org>
+        Robert Hodaszi <robert.hodaszi@digi.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Marek Vasut <marex@denx.de>, Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.15 44/61] iio: mxs-lradc: fix divider
+Date: Tue, 24 Jun 2014 11:51:27 -0400
+Message-Id: <20140624154954.791434394@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154952.751713761@linuxfoundation.org>
 References: <20140624154952.751713761@linuxfoundation.org>
@@ -28,114 +30,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Robert Hodaszi <robert.hodaszi@digi.com>
 
-commit ae339336dc950b9b05e7ccd3565dd3e8781c06d9 upstream.
+commit 19bc4981a213d0c5b0e1e8b08815c0b26f01ec54 upstream.
 
-The current code posts periodic memory pressure status from a dedicated thread.
-Under some conditions, especially when we are releasing a lot of memory into
-the guest, we may not send timely pressure reports back to the host. Fix this
-issue by reporting pressure in all contexts that can be active in this driver.
+All channels' single measurement are happening on CH 0. So enabling / disabling
+the divider once is not enough, because it has impact on all channels.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Set only a flag, then check this on each measurement, and enable / disable the
+divider as required.
+
+Signed-off-by: Robert Hodaszi <robert.hodaszi@digi.com>
+Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Acked-by: Marek Vasut <marex@denx.de>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hv/hv_balloon.c |   29 ++++++++++++++++++++++++++---
- 1 file changed, 26 insertions(+), 3 deletions(-)
+ drivers/staging/iio/adc/mxs-lradc.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
---- a/drivers/hv/hv_balloon.c
-+++ b/drivers/hv/hv_balloon.c
-@@ -19,6 +19,7 @@
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+--- a/drivers/staging/iio/adc/mxs-lradc.c
++++ b/drivers/staging/iio/adc/mxs-lradc.c
+@@ -846,6 +846,14 @@ static int mxs_lradc_read_single(struct
+ 			LRADC_CTRL1);
+ 	mxs_lradc_reg_clear(lradc, 0xff, LRADC_CTRL0);
  
- #include <linux/kernel.h>
-+#include <linux/jiffies.h>
- #include <linux/mman.h>
- #include <linux/delay.h>
- #include <linux/init.h>
-@@ -459,6 +460,11 @@ static bool do_hot_add;
-  */
- static uint pressure_report_delay = 45;
- 
-+/*
-+ * The last time we posted a pressure report to host.
-+ */
-+static unsigned long last_post_time;
++	/* Enable / disable the divider per requirement */
++	if (test_bit(chan, &lradc->is_divided))
++		mxs_lradc_reg_set(lradc, 1 << LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET,
++			LRADC_CTRL2);
++	else
++		mxs_lradc_reg_clear(lradc,
++			1 << LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET, LRADC_CTRL2);
 +
- module_param(hot_add, bool, (S_IRUGO | S_IWUSR));
- MODULE_PARM_DESC(hot_add, "If set attempt memory hot_add");
- 
-@@ -542,6 +548,7 @@ struct hv_dynmem_device {
- 
- static struct hv_dynmem_device dm_device;
- 
-+static void post_status(struct hv_dynmem_device *dm);
- #ifdef CONFIG_MEMORY_HOTPLUG
- 
- static void hv_bring_pgs_online(unsigned long start_pfn, unsigned long size)
-@@ -612,7 +619,7 @@ static void hv_mem_hot_add(unsigned long
- 		 * have not been "onlined" within the allowed time.
- 		 */
- 		wait_for_completion_timeout(&dm_device.ol_waitevent, 5*HZ);
--
-+		post_status(&dm_device);
- 	}
- 
- 	return;
-@@ -951,11 +958,17 @@ static void post_status(struct hv_dynmem
- {
- 	struct dm_status status;
- 	struct sysinfo val;
-+	unsigned long now = jiffies;
-+	unsigned long last_post = last_post_time;
- 
- 	if (pressure_report_delay > 0) {
- 		--pressure_report_delay;
- 		return;
- 	}
-+
-+	if (!time_after(now, (last_post_time + HZ)))
-+		return;
-+
- 	si_meminfo(&val);
- 	memset(&status, 0, sizeof(struct dm_status));
- 	status.hdr.type = DM_STATUS_REPORT;
-@@ -983,6 +996,14 @@ static void post_status(struct hv_dynmem
- 	if (status.hdr.trans_id != atomic_read(&trans_id))
- 		return;
- 
-+	/*
-+	 * If the last post time that we sampled has changed,
-+	 * we have raced, don't post the status.
-+	 */
-+	if (last_post != last_post_time)
-+		return;
-+
-+	last_post_time = jiffies;
- 	vmbus_sendpacket(dm->dev->channel, &status,
- 				sizeof(struct dm_status),
- 				(unsigned long)NULL,
-@@ -1117,7 +1138,7 @@ static void balloon_up(struct work_struc
- 
- 			if (ret == -EAGAIN)
- 				msleep(20);
--
-+			post_status(&dm_device);
- 		} while (ret == -EAGAIN);
- 
- 		if (ret) {
-@@ -1144,8 +1165,10 @@ static void balloon_down(struct hv_dynme
- 	struct dm_unballoon_response resp;
- 	int i;
- 
--	for (i = 0; i < range_count; i++)
-+	for (i = 0; i < range_count; i++) {
- 		free_balloon_pages(dm, &range_array[i]);
-+		post_status(&dm_device);
-+	}
- 
- 	if (req->more_pages == 1)
- 		return;
+ 	/* Clean the slot's previous content, then set new one. */
+ 	mxs_lradc_reg_clear(lradc, LRADC_CTRL4_LRADCSELECT_MASK(0),
+ 			LRADC_CTRL4);
+@@ -961,15 +969,11 @@ static int mxs_lradc_write_raw(struct ii
+ 		if (val == scale_avail[MXS_LRADC_DIV_DISABLED].integer &&
+ 		    val2 == scale_avail[MXS_LRADC_DIV_DISABLED].nano) {
+ 			/* divider by two disabled */
+-			writel(1 << LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET,
+-			       lradc->base + LRADC_CTRL2 + STMP_OFFSET_REG_CLR);
+ 			clear_bit(chan->channel, &lradc->is_divided);
+ 			ret = 0;
+ 		} else if (val == scale_avail[MXS_LRADC_DIV_ENABLED].integer &&
+ 			   val2 == scale_avail[MXS_LRADC_DIV_ENABLED].nano) {
+ 			/* divider by two enabled */
+-			writel(1 << LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET,
+-			       lradc->base + LRADC_CTRL2 + STMP_OFFSET_REG_SET);
+ 			set_bit(chan->channel, &lradc->is_divided);
+ 			ret = 0;
+ 		}
 
 
