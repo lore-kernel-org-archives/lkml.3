@@ -1,53 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010AbaFXOAO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 10:00:14 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:45202 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752482AbaFXOAM (ORCPT
+	id S1754030AbaFXOAu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 10:00:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59863 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752539AbaFXOAs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 10:00:12 -0400
-Message-ID: <1403618407.3796.15.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: [PATCH] mm/vmalloc.c: add a schedule point to vmalloc()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>, David Rientjes <rientjes@google.com>
-Date: Tue, 24 Jun 2014 07:00:07 -0700
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 24 Jun 2014 10:00:48 -0400
+Date: Tue, 24 Jun 2014 10:00:26 -0400
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>
+Subject: Re: [GIT PULL] USB fixes for v3.16-rc2
+Message-ID: <20140624140026.GA10575@kroah.com>
+References: <1403275477-18107-1-git-send-email-balbi@ti.com>
+ <20140620204049.GD16973@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140620204049.GD16973@kroah.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <edumazet@google.com>
+On Fri, Jun 20, 2014 at 01:40:49PM -0700, Greg KH wrote:
+> On Fri, Jun 20, 2014 at 09:44:37AM -0500, Felipe Balbi wrote:
+> > Hi Greg,
+> > 
+> > Here's my first set of fixes for this -rc cycle. Please consider merging
+> > to your usb-linus branch.
+> 
+> I'll do it after Linus picks up my last round of changes I sent him.
 
-It is not uncommon on busy servers to get stuck hundred of ms in
-vmalloc() calls (like file descriptor expansions).
+Now pulled and pushed out, thanks.
 
-Add a cond_resched() to __vmalloc_area_node() to be gentle to
-other tasks.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: David Rientjes <rientjes@google.com>
----
- mm/vmalloc.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index f64632b67196..05a145ed1332 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -1602,6 +1602,7 @@ static void *__vmalloc_area_node(struct vm_struct *area, gfp_t gfp_mask,
- 			goto fail;
- 		}
- 		area->pages[i] = page;
-+		cond_resched();
- 	}
- 
- 	if (map_vm_area(area, prot, &pages))
-
-
+greg k-h
