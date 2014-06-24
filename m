@@ -1,81 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932708AbaFXQnF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:43:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60960 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755498AbaFXPwn (ORCPT
+	id S1030274AbaFXQnX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:43:23 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:59832 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753450AbaFXQnU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:52:43 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        stephen hemminger <stephen@networkplumber.org>,
-        Pravin B Shelar <pshelar@nicira.com>,
-        Cong Wang <cwang@twopensource.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>
-Subject: [PATCH 3.10 24/52] vxlan: use dev->needed_headroom instead of dev->hard_header_len
-Date: Tue, 24 Jun 2014 11:50:39 -0400
-Message-Id: <20140624154714.955404209@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <20140624154713.428945460@linuxfoundation.org>
-References: <20140624154713.428945460@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 24 Jun 2014 12:43:20 -0400
+Message-ID: <53A9AAA1.4030005@collabora.co.uk>
+Date: Tue, 24 Jun 2014 18:43:13 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: Mark Brown <broonie@kernel.org>
+CC: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
+        Daniel Stone <daniels@collabora.com>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 07/10] regulator: Add driver for Maxim 77802 PMIC regulators
+References: <1402941758-11216-1-git-send-email-javier.martinez@collabora.co.uk> <1402941758-11216-8-git-send-email-javier.martinez@collabora.co.uk> <20140616192500.GJ5099@sirena.org.uk> <53A01D54.10506@collabora.co.uk> <20140617141254.GP5099@sirena.org.uk> <53A06749.1010606@collabora.co.uk> <20140621204026.GH22657@sirena.org.uk> <53A7F339.7050608@collabora.co.uk> <20140623094734.GV24291@sirena.org.uk>
+In-Reply-To: <20140623094734.GV24291@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+Hello Mark,
 
-------------------
+On 06/23/2014 11:47 AM, Mark Brown wrote:
+> On Mon, Jun 23, 2014 at 11:28:25AM +0200, Javier Martinez Canillas wrote:
+>> On 06/21/2014 10:40 PM, Mark Brown wrote:
+> 
+>> > That's not really relevant here - I'm asking if the regulators get their
+>> > own supplies rather than if anything uses them.
+> 
+>> Sorry if I keep misunderstanding your question but the regulators in this PMIC
+>> don't have a parent supply/regulator node.
+> 
+> They should, I'm pretty sure the device does actually regulate one
+> supply into another.
+> 
 
-From: Cong Wang <cwang@twopensource.com>
+Thanks a lot for the clarification. This was not evident to me when I read the
+PMIC datasheet and because both the max77xxx Chrome OS 3.8 and mainline max77686
+drivers used a simplistic model of the power scheme.
 
-[ Upstream commit 2853af6a2ea1a8ed09b09dd4fb578e7f435e8d34 ]
+But Doug confirmed to me that some regulators on this PMIC do indeed use others
+regulators as a power supply so I'll change this in the next version of the
+patch-set.
 
-When we mirror packets from a vxlan tunnel to other device,
-the mirror device should see the same packets (that is, without
-outer header). Because vxlan tunnel sets dev->hard_header_len,
-tcf_mirred() resets mac header back to outer mac, the mirror device
-actually sees packets with outer headers
-
-Vxlan tunnel should set dev->needed_headroom instead of
-dev->hard_header_len, like what other ip tunnels do. This fixes
-the above problem.
-
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: stephen hemminger <stephen@networkplumber.org>
-Cc: Pravin B Shelar <pshelar@nicira.com>
-Signed-off-by: Cong Wang <cwang@twopensource.com>
-Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/vxlan.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/drivers/net/vxlan.c
-+++ b/drivers/net/vxlan.c
-@@ -1314,7 +1314,7 @@ static void vxlan_setup(struct net_devic
- 
- 	eth_hw_addr_random(dev);
- 	ether_setup(dev);
--	dev->hard_header_len = ETH_HLEN + VXLAN_HEADROOM;
-+	dev->needed_headroom = ETH_HLEN + VXLAN_HEADROOM;
- 
- 	dev->netdev_ops = &vxlan_netdev_ops;
- 	dev->destructor = vxlan_free;
-@@ -1454,7 +1454,7 @@ static int vxlan_newlink(struct net *net
- 			dev->mtu = lowerdev->mtu - VXLAN_HEADROOM;
- 
- 		/* update header length based on lower device */
--		dev->hard_header_len = lowerdev->hard_header_len +
-+		dev->needed_headroom = lowerdev->hard_header_len +
- 				       VXLAN_HEADROOM;
- 	}
- 
-
-
+Best regards,
+Javier
