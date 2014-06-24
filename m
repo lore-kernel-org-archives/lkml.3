@@ -1,99 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753880AbaFXOLG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 10:11:06 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:44579 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753782AbaFXOLE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 10:11:04 -0400
-Message-ID: <1403616338.4230.8.camel@weser.hi.pengutronix.de>
-Subject: Re: [Nouveau] [PATCH v2 2/3] drm/ttm: introduce dma cache sync
- helpers
-From: Lucas Stach <l.stach@pengutronix.de>
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: Alexandre Courbot <gnurou@gmail.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Tue, 24 Jun 2014 15:25:38 +0200
-In-Reply-To: <53A96EC5.3030701@canonical.com>
-References: <1403603667-11302-1-git-send-email-acourbot@nvidia.com>
-	 <1403603667-11302-3-git-send-email-acourbot@nvidia.com>
-	 <20140624100220.GK32514@n2100.arm.linux.org.uk>
-	 <53A953E6.2030503@nvidia.com> <53A95910.20104@nvidia.com>
-	 <CAAVeFu+rbCViC87kYCLfxGV18iYq=Pa0ABb+L=iNiYPLn+mR8Q@mail.gmail.com>
-	 <53A96EC5.3030701@canonical.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:fa0f:41ff:fe58:4010
-X-SA-Exim-Mail-From: l.stach@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1753143AbaFXOPK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 10:15:10 -0400
+Received: from mail.kernel.org ([198.145.19.201]:44820 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752322AbaFXOPI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 10:15:08 -0400
+Date: Tue, 24 Jun 2014 11:15:01 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Stanislav Fomichev <stfomichev@yandex-team.ru>
+Cc: a.p.zijlstra@chello.nl, paulus@samba.org, Ingo Molnar <mingo@kernel.org>,
+        dsahern@gmail.com, jolsa@redhat.com, xiaoguangrong@linux.vnet.ibm.com,
+        yangds.fnst@cn.fujitsu.com, adrian.hunter@intel.com,
+        namhyung@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/7] perf trace pagefaults
+Message-ID: <20140624141501.GA3456@kernel.org>
+References: <1403261389-13423-1-git-send-email-stfomichev@yandex-team.ru>
+ <20140620132105.GE31524@kernel.org>
+ <20140620150318.GK15620@stfomichev-desktop.yandex.net>
+ <20140620152449.GH31524@kernel.org>
+ <20140620161859.GN15620@stfomichev-desktop.yandex.net>
+ <20140620183028.GK31524@kernel.org>
+ <20140623114139.GB20225@stfomichev-desktop.yandex.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140623114139.GB20225@stfomichev-desktop.yandex.net>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, den 24.06.2014, 14:27 +0200 schrieb Maarten Lankhorst:
-> op 24-06-14 14:23, Alexandre Courbot schreef:
-> > On Tue, Jun 24, 2014 at 7:55 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
-> >> On 06/24/2014 07:33 PM, Alexandre Courbot wrote:
-> >>> On 06/24/2014 07:02 PM, Russell King - ARM Linux wrote:
-> >>>> On Tue, Jun 24, 2014 at 06:54:26PM +0900, Alexandre Courbot wrote:
-> >>>>> From: Lucas Stach <dev@lynxeye.de>
-> >>>>>
-> >>>>> On architectures for which access to GPU memory is non-coherent,
-> >>>>> caches need to be flushed and invalidated explicitly at the
-> >>>>> appropriate places. Introduce two small helpers to make things
-> >>>>> easy for TTM-based drivers.
-> >>>>
-> >>>> Have you run this with DMA API debugging enabled?  I suspect you haven't,
-> >>>> and I recommend that you do.
-> >>>
-> >>> # cat /sys/kernel/debug/dma-api/error_count
-> >>> 162621
-> >>>
-> >>> (╯°□°）╯︵ ┻━┻)
-> >>
-> >> *puts table back on its feet*
-> >>
-> >> So, yeah - TTM memory is not allocated using the DMA API, hence we cannot
-> >> use the DMA API to sync it. Thanks Russell for pointing it out.
-> >>
-> >> The only alternative I see here is to flush the CPU caches when syncing for
-> >> the device, and invalidate them for the other direction. Of course if the
-> >> device has caches on its side as well the opposite operation must also be
-> >> done for it. Guess the only way is to handle it all by ourselves here. :/
-> > ... and it really sucks. Basically if we cannot use the DMA API here
-> > we will lose the convenience of having a portable API that does just
-> > the right thing for the underlying platform. Without it we would have
-> > to duplicate arm_iommu_sync_single_for_cpu/device() and we would only
-> > have support for ARM.
-> >
-> > The usage of the DMA API that we are doing might be illegal, but in
-> > essence it does exactly what we need - at least for ARM. What are the
-> > alternatives?
-> Convert TTM to use the dma api? :-)
+Em Mon, Jun 23, 2014 at 03:41:39PM +0400, Stanislav Fomichev escreveu:
+> > > But we then need to predefine many probes for decoding to work in the form of
+> > > func:offset, and then play catch-up with all the kernel changes.
+> > > Or I miss something important here?
 
-Actually TTM already has a page alloc backend using the DMA API. It's
-just not used for the standard case right now.
+> > No you don't.
 
-I would argue that we should just use this page allocator (which has the
-side effect of getting pages from CMA if available -> you are actually
-free to change the caching) and do away with the other allocator in the
-ARM case.
+> > If we want to disturb the system in the least way possible, we need to
+> > tag along the copying from userspace of those pointers, so that we get
+> > them fresh and just stash it in our ring buffer and get out of the way
+> > quickly.
 
-Regards,
-Lucas
--- 
-Pengutronix e.K.             | Lucas Stach                 |
-Industrial Linux Solutions   | http://www.pengutronix.de/  |
+> I just thought maybe you have some grand plan in mind about automagically
+> adding probes so argument tracing works transparently. I like the
+> approach though.
 
+First we use what we have in place, then we optimize it.
+ 
+> > Almost a year ago, and it still works, now lets see the cset you mention...
+> > 
+> > [acme@zoo linux]$ git describe c4ad8f98bef77c7356aa6a9ad9188a6acc6b849d
+> > v3.14-rc1-14-gc4ad8f98bef7
+> > [acme@zoo linux]$
+> > [root@zoo ~]# uname -r
+> > 3.15.0-rc8+
+> > 
+> > Humm, what is the problem?
+
+> I thought that result->name was actually set on 65th line of
+> getname_flags, so the above commit would move it to 66th. But it's not
+> the case, sorry for confusion.
+ 
+> > [1] And I feel like all of tools/perf/ is just that, reference implementations, but hopefully
+> >     done in a such a way that may well be useful as-is :-)
+
+> I'd like perf to be a goto tool for all kind of performance analysis,
+
+yay, and you're working for that, thanks!
+
+> not just a reference implementation. I believe nobody looks at this
+> reference, and we end up with tools like https://github.com/draios/sysdig
+
+Never heard about it, will take a look, thanks for the pointer.
+
+> which do their own events, ring buffer, etc.
+
+There are several out there :)
+
+- Arnaldo
