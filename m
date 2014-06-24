@@ -1,79 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753972AbaFXOGq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 10:06:46 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:33409 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752593AbaFXOGo convert rfc822-to-8bit (ORCPT
+	id S1753078AbaFXOIU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 10:08:20 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:60705 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751401AbaFXOIS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 10:06:44 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Mathias Nyman'" <mathias.nyman@linux.intel.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: RE: [PATCH 1/5] xhci: Use correct SLOT ID when handling a reset
- device command
-Thread-Topic: [PATCH 1/5] xhci: Use correct SLOT ID when handling a reset
- device command
-Thread-Index: AQHPj7T3A3v0NA89pUGB6GqHs8HeqJuASw/w
-Date: Tue, 24 Jun 2014 14:06:05 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D17263160@AcuExch.aculab.com>
-References: <1403618059-24533-1-git-send-email-mathias.nyman@linux.intel.com>
- <1403619322-24704-1-git-send-email-mathias.nyman@linux.intel.com>
-In-Reply-To: <1403619322-24704-1-git-send-email-mathias.nyman@linux.intel.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Tue, 24 Jun 2014 10:08:18 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] phy: miphy365x: Add Device Tree bindings for the MiPHY365x
+Date: Tue, 24 Jun 2014 16:08:15 +0200
+Message-ID: <4274516.nCpbjAuUJp@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140624124634.GO13803@lee--X1>
+References: <1400766819-22286-1-git-send-email-lee.jones@linaro.org> <6599289.0ZjjaMbRqj@wuerfel> <20140624124634.GO13803@lee--X1>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:YvWSh+ixZRpNdtM0CkbVXNFisU/9UyWqet8IyMuklGb
+ qrhTy7pe2HVAxlntrd+US2AaoMzNWU5KFJPiYB5riBJpAcdxji
+ WErFFjNnVWVSU/A6BXMwjJu4svpkZks7/7msaER+KnsrZ665Yr
+ I+h8+8ayX95+oI+FB4mIWzXfk47HhPrzHu5c5CmuI6iOrkdoVQ
+ 9Vr7i0b5yxNMvUfbH0EEJ/bodHN7IDrt+aAOU4S7IkLNv4hMg8
+ 1qKEwR5M2ONitJwqVUPYOQp+RQKszymvaEbtMGwlzJJPJIo6gP
+ bZOZxm5fnxaaVMSIGbjf8+t+nvrwaevWtly4ecC93WxyVDZS4h
+ gsrHXLL7qE4cEiYZkVo4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Of Mathias Nyman
-> Command completion events normally include command completion status,
-> SLOT_ID, and a pointer to the original command. Reset device command
-> completion SLOT_ID may be zero according to xhci specs 4.6.11.
+On Tuesday 24 June 2014 13:46:34 Lee Jones wrote:
+> > > > > converting all addresses to to resources so drivers can easily pull
+> > > > > them out using platform_get_resource() and friends.  Pushing the reg
+> > > > 
+> > > > right. Can't we use of_address_to_resource here?
+> > > 
+> > > We could, but that would be an extra layer.  We'd be pulling the
+> > > address, putting it into a resource, then pulling it from the resource
+> > > for use.  If we're going to be pulling addresses out manually, we're
+> > > probably better off using of_get_address().  But again, we're just
+> > > carrying out functionality which is already provided by the
+> > > framework.
+> > 
+> > there is also of_ioremap().
 > 
-> VIA controllers set the SLOT_ID to zero, triggering a WARN_ON in the
-> command completion handler.
-> 
-> Use the SLOT ID found from the original command instead.
-> 
-> This patch should be applied to stable kernels since 3.13 that contain
-> the commit 20e7acb13ff48fbc884d5918c3697c27de63922a
-> "xhci: use completion event's slot id rather than dig it out of command"
-> 
-> Cc: stable@vger.kernel.org # 3.13
-> Reported-by: Saran Neti <sarannmr@gmail.com>
-> Tested-by: Saran Neti <sarannmr@gmail.com>
-> Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-> ---
->  drivers/usb/host/xhci-ring.c | 7 +++++--
->  1 file changed, 5 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
-> index d67ff71..71657d3 100644
-> --- a/drivers/usb/host/xhci-ring.c
-> +++ b/drivers/usb/host/xhci-ring.c
-> @@ -1433,8 +1433,11 @@ static void handle_cmd_completion(struct xhci_hcd *xhci,
->  		xhci_handle_cmd_reset_ep(xhci, slot_id, cmd_trb, cmd_comp_code);
->  		break;
->  	case TRB_RESET_DEV:
-> -		WARN_ON(slot_id != TRB_TO_SLOT_ID(
-> -				le32_to_cpu(cmd_trb->generic.field[3])));
-> +		/* SLOT_ID field in reset device cmd completion event TRB is 0.
+> Isn't this SPARK only?  And doesn't it require a populated resource?  
+> Which is what I'm saying is the issue here i.e. we don't have one.
 
-Minor nit...
-Surely is would be better to say 'is undefined' or 'may be zero'.
+Sorry, I meant of_iomap(). I think it's only for historic reaons
+that we have both. Probably of_iomap started out on powerpc with
+the same intention as the sparc of_ioremap.
 
-	David
+of_iomap does not require a resource, just an index.
 
-
-
+	Arnd
