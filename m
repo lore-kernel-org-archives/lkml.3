@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756151AbaFXQWD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:22:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33067 "EHLO
+	id S1756344AbaFXQWc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:22:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33062 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964827AbaFXPyl (ORCPT
+	with ESMTP id S964815AbaFXPyj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:54:41 -0400
+	Tue, 24 Jun 2014 11:54:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        stephen hemminger <stephen@networkplumber.org>,
-        Pravin B Shelar <pshelar@nicira.com>,
-        Cong Wang <cwang@twopensource.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>
-Subject: [PATCH 3.14 32/68] vxlan: use dev->needed_headroom instead of dev->hard_header_len
-Date: Tue, 24 Jun 2014 11:50:51 -0400
-Message-Id: <20140624154725.367671252@linuxfoundation.org>
+        Xiao Jin <jin.xiao@intel.com>, Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.14 41/68] USB: cdc-acm: fix broken runtime suspend
+Date: Tue, 24 Jun 2014 11:51:00 -0400
+Message-Id: <20140624154725.780075702@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154723.907894814@linuxfoundation.org>
 References: <20140624154723.907894814@linuxfoundation.org>
@@ -32,54 +28,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cong Wang <cwang@twopensource.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-[ Upstream commit 2853af6a2ea1a8ed09b09dd4fb578e7f435e8d34 ]
+commit 140cb81ac8c625942a1d695875932c615767a526 upstream.
 
-When we mirror packets from a vxlan tunnel to other device,
-the mirror device should see the same packets (that is, without
-outer header). Because vxlan tunnel sets dev->hard_header_len,
-tcf_mirred() resets mac header back to outer mac, the mirror device
-actually sees packets with outer headers
+The current ACM runtime-suspend implementation is broken in several
+ways:
 
-Vxlan tunnel should set dev->needed_headroom instead of
-dev->hard_header_len, like what other ip tunnels do. This fixes
-the above problem.
+Firstly, it buffers only the first write request being made while
+suspended -- any further writes are silently dropped.
 
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: stephen hemminger <stephen@networkplumber.org>
-Cc: Pravin B Shelar <pshelar@nicira.com>
-Signed-off-by: Cong Wang <cwang@twopensource.com>
-Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Secondly, writes being dropped also leak write urbs, which are never
+reclaimed (until the device is unbound).
+
+Thirdly, even the single buffered write is not cleared at shutdown
+(which may happen before the device is resumed), something which can
+lead to another urb leak as well as a PM usage-counter leak.
+
+Fix this by implementing a delayed-write queue using urb anchors and
+making sure to discard the queue properly at shutdown.
+
+Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
+that support remote wakeup")
+
+Reported-by: Xiao Jin <jin.xiao@intel.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/vxlan.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
 
---- a/drivers/net/vxlan.c
-+++ b/drivers/net/vxlan.c
-@@ -2282,9 +2282,9 @@ static void vxlan_setup(struct net_devic
- 	eth_hw_addr_random(dev);
- 	ether_setup(dev);
- 	if (vxlan->default_dst.remote_ip.sa.sa_family == AF_INET6)
--		dev->hard_header_len = ETH_HLEN + VXLAN6_HEADROOM;
-+		dev->needed_headroom = ETH_HLEN + VXLAN6_HEADROOM;
- 	else
--		dev->hard_header_len = ETH_HLEN + VXLAN_HEADROOM;
-+		dev->needed_headroom = ETH_HLEN + VXLAN_HEADROOM;
+---
+ drivers/usb/class/cdc-acm.c |   32 ++++++++++++++++++++++----------
+ drivers/usb/class/cdc-acm.h |    2 +-
+ 2 files changed, 23 insertions(+), 11 deletions(-)
+
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -571,6 +571,8 @@ static void acm_port_destruct(struct tty
+ static void acm_port_shutdown(struct tty_port *port)
+ {
+ 	struct acm *acm = container_of(port, struct acm, port);
++	struct urb *urb;
++	struct acm_wb *wb;
+ 	int i;
  
- 	dev->netdev_ops = &vxlan_netdev_ops;
- 	dev->destructor = free_netdev;
-@@ -2667,8 +2667,7 @@ static int vxlan_newlink(struct net *net
- 		if (!tb[IFLA_MTU])
- 			dev->mtu = lowerdev->mtu - (use_ipv6 ? VXLAN6_HEADROOM : VXLAN_HEADROOM);
+ 	dev_dbg(&acm->control->dev, "%s\n", __func__);
+@@ -579,6 +581,16 @@ static void acm_port_shutdown(struct tty
+ 	if (!acm->disconnected) {
+ 		usb_autopm_get_interface(acm->control);
+ 		acm_set_control(acm, acm->ctrlout = 0);
++
++		for (;;) {
++			urb = usb_get_from_anchor(&acm->delayed);
++			if (!urb)
++				break;
++			wb = urb->context;
++			wb->use = 0;
++			usb_autopm_put_interface_async(acm->control);
++		}
++
+ 		usb_kill_urb(acm->ctrlurb);
+ 		for (i = 0; i < ACM_NW; i++)
+ 			usb_kill_urb(acm->wb[i].urb);
+@@ -646,12 +658,9 @@ static int acm_tty_write(struct tty_stru
  
--		/* update header length based on lower device */
--		dev->hard_header_len = lowerdev->hard_header_len +
-+		dev->needed_headroom = lowerdev->hard_header_len +
- 				       (use_ipv6 ? VXLAN6_HEADROOM : VXLAN_HEADROOM);
- 	} else if (use_ipv6)
- 		vxlan->flags |= VXLAN_F_IPV6;
+ 	usb_autopm_get_interface_async(acm->control);
+ 	if (acm->susp_count) {
+-		if (!acm->delayed_wb)
+-			acm->delayed_wb = wb;
+-		else
+-			usb_autopm_put_interface_async(acm->control);
++		usb_anchor_urb(wb->urb, &acm->delayed);
+ 		spin_unlock_irqrestore(&acm->write_lock, flags);
+-		return count;	/* A white lie */
++		return count;
+ 	}
+ 	usb_mark_last_busy(acm->dev);
+ 
+@@ -1267,6 +1276,7 @@ made_compressed_probe:
+ 		acm->bInterval = epread->bInterval;
+ 	tty_port_init(&acm->port);
+ 	acm->port.ops = &acm_port_ops;
++	init_usb_anchor(&acm->delayed);
+ 
+ 	buf = usb_alloc_coherent(usb_dev, ctrlsize, GFP_KERNEL, &acm->ctrl_dma);
+ 	if (!buf) {
+@@ -1537,7 +1547,7 @@ static int acm_suspend(struct usb_interf
+ static int acm_resume(struct usb_interface *intf)
+ {
+ 	struct acm *acm = usb_get_intfdata(intf);
+-	struct acm_wb *wb;
++	struct urb *urb;
+ 	int rv = 0;
+ 
+ 	spin_lock_irq(&acm->read_lock);
+@@ -1549,10 +1559,12 @@ static int acm_resume(struct usb_interfa
+ 	if (test_bit(ASYNCB_INITIALIZED, &acm->port.flags)) {
+ 		rv = usb_submit_urb(acm->ctrlurb, GFP_ATOMIC);
+ 
+-		if (acm->delayed_wb) {
+-			wb = acm->delayed_wb;
+-			acm->delayed_wb = NULL;
+-			acm_start_wb(acm, wb);
++		for (;;) {
++			urb = usb_get_from_anchor(&acm->delayed);
++			if (!urb)
++				break;
++
++			acm_start_wb(acm, urb->context);
+ 		}
+ 
+ 		/*
+--- a/drivers/usb/class/cdc-acm.h
++++ b/drivers/usb/class/cdc-acm.h
+@@ -120,7 +120,7 @@ struct acm {
+ 	unsigned int throttled:1;			/* actually throttled */
+ 	unsigned int throttle_req:1;			/* throttle requested */
+ 	u8 bInterval;
+-	struct acm_wb *delayed_wb;			/* write queued for a device about to be woken */
++	struct usb_anchor delayed;			/* writes queued for a device about to be woken */
+ };
+ 
+ #define CDC_DATA_INTERFACE_TYPE	0x0a
 
 
