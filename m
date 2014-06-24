@@ -1,94 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753582AbaFXM4O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 08:56:14 -0400
-Received: from mailapp01.imgtec.com ([195.59.15.196]:9827 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752842AbaFXM4M (ORCPT
+	id S1753100AbaFXNBw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 09:01:52 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:53222 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751530AbaFXNBu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 08:56:12 -0400
-Message-ID: <53A9755F.9000403@imgtec.com>
-Date: Tue, 24 Jun 2014 13:55:59 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 24 Jun 2014 09:01:50 -0400
+Message-ID: <53A976B7.3070709@ozlabs.ru>
+Date: Tue, 24 Jun 2014 23:01:43 +1000
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Daniel Walter <dwalter@google.com>, Ralf Baechle <ralf@linux-mips.org>
-CC: <linux-mips@linux-mips.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3] arch/mips/rb532: replace mac_addr parsing
-References: <20140624111426.GA15160@google.com>
-In-Reply-To: <20140624111426.GA15160@google.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Alexander Graf <agraf@suse.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Alex Williamson <alex.williamson@redhat.com>
+CC: linuxppc-dev@lists.ozlabs.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
+Subject: Re: [PATCH] vfio: Fix endianness handling for emulated BARs
+References: <1403091391-31780-1-git-send-email-aik@ozlabs.ru>	 <1403116512.3707.175.camel@ul30vt.home> <53A233E9.6030006@ozlabs.ru>	 <53A241F6.9010307@ozlabs.ru> <53A25D74.5000804@ozlabs.ru>	 <1403234514.3707.278.camel@ul30vt.home> <1403305961.4587.66.camel@pasglop> <53A94EBD.101@ozlabs.ru> <53A955F5.6050801@suse.de> <53A9741B.1040500@ozlabs.ru> <53A97486.4070604@suse.de>
+In-Reply-To: <53A97486.4070604@suse.de>
+Content-Type: text/plain; charset=KOI8-R
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.101]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/06/14 12:14, Daniel Walter wrote:
-> Replace parse_mac_addr with mac_pton().
+On 06/24/2014 10:52 PM, Alexander Graf wrote:
 > 
+> On 24.06.14 14:50, Alexey Kardashevskiy wrote:
+>> On 06/24/2014 08:41 PM, Alexander Graf wrote:
+>>> On 24.06.14 12:11, Alexey Kardashevskiy wrote:
+>>>> On 06/21/2014 09:12 AM, Benjamin Herrenschmidt wrote:
+>>>>> On Thu, 2014-06-19 at 21:21 -0600, Alex Williamson wrote:
+>>>>>
+>>>>>> Working on big endian being an accident may be a matter of perspective
+>>>>>    :-)
+>>>>>
+>>>>>> The comment remains that this patch doesn't actually fix anything except
+>>>>>> the overhead on big endian systems doing redundant byte swapping and
+>>>>>> maybe the philosophy that vfio regions are little endian.
+>>>>> Yes, that works by accident because technically VFIO is a transport and
+>>>>> thus shouldn't perform any endian swapping of any sort, which remains
+>>>>> the responsibility of the end driver which is the only one to know
+>>>>> whether a given BAR location is a a register or some streaming data
+>>>>> and in the former case whether it's LE or BE (some PCI devices are BE
+>>>>> even ! :-)
+>>>>>
+>>>>> But yes, in the end, it works with the dual "cancelling" swaps and the
+>>>>> overhead of those swaps is probably drowned in the noise of the syscall
+>>>>> overhead.
+>>>>>
+>>>>>> I'm still not a fan of iowrite vs iowritebe, there must be something we
+>>>>>> can use that doesn't have an implicit swap.
+>>>>> Sadly there isn't ... In the old day we didn't even have the "be"
+>>>>> variant and readl/writel style accessors still don't have them either
+>>>>> for all archs.
+>>>>>
+>>>>> There is __raw_readl/writel but here the semantics are much more than
+>>>>> just "don't swap", they also don't have memory barriers (which means
+>>>>> they are essentially useless to most drivers unless those are platform
+>>>>> specific drivers which know exactly what they are doing, or in the rare
+>>>>> cases such as accessing a framebuffer which we know never have side
+>>>>> effects).
+>>>>>
+>>>>>>    Calling it iowrite*_native is also an abuse of the namespace.
+>>>>>>    Next thing we know some common code
+>>>>>> will legitimately use that name.
+>>>>> I might make sense to those definitions into a common header. There have
+>>>>> been a handful of cases in the past that wanted that sort of "native
+>>>>> byte order" MMIOs iirc (though don't ask me for examples, I can't really
+>>>>> remember).
+>>>>>
+>>>>>>    If we do need to define an alias
+>>>>>> (which I'd like to avoid) it should be something like vfio_iowrite32.
+>>>> Ping?
+>>>>
+>>>> We need to make a decision whether to move those xxx_native() helpers
+>>>> somewhere (where?) or leave the patch as is (as we figured out that
+>>>> iowriteXX functions implement barriers and we cannot just use raw
+>>>> accessors) and fix commit log to explain everything.
+>>> Is there actually any difference in generated code with this patch applied
+>>> and without? I would hope that iowrite..() is inlined and cancels out the
+>>> cpu_to_le..() calls that are also inlined?
+>> iowrite32 is a non-inline function so conversions take place so are the
+>> others. And sorry but I fail to see why this matters. We are not trying to
+>> accelerate things, we are removing redundant operations which confuse
+>> people who read the code.
 > 
-> Signed-off-by: Daniel Walter <dwalter@google.com>
+> The confusion depends on where you're coming from. If you happen to know
+> that "iowrite32" writes in LE, then the LE conversion makes a lot of sense.
 
-Reviewed-by: James Hogan <james.hogan@imgtec.com>
+It was like this (and this is just confusing):
 
-Cheers
-James
+iowrite32(le32_to_cpu(val), io + off);
 
-> ---
-> Changes since v2
->   Use mac_pton() instead of sscanf()
->   added error handling in case could not be parsed
-> ---
-> Patch applies against current linux-git
-> ---
->  arch/mips/rb532/devices.c | 27 ++++-----------------------
->  1 file changed, 4 insertions(+), 23 deletions(-)
-> ---
-> diff --git a/arch/mips/rb532/devices.c b/arch/mips/rb532/devices.c
-> index 3af00b2..03a4cdc 100644
-> --- a/arch/mips/rb532/devices.c
-> +++ b/arch/mips/rb532/devices.c
-> @@ -250,28 +250,6 @@ static struct platform_device *rb532_devs[] = {
->  	&rb532_wdt
->  };
->  
-> -static void __init parse_mac_addr(char *macstr)
-> -{
-> -	int i, h, l;
-> -
-> -	for (i = 0; i < 6; i++) {
-> -		if (i != 5 && *(macstr + 2) != ':')
-> -			return;
-> -
-> -		h = hex_to_bin(*macstr++);
-> -		if (h == -1)
-> -			return;
-> -
-> -		l = hex_to_bin(*macstr++);
-> -		if (l == -1)
-> -			return;
-> -
-> -		macstr++;
-> -		korina_dev0_data.mac[i] = (h << 4) + l;
-> -	}
-> -}
-> -
-> -
->  /* NAND definitions */
->  #define NAND_CHIP_DELAY 25
->  
-> @@ -333,7 +311,10 @@ static int __init plat_setup_devices(void)
->  static int __init setup_kmac(char *s)
->  {
->  	printk(KERN_INFO "korina mac = %s\n", s);
-> -	parse_mac_addr(s);
-> +	if (!mac_pton(s, korina_dev0_data.mac)) {
-> +		printk(KERN_ERR "Invalid mac\n");
-> +		return -EINVAL;
-> +	}
->  	return 0;
->  }
->  
-> 
+What would make sense (according to you and I would understand this) is this:
+
+iowrite32(cpu_to_le32(val), io + off);
+
+
+Or I missed your point, did I?
+
+
+> I don't have a strong feeling either way though and will let Alex decide on
+> the path forward :)
+
+It would probably help if you picked the side :)
+
+
+-- 
+Alexey
