@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756059AbaFXUqE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:46:04 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47638 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754490AbaFXUam (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754523AbaFXUam (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 24 Jun 2014 16:30:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47588 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754165AbaFXUah (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 16:30:37 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: George McCollister <george.mccollister@gmail.com>,
-        Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 54/65] USB: ftdi_sio: add NovaTech OrionLXm product ID
-Date: Tue, 24 Jun 2014 13:30:14 -0700
-Message-Id: <1403641825-12825-55-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 08/65] ACPI / blacklist: Add dmi_enable_osi_linux quirk for Asus EEE PC 1015PX
+Date: Tue, 24 Jun 2014 13:29:28 -0700
+Message-Id: <1403641825-12825-9-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
 References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
@@ -29,55 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: George McCollister <george.mccollister@gmail.com>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit d0839d757e6294921c31b1c4ca4f1dcc5df63bcd upstream.
+commit f6e6e1b9fee88c90586787b71dc49bb3ce62bb89 upstream.
 
-The NovaTech OrionLXm uses an onboard FTDI serial converter for JTAG and
-console access.
+Without this this EEE PC exports a non working WMI interface, with this it
+exports a working "good old" eeepc_laptop interface, fixing brightness control
+not working as well as rfkill being stuck in a permanent wireless blocked
+state.
 
-Here is the lsusb output:
-Bus 004 Device 123: ID 0403:7c90 Future Technology Devices
-International, Ltd
+This is not an ideal way to fix this, but various attempts to fix this
+otherwise have failed, see:
 
-Signed-off-by: George McCollister <george.mccollister@gmail.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+References: https://bugzilla.redhat.com/show_bug.cgi?id=1067181
+Reported-and-tested-by: lou.cardone@gmail.com
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/ftdi_sio.c     | 2 ++
- drivers/usb/serial/ftdi_sio_ids.h | 5 +++++
- 2 files changed, 7 insertions(+)
+ drivers/acpi/blacklist.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index 13d8c33..0e9c7e3 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -585,6 +585,8 @@ static struct usb_device_id id_table_combined [] = {
- 	{ USB_DEVICE(FTDI_VID, FTDI_TAVIR_STK500_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_TIAO_UMPA_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
-+	{ USB_DEVICE(FTDI_VID, FTDI_NT_ORIONLXM_PID),
-+		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
- 	/*
- 	 * ELV devices:
- 	 */
-diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-index 993c93d..500474c 100644
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -538,6 +538,11 @@
-  */
- #define FTDI_TIAO_UMPA_PID	0x8a98	/* TIAO/DIYGADGET USB Multi-Protocol Adapter */
+diff --git a/drivers/acpi/blacklist.c b/drivers/acpi/blacklist.c
+index cb96296..76da257 100644
+--- a/drivers/acpi/blacklist.c
++++ b/drivers/acpi/blacklist.c
+@@ -327,6 +327,19 @@ static struct dmi_system_id acpi_osi_dmi_table[] __initdata = {
+ 		     DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T500"),
+ 		},
+ 	},
++	/*
++	 * Without this this EEEpc exports a non working WMI interface, with
++	 * this it exports a working "good old" eeepc_laptop interface, fixing
++	 * both brightness control, and rfkill not working.
++	 */
++	{
++	.callback = dmi_enable_osi_linux,
++	.ident = "Asus EEE PC 1015PX",
++	.matches = {
++		     DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK Computer INC."),
++		     DMI_MATCH(DMI_PRODUCT_NAME, "1015PX"),
++		},
++	},
+ 	{}
+ };
  
-+/*
-+ * NovaTech product ids (FTDI_VID)
-+ */
-+#define FTDI_NT_ORIONLXM_PID	0x7c90	/* OrionLXm Substation Automation Platform */
-+
- 
- /********************************/
- /** third-party VID/PID combos **/
 -- 
 1.9.1
 
