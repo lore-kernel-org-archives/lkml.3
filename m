@@ -1,49 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754199AbaFXPMH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:12:07 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:45835 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752441AbaFXPMF (ORCPT
+	id S1753838AbaFXPSc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:18:32 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:54324 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752392AbaFXPSb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:12:05 -0400
-From: Dave Chiluk <chiluk@canonical.com>
-To: gregkh@linuxfoundation.org, rdunlap@infradead.org, stable@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, bjorn@mork.no,
-        joe@perches.com
-Subject: [PATCH v3] stable_kernel_rules: Add pointer to netdev-FAQ for network patches
-Date: Tue, 24 Jun 2014 10:11:26 -0500
-Message-Id: <1403622686-21405-1-git-send-email-chiluk@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <878uomwk8g.fsf@nemi.mork.no>
-References: <878uomwk8g.fsf@nemi.mork.no>
+	Tue, 24 Jun 2014 11:18:31 -0400
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        kgdb-bugreport@lists.sourceforge.net, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Colin Cross <ccross@android.com>, kernel-team@android.com,
+        Rob Herring <robherring2@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Nicolas Pitre <nico@linaro.org>
+Subject: [PATCH v6 0/4] arm: KGDB NMI/FIQ support
+Date: Tue, 24 Jun 2014 16:18:13 +0100
+Message-Id: <1403623097-1153-1-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1403174303-25456-1-git-send-email-daniel.thompson@linaro.org>
+References: <1403174303-25456-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stable_kernel_rules should point submitters of network stable patches to the
-netdev_FAQ.txt as requests for stable network patches should go to netdev
-first.
+This patchset makes it possible to use kgdb's NMI infrastructure on ARM
+platforms.
 
-Signed-off-by: Dave Chiluk <chiluk@canonical.com>
----
- Documentation/stable_kernel_rules.txt | 3 +++
- 1 file changed, 3 insertions(+)
+The patches have been previously circulated as part of a large patchset
+mixing together ARM architecture code and driver changes
+(http://thread.gmane.org/gmane.linux.ports.arm.kernel/333901 ). This
+patchset is dramatically cut down to include only the arch/arm code. The
+driver code (irqchip and tty/serial) will follow when/if the arch code
+is accepted.
 
-diff --git a/Documentation/stable_kernel_rules.txt b/Documentation/stable_kernel_rules.txt
-index cbc2f03..aee73e7 100644
---- a/Documentation/stable_kernel_rules.txt
-+++ b/Documentation/stable_kernel_rules.txt
-@@ -29,6 +29,9 @@ Rules on what kind of patches are accepted, and which ones are not, into the
- 
- Procedure for submitting patches to the -stable tree:
- 
-+ - If the patch covers files in net/ or drivers/net please follow netdev stable
-+   submission guidelines as described in
-+   Documentation/networking/netdev-FAQ.txt
-  - Send the patch, after verifying that it follows the above rules, to
-    stable@vger.kernel.org.  You must note the upstream commit ID in the
-    changelog of your submission, as well as the kernel version you wish
--- 
-1.9.1
+The first two patches modify the FIQ infrastructure to allow interrupt
+controller drivers to register callbacks (the fiq_chip structure) to
+manage FIQ routings and to signal FIQ EOI. This makes it possible to
+use FIQ in multi-platform kernels and with recent ARM interrupt
+controllers.
+
+The remaining two patches provide architecture support for KGDB's NMI
+feature (and rely upon the preceding changes to the FIQ code).
+
+Tested on qemu (versatile), STiH416 (B2020 board) and Freescale i.MX6
+quad (wandboard).
+
+Changes since v5:
+
+- Separated anything not strictly impacting arch/arm.
+- Fixed a spurious add/remove of code within the series (there was
+  broken code in intermediate patches)
+
+For previous changes see:
+http://thread.gmane.org/gmane.linux.ports.arm.kernel/333901
+
+
+Anton Vorontsov (2):
+  ARM: Move some macros from entry-armv to entry-header
+  ARM: Add KGDB/KDB FIQ debugger generic code
+
+Daniel Thompson (2):
+  arm: fiq: Add callbacks to manage FIQ routings
+  arm: fiq: Allow EOI to be communicated to the intc
+
+ arch/arm/Kconfig                 |   2 +
+ arch/arm/Kconfig.debug           |  18 +++++
+ arch/arm/include/asm/fiq.h       |  13 ++++
+ arch/arm/include/asm/kgdb.h      |   7 ++
+ arch/arm/kernel/Makefile         |   1 +
+ arch/arm/kernel/entry-armv.S     | 151 +----------------------------------
+ arch/arm/kernel/entry-header.S   | 164 +++++++++++++++++++++++++++++++++++++++
+ arch/arm/kernel/fiq.c            | 112 +++++++++++++++++++++++++-
+ arch/arm/kernel/kgdb_fiq.c       | 124 +++++++++++++++++++++++++++++
+ arch/arm/kernel/kgdb_fiq_entry.S |  87 +++++++++++++++++++++
+ 10 files changed, 527 insertions(+), 152 deletions(-)
+ create mode 100644 arch/arm/kernel/kgdb_fiq.c
+ create mode 100644 arch/arm/kernel/kgdb_fiq_entry.S
+
+--
+1.9.3
 
