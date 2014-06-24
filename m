@@ -1,274 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753141AbaFXKZc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 06:25:32 -0400
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:64282 "EHLO
+	id S1753537AbaFXK05 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 06:26:57 -0400
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:33174 "EHLO
 	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752582AbaFXKZ3 (ORCPT
+	with ESMTP id S1752608AbaFXK0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 06:25:29 -0400
-Date: Tue, 24 Jun 2014 11:25:22 +0100
+	Tue, 24 Jun 2014 06:26:54 -0400
+Date: Tue, 24 Jun 2014 11:26:43 +0100
 From: Lee Jones <lee.jones@linaro.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Andrew Bresticker <abrestic@chromium.org>, swarren@wwwdotorg.org,
-        olof@lixom.net, Sonny Rao <sonnyrao@chromium.org>,
-        linux-samsung-soc@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Bill Richardson <wfrichar@chromium.org>, sjg@chromium.org,
-        Wolfram Sang <wsa@the-dreams.de>, broonie@kernel.org,
-        dmitry.torokhov@gmail.com, sameo@linux.intel.com, geert@linux-m68k.org,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 10/10] mfd: cros_ec: move EC interrupt to cros_ec_keyb
-Message-ID: <20140624102522.GI13803@lee--X1>
-References: <1403115247-8853-1-git-send-email-dianders@chromium.org>
- <1403115247-8853-11-git-send-email-dianders@chromium.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: wsa@the-dreams.de, grant.likely@linaro.org, linux-i2c@vger.kernel.org,
+        devicetree@vger.kernel.org, linus.walleij@linaro.org
+Subject: Re: [PATCH] gpio: crystalcove: Fix implicit declaration of function
+ 'seq_printf' error
+Message-ID: <20140624102643.GJ13803@lee--X1>
+References: <1403265753-25851-1-git-send-email-lee.jones@linaro.org>
+ <1403265753-25851-3-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1403115247-8853-11-git-send-email-dianders@chromium.org>
+In-Reply-To: <1403265753-25851-3-git-send-email-lee.jones@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Jun 2014, Doug Anderson wrote:
+Hmm... a leftover patch in my 'send' directory I feel!
 
-> From: Andrew Bresticker <abrestic@chromium.org>
+Please ignore.
+
+> drivers/gpio/gpio-crystalcove.c: In function 'crystalcove_gpio_dbg_show':
+> drivers/gpio/gpio-crystalcove.c:286:3: error: implicit declaration of function 'seq_printf'
+>    seq_printf(s, " gpio-%-2d %s %s %s %s ctlo=%2x,%s %s %s\n",
 > 
-> If we receive EC interrupts after the cros_ec driver has probed, but
-> before the cros_ec_keyb driver has probed, the cros_ec IRQ handler
-> will not run the cros_ec_keyb notifier and the EC will leave the IRQ
-> line asserted.  The cros_ec IRQ handler then returns IRQ_HANDLED and
-> the resulting flood of interrupts causes the machine to hang.
-> 
-> Since the EC interrupt is currently only used for the keyboard, move
-> the setup and handling of the EC interrupt to the cros_ec_keyb driver.
-> 
-> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 > ---
-> Changes in v2:
-> - IRQs should be optional => move EC interrupt to keyboard.
+>  drivers/gpio/gpio-crystalcove.c | 1 +
+>  1 file changed, 1 insertion(+)
 > 
->  drivers/input/keyboard/cros_ec_keyb.c | 58 ++++++++++++++++++++---------------
->  drivers/mfd/cros_ec.c                 | 35 +--------------------
->  include/linux/mfd/cros_ec.h           |  2 --
->  3 files changed, 34 insertions(+), 61 deletions(-)
-
-For the MFD changes:
-  Acked-by: Lee Jones <lee.jones@linaro.org>
- 
-> diff --git a/drivers/input/keyboard/cros_ec_keyb.c b/drivers/input/keyboard/cros_ec_keyb.c
-> index b8341ab..791781a 100644
-> --- a/drivers/input/keyboard/cros_ec_keyb.c
-> +++ b/drivers/input/keyboard/cros_ec_keyb.c
-> @@ -24,8 +24,8 @@
->  #include <linux/module.h>
->  #include <linux/i2c.h>
->  #include <linux/input.h>
-> +#include <linux/interrupt.h>
->  #include <linux/kernel.h>
-> -#include <linux/notifier.h>
+> diff --git a/drivers/gpio/gpio-crystalcove.c b/drivers/gpio/gpio-crystalcove.c
+> index 5a98499..934462f 100644
+> --- a/drivers/gpio/gpio-crystalcove.c
+> +++ b/drivers/gpio/gpio-crystalcove.c
+> @@ -18,6 +18,7 @@
+>  #include <linux/interrupt.h>
 >  #include <linux/platform_device.h>
->  #include <linux/slab.h>
->  #include <linux/input/matrix_keypad.h>
-> @@ -42,7 +42,6 @@
->   * @dev: Device pointer
->   * @idev: Input device
->   * @ec: Top level ChromeOS device to use to talk to EC
-> - * @event_notifier: interrupt event notifier for transport devices
->   */
->  struct cros_ec_keyb {
->  	unsigned int rows;
-> @@ -55,7 +54,6 @@ struct cros_ec_keyb {
->  	struct device *dev;
->  	struct input_dev *idev;
->  	struct cros_ec_device *ec;
-> -	struct notifier_block notifier;
->  };
->  
->  
-> @@ -173,22 +171,6 @@ static void cros_ec_keyb_process(struct cros_ec_keyb *ckdev,
->  	input_sync(ckdev->idev);
->  }
->  
-> -static int cros_ec_keyb_open(struct input_dev *dev)
-> -{
-> -	struct cros_ec_keyb *ckdev = input_get_drvdata(dev);
-> -
-> -	return blocking_notifier_chain_register(&ckdev->ec->event_notifier,
-> -						&ckdev->notifier);
-> -}
-> -
-> -static void cros_ec_keyb_close(struct input_dev *dev)
-> -{
-> -	struct cros_ec_keyb *ckdev = input_get_drvdata(dev);
-> -
-> -	blocking_notifier_chain_unregister(&ckdev->ec->event_notifier,
-> -					   &ckdev->notifier);
-> -}
-> -
->  static int cros_ec_keyb_get_state(struct cros_ec_keyb *ckdev, uint8_t *kb_state)
->  {
->  	struct cros_ec_command msg = {
-> @@ -203,19 +185,41 @@ static int cros_ec_keyb_get_state(struct cros_ec_keyb *ckdev, uint8_t *kb_state)
->  	return ckdev->ec->cmd_xfer(ckdev->ec, &msg);
->  }
->  
-> -static int cros_ec_keyb_work(struct notifier_block *nb,
-> -		     unsigned long state, void *_notify)
-> +static irqreturn_t cros_ec_keyb_irq(int irq, void *data)
->  {
-> +	struct cros_ec_keyb *ckdev = data;
-> +	struct cros_ec_device *ec = ckdev->ec;
->  	int ret;
-> -	struct cros_ec_keyb *ckdev = container_of(nb, struct cros_ec_keyb,
-> -						    notifier);
->  	uint8_t kb_state[ckdev->cols];
->  
-> +	if (device_may_wakeup(ec->dev))
-> +		pm_wakeup_event(ec->dev, 0);
-> +
->  	ret = cros_ec_keyb_get_state(ckdev, kb_state);
->  	if (ret >= 0)
->  		cros_ec_keyb_process(ckdev, kb_state, ret);
-> +	else
-> +		dev_err(ec->dev, "failed to get keyboard state: %d\n", ret);
->  
-> -	return NOTIFY_DONE;
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static int cros_ec_keyb_open(struct input_dev *dev)
-> +{
-> +	struct cros_ec_keyb *ckdev = input_get_drvdata(dev);
-> +	struct cros_ec_device *ec = ckdev->ec;
-> +
-> +	return request_threaded_irq(ec->irq, NULL, cros_ec_keyb_irq,
-> +					IRQF_TRIGGER_LOW | IRQF_ONESHOT,
-> +					"cros_ec_keyb", ckdev);
-> +}
-> +
-> +static void cros_ec_keyb_close(struct input_dev *dev)
-> +{
-> +	struct cros_ec_keyb *ckdev = input_get_drvdata(dev);
-> +	struct cros_ec_device *ec = ckdev->ec;
-> +
-> +	free_irq(ec->irq, ckdev);
->  }
->  
->  static int cros_ec_keyb_probe(struct platform_device *pdev)
-> @@ -246,8 +250,12 @@ static int cros_ec_keyb_probe(struct platform_device *pdev)
->  	if (!idev)
->  		return -ENOMEM;
->  
-> +	if (!ec->irq) {
-> +		dev_err(dev, "no EC IRQ specified\n");
-> +		return -EINVAL;
-> +	}
-> +
->  	ckdev->ec = ec;
-> -	ckdev->notifier.notifier_call = cros_ec_keyb_work;
->  	ckdev->dev = dev;
->  	dev_set_drvdata(&pdev->dev, ckdev);
->  
-> diff --git a/drivers/mfd/cros_ec.c b/drivers/mfd/cros_ec.c
-> index 83e30c6..4873f9c 100644
-> --- a/drivers/mfd/cros_ec.c
-> +++ b/drivers/mfd/cros_ec.c
-> @@ -62,18 +62,6 @@ int cros_ec_check_result(struct cros_ec_device *ec_dev,
->  }
->  EXPORT_SYMBOL(cros_ec_check_result);
->  
-> -static irqreturn_t ec_irq_thread(int irq, void *data)
-> -{
-> -	struct cros_ec_device *ec_dev = data;
-> -
-> -	if (device_may_wakeup(ec_dev->dev))
-> -		pm_wakeup_event(ec_dev->dev, 0);
-> -
-> -	blocking_notifier_call_chain(&ec_dev->event_notifier, 1, ec_dev);
-> -
-> -	return IRQ_HANDLED;
-> -}
-> -
->  static const struct mfd_cell cros_devs[] = {
->  	{
->  		.name = "cros-ec-keyb",
-> @@ -92,8 +80,6 @@ int cros_ec_register(struct cros_ec_device *ec_dev)
->  	struct device *dev = ec_dev->dev;
->  	int err = 0;
->  
-> -	BLOCKING_INIT_NOTIFIER_HEAD(&ec_dev->event_notifier);
-> -
->  	if (ec_dev->din_size) {
->  		ec_dev->din = devm_kzalloc(dev, ec_dev->din_size, GFP_KERNEL);
->  		if (!ec_dev->din)
-> @@ -105,42 +91,23 @@ int cros_ec_register(struct cros_ec_device *ec_dev)
->  			return -ENOMEM;
->  	}
->  
-> -	if (!ec_dev->irq) {
-> -		dev_dbg(dev, "no valid IRQ: %d\n", ec_dev->irq);
-> -		return err;
-> -	}
-> -
-> -	err = request_threaded_irq(ec_dev->irq, NULL, ec_irq_thread,
-> -				   IRQF_TRIGGER_LOW | IRQF_ONESHOT,
-> -				   "chromeos-ec", ec_dev);
-> -	if (err) {
-> -		dev_err(dev, "request irq %d: error %d\n", ec_dev->irq, err);
-> -		return err;
-> -	}
-> -
->  	err = mfd_add_devices(dev, 0, cros_devs,
->  			      ARRAY_SIZE(cros_devs),
->  			      NULL, ec_dev->irq, NULL);
->  	if (err) {
->  		dev_err(dev, "failed to add mfd devices\n");
-> -		goto fail_mfd;
-> +		return err;
->  	}
->  
->  	dev_info(dev, "Chrome EC device registered\n");
->  
->  	return 0;
-> -
-> -fail_mfd:
-> -	free_irq(ec_dev->irq, ec_dev);
-> -
-> -	return err;
->  }
->  EXPORT_SYMBOL(cros_ec_register);
->  
->  int cros_ec_remove(struct cros_ec_device *ec_dev)
->  {
->  	mfd_remove_devices(ec_dev->dev);
-> -	free_irq(ec_dev->irq, ec_dev);
->  
->  	return 0;
->  }
-> diff --git a/include/linux/mfd/cros_ec.h b/include/linux/mfd/cros_ec.h
-> index 0ebf26f..fcbe9d1 100644
-> --- a/include/linux/mfd/cros_ec.h
-> +++ b/include/linux/mfd/cros_ec.h
-> @@ -62,7 +62,6 @@ struct cros_ec_command {
->   * @dev: Device pointer
->   * @was_wake_device: true if this device was set to wake the system from
->   * sleep at the last suspend
-> - * @event_notifier: interrupt event notifier for transport devices
->   * @cmd_xfer: send command to EC and get response
->   *     Returns the number of bytes received if the communication succeeded, but
->   *     that doesn't mean the EC was happy with the command. The caller
-> @@ -93,7 +92,6 @@ struct cros_ec_device {
->  	struct device *dev;
->  	bool was_wake_device;
->  	struct class *cros_class;
-> -	struct blocking_notifier_head event_notifier;
->  	int (*cmd_xfer)(struct cros_ec_device *ec,
->  			struct cros_ec_command *msg);
->  
+>  #include <linux/gpio.h>
+> +#include <linux/seq_file.h>
+>  #include <linux/bitops.h>
+>  #include <linux/regmap.h>
+>  #include <linux/mfd/intel_soc_pmic.h>
 
 -- 
 Lee Jones
