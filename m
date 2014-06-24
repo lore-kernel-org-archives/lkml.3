@@ -1,52 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372AbaFXWJP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 18:09:15 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:64184 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751211AbaFXWJO (ORCPT
+	id S1752534AbaFXWLx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 18:11:53 -0400
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:59144 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750985AbaFXWLw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 18:09:14 -0400
-From: Jerry Stralko <gerb.stralko@gmail.com>
-To: greg@kroah.com, linux-kernel@vger.kernel.org
-Cc: swetland@google.com, Jerry Stralko <gerb.stralko@gmail.com>
-Subject: [PATCH] stagging: android: logger: code cleanup
-Date: Tue, 24 Jun 2014 18:09:03 -0400
-Message-Id: <1403647743-3955-1-git-send-email-gerb.stralko@gmail.com>
-X-Mailer: git-send-email 1.9.3
+	Tue, 24 Jun 2014 18:11:52 -0400
+Date: Tue, 24 Jun 2014 18:11:48 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Jet Chen <jet.chen@intel.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        LKP <lkp@01.org>
+Subject: Re: [block, blk] BUG: unable to handle kernel NULL pointer
+ dereference at 0000000000000028
+Message-ID: <20140624221148.GJ14909@htj.dyndns.org>
+References: <53A8F812.5050006@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53A8F812.5050006@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----
- drivers/staging/android/logger.c | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+On Tue, Jun 24, 2014 at 12:01:22PM +0800, Jet Chen wrote:
+> Hi Tejun,
+> 
+> we noticed the below changes on
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-mq-percpu_ref
+> commit c924ec35e72ce0d6c289b858d323f7eb3f5076a5 ("block, blk-mq: draining can't be skipped even if bypass_depth was non-zero")
 
-diff --git a/drivers/staging/android/logger.c b/drivers/staging/android/logger.c
-index 2772e01..9b47e66 100644
---- a/drivers/staging/android/logger.c
-+++ b/drivers/staging/android/logger.c
-@@ -110,8 +110,8 @@ static inline struct logger_log *file_get_log(struct file *file)
- 		struct logger_reader *reader = file->private_data;
- 
- 		return reader->log;
--	} else
--		return file->private_data;
-+	}
-+	return file->private_data;
- }
- 
- /*
-@@ -159,8 +159,7 @@ static size_t get_user_hdr_len(int ver)
- {
- 	if (ver < 2)
- 		return sizeof(struct user_logger_entry_compat);
--	else
--		return sizeof(struct logger_entry);
-+	return sizeof(struct logger_entry);
- }
- 
- static ssize_t copy_header_to_user(int ver, struct logger_entry *entry,
+Yeah, this is from trying to drain NULL root blkcg.  It's hit from
+another path too and will soon be fixed.
+
+Thanks!
+
 -- 
-1.9.3
-
+tejun
