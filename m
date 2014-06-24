@@ -1,82 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966AbaFXOWZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 10:22:25 -0400
-Received: from prod-mail-xrelay07.akamai.com ([72.246.2.115]:34069 "EHLO
-	prod-mail-xrelay07.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753248AbaFXOWX (ORCPT
+	id S1753639AbaFXOZx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 10:25:53 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:51741 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752179AbaFXOZv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 10:22:23 -0400
-Message-ID: <53A9899C.9040005@akamai.com>
-Date: Tue, 24 Jun 2014 09:22:20 -0500
-From: Josh Hunt <johunt@akamai.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 24 Jun 2014 10:25:51 -0400
+Date: Tue, 24 Jun 2014 10:25:51 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Paul Bolle <pebolle@tiscali.nl>
+cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Randy Dunlap <rdunlap@infradead.org>, <linux-usb@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] USB: remove CONFIG_USB_PERSIST from Documentation
+In-Reply-To: <1403604665.1960.14.camel@x220>
+Message-ID: <Pine.LNX.4.44L0.1406241017250.990-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Baron, Jason" <jbaron@akamai.com>
-Subject: Re: [PATCH] panic: add TAINT_SOFTLOCKUP
-References: <1401847955-3345-1-git-send-email-johunt@akamai.com>	<20140623151121.44f17779004e94ab620b837c@linux-foundation.org>	<53A8ADEC.6070406@akamai.com> <20140623155118.e2446a6110a9889454db2386@linux-foundation.org>
-In-Reply-To: <20140623155118.e2446a6110a9889454db2386@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2014 05:51 PM, Andrew Morton wrote:
-> On Mon, 23 Jun 2014 17:45:00 -0500 Josh Hunt <johunt@akamai.com> wrote:
->
->> On 06/23/2014 05:11 PM, Andrew Morton wrote:
->>> On Tue,  3 Jun 2014 22:12:35 -0400 Josh Hunt <johunt@akamai.com> wrote:
->>>
->>>> This taint flag will be set if the system has ever entered a softlockup
->>>> state. Similar to TAINT_WARN it is useful to know whether or not the system
->>>> has been in a softlockup state when debugging.
->>>>
->>>> ...
->>>>
->>>> @@ -329,6 +329,7 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
->>>>
->>>>    		if (softlockup_panic)
->>>>    			panic("softlockup: hung tasks");
->>>> +		add_taint(TAINT_SOFTLOCKUP, LOCKDEP_STILL_OK);
->>>>    		__this_cpu_write(soft_watchdog_warn, true);
->>>>    	} else
->>>>    		__this_cpu_write(soft_watchdog_warn, false);
->>>
->>> Would make more sense to have applied the taint *before* calling
->>> panic()?
->>
->> Andrew
->>
->> Yep, that's a good call. Thanks. Do you want me to send a v2 or did you
->> take care of it?
->
-> I fixed it up.
->
->> In addition to adding the softlockup taint flag, do you think it'd be
->> reasonable to add another flag for page allocation failures? I think
->> it'd be nice to be able to account for these conditions somehow without
->> having to parse dmesg, etc. As with the softlockup flag, it's helpful to
->> know if your system had encountered a page allocation failure at some
->> point before the crash or whatever you're debugging.
->
-> I don't know, really.  Allocation failures are often an expected thing
-> as drivers try to work out how much memory they can allocate.  Those
-> things can be screened out by testing __GFP_NOWARN.  GFP_ATOMIC
-> failures should probably be ignored, except for when they shouldn't.
-> But even then, allocation failures are somewhat common.  And recency is
-> a concern: an allocation failure 10 minutes ago is unlikely to be
-> relevant.
->
-> But that's just me waving hands around.  I'd be interested to hear from
-> people whose kernels crash more often than mine, and from those whose
-> job is to support them (ie distro people?).
->
+On Tue, 24 Jun 2014, Paul Bolle wrote:
 
-Anyone you'd suggest adding to this thread to get other feedback about 
-tracking page allocation failures? I could also spin up a patch and cc them.
+> CONFIG_USB_PERSIST was removed in v2.6.26. Remove a reference to it from
+> Documentation. That reference was a bit odd to begin with.
+> 
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> "[...] under certain circumstances [...]"? Is that about
+> USB_QUIRK_RESET_RESUME? Anyhow, I feel this paragraph needs more work,
+> but that would require quite a bit of hand-holding. Perhaps Alan or Greg
+> would like to hold my hand here...
+> 
+>  Documentation/usb/power-management.txt | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/Documentation/usb/power-management.txt b/Documentation/usb/power-management.txt
+> index 1392b61d6ebe..90dc927f0e1e 100644
+> --- a/Documentation/usb/power-management.txt
+> +++ b/Documentation/usb/power-management.txt
+> @@ -304,7 +304,7 @@ using the USB Persist facility.)
+>  
+>  The reset_resume method is used by the USB Persist facility (see
+>  Documentation/usb/persist.txt) and it can also be used under certain
+> -circumstances when CONFIG_USB_PERSIST is not enabled.  Currently, if a
+> +circumstances when that facility is not enabled.  Currently, if a
+>  device is reset during a resume and the driver does not have a
+>  reset_resume method, the driver won't receive any notification about
+>  the resume.  Later kernels will call the driver's disconnect method;
 
-Thanks
-Josh
+I don't remember what the "certain circumstances" referred to 
+originally.  Right now, if the USB_QUIRK_RESET_RESUME quirk is set 
+(meaning that the device can't reset properly so it always has to be 
+reset-resumed) then persist will be used even if it isn't enabled.
+
+Also, that "Later kernels" thing has already arrived.  I believe it was 
+implemented in 2.6.35.
+
+Alan Stern
+
