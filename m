@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752597AbaFXWje (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 18:39:34 -0400
-Received: from g9t1613g.houston.hp.com ([15.240.0.71]:55375 "EHLO
-	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751211AbaFXWjd (ORCPT
+	id S1753223AbaFXWjv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 18:39:51 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:49676 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752895AbaFXWjt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 18:39:33 -0400
-Message-ID: <53A9FE04.2000306@hp.com>
-Date: Tue, 24 Jun 2014 16:39:00 -0600
-From: Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: "Maciej W. Rozycki" <macro@linux-mips.org>,
-        T Makphaibulchoke <tmac@hp.com>
-CC: "Theodore Ts'o" <tytso@mit.edu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: Re: [GIT PULL] ext4 changes for 3.15
-References: <20140403191558.GA8745@thunk.org> <alpine.LFD.2.11.1406242251230.23403@eddie.linux-mips.org>
-In-Reply-To: <alpine.LFD.2.11.1406242251230.23403@eddie.linux-mips.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 24 Jun 2014 18:39:49 -0400
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+To: tiwai@suse.de, chunkeey@googlemail.com, leedom@chelsio.com,
+        cocci@systeme.lip6.fr
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, "Luis R. Rodriguez" <mcgrof@suse.com>
+Subject: [PATCH 0/3] drivers: expand usage of request_firmware_direct()
+Date: Tue, 24 Jun 2014 15:39:40 -0700
+Message-Id: <1403649583-12707-1-git-send-email-mcgrof@do-not-panic.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24/2014 04:03 PM, Maciej W. Rozycki wrote:
-> On Thu, 3 Apr 2014, Theodore Ts'o wrote:
-> 
->>       fs/mbcache.c: doucple the locking of local from global data
-> 
->  This change causes breakage:
-> 
-> fs/built-in.o: In function `__mb_cache_entry_release':
-> mbcache.c:(.text+0x56b3c): undefined reference to `log2'
-> mbcache.c:(.text+0x56b3c): relocation truncated to fit: R_MIPS_26 against `log2'
-> mbcache.c:(.text+0x56b74): undefined reference to `__fixunsdfsi'
-> mbcache.c:(.text+0x56b74): relocation truncated to fit: R_MIPS_26 against `__fixunsdfsi'
-> mbcache.c:(.text+0x56be4): undefined reference to `log2'
-> mbcache.c:(.text+0x56be4): relocation truncated to fit: R_MIPS_26 against `log2'
-> mbcache.c:(.text+0x56bf0): undefined reference to `__fixunsdfsi'
-> mbcache.c:(.text+0x56bf0): relocation truncated to fit: R_MIPS_26 against `__fixunsdfsi'
-> 
-> and so on, and so on.  It uses __builtin_log2() that is a floating-point 
-> function, its corresponding <math.h> prototype is:
-> 
->  -- Function: double log2 (double X)
-> 
-> (GCC builtins are of course implicitly prototyped).  Please note that 
-> floating-point calculations are not allowed in the kernel and relying on 
-> the compiler to optimise them away is risky to say the least.
-> 
->  Can you please rewrite the fragment using __builtin_log2() so as to avoid 
-> the floating-point calculation, using ffs() or suchlike perhaps?
-> 
->   Maciej
-> 
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
 
-Sorry and thanks for notifying me about the problem.
+Takashi added request_firmware_direct() via bba3a87e9 through v3.14-rc1
+which avoids the unnecessary delay introduced by using the udev firmware
+loader in case the first try failed when loading we know loading "firmware"
+is optional. The first use case was for microcode update but if drivers are
+using it for optional configuration updates, custom EEPROMs, and other
+junk other than firmware that should apply as well as good use cases,
+specially if the driver already had a first phase in which it loaded
+the first required firmware. While reviewing one driver I figured it'd
+be best to try to give formalizing a check with SmPL. This isn't perfect
+it had 1 false possitive drivers/fmc/fmc-fakedev.c on the entire kernel
+run but my hope is this can be extended a bit more to build more
+confidence, and then perhaps stuff it as a coccicheck.
 
-I've submitted the fix, using ilog2, and could be found at,
+I suppose this will not be required once and if we remove
+CONFIG_FW_LOADER_USER_HELPER. Is that ever going away for good? I know
+there was a recent attempt to remove the udev loader support but
+it was unclear if the special alternative helper support would be
+removed upstream from the kernel.
 
-https://lkml.org/lkml/2014/5/30/462
+@ firmware_not_critical @
+expression cf;
+expression config_file;
+expression dev;
+int ret;
+identifier l;
+statement S;
+@@
 
-Please let me know if you have any comment.
+-	ret = request_firmware(&cf, config_file, dev);
++	ret = request_firmware_direct(&cf, config_file, dev);
+	if (ret < 0) {
+		... when != goto l;
+		    when != return ret;
+		    when any
+	} else {
+		...
+		release_firmware(cf);
+		...
+	}
 
-Thanks,
-Mak.
 
+Luis R. Rodriguez (3):
+  mmc: vub300: use request_firmware_direct() for pseudo code
+  cxgb4: make configuration load use request_firmware_direct()
+  p54: use request_firmware_direct() for optional EEPROM override
 
+ drivers/mmc/host/vub300.c                       | 5 +++--
+ drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c | 2 +-
+ drivers/net/wireless/p54/p54spi.c               | 2 +-
+ 3 files changed, 5 insertions(+), 4 deletions(-)
+
+-- 
+2.0.0
 
