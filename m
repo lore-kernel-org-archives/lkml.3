@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756594AbaFXQEd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:04:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33344 "EHLO
+	id S965035AbaFXP4T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:56:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33326 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754232AbaFXP4V (ORCPT
+	with ESMTP id S1756095AbaFXP4O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:56:21 -0400
+	Tue, 24 Jun 2014 11:56:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.15 27/61] USB: cdc-acm: fix write and resume race
-Date: Tue, 24 Jun 2014 11:51:10 -0400
-Message-Id: <20140624154954.009828597@linuxfoundation.org>
+        Yang Zhang <yang.z.zhang@intel.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.15 23/61] KVM: lapic: sync highest ISR to hardware apic on EOI
+Date: Tue, 24 Jun 2014 11:51:06 -0400
+Message-Id: <20140624154953.819966374@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154952.751713761@linuxfoundation.org>
 References: <20140624154952.751713761@linuxfoundation.org>
@@ -28,79 +29,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Paolo Bonzini <pbonzini@redhat.com>
 
-commit e144ed28bed10684f9aaec6325ed974d53f76110 upstream.
+commit fc57ac2c9ca8109ea97fcc594f4be436944230cc upstream.
 
-Fix race between write() and resume() due to improper locking that could
-lead to writes being reordered.
+When Hyper-V enlightenments are in effect, Windows prefers to issue an
+Hyper-V MSR write to issue an EOI rather than an x2apic MSR write.
+The Hyper-V MSR write is not handled by the processor, and besides
+being slower, this also causes bugs with APIC virtualization.  The
+reason is that on EOI the processor will modify the highest in-service
+interrupt (SVI) field of the VMCS, as explained in section 29.1.4 of
+the SDM; every other step in EOI virtualization is already done by
+apic_send_eoi or on VM entry, but this one is missing.
 
-Resume must be done atomically and susp_count be protected by the
-write_lock in order to prevent racing with write(). This could otherwise
-lead to writes being reordered if write() grabs the write_lock after
-susp_count is decremented, but before the delayed urb is submitted.
+We need to do the same, and be careful not to muck with the isr_count
+and highest_isr_cache fields that are unused when virtual interrupt
+delivery is enabled.
 
-Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
-that support remote wakeup")
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Reviewed-by: Yang Zhang <yang.z.zhang@intel.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/class/cdc-acm.c |   23 +++++++++--------------
- 1 file changed, 9 insertions(+), 14 deletions(-)
+ arch/x86/kvm/lapic.c |   62 +++++++++++++++++++++++++++++++++++----------------
+ 1 file changed, 43 insertions(+), 19 deletions(-)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -1541,27 +1541,20 @@ static int acm_resume(struct usb_interfa
- 	struct acm *acm = usb_get_intfdata(intf);
- 	struct acm_wb *wb;
- 	int rv = 0;
--	int cnt;
+--- a/arch/x86/kvm/lapic.c
++++ b/arch/x86/kvm/lapic.c
+@@ -360,6 +360,8 @@ static inline void apic_clear_irr(int ve
  
- 	spin_lock_irq(&acm->read_lock);
--	acm->susp_count -= 1;
--	cnt = acm->susp_count;
--	spin_unlock_irq(&acm->read_lock);
-+	spin_lock(&acm->write_lock);
- 
--	if (cnt)
--		return 0;
-+	if (--acm->susp_count)
-+		goto out;
- 
- 	if (test_bit(ASYNCB_INITIALIZED, &acm->port.flags)) {
--		rv = usb_submit_urb(acm->ctrlurb, GFP_NOIO);
-+		rv = usb_submit_urb(acm->ctrlurb, GFP_ATOMIC);
- 
--		spin_lock_irq(&acm->write_lock);
- 		if (acm->delayed_wb) {
- 			wb = acm->delayed_wb;
- 			acm->delayed_wb = NULL;
--			spin_unlock_irq(&acm->write_lock);
- 			acm_start_wb(acm, wb);
--		} else {
--			spin_unlock_irq(&acm->write_lock);
- 		}
- 
- 		/*
-@@ -1569,12 +1562,14 @@ static int acm_resume(struct usb_interfa
- 		 * do the write path at all cost
- 		 */
- 		if (rv < 0)
--			goto err_out;
-+			goto out;
- 
--		rv = acm_submit_read_urbs(acm, GFP_NOIO);
-+		rv = acm_submit_read_urbs(acm, GFP_ATOMIC);
- 	}
-+out:
-+	spin_unlock(&acm->write_lock);
-+	spin_unlock_irq(&acm->read_lock);
- 
--err_out:
- 	return rv;
+ static inline void apic_set_isr(int vec, struct kvm_lapic *apic)
+ {
++	/* Note that we never get here with APIC virtualization enabled.  */
++
+ 	if (!__apic_test_and_set_vector(vec, apic->regs + APIC_ISR))
+ 		++apic->isr_count;
+ 	BUG_ON(apic->isr_count > MAX_APIC_VECTOR);
+@@ -371,12 +373,48 @@ static inline void apic_set_isr(int vec,
+ 	apic->highest_isr_cache = vec;
  }
+ 
++static inline int apic_find_highest_isr(struct kvm_lapic *apic)
++{
++	int result;
++
++	/*
++	 * Note that isr_count is always 1, and highest_isr_cache
++	 * is always -1, with APIC virtualization enabled.
++	 */
++	if (!apic->isr_count)
++		return -1;
++	if (likely(apic->highest_isr_cache != -1))
++		return apic->highest_isr_cache;
++
++	result = find_highest_vector(apic->regs + APIC_ISR);
++	ASSERT(result == -1 || result >= 16);
++
++	return result;
++}
++
+ static inline void apic_clear_isr(int vec, struct kvm_lapic *apic)
+ {
+-	if (__apic_test_and_clear_vector(vec, apic->regs + APIC_ISR))
++	struct kvm_vcpu *vcpu;
++	if (!__apic_test_and_clear_vector(vec, apic->regs + APIC_ISR))
++		return;
++
++	vcpu = apic->vcpu;
++
++	/*
++	 * We do get here for APIC virtualization enabled if the guest
++	 * uses the Hyper-V APIC enlightenment.  In this case we may need
++	 * to trigger a new interrupt delivery by writing the SVI field;
++	 * on the other hand isr_count and highest_isr_cache are unused
++	 * and must be left alone.
++	 */
++	if (unlikely(kvm_apic_vid_enabled(vcpu->kvm)))
++		kvm_x86_ops->hwapic_isr_update(vcpu->kvm,
++					       apic_find_highest_isr(apic));
++	else {
+ 		--apic->isr_count;
+-	BUG_ON(apic->isr_count < 0);
+-	apic->highest_isr_cache = -1;
++		BUG_ON(apic->isr_count < 0);
++		apic->highest_isr_cache = -1;
++	}
+ }
+ 
+ int kvm_lapic_find_highest_irr(struct kvm_vcpu *vcpu)
+@@ -456,22 +494,6 @@ static void pv_eoi_clr_pending(struct kv
+ 	__clear_bit(KVM_APIC_PV_EOI_PENDING, &vcpu->arch.apic_attention);
+ }
+ 
+-static inline int apic_find_highest_isr(struct kvm_lapic *apic)
+-{
+-	int result;
+-
+-	/* Note that isr_count is always 1 with vid enabled */
+-	if (!apic->isr_count)
+-		return -1;
+-	if (likely(apic->highest_isr_cache != -1))
+-		return apic->highest_isr_cache;
+-
+-	result = find_highest_vector(apic->regs + APIC_ISR);
+-	ASSERT(result == -1 || result >= 16);
+-
+-	return result;
+-}
+-
+ void kvm_apic_update_tmr(struct kvm_vcpu *vcpu, u32 *tmr)
+ {
+ 	struct kvm_lapic *apic = vcpu->arch.apic;
+@@ -1605,6 +1627,8 @@ int kvm_get_apic_interrupt(struct kvm_vc
+ 	int vector = kvm_apic_has_interrupt(vcpu);
+ 	struct kvm_lapic *apic = vcpu->arch.apic;
+ 
++	/* Note that we never get here with APIC virtualization enabled.  */
++
+ 	if (vector == -1)
+ 		return -1;
  
 
 
