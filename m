@@ -1,99 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753646AbaFXN5w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 09:57:52 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:19790 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751984AbaFXN5s (ORCPT
+	id S1753790AbaFXN6M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 09:58:12 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:10124 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753474AbaFXN5u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 09:57:48 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-e6-53a983d9ce65
+	Tue, 24 Jun 2014 09:57:50 -0400
+X-AuditID: cbfec7f5-b7f626d000004b39-c1-53a983dae00c
 From: Tomasz Figa <t.figa@samsung.com>
 To: linux-samsung-soc@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Kukjin Kim <kgene.kim@samsung.com>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>, Tomasz Figa <t.figa@samsung.com>,
-        Ben Dooks <ben-linux@fluff.org>, Chris Ball <chris@printf.net>,
-        Ulf Hansson <ulf.hansson@linaro.org>, linux-mmc@vger.kernel.org
-Subject: [PATCH 1/6] mmc: sdhci-s3c: Fix local I/O clock gating
-Date: Tue, 24 Jun 2014 15:57:10 +0200
-Message-id: <1403618235-19353-2-git-send-email-t.figa@samsung.com>
+        Tomasz Figa <tomasz.figa@gmail.com>, Tomasz Figa <t.figa@samsung.com>
+Subject: [PATCH 6/6] ARM: EXYNOS: Register cpuidle device only on Exynos4210
+ and 5250
+Date: Tue, 24 Jun 2014 15:57:15 +0200
+Message-id: <1403618235-19353-7-git-send-email-t.figa@samsung.com>
 X-Mailer: git-send-email 1.9.3
 In-reply-to: <1403618235-19353-1-git-send-email-t.figa@samsung.com>
 References: <1403618235-19353-1-git-send-email-t.figa@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMLMWRmVeSWpSXmKPExsVy+t/xq7o3m1cGGxx/x2Qxad0BJosJl7cz
-	WvQuuMpmsenxNVaLy7vmsFkc+d/PaDHj/D4mi7VH7rJbrJ/xmsVi1a4/jBbH14Y7cHv8XfWC
-	2WPnrLvsHneu7WHz2Lyk3uPGq4VMHn1bVjF6fN4kF8AexWWTkpqTWZZapG+XwJXxoP0pa8Fi
-	/orlk06yNTBe4Oli5OSQEDCR+Hx9PROELSZx4d56ti5GLg4hgaWMEi+m/WCEcPqYJOZMaGAB
-	qWITUJP43PCIDcQWEVCV+Ny2gB2kiFngJZPE6i3tYEXCAvYSn252MYLYLEBF137+A1vBK+Ak
-	MfnWO2aIdXISvdvegNmcAs4SO9u3sYLYQkA1/082MU1g5F3AyLCKUTS1NLmgOCk911CvODG3
-	uDQvXS85P3cTIyQgv+xgXHzM6hCjAAejEg/vhV0rgoVYE8uKK3MPMUpwMCuJ8N6oWRksxJuS
-	WFmVWpQfX1Sak1p8iJGJg1OqgXFV6L6bM7+81g7q4+DMfBZoFPhd6ndjueoZv44lZgumWWft
-	urR79cuUELPpKVl7vnh/cquPb/ngsTJkt+7PCjlWpsLvN6YJlFTtFJko0Mp5OWya7ssfGk3R
-	s6ZM+lW5Vj5FtiNqCuOERWqxve7X6j5dVHGM27j735v6vuZSE2bnu/O89/+uuq7EUpyRaKjF
-	XFScCADB/KM3JgIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLJMWRmVeSWpSXmKPExsVy+t/xq7q3mlcGG9zeZWLRu+Aqm8Wmx9dY
+	LS7vmsNmMeP8PiaLtUfuslusn/GaxWLVrj+MDuweO2fdZffYvKTeo2/LKkaPz5vkAliiuGxS
+	UnMyy1KL9O0SuDJebPzJWrCbo+LQ490sDYzd7F2MHBwSAiYSO55YdzFyApliEhfurWfrYuTi
+	EBJYyijRM+MKM0hCSKCPSeJwawGIzSagJvG54REbiC0ioCrxuW0BO4jNLPCEUWLWUzeQmcIC
+	4RIbOktBwixAJfuuTQAr5xVwkphwfzMrxC45id5tb8DGcwo4S+xs38YKscpJ4v/JJqYJjLwL
+	GBlWMYqmliYXFCel5xrpFSfmFpfmpesl5+duYoQE0dcdjEuPWR1iFOBgVOLhrdixIliINbGs
+	uDL3EKMEB7OSCO+NmpXBQrwpiZVVqUX58UWlOanFhxiZODilGhiNhY5p2gUzhHzPu3hk30Hn
+	tElsSv+ufLedGCue/XJ6zXOG0Kjv1/zXbihlD9W+47Eq6dOLnRP77ya9fLzubNSmKw5tB3xE
+	dgsFn5nq6cN35VbZs51rlwq98O/1kijydUxVcExMXvkh0MM5tKp879W/LZJ3Az0jFc72nOzX
+	0mY8PtGq70pk9C0lluKMREMt5qLiRAD/afeKAAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For internal card detection mechanism it is required that the local I/O
-clock is always running. However while current implementation accounts
-for this, it does so incorrectly leading to race conditions and warnings
-about unbalanced clock disables.
-
-This patch fixes it by inverting the logic, which now increases local
-I/O clock enable count when internal card detect is used, instead of
-decreasing it otherwise.
+Currently, the Exynos cpuidle driver works correctly only on Exynos4210
+and 5250. Trying to use it with just one CPU online on any other Exynos
+SoC will lead to system failure, due to unsupported AFTR mode on other
+SoCs. This patch fixes the problem by registering the driver only on
+supported SoCs and letting others simply use default WFI mode until
+support for them is added.
 
 Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-Cc: Ben Dooks <ben-linux@fluff.org>
-Cc: Chris Ball <chris@printf.net>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: linux-mmc@vger.kernel.org
 ---
- drivers/mmc/host/sdhci-s3c.c | 17 ++++++++++-------
- 1 file changed, 10 insertions(+), 7 deletions(-)
+ arch/arm/mach-exynos/exynos.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/mmc/host/sdhci-s3c.c b/drivers/mmc/host/sdhci-s3c.c
-index fa5954a..1795e1f 100644
---- a/drivers/mmc/host/sdhci-s3c.c
-+++ b/drivers/mmc/host/sdhci-s3c.c
-@@ -487,8 +487,13 @@ static int sdhci_s3c_probe(struct platform_device *pdev)
- 		goto err_pdata_io_clk;
- 	}
+diff --git a/arch/arm/mach-exynos/exynos.c b/arch/arm/mach-exynos/exynos.c
+index f38cf7c..176bbf5 100644
+--- a/arch/arm/mach-exynos/exynos.c
++++ b/arch/arm/mach-exynos/exynos.c
+@@ -173,10 +173,8 @@ static struct platform_device exynos_cpuidle = {
  
--	/* enable the local io clock and keep it running for the moment. */
--	clk_prepare_enable(sc->clk_io);
-+	/*
-+	 * Keep local I/O clock enabled for internal card detect pin
-+	 * or runtime PM is disabled.
-+	 */
-+	if (pdata->cd_type == S3C_SDHCI_CD_INTERNAL
-+	    || !IS_ENABLED(CONFIG_PM_RUNTIME))
-+		clk_prepare_enable(sc->clk_io);
+ void __init exynos_cpuidle_init(void)
+ {
+-	if (soc_is_exynos5440())
+-		return;
+-
+-	platform_device_register(&exynos_cpuidle);
++	if (soc_is_exynos4210() || soc_is_exynos5250())
++		platform_device_register(&exynos_cpuidle);
+ }
  
- 	for (clks = 0, ptr = 0; ptr < MAX_BUS_CLK; ptr++) {
- 		char name[14];
-@@ -611,15 +616,13 @@ static int sdhci_s3c_probe(struct platform_device *pdev)
- 		goto err_req_regs;
- 	}
- 
--#ifdef CONFIG_PM_RUNTIME
--	if (pdata->cd_type != S3C_SDHCI_CD_INTERNAL)
--		clk_disable_unprepare(sc->clk_io);
--#endif
- 	return 0;
- 
-  err_req_regs:
-  err_no_busclks:
--	clk_disable_unprepare(sc->clk_io);
-+	if (pdata->cd_type == S3C_SDHCI_CD_INTERNAL
-+	    || !IS_ENABLED(CONFIG_PM_RUNTIME))
-+		clk_disable_unprepare(sc->clk_io);
- 
-  err_pdata_io_clk:
- 	sdhci_free_host(host);
+ void __init exynos_cpufreq_init(void)
 -- 
 1.9.3
 
