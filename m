@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753064AbaFXI0Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 04:26:25 -0400
-Received: from us01smtprelay-2.synopsys.com ([198.182.44.111]:53682 "EHLO
+	id S1753152AbaFXI0h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 04:26:37 -0400
+Received: from us01smtprelay-2.synopsys.com ([198.182.60.111]:34310 "EHLO
 	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752599AbaFXI0T (ORCPT
+	with ESMTP id S1753099AbaFXI0c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 04:26:19 -0400
+	Tue, 24 Jun 2014 04:26:32 -0400
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         "Mark Rutland" <mark.rutland@arm.com>,
@@ -17,9 +17,9 @@ To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
 CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-serial@vger.kernel.org>, <Francois.Bedard@synopsys.com>,
         Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH v2 REBASED 03/10] serial/arc: Remove the workaround for legacy ISS
-Date: Tue, 24 Jun 2014 13:55:08 +0530
-Message-ID: <1403598315-1429-4-git-send-email-vgupta@synopsys.com>
+Subject: [PATCH v2 REBASED 04/10] serial/arc: Use generic earlycon infrastructure
+Date: Tue, 24 Jun 2014 13:55:09 +0530
+Message-ID: <1403598315-1429-5-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1403598315-1429-1-git-send-email-vgupta@synopsys.com>
 References: <1403598315-1429-1-git-send-email-vgupta@synopsys.com>
@@ -30,50 +30,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+With this change both earlyprintk and earlycon coexist
+We switch over to latter in next patch
+
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 ---
- drivers/tty/serial/arc_uart.c | 14 --------------
- 1 file changed, 14 deletions(-)
+ drivers/tty/serial/Kconfig    |  1 +
+ drivers/tty/serial/arc_uart.c | 30 ++++++++++++++++++++++++++++++
+ 2 files changed, 31 insertions(+)
 
+diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+index fb57159bad3a..2311443be7dc 100644
+--- a/drivers/tty/serial/Kconfig
++++ b/drivers/tty/serial/Kconfig
+@@ -1473,6 +1473,7 @@ config SERIAL_ARC_CONSOLE
+ 	bool "Console on ARC UART"
+ 	depends on SERIAL_ARC=y
+ 	select SERIAL_CORE_CONSOLE
++	select SERIAL_EARLYCON
+ 	help
+ 	  Enable system Console on ARC UART
+ 
 diff --git a/drivers/tty/serial/arc_uart.c b/drivers/tty/serial/arc_uart.c
-index 4d971281e3d9..a6da10f84293 100644
+index a6da10f84293..0c8ba5bb97c7 100644
 --- a/drivers/tty/serial/arc_uart.c
 +++ b/drivers/tty/serial/arc_uart.c
-@@ -102,7 +102,6 @@
- struct arc_uart_port {
- 	struct uart_port port;
- 	unsigned long baud;
--	int is_emulated;	/* H/w vs. Instruction Set Simulator */
- };
+@@ -646,6 +646,36 @@ static int __init arc_serial_probe_earlyprintk(struct platform_device *pdev)
+ 	register_console(&arc_early_serial_console);
+ 	return 0;
+ }
++
++static __init void arc_early_serial_write(struct console *con, const char *s,
++					  unsigned int n)
++{
++	struct earlycon_device *dev = con->data;
++
++	uart_console_write(&dev->port, s, n, arc_serial_poll_putchar);
++}
++
++static int __init arc_early_console_setup(struct earlycon_device *dev,
++					  const char *opt)
++{
++	struct uart_port *port = &dev->port;
++	unsigned int l, h, hw_val;
++
++	if (!dev->port.membase)
++		return -ENODEV;
++
++	hw_val = port->uartclk / (dev->baud * 4) - 1;
++	l = hw_val & 0xFF;
++	h = (hw_val >> 8) & 0xFF;
++
++	UART_SET_BAUDL(port, l);
++	UART_SET_BAUDH(port, h);
++
++	dev->con->write = arc_early_serial_write;
++	return 0;
++}
++EARLYCON_DECLARE(arc_uart, arc_early_console_setup);
++
+ #endif	/* CONFIG_SERIAL_ARC_CONSOLE */
  
- #define to_arc_port(uport)  container_of(uport, struct arc_uart_port, port)
-@@ -387,17 +386,6 @@ arc_serial_set_termios(struct uart_port *port, struct ktermios *new,
- 	uartl = hw_val & 0xFF;
- 	uarth = (hw_val >> 8) & 0xFF;
- 
--	/*
--	 * UART ISS(Instruction Set simulator) emulation has a subtle bug:
--	 * A existing value of Baudh = 0 is used as a indication to startup
--	 * it's internal state machine.
--	 * Thus if baudh is set to 0, 2 times, it chokes.
--	 * This happens with BAUD=115200 and the formaula above
--	 * Until that is fixed, when running on ISS, we will set baudh to !0
--	 */
--	if (uart->is_emulated)
--		uarth = 1;
--
- 	spin_lock_irqsave(&port->lock, flags);
- 
- 	UART_ALL_IRQ_DISABLE(port);
-@@ -520,8 +508,6 @@ arc_uart_init_one(struct platform_device *pdev, int dev_id)
- 	if (!plat_data)
- 		return -ENODEV;
- 
--	uart->is_emulated = !!plat_data[0];	/* workaround ISS bug */
--
- 	if (is_early_platform_device(pdev)) {
- 		port->uartclk = plat_data[1];
- 		uart->baud = plat_data[2];
+ static int arc_serial_probe(struct platform_device *pdev)
 -- 
 1.8.3.2
 
