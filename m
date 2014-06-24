@@ -1,83 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753728AbaFXS41 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 14:56:27 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:57904 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753224AbaFXS4Z (ORCPT
+	id S1752531AbaFXTCF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 15:02:05 -0400
+Received: from forward3l.mail.yandex.net ([84.201.143.136]:41136 "EHLO
+	forward3l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750762AbaFXTCD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 14:56:25 -0400
+	Tue, 24 Jun 2014 15:02:03 -0400
+X-Yandex-Uniq: 9db080be-60b4-4c1b-9014-222fcc10f070
+Authentication-Results: smtp11.mail.yandex.net; dkim=pass header.i=@yandex.ru
+Message-ID: <53A9CB23.1080708@yandex.ru>
+Date: Tue, 24 Jun 2014 23:01:55 +0400
+From: Kirill Tkhai <tkhai@yandex.ru>
+Reply-To: tkhai@yandex.ru
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <CAMuHMdXB4U=tkGgV=UE5KRBgP7jqyB8Wpjn1x6ei-wq-MYkLqQ@mail.gmail.com>
-References: <1403259380-13634-6-git-send-email-geert+renesas@glider.be>
-	<20140621101959.GM5099@sirena.org.uk>
-	<CAMuHMdXB4U=tkGgV=UE5KRBgP7jqyB8Wpjn1x6ei-wq-MYkLqQ@mail.gmail.com>
-Date: Tue, 24 Jun 2014 20:56:23 +0200
-X-Google-Sender-Auth: LPj_zyW4haoc19_Amj_iqcMl5wA
-Message-ID: <CAMuHMdUEkCm_N0zGTftp5_N_u_FQ4-=KH8h8qsrAqLgk6Kk=iQ@mail.gmail.com>
-Subject: Re: [PATCH 5/5] spi: sh-msiof: Add DMA support
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        linux-spi <linux-spi@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: bsegall@google.com
+CC: Kirill Tkhai <ktkhai@parallels.com>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>, khorenko@parallels.com,
+        Paul Turner <pjt@google.com>
+Subject: Re: [PATCH v2 1/3] sched/fair: Disable runtime_enabled on dying rq
+References: <20140624074148.8738.57690.stgit@tkhai>	<1403596432.3462.26.camel@tkhai> <xm26wqc6z1c8.fsf@sword-of-the-dawn.mtv.corp.google.com>
+In-Reply-To: <xm26wqc6z1c8.fsf@sword-of-the-dawn.mtv.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
-
-On Sun, Jun 22, 2014 at 10:06 AM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> On Sat, Jun 21, 2014 at 12:19 PM, Mark Brown <broonie@kernel.org> wrote:
->> On Fri, Jun 20, 2014 at 12:16:20PM +0200, Geert Uytterhoeven wrote:
->>> Add DMA support to the MSIOF driver using platform data.
+On 24.06.2014 21:03, bsegall@google.com wrote:
+> Kirill Tkhai <ktkhai@parallels.com> writes:
+> 
+>> We kill rq->rd on the CPU_DOWN_PREPARE stage:
 >>
->> This doesn't apply against current code, can you please check and
->> resend?
->
-> My patches were based on your for-next branch, which has
-> commit 1e8231b79ccbb3e6e7b3f6af9f998dca16b00efe
-> Author: Jingoo Han <jg1.han@samsung.com>
-> Date:   Tue Apr 29 17:21:25 2014 +0900
->
->     spi: sh-msiof: remove unnecessary OOM messages
+>> 	cpuset_cpu_inactive -> cpuset_update_active_cpus -> partition_sched_domains ->
+>> 	-> cpu_attach_domain -> rq_attach_root -> set_rq_offline
+>>
+>> This unthrottles all throttled cfs_rqs.
+>>
+>> But the cpu is still able to call schedule() till
+>>
+>> 	take_cpu_down->__cpu_disable()
+>>
+>> is called from stop_machine.
+>>
+>> This case the tasks from just unthrottled cfs_rqs are pickable
+>> in a standard scheduler way, and they are picked by dying cpu.
+>> The cfs_rqs becomes throttled again, and migrate_tasks()
+>> in migration_call skips their tasks (one more unthrottle
+>> in migrate_tasks()->CPU_DYING does not happen, because rq->rd
+>> is already NULL).
+>>
+>> Patch sets runtime_enabled to zero. This guarantees, the runtime
+>> is not accounted, and the cfs_rqs won't exceed given
+>> cfs_rq->runtime_remaining = 1, and tasks will be pickable
+>> in migrate_tasks(). runtime_enabled is recalculated again
+>> when rq becomes online again.
+>>
+>> Ben Segall also noticed, we always enable runtime in
+>> tg_set_cfs_bandwidth(). Actually, we should do that for online
+>> cpus only. To fix that, we check if a cpu is online when
+>> its rq is locked. This guarantees we do not have races with
+>> set_rq_offline(), which also requires rq->lock.
+>>
+>> v2: Fix race with tg_set_cfs_bandwidth().
+>>     Move cfs_rq->runtime_enabled=0 above unthrottle_cfs_rq().
+>>
+>> Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+>> CC: Konstantin Khorenko <khorenko@parallels.com>
+>> CC: Ben Segall <bsegall@google.com>
+>> CC: Paul Turner <pjt@google.com>
+>> CC: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+>> CC: Mike Galbraith <umgwanakikbuti@gmail.com>
+>> CC: Peter Zijlstra <peterz@infradead.org>
+>> CC: Ingo Molnar <mingo@kernel.org>
+>> ---
+>>  kernel/sched/core.c |   15 +++++++++++----
+>>  kernel/sched/fair.c |   22 ++++++++++++++++++++++
+>>  2 files changed, 33 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+>> index 7f3063c..707a3c5 100644
+>> --- a/kernel/sched/core.c
+>> +++ b/kernel/sched/core.c
+>> @@ -7842,11 +7842,18 @@ static int tg_set_cfs_bandwidth(struct task_group *tg, u64 period, u64 quota)
+>>  		struct rq *rq = cfs_rq->rq;
+>>  
+>>  		raw_spin_lock_irq(&rq->lock);
+>> -		cfs_rq->runtime_enabled = runtime_enabled;
+>> -		cfs_rq->runtime_remaining = 0;
+>> +		/*
+>> +		 * Do not enable runtime on offline runqueues. We specially
+>> +		 * make it disabled in unthrottle_offline_cfs_rqs().
+>> +		 */
+>> +		if (cpu_online(i)) {
+>> +			cfs_rq->runtime_enabled = runtime_enabled;
+>> +			cfs_rq->runtime_remaining = 0;
+>> +
+>> +			if (cfs_rq->throttled)
+>> +				unthrottle_cfs_rq(cfs_rq);
+>> +		}
+> 
+> We can just do for_each_online_cpu, yes? Also we probably need
+> get_online_cpus/put_online_cpus, and/or want cpu_active_mask instead
+> right?
+> 
 
-Sorry, wrong copy and paste, I meant:
-
-commit b8fa0abd47f3f2fa47c1b2b06182c422d0c2350d
-Author: Alexander Shiyan <shc_work@mail.ru>
-Date:   Wed Jun 4 18:17:09 2014 +0400
-
-    spi: sh-msiof: Remove unnecessary platform_set_drvdata()
-
-    Drop call to platform_set_drvdata() as driver data is not used
-    anywhere in the driver.
-
-    Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
-    Signed-off-by: Mark Brown <broonie@linaro.org>
-
-> (from topic/cleanup), but topic/sh-msiof hasn't.
-
-Do you want me to resend? Against which branch?
-
-Basically I had to revert the above commit, as I do use the driver data.
-So if I would rebase and resend against topic/sh-msiof, you'll get a merge
-conflict when merging this into for-next.
-
-Thanks!
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Yes, we can use for_each_online_cpu/for_each_active_cpu with
+get_online_cpus() taken. But it adds one more lock dependence.
+This looks worse for me.
