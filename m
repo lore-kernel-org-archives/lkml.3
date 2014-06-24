@@ -1,92 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932106AbaFXPxR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:53:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32800 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751598AbaFXPxN (ORCPT
+	id S932336AbaFXPxz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:53:55 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:40573 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932280AbaFXPxs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:53:13 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Erik Habbinga <Erik.Habbinga@schneider-electric.com>,
-        Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>
-Subject: [PATCH 3.10 39/52] iio:adc:max1363 incorrect resolutions for max11604, max11605, max11610 and max11611.
-Date: Tue, 24 Jun 2014 11:50:54 -0400
-Message-Id: <20140624154715.807720923@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <20140624154713.428945460@linuxfoundation.org>
-References: <20140624154713.428945460@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 24 Jun 2014 11:53:48 -0400
+Message-ID: <53A99F09.1070504@wwwdotorg.org>
+Date: Tue, 24 Jun 2014 09:53:45 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: Alexandre Courbot <acourbot@nvidia.com>
+CC: Thierry Reding <thierry.reding@gmail.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gnurou@gmail.com" <gnurou@gmail.com>
+Subject: Re: [PATCH 2/2] ARM: tegra: roth: enable input on mmc clock pins
+References: <1403508779-25896-1-git-send-email-acourbot@nvidia.com> <1403508779-25896-3-git-send-email-acourbot@nvidia.com> <53A87979.6000104@wwwdotorg.org> <53A91026.7040506@nvidia.com>
+In-Reply-To: <53A91026.7040506@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On 06/23/2014 11:44 PM, Alexandre Courbot wrote:
+> On 06/24/2014 04:01 AM, Stephen Warren wrote:
+>> On 06/23/2014 01:32 AM, Alexandre Courbot wrote:
+>>> Input had been disabled by mistake on these pins, leading to issues with
+>>> SDIO devices like the Wifi module not being probed or random errors
+>>> occuring on the SD card.
+>>
+>> I thought the host controller always drove the clock, so there should be
+>> no need for the pin's input path to be enabled. Perhaps it depends on
+>> the transfer mode (e.g. UHS)?
+> 
+> That's what I thought too, so I went against what was done downstream
+> and disabled input mode. Eventually noticed various issues with MMC
+> devices, reverted to the downstream settings and noticed my problems
+> were solved by this single change.
 
-------------------
-
-From: Jonathan Cameron <jic23@kernel.org>
-
-commit a91a73c8b39a6b8bcc53fafa5372c65387c81233 upstream.
-
-Reported-by: Erik Habbinga <Erik.Habbinga@schneider-electric.com>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
-Acked-by: Hartmut Knaack <knaack.h@gmx.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/iio/adc/max1363.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
-
---- a/drivers/iio/adc/max1363.c
-+++ b/drivers/iio/adc/max1363.c
-@@ -1214,8 +1214,8 @@ static const struct max1363_chip_info ma
- 		.num_modes = ARRAY_SIZE(max1238_mode_list),
- 		.default_mode = s0to11,
- 		.info = &max1238_info,
--		.channels = max1238_channels,
--		.num_channels = ARRAY_SIZE(max1238_channels),
-+		.channels = max1038_channels,
-+		.num_channels = ARRAY_SIZE(max1038_channels),
- 	},
- 	[max11605] = {
- 		.bits = 8,
-@@ -1224,8 +1224,8 @@ static const struct max1363_chip_info ma
- 		.num_modes = ARRAY_SIZE(max1238_mode_list),
- 		.default_mode = s0to11,
- 		.info = &max1238_info,
--		.channels = max1238_channels,
--		.num_channels = ARRAY_SIZE(max1238_channels),
-+		.channels = max1038_channels,
-+		.num_channels = ARRAY_SIZE(max1038_channels),
- 	},
- 	[max11606] = {
- 		.bits = 10,
-@@ -1274,8 +1274,8 @@ static const struct max1363_chip_info ma
- 		.num_modes = ARRAY_SIZE(max1238_mode_list),
- 		.default_mode = s0to11,
- 		.info = &max1238_info,
--		.channels = max1238_channels,
--		.num_channels = ARRAY_SIZE(max1238_channels),
-+		.channels = max1138_channels,
-+		.num_channels = ARRAY_SIZE(max1138_channels),
- 	},
- 	[max11611] = {
- 		.bits = 10,
-@@ -1284,8 +1284,8 @@ static const struct max1363_chip_info ma
- 		.num_modes = ARRAY_SIZE(max1238_mode_list),
- 		.default_mode = s0to11,
- 		.info = &max1238_info,
--		.channels = max1238_channels,
--		.num_channels = ARRAY_SIZE(max1238_channels),
-+		.channels = max1138_channels,
-+		.num_channels = ARRAY_SIZE(max1138_channels),
- 	},
- 	[max11612] = {
- 		.bits = 12,
-
-
+Hmm. That's odd. Can you talk to one of the HW engineers behind the
+SDHCI controller and get a definitive answer. Thanks.
