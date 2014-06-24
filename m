@@ -1,26 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995AbaFXWuT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 18:50:19 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:42721 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753713AbaFXWuN (ORCPT
+	id S1754173AbaFXWu3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 18:50:29 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:33588 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754085AbaFXWuZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 18:50:13 -0400
+	Tue, 24 Jun 2014 18:50:25 -0400
 From: Alexis Berlemont <alexis.berlemont@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, dsahern@gmail.com, mingo@kernel.org,
-        sam@ravnborg.org, mmarek@suse.cz, namhyung@kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Borislav Petkov <bp@alien8.de>, linux-kbuild@vger.kernel.org,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 03/13] perf tools: Kbuild source related fixies
-Date: Wed, 25 Jun 2014 00:47:50 +0200
-Message-Id: <1403650080-3130-4-git-send-email-alexis.berlemont@gmail.com>
+Cc: Alexis Berlemont <alexis.berlemont@gmail.com>, jolsa@redhat.com,
+        dsahern@gmail.com, mingo@kernel.org, sam@ravnborg.org, mmarek@suse.cz,
+        namhyung@kernel.org
+Subject: [PATCH 11/13] perf kbuild: remove legacy script-related build variables
+Date: Wed, 25 Jun 2014 00:47:58 +0200
+Message-Id: <1403650080-3130-12-git-send-email-alexis.berlemont@gmail.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1403650080-3130-1-git-send-email-alexis.berlemont@gmail.com>
 References: <1403650080-3130-1-git-send-email-alexis.berlemont@gmail.com>
@@ -30,236 +24,219 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
-
-Fixing several sources config dependencies to allow
-separate config builds.
-
-This commit was originally created by Jiri Olsa in 2013. Minor changes
-were needed to get it working one year later:
-* Remove #ifdef directives related with GUI / TUI (because of code
-  changes in ui/setup.c)
-* Fix a link issue if the option BUILTIN_TRACE is disabled.
-* Fix typo (CONFIG_BULTIN_ instead CONFIG_BUILTIN_)
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org
-Cc: Stephane Eranian <eranian@google.com>
+Remove NO_LIBPERL (replaced by CONFIG_LIBPERL)
+Remove NO_LIBPYTHON (replaced by CONFIG_LIBPYTHON)
 ---
- tools/perf/builtin-annotate.c    |  6 +++---
- tools/perf/builtin-lock.c        |  5 ++++-
- tools/perf/builtin-report.c      |  2 +-
- tools/perf/builtin-sched.c       |  3 +++
- tools/perf/builtin-top.c         |  4 ++--
- tools/perf/perf.c                | 10 ++++++++--
- tools/perf/ui/browsers/scripts.c |  4 ++++
- tools/perf/ui/setup.c            |  6 +++---
- 8 files changed, 28 insertions(+), 12 deletions(-)
+ tools/perf/builtin-script.c             |  6 ++--
+ tools/perf/config/Makefile              | 51 +++++++++++----------------------
+ tools/perf/config/Makefile.fix-config   | 16 -----------
+ tools/perf/config/Makefile.fix-legacy   |  8 ------
+ tools/perf/util/trace-event-scripting.c | 13 +++++----
+ 5 files changed, 27 insertions(+), 67 deletions(-)
 
-diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index d40070f..aea56c5 100644
---- a/tools/perf/builtin-annotate.c
-+++ b/tools/perf/builtin-annotate.c
-@@ -154,7 +154,7 @@ find_next:
- 
- 			/* skip missing symbols */
- 			nd = rb_next(nd);
--#ifdef CONFIG_TUI
-+#if defined(CONFIG_TUI) || !defined(CONFIG_KBUILD)
- 		} else if (use_browser == 1) {
- 			struct rb_node *next = NULL;
- 			key = hist_entry__tui_annotate(he, evsel, NULL);
-@@ -318,9 +318,9 @@ int cmd_annotate(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_BOOLEAN('D', "dump-raw-trace", &dump_trace,
- 		    "dump raw trace in ASCII"),
- 	OPT_BOOLEAN(0, "gtk", &annotate.use_gtk, "Use the GTK interface"),
--#ifdef CONFIG_TUI
-+#if defined(CONFIG_TUI) || !defined(CONFIG_KBUILD)
- 	OPT_BOOLEAN(0, "tui", &annotate.use_tui, "Use the TUI interface"),
--#endif /* CONFIG_TUI */
-+#endif
- 	OPT_BOOLEAN(0, "stdio", &annotate.use_stdio, "Use the stdio interface"),
- 	OPT_STRING('k', "vmlinux", &symbol_conf.vmlinux_name,
- 		   "file", "vmlinux pathname"),
-diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
-index 6148afc..f5404dc 100644
---- a/tools/perf/builtin-lock.c
-+++ b/tools/perf/builtin-lock.c
-@@ -1,4 +1,5 @@
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index 9e9c91f..3e59b24 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -1,3 +1,5 @@
++#include "generated/autoconf.h"
++
  #include "builtin.h"
-+#include "builtin-cmds.h"
+ 
  #include "perf.h"
+@@ -1362,11 +1364,11 @@ int find_scripts(char **scripts_array, char **scripts_path_array)
+ 	for_each_lang(scripts_path, scripts_dir, lang_dirent, lang_next) {
+ 		snprintf(lang_path, MAXPATHLEN, "%s/%s", scripts_path,
+ 			 lang_dirent.d_name);
+-#ifdef NO_LIBPERL
++#ifndef CONFIG_LIBPERL
+ 		if (strstr(lang_path, "perl"))
+ 			continue;
+ #endif
+-#ifdef NO_LIBPYTHON
++#ifndef CONFIG_LIBPYTHON
+ 		if (strstr(lang_path, "python"))
+ 			continue;
+ #endif
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index f4b133e..0f8fa99 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -454,9 +454,7 @@ endif
+ grep-libs  = $(filter -l%,$(1))
+ strip-libs = $(filter-out -l%,$(1))
  
- #include "util/evlist.h"
-@@ -994,9 +995,11 @@ int cmd_lock(int argc, const char **argv, const char *prefix __maybe_unused)
- 				usage_with_options(report_usage, report_options);
- 		}
- 		rc = __cmd_report(false);
-+#ifdef CONFIG_BUILTIN_SCRIPT
- 	} else if (!strcmp(argv[0], "script")) {
- 		/* Aliased to 'perf script' */
--		return cmd_script(argc, argv, prefix);
-+		rc = cmd_script(argc, argv, prefix);
-+#endif
- 	} else if (!strcmp(argv[0], "info")) {
- 		if (argc) {
- 			argc = parse_options(argc, argv,
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index c97410a..8dc8077 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -392,7 +392,7 @@ static int report__browse_hists(struct report *rep)
- 	const char *help = "For a higher level overview, try: perf report --sort comm,dso";
+-ifdef NO_LIBPERL
+-  CFLAGS += -DNO_LIBPERL
+-else
++ifdef CONFIG_LIBPERL
+   PERL_EMBED_LDOPTS = $(shell perl -MExtUtils::Embed -e ldopts 2>/dev/null)
+   PERL_EMBED_LDFLAGS = $(call strip-libs,$(PERL_EMBED_LDOPTS))
+   PERL_EMBED_LIBADD = $(call grep-libs,$(PERL_EMBED_LDOPTS))
+@@ -464,9 +462,8 @@ else
+   FLAGS_PERL_EMBED=$(PERL_EMBED_CCOPTS) $(PERL_EMBED_LDOPTS)
  
- 	switch (use_browser) {
--#ifdef CONFIG_TUI
-+#if defined(CONFIG_TUI) || !defined(CONFIG_KBUILD)
- 	case 1:
- 		ret = perf_evlist__tui_browse_hists(evlist, help, NULL,
- 						    rep->min_percent,
-diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index c38d06c..80515e0 100644
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -1,4 +1,5 @@
- #include "builtin.h"
-+#include "builtin-cmds.h"
- #include "perf.h"
+   ifneq ($(feature-libperl), 1)
+-    CFLAGS += -DNO_LIBPERL
+-    NO_LIBPERL := 1
+     msg := $(warning Missing perl devel files. Disabling perl scripting support, consider installing perl-ExtUtils-Embed);
++    $(shell $(KCONFIG_SCRIPT) -d CONFIG_LIBPERL)
+   else
+     LDFLAGS += $(PERL_EMBED_LDFLAGS)
+     EXTLIBS += $(PERL_EMBED_LIBADD)
+@@ -481,27 +478,24 @@ ifdef CONFIG_TIMERFD
+   endif
+ endif
  
- #include "util/util.h"
-@@ -1739,11 +1740,13 @@ int cmd_sched(int argc, const char **argv, const char *prefix __maybe_unused)
- 	if (!argc)
- 		usage_with_options(sched_usage, sched_options);
+-disable-python = $(eval $(disable-python_code))
+-define disable-python_code
+-  CFLAGS += -DNO_LIBPYTHON
+-  $(if $(1),$(warning No $(1) was found))
+-  $(warning Python support will not be built)
+-  NO_LIBPYTHON := 1
+-endef
++ifdef CONFIG_LIBPYTHON
  
-+#ifdef CONFIG_BUILTIN_SCRIPT
- 	/*
- 	 * Aliased to 'perf script' for now:
- 	 */
- 	if (!strcmp(argv[0], "script"))
- 		return cmd_script(argc, argv, prefix);
-+#endif
+-override PYTHON := \
+-  $(call get-executable-or-default,PYTHON,python)
++  disable-python = $(eval $(disable-python_code))
++  define disable-python_code
++    $(if $(1),$(warning No $(1) was found))
++    $(warning Python support will not be built)
++    $(shell $(KCONFIG_SCRIPT) -d CONFIG_LIBPYTHON)
++  endef
  
- 	symbol__init();
- 	if (!strncmp(argv[0], "rec", 3)) {
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index c668b0a..1c807c3 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -535,7 +535,7 @@ static bool perf_top__handle_keypress(struct perf_top *top, int c)
- 	return ret;
+-ifndef PYTHON
+-  $(call disable-python,python interpreter)
+-else
++  override PYTHON := \
++    $(call get-executable-or-default,PYTHON,python)
+ 
+-  PYTHON_WORD := $(call shell-wordify,$(PYTHON))
+-
+-  ifdef NO_LIBPYTHON
+-    $(call disable-python)
++  ifndef PYTHON
++    $(call disable-python,python interpreter)
+   else
+ 
++    PYTHON_WORD := $(call shell-wordify,$(PYTHON))
++
+     override PYTHON_CONFIG := \
+       $(call get-executable-or-default,PYTHON_CONFIG,$(PYTHON)-config)
+ 
+@@ -522,18 +516,7 @@ else
+       else
+ 
+         ifneq ($(feature-libpython-version), 1)
+-          $(warning Python 3 is not yet supported; please set)
+-          $(warning PYTHON and/or PYTHON_CONFIG appropriately.)
+-          $(warning If you also have Python 2 installed, then)
+-          $(warning try something like:)
+-          $(warning $(and ,))
+-          $(warning $(and ,)  make PYTHON=python2)
+-          $(warning $(and ,))
+-          $(warning Otherwise, disable Python support entirely:)
+-          $(warning $(and ,))
+-          $(warning $(and ,)  make NO_LIBPYTHON=1)
+-          $(warning $(and ,))
+-          $(error   $(and ,))
++          $(call disable-python,python2 interpreter)
+         else
+           LDFLAGS += $(PYTHON_EMBED_LDFLAGS)
+           EXTLIBS += $(PYTHON_EMBED_LIBADD)
+@@ -776,8 +759,6 @@ all:
+ 	$(call store,PERL_EMBED_CCOPTS)
+ 	$(call store,CONFIG_X86_64)
+ 	$(call store,NO_LIBUNWIND)
+-	$(call store,NO_LIBPERL)
+-	$(call store,NO_LIBPYTHON)
+ 	$(call store,ETC_PERFCONFIG_SQ)
+ 	$(call store,DESTDIR_SQ)
+ 	$(call store,bindir_SQ)
+diff --git a/tools/perf/config/Makefile.fix-config b/tools/perf/config/Makefile.fix-config
+index e63539f..3f0e33e 100644
+--- a/tools/perf/config/Makefile.fix-config
++++ b/tools/perf/config/Makefile.fix-config
+@@ -3,20 +3,4 @@ include $(KCONFIG_CONFIG)
+ 
+ CONFIG := $(srctree)/scripts/config --file $(KCONFIG_CONFIG)
+ 
+-# NO_LIBPERL
+-ifdef CONFIG_LIBPERL
+-ifdef NO_LIBPERL
+-dummy := $(info Disabling CONFIG_LIBPERL)
+-dummy := $(shell $(CONFIG) -d CONFIG_LIBPERL)
+-endif
+-endif
+-
+-# NO_LIBPYTHON
+-ifdef CONFIG_LIBPYTHON
+-ifdef NO_LIBPYTHON
+-dummy := $(info Disabling CONFIG_LIBPYTHON)
+-dummy := $(shell $(CONFIG) -d CONFIG_LIBPYTHON)
+-endif
+-endif
+-
+ all:
+diff --git a/tools/perf/config/Makefile.fix-legacy b/tools/perf/config/Makefile.fix-legacy
+index 20a4062..431c9bf 100644
+--- a/tools/perf/config/Makefile.fix-legacy
++++ b/tools/perf/config/Makefile.fix-legacy
+@@ -1,10 +1,2 @@
+ 
+ include $(KCONFIG_CONFIG)
+-
+-ifndef CONFIG_LIBPERL
+-NO_LIBPERL := 1
+-endif
+-
+-ifndef CONFIG_LIBPYTHON
+-NO_LIBPYTHON := 1
+-endif
+diff --git a/tools/perf/util/trace-event-scripting.c b/tools/perf/util/trace-event-scripting.c
+index 57aaccc..4a70ef7 100644
+--- a/tools/perf/util/trace-event-scripting.c
++++ b/tools/perf/util/trace-event-scripting.c
+@@ -24,6 +24,7 @@
+ #include <string.h>
+ #include <errno.h>
+ 
++#include "generated/autoconf.h"
+ #include "../perf.h"
+ #include "util.h"
+ #include "trace-event.h"
+@@ -93,7 +94,7 @@ static void register_python_scripting(struct scripting_ops *scripting_ops)
+ 	scripting_context = malloc(sizeof(struct scripting_context));
  }
  
--#ifdef CONFIG_TUI
-+#if defined(CONFIG_TUI) || !defined(CONFIG_KBUILD)
- static void perf_top__sort_new_samples(void *arg)
+-#ifdef NO_LIBPYTHON
++#ifndef CONFIG_LIBPYTHON
+ void setup_python_scripting(void)
  {
- 	struct perf_top *t = arg;
-@@ -958,7 +958,7 @@ static int __cmd_top(struct perf_top *top)
- 
- 	ret = -1;
- 
--#ifdef CONFIG_TUI
-+#if defined(CONFIG_TUI) || !defined(CONFIG_KBUILD)
- 	if (use_browser > 0)
- 		display_fn = display_thread_tui;
- #endif
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index 8dd6f6f..b094379 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -92,8 +92,10 @@ static struct cmd_struct commands[] = {
- #ifdef CONFIG_BUILTIN_KVM
- 	{ "kvm",	cmd_kvm,	0 },
- #endif
-+#ifdef CONFIG_BUILTIN_TEST
- 	{ "test",	cmd_test,	0 },
--#if defined HAVE_LIBAUDIT_SUPPORT && defined CONFIG_BUILTIN_TRACE
-+#endif
-+#ifdef CONFIG_BUILTIN_TRACE
- 	{ "trace",	cmd_trace,	0 },
- #endif
- #ifdef CONFIG_BUILTIN_INJECT
-@@ -524,7 +526,7 @@ int main(int argc, const char **argv)
- 		goto out;
- 	}
- 	if (!prefixcmp(cmd, "trace")) {
--#ifdef HAVE_LIBAUDIT_SUPPORT
-+#ifdef CONFIG_BUILTIN_TRACE
- 		set_buildid_dir();
- 		setup_path();
- 		argv[0] = "trace";
-@@ -548,13 +550,17 @@ int main(int argc, const char **argv)
- 	} else {
- 		/* The user didn't specify a command; give them help */
- 		printf("\n usage: %s\n\n", perf_usage_string);
-+#ifdef CONFIG_BUILTIN_HELP
- 		list_common_cmds_help();
- 		printf("\n %s\n\n", perf_more_info_string);
-+#endif
- 		goto out;
- 	}
- 	cmd = argv[0];
- 
-+#ifdef CONFIG_BUILTIN_TEST
- 	test_attr__init();
-+#endif
- 
- 	/*
- 	 * We use PATH to find perf commands, but we prepend some higher
-diff --git a/tools/perf/ui/browsers/scripts.c b/tools/perf/ui/browsers/scripts.c
-index 402d2bd..128988d 100644
---- a/tools/perf/ui/browsers/scripts.c
-+++ b/tools/perf/ui/browsers/scripts.c
-@@ -59,7 +59,11 @@ static int list_scripts(char *script_name)
- 		paths[i] = names[i] + SCRIPT_NAMELEN;
- 	}
- 
-+#ifdef CONFIG_BUILTIN_SCRIPT
- 	num = find_scripts(names, paths);
-+#else
-+	num = 0;
-+#endif
- 	if (num > 0) {
- 		choice = ui__popup_menu(num, names);
- 		if (choice < num && choice >= 0) {
-diff --git a/tools/perf/ui/setup.c b/tools/perf/ui/setup.c
-index ec7fd36..efc2b21 100644
---- a/tools/perf/ui/setup.c
-+++ b/tools/perf/ui/setup.c
-@@ -77,7 +77,7 @@ void setup_browser(bool fallback_to_pager)
- 		       PERF_GTK_DSO);
- 		sleep(1);
- 		/* fall through */
--#ifdef CONFIG_TUI
-+#if defined(CONFIG_TUI) || !defined(CONFIG_KBUILD)
- 	case 1:
- 		use_browser = 1;
- 		if (ui__init() == 0)
-@@ -92,13 +92,13 @@ void setup_browser(bool fallback_to_pager)
- 	}
+ 	register_python_scripting(&python_scripting_unsupported_ops);
+@@ -156,16 +157,16 @@ static void register_perl_scripting(struct scripting_ops *scripting_ops)
+ 	scripting_context = malloc(sizeof(struct scripting_context));
  }
  
--void exit_browser(bool wait_for_ok)
-+void exit_browser(bool wait_for_ok __maybe_unused)
+-#ifdef NO_LIBPERL
++#ifdef CONFIG_LIBPERL
++extern struct scripting_ops perl_scripting_ops;
++
+ void setup_perl_scripting(void)
  {
- 	switch (use_browser) {
- 	case 2:
- 		exit_gtk_browser(wait_for_ok);
- 		break;
--#ifdef CONFIG_TUI
-+#if defined(CONFIG_TUI) || !defined(CONFIG_KBUILD)
- 	case 1:
- 		ui__exit(wait_for_ok);
- 		break;
+-	register_perl_scripting(&perl_scripting_unsupported_ops);
++	register_perl_scripting(&perl_scripting_ops);
+ }
+ #else
+-extern struct scripting_ops perl_scripting_ops;
+-
+ void setup_perl_scripting(void)
+ {
+-	register_perl_scripting(&perl_scripting_ops);
++	register_perl_scripting(&perl_scripting_unsupported_ops);
+ }
+ #endif
 -- 
 1.9.3
 
