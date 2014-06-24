@@ -1,21 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755775AbaFXUjn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:39:43 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47867 "EHLO
+	id S1756193AbaFXUkO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:40:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47852 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755820AbaFXUdk (ORCPT
+	with ESMTP id S1755780AbaFXUdd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:33:40 -0400
+	Tue, 24 Jun 2014 16:33:33 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Chris Boot <crb@tiger-computing.co.uk>, Philip Gaw <pgaw@darktech.org.uk>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Thomas Gleixner <tglx@linutronix.de>, Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Darren Hart <darren@dvhart.com>,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Clark Williams <williams@redhat.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Carlos ODonell <carlos@redhat.com>, Jakub Jelinek <jakub@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 64/65] target: Fix alua_access_state attribute OOPs for un-configured devices
-Date: Tue, 24 Jun 2014 13:30:24 -0700
-Message-Id: <1403641825-12825-65-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 44/65] futex: Prevent attaching to kernel threads
+Date: Tue, 24 Jun 2014 13:30:04 -0700
+Message-Id: <1403641825-12825-45-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
 References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
@@ -28,47 +38,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit f1453773514bb8b0bba0716301e8c8f17f8d39c7 upstream.
+commit f0d71b3dcb8332f7971b5f2363632573e6d9486a upstream.
 
-This patch fixes a OOPs where an attempt to write to the per-device
-alua_access_state configfs attribute at:
+We happily allow userspace to declare a random kernel thread to be the
+owner of a user space PI futex.
 
-  /sys/kernel/config/target/core/$HBA/$DEV/alua/$TG_PT_GP/alua_access_state
+Found while analysing the fallout of Dave Jones syscall fuzzer.
 
-results in an NULL pointer dereference when the backend device has not
-yet been configured.
+We also should validate the thread group for private futexes and find
+some fast way to validate whether the "alleged" owner has RW access on
+the file which backs the SHM, but that's a separate issue.
 
-This patch adds an explicit check for DF_CONFIGURED, and fails with
--ENODEV to avoid this case.
-
-Reported-by: Chris Boot <crb@tiger-computing.co.uk>
-Reported-by: Philip Gaw <pgaw@darktech.org.uk>
-Cc: Chris Boot <crb@tiger-computing.co.uk>
-Cc: Philip Gaw <pgaw@darktech.org.uk>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Darren Hart <darren@dvhart.com>
+Cc: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Clark Williams <williams@redhat.com>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Roland McGrath <roland@hack.frob.com>
+Cc: Carlos ODonell <carlos@redhat.com>
+Cc: Jakub Jelinek <jakub@redhat.com>
+Cc: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Link: http://lkml.kernel.org/r/20140512201701.194824402@linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/target/target_core_configfs.c | 5 +++++
+ kernel/futex.c | 5 +++++
  1 file changed, 5 insertions(+)
 
-diff --git a/drivers/target/target_core_configfs.c b/drivers/target/target_core_configfs.c
-index 4efb61b..f13014b 100644
---- a/drivers/target/target_core_configfs.c
-+++ b/drivers/target/target_core_configfs.c
-@@ -2023,6 +2023,11 @@ static ssize_t target_core_alua_tg_pt_gp_store_attr_alua_access_state(
- 			" tg_pt_gp ID: %hu\n", tg_pt_gp->tg_pt_gp_valid_id);
- 		return -EINVAL;
- 	}
-+	if (!(dev->dev_flags & DF_CONFIGURED)) {
-+		pr_err("Unable to set alua_access_state while device is"
-+		       " not configured\n");
-+		return -ENODEV;
-+	}
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 50a0244..ef88446 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -662,6 +662,11 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
+ 	if (!p)
+ 		return -ESRCH;
  
- 	ret = strict_strtoul(page, 0, &tmp);
- 	if (ret < 0) {
++	if (!p->mm) {
++		put_task_struct(p);
++		return -EPERM;
++	}
++
+ 	/*
+ 	 * We need to look at the task state flags to figure out,
+ 	 * whether the task is exiting. To protect against the do_exit
 -- 
 1.9.1
 
