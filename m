@@ -1,131 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753423AbaFXNzo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 09:55:44 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:61407 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752521AbaFXNzm (ORCPT
+	id S1753571AbaFXN5u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 09:57:50 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:39857 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752800AbaFXN5r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 09:55:42 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 2/6] OF: Add [__]of_find_node_by_full_name
-To: Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        Guenter Roeck <linux@roeck-us.net>
-Cc: Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>, Joel Becker <jlbec@evilplan.org>,
-        devicetree@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
-        linux-i2c@vger.kernel.org, Mark Brown <broonie@kernel.org>,
-        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pete Popov <pete.popov@konsulko.com>,
-        Dan Malek <dan.malek@konsulko.com>,
-        Georgi Vlaev <georgi.vlaev@konsulko.com>
-In-Reply-To: <4F4A55EC-744B-49CC-96FA-811C9483A43D@konsulko.com>
-References: <1403430039-15085-1-git-send-email-pantelis.antoniou@konsulko.com>
-	<1403430039-15085-3-git-send-email-pantelis.antoniou@konsulko.com>
-	<53A86ADA.9000903@roeck-us.net>
-	<4F4A55EC-744B-49CC-96FA-811C9483A43D@konsulko.com>
-Date: Tue, 24 Jun 2014 14:55:23 +0100
-Message-Id: <20140624135523.99956C40B84@trevor.secretlab.ca>
+	Tue, 24 Jun 2014 09:57:47 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-e4-53a983d84130
+From: Tomasz Figa <t.figa@samsung.com>
+To: linux-samsung-soc@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Tomasz Figa <t.figa@samsung.com>
+Subject: [PATCH 0/6] Various Samsung fixes for v3.16-rc3
+Date: Tue, 24 Jun 2014 15:57:09 +0200
+Message-id: <1403618235-19353-1-git-send-email-t.figa@samsung.com>
+X-Mailer: git-send-email 1.9.3
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBJMWRmVeSWpSXmKPExsVy+t/xq7o3mlcGGyzfpmLRu+Aqm8Wmx9dY
+	LS7vmsNmMeP8PiaLtUfuslusn/GaxWLVrj+MDuweO2fdZffYvKTeo2/LKkaPz5vkAliiuGxS
+	UnMyy1KL9O0SuDIaf89kK7jLWXFm302mBsbP7F2MnBwSAiYSz5/2sUHYYhIX7q0Hsrk4hASW
+	MkrsPjeNEcLpY5I42HOaFaSKTUBN4nPDI7AOEQFVic9tC8AmMQs8YZSY9dQNxBYWsJCYu6yN
+	EcRmAaqZfWwdWA2vgJPExfm3obbJSfRue8M8gZF7ASPDKkbR1NLkguKk9FxDveLE3OLSvHS9
+	5PzcTYyQ0Piyg3HxMatDjAIcjEo8vBd2rQgWYk0sK67MPcQowcGsJMJ7o2ZlsBBvSmJlVWpR
+	fnxRaU5q8SFGJg5OqQbG1BL3XO+WFzKHM0T2BTl/KjgZ8NMhwGeR3bYg3379icU8J2cUTgqT
+	5vjQa/LHXuD7zhc7rb+fZkmYIJyb9MNeOkFtX0Ua/6cJrKcmC/Qrl+RFT1epbBNafvz0OU3t
+	bUtWsEkqBreEt1+/pxIzgzXWYmLX8+vWD5eopKVJb3GomLVjasPVP3JKLMUZiYZazEXFiQAB
+	T6aV6wEAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Jun 2014 21:00:39 +0300, Pantelis Antoniou <pantelis.antoniou@konsulko.com> wrote:
-> Hi Guenter,
-> 
-> On Jun 23, 2014, at 8:58 PM, Guenter Roeck wrote:
-> 
-> > On 06/22/2014 02:40 AM, Pantelis Antoniou wrote:
-> >> __of_find_node_by_full_name recursively searches for a matching node
-> >> with the given full name without taking any locks.
-> >> 
-> >> of_find_node_by_full_name takes locks and takes a reference on the
-> >> matching node.
-> >> 
-> >> Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-> >> ---
-> >>  drivers/of/base.c  | 58 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
-> >>  include/linux/of.h |  4 ++++
-> >>  2 files changed, 62 insertions(+)
-> >> 
-> >> diff --git a/drivers/of/base.c b/drivers/of/base.c
-> >> index d3493e1..80fef33 100644
-> >> --- a/drivers/of/base.c
-> >> +++ b/drivers/of/base.c
-> >> @@ -1201,6 +1201,64 @@ static void *of_find_property_value_of_size(const struct device_node *np,
-> >>  }
-> >> 
-> >>  /**
-> >> + * __of_find_node_by_full_name - Find a node with the full name recursively
-> >> + * @node:	Root of the tree to perform the search
-> >> + * @full_name:	Full name of the node to find.
-> >> + *
-> >> + * Find a node with the give full name by recursively following any of
-> >> + * the child node links.
-> >> + * Returns the matching node, or NULL if not found.
-> >> + * Note that the devtree lock is not taken, so this function is only
-> >> + * safe to call on either detached trees, or when devtree lock is already
-> >> + * taken.
-> >> + */
-> >> +struct device_node *__of_find_node_by_full_name(struct device_node *node,
-> >> +		const char *full_name)
-> >> +{
-> >> +	struct device_node *child, *found;
-> >> +
-> >> +	if (node == NULL)
-> >> +		return NULL;
-> >> +
-> >> +	/* check */
-> >> +	if (of_node_cmp(node->full_name, full_name) == 0)
-> >> +		return node;
-> >> +
-> >> +	__for_each_child_of_node(node, child) {
-> >> +		found = __of_find_node_by_full_name(child, full_name);
-> >> +		if (found != NULL)
-> >> +			return found;
-> >> +	}
-> >> +
-> >> +	return NULL;
-> >> +}
-> >> +EXPORT_SYMBOL(__of_find_node_by_full_name);
-> >> +
-> >> +/**
-> >> + * of_find_node_by_full_name - Find a node with the full name recursively
-> >> + * @node:	Root of the tree to perform the search
-> >> + * @full_name:	Full name of the node to find.
-> >> + *
-> >> + * Find a node with the give full name by recursively following any of
-> >> + * the child node links.
-> >> + * Returns the matching node (with a ref taken), or NULL if not found.
-> >> + */
-> >> +struct device_node *of_find_node_by_full_name(struct device_node *node,
-> >> +		const char *full_name)
-> >> +{
-> >> +	unsigned long flags;
-> >> +	struct device_node *np;
-> >> +
-> >> +	raw_spin_lock_irqsave(&devtree_lock, flags);
-> >> +	np = of_find_node_by_full_name(node, full_name);
-> > 
-> > Should this be __of_find_node_by_full_name, or am I missing something ?
-> > 
-> 
-> Ugh, you're not missing something. This slipped through since this is not 
-> used in the current code
+This series inteds to fix various issues spotted while testing v3.16-rc2.
+The patches should be reasonably independent from each other and so could be
+picked to respective trees. See descriptions of individual patches for more
+information.
 
-Then perhaps the function shouldn't exist at all.
+Tested on Exynos4412-based Trats2 and Exynos4210-based Trats boards.
 
-g.
+AFAIK there is no need to backport those fixes to stable.
+
+Tomasz Figa (6):
+  mmc: sdhci-s3c: Fix local I/O clock gating
+  ARM: EXYNOS: Fix core ID used by platsmp and hotplug code
+  clk: samsung: exynos4: Remove SRC_MASK_ISP gates
+  ARM: SAMSUNG: Restore Samsung PM Debug functionality
+  ARM: EXYNOS: Fix suspend/resume sequencies
+  ARM: EXYNOS: Register cpuidle device only on Exynos4210 and 5250
+
+ arch/arm/mach-exynos/exynos.c     |  6 ++----
+ arch/arm/mach-exynos/hotplug.c    | 10 ++++++----
+ arch/arm/mach-exynos/platsmp.c    | 34 +++++++++++++++++++---------------
+ arch/arm/mach-exynos/pm.c         | 20 ++++----------------
+ arch/arm/plat-samsung/Kconfig     |  8 +++++++-
+ arch/arm/plat-samsung/pm-debug.c  |  1 +
+ drivers/clk/samsung/clk-exynos4.c | 16 ++++------------
+ drivers/mmc/host/sdhci-s3c.c      | 17 ++++++++++-------
+ 8 files changed, 53 insertions(+), 59 deletions(-)
+
+-- 
+1.9.3
 
