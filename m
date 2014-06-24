@@ -1,54 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755218AbaFXSkG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 14:40:06 -0400
-Received: from smtprelay0150.hostedemail.com ([216.40.44.150]:42340 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755174AbaFXSkE (ORCPT
+	id S1755249AbaFXSkR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 14:40:17 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:57377 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755174AbaFXSkM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 14:40:04 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:41:355:379:541:800:960:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3350:3867:3868:3872:4321:5007:7652:9592:10004:10400:10848:11026:11658:11914:12517:12519:12555:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: brass71_1d6c004cee40a
-X-Filterd-Recvd-Size: 1429
-Message-ID: <1403635200.29061.26.camel@joe-AO725>
-Subject: [PATCH] kernel.h: Remove deprecated pack_hex_byte
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 24 Jun 2014 11:40:00 -0700
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 24 Jun 2014 14:40:12 -0400
+From: "Cooper Jr., Franklin" <fcooper@ti.com>
+To: "Balbi, Felipe" <balbi@ti.com>, Benoit Cousson <bcousson@baylibre.com>
+CC: "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        Tony Lindgren <tony@atomide.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "Nayak, Rajendra" <rnayak@ti.com>, "Menon, Nishanth" <nm@ti.com>,
+        "R, Sricharan" <r.sricharan@ti.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH v3 1/2] arm: dts: am4372: let boards access all nodes
+ through phandles
+Thread-Topic: [PATCH v3 1/2] arm: dts: am4372: let boards access all nodes
+ through phandles
+Thread-Index: AQHPj9m9/CCpEQE0jECvlfPSyaRcWZuAl5OA
+Date: Tue, 24 Jun 2014 18:39:40 +0000
+Message-ID: <8F29D6B095ED194EA1980491A5E029710C6D71A1@DFLE08.ent.ti.com>
+References: <1403547659-24558-1-git-send-email-balbi@ti.com>
+ <1403547659-24558-2-git-send-email-balbi@ti.com>
+In-Reply-To: <1403547659-24558-2-git-send-email-balbi@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.170.170.90]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's been nearly 3 years now since commit 55036ba76b2d
-("lib: rename pack_hex_byte() to hex_byte_pack()") so it's
-time to remove this deprecated and unused static inline.
+Tested-by: Franklin Cooper Jr. <fcooper@ti.com>
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- include/linux/kernel.h | 5 -----
- 1 file changed, 5 deletions(-)
-
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 44649e0..2416c82 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -493,11 +493,6 @@ static inline char *hex_byte_pack_upper(char *buf, u8 byte)
- 	return buf;
- }
- 
--static inline char * __deprecated pack_hex_byte(char *buf, u8 byte)
--{
--	return hex_byte_pack(buf, byte);
--}
--
- extern int hex_to_bin(char ch);
- extern int __must_check hex2bin(u8 *dst, const char *src, size_t count);
- 
-
+> -----Original Message-----
+> From: Balbi, Felipe
+> Sent: Monday, June 23, 2014 1:21 PM
+> To: Benoit Cousson
+> Cc: robh+dt@kernel.org; galak@codeaurora.org; Tony Lindgren;
+> linux@arm.linux.org.uk; Nayak, Rajendra; Menon, Nishanth; R, Sricharan;
+> devicetree@vger.kernel.org; Linux Kernel Mailing List; Linux OMAP Mailing
+> List; Linux ARM Kernel Mailing List; Balbi, Felipe
+> Subject: [PATCH v3 1/2] arm: dts: am4372: let boards access all nodes through
+> phandles
+> 
+> by providing phandles to rtc, wdt, cpu and dispc nodes, boards can access
+> them to add board-specific data.
+> 
+> Signed-off-by: Felipe Balbi <balbi@ti.com>
+> ---
+> 
+> Changes since v1:
+> 	- added phandles to cpu and dispc
+> 
+>  arch/arm/boot/dts/am4372.dtsi | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/am4372.dtsi b/arch/arm/boot/dts/am4372.dtsi
+> index 49fa596..8d3c163 100644
+> --- a/arch/arm/boot/dts/am4372.dtsi
+> +++ b/arch/arm/boot/dts/am4372.dtsi
+> @@ -30,7 +30,7 @@
+>  	cpus {
+>  		#address-cells = <1>;
+>  		#size-cells = <0>;
+> -		cpu@0 {
+> +		cpu: cpu@0 {
+>  			compatible = "arm,cortex-a9";
+>  			device_type = "cpu";
+>  			reg = <0>;
+> @@ -270,7 +270,7 @@
+>  			ti,hwmods = "counter_32k";
+>  		};
+> 
+> -		rtc@44e3e000 {
+> +		rtc: rtc@44e3e000 {
+>  			compatible = "ti,am4372-rtc","ti,da830-rtc";
+>  			reg = <0x44e3e000 0x1000>;
+>  			interrupts = <GIC_SPI 75 IRQ_TYPE_LEVEL_HIGH @@ -
+> 279,7 +279,7 @@
+>  			status = "disabled";
+>  		};
+> 
+> -		wdt@44e35000 {
+> +		wdt: wdt@44e35000 {
+>  			compatible = "ti,am4372-wdt","ti,omap3-wdt";
+>  			reg = <0x44e35000 0x1000>;
+>  			interrupts = <GIC_SPI 91 IRQ_TYPE_LEVEL_HIGH>; @@
+> -871,7 +871,7 @@
+>  			#size-cells = <1>;
+>  			ranges;
+> 
+> -			dispc@4832a400 {
+> +			dispc: dispc@4832a400 {
+>  				compatible = "ti,omap3-dispc";
+>  				reg = <0x4832a400 0x400>;
+>  				interrupts = <GIC_SPI 127
+> IRQ_TYPE_LEVEL_HIGH>;
+> --
+> 2.0.0.390.gcb682f8
 
