@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030210AbaFXQj7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:39:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32787 "EHLO
+	id S1752544AbaFXPxF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:53:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32773 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755698AbaFXPxI (ORCPT
+	with ESMTP id S1755599AbaFXPxB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:53:08 -0400
+	Tue, 24 Jun 2014 11:53:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.10 36/52] USB: cdc-acm: fix runtime PM imbalance at shutdown
-Date: Tue, 24 Jun 2014 11:50:51 -0400
-Message-Id: <20140624154715.623916335@linuxfoundation.org>
+        Zhang Dongxing <dongxing.zhang@intel.com>,
+        xiaoming wang <xiaoming.wang@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.10 45/52] ALSA: compress: Cancel the optimization of compiler and fix the size of struct for all platform.
+Date: Tue, 24 Jun 2014 11:51:00 -0400
+Message-Id: <20140624154716.187384290@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154713.428945460@linuxfoundation.org>
 References: <20140624154713.428945460@linuxfoundation.org>
@@ -28,52 +30,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: "Wang, Xiaoming" <xiaoming.wang@intel.com>
 
-commit 5292afa657d0e790b7479ad8eef9450c1e040b3d upstream.
+commit 2bd0ae464a6cf7363bbf72c8545e0aa43caa57f0 upstream.
 
-Make sure only to decrement the PM counters if they were actually
-incremented.
+Cancel the optimization of compiler for struct snd_compr_avail
+which size will be 0x1c in 32bit kernel while 0x20 in 64bit
+kernel under the optimizer. That will make compaction between
+32bit and 64bit. So add packed to fix the size of struct
+snd_compr_avail to 0x1c for all platform.
 
-Note that the USB PM counter, but not necessarily the driver core PM
-counter, is reset when the interface is unbound.
-
-Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
-that support remote wakeup")
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Zhang Dongxing <dongxing.zhang@intel.com>
+Signed-off-by: xiaoming wang <xiaoming.wang@intel.com>
+Acked-by: Vinod Koul <vinod.koul@intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/class/cdc-acm.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ include/uapi/sound/compress_offload.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -604,12 +604,13 @@ static void acm_port_shutdown(struct tty
- 	struct urb *urb;
- 	struct acm_wb *wb;
- 	int i;
-+	int pm_err;
+--- a/include/uapi/sound/compress_offload.h
++++ b/include/uapi/sound/compress_offload.h
+@@ -80,7 +80,7 @@ struct snd_compr_tstamp {
+ struct snd_compr_avail {
+ 	__u64 avail;
+ 	struct snd_compr_tstamp tstamp;
+-};
++} __attribute__((packed));
  
- 	dev_dbg(&acm->control->dev, "%s\n", __func__);
- 
- 	mutex_lock(&acm->mutex);
- 	if (!acm->disconnected) {
--		usb_autopm_get_interface(acm->control);
-+		pm_err = usb_autopm_get_interface(acm->control);
- 		acm_set_control(acm, acm->ctrlout = 0);
- 
- 		for (;;) {
-@@ -627,7 +628,8 @@ static void acm_port_shutdown(struct tty
- 		for (i = 0; i < acm->rx_buflimit; i++)
- 			usb_kill_urb(acm->read_urbs[i]);
- 		acm->control->needs_remote_wakeup = 0;
--		usb_autopm_put_interface(acm->control);
-+		if (!pm_err)
-+			usb_autopm_put_interface(acm->control);
- 	}
- 	mutex_unlock(&acm->mutex);
- }
+ enum snd_compr_direction {
+ 	SND_COMPRESS_PLAYBACK = 0,
 
 
