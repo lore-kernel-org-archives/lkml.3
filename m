@@ -1,120 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752209AbaFXJjf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 05:39:35 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:57928 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751360AbaFXJjd (ORCPT
+	id S1752631AbaFXJnD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 05:43:03 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:58133 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751859AbaFXJnC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 05:39:33 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        devicetree <devicetree@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] phy: miphy365x: Add Device Tree bindings for the MiPHY365x
-Date: Tue, 24 Jun 2014 11:38:54 +0200
-Message-ID: <6599289.0ZjjaMbRqj@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140618100411.GL23945@lee--X1>
-References: <1400766819-22286-1-git-send-email-lee.jones@linaro.org> <53A160D1.8000908@ti.com> <20140618100411.GL23945@lee--X1>
+	Tue, 24 Jun 2014 05:43:02 -0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: <akpm@linux-foundation.org>
+CC: <iamjoonsoo.kim@lge.com>, <cl@linux.com>, <rientjes@google.com>,
+        <penberg@kernel.org>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
+Subject: [PATCH -mm] slub: kmem_cache_shrink: check if partial list is empty under list_lock
+Date: Tue, 24 Jun 2014 13:42:42 +0400
+Message-ID: <1403602962-18946-1-git-send-email-vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <20140624075011.GD4836@js1304-P5Q-DELUXE>
+References: <20140624075011.GD4836@js1304-P5Q-DELUXE>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:P4kRwgmfKiOrqeyGUdOC1EOaQ7gNxRgDCUCPKM+Fw9V
- NYK0jEP9aSUNNH0caht6rPwrkEDQbZ6zXxiMMAji+LoLFP3WYg
- awDv0Tz43qT8hU+NdD8dHHy3DLtitYvrUED/yXEx98NEKRE04n
- ftnj1LvTsaGSIGS39x6yyDrmi1O+iEx2wBPPukRcm1Lv8lNfLA
- gwLhoCIqUFv3V3kDOJGuedPBmMKXiNFkiXTxFayZ7LcXTmkJI5
- NdEBwouEAnUOAlQnQy0s1XfxsLtj/MF1nApaeUgQtJyeq6eBW+
- gy12ieYTdgfcOuwVfm/hekg3QWCTJQmguNpbPycW42UPoEPxeC
- Xu2sylEchOuhNE41umFs=
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 18 June 2014 11:04:11 Lee Jones wrote:
-> > On Tuesday 17 June 2014 04:53 PM, Lee Jones wrote:
-> > >>> The MiPHY365x is a Generic PHY which can serve various SATA or PCIe
-> > >>> devices. It has 2 ports which it can use for either; both SATA, both
-> > >>> PCIe or one of each in any configuration.
-> > >>
-> > >> I've asked others who wrote multi-phy PHY providers to model each individual
-> > >> PHY as sub-node of the PHY provider. So It's only fair I ask you the same to
-> > >> do. So in this case the dt node should look something like:
-> > >>
-> > >> 	miphy365x_phy: miphy365x@fe382000 {
-> > >> 		compatible = "st,miphy365x-phy";
-> > >> 		#phy-cells = <2>;
-> > >> 		st,syscfg = <&syscfg_rear>;
-> > >> 		channel@0 {
-> > >> 			reg =	<0xfe382000 0x100>, <0xfe394000 0x100>;
-> > >> 			reg-names = "sata", "pcie";
-> > >> 		}
-> > >>
-> > >> 		channel@1{
-> > >> 			reg =	<0xfe38a000 0x100>, <0xfe804000 0x100>;
-> > >> 			reg-names = "sata", "pcie";
-> > >> 		}
-> > >>
-> > >> 	};
-> > > 
-> > > I'm interested to know why you've taken this approach, as it makes the
-> > > code much more complex.  The DT framework goes to the trouble of
-> > 
-> > It looks to be much closer representation of the hardware in dt. It also
-> > enables to have more control of each individual PHYs. For example, we can have
-> > something like status="disabled" for channels which is disabled.
-> 
-> If you wanted to disable the channels in this way, you would either
-> have to A) add your own code to parse that property or B) have each
-> channel set itself up as platform device and would probe (or not if
-> status = "disabled") individually.  If you choose the later option,
-> the platform resource would also be populated.
+SLUB's implementation of kmem_cache_shrink skips nodes that have
+nr_partial=0, because they surely don't have any empty slabs to free.
+This check is done w/o holding any locks, therefore it can race with
+concurrent kfree adding an empty slab to a partial list. As a result, a
+just shrinked cache can have empty slabs.
 
-We have of_device_is_available() and for_each_available_child_of_node()
-to check for the status property. This doesn't seem much extra overhead.
+This is unacceptable for kmemcg, which needs to be sure that there will
+be no empty slabs on dead memcg caches after kmem_cache_shrink was
+called, because otherwise we may leak a dead cache.
 
-> > > converting all addresses to to resources so drivers can easily pull
-> > > them out using platform_get_resource() and friends.  Pushing the reg
-> > 
-> > right. Can't we use of_address_to_resource here?
-> 
-> We could, but that would be an extra layer.  We'd be pulling the
-> address, putting it into a resource, then pulling it from the resource
-> for use.  If we're going to be pulling addresses out manually, we're
-> probably better off using of_get_address().  But again, we're just
-> carrying out functionality which is already provided by the
-> framework.
+Let's fix this race by checking if node partial list is empty under
+node->list_lock. Since the nr_partial!=0 branch of kmem_cache_shrink
+does nothing if the list is empty, we can simply remove the nr_partial=0
+check.
 
-there is also of_ioremap().
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Reported-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+---
+ mm/slub.c |    3 ---
+ 1 file changed, 3 deletions(-)
 
-> > > properties down into a child node means that we have to now iterate
-> > > over the sub-nodes and pull them out manually.  This will lead to a
-> > 
-> > You anyway iterate while creating PHYs based on some constant. Now you have to
-> > iterate over the sub-nodes.
-> > > pretty messy implementation IMHO.
-> 
-> This much is true.
-> 
-> > > Can you point me in the direction of previous implementations where you
-> > > have stipulated the same set of constraints please?
-> > 
-> > ah.. there isn't any. The author of the other multi-phy driver [1] also feels
-> > this will just add to the complexity of the driver.
-> 
-> =:)
-> 
-> > Maybe we should ask the opinion of others?
-> 
-> We could.  I'll CC Arnd as he likes this PHY stuff. :)
-> 
-> > [1] -> http://www.spinics.net/lists/linux-sh/msg32087.html
+diff --git a/mm/slub.c b/mm/slub.c
+index 67da14d9ec70..891ac6cd78cc 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -3397,9 +3397,6 @@ int __kmem_cache_shrink(struct kmem_cache *s)
+ 
+ 	flush_all(s);
+ 	for_each_kmem_cache_node(s, node, n) {
+-		if (!n->nr_partial)
+-			continue;
+-
+ 		for (i = 0; i < objects; i++)
+ 			INIT_LIST_HEAD(slabs_by_inuse + i);
+ 
+-- 
+1.7.10.4
 
-Having sub-nodes for each individual PHY managed by a controller seems
-very reasonable to me. Making them show up as separate platform devices
-seems less useful though.
-
-	Arnd
