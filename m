@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754783AbaFXUaq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:30:46 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47608 "EHLO
+	id S1755029AbaFXUaz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:30:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47660 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754231AbaFXUah (ORCPT
+	with ESMTP id S1754917AbaFXUaw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:30:37 -0400
+	Tue, 24 Jun 2014 16:30:52 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Josef Gajdusek <atx@atx.name>, Guenter Roeck <linux@roeck-us.net>,
+Cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 13/65] hwmon: (emc1403) fix inverted store_hyst()
-Date: Tue, 24 Jun 2014 13:29:33 -0700
-Message-Id: <1403641825-12825-14-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 57/65] xhci: delete endpoints from bandwidth list before freeing whole device
+Date: Tue, 24 Jun 2014 13:30:17 -0700
+Message-Id: <1403641825-12825-58-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
 References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,36 +31,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Gajdusek <atx@atx.name>
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
 
-commit 17c048fc4bd95efea208a1920f169547d8588f1f upstream.
+commit 5dc2808c4729bf080487e61b80ee04e0fdb12a37 upstream.
 
-Attempts to set the hysteresis value to a temperature below the target
-limit fails with "write error: Numerical result out of range" due to
-an inverted comparison.
+Lists of endpoints are stored for bandwidth calculation for roothub ports.
+Make sure we remove all endpoints from the list before the whole device,
+containing its endpoints list_head stuctures, is freed.
 
-Signed-off-by: Josef Gajdusek <atx@atx.name>
-Reviewed-by: Jean Delvare <jdelvare@suse.de>
-[Guenter Roeck: Updated headline and description]
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+This used to be done in the wrong order in xhci_mem_cleanup(),
+and triggered an oops in resume from S4 (hibernate).
+
+Tested-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/hwmon/emc1403.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/host/xhci-mem.c | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/hwmon/emc1403.c b/drivers/hwmon/emc1403.c
-index 142e1cb..62fba71 100644
---- a/drivers/hwmon/emc1403.c
-+++ b/drivers/hwmon/emc1403.c
-@@ -162,7 +162,7 @@ static ssize_t store_hyst(struct device *dev,
- 	if (retval < 0)
- 		goto fail;
+diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
+index 1ffbbfb..1b07fbb 100644
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -1814,6 +1814,16 @@ void xhci_mem_cleanup(struct xhci_hcd *xhci)
+ 		kfree(cur_cd);
+ 	}
  
--	hyst = val - retval * 1000;
-+	hyst = retval * 1000 - val;
- 	hyst = DIV_ROUND_CLOSEST(hyst, 1000);
- 	if (hyst < 0 || hyst > 255) {
- 		retval = -ERANGE;
++	num_ports = HCS_MAX_PORTS(xhci->hcs_params1);
++	for (i = 0; i < num_ports; i++) {
++		struct xhci_interval_bw_table *bwt = &xhci->rh_bw[i].bw_table;
++		for (j = 0; j < XHCI_MAX_INTERVAL; j++) {
++			struct list_head *ep = &bwt->interval_bw[j].endpoints;
++			while (!list_empty(ep))
++				list_del_init(ep->next);
++		}
++	}
++
+ 	for (i = 1; i < MAX_HC_SLOTS; ++i)
+ 		xhci_free_virt_device(xhci, i);
+ 
+@@ -1854,16 +1864,6 @@ void xhci_mem_cleanup(struct xhci_hcd *xhci)
+ 	if (!xhci->rh_bw)
+ 		goto no_bw;
+ 
+-	num_ports = HCS_MAX_PORTS(xhci->hcs_params1);
+-	for (i = 0; i < num_ports; i++) {
+-		struct xhci_interval_bw_table *bwt = &xhci->rh_bw[i].bw_table;
+-		for (j = 0; j < XHCI_MAX_INTERVAL; j++) {
+-			struct list_head *ep = &bwt->interval_bw[j].endpoints;
+-			while (!list_empty(ep))
+-				list_del_init(ep->next);
+-		}
+-	}
+-
+ 	for (i = 0; i < num_ports; i++) {
+ 		struct xhci_tt_bw_info *tt, *n;
+ 		list_for_each_entry_safe(tt, n, &xhci->rh_bw[i].tts, tt_list) {
 -- 
 1.9.1
 
