@@ -1,77 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754097AbaFXS0i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 14:26:38 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54862 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752845AbaFXS0h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 14:26:37 -0400
-Message-ID: <53A9C2C3.7050508@zytor.com>
-Date: Tue, 24 Jun 2014 11:26:11 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1754303AbaFXS1Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 14:27:24 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59378 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753712AbaFXS1X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 14:27:23 -0400
+Date: Tue, 24 Jun 2014 19:27:08 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Andy Gross <agross@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] pinctrl: msm: Add msm8960 definitions
+Message-ID: <20140624182708.GA29789@leverpostej>
+References: <1403633766-25796-1-git-send-email-bjorn.andersson@sonymobile.com>
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>, Ingo Molnar <mingo@kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Subject: Re: [tip:x86/urgent] x86/vdso: Discard the __bug_table section
-References: <2a5bebff42defd8a5e81d96f7dc00f21143c80e8.1403129369.git.luto@amacapital.net> <tip-5f56e7167e6d438324fcba87018255d81e201383@git.kernel.org> <20140622084754.GA15094@gmail.com> <CALCETrW_U7z7RC-D5+Ji+PQd73nR-=xQGH5uieb7y3Z7yzYPRw@mail.gmail.com> <CALCETrXohybf=Lk70j=hVG1zaAQ-mw8CVo6P59xjM2qsc-p+Gg@mail.gmail.com>
-In-Reply-To: <CALCETrXohybf=Lk70j=hVG1zaAQ-mw8CVo6P59xjM2qsc-p+Gg@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403633766-25796-1-git-send-email-bjorn.andersson@sonymobile.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24/2014 11:19 AM, Andy Lutomirski wrote:
->>>
->>> One of the recent x86/urgent vdso commits causes this build failure:
->>>
->>>  Error: too many copied sections (max = 13)
->>
->> I can't reproduce this with your config, which suggestes a binutils
->> issue, which is annoying.  Can you tell me what version of ld you're
->> using and send me the output of:
->>
->> for i in arch/x86/vdso/*.so.dbg; do echo $i; eu-readelf -S $i; done
+On Tue, Jun 24, 2014 at 07:16:06PM +0100, Bjorn Andersson wrote:
+> Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+> ---
 > 
-> Ping!
+> Changes since v1:
+>  - Deduplicated functions for alternative pins
 > 
-> The current state of this is obviously not so good, but I don't know
-> how to proceed.
+>  .../bindings/pinctrl/qcom,msm8960-pinctrl.txt      |  103 ++
+>  drivers/pinctrl/Kconfig                            |    8 +
+>  drivers/pinctrl/Makefile                           |    1 +
+>  drivers/pinctrl/pinctrl-msm8960.c                  | 1146 ++++++++++++++++++++
+>  4 files changed, 1258 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/pinctrl/qcom,msm8960-pinctrl.txt
+>  create mode 100644 drivers/pinctrl/pinctrl-msm8960.c
 > 
+> diff --git a/Documentation/devicetree/bindings/pinctrl/qcom,msm8960-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/qcom,msm8960-pinctrl.txt
+> new file mode 100644
+> index 0000000..6e79eea
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/pinctrl/qcom,msm8960-pinctrl.txt
+> @@ -0,0 +1,103 @@
+> +Qualcomm MSM8960 TLMM block
+> +
+> +Required properties:
+> +- compatible: "qcom,msm8960-pinctrl"
+> +- reg: Should be the base address and length of the TLMM block.
+> +- interrupts: Should be the parent IRQ of the TLMM block.
+> +- interrupt-controller: Marks the device node as an interrupt controller.
+> +- #interrupt-cells: Should be two.
 
-We used to have this kind of problems with PHDRs, where ld would guess
-how much space it would need, somehow guess wrong, and fall on its face.
+There should be a description of valid values for the two cells of an
+interrupt-specifier.
 
-I think we want to actually print the number that we are trying to copy
-in addition to the maximum, and I also noticed the test looks wrong.
-Thus I would like to propose the following patch as a diagnostic:
+> +- gpio-controller: Marks the device node as a GPIO controller.
+> +- #gpio-cells : Should be two.
+> +                The first cell is the gpio pin number and the
+> +                second cell is used for optional parameters.
 
-diff --git a/arch/x86/vdso/vdso2c.h b/arch/x86/vdso/vdso2c.h
-index f42e2ddc663d..94158e100f26 100644
---- a/arch/x86/vdso/vdso2c.h
-+++ b/arch/x86/vdso/vdso2c.h
-@@ -99,8 +99,9 @@ static void BITSFUNC(copy_section)(struct
-BITSFUNC(fake_sections) *out,
-        if (!copy)
-                return;
+And what are those optional parameters?
 
--       if (out->count >= out->max_count)
--               fail("too many copied sections (max = %d)\n",
-out->max_count);
-+       if (out->count > out->max_count)
-+               fail("too many copied sections (max = %d, need = %d)\n",
-+                    out->max_count, out->count);
+[...]
 
-        if (in_idx == out->in_shstrndx)
-                out->out_shstrndx = out->count;
+> +Example:
+> +
+> +       msmgpio: pinctrl@800000 {
+> +               compatible = "qcom,msm8960-pinctrl";
+> +               reg = <0x800000 0x4000>;
+> +
+> +               gpio-controller;
+> +               #gpio-cells = <2>;
+> +               interrupt-controller;
+> +               #interrupt-cells = <2>;
+> +                interrupts = <0 32 0x4>;
+> +
+> +               pinctrl-names = "default";
+> +               pinctrl-0 = <&debug_uart>;
 
-Does anyone have any objection?  Andy, I presume I am correct that =>
-should be > there?
+The fact that the pinctrl block itself supports pinctrl properties was
+not described above.
 
-	-hpa
+Thanks,
+Mark.
