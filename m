@@ -1,88 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753370AbaFXKYF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 06:24:05 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53758 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751855AbaFXKYD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 06:24:03 -0400
-Date: Tue, 24 Jun 2014 11:23:27 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Christoffer Dall <christoffer.dall@linaro.org>
-Cc: Marc Zyngier <Marc.Zyngier@arm.com>,
-        Kim Phillips <kim.phillips@freescale.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Eric Auger <eric.auger@linaro.org>,
-        Kim Phillips <kim.phillips@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Antonios Motakis <a.motakis@virtualopensystems.com>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/2] ARM: KVM: user_mem_abort: support stage 2 MMIO page
- mapping
-Message-ID: <20140624102327.GA9121@arm.com>
-References: <1395785294-2545-1-git-send-email-kim.phillips@linaro.org>
- <1395785294-2545-2-git-send-email-kim.phillips@linaro.org>
- <20140506180448.GH3066@lvm>
- <87bnvaotei.fsf@approximate.cambridge.arm.com>
- <20140507145557.GJ3066@lvm>
+	id S1753494AbaFXKZh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 06:25:37 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:56830 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752582AbaFXKZd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 06:25:33 -0400
+Date: Tue, 24 Jun 2014 12:25:31 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Cc: tony.luck@intel.com, mattieu.souchaud@free.fr, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86/mce: Don't unregister CPU hotplug notifier in error
+ path
+Message-ID: <20140624102531.GE4439@pd.tnic>
+References: <1acfd8b6-48f1-4324-9723-224a7f4f7367@default>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140507145557.GJ3066@lvm>
+In-Reply-To: <1acfd8b6-48f1-4324-9723-224a7f4f7367@default>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 07, 2014 at 03:55:57PM +0100, Christoffer Dall wrote:
-> On Wed, May 07, 2014 at 10:00:21AM +0100, Marc Zyngier wrote:
-> > On Tue, May 06 2014 at  7:04:48 pm BST, Christoffer Dall <christoffer.dall@linaro.org> wrote:
-> > > On Tue, Mar 25, 2014 at 05:08:14PM -0500, Kim Phillips wrote:
-> > >> Use the correct memory type for device MMIO mappings: PAGE_S2_DEVICE.
-> > >> 
-> > >> Signed-off-by: Kim Phillips <kim.phillips@linaro.org>
-> > >> ---
-> > >>  arch/arm/kvm/mmu.c | 11 ++++++++---
-> > >>  1 file changed, 8 insertions(+), 3 deletions(-)
+On Sun, Jun 22, 2014 at 10:25:50AM -0700, Boris Ostrovsky wrote:
+> You can add
+>
+> Tested-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+>
+> if you prefer to go with that version. I still think it's not 100%
+> reliable (because of what I said above) but at least it fixes the
+> current breakage.
 
-[...]
+Thanks.
 
-> > > I think this looks reasonable.
-> > >
-> > > Acked-by: Christoffer Dall <christoffer.dall@linaro.org>
-> > 
-> > I feel like I'm missing some context here, and the commit message is way
-> > too terse for me to make sense of it.
-> > 
-> > So far, we can only get into user_mem_abort on a Stage-2 fault
-> > (translation or permission) for memory. How can we suddenly get here for
-> > a *device* fault? Do we get a special kind of memslot?
-> > 
-> > I'm not saying the patch does anything wrong, but I'd like to understand
-> > the rationale behind it. On its own, it doesn't make much sense.
-> > 
-> Think device passthrough.  There's nothing preventing user space from
-> setting up a memory region to point to device memory (through VFIO or
-> /dev/mem).  If that's done, we should enforce device memory properties
-> so writes don't linger around in the cache to be written some time later
-> when that device memory potentially doesn't belong to the VM anymore.
-> 
-> This is just one tiny piece of all of them to make device passthrough
-> work, and we could hold off with this patch until we have something more
-> complete.  On the other hand, we need to start somewhere, and this is
-> hardly intrusive and is functionally correct even though you don't have
-> a full device passthrough setup.
+The thing is, I don't like to address hypothetical breakages if they can
+never be triggered on any configuration.
 
-Please can you queue this patch up? I need it for my VFIO work, where I'm
-registering the PCI BARs using KVM_SET_USER_MEMORY_REGION.
+But I'm going to leave an open mind so if you still can trigger *with*
+this fix, then we can revisit it then again.
 
-Without this, I'd have to trap all accesses and do pread/pwrite from
-kvmtool instead of mmaping the regions straight through.
+Thanks for testing!
 
-Cheers,
+-- 
+Regards/Gruss,
+    Boris.
 
-Will
+Sent from a fat crate under my desk. Formatting is fine.
+--
