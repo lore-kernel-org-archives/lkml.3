@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753233AbaFXI07 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 04:26:59 -0400
-Received: from us01smtprelay-2.synopsys.com ([198.182.60.111]:34321 "EHLO
+	id S1753271AbaFXI1M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 04:27:12 -0400
+Received: from smtprelay4.synopsys.com ([198.182.44.111]:53718 "EHLO
 	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752534AbaFXI05 (ORCPT
+	with ESMTP id S1752534AbaFXI1J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 04:26:57 -0400
+	Tue, 24 Jun 2014 04:27:09 -0400
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         "Mark Rutland" <mark.rutland@arm.com>,
@@ -17,9 +17,9 @@ To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
 CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-serial@vger.kernel.org>, <Francois.Bedard@synopsys.com>,
         Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH v2 REBASED 06/10] serial/arc: remove last remanants of platform data
-Date: Tue, 24 Jun 2014 13:55:11 +0530
-Message-ID: <1403598315-1429-7-git-send-email-vgupta@synopsys.com>
+Subject: [PATCH v2 REBASED 07/10] serial/arc: inline the probe helper
+Date: Tue, 24 Jun 2014 13:55:12 +0530
+Message-ID: <1403598315-1429-8-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1403598315-1429-1-git-send-email-vgupta@synopsys.com>
 References: <1403598315-1429-1-git-send-email-vgupta@synopsys.com>
@@ -32,62 +32,126 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 ---
- drivers/tty/serial/arc_uart.c | 22 ++++++----------------
- 1 file changed, 6 insertions(+), 16 deletions(-)
+ drivers/tty/serial/arc_uart.c | 90 +++++++++++++++++++------------------------
+ 1 file changed, 40 insertions(+), 50 deletions(-)
 
 diff --git a/drivers/tty/serial/arc_uart.c b/drivers/tty/serial/arc_uart.c
-index 2ffaf099691a..dc3d5db37dc4 100644
+index dc3d5db37dc4..435de4f2af3b 100644
 --- a/drivers/tty/serial/arc_uart.c
 +++ b/drivers/tty/serial/arc_uart.c
-@@ -37,8 +37,8 @@
- #include <linux/tty_flip.h>
- #include <linux/serial_core.h>
- #include <linux/io.h>
--#include <linux/of.h>
--#include <linux/of_platform.h>
-+#include <linux/of_irq.h>
-+#include <linux/of_address.h>
+@@ -496,50 +496,6 @@ static struct uart_ops arc_serial_pops = {
+ #endif
+ };
  
- /*************************************
-  * ARC UART Hardware Specs
-@@ -499,11 +499,9 @@ static struct uart_ops arc_serial_pops = {
- static int
- arc_uart_init_one(struct platform_device *pdev, int dev_id)
- {
--	struct resource *res, *res2;
-+	struct device_node *np = pdev->dev.of_node;
- 	struct arc_uart_port *uart = &arc_uart_ports[dev_id];
- 	struct uart_port *port = &uart->port;
--
+-static int
+-arc_uart_init_one(struct platform_device *pdev, int dev_id)
+-{
 -	struct device_node *np = pdev->dev.of_node;
- 	u32 val;
- 
- 	if (of_property_read_u32(np, "clock-frequency", &val)) {
-@@ -518,21 +516,13 @@ arc_uart_init_one(struct platform_device *pdev, int dev_id)
- 	}
- 	uart->baud = val;
- 
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res)
--		return -ENODEV;
+-	struct arc_uart_port *uart = &arc_uart_ports[dev_id];
+-	struct uart_port *port = &uart->port;
+-	u32 val;
 -
--	res2 = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
--	if (!res2)
--		return -ENODEV;
+-	if (of_property_read_u32(np, "clock-frequency", &val)) {
+-		dev_err(&pdev->dev, "clock-frequency property NOTset\n");
+-		return -EINVAL;
+-	}
+-	port->uartclk = val;
 -
--	port->mapbase = res->start;
--	port->membase = ioremap_nocache(res->start, resource_size(res));
+-	if (of_property_read_u32(np, "current-speed", &val)) {
+-		dev_err(&pdev->dev, "current-speed property NOT set\n");
+-		return -EINVAL;
+-	}
+-	uart->baud = val;
+-
+-	port->membase = of_iomap(np, 0);
+-	if (!port->membase)
+-		/* No point of dev_err since UART itself is hosed here */
+-		return -ENXIO;
+-
+-	port->irq = irq_of_parse_and_map(np, 0);
+-
+-	port->dev = &pdev->dev;
+-	port->iotype = UPIO_MEM;
+-	port->flags = UPF_BOOT_AUTOCONF;
+-	port->line = dev_id;
+-	port->ops = &arc_serial_pops;
+-
+-	port->fifosize = ARC_UART_TX_FIFO_SIZE;
+-
+-	/*
+-	 * uart_insert_char( ) uses it in decideding whether to ignore a
+-	 * char or not. Explicitly setting it here, removes the subtelty
+-	 */
+-	port->ignore_status_mask = 0;
+-
+-	return 0;
+-}
+-
+ #ifdef CONFIG_SERIAL_ARC_CONSOLE
+ 
+ static int arc_serial_console_setup(struct console *co, char *options)
+@@ -628,8 +584,11 @@ EARLYCON_DECLARE(arc_uart, arc_early_console_setup);
+ 
+ static int arc_serial_probe(struct platform_device *pdev)
+ {
+-	int rc, dev_id;
+ 	struct device_node *np = pdev->dev.of_node;
++	struct arc_uart_port *uart;
++	struct uart_port *port;
++	int dev_id;
++	u32 val;
+ 
+ 	/* no device tree device */
+ 	if (!np)
+@@ -639,12 +598,43 @@ static int arc_serial_probe(struct platform_device *pdev)
+ 	if (dev_id < 0)
+ 		dev_id = 0;
+ 
+-	rc = arc_uart_init_one(pdev, dev_id);
+-	if (rc)
+-		return rc;
++	uart = &arc_uart_ports[dev_id];
++	port = &uart->port;
++
++	if (of_property_read_u32(np, "clock-frequency", &val)) {
++		dev_err(&pdev->dev, "clock-frequency property NOTset\n");
++		return -EINVAL;
++	}
++	port->uartclk = val;
++
++	if (of_property_read_u32(np, "current-speed", &val)) {
++		dev_err(&pdev->dev, "current-speed property NOT set\n");
++		return -EINVAL;
++	}
++	uart->baud = val;
++
 +	port->membase = of_iomap(np, 0);
- 	if (!port->membase)
- 		/* No point of dev_err since UART itself is hosed here */
- 		return -ENXIO;
- 
--	port->irq = res2->start;
++	if (!port->membase)
++		/* No point of dev_err since UART itself is hosed here */
++		return -ENXIO;
++
 +	port->irq = irq_of_parse_and_map(np, 0);
 +
- 	port->dev = &pdev->dev;
- 	port->iotype = UPIO_MEM;
- 	port->flags = UPF_BOOT_AUTOCONF;
++	port->dev = &pdev->dev;
++	port->iotype = UPIO_MEM;
++	port->flags = UPF_BOOT_AUTOCONF;
++	port->line = dev_id;
++	port->ops = &arc_serial_pops;
++
++	port->fifosize = ARC_UART_TX_FIFO_SIZE;
++
++	/*
++	 * uart_insert_char( ) uses it in decideding whether to ignore a
++	 * char or not. Explicitly setting it here, removes the subtelty
++	 */
++	port->ignore_status_mask = 0;
+ 
+-	rc = uart_add_one_port(&arc_uart_driver, &arc_uart_ports[dev_id].port);
+-	return rc;
++	return uart_add_one_port(&arc_uart_driver, &arc_uart_ports[dev_id].port);
+ }
+ 
+ static int arc_serial_remove(struct platform_device *pdev)
 -- 
 1.8.3.2
 
