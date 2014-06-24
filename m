@@ -1,130 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753474AbaFXOdg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 10:33:36 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:52303 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752564AbaFXOde (ORCPT
+	id S1753895AbaFXOig (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 10:38:36 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:55232 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752949AbaFXOif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 10:33:34 -0400
-Message-ID: <53A98C38.8020205@ozlabs.ru>
-Date: Wed, 25 Jun 2014 00:33:28 +1000
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 24 Jun 2014 10:38:35 -0400
+Date: Tue, 24 Jun 2014 16:38:20 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, chegu_vinod@hp.com, mgorman@suse.de,
+        mingo@kernel.org
+Subject: Re: [PATCH 8/7] sched,numa: do not let a move increase the imbalance
+Message-ID: <20140624143820.GA28774@twins.programming.kicks-ass.net>
+References: <1403538095-31256-1-git-send-email-riel@redhat.com>
+ <20140623183011.28555a7c@annuminas.surriel.com>
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>,
-        Alexander Graf <agraf@suse.de>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
-Subject: Re: [PATCH] vfio: Fix endianness handling for emulated BARs
-References: <1403091391-31780-1-git-send-email-aik@ozlabs.ru>		 <1403116512.3707.175.camel@ul30vt.home> <53A233E9.6030006@ozlabs.ru>		 <53A241F6.9010307@ozlabs.ru> <53A25D74.5000804@ozlabs.ru>		 <1403234514.3707.278.camel@ul30vt.home> <1403305961.4587.66.camel@pasglop>	 <53A94EBD.101@ozlabs.ru> <53A955F5.6050801@suse.de>	 <53A9741B.1040500@ozlabs.ru> <53A97486.4070604@suse.de>	 <53A976B7.3070709@ozlabs.ru> <53A97BA9.4020702@suse.de> <1403619685.16078.15.camel@ul30vt.home>
-In-Reply-To: <1403619685.16078.15.camel@ul30vt.home>
-Content-Type: text/plain; charset=KOI8-R
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="fdj2RfSjLxBAspz7"
+Content-Disposition: inline
+In-Reply-To: <20140623183011.28555a7c@annuminas.surriel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2014 12:21 AM, Alex Williamson wrote:
-> On Tue, 2014-06-24 at 15:22 +0200, Alexander Graf wrote:
->> On 24.06.14 15:01, Alexey Kardashevskiy wrote:
->>> On 06/24/2014 10:52 PM, Alexander Graf wrote:
->>>> On 24.06.14 14:50, Alexey Kardashevskiy wrote:
->>>>> On 06/24/2014 08:41 PM, Alexander Graf wrote:
->>>>>> On 24.06.14 12:11, Alexey Kardashevskiy wrote:
->>>>>>> On 06/21/2014 09:12 AM, Benjamin Herrenschmidt wrote:
->>>>>>>> On Thu, 2014-06-19 at 21:21 -0600, Alex Williamson wrote:
->>>>>>>>
->>>>>>>>> Working on big endian being an accident may be a matter of perspective
->>>>>>>>     :-)
->>>>>>>>
->>>>>>>>> The comment remains that this patch doesn't actually fix anything except
->>>>>>>>> the overhead on big endian systems doing redundant byte swapping and
->>>>>>>>> maybe the philosophy that vfio regions are little endian.
->>>>>>>> Yes, that works by accident because technically VFIO is a transport and
->>>>>>>> thus shouldn't perform any endian swapping of any sort, which remains
->>>>>>>> the responsibility of the end driver which is the only one to know
->>>>>>>> whether a given BAR location is a a register or some streaming data
->>>>>>>> and in the former case whether it's LE or BE (some PCI devices are BE
->>>>>>>> even ! :-)
->>>>>>>>
->>>>>>>> But yes, in the end, it works with the dual "cancelling" swaps and the
->>>>>>>> overhead of those swaps is probably drowned in the noise of the syscall
->>>>>>>> overhead.
->>>>>>>>
->>>>>>>>> I'm still not a fan of iowrite vs iowritebe, there must be something we
->>>>>>>>> can use that doesn't have an implicit swap.
->>>>>>>> Sadly there isn't ... In the old day we didn't even have the "be"
->>>>>>>> variant and readl/writel style accessors still don't have them either
->>>>>>>> for all archs.
->>>>>>>>
->>>>>>>> There is __raw_readl/writel but here the semantics are much more than
->>>>>>>> just "don't swap", they also don't have memory barriers (which means
->>>>>>>> they are essentially useless to most drivers unless those are platform
->>>>>>>> specific drivers which know exactly what they are doing, or in the rare
->>>>>>>> cases such as accessing a framebuffer which we know never have side
->>>>>>>> effects).
->>>>>>>>
->>>>>>>>>     Calling it iowrite*_native is also an abuse of the namespace.
->>>>>>>>>     Next thing we know some common code
->>>>>>>>> will legitimately use that name.
->>>>>>>> I might make sense to those definitions into a common header. There have
->>>>>>>> been a handful of cases in the past that wanted that sort of "native
->>>>>>>> byte order" MMIOs iirc (though don't ask me for examples, I can't really
->>>>>>>> remember).
->>>>>>>>
->>>>>>>>>     If we do need to define an alias
->>>>>>>>> (which I'd like to avoid) it should be something like vfio_iowrite32.
->>>>>>> Ping?
->>>>>>>
->>>>>>> We need to make a decision whether to move those xxx_native() helpers
->>>>>>> somewhere (where?) or leave the patch as is (as we figured out that
->>>>>>> iowriteXX functions implement barriers and we cannot just use raw
->>>>>>> accessors) and fix commit log to explain everything.
->>>>>> Is there actually any difference in generated code with this patch applied
->>>>>> and without? I would hope that iowrite..() is inlined and cancels out the
->>>>>> cpu_to_le..() calls that are also inlined?
->>>>> iowrite32 is a non-inline function so conversions take place so are the
->>>>> others. And sorry but I fail to see why this matters. We are not trying to
->>>>> accelerate things, we are removing redundant operations which confuse
->>>>> people who read the code.
->>>> The confusion depends on where you're coming from. If you happen to know
->>>> that "iowrite32" writes in LE, then the LE conversion makes a lot of sense.
->>> It was like this (and this is just confusing):
->>>
->>> iowrite32(le32_to_cpu(val), io + off);
->>>
->>> What would make sense (according to you and I would understand this) is this:
->>>
->>> iowrite32(cpu_to_le32(val), io + off);
->>>
->>>
->>> Or I missed your point, did I?
->>
->> No, you didn't miss it. I think for people who know how iowrite32() 
->> works the above is obvious. I find the fact that iowrite32() writes in 
->> LE always pretty scary though ;).
->>
->> So IMHO we should either create new, generic iowrite helpers that don't 
->> do any endian swapping at all or do iowrite32(cpu_to_le32(val)) calls.
-> 
-> I'm one of those people for whom iowrite32(le32_to_cpu(val)) makes sense
+
+--fdj2RfSjLxBAspz7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Mon, Jun 23, 2014 at 06:30:11PM -0400, Rik van Riel wrote:
+> The HP DL980 system has a different NUMA topology from the 8 node
+> system I am testing on, and showed some bad behaviour I have not
+> managed to reproduce. This patch makes sure workloads converge.
+>=20
+> When both a task swap and a task move are possible, do not let the
+> task move cause an increase in the load imbalance. Forcing task swaps
+> can help untangle workloads that have gotten stuck fighting over the
+> same nodes, like this run of "perf bench numa -m -0 -p 1000 -p 16 -t 15":
+>=20
+> Per-node process memory usage (in MBs)
+> 38035 (process 0      2      0      0      1   1000      0      0      0 =
+ 1003
+> 38036 (process 1      2      0      0      1      0   1000      0      0 =
+ 1003
+> 38037 (process 2    230    772      0      1      0      0      0      0 =
+ 1003
+> 38038 (process 3      1      0      0   1003      0      0      0      0 =
+ 1004
+> 38039 (process 4      2      0      0      1      0      0    994      6 =
+ 1003
+> 38040 (process 5      2      0      0      1    994      0      0      6 =
+ 1003
+> 38041 (process 6      2      0   1000      1      0      0      0      0 =
+ 1003
+> 38042 (process 7   1003      0      0      1      0      0      0      0 =
+ 1004
+> 38043 (process 8      2      0      0      1      0   1000      0      0 =
+ 1003
+> 38044 (process 9      2      0      0      1      0      0      0   1000 =
+ 1003
+> 38045 (process 1   1002      0      0      1      0      0      0      0 =
+ 1003
+> 38046 (process 1      3      0    954      1      0      0      0     46 =
+ 1004
+> 38047 (process 1      2   1000      0      1      0      0      0      0 =
+ 1003
+> 38048 (process 1      2      0      0      1      0      0   1000      0 =
+ 1003
+> 38049 (process 1      2      0      0   1001      0      0      0      0 =
+ 1003
+> 38050 (process 1      2    934      0     67      0      0      0      0 =
+ 1003
+>=20
+> Allowing task moves to increase the imbalance even slightly causes
+> tasks to move towards node 1, and not towards node 7, which prevents
+> the workload from converging once the above scenario has been reached.
+>=20
+> Reported-and-tested-by: Vinod Chegu <chegu_vinod@hp.com>
+> Signed-off-by: Rik van Riel <riel@redhat.com>
+> ---
+>  kernel/sched/fair.c | 8 ++++++++
+>  1 file changed, 8 insertions(+)
+>=20
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 4723234..e98d290 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -1314,6 +1314,12 @@ static void task_numa_compare(struct task_numa_env=
+ *env,
+> =20
+>  	if (moveimp > imp && moveimp > env->best_imp) {
+>  		/*
+> +		 * A task swap is possible, do not let a task move
+> +		 * increase the imbalance.
+> +		 */
+> +		int imbalance_pct =3D env->imbalance_pct;
+> +		env->imbalance_pct =3D 100;
+> +		/*
+
+I would feel so much better if we could say _why_ this is so.
 
 
-I do not understand why @val is considered LE here and need to be converted
-to CPU. Really. I truly believe it should be cpu_to_le32().
+--fdj2RfSjLxBAspz7
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-> and keeps the byte order consistent regardless of the platform, while
-> iowrite32(val) or iowrite32be(val) makes me scratch my head and try to
-> remember that the byte swaps are a nop on the given platforms.  As Ben
-> noted, a native, no-swap ioread/write doesn't exist, but perhaps should.
-> I'd prefer an attempt be made to make it exist before adding
-> vfio-specific macros.  vfio is arguably doing the right thing here given
-> the functions available.  Thanks,
+iQIcBAEBAgAGBQJTqY1WAAoJEHZH4aRLwOS62MEP/iOK/fQzCh8jTi3yVWfWh79B
+DeSRbubXGZ2vKN/thuHcCRazzbQEgHO/oPWKGysRCRG6jHGtvdSB+sgnQ2g7MQWW
+aIcdos84CuJLAhVuEMFpwSlFil42rxbRgn3SDRjDakJ8FWZAbke80DYd/FqFc1mo
+oraG4nVfgZgQDqDj3nbeFZRrNMOXm9C5LfNqSBNamHhtCYtEoLQfqO0WQV577NKi
+RpmzZL5Z50nQsTcfDa9G/CzPZxGsA/oJEMv/uzvp8wuYFVort+VlwN5JPrB1B2It
+sQb1uVcz4+dQOdmwQcLdHCS10bDfqc3q9cb/zJbrtnHQXLDQL8C+EI2eC16qz1RC
+G9IosvaP7tnnM696mLrZaxBKKSECLIMmhR5NTA++2xeIOdsnYHpMhRem2ri+7WuC
+y0JBnle6YlZngy9VAxuAApYZ4s8kZXjya+sMoDV2E65rJ5ymVWoYb6mt2QRPoUCA
+dOob9Xyl7tiI5MyMIOaiXx4XzcQtqnAjlGlydYAy6wI4yHuZ2yJg28nt2qpc2HTq
+C+nL/7cwkFoUGhq3gJWYHa09LSrjMFPA1BVCaYpfKhTd4Z7SZ420bsiFX9E4UYfM
+GdqLONQYwvxe4sHc8eGV9ym1xpEK8Blx+1EKyNaolmX/Rv1tSYRzDM7YfjHKEDOJ
+9xSvgcm399g4FdtNyRzS
+=wAs8
+-----END PGP SIGNATURE-----
 
-
--- 
-Alexey
+--fdj2RfSjLxBAspz7--
