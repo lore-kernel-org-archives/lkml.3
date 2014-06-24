@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756661AbaFXQdX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:33:23 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:56209 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755917AbaFXQdS (ORCPT
+	id S964891AbaFXQef (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:34:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32894 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932238AbaFXPxo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 12:33:18 -0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <akpm@linux-foundation.org>
-CC: <hannes@cmpxchg.org>, <mhocko@suse.cz>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>
-Subject: [PATCH -mm 3/3] page-cgroup: fix flags definition
-Date: Tue, 24 Jun 2014 20:33:06 +0400
-Message-ID: <aacc50fb60eeb9cbe14e07235310fb9295b2658b.1403626729.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <9f5abf8dcb07fe5462f12f81867f199c22e883d3.1403626729.git.vdavydov@parallels.com>
-References: <9f5abf8dcb07fe5462f12f81867f199c22e883d3.1403626729.git.vdavydov@parallels.com>
+	Tue, 24 Jun 2014 11:53:44 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Tom Gundersen <teg@jklm.no>, "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 17/68] net: tunnels - enable module autoloading
+Date: Tue, 24 Jun 2014 11:50:36 -0400
+Message-Id: <20140624154724.689513740@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <20140624154723.907894814@linuxfoundation.org>
+References: <20140624154723.907894814@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit a9ce315aaec1f ("mm: memcontrol: rewrite uncharge API"),
-PCG_* flags are used as bit masks, but they are still defined in a enum
-as bit numbers. Fix it.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+------------------
+
+From: Tom Gundersen <teg@jklm.no>
+
+[ Upstream commit f98f89a0104454f35a62d681683c844f6dbf4043 ]
+
+Enable the module alias hookup to allow tunnel modules to be autoloaded on demand.
+
+This is in line with how most other netdev kinds work, and will allow userspace
+to create tunnels without having CAP_SYS_MODULE.
+
+Signed-off-by: Tom Gundersen <teg@jklm.no>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/linux/page_cgroup.h |   12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
+ net/ipv4/ipip.c       |    1 +
+ net/ipv6/ip6_tunnel.c |    1 +
+ net/ipv6/sit.c        |    1 +
+ 3 files changed, 3 insertions(+)
 
-diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
-index fb60e4a466c0..9065a61345a1 100644
---- a/include/linux/page_cgroup.h
-+++ b/include/linux/page_cgroup.h
-@@ -1,12 +1,10 @@
- #ifndef __LINUX_PAGE_CGROUP_H
- #define __LINUX_PAGE_CGROUP_H
+--- a/net/ipv4/ipip.c
++++ b/net/ipv4/ipip.c
+@@ -486,4 +486,5 @@ static void __exit ipip_fini(void)
+ module_init(ipip_init);
+ module_exit(ipip_fini);
+ MODULE_LICENSE("GPL");
++MODULE_ALIAS_RTNL_LINK("ipip");
+ MODULE_ALIAS_NETDEV("tunl0");
+--- a/net/ipv6/ip6_tunnel.c
++++ b/net/ipv6/ip6_tunnel.c
+@@ -61,6 +61,7 @@
+ MODULE_AUTHOR("Ville Nuorvala");
+ MODULE_DESCRIPTION("IPv6 tunneling device");
+ MODULE_LICENSE("GPL");
++MODULE_ALIAS_RTNL_LINK("ip6tnl");
+ MODULE_ALIAS_NETDEV("ip6tnl0");
  
--enum {
--	/* flags for mem_cgroup */
--	PCG_USED,	/* This page is charged to a memcg */
--	PCG_MEM,	/* This page holds a memory charge */
--	PCG_MEMSW,	/* This page holds a memory+swap charge */
--};
-+/* flags for mem_cgroup */
-+#define PCG_USED	0x01	/* This page is charged to a memcg */
-+#define PCG_MEM		0x02	/* This page holds a memory charge */
-+#define PCG_MEMSW	0x04	/* This page holds a memory+swap charge */
- 
- struct pglist_data;
- 
-@@ -44,7 +42,7 @@ struct page *lookup_cgroup_page(struct page_cgroup *pc);
- 
- static inline int PageCgroupUsed(struct page_cgroup *pc)
- {
--	return test_bit(PCG_USED, &pc->flags);
-+	return !!(pc->flags & PCG_USED);
- }
- #else /* !CONFIG_MEMCG */
- struct page_cgroup;
--- 
-1.7.10.4
+ #ifdef IP6_TNL_DEBUG
+--- a/net/ipv6/sit.c
++++ b/net/ipv6/sit.c
+@@ -1850,4 +1850,5 @@ xfrm_tunnel_failed:
+ module_init(sit_init);
+ module_exit(sit_cleanup);
+ MODULE_LICENSE("GPL");
++MODULE_ALIAS_RTNL_LINK("sit");
+ MODULE_ALIAS_NETDEV("sit0");
+
 
