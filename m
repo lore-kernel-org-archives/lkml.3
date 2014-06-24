@@ -1,102 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754364AbaFXPqg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:46:36 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:48694 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752186AbaFXPqf (ORCPT
+	id S1752463AbaFXPsm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:48:42 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:54155 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751307AbaFXPsk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:46:35 -0400
-Date: Tue, 24 Jun 2014 11:46:32 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-cc: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        kgdb-bugreport@lists.sourceforge.net, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Colin Cross <ccross@android.com>, kernel-team@android.com,
-        Rob Herring <robherring2@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH v6 2/4] arm: fiq: Allow EOI to be communicated to the
- intc
-In-Reply-To: <1403623097-1153-3-git-send-email-daniel.thompson@linaro.org>
-Message-ID: <alpine.LFD.2.11.1406241145590.16842@knanqh.ubzr>
-References: <1403174303-25456-1-git-send-email-daniel.thompson@linaro.org> <1403623097-1153-1-git-send-email-daniel.thompson@linaro.org> <1403623097-1153-3-git-send-email-daniel.thompson@linaro.org>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	Tue, 24 Jun 2014 11:48:40 -0400
+Date: Tue, 24 Jun 2014 16:48:33 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Jim Davis <jim.epost@gmail.com>, sfr@canb.auug.org.au,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, sbkim73@samsung.com,
+        sameo@linux.intel.com, grant.likely@linaro.org, robh+dt@kernel.org,
+        devicetree <devicetree@vger.kernel.org>
+Subject: Re: randconfig build error with next-20140624, in
+ drivers/mfd/sec-core.c
+Message-ID: <20140624154833.GR13803@lee--X1>
+References: <CA+r1ZhhFYip3Jp2c3d8tNpD-vK8Pkf7DzrKTtk6Gy8uOOO3Ucw@mail.gmail.com>
+ <29237234.T7oGEGKuvp@wuerfel>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <29237234.T7oGEGKuvp@wuerfel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Jun 2014, Daniel Thompson wrote:
+On Tue, 24 Jun 2014, Arnd Bergmann wrote:
 
-> Modern ARM systems require an EOI to be sent to the interrupt controller
-> on completion of both IRQ and FIQ. The FIQ code currently does not provide
-> any API to perform this. This patch provides this API, implemented by
-> adding a callback to the fiq_chip structure.
+> On Tuesday 24 June 2014 07:39:04 Jim Davis wrote:
+> > Building with the attached random configuration file,
+> > 
+> > drivers/built-in.o: In function `sec_pmic_suspend':
+> > sec-core.c:(.text+0x31e02c): undefined reference to `regulator_suspend_prepare'
+> > make: *** [vmlinux] Error 1
 > 
-> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Fabio Estevam <festevam@gmail.com>
-> Cc: Nicolas Pitre <nico@linaro.org>
+> Reported-by: Jim Davis <jim.epost@gmail.com>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> 
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> index 207c433..1caa3c5 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -582,7 +582,7 @@ config MFD_RC5T583
+>  
+>  config MFD_SEC_CORE
+>  	bool "SAMSUNG Electronics PMIC Series Support"
+> -	depends on I2C=y
+> +	depends on I2C=y && REGULATOR
+>  	select MFD_CORE
+>  	select REGMAP_I2C
+>  	select REGMAP_IRQ
 
-Acked-by: Nicolas Pitre <nico@linaro.org>
+Can you send me something I can `git am` please?
 
-> ---
->  arch/arm/include/asm/fiq.h | 6 ++++++
->  arch/arm/kernel/fiq.c      | 9 +++++++++
->  2 files changed, 15 insertions(+)
-> 
-> diff --git a/arch/arm/include/asm/fiq.h b/arch/arm/include/asm/fiq.h
-> index a7806ef..e5d9458 100644
-> --- a/arch/arm/include/asm/fiq.h
-> +++ b/arch/arm/include/asm/fiq.h
-> @@ -21,6 +21,11 @@
->  struct fiq_chip {
->  	void (*fiq_enable)(struct irq_data *data);
->  	void (*fiq_disable)(struct irq_data *data);
-> +
-> +	/* .fiq_eoi() will be called from the FIQ handler. For this
-> +	 * reason it must not use spin locks (or any other locks).
-> +	 */
-> +	void (*fiq_eoi)(struct irq_data *data);
->  };
->  
->  struct fiq_handler {
-> @@ -43,6 +48,7 @@ extern void release_fiq(struct fiq_handler *f);
->  extern void set_fiq_handler(void *start, unsigned int length);
->  extern void enable_fiq(int fiq);
->  extern void disable_fiq(int fiq);
-> +extern void eoi_fiq(int fiq);
->  extern bool has_fiq(int fiq);
->  extern void fiq_register_mapping(int irq, struct fiq_chip *chip);
->  
-> diff --git a/arch/arm/kernel/fiq.c b/arch/arm/kernel/fiq.c
-> index 567f8fd..edde332 100644
-> --- a/arch/arm/kernel/fiq.c
-> +++ b/arch/arm/kernel/fiq.c
-> @@ -183,6 +183,15 @@ void disable_fiq(int fiq)
->  	disable_irq(fiq + fiq_start);
->  }
->  
-> +void eoi_fiq(int fiq)
-> +{
-> +	struct fiq_data *data = lookup_fiq_data(fiq);
-> +
-> +	if (data && data->fiq_chip->fiq_eoi)
-> +		data->fiq_chip->fiq_eoi(data->irq_data);
-> +}
-> +EXPORT_SYMBOL(eoi_fiq);
-> +
->  bool has_fiq(int fiq)
->  {
->  	struct fiq_data *data = lookup_fiq_data(fiq);
-> -- 
-> 1.9.3
-> 
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
