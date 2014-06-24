@@ -1,88 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755905AbaFXUsi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:48:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47615 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136AbaFXUai (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:30:38 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Antti Palosaari <crope@iki.fi>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 02/65] [media] fc2580: fix tuning failure on 32-bit arch
-Date: Tue, 24 Jun 2014 13:29:22 -0700
-Message-Id: <1403641825-12825-3-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
-References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	id S1756491AbaFXUs7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:48:59 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:44772 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755882AbaFXUs4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 16:48:56 -0400
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Kees Cook <keescook@chromium.org>, Oleg Nesterov <oleg@redhat.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        linux-api@vger.kernel.org, x86@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
+        linux-arch@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: [PATCH v8 7/9] ARM: add seccomp syscall
+Date: Tue, 24 Jun 2014 13:48:11 -0700
+Message-Id: <1403642893-23107-8-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1403642893-23107-1-git-send-email-keescook@chromium.org>
+References: <1403642893-23107-1-git-send-email-keescook@chromium.org>
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.25 -stable review patch.  If anyone has any objections, please let me know.
+Wires up the new seccomp syscall.
 
-------------------
-
-From: Antti Palosaari <crope@iki.fi>
-
-commit 8845cc6415ec28ef8d57b3fb81c75ef9bce69c5f upstream.
-
-There was some frequency calculation overflows which caused tuning
-failure on 32-bit architecture. Use 64-bit numbers where needed in
-order to avoid calculation overflows.
-
-Thanks for the Finnish person, who asked remain anonymous, reporting,
-testing and suggesting the fix.
-
-Signed-off-by: Antti Palosaari <crope@iki.fi>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- drivers/media/tuners/fc2580.c      | 6 +++---
- drivers/media/tuners/fc2580_priv.h | 1 +
- 2 files changed, 4 insertions(+), 3 deletions(-)
+ arch/arm/include/uapi/asm/unistd.h |    1 +
+ arch/arm/kernel/calls.S            |    1 +
+ 2 files changed, 2 insertions(+)
 
-diff --git a/drivers/media/tuners/fc2580.c b/drivers/media/tuners/fc2580.c
-index 81f38aa..dbf8dfe 100644
---- a/drivers/media/tuners/fc2580.c
-+++ b/drivers/media/tuners/fc2580.c
-@@ -178,7 +178,7 @@ static int fc2580_set_params(struct dvb_frontend *fe)
+diff --git a/arch/arm/include/uapi/asm/unistd.h b/arch/arm/include/uapi/asm/unistd.h
+index ba94446c72d9..e21b4a069701 100644
+--- a/arch/arm/include/uapi/asm/unistd.h
++++ b/arch/arm/include/uapi/asm/unistd.h
+@@ -409,6 +409,7 @@
+ #define __NR_sched_setattr		(__NR_SYSCALL_BASE+380)
+ #define __NR_sched_getattr		(__NR_SYSCALL_BASE+381)
+ #define __NR_renameat2			(__NR_SYSCALL_BASE+382)
++#define __NR_seccomp			(__NR_SYSCALL_BASE+383)
  
- 	f_ref = 2UL * priv->cfg->clock / r_val;
- 	n_val = div_u64_rem(f_vco, f_ref, &k_val);
--	k_val_reg = 1UL * k_val * (1 << 20) / f_ref;
-+	k_val_reg = div_u64(1ULL * k_val * (1 << 20), f_ref);
- 
- 	ret = fc2580_wr_reg(priv, 0x18, r18_val | ((k_val_reg >> 16) & 0xff));
- 	if (ret < 0)
-@@ -331,8 +331,8 @@ static int fc2580_set_params(struct dvb_frontend *fe)
- 	if (ret < 0)
- 		goto err;
- 
--	ret = fc2580_wr_reg(priv, 0x37, 1UL * priv->cfg->clock * \
--			fc2580_if_filter_lut[i].mul / 1000000000);
-+	ret = fc2580_wr_reg(priv, 0x37, div_u64(1ULL * priv->cfg->clock *
-+			fc2580_if_filter_lut[i].mul, 1000000000));
- 	if (ret < 0)
- 		goto err;
- 
-diff --git a/drivers/media/tuners/fc2580_priv.h b/drivers/media/tuners/fc2580_priv.h
-index be38a9e..646c994 100644
---- a/drivers/media/tuners/fc2580_priv.h
-+++ b/drivers/media/tuners/fc2580_priv.h
-@@ -22,6 +22,7 @@
- #define FC2580_PRIV_H
- 
- #include "fc2580.h"
-+#include <linux/math64.h>
- 
- struct fc2580_reg_val {
- 	u8 reg;
+ /*
+  * This may need to be greater than __NR_last_syscall+1 in order to
+diff --git a/arch/arm/kernel/calls.S b/arch/arm/kernel/calls.S
+index 8f51bdcdacbb..bea85f97f363 100644
+--- a/arch/arm/kernel/calls.S
++++ b/arch/arm/kernel/calls.S
+@@ -392,6 +392,7 @@
+ /* 380 */	CALL(sys_sched_setattr)
+ 		CALL(sys_sched_getattr)
+ 		CALL(sys_renameat2)
++		CALL(sys_seccomp)
+ #ifndef syscalls_counted
+ .equ syscalls_padding, ((NR_syscalls + 3) & ~3) - NR_syscalls
+ #define syscalls_counted
 -- 
-1.9.1
+1.7.9.5
 
