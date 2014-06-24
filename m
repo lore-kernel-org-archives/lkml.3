@@ -1,126 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404AbaFXTNV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 15:13:21 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:47078 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750925AbaFXTNU (ORCPT
+	id S1753842AbaFXTNy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 15:13:54 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:36840 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752712AbaFXTNx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 15:13:20 -0400
+	Tue, 24 Jun 2014 15:13:53 -0400
+From: bsegall@google.com
+To: tkhai@yandex.ru
+Cc: Kirill Tkhai <ktkhai@parallels.com>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>, khorenko@parallels.com,
+        Paul Turner <pjt@google.com>
+Subject: Re: [PATCH v2 1/3] sched/fair: Disable runtime_enabled on dying rq
+References: <20140624074148.8738.57690.stgit@tkhai>
+	<1403596432.3462.26.camel@tkhai>
+	<xm26wqc6z1c8.fsf@sword-of-the-dawn.mtv.corp.google.com>
+	<53A9CB23.1080708@yandex.ru>
+Date: Tue, 24 Jun 2014 12:13:50 -0700
+In-Reply-To: <53A9CB23.1080708@yandex.ru> (Kirill Tkhai's message of "Tue, 24
+	Jun 2014 23:01:55 +0400")
+Message-ID: <xm26pphyyvbl.fsf@sword-of-the-dawn.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <87egyeqt03.fsf@rasmusvillemoes.dk>
-References: <1403477209-14612-1-git-send-email-minipli@googlemail.com>
-	<1403477762.18747.14.camel@joe-AO725>
-	<CA+rthh8D=r1kW6iDb0MqfHwA4OW-oXSA+B1AXe-0Cqperz6ZRQ@mail.gmail.com>
-	<1403505219.18747.37.camel@joe-AO725>
-	<87egyeqt03.fsf@rasmusvillemoes.dk>
-Date: Tue, 24 Jun 2014 21:13:16 +0200
-Message-ID: <CA+rthh8XwC80hq8z07k+=0J7MDA6tUtLff+J=qMuzYqTNyLKww@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/3] Mark literal strings in __init / __exit code
-From: Mathias Krause <minipli@googlemail.com>
-To: Rasmus Villemoes <linux@rasmusvillemoes.dk>, Joe Perches <joe@perches.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 June 2014 16:31, Rasmus Villemoes <linux@rasmusvillemoes.dk> wrote:
-> Joe Perches <joe@perches.com> writes:
->
->> On Mon, 2014-06-23 at 08:23 +0200, Mathias Krause wrote:
->>> On 23 June 2014 00:56, Joe Perches <joe@perches.com> wrote:
->>> > On Mon, 2014-06-23 at 00:46 +0200, Mathias Krause wrote:
->>> >> [...] patch 2 adds some syntactical sugar for the most popular use
->>> >> case, by providing pr_<level> alike macros, namely pi_<level> for __init
->>> >> code and pe_<level> for __exit code. This hides the use of the marker
->>> >> macros behind the commonly known printing functions -- with just a
->>> >> single character changed.
->>> >>
->>> >> Patch 3 exemplarily changes all strings and format strings in
->>> >> arch/x86/kernel/acpi/boot.c to use the new macros. It also addresses a
->>> >> few styling issues, though. But this already leads to ~1.7 kB of r/o
->>> >> data moved to the .init.rodata section, marking it for release after
->>> >> init.
->>> >>
->>> >> [...]
->>> >
->>> > I once proposed a similar thing.
->>> >
->>> > https://lkml.org/lkml/2009/7/21/421
->>> >
->>> > Matt Mackall replied
->>> >
->>> > https://lkml.org/lkml/2009/7/21/463
->>> >
+Kirill Tkhai <tkhai@yandex.ru> writes:
+
+> On 24.06.2014 21:03, bsegall@google.com wrote:
+>> Kirill Tkhai <ktkhai@parallels.com> writes:
+>> 
+>>> We kill rq->rd on the CPU_DOWN_PREPARE stage:
 >>>
->>> Thanks for the pointers. Have you looked at patch 2 and 3? I don't
->>> think it makes the printk() case ugly. In fact, using pi_<level>()
->>> should be no less readable then pr_<level>, no?
->>
->> I don't think it's particularly less readable, but I
->> do think using the plug-in mechanism might be a better
->> option as it would need no manual markings at all.
+>>> 	cpuset_cpu_inactive -> cpuset_update_active_cpus -> partition_sched_domains ->
+>>> 	-> cpu_attach_domain -> rq_attach_root -> set_rq_offline
+>>>
+>>> This unthrottles all throttled cfs_rqs.
+>>>
+>>> But the cpu is still able to call schedule() till
+>>>
+>>> 	take_cpu_down->__cpu_disable()
+>>>
+>>> is called from stop_machine.
+>>>
+>>> This case the tasks from just unthrottled cfs_rqs are pickable
+>>> in a standard scheduler way, and they are picked by dying cpu.
+>>> The cfs_rqs becomes throttled again, and migrate_tasks()
+>>> in migration_call skips their tasks (one more unthrottle
+>>> in migrate_tasks()->CPU_DYING does not happen, because rq->rd
+>>> is already NULL).
+>>>
+>>> Patch sets runtime_enabled to zero. This guarantees, the runtime
+>>> is not accounted, and the cfs_rqs won't exceed given
+>>> cfs_rq->runtime_remaining = 1, and tasks will be pickable
+>>> in migrate_tasks(). runtime_enabled is recalculated again
+>>> when rq becomes online again.
+>>>
+>>> Ben Segall also noticed, we always enable runtime in
+>>> tg_set_cfs_bandwidth(). Actually, we should do that for online
+>>> cpus only. To fix that, we check if a cpu is online when
+>>> its rq is locked. This guarantees we do not have races with
+>>> set_rq_offline(), which also requires rq->lock.
+>>>
+>>> v2: Fix race with tg_set_cfs_bandwidth().
+>>>     Move cfs_rq->runtime_enabled=0 above unthrottle_cfs_rq().
+>>>
+>>> Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+>>> CC: Konstantin Khorenko <khorenko@parallels.com>
+>>> CC: Ben Segall <bsegall@google.com>
+>>> CC: Paul Turner <pjt@google.com>
+>>> CC: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+>>> CC: Mike Galbraith <umgwanakikbuti@gmail.com>
+>>> CC: Peter Zijlstra <peterz@infradead.org>
+>>> CC: Ingo Molnar <mingo@kernel.org>
+>>> ---
+>>>  kernel/sched/core.c |   15 +++++++++++----
+>>>  kernel/sched/fair.c |   22 ++++++++++++++++++++++
+>>>  2 files changed, 33 insertions(+), 4 deletions(-)
+>>>
+>>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+>>> index 7f3063c..707a3c5 100644
+>>> --- a/kernel/sched/core.c
+>>> +++ b/kernel/sched/core.c
+>>> @@ -7842,11 +7842,18 @@ static int tg_set_cfs_bandwidth(struct task_group *tg, u64 period, u64 quota)
+>>>  		struct rq *rq = cfs_rq->rq;
+>>>  
+>>>  		raw_spin_lock_irq(&rq->lock);
+>>> -		cfs_rq->runtime_enabled = runtime_enabled;
+>>> -		cfs_rq->runtime_remaining = 0;
+>>> +		/*
+>>> +		 * Do not enable runtime on offline runqueues. We specially
+>>> +		 * make it disabled in unthrottle_offline_cfs_rqs().
+>>> +		 */
+>>> +		if (cpu_online(i)) {
+>>> +			cfs_rq->runtime_enabled = runtime_enabled;
+>>> +			cfs_rq->runtime_remaining = 0;
+>>> +
+>>> +			if (cfs_rq->throttled)
+>>> +				unthrottle_cfs_rq(cfs_rq);
+>>> +		}
+>> 
+>> We can just do for_each_online_cpu, yes? Also we probably need
+>> get_online_cpus/put_online_cpus, and/or want cpu_active_mask instead
+>> right?
+>> 
 >
-> gcc already seems to contain infrastructure for this kind of thing, so
-> maybe it doesn't even require a plugin, but simply a little coordination
-> with the gcc folks. This snippet from gcc internals seems relevant:
->
-> -- Target Hook: section * TARGET_ASM_FUNCTION_RODATA_SECTION (tree
->           DECL)
->      Return the readonly data section associated with 'DECL_SECTION_NAME
->      (DECL)'.  The default version of this function selects
->      '.gnu.linkonce.r.name' if the function's section is
->      '.gnu.linkonce.t.name', '.rodata.name' if function is in
->      '.text.name', and the normal readonly-data section otherwise.
->
+> Yes, we can use for_each_online_cpu/for_each_active_cpu with
+> get_online_cpus() taken. But it adds one more lock dependence.
+> This looks worse for me.
 
-I don't think it's that easy. You cannot simply put all strings into
-the .init.rodata section when code currently gets emitted to
-.init.text. The reason is because strings used in __init code might be
-referenced later on, too. For example, the name passed to
-class_create() won't be copied. If that one would go into the
-.init.rodata section automatically, we would have dangling pointers
-after the .init.* memory got freed. Therefore a compiler driven
-approach would need to be implemented as a compiler extension, a gcc
-plugin to handle such cases -- know when a string can safely be put
-into the .init.rodata section and when not. But that decision is not
-as easy as Joe might think it would be. How would the plugin know
-which strings to put into the .init.rodata section? Would it only
-handle the ones passed to printk()? How to ensure those are actually
-safe strings? The pr_<level> macros can ensure this by using
-preprocessor string concatenation internally. Therefore those are
-unique and can safely be put into the .init.rodata section. But the
-compiler won't see the pr_<level> calls any more, only the printk().
-But that one might be a direct call, called with a string used later
-on, too. How would a plugin be able to detect this?
-What about strings used in strcmp() and the like? What about strings
-stored in temporary variables before getting passed to printk()? Those
-would require the plugin to track variable assignment, too. That,
-again, complicates the plugin.
-For a fully automatic handling of such strings a global analysis is
-needed, e.g. LTO is *required* to know if the strings passed to the
-functions will be stored in data structures not backed in .init.*
-sections. That's far from being easy to implement and even farther
-away from being widely used. Beside that, for being able to use gcc
-plugins, the plugin headers need to be installed -- not only the
-compiler. Again, a perquisite, not available by default.
-
-Therefore I still strongly believe it's better to do this manually.
-It's way simpler and much more explicit and therefore less surprising.
-Even if this means we need to change quite a lot of code to get the
-best out of it. For a start it really depends on a few subsystem
-maintainers to accept patches to get an initial value out of it. Heck,
-even for the non-embedded case, it has value -- at least for me. I
-like to get rid of the unused strings. It's just a few pages,
-admitted. But hey, we can get them almost for free. So, why not just
-do it?
-
-Regards,
-Mathias
+I mean, you need get_online_cpus anyway - cpu_online is just a test
+against the same mask that for_each_online_cpu uses, and without taking
+the lock you can still race with offlining and reset runtime_enabled.
