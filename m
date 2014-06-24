@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030262AbaFXQmg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:42:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60973 "EHLO
+	id S1755518AbaFXPwo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:52:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60954 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755527AbaFXPwr (ORCPT
+	with ESMTP id S1755489AbaFXPwm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:52:47 -0400
+	Tue, 24 Jun 2014 11:52:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>, Amir Vadai <amirv@mellanox.com>,
-        Jack Morgenstein <jackm@dev.mellanox.co.il>,
-        Or Gerlitz <ogerlitz@mellanox.com>,
-        Wei Yang <weiyang@linux.vnet.ibm.com>,
+        Michal Schmidt <mschmidt@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 26/52] net/mlx4_core: Preserve pci_dev_data after __mlx4_remove_one()
-Date: Tue, 24 Jun 2014 11:50:41 -0400
-Message-Id: <20140624154715.067497332@linuxfoundation.org>
+Subject: [PATCH 3.10 23/52] rtnetlink: fix userspace API breakage for iproute2 < v3.9.0
+Date: Tue, 24 Jun 2014 11:50:38 -0400
+Message-Id: <20140624154714.906140527@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154713.428945460@linuxfoundation.org>
 References: <20140624154713.428945460@linuxfoundation.org>
@@ -32,276 +29,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wei Yang <weiyang@linux.vnet.ibm.com>
+From: Michal Schmidt <mschmidt@redhat.com>
 
-[ Upstream commit befdf8978accecac2e0739e6b5075afc62db37fe ]
+[ Upstream commit e5eca6d41f53db48edd8cf88a3f59d2c30227f8e ]
 
-pci_match_id() just match the static pci_device_id, which may return NULL if
-someone binds the driver to a device manually using
-/sys/bus/pci/drivers/.../new_id.
+When running RHEL6 userspace on a current upstream kernel, "ip link"
+fails to show VF information.
 
-This patch wrap up a helper function __mlx4_remove_one() which does the tear
-down function but preserve the drv_data. Functions like
-mlx4_pci_err_detected() and mlx4_restart_one() will call this one with out
-releasing drvdata.
+The reason is a kernel<->userspace API change introduced by commit
+88c5b5ce5cb57 ("rtnetlink: Call nlmsg_parse() with correct header length"),
+after which the kernel does not see iproute2's IFLA_EXT_MASK attribute
+in the netlink request.
 
-Fixes: 97a5221 "net/mlx4_core: pass pci_device_id.driver_data to __mlx4_init_one during reset".
+iproute2 adjusted for the API change in its commit 63338dca4513
+("libnetlink: Use ifinfomsg instead of rtgenmsg in rtnl_wilddump_req_filter").
 
-CC: Bjorn Helgaas <bhelgaas@google.com>
-CC: Amir Vadai <amirv@mellanox.com>
-CC: Jack Morgenstein <jackm@dev.mellanox.co.il>
-CC: Or Gerlitz <ogerlitz@mellanox.com>
-Signed-off-by: Wei Yang <weiyang@linux.vnet.ibm.com>
-Acked-by: Jack Morgenstein <jackm@dev.mellanox.co.il>
+The problem has been noticed before:
+http://marc.info/?l=linux-netdev&m=136692296022182&w=2
+(Subject: Re: getting VF link info seems to be broken in 3.9-rc8)
+
+We can do better than tell those with old userspace to upgrade. We can
+recognize the old iproute2 in the kernel by checking the netlink message
+length. Even when including the IFLA_EXT_MASK attribute, its netlink
+message is shorter than struct ifinfomsg.
+
+With this patch "ip link" shows VF information in both old and new
+iproute2 versions.
+
+Signed-off-by: Michal Schmidt <mschmidt@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/mellanox/mlx4/main.c |  170 ++++++++++++++++--------------
- drivers/net/ethernet/mellanox/mlx4/mlx4.h |    1 
- 2 files changed, 96 insertions(+), 75 deletions(-)
+ net/core/rtnetlink.c |   22 ++++++++++++++++++----
+ 1 file changed, 18 insertions(+), 4 deletions(-)
 
---- a/drivers/net/ethernet/mellanox/mlx4/main.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/main.c
-@@ -2129,13 +2129,8 @@ static int __mlx4_init_one(struct pci_de
- 	/* Allow large DMA segments, up to the firmware limit of 1 GB */
- 	dma_set_max_seg_size(&pdev->dev, 1024 * 1024 * 1024);
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -1044,6 +1044,7 @@ static int rtnl_dump_ifinfo(struct sk_bu
+ 	struct nlattr *tb[IFLA_MAX+1];
+ 	u32 ext_filter_mask = 0;
+ 	int err;
++	int hdrlen;
  
--	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
--	if (!priv) {
--		err = -ENOMEM;
--		goto err_release_regions;
--	}
--
--	dev       = &priv->dev;
-+	dev       = pci_get_drvdata(pdev);
-+	priv      = mlx4_priv(dev);
- 	dev->pdev = pdev;
- 	INIT_LIST_HEAD(&priv->ctx_list);
- 	spin_lock_init(&priv->ctx_lock);
-@@ -2300,8 +2295,7 @@ slave_start:
- 	mlx4_sense_init(dev);
- 	mlx4_start_sense(dev);
+ 	s_h = cb->args[0];
+ 	s_idx = cb->args[1];
+@@ -1051,8 +1052,17 @@ static int rtnl_dump_ifinfo(struct sk_bu
+ 	rcu_read_lock();
+ 	cb->seq = net->dev_base_seq;
  
--	priv->pci_dev_data = pci_dev_data;
--	pci_set_drvdata(pdev, dev);
-+	priv->removed = 0;
- 
- 	return 0;
- 
-@@ -2367,84 +2361,110 @@ err_disable_pdev:
- 
- static int mlx4_init_one(struct pci_dev *pdev, const struct pci_device_id *id)
- {
-+	struct mlx4_priv *priv;
-+	struct mlx4_dev *dev;
+-	if (nlmsg_parse(cb->nlh, sizeof(struct ifinfomsg), tb, IFLA_MAX,
+-			ifla_policy) >= 0) {
++	/* A hack to preserve kernel<->userspace interface.
++	 * The correct header is ifinfomsg. It is consistent with rtnl_getlink.
++	 * However, before Linux v3.9 the code here assumed rtgenmsg and that's
++	 * what iproute2 < v3.9.0 used.
++	 * We can detect the old iproute2. Even including the IFLA_EXT_MASK
++	 * attribute, its netlink message is shorter than struct ifinfomsg.
++	 */
++	hdrlen = nlmsg_len(cb->nlh) < sizeof(struct ifinfomsg) ?
++		 sizeof(struct rtgenmsg) : sizeof(struct ifinfomsg);
 +
- 	printk_once(KERN_INFO "%s", mlx4_version);
++	if (nlmsg_parse(cb->nlh, hdrlen, tb, IFLA_MAX, ifla_policy) >= 0) {
  
-+	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
-+	if (!priv)
-+		return -ENOMEM;
+ 		if (tb[IFLA_EXT_MASK])
+ 			ext_filter_mask = nla_get_u32(tb[IFLA_EXT_MASK]);
+@@ -1907,9 +1917,13 @@ static u16 rtnl_calcit(struct sk_buff *s
+ 	struct nlattr *tb[IFLA_MAX+1];
+ 	u32 ext_filter_mask = 0;
+ 	u16 min_ifinfo_dump_size = 0;
++	int hdrlen;
 +
-+	dev       = &priv->dev;
-+	pci_set_drvdata(pdev, dev);
-+	priv->pci_dev_data = id->driver_data;
-+
- 	return __mlx4_init_one(pdev, id->driver_data);
- }
++	/* Same kernel<->userspace interface hack as in rtnl_dump_ifinfo. */
++	hdrlen = nlmsg_len(nlh) < sizeof(struct ifinfomsg) ?
++		 sizeof(struct rtgenmsg) : sizeof(struct ifinfomsg);
  
--static void mlx4_remove_one(struct pci_dev *pdev)
-+static void __mlx4_remove_one(struct pci_dev *pdev)
- {
- 	struct mlx4_dev  *dev  = pci_get_drvdata(pdev);
- 	struct mlx4_priv *priv = mlx4_priv(dev);
-+	int               pci_dev_data;
- 	int p;
- 
--	if (dev) {
--		/* in SRIOV it is not allowed to unload the pf's
--		 * driver while there are alive vf's */
--		if (mlx4_is_master(dev)) {
--			if (mlx4_how_many_lives_vf(dev))
--				printk(KERN_ERR "Removing PF when there are assigned VF's !!!\n");
--		}
--		mlx4_stop_sense(dev);
--		mlx4_unregister_device(dev);
-+	if (priv->removed)
-+		return;
- 
--		for (p = 1; p <= dev->caps.num_ports; p++) {
--			mlx4_cleanup_port_info(&priv->port[p]);
--			mlx4_CLOSE_PORT(dev, p);
--		}
-+	pci_dev_data = priv->pci_dev_data;
- 
--		if (mlx4_is_master(dev))
--			mlx4_free_resource_tracker(dev,
--						   RES_TR_FREE_SLAVES_ONLY);
-+	/* in SRIOV it is not allowed to unload the pf's
-+	 * driver while there are alive vf's */
-+	if (mlx4_is_master(dev)) {
-+		if (mlx4_how_many_lives_vf(dev))
-+			printk(KERN_ERR "Removing PF when there are assigned VF's !!!\n");
-+	}
-+	mlx4_stop_sense(dev);
-+	mlx4_unregister_device(dev);
- 
--		mlx4_cleanup_counters_table(dev);
--		mlx4_cleanup_mcg_table(dev);
--		mlx4_cleanup_qp_table(dev);
--		mlx4_cleanup_srq_table(dev);
--		mlx4_cleanup_cq_table(dev);
--		mlx4_cmd_use_polling(dev);
--		mlx4_cleanup_eq_table(dev);
--		mlx4_cleanup_mr_table(dev);
--		mlx4_cleanup_xrcd_table(dev);
--		mlx4_cleanup_pd_table(dev);
-+	for (p = 1; p <= dev->caps.num_ports; p++) {
-+		mlx4_cleanup_port_info(&priv->port[p]);
-+		mlx4_CLOSE_PORT(dev, p);
-+	}
- 
--		if (mlx4_is_master(dev))
--			mlx4_free_resource_tracker(dev,
--						   RES_TR_FREE_STRUCTS_ONLY);
-+	if (mlx4_is_master(dev))
-+		mlx4_free_resource_tracker(dev,
-+					   RES_TR_FREE_SLAVES_ONLY);
- 
--		iounmap(priv->kar);
--		mlx4_uar_free(dev, &priv->driver_uar);
--		mlx4_cleanup_uar_table(dev);
--		if (!mlx4_is_slave(dev))
--			mlx4_clear_steering(dev);
--		mlx4_free_eq_table(dev);
--		if (mlx4_is_master(dev))
--			mlx4_multi_func_cleanup(dev);
--		mlx4_close_hca(dev);
--		if (mlx4_is_slave(dev))
--			mlx4_multi_func_cleanup(dev);
--		mlx4_cmd_cleanup(dev);
--
--		if (dev->flags & MLX4_FLAG_MSI_X)
--			pci_disable_msix(pdev);
--		if (dev->flags & MLX4_FLAG_SRIOV) {
--			mlx4_warn(dev, "Disabling SR-IOV\n");
--			pci_disable_sriov(pdev);
--		}
-+	mlx4_cleanup_counters_table(dev);
-+	mlx4_cleanup_qp_table(dev);
-+	mlx4_cleanup_srq_table(dev);
-+	mlx4_cleanup_cq_table(dev);
-+	mlx4_cmd_use_polling(dev);
-+	mlx4_cleanup_eq_table(dev);
-+	mlx4_cleanup_mcg_table(dev);
-+	mlx4_cleanup_mr_table(dev);
-+	mlx4_cleanup_xrcd_table(dev);
-+	mlx4_cleanup_pd_table(dev);
- 
--		if (!mlx4_is_slave(dev))
--			mlx4_free_ownership(dev);
-+	if (mlx4_is_master(dev))
-+		mlx4_free_resource_tracker(dev,
-+					   RES_TR_FREE_STRUCTS_ONLY);
- 
--		kfree(dev->caps.qp0_tunnel);
--		kfree(dev->caps.qp0_proxy);
--		kfree(dev->caps.qp1_tunnel);
--		kfree(dev->caps.qp1_proxy);
--
--		kfree(priv);
--		pci_release_regions(pdev);
--		pci_disable_device(pdev);
--		pci_set_drvdata(pdev, NULL);
-+	iounmap(priv->kar);
-+	mlx4_uar_free(dev, &priv->driver_uar);
-+	mlx4_cleanup_uar_table(dev);
-+	if (!mlx4_is_slave(dev))
-+		mlx4_clear_steering(dev);
-+	mlx4_free_eq_table(dev);
-+	if (mlx4_is_master(dev))
-+		mlx4_multi_func_cleanup(dev);
-+	mlx4_close_hca(dev);
-+	if (mlx4_is_slave(dev))
-+		mlx4_multi_func_cleanup(dev);
-+	mlx4_cmd_cleanup(dev);
-+
-+	if (dev->flags & MLX4_FLAG_MSI_X)
-+		pci_disable_msix(pdev);
-+	if (dev->flags & MLX4_FLAG_SRIOV) {
-+		mlx4_warn(dev, "Disabling SR-IOV\n");
-+		pci_disable_sriov(pdev);
+-	if (nlmsg_parse(nlh, sizeof(struct ifinfomsg), tb, IFLA_MAX,
+-			ifla_policy) >= 0) {
++	if (nlmsg_parse(nlh, hdrlen, tb, IFLA_MAX, ifla_policy) >= 0) {
+ 		if (tb[IFLA_EXT_MASK])
+ 			ext_filter_mask = nla_get_u32(tb[IFLA_EXT_MASK]);
  	}
-+
-+	if (!mlx4_is_slave(dev))
-+		mlx4_free_ownership(dev);
-+
-+	kfree(dev->caps.qp0_tunnel);
-+	kfree(dev->caps.qp0_proxy);
-+	kfree(dev->caps.qp1_tunnel);
-+	kfree(dev->caps.qp1_proxy);
-+
-+	pci_release_regions(pdev);
-+	pci_disable_device(pdev);
-+	memset(priv, 0, sizeof(*priv));
-+	priv->pci_dev_data = pci_dev_data;
-+	priv->removed = 1;
-+}
-+
-+static void mlx4_remove_one(struct pci_dev *pdev)
-+{
-+	struct mlx4_dev  *dev  = pci_get_drvdata(pdev);
-+	struct mlx4_priv *priv = mlx4_priv(dev);
-+
-+	__mlx4_remove_one(pdev);
-+	kfree(priv);
-+	pci_set_drvdata(pdev, NULL);
- }
- 
- int mlx4_restart_one(struct pci_dev *pdev)
-@@ -2454,7 +2474,7 @@ int mlx4_restart_one(struct pci_dev *pde
- 	int		  pci_dev_data;
- 
- 	pci_dev_data = priv->pci_dev_data;
--	mlx4_remove_one(pdev);
-+	__mlx4_remove_one(pdev);
- 	return __mlx4_init_one(pdev, pci_dev_data);
- }
- 
-@@ -2509,7 +2529,7 @@ MODULE_DEVICE_TABLE(pci, mlx4_pci_table)
- static pci_ers_result_t mlx4_pci_err_detected(struct pci_dev *pdev,
- 					      pci_channel_state_t state)
- {
--	mlx4_remove_one(pdev);
-+	__mlx4_remove_one(pdev);
- 
- 	return state == pci_channel_io_perm_failure ?
- 		PCI_ERS_RESULT_DISCONNECT : PCI_ERS_RESULT_NEED_RESET;
-@@ -2517,11 +2537,11 @@ static pci_ers_result_t mlx4_pci_err_det
- 
- static pci_ers_result_t mlx4_pci_slot_reset(struct pci_dev *pdev)
- {
--	const struct pci_device_id *id;
--	int ret;
-+	struct mlx4_dev	 *dev  = pci_get_drvdata(pdev);
-+	struct mlx4_priv *priv = mlx4_priv(dev);
-+	int               ret;
- 
--	id = pci_match_id(mlx4_pci_table, pdev);
--	ret = __mlx4_init_one(pdev, id->driver_data);
-+	ret = __mlx4_init_one(pdev, priv->pci_dev_data);
- 
- 	return ret ? PCI_ERS_RESULT_DISCONNECT : PCI_ERS_RESULT_RECOVERED;
- }
---- a/drivers/net/ethernet/mellanox/mlx4/mlx4.h
-+++ b/drivers/net/ethernet/mellanox/mlx4/mlx4.h
-@@ -743,6 +743,7 @@ struct mlx4_priv {
- 	spinlock_t		ctx_lock;
- 
- 	int			pci_dev_data;
-+	int                     removed;
- 
- 	struct list_head        pgdir_list;
- 	struct mutex            pgdir_mutex;
 
 
