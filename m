@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756987AbaFXUzp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:55:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47534 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750925AbaFXUaf (ORCPT
+	id S1755454AbaFXU4u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:56:50 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:54125 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754206AbaFXU4s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:30:35 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
-        "J. Bruce Fields" <bfields@redhat.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 06/65] NFSd: call rpc_destroy_wait_queue() from free_client()
-Date: Tue, 24 Jun 2014 13:29:26 -0700
-Message-Id: <1403641825-12825-7-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
-References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Tue, 24 Jun 2014 16:56:48 -0400
+Date: Tue, 24 Jun 2014 16:56:44 -0400
+From: Tejun Heo <tj@kernel.org>
+To: "kefeng.wang" <kefeng.wang@linaro.org>
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        Zhangfei Gao <zhangfei.gao@linaro.org>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, wangkefeng.wang@huawei.com,
+        xuwei5@hisilicon.com
+Subject: [PATCH] ahci: disable ncq feature for hisilicon sata
+Message-ID: <20140624205644.GA14909@htj.dyndns.org>
+References: <1398416351-30567-1-git-send-email-kefeng.wang@linaro.org>
+ <20140514170757.GD15690@htj.dyndns.org>
+ <5396D529.308@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5396D529.308@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.25 -stable review patch.  If anyone has any objections, please let me know.
+>From 72cbaa3d2f563d7b48c9f8aef47ec9aa3a31adf2 Mon Sep 17 00:00:00 2001
+From: Kefeng Wang <kefeng.wang@linaro.org>
+Date: Tue, 24 Jun 2014 16:54:23 -0400
 
-------------------
+NCQ feature is unsupported on hisilicon sata controller, so disable
+it.  This version of IP is used by hip04 and hix5hd2 soc.
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+tj: "|=" was replaced with "=" for no reason.  Restored "|=".
 
-commit 4cb57e3032d4e4bf5e97780e9907da7282b02b0c upstream.
-
-Mainly to ensure that we don't leave any hanging timers.
-
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+Signed-off-by: Kefeng Wang <kefeng.wang@linaro.org>
+Sigend-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/nfsd/nfs4state.c | 1 +
- 1 file changed, 1 insertion(+)
+Patch didn't apply.  Applied to libata/for-3.16-fixes manually and
+dropped "|=" -> "=" conversion.  Why was this done?
 
-diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-index 1e7527a..b2142f9 100644
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -1052,6 +1052,7 @@ free_client(struct nfs4_client *clp)
- 		list_del(&ses->se_perclnt);
- 		nfsd4_put_session_locked(ses);
+Thanks.
+
+ drivers/ata/ahci_platform.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
+index ebe505c..b10d81d 100644
+--- a/drivers/ata/ahci_platform.c
++++ b/drivers/ata/ahci_platform.c
+@@ -58,7 +58,7 @@ static int ahci_probe(struct platform_device *pdev)
  	}
-+	rpc_destroy_wait_queue(&clp->cl_cb_waitq);
- 	free_svc_cred(&clp->cl_cred);
- 	kfree(clp->cl_name.data);
- 	idr_remove_all(&clp->cl_stateids);
+ 
+ 	if (of_device_is_compatible(dev->of_node, "hisilicon,hisi-ahci"))
+-		hflags |= AHCI_HFLAG_NO_FBS;
++		hflags |= AHCI_HFLAG_NO_FBS | AHCI_HFLAG_NO_NCQ;
+ 
+ 	rc = ahci_platform_init_host(pdev, hpriv, &ahci_port_info,
+ 				     hflags, 0, 0);
 -- 
-1.9.1
+1.9.3
 
