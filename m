@@ -1,167 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755428AbaFXR3p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 13:29:45 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:45581 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754691AbaFXR2N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 13:28:13 -0400
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        kernel-janitors@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Subject: [PATCH 1/6] include/linux/cycx_x25.h: Remove unused header
-Date: Tue, 24 Jun 2014 19:27:30 +0200
-Message-Id: <1403630855-29186-2-git-send-email-linux@rasmusvillemoes.dk>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1403630855-29186-1-git-send-email-linux@rasmusvillemoes.dk>
-References: <1403630855-29186-1-git-send-email-linux@rasmusvillemoes.dk>
+	id S1755467AbaFXRax (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 13:30:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62239 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751862AbaFXRav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 13:30:51 -0400
+Date: Tue, 24 Jun 2014 19:27:53 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        linux-api@vger.kernel.org, x86@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
+        linux-arch@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: Re: [PATCH v7 7/9] seccomp: implement SECCOMP_FILTER_FLAG_TSYNC
+Message-ID: <20140624172753.GA31435@redhat.com>
+References: <1403560693-21809-1-git-send-email-keescook@chromium.org> <1403560693-21809-8-git-send-email-keescook@chromium.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403560693-21809-8-git-send-email-keescook@chromium.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The header file include/linux/cycx_x25.h does not seem to be used
-anywhere. It was orphaned by 6fcdf4facb "wanrouter: delete now
-orphaned header content, files/drivers". Remove it.
+On 06/23, Kees Cook wrote:
+>
+> +static pid_t seccomp_can_sync_threads(void)
+> +{
+> +	struct task_struct *thread, *caller;
+> +
+> +	BUG_ON(write_can_lock(&tasklist_lock));
+> +	BUG_ON(!spin_is_locked(&current->sighand->siglock));
+> +
+> +	if (current->seccomp.mode != SECCOMP_MODE_FILTER)
+> +		return -EACCES;
+> +
+> +	/* Validate all threads being eligible for synchronization. */
+> +	thread = caller = current;
+> +	for_each_thread(caller, thread) {
+> +		pid_t failed;
+> +
+> +		if (thread->seccomp.mode == SECCOMP_MODE_DISABLED ||
+> +		    (thread->seccomp.mode == SECCOMP_MODE_FILTER &&
+> +		     is_ancestor(thread->seccomp.filter,
+> +				 caller->seccomp.filter)))
+> +			continue;
+> +
+> +		/* Return the first thread that cannot be synchronized. */
+> +		failed = task_pid_vnr(thread);
+> +		/* If the pid cannot be resolved, then return -ESRCH */
+> +		if (failed == 0)
+> +			failed = -ESRCH;
 
-Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
----
- include/linux/cycx_x25.h | 125 -----------------------------------------------
- 1 file changed, 125 deletions(-)
- delete mode 100644 include/linux/cycx_x25.h
+forgot to mention, task_pid_vnr() can't fail. sighand->siglock is held,
+for_each_thread() can't see a thread which has passed unhash_process().
 
-diff --git a/include/linux/cycx_x25.h b/include/linux/cycx_x25.h
-deleted file mode 100644
-index 362bf19..0000000
---- a/include/linux/cycx_x25.h
-+++ /dev/null
-@@ -1,125 +0,0 @@
--#ifndef	_CYCX_X25_H
--#define	_CYCX_X25_H
--/*
--* cycx_x25.h	Cyclom X.25 firmware API definitions.
--*
--* Author:	Arnaldo Carvalho de Melo <acme@conectiva.com.br>
--*
--* Copyright:	(c) 1998-2003 Arnaldo Carvalho de Melo
--*
--* Based on sdla_x25.h by Gene Kozin <74604.152@compuserve.com>
--*
--*		This program is free software; you can redistribute it and/or
--*		modify it under the terms of the GNU General Public License
--*		as published by the Free Software Foundation; either version
--*		2 of the License, or (at your option) any later version.
--* ============================================================================
--* 2000/04/02	acme		dprintk and cycx_debug
--* 1999/01/03	acme		judicious use of data types
--* 1999/01/02	acme		#define X25_ACK_N3	0x4411
--* 1998/12/28	acme		cleanup: lot'o'things removed
--*					 commands listed,
--*					 TX25Cmd & TX25Config structs
--*					 typedef'ed
--*/
--#ifndef PACKED
--#define PACKED __attribute__((packed))
--#endif 
--
--/* X.25 shared memory layout. */
--#define	X25_MBOX_OFFS	0x300	/* general mailbox block */
--#define	X25_RXMBOX_OFFS	0x340	/* receive mailbox */
--
--/* Debug */
--#define dprintk(level, format, a...) if (cycx_debug >= level) printk(format, ##a)
--
--extern unsigned int cycx_debug;
--
--/* Data Structures */
--/* X.25 Command Block. */
--struct cycx_x25_cmd {
--	u16 command;
--	u16 link;	/* values: 0 or 1 */
--	u16 len;	/* values: 0 thru 0x205 (517) */
--	u32 buf;
--} PACKED;
--
--/* Defines for the 'command' field. */
--#define X25_CONNECT_REQUEST             0x4401
--#define X25_CONNECT_RESPONSE            0x4402
--#define X25_DISCONNECT_REQUEST          0x4403
--#define X25_DISCONNECT_RESPONSE         0x4404
--#define X25_DATA_REQUEST                0x4405
--#define X25_ACK_TO_VC			0x4406
--#define X25_INTERRUPT_RESPONSE          0x4407
--#define X25_CONFIG                      0x4408
--#define X25_CONNECT_INDICATION          0x4409
--#define X25_CONNECT_CONFIRM             0x440A
--#define X25_DISCONNECT_INDICATION       0x440B
--#define X25_DISCONNECT_CONFIRM          0x440C
--#define X25_DATA_INDICATION             0x440E
--#define X25_INTERRUPT_INDICATION        0x440F
--#define X25_ACK_FROM_VC			0x4410
--#define X25_ACK_N3			0x4411
--#define X25_CONNECT_COLLISION           0x4413
--#define X25_N3WIN                       0x4414
--#define X25_LINE_ON                     0x4415
--#define X25_LINE_OFF                    0x4416
--#define X25_RESET_REQUEST               0x4417
--#define X25_LOG                         0x4500
--#define X25_STATISTIC                   0x4600
--#define X25_TRACE                       0x4700
--#define X25_N2TRACEXC                   0x4702
--#define X25_N3TRACEXC                   0x4703
--
--/**
-- *	struct cycx_x25_config - cyclom2x x25 firmware configuration
-- *	@link - link number
-- *	@speed - line speed
-- *	@clock - internal/external
-- *	@n2 - # of level 2 retransm.(values: 1 thru FF)
-- *	@n2win - level 2 window (values: 1 thru 7)
-- *	@n3win - level 3 window (values: 1 thru 7)
-- *	@nvc - # of logical channels (values: 1 thru 64)
-- *	@pktlen - level 3 packet length - log base 2 of size
-- *	@locaddr - my address
-- *	@remaddr - remote address
-- *	@t1 - time, in seconds
-- *	@t2 - time, in seconds
-- *	@t21 - time, in seconds
-- *	@npvc - # of permanent virt. circuits (1 thru nvc)
-- *	@t23 - time, in seconds
-- *	@flags - see dosx25.doc, in portuguese, for details
-- */
--struct cycx_x25_config {
--	u8  link;
--	u8  speed;
--	u8  clock;
--	u8  n2;
--	u8  n2win;
--	u8  n3win;
--	u8  nvc;
--	u8  pktlen;
--	u8  locaddr;
--	u8  remaddr;
--	u16 t1;
--	u16 t2;
--	u8  t21;
--	u8  npvc;
--	u8  t23;
--	u8  flags;
--} PACKED;
--
--struct cycx_x25_stats {
--	u16 rx_crc_errors;
--	u16 rx_over_errors;
--	u16 n2_tx_frames;
--	u16 n2_rx_frames;
--	u16 tx_timeouts;
--	u16 rx_timeouts;
--	u16 n3_tx_packets;
--	u16 n3_rx_packets;
--	u16 tx_aborts;
--	u16 rx_aborts;
--} PACKED;
--#endif	/* _CYCX_X25_H */
--- 
-1.9.2
+Oleg.
 
