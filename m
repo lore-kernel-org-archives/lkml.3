@@ -1,46 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755040AbaFXTva (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 15:51:30 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:54231 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754421AbaFXTuU (ORCPT
+	id S1755155AbaFXTwI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 15:52:08 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:63537 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754426AbaFXTwG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 15:50:20 -0400
+	Tue, 24 Jun 2014 15:52:06 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAGXu5jJjuNmf=FRzUPMChvL4D_xkg034pUbRAbaK38f37GYC0A@mail.gmail.com>
+References: <1403560693-21809-1-git-send-email-keescook@chromium.org>
+ <1403560693-21809-5-git-send-email-keescook@chromium.org> <20140624191815.GA3623@redhat.com>
+ <CALCETrVgpP=zOtiQafVgcic2T95TdEM5DTvHYXWTbcZ14xBqHQ@mail.gmail.com>
+ <20140624193055.GA4482@redhat.com> <CALCETrU9x05ADgz9JToiw_BuCPz1h0xmOh=1R3eojL9far1aEA@mail.gmail.com>
+ <CAGXu5jJjuNmf=FRzUPMChvL4D_xkg034pUbRAbaK38f37GYC0A@mail.gmail.com>
 From: Andy Lutomirski <luto@amacapital.net>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
+Date: Tue, 24 Jun 2014 12:51:43 -0700
+Message-ID: <CALCETrUCK0g3nTQP+Oh7-JXh-mODAC-Bemr1fCYMJyDvjFPcjQ@mail.gmail.com>
+Subject: Re: [PATCH v7 4/9] seccomp: move no_new_privs into seccomp
+To: Kees Cook <keescook@chromium.org>
+Cc: Oleg Nesterov <oleg@redhat.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH 0/2] x86: Build fixes for tip/x86/urgent
-Date: Tue, 24 Jun 2014 12:50:07 -0700
-Message-Id: <cover.1403639279.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <53A9C6EB.50900@zytor.com>
-References: <53A9C6EB.50900@zytor.com>
+        Alexei Starovoitov <ast@plumgrid.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        Linux API <linux-api@vger.kernel.org>, X86 ML <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For reasons that I don't quite understand, the current code to
-disable branch profiling in the vdso wasn't working right.  Redo it
-better.
+On Tue, Jun 24, 2014 at 12:50 PM, Kees Cook <keescook@chromium.org> wrote:
+> On Tue, Jun 24, 2014 at 12:34 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> On Tue, Jun 24, 2014 at 12:30 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+>>> On 06/24, Andy Lutomirski wrote:
+>>>>
+>>>> On Tue, Jun 24, 2014 at 12:18 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+>>>> >>
+>>>> >> -struct seccomp { };
+>>>> >> +struct seccomp {
+>>>> >> +     unsigned long flags;
+>>>> >> +};
+>>>> >
+>>>> > A bit messy ;)
+>>>> >
+>>>> > I am wondering if we can simply do
+>>>> >
+>>>> >         static inline bool current_no_new_privs(void)
+>>>> >         {
+>>>> >                 if (current->no_new_privs)
+>>>> >                         return true;
+>>>> >
+>>>> >         #ifdef CONFIG_SECCOMP
+>>>> >                 if (test_thread_flag(TIF_SECCOMP))
+>>>> >                         return true;
+>>>> >         #endif
+>>>>
+>>>> Nope -- privileged users can enable seccomp w/o nnp.
+>>>
+>>> Indeed, I am stupid.
+>>>
+>>> Still it would be nice to cleanup this somehow. The new member is only
+>>> used as a previous ->no_new_privs, just it is long to allow the concurent
+>>> set/get. Logically it doesn't even belong to seccomp{}.
+>>
+>> We could add an unsigned long atomic flags field to task_struct.
+>
+> I thought that had gotten shot down originally, but given the current
+> state of the patch series, it would be effectively identical, since my
+> earlier attempt at keeping sizes the same (with alternate accessors)
+> was too messy. I will change this as well.
+>
+>> Grr.  Why isn't there an unsigned *int* atomic bitmask type?  Even u64
+>> would be better.  unsigned long is useless.
+>
+> Useless beyond 32 bits. ;)
 
-Patch 2 is a sanity check: if that error happens, then something
-is wrong with the vdso.
+It basically guarantees 32 wasted bits on 64-bit systems.
 
-Andy Lutomirski (2):
-  x86,vdso: Move DISABLE_BRANCH_PROFILING into the vdso makefile
-  x86,vdso2c: Error out if DT_RELA is present
+I guess that unsigned long foo[64/BITS_PER_LONG] would work, bit that's hideous.
 
- arch/x86/vdso/Makefile         | 4 +++-
- arch/x86/vdso/vclock_gettime.c | 3 ---
- arch/x86/vdso/vdso2c.h         | 2 +-
- 3 files changed, 4 insertions(+), 5 deletions(-)
-
--- 
-1.9.3
-
+--Andy
