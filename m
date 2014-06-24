@@ -1,43 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754211AbaFXSUM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 14:20:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28474 "EHLO mx1.redhat.com"
+	id S1754254AbaFXSWC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 14:22:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26617 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753542AbaFXSUK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 14:20:10 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Benjamin LaHaise <bcrl@kvack.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, security@kernel.org,
-        linux-aio@kvack.org, linux-kernel@vger.kernel.org,
-        Mateusz Guzik <mguzik@redhat.com>, Petr Matousek <pmatouse@redhat.com>,
-        Kent Overstreet <kmo@daterainc.com>, stable@vger.kernel.org
-Subject: Re: [PATCH 1/2] aio: fix aio request leak when events are reaped by userspace
-References: <cover.1403632276.git.bcrl@kvack.org>
-	<f8567a3845ac05bb28f3c1b478ef752762bd39ef.1403632276.git.bcrl@kvack.org>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 24 Jun 2014 14:20:02 -0400
-In-Reply-To: <f8567a3845ac05bb28f3c1b478ef752762bd39ef.1403632276.git.bcrl@kvack.org>
-	(Benjamin LaHaise's message of "Tue, 24 Jun 2014 14:01:54 -0400")
-Message-ID: <x49a992b25p.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1752392AbaFXSWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 14:22:00 -0400
+Date: Tue, 24 Jun 2014 20:21:43 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Stanislav Fomichev <stfomichev@yandex-team.ru>
+Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        acme@kernel.org, namhyung@kernel.org, artagnon@gmail.com,
+        rusty@rustcorp.com.au, bp@suse.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] perf timechart: implement IO mode
+Message-ID: <20140624182143.GA1148@krava.brq.redhat.com>
+References: <1403260191-10079-1-git-send-email-stfomichev@yandex-team.ru>
+ <1403260191-10079-3-git-send-email-stfomichev@yandex-team.ru>
+ <20140624083435.GA31390@krava.redhat.com>
+ <20140624170012.GB10114@stfomichev-desktop.yandex.net>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140624170012.GB10114@stfomichev-desktop.yandex.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Benjamin LaHaise <bcrl@kvack.org> writes:
+On Tue, Jun 24, 2014 at 09:00:12PM +0400, Stanislav Fomichev wrote:
+> > I'll need some more info (description, usage..) to push this throught
+> There is actual description and usage example in the documentation, does
+> this count? Or you want me to also have some small explanation in the
+> changelog?
 
-> The aio cleanups and optimizations by kmo that were merged into the 3.10
-> tree added a regression for userspace event reaping.  Specifically, the
-> reference counts are not decremented if the event is reaped in userspace,
-> leading to the application being unable to submit further aio requests.
-> This patch applies to 3.12+.  A separate backport is required for 3.10/3.11.
-> This issue was uncovered as part of CVE-2014-0206.
->
-> Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
+yep, in changelog.. feel free to use the info from documentation
 
-Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
+jirka
