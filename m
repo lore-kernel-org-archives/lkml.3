@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754054AbaFXXZy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 19:25:54 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:34768 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751826AbaFXXZw (ORCPT
+	id S1754125AbaFXX14 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 19:27:56 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:58272 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751966AbaFXX1y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 19:25:52 -0400
-Date: Wed, 25 Jun 2014 00:25:51 +0100 (BST)
-From: "Maciej W. Rozycki" <macro@linux-mips.org>
-To: Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
-cc: T Makphaibulchoke <tmac@hp.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: Re: [GIT PULL] ext4 changes for 3.15
-In-Reply-To: <53A9FE04.2000306@hp.com>
-Message-ID: <alpine.LFD.2.11.1406250018180.23403@eddie.linux-mips.org>
-References: <20140403191558.GA8745@thunk.org> <alpine.LFD.2.11.1406242251230.23403@eddie.linux-mips.org> <53A9FE04.2000306@hp.com>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	Tue, 24 Jun 2014 19:27:54 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53AA096F.6080000@roeck-us.net>
+Date: Tue, 24 Jun 2014 16:27:43 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.10 00/52] 3.10.45-stable review
+References: <20140624154713.428945460@linuxfoundation.org>
+In-Reply-To: <20140624154713.428945460@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Jun 2014, Thavatchai Makphaibulchoke wrote:
+On 06/24/2014 08:50 AM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.10.45 release.
+> There are 52 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Thu Jun 26 15:46:59 UTC 2014.
+> Anything received after that time might be too late.
+>
 
-> >  This change causes breakage:
-> > 
-> > fs/built-in.o: In function `__mb_cache_entry_release':
-> > mbcache.c:(.text+0x56b3c): undefined reference to `log2'
-> > mbcache.c:(.text+0x56b3c): relocation truncated to fit: R_MIPS_26 against `log2'
-> > mbcache.c:(.text+0x56b74): undefined reference to `__fixunsdfsi'
-> > mbcache.c:(.text+0x56b74): relocation truncated to fit: R_MIPS_26 against `__fixunsdfsi'
-> > mbcache.c:(.text+0x56be4): undefined reference to `log2'
-> > mbcache.c:(.text+0x56be4): relocation truncated to fit: R_MIPS_26 against `log2'
-> > mbcache.c:(.text+0x56bf0): undefined reference to `__fixunsdfsi'
-> > mbcache.c:(.text+0x56bf0): relocation truncated to fit: R_MIPS_26 against `__fixunsdfsi'
-> > 
-> > and so on, and so on.  It uses __builtin_log2() that is a floating-point 
-> > function, its corresponding <math.h> prototype is:
-> > 
-> >  -- Function: double log2 (double X)
-> > 
-> > (GCC builtins are of course implicitly prototyped).  Please note that 
-> > floating-point calculations are not allowed in the kernel and relying on 
-> > the compiler to optimise them away is risky to say the least.
-> > 
-> >  Can you please rewrite the fragment using __builtin_log2() so as to avoid 
-> > the floating-point calculation, using ffs() or suchlike perhaps?
-> > 
-> >   Maciej
-> > 
-> 
-> Sorry and thanks for notifying me about the problem.
-> 
-> I've submitted the fix, using ilog2, and could be found at,
-> 
-> https://lkml.org/lkml/2014/5/30/462
-> 
-> Please let me know if you have any comment.
+Build results:
+	total: 144 pass: 136 skipped: 6 fail: 2
+Failed builds:
+	score:defconfig
+	unicore32:defconfig
 
- Thanks, that's even better, and the kernel builds and boots.  I saw no 
-trace of your proposal going anywhere so I gave it my `Reviewed-by' tag in 
-case that helps.
+Qemu tests all passed.
 
-  Maciej
+Results are as expected. As mentioned before, score:defconfig is new in the list,
+passes from 3.12, and the fixes are isolated, so it should be possible to backport
+the necessary patches to 3.10 if desired. unicore32:defconfig passes with 3.16-rc2.
+Again, it should be  straightforward to backport the necessary patches to 3.10
+if so desired.
+
+Details are available at http://server.roeck-us.net:8010/builders.
+
+Guenter
+
+
