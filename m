@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756133AbaFXUeJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:34:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47937 "EHLO
+	id S1756202AbaFXUeX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:34:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47948 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756097AbaFXUeH (ORCPT
+	with ESMTP id S1756161AbaFXUeU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:34:07 -0400
+	Tue, 24 Jun 2014 16:34:20 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sage Weil <sage@inktank.com>, Yehuda Sadeh <yehuda@inktank.com>,
-        Chunwei Chen <tuxoko@gmail.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 26/65] libceph: fix corruption when using page_count 0 page in rbd
-Date: Tue, 24 Jun 2014 13:29:46 -0700
-Message-Id: <1403641825-12825-27-git-send-email-kamal@canonical.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Shaun Ruffell <sruffell@digium.com>, Ingo Molnar <mingo@kernel.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 27/65] sched: Sanitize irq accounting madness
+Date: Tue, 24 Jun 2014 13:29:47 -0700
+Message-Id: <1403641825-12825-28-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
 References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
@@ -27,73 +30,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chunwei Chen <tuxoko@gmail.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 178eda29ca721842f2146378e73d43e0044c4166 upstream.
+commit 2d513868e2a33e1d5315490ef4c861ee65babd65 upstream.
 
-It has been reported that using ZFSonLinux on rbd will result in memory
-corruption. The bug report can be found here:
+Russell reported, that irqtime_account_idle_ticks() takes ages due to:
 
-https://github.com/zfsonlinux/spl/issues/241
-http://tracker.ceph.com/issues/7790
+       for (i = 0; i < ticks; i++)
+               irqtime_account_process_tick(current, 0, rq);
 
-The reason is that ZFS will send pages with page_count 0 into rbd, which in
-turns send them to tcp_sendpage. However, tcp_sendpage cannot deal with
-page_count 0, as it will do get_page and put_page, and erroneously free the
-page.
+It's sad, that this code was written way _AFTER_ the NOHZ idle
+functionality was available. I charge myself guitly for not paying
+attention when that crap got merged with commit abb74cefa ("sched:
+Export ns irqtimes through /proc/stat")
 
-This type of issue has been noted before, and handled in iscsi, drbd,
-etc. So, rbd should also handle this. This fix address this issue by fall back
-to slower sendmsg when page_count 0 detected.
+So instead of looping nr_ticks times just apply the whole thing at
+once.
 
-Cc: Sage Weil <sage@inktank.com>
-Cc: Yehuda Sadeh <yehuda@inktank.com>
-Signed-off-by: Chunwei Chen <tuxoko@gmail.com>
-Reviewed-by: Ilya Dryomov <ilya.dryomov@inktank.com>
-[ kamal: backport to 3.8-stable: 'more' param is an int ]
+As a side note: The whole cputime_t vs. u64 business in that context
+wants to be cleaned up as well. There is no point in having all these
+back and forth conversions. Lets standardise on u64 nsec for all
+kernel internal accounting and be done with it. Everything else does
+not make sense at all for fine grained accounting. Frederic, can you
+please take care of that?
+
+Reported-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Venkatesh Pallipadi <venki@google.com>
+Cc: Shaun Ruffell <sruffell@digium.com>
+Link: http://lkml.kernel.org/r/alpine.DEB.2.02.1405022307000.6261@ionos.tec.linutronix.de
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ceph/messenger.c | 20 +++++++++++++++++++-
- 1 file changed, 19 insertions(+), 1 deletion(-)
+ kernel/sched/cputime.c | 32 ++++++++++++++++----------------
+ 1 file changed, 16 insertions(+), 16 deletions(-)
 
-diff --git a/net/ceph/messenger.c b/net/ceph/messenger.c
-index be626db..c604d7c 100644
---- a/net/ceph/messenger.c
-+++ b/net/ceph/messenger.c
-@@ -440,7 +440,7 @@ static int ceph_tcp_sendmsg(struct socket *sock, struct kvec *iov,
- 	return r;
- }
- 
--static int ceph_tcp_sendpage(struct socket *sock, struct page *page,
-+static int __ceph_tcp_sendpage(struct socket *sock, struct page *page,
- 		     int offset, size_t size, int more)
+diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+index 293b202..bead889 100644
+--- a/kernel/sched/cputime.c
++++ b/kernel/sched/cputime.c
+@@ -341,50 +341,50 @@ out:
+  * softirq as those do not count in task exec_runtime any more.
+  */
+ static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
+-						struct rq *rq)
++					 struct rq *rq, int ticks)
  {
- 	int flags = MSG_DONTWAIT | MSG_NOSIGNAL | (more ? MSG_MORE : MSG_EOR);
-@@ -453,6 +453,24 @@ static int ceph_tcp_sendpage(struct socket *sock, struct page *page,
- 	return ret;
+-	cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
++	cputime_t scaled = cputime_to_scaled(cputime_one_jiffy);
++	u64 cputime = (__force u64) cputime_one_jiffy;
+ 	u64 *cpustat = kcpustat_this_cpu->cpustat;
+ 
+ 	if (steal_account_process_tick())
+ 		return;
+ 
++	cputime *= ticks;
++	scaled *= ticks;
++
+ 	if (irqtime_account_hi_update()) {
+-		cpustat[CPUTIME_IRQ] += (__force u64) cputime_one_jiffy;
++		cpustat[CPUTIME_IRQ] += cputime;
+ 	} else if (irqtime_account_si_update()) {
+-		cpustat[CPUTIME_SOFTIRQ] += (__force u64) cputime_one_jiffy;
++		cpustat[CPUTIME_SOFTIRQ] += cputime;
+ 	} else if (this_cpu_ksoftirqd() == p) {
+ 		/*
+ 		 * ksoftirqd time do not get accounted in cpu_softirq_time.
+ 		 * So, we have to handle it separately here.
+ 		 * Also, p->stime needs to be updated for ksoftirqd.
+ 		 */
+-		__account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
+-					CPUTIME_SOFTIRQ);
++		__account_system_time(p, cputime, scaled, CPUTIME_SOFTIRQ);
+ 	} else if (user_tick) {
+-		account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
++		account_user_time(p, cputime, scaled);
+ 	} else if (p == rq->idle) {
+-		account_idle_time(cputime_one_jiffy);
++		account_idle_time(cputime);
+ 	} else if (p->flags & PF_VCPU) { /* System time or guest time */
+-		account_guest_time(p, cputime_one_jiffy, one_jiffy_scaled);
++		account_guest_time(p, cputime, scaled);
+ 	} else {
+-		__account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
+-					CPUTIME_SYSTEM);
++		__account_system_time(p, cputime, scaled,	CPUTIME_SYSTEM);
+ 	}
  }
  
-+static int ceph_tcp_sendpage(struct socket *sock, struct page *page,
-+		     int offset, size_t size, int more)
-+{
-+	int ret;
-+	struct kvec iov;
-+
-+	/* sendpage cannot properly handle pages with page_count == 0,
-+	 * we need to fallback to sendmsg if that's the case */
-+	if (page_count(page) >= 1)
-+		return __ceph_tcp_sendpage(sock, page, offset, size, more);
-+
-+	iov.iov_base = kmap(page) + offset;
-+	iov.iov_len = size;
-+	ret = ceph_tcp_sendmsg(sock, &iov, 1, size, more);
-+	kunmap(page);
-+
-+	return ret;
-+}
+ static void irqtime_account_idle_ticks(int ticks)
+ {
+-	int i;
+ 	struct rq *rq = this_rq();
+ 
+-	for (i = 0; i < ticks; i++)
+-		irqtime_account_process_tick(current, 0, rq);
++	irqtime_account_process_tick(current, 0, rq, ticks);
+ }
+ #else /* CONFIG_IRQ_TIME_ACCOUNTING */
+ static void irqtime_account_idle_ticks(int ticks) {}
+ static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
+-						struct rq *rq) {}
++						struct rq *rq, int nr_ticks) {}
+ #endif /* CONFIG_IRQ_TIME_ACCOUNTING */
  
  /*
-  * Shutdown/close the socket for the given connection.
+@@ -398,7 +398,7 @@ void account_process_tick(struct task_struct *p, int user_tick)
+ 	struct rq *rq = this_rq();
+ 
+ 	if (sched_clock_irqtime) {
+-		irqtime_account_process_tick(p, user_tick, rq);
++		irqtime_account_process_tick(p, user_tick, rq, 1);
+ 		return;
+ 	}
+ 
 -- 
 1.9.1
 
