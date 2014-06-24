@@ -1,192 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753557AbaFXKf1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 06:35:27 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:54285 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752534AbaFXKfZ (ORCPT
+	id S1753732AbaFXKjz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 06:39:55 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:27183 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752081AbaFXKjy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 06:35:25 -0400
-From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: sebastian.hesselbarth@gmail.com, p.zabel@pengutronix.de
-Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 01/12] reset: add the Berlin reset controller driver
-Date: Tue, 24 Jun 2014 12:35:10 +0200
-Message-Id: <1403606121-6368-2-git-send-email-antoine.tenart@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403606121-6368-1-git-send-email-antoine.tenart@free-electrons.com>
-References: <1403606121-6368-1-git-send-email-antoine.tenart@free-electrons.com>
+	Tue, 24 Jun 2014 06:39:54 -0400
+Message-ID: <53A9556D.3000003@arm.com>
+Date: Tue, 24 Jun 2014 11:39:41 +0100
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Will Deacon <will.deacon@arm.com>,
+        Kim Phillips <kim.phillips@freescale.com>
+CC: Christoffer Dall <christoffer.dall@linaro.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Eric Auger <eric.auger@linaro.org>,
+        Kim Phillips <kim.phillips@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Antonios Motakis <a.motakis@virtualopensystems.com>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/2] ARM: KVM: user_mem_abort: support stage 2 MMIO page
+ mapping
+References: <1395785294-2545-1-git-send-email-kim.phillips@linaro.org> <1395785294-2545-2-git-send-email-kim.phillips@linaro.org> <20140506180448.GH3066@lvm> <87bnvaotei.fsf@approximate.cambridge.arm.com> <20140507145557.GJ3066@lvm> <20140624102327.GA9121@arm.com>
+In-Reply-To: <20140624102327.GA9121@arm.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a reset controller for Marvell Berlin SoCs which is used by the
-USB PHYs drivers (for now).
+On 24/06/14 11:23, Will Deacon wrote:
+> On Wed, May 07, 2014 at 03:55:57PM +0100, Christoffer Dall wrote:
+>> On Wed, May 07, 2014 at 10:00:21AM +0100, Marc Zyngier wrote:
+>>> On Tue, May 06 2014 at  7:04:48 pm BST, Christoffer Dall <christoffer.dall@linaro.org> wrote:
+>>>> On Tue, Mar 25, 2014 at 05:08:14PM -0500, Kim Phillips wrote:
+>>>>> Use the correct memory type for device MMIO mappings: PAGE_S2_DEVICE.
+>>>>>
+>>>>> Signed-off-by: Kim Phillips <kim.phillips@linaro.org>
+>>>>> ---
+>>>>>  arch/arm/kvm/mmu.c | 11 ++++++++---
+>>>>>  1 file changed, 8 insertions(+), 3 deletions(-)
+> 
+> [...]
+> 
+>>>> I think this looks reasonable.
+>>>>
+>>>> Acked-by: Christoffer Dall <christoffer.dall@linaro.org>
+>>>
+>>> I feel like I'm missing some context here, and the commit message is way
+>>> too terse for me to make sense of it.
+>>>
+>>> So far, we can only get into user_mem_abort on a Stage-2 fault
+>>> (translation or permission) for memory. How can we suddenly get here for
+>>> a *device* fault? Do we get a special kind of memslot?
+>>>
+>>> I'm not saying the patch does anything wrong, but I'd like to understand
+>>> the rationale behind it. On its own, it doesn't make much sense.
+>>>
+>> Think device passthrough.  There's nothing preventing user space from
+>> setting up a memory region to point to device memory (through VFIO or
+>> /dev/mem).  If that's done, we should enforce device memory properties
+>> so writes don't linger around in the cache to be written some time later
+>> when that device memory potentially doesn't belong to the VM anymore.
+>>
+>> This is just one tiny piece of all of them to make device passthrough
+>> work, and we could hold off with this patch until we have something more
+>> complete.  On the other hand, we need to start somewhere, and this is
+>> hardly intrusive and is functionally correct even though you don't have
+>> a full device passthrough setup.
+> 
+> Please can you queue this patch up? I need it for my VFIO work, where I'm
+> registering the PCI BARs using KVM_SET_USER_MEMORY_REGION.
+> 
+> Without this, I'd have to trap all accesses and do pread/pwrite from
+> kvmtool instead of mmaping the regions straight through.
 
-Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
----
- drivers/reset/Makefile       |   1 +
- drivers/reset/reset-berlin.c | 131 +++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 132 insertions(+)
- create mode 100644 drivers/reset/reset-berlin.c
+I'm afraid there as been quite a bit of churn in this department, and
+the patch doesn't apply any more.
 
-diff --git a/drivers/reset/Makefile b/drivers/reset/Makefile
-index 60fed3d7820b..157d421f755b 100644
---- a/drivers/reset/Makefile
-+++ b/drivers/reset/Makefile
-@@ -1,4 +1,5 @@
- obj-$(CONFIG_RESET_CONTROLLER) += core.o
- obj-$(CONFIG_ARCH_SOCFPGA) += reset-socfpga.o
-+obj-$(CONFIG_ARCH_BERLIN) += reset-berlin.o
- obj-$(CONFIG_ARCH_SUNXI) += reset-sunxi.o
- obj-$(CONFIG_ARCH_STI) += sti/
-diff --git a/drivers/reset/reset-berlin.c b/drivers/reset/reset-berlin.c
-new file mode 100644
-index 000000000000..c988c08825b4
---- /dev/null
-+++ b/drivers/reset/reset-berlin.c
-@@ -0,0 +1,131 @@
-+/*
-+ * Copyright (C) 2014 Marvell Technology Group Ltd.
-+ *
-+ * Antoine Ténart <antoine.tenart@free-electrons.com>
-+ * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2. This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#include <linux/delay.h>
-+#include <linux/io.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/platform_device.h>
-+#include <linux/reset-controller.h>
-+#include <linux/slab.h>
-+#include <linux/types.h>
-+
-+#define to_berlin_reset_priv(p)		\
-+	container_of((p), struct berlin_reset_priv, rcdev)
-+
-+struct berlin_reset_priv {
-+	spinlock_t			lock;
-+	void __iomem			*base;
-+	unsigned int			size;
-+	struct reset_controller_dev	rcdev;
-+};
-+
-+static int berlin_reset_reset(struct reset_controller_dev *rcdev,
-+			      unsigned long id)
-+{
-+	struct berlin_reset_priv *priv = to_berlin_reset_priv(rcdev);
-+	int offset = id >> 8;
-+	int mask = BIT(id & 0xff);
-+
-+	writel(mask, priv->base + offset);
-+
-+	/* let the reset be effective */
-+	udelay(10);
-+
-+	return 0;
-+}
-+
-+static struct reset_control_ops berlin_reset_ops = {
-+	.reset	= berlin_reset_reset,
-+};
-+
-+static int berlin_reset_xlate(struct reset_controller_dev *rcdev,
-+			      const struct of_phandle_args *reset_spec)
-+{
-+	struct berlin_reset_priv *priv = to_berlin_reset_priv(rcdev);
-+	unsigned offset, bit;
-+
-+	if (WARN_ON(reset_spec->args_count != rcdev->of_reset_n_cells))
-+		return -EINVAL;
-+
-+	offset = reset_spec->args[0];
-+	bit = reset_spec->args[1];
-+
-+	if (offset >= priv->size)
-+		return -EINVAL;
-+
-+	if (bit >= rcdev->nr_resets)
-+		return -EINVAL;
-+
-+	return (offset << 8) | bit;
-+}
-+
-+static int __berlin_reset_init(struct device_node *np)
-+{
-+	struct berlin_reset_priv *priv;
-+	struct resource res;
-+	resource_size_t size;
-+	int ret;
-+
-+	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
-+	if (!priv)
-+		return -ENOMEM;
-+
-+	ret = of_address_to_resource(np, 0, &res);
-+	if (ret)
-+		goto err;
-+
-+	size = resource_size(&res);
-+	priv->base = ioremap(res.start, size);
-+	if (!priv->base) {
-+		ret = -ENOMEM;
-+		goto err;
-+	}
-+	priv->size = size;
-+
-+	priv->rcdev.owner = THIS_MODULE;
-+	priv->rcdev.nr_resets = 32;
-+	priv->rcdev.ops = &berlin_reset_ops;
-+	priv->rcdev.of_node = np;
-+	priv->rcdev.of_reset_n_cells = 2;
-+	priv->rcdev.of_xlate = berlin_reset_xlate;
-+
-+	reset_controller_register(&priv->rcdev);
-+
-+	return 0;
-+
-+err:
-+	kfree(priv);
-+	return ret;
-+}
-+
-+static const struct of_device_id berlin_reset_of_match[] __initconst = {
-+	{ .compatible = "marvell,berlin2-chip-ctrl" },
-+	{ .compatible = "marvell,berlin2cd-chip-ctrl" },
-+	{ .compatible = "marvell,berlin2q-chip-ctrl" },
-+	{ },
-+};
-+
-+static int __init berlin_reset_init(void)
-+{
-+	struct device_node *np;
-+	int ret;
-+
-+	for_each_matching_node(np, berlin_reset_of_match) {
-+		ret = __berlin_reset_init(np);
-+		if (ret)
-+			return ret;
-+	}
-+
-+	return 0;
-+}
-+arch_initcall(berlin_reset_init);
+Kim, any chance you could respin this patch on top of mainline?
+
+Thanks,
+
+	M.
 -- 
-1.9.1
-
+Jazz is not dead. It just smells funny...
