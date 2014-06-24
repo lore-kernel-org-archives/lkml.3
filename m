@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932186AbaFXUie (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:38:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47896 "EHLO
+	id S1755681AbaFXUix (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:38:53 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47893 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755870AbaFXUds (ORCPT
+	with ESMTP id S1755926AbaFXUdq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:33:48 -0400
+	Tue, 24 Jun 2014 16:33:46 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 28/65] sched: Use CPUPRI_NR_PRIORITIES instead of MAX_RT_PRIO in cpupri check
-Date: Tue, 24 Jun 2014 13:29:48 -0700
-Message-Id: <1403641825-12825-29-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 65/65] mm: rmap: fix use-after-free in __put_anon_vma
+Date: Tue, 24 Jun 2014 13:30:25 -0700
+Message-Id: <1403641825-12825-66-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
 References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
@@ -28,43 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
 
-commit 6227cb00cc120f9a43ce8313bb0475ddabcb7d01 upstream.
+commit 624483f3ea82598ab0f62f1bdb9177f531ab1892 upstream.
 
-The check at the beginning of cpupri_find() makes sure that the task_pri
-variable does not exceed the cp->pri_to_cpu array length. But that length
-is CPUPRI_NR_PRIORITIES not MAX_RT_PRIO, where it will miss the last two
-priorities in that array.
+While working address sanitizer for kernel I've discovered
+use-after-free bug in __put_anon_vma.
 
-As task_pri is computed from convert_prio() which should never be bigger
-than CPUPRI_NR_PRIORITIES, if the check should cause a panic if it is
-hit.
+For the last anon_vma, anon_vma->root freed before child anon_vma.
+Later in anon_vma_free(anon_vma) we are referencing to already freed
+anon_vma->root to check rwsem.
 
-Reported-by: Mike Galbraith <umgwanakikbuti@gmail.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1397015410.5212.13.camel@marge.simpson.net
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+This fixes it by freeing the child anon_vma before freeing
+anon_vma->root.
+
+Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/sched/cpupri.c | 3 +--
+ mm/rmap.c | 3 +--
  1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/kernel/sched/cpupri.c b/kernel/sched/cpupri.c
-index 23aa789..8ea0f2e 100644
---- a/kernel/sched/cpupri.c
-+++ b/kernel/sched/cpupri.c
-@@ -68,8 +68,7 @@ int cpupri_find(struct cpupri *cp, struct task_struct *p,
- 	int idx = 0;
- 	int task_pri = convert_prio(p->prio);
+diff --git a/mm/rmap.c b/mm/rmap.c
+index da8e2cf..770320b 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -1696,10 +1696,9 @@ void __put_anon_vma(struct anon_vma *anon_vma)
+ {
+ 	struct anon_vma *root = anon_vma->root;
  
--	if (task_pri >= MAX_RT_PRIO)
--		return 0;
-+	BUG_ON(task_pri >= CPUPRI_NR_PRIORITIES);
++	anon_vma_free(anon_vma);
+ 	if (root != anon_vma && atomic_dec_and_test(&root->refcount))
+ 		anon_vma_free(root);
+-
+-	anon_vma_free(anon_vma);
+ }
  
- 	for (idx = 0; idx < task_pri; idx++) {
- 		struct cpupri_vec *vec  = &cp->pri_to_cpu[idx];
+ #ifdef CONFIG_MIGRATION
 -- 
 1.9.1
 
