@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756450AbaFXQXy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:23:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33031 "EHLO
+	id S1756423AbaFXQXx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:23:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33052 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964785AbaFXPyb (ORCPT
+	with ESMTP id S1755826AbaFXPye (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:54:31 -0400
+	Tue, 24 Jun 2014 11:54:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yang Zhang <yang.z.zhang@intel.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.14 36/68] KVM: lapic: sync highest ISR to hardware apic on EOI
-Date: Tue, 24 Jun 2014 11:50:55 -0400
-Message-Id: <20140624154725.556616820@linuxfoundation.org>
+        James Hogan <james.hogan@imgtec.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        kvm@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
+        linux-mips@linux-mips.org, Sanjay Lal <sanjayl@kymasys.com>
+Subject: [PATCH 3.14 38/68] MIPS: KVM: Allocate at least 16KB for exception handlers
+Date: Tue, 24 Jun 2014 11:50:57 -0400
+Message-Id: <20140624154725.644406717@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154723.907894814@linuxfoundation.org>
 References: <20140624154723.907894814@linuxfoundation.org>
@@ -29,125 +31,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+From: James Hogan <james.hogan@imgtec.com>
 
-commit fc57ac2c9ca8109ea97fcc594f4be436944230cc upstream.
+commit 7006e2dfda9adfa40251093604db76d7e44263b3 upstream.
 
-When Hyper-V enlightenments are in effect, Windows prefers to issue an
-Hyper-V MSR write to issue an EOI rather than an x2apic MSR write.
-The Hyper-V MSR write is not handled by the processor, and besides
-being slower, this also causes bugs with APIC virtualization.  The
-reason is that on EOI the processor will modify the highest in-service
-interrupt (SVI) field of the VMCS, as explained in section 29.1.4 of
-the SDM; every other step in EOI virtualization is already done by
-apic_send_eoi or on VM entry, but this one is missing.
+Each MIPS KVM guest has its own copy of the KVM exception vector. This
+contains the TLB refill exception handler at offset 0x000, the general
+exception handler at offset 0x180, and interrupt exception handlers at
+offset 0x200 in case Cause_IV=1. A common handler is copied to offset
+0x2000 and offset 0x3000 is used for temporarily storing k1 during entry
+from guest.
 
-We need to do the same, and be careful not to muck with the isr_count
-and highest_isr_cache fields that are unused when virtual interrupt
-delivery is enabled.
+However the amount of memory allocated for this purpose is calculated as
+0x200 rounded up to the next page boundary, which is insufficient if 4KB
+pages are in use. This can lead to the common handler at offset 0x2000
+being overwritten and infinitely recursive exceptions on the next exit
+from the guest.
 
-Reviewed-by: Yang Zhang <yang.z.zhang@intel.com>
+Increase the minimum size from 0x200 to 0x4000 to cover the full use of
+the page.
+
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Gleb Natapov <gleb@kernel.org>
+Cc: kvm@vger.kernel.org
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-mips@linux-mips.org
+Cc: Sanjay Lal <sanjayl@kymasys.com>
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kvm/lapic.c |   62 +++++++++++++++++++++++++++++++++++----------------
- 1 file changed, 43 insertions(+), 19 deletions(-)
+ arch/mips/kvm/kvm_mips.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kvm/lapic.c
-+++ b/arch/x86/kvm/lapic.c
-@@ -360,6 +360,8 @@ static inline void apic_clear_irr(int ve
+--- a/arch/mips/kvm/kvm_mips.c
++++ b/arch/mips/kvm/kvm_mips.c
+@@ -304,7 +304,7 @@ struct kvm_vcpu *kvm_arch_vcpu_create(st
+ 	if (cpu_has_veic || cpu_has_vint) {
+ 		size = 0x200 + VECTORSPACING * 64;
+ 	} else {
+-		size = 0x200;
++		size = 0x4000;
+ 	}
  
- static inline void apic_set_isr(int vec, struct kvm_lapic *apic)
- {
-+	/* Note that we never get here with APIC virtualization enabled.  */
-+
- 	if (!__apic_test_and_set_vector(vec, apic->regs + APIC_ISR))
- 		++apic->isr_count;
- 	BUG_ON(apic->isr_count > MAX_APIC_VECTOR);
-@@ -371,12 +373,48 @@ static inline void apic_set_isr(int vec,
- 	apic->highest_isr_cache = vec;
- }
- 
-+static inline int apic_find_highest_isr(struct kvm_lapic *apic)
-+{
-+	int result;
-+
-+	/*
-+	 * Note that isr_count is always 1, and highest_isr_cache
-+	 * is always -1, with APIC virtualization enabled.
-+	 */
-+	if (!apic->isr_count)
-+		return -1;
-+	if (likely(apic->highest_isr_cache != -1))
-+		return apic->highest_isr_cache;
-+
-+	result = find_highest_vector(apic->regs + APIC_ISR);
-+	ASSERT(result == -1 || result >= 16);
-+
-+	return result;
-+}
-+
- static inline void apic_clear_isr(int vec, struct kvm_lapic *apic)
- {
--	if (__apic_test_and_clear_vector(vec, apic->regs + APIC_ISR))
-+	struct kvm_vcpu *vcpu;
-+	if (!__apic_test_and_clear_vector(vec, apic->regs + APIC_ISR))
-+		return;
-+
-+	vcpu = apic->vcpu;
-+
-+	/*
-+	 * We do get here for APIC virtualization enabled if the guest
-+	 * uses the Hyper-V APIC enlightenment.  In this case we may need
-+	 * to trigger a new interrupt delivery by writing the SVI field;
-+	 * on the other hand isr_count and highest_isr_cache are unused
-+	 * and must be left alone.
-+	 */
-+	if (unlikely(kvm_apic_vid_enabled(vcpu->kvm)))
-+		kvm_x86_ops->hwapic_isr_update(vcpu->kvm,
-+					       apic_find_highest_isr(apic));
-+	else {
- 		--apic->isr_count;
--	BUG_ON(apic->isr_count < 0);
--	apic->highest_isr_cache = -1;
-+		BUG_ON(apic->isr_count < 0);
-+		apic->highest_isr_cache = -1;
-+	}
- }
- 
- int kvm_lapic_find_highest_irr(struct kvm_vcpu *vcpu)
-@@ -456,22 +494,6 @@ static void pv_eoi_clr_pending(struct kv
- 	__clear_bit(KVM_APIC_PV_EOI_PENDING, &vcpu->arch.apic_attention);
- }
- 
--static inline int apic_find_highest_isr(struct kvm_lapic *apic)
--{
--	int result;
--
--	/* Note that isr_count is always 1 with vid enabled */
--	if (!apic->isr_count)
--		return -1;
--	if (likely(apic->highest_isr_cache != -1))
--		return apic->highest_isr_cache;
--
--	result = find_highest_vector(apic->regs + APIC_ISR);
--	ASSERT(result == -1 || result >= 16);
--
--	return result;
--}
--
- void kvm_apic_update_tmr(struct kvm_vcpu *vcpu, u32 *tmr)
- {
- 	struct kvm_lapic *apic = vcpu->arch.apic;
-@@ -1605,6 +1627,8 @@ int kvm_get_apic_interrupt(struct kvm_vc
- 	int vector = kvm_apic_has_interrupt(vcpu);
- 	struct kvm_lapic *apic = vcpu->arch.apic;
- 
-+	/* Note that we never get here with APIC virtualization enabled.  */
-+
- 	if (vector == -1)
- 		return -1;
- 
+ 	/* Save Linux EBASE */
 
 
