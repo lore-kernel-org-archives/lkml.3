@@ -1,44 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932070AbaFXRRg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 13:17:36 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:45468 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755284AbaFXRRT (ORCPT
+	id S932125AbaFXRSU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 13:18:20 -0400
+Received: from forward-corp1g.mail.yandex.net ([95.108.253.251]:44540 "EHLO
+	forward-corp1g.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932077AbaFXRSS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 13:17:19 -0400
-Date: Tue, 24 Jun 2014 13:17:17 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Paul Bolle <pebolle@tiscali.nl>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-api@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Documentation: sysfs-bus-usb: update power/persist
- description
-In-Reply-To: <1403628854.1960.21.camel@x220>
-Message-ID: <Pine.LNX.4.44L0.1406241316550.888-100000@iolanthe.rowland.org>
+	Tue, 24 Jun 2014 13:18:18 -0400
+X-Yandex-Uniq: 7dd882a4-4845-47d4-917a-d2040fa130a9
+Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+Date: Tue, 24 Jun 2014 21:18:07 +0400
+From: Stanislav Fomichev <stfomichev@yandex-team.ru>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: john.stultz@linaro.org, prarit@redhat.com, paul.gortmaker@windriver.com,
+        juri.lelli@gmail.com, ddaney.cavm@gmail.com, mbohan@codeaurora.org,
+        david.vrabel@citrix.com, david.engraf@sysgo.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] hrtimers: calculate expires_next after all timers are
+ executed
+Message-ID: <20140624171807.GA21788@stfomichev-desktop.yandex.net>
+References: <1395067037-20060-1-git-send-email-stfomichev@yandex-team.ru>
+ <alpine.DEB.2.02.1403191149460.18573@ionos.tec.linutronix.de>
+ <20140319141615.GB11081@stfomichev-desktop.yandex.net>
+ <alpine.DEB.2.10.1406221417510.5170@nanos>
+ <20140623110302.GA20225@stfomichev-desktop.yandex.net>
+ <alpine.DEB.2.10.1406231904090.5170@nanos>
+ <20140623180443.GD20225@stfomichev-desktop.yandex.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140623180443.GD20225@stfomichev-desktop.yandex.net>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Jun 2014, Paul Bolle wrote:
+> > Tested-by is fine. I can cobble a changelog together.
+No issues after more than a day of running, I think you can use my
 
-> On Tue, 2014-06-24 at 10:15 -0400, Alan Stern wrote:
-> > The default value for the persist facility depends on the setting of 
-> > CONFIG_USB_DEFAULT_PERSIST.  If that symbol is set then persist is 
-> > enabled by default for all devices, except those which have the 
-> > USB_QUIRK_RESET flag set (meaning that they will morph or change modes 
-> > when reset).  If the symbol is not set then persist is enabled by 
-> > default only for hubs.
-> > 
-> > Thanks for the documentation update.
-> 
-> You do expect a v2 updated to reflect your comments, don't you?
-
-It would be nice.
-
-Alan Stern
-
+Tested-By: Stanislav Fomichev <stfomichev@yandex-team.ru>
