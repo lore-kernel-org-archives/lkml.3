@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756507AbaFXQow (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:44:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60936 "EHLO
+	id S1755439AbaFXPwe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:52:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60910 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755440AbaFXPwf (ORCPT
+	with ESMTP id S1754707AbaFXPw2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:52:35 -0400
+	Tue, 24 Jun 2014 11:52:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.10 31/52] USB: cdc-acm: fix write and resume race
-Date: Tue, 24 Jun 2014 11:50:46 -0400
-Message-Id: <20140624154715.359607960@linuxfoundation.org>
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 19/52] net: force a list_del() in unregister_netdevice_many()
+Date: Tue, 24 Jun 2014 11:50:34 -0400
+Message-Id: <20140624154714.639041760@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154713.428945460@linuxfoundation.org>
 References: <20140624154713.428945460@linuxfoundation.org>
@@ -28,79 +29,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Eric Dumazet <edumazet@google.com>
 
-commit e144ed28bed10684f9aaec6325ed974d53f76110 upstream.
+[ Upstream commit 87757a917b0b3c0787e0563c679762152be81312 ]
 
-Fix race between write() and resume() due to improper locking that could
-lead to writes being reordered.
+unregister_netdevice_many() API is error prone and we had too
+many bugs because of dangling LIST_HEAD on stacks.
 
-Resume must be done atomically and susp_count be protected by the
-write_lock in order to prevent racing with write(). This could otherwise
-lead to writes being reordered if write() grabs the write_lock after
-susp_count is decremented, but before the delayed urb is submitted.
+See commit f87e6f47933e3e ("net: dont leave active on stack LIST_HEAD")
 
-Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
-that support remote wakeup")
+In fact, instead of making sure no caller leaves an active list_head,
+just force a list_del() in the callee. No one seems to need to access
+the list after unregister_netdevice_many()
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/usb/class/cdc-acm.c |   23 +++++++++--------------
- 1 file changed, 9 insertions(+), 14 deletions(-)
+ drivers/net/macvlan.c |    1 -
+ net/core/dev.c        |    5 ++++-
+ net/core/rtnetlink.c  |    1 -
+ net/mac80211/iface.c  |    1 -
+ 4 files changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -1461,27 +1461,20 @@ static int acm_resume(struct usb_interfa
- 	struct acm *acm = usb_get_intfdata(intf);
- 	struct acm_wb *wb;
- 	int rv = 0;
--	int cnt;
- 
- 	spin_lock_irq(&acm->read_lock);
--	acm->susp_count -= 1;
--	cnt = acm->susp_count;
--	spin_unlock_irq(&acm->read_lock);
-+	spin_lock(&acm->write_lock);
- 
--	if (cnt)
--		return 0;
-+	if (--acm->susp_count)
-+		goto out;
- 
- 	if (test_bit(ASYNCB_INITIALIZED, &acm->port.flags)) {
--		rv = usb_submit_urb(acm->ctrlurb, GFP_NOIO);
-+		rv = usb_submit_urb(acm->ctrlurb, GFP_ATOMIC);
- 
--		spin_lock_irq(&acm->write_lock);
- 		if (acm->delayed_wb) {
- 			wb = acm->delayed_wb;
- 			acm->delayed_wb = NULL;
--			spin_unlock_irq(&acm->write_lock);
- 			acm_start_wb(acm, wb);
--		} else {
--			spin_unlock_irq(&acm->write_lock);
- 		}
- 
- 		/*
-@@ -1489,12 +1482,14 @@ static int acm_resume(struct usb_interfa
- 		 * do the write path at all cost
- 		 */
- 		if (rv < 0)
--			goto err_out;
-+			goto out;
- 
--		rv = acm_submit_read_urbs(acm, GFP_NOIO);
-+		rv = acm_submit_read_urbs(acm, GFP_ATOMIC);
+--- a/drivers/net/macvlan.c
++++ b/drivers/net/macvlan.c
+@@ -961,7 +961,6 @@ static int macvlan_device_event(struct n
+ 		list_for_each_entry_safe(vlan, next, &port->vlans, list)
+ 			vlan->dev->rtnl_link_ops->dellink(vlan->dev, &list_kill);
+ 		unregister_netdevice_many(&list_kill);
+-		list_del(&list_kill);
+ 		break;
+ 	case NETDEV_PRE_TYPE_CHANGE:
+ 		/* Forbid underlaying device to change its type. */
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -5827,6 +5827,9 @@ EXPORT_SYMBOL(unregister_netdevice_queue
+ /**
+  *	unregister_netdevice_many - unregister many devices
+  *	@head: list of devices
++ *
++ *  Note: As most callers use a stack allocated list_head,
++ *  we force a list_del() to make sure stack wont be corrupted later.
+  */
+ void unregister_netdevice_many(struct list_head *head)
+ {
+@@ -5836,6 +5839,7 @@ void unregister_netdevice_many(struct li
+ 		rollback_registered_many(head);
+ 		list_for_each_entry(dev, head, unreg_list)
+ 			net_set_todo(dev);
++		list_del(head);
  	}
-+out:
-+	spin_unlock(&acm->write_lock);
-+	spin_unlock_irq(&acm->read_lock);
- 
--err_out:
- 	return rv;
+ }
+ EXPORT_SYMBOL(unregister_netdevice_many);
+@@ -6252,7 +6256,6 @@ static void __net_exit default_device_ex
+ 		}
+ 	}
+ 	unregister_netdevice_many(&dev_kill_list);
+-	list_del(&dev_kill_list);
+ 	rtnl_unlock();
  }
  
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -1601,7 +1601,6 @@ static int rtnl_dellink(struct sk_buff *
+ 
+ 	ops->dellink(dev, &list_kill);
+ 	unregister_netdevice_many(&list_kill);
+-	list_del(&list_kill);
+ 	return 0;
+ }
+ 
+--- a/net/mac80211/iface.c
++++ b/net/mac80211/iface.c
+@@ -1746,7 +1746,6 @@ void ieee80211_remove_interfaces(struct
+ 	}
+ 	mutex_unlock(&local->iflist_mtx);
+ 	unregister_netdevice_many(&unreg_list);
+-	list_del(&unreg_list);
+ 
+ 	list_for_each_entry_safe(sdata, tmp, &wdev_list, list) {
+ 		list_del(&sdata->list);
 
 
