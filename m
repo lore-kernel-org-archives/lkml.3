@@ -1,94 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753402AbaFXKeT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 06:34:19 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55492 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751407AbaFXKeR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 06:34:17 -0400
-Date: Tue, 24 Jun 2014 11:33:36 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: addy ke <addy.ke@rock-chips.com>, "heiko@sntech.de" <heiko@sntech.de>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "huangtao@rock-chips.com" <huangtao@rock-chips.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "yzq@rock-chips.com" <yzq@rock-chips.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
-        "kever.yang@rock-chips.com" <kever.yang@rock-chips.com>,
-        "zyw@rock-chips.com" <zyw@rock-chips.com>,
-        "xjq@rock-chips.com" <xjq@rock-chips.com>,
-        "zhenfu.fang@rock-chips.com" <zhenfu.fang@rock-chips.com>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "cf@rock-chips.com" <cf@rock-chips.com>,
-        "hj@rock-chips.com" <hj@rock-chips.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Message-ID: <20140624103336.GG23300@sirena.org.uk>
-References: <1403582324-9485-1-git-send-email-addy.ke@rock-chips.com>
- <1403582324-9485-2-git-send-email-addy.ke@rock-chips.com>
- <20140624101802.GE5856@leverpostej>
+	id S1753505AbaFXKee (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 06:34:34 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:58835 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751407AbaFXKec (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 06:34:32 -0400
+Date: Tue, 24 Jun 2014 12:34:30 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Cc: tony.luck@intel.com, mattieu.souchaud@free.fr, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] x86, MCE: Robustify mcheck_init_device
+Message-ID: <20140624103430.GF4439@pd.tnic>
+References: <1acfd8b6-48f1-4324-9723-224a7f4f7367@default>
+ <20140624102531.GE4439@pd.tnic>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Sw7tCqrGA+HQ0/zt"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140624101802.GE5856@leverpostej>
-X-Cookie: But it does move!
+In-Reply-To: <20140624102531.GE4439@pd.tnic>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] documentation: add rockchip spi documentation
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Borislav Petkov <bp@suse.de>
+Subject: [PATCH] x86, MCE: Robustify mcheck_init_device
 
---Sw7tCqrGA+HQ0/zt
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+BorisO reports that misc_register() fails often on xen. The current code
+unregisters the CPU hotplug notifier in that case. If then a CPU is
+offlined and onlined back again, we end up with a second timer running
+on that CPU, leading to soft lockups and system hangs.
 
-On Tue, Jun 24, 2014 at 11:18:02AM +0100, Mark Rutland wrote:
-> On Tue, Jun 24, 2014 at 04:58:43AM +0100, addy ke wrote:
+So let's leave the hotcpu notifier always registered - even if
+mce_device_create failed for some cores and never unreg it so that we
+can deal with the timer handling accordingly.
 
-> > +- Board Specific Portion:
-> > +
-> > +	&spi0 {
-> > +		status = "okay";
-> > +		spi_test@00 {
-> > +			compatible = "rockchip,spi_test";
+Reported-and-Tested-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Link: http://lkml.kernel.org/r/1403274493-1371-1-git-send-email-boris.ostrovsky@oracle.com
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ arch/x86/kernel/cpu/mcheck/mce.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-> Huh?
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index bb92f38153b2..9a79c8dbd8e8 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -2451,6 +2451,12 @@ static __init int mcheck_init_device(void)
+ 	for_each_online_cpu(i) {
+ 		err = mce_device_create(i);
+ 		if (err) {
++			/*
++			 * Register notifier anyway (and do not unreg it) so
++			 * that we don't leave undeleted timers, see notifier
++			 * callback above.
++			 */
++			__register_hotcpu_notifier(&mce_cpu_notifier);
+ 			cpu_notifier_register_done();
+ 			goto err_device_create;
+ 		}
+@@ -2471,10 +2477,6 @@ static __init int mcheck_init_device(void)
+ err_register:
+ 	unregister_syscore_ops(&mce_syscore_ops);
+ 
+-	cpu_notifier_register_begin();
+-	__unregister_hotcpu_notifier(&mce_cpu_notifier);
+-	cpu_notifier_register_done();
+-
+ err_device_create:
+ 	/*
+ 	 * We didn't keep track of which devices were created above, but
+-- 
+2.0.0
 
-I expect that's just intended as an example of how to set up a device
-and they're doing something like use a driver that generates known
-patterns.  We'd normally omit such examples from the binding document
-since it's generic and covered well enough elsehwere.
+-- 
+Regards/Gruss,
+    Boris.
 
---Sw7tCqrGA+HQ0/zt
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJTqVP8AAoJELSic+t+oim9768P/2wmhn+zUELR+Afyz9m7T1uS
-F0B7iV9hm3LD98h96hGeaqax8XVEreR8E5DiF0pMxxkkalMsJetT0hXcU2edvM/k
-UuE9lYAX6ExcxlWjDpHF+2pZHPqjHH6s1cU4nOthZY/uBaQdVLS+WadU7Ng+JkYN
-0/udpOY53so3g93zMFNtpcAha4oOBMyBnwz3JmITfRvRPG/nzyPLA0hiGxPShdk8
-4ha3e18Tk/vvMFQzIWI5XcDE4L0hB7+fCkElXs5nJfDGhGA/U/0IFMmXcupVXLMM
-W4xXfQcfxEhWTCvCw4j/T0of36PNwvJnFMu0Djdq3VxAz9+2bQ1ZTAQMEbn+xPHg
-KwzLE1ESBJUhn8i8IM7PeliHjdu7AJ/IfNNCAFAqTLBeUR5/rnUtIT4D7Fj0pyiK
-LdfmIVwDjM0S4O5XTbOKVY0zWh/3JQFjr15wYTaNswLfqfNDBO2AVlT3biry7tn2
-InVk+efm+MFzg/SDVa8gnYEjghf0R09GtjVmSE6pl55HKlSountDkF3roMwZMdsi
-PyRZPxjCKt5GaoQt38S7OKyh6oCa9nnWO4onnpMoZWBt8f3eSTNJneZuY1N1TUQR
-hWsVYRmGakHjwSDMOVOEKFL8DnfaGI/a2E8NDO7OK9AzD3Y8XQyIQt8tgQbNZoCE
-WduhD98mr656/bTmqlMh
-=Haop
------END PGP SIGNATURE-----
-
---Sw7tCqrGA+HQ0/zt--
+Sent from a fat crate under my desk. Formatting is fine.
+--
