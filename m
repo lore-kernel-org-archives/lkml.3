@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753099AbaFXKA0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 06:00:26 -0400
-Received: from mirror2.csie.ntu.edu.tw ([140.112.30.76]:41914 "EHLO
+	id S1753173AbaFXKAd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 06:00:33 -0400
+Received: from mirror2.csie.ntu.edu.tw ([140.112.30.76]:41917 "EHLO
 	mirror2.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752999AbaFXKAY (ORCPT
+	with ESMTP id S1752917AbaFXKAb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 06:00:24 -0400
+	Tue, 24 Jun 2014 06:00:31 -0400
 From: Chen-Yu Tsai <wens@csie.org>
 To: Maxime Ripard <maxime.ripard@free-electrons.com>,
         Mike Turquette <mturquette@linaro.org>,
@@ -14,9 +14,9 @@ To: Maxime Ripard <maxime.ripard@free-electrons.com>,
 Cc: Chen-Yu Tsai <wens@csie.org>, linux-arm-kernel@lists.infradead.org,
         devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-sunxi@googlegroups.com
-Subject: [PATCH v3 2/6] clk: sunxi: move "ahb_sdram" to protected clock list
-Date: Tue, 24 Jun 2014 17:59:36 +0800
-Message-Id: <1403603980-31101-3-git-send-email-wens@csie.org>
+Subject: [PATCH v3 3/6] clk: sunxi: Support factor clocks with N factor starting not from 0
+Date: Tue, 24 Jun 2014 17:59:37 +0800
+Message-Id: <1403603980-31101-4-git-send-email-wens@csie.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1403603980-31101-1-git-send-email-wens@csie.org>
 References: <1403603980-31101-1-git-send-email-wens@csie.org>
@@ -24,58 +24,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With sunxi_gates clocks registered with clkdev, we can use the
-protected clocks list to enable the "ahb_sdram" clock, instead
-of looking for it and adding CLK_IGNORE_UNUSED inline in the
-clock setup code.
+The PLLs on newer Allwinner SoC's, such as the A31 and A23, have a
+N multiplier factor that starts from 1, not 0.
+
+This patch adds an option to the factor clk driver's config data
+structures to specify the base value of N.
 
 Signed-off-by: Chen-Yu Tsai <wens@csie.org>
-Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/clk/sunxi/clk-sunxi.c | 8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ drivers/clk/sunxi/clk-factors.c | 2 +-
+ drivers/clk/sunxi/clk-factors.h | 1 +
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
-index e43ed6a..a38c799 100644
---- a/drivers/clk/sunxi/clk-sunxi.c
-+++ b/drivers/clk/sunxi/clk-sunxi.c
-@@ -870,7 +870,6 @@ static void __init sunxi_gates_clk_setup(struct device_node *node,
- 	int qty;
- 	int i = 0;
- 	int j = 0;
--	int ignore;
+diff --git a/drivers/clk/sunxi/clk-factors.c b/drivers/clk/sunxi/clk-factors.c
+index 3806d97..2057c8a 100644
+--- a/drivers/clk/sunxi/clk-factors.c
++++ b/drivers/clk/sunxi/clk-factors.c
+@@ -62,7 +62,7 @@ static unsigned long clk_factors_recalc_rate(struct clk_hw *hw,
+ 		p = FACTOR_GET(config->pshift, config->pwidth, reg);
  
- 	reg = of_iomap(node, 0);
+ 	/* Calculate the rate */
+-	rate = (parent_rate * n * (k + 1) >> p) / (m + 1);
++	rate = (parent_rate * (n + config->n_start) * (k + 1) >> p) / (m + 1);
  
-@@ -891,11 +890,8 @@ static void __init sunxi_gates_clk_setup(struct device_node *node,
- 		of_property_read_string_index(node, "clock-output-names",
- 					      j, &clk_name);
- 
--		/* No driver claims this clock, but it should remain gated */
--		ignore = !strcmp("ahb_sdram", clk_name) ? CLK_IGNORE_UNUSED : 0;
--
- 		clk_data->clks[i] = clk_register_gate(NULL, clk_name,
--						      clk_parent, ignore,
-+						      clk_parent, 0,
- 						      reg + 4 * (i/32), i % 32,
- 						      0, &clk_lock);
- 		WARN_ON(IS_ERR(clk_data->clks[i]));
-@@ -1203,6 +1199,7 @@ static void __init sunxi_init_clocks(const char *clocks[], int nclocks)
- 
- static const char *sun4i_a10_critical_clocks[] __initdata = {
- 	"pll5_ddr",
-+	"ahb_sdram",
+ 	return rate;
+ }
+diff --git a/drivers/clk/sunxi/clk-factors.h b/drivers/clk/sunxi/clk-factors.h
+index 02e1a43..d2d0efa 100644
+--- a/drivers/clk/sunxi/clk-factors.h
++++ b/drivers/clk/sunxi/clk-factors.h
+@@ -15,6 +15,7 @@ struct clk_factors_config {
+ 	u8 mwidth;
+ 	u8 pshift;
+ 	u8 pwidth;
++	u8 n_start;
  };
  
- static void __init sun4i_a10_init_clocks(struct device_node *node)
-@@ -1215,6 +1212,7 @@ CLK_OF_DECLARE(sun4i_a10_clk_init, "allwinner,sun4i-a10", sun4i_a10_init_clocks)
- static const char *sun5i_critical_clocks[] __initdata = {
- 	"mbus",
- 	"pll5_ddr",
-+	"ahb_sdram",
- };
- 
- static void __init sun5i_init_clocks(struct device_node *node)
+ struct clk_factors {
 -- 
 2.0.0
 
