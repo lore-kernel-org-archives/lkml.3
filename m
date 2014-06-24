@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756538AbaFXQDX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:03:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33372 "EHLO
+	id S1756550AbaFXQDn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:03:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33367 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965079AbaFXP4a (ORCPT
+	with ESMTP id S965071AbaFXP43 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:56:30 -0400
+	Tue, 24 Jun 2014 11:56:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Meerwald <pmeerw@pmeerw.net>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
         Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.15 46/61] iio: Fix endianness issue in ak8975_read_axis()
-Date: Tue, 24 Jun 2014 11:51:29 -0400
-Message-Id: <20140624154954.882984018@linuxfoundation.org>
+Subject: [PATCH 3.15 45/61] iio: adc: at91: signedness bug in at91_adc_get_trigger_value_by_name()
+Date: Tue, 24 Jun 2014 11:51:28 -0400
+Message-Id: <20140624154954.832950778@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154952.751713761@linuxfoundation.org>
 References: <20140624154952.751713761@linuxfoundation.org>
@@ -29,49 +30,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Meerwald <pmeerw@pmeerw.net>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 8ba42fb7b17649c9ab5b5e79d4e90370a0b4645e upstream.
+commit 4f3bcd878f1d3c730fe00f619b7260c6125d49eb upstream.
 
-i2c_smbus_read_word_data() does host endian conversion already,
-no need for le16_to_cpu()
+at91_adc_get_trigger_value_by_name() was returning -ENOMEM truncated to
+a positive u8 and that doesn't work.  I've changed it to int and
+refactored it to preserve the error code.
 
-Signed-off-by: Peter Meerwald <pmeerw@pmeerw.net>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Tested-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iio/magnetometer/ak8975.c |    9 +--------
- 1 file changed, 1 insertion(+), 8 deletions(-)
+ drivers/iio/adc/at91_adc.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
---- a/drivers/iio/magnetometer/ak8975.c
-+++ b/drivers/iio/magnetometer/ak8975.c
-@@ -352,8 +352,6 @@ static int ak8975_read_axis(struct iio_d
+--- a/drivers/iio/adc/at91_adc.c
++++ b/drivers/iio/adc/at91_adc.c
+@@ -322,12 +322,11 @@ static int at91_adc_channel_init(struct
+ 	return idev->num_channels;
+ }
+ 
+-static u8 at91_adc_get_trigger_value_by_name(struct iio_dev *idev,
++static int at91_adc_get_trigger_value_by_name(struct iio_dev *idev,
+ 					     struct at91_adc_trigger *triggers,
+ 					     const char *trigger_name)
  {
- 	struct ak8975_data *data = iio_priv(indio_dev);
- 	struct i2c_client *client = data->client;
--	u16 meas_reg;
--	s16 raw;
- 	int ret;
+ 	struct at91_adc_state *st = iio_priv(idev);
+-	u8 value = 0;
+ 	int i;
  
- 	mutex_lock(&data->lock);
-@@ -401,16 +399,11 @@ static int ak8975_read_axis(struct iio_d
- 		dev_err(&client->dev, "Read axis data fails\n");
- 		goto exit;
+ 	for (i = 0; i < st->trigger_number; i++) {
+@@ -340,15 +339,16 @@ static u8 at91_adc_get_trigger_value_by_
+ 			return -ENOMEM;
+ 
+ 		if (strcmp(trigger_name, name) == 0) {
+-			value = triggers[i].value;
+ 			kfree(name);
+-			break;
++			if (triggers[i].value == 0)
++				return -EINVAL;
++			return triggers[i].value;
+ 		}
+ 
+ 		kfree(name);
  	}
--	meas_reg = ret;
  
- 	mutex_unlock(&data->lock);
+-	return value;
++	return -EINVAL;
+ }
  
--	/* Endian conversion of the measured values. */
--	raw = (s16) (le16_to_cpu(meas_reg));
--
- 	/* Clamp to valid range. */
--	raw = clamp_t(s16, raw, -4096, 4095);
--	*val = raw;
-+	*val = clamp_t(s16, ret, -4096, 4095);
- 	return IIO_VAL_INT;
+ static int at91_adc_configure_trigger(struct iio_trigger *trig, bool state)
+@@ -358,14 +358,14 @@ static int at91_adc_configure_trigger(st
+ 	struct iio_buffer *buffer = idev->buffer;
+ 	struct at91_adc_reg_desc *reg = st->registers;
+ 	u32 status = at91_adc_readl(st, reg->trigger_register);
+-	u8 value;
++	int value;
+ 	u8 bit;
  
- exit:
+ 	value = at91_adc_get_trigger_value_by_name(idev,
+ 						   st->trigger_list,
+ 						   idev->trig->name);
+-	if (value == 0)
+-		return -EINVAL;
++	if (value < 0)
++		return value;
+ 
+ 	if (state) {
+ 		st->buffer = kmalloc(idev->scan_bytes, GFP_KERNEL);
 
 
