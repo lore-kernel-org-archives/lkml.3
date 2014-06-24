@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932513AbaFXP5U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:57:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33479 "EHLO
+	id S932529AbaFXP5y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:57:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33473 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965257AbaFXP5M (ORCPT
+	with ESMTP id S965251AbaFXP5L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:57:12 -0400
+	Tue, 24 Jun 2014 11:57:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Lars-Peter Clausen <lars@metafoo.de>, Jaroslav Kysela <perex@perex.cz>,
         Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.15 57/61] ALSA: control: Dont access controls outside of protected regions
-Date: Tue, 24 Jun 2014 11:51:40 -0400
-Message-Id: <20140624154955.387757020@linuxfoundation.org>
+Subject: [PATCH 3.15 56/61] ALSA: control: Fix replacing user controls
+Date: Tue, 24 Jun 2014 11:51:39 -0400
+Message-Id: <20140624154955.343276208@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154952.751713761@linuxfoundation.org>
 References: <20140624154952.751713761@linuxfoundation.org>
@@ -31,11 +31,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit fd9f26e4eca5d08a27d12c0933fceef76ed9663d upstream.
+commit 82262a46627bebb0febcc26664746c25cef08563 upstream.
 
-A control that is visible on the card->controls list can be freed at any time.
-This means we must not access any of its memory while not holding the
-controls_rw_lock. Otherwise we risk a use after free access.
+There are two issues with the current implementation for replacing user
+controls. The first is that the code does not check if the control is actually a
+user control and neither does it check if the control is owned by the process
+that tries to remove it. That allows userspace applications to remove arbitrary
+controls, which can cause a user after free if a for example a driver does not
+expect a control to be removed from under its feed.
+
+The second issue is that on one hand when a control is replaced the
+user_ctl_count limit is not checked and on the other hand the user_ctl_count is
+increased (even though the number of user controls does not change). This allows
+userspace, once the user_ctl_count limit as been reached, to repeatedly replace
+a control until user_ctl_count overflows. Once that happens new controls can be
+added effectively bypassing the user_ctl_count limit.
+
+Both issues can be fixed by instead of open-coding the removal of the control
+that is to be replaced to use snd_ctl_remove_user_ctl(). This function does
+proper permission checks as well as decrements user_ctl_count after the control
+has been removed.
+
+Note that by using snd_ctl_remove_user_ctl() the check which returns -EBUSY at
+beginning of the function if the control already exists is removed. This is not
+a problem though since the check is quite useless, because the lock that is
+protecting the control list is released between the check and before adding the
+new control to the list, which means that it is possible that a different
+control with the same settings is added to the list after the check. Luckily
+there is another check that is done while holding the lock in snd_ctl_add(), so
+we'll rely on that to make sure that the same control is not added twice.
 
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 Acked-by: Jaroslav Kysela <perex@perex.cz>
@@ -43,71 +67,50 @@ Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/core/control.c |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ sound/core/control.c |   25 +++++++++----------------
+ 1 file changed, 9 insertions(+), 16 deletions(-)
 
 --- a/sound/core/control.c
 +++ b/sound/core/control.c
-@@ -330,6 +330,7 @@ int snd_ctl_add(struct snd_card *card, s
- {
- 	struct snd_ctl_elem_id id;
- 	unsigned int idx;
-+	unsigned int count;
- 	int err = -EINVAL;
+@@ -1154,8 +1154,6 @@ static int snd_ctl_elem_add(struct snd_c
+ 	struct user_element *ue;
+ 	int idx, err;
  
- 	if (! kcontrol)
-@@ -358,8 +359,9 @@ int snd_ctl_add(struct snd_card *card, s
- 	card->controls_count += kcontrol->count;
- 	kcontrol->id.numid = card->last_numid + 1;
- 	card->last_numid += kcontrol->count;
-+	count = kcontrol->count;
- 	up_write(&card->controls_rwsem);
--	for (idx = 0; idx < kcontrol->count; idx++, id.index++, id.numid++)
-+	for (idx = 0; idx < count; idx++, id.index++, id.numid++)
- 		snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_ADD, &id);
- 	return 0;
- 
-@@ -388,6 +390,7 @@ int snd_ctl_replace(struct snd_card *car
- 		    bool add_on_replace)
- {
- 	struct snd_ctl_elem_id id;
-+	unsigned int count;
- 	unsigned int idx;
- 	struct snd_kcontrol *old;
- 	int ret;
-@@ -423,8 +426,9 @@ add:
- 	card->controls_count += kcontrol->count;
- 	kcontrol->id.numid = card->last_numid + 1;
- 	card->last_numid += kcontrol->count;
-+	count = kcontrol->count;
- 	up_write(&card->controls_rwsem);
--	for (idx = 0; idx < kcontrol->count; idx++, id.index++, id.numid++)
-+	for (idx = 0; idx < count; idx++, id.index++, id.numid++)
- 		snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_ADD, &id);
- 	return 0;
- 
-@@ -897,9 +901,9 @@ static int snd_ctl_elem_write(struct snd
- 			result = kctl->put(kctl, control);
- 		}
- 		if (result > 0) {
-+			struct snd_ctl_elem_id id = control->id;
- 			up_read(&card->controls_rwsem);
--			snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_VALUE,
--				       &control->id);
-+			snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_VALUE, &id);
- 			return 0;
- 		}
+-	if (!replace && card->user_ctl_count >= MAX_USER_CONTROLS)
+-		return -ENOMEM;
+ 	if (info->count < 1)
+ 		return -EINVAL;
+ 	access = info->access == 0 ? SNDRV_CTL_ELEM_ACCESS_READWRITE :
+@@ -1164,21 +1162,16 @@ static int snd_ctl_elem_add(struct snd_c
+ 				 SNDRV_CTL_ELEM_ACCESS_TLV_READWRITE));
+ 	info->id.numid = 0;
+ 	memset(&kctl, 0, sizeof(kctl));
+-	down_write(&card->controls_rwsem);
+-	_kctl = snd_ctl_find_id(card, &info->id);
+-	err = 0;
+-	if (_kctl) {
+-		if (replace)
+-			err = snd_ctl_remove(card, _kctl);
+-		else
+-			err = -EBUSY;
+-	} else {
+-		if (replace)
+-			err = -ENOENT;
++
++	if (replace) {
++		err = snd_ctl_remove_user_ctl(file, &info->id);
++		if (err)
++			return err;
  	}
-@@ -1333,8 +1337,9 @@ static int snd_ctl_tlv_ioctl(struct snd_
- 		}
- 		err = kctl->tlv.c(kctl, op_flag, tlv.length, _tlv->tlv);
- 		if (err > 0) {
-+			struct snd_ctl_elem_id id = kctl->id;
- 			up_read(&card->controls_rwsem);
--			snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_TLV, &kctl->id);
-+			snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_TLV, &id);
- 			return 0;
- 		}
- 	} else {
+-	up_write(&card->controls_rwsem);
+-	if (err < 0)
+-		return err;
++
++	if (card->user_ctl_count >= MAX_USER_CONTROLS)
++		return -ENOMEM;
++
+ 	memcpy(&kctl.id, &info->id, sizeof(info->id));
+ 	kctl.count = info->owner ? info->owner : 1;
+ 	access |= SNDRV_CTL_ELEM_ACCESS_USER;
 
 
