@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753171AbaFXKNi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 06:13:38 -0400
-Received: from mailapp01.imgtec.com ([195.59.15.196]:32924 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751855AbaFXKNh (ORCPT
+	id S1753314AbaFXKOU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 06:14:20 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:41208 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752190AbaFXKOS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 06:13:37 -0400
-Message-ID: <53A94F4D.10605@imgtec.com>
-Date: Tue, 24 Jun 2014 11:13:33 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 24 Jun 2014 06:14:18 -0400
+Date: Tue, 24 Jun 2014 11:14:13 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: arizona: Add comment to explain non-devm
+ regulator_get
+Message-ID: <20140624101413.GF13803@lee--X1>
+References: <1403190263-32737-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-To: Daniel Walter <dwalter@google.com>, Ralf Baechle <ralf@linux-mips.org>
-CC: <linux-mips@linux-mips.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] arch/mips rb532: replace mac_addr parsing
-References: <20140624084540.GA22930@google.com>
-In-Reply-To: <20140624084540.GA22930@google.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.101]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1403190263-32737-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+> To avoid someone attempting to change this regulator_get back into a
+> devm_regulator_get put a comment in explaining that devres can't be used
+> here as the regulator will be destroyed before devres calls
+> regulator_put.
+> 
+> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+> ---
+>  drivers/mfd/arizona-core.c |    6 ++++++
+>  1 files changed, 6 insertions(+), 0 deletions(-)
 
-On 24/06/14 09:45, Daniel Walter wrote:
-> @@ -333,7 +311,13 @@ static int __init plat_setup_devices(void)
->  static int __init setup_kmac(char *s)
->  {
->  	printk(KERN_INFO "korina mac = %s\n", s);
-> -	parse_mac_addr(s);
-> +	sscanf(s, "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",
-> +			&korina_dev0_data.mac[0],
-> +			&korina_dev0_data.mac[1],
-> +			&korina_dev0_data.mac[2],
-> +			&korina_dev0_data.mac[3],
-> +			&korina_dev0_data.mac[4],
-> +			&korina_dev0_data.mac[5]);
+Applied, thanks.
 
-Does it make sense to go one better and use mac_pton() for this?
+> diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
+> index 27936fe..b4f22e7 100644
+> --- a/drivers/mfd/arizona-core.c
+> +++ b/drivers/mfd/arizona-core.c
+> @@ -683,6 +683,12 @@ int arizona_dev_init(struct arizona *arizona)
+>  		goto err_early;
+>  	}
+>  
+> +	/**
+> +	 * Don't use devres here because the only device we have to get
+> +	 * against is the MFD device and DCVDD will likely be supplied by
+> +	 * one of its children. Meaning that the regulator will be
+> +	 * destroyed by the time devres calls regulator put.
+> +	 */
+>  	arizona->dcvdd = regulator_get(arizona->dev, "DCVDD");
+>  	if (IS_ERR(arizona->dcvdd)) {
+>  		ret = PTR_ERR(arizona->dcvdd);
 
-Cheers
-James
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
