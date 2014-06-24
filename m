@@ -1,81 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754092AbaFXOkW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 10:40:22 -0400
-Received: from mga09.intel.com ([134.134.136.24]:53886 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753447AbaFXOkU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 10:40:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,538,1400050800"; 
-   d="scan'208";a="562520288"
-Message-ID: <53A99064.5040505@linux.intel.com>
-Date: Tue, 24 Jun 2014 17:51:16 +0300
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1754126AbaFXOkq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 10:40:46 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:34015 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753921AbaFXOkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 10:40:45 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Alexey Kardashevskiy'" <aik@ozlabs.ru>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Alexander Graf <agraf@suse.de>
+CC: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: RE: [PATCH] vfio: Fix endianness handling for emulated BARs
+Thread-Topic: [PATCH] vfio: Fix endianness handling for emulated BARs
+Thread-Index: AQHPj7lOvm3ulD4XbEqGzGoVRPxJOZuAU8wQ
+Date: Tue, 24 Jun 2014 14:40:07 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D17263229@AcuExch.aculab.com>
+References: <1403091391-31780-1-git-send-email-aik@ozlabs.ru>
+		 <1403116512.3707.175.camel@ul30vt.home> <53A233E9.6030006@ozlabs.ru>
+		 <53A241F6.9010307@ozlabs.ru> <53A25D74.5000804@ozlabs.ru>
+		 <1403234514.3707.278.camel@ul30vt.home> <1403305961.4587.66.camel@pasglop>
+	 <53A94EBD.101@ozlabs.ru> <53A955F5.6050801@suse.de>
+	 <53A9741B.1040500@ozlabs.ru> <53A97486.4070604@suse.de>
+	 <53A976B7.3070709@ozlabs.ru> <53A97BA9.4020702@suse.de>
+ <1403619685.16078.15.camel@ul30vt.home> <53A98C38.8020205@ozlabs.ru>
+In-Reply-To: <53A98C38.8020205@ozlabs.ru>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dan.j.williams@intel.com, Julius Werner <jwerner@chromium.org>
-Subject: Re: [PATCH 3/5] usb: xhci: Correct last context entry calculation
- for Configure Endpoint
-References: <1403618059-24533-1-git-send-email-mathias.nyman@linux.intel.com> <1403619322-24704-1-git-send-email-mathias.nyman@linux.intel.com> <1403619322-24704-3-git-send-email-mathias.nyman@linux.intel.com> <20140624141028.GA2844@kroah.com>
-In-Reply-To: <20140624141028.GA2844@kroah.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s5OEeonD028620
 
-On 06/24/2014 05:10 PM, Greg KH wrote:
-> On Tue, Jun 24, 2014 at 05:14:42PM +0300, Mathias Nyman wrote:
->> From: Julius Werner <jwerner@chromium.org>
->>
->> The current XHCI driver recalculates the Context Entries field in the
->> Slot Context on every add_endpoint() and drop_endpoint() call. In the
->> case of drop_endpoint(), it seems to assume that the add_flags will
->> always contain every endpoint for the new configuration, which is not
->> necessarily correct if you don't make assumptions about how the USB core
->> uses the add_endpoint/drop_endpoint interface (add_flags only contains
->> endpoints that are new additions in the new configuration).
->>
->> Furthermore, EP0_FLAG is not consistently set in add_flags throughout
->> the lifetime of a device. This means that when all endpoints are
->> dropped, the Context Entries field can be set to 0 (which is invalid and
->> may cause a Parameter Error) or -1 (which is interpreted as 31 and
->> causes the driver to keep using the old, incorrect value).
->>
->> The only surefire way to set this field right is to also take all
->> existing endpoints into account, and to force the value to 1 (meaning
->> only EP0 is active) if no other endpoint is found. This patch implements
->> that as a single step in the final check_bandwidth() call and removes
->> the intermediary calculations from add_endpoint() and drop_endpoint().
->>
->> Signed-off-by: Julius Werner <jwerner@chromium.org>
->> Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
->> ---
->>  drivers/usb/host/xhci.c | 51 +++++++++++++++++--------------------------------
->>  1 file changed, 18 insertions(+), 33 deletions(-)
+From: Alexey Kardashevskiy
+...
+> >> So IMHO we should either create new, generic iowrite helpers that don't
+> >> do any endian swapping at all or do iowrite32(cpu_to_le32(val)) calls.
+> >
+> > I'm one of those people for whom iowrite32(le32_to_cpu(val)) makes sense
 > 
-> Is this something for older (i.e. stable) kernels?
 > 
+> I do not understand why @val is considered LE here and need to be converted
+> to CPU. Really. I truly believe it should be cpu_to_le32().
 
-This was intentionally left out of stable, reasoning in a previous mail was:
+Think about it carefully...
 
-"We discussed with Sarah that we should try this out and queue it for 
-usb-linus. This clearly fixes the generation of a invalid slot context 
-if all endpoints are dropped.
+Apparently iowrite32() is writing a 'cpu' value out 'le'.
+So if you have a 'le' value you need to convert it to 'cpu' first.
 
-But because there hasn't been any reported issue about the other case 
-this changes (always setting context entries to last valid ep in target 
-configuration), and spec still has this tiny contradiction in this case, 
-we should keep this out of stable. At least for now, until it gets some 
-real world testing coverage."
+I really won't ask how 'be' ppc managed to get 'le' on-chip peripherals.
 
-The mail:
-http://marc.info/?l=linux-usb&m=139879120000807&w=2
+	David
 
-Or if you prefer this patch could go to usb-next instead.
-
--Mathias
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
