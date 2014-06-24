@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756104AbaFXQVq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:21:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33077 "EHLO
+	id S1756151AbaFXQWD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:22:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33067 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755835AbaFXPyo (ORCPT
+	with ESMTP id S964827AbaFXPyl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:54:44 -0400
+	Tue, 24 Jun 2014 11:54:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Robert Hodaszi <robert.hodaszi@digi.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Marek Vasut <marex@denx.de>, Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.14 54/68] iio: mxs-lradc: fix divider
-Date: Tue, 24 Jun 2014 11:51:13 -0400
-Message-Id: <20140624154726.399692395@linuxfoundation.org>
+        "David S. Miller" <davem@davemloft.net>,
+        stephen hemminger <stephen@networkplumber.org>,
+        Pravin B Shelar <pshelar@nicira.com>,
+        Cong Wang <cwang@twopensource.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>
+Subject: [PATCH 3.14 32/68] vxlan: use dev->needed_headroom instead of dev->hard_header_len
+Date: Tue, 24 Jun 2014 11:50:51 -0400
+Message-Id: <20140624154725.367671252@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154723.907894814@linuxfoundation.org>
 References: <20140624154723.907894814@linuxfoundation.org>
@@ -30,58 +32,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Robert Hodaszi <robert.hodaszi@digi.com>
+From: Cong Wang <cwang@twopensource.com>
 
-commit 19bc4981a213d0c5b0e1e8b08815c0b26f01ec54 upstream.
+[ Upstream commit 2853af6a2ea1a8ed09b09dd4fb578e7f435e8d34 ]
 
-All channels' single measurement are happening on CH 0. So enabling / disabling
-the divider once is not enough, because it has impact on all channels.
+When we mirror packets from a vxlan tunnel to other device,
+the mirror device should see the same packets (that is, without
+outer header). Because vxlan tunnel sets dev->hard_header_len,
+tcf_mirred() resets mac header back to outer mac, the mirror device
+actually sees packets with outer headers
 
-Set only a flag, then check this on each measurement, and enable / disable the
-divider as required.
+Vxlan tunnel should set dev->needed_headroom instead of
+dev->hard_header_len, like what other ip tunnels do. This fixes
+the above problem.
 
-Signed-off-by: Robert Hodaszi <robert.hodaszi@digi.com>
-Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Acked-by: Marek Vasut <marex@denx.de>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: stephen hemminger <stephen@networkplumber.org>
+Cc: Pravin B Shelar <pshelar@nicira.com>
+Signed-off-by: Cong Wang <cwang@twopensource.com>
+Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/staging/iio/adc/mxs-lradc.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ drivers/net/vxlan.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
---- a/drivers/staging/iio/adc/mxs-lradc.c
-+++ b/drivers/staging/iio/adc/mxs-lradc.c
-@@ -846,6 +846,14 @@ static int mxs_lradc_read_single(struct
- 			LRADC_CTRL1);
- 	mxs_lradc_reg_clear(lradc, 0xff, LRADC_CTRL0);
+--- a/drivers/net/vxlan.c
++++ b/drivers/net/vxlan.c
+@@ -2282,9 +2282,9 @@ static void vxlan_setup(struct net_devic
+ 	eth_hw_addr_random(dev);
+ 	ether_setup(dev);
+ 	if (vxlan->default_dst.remote_ip.sa.sa_family == AF_INET6)
+-		dev->hard_header_len = ETH_HLEN + VXLAN6_HEADROOM;
++		dev->needed_headroom = ETH_HLEN + VXLAN6_HEADROOM;
+ 	else
+-		dev->hard_header_len = ETH_HLEN + VXLAN_HEADROOM;
++		dev->needed_headroom = ETH_HLEN + VXLAN_HEADROOM;
  
-+	/* Enable / disable the divider per requirement */
-+	if (test_bit(chan, &lradc->is_divided))
-+		mxs_lradc_reg_set(lradc, 1 << LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET,
-+			LRADC_CTRL2);
-+	else
-+		mxs_lradc_reg_clear(lradc,
-+			1 << LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET, LRADC_CTRL2);
-+
- 	/* Clean the slot's previous content, then set new one. */
- 	mxs_lradc_reg_clear(lradc, LRADC_CTRL4_LRADCSELECT_MASK(0), LRADC_CTRL4);
- 	mxs_lradc_reg_set(lradc, chan, LRADC_CTRL4);
-@@ -964,15 +972,11 @@ static int mxs_lradc_write_raw(struct ii
- 		if (val == scale_avail[MXS_LRADC_DIV_DISABLED].integer &&
- 		    val2 == scale_avail[MXS_LRADC_DIV_DISABLED].nano) {
- 			/* divider by two disabled */
--			writel(1 << LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET,
--			       lradc->base + LRADC_CTRL2 + STMP_OFFSET_REG_CLR);
- 			clear_bit(chan->channel, &lradc->is_divided);
- 			ret = 0;
- 		} else if (val == scale_avail[MXS_LRADC_DIV_ENABLED].integer &&
- 			   val2 == scale_avail[MXS_LRADC_DIV_ENABLED].nano) {
- 			/* divider by two enabled */
--			writel(1 << LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET,
--			       lradc->base + LRADC_CTRL2 + STMP_OFFSET_REG_SET);
- 			set_bit(chan->channel, &lradc->is_divided);
- 			ret = 0;
- 		}
+ 	dev->netdev_ops = &vxlan_netdev_ops;
+ 	dev->destructor = free_netdev;
+@@ -2667,8 +2667,7 @@ static int vxlan_newlink(struct net *net
+ 		if (!tb[IFLA_MTU])
+ 			dev->mtu = lowerdev->mtu - (use_ipv6 ? VXLAN6_HEADROOM : VXLAN_HEADROOM);
+ 
+-		/* update header length based on lower device */
+-		dev->hard_header_len = lowerdev->hard_header_len +
++		dev->needed_headroom = lowerdev->hard_header_len +
+ 				       (use_ipv6 ? VXLAN6_HEADROOM : VXLAN_HEADROOM);
+ 	} else if (use_ipv6)
+ 		vxlan->flags |= VXLAN_F_IPV6;
 
 
