@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755942AbaFXUdq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:33:46 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47881 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755870AbaFXUdo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755896AbaFXUdo (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 24 Jun 2014 16:33:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47872 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755850AbaFXUdl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 16:33:41 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Gleixner <tglx@linutronix.de>, Kees Cook <keescook@chromium.org>,
-        Will Drewry <wad@chromium.org>, Darren Hart <dvhart@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Mikulas Patocka <mpatocka@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 63/65] futex: Make lookup_pi_state more robust
-Date: Tue, 24 Jun 2014 13:30:23 -0700
-Message-Id: <1403641825-12825-64-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 23/65] dm crypt: fix cpu hotplug crash by removing per-cpu structure
+Date: Tue, 24 Jun 2014 13:29:43 -0700
+Message-Id: <1403641825-12825-24-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
 References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
@@ -29,281 +27,226 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 54a217887a7b658e2650c3feff22756ab80c7339 upstream.
+commit 610f2de3559c383caf8fbbf91e9968102dff7ca0 upstream.
 
-The current implementation of lookup_pi_state has ambigous handling of
-the TID value 0 in the user space futex.  We can get into the kernel
-even if the TID value is 0, because either there is a stale waiters bit
-or the owner died bit is set or we are called from the requeue_pi path
-or from user space just for fun.
+The DM crypt target used per-cpu structures to hold pointers to a
+ablkcipher_request structure.  The code assumed that the work item keeps
+executing on a single CPU, so it didn't use synchronization when
+accessing this structure.
 
-The current code avoids an explicit sanity check for pid = 0 in case
-that kernel internal state (waiters) are found for the user space
-address.  This can lead to state leakage and worse under some
-circumstances.
+If a CPU is disabled by writing 0 to /sys/devices/system/cpu/cpu*/online,
+the work item could be moved to another CPU.  This causes dm-crypt
+crashes, like the following, because the code starts using an incorrect
+ablkcipher_request:
 
-Handle the cases explicit:
+ smpboot: CPU 7 is now offline
+ BUG: unable to handle kernel NULL pointer dereference at 0000000000000130
+ IP: [<ffffffffa1862b3d>] crypt_convert+0x12d/0x3c0 [dm_crypt]
+ ...
+ Call Trace:
+  [<ffffffffa1864415>] ? kcryptd_crypt+0x305/0x470 [dm_crypt]
+  [<ffffffff81062060>] ? finish_task_switch+0x40/0xc0
+  [<ffffffff81052a28>] ? process_one_work+0x168/0x470
+  [<ffffffff8105366b>] ? worker_thread+0x10b/0x390
+  [<ffffffff81053560>] ? manage_workers.isra.26+0x290/0x290
+  [<ffffffff81058d9f>] ? kthread+0xaf/0xc0
+  [<ffffffff81058cf0>] ? kthread_create_on_node+0x120/0x120
+  [<ffffffff813464ac>] ? ret_from_fork+0x7c/0xb0
+  [<ffffffff81058cf0>] ? kthread_create_on_node+0x120/0x120
 
-       Waiter | pi_state | pi->owner | uTID      | uODIED | ?
+Fix this bug by removing the per-cpu definition.  The structure
+ablkcipher_request is accessed via a pointer from convert_context.
+Consequently, if the work item is rescheduled to a different CPU, the
+thread still uses the same ablkcipher_request.
 
-  [1]  NULL   | ---      | ---       | 0         | 0/1    | Valid
-  [2]  NULL   | ---      | ---       | >0        | 0/1    | Valid
+This change may undermine performance improvements intended by commit
+c0297721 ("dm crypt: scale to multiple cpus") on select hardware.  In
+practice no performance difference was observed on recent hardware.  But
+regardless, correctness is more important than performance.
 
-  [3]  Found  | NULL     | --        | Any       | 0/1    | Invalid
-
-  [4]  Found  | Found    | NULL      | 0         | 1      | Valid
-  [5]  Found  | Found    | NULL      | >0        | 1      | Invalid
-
-  [6]  Found  | Found    | task      | 0         | 1      | Valid
-
-  [7]  Found  | Found    | NULL      | Any       | 0      | Invalid
-
-  [8]  Found  | Found    | task      | ==taskTID | 0/1    | Valid
-  [9]  Found  | Found    | task      | 0         | 0      | Invalid
-  [10] Found  | Found    | task      | !=taskTID | 0/1    | Invalid
-
- [1] Indicates that the kernel can acquire the futex atomically. We
-     came came here due to a stale FUTEX_WAITERS/FUTEX_OWNER_DIED bit.
-
- [2] Valid, if TID does not belong to a kernel thread. If no matching
-     thread is found then it indicates that the owner TID has died.
-
- [3] Invalid. The waiter is queued on a non PI futex
-
- [4] Valid state after exit_robust_list(), which sets the user space
-     value to FUTEX_WAITERS | FUTEX_OWNER_DIED.
-
- [5] The user space value got manipulated between exit_robust_list()
-     and exit_pi_state_list()
-
- [6] Valid state after exit_pi_state_list() which sets the new owner in
-     the pi_state but cannot access the user space value.
-
- [7] pi_state->owner can only be NULL when the OWNER_DIED bit is set.
-
- [8] Owner and user space value match
-
- [9] There is no transient state which sets the user space TID to 0
-     except exit_robust_list(), but this is indicated by the
-     FUTEX_OWNER_DIED bit. See [4]
-
-[10] There is no transient state which leaves owner and user space
-     TID out of sync.
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Will Drewry <wad@chromium.org>
-Cc: Darren Hart <dvhart@linux.intel.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/futex.c | 134 +++++++++++++++++++++++++++++++++++++++++++++------------
- 1 file changed, 106 insertions(+), 28 deletions(-)
+ drivers/md/dm-crypt.c | 61 ++++++++++-----------------------------------------
+ 1 file changed, 12 insertions(+), 49 deletions(-)
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 5f5a635..9396b7b 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -588,10 +588,58 @@ void exit_pi_state_list(struct task_struct *curr)
- 	raw_spin_unlock_irq(&curr->pi_lock);
+diff --git a/drivers/md/dm-crypt.c b/drivers/md/dm-crypt.c
+index 2ae151e..dd9e02c 100644
+--- a/drivers/md/dm-crypt.c
++++ b/drivers/md/dm-crypt.c
+@@ -18,7 +18,6 @@
+ #include <linux/crypto.h>
+ #include <linux/workqueue.h>
+ #include <linux/backing-dev.h>
+-#include <linux/percpu.h>
+ #include <linux/atomic.h>
+ #include <linux/scatterlist.h>
+ #include <asm/page.h>
+@@ -44,6 +43,7 @@ struct convert_context {
+ 	unsigned int idx_out;
+ 	sector_t cc_sector;
+ 	atomic_t cc_pending;
++	struct ablkcipher_request *req;
+ };
+ 
+ /*
+@@ -105,15 +105,7 @@ struct iv_lmk_private {
+ enum flags { DM_CRYPT_SUSPENDED, DM_CRYPT_KEY_VALID };
+ 
+ /*
+- * Duplicated per-CPU state for cipher.
+- */
+-struct crypt_cpu {
+-	struct ablkcipher_request *req;
+-};
+-
+-/*
+- * The fields in here must be read only after initialization,
+- * changing state should be in crypt_cpu.
++ * The fields in here must be read only after initialization.
+  */
+ struct crypt_config {
+ 	struct dm_dev *dev;
+@@ -143,12 +135,6 @@ struct crypt_config {
+ 	sector_t iv_offset;
+ 	unsigned int iv_size;
+ 
+-	/*
+-	 * Duplicated per cpu state. Access through
+-	 * per_cpu_ptr() only.
+-	 */
+-	struct crypt_cpu __percpu *cpu;
+-
+ 	/* ESSIV: struct crypto_cipher *essiv_tfm */
+ 	void *iv_private;
+ 	struct crypto_ablkcipher **tfms;
+@@ -184,11 +170,6 @@ static void clone_init(struct dm_crypt_io *, struct bio *);
+ static void kcryptd_queue_crypt(struct dm_crypt_io *io);
+ static u8 *iv_of_dmreq(struct crypt_config *cc, struct dm_crypt_request *dmreq);
+ 
+-static struct crypt_cpu *this_crypt_config(struct crypt_config *cc)
+-{
+-	return this_cpu_ptr(cc->cpu);
+-}
+-
+ /*
+  * Use this to access cipher attributes that are the same for each CPU.
+  */
+@@ -738,16 +719,15 @@ static void kcryptd_async_done(struct crypto_async_request *async_req,
+ static void crypt_alloc_req(struct crypt_config *cc,
+ 			    struct convert_context *ctx)
+ {
+-	struct crypt_cpu *this_cc = this_crypt_config(cc);
+ 	unsigned key_index = ctx->cc_sector & (cc->tfms_count - 1);
+ 
+-	if (!this_cc->req)
+-		this_cc->req = mempool_alloc(cc->req_pool, GFP_NOIO);
++	if (!ctx->req)
++		ctx->req = mempool_alloc(cc->req_pool, GFP_NOIO);
+ 
+-	ablkcipher_request_set_tfm(this_cc->req, cc->tfms[key_index]);
+-	ablkcipher_request_set_callback(this_cc->req,
++	ablkcipher_request_set_tfm(ctx->req, cc->tfms[key_index]);
++	ablkcipher_request_set_callback(ctx->req,
+ 	    CRYPTO_TFM_REQ_MAY_BACKLOG | CRYPTO_TFM_REQ_MAY_SLEEP,
+-	    kcryptd_async_done, dmreq_of_req(cc, this_cc->req));
++	    kcryptd_async_done, dmreq_of_req(cc, ctx->req));
  }
  
-+/*
-+ * We need to check the following states:
-+ *
-+ *      Waiter | pi_state | pi->owner | uTID      | uODIED | ?
-+ *
-+ * [1]  NULL   | ---      | ---       | 0         | 0/1    | Valid
-+ * [2]  NULL   | ---      | ---       | >0        | 0/1    | Valid
-+ *
-+ * [3]  Found  | NULL     | --        | Any       | 0/1    | Invalid
-+ *
-+ * [4]  Found  | Found    | NULL      | 0         | 1      | Valid
-+ * [5]  Found  | Found    | NULL      | >0        | 1      | Invalid
-+ *
-+ * [6]  Found  | Found    | task      | 0         | 1      | Valid
-+ *
-+ * [7]  Found  | Found    | NULL      | Any       | 0      | Invalid
-+ *
-+ * [8]  Found  | Found    | task      | ==taskTID | 0/1    | Valid
-+ * [9]  Found  | Found    | task      | 0         | 0      | Invalid
-+ * [10] Found  | Found    | task      | !=taskTID | 0/1    | Invalid
-+ *
-+ * [1]	Indicates that the kernel can acquire the futex atomically. We
-+ *	came came here due to a stale FUTEX_WAITERS/FUTEX_OWNER_DIED bit.
-+ *
-+ * [2]	Valid, if TID does not belong to a kernel thread. If no matching
-+ *      thread is found then it indicates that the owner TID has died.
-+ *
-+ * [3]	Invalid. The waiter is queued on a non PI futex
-+ *
-+ * [4]	Valid state after exit_robust_list(), which sets the user space
-+ *	value to FUTEX_WAITERS | FUTEX_OWNER_DIED.
-+ *
-+ * [5]	The user space value got manipulated between exit_robust_list()
-+ *	and exit_pi_state_list()
-+ *
-+ * [6]	Valid state after exit_pi_state_list() which sets the new owner in
-+ *	the pi_state but cannot access the user space value.
-+ *
-+ * [7]	pi_state->owner can only be NULL when the OWNER_DIED bit is set.
-+ *
-+ * [8]	Owner and user space value match
-+ *
-+ * [9]	There is no transient state which sets the user space TID to 0
-+ *	except exit_robust_list(), but this is indicated by the
-+ *	FUTEX_OWNER_DIED bit. See [4]
-+ *
-+ * [10] There is no transient state which leaves owner and user space
-+ *	TID out of sync.
-+ */
- static int
- lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
--		union futex_key *key, struct futex_pi_state **ps,
--		struct task_struct *task)
-+		union futex_key *key, struct futex_pi_state **ps)
+ /*
+@@ -756,7 +736,6 @@ static void crypt_alloc_req(struct crypt_config *cc,
+ static int crypt_convert(struct crypt_config *cc,
+ 			 struct convert_context *ctx)
  {
- 	struct futex_pi_state *pi_state = NULL;
- 	struct futex_q *this, *next;
-@@ -604,12 +652,13 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
- 	plist_for_each_entry_safe(this, next, head, list) {
- 		if (match_futex(&this->key, key)) {
- 			/*
--			 * Another waiter already exists - bump up
--			 * the refcount and return its pi_state:
-+			 * Sanity check the waiter before increasing
-+			 * the refcount and attaching to it.
- 			 */
- 			pi_state = this->pi_state;
- 			/*
--			 * Userspace might have messed up non-PI and PI futexes
-+			 * Userspace might have messed up non-PI and
-+			 * PI futexes [3]
- 			 */
- 			if (unlikely(!pi_state))
- 				return -EINVAL;
-@@ -617,44 +666,70 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
- 			WARN_ON(!atomic_read(&pi_state->refcount));
+-	struct crypt_cpu *this_cc = this_crypt_config(cc);
+ 	int r;
  
- 			/*
--			 * When pi_state->owner is NULL then the owner died
--			 * and another waiter is on the fly. pi_state->owner
--			 * is fixed up by the task which acquires
--			 * pi_state->rt_mutex.
--			 *
--			 * We do not check for pid == 0 which can happen when
--			 * the owner died and robust_list_exit() cleared the
--			 * TID.
-+			 * Handle the owner died case:
- 			 */
--			if (pid && pi_state->owner) {
-+			if (uval & FUTEX_OWNER_DIED) {
- 				/*
--				 * Bail out if user space manipulated the
--				 * futex value.
-+				 * exit_pi_state_list sets owner to NULL and
-+				 * wakes the topmost waiter. The task which
-+				 * acquires the pi_state->rt_mutex will fixup
-+				 * owner.
- 				 */
--				if (pid != task_pid_vnr(pi_state->owner))
-+				if (!pi_state->owner) {
-+					/*
-+					 * No pi state owner, but the user
-+					 * space TID is not 0. Inconsistent
-+					 * state. [5]
-+					 */
-+					if (pid)
-+						return -EINVAL;
-+					/*
-+					 * Take a ref on the state and
-+					 * return. [4]
-+					 */
-+					goto out_state;
-+				}
-+
-+				/*
-+				 * If TID is 0, then either the dying owner
-+				 * has not yet executed exit_pi_state_list()
-+				 * or some waiter acquired the rtmutex in the
-+				 * pi state, but did not yet fixup the TID in
-+				 * user space.
-+				 *
-+				 * Take a ref on the state and return. [6]
-+				 */
-+				if (!pid)
-+					goto out_state;
-+			} else {
-+				/*
-+				 * If the owner died bit is not set,
-+				 * then the pi_state must have an
-+				 * owner. [7]
-+				 */
-+				if (!pi_state->owner)
- 					return -EINVAL;
- 			}
+ 	atomic_set(&ctx->cc_pending, 1);
+@@ -768,7 +747,7 @@ static int crypt_convert(struct crypt_config *cc,
  
- 			/*
--			 * Protect against a corrupted uval. If uval
--			 * is 0x80000000 then pid is 0 and the waiter
--			 * bit is set. So the deadlock check in the
--			 * calling code has failed and we did not fall
--			 * into the check above due to !pid.
-+			 * Bail out if user space manipulated the
-+			 * futex value. If pi state exists then the
-+			 * owner TID must be the same as the user
-+			 * space TID. [9/10]
- 			 */
--			if (task && pi_state->owner == task)
--				return -EDEADLK;
-+			if (pid != task_pid_vnr(pi_state->owner))
-+				return -EINVAL;
+ 		atomic_inc(&ctx->cc_pending);
  
-+		out_state:
- 			atomic_inc(&pi_state->refcount);
- 			*ps = pi_state;
+-		r = crypt_convert_block(cc, ctx, this_cc->req);
++		r = crypt_convert_block(cc, ctx, ctx->req);
+ 
+ 		switch (r) {
+ 		/* async */
+@@ -777,7 +756,7 @@ static int crypt_convert(struct crypt_config *cc,
+ 			INIT_COMPLETION(ctx->restart);
+ 			/* fall through*/
+ 		case -EINPROGRESS:
+-			this_cc->req = NULL;
++			ctx->req = NULL;
+ 			ctx->cc_sector++;
+ 			continue;
+ 
+@@ -877,6 +856,7 @@ static struct dm_crypt_io *crypt_io_alloc(struct crypt_config *cc,
+ 	io->sector = sector;
+ 	io->error = 0;
+ 	io->base_io = NULL;
++	io->ctx.req = NULL;
+ 	atomic_set(&io->io_pending, 0);
+ 
+ 	return io;
+@@ -902,6 +882,8 @@ static void crypt_dec_pending(struct dm_crypt_io *io)
+ 	if (!atomic_dec_and_test(&io->io_pending))
+ 		return;
+ 
++	if (io->ctx.req)
++		mempool_free(io->ctx.req, cc->req_pool);
+ 	mempool_free(io, cc->io_pool);
+ 
+ 	if (likely(!base_io))
+@@ -1327,8 +1309,6 @@ static int crypt_wipe_key(struct crypt_config *cc)
+ static void crypt_dtr(struct dm_target *ti)
+ {
+ 	struct crypt_config *cc = ti->private;
+-	struct crypt_cpu *cpu_cc;
+-	int cpu;
+ 
+ 	ti->private = NULL;
+ 
+@@ -1340,13 +1320,6 @@ static void crypt_dtr(struct dm_target *ti)
+ 	if (cc->crypt_queue)
+ 		destroy_workqueue(cc->crypt_queue);
+ 
+-	if (cc->cpu)
+-		for_each_possible_cpu(cpu) {
+-			cpu_cc = per_cpu_ptr(cc->cpu, cpu);
+-			if (cpu_cc->req)
+-				mempool_free(cpu_cc->req, cc->req_pool);
+-		}
 -
- 			return 0;
- 		}
- 	}
+ 	crypt_free_tfms(cc);
  
+ 	if (cc->bs)
+@@ -1365,9 +1338,6 @@ static void crypt_dtr(struct dm_target *ti)
+ 	if (cc->dev)
+ 		dm_put_device(ti, cc->dev);
+ 
+-	if (cc->cpu)
+-		free_percpu(cc->cpu);
+-
+ 	kzfree(cc->cipher);
+ 	kzfree(cc->cipher_string);
+ 
+@@ -1422,13 +1392,6 @@ static int crypt_ctr_cipher(struct dm_target *ti,
+ 	if (tmp)
+ 		DMWARN("Ignoring unexpected additional cipher options");
+ 
+-	cc->cpu = __alloc_percpu(sizeof(*(cc->cpu)),
+-				 __alignof__(struct crypt_cpu));
+-	if (!cc->cpu) {
+-		ti->error = "Cannot allocate per cpu state";
+-		goto bad_mem;
+-	}
+-
  	/*
- 	 * We are the first waiter - try to look up the real owner and attach
--	 * the new pi_state to it, but bail out when TID = 0
-+	 * the new pi_state to it, but bail out when TID = 0 [1]
- 	 */
- 	if (!pid)
- 		return -ESRCH;
-@@ -687,6 +762,9 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
- 		return ret;
- 	}
- 
-+	/*
-+	 * No existing pi state. First waiter. [2]
-+	 */
- 	pi_state = alloc_pi_state();
- 
- 	/*
-@@ -807,7 +885,7 @@ retry:
- 	 * We dont have the lock. Look up the PI state (or create it if
- 	 * we are the first waiter):
- 	 */
--	ret = lookup_pi_state(uval, hb, key, ps, task);
-+	ret = lookup_pi_state(uval, hb, key, ps);
- 
- 	if (unlikely(ret)) {
- 		switch (ret) {
-@@ -1410,7 +1488,7 @@ retry_private:
- 			 * rereading and handing potential crap to
- 			 * lookup_pi_state.
- 			 */
--			ret = lookup_pi_state(ret, hb2, &key2, &pi_state, NULL);
-+			ret = lookup_pi_state(ret, hb2, &key2, &pi_state);
- 		}
- 
- 		switch (ret) {
+ 	 * For compatibility with the original dm-crypt mapping format, if
+ 	 * only the cipher name is supplied, use cbc-plain.
 -- 
 1.9.1
 
