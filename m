@@ -1,125 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753680AbaFXUZu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:25:50 -0400
-Received: from mail.kernel.org ([198.145.19.201]:39632 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752607AbaFXUZs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:25:48 -0400
-Date: Tue, 24 Jun 2014 17:25:41 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: David Laight <David.Laight@aculab.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        Ondrej =?iso-8859-1?Q?B=EDlka?= <neleai@seznam.cz>,
-        Caitlin Bestler <caitlin.bestler@gmail.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Elie De Brauwer <eliedebrauwer@gmail.com>,
-        David Miller <davem@davemloft.net>,
-        Steven Whitehouse <steve@chygwyn.com>,
-        =?iso-8859-1?Q?R=E9mi?= Denis-Courmont 
-	<remi.denis-courmont@nokia.com>,
-        Paul Moore <paul@paul-moore.com>,
-        Chris Friesen <chris.friesen@windriver.com>
-Subject: Re: [PATCH/RFC] Re: recvmmsg() timeout behavior strangeness [RESEND]
-Message-ID: <20140624202541.GD3456@kernel.org>
-References: <20140527203010.GA2764@kernel.org>
- <5385D47A.3070401@gmail.com>
- <20140528150720.GB2764@kernel.org>
- <063D6719AE5E284EB5DD2968C1650D6D1724F2A0@AcuExch.aculab.com>
- <20140528195004.GD2764@kernel.org>
- <063D6719AE5E284EB5DD2968C1650D6D1724FB67@AcuExch.aculab.com>
- <20140529135547.GG2764@kernel.org>
- <063D6719AE5E284EB5DD2968C1650D6D1724FC78@AcuExch.aculab.com>
- <20140529141705.GI2764@kernel.org>
- <CAKgNAkj-MVfeqEeffWKMNok0yO-Rm1kyY+zhXEy-U9NkB+aLow@mail.gmail.com>
+	id S1754058AbaFXU1D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:27:03 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:49396 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211AbaFXU06 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 16:26:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKgNAkj-MVfeqEeffWKMNok0yO-Rm1kyY+zhXEy-U9NkB+aLow@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140624183550.GB1258@redhat.com>
+References: <1403560693-21809-1-git-send-email-keescook@chromium.org>
+	<1403560693-21809-4-git-send-email-keescook@chromium.org>
+	<20140624165216.GA29272@redhat.com>
+	<CAGXu5j+G8qAkGD7H=3R2iw2ZTqZSrMPa2f=czoEjwSW5wKqUWQ@mail.gmail.com>
+	<20140624183550.GB1258@redhat.com>
+Date: Tue, 24 Jun 2014 13:26:57 -0700
+X-Google-Sender-Auth: Hf9aZEu6watFGlSEbM8Evs2TYCE
+Message-ID: <CAGXu5jJvAhnVVLvwvC54YUWvZngQGAAhoGoqvDsHs3SK723O5w@mail.gmail.com>
+Subject: Re: [PATCH v7 3/9] seccomp: introduce writer locking
+From: Kees Cook <keescook@chromium.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Andy Lutomirski <luto@amacapital.net>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Jun 16, 2014 at 11:58:51AM +0200, Michael Kerrisk (man-pages) escreveu:
-> Hi Arnaldo,
-> 
-> Things have gone quiet ;-). What's the current state of this patch?
+On Tue, Jun 24, 2014 at 11:35 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 06/24, Kees Cook wrote:
+>> On Tue, Jun 24, 2014 at 9:52 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>> >> @@ -1142,6 +1168,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+>> >>  {
+>> >>       int retval;
+>> >>       struct task_struct *p;
+>> >> +     unsigned long irqflags;
+>> >>
+>> >>       if ((clone_flags & (CLONE_NEWNS|CLONE_FS)) == (CLONE_NEWNS|CLONE_FS))
+>> >>               return ERR_PTR(-EINVAL);
+>> >> @@ -1196,7 +1223,6 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+>> >>               goto fork_out;
+>> >>
+>> >>       ftrace_graph_init_task(p);
+>> >> -     get_seccomp_filter(p);
+>> >>
+>> >>       rt_mutex_init_task(p);
+>> >>
+>> >> @@ -1434,7 +1460,13 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+>> >>               p->parent_exec_id = current->self_exec_id;
+>> >>       }
+>> >>
+>> >> -     spin_lock(&current->sighand->siglock);
+>> >> +     spin_lock_irqsave(&current->sighand->siglock, irqflags);
+>> >> +
+>> >> +     /*
+>> >> +      * Copy seccomp details explicitly here, in case they were changed
+>> >> +      * before holding tasklist_lock.
+>> >> +      */
+>> >> +     copy_seccomp(p);
+>> >>
+>> >>       /*
+>> >>        * Process group and session signals need to be delivered to just the
+>> >> @@ -1446,7 +1478,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+>> >>       */
+>> >>       recalc_sigpending();
+>> >>       if (signal_pending(current)) {
+>> >> -             spin_unlock(&current->sighand->siglock);
+>> >> +             spin_unlock_irqrestore(&current->sighand->siglock, irqflags);
+>> >>               write_unlock_irq(&tasklist_lock);
+>> >>               retval = -ERESTARTNOINTR;
+>> >>               goto bad_fork_free_pid;
+>> >> @@ -1486,7 +1518,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+>> >>       }
+>> >>
+>> >>       total_forks++;
+>> >> -     spin_unlock(&current->sighand->siglock);
+>> >> +     spin_unlock_irqrestore(&current->sighand->siglock, irqflags);
+>> >>       write_unlock_irq(&tasklist_lock);
+>> >>       proc_fork_connector(p);
+>> >>       cgroup_post_fork(p);
+>> >
+>> > It seems that the only change copy_process() needs is copy_seccomp() under the locks.
+>> > Everythinh else (irqflags games) looks obviously unneeded?
+>>
+>> I got irq lock dep warnings without these changes.
+>
+> With or without your patches? Could you show the waring?
 
-Yeah, I kept meaning to prod the other people on this thread about what
-they thought about my last messages, patches, etc. :-)
+It seems it's only needed in seccomp itself (I can drop the changes in
+kernel/fork.c). I get no warnings in that case. If I also remove irq
+handling from seccomp, I see:
 
-Can I have acked-by or even tested-by on those? Is it ok?
+[   17.444328]
+[   17.445031] =================================
+[   17.445031] [ INFO: inconsistent lock state ]
+[   17.445031] 3.16.0-rc2+ #289 Not tainted
+[   17.445031] ---------------------------------
+[   17.445031] inconsistent {IN-HARDIRQ-W} -> {HARDIRQ-ON-W} usage.
+[   17.445031] seccomp_bpf_tes/1987 [HC0[0]:SC0[0]:HE1:SE1] takes:
+[   17.445031]  (&(&sighand->siglock)->rlock){?.....}, at:
+[<ffffffff9e2fb7e5>] do_seccomp.part.7+0x25/0xc0
+[   17.445031] {IN-HARDIRQ-W} state was registered at:
+[   17.445031]   [<ffffffff9e2a422a>] mark_irqflags+0x19a/0x1b0
+[   17.445031]   [<ffffffff9e2a4542>] __lock_acquire+0x302/0x9e0
+[   17.445031]   [<ffffffff9e2a5325>] lock_acquire+0x95/0x1e0
+[   17.445031]   [<ffffffff9ebda204>] _raw_spin_lock+0x34/0x50
+[   17.445031]   [<ffffffff9e263e70>] __lock_task_sighand+0xa0/0x230
+[   17.445031]   [<ffffffff9e2652cf>] send_sigqueue+0x3f/0x280
+[   17.445031]   [<ffffffff9e2781e3>] posix_timer_event+0x83/0x140
+[   17.445031]   [<ffffffff9e2782f2>] posix_timer_fn+0x52/0xd0
+[   17.445031]   [<ffffffff9e27d3bc>] __run_hrtimer+0x7c/0x420
+[   17.445031]   [<ffffffff9e27de27>] hrtimer_interrupt+0x107/0x260
+[   17.445031]   [<ffffffff9e235aa6>] local_apic_timer_interrupt+0x36/0x60
+[   17.445031]   [<ffffffff9e235f1e>] smp_apic_timer_interrupt+0x3e/0x60
+[   17.445031]   [<ffffffff9ebdbf2f>] apic_timer_interrupt+0x6f/0x80
+[   17.445031]   [<ffffffff9e20d99a>] arch_cpu_idle+0xa/0x10
+[   17.445031]   [<ffffffff9e29d587>] cpuidle_idle_call+0x157/0x3d0
+[   17.445031]   [<ffffffff9e29d945>] cpu_idle_loop+0x145/0x370
+[   17.445031]   [<ffffffff9e29dbc6>] cpu_startup_entry+0x56/0x60
+[   17.445031]   [<ffffffff9e234544>] start_secondary+0xd4/0xe0
+[   17.445031] irq event stamp: 243
+[   17.445031] hardirqs last  enabled at (243): [<ffffffff9e2b9d00>]
+__call_rcu.constprop.63+0x70/0x120
+[   17.445031] hardirqs last disabled at (242): [<ffffffff9e2b9cd2>]
+__call_rcu.constprop.63+0x42/0x120
+[   17.445031] softirqs last  enabled at (50): [<ffffffff9e256310>]
+__do_softirq+0x1d0/0x4d0
+[   17.445031] softirqs last disabled at (21): [<ffffffff9e2568be>]
+irq_exit+0x8e/0xb0
+[   17.445031]
+[   17.445031] other info that might help us debug this:
+[   17.445031]  Possible unsafe locking scenario:
+[   17.445031]
+[   17.445031]        CPU0
+[   17.445031]        ----
+[   17.445031]   lock(&(&sighand->siglock)->rlock);
+[   17.445031]   <Interrupt>
+[   17.445031]     lock(&(&sighand->siglock)->rlock);
+[   17.445031]
+[   17.445031]  *** DEADLOCK ***
+[   17.445031]
+[   17.445031] no locks held by seccomp_bpf_tes/1987.
+[   17.445031]
+[   17.445031] stack backtrace:
+[   17.445031] CPU: 0 PID: 1987 Comm: seccomp_bpf_tes Not tainted
+3.16.0-rc2+ #289
+[   17.445031] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996),
+BIOS Bochs 01/01/2011
+[   17.445031]  ffffffff9f71dd90 ffff88007878bc48 ffffffff9ebc4fb4
+0000000000000007
+[   17.445031]  ffff880077fb3570 ffff88007878bca8 ffffffff9ebbad0d
+0000000000000000
+[   17.445031]  0000000000000001 00007fff00000001 ffff88007878bd70
+ffff88007878bd18
+[   17.445031] Call Trace:
+[   17.445031]  [<ffffffff9ebc4fb4>] dump_stack+0x4e/0x68
+[   17.445031]  [<ffffffff9ebbad0d>] print_usage_bug+0x1f1/0x202
+[   17.445031]  [<ffffffff9e2a26e0>] ? check_usage_forwards+0x150/0x150
+[   17.445031]  [<ffffffff9ebbad8a>] mark_lock_irq+0x6c/0x137
+[   17.445031]  [<ffffffff9e2a3ff5>] mark_lock+0x125/0x1c0
+[   17.445031]  [<ffffffff9e2a41c8>] mark_irqflags+0x138/0x1b0
+[   17.445031]  [<ffffffff9e2a4542>] __lock_acquire+0x302/0x9e0
+[   17.445031]  [<ffffffff9e383a0c>] ? create_object+0x21c/0x2d0
+[   17.445031]  [<ffffffff9e2a5325>] lock_acquire+0x95/0x1e0
+[   17.445031]  [<ffffffff9e2fb7e5>] ? do_seccomp.part.7+0x25/0xc0
+[   17.445031]  [<ffffffff9e2a5e55>] ? trace_hardirqs_on_caller+0x105/0x1d0
+[   17.445031]  [<ffffffff9ebda204>] _raw_spin_lock+0x34/0x50
+[   17.445031]  [<ffffffff9e2fb7e5>] ? do_seccomp.part.7+0x25/0xc0
+[   17.445031]  [<ffffffff9e27ffc5>] ? abort_creds+0x45/0x50
+[   17.445031]  [<ffffffff9e2fb7e5>] do_seccomp.part.7+0x25/0xc0
+[   17.445031]  [<ffffffff9e2fbf28>] do_seccomp+0x18/0x40
+[   17.445031]  [<ffffffff9e2fc1df>] prctl_set_seccomp+0x2f/0x40
+[   17.445031]  [<ffffffff9e26bce1>] SyS_prctl+0x141/0x4b0
+[   17.445031]  [<ffffffff9e2f306c>] ? __audit_syscall_entry+0x8c/0xe0
+[   17.445031]  [<ffffffff9e59556e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+[   17.445031]  [<ffffffff9ebdb012>] system_call_fastpath+0x16/0x1b
 
-- Arnaldo
 
-> Thanks,
-> 
-> Michael
-> 
-> 
-> On Thu, May 29, 2014 at 4:17 PM, Arnaldo Carvalho de Melo
-> <acme@ghostprotocols.net> wrote:
-> > Em Thu, May 29, 2014 at 02:06:04PM +0000, David Laight escreveu:
-> >> From: 'Arnaldo Carvalho de Melo'
-> >> ...
-> >> > > I remember some discussions from an XNET standards meeting (I've forgotten
-> >> > > exactly which errors on which calls were being discussed).
-> >> > > My recollection is that you return success with a partial transfer
-> >> > > count for ANY error that happens after some data has been transferred.
-> >> > > The actual error will be returned when it happens again on the next
-> >> > > system call - Note the AGAIN, not a saved error.
-> >
-> >> > A saved error, for the right entity, in the recvmmsg case, that
-> >> > basically is batching multiple recvmsg syscalls, doesn't sound like a
-> >> > problem, i.e. the idea is to, as much as possible, mimic what multiple
-> >> > recvmsg calls would do, but reduce its in/out kernel (and inside kernel
-> >> > subsystems) overhead.
-> >
-> >> > Perhaps we can have something in between, i.e. for things like EFAULT,
-> >> > we should report straight away, effectively dropping whatever datagrams
-> >> > successfully received in the current batch, do you agree?
-> >
-> >> Not unreasonable - EFAULT shouldn't happen unless the application
-> >> is buggy.
-> >
-> > Ok.
-> >
-> >> > For transient errors the existing mechanism, fixed so that only per
-> >> > socket errors are saved for later, as today, could be kept?
-> >
-> >> I don't think it is ever necessary to save an errno value for the
-> >> next system call at all.
-> >> Just process the next system call and see what happens.
-> >
-> >> If the call returns with less than the maximum number of datagrams
-> >> and with a non-zero timeout left - then the application can infer
-> >> that it was terminated by an abnormal event of some kind.
-> >> This might be a signal.
-> >
-> > Then it could use getsockopt(SO_ERROR) perhaps? I.e. we don't return the
-> > error on the next call, but we provide a way for the app to retrieve the
-> > reason for the smaller than expected batch?
-> >
-> >> I'm not sure if an icmp error on a connected datagram socket could
-> >> generate a 'disconnect'. It might happen if the interface is being
-> >> used for something like SCTP.
-> >> In either case the next call will detect the error.
-> >
-> > - Arnaldo
-> 
-> 
-> 
-> -- 
-> Michael Kerrisk
-> Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-> Linux/UNIX System Programming Training: http://man7.org/training/
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+I'll drop the fork.c changes, and keep the seccomp.c irqflags.
+
+Thanks!
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
