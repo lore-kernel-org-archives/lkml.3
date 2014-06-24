@@ -1,28 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964809AbaFXPyh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:54:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33038 "EHLO
+	id S1754968AbaFXPyz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:54:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33099 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754287AbaFXPyc (ORCPT
+	with ESMTP id S1755857AbaFXPyv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:54:32 -0400
+	Tue, 24 Jun 2014 11:54:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Bryan Evenson <bevenson@melinkcorp.com>,
-        Johan Hovold <johan@hovold.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Mark Roszko <mark.roszko@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 37/68] ARM: at91: fix at91_sysirq_mask_rtc for sam9x5 SoCs
-Date: Tue, 24 Jun 2014 11:50:56 -0400
-Message-Id: <20140624154725.599746653@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.14 46/68] USB: cdc-acm: fix runtime PM imbalance at shutdown
+Date: Tue, 24 Jun 2014 11:51:05 -0400
+Message-Id: <20140624154726.018120713@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154723.907894814@linuxfoundation.org>
 References: <20140624154723.907894814@linuxfoundation.org>
@@ -37,73 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 9dcc87fec8947308e0111c65dcd881e6aa5b1673 upstream.
+commit 5292afa657d0e790b7479ad8eef9450c1e040b3d upstream.
 
-sam9x5 SoCs have the following errata:
- "RTC: Interrupt Mask Register cannot be used
-  Interrupt Mask Register read always returns 0."
+Make sure only to decrement the PM counters if they were actually
+incremented.
 
-Hence we should not rely on what IMR claims about already masked IRQs
-and just disable all IRQs.
+Note that the USB PM counter, but not necessarily the driver core PM
+counter, is reset when the interface is unbound.
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Reported-by: Bryan Evenson <bevenson@melinkcorp.com>
-Reviewed-by: Johan Hovold <johan@hovold.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Bryan Evenson <bevenson@melinkcorp.com>
-Cc: Andrew Victor <linux@maxim.org.za>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Cc: Mark Roszko <mark.roszko@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
+that support remote wakeup")
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-at91/sysirq_mask.c |   22 +++++++++++++---------
- 1 file changed, 13 insertions(+), 9 deletions(-)
+ drivers/usb/class/cdc-acm.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/arch/arm/mach-at91/sysirq_mask.c
-+++ b/arch/arm/mach-at91/sysirq_mask.c
-@@ -25,24 +25,28 @@
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -587,12 +587,13 @@ static void acm_port_shutdown(struct tty
+ 	struct urb *urb;
+ 	struct acm_wb *wb;
+ 	int i;
++	int pm_err;
  
- #include "generic.h"
+ 	dev_dbg(&acm->control->dev, "%s\n", __func__);
  
--#define AT91_RTC_IDR	0x24	/* Interrupt Disable Register */
--#define AT91_RTC_IMR	0x28	/* Interrupt Mask Register */
-+#define AT91_RTC_IDR		0x24	/* Interrupt Disable Register */
-+#define AT91_RTC_IMR		0x28	/* Interrupt Mask Register */
-+#define AT91_RTC_IRQ_MASK	0x1f	/* Available IRQs mask */
+ 	mutex_lock(&acm->mutex);
+ 	if (!acm->disconnected) {
+-		usb_autopm_get_interface(acm->control);
++		pm_err = usb_autopm_get_interface(acm->control);
+ 		acm_set_control(acm, acm->ctrlout = 0);
  
- void __init at91_sysirq_mask_rtc(u32 rtc_base)
- {
- 	void __iomem *base;
--	u32 mask;
- 
- 	base = ioremap(rtc_base, 64);
- 	if (!base)
- 		return;
- 
--	mask = readl_relaxed(base + AT91_RTC_IMR);
--	if (mask) {
--		pr_info("AT91: Disabling rtc irq\n");
--		writel_relaxed(mask, base + AT91_RTC_IDR);
--		(void)readl_relaxed(base + AT91_RTC_IMR);	/* flush */
--	}
-+	/*
-+	 * sam9x5 SoCs have the following errata:
-+	 * "RTC: Interrupt Mask Register cannot be used
-+	 *  Interrupt Mask Register read always returns 0."
-+	 *
-+	 * Hence we're not relying on IMR values to disable
-+	 * interrupts.
-+	 */
-+	writel_relaxed(AT91_RTC_IRQ_MASK, base + AT91_RTC_IDR);
-+	(void)readl_relaxed(base + AT91_RTC_IMR);	/* flush */
- 
- 	iounmap(base);
+ 		for (;;) {
+@@ -610,7 +611,8 @@ static void acm_port_shutdown(struct tty
+ 		for (i = 0; i < acm->rx_buflimit; i++)
+ 			usb_kill_urb(acm->read_urbs[i]);
+ 		acm->control->needs_remote_wakeup = 0;
+-		usb_autopm_put_interface(acm->control);
++		if (!pm_err)
++			usb_autopm_put_interface(acm->control);
+ 	}
+ 	mutex_unlock(&acm->mutex);
  }
 
 
