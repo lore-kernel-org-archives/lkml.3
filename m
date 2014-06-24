@@ -1,20 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965271AbaFXQfw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:35:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32872 "EHLO
+	id S932203AbaFXPxe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:53:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32849 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932214AbaFXPxf (ORCPT
+	with ESMTP id S932109AbaFXPxa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:53:35 -0400
+	Tue, 24 Jun 2014 11:53:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>
-Subject: [PATCH 3.14 04/68] ima: audit log files opened with O_DIRECT flag
-Date: Tue, 24 Jun 2014 11:50:23 -0400
-Message-Id: <20140624154724.115525720@linuxfoundation.org>
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Bryan Evenson <bevenson@melinkcorp.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 01/68] rtc: rtc-at91rm9200: fix infinite wait for ACKUPD irq
+Date: Tue, 24 Jun 2014 11:50:20 -0400
+Message-Id: <20140624154723.977438835@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154723.907894814@linuxfoundation.org>
 References: <20140624154723.907894814@linuxfoundation.org>
@@ -29,147 +35,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 
-commit f9b2a735bdddf836214b5dca74f6ca7712e5a08c upstream.
+commit 2fe121e1f5aa3bf31b418a9790db6c400e922291 upstream.
 
-Files are measured or appraised based on the IMA policy.  When a
-file, in policy, is opened with the O_DIRECT flag, a deadlock
-occurs.
+The rtc user must wait at least 1 sec between each time/calandar update
+(see atmel's datasheet chapter "Updating Time/Calendar").
 
-The first attempt at resolving this lockdep temporarily removed the
-O_DIRECT flag and restored it, after calculating the hash.  The
-second attempt introduced the O_DIRECT_HAVELOCK flag. Based on this
-flag, do_blockdev_direct_IO() would skip taking the i_mutex a second
-time.  The third attempt, by Dmitry Kasatkin, resolves the i_mutex
-locking issue, by re-introducing the IMA mutex, but uncovered
-another problem.  Reading a file with O_DIRECT flag set, writes
-directly to userspace pages.  A second patch allocates a user-space
-like memory.  This works for all IMA hooks, except ima_file_free(),
-which is called on __fput() to recalculate the file hash.
+Use the 1Hz interrupt to update the at91_rtc_upd_rdy flag and wait for
+the at91_rtc_wait_upd_rdy event if the rtc is not ready.
 
-Until this last issue is addressed, do not 'collect' the
-measurement for measuring, appraising, or auditing files opened
-with the O_DIRECT flag set.  Based on policy, permit or deny file
-access.  This patch defines a new IMA policy rule option named
-'permit_directio'.  Policy rules could be defined, based on LSM
-or other criteria, to permit specific applications to open files
-with the O_DIRECT flag set.
+This patch fixes a deadlock in an uninterruptible wait when the RTC is
+updated more than once every second.  AFAICT the bug is here from the
+beginning, but I think we should at least backport this fix to 3.10 and
+the following longterm and stable releases.
 
-Changelog v1:
-- permit or deny file access based IMA policy rules
-
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Acked-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Reported-by: Bryan Evenson <bevenson@melinkcorp.com>
+Tested-by: Bryan Evenson <bevenson@melinkcorp.com>
+Cc: Andrew Victor <linux@maxim.org.za>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/ABI/testing/ima_policy |    2 +-
- security/integrity/ima/ima_api.c     |   10 +++++++++-
- security/integrity/ima/ima_main.c    |    5 ++++-
- security/integrity/ima/ima_policy.c  |    6 +++++-
- security/integrity/integrity.h       |    1 +
- 5 files changed, 20 insertions(+), 4 deletions(-)
+ drivers/rtc/rtc-at91rm9200.c |   16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
---- a/Documentation/ABI/testing/ima_policy
-+++ b/Documentation/ABI/testing/ima_policy
-@@ -23,7 +23,7 @@ Description:
- 				 [fowner]]
- 			lsm:	[[subj_user=] [subj_role=] [subj_type=]
- 				 [obj_user=] [obj_role=] [obj_type=]]
--			option:	[[appraise_type=]]
-+			option:	[[appraise_type=]] [permit_directio]
+--- a/drivers/rtc/rtc-at91rm9200.c
++++ b/drivers/rtc/rtc-at91rm9200.c
+@@ -48,6 +48,7 @@ struct at91_rtc_config {
  
- 		base: 	func:= [BPRM_CHECK][MMAP_CHECK][FILE_CHECK][MODULE_CHECK]
- 			mask:= [MAY_READ] [MAY_WRITE] [MAY_APPEND] [MAY_EXEC]
---- a/security/integrity/ima/ima_api.c
-+++ b/security/integrity/ima/ima_api.c
-@@ -199,6 +199,7 @@ int ima_collect_measurement(struct integ
- 			    struct evm_ima_xattr_data **xattr_value,
- 			    int *xattr_len)
- {
-+	const char *audit_cause = "failed";
- 	struct inode *inode = file_inode(file);
- 	const char *filename = file->f_dentry->d_name.name;
- 	int result = 0;
-@@ -213,6 +214,12 @@ int ima_collect_measurement(struct integ
- 	if (!(iint->flags & IMA_COLLECTED)) {
- 		u64 i_version = file_inode(file)->i_version;
+ static const struct at91_rtc_config *at91_rtc_config;
+ static DECLARE_COMPLETION(at91_rtc_updated);
++static DECLARE_COMPLETION(at91_rtc_upd_rdy);
+ static unsigned int at91_alarm_year = AT91_RTC_EPOCH;
+ static void __iomem *at91_rtc_regs;
+ static int irq;
+@@ -161,6 +162,8 @@ static int at91_rtc_settime(struct devic
+ 		1900 + tm->tm_year, tm->tm_mon, tm->tm_mday,
+ 		tm->tm_hour, tm->tm_min, tm->tm_sec);
  
-+		if (file->f_flags & O_DIRECT) {
-+			audit_cause = "failed(directio)";
-+			result = -EACCES;
-+			goto out;
-+		}
++	wait_for_completion(&at91_rtc_upd_rdy);
 +
- 		/* use default hash algorithm */
- 		hash.hdr.algo = ima_hash_algo;
+ 	/* Stop Time/Calendar from counting */
+ 	cr = at91_rtc_read(AT91_RTC_CR);
+ 	at91_rtc_write(AT91_RTC_CR, cr | AT91_RTC_UPDCAL | AT91_RTC_UPDTIM);
+@@ -183,7 +186,9 @@ static int at91_rtc_settime(struct devic
  
-@@ -233,9 +240,10 @@ int ima_collect_measurement(struct integ
- 				result = -ENOMEM;
- 		}
- 	}
-+out:
- 	if (result)
- 		integrity_audit_msg(AUDIT_INTEGRITY_DATA, inode,
--				    filename, "collect_data", "failed",
-+				    filename, "collect_data", audit_cause,
- 				    result, 0);
- 	return result;
+ 	/* Restart Time/Calendar */
+ 	cr = at91_rtc_read(AT91_RTC_CR);
++	at91_rtc_write(AT91_RTC_SCCR, AT91_RTC_SECEV);
+ 	at91_rtc_write(AT91_RTC_CR, cr & ~(AT91_RTC_UPDCAL | AT91_RTC_UPDTIM));
++	at91_rtc_write_ier(AT91_RTC_SECEV);
+ 
+ 	return 0;
  }
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@ -217,8 +217,11 @@ static int process_measurement(struct fi
- 		xattr_ptr = &xattr_value;
+@@ -290,8 +295,10 @@ static irqreturn_t at91_rtc_interrupt(in
+ 	if (rtsr) {		/* this interrupt is shared!  Is it ours? */
+ 		if (rtsr & AT91_RTC_ALARM)
+ 			events |= (RTC_AF | RTC_IRQF);
+-		if (rtsr & AT91_RTC_SECEV)
+-			events |= (RTC_UF | RTC_IRQF);
++		if (rtsr & AT91_RTC_SECEV) {
++			complete(&at91_rtc_upd_rdy);
++			at91_rtc_write_idr(AT91_RTC_SECEV);
++		}
+ 		if (rtsr & AT91_RTC_ACKUPD)
+ 			complete(&at91_rtc_updated);
  
- 	rc = ima_collect_measurement(iint, file, xattr_ptr, &xattr_len);
--	if (rc != 0)
-+	if (rc != 0) {
-+		if (file->f_flags & O_DIRECT)
-+			rc = (iint->flags & IMA_PERMIT_DIRECTIO) ? 0 : -EACCES;
- 		goto out_digsig;
-+	}
+@@ -413,6 +420,11 @@ static int __init at91_rtc_probe(struct
+ 		return PTR_ERR(rtc);
+ 	platform_set_drvdata(pdev, rtc);
  
- 	pathname = !filename ? ima_d_path(&file->f_path, &pathbuf) : filename;
- 	if (!pathname)
---- a/security/integrity/ima/ima_policy.c
-+++ b/security/integrity/ima/ima_policy.c
-@@ -351,7 +351,7 @@ enum {
- 	Opt_obj_user, Opt_obj_role, Opt_obj_type,
- 	Opt_subj_user, Opt_subj_role, Opt_subj_type,
- 	Opt_func, Opt_mask, Opt_fsmagic, Opt_uid, Opt_fowner,
--	Opt_appraise_type, Opt_fsuuid
-+	Opt_appraise_type, Opt_fsuuid, Opt_permit_directio
- };
- 
- static match_table_t policy_tokens = {
-@@ -373,6 +373,7 @@ static match_table_t policy_tokens = {
- 	{Opt_uid, "uid=%s"},
- 	{Opt_fowner, "fowner=%s"},
- 	{Opt_appraise_type, "appraise_type=%s"},
-+	{Opt_permit_directio, "permit_directio"},
- 	{Opt_err, NULL}
- };
- 
-@@ -621,6 +622,9 @@ static int ima_parse_rule(char *rule, st
- 			else
- 				result = -EINVAL;
- 			break;
-+		case Opt_permit_directio:
-+			entry->flags |= IMA_PERMIT_DIRECTIO;
-+			break;
- 		case Opt_err:
- 			ima_log_string(ab, "UNKNOWN", p);
- 			result = -EINVAL;
---- a/security/integrity/integrity.h
-+++ b/security/integrity/integrity.h
-@@ -30,6 +30,7 @@
- #define IMA_ACTION_FLAGS	0xff000000
- #define IMA_DIGSIG		0x01000000
- #define IMA_DIGSIG_REQUIRED	0x02000000
-+#define IMA_PERMIT_DIRECTIO	0x04000000
- 
- #define IMA_DO_MASK		(IMA_MEASURE | IMA_APPRAISE | IMA_AUDIT | \
- 				 IMA_APPRAISE_SUBMASK)
++	/* enable SECEV interrupt in order to initialize at91_rtc_upd_rdy
++	 * completion.
++	 */
++	at91_rtc_write_ier(AT91_RTC_SECEV);
++
+ 	dev_info(&pdev->dev, "AT91 Real Time Clock driver.\n");
+ 	return 0;
+ }
 
 
