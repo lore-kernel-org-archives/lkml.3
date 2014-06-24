@@ -1,42 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754239AbaFXAUg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 20:20:36 -0400
-Received: from mga09.intel.com ([134.134.136.24]:9784 "EHLO mga09.intel.com"
+	id S1754576AbaFXAUz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 20:20:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59908 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752687AbaFXAUf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 20:20:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,533,1400050800"; 
-   d="scan'208";a="562177630"
-Message-ID: <53A8C44E.7050000@intel.com>
-Date: Mon, 23 Jun 2014 17:20:30 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1754354AbaFXAUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jun 2014 20:20:54 -0400
+Date: Tue, 24 Jun 2014 02:20:50 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, gregkh@linuxfoundation.org,
+        hpa@linux.intel.com, linux-kernel@vger.kernel.org,
+        Andrew Lunn <andrew@lunn.ch>, Stephen Warren <swarren@wwwdotorg.org>,
+        Michal Hocko <mhocko@suse.cz>, Petr Mladek <pmladek@suse.cz>,
+        Joe Perches <joe@perches.com>, Arun KS <arunks.linux@gmail.com>,
+        Kees Cook <keescook@chromium.org>, Davidlohr Bueso <davidlohr@hp.com>,
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [PATCH v8 4/4] printk: allow increasing the ring buffer
+	depending on the number of CPUs
+Message-ID: <20140624002050.GC27687@wotan.suse.de>
+References: <1403124337-14886-1-git-send-email-mcgrof@do-not-panic.com> <1403124337-14886-4-git-send-email-mcgrof@do-not-panic.com> <20140623154134.43ac7ab63896cd9ebcba84b6@linux-foundation.org>
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, oleg@redhat.com, ak@linux.intel.com, cl@gentwo.org,
-        umgwanakikbuti@gmail.com
-Subject: Re: [PATCH tip/core/rcu] Reduce overhead of cond_resched() checks
- for RCU
-References: <20140621025958.GA7185@linux.vnet.ibm.com> <53A85BF9.7030006@intel.com> <53A8611F.1000804@intel.com> <20140623180945.GL4603@linux.vnet.ibm.com> <53A8B884.6000600@intel.com> <20140624001519.GO4603@linux.vnet.ibm.com>
-In-Reply-To: <20140624001519.GO4603@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140623154134.43ac7ab63896cd9ebcba84b6@linux-foundation.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2014 05:15 PM, Paul E. McKenney wrote:
-> Just out of curiosity, how many CPUs does your system have?  80?
-> If 160, looks like something bad is happening at 80.
+On Mon, Jun 23, 2014 at 03:41:34PM -0700, Andrew Morton wrote:
+> On Wed, 18 Jun 2014 13:45:37 -0700 "Luis R. Rodriguez" <mcgrof@do-not-panic.com> wrote:
+> 
+> > ...
+> >
+> > If an increase is required the ring buffer is increased to
+> > +	  the next power of 2 that can fit both the minimum kernel ring buffer
+> > +	  (LOG_BUF_SHIFT) plus the additional worst case CPU contributions.
+> >
+> > ...
+> >
+> > +	log_buf_len_update(cpu_extra + __LOG_BUF_LEN);
+> > +}
+> 
+> I'd have expected
+> 
+>   total_cpu_space = minimum-per-cpu-len * nr_possible_cpus;
+>   log_buf_len = max(__LOG_BUF_LEN, total_cpu_space)
+> 
+> but here you added __LOG_BUF_LEN to total_cpu_space and I cannot work
+> out why.  
+> .
 
-80 cores, 160 threads.  >80 processes/threads is where we start using
-the second thread on the cores.  The tasks are also pinned to
-hyperthread pairs, so they disturb each other, and the scheduler moves
-them between threads on occasion which causes extra noise.
+Ah, because its cpu_extra, not total_cpu_space that is being
+computed, the goal was to see how much extra junk on the
+worst case a CPU might contribute. The __LOG_BUF_LEN is the
+default size, so we combine both.
+
+  Luis
