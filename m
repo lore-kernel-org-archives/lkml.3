@@ -1,87 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754167AbaFXVFy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 17:05:54 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:37712 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752322AbaFXVFv (ORCPT
+	id S1755044AbaFXVHB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 17:07:01 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:49568 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753936AbaFXVHA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 17:05:51 -0400
+	Tue, 24 Jun 2014 17:07:00 -0400
 MIME-Version: 1.0
-In-Reply-To: <1403598315-1429-1-git-send-email-vgupta@synopsys.com>
-References: <1403598315-1429-1-git-send-email-vgupta@synopsys.com>
-From: Rob Herring <robherring2@gmail.com>
-Date: Tue, 24 Jun 2014 16:05:30 -0500
-Message-ID: <CAL_JsqJF-a3K+dUHpwgSLNrwZTHLp2uj44bZaNboVpTtc8a-RA@mail.gmail.com>
-Subject: Re: [PATCH v2 REBASED 00/10] Generic earlyconsole for ARC UART Driver
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Paul Bolle <pebolle@tiscali.nl>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+In-Reply-To: <1403643440.29061.56.camel@joe-AO725>
+References: <1403477209-14612-1-git-send-email-minipli@googlemail.com>
+	<1403477762.18747.14.camel@joe-AO725>
+	<CA+rthh8D=r1kW6iDb0MqfHwA4OW-oXSA+B1AXe-0Cqperz6ZRQ@mail.gmail.com>
+	<1403505219.18747.37.camel@joe-AO725>
+	<87egyeqt03.fsf@rasmusvillemoes.dk>
+	<CA+rthh8XwC80hq8z07k+=0J7MDA6tUtLff+J=qMuzYqTNyLKww@mail.gmail.com>
+	<1403638620.29061.35.camel@joe-AO725>
+	<CA+rthh9qGpkicfR+C7Qz1uOF4HUaVANVyq6YaH_Rx-80L_-YvQ@mail.gmail.com>
+	<1403641843.29061.51.camel@joe-AO725>
+	<CA+rthh89rYOyUd58vJO_0Nu_j+zrAMwUYSitRbT=MVoz9pO5Lw@mail.gmail.com>
+	<1403643440.29061.56.camel@joe-AO725>
+Date: Tue, 24 Jun 2014 23:06:58 +0200
+Message-ID: <CA+rthh9gKVWix4E0ENPFBXgUMpjnb8_+aeNUi3iZpAnqzo8C1w@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/3] Mark literal strings in __init / __exit code
+From: Mathias Krause <minipli@googlemail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        Francois.Bedard@synopsys.com
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 24, 2014 at 3:25 AM, Vineet Gupta
-<Vineet.Gupta1@synopsys.com> wrote:
-> Hi,
+On 24 June 2014 22:57, Joe Perches <joe@perches.com> wrote:
+> On Tue, 2014-06-24 at 22:41 +0200, Mathias Krause wrote:
+>> there is more to optimize
+>> if one is patient enough ;)
 >
-> This is slightly modified repost of series posted last week
-> http://www.spinics.net/lists/linux-serial/msg12884.html
+> Ever thus.
 >
-> This series switches ARC UART from custom earlyprintk support to generic
-> earlycon (many thanks to Rob for doing that). And also build on Grant's recent
-> work for using DT stdout-path as default console.
+>> And all of those strings should be in the .rodata section, now. But
+>> why you're asking?
 >
-> The motivation is to get rid of the early platform code, which in turn
-> would help consolidate the init code across several ARC platforms.
->
-> First 3 patches are general cleanup/refactoring, not necesarily related to
-> earlycon.
+> Because now they will be duplicated in .rodata
+> and the __init section no?
 
-Other than my comment on patch 6:
+No. A string marked with __init_str() will only life in the
+.init.rodata section. No duplication.
 
-Reviewed-by: Rob Herring <robh@kernel.org>
+>> Yes. My vanilla vmlinux build has quite a lot of copies of "off" in
+>> it. But I doubt any linker would merge those. Does LTO do so?
+>
+> I would expect that duplicated strings in
+> separate sections would not be merged.
 
->
-> v2 <- v1
-> --------
-> * Rebased on linux-next: 20140623
-> * Patch 9 split into 9 and 10 for driver/platform changes
-> * Patch 10 also uses the DT stdout-path so no need for console=
->
->
-> Thx,
-> -Vineet
->
->
-> Vineet Gupta (10):
->   serial/arc: use uart_console_write() helper
->   serial/arc: Refactor by referencing to uart_port where possible
->   serial/arc: Remove the workaround for legacy ISS
->   serial/arc: Use generic earlycon infrastructure
->   serial/arc: remove earlyprintk support and switch to earlycon
->   serial/arc: remove last remanants of platform data
->   serial/arc: inline the probe helper
->   ARC: [arcfpga] RIP early uart platform device stuff
->   serial/arc: Enable DT based earlycon
->   ARC: [arcfpga] stdout-path now suffices for earlycon/console
->
->  arch/arc/boot/dts/angel4.dts     |   3 +-
->  arch/arc/plat-arcfpga/Kconfig    |   7 -
->  arch/arc/plat-arcfpga/platform.c |  97 +-----------
->  drivers/tty/serial/Kconfig       |   1 +
->  drivers/tty/serial/arc_uart.c    | 329 ++++++++++++++-------------------------
->  5 files changed, 123 insertions(+), 314 deletions(-)
->
-> --
-> 1.8.3.2
->
+I do hope so, too! :D Because if strings in .rodata would be merged
+with ones in .init.rodata the former would be dangling when the latter
+are freed after initialization.
+Having duplicated strings in .rodata and .init.rodata is also no
+problem as the latter will be freed.
+
+Regards,
+Mathias
