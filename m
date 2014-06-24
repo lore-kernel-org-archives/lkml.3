@@ -1,99 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753572AbaFWXuL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 19:50:11 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:58235 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751242AbaFWXuK (ORCPT
+	id S1753051AbaFXABp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 20:01:45 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:63614 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751242AbaFXABn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 19:50:10 -0400
-Date: Tue, 24 Jun 2014 00:50:07 +0100 (BST)
-From: "Maciej W. Rozycki" <macro@linux-mips.org>
-To: David Rientjes <rientjes@google.com>
-cc: Al Viro <viro@zeniv.linux.org.uk>, Ralf Baechle <ralf@linux-mips.org>,
-        Eunbong Song <eunb.song@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-mips@linux-mips.org
-Subject: GCC version requirement (was: Re: mips: math-emu: Fix compilation
- error ieee754.c)
-In-Reply-To: <alpine.DEB.2.02.1406111427170.27885@chino.kir.corp.google.com>
-Message-ID: <alpine.LFD.2.11.1406240032450.23403@eddie.linux-mips.org>
-References: <2463243.264261402478691777.JavaMail.weblogic@epml26> <20140611171000.GD26335@linux-mips.org> <alpine.DEB.2.02.1406111427170.27885@chino.kir.corp.google.com>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	Mon, 23 Jun 2014 20:01:43 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <53A8BB5A.5090103@intel.com>
+References: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com>
+ <1403084656-27284-9-git-send-email-qiaowei.ren@intel.com> <53A8874A.3050301@mit.edu>
+ <53A88966.5080400@intel.com> <CALCETrX7B8yxrNgojCR8YNH+6zHX8vq+GMFn0RjdWXdLmhA-Fg@mail.gmail.com>
+ <53A8BB5A.5090103@intel.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 23 Jun 2014 17:01:22 -0700
+Message-ID: <CALCETrVXn5HAcifiU1TnGUckNz8g7ZEw1FeMjLwVCpd6G+pq3g@mail.gmail.com>
+Subject: Re: [PATCH v6 08/10] x86, mpx: add prctl commands PR_MPX_REGISTER, PR_MPX_UNREGISTER
+To: Dave Hansen <dave.hansen@intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Qiaowei Ren <qiaowei.ren@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Jun 2014, David Rientjes wrote:
+On Mon, Jun 23, 2014 at 4:42 PM, Dave Hansen <dave.hansen@intel.com> wrote:
+> On 06/23/2014 03:00 PM, Andy Lutomirski wrote:
+>> Hmm.  How about PR_SET/GET_MPX_BOUNDS_TABLE, to update the kernel's
+>> copy.  No fpu magic needed.
+>>
+>> This has an added benefit: CRIU will need updating for MPX, and
+>> they'll appreciate having the required interface already exist.
+>> (They'll want a way to allocate "MPX" memory, too, but that's probably
+>> somewhat less important, and it won't result in duplicated
+>> functionality.)
+>
+> I like the idea of the most minimal interface possible.  If the kernel
+> ever needed or wanted to cache more of the register setup, we wouldn't
+> need to change the interface.  For CRIU, I don't know much about the
+> phases of how it sets itself up, but I guess the difference would be
+> whether userspace has to do a register save and restore and a prctl() or
+> just a plain prctl() with extra arguments.  Doesn't seem fundamentally
+> different to me.
+>
+> BTW, it's not a pointer to a bounds table, it's the bounds directory.
+> There are two levels of the tables.
 
-> > > ieee754dp has bitfield member in struct without name. And this
-> > > cause compilation error. This patch removes struct in ieee754dp
-> > > declaration. So compilation error is fixed.
-> > > Signed-off-by: Eunbong Song <eunb.song@samsung.com>
-> > 
-> > What gcc version are you using?
-> > 
-> 
-> make arch/mips/math-emu/ieee754.o for mips defconfig triggers the 
-> following on linux-next 30 times:
-> 
-> arch/mips/math-emu/ieee754.c:45:2: error: unknown field 'sign' specified in initializer
-> arch/mips/math-emu/ieee754.c:45:2: warning: missing braces around initializer
-> arch/mips/math-emu/ieee754.c:45:2: warning: (near initialization for '__ieee754dp_spcvals[0].<anonymous>')
-> arch/mips/math-emu/ieee754.c:45:2: error: unknown field 'bexp' specified in initializer
-> arch/mips/math-emu/ieee754.c:45:2: warning: excess elements in union initializer
-> arch/mips/math-emu/ieee754.c:45:2: warning: (near initialization for '__ieee754dp_spcvals[0]')
-> arch/mips/math-emu/ieee754.c:45:2: error: unknown field 'mant' specified in initializer
-> arch/mips/math-emu/ieee754.c:45:2: warning: excess elements in union initializer
-> arch/mips/math-emu/ieee754.c:45:2: warning: (near initialization for '__ieee754dp_spcvals[0]')
-> 
-> I'm using gcc 4.5.1 for mips.  The patch makes all members part of the 
-> union so it's probably not what you want to fix it, though.
+I suspect that the existence of the get operation matters more.  What
+if the checkpointed process has the cached copy out of sync with the
+register copy?  More realistically, what if the checkpointed process
+doesn't want to use kernel MPX assistance at all?  CRIU won't be able
+to detect this with the current proposed interface.
 
- There's more recent breakage like this, e.g.:
-
-mm/page_io.c: In function '__swap_writepage':
-mm/page_io.c:277: error: unknown field 'bvec' specified in initializer
-mm/page_io.c:278: warning: excess elements in struct initializer
-mm/page_io.c:278: warning: (near initialization for 'from')
-
-introduced with "bio_vec-backed iov_iter" (GCC 4.1.2 here).  We still in 
-principle support GCC versions back to 3.2:
-
-$ grep 'Gnu C' Documentation/Changes
-o  Gnu C                  3.2                     # gcc --version
-$ 
-
-so either this breakage has to be cleaned up or the requirement for the 
-minimum GCC version revisited.
-
- This is a semi-standard language extension BTW, citing from the GCC 
-manual:
-
---------------------------------------------------------------------------
-6 Extensions to the C Language Family
-*************************************
-
-GNU C provides several language features not found in ISO standard C.
-(The `-pedantic' option directs GCC to print a warning message if any
-of these features is used.)  To test for the availability of these
-features in conditional compilation, check for a predefined macro
-`__GNUC__', which is always defined under GCC.
-
-6.59 Unnamed struct/union fields within structs/unions
-======================================================
-
-As permitted by ISO C11 and for compatibility with other compilers, GCC
-allows you to define a structure or union that contains, as fields,
-structures and unions without names.
---------------------------------------------------------------------------
-
--- note the term "permitted" rather than "required".
-
- We do make use of a few GCC language extensions, most notably inline 
-assembly, however in this case we merely save a couple of characters here 
-and there and this is IMO not worth breaking people's development 
-environments.
-
-  Maciej
+--Andy
