@@ -1,155 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751389AbaFXDDa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 23:03:30 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:63426 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750827AbaFXDD3 (ORCPT
+	id S1751405AbaFXDEF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 23:04:05 -0400
+Received: from 184-82-29-211.superslickydeals.com ([184.82.29.211]:43232 "EHLO
+	smtp1.qihuxinsheng.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1751059AbaFXDED (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 23:03:29 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AsBSALLpqFN5LC2vPGdsb2JhbABagw2DSKgiBpk1AYEKFwQBAQEBODWDfAcBAQQBJxMcIwULCBsJJQ8FJQMHGhOFSYJxB8QTFxaFTYkZB4MtgRYEmkuXOCs
-Date: Tue, 24 Jun 2014 13:02:40 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Austin Schuh <austin@peloton-tech.com>
-Cc: xfs <xfs@oss.sgi.com>, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>
-Subject: On-stack work item completion race? (was Re: XFS crash?)
-Message-ID: <20140624030240.GB9508@dastard>
-References: <20140305233551.GK6851@dastard>
- <CANGgnMb=2dYGQO4K36pQ9LEb8E4rT6S_VskLF+n=ndd0_kJr_g@mail.gmail.com>
- <CANGgnMa80WwQ8zSkL52yYegmQURVQeZiBFv41=FQXMZJ_NaEDw@mail.gmail.com>
- <20140513034647.GA5421@dastard>
- <CANGgnMZ0q9uE3NHj2i0SBK1d0vdKLx7QBJeFNb+YwP-5EAmejQ@mail.gmail.com>
- <20140513063943.GQ26353@dastard>
- <CANGgnMYn++1++UyX+D2d9GxPxtytpQJv0ThFwdxM-yX7xDWqiA@mail.gmail.com>
- <20140513090321.GR26353@dastard>
- <CANGgnMZqQc_NeaDpO_aX+bndmHrQ9VWo9mkfxhPBkRD-J=N6sQ@mail.gmail.com>
- <CANGgnMZ8OwzfBj5m9H7c6q2yahGhU7oFZLsJfVxnWoqZExkZmQ@mail.gmail.com>
+	Mon, 23 Jun 2014 23:04:03 -0400
+Date: Tue, 24 Jun 2014 11:04:01 +0800
+From: "Emma" <kingbirdsales07@live.cn>
+Reply-To: kingbirdsales03@msn.cn
+Reply-To: kingbirdsales07@live.cn
+To: "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: SUPPLY MARINE WINDLASS
+Message-ID: <201406241104017964691@smtp1.qihuxinsheng.com>
+X-Mailer: Foxmail 6, 10, 201, 20 [cn]
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANGgnMZ8OwzfBj5m9H7c6q2yahGhU7oFZLsJfVxnWoqZExkZmQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+	charset="GB2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s5O34G91024718
 
-[Adding Tejun and lkml to the cc list]
+Dear Sir or Madam,
 
-On Mon, Jun 23, 2014 at 01:05:54PM -0700, Austin Schuh wrote:
-> I found 1 bug in XFS which I fixed, and I've uncovered something else that
-> I'm not completely sure how to fix.
-> 
-> In xfs_bmapi_allocate, you create a completion, and use that to wait until
-> the work has finished.  Occasionally, I'm seeing a case where I get a
-> context switch after the completion has been completed, but before the
-> workqueue has finished doing it's internal book-keeping.  This results in
-> the work being deleted before the workqueue is done using it, corrupting
-> the internal data structures.  I fixed it by waiting using flush_work and
-> removing the completion entirely.
-> 
-> --- a/fs/xfs/xfs_bmap_util.c        2014-06-23 12:59:10.008678410 -0700
-> +++ b/fs/xfs/xfs_bmap_util.c      2014-06-23 12:59:14.116678239 -0700
-> @@ -263,7 +263,6 @@
->         current_set_flags_nested(&pflags, PF_FSTRANS);
-> 
->         args->result = __xfs_bmapi_allocate(args);
-> -       complete(args->done);
-> 
->         current_restore_flags_nested(&pflags, PF_FSTRANS);
->  }
-> @@ -277,16 +276,13 @@
->  xfs_bmapi_allocate(
->         struct xfs_bmalloca     *args)
->  {
-> -       DECLARE_COMPLETION_ONSTACK(done);
-> -
->         if (!args->stack_switch)
->                 return __xfs_bmapi_allocate(args);
-> 
-> 
-> -       args->done = &done;
->         INIT_WORK_ONSTACK(&args->work, xfs_bmapi_allocate_worker);
->         queue_work(xfs_alloc_wq, &args->work);
-> -       wait_for_completion(&done);
-> +       flush_work(&args->work);
->         destroy_work_on_stack(&args->work);
->         return args->result;
->  }
-> --- a/fs/xfs/xfs_bmap_util.h        2014-06-23 12:59:10.008678410 -0700
-> +++ b/fs/xfs/xfs_bmap_util.h      2014-06-23 12:59:11.708678340 -0700
-> @@ -57,7 +57,6 @@
->         char                    conv;   /* overwriting unwritten extents */
->         char                    stack_switch;
->         int                     flags;
-> -       struct completion       *done;
->         struct work_struct      work;
->         int                     result;
->  };
+We saw your information from internet, wondering if we have chance to cooperate with MARINE WINCH OR OTHER DECK MACHINERY?
+WINCH from 10KN to 2000KN are available ,appoved by GL,BV,LR,DNV,ABS,CCS,KR,NK etc.
+if you like ,i can send you the catalogue to refer.ok?
+May be you are already have your own supplier ,it¡¯s ok ,just give a chance to be your second choice,ok?
+Kindly look forward to your reply !
 
-Ok, that's a surprise. However, I can't see how using flush_work()
-solves that underlying context switch problem, because it's
-implemented the same way:
+Thank you !
 
-bool flush_work(struct work_struct *work)
-{
-        struct wq_barrier barr;
-
-        lock_map_acquire(&work->lockdep_map);
-        lock_map_release(&work->lockdep_map);
-
-        if (start_flush_work(work, &barr)) {
-                wait_for_completion(&barr.done);
-                destroy_work_on_stack(&barr.work);
-                return true;
-        } else {
-                return false;
-        }
-}
-
-start_flush_work() is effectively a special queue_work()
-implementation, so if if it's not safe to call complete() from the
-workqueue as the above patch implies then this code has the same
-problem.
-
-Tejun - is this "do it yourself completion" a known issue w.r.t.
-workqueues? I can't find any documentation that says "don't do
-that" so...?
-
-A quick grep also shows up the same queue_work/wait_for_completion
-pattern in arch/x86/kernel/hpet.c, drivers/md/dm-thin.c,
-fs/fs-writeback.c, drivers/block/drbd/drbd_main.c....
-
-> I enabled event tracing (and added a new event which lists the number of
-> workers running in a queue whenever that is changed).
-> 
-> To me, it looks like work is scheduled from irq/44-ahci-273 that will
-> acquire an inode lock.  scp-3986 then acquires the lock, and then goes and
-> schedules work.  That work is then scheduled behind the work from
-> irq/44-ahci-273 in the same pool.  The first work blocks waiting on the
-> lock, and scp-3986 won't finish and release that lock until the second work
-> gets run.
-
-IOWs, scp takes an inode lock and queues work to the xfs_alloc_wq,
-then schedules. Then a kworker runs an xfs-data work item, which
-tries to take the inode lock and blocks.
-
-As I understand it, what then happens is that the workqueue code
-grabs another kworker thread and runs the next work item in it's
-queue. IOWs, work items can block, but doing that does not prevent
-execution of other work items queued on other work queues or even on
-the same work queue. Tejun, did I get that correct?
-
-Hence the work on the xfs-data queue will block until another
-kworker processes the item on the xfs-alloc-wq which means progress
-is made and the inode gets unlocked. Then the kworker for the work
-on the xfs-data queue will get the lock, complete it's work and
-everything has resolved itself.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Best Regards.  
+Peter
+------------------------------------------------------------
+Sales Specialist | Kingbird Marine parts group | www.kingbirdmachinery.com
+Tel:86-023-63017612 ext805  
+Skype: kingbirdsales05          Msn: kingbirdsales03@msn.cn
+Email: salesdept@kingbirdmachinery.com
+Address: 2-5-4,Xinke International Building,
+North New District,Chongqing,China 400014ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
