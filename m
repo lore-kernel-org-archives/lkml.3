@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755483AbaFXUcS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:32:18 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47753 "EHLO
+	id S1755512AbaFXUce (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:32:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47765 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753994AbaFXUcL (ORCPT
+	with ESMTP id S1753200AbaFXUcc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:32:11 -0400
+	Tue, 24 Jun 2014 16:32:32 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Peter Zijlstra <peterz@infradead.org>, Dario Faggioli <raistlin@linux.it>,
-        linux-man <linux-man@vger.kernel.org>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 46/65] sched/deadline: Change sched_getparam() behaviour vs SCHED_DEADLINE
-Date: Tue, 24 Jun 2014 13:30:06 -0700
-Message-Id: <1403641825-12825-47-git-send-email-kamal@canonical.com>
+Cc: "J. Bruce Fields" <bfields@redhat.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 37/65] nfsd4: warn on finding lockowner without stateid's
+Date: Tue, 24 Jun 2014 13:29:57 -0700
+Message-Id: <1403641825-12825-38-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
 References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
@@ -31,55 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit ce5f7f8200ca2504f6f290044393d73ca314965a upstream.
+commit 27b11428b7de097c42f205beabb1764f4365443b upstream.
 
-The way we read POSIX one should only call sched_getparam() when
-sched_getscheduler() returns either SCHED_FIFO or SCHED_RR.
+The current code assumes a one-to-one lockowner<->lock stateid
+correspondance.
 
-Given that we currently return sched_param::sched_priority=0 for all
-others, extend the same behaviour to SCHED_DEADLINE.
-
-Requested-by: Michael Kerrisk <mtk.manpages@gmail.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Acked-by: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: Dario Faggioli <raistlin@linux.it>
-Cc: linux-man <linux-man@vger.kernel.org>
-Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: Juri Lelli <juri.lelli@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20140512205034.GH13467@laptop.programming.kicks-ass.net
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-[ kamal: backport to 3.8-stable: context ]
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/sched/core.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ fs/nfsd/nfs4state.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 5e2f7c3..8188769 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -4039,7 +4039,7 @@ SYSCALL_DEFINE1(sched_getscheduler, pid_t, pid)
-  */
- SYSCALL_DEFINE2(sched_getparam, pid_t, pid, struct sched_param __user *, param)
- {
--	struct sched_param lp;
-+	struct sched_param lp = { .sched_priority = 0 };
- 	struct task_struct *p;
- 	int retval;
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index 6acaeed..d5e1349 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -3971,6 +3971,10 @@ static bool same_lockowner_ino(struct nfs4_lockowner *lo, struct inode *inode, c
  
-@@ -4056,7 +4056,8 @@ SYSCALL_DEFINE2(sched_getparam, pid_t, pid, struct sched_param __user *, param)
- 	if (retval)
- 		goto out_unlock;
- 
--	lp.sched_priority = p->rt_priority;
-+	if (task_has_rt_policy(p))
-+		lp.sched_priority = p->rt_priority;
- 	rcu_read_unlock();
- 
- 	/*
+ 	if (!same_owner_str(&lo->lo_owner, owner, clid))
+ 		return false;
++	if (list_empty(&lo->lo_owner.so_stateids)) {
++		WARN_ON_ONCE(1);
++		return false;
++	}
+ 	lst = list_first_entry(&lo->lo_owner.so_stateids,
+ 			       struct nfs4_ol_stateid, st_perstateowner);
+ 	return lst->st_file->fi_inode == inode;
 -- 
 1.9.1
 
