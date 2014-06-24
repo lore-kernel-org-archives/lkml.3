@@ -1,22 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755046AbaFXPvq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:51:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60805 "EHLO
+	id S1755177AbaFXPv7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:51:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60827 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754969AbaFXPvp (ORCPT
+	with ESMTP id S1755111AbaFXPv4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:51:45 -0400
+	Tue, 24 Jun 2014 11:51:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roland Dreier <roland@purestorage.com>
-Subject: [PATCH 3.4 07/26] mlx4_core: Stash PCI ID driver_data in mlx4_priv structure
-Date: Tue, 24 Jun 2014 11:50:30 -0400
-Message-Id: <20140624154619.844365922@linuxfoundation.org>
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Bryan Evenson <bevenson@melinkcorp.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 01/52] rtc: rtc-at91rm9200: fix infinite wait for ACKUPD irq
+Date: Tue, 24 Jun 2014 11:50:16 -0400
+Message-Id: <20140624154713.533414076@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
-In-Reply-To: <20140624154619.499002156@linuxfoundation.org>
-References: <20140624154619.499002156@linuxfoundation.org>
+In-Reply-To: <20140624154713.428945460@linuxfoundation.org>
+References: <20140624154713.428945460@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,139 +31,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Wei Yang <weiyang@linux.vnet.ibm.com>
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 
-[ No upstream commit, this is a cherry picked backport enabler. ]
+commit 2fe121e1f5aa3bf31b418a9790db6c400e922291 upstream.
 
-From: Roland Dreier <roland@purestorage.com>
+The rtc user must wait at least 1 sec between each time/calandar update
+(see atmel's datasheet chapter "Updating Time/Calendar").
 
-That way we can check flags later on, when we've finished with the
-pci_device_id structure.  Also convert the "is VF" flag to an enum:
-"Never do in the preprocessor what can be done in C."
+Use the 1Hz interrupt to update the at91_rtc_upd_rdy flag and wait for
+the at91_rtc_wait_upd_rdy event if the rtc is not ready.
 
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+This patch fixes a deadlock in an uninterruptible wait when the RTC is
+updated more than once every second.  AFAICT the bug is here from the
+beginning, but I think we should at least backport this fix to 3.10 and
+the following longterm and stable releases.
+
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Reported-by: Bryan Evenson <bevenson@melinkcorp.com>
+Tested-by: Bryan Evenson <bevenson@melinkcorp.com>
+Cc: Andrew Victor <linux@maxim.org.za>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/mellanox/mlx4/main.c |   27 +++++++++++++++------------
- drivers/net/ethernet/mellanox/mlx4/mlx4.h |    6 ++++++
- 2 files changed, 21 insertions(+), 12 deletions(-)
 
---- a/drivers/net/ethernet/mellanox/mlx4/main.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/main.c
-@@ -92,8 +92,6 @@ MODULE_PARM_DESC(log_num_mgm_entry_size,
- 					 " 10 gives 248.range: 9<="
- 					 " log_num_mgm_entry_size <= 12");
+---
+ drivers/rtc/rtc-at91rm9200.c |   16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
+
+--- a/drivers/rtc/rtc-at91rm9200.c
++++ b/drivers/rtc/rtc-at91rm9200.c
+@@ -49,6 +49,7 @@ struct at91_rtc_config {
  
--#define MLX4_VF                                        (1 << 0)
--
- #define HCA_GLOBAL_CAP_MASK            0
- #define PF_CONTEXT_BEHAVIOUR_MASK      0
+ static const struct at91_rtc_config *at91_rtc_config;
+ static DECLARE_COMPLETION(at91_rtc_updated);
++static DECLARE_COMPLETION(at91_rtc_upd_rdy);
+ static unsigned int at91_alarm_year = AT91_RTC_EPOCH;
+ static void __iomem *at91_rtc_regs;
+ static int irq;
+@@ -162,6 +163,8 @@ static int at91_rtc_settime(struct devic
+ 		1900 + tm->tm_year, tm->tm_mon, tm->tm_mday,
+ 		tm->tm_hour, tm->tm_min, tm->tm_sec);
  
-@@ -1731,7 +1729,7 @@ static void mlx4_free_ownership(struct m
- 	iounmap(owner);
- }
++	wait_for_completion(&at91_rtc_upd_rdy);
++
+ 	/* Stop Time/Calendar from counting */
+ 	cr = at91_rtc_read(AT91_RTC_CR);
+ 	at91_rtc_write(AT91_RTC_CR, cr | AT91_RTC_UPDCAL | AT91_RTC_UPDTIM);
+@@ -184,7 +187,9 @@ static int at91_rtc_settime(struct devic
  
--static int __mlx4_init_one(struct pci_dev *pdev, const struct pci_device_id *id)
-+static int __mlx4_init_one(struct pci_dev *pdev, int pci_dev_data)
- {
- 	struct mlx4_priv *priv;
- 	struct mlx4_dev *dev;
-@@ -1754,12 +1752,11 @@ static int __mlx4_init_one(struct pci_de
- 	/*
- 	 * Check for BARs.
- 	 */
--	if (((id == NULL) || !(id->driver_data & MLX4_VF)) &&
-+	if (!(pci_dev_data & MLX4_PCI_DEV_IS_VF) &&
- 	    !(pci_resource_flags(pdev, 0) & IORESOURCE_MEM)) {
- 		dev_err(&pdev->dev, "Missing DCS, aborting."
--			"(id == 0X%p, id->driver_data: 0x%lx,"
--			" pci_resource_flags(pdev, 0):0x%lx)\n", id,
--			id ? id->driver_data : 0, pci_resource_flags(pdev, 0));
-+			"(driver_data: 0x%x, pci_resource_flags(pdev, 0):0x%lx)\n",
-+			pci_dev_data, pci_resource_flags(pdev, 0));
- 		err = -ENODEV;
- 		goto err_disable_pdev;
- 	}
-@@ -1824,7 +1821,7 @@ static int __mlx4_init_one(struct pci_de
- 
- 	dev->rev_id = pdev->revision;
- 	/* Detect if this device is a virtual function */
--	if (id && id->driver_data & MLX4_VF) {
-+	if (pci_dev_data & MLX4_PCI_DEV_IS_VF) {
- 		/* When acting as pf, we normally skip vfs unless explicitly
- 		 * requested to probe them. */
- 		if (num_vfs && extended_func_num(pdev) > probe_vf) {
-@@ -1970,6 +1967,7 @@ slave_start:
- 	mlx4_sense_init(dev);
- 	mlx4_start_sense(dev);
- 
-+	priv->pci_dev_data = pci_dev_data;
- 	pci_set_drvdata(pdev, dev);
+ 	/* Restart Time/Calendar */
+ 	cr = at91_rtc_read(AT91_RTC_CR);
++	at91_rtc_write(AT91_RTC_SCCR, AT91_RTC_SECEV);
+ 	at91_rtc_write(AT91_RTC_CR, cr & ~(AT91_RTC_UPDCAL | AT91_RTC_UPDTIM));
++	at91_rtc_write_ier(AT91_RTC_SECEV);
  
  	return 0;
-@@ -2039,7 +2037,7 @@ static int __devinit mlx4_init_one(struc
- {
- 	printk_once(KERN_INFO "%s", mlx4_version);
- 
--	return __mlx4_init_one(pdev, id);
-+	return __mlx4_init_one(pdev, id->driver_data);
  }
+@@ -291,8 +296,10 @@ static irqreturn_t at91_rtc_interrupt(in
+ 	if (rtsr) {		/* this interrupt is shared!  Is it ours? */
+ 		if (rtsr & AT91_RTC_ALARM)
+ 			events |= (RTC_AF | RTC_IRQF);
+-		if (rtsr & AT91_RTC_SECEV)
+-			events |= (RTC_UF | RTC_IRQF);
++		if (rtsr & AT91_RTC_SECEV) {
++			complete(&at91_rtc_upd_rdy);
++			at91_rtc_write_idr(AT91_RTC_SECEV);
++		}
+ 		if (rtsr & AT91_RTC_ACKUPD)
+ 			complete(&at91_rtc_updated);
  
- static void mlx4_remove_one(struct pci_dev *pdev)
-@@ -2108,8 +2106,13 @@ static void mlx4_remove_one(struct pci_d
+@@ -415,6 +422,11 @@ static int __init at91_rtc_probe(struct
+ 	}
+ 	platform_set_drvdata(pdev, rtc);
  
- int mlx4_restart_one(struct pci_dev *pdev)
- {
-+	struct mlx4_dev	 *dev  = pci_get_drvdata(pdev);
-+	struct mlx4_priv *priv = mlx4_priv(dev);
-+	int		  pci_dev_data;
++	/* enable SECEV interrupt in order to initialize at91_rtc_upd_rdy
++	 * completion.
++	 */
++	at91_rtc_write_ier(AT91_RTC_SECEV);
 +
-+	pci_dev_data = priv->pci_dev_data;
- 	mlx4_remove_one(pdev);
--	return __mlx4_init_one(pdev, NULL);
-+	return __mlx4_init_one(pdev, pci_dev_data);
- }
- 
- static DEFINE_PCI_DEVICE_TABLE(mlx4_pci_table) = {
-@@ -2138,11 +2141,11 @@ static DEFINE_PCI_DEVICE_TABLE(mlx4_pci_
- 	/* MT26478 ConnectX2 40GigE PCIe gen2 */
- 	{ PCI_VDEVICE(MELLANOX, 0x676e), 0 },
- 	/* MT25400 Family [ConnectX-2 Virtual Function] */
--	{ PCI_VDEVICE(MELLANOX, 0x1002), MLX4_VF },
-+	{ PCI_VDEVICE(MELLANOX, 0x1002), MLX4_PCI_DEV_IS_VF },
- 	/* MT27500 Family [ConnectX-3] */
- 	{ PCI_VDEVICE(MELLANOX, 0x1003), 0 },
- 	/* MT27500 Family [ConnectX-3 Virtual Function] */
--	{ PCI_VDEVICE(MELLANOX, 0x1004), MLX4_VF },
-+	{ PCI_VDEVICE(MELLANOX, 0x1004), MLX4_PCI_DEV_IS_VF },
- 	{ PCI_VDEVICE(MELLANOX, 0x1005), 0 }, /* MT27510 Family */
- 	{ PCI_VDEVICE(MELLANOX, 0x1006), 0 }, /* MT27511 Family */
- 	{ PCI_VDEVICE(MELLANOX, 0x1007), 0 }, /* MT27520 Family */
---- a/drivers/net/ethernet/mellanox/mlx4/mlx4.h
-+++ b/drivers/net/ethernet/mellanox/mlx4/mlx4.h
-@@ -711,6 +711,10 @@ struct mlx4_steer {
- 	struct list_head steer_entries[MLX4_NUM_STEERS];
- };
- 
-+enum {
-+	MLX4_PCI_DEV_IS_VF              = 1 << 0,
-+};
-+
- struct mlx4_priv {
- 	struct mlx4_dev		dev;
- 
-@@ -718,6 +722,8 @@ struct mlx4_priv {
- 	struct list_head	ctx_list;
- 	spinlock_t		ctx_lock;
- 
-+	int			pci_dev_data;
-+
- 	struct list_head        pgdir_list;
- 	struct mutex            pgdir_mutex;
+ 	dev_info(&pdev->dev, "AT91 Real Time Clock driver.\n");
+ 	return 0;
  
 
 
