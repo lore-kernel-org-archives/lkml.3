@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755419AbaFXP4N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:56:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33301 "EHLO
+	id S1756645AbaFXQGP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:06:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33308 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965000AbaFXP4J (ORCPT
+	with ESMTP id S964962AbaFXP4L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:56:09 -0400
+	Tue, 24 Jun 2014 11:56:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        stephen hemminger <stephen@networkplumber.org>,
-        Pravin B Shelar <pshelar@nicira.com>,
-        Cong Wang <cwang@twopensource.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>
-Subject: [PATCH 3.15 20/61] vxlan: use dev->needed_headroom instead of dev->hard_header_len
-Date: Tue, 24 Jun 2014 11:51:03 -0400
-Message-Id: <20140624154953.683689178@linuxfoundation.org>
+        Eric Dumazet <edumazet@google.com>, David Held <drheld@google.com>,
+        Shawn Bohrer <sbohrer@rgmadvisors.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.15 21/61] udp: ipv4: do not waste time in __udp4_lib_mcast_demux_lookup
+Date: Tue, 24 Jun 2014 11:51:04 -0400
+Message-Id: <20140624154953.727609079@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154952.751713761@linuxfoundation.org>
 References: <20140624154952.751713761@linuxfoundation.org>
@@ -32,54 +30,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cong Wang <cwang@twopensource.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 2853af6a2ea1a8ed09b09dd4fb578e7f435e8d34 ]
+[ Upstream commit 63c6f81cdde58c41da62a8d8a209592e42a0203e ]
 
-When we mirror packets from a vxlan tunnel to other device,
-the mirror device should see the same packets (that is, without
-outer header). Because vxlan tunnel sets dev->hard_header_len,
-tcf_mirred() resets mac header back to outer mac, the mirror device
-actually sees packets with outer headers
+Its too easy to add thousand of UDP sockets on a particular bucket,
+and slow down an innocent multicast receiver.
 
-Vxlan tunnel should set dev->needed_headroom instead of
-dev->hard_header_len, like what other ip tunnels do. This fixes
-the above problem.
+Early demux is supposed to be an optimization, we should avoid spending
+too much time in it.
 
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: stephen hemminger <stephen@networkplumber.org>
-Cc: Pravin B Shelar <pshelar@nicira.com>
-Signed-off-by: Cong Wang <cwang@twopensource.com>
-Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+It is interesting to note __udp4_lib_demux_lookup() only tries to
+match first socket in the chain.
+
+10 is the threshold we already have in __udp4_lib_lookup() to switch
+to secondary hash.
+
+Fixes: 421b3885bf6d5 ("udp: ipv4: Add udp early demux")
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Reported-by: David Held <drheld@google.com>
+Cc: Shawn Bohrer <sbohrer@rgmadvisors.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/vxlan.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ net/ipv4/udp.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/net/vxlan.c
-+++ b/drivers/net/vxlan.c
-@@ -2275,9 +2275,9 @@ static void vxlan_setup(struct net_devic
- 	eth_hw_addr_random(dev);
- 	ether_setup(dev);
- 	if (vxlan->default_dst.remote_ip.sa.sa_family == AF_INET6)
--		dev->hard_header_len = ETH_HLEN + VXLAN6_HEADROOM;
-+		dev->needed_headroom = ETH_HLEN + VXLAN6_HEADROOM;
- 	else
--		dev->hard_header_len = ETH_HLEN + VXLAN_HEADROOM;
-+		dev->needed_headroom = ETH_HLEN + VXLAN_HEADROOM;
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -1834,6 +1834,10 @@ static struct sock *__udp4_lib_mcast_dem
+ 	unsigned int count, slot = udp_hashfn(net, hnum, udp_table.mask);
+ 	struct udp_hslot *hslot = &udp_table.hash[slot];
  
- 	dev->netdev_ops = &vxlan_netdev_ops;
- 	dev->destructor = free_netdev;
-@@ -2660,8 +2660,7 @@ static int vxlan_newlink(struct net *net
- 		if (!tb[IFLA_MTU])
- 			dev->mtu = lowerdev->mtu - (use_ipv6 ? VXLAN6_HEADROOM : VXLAN_HEADROOM);
- 
--		/* update header length based on lower device */
--		dev->hard_header_len = lowerdev->hard_header_len +
-+		dev->needed_headroom = lowerdev->hard_header_len +
- 				       (use_ipv6 ? VXLAN6_HEADROOM : VXLAN_HEADROOM);
- 	} else if (use_ipv6)
- 		vxlan->flags |= VXLAN_F_IPV6;
++	/* Do not bother scanning a too big list */
++	if (hslot->count > 10)
++		return NULL;
++
+ 	rcu_read_lock();
+ begin:
+ 	count = 0;
 
 
