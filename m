@@ -1,94 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752704AbaFXX4G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 19:56:06 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:35057 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751211AbaFXX4E (ORCPT
+	id S1753375AbaFXX47 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 19:56:59 -0400
+Received: from mail-yh0-f74.google.com ([209.85.213.74]:54197 "EHLO
+	mail-yh0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752638AbaFXX46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 19:56:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <9E0BE1322F2F2246BD820DA9FC397ADE016AF41C@shsmsx102.ccr.corp.intel.com>
-References: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com>
- <1403084656-27284-3-git-send-email-qiaowei.ren@intel.com> <53A884B2.5070702@mit.edu>
- <53A88806.1060908@intel.com> <CALCETrXYZZiZsDiUvvZd0636+qHP9a0sHTN6wt_ZKjvLaeeBzw@mail.gmail.com>
- <53A88DE4.8050107@intel.com> <CALCETrWBbkFzQR3tz1TphqxiGYycvzrFrKc=ghzMynbem=d7rg@mail.gmail.com>
- <9E0BE1322F2F2246BD820DA9FC397ADE016AF41C@shsmsx102.ccr.corp.intel.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 24 Jun 2014 16:55:41 -0700
-Message-ID: <CALCETrX+iS5N8bCUm_O-1E4GPu4oG-SuFJoJjx_+S054K9-6pw@mail.gmail.com>
-Subject: Re: [PATCH v6 02/10] x86, mpx: add MPX specific mmap interface
-To: "Ren, Qiaowei" <qiaowei.ren@intel.com>
-Cc: "Hansen, Dave" <dave.hansen@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        X86 ML <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 24 Jun 2014 19:56:58 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Wolfram Sang <wsa@the-dreams.de>, Kukjin Kim <kgene.kim@samsung.com>,
+        Ben Dooks <ben-linux@fluff.org>
+Cc: Tomasz Figa <tomasz.figa@gmail.com>, javier.martinez@collabora.co.uk,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Doug Anderson <dianders@chromium.org>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] i2c: s3c2410: resume the I2C controller earlier
+Date: Tue, 24 Jun 2014 16:56:54 -0700
+Message-Id: <1403654214-25072-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 2.0.0.526.g5318336
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 23, 2014 at 10:53 PM, Ren, Qiaowei <qiaowei.ren@intel.com> wrote:
-> On 2014-06-24, Andy Lutomirski wrote:
->>> On 06/23/2014 01:06 PM, Andy Lutomirski wrote:
->>>> Can the new vm_operation "name" be use for this?  The magic "always
->>>> written to core dumps" feature might need to be reconsidered.
->>>
->>> One thing I'd like to avoid is an MPX vma getting merged with a
->>> non-MPX vma.  I don't see any code to prevent two VMAs with
->>> different vm_ops->names from getting merged.  That seems like a bit
->>> of a design oversight for ->name.  Right?
->>
->> AFAIK there are no ->name users that don't also set ->close, for
->> exactly that reason.  I'd be okay with adding a check for ->name, too.
->>
->> Hmm.  If MPX vmas had a real struct file attached, this would all come
->> for free. Maybe vmas with non-default vm_ops and file != NULL should
->> never be mergeable?
->>
->>>
->>> Thinking out loud a bit... There are also some more complicated but
->>> more performant cleanup mechanisms that I'd like to go after in the future.
->>> Given a page, we might want to figure out if it is an MPX page or not.
->>> I wonder if we'll ever collide with some other user of vm_ops->name.
->>> It looks fairly narrowly used at the moment, but would this keep us
->>> from putting these pages on, say, a tmpfs mount?  Doesn't look that
->>> way at the moment.
->>
->> You could always check the vm_ops pointer to see if it's MPX.
->>
->> One feature I've wanted: a way to have special per-process vmas that
->> can be easily found.  For example, I want to be able to efficiently
->> find out where the vdso and vvar vmas are.  I don't think this is currently supported.
->>
-> Andy, if you add a check for ->name to avoid the MPX vmas merged with non-MPX vmas, I guess the work flow should be as follow (use _install_special_mapping to get a new vma):
->
-> unsigned long mpx_mmap(unsigned long len)
-> {
->     ......
->     static struct vm_special_mapping mpx_mapping = {
->         .name = "[mpx]",
->         .pages = no_pages,
->     };
->
->     .......
->     vma = _install_special_mapping(mm, addr, len, vm_flags, &mpx_mapping);
->     ......
-> }
->
-> Then, we could check the ->name to see if the VMA is MPX specific. Right?
+From: Vincent Palatin <vpalatin@chromium.org>
 
-Does this actually create a vma backed with real memory?  Doesn't this
-need to go through anon_vma or something?  _install_special_mapping
-completely prevents merging.
+When the wake-up is triggered by the PMIC RTC, the RTC driver is trying
+to read the PMIC interrupt status over I2C and fails because the I2C
+controller is not resumed yet.
+Let's resume the I2C controller earlier in the _noirq phase
+(as other hardwares are doing), so we can properly get the wake-up
+condition.
 
-Possibly silly question: would it make more sense to just create one
-giant vma for the MPX tables and only populate pieces of it as needed?
- This wouldn't work for 32-bit code, but maybe we don't care.  (I see
-no reason why it couldn't work for x32, though.)
+Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+Changes in v2:
+- Added missing freeze/thaw/poweroff/restore
 
-(I don't really understand how anonymous memory works at all.  I'm not
-an mm person.)
+ drivers/i2c/busses/i2c-s3c2410.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---Andy
+diff --git a/drivers/i2c/busses/i2c-s3c2410.c b/drivers/i2c/busses/i2c-s3c2410.c
+index e828a1d..ecb389c 100644
+--- a/drivers/i2c/busses/i2c-s3c2410.c
++++ b/drivers/i2c/busses/i2c-s3c2410.c
+@@ -1267,7 +1267,7 @@ static int s3c24xx_i2c_suspend_noirq(struct device *dev)
+ 	return 0;
+ }
+ 
+-static int s3c24xx_i2c_resume(struct device *dev)
++static int s3c24xx_i2c_resume_noirq(struct device *dev)
+ {
+ 	struct platform_device *pdev = to_platform_device(dev);
+ 	struct s3c24xx_i2c *i2c = platform_get_drvdata(pdev);
+@@ -1285,7 +1285,11 @@ static int s3c24xx_i2c_resume(struct device *dev)
+ static const struct dev_pm_ops s3c24xx_i2c_dev_pm_ops = {
+ #ifdef CONFIG_PM_SLEEP
+ 	.suspend_noirq = s3c24xx_i2c_suspend_noirq,
+-	.resume = s3c24xx_i2c_resume,
++	.resume_noirq = s3c24xx_i2c_resume_noirq,
++	.freeze_noirq = s3c24xx_i2c_suspend_noirq,
++	.thaw_noirq = s3c24xx_i2c_resume_noirq,
++	.poweroff_noirq = s3c24xx_i2c_suspend_noirq,
++	.restore_noirq = s3c24xx_i2c_resume_noirq,
+ #endif
+ };
+ 
+-- 
+2.0.0.526.g5318336
+
