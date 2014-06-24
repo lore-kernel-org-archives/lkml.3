@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752463AbaFXPsm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:48:42 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:54155 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751307AbaFXPsk (ORCPT
+	id S1754600AbaFXPs4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:48:56 -0400
+Received: from smtprelay0099.hostedemail.com ([216.40.44.99]:45750 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751582AbaFXPsm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:48:40 -0400
-Date: Tue, 24 Jun 2014 16:48:33 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Jim Davis <jim.epost@gmail.com>, sfr@canb.auug.org.au,
-        linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, sbkim73@samsung.com,
-        sameo@linux.intel.com, grant.likely@linaro.org, robh+dt@kernel.org,
-        devicetree <devicetree@vger.kernel.org>
-Subject: Re: randconfig build error with next-20140624, in
- drivers/mfd/sec-core.c
-Message-ID: <20140624154833.GR13803@lee--X1>
-References: <CA+r1ZhhFYip3Jp2c3d8tNpD-vK8Pkf7DzrKTtk6Gy8uOOO3Ucw@mail.gmail.com>
- <29237234.T7oGEGKuvp@wuerfel>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <29237234.T7oGEGKuvp@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 24 Jun 2014 11:48:42 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2693:2828:3138:3139:3140:3141:3142:3352:3622:3868:3871:4321:5007:7652:7875:10004:10400:10848:11026:11232:11658:11914:12043:12296:12517:12519:12740:13069:13161:13229:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: grass47_85d685a7bac2a
+X-Filterd-Recvd-Size: 1675
+Message-ID: <1403624918.29061.16.camel@joe-AO725>
+Subject: Re: [PATCH 1/1] ar7: replace mac address parsing
+From: Joe Perches <joe@perches.com>
+To: Daniel Walter <dwalter@google.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 24 Jun 2014 08:48:38 -0700
+In-Reply-To: <20140624153959.GA19564@google.com>
+References: <20140624153959.GA19564@google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Jun 2014, Arnd Bergmann wrote:
-
-> On Tuesday 24 June 2014 07:39:04 Jim Davis wrote:
-> > Building with the attached random configuration file,
-> > 
-> > drivers/built-in.o: In function `sec_pmic_suspend':
-> > sec-core.c:(.text+0x31e02c): undefined reference to `regulator_suspend_prepare'
-> > make: *** [vmlinux] Error 1
-> 
-> Reported-by: Jim Davis <jim.epost@gmail.com>
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> 
-> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> index 207c433..1caa3c5 100644
-> --- a/drivers/mfd/Kconfig
-> +++ b/drivers/mfd/Kconfig
-> @@ -582,7 +582,7 @@ config MFD_RC5T583
+On Tue, 2014-06-24 at 16:39 +0100, Daniel Walter wrote:
+> Replace sscanf() with mac_pton().
+[]
+> diff --git a/arch/mips/ar7/platform.c b/arch/mips/ar7/platform.c
+[]
+> @@ -307,10 +307,7 @@ static void __init cpmac_get_mac(int instance, unsigned char *dev_addr)
+>  	}
 >  
->  config MFD_SEC_CORE
->  	bool "SAMSUNG Electronics PMIC Series Support"
-> -	depends on I2C=y
-> +	depends on I2C=y && REGULATOR
->  	select MFD_CORE
->  	select REGMAP_I2C
->  	select REGMAP_IRQ
+>  	if (mac) {
+> -		if (sscanf(mac, "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",
+> -					&dev_addr[0], &dev_addr[1],
+> -					&dev_addr[2], &dev_addr[3],
+> -					&dev_addr[4], &dev_addr[5]) != 6) {
+> +		if (!mac_pton(mac, dev_addr)) {
 
-Can you send me something I can `git am` please?
+There is a slight functional change with this conversion.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+mac_pton is strict about leading 0's and requires a 17 char strlen.
+
+sscanf will accept 0:1:2:3:4:5, mac_pton will not.
+
+>  			pr_warning("cannot parse mac address, "
+>  					"using random address\n");
+
+could be coalesced and pr_warn
+
+			pr_warn("cannot parse mac address - using random address\n");
+
+
