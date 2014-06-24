@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756612AbaFXQ4m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:56:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60731 "EHLO
+	id S1754723AbaFXPvQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:51:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60717 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754734AbaFXPvR (ORCPT
+	with ESMTP id S1754489AbaFXPvM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:51:17 -0400
+	Tue, 24 Jun 2014 11:51:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Pirko <jiri@resnulli.us>, Flavio Leitner <fbl@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 05/26] team: fix mtu setting
-Date: Tue, 24 Jun 2014 11:50:28 -0400
-Message-Id: <20140624154619.752726368@linuxfoundation.org>
+        Mimi Zohar <zohar@linux.vnet.ibm.com>
+Subject: [PATCH 3.4 02/26] evm: prohibit userspace writing security.evm HMAC value
+Date: Tue, 24 Jun 2014 11:50:25 -0400
+Message-Id: <20140624154619.609791236@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154619.499002156@linuxfoundation.org>
 References: <20140624154619.499002156@linuxfoundation.org>
@@ -29,73 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Pirko <jiri@resnulli.us>
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 
-[ Upstream commit 9d0d68faea6962d62dd501cd6e71ce5cc8ed262b ]
+commit 2fb1c9a4f2dbc2f0bd2431c7fa64d0b5483864e4 upstream.
 
-Now it is not possible to set mtu to team device which has a port
-enslaved to it. The reason is that when team_change_mtu() calls
-dev_set_mtu() for port device, notificator for NETDEV_PRECHANGEMTU
-event is called and team_device_event() returns NOTIFY_BAD forbidding
-the change. So fix this by returning NOTIFY_DONE here in case team is
-changing mtu in team_change_mtu().
+Calculating the 'security.evm' HMAC value requires access to the
+EVM encrypted key.  Only the kernel should have access to it.  This
+patch prevents userspace tools(eg. setfattr, cp --preserve=xattr)
+from setting/modifying the 'security.evm' HMAC value directly.
 
-Introduced-by: 3d249d4c "net: introduce ethernet teaming device"
-Signed-off-by: Jiri Pirko <jiri@resnulli.us>
-Acked-by: Flavio Leitner <fbl@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/team/team.c |    7 ++++++-
- include/linux/if_team.h |    1 +
- 2 files changed, 7 insertions(+), 1 deletion(-)
 
---- a/drivers/net/team/team.c
-+++ b/drivers/net/team/team.c
-@@ -889,6 +889,7 @@ static int team_change_mtu(struct net_de
- 	 * to traverse list in reverse under rcu_read_lock
- 	 */
- 	mutex_lock(&team->lock);
-+	team->port_mtu_change_allowed = true;
- 	list_for_each_entry(port, &team->port_list, list) {
- 		err = dev_set_mtu(port->dev, new_mtu);
- 		if (err) {
-@@ -897,6 +898,7 @@ static int team_change_mtu(struct net_de
- 			goto unwind;
- 		}
- 	}
-+	team->port_mtu_change_allowed = false;
- 	mutex_unlock(&team->lock);
- 
- 	dev->mtu = new_mtu;
-@@ -906,6 +908,7 @@ static int team_change_mtu(struct net_de
- unwind:
- 	list_for_each_entry_continue_reverse(port, &team->port_list, list)
- 		dev_set_mtu(port->dev, dev->mtu);
-+	team->port_mtu_change_allowed = false;
- 	mutex_unlock(&team->lock);
- 
- 	return err;
-@@ -1671,7 +1674,9 @@ static int team_device_event(struct noti
- 		break;
- 	case NETDEV_CHANGEMTU:
- 		/* Forbid to change mtu of underlaying device */
--		return NOTIFY_BAD;
-+		if (!port->team->port_mtu_change_allowed)
-+			return NOTIFY_BAD;
-+		break;
- 	case NETDEV_PRE_TYPE_CHANGE:
- 		/* Forbid to change type of underlaying device */
- 		return NOTIFY_BAD;
---- a/include/linux/if_team.h
-+++ b/include/linux/if_team.h
-@@ -113,6 +113,7 @@ struct team {
- 
- 	const struct team_mode *mode;
- 	struct team_mode_ops ops;
-+	bool port_mtu_change_allowed;
- 	long mode_priv[TEAM_MODE_PRIV_LONGS];
- };
- 
+---
+ security/integrity/evm/evm_main.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+--- a/security/integrity/evm/evm_main.c
++++ b/security/integrity/evm/evm_main.c
+@@ -271,12 +271,20 @@ static int evm_protect_xattr(struct dent
+  * @xattr_value: pointer to the new extended attribute value
+  * @xattr_value_len: pointer to the new extended attribute value length
+  *
+- * Updating 'security.evm' requires CAP_SYS_ADMIN privileges and that
+- * the current value is valid.
++ * Before allowing the 'security.evm' protected xattr to be updated,
++ * verify the existing value is valid.  As only the kernel should have
++ * access to the EVM encrypted key needed to calculate the HMAC, prevent
++ * userspace from writing HMAC value.  Writing 'security.evm' requires
++ * requires CAP_SYS_ADMIN privileges.
+  */
+ int evm_inode_setxattr(struct dentry *dentry, const char *xattr_name,
+ 		       const void *xattr_value, size_t xattr_value_len)
+ {
++	const struct evm_ima_xattr_data *xattr_data = xattr_value;
++
++	if ((strcmp(xattr_name, XATTR_NAME_EVM) == 0)
++	    && (xattr_data->type == EVM_XATTR_HMAC))
++		return -EPERM;
+ 	return evm_protect_xattr(dentry, xattr_name, xattr_value,
+ 				 xattr_value_len);
+ }
 
 
