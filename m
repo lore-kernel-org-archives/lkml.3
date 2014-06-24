@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932482AbaFXQ0G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:26:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32994 "EHLO
+	id S932508AbaFXQ0d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:26:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32990 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932433AbaFXPyT (ORCPT
+	with ESMTP id S932404AbaFXPyR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:54:19 -0400
+	Tue, 24 Jun 2014 11:54:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Popov <ixaphire@qrator.net>,
+        Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 27/68] ipip, sit: fix ipv4_{update_pmtu,redirect} calls
-Date: Tue, 24 Jun 2014 11:50:46 -0400
-Message-Id: <20140624154725.143724978@linuxfoundation.org>
+Subject: [PATCH 3.14 26/68] net: force a list_del() in unregister_netdevice_many()
+Date: Tue, 24 Jun 2014 11:50:45 -0400
+Message-Id: <20140624154725.096272615@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154723.907894814@linuxfoundation.org>
 References: <20140624154723.907894814@linuxfoundation.org>
@@ -29,57 +29,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Popov <ixaphire@qrator.net>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 2346829e641b804ece9ac9298136b56d9567c278 ]
+[ Upstream commit 87757a917b0b3c0787e0563c679762152be81312 ]
 
-ipv4_{update_pmtu,redirect} were called with tunnel's ifindex (t->dev is a
-tunnel netdevice). It caused wrong route lookup and failure of pmtu update or
-redirect. We should use the same ifindex that we use in ip_route_output_* in
-*tunnel_xmit code. It is t->parms.link .
+unregister_netdevice_many() API is error prone and we had too
+many bugs because of dangling LIST_HEAD on stacks.
 
-Signed-off-by: Dmitry Popov <ixaphire@qrator.net>
+See commit f87e6f47933e3e ("net: dont leave active on stack LIST_HEAD")
+
+In fact, instead of making sure no caller leaves an active list_head,
+just force a list_del() in the callee. No one seems to need to access
+the list after unregister_netdevice_many()
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/ipip.c |    4 ++--
- net/ipv6/sit.c  |    4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/net/macvlan.c |    1 -
+ net/core/dev.c        |    5 ++++-
+ net/core/rtnetlink.c  |    1 -
+ net/mac80211/iface.c  |    1 -
+ 4 files changed, 4 insertions(+), 4 deletions(-)
 
---- a/net/ipv4/ipip.c
-+++ b/net/ipv4/ipip.c
-@@ -149,13 +149,13 @@ static int ipip_err(struct sk_buff *skb,
- 
- 	if (type == ICMP_DEST_UNREACH && code == ICMP_FRAG_NEEDED) {
- 		ipv4_update_pmtu(skb, dev_net(skb->dev), info,
--				 t->dev->ifindex, 0, IPPROTO_IPIP, 0);
-+				 t->parms.link, 0, IPPROTO_IPIP, 0);
- 		err = 0;
- 		goto out;
+--- a/drivers/net/macvlan.c
++++ b/drivers/net/macvlan.c
+@@ -1043,7 +1043,6 @@ static int macvlan_device_event(struct n
+ 		list_for_each_entry_safe(vlan, next, &port->vlans, list)
+ 			vlan->dev->rtnl_link_ops->dellink(vlan->dev, &list_kill);
+ 		unregister_netdevice_many(&list_kill);
+-		list_del(&list_kill);
+ 		break;
+ 	case NETDEV_PRE_TYPE_CHANGE:
+ 		/* Forbid underlaying device to change its type. */
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -6548,6 +6548,9 @@ EXPORT_SYMBOL(unregister_netdevice_queue
+ /**
+  *	unregister_netdevice_many - unregister many devices
+  *	@head: list of devices
++ *
++ *  Note: As most callers use a stack allocated list_head,
++ *  we force a list_del() to make sure stack wont be corrupted later.
+  */
+ void unregister_netdevice_many(struct list_head *head)
+ {
+@@ -6557,6 +6560,7 @@ void unregister_netdevice_many(struct li
+ 		rollback_registered_many(head);
+ 		list_for_each_entry(dev, head, unreg_list)
+ 			net_set_todo(dev);
++		list_del(head);
  	}
- 
- 	if (type == ICMP_REDIRECT) {
--		ipv4_redirect(skb, dev_net(skb->dev), t->dev->ifindex, 0,
-+		ipv4_redirect(skb, dev_net(skb->dev), t->parms.link, 0,
- 			      IPPROTO_IPIP, 0);
- 		err = 0;
- 		goto out;
---- a/net/ipv6/sit.c
-+++ b/net/ipv6/sit.c
-@@ -560,12 +560,12 @@ static int ipip6_err(struct sk_buff *skb
- 
- 	if (type == ICMP_DEST_UNREACH && code == ICMP_FRAG_NEEDED) {
- 		ipv4_update_pmtu(skb, dev_net(skb->dev), info,
--				 t->dev->ifindex, 0, IPPROTO_IPV6, 0);
-+				 t->parms.link, 0, IPPROTO_IPV6, 0);
- 		err = 0;
- 		goto out;
+ }
+ EXPORT_SYMBOL(unregister_netdevice_many);
+@@ -7012,7 +7016,6 @@ static void __net_exit default_device_ex
+ 		}
  	}
- 	if (type == ICMP_REDIRECT) {
--		ipv4_redirect(skb, dev_net(skb->dev), t->dev->ifindex, 0,
-+		ipv4_redirect(skb, dev_net(skb->dev), t->parms.link, 0,
- 			      IPPROTO_IPV6, 0);
- 		err = 0;
- 		goto out;
+ 	unregister_netdevice_many(&dev_kill_list);
+-	list_del(&dev_kill_list);
+ 	rtnl_unlock();
+ }
+ 
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -1735,7 +1735,6 @@ static int rtnl_dellink(struct sk_buff *
+ 
+ 	ops->dellink(dev, &list_kill);
+ 	unregister_netdevice_many(&list_kill);
+-	list_del(&list_kill);
+ 	return 0;
+ }
+ 
+--- a/net/mac80211/iface.c
++++ b/net/mac80211/iface.c
+@@ -1761,7 +1761,6 @@ void ieee80211_remove_interfaces(struct
+ 	}
+ 	mutex_unlock(&local->iflist_mtx);
+ 	unregister_netdevice_many(&unreg_list);
+-	list_del(&unreg_list);
+ 
+ 	list_for_each_entry_safe(sdata, tmp, &wdev_list, list) {
+ 		list_del(&sdata->list);
 
 
