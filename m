@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755013AbaFXPvo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:51:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60799 "EHLO
+	id S1755141AbaFXPvz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:51:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60825 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754958AbaFXPvl (ORCPT
+	with ESMTP id S1755102AbaFXPvx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:51:41 -0400
+	Tue, 24 Jun 2014 11:51:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.4 15/26] USB: cdc-acm: fix I/O after failed open
-Date: Tue, 24 Jun 2014 11:50:38 -0400
-Message-Id: <20140624154620.237575343@linuxfoundation.org>
+        Lars-Peter Clausen <lars@metafoo.de>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.4 22/26] ALSA: control: Handle numid overflow
+Date: Tue, 24 Jun 2014 11:50:45 -0400
+Message-Id: <20140624154620.554723214@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154619.499002156@linuxfoundation.org>
 References: <20140624154619.499002156@linuxfoundation.org>
@@ -28,39 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit e4c36076c2a6195ec62c35b03c3fde84d0087dc8 upstream.
+commit ac902c112d90a89e59916f751c2745f4dbdbb4bd upstream.
 
-Make sure to kill any already submitted read urbs on read-urb submission
-failures in open in order to prevent doing I/O for a closed port.
+Each control gets automatically assigned its numids when the control is created.
+The allocation is done by incrementing the numid by the amount of allocated
+numids per allocation. This means that excessive creation and destruction of
+controls (e.g. via SNDRV_CTL_IOCTL_ELEM_ADD/REMOVE) can cause the id to
+eventually overflow. Currently when this happens for the control that caused the
+overflow kctl->id.numid + kctl->count will also over flow causing it to be
+smaller than kctl->id.numid. Most of the code assumes that this is something
+that can not happen, so we need to make sure that it won't happen
 
-Fixes: 088c64f81284 ("USB: cdc-acm: re-write read processing")
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Acked-by: Jaroslav Kysela <perex@perex.cz>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/class/cdc-acm.c |    3 +++
- 1 file changed, 3 insertions(+)
+ sound/core/control.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -542,6 +542,7 @@ static int acm_port_activate(struct tty_
+--- a/sound/core/control.c
++++ b/sound/core/control.c
+@@ -288,6 +288,10 @@ static bool snd_ctl_remove_numid_conflic
  {
- 	struct acm *acm = container_of(port, struct acm, port);
- 	int retval = -ENODEV;
-+	int i;
+ 	struct snd_kcontrol *kctl;
  
- 	dev_dbg(&acm->control->dev, "%s\n", __func__);
- 
-@@ -590,6 +591,8 @@ static int acm_port_activate(struct tty_
- 	return 0;
- 
- error_submit_read_urbs:
-+	for (i = 0; i < acm->rx_buflimit; i++)
-+		usb_kill_urb(acm->read_urbs[i]);
- 	acm->ctrlout = 0;
- 	acm_set_control(acm, acm->ctrlout);
- error_set_control:
++	/* Make sure that the ids assigned to the control do not wrap around */
++	if (card->last_numid >= UINT_MAX - count)
++		card->last_numid = 0;
++
+ 	list_for_each_entry(kctl, &card->controls, list) {
+ 		if (kctl->id.numid < card->last_numid + 1 + count &&
+ 		    kctl->id.numid + kctl->count > card->last_numid + 1) {
 
 
