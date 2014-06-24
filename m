@@ -1,53 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754697AbaFXTn7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 15:43:59 -0400
-Received: from smtprelay0203.hostedemail.com ([216.40.44.203]:48758 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753942AbaFXTn5 (ORCPT
+	id S1754847AbaFXTqG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 15:46:06 -0400
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:47854 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753578AbaFXTqC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 15:43:57 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2693:2828:3138:3139:3140:3141:3142:3350:3622:3865:3867:3870:3871:3873:4321:5007:6120:7652:9140:10004:10400:10848:11026:11232:11658:11914:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: crowd70_49835eed4c56
-X-Filterd-Recvd-Size: 1801
-Message-ID: <1403639030.29061.37.camel@joe-AO725>
-Subject: Re: [RFC PATCH 1/3] init.h: Add __init_str / __exit_str macros
-From: Joe Perches <joe@perches.com>
-To: Mathias Krause <minipli@googlemail.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jason Baron <jbaron@redhat.com>
-Date: Tue, 24 Jun 2014 12:43:50 -0700
-In-Reply-To: <1403477209-14612-2-git-send-email-minipli@googlemail.com>
-References: <1403477209-14612-1-git-send-email-minipli@googlemail.com>
-	 <1403477209-14612-2-git-send-email-minipli@googlemail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 24 Jun 2014 15:46:02 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140624183024.GA1258@redhat.com>
+References: <1403560693-21809-1-git-send-email-keescook@chromium.org>
+	<1403560693-21809-4-git-send-email-keescook@chromium.org>
+	<20140624183024.GA1258@redhat.com>
+Date: Tue, 24 Jun 2014 12:46:01 -0700
+X-Google-Sender-Auth: DvLfigLX9yAwX06Up2bO3zGXK9Y
+Message-ID: <CAGXu5j+Khz+HH3QvfNWa3FdUspTEf-xLchBMLyCC_QN42xpLZA@mail.gmail.com>
+Subject: Re: [PATCH v7 3/9] seccomp: introduce writer locking
+From: Kees Cook <keescook@chromium.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Andy Lutomirski <luto@amacapital.net>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-06-23 at 00:46 +0200, Mathias Krause wrote:
-> Add macros to be able to mark string literals used in __init / __exit
-> functions.
-[]
-> diff --git a/include/linux/init.h b/include/linux/init.h
-[]
-> +#define __init_str(str)	__mark_str(str, __UNIQUE_ID(_init_str_), __initconst)
-> +#define __exit_str(str)	__mark_str(str, __UNIQUE_ID(_exit_str_), __exitdata)
-> +#define __mark_str(str, var, __section) \
-> +	({ static const char var[] __section __aligned(1) = str; var; })
-> +
+On Tue, Jun 24, 2014 at 11:30 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> I am puzzled by the usage of smp_load_acquire(),
 
-You probably want to make these strings vanish
-completely when !CONFIG_PRINTK.
+It was recommended by Andy Lutomirski in preference to ACCESS_ONCE().
 
-As is, they will always exist in the image.
+> On 06/23, Kees Cook wrote:
+>>
+>>  static u32 seccomp_run_filters(int syscall)
+>>  {
+>> -     struct seccomp_filter *f;
+>> +     struct seccomp_filter *f = smp_load_acquire(&current->seccomp.filter);
+>>       struct seccomp_data sd;
+>>       u32 ret = SECCOMP_RET_ALLOW;
+>>
+>>       /* Ensure unexpected behavior doesn't result in failing open. */
+>> -     if (WARN_ON(current->seccomp.filter == NULL))
+>> +     if (WARN_ON(f == NULL))
+>>               return SECCOMP_RET_KILL;
+>>
+>>       populate_seccomp_data(&sd);
+>> @@ -186,9 +186,8 @@ static u32 seccomp_run_filters(int syscall)
+>>        * All filters in the list are evaluated and the lowest BPF return
+>>        * value always takes priority (ignoring the DATA).
+>>        */
+>> -     for (f = current->seccomp.filter; f; f = f->prev) {
+>> +     for (; f; f = smp_load_acquire(&f->prev)) {
+>>               u32 cur_ret = SK_RUN_FILTER(f->prog, (void *)&sd);
+>> -
+>>               if ((cur_ret & SECCOMP_RET_ACTION) < (ret & SECCOMP_RET_ACTION))
+>>                       ret = cur_ret;
+>
+> OK, in this case the 1st one is probably fine, altgough it is not
+> clear to me why it is better than read_barrier_depends().
+>
+> But why do we need a 2nd one inside the loop? And if we actually need
+> it (I don't think so) then why it is safe to use f->prog without
+> load_acquire ?
 
+You're right -- it should not be possible for for any of the ->prev
+pointers to change.
 
+>>  void get_seccomp_filter(struct task_struct *tsk)
+>>  {
+>> -     struct seccomp_filter *orig = tsk->seccomp.filter;
+>> +     struct seccomp_filter *orig = smp_load_acquire(&tsk->seccomp.filter);
+>>       if (!orig)
+>>               return;
+>
+> This one looks unneeded.
+>
+> First of all, afaics atomic_inc() should work correctly without any barriers,
+> otherwise it is buggy. But even this doesn't matter.
+>
+> With this changes get_seccomp_filter() must be called under ->siglock, it can't
+> race with add-filter and thus tsk->seccomp.filter should be stable.
+
+Excellent point, yes. I'll remove that.
+
+>>       /* Reference count is bounded by the number of total processes. */
+>> @@ -361,7 +364,7 @@ void put_seccomp_filter(struct task_struct *tsk)
+>>       /* Clean up single-reference branches iteratively. */
+>>       while (orig && atomic_dec_and_test(&orig->usage)) {
+>>               struct seccomp_filter *freeme = orig;
+>> -             orig = orig->prev;
+>> +             orig = smp_load_acquire(&orig->prev);
+>>               seccomp_filter_free(freeme);
+>>       }
+>
+> This one looks unneeded too. And note that this patch does not add
+> smp_load_acquire() to read tsk->seccomp.filter.
+
+Hrm, yes, that should get added.
+
+> atomic_dec_and_test() adds mb(), we do not need more barriers to access
+> ->prev ?
+
+Right, same situation as the run_filters loop. Thanks!
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
