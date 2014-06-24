@@ -1,78 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752582AbaFXN2i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 09:28:38 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:37855 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751132AbaFXN2h (ORCPT
+	id S1752793AbaFXNcS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 09:32:18 -0400
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:42369 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751132AbaFXNcQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 09:28:37 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-7f-53a97d0151de
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-To: zohar@linux.vnet.ibm.com, linux-ima-devel@lists.sourceforge.net,
-        linux-security-module@vger.kernel.org, viro@zeniv.linux.org.uk
-Cc: linux-kernel@vger.kernel.org, dmitry.kasatkin@gmail.com,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>
-Subject: [PATCH 1/1] ima: fix fallback to use new_sync_read()
-Date: Tue, 24 Jun 2014 16:27:19 +0300
-Message-id: <ffb4808ed8ce0dddbc96c566ccca2c9b39005643.1403616439.git.d.kasatkin@samsung.com>
-X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMJMWRmVeSWpSXmKPExsVy+t/xq7qMtSuDDfqPmFrc+ruX2eLL0jqL
-	lzPmsVtc3jWHzeJDzyM2i/N/j7NafFoxidmB3WPnrLvsHg8ObWbx2L3gM5NH35ZVjB6fN8l5
-	bHrylimALYrLJiU1J7MstUjfLoErY+7qOawFa7grLs/dw9jAuI2zi5GTQ0LAROL3hl0sELaY
-	xIV769m6GLk4hASWMkqcnzwDyulkklj9r5URpIpNQE9iQ/MPdpCEiEAro8SSr0vAEswC6RKf
-	JvWyg9jCArYSa75vYQKxWQRUJXr6OlhBbF6BOIkf/dvZINbJSZw8Npl1AiP3AkaGVYyiqaXJ
-	BcVJ6blGesWJucWleel6yfm5mxghAfN1B+PSY1aHGAU4GJV4eCt2rAgWYk0sK67MPcQowcGs
-	JML7JW5lsBBvSmJlVWpRfnxRaU5q8SFGJg5OqQbGxr4NCaK1V/XuZJYe+Hqj7PzVu0+8dI2X
-	O3seOaL8Wqf74YnnFoJzLBy3dyhX/Hc23/2kMHx205f5ddJPw8I7XDmstu/0Ff9h0dE/ab52
-	qaN9WWd7pfpsp9TmY9xRwudLnoWFvjnJJCdwbtLFeO1TYipCU+f+Vc9fp7yqqrArPrcgoS7v
-	UZYSS3FGoqEWc1FxIgAm5Hes9gEAAA==
+	Tue, 24 Jun 2014 09:32:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140620143525.GB8769@pathway.suse.cz>
+References: <20140619213329.478113470@goodmis.org>
+	<alpine.LNX.2.00.1406192349400.15014@pobox.suse.cz>
+	<20140619185810.4137e14b@gandalf.local.home>
+	<alpine.LNX.2.00.1406200100520.15014@pobox.suse.cz>
+	<20140619191923.1365850a@gandalf.local.home>
+	<alpine.LNX.2.00.1406200123220.15014@pobox.suse.cz>
+	<20140619193635.1949b469@gandalf.local.home>
+	<alpine.LNX.2.00.1406200137310.15014@pobox.suse.cz>
+	<20140620143525.GB8769@pathway.suse.cz>
+Date: Tue, 24 Jun 2014 17:32:15 +0400
+Message-ID: <CALYGNiM3OH64ULh63cCarTitbjUatZP0mckJ3N9CDusP3mFMRg@mail.gmail.com>
+Subject: Re: [RFC][PATCH 0/3] x86/nmi: Print all cpu stacks from NMI safely
+From: Konstantin Khlebnikov <koct9i@gmail.com>
+To: =?UTF-8?B?UGV0ciBNbMOhZGVr?= <pmladek@suse.cz>
+Cc: Jiri Kosina <jkosina@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, Jan Kara <jack@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Dave Anderson <anderson@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16 commit aad4f8bb42af06371aa0e85bf0cd9d52c0494985
-'switch simple generic_file_aio_read() users to ->read_iter()'
-replaced ->aio_read with ->read_iter in most of the file systems
-and introduced new_sync_read() as a replacement for do_sync_read().
+On Fri, Jun 20, 2014 at 6:35 PM, Petr Mládek <pmladek@suse.cz> wrote:
+> On Fri 2014-06-20 01:38:59, Jiri Kosina wrote:
+>> On Thu, 19 Jun 2014, Steven Rostedt wrote:
+>>
+>> > > I don't think there is a need for a global stop_machine()-like
+>> > > synchronization here. The printing CPU will be sending IPI to the CPU N+1
+>> > > only after it has finished printing CPU N stacktrace.
+>> >
+>> > So you plan on sending an IPI to a CPU then wait for it to acknowledge
+>> > that it is spinning, and then print out the data and then tell the CPU
+>> > it can stop spinning?
+>>
+>> Yes, that was exactly my idea. You have to be synchronized with the CPU
+>> receiving the NMI anyway in case you'd like to get its pt_regs and dump
+>> those as part of the dump.
+>
+> This approach did not work after all. There was still the same
+> race. If we stop a CPU in the middle of printk(), it does not help
+> to move the printing task to another CPU ;-) We would need to
+> make a copy of regs and all the stacks to unblock the CPU.
+>
+> Hmm, in general, if we want a consistent snapshot, we need to temporary store
+> the information in NMI context and put it into the main ring buffer
+> in normal context. We either need to copy stacks or copy the printed text.
+>
+>
+> I start to like Steven's solution with the trace_seq buffer. I see the
+> following advantages:
+>
+>     + the snapshot is pretty good;
+>         + we still send NMI to all CPUs at the "same" time
+>
+>     + only minimal time is spent in NMI context;
+>         + CPUs are not blocked by each other to get sequential output
+>
+>     + minimum of new code
+>         + trace_seq buffer is already implemented and used
+>         + it might be even better after getting attention from new users
+>
+>
+> Of course, it has also some disadvantages:
+>
+>    + needs quite big per-CPU buffer;
+>         + but we would need some extra space to copy the data anyway
+>
+>    + trace might be shrunken;
+>         + but 1 page should be enough in most cases;
+>         + we could make it configurable
+>
+>    + delay until the message appears in the ringbuffer and console
+>         + better than freezing
+>         + still saved in core file
+>         + crash tool could get improved to find the traces
+>
+>
+> Note that the above solution solves only printing of the stack.
+> There are still other locations when printk is called in NMI
+> context. IMHO, some of them are helpful:
+>
+>     ./arch/x86/kernel/nmi.c:                        WARN(in_nmi(),
+>     ./arch/x86/mm/kmemcheck/kmemcheck.c:    WARN_ON_ONCE(in_nmi());
+>     ./arch/x86/mm/fault.c:  WARN_ON_ONCE(in_nmi());
+>     ./arch/x86/mm/fault.c:  WARN_ON_ONCE(in_nmi());
+>
+>     ./mm/vmalloc.c: BUG_ON(in_nmi());
+>     ./lib/genalloc.c:       BUG_ON(in_nmi());
+>     ./lib/genalloc.c:       BUG_ON(in_nmi());
+>     ./include/linux/hardirq.h:              BUG_ON(in_nmi());
+>
+> And some are probably less important:
+>
+>     ./arch/x86/platform/uv/uv_nmi.c   several locations here
+>     ./arch/m68k/mac/macints.c-              printk("... pausing, press NMI to resume ...");
+>
+>
+> Well, there are only few. Maybe, we could share the trace_seq buffer
+> here.
+>
+> Of course, there is still the possibility to implement a lockless
+> buffer. But it will be much more complicated than the current one.
+> I am not sure that we really want it.
 
-Most of file systems set '->read' and ima_kernel_read is not affected.
-When ->read is not set, this patch adopts fallback call changes from the
-vfs_read.
+Let me join the discussion.
+In the past I've implemented similar feature for x86 in openvz kernel
+and now I'm thinking about it for arm.
 
-Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
----
- security/integrity/ima/ima_crypto.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+Originally I thought that seizing all cpus one by one and printing
+from the initiator
+is a best approach and I've started preparing arguments against
+over-engineered printk...
+But it seems deferring printk output isn't that bad idea, it much
+easier and arch-independent.
+Saving context is very arch-specific. Printing is a problem too:
+show_regs() is a horrible mess,
+on most arches it always prints something from current context. I'm
+thinking about cleaning this
+mess, but doing this for all arches takes some time for sure.
 
-diff --git a/security/integrity/ima/ima_crypto.c b/security/integrity/ima/ima_crypto.c
-index ccd0ac8..b126a78 100644
---- a/security/integrity/ima/ima_crypto.c
-+++ b/security/integrity/ima/ima_crypto.c
-@@ -40,19 +40,19 @@ static int ima_kernel_read(struct file *file, loff_t offset,
- {
- 	mm_segment_t old_fs;
- 	char __user *buf = addr;
--	ssize_t ret;
-+	ssize_t ret = -EINVAL;
- 
- 	if (!(file->f_mode & FMODE_READ))
- 		return -EBADF;
--	if (!file->f_op->read && !file->f_op->aio_read)
--		return -EINVAL;
- 
- 	old_fs = get_fs();
- 	set_fs(get_ds());
- 	if (file->f_op->read)
- 		ret = file->f_op->read(file, buf, count, &offset);
--	else
-+	else if (file->f_op->aio_read)
- 		ret = do_sync_read(file, buf, count, &offset);
-+	else if (file->f_op->read_iter)
-+		ret = new_sync_read(file, buf, count, &offset);
- 	set_fs(old_fs);
- 	return ret;
- }
--- 
-1.9.1
+Instead of per-cpu buffers printk might use part of existing ring
+buffer  -- initiator cpu allocates space for
+target cpu and flushes it into common stream after it finish printing.
+Probably this kind of transactional model might be used on single cpu
+for multi-line KERN_CONT.
 
+>
+>
+> Best Regards,
+> Petr
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
