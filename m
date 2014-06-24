@@ -1,53 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753052AbaFXKrR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 06:47:17 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:44269 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751407AbaFXKrP (ORCPT
+	id S1753586AbaFXKs2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 06:48:28 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:33406 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751713AbaFXKs0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 06:47:15 -0400
-Date: Tue, 24 Jun 2014 12:47:02 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, Waiman.Long@hp.com,
-        tglx@linutronix.de, mingo@kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        paolo.bonzini@gmail.com, boris.ostrovsky@oracle.com,
-        paulmck@linux.vnet.ibm.com, riel@redhat.com,
-        torvalds@linux-foundation.org, raghavendra.kt@linux.vnet.ibm.com,
-        david.vrabel@citrix.com, oleg@redhat.com, gleb@redhat.com,
-        scott.norton@hp.com, chegu_vinod@hp.com
-Subject: Re: [PATCH 04/11] qspinlock: Extract out the exchange of tail code
- word
-Message-ID: <20140624104702.GO13930@laptop.programming.kicks-ass.net>
-References: <20140615124657.264658593@chello.nl>
- <20140615130153.376621956@chello.nl>
- <20140617205525.GB29634@laptop.dumpdata.com>
- <53A17A09.6010007@redhat.com>
+	Tue, 24 Jun 2014 06:48:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53A17A09.6010007@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140624080347.GL13930@laptop.programming.kicks-ass.net>
+References: <0dfbe2976aa108c53e08d3477ea90f6360c1f54c.1403584026.git.viresh.kumar@linaro.org>
+	<20140624080347.GL13930@laptop.programming.kicks-ass.net>
+Date: Tue, 24 Jun 2014 16:18:26 +0530
+Message-ID: <CAKohpomVO5H+peZe53U9=cGkRKNB9HVZZe02n+2pByLYJs1G5w@mail.gmail.com>
+Subject: Re: [PATCH] sched/idle: Drop !! while calculating 'broadcast'
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 18, 2014 at 01:37:45PM +0200, Paolo Bonzini wrote:
-> However, I *do* agree with you that it's simpler to just squash this patch
-> into 01/11.
+On 24 June 2014 13:33, Peter Zijlstra <peterz@infradead.org> wrote:
+> All true; but does it change anything? That is, does your compiler
+> generate better code because of this?
 
-So I explicitly broke out these optimizations into separate patches so
-that we can see them independently and agree they're idempotent wrt the
-state machine.
+Compilers are smart enough now a days and may not  perform !!
+at all I believe.. And so this patch is more about code clarity ..
 
-The initial patches by Waiman were totally unreadable, partly because
-the optimizations made the code terribly complex.
+I tried comparing results for ARM and got this with/without
+this patch ..
 
-Luckily waiman then dropped the most horrible optimizations
-(optimization for the very large nr_cpus case, were we cannot have a
-pending byte), so the end result isn't quite as complex as it used to
-be.
+$ size ../bexynos/kernel/sched/idle.o
+   text   data    bss    dec    hex filename
+    690     30      0    720    2d0 ../bexynos/kernel/sched/idle.o
+
+Don't know if some architectures are using somewhat dumb
+compilers which might result in better code with this patch :)
