@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964959AbaFXP4A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:56:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33277 "EHLO
+	id S964981AbaFXP4E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:56:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33283 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755309AbaFXPz5 (ORCPT
+	with ESMTP id S964962AbaFXP4A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:55:57 -0400
+	Tue, 24 Jun 2014 11:56:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejas Vaykole <tejas.vaykole@calsoftinc.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.15 03/61] iscsi-target: Reject mutual authentication with reflected CHAP_C
-Date: Tue, 24 Jun 2014 11:50:46 -0400
-Message-Id: <20140624154952.934935636@linuxfoundation.org>
+        Xiao Jin <jin.xiao@intel.com>, Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.15 28/61] USB: cdc-acm: fix broken runtime suspend
+Date: Tue, 24 Jun 2014 11:51:11 -0400
+Message-Id: <20140624154954.053014519@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154952.751713761@linuxfoundation.org>
 References: <20140624154952.751713761@linuxfoundation.org>
@@ -29,47 +28,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 1d2b60a5545942b1376cb48c1d55843d71e3a08f upstream.
+commit 140cb81ac8c625942a1d695875932c615767a526 upstream.
 
-This patch adds an explicit check in chap_server_compute_md5() to ensure
-the CHAP_C value received from the initiator during mutual authentication
-does not match the original CHAP_C provided by the target.
+The current ACM runtime-suspend implementation is broken in several
+ways:
 
-This is in line with RFC-3720, section 8.2.1:
+Firstly, it buffers only the first write request being made while
+suspended -- any further writes are silently dropped.
 
-   Originators MUST NOT reuse the CHAP challenge sent by the Responder
-   for the other direction of a bidirectional authentication.
-   Responders MUST check for this condition and close the iSCSI TCP
-   connection if it occurs.
+Secondly, writes being dropped also leak write urbs, which are never
+reclaimed (until the device is unbound).
 
-Reported-by: Tejas Vaykole <tejas.vaykole@calsoftinc.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Thirdly, even the single buffered write is not cleared at shutdown
+(which may happen before the device is resumed), something which can
+lead to another urb leak as well as a PM usage-counter leak.
+
+Fix this by implementing a delayed-write queue using urb anchors and
+making sure to discard the queue properly at shutdown.
+
+Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
+that support remote wakeup")
+
+Reported-by: Xiao Jin <jin.xiao@intel.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/iscsi/iscsi_target_auth.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/usb/class/cdc-acm.c |   32 ++++++++++++++++++++++----------
+ drivers/usb/class/cdc-acm.h |    2 +-
+ 2 files changed, 23 insertions(+), 11 deletions(-)
 
---- a/drivers/target/iscsi/iscsi_target_auth.c
-+++ b/drivers/target/iscsi/iscsi_target_auth.c
-@@ -314,6 +314,16 @@ static int chap_server_compute_md5(
- 		goto out;
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -573,6 +573,8 @@ static void acm_port_destruct(struct tty
+ static void acm_port_shutdown(struct tty_port *port)
+ {
+ 	struct acm *acm = container_of(port, struct acm, port);
++	struct urb *urb;
++	struct acm_wb *wb;
+ 	int i;
+ 
+ 	dev_dbg(&acm->control->dev, "%s\n", __func__);
+@@ -581,6 +583,16 @@ static void acm_port_shutdown(struct tty
+ 	if (!acm->disconnected) {
+ 		usb_autopm_get_interface(acm->control);
+ 		acm_set_control(acm, acm->ctrlout = 0);
++
++		for (;;) {
++			urb = usb_get_from_anchor(&acm->delayed);
++			if (!urb)
++				break;
++			wb = urb->context;
++			wb->use = 0;
++			usb_autopm_put_interface_async(acm->control);
++		}
++
+ 		usb_kill_urb(acm->ctrlurb);
+ 		for (i = 0; i < ACM_NW; i++)
+ 			usb_kill_urb(acm->wb[i].urb);
+@@ -648,12 +660,9 @@ static int acm_tty_write(struct tty_stru
+ 
+ 	usb_autopm_get_interface_async(acm->control);
+ 	if (acm->susp_count) {
+-		if (!acm->delayed_wb)
+-			acm->delayed_wb = wb;
+-		else
+-			usb_autopm_put_interface_async(acm->control);
++		usb_anchor_urb(wb->urb, &acm->delayed);
+ 		spin_unlock_irqrestore(&acm->write_lock, flags);
+-		return count;	/* A white lie */
++		return count;
  	}
- 	/*
-+	 * During mutual authentication, the CHAP_C generated by the
-+	 * initiator must not match the original CHAP_C generated by
-+	 * the target.
-+	 */
-+	if (!memcmp(challenge_binhex, chap->challenge, CHAP_CHALLENGE_LENGTH)) {
-+		pr_err("initiator CHAP_C matches target CHAP_C, failing"
-+		       " login attempt\n");
-+		goto out;
-+	}
-+	/*
- 	 * Generate CHAP_N and CHAP_R for mutual authentication.
- 	 */
- 	tfm = crypto_alloc_hash("md5", 0, CRYPTO_ALG_ASYNC);
+ 	usb_mark_last_busy(acm->dev);
+ 
+@@ -1269,6 +1278,7 @@ made_compressed_probe:
+ 		acm->bInterval = epread->bInterval;
+ 	tty_port_init(&acm->port);
+ 	acm->port.ops = &acm_port_ops;
++	init_usb_anchor(&acm->delayed);
+ 
+ 	buf = usb_alloc_coherent(usb_dev, ctrlsize, GFP_KERNEL, &acm->ctrl_dma);
+ 	if (!buf) {
+@@ -1539,7 +1549,7 @@ static int acm_suspend(struct usb_interf
+ static int acm_resume(struct usb_interface *intf)
+ {
+ 	struct acm *acm = usb_get_intfdata(intf);
+-	struct acm_wb *wb;
++	struct urb *urb;
+ 	int rv = 0;
+ 
+ 	spin_lock_irq(&acm->read_lock);
+@@ -1551,10 +1561,12 @@ static int acm_resume(struct usb_interfa
+ 	if (test_bit(ASYNCB_INITIALIZED, &acm->port.flags)) {
+ 		rv = usb_submit_urb(acm->ctrlurb, GFP_ATOMIC);
+ 
+-		if (acm->delayed_wb) {
+-			wb = acm->delayed_wb;
+-			acm->delayed_wb = NULL;
+-			acm_start_wb(acm, wb);
++		for (;;) {
++			urb = usb_get_from_anchor(&acm->delayed);
++			if (!urb)
++				break;
++
++			acm_start_wb(acm, urb->context);
+ 		}
+ 
+ 		/*
+--- a/drivers/usb/class/cdc-acm.h
++++ b/drivers/usb/class/cdc-acm.h
+@@ -120,7 +120,7 @@ struct acm {
+ 	unsigned int throttled:1;			/* actually throttled */
+ 	unsigned int throttle_req:1;			/* throttle requested */
+ 	u8 bInterval;
+-	struct acm_wb *delayed_wb;			/* write queued for a device about to be woken */
++	struct usb_anchor delayed;			/* writes queued for a device about to be woken */
+ };
+ 
+ #define CDC_DATA_INTERFACE_TYPE	0x0a
 
 
