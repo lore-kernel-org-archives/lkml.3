@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756937AbaFXUyg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:54:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47557 "EHLO
+	id S1755968AbaFXUye (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:54:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47568 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753499AbaFXUaf (ORCPT
+	with ESMTP id S1753908AbaFXUaf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 24 Jun 2014 16:30:35 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        Joerg Roedel <joro@8bytes.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 15/65] iommu/amd: Fix interrupt remapping for aliased devices
-Date: Tue, 24 Jun 2014 13:29:35 -0700
-Message-Id: <1403641825-12825-16-git-send-email-kamal@canonical.com>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 18/65] [media] V4L2: fix VIDIOC_CREATE_BUFS in 64- / 32-bit compatibility mode
+Date: Tue, 24 Jun 2014 13:29:38 -0700
+Message-Id: <1403641825-12825-19-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
 References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
@@ -27,38 +28,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Williamson <alex.williamson@redhat.com>
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 
-commit e028a9e6b8a637af09ac4114083280df4a7045f1 upstream.
+commit 97d9d23dda6f37d90aefeec4ed619d52df525382 upstream.
 
-An apparent cut and paste error prevents the correct flags from being
-set on the alias device resulting in MSI on conventional PCI devices
-failing to work.  This also produces error events from the IOMMU like:
+If a struct contains 64-bit fields, it is aligned on 64-bit boundaries
+within containing structs in 64-bit compilations. This is the case with
+struct v4l2_window, which contains pointers and is embedded into struct
+v4l2_format, and that one is embedded into struct v4l2_create_buffers.
+Unlike some other structs, used as a part of the kernel ABI as ioctl()
+arguments, that are packed, these structs aren't packed. This isn't a
+problem per se, but the ioctl-compat code for VIDIOC_CREATE_BUFS contains
+a bug, that triggers in such 64-bit builds. That code wrongly assumes,
+that in struct v4l2_create_buffers, struct v4l2_format immediately follows
+the __u32 memory field, which in fact isn't the case. This bug wasn't
+visible until now, because until recently hardly any applications used
+this ioctl() and mostly embedded 32-bit only drivers implemented it. This
+is changing now with addition of this ioctl() to some USB drivers, e.g.
+UVC. This patch fixes the bug by copying parts of struct
+v4l2_create_buffers separately.
 
-AMD-Vi: Event logged [INVALID_DEVICE_REQUEST device=00:14.4 address=0x000000fdf8000000 flags=0x0a00]
-
-Where 14.4 is a PCIe-to-PCI bridge with a device behind it trying to
-use MSI interrupts.
-
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Signed-off-by: Joerg Roedel <joro@8bytes.org>
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/iommu/amd_iommu.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/media/v4l2-core/v4l2-compat-ioctl32.c | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index 895902e6..8561b55 100644
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -4004,7 +4004,7 @@ static struct irq_remap_table *get_irq_table(u16 devid, bool ioapic)
- 	iommu_flush_dte(iommu, devid);
- 	if (devid != alias) {
- 		irq_lookup_table[alias] = table;
--		set_dte_irq_entry(devid, table);
-+		set_dte_irq_entry(alias, table);
- 		iommu_flush_dte(iommu, alias);
- 	}
+diff --git a/drivers/media/v4l2-core/v4l2-compat-ioctl32.c b/drivers/media/v4l2-core/v4l2-compat-ioctl32.c
+index 7157af3..b4b0750 100644
+--- a/drivers/media/v4l2-core/v4l2-compat-ioctl32.c
++++ b/drivers/media/v4l2-core/v4l2-compat-ioctl32.c
+@@ -178,6 +178,9 @@ struct v4l2_create_buffers32 {
+ 
+ static int __get_v4l2_format32(struct v4l2_format *kp, struct v4l2_format32 __user *up)
+ {
++	if (get_user(kp->type, &up->type))
++		return -EFAULT;
++
+ 	switch (kp->type) {
+ 	case V4L2_BUF_TYPE_VIDEO_CAPTURE:
+ 	case V4L2_BUF_TYPE_VIDEO_OUTPUT:
+@@ -204,17 +207,16 @@ static int __get_v4l2_format32(struct v4l2_format *kp, struct v4l2_format32 __us
+ 
+ static int get_v4l2_format32(struct v4l2_format *kp, struct v4l2_format32 __user *up)
+ {
+-	if (!access_ok(VERIFY_READ, up, sizeof(struct v4l2_format32)) ||
+-			get_user(kp->type, &up->type))
+-			return -EFAULT;
++	if (!access_ok(VERIFY_READ, up, sizeof(struct v4l2_format32)))
++		return -EFAULT;
+ 	return __get_v4l2_format32(kp, up);
+ }
+ 
+ static int get_v4l2_create32(struct v4l2_create_buffers *kp, struct v4l2_create_buffers32 __user *up)
+ {
+ 	if (!access_ok(VERIFY_READ, up, sizeof(struct v4l2_create_buffers32)) ||
+-	    copy_from_user(kp, up, offsetof(struct v4l2_create_buffers32, format.fmt)))
+-			return -EFAULT;
++	    copy_from_user(kp, up, offsetof(struct v4l2_create_buffers32, format)))
++		return -EFAULT;
+ 	return __get_v4l2_format32(&kp->format, &up->format);
+ }
  
 -- 
 1.9.1
