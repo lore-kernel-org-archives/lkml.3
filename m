@@ -1,95 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367AbaFXNwa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 09:52:30 -0400
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:43549 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751401AbaFXNw3 convert rfc822-to-8bit (ORCPT
+	id S1753423AbaFXNzo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 09:55:44 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:61407 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752521AbaFXNzm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 09:52:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <1403616338.4230.8.camel@weser.hi.pengutronix.de>
-References: <1403603667-11302-1-git-send-email-acourbot@nvidia.com>
- <1403603667-11302-3-git-send-email-acourbot@nvidia.com> <20140624100220.GK32514@n2100.arm.linux.org.uk>
- <53A953E6.2030503@nvidia.com> <53A95910.20104@nvidia.com> <CAAVeFu+rbCViC87kYCLfxGV18iYq=Pa0ABb+L=iNiYPLn+mR8Q@mail.gmail.com>
- <53A96EC5.3030701@canonical.com> <1403616338.4230.8.camel@weser.hi.pengutronix.de>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Tue, 24 Jun 2014 22:52:08 +0900
-Message-ID: <CAAVeFuLcC30BdWierY8Bg0vBmfNCaB=Qs34h790jGB=BRYvGAg@mail.gmail.com>
-Subject: Re: [Nouveau] [PATCH v2 2/3] drm/ttm: introduce dma cache sync helpers
-To: Lucas Stach <l.stach@pengutronix.de>
-Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 24 Jun 2014 09:55:42 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 2/6] OF: Add [__]of_find_node_by_full_name
+To: Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
+        Guenter Roeck <linux@roeck-us.net>
+Cc: Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Michael Stickel <ms@mycable.de>, Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>, Joel Becker <jlbec@evilplan.org>,
+        devicetree@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
+        linux-i2c@vger.kernel.org, Mark Brown <broonie@kernel.org>,
+        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pete Popov <pete.popov@konsulko.com>,
+        Dan Malek <dan.malek@konsulko.com>,
+        Georgi Vlaev <georgi.vlaev@konsulko.com>
+In-Reply-To: <4F4A55EC-744B-49CC-96FA-811C9483A43D@konsulko.com>
+References: <1403430039-15085-1-git-send-email-pantelis.antoniou@konsulko.com>
+	<1403430039-15085-3-git-send-email-pantelis.antoniou@konsulko.com>
+	<53A86ADA.9000903@roeck-us.net>
+	<4F4A55EC-744B-49CC-96FA-811C9483A43D@konsulko.com>
+Date: Tue, 24 Jun 2014 14:55:23 +0100
+Message-Id: <20140624135523.99956C40B84@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 24, 2014 at 10:25 PM, Lucas Stach <l.stach@pengutronix.de> wrote:
-> Am Dienstag, den 24.06.2014, 14:27 +0200 schrieb Maarten Lankhorst:
->> op 24-06-14 14:23, Alexandre Courbot schreef:
->> > On Tue, Jun 24, 2014 at 7:55 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
->> >> On 06/24/2014 07:33 PM, Alexandre Courbot wrote:
->> >>> On 06/24/2014 07:02 PM, Russell King - ARM Linux wrote:
->> >>>> On Tue, Jun 24, 2014 at 06:54:26PM +0900, Alexandre Courbot wrote:
->> >>>>> From: Lucas Stach <dev@lynxeye.de>
->> >>>>>
->> >>>>> On architectures for which access to GPU memory is non-coherent,
->> >>>>> caches need to be flushed and invalidated explicitly at the
->> >>>>> appropriate places. Introduce two small helpers to make things
->> >>>>> easy for TTM-based drivers.
->> >>>>
->> >>>> Have you run this with DMA API debugging enabled?  I suspect you haven't,
->> >>>> and I recommend that you do.
->> >>>
->> >>> # cat /sys/kernel/debug/dma-api/error_count
->> >>> 162621
->> >>>
->> >>> (╯°□°）╯︵ ┻━┻)
->> >>
->> >> *puts table back on its feet*
->> >>
->> >> So, yeah - TTM memory is not allocated using the DMA API, hence we cannot
->> >> use the DMA API to sync it. Thanks Russell for pointing it out.
->> >>
->> >> The only alternative I see here is to flush the CPU caches when syncing for
->> >> the device, and invalidate them for the other direction. Of course if the
->> >> device has caches on its side as well the opposite operation must also be
->> >> done for it. Guess the only way is to handle it all by ourselves here. :/
->> > ... and it really sucks. Basically if we cannot use the DMA API here
->> > we will lose the convenience of having a portable API that does just
->> > the right thing for the underlying platform. Without it we would have
->> > to duplicate arm_iommu_sync_single_for_cpu/device() and we would only
->> > have support for ARM.
->> >
->> > The usage of the DMA API that we are doing might be illegal, but in
->> > essence it does exactly what we need - at least for ARM. What are the
->> > alternatives?
->> Convert TTM to use the dma api? :-)
->
-> Actually TTM already has a page alloc backend using the DMA API. It's
-> just not used for the standard case right now.
+On Mon, 23 Jun 2014 21:00:39 +0300, Pantelis Antoniou <pantelis.antoniou@konsulko.com> wrote:
+> Hi Guenter,
+> 
+> On Jun 23, 2014, at 8:58 PM, Guenter Roeck wrote:
+> 
+> > On 06/22/2014 02:40 AM, Pantelis Antoniou wrote:
+> >> __of_find_node_by_full_name recursively searches for a matching node
+> >> with the given full name without taking any locks.
+> >> 
+> >> of_find_node_by_full_name takes locks and takes a reference on the
+> >> matching node.
+> >> 
+> >> Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+> >> ---
+> >>  drivers/of/base.c  | 58 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+> >>  include/linux/of.h |  4 ++++
+> >>  2 files changed, 62 insertions(+)
+> >> 
+> >> diff --git a/drivers/of/base.c b/drivers/of/base.c
+> >> index d3493e1..80fef33 100644
+> >> --- a/drivers/of/base.c
+> >> +++ b/drivers/of/base.c
+> >> @@ -1201,6 +1201,64 @@ static void *of_find_property_value_of_size(const struct device_node *np,
+> >>  }
+> >> 
+> >>  /**
+> >> + * __of_find_node_by_full_name - Find a node with the full name recursively
+> >> + * @node:	Root of the tree to perform the search
+> >> + * @full_name:	Full name of the node to find.
+> >> + *
+> >> + * Find a node with the give full name by recursively following any of
+> >> + * the child node links.
+> >> + * Returns the matching node, or NULL if not found.
+> >> + * Note that the devtree lock is not taken, so this function is only
+> >> + * safe to call on either detached trees, or when devtree lock is already
+> >> + * taken.
+> >> + */
+> >> +struct device_node *__of_find_node_by_full_name(struct device_node *node,
+> >> +		const char *full_name)
+> >> +{
+> >> +	struct device_node *child, *found;
+> >> +
+> >> +	if (node == NULL)
+> >> +		return NULL;
+> >> +
+> >> +	/* check */
+> >> +	if (of_node_cmp(node->full_name, full_name) == 0)
+> >> +		return node;
+> >> +
+> >> +	__for_each_child_of_node(node, child) {
+> >> +		found = __of_find_node_by_full_name(child, full_name);
+> >> +		if (found != NULL)
+> >> +			return found;
+> >> +	}
+> >> +
+> >> +	return NULL;
+> >> +}
+> >> +EXPORT_SYMBOL(__of_find_node_by_full_name);
+> >> +
+> >> +/**
+> >> + * of_find_node_by_full_name - Find a node with the full name recursively
+> >> + * @node:	Root of the tree to perform the search
+> >> + * @full_name:	Full name of the node to find.
+> >> + *
+> >> + * Find a node with the give full name by recursively following any of
+> >> + * the child node links.
+> >> + * Returns the matching node (with a ref taken), or NULL if not found.
+> >> + */
+> >> +struct device_node *of_find_node_by_full_name(struct device_node *node,
+> >> +		const char *full_name)
+> >> +{
+> >> +	unsigned long flags;
+> >> +	struct device_node *np;
+> >> +
+> >> +	raw_spin_lock_irqsave(&devtree_lock, flags);
+> >> +	np = of_find_node_by_full_name(node, full_name);
+> > 
+> > Should this be __of_find_node_by_full_name, or am I missing something ?
+> > 
+> 
+> Ugh, you're not missing something. This slipped through since this is not 
+> used in the current code
 
-Indeed, and Nouveau even already makes use of it if CONFIG_SWIOTLB is
-set apparently.
+Then perhaps the function shouldn't exist at all.
 
-> I would argue that we should just use this page allocator (which has the
-> side effect of getting pages from CMA if available -> you are actually
-> free to change the caching) and do away with the other allocator in the
-> ARM case.
+g.
 
-Mm? Does it mean that CMA memory is not mapped into lowmem? That would
-certainly help in the present case, but I wonder how useful it will be
-once the iommu support is in place. Will also need to consider
-performance of such coherent memory for e.g. user-space mappings.
-
-Anyway, I will experiment a bit with this tomorrow, thanks!
