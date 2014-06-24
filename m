@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932085AbaFXPxM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:53:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32790 "EHLO
+	id S932674AbaFXQjL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:39:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32805 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755722AbaFXPxJ (ORCPT
+	with ESMTP id S1755687AbaFXPxP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:53:09 -0400
+	Tue, 24 Jun 2014 11:53:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 3.10 37/52] Drivers: hv: balloon: Ensure pressure reports are posted regularly
-Date: Tue, 24 Jun 2014 11:50:52 -0400
-Message-Id: <20140624154715.682595749@linuxfoundation.org>
+        Mario Schuknecht <mario.schuknecht@dresearch-fe.de>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.10 40/52] staging: iio: tsl2x7x_core: fix proximity treshold
+Date: Tue, 24 Jun 2014 11:50:55 -0400
+Message-Id: <20140624154715.884747551@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154713.428945460@linuxfoundation.org>
 References: <20140624154713.428945460@linuxfoundation.org>
@@ -28,114 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Mario Schuknecht <mario.schuknecht@dresearch-fe.de>
 
-commit ae339336dc950b9b05e7ccd3565dd3e8781c06d9 upstream.
+commit c404618cd06dad771495fe1cf9d5a63b5664f65f upstream.
 
-The current code posts periodic memory pressure status from a dedicated thread.
-Under some conditions, especially when we are releasing a lot of memory into
-the guest, we may not send timely pressure reports back to the host. Fix this
-issue by reporting pressure in all contexts that can be active in this driver.
+Consider high byte of proximity min and max treshold in function
+'tsl2x7x_chip_on'. So far, the high byte was not set.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Mario Schuknecht <mario.schuknecht@dresearch-fe.de>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hv/hv_balloon.c |   29 ++++++++++++++++++++++++++---
- 1 file changed, 26 insertions(+), 3 deletions(-)
+ drivers/staging/iio/light/tsl2x7x_core.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/hv/hv_balloon.c
-+++ b/drivers/hv/hv_balloon.c
-@@ -19,6 +19,7 @@
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+--- a/drivers/staging/iio/light/tsl2x7x_core.c
++++ b/drivers/staging/iio/light/tsl2x7x_core.c
+@@ -672,9 +672,13 @@ static int tsl2x7x_chip_on(struct iio_de
+ 	chip->tsl2x7x_config[TSL2X7X_PRX_COUNT] =
+ 			chip->tsl2x7x_settings.prox_pulse_count;
+ 	chip->tsl2x7x_config[TSL2X7X_PRX_MINTHRESHLO] =
+-	chip->tsl2x7x_settings.prox_thres_low;
++			(chip->tsl2x7x_settings.prox_thres_low) & 0xFF;
++	chip->tsl2x7x_config[TSL2X7X_PRX_MINTHRESHHI] =
++			(chip->tsl2x7x_settings.prox_thres_low >> 8) & 0xFF;
+ 	chip->tsl2x7x_config[TSL2X7X_PRX_MAXTHRESHLO] =
+-			chip->tsl2x7x_settings.prox_thres_high;
++			(chip->tsl2x7x_settings.prox_thres_high) & 0xFF;
++	chip->tsl2x7x_config[TSL2X7X_PRX_MAXTHRESHHI] =
++			(chip->tsl2x7x_settings.prox_thres_high >> 8) & 0xFF;
  
- #include <linux/kernel.h>
-+#include <linux/jiffies.h>
- #include <linux/mman.h>
- #include <linux/delay.h>
- #include <linux/init.h>
-@@ -459,6 +460,11 @@ static bool do_hot_add;
-  */
- static uint pressure_report_delay = 45;
- 
-+/*
-+ * The last time we posted a pressure report to host.
-+ */
-+static unsigned long last_post_time;
-+
- module_param(hot_add, bool, (S_IRUGO | S_IWUSR));
- MODULE_PARM_DESC(hot_add, "If set attempt memory hot_add");
- 
-@@ -542,6 +548,7 @@ struct hv_dynmem_device {
- 
- static struct hv_dynmem_device dm_device;
- 
-+static void post_status(struct hv_dynmem_device *dm);
- #ifdef CONFIG_MEMORY_HOTPLUG
- 
- static void hv_bring_pgs_online(unsigned long start_pfn, unsigned long size)
-@@ -612,7 +619,7 @@ static void hv_mem_hot_add(unsigned long
- 		 * have not been "onlined" within the allowed time.
- 		 */
- 		wait_for_completion_timeout(&dm_device.ol_waitevent, 5*HZ);
--
-+		post_status(&dm_device);
- 	}
- 
- 	return;
-@@ -951,11 +958,17 @@ static void post_status(struct hv_dynmem
- {
- 	struct dm_status status;
- 	struct sysinfo val;
-+	unsigned long now = jiffies;
-+	unsigned long last_post = last_post_time;
- 
- 	if (pressure_report_delay > 0) {
- 		--pressure_report_delay;
- 		return;
- 	}
-+
-+	if (!time_after(now, (last_post_time + HZ)))
-+		return;
-+
- 	si_meminfo(&val);
- 	memset(&status, 0, sizeof(struct dm_status));
- 	status.hdr.type = DM_STATUS_REPORT;
-@@ -983,6 +996,14 @@ static void post_status(struct hv_dynmem
- 	if (status.hdr.trans_id != atomic_read(&trans_id))
- 		return;
- 
-+	/*
-+	 * If the last post time that we sampled has changed,
-+	 * we have raced, don't post the status.
-+	 */
-+	if (last_post != last_post_time)
-+		return;
-+
-+	last_post_time = jiffies;
- 	vmbus_sendpacket(dm->dev->channel, &status,
- 				sizeof(struct dm_status),
- 				(unsigned long)NULL,
-@@ -1117,7 +1138,7 @@ static void balloon_up(struct work_struc
- 
- 			if (ret == -EAGAIN)
- 				msleep(20);
--
-+			post_status(&dm_device);
- 		} while (ret == -EAGAIN);
- 
- 		if (ret) {
-@@ -1144,8 +1165,10 @@ static void balloon_down(struct hv_dynme
- 	struct dm_unballoon_response resp;
- 	int i;
- 
--	for (i = 0; i < range_count; i++)
-+	for (i = 0; i < range_count; i++) {
- 		free_balloon_pages(dm, &range_array[i]);
-+		post_status(&dm_device);
-+	}
- 
- 	if (req->more_pages == 1)
- 		return;
+ 	/* and make sure we're not already on */
+ 	if (chip->tsl2x7x_chip_status == TSL2X7X_CHIP_WORKING) {
 
 
