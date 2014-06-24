@@ -1,74 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756927AbaFXUxu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:53:50 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:51554 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753985AbaFXUxq convert rfc822-to-8bit (ORCPT
+	id S1756897AbaFXUxj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:53:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47580 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754075AbaFXUag (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:53:46 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140624105108.GG4439@pd.tnic>
-References: <CA+5PVA70nFS8JZkL0-Q-1HjFHT5NA04275_M4WstjQMrpT+hrQ@mail.gmail.com>
- <e09c499eade6fc321266dd6b54da7beb28d6991c.1403558229.git.luto@amacapital.net> <20140624105108.GG4439@pd.tnic>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 24 Jun 2014 13:53:25 -0700
-Message-ID: <CALCETrUStJFrCJBO-QRzn7mbdUgbnFgzYNspiVKORMsU6DMDKw@mail.gmail.com>
-Subject: Re: [PATCH] x86_32,entry: Do syscall exit work on badsys (CVE-2014-4508)
-To: Borislav Petkov <bp@alien8.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Richard Weinberger <richard@nod.at>,
-        X86 ML <x86@kernel.org>, Eric Paris <eparis@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "security@kernel.org" <security@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        =?UTF-8?Q?Toralf_F=C3=B6rster?= <toralf.foerster@gmx.de>,
-        stable <stable@vger.kernel.org>, Roland McGrath <roland@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 24 Jun 2014 16:30:36 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Wenkai Du <wenkai.du@intel.com>, Wolfram Sang <wsa@the-dreams.de>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 20/65] i2c: designware: Mask all interrupts during i2c controller enable
+Date: Tue, 24 Jun 2014 13:29:40 -0700
+Message-Id: <1403641825-12825-21-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
+References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 24, 2014 at 3:51 AM, Borislav Petkov <bp@alien8.de> wrote:
-> On Mon, Jun 23, 2014 at 02:22:15PM -0700, Andy Lutomirski wrote:
->> The bad syscall nr paths are their own incomprehensible route
->> through the entry control flow.  Rearrange them to work just like
->> syscalls that return -ENOSYS.
->>
->> This fixes an OOPS in the audit code when fast-path auditing is
->> enabled and sysenter gets a bad syscall nr (CVE-2014-4508).
->>
->> This has probably been broken since Linux 2.6.27:
->> af0575bba0 i386 syscall audit fast-path
->>
->> Cc: stable@vger.kernel.org
->> Cc: Roland McGrath <roland@redhat.com>
->> Reported-by: Toralf Förster <toralf.foerster@gmx.de>
->> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
->> ---
->>
->> I realize that the syscall audit fast path and badsys code, on 32-bit
->> x86 no less, is possibly one of the least fun things in the kernel to
->> review, but this is still a real security bug and should get fixed :(
->>
->> So I'm cc-ing a bunch of people and maybe someone will review it.
->
-> Well, AFAICS, you're rerouting execution so that the audit stuff gets
-> properly "unwound" before returning to userspace. Which makes sense to
-> me.
->
-> Would it really work in all possible cases and isn't it causing any
-> other problems?
->
-> No friggin' idea - it would need extensive hammering to confirm it is ok
-> IMHO.
->
-> HTH.
+3.8.13.25 -stable review patch.  If anyone has any objections, please let me know.
 
-It confirms my sense that no one knows how to test this stuff :-/
-It's pretty clear that no one has ever extensively hammered it.
+------------------
 
-I wonder how much could be effectively rewritten in C.  I'm thinking
-of redoing most of the entry work in C, but that won't help here.
+From: "Du, Wenkai" <wenkai.du@intel.com>
 
---Andy
+commit 47bb27e78867997040a228328f2a631c3c7f2c82 upstream.
+
+There have been "i2c_designware 80860F41:00: controller timed out" errors
+on a number of Baytrail platforms. The issue is caused by incorrect value in
+Interrupt Mask Register (DW_IC_INTR_MASK)  when i2c core is being enabled.
+This causes call to __i2c_dw_enable() to immediately start the transfer which
+leads to timeout. There are 3 failure modes observed:
+
+1. Failure in S0 to S3 resume path
+
+The default value after reset for DW_IC_INTR_MASK is 0x8ff. When we start
+the first transaction after resuming from system sleep, TX_EMPTY interrupt
+is already unmasked because of the hardware default.
+
+2. Failure in normal operational path
+
+This failure happens rarely and is hard to reproduce. Debug trace showed that
+DW_IC_INTR_MASK had value of 0x254 when failure occurred, which meant
+TX_EMPTY was unmasked.
+
+3. Failure in S3 to S0 suspend path
+
+This failure also happens rarely and is hard to reproduce. Adding debug trace
+that read DW_IC_INTR_MASK made this failure not reproducible. But from ISR
+call trace we could conclude TX_EMPTY was unmasked when problem occurred.
+
+The patch masks all interrupts before the controller is enabled to resolve the
+faulty DW_IC_INTR_MASK conditions.
+
+Signed-off-by: Wenkai Du <wenkai.du@intel.com>
+Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+[wsa: improved the comment and removed typo in commit msg]
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/i2c/busses/i2c-designware-core.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
+index bf8ce32..4a35605 100644
+--- a/drivers/i2c/busses/i2c-designware-core.c
++++ b/drivers/i2c/busses/i2c-designware-core.c
+@@ -358,6 +358,9 @@ static void i2c_dw_xfer_init(struct dw_i2c_dev *dev)
+ 		ic_con &= ~DW_IC_CON_10BITADDR_MASTER;
+ 	dw_writel(dev, ic_con, DW_IC_CON);
+ 
++	/* enforce disabled interrupts (due to HW issues) */
++	i2c_dw_disable_int(dev);
++
+ 	/* Enable the adapter */
+ 	dw_writel(dev, 1, DW_IC_ENABLE);
+ 
+-- 
+1.9.1
+
