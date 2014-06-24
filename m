@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755681AbaFXUix (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:38:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47893 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755926AbaFXUdq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755942AbaFXUdq (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 24 Jun 2014 16:33:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47881 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755870AbaFXUdo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 16:33:44 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
+Cc: Thomas Gleixner <tglx@linutronix.de>, Kees Cook <keescook@chromium.org>,
+        Will Drewry <wad@chromium.org>, Darren Hart <dvhart@linux.intel.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 65/65] mm: rmap: fix use-after-free in __put_anon_vma
-Date: Tue, 24 Jun 2014 13:30:25 -0700
-Message-Id: <1403641825-12825-66-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 63/65] futex: Make lookup_pi_state more robust
+Date: Tue, 24 Jun 2014 13:30:23 -0700
+Message-Id: <1403641825-12825-64-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
 References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
@@ -28,44 +29,281 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 624483f3ea82598ab0f62f1bdb9177f531ab1892 upstream.
+commit 54a217887a7b658e2650c3feff22756ab80c7339 upstream.
 
-While working address sanitizer for kernel I've discovered
-use-after-free bug in __put_anon_vma.
+The current implementation of lookup_pi_state has ambigous handling of
+the TID value 0 in the user space futex.  We can get into the kernel
+even if the TID value is 0, because either there is a stale waiters bit
+or the owner died bit is set or we are called from the requeue_pi path
+or from user space just for fun.
 
-For the last anon_vma, anon_vma->root freed before child anon_vma.
-Later in anon_vma_free(anon_vma) we are referencing to already freed
-anon_vma->root to check rwsem.
+The current code avoids an explicit sanity check for pid = 0 in case
+that kernel internal state (waiters) are found for the user space
+address.  This can lead to state leakage and worse under some
+circumstances.
 
-This fixes it by freeing the child anon_vma before freeing
-anon_vma->root.
+Handle the cases explicit:
 
-Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
-Acked-by: Peter Zijlstra <peterz@infradead.org>
+       Waiter | pi_state | pi->owner | uTID      | uODIED | ?
+
+  [1]  NULL   | ---      | ---       | 0         | 0/1    | Valid
+  [2]  NULL   | ---      | ---       | >0        | 0/1    | Valid
+
+  [3]  Found  | NULL     | --        | Any       | 0/1    | Invalid
+
+  [4]  Found  | Found    | NULL      | 0         | 1      | Valid
+  [5]  Found  | Found    | NULL      | >0        | 1      | Invalid
+
+  [6]  Found  | Found    | task      | 0         | 1      | Valid
+
+  [7]  Found  | Found    | NULL      | Any       | 0      | Invalid
+
+  [8]  Found  | Found    | task      | ==taskTID | 0/1    | Valid
+  [9]  Found  | Found    | task      | 0         | 0      | Invalid
+  [10] Found  | Found    | task      | !=taskTID | 0/1    | Invalid
+
+ [1] Indicates that the kernel can acquire the futex atomically. We
+     came came here due to a stale FUTEX_WAITERS/FUTEX_OWNER_DIED bit.
+
+ [2] Valid, if TID does not belong to a kernel thread. If no matching
+     thread is found then it indicates that the owner TID has died.
+
+ [3] Invalid. The waiter is queued on a non PI futex
+
+ [4] Valid state after exit_robust_list(), which sets the user space
+     value to FUTEX_WAITERS | FUTEX_OWNER_DIED.
+
+ [5] The user space value got manipulated between exit_robust_list()
+     and exit_pi_state_list()
+
+ [6] Valid state after exit_pi_state_list() which sets the new owner in
+     the pi_state but cannot access the user space value.
+
+ [7] pi_state->owner can only be NULL when the OWNER_DIED bit is set.
+
+ [8] Owner and user space value match
+
+ [9] There is no transient state which sets the user space TID to 0
+     except exit_robust_list(), but this is indicated by the
+     FUTEX_OWNER_DIED bit. See [4]
+
+[10] There is no transient state which leaves owner and user space
+     TID out of sync.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Kees Cook <keescook@chromium.org>
+Cc: Will Drewry <wad@chromium.org>
+Cc: Darren Hart <dvhart@linux.intel.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/rmap.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ kernel/futex.c | 134 +++++++++++++++++++++++++++++++++++++++++++++------------
+ 1 file changed, 106 insertions(+), 28 deletions(-)
 
-diff --git a/mm/rmap.c b/mm/rmap.c
-index da8e2cf..770320b 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -1696,10 +1696,9 @@ void __put_anon_vma(struct anon_vma *anon_vma)
- {
- 	struct anon_vma *root = anon_vma->root;
- 
-+	anon_vma_free(anon_vma);
- 	if (root != anon_vma && atomic_dec_and_test(&root->refcount))
- 		anon_vma_free(root);
--
--	anon_vma_free(anon_vma);
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 5f5a635..9396b7b 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -588,10 +588,58 @@ void exit_pi_state_list(struct task_struct *curr)
+ 	raw_spin_unlock_irq(&curr->pi_lock);
  }
  
- #ifdef CONFIG_MIGRATION
++/*
++ * We need to check the following states:
++ *
++ *      Waiter | pi_state | pi->owner | uTID      | uODIED | ?
++ *
++ * [1]  NULL   | ---      | ---       | 0         | 0/1    | Valid
++ * [2]  NULL   | ---      | ---       | >0        | 0/1    | Valid
++ *
++ * [3]  Found  | NULL     | --        | Any       | 0/1    | Invalid
++ *
++ * [4]  Found  | Found    | NULL      | 0         | 1      | Valid
++ * [5]  Found  | Found    | NULL      | >0        | 1      | Invalid
++ *
++ * [6]  Found  | Found    | task      | 0         | 1      | Valid
++ *
++ * [7]  Found  | Found    | NULL      | Any       | 0      | Invalid
++ *
++ * [8]  Found  | Found    | task      | ==taskTID | 0/1    | Valid
++ * [9]  Found  | Found    | task      | 0         | 0      | Invalid
++ * [10] Found  | Found    | task      | !=taskTID | 0/1    | Invalid
++ *
++ * [1]	Indicates that the kernel can acquire the futex atomically. We
++ *	came came here due to a stale FUTEX_WAITERS/FUTEX_OWNER_DIED bit.
++ *
++ * [2]	Valid, if TID does not belong to a kernel thread. If no matching
++ *      thread is found then it indicates that the owner TID has died.
++ *
++ * [3]	Invalid. The waiter is queued on a non PI futex
++ *
++ * [4]	Valid state after exit_robust_list(), which sets the user space
++ *	value to FUTEX_WAITERS | FUTEX_OWNER_DIED.
++ *
++ * [5]	The user space value got manipulated between exit_robust_list()
++ *	and exit_pi_state_list()
++ *
++ * [6]	Valid state after exit_pi_state_list() which sets the new owner in
++ *	the pi_state but cannot access the user space value.
++ *
++ * [7]	pi_state->owner can only be NULL when the OWNER_DIED bit is set.
++ *
++ * [8]	Owner and user space value match
++ *
++ * [9]	There is no transient state which sets the user space TID to 0
++ *	except exit_robust_list(), but this is indicated by the
++ *	FUTEX_OWNER_DIED bit. See [4]
++ *
++ * [10] There is no transient state which leaves owner and user space
++ *	TID out of sync.
++ */
+ static int
+ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
+-		union futex_key *key, struct futex_pi_state **ps,
+-		struct task_struct *task)
++		union futex_key *key, struct futex_pi_state **ps)
+ {
+ 	struct futex_pi_state *pi_state = NULL;
+ 	struct futex_q *this, *next;
+@@ -604,12 +652,13 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
+ 	plist_for_each_entry_safe(this, next, head, list) {
+ 		if (match_futex(&this->key, key)) {
+ 			/*
+-			 * Another waiter already exists - bump up
+-			 * the refcount and return its pi_state:
++			 * Sanity check the waiter before increasing
++			 * the refcount and attaching to it.
+ 			 */
+ 			pi_state = this->pi_state;
+ 			/*
+-			 * Userspace might have messed up non-PI and PI futexes
++			 * Userspace might have messed up non-PI and
++			 * PI futexes [3]
+ 			 */
+ 			if (unlikely(!pi_state))
+ 				return -EINVAL;
+@@ -617,44 +666,70 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
+ 			WARN_ON(!atomic_read(&pi_state->refcount));
+ 
+ 			/*
+-			 * When pi_state->owner is NULL then the owner died
+-			 * and another waiter is on the fly. pi_state->owner
+-			 * is fixed up by the task which acquires
+-			 * pi_state->rt_mutex.
+-			 *
+-			 * We do not check for pid == 0 which can happen when
+-			 * the owner died and robust_list_exit() cleared the
+-			 * TID.
++			 * Handle the owner died case:
+ 			 */
+-			if (pid && pi_state->owner) {
++			if (uval & FUTEX_OWNER_DIED) {
+ 				/*
+-				 * Bail out if user space manipulated the
+-				 * futex value.
++				 * exit_pi_state_list sets owner to NULL and
++				 * wakes the topmost waiter. The task which
++				 * acquires the pi_state->rt_mutex will fixup
++				 * owner.
+ 				 */
+-				if (pid != task_pid_vnr(pi_state->owner))
++				if (!pi_state->owner) {
++					/*
++					 * No pi state owner, but the user
++					 * space TID is not 0. Inconsistent
++					 * state. [5]
++					 */
++					if (pid)
++						return -EINVAL;
++					/*
++					 * Take a ref on the state and
++					 * return. [4]
++					 */
++					goto out_state;
++				}
++
++				/*
++				 * If TID is 0, then either the dying owner
++				 * has not yet executed exit_pi_state_list()
++				 * or some waiter acquired the rtmutex in the
++				 * pi state, but did not yet fixup the TID in
++				 * user space.
++				 *
++				 * Take a ref on the state and return. [6]
++				 */
++				if (!pid)
++					goto out_state;
++			} else {
++				/*
++				 * If the owner died bit is not set,
++				 * then the pi_state must have an
++				 * owner. [7]
++				 */
++				if (!pi_state->owner)
+ 					return -EINVAL;
+ 			}
+ 
+ 			/*
+-			 * Protect against a corrupted uval. If uval
+-			 * is 0x80000000 then pid is 0 and the waiter
+-			 * bit is set. So the deadlock check in the
+-			 * calling code has failed and we did not fall
+-			 * into the check above due to !pid.
++			 * Bail out if user space manipulated the
++			 * futex value. If pi state exists then the
++			 * owner TID must be the same as the user
++			 * space TID. [9/10]
+ 			 */
+-			if (task && pi_state->owner == task)
+-				return -EDEADLK;
++			if (pid != task_pid_vnr(pi_state->owner))
++				return -EINVAL;
+ 
++		out_state:
+ 			atomic_inc(&pi_state->refcount);
+ 			*ps = pi_state;
+-
+ 			return 0;
+ 		}
+ 	}
+ 
+ 	/*
+ 	 * We are the first waiter - try to look up the real owner and attach
+-	 * the new pi_state to it, but bail out when TID = 0
++	 * the new pi_state to it, but bail out when TID = 0 [1]
+ 	 */
+ 	if (!pid)
+ 		return -ESRCH;
+@@ -687,6 +762,9 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
+ 		return ret;
+ 	}
+ 
++	/*
++	 * No existing pi state. First waiter. [2]
++	 */
+ 	pi_state = alloc_pi_state();
+ 
+ 	/*
+@@ -807,7 +885,7 @@ retry:
+ 	 * We dont have the lock. Look up the PI state (or create it if
+ 	 * we are the first waiter):
+ 	 */
+-	ret = lookup_pi_state(uval, hb, key, ps, task);
++	ret = lookup_pi_state(uval, hb, key, ps);
+ 
+ 	if (unlikely(ret)) {
+ 		switch (ret) {
+@@ -1410,7 +1488,7 @@ retry_private:
+ 			 * rereading and handing potential crap to
+ 			 * lookup_pi_state.
+ 			 */
+-			ret = lookup_pi_state(ret, hb2, &key2, &pi_state, NULL);
++			ret = lookup_pi_state(ret, hb2, &key2, &pi_state);
+ 		}
+ 
+ 		switch (ret) {
 -- 
 1.9.1
 
