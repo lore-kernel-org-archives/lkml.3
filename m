@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965207AbaFXP4x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:56:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33423 "EHLO
+	id S1756196AbaFXP76 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:59:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33428 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965146AbaFXP4v (ORCPT
+	with ESMTP id S965194AbaFXP4x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:56:51 -0400
+	Tue, 24 Jun 2014 11:56:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Lars-Peter Clausen <lars@metafoo.de>, Jaroslav Kysela <perex@perex.cz>,
         Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.15 58/61] ALSA: control: Handle numid overflow
-Date: Tue, 24 Jun 2014 11:51:41 -0400
-Message-Id: <20140624154955.428696672@linuxfoundation.org>
+Subject: [PATCH 3.15 59/61] ALSA: control: Make sure that id->index does not overflow
+Date: Tue, 24 Jun 2014 11:51:42 -0400
+Message-Id: <20140624154955.471283600@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154952.751713761@linuxfoundation.org>
 References: <20140624154952.751713761@linuxfoundation.org>
@@ -31,16 +31,14 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit ac902c112d90a89e59916f751c2745f4dbdbb4bd upstream.
+commit 883a1d49f0d77d30012f114b2e19fc141beb3e8e upstream.
 
-Each control gets automatically assigned its numids when the control is created.
-The allocation is done by incrementing the numid by the amount of allocated
-numids per allocation. This means that excessive creation and destruction of
-controls (e.g. via SNDRV_CTL_IOCTL_ELEM_ADD/REMOVE) can cause the id to
-eventually overflow. Currently when this happens for the control that caused the
-overflow kctl->id.numid + kctl->count will also over flow causing it to be
-smaller than kctl->id.numid. Most of the code assumes that this is something
-that can not happen, so we need to make sure that it won't happen
+The ALSA control code expects that the range of assigned indices to a control is
+continuous and does not overflow. Currently there are no checks to enforce this.
+If a control with a overflowing index range is created that control becomes
+effectively inaccessible and unremovable since snd_ctl_find_id() will not be
+able to find it. This patch adds a check that makes sure that controls with a
+overflowing index range can not be created.
 
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 Acked-by: Jaroslav Kysela <perex@perex.cz>
@@ -48,21 +46,20 @@ Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/core/control.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ sound/core/control.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
 --- a/sound/core/control.c
 +++ b/sound/core/control.c
-@@ -288,6 +288,10 @@ static bool snd_ctl_remove_numid_conflic
- {
- 	struct snd_kcontrol *kctl;
- 
-+	/* Make sure that the ids assigned to the control do not wrap around */
-+	if (card->last_numid >= UINT_MAX - count)
-+		card->last_numid = 0;
+@@ -342,6 +342,9 @@ int snd_ctl_add(struct snd_card *card, s
+ 	if (snd_BUG_ON(!card || !kcontrol->info))
+ 		goto error;
+ 	id = kcontrol->id;
++	if (id.index > UINT_MAX - kcontrol->count)
++		goto error;
 +
- 	list_for_each_entry(kctl, &card->controls, list) {
- 		if (kctl->id.numid < card->last_numid + 1 + count &&
- 		    kctl->id.numid + kctl->count > card->last_numid + 1) {
+ 	down_write(&card->controls_rwsem);
+ 	if (snd_ctl_find_id(card, &id)) {
+ 		up_write(&card->controls_rwsem);
 
 
