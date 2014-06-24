@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756606AbaFXUqF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:46:05 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47634 "EHLO
+	id S1756059AbaFXUqE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:46:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47638 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754488AbaFXUam (ORCPT
+	with ESMTP id S1754490AbaFXUam (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 24 Jun 2014 16:30:42 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, linaro-kernel@lists.linaro.org,
-        linaro-networking@linaro.org, fweisbec@gmail.com,
-        arvind.chauhan@arm.com, Thomas Gleixner <tglx@linutronix.de>,
+Cc: George McCollister <george.mccollister@gmail.com>,
+        Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 12/65] hrtimer: Set expiry time before switch_hrtimer_base()
-Date: Tue, 24 Jun 2014 13:29:32 -0700
-Message-Id: <1403641825-12825-13-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 54/65] USB: ftdi_sio: add NovaTech OrionLXm product ID
+Date: Tue, 24 Jun 2014 13:30:14 -0700
+Message-Id: <1403641825-12825-55-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
 References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
@@ -29,61 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Viresh Kumar <viresh.kumar@linaro.org>
+From: George McCollister <george.mccollister@gmail.com>
 
-commit 84ea7fe37908254c3bd90910921f6e1045c1747a upstream.
+commit d0839d757e6294921c31b1c4ca4f1dcc5df63bcd upstream.
 
-switch_hrtimer_base() calls hrtimer_check_target() which ensures that
-we do not migrate a timer to a remote cpu if the timer expires before
-the current programmed expiry time on that remote cpu.
+The NovaTech OrionLXm uses an onboard FTDI serial converter for JTAG and
+console access.
 
-But __hrtimer_start_range_ns() calls switch_hrtimer_base() before the
-new expiry time is set. So the sanity check in hrtimer_check_target()
-is operating on stale or even uninitialized data.
+Here is the lsusb output:
+Bus 004 Device 123: ID 0403:7c90 Future Technology Devices
+International, Ltd
 
-Update expiry time before calling switch_hrtimer_base().
-
-[ tglx: Rewrote changelog once again ]
-
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linaro-kernel@lists.linaro.org
-Cc: linaro-networking@linaro.org
-Cc: fweisbec@gmail.com
-Cc: arvind.chauhan@arm.com
-Link: http://lkml.kernel.org/r/81999e148745fc51bbcd0615823fbab9b2e87e23.1399882253.git.viresh.kumar@linaro.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: George McCollister <george.mccollister@gmail.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/hrtimer.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     | 2 ++
+ drivers/usb/serial/ftdi_sio_ids.h | 5 +++++
+ 2 files changed, 7 insertions(+)
 
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 9873816..20e88af 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -980,11 +980,8 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
- 	/* Remove an active timer from the queue: */
- 	ret = remove_hrtimer(timer, base);
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index 13d8c33..0e9c7e3 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -585,6 +585,8 @@ static struct usb_device_id id_table_combined [] = {
+ 	{ USB_DEVICE(FTDI_VID, FTDI_TAVIR_STK500_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_TIAO_UMPA_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
++	{ USB_DEVICE(FTDI_VID, FTDI_NT_ORIONLXM_PID),
++		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+ 	/*
+ 	 * ELV devices:
+ 	 */
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
+index 993c93d..500474c 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -538,6 +538,11 @@
+  */
+ #define FTDI_TIAO_UMPA_PID	0x8a98	/* TIAO/DIYGADGET USB Multi-Protocol Adapter */
  
--	/* Switch the timer base, if necessary: */
--	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
--
- 	if (mode & HRTIMER_MODE_REL) {
--		tim = ktime_add_safe(tim, new_base->get_time());
-+		tim = ktime_add_safe(tim, base->get_time());
- 		/*
- 		 * CONFIG_TIME_LOW_RES is a temporary way for architectures
- 		 * to signal that they simply return xtime in
-@@ -999,6 +996,9 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
- 
- 	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
- 
-+	/* Switch the timer base, if necessary: */
-+	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
++/*
++ * NovaTech product ids (FTDI_VID)
++ */
++#define FTDI_NT_ORIONLXM_PID	0x7c90	/* OrionLXm Substation Automation Platform */
 +
- 	timer_stats_hrtimer_set_start_info(timer);
  
- 	leftmost = enqueue_hrtimer(timer, new_base);
+ /********************************/
+ /** third-party VID/PID combos **/
 -- 
 1.9.1
 
