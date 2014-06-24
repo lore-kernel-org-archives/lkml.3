@@ -1,108 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754500AbaFXPdG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:33:06 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:55002 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753125AbaFXPdE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:33:04 -0400
+	id S1754554AbaFXPdg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:33:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61769 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753709AbaFXPde (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 11:33:34 -0400
+Date: Tue, 24 Jun 2014 11:30:01 -0400
+From: Rik van Riel <riel@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, chegu_vinod@hp.com, mgorman@suse.de,
+        mingo@kernel.org
+Subject: Re: [PATCH 8/7] sched,numa: do not let a move increase the
+ imbalance
+Message-ID: <20140624113001.114a6590@riellap.home.surriel.com>
+In-Reply-To: <20140624143820.GA28774@twins.programming.kicks-ass.net>
+References: <1403538095-31256-1-git-send-email-riel@redhat.com>
+	<20140623183011.28555a7c@annuminas.surriel.com>
+	<20140624143820.GA28774@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-In-Reply-To: <1403618235-19353-6-git-send-email-t.figa@samsung.com>
-References: <1403618235-19353-1-git-send-email-t.figa@samsung.com>
-	<1403618235-19353-6-git-send-email-t.figa@samsung.com>
-Date: Tue, 24 Jun 2014 21:03:03 +0530
-Message-ID: <CAM4voanJ_auOJoauvsMOVz3nhjx3hGgpbzccMMwn2ouvjwWy2g@mail.gmail.com>
-Subject: Re: [PATCH 5/6] ARM: EXYNOS: Fix suspend/resume sequencies
-From: Abhilash Kesavan <kesavan.abhilash@gmail.com>
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomasz,
+On Tue, 24 Jun 2014 16:38:20 +0200
+Peter Zijlstra <peterz@infradead.org> wrote:
 
-On Tue, Jun 24, 2014 at 7:27 PM, Tomasz Figa <t.figa@samsung.com> wrote:
-> Due to recent consolidation of Exynos suspend and cpuidle code, some
-> parts of suspend and resume sequences are executed two times, once from
-> exynos_pm_syscore_ops and then from exynos_cpu_pm_notifier() and thus it
-> breaks suspend, at least on Exynos4-based boards.
->
-> This patch fixes the issue by removing exynos_pm_syscore_ops completely
-> and making the code rely only on CPU PM notifier.
->
-> Tested on Exynos4210-based Trats board.
->
-> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-> ---
->  arch/arm/mach-exynos/pm.c | 20 ++++----------------
->  1 file changed, 4 insertions(+), 16 deletions(-)
->
-A patch from me has recently gone in which converts the soc_is checks
-for A9 specific registers to  the A9 part number. This patch will
-probably have to be rebased atop it.
+> On Mon, Jun 23, 2014 at 06:30:11PM -0400, Rik van Riel wrote:
+> > The HP DL980 system has a different NUMA topology from the 8 node
+> > system I am testing on, and showed some bad behaviour I have not
+> > managed to reproduce. This patch makes sure workloads converge.
+> > 
+> > When both a task swap and a task move are possible, do not let the
+> > task move cause an increase in the load imbalance. Forcing task
+> > swaps can help untangle workloads that have gotten stuck fighting
+> > over the same nodes, like this run of "perf bench numa -m -0 -p
+> > 1000 -p 16 -t 15":
+> > 
+> > Per-node process memory usage (in MBs)
+> > 38035 (process 0      2      0      0      1   1000      0
+> > 0      0  1003 38036 (process 1      2      0      0      1
+> > 0   1000      0      0  1003 38037 (process 2    230    772
+> > 0      1      0      0      0      0  1003 38038 (process 3
+> > 1      0      0   1003      0      0      0      0  1004 38039
+> > (process 4      2      0      0      1      0      0    994      6
+> > 1003 38040 (process 5      2      0      0      1    994
+> > 0      0      6  1003 38041 (process 6      2      0   1000
+> > 1      0      0      0      0  1003 38042 (process 7   1003
+> > 0      0      1      0      0      0      0  1004 38043 (process
+> > 8      2      0      0      1      0   1000      0      0  1003
+> > 38044 (process 9      2      0      0      1      0      0      0
+> > 1000  1003 38045 (process 1   1002      0      0      1      0
+> > 0      0      0  1003 38046 (process 1      3      0    954
+> > 1      0      0      0     46  1004 38047 (process 1      2
+> > 1000      0      1      0      0      0      0  1003 38048 (process
+> > 1      2      0      0      1      0      0   1000      0  1003
+> > 38049 (process 1      2      0      0   1001      0      0
+> > 0      0  1003 38050 (process 1      2    934      0     67
+> > 0      0      0      0  1003
+> > 
+> > Allowing task moves to increase the imbalance even slightly causes
+> > tasks to move towards node 1, and not towards node 7, which prevents
+> > the workload from converging once the above scenario has been
+> > reached.
+> > 
+> > Reported-and-tested-by: Vinod Chegu <chegu_vinod@hp.com>
+> > Signed-off-by: Rik van Riel <riel@redhat.com>
+> > ---
+> >  kernel/sched/fair.c | 8 ++++++++
+> >  1 file changed, 8 insertions(+)
+> > 
+> > diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> > index 4723234..e98d290 100644
+> > --- a/kernel/sched/fair.c
+> > +++ b/kernel/sched/fair.c
+> > @@ -1314,6 +1314,12 @@ static void task_numa_compare(struct
+> > task_numa_env *env, 
+> >  	if (moveimp > imp && moveimp > env->best_imp) {
+> >  		/*
+> > +		 * A task swap is possible, do not let a task move
+> > +		 * increase the imbalance.
+> > +		 */
+> > +		int imbalance_pct = env->imbalance_pct;
+> > +		env->imbalance_pct = 100;
+> > +		/*
+> 
+> I would feel so much better if we could say _why_ this is so.
 
-Regards,
-Abhilash
-> diff --git a/arch/arm/mach-exynos/pm.c b/arch/arm/mach-exynos/pm.c
-> index 87c0d34..98d4926 100644
-> --- a/arch/arm/mach-exynos/pm.c
-> +++ b/arch/arm/mach-exynos/pm.c
-> @@ -364,11 +364,6 @@ early_wakeup:
->         return;
->  }
->
-> -static struct syscore_ops exynos_pm_syscore_ops = {
-> -       .suspend        = exynos_pm_suspend,
-> -       .resume         = exynos_pm_resume,
-> -};
-> -
->  /*
->   * Suspend Ops
->   */
-> @@ -438,19 +433,13 @@ static int exynos_cpu_pm_notifier(struct notifier_block *self,
->
->         switch (cmd) {
->         case CPU_PM_ENTER:
-> -               if (cpu == 0) {
-> -                       exynos_pm_central_suspend();
-> -                       exynos_cpu_save_register();
-> -               }
-> +               if (cpu == 0)
-> +                       exynos_pm_suspend();
->                 break;
->
->         case CPU_PM_EXIT:
-> -               if (cpu == 0) {
-> -                       if (!soc_is_exynos5250())
-> -                               scu_enable(S5P_VA_SCU);
-> -                       exynos_cpu_restore_register();
-> -                       exynos_pm_central_resume();
-> -               }
-> +               if (cpu == 0)
-> +                       exynos_pm_resume();
->                 break;
->         }
->
-> @@ -475,6 +464,5 @@ void __init exynos_pm_init(void)
->         tmp |= ((0xFF << 8) | (0x1F << 1));
->         __raw_writel(tmp, S5P_WAKEUP_MASK);
->
-> -       register_syscore_ops(&exynos_pm_syscore_ops);
->         suspend_set_ops(&exynos_suspend_ops);
->  }
-> --
-> 1.9.3
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+I can explain why, and will need to think a little about how to
+write it best down in a concise form for a comment...
+
+Basically, when we have more numa_groups than nodes on the
+system, say 2x the number of nodes, it is possible that one node
+is the most desirable node for 3 of the tasks or numa_groups
+(node A), while another node is desirable to just 1 group (node B).
+
+If we allow task moves to create an imbalance, the load balancer
+will move tasks from groups 1, 2 & 3 from node A to node B,
+while the NUMA code is allowed to move tasks back from node B
+to node A.
+
+Each of the numa groups are allowed equal movement here. A task
+move has a higher improvement than a task swap, so the system
+will prefer a task move.
+
+By not doing the task moves, the workloads never "untangle" with
+two of them winning node A, and the other ending up predominantly
+on node B, until node B becomes its preferred nid.
+
+Does that make sense?
