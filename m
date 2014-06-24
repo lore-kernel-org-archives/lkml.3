@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753078AbaFXOIU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 10:08:20 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:60705 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751401AbaFXOIS (ORCPT
+	id S1753645AbaFXOKl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 10:10:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59969 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753224AbaFXOKk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 10:08:18 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        devicetree <devicetree@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] phy: miphy365x: Add Device Tree bindings for the MiPHY365x
-Date: Tue, 24 Jun 2014 16:08:15 +0200
-Message-ID: <4274516.nCpbjAuUJp@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140624124634.GO13803@lee--X1>
-References: <1400766819-22286-1-git-send-email-lee.jones@linaro.org> <6599289.0ZjjaMbRqj@wuerfel> <20140624124634.GO13803@lee--X1>
+	Tue, 24 Jun 2014 10:10:40 -0400
+Date: Tue, 24 Jun 2014 10:10:28 -0400
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Mathias Nyman <mathias.nyman@linux.intel.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dan.j.williams@intel.com, Julius Werner <jwerner@chromium.org>
+Subject: Re: [PATCH 3/5] usb: xhci: Correct last context entry calculation
+ for Configure Endpoint
+Message-ID: <20140624141028.GA2844@kroah.com>
+References: <1403618059-24533-1-git-send-email-mathias.nyman@linux.intel.com>
+ <1403619322-24704-1-git-send-email-mathias.nyman@linux.intel.com>
+ <1403619322-24704-3-git-send-email-mathias.nyman@linux.intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:YvWSh+ixZRpNdtM0CkbVXNFisU/9UyWqet8IyMuklGb
- qrhTy7pe2HVAxlntrd+US2AaoMzNWU5KFJPiYB5riBJpAcdxji
- WErFFjNnVWVSU/A6BXMwjJu4svpkZks7/7msaER+KnsrZ665Yr
- I+h8+8ayX95+oI+FB4mIWzXfk47HhPrzHu5c5CmuI6iOrkdoVQ
- 9Vr7i0b5yxNMvUfbH0EEJ/bodHN7IDrt+aAOU4S7IkLNv4hMg8
- 1qKEwR5M2ONitJwqVUPYOQp+RQKszymvaEbtMGwlzJJPJIo6gP
- bZOZxm5fnxaaVMSIGbjf8+t+nvrwaevWtly4ecC93WxyVDZS4h
- gsrHXLL7qE4cEiYZkVo4=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403619322-24704-3-git-send-email-mathias.nyman@linux.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 24 June 2014 13:46:34 Lee Jones wrote:
-> > > > > converting all addresses to to resources so drivers can easily pull
-> > > > > them out using platform_get_resource() and friends.  Pushing the reg
-> > > > 
-> > > > right. Can't we use of_address_to_resource here?
-> > > 
-> > > We could, but that would be an extra layer.  We'd be pulling the
-> > > address, putting it into a resource, then pulling it from the resource
-> > > for use.  If we're going to be pulling addresses out manually, we're
-> > > probably better off using of_get_address().  But again, we're just
-> > > carrying out functionality which is already provided by the
-> > > framework.
-> > 
-> > there is also of_ioremap().
+On Tue, Jun 24, 2014 at 05:14:42PM +0300, Mathias Nyman wrote:
+> From: Julius Werner <jwerner@chromium.org>
 > 
-> Isn't this SPARK only?  And doesn't it require a populated resource?  
-> Which is what I'm saying is the issue here i.e. we don't have one.
+> The current XHCI driver recalculates the Context Entries field in the
+> Slot Context on every add_endpoint() and drop_endpoint() call. In the
+> case of drop_endpoint(), it seems to assume that the add_flags will
+> always contain every endpoint for the new configuration, which is not
+> necessarily correct if you don't make assumptions about how the USB core
+> uses the add_endpoint/drop_endpoint interface (add_flags only contains
+> endpoints that are new additions in the new configuration).
+> 
+> Furthermore, EP0_FLAG is not consistently set in add_flags throughout
+> the lifetime of a device. This means that when all endpoints are
+> dropped, the Context Entries field can be set to 0 (which is invalid and
+> may cause a Parameter Error) or -1 (which is interpreted as 31 and
+> causes the driver to keep using the old, incorrect value).
+> 
+> The only surefire way to set this field right is to also take all
+> existing endpoints into account, and to force the value to 1 (meaning
+> only EP0 is active) if no other endpoint is found. This patch implements
+> that as a single step in the final check_bandwidth() call and removes
+> the intermediary calculations from add_endpoint() and drop_endpoint().
+> 
+> Signed-off-by: Julius Werner <jwerner@chromium.org>
+> Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+> ---
+>  drivers/usb/host/xhci.c | 51 +++++++++++++++++--------------------------------
+>  1 file changed, 18 insertions(+), 33 deletions(-)
 
-Sorry, I meant of_iomap(). I think it's only for historic reaons
-that we have both. Probably of_iomap started out on powerpc with
-the same intention as the sparc of_ioremap.
+Is this something for older (i.e. stable) kernels?
 
-of_iomap does not require a resource, just an index.
+thanks,
 
-	Arnd
+greg k-h
