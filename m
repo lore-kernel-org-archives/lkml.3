@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965605AbaFXQM2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:12:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33254 "EHLO
+	id S965622AbaFXQM4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:12:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33244 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756073AbaFXPzt (ORCPT
+	with ESMTP id S1756053AbaFXPzq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:55:49 -0400
+	Tue, 24 Jun 2014 11:55:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tom Gundersen <teg@jklm.no>, "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.15 08/61] net: tunnels - enable module autoloading
-Date: Tue, 24 Jun 2014 11:50:51 -0400
-Message-Id: <20140624154953.147984442@linuxfoundation.org>
+        Mimi Zohar <zohar@linux.vnet.ibm.com>
+Subject: [PATCH 3.15 06/61] evm: prohibit userspace writing security.evm HMAC value
+Date: Tue, 24 Jun 2014 11:50:49 -0400
+Message-Id: <20140624154953.059964259@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154952.751713761@linuxfoundation.org>
 References: <20140624154952.751713761@linuxfoundation.org>
@@ -28,49 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tom Gundersen <teg@jklm.no>
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 
-[ Upstream commit f98f89a0104454f35a62d681683c844f6dbf4043 ]
+commit 2fb1c9a4f2dbc2f0bd2431c7fa64d0b5483864e4 upstream.
 
-Enable the module alias hookup to allow tunnel modules to be autoloaded on demand.
+Calculating the 'security.evm' HMAC value requires access to the
+EVM encrypted key.  Only the kernel should have access to it.  This
+patch prevents userspace tools(eg. setfattr, cp --preserve=xattr)
+from setting/modifying the 'security.evm' HMAC value directly.
 
-This is in line with how most other netdev kinds work, and will allow userspace
-to create tunnels without having CAP_SYS_MODULE.
-
-Signed-off-by: Tom Gundersen <teg@jklm.no>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/ipip.c       |    1 +
- net/ipv6/ip6_tunnel.c |    1 +
- net/ipv6/sit.c        |    1 +
- 3 files changed, 3 insertions(+)
 
---- a/net/ipv4/ipip.c
-+++ b/net/ipv4/ipip.c
-@@ -486,4 +486,5 @@ static void __exit ipip_fini(void)
- module_init(ipip_init);
- module_exit(ipip_fini);
- MODULE_LICENSE("GPL");
-+MODULE_ALIAS_RTNL_LINK("ipip");
- MODULE_ALIAS_NETDEV("tunl0");
---- a/net/ipv6/ip6_tunnel.c
-+++ b/net/ipv6/ip6_tunnel.c
-@@ -61,6 +61,7 @@
- MODULE_AUTHOR("Ville Nuorvala");
- MODULE_DESCRIPTION("IPv6 tunneling device");
- MODULE_LICENSE("GPL");
-+MODULE_ALIAS_RTNL_LINK("ip6tnl");
- MODULE_ALIAS_NETDEV("ip6tnl0");
- 
- #ifdef IP6_TNL_DEBUG
---- a/net/ipv6/sit.c
-+++ b/net/ipv6/sit.c
-@@ -1828,4 +1828,5 @@ xfrm_tunnel_failed:
- module_init(sit_init);
- module_exit(sit_cleanup);
- MODULE_LICENSE("GPL");
-+MODULE_ALIAS_RTNL_LINK("sit");
- MODULE_ALIAS_NETDEV("sit0");
+---
+ security/integrity/evm/evm_main.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+--- a/security/integrity/evm/evm_main.c
++++ b/security/integrity/evm/evm_main.c
+@@ -287,12 +287,20 @@ out:
+  * @xattr_value: pointer to the new extended attribute value
+  * @xattr_value_len: pointer to the new extended attribute value length
+  *
+- * Updating 'security.evm' requires CAP_SYS_ADMIN privileges and that
+- * the current value is valid.
++ * Before allowing the 'security.evm' protected xattr to be updated,
++ * verify the existing value is valid.  As only the kernel should have
++ * access to the EVM encrypted key needed to calculate the HMAC, prevent
++ * userspace from writing HMAC value.  Writing 'security.evm' requires
++ * requires CAP_SYS_ADMIN privileges.
+  */
+ int evm_inode_setxattr(struct dentry *dentry, const char *xattr_name,
+ 		       const void *xattr_value, size_t xattr_value_len)
+ {
++	const struct evm_ima_xattr_data *xattr_data = xattr_value;
++
++	if ((strcmp(xattr_name, XATTR_NAME_EVM) == 0)
++	    && (xattr_data->type == EVM_XATTR_HMAC))
++		return -EPERM;
+ 	return evm_protect_xattr(dentry, xattr_name, xattr_value,
+ 				 xattr_value_len);
+ }
 
 
