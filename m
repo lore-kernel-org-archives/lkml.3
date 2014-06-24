@@ -1,44 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756883AbaFXUxD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:53:03 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:54179 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756482AbaFXUwO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756483AbaFXUwO (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 24 Jun 2014 16:52:14 -0400
-Message-ID: <53A9E4CC.4050409@ti.com>
-Date: Tue, 24 Jun 2014 16:51:24 -0400
-From: Tom Rini <trini@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Felipe Balbi <balbi@ti.com>, Benoit Cousson <bcousson@baylibre.com>
-CC: <robh+dt@kernel.org>, <galak@codeaurora.org>,
-        Tony Lindgren <tony@atomide.com>, <linux@arm.linux.org.uk>,
-        Rajendra Nayak <rnayak@ti.com>, Nishanth Menon <nm@ti.com>,
-        <r.sricharan@ti.com>, <devicetree@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 1/2] arm: dts: am4372: let boards access all nodes
- through phandles
-References: <1403547659-24558-1-git-send-email-balbi@ti.com> <1403547659-24558-2-git-send-email-balbi@ti.com>
-In-Reply-To: <1403547659-24558-2-git-send-email-balbi@ti.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Received: from youngberry.canonical.com ([91.189.89.112]:47612 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754311AbaFXUah (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 16:30:37 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 07/65] genirq: Provide irq_force_affinity fallback for non-SMP
+Date: Tue, 24 Jun 2014 13:29:27 -0700
+Message-Id: <1403641825-12825-8-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
+References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2014 02:20 PM, Felipe Balbi wrote:
-> by providing phandles to rtc, wdt, cpu and dispc nodes,
-> boards can access them to add board-specific data.
-> 
-> Signed-off-by: Felipe Balbi <balbi@ti.com>
+3.8.13.25 -stable review patch.  If anyone has any objections, please let me know.
 
-Tested-by: Tom Rini <trini@ti.com>
+------------------
 
+From: Arnd Bergmann <arnd@arndb.de>
+
+commit 4c88d7f9b0d5fb0588c3386be62115cc2eaa8f9f upstream.
+
+Patch 01f8fa4f01d "genirq: Allow forcing cpu affinity of interrupts" added
+an irq_force_affinity() function, and 30ccf03b4a6 "clocksource: Exynos_mct:
+Use irq_force_affinity() in cpu bringup" subsequently uses it. However, the
+driver can be used with CONFIG_SMP disabled, but the function declaration
+is only available for CONFIG_SMP, leading to this build error:
+
+drivers/clocksource/exynos_mct.c:431:3: error: implicit declaration of function 'irq_force_affinity' [-Werror=implicit-function-declaration]
+   irq_force_affinity(mct_irqs[MCT_L0_IRQ + cpu], cpumask_of(cpu));
+
+This patch introduces a dummy helper function for the non-SMP case
+that always returns success, to get rid of the build error.
+Since the patches causing the problem are marked for stable backports,
+this one should be as well.
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+Link: http://lkml.kernel.org/r/5619084.0zmrrIUZLV@wuerfel
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ include/linux/interrupt.h | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+index e8401d0..6de0f2c 100644
+--- a/include/linux/interrupt.h
++++ b/include/linux/interrupt.h
+@@ -308,6 +308,11 @@ static inline int irq_set_affinity(unsigned int irq, const struct cpumask *m)
+ 	return -EINVAL;
+ }
+ 
++static inline int irq_force_affinity(unsigned int irq, const struct cpumask *cpumask)
++{
++	return 0;
++}
++
+ static inline int irq_can_set_affinity(unsigned int irq)
+ {
+ 	return 0;
 -- 
-Tom
+1.9.1
+
