@@ -1,140 +1,277 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754386AbaFXOmT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 10:42:19 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:34757 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754184AbaFXOlR (ORCPT
+	id S1754478AbaFXOmh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 10:42:37 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:11951 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754365AbaFXOmT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 10:41:17 -0400
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        keyrings <keyrings@linux-nfs.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Josh Boyer <jwboyer@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>
-Subject: [PATCH v6 3/6] KEYS: make partial key id matching as a dedicated function
-Date: Tue, 24 Jun 2014 10:40:49 -0400
-Message-Id: <1403620852-16476-4-git-send-email-zohar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1403620852-16476-1-git-send-email-zohar@linux.vnet.ibm.com>
-References: <1403620852-16476-1-git-send-email-zohar@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14062414-3532-0000-0000-000002B013B8
+	Tue, 24 Jun 2014 10:42:19 -0400
+X-IronPort-AV: E=Sophos;i="5.01,538,1400025600"; 
+   d="scan'208";a="146559608"
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+To: Steffen Klassert <steffen.klassert@secunet.com>,
+        Fan Du <fan.du@windriver.com>, Mathias Krause <minipli@googlemail.com>,
+        Daniel Borkmann <dborkman@redhat.com>
+CC: Zoltan Kiss <zoltan.kiss@citrix.com>,
+        "David S. Miller" <davem@davemloft.net>, Thomas Graf <tgraf@suug.ch>,
+        Joe Perches <joe@perches.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
+Subject: [PATCH net-next] pktgen: Fill the payload optionally with a pattern
+Date: Tue, 24 Jun 2014 15:42:08 +0100
+Message-ID: <1403620928-4514-1-git-send-email-zoltan.kiss@citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.80.118.114]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
+Introduces a new flag called PATTERN, which puts a non-periodic, predicatble
+pattern into the payload. This was useful to reproduce an otherwise intermittent
+bug in xen-netback [1], where checksum checking doesn't help.
+The pattern is a repetition of " %lu", a series of increasing numbers divided by
+space. The value of the number is the size of the preceding payload area. E.g.
+" 1 3 5"..." 1000 1005 1010"
+If the pattern is used, every frag will have its own page, unlike before, so it
+needs more memory.
 
-To avoid code duplication this patch refactors asymmetric_key_match(),
-making partial ID string match a separate function.
+[1] 5837574: xen-netback: Fix grant ref resolution in RX path
 
-This patch also implicitly fixes a bug in the code.  asymmetric_key_match()
-allows to match the key by its subtype. But subtype matching could be
-undone if asymmetric_key_id(key) would return NULL. This patch first
-checks for matching spec and then for its value.
+Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Thomas Graf <tgraf@suug.ch>
+Cc: Joe Perches <joe@perches.com>
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: xen-devel@lists.xenproject.org
 
-Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
 ---
- crypto/asymmetric_keys/asymmetric_keys.h |  2 ++
- crypto/asymmetric_keys/asymmetric_type.c | 50 ++++++++++++++++++++------------
- 2 files changed, 33 insertions(+), 19 deletions(-)
+ net/core/pktgen.c |  131 +++++++++++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 118 insertions(+), 13 deletions(-)
 
-diff --git a/crypto/asymmetric_keys/asymmetric_keys.h b/crypto/asymmetric_keys/asymmetric_keys.h
-index 515b634..a63c551 100644
---- a/crypto/asymmetric_keys/asymmetric_keys.h
-+++ b/crypto/asymmetric_keys/asymmetric_keys.h
-@@ -9,6 +9,8 @@
-  * 2 of the Licence, or (at your option) any later version.
-  */
+diff --git a/net/core/pktgen.c b/net/core/pktgen.c
+index 0304f98..69eb482 100644
+--- a/net/core/pktgen.c
++++ b/net/core/pktgen.c
+@@ -201,6 +201,7 @@
+ #define F_QUEUE_MAP_CPU (1<<14)	/* queue map mirrors smp_processor_id() */
+ #define F_NODE          (1<<15)	/* Node memory alloc*/
+ #define F_UDPCSUM       (1<<16)	/* Include UDP checksum */
++#define F_PATTERN       (1<<17)	/* Fill the payload with a pattern */
  
-+int asymmetric_keyid_match(const char *kid, const char *id);
+ /* Thread control flag bits */
+ #define T_STOP        (1<<0)	/* Stop run */
+@@ -255,7 +256,7 @@ struct pktgen_dev {
+ 	int max_pkt_size;
+ 	int pkt_overhead;	/* overhead for MPLS, VLANs, IPSEC etc */
+ 	int nfrags;
+-	struct page *page;
++	struct page *pages[MAX_SKB_FRAGS];
+ 	u64 delay;		/* nano-seconds */
+ 
+ 	__u64 count;		/* Default No packets to send */
+@@ -1127,11 +1128,13 @@ static ssize_t pktgen_if_write(struct file *file,
+ 		i += len;
+ 
+ 		if (node_possible(value)) {
++			int j;
+ 			pkt_dev->node = value;
+ 			sprintf(pg_result, "OK: node=%d", pkt_dev->node);
+-			if (pkt_dev->page) {
+-				put_page(pkt_dev->page);
+-				pkt_dev->page = NULL;
++			for (j = 0; j < MAX_SKB_FRAGS; ++j)
++				if (pkt_dev->pages[j]) {
++					put_page(pkt_dev->pages[j]);
++					pkt_dev->pages[j] = NULL;
+ 			}
+ 		}
+ 		else
+@@ -1242,6 +1245,12 @@ static ssize_t pktgen_if_write(struct file *file,
+ 		else if (strcmp(f, "!UDPCSUM") == 0)
+ 			pkt_dev->flags &= ~F_UDPCSUM;
+ 
++		else if (strcmp(f, "PATTERN") == 0)
++			pkt_dev->flags |= F_PATTERN;
 +
- static inline const char *asymmetric_key_id(const struct key *key)
- {
- 	return key->type_data.p[1];
-diff --git a/crypto/asymmetric_keys/asymmetric_type.c b/crypto/asymmetric_keys/asymmetric_type.c
-index b77eb53..1fd1d30 100644
---- a/crypto/asymmetric_keys/asymmetric_type.c
-+++ b/crypto/asymmetric_keys/asymmetric_type.c
-@@ -23,6 +23,34 @@ static LIST_HEAD(asymmetric_key_parsers);
- static DECLARE_RWSEM(asymmetric_key_parsers_sem);
++		else if (strcmp(f, "!PATTERN") == 0)
++			pkt_dev->flags &= ~F_PATTERN;
++
+ 		else {
+ 			sprintf(pg_result,
+ 				"Flag -:%s:- unknown\nAvailable flags, (prepend ! to un-set flag):\n%s",
+@@ -2623,17 +2632,90 @@ static inline __be16 build_tci(unsigned int id, unsigned int cfi,
+ 	return htons(id | (cfi << 12) | (prio << 13));
+ }
  
- /*
-+ * Match asymmetric key id with partial match
-+ * @id:		key id to match in a form "id:<id>"
++/* Max number of digits. The sizeof equals to log base 2^8 (UINT_MAX), multiply
++ * with 3 is a cheap, rounded up conversion to log10
 + */
-+int asymmetric_keyid_match(const char *kid, const char *id)
++#define UINT_MAX_DIGITS (3*sizeof(unsigned long)+1)
++
++/* Fill the buffer up with a pattern
++ * buf - pointer to buffer
++ * bufsize - size of the buffer
++ * start - starting value for the pattern
++ * incomplete - pointer to the offset inside the pattern, or 0 if none
++ *
++ * The pattern is a repetition of " %lu", a series of increasing numbers divided
++ * by space. The value of the number is "start" plus the size of the preceding
++ * space. E.g. if start is 1000, it starts like " 1000 1005 1010".
++ * If the last number doesn't fit, it gets truncated, and the number of leading
++ * characters is saved into incomplete. It can be passed then to the next call
++ * with the next buffer, and the pattern looks contiguous over scattered
++ * buffers.
++ * It returns "start" plus the offset of the byte after the last full
++ * pattern write.
++ */
++static unsigned long pattern_to_packet(char *buf,
++				       int bufsize,
++				       unsigned long start,
++				       unsigned int *incomplete)
 +{
-+	size_t idlen, kidlen;
++	int len;
++	/* Only used when the pattern doesn't align to the buffer */
++	char temp[UINT_MAX_DIGITS];
 +
-+	if (!kid || !id)
-+		return 0;
++	if (*incomplete) {
++		int copylen;
 +
-+	/* make it possible to use id as in the request: "id:<id>" */
-+	if (strncmp(id, "id:", 3) == 0)
-+		id += 3;
++		len = snprintf(temp, UINT_MAX_DIGITS, " %lu", start);
++		copylen = len - *incomplete;
++		if (copylen > bufsize) {
++			/* The continuation of this number couldn't fit here */
++			copylen = bufsize;
++			*incomplete += bufsize;
++		} else {
++			*incomplete = 0;
++			start += len;
++		}
++		memcpy(buf, temp + *incomplete, copylen);
++		bufsize -= copylen;
++		buf += copylen;
++	}
 +
-+	/* Anything after here requires a partial match on the ID string */
-+	idlen = strlen(id);
-+	kidlen = strlen(kid);
-+	if (idlen > kidlen)
-+		return 0;
-+
-+	kid += kidlen - idlen;
-+	if (strcasecmp(id, kid) != 0)
-+		return 0;
-+
-+	return 1;
++	while (bufsize > 0) {
++		len = snprintf(buf, bufsize, " %lu", start);
++		/* The last number doesn't fit, remember where it was truncated.
++		 */
++		if (len >= bufsize) {
++			/* snprintf always add a trailing zero */
++			len = snprintf(temp, UINT_MAX_DIGITS, " %lu", start);
++			memcpy(buf, temp, bufsize);
++			*incomplete = len - bufsize;
++			return start;
++		}
++		bufsize -= len;
++		start += len;
++		buf += len;
++	}
++	return start;
 +}
 +
-+/*
-  * Match asymmetric keys on (part of) their name
-  * We have some shorthand methods for matching keys.  We allow:
-  *
-@@ -34,9 +62,8 @@ static int asymmetric_key_match(const struct key *key, const void *description)
+ static void pktgen_finalize_skb(struct pktgen_dev *pkt_dev, struct sk_buff *skb,
+ 				int datalen)
  {
- 	const struct asymmetric_key_subtype *subtype = asymmetric_key_subtype(key);
- 	const char *spec = description;
--	const char *id, *kid;
-+	const char *id;
- 	ptrdiff_t speclen;
--	size_t idlen, kidlen;
+ 	struct timeval timestamp;
+ 	struct pktgen_hdr *pgh;
++	unsigned long offset = 0;
++	unsigned int incomplete = 0;
  
- 	if (!subtype || !spec || !*spec)
- 		return 0;
-@@ -55,23 +82,8 @@ static int asymmetric_key_match(const struct key *key, const void *description)
- 	speclen = id - spec;
- 	id++;
+ 	pgh = (struct pktgen_hdr *)skb_put(skb, sizeof(*pgh));
+ 	datalen -= sizeof(*pgh);
  
--	/* Anything after here requires a partial match on the ID string */
--	kid = asymmetric_key_id(key);
--	if (!kid)
--		return 0;
--
--	idlen = strlen(id);
--	kidlen = strlen(kid);
--	if (idlen > kidlen)
--		return 0;
--
--	kid += kidlen - idlen;
--	if (strcasecmp(id, kid) != 0)
--		return 0;
--
--	if (speclen == 2 &&
--	    memcmp(spec, "id", 2) == 0)
--		return 1;
-+	if (speclen == 2 && memcmp(spec, "id", 2) == 0)
-+		return asymmetric_keyid_match(asymmetric_key_id(key), id);
+ 	if (pkt_dev->nfrags <= 0) {
+-		memset(skb_put(skb, datalen), 0, datalen);
++		if (pkt_dev->flags & F_PATTERN)
++			offset = pattern_to_packet(skb_put(skb, datalen),
++						   datalen, offset,
++						   &incomplete);
++		else
++			memset(skb_put(skb, datalen), 0, datalen);
+ 	} else {
+ 		int frags = pkt_dev->nfrags;
+ 		int i, len;
+@@ -2644,7 +2726,12 @@ static void pktgen_finalize_skb(struct pktgen_dev *pkt_dev, struct sk_buff *skb,
+ 			frags = MAX_SKB_FRAGS;
+ 		len = datalen - frags * PAGE_SIZE;
+ 		if (len > 0) {
+-			memset(skb_put(skb, len), 0, len);
++			if (pkt_dev->flags & F_PATTERN)
++				offset = pattern_to_packet(skb_put(skb, len),
++							   len, offset,
++							   &incomplete);
++			else
++				memset(skb_put(skb, len), 0, len);
+ 			datalen = frags * PAGE_SIZE;
+ 		}
  
- 	if (speclen == subtype->name_len &&
- 	    memcmp(spec, subtype->name, speclen) == 0)
--- 
-1.8.1.4
-
+@@ -2652,17 +2739,28 @@ static void pktgen_finalize_skb(struct pktgen_dev *pkt_dev, struct sk_buff *skb,
+ 		frag_len = (datalen/frags) < PAGE_SIZE ?
+ 			   (datalen/frags) : PAGE_SIZE;
+ 		while (datalen > 0) {
+-			if (unlikely(!pkt_dev->page)) {
++			int fragpage;
++			gfp_t flags = GFP_KERNEL;
++
++			if (pkt_dev->flags & F_PATTERN) {
++				fragpage = i;
++			} else {
++				fragpage = 0;
++				flags |= __GFP_ZERO;
++			}
++
++			if (unlikely(!pkt_dev->pages[fragpage])) {
+ 				int node = numa_node_id();
+ 
+ 				if (pkt_dev->node >= 0 && (pkt_dev->flags & F_NODE))
+ 					node = pkt_dev->node;
+-				pkt_dev->page = alloc_pages_node(node, GFP_KERNEL | __GFP_ZERO, 0);
+-				if (!pkt_dev->page)
++				pkt_dev->pages[fragpage] = alloc_pages_node(node, flags, 0);
++				if (!pkt_dev->pages[fragpage])
+ 					break;
+ 			}
+-			get_page(pkt_dev->page);
+-			skb_frag_set_page(skb, i, pkt_dev->page);
++			get_page(pkt_dev->pages[fragpage]);
++			skb_frag_set_page(skb, i, pkt_dev->pages[fragpage]);
++
+ 			skb_shinfo(skb)->frags[i].page_offset = 0;
+ 			/*last fragment, fill rest of data*/
+ 			if (i == (frags - 1))
+@@ -2671,6 +2769,10 @@ static void pktgen_finalize_skb(struct pktgen_dev *pkt_dev, struct sk_buff *skb,
+ 			else
+ 				skb_frag_size_set(&skb_shinfo(skb)->frags[i], frag_len);
+ 			datalen -= skb_frag_size(&skb_shinfo(skb)->frags[i]);
++			if (pkt_dev->flags & F_PATTERN)
++				offset = pattern_to_packet(skb_frag_address(&skb_shinfo(skb)->frags[i]),
++							   skb_frag_size(&skb_shinfo(skb)->frags[i]),
++							   offset, &incomplete);
+ 			skb->len += skb_frag_size(&skb_shinfo(skb)->frags[i]);
+ 			skb->data_len += skb_frag_size(&skb_shinfo(skb)->frags[i]);
+ 			i++;
+@@ -3685,6 +3787,8 @@ static void _rem_dev_from_if_list(struct pktgen_thread *t,
+ static int pktgen_remove_device(struct pktgen_thread *t,
+ 				struct pktgen_dev *pkt_dev)
+ {
++	int i;
++
+ 	pr_debug("remove_device pkt_dev=%p\n", pkt_dev);
+ 
+ 	if (pkt_dev->running) {
+@@ -3710,8 +3814,9 @@ static int pktgen_remove_device(struct pktgen_thread *t,
+ 	free_SAs(pkt_dev);
+ #endif
+ 	vfree(pkt_dev->flows);
+-	if (pkt_dev->page)
+-		put_page(pkt_dev->page);
++	for (i = 0; i < MAX_SKB_FRAGS; ++i)
++		if (pkt_dev->pages[i])
++			put_page(pkt_dev->pages[i]);
+ 	kfree(pkt_dev);
+ 	return 0;
+ }
