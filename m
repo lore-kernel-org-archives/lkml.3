@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932169AbaFXPx1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:53:27 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:56450 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932109AbaFXPxS (ORCPT
+	id S1755757AbaFXPxk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:53:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32876 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932160AbaFXPxh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:53:18 -0400
+	Tue, 24 Jun 2014 11:53:37 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 13/68] qlcnic: info leak in qlcnic_dcb_peer_app_info()
+Date: Tue, 24 Jun 2014 11:50:32 -0400
+Message-Id: <20140624154724.516793835@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <20140624154723.907894814@linuxfoundation.org>
+References: <20140624154723.907894814@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-In-Reply-To: <1403558406-14519-1-git-send-email-dianders@chromium.org>
-References: <1403558406-14519-1-git-send-email-dianders@chromium.org>
-Date: Tue, 24 Jun 2014 09:53:17 -0600
-X-Google-Sender-Auth: rip6J6N1CSNmKW0vzg-Oesx8yD4
-Message-ID: <CAPnjgZ2_T46YgQnS1WvG7Wf8oPREuZmayE+_JkTzuEUVtAA=OA@mail.gmail.com>
-Subject: Re: [PATCH] i2c: cros_ec: Remove EC_I2C_FLAG_10BIT
-From: Simon Glass <sjg@chromium.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Wolfram Sang <wsa@the-dreams.de>, Lee Jones <lee.jones@linaro.org>,
-        Dave Jones <davej@redhat.com>,
-        Randall Spangler <rspangler@chromium.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Bill Richardson <wfrichar@chromium.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        lk <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 June 2014 15:20, Doug Anderson <dianders@chromium.org> wrote:
-> In <https://lkml.org/lkml/2014/6/10/265> pointed out that the 10-bit
-> flag in the cros_ec_tunnel was useless.  It went into a 16-bit flags
-> field but was defined at (1 << 16).
->
-> Since we have no 10-bit i2c devices on the other side of the tunnel on
-> any known devices this was never a problem.  Until we do it makes
-> sense to remove this code.  On the EC side the code to handle this
-> flag was removed in <https://chromium-review.googlesource.com/204162>.
->
-> Reported-by: Dave Jones <davej@redhat.com>
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-Funny. We certainly don't use it.
+------------------
 
-Reviewed-by: Simon Glass <sjg@chromium.org>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-Regards,
-Simon
+[ Upstream commit 7df566bbdd0af0785542b89466a937e94257fcfb ]
+
+This function is called from dcbnl_build_peer_app().  The "info"
+struct isn't initialized at all so we disclose 2 bytes of uninitialized
+stack data.  We should clear it before passing it to the user.
+
+Fixes: 48365e485275 ('qlcnic: dcb: Add support for CEE Netlink interface.')
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_dcb.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_dcb.c
++++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_dcb.c
+@@ -1022,6 +1022,7 @@ static int qlcnic_dcb_peer_app_info(stru
+ 	struct qlcnic_dcb_cee *peer;
+ 	int i;
+ 
++	memset(info, 0, sizeof(*info));
+ 	*app_count = 0;
+ 
+ 	if (!test_bit(QLCNIC_DCB_STATE, &adapter->dcb->state))
+
+
