@@ -1,50 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753532AbaFXOPR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 10:15:17 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:25461 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752322AbaFXOPM (ORCPT
+	id S1753844AbaFXOPk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 10:15:40 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:51734 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753728AbaFXOPi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 10:15:12 -0400
-Date: Tue, 24 Jun 2014 15:14:55 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Mark Salter <msalter@redhat.com>
-Cc: Will Deacon <Will.Deacon@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arm64: make CONFIG_ZONE_DMA user settable
-Message-ID: <20140624141455.GE4489@arm.com>
-References: <1403499924-11214-1-git-send-email-msalter@redhat.com>
- <20140623110937.GB15907@arm.com>
- <1403529423.755.49.camel@deneb.redhat.com>
+	Tue, 24 Jun 2014 10:15:38 -0400
+Date: Tue, 24 Jun 2014 10:15:37 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Paul Bolle <pebolle@tiscali.nl>
+cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-api@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Documentation: sysfs-bus-usb: update power/persist
+ description
+In-Reply-To: <1403602404.1960.7.camel@x220>
+Message-ID: <Pine.LNX.4.44L0.1406241010160.990-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403529423.755.49.camel@deneb.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 23, 2014 at 02:17:03PM +0100, Mark Salter wrote:
-> On Mon, 2014-06-23 at 12:09 +0100, Catalin Marinas wrote:
-> > My proposal (in the absence of any kind of description) is to still
-> > create a ZONE_DMA if we have DMA memory below 32-bit, otherwise just add
-> > everything (>32-bit) to ZONE_DMA. Basically an extension from your CMA
-> > patch, make dma_phys_limit static in that file and set it to
-> > memblock_end_of_DRAM() if no 32-bit DMA. Re-use it in the
-> > zone_sizes_init() function for ZONE_DMA (maybe with a pr_info for no
-> > 32-bit only DMA zone).
+On Tue, 24 Jun 2014, Paul Bolle wrote:
+
+> There's no power/persist file for hubs. And CONFIG_USB_PERSIST was
+> removed in v2.6.26. Update the description of power/persist accordingly.
 > 
-> There's a performance issue with all memory being in ZONE_DMA. It means
-> all normal allocations will fail on ZONE_NORMAL and then have to fall
-> back to ZONE_DMA. It would be better to put some percentage of memory
-> in ZONE_DMA.
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> I don't know anything about USB-Persist. Could Greg and Alan please
+> check whether the new description does actually match reality?
 
-Is the performance penalty real or just theoretical? I haven't run any
-benchmarks myself.
+Not exactly.  More details below.
 
--- 
-Catalin
+>  Documentation/ABI/stable/sysfs-bus-usb | 14 +++++++-------
+>  1 file changed, 7 insertions(+), 7 deletions(-)
+> 
+> diff --git a/Documentation/ABI/stable/sysfs-bus-usb b/Documentation/ABI/stable/sysfs-bus-usb
+> index a6b685724740..a61d04b8fc78 100644
+> --- a/Documentation/ABI/stable/sysfs-bus-usb
+> +++ b/Documentation/ABI/stable/sysfs-bus-usb
+> @@ -3,13 +3,13 @@ Date:		May 2007
+>  KernelVersion:	2.6.23
+>  Contact:	Alan Stern <stern@rowland.harvard.edu>
+>  Description:
+> -		If CONFIG_USB_PERSIST is set, then each USB device directory
+> -		will contain a file named power/persist.  The file holds a
+> -		boolean value (0 or 1) indicating whether or not the
+> -		"USB-Persist" facility is enabled for the device.  Since the
+> -		facility is inherently dangerous, it is disabled by default
+> -		for all devices except hubs.  For more information, see
+> -		Documentation/usb/persist.txt.
+> +		USB device directories for all devices except hubs will contain
+> +		a file named power/persist.  The file holds a boolean value (0
+> +		or 1) indicating whether or not the "USB-Persist" facility is
+> +		enabled for the device.  Since the facility is inherently
+> +		dangerous, it is disabled by default.  For hubs this facility is
+> +		always enabled making the file pointless.  For more information,
+> +		see Documentation/usb/persist.txt.
+
+Instead of depending on CONFIG_USB_PERSIST, the power/persist attribute
+depends on CONFIG_PM.  But pointing that out would be redundant, since
+the power/ device directory itself doesn't exist unless CONFIG_PM is
+enabled.
+
+The default value for the persist facility depends on the setting of 
+CONFIG_USB_DEFAULT_PERSIST.  If that symbol is set then persist is 
+enabled by default for all devices, except those which have the 
+USB_QUIRK_RESET flag set (meaning that they will morph or change modes 
+when reset).  If the symbol is not set then persist is enabled by 
+default only for hubs.
+
+Thanks for the documentation update.
+
+Alan Stern
+
