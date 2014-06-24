@@ -1,69 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753249AbaFXT07 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 15:26:59 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:42241 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752607AbaFXT04 (ORCPT
+	id S1753678AbaFXTcd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 15:32:33 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:47549 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750860AbaFXTca (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 15:26:56 -0400
+	Tue, 24 Jun 2014 15:32:30 -0400
+Message-ID: <53A9D24B.4040301@wwwdotorg.org>
+Date: Tue, 24 Jun 2014 13:32:27 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <1403624918.29061.16.camel@joe-AO725>
-References: <20140624153959.GA19564@google.com> <1403624918.29061.16.camel@joe-AO725>
-From: Florian Fainelli <florian@openwrt.org>
-Date: Tue, 24 Jun 2014 12:26:15 -0700
-X-Google-Sender-Auth: qKePAIqC5fWPDNaDxdjIM_Yglyk
-Message-ID: <CAGVrzcbgds+zHbTJWnUi48Nn1xPiEjGV7PGRmUX46da2CD+G=g@mail.gmail.com>
-Subject: Re: [PATCH 1/1] ar7: replace mac address parsing
-To: Joe Perches <joe@perches.com>
-Cc: Daniel Walter <dwalter@google.com>, Ralf Baechle <ralf@linux-mips.org>,
-        Linux-MIPS <linux-mips@linux-mips.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Mikko Perttunen <mperttunen@nvidia.com>, thierry.reding@gmail.com,
+        tj@kernel.org, pdeschrijver@nvidia.com
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: Re: [PATCH v2 5/7] clk: tegra: Add SATA clocks to Tegra124 initialization
+ table
+References: <1403101406-15439-1-git-send-email-mperttunen@nvidia.com> <1403101406-15439-6-git-send-email-mperttunen@nvidia.com>
+In-Reply-To: <1403101406-15439-6-git-send-email-mperttunen@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-06-24 8:48 GMT-07:00 Joe Perches <joe@perches.com>:
-> On Tue, 2014-06-24 at 16:39 +0100, Daniel Walter wrote:
->> Replace sscanf() with mac_pton().
-> []
->> diff --git a/arch/mips/ar7/platform.c b/arch/mips/ar7/platform.c
-> []
->> @@ -307,10 +307,7 @@ static void __init cpmac_get_mac(int instance, unsigned char *dev_addr)
->>       }
->>
->>       if (mac) {
->> -             if (sscanf(mac, "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",
->> -                                     &dev_addr[0], &dev_addr[1],
->> -                                     &dev_addr[2], &dev_addr[3],
->> -                                     &dev_addr[4], &dev_addr[5]) != 6) {
->> +             if (!mac_pton(mac, dev_addr)) {
->
-> There is a slight functional change with this conversion.
->
-> mac_pton is strict about leading 0's and requires a 17 char strlen.
+On 06/18/2014 08:23 AM, Mikko Perttunen wrote:
+> This adds two clocks, SATA and SATA_OOB, to the Tegra124 clock initialization
+> table. The clocks are needed for working SATA support.
 
-I do not have my devices handy, but I am fairly positive the use of
-sscanf() was exactly for that, we may or may not have leading zeroes.
-I am feeling a little uncomfortable with random code changes like that
-without being actually able to test on real hardware that has a
-variety of bootloaders and environment variables.
+Acked-by: Stephen Warren <swarren@nvidia.com>
+(When I wrote that for v1, it applied to both patches 4 and 5, not just
+patch 4)
 
->
-> sscanf will accept 0:1:2:3:4:5, mac_pton will not.
->
->>                       pr_warning("cannot parse mac address, "
->>                                       "using random address\n");
->
-> could be coalesced and pr_warn
->
->                         pr_warn("cannot parse mac address - using random address\n");
->
->
->
-
-
-
--- 
-Florian
+Peter, can you please pick up patches 4 and 5, and get them into
+linux-next. Thanks.
