@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756628AbaFXQFm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:05:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33330 "EHLO
+	id S1755419AbaFXP4N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:56:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33301 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756104AbaFXP4P (ORCPT
+	with ESMTP id S965000AbaFXP4J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:56:15 -0400
+	Tue, 24 Jun 2014 11:56:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Thomas Huth <thuth@linux.vnet.ibm.com>
-Subject: [PATCH 3.15 24/61] KVM: s390: Drop pending interrupts on guest exit
-Date: Tue, 24 Jun 2014 11:51:07 -0400
-Message-Id: <20140624154953.873301308@linuxfoundation.org>
+        "David S. Miller" <davem@davemloft.net>,
+        stephen hemminger <stephen@networkplumber.org>,
+        Pravin B Shelar <pshelar@nicira.com>,
+        Cong Wang <cwang@twopensource.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>
+Subject: [PATCH 3.15 20/61] vxlan: use dev->needed_headroom instead of dev->hard_header_len
+Date: Tue, 24 Jun 2014 11:51:03 -0400
+Message-Id: <20140624154953.683689178@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154952.751713761@linuxfoundation.org>
 References: <20140624154952.751713761@linuxfoundation.org>
@@ -29,70 +32,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Borntraeger <borntraeger@de.ibm.com>
+From: Cong Wang <cwang@twopensource.com>
 
-commit 67335e63c9ef59e97b45a08b4a6a93767762031d upstream.
+[ Upstream commit 2853af6a2ea1a8ed09b09dd4fb578e7f435e8d34 ]
 
-On hard exits (abort, sigkill) we have have some kvm_s390_interrupt_info
-structures hanging around. Delete those on exit to avoid memory leaks.
+When we mirror packets from a vxlan tunnel to other device,
+the mirror device should see the same packets (that is, without
+outer header). Because vxlan tunnel sets dev->hard_header_len,
+tcf_mirred() resets mac header back to outer mac, the mirror device
+actually sees packets with outer headers
 
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Reviewed-by: Thomas Huth <thuth@linux.vnet.ibm.com>
+Vxlan tunnel should set dev->needed_headroom instead of
+dev->hard_header_len, like what other ip tunnels do. This fixes
+the above problem.
+
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: stephen hemminger <stephen@networkplumber.org>
+Cc: Pravin B Shelar <pshelar@nicira.com>
+Signed-off-by: Cong Wang <cwang@twopensource.com>
+Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/s390/kvm/interrupt.c |    4 ++--
- arch/s390/kvm/kvm-s390.c  |    2 ++
- arch/s390/kvm/kvm-s390.h  |    1 +
- 3 files changed, 5 insertions(+), 2 deletions(-)
+ drivers/net/vxlan.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
---- a/arch/s390/kvm/interrupt.c
-+++ b/arch/s390/kvm/interrupt.c
-@@ -900,7 +900,7 @@ int kvm_s390_inject_vcpu(struct kvm_vcpu
- 	return 0;
- }
+--- a/drivers/net/vxlan.c
++++ b/drivers/net/vxlan.c
+@@ -2275,9 +2275,9 @@ static void vxlan_setup(struct net_devic
+ 	eth_hw_addr_random(dev);
+ 	ether_setup(dev);
+ 	if (vxlan->default_dst.remote_ip.sa.sa_family == AF_INET6)
+-		dev->hard_header_len = ETH_HLEN + VXLAN6_HEADROOM;
++		dev->needed_headroom = ETH_HLEN + VXLAN6_HEADROOM;
+ 	else
+-		dev->hard_header_len = ETH_HLEN + VXLAN_HEADROOM;
++		dev->needed_headroom = ETH_HLEN + VXLAN_HEADROOM;
  
--static void clear_floating_interrupts(struct kvm *kvm)
-+void kvm_s390_clear_float_irqs(struct kvm *kvm)
- {
- 	struct kvm_s390_float_interrupt *fi;
- 	struct kvm_s390_interrupt_info	*n, *inti = NULL;
-@@ -1246,7 +1246,7 @@ static int flic_set_attr(struct kvm_devi
- 		break;
- 	case KVM_DEV_FLIC_CLEAR_IRQS:
- 		r = 0;
--		clear_floating_interrupts(dev->kvm);
-+		kvm_s390_clear_float_irqs(dev->kvm);
- 		break;
- 	case KVM_DEV_FLIC_APF_ENABLE:
- 		dev->kvm->arch.gmap->pfault_enabled = 1;
---- a/arch/s390/kvm/kvm-s390.c
-+++ b/arch/s390/kvm/kvm-s390.c
-@@ -322,6 +322,7 @@ void kvm_arch_vcpu_destroy(struct kvm_vc
- {
- 	VCPU_EVENT(vcpu, 3, "%s", "free cpu");
- 	trace_kvm_s390_destroy_vcpu(vcpu->vcpu_id);
-+	kvm_s390_clear_local_irqs(vcpu);
- 	kvm_clear_async_pf_completion_queue(vcpu);
- 	if (!kvm_is_ucontrol(vcpu->kvm)) {
- 		clear_bit(63 - vcpu->vcpu_id,
-@@ -372,6 +373,7 @@ void kvm_arch_destroy_vm(struct kvm *kvm
- 	if (!kvm_is_ucontrol(kvm))
- 		gmap_free(kvm->arch.gmap);
- 	kvm_s390_destroy_adapters(kvm);
-+	kvm_s390_clear_float_irqs(kvm);
- }
+ 	dev->netdev_ops = &vxlan_netdev_ops;
+ 	dev->destructor = free_netdev;
+@@ -2660,8 +2660,7 @@ static int vxlan_newlink(struct net *net
+ 		if (!tb[IFLA_MTU])
+ 			dev->mtu = lowerdev->mtu - (use_ipv6 ? VXLAN6_HEADROOM : VXLAN_HEADROOM);
  
- /* Section: vcpu related */
---- a/arch/s390/kvm/kvm-s390.h
-+++ b/arch/s390/kvm/kvm-s390.h
-@@ -130,6 +130,7 @@ void kvm_s390_tasklet(unsigned long parm
- void kvm_s390_deliver_pending_interrupts(struct kvm_vcpu *vcpu);
- void kvm_s390_deliver_pending_machine_checks(struct kvm_vcpu *vcpu);
- void kvm_s390_clear_local_irqs(struct kvm_vcpu *vcpu);
-+void kvm_s390_clear_float_irqs(struct kvm *kvm);
- int __must_check kvm_s390_inject_vm(struct kvm *kvm,
- 				    struct kvm_s390_interrupt *s390int);
- int __must_check kvm_s390_inject_vcpu(struct kvm_vcpu *vcpu,
+-		/* update header length based on lower device */
+-		dev->hard_header_len = lowerdev->hard_header_len +
++		dev->needed_headroom = lowerdev->hard_header_len +
+ 				       (use_ipv6 ? VXLAN6_HEADROOM : VXLAN_HEADROOM);
+ 	} else if (use_ipv6)
+ 		vxlan->flags |= VXLAN_F_IPV6;
 
 
