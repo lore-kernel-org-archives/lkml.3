@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755090AbaFXUa7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:30:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47665 "EHLO
+	id S1754861AbaFXUat (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:30:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47645 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754965AbaFXUay (ORCPT
+	with ESMTP id S1754709AbaFXUaq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:30:54 -0400
+	Tue, 24 Jun 2014 16:30:46 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alexej Starschenko <starschenko@gmail.com>,
-        Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 55/65] USB: serial: option: add support for Novatel E371 PCIe card
-Date: Tue, 24 Jun 2014 13:30:15 -0700
-Message-Id: <1403641825-12825-56-git-send-email-kamal@canonical.com>
+Cc: NeilBrown <neilb@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 56/65] md: always set MD_RECOVERY_INTR when aborting a reshape or other "resync".
+Date: Tue, 24 Jun 2014 13:30:16 -0700
+Message-Id: <1403641825-12825-57-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
 References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
@@ -29,60 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexej Starschenko <starschenko@gmail.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 8a61ba3a47ac39f660702aa66a172185dd605a86 upstream.
+commit 3991b31ea072b070081ca3bfa860a077eda67de5 upstream.
 
-Adds product ID for the Novatel E371 PCI Express Mini Card.
+If mddev->ro is set, md_to_sync will (correctly) abort.
+However in that case MD_RECOVERY_INTR isn't set.
 
-$ lsusb
-Bus 001 Device 024: ID 1410:9011 Novatel Wireless
+If a RESHAPE had been requested, then ->finish_reshape() will be
+called and it will think the reshape was successful even though
+nothing happened.
 
-$ usb-devices
-T:  Bus=01 Lev=01 Prnt=01 Port=03 Cnt=01 Dev#= 24 Spd=480 MxCh= 0
-D:  Ver= 2.00 Cls=ef(misc ) Sub=02 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=1410 ProdID=9011 Rev=00.03
-S:  Manufacturer=Novatel Wireless, Inc.
-S:  Product=Novatel Wireless HSPA
-S:  SerialNumber=012773002115811
-C:  #Ifs= 6 Cfg#= 1 Atr=e0 MxPwr=500mA
-I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-I:  If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-I:  If#= 3 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-I:  If#= 6 Alt= 0 #EPs= 1 Cls=02(commc) Sub=06 Prot=00 Driver=cdc_ether
-I:  If#= 7 Alt= 1 #EPs= 2 Cls=0a(data ) Sub=00 Prot=00 Driver=cdc_ether
+Normally a resync will not be requested if ->ro is set, but if an
+array is stopped while a reshape is on-going, then when the array is
+started, the reshape will be restarted.  If the array is also set
+read-only at this point, the reshape will instantly appear to success,
+resulting in data corruption.
 
-Tested with kernel 3.2.0.
+Consequently, this patch is suitable for any -stable kernel.
 
-Signed-off-by: Alexej Starschenko <starschenko@gmail.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/option.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/md/md.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index 24e9b08..6c7869e 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -161,6 +161,7 @@ static void option_instat_callback(struct urb *urb);
- #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_FULLSPEED	0x9000
- #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_HIGHSPEED	0x9001
- #define NOVATELWIRELESS_PRODUCT_E362		0x9010
-+#define NOVATELWIRELESS_PRODUCT_E371		0x9011
- #define NOVATELWIRELESS_PRODUCT_G2		0xA010
- #define NOVATELWIRELESS_PRODUCT_MC551		0xB001
+diff --git a/drivers/md/md.c b/drivers/md/md.c
+index cb8f03a..6848c2e 100644
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -7305,8 +7305,10 @@ void md_do_sync(struct md_thread *thread)
+ 	/* just incase thread restarts... */
+ 	if (test_bit(MD_RECOVERY_DONE, &mddev->recovery))
+ 		return;
+-	if (mddev->ro) /* never try to sync a read-only array */
++	if (mddev->ro) {/* never try to sync a read-only array */
++		set_bit(MD_RECOVERY_INTR, &mddev->recovery);
+ 		return;
++	}
  
-@@ -1012,6 +1013,7 @@ static const struct usb_device_id option_ids[] = {
- 	/* Novatel Ovation MC551 a.k.a. Verizon USB551L */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_MC551, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_E362, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_E371, 0xff, 0xff, 0xff) },
- 
- 	{ USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_H01) },
- 	{ USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_H01A) },
+ 	if (test_bit(MD_RECOVERY_SYNC, &mddev->recovery)) {
+ 		if (test_bit(MD_RECOVERY_CHECK, &mddev->recovery))
 -- 
 1.9.1
 
