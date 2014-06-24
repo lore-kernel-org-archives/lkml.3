@@ -1,76 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754735AbaFXTlO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 15:41:14 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:41169 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750949AbaFXTlM (ORCPT
+	id S1753641AbaFXTnl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 15:43:41 -0400
+Received: from orange.myspectrum.nl ([149.210.134.247]:49306 "EHLO
+	orange.myspectrum.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211AbaFXTnk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 15:41:12 -0400
+	Tue, 24 Jun 2014 15:43:40 -0400
+X-Greylist: delayed 450 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 Jun 2014 15:43:40 EDT
+Message-ID: <53A9D326.9060409@myspectrum.nl>
+Date: Tue, 24 Jun 2014 21:36:06 +0200
+From: Jeroen Hofstee <jeroen@myspectrum.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <53A9C6EB.50900@zytor.com>
-References: <2a5bebff42defd8a5e81d96f7dc00f21143c80e8.1403129369.git.luto@amacapital.net>
- <tip-5f56e7167e6d438324fcba87018255d81e201383@git.kernel.org>
- <20140622084754.GA15094@gmail.com> <CALCETrW_U7z7RC-D5+Ji+PQd73nR-=xQGH5uieb7y3Z7yzYPRw@mail.gmail.com>
- <CALCETrXohybf=Lk70j=hVG1zaAQ-mw8CVo6P59xjM2qsc-p+Gg@mail.gmail.com>
- <53A9C2C3.7050508@zytor.com> <CALCETrX8xJQwm=Cp63xSWsmsF1EXB9pPkZ46rX1u49f0oCfxfw@mail.gmail.com>
- <53A9C6EB.50900@zytor.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 24 Jun 2014 12:40:51 -0700
-Message-ID: <CALCETrUEUeW4UywKUFzZwdPiyff+QcMpEiHi2-g=4_ODBm0qaQ@mail.gmail.com>
-Subject: Re: [tip:x86/urgent] x86/vdso: Discard the __bug_table section
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Masahiro Yamada <yamada.m@jp.panasonic.com>
+CC: u-boot@lists.denx.de, linux-kernel@vger.kernel.org
+Subject: Re: [U-Boot] [RFC] kbuild.h: workaround for llvm IAS
+References: <1402609254-14078-1-git-send-email-jeroen@myspectrum.nl> <20140624215349.3E89.AA925319@jp.panasonic.com>
+In-Reply-To: <20140624215349.3E89.AA925319@jp.panasonic.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 24, 2014 at 11:43 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 06/24/2014 11:37 AM, Andy Lutomirski wrote:
->>>
->>> diff --git a/arch/x86/vdso/vdso2c.h b/arch/x86/vdso/vdso2c.h
->>> index f42e2ddc663d..94158e100f26 100644
->>> --- a/arch/x86/vdso/vdso2c.h
->>> +++ b/arch/x86/vdso/vdso2c.h
->>> @@ -99,8 +99,9 @@ static void BITSFUNC(copy_section)(struct
->>> BITSFUNC(fake_sections) *out,
->>>         if (!copy)
->>>                 return;
->>>
->>> -       if (out->count >= out->max_count)
->>> -               fail("too many copied sections (max = %d)\n",
->>> out->max_count);
->>> +       if (out->count > out->max_count)
->>> +               fail("too many copied sections (max = %d, need = %d)\n",
->>> +                    out->max_count, out->count);
->>>
->>
->> I think the old test was correct: we haven't incremented count yet
->> (it's a couple lines below), so count is the zero-based index to which
->> we're writing.
->>
->> I thought of doing the need = %d thing, but I think that the output is
->> a foregone conclusion: count == max_count + 1 when this fails.  A list
->> of all the section names would be more interesting, but eu-readelf -S
->> will tell is that.
->>
+Hi Masahiro,
+
+On 24-06-14 14:53, Masahiro Yamada wrote:
+> On Thu, 12 Jun 2014 23:40:54 +0200
+> Jeroen Hofstee <jeroen@myspectrum.nl> wrote:
 >
-> Well, I have reproduced this failure.  eu-readelf output included.
-
-It's branch profiling.  Patches coming.
-
+>> KBuild (ab)uses the asm statement to write to a file and
+>> llvm integrated as chokes about these invalid asm statements.
+>> Workaround it by making it look like valid asm code.
+>>
+>> Signed-off-by: Jeroen Hofstee <jeroen@myspectrum.nl>
+> I think Linux has the same problem.
 >
->         -hpa
->
+> Are you willing to this patch to linux-kbuild ML?
+> Or fixing U-Boot only?
+I don't mind in general, but it is just noise for them (cc-ing them to
+create some).  For u-boot (ARM) you actually get a valid binary with
+this patch after clang support has landed, for linux you just get other
+errors as far as I tried (native only), patch below.
+
+However in linux there seem more spots relying on the format, e.g.
+     arch/ia64/kvm/Makefile
+     arch/ia64/kernel/Makefile
+     arch/um/Makefile
+
+So if anything, I think this should be made a general rules first
+in the makefiles. It seems stupid to potentially break something
+while it gains nothing.
+
+So yes, u-boot only afaic, or does that make your syncing more difficult?
+
+Regards,
+Jeroen
 
 
+--- a/Kbuild
++++ b/Kbuild
+@@ -52,7 +52,8 @@ targets += arch/$(SRCARCH)/kernel/asm-offsets.s
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+  # Default sed regexp - multiline due to syntax constraints
+  define sed-y
+-       "/^->/{s:->#\(.*\):/* \1 */:; \
++       "s:[[:space:]]*\.ascii[[:space:]]*\"\(.*\)\":\1:; \
++       /^->/{s:->#\(.*\):/* \1 */:; \
+         s:^->\([^ ]*\) [\$$#]*\([-0-9]*\) \(.*\):#define \1 \2 /* \3 */:; \
+         s:^->\([^ ]*\) [\$$#]*\([^ ]*\) \(.*\):#define \1 \2 /* \3 */:; \
+         s:->::; p;}"
+diff --git a/include/linux/kbuild.h b/include/linux/kbuild.h
+index 22a7219..4e80f3a 100644
+--- a/include/linux/kbuild.h
++++ b/include/linux/kbuild.h
+@@ -2,14 +2,14 @@
+  #define __LINUX_KBUILD_H
+
+  #define DEFINE(sym, val) \
+-        asm volatile("\n->" #sym " %0 " #val : : "i" (val))
++       asm volatile("\n.ascii \"->" #sym " %0 " #val "\"" : : "i" (val))
+
+-#define BLANK() asm volatile("\n->" : : )
++#define BLANK() asm volatile("\n.ascii \"->\"" : : )
+
+  #define OFFSET(sym, str, mem) \
+         DEFINE(sym, offsetof(struct str, mem))
+
+  #define COMMENT(x) \
+-       asm volatile("\n->#" x)
++       asm volatile("\n.ascii \"->#" x "\"")
+
+  #endif
+diff --git a/scripts/mod/Makefile b/scripts/mod/Makefile
+index c11212f..0698af3 100644
+--- a/scripts/mod/Makefile
++++ b/scripts/mod/Makefile
+@@ -6,7 +6,8 @@ modpost-objs    := modpost.o file2alias.o sumversion.o
+  devicetable-offsets-file := devicetable-offsets.h
+
+  define sed-y
+-       "/^->/{s:->#\(.*\):/* \1 */:; \
++       "s:[[:space:]]*\.ascii[[:space:]]*\"\(.*\)\":\1:; \
++       /^->/{s:->#\(.*\):/* \1 */:; \
+         s:^->\([^ ]*\) [\$$#]*\([-0-9]*\) \(.*\):#define \1 \2 /* \3 */:; \
+         s:^->\([^ ]*\) [\$$#]*\([^ ]*\) \(.*\):#define \1 \2 /* \3 */:; \
+         s:->::; p;}"
