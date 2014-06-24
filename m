@@ -1,105 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754660AbaFXRDz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 13:03:55 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:45733 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752392AbaFXRDx (ORCPT
+	id S1756112AbaFXREe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 13:04:34 -0400
+Received: from mailout.micron.com ([137.201.242.129]:18659 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754910AbaFXREc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 13:03:53 -0400
-From: bsegall@google.com
-To: Kirill Tkhai <ktkhai@parallels.com>
-Cc: <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, <tkhai@yandex.ru>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "Mike Galbraith" <umgwanakikbuti@gmail.com>, <khorenko@parallels.com>,
-        Paul Turner <pjt@google.com>
-Subject: Re: [PATCH v2 1/3] sched/fair: Disable runtime_enabled on dying rq
-References: <20140624074148.8738.57690.stgit@tkhai>
-	<1403596432.3462.26.camel@tkhai>
-Date: Tue, 24 Jun 2014 10:03:51 -0700
-In-Reply-To: <1403596432.3462.26.camel@tkhai> (Kirill Tkhai's message of "Tue,
-	24 Jun 2014 11:53:52 +0400")
-Message-ID: <xm26wqc6z1c8.fsf@sword-of-the-dawn.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Tue, 24 Jun 2014 13:04:32 -0400
+From: =?iso-2022-jp?B?QmVhbiBIdW8gGyRCcDlJTElMGyhCIChiZWFuaHVvKQ==?= 
+	<beanhuo@micron.com>
+To: David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+CC: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        "b32955@freescale.com" <b32955@freescale.com>
+Subject: [PATCH v3] mtd:nor:timeout:fix do_write_buffer() timeout error
+Thread-Topic: [PATCH v3] mtd:nor:timeout:fix do_write_buffer() timeout error
+Thread-Index: Ac+PzkbeJFVYeCKFR6eobaWbzG1DEg==
+Date: Tue, 24 Jun 2014 17:03:54 +0000
+Message-ID: <A765B125120D1346A63912DDE6D8B6315D70C7@NTXXIAMBX02.xacn.micron.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.167.84.5]
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-20776.007
+X-TM-AS-Result: No--8.707200-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+x-mt-checkinternalsenderrule: True
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kirill Tkhai <ktkhai@parallels.com> writes:
+The size of the buffer program has been increased from 256 to 512 ,
+2ms maximum timeout for do_write_buffer can not adapt to all the different
+vendor's norflash.There maximum timeout information in the CFI area,so
+the best way is to choose the result calculated according to timeout field
+of struct cfi_ident that probed from norflash's CFI aera.This is also a
+standard defined by CFI.
 
-> We kill rq->rd on the CPU_DOWN_PREPARE stage:
->
-> 	cpuset_cpu_inactive -> cpuset_update_active_cpus -> partition_sched_domains ->
-> 	-> cpu_attach_domain -> rq_attach_root -> set_rq_offline
->
-> This unthrottles all throttled cfs_rqs.
->
-> But the cpu is still able to call schedule() till
->
-> 	take_cpu_down->__cpu_disable()
->
-> is called from stop_machine.
->
-> This case the tasks from just unthrottled cfs_rqs are pickable
-> in a standard scheduler way, and they are picked by dying cpu.
-> The cfs_rqs becomes throttled again, and migrate_tasks()
-> in migration_call skips their tasks (one more unthrottle
-> in migrate_tasks()->CPU_DYING does not happen, because rq->rd
-> is already NULL).
->
-> Patch sets runtime_enabled to zero. This guarantees, the runtime
-> is not accounted, and the cfs_rqs won't exceed given
-> cfs_rq->runtime_remaining = 1, and tasks will be pickable
-> in migrate_tasks(). runtime_enabled is recalculated again
-> when rq becomes online again.
->
-> Ben Segall also noticed, we always enable runtime in
-> tg_set_cfs_bandwidth(). Actually, we should do that for online
-> cpus only. To fix that, we check if a cpu is online when
-> its rq is locked. This guarantees we do not have races with
-> set_rq_offline(), which also requires rq->lock.
->
-> v2: Fix race with tg_set_cfs_bandwidth().
->     Move cfs_rq->runtime_enabled=0 above unthrottle_cfs_rq().
->
-> Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
-> CC: Konstantin Khorenko <khorenko@parallels.com>
-> CC: Ben Segall <bsegall@google.com>
-> CC: Paul Turner <pjt@google.com>
-> CC: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> CC: Mike Galbraith <umgwanakikbuti@gmail.com>
-> CC: Peter Zijlstra <peterz@infradead.org>
-> CC: Ingo Molnar <mingo@kernel.org>
-> ---
->  kernel/sched/core.c |   15 +++++++++++----
->  kernel/sched/fair.c |   22 ++++++++++++++++++++++
->  2 files changed, 33 insertions(+), 4 deletions(-)
->
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 7f3063c..707a3c5 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -7842,11 +7842,18 @@ static int tg_set_cfs_bandwidth(struct task_group *tg, u64 period, u64 quota)
->  		struct rq *rq = cfs_rq->rq;
->  
->  		raw_spin_lock_irq(&rq->lock);
-> -		cfs_rq->runtime_enabled = runtime_enabled;
-> -		cfs_rq->runtime_remaining = 0;
-> +		/*
-> +		 * Do not enable runtime on offline runqueues. We specially
-> +		 * make it disabled in unthrottle_offline_cfs_rqs().
-> +		 */
-> +		if (cpu_online(i)) {
-> +			cfs_rq->runtime_enabled = runtime_enabled;
-> +			cfs_rq->runtime_remaining = 0;
-> +
-> +			if (cfs_rq->throttled)
-> +				unthrottle_cfs_rq(cfs_rq);
-> +		}
+Without this change, if the size of buffer program is 512 or bigger than 256,
+due to timeout is the shorter than that the chip required,do_write_buffer
+sometimes fails.
 
-We can just do for_each_online_cpu, yes? Also we probably need
-get_online_cpus/put_online_cpus, and/or want cpu_active_mask instead
-right?
+Tested with Micron JS28F512M29EWx and Micron MT28EW512ABA flash devices.
+
+Signed-off-by: bean huo <beanhuo@micron.com>
+---
+changes 
+	v1->v2:Deleted unused parameters in this patch (word_write_time_max and erase_time_max).
+Using usecs_to_jiffies instead of msecs_to_jiffies for convert timeout value into jiffies.
+	v2->v3:Removed unnecessary messages form comments and deleted trailing whitespace.
+
+ drivers/mtd/chips/cfi_cmdset_0002.c |   27 ++++++++++++++++++++++++---
+ 1 file changed, 24 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/mtd/chips/cfi_cmdset_0002.c b/drivers/mtd/chips/cfi_cmdset_0002.c
+index e21fde9..f7098d6 100644
+--- a/drivers/mtd/chips/cfi_cmdset_0002.c
++++ b/drivers/mtd/chips/cfi_cmdset_0002.c
+@@ -628,10 +628,24 @@ struct mtd_info *cfi_cmdset_0002(struct map_info *map, int primary)
+ 		cfi->chips[i].word_write_time = 1<<cfi->cfiq->WordWriteTimeoutTyp;
+ 		cfi->chips[i].buffer_write_time = 1<<cfi->cfiq->BufWriteTimeoutTyp;
+ 		cfi->chips[i].erase_time = 1<<cfi->cfiq->BlockEraseTimeoutTyp;
++		/*
++		 * We first calculate the timeout max according to timeout
++		 * field of struct cfi_ident that probed from chip's CFI
++		 * aera,If haven't probed this information,we will specify
++		 * a default value,and the time unit is us.
++		 */
++		if (cfi->cfiq->BufWriteTimeoutTyp &&
++			cfi->cfiq->BufWriteTimeoutMax){
++			cfi->chips[i].buffer_write_time_max =
++				1<<(cfi->cfiq->BufWriteTimeoutTyp +
++					cfi->cfiq->BufWriteTimeoutMax);
++			} else {
++			/* specify maximum timeout for buffer program 2000us */
++				cfi->chips[i].buffer_write_time_max = 2000;
++				}
+ 		cfi->chips[i].ref_point_counter = 0;
+ 		init_waitqueue_head(&(cfi->chips[i].wq));
+ 	}
+-
+ 	map->fldrv = &cfi_amdstd_chipdrv;
+ 
+ 	return cfi_amdstd_setup(mtd);
+@@ -1462,8 +1476,15 @@ static int __xipram do_write_buffer(struct map_info *map, struct flchip *chip,
+ {
+ 	struct cfi_private *cfi = map->fldrv_priv;
+ 	unsigned long timeo = jiffies + HZ;
+-	/* see comments in do_write_oneword() regarding uWriteTimeo. */
+-	unsigned long uWriteTimeout = ( HZ / 1000 ) + 1;
++	/* There maximum timeout information in the CFI area,so the
++	 * best way is to choose the result calculated according to
++	 * timeout field of struct cfi_ident that probed from
++	 * norflash's CFI aera,see comments in cfi_cmdset_0002().
++	 * uWriteTimeout is used for timeout step,it must be concerted
++	 * into jiffies.
++	 */
++	unsigned long uWriteTimeout =
++				usecs_to_jiffies(chip->buffer_write_time_max);
+ 	int ret = -EIO;
+ 	unsigned long cmd_adr;
+ 	int z, words;
+-- 
+1.7.9.5
