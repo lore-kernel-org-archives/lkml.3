@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756544AbaFXQYh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:24:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33024 "EHLO
+	id S964774AbaFXPy2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:54:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33003 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932399AbaFXPy3 (ORCPT
+	with ESMTP id S932399AbaFXPyW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:54:29 -0400
+	Tue, 24 Jun 2014 11:54:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Or Gerlitz <ogerlitz@mellanox.com>,
-        Jack Morgenstein <jackm@dev.mellanox.co.il>,
-        Wei Yang <weiyang@linux.vnet.ibm.com>,
+        Eric Dumazet <edumazet@google.com>, David Held <drheld@google.com>,
+        Shawn Bohrer <sbohrer@rgmadvisors.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 35/68] net/mlx4_core: Keep only one driver entry release mlx4_priv
-Date: Tue, 24 Jun 2014 11:50:54 -0400
-Message-Id: <20140624154725.512475640@linuxfoundation.org>
+Subject: [PATCH 3.14 33/68] udp: ipv4: do not waste time in __udp4_lib_mcast_demux_lookup
+Date: Tue, 24 Jun 2014 11:50:52 -0400
+Message-Id: <20140624154725.418299802@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154723.907894814@linuxfoundation.org>
 References: <20140624154723.907894814@linuxfoundation.org>
@@ -32,45 +30,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wei Yang <weiyang@linux.vnet.ibm.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit da1de8dfff09d33d4a5345762c21b487028e25f5 ]
+[ Upstream commit 63c6f81cdde58c41da62a8d8a209592e42a0203e ]
 
-Following commit befdf89 "net/mlx4_core: Preserve pci_dev_data after
-__mlx4_remove_one()", there are two mlx4 pci callbacks which will
-attempt to release the mlx4_priv object -- .shutdown and .remove.
+Its too easy to add thousand of UDP sockets on a particular bucket,
+and slow down an innocent multicast receiver.
 
-This leads to a use-after-free access to the already freed mlx4_priv
-instance and trigger a "Kernel access of bad area" crash when both
-.shutdown and .remove are called.
+Early demux is supposed to be an optimization, we should avoid spending
+too much time in it.
 
-During reboot or kexec, .shutdown is called, with the VFs probed to
-the host going through shutdown first and then the PF. Later, the PF
-will trigger VFs' .remove since VFs still have driver attached.
+It is interesting to note __udp4_lib_demux_lookup() only tries to
+match first socket in the chain.
 
-Fix that by keeping only one driver entry which releases mlx4_priv.
+10 is the threshold we already have in __udp4_lib_lookup() to switch
+to secondary hash.
 
-Fixes: befdf89 ('net/mlx4_core: Preserve pci_dev_data after __mlx4_remove_one()')
-CC: Bjorn Helgaas <bhelgaas@google.com>
-Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
-Signed-off-by: Jack Morgenstein <jackm@dev.mellanox.co.il>
-Signed-off-by: Wei Yang <weiyang@linux.vnet.ibm.com>
+Fixes: 421b3885bf6d5 ("udp: ipv4: Add udp early demux")
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Reported-by: David Held <drheld@google.com>
+Cc: Shawn Bohrer <sbohrer@rgmadvisors.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/mellanox/mlx4/main.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv4/udp.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/net/ethernet/mellanox/mlx4/main.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/main.c
-@@ -2718,7 +2718,7 @@ static struct pci_driver mlx4_driver = {
- 	.name		= DRV_NAME,
- 	.id_table	= mlx4_pci_table,
- 	.probe		= mlx4_init_one,
--	.shutdown	= mlx4_remove_one,
-+	.shutdown	= __mlx4_remove_one,
- 	.remove		= mlx4_remove_one,
- 	.err_handler    = &mlx4_err_handler,
- };
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -1833,6 +1833,10 @@ static struct sock *__udp4_lib_mcast_dem
+ 	unsigned int count, slot = udp_hashfn(net, hnum, udp_table.mask);
+ 	struct udp_hslot *hslot = &udp_table.hash[slot];
+ 
++	/* Do not bother scanning a too big list */
++	if (hslot->count > 10)
++		return NULL;
++
+ 	rcu_read_lock();
+ begin:
+ 	count = 0;
 
 
