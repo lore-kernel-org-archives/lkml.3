@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754824AbaFXPvZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:51:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60745 "EHLO
+	id S1754881AbaFXPvc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:51:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60766 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754483AbaFXPvW (ORCPT
+	with ESMTP id S1754855AbaFXPv3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:51:22 -0400
+	Tue, 24 Jun 2014 11:51:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michal Hocko <mhocko@suse.cz>, Borislav Petkov <bp@alien8.de>,
-        Thomas Gleixner <tglx@linutronix.de>, Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 3.4 17/26] nohz: Fix another inconsistency between CONFIG_NO_HZ=n and nohz=off
-Date: Tue, 24 Jun 2014 11:50:40 -0400
-Message-Id: <20140624154620.330797071@linuxfoundation.org>
+        Lars-Peter Clausen <lars@metafoo.de>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.4 21/26] ALSA: control: Dont access controls outside of protected regions
+Date: Tue, 24 Jun 2014 11:50:44 -0400
+Message-Id: <20140624154620.511454083@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154619.499002156@linuxfoundation.org>
 References: <20140624154619.499002156@linuxfoundation.org>
@@ -29,42 +29,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit 0e576acbc1d9600cf2d9b4a141a2554639959d50 upstream.
+commit fd9f26e4eca5d08a27d12c0933fceef76ed9663d upstream.
 
-If CONFIG_NO_HZ=n tick_nohz_get_sleep_length() returns NSEC_PER_SEC/HZ.
+A control that is visible on the card->controls list can be freed at any time.
+This means we must not access any of its memory while not holding the
+controls_rw_lock. Otherwise we risk a use after free access.
 
-If CONFIG_NO_HZ=y and the nohz functionality is disabled via the
-command line option "nohz=off" or not enabled due to missing hardware
-support, then tick_nohz_get_sleep_length() returns 0. That happens
-because ts->sleep_length is never set in that case.
-
-Set it to NSEC_PER_SEC/HZ when the NOHZ mode is inactive.
-
-Reported-by: Michal Hocko <mhocko@suse.cz>
-Reported-by: Borislav Petkov <bp@alien8.de>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Rui Xiang <rui.xiang@huawei.com>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Acked-by: Jaroslav Kysela <perex@perex.cz>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/time/tick-sched.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ sound/core/control.c |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -296,8 +296,10 @@ static void tick_nohz_stop_sched_tick(st
- 			tick_do_timer_cpu = TICK_DO_TIMER_NONE;
+--- a/sound/core/control.c
++++ b/sound/core/control.c
+@@ -329,6 +329,7 @@ int snd_ctl_add(struct snd_card *card, s
+ {
+ 	struct snd_ctl_elem_id id;
+ 	unsigned int idx;
++	unsigned int count;
+ 	int err = -EINVAL;
+ 
+ 	if (! kcontrol)
+@@ -357,8 +358,9 @@ int snd_ctl_add(struct snd_card *card, s
+ 	card->controls_count += kcontrol->count;
+ 	kcontrol->id.numid = card->last_numid + 1;
+ 	card->last_numid += kcontrol->count;
++	count = kcontrol->count;
+ 	up_write(&card->controls_rwsem);
+-	for (idx = 0; idx < kcontrol->count; idx++, id.index++, id.numid++)
++	for (idx = 0; idx < count; idx++, id.index++, id.numid++)
+ 		snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_ADD, &id);
+ 	return 0;
+ 
+@@ -387,6 +389,7 @@ int snd_ctl_replace(struct snd_card *car
+ 		    bool add_on_replace)
+ {
+ 	struct snd_ctl_elem_id id;
++	unsigned int count;
+ 	unsigned int idx;
+ 	struct snd_kcontrol *old;
+ 	int ret;
+@@ -422,8 +425,9 @@ add:
+ 	card->controls_count += kcontrol->count;
+ 	kcontrol->id.numid = card->last_numid + 1;
+ 	card->last_numid += kcontrol->count;
++	count = kcontrol->count;
+ 	up_write(&card->controls_rwsem);
+-	for (idx = 0; idx < kcontrol->count; idx++, id.index++, id.numid++)
++	for (idx = 0; idx < count; idx++, id.index++, id.numid++)
+ 		snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_ADD, &id);
+ 	return 0;
+ 
+@@ -894,9 +898,9 @@ static int snd_ctl_elem_write(struct snd
+ 			result = kctl->put(kctl, control);
+ 		}
+ 		if (result > 0) {
++			struct snd_ctl_elem_id id = control->id;
+ 			up_read(&card->controls_rwsem);
+-			snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_VALUE,
+-				       &control->id);
++			snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_VALUE, &id);
+ 			return 0;
+ 		}
  	}
- 
--	if (unlikely(ts->nohz_mode == NOHZ_MODE_INACTIVE))
-+	if (unlikely(ts->nohz_mode == NOHZ_MODE_INACTIVE)) {
-+		ts->sleep_length = (ktime_t) { .tv64 = NSEC_PER_SEC/HZ };
- 		return;
-+	}
- 
- 	if (need_resched())
- 		return;
+@@ -1330,8 +1334,9 @@ static int snd_ctl_tlv_ioctl(struct snd_
+ 		}
+ 		err = kctl->tlv.c(kctl, op_flag, tlv.length, _tlv->tlv);
+ 		if (err > 0) {
++			struct snd_ctl_elem_id id = kctl->id;
+ 			up_read(&card->controls_rwsem);
+-			snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_TLV, &kctl->id);
++			snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_TLV, &id);
+ 			return 0;
+ 		}
+ 	} else {
 
 
