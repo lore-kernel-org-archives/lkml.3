@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751533AbaFXHRd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 03:17:33 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:55047 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751121AbaFXHRc (ORCPT
+	id S1751971AbaFXHTK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 03:19:10 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38183 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751179AbaFXHTI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 03:17:32 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Stanislav Fomichev <stfomichev@yandex-team.ru>, a.p.zijlstra@chello.nl,
-        paulus@samba.org, mingo@redhat.com, dsahern@gmail.com,
-        jolsa@redhat.com, xiaoguangrong@linux.vnet.ibm.com,
-        yangds.fnst@cn.fujitsu.com, adrian.hunter@intel.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/7] perf trace pagefaults
-References: <1403261389-13423-1-git-send-email-stfomichev@yandex-team.ru>
-	<20140620132105.GE31524@kernel.org>
-Date: Tue, 24 Jun 2014 16:17:25 +0900
-In-Reply-To: <20140620132105.GE31524@kernel.org> (Arnaldo Carvalho de Melo's
-	message of "Fri, 20 Jun 2014 10:21:05 -0300")
-Message-ID: <87wqc66aka.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 24 Jun 2014 03:19:08 -0400
+From: Daniel Jeong <gshark.jeong@gmail.com>
+To: Jingoo Han <jg1.han@samsung.com>, Bryan Wu <cooloney@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Randy Dunlap <rdunlap@infradead.org>
+Cc: Daniel Jeong <daniel.jeong@ti.com>, <linux-kernel@vger.kernel.org>,
+        <linux-fbdev@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, Daniel Jeong <gshark.jeong@gmail.com>
+Subject: [RFC v3 0/2]  backlight: add new tps611xx backlight driver
+Date: Tue, 24 Jun 2014 16:18:48 +0900
+Message-Id: <1403594330-15387-1-git-send-email-gshark.jeong@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnaldo and Stanislav,
+This driver a general version for tps611xx backlgiht chips of TI.
+It supports tps61158, tps61161, tps61163 and tps61165 backlight driver
+based on EasyScale protocol.
 
-On Fri, 20 Jun 2014 10:21:05 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Fri, Jun 20, 2014 at 02:49:42PM +0400, Stanislav Fomichev escreveu:
->> This patch series adds support for pagefaults tracing to 'perf trace' command.
->> It seems this feature was planned by Namhyung Kim (http://events.linuxfoundation.org/images/stories/pdf/klf2012_n_kim.pdf page 17/28)
->> but I couldn't find any prior patches/discussion and started from scratch.
->
-> Just to clarify here, those slides came from slides I made and in turn
-> the whole idea about pagefaults tracing I got from the trace prototype
-> that Thomas Gleixner implemented in his 'trace'  utility, described
-> here:
->
->   Announcing a new utility: 'trace'
->   http://lwn.net/Articles/415728/
+Daniel Jeong (2):
+  backlight
+  backlight: add new tps611xx backlight device tree support      This
+    commit is tps611xx device tree documentation.
 
-Right, I asked to Arnaldo to suggest some cool topics to introduce in
-KLF 2012 and that was it.   I had nothing with the features. :)
+ .../video/backlight/tps611xx-backlight.txt         |   16 +
+ drivers/video/backlight/Kconfig                    |    7 +
+ drivers/video/backlight/Makefile                   |    1 +
+ drivers/video/backlight/tps611xx_bl.c              |  494 ++++++++++++++++++++
+ include/linux/platform_data/tps611xx_bl.h          |   31 ++
+ 5 files changed, 549 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/video/backlight/tps611xx-backlight.txt
+ create mode 100644 drivers/video/backlight/tps611xx_bl.c
+ create mode 100644 include/linux/platform_data/tps611xx_bl.h
 
-Keep going nice works, guys!
+-- 
+1.7.9.5
 
-Thanks,
-Namhyung
