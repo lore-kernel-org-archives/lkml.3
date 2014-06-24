@@ -1,80 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965428AbaFXQI4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:08:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33270 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752574AbaFXPzy (ORCPT
+	id S965444AbaFXQJF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:09:05 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:40672 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S965137AbaFXQJA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:55:54 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.15 11/61] net: filter: fix typo in sparc BPF JIT
-Date: Tue, 24 Jun 2014 11:50:54 -0400
-Message-Id: <20140624154953.290821071@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <20140624154952.751713761@linuxfoundation.org>
-References: <20140624154952.751713761@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 24 Jun 2014 12:09:00 -0400
+Date: Tue, 24 Jun 2014 17:08:45 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Anton Vorontsov <anton.vorontsov@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        kgdb-bugreport@lists.sourceforge.net, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Colin Cross <ccross@android.com>, kernel-team@android.com,
+        Rob Herring <robherring2@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Nicolas Pitre <nico@linaro.org>
+Subject: Re: [PATCH v6 4/4] ARM: Add KGDB/KDB FIQ debugger generic code
+Message-ID: <20140624160844.GV32514@n2100.arm.linux.org.uk>
+References: <1403174303-25456-1-git-send-email-daniel.thompson@linaro.org> <1403623097-1153-1-git-send-email-daniel.thompson@linaro.org> <1403623097-1153-5-git-send-email-daniel.thompson@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403623097-1153-5-git-send-email-daniel.thompson@linaro.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.15-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Jun 24, 2014 at 04:18:17PM +0100, Daniel Thompson wrote:
+> +	.align	5
+> +__fiq_svc:
+> +	svc_entry
 
-------------------
+Remember that the registers you have on the stack here are r0-r12, plus
+the SVC banked sp and lr registers.  These may not be the registers
+from the mode you took the FIQ (eg, if it was IRQ, or abort mode.)
 
-From: Alexei Starovoitov <ast@plumgrid.com>
+Also bear in mind that svc_entry calls trace_hardirqs_off - is this
+appropriate and safe for the FIQ to call?
 
-[ Upstream commit 569810d1e3278907264f5b115281fca3f0038d53 ]
+> +	fiq_handler
+> +	mov	r0, sp
+> +	ldmib	r0, {r1 - r14}
 
-fix typo in sparc codegen for SKF_AD_IFINDEX and SKF_AD_HATYPE
-classic BPF extensions
+So this restores r1 to r12, and the SVC mode sp and lr registers.
+Nothing touches the SVC SPSR, so we hope that retains its value
+throughout the FIQ processing.  Note that the stack pointer at this
+point will be above state which we have not yet read, so we better
+not take any exceptions from this instruction (not even an imprecise
+abort).
 
-Fixes: 2809a2087cc4 ("net: filter: Just In Time compiler for sparc")
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/sparc/net/bpf_jit_comp.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+> +	msr	cpsr_c, #FIQ_MODE | PSR_I_BIT | PSR_F_BIT
 
---- a/arch/sparc/net/bpf_jit_comp.c
-+++ b/arch/sparc/net/bpf_jit_comp.c
-@@ -83,9 +83,9 @@ static void bpf_flush_icache(void *start
- #define BNE		(F2(0, 2) | CONDNE)
- 
- #ifdef CONFIG_SPARC64
--#define BNE_PTR		(F2(0, 1) | CONDNE | (2 << 20))
-+#define BE_PTR		(F2(0, 1) | CONDE | (2 << 20))
- #else
--#define BNE_PTR		BNE
-+#define BE_PTR		BNE
- #endif
- 
- #define SETHI(K, REG)	\
-@@ -600,7 +600,7 @@ void bpf_jit_compile(struct sk_filter *f
- 			case BPF_S_ANC_IFINDEX:
- 				emit_skb_loadptr(dev, r_A);
- 				emit_cmpi(r_A, 0);
--				emit_branch(BNE_PTR, cleanup_addr + 4);
-+				emit_branch(BE_PTR, cleanup_addr + 4);
- 				emit_nop();
- 				emit_load32(r_A, struct net_device, ifindex, r_A);
- 				break;
-@@ -613,7 +613,7 @@ void bpf_jit_compile(struct sk_filter *f
- 			case BPF_S_ANC_HATYPE:
- 				emit_skb_loadptr(dev, r_A);
- 				emit_cmpi(r_A, 0);
--				emit_branch(BNE_PTR, cleanup_addr + 4);
-+				emit_branch(BE_PTR, cleanup_addr + 4);
- 				emit_nop();
- 				emit_load16(r_A, struct net_device, type, r_A);
- 				break;
+Here we switch to FIQ mode.  What about the PSR_A_BIT which prevents
+imprecise aborts on ARMv6+ ?
 
+Nevertheless, I think it's safe because the A bit will be set by the
+CPU when taking the FIQ exception, and it should remain set since
+cpsr_c won't modify it.
 
+> +	add	r8, r0, #S_PC
+> +	ldr	r9, [r0, #S_PSR]
+> +	msr	spsr_cxsf, r9
+
+Here we update the FIQ SPSR with the calling mode's CPSR, ready to
+return...
+
+> +	ldr	r0, [r0, #S_R0]
+
+Load the calling mode's R0 value.
+
+> +	ldmia	r8, {pc}^
+
+And return (restoring CPSR from SPSR_fiq).
+
+This looks pretty good except for the niggles...
+
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
