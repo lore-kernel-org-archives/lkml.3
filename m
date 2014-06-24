@@ -1,68 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754296AbaFXTct (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 15:32:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64204 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753968AbaFXTco (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 15:32:44 -0400
-Date: Tue, 24 Jun 2014 21:30:55 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Kees Cook <keescook@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
-        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
-        Linux API <linux-api@vger.kernel.org>, X86 ML <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH v7 4/9] seccomp: move no_new_privs into seccomp
-Message-ID: <20140624193055.GA4482@redhat.com>
-References: <1403560693-21809-1-git-send-email-keescook@chromium.org> <1403560693-21809-5-git-send-email-keescook@chromium.org> <20140624191815.GA3623@redhat.com> <CALCETrVgpP=zOtiQafVgcic2T95TdEM5DTvHYXWTbcZ14xBqHQ@mail.gmail.com>
+	id S1754524AbaFXTdw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 15:33:52 -0400
+Received: from mail-wi0-f202.google.com ([209.85.212.202]:42288 "EHLO
+	mail-wi0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751024AbaFXTdv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 15:33:51 -0400
+From: Michal Nazarewicz <mina86@mina86.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>, Mark Salter <msalter@redhat.com>,
+        David Rientjes <rientjes@google.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Catalin Marinas <catalin.marinas@arm.com>, linux-mm@kvack.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        <stable@vger.kernel.org>, Michal Nazarewicz <mina86@mina86.com>
+Subject: [PATCHv3 RESEND] mm: page_alloc: fix CMA area initialisation when pageblock > MAX_ORDER
+Date: Tue, 24 Jun 2014 21:33:30 +0200
+Message-Id: <1403638410-30190-1-git-send-email-mina86@mina86.com>
+X-Mailer: git-send-email 2.0.0.526.g5318336
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrVgpP=zOtiQafVgcic2T95TdEM5DTvHYXWTbcZ14xBqHQ@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24, Andy Lutomirski wrote:
->
-> On Tue, Jun 24, 2014 at 12:18 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> >>
-> >> -struct seccomp { };
-> >> +struct seccomp {
-> >> +     unsigned long flags;
-> >> +};
-> >
-> > A bit messy ;)
-> >
-> > I am wondering if we can simply do
-> >
-> >         static inline bool current_no_new_privs(void)
-> >         {
-> >                 if (current->no_new_privs)
-> >                         return true;
-> >
-> >         #ifdef CONFIG_SECCOMP
-> >                 if (test_thread_flag(TIF_SECCOMP))
-> >                         return true;
-> >         #endif
->
-> Nope -- privileged users can enable seccomp w/o nnp.
+With a kernel configured with ARM64_64K_PAGES && !TRANSPARENT_HUGEPAGE,
+the following is triggered at early boot:
 
-Indeed, I am stupid.
+  SMP: Total of 8 processors activated.
+  devtmpfs: initialized
+  Unable to handle kernel NULL pointer dereference at virtual address 00000008
+  pgd = fffffe0000050000
+  [00000008] *pgd=00000043fba00003, *pmd=00000043fba00003, *pte=00e0000078010407
+  Internal error: Oops: 96000006 [#1] SMP
+  Modules linked in:
+  CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.15.0-rc864k+ #44
+  task: fffffe03bc040000 ti: fffffe03bc080000 task.ti: fffffe03bc080000
+  PC is at __list_add+0x10/0xd4
+  LR is at free_one_page+0x270/0x638
+  ...
+  Call trace:
+  [<fffffe00003ee970>] __list_add+0x10/0xd4
+  [<fffffe000019c478>] free_one_page+0x26c/0x638
+  [<fffffe000019c8c8>] __free_pages_ok.part.52+0x84/0xbc
+  [<fffffe000019d5e8>] __free_pages+0x74/0xbc
+  [<fffffe0000c01350>] init_cma_reserved_pageblock+0xe8/0x104
+  [<fffffe0000c24de0>] cma_init_reserved_areas+0x190/0x1e4
+  [<fffffe0000090418>] do_one_initcall+0xc4/0x154
+  [<fffffe0000bf0a50>] kernel_init_freeable+0x204/0x2a8
+  [<fffffe00007520a0>] kernel_init+0xc/0xd4
 
-Still it would be nice to cleanup this somehow. The new member is only
-used as a previous ->no_new_privs, just it is long to allow the concurent
-set/get. Logically it doesn't even belong to seccomp{}.
+This happens because init_cma_reserved_pageblock() calls
+__free_one_page() with pageblock_order as page order but it is bigger
+han MAX_ORDER.  This in turn causes accesses past zone->free_list[].
 
-Oleg.
+Fix the problem by changing init_cma_reserved_pageblock() such that it
+splits pageblock into individual MAX_ORDER pages if pageblock is
+bigger than a MAX_ORDER page.
+
+In cases where !CONFIG_HUGETLB_PAGE_SIZE_VARIABLE, which is all
+architectures expect for ia64, powerpc and tile at the moment, the
+“pageblock_order > MAX_ORDER” condition will be optimised out since
+both sides of the operator are constants.  In cases where pageblock
+size is variable, the performance degradation should not be
+significant anyway since init_cma_reserved_pageblock() is called
+only at boot time at most MAX_CMA_AREAS times which by default is
+eight.
+
+Cc: <stable@vger.kernel.org>   # v3.5+
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+Reported-and-tested-by: Mark Salter <msalter@redhat.com>
+Tested-by: Christopher Covington <cov@codeaurora.org>
+---
+ mm/page_alloc.c | 16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
+
+ Resent with somehow bigger distribution including Andrew, Mel and
+ linux-mm, as well as stable.
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index ee92384..fef9614 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -816,9 +816,21 @@ void __init init_cma_reserved_pageblock(struct page *page)
+ 		set_page_count(p, 0);
+ 	} while (++p, --i);
+ 
+-	set_page_refcounted(page);
+ 	set_pageblock_migratetype(page, MIGRATE_CMA);
+-	__free_pages(page, pageblock_order);
++
++	if (pageblock_order >= MAX_ORDER) {
++		i = pageblock_nr_pages;
++		p = page;
++		do {
++			set_page_refcounted(p);
++			__free_pages(p, MAX_ORDER - 1);
++			p += MAX_ORDER_NR_PAGES;
++		} while (i -= MAX_ORDER_NR_PAGES);
++	} else {
++		set_page_refcounted(page);
++		__free_pages(page, pageblock_order);
++	}
++
+ 	adjust_managed_page_count(page, pageblock_nr_pages);
+ }
+ #endif
+-- 
+2.0.0.526.g5318336
 
