@@ -1,79 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753559AbaFXMX2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 08:23:28 -0400
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:40034 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753338AbaFXMX0 convert rfc822-to-8bit (ORCPT
+	id S1753577AbaFXMYe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 08:24:34 -0400
+Received: from www17.your-server.de ([213.133.104.17]:46347 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751821AbaFXMYd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 08:23:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <53A95910.20104@nvidia.com>
-References: <1403603667-11302-1-git-send-email-acourbot@nvidia.com>
- <1403603667-11302-3-git-send-email-acourbot@nvidia.com> <20140624100220.GK32514@n2100.arm.linux.org.uk>
- <53A953E6.2030503@nvidia.com> <53A95910.20104@nvidia.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Tue, 24 Jun 2014 21:23:05 +0900
-Message-ID: <CAAVeFu+rbCViC87kYCLfxGV18iYq=Pa0ABb+L=iNiYPLn+mR8Q@mail.gmail.com>
-Subject: Re: [PATCH v2 2/3] drm/ttm: introduce dma cache sync helpers
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        David Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>,
-        Lucas Stach <dev@lynxeye.de>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 24 Jun 2014 08:24:33 -0400
+Message-ID: <1403612670.3091.10.camel@localhost.localdomain>
+Subject: Re: [Intel-gfx] Linux 3.16-rc2
+From: Thomas Meyer <thomas@m3y3r.de>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Jani Nikula <jani.nikula@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Tue, 24 Jun 2014 14:24:30 +0200
+In-Reply-To: <20140624115753.GD17674@nuc-i3427.alporthouse.com>
+References: <CA+55aFxdAhp-esuGiY4VEugiiwcMJgg1r6fPiR9Fb+HOz_5tLg@mail.gmail.com>
+	 <1403564870.3091.6.camel@localhost.localdomain> <871tuea7nz.fsf@intel.com>
+	 <20140624115753.GD17674@nuc-i3427.alporthouse.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 24, 2014 at 7:55 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
-> On 06/24/2014 07:33 PM, Alexandre Courbot wrote:
->>
->> On 06/24/2014 07:02 PM, Russell King - ARM Linux wrote:
->>>
->>> On Tue, Jun 24, 2014 at 06:54:26PM +0900, Alexandre Courbot wrote:
->>>>
->>>> From: Lucas Stach <dev@lynxeye.de>
->>>>
->>>> On architectures for which access to GPU memory is non-coherent,
->>>> caches need to be flushed and invalidated explicitly at the
->>>> appropriate places. Introduce two small helpers to make things
->>>> easy for TTM-based drivers.
->>>
->>>
->>> Have you run this with DMA API debugging enabled?  I suspect you haven't,
->>> and I recommend that you do.
->>
->>
->> # cat /sys/kernel/debug/dma-api/error_count
->> 162621
->>
->> (╯°□°）╯︵ ┻━┻)
->
->
-> *puts table back on its feet*
->
-> So, yeah - TTM memory is not allocated using the DMA API, hence we cannot
-> use the DMA API to sync it. Thanks Russell for pointing it out.
->
-> The only alternative I see here is to flush the CPU caches when syncing for
-> the device, and invalidate them for the other direction. Of course if the
-> device has caches on its side as well the opposite operation must also be
-> done for it. Guess the only way is to handle it all by ourselves here. :/
+Am Dienstag, den 24.06.2014, 12:57 +0100 schrieb Chris Wilson:
+> On Tue, Jun 24, 2014 at 02:06:24PM +0300, Jani Nikula wrote:
+> > On Tue, 24 Jun 2014, Thomas Meyer <thomas@m3y3r.de> wrote:
+> > > the i915 driver is still broken in 3.16-rc2. Resume from ram crashes the
+> > > X server.
+> > 
+> > This is not new to 3.16-rc2; apparently we've had it since v3.15-rc4
+> > [1]. Also related [2].
+> > 
+> > Chris, any fresh ideas?
+> 
+> Nope. The bug is https://bugs.freedesktop.org/show_bug.cgi?id=76554
+> everything we know and have tried is there. Which is not much more than
+> at time of the original incarnation:
+> 
+> commit 50aa253d820ad4577e2231202f2c8fd89f9dc4e6
+> Author: Keith Packard <keithp@keithp.com>
+> Date:   Tue Oct 14 17:20:35 2008 -0700
+> 
+>     i915: Fix up ring initialization to cover G45 oddities
+>     
+>     G45 appears quite sensitive to ring initialization register writes,
+>     sometimes leaving the HEAD register with the START register contents. Check
+>     to make sure HEAD is reset correctly when START is written, and fix it up,
+>     screaming loudly.
+> -Chris
+> 
 
-... and it really sucks. Basically if we cannot use the DMA API here
-we will lose the convenience of having a portable API that does just
-the right thing for the underlying platform. Without it we would have
-to duplicate arm_iommu_sync_single_for_cpu/device() and we would only
-have support for ARM.
+Hi,
 
-The usage of the DMA API that we are doing might be illegal, but in
-essence it does exactly what we need - at least for ARM. What are the
-alternatives?
+so why not revert 78f2975eec9faff353a6194e854d3d39907bab68 (drm/i915:
+Move all ring resets before setting the HWS page) ?
+
+Without this commit 3.15 is super stable for me. This seems to be also
+true for others according to above bug report.
+
+thomas
+
