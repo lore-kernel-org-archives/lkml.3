@@ -1,120 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754545AbaFXPUV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:20:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17465 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753819AbaFXPUT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:20:19 -0400
-Date: Tue, 24 Jun 2014 11:20:09 -0400
-From: Dave Jones <davej@redhat.com>
-To: Josh Hunt <johunt@akamai.com>, Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Baron, Jason" <jbaron@akamai.com>
-Subject: Re: [PATCH] panic: add TAINT_SOFTLOCKUP
-Message-ID: <20140624152009.GB18176@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Josh Hunt <johunt@akamai.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"Baron, Jason" <jbaron@akamai.com>
-References: <1401847955-3345-1-git-send-email-johunt@akamai.com>
- <20140623151121.44f17779004e94ab620b837c@linux-foundation.org>
- <53A8ADEC.6070406@akamai.com>
- <20140623155118.e2446a6110a9889454db2386@linux-foundation.org>
- <53A9899C.9040005@akamai.com>
- <20140624150615.GA18176@redhat.com>
+	id S1754585AbaFXPUe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:20:34 -0400
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:64505 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754554AbaFXPUc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 11:20:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140624150615.GA18176@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <53A94DA1.50703@collabora.co.uk>
+References: <1403486483-4063-1-git-send-email-afaerber@suse.de>
+	<1403486483-4063-5-git-send-email-afaerber@suse.de>
+	<CAD=FV=WHAqASC+bp8mGVnhfr79F5LapJCTLtSfgUG8XuRUSCqw@mail.gmail.com>
+	<53A8AE4C.6080702@suse.de>
+	<CAD=FV=W96QpDhh1NSaVwrXYjL6Jr-v4sq1-eRSfT=tErw_KCOQ@mail.gmail.com>
+	<53A94DA1.50703@collabora.co.uk>
+Date: Tue, 24 Jun 2014 08:20:30 -0700
+X-Google-Sender-Auth: QvjQAXgHiMHQ2OviNBM07wtm6IE
+Message-ID: <CAD=FV=VEVwPzW4hdR1kSdZS741Hn6VnDr+yXetTPsN4hEym2xA@mail.gmail.com>
+Subject: Re: [RFC 4/4] ARM: dts: exynos5250: Add Spring device tree
+From: Doug Anderson <dianders@chromium.org>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: =?UTF-8?Q?Andreas_F=C3=A4rber?= <afaerber@suse.de>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Stephan van Schaik <stephan@synkhronix.com>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        "OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        ARM PORT <linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Olof Johansson <olof@lixom.net>,
+        Todd Broch <tbroch@chromium.org>, Tomasz Figa <t.figa@samsung.com>,
+        jwerner@chromium.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 24, 2014 at 11:06:15AM -0400, Dave Jones wrote:
-> 
- > For things like the fuzz test runs I do, I'd have to patch this out.
- > 
- > Things like migrate_pages() with bad arguments will trigger a page
- > allocation failure rather easily. Likewise set_mempolicy(), and a
- > handful of other vm syscalls.
+Javier,
 
-I grepped logs for the last week.  There's also a lot of non-obvious
-causes of page alloc failures. (Possibly because free memory had been
-filled with dirty huge pages), but here we can't even successfully
-alloc a single order 0 page.
+On Tue, Jun 24, 2014 at 3:06 AM, Javier Martinez Canillas
+<javier.martinez@collabora.co.uk> wrote:
+> Hello Doug,
+>
+> On 06/24/2014 06:05 AM, Doug Anderson wrote:
+> Another option is to identify DTS fragments that are common across boards and
+> create .dtsi files for these specific chunks instead of trying to group all set
+> of common things on a single .dtsi file.
+>
+> For example, a quite common design for OMAP2+ based boards is to use a SMSC LAN
+> chip connected to OMAP's General-Purpose Memory Controller (GPMC). So the
+> following files were created to reduce DTS duplication:
+>
+> arch/arm/boot/dts/omap-gpmc-smsc911x.dtsi
+> arch/arm/boot/dts/omap-gpmc-smsc9221.dtsi
+>
+> Now that I think about it, is the same that what you did for
+> arm/boot/dts/cros-ec-keyboard.dtsi.
+>
+> Maybe splitting exynos5250-cros-common.dtsi in a set of .dtsi files will make it
+> more flexible/reusable?
 
-Traces from separate runs, on various kernels from the last week.
+Yes, I think the config fragments can be cleaner but I think we have
+to be judicious about using them.  There are definitely tradeoffs
+involved.  The keyboard was such an excessively large thing and
+totally duplicated, so moving it out made sense.  Other bits are less
+obvious (to me) because there are so many interactions / combinations
+and you end up with a bit of spaghetti in terms of which labels are
+used by and provided by each fragment.  I guess possibly you could
+codify that better...
 
+A few thoughts looking at exynos5420-peach-pit:
 
-page allocation failure: order:0, mode:0x280da
-dump_stack+0x4e/0x7a
-warn_alloc_failed+0xff/0x170
-__alloc_pages_nodemask+0x78e/0xc90
-alloc_pages_vma+0xaf/0x1c0
-handle_mm_fault+0xa31/0xc50
-? default_wake_function+0x12/0x20
-__do_page_fault+0x1c9/0x630
-? __acct_update_integrals+0x8b/0x120
-? preempt_count_sub+0xab/0x100
-trace_do_page_fault+0x3d/0x130
-trace_page_fault+0x22/0x30
-
-
-page allocation failure: order:0, mode:0x200da
-dump_stack+0x4e/0x7a
-warn_alloc_failed+0xff/0x170
-__alloc_pages_nodemask+0x78e/0xc90
-alloc_pages_vma+0xaf/0x1c0
-read_swap_cache_async+0x123/0x220
-swapin_readahead+0x106/0x1d0
-handle_mm_fault+0x9d5/0xc50
-? default_wake_function+0x12/0x20
-? autoremove_wake_function+0x2b/0x40
-__do_page_fault+0x1c9/0x630
-? __wake_up+0x44/0x50
-? __acct_update_integrals+0x8b/0x120
-? preempt_count_sub+0xab/0x100
-trace_do_page_fault+0x3d/0x130
-trace_page_fault+0x22/0x30
+* backlight: seems (?) too board specific
+* samsung,exynos5420-oscclk: could totally be a fragment, but very small.
+* power key: could be a fragment for all boards that happen to use
+gpx1-2 for this
+* sound: could be a fragment for all devices using
+"google,snow-audio-max98090", possibly.
 
 
-page allocation failure: order:0, mode:0x280da
-dump_stack+0x4e/0x7a
-warn_alloc_failed+0xff/0x170
-__alloc_pages_nodemask+0x78e/0xc90
-alloc_pages_vma+0xaf/0x1c0
-handle_mm_fault+0xa31/0xc50
-? follow_page_mask+0x1f0/0x320
-__get_user_pages+0x22b/0x660
-? kmem_cache_alloc+0x183/0x210
-__mlock_vma_pages_range+0x9e/0xd0
-__mm_populate+0xca/0x180
-vm_mmap_pgoff+0xd3/0xe0
-SyS_mmap_pgoff+0x116/0x2c0
-? syscall_trace_enter+0x14d/0x2a0
-SyS_mmap+0x22/0x30
-tracesys+0xdd/0xe2
+> Personally I think that "status = [enabled | disabled]" only makes sense for IP
+> blocks that are part of the SoC but may or may not be used by a board (e.g: i2c
+> and spi buses, sdhci and usb host controllers, etc).
+>
+> DTS should be a description of the hardware so I agree that having a disabled
+> node for a device that is not present in the board is not right.
 
-
-page allocation failure: order:0, mode:0x2084d0
-dump_stack+0x4e/0x7a
-warn_alloc_failed+0xff/0x170
-__alloc_pages_nodemask+0x78e/0xc90
-alloc_pages_current+0xb1/0x160
-pte_alloc_one+0x17/0x90
-__pte_alloc+0x27/0x150
-handle_mm_fault+0x68d/0xc50
-? follow_page_mask+0xcb/0x320
-__get_user_pages+0x22b/0x660
-? kmem_cache_alloc+0x183/0x210
-__mlock_vma_pages_range+0x9e/0xd0
-__mm_populate+0xca/0x180
-vm_mmap_pgoff+0xd3/0xe0
-SyS_mmap_pgoff+0x116/0x2c0
-? syscall_trace_enter+0x14d/0x2a0
-SyS_mmap+0x22/0x30
-tracesys+0xdd/0xe2
-
+Right.  We'll take a look again in v2 when cros-common isn't used.  I
+think this could go in steps:
+1. Don't use cros-common for spring
+2. Don't use cros-common for snow (fold stuff in)
+3. Introduce some fragments.
