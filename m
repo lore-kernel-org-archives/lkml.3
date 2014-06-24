@@ -1,77 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965369AbaFXQrU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:47:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58101 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932385AbaFXQrS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 12:47:18 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CAJfpegvSkr4NJJOfPH4MOhYvaLe=yWv_pR9kK4uiRpScyiapig@mail.gmail.com>
-References: <CAJfpegvSkr4NJJOfPH4MOhYvaLe=yWv_pR9kK4uiRpScyiapig@mail.gmail.com> <CAJfpegtobxoMs+RRrPYLFRPOVSfr_uqZs+HJFLRif3svHGyQwA@mail.gmail.com> <1400838223-30844-1-git-send-email-miklos@szeredi.hu> <28592.1401382081@warthog.procyon.org.uk> <11446.1401420931@jrobl> <7184.1401439773@warthog.procyon.org.uk> <CA+icZUV5P=fVwe_MJJHixwBOBoj7HoKSFuySLdS6AU5L++S=4g@mail.gmail.com> <15839.1401786056@warthog.procyon.org.uk> <CA+icZUUiirxYnoL7pg5TvFEy6pQ+5Q3CuJ0jonJMXTOwhT-LDw@mail.gmail.com> <CA+icZUU8BqGUoQdtuqt403NdCBnJnH1-k64bxTM0b_GSfQr1hQ@mail.gmail.com> <10013.1401791634@warthog.procyon.org.uk> <20140603132153.GA26512@tucsk.piliscsaba.szeredi.hu> <19281.1401809418@warthog.procyon.org.uk>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: dhowells@redhat.com, Sedat Dilek <sedat.dilek@gmail.com>,
-        "J. R. Okajima" <hooanon05g@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Robo Bot <apw@canonical.com>, Felix Fietkau <nbd@openwrt.org>,
-        Neil Brown <neilb@suse.de>, Jordi Pujol <jordipujolp@gmail.com>,
-        ezk@fsl.cs.sunysb.edu, "mszeredi@suse.cz" <mszeredi@suse.cz>
-Subject: Overlayfs rename bug
-Date: Tue, 24 Jun 2014 17:46:14 +0100
-Message-ID: <17091.1403628374@warthog.procyon.org.uk>
+	id S1755325AbaFXPwU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:52:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60882 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755274AbaFXPwQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 11:52:16 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Andy Lutomirski <luto@amacapital.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 06/52] net: Move the permission check in sock_diag_put_filterinfo to packet_diag_dump
+Date: Tue, 24 Jun 2014 11:50:21 -0400
+Message-Id: <20140624154713.818706672@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <20140624154713.428945460@linuxfoundation.org>
+References: <20140624154713.428945460@linuxfoundation.org>
+User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Miklos Szeredi <miklos@szeredi.hu> wrote:
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-> > Tentative Tested-by from me unless I can break it.
-> 
-> Thanks for testing.
+------------------
 
-Tested-by retracted temporarily.  There's a bug in rename handling.  If you
-clone:
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-	http://git.infradead.org/users/dhowells/unionmount-testsuite.git
+[ Upstream commit a53b72c83a4216f2eb883ed45a0cbce014b8e62d ]
 
-and check out the switch-to-python branch and do:
+The permission check in sock_diag_put_filterinfo is wrong, and it is so removed
+from it's sources it is not clear why it is wrong.  Move the computation
+into packet_diag_dump and pass a bool of the result into sock_diag_filterinfo.
 
-	./run --no rename-mass
+This does not yet correct the capability check but instead simply moves it to make
+it clear what is going on.
 
-then this works with no unioning used, but if you do:
+Reported-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ include/linux/sock_diag.h |    2 +-
+ net/core/sock_diag.c      |    4 ++--
+ net/packet/diag.c         |    7 ++++++-
+ 3 files changed, 9 insertions(+), 4 deletions(-)
 
-	./run --ov rename-mass
+--- a/include/linux/sock_diag.h
++++ b/include/linux/sock_diag.h
+@@ -23,7 +23,7 @@ int sock_diag_check_cookie(void *sk, __u
+ void sock_diag_save_cookie(void *sk, __u32 *cookie);
+ 
+ int sock_diag_put_meminfo(struct sock *sk, struct sk_buff *skb, int attr);
+-int sock_diag_put_filterinfo(struct sock *sk,
++int sock_diag_put_filterinfo(bool may_report_filterinfo, struct sock *sk,
+ 			     struct sk_buff *skb, int attrtype);
+ 
+ #endif
+--- a/net/core/sock_diag.c
++++ b/net/core/sock_diag.c
+@@ -49,7 +49,7 @@ int sock_diag_put_meminfo(struct sock *s
+ }
+ EXPORT_SYMBOL_GPL(sock_diag_put_meminfo);
+ 
+-int sock_diag_put_filterinfo(struct sock *sk,
++int sock_diag_put_filterinfo(bool may_report_filterinfo, struct sock *sk,
+ 			     struct sk_buff *skb, int attrtype)
+ {
+ 	struct nlattr *attr;
+@@ -57,7 +57,7 @@ int sock_diag_put_filterinfo(struct sock
+ 	unsigned int len;
+ 	int err = 0;
+ 
+-	if (!ns_capable(sock_net(sk)->user_ns, CAP_NET_ADMIN)) {
++	if (!may_report_filterinfo) {
+ 		nla_reserve(skb, attrtype, 0);
+ 		return 0;
+ 	}
+--- a/net/packet/diag.c
++++ b/net/packet/diag.c
+@@ -127,6 +127,7 @@ static int pdiag_put_fanout(struct packe
+ 
+ static int sk_diag_fill(struct sock *sk, struct sk_buff *skb,
+ 			struct packet_diag_req *req,
++			bool may_report_filterinfo,
+ 			struct user_namespace *user_ns,
+ 			u32 portid, u32 seq, u32 flags, int sk_ino)
+ {
+@@ -171,7 +172,8 @@ static int sk_diag_fill(struct sock *sk,
+ 		goto out_nlmsg_trim;
+ 
+ 	if ((req->pdiag_show & PACKET_SHOW_FILTER) &&
+-	    sock_diag_put_filterinfo(sk, skb, PACKET_DIAG_FILTER))
++	    sock_diag_put_filterinfo(may_report_filterinfo, sk, skb,
++				     PACKET_DIAG_FILTER))
+ 		goto out_nlmsg_trim;
+ 
+ 	return nlmsg_end(skb, nlh);
+@@ -187,9 +189,11 @@ static int packet_diag_dump(struct sk_bu
+ 	struct packet_diag_req *req;
+ 	struct net *net;
+ 	struct sock *sk;
++	bool may_report_filterinfo;
+ 
+ 	net = sock_net(skb->sk);
+ 	req = nlmsg_data(cb->nlh);
++	may_report_filterinfo = ns_capable(net->user_ns, CAP_NET_ADMIN);
+ 
+ 	mutex_lock(&net->packet.sklist_lock);
+ 	sk_for_each(sk, &net->packet.sklist) {
+@@ -199,6 +203,7 @@ static int packet_diag_dump(struct sk_bu
+ 			goto next;
+ 
+ 		if (sk_diag_fill(sk, skb, req,
++				 may_report_filterinfo,
+ 				 sk_user_ns(NETLINK_CB(cb->skb).sk),
+ 				 NETLINK_CB(cb->skb).portid,
+ 				 cb->nlh->nlmsg_seq, NLM_F_MULTI,
 
-to run it on overlayfs, then the following occurs:
 
-	[root@andromeda union-testsuite]# ./run --ov rename-mass
-	***
-	*** ./run --ov --ts=0 rename-mass
-	***
-	TEST rename-mass.py:15: Mass rename sequential files into each other's vacated name slots
-	 ./run --rename /mnt/a/foo103 /mnt/a/foo104
-	 ./run --rename /mnt/a/foo102 /mnt/a/foo103
-	 ./run --rename /mnt/a/foo101 /mnt/a/foo102
-	 ./run --rename /mnt/a/foo100 /mnt/a/foo101
-	 ./run --rename /mnt/a/foo104 /mnt/a/foo105
-	/mnt/a/foo104: File unexpectedly found
-
-strace shows:
-
-	rename("/mnt/a/foo104", "/mnt/a/foo105") = 0
-	lstat("/mnt/a/foo104", {st_mode=S_IFREG|0644, st_size=12, ...}) = 0
-
-which shouldn't happen.
-
-The kernel is 17eb601eb5dbc8a2e200872380c03400813d4f1a from overlayfs.v22.
-
-David
