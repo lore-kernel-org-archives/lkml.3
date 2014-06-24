@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756234AbaFXQAs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:00:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33417 "EHLO
+	id S965168AbaFXP4r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:56:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33406 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965180AbaFXP4t (ORCPT
+	with ESMTP id S965051AbaFXP4o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:56:49 -0400
+	Tue, 24 Jun 2014 11:56:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Don A. Bailey" <donb@securitymouse.com>
-Subject: [PATCH 3.15 49/61] lz4: ensure length does not wrap
-Date: Tue, 24 Jun 2014 11:51:32 -0400
-Message-Id: <20140624154955.023232981@linuxfoundation.org>
+        Erik Habbinga <Erik.Habbinga@schneider-electric.com>,
+        Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>
+Subject: [PATCH 3.15 41/61] iio:adc:max1363 incorrect resolutions for max11604, max11605, max11610 and max11611.
+Date: Tue, 24 Jun 2014 11:51:24 -0400
+Message-Id: <20140624154954.657060600@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154952.751713761@linuxfoundation.org>
 References: <20140624154952.751713761@linuxfoundation.org>
@@ -28,31 +29,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+From: Jonathan Cameron <jic23@kernel.org>
 
-commit 206204a1162b995e2185275167b22468c00d6b36 upstream.
+commit a91a73c8b39a6b8bcc53fafa5372c65387c81233 upstream.
 
-Given some pathologically compressed data, lz4 could possibly decide to
-wrap a few internal variables, causing unknown things to happen.  Catch
-this before the wrapping happens and abort the decompression.
-
-Reported-by: "Don A. Bailey" <donb@securitymouse.com>
+Reported-by: Erik Habbinga <Erik.Habbinga@schneider-electric.com>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Acked-by: Hartmut Knaack <knaack.h@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- lib/lz4/lz4_decompress.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/iio/adc/max1363.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
---- a/lib/lz4/lz4_decompress.c
-+++ b/lib/lz4/lz4_decompress.c
-@@ -72,6 +72,8 @@ static int lz4_uncompress(const char *so
- 			len = *ip++;
- 			for (; len == 255; length += 255)
- 				len = *ip++;
-+			if (unlikely(length > (size_t)(length + len)))
-+				goto _output_error;
- 			length += len;
- 		}
- 
+--- a/drivers/iio/adc/max1363.c
++++ b/drivers/iio/adc/max1363.c
+@@ -1252,8 +1252,8 @@ static const struct max1363_chip_info ma
+ 		.num_modes = ARRAY_SIZE(max1238_mode_list),
+ 		.default_mode = s0to11,
+ 		.info = &max1238_info,
+-		.channels = max1238_channels,
+-		.num_channels = ARRAY_SIZE(max1238_channels),
++		.channels = max1038_channels,
++		.num_channels = ARRAY_SIZE(max1038_channels),
+ 	},
+ 	[max11605] = {
+ 		.bits = 8,
+@@ -1262,8 +1262,8 @@ static const struct max1363_chip_info ma
+ 		.num_modes = ARRAY_SIZE(max1238_mode_list),
+ 		.default_mode = s0to11,
+ 		.info = &max1238_info,
+-		.channels = max1238_channels,
+-		.num_channels = ARRAY_SIZE(max1238_channels),
++		.channels = max1038_channels,
++		.num_channels = ARRAY_SIZE(max1038_channels),
+ 	},
+ 	[max11606] = {
+ 		.bits = 10,
+@@ -1312,8 +1312,8 @@ static const struct max1363_chip_info ma
+ 		.num_modes = ARRAY_SIZE(max1238_mode_list),
+ 		.default_mode = s0to11,
+ 		.info = &max1238_info,
+-		.channels = max1238_channels,
+-		.num_channels = ARRAY_SIZE(max1238_channels),
++		.channels = max1138_channels,
++		.num_channels = ARRAY_SIZE(max1138_channels),
+ 	},
+ 	[max11611] = {
+ 		.bits = 10,
+@@ -1322,8 +1322,8 @@ static const struct max1363_chip_info ma
+ 		.num_modes = ARRAY_SIZE(max1238_mode_list),
+ 		.default_mode = s0to11,
+ 		.info = &max1238_info,
+-		.channels = max1238_channels,
+-		.num_channels = ARRAY_SIZE(max1238_channels),
++		.channels = max1138_channels,
++		.num_channels = ARRAY_SIZE(max1138_channels),
+ 	},
+ 	[max11612] = {
+ 		.bits = 12,
 
 
