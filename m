@@ -1,134 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754887AbaFXSCK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 14:02:10 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:61991 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752650AbaFXSCF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 14:02:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140624165216.GA29272@redhat.com>
-References: <1403560693-21809-1-git-send-email-keescook@chromium.org>
-	<1403560693-21809-4-git-send-email-keescook@chromium.org>
-	<20140624165216.GA29272@redhat.com>
-Date: Tue, 24 Jun 2014 11:02:04 -0700
-X-Google-Sender-Auth: VjwTwMiWAlt1LW-P62uIPo62kpo
-Message-ID: <CAGXu5j+G8qAkGD7H=3R2iw2ZTqZSrMPa2f=czoEjwSW5wKqUWQ@mail.gmail.com>
-Subject: Re: [PATCH v7 3/9] seccomp: introduce writer locking
-From: Kees Cook <keescook@chromium.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Andy Lutomirski <luto@amacapital.net>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
-        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1754957AbaFXSCU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 14:02:20 -0400
+Received: from kanga.kvack.org ([205.233.56.17]:35070 "EHLO kanga.kvack.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752650AbaFXSCR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 14:02:17 -0400
+Date: Tue, 24 Jun 2014 14:02:17 -0400
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>, security@kernel.org
+Cc: linux-aio@kvack.org, linux-kernel@vger.kernel.org,
+        Mateusz Guzik <mguzik@redhat.com>, Petr Matousek <pmatouse@redhat.com>,
+        Kent Overstreet <kmo@daterainc.com>, Jeff Moyer <jmoyer@redhat.com>,
+        stable@vger.kernel.org
+Subject: [PATCH 2/2] aio: fix kernel memory disclosure in io_getevents() introduced in v3.10
+Message-ID: <edfbbf388f293d70bf4b7c0bc38774d05e6f711a.1403632276.git.bcrl@kvack.org>
+References: <cover.1403632276.git.bcrl@kvack.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1403632276.git.bcrl@kvack.org>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 24, 2014 at 9:52 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> Kees,
->
-> I am still trying to force myself to read and try to understand what
-> this series does ;) Just a minor nit so far.
+A kernel memory disclosure was introduced in aio_read_events_ring() in v3.10
+by commit a31ad380bed817aa25f8830ad23e1a0480fef797.  The changes made to
+aio_read_events_ring() failed to correctly limit the index into
+ctx->ring_pages[], allowing an attacked to cause the subsequent kmap() of
+an arbitrary page with a copy_to_user() to copy the contents into userspace.
+This vulnerability has been assigned CVE-2014-0206.  Thanks to Mateusz and
+Petr for disclosing this issue.
 
-The use-case this solves is when a userspace process does not control
-(or know) when a thread is spawned (e.g. via shared library init, or
-LD_PRELOAD) but wants to make sure seccomp filters have been applied
-to it. Specifically, Chrome, when loading some proprietary graphics
-drivers, will have those drivers spawning threads before there has
-been an ability to call seccomp. While some games can be played to get
-ahead of it, it's not always possible, or racey, depending on the
-drivers. With seccomp thread-sync, we can be certain that all threads
-have had the filter applied.
+This patch applies to v3.12+.  A separate backport is needed for 3.10/3.11.
 
->
-> On 06/23, Kees Cook wrote:
->>
->> @@ -1142,6 +1168,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
->>  {
->>       int retval;
->>       struct task_struct *p;
->> +     unsigned long irqflags;
->>
->>       if ((clone_flags & (CLONE_NEWNS|CLONE_FS)) == (CLONE_NEWNS|CLONE_FS))
->>               return ERR_PTR(-EINVAL);
->> @@ -1196,7 +1223,6 @@ static struct task_struct *copy_process(unsigned long clone_flags,
->>               goto fork_out;
->>
->>       ftrace_graph_init_task(p);
->> -     get_seccomp_filter(p);
->>
->>       rt_mutex_init_task(p);
->>
->> @@ -1434,7 +1460,13 @@ static struct task_struct *copy_process(unsigned long clone_flags,
->>               p->parent_exec_id = current->self_exec_id;
->>       }
->>
->> -     spin_lock(&current->sighand->siglock);
->> +     spin_lock_irqsave(&current->sighand->siglock, irqflags);
->> +
->> +     /*
->> +      * Copy seccomp details explicitly here, in case they were changed
->> +      * before holding tasklist_lock.
->> +      */
->> +     copy_seccomp(p);
->>
->>       /*
->>        * Process group and session signals need to be delivered to just the
->> @@ -1446,7 +1478,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
->>       */
->>       recalc_sigpending();
->>       if (signal_pending(current)) {
->> -             spin_unlock(&current->sighand->siglock);
->> +             spin_unlock_irqrestore(&current->sighand->siglock, irqflags);
->>               write_unlock_irq(&tasklist_lock);
->>               retval = -ERESTARTNOINTR;
->>               goto bad_fork_free_pid;
->> @@ -1486,7 +1518,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
->>       }
->>
->>       total_forks++;
->> -     spin_unlock(&current->sighand->siglock);
->> +     spin_unlock_irqrestore(&current->sighand->siglock, irqflags);
->>       write_unlock_irq(&tasklist_lock);
->>       proc_fork_connector(p);
->>       cgroup_post_fork(p);
->
-> It seems that the only change copy_process() needs is copy_seccomp() under the locks.
-> Everythinh else (irqflags games) looks obviously unneeded?
+Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
+Cc: Mateusz Guzik <mguzik@redhat.com>
+Cc: Petr Matousek <pmatouse@redhat.com>
+Cc: Kent Overstreet <kmo@daterainc.com>
+Cc: Jeff Moyer <jmoyer@redhat.com>
+Cc: stable@vger.kernel.org
+---
+ fs/aio.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-I got irq lock dep warnings without these changes. If they're
-unneeded, that's totally fine by me, but some change (either this or
-markings to keep lockdep happy) is needed.
+diff --git a/fs/aio.c b/fs/aio.c
+index 6a9c7e4..955947e 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -1063,6 +1063,9 @@ static long aio_read_events_ring(struct kioctx *ctx,
+ 	if (head == tail)
+ 		goto out;
+ 
++	head %= ctx->nr_events;
++	tail %= ctx->nr_events;
++
+ 	while (ret < nr) {
+ 		long avail;
+ 		struct io_event *ev;
+-- 
+1.8.2.1
 
->> @@ -524,6 +528,9 @@ static long seccomp_set_mode(unsigned long seccomp_mode, char __user *filter)
->>       }
->>  #endif
->>
->> +     if (unlikely(!lock_task_sighand(current, &irqflags)))
->> +             goto out_free;
->> +
->
-> Unless this task is exiting (namely, it has already called exit_notify()),
-> lock_task_sighand(current) must not fail. Looks like you can simply do
-> spin_lock_irq(->siglock).
-
-Okay. I wasn't sure if I needed to be extra careful here or not. I
-opted for just using lock_task_sighand since that seemed to be the
-most used. :)
-
--Kees
 
 -- 
-Kees Cook
-Chrome OS Security
+"Thought is the essence of where you are now."
