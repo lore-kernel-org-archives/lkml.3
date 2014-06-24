@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756655AbaFXQGl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:06:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33297 "EHLO
+	id S932352AbaFXQG4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:06:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33290 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964985AbaFXP4H (ORCPT
+	with ESMTP id S964977AbaFXP4D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:56:07 -0400
+	Tue, 24 Jun 2014 11:56:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.15 32/61] USB: cdc-acm: fix open and suspend race
-Date: Tue, 24 Jun 2014 11:51:15 -0400
-Message-Id: <20140624154954.243403713@linuxfoundation.org>
+Subject: [PATCH 3.15 30/61] USB: cdc-acm: fix shutdown and suspend race
+Date: Tue, 24 Jun 2014 11:51:13 -0400
+Message-Id: <20140624154954.145820801@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154952.751713761@linuxfoundation.org>
 References: <20140624154952.751713761@linuxfoundation.org>
@@ -30,57 +30,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit 703df3297fb1950b0aa53e656108eb936d3f21d9 upstream.
+commit ed797074031a37bb9bf4a70952fffc606b77274d upstream.
 
-We must not do the usb_autopm_put_interface() before submitting the read
-urbs or we might end up doing I/O to a suspended device.
+We should stop I/O unconditionally at suspend rather than rely on the
+tty-port initialised flag (which is set prior to stopping I/O during
+shutdown) in order to prevent suspend returning with URBs still active.
 
-Fixes: 088c64f81284 ("USB: cdc-acm: re-write read processing")
+Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
+that support remote wakeup")
+
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/class/cdc-acm.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ drivers/usb/class/cdc-acm.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
 --- a/drivers/usb/class/cdc-acm.c
 +++ b/drivers/usb/class/cdc-acm.c
-@@ -528,19 +528,15 @@ static int acm_port_activate(struct tty_
- 	if (usb_submit_urb(acm->ctrlurb, GFP_KERNEL)) {
- 		dev_err(&acm->control->dev,
- 			"%s - usb_submit_urb(ctrl irq) failed\n", __func__);
--		usb_autopm_put_interface(acm->control);
- 		goto error_submit_urb;
- 	}
+@@ -1550,8 +1550,7 @@ static int acm_suspend(struct usb_interf
+ 	if (cnt)
+ 		return 0;
  
- 	acm->ctrlout = ACM_CTRL_DTR | ACM_CTRL_RTS;
- 	if (acm_set_control(acm, acm->ctrlout) < 0 &&
- 	    (acm->ctrl_caps & USB_CDC_CAP_LINE)) {
--		usb_autopm_put_interface(acm->control);
- 		goto error_set_control;
- 	}
- 
--	usb_autopm_put_interface(acm->control);
--
- 	/*
- 	 * Unthrottle device in case the TTY was closed while throttled.
- 	 */
-@@ -552,6 +548,8 @@ static int acm_port_activate(struct tty_
- 	if (acm_submit_read_urbs(acm, GFP_KERNEL))
- 		goto error_submit_read_urbs;
- 
-+	usb_autopm_put_interface(acm->control);
-+
- 	mutex_unlock(&acm->mutex);
+-	if (test_bit(ASYNCB_INITIALIZED, &acm->port.flags))
+-		stop_data_traffic(acm);
++	stop_data_traffic(acm);
  
  	return 0;
-@@ -562,6 +560,7 @@ error_submit_read_urbs:
- error_set_control:
- 	usb_kill_urb(acm->ctrlurb);
- error_submit_urb:
-+	usb_autopm_put_interface(acm->control);
- error_get_interface:
- disconnected:
- 	mutex_unlock(&acm->mutex);
+ }
 
 
