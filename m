@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756274AbaFXUef (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 16:34:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47980 "EHLO
+	id S932101AbaFXUek (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 16:34:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47985 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756207AbaFXUeb (ORCPT
+	with ESMTP id S932077AbaFXUeg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 16:34:31 -0400
+	Tue, 24 Jun 2014 16:34:36 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 24/65] x86-64, modify_ldt: Make support for 16-bit segments a runtime option
-Date: Tue, 24 Jun 2014 13:29:44 -0700
-Message-Id: <1403641825-12825-25-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 31/65] perf: Prevent false warning in perf_swevent_add
+Date: Tue, 24 Jun 2014 13:29:51 -0700
+Message-Id: <1403641825-12825-32-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403641825-12825-1-git-send-email-kamal@canonical.com>
 References: <1403641825-12825-1-git-send-email-kamal@canonical.com>
@@ -27,90 +32,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Jiri Olsa <jolsa@redhat.com>
 
-commit fa81511bb0bbb2b1aace3695ce869da9762624ff upstream.
+commit 39af6b1678afa5880dda7e375cf3f9d395087f6d upstream.
 
-Checkin:
+The perf cpu offline callback takes down all cpu context
+events and releases swhash->swevent_hlist.
 
-b3b42ac2cbae x86-64, modify_ldt: Ban 16-bit segments on 64-bit kernels
+This could race with task context software event being just
+scheduled on this cpu via perf_swevent_add while cpu hotplug
+code already cleaned up event's data.
 
-disabled 16-bit segments on 64-bit kernels due to an information
-leak.  However, it does seem that people are genuinely using Wine to
-run old 16-bit Windows programs on Linux.
+The race happens in the gap between the cpu notifier code
+and the cpu being actually taken down. Note that only cpu
+ctx events are terminated in the perf cpu hotplug code.
 
-A proper fix for this ("espfix64") is coming in the upcoming merge
-window, but as a temporary fix, create a sysctl to allow the
-administrator to re-enable support for 16-bit segments.
+It's easily reproduced with:
+  $ perf record -e faults perf bench sched pipe
 
-It adds a "/proc/sys/abi/ldt16" sysctl that defaults to zero (off). If
-you hit this issue and care about your old Windows program more than
-you care about a kernel stack address information leak, you can do
+while putting one of the cpus offline:
+  # echo 0 > /sys/devices/system/cpu/cpu1/online
 
-   echo 1 > /proc/sys/abi/ldt16
+Console emits following warning:
+  WARNING: CPU: 1 PID: 2845 at kernel/events/core.c:5672 perf_swevent_add+0x18d/0x1a0()
+  Modules linked in:
+  CPU: 1 PID: 2845 Comm: sched-pipe Tainted: G        W    3.14.0+ #256
+  Hardware name: Intel Corporation Montevina platform/To be filled by O.E.M., BIOS AMVACRB1.86C.0066.B00.0805070703 05/07/2008
+   0000000000000009 ffff880077233ab8 ffffffff81665a23 0000000000200005
+   0000000000000000 ffff880077233af8 ffffffff8104732c 0000000000000046
+   ffff88007467c800 0000000000000002 ffff88007a9cf2a0 0000000000000001
+  Call Trace:
+   [<ffffffff81665a23>] dump_stack+0x4f/0x7c
+   [<ffffffff8104732c>] warn_slowpath_common+0x8c/0xc0
+   [<ffffffff8104737a>] warn_slowpath_null+0x1a/0x20
+   [<ffffffff8110fb3d>] perf_swevent_add+0x18d/0x1a0
+   [<ffffffff811162ae>] event_sched_in.isra.75+0x9e/0x1f0
+   [<ffffffff8111646a>] group_sched_in+0x6a/0x1f0
+   [<ffffffff81083dd5>] ? sched_clock_local+0x25/0xa0
+   [<ffffffff811167e6>] ctx_sched_in+0x1f6/0x450
+   [<ffffffff8111757b>] perf_event_sched_in+0x6b/0xa0
+   [<ffffffff81117a4b>] perf_event_context_sched_in+0x7b/0xc0
+   [<ffffffff81117ece>] __perf_event_task_sched_in+0x43e/0x460
+   [<ffffffff81096f1e>] ? put_lock_stats.isra.18+0xe/0x30
+   [<ffffffff8107b3c8>] finish_task_switch+0xb8/0x100
+   [<ffffffff8166a7de>] __schedule+0x30e/0xad0
+   [<ffffffff81172dd2>] ? pipe_read+0x3e2/0x560
+   [<ffffffff8166b45e>] ? preempt_schedule_irq+0x3e/0x70
+   [<ffffffff8166b45e>] ? preempt_schedule_irq+0x3e/0x70
+   [<ffffffff8166b464>] preempt_schedule_irq+0x44/0x70
+   [<ffffffff816707f0>] retint_kernel+0x20/0x30
+   [<ffffffff8109e60a>] ? lockdep_sys_exit+0x1a/0x90
+   [<ffffffff812a4234>] lockdep_sys_exit_thunk+0x35/0x67
+   [<ffffffff81679321>] ? sysret_check+0x5/0x56
 
-as root (add it to your startup scripts), and you should be ok.
+Fixing this by tracking the cpu hotplug state and displaying
+the WARN only if current cpu is initialized properly.
 
-The sysctl table is only added if you have COMPAT support enabled on
-x86-64, but I assume anybody who runs old windows binaries very much
-does that ;)
-
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Link: http://lkml.kernel.org/r/CA%2B55aFw9BPoD10U1LfHbOMpHWZkvJTkMcfCs9s3urPr1YyWBxw@mail.gmail.com
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1396861448-10097-1-git-send-email-jolsa@redhat.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/kernel/ldt.c        | 4 +++-
- arch/x86/vdso/vdso32-setup.c | 8 ++++++++
- 2 files changed, 11 insertions(+), 1 deletion(-)
+ kernel/events/core.c | 13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/ldt.c b/arch/x86/kernel/ldt.c
-index af1d14a..dcbbaa1 100644
---- a/arch/x86/kernel/ldt.c
-+++ b/arch/x86/kernel/ldt.c
-@@ -20,6 +20,8 @@
- #include <asm/mmu_context.h>
- #include <asm/syscalls.h>
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 8472f66..9640b61 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -4965,6 +4965,9 @@ struct swevent_htable {
  
-+int sysctl_ldt16 = 0;
+ 	/* Recursion avoidance in each contexts */
+ 	int				recursion[PERF_NR_CONTEXTS];
 +
- #ifdef CONFIG_SMP
- static void flush_ldt(void *current_mm)
- {
-@@ -234,7 +236,7 @@ static int write_ldt(void __user *ptr, unsigned long bytecount, int oldmode)
- 	 * IRET leaking the high bits of the kernel stack address.
- 	 */
- #ifdef CONFIG_X86_64
--	if (!ldt_info.seg_32bit) {
-+	if (!ldt_info.seg_32bit && !sysctl_ldt16) {
- 		error = -EINVAL;
- 		goto out_unlock;
- 	}
-diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
-index 0faad64..0f134c7 100644
---- a/arch/x86/vdso/vdso32-setup.c
-+++ b/arch/x86/vdso/vdso32-setup.c
-@@ -41,6 +41,7 @@ enum {
- #ifdef CONFIG_X86_64
- #define vdso_enabled			sysctl_vsyscall32
- #define arch_setup_additional_pages	syscall32_setup_pages
-+extern int sysctl_ldt16;
- #endif
- 
- /*
-@@ -380,6 +381,13 @@ static ctl_table abi_table2[] = {
- 		.mode		= 0644,
- 		.proc_handler	= proc_dointvec
- 	},
-+	{
-+		.procname	= "ldt16",
-+		.data		= &sysctl_ldt16,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec
-+	},
- 	{}
++	/* Keeps track of cpu being initialized/exited */
++	bool				online;
  };
  
+ static DEFINE_PER_CPU(struct swevent_htable, swevent_htable);
+@@ -5212,8 +5215,14 @@ static int perf_swevent_add(struct perf_event *event, int flags)
+ 	hwc->state = !(flags & PERF_EF_START);
+ 
+ 	head = find_swevent_head(swhash, event);
+-	if (WARN_ON_ONCE(!head))
++	if (!head) {
++		/*
++		 * We can race with cpu hotplug code. Do not
++		 * WARN if the cpu just got unplugged.
++		 */
++		WARN_ON_ONCE(swhash->online);
+ 		return -EINVAL;
++	}
+ 
+ 	hlist_add_head_rcu(&event->hlist_entry, head);
+ 
+@@ -7307,6 +7316,7 @@ static void __cpuinit perf_event_init_cpu(int cpu)
+ 	struct swevent_htable *swhash = &per_cpu(swevent_htable, cpu);
+ 
+ 	mutex_lock(&swhash->hlist_mutex);
++	swhash->online = true;
+ 	if (swhash->hlist_refcount > 0) {
+ 		struct swevent_hlist *hlist;
+ 
+@@ -7364,6 +7374,7 @@ static void perf_event_exit_cpu(int cpu)
+ 	perf_event_exit_cpu_context(cpu);
+ 
+ 	mutex_lock(&swhash->hlist_mutex);
++	swhash->online = false;
+ 	swevent_hlist_release(swhash);
+ 	mutex_unlock(&swhash->hlist_mutex);
+ }
 -- 
 1.9.1
 
