@@ -1,145 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932601AbaFXQ1J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:27:09 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:47520 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932539AbaFXQ07 (ORCPT
+	id S964869AbaFXQ1l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:27:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32968 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932387AbaFXPyJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 12:26:59 -0400
-Message-ID: <53A9A6CC.6050501@ozlabs.ru>
-Date: Wed, 25 Jun 2014 02:26:52 +1000
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 24 Jun 2014 11:54:09 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
+        Simon Horman <horms+renesas@verge.net.au>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 21/68] sh_eth: use RNC mode for packet reception
+Date: Tue, 24 Jun 2014 11:50:40 -0400
+Message-Id: <20140624154724.864312901@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <20140624154723.907894814@linuxfoundation.org>
+References: <20140624154723.907894814@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: Alexander Graf <agraf@suse.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
-Subject: Re: [PATCH] vfio: Fix endianness handling for emulated BARs
-References: <1403091391-31780-1-git-send-email-aik@ozlabs.ru>			 <1403116512.3707.175.camel@ul30vt.home> <53A233E9.6030006@ozlabs.ru>			 <53A241F6.9010307@ozlabs.ru> <53A25D74.5000804@ozlabs.ru>			 <1403234514.3707.278.camel@ul30vt.home>	 <1403305961.4587.66.camel@pasglop>	 <53A94EBD.101@ozlabs.ru>	 <53A955F5.6050801@suse.de>	 <53A9741B.1040500@ozlabs.ru>	 <53A97486.4070604@suse.de>	 <53A976B7.3070709@ozlabs.ru>	 <53A97BA9.4020702@suse.de> <1403619685.16078.15.camel@ul30vt.home>	 <53A98C38.8020205@ozlabs.ru> <1403620984.16078.18.camel@ul30vt.home>
-In-Reply-To: <1403620984.16078.18.camel@ul30vt.home>
-Content-Type: text/plain; charset=KOI8-R
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2014 12:43 AM, Alex Williamson wrote:
-> On Wed, 2014-06-25 at 00:33 +1000, Alexey Kardashevskiy wrote:
->> On 06/25/2014 12:21 AM, Alex Williamson wrote:
->>> On Tue, 2014-06-24 at 15:22 +0200, Alexander Graf wrote:
->>>> On 24.06.14 15:01, Alexey Kardashevskiy wrote:
->>>>> On 06/24/2014 10:52 PM, Alexander Graf wrote:
->>>>>> On 24.06.14 14:50, Alexey Kardashevskiy wrote:
->>>>>>> On 06/24/2014 08:41 PM, Alexander Graf wrote:
->>>>>>>> On 24.06.14 12:11, Alexey Kardashevskiy wrote:
->>>>>>>>> On 06/21/2014 09:12 AM, Benjamin Herrenschmidt wrote:
->>>>>>>>>> On Thu, 2014-06-19 at 21:21 -0600, Alex Williamson wrote:
->>>>>>>>>>
->>>>>>>>>>> Working on big endian being an accident may be a matter of perspective
->>>>>>>>>>     :-)
->>>>>>>>>>
->>>>>>>>>>> The comment remains that this patch doesn't actually fix anything except
->>>>>>>>>>> the overhead on big endian systems doing redundant byte swapping and
->>>>>>>>>>> maybe the philosophy that vfio regions are little endian.
->>>>>>>>>> Yes, that works by accident because technically VFIO is a transport and
->>>>>>>>>> thus shouldn't perform any endian swapping of any sort, which remains
->>>>>>>>>> the responsibility of the end driver which is the only one to know
->>>>>>>>>> whether a given BAR location is a a register or some streaming data
->>>>>>>>>> and in the former case whether it's LE or BE (some PCI devices are BE
->>>>>>>>>> even ! :-)
->>>>>>>>>>
->>>>>>>>>> But yes, in the end, it works with the dual "cancelling" swaps and the
->>>>>>>>>> overhead of those swaps is probably drowned in the noise of the syscall
->>>>>>>>>> overhead.
->>>>>>>>>>
->>>>>>>>>>> I'm still not a fan of iowrite vs iowritebe, there must be something we
->>>>>>>>>>> can use that doesn't have an implicit swap.
->>>>>>>>>> Sadly there isn't ... In the old day we didn't even have the "be"
->>>>>>>>>> variant and readl/writel style accessors still don't have them either
->>>>>>>>>> for all archs.
->>>>>>>>>>
->>>>>>>>>> There is __raw_readl/writel but here the semantics are much more than
->>>>>>>>>> just "don't swap", they also don't have memory barriers (which means
->>>>>>>>>> they are essentially useless to most drivers unless those are platform
->>>>>>>>>> specific drivers which know exactly what they are doing, or in the rare
->>>>>>>>>> cases such as accessing a framebuffer which we know never have side
->>>>>>>>>> effects).
->>>>>>>>>>
->>>>>>>>>>>     Calling it iowrite*_native is also an abuse of the namespace.
->>>>>>>>>>>     Next thing we know some common code
->>>>>>>>>>> will legitimately use that name.
->>>>>>>>>> I might make sense to those definitions into a common header. There have
->>>>>>>>>> been a handful of cases in the past that wanted that sort of "native
->>>>>>>>>> byte order" MMIOs iirc (though don't ask me for examples, I can't really
->>>>>>>>>> remember).
->>>>>>>>>>
->>>>>>>>>>>     If we do need to define an alias
->>>>>>>>>>> (which I'd like to avoid) it should be something like vfio_iowrite32.
->>>>>>>>> Ping?
->>>>>>>>>
->>>>>>>>> We need to make a decision whether to move those xxx_native() helpers
->>>>>>>>> somewhere (where?) or leave the patch as is (as we figured out that
->>>>>>>>> iowriteXX functions implement barriers and we cannot just use raw
->>>>>>>>> accessors) and fix commit log to explain everything.
->>>>>>>> Is there actually any difference in generated code with this patch applied
->>>>>>>> and without? I would hope that iowrite..() is inlined and cancels out the
->>>>>>>> cpu_to_le..() calls that are also inlined?
->>>>>>> iowrite32 is a non-inline function so conversions take place so are the
->>>>>>> others. And sorry but I fail to see why this matters. We are not trying to
->>>>>>> accelerate things, we are removing redundant operations which confuse
->>>>>>> people who read the code.
->>>>>> The confusion depends on where you're coming from. If you happen to know
->>>>>> that "iowrite32" writes in LE, then the LE conversion makes a lot of sense.
->>>>> It was like this (and this is just confusing):
->>>>>
->>>>> iowrite32(le32_to_cpu(val), io + off);
->>>>>
->>>>> What would make sense (according to you and I would understand this) is this:
->>>>>
->>>>> iowrite32(cpu_to_le32(val), io + off);
->>>>>
->>>>>
->>>>> Or I missed your point, did I?
->>>>
->>>> No, you didn't miss it. I think for people who know how iowrite32() 
->>>> works the above is obvious. I find the fact that iowrite32() writes in 
->>>> LE always pretty scary though ;).
->>>>
->>>> So IMHO we should either create new, generic iowrite helpers that don't 
->>>> do any endian swapping at all or do iowrite32(cpu_to_le32(val)) calls.
->>>
->>> I'm one of those people for whom iowrite32(le32_to_cpu(val)) makes sense
->>
->>
->> I do not understand why @val is considered LE here and need to be converted
->> to CPU. Really. I truly believe it should be cpu_to_le32().
-> 
-> Because iowrite32 is defined to take a cpu byte order value and write it
-> as little endian.
+3.14-stable review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: Ben Dooks <ben.dooks@codethink.co.uk>
+
+[ Upstream commit 530aa2d0d9d55ab2775d47621ddf4b5b15bc1110 ]
+
+The current behaviour of the sh_eth driver is not to use the RNC bit
+for the receive ring. This means that every packet recieved is not only
+generating an IRQ but it also stops the receive ring DMA as well until
+the driver re-enables it after unloading the packet.
+
+This means that a number of the following errors are generated due to
+the receive packet FIFO overflowing due to nowhere to put packets:
+
+	net eth0: Receive FIFO Overflow
+
+Since feedback from Yoshihiro Shimoda shows that every supported LSI
+for this driver should have the bit enabled it seems the best way is
+to remove the RMCR default value from the per-system data and just
+write it when initialising the RMCR value. This is discussed in
+the message (http://www.spinics.net/lists/netdev/msg284912.html).
+
+I have tested the RMCR_RNC configuration with NFS root filesystem and
+the driver has not failed yet.  There are further test reports from
+Sergei Shtylov and others for both the R8A7790 and R8A7791.
+
+There is also feedback fron Cao Minh Hiep[1] which reports the
+same issue in (http://comments.gmane.org/gmane.linux.network/316285)
+showing this fixes issues with losing UDP datagrams under iperf.
+
+Tested-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
+Acked-by: Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
+Acked-by: Simon Horman <horms+renesas@verge.net.au>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/net/ethernet/renesas/sh_eth.c |   11 ++---------
+ drivers/net/ethernet/renesas/sh_eth.h |    2 --
+ 2 files changed, 2 insertions(+), 11 deletions(-)
+
+--- a/drivers/net/ethernet/renesas/sh_eth.c
++++ b/drivers/net/ethernet/renesas/sh_eth.c
+@@ -539,7 +539,6 @@ static struct sh_eth_cpu_data sh7757_dat
+ 	.register_type	= SH_ETH_REG_FAST_SH4,
+ 
+ 	.eesipr_value	= DMAC_M_RFRMER | DMAC_M_ECI | 0x003fffff,
+-	.rmcr_value	= RMCR_RNC,
+ 
+ 	.tx_check	= EESR_FTC | EESR_CND | EESR_DLC | EESR_CD | EESR_RTO,
+ 	.eesr_err_check	= EESR_TWB | EESR_TABT | EESR_RABT | EESR_RFE |
+@@ -617,7 +616,6 @@ static struct sh_eth_cpu_data sh7757_dat
+ 			  EESR_RFE | EESR_RDE | EESR_RFRMER | EESR_TFE |
+ 			  EESR_TDE | EESR_ECI,
+ 	.fdr_value	= 0x0000072f,
+-	.rmcr_value	= RMCR_RNC,
+ 
+ 	.irq_flags	= IRQF_SHARED,
+ 	.apr		= 1,
+@@ -745,7 +743,6 @@ static struct sh_eth_cpu_data r8a7740_da
+ 			  EESR_RFE | EESR_RDE | EESR_RFRMER | EESR_TFE |
+ 			  EESR_TDE | EESR_ECI,
+ 	.fdr_value	= 0x0000070f,
+-	.rmcr_value	= RMCR_RNC,
+ 
+ 	.apr		= 1,
+ 	.mpr		= 1,
+@@ -777,7 +774,6 @@ static struct sh_eth_cpu_data r7s72100_d
+ 			  EESR_RFE | EESR_RDE | EESR_RFRMER | EESR_TFE |
+ 			  EESR_TDE | EESR_ECI,
+ 	.fdr_value	= 0x0000070f,
+-	.rmcr_value	= RMCR_RNC,
+ 
+ 	.no_psr		= 1,
+ 	.apr		= 1,
+@@ -826,9 +822,6 @@ static void sh_eth_set_default_cpu_data(
+ 	if (!cd->fdr_value)
+ 		cd->fdr_value = DEFAULT_FDR_INIT;
+ 
+-	if (!cd->rmcr_value)
+-		cd->rmcr_value = DEFAULT_RMCR_VALUE;
+-
+ 	if (!cd->tx_check)
+ 		cd->tx_check = DEFAULT_TX_CHECK;
+ 
+@@ -1281,8 +1274,8 @@ static int sh_eth_dev_init(struct net_de
+ 	sh_eth_write(ndev, mdp->cd->fdr_value, FDR);
+ 	sh_eth_write(ndev, 0, TFTR);
+ 
+-	/* Frame recv control */
+-	sh_eth_write(ndev, mdp->cd->rmcr_value, RMCR);
++	/* Frame recv control (enable multiple-packets per rx irq) */
++	sh_eth_write(ndev, RMCR_RNC, RMCR);
+ 
+ 	sh_eth_write(ndev, DESC_I_RINT8 | DESC_I_RINT5 | DESC_I_TINT2, TRSCER);
+ 
+--- a/drivers/net/ethernet/renesas/sh_eth.h
++++ b/drivers/net/ethernet/renesas/sh_eth.h
+@@ -320,7 +320,6 @@ enum TD_STS_BIT {
+ enum RMCR_BIT {
+ 	RMCR_RNC = 0x00000001,
+ };
+-#define DEFAULT_RMCR_VALUE	0x00000000
+ 
+ /* ECMR */
+ enum FELIC_MODE_BIT {
+@@ -467,7 +466,6 @@ struct sh_eth_cpu_data {
+ 	unsigned long fdr_value;
+ 	unsigned long fcftr_value;
+ 	unsigned long rpadir_value;
+-	unsigned long rmcr_value;
+ 
+ 	/* interrupt checking mask */
+ 	unsigned long tx_check;
 
 
-Ok, then neither le32_to_cpu() nor cpu_to_le32() should be there at all, if
-we are talking about not scratching anyone's head :)
-
-
-
->>> and keeps the byte order consistent regardless of the platform, while
->>> iowrite32(val) or iowrite32be(val) makes me scratch my head and try to
->>> remember that the byte swaps are a nop on the given platforms.  As Ben
->>> noted, a native, no-swap ioread/write doesn't exist, but perhaps should.
->>> I'd prefer an attempt be made to make it exist before adding
->>> vfio-specific macros.  vfio is arguably doing the right thing here given
->>> the functions available.  Thanks,
-
-
-I do not mind to make that atempt but what exactly would make sense here?
-Try moving macros to include/asm-generic/io.h? Something else? Thanks.
-
-
-
--- 
-Alexey
