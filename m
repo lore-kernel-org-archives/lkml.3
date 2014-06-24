@@ -1,146 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752999AbaFXS4M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 14:56:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15167 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751827AbaFXS4L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 14:56:11 -0400
-Date: Tue, 24 Jun 2014 14:55:34 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 07/13] mm, compaction: skip rechecks when lock was
- already held
-Message-ID: <20140624185534.GA11945@nhori.redhat.com>
-References: <1403279383-5862-1-git-send-email-vbabka@suse.cz>
- <1403279383-5862-8-git-send-email-vbabka@suse.cz>
+	id S1753728AbaFXS41 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 14:56:27 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:57904 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753224AbaFXS4Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 14:56:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403279383-5862-8-git-send-email-vbabka@suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAMuHMdXB4U=tkGgV=UE5KRBgP7jqyB8Wpjn1x6ei-wq-MYkLqQ@mail.gmail.com>
+References: <1403259380-13634-6-git-send-email-geert+renesas@glider.be>
+	<20140621101959.GM5099@sirena.org.uk>
+	<CAMuHMdXB4U=tkGgV=UE5KRBgP7jqyB8Wpjn1x6ei-wq-MYkLqQ@mail.gmail.com>
+Date: Tue, 24 Jun 2014 20:56:23 +0200
+X-Google-Sender-Auth: LPj_zyW4haoc19_Amj_iqcMl5wA
+Message-ID: <CAMuHMdUEkCm_N0zGTftp5_N_u_FQ4-=KH8h8qsrAqLgk6Kk=iQ@mail.gmail.com>
+Subject: Re: [PATCH 5/5] spi: sh-msiof: Add DMA support
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        linux-spi <linux-spi@vger.kernel.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 05:49:37PM +0200, Vlastimil Babka wrote:
-> Compaction scanners try to lock zone locks as late as possible by checking
-> many page or pageblock properties opportunistically without lock and skipping
-> them if not unsuitable. For pages that pass the initial checks, some properties
-> have to be checked again safely under lock. However, if the lock was already
-> held from a previous iteration in the initial checks, the rechecks are
-> unnecessary.
-> 
-> This patch therefore skips the rechecks when the lock was already held. This is
-> now possible to do, since we don't (potentially) drop and reacquire the lock
-> between the initial checks and the safe rechecks anymore.
-> 
-> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-> Acked-by: Minchan Kim <minchan@kernel.org>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Michal Nazarewicz <mina86@mina86.com>
-> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: Rik van Riel <riel@redhat.com>
-> Acked-by: David Rientjes <rientjes@google.com>
+Hi Mark,
 
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+On Sun, Jun 22, 2014 at 10:06 AM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> On Sat, Jun 21, 2014 at 12:19 PM, Mark Brown <broonie@kernel.org> wrote:
+>> On Fri, Jun 20, 2014 at 12:16:20PM +0200, Geert Uytterhoeven wrote:
+>>> Add DMA support to the MSIOF driver using platform data.
+>>
+>> This doesn't apply against current code, can you please check and
+>> resend?
+>
+> My patches were based on your for-next branch, which has
+> commit 1e8231b79ccbb3e6e7b3f6af9f998dca16b00efe
+> Author: Jingoo Han <jg1.han@samsung.com>
+> Date:   Tue Apr 29 17:21:25 2014 +0900
+>
+>     spi: sh-msiof: remove unnecessary OOM messages
 
-> ---
->  mm/compaction.c | 53 +++++++++++++++++++++++++++++++----------------------
->  1 file changed, 31 insertions(+), 22 deletions(-)
-> 
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index 40da812..9f6e857 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -324,22 +324,30 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
->  			goto isolate_fail;
->  
->  		/*
-> -		 * The zone lock must be held to isolate freepages.
-> -		 * Unfortunately this is a very coarse lock and can be
-> -		 * heavily contended if there are parallel allocations
-> -		 * or parallel compactions. For async compaction do not
-> -		 * spin on the lock and we acquire the lock as late as
-> -		 * possible.
-> +		 * If we already hold the lock, we can skip some rechecking.
-> +		 * Note that if we hold the lock now, checked_pageblock was
-> +		 * already set in some previous iteration (or strict is true),
-> +		 * so it is correct to skip the suitable migration target
-> +		 * recheck as well.
->  		 */
-> -		if (!locked)
-> +		if (!locked) {
-> +			/*
-> +			 * The zone lock must be held to isolate freepages.
-> +			 * Unfortunately this is a very coarse lock and can be
-> +			 * heavily contended if there are parallel allocations
-> +			 * or parallel compactions. For async compaction do not
-> +			 * spin on the lock and we acquire the lock as late as
-> +			 * possible.
-> +			 */
->  			locked = compact_trylock_irqsave(&cc->zone->lock,
->  								&flags, cc);
-> -		if (!locked)
-> -			break;
-> +			if (!locked)
-> +				break;
->  
-> -		/* Recheck this is a buddy page under lock */
-> -		if (!PageBuddy(page))
-> -			goto isolate_fail;
-> +			/* Recheck this is a buddy page under lock */
-> +			if (!PageBuddy(page))
-> +				goto isolate_fail;
-> +		}
->  
->  		/* Found a free page, break it into order-0 pages */
->  		isolated = split_free_page(page);
-> @@ -623,19 +631,20 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
->  		    page_count(page) > page_mapcount(page))
->  			continue;
->  
-> -		/* If the lock is not held, try to take it */
-> -		if (!locked)
-> +		/* If we already hold the lock, we can skip some rechecking */
-> +		if (!locked) {
->  			locked = compact_trylock_irqsave(&zone->lru_lock,
->  								&flags, cc);
-> -		if (!locked)
-> -			break;
-> +			if (!locked)
-> +				break;
->  
-> -		/* Recheck PageLRU and PageTransHuge under lock */
-> -		if (!PageLRU(page))
-> -			continue;
-> -		if (PageTransHuge(page)) {
-> -			low_pfn += (1 << compound_order(page)) - 1;
-> -			continue;
-> +			/* Recheck PageLRU and PageTransHuge under lock */
-> +			if (!PageLRU(page))
-> +				continue;
-> +			if (PageTransHuge(page)) {
-> +				low_pfn += (1 << compound_order(page)) - 1;
-> +				continue;
-> +			}
->  		}
->  
->  		lruvec = mem_cgroup_page_lruvec(page, zone);
-> -- 
-> 1.8.4.5
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+Sorry, wrong copy and paste, I meant:
+
+commit b8fa0abd47f3f2fa47c1b2b06182c422d0c2350d
+Author: Alexander Shiyan <shc_work@mail.ru>
+Date:   Wed Jun 4 18:17:09 2014 +0400
+
+    spi: sh-msiof: Remove unnecessary platform_set_drvdata()
+
+    Drop call to platform_set_drvdata() as driver data is not used
+    anywhere in the driver.
+
+    Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+    Signed-off-by: Mark Brown <broonie@linaro.org>
+
+> (from topic/cleanup), but topic/sh-msiof hasn't.
+
+Do you want me to resend? Against which branch?
+
+Basically I had to revert the above commit, as I do use the driver data.
+So if I would rebase and resend against topic/sh-msiof, you'll get a merge
+conflict when merging this into for-next.
+
+Thanks!
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
