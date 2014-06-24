@@ -1,74 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754401AbaFXPaF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:30:05 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55797 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754287AbaFXPaC (ORCPT
+	id S1754500AbaFXPdG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:33:06 -0400
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:55002 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753125AbaFXPdE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:30:02 -0400
-Date: Tue, 24 Jun 2014 16:29:38 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: lgirdwood@gmail.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        Keerthy <j-keerthy@ti.com>, stable@vger.kernel.org
-Message-ID: <20140624152938.GS23300@sirena.org.uk>
-References: <1403104668-32316-1-git-send-email-balbi@ti.com>
+	Tue, 24 Jun 2014 11:33:04 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="kLVKJMuKEUFaIs8+"
-Content-Disposition: inline
-In-Reply-To: <1403104668-32316-1-git-send-email-balbi@ti.com>
-X-Cookie: But it does move!
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] regulators: TPS65218: Add the missing of_node
- assignment in probe
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <1403618235-19353-6-git-send-email-t.figa@samsung.com>
+References: <1403618235-19353-1-git-send-email-t.figa@samsung.com>
+	<1403618235-19353-6-git-send-email-t.figa@samsung.com>
+Date: Tue, 24 Jun 2014 21:03:03 +0530
+Message-ID: <CAM4voanJ_auOJoauvsMOVz3nhjx3hGgpbzccMMwn2ouvjwWy2g@mail.gmail.com>
+Subject: Re: [PATCH 5/6] ARM: EXYNOS: Fix suspend/resume sequencies
+From: Abhilash Kesavan <kesavan.abhilash@gmail.com>
+To: Tomasz Figa <t.figa@samsung.com>
+Cc: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Tomasz,
 
---kLVKJMuKEUFaIs8+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Jun 24, 2014 at 7:27 PM, Tomasz Figa <t.figa@samsung.com> wrote:
+> Due to recent consolidation of Exynos suspend and cpuidle code, some
+> parts of suspend and resume sequences are executed two times, once from
+> exynos_pm_syscore_ops and then from exynos_cpu_pm_notifier() and thus it
+> breaks suspend, at least on Exynos4-based boards.
+>
+> This patch fixes the issue by removing exynos_pm_syscore_ops completely
+> and making the code rely only on CPU PM notifier.
+>
+> Tested on Exynos4210-based Trats board.
+>
+> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+> ---
+>  arch/arm/mach-exynos/pm.c | 20 ++++----------------
+>  1 file changed, 4 insertions(+), 16 deletions(-)
+>
+A patch from me has recently gone in which converts the soc_is checks
+for A9 specific registers to  the A9 part number. This patch will
+probably have to be rebased atop it.
 
-On Wed, Jun 18, 2014 at 10:17:47AM -0500, Felipe Balbi wrote:
-> From: Keerthy <j-keerthy@ti.com>
->=20
-> Add the missing of_node assignment in probe.
-
-Applied both, thanks.  Please use subject lines reflecting the style for
-the subsystem.
-
---kLVKJMuKEUFaIs8+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJTqZleAAoJELSic+t+oim9StoP/2oyQGe8RQbxk0oz0sdNaeFM
-eLtXol5PbxGLKLNXLOj9BJ+KY3YSzC2CCxsHnugU9EPnZGg+KnwhRBUHUn8TZTq6
-9tzkrwoDPXPupgVEef04lrLUk+70pWzA6KO/2w+TBaUnULyrXhN/brxKg6pT4vXx
-8Sht51Dcrkc9N36rO5BVHFRIrBhJQ1IcuM3YfyuTusyYxMhkQwell01GKkI3x58I
-yKGwlAX+dm2baIVMgV+ixghLu36Hsdq+yOBB6eOzvacYfHYFWGoDY3T9gTxoHrlj
-oR2odBDrE4HPXFer7c3Zp2aTN1SnGP+DMnEwLkOqBWy3F2U5yF7epQeG8yhPs45f
-pcPFErQe2wS8uxz+23zhIqCO2Rs66JYXASvn105e0Y43xZ/tjXR6Hw57GDdoeW/t
-BSOEtmVmu4MUv7CO7ISP7/6E+4k4eyXT7zQ0hyJw74ygWB9OuegC/HyucoYURY6T
-qS3BwumQB/yAHISf55uurertiPAY35r7YWBoTvpgTZCSVeX9I5Iu95pYElcGOKZX
-zlLXb2wm/N1xc1+8dBrQdZak6QgWU4BdHMNLnuwURD3N0VvaYL9qTXGhd3/9uAZp
-XyJddhEFXNr3xN9hKLt6fADqUfhugBK+mzjkQhEDYUjhBs+ahVU961OPfSuVANeE
-XajMF6+a9nzShCtSW7iQ
-=HMd5
------END PGP SIGNATURE-----
-
---kLVKJMuKEUFaIs8+--
+Regards,
+Abhilash
+> diff --git a/arch/arm/mach-exynos/pm.c b/arch/arm/mach-exynos/pm.c
+> index 87c0d34..98d4926 100644
+> --- a/arch/arm/mach-exynos/pm.c
+> +++ b/arch/arm/mach-exynos/pm.c
+> @@ -364,11 +364,6 @@ early_wakeup:
+>         return;
+>  }
+>
+> -static struct syscore_ops exynos_pm_syscore_ops = {
+> -       .suspend        = exynos_pm_suspend,
+> -       .resume         = exynos_pm_resume,
+> -};
+> -
+>  /*
+>   * Suspend Ops
+>   */
+> @@ -438,19 +433,13 @@ static int exynos_cpu_pm_notifier(struct notifier_block *self,
+>
+>         switch (cmd) {
+>         case CPU_PM_ENTER:
+> -               if (cpu == 0) {
+> -                       exynos_pm_central_suspend();
+> -                       exynos_cpu_save_register();
+> -               }
+> +               if (cpu == 0)
+> +                       exynos_pm_suspend();
+>                 break;
+>
+>         case CPU_PM_EXIT:
+> -               if (cpu == 0) {
+> -                       if (!soc_is_exynos5250())
+> -                               scu_enable(S5P_VA_SCU);
+> -                       exynos_cpu_restore_register();
+> -                       exynos_pm_central_resume();
+> -               }
+> +               if (cpu == 0)
+> +                       exynos_pm_resume();
+>                 break;
+>         }
+>
+> @@ -475,6 +464,5 @@ void __init exynos_pm_init(void)
+>         tmp |= ((0xFF << 8) | (0x1F << 1));
+>         __raw_writel(tmp, S5P_WAKEUP_MASK);
+>
+> -       register_syscore_ops(&exynos_pm_syscore_ops);
+>         suspend_set_ops(&exynos_suspend_ops);
+>  }
+> --
+> 1.9.3
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
