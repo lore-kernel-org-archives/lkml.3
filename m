@@ -1,76 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756694AbaFXQ5x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:57:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60720 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754564AbaFXPvN (ORCPT
+	id S964989AbaFXQ6q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:58:46 -0400
+Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:56540 "EHLO
+	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755656AbaFXQ6o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:51:13 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tom Gundersen <teg@jklm.no>, "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 03/26] net: tunnels - enable module autoloading
-Date: Tue, 24 Jun 2014 11:50:26 -0400
-Message-Id: <20140624154619.654785784@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <20140624154619.499002156@linuxfoundation.org>
-References: <20140624154619.499002156@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Tue, 24 Jun 2014 12:58:44 -0400
+Message-ID: <1403629121.1960.25.camel@x220>
+Subject: Re: [PATCH] USB: remove CONFIG_USB_PERSIST from Documentation
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Randy Dunlap <rdunlap@infradead.org>, linux-usb@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 24 Jun 2014 18:58:41 +0200
+In-Reply-To: <Pine.LNX.4.44L0.1406241017250.990-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1406241017250.990-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 24 Jun 2014 16:58:41.0797 (UTC) FILETIME=[8D415350:01CF8FCD]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Tue, 2014-06-24 at 10:25 -0400, Alan Stern wrote:
+> Also, that "Later kernels" thing has already arrived.  I believe it was 
+> implemented in 2.6.35.
 
-------------------
+How does the kernel currently call the disconnect method? I can't yet
+say for sure, and it seems silly to send a v2 dropping those lines
+without actually knowing why they can be dropped.
 
-From: Tom Gundersen <teg@jklm.no>
+Thanks,
 
-[ Upstream commit f98f89a0104454f35a62d681683c844f6dbf4043 ]
 
-Enable the module alias hookup to allow tunnel modules to be autoloaded on demand.
-
-This is in line with how most other netdev kinds work, and will allow userspace
-to create tunnels without having CAP_SYS_MODULE.
-
-Signed-off-by: Tom Gundersen <teg@jklm.no>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/ipip.c       |    1 +
- net/ipv6/ip6_tunnel.c |    1 +
- net/ipv6/sit.c        |    1 +
- 3 files changed, 3 insertions(+)
-
---- a/net/ipv4/ipip.c
-+++ b/net/ipv4/ipip.c
-@@ -908,4 +908,5 @@ static void __exit ipip_fini(void)
- module_init(ipip_init);
- module_exit(ipip_fini);
- MODULE_LICENSE("GPL");
-+MODULE_ALIAS_RTNL_LINK("ipip");
- MODULE_ALIAS_NETDEV("tunl0");
---- a/net/ipv6/ip6_tunnel.c
-+++ b/net/ipv6/ip6_tunnel.c
-@@ -57,6 +57,7 @@
- MODULE_AUTHOR("Ville Nuorvala");
- MODULE_DESCRIPTION("IPv6 tunneling device");
- MODULE_LICENSE("GPL");
-+MODULE_ALIAS_RTNL_LINK("ip6tnl");
- MODULE_ALIAS_NETDEV("ip6tnl0");
- 
- #ifdef IP6_TNL_DEBUG
---- a/net/ipv6/sit.c
-+++ b/net/ipv6/sit.c
-@@ -1303,4 +1303,5 @@ static int __init sit_init(void)
- module_init(sit_init);
- module_exit(sit_cleanup);
- MODULE_LICENSE("GPL");
-+MODULE_ALIAS_RTNL_LINK("sit");
- MODULE_ALIAS_NETDEV("sit0");
+Paul Bolle
 
 
