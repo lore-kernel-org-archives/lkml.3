@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932784AbaFXQS5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:18:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33131 "EHLO
+	id S965088AbaFXQT2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:19:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33128 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755928AbaFXPzG (ORCPT
+	with ESMTP id S1755024AbaFXPzE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:55:06 -0400
+	Tue, 24 Jun 2014 11:55:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mario Schuknecht <mario.schuknecht@dresearch-fe.de>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.14 53/68] staging: iio: tsl2x7x_core: fix proximity treshold
-Date: Tue, 24 Jun 2014 11:51:12 -0400
-Message-Id: <20140624154726.356109338@linuxfoundation.org>
+        Erik Habbinga <Erik.Habbinga@schneider-electric.com>,
+        Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>
+Subject: [PATCH 3.14 52/68] iio:adc:max1363 incorrect resolutions for max11604, max11605, max11610 and max11611.
+Date: Tue, 24 Jun 2014 11:51:11 -0400
+Message-Id: <20140624154726.310420359@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154723.907894814@linuxfoundation.org>
 References: <20140624154723.907894814@linuxfoundation.org>
@@ -29,38 +29,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mario Schuknecht <mario.schuknecht@dresearch-fe.de>
+From: Jonathan Cameron <jic23@kernel.org>
 
-commit c404618cd06dad771495fe1cf9d5a63b5664f65f upstream.
+commit a91a73c8b39a6b8bcc53fafa5372c65387c81233 upstream.
 
-Consider high byte of proximity min and max treshold in function
-'tsl2x7x_chip_on'. So far, the high byte was not set.
-
-Signed-off-by: Mario Schuknecht <mario.schuknecht@dresearch-fe.de>
+Reported-by: Erik Habbinga <Erik.Habbinga@schneider-electric.com>
 Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Acked-by: Hartmut Knaack <knaack.h@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/iio/light/tsl2x7x_core.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/iio/adc/max1363.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
---- a/drivers/staging/iio/light/tsl2x7x_core.c
-+++ b/drivers/staging/iio/light/tsl2x7x_core.c
-@@ -667,9 +667,13 @@ static int tsl2x7x_chip_on(struct iio_de
- 	chip->tsl2x7x_config[TSL2X7X_PRX_COUNT] =
- 			chip->tsl2x7x_settings.prox_pulse_count;
- 	chip->tsl2x7x_config[TSL2X7X_PRX_MINTHRESHLO] =
--	chip->tsl2x7x_settings.prox_thres_low;
-+			(chip->tsl2x7x_settings.prox_thres_low) & 0xFF;
-+	chip->tsl2x7x_config[TSL2X7X_PRX_MINTHRESHHI] =
-+			(chip->tsl2x7x_settings.prox_thres_low >> 8) & 0xFF;
- 	chip->tsl2x7x_config[TSL2X7X_PRX_MAXTHRESHLO] =
--			chip->tsl2x7x_settings.prox_thres_high;
-+			(chip->tsl2x7x_settings.prox_thres_high) & 0xFF;
-+	chip->tsl2x7x_config[TSL2X7X_PRX_MAXTHRESHHI] =
-+			(chip->tsl2x7x_settings.prox_thres_high >> 8) & 0xFF;
- 
- 	/* and make sure we're not already on */
- 	if (chip->tsl2x7x_chip_status == TSL2X7X_CHIP_WORKING) {
+--- a/drivers/iio/adc/max1363.c
++++ b/drivers/iio/adc/max1363.c
+@@ -1258,8 +1258,8 @@ static const struct max1363_chip_info ma
+ 		.num_modes = ARRAY_SIZE(max1238_mode_list),
+ 		.default_mode = s0to11,
+ 		.info = &max1238_info,
+-		.channels = max1238_channels,
+-		.num_channels = ARRAY_SIZE(max1238_channels),
++		.channels = max1038_channels,
++		.num_channels = ARRAY_SIZE(max1038_channels),
+ 	},
+ 	[max11605] = {
+ 		.bits = 8,
+@@ -1268,8 +1268,8 @@ static const struct max1363_chip_info ma
+ 		.num_modes = ARRAY_SIZE(max1238_mode_list),
+ 		.default_mode = s0to11,
+ 		.info = &max1238_info,
+-		.channels = max1238_channels,
+-		.num_channels = ARRAY_SIZE(max1238_channels),
++		.channels = max1038_channels,
++		.num_channels = ARRAY_SIZE(max1038_channels),
+ 	},
+ 	[max11606] = {
+ 		.bits = 10,
+@@ -1318,8 +1318,8 @@ static const struct max1363_chip_info ma
+ 		.num_modes = ARRAY_SIZE(max1238_mode_list),
+ 		.default_mode = s0to11,
+ 		.info = &max1238_info,
+-		.channels = max1238_channels,
+-		.num_channels = ARRAY_SIZE(max1238_channels),
++		.channels = max1138_channels,
++		.num_channels = ARRAY_SIZE(max1138_channels),
+ 	},
+ 	[max11611] = {
+ 		.bits = 10,
+@@ -1328,8 +1328,8 @@ static const struct max1363_chip_info ma
+ 		.num_modes = ARRAY_SIZE(max1238_mode_list),
+ 		.default_mode = s0to11,
+ 		.info = &max1238_info,
+-		.channels = max1238_channels,
+-		.num_channels = ARRAY_SIZE(max1238_channels),
++		.channels = max1138_channels,
++		.num_channels = ARRAY_SIZE(max1138_channels),
+ 	},
+ 	[max11612] = {
+ 		.bits = 12,
 
 
