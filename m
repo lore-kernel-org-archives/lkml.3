@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756550AbaFXQDn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 12:03:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33367 "EHLO
+	id S1756573AbaFXQEG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:04:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33353 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965071AbaFXP43 (ORCPT
+	with ESMTP id S1756118AbaFXP4Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:56:29 -0400
+	Tue, 24 Jun 2014 11:56:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.15 45/61] iio: adc: at91: signedness bug in at91_adc_get_trigger_value_by_name()
-Date: Tue, 24 Jun 2014 11:51:28 -0400
-Message-Id: <20140624154954.832950778@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.15 34/61] USB: cdc-acm: fix I/O after failed open
+Date: Tue, 24 Jun 2014 11:51:17 -0400
+Message-Id: <20140624154954.337788097@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154952.751713761@linuxfoundation.org>
 References: <20140624154952.751713761@linuxfoundation.org>
@@ -30,77 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 4f3bcd878f1d3c730fe00f619b7260c6125d49eb upstream.
+commit e4c36076c2a6195ec62c35b03c3fde84d0087dc8 upstream.
 
-at91_adc_get_trigger_value_by_name() was returning -ENOMEM truncated to
-a positive u8 and that doesn't work.  I've changed it to int and
-refactored it to preserve the error code.
+Make sure to kill any already submitted read urbs on read-urb submission
+failures in open in order to prevent doing I/O for a closed port.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Tested-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Fixes: 088c64f81284 ("USB: cdc-acm: re-write read processing")
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iio/adc/at91_adc.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ drivers/usb/class/cdc-acm.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/iio/adc/at91_adc.c
-+++ b/drivers/iio/adc/at91_adc.c
-@@ -322,12 +322,11 @@ static int at91_adc_channel_init(struct
- 	return idev->num_channels;
- }
- 
--static u8 at91_adc_get_trigger_value_by_name(struct iio_dev *idev,
-+static int at91_adc_get_trigger_value_by_name(struct iio_dev *idev,
- 					     struct at91_adc_trigger *triggers,
- 					     const char *trigger_name)
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -506,6 +506,7 @@ static int acm_port_activate(struct tty_
  {
- 	struct at91_adc_state *st = iio_priv(idev);
--	u8 value = 0;
- 	int i;
+ 	struct acm *acm = container_of(port, struct acm, port);
+ 	int retval = -ENODEV;
++	int i;
  
- 	for (i = 0; i < st->trigger_number; i++) {
-@@ -340,15 +339,16 @@ static u8 at91_adc_get_trigger_value_by_
- 			return -ENOMEM;
+ 	dev_dbg(&acm->control->dev, "%s\n", __func__);
  
- 		if (strcmp(trigger_name, name) == 0) {
--			value = triggers[i].value;
- 			kfree(name);
--			break;
-+			if (triggers[i].value == 0)
-+				return -EINVAL;
-+			return triggers[i].value;
- 		}
+@@ -556,6 +557,8 @@ static int acm_port_activate(struct tty_
+ 	return 0;
  
- 		kfree(name);
- 	}
- 
--	return value;
-+	return -EINVAL;
- }
- 
- static int at91_adc_configure_trigger(struct iio_trigger *trig, bool state)
-@@ -358,14 +358,14 @@ static int at91_adc_configure_trigger(st
- 	struct iio_buffer *buffer = idev->buffer;
- 	struct at91_adc_reg_desc *reg = st->registers;
- 	u32 status = at91_adc_readl(st, reg->trigger_register);
--	u8 value;
-+	int value;
- 	u8 bit;
- 
- 	value = at91_adc_get_trigger_value_by_name(idev,
- 						   st->trigger_list,
- 						   idev->trig->name);
--	if (value == 0)
--		return -EINVAL;
-+	if (value < 0)
-+		return value;
- 
- 	if (state) {
- 		st->buffer = kmalloc(idev->scan_bytes, GFP_KERNEL);
+ error_submit_read_urbs:
++	for (i = 0; i < acm->rx_buflimit; i++)
++		usb_kill_urb(acm->read_urbs[i]);
+ 	acm->ctrlout = 0;
+ 	acm_set_control(acm, acm->ctrlout);
+ error_set_control:
 
 
