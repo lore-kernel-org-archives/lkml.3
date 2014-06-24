@@ -1,87 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755651AbaFXPxA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:53:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47783 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755628AbaFXPw6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:52:58 -0400
-Date: Tue, 24 Jun 2014 17:52:56 +0200
-From: Jan Kara <jack@suse.cz>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>
-Subject: Re: [PATCH 1/1] FS/UDF: use linux/uaccess.h (2)
-Message-ID: <20140624155256.GG25832@quack.suse.cz>
-References: <1403293990-3123-1-git-send-email-fabf@skynet.be>
+	id S1755492AbaFXPwm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 11:52:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60939 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755458AbaFXPwg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 11:52:36 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Dmitry Popov <ixaphire@qrator.net>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 20/52] ipip, sit: fix ipv4_{update_pmtu,redirect} calls
+Date: Tue, 24 Jun 2014 11:50:35 -0400
+Message-Id: <20140624154714.704789582@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <20140624154713.428945460@linuxfoundation.org>
+References: <20140624154713.428945460@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403293990-3123-1-git-send-email-fabf@skynet.be>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 20-06-14 21:53:10, Fabian Frederick wrote:
-> Fix checkpatch warning
-> WARNING: Use #include <linux/uaccess.h> instead of <asm/uaccess.h>
-> 
-> on 3 more files.
-  Thanks. I've combined this patch with your previous one for the same
-issue.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-								Honza
-> 
-> Cc: Jan Kara <jack@suse.cz>
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
-> ---
->  fs/udf/lowlevel.c | 2 +-
->  fs/udf/super.c    | 2 +-
->  fs/udf/symlink.c  | 2 +-
->  3 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/fs/udf/lowlevel.c b/fs/udf/lowlevel.c
-> index 6583fe9..6ad5a45 100644
-> --- a/fs/udf/lowlevel.c
-> +++ b/fs/udf/lowlevel.c
-> @@ -21,7 +21,7 @@
->  
->  #include <linux/blkdev.h>
->  #include <linux/cdrom.h>
-> -#include <asm/uaccess.h>
-> +#include <linux/uaccess.h>
->  
->  #include "udf_sb.h"
->  
-> diff --git a/fs/udf/super.c b/fs/udf/super.c
-> index 3286db0..813da94 100644
-> --- a/fs/udf/super.c
-> +++ b/fs/udf/super.c
-> @@ -63,7 +63,7 @@
->  #include "udf_i.h"
->  
->  #include <linux/init.h>
-> -#include <asm/uaccess.h>
-> +#include <linux/uaccess.h>
->  
->  #define VDS_POS_PRIMARY_VOL_DESC	0
->  #define VDS_POS_UNALLOC_SPACE_DESC	1
-> diff --git a/fs/udf/symlink.c b/fs/udf/symlink.c
-> index d7c6dbe..6fb7945 100644
-> --- a/fs/udf/symlink.c
-> +++ b/fs/udf/symlink.c
-> @@ -20,7 +20,7 @@
->   */
->  
->  #include "udfdecl.h"
-> -#include <asm/uaccess.h>
-> +#include <linux/uaccess.h>
->  #include <linux/errno.h>
->  #include <linux/fs.h>
->  #include <linux/time.h>
-> -- 
-> 1.8.4.5
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+------------------
+
+From: Dmitry Popov <ixaphire@qrator.net>
+
+[ Upstream commit 2346829e641b804ece9ac9298136b56d9567c278 ]
+
+ipv4_{update_pmtu,redirect} were called with tunnel's ifindex (t->dev is a
+tunnel netdevice). It caused wrong route lookup and failure of pmtu update or
+redirect. We should use the same ifindex that we use in ip_route_output_* in
+*tunnel_xmit code. It is t->parms.link .
+
+Signed-off-by: Dmitry Popov <ixaphire@qrator.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/ipv4/ipip.c |    4 ++--
+ net/ipv6/sit.c  |    4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+--- a/net/ipv4/ipip.c
++++ b/net/ipv4/ipip.c
+@@ -149,13 +149,13 @@ static int ipip_err(struct sk_buff *skb,
+ 
+ 	if (type == ICMP_DEST_UNREACH && code == ICMP_FRAG_NEEDED) {
+ 		ipv4_update_pmtu(skb, dev_net(skb->dev), info,
+-				 t->dev->ifindex, 0, IPPROTO_IPIP, 0);
++				 t->parms.link, 0, IPPROTO_IPIP, 0);
+ 		err = 0;
+ 		goto out;
+ 	}
+ 
+ 	if (type == ICMP_REDIRECT) {
+-		ipv4_redirect(skb, dev_net(skb->dev), t->dev->ifindex, 0,
++		ipv4_redirect(skb, dev_net(skb->dev), t->parms.link, 0,
+ 			      IPPROTO_IPIP, 0);
+ 		err = 0;
+ 		goto out;
+--- a/net/ipv6/sit.c
++++ b/net/ipv6/sit.c
+@@ -530,12 +530,12 @@ static int ipip6_err(struct sk_buff *skb
+ 
+ 	if (type == ICMP_DEST_UNREACH && code == ICMP_FRAG_NEEDED) {
+ 		ipv4_update_pmtu(skb, dev_net(skb->dev), info,
+-				 t->dev->ifindex, 0, IPPROTO_IPV6, 0);
++				 t->parms.link, 0, IPPROTO_IPV6, 0);
+ 		err = 0;
+ 		goto out;
+ 	}
+ 	if (type == ICMP_REDIRECT) {
+-		ipv4_redirect(skb, dev_net(skb->dev), t->dev->ifindex, 0,
++		ipv4_redirect(skb, dev_net(skb->dev), t->parms.link, 0,
+ 			      IPPROTO_IPV6, 0);
+ 		err = 0;
+ 		goto out;
+
+
