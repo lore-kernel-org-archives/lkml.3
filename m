@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754723AbaFXPvQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 11:51:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60717 "EHLO
+	id S965250AbaFXQ5N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 12:57:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60725 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754489AbaFXPvM (ORCPT
+	with ESMTP id S1754681AbaFXPvP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 11:51:12 -0400
+	Tue, 24 Jun 2014 11:51:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>
-Subject: [PATCH 3.4 02/26] evm: prohibit userspace writing security.evm HMAC value
-Date: Tue, 24 Jun 2014 11:50:25 -0400
-Message-Id: <20140624154619.609791236@linuxfoundation.org>
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.4 04/26] net: fix inet_getid() and ipv6_select_ident() bugs
+Date: Tue, 24 Jun 2014 11:50:27 -0400
+Message-Id: <20140624154619.706235756@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140624154619.499002156@linuxfoundation.org>
 References: <20140624154619.499002156@linuxfoundation.org>
@@ -28,46 +29,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+From: Eric Dumazet <edumazet@google.com>
 
-commit 2fb1c9a4f2dbc2f0bd2431c7fa64d0b5483864e4 upstream.
+[ Upstream commit 39c36094d78c39e038c1e499b2364e13bce36f54 ]
 
-Calculating the 'security.evm' HMAC value requires access to the
-EVM encrypted key.  Only the kernel should have access to it.  This
-patch prevents userspace tools(eg. setfattr, cp --preserve=xattr)
-from setting/modifying the 'security.evm' HMAC value directly.
+I noticed we were sending wrong IPv4 ID in TCP flows when MTU discovery
+is disabled.
+Note how GSO/TSO packets do not have monotonically incrementing ID.
 
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+06:37:41.575531 IP (id 14227, proto: TCP (6), length: 4396)
+06:37:41.575534 IP (id 14272, proto: TCP (6), length: 65212)
+06:37:41.575544 IP (id 14312, proto: TCP (6), length: 57972)
+06:37:41.575678 IP (id 14317, proto: TCP (6), length: 7292)
+06:37:41.575683 IP (id 14361, proto: TCP (6), length: 63764)
+
+It appears I introduced this bug in linux-3.1.
+
+inet_getid() must return the old value of peer->ip_id_count,
+not the new one.
+
+Lets revert this part, and remove the prevention of
+a null identification field in IPv6 Fragment Extension Header,
+which is dubious and not even done properly.
+
+Fixes: 87c48fa3b463 ("ipv6: make fragment identifications less predictable")
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- security/integrity/evm/evm_main.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ include/net/inetpeer.h |    9 +--------
+ net/ipv6/ip6_output.c  |   11 +++--------
+ 2 files changed, 4 insertions(+), 16 deletions(-)
 
---- a/security/integrity/evm/evm_main.c
-+++ b/security/integrity/evm/evm_main.c
-@@ -271,12 +271,20 @@ static int evm_protect_xattr(struct dent
-  * @xattr_value: pointer to the new extended attribute value
-  * @xattr_value_len: pointer to the new extended attribute value length
-  *
-- * Updating 'security.evm' requires CAP_SYS_ADMIN privileges and that
-- * the current value is valid.
-+ * Before allowing the 'security.evm' protected xattr to be updated,
-+ * verify the existing value is valid.  As only the kernel should have
-+ * access to the EVM encrypted key needed to calculate the HMAC, prevent
-+ * userspace from writing HMAC value.  Writing 'security.evm' requires
-+ * requires CAP_SYS_ADMIN privileges.
-  */
- int evm_inode_setxattr(struct dentry *dentry, const char *xattr_name,
- 		       const void *xattr_value, size_t xattr_value_len)
+--- a/include/net/inetpeer.h
++++ b/include/net/inetpeer.h
+@@ -114,16 +114,9 @@ static inline void inet_peer_refcheck(co
+ /* can be called with or without local BH being disabled */
+ static inline int inet_getid(struct inet_peer *p, int more)
  {
-+	const struct evm_ima_xattr_data *xattr_data = xattr_value;
-+
-+	if ((strcmp(xattr_name, XATTR_NAME_EVM) == 0)
-+	    && (xattr_data->type == EVM_XATTR_HMAC))
-+		return -EPERM;
- 	return evm_protect_xattr(dentry, xattr_name, xattr_value,
- 				 xattr_value_len);
+-	int old, new;
+ 	more++;
+ 	inet_peer_refcheck(p);
+-	do {
+-		old = atomic_read(&p->ip_id_count);
+-		new = old + more;
+-		if (!new)
+-			new = 1;
+-	} while (atomic_cmpxchg(&p->ip_id_count, old, new) != old);
+-	return new;
++	return atomic_add_return(more, &p->ip_id_count) - more;
  }
+ 
+ #endif /* _NET_INETPEER_H */
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -611,7 +611,7 @@ int ip6_find_1stfragopt(struct sk_buff *
+ void ipv6_select_ident(struct frag_hdr *fhdr, struct rt6_info *rt)
+ {
+ 	static atomic_t ipv6_fragmentation_id;
+-	int old, new;
++	int ident;
+ 
+ 	if (rt && !(rt->dst.flags & DST_NOPEER)) {
+ 		struct inet_peer *peer;
+@@ -624,13 +624,8 @@ void ipv6_select_ident(struct frag_hdr *
+ 			return;
+ 		}
+ 	}
+-	do {
+-		old = atomic_read(&ipv6_fragmentation_id);
+-		new = old + 1;
+-		if (!new)
+-			new = 1;
+-	} while (atomic_cmpxchg(&ipv6_fragmentation_id, old, new) != old);
+-	fhdr->identification = htonl(new);
++	ident = atomic_inc_return(&ipv6_fragmentation_id);
++	fhdr->identification = htonl(ident);
+ }
+ 
+ int ip6_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
 
 
