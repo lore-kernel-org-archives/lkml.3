@@ -1,108 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753030AbaFXVik (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 17:38:40 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:38447 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752730AbaFXVii (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 17:38:38 -0400
-Date: Tue, 24 Jun 2014 23:38:35 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, Michael Matz <matz@suse.de>,
-        linux-kbuild@vger.kernel.org, x86-ml <x86@kernel.org>
-Subject: [PATCH] Kbuild: Move -Wmaybe-uninitialized to W=1
-Message-ID: <20140624213835.GD15068@pd.tnic>
-References: <20140616132045.GE8170@pd.tnic>
- <20140616211405.GA7914@ravnborg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140616211405.GA7914@ravnborg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753324AbaFXVms (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 17:42:48 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:48722 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752281AbaFXVmq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 17:42:46 -0400
+From: Emil Goode <emilgoode@gmail.com>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Jiri Kosina <jkosina@suse.cz>, Hans Verkuil <hans.verkuil@cisco.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
+Subject: [PATCH 1/2] [media] Remove checks of struct member addresses
+Date: Tue, 24 Jun 2014 23:42:27 +0200
+Message-Id: <1403646148-25385-1-git-send-email-emilgoode@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 16, 2014 at 11:14:05PM +0200, Sam Ravnborg wrote:
-> Agreed.
-> The noise ratio is too high - so move it to W=1.
+This removes checks of struct member addresses since they likely result
+in the condition always being true. Also in the stb6100_get_bandwidth
+and tda8261_get_bandwidth functions the pointers frontend_ops and
+tuner_ops are assigned the same addresses twice.
 
-Ok, how about the below?
-
-It still needs this hunk to work:
-
-@@ -33,7 +34,7 @@ warning-1 += $(call cc-disable-warning, format)
- warning-1 += $(call cc-disable-warning, unknown-warning-option)
- warning-1 += $(call cc-disable-warning, sign-compare)
- warning-1 += $(call cc-disable-warning, format-zero-length)
--warning-1 += $(call cc-disable-warning, uninitialized)
-+#warning-1 += $(call cc-disable-warning, uninitialized)
- warning-1 += $(call cc-option, -fcatch-undefined-behavior)
- 
- warning-2 := -Waggregate-return
-
-but that's another story which is still WIP here:
-http://lkml.kernel.org/r/20140616130751.GD8170@pd.tnic
-
-After it is sorted out, we can do something like the below. (Note:
-I'm not filtering out the previous -Wno-maybe-uninitialized from
-KBUILD_CFLAGS because it is not necessary - apparently the following
--Wmaybe-uninitialized reenables it again).
-
+Signed-off-by: Emil Goode <emilgoode@gmail.com>
 ---
-From: Borislav Petkov <bp@suse.de>
-Subject: [PATCH] Kbuild: Move -Wmaybe-uninitialized to W=1
+ drivers/media/dvb-frontends/stb6100_cfg.h  |   30 +++++++-----------------
+ drivers/media/dvb-frontends/stb6100_proc.h |   34 ++++++++--------------------
+ drivers/media/dvb-frontends/stv0367.c      |    9 ++------
+ drivers/media/dvb-frontends/tda8261_cfg.h  |   21 ++++-------------
+ 4 files changed, 25 insertions(+), 69 deletions(-)
 
-This warning is enabled by -Wall or -Wextra, says the gcc manpage. It
-also says that gcc cannot always know whether the warning is issued
-correctly:
-
-"These warnings are made optional because GCC is not smart enough to see
-all the reasons why the code might be correct in spite of appearing to
-have an error."
-
-And, as expected, it fires for perfectly valid use cases, thus making it
-not really useful. Let's move it to the W=1 bunch in case people want to
-enable it with the additional checks.
-
-Signed-off-by: Borislav Petkov <bp@suse.de>
----
- Makefile                   | 2 ++
- scripts/Makefile.extrawarn | 1 +
- 2 files changed, 3 insertions(+)
-
-diff --git a/Makefile b/Makefile
-index b11e2d504a00..63033545d7f6 100644
---- a/Makefile
-+++ b/Makefile
-@@ -402,6 +402,8 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
- 		   -Werror-implicit-function-declaration \
- 		   -Wno-format-security
+diff --git a/drivers/media/dvb-frontends/stb6100_cfg.h b/drivers/media/dvb-frontends/stb6100_cfg.h
+index 6314d18..0e10ad89 100644
+--- a/drivers/media/dvb-frontends/stb6100_cfg.h
++++ b/drivers/media/dvb-frontends/stb6100_cfg.h
+@@ -21,15 +21,11 @@
  
-+KBUILD_CFLAGS   += $(call cc-disable-warning, maybe-uninitialized)
+ static int stb6100_get_frequency(struct dvb_frontend *fe, u32 *frequency)
+ {
+-	struct dvb_frontend_ops	*frontend_ops = NULL;
+-	struct dvb_tuner_ops	*tuner_ops = NULL;
++	struct dvb_frontend_ops	*frontend_ops = &fe->ops;
++	struct dvb_tuner_ops	*tuner_ops = &frontend_ops->tuner_ops;
+ 	struct tuner_state	t_state;
+ 	int err = 0;
+ 
+-	if (&fe->ops)
+-		frontend_ops = &fe->ops;
+-	if (&frontend_ops->tuner_ops)
+-		tuner_ops = &frontend_ops->tuner_ops;
+ 	if (tuner_ops->get_state) {
+ 		if ((err = tuner_ops->get_state(fe, DVBFE_TUNER_FREQUENCY, &t_state)) < 0) {
+ 			printk("%s: Invalid parameter\n", __func__);
+@@ -42,16 +38,13 @@ static int stb6100_get_frequency(struct dvb_frontend *fe, u32 *frequency)
+ 
+ static int stb6100_set_frequency(struct dvb_frontend *fe, u32 frequency)
+ {
+-	struct dvb_frontend_ops	*frontend_ops = NULL;
+-	struct dvb_tuner_ops	*tuner_ops = NULL;
++	struct dvb_frontend_ops	*frontend_ops = &fe->ops;
++	struct dvb_tuner_ops	*tuner_ops = &frontend_ops->tuner_ops;
+ 	struct tuner_state	t_state;
+ 	int err = 0;
+ 
+ 	t_state.frequency = frequency;
+-	if (&fe->ops)
+-		frontend_ops = &fe->ops;
+-	if (&frontend_ops->tuner_ops)
+-		tuner_ops = &frontend_ops->tuner_ops;
 +
- KBUILD_AFLAGS_KERNEL :=
- KBUILD_CFLAGS_KERNEL :=
- KBUILD_AFLAGS   := -D__ASSEMBLY__
-diff --git a/scripts/Makefile.extrawarn b/scripts/Makefile.extrawarn
-index 65643506c71c..e61678c40d41 100644
---- a/scripts/Makefile.extrawarn
-+++ b/scripts/Makefile.extrawarn
-@@ -25,6 +25,7 @@ warning-1 += -Wold-style-definition
- warning-1 += $(call cc-option, -Wmissing-include-dirs)
- warning-1 += $(call cc-option, -Wunused-but-set-variable)
- warning-1 += $(call cc-disable-warning, missing-field-initializers)
-+warning-1 += $(call cc-option, -Wmaybe-uninitialized)
+ 	if (tuner_ops->set_state) {
+ 		if ((err = tuner_ops->set_state(fe, DVBFE_TUNER_FREQUENCY, &t_state)) < 0) {
+ 			printk("%s: Invalid parameter\n", __func__);
+@@ -68,10 +61,6 @@ static int stb6100_get_bandwidth(struct dvb_frontend *fe, u32 *bandwidth)
+ 	struct tuner_state	t_state;
+ 	int err = 0;
  
- # Clang
- warning-1 += $(call cc-disable-warning, initializer-overrides)
+-	if (&fe->ops)
+-		frontend_ops = &fe->ops;
+-	if (&frontend_ops->tuner_ops)
+-		tuner_ops = &frontend_ops->tuner_ops;
+ 	if (tuner_ops->get_state) {
+ 		if ((err = tuner_ops->get_state(fe, DVBFE_TUNER_BANDWIDTH, &t_state)) < 0) {
+ 			printk("%s: Invalid parameter\n", __func__);
+@@ -84,16 +73,13 @@ static int stb6100_get_bandwidth(struct dvb_frontend *fe, u32 *bandwidth)
+ 
+ static int stb6100_set_bandwidth(struct dvb_frontend *fe, u32 bandwidth)
+ {
+-	struct dvb_frontend_ops	*frontend_ops = NULL;
+-	struct dvb_tuner_ops	*tuner_ops = NULL;
++	struct dvb_frontend_ops	*frontend_ops = &fe->ops;
++	struct dvb_tuner_ops	*tuner_ops = &frontend_ops->tuner_ops;
+ 	struct tuner_state	t_state;
+ 	int err = 0;
+ 
+ 	t_state.bandwidth = bandwidth;
+-	if (&fe->ops)
+-		frontend_ops = &fe->ops;
+-	if (&frontend_ops->tuner_ops)
+-		tuner_ops = &frontend_ops->tuner_ops;
++
+ 	if (tuner_ops->set_state) {
+ 		if ((err = tuner_ops->set_state(fe, DVBFE_TUNER_BANDWIDTH, &t_state)) < 0) {
+ 			printk("%s: Invalid parameter\n", __func__);
+diff --git a/drivers/media/dvb-frontends/stb6100_proc.h b/drivers/media/dvb-frontends/stb6100_proc.h
+index 112163a..bd8a0ec 100644
+--- a/drivers/media/dvb-frontends/stb6100_proc.h
++++ b/drivers/media/dvb-frontends/stb6100_proc.h
+@@ -19,15 +19,11 @@
+ 
+ static int stb6100_get_freq(struct dvb_frontend *fe, u32 *frequency)
+ {
+-	struct dvb_frontend_ops	*frontend_ops = NULL;
+-	struct dvb_tuner_ops	*tuner_ops = NULL;
++	struct dvb_frontend_ops	*frontend_ops = &fe->ops;
++	struct dvb_tuner_ops	*tuner_ops = &frontend_ops->tuner_ops;
+ 	struct tuner_state	state;
+ 	int err = 0;
+ 
+-	if (&fe->ops)
+-		frontend_ops = &fe->ops;
+-	if (&frontend_ops->tuner_ops)
+-		tuner_ops = &frontend_ops->tuner_ops;
+ 	if (tuner_ops->get_state) {
+ 		if (frontend_ops->i2c_gate_ctrl)
+ 			frontend_ops->i2c_gate_ctrl(fe, 1);
+@@ -49,16 +45,13 @@ static int stb6100_get_freq(struct dvb_frontend *fe, u32 *frequency)
+ 
+ static int stb6100_set_freq(struct dvb_frontend *fe, u32 frequency)
+ {
+-	struct dvb_frontend_ops	*frontend_ops = NULL;
+-	struct dvb_tuner_ops	*tuner_ops = NULL;
++	struct dvb_frontend_ops	*frontend_ops = &fe->ops;
++	struct dvb_tuner_ops	*tuner_ops = &frontend_ops->tuner_ops;
+ 	struct tuner_state	state;
+ 	int err = 0;
+ 
+ 	state.frequency = frequency;
+-	if (&fe->ops)
+-		frontend_ops = &fe->ops;
+-	if (&frontend_ops->tuner_ops)
+-		tuner_ops = &frontend_ops->tuner_ops;
++
+ 	if (tuner_ops->set_state) {
+ 		if (frontend_ops->i2c_gate_ctrl)
+ 			frontend_ops->i2c_gate_ctrl(fe, 1);
+@@ -79,15 +72,11 @@ static int stb6100_set_freq(struct dvb_frontend *fe, u32 frequency)
+ 
+ static int stb6100_get_bandw(struct dvb_frontend *fe, u32 *bandwidth)
+ {
+-	struct dvb_frontend_ops	*frontend_ops = NULL;
+-	struct dvb_tuner_ops	*tuner_ops = NULL;
++	struct dvb_frontend_ops	*frontend_ops = &fe->ops;
++	struct dvb_tuner_ops	*tuner_ops = &frontend_ops->tuner_ops;
+ 	struct tuner_state	state;
+ 	int err = 0;
+ 
+-	if (&fe->ops)
+-		frontend_ops = &fe->ops;
+-	if (&frontend_ops->tuner_ops)
+-		tuner_ops = &frontend_ops->tuner_ops;
+ 	if (tuner_ops->get_state) {
+ 		if (frontend_ops->i2c_gate_ctrl)
+ 			frontend_ops->i2c_gate_ctrl(fe, 1);
+@@ -109,16 +98,13 @@ static int stb6100_get_bandw(struct dvb_frontend *fe, u32 *bandwidth)
+ 
+ static int stb6100_set_bandw(struct dvb_frontend *fe, u32 bandwidth)
+ {
+-	struct dvb_frontend_ops	*frontend_ops = NULL;
+-	struct dvb_tuner_ops	*tuner_ops = NULL;
++	struct dvb_frontend_ops	*frontend_ops = &fe->ops;
++	struct dvb_tuner_ops	*tuner_ops = &frontend_ops->tuner_ops;
+ 	struct tuner_state	state;
+ 	int err = 0;
+ 
+ 	state.bandwidth = bandwidth;
+-	if (&fe->ops)
+-		frontend_ops = &fe->ops;
+-	if (&frontend_ops->tuner_ops)
+-		tuner_ops = &frontend_ops->tuner_ops;
++
+ 	if (tuner_ops->set_state) {
+ 		if (frontend_ops->i2c_gate_ctrl)
+ 			frontend_ops->i2c_gate_ctrl(fe, 1);
+diff --git a/drivers/media/dvb-frontends/stv0367.c b/drivers/media/dvb-frontends/stv0367.c
+index 4587727..59b6e66 100644
+--- a/drivers/media/dvb-frontends/stv0367.c
++++ b/drivers/media/dvb-frontends/stv0367.c
+@@ -922,18 +922,13 @@ static int stv0367ter_gate_ctrl(struct dvb_frontend *fe, int enable)
+ 
+ static u32 stv0367_get_tuner_freq(struct dvb_frontend *fe)
+ {
+-	struct dvb_frontend_ops	*frontend_ops = NULL;
+-	struct dvb_tuner_ops	*tuner_ops = NULL;
++	struct dvb_frontend_ops	*frontend_ops = &fe->ops;
++	struct dvb_tuner_ops	*tuner_ops = &frontend_ops->tuner_ops;
+ 	u32 freq = 0;
+ 	int err = 0;
+ 
+ 	dprintk("%s:\n", __func__);
+ 
+-
+-	if (&fe->ops)
+-		frontend_ops = &fe->ops;
+-	if (&frontend_ops->tuner_ops)
+-		tuner_ops = &frontend_ops->tuner_ops;
+ 	if (tuner_ops->get_frequency) {
+ 		err = tuner_ops->get_frequency(fe, &freq);
+ 		if (err < 0) {
+diff --git a/drivers/media/dvb-frontends/tda8261_cfg.h b/drivers/media/dvb-frontends/tda8261_cfg.h
+index 4671074..7de65c3 100644
+--- a/drivers/media/dvb-frontends/tda8261_cfg.h
++++ b/drivers/media/dvb-frontends/tda8261_cfg.h
+@@ -19,15 +19,11 @@
+ 
+ static int tda8261_get_frequency(struct dvb_frontend *fe, u32 *frequency)
+ {
+-	struct dvb_frontend_ops	*frontend_ops = NULL;
+-	struct dvb_tuner_ops	*tuner_ops = NULL;
++	struct dvb_frontend_ops	*frontend_ops = &fe->ops;
++	struct dvb_tuner_ops	*tuner_ops = &frontend_ops->tuner_ops;
+ 	struct tuner_state	t_state;
+ 	int err = 0;
+ 
+-	if (&fe->ops)
+-		frontend_ops = &fe->ops;
+-	if (&frontend_ops->tuner_ops)
+-		tuner_ops = &frontend_ops->tuner_ops;
+ 	if (tuner_ops->get_state) {
+ 		if ((err = tuner_ops->get_state(fe, DVBFE_TUNER_FREQUENCY, &t_state)) < 0) {
+ 			printk("%s: Invalid parameter\n", __func__);
+@@ -41,16 +37,13 @@ static int tda8261_get_frequency(struct dvb_frontend *fe, u32 *frequency)
+ 
+ static int tda8261_set_frequency(struct dvb_frontend *fe, u32 frequency)
+ {
+-	struct dvb_frontend_ops	*frontend_ops = NULL;
+-	struct dvb_tuner_ops	*tuner_ops = NULL;
++	struct dvb_frontend_ops	*frontend_ops = &fe->ops;
++	struct dvb_tuner_ops	*tuner_ops = &frontend_ops->tuner_ops;
+ 	struct tuner_state	t_state;
+ 	int err = 0;
+ 
+ 	t_state.frequency = frequency;
+-	if (&fe->ops)
+-		frontend_ops = &fe->ops;
+-	if (&frontend_ops->tuner_ops)
+-		tuner_ops = &frontend_ops->tuner_ops;
++
+ 	if (tuner_ops->set_state) {
+ 		if ((err = tuner_ops->set_state(fe, DVBFE_TUNER_FREQUENCY, &t_state)) < 0) {
+ 			printk("%s: Invalid parameter\n", __func__);
+@@ -68,10 +61,6 @@ static int tda8261_get_bandwidth(struct dvb_frontend *fe, u32 *bandwidth)
+ 	struct tuner_state	t_state;
+ 	int err = 0;
+ 
+-	if (&fe->ops)
+-		frontend_ops = &fe->ops;
+-	if (&frontend_ops->tuner_ops)
+-		tuner_ops = &frontend_ops->tuner_ops;
+ 	if (tuner_ops->get_state) {
+ 		if ((err = tuner_ops->get_state(fe, DVBFE_TUNER_BANDWIDTH, &t_state)) < 0) {
+ 			printk("%s: Invalid parameter\n", __func__);
 -- 
-2.0.0
+1.7.10.4
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
