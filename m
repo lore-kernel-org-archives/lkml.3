@@ -1,171 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757897AbaFYSN3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 14:13:29 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:53431 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754602AbaFYSN1 (ORCPT
+	id S1758099AbaFYSOa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 14:14:30 -0400
+Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:19254 "EHLO
+	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757845AbaFYSO3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 14:13:27 -0400
-From: Janne Kanniainen <janne.kanniainen@gmail.com>
-To: johan@kernel.org, jkosina@suse.cz
-Cc: greg@kroah.com, bjorn@mork.no, cooloney@gmail.com,
-        linux-kernel@vger.kernel.org, linux-leds@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-input@vger.kernel.org,
-        Janne Kanniainen <janne.kanniainen@gmail.com>
-Subject: [PATCH 2/2 v3] HID: leds: move led_mode attribute to led-class devices in MSI GT683R driver
-Date: Wed, 25 Jun 2014 21:13:09 +0300
-Message-Id: <1403719989-19989-1-git-send-email-janne.kanniainen@gmail.com>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <20140625174109.GE1409@localhost>
-References: <20140625174109.GE1409@localhost>
+	Wed, 25 Jun 2014 14:14:29 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ah4HADQRq1NXQ7ge/2dsb2JhbABZgw2rLgsFAZR6hECBDhd1hGAjgRo3iEYBqnWYGBeFY4g1ZB2ELQWPdIpdizaINYNEO4Ex
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Boaz Harrosh <bharrosh@panasas.com>,
+        osd-dev@open-osd.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] fs/exofs/ore_raid.c: replace count*size kzalloc by kcalloc
+Date: Wed, 25 Jun 2014 20:14:23 +0200
+Message-Id: <1403720063-19061-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move led_mode attribute from HID device to led-class devices and rename it
-msi_mode. This will also fix race condition by using attribute-groups.
+kcalloc manages count*sizeof overflow.
 
-Signed-off-by: Janne Kanniainen <janne.kanniainen@gmail.com>
+Cc: Boaz Harrosh <bharrosh@panasas.com>
+Cc: osd-dev@open-osd.org
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
+ fs/exofs/ore_raid.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Changes in v3:
-	- Style fixes
-	- Rename sysfs-class-hid-driver-gt683r to sysfs-class-leds-driver-gt683r
-
- .../ABI/testing/sysfs-class-hid-driver-gt683r      | 14 -----------
- .../ABI/testing/sysfs-class-leds-driver-gt683r     | 16 +++++++++++++
- drivers/hid/hid-gt683r.c                           | 28 ++++++++++++----------
- 3 files changed, 32 insertions(+), 26 deletions(-)
- delete mode 100644 Documentation/ABI/testing/sysfs-class-hid-driver-gt683r
- create mode 100644 Documentation/ABI/testing/sysfs-class-leds-driver-gt683r
-
-diff --git a/Documentation/ABI/testing/sysfs-class-hid-driver-gt683r b/Documentation/ABI/testing/sysfs-class-hid-driver-gt683r
-deleted file mode 100644
-index 317e9d5..0000000
---- a/Documentation/ABI/testing/sysfs-class-hid-driver-gt683r
-+++ /dev/null
-@@ -1,14 +0,0 @@
--What:		/sys/class/hidraw/<hidraw>/device/leds_mode
--Date:		Jun 2014
--KernelVersion:	3.17
--Contact:	Janne Kanniainen <janne.kanniainen@gmail.com>
--Description:
--		Set the mode of LEDs
--
--		0 - normal
--		1 - audio
--		2 - breathing
--
--		Normal: LEDs are fully on when enabled
--		Audio:  LEDs brightness depends on sound level
--		Breathing: LEDs brightness varies at human breathing rate
-\ No newline at end of file
-diff --git a/Documentation/ABI/testing/sysfs-class-leds-driver-gt683r b/Documentation/ABI/testing/sysfs-class-leds-driver-gt683r
-new file mode 100644
-index 0000000..29769fb
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-class-leds-driver-gt683r
-@@ -0,0 +1,16 @@
-+What:		/sys/class/leds/<led>/msi_mode
-+Date:		Jun 2014
-+KernelVersion:	3.17
-+Contact:	Janne Kanniainen <janne.kanniainen@gmail.com>
-+Description:
-+		Set the mode of LEDs. You should notice that changing the mode
-+		of one LED will update the mode of its two sibling devices as
-+		well.
-+
-+		0 - normal
-+		1 - audio
-+		2 - breathing
-+
-+		Normal: LEDs are fully on when enabled
-+		Audio:  LEDs brightness depends on sound level
-+		Breathing: LEDs brightness varies at human breathing rate
-\ No newline at end of file
-diff --git a/drivers/hid/hid-gt683r.c b/drivers/hid/hid-gt683r.c
-index 073bd80..ba27ee1 100644
---- a/drivers/hid/hid-gt683r.c
-+++ b/drivers/hid/hid-gt683r.c
-@@ -84,12 +84,13 @@ static void gt683r_brightness_set(struct led_classdev *led_cdev,
- 	}
- }
+diff --git a/fs/exofs/ore_raid.c b/fs/exofs/ore_raid.c
+index 7f20f25..84529b8 100644
+--- a/fs/exofs/ore_raid.c
++++ b/fs/exofs/ore_raid.c
+@@ -116,7 +116,7 @@ static int _sp2d_alloc(unsigned pages_in_unit, unsigned group_width,
+ 			num_a1pa = min_t(unsigned, PAGE_SIZE / sizeof__a1pa,
+ 							pages_in_unit - i);
  
--static ssize_t leds_mode_show(struct device *dev,
-+static ssize_t msi_mode_show(struct device *dev,
- 				struct device_attribute *attr,
- 				char *buf)
- {
- 	u8 sysfs_mode;
--	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-+	struct hid_device *hdev = container_of(dev->parent,
-+					struct hid_device, dev);
- 	struct gt683r_led *led = hid_get_drvdata(hdev);
- 
- 	if (led->mode == GT683R_LED_NORMAL)
-@@ -102,12 +103,13 @@ static ssize_t leds_mode_show(struct device *dev,
- 	return scnprintf(buf, PAGE_SIZE, "%u\n", sysfs_mode);
- }
- 
--static ssize_t leds_mode_store(struct device *dev,
-+static ssize_t msi_mode_store(struct device *dev,
- 				struct device_attribute *attr,
- 				const char *buf, size_t count)
- {
- 	u8 sysfs_mode;
--	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-+	struct hid_device *hdev = container_of(dev->parent,
-+					struct hid_device, dev);
- 	struct gt683r_led *led = hid_get_drvdata(hdev);
- 
- 
-@@ -212,7 +214,14 @@ fail:
- 	mutex_unlock(&led->lock);
- }
- 
--static DEVICE_ATTR_RW(leds_mode);
-+static DEVICE_ATTR_RW(msi_mode);
-+
-+static struct attribute *gt683r_led_attrs[] = {
-+	&dev_attr_msi_mode.attr,
-+	NULL
-+};
-+
-+ATTRIBUTE_GROUPS(gt683r_led);
- 
- static int gt683r_led_probe(struct hid_device *hdev,
- 			const struct hid_device_id *id)
-@@ -261,6 +270,8 @@ static int gt683r_led_probe(struct hid_device *hdev,
- 		led->led_devs[i].name = name;
- 		led->led_devs[i].max_brightness = 1;
- 		led->led_devs[i].brightness_set = gt683r_brightness_set;
-+		led->led_devs[i].groups = gt683r_led_groups;
-+
- 		ret = led_classdev_register(&hdev->dev, &led->led_devs[i]);
- 		if (ret) {
- 			hid_err(hdev, "could not register led device\n");
-@@ -268,12 +279,6 @@ static int gt683r_led_probe(struct hid_device *hdev,
- 		}
- 	}
- 
--	ret = device_create_file(&led->hdev->dev, &dev_attr_leds_mode);
--	if (ret) {
--		hid_err(hdev, "could not make mode attribute file\n");
--		goto fail;
--	}
--
- 	return 0;
- 
- fail:
-@@ -288,7 +293,6 @@ static void gt683r_led_remove(struct hid_device *hdev)
- 	int i;
- 	struct gt683r_led *led = hid_get_drvdata(hdev);
- 
--	device_remove_file(&hdev->dev, &dev_attr_leds_mode);
- 	for (i = 0; i < GT683R_LED_COUNT; i++)
- 		led_classdev_unregister(&led->led_devs[i]);
- 	flush_work(&led->work);
+-			__a1pa = kzalloc(num_a1pa * sizeof__a1pa, GFP_KERNEL);
++			__a1pa = kcalloc(num_a1pa, sizeof__a1pa, GFP_KERNEL);
+ 			if (unlikely(!__a1pa)) {
+ 				ORE_DBGMSG("!! Failed to _alloc_1p_arrays=%d\n",
+ 					   num_a1pa);
 -- 
-1.9.2
+1.9.1
 
