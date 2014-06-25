@@ -1,64 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757508AbaFYXEb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 19:04:31 -0400
-Received: from exprod5og107.obsmtp.com ([64.18.0.184]:45247 "HELO
-	exprod5og107.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756178AbaFYXDl (ORCPT
+	id S1757565AbaFYXEg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 19:04:36 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:39001 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756178AbaFYXEe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 19:03:41 -0400
-From: Feng Kan <fkan@apm.com>
-To: dbaryshkov@gmail.com, catalin.marinas@arm.com, dwmw2@infradead.org,
-        arnd@arndb.de, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        patches@apm.com
-Cc: Feng Kan <fkan@apm.com>
-Subject: [PATCH V7 4/6] arm64: dts: Add X-Gene reboot driver dts node
-Date: Wed, 25 Jun 2014 16:03:24 -0700
-Message-Id: <1403737406-6474-5-git-send-email-fkan@apm.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403737406-6474-1-git-send-email-fkan@apm.com>
-References: <1403737406-6474-1-git-send-email-fkan@apm.com>
+	Wed, 25 Jun 2014 19:04:34 -0400
+Date: Wed, 25 Jun 2014 16:04:33 -0700 (PDT)
+Message-Id: <20140625.160433.1012876682294424845.davem@davemloft.net>
+To: dborkman@redhat.com
+Cc: netdev@vger.kernel.org, linux@horizon.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next 0/3] crc32 combine improvements
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1403529116-18385-1-git-send-email-dborkman@redhat.com>
+References: <1403529116-18385-1-git-send-email-dborkman@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 25 Jun 2014 16:04:34 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add X-Gene platform reboot driver dts node.
+From: Daniel Borkmann <dborkman@redhat.com>
+Date: Mon, 23 Jun 2014 15:11:53 +0200
 
-Signed-off-by: Feng Kan <fkan@apm.com>
----
- arch/arm64/boot/dts/apm-storm.dtsi | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+> So almost a month passed, and I don't want this to get lost
+> somewhere. I have applied the feedback given at that time to
+> this set, rebased plus tested it against latest net-next. I
+> decided to route this via netdev as it improves performance
+> upon library code that provides library bits for SCTP, i.e.
+> for non-linear skb csum handling in IPVS. Thus, resending
+> this for George before it gets lost.
 
-diff --git a/arch/arm64/boot/dts/apm-storm.dtsi b/arch/arm64/boot/dts/apm-storm.dtsi
-index 40aa96c..53e70f8 100644
---- a/arch/arm64/boot/dts/apm-storm.dtsi
-+++ b/arch/arm64/boot/dts/apm-storm.dtsi
-@@ -103,6 +103,11 @@
- 		#size-cells = <2>;
- 		ranges;
- 
-+		scu: system-clk-controller@17000000 {
-+			compatible = "apm,xgene-scu","syscon";
-+			reg = <0x0 0x17000000 0x0 0x400>;
-+		};
-+
- 		clocks {
- 			#address-cells = <2>;
- 			#size-cells = <2>;
-@@ -397,5 +402,12 @@
- 			#clock-cells = <1>;
- 			clocks = <&rtcclk 0>;
- 		};
-+
-+		reboot@17000014 {
-+			compatible = "syscon-reboot";
-+			regmap = <&scu>;
-+			offset = <0x14>;
-+			mask = <0x1>;
-+		};
- 	};
- };
--- 
-1.9.1
-
+Series applied, thanks Daniel.
