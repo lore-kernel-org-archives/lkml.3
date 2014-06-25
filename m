@@ -1,303 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754758AbaFYCyt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 22:54:49 -0400
-Received: from mail-yh0-f44.google.com ([209.85.213.44]:36592 "EHLO
-	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753934AbaFYCxY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 22:53:24 -0400
-From: James A Shackleford <shack@linux.com>
-To: gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net,
-        florian.c.schilhabel@googlemail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Cc: James A Shackleford <shack@linux.com>
-Subject: [PATCH 3/8] staging: rtl8712: remove wrapper function list_insert_tail
-Date: Tue, 24 Jun 2014 22:52:36 -0400
-Message-Id: <1403664761-15728-3-git-send-email-shack@linux.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1403664761-15728-2-git-send-email-shack@linux.com>
-References: <1403664761-15728-1-git-send-email-shack@linux.com>
- <1403664761-15728-2-git-send-email-shack@linux.com>
+	id S1754819AbaFYC4P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 22:56:15 -0400
+Received: from mail-by2lp0238.outbound.protection.outlook.com ([207.46.163.238]:41022
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753934AbaFYC4N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 22:56:13 -0400
+X-WSS-ID: 0N7PETF-08-1PN-02
+X-M-MSG: 
+Message-ID: <53AA3A3A.2050401@amd.com>
+Date: Tue, 24 Jun 2014 21:55:54 -0500
+From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Mark Rutland <mark.rutland@arm.com>
+CC: Marc Zyngier <Marc.Zyngier@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/2] arm/gic: Add supports for GICv2m MSI(-X)
+References: <1403569980-12913-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <1403569980-12913-3-git-send-email-suravee.suthikulpanit@amd.com>
+ <20140624101111.GD5856@leverpostej>
+In-Reply-To: <20140624101111.GD5856@leverpostej>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(377454003)(51704005)(479174003)(164054003)(24454002)(189002)(199002)(51914003)(92726001)(20776003)(64706001)(87266999)(50986999)(74662001)(74502001)(85306003)(47776003)(36756003)(101416001)(95666004)(105586002)(76176999)(65816999)(97736001)(86362001)(54356999)(87936001)(83072002)(31966008)(92566001)(21056001)(65806001)(76482001)(19580395003)(81542001)(46102001)(84676001)(85852003)(83506001)(83322001)(68736004)(44976005)(80022001)(19580405001)(77982001)(4396001)(59896001)(33656002)(64126003)(81342001)(102836001)(50466002)(79102001)(99396002)(106466001)(65956001)(23756003)(107046001);DIR:OUT;SFP:;SCL:1;SRVR:CY1PR0201MB0924;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 02530BD3AA
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-list_insert_tail is just an inline wrapper around list_add_tail.  This
-patch removes the wrapper and directly uses list_add_tail.
+Mark,
 
-Signed-off-by: James A Shackleford <shack@linux.com>
----
- drivers/staging/rtl8712/osdep_service.h   |    6 ------
- drivers/staging/rtl8712/rtl8712_recv.c    |   10 +++++-----
- drivers/staging/rtl8712/rtl871x_cmd.c     |    6 +++---
- drivers/staging/rtl8712/rtl871x_io.c      |    2 +-
- drivers/staging/rtl8712/rtl871x_mlme.c    |    8 ++++----
- drivers/staging/rtl8712/rtl871x_mp.c      |    2 +-
- drivers/staging/rtl8712/rtl871x_recv.c    |    2 +-
- drivers/staging/rtl8712/rtl871x_sta_mgt.c |    6 +++---
- drivers/staging/rtl8712/rtl871x_xmit.c    |   12 ++++++------
- 9 files changed, 24 insertions(+), 30 deletions(-)
+Thank you for all your comments. Please see my reply below. I have 
+omitted the minor ones.
 
-diff --git a/drivers/staging/rtl8712/osdep_service.h b/drivers/staging/rtl8712/osdep_service.h
-index 58f2090..bc5e922 100644
---- a/drivers/staging/rtl8712/osdep_service.h
-+++ b/drivers/staging/rtl8712/osdep_service.h
-@@ -115,12 +115,6 @@ For the following list_xxx operations,
- caller must guarantee the atomic context.
- Otherwise, there will be racing condition.
- */
--static inline void list_insert_tail(struct list_head *plist,
--				    struct list_head *phead)
--{
--	list_add_tail(plist, phead);
--}
--
- static inline u32 _down_sema(struct semaphore *sema)
- {
- 	if (down_interruptible(sema))
-diff --git a/drivers/staging/rtl8712/rtl8712_recv.c b/drivers/staging/rtl8712/rtl8712_recv.c
-index 22840a1..b510312 100644
---- a/drivers/staging/rtl8712/rtl8712_recv.c
-+++ b/drivers/staging/rtl8712/rtl8712_recv.c
-@@ -73,7 +73,7 @@ int r8712_init_recv_priv(struct recv_priv *precvpriv, struct _adapter *padapter)
- 			break;
- 		precvbuf->ref_cnt = 0;
- 		precvbuf->adapter = padapter;
--		list_insert_tail(&precvbuf->list,
-+		list_add_tail(&precvbuf->list,
- 				 &(precvpriv->free_recv_buf_queue.queue));
- 		precvbuf++;
- 	}
-@@ -146,7 +146,7 @@ int r8712_free_recvframe(union recv_frame *precvframe,
- 	}
- 	spin_lock_irqsave(&pfree_recv_queue->lock, irqL);
- 	list_delete(&(precvframe->u.hdr.list));
--	list_insert_tail(&(precvframe->u.hdr.list),
-+	list_add_tail(&(precvframe->u.hdr.list),
- 			 get_list_head(pfree_recv_queue));
- 	if (padapter != NULL) {
- 		if (pfree_recv_queue == &precvpriv->free_recv_queue)
-@@ -297,7 +297,7 @@ union recv_frame *r8712_recvframe_chk_defrag(struct _adapter *padapter,
- 			}
- 			/* Then enqueue the 0~(n-1) fragment to the defrag_q */
- 			phead = get_list_head(pdefrag_q);
--			list_insert_tail(&pfhdr->list, phead);
-+			list_add_tail(&pfhdr->list, phead);
- 			prtnframe = NULL;
- 		} else {
- 			/* can't find this ta's defrag_queue, so free this
-@@ -312,7 +312,7 @@ union recv_frame *r8712_recvframe_chk_defrag(struct _adapter *padapter,
- 		 * enqueue the last fragment */
- 		if (pdefrag_q != NULL) {
- 			phead = get_list_head(pdefrag_q);
--			list_insert_tail(&pfhdr->list, phead);
-+			list_add_tail(&pfhdr->list, phead);
- 			/*call recvframe_defrag to defrag*/
- 			precv_frame = recvframe_defrag(padapter, pdefrag_q);
- 			prtnframe = precv_frame;
-@@ -512,7 +512,7 @@ static int enqueue_reorder_recvframe(struct recv_reorder_ctrl *preorder_ctrl,
- 			break;
- 	}
- 	list_delete(&(prframe->u.hdr.list));
--	list_insert_tail(&(prframe->u.hdr.list), plist);
-+	list_add_tail(&(prframe->u.hdr.list), plist);
- 	return true;
- }
- 
-diff --git a/drivers/staging/rtl8712/rtl871x_cmd.c b/drivers/staging/rtl8712/rtl871x_cmd.c
-index 689364d..cae8ee6 100644
---- a/drivers/staging/rtl8712/rtl871x_cmd.c
-+++ b/drivers/staging/rtl8712/rtl871x_cmd.c
-@@ -126,7 +126,7 @@ static sint _enqueue_cmd(struct  __queue *queue, struct cmd_obj *obj)
- 	if (obj == NULL)
- 		return _SUCCESS;
- 	spin_lock_irqsave(&queue->lock, irqL);
--	list_insert_tail(&obj->list, &queue->queue);
-+	list_add_tail(&obj->list, &queue->queue);
- 	spin_unlock_irqrestore(&queue->lock, irqL);
- 	return _SUCCESS;
- }
-@@ -190,7 +190,7 @@ u32 r8712_enqueue_cmd_ex(struct cmd_priv *pcmdpriv, struct cmd_obj *obj)
- 		return _FAIL;
- 	queue = &pcmdpriv->cmd_queue;
- 	spin_lock_irqsave(&queue->lock, irqL);
--	list_insert_tail(&obj->list, &queue->queue);
-+	list_add_tail(&obj->list, &queue->queue);
- 	spin_unlock_irqrestore(&queue->lock, irqL);
- 	up(&pcmdpriv->cmd_queue_sema);
- 	return _SUCCESS;
-@@ -956,7 +956,7 @@ void r8712_createbss_cmd_callback(struct _adapter *padapter,
- 				goto createbss_cmd_fail;
- 			pwlan->last_scanned = jiffies;
- 		} else
--			list_insert_tail(&(pwlan->list),
-+			list_add_tail(&(pwlan->list),
- 					 &pmlmepriv->scanned_queue.queue);
- 		pnetwork->Length = r8712_get_ndis_wlan_bssid_ex_sz(pnetwork);
- 		memcpy(&(pwlan->network), pnetwork, pnetwork->Length);
-diff --git a/drivers/staging/rtl8712/rtl871x_io.c b/drivers/staging/rtl8712/rtl871x_io.c
-index c42a578..8858687 100644
---- a/drivers/staging/rtl8712/rtl871x_io.c
-+++ b/drivers/staging/rtl8712/rtl871x_io.c
-@@ -132,7 +132,7 @@ uint r8712_alloc_io_queue(struct _adapter *adapter)
- 	pio_req = (struct io_req *)(pio_queue->free_ioreqs_buf);
- 	for (i = 0; i < NUM_IOREQ; i++) {
- 		INIT_LIST_HEAD(&pio_req->list);
--		list_insert_tail(&pio_req->list, &pio_queue->free_ioreqs);
-+		list_add_tail(&pio_req->list, &pio_queue->free_ioreqs);
- 		pio_req++;
- 	}
- 	if ((register_intf_hdl((u8 *)adapter, &(pio_queue->intf))) == _FAIL)
-diff --git a/drivers/staging/rtl8712/rtl871x_mlme.c b/drivers/staging/rtl8712/rtl871x_mlme.c
-index 3000b2a..05ff7dd 100644
---- a/drivers/staging/rtl8712/rtl871x_mlme.c
-+++ b/drivers/staging/rtl8712/rtl871x_mlme.c
-@@ -70,7 +70,7 @@ static sint _init_mlme_priv(struct _adapter *padapter)
- 	pnetwork = (struct wlan_network *)pbuf;
- 	for (i = 0; i < MAX_BSS_CNT; i++) {
- 		INIT_LIST_HEAD(&(pnetwork->list));
--		list_insert_tail(&(pnetwork->list),
-+		list_add_tail(&(pnetwork->list),
- 				 &(pmlmepriv->free_bss_pool.queue));
- 		pnetwork++;
- 	}
-@@ -118,7 +118,7 @@ static void _free_network(struct mlme_priv *pmlmepriv,
- 		return;
- 	spin_lock_irqsave(&free_queue->lock, irqL);
- 	list_delete(&pnetwork->list);
--	list_insert_tail(&pnetwork->list, &free_queue->queue);
-+	list_add_tail(&pnetwork->list, &free_queue->queue);
- 	pmlmepriv->num_of_scanned--;
- 	spin_unlock_irqrestore(&free_queue->lock, irqL);
- }
-@@ -133,7 +133,7 @@ static void _free_network_nolock(struct mlme_priv *pmlmepriv,
- 	if (pnetwork->fixed == true)
- 		return;
- 	list_delete(&pnetwork->list);
--	list_insert_tail(&pnetwork->list, get_list_head(free_queue));
-+	list_add_tail(&pnetwork->list, get_list_head(free_queue));
- 	pmlmepriv->num_of_scanned--;
- }
- 
-@@ -437,7 +437,7 @@ static void update_scanned_network(struct _adapter *adapter,
- 			bssid_ex_sz = r8712_get_ndis_wlan_bssid_ex_sz(target);
- 			target->Length = bssid_ex_sz;
- 			memcpy(&pnetwork->network, target, bssid_ex_sz);
--			list_insert_tail(&pnetwork->list, &queue->queue);
-+			list_add_tail(&pnetwork->list, &queue->queue);
- 		}
- 	} else {
- 		/* we have an entry and we are going to update it. But
-diff --git a/drivers/staging/rtl8712/rtl871x_mp.c b/drivers/staging/rtl8712/rtl871x_mp.c
-index 594d023..aae77f0 100644
---- a/drivers/staging/rtl8712/rtl871x_mp.c
-+++ b/drivers/staging/rtl8712/rtl871x_mp.c
-@@ -66,7 +66,7 @@ static int init_mp_priv(struct mp_priv *pmp_priv)
- 	pmp_xmitframe = (struct mp_xmit_frame *)pmp_priv->pmp_xmtframe_buf;
- 	for (i = 0; i < NR_MP_XMITFRAME; i++) {
- 		INIT_LIST_HEAD(&(pmp_xmitframe->list));
--		list_insert_tail(&(pmp_xmitframe->list),
-+		list_add_tail(&(pmp_xmitframe->list),
- 				 &(pmp_priv->free_mp_xmitqueue.queue));
- 		pmp_xmitframe->pkt = NULL;
- 		pmp_xmitframe->frame_tag = MP_FRAMETAG;
-diff --git a/drivers/staging/rtl8712/rtl871x_recv.c b/drivers/staging/rtl8712/rtl871x_recv.c
-index 269c872..cd31982 100644
---- a/drivers/staging/rtl8712/rtl871x_recv.c
-+++ b/drivers/staging/rtl8712/rtl871x_recv.c
-@@ -87,7 +87,7 @@ sint _r8712_init_recv_priv(struct recv_priv *precvpriv,
- 	precvframe = (union recv_frame *)precvpriv->precv_frame_buf;
- 	for (i = 0; i < NR_RECVFRAME; i++) {
- 		INIT_LIST_HEAD(&(precvframe->u.list));
--		list_insert_tail(&(precvframe->u.list),
-+		list_add_tail(&(precvframe->u.list),
- 				 &(precvpriv->free_recv_queue.queue));
- 		r8712_os_recv_resource_alloc(padapter, precvframe);
- 		precvframe->u.hdr.adapter = padapter;
-diff --git a/drivers/staging/rtl8712/rtl871x_sta_mgt.c b/drivers/staging/rtl8712/rtl871x_sta_mgt.c
-index 8dd5e35..e7f3cdb 100644
---- a/drivers/staging/rtl8712/rtl871x_sta_mgt.c
-+++ b/drivers/staging/rtl8712/rtl871x_sta_mgt.c
-@@ -66,7 +66,7 @@ u32 _r8712_init_sta_priv(struct	sta_priv *pstapriv)
- 	for (i = 0; i < NUM_STA; i++) {
- 		_init_stainfo(psta);
- 		INIT_LIST_HEAD(&(pstapriv->sta_hash[i]));
--		list_insert_tail(&psta->list,
-+		list_add_tail(&psta->list,
- 				 get_list_head(&pstapriv->free_sta_queue));
- 		psta++;
- 	}
-@@ -137,7 +137,7 @@ struct sta_info *r8712_alloc_stainfo(struct sta_priv *pstapriv, u8 *hwaddr)
- 			goto exit;
- 		}
- 		phash_list = &(pstapriv->sta_hash[index]);
--		list_insert_tail(&psta->hash_list, phash_list);
-+		list_add_tail(&psta->hash_list, phash_list);
- 		pstapriv->asoc_sta_count++;
- 
- /* For the SMC router, the sequence number of first packet of WPS handshake
-@@ -208,7 +208,7 @@ void r8712_free_stainfo(struct _adapter *padapter, struct sta_info *psta)
- 	}
- 	spin_lock(&(pfree_sta_queue->lock));
- 	/* insert into free_sta_queue; 20061114 */
--	list_insert_tail(&psta->list, get_list_head(pfree_sta_queue));
-+	list_add_tail(&psta->list, get_list_head(pfree_sta_queue));
- 	spin_unlock(&(pfree_sta_queue->lock));
- }
- 
-diff --git a/drivers/staging/rtl8712/rtl871x_xmit.c b/drivers/staging/rtl8712/rtl871x_xmit.c
-index 989fb67..71d0d0d 100644
---- a/drivers/staging/rtl8712/rtl871x_xmit.c
-+++ b/drivers/staging/rtl8712/rtl871x_xmit.c
-@@ -103,7 +103,7 @@ sint _r8712_init_xmit_priv(struct xmit_priv *pxmitpriv,
- 		pxframe->pkt = NULL;
- 		pxframe->buf_addr = NULL;
- 		pxframe->pxmitbuf = NULL;
--		list_insert_tail(&(pxframe->list),
-+		list_add_tail(&(pxframe->list),
- 				 &(pxmitpriv->free_xmit_queue.queue));
- 		pxframe++;
- 	}
-@@ -143,7 +143,7 @@ sint _r8712_init_xmit_priv(struct xmit_priv *pxmitpriv,
- 				 ((addr_t) (pxmitbuf->pallocated_buf) &
- 				 (XMITBUF_ALIGN_SZ - 1));
- 		r8712_xmit_resource_alloc(padapter, pxmitbuf);
--		list_insert_tail(&pxmitbuf->list,
-+		list_add_tail(&pxmitbuf->list,
- 				 &(pxmitpriv->free_xmitbuf_queue.queue));
- 		pxmitbuf++;
- 	}
-@@ -767,7 +767,7 @@ int r8712_free_xmitbuf(struct xmit_priv *pxmitpriv, struct xmit_buf *pxmitbuf)
- 		return _FAIL;
- 	spin_lock_irqsave(&pfree_xmitbuf_queue->lock, irqL);
- 	list_delete(&pxmitbuf->list);
--	list_insert_tail(&(pxmitbuf->list), get_list_head(pfree_xmitbuf_queue));
-+	list_add_tail(&(pxmitbuf->list), get_list_head(pfree_xmitbuf_queue));
- 	pxmitpriv->free_xmitbuf_cnt++;
- 	spin_unlock_irqrestore(&pfree_xmitbuf_queue->lock, irqL);
- 	return _SUCCESS;
-@@ -833,7 +833,7 @@ void r8712_free_xmitframe(struct xmit_priv *pxmitpriv,
- 		pndis_pkt = pxmitframe->pkt;
- 		pxmitframe->pkt = NULL;
- 	}
--	list_insert_tail(&pxmitframe->list, get_list_head(pfree_xmit_queue));
-+	list_add_tail(&pxmitframe->list, get_list_head(pfree_xmit_queue));
- 	pxmitpriv->free_xmitframe_cnt++;
- 	spin_unlock_irqrestore(&pfree_xmit_queue->lock, irqL);
- 	if (netif_queue_stopped(padapter->pnetdev))
-@@ -940,9 +940,9 @@ sint r8712_xmit_classifier(struct _adapter *padapter,
- 		   psta, pattrib->priority);
- 	spin_lock_irqsave(&pstapending->lock, irqL0);
- 	if (list_empty(&ptxservq->tx_pending))
--		list_insert_tail(&ptxservq->tx_pending,
-+		list_add_tail(&ptxservq->tx_pending,
- 				 get_list_head(pstapending));
--	list_insert_tail(&pxmitframe->list,
-+	list_add_tail(&pxmitframe->list,
- 			 get_list_head(&ptxservq->sta_pending));
- 	ptxservq->qcnt++;
- 	spin_unlock_irqrestore(&pstapending->lock, irqL0);
--- 
-1.7.9.5
+On 6/24/2014 5:11 AM, Mark Rutland wrote:
+> On Tue, Jun 24, 2014 at 01:33:00AM +0100, suravee.suthikulpanit@amd.com wrote:
+>> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+>> +static int alloc_msi_irq(struct gicv2m_msi_data *data, int nvec, int *irq)
+>> +{
+>> +       int size = sizeof(unsigned long) * data->bm_sz;
+>> +       int next = size, ret, num;
+>> +
+>> +       spin_lock(&data->msi_cnt_lock);
+>> +
+>> +       for (num = nvec; num > 0; num--) {
+>> +               next = bitmap_find_next_zero_area(data->bm,
+>> +                                       size, 0, num, 0);
+>> +               if (next < size)
+>> +                       break;
+>> +       }
+>
+> If max_spi_cnt is not a multiple of BITS_PER_LONG, this can allocate a
+> number greater or equal to max_spi_cnt, but below size. We should never
+> allocate max_spi_cnt or above.
+>
+Thanks for the catch. I also need to clean up this logic for V2.
+
+>> +       spin_unlock(&data->msi_cnt_lock);
+>> +
+>> +       return ret;
+>> +}
+>> +
+>> +static void free_msi_irq(struct gicv2m_msi_data *data, unsigned int irq)
+>> +{
+>> +       int pos;
+>> +
+>> +       spin_lock(&data->msi_cnt_lock);
+>> +
+>> +       pos = irq - data->spi_start;
+>> +       if (pos >= 0 && pos < data->max_spi_cnt)
+>
+> Should either of these cases ever happen?
+
+This is to check if the irq provided is within the MSI range.
+
+>> +static int gicv2m_setup_msi_irq(struct msi_chip *chip, struct pci_dev *pdev,
+>> +                     struct msi_desc *desc)
+>> +{
+>> +       int avail, irq = 0;
+>> +       struct msi_msg msg;
+>> +       phys_addr_t addr;
+>> +       struct gicv2m_msi_data *data = to_gicv2m_msi_data(chip);
+>> +
+>> +       if (data == NULL) {
+>
+> If container_of returns NULL, you have bigger problems.
+
+It was just sanity check. But, if you think this is obvious, I'll remove 
+this check then.
+
+>> +int __init gicv2m_msi_init(struct device_node *node,
+>> +                          struct gicv2m_msi_data *msi)
+>> +{
+>> +       unsigned int val;
+>> +       const __be32 *msi_be;
+>
+> Every time I see a __be32* in a DT probe function I weep. There is no
+> need to deal with the internal details of the DTB.
+>
+>> +
+>> +       msi_be = of_get_address(node, GIC_OF_MSIV2M_RANGE_INDEX, NULL, NULL);
+>> +       if (!msi_be) {
+>> +               pr_err("GICv2m failed. Fail to locate MSI base.\n");
+>> +               return -EINVAL;
+>> +       }
+>> +
+>> +       msi->paddr64 = of_translate_address(node, msi_be);
+>> +       msi->base = of_iomap(node, GIC_OF_MSIV2M_RANGE_INDEX);
+>
+> You can instead use of_address_to_resource to query the address from the
+> DTB once, without having to muck about with endianness conversion
+> manually. Take a look at what of_iomap does.
+
+Thanks for this suggestion. I was not quite familiar with the "of_" 
+interface. I am cleaning up this whole section now.
+
+> I'm surprised we don't have an ioremap_resource given we have a devm_
+> variant.
+>
+
+>> +
+>> +       /*
+>> +       * MSI_TYPER:
+>> +       *     [31:26] Reserved
+>> +       *     [25:16] lowest SPI assigned to MSI
+>> +       *     [15:10] Reserved
+>> +       *     [9:0]   Numer of SPIs assigned to MSI
+>> +       */
+>> +       val = __raw_readl(msi->base + MSI_TYPER);
+>
+> Are you sure you want to use __raw_readl?
+>
+Probably not.  I am replacing this with ioread32(msi->base + MSI_TYPER).
+
+>> +       if (!val) {
+>> +               pr_warn("GICv2m: Failed to read MSI_TYPER register\n");
+>> +               return -EINVAL;
+>> +       }
+>> +
+>> +       msi->spi_start = (val >> 16) & 0x3ff;
+>> +       msi->max_spi_cnt = val & 0x3ff;
+>> +
+>> +       pr_debug("GICv2m: SPI = %u, cnt = %u\n",
+>> +               msi->spi_start, msi->max_spi_cnt);
+>> +
+>> +       if (msi->spi_start < GIC_V2M_MIN_SPI ||
+>> +               msi->max_spi_cnt >= GIC_V2M_MAX_SPI) {
+>> +                       pr_err("GICv2m: Init failed\n");
+>> +                       return -EINVAL;
+>> +       }
+>> +
+>> +       msi->bm_sz = BITS_TO_LONGS(msi->max_spi_cnt);
+>
+> So msi->bm_sz is msi->max_spi_cnt in _longs_ (rounded up)...
+>
+>> +       msi->bm = kzalloc(msi->bm_sz, GFP_KERNEL);
+>
+> ...yet we allocate that many _bytes_?
+>
+Sorry, I got a bit confused here. I'll fix this.
+
+>> +
+>> +       gic_arch_extn.irq_mask = gicv2m_mask_msi;
+>> +       gic_arch_extn.irq_unmask = gicv2m_unmask_msi;
+>
+> I'll leave others to comment on the validity of this...
+>
+Marc has commented this part in the other patch.
+
+>> +       void __iomem *base;       /* GICv2m virt address */
+>> +       unsigned int spi_start;   /* The SPI number that MSIs start */
+>> +       unsigned int max_spi_cnt; /* The number of SPIs for MSIs */
+>> +       unsigned long *bm;        /* MSI vector bitmap */
+>> +       unsigned long bm_sz;      /* MSI bitmap size */
+>
+> It's a bit odd in my mind that this is in longs. Why not just use
+> max_spi_cnt, which you can trivially use to determine bytes or longs?
+
+That's true. I'm cleaning this up.
+
+>> @@ -246,7 +254,8 @@ static int gic_set_affinity(struct irq_data *d, const struct cpumask *mask_val,
+>>                              bool force)
+>>   {
+>>          void __iomem *reg = gic_dist_base(d) + GIC_DIST_TARGET + (gic_irq(d) & ~3);
+>> -       unsigned int cpu, shift = (gic_irq(d) % 4) * 8;
+>> +       unsigned int shift = (gic_irq(d) % 4) * 8;
+>> +       unsigned int cpu = cpumask_any_and(mask_val, cpu_online_mask);
+>
+> Unrelated change?
+
+Sorry, this was not supposed to be part of this patch.
+
+Thanks,
+
+Suravee
 
