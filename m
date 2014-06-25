@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932228AbaFYOjw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 10:39:52 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:54136 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932183AbaFYOjv (ORCPT
+	id S1757158AbaFYOoS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 10:44:18 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:33038 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756454AbaFYOoP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 10:39:51 -0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <akpm@linux-foundation.org>
-CC: <iamjoonsoo.kim@lge.com>, <cl@linux.com>, <rientjes@google.com>,
-        <penberg@kernel.org>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-Subject: [PATCH] slab: document why cache can have no per cpu array on kfree
-Date: Wed, 25 Jun 2014 18:39:37 +0400
-Message-ID: <1403707177-3740-1-git-send-email-vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <20140624073840.GC4836@js1304-P5Q-DELUXE>
-References: <20140624073840.GC4836@js1304-P5Q-DELUXE>
+	Wed, 25 Jun 2014 10:44:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20140625134354.GA7892@redhat.com>
+References: <1403642893-23107-1-git-send-email-keescook@chromium.org>
+	<1403642893-23107-5-git-send-email-keescook@chromium.org>
+	<20140625134354.GA7892@redhat.com>
+Date: Wed, 25 Jun 2014 07:44:15 -0700
+X-Google-Sender-Auth: 0nCLCSOhkNigsvazxcb0T8pkDus
+Message-ID: <CAGXu5j+yutPBpEq3qiVwAMT6q0y36bwM2ksBvj-=6AqkWAgaGQ@mail.gmail.com>
+Subject: Re: [PATCH v8 4/9] sched: move no_new_privs into new atomic flags
+From: Kees Cook <keescook@chromium.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Andy Lutomirski <luto@amacapital.net>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
----
- mm/slab.c |    4 ++++
- 1 file changed, 4 insertions(+)
+On Wed, Jun 25, 2014 at 6:43 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 06/24, Kees Cook wrote:
+>>
+>> --- a/include/linux/sched.h
+>> +++ b/include/linux/sched.h
+>> @@ -1307,8 +1307,7 @@ struct task_struct {
+>>                                * execve */
+>>       unsigned in_iowait:1;
+>>
+>> -     /* task may not gain privileges */
+>> -     unsigned no_new_privs:1;
+>> +     unsigned long atomic_flags; /* Flags needing atomic access. */
+>>
+>>       /* Revert to default priority/policy when forking */
+>>       unsigned sched_reset_on_fork:1;
+>
+> Agreed, personally I like it more than seccomp->flags.
+>
+> But probably it would be better to place the new member before/after
+> other bitfields to save the space?
 
-diff --git a/mm/slab.c b/mm/slab.c
-index 6009e44a4d1d..4cb2619277ff 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -3530,6 +3530,10 @@ static inline void __cache_free(struct kmem_cache *cachep, void *objp,
- 	kmemcheck_slab_free(cachep, objp, cachep->object_size);
- 
- #ifdef CONFIG_MEMCG_KMEM
-+	/*
-+	 * Per cpu arrays are disabled for dead memcg caches in order not to
-+	 * prevent self-destruction.
-+	 */
- 	if (unlikely(!ac)) {
- 		int nodeid = page_to_nid(virt_to_page(objp));
- 
+Sure, I'll move it down. (Though I thought the compiler was smarter about that.)
+
+-Kees
+
 -- 
-1.7.10.4
-
+Kees Cook
+Chrome OS Security
