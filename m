@@ -1,230 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757011AbaFYWhl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 18:37:41 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:50076 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755049AbaFYWhi (ORCPT
+	id S1757111AbaFYWhy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 18:37:54 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:47243 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757053AbaFYWhv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 18:37:38 -0400
-Message-ID: <53AB4F2D.2060208@wwwdotorg.org>
-Date: Wed, 25 Jun 2014 16:37:33 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 25 Jun 2014 18:37:51 -0400
+Date: Wed, 25 Jun 2014 15:36:24 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Vlastimil Babka <vbabka@suse.cz>
+cc: Konstantin Khlebnikov <koct9i@gmail.com>, Hugh Dickins <hughd@google.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: mm: shm: hang in shmem_fallocate
+In-Reply-To: <53A9A7D8.2020703@suse.cz>
+Message-ID: <alpine.LSU.2.11.1406251152450.1580@eggly.anvils>
+References: <52AE7B10.2080201@oracle.com> <52F6898A.50101@oracle.com> <alpine.LSU.2.11.1402081841160.26825@eggly.anvils> <52F82E62.2010709@oracle.com> <539A0FC8.8090504@oracle.com> <alpine.LSU.2.11.1406151921070.2850@eggly.anvils>
+ <53A9A7D8.2020703@suse.cz>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-To: Andrew Bresticker <abrestic@chromium.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Kishon Vijay Abraham I <kishon@ti.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v1 6/9] usb: xhci: Add NVIDIA Tegra XHCI host-controller
- driver
-References: <1403072180-4944-1-git-send-email-abrestic@chromium.org> <1403072180-4944-7-git-send-email-abrestic@chromium.org>
-In-Reply-To: <1403072180-4944-7-git-send-email-abrestic@chromium.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2014 12:16 AM, Andrew Bresticker wrote:
-> Add support for the on-chip XHCI host controller present on Tegra SoCs.
+On Tue, 24 Jun 2014, Vlastimil Babka wrote:
+> On 06/16/2014 04:29 AM, Hugh Dickins wrote:
+> > On Thu, 12 Jun 2014, Sasha Levin wrote:
+> >> On 02/09/2014 08:41 PM, Sasha Levin wrote:
+> >>> On 02/08/2014 10:25 PM, Hugh Dickins wrote:
+> >>>> Would trinity be likely to have a thread or process repeatedly faulting
+> >>>> in pages from the hole while it is being punched?
+> >>>
+> >>> I can see how trinity would do that, but just to be certain - Cc davej.
+> >>>
+> >>> On 02/08/2014 10:25 PM, Hugh Dickins wrote:
+> >>>> Does this happen with other holepunch filesystems?  If it does not,
+> >>>> I'd suppose it's because the tmpfs fault-in-newly-created-page path
+> >>>> is lighter than a consistent disk-based filesystem's has to be.
+> >>>> But we don't want to make the tmpfs path heavier to match them.
+> >>>
+> >>> No, this is strictly limited to tmpfs, and AFAIK trinity tests hole
+> >>> punching in other filesystems and I make sure to get a bunch of those
+> >>> mounted before starting testing.
+> >>
+> >> Just pinging this one again. I still see hangs in -next where the hang
+> >> location looks same as before:
+> >>
+> > 
+> > Please give this patch a try.  It fixes what I can reproduce, but given
+> > your unexplained page_mapped() BUG in this area, we know there's more
+> > yet to be understood, so perhaps this patch won't do enough for you.
+> > 
 > 
-> The driver is currently very basic: it loads the controller with its
-> firmware, starts the controller, and is able to service messages sent
-> by the controller's firmware.  The hardware supports device mode as
-> well as runtime power-gating, but support for these is not yet
-> implemented here.
+> Hi,
+
+Sorry for the slow response: I have got confused, learnt more, and
+changed my mind, several times in the course of replying to you.
+I think this reply will be stable... though not final.
+
 > 
-> Based on work by:
->   Ajay Gupta <ajayg@nvidia.com>
->   Bharath Yadav <byadav@nvidia.com>
+> since this got a CVE,
 
-> diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+Oh.  CVE-2014-4171.  Couldn't locate that yesterday but see it now.
+Looks overrated to me (and amusing to see my pompous words about a
+"range notification mechanism" taken too seriously), but of course
+we do need to address it.
 
-> +config USB_XHCI_TEGRA
-> +	tristate "NVIDIA Tegra XHCI support"
-> +	depends on ARCH_TEGRA
-> +	select PINCTRL_TEGRA_XUSB
-> +	select TEGRA_XUSB_MBOX
-> +	select FW_LOADER
+> I've been looking at backport to an older kernel where
 
-I think at least some of those should be depends. In particular, the
-mbox driver patch said:
+Thanks a lot for looking into it.  I didn't think it was worth a
+Cc: stable@vger.kernel.org myself, but admit to being both naive
+and inconsistent about that.
 
-+config TEGRA_XUSB_MBOX
-+	bool "NVIDIA Tegra XUSB mailbox support"
+> fallocate(FALLOC_FL_PUNCH_HOLE) is not yet supported, and there's also no
+> range notification mechanism yet. There's just madvise(MADV_REMOVE) and since
 
-which means the option is user-selectable. Either MBOX should be
-invisible and selected here, or it should be visible with USB_XHCI_TEGRA
-depending on it.
+Yes, that mechanism could be ported back pre-v3.5,
+but I agree with your preference not to.
 
-> diff --git a/drivers/usb/host/xhci-tegra.c b/drivers/usb/host/xhci-tegra.c
+> it doesn't guarantee anything, it seems simpler just to give up retrying to
 
-> +#define TEGRA_XHCI_UTMI_PHYS 3
-> +#define TEGRA_XHCI_HSIC_PHYS 2
-> +#define TEGRA_XHCI_USB3_PHYS 2
-> +#define TEGRA_XHCI_MAX_PHYS (TEGRA_XHCI_UTMI_PHYS + TEGRA_XHCI_HSIC_PHYS + \
-> +			     TEGRA_XHCI_USB3_PHYS)
+Right, I don't think we have formally documented the instant of "full hole"
+that I strove for there, and it's probably not externally verifiable, nor
+guaranteed by other filesystems.  I just thought it a good QoS aim, but
+it has given us this problem.
 
-Do those numbers need to be synchronized with the XUSB padctrl driver at
-all?
+> truncate really everything. Then I realized that maybe it would work for
+> current kernel as well, without having to add any checks in the page fault
+> path. The semantics of fallocate(FALLOC_FL_PUNCH_HOLE) might look different
+> from madvise(MADV_REMOVE), but it seems to me that as long as it does discard
+> the old data from the range, it's fine from any information leak point of view.
+> If someone races page faulting, it IMHO doesn't matter if he gets a new zeroed
+> page before the parallel truncate has ended, or right after it has ended.
 
-> +static u32 csb_readl(struct tegra_xhci_hcd *tegra, u32 addr)
-> +{
-> +	u32 page, offset;
-> +
-> +	page = CSB_PAGE_SELECT(addr);
-> +	offset = CSB_PAGE_OFFSET(addr);
-> +	fpci_writel(tegra, page, XUSB_CFG_ARU_C11_CSBRANGE);
-> +	return fpci_readl(tegra, XUSB_CFG_CSB_BASE_ADDR + offset);
-> +}
+Yes.  I disagree with your actual patch, for more than one reason,
+but it's in the right area; and I found myself growing to agree with
+you, that's it's better to have one kind of fix for all these releases,
+than one for v3.5..v3.15 and another for v3.1..v3.4.  (The CVE cites
+v3.0 too, I'm sceptical about that, but haven't tried it as yet.)
 
-I assume some higher level has the required locking or single-threading
-so that the keyhole register accesses don't get interleaved?
+If I'd realized that we were going to have to backport, I'd have spent
+longer looking for a patch like yours originally.  So my inclination
+now is to go your route, make a new patch for v3.16 and backports,
+and revert the f00cdc6df7d7 that has already gone in.
 
-> +static void tegra_xhci_cfg(struct tegra_xhci_hcd *tegra)
-> +{
-> +	u32 reg;
-> +
-> +	reg = ipfs_readl(tegra, IPFS_XUSB_HOST_CONFIGURATION_0);
-> +	reg |= IPFS_EN_FPCI;
-> +	ipfs_writel(tegra, reg, IPFS_XUSB_HOST_CONFIGURATION_0);
-> +	udelay(10);
-> +
-> +	/* Program Bar0 Space */
-> +	reg = fpci_readl(tegra, XUSB_CFG_4);
-> +	reg |= tegra->hcd->rsrc_start;
+> So I'm posting it here as a RFC. I haven't thought about the
+> i915_gem_object_truncate caller yet. I think that this path wouldn't satisfy
 
-Don't you need to mask out the original value here? I guess whatever is
-being written is probably always the same, but it seems scary to assume
-that a bootloader, or previous version of a module during development,
-didn't write something unexpected there. Perhaps if the HW module's
-reset is pulsed we don't need to worry though.
+My understanding is that i915_gem_object_truncate() is not a problem,
+that i915's dev->struct_mutex serializes all its relevant transitions,
+plus the object woudn't even be interestingly accessible to the user.
 
-> +static int tegra_xhci_load_firmware(struct tegra_xhci_hcd *tegra)
-> +{
-> +	struct device *dev = tegra->dev;
-> +	struct tegra_xhci_fw_cfgtbl *cfg_tbl;
-> +	u64 fw_base;
-> +	u32 val;
-> +	time_t fw_time;
-> +	struct tm fw_tm;
-> +
-> +	if (csb_readl(tegra, XUSB_CSB_MP_ILOAD_BASE_LO) != 0) {
-> +		dev_info(dev, "Firmware already loaded, Falcon state 0x%x\n",
-> +			 csb_readl(tegra, XUSB_FALC_CPUCTL));
-> +		return 0;
-> +	}
-> +
-> +	cfg_tbl = (struct tegra_xhci_fw_cfgtbl *)tegra->fw_data;
+> the new "lstart < inode->i_size" condition, but I don't know if it's "vulnerable"
+> to the problem.
 
-Are there endianness or CPU word size (e.g. ARMv8) issues here; this is
-casting the content of a data file to a CPU data structure.
+I don't think i915 is vulnerable, but if it is, that condition would
+be fine for it, as would be the patch I'm now thinking of.
 
-> +static int tegra_xhci_set_ss_clk(struct tegra_xhci_hcd *tegra,
-> +				 unsigned long rate)
+> 
+> -----8<-----
+> From: Vlastimil Babka <vbabka@suse.cz>
+> Subject: [RFC PATCH] shmem: prevent livelock between page fault and hole punching
+> 
+> ---
+>  mm/shmem.c | 19 +++++++++++++++++++
+>  1 file changed, 19 insertions(+)
+> 
+> diff --git a/mm/shmem.c b/mm/shmem.c
+> index f484c27..6d6005c 100644
+> --- a/mm/shmem.c
+> +++ b/mm/shmem.c
+> @@ -476,6 +476,25 @@ static void shmem_undo_range(struct inode *inode, loff_t lstart, loff_t lend,
+>  		if (!pvec.nr) {
+>  			if (index == start || unfalloc)
+>  				break;
+> +                        /* 
+> +                         * When this condition is true, it means we were
+> +                         * called from fallocate(FALLOC_FL_PUNCH_HOLE).
+> +                         * To prevent a livelock when someone else is faulting
+> +                         * pages back, we are content with single pass and do
+> +                         * not retry with index = start. It's important that
+> +                         * previous page content has been discarded, and
+> +                         * faulter(s) got new zeroed pages.
+> +                         *
+> +                         * The other callsites are shmem_setattr (for
+> +                         * truncation) and shmem_evict_inode, which set i_size
+> +                         * to truncated size or 0, respectively, and then call
+> +                         * us with lstart == inode->i_size. There we do want to
+> +                         * retry, and livelock cannot happen for other reasons.
+> +                         *
+> +                         * XXX what about i915_gem_object_truncate?
+> +                         */
 
-> +	switch (rate) {
-> +	case TEGRA_XHCI_SS_CLK_HIGH_SPEED:
-> +		/* Reparent to PLLU_480M. Set div first to avoid overclocking */
-> +		old_parent_rate = clk_get_rate(clk_get_parent(clk));
-> +		new_parent_rate = clk_get_rate(tegra->pll_u_480m);
-> +		div = new_parent_rate / rate;
-> +		ret = clk_set_rate(clk, old_parent_rate / div);
-> +		if (ret)
-> +			return ret;
-> +		ret = clk_set_parent(clk, tegra->pll_u_480m);
-> +		if (ret)
-> +			return ret;
+I doubt you have ever faced such a criticism before, but I'm going
+to speak my mind and say that comment is too long!  A comment of that
+length is okay above or just inside or at a natural break in a function,
+but here it distracts too much from what the code is actually doing.
 
-Don't you need to call clk_set_rate() again after reparenting, since the
-divisor will be different, and the rounding too.
+In particular, the words "this condition" are so much closer to the
+condition above than the condition below, that it's rather confusing.
 
-> +static int tegra_xhci_regulator_enable(struct tegra_xhci_hcd *tegra)
-> +{
-> +	int ret;
-> +
-> +	ret = regulator_enable(tegra->s3p3v_reg);
-> +	if (ret < 0)
-> +		return ret;
-> +	ret = regulator_enable(tegra->s1p8v_reg);
-> +	if (ret < 0)
-> +		goto disable_s3p3v;
-> +	ret = regulator_enable(tegra->s1p05v_reg);
-> +	if (ret < 0)
-> +		goto disable_s1p8v;
+/* Single pass when hole-punching to not livelock on racing faults */
+would have been enough (yes, I've cheated, that would be 2 or 4 lines).
 
-Would regulator_bulk_enable() save any code here? Similar in _disable().
+> +                        if (lstart < inode->i_size)
 
-> +static const struct tegra_xhci_soc_config tegra124_soc_config = {
-> +	.firmware_file = "tegra12x/tegra_xusb_firmware",
-> +};
+For a long time I was going to suggest that you leave i_size out of it,
+and use "lend > 0" instead.  Then suddenly I realized that this is the
+wrong place for the test.  And then that it's not your fault, it's mine,
+in v3.1's d0823576bf4b "mm: pincer in truncate_inode_pages_range".
+Wow, that really pessimized the hole-punch case!
 
-I would prefer an "nvidia/" prefix so everything gets namespaced by vendor.
+When is pvec.nr 0?  When we've reached the end of the file.  Why should
+we go to the end of the file, when punching a hole at the start?  Ughh!
 
-"tegra12x" isn't the name of the chip, but rather "Tegra124".
+> +                                break;
+>  			index = start;
+>  			continue;
+>  		}
+> -- 
+> 1.8.4.5
 
-"tegra_" and "_firmware" seem redundant, since they're implied by parent
-directories.
+But there is another problem.  We cannot break out after one pass on
+shmem, because there's a possiblilty that a swap entry in the radix_tree
+got swizzled into a page just as it was about to be removed - your patch
+might then leave that data behind in the hole.
 
-So, how about "nvidia/tegra124/xusb"? (perhaps with .img or .bin file
-extension)
+As it happens, Konstantin Khlebnikov suggested a patch for that a few
+weeks ago, before noticing that it's already handled by the endless loop.
+If we make that loop no longer endless, we need to add in Konstantin's
+"if (shmem_free_swap) goto retry" patch.
 
-> +static int tegra_xhci_probe(struct platform_device *pdev)
+Right now I'm thinking that my idiocy in d0823576bf4b may actually
+be the whole of Trinity's problem: patch below.  If we waste time
+traversing the radix_tree to end-of-file, no wonder that concurrent
+faults have time to put something in the hole every time.
 
-> +	tegra->host_clk = devm_clk_get(&pdev->dev, "xusb_host");
-> +	if (IS_ERR(tegra->host_clk)) {
-> +		ret = PTR_ERR(tegra->host_clk);
-> +		goto put_hcd;
-> +	}
-> +	tegra->falc_clk = devm_clk_get(&pdev->dev, "xusb_falcon_src");
-> +	if (IS_ERR(tegra->falc_clk)) {
-> +		ret = PTR_ERR(tegra->falc_clk);
-> +		goto put_hcd;
-> +	}
-...
+Sasha, may I trespass on your time, and ask you to revert the previous
+patch from your tree, and give this patch below a try?  I am very
+interested to learn if in fact it fixes it for you (as it did for me).
 
-Seems like devm_clk_get_bulk() would be useful:-)
+However, I am wasting your time, in that I think we shall decide that
+it's too unsafe to rely solely upon the patch below (what happens if
+1024 cpus are all faulting on it while we try to punch a 4MB hole at
+end of file? if we care).  I think we shall end up with the optimization
+below (or some such: it can be written in various ways), plus reverting
+d0823576bf4b's "index == start && " pincer, plus Konstantin's
+shmem_free_swap handling, rolled into a single patch; and a similar
+patch (without the swap part) for several functions in truncate.c.
 
-> +	for (i = 0; i < TEGRA_XHCI_UTMI_PHYS; i++) {
-> +		char prop[sizeof("utmi-N")];
-> +
-> +		sprintf(prop, "utmi-%d", i);
+Hugh
 
-Since this loop is cut/paste 3 times just with the string
-"utmi"/"hsic"/"usb3" being different, does it make sense to add an outer
-loop over an array of strings instead of duplicating the loo?
-
-> +	ret = request_firmware_nowait(THIS_MODULE, true,
-> +				      tegra->soc_config->firmware_file,
-> +				      tegra->dev, GFP_KERNEL, tegra,
-> +				      tegra_xhci_probe_finish);
-
-I'm not familiar with that API. I assume the point is this works in allh
-the following situations:
-
-* Driver is built-in, probes before rootfs is available, firmware
-eventually gets loaded a few seconds after rootfs is available.
-
-* Driver is a module and gets loaded from an initrd, firmware is loaded
-from initrd essentially immediately.
-
-* Driver is a module and gets loaded from an initrd, firmware eventually
-gets loaded a few seconds after rootfs is available.
-
-* Driver is a module and gets loaded from rootfs, firmware is loaded
-from rootfs essentially immediately.
+--- 3.16-rc2/mm/shmem.c	2014-06-16 00:28:55.124076531 -0700
++++ linux/mm/shmem.c	2014-06-25 10:28:47.063967052 -0700
+@@ -470,6 +470,7 @@ static void shmem_undo_range(struct inod
+ 	for ( ; ; ) {
+ 		cond_resched();
+ 
++		index = min(index, end);
+ 		pvec.nr = find_get_entries(mapping, index,
+ 				min(end - index, (pgoff_t)PAGEVEC_SIZE),
+ 				pvec.pages, indices);
