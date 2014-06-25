@@ -1,205 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757218AbaFYPNT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 11:13:19 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:62420 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756454AbaFYPNR (ORCPT
+	id S1757260AbaFYPRC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 11:17:02 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:62492 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756769AbaFYPRA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 11:13:17 -0400
+	Wed, 25 Jun 2014 11:17:00 -0400
 MIME-Version: 1.0
-Date: Wed, 25 Jun 2014 11:13:16 -0400
-X-Google-Sender-Auth: _oqRfFFgrLhTqyRCllM6NUGwrnk
-Message-ID: <CAMwGMjwmdcePeeT5rbZNxCVD7f-bgYgrwBW21hzEV20tkKg9Yg@mail.gmail.com>
-Subject: USB_MUSB_DA8XX with g_multi.ko
-From: Jon Ringle <jon@ringle.org>
-To: Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org,
+In-Reply-To: <53AA251D.9070100@gmail.com>
+References: <53A9783C.7050206@gmail.com>
+	<53A98F6F.4080503@roeck-us.net>
+	<alpine.DEB.2.02.1406241549430.29176@chino.kir.corp.google.com>
+	<53AA0553.6020909@roeck-us.net>
+	<alpine.DEB.2.02.1406241639310.22030@chino.kir.corp.google.com>
+	<53AA251D.9070100@gmail.com>
+Date: Wed, 25 Jun 2014 23:16:59 +0800
+Message-ID: <CAF0htA5VjUy52OKod6kxA43kjyZPj+CHcSrFmhNEn-bD0GvtgA@mail.gmail.com>
+Subject: Re: [PATCH v2] rch/score/include/uapi/asm/ptrace.h: Add prefix
+ 'SCORE_' for related macros
+From: Lennox Wu <lennox.wu@gmail.com>
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+Cc: David Rientjes <rientjes@google.com>, Guenter Roeck <linux@roeck-us.net>,
+        Liqin Chen <liqin.linux@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In commit 787f5627bec80094db487bfcb401e9744f181aed
-usb: musb: make davinci and da8xx glues depend on BROKEN
+These marcos are listed in advance.
+Indeed, they have not been used, and the functions use them have not
+be released.
+I would like to keep the status even if the configure should not be used.
+However, if guys think it is dirty, maybe we can remove or comment them first.
 
-USB_MUSB_DA8XX was marked as BROKEN
+Best,
+Lennox
 
-A few months ago, we updated the linux kernel on our AM1808 SoC based
-embedded board from Linux 2.6.33 to the latest long term 3.12.
 
-I am interested in having the USB gadget support on my board, so I
-removed BROKEN on USB_MUSB_DA8XX. I found that when I modprobe
-g_ether, g_serial, and g_mass_storage (by themselves), they all appear
-to work as expected, but if I try to use g_multi to have a composite
-device supporting all three simultaneously, I run into failure during
-initialization.
-
-Here is the USB related config:
-# zcat /proc/config.gz |grep "^CONFIG_USB"
-CONFIG_USB_HID=y
-CONFIG_USB_OHCI_LITTLE_ENDIAN=y
-CONFIG_USB_SUPPORT=y
-CONFIG_USB_COMMON=y
-CONFIG_USB_ARCH_HAS_HCD=y
-CONFIG_USB=y
-CONFIG_USB_ANNOUNCE_NEW_DEVICES=y
-CONFIG_USB_DEFAULT_PERSIST=y
-CONFIG_USB_OTG=y
-CONFIG_USB_OHCI_HCD=y
-CONFIG_USB_MUSB_HDRC=y
-CONFIG_USB_MUSB_DUAL_ROLE=y
-CONFIG_USB_MUSB_DA8XX=y
-CONFIG_USB_STORAGE=y
-CONFIG_USB_SERIAL=y
-CONFIG_USB_SERIAL_CONSOLE=y
-CONFIG_USB_SERIAL_GENERIC=y
-CONFIG_USB_SERIAL_FTDI_SIO=y
-CONFIG_USB_SERIAL_PL2303=y
-CONFIG_USB_PHY=y
-CONFIG_USB_ULPI=y
-CONFIG_USB_GADGET=y
-CONFIG_USB_GADGET_DEBUG=y
-CONFIG_USB_GADGET_DEBUG_FILES=y
-CONFIG_USB_GADGET_DEBUG_FS=y
-CONFIG_USB_GADGET_VBUS_DRAW=2
-CONFIG_USB_GADGET_STORAGE_NUM_BUFFERS=2
-CONFIG_USB_LIBCOMPOSITE=m
-CONFIG_USB_F_ACM=m
-CONFIG_USB_U_SERIAL=m
-CONFIG_USB_U_ETHER=m
-CONFIG_USB_U_RNDIS=m
-CONFIG_USB_F_SERIAL=m
-CONFIG_USB_F_OBEX=m
-CONFIG_USB_F_ECM=m
-CONFIG_USB_F_SUBSET=m
-CONFIG_USB_F_RNDIS=m
-CONFIG_USB_ETH=m
-CONFIG_USB_ETH_RNDIS=y
-CONFIG_USB_MASS_STORAGE=m
-CONFIG_USB_G_SERIAL=m
-CONFIG_USB_G_MULTI=m
-CONFIG_USB_G_MULTI_RNDIS=y
-
-# modprobe g_multi file=/root/backing_file
-modprobe: can't load module g_multi
-(kernel/drivers/usb/gadget/g_multi.ko): Unknown error 524
-
-I added a couple of debug message to identify where I was failing in:
-
-diff --git a/drivers/usb/gadget/f_mass_storage.c
-b/drivers/usb/gadget/f_mass_storage.c
-index a01d7d3..3e7a22a 100644
---- a/drivers/usb/gadget/f_mass_storage.c
-+++ b/drivers/usb/gadget/f_mass_storage.c
-@@ -2899,14 +2899,18 @@ static int fsg_bind(struct usb_configuration
-*c, struct usb_function *f)
-
-        /* Find all the endpoints we will use */
-        ep = usb_ep_autoconfig(gadget, &fsg_fs_bulk_in_desc);
--       if (!ep)
-+       if (!ep) {
-+               ERROR(fsg, "usb_ep_autoconfig in failed\n");
-                goto autoconf_fail;
-+       }
-        ep->driver_data = fsg->common;  /* claim the endpoint */
-        fsg->bulk_in = ep;
-
-        ep = usb_ep_autoconfig(gadget, &fsg_fs_bulk_out_desc);
--       if (!ep)
-+       if (!ep) {
-+               ERROR(fsg, "usb_ep_autoconfig out failed\n");
-                goto autoconf_fail;
-+       }
-        ep->driver_data = fsg->common;  /* claim the endpoint */
-        fsg->bulk_out = ep;
-
-@@ -2929,8 +2933,10 @@ static int fsg_bind(struct usb_configuration
-*c, struct usb_function *f)
-
-        ret = usb_assign_descriptors(f, fsg_fs_function, fsg_hs_function,
-                        fsg_ss_function);
--       if (ret)
-+       if (ret) {
-+               ERROR(fsg, "usb_assign_descriptors failed\n");
-                goto autoconf_fail;
-+       }
-
-        return 0;
-
-diff --git a/drivers/usb/musb/Kconfig b/drivers/usb/musb/Kconfig
-index c258a97..5172b00 100644
---- a/drivers/usb/musb/Kconfig
-+++ b/drivers/usb/musb/Kconfig
-@@ -67,7 +67,6 @@ config USB_MUSB_DAVINCI
- config USB_MUSB_DA8XX
-        tristate "DA8xx/OMAP-L1x"
-        depends on ARCH_DAVINCI_DA8XX
--       depends on BROKEN
-
- config USB_MUSB_TUSB6010
-        tristate "TUSB6010"
-
-This is the kernel log I get from journalctl -f:
-
-Jun 25 14:36:00 Ringle1 kernel: calling  multi_init+0x0/0xc [g_multi] @ 957
-Jun 25 14:36:01 Ringle1 kernel: udc musb-hdrc.0.auto: registering UDC
-driver [g_multi]
-Jun 25 14:36:01 Ringle1 kernel: g_multi gadget: using random self
-ethernet address
-Jun 25 14:36:01 Ringle1 kernel: g_multi gadget: using random host
-ethernet address
-Jun 25 14:36:01 Ringle1 kernel: usb0: MAC 22:34:67:82:df:aa
-Jun 25 14:36:01 Ringle1 kernel: usb0: HOST MAC 0e:a8:d1:26:29:37
-Jun 25 14:36:01 Ringle1 kernel: calling  userial_init+0x0/0x180 [u_serial] @ 963
-Jun 25 14:36:01 Ringle1 kernel: userial_init: registered 4 ttyGS* devices
-Jun 25 14:36:01 Ringle1 kernel: initcall userial_init+0x0/0x180
-[u_serial] returned 0 after 87 usecs
-Jun 25 14:36:01 Ringle1 kernel: calling  acmmod_init+0x0/0xc [usb_f_acm] @ 963
-Jun 25 14:36:01 Ringle1 kernel: initcall acmmod_init+0x0/0xc
-[usb_f_acm] returned 0 after 10 usecs
-Jun 25 14:36:01 Ringle1 kernel:  lun0: open backing file: /root/backing_file
-Jun 25 14:36:01 Ringle1 kernel: g_multi gadget: Mass Storage Function,
-version: 2009/09/11
-Jun 25 14:36:01 Ringle1 kernel: g_multi gadget: Number of LUNs=1
-Jun 25 14:36:01 Ringle1 kernel:  lun0: LUN: file: /root/backing_file
-Jun 25 14:36:01 Ringle1 kernel: g_multi gadget: I/O thread pid: 969
-Jun 25 14:36:01 Ringle1 kernel: g_multi gadget: adding config #1
-'Multifunction with RNDIS'/bf034bbc
-Jun 25 14:36:01 Ringle1 kernel: g_multi gadget: adding
-'rndis'/c0ad9f20 to config 'Multifunction with RNDIS'/bf034bbc
-Jun 25 14:36:01 Ringle1 kernel: rndis_register: configNr = 0
-Jun 25 14:36:01 Ringle1 kernel: rndis_set_param_medium: 0 0
-Jun 25 14:36:01 Ringle1 kernel: g_multi gadget: RNDIS: dual speed
-IN/ep1in OUT/ep1out NOTIFY/ep2in
-Jun 25 14:36:01 Ringle1 kernel: g_multi gadget: adding 'acm'/c3934080
-to config 'Multifunction with RNDIS'/bf034bbc
-Jun 25 14:36:01 Ringle1 kernel: g_multi gadget: acm ttyGS0: dual speed
-IN/ep3 OUT/ep2out NOTIFY/ep4
-Jun 25 14:36:01 Ringle1 kernel: g_multi gadget: adding 'Mass Storage
-Function'/c29169a0 to config 'Multifunction with RNDIS'/bf034bbc
-Jun 25 14:36:01 Ringle1 kernel: g_multi gadget: usb_ep_autoconfig in failed
-Jun 25 14:36:01 Ringle1 kernel: g_multi gadget: unable to
-autoconfigure all endpoints
-Jun 25 14:36:01 Ringle1 kernel: g_multi gadget: adding 'Mass Storage
-Function'/c29169a0 --> -524
-Jun 25 14:36:01 Ringle1 kernel: g_multi gadget: acm ttyGS0 deactivated
-Jun 25 14:36:01 Ringle1 kernel: g_multi gadget: unbind function 'rndis'/c0ad9f20
-Jun 25 14:36:01 Ringle1 kernel: rndis_deregister:
-Jun 25 14:36:01 Ringle1 kernel: g_multi gadget: added config
-'Multifunction with RNDIS'/1 --> -524
-Jun 25 14:36:01 Ringle1 kernel:  lun0: close backing file
-Jun 25 14:36:01 Ringle1 kernel: g_multi musb-hdrc.0.auto: failed to
-start g_multi: -524
-Jun 25 14:36:01 Ringle1 kernel: initcall multi_init+0x0/0xc [g_multi]
-returned -524 after 253364 usecs
-
->From this I can see that it's failing on the following call in fsg_bind():
-ep = usb_ep_autoconfig(gadget, &fsg_fs_bulk_in_desc);
-
-I appreciate any guidance on what I need to do to get g_multi working properly.
-
-Thanks!
-
-Jon
+2014-06-25 9:25 GMT+08:00 Chen Gang <gang.chen.5i5j@gmail.com>:
+>
+>
+> On 06/25/2014 07:40 AM, David Rientjes wrote:
+>> On Tue, 24 Jun 2014, Guenter Roeck wrote:
+>>
+>>> That is another question. But for the time being it might be sufficient to
+>>> surround the defines with #if !defined(__KERNEL__) without introducing new
+>>> (and unused) kernel defines.
+>>>
+>>
+>> On the other hand, if no userspace is referencing these, then you could
+>> just rename them and move them out of the uapi header to
+>> include/asm/ptrace.h and be done with it.
+>>
+>
+> OK, thanks. And sorry for the subject lost 'a', firstly.  And it is
+> related with UAPI,  so it is really important enough to let related
+> maintainer to notice about it.
+>
+> I guess, only the related maintainer know whether can remove these
+> macros out of "include/uapi/asm/ptrace.h" (although in current upstream
+> kernel source, they are really not used).
+>
+> It is abnormal in uapi headers for same values with different macros
+> switched by "__KERNEL__", but if we have to remain them still in uapi,
+> we have to use "__KERNEL__ && __linux__" to carm down kernel and user.
+>
+>
+> Thanks.
+> --
+> Chen Gang
+>
+> Open, share, and attitude like air, water, and life which God blessed
