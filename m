@@ -1,95 +1,504 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753845AbaFXX7i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 19:59:38 -0400
-Received: from ozlabs.org ([103.22.144.67]:41480 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751963AbaFXX7h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 19:59:37 -0400
-Date: Wed, 25 Jun 2014 09:59:28 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Paul Moore <paul@paul-moore.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        James Morris <james.l.morris@oracle.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>
-Subject: Re: linux-next: the selinux tree needs cleaning up
-Message-ID: <20140625095928.3161ebe1@canb.auug.org.au>
-In-Reply-To: <32647147.KmAPzBrbMT@sifl>
-References: <20140618084046.1bce12cc@canb.auug.org.au>
-	<20140620085931.6427678d@canb.auug.org.au>
-	<1474416.aEfMv8Ny53@sifl>
-	<32647147.KmAPzBrbMT@sifl>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1753906AbaFYABc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 20:01:32 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:45204 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211AbaFYABb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 20:01:31 -0400
+Date: Tue, 24 Jun 2014 17:00:52 -0700
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Cc: Anton Blanchard <anton@au1.ibm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
+        ulrich.weigand@de.ibm.com, Michael Ellerman <michaele@au1.ibm.com>,
+        linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v5 1/1] powerpc/perf: Adjust callchain based on DWARF debug
+ info
+Message-ID: <20140625000052.GA4484@us.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/B=lbAxXCGsgWy6geVO_AYlu"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Operating-System: Linux 2.0.32 on an i486
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14062500-3532-0000-0000-000002B3C9E4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/B=lbAxXCGsgWy6geVO_AYlu
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+[PATCH v5 1/1] powerpc/perf: Adjust callchain based on DWARF debug info
 
-Hi Paul,
+When saving the callchain on Power, the kernel conservatively saves excess
+entries in the callchain. A few of these entries are needed in some cases
+but not others. We should use the DWARF debug information to determine
+when the entries are  needed.
 
-On Tue, 24 Jun 2014 14:03:08 -0400 Paul Moore <paul@paul-moore.com> wrote:
->
-> On Friday, June 20, 2014 12:06:28 PM Paul Moore wrote:
->=20
-> {big snip}
->=20
-> > Stephen, assuming for a moment that I created a fresh branch, based aga=
-inst
-> > 3.15, and then added the SELinux patches for 3.16 (basically the few new
-> > patches that were in the ole #next branch) would that serve as a reason=
-able
-> > basis for a new SELinux #next branch?  Around the -rc5/6/7 timeframe I =
-would
-> > send a pull request to James to pull from this next branch into the Lin=
-ux
-> > Security branch for 3.17.  Once 3.16 is released, I would merge that in=
-to
-> > this new #next branch and continue with the next round of patches.
-> >=20
-> > FYI, more or less, the above is the process we've settled upon for all =
-of
-> > the trees that get accumulated into the Linux Security tree.
->=20
-> Does the above work for you in linux-next?  I'd like to try and resolve t=
-his=20
-> sooner rather than later and I imagine you feel the same ...
+Eg: the value in the link register (LR) is needed only when it holds the
+return address of a function. At other times it must be ignored.
 
-Well, I see that James has pulled your tree, so past problems are now
-moot. He has some duplicate commits in his tree now and Linus will get
-a few more when he next pulls James' tree.  We just need to avoid this
-going forward.  And given that James or Serge will, from now on, *pull*
-your tree (not cherry-pick from it), things should be fine.
+If the unnecessary entries are not ignored, we end up with duplicate arcs
+in the call-graphs.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Use the DWARF debug information to determine if any callchain entries
+should be ignored when building call-graphs.
 
---Sig_/B=lbAxXCGsgWy6geVO_AYlu
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+Callgraph before the patch:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+    14.67%          2234  sprintft  libc-2.18.so       [.] __random
+            |
+            --- __random
+               |
+               |--61.12%-- __random
+               |          |
+               |          |--97.15%-- rand
+               |          |          do_my_sprintf
+               |          |          main
+               |          |          generic_start_main.isra.0
+               |          |          __libc_start_main
+               |          |          0x0
+               |          |
+               |           --2.85%-- do_my_sprintf
+               |                     main
+               |                     generic_start_main.isra.0
+               |                     __libc_start_main
+               |                     0x0
+               |
+                --38.88%-- rand
+                          |
+                          |--94.01%-- rand
+                          |          do_my_sprintf
+                          |          main
+                          |          generic_start_main.isra.0
+                          |          __libc_start_main
+                          |          0x0
+                          |
+                           --5.99%-- do_my_sprintf
+                                     main
+                                     generic_start_main.isra.0
+                                     __libc_start_main
+                                     0x0
 
-iQIcBAEBCAAGBQJTqhDnAAoJEMDTa8Ir7ZwV6VkP/3Ww0fkWRIfibWMbeHNzdImS
-zdksO+M9iRIKGRklU2W3Ccu6wAPGCe6qNSEqr4DhCFLLxk3aKJ5XgMr3GkflFZj8
-kGj2hf1R+Tf6FOfOoBSudhcIyt0yV5ZtwnCtN40yetZybG2uEokvQUYJoxPyuach
-HotiyWBw+LK9ObD8/ASFyToweGW06oqBURlzKKjzOXT6ENZgPj4MW2VoKuF/NrhX
-KVEzaX5LhRkxXAfTxlyG5AMGPbgMHvCXScryO7u9kxtT33O5i8T/GYrV6IuY35vY
-H/hwdGLxeI7TZ/6Va9Tw2CTwssEOmHUS9Qvt+DBL7Y0Vv6jwTogVIQvR2MAOsIuV
-FaEJJ5N8JwvLegWe8b3jZSq4Ngvs4rS/kyMR5qua1mqykhSdWKXiYfgeSk+fZAPB
-6lJMFZk4ffQUMdtdZEeNL11GJ7cQPjPnezcjFNbCenI63MdgZrFagmOZW3tu4KbG
-fahzech1D7TPEj4M45bpgaBRtGQ2QWKQgp1sROLdoTDFQpJgi5b4+GdDtr8GAy8H
-HC4VsDmUDKnkPyjgF7cXzoUmy3h5UnnxlrLQ23SuNkDqydTm4LoINE2IdapL7nGV
-d1h8XNs7yUbv+QM6vS3nd6+o0VYPW0D2cq9F2D0upEnokohuUsW4XwjiH2+cmwqq
-uqo/niiVWu4tTX+qC2X+
-=dnts
------END PGP SIGNATURE-----
+Callgraph after the patch:
 
---Sig_/B=lbAxXCGsgWy6geVO_AYlu--
+    14.67%          2234  sprintft  libc-2.18.so       [.] __random
+            |
+            --- __random
+               |
+               |--95.93%-- rand
+               |          do_my_sprintf
+               |          main
+               |          generic_start_main.isra.0
+               |          __libc_start_main
+               |          0x0
+               |
+                --4.07%-- do_my_sprintf
+                          main
+                          generic_start_main.isra.0
+                          __libc_start_main
+                          0x0
+
+TODO:	For split-debug info objects like glibc, we can only determine
+	the call-frame-address only when both .eh_frame and .debug_info
+	sections are available. We should be able to determin the CFA
+	even without the .eh_frame section.
+
+Fix suggested by Anton Blanchard.
+
+Thanks to valuable input on DWARF debug information from Ulrich Weigand.
+
+Reported-by: Maynard Johnson <maynard@us.ibm.com>
+Tested-by: Maynard Johnson <maynard@us.ibm.com>
+Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+---
+Changelog[v5]
+	[Jiri Olsa] Avoid the new external symbol PERF_CONTEXT_IGNORE;
+	Revert back to previous version and  use #ifdef directly in
+	machine__resolve_callchain_sample() to avoid performance impact
+	on other architectures.
+
+Changelog[v4]
+        Move Powerpc-specific code into a separate patch
+
+Changelog[v3]
+        [Jiri Olsa] Rename function to arch_skip_callchain_idx() to be
+                consistent with behavior.
+        [Jiri Olsa] Add '__maybe_unused' tags for unused parameters.
+
+Changelog[v2]:
+        Add missing dwfl_end()
+        Fix merge conflicts due to some unwind code
+
+ tools/perf/arch/powerpc/Makefile                  |    1 +
+ tools/perf/arch/powerpc/util/skip-callchain-idx.c |  266 +++++++++++++++++++++
+ tools/perf/config/Makefile                        |    4 +
+ tools/perf/util/callchain.h                       |   13 +
+ tools/perf/util/machine.c                         |   18 +-
+ 5 files changed, 300 insertions(+), 2 deletions(-)
+ create mode 100644 tools/perf/arch/powerpc/util/skip-callchain-idx.c
+
+diff --git a/tools/perf/arch/powerpc/Makefile b/tools/perf/arch/powerpc/Makefile
+index 744e629..b92219b 100644
+--- a/tools/perf/arch/powerpc/Makefile
++++ b/tools/perf/arch/powerpc/Makefile
+@@ -3,3 +3,4 @@ PERF_HAVE_DWARF_REGS := 1
+ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
+ endif
+ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/header.o
++LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/skip-callchain-idx.o
+diff --git a/tools/perf/arch/powerpc/util/skip-callchain-idx.c b/tools/perf/arch/powerpc/util/skip-callchain-idx.c
+new file mode 100644
+index 0000000..a7c23a4
+--- /dev/null
++++ b/tools/perf/arch/powerpc/util/skip-callchain-idx.c
+@@ -0,0 +1,266 @@
++/*
++ * Use DWARF Debug information to skip unnecessary callchain entries.
++ *
++ * Copyright (C) 2014 Sukadev Bhattiprolu, IBM Corporation.
++ * Copyright (C) 2014 Ulrich Weigand, IBM Corporation.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version
++ * 2 of the License, or (at your option) any later version.
++ */
++#include <inttypes.h>
++#include <dwarf.h>
++#include <elfutils/libdwfl.h>
++
++#include "util/thread.h"
++#include "util/callchain.h"
++
++/*
++ * When saving the callchain on Power, the kernel conservatively saves
++ * excess entries in the callchain. A few of these entries are needed
++ * in some cases but not others. If the unnecessary entries are not
++ * ignored, we end up with duplicate arcs in the call-graphs. Use
++ * DWARF debug information to skip over any unnecessary callchain
++ * entries.
++ *
++ * See function header for arch_adjust_callchain() below for more details.
++ *
++ * The libdwfl code in this file is based on code from elfutils
++ * (libdwfl/argp-std.c, libdwfl/tests/addrcfi.c, etc).
++ */
++static char *debuginfo_path;
++
++static const Dwfl_Callbacks offline_callbacks = {
++	.debuginfo_path = &debuginfo_path,
++	.find_debuginfo = dwfl_standard_find_debuginfo,
++	.section_address = dwfl_offline_section_address,
++};
++
++
++/*
++ * Use the DWARF expression for the Call-frame-address and determine
++ * if return address is in LR and if a new frame was allocated.
++ */
++static int check_return_reg(int ra_regno, Dwarf_Frame *frame)
++{
++	Dwarf_Op ops_mem[2];
++	Dwarf_Op dummy;
++	Dwarf_Op *ops = &dummy;
++	size_t nops;
++	int result;
++
++	result = dwarf_frame_register(frame, ra_regno, ops_mem, &ops, &nops);
++	if (result < 0) {
++		pr_debug("dwarf_frame_register() %s\n", dwarf_errmsg(-1));
++		return -1;
++	}
++
++	/*
++	 * Check if return address is on the stack.
++	 */
++	if (nops != 0 || ops != NULL)
++		return 0;
++
++	/*
++	 * Return address is in LR. Check if a frame was allocated
++	 * but not-yet used.
++	 */
++	result = dwarf_frame_cfa(frame, &ops, &nops);
++	if (result < 0) {
++		pr_debug("dwarf_frame_cfa() returns %d, %s\n", result,
++					dwarf_errmsg(-1));
++		return -1;
++	}
++
++	/*
++	 * If call frame address is in r1, no new frame was allocated.
++	 */
++	if (nops == 1 && ops[0].atom == DW_OP_bregx && ops[0].number == 1 &&
++				ops[0].number2 == 0)
++		return 1;
++
++	/*
++	 * A new frame was allocated but has not yet been used.
++	 */
++	return 2;
++}
++
++/*
++ * Get the DWARF frame from the .eh_frame section.
++ */
++static Dwarf_Frame *get_eh_frame(Dwfl_Module *mod, Dwarf_Addr pc)
++{
++	int		result;
++	Dwarf_Addr	bias;
++	Dwarf_CFI	*cfi;
++	Dwarf_Frame	*frame;
++
++	cfi = dwfl_module_eh_cfi(mod, &bias);
++	if (!cfi) {
++		pr_debug("%s(): no CFI - %s\n", __func__, dwfl_errmsg(-1));
++		return NULL;
++	}
++
++	result = dwarf_cfi_addrframe(cfi, pc, &frame);
++	if (result) {
++		pr_debug("%s(): %s\n", __func__, dwfl_errmsg(-1));
++		return NULL;
++	}
++
++	return frame;
++}
++
++/*
++ * Get the DWARF frame from the .debug_frame section.
++ */
++static Dwarf_Frame *get_dwarf_frame(Dwfl_Module *mod, Dwarf_Addr pc)
++{
++	Dwarf_CFI       *cfi;
++	Dwarf_Addr      bias;
++	Dwarf_Frame     *frame;
++	int             result;
++
++	cfi = dwfl_module_dwarf_cfi(mod, &bias);
++	if (!cfi) {
++		pr_debug("%s(): no CFI - %s\n", __func__, dwfl_errmsg(-1));
++		return NULL;
++	}
++
++	result = dwarf_cfi_addrframe(cfi, pc, &frame);
++	if (result) {
++		pr_debug("%s(): %s\n", __func__, dwfl_errmsg(-1));
++		return NULL;
++	}
++
++	return frame;
++}
++
++/*
++ * Return:
++ *	0 if return address for the program counter @pc is on stack
++ *	1 if return address is in LR and no new stack frame was allocated
++ *	2 if return address is in LR and a new frame was allocated (but not
++ *		yet used)
++ *	-1 in case of errors
++ */
++static int check_return_addr(const char *exec_file, Dwarf_Addr pc)
++{
++	int		rc = -1;
++	Dwfl		*dwfl;
++	Dwfl_Module	*mod;
++	Dwarf_Frame	*frame;
++	int		ra_regno;
++	Dwarf_Addr	start = pc;
++	Dwarf_Addr	end = pc;
++	bool		signalp;
++
++	dwfl = dwfl_begin(&offline_callbacks);
++	if (!dwfl) {
++		pr_debug("dwfl_begin() failed: %s\n", dwarf_errmsg(-1));
++		return -1;
++	}
++
++	if (dwfl_report_offline(dwfl, "",  exec_file, -1) == NULL) {
++		pr_debug("dwfl_report_offline() failed %s\n", dwarf_errmsg(-1));
++		goto out;
++	}
++
++	mod = dwfl_addrmodule(dwfl, pc);
++	if (!mod) {
++		pr_debug("dwfl_addrmodule() failed, %s\n", dwarf_errmsg(-1));
++		goto out;
++	}
++
++	/*
++	 * To work with split debug info files (eg: glibc), check both
++	 * .eh_frame and .debug_frame sections of the ELF header.
++	 */
++	frame = get_eh_frame(mod, pc);
++	if (!frame) {
++		frame = get_dwarf_frame(mod, pc);
++		if (!frame)
++			goto out;
++	}
++
++	ra_regno = dwarf_frame_info(frame, &start, &end, &signalp);
++	if (ra_regno < 0) {
++		pr_debug("Return address register unavailable: %s\n",
++				dwarf_errmsg(-1));
++		goto out;
++	}
++
++	rc = check_return_reg(ra_regno, frame);
++
++out:
++	dwfl_end(dwfl);
++	return rc;
++}
++
++/*
++ * The callchain saved by the kernel always includes the link register (LR).
++ *
++ *	0:	PERF_CONTEXT_USER
++ *	1:	Program counter (Next instruction pointer)
++ *	2:	LR value
++ *	3:	Caller's caller
++ *	4:	...
++ *
++ * The value in LR is only needed when it holds a return address. If the
++ * return address is on the stack, we should ignore the LR value.
++ *
++ * Further, when the return address is in the LR, if a new frame was just
++ * allocated but the LR was not saved into it, then the LR contains the
++ * caller, slot 4: contains the caller's caller and the contents of slot 3:
++ * (chain->ips[3]) is undefined and must be ignored.
++ *
++ * Use DWARF debug information to determine if any entries need to be skipped.
++ *
++ * Return:
++ *	index:	of callchain entry that needs to be ignored (if any)
++ *	-1	if no entry needs to be ignored or in case of errors
++ */
++int arch_skip_callchain_idx(struct machine *machine, struct thread *thread,
++				struct ip_callchain *chain)
++{
++	struct addr_location al;
++	struct dso *dso = NULL;
++	int rc;
++	u64 ip;
++	u64 skip_slot = -1;
++
++	if (chain->nr < 3)
++		return skip_slot;
++
++	ip = chain->ips[2];
++
++	thread__find_addr_location(thread, machine, PERF_RECORD_MISC_USER,
++			MAP__FUNCTION, ip, &al);
++
++	if (al.map)
++		dso = al.map->dso;
++
++	if (!dso) {
++		pr_debug("%" PRIx64 " dso is NULL\n", ip);
++		return skip_slot;
++	}
++
++	rc = check_return_addr(dso->long_name, ip);
++
++	pr_debug("DSO %s, nr %" PRIx64 ", ip 0x%" PRIx64 "rc %d\n",
++				dso->long_name, chain->nr, ip, rc);
++
++	if (rc == 0) {
++		/*
++		 * Return address on stack. Ignore LR value in callchain
++		 */
++		skip_slot = 2;
++	} else if (rc == 2) {
++		/*
++		 * New frame allocated but return address still in LR.
++		 * Ignore the caller's caller entry in callchain.
++		 */
++		skip_slot = 3;
++	}
++	return skip_slot;
++}
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index f30ac5e..346bdb6 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -48,6 +48,10 @@ ifneq ($(ARCH),$(filter $(ARCH),x86 arm))
+   NO_LIBDW_DWARF_UNWIND := 1
+ endif
+ 
++ifeq ($(ARCH),powerpc)
++  CFLAGS += -DHAVE_SKIP_CALLCHAIN_IDX
++endif
++
+ ifeq ($(LIBUNWIND_LIBS),)
+   NO_LIBUNWIND := 1
+ else
+diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
+index 8f84423..da43619 100644
+--- a/tools/perf/util/callchain.h
++++ b/tools/perf/util/callchain.h
+@@ -176,4 +176,17 @@ static inline void callchain_cursor_snapshot(struct callchain_cursor *dest,
+ 	dest->first = src->curr;
+ 	dest->nr -= src->pos;
+ }
++
++#ifdef HAVE_SKIP_CALLCHAIN_IDX
++extern int arch_skip_callchain_idx(struct machine *machine,
++			struct thread *thread, struct ip_callchain *chain);
++#else
++static inline int arch_skip_callchain_idx(struct machine *machine __maybe_unused,
++			struct thread *thread __maybe_unused,
++			struct ip_callchain *chain __maybe_unused)
++{
++	return -1;
++}
++#endif
++
+ #endif	/* __PERF_CALLCHAIN_H */
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 0e5fea9..6221d01 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -1291,7 +1291,9 @@ static int machine__resolve_callchain_sample(struct machine *machine,
+ 	u8 cpumode = PERF_RECORD_MISC_USER;
+ 	int chain_nr = min(max_stack, (int)chain->nr);
+ 	int i;
++	int j;
+ 	int err;
++	int skip_idx;
+ 
+ 	callchain_cursor_reset(&callchain_cursor);
+ 
+@@ -1300,14 +1302,26 @@ static int machine__resolve_callchain_sample(struct machine *machine,
+ 		return 0;
+ 	}
+ 
++	/*
++	 * Based on DWARF debug information, some architectures skip
++	 * a callchain entry saved by the kernel.
++	 */
++	skip_idx = arch_skip_callchain_idx(machine, thread, chain);
++
+ 	for (i = 0; i < chain_nr; i++) {
+ 		u64 ip;
+ 		struct addr_location al;
+ 
+ 		if (callchain_param.order == ORDER_CALLEE)
+-			ip = chain->ips[i];
++			j = i;
+ 		else
+-			ip = chain->ips[chain->nr - i - 1];
++			j = chain->nr - i - 1;
++
++#ifdef HAVE_SKIP_CALLCHAIN_IDX
++		if (j == skip_idx)
++			continue;
++#endif
++		ip = chain->ips[j];
+ 
+ 		if (ip >= PERF_CONTEXT_MAX) {
+ 			switch (ip) {
+-- 
+1.7.9.5
+
