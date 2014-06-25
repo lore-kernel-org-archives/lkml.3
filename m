@@ -1,52 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756814AbaFYWDV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 18:03:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48371 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755795AbaFYWDT (ORCPT
+	id S1756217AbaFYWH3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 18:07:29 -0400
+Received: from exprod5og119.obsmtp.com ([64.18.0.189]:50566 "HELO
+	exprod5og119.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754214AbaFYWH2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 18:03:19 -0400
-Date: Wed, 25 Jun 2014 15:03:18 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Konstantin Khlebnikov <koct9i@gmail.com>
-Cc: linux-mm@kvack.org, Hugh Dickins <hughd@google.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] mm: catch memory commitment underflow
-Message-Id: <20140625150318.4355468ab59a5293e870605e@linux-foundation.org>
-In-Reply-To: <20140624201614.18273.39034.stgit@zurg>
-References: <20140624201606.18273.44270.stgit@zurg>
-	<20140624201614.18273.39034.stgit@zurg>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 25 Jun 2014 18:07:28 -0400
+From: Feng Kan <fkan@apm.com>
+To: tglx@linutronix.de, jason@lakedaemon.net, marc.zyngier@arm.com,
+        linux-kernel@vger.kernel.org, patches@apm.com
+Cc: Feng Kan <fkan@apm.com>
+Subject: [PATCH v2 0/2] irqchip: gic: Add support for GIC v2 bypass disable
+Date: Wed, 25 Jun 2014 15:07:19 -0700
+Message-Id: <1403734041-5112-1-git-send-email-fkan@apm.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Jun 2014 00:16:14 +0400 Konstantin Khlebnikov <koct9i@gmail.com> wrote:
+This patch series cleans up hex number in the gic driver and then adds
+the code to preserve GIC v2 bypass disable bits in the GIC driver.
 
-> This patch prints warning (if CONFIG_DEBUG_VM=y) when
-> memory commitment becomes too negative.
-> 
-> ...
->
-> --- a/mm/mmap.c
-> +++ b/mm/mmap.c
-> @@ -134,6 +134,12 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
->  {
->  	unsigned long free, allowed, reserve;
->  
-> +#ifdef CONFIG_DEBUG_VM
-> +	WARN_ONCE(percpu_counter_read(&vm_committed_as) <
-> +			-(s64)vm_committed_as_batch * num_online_cpus(),
-> +			"memory commitment underflow");
-> +#endif
-> +
->  	vm_acct_memory(pages);
+V2 Change:
+	seem my send email was not working correctly, resending this with
+        rebase pull.
+	- had to pull HaoJian's change out of arm-gic.h to keep consistency.
+	- replace GIC defines as noted by Marc
+	- remove GIC_CPU_DISABLE since it no longer used.
+	- fix gic_cpu_if_down as noted by Marc
 
-The changelog doesn't describe the reasons for making the change.
+PM path gic cpu ctrl register restore is not added here, I will have to 
+test that seperately once all the PM code is fully in place and submit it
+afterward.
 
-I assume this warning will detect the situation which the previous two
-patches just fixed?
+Feng Kan (2):
+  irqchip: gic: replace hex numbers with defines.
+  irqchip: gic: preserve gic V2 bypass bits in cpu ctrl register
+
+ drivers/irqchip/irq-gic.c | 82 +++++++++++++++++++++++++++++++++++------------
+ 1 file changed, 62 insertions(+), 20 deletions(-)
+
+-- 
+1.9.1
+
