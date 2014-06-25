@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756944AbaFYVzF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 17:55:05 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:55566 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756585AbaFYVzB (ORCPT
+	id S1756610AbaFYV5r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 17:57:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48294 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754214AbaFYV5p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 17:55:01 -0400
-Message-ID: <53AB4530.2050106@wwwdotorg.org>
-Date: Wed, 25 Jun 2014 15:54:56 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Andrew Bresticker <abrestic@chromium.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Kishon Vijay Abraham I <kishon@ti.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v1 5/9] of: Add NVIDIA Tegra XHCI controller binding
-References: <1403072180-4944-1-git-send-email-abrestic@chromium.org> <1403072180-4944-6-git-send-email-abrestic@chromium.org>
-In-Reply-To: <1403072180-4944-6-git-send-email-abrestic@chromium.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 25 Jun 2014 17:57:45 -0400
+Date: Wed, 25 Jun 2014 14:57:44 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH 01/22] pci-dma-compat: Add pci_zalloc_consistent helper
+Message-Id: <20140625145744.9cb4ec9e3ea7a63bf630eeaa@linux-foundation.org>
+In-Reply-To: <1403733111.24788.8.camel@joe-AO725>
+References: <cover.1403530604.git.joe@perches.com>
+	<2248b3ffe86cd8995a809bf7e2871f38039979c1.1403530604.git.joe@perches.com>
+	<20140625122755.152685fadbc9cffe7a298dc6@linux-foundation.org>
+	<1403733111.24788.8.camel@joe-AO725>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2014 12:16 AM, Andrew Bresticker wrote:
-> Add device-tree binding documentation for the XHCI controller present
-> on Tegra124 and later SoCs.
+On Wed, 25 Jun 2014 14:51:51 -0700 Joe Perches <joe@perches.com> wrote:
 
-> diff --git a/Documentation/devicetree/bindings/usb/nvidia,tegra124-xhci.txt b/Documentation/devicetree/bindings/usb/nvidia,tegra124-xhci.txt
+> > People sometimes address this by using
+> > 
+> > 	"drivers: net: ethernet: amd: use pci_zalloc_consistent"
+> > 
+> > which strikes me as utterly perverse.  We already have a nice way of
+> > representing the hierarchy and that's using '/'.
+> 
+> I used to do that until several people complained.
 
-> + - clock-names: Must include the following entries:
-> +    - xusb_host
-> +    - xusb_falcon_src
-> +    - xusb_ss
-> +    - xusb_ss_src
-> +    - xusb_hs_src
-> +    - xusb_fs_src
+Slap 'em.
 
-Looking at include/dt-bindings/clock/tegra124-car.h I see a few entries
-potentially missing here:
+I don't know where this thing is coming from - I'd suspected there must
+be some misguided doc somewhere but I don't know where it is.  Some
+vast conspiracy against common sense.
 
-#define TEGRA124_CLK_XUSB_HOST_SRC 252
-#define TEGRA124_CLK_XUSB_DEV_SRC 256
-#define TEGRA124_CLK_XUSB_DEV 257
-#define TEGRA124_CLK_XUSB_SS_DIV2 312
+> Now I don't.  btw:  Documentation/SubmittingPatches says:
+> 
+> 15) The canonical patch format
+> 
+> The canonical patch subject line is:
+> 
+>     Subject: [PATCH 001/123] subsystem: summary phrase
 
-> +    - pll_u_480m
+Yes, that doesn't go into how to identify the subsystem.
 
-Not just pll_u?
+I don't want to be overly proscriptive here, but it's a bit maddening
+when you're skimming patch titles and cannot work out which part of the
+kernel is being patched :(
