@@ -1,116 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756936AbaFYWdP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 18:33:15 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:43064 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755213AbaFYWdN (ORCPT
+	id S1756713AbaFYWf1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 18:35:27 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43354 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755213AbaFYWfZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 18:33:13 -0400
-Date: Wed, 25 Jun 2014 23:33:02 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Sudeep Holla <sudeep.holla@arm.com>
-Cc: linux-kernel@vger.kernel.org, Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 8/9] ARM: kernel: add support for cpu cache information
-Message-ID: <20140625223302.GL32514@n2100.arm.linux.org.uk>
-References: <1403717444-23559-1-git-send-email-sudeep.holla@arm.com> <1403717444-23559-9-git-send-email-sudeep.holla@arm.com>
+	Wed, 25 Jun 2014 18:35:25 -0400
+Date: Thu, 26 Jun 2014 00:35:22 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux-pm mailing list <linux-pm@lists.osdl.org>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>
+Subject: Re: 3.15-rc: regression in suspend
+Message-ID: <20140625223522.GA5923@xo-6d-61-c0.localdomain>
+References: <alpine.LRH.2.00.1405141435510.30793@twin.jikos.cz>
+ <20140514155759.GB9723@amd.pavel.ucw.cz>
+ <20140514182046.GA13342@amd.pavel.ucw.cz>
+ <alpine.LNX.2.00.1405151727380.16459@pobox.suse.cz>
+ <CAKMK7uFEjDGSpdB0xDPL09GZ8N7aFrNA530HbRLyfTPx5SkLQw@mail.gmail.com>
+ <20140607120614.GB5309@amd.pavel.ucw.cz>
+ <20140607231124.GA3611@amd.pavel.ucw.cz>
+ <CAKMK7uEALofLiEA3m-QKjygC=YZNjaEtUMfbpbXinMoim1ygkw@mail.gmail.com>
+ <20140609102328.GA25332@amd.pavel.ucw.cz>
+ <alpine.LNX.2.00.1406091302560.20782@pobox.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1403717444-23559-9-git-send-email-sudeep.holla@arm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <alpine.LNX.2.00.1406091302560.20782@pobox.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 06:30:43PM +0100, Sudeep Holla wrote:
-> diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
-> index 38ddd9f..2c5ff0e 100644
-> --- a/arch/arm/kernel/Makefile
-> +++ b/arch/arm/kernel/Makefile
-> @@ -29,6 +29,7 @@ obj-y		+= entry-v7m.o v7m.o
->  else
->  obj-y		+= entry-armv.o
->  endif
-> +obj-$(CONFIG_CPU_HAS_CACHE) += cacheinfo.o
->  
->  obj-$(CONFIG_OC_ETM)		+= etm.o
->  obj-$(CONFIG_CPU_IDLE)		+= cpuidle.o
-> diff --git a/arch/arm/kernel/cacheinfo.c b/arch/arm/kernel/cacheinfo.c
-> new file mode 100644
-> index 0000000..ab70993
-> --- /dev/null
-> +++ b/arch/arm/kernel/cacheinfo.c
-> @@ -0,0 +1,229 @@
-> +/*
-> + *  ARM cacheinfo support
-> + *
-> + *  Copyright (C) 2014 ARM Ltd.
-> + *  All Rights Reserved
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +#include <linux/bitops.h>
-> +#include <linux/cacheinfo.h>
-> +#include <linux/cpu.h>
-> +#include <linux/compiler.h>
-> +#include <linux/of.h>
-> +
-> +#include <asm/cputype.h>
-> +#include <asm/processor.h>
-> +
-> +#if __LINUX_ARM_ARCH__ < 7 /* pre ARMv7 */
+On Mon 2014-06-09 13:03:31, Jiri Kosina wrote:
+> On Mon, 9 Jun 2014, Pavel Machek wrote:
+> 
+> > > > Strange. It seems 3.15 with the patch reverted only boots in 30% or so
+> > > > cases... And I've seen resume failure, too, so maybe I was just lucky
+> > > > that it worked for a while.
+> > > 
+> > > git bisect really likes 25f397a429dfa43f22c278d0119a60 - you're about
+> > > the 5th report or so that claims this is the culprit but it's
+> > > something else. The above code is definitely not used in i915 so bogus
+> > > bisect result.
+> > 
+> > Note I did not do the bisect, I only attempted revert and test.
+> > 
+> > And did three boots of successful s2ram.. only to find out that it
+> > does not really fix s2ram, I was just lucky :-(.
+> > 
+> > Unfortunately, this means my s2ram problem will be tricky/impossible
+> > to bisect :-(.
+> 
+> Welcome to the situation I have been in for past several months.
 
-__LINUX_ARM_ARCH__ defines the minimum architecture version we are building
-for - we may support later versions than the architecture version denoted
-by this symbol.  It does not define which CPUs we are building for.  Are
-you sure that this is correct here?  What if we build a kernel supporting
-both v6 + v7, as the OMAP guys do?
+Ok, so I have set up machines for ktest / autobisect, and found out that 3.16-rc1 no
+longer has that problem. Oh well, bisect would not be fun, anyway...
 
-> +
-> +#define MAX_CACHE_LEVEL		1	/* Only 1 level supported */
-> +#define CTR_CTYPE_SHIFT		24
-> +#define CTR_CTYPE_MASK		(1 << CTR_CTYPE_SHIFT)
-> +
-> +struct ctr_info {
-> +	unsigned int cpuid_id;
-> +	unsigned int ctr;
-> +};
-> +
-> +static struct ctr_info cache_ctr_list[] = {
-> +};
-
-This list needs to be populated.  Early CPUs (such as StrongARM) do not
-have the CTR register.
-
-> +static int get_unimplemented_ctr(unsigned int *ctr)
-> +{
-> +	int i, cpuid_id = read_cpuid_id();
-> +
-> +	for (i = 0; i < ARRAY_SIZE(cache_ctr_list); i++)
-> +		if (cache_ctr_list[i].cpuid_id == cpuid_id) {
-> +			*ctr = cache_ctr_list[i].ctr;
-> +			return 0;
-> +		}
-> +	return -ENOENT;
-> +}
-> +
-> +static unsigned int get_ctr(void)
-> +{
-> +	unsigned int ctr;
-> +
-> +	if (get_unimplemented_ctr(&ctr))
-> +		asm volatile ("mrc p15, 0, %0, c0, c0, 1" : "=r" (ctr));
-
-read_cpuid_cachetype() ?
-
+										Pavel
 -- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
