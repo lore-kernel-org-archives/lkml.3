@@ -1,44 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757968AbaFYRx1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 13:53:27 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:43430 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757928AbaFYRx0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 13:53:26 -0400
+	id S932285AbaFYRxb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 13:53:31 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:42881 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757928AbaFYRx2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 13:53:28 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <kishon@ti.com>, <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
 CC: <rogerq@ti.com>, <balbi@ti.com>
-Subject: [PATCH 0/2] dra7: Add PCIe PHY support
-Date: Wed, 25 Jun 2014 23:22:55 +0530
-Message-ID: <1403718777-9227-1-git-send-email-kishon@ti.com>
+Subject: [PATCH 1/2] phy: phy-omap-pipe3: Add support for PCIe PHY
+Date: Wed, 25 Jun 2014 23:22:56 +0530
+Message-ID: <1403718777-9227-2-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1403718777-9227-1-git-send-email-kishon@ti.com>
+References: <1403718777-9227-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[1] is split into separate series in order for individual subsystem
-Maintainers to pick up the patches. This series handles the PCIe
-PHY support for DRA7.
+PCIe PHY uses an external pll instead of the internal pll used by SATA
+and USB3. So added support in pipe3 PHY to use external pll.
 
-The only change from previous version is added 'id' property in-order
-to differentiate between each individual lanes of PCIe PHY.
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+Reviewed-by: Roger Quadros <rogerq@ti.com>
+---
+ Documentation/devicetree/bindings/phy/ti-phy.txt |   11 ++-
+ drivers/phy/phy-ti-pipe3.c                       |  103 +++++++++++++++++-----
+ 2 files changed, 91 insertions(+), 23 deletions(-)
 
-[1] -> https://lkml.org/lkml/2014/5/29/258
-
-Kishon Vijay Abraham I (2):
-  phy: phy-omap-pipe3: Add support for PCIe PHY
-  phy: pipe3: insert delay to enumerate in GEN2 mode
-
- Documentation/devicetree/bindings/phy/ti-phy.txt |   23 +++--
- drivers/phy/phy-omap-control.c                   |   52 ++++++++++-
- drivers/phy/phy-ti-pipe3.c                       |  105 +++++++++++++++++-----
- include/linux/phy/omap_control_phy.h             |   10 +++
- 4 files changed, 161 insertions(+), 29 deletions(-)
-
+diff --git a/Documentation/devicetree/bindings/phy/ti-phy.txt b/Documentation/devicetree/bindings/phy/ti-phy.txt
+index 9ce458f..b50e1c1 100644
+--- a/Documentation/devicetree/bindings/phy/ti-phy.txt
++++ b/Documentation/devicetree/bindings/phy/ti-phy.txt
+@@ -56,8 +56,8 @@ usb2phy@4a0ad080 {
+ TI PIPE3 PHY
+ 
+ Required properties:
+- - compatible: Should be "ti,phy-usb3" or "ti,phy-pipe3-sata".
+-   "ti,omap-usb3" is deprecated.
++ - compatible: Should be "ti,phy-usb3", "ti,phy-pipe3-sata" or
++   "ti,phy-pipe3-pcie. "ti,omap-usb3" is deprecated.
+  - reg : Address and length of the register set for the device.
+  - reg-names: The names of the register addresses corresponding to the registers
+    filled in "reg".
+@@ -69,10 +69,17 @@ Required properties:
+    * "wkupclk" - wakeup clock.
+    * "sysclk" - system clock.
+    * "refclk" - reference clock.
++   * "dpll_ref" - external dpll ref clk
++   * "dpll_ref_m2" - external dpll ref clk
++   * "phy-div" - divider for apll
++   * "div-clk" - apll clock
+ 
+ Optional properties:
+  - ctrl-module : phandle of the control module used by PHY driver to power on
+    the PHY.
++ - id: If there are multiple instance of the same type, in order to
++   differentiate between each instance "id" can be used (e.g., multi-lane PCIe
++   PHY). If "id" is not provided, it is set to default value of '1'.
+ 
+ This is usually a subnode of ocp2scp to which it is connected.
+ 
+diff --git a/drivers/phy/phy-ti-pipe3.c b/drivers/phy/phy-ti-pipe3.c
+index 5913676..6174f4b 100644
+--- a/drivers/phy/phy-ti-pipe3.c
++++ b/drivers/phy/phy-ti-pipe3.c
+@@ -80,7 +80,9 @@ struct ti_pipe3 {
+ 	struct clk		*wkupclk;
+ 	struct clk		*sys_clk;
+ 	struct clk		*refclk;
++	struct clk		*div_clk;
+ 	struct pipe3_dpll_map	*dpll_map;
++	u8			id;
+ };
+ 
+ static struct pipe3_dpll_map dpll_map_usb[] = {
+@@ -215,6 +217,9 @@ static int ti_pipe3_init(struct phy *x)
+ 	u32 val;
+ 	int ret = 0;
+ 
++	if (of_device_is_compatible(phy->dev->of_node, "ti,phy-pipe3-pcie"))
++		return 0;
++
+ 	/* Bring it out of IDLE if it is IDLE */
+ 	val = ti_pipe3_readl(phy->pll_ctrl_base, PLL_CONFIGURATION2);
+ 	if (val & PLL_IDLE) {
+@@ -238,8 +243,11 @@ static int ti_pipe3_exit(struct phy *x)
+ 	u32 val;
+ 	unsigned long timeout;
+ 
+-	/* SATA DPLL can't be powered down due to Errata i783 */
+-	if (of_device_is_compatible(phy->dev->of_node, "ti,phy-pipe3-sata"))
++	/* SATA DPLL can't be powered down due to Errata i783 and PCIe
++	 * does not have internal DPLL
++	 */
++	if (of_device_is_compatible(phy->dev->of_node, "ti,phy-pipe3-sata") ||
++	    of_device_is_compatible(phy->dev->of_node, "ti,phy-pipe3-pcie"))
+ 		return 0;
+ 
+ 	/* Put DPLL in IDLE mode */
+@@ -286,32 +294,41 @@ static int ti_pipe3_probe(struct platform_device *pdev)
+ 	struct device_node *control_node;
+ 	struct platform_device *control_pdev;
+ 	const struct of_device_id *match;
+-
+-	match = of_match_device(of_match_ptr(ti_pipe3_id_table), &pdev->dev);
+-	if (!match)
+-		return -EINVAL;
++	struct clk *clk;
+ 
+ 	phy = devm_kzalloc(&pdev->dev, sizeof(*phy), GFP_KERNEL);
+ 	if (!phy) {
+ 		dev_err(&pdev->dev, "unable to alloc mem for TI PIPE3 PHY\n");
+ 		return -ENOMEM;
+ 	}
++	phy->dev		= &pdev->dev;
+ 
+-	phy->dpll_map = (struct pipe3_dpll_map *)match->data;
+-	if (!phy->dpll_map) {
+-		dev_err(&pdev->dev, "no DPLL data\n");
+-		return -EINVAL;
+-	}
++	if (!of_device_is_compatible(node, "ti,phy-pipe3-pcie")) {
++		match = of_match_device(of_match_ptr(ti_pipe3_id_table),
++					&pdev->dev);
++		if (!match)
++			return -EINVAL;
+ 
+-	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "pll_ctrl");
+-	phy->pll_ctrl_base = devm_ioremap_resource(&pdev->dev, res);
+-	if (IS_ERR(phy->pll_ctrl_base))
+-		return PTR_ERR(phy->pll_ctrl_base);
++		phy->dpll_map = (struct pipe3_dpll_map *)match->data;
++		if (!phy->dpll_map) {
++			dev_err(&pdev->dev, "no DPLL data\n");
++			return -EINVAL;
++		}
+ 
+-	phy->dev		= &pdev->dev;
++		res = platform_get_resource_byname(pdev, IORESOURCE_MEM,
++						   "pll_ctrl");
++		phy->pll_ctrl_base = devm_ioremap_resource(&pdev->dev, res);
++		if (IS_ERR(phy->pll_ctrl_base))
++			return PTR_ERR(phy->pll_ctrl_base);
+ 
+-	if (!of_device_is_compatible(node, "ti,phy-pipe3-sata")) {
++		phy->sys_clk = devm_clk_get(phy->dev, "sysclk");
++		if (IS_ERR(phy->sys_clk)) {
++			dev_err(&pdev->dev, "unable to get sysclk\n");
++			return -EINVAL;
++		}
++	}
+ 
++	if (!of_device_is_compatible(node, "ti,phy-pipe3-sata")) {
+ 		phy->wkupclk = devm_clk_get(phy->dev, "wkupclk");
+ 		if (IS_ERR(phy->wkupclk)) {
+ 			dev_err(&pdev->dev, "unable to get wkupclk\n");
+@@ -328,10 +345,38 @@ static int ti_pipe3_probe(struct platform_device *pdev)
+ 		phy->refclk = ERR_PTR(-ENODEV);
+ 	}
+ 
+-	phy->sys_clk = devm_clk_get(phy->dev, "sysclk");
+-	if (IS_ERR(phy->sys_clk)) {
+-		dev_err(&pdev->dev, "unable to get sysclk\n");
+-		return -EINVAL;
++	if (of_device_is_compatible(node, "ti,phy-pipe3-pcie")) {
++		if (of_property_read_u8(node, "id", &phy->id) < 0)
++			phy->id = 1;
++
++		clk = devm_clk_get(phy->dev, "dpll_ref");
++		if (IS_ERR(clk)) {
++			dev_err(&pdev->dev, "unable to get dpll ref clk\n");
++			return PTR_ERR(clk);
++		}
++		clk_set_rate(clk, 1500000000);
++
++		clk = devm_clk_get(phy->dev, "dpll_ref_m2");
++		if (IS_ERR(clk)) {
++			dev_err(&pdev->dev, "unable to get dpll ref m2 clk\n");
++			return PTR_ERR(clk);
++		}
++		clk_set_rate(clk, 100000000);
++
++		clk = devm_clk_get(phy->dev, "phy-div");
++		if (IS_ERR(clk)) {
++			dev_err(&pdev->dev, "unable to get phy-div clk\n");
++			return PTR_ERR(clk);
++		}
++		clk_set_rate(clk, 100000000);
++
++		phy->div_clk = devm_clk_get(phy->dev, "div-clk");
++		if (IS_ERR(phy->div_clk)) {
++			dev_err(&pdev->dev, "unable to get div-clk\n");
++			return PTR_ERR(phy->div_clk);
++		}
++	} else {
++		phy->div_clk = ERR_PTR(-ENODEV);
+ 	}
+ 
+ 	control_node = of_parse_phandle(node, "ctrl-module", 0);
+@@ -387,6 +432,8 @@ static int ti_pipe3_runtime_suspend(struct device *dev)
+ 		clk_disable_unprepare(phy->wkupclk);
+ 	if (!IS_ERR(phy->refclk))
+ 		clk_disable_unprepare(phy->refclk);
++	if (!IS_ERR(phy->div_clk))
++		clk_disable_unprepare(phy->div_clk);
+ 
+ 	return 0;
+ }
+@@ -412,8 +459,19 @@ static int ti_pipe3_runtime_resume(struct device *dev)
+ 		}
+ 	}
+ 
++	if (!IS_ERR(phy->div_clk)) {
++		ret = clk_prepare_enable(phy->div_clk);
++		if (ret) {
++			dev_err(phy->dev, "Failed to enable div_clk %d\n", ret);
++			goto err3;
++		}
++	}
+ 	return 0;
+ 
++err3:
++	if (!IS_ERR(phy->wkupclk))
++		clk_disable_unprepare(phy->wkupclk);
++
+ err2:
+ 	if (!IS_ERR(phy->refclk))
+ 		clk_disable_unprepare(phy->refclk);
+@@ -446,6 +504,9 @@ static const struct of_device_id ti_pipe3_id_table[] = {
+ 		.compatible = "ti,phy-pipe3-sata",
+ 		.data = dpll_map_sata,
+ 	},
++	{
++		.compatible = "ti,phy-pipe3-pcie",
++	},
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(of, ti_pipe3_id_table);
 -- 
 1.7.9.5
 
