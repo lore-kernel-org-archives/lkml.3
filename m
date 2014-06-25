@@ -1,271 +1,316 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757291AbaFYOTY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 10:19:24 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:59755 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757070AbaFYOTW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 10:19:22 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-bf-53aada678fb6
-Message-id: <1403705957.22107.22.camel@AMDC1943>
-Subject: Re: [PATCH v3 05/14] clk: Add generic driver for Maxim PMIC clocks
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
-        Daniel Stone <daniels@collabora.com>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 25 Jun 2014 16:19:17 +0200
-In-reply-to: <1403202040-12641-6-git-send-email-javier.martinez@collabora.co.uk>
-References: <1403202040-12641-1-git-send-email-javier.martinez@collabora.co.uk>
- <1403202040-12641-6-git-send-email-javier.martinez@collabora.co.uk>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.10.4-0ubuntu1
-MIME-version: 1.0
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAIsWRmVeSWpSXmKPExsVy+t/xy7rpt1YFG9zdrWKx5OJVdoupD5+w
-	WWzq38puMf/IOVaLs8sOslkc/V1g0bvgKpvF/a9HGS2+Xelgstj0+BqrxeVdc9gsZpzfx2Tx
-	dMJFNotT1z+zWZzuZrWYfvwtq0Xf2ktsDoIesxsusnj8fX6dxWPH3SWMHjtn3WX32LSqk83j
-	zrU9bB7zTgZ6bF5S73HlRBOrR9+WVYwe0+f9ZPL4vEkugCeKyyYlNSezLLVI3y6BK2PW/+PM
-	Bf3GFW/aLBsYr2h0MXJySAiYSPzYsYgFwhaTuHBvPVsXIxeHkMBSRolTr3exQjifGSUWn3rB
-	BFLFK2AgMffIF1YQW1jAW+Lzqc9sIDabgLHE5uVLwGwRATuJG6sfMoM0Mws8YpF4tOUPI0iC
-	RUBVYuafm2DrOAUCJG4tugO1biqjxJ3e32DdzALqEpPmLWKGuElZYt7+Y1CbBSV+TL7HAlEj
-	L7F5zVvmCYwCs5C0zEJSNgtJ2QJG5lWMoqmlyQXFSem5RnrFibnFpXnpesn5uZsYIbH4dQfj
-	0mNWhxgFOBiVeHgDeFYFC7EmlhVX5h5ilOBgVhLhdd8PFOJNSaysSi3Kjy8qzUktPsTIxMEp
-	1cCYmxHVLllzgav4/h2Nz0cPTvu/4U2pOn+MROMBC9sN6t/Vtq+o59jkNjU7YgvvLjuJqu93
-	wpQXMbxsfX6vYNNmzV/vtHidJh6QdWiumqVg++OYVebWzM+z834++LfmpZ8vW1OToe/5ORNe
-	bauIkZcqdGZqKfu4OmLNi2WuV6d28L8/eObjnLatSizFGYmGWsxFxYkA5rLQEKMCAAA=
+	id S1757294AbaFYOUr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 10:20:47 -0400
+Received: from kanga.kvack.org ([205.233.56.17]:44364 "EHLO kanga.kvack.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754206AbaFYOUp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 10:20:45 -0400
+Date: Wed, 25 Jun 2014 10:20:43 -0400
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, linux@roeck-us.net,
+        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.15 00/61] 3.15.2-stable review
+Message-ID: <20140625142043.GP23137@kvack.org>
+References: <20140624154952.751713761@linuxfoundation.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140624154952.751713761@linuxfoundation.org>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On czw, 2014-06-19 at 20:20 +0200, Javier Martinez Canillas wrote:
-> Maxim Integrated Power Management ICs are very similar with
-> regard to their clock outputs. Most of the clock drivers for
-> these chips are duplicating code and are simpler enough that
-> can be converted to use a generic driver to consolidate code
-> and avoid duplication.
+Hi Greg,
+
+On Tue, Jun 24, 2014 at 11:50:43AM -0400, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.15.2 release.
+> There are 61 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+
+You'll probably want to include the fixes for CVE-2014-0206 -- these are  
+edfbbf388f293d70bf4b7c0bc38774d05e6f711a and 
+f8567a3845ac05bb28f3c1b478ef752762bd39ef .
+
+		-ben
+
+> Responses should be made by Thu Jun 26 15:49:36 UTC 2014.
+> Anything received after that time might be too late.
 > 
-> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.15.2-rc1.gz
+> and the diffstat can be found below.
+> 
+> thanks,
+> 
+> greg k-h
+> 
+> -------------
+> Pseudo-Shortlog of commits:
+> 
+> Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>     Linux 3.15.2-rc1
+> 
+> Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>     slab: fix oops when reading /proc/slab_allocators
+> 
+> Hugh Dickins <hughd@google.com>
+>     tmpfs: ZERO_RANGE and COLLAPSE_RANGE not currently supported
+> 
+> Lars-Peter Clausen <lars@metafoo.de>
+>     ALSA: control: Make sure that id->index does not overflow
+> 
+> Lars-Peter Clausen <lars@metafoo.de>
+>     ALSA: control: Handle numid overflow
+> 
+> Lars-Peter Clausen <lars@metafoo.de>
+>     ALSA: control: Don't access controls outside of protected regions
+> 
+> Lars-Peter Clausen <lars@metafoo.de>
+>     ALSA: control: Fix replacing user controls
+> 
+> Lars-Peter Clausen <lars@metafoo.de>
+>     ALSA: control: Protect user controls against concurrent access
+> 
+> David Henningsson <david.henningsson@canonical.com>
+>     ALSA: hda - Add quirk for external mic on Lifebook U904
+> 
+> Mengdong Lin <mengdong.lin@intel.com>
+>     ALSA: hda - verify pin:converter connection on unsol event for HSW and VLV
+> 
+> Kailang Yang <kailang@realtek.com>
+>     ALSA: hda/realtek - Add more entry for enable HP mute led
+> 
+> Kailang Yang <kailang@realtek.com>
+>     ALSA: hda/realtek - Add support of ALC891 codec
+> 
+> Wang, Xiaoming <xiaoming.wang@intel.com>
+>     ALSA: compress: Cancel the optimization of compiler and fix the size of struct for all platform.
+> 
+> Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>     lz4: ensure length does not wrap
+> 
+> Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>     lzo: properly check for overruns
+> 
+> Peter Meerwald <pmeerw@pmeerw.net>
+>     iio: Fix two mpl3115 issues in measurement conversion
+> 
+> Peter Meerwald <pmeerw@pmeerw.net>
+>     iio: Fix endianness issue in ak8975_read_axis()
+> 
+> Dan Carpenter <dan.carpenter@oracle.com>
+>     iio: adc: at91: signedness bug in at91_adc_get_trigger_value_by_name()
+> 
+> Robert Hodaszi <robert.hodaszi@digi.com>
+>     iio: mxs-lradc: fix divider
+> 
+> Dan Carpenter <dan.carpenter@oracle.com>
+>     iio: adc: checking for NULL instead of IS_ERR() in probe
+> 
+> Mario Schuknecht <mario.schuknecht@dresearch-fe.de>
+>     staging: iio: tsl2x7x_core: fix proximity treshold
+> 
+> Jonathan Cameron <jic23@kernel.org>
+>     iio:adc:max1363 incorrect resolutions for max11604, max11605, max11610 and max11611.
+> 
+> Peter Ujfalusi <peter.ujfalusi@ti.com>
+>     ASoC: tlv320aci3x: Fix custom snd_soc_dapm_put_volsw_aic3x() function
+> 
+> Liam Girdwood <liam.r.girdwood@linux.intel.com>
+>     ASoC: max98090: Fix reset at resume time
+> 
+> Lars-Peter Clausen <lars@metafoo.de>
+>     ASoC: dapm: Make sure to always update the DAPM graph in _put_volsw()
+> 
+> Radim Krčmář <rkrcmar@redhat.com>
+>     hv: use correct order when freeing monitor_pages
+> 
+> K. Y. Srinivasan <kys@microsoft.com>
+>     Drivers: hv: balloon: Ensure pressure reports are posted regularly
+> 
+> Johan Hovold <jhovold@gmail.com>
+>     USB: cdc-acm: fix runtime PM imbalance at shutdown
+> 
+> Johan Hovold <jhovold@gmail.com>
+>     USB: cdc-acm: fix I/O after failed open
+> 
+> Johan Hovold <jhovold@gmail.com>
+>     USB: cdc-acm: fix failed open not being detected
+> 
+> Johan Hovold <jhovold@gmail.com>
+>     USB: cdc-acm: fix open and suspend race
+> 
+> Johan Hovold <jhovold@gmail.com>
+>     USB: cdc-acm: fix potential urb leak and PM imbalance in write
+> 
+> Johan Hovold <jhovold@gmail.com>
+>     USB: cdc-acm: fix shutdown and suspend race
+> 
+> Johan Hovold <jhovold@gmail.com>
+>     USB: cdc-acm: fix runtime PM for control messages
+> 
+> Johan Hovold <jhovold@gmail.com>
+>     USB: cdc-acm: fix broken runtime suspend
+> 
+> Johan Hovold <jhovold@gmail.com>
+>     USB: cdc-acm: fix write and resume race
+> 
+> Johan Hovold <jhovold@gmail.com>
+>     USB: cdc-acm: fix write and suspend race
+> 
+> James Hogan <james.hogan@imgtec.com>
+>     MIPS: KVM: Allocate at least 16KB for exception handlers
+> 
+> Christian Borntraeger <borntraeger@de.ibm.com>
+>     KVM: s390: Drop pending interrupts on guest exit
+> 
+> Paolo Bonzini <pbonzini@redhat.com>
+>     KVM: lapic: sync highest ISR to hardware apic on EOI
+> 
+> Boris BREZILLON <boris.brezillon@free-electrons.com>
+>     ARM: at91: fix at91_sysirq_mask_rtc for sam9x5 SoCs
+> 
+> Eric Dumazet <edumazet@google.com>
+>     udp: ipv4: do not waste time in __udp4_lib_mcast_demux_lookup
+> 
+> Cong Wang <cwang@twopensource.com>
+>     vxlan: use dev->needed_headroom instead of dev->hard_header_len
+> 
+> Michal Schmidt <mschmidt@redhat.com>
+>     rtnetlink: fix userspace API breakage for iproute2 < v3.9.0
+> 
+> Xufeng Zhang <xufeng.zhang@windriver.com>
+>     sctp: Fix sk_ack_backlog wrap-around problem
+> 
+> Eric Dumazet <edumazet@google.com>
+>     ipv4: fix a race in ip4_datagram_release_cb()
+> 
+> Jon Cooper <jcooper@solarflare.com>
+>     sfc: PIO:Restrict to 64bit arch and use 64-bit writes.
+> 
+> Dmitry Popov <ixaphire@qrator.net>
+>     ipip, sit: fix ipv4_{update_pmtu,redirect} calls
+> 
+> Eric Dumazet <edumazet@google.com>
+>     net: force a list_del() in unregister_netdevice_many()
+> 
+> Bjørn Mork <bjorn@mork.no>
+>     net: qmi_wwan: add Olivetti Olicard modems
+> 
+> Alexei Starovoitov <ast@plumgrid.com>
+>     net: filter: fix sparc32 typo
+> 
+> Alexei Starovoitov <ast@plumgrid.com>
+>     net: filter: fix typo in sparc BPF JIT
+> 
+> Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+>     sh_eth: fix SH7619/771x support
+> 
+> Ben Dooks <ben.dooks@codethink.co.uk>
+>     sh_eth: use RNC mode for packet reception
+> 
+> Tom Gundersen <teg@jklm.no>
+>     net: tunnels - enable module autoloading
+> 
+> Sven Wegener <sven.wegener@stealer.net>
+>     ipv6: Fix regression caused by efe4208 in udp_v6_mcast_next()
+> 
+> Mimi Zohar <zohar@linux.vnet.ibm.com>
+>     evm: prohibit userspace writing 'security.evm' HMAC value
+> 
+> Dmitry Kasatkin <d.kasatkin@samsung.com>
+>     ima: introduce ima_kernel_read()
+> 
+> Mimi Zohar <zohar@linux.vnet.ibm.com>
+>     ima: audit log files opened with O_DIRECT flag
+> 
+> Nicholas Bellinger <nab@linux-iscsi.org>
+>     iscsi-target: Reject mutual authentication with reflected CHAP_C
+> 
+> Nicholas Bellinger <nab@linux-iscsi.org>
+>     target: Fix NULL pointer dereference for XCOPY in target_put_sess_cmd
+> 
+> Boris BREZILLON <boris.brezillon@free-electrons.com>
+>     rtc: rtc-at91rm9200: fix infinite wait for ACKUPD irq
+> 
+> 
+> -------------
+> 
+> Diffstat:
+> 
+>  Documentation/ABI/testing/ima_policy     |   2 +-
+>  Makefile                                 |   4 +-
+>  arch/arm/mach-at91/sysirq_mask.c         |  22 +++---
+>  arch/mips/kvm/kvm_mips.c                 |   2 +-
+>  arch/s390/kvm/interrupt.c                |   4 +-
+>  arch/s390/kvm/kvm-s390.c                 |   2 +
+>  arch/s390/kvm/kvm-s390.h                 |   1 +
+>  arch/sparc/net/bpf_jit_comp.c            |   8 +-
+>  arch/x86/kvm/lapic.c                     |  62 ++++++++++-----
+>  drivers/hv/connection.c                  |   4 +-
+>  drivers/hv/hv_balloon.c                  |  29 ++++++-
+>  drivers/iio/adc/at91_adc.c               |  16 ++--
+>  drivers/iio/adc/max1363.c                |  16 ++--
+>  drivers/iio/adc/men_z188_adc.c           |   4 +-
+>  drivers/iio/magnetometer/ak8975.c        |   9 +--
+>  drivers/iio/pressure/mpl3115.c           |   6 +-
+>  drivers/net/ethernet/renesas/sh_eth.c    |  32 +++++---
+>  drivers/net/ethernet/renesas/sh_eth.h    |   2 -
+>  drivers/net/ethernet/sfc/io.h            |   7 ++
+>  drivers/net/ethernet/sfc/tx.c            |  22 ++++--
+>  drivers/net/macvlan.c                    |   1 -
+>  drivers/net/usb/qmi_wwan.c               |   7 +-
+>  drivers/net/vxlan.c                      |   7 +-
+>  drivers/rtc/rtc-at91rm9200.c             |  16 +++-
+>  drivers/staging/iio/adc/mxs-lradc.c      |  12 ++-
+>  drivers/staging/iio/light/tsl2x7x_core.c |   8 +-
+>  drivers/target/iscsi/iscsi_target_auth.c |  10 +++
+>  drivers/target/target_core_transport.c   |   4 +
+>  drivers/usb/class/cdc-acm.c              | 125 ++++++++++++++++++-------------
+>  drivers/usb/class/cdc-acm.h              |   2 +-
+>  include/sound/core.h                     |   2 +
+>  include/uapi/sound/compress_offload.h    |   2 +-
+>  lib/lz4/lz4_decompress.c                 |   2 +
+>  lib/lzo/lzo1x_decompress_safe.c          |  62 +++++++++------
+>  mm/shmem.c                               |   3 +
+>  mm/slab.c                                |  90 +++++++++++++++++-----
+>  net/core/dev.c                           |   5 +-
+>  net/core/rtnetlink.c                     |  23 ++++--
+>  net/ipv4/datagram.c                      |  20 +++--
+>  net/ipv4/ipip.c                          |   5 +-
+>  net/ipv4/udp.c                           |   4 +
+>  net/ipv6/ip6_tunnel.c                    |   1 +
+>  net/ipv6/sit.c                           |   5 +-
+>  net/ipv6/udp.c                           |   8 +-
+>  net/mac80211/iface.c                     |   1 -
+>  net/sctp/associola.c                     |   2 +-
+>  security/integrity/evm/evm_main.c        |  12 ++-
+>  security/integrity/ima/ima_api.c         |  10 ++-
+>  security/integrity/ima/ima_crypto.c      |  32 +++++++-
+>  security/integrity/ima/ima_main.c        |   5 +-
+>  security/integrity/ima/ima_policy.c      |   6 +-
+>  security/integrity/integrity.h           |   1 +
+>  sound/core/control.c                     |  78 ++++++++++++-------
+>  sound/core/init.c                        |   1 +
+>  sound/pci/hda/patch_hdmi.c               |  10 ++-
+>  sound/pci/hda/patch_realtek.c            |  24 ++++++
+>  sound/soc/codecs/max98090.c              |   3 +
+>  sound/soc/codecs/tlv320aic3x.c           |   2 +-
+>  sound/soc/soc-dapm.c                     |  23 +++---
+>  59 files changed, 625 insertions(+), 263 deletions(-)
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe stable" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-(...)
-
-> diff --git a/drivers/clk/clk-max-gen.c b/drivers/clk/clk-max-gen.c
-> new file mode 100644
-> index 0000000..aa9ebbe
-> --- /dev/null
-> +++ b/drivers/clk/clk-max-gen.c
-> @@ -0,0 +1,197 @@
-> +/*
-> + * clk-max-gen.c - Generic clock driver for Maxim PMICs clocks
-> + *
-> + * Copyright (C) 2012 Samsung Electornics
-> + * Jonghwa Lee <jonghwa3.lee@samsung.com>
-
-You copied this from original file but '2012' and author look a little
-strange since this piece of work is actually new stuff. Maybe consider
-adding current copyright?
-
-> + *
-> + * This program is free software; you can redistribute  it and/or modify it
-> + * under  the terms of  the GNU General  Public License as published by the
-> + * Free Software Foundation;  either version 2 of the  License, or (at your
-> + * option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * This driver is based on clk-max77686.c
-> + *
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/slab.h>
-> +#include <linux/err.h>
-> +#include <linux/regmap.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/clk-provider.h>
-> +#include <linux/mutex.h>
-> +#include <linux/clkdev.h>
-> +
-> +struct max_gen_clk {
-> +	struct regmap *regmap;
-> +	u32 mask;
-> +	u32 reg;
-> +	struct clk_hw hw;
-> +	struct clk_lookup *lookup;
-> +};
-> +
-> +static struct max_gen_clk *to_max_gen_clk(struct clk_hw *hw)
-> +{
-> +	return container_of(hw, struct max_gen_clk, hw);
-> +}
-> +
-> +static int max_gen_clk_prepare(struct clk_hw *hw)
-> +{
-> +	struct max_gen_clk *max_gen = to_max_gen_clk(hw);
-> +
-> +	return regmap_update_bits(max_gen->regmap, max_gen->reg,
-> +				  max_gen->mask, max_gen->mask);
-> +}
-> +
-> +static void max_gen_clk_unprepare(struct clk_hw *hw)
-> +{
-> +	struct max_gen_clk *max_gen = to_max_gen_clk(hw);
-> +
-> +	regmap_update_bits(max_gen->regmap, max_gen->reg,
-> +			   max_gen->mask, ~max_gen->mask);
-> +}
-> +
-> +static int max_gen_clk_is_prepared(struct clk_hw *hw)
-> +{
-> +	struct max_gen_clk *max_gen = to_max_gen_clk(hw);
-> +	int ret;
-> +	u32 val;
-> +
-> +	ret = regmap_read(max_gen->regmap, max_gen->reg, &val);
-> +
-> +	if (ret < 0)
-> +		return -EINVAL;
-> +
-> +	return val & max_gen->mask;
-> +}
-> +
-> +static unsigned long max_gen_recalc_rate(struct clk_hw *hw,
-> +					 unsigned long parent_rate)
-> +{
-> +	return 32768;
-> +}
-> +
-> +struct clk_ops max_gen_clk_ops = {
-> +	.prepare	= max_gen_clk_prepare,
-> +	.unprepare	= max_gen_clk_unprepare,
-> +	.is_prepared	= max_gen_clk_is_prepared,
-> +	.recalc_rate	= max_gen_recalc_rate,
-> +};
-> +
-> +static struct clk *max_gen_clk_register(struct device *dev,
-> +					struct max_gen_clk *max_gen)
-> +{
-> +	struct clk *clk;
-> +	struct clk_hw *hw = &max_gen->hw;
-> +
-> +	clk = clk_register(dev, hw);
-> +	if (IS_ERR(clk))
-> +		return clk;
-> +
-> +	max_gen->lookup = kzalloc(sizeof(struct clk_lookup), GFP_KERNEL);
-> +	if (!max_gen->lookup)
-> +		return ERR_PTR(-ENOMEM);
-> +
-> +	max_gen->lookup->con_id = hw->init->name;
-> +	max_gen->lookup->clk = clk;
-> +
-> +	clkdev_add(max_gen->lookup);
-> +
-> +	return clk;
-> +}
-> +
-> +int max_gen_clk_probe(struct platform_device *pdev, struct regmap *regmap,
-> +		      u32 reg, struct clk_init_data *clks_init, int num_init)
-> +{
-> +	int i, ret;
-> +	struct max_gen_clk **max_gen_clks;
-> +	struct clk **clocks;
-> +	struct device *dev = &pdev->dev;
-> +
-> +	clocks = devm_kzalloc(dev, sizeof(struct clk *) * num_init, GFP_KERNEL);
-> +	if (!clocks)
-> +		return -ENOMEM;
-> +
-> +	max_gen_clks = devm_kzalloc(dev, sizeof(struct max_gen_clk *)
-> +				    * num_init, GFP_KERNEL);
-> +	if (!max_gen_clks)
-> +		return -ENOMEM;
-> +
-> +	for (i = 0; i < num_init; i++) {
-> +		max_gen_clks[i] = devm_kzalloc(dev, sizeof(struct max_gen_clk),
-> +					       GFP_KERNEL);
-> +		if (!max_gen_clks[i])
-> +			return -ENOMEM;
-> +	}
-
-Why don't use only one devm_kzalloc() call for struct max_gen_clk?
-Something like:
-	max_gen_clks = devm_kzalloc(dev, sizeof(struct max_gen_clk)
-				    * num_init, GFP_KERNEL);
-
-This will be shorter and still readable.
-
-> +
-> +	for (i = 0; i < num_init; i++) {
-> +		max_gen_clks[i]->regmap = regmap;
-> +		max_gen_clks[i]->mask = 1 << i;
-> +		max_gen_clks[i]->reg = reg;
-> +		max_gen_clks[i]->hw.init = &clks_init[i];
-> +
-> +		clocks[i] = max_gen_clk_register(dev, max_gen_clks[i]);
-> +		if (IS_ERR(clocks[i])) {
-> +			ret = PTR_ERR(clocks[i]);
-> +			dev_err(dev, "failed to register %s\n",
-> +				max_gen_clks[i]->hw.init->name);
-> +			goto err_clocks;
-> +		}
-> +	}
-> +
-> +	platform_set_drvdata(pdev, clocks);
-> +
-> +	if (dev->of_node) {
-> +		struct clk_onecell_data *of_data;
-> +
-> +		of_data = devm_kzalloc(dev, sizeof(*of_data), GFP_KERNEL);
-> +		if (!of_data) {
-> +			ret = -ENOMEM;
-> +			goto err_clocks;
-> +		}
-> +
-> +		of_data->clks = clocks;
-> +		of_data->clk_num = num_init;
-> +		ret = of_clk_add_provider(dev->of_node, of_clk_src_onecell_get,
-> +					  of_data);
-> +
-> +		if (ret) {
-> +			dev_err(dev, "failed to register OF clock provider\n");
-> +			goto err_clocks;
-> +		}
-> +	}
-> +
-> +	return 0;
-> +
-> +err_clocks:
-> +	for (--i; i >= 0; --i) {
-> +		clkdev_drop(max_gen_clks[i]->lookup);
-> +		clk_unregister(max_gen_clks[i]->hw.clk);
-> +	}
-> +
-> +	return ret;
-> +}
-
-Since users of this function may be compiled as modules these should be
-exported (EXPORT_SYMBOL(_GPL)):
-ERROR: "max_gen_clk_ops" [drivers/clk/clk-max77802.ko] undefined!
-ERROR: "max_gen_clk_probe" [drivers/clk/clk-max77802.ko] undefined!
-ERROR: "max_gen_clk_remove" [drivers/clk/clk-max77802.ko] undefined!
-ERROR: "max_gen_clk_ops" [drivers/clk/clk-max77686.ko] undefined!
-ERROR: "max_gen_clk_probe" [drivers/clk/clk-max77686.ko] undefined!
-ERROR: "max_gen_clk_remove" [drivers/clk/clk-max77686.ko] undefined!
-
-Best regards,
-Krzysztof
-
+-- 
+"Thought is the essence of where you are now."
