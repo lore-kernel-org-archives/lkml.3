@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756148AbaFYJce (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 05:32:34 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:51350 "EHLO
+	id S1756183AbaFYJdA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 05:33:00 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:51348 "EHLO
 	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755332AbaFYJ25 (ORCPT
+	by vger.kernel.org with ESMTP id S1752199AbaFYJ24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 05:28:57 -0400
+	Wed, 25 Jun 2014 05:28:56 -0400
 From: Marc Zyngier <marc.zyngier@arm.com>
 To: kvmarm@lists.cs.columbia.edu, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
@@ -14,84 +14,223 @@ Cc: Will Deacon <will.deacon@arm.com>,
         Catalin Marinas <catalin.marinas@arm.com>,
         Thomas Gleixner <tglx@linutronix.de>, eric.auger@linaro.org,
         Christoffer Dall <christoffer.dall@linaro.org>
-Subject: [RFC PATCH 0/9] ARM: Forwarding physical interrupts to a guest VM
-Date: Wed, 25 Jun 2014 10:28:41 +0100
-Message-Id: <1403688530-23273-1-git-send-email-marc.zyngier@arm.com>
+Subject: [RFC PATCH 3/9] irqchip: GIC: Convert to EOImode == 1
+Date: Wed, 25 Jun 2014 10:28:44 +0100
+Message-Id: <1403688530-23273-4-git-send-email-marc.zyngier@arm.com>
 X-Mailer: git-send-email 1.8.3.4
+In-Reply-To: <1403688530-23273-1-git-send-email-marc.zyngier@arm.com>
+References: <1403688530-23273-1-git-send-email-marc.zyngier@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The GIC architecture (ARM's Generic Interrupt Controller) allows an
-active physical interrupt to be forwarded to a guest, and the guest to
-indirectly perform the deactivation of the interrupt by performing an
-EOI on the virtual interrupt (see for example the GICv2 spec, 3.2.1).
+So far, GICv2 has been used in with EOImode == 0. The effect of this
+mode is to perform the priority drop and the deactivation of the
+interrupt at the same time.
 
-So far, Linux doesn't have this notion, which is a bit of a pain.
+While this works perfectly for Linux (we only have a single priority),
+it causes issues when an interrupt is forwarded to a guest, and when
+we want the guest to perform the EOI itself.
 
-This patch series introduce two generic features:
+For this case, the GIC architecture provides EOImode == 1, where:
+- A write to the EOI register drops the priority of the interrupt and leaves
+it active. Other interrupts at the same priority level can now be taken,
+but the active interrupt cannot be taken again
+- A write to the DIR marks the interrupt as inactive, meaning it can
+now be taken again.
 
-- A way to mark an interrupt as "forwarded": this allows an irq_chip
-  to know that it shouldn't perform the deactivation itself
-- A way to save/restore the "state" of a "forwarded" interrupt
+We only enable this feature when booted in HYP mode. Also, as most device
+trees are broken (they report the CPU interface size to be 4kB, while
+the GICv2 CPU interface size is 8kB), output a warning if we're booted
+in HYP mode, and disable the feature.
 
-The series then adapts both GIC drivers to switch to EOImode == 1
-(split priority drop and deactivation), to support this "forwarded"
-feature and hacks the KVM/ARM timer backend to use all of this.
+Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+---
+ drivers/irqchip/irq-gic.c       | 61 +++++++++++++++++++++++++++++++++++++----
+ include/linux/irqchip/arm-gic.h |  4 +++
+ 2 files changed, 59 insertions(+), 6 deletions(-)
 
-This requires yet another bit of surgery in the vgic code in order to
-allow a mapping between physical interrupts and virtual
-ones. Hopefully, this should plug into VFIO and the whole irqfd thing,
-but I don't understand any of that just yet (Eric?)
-
-The patches are against 3.16-rc2, plus a massive amount of GICv3
-code. They are also available in my git repo:
-git://git.kernel.org/pub/scm/linux/kernel/git/maz/arm-platforms.git kvm-arm64/irq-forward
-
-Open questions (Thomas, these are mostly targeted at you):
-
-- Are the generic features generic enough?
-- Would the "forwarded" thing be better implemented as a handler
-  rather than an irq_chip specific thing?
-- The split priority drop/deactivate also fits the threaded interrupt
-  model fairly well (no need to mask/unmask). Should we have a go at
-  this too?
-- Does it fit the VFIO+KVM model without playing the ugly mask/unmask
-  dance?
-
-Thanks,
-
-	M.
-
-Marc Zyngier (9):
-  genirq: Add IRQD_IRQ_FORWARDED flag and accessors
-  genirq: Allow the state of a  forwarded irq to be save/restored
-  irqchip: GIC: Convert to EOImode == 1
-  irqchip: GIC: add support for forwarded interrupts
-  irqchip: GICv3: Convert to EOImode == 1
-  irqchip: GICv3: add support for forwarded interrupts
-  KVM: arm: vgic: allow dynamic mapping of physical/virtual interrupts
-  arm: KVM: timer: move the timer switch into the non-preemptible
-    section
-  KVM: arm: timer: make the interrupt state part of the timer state
-
- arch/arm/kvm/arm.c                 |   7 +--
- drivers/irqchip/irq-gic-v3-its.c   |   2 +
- drivers/irqchip/irq-gic-v3.c       |  33 +++++++++++-
- drivers/irqchip/irq-gic.c          | 107 +++++++++++++++++++++++++++++++++----
- include/kvm/arm_arch_timer.h       |   3 ++
- include/kvm/arm_vgic.h             |  13 +++++
- include/linux/interrupt.h          |   2 +
- include/linux/irq.h                |  32 +++++++++++
- include/linux/irqchip/arm-gic-v3.h |  12 +++++
- include/linux/irqchip/arm-gic.h    |   5 ++
- kernel/irq/manage.c                |  80 +++++++++++++++++++++++++++
- virt/kvm/arm/arch_timer.c          |  31 ++++++++++-
- virt/kvm/arm/vgic-v2.c             |  14 ++++-
- virt/kvm/arm/vgic-v3.c             |  22 +++++++-
- virt/kvm/arm/vgic.c                |  88 ++++++++++++++++++++++++++++++
- 15 files changed, 431 insertions(+), 20 deletions(-)
-
+diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+index 508b815..9295bf2 100644
+--- a/drivers/irqchip/irq-gic.c
++++ b/drivers/irqchip/irq-gic.c
+@@ -45,6 +45,7 @@
+ #include <asm/irq.h>
+ #include <asm/exception.h>
+ #include <asm/smp_plat.h>
++#include <asm/virt.h>
+ 
+ #include "irq-gic-common.h"
+ #include "irqchip.h"
+@@ -94,6 +95,10 @@ struct irq_chip gic_arch_extn = {
+ 	.irq_set_wake	= NULL,
+ };
+ 
++static struct irq_chip *gic_chip;
++
++static bool supports_deactivate = false;
++
+ #ifndef MAX_GIC_NR
+ #define MAX_GIC_NR	1
+ #endif
+@@ -185,6 +190,12 @@ static void gic_eoi_irq(struct irq_data *d)
+ 	writel_relaxed(gic_irq(d), gic_cpu_base(d) + GIC_CPU_EOI);
+ }
+ 
++static void gic_eoi_dir_irq(struct irq_data *d)
++{
++	gic_eoi_irq(d);
++	writel_relaxed(gic_irq(d), gic_cpu_base(d) + GIC_CPU_DEACTIVATE);
++}
++
+ static int gic_set_type(struct irq_data *d, unsigned int type)
+ {
+ 	void __iomem *base = gic_dist_base(d);
+@@ -277,6 +288,7 @@ static void __exception_irq_entry gic_handle_irq(struct pt_regs *regs)
+ 		}
+ 		if (irqnr < 16) {
+ 			writel_relaxed(irqstat, cpu_base + GIC_CPU_EOI);
++			writel_relaxed(irqstat, cpu_base + GIC_CPU_DEACTIVATE);
+ #ifdef CONFIG_SMP
+ 			handle_IPI(irqnr, regs);
+ #endif
+@@ -313,7 +325,7 @@ static void gic_handle_cascade_irq(unsigned int irq, struct irq_desc *desc)
+ 	chained_irq_exit(chip, desc);
+ }
+ 
+-static struct irq_chip gic_chip = {
++static struct irq_chip gicv1_chip = {
+ 	.name			= "GIC",
+ 	.irq_mask		= gic_mask_irq,
+ 	.irq_unmask		= gic_unmask_irq,
+@@ -326,6 +338,19 @@ static struct irq_chip gic_chip = {
+ 	.irq_set_wake		= gic_set_wake,
+ };
+ 
++static struct irq_chip gicv2_chip = {
++	.name			= "GIC",
++	.irq_mask		= gic_mask_irq,
++	.irq_unmask		= gic_unmask_irq,
++	.irq_eoi		= gic_eoi_dir_irq,
++	.irq_set_type		= gic_set_type,
++	.irq_retrigger		= gic_retrigger,
++#ifdef CONFIG_SMP
++	.irq_set_affinity	= gic_set_affinity,
++#endif
++	.irq_set_wake		= gic_set_wake,
++};
++
+ void __init gic_cascade_irq(unsigned int gic_nr, unsigned int irq)
+ {
+ 	if (gic_nr >= MAX_GIC_NR)
+@@ -377,6 +402,16 @@ static void __init gic_dist_init(struct gic_chip_data *gic)
+ 	writel_relaxed(1, base + GIC_DIST_CTRL);
+ }
+ 
++static void gic_cpu_if_up(void)
++{
++	void __iomem *cpu_base = gic_data_cpu_base(&gic_data[0]);
++	u32 val = 0;
++
++	if (supports_deactivate)
++		val = GIC_CPU_CTRL_EOImodeNS;
++	writel_relaxed(val | 1, cpu_base + GIC_CPU_CTRL);
++}
++
+ static void gic_cpu_init(struct gic_chip_data *gic)
+ {
+ 	void __iomem *dist_base = gic_data_dist_base(gic);
+@@ -402,7 +437,7 @@ static void gic_cpu_init(struct gic_chip_data *gic)
+ 	gic_cpu_config(dist_base, NULL);
+ 
+ 	writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
+-	writel_relaxed(1, base + GIC_CPU_CTRL);
++	gic_cpu_if_up();
+ }
+ 
+ void gic_cpu_if_down(void)
+@@ -543,7 +578,7 @@ static void gic_cpu_restore(unsigned int gic_nr)
+ 		writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4);
+ 
+ 	writel_relaxed(0xf0, cpu_base + GIC_CPU_PRIMASK);
+-	writel_relaxed(1, cpu_base + GIC_CPU_CTRL);
++	gic_cpu_if_up();
+ }
+ 
+ static int gic_notifier(struct notifier_block *self, unsigned long cmd,	void *v)
+@@ -770,11 +805,11 @@ static int gic_irq_domain_map(struct irq_domain *d, unsigned int irq,
+ {
+ 	if (hw < 32) {
+ 		irq_set_percpu_devid(irq);
+-		irq_set_chip_and_handler(irq, &gic_chip,
++		irq_set_chip_and_handler(irq, gic_chip,
+ 					 handle_percpu_devid_irq);
+ 		set_irq_flags(irq, IRQF_VALID | IRQF_NOAUTOEN);
+ 	} else {
+-		irq_set_chip_and_handler(irq, &gic_chip,
++		irq_set_chip_and_handler(irq, gic_chip,
+ 					 handle_fasteoi_irq);
+ 		set_irq_flags(irq, IRQF_VALID | IRQF_PROBE);
+ 
+@@ -951,6 +986,11 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
+ 
+ 	gic_irqs -= hwirq_base; /* calculate # of irqs to allocate */
+ 
++	if (!supports_deactivate)
++		gic_chip = &gicv1_chip;
++	else
++		gic_chip = &gicv2_chip;
++
+ 	if (of_property_read_u32(node, "arm,routable-irqs",
+ 				 &nr_routable_irqs)) {
+ 		irq_base = irq_alloc_descs(irq_start, 16, gic_irqs,
+@@ -980,7 +1020,7 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
+ 		set_handle_irq(gic_handle_irq);
+ 	}
+ 
+-	gic_chip.flags |= gic_arch_extn.flags;
++	gic_chip->flags |= gic_arch_extn.flags;
+ 	gic_dist_init(gic);
+ 	gic_cpu_init(gic);
+ 	gic_pm_init(gic);
+@@ -994,6 +1034,7 @@ gic_of_init(struct device_node *node, struct device_node *parent)
+ {
+ 	void __iomem *cpu_base;
+ 	void __iomem *dist_base;
++	struct resource cpu_res;
+ 	u32 percpu_offset;
+ 	int irq;
+ 
+@@ -1006,6 +1047,14 @@ gic_of_init(struct device_node *node, struct device_node *parent)
+ 	cpu_base = of_iomap(node, 1);
+ 	WARN(!cpu_base, "unable to map gic cpu registers\n");
+ 
++	of_address_to_resource(node, 1, &cpu_res);
++	if (is_hyp_mode_available()) {
++		if (resource_size(&cpu_res) >= SZ_8K)
++			supports_deactivate = true;
++		else
++			pr_warn("GIC: CPU interface size is %x, DT is probably wrong\n", (int)resource_size(&cpu_res));
++	}
++
+ 	if (of_property_read_u32(node, "cpu-offset", &percpu_offset))
+ 		percpu_offset = 0;
+ 
+diff --git a/include/linux/irqchip/arm-gic.h b/include/linux/irqchip/arm-gic.h
+index 45e2d8c..ffe3911 100644
+--- a/include/linux/irqchip/arm-gic.h
++++ b/include/linux/irqchip/arm-gic.h
+@@ -21,6 +21,10 @@
+ #define GIC_CPU_ACTIVEPRIO		0xd0
+ #define GIC_CPU_IDENT			0xfc
+ 
++#define GIC_CPU_DEACTIVATE		0x1000
++
++#define GIC_CPU_CTRL_EOImodeNS		(1 << 9)
++
+ #define GICC_IAR_INT_ID_MASK		0x3ff
+ 
+ #define GIC_DIST_CTRL			0x000
 -- 
 1.8.3.4
 
