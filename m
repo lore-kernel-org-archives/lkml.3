@@ -1,83 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756803AbaFYXPB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 19:15:01 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:53733 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751598AbaFYXO6 (ORCPT
+	id S1757058AbaFYXPh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 19:15:37 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:39094 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755871AbaFYXPf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 19:14:58 -0400
-Message-ID: <53AB57ED.7080600@wwwdotorg.org>
-Date: Wed, 25 Jun 2014 17:14:53 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Andrew Bresticker <abrestic@chromium.org>
-CC: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-usb@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Kishon Vijay Abraham I <kishon@ti.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v1 5/9] of: Add NVIDIA Tegra XHCI controller binding
-References: <1403072180-4944-1-git-send-email-abrestic@chromium.org>	<1403072180-4944-6-git-send-email-abrestic@chromium.org>	<53AB4530.2050106@wwwdotorg.org> <CAL1qeaHThKVBoY0fikFCh9X00BFNJ=XKfovOBwztEyOVjHBLjg@mail.gmail.com>
-In-Reply-To: <CAL1qeaHThKVBoY0fikFCh9X00BFNJ=XKfovOBwztEyOVjHBLjg@mail.gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
+	Wed, 25 Jun 2014 19:15:35 -0400
+Date: Wed, 25 Jun 2014 16:15:34 -0700 (PDT)
+Message-Id: <20140625.161534.2268236653961314658.davem@davemloft.net>
+To: fabf@skynet.be
+Cc: linux-kernel@vger.kernel.org, grant.likely@linaro.org,
+        netdev@vger.kernel.org, joe@perches.com
+Subject: Re: [PATCH V2] net/dsa/dsa.c: remove unnecessary null test before
+ kfree
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1403544767-12438-1-git-send-email-fabf@skynet.be>
+References: <1403544767-12438-1-git-send-email-fabf@skynet.be>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 25 Jun 2014 16:15:35 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2014 05:02 PM, Andrew Bresticker wrote:
-> On Wed, Jun 25, 2014 at 2:54 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
->> On 06/18/2014 12:16 AM, Andrew Bresticker wrote:
->>> Add device-tree binding documentation for the XHCI controller present
->>> on Tegra124 and later SoCs.
->>
->>> diff --git a/Documentation/devicetree/bindings/usb/nvidia,tegra124-xhci.txt b/Documentation/devicetree/bindings/usb/nvidia,tegra124-xhci.txt
->>
->>> + - clock-names: Must include the following entries:
->>> +    - xusb_host
->>> +    - xusb_falcon_src
->>> +    - xusb_ss
->>> +    - xusb_ss_src
->>> +    - xusb_hs_src
->>> +    - xusb_fs_src
->>
->> Looking at include/dt-bindings/clock/tegra124-car.h I see a few entries
->> potentially missing here:
->>
->> #define TEGRA124_CLK_XUSB_HOST_SRC 252
->> #define TEGRA124_CLK_XUSB_DEV_SRC 256
->> #define TEGRA124_CLK_XUSB_DEV 257
->> #define TEGRA124_CLK_XUSB_SS_DIV2 312
+From: Fabian Frederick <fabf@skynet.be>
+Date: Mon, 23 Jun 2014 19:32:47 +0200
+
+> Fix checkpatch warning:
+> WARNING: kfree(NULL) is safe this check is probably not required
 > 
-> The driver doesn't use them, so I didn't put them in the binding.
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: netdev@vger.kernel.org
+> Cc: Joe Perches <joe@perches.com>
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
 
-I think we should add them in case we need them later. Best to fully
-describe the HW rather than the parts of the HW that SW currently uses.
-
->>> +    - pll_u_480m
->>
->> Not just pll_u?
-> 
-> We specifically want pll_u_480M as that's what we use as the parent of
-> xusb_ss_src when scaling it to 120Mhz.
-
-OK. I recall text in the TRM implying that SW should just leave PLL_U
-alone and not fiddle with the separate output clocks. Still, if we have
-a clock ID for each output, and it's the correct parent for the clock,
-then it does make sense to use that ID.
+Applied, thanks.
