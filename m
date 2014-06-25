@@ -1,109 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754158AbaFYWwK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 18:52:10 -0400
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:51672 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751598AbaFYWwI (ORCPT
+	id S1755493AbaFYWwe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 18:52:34 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:48587 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754602AbaFYWwd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 18:52:08 -0400
-Message-ID: <1403736725.3457.1.camel@leira.trondhjem.org>
-Subject: [GIT PULL] Please pull NFS client bugfixes for Linux 3.16
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
-Date: Wed, 25 Jun 2014 18:52:05 -0400
-Organization: PrimaryData Inc
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-KyPm5aLxPalqIrx8Hf69"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
+	Wed, 25 Jun 2014 18:52:33 -0400
+Date: Wed, 25 Jun 2014 15:52:30 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Stefan Bader <stefan.bader@canonical.com>
+cc: Heiko Carstens <heiko.carstens@de.ibm.com>, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: fs/stat: Reduce memory requirements for stat_open
+In-Reply-To: <53AA746A.3030303@canonical.com>
+Message-ID: <alpine.DEB.2.02.1406251551460.4592@chino.kir.corp.google.com>
+References: <1402578017-16637-1-git-send-email-stefan.bader@canonical.com> <20140612134149.GC4296@osiris> <5399B301.9030108@canonical.com> <alpine.DEB.2.02.1406241642280.22030@chino.kir.corp.google.com> <53AA746A.3030303@canonical.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 25 Jun 2014, Stefan Bader wrote:
 
---=-KyPm5aLxPalqIrx8Hf69
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> Heiko and I both had the same issue. Since some x86 hardware also reaches a lot
+> of CPUs (hyperthreads included), we bumped the possible number of CPUs to 256 at
+> least for the 64bit kernel. And that resulted in failed accesses to /proc/stat
+> when memory became fragmented.
+> So the first patch will avoid this on most systems. I have not seen this myself,
+> but I would expect him to be happy with 1/2 already. For really excessive
+> hardware 2/2 will close the gap.
+> Since this is no critical bug, I am fine with 3.17, too. I have not done so,
+> yet, but I could let our reporter try the patches (again, probably not verifying
+> the second part). Just waited to do so to see whether the code settles down to
+> these changes.
+> 
 
-Hi Linus,
+Ok, thanks.  Looks like
 
-The following changes since commit a497c3ba1d97fc69c1e78e7b96435ba8c2cb42ee=
-:
+proc-stat-convert-to-single_open_size.patch
+fs-seq_file-fallback-to-vmalloc-allocation.patch
 
-  Linux 3.16-rc2 (2014-06-21 19:02:54 -1000)
-
-are available in the git repository at:
-
-  git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs-for-3.16-=
-2
-
-for you to fetch changes up to 66b068604903849c5dee3842eb72564064c64c72:
-
-  NFSv4: test SECINFO RPC_AUTH_GSS pseudoflavors for support (2014-06-24 18=
-:46:58 -0400)
-
-----------------------------------------------------------------
-NFS client fixes for Linux 3.16
-
-Highlights include:
-
-- Stable fix for a data corruption case due to incorrect cache validation
-- Fix a couple of false positive cache invalidations
-- Fix NFSv4 security negotiation issues
-
-----------------------------------------------------------------
-Andy Adamson (3):
-      NFS check the return of nfs4_negotiate_security in nfs4_submount
-      NFS Return -EPERM if no supported or matching SECINFO flavor
-      NFSv4: test SECINFO RPC_AUTH_GSS pseudoflavors for support
-
-Scott Mayhew (1):
-      nfs: Fix cache_validity check in nfs_write_pageuptodate()
-
-Trond Myklebust (2):
-      NFS: Clear NFS_INO_REVAL_PAGECACHE when we update the file size
-      NFS: Don't mark the data cache as invalid if it has been flushed
-
- fs/nfs/inode.c         |  76 +++++++++++++++++++-----------------
- fs/nfs/nfs4_fs.h       |   2 +-
- fs/nfs/nfs4namespace.c | 102 +++++++++++++++++++++++++++------------------=
-----
- fs/nfs/nfs4proc.c      |   2 +-
- fs/nfs/write.c         |   4 +-
- net/sunrpc/auth.c      |   1 +
- 6 files changed, 104 insertions(+), 83 deletions(-)
-
---=20
-Trond Myklebust
-Linux NFS client maintainer, PrimaryData
-trond.myklebust@primarydata.com
-
-
---=-KyPm5aLxPalqIrx8Hf69
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAABAgAGBQJTq1KVAAoJEGcL54qWCgDyHXgQAJdh3y3P7zIISKfBqsmnzj2k
-odxw1cOfKYvPqKO/r7SJrsgQA1mWYZZ0HzxJekV03yubiWjpKRx8IMjD7KgXpxnO
-5NQKi/9DiCrlsmxzuMHcELrG1HV76yc5P4h/bHe+lLjb8XywhMGTtSk43oPZTfga
-hCFj7fimwtdF1OAmaWC130t/AEYxxPcGVejkpbRlizyLhPMV9AZLEGbLyvbqAn2W
-zOMTAEtMcXeyk+1uIlrXkgVDpzV1rHtOzsitbQYTYLtFLwdDw1TS4e+Go60LwCH9
-q8fca8h9LSYke1xBzUJ1S/6/3dPAZn+qq+fgnPq/+F9BOKYSFTU+EvkWYEYKKMzY
-AkHvUWSLDmBl4uhxn0Z5fdEw0R/2oWMsU/Zfsf/wYv77tSajkdOyzKKOC2ArTgdM
-+7aAqoyOCfsq4R/bpXmBtwV9f4KOokZCkU43Vqq7cqZcNVG29TRBNqrYGGhWNCTM
-YQ5b+uc0OJRwT4NUoSyVHDeASHVFQJoqXuhc5Ac8tVxPQgb9GJvYcccKUYAWdCTG
-PeF67uE1s0YhU4IBd2vIXdluE3RTOjEbnXq9WcyG7ZToUd88t5uS4QyEe3S9kGpS
-J1PAedBfjXVEXa/2hMfuhrtdT7VAnw5FnX8uvXpfw0EsIEZN20FK+l6+l6xSJjnR
-Tqptex20DxHck47/VUqa
-=BNpt
------END PGP SIGNATURE-----
-
---=-KyPm5aLxPalqIrx8Hf69--
-
+are destined for 3.17.
