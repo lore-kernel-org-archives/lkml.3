@@ -1,330 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757936AbaFYQwB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 12:52:01 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59477 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757700AbaFYQuA (ORCPT
+	id S1757950AbaFYQwR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 12:52:17 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:57935 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755985AbaFYQwL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 12:50:00 -0400
-From: Christoph Hellwig <hch@lst.de>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Bart Van Assche <bvanassche@fusionio.com>,
-        Robert Elliott <Elliott@hp.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 09/14] scsi: fix the {host,target,device}_blocked counter mess
-Date: Wed, 25 Jun 2014 18:51:56 +0200
-Message-Id: <1403715121-1201-10-git-send-email-hch@lst.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1403715121-1201-1-git-send-email-hch@lst.de>
-References: <1403715121-1201-1-git-send-email-hch@lst.de>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 25 Jun 2014 12:52:11 -0400
+From: bsegall@google.com
+To: Kirill Tkhai <ktkhai@parallels.com>
+Cc: <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>, <khorenko@parallels.com>,
+        Paul Turner <pjt@google.com>, <tkhai@yandex.ru>
+Subject: Re: [PATCH v2 1/3] sched/fair: Disable runtime_enabled on dying rq
+References: <20140624074148.8738.57690.stgit@tkhai>
+	<1403596432.3462.26.camel@tkhai>
+	<xm26wqc6z1c8.fsf@sword-of-the-dawn.mtv.corp.google.com>
+	<53A9CB23.1080708@yandex.ru>
+	<xm26pphyyvbl.fsf@sword-of-the-dawn.mtv.corp.google.com>
+	<53A9D0F1.5080305@yandex.ru> <1403682814.3462.33.camel@tkhai>
+Date: Wed, 25 Jun 2014 09:52:07 -0700
+In-Reply-To: <1403682814.3462.33.camel@tkhai> (Kirill Tkhai's message of "Wed,
+	25 Jun 2014 11:53:34 +0400")
+Message-ID: <xm26ionpyls8.fsf@sword-of-the-dawn.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seems like these counters are missing any sort of synchronization for
-updates, as a over 10 year old comment from me noted.  Fix this by
-using atomic counters, and while we're at it also make sure they are
-in the same cacheline as the _busy counters and not needlessly stored
-to in every I/O completion.
+Kirill Tkhai <ktkhai@parallels.com> writes:
 
-With the new model the _busy counters can temporarily go negative,
-so all the readers are updated to check for > 0 values.  Longer
-term every successful I/O completion will reset the counters to zero,
-so the temporarily negative values will not cause any harm.
+> В Вт, 24/06/2014 в 23:26 +0400, Kirill Tkhai пишет:
+>> On 24.06.2014 23:13, bsegall@google.com wrote:
+>> > Kirill Tkhai <tkhai@yandex.ru> writes:
+>> > 
+>> >> On 24.06.2014 21:03, bsegall@google.com wrote:
+>> >>> Kirill Tkhai <ktkhai@parallels.com> writes:
+>> >>>
+>> >>>> We kill rq->rd on the CPU_DOWN_PREPARE stage:
+>> >>>>
+>> >>>> 	cpuset_cpu_inactive -> cpuset_update_active_cpus -> partition_sched_domains ->
+>> >>>> 	-> cpu_attach_domain -> rq_attach_root -> set_rq_offline
+>> >>>>
+>> >>>> This unthrottles all throttled cfs_rqs.
+>> >>>>
+>> >>>> But the cpu is still able to call schedule() till
+>> >>>>
+>> >>>> 	take_cpu_down->__cpu_disable()
+>> >>>>
+>> >>>> is called from stop_machine.
+>> >>>>
+>> >>>> This case the tasks from just unthrottled cfs_rqs are pickable
+>> >>>> in a standard scheduler way, and they are picked by dying cpu.
+>> >>>> The cfs_rqs becomes throttled again, and migrate_tasks()
+>> >>>> in migration_call skips their tasks (one more unthrottle
+>> >>>> in migrate_tasks()->CPU_DYING does not happen, because rq->rd
+>> >>>> is already NULL).
+>> >>>>
+>> >>>> Patch sets runtime_enabled to zero. This guarantees, the runtime
+>> >>>> is not accounted, and the cfs_rqs won't exceed given
+>> >>>> cfs_rq->runtime_remaining = 1, and tasks will be pickable
+>> >>>> in migrate_tasks(). runtime_enabled is recalculated again
+>> >>>> when rq becomes online again.
+>> >>>>
+>> >>>> Ben Segall also noticed, we always enable runtime in
+>> >>>> tg_set_cfs_bandwidth(). Actually, we should do that for online
+>> >>>> cpus only. To fix that, we check if a cpu is online when
+>> >>>> its rq is locked. This guarantees we do not have races with
+>> >>>> set_rq_offline(), which also requires rq->lock.
+>> >>>>
+>> >>>> v2: Fix race with tg_set_cfs_bandwidth().
+>> >>>>     Move cfs_rq->runtime_enabled=0 above unthrottle_cfs_rq().
+>> >>>>
+>> >>>> Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+>> >>>> CC: Konstantin Khorenko <khorenko@parallels.com>
+>> >>>> CC: Ben Segall <bsegall@google.com>
+>> >>>> CC: Paul Turner <pjt@google.com>
+>> >>>> CC: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+>> >>>> CC: Mike Galbraith <umgwanakikbuti@gmail.com>
+>> >>>> CC: Peter Zijlstra <peterz@infradead.org>
+>> >>>> CC: Ingo Molnar <mingo@kernel.org>
+>> >>>> ---
+>> >>>>  kernel/sched/core.c |   15 +++++++++++----
+>> >>>>  kernel/sched/fair.c |   22 ++++++++++++++++++++++
+>> >>>>  2 files changed, 33 insertions(+), 4 deletions(-)
+>> >>>>
+>> >>>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+>> >>>> index 7f3063c..707a3c5 100644
+>> >>>> --- a/kernel/sched/core.c
+>> >>>> +++ b/kernel/sched/core.c
+>> >>>> @@ -7842,11 +7842,18 @@ static int tg_set_cfs_bandwidth(struct task_group *tg, u64 period, u64 quota)
+>> >>>>  		struct rq *rq = cfs_rq->rq;
+>> >>>>  
+>> >>>>  		raw_spin_lock_irq(&rq->lock);
+>> >>>> -		cfs_rq->runtime_enabled = runtime_enabled;
+>> >>>> -		cfs_rq->runtime_remaining = 0;
+>> >>>> +		/*
+>> >>>> +		 * Do not enable runtime on offline runqueues. We specially
+>> >>>> +		 * make it disabled in unthrottle_offline_cfs_rqs().
+>> >>>> +		 */
+>> >>>> +		if (cpu_online(i)) {
+>> >>>> +			cfs_rq->runtime_enabled = runtime_enabled;
+>> >>>> +			cfs_rq->runtime_remaining = 0;
+>> >>>> +
+>> >>>> +			if (cfs_rq->throttled)
+>> >>>> +				unthrottle_cfs_rq(cfs_rq);
+>> >>>> +		}
+>> >>>
+>> >>> We can just do for_each_online_cpu, yes? Also we probably need
+>> >>> get_online_cpus/put_online_cpus, and/or want cpu_active_mask instead
+>> >>> right?
+>> >>>
+>> >>
+>> >> Yes, we can use for_each_online_cpu/for_each_active_cpu with
+>> >> get_online_cpus() taken. But it adds one more lock dependence.
+>> >> This looks worse for me.
+>> > 
+>> > I mean, you need get_online_cpus anyway - cpu_online is just a test
+>> > against the same mask that for_each_online_cpu uses, and without taking
+>> > the lock you can still race with offlining and reset runtime_enabled.
+>> > 
+>> 
+>> Oh, I see. Thanks.
+>
+> But we can check for rq->online, don't we? How about this?
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
----
- drivers/scsi/scsi.c        |   21 ++++++------
- drivers/scsi/scsi_lib.c    |   82 +++++++++++++++++++++-----------------------
- drivers/scsi/scsi_sysfs.c  |   10 +++++-
- include/scsi/scsi_device.h |    7 ++--
- include/scsi/scsi_host.h   |    7 ++--
- 5 files changed, 64 insertions(+), 63 deletions(-)
+Yeah, that should work.
+>
+>     sched/fair: Disable runtime_enabled on dying rq
+>     
+>     We kill rq->rd on the CPU_DOWN_PREPARE stage:
+>     
+>     	cpuset_cpu_inactive -> cpuset_update_active_cpus -> partition_sched_domains ->
+>     	-> cpu_attach_domain -> rq_attach_root -> set_rq_offline
+>     
+>     This unthrottles all throttled cfs_rqs.
+>     
+>     But the cpu is still able to call schedule() till
+>     
+>     	take_cpu_down->__cpu_disable()
+>     
+>     is called from stop_machine.
+>     
+>     This case the tasks from just unthrottled cfs_rqs are pickable
+>     in a standard scheduler way, and they are picked by dying cpu.
+>     The cfs_rqs becomes throttled again, and migrate_tasks()
+>     in migration_call skips their tasks (one more unthrottle
+>     in migrate_tasks()->CPU_DYING does not happen, because rq->rd
+>     is already NULL).
+>     
+>     Patch sets runtime_enabled to zero. This guarantees, the runtime
+>     is not accounted, and the cfs_rqs won't exceed given
+>     cfs_rq->runtime_remaining = 1, and tasks will be pickable
+>     in migrate_tasks(). runtime_enabled is recalculated again
+>     when rq becomes online again.
+>     
+>     Ben Segall also noticed, we always enable runtime in
+>     tg_set_cfs_bandwidth(). Actually, we should do that for online
+>     cpus only. To fix that, we check if a cpu is online when
+>     its rq is locked. This guarantees we do not have races with
+>     set_rq_offline(), which also requires rq->lock.
+>     
+>     v2: Fix race with tg_set_cfs_bandwidth().
+>         Move cfs_rq->runtime_enabled=0 above unthrottle_cfs_rq().
+>     v3: Check for rq->online instead of cpu_active.
+>     
+>     Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
 
-diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
-index 35a23e2..b362058 100644
---- a/drivers/scsi/scsi.c
-+++ b/drivers/scsi/scsi.c
-@@ -729,17 +729,16 @@ void scsi_finish_command(struct scsi_cmnd *cmd)
- 
- 	scsi_device_unbusy(sdev);
- 
--        /*
--         * Clear the flags which say that the device/host is no longer
--         * capable of accepting new commands.  These are set in scsi_queue.c
--         * for both the queue full condition on a device, and for a
--         * host full condition on the host.
--	 *
--	 * XXX(hch): What about locking?
--         */
--        shost->host_blocked = 0;
--	starget->target_blocked = 0;
--        sdev->device_blocked = 0;
-+	/*
-+	 * Clear the flags which say that the device/target/host is no longer
-+	 * capable of accepting new commands.
-+	 */
-+	if (atomic_read(&shost->host_blocked))
-+		atomic_set(&shost->host_blocked, 0);
-+	if (atomic_read(&starget->target_blocked))
-+		atomic_set(&starget->target_blocked, 0);
-+	if (atomic_read(&sdev->device_blocked))
-+		atomic_set(&sdev->device_blocked, 0);
- 
- 	/*
- 	 * If we have valid sense information, then some kind of recovery
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index e23fef5..a39d5ba 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -99,14 +99,16 @@ scsi_set_blocked(struct scsi_cmnd *cmd, int reason)
- 	 */
- 	switch (reason) {
- 	case SCSI_MLQUEUE_HOST_BUSY:
--		host->host_blocked = host->max_host_blocked;
-+		atomic_set(&host->host_blocked, host->max_host_blocked);
- 		break;
- 	case SCSI_MLQUEUE_DEVICE_BUSY:
- 	case SCSI_MLQUEUE_EH_RETRY:
--		device->device_blocked = device->max_device_blocked;
-+		atomic_set(&device->device_blocked,
-+			   device->max_device_blocked);
- 		break;
- 	case SCSI_MLQUEUE_TARGET_BUSY:
--		starget->target_blocked = starget->max_target_blocked;
-+		atomic_set(&starget->target_blocked,
-+			   starget->max_target_blocked);
- 		break;
- 	}
- }
-@@ -351,30 +353,39 @@ static void scsi_single_lun_run(struct scsi_device *current_sdev)
- 	spin_unlock_irqrestore(shost->host_lock, flags);
- }
- 
--static inline int scsi_device_is_busy(struct scsi_device *sdev)
-+static inline bool scsi_device_is_busy(struct scsi_device *sdev)
- {
- 	if (atomic_read(&sdev->device_busy) >= sdev->queue_depth)
--		return 1;
--	if (sdev->device_blocked)
--		return 1;
-+		return true;
-+	if (atomic_read(&sdev->device_blocked) > 0)
-+		return true;
- 	return 0;
- }
- 
--static inline int scsi_target_is_busy(struct scsi_target *starget)
-+static inline bool scsi_target_is_busy(struct scsi_target *starget)
- {
--	return ((starget->can_queue > 0 &&
--		 atomic_read(&starget->target_busy) >= starget->can_queue) ||
--		 starget->target_blocked);
-+	if (starget->can_queue > 0) {
-+		if (atomic_read(&starget->target_busy) >= starget->can_queue)
-+			return true;
-+		if (atomic_read(&starget->target_blocked) > 0)
-+			return true;
-+	}
-+
-+	return false;
- }
- 
--static inline int scsi_host_is_busy(struct Scsi_Host *shost)
-+static inline bool scsi_host_is_busy(struct Scsi_Host *shost)
- {
--	if ((shost->can_queue > 0 &&
--	     atomic_read(&shost->host_busy) >= shost->can_queue) ||
--	    shost->host_blocked || shost->host_self_blocked)
--		return 1;
-+	if (shost->can_queue > 0) {
-+		if (atomic_read(&shost->host_busy) >= shost->can_queue)
-+			return true;
-+		if (atomic_read(&shost->host_blocked) > 0)
-+			return true;
-+		if (shost->host_self_blocked)
-+			return true;
-+	}
- 
--	return 0;
-+	return false;
- }
- 
- static void scsi_starved_list_run(struct Scsi_Host *shost)
-@@ -1283,11 +1294,8 @@ static inline int scsi_dev_queue_ready(struct request_queue *q,
- 	unsigned int busy;
- 
- 	busy = atomic_inc_return(&sdev->device_busy) - 1;
--	if (busy == 0 && sdev->device_blocked) {
--		/*
--		 * unblock after device_blocked iterates to zero
--		 */
--		if (--sdev->device_blocked != 0) {
-+	if (busy == 0 && atomic_read(&sdev->device_blocked) > 0) {
-+		if (atomic_dec_return(&sdev->device_blocked) > 0) {
- 			blk_delay_queue(q, SCSI_QUEUE_DELAY);
- 			goto out_dec;
- 		}
-@@ -1297,7 +1305,7 @@ static inline int scsi_dev_queue_ready(struct request_queue *q,
- 
- 	if (busy >= sdev->queue_depth)
- 		goto out_dec;
--	if (sdev->device_blocked)
-+	if (atomic_read(&sdev->device_blocked) > 0)
- 		goto out_dec;
- 
- 	return 1;
-@@ -1328,16 +1336,9 @@ static inline int scsi_target_queue_ready(struct Scsi_Host *shost,
- 	}
- 
- 	busy = atomic_inc_return(&starget->target_busy) - 1;
--	if (busy == 0 && starget->target_blocked) {
--		/*
--		 * unblock after target_blocked iterates to zero
--		 */
--		spin_lock_irq(shost->host_lock);
--		if (--starget->target_blocked != 0) {
--			spin_unlock_irq(shost->host_lock);
-+	if (busy == 0 && atomic_read(&starget->target_blocked) > 0) {
-+		if (atomic_dec_return(&starget->target_blocked) > 0)
- 			goto out_dec;
--		}
--		spin_unlock_irq(shost->host_lock);
- 
- 		SCSI_LOG_MLQUEUE(3, starget_printk(KERN_INFO, starget,
- 				 "unblocking target at zero depth\n"));
-@@ -1345,7 +1346,7 @@ static inline int scsi_target_queue_ready(struct Scsi_Host *shost,
- 
- 	if (starget->can_queue > 0 && busy >= starget->can_queue)
- 		goto starved;
--	if (starget->target_blocked)
-+	if (atomic_read(&starget->target_blocked) > 0)
- 		goto starved;
- 
- 	return 1;
-@@ -1374,16 +1375,9 @@ static inline int scsi_host_queue_ready(struct request_queue *q,
- 		return 0;
- 
- 	busy = atomic_inc_return(&shost->host_busy) - 1;
--	if (busy == 0 && shost->host_blocked) {
--		/*
--		 * unblock after host_blocked iterates to zero
--		 */
--		spin_lock_irq(shost->host_lock);
--		if (--shost->host_blocked != 0) {
--			spin_unlock_irq(shost->host_lock);
-+	if (busy == 0 && atomic_read(&shost->host_blocked) > 0) {
-+		if (atomic_dec_return(&shost->host_blocked) > 0)
- 			goto out_dec;
--		}
--		spin_unlock_irq(shost->host_lock);
- 
- 		SCSI_LOG_MLQUEUE(3,
- 			shost_printk(KERN_INFO, shost,
-@@ -1392,7 +1386,9 @@ static inline int scsi_host_queue_ready(struct request_queue *q,
- 
- 	if (shost->can_queue > 0 && busy >= shost->can_queue)
- 		goto starved;
--	if (shost->host_blocked || shost->host_self_blocked)
-+	if (atomic_read(&shost->host_blocked) > 0)
-+		goto starved;
-+	if (shost->host_self_blocked)
- 		goto starved;
- 
- 	/* We're OK to process the command, so we can't be starved */
-diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
-index 54e3dac..deef063 100644
---- a/drivers/scsi/scsi_sysfs.c
-+++ b/drivers/scsi/scsi_sysfs.c
-@@ -584,7 +584,6 @@ static int scsi_sdev_check_buf_bit(const char *buf)
- /*
-  * Create the actual show/store functions and data structures.
-  */
--sdev_rd_attr (device_blocked, "%d\n");
- sdev_rd_attr (type, "%d\n");
- sdev_rd_attr (scsi_level, "%d\n");
- sdev_rd_attr (vendor, "%.8s\n");
-@@ -600,6 +599,15 @@ sdev_show_device_busy(struct device *dev, struct device_attribute *attr,
- }
- static DEVICE_ATTR(device_busy, S_IRUGO, sdev_show_device_busy, NULL);
- 
-+static ssize_t
-+sdev_show_device_blocked(struct device *dev, struct device_attribute *attr,
-+		char *buf)
-+{
-+	struct scsi_device *sdev = to_scsi_device(dev);
-+	return snprintf(buf, 20, "%d\n", atomic_read(&sdev->device_blocked));
-+}
-+static DEVICE_ATTR(device_blocked, S_IRUGO, sdev_show_device_blocked, NULL);
-+
- /*
-  * TODO: can we make these symlinks to the block layer ones?
-  */
-diff --git a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h
-index 5ff3d24..a8a8981 100644
---- a/include/scsi/scsi_device.h
-+++ b/include/scsi/scsi_device.h
-@@ -82,6 +82,8 @@ struct scsi_device {
- 	struct list_head    same_target_siblings; /* just the devices sharing same target id */
- 
- 	atomic_t device_busy;		/* commands actually active on LLDD */
-+	atomic_t device_blocked;	/* Device returned QUEUE_FULL. */
-+
- 	spinlock_t list_lock;
- 	struct list_head cmd_list;	/* queue of in use SCSI Command structures */
- 	struct list_head starved_entry;
-@@ -179,8 +181,6 @@ struct scsi_device {
- 	struct list_head event_list;	/* asserted events */
- 	struct work_struct event_work;
- 
--	unsigned int device_blocked;	/* Device returned QUEUE_FULL. */
--
- 	unsigned int max_device_blocked; /* what device_blocked counts down from  */
- #define SCSI_DEFAULT_DEVICE_BLOCKED	3
- 
-@@ -290,12 +290,13 @@ struct scsi_target {
- 						 * the same target will also. */
- 	/* commands actually active on LLD. */
- 	atomic_t		target_busy;
-+	atomic_t		target_blocked;
-+
- 	/*
- 	 * LLDs should set this in the slave_alloc host template callout.
- 	 * If set to zero then there is not limit.
- 	 */
- 	unsigned int		can_queue;
--	unsigned int		target_blocked;
- 	unsigned int		max_target_blocked;
- #define SCSI_DEFAULT_TARGET_BLOCKED	3
- 
-diff --git a/include/scsi/scsi_host.h b/include/scsi/scsi_host.h
-index 3d124f7..7f9bbda 100644
---- a/include/scsi/scsi_host.h
-+++ b/include/scsi/scsi_host.h
-@@ -604,6 +604,8 @@ struct Scsi_Host {
- 	struct blk_queue_tag	*bqt;
- 
- 	atomic_t host_busy;		   /* commands actually active on low-level */
-+	atomic_t host_blocked;
-+
- 	unsigned int host_failed;	   /* commands that failed.
- 					      protected by host_lock */
- 	unsigned int host_eh_scheduled;    /* EH scheduled without command */
-@@ -703,11 +705,6 @@ struct Scsi_Host {
- 	struct workqueue_struct *tmf_work_q;
- 
- 	/*
--	 * Host has rejected a command because it was busy.
--	 */
--	unsigned int host_blocked;
--
--	/*
- 	 * Value host_blocked counts down from
- 	 */
- 	unsigned int max_host_blocked;
--- 
-1.7.10.4
-
+Reviewed-by: Ben Segall <bsegall@google.com>
