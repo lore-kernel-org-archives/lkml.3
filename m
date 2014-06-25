@@ -1,58 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757157AbaFYWQS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 18:16:18 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43014 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755730AbaFYWQR (ORCPT
+	id S1757226AbaFYWQl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 18:16:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48473 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756043AbaFYWQj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 18:16:17 -0400
-Date: Thu, 26 Jun 2014 00:15:48 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Thomas Knauth <thomas.knauth@gmx.de>
-Cc: dedekind1@gmail.com, David Rientjes <rientjes@google.com>,
-        Maksym Planeta <mcsim.planeta@gmail.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sysctl: Add a feature to drop caches selectively
-Message-ID: <20140625221548.GA614@xo-6d-61-c0.localdomain>
-References: <1403626213-7691-1-git-send-email-mcsim.planeta@gmail.com>
- <alpine.DEB.2.02.1406241458140.29176@chino.kir.corp.google.com>
- <1403677528.7903.103.camel@sauron.fi.intel.com>
- <CABhLV03_PNFiwsvt+yitcsKxz5TeVECCFavdNkbgQ+XzQqASaw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABhLV03_PNFiwsvt+yitcsKxz5TeVECCFavdNkbgQ+XzQqASaw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 25 Jun 2014 18:16:39 -0400
+Date: Wed, 25 Jun 2014 15:16:38 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Sebastien Buisson <sebastien.buisson@bull.net>
+Cc: <rob@landley.net>, <viro@zeniv.linux.org.uk>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH] Allow increasing the buffer-head per-CPU LRU size
+Message-Id: <20140625151638.00b7c2aa29f79f63dce7ae56@linux-foundation.org>
+In-Reply-To: <53A99EA0.3010800@bull.net>
+References: <53A99EA0.3010800@bull.net>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2014-06-25 10:25:05, Thomas Knauth wrote:
-> On Wed, Jun 25, 2014 at 8:25 AM, Artem Bityutskiy <dedekind1@gmail.com> wrote:
-> > Plus some explanations WRT why proc-based interface and what would be
-> > the alternatives, what if tomorrow we want to extend the functionality
-> > and drop caches only for certain file range, is this only for regular
-> > files or also for directories, why posix_fadvice(DONTNEED) is not
-> > sufficient.
-> 
-> I suggested the idea originally. Let me address each of your questions in turn:
-> 
-> Why a selective drop? To have a middle ground between echo 2 >
-> drop_caches and echo 3 > drop_caches. When is this interesting? My
-> particular use case was benchmarking. I wanted to repeatedly measure
-> the timing when things were read from disk. Dropping everything from
-> the cache, also drops useful things, not just the few files your
-> benchmark intends to measure.
-> 
-> Why /proc? Because this is where the current drop_caches mechanism is
-> located. If it should go somewhere else, please do suggest so.
+On Tue, 24 Jun 2014 17:52:00 +0200 Sebastien Buisson <sebastien.buisson@bull.net> wrote:
 
-It sounds like this should be a new syscall.
+> Allow increasing the buffer-head per-CPU LRU size to allow efficient
+> filesystem operations that access many blocks for each transaction.
+> For example, creating a file in a large ext4 directory with quota
+> enabled will accesses multiple buffer heads and will overflow the LRU
+> at the default 8-block LRU size:
+> 
+> * parent directory inode table block (ctime, nlinks for subdirs)
+> * new inode bitmap
+> * inode table block
+> * 2 quota blocks
+> * directory leaf block (not reused, but pollutes one cache entry)
+> * 2 levels htree blocks (only one is reused, other pollutes cache)
+> * 2 levels indirect/index blocks (only one is reused)
+> 
+> Make this tuning be a kernel parameter 'bh_lru_size'.
 
-echoing filenames in files is strange/ugly.
-										Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+I don't think it's a great idea to make this a boot-time tunable.  It's
+going to take a ton of work by each and every kernel
+user/installer/distributor to work out what is the best setting for
+them.  And the differences will be pretty small anyway.  And we didn't
+provide them with any documentation to help them even get started with
+the project.
+
+Other approaches: 
+
+- Perform some boot-time auto-sizing, perhaps based on memory size,
+  cpu counts, etc.
+
+  None of which will be very successful, because the LRU miss rate is
+  dependent on filesystem type and usage, not on system size.
+
+- Perform some runtime resizing: if the miss rate gets "too high"
+  then increase the LRU size.  Maybe decrease it as well, or maybe not.
+
+  This will get more complex and we'd require decent improvements to
+  justify the change.
+
+- Just increase BH_LRU_SIZE to 16!
+
+I think the third option should be the first choice.  It doesn't get
+simpler than that and any more complex option would need additional
+testing-based justification on top of this simplest approach.
+
+
+I'm amused that my dopey-but-simple LRU management code has survived
+these 12-odd years.  I suspect that if the LRUs get much larger, we'll
+be needing something less dopey and simple in there.
+
+It's good to see (indirect) evidence that the LRUs are actually doing
+something useful.
