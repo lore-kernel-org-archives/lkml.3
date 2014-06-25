@@ -1,77 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754686AbaFYTnD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 15:43:03 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:34591 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753122AbaFYTnB (ORCPT
+	id S1755010AbaFYTpP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 15:45:15 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:55286 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750807AbaFYTpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 15:43:01 -0400
-Message-ID: <53AB2643.8050901@codeaurora.org>
-Date: Wed, 25 Jun 2014 12:42:59 -0700
-From: Subbaraman Narayanamurthy <subbaram@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Wed, 25 Jun 2014 15:45:12 -0400
+Date: Wed, 25 Jun 2014 15:41:12 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, linux-atm-general@lists.sourceforge.net,
+        netdev@vger.kernel.org, iss_storagedev@hp.com,
+        linux-crypto@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-rdma@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-wireless@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-eata@i-connect.net, devel@driverdev.osuosl.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH 00/22] Add and use pci_zalloc_consistent
+Message-ID: <20140625194112.GJ3445@tuxdriver.com>
+References: <cover.1403530604.git.joe@perches.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: tglx@linutronix.de
-Subject: [PATCH] kthread: Fix the race condition when kthread is parked
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1403530604.git.joe@perches.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While stressing the CPU hotplug path, sometimes we hit a problem
-as shown below.
+On Mon, Jun 23, 2014 at 06:41:28AM -0700, Joe Perches wrote:
+> Adding the helper reduces object code size as well as overall
+> source size line count.
+> 
+> It's also consistent with all the various zalloc mechanisms
+> in the kernel.
+> 
+> Done with a simple cocci script and some typing.
+> 
+> Joe Perches (22):
 
-[57056.416774] ------------[ cut here ]------------
-[57056.489232] ksoftirqd/1 (14): undefined instruction: pc=c01931e8
-[57056.489245] Code: e594a000 eb085236 e15a0000 0a000000 (e7f001f2)
-[57056.489259] ------------[ cut here ]------------
-[57056.492840] kernel BUG at kernel/kernel/smpboot.c:134!
-[57056.513236] Internal error: Oops - BUG: 0 [#1] PREEMPT SMP ARM
-[57056.519055] Modules linked in: wlan(O) mhi(O)
-[57056.523394] CPU: 0 PID: 14 Comm: ksoftirqd/1 Tainted: G        W O 
-3.10.0-g3677c61-00008-g180c060 #1
-[57056.532595] task: f0c8b000 ti: f0e78000 task.ti: f0e78000
-[57056.537991] PC is at smpboot_thread_fn+0x124/0x218
-[57056.542750] LR is at smpboot_thread_fn+0x11c/0x218
-[57056.547528] pc : [<c01931e8>]    lr : [<c01931e0>] psr: 200f0013
-[57056.547528] sp : f0e79f30  ip : 00000000  fp : 00000000
-[57056.558983] r10: 00000001  r9 : 00000000  r8 : f0e78000
-[57056.564192] r7 : 00000001  r6 : c1195758  r5 : f0e78000  r4 : f0e5fd00
-[57056.570701] r3 : 00000001  r2 : f0e79f20  r1 : 00000000  r0 : 00000000
+>   ipw2100: Use pci_zalloc_consistent
+>   mwl8k: Use pci_zalloc_consistent
+>   rtl818x: Use pci_zalloc_consistent
+>   rtlwifi: Use pci_zalloc_consistent
 
-This issue was always seen in the context of "ksoftirqd". It seems to
-be happening because of a potential race condition in __kthread_parkme
-where just after completing the parked completion, before the
-ksoftirqd task has been scheduled again, it can go into running state.
-
-Fix this by waiting for the task state to parked after waiting for the
-parked completion.
-
-Signed-off-by: Subbaraman Narayanamurthy <subbaram@codeaurora.org>
----
-  kernel/kthread.c | 2 ++
-  1 file changed, 2 insertions(+)
-
-diff --git a/kernel/kthread.c b/kernel/kthread.c
-index 760e86d..c56c6f8 100644
---- a/kernel/kthread.c
-+++ b/kernel/kthread.c
-@@ -398,6 +398,8 @@ int kthread_park(struct task_struct *k)
-              if (k != current) {
-                  wake_up_process(k);
-                  wait_for_completion(&kthread->parked);
-+                while (k->state != TASK_PARKED)
-+                    cond_resched();
-              }
-          }
-          ret = 0;
--- 
-1.8.2.1
+Sure, fine by me.
 
 -- 
-The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
