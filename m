@@ -1,95 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755069AbaFYH1F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 03:27:05 -0400
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:55550 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752912AbaFYH1D (ORCPT
+	id S1754892AbaFYHaX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 03:30:23 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:33087 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753142AbaFYHaW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 03:27:03 -0400
-X-IronPort-AV: E=Sophos;i="5.01,544,1400050800"; 
-   d="scan'208";a="35881436"
-Message-ID: <53AA799F.7030807@broadcom.com>
-Date: Wed, 25 Jun 2014 09:26:23 +0200
-From: Arend van Spriel <arend@broadcom.com>
+	Wed, 25 Jun 2014 03:30:22 -0400
+Message-ID: <53AA7A8C.1010304@free-electrons.com>
+Date: Wed, 25 Jun 2014 09:30:20 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, <tiwai@suse.de>,
-        <chunkeey@googlemail.com>, <leedom@chelsio.com>,
-        <cocci@systeme.lip6.fr>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <gregkh@linuxfoundation.org>, "Luis R. Rodriguez" <mcgrof@suse.com>,
-        <linux-wireless@vger.kernel.org>
-Subject: Re: [PATCH 3/3] p54: use request_firmware_direct() for optional EEPROM
- override
-References: <1403649583-12707-1-git-send-email-mcgrof@do-not-panic.com> <1403649583-12707-4-git-send-email-mcgrof@do-not-panic.com>
-In-Reply-To: <1403649583-12707-4-git-send-email-mcgrof@do-not-panic.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Bo Shen <voice.shen@atmel.com>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] ARM: at91/dt: describe rgmii ethernet phy connected
+ to sama5d3xek boards
+References: <1403649878-28242-1-git-send-email-boris.brezillon@free-electrons.com> <1403649878-28242-2-git-send-email-boris.brezillon@free-electrons.com> <53AA735C.7050805@atmel.com>
+In-Reply-To: <53AA735C.7050805@atmel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25-06-14 00:39, Luis R. Rodriguez wrote:
-> From: "Luis R. Rodriguez" <mcgrof@suse.com>
->
-> The p54 driver uses request_firmware() twice, once for actual
-> firmware and then another time for an optional user overide on
-> EEPROM, 3826.eeprom. The custom EEPROM  is optional but if not
-> present we'll introduce an extra lag of 60 seconds with udev
-> present. Annotate we don't want udev nonsense here to avoid
-> the lag in case its not present.
+Hello Bo,
 
-I guess the fact that EEPROM is optional does not matter much. If doing 
-a second request you could always use request_firmware_direct(), right?
+On 25/06/2014 08:59, Bo Shen wrote:
+> Hi Boris,
+>
+> On 06/25/2014 06:44 AM, Boris BREZILLON wrote:
+>> Add ethernet-phy node to specify phy address (on the MDIO bus) and phy
+>> interrupt (connected to pin PB25).
+>>
+>> Define board specific delays to apply to RGMII signals.
+>>
+>> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+>> ---
+>>   arch/arm/boot/dts/sama5d3xcm.dtsi | 16 ++++++++++++++++
+>>   1 file changed, 16 insertions(+)
+>>
+>> diff --git a/arch/arm/boot/dts/sama5d3xcm.dtsi
+>> b/arch/arm/boot/dts/sama5d3xcm.dtsi
+>> index b0b1331..2185ad8 100644
+>> --- a/arch/arm/boot/dts/sama5d3xcm.dtsi
+>> +++ b/arch/arm/boot/dts/sama5d3xcm.dtsi
+>> @@ -34,6 +34,22 @@
+>>
+>>               macb0: ethernet@f0028000 {
+>>                   phy-mode = "rgmii";
+>> +                #address-cells = <1>;
+>> +                #size-cells = <0>;
+>> +
+>> +                ethernet-phy@1 {
+>
+> The GMAC PHY address is 0x7 while not 0x1.
 
-Regards,
-Arend
+Are you sure of that ? I checked sama5d3x-ek schematics.
+On these schematics PHYAD0 is connected to a pull up resistor and
+PHYAD1/2 are connected to a pull down one.
+This gives PHYAD[4:0] = 0b00001 = 0x1.
+Is there some bootloader mechanisms that changes PHYAD[0-2] pin status
+and reset the PHY ?
 
-> This was found with the following SmPL patch.
 >
-> @ firmware_not_critical @
-> expression cf;
-> expression config_file;
-> expression dev;
-> int ret;
-> identifier l;
-> statement S;
-> @@
+>> +                    interrupt-parent = <&pioB>;
+>> +                    interrupts = <25 IRQ_TYPE_EDGE_FALLING>;
+>> +                    reg = <1>;
 >
-> -	ret = request_firmware(&cf, config_file, dev);
-> +	ret = request_firmware_direct(&cf, config_file, dev);
-> 	if (ret < 0) {
-> 		... when != goto l;
-> 		    when != return ret;
-> 		    when any
-> 	} else {
-> 		...
-> 		release_firmware(cf);
-> 		...
-> 	}
+> Nitpick: as usual, we will add "0x" prefix in reg property.
+
+Sure, I'll fix that.
+
 >
-> Cc: Takashi Iwai <tiwai@suse.de>
-> Cc: Christian Lamparter <chunkeey@googlemail.com>
-> Cc: linux-wireless@vger.kernel.org
-> Cc: cocci@systeme.lip6.fr
-> Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
-> ---
->   drivers/net/wireless/p54/p54spi.c | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/net/wireless/p54/p54spi.c b/drivers/net/wireless/p54/p54spi.c
-> index de15171..63de5ee 100644
-> --- a/drivers/net/wireless/p54/p54spi.c
-> +++ b/drivers/net/wireless/p54/p54spi.c
-> @@ -193,7 +193,7 @@ static int p54spi_request_eeprom(struct ieee80211_hw *dev)
->   	/* allow users to customize their eeprom.
->   	 */
->
-> -	ret = request_firmware(&eeprom, "3826.eeprom", &priv->spi->dev);
-> +	ret = request_firmware_direct(&eeprom, "3826.eeprom", &priv->spi->dev);
->   	if (ret < 0) {
->   #ifdef CONFIG_P54_SPI_DEFAULT_EEPROM
->   		dev_info(&priv->spi->dev, "loading default eeprom...\n");
->
+>> +                    txen-skew-ps = <800>;
+>> +                    txc-skew-ps = <12000>;
+
+Should be 3000 (0xf * 200 ps) not 12000.
+
+>> +                    rxdv-skew-ps = <400>;
+>> +                    rxc-skew-ps = <12000>;
+
+Ditto.
+
+Best Regards,
+
+Boris
+
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
 
