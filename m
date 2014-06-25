@@ -1,98 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756839AbaFYWMX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 18:12:23 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:44328 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755982AbaFYWMV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 18:12:21 -0400
-Message-ID: <53AB493F.3030802@wwwdotorg.org>
-Date: Wed, 25 Jun 2014 16:12:15 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1756965AbaFYWMq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 18:12:46 -0400
+Received: from ozlabs.org ([103.22.144.67]:54636 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756849AbaFYWMo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 18:12:44 -0400
+Date: Thu, 26 Jun 2014 08:12:32 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: James Morris <james.l.morris@oracle.com>
+Cc: Paul Moore <paul@paul-moore.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>
+Subject: Re: linux-next: the selinux tree needs cleaning up
+Message-ID: <20140626081232.52cb51da@canb.auug.org.au>
+In-Reply-To: <53AAA9BF.4090205@oracle.com>
+References: <20140618084046.1bce12cc@canb.auug.org.au>
+	<20140620085931.6427678d@canb.auug.org.au>
+	<1474416.aEfMv8Ny53@sifl>
+	<32647147.KmAPzBrbMT@sifl>
+	<20140625095928.3161ebe1@canb.auug.org.au>
+	<53AAA9BF.4090205@oracle.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-To: Andrew Bresticker <abrestic@chromium.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Kishon Vijay Abraham I <kishon@ti.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v1 4/9] pinctrl: tegra-xusb: Add USB PHY support
-References: <1403072180-4944-1-git-send-email-abrestic@chromium.org> <1403072180-4944-5-git-send-email-abrestic@chromium.org>
-In-Reply-To: <1403072180-4944-5-git-send-email-abrestic@chromium.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/_o1oOzxuQ.AewR_x/1+R1Sl"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2014 12:16 AM, Andrew Bresticker wrote:
-> In addition to the PCIe and SATA PHYs, the XUSB pad controller also
-> supports 3 UTMI, 2 HSIC, and 2 USB3 PHYs.  Each USB3 PHY uses a single
-> PCIe or SATA lane and is mapped to one of the three UTMI ports.
-> 
+--Sig_/_o1oOzxuQ.AewR_x/1+R1Sl
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> diff --git a/drivers/pinctrl/pinctrl-tegra-xusb.c b/drivers/pinctrl/pinctrl-tegra-xusb.c
+Hi James,
 
-> @@ -372,6 +720,193 @@ static int tegra_xusb_padctl_pinconf_group_set(struct pinctrl_dev *pinctrl,
->  			padctl_writel(padctl, regval, lane->offset);
->  			break;
->  
-> +		case TEGRA_XUSB_PADCTL_USB3_PORT_NUM:
-> +			if (value >= TEGRA_XUSB_PADCTL_USB3_PORTS) {
-> +				dev_err(padctl->dev, "Invalid USB3 port: %lu\n",
-> +					value);
-> +				return -EINVAL;
-> +			}
-> +			if (!is_pcie_sata_lane(group)) {
-> +				dev_err(padctl->dev,
-> +					"USB3 port not applicable for pin %d\n",
-> +					group);
-> +				return -EINVAL;
-> +			}
-> +			padctl->usb3_ports[value].lane = group;
-> +			break;
+On Wed, 25 Jun 2014 20:51:43 +1000 James Morris <james.l.morris@oracle.com>=
+ wrote:
+>
+> I haven't pulled in Paul's tree, I merged with the latest Linus release.
 
-It feels odd to use pinctrl for a SW-only purpose. In other words, that
-chunk of code isn't writing the pinconf data to HW, but rather some
-internal variable.
+Ummm, yesterday your security tree
+(git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git#n=
+ext)
+moved from commit 2fd4e6698f08 ("Merge branch 'smack-for-3.16' of
+git://git.gitorious.org/smack-next/kernel into next") (which is
+included in v3.16-rc1) to commit f01387d26938 ("Merge commit 'v3.15'
+into next").  The commit between those 2 commits is 92953ff38ba5
+("Merge branch 'next' of git://git.infradead.org/users/pcmoore/selinux
+into next").
 
-Perhaps it would make more sense for the DT binding to represent this
-data directly in a custom property that's parsed at probe() time. That
-way, pinctrl only touches "real" HW stuff.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> +static int usb3_phy_power_on(struct phy *phy)
-> +{
-> +	struct tegra_xusb_padctl *padctl = phy_get_drvdata(phy);
-> +	int port = usb3_phy_to_port(phy);
-> +	int lane = padctl->usb3_ports[port].lane;
-> +	u32 value, offset;
-> +
-> +	value = padctl_readl(padctl, XUSB_PADCTL_IOPHY_USB3_PADX_CTL2(port));
-> +	value &= ~((XUSB_PADCTL_IOPHY_USB3_PAD_CTL2_RX_WANDER_MASK <<
-> +		    XUSB_PADCTL_IOPHY_USB3_PAD_CTL2_RX_WANDER_SHIFT) |
-> +		   (XUSB_PADCTL_IOPHY_USB3_PAD_CTL2_RX_EQ_MASK <<
-> +		    XUSB_PADCTL_IOPHY_USB3_PAD_CTL2_RX_EQ_SHIFT) |
-> +		   (XUSB_PADCTL_IOPHY_USB3_PAD_CTL2_CDR_CNTL_MASK <<
-> +		    XUSB_PADCTL_IOPHY_USB3_PAD_CTL2_CDR_CNTL_SHIFT));
+--Sig_/_o1oOzxuQ.AewR_x/1+R1Sl
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-Hmm. So there is a lot of "PHY" stuff here after all.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-However, the PHYs implemented here appear to implement very low-level
-I/O pad code, whereas the PHYs we have for our USB 2.0 controller are
-somewhat higher-level; they're more USB-oriented than just IO pad
-oriented. Do you know which level of abstraction a Linux PHY object is
-supposed to be? I could never get an answer when I asked before.
+iQIcBAEBCAAGBQJTq0laAAoJEMDTa8Ir7ZwVLGoP/j/6BjC80ssWq5j+IoTTz7fE
+AT58DW3/9NDzxaF9+fnTx97JvHjp9KCCyuGr08QLiAHKRLv3hbkac3iz5TJ5uMPj
+reyqegEI7zxK+T1pxhOqwKDjpu13WmoxZ5N++11jiLmVWVYHaci4Wfjjbl7WDSjQ
+atfApznpgqmaGPvqKMB4VYtQtkbnodsS31YwQtmTwbTeGY2TOIHfHk1CsreAJIYx
+5HUFVsYYh9GxbST8+hOe4Jj+Mq85JbcHk/5x5/DAuM0w7lLqiYCnjL/WD1Akp7e2
+QO3LOaKLjvLsgYAp9bziXv3pPEkEyci0gnvcTqtrNjPeaV0e/kWTQOCI+B1ixBta
+ovZpteplgQiy79jhZMuq9ciZ9o0mYuUtsjz+jGDfwPruglFN5LXXuMONgWgN45BK
+Xr4IN0OMnQ3/ylqoQ1aCSE6imoTYaT4IzYV/Zg+9q0qX21FZkSuVht8JEw5g+tu6
+J8wHe6br+/Y0qi+sbVDgUNnxlNaavi23nWO/g8/ooutO4X/gwddyFfz+fKaRp2TW
+kba35djcODZklNbL/VMC0f5srlwa7FtYuaXuivIGGqdSGKcqu5wSF5EyQ4tWjHb2
+aseOts+ngLhQ7FNFa6zH71iisyAZzUHXx3Ug9N3oSt90agmOzrLxUXOLX6rrdw/A
+6oWASC/gKH50Sv/qD/CB
+=3DgB
+-----END PGP SIGNATURE-----
+
+--Sig_/_o1oOzxuQ.AewR_x/1+R1Sl--
