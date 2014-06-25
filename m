@@ -1,57 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757100AbaFYOBV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 10:01:21 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:36497 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756888AbaFYOBU (ORCPT
+	id S1757186AbaFYOBj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 10:01:39 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:41769 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757161AbaFYOBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 10:01:20 -0400
-Message-ID: <53AAD62D.3030105@gmail.com>
-Date: Wed, 25 Jun 2014 08:01:17 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Stanislav Fomichev <stfomichev@yandex-team.ru>
-CC: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
-        acme@kernel.org, namhyung@kernel.org, artagnon@gmail.com,
-        rusty@rustcorp.com.au, bp@suse.de
-Subject: Re: [PATCH v4 0/4] perf timechart io mode
-References: <1403260191-10079-1-git-send-email-stfomichev@yandex-team.ru> <20140624084113.GC31390@krava.redhat.com> <20140624091022.GE20225@stfomichev-desktop.yandex.net> <20140624165712.GA10114@stfomichev-desktop.yandex.net> <53A9B7A4.9050805@gmail.com> <20140624185134.GB1148@krava.brq.redhat.com> <53A9CB6E.5080104@gmail.com> <20140625112019.GC21788@stfomichev-desktop.yandex.net>
-In-Reply-To: <20140625112019.GC21788@stfomichev-desktop.yandex.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 25 Jun 2014 10:01:37 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [patch added to the 3.12 stable tree] sched: Make scale_rt_power() deal with backward clocks
+Date: Wed, 25 Jun 2014 16:01:27 +0200
+Message-Id: <1403704891-18268-4-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1403704891-18268-1-git-send-email-jslaby@suse.cz>
+References: <1403704891-18268-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/25/14, 5:20 AM, Stanislav Fomichev wrote:
->>> maybe we dont need to fail in this case.. seems like it should
->>> not be hard to detect, wanr and recover? ;-)
-> The easiest way is just to bail out and don't try to be smart, that's
-> what I do now.
->
-> Another approach would be to just convert all my consistency
-> checks to warnings and skip invalid events (and hope it somehow works). I
-> think it makes sense when for some reason we have perf.data which
-> is not really consistent but we still want to get something out of it.
+From: Peter Zijlstra <peterz@infradead.org>
 
-If the event type does not make sense how can you trust any other field 
--- like event size?
+This patch has been added to the 3.12 stable tree. If you have any
+objections, please let us know.
 
->
->> seems to me it should not be happening at all. It seems like the head caught
->> the tail and was not properly detected.
-> So you mean it perf record's fault?
->
+===============
 
-In my cases I am running perf-record. At the end of the session it walks 
-the events and in too many cases I see the message:
+commit cadefd3d6cc914d95163ba1eda766bfe7ce1e5b7 upstream.
 
-  0x113f80 [0x8]: failed to process type: 68
+Mike reported that, while unlikely, its entirely possible for
+scale_rt_power() to see the time go backwards. This yields rather
+'interesting' results.
 
-So, yes I think something is happening during the record such as the 
-writer passing the reader and corrupting the buffers.
+So like all other sites that deal with clocks; make this one ignore
+backward clock movement too.
 
-David
+Reported-by: Mike Galbraith <bitbucket@online.de>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20140227094035.GZ9987@twins.programming.kicks-ass.net
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ kernel/sched/fair.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 25658d2c68d0..898622244bdf 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4404,6 +4404,7 @@ static unsigned long scale_rt_power(int cpu)
+ {
+ 	struct rq *rq = cpu_rq(cpu);
+ 	u64 total, available, age_stamp, avg;
++	s64 delta;
+ 
+ 	/*
+ 	 * Since we're reading these variables without serialization make sure
+@@ -4412,7 +4413,11 @@ static unsigned long scale_rt_power(int cpu)
+ 	age_stamp = ACCESS_ONCE(rq->age_stamp);
+ 	avg = ACCESS_ONCE(rq->rt_avg);
+ 
+-	total = sched_avg_period() + (rq_clock(rq) - age_stamp);
++	delta = rq_clock(rq) - age_stamp;
++	if (unlikely(delta < 0))
++		delta = 0;
++
++	total = sched_avg_period() + delta;
+ 
+ 	if (unlikely(total < avg)) {
+ 		/* Ensures that power won't end up being negative */
+-- 
+2.0.0
+
