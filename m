@@ -1,78 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756965AbaFYWMq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 18:12:46 -0400
-Received: from ozlabs.org ([103.22.144.67]:54636 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756849AbaFYWMo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 18:12:44 -0400
-Date: Thu, 26 Jun 2014 08:12:32 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: James Morris <james.l.morris@oracle.com>
-Cc: Paul Moore <paul@paul-moore.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>
-Subject: Re: linux-next: the selinux tree needs cleaning up
-Message-ID: <20140626081232.52cb51da@canb.auug.org.au>
-In-Reply-To: <53AAA9BF.4090205@oracle.com>
-References: <20140618084046.1bce12cc@canb.auug.org.au>
-	<20140620085931.6427678d@canb.auug.org.au>
-	<1474416.aEfMv8Ny53@sifl>
-	<32647147.KmAPzBrbMT@sifl>
-	<20140625095928.3161ebe1@canb.auug.org.au>
-	<53AAA9BF.4090205@oracle.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/_o1oOzxuQ.AewR_x/1+R1Sl"; protocol="application/pgp-signature"
+	id S1757019AbaFYWNv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 18:13:51 -0400
+Received: from exprod5og109.obsmtp.com ([64.18.0.188]:60278 "HELO
+	exprod5og109.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755156AbaFYWNu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 18:13:50 -0400
+X-Greylist: delayed 372 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 Jun 2014 18:13:50 EDT
+From: Feng Kan <fkan@apm.com>
+To: tglx@linutronix.de, jason@lakedaemon.net, marc.zyngier@arm.com,
+        linux-kernel@vger.kernel.org, patches@apm.com
+Cc: Feng Kan <fkan@apm.com>, Vinayak Kale <vkale@apm.com>
+Subject: [PATCH V2 2/2] irqchip: gic: preserve gic V2 bypass bits in cpu ctrl register
+Date: Wed, 25 Jun 2014 15:07:21 -0700
+Message-Id: <1403734041-5112-3-git-send-email-fkan@apm.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403734041-5112-1-git-send-email-fkan@apm.com>
+References: <1403734041-5112-1-git-send-email-fkan@apm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/_o1oOzxuQ.AewR_x/1+R1Sl
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+This change is made to preserve the GIC v2 bypass bits in the
+GIC_CPU_CTRL register (also known as the GICC_CTLR register in spec).
+This code will preserve all bits configured by the bootloader regarding
+v2 bypass group bits. In the X-Gene platform, the bypass functionality
+is not used and bypass bits should not be changed by the kernel gic
+code as it could lead to incorrect behavior.
 
-Hi James,
+Signed-off-by: Vinayak Kale <vkale@apm.com>
+Signed-off-by: Feng Kan <fkan@apm.com>
+Reviewed-by: Anup Patel <apatel@apm.com>
+---
+ drivers/irqchip/irq-gic.c | 25 ++++++++++++++++++++++---
+ 1 file changed, 22 insertions(+), 3 deletions(-)
 
-On Wed, 25 Jun 2014 20:51:43 +1000 James Morris <james.l.morris@oracle.com>=
- wrote:
->
-> I haven't pulled in Paul's tree, I merged with the latest Linus release.
+diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+index 9ec3f4c..e70ef38 100644
+--- a/drivers/irqchip/irq-gic.c
++++ b/drivers/irqchip/irq-gic.c
+@@ -64,6 +64,7 @@
+ #define GIC_CPU_INT_PRI_THRESHOLD	0xf0
+ #define GIC_CPU_INT_SPURIOUS		1023
+ #define GIC_CPU_INT_ID_MASK		0x3ff
++#define GIC_CPU_DIS_BYPASS_MASK		0x1e0
+ 
+ union gic_base {
+ 	void __iomem *common_base;
+@@ -394,6 +395,20 @@ static u8 gic_get_cpumask(struct gic_chip_data *gic)
+ 	return mask;
+ }
+ 
++static void gic_cpu_if_up(void)
++{
++	void __iomem *cpu_base = gic_data_cpu_base(&gic_data[0]);
++	u32 bypass;
++
++	/*
++	 * Preserve bypass disable bits to be written back later
++	 */
++	bypass = readl(cpu_base + GIC_CPU_CTRL);
++	bypass &= GIC_CPU_DIS_BYPASS_MASK;
++
++	writel_relaxed(bypass | GIC_CPU_ENABLE, cpu_base + GIC_CPU_CTRL);
++}
++
+ static void __init gic_dist_init(struct gic_chip_data *gic)
+ {
+ 	unsigned int i;
+@@ -476,13 +491,17 @@ static void gic_cpu_init(struct gic_chip_data *gic)
+ 				dist_base + GIC_DIST_PRI + i * 4 / 4);
+ 
+ 	writel_relaxed(GIC_CPU_INT_PRI_THRESHOLD, base + GIC_CPU_PRIMASK);
+-	writel_relaxed(GIC_CPU_ENABLE, base + GIC_CPU_CTRL);
++	gic_cpu_if_up();
+ }
+ 
+ void gic_cpu_if_down(void)
+ {
+ 	void __iomem *cpu_base = gic_data_cpu_base(&gic_data[0]);
+-	writel_relaxed(0, cpu_base + GIC_CPU_CTRL);
++	u32 val;
++
++	val = readl(cpu_base + GIC_CPU_CTRL);
++	val &= ~GIC_CPU_ENABLE;
++	writel_relaxed(val, cpu_base + GIC_CPU_CTRL);
+ }
+ 
+ #ifdef CONFIG_CPU_PM
+@@ -618,7 +637,7 @@ static void gic_cpu_restore(unsigned int gic_nr)
+ 					dist_base + GIC_DIST_PRI + i * 4);
+ 
+ 	writel_relaxed(GIC_CPU_INT_PRI_THRESHOLD, cpu_base + GIC_CPU_PRIMASK);
+-	writel_relaxed(GIC_CPU_ENABLE, cpu_base + GIC_CPU_CTRL);
++	gic_cpu_if_up();
+ }
+ 
+ static int gic_notifier(struct notifier_block *self, unsigned long cmd,	void *v)
+-- 
+1.9.1
 
-Ummm, yesterday your security tree
-(git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git#n=
-ext)
-moved from commit 2fd4e6698f08 ("Merge branch 'smack-for-3.16' of
-git://git.gitorious.org/smack-next/kernel into next") (which is
-included in v3.16-rc1) to commit f01387d26938 ("Merge commit 'v3.15'
-into next").  The commit between those 2 commits is 92953ff38ba5
-("Merge branch 'next' of git://git.infradead.org/users/pcmoore/selinux
-into next").
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/_o1oOzxuQ.AewR_x/1+R1Sl
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJTq0laAAoJEMDTa8Ir7ZwVLGoP/j/6BjC80ssWq5j+IoTTz7fE
-AT58DW3/9NDzxaF9+fnTx97JvHjp9KCCyuGr08QLiAHKRLv3hbkac3iz5TJ5uMPj
-reyqegEI7zxK+T1pxhOqwKDjpu13WmoxZ5N++11jiLmVWVYHaci4Wfjjbl7WDSjQ
-atfApznpgqmaGPvqKMB4VYtQtkbnodsS31YwQtmTwbTeGY2TOIHfHk1CsreAJIYx
-5HUFVsYYh9GxbST8+hOe4Jj+Mq85JbcHk/5x5/DAuM0w7lLqiYCnjL/WD1Akp7e2
-QO3LOaKLjvLsgYAp9bziXv3pPEkEyci0gnvcTqtrNjPeaV0e/kWTQOCI+B1ixBta
-ovZpteplgQiy79jhZMuq9ciZ9o0mYuUtsjz+jGDfwPruglFN5LXXuMONgWgN45BK
-Xr4IN0OMnQ3/ylqoQ1aCSE6imoTYaT4IzYV/Zg+9q0qX21FZkSuVht8JEw5g+tu6
-J8wHe6br+/Y0qi+sbVDgUNnxlNaavi23nWO/g8/ooutO4X/gwddyFfz+fKaRp2TW
-kba35djcODZklNbL/VMC0f5srlwa7FtYuaXuivIGGqdSGKcqu5wSF5EyQ4tWjHb2
-aseOts+ngLhQ7FNFa6zH71iisyAZzUHXx3Ug9N3oSt90agmOzrLxUXOLX6rrdw/A
-6oWASC/gKH50Sv/qD/CB
-=3DgB
------END PGP SIGNATURE-----
-
---Sig_/_o1oOzxuQ.AewR_x/1+R1Sl--
