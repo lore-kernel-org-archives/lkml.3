@@ -1,88 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754888AbaFYBvp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 21:51:45 -0400
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:46216 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752271AbaFYBvo convert rfc822-to-8bit (ORCPT
+	id S1753210AbaFYB4v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 21:56:51 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:51318 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752322AbaFYB4u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 21:51:44 -0400
+	Tue, 24 Jun 2014 21:56:50 -0400
+Message-ID: <53AA2C4F.30808@huawei.com>
+Date: Wed, 25 Jun 2014 09:56:31 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <1403651531-24891-2-git-send-email-m@bjorling.me>
-References: <1403651531-24891-1-git-send-email-m@bjorling.me>
-	<1403651531-24891-2-git-send-email-m@bjorling.me>
-Date: Wed, 25 Jun 2014 09:51:43 +0800
-Message-ID: <CACVXFVPHQXZoBGGpivjEX15_UfvZHoVYLDUwYeyhjffkJss53A@mail.gmail.com>
-Subject: Re: [PATCH v9] NVMe: Convert to blk-mq
-From: Ming Lei <tom.leiming@gmail.com>
-To: =?UTF-8?Q?Matias_Bj=C3=B8rling?= <m@bjorling.me>
-Cc: Matthew Wilcox <willy@linux.intel.com>,
-        Keith Busch <keith.busch@intel.com>,
-        "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com>,
-        Jens Axboe <axboe@fb.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-nvme <linux-nvme@lists.infradead.org>,
-        Christoph Hellwig <hch@infradead.org>, rlnelson@google.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH 5/5] cgroup: fix a race between cgroup_mount() and cgroup_kill_sb()
+References: <53994943.60703@huawei.com> <539949A1.90301@huawei.com> <20140620193521.GB28324@mtj.dyndns.org> <53A8D2B8.4080107@huawei.com> <20140624210119.GC14909@htj.dyndns.org>
+In-Reply-To: <20140624210119.GC14909@htj.dyndns.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020204.53AA2C53.00A6,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2011-05-27 18:58:46
+X-Mirapoint-Loop-Id: f01f84052cc1bb9fda976dd61b5c00ac
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 7:12 AM, Matias Bjørling <m@bjorling.me> wrote:
-> This converts the current NVMe driver to utilize the blk-mq layer.
->
-> Contributions in this patch from:
->
->   Sam Bradshaw <sbradshaw@micron.com>
->   Jens Axboe <axboe@kernel.dk>
->   Keith Busch <keith.busch@intel.com>
->   Christoph Hellwig <hch@infradead.org>
->   Robert Nelson <rlnelson@google.com>
->
-> Acked-by: Keith Busch <keith.busch@intel.com>
-> Acked-by: Jens Axboe <axboe@fb.com>
-> Signed-off-by: Matias Bjørling <m@bjorling.me>
-> ---
->  drivers/block/nvme-core.c | 1204 ++++++++++++++++++---------------------------
->  drivers/block/nvme-scsi.c |    8 +-
->  include/linux/nvme.h      |   15 +-
->  3 files changed, 489 insertions(+), 738 deletions(-)
->
-> diff --git a/drivers/block/nvme-core.c b/drivers/block/nvme-core.c
-> index 6e8ce4f..ecbf5dd 100644
-> --- a/drivers/block/nvme-core.c
-> +++ b/drivers/block/nvme-core.c
+On 2014/6/25 5:01, Tejun Heo wrote:
+> Hello, Li.
+> 
+> On Tue, Jun 24, 2014 at 09:22:00AM +0800, Li Zefan wrote:
+>>> Ah, right.  Gees, I'm really hating the fact that we have ->mount but
+>>> not ->umount.  However, can't we make it a bit simpler by just
+>>> introducing a mutex protecting looking up and refing up an existing
+>>> root and a sb going away?  The only problem is that the refcnt being
+>>> killed isn't atomic w.r.t. new live ref coming up, right?  Why not
+>>> just add a mutex around them so that they can't race?
+>>
+>> Well, kill_sb() is called with sb->s_umount held, while kernfs_mount()
+>> returned with sb->s_umount held, so adding a mutex will lead to ABBA
+>> deadlock.
+> 
+> Hmmm?  Why does that matter?  The only region in cgroup_mount() which
+> needs to be put inside such mutex would be root lookup, no?
+> 
 
-> -static void bio_completion(struct nvme_queue *nvmeq, void *ctx,
-> +static void req_completion(struct nvme_queue *nvmeq, void *ctx,
->                                                 struct nvme_completion *cqe)
->  {
->         struct nvme_iod *iod = ctx;
-> -       struct bio *bio = iod->private;
-> +       struct request *req = iod->private;
-> +       struct nvme_cmd_info *cmd_rq = blk_mq_rq_to_pdu(req);
-> +
->         u16 status = le16_to_cpup(&cqe->status) >> 1;
-> -       int error = 0;
->
->         if (unlikely(status)) {
-> -               if (!(status & NVME_SC_DNR ||
-> -                               bio->bi_rw & REQ_FAILFAST_MASK) &&
-> -                               (jiffies - iod->start_time) < IOD_TIMEOUT) {
-> -                       if (!waitqueue_active(&nvmeq->sq_full))
-> -                               add_wait_queue(&nvmeq->sq_full,
-> -                                                       &nvmeq->sq_cong_wait);
-> -                       list_add_tail(&iod->node, &nvmeq->iod_bio);
-> -                       wake_up(&nvmeq->sq_full);
-> +               if (!(status & NVME_SC_DNR || blk_noretry_request(req))
-> +                   && (jiffies - req->start_time) < req->timeout) {
-> +                       blk_mq_requeue_request(req);
+unfortunately that won't help. I think what you suggest is:
 
-You need to call blk_mq_kick_requeue_list() following
-blk_mq_requeue_request(), otherwise the request won't
-be scheduled to hw queue.
+cgroup_mount()
+{
+	mutex_lock();
+	lookup_cgroup_root();
+	mutex_unlock();
+	kernfs_mount();
+}
 
-Thanks,
---
-Ming Lei
+cgroup_kill_sb()
+{
+	mutex_lock();
+	percpu_ref_kill();
+	mutex_Unlock();
+	kernfs_kill_sb();
+}
+
+See, we may still be destroying the superblock after we've succeeded
+in getting the refcnt of cgroup root.
+
