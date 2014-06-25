@@ -1,161 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757275AbaFYOIg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 10:08:36 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:56409 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755444AbaFYOIe (ORCPT
+	id S1757342AbaFYOIt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 10:08:49 -0400
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:54357 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757253AbaFYOIs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 10:08:34 -0400
-X-AuditID: cbfee691-b7f2f6d0000040c4-65-53aad7e06d6f
-From: Pankaj Dubey <pankaj.dubey@samsung.com>
-To: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: kgene.kim@samsung.com, linux@arm.linux.org.uk, t.figa@samsung.com,
-        vikas.sajjan@samsung.com, joshi@samsung.com, naushad@samsung.com,
-        thomas.ab@samsung.com, chow.kim@samsung.com,
-        Pankaj Dubey <pankaj.dubey@samsung.com>
-Subject: [PATCH v5 5/5] ARM: EXYNOS: Move PMU specific definitions from common.h
-Date: Wed, 25 Jun 2014 19:33:52 +0530
-Message-id: <1403705032-14835-6-git-send-email-pankaj.dubey@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1403705032-14835-1-git-send-email-pankaj.dubey@samsung.com>
-References: <1403705032-14835-1-git-send-email-pankaj.dubey@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjkeLIzCtJLcpLzFFi42JZI2JSrfvw+qpgg9NTGS2WTbrLZvF91xd2
-	i94FV9ksNj2+xmpxedccNosZ5/cxWdy+zGvx6eh/VotFW4Eq1s94zWLRsYzR4uaz7UwOPB4t
-	zT1sHpuX1Hv0bVnF6PF5k1wASxSXTUpqTmZZapG+XQJXxqVzH9gKHolV/D2zkLGB8a9QFyMn
-	h4SAicSSU/dYIGwxiQv31rN1MXJxCAksZZQ4s3kBM0zR+huPWUFsIYHpjBI7V8hD2BOYJH42
-	s4PYbAK6Ek/ezwWrFxHIlui/vZoFZBCzwGNGiTcrjzKCJIQFAiRWPPoA1sAioCqx/NIksKG8
-	Ah4Sd07tAYpzAC1TkJgzyQYkzCngKfFp5nd2iF0eEl9n7mcGmSkhsI1dYtLMJ6wQcwQkvk0+
-	xALRKyux6QDUzZISB1fcYJnAKLyAkWEVo2hqQXJBcVJ6kalecWJucWleul5yfu4mRmAcnP73
-	bOIOxvsHrA8xJgONm8gsJZqcD4yjvJJ4Q2MzIwtTE1NjI3NLM9KElcR50x8lBQkJpCeWpGan
-	phakFsUXleakFh9iZOLglGpgtJ1XV/SYb0rs4Umt8R2Pea8utZcNyZ/Y8el9bcf8o3miBQJW
-	hqsPOrQ9dZjWVXvn8pfmpwflePc5c0VnK3BtWdJ1tNveaemm+Y0TF733mzw3uWOPT5v5BTtL
-	zu7Fghm//mg92R6i46PSt9HqqZLt0+BLp5KiGsR/Mr2WnHPi4MlfBpxx7avzlViKMxINtZiL
-	ihMBmYFCq5kCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKIsWRmVeSWpSXmKPExsVy+t9jQd0H11cFGyx+Z2KxbNJdNovvu76w
-	W/QuuMpmsenxNVaLy7vmsFnMOL+PyeL2ZV6LT0f/s1os2gpUsX7GaxaLjmWMFjefbWdy4PFo
-	ae5h89i8pN6jb8sqRo/Pm+QCWKIaGG0yUhNTUosUUvOS81My89JtlbyD453jTc0MDHUNLS3M
-	lRTyEnNTbZVcfAJ03TJzgA5TUihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesbEgTXY2SABhLW
-	MGZcOveBreCRWMXfMwsZGxj/CnUxcnJICJhIrL/xmBXCFpO4cG89G4gtJDCdUWLnCnkIewKT
-	xM9mdhCbTUBX4sn7ucwgtohAtkT/7dUsXYxcHMwCjxkl3qw8ygiSEBYIkFjx6ANYA4uAqsTy
-	S5PAFvAKeEjcObUHKM4BtExBYs4kG5Awp4CnxKeZ39khdnlIfJ25n3kCI+8CRoZVjKKpBckF
-	xUnpuUZ6xYm5xaV56XrJ+bmbGMFR9kx6B+OqBotDjAIcjEo8vBdmrwwWYk0sK67MPcQowcGs
-	JMLrvn9VsBBvSmJlVWpRfnxRaU5q8SFGU6CjJjJLiSbnAxNAXkm8obGJuamxqaWJhYmZpZI4
-	78FW60AhgfTEktTs1NSC1CKYPiYOTqkGRvbOOLenp6dfUlvP5/7Y+EZOXo3+MdUyoUWavMsO
-	Tl35xTd6at/J6WfPlSnrdM6qqfHJ6drZNHP6C+ZnV/bdUbqZWae2+Ob7nnAtzc6cSbJfmz0/
-	i+3cffrz25scUvf2KFTe+3bu7imuA8XPpL7eerNJvdeeUe38MV8p1stF7uu7/32v2tc4ZZYS
-	S3FGoqEWc1FxIgChJfS2yAIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 25 Jun 2014 10:08:48 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAAhSdy11HQtiOD6XLqQcZ+zf_Z9Mx0nPrJ0ECNNuRkZt=CfdpA@mail.gmail.com>
+References: <1403688530-23273-1-git-send-email-marc.zyngier@arm.com>
+ <1403688530-23273-4-git-send-email-marc.zyngier@arm.com> <CAAhSdy11HQtiOD6XLqQcZ+zf_Z9Mx0nPrJ0ECNNuRkZt=CfdpA@mail.gmail.com>
+From: Rob Herring <robherring2@gmail.com>
+Date: Wed, 25 Jun 2014 09:08:27 -0500
+Message-ID: <CAL_JsqL+L-pDr=ENJDj3Um_iMeYNmisd=BMW=SR8tie-_qDeeA@mail.gmail.com>
+Subject: Re: [RFC PATCH 3/9] irqchip: GIC: Convert to EOImode == 1
+To: Anup Patel <anup@brainfault.org>
+Cc: Marc Zyngier <marc.zyngier@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves PMU specific definitions into a new file
-as exynos-pmu.h.
-This will help in reducing dependency of common.h in pmu.c.
+On Wed, Jun 25, 2014 at 8:56 AM, Anup Patel <anup@brainfault.org> wrote:
+> Hi Marc,
+>
+> On Wed, Jun 25, 2014 at 2:58 PM, Marc Zyngier <marc.zyngier@arm.com> wrote:
+>> So far, GICv2 has been used in with EOImode == 0. The effect of this
+>> mode is to perform the priority drop and the deactivation of the
+>> interrupt at the same time.
+>>
+>> While this works perfectly for Linux (we only have a single priority),
+>> it causes issues when an interrupt is forwarded to a guest, and when
+>> we want the guest to perform the EOI itself.
+>>
+>> For this case, the GIC architecture provides EOImode == 1, where:
+>> - A write to the EOI register drops the priority of the interrupt and leaves
+>> it active. Other interrupts at the same priority level can now be taken,
+>> but the active interrupt cannot be taken again
+>> - A write to the DIR marks the interrupt as inactive, meaning it can
+>> now be taken again.
+>>
+>> We only enable this feature when booted in HYP mode. Also, as most device
+>> trees are broken (they report the CPU interface size to be 4kB, while
+>> the GICv2 CPU interface size is 8kB), output a warning if we're booted
+>> in HYP mode, and disable the feature.
+>>
+>> Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+>> ---
 
-Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
----
- arch/arm/mach-exynos/common.h     |   17 -----------------
- arch/arm/mach-exynos/exynos-pmu.h |   31 +++++++++++++++++++++++++++++++
- arch/arm/mach-exynos/pm.c         |    1 +
- arch/arm/mach-exynos/pmu.c        |    2 +-
- 4 files changed, 33 insertions(+), 18 deletions(-)
- create mode 100644 arch/arm/mach-exynos/exynos-pmu.h
+[...]
 
-diff --git a/arch/arm/mach-exynos/common.h b/arch/arm/mach-exynos/common.h
-index 296c6e1..0326ca2 100644
---- a/arch/arm/mach-exynos/common.h
-+++ b/arch/arm/mach-exynos/common.h
-@@ -135,23 +135,6 @@ extern struct smp_operations exynos_smp_ops;
- 
- extern void exynos_cpu_die(unsigned int cpu);
- 
--/* PMU(Power Management Unit) support */
--
--#define PMU_TABLE_END	(-1U)
--
--enum sys_powerdown {
--	SYS_AFTR,
--	SYS_LPA,
--	SYS_SLEEP,
--	NUM_SYS_POWERDOWN,
--};
--
--struct exynos_pmu_conf {
--	unsigned int offset;
--	unsigned int val[NUM_SYS_POWERDOWN];
--};
--
--extern void exynos_sys_powerdown_conf(enum sys_powerdown mode);
- extern void exynos_cpu_power_down(int cpu);
- extern void exynos_cpu_power_up(int cpu);
- extern int  exynos_cpu_power_state(int cpu);
-diff --git a/arch/arm/mach-exynos/exynos-pmu.h b/arch/arm/mach-exynos/exynos-pmu.h
-new file mode 100644
-index 0000000..16ff036
---- /dev/null
-+++ b/arch/arm/mach-exynos/exynos-pmu.h
-@@ -0,0 +1,31 @@
-+/*
-+ * Copyright (c) 2014 Samsung Electronics Co., Ltd.
-+ *		http://www.samsung.com
-+ *
-+ * Header for EXYNOS PMU Driver support
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#ifndef __EXYNOS_PMU_H
-+#define __EXYNOS_PMU_H
-+
-+#define PMU_TABLE_END	(-1U)
-+
-+enum sys_powerdown {
-+	SYS_AFTR,
-+	SYS_LPA,
-+	SYS_SLEEP,
-+	NUM_SYS_POWERDOWN,
-+};
-+
-+struct exynos_pmu_conf {
-+	unsigned int offset;
-+	unsigned int val[NUM_SYS_POWERDOWN];
-+};
-+
-+extern void exynos_sys_powerdown_conf(enum sys_powerdown mode);
-+
-+#endif /* __EXYNOS_PMU_H */
-diff --git a/arch/arm/mach-exynos/pm.c b/arch/arm/mach-exynos/pm.c
-index 519aefe..de61d48 100644
---- a/arch/arm/mach-exynos/pm.c
-+++ b/arch/arm/mach-exynos/pm.c
-@@ -34,6 +34,7 @@
- #include <mach/map.h>
- 
- #include "common.h"
-+#include "exynos-pmu.h"
- #include "regs-pmu.h"
- #include "regs-sys.h"
- 
-diff --git a/arch/arm/mach-exynos/pmu.c b/arch/arm/mach-exynos/pmu.c
-index c80a648..ca57a54 100644
---- a/arch/arm/mach-exynos/pmu.c
-+++ b/arch/arm/mach-exynos/pmu.c
-@@ -17,7 +17,7 @@
- #include <linux/regmap.h>
- #include <linux/mfd/syscon.h>
- 
--#include "common.h"
-+#include "exynos-pmu.h"
- #include "regs-pmu.h"
- 
- struct exynos_pmu_data {
--- 
-1.7.9.5
+>> +               if (resource_size(&cpu_res) >= SZ_8K)
+>> +                       supports_deactivate = true;
+>> +               else
+>> +                       pr_warn("GIC: CPU interface size is %x, DT is probably wrong\n", (int)resource_size(&cpu_res));
+>
+> This will not work on APM X-Gene because, for
+> X-Gene first CPU page is at 0x78020000 and
+> second CPU page is at 0x78030000.
 
+Does 0x7802f000 for the cpu address not work? It should if X-Gene is
+"SBSA compliant" for whatever that is worth.
+
+Rob
