@@ -1,94 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756726AbaFYVv4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 17:51:56 -0400
-Received: from smtprelay0150.hostedemail.com ([216.40.44.150]:48716 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755516AbaFYVvy (ORCPT
+	id S1756790AbaFYVw3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 17:52:29 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:41369 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754214AbaFYVw0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 17:51:54 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 10,1,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:800:960:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:1981:2194:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3304:3354:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4321:4605:5007:7522:7652:7903:8603:8957:9545:10007:10400:10450:10455:10848:10967:11026:11232:11658:11914:12043:12114:12296:12438:12517:12519:12663:12740:13161:13229:14093:14097:19904:19999:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:1:0
-X-HE-Tag: base77_105b4a620e95e
-X-Filterd-Recvd-Size: 3204
-Message-ID: <1403733111.24788.8.camel@joe-AO725>
-Subject: Re: [PATCH 01/22] pci-dma-compat: Add pci_zalloc_consistent helper
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org
-Date: Wed, 25 Jun 2014 14:51:51 -0700
-In-Reply-To: <20140625122755.152685fadbc9cffe7a298dc6@linux-foundation.org>
-References: <cover.1403530604.git.joe@perches.com>
-	 <2248b3ffe86cd8995a809bf7e2871f38039979c1.1403530604.git.joe@perches.com>
-	 <20140625122755.152685fadbc9cffe7a298dc6@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
+	Wed, 25 Jun 2014 17:52:26 -0400
+Message-ID: <53AB4495.1020000@wwwdotorg.org>
+Date: Wed, 25 Jun 2014 15:52:21 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Andrew Bresticker <abrestic@chromium.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Kishon Vijay Abraham I <kishon@ti.com>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v1 5/9] of: Add NVIDIA Tegra XHCI controller binding
+References: <1403072180-4944-1-git-send-email-abrestic@chromium.org> <1403072180-4944-6-git-send-email-abrestic@chromium.org>
+In-Reply-To: <1403072180-4944-6-git-send-email-abrestic@chromium.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-06-25 at 12:27 -0700, Andrew Morton wrote:
-> On Mon, 23 Jun 2014 06:41:29 -0700 Joe Perches <joe@perches.com> wrote:
-> 
-> > Add this helper for consistency with pci_zalloc_coherent
-> > and the ability to remove unnecessary memset(,0,) uses.
-> 
-> While we're being anal..  I'm not a big fan of the patch titles.  Worst
-> is "amd: Use pci_zalloc_consistent".  "amd" is quite a poor identifier
-> - it's only when you get in and look at the diff that you realise it's
-> an ethernet driver.
+On 06/18/2014 12:16 AM, Andrew Bresticker wrote:
+> Add device-tree binding documentation for the XHCI controller present
+> on Tegra124 and later SoCs.
 
-Yeah, those "amd:" prefixes should really have been "pcnet32:"
+> diff --git a/Documentation/devicetree/bindings/usb/nvidia,tegra124-xhci.txt b/Documentation/devicetree/bindings/usb/nvidia,tegra124-xhci.txt
 
-> People sometimes address this by using
-> 
-> 	"drivers: net: ethernet: amd: use pci_zalloc_consistent"
-> 
-> which strikes me as utterly perverse.  We already have a nice way of
-> representing the hierarchy and that's using '/'.
+> +Required properties:
+> +--------------------
 
-I used to do that until several people complained.
-Now I don't.  btw:  Documentation/SubmittingPatches says:
+> + - clock-names: Must include the following entries:
+> +    - xusb_host
+> +    - xusb_falcon_src
+> +    - xusb_ss
+> +    - xusb_ss_src
+> +    - xusb_hs_src
+> +    - xusb_fs_src
+> +    - pll_u_480m
+> +    - clk_m
+> +    - pll_e
 
-15) The canonical patch format
+> + - reset-names: Must include the following entries:
+> +   - xusb_host
+> +   - xusb_ss
 
-The canonical patch subject line is:
+Usually the CAR has a reset control for each clock. So, I would expect
+as many entries in reset-names as in clock-names. Even if the SW doesn't
+currently touch all the reset lines, we should make sure the binding
+requires them to be present so that any DT will contain the entries if
+they're ever needed in the future.
 
-    Subject: [PATCH 001/123] subsystem: summary phrase
+In the CAR documentation, I see "XUSB_DEV" as a clock/reset bit. Is that
+missing from the list above?
 
+> + - nvidia,xusb-mbox: Handle to the Tegra XUSB mailbox node.
 
-> So when the irritation gets too high and when I can be bothered I'll
-> rewrite things like that to
-> 
-> 	"drivers/net/ethernet/amd: use pci_zalloc_consistent"
-> 
-> which strikes me as being blindingly obvious, but apparently I'm in a
-> small minority :(
-> 
-> > --- a/include/asm-generic/pci-dma-compat.h
-> > +++ b/include/asm-generic/pci-dma-compat.h
-> > @@ -19,6 +19,14 @@ pci_alloc_consistent(struct pci_dev *hwdev, size_t size,
-> >  	return dma_alloc_coherent(hwdev == NULL ? NULL : &hwdev->dev, size, dma_handle, GFP_ATOMIC);
-> >  }
-> >  
-> > +static inline void *
-> > +pci_zalloc_consistent(struct pci_dev *hwdev, size_t size,
-> > +		      dma_addr_t *dma_handle)
-> > +{
-> > +	return dma_zalloc_coherent(hwdev == NULL ? NULL : &hwdev->dev,
-> > +				   size, dma_handle, GFP_ATOMIC);
-> > +}
-> > +
-> 
-> We'd get a smaller kernel by uninlining this.  It is hardly
-> performance-sensitive.  Uninlining would presumably use more stack,
-> but GFP_ATOMIC won't use a ton of stack anyway.
+As mentioned earlier, I think that's an internal implementation detail.
+Shouldn't the two nodes be squashed together?
 
-True.  Maybe via a follow-on patch.
+> +Optional properties:
 
-Another option would be to remove pci_[z]alloc_consistent
-and just use dma_alloc_coherent instead.
+> + - s1p05v-supply: 1.05V supply regulator.
+> + - s1p8v-supply: 1.8V supply regulator.
+> + - s3p3v-supply: 3.3V supply regulator.
 
+What are those supplies for? I would have expected any input to the SoC
+to have a name that described its purpose, and the pins and DT
+properties would be named to match.
