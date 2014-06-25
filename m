@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757924AbaFYRKD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 13:10:03 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:60953 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757815AbaFYRJy (ORCPT
+	id S1757906AbaFYRKA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 13:10:00 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:34818 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757814AbaFYRJy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 25 Jun 2014 13:09:54 -0400
 X-Google-Original-Sender: <johan@hovold.com>
@@ -18,9 +18,9 @@ Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Jiri Kosina <jkosina@suse.cz>,
         =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
         Johan Hovold <johan@kernel.org>
-Subject: [PATCH 06/13] leds: max8997: fix attribute-creation race
-Date: Wed, 25 Jun 2014 19:08:49 +0200
-Message-Id: <1403716136-32694-7-git-send-email-johan@kernel.org>
+Subject: [PATCH 01/13] leds: add led-class attribute-group support
+Date: Wed, 25 Jun 2014 19:08:44 +0200
+Message-Id: <1403716136-32694-2-git-send-email-johan@kernel.org>
 X-Mailer: git-send-email 1.8.5.5
 In-Reply-To: <1403716136-32694-1-git-send-email-johan@kernel.org>
 References: <1403716136-32694-1-git-send-email-johan@kernel.org>
@@ -28,62 +28,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the attribute groups of the led-class to create the mode attribute
-during probe in order to avoid racing with userspace.
+Allow led-class devices to be created with optional attribute groups.
+
+This is needed in order to allow led drivers to create custom device
+attributes in a race-free manner.
 
 Signed-off-by: Johan Hovold <johan@kernel.org>
 ---
- drivers/leds/leds-max8997.c | 16 +++++++---------
- 1 file changed, 7 insertions(+), 9 deletions(-)
+ drivers/leds/led-class.c | 5 +++--
+ include/linux/leds.h     | 2 ++
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/leds/leds-max8997.c b/drivers/leds/leds-max8997.c
-index f449a8bdddc7..607bc2755aba 100644
---- a/drivers/leds/leds-max8997.c
-+++ b/drivers/leds/leds-max8997.c
-@@ -229,6 +229,12 @@ static ssize_t max8997_led_store_mode(struct device *dev,
+diff --git a/drivers/leds/led-class.c b/drivers/leds/led-class.c
+index f37d63cf726b..aa29198fca3e 100644
+--- a/drivers/leds/led-class.c
++++ b/drivers/leds/led-class.c
+@@ -210,8 +210,9 @@ static const struct dev_pm_ops leds_class_dev_pm_ops = {
+  */
+ int led_classdev_register(struct device *parent, struct led_classdev *led_cdev)
+ {
+-	led_cdev->dev = device_create(leds_class, parent, 0, led_cdev,
+-				      "%s", led_cdev->name);
++	led_cdev->dev = device_create_with_groups(leds_class, parent, 0,
++					led_cdev, led_cdev->groups,
++					"%s", led_cdev->name);
+ 	if (IS_ERR(led_cdev->dev))
+ 		return PTR_ERR(led_cdev->dev);
  
- static DEVICE_ATTR(mode, 0644, max8997_led_show_mode, max8997_led_store_mode);
+diff --git a/include/linux/leds.h b/include/linux/leds.h
+index 0287ab296689..e43686472197 100644
+--- a/include/linux/leds.h
++++ b/include/linux/leds.h
+@@ -63,6 +63,8 @@ struct led_classdev {
+ 				     unsigned long *delay_off);
  
-+static struct attribute *max8997_attrs[] = {
-+	&dev_attr_mode.attr,
-+	NULL
-+};
-+ATTRIBUTE_GROUPS(max8997);
+ 	struct device		*dev;
++	const struct attribute_group	**groups;
 +
- static int max8997_led_probe(struct platform_device *pdev)
- {
- 	struct max8997_dev *iodev = dev_get_drvdata(pdev->dev.parent);
-@@ -253,6 +259,7 @@ static int max8997_led_probe(struct platform_device *pdev)
- 	led->cdev.brightness_set = max8997_led_brightness_set;
- 	led->cdev.flags |= LED_CORE_SUSPENDRESUME;
- 	led->cdev.brightness = 0;
-+	led->cdev.groups = max8997_groups;
- 	led->iodev = iodev;
+ 	struct list_head	 node;			/* LED Device list */
+ 	const char		*default_trigger;	/* Trigger to use */
  
- 	/* initialize mode and brightness according to platform_data */
-@@ -281,14 +288,6 @@ static int max8997_led_probe(struct platform_device *pdev)
- 	if (ret < 0)
- 		return ret;
- 
--	ret = device_create_file(led->cdev.dev, &dev_attr_mode);
--	if (ret != 0) {
--		dev_err(&pdev->dev,
--			"failed to create file: %d\n", ret);
--		led_classdev_unregister(&led->cdev);
--		return ret;
--	}
--
- 	return 0;
- }
- 
-@@ -296,7 +295,6 @@ static int max8997_led_remove(struct platform_device *pdev)
- {
- 	struct max8997_led *led = platform_get_drvdata(pdev);
- 
--	device_remove_file(led->cdev.dev, &dev_attr_mode);
- 	led_classdev_unregister(&led->cdev);
- 
- 	return 0;
 -- 
 1.8.5.5
 
