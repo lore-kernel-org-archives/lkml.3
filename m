@@ -1,82 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757599AbaFYQK4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 12:10:56 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:35380 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757067AbaFYQKy (ORCPT
+	id S1757331AbaFYQTI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 12:19:08 -0400
+Received: from qmta05.emeryville.ca.mail.comcast.net ([76.96.30.48]:40854 "EHLO
+	qmta05.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756853AbaFYQTH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 12:10:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAGXu5jJkFxh4K=40xuh6tu3kUf4oJM8Dry+4upBdRieW3FNLgw@mail.gmail.com>
-References: <1403642893-23107-1-git-send-email-keescook@chromium.org>
- <1403642893-23107-6-git-send-email-keescook@chromium.org> <20140625135121.GB7892@redhat.com>
- <CAGXu5jJkFxh4K=40xuh6tu3kUf4oJM8Dry+4upBdRieW3FNLgw@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 25 Jun 2014 09:10:32 -0700
-Message-ID: <CALCETrUBNmLnpa+LM91om2RSpR6SjupP-EdefzhU1Me4nv3Dfw@mail.gmail.com>
-Subject: Re: [PATCH v8 5/9] seccomp: split mode set routines
-To: Kees Cook <keescook@chromium.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
-        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 25 Jun 2014 12:19:07 -0400
+Date: Wed, 25 Jun 2014 11:19:02 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+To: Vladimir Davydov <vdavydov@parallels.com>
+cc: akpm@linux-foundation.org, iamjoonsoo.kim@lge.com, rientjes@google.com,
+        penberg@kernel.org, hannes@cmpxchg.org, mhocko@suse.cz,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] slab: document why cache can have no per cpu array on
+ kfree
+In-Reply-To: <1403707177-3740-1-git-send-email-vdavydov@parallels.com>
+Message-ID: <alpine.DEB.2.11.1406251118440.26523@gentwo.org>
+References: <20140624073840.GC4836@js1304-P5Q-DELUXE> <1403707177-3740-1-git-send-email-vdavydov@parallels.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 7:51 AM, Kees Cook <keescook@chromium.org> wrote:
-> On Wed, Jun 25, 2014 at 6:51 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->> On 06/24, Kees Cook wrote:
->>>
->>> +static inline void seccomp_assign_mode(struct task_struct *task,
->>> +                                    unsigned long seccomp_mode)
->>> +{
->>> +     BUG_ON(!spin_is_locked(&task->sighand->siglock));
->>> +
->>> +     task->seccomp.mode = seccomp_mode;
->>> +     set_tsk_thread_flag(task, TIF_SECCOMP);
->>> +}
->>
->> OK, but unless task == current this can race with secure_computing().
->> I think this needs smp_mb__before_atomic() and secure_computing() needs
->> rmb() after test_bit(TIF_SECCOMP).
->>
->> Otherwise, can't __secure_computing() hit BUG() if it sees the old
->> mode == SECCOMP_MODE_DISABLED ?
->>
->> Or seccomp_run_filters() can see ->filters == NULL and WARN(),
->> smp_load_acquire() only serializes that LOAD with the subsequent memory
->> operations.
->
-> Hm, actually, now I'm worried about smp_load_acquire() being too slow
-> in run_filters().
->
-> The ordering must be:
-> - task->seccomp.filter must be valid before
-> - task->seccomp.mode is set, which must be valid before
-> - TIF_SECCOMP is set
->
-> But I don't want to impact secure_computing(). What's the best way to
-> make sure this ordering is respected?
 
-Remove the ordering requirement, perhaps?
+Acked-by: Christoph Lameter <cl@linux.com>
 
-What if you moved mode into seccomp.filter?  Then there would be
-little reason to check TIF_SECCOMP from secure_computing; instead, you
-could smp_load_acquire (or read_barrier_depends, maybe) seccomp.filter
-from secure_computing and pass the result as a parameter to
-__secure_computing.  Or you could even remove the distinction between
-secure_computing and __secure_computing -- it's essentially useless
-anyway to split entry hook approaches like my x86 fastpath prototype.
-
---Andy
