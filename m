@@ -1,59 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754260AbaFYFep (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 01:34:45 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:57915 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750832AbaFYFen (ORCPT
+	id S1753189AbaFYFjZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 01:39:25 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:55851 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752369AbaFYFjY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 01:34:43 -0400
-Date: Tue, 24 Jun 2014 22:34:42 -0700 (PDT)
-Message-Id: <20140624.223442.1599243407487139839.davem@davemloft.net>
-To: isubramanian@apm.com
-Cc: netdev@vger.kernel.org, devicetree@vger.kernel.org,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, jcm@redhat.com, patches@apm.com,
-        rapatel@apm.com, kchudgar@apm.com
-Subject: Re: [PATCH v8 4/4] drivers: net: Add APM X-Gene SoC ethernet
- driver support.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1403306296-26198-5-git-send-email-isubramanian@apm.com>
-References: <1403306296-26198-1-git-send-email-isubramanian@apm.com>
-	<1403306296-26198-5-git-send-email-isubramanian@apm.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 24 Jun 2014 22:34:43 -0700 (PDT)
+	Wed, 25 Jun 2014 01:39:24 -0400
+Date: Wed, 25 Jun 2014 07:39:20 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, sasha.levin@oracle.com, tglx@linutronix.de,
+        cl@linux.com, dave.hansen@intel.com, ak@linux.intel.com,
+        umgwanakikbuti@gmail.com, eric.dumazet@gmail.com,
+        josh@joshtriplett.org, oleg@redhat.com
+Subject: Re: [GIT PULL rcu/urgent] Fixes for 3.16
+Message-ID: <20140625053920.GA21231@gmail.com>
+References: <20140624135857.GA3203@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140624135857.GA3203@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Iyappan Subramanian <isubramanian@apm.com>
-Date: Fri, 20 Jun 2014 16:18:16 -0700
 
-> This patch adds network driver for APM X-Gene SoC ethernet.
+* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+
+> Hello, Ingo,
 > 
-> Signed-off-by: Iyappan Subramanian <isubramanian@apm.com>
-> Signed-off-by: Ravi Patel <rapatel@apm.com>
-> Signed-off-by: Keyur Chudgar <kchudgar@apm.com>
+> This series includes the following:
+> 
+> 1.	Export a pair of debug-object interfaces for RCU that will
+> 	allow the slab allocators to avoid a recursion bug located
+> 	by Sasha Levin.  Strictly speaking, this is not a regression,
+> 	but it would be good to enable the fix.
+> 
+> 2.	Address a serious performance regression on an open/close
+> 	micro-benchmark located by Dave Hansen.  The offending commit
+> 	is ac1bea85781e (Make cond_resched() report RCU quiescent states).
+> 
+> Both have been exposed to -next testing, and are available in the git
+> repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git urgent.2014.06.23a
+> 
+> for you to fetch changes up to 4a81e8328d3791a4f99bf5b436d050f6dc5ffea3:
+> 
+>   rcu: Reduce overhead of cond_resched() checks for RCU (2014-06-23 11:19:32 -0700)
+> 
+> ----------------------------------------------------------------
+> Paul E. McKenney (2):
+>       rcu: Export debug_init_rcu_head() and and debug_init_rcu_head()
+>       rcu: Reduce overhead of cond_resched() checks for RCU
+> 
+>  Documentation/kernel-parameters.txt |   6 ++
+>  include/linux/rcupdate.h            |  46 +++---------
+>  kernel/rcu/tree.c                   | 140 ++++++++++++++++++++++++++++--------
+>  kernel/rcu/tree.h                   |   6 +-
+>  kernel/rcu/tree_plugin.h            |   2 +-
+>  kernel/rcu/update.c                 |  22 +-----
+>  kernel/sched/core.c                 |   7 +-
+>  7 files changed, 137 insertions(+), 92 deletions(-)
+> 
 
-I really don't like how you handle the hardware descriptors in this
-driver.
+Pulled into tip:core/urgent, thanks a lot Paul!
 
-You copy back and forth between a software format and the hardware
-format.  That's extremely wasteful and will hurt performance.
-
-Just use the raw format throughout, you can extract the fields when
-you need them.
-
-You also make two passes when building a hardware descriptor:
-
-1) write the values
-2) endian swap
-
-This means you make three memory accesses on every 64-bit word
-in every descriptor you setup, this is really inefficient.
-
-You should just byte swap them in-situ as you build the raw
-descriptors.
+	Ingo
