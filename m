@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758053AbaFYSI1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 14:08:27 -0400
-Received: from mout.kundenserver.de ([212.227.126.130]:49789 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757657AbaFYSIZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 14:08:25 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Peter De Schrijver <pdeschrijver@nvidia.com>, linux-tegra@vger.kernel.org,
-        Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] clk: define and export __clk_get_debug for providers
-Date: Wed, 25 Jun 2014 20:07:37 +0200
-Message-ID: <44039675.8s16pHQIVH@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1403713591-17179-1-git-send-email-pdeschrijver@nvidia.com>
-References: <1403713591-17179-1-git-send-email-pdeschrijver@nvidia.com>
+	id S1758108AbaFYSIr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 14:08:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56560 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758073AbaFYSIo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 14:08:44 -0400
+Date: Wed, 25 Jun 2014 20:07:05 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        linux-api@vger.kernel.org, x86@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
+        linux-arch@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: Re: [PATCH v8 3/9] seccomp: introduce writer locking
+Message-ID: <20140625180705.GB18185@redhat.com>
+References: <1403642893-23107-1-git-send-email-keescook@chromium.org> <1403642893-23107-4-git-send-email-keescook@chromium.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:VDQul4P2UT8cMF4cNfI9TUOria8Jatg71lFwWXnBq8V
- mWWVczn8H23W+tuzxcHrOC4he2rGfecKAH4RIs92du+dMj6dkz
- zXgTqaogFo+UgOsYEz0yVkhzdr+UcpFv/e+P2NUXbfHZvcZoUO
- SxNh2WsIkSNyB4nZ93qxNk81qLUIe1ESSusaV+d/Iwg6qqjcrs
- +tszvrXLSkcfLYoxliYBBmwvFtZ4WXKWtll0rMbHIsgUulqQn+
- AtJ8OU6MAH2yVwLdSYuQ7Q6/GSHv1xssJaoOYVjy/UMuBTRJ20
- bC2rd5p/pSKmQB6lRim7mtc227XFnNaD7OhKp4ZhSM23Ges+b6
- /P4RnKhuZvMfeoSdTQh0=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403642893-23107-4-git-send-email-keescook@chromium.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 25 June 2014 19:26:31 Peter De Schrijver wrote:
-> Define and export a new function __clk_get_debug which returns the debugfs
-> directory entry pointer. This can be used by clock providers to add debugfs
-> entries which are not related to a specific clock type. Examples include the
-> ability to measure the rate of a clock. It can also be used by modules to
-> create new debugfs entries. This is useful if you want to expose features
-> for testing which can potentially cause system instability such as allowing
-> to change a clock's rate from userspace.
-> 
-> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
-> 
+On 06/24, Kees Cook wrote:
+>
+> +static void copy_seccomp(struct task_struct *p)
+> +{
+> +#ifdef CONFIG_SECCOMP
+> +	/*
+> +	 * Must be called with sighand->lock held, which is common to
+> +	 * all threads in the group. Regardless, nothing special is
+> +	 * needed for the child since it is not yet in the tasklist.
+> +	 */
+> +	BUG_ON(!spin_is_locked(&current->sighand->siglock));
+> +
+> +	get_seccomp_filter(current);
+> +	p->seccomp = current->seccomp;
+> +
+> +	if (p->seccomp.mode != SECCOMP_MODE_DISABLED)
+> +		set_tsk_thread_flag(p, TIF_SECCOMP);
+> +#endif
+> +}
 
-Just an idea, but would it be better to add a pair of functions to add/remove
-debugfs files rather than exposing the dentry itself?
+Wait. But what about no_new_privs? We should copy it as well...
 
-	Arnd
+Perhaps this helper should be updated a bit and moved into seccomp.c so
+that seccomp_sync_threads() could use it too.
+
+Oleg.
+
