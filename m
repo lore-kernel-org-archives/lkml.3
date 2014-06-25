@@ -1,48 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757943AbaFYSU7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 14:20:59 -0400
-Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:47452 "EHLO
-	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750851AbaFYSU6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 14:20:58 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ah8HALARq1NXQ7ge/2dsb2JhbABZgw2rLgsFAZR6hECBDhd1hDEvI4EaN4hGAapymBgXhWOINWQdhC0Fj3SKXYs2iDWDRDuBMQ
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] fs/adfs/dir_fplus.c: replace count*size kzalloc by kcalloc
-Date: Wed, 25 Jun 2014 20:20:52 +0200
-Message-Id: <1403720452-19247-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.1
+	id S1757986AbaFYSV4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 14:21:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19637 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756153AbaFYSVy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 14:21:54 -0400
+Date: Wed, 25 Jun 2014 20:20:12 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Andy Lutomirski <luto@amacapital.net>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH v8 9/9] seccomp: implement SECCOMP_FILTER_FLAG_TSYNC
+Message-ID: <20140625182012.GA19437@redhat.com>
+References: <1403642893-23107-1-git-send-email-keescook@chromium.org> <1403642893-23107-10-git-send-email-keescook@chromium.org> <20140625142121.GD7892@redhat.com> <CAGXu5jJtLrjbobZC1FD4WV-Jm2p7cRGa1aSPK-d_isnfCZAHdA@mail.gmail.com> <20140625165209.GA14720@redhat.com> <CAGXu5jLHDew1fifGY_mWgwcH7evm0T8rqSnBrw4XpoAXGK+t-Q@mail.gmail.com> <20140625172410.GA17133@redhat.com> <CAGXu5jKkLS3++_dtWHnjWudVvaSR9DRwjNG3q00SmSy6XoCMaw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGXu5jKkLS3++_dtWHnjWudVvaSR9DRwjNG3q00SmSy6XoCMaw@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kcalloc manages count*sizeof overflow.
+On 06/25, Kees Cook wrote:
+>
+> On Wed, Jun 25, 2014 at 10:24 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> >
+> > However, do_execve() takes cred_guard_mutex at the start in prepare_bprm_creds()
+> > and drops it in install_exec_creds(), so it should solve the problem?
+>
+> I can't tell yet. I'm still trying to understand the order of
+> operations here. It looks like de_thread() takes the sighand lock.
+> do_execve_common does:
+>
+> prepare_bprm_creds (takes cred_guard_mutex)
+> check_unsafe_exec (checks nnp to set LSM_UNSAFE_NO_NEW_PRIVS)
+> prepare_binprm (handles suid escalation, checks nnp separately)
+>     security_bprm_set_creds (checks LSM_UNSAFE_NO_NEW_PRIVS)
+> exec_binprm
+>     load_elf_binary
+>         flush_old_exec
+>             de_thread (takes and releases sighand->lock)
+>         install_exec_creds (releases cred_guard_mutex)
 
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/adfs/dir_fplus.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Yes, and note that when cred_guard_mutex is dropped all other threads
+are already killed,
 
-diff --git a/fs/adfs/dir_fplus.c b/fs/adfs/dir_fplus.c
-index d9e3bee..a7b2595 100644
---- a/fs/adfs/dir_fplus.c
-+++ b/fs/adfs/dir_fplus.c
-@@ -58,7 +58,7 @@ adfs_fplus_read(struct super_block *sb, unsigned int id, unsigned int sz, struct
- 	if (size > sizeof(dir->bh)/sizeof(dir->bh[0])) {
- 		/* this directory is too big for fixed bh set, must allocate */
- 		struct buffer_head **bh_fplus =
--			kzalloc(size * sizeof(struct buffer_head *),
-+			kcalloc(size, sizeof(struct buffer_head *),
- 				GFP_KERNEL);
- 		if (!bh_fplus) {
- 			adfs_error(sb, "not enough memory for"
--- 
-1.9.1
+> I don't see a way to use cred_guard_mutex during tsync (which holds
+> sighand->lock) without dead-locking. What were you considering here?
+
+Just take/drop current->signal->cred_guard_mutex along with ->siglock
+in seccomp_set_mode_filter() ? Unconditionally on depending on
+SECCOMP_FILTER_FLAG_TSYNC.
+
+Oleg.
 
