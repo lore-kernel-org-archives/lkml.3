@@ -1,231 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932351AbaFYRxm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 13:53:42 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:42882 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757971AbaFYRxa (ORCPT
+	id S932391AbaFYRzN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 13:55:13 -0400
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:44616 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757536AbaFYRzK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 13:53:30 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <kishon@ti.com>, <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <rogerq@ti.com>, <balbi@ti.com>
-Subject: [PATCH 2/2] phy: pipe3: insert delay to enumerate in GEN2 mode
-Date: Wed, 25 Jun 2014 23:22:57 +0530
-Message-ID: <1403718777-9227-3-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1403718777-9227-1-git-send-email-kishon@ti.com>
-References: <1403718777-9227-1-git-send-email-kishon@ti.com>
+	Wed, 25 Jun 2014 13:55:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <CAGXu5j+99NOtJq2-TWYm8mwNw1ki0y3rRH21wX66MVM8=jz1bQ@mail.gmail.com>
+References: <1403642893-23107-1-git-send-email-keescook@chromium.org>
+ <20140624205615.GW5412@outflux.net> <20140625140440.6870eac1@alan.etchedpixels.co.uk>
+ <CAGXu5j+99NOtJq2-TWYm8mwNw1ki0y3rRH21wX66MVM8=jz1bQ@mail.gmail.com>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Wed, 25 Jun 2014 19:54:49 +0200
+Message-ID: <CAKgNAkgU+igKYKtzk3u83ZTcR-ov7kq_J9mbTeHuOt7Zkbpy6Q@mail.gmail.com>
+Subject: Re: [PATCH v8 1/1] man-pages: seccomp.2: document syscall
+To: Kees Cook <keescook@chromium.org>
+Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Oleg Nesterov <oleg@redhat.com>, Andy Lutomirski <luto@amacapital.net>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-8-bit delay value (0xF1) is required for GEN2 devices to be enumerated
-consistently. Added an API to be called from PHY drivers to set this delay
-value and called it from PIPE3 driver to set the delay value.
+On Wed, Jun 25, 2014 at 5:10 PM, Kees Cook <keescook@chromium.org> wrote:
+> On Wed, Jun 25, 2014 at 6:04 AM, One Thousand Gnomes
+> <gnomes@lxorguk.ukuu.org.uk> wrote:
+>> On Tue, 24 Jun 2014 13:56:15 -0700
+>> Kees Cook <keescook@chromium.org> wrote:
+>>
+>>> Combines documentation from prctl, in-kernel seccomp_filter.txt and
+>>> dropper.c, along with details specific to the new syscall.
+>>
+>> What is the license on the example ? Probably you want to propogate the
+>> minimal form of the text in seccomp/dropper into the document example to
+>> avoid confusion ?
+>
+> What is the license of the other code examples in man-pages?
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-Reviewed-by: Roger Quadros <rogerq@ti.com>
----
- Documentation/devicetree/bindings/phy/ti-phy.txt |   12 ++---
- drivers/phy/phy-omap-control.c                   |   52 +++++++++++++++++++++-
- drivers/phy/phy-ti-pipe3.c                       |    4 +-
- include/linux/phy/omap_control_phy.h             |   10 +++++
- 4 files changed, 71 insertions(+), 7 deletions(-)
+Typically, just the same as the rest if the page text. Perhaps that
+should be rethought for future examples. I haven't thought about it at
+length, but, at first glance, I'm not against having separate licenses
+for the page text and the code sample.
 
-diff --git a/Documentation/devicetree/bindings/phy/ti-phy.txt b/Documentation/devicetree/bindings/phy/ti-phy.txt
-index b50e1c1..305e3df 100644
---- a/Documentation/devicetree/bindings/phy/ti-phy.txt
-+++ b/Documentation/devicetree/bindings/phy/ti-phy.txt
-@@ -9,15 +9,17 @@ Required properties:
-                         e.g. USB2_PHY on OMAP5.
-  "ti,control-phy-pipe3" - if it has DPLL and individual Rx & Tx power control
-                         e.g. USB3 PHY and SATA PHY on OMAP5.
-+ "ti,control-phy-pcie" - for pcie to support external clock for pcie and to
-+			set PCS delay value.
-+			e.g. PCIE PHY in DRA7x
-  "ti,control-phy-usb2-dra7" - if it has power down register like USB2 PHY on
-                         DRA7 platform.
-  "ti,control-phy-usb2-am437" - if it has power down register like USB2 PHY on
-                         AM437 platform.
-- - reg : Address and length of the register set for the device. It contains
--   the address of "otghs_control" for control-phy-otghs or "power" register
--   for other types.
-- - reg-names: should be "otghs_control" control-phy-otghs and "power" for
--   other types.
-+ - reg : register ranges as listed in the reg-names property
-+ - reg-names: "otghs_control" for control-phy-otghs
-+	      "power", "pcie_pcs" and "control_sma" for control-phy-pcie
-+	      "power" for all other types
- 
- omap_control_usb: omap-control-usb@4a002300 {
-         compatible = "ti,control-phy-otghs";
-diff --git a/drivers/phy/phy-omap-control.c b/drivers/phy/phy-omap-control.c
-index 311b4f9..9487bf1 100644
---- a/drivers/phy/phy-omap-control.c
-+++ b/drivers/phy/phy-omap-control.c
-@@ -27,6 +27,41 @@
- #include <linux/phy/omap_control_phy.h>
- 
- /**
-+ * omap_control_pcie_pcs - set the PCS delay count
-+ * @dev: the control module device
-+ * @id: index of the pcie PHY (should be 1 or 2)
-+ * @delay: 8 bit delay value
-+ */
-+void omap_control_pcie_pcs(struct device *dev, u8 id, u8 delay)
-+{
-+	u32 val;
-+	struct omap_control_phy	*control_phy;
-+
-+	if (IS_ERR(dev) || !dev) {
-+		pr_err("%s: invalid device\n", __func__);
-+		return;
-+	}
-+
-+	control_phy = dev_get_drvdata(dev);
-+	if (!control_phy) {
-+		dev_err(dev, "%s: invalid control phy device\n", __func__);
-+		return;
-+	}
-+
-+	if (control_phy->type != OMAP_CTRL_TYPE_PCIE) {
-+		dev_err(dev, "%s: unsupported operation\n", __func__);
-+		return;
-+	}
-+
-+	val = readl(control_phy->pcie_pcs);
-+	val &= ~(OMAP_CTRL_PCIE_PCS_MASK <<
-+		(id * OMAP_CTRL_PCIE_PCS_DELAY_COUNT_SHIFT));
-+	val |= delay << (id * OMAP_CTRL_PCIE_PCS_DELAY_COUNT_SHIFT);
-+	writel(val, control_phy->pcie_pcs);
-+}
-+EXPORT_SYMBOL_GPL(omap_control_pcie_pcs);
-+
-+/**
-  * omap_control_phy_power - power on/off the phy using control module reg
-  * @dev: the control module device
-  * @on: 0 or 1, based on powering on or off the PHY
-@@ -61,6 +96,7 @@ void omap_control_phy_power(struct device *dev, int on)
- 			val |= OMAP_CTRL_DEV_PHY_PD;
- 		break;
- 
-+	case OMAP_CTRL_TYPE_PCIE:
- 	case OMAP_CTRL_TYPE_PIPE3:
- 		rate = clk_get_rate(control_phy->sys_clk);
- 		rate = rate/1000000;
-@@ -211,6 +247,7 @@ EXPORT_SYMBOL_GPL(omap_control_usb_set_mode);
- static const enum omap_control_phy_type otghs_data = OMAP_CTRL_TYPE_OTGHS;
- static const enum omap_control_phy_type usb2_data = OMAP_CTRL_TYPE_USB2;
- static const enum omap_control_phy_type pipe3_data = OMAP_CTRL_TYPE_PIPE3;
-+static const enum omap_control_phy_type pcie_data = OMAP_CTRL_TYPE_PCIE;
- static const enum omap_control_phy_type dra7usb2_data = OMAP_CTRL_TYPE_DRA7USB2;
- static const enum omap_control_phy_type am437usb2_data = OMAP_CTRL_TYPE_AM437USB2;
- 
-@@ -228,6 +265,10 @@ static const struct of_device_id omap_control_phy_id_table[] = {
- 		.data = &pipe3_data,
- 	},
- 	{
-+		.compatible = "ti,control-phy-pcie",
-+		.data = &pcie_data,
-+	},
-+	{
- 		.compatible = "ti,control-phy-usb2-dra7",
- 		.data = &dra7usb2_data,
- 	},
-@@ -279,7 +320,8 @@ static int omap_control_phy_probe(struct platform_device *pdev)
- 		}
- 	}
- 
--	if (control_phy->type == OMAP_CTRL_TYPE_PIPE3) {
-+	if (control_phy->type == OMAP_CTRL_TYPE_PIPE3 ||
-+	    control_phy->type == OMAP_CTRL_TYPE_PCIE) {
- 		control_phy->sys_clk = devm_clk_get(control_phy->dev,
- 			"sys_clkin");
- 		if (IS_ERR(control_phy->sys_clk)) {
-@@ -288,6 +330,14 @@ static int omap_control_phy_probe(struct platform_device *pdev)
- 		}
- 	}
- 
-+	if (control_phy->type == OMAP_CTRL_TYPE_PCIE) {
-+		res = platform_get_resource_byname(pdev, IORESOURCE_MEM,
-+						   "pcie_pcs");
-+		control_phy->pcie_pcs = devm_ioremap_resource(&pdev->dev, res);
-+		if (IS_ERR(control_phy->pcie_pcs))
-+			return PTR_ERR(control_phy->pcie_pcs);
-+	}
-+
- 	dev_set_drvdata(control_phy->dev, control_phy);
- 
- 	return 0;
-diff --git a/drivers/phy/phy-ti-pipe3.c b/drivers/phy/phy-ti-pipe3.c
-index 6174f4b..93bcd67 100644
---- a/drivers/phy/phy-ti-pipe3.c
-+++ b/drivers/phy/phy-ti-pipe3.c
-@@ -217,8 +217,10 @@ static int ti_pipe3_init(struct phy *x)
- 	u32 val;
- 	int ret = 0;
- 
--	if (of_device_is_compatible(phy->dev->of_node, "ti,phy-pipe3-pcie"))
-+	if (of_device_is_compatible(phy->dev->of_node, "ti,phy-pipe3-pcie")) {
-+		omap_control_pcie_pcs(phy->control_dev, phy->id, 0xF1);
- 		return 0;
-+	}
- 
- 	/* Bring it out of IDLE if it is IDLE */
- 	val = ti_pipe3_readl(phy->pll_ctrl_base, PLL_CONFIGURATION2);
-diff --git a/include/linux/phy/omap_control_phy.h b/include/linux/phy/omap_control_phy.h
-index 5450403..e9e6cfb 100644
---- a/include/linux/phy/omap_control_phy.h
-+++ b/include/linux/phy/omap_control_phy.h
-@@ -23,6 +23,7 @@ enum omap_control_phy_type {
- 	OMAP_CTRL_TYPE_OTGHS = 1,	/* Mailbox OTGHS_CONTROL */
- 	OMAP_CTRL_TYPE_USB2,	/* USB2_PHY, power down in CONTROL_DEV_CONF */
- 	OMAP_CTRL_TYPE_PIPE3,	/* PIPE3 PHY, DPLL & seperate Rx/Tx power */
-+	OMAP_CTRL_TYPE_PCIE,	/* RX TX control of ACSPCIE */
- 	OMAP_CTRL_TYPE_DRA7USB2, /* USB2 PHY, power and power_aux e.g. DRA7 */
- 	OMAP_CTRL_TYPE_AM437USB2, /* USB2 PHY, power e.g. AM437x */
- };
-@@ -33,6 +34,7 @@ struct omap_control_phy {
- 	u32 __iomem *otghs_control;
- 	u32 __iomem *power;
- 	u32 __iomem *power_aux;
-+	u32 __iomem *pcie_pcs;
- 
- 	struct clk *sys_clk;
- 
-@@ -63,6 +65,9 @@ enum omap_control_usb_mode {
- #define	OMAP_CTRL_PIPE3_PHY_TX_RX_POWERON	0x3
- #define	OMAP_CTRL_PIPE3_PHY_TX_RX_POWEROFF	0x0
- 
-+#define	OMAP_CTRL_PCIE_PCS_MASK			0xff
-+#define	OMAP_CTRL_PCIE_PCS_DELAY_COUNT_SHIFT	0x8
-+
- #define OMAP_CTRL_USB2_PHY_PD		BIT(28)
- 
- #define AM437X_CTRL_USB2_PHY_PD		BIT(0)
-@@ -74,6 +79,7 @@ enum omap_control_usb_mode {
- void omap_control_phy_power(struct device *dev, int on);
- void omap_control_usb_set_mode(struct device *dev,
- 			       enum omap_control_usb_mode mode);
-+void omap_control_pcie_pcs(struct device *dev, u8 id, u8 delay);
- #else
- 
- static inline void omap_control_phy_power(struct device *dev, int on)
-@@ -84,6 +90,10 @@ static inline void omap_control_usb_set_mode(struct device *dev,
- 	enum omap_control_usb_mode mode)
- {
- }
-+
-+static inline void omap_control_pcie_pcs(struct device *dev, u8 id, u8 delay)
-+{
-+}
- #endif
- 
- #endif	/* __OMAP_CONTROL_PHY_H__ */
+Cheers,
+
+Michael
+
 -- 
-1.7.9.5
-
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
