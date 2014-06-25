@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755502AbaFYTEQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 15:04:16 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:60696 "EHLO
+	id S1755514AbaFYTIM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 15:08:12 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:60691 "EHLO
 	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753257AbaFYTEN (ORCPT
+	with ESMTP id S1755322AbaFYTEJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 15:04:13 -0400
+	Wed, 25 Jun 2014 15:04:09 -0400
 From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 To: Lee Jones <lee.jones@linaro.org>
 Cc: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
@@ -20,11 +20,10 @@ Cc: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
         Tomeu Vizoso <tomeu.vizoso@collabora.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>,
         linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH v4 03/14] clk: max77686: Add DT include for MAX77686 PMIC clock
-Date: Wed, 25 Jun 2014 21:03:27 +0200
-Message-Id: <1403723019-6212-4-git-send-email-javier.martinez@collabora.co.uk>
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v4 02/14] mfd: max77686: Allow the max77686 rtc to wakeup the system
+Date: Wed, 25 Jun 2014 21:03:26 +0200
+Message-Id: <1403723019-6212-3-git-send-email-javier.martinez@collabora.co.uk>
 X-Mailer: git-send-email 2.0.0.rc2
 In-Reply-To: <1403723019-6212-1-git-send-email-javier.martinez@collabora.co.uk>
 References: <1403723019-6212-1-git-send-email-javier.martinez@collabora.co.uk>
@@ -32,68 +31,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a dt-binding include for Maxim 77686
-PMIC clock IDs that can be to be shared between the
-clk-max77686 clock driver and DeviceTree source files.
+From: Doug Anderson <dianders@chromium.org>
 
-Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+The max77686 includes an RTC that keeps power during suspend.  It's
+convenient to be able to use it as a wakeup source.
+
+NOTE: due to wakeup ordering problems this patch alone doesn't work so
+well on exynos5250-snow.  You also need something that brings the i2c
+bus up before the max77686 wakeup runs.
+
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+Reviewed-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 ---
 
-Changes since v3: None
+Changes since v3:
+ - Keep the note that this patch needs another change due wakeup
+   ordering problems.
 
- drivers/clk/clk-max77686.c                 |  7 +------
- include/dt-bindings/clock/maxim,max77686.h | 23 +++++++++++++++++++++++
- 2 files changed, 24 insertions(+), 6 deletions(-)
- create mode 100644 include/dt-bindings/clock/maxim,max77686.h
+ drivers/rtc/rtc-max77686.c | 28 ++++++++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
 
-diff --git a/drivers/clk/clk-max77686.c b/drivers/clk/clk-max77686.c
-index 3d7e8dd..185b611 100644
---- a/drivers/clk/clk-max77686.c
-+++ b/drivers/clk/clk-max77686.c
-@@ -30,12 +30,7 @@
- #include <linux/mutex.h>
- #include <linux/clkdev.h>
+diff --git a/drivers/rtc/rtc-max77686.c b/drivers/rtc/rtc-max77686.c
+index d20a7f0..c1c6055 100644
+--- a/drivers/rtc/rtc-max77686.c
++++ b/drivers/rtc/rtc-max77686.c
+@@ -583,6 +583,33 @@ static void max77686_rtc_shutdown(struct platform_device *pdev)
+ #endif /* MAX77686_RTC_WTSR_SMPL */
+ }
  
--enum {
--	MAX77686_CLK_AP = 0,
--	MAX77686_CLK_CP,
--	MAX77686_CLK_PMIC,
--	MAX77686_CLKS_NUM,
--};
-+#include <dt-bindings/clock/maxim,max77686.h>
- 
- struct max77686_clk {
- 	struct max77686_dev *iodev;
-diff --git a/include/dt-bindings/clock/maxim,max77686.h b/include/dt-bindings/clock/maxim,max77686.h
-new file mode 100644
-index 0000000..7b28b09
---- /dev/null
-+++ b/include/dt-bindings/clock/maxim,max77686.h
-@@ -0,0 +1,23 @@
-+/*
-+ * Copyright (C) 2014 Google, Inc
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Device Tree binding constants clocks for the Maxim 77686 PMIC.
-+ */
++#ifdef CONFIG_PM_SLEEP
++static int max77686_rtc_suspend(struct device *dev)
++{
++	if (device_may_wakeup(dev)) {
++		struct max77686_rtc_info *info = dev_get_drvdata(dev);
 +
-+#ifndef _DT_BINDINGS_CLOCK_MAXIM_MAX77686_CLOCK_H
-+#define _DT_BINDINGS_CLOCK_MAXIM_MAX77686_CLOCK_H
++		return enable_irq_wake(info->virq);
++	}
 +
-+/* Fixed rate clocks. */
++	return 0;
++}
 +
-+#define MAX77686_CLK_AP		0
-+#define MAX77686_CLK_CP		1
-+#define MAX77686_CLK_PMIC	2
++static int max77686_rtc_resume(struct device *dev)
++{
++	if (device_may_wakeup(dev)) {
++		struct max77686_rtc_info *info = dev_get_drvdata(dev);
 +
-+/* Total number of clocks. */
-+#define MAX77686_CLKS_NUM		(MAX77686_CLK_PMIC + 1)
++		return disable_irq_wake(info->virq);
++	}
 +
-+#endif /* _DT_BINDINGS_CLOCK_MAXIM_MAX77686_CLOCK_H */
++	return 0;
++}
++#endif
++
++static SIMPLE_DEV_PM_OPS(max77686_rtc_pm_ops,
++			 max77686_rtc_suspend, max77686_rtc_resume);
++
+ static const struct platform_device_id rtc_id[] = {
+ 	{ "max77686-rtc", 0 },
+ 	{},
+@@ -592,6 +619,7 @@ static struct platform_driver max77686_rtc_driver = {
+ 	.driver		= {
+ 		.name	= "max77686-rtc",
+ 		.owner	= THIS_MODULE,
++		.pm	= &max77686_rtc_pm_ops,
+ 	},
+ 	.probe		= max77686_rtc_probe,
+ 	.shutdown	= max77686_rtc_shutdown,
 -- 
 2.0.0.rc2
 
