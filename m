@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758204AbaFYSBg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 14:01:36 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:43279 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757679AbaFYSBa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 14:01:30 -0400
+	id S1758218AbaFYSBp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 14:01:45 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:46206 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757679AbaFYSBm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 14:01:42 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <devicetree@vger.kernel.org>, <linux-pci@vger.kernel.org>,
         <jg1.han@samsung.com>, <bhelgaas@google.com>, <mohit.kumar@st.com>,
         <linux-arm-kernel@lists.infradead.org>, <tony@atomide.com>,
         <linux-kernel@vger.kernel.org>
-CC: <kishon@ti.com>, <grant.likely@linaro.org>, Rajendra Nayak <rnayak@ti.com>,
-        Tero Kristo <t-kristo@ti.com>, Paul Walmsley <paul@pwsan.com>,
+CC: <kishon@ti.com>, <grant.likely@linaro.org>,
         Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>
-Subject: [PATCH 3/8] ARM: dts: dra7xx-clocks: Add missing 32KHz clocks used for PHY
-Date: Wed, 25 Jun 2014 23:30:13 +0530
-Message-ID: <1403719218-9484-4-git-send-email-kishon@ti.com>
+Subject: [PATCH 6/8] ARM: dts: dra7: Add dt data for PCIe PHY control module
+Date: Wed, 25 Jun 2014 23:30:16 +0530
+Message-ID: <1403719218-9484-7-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1403719218-9484-1-git-send-email-kishon@ti.com>
 References: <1403719218-9484-1-git-send-email-kishon@ti.com>
@@ -28,13 +26,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added missing 32KHz clock used by PCIe PHY.
-Figure 26-19. PCIe PHY Subsystem Integration in vE of DRA7xx ES1.0 TRM shows
-32KHz is used by PCIe PHY.
+Added dt data for PCIe PHY control module used by PCIe PHY.
+The documention for this node can be found @ ../bindings/phy/ti-phy.txt
 
-Cc: Rajendra Nayak <rnayak@ti.com>
-Cc: Tero Kristo <t-kristo@ti.com>
-Cc: Paul Walmsley <paul@pwsan.com>
 Cc: Tony Lindgren <tony@atomide.com>
 Cc: Rob Herring <robh+dt@kernel.org>
 Cc: Pawel Moll <pawel.moll@arm.com>
@@ -42,28 +36,37 @@ Cc: Mark Rutland <mark.rutland@arm.com>
 Cc: Kumar Gala <galak@codeaurora.org>
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- arch/arm/boot/dts/dra7xx-clocks.dtsi |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ arch/arm/boot/dts/dra7.dtsi |   17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
-diff --git a/arch/arm/boot/dts/dra7xx-clocks.dtsi b/arch/arm/boot/dts/dra7xx-clocks.dtsi
-index f5dca1f..3ff6d7c 100644
---- a/arch/arm/boot/dts/dra7xx-clocks.dtsi
-+++ b/arch/arm/boot/dts/dra7xx-clocks.dtsi
-@@ -1165,6 +1165,14 @@
- 		reg = <0x021c>, <0x0220>;
- 	};
+diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
+index 34464cd..f029a90 100644
+--- a/arch/arm/boot/dts/dra7.dtsi
++++ b/arch/arm/boot/dts/dra7.dtsi
+@@ -827,6 +827,23 @@
+ 			ti,hwmods = "sata";
+ 		};
  
-+	optfclk_pciephy_32khz: optfclk_pciephy_32khz@4a0093b0 {
-+		compatible = "ti,gate-clock";
-+		clocks = <&sys_32k_ck>;
-+		#clock-cells = <0>;
-+		reg = <0x13b0>;
-+		ti,bit-shift = <8>;
-+	};
++		omap_control_pcie1phy: control-phy@0x4a003c40 {
++			compatible = "ti,control-phy-pcie";
++			reg = <0x4a003c40 0x4>, <0x4a003c14 0x4>, <0x4a003c34 0x4>;
++			reg-names = "power", "control_sma", "pcie_pcs";
++			clocks = <&sys_clkin1>;
++			clock-names = "sysclk";
++		};
 +
- 	optfclk_pciephy_div: optfclk_pciephy_div@4a00821c {
- 		compatible = "ti,divider-clock";
- 		clocks = <&apll_pcie_ck>;
++		omap_control_pcie2phy: control-pcie@0x4a003c44 {
++			compatible = "ti,control-phy-pcie";
++			reg = <0x4a003c44 0x4>, <0x4a003c14 0x4>, <0x4a003c34 0x4>;
++			reg-names = "power", "control_sma", "pcie_pcs";
++			clocks = <&sys_clkin1>;
++			clock-names = "sysclk";
++			status = "disabled";
++		};
++
+ 		omap_control_usb2phy1: control-phy@4a002300 {
+ 			compatible = "ti,control-phy-usb2";
+ 			reg = <0x4a002300 0x4>;
 -- 
 1.7.9.5
 
