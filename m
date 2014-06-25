@@ -1,101 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756064AbaFYJTQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 05:19:16 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:34184 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753993AbaFYJTA (ORCPT
+	id S1754035AbaFYJWe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 05:22:34 -0400
+Received: from mga01.intel.com ([192.55.52.88]:28043 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752361AbaFYJWc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 05:19:00 -0400
-Date: Wed, 25 Jun 2014 10:18:59 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Olav Haugan <ohaugan@codeaurora.org>
-Cc: Mark Rutland <Mark.Rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
+	Wed, 25 Jun 2014 05:22:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,544,1400050800"; 
+   d="scan'208";a="560659894"
+From: "Chen, Alvin" <alvin.chen@intel.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Cho KyongHo <pullip.cho@samsung.com>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>
-Subject: Re: [PATCH v2] devicetree: Add generic IOMMU device tree bindings
-Message-ID: <20140625091858.GG6153@arm.com>
-References: <1400877218-4113-1-git-send-email-thierry.reding@gmail.com>
- <CAL_JsqKumG1PSFoVfeGpLLG+MjXFeF4aUjun=vv1BJpaxk0Byg@mail.gmail.com>
- <4545972.cM7IP1qTXQ@wuerfel>
- <53A4C0C9.2050908@codeaurora.org>
- <20140624091808.GC26013@arm.com>
- <53A9BC18.2090106@codeaurora.org>
- <20140624181150.GB4067@arm.com>
- <53A9EF3A.2070704@codeaurora.org>
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>
+Subject: RE: [PATCH] USB: ehci-pci: USB host controller support for Intel
+ Quark X1000
+Thread-Topic: [PATCH] USB: ehci-pci: USB host controller support for Intel
+ Quark X1000
+Thread-Index: AQHPj6ks5BxdJArRXUevrLYTW6T4oZuBb7PQ
+Date: Wed, 25 Jun 2014 09:22:18 +0000
+Message-ID: <4656BEB6164FC34F8171C6538F1A595B2E946EBC@SHSMSX101.ccr.corp.intel.com>
+References: <1403625103-28078-1-git-send-email-alvin.chen@intel.com>
+ <1403625103-28078-2-git-send-email-alvin.chen@intel.com>
+ <53A9713A.3020202@cogentembedded.com>
+In-Reply-To: <53A9713A.3020202@cogentembedded.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53A9EF3A.2070704@codeaurora.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 24, 2014 at 10:35:54PM +0100, Olav Haugan wrote:
-> On 6/24/2014 11:11 AM, Will Deacon wrote:
-> > On Tue, Jun 24, 2014 at 06:57:44PM +0100, Olav Haugan wrote:
-> >> On 6/24/2014 2:18 AM, Will Deacon wrote:
-> >>> On Sat, Jun 21, 2014 at 12:16:25AM +0100, Olav Haugan wrote:
-> >>>> We have multiple-master SMMUs and each master emits a variable number of
-> >>>> StreamIDs. However, we have to apply a mask (the ARM SMMU spec allows
-> >>>> for this) to the StreamIDs due to limited number of StreamID 2 Context
-> >>>> Bank entries in the SMMU. If my understanding is correct we would
-> >>>> represent this in the DT like this:
-> >>>>
-> >>>> 	iommu {
-> >>>> 		#address-cells = <2>;
-> >>>> 		#size-cells = <0>;
-> >>>> 	};
-> >>>>
-> >>>> 	master@a {
-> >>>> 		...
-> >>>> 		iommus = <&iommu StreamID0 MASK0>,
-> >>>> 			 <&iommu StreamID1 MASK1>,
-> >>>> 			 <&iommu StreamID2 MASK2>;
-> >>>> 	};
-> >>>
-> >>> Stupid question, but why not simply describe the masked IDs? What use does
-> >>> the `raw' ID have to Linux?
-> >>
-> >> We do describe the masked StreamID (SID) but we need to specify the mask
-> >> that the SMMU should apply to the incoming SIDs, right?
-> >>
-> >> We have a bus master that emits 43 unique SIDs. However, we have only 40
-> >> SMMU_SMRn registers in the SMMU. So we need to mask out some of the
-> >> incoming SID bits so that the 43 SIDs can match one of 40 entries in the
-> >> SMR.
-> > 
-> > Hmm, so you're talking about stream matching, right? That doesn't belong in
-> > the device-tree. I appreciate that the current driver does a terrible job at
-> > allocating the SMRs (it's bloody difficult!), but we should try to improve
-> > the dynamic behaviour instead of moving configuration of the SMMU out into
-> > device-tree, where it's inflexible at best.
+See my comments below:
+
+> > +	/* Reset the threshold limit */
+> > +	if(unlikely(usb_is_intel_qrk(pdev)))
 > 
-> I am talking about SMMU_SMRn[MASK] register bits. This is not something
-> that can be dynamically detected at run-time. It is configuration at the
-> same level as the actual StreamIDs.
+>     Please run your patch thru scripts/checkpatch.pl -- space needed after
+> *if*.
+OK, I will improve it in the PATCH v2.
 
-Why can't it be dynamically detected? Whilst the StreamIDs are fixed in
-hardware (from the SMMU architecture perspective), the SMRs are completely
-programmable. Why doesn't something like Andreas's proposal work for you?
-The idea there was to find the constant bits among the StreamIDs for a
-master and create the mask accordingly.
+> 
+> > +		usb_set_qrk_bulk_thresh(pdev);
+> > +
+> >   	return 0;
+> >   }
+> >
+> > diff --git a/drivers/usb/host/pci-quirks.c
+> > b/drivers/usb/host/pci-quirks.c index 00661d3..1ea8803 100644
+> > --- a/drivers/usb/host/pci-quirks.c
+> > +++ b/drivers/usb/host/pci-quirks.c
+> > @@ -823,6 +823,48 @@ static int handshake(void __iomem *ptr, u32 mask,
+> u32 done,
+> >   	return -ETIMEDOUT;
+> >   }
+> >
+> > +#define PCI_DEVICE_ID_INTEL_QUARK_X1000_SOC		0x0939
+> > +bool usb_is_intel_qrk(struct pci_dev *pdev) {
+> > +	return pdev->vendor == PCI_VENDOR_ID_INTEL &&
+> > +		pdev->device == PCI_DEVICE_ID_INTEL_QUARK_X1000_SOC;
+> > +
+> > +}
+> > +EXPORT_SYMBOL_GPL(usb_is_intel_qrk);
+> 
+>     Why not use DECLARE_PCI_FIXUP_FINAL() instead?
+> 
+Alan Stern suggests me to move 'usb_is_intel_qrk' and 'usb_set_qrk_bulk_thresh' to ehci-pci.c. 
+Since no other modules call these two functions, I will move them to ehci-pci.c as static functions, so no necessary to export them out.
 
-Will
+> > +
+> > +#define EHCI_INSNREG01		0x84
+> > +#define EHCI_INSNREG01_THRESH	0x007F007F	/* Threshold value */
+> > +void usb_set_qrk_bulk_thresh(struct pci_dev *pdev) {
+> > +	void __iomem *base, *op_reg_base;
+> > +	u8 cap_length;
+> > +	u32 val;
+> > +
+> > +	if (!mmio_resource_enabled(pdev, 0))
+> > +		return;
+> > +
+> > +	base = pci_ioremap_bar(pdev, 0);
+> > +	if (base == NULL)
+> > +		return;
+> > +
+> > +	cap_length = readb(base);
+> > +	op_reg_base = base + cap_length;
+> > +
+> > +	val = readl(op_reg_base + EHCI_INSNREG01);
+> > +	dev_printk(KERN_INFO, &pdev->dev, "INSNREG01 is 0x%08x\n", val);
+> > +
+> > +	val = EHCI_INSNREG01_THRESH;
+> > +
+> > +	writel(val, op_reg_base + EHCI_INSNREG01);
+> > +
+> > +	val = readl(op_reg_base + EHCI_INSNREG01);
+> > +	dev_printk(KERN_INFO, &pdev->dev, "INSNREG01 is 0x%08x\n", val);
+> 
+>     I doubt these dev_printk() calls are really useful. But if the are, it's worth
+> merging them into one call.
+Actually, the dev_printk calls is not necessary, I will remove them in the PATCH v2.
+
+> 
+> WBR, Sergei
+
