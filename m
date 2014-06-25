@@ -1,63 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758148AbaFYSau (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 14:30:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44673 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757623AbaFYSas (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 14:30:48 -0400
-Date: Wed, 25 Jun 2014 20:29:07 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
-        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
-        linux-api@vger.kernel.org, x86@kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
-        linux-arch@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: Re: [PATCH v8 3/9] seccomp: introduce writer locking
-Message-ID: <20140625182907.GA20226@redhat.com>
-References: <1403642893-23107-1-git-send-email-keescook@chromium.org> <1403642893-23107-4-git-send-email-keescook@chromium.org> <20140625180705.GB18185@redhat.com>
+	id S1758160AbaFYSbw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 14:31:52 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:61332 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757536AbaFYSbt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 14:31:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140625180705.GB18185@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20140625182012.GA19437@redhat.com>
+References: <1403642893-23107-1-git-send-email-keescook@chromium.org>
+	<1403642893-23107-10-git-send-email-keescook@chromium.org>
+	<20140625142121.GD7892@redhat.com>
+	<CAGXu5jJtLrjbobZC1FD4WV-Jm2p7cRGa1aSPK-d_isnfCZAHdA@mail.gmail.com>
+	<20140625165209.GA14720@redhat.com>
+	<CAGXu5jLHDew1fifGY_mWgwcH7evm0T8rqSnBrw4XpoAXGK+t-Q@mail.gmail.com>
+	<20140625172410.GA17133@redhat.com>
+	<CAGXu5jKkLS3++_dtWHnjWudVvaSR9DRwjNG3q00SmSy6XoCMaw@mail.gmail.com>
+	<20140625182012.GA19437@redhat.com>
+Date: Wed, 25 Jun 2014 11:31:48 -0700
+X-Google-Sender-Auth: aGErAidmIooTIFiXMdWJrG37Qhc
+Message-ID: <CAGXu5jLh-a2x0N+kHW7qbZSW0gOPs8v05EzBFkMYQwhft8o2aA@mail.gmail.com>
+Subject: Re: [PATCH v8 9/9] seccomp: implement SECCOMP_FILTER_FLAG_TSYNC
+From: Kees Cook <keescook@chromium.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-arch <linux-arch@vger.kernel.org>, linux-mips@linux-mips.org,
+        Will Drewry <wad@chromium.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Julien Tinnes <jln@chromium.org>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Drysdale <drysdale@google.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Alexei Starovoitov <ast@plumgrid.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25, Oleg Nesterov wrote:
+On Wed, Jun 25, 2014 at 11:20 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 06/25, Kees Cook wrote:
+>>
+>> On Wed, Jun 25, 2014 at 10:24 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>> >
+>> > However, do_execve() takes cred_guard_mutex at the start in prepare_bprm_creds()
+>> > and drops it in install_exec_creds(), so it should solve the problem?
+>>
+>> I can't tell yet. I'm still trying to understand the order of
+>> operations here. It looks like de_thread() takes the sighand lock.
+>> do_execve_common does:
+>>
+>> prepare_bprm_creds (takes cred_guard_mutex)
+>> check_unsafe_exec (checks nnp to set LSM_UNSAFE_NO_NEW_PRIVS)
+>> prepare_binprm (handles suid escalation, checks nnp separately)
+>>     security_bprm_set_creds (checks LSM_UNSAFE_NO_NEW_PRIVS)
+>> exec_binprm
+>>     load_elf_binary
+>>         flush_old_exec
+>>             de_thread (takes and releases sighand->lock)
+>>         install_exec_creds (releases cred_guard_mutex)
 >
-> On 06/24, Kees Cook wrote:
-> >
-> > +static void copy_seccomp(struct task_struct *p)
-> > +{
-> > +#ifdef CONFIG_SECCOMP
-> > +	/*
-> > +	 * Must be called with sighand->lock held, which is common to
-> > +	 * all threads in the group. Regardless, nothing special is
-> > +	 * needed for the child since it is not yet in the tasklist.
-> > +	 */
-> > +	BUG_ON(!spin_is_locked(&current->sighand->siglock));
-> > +
-> > +	get_seccomp_filter(current);
-> > +	p->seccomp = current->seccomp;
-> > +
-> > +	if (p->seccomp.mode != SECCOMP_MODE_DISABLED)
-> > +		set_tsk_thread_flag(p, TIF_SECCOMP);
-> > +#endif
-> > +}
+> Yes, and note that when cred_guard_mutex is dropped all other threads
+> are already killed,
 >
-> Wait. But what about no_new_privs? We should copy it as well...
+>> I don't see a way to use cred_guard_mutex during tsync (which holds
+>> sighand->lock) without dead-locking. What were you considering here?
 >
-> Perhaps this helper should be updated a bit and moved into seccomp.c so
-> that seccomp_sync_threads() could use it too.
+> Just take/drop current->signal->cred_guard_mutex along with ->siglock
+> in seccomp_set_mode_filter() ? Unconditionally on depending on
+> SECCOMP_FILTER_FLAG_TSYNC.
 
-This way we can also unexport get_seccomp_filter().
+Yeah, this looks good. *whew* Testing it now, so far so good.
 
-Oleg.
+Thanks!
 
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
