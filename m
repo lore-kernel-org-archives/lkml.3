@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932224AbaFYUmc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 16:42:32 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:36659 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754214AbaFYUma (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 16:42:30 -0400
-Date: Wed, 25 Jun 2014 21:42:27 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>
-Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [GIT PULL] EFI urgent fix
-Message-ID: <20140625204227.GD15494@console-pimps.org>
-References: <20140620090008.GU24049@console-pimps.org>
+	id S1755591AbaFYUnK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 16:43:10 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:2346 "EHLO SMTP02.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753932AbaFYUnI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 16:43:08 -0400
+X-IronPort-AV: E=Sophos;i="5.01,547,1400025600"; 
+   d="scan'208";a="147121163"
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+To: Steffen Klassert <steffen.klassert@secunet.com>,
+        Mathias Krause <minipli@googlemail.com>,
+        Daniel Borkmann <dborkman@redhat.com>
+CC: Zoltan Kiss <zoltan.kiss@citrix.com>,
+        "David S. Miller" <davem@davemloft.net>, Thomas Graf <tgraf@suug.ch>,
+        Joe Perches <joe@perches.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
+Subject: [PATCH net-next] pktgen: Upstreaming features useful for xen-netback/front testing
+Date: Wed, 25 Jun 2014 21:42:49 +0100
+Message-ID: <1403728972-29548-1-git-send-email-zoltan.kiss@citrix.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140620090008.GU24049@console-pimps.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [10.80.118.114]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Jun, at 10:00:08AM, Matt Fleming wrote:
-> Guys,
-> 
-> Please pull the following compiler warning fix. Sorry, I've been pretty
-> slow in getting this pull request sent. Multiple people have reported
-> hitting it and I've now received 4 patches for the same warning,
-> 
->   http://article.gmane.org/gmane.linux.kernel.efi/4024
->   http://article.gmane.org/gmane.linux.kernel.efi/4017
->   http://article.gmane.org/gmane.linux.kernel.efi/3957
->   http://article.gmane.org/gmane.linux.kernel.efi/3930
-> 
-> The following changes since commit 7171511eaec5bf23fb06078f59784a3a0626b38f:
-> 
->   Linux 3.16-rc1 (2014-06-15 17:45:28 -1000)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-urgent
-> 
-> for you to fetch changes up to 6fb8cc82c096fd5ccf277678639193cae07125a0:
-> 
->   efi: Fix compiler warnings (unused, const, type) (2014-06-19 15:03:05 +0100)
-> 
-> ----------------------------------------------------------------
->  * Fix a few compiler warnings in the arm64 EFI code that lots of people
->    are running into and reporting - Catalin Marinas
+This series is my work during stressing the xen network drivers, hopefully
+others can benefit from it.
+1/3: Filling payload with pattern, useful for checking data correctness when the
+packets travelling without checksum (~ intrahost VM-to-VM). Already sent it
+separately
+2/3: fine-grained buffer geometrics
+3/3: sending TCP GSO packets. This is an RFC yet, as I'm not certain about all
+things changed here
 
-Ping? This doesn't seem to have been picked up yet?
+Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Thomas Graf <tgraf@suug.ch>
+Cc: Joe Perches <joe@perches.com>
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: xen-devel@lists.xenproject.org
 
--- 
-Matt Fleming, Intel Open Source Technology Center
