@@ -1,127 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756106AbaFYUQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 16:16:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37925 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755330AbaFYUQX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 16:16:23 -0400
-Date: Wed, 25 Jun 2014 16:16:04 -0400
-From: Rafael Aquini <aquini@redhat.com>
-To: Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Motohiro Kosaki JP <kosaki.motohiro@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: export NR_SHMEM via sysinfo(2) / si_meminfo()
- interfaces
-Message-ID: <20140625201603.GA1534@t510.redhat.com>
-References: <4b46c5b21263c446923caf3da3f0dca6febc7b55.1403709665.git.aquini@redhat.com>
- <6B2BA408B38BA1478B473C31C3D2074E341D585464@SV-EXCHANGE1.Corp.FC.LOCAL>
+	id S1754998AbaFYUUL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 16:20:11 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:38989 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753207AbaFYUUJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 16:20:09 -0400
+Date: Wed, 25 Jun 2014 22:15:51 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Chen-Yu Tsai <wens@csie.org>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        Emilio Lopez <emilio@elopez.com.ar>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com
+Subject: Re: [PATCH v3 3/6] clk: sunxi: Support factor clocks with N factor
+ starting not from 0
+Message-ID: <20140625201551.GI19569@lukather>
+References: <1403603980-31101-1-git-send-email-wens@csie.org>
+ <1403603980-31101-4-git-send-email-wens@csie.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="NyChO5MpGs3JHJbz"
 Content-Disposition: inline
-In-Reply-To: <6B2BA408B38BA1478B473C31C3D2074E341D585464@SV-EXCHANGE1.Corp.FC.LOCAL>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1403603980-31101-4-git-send-email-wens@csie.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 12:41:17PM -0700, Motohiro Kosaki wrote:
-> 
-> 
-> > -----Original Message-----
-> > From: Rafael Aquini [mailto:aquini@redhat.com]
-> > Sent: Wednesday, June 25, 2014 2:40 PM
-> > To: linux-mm@kvack.org
-> > Cc: Andrew Morton; Rik van Riel; Mel Gorman; Johannes Weiner; Motohiro Kosaki JP; linux-kernel@vger.kernel.org
-> > Subject: [PATCH] mm: export NR_SHMEM via sysinfo(2) / si_meminfo() interfaces
-> > 
-> > This patch leverages the addition of explicit accounting for pages used by shmem/tmpfs -- "4b02108 mm: oom analysis: add shmem
-> > vmstat" -- in order to make the users of sysinfo(2) and si_meminfo*() friends aware of that vmstat entry consistently across the
-> > interfaces.
-> 
-> Why?
 
-Because we do not report consistently across the interfaces we declare
-exporting that data. Check sysinfo(2) manpage, for instance:
-[...]
-           struct sysinfo {
-               long uptime;             /* Seconds since boot */
-               unsigned long loads[3];  /* 1, 5, and 15 minute load averages */
-               unsigned long totalram;  /* Total usable main memory size */
-               unsigned long freeram;   /* Available memory size */
-               unsigned long sharedram; /* Amount of shared memory */ <<<<<
-[...]
+--NyChO5MpGs3JHJbz
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-userspace tools resorting to sysinfo() syscall will get a hardcoded 0
-for shared memory which is reported differently from /proc/meminfo.
+On Tue, Jun 24, 2014 at 05:59:37PM +0800, Chen-Yu Tsai wrote:
+> The PLLs on newer Allwinner SoC's, such as the A31 and A23, have a
+> N multiplier factor that starts from 1, not 0.
+>=20
+> This patch adds an option to the factor clk driver's config data
+> structures to specify the base value of N.
+>=20
+> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
 
-Also, si_meminfo() & si_meminfo_node() are utilized within the kernel to
-gather statistics for /proc/meminfo & friends, and so we can leverage collecting
-sharedmem from those calls as well, just as we do for totalram, freeram & bufferram.
+Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 
-Regards,
--- Rafael
+Maxime
 
-> Traditionally sysinfo.sharedram was not used for shmem. It was totally strange semantics and completely outdated feature. 
-> So, we may reuse it for another purpose. But I'm not sure its benefit. 
-> 
-> Why don't you use /proc/meminfo?
-> I'm afraid userland programs get a confusion. 
-> 
-> 
-> > 
-> > Signed-off-by: Rafael Aquini <aquini@redhat.com>
-> > ---
-> >  drivers/base/node.c | 2 +-
-> >  fs/proc/meminfo.c   | 2 +-
-> >  mm/page_alloc.c     | 3 ++-
-> >  3 files changed, 4 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/drivers/base/node.c b/drivers/base/node.c index 8f7ed99..c6d3ae0 100644
-> > --- a/drivers/base/node.c
-> > +++ b/drivers/base/node.c
-> > @@ -126,7 +126,7 @@ static ssize_t node_read_meminfo(struct device *dev,
-> >  		       nid, K(node_page_state(nid, NR_FILE_PAGES)),
-> >  		       nid, K(node_page_state(nid, NR_FILE_MAPPED)),
-> >  		       nid, K(node_page_state(nid, NR_ANON_PAGES)),
-> > -		       nid, K(node_page_state(nid, NR_SHMEM)),
-> > +		       nid, K(i.sharedram),
-> >  		       nid, node_page_state(nid, NR_KERNEL_STACK) *
-> >  				THREAD_SIZE / 1024,
-> >  		       nid, K(node_page_state(nid, NR_PAGETABLE)), diff --git a/fs/proc/meminfo.c b/fs/proc/meminfo.c index
-> > 7445af0..aa1eee0 100644
-> > --- a/fs/proc/meminfo.c
-> > +++ b/fs/proc/meminfo.c
-> > @@ -168,7 +168,7 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
-> >  		K(global_page_state(NR_WRITEBACK)),
-> >  		K(global_page_state(NR_ANON_PAGES)),
-> >  		K(global_page_state(NR_FILE_MAPPED)),
-> > -		K(global_page_state(NR_SHMEM)),
-> > +		K(i.sharedram),
-> >  		K(global_page_state(NR_SLAB_RECLAIMABLE) +
-> >  				global_page_state(NR_SLAB_UNRECLAIMABLE)),
-> >  		K(global_page_state(NR_SLAB_RECLAIMABLE)),
-> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c index 20d17f8..f72ea38 100644
-> > --- a/mm/page_alloc.c
-> > +++ b/mm/page_alloc.c
-> > @@ -3040,7 +3040,7 @@ static inline void show_node(struct zone *zone)  void si_meminfo(struct sysinfo *val)  {
-> >  	val->totalram = totalram_pages;
-> > -	val->sharedram = 0;
-> > +	val->sharedram = global_page_state(NR_SHMEM);
-> >  	val->freeram = global_page_state(NR_FREE_PAGES);
-> >  	val->bufferram = nr_blockdev_pages();
-> >  	val->totalhigh = totalhigh_pages;
-> > @@ -3060,6 +3060,7 @@ void si_meminfo_node(struct sysinfo *val, int nid)
-> >  	for (zone_type = 0; zone_type < MAX_NR_ZONES; zone_type++)
-> >  		managed_pages += pgdat->node_zones[zone_type].managed_pages;
-> >  	val->totalram = managed_pages;
-> > +	val->sharedram = node_page_state(nid, NR_SHMEM);
-> >  	val->freeram = node_page_state(nid, NR_FREE_PAGES);  #ifdef CONFIG_HIGHMEM
-> >  	val->totalhigh = pgdat->node_zones[ZONE_HIGHMEM].managed_pages;
-> > --
-> > 1.9.3
-> 
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--NyChO5MpGs3JHJbz
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTqy33AAoJEBx+YmzsjxAgswwP/RC7rvYBP2z4wH0T327EPD6E
+UvoahyZbmXusXrJk2vRMWBgEPlD1n8GV6hNnE+zWIxCi0T7+gNH73rwVouGFtCqn
+Y4NisQD91nGaCI69Z1jLDdd/H5+WiQ5MDKnriHyfoJyTXuJehQnS92T0uPLW5P5Z
+6GHgvaIKiLR57qp9kpJ7ccW9TUFwBAB0TWEbkhnBda8WDCZLrZwPCpyuSfwLWAep
+IQkwyt2BEgcC2PhpWYpRH4LtnhCN/YV/nzW9k12FrDtp7NAdw5qczHOlOGogrbwE
+2bYdGGHHp+DgY+SJk1zGR/H/8fFUZWA0Mvmzm3s4F1ygwDpCn3t83k/kd6FUb3Gl
+C66gLOz6ccKaJq0t53ExrpoxGF+0XvKfnIQME2RQY7vloy7iL4lubsAM34QVVUWW
+RlsSF1GKkaHll8vT9MoTkGUnxNwc+pyL08WWA+KBo0xSlki5dl114+XXdxGj7u52
+7Hug4vs6g8VtmsExv8I08dUaPxaXe1mKkDwfZYMitZyIBcRY6uRHVK1dHuKPTN+F
+I1NQ6hUj2fBSPXAEWPzS5jRuh4GdvKhBN9bMXwVtfs5A7yEG8G9b8Do4lCou+48v
+aDZK23yj44Y2jpUgTooswg7Qcl4XRsGVW7CFr/dSM5NNu0o6XhLhii0hsZx+ocYZ
+1TMwp8mk3bcOcVhmByZW
+=/VF5
+-----END PGP SIGNATURE-----
+
+--NyChO5MpGs3JHJbz--
