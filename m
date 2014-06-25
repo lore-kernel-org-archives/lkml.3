@@ -1,104 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753918AbaFYA3S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 20:29:18 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:34451 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752920AbaFYA3R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 20:29:17 -0400
-Message-ID: <53AA17C5.4030304@gmail.com>
-Date: Wed, 25 Jun 2014 08:28:53 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752556AbaFYAlJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 20:41:09 -0400
+Received: from mga14.intel.com ([192.55.52.115]:2263 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751479AbaFYAlH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 20:41:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="357138513"
+Message-ID: <53AA1A9F.8030108@linux.intel.com>
+Date: Wed, 25 Jun 2014 08:41:03 +0800
+From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>, Liqin Chen <liqin.linux@gmail.com>,
-        Lennox Wu <lennox.wu@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arch/score/include/uapi/asm/ptrace.h: Add prefix 'SCORE_'
- for related macros
-References: <53A66000.4010208@gmail.com> <53A6669B.1010701@roeck-us.net> <53A66A92.9040106@gmail.com> <53A6EDF6.2030203@roeck-us.net> <53A6EFEC.1020207@roeck-us.net> <53A79905.9020007@gmail.com> <53A97BF6.1060203@gmail.com> <53A98EBA.6050900@roeck-us.net>
-In-Reply-To: <53A98EBA.6050900@roeck-us.net>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Liu hua <sdu.liu@huawei.com>, "Luck, Tony" <tony.luck@intel.com>,
+        "anton@enomsg.org" <anton@enomsg.org>,
+        "ccross@android.com" <ccross@android.com>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Wang Nan <wangnan0@huawei.com>,
+        "peifeiyue@huawei.com" <peifeiyue@huawei.com>,
+        Liu ShuoX <shuox.liu@intel.com>
+Subject: Re: Should Pstore(ramoops) records customized information?
+References: <539E6D4D.5000802@huawei.com> <53A164DB.1020305@huawei.com> <3908561D78D1C84285E8C5FCA982C28F32838E10@ORSMSX114.amr.corp.intel.com> <53A2D5BB.5040500@huawei.com> <3908561D78D1C84285E8C5FCA982C28F3283A5E3@ORSMSX114.amr.corp.intel.com> <53A41125.4080802@huawei.com>
+In-Reply-To: <53A41125.4080802@huawei.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-
-On 06/24/2014 10:44 PM, Guenter Roeck wrote:
-> On 06/24/2014 06:24 AM, Chen Gang wrote:
->> On 06/23/2014 11:03 AM, Chen Gang wrote:
->>> On 06/22/2014 11:02 PM, Guenter Roeck wrote:
->>>> On 06/22/2014 07:53 AM, Guenter Roeck wrote:
->>>>> I did that, and managed to build gcc.
->>>>>
->>>>> However, when trying to compile score defconfig, I get internal
->>>>> compiler errors in cc1
->>>>> when compiling drivers/tty/tty_mutex.o and block/elevator.o.
->>>>>
->>>>>    CC      block/elevator.o
->>>>> score-elf-gcc: internal compiler error: Segmentation fault (program
->>>>> cc1)
->>>>> 0x40c073 execute
->>>>>       ../../gcc/gcc/gcc.c:2848
->>>>> Please submit a full bug report,
->>>>> with preprocessed source if appropriate.
->>>>> Please include the complete backtrace with any bug report.
->>>>> See <http://gcc.gnu.org/bugs.html> for instructions.
->>>>> make[1]: *** [block/elevator.o] Error 4
->>>>> make: *** [block/elevator.o] Error 2
->>>>>
->>>>> Do you see that as well ?
->>>>>
->>>>> This is with
->>>>>
->>>>> GNU assembler version 2.24.51 (score-elf) using BFD version (GNU
->>>>> Binutils) 2.24.51.20140622
->>>>>
->>>>> and gcc configured with:
->>>>>
->>>>> Configured with: ../gcc/configure --prefix=/opt/kernel/score
->>>>> --program-prefix=score-elf- \
->>>>> --target=score-elf --without-header --disable-nls --enable-languages=c
->>>>> --disable-threads \
->>>>> --disable-shared --enable-werror=no
->>>>> target_configargs=enable_vtable_verify=yes \
->>>>> --enable-obsolete --disable-libssp --disable-libquadmath
->>>>>
->>>>> Tip of gcc source is commit d8686b0aa945a, tip of binutils source is
->>>>> commit d17c74c1d41.
->>>>> Your assembler fix is included in this version of binutils.
->>>>>
+On 2014/6/20 18:47, Liu hua wrote:
+> On 2014/6/20 7:42, Luck, Tony wrote:
+>
+>>> BTW, I note that "extern struct pstore_info *psinfo" locates in
+>>> fs/pstore/internal.h. So users out of directory "fs/pstore/" can not use pstore to
+>>> record messages. We do not want other kernel users to use pstore, right?  And can we
+>>> break this?
+>> Yes we can make some interface visible to the rest of the kernel ... probably
+>> not the raw "*psinfo" though. Perhaps the pstore_alloc_ring_buffer() and
+>> pstore_write_ring_buffer() functions should be the ones exported to the
+>> rest of the kernel.
 >>
->> Can we repeated this issue, or it is random?  I have try it use my
->> current gcc version, it has no issue.
+>>> ditoo.. Since other backends like efi and erst may can not privide such ring buffer.
+>>> So pstore_alloc_ring_buffer should be a funciton pointer of pstore_info struct.
+>> Yes - that allows less capable backend like ERST and efivars to not provide the
+>> service.  Since it becomes internal, you can drop the "pstore_" prefix.  E.g.
+>> something like:
 >>
->> If it can be repeated in the latest version, I shall use version compine
->> (and try step by step) to fix it.
+>> int pstore_alloc_ring_buffer(char *name, int size)
+>> {
+>> 	return psinfo->alloc_ring_buffer(name, size);
+>> }
+>> EXPORT_SYMBOL_GPL(pstore_alloc_ring_buffer);
 >>
->> If real random issue, if possible, please help repeated and generate
->> coredump file, and put it to a place to let me get back for analysing.
->>
-> I got the same error each time. You should be able to reproduce it by
-> checking out the latest gcc. If that doesn't produce the error, try
-> checking out sha d8686b0aa945a. I didn't keep that compiler after the tip
-> of the gcc 4.9 branch worked, so I'd have to rebuild it myself
-> to reproduce it myself.
-> 
-> Note that compilation of libssp failed with d8686b0aa945a, which is why
-> I disabled it. I didn't try to build it with 4.9.
-> 
+>> ... and you have to find/make some global header for the "extern" declaration.
+> I will make these RFC patch series according to our discussion. Thanks you very to
+> valuable advice.
 
-Thank you very much for your work.
+Sorry for seeing your email late.We already worked out some patches to restructure
+pstore. Would you like to try patchset http://article.gmane.org/gmane.linux.kernel/1697680/?
 
-It is my chance to fix gcc issues which I have planed, I shall continue
-based on it, hope I can finish within this month (within 2014-06-30).
+We have more patches available to add some flags to disable/enable specific zones.
 
+Yanmin
 
-Thanks.
--- 
-Chen Gang
-
-Open, share, and attitude like air, water, and life which God blessed
