@@ -1,180 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752881AbaFYIoD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 04:44:03 -0400
-Received: from mga03.intel.com ([143.182.124.21]:15882 "EHLO mga03.intel.com"
+	id S1756172AbaFYIol (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 04:44:41 -0400
+Received: from mga01.intel.com ([192.55.52.88]:21984 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755904AbaFYIk2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 04:40:28 -0400
+	id S1754563AbaFYIkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 04:40:25 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,544,1400050800"; 
-   d="scan'208";a="449717514"
-From: Yuyang Du <yuyang.du@intel.com>
-To: mingo@redhat.com, peterz@infradead.org, rafael.j.wysocki@intel.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Cc: arjan.van.de.ven@intel.com, len.brown@intel.com, alan.cox@intel.com,
-        mark.gross@intel.com, morten.rasmussen@arm.com,
-        vincent.guittot@linaro.org, dietmar.eggemann@arm.com,
-        rajeev.d.muralidhar@intel.com, vishwesh.m.rudramuni@intel.com,
-        nicole.chalhoub@intel.com, ajaya.durg@intel.com,
-        harinarayanan.seshadri@intel.com, jacob.jun.pan@linux.intel.com,
-        Yuyang Du <yuyang.du@intel.com>
-Subject: [RFC PATCH 6/9 v4] Implement Workload Consolidation in wakeup/fork/exec
-Date: Wed, 25 Jun 2014 08:36:05 +0800
-Message-Id: <1403656568-32445-7-git-send-email-yuyang.du@intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1403656568-32445-1-git-send-email-yuyang.du@intel.com>
-References: <1403656568-32445-1-git-send-email-yuyang.du@intel.com>
+   d="scan'208";a="552974312"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: [Patch V3 15/16] PCI: Remove PCI ioapic driver
+Date: Wed, 25 Jun 2014 16:40:46 +0800
+Message-Id: <1403685648-10103-16-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1403685648-10103-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1403685648-10103-1-git-send-email-jiang.liu@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In WAKE_AFFINE, if the target (in wakee and waker order) is not idle, but the
-the target is capable of handling the wakee task according to CC, we also
-select it.
+To support IOAPIC hotplug on x86 and IA64 platforms, OS needs to figure
+out global interrupt source number(GSI) and IOAPIC enumeration ID
+through ACPI interfaces. So BIOS must implement an ACPI IOAPIC device
+with _GSB/_UID or _MAT method to support IOAPIC hotplug. OS also needs
+to figure out base physical address to access IOAPIC registers. OS may
+get the base physical address through PCI BARs if IOAPIC device is
+visible in PCI domain, otherwise OS may get the address by ACPI _CRS
+method if IOAPIC device is hidden from PCI domain by BIOS.
 
-When to find the idlest sched_group, we first try to find the consolidated group.
+When adding a PCI subtree, we need to add IOAPIC devices before enabling
+all other PCI devices because other PCI devices may use the IOAPIC to
+allocate PCI interrupts.
 
-Signed-off-by: Yuyang Du <yuyang.du@intel.com>
+So we plan to reimplement IOAPIC driver as an ACPI instead of PCI driver
+due to:
+1) hot-pluggable IOAPIC devices are always visible in ACPI domain,
+   but may or may not be visible in PCI domain.
+2) we could explicitly control the order between IOAPIC and other PCI
+   devices.
+
+We also have another choice to use a PCI driver to manage IOAPIC device
+if it's visible in PCI domain and use an ACPI driver if it's only
+visible in ACPI domain. But this solution is a little complex.
+
+It shouldn't cause serious backward compatibility issues because:
+1) IOAPIC hotplug is never supported on x86 yet because it hasn't
+   implemented the required acpi_register_ioapic() and
+   acpi_unregister_ioapic().
+2) Currently only ACPI based IOAPIC hotplug is possible on x86 and
+   IA64, we don't know other specifications and interfaces to support
+   IOAPIC hotplug yet.
+3) We will reimplement an ACPI IOAPICｔdriver support IOAPIC hotplug.
+
+This change also helps to get rid of the false alarm on all current
+Linux distributions:
+[    6.952497] ioapic: probe of 0000:00:05.4 failed with error -22
+[    6.959542] ioapic: probe of 0000:80:05.4 failed with error -22
+
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- include/linux/sched/sysctl.h |    4 ++++
- kernel/sched/fair.c          |   52 +++++++++++++++++++++++++++++++++++++++---
- kernel/sysctl.c              |    9 ++++++++
- 3 files changed, 62 insertions(+), 3 deletions(-)
+ drivers/pci/Kconfig  |    7 ---
+ drivers/pci/Makefile |    2 -
+ drivers/pci/ioapic.c |  121 --------------------------------------------------
+ 3 files changed, 130 deletions(-)
+ delete mode 100644 drivers/pci/ioapic.c
 
-diff --git a/include/linux/sched/sysctl.h b/include/linux/sched/sysctl.h
-index 596a0e0..78acbd7 100644
---- a/include/linux/sched/sysctl.h
-+++ b/include/linux/sched/sysctl.h
-@@ -40,6 +40,10 @@ extern unsigned int sysctl_sched_min_granularity;
- extern unsigned int sysctl_sched_wakeup_granularity;
- extern unsigned int sysctl_sched_child_runs_first;
+diff --git a/drivers/pci/Kconfig b/drivers/pci/Kconfig
+index 893503fa1782..39866d18004e 100644
+--- a/drivers/pci/Kconfig
++++ b/drivers/pci/Kconfig
+@@ -104,13 +104,6 @@ config PCI_PASID
  
-+#ifdef CONFIG_SMP
-+extern unsigned int sysctl_sched_cc_wakeup_threshold;
-+#endif
-+
- enum sched_tunable_scaling {
- 	SCHED_TUNABLESCALING_NONE,
- 	SCHED_TUNABLESCALING_LOG,
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 7f80058..008cbc9 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2606,6 +2606,9 @@ static inline void dequeue_entity_load_avg(struct cfs_rq *cfs_rq,
- }
+ 	  If unsure, say N.
  
- static inline void update_cpu_concurrency(struct rq *rq);
-+static struct sched_group *wc_find_group(struct sched_domain *sd,
-+	struct task_struct *p, int this_cpu);
-+static int cpu_cc_capable(int cpu);
+-config PCI_IOAPIC
+-	bool "PCI IO-APIC hotplug support" if X86
+-	depends on PCI
+-	depends on ACPI
+-	depends on X86_IO_APIC
+-	default !X86
+-
+ config PCI_LABEL
+ 	def_bool y if (DMI || ACPI)
+ 	select NLS
+diff --git a/drivers/pci/Makefile b/drivers/pci/Makefile
+index e04fe2d9df3b..73e4af400a5a 100644
+--- a/drivers/pci/Makefile
++++ b/drivers/pci/Makefile
+@@ -13,8 +13,6 @@ obj-$(CONFIG_PCI_QUIRKS) += quirks.o
+ # Build PCI Express stuff if needed
+ obj-$(CONFIG_PCIEPORTBUS) += pcie/
  
- /*
-  * Update the rq's load with the elapsed running time before entering
-@@ -4421,7 +4424,19 @@ static int select_idle_sibling(struct task_struct *p, int target)
- 	struct sched_group *sg;
- 	int i = task_cpu(p);
- 
--	if (idle_cpu(target))
-+	/*
-+	 * We prefer wakee to waker CPU. For each of them, if it is idle, then
-+	 * select it, but if not, we lower down the bar to use a threshold of CC
-+	 * to determine whether it is capable of handling the wakee task
-+	 */
-+	if (sysctl_sched_cc_wakeup_threshold) {
-+		if (idle_cpu(i) || cpu_cc_capable(i))
-+			return i;
-+
-+		if (i != target && (idle_cpu(target) || cpu_cc_capable(target)))
-+			return target;
-+	}
-+	else if (idle_cpu(target))
- 		return target;
- 
- 	/*
-@@ -4515,7 +4530,7 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
- 	}
- 
- 	while (sd) {
--		struct sched_group *group;
-+		struct sched_group *group = NULL;
- 		int weight;
- 
- 		if (!(sd->flags & sd_flag)) {
-@@ -4523,7 +4538,12 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
- 			continue;
- 		}
- 
--		group = find_idlest_group(sd, p, cpu, sd_flag);
-+		if (sd->flags & SD_WORKLOAD_CONSOLIDATION)
-+			group = wc_find_group(sd, p, cpu);
-+
-+		if (!group)
-+			group = find_idlest_group(sd, p, cpu, sd_flag);
-+
- 		if (!group) {
- 			sd = sd->child;
- 			continue;
-@@ -7834,6 +7854,12 @@ __init void init_sched_fair_class(void)
-  */
- 
- /*
-+ * concurrency lower than this threshold percentage of cc 1
-+ * is capable of running wakee task, otherwise make it 0
-+ */
-+unsigned int sysctl_sched_cc_wakeup_threshold = 60UL;
-+
-+/*
-  * we update cpu concurrency at:
-  * 1) enqueue task, which increases concurrency
-  * 2) dequeue task, which decreases concurrency
-@@ -7860,6 +7886,26 @@ static inline unsigned long get_cpu_concurrency(int cpu)
- 	return cpu_rq(cpu)->avg.load_avg_contrib;
- }
- 
-+/*
-+ * whether cpu is capable of having more concurrency
-+ */
-+static int cpu_cc_capable(int cpu)
-+{
-+	u64 cpu_cc = get_cpu_concurrency(cpu);
-+	u64 threshold = cc_weight(1);
-+
-+	cpu_cc *= 100;
-+	cpu_cc *= capacity_of(cpu);
-+
-+	threshold *= sysctl_sched_cc_wakeup_threshold;
-+	threshold <<= SCHED_CAPACITY_SHIFT;
-+
-+	if (cpu_cc <= threshold)
-+		return 1;
-+
-+	return 0;
-+}
-+
- static inline u64 sched_group_cc(struct sched_group *sg)
- {
- 	u64 sg_cc = 0;
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 7de6555..987557b 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -1102,6 +1102,15 @@ static struct ctl_table kern_table[] = {
- 		.proc_handler	= proc_dointvec,
- 	},
- #endif
-+#ifdef CONFIG_SMP
-+	{
-+		.procname	= "sched_cc_wakeup_threshold",
-+		.data		= &sysctl_sched_cc_wakeup_threshold,
-+		.maxlen		= sizeof(sysctl_sched_cc_wakeup_threshold),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec,
-+	},
-+#endif
- 	{ }
- };
- 
+-obj-$(CONFIG_PCI_IOAPIC) += ioapic.o
+-
+ # Build the PCI Hotplug drivers if we were asked to
+ obj-$(CONFIG_HOTPLUG_PCI) += hotplug/
+ ifdef CONFIG_HOTPLUG_PCI
+diff --git a/drivers/pci/ioapic.c b/drivers/pci/ioapic.c
+deleted file mode 100644
+index 6b2b7dddbbdb..000000000000
+--- a/drivers/pci/ioapic.c
++++ /dev/null
+@@ -1,121 +0,0 @@
+-/*
+- * IOAPIC/IOxAPIC/IOSAPIC driver
+- *
+- * Copyright (C) 2009 Fujitsu Limited.
+- * (c) Copyright 2009 Hewlett-Packard Development Company, L.P.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-
+-/*
+- * This driver manages PCI I/O APICs added by hotplug after boot.  We try to
+- * claim all I/O APIC PCI devices, but those present at boot were registered
+- * when we parsed the ACPI MADT, so we'll fail when we try to re-register
+- * them.
+- */
+-
+-#include <linux/pci.h>
+-#include <linux/module.h>
+-#include <linux/acpi.h>
+-#include <linux/slab.h>
+-
+-struct ioapic {
+-	acpi_handle	handle;
+-	u32		gsi_base;
+-};
+-
+-static int ioapic_probe(struct pci_dev *dev, const struct pci_device_id *ent)
+-{
+-	acpi_handle handle;
+-	acpi_status status;
+-	unsigned long long gsb;
+-	struct ioapic *ioapic;
+-	int ret;
+-	char *type;
+-	struct resource *res;
+-
+-	handle = ACPI_HANDLE(&dev->dev);
+-	if (!handle)
+-		return -EINVAL;
+-
+-	status = acpi_evaluate_integer(handle, "_GSB", NULL, &gsb);
+-	if (ACPI_FAILURE(status))
+-		return -EINVAL;
+-
+-	/*
+-	 * The previous code in acpiphp evaluated _MAT if _GSB failed, but
+-	 * ACPI spec 4.0 sec 6.2.2 requires _GSB for hot-pluggable I/O APICs.
+-	 */
+-
+-	ioapic = kzalloc(sizeof(*ioapic), GFP_KERNEL);
+-	if (!ioapic)
+-		return -ENOMEM;
+-
+-	ioapic->handle = handle;
+-	ioapic->gsi_base = (u32) gsb;
+-
+-	if (dev->class == PCI_CLASS_SYSTEM_PIC_IOAPIC)
+-		type = "IOAPIC";
+-	else
+-		type = "IOxAPIC";
+-
+-	ret = pci_enable_device(dev);
+-	if (ret < 0)
+-		goto exit_free;
+-
+-	pci_set_master(dev);
+-
+-	if (pci_request_region(dev, 0, type))
+-		goto exit_disable;
+-
+-	res = &dev->resource[0];
+-	if (acpi_register_ioapic(ioapic->handle, res->start, ioapic->gsi_base))
+-		goto exit_release;
+-
+-	pci_set_drvdata(dev, ioapic);
+-	dev_info(&dev->dev, "%s at %pR, GSI %u\n", type, res, ioapic->gsi_base);
+-	return 0;
+-
+-exit_release:
+-	pci_release_region(dev, 0);
+-exit_disable:
+-	pci_disable_device(dev);
+-exit_free:
+-	kfree(ioapic);
+-	return -ENODEV;
+-}
+-
+-static void ioapic_remove(struct pci_dev *dev)
+-{
+-	struct ioapic *ioapic = pci_get_drvdata(dev);
+-
+-	acpi_unregister_ioapic(ioapic->handle, ioapic->gsi_base);
+-	pci_release_region(dev, 0);
+-	pci_disable_device(dev);
+-	kfree(ioapic);
+-}
+-
+-
+-static DEFINE_PCI_DEVICE_TABLE(ioapic_devices) = {
+-	{ PCI_DEVICE_CLASS(PCI_CLASS_SYSTEM_PIC_IOAPIC, ~0) },
+-	{ PCI_DEVICE_CLASS(PCI_CLASS_SYSTEM_PIC_IOXAPIC, ~0) },
+-	{ }
+-};
+-MODULE_DEVICE_TABLE(pci, ioapic_devices);
+-
+-static struct pci_driver ioapic_driver = {
+-	.name		= "ioapic",
+-	.id_table	= ioapic_devices,
+-	.probe		= ioapic_probe,
+-	.remove		= ioapic_remove,
+-};
+-
+-static int __init ioapic_init(void)
+-{
+-	return pci_register_driver(&ioapic_driver);
+-}
+-module_init(ioapic_init);
+-
+-MODULE_LICENSE("GPL");
 -- 
-1.7.9.5
+1.7.10.4
 
