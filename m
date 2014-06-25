@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757317AbaFYO0p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 10:26:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59996 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757236AbaFYO0n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 10:26:43 -0400
-Message-ID: <53AADC16.9080301@redhat.com>
-Date: Wed, 25 Jun 2014 16:26:30 +0200
-From: Maurizio Lombardi <mlombard@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1757353AbaFYO1c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 10:27:32 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:47211 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756873AbaFYO1a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 10:27:30 -0400
 MIME-Version: 1.0
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Eddie Wai <eddie.wai@broadcom.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-CC: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] scsi: bnx2i: bnx2i_iscsi.c:  Cleaning up variable is
- set more than once
-References: <1403705059-25834-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-In-Reply-To: <1403705059-25834-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+In-Reply-To: <20140625142043.GP23137@kvack.org>
+References: <20140624154952.751713761@linuxfoundation.org>
+	<20140625142043.GP23137@kvack.org>
+Date: Wed, 25 Jun 2014 10:27:29 -0400
+X-Google-Sender-Auth: V9-gXMit5YRc0kTEygWOjik5_Ac
+Message-ID: <CA+5PVA7OPxScruo73jv8K_SvzyQ=22Z9MjVEN3F3yHuAWoXHjw@mail.gmail.com>
+Subject: Re: [PATCH 3.15 00/61] 3.15.2-stable review
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Benjamin LaHaise <bcrl@kvack.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Guenter Roeck <linux@roeck-us.net>, satoru.takeuchi@gmail.com,
+        shuah.kh@samsung.com,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "security@kernel.org" <security@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Jun 25, 2014 at 10:20 AM, Benjamin LaHaise <bcrl@kvack.org> wrote:
+> Hi Greg,
+>
+> On Tue, Jun 24, 2014 at 11:50:43AM -0400, Greg Kroah-Hartman wrote:
+>> This is the start of the stable review cycle for the 3.15.2 release.
+>> There are 61 patches in this series, all will be posted as a response
+>> to this one.  If anyone has any issues with these being applied, please
+>> let me know.
+>
+> You'll probably want to include the fixes for CVE-2014-0206 -- these are
+> edfbbf388f293d70bf4b7c0bc38774d05e6f711a and
+> f8567a3845ac05bb28f3c1b478ef752762bd39ef .
 
-On 06/25/2014 04:04 PM, Rickard Strandqvist wrote:
-> A struct member variable is set to different values without having used in between.
-> 
-> This was found using a static code analysis program called cppcheck
-> 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> ---
->  drivers/scsi/bnx2i/bnx2i_iscsi.c |    1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/drivers/scsi/bnx2i/bnx2i_iscsi.c b/drivers/scsi/bnx2i/bnx2i_iscsi.c
-> index 166543f..fdf7bc3 100644
-> --- a/drivers/scsi/bnx2i/bnx2i_iscsi.c
-> +++ b/drivers/scsi/bnx2i/bnx2i_iscsi.c
-> @@ -1643,7 +1643,6 @@ static void bnx2i_conn_get_stats(struct iscsi_cls_conn *cls_conn,
->  	stats->r2t_pdus = conn->r2t_pdus_cnt;
->  	stats->tmfcmd_pdus = conn->tmfcmd_pdus_cnt;
->  	stats->tmfrsp_pdus = conn->tmfrsp_pdus_cnt;
-> -	stats->custom_length = 3;
->  	strcpy(stats->custom[2].desc, "eh_abort_cnt");
->  	stats->custom[2].value = conn->eh_abort_cnt;
->  	stats->digest_err = 0;
-> 
+FWIW, they should cherry-pick cleanly on top of 3.15.1 and 3.14.8.
+I've not tried anything older yet.
 
-Eddie,
-
-The code modifies the content of stats->custom[2], so shouldn't custom_length be set to 3?
-Why is it set to zero at the end of this function?
-
-Regards,
-Maurizio Lombardi
+josh
