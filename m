@@ -1,111 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753926AbaFYAG3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 20:06:29 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:41325 "EHLO
+	id S1754739AbaFYAJq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 20:09:46 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:41340 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752381AbaFYAG1 (ORCPT
+	with ESMTP id S1752565AbaFYAG2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 20:06:27 -0400
+	Tue, 24 Jun 2014 20:06:28 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: linux-arm-msm@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Mike Turquette <mturquette@linaro.org>
-Subject: [RFC/PATCH 00/12] Krait clocks + Krait CPUfreq
-Date: Tue, 24 Jun 2014 17:06:11 -0700
-Message-Id: <1403654783-7176-1-git-send-email-sboyd@codeaurora.org>
+Subject: [RFC/PATCH 01/12] ARM: Add Krait L2 register accessor functions
+Date: Tue, 24 Jun 2014 17:06:12 -0700
+Message-Id: <1403654783-7176-2-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
+In-Reply-To: <1403654783-7176-1-git-send-email-sboyd@codeaurora.org>
+References: <1403654783-7176-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches provide cpufreq scaling on devices with Krait CPUs.
-For now I've only added support for 8960 and 8974. Adding more
-chips should be fairly easy. There are still some big TODOs but
-I'm posting these patches now to get any early feedback possible.
+Krait CPUs have a handful of L2 cache controller registers that
+live behind a cp15 based indirection register. First you program
+the indirection register (l2cpselr) to point the L2 'window'
+register (l2cpdr) at what you want to read/write.  Then you
+read/write the 'window' register to do what you want. The
+l2cpselr register is not banked per-cpu so we must lock around
+accesses to it to prevent other CPUs from re-pointing l2cpdr
+underneath us.
 
-The first patch has been posted before. It's included here for
-completeness. The second patch changes the way rates are changed
-in the generic framework so that we can safely switch rates of clocks
-while they're being used to clock the CPU. The third patch is 
-temporary until I can properly use the CCF code for generic muxes
-and dividers. The fourth, fifth and sixth patches are mostly ready to go,
-they add HFPLL support. After that, the seventh patch adds support for the
-Krait clock ops; basically muxes and dividers that are controlled by cp15
-registers. The eighth patch adds a driver to control the muxes in KPSSv1
-that provide the aux clock source for the Krait clocks. The ninth patch ties
-all the Krait clocks together into a clock provider. The tenth and eleventh
-patches are the cpufreq layer that look for a qcom,krait cpu and then register
-a cpufreq driver that switches the rate of the CPU clocks between whatever OPP
-tables say are available. The final patch ties it all together by adding
-all the DTS necessary to get this stuff to probe.
-
-I plan to submit the cpufreq patches directly to the cpufreq maintainers
-and the DTS changes through arm-soc, but I've included everything here to
-make it easier to pick things up for testing, etc.
-
-TODO:
- * Get rid of clk-generic.c and use the CCF generic code
- * Make cpufreq-krait generic for any systems with one clock per CPU
- * Populate OPPs by reading the qfprom instead of relying on DT
- * Add Krait regulator voltage scaling (not strictly necessary)
- * Document lots of DT bindings
-
-Stephen Boyd (12):
-  ARM: Add Krait L2 register accessor functions
-  clk: Add safe switch hook
-  clk: qcom: Add support for muxes, dividers, and mux dividers
-  clk: qcom: Add support for High-Frequency PLLs (HFPLLs)
-  clk: qcom: Add HFPLL driver
-  clk: qcom: Add MSM8960's HFPLLs
-  clk: qcom: Add support for Krait clocks
-  clk: qcom: Add KPSS ACC/GCC driver
-  clk: qcom: Add Krait clock controller driver
-  cpufreq: Add a cpufreq-krait based on cpufreq-cpu0
-  cpufreq: Add module to register cpufreq-krait device
-  ARM: dts: qcom: Add necessary DT data for Krait cpufreq
-
- arch/arm/boot/dts/qcom-msm8960.dtsi       |  49 ++++
- arch/arm/boot/dts/qcom-msm8974.dtsi       | 106 +++++++-
- arch/arm/common/Kconfig                   |   3 +
- arch/arm/common/Makefile                  |   1 +
- arch/arm/common/krait-l2-accessors.c      |  58 +++++
- arch/arm/include/asm/krait-l2-accessors.h |  20 ++
- drivers/clk/clk.c                         |  53 +++-
- drivers/clk/qcom/Kconfig                  |  25 ++
- drivers/clk/qcom/Makefile                 |   6 +
- drivers/clk/qcom/clk-generic.c            | 405 ++++++++++++++++++++++++++++++
- drivers/clk/qcom/clk-hfpll.c              | 260 +++++++++++++++++++
- drivers/clk/qcom/clk-hfpll.h              |  54 ++++
- drivers/clk/qcom/clk-krait.c              | 121 +++++++++
- drivers/clk/qcom/clk-krait.h              |  22 ++
- drivers/clk/qcom/gcc-msm8960.c            |  82 ++++++
- drivers/clk/qcom/hfpll.c                  | 110 ++++++++
- drivers/clk/qcom/kpss-xcc.c               | 115 +++++++++
- drivers/clk/qcom/krait-cc.c               | 366 +++++++++++++++++++++++++++
- drivers/cpufreq/Kconfig                   |  13 +
- drivers/cpufreq/Kconfig.arm               |   8 +
- drivers/cpufreq/Makefile                  |   2 +
- drivers/cpufreq/cpufreq-krait.c           | 190 ++++++++++++++
- drivers/cpufreq/qcom-cpufreq.c            |  48 ++++
- include/linux/clk-private.h               |   2 +
- include/linux/clk-provider.h              |   1 +
- include/linux/clk/msm-clk-generic.h       | 208 +++++++++++++++
- 26 files changed, 2317 insertions(+), 11 deletions(-)
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ arch/arm/common/Kconfig                   |  3 ++
+ arch/arm/common/Makefile                  |  1 +
+ arch/arm/common/krait-l2-accessors.c      | 58 +++++++++++++++++++++++++++++++
+ arch/arm/include/asm/krait-l2-accessors.h | 20 +++++++++++
+ 4 files changed, 82 insertions(+)
  create mode 100644 arch/arm/common/krait-l2-accessors.c
  create mode 100644 arch/arm/include/asm/krait-l2-accessors.h
- create mode 100644 drivers/clk/qcom/clk-generic.c
- create mode 100644 drivers/clk/qcom/clk-hfpll.c
- create mode 100644 drivers/clk/qcom/clk-hfpll.h
- create mode 100644 drivers/clk/qcom/clk-krait.c
- create mode 100644 drivers/clk/qcom/clk-krait.h
- create mode 100644 drivers/clk/qcom/hfpll.c
- create mode 100644 drivers/clk/qcom/kpss-xcc.c
- create mode 100644 drivers/clk/qcom/krait-cc.c
- create mode 100644 drivers/cpufreq/cpufreq-krait.c
- create mode 100644 drivers/cpufreq/qcom-cpufreq.c
- create mode 100644 include/linux/clk/msm-clk-generic.h
 
+diff --git a/arch/arm/common/Kconfig b/arch/arm/common/Kconfig
+index c3a4e9ceba34..9da52dc6260b 100644
+--- a/arch/arm/common/Kconfig
++++ b/arch/arm/common/Kconfig
+@@ -9,6 +9,9 @@ config DMABOUNCE
+ 	bool
+ 	select ZONE_DMA
+ 
++config KRAIT_L2_ACCESSORS
++	bool
++
+ config SHARP_LOCOMO
+ 	bool
+ 
+diff --git a/arch/arm/common/Makefile b/arch/arm/common/Makefile
+index 70b1eff477b3..6b2cddf6e8d0 100644
+--- a/arch/arm/common/Makefile
++++ b/arch/arm/common/Makefile
+@@ -7,6 +7,7 @@ obj-y				+= firmware.o
+ obj-$(CONFIG_ICST)		+= icst.o
+ obj-$(CONFIG_SA1111)		+= sa1111.o
+ obj-$(CONFIG_DMABOUNCE)		+= dmabounce.o
++obj-$(CONFIG_KRAIT_L2_ACCESSORS) += krait-l2-accessors.o
+ obj-$(CONFIG_SHARP_LOCOMO)	+= locomo.o
+ obj-$(CONFIG_SHARP_PARAM)	+= sharpsl_param.o
+ obj-$(CONFIG_SHARP_SCOOP)	+= scoop.o
+diff --git a/arch/arm/common/krait-l2-accessors.c b/arch/arm/common/krait-l2-accessors.c
+new file mode 100644
+index 000000000000..5d514bbc88a6
+--- /dev/null
++++ b/arch/arm/common/krait-l2-accessors.c
+@@ -0,0 +1,58 @@
++/*
++ * Copyright (c) 2011-2013, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/spinlock.h>
++#include <linux/export.h>
++
++#include <asm/barrier.h>
++#include <asm/krait-l2-accessors.h>
++
++static DEFINE_RAW_SPINLOCK(krait_l2_lock);
++
++void krait_set_l2_indirect_reg(u32 addr, u32 val)
++{
++	unsigned long flags;
++
++	raw_spin_lock_irqsave(&krait_l2_lock, flags);
++	/*
++	 * Select the L2 window by poking l2cpselr, then write to the window
++	 * via l2cpdr.
++	 */
++	asm volatile ("mcr p15, 3, %0, c15, c0, 6 @ l2cpselr" : : "r" (addr));
++	isb();
++	asm volatile ("mcr p15, 3, %0, c15, c0, 7 @ l2cpdr" : : "r" (val));
++	isb();
++
++	raw_spin_unlock_irqrestore(&krait_l2_lock, flags);
++}
++EXPORT_SYMBOL(krait_set_l2_indirect_reg);
++
++u32 krait_get_l2_indirect_reg(u32 addr)
++{
++	u32 val;
++	unsigned long flags;
++
++	raw_spin_lock_irqsave(&krait_l2_lock, flags);
++	/*
++	 * Select the L2 window by poking l2cpselr, then read from the window
++	 * via l2cpdr.
++	 */
++	asm volatile ("mcr p15, 3, %0, c15, c0, 6 @ l2cpselr" : : "r" (addr));
++	isb();
++	asm volatile ("mrc p15, 3, %0, c15, c0, 7 @ l2cpdr" : "=r" (val));
++
++	raw_spin_unlock_irqrestore(&krait_l2_lock, flags);
++
++	return val;
++}
++EXPORT_SYMBOL(krait_get_l2_indirect_reg);
+diff --git a/arch/arm/include/asm/krait-l2-accessors.h b/arch/arm/include/asm/krait-l2-accessors.h
+new file mode 100644
+index 000000000000..48fe5527bc01
+--- /dev/null
++++ b/arch/arm/include/asm/krait-l2-accessors.h
+@@ -0,0 +1,20 @@
++/*
++ * Copyright (c) 2011-2013, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#ifndef __ASMARM_KRAIT_L2_ACCESSORS_H
++#define __ASMARM_KRAIT_L2_ACCESSORS_H
++
++extern void krait_set_l2_indirect_reg(u32 addr, u32 val);
++extern u32 krait_get_l2_indirect_reg(u32 addr);
++
++#endif
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
