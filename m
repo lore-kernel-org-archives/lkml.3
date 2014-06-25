@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756708AbaFYMss (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 08:48:48 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:50087 "EHLO
+	id S1756785AbaFYMtI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 08:49:08 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:50111 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756382AbaFYMsq (ORCPT
+	with ESMTP id S1755297AbaFYMtG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 08:48:46 -0400
-X-AuditID: cbfee68e-b7fb96d000004bfc-2e-53aac52c1570
+	Wed, 25 Jun 2014 08:49:06 -0400
+X-AuditID: cbfee68f-b7fef6d000003970-63-53aac54160f1
 From: Pankaj Dubey <pankaj.dubey@samsung.com>
 To: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Cc: kgene.kim@samsung.com, linux@arm.linux.org.uk, t.figa@samsung.com,
         vikas.sajjan@samsung.com, joshi@samsung.com, naushad@samsung.com,
         chow.kim@samsung.com, Pankaj Dubey <pankaj.dubey@samsung.com>
-Subject: [PATCH v5 1/6] ARM: EXYNOS: Make exynos machine_ops as static
-Date: Wed, 25 Jun 2014 18:15:37 +0530
-Message-id: <1403700342-9678-2-git-send-email-pankaj.dubey@samsung.com>
+Subject: [PATCH v5 2/6] ARM: EXYNOS: Move cpufreq and cpuidle device
+ registration to init_machine
+Date: Wed, 25 Jun 2014 18:15:38 +0530
+Message-id: <1403700342-9678-3-git-send-email-pankaj.dubey@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1403700342-9678-1-git-send-email-pankaj.dubey@samsung.com>
 References: <1403700342-9678-1-git-send-email-pankaj.dubey@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphkeLIzCtJLcpLzFFi42JZI2JSratzdFWwwfMH2hbLJt1ls/i+6wu7
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpmkeLIzCtJLcpLzFFi42JZI2JSq+t4dFWwwYMXHBbLJt1ls/i+6wu7
 	Re+Cq2wWmx5fY7W4vGsOm8WM8/uYLG5f5rX4dPQ/q8WirUAV62e8ZrG4+Ww7kwO3R0tzD5vH
-	5iX1Hn1bVjF6fN4kF8ASxWWTkpqTWZZapG+XwJWx6nozc8FSwYqb/z+xNDBe5eti5OSQEDCR
-	2DjtGguELSZx4d56ti5GLg4hgaWMEh8n9LPCFF3Yc5sFIjGdUeLJgZOsEM4EJokjd8+AVbEJ
-	6Eo8eT+XGcQWEciW6L+9GqyDWeAUo8TszdPYQRLCAm4SjUuOg9ksAqoST2ctA2vgFXCXOHFi
-	PZDNAbROQWLOJBuQMKeAh8SjRTfAzhMCKulo+MsOMlNCYBO7xJHL/1gg5ghIfJt8iAWiV1Zi
-	0wFmiKslJQ6uuMEygVF4ASPDKkbR1ILkguKk9CIjveLE3OLSvHS95PzcTYzAGDj971nfDsab
-	B6wPMSYDjZvILCWanA+MobySeENjMyMLUxNTYyNzSzPShJXEeRc9TAoSEkhPLEnNTk0tSC2K
-	LyrNSS0+xMjEwSnVwCjAOkdtOnOq29x4CcGptXms06cHnQwqYa8P5bxmaLukpu+m5eGjj1MS
-	T4mmq8izf4h1N+u/t6H0b7vF3M07C2fsEpw2b06s/7yLr2du57PQE2VW8dXxC5Ko3MiRlRx+
-	rvI789L4mW1L8i/sPMoQ9ThS4bzgeifHKK932h56fsK3NDRuan04rsRSnJFoqMVcVJwIAMV8
-	bmSXAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMIsWRmVeSWpSXmKPExsVy+t9jQV2do6uCDS7OUbJYNukum8X3XV/Y
+	5iX1Hn1bVjF6fN4kF8ASxWWTkpqTWZZapG+XwJXxsvMcc8Fpnoq/O3ewNjCe5epi5OSQEDCR
+	mPbhNBuELSZx4d56IJuLQ0hgKaPE1FezWGCK3vxqZIdITGeUePjjASOEM4FJomfyJLB2NgFd
+	iSfv5zKD2CIC2RL9t1ezgBQxC5xilJi9eRo7SEJYIFnizoI9TF2MHBwsAqoSDZdjQcK8Au4S
+	P15cZQMJSwgoSMyZZAMS5hTwkHi06AbYEUJAJR0Nf8GOkBDYxi7x7c0sJpAEi4CAxLfJh1gg
+	emUlNh1ghjhaUuLgihssExiFFzAyrGIUTS1ILihOSi8y1itOzC0uzUvXS87P3cQIjIDT/571
+	72C8e8D6EGMy0LiJzFKiyfnACMoriTc0NjOyMDUxNTYytzQjTVhJnPf+w6QgIYH0xJLU7NTU
+	gtSi+KLSnNTiQ4xMHJxSDYwWE5xrl4ltnT679m7wseDGv8YpF3buNwyutt158sr1ZUzZk4SV
+	bjU8F/4jbdxh3n5JyWjd4Un7/+xxihGeLGz5NFx7nZ9aRk77pYMbr3KqWvjNWsZ2kXnFaw+m
+	32uemcSV2Qeabjfclz7jmJ90gYml/zMJqaUyk1pFXJYV5hpOSBJ6t/0vm6ESS3FGoqEWc1Fx
+	IgBLCuvclgIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEIsWRmVeSWpSXmKPExsVy+t9jQV3Ho6uCDXa/YLRYNukum8X3XV/Y
 	LXoXXGWz2PT4GqvF5V1z2CxmnN/HZHH7Mq/Fp6P/WS0WbQWqWD/jNYvFzWfbmRy4PVqae9g8
 	Ni+p9+jbsorR4/MmuQCWqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE
-	3FRbJRefAF23zBygo5QUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhDWMGauu
-	NzMXLBWsuPn/E0sD41W+LkZODgkBE4kLe26zQNhiEhfurWfrYuTiEBKYzijx5MBJVghnApPE
-	kbtnWEGq2AR0JZ68n8sMYosIZEv0317NAlLELHCKUWL25mnsIAlhATeJxiXHwWwWAVWJp7OW
-	gTXwCrhLnDixHsjmAFqnIDFnkg1ImFPAQ+LRohtgVwgBlXQ0/GWfwMi7gJFhFaNoakFyQXFS
-	eq6hXnFibnFpXrpecn7uJkZwhD2T2sG4ssHiEKMAB6MSD++F2SuDhVgTy4orcw8xSnAwK4nw
-	uu9fFSzEm5JYWZValB9fVJqTWnyI0RToqInMUqLJ+cDozyuJNzQ2MTc1NrU0sTAxs1QS5z3Q
-	ah0oJJCeWJKanZpakFoE08fEwSnVwFjO2/F+8oQlNbeqmCPuLbv+svx8kYmGI3/YDN7/+3az
-	betLtc5vbDqisKX06tU2mf9bnXhiNzQmcH+N/B6ZeJwhyGCOMGtLYq1m65H1W86sjbSYzKTk
-	lX9s1qqtcfMkzgvc9leOLjvhococLFn6YM/3GW/E/uw+WFdwaE6eq/bjyz+yb//4MlWJpTgj
-	0VCLuag4EQBVvJWExgIAAA==
+	3FRbJRefAF23zBygo5QUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhDWMGS87
+	zzEXnOap+LtzB2sD41muLkZODgkBE4k3vxrZIWwxiQv31rN1MXJxCAlMZ5R4+OMBI4QzgUmi
+	Z/IkNpAqNgFdiSfv5zKD2CIC2RL9t1ezgBQxC5xilJi9eRrYKGGBZIk7C/YwdTFycLAIqEo0
+	XI4FCfMKuEv8eHGVDSQsIaAgMWeSDUiYU8BD4tGiGywgthBQSUfDX/YJjLwLGBlWMYqmFiQX
+	FCel5xrqFSfmFpfmpesl5+duYgTH1zOpHYwrGywOMQpwMCrx8F6YvTJYiDWxrLgy9xCjBAez
+	kgiv+/5VwUK8KYmVValF+fFFpTmpxYcYTYFumsgsJZqcD4z9vJJ4Q2MTc1NjU0sTCxMzSyVx
+	3gOt1oFCAumJJanZqakFqUUwfUwcnFINjOFV4WosP6o3dy37pHpnyVm7VZ9sbv1stIyqYW8v
+	YH9dq3AjZi1TIleQu9SRh8dq/hmb8NYUJ+5ZtW9WB/OWAy8covd2nlPdM2dTnPD1f6ovD08/
+	fPGnjOGOz0//HfHQ/7q/ceKrzsIdeZfyZh9uXBTwkDv6ycPXC+vPVq049v+Oxgbbj9eXWRgr
+	sRRnJBpqMRcVJwIAn9i61cUCAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -52,69 +53,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As machine function ops are used only in this file let's make
-them static. Also remove unused and unwanted declarations from
-common.h.
+As exynos_cpuidle_init and exynos_cpufreq_init function have just one lines
+of code for registering platform devices. We can move these lines to
+exynos_dt_machine_init and delete exynos_cpuidle_init and exynos_cpufreq_init
+function. This will help in reducing lines of code in exynos.c, making it
+more cleaner.
 
+Suggested-by: Tomasz Figa <t.figa@samsung.com>
 Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
 Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 ---
- arch/arm/mach-exynos/common.h |    8 --------
- arch/arm/mach-exynos/exynos.c |    6 +++---
- 2 files changed, 3 insertions(+), 11 deletions(-)
+ arch/arm/mach-exynos/exynos.c |   19 ++++---------------
+ 1 file changed, 4 insertions(+), 15 deletions(-)
 
-diff --git a/arch/arm/mach-exynos/common.h b/arch/arm/mach-exynos/common.h
-index 16617bd..3f25f89 100644
---- a/arch/arm/mach-exynos/common.h
-+++ b/arch/arm/mach-exynos/common.h
-@@ -111,16 +111,8 @@ IS_SAMSUNG_CPU(exynos5800, EXYNOS5800_SOC_ID, EXYNOS5_SOC_MASK)
- #define soc_is_exynos5() (soc_is_exynos5250() || soc_is_exynos5410() || \
- 			  soc_is_exynos5420() || soc_is_exynos5800())
- 
--void mct_init(void __iomem *base, int irq_g0, int irq_l0, int irq_l1);
--
--struct map_desc;
- extern void __iomem *sysram_ns_base_addr;
- extern void __iomem *sysram_base_addr;
--void exynos_init_io(void);
--void exynos_restart(enum reboot_mode mode, const char *cmd);
--void exynos_cpuidle_init(void);
--void exynos_cpufreq_init(void);
--void exynos_init_late(void);
- 
- void exynos_firmware_init(void);
- 
 diff --git a/arch/arm/mach-exynos/exynos.c b/arch/arm/mach-exynos/exynos.c
-index 90aab4d..6affcd9 100644
+index 6affcd9..e54d885 100644
 --- a/arch/arm/mach-exynos/exynos.c
 +++ b/arch/arm/mach-exynos/exynos.c
-@@ -143,7 +143,7 @@ static struct map_desc exynos5_iodesc[] __initdata = {
- 	},
+@@ -171,19 +171,6 @@ static struct platform_device exynos_cpuidle = {
+ 	.id                = -1,
  };
  
--void exynos_restart(enum reboot_mode mode, const char *cmd)
-+static void exynos_restart(enum reboot_mode mode, const char *cmd)
- {
- 	struct device_node *np;
- 	u32 val = 0x1;
-@@ -184,7 +184,7 @@ void __init exynos_cpufreq_init(void)
- 	platform_device_register_simple("exynos-cpufreq", -1, NULL, 0);
- }
- 
--void __init exynos_init_late(void)
-+static void __init exynos_init_late(void)
+-void __init exynos_cpuidle_init(void)
+-{
+-	if (soc_is_exynos5440())
+-		return;
+-
+-	platform_device_register(&exynos_cpuidle);
+-}
+-
+-void __init exynos_cpufreq_init(void)
+-{
+-	platform_device_register_simple("exynos-cpufreq", -1, NULL, 0);
+-}
+-
+ static void __init exynos_init_late(void)
  {
  	if (of_machine_is_compatible("samsung,exynos5440"))
- 		/* to be supported later */
-@@ -231,7 +231,7 @@ static void __init exynos_map_io(void)
- 		iotable_init(exynos5_iodesc, ARRAY_SIZE(exynos5_iodesc));
+@@ -271,8 +258,10 @@ static void __init exynos_dt_machine_init(void)
+ 		}
+ 	}
+ 
+-	exynos_cpuidle_init();
+-	exynos_cpufreq_init();
++	if (!soc_is_exynos5440())
++		platform_device_register(&exynos_cpuidle);
++
++	platform_device_register_simple("exynos-cpufreq", -1, NULL, 0);
+ 
+ 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
  }
- 
--void __init exynos_init_io(void)
-+static void __init exynos_init_io(void)
- {
- 	debug_ll_io_init();
- 
 -- 
 1.7.9.5
 
