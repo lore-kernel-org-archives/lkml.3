@@ -1,57 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757143AbaFYW5j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 18:57:39 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:32819 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752565AbaFYW5i (ORCPT
+	id S1756033AbaFYXAN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 19:00:13 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:46148 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752565AbaFYXAK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 18:57:38 -0400
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] scripts/mod/modpost.c: Fix bug in number_prefix
-Organization: D03
-References: <1403685999-31013-1-git-send-email-linux@rasmusvillemoes.dk>
-	<53AADC30.7080401@windriver.com>
-X-Hashcash: 1:20:140625:linux-kernel@vger.kernel.org::TiNndBsQynz5POSV:000000000000000000000000000000000097P
-X-Hashcash: 1:20:140625:paul.gortmaker@windriver.com::ZBGGCOO3vx6Bh5rj:0000000000000000000000000000000000WqP
-X-Hashcash: 1:20:140625:akpm@linux-foundation.org::aBTLsP9yAFmzv7qw:0000000000000000000000000000000000002tiu
-X-Hashcash: 1:20:140625:hpa@linux.intel.com::rAZERZ0hfO2OX9xr:0000000000000000000000000000000000000000005V/5
-X-Hashcash: 1:20:140625:rusty@rustcorp.com.au::B+PNXB9wdWG8DxiV:00000000000000000000000000000000000000006VNg
-Date: Thu, 26 Jun 2014 00:57:33 +0200
-In-Reply-To: <53AADC30.7080401@windriver.com> (Paul Gortmaker's message of
-	"Wed, 25 Jun 2014 10:26:56 -0400")
-Message-ID: <8761jooaw2.fsf@rasmusvillemoes.dk>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Wed, 25 Jun 2014 19:00:10 -0400
+Message-ID: <53AB5473.3050204@wwwdotorg.org>
+Date: Wed, 25 Jun 2014 17:00:03 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Andrew Bresticker <abrestic@chromium.org>
+CC: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-usb@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Kishon Vijay Abraham I <kishon@ti.com>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v1 1/9] of: Add NVIDIA Tegra XUSB mailbox binding
+References: <1403072180-4944-1-git-send-email-abrestic@chromium.org>	<1403072180-4944-2-git-send-email-abrestic@chromium.org>	<53AB422E.4040707@wwwdotorg.org> <CAL1qeaFPjq9nqA2GDZZW+=DZsddWCkUjJcnRsfPkBWj8gmFsiw@mail.gmail.com>
+In-Reply-To: <CAL1qeaFPjq9nqA2GDZZW+=DZsddWCkUjJcnRsfPkBWj8gmFsiw@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul Gortmaker <paul.gortmaker@windriver.com> writes:
+On 06/25/2014 04:37 PM, Andrew Bresticker wrote:
+> On Wed, Jun 25, 2014 at 2:42 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>> On 06/18/2014 12:16 AM, Andrew Bresticker wrote:
+>>> Add device-tree bindings for the Tegra XUSB mailbox which will be used
+>>> for communication between the Tegra XHCI controller and the host.
+>>
+>> Sorry for the slow review.
+>>
+>>> diff --git a/Documentation/devicetree/bindings/mailbox/nvidia,tegra124-xusb-mbox.txt b/Documentation/devicetree/bindings/mailbox/nvidia,tegra124-xusb-mbox.txt
+>>
+>>> +NVIDIA Tegra XUSB mailbox
+>>> +=========================
+>>> +
+>>> +The Tegra XUSB mailbox is used by the Tegra XHCI controller's firmware to
+>>> +communicate with the host.
+>>
+>> Isn't the mailbox an internal implementation detail of the XUSB controller.
+>>
+>> In other words, I'd naively think that there isn't a standalone generic
+>> mailbox that can be used by anything, but we just happen to want to use
+>> for XUSB. Rather, there's an XUSB controller, and part of the interface
+>> to that controller is a mailbox.
+> 
+> Yes, the mailbox isn't an actual piece of hardware but rather the
+> interface through which the XUSB host and AP communicate.
+> 
+>> As such, I don't think we want a standalone mailbox node in DT. Rather,
+>> we should add the required reg and interrupt values into the XUSB DT node.
+>>
+>> The driver for that XUSB HW module can either:
+>>
+>> a) Register as both a mailbox driver and an EHCI driver.
+>>
+>> b) Spawn a child device to instantiate the mailbox driver.
+>>
+>> Perhaps (b) could be assisted by using the MFD framework?
+> 
+> So in the RFC series I did something like (a) where the XUSB host
+> handled the mailbox interrupt with both the PHY and host could
+> registering notifiers to handle the messages.  It was suggested by
+> Arnd though that I make a separate mailbox driver.  Instead of having
+> a both a host and mailbox node, I could have a single XUSB host node
+> and have the mailbox driver bind to that - thoughts?
 
-> On 14-06-25 04:46 AM, Rasmus Villemoes wrote:
->> The function number_prefix() can currently only return 1 if its
->> argument is the empty string: If line 3 is reached and *sym (now the
->> second character in the argument) is not '.', 0 is returned. However,
->> if that character is '.', the first assignment to c is that same '.',
->> which obviously fails to be a digit.
->
-> I'd suggest you expand the commit log to actually list the end-user
-> visible symptom and the use case that this actually fixes, since it
-> isn't obvious to me at all.
+Yes, that sounds like what I meant by (b) above. I don't think you can
+actually have 2 drivers bind to the same DT node though, so it'd have to
+work something like:
 
-Sorry, it isn't obvious to me either. I just stumbled on it reading the
-code; the rest of modpost.c is too deep magic for me.
+* XUSB host node causes a platform device to be instantiated
+* XUSB host driver probe()s against that
+* XUSB host driver's probe() creates a platform device for the mailbox
+* XUSB mailbox driver probe()s against that.
 
-Maybe there are no user-visible symptoms, and maybe that means it is not
-worth fixing, in which case I'll just add scripts/mod/modpost.c to my
-mental .ocpdignore.
-
-Thanks,
-Rasmus
+Or, perhaps go completely MFD, and have 2 child devices (XUSB host and
+XUSB mailbox) instantiated by the MFD parent, which is what is in the DT.
