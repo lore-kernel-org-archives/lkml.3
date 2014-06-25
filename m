@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757377AbaFYXDm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 19:03:42 -0400
-Received: from exprod5og116.obsmtp.com ([64.18.0.147]:37363 "HELO
-	exprod5og116.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757298AbaFYXDj (ORCPT
+	id S1757461AbaFYXEE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 19:04:04 -0400
+Received: from exprod5og115.obsmtp.com ([64.18.0.246]:35296 "HELO
+	exprod5og115.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757330AbaFYXDm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 19:03:39 -0400
+	Wed, 25 Jun 2014 19:03:42 -0400
 From: Feng Kan <fkan@apm.com>
 To: dbaryshkov@gmail.com, catalin.marinas@arm.com, dwmw2@infradead.org,
         arnd@arndb.de, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         patches@apm.com
 Cc: Feng Kan <fkan@apm.com>
-Subject: [PATCH V7 3/6] Documentation: arm64: add SCU dts binding documentation to linux kernel
-Date: Wed, 25 Jun 2014 16:03:23 -0700
-Message-Id: <1403737406-6474-4-git-send-email-fkan@apm.com>
+Subject: [PATCH V7 5/6] arm64: Select reboot driver for X-Gene platform
+Date: Wed, 25 Jun 2014 16:03:25 -0700
+Message-Id: <1403737406-6474-6-git-send-email-fkan@apm.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403737406-6474-1-git-send-email-fkan@apm.com>
 References: <1403737406-6474-1-git-send-email-fkan@apm.com>
@@ -23,38 +23,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This add documentation for the SCU system clock unit device tree binding
-to the kernel.
+Select reboot driver for X-Gene platform.
 
 Signed-off-by: Feng Kan <fkan@apm.com>
 ---
- Documentation/devicetree/bindings/arm/apm/scu.txt | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/arm/apm/scu.txt
+ arch/arm64/Kconfig | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/arm/apm/scu.txt b/Documentation/devicetree/bindings/arm/apm/scu.txt
-new file mode 100644
-index 0000000..b45be06
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/apm/scu.txt
-@@ -0,0 +1,17 @@
-+APM X-GENE SoC series SCU Registers
-+
-+This system clock unit contain various register that control block resets,
-+clock enable/disables, clock divisors and other deepsleep registers.
-+
-+Properties:
-+ - compatible : should contain two values. First value must be:
-+		   - "apm,xgene-scu"
-+		second value must be always "syscon".
-+
-+ - reg : offset and length of the register set.
-+
-+Example :
-+	scu: system-clk-controller@17000000 {
-+		compatible = "apm,xgene-scu","syscon";
-+		reg = <0x0 0x17000000 0x0 0x400>;
-+	};
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index a474de34..91a2e25 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -140,6 +140,8 @@ config ARCH_VEXPRESS
+ 
+ config ARCH_XGENE
+ 	bool "AppliedMicro X-Gene SOC Family"
++	select MFD_SYSCON
++	select POWER_RESET_SYSCON
+ 	help
+ 	  This enables support for AppliedMicro X-Gene SOC Family
+ 
 -- 
 1.9.1
 
