@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756880AbaFYNWb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 09:22:31 -0400
-Received: from mail.fireflyinternet.com ([87.106.93.118]:64921 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753576AbaFYNW3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 09:22:29 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.65.138;
-Date: Wed, 25 Jun 2014 14:22:20 +0100
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Tom Van Braeckel <tomvanbraeckel@gmail.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        David Airlie <airlied@linux.ie>, ville.syrjala@linux.intel.com,
-        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: drm/i915 KMS regression in Linux 3.16-rc2 (with git bisect
- result)
-Message-ID: <20140625132220.GA20837@nuc-i3427.alporthouse.com>
-Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
-	Tom Van Braeckel <tomvanbraeckel@gmail.com>,
-	Daniel Vetter <daniel.vetter@ffwll.ch>,
-	Jani Nikula <jani.nikula@linux.intel.com>,
-	David Airlie <airlied@linux.ie>, ville.syrjala@linux.intel.com,
-	intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-	linux-kernel@vger.kernel.org
-References: <CAJ7vePCSE3eWTBpzBGY8-e3ZTB0iZARdfMmhRE6LQYaxcFkVqg@mail.gmail.com>
+	id S1756903AbaFYNXr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 09:23:47 -0400
+Received: from mout.gmx.net ([212.227.17.21]:60140 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755478AbaFYNXq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 09:23:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJ7vePCSE3eWTBpzBGY8-e3ZTB0iZARdfMmhRE6LQYaxcFkVqg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1403690184.20275.11.camel@sauron.fi.intel.com>
+References: <1403626213-7691-1-git-send-email-mcsim.planeta@gmail.com>
+	<alpine.DEB.2.02.1406241458140.29176@chino.kir.corp.google.com>
+	<1403677528.7903.103.camel@sauron.fi.intel.com>
+	<CABhLV03_PNFiwsvt+yitcsKxz5TeVECCFavdNkbgQ+XzQqASaw@mail.gmail.com>
+	<1403690184.20275.11.camel@sauron.fi.intel.com>
+Date: Wed, 25 Jun 2014 15:23:42 +0200
+Message-ID: <CABhLV02COaH=qP=Snd7YJtcVOvm9NTmY58QuiTQoPZxH3NemPQ@mail.gmail.com>
+Subject: Re: [PATCH] sysctl: Add a feature to drop caches selectively
+From: Thomas Knauth <thomas.knauth@gmx.de>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: David Rientjes <rientjes@google.com>,
+        Maksym Planeta <mcsim.planeta@gmail.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+X-Provags-ID: V03:K0:Gvm7yI5Mn9g4qmkZbiQ0cnsctcqLw+wbfLGtvWYre/sb6GIh7XF
+ s6bBg3OjFp7WP8VwEYrge6+aoDMVnHMv9cXDWBoD3LgvW12QYUa/EY1IhLbjCSFuaEwmVq1
+ tyhQ2MBnqRQogbdma7jN9khqTryS2yDbX7RD+6ch0R4h2GaEEIavvDXbvQtX65Br70qjUyk
+ XCfVSgjCyPhYHQWz8x1zA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 03:03:44PM +0200, Tom Van Braeckel wrote:
-> Hi,
-> 
-> There seems to be a regression in the upcoming Linux 3.16-rc2 release
-> candidate that I bisected down to this first bad commit:
-> [dbb42748ac4929987c1449ecb296b39ef8956b62] drm/i915: Move the C3 LP
-> write bit setup to gen3_init_clock_gating() for KMS.
+On Wed, Jun 25, 2014 at 11:56 AM, Artem Bityutskiy <dedekind1@gmail.com> wrote:
+> Thanks for the answer, although you forgot to comment on the question
+> about possibly extending the new interface to work with file ranges in
+> the future. For example, I have a 2 TiB file, and I am only interested
+> in dropping caches for the first couple of gigabytes. Would I extend
+> your interface, or would I come up with another one?
 
-Can you attach the dmesg with rc2 and dbb4274 reverted?
--Chris
+Ah, didn't quite understand what was meant with file ranges. Again, we
+had not considered this so far. I guess you could make a distinction
+between directories and files here. If the path points to a file, you
+can have an optional argument indicating the range of bytes you would
+like to drop. Something like
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+echo "my-file 0-1000,8000-1000" > /proc/sys/vm/sdrop_cache
+
+If this is desirable, we can add it to the patch.
