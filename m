@@ -1,302 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755931AbaFYUnU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 16:43:20 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:60808 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755663AbaFYUnS (ORCPT
+	id S1756085AbaFYUp6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 16:45:58 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:55334 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755071AbaFYUp4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 16:43:18 -0400
-X-IronPort-AV: E=Sophos;i="5.01,547,1400025600"; 
-   d="scan'208";a="147121211"
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-To: Steffen Klassert <steffen.klassert@secunet.com>,
-        Mathias Krause <minipli@googlemail.com>,
-        Daniel Borkmann <dborkman@redhat.com>
-CC: Zoltan Kiss <zoltan.kiss@citrix.com>,
-        "David S. Miller" <davem@davemloft.net>, Thomas Graf <tgraf@suug.ch>,
-        Joe Perches <joe@perches.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
-Subject: [PATCH net-next v3] pktgen: Fill the payload optionally with a pattern
-Date: Wed, 25 Jun 2014 21:42:50 +0100
-Message-ID: <1403728972-29548-2-git-send-email-zoltan.kiss@citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1403728972-29548-1-git-send-email-zoltan.kiss@citrix.com>
-References: <1403728972-29548-1-git-send-email-zoltan.kiss@citrix.com>
+	Wed, 25 Jun 2014 16:45:56 -0400
+Date: Wed, 25 Jun 2014 21:45:54 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Matt Fleming <matt.fleming@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] efilinux: Allocate boot_params before parsing initrd
+Message-ID: <20140625204554.GE15494@console-pimps.org>
+References: <1403073669-6602-1-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.80.118.114]
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403073669-6602-1-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduces a new flag called PATTERN, which puts a non-periodic, predicatble
-pattern into the payload. This was useful to reproduce an otherwise intermittent
-bug in xen-netback [1], where checksum checking doesn't help.
-The pattern is a repetition of "%lu ", a series of increasing numbers divided by
-space. The value of the number is the size of the preceding payload area. E.g.
-"1 3 5 "..." 1000 1005 1010"
-If the pattern is used, every frag will have its own page, unlike before, so it
-needs more memory.
+On Tue, 17 Jun, at 11:41:08PM, Yinghai Lu wrote:
+> We need to allocate boot_params early and clear it before copy
+> setup_header to it.
+> 
+> So kernel will not call sanitize_boot_params() to overwrite new
+> added parameter like ext_ramdisk_image, ext_ramdisk_size...
+> 
+> We should modify boot_params later instead of touch temp buf too early.
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> 
+> ---
+>  loaders/bzimage/bzimage.c |   65 ++++++++++++++++++++++++----------------------
+>  1 file changed, 34 insertions(+), 31 deletions(-)
+ 
+Applied, thanks!
 
-[1] 5837574: xen-netback: Fix grant ref resolution in RX path
-
-Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Thomas Graf <tgraf@suug.ch>
-Cc: Joe Perches <joe@perches.com>
-Cc: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xenproject.org
----
-v2: some bugfixes for pattern_to_packet, as my upcoming patch revealed some
-
-v3:
-- move the space in the pattern after the number, it just feels more intuitive
-- show this setting when the flags are queried
-
- net/core/pktgen.c |  142 ++++++++++++++++++++++++++++++++++++++++++++++++-----
- 1 file changed, 129 insertions(+), 13 deletions(-)
-
-diff --git a/net/core/pktgen.c b/net/core/pktgen.c
-index 0304f98..23b3a58 100644
---- a/net/core/pktgen.c
-+++ b/net/core/pktgen.c
-@@ -201,6 +201,7 @@
- #define F_QUEUE_MAP_CPU (1<<14)	/* queue map mirrors smp_processor_id() */
- #define F_NODE          (1<<15)	/* Node memory alloc*/
- #define F_UDPCSUM       (1<<16)	/* Include UDP checksum */
-+#define F_PATTERN       (1<<17)	/* Fill the payload with a pattern */
- 
- /* Thread control flag bits */
- #define T_STOP        (1<<0)	/* Stop run */
-@@ -255,7 +256,7 @@ struct pktgen_dev {
- 	int max_pkt_size;
- 	int pkt_overhead;	/* overhead for MPLS, VLANs, IPSEC etc */
- 	int nfrags;
--	struct page *page;
-+	struct page *pages[MAX_SKB_FRAGS];
- 	u64 delay;		/* nano-seconds */
- 
- 	__u64 count;		/* Default No packets to send */
-@@ -636,6 +637,9 @@ static int pktgen_if_show(struct seq_file *seq, void *v)
- 	if (pkt_dev->flags & F_UDPCSUM)
- 		seq_printf(seq, "UDPCSUM  ");
- 
-+	if (pkt_dev->flags & F_PATTERN)
-+		seq_printf(seq, "PATTERN  ");
-+
- 	if (pkt_dev->flags & F_MPLS_RND)
- 		seq_printf(seq,  "MPLS_RND  ");
- 
-@@ -1127,11 +1131,13 @@ static ssize_t pktgen_if_write(struct file *file,
- 		i += len;
- 
- 		if (node_possible(value)) {
-+			int j;
- 			pkt_dev->node = value;
- 			sprintf(pg_result, "OK: node=%d", pkt_dev->node);
--			if (pkt_dev->page) {
--				put_page(pkt_dev->page);
--				pkt_dev->page = NULL;
-+			for (j = 0; j < MAX_SKB_FRAGS; ++j)
-+				if (pkt_dev->pages[j]) {
-+					put_page(pkt_dev->pages[j]);
-+					pkt_dev->pages[j] = NULL;
- 			}
- 		}
- 		else
-@@ -1242,6 +1248,12 @@ static ssize_t pktgen_if_write(struct file *file,
- 		else if (strcmp(f, "!UDPCSUM") == 0)
- 			pkt_dev->flags &= ~F_UDPCSUM;
- 
-+		else if (strcmp(f, "PATTERN") == 0)
-+			pkt_dev->flags |= F_PATTERN;
-+
-+		else if (strcmp(f, "!PATTERN") == 0)
-+			pkt_dev->flags &= ~F_PATTERN;
-+
- 		else {
- 			sprintf(pg_result,
- 				"Flag -:%s:- unknown\nAvailable flags, (prepend ! to un-set flag):\n%s",
-@@ -2623,17 +2635,98 @@ static inline __be16 build_tci(unsigned int id, unsigned int cfi,
- 	return htons(id | (cfi << 12) | (prio << 13));
- }
- 
-+/* Max number of digits. The sizeof equals to log base 2^8 (UINT_MAX), multiply
-+ * with 3 is a cheap, rounded up conversion to log10
-+ */
-+#define UINT_MAX_DIGITS (3*sizeof(unsigned long)+1)
-+
-+/* Fill the buffer up with a pattern
-+ * buf - pointer to buffer
-+ * bufsize - size of the buffer
-+ * start - starting value for the pattern
-+ * incomplete - pointer to the offset inside the pattern, or 0 if none
-+ *
-+ * The pattern is a repetition of " %lu", a series of increasing numbers divided
-+ * by space. The value of the number is "start" plus the size of the preceding
-+ * space. E.g. if start is 1000, it starts like " 1000 1005 1010".
-+ * If the last number doesn't fit, it gets truncated, and the number of leading
-+ * characters is saved into incomplete. It can be passed then to the next call
-+ * with the next buffer, and the pattern looks contiguous over scattered
-+ * buffers.
-+ * It returns "start" plus the offset of the byte after the last full
-+ * pattern write.
-+ */
-+static unsigned long pattern_to_packet(char *buf,
-+				       int bufsize,
-+				       unsigned long start,
-+				       unsigned int *incomplete)
-+{
-+	int len;
-+	/* Only used when the pattern doesn't align to the buffer */
-+	char temp[UINT_MAX_DIGITS];
-+
-+	if (*incomplete) {
-+		int copylen, offset = *incomplete;
-+
-+		len = snprintf(temp, sizeof(temp), "%lu ", start);
-+		copylen = len - *incomplete;
-+		if (copylen > bufsize) {
-+			/* The continuation of this number couldn't fit here */
-+			copylen = bufsize;
-+			*incomplete += bufsize;
-+		} else {
-+			*incomplete = 0;
-+			start += len;
-+		}
-+		memcpy(buf, temp + offset, copylen);
-+		bufsize -= copylen;
-+		buf += copylen;
-+	}
-+
-+	while (bufsize > 0) {
-+		len = snprintf(buf, bufsize, " %lu", start);
-+		/* The last number doesn't fit, remember where it was truncated.
-+		 */
-+		if (len >= bufsize) {
-+			/* snprintf always add a trailing zero, but actually we
-+			 * need the last digit there
-+			 */
-+			len = snprintf(temp, sizeof(temp), " %lu", start);
-+			memcpy(buf, temp, bufsize);
-+			/* If the last number just fit without the trailing
-+			 * zero, the next buffer can continue from an increased
-+			 * offset.
-+			 */
-+			if (len == bufsize)
-+				start += len;
-+			*incomplete = bufsize;
-+			return start;
-+		}
-+		bufsize -= len;
-+		start += len;
-+		buf += len;
-+	}
-+	return start;
-+}
-+
- static void pktgen_finalize_skb(struct pktgen_dev *pkt_dev, struct sk_buff *skb,
- 				int datalen)
- {
- 	struct timeval timestamp;
- 	struct pktgen_hdr *pgh;
-+	unsigned long offset = 0;
-+	unsigned int incomplete = 0;
- 
- 	pgh = (struct pktgen_hdr *)skb_put(skb, sizeof(*pgh));
- 	datalen -= sizeof(*pgh);
- 
- 	if (pkt_dev->nfrags <= 0) {
--		memset(skb_put(skb, datalen), 0, datalen);
-+		if (pkt_dev->flags & F_PATTERN)
-+			offset = pattern_to_packet(skb_put(skb, datalen),
-+						   datalen, offset,
-+						   &incomplete);
-+		else
-+			memset(skb_put(skb, datalen), 0, datalen);
- 	} else {
- 		int frags = pkt_dev->nfrags;
- 		int i, len;
-@@ -2644,7 +2737,12 @@ static void pktgen_finalize_skb(struct pktgen_dev *pkt_dev, struct sk_buff *skb,
- 			frags = MAX_SKB_FRAGS;
- 		len = datalen - frags * PAGE_SIZE;
- 		if (len > 0) {
--			memset(skb_put(skb, len), 0, len);
-+			if (pkt_dev->flags & F_PATTERN)
-+				offset = pattern_to_packet(skb_put(skb, len),
-+							   len, offset,
-+							   &incomplete);
-+			else
-+				memset(skb_put(skb, len), 0, len);
- 			datalen = frags * PAGE_SIZE;
- 		}
- 
-@@ -2652,17 +2750,28 @@ static void pktgen_finalize_skb(struct pktgen_dev *pkt_dev, struct sk_buff *skb,
- 		frag_len = (datalen/frags) < PAGE_SIZE ?
- 			   (datalen/frags) : PAGE_SIZE;
- 		while (datalen > 0) {
--			if (unlikely(!pkt_dev->page)) {
-+			int fragpage;
-+			gfp_t flags = GFP_KERNEL;
-+
-+			if (pkt_dev->flags & F_PATTERN) {
-+				fragpage = i;
-+			} else {
-+				fragpage = 0;
-+				flags |= __GFP_ZERO;
-+			}
-+
-+			if (unlikely(!pkt_dev->pages[fragpage])) {
- 				int node = numa_node_id();
- 
- 				if (pkt_dev->node >= 0 && (pkt_dev->flags & F_NODE))
- 					node = pkt_dev->node;
--				pkt_dev->page = alloc_pages_node(node, GFP_KERNEL | __GFP_ZERO, 0);
--				if (!pkt_dev->page)
-+				pkt_dev->pages[fragpage] = alloc_pages_node(node, flags, 0);
-+				if (!pkt_dev->pages[fragpage])
- 					break;
- 			}
--			get_page(pkt_dev->page);
--			skb_frag_set_page(skb, i, pkt_dev->page);
-+			get_page(pkt_dev->pages[fragpage]);
-+			skb_frag_set_page(skb, i, pkt_dev->pages[fragpage]);
-+
- 			skb_shinfo(skb)->frags[i].page_offset = 0;
- 			/*last fragment, fill rest of data*/
- 			if (i == (frags - 1))
-@@ -2671,6 +2780,10 @@ static void pktgen_finalize_skb(struct pktgen_dev *pkt_dev, struct sk_buff *skb,
- 			else
- 				skb_frag_size_set(&skb_shinfo(skb)->frags[i], frag_len);
- 			datalen -= skb_frag_size(&skb_shinfo(skb)->frags[i]);
-+			if (pkt_dev->flags & F_PATTERN)
-+				offset = pattern_to_packet(skb_frag_address(&skb_shinfo(skb)->frags[i]),
-+							   skb_frag_size(&skb_shinfo(skb)->frags[i]),
-+							   offset, &incomplete);
- 			skb->len += skb_frag_size(&skb_shinfo(skb)->frags[i]);
- 			skb->data_len += skb_frag_size(&skb_shinfo(skb)->frags[i]);
- 			i++;
-@@ -3685,6 +3798,8 @@ static void _rem_dev_from_if_list(struct pktgen_thread *t,
- static int pktgen_remove_device(struct pktgen_thread *t,
- 				struct pktgen_dev *pkt_dev)
- {
-+	int i;
-+
- 	pr_debug("remove_device pkt_dev=%p\n", pkt_dev);
- 
- 	if (pkt_dev->running) {
-@@ -3710,8 +3825,9 @@ static int pktgen_remove_device(struct pktgen_thread *t,
- 	free_SAs(pkt_dev);
- #endif
- 	vfree(pkt_dev->flows);
--	if (pkt_dev->page)
--		put_page(pkt_dev->page);
-+	for (i = 0; i < MAX_SKB_FRAGS; ++i)
-+		if (pkt_dev->pages[i])
-+			put_page(pkt_dev->pages[i]);
- 	kfree(pkt_dev);
- 	return 0;
- }
+-- 
+Matt Fleming, Intel Open Source Technology Center
