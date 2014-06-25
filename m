@@ -1,107 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755252AbaFYH4K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 03:56:10 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:54916 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754850AbaFYH4I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 03:56:08 -0400
-Message-ID: <53AA808C.5020402@redhat.com>
-Date: Wed, 25 Jun 2014 09:55:56 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: "Chen, Tiejun" <tiejun.chen@intel.com>, daniel.vetter@ffwll.ch,
-        jani.nikula@linux.intel.com, airlied@linux.ie
-CC: intel-gfx@lists.freedesktop.org, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        qemu-devel@nongnu.org
-Subject: Re: [RFC][PATCH] gpu:drm:i915:intel_detect_pch: back to check devfn
- instead of check class type
-References: <1403171631-3452-1-git-send-email-tiejun.chen@intel.com> <53A42DAA.80406@redhat.com> <53A692F9.3060200@intel.com> <53AA70C0.2000806@redhat.com> <53AA7B73.90503@intel.com>
-In-Reply-To: <53AA7B73.90503@intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755323AbaFYH67 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 03:58:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60613 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755204AbaFYH65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 03:58:57 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Linux Kernel <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Jens Axboe <axboe@kernel.dk>,
+        Jeff Moyer <jmoyer@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 6/6] cfq: Increase default value of target_latency
+Date: Wed, 25 Jun 2014 08:58:49 +0100
+Message-Id: <1403683129-10814-7-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1403683129-10814-1-git-send-email-mgorman@suse.de>
+References: <1403683129-10814-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 25/06/2014 09:34, Chen, Tiejun ha scritto:
-> On 2014/6/25 14:48, Paolo Bonzini wrote:
->> Second problem.  Your IGD passthrough code currently works with QEMU's
->> PIIX4-based machine.  But what happens if you try to extend it, so that
->
-> Yes, current xen machine, xenpv, is based on pii4, and also I don't
-> known if we will plan to migrate to q35 or others. So its hard to
-> further say more now.
->
->> it works with QEMU's ICH9-based machine?  That's a more modern machine
->> that has a PCIe chipset and hence has its ISA bridge at 00:1f.0.  Now
->
-> But even in this case, could we set the real vendor/device ids for that
-> ISA bridge at 00:1f.0? If not, what's broken?
+The existing CFQ default target_latency results in very poor performance
+for larger numbers of threads doing sequential reads. While this can be
+easily described as a tuning problem for users, it is one that is tricky
+to detect. This patch updates the default to benefit smaller machines.
+Dave Chinner points out that it is dangerous to assume that people know
+how to tune their IO scheduler. Jeff Moyer asked what workloads even
+care about threaded readers but it's reasonable to assume file,
+media, database and multi-user servers all experience large sequential
+readers from multiple sources at the same time.
 
-The config space layout changes for different vendor/device ids, so the 
-guest firmware only works if you have the right vendor/device id.
+It's a bit depressing to note how much slower this relatively simple case
+is in comparison to 3.0.  The following is from tiobench on a mid-range
+desktop using ext3 as the test filesystem although it's known other
+filesystems experience similar trouble.
 
->> It is only slightly better, but the right solution is to fix the driver.
->>   There is absolutely zero reason why a graphics driver should know
->> about the vendor/device ids of the PCH.
->
-> This means we have to fix this both on Linux and Windows but I'm not
-> sure if this is feasible to us.
+                                      3.16.0-rc2            3.16.0-rc2                 3.0.0
+                                 lessdirty                cfq600                     vanilla
+Min    SeqRead-MB/sec-1         140.79 (  0.00%)      140.43 ( -0.26%)      134.04 ( -4.79%)
+Min    SeqRead-MB/sec-2         118.08 (  0.00%)      118.18 (  0.08%)      120.76 (  2.27%)
+Min    SeqRead-MB/sec-4         108.47 (  0.00%)      110.84 (  2.18%)      114.49 (  5.55%)
+Min    SeqRead-MB/sec-8          87.20 (  0.00%)       92.40 (  5.96%)       98.04 ( 12.43%)
+Min    SeqRead-MB/sec-16         68.98 (  0.00%)       76.68 ( 11.16%)       79.49 ( 15.24%)
 
-You have to do it if you want this feature in QEMU in a future-proof way.
+The full series including this patch brings performance within an acceptable
+distance of 3.0.0-vanilla considering that read latencies and fairness are
+generally better now at the cost of overall throughput.
 
-You _can_ provide the ugly PIIX4-specific hack as a compatibility 
-fallback (and this patch is okay to make the compatibility fallback less 
-hacky).  However, I don't think QEMU should accept the patch for IGD 
-passthrough unless Intel is willing to make drivers 
-virtualization-friendly.  Once you assign the IGD, it is not that 
-integrated anymore and the drivers must take that into account.
+Here is the very high-level view of the iostats
 
-It is worthwhile pointing out that neither AMD nor nVidia need any of this.
+                  3.16.0-rc2  3.16.0-rc2       3.0.0
+                   lessdirty      cfq600     vanilla
+Mean sda-avgqusz      935.48      957.28     1000.70
+Mean sda-avgrqsz      575.27      579.85      600.71
+Mean sda-await       4405.00     4471.12     4887.67
+Mean sda-r_await       82.43       87.95      108.53
+Mean sda-w_await    13272.23    10783.67    11599.83
+Mean sda-rrqm          14.12       10.14       19.68
+Mean sda-wrqm        1631.24     1744.00    11999.46
+Max  sda-avgqusz     2179.79     2238.95     2626.78
+Max  sda-avgrqsz     1021.03     1021.97     1024.00
+Max  sda-await      15007.79    13600.51    24971.00
+Max  sda-r_await      897.78      893.09     5308.00
+Max  sda-w_await   207814.40   179483.79   177698.47
+Max  sda-rrqm          68.40       45.60       73.30
+Max  sda-wrqm       19544.00    19619.20    58058.40
 
->> The right way could be to make QEMU add a vendor-specific capability to
->> the video device. The driver can probe for that capability before
->
-> Do you mean we can pick two unused offsets in the configuration space of
-> the video device as a vendor-specific capability to hold the
-> vendor/device ids of the PCH?
+await figures are generally ok.  Average wait times are still acceptable
+and the worst-case read wait times are ok. Queue sizes and request sizes
+generally look ok. It's worth noting that the iostats are generally *far*
+better than 3.0.
 
-Yes, either that or add a new capability (which lets you choose the 
-offsets more freely).
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ block/cfq-iosched.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-If the IGD driver needs config space fields of the MCH, those fields 
-could also be mirrored in the new capability.  QEMU would forward them 
-automatically.
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index cadc378..876ae44 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -32,7 +32,7 @@ static int cfq_slice_async = HZ / 25;
+ static const int cfq_slice_async_rq = 2;
+ static int cfq_slice_idle = HZ / 125;
+ static int cfq_group_idle = HZ / 125;
+-static const int cfq_target_latency = HZ * 3/10; /* 300 ms */
++static const int cfq_target_latency = HZ * 6/10; /* 600 ms */
+ static const int cfq_hist_divisor = 4;
+ 
+ /*
+-- 
+1.8.4.5
 
-It could even be a new BAR, which gives even more freedom to allocate 
-the fields.
-
->> looking at the PCI bus.  QEMU can add the capability to the list, it is
->> easy because all accesses to the video device's configuration space trap
->> to QEMU.  Then you do not need to add fake devices to the machine.
->>
->> In fact, it would be nice if Intel added such a capability on the next
->> generation of integrated graphics, too.  On real hardware, ACPI or some
->
-> Maybe, but even this would be implemented, shouldn't we need to be
-> compatible with those old generations?
-
-Yes.
-
-- old generation / old driver: use 00:1f.0 hack, only guaranteed to work 
-on PIIX4-based virtual guest
-
-- old generation / new driver: use 00:1f.0 hack on real hardware, use 
-capability on 00:02.0 on virtual guest, can work on PCIe virtual guest
-
-- new generation / old driver: doesn't exist
-
-- new generation / new driver: always use capability on 00:02.0, can 
-work on PCIe virtual guest.
-
-Paolo
