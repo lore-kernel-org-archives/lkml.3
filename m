@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757913AbaFYRal (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 13:30:41 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54839 "EHLO
+	id S1757933AbaFYRbE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 13:31:04 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54832 "EHLO
 	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757876AbaFYRaj (ORCPT
+	by vger.kernel.org with ESMTP id S1757830AbaFYRai (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 13:30:39 -0400
+	Wed, 25 Jun 2014 13:30:38 -0400
 From: Sudeep Holla <sudeep.holla@arm.com>
 To: linux-kernel@vger.kernel.org
 Cc: sudeep.holla@arm.com, Heiko Carstens <heiko.carstens@de.ibm.com>,
         Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        linux-ia64@vger.kernel.org
-Subject: [PATCH 3/9] ia64: move cacheinfo sysfs to generic cacheinfo infrastructure
-Date: Wed, 25 Jun 2014 18:30:38 +0100
-Message-Id: <1403717444-23559-4-git-send-email-sudeep.holla@arm.com>
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH 1/9] drivers: base: add new class "cpu" to group cpu devices
+Date: Wed, 25 Jun 2014 18:30:36 +0100
+Message-Id: <1403717444-23559-2-git-send-email-sudeep.holla@arm.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1403717444-23559-1-git-send-email-sudeep.holla@arm.com>
 References: <1403717444-23559-1-git-send-email-sudeep.holla@arm.com>
@@ -25,482 +24,153 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sudeep Holla <sudeep.holla@arm.com>
 
-This patch removes the redundant sysfs cacheinfo code by making use of
-the newly introduced generic cacheinfo infrastructure.
+This patch creates a new class called "cpu" and assigns it to all the
+cpu devices. This helps in grouping all the cpu devices and associated
+child devices under the same class.
+
+This patch also:
+1. modifies the get_parent_device to return the legacy path
+   (/sys/devices/system/cpu/..) for the cpu class devices to support
+   existing sysfs ABI
+2. avoids creating link in the class directory pointing to the device as
+   there would be per-cpu instance of these devices with the same name
+3. makes sure subsystem symlink continues pointing to cpu bus instead of
+   cpu class for cpu devices
 
 Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: linux-ia64@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/ia64/kernel/topology.c | 401 +++++++++-----------------------------------
- 1 file changed, 79 insertions(+), 322 deletions(-)
+ drivers/base/core.c | 39 +++++++++++++++++++++++++++++++++------
+ drivers/base/cpu.c  |  7 +++++++
+ include/linux/cpu.h |  2 ++
+ 3 files changed, 42 insertions(+), 6 deletions(-)
 
-diff --git a/arch/ia64/kernel/topology.c b/arch/ia64/kernel/topology.c
-index f295f9a..48dc46d 100644
---- a/arch/ia64/kernel/topology.c
-+++ b/arch/ia64/kernel/topology.c
-@@ -13,6 +13,7 @@
-  *	Populate cpu cache entries in sysfs for cpu cache info
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index 20da3ad..fe622e2 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -10,6 +10,7 @@
+  *
   */
  
-+#include <linux/cacheinfo.h>
- #include <linux/cpu.h>
- #include <linux/kernel.h>
- #include <linux/mm.h>
-@@ -21,7 +22,6 @@
++#include <linux/cpu.h>
+ #include <linux/device.h>
+ #include <linux/err.h>
  #include <linux/init.h>
- #include <linux/bootmem.h>
- #include <linux/nodemask.h>
--#include <linux/notifier.h>
- #include <linux/export.h>
- #include <asm/mmzone.h>
- #include <asm/numa.h>
-@@ -103,60 +103,25 @@ subsys_initcall(topology_init);
- /*
-  * Export cpu cache information through sysfs
-  */
--
--/*
-- *  A bunch of string array to get pretty printing
-- */
--static const char *cache_types[] = {
--	"",			/* not used */
--	"Instruction",
--	"Data",
--	"Unified"	/* unified */
--};
--
--static const char *cache_mattrib[]={
--	"WriteThrough",
--	"WriteBack",
--	"",		/* reserved */
--	""		/* reserved */
--};
--
--struct cache_info {
--	pal_cache_config_info_t	cci;
--	cpumask_t shared_cpu_map;
--	int level;
--	int type;
--	struct kobject kobj;
--};
--
--struct cpu_cache_info {
--	struct cache_info *cache_leaves;
--	int	num_cache_leaves;
--	struct kobject kobj;
--};
--
--static struct cpu_cache_info	all_cpu_cache_info[NR_CPUS];
--#define LEAF_KOBJECT_PTR(x,y)    (&all_cpu_cache_info[x].cache_leaves[y])
--
- #ifdef CONFIG_SMP
--static void cache_shared_cpu_map_setup(unsigned int cpu,
--		struct cache_info * this_leaf)
-+static int __cache_cpumap_setup(unsigned int cpu, struct cacheinfo *this_leaf)
- {
- 	pal_cache_shared_info_t	csi;
--	int num_shared, i = 0;
--	unsigned int j;
-+	int num_shared, i = 0, j;
-+	enum cache_type type = this_leaf->type;
+@@ -742,6 +743,12 @@ static struct kobject *get_device_parent(struct device *dev,
+ 			return &block_class.p->subsys.kobj;
+ 		}
+ #endif
++		/*
++		 * if the device is in cpu class, then use the default/legacy
++		 * /sys/devices/system/cpu/.. path
++		 */
++		if (dev->class == cpu_class)
++			return &parent->kobj;
  
- 	if (cpu_data(cpu)->threads_per_core <= 1 &&
- 		cpu_data(cpu)->cores_per_socket <= 1) {
- 		cpu_set(cpu, this_leaf->shared_cpu_map);
--		return;
-+		return 0;
- 	}
+ 		/*
+ 		 * If we have no parent, we live in "virtual".
+@@ -808,11 +815,17 @@ static int device_add_class_symlinks(struct device *dev)
+ 	if (!dev->class)
+ 		return 0;
  
--	if (ia64_pal_cache_shared_info(this_leaf->level,
--					this_leaf->type,
--					0,
--					&csi) != PAL_STATUS_SUCCESS)
--		return;
-+	if (type == CACHE_TYPE_UNIFIED)
-+		type = CACHE_TYPE_DATA;
-+
-+	if (ia64_pal_cache_shared_info(this_leaf->level, type, 0,
-+				       &csi) != PAL_STATUS_SUCCESS)
-+		return -EIO;
- 
- 	num_shared = (int) csi.num_shared;
- 	do {
-@@ -168,305 +133,97 @@ static void cache_shared_cpu_map_setup(unsigned int cpu,
- 
- 		i++;
- 	} while (i < num_shared &&
--		ia64_pal_cache_shared_info(this_leaf->level,
--				this_leaf->type,
--				i,
--				&csi) == PAL_STATUS_SUCCESS);
--}
--#else
--static void cache_shared_cpu_map_setup(unsigned int cpu,
--		struct cache_info * this_leaf)
--{
--	cpu_set(cpu, this_leaf->shared_cpu_map);
--	return;
--}
--#endif
--
--static ssize_t show_coherency_line_size(struct cache_info *this_leaf,
--					char *buf)
--{
--	return sprintf(buf, "%u\n", 1 << this_leaf->cci.pcci_line_size);
--}
--
--static ssize_t show_ways_of_associativity(struct cache_info *this_leaf,
--					char *buf)
--{
--	return sprintf(buf, "%u\n", this_leaf->cci.pcci_assoc);
--}
--
--static ssize_t show_attributes(struct cache_info *this_leaf, char *buf)
--{
--	return sprintf(buf,
--			"%s\n",
--			cache_mattrib[this_leaf->cci.pcci_cache_attr]);
--}
--
--static ssize_t show_size(struct cache_info *this_leaf, char *buf)
--{
--	return sprintf(buf, "%uK\n", this_leaf->cci.pcci_cache_size / 1024);
--}
--
--static ssize_t show_number_of_sets(struct cache_info *this_leaf, char *buf)
--{
--	unsigned number_of_sets = this_leaf->cci.pcci_cache_size;
--	number_of_sets /= this_leaf->cci.pcci_assoc;
--	number_of_sets /= 1 << this_leaf->cci.pcci_line_size;
--
--	return sprintf(buf, "%u\n", number_of_sets);
--}
--
--static ssize_t show_shared_cpu_map(struct cache_info *this_leaf, char *buf)
--{
--	ssize_t	len;
--	cpumask_t shared_cpu_map;
--
--	cpumask_and(&shared_cpu_map,
--				&this_leaf->shared_cpu_map, cpu_online_mask);
--	len = cpumask_scnprintf(buf, NR_CPUS+1, &shared_cpu_map);
--	len += sprintf(buf+len, "\n");
--	return len;
--}
--
--static ssize_t show_type(struct cache_info *this_leaf, char *buf)
--{
--	int type = this_leaf->type + this_leaf->cci.pcci_unified;
--	return sprintf(buf, "%s\n", cache_types[type]);
--}
--
--static ssize_t show_level(struct cache_info *this_leaf, char *buf)
--{
--	return sprintf(buf, "%u\n", this_leaf->level);
-+		 ia64_pal_cache_shared_info(this_leaf->level, type, i,
-+					    &csi) == PAL_STATUS_SUCCESS);
-+	return 0;
- }
- 
--struct cache_attr {
--	struct attribute attr;
--	ssize_t (*show)(struct cache_info *, char *);
--	ssize_t (*store)(struct cache_info *, const char *, size_t count);
--};
--
--#ifdef define_one_ro
--	#undef define_one_ro
--#endif
--#define define_one_ro(_name) \
--	static struct cache_attr _name = \
--__ATTR(_name, 0444, show_##_name, NULL)
--
--define_one_ro(level);
--define_one_ro(type);
--define_one_ro(coherency_line_size);
--define_one_ro(ways_of_associativity);
--define_one_ro(size);
--define_one_ro(number_of_sets);
--define_one_ro(shared_cpu_map);
--define_one_ro(attributes);
--
--static struct attribute * cache_default_attrs[] = {
--	&type.attr,
--	&level.attr,
--	&coherency_line_size.attr,
--	&ways_of_associativity.attr,
--	&attributes.attr,
--	&size.attr,
--	&number_of_sets.attr,
--	&shared_cpu_map.attr,
--	NULL
--};
--
--#define to_object(k) container_of(k, struct cache_info, kobj)
--#define to_attr(a) container_of(a, struct cache_attr, attr)
--
--static ssize_t ia64_cache_show(struct kobject * kobj, struct attribute * attr, char * buf)
-+static int cache_shared_cpu_map_setup(unsigned int cpu)
- {
--	struct cache_attr *fattr = to_attr(attr);
--	struct cache_info *this_leaf = to_object(kobj);
--	ssize_t ret;
-+	unsigned int idx;
-+	int ret = 0;
-+	struct cpu_cacheinfo *this_cpu_ci = get_cpu_cacheinfo(cpu);
-+	struct cacheinfo *this_leaf = this_cpu_ci->info_list;
- 
--	ret = fattr->show ? fattr->show(this_leaf, buf) : 0;
-+	for (idx = 0; idx < this_cpu_ci->num_leaves; idx++, this_leaf++) {
-+		ret = __cache_cpumap_setup(cpu, this_leaf);
-+		if (ret)
-+			break;
+-	error = sysfs_create_link(&dev->kobj,
+-				  &dev->class->p->subsys.kobj,
+-				  "subsystem");
+-	if (error)
+-		goto out;
++	/*
++	 * the subsystem symlink in each cpu device needs to continue
++	 * pointing to cpu bus
++	 */
++	if (dev->bus != &cpu_subsys) {
++		error = sysfs_create_link(&dev->kobj,
++					  &dev->class->p->subsys.kobj,
++					  "subsystem");
++		if (error)
++			goto out;
 +	}
- 	return ret;
- }
--
--static const struct sysfs_ops cache_sysfs_ops = {
--	.show   = ia64_cache_show
--};
--
--static struct kobj_type cache_ktype = {
--	.sysfs_ops	= &cache_sysfs_ops,
--	.default_attrs	= cache_default_attrs,
--};
--
--static struct kobj_type cache_ktype_percpu_entry = {
--	.sysfs_ops	= &cache_sysfs_ops,
--};
--
--static void cpu_cache_sysfs_exit(unsigned int cpu)
--{
--	kfree(all_cpu_cache_info[cpu].cache_leaves);
--	all_cpu_cache_info[cpu].cache_leaves = NULL;
--	all_cpu_cache_info[cpu].num_cache_leaves = 0;
--	memset(&all_cpu_cache_info[cpu].kobj, 0, sizeof(struct kobject));
--	return;
--}
--
--static int cpu_cache_sysfs_init(unsigned int cpu)
-+#else
-+static int cache_shared_cpu_map_setup(unsigned int cpu)
- {
--	unsigned long i, levels, unique_caches;
--	pal_cache_config_info_t cci;
--	int j;
--	long status;
--	struct cache_info *this_cache;
--	int num_cache_leaves = 0;
--
--	if ((status = ia64_pal_cache_summary(&levels, &unique_caches)) != 0) {
--		printk(KERN_ERR "ia64_pal_cache_summary=%ld\n", status);
--		return -1;
--	}
--
--	this_cache=kzalloc(sizeof(struct cache_info)*unique_caches,
--			GFP_KERNEL);
--	if (this_cache == NULL)
--		return -ENOMEM;
--
--	for (i=0; i < levels; i++) {
--		for (j=2; j >0 ; j--) {
--			if ((status=ia64_pal_cache_config_info(i,j, &cci)) !=
--					PAL_STATUS_SUCCESS)
--				continue;
--
--			this_cache[num_cache_leaves].cci = cci;
--			this_cache[num_cache_leaves].level = i + 1;
--			this_cache[num_cache_leaves].type = j;
--
--			cache_shared_cpu_map_setup(cpu,
--					&this_cache[num_cache_leaves]);
--			num_cache_leaves ++;
--		}
--	}
--
--	all_cpu_cache_info[cpu].cache_leaves = this_cache;
--	all_cpu_cache_info[cpu].num_cache_leaves = num_cache_leaves;
--
--	memset(&all_cpu_cache_info[cpu].kobj, 0, sizeof(struct kobject));
-+	int idx;
-+	struct cpu_cacheinfo *this_cpu_ci = get_cpu_cacheinfo(cpu);
-+	struct cacheinfo *this_leaf = this_cpu_ci->info_list;
  
-+	for (idx = 0; idx < this_cpu_ci->num_leaves; idx++, this_leaf++)
-+		cpu_set(cpu, this_leaf->shared_cpu_map);
- 	return 0;
- }
-+#endif
+ 	if (dev->parent && device_is_not_partition(dev)) {
+ 		error = sysfs_create_link(&dev->kobj, &dev->parent->kobj,
+@@ -826,6 +839,13 @@ static int device_add_class_symlinks(struct device *dev)
+ 	if (sysfs_deprecated && dev->class == &block_class)
+ 		return 0;
+ #endif
++	/*
++	 * don't create a link in the cpu class directory pointing to the
++	 * device as there would be per-cpu instance of these devices with
++	 * the same name
++	 */
++	if (dev->class == cpu_class)
++		return 0;
  
--/* Add cache interface for CPU device */
--static int cache_add_dev(struct device *sys_dev)
-+static void ci_leaf_init(struct cacheinfo *this_leaf,
-+			 pal_cache_config_info_t *cci,
-+			 enum cache_type type, unsigned int level)
- {
--	unsigned int cpu = sys_dev->id;
--	unsigned long i, j;
--	struct cache_info *this_object;
--	int retval = 0;
--	cpumask_t oldmask;
--
--	if (all_cpu_cache_info[cpu].kobj.parent)
--		return 0;
--
--	oldmask = current->cpus_allowed;
--	retval = set_cpus_allowed_ptr(current, cpumask_of(cpu));
--	if (unlikely(retval))
--		return retval;
-+	unsigned number_of_sets = cci->pcci_cache_size;
+ 	/* link in the class directory pointing to the device */
+ 	error = sysfs_create_link(&dev->class->p->subsys.kobj,
+@@ -851,11 +871,18 @@ static void device_remove_class_symlinks(struct device *dev)
  
--	retval = cpu_cache_sysfs_init(cpu);
--	set_cpus_allowed_ptr(current, &oldmask);
--	if (unlikely(retval < 0))
--		return retval;
--
--	retval = kobject_init_and_add(&all_cpu_cache_info[cpu].kobj,
--				      &cache_ktype_percpu_entry, &sys_dev->kobj,
--				      "%s", "cache");
--	if (unlikely(retval < 0)) {
--		cpu_cache_sysfs_exit(cpu);
--		return retval;
--	}
--
--	for (i = 0; i < all_cpu_cache_info[cpu].num_cache_leaves; i++) {
--		this_object = LEAF_KOBJECT_PTR(cpu,i);
--		retval = kobject_init_and_add(&(this_object->kobj),
--					      &cache_ktype,
--					      &all_cpu_cache_info[cpu].kobj,
--					      "index%1lu", i);
--		if (unlikely(retval)) {
--			for (j = 0; j < i; j++) {
--				kobject_put(&(LEAF_KOBJECT_PTR(cpu,j)->kobj));
--			}
--			kobject_put(&all_cpu_cache_info[cpu].kobj);
--			cpu_cache_sysfs_exit(cpu);
--			return retval;
--		}
--		kobject_uevent(&(this_object->kobj), KOBJ_ADD);
--	}
--	kobject_uevent(&all_cpu_cache_info[cpu].kobj, KOBJ_ADD);
--	return retval;
-+	number_of_sets /= cci->pcci_assoc;
-+	number_of_sets /= 1 << cci->pcci_line_size;
-+	this_leaf->level = level;
-+	this_leaf->type = cci->pcci_unified ? CACHE_TYPE_UNIFIED : type;
-+	this_leaf->coherency_line_size = cci->pcci_line_size;
-+	this_leaf->ways_of_associativity = cci->pcci_assoc;
-+	this_leaf->size = cci->pcci_cache_size;
-+	this_leaf->attributes = cci->pcci_cache_attr;
-+	this_leaf->number_of_sets = number_of_sets;
- }
- 
--/* Remove cache interface for CPU device */
--static int cache_remove_dev(struct device *sys_dev)
-+int init_cache_level(unsigned int cpu)
- {
--	unsigned int cpu = sys_dev->id;
--	unsigned long i;
-+	struct cpu_cacheinfo *this_cpu_ci = get_cpu_cacheinfo(cpu);
-+	unsigned long levels, unique_caches;
-+	long status;
- 
--	for (i = 0; i < all_cpu_cache_info[cpu].num_cache_leaves; i++)
--		kobject_put(&(LEAF_KOBJECT_PTR(cpu,i)->kobj));
-+	if (!this_cpu_ci)
-+		return -EINVAL;
- 
--	if (all_cpu_cache_info[cpu].kobj.parent) {
--		kobject_put(&all_cpu_cache_info[cpu].kobj);
--		memset(&all_cpu_cache_info[cpu].kobj,
--			0,
--			sizeof(struct kobject));
-+	status = ia64_pal_cache_summary(&levels, &unique_caches);
-+	if (status != PAL_STATUS_SUCCESS) {
-+		pr_err("ia64_pal_cache_summary = %ld\n", status);
-+		return -EIO;
- 	}
--
--	cpu_cache_sysfs_exit(cpu);
-+	this_cpu_ci->num_levels = levels;
-+	this_cpu_ci->num_leaves = unique_caches;
- 
- 	return 0;
- }
- 
--/*
-- * When a cpu is hot-plugged, do a check and initiate
-- * cache kobject if necessary
-- */
--static int cache_cpu_callback(struct notifier_block *nfb,
--		unsigned long action, void *hcpu)
--{
--	unsigned int cpu = (unsigned long)hcpu;
--	struct device *sys_dev;
--
--	sys_dev = get_cpu_device(cpu);
--	switch (action) {
--	case CPU_ONLINE:
--	case CPU_ONLINE_FROZEN:
--		cache_add_dev(sys_dev);
--		break;
--	case CPU_DEAD:
--	case CPU_DEAD_FROZEN:
--		cache_remove_dev(sys_dev);
--		break;
--	}
--	return NOTIFY_OK;
--}
--
--static struct notifier_block cache_cpu_notifier =
--{
--	.notifier_call = cache_cpu_callback
--};
--
--static int __init cache_sysfs_init(void)
-+int populate_cache_leaves(unsigned int cpu)
- {
--	int i;
--
--	cpu_notifier_register_begin();
--
--	for_each_online_cpu(i) {
--		struct device *sys_dev = get_cpu_device((unsigned int)i);
--		cache_add_dev(sys_dev);
-+	unsigned int level, idx;
-+	s64 status;
-+	pal_cache_config_info_t cci;
-+	enum cache_type type;
-+	struct cpu_cacheinfo *this_cpu_ci = get_cpu_cacheinfo(cpu);
-+	struct cacheinfo *this_leaf = this_cpu_ci->info_list;
+ 	if (dev->parent && device_is_not_partition(dev))
+ 		sysfs_remove_link(&dev->kobj, "device");
+-	sysfs_remove_link(&dev->kobj, "subsystem");
 +
-+	for (idx = 0, level = 1; level <= this_cpu_ci->num_levels &&
-+	     idx < this_cpu_ci->num_leaves; idx++, level++) {
-+		if (!this_leaf)
-+			return -EINVAL;
++	/* if subsystem points to cpu bus, bus_remove_device will remove it */
++	if (dev->bus != &cpu_subsys)
++		sysfs_remove_link(&dev->kobj, "subsystem");
+ #ifdef CONFIG_BLOCK
+ 	if (sysfs_deprecated && dev->class == &block_class)
+ 		return;
+ #endif
++	/* symlinks are not created for cpu class devices, nothing to remove */
++	if (dev->class == cpu_class)
++		return;
 +
-+		type = CACHE_TYPE_INST;
-+		status = ia64_pal_cache_config_info(level - 1, type, &cci);
-+		if (status == PAL_STATUS_SUCCESS)
-+			ci_leaf_init(this_leaf++, &cci, type, level);
-+		type = CACHE_TYPE_DATA;
-+		status = ia64_pal_cache_config_info(level - 1, type, &cci);
-+		if (status == PAL_STATUS_SUCCESS)
-+			ci_leaf_init(this_leaf++, &cci, type, level);
- 	}
--
--	__register_hotcpu_notifier(&cache_cpu_notifier);
--
--	cpu_notifier_register_done();
--
--	return 0;
-+	return cache_shared_cpu_map_setup(cpu);
+ 	sysfs_delete_link(&dev->class->p->subsys.kobj, &dev->kobj, dev_name(dev));
  }
--
--device_initcall(cache_sysfs_init);
--
+ 
+diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+index 006b1bc..056b885 100644
+--- a/drivers/base/cpu.c
++++ b/drivers/base/cpu.c
+@@ -322,6 +322,7 @@ static int cpu_uevent(struct device *dev, struct kobj_uevent_env *env)
+ }
+ #endif
+ 
++struct class *cpu_class;
+ /*
+  * register_cpu - Setup a sysfs device for a CPU.
+  * @cpu - cpu->hotpluggable field set to 1 will generate a control file in
+@@ -338,6 +339,8 @@ int register_cpu(struct cpu *cpu, int num)
+ 	memset(&cpu->dev, 0x00, sizeof(struct device));
+ 	cpu->dev.id = num;
+ 	cpu->dev.bus = &cpu_subsys;
++	cpu->dev.parent = cpu_subsys.dev_root;
++	cpu->dev.class = cpu_class;
+ 	cpu->dev.release = cpu_device_release;
+ 	cpu->dev.offline_disabled = !cpu->hotpluggable;
+ 	cpu->dev.offline = !cpu_online(num);
+@@ -423,5 +426,9 @@ void __init cpu_dev_init(void)
+ 	if (subsys_system_register(&cpu_subsys, cpu_root_attr_groups))
+ 		panic("Failed to register CPU subsystem");
+ 
++	cpu_class = class_create(THIS_MODULE, "cpu");
++	if (IS_ERR(cpu_class))
++		panic("Failed to register CPU class");
++
+ 	cpu_dev_register_generic();
+ }
+diff --git a/include/linux/cpu.h b/include/linux/cpu.h
+index 95978ad..8c0fc9b 100644
+--- a/include/linux/cpu.h
++++ b/include/linux/cpu.h
+@@ -39,6 +39,8 @@ extern void cpu_remove_dev_attr(struct device_attribute *attr);
+ extern int cpu_add_dev_attr_group(struct attribute_group *attrs);
+ extern void cpu_remove_dev_attr_group(struct attribute_group *attrs);
+ 
++extern struct class *cpu_class;
++
+ #ifdef CONFIG_HOTPLUG_CPU
+ extern void unregister_cpu(struct cpu *cpu);
+ extern ssize_t arch_cpu_probe(const char *, size_t);
 -- 
 1.8.3.2
 
