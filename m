@@ -1,57 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754380AbaFYGN2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 02:13:28 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:58136 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753335AbaFYGN0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 02:13:26 -0400
-Date: Tue, 24 Jun 2014 23:13:23 -0700 (PDT)
-Message-Id: <20140624.231323.1246980184268143860.davem@davemloft.net>
-To: ogerlitz@mellanox.com
-Cc: gregkh@linuxfoundation.org, weiyang@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        bhelgaas@google.com, amirv@mellanox.com, jackm@dev.mellanox.co.il,
-        or.gerlitz@gmail.com
-Subject: Re: [PATCH 3.10 26/52] net/mlx4_core: Preserve pci_dev_data after
- __mlx4_remove_one()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <53AA65F2.8060405@mellanox.com>
-References: <20140624154713.428945460@linuxfoundation.org>
-	<20140624154715.067497332@linuxfoundation.org>
-	<53AA65F2.8060405@mellanox.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	id S1754611AbaFYGNk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 02:13:40 -0400
+Received: from gate.crashing.org ([63.228.1.57]:45714 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754496AbaFYGNi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 02:13:38 -0400
+Message-ID: <1403676803.4587.204.camel@pasglop>
+Subject: [git pull] Please pull powerpc.git merge branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Date: Wed, 25 Jun 2014 16:13:23 +1000
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2 
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 24 Jun 2014 23:13:26 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Or Gerlitz <ogerlitz@mellanox.com>
-Date: Wed, 25 Jun 2014 09:02:26 +0300
+Hi Linus !
 
-> On 24/06/2014 18:50, Greg Kroah-Hartman wrote:
->> 3.10-stable review patch.  If anyone has any objections, please let me
->> know.
->>
->> ------------------
->>
->> From: Wei Yang <weiyang@linux.vnet.ibm.com>
->>
->> [ Upstream commit befdf8978accecac2e0739e6b5075afc62db37fe ]
-> 
-> Hi Wei, Dave,
-> 
-> In the same manner you acted for 3.14.y -- for this commit to go into
-> 3.10.y it must be accompanied by commit
-> da1de8dfff09d33d4a5345762c21b487028e25f5 "net/mlx4_core: Keep only one
-> driver entry release mlx4_priv" which fixes a bug introduced by the
-> former, agree?
+Here are a handful or two of powerpc fixes and simple/trivial
+cleanups. A bunch of them fix ftrace with the new ABI v2 in
+Little Endian, the rest is a scattering of fairly simple things.
 
-That's impossible, there is no shutdown method defined in the 3.10.x
-version of the mlx4 driver.
+Cheers,
+Ben.
 
-That's why I didn't include that change.
+The following changes since commit 68986c9f0f4552c34c248501eb0c690553866d6e:
+
+  Revert "offb: Add palette hack for little endian" (2014-06-16 19:45:45 +1000)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
+
+for you to fetch changes up to 6663a4fa6711050036562ddfd2086edf735fae21:
+
+  powerpc: Don't skip ePAPR spin-table CPUs (2014-06-25 13:10:49 +1000)
+
+----------------------------------------------------------------
+Benjamin Herrenschmidt (1):
+      powerpc: Remove __arch_swab*
+
+Catalin Marinas (1):
+      powerpc/kmemleak: Do not scan the DART table
+
+Gavin Shan (1):
+      powerpc/kerenl: Enable EEH for IO accessors
+
+Laurent Dufour (1):
+      powerpc/module: Fix TOC symbol CRC
+
+Michael Ellerman (9):
+      powerpc: Remove ancient DEBUG_SIG code
+      powerpc: Add ppc_global_function_entry()
+      powerpc/ftrace: Fix typo in mask of opcode
+      powerpc/ftrace: Fix inverted check of create_branch()
+      powerpc/ftrace: Fix nop of modules on 64bit LE (ABIv2)
+      powerpc/ftrace: Use pr_fmt() to namespace error messages
+      powerpc/kprobes: Fix jprobes on ABI v2 (LE)
+      selftests/powerpc: Use the test harness for the TM DSCR test
+      powerpc/powernv: Remove OPAL v1 takeover
+
+Rasmus Villemoes (1):
+      powerpc/macintosh/smu.c: Fix closing brace followed by if
+
+Rickard Strandqvist (1):
+      powerpc/cell: cbe_thermal.c: Cleaning up a variable is of the wrong type
+
+Scott Wood (1):
+      powerpc: Don't skip ePAPR spin-table CPUs
+
+ arch/powerpc/Kconfig.debug                         |   1 -
+ arch/powerpc/include/asm/code-patching.h           |  11 ++
+ arch/powerpc/include/asm/opal.h                    |  29 ---
+ arch/powerpc/include/asm/swab.h                    |  43 -----
+ arch/powerpc/kernel/ftrace.c                       |  52 +++--
+ arch/powerpc/kernel/iomap.c                        |  20 +-
+ arch/powerpc/kernel/kprobes.c                      |   9 +-
+ arch/powerpc/kernel/module_64.c                    |  11 +-
+ arch/powerpc/kernel/prom.c                         |   7 -
+ arch/powerpc/kernel/prom_init.c                    | 211 ---------------------
+ arch/powerpc/kernel/prom_init_check.sh             |   4 +-
+ arch/powerpc/kernel/setup-common.c                 |  10 +-
+ arch/powerpc/kernel/signal_32.c                    |   9 -
+ arch/powerpc/kernel/signal_64.c                    |   9 -
+ arch/powerpc/platforms/cell/cbe_thermal.c          |   2 +-
+ arch/powerpc/platforms/powernv/Makefile            |   2 +-
+ arch/powerpc/platforms/powernv/opal-takeover.S     | 140 --------------
+ arch/powerpc/sysdev/dart_iommu.c                   |   5 +
+ drivers/macintosh/smu.c                            |   3 +-
+ tools/testing/selftests/powerpc/tm/Makefile        |   2 +-
+ .../testing/selftests/powerpc/tm/tm-resched-dscr.c |  14 +-
+ 21 files changed, 93 insertions(+), 501 deletions(-)
+ delete mode 100644 arch/powerpc/platforms/powernv/opal-takeover.S
+
+
