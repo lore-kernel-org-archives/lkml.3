@@ -1,59 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757414AbaFYPZf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 11:25:35 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:60956 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757072AbaFYPZe (ORCPT
+	id S1757435AbaFYP0x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 11:26:53 -0400
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:56844 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756559AbaFYP0w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 11:25:34 -0400
+	Wed, 25 Jun 2014 11:26:52 -0400
 MIME-Version: 1.0
-Date: Wed, 25 Jun 2014 23:25:33 +0800
-Message-ID: <CAJKoSVTzYbuzmh6NOpXZ8hd5B_X3fWoik_w9AQJ=0RaCo40rBA@mail.gmail.com>
-Subject: [PATCH 2/2] staging: wlan-ng/hfa384x_usb.c: add blank line after declarations
-From: Cheng-Wei Lee <lee.rhapsody@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sherif Shehab Aldin <shehabaldin.sherif@gmail.com>,
-        Avinash Kumar <avi.kp.137@gmail.com>,
-        Peter Senna Tschudin <peter.senna@gmail.com>
-Cc: devel <devel@driverdev.osuosl.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <53AAE603.500@st.com>
+References: <1401195188-23677-1-git-send-email-lee.jones@linaro.org>
+	<20140625145354.GK13518@lee--X1>
+	<53AAE603.500@st.com>
+Date: Wed, 25 Jun 2014 08:26:51 -0700
+Message-ID: <CAOesGMiR1tKZH7BeZUuiAPUsw=oRnUg6q--Nby+RROd=p6zMaA@mail.gmail.com>
+Subject: Re: [PATCH] ARM: STi: DT: STiH41x: Convert all uppercase non-defines
+ to lowercase
+From: Olof Johansson <olof@lixom.net>
+To: Maxime Coquelin <maxime.coquelin@st.com>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel@stlinux.com" <kernel@stlinux.com>,
+        Patrice CHOTARD <patrice.chotard@st.com>,
+        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the following checkpatch.pl issues in hfa384x_usb.c:
-WARNING: Missing a blank line after declarations
+`On Wed, Jun 25, 2014 at 8:08 AM, Maxime Coquelin
+<maxime.coquelin@st.com> wrote:
+>
+>
+> On 06/25/2014 04:53 PM, Lee Jones wrote:
+>>> Suggested-by: Olof Johansson <olof@lixom.net>
+>>> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+>>> ---
+>>>  arch/arm/boot/dts/stih415-pinctrl.dtsi   | 340 +++++++++++++++---------------
+>>>  arch/arm/boot/dts/stih416-b2020-revE.dts |   6 +-
+>>>  arch/arm/boot/dts/stih416-pinctrl.dtsi   | 342 +++++++++++++++----------------
+>>>  arch/arm/boot/dts/stih41x-b2000.dtsi     |   6 +-
+>>>  arch/arm/boot/dts/stih41x-b2020.dtsi     |   6 +-
+>>>  5 files changed, 350 insertions(+), 350 deletions(-)
+>>
+>> What happened to this Maxime?
+>>
+>> It was Acked by Olof, then died.  Did it slip through the net?
+>>
+>
+> You sent it to the ML after my last pull request for v3.16.
+> I think to take it for v3.17, but maybe you think it can go in next v3.16 rc?
+> If so, maybe Arnd or Olof can pick it directly, since we only have this single
+> patch for v3.16 fixes currently?
 
-Signed-off-by: Quentin Lee <lee.rhapsody@gmail.com>
----
- drivers/staging/wlan-ng/hfa384x_usb.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+If you have only one patch, then please send it to us as a fresh copy
+with git send-email to arm@kernel.org + the usual lists.
 
-diff --git a/drivers/staging/wlan-ng/hfa384x_usb.c
-b/drivers/staging/wlan-ng/hfa384x_usb.c
-index 07cee56..99e2f2d 100644
---- a/drivers/staging/wlan-ng/hfa384x_usb.c
-+++ b/drivers/staging/wlan-ng/hfa384x_usb.c
-@@ -3533,7 +3533,7 @@ static void hfa384x_usbin_rx(wlandevice_t
-*wlandev, struct sk_buff *skb)
- 	}
+You need to apply it and test it on hardware before anyway, right? We
+certainly can't do that for you.
 
- done:
--	return;
-+	pr_debug("hfa384x_usbin_rx: done\n");
- }
 
- /*----------------------------------------------------------------
-@@ -3643,8 +3643,6 @@ static void hfa384x_int_rxmonitor(wlandevice_t *wlandev,
 
- 	/* pass it back up */
- 	prism2sta_ev_rx(wlandev, skb);
--
--	return;
- }
-
- /*----------------------------------------------------------------
--- 
-1.7.9.5
+-Olof
