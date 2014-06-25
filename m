@@ -1,123 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757626AbaFYREH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 13:04:07 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:33519 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757421AbaFYREE (ORCPT
+	id S1757685AbaFYREf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 13:04:35 -0400
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:34335 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757641AbaFYREe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 13:04:04 -0400
+	Wed, 25 Jun 2014 13:04:34 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAGXu5j+J11zJnuFR8bYKAXizAHhCx4R+uJE_QH6zC3q2udkpaQ@mail.gmail.com>
-References: <1403642893-23107-1-git-send-email-keescook@chromium.org>
- <1403642893-23107-6-git-send-email-keescook@chromium.org> <20140625135121.GB7892@redhat.com>
- <CAGXu5jJkFxh4K=40xuh6tu3kUf4oJM8Dry+4upBdRieW3FNLgw@mail.gmail.com>
- <CALCETrUBNmLnpa+LM91om2RSpR6SjupP-EdefzhU1Me4nv3Dfw@mail.gmail.com> <CAGXu5j+J11zJnuFR8bYKAXizAHhCx4R+uJE_QH6zC3q2udkpaQ@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 25 Jun 2014 10:03:42 -0700
-Message-ID: <CALCETrVrs8sb19+UUqyFEpAFzTih5dkAwn-WpQjfgPcPJMpP5g@mail.gmail.com>
-Subject: Re: [PATCH v8 5/9] seccomp: split mode set routines
-To: Kees Cook <keescook@chromium.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
-        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
+In-Reply-To: <20140625140005.GB26883@htj.dyndns.org>
+References: <20140513034647.GA5421@dastard> <CANGgnMZ0q9uE3NHj2i0SBK1d0vdKLx7QBJeFNb+YwP-5EAmejQ@mail.gmail.com>
+ <20140513063943.GQ26353@dastard> <CANGgnMYn++1++UyX+D2d9GxPxtytpQJv0ThFwdxM-yX7xDWqiA@mail.gmail.com>
+ <20140513090321.GR26353@dastard> <CANGgnMZqQc_NeaDpO_aX+bndmHrQ9VWo9mkfxhPBkRD-J=N6sQ@mail.gmail.com>
+ <CANGgnMZ8OwzfBj5m9H7c6q2yahGhU7oFZLsJfVxnWoqZExkZmQ@mail.gmail.com>
+ <20140624030240.GB9508@dastard> <20140624032521.GA12164@htj.dyndns.org>
+ <CANGgnMY5cBSXOayDbbOvqNXEG8e6sAYEjpWEQO2X8XPxx2R5-Q@mail.gmail.com> <20140625140005.GB26883@htj.dyndns.org>
+From: Austin Schuh <austin@peloton-tech.com>
+Date: Wed, 25 Jun 2014 10:04:13 -0700
+Message-ID: <CANGgnMb_eqipXLhJfvDjWywG2xxFSiEPySiuYz=mvU94h0P6sw@mail.gmail.com>
+Subject: Re: On-stack work item completion race? (was Re: XFS crash?)
+To: Tejun Heo <tj@kernel.org>
+Cc: Dave Chinner <david@fromorbit.com>, xfs <xfs@oss.sgi.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 9:54 AM, Kees Cook <keescook@chromium.org> wrote:
-> On Wed, Jun 25, 2014 at 9:10 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->> On Wed, Jun 25, 2014 at 7:51 AM, Kees Cook <keescook@chromium.org> wrote:
->>> On Wed, Jun 25, 2014 at 6:51 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->>>> On 06/24, Kees Cook wrote:
->>>>>
->>>>> +static inline void seccomp_assign_mode(struct task_struct *task,
->>>>> +                                    unsigned long seccomp_mode)
->>>>> +{
->>>>> +     BUG_ON(!spin_is_locked(&task->sighand->siglock));
->>>>> +
->>>>> +     task->seccomp.mode = seccomp_mode;
->>>>> +     set_tsk_thread_flag(task, TIF_SECCOMP);
->>>>> +}
->>>>
->>>> OK, but unless task == current this can race with secure_computing().
->>>> I think this needs smp_mb__before_atomic() and secure_computing() needs
->>>> rmb() after test_bit(TIF_SECCOMP).
->>>>
->>>> Otherwise, can't __secure_computing() hit BUG() if it sees the old
->>>> mode == SECCOMP_MODE_DISABLED ?
->>>>
->>>> Or seccomp_run_filters() can see ->filters == NULL and WARN(),
->>>> smp_load_acquire() only serializes that LOAD with the subsequent memory
->>>> operations.
->>>
->>> Hm, actually, now I'm worried about smp_load_acquire() being too slow
->>> in run_filters().
->>>
->>> The ordering must be:
->>> - task->seccomp.filter must be valid before
->>> - task->seccomp.mode is set, which must be valid before
->>> - TIF_SECCOMP is set
->>>
->>> But I don't want to impact secure_computing(). What's the best way to
->>> make sure this ordering is respected?
->>
->> Remove the ordering requirement, perhaps?
->>
->> What if you moved mode into seccomp.filter?  Then there would be
->> little reason to check TIF_SECCOMP from secure_computing; instead, you
->> could smp_load_acquire (or read_barrier_depends, maybe) seccomp.filter
->> from secure_computing and pass the result as a parameter to
->> __secure_computing.  Or you could even remove the distinction between
->> secure_computing and __secure_computing -- it's essentially useless
->> anyway to split entry hook approaches like my x86 fastpath prototype.
+On Wed, Jun 25, 2014 at 7:00 AM, Tejun Heo <tj@kernel.org> wrote:
 >
-> The TIF_SECCOMP is needed for the syscall entry path. The check in
-> secure_computing() is just because the "I am being traced" trigger
-> includes a call to secure_computing, which filters out tracing
-> reasons.
-
-Right.  I'm suggesting just checking a single indication that seccomp
-is on from the process in the seccomp code so that the order doesn't
-matter.
-
-IOW, TIF_SECCOMP causes __secure_computing to be invoked, but the race
-only seems to matter because of the warning and the BUG.  I think that
-both can be fixed if you merge mode into filter so that
-__secure_computing atomically checks one condition.
-
+> Hello,
 >
-> Your fast path work would clean a lot of that up, as you say. But it
-> still doesn't change the ordering check here. TIF_SECCOMP indicates
-> seccomp.mode must be checked, so that ordering will remain, and if
-> mode == FILTER, seccomp.filter must be valid.
+> On Tue, Jun 24, 2014 at 08:05:07PM -0700, Austin Schuh wrote:
+> > > I can see no reason why manual completion would behave differently
+> > > from flush_work() in this case.
+> >
+> > I went looking for a short trace in my original log to show the problem,
+> > and instead found evidence of the second problem.  I still like the shorter
+> > flush_work call, but that's not my call.
 >
-> Isn't there a way we can force the assignment ordering in seccomp_assign_mode()?
+> So, are you saying that the original issue you reported isn't actually
+> a problem?  But didn't you imply that changing the waiting mechanism
+> fixed a deadlock or was that a false positive?
 
-Write the filter, then smp_mb (or maybe a weaker barrier is okay),
-then set the bit.
+Correct, that was a false positive.  Sorry for the noise.
 
---Andy
-
+> > I spent some more time debugging, and I am seeing that tsk_is_pi_blocked is
+> > returning 1 in sched_submit_work (kernel/sched/core.c).  It looks
+> > like sched_submit_work is not detecting that the worker task is blocked on
+> > a mutex.
 >
-> -Kees
+> The function unplugs the block layer and doesn't have much to do with
+> workqueue although it has "_work" in its name.
+
+Thomas moved
++ if (tsk->flags & PF_WQ_WORKER)
++   wq_worker_sleeping(tsk);
+into sched_submit_work as part of the RT patchset.
+
+> > This looks very RT related right now.  I see 2 problems from my reading
+> > (and experimentation).  The first is that the second worker isn't getting
+> > started because tsk_is_pi_blocked is reporting that the task isn't blocked
+> > on a mutex.  The second is that even if another worker needs to be
+> > scheduled because the original worker is blocked on a mutex, we need the
+> > pool lock to schedule another worker.  The pool lock can be acquired by any
+> > CPU, and is a spin_lock.  If we end up on the slow path for the pool lock,
+> > we hit BUG_ON(rt_mutex_real_waiter(task->pi_blocked_on))
+> > in task_blocks_on_rt_mutex in rtmutex.c.  I'm not sure how to deal with
+> > either problem.
+> >
+> > Hopefully I've got all my facts right...  Debugging kernel code is a whole
+> > new world from userspace code.
+>
+> I don't have much idea how RT kernel works either.  Can you reproduce
+> the issues that you see on mainline?
+>
+> Thanks.
 >
 > --
-> Kees Cook
-> Chrome OS Security
+> tejun
 
+I'll see what I can do.
 
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Thanks!
+  Austin
