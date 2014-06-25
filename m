@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754899AbaFYUE3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 16:04:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47161 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752666AbaFYUE1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 16:04:27 -0400
-Date: Wed, 25 Jun 2014 13:04:25 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Alexander Graf <agraf@suse.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: Re: [PATCH v3 -next 0/9] CMA: generalize CMA reserved area
- management code
-Message-Id: <20140625130425.609ad4293781f5ac81772bf9@linux-foundation.org>
-In-Reply-To: <53AAC1B4.5000204@samsung.com>
-References: <1402897251-23639-1-git-send-email-iamjoonsoo.kim@lge.com>
-	<539EB4C7.3080106@samsung.com>
-	<20140617012507.GA6825@js1304-P5Q-DELUXE>
-	<20140618135144.297c785260f9e2aebead867c@linux-foundation.org>
-	<53AAC1B4.5000204@samsung.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755184AbaFYUFO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 16:05:14 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47785 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752833AbaFYUFN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 16:05:13 -0400
+Date: Wed, 25 Jun 2014 22:05:10 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Casey Leedom <leedom@chelsio.com>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, tiwai@suse.de,
+        chunkeey@googlemail.com, cocci@systeme.lip6.fr, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        Philip Oswald <poswald@suse.com>,
+        Santosh Rastapur <santosh@chelsio.com>,
+        Jeffrey Cheung <jcheung@suse.com>, David Chang <dchang@suse.com>,
+        Hariprasad Shenai <hariprasad@chelsio.com>
+Subject: Re: [PATCH 2/3] cxgb4: make configuration load use
+	request_firmware_direct()
+Message-ID: <20140625200510.GY27687@wotan.suse.de>
+References: <1403649583-12707-1-git-send-email-mcgrof@do-not-panic.com> <1403649583-12707-3-git-send-email-mcgrof@do-not-panic.com> <D46B557B-AF4A-4E60-8D83-6181D406C64F@chelsio.com> <20140625015048.GI27687@wotan.suse.de> <53AB02F4.1090701@chelsio.com> <20140625173156.GW27687@wotan.suse.de> <53AB1BEC.4080107@chelsio.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53AB1BEC.4080107@chelsio.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Jun 2014 14:33:56 +0200 Marek Szyprowski <m.szyprowski@samsung.com> wrote:
+On Wed, Jun 25, 2014 at 11:58:52AM -0700, Casey Leedom wrote:
+>   Okay, I'll leave the whole request_firmware{,_direct,_nowait}() thing 
+> alone.  The request_firmware_direct() will "solve" a non-problem (since all 
+> of our "firmware" files are _supposed to be_ always present.
 
-> > That's probably easier.  Marek, I'll merge these into -mm (and hence
-> > -next and git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git)
-> > and shall hold them pending you review/ack/test/etc, OK?
-> 
-> Ok. I've tested them and they work fine. I'm sorry that you had to wait for
-> me for a few days. You can now add:
-> 
-> Acked-and-tested-by: Marek Szyprowski <m.szyprowski@samsung.com>
+The code does not reflect that, it allows for files to not be present for
+the config stuff. If in practice files are always present that's a bit
+different.
 
-Thanks.
+> (And the 60 
+> second timeout for udev to confirm that a file doesn't exist seems like 
+> udev is just basically broken.)
 
-> I've also rebased my pending patches onto this set (I will send them soon).
-> 
-> The question is now if you want to keep the discussed patches in your 
-> -mm tree,
-> or should I take them to my -next branch. If you like to keep them, I assume
-> you will also take the patches which depends on the discussed changes.
+Its one reason it being tossed.
 
-Yup, that works.
+>   That aside, we still need to solve the real problem that we're 
+> experiencing in that the boot-time load of cxgb4 is timing out on SLE12 
+> because a maximum load timeout has been instituted in that distribution for 
+> driver modules and if there are two 10Gb/s-BT adapters present in a system 
+> which need both base firmware and BT PHY firmware, we exceed that timeout.  
+
+As for that it'd be great if you can answer some questions I had about
+the rest of firmware load processing on the other thread, I had a bit
+of questions for you there.
+
+> The timeout really should be per device (since there ~could~ be an 
+> arbitrary number of devices in a system) and there probably should be a way 
+> for the driver to notify the kernel timeout mechanism that forward progress 
+> is being made ...
+
+I'd prefer we dive into this on the other thread.
+
+  Luis
