@@ -1,43 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753184AbaFYEtT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 00:49:19 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:55609 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745AbaFYEtR (ORCPT
+	id S1752753AbaFYE6a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 00:58:30 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:46533 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750745AbaFYE63 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 00:49:17 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53AA54BE.9030206@roeck-us.net>
-Date: Tue, 24 Jun 2014 21:49:02 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>, Don Fry <pcnet32@frontier.com>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH V2 08/22] amd: Use pci_zalloc_consistent
-References: <cover.1403530604.git.joe@perches.com>  <c7cdaa8e080157cdabb92278a4c3beba89b49070.1403530604.git.joe@perches.com>  <1403546524.12008.2.camel@Lunix2.home>  <1403550950.15811.15.camel@joe-AO725> <1403557507.20657.3.camel@joe-AO725>
-In-Reply-To: <1403557507.20657.3.camel@joe-AO725>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 25 Jun 2014 00:58:29 -0400
+From: Anil Belur <askb23@gmail.com>
+X-Google-Original-From: Anil Belur
+To: andreas.dilger@intel.com, oleg.drokin@intel.com,
+        gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, hpdd-discuss@ml01.01.org,
+        Anil Belur <askb23@gmail.com>
+Subject: [PATCH 1/4] staging: lustre: llite: llite_capa.c - fixes checkpatch errors - unecessary init of static variables to 0
+Date: Wed, 25 Jun 2014 14:57:27 +1000
+Message-Id: <1403672250-19048-1-git-send-email-askb23@gmail.com>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2014 02:05 PM, Joe Perches wrote:
-> Remove the now unnecessary memset too.
->
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
-> On Mon, 2014-06-23 at 12:15 -0700, Joe Perches wrote:
->> On Mon, 2014-06-23 at 11:02 -0700, Don Fry wrote:
->>> This causes the line length to be greater than 80 characters causing
->>> checkpatch to complain.
->
-> V2: Don Fry is an 80 column neatnik.
->
+From: Anil Belur <askb23@gmail.com>
 
-And you are an 'align with (' neatnik, so guess the two of you are even :-)
+- this commit fixes some "ERROR: do not initialise statics to 0 or NULL"
 
-Guenter
+Signed-off-by: Anil Belur <askb23@gmail.com>
+---
+ drivers/staging/lustre/lustre/llite/llite_capa.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/staging/lustre/lustre/llite/llite_capa.c b/drivers/staging/lustre/lustre/llite/llite_capa.c
+index d06d0b1..7ed45a4 100644
+--- a/drivers/staging/lustre/lustre/llite/llite_capa.c
++++ b/drivers/staging/lustre/lustre/llite/llite_capa.c
+@@ -63,10 +63,10 @@ static struct list_head *ll_capa_list = &capa_list[CAPA_SITE_CLIENT];
+ struct timer_list ll_capa_timer;
+ /* for debug: indicate whether capa on llite is enabled or not */
+ static atomic_t ll_capa_debug = ATOMIC_INIT(0);
+-static unsigned long long ll_capa_renewed = 0;
+-static unsigned long long ll_capa_renewal_noent = 0;
+-static unsigned long long ll_capa_renewal_failed = 0;
+-static unsigned long long ll_capa_renewal_retries = 0;
++static unsigned long long ll_capa_renewed;
++static unsigned long long ll_capa_renewal_noent;
++static unsigned long long ll_capa_renewal_failed;
++static unsigned long long ll_capa_renewal_retries;
+ 
+ static int ll_update_capa(struct obd_capa *ocapa, struct lustre_capa *capa);
+ 
+-- 
+1.9.0
 
