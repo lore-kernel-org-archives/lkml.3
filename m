@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755187AbaFYHPp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 03:15:45 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:48852 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754880AbaFYHOx (ORCPT
+	id S1755224AbaFYHQF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 03:16:05 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:44749 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754879AbaFYHOw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 03:14:53 -0400
-X-AuditID: cbfee68e-b7fb96d000004bfc-a8-53aa76ea98e5
+	Wed, 25 Jun 2014 03:14:52 -0400
+X-AuditID: cbfee691-b7f2f6d0000040c4-2f-53aa76eab842
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: lee.jones@linaro.org, sbkim73@samsung.com, sameo@linux.intel.com,
         broonie@kernel.org
 Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        linux-kernel@vger.kernel.org, Chanwoo Choi <cw00.choi@samsung.com>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>
-Subject: [PATCHv8 2/4] regulator: s2mps11: Add support S2MPU02 regulator device
-Date: Wed, 25 Jun 2014 16:14:45 +0900
-Message-id: <1403680487-12141-3-git-send-email-cw00.choi@samsung.com>
+        linux-kernel@vger.kernel.org, Chanwoo Choi <cw00.choi@samsung.com>
+Subject: [PATCHv8 4/4] mfd: sec-core: Prepare regulators for suspend state to
+ reduce power-consumption
+Date: Wed, 25 Jun 2014 16:14:47 +0900
+Message-id: <1403680487-12141-5-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.0
 In-reply-to: <1403680487-12141-1-git-send-email-cw00.choi@samsung.com>
 References: <1403680487-12141-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPLMWRmVeSWpSXmKPExsWyRsSkRPdV2apgg50veC2mPnzCZnH9y3NW
-	i86zT5gtzja9Ybe4//Uoo8XlXXPYLG43rmCzON3NanFxxRcmB06PTas62TzuXNvD5jHvZKBH
-	35ZVjB6fN8kFsEZx2aSk5mSWpRbp2yVwZZzduY614HsTY8XPLdvZGhi353QxcnJICJhIrGlb
-	wAJhi0lcuLeerYuRi0NIYCmjxMMumISJRMeF24wgtpDAdEaJvdOVIewmJonrh0RBbDYBLYn9
-	L26wgdgiAlEScxd+BxvELLCcUeLN1OdgzcIC/hIXvu4Gs1kEVCU+rvzEBGLzCrhKfNkwgxFi
-	mZzEhz2P2EFsTgE3iZ71J9kglrlKXD9yjhFkqITAPHaJb0cPsEAMEpD4NvkQkM0BlJCV2HSA
-	GWKOpMTBFTdYJjAKL2BkWMUomlqQXFCclF5kpFecmFtcmpeul5yfu4kRGPin/z3r28F484D1
-	IcZkoHETmaVEk/OBkZNXEm9obGZkYWpiamxkbmlGmrCSOO+ih0lBQgLpiSWp2ampBalF8UWl
-	OanFhxiZODilGhg5rOONLn9hde6R6Z7ykddhwZV+Hr8fghnl9ydoiFWK+L+Svy6Yfsjs287f
-	Oz6G1p9cVmjSEbrbZNPjWercj3ov/rRtbD/z/KnYFjU1iYaw0uRfX3e8jvzhrpkgqc3fJ36S
-	SUKsPjmdmWv3rMdnTcQSN8XmWm+sn/BLOMnkvSiTQPpiuYVHJiixFGckGmoxFxUnAgDXdwUo
-	kgIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLIsWRmVeSWpSXmKPExsVy+t9jQd1XZauCDR6EWEx9+ITN4vqX56wW
-	nWefMFucbXrDbnH/61FGi8u75rBZ3G5cwWZxupvV4uKKL0wOnB6bVnWyedy5tofNY97JQI++
-	LasYPT5vkgtgjWpgtMlITUxJLVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLx
-	CdB1y8wBOkdJoSwxpxQoFJBYXKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjDmHF25zrWgu9N
-	jBU/t2xna2DcntPFyMkhIWAi0XHhNiOELSZx4d56NhBbSGA6o8Te6coQdhOTxPVDoiA2m4CW
-	xP4XN8BqRASiJOYu/A5kc3EwCyxnlHgz9TnYIGEBf4kLX3eD2SwCqhIfV35iArF5BVwlvmyY
-	AbVMTuLDnkfsIDangJtEz/qTUItdJa4fOcc4gZF3ASPDKkbR1ILkguKk9FwjveLE3OLSvHS9
-	5PzcTYzgqHomvYNxVYPFIUYBDkYlHt4Ls1cGC7EmlhVX5h5ilOBgVhLhveS1KliINyWxsiq1
-	KD++qDQntfgQoynQVROZpUST84ERn1cSb2hsYmZkaWRuaGFkbK4kznuw1TpQSCA9sSQ1OzW1
-	ILUIpo+Jg1OqgbGfVfK23n/WJ7Nl+x675xSJbveblPNI+9G5qPepZT6fvHf1zo5YFHY4/uAq
-	iXCFQqvUw98WftALiV7f3LNDk3XZKd7Mi9blmzdFCt2PFc0Uslr28fH1e3YSNi5i7eufaP+M
-	NKr5UselWvriMF/oY9Vo7cD0y2tmaNcd0F8zO2jKxinJktEMV5RYijMSDbWYi4oTAY0xLcXA	AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJLMWRmVeSWpSXmKPExsWyRsSkSPd12apgg3UrWSymPnzCZnH9y3NW
+	i7NNb9gt7n89ymhxedccNovbjSvYLE53s1pcXPGFyYHDY9OqTjaPO9f2sHnMOxno0bdlFaPH
+	501yAaxRXDYpqTmZZalF+nYJXBkPr+1lL1jCXdG0dxtLA+Nqzi5GTg4JAROJq0/mMUHYYhIX
+	7q1n62Lk4hASWMooMfPdJUaYork/W1kgEtMZJdoOXoaqamKS2HrxBytIFZuAlsT+FzfYQGwR
+	gSiJuQu/g9nMArUS+641gdUIC2RIfL41gx3EZhFQlTh2fD/YBl4BV4lti18xQ2yTk/iw5xFY
+	DaeAm0TP+pNgc4SAaq4fOQd10Tx2ibPnaiDmCEh8m3wI6DoOoLisxKYDUGMkJQ6uuMEygVF4
+	ASPDKkbR1ILkguKk9CJTveLE3OLSvHS95PzcTYzAYD/979nEHYz3D1gfYkwGGjeRWUo0OR8Y
+	LXkl8YbGZkYWpiamxkbmlmakCSuJ86Y/SgoSEkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnVwHhk
+	tULeEzmNdZFqb/cz+Fm8/8doFtiRJanWuseFs4irvTtDTL415Yd7L/O3gnVa+2Zxce/5vGr6
+	qcUJy7uXKr3Ib337zvba9N4d5V8urDZyXKsblH3uf9i9yC02jBK9Mx0tuE9fe/pIrK+HZ6Fe
+	0KabU6av905V01Wpnntul5fKJZ5lKR9MHyuxFGckGmoxFxUnAgCePJWXjAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJIsWRmVeSWpSXmKPExsVy+t9jQd1XZauCDf59sbSY+vAJm8X1L89Z
+	Lc42vWG3uP/1KKPF5V1z2CxuN65gszjdzWpxccUXJgcOj02rOtk87lzbw+Yx72SgR9+WVYwe
+	nzfJBbBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl
+	5gCdoqRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGHMeHhtL3vBEu6Kpr3b
+	WBoYV3N2MXJySAiYSMz92coCYYtJXLi3nq2LkYtDSGA6o0TbwctQThOTxNaLP1hBqtgEtCT2
+	v7jBBmKLCERJzF34HcxmFqiV2HetCaxGWCBD4vOtGewgNouAqsSx4/sZQWxeAVeJbYtfMUNs
+	k5P4sOcRWA2ngJtEz/qTYHOEgGquHznHOIGRdwEjwypG0dSC5ILipPRcQ73ixNzi0rx0veT8
+	3E2M4Gh6JrWDcWWDxSFGAQ5GJR7eC7NXBguxJpYVV+YeYpTgYFYS4b3ktSpYiDclsbIqtSg/
+	vqg0J7X4EKMp0FUTmaVEk/OBkZ5XEm9obGJmZGlkbmhhZGyuJM57oNU6UEggPbEkNTs1tSC1
+	CKaPiYNTqoHRtceRx+3AbLm1URuU8sSF1s7J/nmt4VsV17tK42ztpC1GvrelO5+/+3/s9rbf
+	dTc8uG4+tF+uGZgyo8KUQYZ1QbGGdk4AZ8ll54+bk5L+mFzcecO4VCVtss8/W4/Pv1anB1W+
+	WSPP/uTVvbszFIpONmYGsx06KHvjo1+axcs2ewODHi6boNlKLMUZiYZazEXFiQB4BqS6vAIA	AA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -51,499 +50,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add S2MPU02 regulator device to existing S2MPS11 device driver
-because of little difference between S2MPS1x and S2MPU02. The S2MPU02
-regulator device includes LDO[1-28] and BUCK[1-7].
+This patch use regulator_suspend_prepare() function to prepare the proper state
+of regulators for suspend state to remove un-necessary leakage power-consumption.
 
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-[Add missing linear_min_sel of S2MPU02 LDO regulators by Jonghwa Lee]
-Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
-Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Acked-by: Mark Brown <broonie@linaro.org>
-Acked-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mfd/sec-core.c      |  25 ++++
- drivers/regulator/s2mps11.c | 321 +++++++++++++++++++++++++++++++++++++++++---
- 2 files changed, 325 insertions(+), 21 deletions(-)
+ drivers/mfd/Kconfig    |  1 +
+ drivers/mfd/sec-core.c | 10 ++++++++++
+ 2 files changed, 11 insertions(+)
 
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index af0e83f..b5898dc 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -586,6 +586,7 @@ config MFD_SEC_CORE
+ 	select MFD_CORE
+ 	select REGMAP_I2C
+ 	select REGMAP_IRQ
++	select REGULATOR
+ 	help
+ 	 Support for the Samsung Electronics MFD series.
+ 	 This driver provides common support for accessing the device,
 diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
-index 15ba847..2621328 100644
+index 2621328..fb8ba64 100644
 --- a/drivers/mfd/sec-core.c
 +++ b/drivers/mfd/sec-core.c
-@@ -28,6 +28,7 @@
- #include <linux/mfd/samsung/s2mpa01.h>
- #include <linux/mfd/samsung/s2mps11.h>
- #include <linux/mfd/samsung/s2mps14.h>
-+#include <linux/mfd/samsung/s2mpu02.h>
+@@ -31,6 +31,7 @@
+ #include <linux/mfd/samsung/s2mpu02.h>
  #include <linux/mfd/samsung/s5m8763.h>
  #include <linux/mfd/samsung/s5m8767.h>
++#include <linux/regulator/machine.h>
  #include <linux/regmap.h>
-@@ -144,6 +145,18 @@ static bool s2mps11_volatile(struct device *dev, unsigned int reg)
- 	}
- }
  
-+static bool s2mpu02_volatile(struct device *dev, unsigned int reg)
-+{
-+	switch (reg) {
-+	case S2MPU02_REG_INT1M:
-+	case S2MPU02_REG_INT2M:
-+	case S2MPU02_REG_INT3M:
-+		return false;
-+	default:
-+		return true;
-+	}
-+}
-+
- static bool s5m8763_volatile(struct device *dev, unsigned int reg)
- {
- 	switch (reg) {
-@@ -189,6 +202,15 @@ static const struct regmap_config s2mps14_regmap_config = {
- 	.cache_type = REGCACHE_FLAT,
- };
- 
-+static const struct regmap_config s2mpu02_regmap_config = {
-+	.reg_bits = 8,
-+	.val_bits = 8,
-+
-+	.max_register = S2MPU02_REG_DVSDATA,
-+	.volatile_reg = s2mpu02_volatile,
-+	.cache_type = REGCACHE_FLAT,
-+};
-+
- static const struct regmap_config s5m8763_regmap_config = {
- 	.reg_bits = 8,
- 	.val_bits = 8,
-@@ -310,6 +332,9 @@ static int sec_pmic_probe(struct i2c_client *i2c,
- 	case S5M8767X:
- 		regmap = &s5m8767_regmap_config;
- 		break;
-+	case S2MPU02:
-+		regmap = &s2mpu02_regmap_config;
-+		break;
- 	default:
- 		regmap = &sec_regmap_config;
- 		break;
-diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
-index 02e2fb2..2daacc6 100644
---- a/drivers/regulator/s2mps11.c
-+++ b/drivers/regulator/s2mps11.c
-@@ -31,6 +31,7 @@
- #include <linux/mfd/samsung/core.h>
- #include <linux/mfd/samsung/s2mps11.h>
- #include <linux/mfd/samsung/s2mps14.h>
-+#include <linux/mfd/samsung/s2mpu02.h>
- 
- struct s2mps11_info {
- 	unsigned int rdev_num;
-@@ -40,11 +41,15 @@ struct s2mps11_info {
- 	int ramp_delay16;
- 	int ramp_delay7810;
- 	int ramp_delay9;
-+
-+	enum sec_device_type dev_type;
-+
- 	/*
--	 * One bit for each S2MPS14 regulator whether the suspend mode
-+	 * One bit for each S2MPS14/S2MPU02 regulator whether the suspend mode
- 	 * was enabled.
+ static const struct mfd_cell s5m8751_devs[] = {
+@@ -430,6 +431,15 @@ static int sec_pmic_suspend(struct device *dev)
  	 */
--	unsigned int s2mps14_suspend_state:30;
-+	unsigned long long s2mps14_suspend_state:35;
+ 	disable_irq(sec_pmic->irq);
+ 
++	switch (sec_pmic->device_type) {
++	case S2MPS14X:
++	case S2MPU02:
++		regulator_suspend_prepare(PM_SUSPEND_MEM);
++		break;
++	default:
++		break;
++	}
 +
- 	/* Array of size rdev_num with GPIO-s for external sleep control */
- 	int *ext_control_gpio;
- };
-@@ -415,12 +420,24 @@ static int s2mps14_regulator_enable(struct regulator_dev *rdev)
- 	struct s2mps11_info *s2mps11 = rdev_get_drvdata(rdev);
- 	unsigned int val;
- 
--	if (s2mps11->s2mps14_suspend_state & (1 << rdev_get_id(rdev)))
--		val = S2MPS14_ENABLE_SUSPEND;
--	else if (gpio_is_valid(s2mps11->ext_control_gpio[rdev_get_id(rdev)]))
--		val = S2MPS14_ENABLE_EXT_CONTROL;
--	else
--		val = rdev->desc->enable_mask;
-+	switch (s2mps11->dev_type) {
-+	case S2MPS14X:
-+		if (s2mps11->s2mps14_suspend_state & (1 << rdev_get_id(rdev)))
-+			val = S2MPS14_ENABLE_SUSPEND;
-+		else if (gpio_is_valid(s2mps11->ext_control_gpio[rdev_get_id(rdev)]))
-+			val = S2MPS14_ENABLE_EXT_CONTROL;
-+		else
-+			val = rdev->desc->enable_mask;
-+		break;
-+	case S2MPU02:
-+		if (s2mps11->s2mps14_suspend_state & (1 << rdev_get_id(rdev)))
-+			val = S2MPU02_ENABLE_SUSPEND;
-+		else
-+			val = rdev->desc->enable_mask;
-+		break;
-+	default:
-+		return -EINVAL;
-+	};
- 
- 	return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
- 			rdev->desc->enable_mask, val);
-@@ -429,12 +446,38 @@ static int s2mps14_regulator_enable(struct regulator_dev *rdev)
- static int s2mps14_regulator_set_suspend_disable(struct regulator_dev *rdev)
- {
- 	int ret;
--	unsigned int val;
-+	unsigned int val, state;
- 	struct s2mps11_info *s2mps11 = rdev_get_drvdata(rdev);
-+	int rdev_id = rdev_get_id(rdev);
- 
--	/* LDO3 should be always on and does not support suspend mode */
--	if (rdev_get_id(rdev) == S2MPS14_LDO3)
--		return 0;
-+	/* Below LDO should be always on or does not support suspend mode. */
-+	switch (s2mps11->dev_type) {
-+	case S2MPS14X:
-+		switch (rdev_id) {
-+		case S2MPS14_LDO3:
-+			return 0;
-+		default:
-+			state = S2MPS14_ENABLE_SUSPEND;
-+			break;
-+		};
-+		break;
-+	case S2MPU02:
-+		switch (rdev_id) {
-+		case S2MPU02_LDO13:
-+		case S2MPU02_LDO14:
-+		case S2MPU02_LDO15:
-+		case S2MPU02_LDO17:
-+		case S2MPU02_BUCK7:
-+			state = S2MPU02_DISABLE_SUSPEND;
-+			break;
-+		default:
-+			state = S2MPU02_ENABLE_SUSPEND;
-+			break;
-+		};
-+		break;
-+	default:
-+		return -EINVAL;
-+	};
- 
- 	ret = regmap_read(rdev->regmap, rdev->desc->enable_reg, &val);
- 	if (ret < 0)
-@@ -452,7 +495,7 @@ static int s2mps14_regulator_set_suspend_disable(struct regulator_dev *rdev)
- 		return 0;
- 
- 	return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
--			rdev->desc->enable_mask, S2MPS14_ENABLE_SUSPEND);
-+			rdev->desc->enable_mask, state);
- }
- 
- static struct regulator_ops s2mps14_reg_ops = {
-@@ -605,8 +648,7 @@ static void s2mps14_pmic_dt_parse_ext_control_gpio(struct platform_device *pdev,
- }
- 
- static int s2mps11_pmic_dt_parse(struct platform_device *pdev,
--		struct of_regulator_match *rdata, struct s2mps11_info *s2mps11,
--		enum sec_device_type dev_type)
-+		struct of_regulator_match *rdata, struct s2mps11_info *s2mps11)
- {
- 	struct device_node *reg_np;
- 
-@@ -617,7 +659,7 @@ static int s2mps11_pmic_dt_parse(struct platform_device *pdev,
- 	}
- 
- 	of_regulator_match(&pdev->dev, reg_np, rdata, s2mps11->rdev_num);
--	if (dev_type == S2MPS14X)
-+	if (s2mps11->dev_type == S2MPS14X)
- 		s2mps14_pmic_dt_parse_ext_control_gpio(pdev, rdata, s2mps11);
- 
- 	of_node_put(reg_np);
-@@ -625,6 +667,238 @@ static int s2mps11_pmic_dt_parse(struct platform_device *pdev,
  	return 0;
  }
  
-+static int s2mpu02_set_ramp_delay(struct regulator_dev *rdev, int ramp_delay)
-+{
-+	unsigned int ramp_val, ramp_shift, ramp_reg;
-+
-+	switch (rdev_get_id(rdev)) {
-+	case S2MPU02_BUCK1:
-+		ramp_shift = S2MPU02_BUCK1_RAMP_SHIFT;
-+		break;
-+	case S2MPU02_BUCK2:
-+		ramp_shift = S2MPU02_BUCK2_RAMP_SHIFT;
-+		break;
-+	case S2MPU02_BUCK3:
-+		ramp_shift = S2MPU02_BUCK3_RAMP_SHIFT;
-+		break;
-+	case S2MPU02_BUCK4:
-+		ramp_shift = S2MPU02_BUCK4_RAMP_SHIFT;
-+		break;
-+	default:
-+		return 0;
-+	}
-+	ramp_reg = S2MPU02_REG_RAMP1;
-+	ramp_val = get_ramp_delay(ramp_delay);
-+
-+	return regmap_update_bits(rdev->regmap, ramp_reg,
-+				  S2MPU02_BUCK1234_RAMP_MASK << ramp_shift,
-+				  ramp_val << ramp_shift);
-+}
-+
-+static struct regulator_ops s2mpu02_ldo_ops = {
-+	.list_voltage		= regulator_list_voltage_linear,
-+	.map_voltage		= regulator_map_voltage_linear,
-+	.is_enabled		= regulator_is_enabled_regmap,
-+	.enable			= s2mps14_regulator_enable,
-+	.disable		= regulator_disable_regmap,
-+	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
-+	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
-+	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
-+	.set_suspend_disable	= s2mps14_regulator_set_suspend_disable,
-+};
-+
-+static struct regulator_ops s2mpu02_buck_ops = {
-+	.list_voltage		= regulator_list_voltage_linear,
-+	.map_voltage		= regulator_map_voltage_linear,
-+	.is_enabled		= regulator_is_enabled_regmap,
-+	.enable			= s2mps14_regulator_enable,
-+	.disable		= regulator_disable_regmap,
-+	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
-+	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
-+	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
-+	.set_suspend_disable	= s2mps14_regulator_set_suspend_disable,
-+	.set_ramp_delay		= s2mpu02_set_ramp_delay,
-+};
-+
-+#define regulator_desc_s2mpu02_ldo1(num) {		\
-+	.name		= "LDO"#num,			\
-+	.id		= S2MPU02_LDO##num,		\
-+	.ops		= &s2mpu02_ldo_ops,		\
-+	.type		= REGULATOR_VOLTAGE,		\
-+	.owner		= THIS_MODULE,			\
-+	.min_uV		= S2MPU02_LDO_MIN_900MV,	\
-+	.uV_step	= S2MPU02_LDO_STEP_12_5MV,	\
-+	.linear_min_sel	= S2MPU02_LDO_GROUP1_START_SEL,	\
-+	.n_voltages	= S2MPU02_LDO_N_VOLTAGES,	\
-+	.vsel_reg	= S2MPU02_REG_L1CTRL,		\
-+	.vsel_mask	= S2MPU02_LDO_VSEL_MASK,	\
-+	.enable_reg	= S2MPU02_REG_L1CTRL,		\
-+	.enable_mask	= S2MPU02_ENABLE_MASK		\
-+}
-+#define regulator_desc_s2mpu02_ldo2(num) {		\
-+	.name		= "LDO"#num,			\
-+	.id		= S2MPU02_LDO##num,		\
-+	.ops		= &s2mpu02_ldo_ops,		\
-+	.type		= REGULATOR_VOLTAGE,		\
-+	.owner		= THIS_MODULE,			\
-+	.min_uV		= S2MPU02_LDO_MIN_1050MV,	\
-+	.uV_step	= S2MPU02_LDO_STEP_25MV,	\
-+	.linear_min_sel	= S2MPU02_LDO_GROUP2_START_SEL,	\
-+	.n_voltages	= S2MPU02_LDO_N_VOLTAGES,	\
-+	.vsel_reg	= S2MPU02_REG_L2CTRL1,		\
-+	.vsel_mask	= S2MPU02_LDO_VSEL_MASK,	\
-+	.enable_reg	= S2MPU02_REG_L2CTRL1,		\
-+	.enable_mask	= S2MPU02_ENABLE_MASK		\
-+}
-+#define regulator_desc_s2mpu02_ldo3(num) {		\
-+	.name		= "LDO"#num,			\
-+	.id		= S2MPU02_LDO##num,		\
-+	.ops		= &s2mpu02_ldo_ops,		\
-+	.type		= REGULATOR_VOLTAGE,		\
-+	.owner		= THIS_MODULE,			\
-+	.min_uV		= S2MPU02_LDO_MIN_900MV,	\
-+	.uV_step	= S2MPU02_LDO_STEP_12_5MV,	\
-+	.linear_min_sel	= S2MPU02_LDO_GROUP1_START_SEL,	\
-+	.n_voltages	= S2MPU02_LDO_N_VOLTAGES,	\
-+	.vsel_reg	= S2MPU02_REG_L3CTRL + num - 3,	\
-+	.vsel_mask	= S2MPU02_LDO_VSEL_MASK,	\
-+	.enable_reg	= S2MPU02_REG_L3CTRL + num - 3,	\
-+	.enable_mask	= S2MPU02_ENABLE_MASK		\
-+}
-+#define regulator_desc_s2mpu02_ldo4(num) {		\
-+	.name		= "LDO"#num,			\
-+	.id		= S2MPU02_LDO##num,		\
-+	.ops		= &s2mpu02_ldo_ops,		\
-+	.type		= REGULATOR_VOLTAGE,		\
-+	.owner		= THIS_MODULE,			\
-+	.min_uV		= S2MPU02_LDO_MIN_1050MV,	\
-+	.uV_step	= S2MPU02_LDO_STEP_25MV,	\
-+	.linear_min_sel	= S2MPU02_LDO_GROUP2_START_SEL,	\
-+	.n_voltages	= S2MPU02_LDO_N_VOLTAGES,	\
-+	.vsel_reg	= S2MPU02_REG_L3CTRL + num - 3,	\
-+	.vsel_mask	= S2MPU02_LDO_VSEL_MASK,	\
-+	.enable_reg	= S2MPU02_REG_L3CTRL + num - 3,	\
-+	.enable_mask	= S2MPU02_ENABLE_MASK		\
-+}
-+#define regulator_desc_s2mpu02_ldo5(num) {		\
-+	.name		= "LDO"#num,			\
-+	.id		= S2MPU02_LDO##num,		\
-+	.ops		= &s2mpu02_ldo_ops,		\
-+	.type		= REGULATOR_VOLTAGE,		\
-+	.owner		= THIS_MODULE,			\
-+	.min_uV		= S2MPU02_LDO_MIN_1600MV,	\
-+	.uV_step	= S2MPU02_LDO_STEP_50MV,	\
-+	.linear_min_sel	= S2MPU02_LDO_GROUP3_START_SEL,	\
-+	.n_voltages	= S2MPU02_LDO_N_VOLTAGES,	\
-+	.vsel_reg	= S2MPU02_REG_L3CTRL + num - 3,	\
-+	.vsel_mask	= S2MPU02_LDO_VSEL_MASK,	\
-+	.enable_reg	= S2MPU02_REG_L3CTRL + num - 3,	\
-+	.enable_mask	= S2MPU02_ENABLE_MASK		\
-+}
-+
-+#define regulator_desc_s2mpu02_buck1234(num) {			\
-+	.name		= "BUCK"#num,				\
-+	.id		= S2MPU02_BUCK##num,			\
-+	.ops		= &s2mpu02_buck_ops,			\
-+	.type		= REGULATOR_VOLTAGE,			\
-+	.owner		= THIS_MODULE,				\
-+	.min_uV		= S2MPU02_BUCK1234_MIN_600MV,		\
-+	.uV_step	= S2MPU02_BUCK1234_STEP_6_25MV,		\
-+	.n_voltages	= S2MPU02_BUCK_N_VOLTAGES,		\
-+	.linear_min_sel = S2MPU02_BUCK1234_START_SEL,		\
-+	.ramp_delay	= S2MPU02_BUCK_RAMP_DELAY,		\
-+	.vsel_reg	= S2MPU02_REG_B1CTRL2 + (num - 1) * 2,	\
-+	.vsel_mask	= S2MPU02_BUCK_VSEL_MASK,		\
-+	.enable_reg	= S2MPU02_REG_B1CTRL1 + (num - 1) * 2,	\
-+	.enable_mask	= S2MPU02_ENABLE_MASK			\
-+}
-+#define regulator_desc_s2mpu02_buck5(num) {			\
-+	.name		= "BUCK"#num,				\
-+	.id		= S2MPU02_BUCK##num,			\
-+	.ops		= &s2mpu02_ldo_ops,			\
-+	.type		= REGULATOR_VOLTAGE,			\
-+	.owner		= THIS_MODULE,				\
-+	.min_uV		= S2MPU02_BUCK5_MIN_1081_25MV,		\
-+	.uV_step	= S2MPU02_BUCK5_STEP_6_25MV,		\
-+	.n_voltages	= S2MPU02_BUCK_N_VOLTAGES,		\
-+	.linear_min_sel = S2MPU02_BUCK5_START_SEL,		\
-+	.ramp_delay	= S2MPU02_BUCK_RAMP_DELAY,		\
-+	.vsel_reg	= S2MPU02_REG_B5CTRL2,			\
-+	.vsel_mask	= S2MPU02_BUCK_VSEL_MASK,		\
-+	.enable_reg	= S2MPU02_REG_B5CTRL1,			\
-+	.enable_mask	= S2MPU02_ENABLE_MASK			\
-+}
-+#define regulator_desc_s2mpu02_buck6(num) {			\
-+	.name		= "BUCK"#num,				\
-+	.id		= S2MPU02_BUCK##num,			\
-+	.ops		= &s2mpu02_ldo_ops,			\
-+	.type		= REGULATOR_VOLTAGE,			\
-+	.owner		= THIS_MODULE,				\
-+	.min_uV		= S2MPU02_BUCK6_MIN_1700MV,		\
-+	.uV_step	= S2MPU02_BUCK6_STEP_2_50MV,		\
-+	.n_voltages	= S2MPU02_BUCK_N_VOLTAGES,		\
-+	.linear_min_sel = S2MPU02_BUCK6_START_SEL,		\
-+	.ramp_delay	= S2MPU02_BUCK_RAMP_DELAY,		\
-+	.vsel_reg	= S2MPU02_REG_B6CTRL2,			\
-+	.vsel_mask	= S2MPU02_BUCK_VSEL_MASK,		\
-+	.enable_reg	= S2MPU02_REG_B6CTRL1,			\
-+	.enable_mask	= S2MPU02_ENABLE_MASK			\
-+}
-+#define regulator_desc_s2mpu02_buck7(num) {			\
-+	.name		= "BUCK"#num,				\
-+	.id		= S2MPU02_BUCK##num,			\
-+	.ops		= &s2mpu02_ldo_ops,			\
-+	.type		= REGULATOR_VOLTAGE,			\
-+	.owner		= THIS_MODULE,				\
-+	.min_uV		= S2MPU02_BUCK7_MIN_900MV,		\
-+	.uV_step	= S2MPU02_BUCK7_STEP_6_25MV,		\
-+	.n_voltages	= S2MPU02_BUCK_N_VOLTAGES,		\
-+	.linear_min_sel = S2MPU02_BUCK7_START_SEL,		\
-+	.ramp_delay	= S2MPU02_BUCK_RAMP_DELAY,		\
-+	.vsel_reg	= S2MPU02_REG_B7CTRL2,			\
-+	.vsel_mask	= S2MPU02_BUCK_VSEL_MASK,		\
-+	.enable_reg	= S2MPU02_REG_B7CTRL1,			\
-+	.enable_mask	= S2MPU02_ENABLE_MASK			\
-+}
-+
-+static const struct regulator_desc s2mpu02_regulators[] = {
-+	regulator_desc_s2mpu02_ldo1(1),
-+	regulator_desc_s2mpu02_ldo2(2),
-+	regulator_desc_s2mpu02_ldo4(3),
-+	regulator_desc_s2mpu02_ldo5(4),
-+	regulator_desc_s2mpu02_ldo4(5),
-+	regulator_desc_s2mpu02_ldo3(6),
-+	regulator_desc_s2mpu02_ldo3(7),
-+	regulator_desc_s2mpu02_ldo4(8),
-+	regulator_desc_s2mpu02_ldo5(9),
-+	regulator_desc_s2mpu02_ldo3(10),
-+	regulator_desc_s2mpu02_ldo4(11),
-+	regulator_desc_s2mpu02_ldo5(12),
-+	regulator_desc_s2mpu02_ldo5(13),
-+	regulator_desc_s2mpu02_ldo5(14),
-+	regulator_desc_s2mpu02_ldo5(15),
-+	regulator_desc_s2mpu02_ldo5(16),
-+	regulator_desc_s2mpu02_ldo4(17),
-+	regulator_desc_s2mpu02_ldo5(18),
-+	regulator_desc_s2mpu02_ldo3(19),
-+	regulator_desc_s2mpu02_ldo4(20),
-+	regulator_desc_s2mpu02_ldo5(21),
-+	regulator_desc_s2mpu02_ldo5(22),
-+	regulator_desc_s2mpu02_ldo5(23),
-+	regulator_desc_s2mpu02_ldo4(24),
-+	regulator_desc_s2mpu02_ldo5(25),
-+	regulator_desc_s2mpu02_ldo4(26),
-+	regulator_desc_s2mpu02_ldo5(27),
-+	regulator_desc_s2mpu02_ldo5(28),
-+	regulator_desc_s2mpu02_buck1234(1),
-+	regulator_desc_s2mpu02_buck1234(2),
-+	regulator_desc_s2mpu02_buck1234(3),
-+	regulator_desc_s2mpu02_buck1234(4),
-+	regulator_desc_s2mpu02_buck5(5),
-+	regulator_desc_s2mpu02_buck6(6),
-+	regulator_desc_s2mpu02_buck7(7),
-+};
-+
- static int s2mps11_pmic_probe(struct platform_device *pdev)
- {
- 	struct sec_pmic_dev *iodev = dev_get_drvdata(pdev->dev.parent);
-@@ -634,15 +908,14 @@ static int s2mps11_pmic_probe(struct platform_device *pdev)
- 	struct s2mps11_info *s2mps11;
- 	int i, ret = 0;
- 	const struct regulator_desc *regulators;
--	enum sec_device_type dev_type;
- 
- 	s2mps11 = devm_kzalloc(&pdev->dev, sizeof(struct s2mps11_info),
- 				GFP_KERNEL);
- 	if (!s2mps11)
- 		return -ENOMEM;
- 
--	dev_type = platform_get_device_id(pdev)->driver_data;
--	switch (dev_type) {
-+	s2mps11->dev_type = platform_get_device_id(pdev)->driver_data;
-+	switch (s2mps11->dev_type) {
- 	case S2MPS11X:
- 		s2mps11->rdev_num = ARRAY_SIZE(s2mps11_regulators);
- 		regulators = s2mps11_regulators;
-@@ -651,8 +924,13 @@ static int s2mps11_pmic_probe(struct platform_device *pdev)
- 		s2mps11->rdev_num = ARRAY_SIZE(s2mps14_regulators);
- 		regulators = s2mps14_regulators;
- 		break;
-+	case S2MPU02:
-+		s2mps11->rdev_num = ARRAY_SIZE(s2mpu02_regulators);
-+		regulators = s2mpu02_regulators;
-+		break;
- 	default:
--		dev_err(&pdev->dev, "Invalid device type: %u\n", dev_type);
-+		dev_err(&pdev->dev, "Invalid device type: %u\n",
-+				    s2mps11->dev_type);
- 		return -EINVAL;
- 	};
- 
-@@ -686,7 +964,7 @@ static int s2mps11_pmic_probe(struct platform_device *pdev)
- 	for (i = 0; i < s2mps11->rdev_num; i++)
- 		rdata[i].name = regulators[i].name;
- 
--	ret = s2mps11_pmic_dt_parse(pdev, rdata, s2mps11, dev_type);
-+	ret = s2mps11_pmic_dt_parse(pdev, rdata, s2mps11);
- 	if (ret)
- 		goto out;
- 
-@@ -739,6 +1017,7 @@ out:
- static const struct platform_device_id s2mps11_pmic_id[] = {
- 	{ "s2mps11-pmic", S2MPS11X},
- 	{ "s2mps14-pmic", S2MPS14X},
-+	{ "s2mpu02-pmic", S2MPU02},
- 	{ },
- };
- MODULE_DEVICE_TABLE(platform, s2mps11_pmic_id);
 -- 
 1.8.0
 
