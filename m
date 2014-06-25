@@ -1,92 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756304AbaFYJ5k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 05:57:40 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:34844 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753542AbaFYJ5h (ORCPT
+	id S1755818AbaFYJ64 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 05:58:56 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:37851 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752596AbaFYJ6y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 05:57:37 -0400
-Date: Wed, 25 Jun 2014 10:57:36 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Olav Haugan <ohaugan@codeaurora.org>, Rob Herring <robherring2@gmail.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Kumar Gala <galak@codeaurora.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Cho KyongHo <pullip.cho@samsung.com>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>
-Subject: Re: [PATCH v2] devicetree: Add generic IOMMU device tree bindings
-Message-ID: <20140625095735.GI6153@arm.com>
-References: <1400877218-4113-1-git-send-email-thierry.reding@gmail.com>
- <4839521.56FtveYIl6@wuerfel>
- <20140625093825.GH6153@arm.com>
- <130361958.xFghHXmZkz@wuerfel>
+	Wed, 25 Jun 2014 05:58:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <130361958.xFghHXmZkz@wuerfel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1403618235-19353-4-git-send-email-t.figa@samsung.com>
+References: <1403618235-19353-1-git-send-email-t.figa@samsung.com>
+	<1403618235-19353-4-git-send-email-t.figa@samsung.com>
+Date: Wed, 25 Jun 2014 10:58:53 +0100
+Message-ID: <CAD8Lp45a0kQocSFVeXGY99jE+Rx7PVwv6ZZKbE8iFp7G4=X12A@mail.gmail.com>
+Subject: Re: [PATCH 3/6] clk: samsung: exynos4: Remove SRC_MASK_ISP gates
+From: Daniel Drake <drake@endlessm.com>
+To: Tomasz Figa <t.figa@samsung.com>
+Cc: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Mike Turquette <mturquette@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 10:48:31AM +0100, Arnd Bergmann wrote:
-> On Wednesday 25 June 2014 10:38:25 Will Deacon wrote:
-> > On Wed, Jun 25, 2014 at 10:27:50AM +0100, Arnd Bergmann wrote:
-> > > I think the situation is a bit different here: It's less about the corner
-> > > cases for the SMMU, but about the question whether it makes more sense to
-> > > have the kernel figure out the settings, or have them come from DT
-> > > all the time.
-> > 
-> > But, as far as I can tell, this setting is basically `which bits are
-> > constant among this set of IDs'.
-> > 
-> > > As I said, I can't tell which approach is best here, but it sounds to
-> > > me we should either do dynamic configuration and get it right, or
-> > > hardcode the configuration it all the time if we can't.
-> > 
-> > I disagree. If you have `sensible' StreamID allocations, doing this
-> > dynamically should be straight-forward and gives the driver more flexibility
-> > (e.g. we then have the option of combining SMR entries for different masters
-> > if they are in the same domain). The dynamic approach also lends itself to
-> > sanity-checking (it is IMPLEMENTATION DEFINED whether the SMMU detects SMR
-> > aliases) and helps with virtualisation (forcing QEMU to generate these masks
-> > in a device-tree for a guest using a virtual SMMU interface is very painful).
-> 
-> In which case do you think hardcoding is needed then? I'm still confused
-> why you think we need both, as your arguments seem to all be in favor of
-> dynamic configuration.
+Hi Tomasz,
 
-So far, I've been avoiding the hardcoding. However, you could potentially
-build a system with a small number of SMRs (compared to the number of
-StreamIDs) and allocate the StreamIDs in such a way that I think the dynamic
-configuration would be NP complete if we require an optimal SMR allocation.
+On Tue, Jun 24, 2014 at 2:57 PM, Tomasz Figa <t.figa@samsung.com> wrote:
+> ISP special clocks have dedicated gating registers and so MUX SRC_MASK
+> register should not be used. This patch fixes the problem of
+> Exynos4x12-based boards freezing on system suspend, because those
+> mux outputs need not to be masked while suspending.
 
-However:
+Not sure if you will be interested in this, as your plate must be
+pretty full already, and I am probably the first person to try
+suspend/resume on ODROID, but:
 
-  (1) I don't know of a system where this is the case
-  (2) Not much work has been done on improving the dynamic allocator yet
+ODROID-U2 fails to suspend/resume. I am testing with rtcwake, trying
+to raise a wakeup alarm on the internal Exynos4412 RTC. For this,
+CONFIG_COMMON_CLK_MAX77686 must be disabled (otherwise it disables the
+upstream 32KHz clock source for the RTC), I also have
+CONFIG_RTC_DRV_MAX77686 disabled so that there is only one RTC to
+worry about.
 
-which is why I'm still favouring dynamic configuration in the driver.
+Then:
+ rtcwake --utc -m mem -s 10 -v
 
-The other thing I forgot to mention earlier is that we need to support
-device hotplug in the future, so some level of dynamic configuration
-will always be required.
+Before this patch, it would totally hang after calling cpu_suspend()
+(checked with S3C_PMDBG) - not sure if it hangs before sleeping, or if
+it sleeps but simply fails to wake up.
 
-Will
+With this patch, now it seems like the RTC alarm does wake up the
+system after the desired time, however it immediately goes back into
+uboot rather than resuming into Linux. So this patch does make some
+progress at least.
+
+The power light is on at all times during these tests (not sure if
+that means anything, but I was wondering if it should go out when the
+system suspends).
+
+Thanks
+Daniel
