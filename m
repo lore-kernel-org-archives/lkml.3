@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754051AbaFYT0o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 15:26:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2890 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752760AbaFYT0n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 15:26:43 -0400
-Date: Wed, 25 Jun 2014 21:25:47 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <rric@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Namhyung Kim <namhyung@gmail.com>, Jean Pihet <jean.pihet@linaro.org>
-Subject: Re: [PATCH] perf tool: Carve out ctype.h et al
-Message-ID: <20140625192547.GF1153@krava.brq.redhat.com>
-References: <1403688184-6917-1-git-send-email-bp@alien8.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1403688184-6917-1-git-send-email-bp@alien8.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754311AbaFYT16 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 15:27:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46829 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752739AbaFYT14 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 15:27:56 -0400
+Date: Wed, 25 Jun 2014 12:27:55 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH 01/22] pci-dma-compat: Add pci_zalloc_consistent helper
+Message-Id: <20140625122755.152685fadbc9cffe7a298dc6@linux-foundation.org>
+In-Reply-To: <2248b3ffe86cd8995a809bf7e2871f38039979c1.1403530604.git.joe@perches.com>
+References: <cover.1403530604.git.joe@perches.com>
+	<2248b3ffe86cd8995a809bf7e2871f38039979c1.1403530604.git.joe@perches.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 11:23:04AM +0200, Borislav Petkov wrote:
-> From: Borislav Petkov <bp@suse.de>
-> 
-> Carve out ctype.* and util.* stuff into tools/lib/util/. We're keeping
-> those as standalone object files in TOOLS_OBJS and add them to the
-> targets that need them.
-> 
-> This way we don't do lib archives but single objects only.
+On Mon, 23 Jun 2014 06:41:29 -0700 Joe Perches <joe@perches.com> wrote:
 
-heya,
-got following error;
+> Add this helper for consistency with pci_zalloc_coherent
+> and the ability to remove unnecessary memset(,0,) uses.
 
-[jolsa@krava perf]$ make
-  BUILD:   Doing 'make -j4' parallel build
-  CC       util/pmu.o
-  CC       util/parse-events-flex.o
-  SUBDIR   /home/jolsa/kernel.org/linux-perf/tools/lib/traceevent/
-util/pmu.c: In function ‘wordwrap’:
-util/pmu.c:788:3: error: implicit declaration of function ‘isspace’ [-Werror=implicit-function-declaration]
-   while (isspace(*s))
-   ^
-cc1: all warnings being treated as errors
-make[1]: *** [util/pmu.o] Error 1
-make[1]: *** Waiting for unfinished jobs....
-make: *** [all] Error 2
+While we're being anal..  I'm not a big fan of the patch titles.  Worst
+is "amd: Use pci_zalloc_consistent".  "amd" is quite a poor identifier
+- it's only when you get in and look at the diff that you realise it's
+an ethernet driver.
 
+People sometimes address this by using
 
-Anyway, so you moved hex2u64, ctype interface under tools/lib
-and made several Makefile changes to compile tools/lib objects.
+	"drivers: net: ethernet: amd: use pci_zalloc_consistent"
 
-Besides that we'd need all those changes separated, who is the
-other user of this library? I dont see any in the patch.
+which strikes me as utterly perverse.  We already have a nice way of
+representing the hierarchy and that's using '/'.
 
-thanks,
-jirka
+So when the irritation gets too high and when I can be bothered I'll
+rewrite things like that to
+
+	"drivers/net/ethernet/amd: use pci_zalloc_consistent"
+
+which strikes me as being blindingly obvious, but apparently I'm in a
+small minority :(
+
+> --- a/include/asm-generic/pci-dma-compat.h
+> +++ b/include/asm-generic/pci-dma-compat.h
+> @@ -19,6 +19,14 @@ pci_alloc_consistent(struct pci_dev *hwdev, size_t size,
+>  	return dma_alloc_coherent(hwdev == NULL ? NULL : &hwdev->dev, size, dma_handle, GFP_ATOMIC);
+>  }
+>  
+> +static inline void *
+> +pci_zalloc_consistent(struct pci_dev *hwdev, size_t size,
+> +		      dma_addr_t *dma_handle)
+> +{
+> +	return dma_zalloc_coherent(hwdev == NULL ? NULL : &hwdev->dev,
+> +				   size, dma_handle, GFP_ATOMIC);
+> +}
+> +
+
+We'd get a smaller kernel by uninlining this.  It is hardly
+performance-sensitive.  Uninlining would presumably use more stack,
+but GFP_ATOMIC won't use a ton of stack anyway.
+
