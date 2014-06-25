@@ -1,102 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758067AbaFYQyI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 12:54:08 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:63750 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757788AbaFYQyD (ORCPT
+	id S1758074AbaFYQym (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 12:54:42 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59446 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757623AbaFYQtx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 12:54:03 -0400
-MIME-Version: 1.0
-In-Reply-To: <CALCETrUBNmLnpa+LM91om2RSpR6SjupP-EdefzhU1Me4nv3Dfw@mail.gmail.com>
-References: <1403642893-23107-1-git-send-email-keescook@chromium.org>
-	<1403642893-23107-6-git-send-email-keescook@chromium.org>
-	<20140625135121.GB7892@redhat.com>
-	<CAGXu5jJkFxh4K=40xuh6tu3kUf4oJM8Dry+4upBdRieW3FNLgw@mail.gmail.com>
-	<CALCETrUBNmLnpa+LM91om2RSpR6SjupP-EdefzhU1Me4nv3Dfw@mail.gmail.com>
-Date: Wed, 25 Jun 2014 09:54:01 -0700
-X-Google-Sender-Auth: C4SwRTLOti7eX0n26vQa2PKUUj8
-Message-ID: <CAGXu5j+J11zJnuFR8bYKAXizAHhCx4R+uJE_QH6zC3q2udkpaQ@mail.gmail.com>
-Subject: Re: [PATCH v8 5/9] seccomp: split mode set routines
-From: Kees Cook <keescook@chromium.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
-        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 25 Jun 2014 12:49:53 -0400
+From: Christoph Hellwig <hch@lst.de>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Bart Van Assche <bvanassche@fusionio.com>,
+        Robert Elliott <Elliott@hp.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 03/14] scsi: centralize command re-queueing in scsi_dispatch_fn
+Date: Wed, 25 Jun 2014 18:51:50 +0200
+Message-Id: <1403715121-1201-4-git-send-email-hch@lst.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1403715121-1201-1-git-send-email-hch@lst.de>
+References: <1403715121-1201-1-git-send-email-hch@lst.de>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 9:10 AM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Wed, Jun 25, 2014 at 7:51 AM, Kees Cook <keescook@chromium.org> wrote:
->> On Wed, Jun 25, 2014 at 6:51 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->>> On 06/24, Kees Cook wrote:
->>>>
->>>> +static inline void seccomp_assign_mode(struct task_struct *task,
->>>> +                                    unsigned long seccomp_mode)
->>>> +{
->>>> +     BUG_ON(!spin_is_locked(&task->sighand->siglock));
->>>> +
->>>> +     task->seccomp.mode = seccomp_mode;
->>>> +     set_tsk_thread_flag(task, TIF_SECCOMP);
->>>> +}
->>>
->>> OK, but unless task == current this can race with secure_computing().
->>> I think this needs smp_mb__before_atomic() and secure_computing() needs
->>> rmb() after test_bit(TIF_SECCOMP).
->>>
->>> Otherwise, can't __secure_computing() hit BUG() if it sees the old
->>> mode == SECCOMP_MODE_DISABLED ?
->>>
->>> Or seccomp_run_filters() can see ->filters == NULL and WARN(),
->>> smp_load_acquire() only serializes that LOAD with the subsequent memory
->>> operations.
->>
->> Hm, actually, now I'm worried about smp_load_acquire() being too slow
->> in run_filters().
->>
->> The ordering must be:
->> - task->seccomp.filter must be valid before
->> - task->seccomp.mode is set, which must be valid before
->> - TIF_SECCOMP is set
->>
->> But I don't want to impact secure_computing(). What's the best way to
->> make sure this ordering is respected?
->
-> Remove the ordering requirement, perhaps?
->
-> What if you moved mode into seccomp.filter?  Then there would be
-> little reason to check TIF_SECCOMP from secure_computing; instead, you
-> could smp_load_acquire (or read_barrier_depends, maybe) seccomp.filter
-> from secure_computing and pass the result as a parameter to
-> __secure_computing.  Or you could even remove the distinction between
-> secure_computing and __secure_computing -- it's essentially useless
-> anyway to split entry hook approaches like my x86 fastpath prototype.
+Make sure we only have the logic for requeing commands in one place.
 
-The TIF_SECCOMP is needed for the syscall entry path. The check in
-secure_computing() is just because the "I am being traced" trigger
-includes a call to secure_computing, which filters out tracing
-reasons.
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+---
+ drivers/scsi/scsi.c     |   35 ++++++++++++-----------------------
+ drivers/scsi/scsi_lib.c |    9 ++++++---
+ 2 files changed, 18 insertions(+), 26 deletions(-)
 
-Your fast path work would clean a lot of that up, as you say. But it
-still doesn't change the ordering check here. TIF_SECCOMP indicates
-seccomp.mode must be checked, so that ordering will remain, and if
-mode == FILTER, seccomp.filter must be valid.
-
-Isn't there a way we can force the assignment ordering in seccomp_assign_mode()?
-
--Kees
-
+diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
+index ce5b4e5..dcc43fd 100644
+--- a/drivers/scsi/scsi.c
++++ b/drivers/scsi/scsi.c
+@@ -648,9 +648,7 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
+ 		 * returns an immediate error upwards, and signals
+ 		 * that the device is no longer present */
+ 		cmd->result = DID_NO_CONNECT << 16;
+-		scsi_done(cmd);
+-		/* return 0 (because the command has been processed) */
+-		goto out;
++		goto done;
+ 	}
+ 
+ 	/* Check to see if the scsi lld made this device blocked. */
+@@ -662,17 +660,9 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
+ 		 * occur until the device transitions out of the
+ 		 * suspend state.
+ 		 */
+-
+-		scsi_queue_insert(cmd, SCSI_MLQUEUE_DEVICE_BUSY);
+-
+ 		SCSI_LOG_MLQUEUE(3, scmd_printk(KERN_INFO, cmd,
+ 			"queuecommand : device blocked\n"));
+-
+-		/*
+-		 * NOTE: rtn is still zero here because we don't need the
+-		 * queue to be plugged on return (it's already stopped)
+-		 */
+-		goto out;
++		return SCSI_MLQUEUE_DEVICE_BUSY;
+ 	}
+ 
+ 	/*
+@@ -696,20 +686,19 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
+ 			       "cdb_size=%d host->max_cmd_len=%d\n",
+ 			       cmd->cmd_len, cmd->device->host->max_cmd_len));
+ 		cmd->result = (DID_ABORT << 16);
+-
+-		scsi_done(cmd);
+-		goto out;
++		goto done;
+ 	}
+ 
+ 	if (unlikely(host->shost_state == SHOST_DEL)) {
+ 		cmd->result = (DID_NO_CONNECT << 16);
+-		scsi_done(cmd);
+-	} else {
+-		trace_scsi_dispatch_cmd_start(cmd);
+-		cmd->scsi_done = scsi_done;
+-		rtn = host->hostt->queuecommand(host, cmd);
++		goto done;
++
+ 	}
+ 
++	trace_scsi_dispatch_cmd_start(cmd);
++
++	cmd->scsi_done = scsi_done;
++	rtn = host->hostt->queuecommand(host, cmd);
+ 	if (rtn) {
+ 		trace_scsi_dispatch_cmd_error(cmd, rtn);
+ 		if (rtn != SCSI_MLQUEUE_DEVICE_BUSY &&
+@@ -718,12 +707,12 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
+ 
+ 		SCSI_LOG_MLQUEUE(3, scmd_printk(KERN_INFO, cmd,
+ 			"queuecommand : request rejected\n"));
+-
+-		scsi_queue_insert(cmd, rtn);
+ 	}
+ 
+- out:
+ 	return rtn;
++ done:
++	scsi_done(cmd);
++	return 0;
+ }
+ 
+ /**
+diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+index 2667c75..63bf844 100644
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -1583,9 +1583,12 @@ static void scsi_request_fn(struct request_queue *q)
+ 		 * Dispatch the command to the low-level driver.
+ 		 */
+ 		rtn = scsi_dispatch_cmd(cmd);
+-		spin_lock_irq(q->queue_lock);
+-		if (rtn)
++		if (rtn) {
++			scsi_queue_insert(cmd, rtn);
++			spin_lock_irq(q->queue_lock);
+ 			goto out_delay;
++		}
++		spin_lock_irq(q->queue_lock);
+ 	}
+ 
+ 	return;
+@@ -1605,7 +1608,7 @@ static void scsi_request_fn(struct request_queue *q)
+ 	blk_requeue_request(q, req);
+ 	sdev->device_busy--;
+ out_delay:
+-	if (sdev->device_busy == 0)
++	if (sdev->device_busy == 0 && !scsi_device_blocked(sdev))
+ 		blk_delay_queue(q, SCSI_QUEUE_DELAY);
+ }
+ 
 -- 
-Kees Cook
-Chrome OS Security
+1.7.10.4
+
