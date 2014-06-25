@@ -1,66 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756609AbaFYW1r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 18:27:47 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:42114 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752104AbaFYW1q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 18:27:46 -0400
-Message-ID: <53AB4CE0.6020705@ti.com>
-Date: Wed, 25 Jun 2014 17:27:44 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1756808AbaFYW20 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 18:28:26 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:45123 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755049AbaFYW2Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 18:28:24 -0400
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Don Mullis <don.mullis@gmail.com>, Dave Chinner <david@fromorbit.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/4] lib: list_sort: Various minor improvements
+Organization: D03
+References: <1403604392-23259-1-git-send-email-linux@rasmusvillemoes.dk>
+	<20140625145314.3e16af6998765b7aad860bf7@linux-foundation.org>
+X-Hashcash: 1:20:140625:linux-kernel@vger.kernel.org::wNBdyzNP8Ni2ib9d:0000000000000000000000000000000000kpl
+X-Hashcash: 1:20:140625:david@fromorbit.com::oGEq8vc5QYZvSAgM:0000000000000000000000000000000000000000000qFS
+X-Hashcash: 1:20:140625:akpm@linux-foundation.org::TLxzck2HAkhsNazD:0000000000000000000000000000000000007QcH
+X-Hashcash: 1:20:140625:artem.bityutskiy@linux.intel.com::AuGaHXNqo7K2uaUs:000000000000000000000000000005PUY
+X-Hashcash: 1:20:140625:don.mullis@gmail.com::XuErPmZbwtS3EVxV:000000000000000000000000000000000000000007Xfj
+Date: Thu, 26 Jun 2014 00:28:18 +0200
+In-Reply-To: <20140625145314.3e16af6998765b7aad860bf7@linux-foundation.org>
+	(Andrew Morton's message of "Wed, 25 Jun 2014 14:53:14 -0700")
+Message-ID: <87egycoc8t.fsf@rasmusvillemoes.dk>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Roger Quadros <rogerq@ti.com>, <tony@atomide.com>
-CC: <rnayak@ti.com>, <balbi@ti.com>, <nsekhar@ti.com>, <kishon@ti.com>,
-        <george.cherian@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: DRA7-evm: Enable SATA PHY and USB PHY power supplies
-References: <1403700996-27105-1-git-send-email-rogerq@ti.com>
-In-Reply-To: <1403700996-27105-1-git-send-email-rogerq@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2014 07:56 AM, Roger Quadros wrote:
-> The SATA and USB PHYs need the 1.8V and 3.3V supplies.
-> The PHY drivers/framework don't yet support regulator
-> supply so we have to keep these regulators always-on till
-> then.
-> 
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> ---
->  arch/arm/boot/dts/dra7-evm.dts | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/dra7-evm.dts b/arch/arm/boot/dts/dra7-evm.dts
-> index 4adc280..99a1f79 100644
-> --- a/arch/arm/boot/dts/dra7-evm.dts
-> +++ b/arch/arm/boot/dts/dra7-evm.dts
-> @@ -241,6 +241,7 @@
->  					regulator-min-microvolt = <1800000>;
->  					regulator-max-microvolt = <1800000>;
->  					regulator-boot-on;
-> +					regulator-always-on;
->  				};
->  
->  				ldo9_reg: ldo9 {
-> @@ -266,6 +267,7 @@
->  					regulator-min-microvolt = <3300000>;
->  					regulator-max-microvolt = <3300000>;
->  					regulator-boot-on;
-> +					regulator-always-on;
->  				};
->  			};
->  		};
-> 
+Andrew Morton <akpm@linux-foundation.org> writes:
 
-Why not fix phy driver/framework as needed? the trouble is people
-always forget to remove always-on... who actually audits old logs and
-fixes stuff back up?
+> On Tue, 24 Jun 2014 12:06:27 +0200 Rasmus Villemoes <linux@rasmusvillemoes.dk> wrote:
+>
+>> Reading the source of lib/list_sort.c, I came up with a few possible
+>> improvements. I think 4/4 may be a bit controversial, but 1/4, 2/4 and
+>> 3/4 should be straightforward.
+>> 
+>
+> All looks OK to me.
 
--- 
-Regards,
-Nishanth Menon
+Thanks.
+
+> We may as well do the pr_foo() conversion as well.  As often happens,
+> the results are quite pleasing.
+>
+> --- a/lib/list_sort.c~lib-list_sortc-convert-to-pr_foo
+> +++ a/lib/list_sort.c
+> @@ -1,3 +1,6 @@
+> +
+> +#define pr_fmt(fmt) "list_sort_test: " fmt
+> +
+>  #include <linux/kernel.h>
+>  #include <linux/module.h>
+>  #include <linux/list_sort.h>
+> @@ -125,9 +128,8 @@ void list_sort(void *priv, struct list_h
+>  		}
+>  		if (lev > max_lev) {
+>  			if (unlikely(lev >= ARRAY_SIZE(part)-1)) {
+> -				printk_once(KERN_DEBUG "list passed to"
+> -					" list_sort() too long for"
+> -					" efficiency\n");
+> +				pr_debug_once("list passed to list_sort() too "
+> +					      "long for efficiency\n");
+
+Minor comment: Won't this end up saying "list_sort_test: list passed to
+...", despite the list coming from a 'real' user? Maybe change the first
+#define to '"list_sort: " fmt', the above message to "passed list too
+long for efficiency", and redefine pr_fmt right after #ifdef
+CONFIG_TEST_LIST_SORT.
+
+Rasmus
