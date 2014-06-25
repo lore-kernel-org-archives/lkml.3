@@ -1,102 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756707AbaFYWah (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 18:30:37 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:54885 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754810AbaFYWaf (ORCPT
+	id S1756905AbaFYWbP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 18:31:15 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:38742 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755226AbaFYWbM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 18:30:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <1403716136-32694-8-git-send-email-johan@kernel.org>
-References: <1403716136-32694-1-git-send-email-johan@kernel.org> <1403716136-32694-8-git-send-email-johan@kernel.org>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Wed, 25 Jun 2014 15:30:13 -0700
-Message-ID: <CAK5ve-K2DQq+KpAARMWw_RR=zmCpz92TikAivwMNWT5=n2iDBQ@mail.gmail.com>
-Subject: Re: [PATCH 07/13] leds: netxbig: fix attribute-creation race
-To: Johan Hovold <johan@kernel.org>
-Cc: Richard Purdie <rpurdie@rpsys.net>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-input@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        Janne Kanniainen <janne.kanniainen@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>,
-        =?UTF-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 25 Jun 2014 18:31:12 -0400
+Date: Wed, 25 Jun 2014 15:31:09 -0700 (PDT)
+Message-Id: <20140625.153109.1658452238116055408.davem@davemloft.net>
+To: joe@perches.com
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, arnd@arndb.de,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH 01/22] pci-dma-compat: Add pci_zalloc_consistent helper
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1403733111.24788.8.camel@joe-AO725>
+References: <2248b3ffe86cd8995a809bf7e2871f38039979c1.1403530604.git.joe@perches.com>
+	<20140625122755.152685fadbc9cffe7a298dc6@linux-foundation.org>
+	<1403733111.24788.8.camel@joe-AO725>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 25 Jun 2014 15:31:12 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 10:08 AM, Johan Hovold <johan@kernel.org> wrote:
-> Use the attribute groups of the led-class to create the sata attribute
-> during probe in order to avoid racing with userspace.
->
-> Signed-off-by: Johan Hovold <johan@kernel.org>
-> ---
->  drivers/leds/leds-netxbig.c | 26 ++++++++++++--------------
->  1 file changed, 12 insertions(+), 14 deletions(-)
->
-> diff --git a/drivers/leds/leds-netxbig.c b/drivers/leds/leds-netxbig.c
-> index e97f443a6e07..8ab931b8fcd3 100644
-> --- a/drivers/leds/leds-netxbig.c
-> +++ b/drivers/leds/leds-netxbig.c
-> @@ -293,10 +293,14 @@ static ssize_t netxbig_led_sata_show(struct device *dev,
->
->  static DEVICE_ATTR(sata, 0644, netxbig_led_sata_show, netxbig_led_sata_store);
->
-> +static struct attribute *netxbig_led_attrs[] = {
-> +       &dev_attr_sata.attr,
-> +       NULL
-> +};
-> +ATTRIBUTE_GROUPS(netxbig_led);
-> +
->  static void delete_netxbig_led(struct netxbig_led_data *led_dat)
->  {
-> -       if (led_dat->mode_val[NETXBIG_LED_SATA] != NETXBIG_LED_INVALID_MODE)
-> -               device_remove_file(led_dat->cdev.dev, &dev_attr_sata);
->         led_classdev_unregister(&led_dat->cdev);
->  }
->
-> @@ -327,6 +331,12 @@ create_netxbig_led(struct platform_device *pdev,
->         led_dat->sata = 0;
->         led_dat->cdev.brightness = LED_OFF;
->         led_dat->cdev.flags |= LED_CORE_SUSPENDRESUME;
-> +       /*
-> +        * If available, expose the SATA activity blink capability through
-> +        * a "sata" sysfs attribute.
-> +        */
-> +       if (led_dat->mode_val[NETXBIG_LED_SATA] != NETXBIG_LED_INVALID_MODE)
-> +               led_dat->cdev.groups = netxbig_led_groups;
->         led_dat->mode_addr = template->mode_addr;
->         led_dat->mode_val = template->mode_val;
->         led_dat->bright_addr = template->bright_addr;
-> @@ -335,18 +345,6 @@ create_netxbig_led(struct platform_device *pdev,
->         led_dat->num_timer = pdata->num_timer;
->
->         ret = led_classdev_register(&pdev->dev, &led_dat->cdev);
+From: Joe Perches <joe@perches.com>
+Date: Wed, 25 Jun 2014 14:51:51 -0700
 
-Let's just "return led_classdev_register(&pdev->dev, &led_dat->cdev);"
-and remove "ret"
+> On Wed, 2014-06-25 at 12:27 -0700, Andrew Morton wrote:
+>> On Mon, 23 Jun 2014 06:41:29 -0700 Joe Perches <joe@perches.com> wrote:
+>> 
+>> > Add this helper for consistency with pci_zalloc_coherent
+>> > and the ability to remove unnecessary memset(,0,) uses.
+>> 
+>> While we're being anal..  I'm not a big fan of the patch titles.  Worst
+>> is "amd: Use pci_zalloc_consistent".  "amd" is quite a poor identifier
+>> - it's only when you get in and look at the diff that you realise it's
+>> an ethernet driver.
+> 
+> Yeah, those "amd:" prefixes should really have been "pcnet32:"
+> 
+>> People sometimes address this by using
+>> 
+>> 	"drivers: net: ethernet: amd: use pci_zalloc_consistent"
+>> 
+>> which strikes me as utterly perverse.  We already have a nice way of
+>> representing the hierarchy and that's using '/'.
+> 
+> I used to do that until several people complained.
+> Now I don't.  btw:  Documentation/SubmittingPatches says:
+> 
+> 15) The canonical patch format
+> 
+> The canonical patch subject line is:
+> 
+>     Subject: [PATCH 001/123] subsystem: summary phrase
 
-I will handle this trivial change.
++1
 
--Bryan
-> -       if (ret < 0)
-> -               return ret;
-> -
-> -       /*
-> -        * If available, expose the SATA activity blink capability through
-> -        * a "sata" sysfs attribute.
-> -        */
-> -       if (led_dat->mode_val[NETXBIG_LED_SATA] != NETXBIG_LED_INVALID_MODE) {
-> -               ret = device_create_file(led_dat->cdev.dev, &dev_attr_sata);
-> -               if (ret)
-> -                       led_classdev_unregister(&led_dat->cdev);
-> -       }
->
->         return ret;
->  }
-> --
-> 1.8.5.5
->
+We've been representing subsystems using colon prefixes for ages, and
+I can't seen the value of starting to use something inconsistent with
+a decade of precedence.
