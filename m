@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757484AbaFYPfS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 11:35:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14214 "EHLO mx1.redhat.com"
+	id S1757501AbaFYPf0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 11:35:26 -0400
+Received: from kanga.kvack.org ([205.233.56.17]:44558 "EHLO kanga.kvack.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756886AbaFYPfP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 11:35:15 -0400
-Message-ID: <53AAEC1A.20905@redhat.com>
-Date: Wed, 25 Jun 2014 17:34:50 +0200
-From: Maurizio Lombardi <mlombard@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        xjtuwjp@gmail.com, lindar_liu@usish.com
-CC: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] scsi: pm8001: pm80xx_hwi.c:  Cleaning up variable is
- set more than once
-References: <1403704907-25672-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-In-Reply-To: <1403704907-25672-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756886AbaFYPfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 11:35:22 -0400
+Date: Wed, 25 Jun 2014 11:35:20 -0400
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: cl@linux-foundation.org, kmo@daterainc.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/6] percpu-refcount, aio: use percpu_ref_cancel_init() in ioctx_alloc()
+Message-ID: <20140625153520.GT23137@kvack.org>
+References: <1403053685-28240-1-git-send-email-tj@kernel.org> <1403053685-28240-2-git-send-email-tj@kernel.org> <20140625143112.GR23137@kvack.org> <20140625145634.GD26883@htj.dyndns.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140625145634.GD26883@htj.dyndns.org>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This one looks good to me,
+Hi Tejun,
 
-Reviewed-by: Maurizio Lombardi <mlombard@redhat.com>
+On Wed, Jun 25, 2014 at 10:56:34AM -0400, Tejun Heo wrote:
+> Hello, Benjamin.
+...
+> It'd probably easier if I route this through percpu tree with the rest
+> of changes as there are further changes on the aio side (trivial but
+> still), so we'd end up having to do pulling dance back and forth.  The
+> changes on aio side are mostly trivial.  Can I route them through
+> percpu tree with your acks?
 
-On 06/25/2014 04:01 PM, Rickard Strandqvist wrote:
-> A struct member variable is set to different values without having used in between.
+Sure, no problem -- add my acks and proceed.  I don't think there should 
+be any conflicts.  Cheers,
+
+		-ben
+
+> Thanks.
 > 
-> This was found using a static code analysis program called cppcheck
-> 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> ---
->  drivers/scsi/pm8001/pm80xx_hwi.c |    1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/drivers/scsi/pm8001/pm80xx_hwi.c b/drivers/scsi/pm8001/pm80xx_hwi.c
-> index d70587f..2698227 100644
-> --- a/drivers/scsi/pm8001/pm80xx_hwi.c
-> +++ b/drivers/scsi/pm8001/pm80xx_hwi.c
-> @@ -249,7 +249,6 @@ moreData:
->  				sprintf(pm8001_ha->
->  					forensic_info.data_buf.direct_data,
->  						"%08x ", 4);
-> -			pm8001_ha->forensic_info.data_buf.read_len = 0xFFFFFFFF;
->  			pm8001_ha->forensic_info.data_buf.direct_len =  0;
->  			pm8001_ha->forensic_info.data_buf.direct_offset = 0;
->  			pm8001_ha->forensic_info.data_buf.read_len = 0;
-> 
+> -- 
+> tejun
+
+-- 
+"Thought is the essence of where you are now."
