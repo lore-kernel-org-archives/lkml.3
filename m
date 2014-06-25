@@ -1,73 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758100AbaFYSA3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 14:00:29 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:34045 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757818AbaFYSA1 (ORCPT
+	id S1758117AbaFYSAz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 14:00:55 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:39298 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752600AbaFYSAw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 14:00:27 -0400
+	Wed, 25 Jun 2014 14:00:52 -0400
 MIME-Version: 1.0
-In-Reply-To: <1403686967-10887-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1403686967-10887-1-git-send-email-jiang.liu@linux.intel.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 25 Jun 2014 12:00:06 -0600
-Message-ID: <CAErSpo5z9OH_u3f9L5qKoJsJ+mgRU5rba9mnQG0Y5XXn0zcEvg@mail.gmail.com>
-Subject: Re: [Patch Part3 V3 00/21] Enable support of Intel DMAR device hotplug
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Ashok Raj <ashok.raj@intel.com>, Yijing Wang <wangyijing@huawei.com>,
-        Tony Luck <tony.luck@intel.com>,
-        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        linux hotplug mailing <linux-hotplug@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        dmaengine@vger.kernel.org
+In-Reply-To: <20140625175136.GA18185@redhat.com>
+References: <1403642893-23107-1-git-send-email-keescook@chromium.org>
+	<1403642893-23107-6-git-send-email-keescook@chromium.org>
+	<20140625135121.GB7892@redhat.com>
+	<CAGXu5jJkFxh4K=40xuh6tu3kUf4oJM8Dry+4upBdRieW3FNLgw@mail.gmail.com>
+	<CALCETrUBNmLnpa+LM91om2RSpR6SjupP-EdefzhU1Me4nv3Dfw@mail.gmail.com>
+	<CAGXu5j+J11zJnuFR8bYKAXizAHhCx4R+uJE_QH6zC3q2udkpaQ@mail.gmail.com>
+	<CALCETrVrs8sb19+UUqyFEpAFzTih5dkAwn-WpQjfgPcPJMpP5g@mail.gmail.com>
+	<20140625173245.GA17695@redhat.com>
+	<CALCETrUc65H+fn6dtMdYnB_xR39wcmgDdTbdR3fFRjyrndJhgA@mail.gmail.com>
+	<20140625175136.GA18185@redhat.com>
+Date: Wed, 25 Jun 2014 11:00:51 -0700
+X-Google-Sender-Auth: OqbIQ1uTXUI-aEPiNFDo8JxIExk
+Message-ID: <CAGXu5jL17k6=GXju6x+eLU20FMwBHhnuRiHoQD1Bzj_EmpiKjg@mail.gmail.com>
+Subject: Re: [PATCH v8 5/9] seccomp: split mode set routines
+From: Kees Cook <keescook@chromium.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, LKML <linux-kernel@vger.kernel.org>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->   iommu/vt-d: match segment number when searching for dev_iotlb capable
->     devices
->   iommu/vt-d: use correct domain id to flush virtual machine domains
->   iommu/vt-d: introduce helper functions to improve code readability
->   iommu/vt-d: introduce helper functions to make code symmetric for
->     readability
->   iommu/vt-d: only dynamically allocate domain id for virtual domains
->   iommu/vt-d: fix possible invalid memory access caused by
->     free_dmar_iommu()
->   iommu/vt-d: avoid freeing virtual machine domain in free_dmar_iommu()
->   iommu/VT-d: simplify include/linux/dmar.h
->   iommu/vt-d: change iommu_enable/disable_translation to return void
->   iommu/vt-d: simplify intel_unmap_sg() and kill duplicated code
->   iommu/vt-d: introduce helper domain_pfn_within_range() to simplify
->     code
->   iommu/vt-d: introduce helper function iova_size() to improve code
->     readability
->   iommu/vt-d: fix bug in computing domain's iommu_snooping flag
->   IOMMU/vt-d: introduce helper function dmar_walk_resources()
->   iommu/vt-d: dynamically allocate and free seq_id for DMAR units
->   iommu/vt-d: implement DMAR unit hotplug framework
->   iommu/vt-d: search _DSM method for DMAR hotplug
->   iommu/vt-d: enhance intel_irq_remapping driver to support DMAR unit
->     hotplug
->   iommu/vt-d: enhance error recovery in function
->     intel_enable_irq_remapping()
->   iommu/vt-d: enhance intel-iommu driver to support DMAR unit hotplug
->   pci, ACPI, iommu: enhance pci_root to support DMAR device hotplug
+On Wed, Jun 25, 2014 at 10:51 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 06/25, Andy Lutomirski wrote:
+>>
+>> On Wed, Jun 25, 2014 at 10:32 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>> > On 06/25, Andy Lutomirski wrote:
+>> >>
+>> >> Write the filter, then smp_mb (or maybe a weaker barrier is okay),
+>> >> then set the bit.
+>> >
+>> > Yes, exactly, this is what I meant. Plas rmb() in __secure_computing().
+>> >
+>> > But I still can't understand the rest of your discussion about the
+>> > ordering we need ;)
+>>
+>> Let me try again from scratch.
+>>
+>> Currently there are three relevant variables: TIF_SECCOMP,
+>> seccomp.mode, and seccomp.filter.  __secure_computing needs
+>> seccomp.mode and seccomp.filter to be in sync, and it wants (but
+>> doesn't really need) TIF_SECCOMP to be in sync as well.
+>>
+>> My suggestion is to rearrange it a bit.  Move mode into seccomp.filter
+>> (so that filter == NULL implies no seccomp) and don't check
 
-This looks a little sloppy; you have three different ways of
-capitalizing the area:
+This would require that we reimplement mode 1 seccomp via mode 2
+filters. Which isn't too hard, but may add complexity.
 
-  iommu/vt-d:
-  iommu/VT-d:
-  IOMMU/vt-d:
+>> TIF_SECCOMP in secure_computing.  Then turning on seccomp is entirely
+>> atomic except for the fact that the seccomp hooks won't be called if
+>> filter != NULL but !TIF_SECCOMP.  This removes all ordering
+>> requirements.
+>
+> Ah, got it, thanks. Perhaps I missed somehing, but to me this looks like
+> unnecessary complication at first glance.
+>
+> We alredy have TIF_SECCOMP, we need it anyway, and we should only care
+> about the case when this bit is actually set, so that we can race with
+> the 1st call of __secure_computing().
+>
+> Otherwise we are fine: we can miss the new filter anyway, ->mode can't
+> be changed it is already nonzero.
+>
+>> Alternatively, __secure_computing could still BUG_ON(!seccomp.filter).
+>> In that case, filter needs to be set before TIF_SECCOMP is set, but
+>> that's straightforward.
+>
+> Yep. And this is how seccomp_assign_mode() already works? It is called
+> after we change ->filter chain, it changes ->mode before set(TIF_SECCOMP)
+> just it lacks a barrier.
 
-Also, "git log --oneline drivers/iommu" says that the convention for
-drivers/iommu is to capitalize the first word of the rest of the
-subject line.
+Right, I think the best solution is to add the barrier. I was
+concerned that adding the read barrier in secure_computing would have
+a performance impact, though.
+
+
+-- 
+Kees Cook
+Chrome OS Security
