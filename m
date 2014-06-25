@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757083AbaFYNq0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 09:46:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14265 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756944AbaFYNqY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 09:46:24 -0400
-Date: Wed, 25 Jun 2014 15:43:54 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
-        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
-        linux-api@vger.kernel.org, x86@kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
-        linux-arch@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: Re: [PATCH v8 4/9] sched: move no_new_privs into new atomic flags
-Message-ID: <20140625134354.GA7892@redhat.com>
-References: <1403642893-23107-1-git-send-email-keescook@chromium.org> <1403642893-23107-5-git-send-email-keescook@chromium.org>
+	id S1757002AbaFYNr5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 09:47:57 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:34280 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754459AbaFYNr4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 09:47:56 -0400
+Date: Wed, 25 Jun 2014 21:47:44 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Ruchika Gupta <ruchika.gupta@freescale.com>
+Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
+        davem@davemloft.net, alexandru.porosanu@freescale.com,
+        horia.geanta@freescale.com, grant.likely@linaro.org,
+        NiteshNarayanLal@freescale.com, thierry.reding@gmail.com,
+        rob.herring@calxeda.com, kim.phillips@freescale.com,
+        dan.carpenter@oracle.com
+Subject: Re: [PATCH][v4] crypto: caam - Correct definition of registers in
+ memory map
+Message-ID: <20140625134744.GA10379@gondor.apana.org.au>
+References: <1403516308-22009-1-git-send-email-ruchika.gupta@freescale.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1403642893-23107-5-git-send-email-keescook@chromium.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1403516308-22009-1-git-send-email-ruchika.gupta@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24, Kees Cook wrote:
->
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1307,8 +1307,7 @@ struct task_struct {
->  				 * execve */
->  	unsigned in_iowait:1;
->
-> -	/* task may not gain privileges */
-> -	unsigned no_new_privs:1;
-> +	unsigned long atomic_flags; /* Flags needing atomic access. */
->
->  	/* Revert to default priority/policy when forking */
->  	unsigned sched_reset_on_fork:1;
+On Mon, Jun 23, 2014 at 03:08:28PM +0530, Ruchika Gupta wrote:
+> Some registers like SECVID, CHAVID, CHA Revision Number,
+> CTPR were defined as 64 bit resgisters.  The IP provides
+> a DWT bit(Double word Transpose) to transpose the two words when
+> a double word register is accessed. However setting this bit
+> would also affect the operation of job descriptors as well as
+> other registers which are truly double word in nature.
+> So, for the IP to work correctly on big-endian as well as
+> little-endian SoC's, change is required to access all 32 bit
+> registers as 32 bit quantities.
+> 
+> Signed-off-by: Ruchika Gupta <ruchika.gupta@freescale.com>
 
-Agreed, personally I like it more than seccomp->flags.
-
-But probably it would be better to place the new member before/after
-other bitfields to save the space?
-
-Oleg.
-
+Patch applied.
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
