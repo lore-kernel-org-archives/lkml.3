@@ -1,222 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932265AbaFYPn5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 11:43:57 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:34921 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756515AbaFYPn4 (ORCPT
+	id S1757355AbaFYPrM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 11:47:12 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:25326 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757046AbaFYPrK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 11:43:56 -0400
-Message-ID: <53AAEDE7.8060300@oracle.com>
-Date: Wed, 25 Jun 2014 11:42:31 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        peterz@infradead.org, tglx@linutronix.de, mingo@kernel.org,
-        tj@kernel.org, rusty@rustcorp.com.au, akpm@linux-foundation.org,
-        fweisbec@gmail.com, hch@infradead.org
-CC: mgorman@suse.de, riel@redhat.com, bp@suse.de, rostedt@goodmis.org,
-        mgalbraith@suse.de, ego@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        oleg@redhat.com, rjw@rjwysocki.net, linux-kernel@vger.kernel.org,
-        Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH v7 2/2] CPU hotplug, smp: Flush any pending IPI callbacks
- before CPU offline
-References: <20140526110743.16203.18186.stgit@srivatsabhat.in.ibm.com> <20140526110831.16203.25130.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20140526110831.16203.25130.stgit@srivatsabhat.in.ibm.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Wed, 25 Jun 2014 11:47:10 -0400
+X-AuditID: cbfec7f5-b7f626d000004b39-c4-53aaeefa0066
+Message-id: <53AAEEE3.1000004@samsung.com>
+Date: Wed, 25 Jun 2014 17:46:43 +0200
+From: Tomasz Figa <t.figa@samsung.com>
+Organization: Samsung R&D Institute Poland
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.5.0
+MIME-version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Tomasz Figa <tomasz.figa@gmail.com>,
+        Daniel Drake <drake@endlessm.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH v2 0/6] Enable L2 cache support on Exynos4210/4x12 SoCs
+References: <1403703451-12233-1-git-send-email-t.figa@samsung.com>
+ <20140625135039.GM3705@n2100.arm.linux.org.uk> <53AAD8FC.9040306@samsung.com>
+ <20140625143728.GN3705@n2100.arm.linux.org.uk>
+In-reply-to: <20140625143728.GN3705@n2100.arm.linux.org.uk>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnkeLIzCtJLcpLzFFi42I5/e/4Vd3f71YFG6w3tfg76Ri7xaP5j5kt
+	ehdcZbPY3jmD3WLKn+VMFpseX2O1uLxrDpvF7CX9LBYzzu9jsrh9mddi7ZG77Banrn9ms3jd
+	t4bZYtWuP4wW+694OfB7tDT3sHn8/jWJ0ePb10ksHpf7epk8Fn3P8tg56y67x51re9g8Ni+p
+	97hyoonVo2/LKkaP4ze2M3l83iQXwBPFZZOSmpNZllqkb5fAlfHx1X22ggP8FTcnTmNuYNzH
+	08XIySEhYCJx+fV5JghbTOLCvfVsXYxcHEICSxklZv+ZzwiSEBL4zCgx/60ViM0roCVxomUb
+	M4jNIqAqsXDiZDCbTUBN4nPDIzYQmx+oZk3TdZYuRg4OUYEIiccXhCBaBSV+TL7HAmKLCJhK
+	XHv0jBlkF7NAH4vE+mU3wXqFBbwlJvXMhtp7mFHi7xUOEJtTwFpix/OLYLuYBXQk9rdOY4Ow
+	5SU2r3nLPIFRcBaSHbOQlM1CUraAkXkVo2hqaXJBcVJ6rpFecWJucWleul5yfu4mRkgkft3B
+	uPSY1SFGAQ5GJR7eAJ5VwUKsiWXFlbmHGCU4mJVEeKOeA4V4UxIrq1KL8uOLSnNSiw8xMnFw
+	SjUwarhPUK9a4ylt/1ohWO/epw0MtfvTHgis/H+65kBESXb9Yf7rJkH3UrIkD2R/SFzxrCk9
+	V3tp7DGFkwdKXq60vXnywVypNs0t81XUV5381H7crm4yP6eZ8bmlBQcLlnAanxCWOX+qbtGy
+	rp8fZnMYKR5qWP/FN0jt4iv7u4dn7VrbGXfR+X9NsBJLcUaioRZzUXEiAEyUgAaiAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/26/2014 07:08 AM, Srivatsa S. Bhat wrote:
-> During CPU offline, in stop-machine, we don't enforce any rule in the
-> _DISABLE_IRQ stage, regarding the order in which the outgoing CPU and the other
-> CPUs disable their local interrupts. Hence, we can encounter a scenario as
-> depicted below, in which IPIs are sent by the other CPUs to the CPU going
-> offline (while it is *still* online), but the outgoing CPU notices them only
-> *after* it has gone offline.
+On 25.06.2014 16:37, Russell King - ARM Linux wrote:
+> On Wed, Jun 25, 2014 at 04:13:16PM +0200, Tomasz Figa wrote:
+>> On 25.06.2014 15:50, Russell King - ARM Linux wrote:
+>>> On Wed, Jun 25, 2014 at 03:37:25PM +0200, Tomasz Figa wrote:
+>>>> This series intends to add support for L2 cache on Exynos4 SoCs on boards
+>>>> running under secure firmware, which requires certain initialization steps
+>>>> to be done with help of firmware, as selected registers are writable only
+>>>> from secure mode.
+>>>
+>>> What I said in my message on June 12th applies to this series.  I'm
+>>> not having the virtual address exposed via the write_sec call.
+>>>
+>>> Yes, you need to read other registers in order to use your secure
+>>> firmware implementation.  Let's fix that by providing a better write_sec
+>>> interface so you don't have to read back these registers, rather than
+>>> working around this short-coming.
+>>
+>> Do you have anything in particular in mind? I would be glad to implement
+>> it and send patches.
 > 
+> As I've already said, you are not the only ones who need fuller information
+> to make your secure monitor calls.  So, what that implies is that rather
+> than the interface being "please write register X with value V", and then
+> having platforms work-around that by reading various registers, we need
+> a more flexible interface which passes the desired state.
 > 
->               CPU 1                                         CPU 2
->           (Online CPU)                               (CPU going offline)
-> 
->        Enter _PREPARE stage                          Enter _PREPARE stage
-> 
->                                                      Enter _DISABLE_IRQ stage
-> 
-> 
->                                                    =
->        Got a device interrupt,                     | Didn't notice the IPI
->        and the interrupt handler                   | since interrupts were
->        called smp_call_function()                  | disabled on this CPU.
->        and sent an IPI to CPU 2.                   |
->                                                    =
-> 
-> 
->        Enter _DISABLE_IRQ stage
-> 
-> 
->        Enter _RUN stage                              Enter _RUN stage
-> 
->                                   =
->        Busy loop with interrupts  |                  Invoke take_cpu_down()
->        disabled.                  |                  and take CPU 2 offline
->                                   =
-> 
-> 
->        Enter _EXIT stage                             Enter _EXIT stage
-> 
->        Re-enable interrupts                          Re-enable interrupts
-> 
->                                                      The pending IPI is noted
->                                                      immediately, but alas,
->                                                      the CPU is offline at
->                                                      this point.
-> 
-> 
-> 
-> This of course, makes the smp-call-function IPI handler code unhappy and it
-> complains about "receiving an IPI on an offline CPU".
-> 
-> However, if we look closely, we observe that the IPI was sent when CPU 2 was
-> still online, and hence it was perfectly legal for CPU 1 to send the IPI at
-> that point. Furthermore, receiving an IPI on an offline CPU is terrible only
-> if there were pending callbacks yet to be executed by that CPU (in other words,
-> its a bug if the CPU went offline with work still pending).
-> 
-> So, fix this by flushing all the queued smp-call-function callbacks on the
-> outgoing CPU in the CPU_DYING stage[1], including those callbacks for which the
-> source CPU's IPIs might not have been received on the outgoing CPU yet. This
-> ensures that all pending IPI callbacks are run before the CPU goes completely
-> offline. But note that the outgoing CPU can still get IPIs from the other CPUs
-> just after it exits stop-machine, due to the scenario mentioned above. But
-> because we flush the callbacks before going offline, this will be completely
-> harmless.
-> 
-> Further, this solution also guarantees that there will be pending callbacks
-> on an offline CPU *only if* the source CPU initiated the IPI-send-procedure
-> *after* the target CPU went offline, which clearly indicates a bug in the
-> sender code.
-> 
-> So, considering all this, teach the smp-call-function IPI handler code to
-> complain only if an offline CPU received an IPI *and* it still had pending
-> callbacks to execute, since that is the only buggy scenario.
-> 
-> There is another case (somewhat theoretical though) where IPIs might arrive
-> late on the target CPU (possibly _after_ the CPU has gone offline): due to IPI
-> latencies in the hardware. But with this patch, even this scenario turns out
-> to be harmless, since we explicitly loop through the call_single_queue and
-> flush out any pending callbacks without waiting for the corresponding IPIs
-> to arrive.
-> 
-> 
-> [1]. The CPU_DYING part needs a little more explanation: by the time we
-> execute the CPU_DYING notifier callbacks, the CPU would have already been
-> marked offline. But we want to flush out the pending callbacks at this stage,
-> ignoring the fact that the CPU is offline. So restructure the IPI handler
-> code so that we can by-pass the "is-cpu-offline?" check in this particular
-> case. (Of course, the right solution here is to fix CPU hotplug to mark the
-> CPU offline _after_ invoking the CPU_DYING notifiers, but this requires a
-> lot of audit to ensure that this change doesn't break any existing code;
-> hence lets go with the solution proposed above until that is done).
-> 
-> Suggested-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
-Hi all,
+So it's still not clear to me how this should be done correctly.
 
-While fuzzing with trinity inside a KVM tools guest running the latest -next
-kernel I've stumbled on the following spew:
+One thing that comes to my mind is precomputing register values to some
+kind of structure, then calling some kind of magical platform-specific
+.enable() or .configure() callback, which takes the structure and, in
+one shot, configures the L2C according to firmware requirements. Then
+the generic code would read back those values to verify the final
+configuration (as it does right now) and rest of the operation would be
+identical.
 
-[ 1982.600053] kernel BUG at kernel/irq_work.c:175!
-[ 1982.600053] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[ 1982.600053] Dumping ftrace buffer:
-[ 1982.600053]    (ftrace buffer empty)
-[ 1982.600053] Modules linked in:
-[ 1982.600053] CPU: 14 PID: 168 Comm: migration/14 Not tainted 3.16.0-rc2-next-20140624-sasha-00024-g332b58d #726
-[ 1982.600053] task: ffff88036a5a3000 ti: ffff88036a5ac000 task.ti: ffff88036a5ac000
-[ 1982.600053] RIP: irq_work_run (kernel/irq_work.c:175 (discriminator 1))
-[ 1982.600053] RSP: 0000:ffff88036a5afbe0  EFLAGS: 00010046
-[ 1982.600053] RAX: 0000000080000001 RBX: 0000000000000000 RCX: 0000000000000008
-[ 1982.600053] RDX: 000000000000000e RSI: ffffffffaf9185fb RDI: 0000000000000000
-[ 1982.600053] RBP: ffff88036a5afc08 R08: 0000000000099224 R09: 0000000000000000
-[ 1982.600053] R10: 0000000000000000 R11: 0000000000000001 R12: ffff88036afd8400
-[ 1982.600053] R13: 0000000000000000 R14: ffffffffb0cf8120 R15: ffffffffb0cce5d0
-[ 1982.600053] FS:  0000000000000000(0000) GS:ffff88036ae00000(0000) knlGS:0000000000000000
-[ 1982.600053] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 1982.600053] CR2: 00000000019485d0 CR3: 00000002c7c8f000 CR4: 00000000000006a0
-[ 1982.600053] Stack:
-[ 1982.600053]  ffffffffab20fbb5 0000000000000082 ffff88036afd8440 0000000000000000
-[ 1982.600053]  0000000000000001 ffff88036a5afc28 ffffffffab20fca7 0000000000000000
-[ 1982.600053]  00000000ffffffef ffff88036a5afc78 ffffffffab19c58e 000000000000000e
-[ 1982.600053] Call Trace:
-[ 1982.600053] ? flush_smp_call_function_queue (kernel/smp.c:263)
-[ 1982.600053] hotplug_cfd (kernel/smp.c:81)
-[ 1982.600053] notifier_call_chain (kernel/notifier.c:95)
-[ 1982.600053] __raw_notifier_call_chain (kernel/notifier.c:395)
-[ 1982.600053] __cpu_notify (kernel/cpu.c:202)
-[ 1982.600053] cpu_notify (kernel/cpu.c:211)
-[ 1982.600053] take_cpu_down (./arch/x86/include/asm/current.h:14 kernel/cpu.c:312)
-[ 1982.600053] multi_cpu_stop (kernel/stop_machine.c:201)
-[ 1982.600053] ? __stop_cpus (kernel/stop_machine.c:170)
-[ 1982.600053] cpu_stopper_thread (kernel/stop_machine.c:474)
-[ 1982.600053] ? put_lock_stats.isra.12 (./arch/x86/include/asm/preempt.h:98 kernel/locking/lockdep.c:254)
-[ 1982.600053] ? _raw_spin_unlock_irqrestore (./arch/x86/include/asm/paravirt.h:809 include/linux/spinlock_api_smp.h:160 kernel/locking/spinlock.c:191)
-[ 1982.600053] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
-[ 1982.600053] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2557 kernel/locking/lockdep.c:2599)
-[ 1982.600053] smpboot_thread_fn (kernel/smpboot.c:160)
-[ 1982.600053] ? __smpboot_create_thread (kernel/smpboot.c:105)
-[ 1982.600053] kthread (kernel/kthread.c:210)
-[ 1982.600053] ? wait_for_completion (kernel/sched/completion.c:77 kernel/sched/completion.c:93 kernel/sched/completion.c:101 kernel/sched/completion.c:122)
-[ 1982.600053] ? kthread_create_on_node (kernel/kthread.c:176)
-[ 1982.600053] ret_from_fork (arch/x86/kernel/entry_64.S:349)
-[ 1982.600053] ? kthread_create_on_node (kernel/kthread.c:176)
-[ 1982.600053] Code: 00 00 00 00 e8 63 ff ff ff 48 83 c4 08 b8 01 00 00 00 5b 5d c3 b8 01 00 00 00 c3 90 65 8b 04 25 a0 da 00 00 a9 00 00 0f 00 75 09 <0f> 0b 0f 1f 80 00 00 00 00 55 48 89 e5 e8 2f ff ff ff 5d c3 66
-All code
-========
-   0:	00 00                	add    %al,(%rax)
-   2:	00 00                	add    %al,(%rax)
-   4:	e8 63 ff ff ff       	callq  0xffffffffffffff6c
-   9:	48 83 c4 08          	add    $0x8,%rsp
-   d:	b8 01 00 00 00       	mov    $0x1,%eax
-  12:	5b                   	pop    %rbx
-  13:	5d                   	pop    %rbp
-  14:	c3                   	retq
-  15:	b8 01 00 00 00       	mov    $0x1,%eax
-  1a:	c3                   	retq
-  1b:	90                   	nop
-  1c:	65 8b 04 25 a0 da 00 	mov    %gs:0xdaa0,%eax
-  23:	00
-  24:	a9 00 00 0f 00       	test   $0xf0000,%eax
-  29:	75 09                	jne    0x34
-  2b:*	0f 0b                	ud2    		<-- trapping instruction
-  2d:	0f 1f 80 00 00 00 00 	nopl   0x0(%rax)
-  34:	55                   	push   %rbp
-  35:	48 89 e5             	mov    %rsp,%rbp
-  38:	e8 2f ff ff ff       	callq  0xffffffffffffff6c
-  3d:	5d                   	pop    %rbp
-  3e:	c3                   	retq
-  3f:	66                   	data16
-	...
+Is this something you would deem acceptable?
 
-Code starting with the faulting instruction
-===========================================
-   0:	0f 0b                	ud2
-   2:	0f 1f 80 00 00 00 00 	nopl   0x0(%rax)
-   9:	55                   	push   %rbp
-   a:	48 89 e5             	mov    %rsp,%rbp
-   d:	e8 2f ff ff ff       	callq  0xffffffffffffff41
-  12:	5d                   	pop    %rbp
-  13:	c3                   	retq
-  14:	66                   	data16
-	...
-[ 1982.600053] RIP irq_work_run (kernel/irq_work.c:175 (discriminator 1))
-[ 1982.600053]  RSP <ffff88036a5afbe0>
-
-
-Thanks,
-Sasha
+Best regards,
+Tomasz
