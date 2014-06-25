@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754033AbaFYDqp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 23:46:45 -0400
-Received: from smtprelay0231.hostedemail.com ([216.40.44.231]:45960 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752564AbaFYDqo (ORCPT
+	id S1754281AbaFYDrb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 23:47:31 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:62991 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752833AbaFYDr3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 23:46:44 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3653:3868:4321:5007:6120:7652:7903:10004:10400:10848:11658:11914:12043:12438:12517:12519:12555:13018:13019:13069:13095:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: stop57_5283f8c0c23
-X-Filterd-Recvd-Size: 1784
-Message-ID: <1403668000.12657.15.camel@joe-AO725>
-Subject: [RFC PATCH] checkpatch: Warn on unnecessary parentheses around
- references of foo->bar
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Date: Tue, 24 Jun 2014 20:46:40 -0700
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
+	Tue, 24 Jun 2014 23:47:29 -0400
+Message-ID: <53AA4595.6030401@huawei.com>
+Date: Wed, 25 Jun 2014 11:44:21 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
+CC: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>
+Subject: Re: [PATCH] cgroup: fix a typo in Documentation/cgroups/cgroups.txt
+References: <1403667025-13422-1-git-send-email-chenhanxiao@cn.fujitsu.com>
+In-Reply-To: <1403667025-13422-1-git-send-email-chenhanxiao@cn.fujitsu.com>
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020206.53AA45A0.0060,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2011-05-27 18:58:46
+X-Mirapoint-Loop-Id: 91327f41cb7ba427acdd7f2a25c559ea
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Parentheses around  &(foo->bar) and *(foo->bar) are unnecessary.
-Emit a --strict only message on these uses.
+On 2014/6/25 11:30, Chen Hanxiao wrote:
+> s/iff/if
+> 
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
-lk sources by far use &foo->bar over &(foo->bar).
-(a rough count shows about 25:1)
+This is not a typo. iff == if and only if.
 
- scripts/checkpatch.pl | 8 ++++++++
- 1 file changed, 8 insertions(+)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 538105a..8feaee2 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -3462,6 +3462,14 @@ sub process {
- 			}
- 		}
- 
-+# check unnecessary parentheses around addressof/dereference single $Lvals
-+# ie: &(foo->bar) should be &foo->bar and *(foo->bar) should be *foo->bar
-+
-+		while ($line =~ /(?:[^&]&\s*|\*)\(\s*($Ident\s*(?:$Member\s*)+)\s*\)/g) {
-+			CHK("UNNECESSARY_PARENTHESES",
-+			    "Unnecessary parentheses around $1\n" . $herecurr);
-+		    }
-+
- #goto labels aren't indented, allow a single space however
- 		if ($line=~/^.\s+[A-Za-z\d_]+:(?![0-9]+)/ and
- 		   !($line=~/^. [A-Za-z\d_]+:/) and !($line=~/^.\s+default:/)) {
-
-
-
+> Signed-off-by: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
+> ---
+>  Documentation/cgroups/cgroups.txt | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/Documentation/cgroups/cgroups.txt b/Documentation/cgroups/cgroups.txt
+> index 821de56..b614f42 100644
+> --- a/Documentation/cgroups/cgroups.txt
+> +++ b/Documentation/cgroups/cgroups.txt
+> @@ -562,7 +562,7 @@ cgroup_for_each_descendant_pre() for details.
+>  void css_offline(struct cgroup *cgrp);
+>  (cgroup_mutex held by caller)
+>  
+> -This is the counterpart of css_online() and called iff css_online()
+> +This is the counterpart of css_online() and called if css_online()
+>  has succeeded on @cgrp. This signifies the beginning of the end of
+>  @cgrp. @cgrp is being removed and the subsystem should start dropping
+>  all references it's holding on @cgrp. When all references are dropped,
+> 
 
