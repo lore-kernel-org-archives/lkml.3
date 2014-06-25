@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756486AbaFYL5w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 07:57:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37603 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753952AbaFYL5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 07:57:49 -0400
-Date: Wed, 25 Jun 2014 13:57:45 +0200
-From: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
-To: Konstantin Khlebnikov <koct9i@gmail.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Jan Kara <jack@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Dave Anderson <anderson@redhat.com>
-Subject: Re: [RFC][PATCH 0/3] x86/nmi: Print all cpu stacks from NMI safely
-Message-ID: <20140625115745.GK8769@pathway.suse.cz>
-References: <20140619185810.4137e14b@gandalf.local.home>
- <alpine.LNX.2.00.1406200100520.15014@pobox.suse.cz>
- <20140619191923.1365850a@gandalf.local.home>
- <alpine.LNX.2.00.1406200123220.15014@pobox.suse.cz>
- <20140619193635.1949b469@gandalf.local.home>
- <alpine.LNX.2.00.1406200137310.15014@pobox.suse.cz>
- <20140620143525.GB8769@pathway.suse.cz>
- <CALYGNiM3OH64ULh63cCarTitbjUatZP0mckJ3N9CDusP3mFMRg@mail.gmail.com>
- <alpine.LNX.2.00.1406251200051.15939@pobox.suse.cz>
- <CALYGNiOT9XkiE1Q=AimOt42UkQ430Qy89cseNLVaMf96O9=FJw@mail.gmail.com>
+	id S1756292AbaFYMDi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 08:03:38 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:42745 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752942AbaFYMDh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 08:03:37 -0400
+Date: Wed, 25 Jun 2014 13:03:31 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Alexandre Courbot <acourbot@nvidia.com>, Jingoo Han <jg1.han@samsung.com>,
+        Bryan Wu <cooloney@gmail.com>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gnurou@gmail.com
+Subject: Re: [PATCH] pwm-backlight: use devm_gpiod_get_optional()
+Message-ID: <20140625120331.GE13518@lee--X1>
+References: <1403687898-26881-1-git-send-email-acourbot@nvidia.com>
+ <20140625095447.GT13803@lee--X1>
+ <20140625111346.GB21208@ulmo>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CALYGNiOT9XkiE1Q=AimOt42UkQ430Qy89cseNLVaMf96O9=FJw@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140625111346.GB21208@ulmo>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2014-06-25 15:04:41, Konstantin Khlebnikov wrote:
-> On Wed, Jun 25, 2014 at 2:01 PM, Jiri Kosina <jkosina@suse.cz> wrote:
-> > On Tue, 24 Jun 2014, Konstantin Khlebnikov wrote:
+On Wed, 25 Jun 2014, Thierry Reding wrote:
+> On Wed, Jun 25, 2014 at 10:54:47AM +0100, Lee Jones wrote:
+> > > Make use of the new devm_gpiod_get_optional() to simplify the probe
+> > > code.
+> > > 
+> > > Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> > > ---
+> > >  drivers/video/backlight/pwm_bl.c | 7 ++-----
+> > >  1 file changed, 2 insertions(+), 5 deletions(-)
+> > 
+> > Looks good.  Applied, thanks.
 > 
-> I like that context-depend printk routing from this patchset.
-> I'm just not quite happy with this straight forward implementation.
-> Rerouting flow into different buffers might serve different purposes,
-> it must make code simpler instead of adding yet another knot.
-> For example printk continuation might use it too.
+> Technically pwm_bl.c is my turf. However I only adopted it way back when
+> the backlight subsystem was orphaned, but it seems Jingoo, Bryan and you
+> are taking good care of it these days, so perhaps it would be a good
+> idea to move it back to your custody?
 
-Note that we could not share the buffer between normal and NMI
-context easily. We would end with the same locking problems as we have now.
+Yeah, the whole 'driver maintainer' sketch could get pretty complex.
+It's pretty clean-cut in the PWM subsystem as only one exists, but
+Backlight and MFD have a whole bunch, and I don't usually wait for
+them to Ack/Nack before applying or providing review comments.
 
-In fact, any sharing is complicated when NMI is involved, especially
-when we need to access the data from both NMI and normal context.
-And we need to copy them into the main ring buffer in a normal context.
+I'm happy to play it however you like really.  I'm sure the boys and I
+can handle it if you so wish.  Even better if you would say in the
+MAINTAINERS file and provide review comments when patches are
+submitted.  I do think all 'drivers/video/backlight' changes should go
+in via the Backlight tree though.
 
-This patchset works only because arch_trigger_all_cpu_backtrace() is
-called from normal context. Also all other calls are ignored until the
-previous call is finished, see "backtrace_flag".
-
-
-Best Regards,
-Petr
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
