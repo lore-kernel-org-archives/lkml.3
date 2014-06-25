@@ -1,103 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755347AbaFYUin (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 16:38:43 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:48574 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753174AbaFYUim (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 16:38:42 -0400
-Date: Wed, 25 Jun 2014 22:38:36 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <rric@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Namhyung Kim <namhyung@gmail.com>, Jean Pihet <jean.pihet@linaro.org>
-Subject: Re: [PATCH] perf tool: Carve out ctype.h et al
-Message-ID: <20140625203836.GD13845@pd.tnic>
-References: <1403688184-6917-1-git-send-email-bp@alien8.de>
- <20140625192547.GF1153@krava.brq.redhat.com>
+	id S932224AbaFYUmc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 16:42:32 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:36659 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754214AbaFYUma (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 16:42:30 -0400
+Date: Wed, 25 Jun 2014 21:42:27 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>
+Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [GIT PULL] EFI urgent fix
+Message-ID: <20140625204227.GD15494@console-pimps.org>
+References: <20140620090008.GU24049@console-pimps.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140625192547.GF1153@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140620090008.GU24049@console-pimps.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 09:25:47PM +0200, Jiri Olsa wrote:
-> heya,
-> got following error;
+On Fri, 20 Jun, at 10:00:08AM, Matt Fleming wrote:
+> Guys,
 > 
-> [jolsa@krava perf]$ make
->   BUILD:   Doing 'make -j4' parallel build
->   CC       util/pmu.o
->   CC       util/parse-events-flex.o
->   SUBDIR   /home/jolsa/kernel.org/linux-perf/tools/lib/traceevent/
-> util/pmu.c: In function ‘wordwrap’:
-> util/pmu.c:788:3: error: implicit declaration of function ‘isspace’ [-Werror=implicit-function-declaration]
->    while (isspace(*s))
->    ^
-> cc1: all warnings being treated as errors
-> make[1]: *** [util/pmu.o] Error 1
-> make[1]: *** Waiting for unfinished jobs....
-> make: *** [all] Error 2
+> Please pull the following compiler warning fix. Sorry, I've been pretty
+> slow in getting this pull request sent. Multiple people have reported
+> hitting it and I've now received 4 patches for the same warning,
+> 
+>   http://article.gmane.org/gmane.linux.kernel.efi/4024
+>   http://article.gmane.org/gmane.linux.kernel.efi/4017
+>   http://article.gmane.org/gmane.linux.kernel.efi/3957
+>   http://article.gmane.org/gmane.linux.kernel.efi/3930
+> 
+> The following changes since commit 7171511eaec5bf23fb06078f59784a3a0626b38f:
+> 
+>   Linux 3.16-rc1 (2014-06-15 17:45:28 -1000)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-urgent
+> 
+> for you to fetch changes up to 6fb8cc82c096fd5ccf277678639193cae07125a0:
+> 
+>   efi: Fix compiler warnings (unused, const, type) (2014-06-19 15:03:05 +0100)
+> 
+> ----------------------------------------------------------------
+>  * Fix a few compiler warnings in the arm64 EFI code that lots of people
+>    are running into and reporting - Catalin Marinas
 
-This is a perfect example why doing this piecewise is the only way to
-go! And even that is not easy:
-
-I don't have this line in util/pmu.c:788 so I can't trigger it:
-
-   782  bool pmu_have_event(const char *pname, const char *name)
-   783  {
-   784          struct perf_pmu *pmu;
-   785          struct perf_pmu_alias *alias;
-   786  
-   787          pmu = NULL;
-   788          while ((pmu = perf_pmu__scan(pmu)) != NULL) {
-   789                  if (strcmp(pname, pmu->name))
-   790                          continue;
-   791                  list_for_each_entry(alias, &pmu->aliases, list)
-   792                          if (!strcmp(alias->name, name))
-   793                                  return true;
-   794          }
-   795          return false;
-   796  }
-
-So, I've done the patch ontop of those branches:
-
-commit 279a8cc64fada4b0e7ebf4e4631d67c8ca715f27
-Merge: 9724066c49ba 1545d8aca9ac
-Author: Borislav Petkov <bp@suse.de>
-Date:   Tue Jun 24 15:45:51 2014 +0200
-
-    Merge remote-tracking branch 'jolsa/perf/core' into ptool-v0.5
-
-commit 9724066c49baab314a0c3d3f84ec102cd0f76b86
-Merge: ecdac96899e3 a93f0e551af9
-Author: Borislav Petkov <bp@suse.de>
-Date:   Tue Jun 24 15:45:44 2014 +0200
-
-    Merge remote-tracking branch 'jolsa/perf/urgent' into ptool-v0.5
-
-commit a93f0e551af9e194db38bfe16001e17a3a1d189a
-Author: Simon Que <sque@chromium.org>
-Date:   Mon Jun 16 11:32:09 2014 -0700
-
-    perf symbols: Get kernel start address by symbol name
-
-by checking out acme/perf/core first.
-
-So, guys, can we agree on a common branch to apply patches ontop please?
-
-Thanks a lot.
+Ping? This doesn't seem to have been picked up yet?
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Matt Fleming, Intel Open Source Technology Center
