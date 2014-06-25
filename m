@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754121AbaFYDCe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 23:02:34 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:51594 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752423AbaFYDCd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 23:02:33 -0400
-Date: Wed, 25 Jun 2014 11:02:25 +0800
-From: Wei Yang <weiyang@linux.vnet.ibm.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Wei Yang <weiyang@linux.vnet.ibm.com>, grant.likely@linaro.org,
-        xiaoguangrong@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivercore: refine commit 58b116b "drivercore: deferral
- race condition fix"
-Message-ID: <20140625030225.GA23302@richard>
-Reply-To: Wei Yang <weiyang@linux.vnet.ibm.com>
-References: <1399612799-12251-1-git-send-email-weiyang@linux.vnet.ibm.com>
- <20140521032143.GA8157@richard>
- <20140528205245.GC10468@kroah.com>
+	id S1754165AbaFYDEj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 23:04:39 -0400
+Received: from mail-bl2lp0203.outbound.protection.outlook.com ([207.46.163.203]:19847
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752599AbaFYDEi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 23:04:38 -0400
+X-WSS-ID: 0N7PF75-08-221-02
+X-M-MSG: 
+Message-ID: <53AA3C28.4080200@amd.com>
+Date: Tue, 24 Jun 2014 22:04:08 -0500
+From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140528205245.GC10468@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14062503-8878-0000-0000-00000D2B5C27
+To: Marc Zyngier <marc.zyngier@arm.com>
+CC: Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] arm/gic: Add supports for GICv2m MSI(-X)
+References: <1403569980-12913-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <1403569980-12913-3-git-send-email-suravee.suthikulpanit@amd.com>
+ <53A94A46.1010801@arm.com>
+In-Reply-To: <53A94A46.1010801@arm.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(51704005)(51914003)(189002)(199002)(24454002)(479174003)(377454003)(164054003)(81542001)(46102001)(50986999)(19580395003)(64126003)(65806001)(77982001)(95666004)(102836001)(65816999)(59896001)(50466002)(64706001)(23746002)(79102001)(107046001)(92726001)(85852003)(47776003)(84676001)(20776003)(106466001)(92566001)(87936001)(83072002)(68736004)(4396001)(83506001)(81342001)(80022001)(36756003)(97736001)(105586002)(74662001)(101416001)(54356999)(76176999)(33656002)(44976005)(21056001)(85306003)(99396002)(86362001)(76482001)(74502001)(83322001)(65956001)(31966008)(87266999);DIR:OUT;SFP:;SCL:1;SRVR:BN3PR0201MB0914;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 02530BD3AA
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 01:52:45PM -0700, Greg KH wrote:
->On Wed, May 21, 2014 at 11:21:43AM +0800, Wei Yang wrote:
->> Hi~
->> 
->> Is this fix reasonable?
+On 6/24/2014 4:52 AM, Marc Zyngier wrote:
+> Overall, this requires to be re-architected. If you want to have a look
+> at the way I did the GICv3 ITS support:
 >
->I'll leave this up to Grant...
+> git://git.kernel.org/pub/scm/linux/kernel/git/maz/arm-platforms.git
+> gicv3/its
+>
+> Thanks,
 
-Hmm... not sure this is missed or Grant's mail address is not correct?
+Thanks for the review comments. I'll take a look at the GICv3 and 
+re-architect for the V2 patch set.
 
--- 
-Richard Yang
-Help you, Help me
+Suravee
 
