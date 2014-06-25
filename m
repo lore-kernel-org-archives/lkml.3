@@ -1,46 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753387AbaFYBDZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 21:03:25 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:50951 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751862AbaFYBDY (ORCPT
+	id S1753985AbaFYBEv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 21:04:51 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:33889 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753306AbaFYBEu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 21:03:24 -0400
-Date: Tue, 24 Jun 2014 18:03:22 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Vladimir Davydov <vdavydov@parallels.com>
-Subject: Re: [PATCH] slub: fix off by one in number of slab tests
-In-Reply-To: <1403595842-28270-1-git-send-email-iamjoonsoo.kim@lge.com>
-Message-ID: <alpine.DEB.2.02.1406241801240.22030@chino.kir.corp.google.com>
-References: <1403595842-28270-1-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 24 Jun 2014 21:04:50 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Jiri Olsa <jolsa@redhat.com>,
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Howard Cochran <hcochran@lexmark.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tools: lib: traceevent: event-parse.c:  Fix a risk for doing free on uninitialized pointer
+References: <1403608150-13037-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Date: Wed, 25 Jun 2014 10:04:47 +0900
+In-Reply-To: <1403608150-13037-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	(Rickard Strandqvist's message of "Tue, 24 Jun 2014 13:09:10 +0200")
+Message-ID: <87oaxh6bps.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Jun 2014, Joonsoo Kim wrote:
+Hi Rickard,
 
-> min_partial means minimum number of slab cached in node partial
-> list. So, if nr_partial is less than it, we keep newly empty slab
-> on node partial list rather than freeing it. But if nr_partial is
-> equal or greater than it, it means that we have enough partial slabs
-> so should free newly empty slab. Current implementation missed
-> the equal case so if we set min_partial is 0, then, at least one slab
-> could be cached. This is critical problem to kmemcg destroying logic
-> because it doesn't works properly if some slabs is cached. This patch
-> fixes this problem.
-> 
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+On Tue, 24 Jun 2014 13:09:10 +0200, Rickard Strandqvist wrote:
+> Fix a risk of doing free on an uninitialized pointer.
+>
+> This was found using a static code analysis program called cppcheck.
+>
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 
-Acked-by: David Rientjes <rientjes@google.com>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
 
-Needed for 3.16 to fix commit 91cb69620284 ("slub: make dead memcg caches 
-discard free slabs immediately").
+Thanks,
+Namhyung
+
+
+> ---
+>  tools/lib/traceevent/event-parse.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+> index b83184f..857675e 100644
+> --- a/tools/lib/traceevent/event-parse.c
+> +++ b/tools/lib/traceevent/event-parse.c
+> @@ -2390,7 +2390,7 @@ process_flags(struct event_format *event, struct print_arg *arg, char **tok)
+>  {
+>  	struct print_arg *field;
+>  	enum event_type type;
+> -	char *token;
+> +	char *token = NULL;
+>  
+>  	memset(arg, 0, sizeof(*arg));
+>  	arg->type = PRINT_FLAGS;
+> @@ -2443,7 +2443,7 @@ process_symbols(struct event_format *event, struct print_arg *arg, char **tok)
+>  {
+>  	struct print_arg *field;
+>  	enum event_type type;
+> -	char *token;
+> +	char *token = NULL;
+>  
+>  	memset(arg, 0, sizeof(*arg));
+>  	arg->type = PRINT_SYMBOL;
+> @@ -2482,7 +2482,7 @@ process_hex(struct event_format *event, struct print_arg *arg, char **tok)
+>  {
+>  	struct print_arg *field;
+>  	enum event_type type;
+> -	char *token;
+> +	char *token = NULL;
+>  
+>  	memset(arg, 0, sizeof(*arg));
+>  	arg->type = PRINT_HEX;
