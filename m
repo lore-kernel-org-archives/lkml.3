@@ -1,105 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753940AbaFYDJr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 23:09:47 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:57086 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752423AbaFYDJp (ORCPT
+	id S1753986AbaFYDQt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 23:16:49 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:34727 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752423AbaFYDQr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 23:09:45 -0400
-Message-ID: <53AA3D71.5010000@gmail.com>
-Date: Wed, 25 Jun 2014 08:39:37 +0530
-From: Tushar Behera <trblinux@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 24 Jun 2014 23:16:47 -0400
 MIME-Version: 1.0
-To: Doug Anderson <dianders@google.com>, Tushar Behera <tushar.b@samsung.com>
-CC: Kevin Hilman <khilman@linaro.org>, lkml <linux-kernel@vger.kernel.org>,
-        ML Devicetree <devicetree@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        ML Arch-Arm <linux-arm-kernel@lists.infradead.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Shaik Ameer Basha <shaik.ameer@samsung.com>
-Subject: Re: [PATCH 1/3] clk: exynos-audss: Keep the parent of mout_audss
- always enabled
-References: <1402464739-19044-1-git-send-email-tushar.b@samsung.com>	<1402464739-19044-2-git-send-email-tushar.b@samsung.com>	<7ha99jjspt.fsf@paris.lan>	<CAC5m3Bwj1HEWSQd7rx6Zn5vbUPKFqeT_X0PL3mAxRw0FNkK=QQ@mail.gmail.com> <CAD=FV=VP4-+B6oV8Skb3rxxPRbOWmzu=6PJbWbxCU=86ZvRuYQ@mail.gmail.com>
-In-Reply-To: <CAD=FV=VP4-+B6oV8Skb3rxxPRbOWmzu=6PJbWbxCU=86ZvRuYQ@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140624032521.GA12164@htj.dyndns.org>
+References: <CANGgnMb=2dYGQO4K36pQ9LEb8E4rT6S_VskLF+n=ndd0_kJr_g@mail.gmail.com>
+ <CANGgnMa80WwQ8zSkL52yYegmQURVQeZiBFv41=FQXMZJ_NaEDw@mail.gmail.com>
+ <20140513034647.GA5421@dastard> <CANGgnMZ0q9uE3NHj2i0SBK1d0vdKLx7QBJeFNb+YwP-5EAmejQ@mail.gmail.com>
+ <20140513063943.GQ26353@dastard> <CANGgnMYn++1++UyX+D2d9GxPxtytpQJv0ThFwdxM-yX7xDWqiA@mail.gmail.com>
+ <20140513090321.GR26353@dastard> <CANGgnMZqQc_NeaDpO_aX+bndmHrQ9VWo9mkfxhPBkRD-J=N6sQ@mail.gmail.com>
+ <CANGgnMZ8OwzfBj5m9H7c6q2yahGhU7oFZLsJfVxnWoqZExkZmQ@mail.gmail.com>
+ <20140624030240.GB9508@dastard> <20140624032521.GA12164@htj.dyndns.org>
+From: Austin Schuh <austin@peloton-tech.com>
+Date: Tue, 24 Jun 2014 20:16:26 -0700
+Message-ID: <CANGgnMa99dCKmFkVAY1XdXVY-UVdbg7Ey8-8iTbs5tm=bYS3uA@mail.gmail.com>
+Subject: Re: On-stack work item completion race? (was Re: XFS crash?)
+To: Tejun Heo <tj@kernel.org>
+Cc: Dave Chinner <david@fromorbit.com>, xfs <xfs@oss.sgi.com>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2014 04:29 AM, Doug Anderson wrote:
-> Tushar,
-> 
-> On Thu, Jun 12, 2014 at 12:40 AM, Tushar Behera <tushar.b@samsung.com> wrote:
->> On Wed, Jun 11, 2014 at 10:20 PM, Kevin Hilman <khilman@linaro.org> wrote:
->>> Tushar Behera <tushar.b@samsung.com> writes:
->>>
->>>> When the output clock of AUDSS mux is disabled, we are getting kernel
->>>> oops while doing a clk_get() on other clocks provided by AUDSS.
->>>>
->>>> Though user manual doesn't specify this dependency, we came across
->>>> this issue while disabling the parent of AUDSS mux clocks.
->>>>
->>>> Keeping the parents of AUDSS mux always enabled fixes this issue.
->>>
->>> While this patch works (and fixes the boot problem for me), it seems
->>> like it's papering over the real problem.
->>>
+[Adding tglx to the cc.  Sorry for any double sends]
+
+On Mon, Jun 23, 2014 at 8:25 PM, Tejun Heo <tj@kernel.org> wrote:
+> Hello,
+>
+> On Tue, Jun 24, 2014 at 01:02:40PM +1000, Dave Chinner wrote:
+>> start_flush_work() is effectively a special queue_work()
+>> implementation, so if if it's not safe to call complete() from the
+>> workqueue as the above patch implies then this code has the same
+>> problem.
 >>
->> Thanks for testing.
->>
->>> Seems like the right fix is actually modelling the clocks properly so
->>> that enabling a child clock ensures that the parent is also enabled.
->>>
->>
->> Patch 2/3 was to ensure we have proper clock tree defined for
->> Exynos5420. While testing with audio disabled, that patch alone fixed
->> the issue. But when audio was enabled (and hence I2S0 was trying to
->> access the clocks), we got some kernel oops during late booting, hence
->> I came up this solution.
->>
->> The solution might be a little half-baked because of the urgency to
->> push the fix, but will try to dig more into the issue on Monday when I
->> resume office.
-> 
-> Which Monday were you referring to?  ;)
-> 
+>> Tejun - is this "do it yourself completion" a known issue w.r.t.
+>> workqueues? I can't find any documentation that says "don't do
+>> that" so...?
+>
+> It's more complex than using flush_work() but there's nothing
+> fundamentally wrong with it.  A work item is completely unlinked
+> before its execution starts.  It's safe to free the work item once its
+> work function started, whether through kfree() or returning.
+>
+> One difference between flush_work() and manual completion would be
+> that if the work item gets requeued, flush_work() would wait for the
+> queued one to finish but given the work item is one-shot this doesn't
+> make any difference.
+>
+> I can see no reason why manual completion would behave differently
+> from flush_work() in this case.
 
-Sorry that I couldn't get deeper into this issue. Thanks for reminding
-though.
+I went looking for a short trace in my original log to show the
+problem, and instead found evidence of the second problem.  I still
+like the shorter flush_work call, but that's not my call.
 
-> ...but in all seriousness do you have an official status update on
-> this patch?  It seems as if it's not needed and all you need is
-> <https://patchwork.kernel.org/patch/4333581/>, but it would be nice to
-> get an official confirmation.
+I did find this comment in the process_one_work function.  Sounds like
+this could be better documented.
 
-I have tested various scenarios with only patch 2/3, which seems to be
-sufficient for the time being. I have not encountered the older issue
-till now. I was thinking of testing a bit further, but given that you
-have already asked for, we can go ahead with only patch 2/3 right now.
+  /*
+   * It is permissible to free the struct work_struct from
+   * inside the function that is called from it, this we need to
+   * take into account for lockdep too.  To avoid bogus "held
+   * lock freed" warnings as well as problems when looking into
+   * work->lockdep_map, make a copy and use that here.
+   */
 
-In case any further issue comes up, I will post patch 1/3 as per the
-review comments that I have got.
+>> As I understand it, what then happens is that the workqueue code
+>> grabs another kworker thread and runs the next work item in it's
+>> queue. IOWs, work items can block, but doing that does not prevent
+>> execution of other work items queued on other work queues or even on
+>> the same work queue. Tejun, did I get that correct?
+>
+> Yes, as long as the workqueue is under its @max_active limit and has
+> access to an existing kworker or can create a new one, it'll start
+> executing the next work item immediately; however, the guaranteed
+> level of concurrency is 1 even for WQ_RECLAIM workqueues.  IOW, the
+> work items queued on a workqueue must be able to make forward progress
+> with single work item if the work items are being depended upon for
+> memory reclaim.
 
-> 
-> Thanks!
-> 
-> -Doug
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+I mentioned this to Dave when I initially started this thread, but I'm
+running a RT patched kernel.  I don't see forwards progress.  The
+workqueue is only used in 1 spot (xfs_alloc_wq), and has
+WQ_MEM_RECLAIM set.  I started with a 10,000,000 line trace and pulled
+out the entries which referenced the workqueue and pool leading up to
+the lockup.
 
+             scp-4110  [001] ....1.3   101.184640:
+workqueue_queue_work: work struct=ffff8803c782d900
+function=xfs_bmapi_allocate_worker workqueue=ffff88040c9f5a00
+pool=ffff88042dae3fc0 req_cpu=512 cpu=1
+             scp-4110  [001] ....1.3   101.184641:
+workqueue_activate_work: work struct ffff8803c782d900
+     kworker/1:1-89    [001] ....1.1   101.184883:
+workqueue_nr_running: pool=ffff88042dae3fc0 nr_running=1
+     kworker/1:1-89    [001] ....1..   101.184885:
+workqueue_execute_start: work struct ffff8803c782d900: function
+xfs_bmapi_allocate_worker
+     irq/44-ahci-275   [001] ....1.5   101.185086:
+workqueue_queue_work: work struct=ffff8800ae3f01e0 function=xfs_end_io
+workqueue=ffff88040b459a00 pool=ffff88042dae3fc0 req_cpu=512 cpu=1
+     irq/44-ahci-275   [001] ....1.5   101.185088:
+workqueue_activate_work: work struct ffff8800ae3f01e0
+             scp-4110  [001] ....1..   101.187911: xfs_ilock: dev 8:5
+ino 0xf9e flags ILOCK_EXCL caller xfs_iomap_write_allocate
+             scp-4110  [001] ....1.3   101.187914:
+workqueue_queue_work: work struct=ffff8803c782d900
+function=xfs_bmapi_allocate_worker workqueue=ffff88040c9f5a00
+pool=ffff88042dae3fc0 req_cpu=512 cpu=1
+             scp-4110  [001] ....1.3   101.187915:
+workqueue_activate_work: work struct ffff8803c782d900
+             scp-4110  [001] ....1.4   101.187926:
+workqueue_queue_work: work struct=ffff88040a6a01c8
+function=blk_delay_work workqueue=ffff88040c9f4a00
+pool=ffff88042dae44c0 req_cpu=512 cpu=1
+             scp-4110  [001] ....1.4   101.187926:
+workqueue_activate_work: work struct ffff88040a6a01c8
+     kworker/1:1-89    [001] ....1..   101.187998:
+workqueue_execute_end: work struct ffff8803c782d900
+     kworker/1:1-89    [001] ....1..   101.188000:
+workqueue_execute_start: work struct ffff8800ae3f01e0: function
+xfs_end_io
+     kworker/1:1-89    [001] ....1..   101.188001: xfs_ilock: dev 8:5
+ino 0xf9e flags ILOCK_EXCL caller xfs_setfilesize
 
--- 
-Tushar Behera
+The last work never runs.  Hangcheck triggers shortly after.
+
+I spent some more time debugging, and I am seeing that
+tsk_is_pi_blocked is returning 1 in sched_submit_work
+(kernel/sched/core.c).  It looks like sched_submit_work is not
+detecting that the worker task is blocked on a mutex.
+
+This looks very RT related right now.  I see 2 problems from my
+reading (and experimentation).  The first is that the second worker
+isn't getting started because tsk_is_pi_blocked is reporting that the
+task isn't blocked on a mutex.  The second is that even if another
+worker needs to be scheduled because the original worker is blocked on
+a mutex, we need the pool lock to schedule another worker.  The pool
+lock can be acquired by any CPU, and is a spin_lock.  If we end up on
+the slow path for the pool lock, we hit
+BUG_ON(rt_mutex_real_waiter(task->pi_blocked_on)) in
+task_blocks_on_rt_mutex in rtmutex.c.  I'm not sure how to deal with
+either problem.  Thomas, any ideas?
+
+Hopefully I've got all my facts right...  Debugging kernel code is a
+whole new world from userspace code.
+
+Thanks!
+Austin
