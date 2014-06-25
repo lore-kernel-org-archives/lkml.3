@@ -1,108 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754845AbaFYHnM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 03:43:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38694 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752483AbaFYHnK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 03:43:10 -0400
-Date: Wed, 25 Jun 2014 09:42:48 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Anton Blanchard <anton@au1.ibm.com>,
-        Maynard Johnson <mpjohn@us.ibm.com>, ulrich.weigand@de.ibm.com,
-        Michael Ellerman <michaele@au1.ibm.com>, linuxppc-dev@ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 1/1] powerpc/perf: Adjust callchain based on DWARF
- debug info
-Message-ID: <20140625074248.GC1153@krava.brq.redhat.com>
-References: <20140625000052.GA4484@us.ibm.com>
+	id S1754880AbaFYHpJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 03:45:09 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:33278 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752271AbaFYHpH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 03:45:07 -0400
+Message-ID: <53AA7E01.3090800@free-electrons.com>
+Date: Wed, 25 Jun 2014 09:45:05 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+To: Bo Shen <voice.shen@atmel.com>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] ARM: at91/dt: describe rgmii ethernet phy connected
+ to sama5d3xek boards
+References: <1403649878-28242-1-git-send-email-boris.brezillon@free-electrons.com> <1403649878-28242-2-git-send-email-boris.brezillon@free-electrons.com> <53AA735C.7050805@atmel.com> <53AA7A8C.1010304@free-electrons.com> <53AA7BC6.3020902@atmel.com>
+In-Reply-To: <53AA7BC6.3020902@atmel.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140625000052.GA4484@us.ibm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 24, 2014 at 05:00:52PM -0700, Sukadev Bhattiprolu wrote:
-> [PATCH v5 1/1] powerpc/perf: Adjust callchain based on DWARF debug info
 
-superflous ^^^
+On 25/06/2014 09:35, Bo Shen wrote:
+> Hi Boris,
+>
+> On 06/25/2014 03:30 PM, Boris BREZILLON wrote:
+>> Hello Bo,
+>>
+>> On 25/06/2014 08:59, Bo Shen wrote:
+>>> Hi Boris,
+>>>
+>>> On 06/25/2014 06:44 AM, Boris BREZILLON wrote:
+>>>> Add ethernet-phy node to specify phy address (on the MDIO bus) and phy
+>>>> interrupt (connected to pin PB25).
+>>>>
+>>>> Define board specific delays to apply to RGMII signals.
+>>>>
+>>>> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+>>>> ---
+>>>> arch/arm/boot/dts/sama5d3xcm.dtsi | 16 ++++++++++++++++
+>>>> 1 file changed, 16 insertions(+)
+>>>>
+>>>> diff --git a/arch/arm/boot/dts/sama5d3xcm.dtsi
+>>>> b/arch/arm/boot/dts/sama5d3xcm.dtsi
+>>>> index b0b1331..2185ad8 100644
+>>>> --- a/arch/arm/boot/dts/sama5d3xcm.dtsi
+>>>> +++ b/arch/arm/boot/dts/sama5d3xcm.dtsi
+>>>> @@ -34,6 +34,22 @@
+>>>>
+>>>> macb0: ethernet@f0028000 {
+>>>> phy-mode = "rgmii";
+>>>> + #address-cells = <1>;
+>>>> + #size-cells = <0>;
+>>>> +
+>>>> + ethernet-phy@1 {
+>>>
+>>> The GMAC PHY address is 0x7 while not 0x1.
+>>
+>> Are you sure of that ? I checked sama5d3x-ek schematics.
+>
+> On sama5d3x-ek schematic, it is EMAC PHY (ksz8051RNL, it's address is
+> 0x1), while not GMAC PHY. You should check the sama5d3x-CM schematic.
 
-> 
-> When saving the callchain on Power, the kernel conservatively saves excess
-> entries in the callchain. A few of these entries are needed in some cases
-> but not others. We should use the DWARF debug information to determine
-> when the entries are  needed.
+I checked "Figure 5-16. RONETIX GEthernet ETH0" and "Figure 5-15. EMBEST
+GEthernet ETH0" of this document "11180A�ATARM�30-Jan-13", which,
+AFAICT, are RGMII phy schematics of CPU Modules.
+I might have an old datasheet though.
+If this is the case could you point out the new one ?
 
-SNIP
+Thanks,
 
-> diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-> index 0e5fea9..6221d01 100644
-> --- a/tools/perf/util/machine.c
-> +++ b/tools/perf/util/machine.c
-> @@ -1291,7 +1291,9 @@ static int machine__resolve_callchain_sample(struct machine *machine,
->  	u8 cpumode = PERF_RECORD_MISC_USER;
->  	int chain_nr = min(max_stack, (int)chain->nr);
->  	int i;
-> +	int j;
->  	int err;
-> +	int skip_idx;
->  
->  	callchain_cursor_reset(&callchain_cursor);
->  
-> @@ -1300,14 +1302,26 @@ static int machine__resolve_callchain_sample(struct machine *machine,
->  		return 0;
->  	}
->  
-> +	/*
-> +	 * Based on DWARF debug information, some architectures skip
-> +	 * a callchain entry saved by the kernel.
-> +	 */
-> +	skip_idx = arch_skip_callchain_idx(machine, thread, chain);
-> +
->  	for (i = 0; i < chain_nr; i++) {
->  		u64 ip;
->  		struct addr_location al;
->  
->  		if (callchain_param.order == ORDER_CALLEE)
-> -			ip = chain->ips[i];
-> +			j = i;
->  		else
-> -			ip = chain->ips[chain->nr - i - 1];
-> +			j = chain->nr - i - 1;
-> +
-> +#ifdef HAVE_SKIP_CALLCHAIN_IDX
-> +		if (j == skip_idx)
-> +			continue;
-> +#endif
-> +		ip = chain->ips[j];
->  
->  		if (ip >= PERF_CONTEXT_MAX) {
->  			switch (ip) {
-> -- 
-> 1.7.9.5
-> 
-
-got following compile error:
-
-  CC       util/map.o
-util/machine.c: In function ‘machine__resolve_callchain_sample’:
-util/machine.c:1286:6: error: variable ‘skip_idx’ set but not used [-Werror=unused-but-set-variable]
-  int skip_idx;
-      ^
-cc1: all warnings being treated as errors
-make[2]: *** [util/machine.o] Error 1
-make[2]: *** Waiting for unfinished jobs....
-make[1]: *** [all] Error 2
-  test: test -x ./perf
-make: *** [make_pure] Error 1
+Boris
 
 
-you could use __maybe_unused for the 'skip_idx'
 
-jirka
+>
+>> On these schematics PHYAD0 is connected to a pull up resistor and
+>> PHYAD1/2 are connected to a pull down one.
+>> This gives PHYAD[4:0] = 0b00001 = 0x1.
+>> Is there some bootloader mechanisms that changes PHYAD[0-2] pin status
+>> and reset the PHY ?
+>>
+>>>
+>>>> + interrupt-parent = <&pioB>;
+>>>> + interrupts = <25 IRQ_TYPE_EDGE_FALLING>;
+>>>> + reg = <1>;
+>>>
+>>> Nitpick: as usual, we will add "0x" prefix in reg property.
+>>
+>> Sure, I'll fix that.
+>>
+>>>
+>>>> + txen-skew-ps = <800>;
+>>>> + txc-skew-ps = <12000>;
+>>
+>> Should be 3000 (0xf * 200 ps) not 12000.
+>>
+>>>> + rxdv-skew-ps = <400>;
+>>>> + rxc-skew-ps = <12000>;
+>>
+>> Ditto.
+>>
+>> Best Regards,
+>>
+>> Boris
+>
+> Best Regards,
+> Bo Shen
+>
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
+
