@@ -1,81 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757465AbaFYQid (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 12:38:33 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:41528 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757209AbaFYQib (ORCPT
+	id S1757538AbaFYQjf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 12:39:35 -0400
+Received: from mail-pb0-f74.google.com ([209.85.160.74]:61008 "EHLO
+	mail-pb0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757212AbaFYQjd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 12:38:31 -0400
-Date: Wed, 25 Jun 2014 18:38:20 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Subject: Re: [PATCH 2/6] irq_work: Implement remote queueing
-Message-ID: <20140625163820.GC3935@laptop>
-References: <53A9E0A5.5040402@wwwdotorg.org>
- <20140625051234.GD6758@twins.programming.kicks-ass.net>
- <20140625051721.GG3588@twins.programming.kicks-ass.net>
- <53AA6E11.1000404@linux.vnet.ibm.com>
- <20140625093657.GN19860@laptop.programming.kicks-ass.net>
- <20140625093944.GV16155@laptop.programming.kicks-ass.net>
- <53AA9B68.4050104@linux.vnet.ibm.com>
- <53AA9C43.3020903@linux.vnet.ibm.com>
- <20140625101915.GO19860@laptop.programming.kicks-ass.net>
- <53AAF779.8060006@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53AAF779.8060006@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Wed, 25 Jun 2014 12:39:33 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Wolfram Sang <wsa@the-dreams.de>, Kukjin Kim <kgene.kim@samsung.com>
+Cc: Tomasz Figa <tomasz.figa@gmail.com>, javier.martinez@collabora.co.uk,
+        ch.naveen@samsung.com, Doug Anderson <dianders@chromium.org>,
+        jg1.han@samsung.com, jdelvare@suse.de, sjg@google.com,
+        paul.gortmaker@windriver.com, standby24x7@gmail.com,
+        sachin.kamat@linaro.org, linux-i2c@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v3] i2c: exynos5: Properly use the "noirq" variants of suspend/resume
+Date: Wed, 25 Jun 2014 09:39:20 -0700
+Message-Id: <1403714360-7581-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 2.0.0.526.g5318336
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 10:23:21AM -0600, Stephen Warren wrote:
-> On 06/25/2014 04:19 AM, Peter Zijlstra wrote:
-> > On Wed, Jun 25, 2014 at 03:24:11PM +0530, Srivatsa S. Bhat wrote:
-> >> Wait, that was a stupid idea. hotplug_cfd() already invokes irq_work_run
-> >> indirectly via flush_smp_call_function_queue(). So irq_work_cpu_notify()
-> >> doesn't need to invoke it again, AFAIU. So perhaps we can get rid of
-> >> irq_work_cpu_notify() altogether?
-> > 
-> > Just so...
-> > 
-> > getting up at 6am and sitting in an airport terminal doesn't seem to
-> > agree with me; any more silly fail here?
-> > 
-> > ---
-> > Subject: irq_work: Remove BUG_ON in irq_work_run()
-> > From: Peter Zijlstra <peterz@infradead.org>
-> > Date: Wed Jun 25 07:13:07 CEST 2014
-> > 
-> > Because of a collision with 8d056c48e486 ("CPU hotplug, smp: flush any
-> > pending IPI callbacks before CPU offline"), which ends up calling
-> > hotplug_cfd()->flush_smp_call_function_queue()->irq_work_run(), which
-> > is not from IRQ context.
-> > 
-> > And since that already calls irq_work_run() from the hotplug path,
-> > remove our entire hotplug handling.
-> 
-> Tested-by: Stephen Warren <swarren@nvidia.com>
-> 
-> [with the s/static// already mentioned in this thread, obviously:-)]
+The original code for the exynos i2c controller registered for the
+"noirq" variants.  However during review feedback it was moved to
+SIMPLE_DEV_PM_OPS without anyone noticing that it meant we were no
+longer actually "noirq" (despite functions named
+exynos5_i2c_suspend_noirq and exynos5_i2c_resume_noirq).
 
-Right; I pushed out a fixed version right before loosing my tubes at the
-airport :-)
+i2c controllers that might have wakeup sources on them seem to need to
+resume at noirq time so that the individual drivers can actually read
+the i2c bus to handle their wakeup.
 
-https://git.kernel.org/cgit/linux/kernel/git/peterz/queue.git/commit/?h=timers/nohz&id=921d8b81281ecdca686369f52165d04fa3505bd7
+NOTE: I took the original review feedback from Wolfram and added
+poweroff, thaw, freeze, restore.
 
-I've not gotten wu build bot spam on it so it must be good ;-)
+This patch has only been compile-tested since I don't have all the
+patches needed to make my machine using this i2c driver actually
+suspend/resume.
 
-In any case, I'll add your tested-by and update later this evening.
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+---
+Changes in v3:
+- Made the structure static.
+
+Changes in v2:
+- Added missing CONFIG_PM_SLEEP
+
+ drivers/i2c/busses/i2c-exynos5.c | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/i2c/busses/i2c-exynos5.c b/drivers/i2c/busses/i2c-exynos5.c
+index 63d2292..f9447a4 100644
+--- a/drivers/i2c/busses/i2c-exynos5.c
++++ b/drivers/i2c/busses/i2c-exynos5.c
+@@ -789,8 +789,16 @@ static int exynos5_i2c_resume_noirq(struct device *dev)
+ }
+ #endif
+ 
+-static SIMPLE_DEV_PM_OPS(exynos5_i2c_dev_pm_ops, exynos5_i2c_suspend_noirq,
+-			 exynos5_i2c_resume_noirq);
++static const struct dev_pm_ops exynos5_i2c_dev_pm_ops = {
++#ifdef CONFIG_PM_SLEEP
++	.suspend_noirq = exynos5_i2c_suspend_noirq,
++	.resume_noirq = exynos5_i2c_resume_noirq,
++	.freeze_noirq = exynos5_i2c_suspend_noirq,
++	.thaw_noirq = exynos5_i2c_resume_noirq,
++	.poweroff_noirq = exynos5_i2c_suspend_noirq,
++	.restore_noirq = exynos5_i2c_resume_noirq,
++#endif
++};
+ 
+ static struct platform_driver exynos5_i2c_driver = {
+ 	.probe		= exynos5_i2c_probe,
+-- 
+2.0.0.526.g5318336
+
