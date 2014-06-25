@@ -1,38 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757565AbaFYXEg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 19:04:36 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:39001 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756178AbaFYXEe (ORCPT
+	id S1756194AbaFYXDj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 19:03:39 -0400
+Received: from exprod5og103.obsmtp.com ([64.18.0.145]:50694 "HELO
+	exprod5og103.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757133AbaFYXDh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 19:04:34 -0400
-Date: Wed, 25 Jun 2014 16:04:33 -0700 (PDT)
-Message-Id: <20140625.160433.1012876682294424845.davem@davemloft.net>
-To: dborkman@redhat.com
-Cc: netdev@vger.kernel.org, linux@horizon.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next 0/3] crc32 combine improvements
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1403529116-18385-1-git-send-email-dborkman@redhat.com>
-References: <1403529116-18385-1-git-send-email-dborkman@redhat.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 25 Jun 2014 16:04:34 -0700 (PDT)
+	Wed, 25 Jun 2014 19:03:37 -0400
+From: Feng Kan <fkan@apm.com>
+To: dbaryshkov@gmail.com, catalin.marinas@arm.com, dwmw2@infradead.org,
+        arnd@arndb.de, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        patches@apm.com
+Cc: Feng Kan <fkan@apm.com>
+Subject: [PATCH V7 1/6] power: reset: Add generic SYSCON register mapped reset
+Date: Wed, 25 Jun 2014 16:03:21 -0700
+Message-Id: <1403737406-6474-2-git-send-email-fkan@apm.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403737406-6474-1-git-send-email-fkan@apm.com>
+References: <1403737406-6474-1-git-send-email-fkan@apm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Daniel Borkmann <dborkman@redhat.com>
-Date: Mon, 23 Jun 2014 15:11:53 +0200
+Add a generic SYSCON register mapped reset mechanism.
 
-> So almost a month passed, and I don't want this to get lost
-> somewhere. I have applied the feedback given at that time to
-> this set, rebased plus tested it against latest net-next. I
-> decided to route this via netdev as it improves performance
-> upon library code that provides library bits for SCTP, i.e.
-> for non-linear skb csum handling in IPVS. Thus, resending
-> this for George before it gets lost.
+Signed-off-by: Feng Kan <fkan@apm.com>
+---
+ drivers/power/reset/Kconfig         |  6 +++
+ drivers/power/reset/Makefile        |  1 +
+ drivers/power/reset/syscon-reboot.c | 91 +++++++++++++++++++++++++++++++++++++
+ 3 files changed, 98 insertions(+)
+ create mode 100644 drivers/power/reset/syscon-reboot.c
 
-Series applied, thanks Daniel.
+diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
+index bdcf517..7035236 100644
+--- a/drivers/power/reset/Kconfig
++++ b/drivers/power/reset/Kconfig
+@@ -80,3 +80,9 @@ config POWER_RESET_KEYSTONE
+ 	help
+ 	  Reboot support for the KEYSTONE SoCs.
+ 
++config POWER_RESET_SYSCON
++	bool "Generic SYSCON regmap reset driver"
++	depends on ARCH_XGENE
++	depends on POWER_RESET && MFD_SYSCON
++	help
++	  Reboot support for generic SYSCON mapped register reset.
+diff --git a/drivers/power/reset/Makefile b/drivers/power/reset/Makefile
+index dde2e8b..b1b5ab3 100644
+--- a/drivers/power/reset/Makefile
++++ b/drivers/power/reset/Makefile
+@@ -8,3 +8,4 @@ obj-$(CONFIG_POWER_RESET_SUN6I) += sun6i-reboot.o
+ obj-$(CONFIG_POWER_RESET_VEXPRESS) += vexpress-poweroff.o
+ obj-$(CONFIG_POWER_RESET_XGENE) += xgene-reboot.o
+ obj-$(CONFIG_POWER_RESET_KEYSTONE) += keystone-reset.o
++obj-$(CONFIG_POWER_RESET_SYSCON) += syscon-reboot.o
+diff --git a/drivers/power/reset/syscon-reboot.c b/drivers/power/reset/syscon-reboot.c
+new file mode 100644
+index 0000000..9c15ba5
+--- /dev/null
++++ b/drivers/power/reset/syscon-reboot.c
+@@ -0,0 +1,91 @@
++/*
++ * Generic Syscon Reboot Driver
++ *
++ * Copyright (c) 2013, Applied Micro Circuits Corporation
++ * Author: Feng Kan <fkan@apm.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++#include <linux/io.h>
++#include <linux/of_device.h>
++#include <linux/of_address.h>
++#include <linux/platform_device.h>
++#include <linux/stat.h>
++#include <linux/slab.h>
++#include <linux/mfd/syscon.h>
++#include <linux/regmap.h>
++#include <linux/reboot.h>
++#include <asm/system_misc.h>
++
++struct syscon_reboot_context {
++	struct regmap *map;
++	u32 offset;
++	u32 mask;
++};
++
++static struct syscon_reboot_context *syscon_reboot_ctx;
++
++static void syscon_restart(enum reboot_mode reboot_mode, const char *cmd)
++{
++	struct syscon_reboot_context *ctx = syscon_reboot_ctx;
++	unsigned long timeout;
++
++	/* Issue the reboot */
++	if (ctx->map)
++		regmap_write(ctx->map, ctx->offset, ctx->mask);
++
++	timeout = jiffies + HZ;
++	while (time_before(jiffies, timeout))
++		cpu_relax();
++
++	pr_emerg("Unable to restart system\n");
++}
++
++static int syscon_reboot_probe(struct platform_device *pdev)
++{
++	struct syscon_reboot_context *ctx;
++	struct device *dev = &pdev->dev;
++
++	ctx = devm_kzalloc(&pdev->dev, sizeof(*ctx), GFP_KERNEL);
++	if (!ctx) {
++		dev_err(&pdev->dev, "out of memory for context\n");
++		return -ENOMEM;
++	}
++
++	ctx->map = syscon_regmap_lookup_by_phandle(dev->of_node, "regmap");
++	if (IS_ERR(ctx->map))
++		return PTR_ERR(ctx->map);
++
++	if (of_property_read_u32(pdev->dev.of_node, "offset", &ctx->offset))
++		return -EINVAL;
++
++	if (of_property_read_u32(pdev->dev.of_node, "mask", &ctx->mask))
++		return -EINVAL;
++
++	arm_pm_restart = syscon_restart;
++	syscon_reboot_ctx = ctx;
++
++	return 0;
++}
++
++static struct of_device_id syscon_reboot_of_match[] = {
++	{ .compatible = "syscon-reboot" },
++	{}
++};
++
++static struct platform_driver syscon_reboot_driver = {
++	.probe = syscon_reboot_probe,
++	.driver = {
++		.name = "syscon-reboot",
++		.of_match_table = syscon_reboot_of_match,
++	},
++};
++module_platform_driver(syscon_reboot_driver);
+-- 
+1.9.1
+
