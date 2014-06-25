@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756718AbaFYMTs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 08:19:48 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:35606 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755839AbaFYMTq (ORCPT
+	id S1756758AbaFYMUA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 08:20:00 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:60334 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756723AbaFYMT7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 08:19:46 -0400
-X-IronPort-AV: E=Sophos;i="5.00,776,1396972800"; 
-   d="scan'208";a="32417927"
-From: "chenhanxiao@cn.fujitsu.com" <chenhanxiao@cn.fujitsu.com>
-To: Li Zefan <lizefan@huawei.com>
-CC: "containers@lists.linux-foundation.org" 
-	<containers@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, Randy Dunlap <rdunlap@infradead.org>
-Subject: RE: [PATCH] cgroup: fix a typo in Documentation/cgroups/cgroups.txt
-Thread-Topic: [PATCH] cgroup: fix a typo in Documentation/cgroups/cgroups.txt
-Thread-Index: AQHPkCg04A/64+yKwk25jIoIdpndQZuBvuqQ
-Date: Wed, 25 Jun 2014 12:19:44 +0000
-Message-ID: <5871495633F38949900D2BF2DC04883E5522C0@G08CNEXMBPEKD02.g08.fujitsu.local>
-References: <1403667025-13422-1-git-send-email-chenhanxiao@cn.fujitsu.com>
- <53AA4595.6030401@huawei.com>
-In-Reply-To: <53AA4595.6030401@huawei.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.226.240]
-Content-Type: text/plain; charset="gb2312"
-MIME-Version: 1.0
+	Wed, 25 Jun 2014 08:19:59 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Ana Rey <anarey@gmail.com>, Andrea Merello <andrea.merello@gmail.com>,
+        Teodora Baluta <teobaluta@gmail.com>, Chi Pham <fempsci@gmail.com>,
+        Xenia Ragiadakou <burzalodowa@gmail.com>,
+        Paul Bolle <pebolle@tiscali.nl>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: rtl8192u: r8192U_core.c:  Cleaning up variable is set more than once
+Date: Wed, 25 Jun 2014 14:20:58 +0200
+Message-Id: <1403698858-22513-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s5PCJqQJ007498
 
+A struct member variable is set to the same value more than once
 
+This was found using a static code analysis program called cppcheck.
 
-> -----Original Message-----
-> From: Li Zefan [mailto:lizefan@huawei.com]
-> Sent: Wednesday, June 25, 2014 11:44 AM
-> On 2014/6/25 11:30, Chen Hanxiao wrote:
-> > s/iff/if
-> >
-> 
-> This is not a typo. iff == if and only if.
-> 
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ drivers/staging/rtl8192u/r8192U_core.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-I see.
-Thanks for teaching.
+diff --git a/drivers/staging/rtl8192u/r8192U_core.c b/drivers/staging/rtl8192u/r8192U_core.c
+index 24272c5..b2b4cd0 100644
+--- a/drivers/staging/rtl8192u/r8192U_core.c
++++ b/drivers/staging/rtl8192u/r8192U_core.c
+@@ -2355,7 +2355,6 @@ static void rtl8192_init_priv_variable(struct net_device *dev)
+ 
+ 	priv->ieee80211->FwRWRF = 0;	//we don't use FW read/write RF until stable firmware is available.
+ 	priv->ieee80211->current_network.beacon_interval = DEFAULT_BEACONINTERVAL;
+-	priv->ieee80211->iw_mode = IW_MODE_INFRA;
+ 	priv->ieee80211->softmac_features  = IEEE_SOFTMAC_SCAN |
+ 		IEEE_SOFTMAC_ASSOCIATE | IEEE_SOFTMAC_PROBERQ |
+ 		IEEE_SOFTMAC_PROBERS | IEEE_SOFTMAC_TX_QUEUE |
+-- 
+1.7.10.4
 
-- Chen
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
