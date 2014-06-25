@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757205AbaFYNuu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 09:50:50 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:42527 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756995AbaFYNut (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 09:50:49 -0400
-Date: Wed, 25 Jun 2014 14:50:39 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Daniel Drake <drake@endlessm.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH v2 0/6] Enable L2 cache support on Exynos4210/4x12 SoCs
-Message-ID: <20140625135039.GM3705@n2100.arm.linux.org.uk>
-References: <1403703451-12233-1-git-send-email-t.figa@samsung.com>
+	id S1757057AbaFYNxI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 09:53:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40462 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754764AbaFYNxG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 09:53:06 -0400
+Date: Wed, 25 Jun 2014 15:51:22 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        linux-api@vger.kernel.org, x86@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
+        linux-arch@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: Re: [PATCH v8 5/9] seccomp: split mode set routines
+Message-ID: <20140625135121.GB7892@redhat.com>
+References: <1403642893-23107-1-git-send-email-keescook@chromium.org> <1403642893-23107-6-git-send-email-keescook@chromium.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1403703451-12233-1-git-send-email-t.figa@samsung.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1403642893-23107-6-git-send-email-keescook@chromium.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 03:37:25PM +0200, Tomasz Figa wrote:
-> This series intends to add support for L2 cache on Exynos4 SoCs on boards
-> running under secure firmware, which requires certain initialization steps
-> to be done with help of firmware, as selected registers are writable only
-> from secure mode.
+On 06/24, Kees Cook wrote:
+>
+> +static inline void seccomp_assign_mode(struct task_struct *task,
+> +				       unsigned long seccomp_mode)
+> +{
+> +	BUG_ON(!spin_is_locked(&task->sighand->siglock));
+> +
+> +	task->seccomp.mode = seccomp_mode;
+> +	set_tsk_thread_flag(task, TIF_SECCOMP);
+> +}
 
-What I said in my message on June 12th applies to this series.  I'm
-not having the virtual address exposed via the write_sec call.
+OK, but unless task == current this can race with secure_computing().
+I think this needs smp_mb__before_atomic() and secure_computing() needs
+rmb() after test_bit(TIF_SECCOMP).
 
-Yes, you need to read other registers in order to use your secure
-firmware implementation.  Let's fix that by providing a better write_sec
-interface so you don't have to read back these registers, rather than
-working around this short-coming.
+Otherwise, can't __secure_computing() hit BUG() if it sees the old
+mode == SECCOMP_MODE_DISABLED ?
 
-That's exactly what I meant when I talked on June 12th about turning
-cache-l2x0.c back into a pile of crap.  You're working around problems
-rather than fixing the underlying issue, as seems to be standard
-platform maintainer behaviour when things like core ARM code is
-concerned.  This is why things devolve over time into piles of crap,
-because platforms just hack around problems rather than fixing the
-root cause of the problem.
+Or seccomp_run_filters() can see ->filters == NULL and WARN(),
+smp_load_acquire() only serializes that LOAD with the subsequent memory
+operations.
 
-So... I'm NAKing the entire series.
+Oleg.
 
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
