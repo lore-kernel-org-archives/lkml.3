@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756905AbaFYWbP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 18:31:15 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:38742 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755226AbaFYWbM (ORCPT
+	id S1755982AbaFYWct (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 18:32:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48606 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752104AbaFYWcr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 18:31:12 -0400
-Date: Wed, 25 Jun 2014 15:31:09 -0700 (PDT)
-Message-Id: <20140625.153109.1658452238116055408.davem@davemloft.net>
-To: joe@perches.com
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, arnd@arndb.de,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCH 01/22] pci-dma-compat: Add pci_zalloc_consistent helper
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1403733111.24788.8.camel@joe-AO725>
-References: <2248b3ffe86cd8995a809bf7e2871f38039979c1.1403530604.git.joe@perches.com>
-	<20140625122755.152685fadbc9cffe7a298dc6@linux-foundation.org>
-	<1403733111.24788.8.camel@joe-AO725>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Wed, 25 Jun 2014 18:32:47 -0400
+Date: Wed, 25 Jun 2014 15:32:46 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Don Mullis <don.mullis@gmail.com>, Dave Chinner <david@fromorbit.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/4] lib: list_sort: Various minor improvements
+Message-Id: <20140625153246.3d3dbda781ce1af5524269ab@linux-foundation.org>
+In-Reply-To: <87egycoc8t.fsf@rasmusvillemoes.dk>
+References: <1403604392-23259-1-git-send-email-linux@rasmusvillemoes.dk>
+	<20140625145314.3e16af6998765b7aad860bf7@linux-foundation.org>
+	<87egycoc8t.fsf@rasmusvillemoes.dk>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 25 Jun 2014 15:31:12 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Wed, 25 Jun 2014 14:51:51 -0700
+On Thu, 26 Jun 2014 00:28:18 +0200 Rasmus Villemoes <linux@rasmusvillemoes.dk> wrote:
 
-> On Wed, 2014-06-25 at 12:27 -0700, Andrew Morton wrote:
->> On Mon, 23 Jun 2014 06:41:29 -0700 Joe Perches <joe@perches.com> wrote:
->> 
->> > Add this helper for consistency with pci_zalloc_coherent
->> > and the ability to remove unnecessary memset(,0,) uses.
->> 
->> While we're being anal..  I'm not a big fan of the patch titles.  Worst
->> is "amd: Use pci_zalloc_consistent".  "amd" is quite a poor identifier
->> - it's only when you get in and look at the diff that you realise it's
->> an ethernet driver.
+> > We may as well do the pr_foo() conversion as well.  As often happens,
+> > the results are quite pleasing.
+> >
+> > --- a/lib/list_sort.c~lib-list_sortc-convert-to-pr_foo
+> > +++ a/lib/list_sort.c
+> > @@ -1,3 +1,6 @@
+> > +
+> > +#define pr_fmt(fmt) "list_sort_test: " fmt
+> > +
+> >  #include <linux/kernel.h>
+> >  #include <linux/module.h>
+> >  #include <linux/list_sort.h>
+> > @@ -125,9 +128,8 @@ void list_sort(void *priv, struct list_h
+> >  		}
+> >  		if (lev > max_lev) {
+> >  			if (unlikely(lev >= ARRAY_SIZE(part)-1)) {
+> > -				printk_once(KERN_DEBUG "list passed to"
+> > -					" list_sort() too long for"
+> > -					" efficiency\n");
+> > +				pr_debug_once("list passed to list_sort() too "
+> > +					      "long for efficiency\n");
 > 
-> Yeah, those "amd:" prefixes should really have been "pcnet32:"
-> 
->> People sometimes address this by using
->> 
->> 	"drivers: net: ethernet: amd: use pci_zalloc_consistent"
->> 
->> which strikes me as utterly perverse.  We already have a nice way of
->> representing the hierarchy and that's using '/'.
-> 
-> I used to do that until several people complained.
-> Now I don't.  btw:  Documentation/SubmittingPatches says:
-> 
-> 15) The canonical patch format
-> 
-> The canonical patch subject line is:
-> 
->     Subject: [PATCH 001/123] subsystem: summary phrase
+> Minor comment: Won't this end up saying "list_sort_test: list passed to
+> ...", despite the list coming from a 'real' user? Maybe change the first
+> #define to '"list_sort: " fmt', the above message to "passed list too
+> long for efficiency", and redefine pr_fmt right after #ifdef
+> CONFIG_TEST_LIST_SORT.
 
-+1
+Yeah, I was hoping nobody would notice that ;)
 
-We've been representing subsystems using colon prefixes for ages, and
-I can't seen the value of starting to use something inconsistent with
-a decade of precedence.
+How about just
+
+		printk_once(KERN_DEBUG "list too long for efficiency\n");
+
+
