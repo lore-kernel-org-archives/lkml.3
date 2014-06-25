@@ -1,84 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755161AbaFYKNJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 06:13:09 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:59535 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851AbaFYKNF (ORCPT
+	id S1755622AbaFYKOE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 06:14:04 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:46961 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752989AbaFYKOC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 06:13:05 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Olav Haugan <ohaugan@codeaurora.org>, Rob Herring <robherring2@gmail.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Kumar Gala <galak@codeaurora.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Cho KyongHo <pullip.cho@samsung.com>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>
-Subject: Re: [PATCH v2] devicetree: Add generic IOMMU device tree bindings
-Date: Wed, 25 Jun 2014 12:12:13 +0200
-Message-ID: <6589024.32Qh7fFhXo@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140625095735.GI6153@arm.com>
-References: <1400877218-4113-1-git-send-email-thierry.reding@gmail.com> <130361958.xFghHXmZkz@wuerfel> <20140625095735.GI6153@arm.com>
+	Wed, 25 Jun 2014 06:14:02 -0400
+Message-ID: <53AAA0E5.1000608@atmel.com>
+Date: Wed, 25 Jun 2014 12:13:57 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:XyI7SUS+VTUHa6oAQqisCmZU+3PDtby2Z0pxyyLDvJW
- bwYao5YGzvA3yrTPFNwyMe6cUmAaFQ5ozylWj7OyKEss81tdwM
- Tac3hT8mpTYvVMeaP9jEjgG/reErQbNPiU0FE9Ks3xl7GIgwy1
- CrWJl+gO44Dq9UDJH3tKp5Em6u+iUh7ro3twn75P7fCpVrmGXL
- Okr9EUPKrrWTf8JqssSp59qSy4tRfo3vxKeqKTQ54Q03zAC5sd
- p0cHbS094qpndOWyWY7PyESlyR9q1G7oAPcgACKnUlFV+BCcZi
- 5tSZtrrJnVGtO14lr6R+A2X3RubUeFdBOIYHv1ujwHE/C2TEKe
- kX1R/NxmQhk2DUEJE3WU=
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        <arm@kernel.org>
+CC: Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        <egtvedt@samfundet.no>, <gregkh@linuxfoundation.org>,
+        <thierry.reding@gmail.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: Re: [GIT PULL] at91: fixes for 3.16 (drivers) #1
+References: <CAOesGMj1FuozbydRf=J7jWFt_8GZ8ZKZReg_1BmvPC706cZ7rQ@mail.gmail.com> <1402994561-29492-1-git-send-email-nicolas.ferre@atmel.com>
+In-Reply-To: <1402994561-29492-1-git-send-email-nicolas.ferre@atmel.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 25 June 2014 10:57:36 Will Deacon wrote:
-> So far, I've been avoiding the hardcoding. However, you could potentially
-> build a system with a small number of SMRs (compared to the number of
-> StreamIDs) and allocate the StreamIDs in such a way that I think the dynamic
-> configuration would be NP complete if we require an optimal SMR allocation.
+On 17/06/2014 10:42, Nicolas Ferre :
+> Arnd, Olof, Kevin,
 > 
-> However:
+> As advised by Olof, here is the interesting updated on PWM drivers for AT91
+> resent after 3.16-rc1 release. Delaying the inclusion of this material has
+> solved all the issues with dependecies that previous pull-request had ([GIT
+> PULL] at91: drivers for 3.16 #1).
 > 
->   (1) I don't know of a system where this is the case
->   (2) Not much work has been done on improving the dynamic allocator yet
+> I remind you what it's about: Alexandre did a great job replacing the existing
+> calls to the older, non-standard drivers by the use of the newer "pwm-atmel"
+> which takes advantage of the PWM framework.
+> In addition of removing three obsolete drivers, it also solves an issue with
+> non existing Kconfig symbols introduced by (misc: atmel_pwm: only build for
+> supported platforms) which was trying to avoid a build failure... so, all in 
+> all, a pretty good thing!
+> The diffstat is pretty nice as well ;-)
 > 
-> which is why I'm still favouring dynamic configuration in the driver.
+> Thanks, best regards,
+
+After talking to Arnd on IRC. I'll re-spin this series for 3.17, so you
+can forget it for now on...
+
+Bye,
+
+
+> The following changes since commit 7171511eaec5bf23fb06078f59784a3a0626b38f:
 > 
-> The other thing I forgot to mention earlier is that we need to support
-> device hotplug in the future, so some level of dynamic configuration
-> will always be required.
+>   Linux 3.16-rc1 (2014-06-15 17:45:28 -1000)
+> 
+> are available in the git repository at:
+> 
+>   git://github.com/at91linux/linux-at91.git tags/at91-fixes
+> 
+> for you to fetch changes up to be6ef50d11bfeec5cce3cf6b463f9094fad1de14:
+> 
+>   misc: atmel_pwm: remove obsolete driver (2014-06-17 10:24:08 +0200)
+> 
+> ----------------------------------------------------------------
+> Atmel PWM driver update for 3.16
+> - move to the new PWM driver which uses PWM framework
+> - remove 3 obsolete drivers (atmel-pwm-bl.c, leds-atmel-pwm.c and atmel_pwm.c)
+> 
+> ----------------------------------------------------------------
+> Alexandre Belloni (15):
+>       ARM: at91: at91sam9g45: switch to generic PWM framework
+>       ARM: at91: sam9m10g45ek: use generic leds_pwm driver
+>       ARM: at91: at91sam9263: switch to generic PWM framework
+>       ARM: at91: sam9263ek: use generic leds_pwm driver
+>       ARM: at91: at91sam9rl: switch to generic PWM framework
+>       ARM: at91: remove useless at91_pwm_leds()
+>       PWM: atmel: allow building for AVR32
+>       avr32/at32ap: switch to the generic PWM framework
+>       avr32: MRMT: use generic leds_pwm driver
+>       avr32: merisc: use generic leds_pwm driver
+>       avr32: favr-32: use generic pwm_bl driver
+>       avr32: update defconfig to use the generic PWM framework
+>       backlight: atmel-pwm-bl: remove obsolete driver
+>       leds: atmel-pwm: remove obsolete driver
+>       misc: atmel_pwm: remove obsolete driver
+> 
+>  arch/arm/mach-at91/at91sam9263.c           |   1 +
+>  arch/arm/mach-at91/at91sam9263_devices.c   |  11 +-
+>  arch/arm/mach-at91/at91sam9g45.c           |   1 +
+>  arch/arm/mach-at91/at91sam9g45_devices.c   |  11 +-
+>  arch/arm/mach-at91/at91sam9rl.c            |   1 +
+>  arch/arm/mach-at91/at91sam9rl_devices.c    |  11 +-
+>  arch/arm/mach-at91/board-sam9263ek.c       |  55 +++-
+>  arch/arm/mach-at91/board-sam9m10g45ek.c    |  42 ++-
+>  arch/arm/mach-at91/board.h                 |   1 -
+>  arch/arm/mach-at91/leds.c                  |  37 ---
+>  arch/avr32/boards/atngw100/mrmt.c          |  34 ++-
+>  arch/avr32/boards/favr-32/setup.c          |  48 ++--
+>  arch/avr32/boards/merisc/setup.c           |  34 ++-
+>  arch/avr32/configs/atngw100_mrmt_defconfig |   5 +-
+>  arch/avr32/configs/atstk1002_defconfig     |   5 +-
+>  arch/avr32/configs/atstk1003_defconfig     |   5 +-
+>  arch/avr32/configs/atstk1004_defconfig     |   5 +-
+>  arch/avr32/configs/atstk1006_defconfig     |   5 +-
+>  arch/avr32/configs/favr-32_defconfig       |   6 +-
+>  arch/avr32/configs/merisc_defconfig        |   5 +-
+>  arch/avr32/mach-at32ap/at32ap700x.c        |   7 +-
+>  drivers/leds/Kconfig                       |   8 -
+>  drivers/leds/Makefile                      |   1 -
+>  drivers/leds/leds-atmel-pwm.c              | 149 -----------
+>  drivers/misc/Kconfig                       |  10 -
+>  drivers/misc/Makefile                      |   1 -
+>  drivers/misc/atmel_pwm.c                   | 402 -----------------------------
+>  drivers/pwm/Kconfig                        |   2 +-
+>  drivers/video/backlight/Kconfig            |  11 -
+>  drivers/video/backlight/Makefile           |   1 -
+>  drivers/video/backlight/atmel-pwm-bl.c     | 223 ----------------
+>  include/linux/atmel-pwm-bl.h               |  43 ---
+>  include/linux/atmel_pwm.h                  |  70 -----
+>  33 files changed, 186 insertions(+), 1065 deletions(-)
+>  delete mode 100644 drivers/leds/leds-atmel-pwm.c
+>  delete mode 100644 drivers/misc/atmel_pwm.c
+>  delete mode 100644 drivers/video/backlight/atmel-pwm-bl.c
+>  delete mode 100644 include/linux/atmel-pwm-bl.h
+>  delete mode 100644 include/linux/atmel_pwm.h
+> 
 
-Ok, got it. So we just hope that we can make dynamic configuration
-work all the time, but if it all fails, then we come up with a
-hardcoded configuration method.
 
-I guess this could be done similarly to how we handle clocks on
-a lot of systems: generally these are dynamic, but you have the
-option to provide hints in the clock controller node about how
-you expect things to be configured.
-
-For the SMMU that could mean that (if we get into the situation you
-describe), we add optional properties to the SMMU node itself
-describing how we expect the SMRs to be used.
-
-	Arnd
+-- 
+Nicolas Ferre
