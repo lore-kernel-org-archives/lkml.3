@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756204AbaFYJGY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 05:06:24 -0400
-Received: from mga11.intel.com ([192.55.52.93]:42154 "EHLO mga11.intel.com"
+	id S1756154AbaFYJGV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 05:06:21 -0400
+Received: from mga11.intel.com ([192.55.52.93]:42158 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755610AbaFYJBA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 05:01:00 -0400
+	id S1755620AbaFYJBB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 05:01:01 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,544,1400050800"; 
-   d="scan'208";a="552982539"
+   d="scan'208";a="552982571"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
         Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
         Dan Williams <dan.j.williams@intel.com>,
         Vinod Koul <vinod.koul@intel.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Ashok Raj <ashok.raj@intel.com>, Yijing Wang <wangyijing@huawei.com>,
-        Tony Luck <tony.luck@intel.com>, iommu@lists.linux-foundation.org,
-        linux-pci@vger.kernel.org, linux-hotplug@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org
-Subject: [Patch Part3 V3 12/21] iommu/vt-d: introduce helper function iova_size() to improve code readability
-Date: Wed, 25 Jun 2014 17:02:38 +0800
-Message-Id: <1403686967-10887-13-git-send-email-jiang.liu@linux.intel.com>
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>, Ashok Raj <ashok.raj@intel.com>,
+        Yijing Wang <wangyijing@huawei.com>, Tony Luck <tony.luck@intel.com>,
+        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
+        linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmaengine@vger.kernel.org
+Subject: [Patch Part3 V3 13/21] iommu/vt-d: fix bug in computing domain's iommu_snooping flag
+Date: Wed, 25 Jun 2014 17:02:39 +0800
+Message-Id: <1403686967-10887-14-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1403686967-10887-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1403686967-10887-1-git-send-email-jiang.liu@linux.intel.com>
@@ -30,55 +30,97 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+IOMMU units may dynamically attached to/detached from domains,
+so we should scan all active IOMMU units when computing iommu_snooping
+flag for a domain instead of only scanning IOMMU units associated
+with the domain.
+
+Also check snooping and superpage capabilities when hot-adding DMAR units.
+
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- drivers/iommu/intel-iommu.c |    7 +++----
- include/linux/iova.h        |    5 +++++
- 2 files changed, 8 insertions(+), 4 deletions(-)
+ drivers/iommu/intel-iommu.c |   42 ++++++++++++++++++++++++------------------
+ 1 file changed, 24 insertions(+), 18 deletions(-)
 
 diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index 0d34f33bea34..d94468ae2947 100644
+index d94468ae2947..91dc85f63c41 100644
 --- a/drivers/iommu/intel-iommu.c
 +++ b/drivers/iommu/intel-iommu.c
-@@ -3117,10 +3117,10 @@ static void flush_unmaps(void)
- 			/* On real hardware multiple invalidations are expensive */
- 			if (cap_caching_mode(iommu->cap))
- 				iommu_flush_iotlb_psi(iommu, domain->id,
--					iova->pfn_lo, iova->pfn_hi - iova->pfn_lo + 1,
-+					iova->pfn_lo, iova_size(iova),
- 					!deferred_flush[i].freelist[j], 0);
- 			else {
--				mask = ilog2(mm_to_dma_pfn(iova->pfn_hi - iova->pfn_lo + 1));
-+				mask = ilog2(mm_to_dma_pfn(iova_size(iova)));
- 				iommu_flush_dev_iotlb(deferred_flush[i].domain[j],
- 						(uint64_t)iova->pfn_lo << PAGE_SHIFT, mask);
- 			}
-@@ -3921,8 +3921,7 @@ static int intel_iommu_memory_notifier(struct notifier_block *nb,
- 			rcu_read_lock();
- 			for_each_active_iommu(iommu, drhd)
- 				iommu_flush_iotlb_psi(iommu, si_domain->id,
--					iova->pfn_lo,
--					iova->pfn_hi - iova->pfn_lo + 1,
-+					iova->pfn_lo, iova_size(iova),
- 					!freelist, 0);
- 			rcu_read_unlock();
- 			dma_free_pagelist(freelist);
-diff --git a/include/linux/iova.h b/include/linux/iova.h
-index 3277f4711349..19e81d5ccb6d 100644
---- a/include/linux/iova.h
-+++ b/include/linux/iova.h
-@@ -34,6 +34,11 @@ struct iova_domain {
- 	unsigned long	dma_32bit_pfn;
- };
+@@ -634,50 +634,56 @@ static void domain_update_iommu_coherency(struct dmar_domain *domain)
+ 	rcu_read_unlock();
+ }
  
-+static inline unsigned long iova_size(struct iova *iova)
-+{
-+	return iova->pfn_hi - iova->pfn_lo + 1;
-+}
+-static void domain_update_iommu_snooping(struct dmar_domain *domain)
++static int domain_update_iommu_snooping(struct intel_iommu *skip)
+ {
+-	int i;
+-
+-	domain->iommu_snooping = 1;
++	struct dmar_drhd_unit *drhd;
++	struct intel_iommu *iommu;
++	int ret = 1;
+ 
+-	for_each_set_bit(i, domain->iommu_bmp, g_num_of_iommus) {
+-		if (!ecap_sc_support(g_iommus[i]->ecap)) {
+-			domain->iommu_snooping = 0;
+-			break;
++	rcu_read_lock();
++	for_each_active_iommu(iommu, drhd) {
++		if (iommu != skip) {
++			if (!ecap_sc_support(iommu->ecap)) {
++				ret = 0;
++				break;
++			}
+ 		}
+ 	}
++	rcu_read_unlock();
 +
- struct iova *alloc_iova_mem(void);
- void free_iova_mem(struct iova *iova);
- void free_iova(struct iova_domain *iovad, unsigned long pfn);
++	return ret;
+ }
+ 
+-static void domain_update_iommu_superpage(struct dmar_domain *domain)
++static int domain_update_iommu_superpage(struct intel_iommu *skip)
+ {
+ 	struct dmar_drhd_unit *drhd;
+-	struct intel_iommu *iommu = NULL;
++	struct intel_iommu *iommu;
+ 	int mask = 0xf;
+ 
+ 	if (!intel_iommu_superpage) {
+-		domain->iommu_superpage = 0;
+-		return;
++		return 0;
+ 	}
+ 
+ 	/* set iommu_superpage to the smallest common denominator */
+ 	rcu_read_lock();
+ 	for_each_active_iommu(iommu, drhd) {
+-		mask &= cap_super_page_val(iommu->cap);
+-		if (!mask) {
+-			break;
++		if (iommu != skip) {
++			mask &= cap_super_page_val(iommu->cap);
++			if (!mask)
++				break;
+ 		}
+ 	}
+ 	rcu_read_unlock();
+ 
+-	domain->iommu_superpage = fls(mask);
++	return fls(mask);
+ }
+ 
+ /* Some capabilities may be different across iommus */
+ static void domain_update_iommu_cap(struct dmar_domain *domain)
+ {
+ 	domain_update_iommu_coherency(domain);
+-	domain_update_iommu_snooping(domain);
+-	domain_update_iommu_superpage(domain);
++	domain->iommu_snooping = domain_update_iommu_snooping(NULL);
++	domain->iommu_superpage = domain_update_iommu_superpage(NULL);
+ }
+ 
+ static struct intel_iommu *device_to_iommu(struct device *dev, u8 *bus, u8 *devfn)
 -- 
 1.7.10.4
 
