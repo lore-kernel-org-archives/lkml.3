@@ -1,78 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757226AbaFYWQl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 18:16:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48473 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756043AbaFYWQj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 18:16:39 -0400
-Date: Wed, 25 Jun 2014 15:16:38 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Sebastien Buisson <sebastien.buisson@bull.net>
-Cc: <rob@landley.net>, <viro@zeniv.linux.org.uk>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH] Allow increasing the buffer-head per-CPU LRU size
-Message-Id: <20140625151638.00b7c2aa29f79f63dce7ae56@linux-foundation.org>
-In-Reply-To: <53A99EA0.3010800@bull.net>
-References: <53A99EA0.3010800@bull.net>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756770AbaFYWTG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 18:19:06 -0400
+Received: from 8bytes.org ([85.214.48.195]:56697 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753932AbaFYWTF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 18:19:05 -0400
+Date: Thu, 26 Jun 2014 00:18:59 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: mmu_notifier and i915_gem_userptr.c
+Message-ID: <20140625221859.GD7732@8bytes.org>
+References: <20140619153655.GG31771@8bytes.org>
+ <20140619160257.GB8476@nuc-i3427.alporthouse.com>
+ <20140620114350.GH31771@8bytes.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140620114350.GH31771@8bytes.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Thu Jun 26 00:19:01 2014
+X-DSPAM-Confidence: 0.9977
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 53ab4ad520861054813626
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Jun 2014 17:52:00 +0200 Sebastien Buisson <sebastien.buisson@bull.net> wrote:
-
-> Allow increasing the buffer-head per-CPU LRU size to allow efficient
-> filesystem operations that access many blocks for each transaction.
-> For example, creating a file in a large ext4 directory with quota
-> enabled will accesses multiple buffer heads and will overflow the LRU
-> at the default 8-block LRU size:
+On Fri, Jun 20, 2014 at 01:43:50PM +0200, Joerg Roedel wrote:
+> Change_pte is also called when the underlying page of an address
+> changes in the kernel which would matter for DMA. But that can only
+> happen in KSM and uprobes code which is probably not of interest for the
+> i915 driver.
 > 
-> * parent directory inode table block (ctime, nlinks for subdirs)
-> * new inode bitmap
-> * inode table block
-> * 2 quota blocks
-> * directory leaf block (not reused, but pollutes one cache entry)
-> * 2 levels htree blocks (only one is reused, other pollutes cache)
-> * 2 levels indirect/index blocks (only one is reused)
+> The other case where I think it matters is the do_wp_page() path for
+> COW. The code works by calling invalidate_range_start -> change_pte ->
+> invalidate_range_end. Your driver would react to this by unbinding the
+> vma from itself internally (after a fork for example).
 > 
-> Make this tuning be a kernel parameter 'bh_lru_size'.
+> But I have to check whether this really matters here.
 
-I don't think it's a great idea to make this a boot-time tunable.  It's
-going to take a ton of work by each and every kernel
-user/installer/distributor to work out what is the best setting for
-them.  And the differences will be pretty small anyway.  And we didn't
-provide them with any documentation to help them even get started with
-the project.
+Okay, I think it does not matter for the i915 driver. The code-paths
+which map pages read-only for COW invoke invalidate_range_start/end on
+the page-ranges which causes the driver to unbind the pages.
 
-Other approaches: 
+When get_user_pages() is called again later it will do the COW by
+itself, so the driver doesn't need to care.
 
-- Perform some boot-time auto-sizing, perhaps based on memory size,
-  cpu counts, etc.
-
-  None of which will be very successful, because the LRU miss rate is
-  dependent on filesystem type and usage, not on system size.
-
-- Perform some runtime resizing: if the miss rate gets "too high"
-  then increase the LRU size.  Maybe decrease it as well, or maybe not.
-
-  This will get more complex and we'd require decent improvements to
-  justify the change.
-
-- Just increase BH_LRU_SIZE to 16!
-
-I think the third option should be the first choice.  It doesn't get
-simpler than that and any more complex option would need additional
-testing-based justification on top of this simplest approach.
+So I tend to say that the i915 driver does not need a change_pte()
+call-back at all. But probably someone should double-check to make sure
+I didn't miss something.
 
 
-I'm amused that my dopey-but-simple LRU management code has survived
-these 12-odd years.  I suspect that if the LRUs get much larger, we'll
-be needing something less dopey and simple in there.
+	Joerg
 
-It's good to see (indirect) evidence that the LRUs are actually doing
-something useful.
+
