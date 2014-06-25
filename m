@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756899AbaFYNKG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 09:10:06 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:35621 "EHLO
+	id S932178AbaFYNNf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 09:13:35 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:35637 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756852AbaFYNKD (ORCPT
+	with ESMTP id S1756873AbaFYNKF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 09:10:03 -0400
+	Wed, 25 Jun 2014 09:10:05 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: linux@maxim.org.za, Nicolas Ferre <nicolas.ferre@atmel.com>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
@@ -16,9 +16,9 @@ Cc: Boris Brezillon <boris@free-electrons.com>,
         Thomas Petazzoni <thomas@free-electrons.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH 01/13] AT91: PIT: Follow the general coding rules
-Date: Wed, 25 Jun 2014 15:06:33 +0200
-Message-Id: <1403701605-26678-2-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH 03/13] AT91: PIT: Use of_have_populated_dt instead of CONFIG_OF
+Date: Wed, 25 Jun 2014 15:06:35 +0200
+Message-Id: <1403701605-26678-4-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1403701605-26678-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1403701605-26678-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -26,57 +26,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace all masks and bits definitions by matching calls to BIT and GENMASK.
-While we're at it, also fix a few style issues.
+Until now, the machines, even when CONFIG_OF was enabled, were calling
+at91sam926x_ioremap_pit to try to map the PIT address using the defined
+physical address.
+
+Obviously, with DT, it's not appropriate anymore, and some code was added to
+the function to deal with this case.
+
+Unfortunately, this code was conditionned on CONFIG_OF, which can be enabled,
+even though no DT was actually used, which would result in such a case, to this
+code being executed, without any reason.
+
+Moreover, the logic that was here before to bail out of the function just check
+in the DT to see if the PIT node is there, which is the case in all our DTSI.
+
+All this can be made much more straightforward just by using
+of_have_populated_dt to bail out.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- arch/arm/mach-at91/at91sam926x_time.c | 17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+ arch/arm/mach-at91/at91sam926x_time.c | 10 ++--------
+ 1 file changed, 2 insertions(+), 8 deletions(-)
 
 diff --git a/arch/arm/mach-at91/at91sam926x_time.c b/arch/arm/mach-at91/at91sam926x_time.c
-index 0a9e2fc8f796..fd3170b65fbb 100644
+index fd3170b65fbb..38490645efea 100644
 --- a/arch/arm/mach-at91/at91sam926x_time.c
 +++ b/arch/arm/mach-at91/at91sam926x_time.c
-@@ -9,11 +9,12 @@
-  * it under the terms of the GNU General Public License version 2 as
-  * published by the Free Software Foundation.
-  */
+@@ -279,15 +279,9 @@ void __init at91sam926x_pit_init(void)
+ 
+ void __init at91sam926x_ioremap_pit(u32 addr)
+ {
+-#if defined(CONFIG_OF)
+-	struct device_node *np =
+-		of_find_matching_node(NULL, pit_timer_ids);
+-
+-	if (np) {
+-		of_node_put(np);
++	if (of_have_populated_dt())
+ 		return;
+-	}
+-#endif
 +
-+#include <linux/clk.h>
-+#include <linux/clockchips.h>
- #include <linux/interrupt.h>
- #include <linux/irq.h>
- #include <linux/kernel.h>
--#include <linux/clk.h>
--#include <linux/clockchips.h>
- #include <linux/of.h>
- #include <linux/of_address.h>
- #include <linux/of_irq.h>
-@@ -22,17 +23,17 @@
- #include <mach/hardware.h>
+ 	pit_base_addr = ioremap(addr, 16);
  
- #define AT91_PIT_MR		0x00			/* Mode Register */
--#define		AT91_PIT_PITIEN		(1 << 25)		/* Timer Interrupt Enable */
--#define		AT91_PIT_PITEN		(1 << 24)		/* Timer Enabled */
--#define		AT91_PIT_PIV		(0xfffff)		/* Periodic Interval Value */
-+#define AT91_PIT_PITIEN			BIT(25)			/* Timer Interrupt Enable */
-+#define AT91_PIT_PITEN			BIT(24)			/* Timer Enabled */
-+#define AT91_PIT_PIV			GENMASK(19, 0)		/* Periodic Interval Value */
- 
- #define AT91_PIT_SR		0x04			/* Status Register */
--#define		AT91_PIT_PITS		(1 << 0)		/* Timer Status */
-+#define AT91_PIT_PITS			BIT(0)			/* Timer Status */
- 
- #define AT91_PIT_PIVR		0x08			/* Periodic Interval Value Register */
- #define AT91_PIT_PIIR		0x0c			/* Periodic Interval Image Register */
--#define		AT91_PIT_PICNT		(0xfff << 20)		/* Interval Counter */
--#define		AT91_PIT_CPIV		(0xfffff)		/* Inverval Value */
-+#define AT91_PIT_PICNT			GENMASK(31, 20)		/* Interval Counter */
-+#define AT91_PIT_CPIV			GENMASK(19, 0)		/* Inverval Value */
- 
- #define PIT_CPIV(x)	((x) & AT91_PIT_CPIV)
- #define PIT_PICNT(x)	(((x) & AT91_PIT_PICNT) >> 20)
+ 	if (!pit_base_addr)
 -- 
 2.0.0
 
