@@ -1,91 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756143AbaFYVfV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 17:35:21 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:65022 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753181AbaFYVfT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 17:35:19 -0400
-Message-ID: <5397E8FD.1070905@gmail.com>
-Date: Tue, 10 Jun 2014 22:28:29 -0700
-From: Rajat Jain <rajatxjain@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1755941AbaFYVlJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 17:41:09 -0400
+Received: from m12-16.163.com ([220.181.12.16]:41159 "EHLO m12-16.163.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755309AbaFYVlI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 17:41:08 -0400
+X-Coremail-DSSMTP: 180.116.26.28
+From: "WN tools" <hexwrench@163.com>
+To: <linux-kernel@vger.kernel.org>
+Subject: linux-kernel,Hand tools Factory suppliy
+Date: Thu, 26 Jun 2014 05:41:07 +0800
+X-Mailer: 
+Reply-To: <hexwrench@163.com>
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-CC: Guenter Roeck <groeck@juniper.net>, Rajat Jain <rajatjain@juniper.net>
-Subject: [PATCH] pciehp: Remove the field controller->no_cmd_completed
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-type: text/plain; charset=GB2312
+X-CM-TRANSID: EMCowEDpmWfwQatTmwM1Ag--.2249S2
+X-Coremail-Antispam: 1Uf129KBjvdXoWrtFWrCw4kGFy3tFyUZryxKrg_yoW3WFc_u3
+	yrWrZ2vry3ZwsxGw4qk393Jr43W3WjqrWYvwsrXr4aywn5t3yDGFs7K3ZxW3WUJFnFk3sa
+	gFnxAr13t343CjkaLaAFLSUrUUUU0b8apTn2vfkv8UJUUUU8Yxn0WfASr-VFAUDa7-sFnT
+	9fnUUvcSsGvfC2KfnxnUUI43ZEXa7IU5Ksj5UUUUU==
+X-Originating-IP: [180.116.26.28]
+Message-Id: <53AB41F0.36EEB1.08240@m12-16.163.com>
+X-CM-SenderInfo: pkh042hhqfxqqrwthudrp/1tbiRAi1qFEAH2xOMwAAsO
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s5PLfLvS012512
 
-After following recent cleanups by Bjorn:
+Dear Manager,
 
-http://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/log/?h=pci/hotplug
+ Wannian Tools Com.is the manufacurer of all kinds of Hex-wrench sets and hammers.
+Our main goods and service involve:
+* all  kinds of  Hex-wrench and wrench sets
+* plastic  hammers, rubber hammers
 
-2cc56f3 PCI: pciehp: Remove assumptions about which commands cause
-40b9608 PCI: pciehp: Compute timeout from hotplug command start time
-3461a06 PCI: pciehp: Wait for hotplug command completion lazily
-4283c70 PCI: pciehp: Make pcie_wait_cmd() self-contained
+Other:
+* stamping / punching parts of  metal
+* machining metal parts
+*plastic injection parts
+*zinc or aluminum die casting parts
+*die casting molds, plastic injection mold, stamping mold
 
-the bitfield no_cmd_complete is not really needed anymore, as there is
-only a single occurance of its use. Hence remove the unnecessary bit
-field, and use existing macro NO_CMD_CMPL() instead.
+Hope have the change to cooperate with you.
+If need, i can send our PDF brochure for your reference.
 
-Signed-off-by: Rajat Jain <rajatxjain@gmail.com>
-Signed-off-by: Rajat Jain <rajatjain@juniper.net>
-Signed-off-by: Guenter Roeck <groeck@juniper.net>
----
-(This is rebased on top of Bjorn's pci/hotplug branch mentioned above)
+Any questions, please feel free to let me know.
 
- drivers/pci/hotplug/pciehp.h     |    1 -
- drivers/pci/hotplug/pciehp_hpc.c |   11 +----------
- 2 files changed, 1 insertion(+), 11 deletions(-)
+Best regards
+stone
 
-diff --git a/drivers/pci/hotplug/pciehp.h b/drivers/pci/hotplug/pciehp.h
-index c496258..9e5a9fb 100644
---- a/drivers/pci/hotplug/pciehp.h
-+++ b/drivers/pci/hotplug/pciehp.h
-@@ -96,7 +96,6 @@ struct controller {
- 	struct timer_list poll_timer;
- 	unsigned long cmd_started;	/* jiffies */
- 	unsigned int cmd_busy:1;
--	unsigned int no_cmd_complete:1;
- 	unsigned int link_active_reporting:1;
- 	unsigned int notification_enabled:1;
- 	unsigned int power_fault_detected;
-diff --git a/drivers/pci/hotplug/pciehp_hpc.c b/drivers/pci/hotplug/pciehp_hpc.c
-index a3a5c65..f7c3709 100644
---- a/drivers/pci/hotplug/pciehp_hpc.c
-+++ b/drivers/pci/hotplug/pciehp_hpc.c
-@@ -140,7 +140,7 @@ static void pcie_wait_cmd(struct controller *ctrl)
- 	 * If the controller does not generate notifications for command
- 	 * completions, we never need to wait between writes.
- 	 */
--	if (ctrl->no_cmd_complete)
-+	if (NO_CMD_CMPL(ctrl))
- 		return;
- 
- 	if (!ctrl->cmd_busy)
-@@ -772,15 +772,6 @@ struct controller *pcie_init(struct pcie_device *dev)
- 	init_waitqueue_head(&ctrl->queue);
- 	dbg_ctrl(ctrl);
- 
--	/*
--	 * Controller doesn't notify of command completion if the "No
--	 * Command Completed Support" bit is set in Slot Capabilities.
--	 * If set, it means the controller can accept hotplug commands
--	 * with no delay between them.
--	 */
--	if (NO_CMD_CMPL(ctrl))
--		ctrl->no_cmd_complete = 1;
--
- 	/* Check if Data Link Layer Link Active Reporting is implemented */
- 	pcie_capability_read_dword(pdev, PCI_EXP_LNKCAP, &link_cap);
- 	if (link_cap & PCI_EXP_LNKCAP_DLLLARC) {
--- 
-1.7.9.5
-
+CHANGZHOU WANNIAN TOOLS COM
+ADD.: mopandun village, niutang town, wujin,changzhou city, jiangsu province, china
+TEL: 008615195010186
+MSN: stonechenpeng@hotmail.com
+SKYPE: stone.chenpeng
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
