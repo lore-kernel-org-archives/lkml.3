@@ -1,46 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757409AbaFYO4V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 10:56:21 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:59492 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756458AbaFYO4U (ORCPT
+	id S1757430AbaFYO4j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 10:56:39 -0400
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:36767 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757232AbaFYO4h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 10:56:20 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: lee.jones@linaro.org, kernel@stlinux.com, maxime.coquelin@st.com,
-        wsa@the-dreams.de, devicetree@vger.kernel.org
-Subject: [PATCH] i2c: i2c-st: Rename clock reference to something that exists
-Date: Wed, 25 Jun 2014 15:55:50 +0100
-Message-Id: <1403708150-32085-1-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
+	Wed, 25 Jun 2014 10:56:37 -0400
+Date: Wed, 25 Jun 2014 10:56:34 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Benjamin LaHaise <bcrl@kvack.org>
+Cc: cl@linux-foundation.org, kmo@daterainc.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/6] percpu-refcount, aio: use percpu_ref_cancel_init()
+ in ioctx_alloc()
+Message-ID: <20140625145634.GD26883@htj.dyndns.org>
+References: <1403053685-28240-1-git-send-email-tj@kernel.org>
+ <1403053685-28240-2-git-send-email-tj@kernel.org>
+ <20140625143112.GR23137@kvack.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140625143112.GR23137@kvack.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CLK_S_ICN_REG_0 hasn't existed for a while now.  This was renamed
-over a few commits, then finally removed in commit 5aa02b9 (ARM:
-STi: DT: STiH415: Remove unused CLK_S_ICN_REG_0 fixed clock).
+Hello, Benjamin.
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- Documentation/devicetree/bindings/i2c/i2c-st.txt | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On Wed, Jun 25, 2014 at 10:31:12AM -0400, Benjamin LaHaise wrote:
+> On Tue, Jun 17, 2014 at 09:08:00PM -0400, Tejun Heo wrote:
+> > ioctx_alloc() reaches inside percpu_ref and directly frees
+> > ->pcpu_count in its failure path, which is quite gross.  percpu_ref
+> > has been providing a proper interface to do this,
+> > percpu_ref_cancel_init(), for quite some time now.  Let's use that
+> > instead.
+> 
+> I applied this to my aio-next tree at git://git.kvack.org/~bcrl/aio-next.git .
 
-diff --git a/Documentation/devicetree/bindings/i2c/i2c-st.txt b/Documentation/devicetree/bindings/i2c/i2c-st.txt
-index 437e0db..4c26fda 100644
---- a/Documentation/devicetree/bindings/i2c/i2c-st.txt
-+++ b/Documentation/devicetree/bindings/i2c/i2c-st.txt
-@@ -31,7 +31,7 @@ i2c0: i2c@fed40000 {
- 	compatible	= "st,comms-ssc4-i2c";
- 	reg		= <0xfed40000 0x110>;
- 	interrupts	=  <GIC_SPI 187 IRQ_TYPE_LEVEL_HIGH>;
--	clocks		= <&CLK_S_ICN_REG_0>;
-+	clocks		= <&clk_s_a0_ls CLK_ICN_REG>;
- 	clock-names	= "ssc";
- 	clock-frequency = <400000>;
- 	pinctrl-names	= "default";
+It'd probably easier if I route this through percpu tree with the rest
+of changes as there are further changes on the aio side (trivial but
+still), so we'd end up having to do pulling dance back and forth.  The
+changes on aio side are mostly trivial.  Can I route them through
+percpu tree with your acks?
+
+Thanks.
+
 -- 
-1.8.3.2
-
+tejun
