@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757459AbaFYObO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 10:31:14 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:44367 "EHLO kanga.kvack.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756875AbaFYObM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 10:31:12 -0400
-Date: Wed, 25 Jun 2014 10:31:12 -0400
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: cl@linux-foundation.org, kmo@daterainc.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] percpu-refcount, aio: use percpu_ref_cancel_init() in ioctx_alloc()
-Message-ID: <20140625143112.GR23137@kvack.org>
-References: <1403053685-28240-1-git-send-email-tj@kernel.org> <1403053685-28240-2-git-send-email-tj@kernel.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403053685-28240-2-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.4.2.2i
+	id S1757470AbaFYOb0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 10:31:26 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:21091 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756593AbaFYObZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 10:31:25 -0400
+Message-ID: <53AADD3A.2010102@arm.com>
+Date: Wed, 25 Jun 2014 15:31:22 +0100
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: Anup Patel <anup@brainfault.org>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Eric Auger <eric.auger@linaro.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: Re: [RFC PATCH 3/9] irqchip: GIC: Convert to EOImode == 1
+References: <1403688530-23273-1-git-send-email-marc.zyngier@arm.com>  <1403688530-23273-4-git-send-email-marc.zyngier@arm.com>  <CAAhSdy11HQtiOD6XLqQcZ+zf_Z9Mx0nPrJ0ECNNuRkZt=CfdpA@mail.gmail.com> <1403705001.18068.6.camel@kazak.uk.xensource.com>
+In-Reply-To: <1403705001.18068.6.camel@kazak.uk.xensource.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 17, 2014 at 09:08:00PM -0400, Tejun Heo wrote:
-> ioctx_alloc() reaches inside percpu_ref and directly frees
-> ->pcpu_count in its failure path, which is quite gross.  percpu_ref
-> has been providing a proper interface to do this,
-> percpu_ref_cancel_init(), for quite some time now.  Let's use that
-> instead.
-
-I applied this to my aio-next tree at git://git.kvack.org/~bcrl/aio-next.git .
-
-		-ben
-
-> This patch doesn't introduce any behavior changes.
+On 25/06/14 15:03, Ian Campbell wrote:
+> On Wed, 2014-06-25 at 19:26 +0530, Anup Patel wrote:
+>>
+>> Ian had send-out a patch long time back to extend
+>> GIC dt-bindings for addressing this issue.
+>> (http://www.spinics.net/lists/arm-kernel/msg283767.html)
 > 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Benjamin LaHaise <bcrl@kvack.org>
-> Cc: Kent Overstreet <kmo@daterainc.com>
-> ---
->  fs/aio.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/aio.c b/fs/aio.c
-> index 4f078c0..5e0d7f9 100644
-> --- a/fs/aio.c
-> +++ b/fs/aio.c
-> @@ -715,8 +715,8 @@ err_ctx:
->  err:
->  	mutex_unlock(&ctx->ring_lock);
->  	free_percpu(ctx->cpu);
-> -	free_percpu(ctx->reqs.pcpu_count);
-> -	free_percpu(ctx->users.pcpu_count);
-> +	percpu_ref_cancel_init(&ctx->reqs);
-> +	percpu_ref_cancel_init(&ctx->users);
->  	kmem_cache_free(kioctx_cachep, ctx);
->  	pr_debug("error allocating ioctx %d\n", err);
->  	return ERR_PTR(err);
-> -- 
-> 1.9.3
+> I've been meaning to revisit this. Since that original patch I've been
+> wondering if some sort of stride property wouldn't be better.
 
+Possibly. I used something like that for the GICv3 redistributors, just
+in case someone messes it up. Given the GICv2 track record, I probably
+did the right thing...
+
+	M.
 -- 
-"Thought is the essence of where you are now."
+Jazz is not dead. It just smells funny...
