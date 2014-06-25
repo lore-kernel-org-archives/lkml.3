@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755455AbaFYUGv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 16:06:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47175 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752271AbaFYUGt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 16:06:49 -0400
-Date: Wed, 25 Jun 2014 13:06:48 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Ian Kent <raven@themaw.net>
-Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        autofs mailing list <autofs@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] autofs4 - fix false positive compile error
-Message-Id: <20140625130648.1e3cd0e578602918dc38bb6a@linux-foundation.org>
-In-Reply-To: <20140625124939.31035.84884.stgit@perseus.fritz.box>
-References: <20140625124939.31035.84884.stgit@perseus.fritz.box>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754667AbaFYULX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 16:11:23 -0400
+Received: from mout.perfora.net ([74.208.4.195]:59314 "EHLO mout.perfora.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752271AbaFYULV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 16:11:21 -0400
+From: Marcel Ziswiler <marcel@ziswiler.com>
+To: swarren@wwwdotorg.org, thierry.reding@gmail.com, bhelgaas@google.com
+Cc: linux@arm.linux.org.uk, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, stefan@agner.ch,
+        Marcel Ziswiler <marcel@ziswiler.com>
+Subject: [PATCH] ARM: tegra: Migrate Apalis T30 PCIe power supply scheme
+Date: Wed, 25 Jun 2014 22:10:01 +0200
+Message-Id: <67868f9464baee36eba48582d56f586ad69d3e86.1403725976.git.marcel@ziswiler.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Provags-ID: V02:K0:A9DBn7vdCFKQck+PjF+IgWEiOG453/LmYAFSuLO0MqF
+ rJd9aK/27Aujt8S92A4mj5JrCTZmGhTKAf+qpRC8fGeJBDZYQ9
+ BU9SPkFfMuQjsfoI+/zy9tIfiWHsEJFsCSTDfUM/mmso6+Lpob
+ LinXMwMVh9Ob1anr26aBy6uq8fYyge8WB1LbMxpfTWd4MPI+MM
+ qsoBWCdywi0oqQcM6AH3RYuvdkWDioD9v9aEtst3YSS86v/29l
+ EnN8KkpGE/eSrFLxlFc0rU+/Jg49eJXs3fkEuPnIukp13AxVzn
+ R7IzsM4MkFWrMzm86Y8hEAm3ZhSA+keeZ/a9woICXif2tGoZV7
+ wOKSNAAmHfwKUZv198mrVbsAytCp4crOLFOVYfo05Ic8iXLKbj
+ SNSyjDig9tMDFo2qELUtgd/cprEQq7HSO0W2MxvgzDdYENCgl9
+ dqgyCP10Izt+rXr6BCQEa0MqBeg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Jun 2014 20:49:39 +0800 Ian Kent <raven@themaw.net> wrote:
+This migration is required for continued PCIe operation after commit:
 
-> On strict build environments we can see:
-> 
-> fs/autofs4/inode.c: In function 'autofs4_fill_super':
-> fs/autofs4/inode.c:312: error: 'pgrp' may be used uninitialized in this
-> function
-> make[2]: *** [fs/autofs4/inode.o] Error 1
-> make[1]: *** [fs/autofs4] Error 2
-> make: *** [fs] Error 2
-> make: *** Waiting for unfinished jobs....
-> 
-> This is due to the use of pgrp_set being used to indicate pgrp has
-> has been set rather than initializing pgrp itself.
-> 
+d3c7e24b84fcb62f96fa9a585a41f1829f326878
 
-Yes, that code seems to be explicitly designed to trigger a gcc warning ;)
+Signed-off-by: Marcel Ziswiler <marcel@ziswiler.com>
+---
+ arch/arm/boot/dts/tegra30-apalis.dtsi |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
-What is a "strict build environment"?  Someone's using -Werror for the
-entire kernel?  That must make for a miserable life.
-
+diff --git a/arch/arm/boot/dts/tegra30-apalis.dtsi b/arch/arm/boot/dts/tegra30-apalis.dtsi
+index d04efcf..8adaa78 100644
+--- a/arch/arm/boot/dts/tegra30-apalis.dtsi
++++ b/arch/arm/boot/dts/tegra30-apalis.dtsi
+@@ -9,9 +9,14 @@
+ 	compatible = "toradex,apalis_t30", "nvidia,tegra30";
+ 
+ 	pcie-controller@00003000 {
+-		pex-clk-supply = <&sys_3v3_reg>;
+-		vdd-supply = <&vdd2_reg>;
+-		avdd-supply = <&ldo6_reg>;
++		avdd-pexa-supply = <&vdd2_reg>;
++		vdd-pexa-supply = <&vdd2_reg>;
++		avdd-pexb-supply = <&vdd2_reg>;
++		vdd-pexb-supply = <&vdd2_reg>;
++		avdd-pex-pll-supply = <&vdd2_reg>;
++		avdd-plle-supply = <&ldo6_reg>;
++		vddio-pex-ctl-supply = <&sys_3v3_reg>;
++		hvdd-pex-supply = <&sys_3v3_reg>;
+ 
+ 		pci@1,0 {
+ 			nvidia,num-lanes = <4>;
+-- 
+1.7.9.5
 
