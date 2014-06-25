@@ -1,74 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753296AbaFYCVQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 22:21:16 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:58604 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752322AbaFYCVP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 22:21:15 -0400
+	id S1753648AbaFYC2g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 22:28:36 -0400
+Received: from mga03.intel.com ([143.182.124.21]:37982 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752688AbaFYC2f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 22:28:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,542,1400050800"; 
+   d="scan'208";a="449619349"
+Message-ID: <53AA33C5.7060501@intel.com>
+Date: Wed, 25 Jun 2014 10:28:21 +0800
+From: "Chen, Tiejun" <tiejun.chen@intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <CAPDOMVifbWCohymLyCc6cxG7t9WCDLTbCWRZx8xyG3DOMFqKqg@mail.gmail.com>
-References: <1401847955-3345-1-git-send-email-johunt@akamai.com>
-	<20140623151121.44f17779004e94ab620b837c@linux-foundation.org>
-	<53A8ADEC.6070406@akamai.com>
-	<20140623155118.e2446a6110a9889454db2386@linux-foundation.org>
-	<53A9899C.9040005@akamai.com>
-	<alpine.DEB.2.02.1406241740330.22030@chino.kir.corp.google.com>
-	<CAPDOMVifbWCohymLyCc6cxG7t9WCDLTbCWRZx8xyG3DOMFqKqg@mail.gmail.com>
-Date: Tue, 24 Jun 2014 22:21:14 -0400
-Message-ID: <CAPDOMVjn6SekFU-mGG+WUW=ESafZaKdDaGRNtJMOd8FTmfx-DA@mail.gmail.com>
-Subject: Re: [PATCH] panic: add TAINT_SOFTLOCKUP
-From: Nick Krause <xerofoify@gmail.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Josh Hunt <johunt@akamai.com>, Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Baron, Jason" <jbaron@akamai.com>
-Content-Type: text/plain; charset=UTF-8
+To: Zhenyu Wang <zhenyuw@linux.intel.com>
+CC: daniel.vetter@ffwll.ch, jani.nikula@linux.intel.com, airlied@linux.ie,
+        intel-gfx@lists.freedesktop.org, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        qemu-devel@nongnu.org
+Subject: Re: [Intel-gfx] [RFC][PATCH] gpu:drm:i915:intel_detect_pch: back
+ to check devfn instead of check class type
+References: <1403171631-3452-1-git-send-email-tiejun.chen@intel.com> <20140624025944.GJ1045@zhen-hp.sh.intel.com>
+In-Reply-To: <20140624025944.GJ1045@zhen-hp.sh.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- I second David, there  is no reason for this if there is a bug due to
-page allocation
-failure it will be probably at the point of kernel panic or in the
-trace statements
-at panic.
-Cheers Nick
+On 2014/6/24 10:59, Zhenyu Wang wrote:
+> On 2014.06.19 17:53:51 +0800, Tiejun Chen wrote:
+>> Originally the reason to probe ISA bridge instead of Dev31:Fun0
+>> is to make graphics device passthrough work easy for VMM, that
+>> only need to expose ISA bridge to let driver know the real
+>> hardware underneath. This is a requirement from virtualization
+>> team. Especially in that virtualized environments, XEN, there
+>> is irrelevant ISA bridge in the system with that legacy qemu
+>> version specific to xen, qemu-xen-traditional. So to work
+>> reliably, we should scan through all the ISA bridge devices
+>> and check for the first match, instead of only checking the
+>> first one.
+>>
+>> But actually, qemu-xen-traditional, is always enumerated with
+>> Dev31:Fun0, 00:1f.0 as follows:
+>>
+>> hw/pt-graphics.c:
+>>
+>> intel_pch_init()
+>>      |
+>>      + pci_isa_bridge_init(bus, PCI_DEVFN(0x1f, 0), ...);
+>>
+>> so this mean that isa bridge is still represented with Dev31:Func0
+>> like the native OS. Furthermore, currently we're pushing VGA
+>> passthrough support into qemu upstream, and with some discussion,
+>> we wouldn't set the bridge class type and just expose this devfn.
+>>
+>> So we just go back to check devfn to make life normal.
+>>
+>> Signed-off-by: Tiejun Chen <tiejun.chen@intel.com>
+>
+> This was added historically when supporting graphics device passthrough.
+> Looks qemu upstream can't accept multiple ISA bridge and our PCH is always
+> on device 31: func0 as far as I know. Looks good to me.
+>
+> Reviewed-by: Zhenyu Wang <zhenyuw@linux.intel.com>
+>
 
-On Tue, Jun 24, 2014 at 10:19 PM, Nick Krause <xerofoify@gmail.com> wrote:
->  I second David, this is no reason for this if there is a bug due to page
-> allocation
-> failure it will be probably at the point of kernel panic or in the trace
-> statements
-> at panic.
-> Cheers Nick
->
->
-> On Tue, Jun 24, 2014 at 8:45 PM, David Rientjes <rientjes@google.com> wrote:
->>
->> On Tue, 24 Jun 2014, Josh Hunt wrote:
->>
->> > Anyone you'd suggest adding to this thread to get other feedback about
->> > tracking page allocation failures? I could also spin up a patch and cc
->> > them.
->> >
->>
->> Page allocation failures happen all the time, mostly because of
->> large-order allocations (more than PAGE_ALLOC_COSTLY_ORDER) or allocations
->> done with GFP_ATOMIC where it's impossible to reclaim or compact memory to
->> allocate.  Because of this, they are fairly easy to trigger from userspace
->> without having to do much.
->>
->> Why would this qualify for a taint?  I have never debugged a kernel crash
->> that I traced back to an earlier page allocation failure and said "oh, if
->> I had only known about that page allocation failure earlier!".  If one of
->> them is going to cause an issue, it probably is at the point of the crash
->> and you shouldn't have to "investigate" much.
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
->
+Thanks for your review.
+
+Do you know when this can be applied?
+
+Tiejun
