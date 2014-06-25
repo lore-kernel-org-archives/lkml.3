@@ -1,108 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755937AbaFYIka (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 04:40:30 -0400
-Received: from mga11.intel.com ([192.55.52.93]:54011 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755811AbaFYIkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 04:40:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,544,1400050800"; 
-   d="scan'208";a="552973947"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        x86@kernel.org
-Cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: [Patch V3 11/16] x86, irq, ACPI: Introduce a rwsem to protect IOAPIC operations from hotplug
-Date: Wed, 25 Jun 2014 16:40:42 +0800
-Message-Id: <1403685648-10103-12-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1403685648-10103-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1403685648-10103-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1755954AbaFYImy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 04:42:54 -0400
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:58306 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755263AbaFYImv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 04:42:51 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@rjwysocki.net, sboyd@codeaurora.org, shawn.guo@linaro.org
+Cc: linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, arvind.chauhan@arm.com,
+        mturquette@linaro.org, linux-arm-kernel@lists.infradead.org,
+        linux-arm-msm@vger.kernel.org, spk.linux@gmail.com,
+        thomas.ab@samsung.com, nm@ti.com, t.figa@samsung.com,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH 0/2] cpufreq: cpu0: Extend support beyond CPU0
+Date: Wed, 25 Jun 2014 14:12:27 +0530
+Message-Id: <cover.1403684824.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 2.0.0.rc2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are going to support ACPI based IOAPIC hotplug, so introduce a rwsem
-to protect IOAPIC data structures from IOAPIC hotplug. We choose to
-serialize in ACPI instead of in the IOAPIC core because:
-1) currently we are only plan to support ACPI based IOAPIC hotplug
-2) it's much more clean and easy
-3) It does't affect IOAPIC discovered by devicetree, SFI and mppparse.
+Stephen Boyd sent few patches today around a new cpufreq driver for Qualcomm's
+Krait SoC: https://lkml.org/lkml/2014/6/24/918.
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
----
- arch/x86/kernel/acpi/boot.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+Krait couldn't use existing cpufreq-cpu0 driver as it doesn't have support for
+SoC's with multiple clusters or SoC's which don't share clock line for all CPUs.
+And I thought about trying updating cpu0 driver to see if we can get rid of this
+limitation easily and use it for Krait as well.
 
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 8c28023924bf..120b573f1e96 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -76,6 +76,8 @@ int acpi_fix_pin2_polarity __initdata;
- static u64 acpi_lapic_addr __initdata = APIC_DEFAULT_PHYS_BASE;
- #endif
- 
-+static DECLARE_RWSEM(acpi_ioapic_rwsem);
-+
- #ifndef __HAVE_ARCH_CMPXCHG
- #warning ACPI uses CMPXCHG, i486 and later hardware
- #endif
-@@ -608,8 +610,11 @@ void __init acpi_pic_sci_set_trigger(unsigned int irq, u16 trigger)
- 
- int acpi_gsi_to_irq(u32 gsi, unsigned int *irqp)
- {
--	int irq = mp_map_gsi_to_irq(gsi, IOAPIC_MAP_ALLOC | IOAPIC_MAP_CHECK);
-+	int irq;
- 
-+	down_read(&acpi_ioapic_rwsem);
-+	irq = mp_map_gsi_to_irq(gsi, IOAPIC_MAP_ALLOC | IOAPIC_MAP_CHECK);
-+	up_read(&acpi_ioapic_rwsem);
- 	if (irq >= 0) {
- 		*irqp = irq;
- 		return 0;
-@@ -650,7 +655,9 @@ static int acpi_register_gsi_ioapic(struct device *dev, u32 gsi,
- 	int irq = gsi;
- 
- #ifdef CONFIG_X86_IO_APIC
-+	down_read(&acpi_ioapic_rwsem);
- 	irq = mp_register_gsi(dev, gsi, trigger, polarity);
-+	up_read(&acpi_ioapic_rwsem);
- #endif
- 
- 	return irq;
-@@ -659,7 +666,9 @@ static int acpi_register_gsi_ioapic(struct device *dev, u32 gsi,
- static void acpi_unregister_gsi_ioapic(u32 gsi)
- {
- #ifdef CONFIG_X86_IO_APIC
-+	down_read(&acpi_ioapic_rwsem);
- 	mp_unregister_gsi(gsi);
-+	up_read(&acpi_ioapic_rwsem);
- #endif
- }
- 
-@@ -1185,7 +1194,9 @@ static void __init acpi_process_madt(void)
- 			/*
- 			 * Parse MADT IO-APIC entries
- 			 */
-+			down_write(&acpi_ioapic_rwsem);
- 			error = acpi_parse_madt_ioapic_entries();
-+			up_write(&acpi_ioapic_rwsem);
- 			if (!error) {
- 				acpi_set_irq_model_ioapic();
- 
+It took me longer than I thought, around 4 hours to get this working on my dual
+A15 exynos board.
+
+First patch adds some space for driver specific data in 'struct cpufreq_policy'
+and second one updates cpufreq-cpu0..
+
+@Stephen: Can you please test this on Krait and see if it works?
+
+Pushed here:
+Rebased over rc2:
+git://git.linaro.org/people/viresh.kumar/linux.git cpufreq/cpu0-krait
+
+For guys looking to test on exynos, rebased over linux-next + some patches from
+Thomas Abraham to use cpufreq-cpu0 for exynos:
+git://git.linaro.org/people/viresh.kumar/linux.git cpufreq/cpu0-exynos
+
+
+In case this is acceptable and bug free, next step would be to get cpufreq-cpu0
+renamed a bit as its not about CPU0 anymore. Any suggestions on that would be
+great :), cpufreq_generic.c ?
+
+Thanks.
+
+Viresh Kumar (2):
+  cpufreq: Add support for per-policy driver data
+  cpufreq: cpu0: Extend support beyond CPU0
+
+ .../devicetree/bindings/cpufreq/cpufreq-cpu0.txt   |   8 +-
+ drivers/cpufreq/Kconfig                            |   5 +-
+ drivers/cpufreq/cpufreq-cpu0.c                     | 280 +++++++++++++--------
+ include/linux/cpufreq.h                            |   3 +
+ 4 files changed, 193 insertions(+), 103 deletions(-)
+
 -- 
-1.7.10.4
+2.0.0.rc2
 
