@@ -1,104 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755408AbaFYIUE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 04:20:04 -0400
-Received: from relay.parallels.com ([195.214.232.42]:35645 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754602AbaFYIT6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 04:19:58 -0400
-Message-ID: <1403684395.3462.44.camel@tkhai>
-Subject: [PATCH v3 3/3] sched: Rework check_for_tasks()
-From: Kirill Tkhai <ktkhai@parallels.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        <tkhai@yandex.ru>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "Mike Galbraith" <umgwanakikbuti@gmail.com>, <khorenko@parallels.com>,
-        Ben Segall <bsegall@google.com>, Paul Turner <pjt@google.com>
-Date: Wed, 25 Jun 2014 12:19:55 +0400
-In-Reply-To: <20140625081502.2861.12526.stgit@tkhai>
-References: <20140625081502.2861.12526.stgit@tkhai>
-Organization: Parallels
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
+	id S1754980AbaFYIZL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 04:25:11 -0400
+Received: from mout.gmx.net ([212.227.17.21]:56260 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750807AbaFYIZI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 04:25:08 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.26.172]
+In-Reply-To: <1403677528.7903.103.camel@sauron.fi.intel.com>
+References: <1403626213-7691-1-git-send-email-mcsim.planeta@gmail.com>
+	<alpine.DEB.2.02.1406241458140.29176@chino.kir.corp.google.com>
+	<1403677528.7903.103.camel@sauron.fi.intel.com>
+Date: Wed, 25 Jun 2014 10:25:05 +0200
+Message-ID: <CABhLV03_PNFiwsvt+yitcsKxz5TeVECCFavdNkbgQ+XzQqASaw@mail.gmail.com>
+Subject: Re: [PATCH] sysctl: Add a feature to drop caches selectively
+From: Thomas Knauth <thomas.knauth@gmx.de>
+To: dedekind1@gmail.com
+Cc: David Rientjes <rientjes@google.com>,
+        Maksym Planeta <mcsim.planeta@gmail.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+X-Provags-ID: V03:K0:g8AEo4WxDsEXY7wx3BUvWRFixEQVBQgA8RQ5Hw+dc7OgnpAM5QK
+ krkKCYVk1f4vQRqmb3RjV+UXA/YIRuj9F33OV9bwKtkCtDqLPn48v0q1cu0335FrlFcaGsK
+ CWtPLoVDL4jxr9pN989lFO4Dl7rPO5k9FqLoLZQyR37z6rnXToiIaJujxN/SwkCRbBnuAdB
+ mL5XesOForm/MWZ1riecQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 25, 2014 at 8:25 AM, Artem Bityutskiy <dedekind1@gmail.com> wrote:
+> Plus some explanations WRT why proc-based interface and what would be
+> the alternatives, what if tomorrow we want to extend the functionality
+> and drop caches only for certain file range, is this only for regular
+> files or also for directories, why posix_fadvice(DONTNEED) is not
+> sufficient.
 
-1)Iterate thru all of threads in the system.
-  Check for all threads, not only for group leaders.
+I suggested the idea originally. Let me address each of your questions in turn:
 
-2)Check for p->on_rq instead of p->state and cputime.
-  Preempted task in !TASK_RUNNING state  OR just
-  created task may be queued, that we want to be
-  reported too.
+Why a selective drop? To have a middle ground between echo 2 >
+drop_caches and echo 3 > drop_caches. When is this interesting? My
+particular use case was benchmarking. I wanted to repeatedly measure
+the timing when things were read from disk. Dropping everything from
+the cache, also drops useful things, not just the few files your
+benchmark intends to measure.
 
-3)Use read_lock() instead of write_lock().
-  This function does not change any structures, and
-  read_lock() is enough.
+Why /proc? Because this is where the current drop_caches mechanism is
+located. If it should go somewhere else, please do suggest so.
 
-Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
-CC: Konstantin Khorenko <khorenko@parallels.com>
-CC: Ben Segall <bsegall@google.com>
-CC: Paul Turner <pjt@google.com>
-CC: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-CC: Mike Galbraith <umgwanakikbuti@gmail.com>
-CC: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@kernel.org>
----
- kernel/cpu.c |   33 ++++++++++++++++++++-------------
- 1 file changed, 20 insertions(+), 13 deletions(-)
+The string is a path, i.e., can be either a file or a directory. In
+case of a directory, we recursively drop all its contents.
 
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index a343bde..81e2a38 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -274,21 +274,28 @@ void clear_tasks_mm_cpumask(int cpu)
- 	rcu_read_unlock();
- }
- 
--static inline void check_for_tasks(int cpu)
-+static inline void check_for_tasks(int dead_cpu)
- {
--	struct task_struct *p;
--	cputime_t utime, stime;
-+	struct task_struct *g, *p;
- 
--	write_lock_irq(&tasklist_lock);
--	for_each_process(p) {
--		task_cputime(p, &utime, &stime);
--		if (task_cpu(p) == cpu && p->state == TASK_RUNNING &&
--		    (utime || stime))
--			pr_warn("Task %s (pid = %d) is on cpu %d (state = %ld, flags = %x)\n",
--				p->comm, task_pid_nr(p), cpu,
--				p->state, p->flags);
--	}
--	write_unlock_irq(&tasklist_lock);
-+	read_lock_irq(&tasklist_lock);
-+	do_each_thread(g, p) {
-+		if (!p->on_rq)
-+			continue;
-+		/*
-+		 * We do the check with unlocked task_rq(p)->lock.
-+		 * Order the reading to do not warn about a task,
-+		 * which was running on this cpu in the past, and
-+		 * it's just been woken on another cpu.
-+		 */
-+		rmb();
-+		if (task_cpu(p) != dead_cpu)
-+			continue;
-+
-+		pr_warn("Task %s (pid=%d) is on cpu %d (state=%ld, flags=%x)\n",
-+			p->comm, task_pid_nr(p), dead_cpu, p->state, p->flags);
-+	} while_each_thread(g, p);
-+	read_unlock_irq(&tasklist_lock);
- }
- 
- struct take_cpu_down_param {
-
-
-
+Why not use posix_fadvice()? Because it is exactly this, an advice.
+The kernel is free to do whatever, i.e., also ignore the request. We
+want a mechanism that reliably drops select content from the cache.
