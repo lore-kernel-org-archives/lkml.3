@@ -1,62 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756461AbaFYMM7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 08:12:59 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:57661 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756330AbaFYMM6 (ORCPT
+	id S1756301AbaFYMR3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 08:17:29 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:41163 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753849AbaFYMR2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 08:12:58 -0400
-Date: Wed, 25 Jun 2014 14:12:49 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <rric@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [RFC v2 6/7] perf: add api for pmus to write to AUX space
-Message-ID: <20140625121249.GB3935@laptop>
-References: <1402501310-31940-1-git-send-email-alexander.shishkin@linux.intel.com>
- <1402501310-31940-7-git-send-email-alexander.shishkin@linux.intel.com>
- <20140624172723.GS3213@twins.programming.kicks-ass.net>
- <87fvitxmd8.fsf@ashishki-desk.ger.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87fvitxmd8.fsf@ashishki-desk.ger.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Wed, 25 Jun 2014 08:17:28 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Julia Lawall <Julia.Lawall@lip6.fr>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] sound: oss: mpu401.c:  Cleaning up variable is set more than once
+Date: Wed, 25 Jun 2014 14:18:24 +0200
+Message-Id: <1403698704-22364-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 02:24:51PM +0300, Alexander Shishkin wrote:
-> Peter Zijlstra <peterz@infradead.org> writes:
-> 
-> > On Wed, Jun 11, 2014 at 06:41:49PM +0300, Alexander Shishkin wrote:
-> >> +void perf_aux_output_end(struct perf_output_handle *handle, unsigned long size,
-> >> +			 bool truncated)
-> >> +{
-> >> +	struct ring_buffer *rb = handle->rb;
-> >> +	unsigned long aux_head;
-> >> +
-> >> +	aux_head = local_read(&rb->aux_head);
-> >> +	local_add(size, &rb->aux_head);
-> >> +
-> >> +	rb->user_page->aux_head = local_read(&rb->aux_head);
-> >> +	smp_wmb();
-> >> +
-> >> +	perf_output_wakeup(handle);
-> >> +	handle->event = NULL;
-> >> +
-> >> +	ring_buffer_put(rb);
-> >> +}
-> >
-> > This thing is distinctly less complex than perf_output_put_handle().. ?
-> 
-> This one doesn't support nested writers, but there shouldn't be any
-> either. But I notice now that the barrier is misplaced. Wakeup watermark
-> is not yet taken care of, but will be. Anything else I'm missing?
+A struct member variable is set to the same value more than once
 
-Maybe put a comment in about explicitly not supporting nesting etc.
-Maybe also a debug check to make sure we catch anybody doing it anyway.
+This was found using a static code analysis program called cppcheck.
+
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ sound/oss/mpu401.c |    1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/sound/oss/mpu401.c b/sound/oss/mpu401.c
+index 3bbc3ec..31d7f72 100644
+--- a/sound/oss/mpu401.c
++++ b/sound/oss/mpu401.c
+@@ -972,7 +972,6 @@ int attach_mpu401(struct address_info *hw_config, struct module *owner)
+ 	devc->m_busy = 0;
+ 	devc->m_state = ST_INIT;
+ 	devc->shared_irq = hw_config->always_detect;
+-	devc->irq = hw_config->irq;
+ 	spin_lock_init(&devc->lock);
+ 
+ 	if (devc->irq < 0)
+-- 
+1.7.10.4
+
