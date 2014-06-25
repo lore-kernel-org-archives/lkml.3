@@ -1,107 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755468AbaFYJt5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 05:49:57 -0400
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:47648 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752638AbaFYJt4 (ORCPT
+	id S1755576AbaFYJwS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 05:52:18 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:45260 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752361AbaFYJwQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 05:49:56 -0400
+	Wed, 25 Jun 2014 05:52:16 -0400
+Message-ID: <53AA9B68.4050104@linux.vnet.ibm.com>
+Date: Wed, 25 Jun 2014 15:20:32 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <1403681134-12616-1-git-send-email-tim.kryger@gmail.com>
-References: <1403681134-12616-1-git-send-email-tim.kryger@gmail.com>
-Date: Wed, 25 Jun 2014 11:49:55 +0200
-Message-ID: <CAPDyKFr-eG04G39AcX2DyUiBgOTE4AY5MZbw6FXBtq918s2rJQ@mail.gmail.com>
-Subject: Re: [PATCH] mmc: sdhci: Improve external VDD regulator support
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Tim Kryger <tim.kryger@gmail.com>
-Cc: Chris Ball <chris@printf.net>, Sachin Kamat <spk.linux@gmail.com>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
+Subject: Re: [PATCH 2/6] irq_work: Implement remote queueing
+References: <1402413309-3415-1-git-send-email-fweisbec@gmail.com> <1402413309-3415-3-git-send-email-fweisbec@gmail.com> <53A9E0A5.5040402@wwwdotorg.org> <20140625051234.GD6758@twins.programming.kicks-ass.net> <20140625051721.GG3588@twins.programming.kicks-ass.net> <53AA6E11.1000404@linux.vnet.ibm.com> <20140625093657.GN19860@laptop.programming.kicks-ass.net> <20140625093944.GV16155@laptop.programming.kicks-ass.net>
+In-Reply-To: <20140625093944.GV16155@laptop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14062509-1618-0000-0000-00000074DA36
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25/06/2014, Tim Kryger <tim.kryger@gmail.com> wrote:
-> A standard compliant SDHCI can itself supply VDD at 1.8, 3.0, or 3.3v.
-> Several vendors ignore this and instead rely upon external regulators
-> to supply VDD.  While the external regulators typically can supply one
-> of the standard SDHCI voltage levels, there is no real reason for this
-> to be a hard requirement.
->
-> This patch alters the SDHCI driver such that external VDD regulators
-> that provide voltages other than the three mentioned above may be used
-> so long as they can supply a voltage that meets the needs of the card.
->
-> In the case that an external VDD regulator is provided, it is reasonable
-> to ignore the voltage capabilities of the host controller and allow the
-> external regulator to set the OCR mask.  Additionally, there is no need
-> to convert a VDD voltage request into one of the standard SDHCI voltage
-> levels or program it in the host controller's power control register.
->
-> Signed-off-by: Tim Kryger <tim.kryger@gmail.com>
-> Tested-by: Sachin Kamat <spk.linux@gmail.com>
-
-Thanks! Applied for next.
-
-Kind regards
-Uffe
-
+On 06/25/2014 03:09 PM, Peter Zijlstra wrote:
+> On Wed, Jun 25, 2014 at 11:36:57AM +0200, Peter Zijlstra wrote:
+>> On Wed, Jun 25, 2014 at 12:07:05PM +0530, Srivatsa S. Bhat wrote:
+>>> I don't think irqs_disabled() is the problematic condition, since
+>>> hotplug_cfg() invokes irq_work_run() from CPU_DYING context (which has
+>>> irqs disabled). I guess you meant to remove the in_irq() check inside
+>>> irq_work_run() instead?
+>>
+>> Yes, clearly I should not get up at 6am.. :-) Let me go do a new one.
+> 
 > ---
->
-> This change corrects a regression observed on Exynos platforms that was
-> triggered by "mmc: sdhci: Use mmc core regulator infrastucture"
->
-> https://www.mail-archive.com/linux-mmc@vger.kernel.org/msg27101.html
->
->  drivers/mmc/host/sdhci.c |   16 +++++++++-------
->  1 file changed, 9 insertions(+), 7 deletions(-)
->
-> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-> index c23a872..07a2426 100644
-> --- a/drivers/mmc/host/sdhci.c
-> +++ b/drivers/mmc/host/sdhci.c
-> @@ -1226,6 +1226,13 @@ static void sdhci_set_power(struct sdhci_host *host,
-> unsigned char mode,
->  	struct mmc_host *mmc = host->mmc;
->  	u8 pwr = 0;
->
-> +	if (!IS_ERR(mmc->supply.vmmc)) {
-> +		spin_unlock_irq(&host->lock);
-> +		mmc_regulator_set_ocr(host->mmc, mmc->supply.vmmc, vdd);
-> +		spin_lock_irq(&host->lock);
-> +		return;
-> +	}
-> +
->  	if (mode != MMC_POWER_OFF) {
->  		switch (1 << vdd) {
->  		case MMC_VDD_165_195:
-> @@ -1284,12 +1291,6 @@ static void sdhci_set_power(struct sdhci_host *host,
-> unsigned char mode,
->  		if (host->quirks & SDHCI_QUIRK_DELAY_AFTER_POWER)
->  			mdelay(10);
+> Subject: irq_work: Remove BUG_ON in irq_work_run()
+> From: Peter Zijlstra <peterz@infradead.org>
+> Date: Wed Jun 25 07:13:07 CEST 2014
+> 
+> Because of a collision with 8d056c48e486 ("CPU hotplug, smp: flush any
+> pending IPI callbacks before CPU offline"), which ends up calling
+> hotplug_cfd()->flush_smp_call_function_queue()->irq_work_run(), which
+> is not from IRQ context.
+> 
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Reported-by: Stephen Warren <swarren@wwwdotorg.org>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> Link: http://lkml.kernel.org/n/tip-busatzs2gvz4v62258agipuf@git.kernel.org
+> ---
+>  kernel/irq_work.c |   12 +-----------
+>  1 file changed, 1 insertion(+), 11 deletions(-)
+> 
+> Index: linux-2.6/kernel/irq_work.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/irq_work.c
+> +++ linux-2.6/kernel/irq_work.c
+> @@ -160,21 +160,11 @@ static void irq_work_run_list(struct lli
 >  	}
-> -
-> -	if (!IS_ERR(mmc->supply.vmmc)) {
-> -		spin_unlock_irq(&host->lock);
-> -		mmc_regulator_set_ocr(host->mmc, mmc->supply.vmmc, vdd);
-> -		spin_lock_irq(&host->lock);
-> -	}
 >  }
->
-> /*****************************************************************************\
-> @@ -3092,8 +3093,9 @@ int sdhci_add_host(struct sdhci_host *host)
->  				   SDHCI_MAX_CURRENT_MULTIPLIER;
->  	}
->
-> +	/* If OCR set by external regulators, use it instead */
->  	if (mmc->ocr_avail)
-> -		ocr_avail &= mmc->ocr_avail;
-> +		ocr_avail = mmc->ocr_avail;
->
->  	if (host->ocr_mask)
->  		ocr_avail &= host->ocr_mask;
-> --
-> 1.7.9.5
->
->
+> 
+> -static void __irq_work_run(void)
+
+Hmm, irq_work_cpu_notify() calls __irq_work_run() in the CPU_DYING
+phase, to by-pass BUG_ON(!in_irq()). How about doing the same thing
+from hotplug_cfd() as well?
+
+> +static void irq_work_run(void)
+>  {
+>  	irq_work_run_list(&__get_cpu_var(raised_list));
+>  	irq_work_run_list(&__get_cpu_var(lazy_list));
+>  }
+> -
+> -/*
+> - * Run the irq_work entries on this cpu. Requires to be ran from hardirq
+> - * context with local IRQs disabled.
+> - */
+> -void irq_work_run(void)
+> -{
+> -	BUG_ON(!in_irq());
+> -	__irq_work_run();
+> -}
+>  EXPORT_SYMBOL_GPL(irq_work_run);
+> 
+>  /*
+> 
+
+Regards,
+Srivatsa S. Bhat
+
