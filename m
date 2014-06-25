@@ -1,155 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756513AbaFYVvR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 17:51:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48864 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754810AbaFYVvQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 17:51:16 -0400
-Date: Wed, 25 Jun 2014 23:51:13 +0200
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: Casey Leedom <leedom@chelsio.com>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, hariprasad@chelsio.com,
-        poswald@suse.com, santosh@chelsio.com, jcheung@suse.com,
-        dchang@suse.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org
-Subject: Re: [RFT 0/3] cxgb4: use request_firmware_nowait()
-Message-ID: <20140625215113.GA27687@wotan.suse.de>
-References: <1403311181-9328-1-git-send-email-mcgrof@do-not-panic.com> <53A87AC8.7010305@chelsio.com> <20140624002941.GD27687@wotan.suse.de> <53A99F71.2060308@chelsio.com> <53A9A88B.2000006@chelsio.com> <20140624233951.GH27687@wotan.suse.de> <20140625020019.GJ27687@wotan.suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140625020019.GJ27687@wotan.suse.de>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1756726AbaFYVv4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 17:51:56 -0400
+Received: from smtprelay0150.hostedemail.com ([216.40.44.150]:48716 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755516AbaFYVvy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 17:51:54 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 10,1,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:800:960:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:1981:2194:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3304:3354:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4321:4605:5007:7522:7652:7903:8603:8957:9545:10007:10400:10450:10455:10848:10967:11026:11232:11658:11914:12043:12114:12296:12438:12517:12519:12663:12740:13161:13229:14093:14097:19904:19999:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:1:0
+X-HE-Tag: base77_105b4a620e95e
+X-Filterd-Recvd-Size: 3204
+Message-ID: <1403733111.24788.8.camel@joe-AO725>
+Subject: Re: [PATCH 01/22] pci-dma-compat: Add pci_zalloc_consistent helper
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org
+Date: Wed, 25 Jun 2014 14:51:51 -0700
+In-Reply-To: <20140625122755.152685fadbc9cffe7a298dc6@linux-foundation.org>
+References: <cover.1403530604.git.joe@perches.com>
+	 <2248b3ffe86cd8995a809bf7e2871f38039979c1.1403530604.git.joe@perches.com>
+	 <20140625122755.152685fadbc9cffe7a298dc6@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 04:00:19AM +0200, Luis R. Rodriguez wrote:
-> On Wed, Jun 25, 2014 at 01:39:51AM +0200, Luis R. Rodriguez wrote:
-> > On Tue, Jun 24, 2014 at 09:34:19AM -0700, Casey Leedom wrote:
-> > > On 06/24/14 08:55, Casey Leedom wrote:
-> > >> On 06/23/14 17:29, Luis R. Rodriguez wrote:
-> > >   So I just did this for a normal modprobe (after the system is up):
-> > >
-> > > Jiffies    Process
-> > > -----------------------------------------------------------------------
-> > >       0    begin firmware load process
-> > >       3    request_firmware() returns
-> > >       7    start looking at the adapter
-> > >      10    finish reading the first sector of existing adapter firmware
-> > >      26    we've decided that we're going to upgrade the firmware
-> > >      28    actual firmware upgrade process starts
-> > >     448    we've finished halting the adapter processor
-> > >     451    we enter the firmware write routine
-> > >   8,470    we've finished erasing the firmware FLASH sectors
-> > >  14,336    write of new firmware is complete
-> > >  14,340    the new firmware load is complete
-> > >  14,949    the adapter processor has been restarted; new firmware running
-> > >  14,952    firmware upgrade process complete
-> > >
-> > > Maybe request_firmware() takes more time during the boot phase but as we 
-> > > can see from the above timings, it's the actual firmware upgrade process 
-> > > which takes the most time ...
-> > 
-> > OK so yeah the kernel work on request_firmware() isn't what takes over a
-> > minute, its the actual hardware poking with the firmware it gets, and then
-> > doing all the things you mentioned (a port for each netdevice, etc).  This is a
-> > particularly interesting driver, apart from this I see some code about bus
-> > master and loading firmware only once. Can you elaborate a bit on how that is
-> > designed to work? Is it that only one PCI bus master device is allowed, and
-> > that will do the request_firmware() for all PCI devices? I'm a bit confused
-> > about this part, are we sure the bus master device will probe first? We can
-> > surely keep all this code on the driver but it seems that if all these
-> > complexitities might become the norm we should consider an API for sharing a
-> > clean framework for it.
-
-Casey here was the first series of questions.
-
-> > As you noted the complexities on firmware loading, the number of different
-> > netdevices one device might actually have would make it impractical to try
-> > to do any completion on firmware on the ndo_init() with request_firmware_nowait().
-> > Apart from a netdev specific API to handle all this cleanly, I wonder if
-> > drivers like these merit getting placed by default onto the deferred_probe_active_list.
-> > Typically this is triggered when drivers don't have a resource a subsystem
-> > hasn't yet brought up, the driver returns -EPROBE_DEFER and the core driver
-> > infrastructure later probes these devices on a secondary list. Greg?
+On Wed, 2014-06-25 at 12:27 -0700, Andrew Morton wrote:
+> On Mon, 23 Jun 2014 06:41:29 -0700 Joe Perches <joe@perches.com> wrote:
 > 
-> Actually another option to clean this up is to use platform_device_register_simple()
-> after the initial firmware load and start poking at stuff there. Check out
-> drivers/net/ethernet/8390/ne.c for an example with probe and all. I think
-> that can help split up the code paths quite nicely and let you do your
-> pre port thing there. Thoughts?
+> > Add this helper for consistency with pci_zalloc_coherent
+> > and the ability to remove unnecessary memset(,0,) uses.
+> 
+> While we're being anal..  I'm not a big fan of the patch titles.  Worst
+> is "amd: Use pci_zalloc_consistent".  "amd" is quite a poor identifier
+> - it's only when you get in and look at the diff that you realise it's
+> an ethernet driver.
 
-And here was the other one, what your thoughts are on splitting things up
-a bit more for probe as ports part of a platform driver?
+Yeah, those "amd:" prefixes should really have been "pcnet32:"
 
-In the meantime I'll go and hunt down to see if there are any timeouts other
-than the one embedded within request_firmware() (or udev if used). As we have
-clarified now the 60s timeout is a timeout embedded as part of the filesystem
-lookup of the firmware, not the actual loading of the firmware onto the device.
+> People sometimes address this by using
+> 
+> 	"drivers: net: ethernet: amd: use pci_zalloc_consistent"
+> 
+> which strikes me as utterly perverse.  We already have a nice way of
+> representing the hierarchy and that's using '/'.
 
-I for instance can introduce a huge delay on purpose right after
-request_firmware() say 3 minutes on a test driver and it loads just fine, but
-on my OpenSUSE 13.1 system. I'll go ahead and test this on the other
-distribution you mentioned you had issues, curious what could trigger a timeout
-failure there that would be distribution specific.
+I used to do that until several people complained.
+Now I don't.  btw:  Documentation/SubmittingPatches says:
 
-ergon:~ # ls > /lib/firmware/fake.bin
+15) The canonical patch format
 
-mcgrof@ergon ~/devel/fake-firmware-delay $ cat Makefile
-all: modules
+The canonical patch subject line is:
 
-.PHONY: modules
-modules:
-	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
+    Subject: [PATCH 001/123] subsystem: summary phrase
 
-.PHONY: clean
-clean:
-	make -C /lib/modules/$(shell uname -r)/build clean M=$(PWD)
 
-obj-m += test.o
+> So when the irritation gets too high and when I can be bothered I'll
+> rewrite things like that to
+> 
+> 	"drivers/net/ethernet/amd: use pci_zalloc_consistent"
+> 
+> which strikes me as being blindingly obvious, but apparently I'm in a
+> small minority :(
+> 
+> > --- a/include/asm-generic/pci-dma-compat.h
+> > +++ b/include/asm-generic/pci-dma-compat.h
+> > @@ -19,6 +19,14 @@ pci_alloc_consistent(struct pci_dev *hwdev, size_t size,
+> >  	return dma_alloc_coherent(hwdev == NULL ? NULL : &hwdev->dev, size, dma_handle, GFP_ATOMIC);
+> >  }
+> >  
+> > +static inline void *
+> > +pci_zalloc_consistent(struct pci_dev *hwdev, size_t size,
+> > +		      dma_addr_t *dma_handle)
+> > +{
+> > +	return dma_zalloc_coherent(hwdev == NULL ? NULL : &hwdev->dev,
+> > +				   size, dma_handle, GFP_ATOMIC);
+> > +}
+> > +
+> 
+> We'd get a smaller kernel by uninlining this.  It is hardly
+> performance-sensitive.  Uninlining would presumably use more stack,
+> but GFP_ATOMIC won't use a ton of stack anyway.
 
-mcgrof@ergon ~/devel/fake-firmware-delay $ cat test.c
-#include <linux/kernel.h>
-#include <linux/module.h>
-#include <linux/firmware.h>
-#include <linux/platform_device.h>
-#include <linux/delay.h>
+True.  Maybe via a follow-on patch.
 
-static struct platform_device *pdev;
+Another option would be to remove pci_[z]alloc_consistent
+and just use dma_alloc_coherent instead.
 
-static int __init test_init(void)
-{
-	int ret;
-	const struct firmware *config;
-
-	pdev = platform_device_register_simple("fake-dev", 0, NULL, 0);
-	if (IS_ERR(pdev))
-		return PTR_ERR(pdev);
-
-	ret = request_firmware(&config, "fake.bin", &pdev->dev);
-	if (ret < 0) {
-		dev_set_uevent_suppress(&pdev->dev, true);
-		platform_device_unregister(pdev);
-		return ret;
-	}
-
-	ssleep(180);
-
-	release_firmware(config);
-
-	return 0;
-}
-
-static void __exit test_exit(void)
-{
-	dev_set_uevent_suppress(&pdev->dev, true);
-	platform_device_unregister(pdev);
-}
-
-module_init(test_init)
-module_exit(test_exit)
-MODULE_LICENSE("GPL");
-
-  Luis
