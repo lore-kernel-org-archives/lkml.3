@@ -1,91 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757615AbaFYXFH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 19:05:07 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:43113 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756638AbaFYXFF (ORCPT
+	id S1757252AbaFYXDh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 19:03:37 -0400
+Received: from exprod5og105.obsmtp.com ([64.18.0.180]:60360 "HELO
+	exprod5og105.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756948AbaFYXDf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 19:05:05 -0400
-Date: Thu, 26 Jun 2014 00:04:50 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Dann Frazier <dann.frazier@canonical.com>
-Cc: Iyappan Subramanian <isubramanian@apm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        jcm@redhat.com, netdev@vger.kernel.org, patches@apm.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Keyur Chudgar <kchudgar@apm.com>, davem@davemloft.net,
-        linux-arm-kernel@lists.infradead.org, Ravi Patel <rapatel@apm.com>
-Subject: Re: [PATCH v8 4/4] drivers: net: Add APM X-Gene SoC ethernet
-	driver support.
-Message-ID: <20140625230450.GO32514@n2100.arm.linux.org.uk>
-References: <1403306296-26198-1-git-send-email-isubramanian@apm.com> <1403306296-26198-5-git-send-email-isubramanian@apm.com> <CALdTtnvHt5mYMC3619E4F3KK0jPOw7mCpKE6bTn0Um6fdZ4rbw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALdTtnvHt5mYMC3619E4F3KK0jPOw7mCpKE6bTn0Um6fdZ4rbw@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Wed, 25 Jun 2014 19:03:35 -0400
+From: Feng Kan <fkan@apm.com>
+To: dbaryshkov@gmail.com, catalin.marinas@arm.com, dwmw2@infradead.org,
+        arnd@arndb.de, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        patches@apm.com
+Cc: Feng Kan <fkan@apm.com>
+Subject: [PATCH V7 0/6] Add X-Gene platform reboot mechanism
+Date: Wed, 25 Jun 2014 16:03:20 -0700
+Message-Id: <1403737406-6474-1-git-send-email-fkan@apm.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 24, 2014 at 10:29:48PM -0600, Dann Frazier wrote:
-> On Fri, Jun 20, 2014 at 5:18 PM, Iyappan Subramanian
-> <isubramanian@apm.com> wrote:
-> > +       ring->desc_addr = dma_zalloc_coherent(dev, size, &ring->dma,
-> > +                                             GFP_KERNEL);
-> 
-> Iyappan,
-> When testing this driver on a 3.16-rc2 base, I'm finding that
-> desc_addr gets assigned to NULL here, which results in an oops later
-> on (see below).
+Enable reboot driver for the X-Gene platform. Add generic syscon reboot
+driver.
 
-Note that on failure here...
+V7 Change:
+	- Seem V3 on, the patches were not making in to the mailinglist.
+	- Fix build error produced by other ARCH while including this
+	  driver. Set to depend on arm64 ARCH for now.
 
-> > +       if (!ring->desc_addr)
-> > +               goto err;
+V6 Change:
+	- Add documentation for scu node.
 
-we jump to 'err'.
+V5 Change:
+	- Documentation update, endian and access size.
 
-> > +err:
-> > +       dma_free_coherent(dev, size, ring->desc_addr, ring->dma);
+V4 Change:
+	- Remove old X-Gene reboot driver
+	- Add generic syscon reboot driver
+	- Add DTS and Kconfig for X-Gene reboot using syscon method
 
-which then tries to call dma_free_coherent on a NULL pointer, and
-possibly undefined ring->dma value.  That's not a nice thing to do,
-and will probably lead to problems.  I know that none of the ARM
-flavours of this function will handle this gracefully, and neither
-does x86's version either.  So this is very probably illegal.
+V3 Change:
+	- Remove the reboot driver's use of acpi resource patch.
+	- Change the reboot driver to use syscon to parse out 
+	  system clock register. Remove the old method of getting
+	  register from the reboot driver directly.
+	- Remove documentation since its now simple.
 
-> > +static int xgene_enet_create_desc_rings(struct net_device *ndev)
-> > +{
-> > +       struct xgene_enet_pdata *pdata = netdev_priv(ndev);
-> > +       struct device *dev = &pdata->pdev->dev;
-> > +       struct xgene_enet_desc_ring *rx_ring, *tx_ring, *cp_ring;
-> > +       struct xgene_enet_desc_ring *buf_pool = NULL;
-> > +       u8 cpu_bufnum = 0, eth_bufnum = 0;
-> > +       u8 bp_bufnum = 0x20;
-> > +       u16 ring_id, ring_num = 0;
-> > +       int ret;
-> > +
-> > +       /* allocate rx descriptor ring */
-> > +       ring_id = xgene_enet_get_ring_id(RING_OWNER_CPU, cpu_bufnum++);
-> > +       rx_ring = xgene_enet_create_desc_ring(ndev, ring_num++,
-> > +                                             RING_CFGSIZE_16KB, ring_id);
-> > +       if (IS_ERR_OR_NULL(rx_ring)) {
-> > +               ret = PTR_ERR(rx_ring);
-> > +               goto err;
-> > +       }
-> 
-> Here we test for IS_ERR_OR_NULL. In the oops I'm hitting, rx_ring is
-> NULL here - but PTR_ERR() apparently returns 0 in that case. So this
-> function ends up returning no error.
+V2 Change:
+	- Add support for using ACPI resource.
 
-Yes, IS_ERR_OR_NULL is evil for this very reason and should be avoided
-where possible.  There were discussions a while back about removing it,
-or at least deprecating it because it causes more bugs (exactly of this
-type) than it solves.
+Feng Kan (5):
+  power: reset: Add generic SYSCON register mapped reset
+  power: reset: Remove X-Gene reboot driver
+  arm64: dts: Add X-Gene reboot driver dts node
+  arm64: Select reboot driver for X-Gene platform
+  Documentation: power: reset: Add documentation for generic SYSCON
+    reboot driver
+
+ .../bindings/power/reset/syscon-reboot.txt         |   23 +++++
+ arch/arm64/Kconfig                                 |    2 +
+ arch/arm64/boot/dts/apm-storm.dtsi                 |   13 +++
+ drivers/power/reset/Kconfig                        |    8 +-
+ drivers/power/reset/Makefile                       |    2 +-
+ drivers/power/reset/syscon-reboot.c                |  100 +++++++++++++++++++
+ drivers/power/reset/xgene-reboot.c                 |  103 --------------------
+ 7 files changed, 143 insertions(+), 108 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
+ create mode 100644 drivers/power/reset/syscon-reboot.c
+ delete mode 100644 drivers/power/reset/xgene-reboot.c
 
 -- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+1.7.6.1
+
