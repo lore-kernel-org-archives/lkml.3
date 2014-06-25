@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756709AbaFYKqp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 06:46:45 -0400
-Received: from mail-bn1blp0185.outbound.protection.outlook.com ([207.46.163.185]:43766
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754090AbaFYKqo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 06:46:44 -0400
-Date: Wed, 25 Jun 2014 16:12:07 +0530
-From: "Reddy, Sreekanth" <Sreekanth.Reddy@avagotech.com>
-To: <jejb@kernel.org>, <JBottomley@Parallels.com>
-CC: <linux-scsi@vger.kernel.org>, <Sathya.Prakash@avagotech.com>,
-        <Nagalakshmi.Nandigama@avagotech.com>, <sreekanth.reddy@avagotech.com>,
-        <linux-kernel@vger.kernel.org>, <hch@infradead.org>,
-        <martin.petersen@oracle.com>
-Subject: [RESEND][PATCH 8/8][SCSI]mpt3sas: Bump mpt3sas driver version to
- 04.100.00.00
-Message-ID: <20140625104207.GA13042@avagotech.com>
+	id S1756625AbaFYKrl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 06:47:41 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36225 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752843AbaFYKri (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 06:47:38 -0400
+Date: Wed, 25 Jun 2014 11:47:32 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Doug Anderson <dianders@chromium.org>,
+        Andreas =?utf-8?Q?F=C3=A4rber?= <afaerber@suse.de>
+Cc: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Stephan van Schaik <stephan@synkhronix.com>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>, Mark Brown <broonie@linaro.org>,
+        Simon Glass <sjg@chromium.org>, Michael Spang <spang@chromium.org>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/4] Documentation: devicetree: Fix tps65090 typos
+Message-ID: <20140625104732.GE14495@leverpostej>
+References: <1403486483-4063-1-git-send-email-afaerber@suse.de>
+ <1403486483-4063-4-git-send-email-afaerber@suse.de>
+ <CAD=FV=UUGQ_ULm+juj0hMxCKhhcXTa2aJT50Y=WrePy9g8u-zA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-EOPAttributedMessage: 0
-X-Matching-Connectors: 130481668009895054;(f081dce6-2920-4dfc-23e8-08d07091c5e3);()
-X-Forefront-Antispam-Report: CIP:192.19.220.100;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(189002)(99396002)(95666004)(46102001)(54356999)(76482001)(81542001)(83506001)(50986999)(21056001)(4396001)(97756001)(74502001)(74662001)(16796002)(31966008)(33656002)(102836001)(83072002)(85852003)(19580395003)(44976005)(83322001)(19580405001)(6806004)(23726002)(107046001)(36756003)(50466002)(106466001)(105596002)(79102001)(77982001)(80022001)(57986006)(47776003)(20776003)(64706001)(76506005)(77096002)(46406003)(85306003)(81342001)(26826002)(86362001)(92566001)(87936001)(92726001)(42413003)(32563001)(2101003);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR07MB026;H:COSEXCH10.lsi.com;FPR:;MLV:ovr;PTR:cosexch10.lsi.com;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 02530BD3AA
-Authentication-Results: spf=softfail (sender IP is 192.19.220.100)
- smtp.mailfrom=Sreekanth.Reddy@avagotech.com; 
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAD=FV=UUGQ_ULm+juj0hMxCKhhcXTa2aJT50Y=WrePy9g8u-zA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bump mpt3sas driver version to 04.100.00.00.
+On Mon, Jun 23, 2014 at 06:27:04PM +0100, Doug Anderson wrote:
+> Andreas,
+> 
+> On Sun, Jun 22, 2014 at 6:21 PM, Andreas Färber <afaerber@suse.de> wrote:
+> > It's vsys-l{1,2}-supply, not vsys_l{1,2}-supply.
+> >
+> > Signed-off-by: Andreas Färber <afaerber@suse.de>
+> > ---
+> >  Documentation/devicetree/bindings/regulator/tps65090.txt | 4 ++--
+> >  1 file changed, 2 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/Documentation/devicetree/bindings/regulator/tps65090.txt b/Documentation/devicetree/bindings/regulator/tps65090.txt
+> > index 34098023..ca69f5e 100644
+> > --- a/Documentation/devicetree/bindings/regulator/tps65090.txt
+> > +++ b/Documentation/devicetree/bindings/regulator/tps65090.txt
+> > @@ -45,8 +45,8 @@ Example:
+> >                 infet5-supply = <&some_reg>;
+> >                 infet6-supply = <&some_reg>;
+> >                 infet7-supply = <&some_reg>;
+> > -               vsys_l1-supply = <&some_reg>;
+> > -               vsys_l2-supply = <&some_reg>;
+> > +               vsys-l1-supply = <&some_reg>;
+> > +               vsys-l2-supply = <&some_reg>;
+> 
+> Your change matches the code and all existing device trees in the
+> Linux kernel.
 
-Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
----
- drivers/scsi/mpt3sas/mpt3sas_base.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Could this fact please be mentioned in the commit message?
 
-diff --git a/drivers/scsi/mpt3sas/mpt3sas_base.h b/drivers/scsi/mpt3sas/mpt3sas_base.h
-index 8fb2a38..09545fc 100644
---- a/drivers/scsi/mpt3sas/mpt3sas_base.h
-+++ b/drivers/scsi/mpt3sas/mpt3sas_base.h
-@@ -70,8 +70,8 @@
- #define MPT3SAS_DRIVER_NAME		"mpt3sas"
- #define MPT3SAS_AUTHOR	"LSI Corporation <DL-MPTFusionLinux@lsi.com>"
- #define MPT3SAS_DESCRIPTION	"LSI MPT Fusion SAS 3.0 Device Driver"
--#define MPT3SAS_DRIVER_VERSION		"03.100.00.00"
--#define MPT3SAS_MAJOR_VERSION		3
-+#define MPT3SAS_DRIVER_VERSION		"04.100.00.00"
-+#define MPT3SAS_MAJOR_VERSION		4
- #define MPT3SAS_MINOR_VERSION		100
- #define MPT3SAS_BUILD_VERSION		0
- #define MPT3SAS_RELEASE_VERSION	00
--- 
-1.7.1
+Given that:
 
+Acked-by: Mark Rutland <mark.rutland@arm.com>
+
+> I also see plenty of other bindings with dashes, so this seems
+> reasonable.
+
+Dashes rather than underscores are preferred/correct for property names
+and compatible strings. Given no-one can possibly be using the
+bad/incorrect form with underscores, fixing the documentation to use
+dashes makes sense.
+
+Thanks,
+Mark.
