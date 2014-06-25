@@ -1,71 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754618AbaFYSuw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 14:50:52 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:53219 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750745AbaFYSuv (ORCPT
+	id S1754754AbaFYSwk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 14:52:40 -0400
+Received: from mout.kundenserver.de ([212.227.126.130]:57163 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752942AbaFYSwi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 14:50:51 -0400
-Date: Wed, 25 Jun 2014 14:50:50 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
-cc: Daniel Vetter <daniel@ffwll.ch>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [Intel-gfx] Regression in i915 driver in 3.16-rc2
-In-Reply-To: <20140625182609.GY27580@intel.com>
-Message-ID: <Pine.LNX.4.44L0.1406251450110.822-100000@iolanthe.rowland.org>
+	Wed, 25 Jun 2014 14:52:38 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Olof Johansson <olof@lixom.net>, arm@kernel.org, pebolle@tiscali.nl,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: Re: [GIT PULL] at91: fixes for 3.16 #1 (ter)
+Date: Wed, 25 Jun 2014 20:49:59 +0200
+Message-ID: <4184712.OOQdXC98UK@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1403713316-28253-1-git-send-email-nicolas.ferre@atmel.com>
+References: <1403713316-28253-1-git-send-email-nicolas.ferre@atmel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:bC9kXin3feM75dfDZTw2/SZhNfbZGn7vKAIYTU9lap8
+ 21HjFHxYO1R5rOBAHlpEO5OP3KrTO0c0IHAhY8HKWGdQ8uX2rr
+ b8IZmw83PwDuZgOXmKAlgbXpQlR0/Ywp3ExNDRdQAM/KNUOmdq
+ hmf3n0a4O4OTgn/cjFh5rIcxjCXFmayKJPIE6rzqFhZ/Jqrmub
+ piExAlLILQ1LS7J1Md1K8ww1XthjdiDcd8t+P3CMpuViRxRWnV
+ yp58Q+eXSv0qTV1J9iT2QQqRQlYb+qWb6+k+iuCr1f+mF27iOx
+ rCMiEW9FrFSTEAQCu7GubTt3m/xuLCVIEoBfdLD3kHR7Wi9Vaj
+ oCT53qZ4EfPiKciO2hrQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Jun 2014, Ville [iso-8859-1] Syrjälä wrote:
-
-> On Wed, Jun 25, 2014 at 02:06:55PM -0400, Alan Stern wrote:
-> > Daniel:
-> > 
-> > I encountered a new problem in the i915 driver the first time I booted 
-> > a 3.16-rc kernel on this computer.  When it switched over to the frame 
-> > buffer driver, the screen went blank and stayed that way.
-> > 
-> > 3.15 works okay.
-> > 
-> > Attached are log extracts from 3.15 and 3.16 (both with drm.debug=0xe
-> > in the boot command line).  The timestamps have been stripped out for
-> > easy diff comparison.  These are the result of
-> > 
-> > 	dmesg | egrep 'drm|i915|frame'
-> > 
-> > with a couple of irrelevant lines removed.  I can send the complete 
-> > logs if you need them.
-> > 
-> > Alan Stern
+On Wednesday 25 June 2014 18:21:56 Nicolas Ferre wrote:
+> Arnd, Olof, Kevin,
 > 
-> > Kernel command line: BOOT_IMAGE=/boot/test-3.x root=/dev/hda8 ro console=ttyS0,115200 console=tty0 earlyprintk=serial,ttyS0,115200 no_console_suspend drm.debug=0xe vconsole.keymap=us vconsole.font=latarcyrheb-sun16 LANG=en_US.UTF-8 usbcore.dyndbg=+p ehci_hcd.dyndbg=+p
-> > [drm] Initialized drm 1.1.0 20060810
-> > [drm:i915_dump_device_info] i915 device info: gen=2, pciid=0x2572 flags=has_overlay,overlay_needs_physical,
-> > [drm:intel_detect_pch] No PCH found.
-> > [drm] Memory usable by graphics device = 128M
-> > [drm:i915_gem_gtt_init] GMADR size = 128M
-> > [drm:i915_gem_gtt_init] GTT stolen size = 8M
-> > [drm:i915_gem_gtt_init] ppgtt mode: 0
-> > [drm:intel_opregion_setup] graphic opregion physical addr: 0x0
-> > [drm:intel_opregion_setup] ACPI OpRegion not supported!
-> > [drm] Supports vblank timestamp caching Rev 2 (21.10.2013).
-> > [drm] Driver supports precise vblank timestamp query.
-> > [drm:init_vbt_defaults] Set default to SSC at 66667 kHz
-> > [drm:parse_general_features] BDB_GENERAL_FEATURES int_tv_support 1 int_crt_support 0 lvds_use_ssc 0 lvds_ssc_freq 48000 display_clock_mode 0 fdi_rx_polarity_inverted 0
->                                                                      ^^^^^^^^^^^^^^^^^
+> An AT91 fixes batch for 3.16 that collects mainly DT fixes in relation
+> to the recent move to CCF on a couple of platforms.
+> A Kconfig symbol fix in drivers/misc is also included.
 > 
-> This should get your display back:
-> http://patchwork.freedesktop.org/patch/28508/
+> As the previous "fixes" pull-requests will be re-spin for 3.17 and shall be
+> ignored, I use the same tag name "at91-fixes".
+> 
+> Thanks, best regards,
+> 
+> The following changes since commit 7171511eaec5bf23fb06078f59784a3a0626b38f:
+> 
+>   Linux 3.16-rc1 (2014-06-15 17:45:28 -1000)
+> 
+> are available in the git repository at:
+> 
+>   git://github.com/at91linux/linux-at91.git tags/at91-fixes
+> 
+> for you to fetch changes up to 971dc9ce106110745f246337f229013589354536:
+> 
+>   ARM: at91/dt: sam9261: remove slow RC osc (2014-06-25 18:00:17 +0200)
+> 
+> ----------------------------------------------------------------
+> First AT91 fixes batch for 3.16:
+> - drivers/misc fix for Kconfig PWM symbol
+> - correction of several values in DT after conversion to CCF
+> - fix at91sam9261/at91sam9261ek mistake in slow crystal vs. slow RC osc
 
-It did indeed.  Thank you very much.
+Pulled and sent out again now. Thanks for following up so quickly.
 
-Alan Stern
-
+	Arnd
