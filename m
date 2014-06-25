@@ -1,500 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756165AbaFYInR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 04:43:17 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:64924 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756143AbaFYInK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 04:43:10 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@rjwysocki.net, sboyd@codeaurora.org, shawn.guo@linaro.org
-Cc: linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arvind.chauhan@arm.com,
-        mturquette@linaro.org, linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org, spk.linux@gmail.com,
-        thomas.ab@samsung.com, nm@ti.com, t.figa@samsung.com,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 2/2] cpufreq: cpu0: Extend support beyond CPU0
-Date: Wed, 25 Jun 2014 14:12:29 +0530
-Message-Id: <e9c0eef07745e561b9d12dcb50c3e2f7eb3e8880.1403684824.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 2.0.0.rc2
-In-Reply-To: <cover.1403684824.git.viresh.kumar@linaro.org>
-References: <cover.1403684824.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1403684824.git.viresh.kumar@linaro.org>
-References: <cover.1403684824.git.viresh.kumar@linaro.org>
+	id S1752881AbaFYIoD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 04:44:03 -0400
+Received: from mga03.intel.com ([143.182.124.21]:15882 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755904AbaFYIk2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 04:40:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,544,1400050800"; 
+   d="scan'208";a="449717514"
+From: Yuyang Du <yuyang.du@intel.com>
+To: mingo@redhat.com, peterz@infradead.org, rafael.j.wysocki@intel.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Cc: arjan.van.de.ven@intel.com, len.brown@intel.com, alan.cox@intel.com,
+        mark.gross@intel.com, morten.rasmussen@arm.com,
+        vincent.guittot@linaro.org, dietmar.eggemann@arm.com,
+        rajeev.d.muralidhar@intel.com, vishwesh.m.rudramuni@intel.com,
+        nicole.chalhoub@intel.com, ajaya.durg@intel.com,
+        harinarayanan.seshadri@intel.com, jacob.jun.pan@linux.intel.com,
+        Yuyang Du <yuyang.du@intel.com>
+Subject: [RFC PATCH 6/9 v4] Implement Workload Consolidation in wakeup/fork/exec
+Date: Wed, 25 Jun 2014 08:36:05 +0800
+Message-Id: <1403656568-32445-7-git-send-email-yuyang.du@intel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1403656568-32445-1-git-send-email-yuyang.du@intel.com>
+References: <1403656568-32445-1-git-send-email-yuyang.du@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cpufreq-cpu0 driver supports only platforms which have single clock line shared
-among all CPUs.
+In WAKE_AFFINE, if the target (in wakee and waker order) is not idle, but the
+the target is capable of handling the wakee task according to CC, we also
+select it.
 
-We already have platforms where this limitation doesn't hold true.For example on
-Qualcomm's KRAIT all CPUs have separate clock line and so have separate
-policies.
+When to find the idlest sched_group, we first try to find the consolidated group.
 
-Instead of adding another driver for this (Stephen just tried that:
-https://lkml.org/lkml/2014/6/24/918), we must reuse cpufreq-cpu0 driver.
-
-cpufreq-cpu0 must be updated to break the assumption on which it is based (all
-cores sharing clock line) and this patch tries to do exactly that.
-
-As we don't have standard DT bindings to mention CPUs sharing clock-line, i.e.
-affected_cpus, this patch also have few limitations. Though easy to fix once we
-have proper bindings.
-
-Limitation: We only supports two types of platforms:
-- All CPUs sharing same clock line, existing user platforms
-- All CPUs have separate clock lines, KRAIT
-
-And so platforms which have multiple clusters with multiple CPUs per cluster
-aren't supported yet. We need proper bindings for that first.
-
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Yuyang Du <yuyang.du@intel.com>
 ---
- .../devicetree/bindings/cpufreq/cpufreq-cpu0.txt   |   8 +-
- drivers/cpufreq/Kconfig                            |   5 +-
- drivers/cpufreq/cpufreq-cpu0.c                     | 280 +++++++++++++--------
- 3 files changed, 190 insertions(+), 103 deletions(-)
+ include/linux/sched/sysctl.h |    4 ++++
+ kernel/sched/fair.c          |   52 +++++++++++++++++++++++++++++++++++++++---
+ kernel/sysctl.c              |    9 ++++++++
+ 3 files changed, 62 insertions(+), 3 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt b/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt
-index f055515..fa8861e 100644
---- a/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt
-+++ b/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt
-@@ -1,15 +1,17 @@
- Generic CPU0 cpufreq driver
+diff --git a/include/linux/sched/sysctl.h b/include/linux/sched/sysctl.h
+index 596a0e0..78acbd7 100644
+--- a/include/linux/sched/sysctl.h
++++ b/include/linux/sched/sysctl.h
+@@ -40,6 +40,10 @@ extern unsigned int sysctl_sched_min_granularity;
+ extern unsigned int sysctl_sched_wakeup_granularity;
+ extern unsigned int sysctl_sched_child_runs_first;
  
--It is a generic cpufreq driver for CPU0 frequency management.  It
-+It is a generic cpufreq driver for CPU frequency management.  It
- supports both uniprocessor (UP) and symmetric multiprocessor (SMP)
--systems which share clock and voltage across all CPUs.
-+systems which share clock and voltage across all CPUs OR have separate
-+clock and voltage for all CPUs.
- 
- Both required and optional properties listed below must be defined
- under node /cpus/cpu@0.
- 
- Required properties:
- - operating-points: Refer to Documentation/devicetree/bindings/power/opp.txt
--  for details
-+  for details. This should either be present only in cpu@0, if CPUs share clock
-+  line OR should be present in all cpu nodes, if they have separate clock lines.
- 
- Optional properties:
- - clock-latency: Specify the possible maximum transition latency for clock,
-diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
-index ffe350f..0e8d983 100644
---- a/drivers/cpufreq/Kconfig
-+++ b/drivers/cpufreq/Kconfig
-@@ -190,9 +190,10 @@ config GENERIC_CPUFREQ_CPU0
- 	depends on !CPU_THERMAL || THERMAL
- 	select PM_OPP
- 	help
--	  This adds a generic cpufreq driver for CPU0 frequency management.
-+	  This adds a generic cpufreq driver for CPU frequency management.
- 	  It supports both uniprocessor (UP) and symmetric multiprocessor (SMP)
--	  systems which share clock and voltage across all CPUs.
-+	  systems which share clock and voltage across all CPUs OR have separate
-+	  clock and voltage for all CPUs.
- 
- 	  If in doubt, say N.
- 
-diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
-index ee1ae30..d29f6a0 100644
---- a/drivers/cpufreq/cpufreq-cpu0.c
-+++ b/drivers/cpufreq/cpufreq-cpu0.c
-@@ -25,34 +25,43 @@
- #include <linux/slab.h>
- #include <linux/thermal.h>
- 
--static unsigned int transition_latency;
--static unsigned int voltage_tolerance; /* in percentage */
-+struct private_data {
-+	struct device *cpu_dev;
-+	struct regulator *cpu_reg;
-+	struct thermal_cooling_device *cdev;
-+	unsigned int voltage_tolerance; /* in percentage */
-+};
- 
--static struct device *cpu_dev;
--static struct clk *cpu_clk;
--static struct regulator *cpu_reg;
--static struct cpufreq_frequency_table *freq_table;
--static struct thermal_cooling_device *cdev;
-+/*
-+ * Currently this driver supports only two types of platforms:
-+ * - All CPUs sharing same clock line, clock_per_cpu == false
-+ * - All CPUs having separate clock lines, clock_per_cpu == true
-+ *
-+ * TODO: Scan affected/related CPUs from proper DT bindings
-+ */
-+bool clock_per_cpu = false;
- 
- static int cpu0_set_target(struct cpufreq_policy *policy, unsigned int index)
- {
- 	struct dev_pm_opp *opp;
-+	struct private_data *priv = policy->driver_data;
- 	unsigned long volt = 0, volt_old = 0, tol = 0;
- 	unsigned int old_freq, new_freq;
- 	long freq_Hz, freq_exact;
- 	int ret;
- 
--	freq_Hz = clk_round_rate(cpu_clk, freq_table[index].frequency * 1000);
-+	freq_Hz = clk_round_rate(policy->clk,
-+				 policy->freq_table[index].frequency * 1000);
- 	if (freq_Hz <= 0)
--		freq_Hz = freq_table[index].frequency * 1000;
-+		freq_Hz = policy->freq_table[index].frequency * 1000;
- 
- 	freq_exact = freq_Hz;
- 	new_freq = freq_Hz / 1000;
--	old_freq = clk_get_rate(cpu_clk) / 1000;
-+	old_freq = clk_get_rate(policy->clk) / 1000;
- 
--	if (!IS_ERR(cpu_reg)) {
-+	if (!IS_ERR(priv->cpu_reg)) {
- 		rcu_read_lock();
--		opp = dev_pm_opp_find_freq_ceil(cpu_dev, &freq_Hz);
-+		opp = dev_pm_opp_find_freq_ceil(priv->cpu_dev, &freq_Hz);
- 		if (IS_ERR(opp)) {
- 			rcu_read_unlock();
- 			pr_err("failed to find OPP for %ld\n", freq_Hz);
-@@ -60,8 +69,8 @@ static int cpu0_set_target(struct cpufreq_policy *policy, unsigned int index)
- 		}
- 		volt = dev_pm_opp_get_voltage(opp);
- 		rcu_read_unlock();
--		tol = volt * voltage_tolerance / 100;
--		volt_old = regulator_get_voltage(cpu_reg);
-+		tol = volt * priv->voltage_tolerance / 100;
-+		volt_old = regulator_get_voltage(priv->cpu_reg);
- 	}
- 
- 	pr_debug("%u MHz, %ld mV --> %u MHz, %ld mV\n",
-@@ -69,28 +78,28 @@ static int cpu0_set_target(struct cpufreq_policy *policy, unsigned int index)
- 		 new_freq / 1000, volt ? volt / 1000 : -1);
- 
- 	/* scaling up?  scale voltage before frequency */
--	if (!IS_ERR(cpu_reg) && new_freq > old_freq) {
--		ret = regulator_set_voltage_tol(cpu_reg, volt, tol);
-+	if (!IS_ERR(priv->cpu_reg) && new_freq > old_freq) {
-+		ret = regulator_set_voltage_tol(priv->cpu_reg, volt, tol);
- 		if (ret) {
- 			pr_err("failed to scale voltage up: %d\n", ret);
- 			return ret;
- 		}
- 	}
- 
--	ret = clk_set_rate(cpu_clk, freq_exact);
-+	ret = clk_set_rate(policy->clk, freq_exact);
- 	if (ret) {
- 		pr_err("failed to set clock rate: %d\n", ret);
--		if (!IS_ERR(cpu_reg))
--			regulator_set_voltage_tol(cpu_reg, volt_old, tol);
-+		if (!IS_ERR(priv->cpu_reg))
-+			regulator_set_voltage_tol(priv->cpu_reg, volt_old, tol);
- 		return ret;
- 	}
- 
- 	/* scaling down?  scale voltage after frequency */
--	if (!IS_ERR(cpu_reg) && new_freq < old_freq) {
--		ret = regulator_set_voltage_tol(cpu_reg, volt, tol);
-+	if (!IS_ERR(priv->cpu_reg) && new_freq < old_freq) {
-+		ret = regulator_set_voltage_tol(priv->cpu_reg, volt, tol);
- 		if (ret) {
- 			pr_err("failed to scale voltage down: %d\n", ret);
--			clk_set_rate(cpu_clk, old_freq * 1000);
-+			clk_set_rate(policy->clk, old_freq * 1000);
- 		}
- 	}
- 
-@@ -99,77 +108,70 @@ static int cpu0_set_target(struct cpufreq_policy *policy, unsigned int index)
- 
- static int cpu0_cpufreq_init(struct cpufreq_policy *policy)
- {
--	policy->clk = cpu_clk;
--	return cpufreq_generic_init(policy, freq_table, transition_latency);
--}
--
--static struct cpufreq_driver cpu0_cpufreq_driver = {
--	.flags = CPUFREQ_STICKY | CPUFREQ_NEED_INITIAL_FREQ_CHECK,
--	.verify = cpufreq_generic_frequency_table_verify,
--	.target_index = cpu0_set_target,
--	.get = cpufreq_generic_get,
--	.init = cpu0_cpufreq_init,
--	.name = "generic_cpu0",
--	.attr = cpufreq_generic_attr,
--};
--
--static int cpu0_cpufreq_probe(struct platform_device *pdev)
--{
-+	struct cpufreq_frequency_table *freq_table;
-+	struct private_data *priv;
- 	struct device_node *np;
--	int ret;
-+	char name[] = "cpuX";
-+	int ret, cpu = policy->cpu;
- 
--	cpu_dev = get_cpu_device(0);
--	if (!cpu_dev) {
--		pr_err("failed to get cpu0 device\n");
--		return -ENODEV;
-+	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
-+	if (!priv) {
-+		pr_err("%s: Memory allocation failed\n", __func__);
-+		return -ENOMEM;
- 	}
- 
--	np = of_node_get(cpu_dev->of_node);
--	if (!np) {
--		pr_err("failed to find cpu0 node\n");
--		return -ENOENT;
--	}
-+	/* Below calls can't fail from here */
-+	priv->cpu_dev = get_cpu_device(cpu);
-+	np = of_node_get(priv->cpu_dev->of_node);
- 
--	cpu_reg = regulator_get_optional(cpu_dev, "cpu0");
--	if (IS_ERR(cpu_reg)) {
--		/*
--		 * If cpu0 regulator supply node is present, but regulator is
--		 * not yet registered, we should try defering probe.
--		 */
--		if (PTR_ERR(cpu_reg) == -EPROBE_DEFER) {
--			dev_err(cpu_dev, "cpu0 regulator not ready, retry\n");
--			ret = -EPROBE_DEFER;
--			goto out_put_node;
--		}
--		pr_warn("failed to get cpu0 regulator: %ld\n",
--			PTR_ERR(cpu_reg));
-+	policy->clk = clk_get(priv->cpu_dev, NULL);
-+	if (IS_ERR(policy->clk)) {
-+		ret = PTR_ERR(policy->clk);
-+		pr_err("%s: failed to get cpu%d clock: %d\n", __func__, cpu,
-+		       ret);
-+		goto out_put_node;
- 	}
- 
--	cpu_clk = clk_get(cpu_dev, NULL);
--	if (IS_ERR(cpu_clk)) {
--		ret = PTR_ERR(cpu_clk);
--		pr_err("failed to get cpu0 clock: %d\n", ret);
--		goto out_put_reg;
-+	ret = of_init_opp_table(priv->cpu_dev);
-+	if (ret) {
-+		pr_err("%s: failed to init OPP table for cpu%d: %d\n", __func__,
-+		       cpu, ret);
-+		goto out_put_clk;
- 	}
- 
--	ret = of_init_opp_table(cpu_dev);
-+	ret = dev_pm_opp_init_cpufreq_table(priv->cpu_dev, &freq_table);
- 	if (ret) {
--		pr_err("failed to init OPP table: %d\n", ret);
-+		pr_err("%s: failed to init cpufreq table for cpu%d: %d\n",
-+		       __func__, cpu, ret);
- 		goto out_put_clk;
- 	}
- 
--	ret = dev_pm_opp_init_cpufreq_table(cpu_dev, &freq_table);
-+	ret = cpufreq_table_validate_and_show(policy, freq_table);
- 	if (ret) {
--		pr_err("failed to init cpufreq table: %d\n", ret);
--		goto out_put_clk;
-+		pr_err("%s: invalid frequency table for cpu%d: %d\n", __func__,
-+		       cpu, ret);
-+		goto out_put_reg;
- 	}
- 
--	of_property_read_u32(np, "voltage-tolerance", &voltage_tolerance);
-+	/* Set mask of CPUs sharing clock line with policy->cpu */
-+	if (!clock_per_cpu)
-+		cpumask_setall(policy->cpus);
- 
--	if (of_property_read_u32(np, "clock-latency", &transition_latency))
--		transition_latency = CPUFREQ_ETERNAL;
-+	of_property_read_u32(np, "voltage-tolerance", &priv->voltage_tolerance);
- 
--	if (!IS_ERR(cpu_reg)) {
-+	if (of_property_read_u32(np, "clock-latency",
-+				 &policy->cpuinfo.transition_latency))
-+		policy->cpuinfo.transition_latency = CPUFREQ_ETERNAL;
++#ifdef CONFIG_SMP
++extern unsigned int sysctl_sched_cc_wakeup_threshold;
++#endif
 +
-+	/* NOTE: Supports only 10 CPUs: 0-9 */
-+	WARN_ONCE(cpu > 9, "cpu: %d", cpu);
+ enum sched_tunable_scaling {
+ 	SCHED_TUNABLESCALING_NONE,
+ 	SCHED_TUNABLESCALING_LOG,
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 7f80058..008cbc9 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2606,6 +2606,9 @@ static inline void dequeue_entity_load_avg(struct cfs_rq *cfs_rq,
+ }
+ 
+ static inline void update_cpu_concurrency(struct rq *rq);
++static struct sched_group *wc_find_group(struct sched_domain *sd,
++	struct task_struct *p, int this_cpu);
++static int cpu_cc_capable(int cpu);
+ 
+ /*
+  * Update the rq's load with the elapsed running time before entering
+@@ -4421,7 +4424,19 @@ static int select_idle_sibling(struct task_struct *p, int target)
+ 	struct sched_group *sg;
+ 	int i = task_cpu(p);
+ 
+-	if (idle_cpu(target))
++	/*
++	 * We prefer wakee to waker CPU. For each of them, if it is idle, then
++	 * select it, but if not, we lower down the bar to use a threshold of CC
++	 * to determine whether it is capable of handling the wakee task
++	 */
++	if (sysctl_sched_cc_wakeup_threshold) {
++		if (idle_cpu(i) || cpu_cc_capable(i))
++			return i;
 +
-+	name[3] = '0' + cpu;
-+	priv->cpu_reg = regulator_get_optional(priv->cpu_dev, name);
-+	if (IS_ERR(priv->cpu_reg)) {
-+		pr_warn("%s: failed to get cpu%d's regulator: %ld\n", __func__,
-+			cpu, PTR_ERR(priv->cpu_reg));
-+	} else {
- 		struct dev_pm_opp *opp;
- 		unsigned long min_uV, max_uV;
- 		int i;
-@@ -182,22 +184,16 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
- 		for (i = 0; freq_table[i].frequency != CPUFREQ_TABLE_END; i++)
- 			;
- 		rcu_read_lock();
--		opp = dev_pm_opp_find_freq_exact(cpu_dev,
-+		opp = dev_pm_opp_find_freq_exact(priv->cpu_dev,
- 				freq_table[0].frequency * 1000, true);
- 		min_uV = dev_pm_opp_get_voltage(opp);
--		opp = dev_pm_opp_find_freq_exact(cpu_dev,
-+		opp = dev_pm_opp_find_freq_exact(priv->cpu_dev,
- 				freq_table[i-1].frequency * 1000, true);
- 		max_uV = dev_pm_opp_get_voltage(opp);
- 		rcu_read_unlock();
--		ret = regulator_set_voltage_time(cpu_reg, min_uV, max_uV);
-+		ret = regulator_set_voltage_time(priv->cpu_reg, min_uV, max_uV);
- 		if (ret > 0)
--			transition_latency += ret * 1000;
--	}
--
--	ret = cpufreq_register_driver(&cpu0_cpufreq_driver);
--	if (ret) {
--		pr_err("failed register driver: %d\n", ret);
--		goto out_free_table;
-+			policy->cpuinfo.transition_latency += ret * 1000;
- 	}
++		if (i != target && (idle_cpu(target) || cpu_cc_capable(target)))
++			return target;
++	}
++	else if (idle_cpu(target))
+ 		return target;
  
  	/*
-@@ -205,34 +201,122 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
- 	 * thermal DT code takes care of matching them.
- 	 */
- 	if (of_find_property(np, "#cooling-cells", NULL)) {
--		cdev = of_cpufreq_cooling_register(np, cpu_present_mask);
--		if (IS_ERR(cdev))
-+		priv->cdev = of_cpufreq_cooling_register(np, policy->cpus);
-+		if (IS_ERR(priv->cdev))
- 			pr_err("running cpufreq without cooling device: %ld\n",
--			       PTR_ERR(cdev));
-+			       PTR_ERR(priv->cdev));
+@@ -4515,7 +4530,7 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
  	}
  
-+	policy->driver_data = priv;
- 	of_node_put(np);
- 	return 0;
+ 	while (sd) {
+-		struct sched_group *group;
++		struct sched_group *group = NULL;
+ 		int weight;
  
--out_free_table:
--	dev_pm_opp_free_cpufreq_table(cpu_dev, &freq_table);
--out_put_clk:
--	if (!IS_ERR(cpu_clk))
--		clk_put(cpu_clk);
- out_put_reg:
--	if (!IS_ERR(cpu_reg))
--		regulator_put(cpu_reg);
-+	if (!IS_ERR(priv->cpu_reg))
-+		regulator_put(priv->cpu_reg);
-+	dev_pm_opp_free_cpufreq_table(priv->cpu_dev, &freq_table);
-+out_put_clk:
-+	clk_put(policy->clk);
- out_put_node:
- 	of_node_put(np);
-+	kfree(priv);
-+	return ret;
-+}
+ 		if (!(sd->flags & sd_flag)) {
+@@ -4523,7 +4538,12 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
+ 			continue;
+ 		}
+ 
+-		group = find_idlest_group(sd, p, cpu, sd_flag);
++		if (sd->flags & SD_WORKLOAD_CONSOLIDATION)
++			group = wc_find_group(sd, p, cpu);
 +
-+static int cpu0_cpufreq_exit(struct cpufreq_policy *policy)
++		if (!group)
++			group = find_idlest_group(sd, p, cpu, sd_flag);
++
+ 		if (!group) {
+ 			sd = sd->child;
+ 			continue;
+@@ -7834,6 +7854,12 @@ __init void init_sched_fair_class(void)
+  */
+ 
+ /*
++ * concurrency lower than this threshold percentage of cc 1
++ * is capable of running wakee task, otherwise make it 0
++ */
++unsigned int sysctl_sched_cc_wakeup_threshold = 60UL;
++
++/*
+  * we update cpu concurrency at:
+  * 1) enqueue task, which increases concurrency
+  * 2) dequeue task, which decreases concurrency
+@@ -7860,6 +7886,26 @@ static inline unsigned long get_cpu_concurrency(int cpu)
+ 	return cpu_rq(cpu)->avg.load_avg_contrib;
+ }
+ 
++/*
++ * whether cpu is capable of having more concurrency
++ */
++static int cpu_cc_capable(int cpu)
 +{
-+	struct private_data *priv = policy->driver_data;
++	u64 cpu_cc = get_cpu_concurrency(cpu);
++	u64 threshold = cc_weight(1);
 +
-+	cpufreq_cooling_unregister(priv->cdev);
-+	if (!IS_ERR(priv->cpu_reg))
-+		regulator_put(priv->cpu_reg);
-+	dev_pm_opp_free_cpufreq_table(priv->cpu_dev, &policy->freq_table);
-+	clk_put(policy->clk);
-+	kfree(priv);
++	cpu_cc *= 100;
++	cpu_cc *= capacity_of(cpu);
++
++	threshold *= sysctl_sched_cc_wakeup_threshold;
++	threshold <<= SCHED_CAPACITY_SHIFT;
++
++	if (cpu_cc <= threshold)
++		return 1;
 +
 +	return 0;
 +}
 +
-+static struct cpufreq_driver cpu0_cpufreq_driver = {
-+	.flags = CPUFREQ_STICKY | CPUFREQ_NEED_INITIAL_FREQ_CHECK,
-+	.verify = cpufreq_generic_frequency_table_verify,
-+	.target_index = cpu0_set_target,
-+	.get = cpufreq_generic_get,
-+	.init = cpu0_cpufreq_init,
-+	.exit = cpu0_cpufreq_exit,
-+	.name = "generic_cpu0",
-+	.attr = cpufreq_generic_attr,
-+};
-+
-+static int cpu0_cpufreq_probe(struct platform_device *pdev)
-+{
-+	const struct property *prop;
-+	struct device *cpu_dev;
-+	struct regulator *cpu_reg;
-+	int ret, cpu, count = 0;
-+
-+	/* Optimization for regulator's -EPROBE_DEFER case */
-+	if (unlikely(clock_per_cpu))
-+		goto scan_regulator;
-+
-+	/*
-+	 * Scan all CPU nodes to set clock_per_cpu
-+	 *
-+	 * FIXME: Scan affected-CPUs from DT and remove this loop.
-+	 */
-+	for_each_possible_cpu(cpu) {
-+		cpu_dev = get_cpu_device(cpu);
-+		if (!cpu_dev) {
-+			pr_err("%s: failed to get cpu%d device\n", __func__,
-+			       cpu);
-+			return -ENODEV;
-+		}
-+
-+		/* Count how many CPU nodes have defined operating-points */
-+		prop = of_find_property(cpu_dev->of_node, "operating-points",
-+					NULL);
-+		if (prop) {
-+			count++;
-+		} else if (cpu == 0) {
-+			pr_err("%s: operating-points missing: cpu%d\n",
-+			       __func__, cpu);
-+			return -ENOENT;
-+		}
-+	}
-+
-+	/* Either one or all CPUs must have operating-points property */
-+	if (count == cpu + 1) {
-+		clock_per_cpu = true;
-+	} else if (count != 1) {
-+		pr_err("%s: operating-points missing for few CPUs\n", __func__);
-+		return -ENOENT;
-+	}
-+
-+scan_regulator:
-+	/* Check only CPU0's regulator for EPROBE_DEFER */
-+	cpu_dev = get_cpu_device(0); /* Can't fail now */
-+	cpu_reg = regulator_get_optional(cpu_dev, "cpu0");
-+	if (!IS_ERR(cpu_reg)) {
-+		regulator_put(cpu_reg);
-+	} else if (PTR_ERR(cpu_reg) == -EPROBE_DEFER) {
-+		/*
-+		 * If cpu0 regulator supply node is present, but regulator is
-+		 * not yet registered, we should try defering probe.
-+		 */
-+		dev_err(cpu_dev, "cpu0 regulator not ready, retry\n");
-+		return -EPROBE_DEFER;
-+	}
-+
-+	ret = cpufreq_register_driver(&cpu0_cpufreq_driver);
-+	if (ret)
-+		pr_err("failed register driver: %d\n", ret);
-+
- 	return ret;
- }
- 
- static int cpu0_cpufreq_remove(struct platform_device *pdev)
+ static inline u64 sched_group_cc(struct sched_group *sg)
  {
--	cpufreq_cooling_unregister(cdev);
- 	cpufreq_unregister_driver(&cpu0_cpufreq_driver);
--	dev_pm_opp_free_cpufreq_table(cpu_dev, &freq_table);
--
- 	return 0;
- }
+ 	u64 sg_cc = 0;
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 7de6555..987557b 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -1102,6 +1102,15 @@ static struct ctl_table kern_table[] = {
+ 		.proc_handler	= proc_dointvec,
+ 	},
+ #endif
++#ifdef CONFIG_SMP
++	{
++		.procname	= "sched_cc_wakeup_threshold",
++		.data		= &sysctl_sched_cc_wakeup_threshold,
++		.maxlen		= sizeof(sysctl_sched_cc_wakeup_threshold),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec,
++	},
++#endif
+ 	{ }
+ };
  
 -- 
-2.0.0.rc2
+1.7.9.5
 
