@@ -1,94 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755632AbaFYWqm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 18:46:42 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:41407 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753356AbaFYWqk (ORCPT
+	id S1756126AbaFYWrR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 18:47:17 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:44824 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752199AbaFYWrQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 18:46:40 -0400
+	Wed, 25 Jun 2014 18:47:16 -0400
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Don Mullis <don.mullis@gmail.com>, Dave Chinner <david@fromorbit.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/4] lib: list_sort: Various minor improvements
+Organization: D03
+References: <1403604392-23259-1-git-send-email-linux@rasmusvillemoes.dk>
+	<20140625145314.3e16af6998765b7aad860bf7@linux-foundation.org>
+	<87egycoc8t.fsf@rasmusvillemoes.dk>
+	<20140625153246.3d3dbda781ce1af5524269ab@linux-foundation.org>
+X-Hashcash: 1:20:140625:don.mullis@gmail.com::X6Iyv9pXxogpUHKH:000000000000000000000000000000000000000000OrG
+X-Hashcash: 1:20:140625:akpm@linux-foundation.org::emVNaI2VBpk0ihx3:00000000000000000000000000000000000050gp
+X-Hashcash: 1:20:140625:artem.bityutskiy@linux.intel.com::50ecMTCWH9jK+MWm:000000000000000000000000000003k0j
+X-Hashcash: 1:20:140625:david@fromorbit.com::uWF9GBJVHoxFgYt9:0000000000000000000000000000000000000000004Wbf
+X-Hashcash: 1:20:140625:linux-kernel@vger.kernel.org::miY5u9pW+7m7drXK:0000000000000000000000000000000005nNi
+Date: Thu, 26 Jun 2014 00:47:12 +0200
+In-Reply-To: <20140625153246.3d3dbda781ce1af5524269ab@linux-foundation.org>
+	(Andrew Morton's message of "Wed, 25 Jun 2014 15:32:46 -0700")
+Message-ID: <87a990obdb.fsf@rasmusvillemoes.dk>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1403716136-32694-1-git-send-email-johan@kernel.org>
-References: <1403716136-32694-1-git-send-email-johan@kernel.org>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Wed, 25 Jun 2014 15:46:19 -0700
-Message-ID: <CAK5ve-JVBoeW+a+1PKcfCwNOC+HOdKUD=1iFrTJAZ_tqh10yuQ@mail.gmail.com>
-Subject: Re: [PATCH 00/13] leds: fix attribute-creation races
-To: Johan Hovold <johan@kernel.org>
-Cc: Richard Purdie <rpurdie@rpsys.net>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-input@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        Janne Kanniainen <janne.kanniainen@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>,
-        =?UTF-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 10:08 AM, Johan Hovold <johan@kernel.org> wrote:
-> LED-class device attributes should be created using the attribute groups
-> of struct device, rather than be added manually after the device has
-> been registered in order to avoid racing with userspace.
->
-> The first patch adds an attribute groups field to struct led_classdev,
-> which is used during registration to add device attributes in a
-> race-free manner.
->
-> The remaining patches convert the current racy LED-device attribute
-> creations to use the new facility. Hopefully my grep-patterns have
-> caught most instances. Note that this also tends to simplify probe error
-> paths.
->
-> The lp55xx-common failed to remove the attribute group it is currently
-> creating, something which is fixed separately.
->
-> Note that this series include one driver from drivers/input/keyboard.
->
-> The individual led-driver patches have been compile tested only.
->
+Andrew Morton <akpm@linux-foundation.org> writes:
 
-Thanks a lot for driving this. I will applied this patchset into my
--devel branch. After I got the Ack from Input guys, I will apply it to
-my for-next branch then.
+> On Thu, 26 Jun 2014 00:28:18 +0200 Rasmus Villemoes <linux@rasmusvillemoes.dk> wrote:
+>
+>> Minor comment: Won't this end up saying "list_sort_test: list passed to
+>> ...", despite the list coming from a 'real' user? Maybe change the first
+>> #define to '"list_sort: " fmt', the above message to "passed list too
+>> long for efficiency", and redefine pr_fmt right after #ifdef
+>> CONFIG_TEST_LIST_SORT.
+>
+> Yeah, I was hoping nobody would notice that ;)
+>
+> How about just
+>
+> 		printk_once(KERN_DEBUG "list too long for efficiency\n");
 
--Bryan
+FWIW, fine by me.
 
-> Johan
->
->
-> Johan Hovold (13):
->   leds: add led-class attribute-group support
->   leds: lm3550: fix attribute-creation race
->   leds: lm3533: fix attribute-creation race
->   leds: lm355x: fix attribute-creation race
->   leds: lm3642: fix attribute-creation race
->   leds: max8997: fix attribute-creation race
->   leds: netxbig: fix attribute-creation race
->   leds: ns2: fix attribute-creation race
->   leds: ss4200: fix attribute-creation race
->   leds: wm831x-status: fix attribute-creation race
->   input: lm8323: fix attribute-creation race
->   leds: lp55xx-common: fix sysfs entry leak
->   leds: lp55xx-common: fix attribute-creation race
->
->  drivers/input/keyboard/lm8323.c   | 22 +++++++++-------------
->  drivers/leds/led-class.c          |  5 +++--
->  drivers/leds/leds-lm3530.c        | 20 +++++++-------------
->  drivers/leds/leds-lm3533.c        | 20 ++++++++------------
->  drivers/leds/leds-lm355x.c        | 21 +++++++++------------
->  drivers/leds/leds-lm3642.c        | 30 ++++++++++++++----------------
->  drivers/leds/leds-lp55xx-common.c | 20 +++-----------------
->  drivers/leds/leds-max8997.c       | 16 +++++++---------
->  drivers/leds/leds-netxbig.c       | 26 ++++++++++++--------------
->  drivers/leds/leds-ns2.c           | 16 +++++++---------
->  drivers/leds/leds-ss4200.c        | 14 +++++++++-----
->  drivers/leds/leds-wm831x-status.c | 23 +++++++++--------------
->  include/linux/leds.h              |  2 ++
->  13 files changed, 99 insertions(+), 136 deletions(-)
->
-> --
-> 1.8.5.5
->
+Rasmus
