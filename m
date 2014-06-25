@@ -1,98 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756647AbaFYKvL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 06:51:11 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:65422 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755438AbaFYKvI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 06:51:08 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-cb-53aaa99a3e94
-Message-id: <53AAA982.9050308@samsung.com>
-Date: Wed, 25 Jun 2014 12:50:42 +0200
-From: Tomasz Figa <t.figa@samsung.com>
-Organization: Samsung R&D Institute Poland
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.5.0
-MIME-version: 1.0
-To: Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "'Marek Szyprowski'" <m.szyprowski@samsung.com>,
-        "'Mike Turquette'" <mturquette@linaro.org>,
-        "'Rob Herring'" <robh+dt@kernel.org>,
-        "'Mark Rutland'" <mark.rutland@arm.com>,
-        "'Pankaj Dubey'" <pankaj.dubey@samsung.com>,
-        "'Rahul Sharma'" <rahul.sharma@samsung.com>,
-        "'Mark Brown'" <broonie@kernel.org>,
-        "'Sylwester Nawrocki'" <s.nawrocki@samsung.com>,
-        "'Daniel Drake'" <drake@endlessm.com>,
-        "'Tomasz Figa'" <tomasz.figa@gmail.com>
-Subject: Re: [PATCH v2 0/4] Add support for Exynos clock output configuration
-References: <1403626107-12073-1-git-send-email-t.figa@samsung.com>
- <026001cf9061$5fef9d00$1fced700$@samsung.com>
-In-reply-to: <026001cf9061$5fef9d00$1fced700$@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJLMWRmVeSWpSXmKPExsVy+t/xy7qzVq4KNpi9k89i6sMnbBaP5j9m
-	tuhdcJXNYtPja6wWl3fNYbOYcX4fk8XaI3fZLZZev8hk8XTCRTaLRVu/sFtMWXSY1aJ17xF2
-	i8Nv2lktVu36w+jA57Fm3hpGj0Xfszx2zrrL7rFpVSebx51re9g8Ni+p9+jbsorR4/MmuQCO
-	KC6blNSczLLUIn27BK6MLcdKC+7zVvRse8TUwLiNq4uRk0NCwERi68uJ7BC2mMSFe+vZuhi5
-	OIQEljJK3Nt4iRnC+cwo8erZDxaQKl4BLYnHt/vAOlgEVCXaZn9jA7HZBNQkPjc8ArP5gWrW
-	NF0HqufgEBWIkHh8QQiiVVDix+R7YGNEBDwlPpw/ATafWeANs8SkLf1gM4UFfCUO7ZwJViQk
-	UCRxecJVVhCbU8BKomH3J0YQm1lAR2J/6zQ2CFteYvOat8wTGAVnIdkxC0nZLCRlCxiZVzGK
-	ppYmFxQnpeca6RUn5haX5qXrJefnbmKERNfXHYxLj1kdYhTgYFTi4Q3gWRUsxJpYVlyZe4hR
-	goNZSYTXcQ5QiDclsbIqtSg/vqg0J7X4ECMTB6dUA2PU2c7dS45djj/edKp5TX/sNKsrvVaH
-	BV/u5YyvzPfQ3/Xgc3zU887ah0bv8tvtv9Xt+n783I4nRv3pis8/1ewV1Xgzr+XzC09Nj3t7
-	7UOLBFI+a93t3M23VIit9Pt1LQVWFz7VbbOOlMTaOQbbMXl37IprkG3MVJi8WiS8N3Hae+kO
-	8dyVwUosxRmJhlrMRcWJADV1BYCMAgAA
+	id S1756666AbaFYKvu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 06:51:50 -0400
+Received: from mail-bn1blp0187.outbound.protection.outlook.com ([207.46.163.187]:44983
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755479AbaFYKvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 06:51:48 -0400
+Date: Wed, 25 Jun 2014 16:02:42 +0530
+From: "Reddy, Sreekanth" <Sreekanth.Reddy@avagotech.com>
+To: <jejb@kernel.org>, <JBottomley@Parallels.com>
+CC: <linux-scsi@vger.kernel.org>, <Sathya.Prakash@avagotech.com>,
+        <Nagalakshmi.Nandigama@avagotech.com>, <sreekanth.reddy@avagotech.com>,
+        <linux-kernel@vger.kernel.org>, <hch@infradead.org>,
+        <martin.petersen@oracle.com>
+Subject: [RESEND][PATCH 04/10][SCSI]mpt2sas: Clear PFA Status on SGPIO when
+ PFA Drive is Removed or Replaced
+Message-ID: <20140625103242.GA12918@avagotech.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-EOPAttributedMessage: 0
+X-Matching-Connectors: 130481662275293345;(f081dce6-2920-4dfc-23e8-08d07091c5e3);()
+X-Forefront-Antispam-Report: CIP:192.19.220.100;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199002)(102836001)(33656002)(76482001)(26826002)(99396002)(83506001)(46406003)(46102001)(21056001)(77982001)(81342001)(50466002)(4396001)(50986999)(97756001)(54356999)(36756003)(74662001)(87936001)(74502001)(16796002)(80022001)(31966008)(6806004)(83322001)(19580405001)(44976005)(79102001)(81542001)(19580395003)(92726001)(92566001)(64706001)(83072002)(20776003)(47776003)(85852003)(85306003)(86362001)(106466001)(57986006)(23726002)(95666004)(76506005)(77096002)(105596002)(107046001)(2101003);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR07MB028;H:COSEXCH10.lsi.com;FPR:;MLV:ovrnspm;PTR:cosexch10.lsi.com;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
+X-Forefront-PRVS: 02530BD3AA
+Authentication-Results: spf=softfail (sender IP is 192.19.220.100)
+ smtp.mailfrom=Sreekanth.Reddy@avagotech.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kukjin,
+Added code to send a SEP message that turns off the Predictive
+Failure LED when a drive is removed (if Predictive Failure LED was turned on).
 
-On 25.06.2014 12:36, Kukjin Kim wrote:
-> Tomasz Figa wrote:
->>
-> Hi Tomasz,
-> 
->> On all Exynos SoCs there is a dedicated CLKOUT pin that allows many of
->> internal SoC clocks to be output from the SoC. The hardware structure
-> 
-> Yeah, because the CLKOUT pin is used for measure of the clock for debug on all
-> of exynos SoCs commonly.
-> 
->> of CLKOUT related clocks looks as follows:
->>
->> 	CMU	|---> clock0 --------->	|	PMU	|
->> 		|			|		|
->>     several	|---> clock1 ---------> |	mux	|
->>     muxes	|			|	+	|---> CLKOUT
->>     dividers	|       ...		|	gate	|
->>     and gates	|			|		|
->> 		|---> clockN ---------> |		|
->>
->> Since the block responsible for handling the pin is PMU, not CMU,
->> a separate driver, that binds to PMU node is required and acquires
->> all input clocks by standard DT clock look-up. This way we don't need
->> any cross-IP block drivers and cross-driver register sharing or
->> nodes for fake devices.
->>
-> BTW, upcoming exynos5 SoCs have two muxs for CLKOUT and each mux is controlled
-> by CMU and PMU, so
-> 
-> The mux1 for CLKOUT in CMU is used to decide which clock in each sub-domain
-> will be out and the mux2 in PMU is used to decide which sub-domain will be out
-> via CLKOUT. So I want you to consider of all of exynos SoCs including upcoming
-> SoCs.
+Added a new flag 'pfa_led_on' per device that tracks the status of Predictive
+Failure LED. When the drive is removed, this flag is checked and
+sends the SEP message to turn off the respective Predictive Failure LED.
 
-Is it something similar to what I implemented for Exynos4 in patch 2/4?
-The same has to be done for other Exynos SoCs as well, but i don't have
-any board on which I could test this, so I just added a subset of
-available inputs of PMU mux in current implementation.
+Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
+---
+ drivers/scsi/mpt2sas/mpt2sas_base.h  |    2 +
+ drivers/scsi/mpt2sas/mpt2sas_scsih.c |   70 +++++++++++++++++++++++++++++----
+ 2 files changed, 63 insertions(+), 9 deletions(-)
 
-Anyway, anything in CMU can be handled in normal SoC clock driver, so I
-don't think this poses any problem for this series.
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.h b/drivers/scsi/mpt2sas/mpt2sas_base.h
+index 863a248..80d26c1 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_base.h
++++ b/drivers/scsi/mpt2sas/mpt2sas_base.h
+@@ -355,6 +355,7 @@ struct _internal_cmd {
+  * @slot: number number
+  * @phy: phy identifier provided in sas device page 0
+  * @responding: used in _scsih_sas_device_mark_responding
++ * @pfa_led_on: flag for PFA LED status
+  */
+ struct _sas_device {
+ 	struct list_head list;
+@@ -373,6 +374,7 @@ struct _sas_device {
+ 	u16	slot;
+ 	u8	phy;
+ 	u8	responding;
++	u8	pfa_led_on;
+ };
+ 
+ /**
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_scsih.c b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+index 5ee6bf0..6ae109b 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+@@ -150,7 +150,7 @@ struct sense_info {
+ };
+ 
+ 
+-#define MPT2SAS_TURN_ON_FAULT_LED (0xFFFC)
++#define MPT2SAS_TURN_ON_PFA_LED (0xFFFC)
+ #define MPT2SAS_PORT_ENABLE_COMPLETE (0xFFFD)
+ #define MPT2SAS_REMOVE_UNRESPONDING_DEVICES (0xFFFF)
+ /**
+@@ -4325,7 +4325,7 @@ _scsih_scsi_ioc_info(struct MPT2SAS_ADAPTER *ioc, struct scsi_cmnd *scmd,
+ #endif
+ 
+ /**
+- * _scsih_turn_on_fault_led - illuminate Fault LED
++ * _scsih_turn_on_pfa_led - illuminate PFA LED
+  * @ioc: per adapter object
+  * @handle: device handle
+  * Context: process
+@@ -4333,10 +4333,15 @@ _scsih_scsi_ioc_info(struct MPT2SAS_ADAPTER *ioc, struct scsi_cmnd *scmd,
+  * Return nothing.
+  */
+ static void
+-_scsih_turn_on_fault_led(struct MPT2SAS_ADAPTER *ioc, u16 handle)
++_scsih_turn_on_pfa_led(struct MPT2SAS_ADAPTER *ioc, u16 handle)
+ {
+ 	Mpi2SepReply_t mpi_reply;
+ 	Mpi2SepRequest_t mpi_request;
++	struct _sas_device *sas_device;
++
++	sas_device = _scsih_sas_device_find_by_handle(ioc, handle);
++	if (!sas_device)
++		return;
+ 
+ 	memset(&mpi_request, 0, sizeof(Mpi2SepRequest_t));
+ 	mpi_request.Function = MPI2_FUNCTION_SCSI_ENCLOSURE_PROCESSOR;
+@@ -4351,6 +4356,47 @@ _scsih_turn_on_fault_led(struct MPT2SAS_ADAPTER *ioc, u16 handle)
+ 		__FILE__, __LINE__, __func__);
+ 		return;
+ 	}
++	sas_device->pfa_led_on = 1;
++
++
++	if (mpi_reply.IOCStatus || mpi_reply.IOCLogInfo) {
++		dewtprintk(ioc, printk(MPT2SAS_INFO_FMT
++		 "enclosure_processor: ioc_status (0x%04x), loginfo(0x%08x)\n",
++		 ioc->name, le16_to_cpu(mpi_reply.IOCStatus),
++		 le32_to_cpu(mpi_reply.IOCLogInfo)));
++		return;
++	}
++}
++
++/**
++ * _scsih_turn_off_pfa_led - turn off PFA LED
++ * @ioc: per adapter object
++ * @sas_device: sas device whose PFA LED has to turned off
++ * Context: process
++ *
++ * Return nothing.
++ */
++static void
++_scsih_turn_off_pfa_led(struct MPT2SAS_ADAPTER *ioc,
++	struct _sas_device *sas_device)
++{
++	Mpi2SepReply_t mpi_reply;
++	Mpi2SepRequest_t mpi_request;
++
++	memset(&mpi_request, 0, sizeof(Mpi2SepRequest_t));
++	mpi_request.Function = MPI2_FUNCTION_SCSI_ENCLOSURE_PROCESSOR;
++	mpi_request.Action = MPI2_SEP_REQ_ACTION_WRITE_STATUS;
++	mpi_request.SlotStatus = 0;
++	mpi_request.Slot = cpu_to_le16(sas_device->slot);
++	mpi_request.DevHandle = 0;
++	mpi_request.EnclosureHandle = cpu_to_le16(sas_device->enclosure_handle);
++	mpi_request.Flags = MPI2_SEP_REQ_FLAGS_ENCLOSURE_SLOT_ADDRESS;
++	if ((mpt2sas_base_scsi_enclosure_processor(ioc, &mpi_reply,
++	    &mpi_request)) != 0) {
++		printk(MPT2SAS_ERR_FMT "failure at %s:%d/%s()!\n", ioc->name,
++		__FILE__, __LINE__, __func__);
++		return;
++	}
+ 
+ 	if (mpi_reply.IOCStatus || mpi_reply.IOCLogInfo) {
+ 		dewtprintk(ioc, printk(MPT2SAS_INFO_FMT "enclosure_processor: "
+@@ -4362,7 +4408,7 @@ _scsih_turn_on_fault_led(struct MPT2SAS_ADAPTER *ioc, u16 handle)
+ }
+ 
+ /**
+- * _scsih_send_event_to_turn_on_fault_led - fire delayed event
++ * _scsih_send_event_to_turn_on_pfa_led - fire delayed event
+  * @ioc: per adapter object
+  * @handle: device handle
+  * Context: interrupt.
+@@ -4370,14 +4416,14 @@ _scsih_turn_on_fault_led(struct MPT2SAS_ADAPTER *ioc, u16 handle)
+  * Return nothing.
+  */
+ static void
+-_scsih_send_event_to_turn_on_fault_led(struct MPT2SAS_ADAPTER *ioc, u16 handle)
++_scsih_send_event_to_turn_on_pfa_led(struct MPT2SAS_ADAPTER *ioc, u16 handle)
+ {
+ 	struct fw_event_work *fw_event;
+ 
+ 	fw_event = kzalloc(sizeof(struct fw_event_work), GFP_ATOMIC);
+ 	if (!fw_event)
+ 		return;
+-	fw_event->event = MPT2SAS_TURN_ON_FAULT_LED;
++	fw_event->event = MPT2SAS_TURN_ON_PFA_LED;
+ 	fw_event->device_handle = handle;
+ 	fw_event->ioc = ioc;
+ 	_scsih_fw_event_add(ioc, fw_event);
+@@ -4421,7 +4467,7 @@ _scsih_smart_predicted_fault(struct MPT2SAS_ADAPTER *ioc, u16 handle)
+ 	spin_unlock_irqrestore(&ioc->sas_device_lock, flags);
+ 
+ 	if (ioc->pdev->subsystem_vendor == PCI_VENDOR_ID_IBM)
+-		_scsih_send_event_to_turn_on_fault_led(ioc, handle);
++		_scsih_send_event_to_turn_on_pfa_led(ioc, handle);
+ 
+ 	/* insert into event log */
+ 	sz = offsetof(Mpi2EventNotificationReply_t, EventData) +
+@@ -5344,6 +5390,12 @@ _scsih_remove_device(struct MPT2SAS_ADAPTER *ioc,
+ {
+ 	struct MPT2SAS_TARGET *sas_target_priv_data;
+ 
++	if ((ioc->pdev->subsystem_vendor == PCI_VENDOR_ID_IBM) &&
++		(sas_device->pfa_led_on)) {
++		_scsih_turn_off_pfa_led(ioc, sas_device);
++		sas_device->pfa_led_on = 0;
++	}
++
+ 	dewtprintk(ioc, printk(MPT2SAS_INFO_FMT "%s: enter: "
+ 	    "handle(0x%04x), sas_addr(0x%016llx)\n", ioc->name, __func__,
+ 		sas_device->handle, (unsigned long long)
+@@ -7444,8 +7496,8 @@ _firmware_event_work(struct work_struct *work)
+ 		dewtprintk(ioc, printk(MPT2SAS_INFO_FMT "port enable: complete "
+ 		    "from worker thread\n", ioc->name));
+ 		break;
+-	case MPT2SAS_TURN_ON_FAULT_LED:
+-		_scsih_turn_on_fault_led(ioc, fw_event->device_handle);
++	case MPT2SAS_TURN_ON_PFA_LED:
++		_scsih_turn_on_pfa_led(ioc, fw_event->device_handle);
+ 		break;
+ 	case MPI2_EVENT_SAS_TOPOLOGY_CHANGE_LIST:
+ 		_scsih_sas_topology_change_event(ioc, fw_event);
+-- 
+1.7.1
 
-Best regards,
-Tomasz
