@@ -1,66 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757254AbaFYPEA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 11:04:00 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:61293 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756454AbaFYPD7 (ORCPT
+	id S932189AbaFYPIP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 11:08:15 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:52270 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756769AbaFYPIM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 11:03:59 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53AAE4D2.5020104@roeck-us.net>
-Date: Wed, 25 Jun 2014 08:03:46 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 25 Jun 2014 11:08:12 -0400
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-CC: Ingo Molnar <mingo@redhat.com>, Russell King <linux@arm.linux.org.uk>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        linuxppc-dev@lists.ozlabs.org,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2] sched: Fix compiler warnings
-References: <1403658329-13196-1-git-send-email-linux@roeck-us.net> <20140625071416.GM14781@pengutronix.de> <53AADC63.8080106@roeck-us.net> <20140625144955.GP14781@pengutronix.de>
-In-Reply-To: <20140625144955.GP14781@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140625142121.GD7892@redhat.com>
+References: <1403642893-23107-1-git-send-email-keescook@chromium.org>
+	<1403642893-23107-10-git-send-email-keescook@chromium.org>
+	<20140625142121.GD7892@redhat.com>
+Date: Wed, 25 Jun 2014 08:08:11 -0700
+X-Google-Sender-Auth: r_1Qo0KhVxpzl5aIumz0oJDUf2o
+Message-ID: <CAGXu5jJtLrjbobZC1FD4WV-Jm2p7cRGa1aSPK-d_isnfCZAHdA@mail.gmail.com>
+Subject: Re: [PATCH v8 9/9] seccomp: implement SECCOMP_FILTER_FLAG_TSYNC
+From: Kees Cook <keescook@chromium.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Andy Lutomirski <luto@amacapital.net>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2014 07:49 AM, Uwe Kleine-König wrote:
-> Hello Guenter,
->
-> On Wed, Jun 25, 2014 at 07:27:47AM -0700, Guenter Roeck wrote:
->>> Maybe the author's intention was:
->>>
->>> 	static inline int cpu_corepower_flags(void) __attribute__((const));
->>>
->>> ?
->>> This specifies that the function has no side effects and the return value
->>> only depends on the (here non-existing) function arguments.
->>>
+On Wed, Jun 25, 2014 at 7:21 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 06/24, Kees Cook wrote:
 >>
->> Possibly, but either I am missing something or this doesn't compile.
-> You need to do a separate declaration:
+>> +static void seccomp_sync_threads(void)
+>> +{
+>> +     struct task_struct *thread, *caller;
+>> +
+>> +     BUG_ON(!spin_is_locked(&current->sighand->siglock));
+>> +
+>> +     /* Synchronize all threads. */
+>> +     caller = current;
+>> +     for_each_thread(caller, thread) {
+>> +             /* Get a task reference for the new leaf node. */
+>> +             get_seccomp_filter(caller);
+>> +             /*
+>> +              * Drop the task reference to the shared ancestor since
+>> +              * current's path will hold a reference.  (This also
+>> +              * allows a put before the assignment.)
+>> +              */
+>> +             put_seccomp_filter(thread);
+>> +             thread->seccomp.filter = caller->seccomp.filter;
+>> +             /* Opt the other thread into seccomp if needed.
+>> +              * As threads are considered to be trust-realm
+>> +              * equivalent (see ptrace_may_access), it is safe to
+>> +              * allow one thread to transition the other.
+>> +              */
+>> +             if (thread->seccomp.mode == SECCOMP_MODE_DISABLED) {
+>> +                     /*
+>> +                      * Don't let an unprivileged task work around
+>> +                      * the no_new_privs restriction by creating
+>> +                      * a thread that sets it up, enters seccomp,
+>> +                      * then dies.
+>> +                      */
+>> +                     if (task_no_new_privs(caller))
+>> +                             task_set_no_new_privs(thread);
+>> +
+>> +                     seccomp_assign_mode(thread, SECCOMP_MODE_FILTER);
+>> +             }
+>> +     }
+>> +}
 >
-> 	static inline int cpu_corepower_flags(void) __attribute__((const));
-> 	static inline int cpu_corepower_flags(void)
-> 	{
-> 		...
+> OK, personally I think this all make sense. I even think that perhaps
+> SECCOMP_FILTER_FLAG_TSYNC should allow filter == NULL, a thread might
+> want to "sync" without adding the new filter, but this is minor/offtopic.
+>
+> But. Doesn't this change add a new security hole?
+>
+> Obviously, we should not allow to install a filter and then (say) exec
+> a suid binary, that is why we have no_new_privs/LSM_UNSAFE_NO_NEW_PRIVS.
+>
+> But what if "thread->seccomp.filter = caller->seccomp.filter" races with
+> any user of task_no_new_privs() ? Say, suppose this thread has already
+> passed check_unsafe_exec/etc and it is going to exec the suid binary?
 
-Actually turns out one can use __attribute_const__, and it is
+Oh, ew. Yeah. It looks like there's a cred lock to be held to combat this?
 
-	static inline int __attribute_const__ cpu_corepower_flags(void)
+I wonder if changes to nnp need to "flushed" during syscall entry
+instead of getting updated externally/asynchronously? That way it
+won't be out of sync with the seccomp mode/filters.
 
-which turns out to be widely used.
+Perhaps secure computing needs to check some (maybe seccomp-only)
+atomic flags and flip on the "real" nnp if found?
 
-I'll change that and resubmit after testing.
+-Kees
 
-Guenter
-
+-- 
+Kees Cook
+Chrome OS Security
