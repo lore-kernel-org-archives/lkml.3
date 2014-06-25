@@ -1,135 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758032AbaFYQxo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 12:53:44 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59453 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757626AbaFYQty (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 12:49:54 -0400
-From: Christoph Hellwig <hch@lst.de>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Bart Van Assche <bvanassche@fusionio.com>,
-        Robert Elliott <Elliott@hp.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 04/14] scsi: set ->scsi_done before calling scsi_dispatch_cmd
-Date: Wed, 25 Jun 2014 18:51:51 +0200
-Message-Id: <1403715121-1201-5-git-send-email-hch@lst.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1403715121-1201-1-git-send-email-hch@lst.de>
-References: <1403715121-1201-1-git-send-email-hch@lst.de>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1758054AbaFYQx5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 12:53:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48957 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758036AbaFYQxx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 12:53:53 -0400
+Date: Wed, 25 Jun 2014 18:52:09 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Andy Lutomirski <luto@amacapital.net>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH v8 9/9] seccomp: implement SECCOMP_FILTER_FLAG_TSYNC
+Message-ID: <20140625165209.GA14720@redhat.com>
+References: <1403642893-23107-1-git-send-email-keescook@chromium.org> <1403642893-23107-10-git-send-email-keescook@chromium.org> <20140625142121.GD7892@redhat.com> <CAGXu5jJtLrjbobZC1FD4WV-Jm2p7cRGa1aSPK-d_isnfCZAHdA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGXu5jJtLrjbobZC1FD4WV-Jm2p7cRGa1aSPK-d_isnfCZAHdA@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The blk-mq code path will set this to a different function, so make the
-code simpler by setting it up in a legacy-request specific place.
+On 06/25, Kees Cook wrote:
+>
+> On Wed, Jun 25, 2014 at 7:21 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> >
+> > But. Doesn't this change add a new security hole?
+> >
+> > Obviously, we should not allow to install a filter and then (say) exec
+> > a suid binary, that is why we have no_new_privs/LSM_UNSAFE_NO_NEW_PRIVS.
+> >
+> > But what if "thread->seccomp.filter = caller->seccomp.filter" races with
+> > any user of task_no_new_privs() ? Say, suppose this thread has already
+> > passed check_unsafe_exec/etc and it is going to exec the suid binary?
+>
+> Oh, ew. Yeah. It looks like there's a cred lock to be held to combat this?
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
----
- drivers/scsi/scsi.c     |   23 +----------------------
- drivers/scsi/scsi_lib.c |   20 ++++++++++++++++++++
- 2 files changed, 21 insertions(+), 22 deletions(-)
+Yes, cred_guard_mutex looks like an obvious choice... Hmm, but somehow
+initially I thought that the fix won't be simple. Not sure why.
 
-diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
-index dcc43fd..d3bd6cf 100644
---- a/drivers/scsi/scsi.c
-+++ b/drivers/scsi/scsi.c
-@@ -72,8 +72,6 @@
- #define CREATE_TRACE_POINTS
- #include <trace/events/scsi.h>
- 
--static void scsi_done(struct scsi_cmnd *cmd);
--
- /*
-  * Definitions and constants.
-  */
-@@ -696,8 +694,6 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
- 	}
- 
- 	trace_scsi_dispatch_cmd_start(cmd);
--
--	cmd->scsi_done = scsi_done;
- 	rtn = host->hostt->queuecommand(host, cmd);
- 	if (rtn) {
- 		trace_scsi_dispatch_cmd_error(cmd, rtn);
-@@ -711,28 +707,11 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
- 
- 	return rtn;
-  done:
--	scsi_done(cmd);
-+	cmd->scsi_done(cmd);
- 	return 0;
- }
- 
- /**
-- * scsi_done - Invoke completion on finished SCSI command.
-- * @cmd: The SCSI Command for which a low-level device driver (LLDD) gives
-- * ownership back to SCSI Core -- i.e. the LLDD has finished with it.
-- *
-- * Description: This function is the mid-level's (SCSI Core) interrupt routine,
-- * which regains ownership of the SCSI command (de facto) from a LLDD, and
-- * calls blk_complete_request() for further processing.
-- *
-- * This function is interrupt context safe.
-- */
--static void scsi_done(struct scsi_cmnd *cmd)
--{
--	trace_scsi_dispatch_cmd_done(cmd);
--	blk_complete_request(cmd->request);
--}
--
--/**
-  * scsi_finish_command - cleanup and pass command back to upper layer
-  * @cmd: the command
-  *
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index 63bf844..6989b6f 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -29,6 +29,8 @@
- #include <scsi/scsi_eh.h>
- #include <scsi/scsi_host.h>
- 
-+#include <trace/events/scsi.h>
-+
- #include "scsi_priv.h"
- #include "scsi_logging.h"
- 
-@@ -1480,6 +1482,23 @@ static void scsi_softirq_done(struct request *rq)
- 	}
- }
- 
-+/**
-+ * scsi_done - Invoke completion on finished SCSI command.
-+ * @cmd: The SCSI Command for which a low-level device driver (LLDD) gives
-+ * ownership back to SCSI Core -- i.e. the LLDD has finished with it.
-+ *
-+ * Description: This function is the mid-level's (SCSI Core) interrupt routine,
-+ * which regains ownership of the SCSI command (de facto) from a LLDD, and
-+ * calls blk_complete_request() for further processing.
-+ *
-+ * This function is interrupt context safe.
-+ */
-+static void scsi_done(struct scsi_cmnd *cmd)
-+{
-+	trace_scsi_dispatch_cmd_done(cmd);
-+	blk_complete_request(cmd->request);
-+}
-+
- /*
-  * Function:    scsi_request_fn()
-  *
-@@ -1582,6 +1601,7 @@ static void scsi_request_fn(struct request_queue *q)
- 		/*
- 		 * Dispatch the command to the low-level driver.
- 		 */
-+		cmd->scsi_done = scsi_done;
- 		rtn = scsi_dispatch_cmd(cmd);
- 		if (rtn) {
- 			scsi_queue_insert(cmd, rtn);
--- 
-1.7.10.4
+Yes, at least this should close the race with suid-exec. And there are no
+other users. Except apparmor, and I hope you will check it because I simply
+do not know what it does ;)
+
+> I wonder if changes to nnp need to "flushed" during syscall entry
+> instead of getting updated externally/asynchronously? That way it
+> won't be out of sync with the seccomp mode/filters.
+>
+> Perhaps secure computing needs to check some (maybe seccomp-only)
+> atomic flags and flip on the "real" nnp if found?
+
+Not sure I understand you, could you clarify?
+
+But I was also worried that task_no_new_privs(current) is no longer stable
+inside the syscall paths, perhaps this is what you meant? However I do not
+see something bad here... And this has nothing to do with the race above.
+
+
+
+Also. Even ignoring no_new_privs, SECCOMP_FILTER_FLAG_TSYNC is not atomic
+and we can do nothing with this fact (unless it try to freeze the thread
+group somehow), perhaps it makes sense to document this somehow.
+
+I mean, suppose you want to ensure write-to-file is not possible, so you
+do seccomp(SECCOMP_FILTER_FLAG_TSYNC, nack_write_to_file_filter). You can't
+assume that this has effect right after seccomp() returns, this can obviously
+race with a sub-thread which has already entered sys_write().
+
+Once again, I am not arguing, just I think it makes sense to at least mention
+the limitations during the discussion.
+
+Oleg.
 
