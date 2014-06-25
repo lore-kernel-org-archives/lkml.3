@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755453AbaFYFwS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 01:52:18 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36337 "EHLO
+	id S1755480AbaFYFwa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 01:52:30 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:36344 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752564AbaFYFwQ (ORCPT
+	with ESMTP id S1750832AbaFYFw2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 01:52:16 -0400
-Date: Tue, 24 Jun 2014 22:51:55 -0700
+	Wed, 25 Jun 2014 01:52:28 -0400
+Date: Tue, 24 Jun 2014 22:52:08 -0700
 From: tip-bot for Davidlohr Bueso <tipbot@zytor.com>
-Message-ID: <tip-d9de84afd1f3a464135abe2b26e66aa86be5af8d@git.kernel.org>
+Message-ID: <tip-424e9634887842ac59c1d06d3264aaeb18853c0b@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
         mingo@kernel.org, jolsa@kernel.org, mitake@dcl.info.waseda.ac.jp,
         tglx@linutronix.de, davidlohr@hp.com, aswin@hp.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         acme@redhat.com, jolsa@kernel.org, mitake@dcl.info.waseda.ac.jp,
         tglx@linutronix.de, davidlohr@hp.com, aswin@hp.com
-In-Reply-To: <1402942467-10671-6-git-send-email-davidlohr@hp.com>
-References: <1402942467-10671-6-git-send-email-davidlohr@hp.com>
+In-Reply-To: <1402942467-10671-8-git-send-email-davidlohr@hp.com>
+References: <1402942467-10671-8-git-send-email-davidlohr@hp.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf bench futex: Use global --repeat option
-Git-Commit-ID: d9de84afd1f3a464135abe2b26e66aa86be5af8d
+Subject: [tip:perf/core] perf bench mem:
+  The -o and -n options are mutually exclusive
+Git-Commit-ID: 424e9634887842ac59c1d06d3264aaeb18853c0b
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,99 +34,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d9de84afd1f3a464135abe2b26e66aa86be5af8d
-Gitweb:     http://git.kernel.org/tip/d9de84afd1f3a464135abe2b26e66aa86be5af8d
+Commit-ID:  424e9634887842ac59c1d06d3264aaeb18853c0b
+Gitweb:     http://git.kernel.org/tip/424e9634887842ac59c1d06d3264aaeb18853c0b
 Author:     Davidlohr Bueso <davidlohr@hp.com>
-AuthorDate: Mon, 16 Jun 2014 11:14:23 -0700
+AuthorDate: Mon, 16 Jun 2014 11:14:25 -0700
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Thu, 19 Jun 2014 16:13:16 -0300
 
-perf bench futex: Use global --repeat option
+perf bench mem: The -o and -n options are mutually exclusive
 
-This option is available through perf-bench, use it instead and free the
-local option.
+ -o, --only-prefault   Show only the result with page faults before mem*
+ -n, --no-prefault     Show only the result without page faults before mem*
+
+Makes no sense to call together. Applies to both memset and memcpy.
 
 Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
 Cc: Aswin Chandramouleeswaran <aswin@hp.com>
 Cc: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
 Cc: Jiri Olsa <jolsa@kernel.org>
-Link: http://lkml.kernel.org/r/1402942467-10671-6-git-send-email-davidlohr@hp.com
+Link: http://lkml.kernel.org/r/1402942467-10671-8-git-send-email-davidlohr@hp.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/bench/futex-requeue.c | 10 +---------
- tools/perf/bench/futex-wake.c    | 12 ++----------
- 2 files changed, 3 insertions(+), 19 deletions(-)
+ tools/perf/bench/mem-memcpy.c | 5 +++++
+ tools/perf/bench/mem-memset.c | 5 +++++
+ 2 files changed, 10 insertions(+)
 
-diff --git a/tools/perf/bench/futex-requeue.c b/tools/perf/bench/futex-requeue.c
-index a1625587..732403b 100644
---- a/tools/perf/bench/futex-requeue.c
-+++ b/tools/perf/bench/futex-requeue.c
-@@ -29,13 +29,6 @@ static u_int32_t futex1 = 0, futex2 = 0;
-  */
- static unsigned int nrequeue = 1;
+diff --git a/tools/perf/bench/mem-memcpy.c b/tools/perf/bench/mem-memcpy.c
+index 5ce71d3..e622c3e 100644
+--- a/tools/perf/bench/mem-memcpy.c
++++ b/tools/perf/bench/mem-memcpy.c
+@@ -189,6 +189,11 @@ int bench_mem_memcpy(int argc, const char **argv,
+ 	argc = parse_options(argc, argv, options,
+ 			     bench_mem_memcpy_usage, 0);
  
--/*
-- * There can be significant variance from run to run,
-- * the more repeats, the more exact the overall avg and
-- * the better idea of the futex latency.
-- */
--static unsigned int repeat = 10;
--
- static pthread_t *worker;
- static bool done = 0, silent = 0;
- static pthread_mutex_t thread_lock;
-@@ -46,7 +39,6 @@ static unsigned int ncpus, threads_starting, nthreads = 0;
- static const struct option options[] = {
- 	OPT_UINTEGER('t', "threads",  &nthreads, "Specify amount of threads"),
- 	OPT_UINTEGER('q', "nrequeue", &nrequeue, "Specify amount of threads to requeue at once"),
--	OPT_UINTEGER('r', "repeat",   &repeat,   "Specify amount of times to repeat the run"),
- 	OPT_BOOLEAN( 's', "silent",   &silent,   "Silent mode: do not display data/details"),
- 	OPT_END()
- };
-@@ -146,7 +138,7 @@ int bench_futex_requeue(int argc, const char **argv,
- 	pthread_cond_init(&thread_parent, NULL);
- 	pthread_cond_init(&thread_worker, NULL);
++	if (no_prefault && only_prefault) {
++		fprintf(stderr, "Invalid options: -o and -n are mutually exclusive\n");
++		return 1;
++	}
++
+ 	if (use_cycle)
+ 		init_cycle();
  
--	for (j = 0; j < repeat && !done; j++) {
-+	for (j = 0; j < bench_repeat && !done; j++) {
- 		unsigned int nrequeued = 0;
- 		struct timeval start, end, runtime;
+diff --git a/tools/perf/bench/mem-memset.c b/tools/perf/bench/mem-memset.c
+index 9af79d2..2a65468 100644
+--- a/tools/perf/bench/mem-memset.c
++++ b/tools/perf/bench/mem-memset.c
+@@ -181,6 +181,11 @@ int bench_mem_memset(int argc, const char **argv,
+ 	argc = parse_options(argc, argv, options,
+ 			     bench_mem_memset_usage, 0);
  
-diff --git a/tools/perf/bench/futex-wake.c b/tools/perf/bench/futex-wake.c
-index d096169..50022cb 100644
---- a/tools/perf/bench/futex-wake.c
-+++ b/tools/perf/bench/futex-wake.c
-@@ -30,15 +30,8 @@ static u_int32_t futex1 = 0;
-  */
- static unsigned int nwakes = 1;
- 
--/*
-- * There can be significant variance from run to run,
-- * the more repeats, the more exact the overall avg and
-- * the better idea of the futex latency.
-- */
--static unsigned int repeat = 10;
--
- pthread_t *worker;
--static bool done = 0, silent = 0;
-+static bool done = false, silent = false;
- static pthread_mutex_t thread_lock;
- static pthread_cond_t thread_parent, thread_worker;
- static struct stats waketime_stats, wakeup_stats;
-@@ -47,7 +40,6 @@ static unsigned int ncpus, threads_starting, nthreads = 0;
- static const struct option options[] = {
- 	OPT_UINTEGER('t', "threads", &nthreads, "Specify amount of threads"),
- 	OPT_UINTEGER('w', "nwakes",  &nwakes,   "Specify amount of threads to wake at once"),
--	OPT_UINTEGER('r', "repeat",  &repeat,   "Specify amount of times to repeat the run"),
- 	OPT_BOOLEAN( 's', "silent",  &silent,   "Silent mode: do not display data/details"),
- 	OPT_END()
- };
-@@ -149,7 +141,7 @@ int bench_futex_wake(int argc, const char **argv,
- 	pthread_cond_init(&thread_parent, NULL);
- 	pthread_cond_init(&thread_worker, NULL);
- 
--	for (j = 0; j < repeat && !done; j++) {
-+	for (j = 0; j < bench_repeat && !done; j++) {
- 		unsigned int nwoken = 0;
- 		struct timeval start, end, runtime;
++	if (no_prefault && only_prefault) {
++		fprintf(stderr, "Invalid options: -o and -n are mutually exclusive\n");
++		return 1;
++	}
++
+ 	if (use_cycle)
+ 		init_cycle();
  
