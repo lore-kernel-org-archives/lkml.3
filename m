@@ -1,55 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756126AbaFYWrR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 18:47:17 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:44824 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752199AbaFYWrQ (ORCPT
+	id S1754158AbaFYWwK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 18:52:10 -0400
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:51672 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751598AbaFYWwI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 18:47:16 -0400
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Don Mullis <don.mullis@gmail.com>, Dave Chinner <david@fromorbit.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/4] lib: list_sort: Various minor improvements
-Organization: D03
-References: <1403604392-23259-1-git-send-email-linux@rasmusvillemoes.dk>
-	<20140625145314.3e16af6998765b7aad860bf7@linux-foundation.org>
-	<87egycoc8t.fsf@rasmusvillemoes.dk>
-	<20140625153246.3d3dbda781ce1af5524269ab@linux-foundation.org>
-X-Hashcash: 1:20:140625:don.mullis@gmail.com::X6Iyv9pXxogpUHKH:000000000000000000000000000000000000000000OrG
-X-Hashcash: 1:20:140625:akpm@linux-foundation.org::emVNaI2VBpk0ihx3:00000000000000000000000000000000000050gp
-X-Hashcash: 1:20:140625:artem.bityutskiy@linux.intel.com::50ecMTCWH9jK+MWm:000000000000000000000000000003k0j
-X-Hashcash: 1:20:140625:david@fromorbit.com::uWF9GBJVHoxFgYt9:0000000000000000000000000000000000000000004Wbf
-X-Hashcash: 1:20:140625:linux-kernel@vger.kernel.org::miY5u9pW+7m7drXK:0000000000000000000000000000000005nNi
-Date: Thu, 26 Jun 2014 00:47:12 +0200
-In-Reply-To: <20140625153246.3d3dbda781ce1af5524269ab@linux-foundation.org>
-	(Andrew Morton's message of "Wed, 25 Jun 2014 15:32:46 -0700")
-Message-ID: <87a990obdb.fsf@rasmusvillemoes.dk>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 25 Jun 2014 18:52:08 -0400
+Message-ID: <1403736725.3457.1.camel@leira.trondhjem.org>
+Subject: [GIT PULL] Please pull NFS client bugfixes for Linux 3.16
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
+Date: Wed, 25 Jun 2014 18:52:05 -0400
+Organization: PrimaryData Inc
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-KyPm5aLxPalqIrx8Hf69"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton <akpm@linux-foundation.org> writes:
 
-> On Thu, 26 Jun 2014 00:28:18 +0200 Rasmus Villemoes <linux@rasmusvillemoes.dk> wrote:
->
->> Minor comment: Won't this end up saying "list_sort_test: list passed to
->> ...", despite the list coming from a 'real' user? Maybe change the first
->> #define to '"list_sort: " fmt', the above message to "passed list too
->> long for efficiency", and redefine pr_fmt right after #ifdef
->> CONFIG_TEST_LIST_SORT.
->
-> Yeah, I was hoping nobody would notice that ;)
->
-> How about just
->
-> 		printk_once(KERN_DEBUG "list too long for efficiency\n");
+--=-KyPm5aLxPalqIrx8Hf69
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-FWIW, fine by me.
+Hi Linus,
 
-Rasmus
+The following changes since commit a497c3ba1d97fc69c1e78e7b96435ba8c2cb42ee=
+:
+
+  Linux 3.16-rc2 (2014-06-21 19:02:54 -1000)
+
+are available in the git repository at:
+
+  git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs-for-3.16-=
+2
+
+for you to fetch changes up to 66b068604903849c5dee3842eb72564064c64c72:
+
+  NFSv4: test SECINFO RPC_AUTH_GSS pseudoflavors for support (2014-06-24 18=
+:46:58 -0400)
+
+----------------------------------------------------------------
+NFS client fixes for Linux 3.16
+
+Highlights include:
+
+- Stable fix for a data corruption case due to incorrect cache validation
+- Fix a couple of false positive cache invalidations
+- Fix NFSv4 security negotiation issues
+
+----------------------------------------------------------------
+Andy Adamson (3):
+      NFS check the return of nfs4_negotiate_security in nfs4_submount
+      NFS Return -EPERM if no supported or matching SECINFO flavor
+      NFSv4: test SECINFO RPC_AUTH_GSS pseudoflavors for support
+
+Scott Mayhew (1):
+      nfs: Fix cache_validity check in nfs_write_pageuptodate()
+
+Trond Myklebust (2):
+      NFS: Clear NFS_INO_REVAL_PAGECACHE when we update the file size
+      NFS: Don't mark the data cache as invalid if it has been flushed
+
+ fs/nfs/inode.c         |  76 +++++++++++++++++++-----------------
+ fs/nfs/nfs4_fs.h       |   2 +-
+ fs/nfs/nfs4namespace.c | 102 +++++++++++++++++++++++++++------------------=
+----
+ fs/nfs/nfs4proc.c      |   2 +-
+ fs/nfs/write.c         |   4 +-
+ net/sunrpc/auth.c      |   1 +
+ 6 files changed, 104 insertions(+), 83 deletions(-)
+
+--=20
+Trond Myklebust
+Linux NFS client maintainer, PrimaryData
+trond.myklebust@primarydata.com
+
+
+--=-KyPm5aLxPalqIrx8Hf69
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAABAgAGBQJTq1KVAAoJEGcL54qWCgDyHXgQAJdh3y3P7zIISKfBqsmnzj2k
+odxw1cOfKYvPqKO/r7SJrsgQA1mWYZZ0HzxJekV03yubiWjpKRx8IMjD7KgXpxnO
+5NQKi/9DiCrlsmxzuMHcELrG1HV76yc5P4h/bHe+lLjb8XywhMGTtSk43oPZTfga
+hCFj7fimwtdF1OAmaWC130t/AEYxxPcGVejkpbRlizyLhPMV9AZLEGbLyvbqAn2W
+zOMTAEtMcXeyk+1uIlrXkgVDpzV1rHtOzsitbQYTYLtFLwdDw1TS4e+Go60LwCH9
+q8fca8h9LSYke1xBzUJ1S/6/3dPAZn+qq+fgnPq/+F9BOKYSFTU+EvkWYEYKKMzY
+AkHvUWSLDmBl4uhxn0Z5fdEw0R/2oWMsU/Zfsf/wYv77tSajkdOyzKKOC2ArTgdM
++7aAqoyOCfsq4R/bpXmBtwV9f4KOokZCkU43Vqq7cqZcNVG29TRBNqrYGGhWNCTM
+YQ5b+uc0OJRwT4NUoSyVHDeASHVFQJoqXuhc5Ac8tVxPQgb9GJvYcccKUYAWdCTG
+PeF67uE1s0YhU4IBd2vIXdluE3RTOjEbnXq9WcyG7ZToUd88t5uS4QyEe3S9kGpS
+J1PAedBfjXVEXa/2hMfuhrtdT7VAnw5FnX8uvXpfw0EsIEZN20FK+l6+l6xSJjnR
+Tqptex20DxHck47/VUqa
+=BNpt
+-----END PGP SIGNATURE-----
+
+--=-KyPm5aLxPalqIrx8Hf69--
+
