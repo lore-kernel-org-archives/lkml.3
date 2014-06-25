@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755184AbaFYUFO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 16:05:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47785 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752833AbaFYUFN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 16:05:13 -0400
-Date: Wed, 25 Jun 2014 22:05:10 +0200
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: Casey Leedom <leedom@chelsio.com>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, tiwai@suse.de,
-        chunkeey@googlemail.com, cocci@systeme.lip6.fr, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        Philip Oswald <poswald@suse.com>,
-        Santosh Rastapur <santosh@chelsio.com>,
-        Jeffrey Cheung <jcheung@suse.com>, David Chang <dchang@suse.com>,
-        Hariprasad Shenai <hariprasad@chelsio.com>
-Subject: Re: [PATCH 2/3] cxgb4: make configuration load use
-	request_firmware_direct()
-Message-ID: <20140625200510.GY27687@wotan.suse.de>
-References: <1403649583-12707-1-git-send-email-mcgrof@do-not-panic.com> <1403649583-12707-3-git-send-email-mcgrof@do-not-panic.com> <D46B557B-AF4A-4E60-8D83-6181D406C64F@chelsio.com> <20140625015048.GI27687@wotan.suse.de> <53AB02F4.1090701@chelsio.com> <20140625173156.GW27687@wotan.suse.de> <53AB1BEC.4080107@chelsio.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53AB1BEC.4080107@chelsio.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1755360AbaFYUFv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 16:05:51 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:40693 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755284AbaFYUFu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 16:05:50 -0400
+Message-ID: <1403726744.2581.3.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH] tools: msgque improve error handling when not running
+ as root
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: gregkh@linuxfoundation.org, akpm@linux-foundation.org,
+        colin.king@canonical.com, linux-kernel@vger.kernel.org
+Date: Wed, 25 Jun 2014 13:05:44 -0700
+In-Reply-To: <1403725210-10245-1-git-send-email-shuah.kh@samsung.com>
+References: <1403725210-10245-1-git-send-email-shuah.kh@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 11:58:52AM -0700, Casey Leedom wrote:
->   Okay, I'll leave the whole request_firmware{,_direct,_nowait}() thing 
-> alone.  The request_firmware_direct() will "solve" a non-problem (since all 
-> of our "firmware" files are _supposed to be_ always present.
+On Wed, 2014-06-25 at 13:40 -0600, Shuah Khan wrote:
+> The test fails in the middle when it is not run as root while
+> accessing /proc/sys/kernel/msg_next_id. Changed it to check
+> for root at the beginning of the test. Also added messages
+> to indicate start and test pass status.
+> 
+> Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+> ---
+>  tools/testing/selftests/ipc/msgque.c | 7 +++++++
+>  1 file changed, 7 insertions(+)
+> 
+> diff --git a/tools/testing/selftests/ipc/msgque.c b/tools/testing/selftests/ipc/msgque.c
+> index aa290c0..30c627a 100644
+> --- a/tools/testing/selftests/ipc/msgque.c
+> +++ b/tools/testing/selftests/ipc/msgque.c
+> @@ -193,6 +193,12 @@ int main(int argc, char **argv)
+>  	int msg, pid, err;
+>  	struct msgque_data msgque;
+>  
+> +	if (getuid() != 0) {
+> +		fprintf(stderr, "Please run the test as root - Exiting.\n");
+> +		exit(1);
+> +	}
 
-The code does not reflect that, it allows for files to not be present for
-the config stuff. If in practice files are always present that's a bit
-different.
+Please use err(3).
 
-> (And the 60 
-> second timeout for udev to confirm that a file doesn't exist seems like 
-> udev is just basically broken.)
+> +	printf("Starting ipc tests:\n");
 
-Its one reason it being tossed.
+This is unnecessary and adds nothing to the program.
 
->   That aside, we still need to solve the real problem that we're 
-> experiencing in that the boot-time load of cxgb4 is timing out on SLE12 
-> because a maximum load timeout has been instituted in that distribution for 
-> driver modules and if there are two 10Gb/s-BT adapters present in a system 
-> which need both base firmware and BT PHY firmware, we exceed that timeout.  
+>  	msgque.key = ftok(argv[0], 822155650);
+>  	if (msgque.key == -1) {
+>  		printf("Can't make key\n");
+> @@ -235,6 +241,7 @@ int main(int argc, char **argv)
+>  		printf("Failed to test queue\n");
+>  		goto err_out;
+>  	}
+> +	printf("All ipc tests Passsed\n");
 
-As for that it'd be great if you can answer some questions I had about
-the rest of firmware load processing on the other thread, I had a bit
-of questions for you there.
+So is this.
 
-> The timeout really should be per device (since there ~could~ be an 
-> arbitrary number of devices in a system) and there probably should be a way 
-> for the driver to notify the kernel timeout mechanism that forward progress 
-> is being made ...
+>  	return 0;
+>  
+>  err_destroy:
 
-I'd prefer we dive into this on the other thread.
 
-  Luis
