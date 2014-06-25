@@ -1,66 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755553AbaFYUP0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 16:15:26 -0400
-Received: from mail-bl2lp0207.outbound.protection.outlook.com ([207.46.163.207]:23214
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755444AbaFYUPV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 16:15:21 -0400
-X-WSS-ID: 0N7QQWW-08-3HC-02
-X-M-MSG: 
-Message-ID: <53AB2DBA.8040407@amd.com>
-Date: Wed, 25 Jun 2014 15:14:50 -0500
-From: Joel Schopp <joel.schopp@amd.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1756106AbaFYUQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 16:16:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37925 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755330AbaFYUQX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 16:16:23 -0400
+Date: Wed, 25 Jun 2014 16:16:04 -0400
+From: Rafael Aquini <aquini@redhat.com>
+To: Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Motohiro Kosaki JP <kosaki.motohiro@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm: export NR_SHMEM via sysinfo(2) / si_meminfo()
+ interfaces
+Message-ID: <20140625201603.GA1534@t510.redhat.com>
+References: <4b46c5b21263c446923caf3da3f0dca6febc7b55.1403709665.git.aquini@redhat.com>
+ <6B2BA408B38BA1478B473C31C3D2074E341D585464@SV-EXCHANGE1.Corp.FC.LOCAL>
 MIME-Version: 1.0
-To: Anup Patel <anup@brainfault.org>, Marc Zyngier <marc.zyngier@arm.com>
-CC: Ian Campbell <ian.campbell@citrix.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 3/9] irqchip: GIC: Convert to EOImode == 1
-References: <1403688530-23273-1-git-send-email-marc.zyngier@arm.com>
- <1403688530-23273-4-git-send-email-marc.zyngier@arm.com>
- <CAAhSdy11HQtiOD6XLqQcZ+zf_Z9Mx0nPrJ0ECNNuRkZt=CfdpA@mail.gmail.com>
-In-Reply-To: <CAAhSdy11HQtiOD6XLqQcZ+zf_Z9Mx0nPrJ0ECNNuRkZt=CfdpA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.180.168.240]
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(199002)(51704005)(189002)(95666004)(65956001)(31966008)(15202345003)(53416004)(77982001)(79102001)(74662001)(65806001)(102836001)(23756003)(87936001)(74502001)(4396001)(54356999)(92566001)(92726001)(85852003)(107046001)(47776003)(64706001)(19580395003)(85306003)(81342001)(36756003)(97736001)(84676001)(64126003)(65816999)(80022001)(76176999)(83322001)(50466002)(83506001)(20776003)(81542001)(83072002)(21056001)(76482001)(50986999)(33656002)(105586002)(80316001)(46102001)(68736004)(59896001)(77096002)(106466001)(101416001)(99396002)(86362001)(15975445006)(44976005)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:BY1PR0201MB0918;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
-X-Forefront-PRVS: 02530BD3AA
-Authentication-Results: spf=none (sender IP is 165.204.84.222)
- smtp.mailfrom=Joel.Schopp@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6B2BA408B38BA1478B473C31C3D2074E341D585464@SV-EXCHANGE1.Corp.FC.LOCAL>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 25, 2014 at 12:41:17PM -0700, Motohiro Kosaki wrote:
+> 
+> 
+> > -----Original Message-----
+> > From: Rafael Aquini [mailto:aquini@redhat.com]
+> > Sent: Wednesday, June 25, 2014 2:40 PM
+> > To: linux-mm@kvack.org
+> > Cc: Andrew Morton; Rik van Riel; Mel Gorman; Johannes Weiner; Motohiro Kosaki JP; linux-kernel@vger.kernel.org
+> > Subject: [PATCH] mm: export NR_SHMEM via sysinfo(2) / si_meminfo() interfaces
+> > 
+> > This patch leverages the addition of explicit accounting for pages used by shmem/tmpfs -- "4b02108 mm: oom analysis: add shmem
+> > vmstat" -- in order to make the users of sysinfo(2) and si_meminfo*() friends aware of that vmstat entry consistently across the
+> > interfaces.
+> 
+> Why?
 
->> +               if (resource_size(&cpu_res) >= SZ_8K)
->> +                       supports_deactivate = true;
->> +               else
->> +                       pr_warn("GIC: CPU interface size is %x, DT is probably wrong\n", (int)resource_size(&cpu_res));
-> This will not work on APM X-Gene because, for
-> X-Gene first CPU page is at 0x78020000 and
-> second CPU page is at 0x78030000.
->
-> Ian had send-out a patch long time back to extend
-> GIC dt-bindings for addressing this issue.
-> (http://www.spinics.net/lists/arm-kernel/msg283767.html)
+Because we do not report consistently across the interfaces we declare
+exporting that data. Check sysinfo(2) manpage, for instance:
+[...]
+           struct sysinfo {
+               long uptime;             /* Seconds since boot */
+               unsigned long loads[3];  /* 1, 5, and 15 minute load averages */
+               unsigned long totalram;  /* Total usable main memory size */
+               unsigned long freeram;   /* Available memory size */
+               unsigned long sharedram; /* Amount of shared memory */ <<<<<
+[...]
 
-We have a similar issue with an AMD SOC.  You can add 0xf000 (60K) page 
-offset to it to cleverly work around the issue but it seems quite likely 
-that the page offset has to be communicated to userspace and handled 
-there at no small effort.
+userspace tools resorting to sysinfo() syscall will get a hardcoded 0
+for shared memory which is reported differently from /proc/meminfo.
 
-Anybody want to revive Ian's split patches?  They do seem convoluted but 
-seem like they might work as an approach.
+Also, si_meminfo() & si_meminfo_node() are utilized within the kernel to
+gather statistics for /proc/meminfo & friends, and so we can leverage collecting
+sharedmem from those calls as well, just as we do for totalram, freeram & bufferram.
 
--Joel
+Regards,
+-- Rafael
 
+> Traditionally sysinfo.sharedram was not used for shmem. It was totally strange semantics and completely outdated feature. 
+> So, we may reuse it for another purpose. But I'm not sure its benefit. 
+> 
+> Why don't you use /proc/meminfo?
+> I'm afraid userland programs get a confusion. 
+> 
+> 
+> > 
+> > Signed-off-by: Rafael Aquini <aquini@redhat.com>
+> > ---
+> >  drivers/base/node.c | 2 +-
+> >  fs/proc/meminfo.c   | 2 +-
+> >  mm/page_alloc.c     | 3 ++-
+> >  3 files changed, 4 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/drivers/base/node.c b/drivers/base/node.c index 8f7ed99..c6d3ae0 100644
+> > --- a/drivers/base/node.c
+> > +++ b/drivers/base/node.c
+> > @@ -126,7 +126,7 @@ static ssize_t node_read_meminfo(struct device *dev,
+> >  		       nid, K(node_page_state(nid, NR_FILE_PAGES)),
+> >  		       nid, K(node_page_state(nid, NR_FILE_MAPPED)),
+> >  		       nid, K(node_page_state(nid, NR_ANON_PAGES)),
+> > -		       nid, K(node_page_state(nid, NR_SHMEM)),
+> > +		       nid, K(i.sharedram),
+> >  		       nid, node_page_state(nid, NR_KERNEL_STACK) *
+> >  				THREAD_SIZE / 1024,
+> >  		       nid, K(node_page_state(nid, NR_PAGETABLE)), diff --git a/fs/proc/meminfo.c b/fs/proc/meminfo.c index
+> > 7445af0..aa1eee0 100644
+> > --- a/fs/proc/meminfo.c
+> > +++ b/fs/proc/meminfo.c
+> > @@ -168,7 +168,7 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
+> >  		K(global_page_state(NR_WRITEBACK)),
+> >  		K(global_page_state(NR_ANON_PAGES)),
+> >  		K(global_page_state(NR_FILE_MAPPED)),
+> > -		K(global_page_state(NR_SHMEM)),
+> > +		K(i.sharedram),
+> >  		K(global_page_state(NR_SLAB_RECLAIMABLE) +
+> >  				global_page_state(NR_SLAB_UNRECLAIMABLE)),
+> >  		K(global_page_state(NR_SLAB_RECLAIMABLE)),
+> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c index 20d17f8..f72ea38 100644
+> > --- a/mm/page_alloc.c
+> > +++ b/mm/page_alloc.c
+> > @@ -3040,7 +3040,7 @@ static inline void show_node(struct zone *zone)  void si_meminfo(struct sysinfo *val)  {
+> >  	val->totalram = totalram_pages;
+> > -	val->sharedram = 0;
+> > +	val->sharedram = global_page_state(NR_SHMEM);
+> >  	val->freeram = global_page_state(NR_FREE_PAGES);
+> >  	val->bufferram = nr_blockdev_pages();
+> >  	val->totalhigh = totalhigh_pages;
+> > @@ -3060,6 +3060,7 @@ void si_meminfo_node(struct sysinfo *val, int nid)
+> >  	for (zone_type = 0; zone_type < MAX_NR_ZONES; zone_type++)
+> >  		managed_pages += pgdat->node_zones[zone_type].managed_pages;
+> >  	val->totalram = managed_pages;
+> > +	val->sharedram = node_page_state(nid, NR_SHMEM);
+> >  	val->freeram = node_page_state(nid, NR_FREE_PAGES);  #ifdef CONFIG_HIGHMEM
+> >  	val->totalhigh = pgdat->node_zones[ZONE_HIGHMEM].managed_pages;
+> > --
+> > 1.9.3
+> 
