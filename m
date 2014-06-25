@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757462AbaFYPfM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 11:35:12 -0400
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:49648 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756886AbaFYPfK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 11:35:10 -0400
+	id S1757484AbaFYPfS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 11:35:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14214 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756886AbaFYPfP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 11:35:15 -0400
+Message-ID: <53AAEC1A.20905@redhat.com>
+Date: Wed, 25 Jun 2014 17:34:50 +0200
+From: Maurizio Lombardi <mlombard@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Date: Wed, 25 Jun 2014 23:35:09 +0800
-Message-ID: <CAJKoSVRLvPe+5tae=buV3j12L612tdaYAWMT303GO71NF-w27g@mail.gmail.com>
-Subject: [PATCH 2/2] staging: wlan-ng/hfa384x_usb.c: remove return statements
- for void function
-From: Cheng-Wei Lee <lee.rhapsody@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sherif Shehab Aldin <shehabaldin.sherif@gmail.com>,
-        Avinash Kumar <avi.kp.137@gmail.com>,
-        Peter Senna Tschudin <peter.senna@gmail.com>
-Cc: devel <devel@driverdev.osuosl.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        xjtuwjp@gmail.com, lindar_liu@usish.com
+CC: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] scsi: pm8001: pm80xx_hwi.c:  Cleaning up variable is
+ set more than once
+References: <1403704907-25672-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+In-Reply-To: <1403704907-25672-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the following checkpatch.pl issues in hfa384x_usb.c:
-WARNING: Missing a blank line after declarations
+This one looks good to me,
 
-Signed-off-by: Quentin Lee <lee.rhapsody@gmail.com>
----
- drivers/staging/wlan-ng/hfa384x_usb.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+Reviewed-by: Maurizio Lombardi <mlombard@redhat.com>
 
-diff --git a/drivers/staging/wlan-ng/hfa384x_usb.c
-b/drivers/staging/wlan-ng/hfa384x_usb.c
-index 07cee56..99e2f2d 100644
---- a/drivers/staging/wlan-ng/hfa384x_usb.c
-+++ b/drivers/staging/wlan-ng/hfa384x_usb.c
-@@ -3533,7 +3533,7 @@ static void hfa384x_usbin_rx(wlandevice_t
-*wlandev, struct sk_buff *skb)
- 	}
-
- done:
--	return;
-+	pr_debug("hfa384x_usbin_rx: done\n");
- }
-
- /*----------------------------------------------------------------
-@@ -3643,8 +3643,6 @@ static void hfa384x_int_rxmonitor(wlandevice_t *wlandev,
-
- 	/* pass it back up */
- 	prism2sta_ev_rx(wlandev, skb);
--
--	return;
- }
-
- /*----------------------------------------------------------------
--- 
-1.7.9.5
+On 06/25/2014 04:01 PM, Rickard Strandqvist wrote:
+> A struct member variable is set to different values without having used in between.
+> 
+> This was found using a static code analysis program called cppcheck
+> 
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>  drivers/scsi/pm8001/pm80xx_hwi.c |    1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/drivers/scsi/pm8001/pm80xx_hwi.c b/drivers/scsi/pm8001/pm80xx_hwi.c
+> index d70587f..2698227 100644
+> --- a/drivers/scsi/pm8001/pm80xx_hwi.c
+> +++ b/drivers/scsi/pm8001/pm80xx_hwi.c
+> @@ -249,7 +249,6 @@ moreData:
+>  				sprintf(pm8001_ha->
+>  					forensic_info.data_buf.direct_data,
+>  						"%08x ", 4);
+> -			pm8001_ha->forensic_info.data_buf.read_len = 0xFFFFFFFF;
+>  			pm8001_ha->forensic_info.data_buf.direct_len =  0;
+>  			pm8001_ha->forensic_info.data_buf.direct_offset = 0;
+>  			pm8001_ha->forensic_info.data_buf.read_len = 0;
+> 
