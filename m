@@ -1,73 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755788AbaFYJxn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 05:53:43 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:56931 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851AbaFYJxl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 05:53:41 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Pawel Osciak <posciak@chromium.org>
-Cc: Vincent Palatin <vpalatin@chromium.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Olof Johansson <olofj@chromium.org>,
-        Zach Kuznia <zork@chromium.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: Re: [PATCH v2] V4L: uvcvideo: Add support for relative pan/tilt controls
-Date: Wed, 25 Jun 2014 11:54:30 +0200
-Message-ID: <8119752.rPOQIYa4Af@avalon>
-User-Agent: KMail/4.11.5 (Linux/3.12.21-gentoo-r1; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CACHYQ-rSk6etrX8RXF4w7aA_LJ9nzGtfJMOjhBOg49BZ4gaWgw@mail.gmail.com>
-References: <539FDC4F.4030000@redhat.com> <1403016348-10129-1-git-send-email-vpalatin@chromium.org> <CACHYQ-rSk6etrX8RXF4w7aA_LJ9nzGtfJMOjhBOg49BZ4gaWgw@mail.gmail.com>
+	id S1755830AbaFYJyu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 05:54:50 -0400
+Received: from mga14.intel.com ([192.55.52.115]:17963 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752596AbaFYJyt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 05:54:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,544,1400050800"; 
+   d="scan'208";a="553001892"
+Date: Wed, 25 Jun 2014 17:54:44 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Jet Chen <jet.chen@intel.com>,
+        Yuanhan Liu <yuanhan.liu@intel.com>, LKP <lkp@01.org>,
+        "Su, Tao" <tao.su@intel.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Subject: Re: [cpufreq] kernel BUG at kernel/irq_work.c:175!
+Message-ID: <20140625095444.GA1635@localhost>
+References: <20140625093650.GD27280@localhost>
+ <CAKohpo=qmJktRviycErY205xo=-MJ1NZG-uGidRXjO+aAEczEg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKohpo=qmJktRviycErY205xo=-MJ1NZG-uGidRXjO+aAEczEg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pawel,
-
-On Wednesday 25 June 2014 11:46:24 Pawel Osciak wrote:
-> On Tue, Jun 17, 2014 at 11:45 PM, Vincent Palatin wrote:
-> > Map V4L2_CID_TILT_RELATIVE and V4L2_CID_PAN_RELATIVE to the standard UVC
-> > CT_PANTILT_RELATIVE_CONTROL terminal control request.
-> > 
-> > Tested by plugging a Logitech ConferenceCam C3000e USB camera
-> > and controlling pan/tilt from the userspace using the VIDIOC_S_CTRL ioctl.
-> > Verified that it can pan and tilt at the same time in both directions.
-> > 
-> > Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
-> > 
-> > Change-Id: I7b70b228e5c0126683f5f0be34ffd2807f5783dc
-> > ---
-> > 
-> > Changes
-> > v2: fix control request name in description.
+> Nothing specific to my tree, its there in linux-next and PeterZ is
+> already working on it:
 > 
-> The patch looks good, but I have a more general comment for everyone to
-> consider. This doesn't match the expected functionality of
-> controls V4L2_CID_PAN/TILT_RELATIVE. This is basically an on/off switch for
-> pan/tilt, which once enabled will keep going until turned off (or I'm
-> guessing until the maximum pan/tilt is reached), while the controls are
-> supposed to expose an ability to turn the camera by a specified amount.
-> Here the amount will also be ignored...
+> https://lkml.org/lkml/2014/6/25/25
 
-I agree with you here, and this mismatch between the V4L and UVC controls is 
-the reason why I haven't implemented relative pan/tilt support.
+That's great! Sorry I should have googled LKML before reporting this error.
 
-> Given that this is a standard UVC control, perhaps we need new V4L2
-> controls for it, as I'm assuming we can't change the meaning of existing
-> controls?
+Fengguang
 
-We could extend the meaning of the controls to cover the UVC behaviour in a 
-device-specific fashion, but that would be confusing for applications, so new 
-controls might be a better idea.
-
--- 
-Regards,
-
-Laurent Pinchart
-
+> Last diff from him:
+> 
+> ---
+>  kernel/irq_work.c |   12 +-----------
+>  1 file changed, 1 insertion(+), 11 deletions(-)
+> 
+> Index: linux-2.6/kernel/irq_work.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/irq_work.c
+> +++ linux-2.6/kernel/irq_work.c
+> @@ -160,21 +160,11 @@ static void irq_work_run_list(struct lli
+>         }
+>  }
+> 
+> -static void __irq_work_run(void)
+> +static void irq_work_run(void)
+>  {
+>         irq_work_run_list(&__get_cpu_var(raised_list));
+>         irq_work_run_list(&__get_cpu_var(lazy_list));
+>  }
+> -
+> -/*
+> - * Run the irq_work entries on this cpu. Requires to be ran from hardirq
+> - * context with local IRQs disabled.
+> - */
+> -void irq_work_run(void)
+> -{
+> -       BUG_ON(!in_irq());
+> -       __irq_work_run();
+> -}
+>  EXPORT_SYMBOL_GPL(irq_work_run);
