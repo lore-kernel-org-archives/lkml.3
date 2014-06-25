@@ -1,93 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754656AbaFYGzY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 02:55:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59243 "EHLO mx2.suse.de"
+	id S1752896AbaFYG6s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 02:58:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59278 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753218AbaFYGzW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 02:55:22 -0400
-Date: Wed, 25 Jun 2014 08:55:20 +0200
+	id S1752391AbaFYG6r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 02:58:47 -0400
+Date: Wed, 25 Jun 2014 08:58:44 +0200
 From: Michal Hocko <mhocko@suse.cz>
 To: Vladimir Davydov <vdavydov@parallels.com>
 Cc: akpm@linux-foundation.org, hannes@cmpxchg.org,
         linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH -mm 2/3] page-cgroup: get rid of NR_PCG_FLAGS
-Message-ID: <20140625065520.GB10223@dhcp22.suse.cz>
+Subject: Re: [PATCH -mm 3/3] page-cgroup: fix flags definition
+Message-ID: <20140625065844.GC10223@dhcp22.suse.cz>
 References: <9f5abf8dcb07fe5462f12f81867f199c22e883d3.1403626729.git.vdavydov@parallels.com>
- <26252c1699103f7efe51b224dd61bdb74e31f255.1403626729.git.vdavydov@parallels.com>
+ <aacc50fb60eeb9cbe14e07235310fb9295b2658b.1403626729.git.vdavydov@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <26252c1699103f7efe51b224dd61bdb74e31f255.1403626729.git.vdavydov@parallels.com>
+In-Reply-To: <aacc50fb60eeb9cbe14e07235310fb9295b2658b.1403626729.git.vdavydov@parallels.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 24-06-14 20:33:05, Vladimir Davydov wrote:
-> It's not used anywhere today, so let's remove it.
+On Tue 24-06-14 20:33:06, Vladimir Davydov wrote:
+> Since commit a9ce315aaec1f ("mm: memcontrol: rewrite uncharge API"),
+
+I guess the sha comes from linux-next. Andrew will probably just fold
+this into mm-memcontrol-rewrite-uncharge-api.patch but the sha should be
+removed otherwise.
+
+> PCG_* flags are used as bit masks, but they are still defined in a enum
+> as bit numbers. Fix it.
 > 
 > Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 
 Acked-by: Michal Hocko <mhocko@suse.cz>
 
 > ---
->  include/linux/page_cgroup.h |    6 ------
->  kernel/bounds.c             |    2 --
->  2 files changed, 8 deletions(-)
+>  include/linux/page_cgroup.h |   12 +++++-------
+>  1 file changed, 5 insertions(+), 7 deletions(-)
 > 
 > diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
-> index 23863edb95ff..fb60e4a466c0 100644
+> index fb60e4a466c0..9065a61345a1 100644
 > --- a/include/linux/page_cgroup.h
 > +++ b/include/linux/page_cgroup.h
-> @@ -6,12 +6,8 @@ enum {
->  	PCG_USED,	/* This page is charged to a memcg */
->  	PCG_MEM,	/* This page holds a memory charge */
->  	PCG_MEMSW,	/* This page holds a memory+swap charge */
-> -	__NR_PCG_FLAGS,
->  };
+> @@ -1,12 +1,10 @@
+>  #ifndef __LINUX_PAGE_CGROUP_H
+>  #define __LINUX_PAGE_CGROUP_H
 >  
-> -#ifndef __GENERATING_BOUNDS_H
-> -#include <generated/bounds.h>
-> -
+> -enum {
+> -	/* flags for mem_cgroup */
+> -	PCG_USED,	/* This page is charged to a memcg */
+> -	PCG_MEM,	/* This page holds a memory charge */
+> -	PCG_MEMSW,	/* This page holds a memory+swap charge */
+> -};
+> +/* flags for mem_cgroup */
+> +#define PCG_USED	0x01	/* This page is charged to a memcg */
+> +#define PCG_MEM		0x02	/* This page holds a memory charge */
+> +#define PCG_MEMSW	0x04	/* This page holds a memory+swap charge */
+>  
 >  struct pglist_data;
 >  
->  #ifdef CONFIG_MEMCG
-> @@ -107,6 +103,4 @@ static inline void swap_cgroup_swapoff(int type)
+> @@ -44,7 +42,7 @@ struct page *lookup_cgroup_page(struct page_cgroup *pc);
 >  
->  #endif /* CONFIG_MEMCG_SWAP */
->  
-> -#endif /* !__GENERATING_BOUNDS_H */
-> -
->  #endif /* __LINUX_PAGE_CGROUP_H */
-> diff --git a/kernel/bounds.c b/kernel/bounds.c
-> index 9fd4246b04b8..e1d1d1952bfa 100644
-> --- a/kernel/bounds.c
-> +++ b/kernel/bounds.c
-> @@ -9,7 +9,6 @@
->  #include <linux/page-flags.h>
->  #include <linux/mmzone.h>
->  #include <linux/kbuild.h>
-> -#include <linux/page_cgroup.h>
->  #include <linux/log2.h>
->  #include <linux/spinlock_types.h>
->  
-> @@ -18,7 +17,6 @@ void foo(void)
->  	/* The enum constants to put into include/generated/bounds.h */
->  	DEFINE(NR_PAGEFLAGS, __NR_PAGEFLAGS);
->  	DEFINE(MAX_NR_ZONES, __MAX_NR_ZONES);
-> -	DEFINE(NR_PCG_FLAGS, __NR_PCG_FLAGS);
->  #ifdef CONFIG_SMP
->  	DEFINE(NR_CPUS_BITS, ilog2(CONFIG_NR_CPUS));
->  #endif
+>  static inline int PageCgroupUsed(struct page_cgroup *pc)
+>  {
+> -	return test_bit(PCG_USED, &pc->flags);
+> +	return !!(pc->flags & PCG_USED);
+>  }
+>  #else /* !CONFIG_MEMCG */
+>  struct page_cgroup;
 > -- 
 > 1.7.10.4
 > 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
 -- 
 Michal Hocko
