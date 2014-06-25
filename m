@@ -1,101 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753306AbaFYE6l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 00:58:41 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:59091 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753022AbaFYE6i (ORCPT
+	id S1754412AbaFYFAB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 01:00:01 -0400
+Received: from smtprelay0198.hostedemail.com ([216.40.44.198]:45063 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754205AbaFYFAA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 00:58:38 -0400
-From: Anil Belur <askb23@gmail.com>
-X-Google-Original-From: Anil Belur
-To: andreas.dilger@intel.com, oleg.drokin@intel.com,
-        gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, hpdd-discuss@ml01.01.org,
-        Anil Belur <askb23@gmail.com>
-Subject: [PATCH 3/4] staging: lustre: llite: dir.c - fixes indented labels in code
-Date: Wed, 25 Jun 2014 14:57:29 +1000
-Message-Id: <1403672250-19048-3-git-send-email-askb23@gmail.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1403672250-19048-1-git-send-email-askb23@gmail.com>
-References: <1403672250-19048-1-git-send-email-askb23@gmail.com>
+	Wed, 25 Jun 2014 01:00:00 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1566:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3866:3867:3868:3870:3871:3873:4321:5007:6119:7652:7903:10004:10400:10848:11232:11658:11914:12114:12517:12519:12663:12740:13069:13161:13229:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: field94_39df51df6c00b
+X-Filterd-Recvd-Size: 1327
+Message-ID: <1403672396.17451.3.camel@joe-AO725>
+Subject: Re: [PATCH V2 08/22] amd: Use pci_zalloc_consistent
+From: Joe Perches <joe@perches.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Don Fry <pcnet32@frontier.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Date: Tue, 24 Jun 2014 21:59:56 -0700
+In-Reply-To: <53AA54BE.9030206@roeck-us.net>
+References: <cover.1403530604.git.joe@perches.com>
+	 <c7cdaa8e080157cdabb92278a4c3beba89b49070.1403530604.git.joe@perches.com>
+	 <1403546524.12008.2.camel@Lunix2.home>
+	 <1403550950.15811.15.camel@joe-AO725> <1403557507.20657.3.camel@joe-AO725>
+	 <53AA54BE.9030206@roeck-us.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Anil Belur <askb23@gmail.com>
+On Tue, 2014-06-24 at 21:49 -0700, Guenter Roeck wrote:
+> On 06/23/2014 02:05 PM, Joe Perches wrote:
+> > V2: Don Fry is an 80 column neatnik.
+> And you are an 'align with (' neatnik, so guess the two of you are even :-)
 
-- this fixes "WARNING: labels should not be indented"
+Guilty.
 
-Signed-off-by: Anil Belur <askb23@gmail.com>
----
- drivers/staging/lustre/lustre/llite/dir.c | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+The editor (emacs in my case) allows me to forget I am one though.
 
-diff --git a/drivers/staging/lustre/lustre/llite/dir.c b/drivers/staging/lustre/lustre/llite/dir.c
-index ae6f61a..5d096d8 100644
---- a/drivers/staging/lustre/lustre/llite/dir.c
-+++ b/drivers/staging/lustre/lustre/llite/dir.c
-@@ -1501,7 +1501,7 @@ out_rmdir:
- 				GOTO(out_req, rc = -EFAULT);
- 			rc = -EOVERFLOW;
- 		}
--	skip_lmm:
-+skip_lmm:
- 		if (cmd == IOC_MDC_GETFILEINFO || cmd == LL_IOC_MDC_GETINFO) {
- 			struct lov_user_mds_data *lmdp;
- 			lstat_t st = { 0 };
-@@ -1525,7 +1525,7 @@ out_rmdir:
- 				GOTO(out_req, rc = -EFAULT);
- 		}
- 
--	out_req:
-+out_req:
- 		ptlrpc_req_finished(request);
- 		if (filename)
- 			ll_putname(filename);
-@@ -1589,9 +1589,9 @@ out_rmdir:
- 		if (copy_to_user(&lumd->lmd_st, &st, sizeof(st)))
- 			GOTO(free_lsm, rc = -EFAULT);
- 
--	free_lsm:
-+free_lsm:
- 		obd_free_memmd(sbi->ll_dt_exp, &lsm);
--	free_lmm:
-+free_lmm:
- 		OBD_FREE_LARGE(lmm, lmmsize);
- 		return rc;
- 	}
-@@ -1653,7 +1653,7 @@ out_rmdir:
- 				CDEBUG(D_QUOTA, "copy_to_user failed\n");
- 			GOTO(out_poll, rc);
- 		}
--	out_poll:
-+out_poll:
- 		OBD_FREE_PTR(check);
- 		return rc;
- 	}
-@@ -1702,9 +1702,9 @@ out_rmdir:
- 				rc = -EFAULT;
- 		}
- 
--	out_quotactl_20:
-+out_quotactl_20:
- 		OBD_FREE_PTR(qctl_20);
--	out_quotactl_18:
-+out_quotactl_18:
- 		OBD_FREE_PTR(qctl_18);
- 		return rc;
- 	}
-@@ -1726,7 +1726,7 @@ out_rmdir:
- 		if (rc == 0 && copy_to_user((void *)arg,qctl,sizeof(*qctl)))
- 			rc = -EFAULT;
- 
--	out_quotactl:
-+out_quotactl:
- 		OBD_FREE_PTR(qctl);
- 		return rc;
- 	}
--- 
-1.9.0
 
