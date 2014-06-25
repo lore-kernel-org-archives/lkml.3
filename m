@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755421AbaFYFv6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 01:51:58 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36321 "EHLO
+	id S1755453AbaFYFwS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 01:52:18 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:36337 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752564AbaFYFvz (ORCPT
+	with ESMTP id S1752564AbaFYFwQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 01:51:55 -0400
-Date: Tue, 24 Jun 2014 22:51:40 -0700
+	Wed, 25 Jun 2014 01:52:16 -0400
+Date: Tue, 24 Jun 2014 22:51:55 -0700
 From: tip-bot for Davidlohr Bueso <tipbot@zytor.com>
-Message-ID: <tip-b6f0629a94f7ed6089560be7f0561be19f934fc4@git.kernel.org>
+Message-ID: <tip-d9de84afd1f3a464135abe2b26e66aa86be5af8d@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
         mingo@kernel.org, jolsa@kernel.org, mitake@dcl.info.waseda.ac.jp,
         tglx@linutronix.de, davidlohr@hp.com, aswin@hp.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         acme@redhat.com, jolsa@kernel.org, mitake@dcl.info.waseda.ac.jp,
         tglx@linutronix.de, davidlohr@hp.com, aswin@hp.com
-In-Reply-To: <1402942467-10671-2-git-send-email-davidlohr@hp.com>
-References: <1402942467-10671-2-git-send-email-davidlohr@hp.com>
+In-Reply-To: <1402942467-10671-6-git-send-email-davidlohr@hp.com>
+References: <1402942467-10671-6-git-send-email-davidlohr@hp.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf bench: Add --repeat option
-Git-Commit-ID: b6f0629a94f7ed6089560be7f0561be19f934fc4
+Subject: [tip:perf/core] perf bench futex: Use global --repeat option
+Git-Commit-ID: d9de84afd1f3a464135abe2b26e66aa86be5af8d
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,90 +33,99 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b6f0629a94f7ed6089560be7f0561be19f934fc4
-Gitweb:     http://git.kernel.org/tip/b6f0629a94f7ed6089560be7f0561be19f934fc4
+Commit-ID:  d9de84afd1f3a464135abe2b26e66aa86be5af8d
+Gitweb:     http://git.kernel.org/tip/d9de84afd1f3a464135abe2b26e66aa86be5af8d
 Author:     Davidlohr Bueso <davidlohr@hp.com>
-AuthorDate: Mon, 16 Jun 2014 11:14:19 -0700
+AuthorDate: Mon, 16 Jun 2014 11:14:23 -0700
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 19 Jun 2014 16:13:15 -0300
+CommitDate: Thu, 19 Jun 2014 16:13:16 -0300
 
-perf bench: Add --repeat option
+perf bench futex: Use global --repeat option
 
-There are a number of benchmarks that do single runs and as a result
-does not really help users gain a general idea of how the workload
-performs. So the user must either manually do multiple runs or just use
-single bogus results.
-
-This option will enable users to specify the amount of runs (arbitrarily
-defaulted to 10, to use the existing benchmarks default) through the
-'--repeat' option.  Add it to perf-bench instead of implementing it
-always in each specific benchmark.
+This option is available through perf-bench, use it instead and free the
+local option.
 
 Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
 Cc: Aswin Chandramouleeswaran <aswin@hp.com>
 Cc: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
 Cc: Jiri Olsa <jolsa@kernel.org>
-Link: http://lkml.kernel.org/r/1402942467-10671-2-git-send-email-davidlohr@hp.com
-[ Kept the existing default of 10, changing it to something else should
-  be done on separate patch ]
+Link: http://lkml.kernel.org/r/1402942467-10671-6-git-send-email-davidlohr@hp.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-bench.txt | 4 ++++
- tools/perf/bench/bench.h                | 1 +
- tools/perf/builtin-bench.c              | 7 +++++++
- 3 files changed, 12 insertions(+)
+ tools/perf/bench/futex-requeue.c | 10 +---------
+ tools/perf/bench/futex-wake.c    | 12 ++----------
+ 2 files changed, 3 insertions(+), 19 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-bench.txt b/tools/perf/Documentation/perf-bench.txt
-index 4464ad7..f6480cb 100644
---- a/tools/perf/Documentation/perf-bench.txt
-+++ b/tools/perf/Documentation/perf-bench.txt
-@@ -16,6 +16,10 @@ This 'perf bench' command is a general framework for benchmark suites.
+diff --git a/tools/perf/bench/futex-requeue.c b/tools/perf/bench/futex-requeue.c
+index a1625587..732403b 100644
+--- a/tools/perf/bench/futex-requeue.c
++++ b/tools/perf/bench/futex-requeue.c
+@@ -29,13 +29,6 @@ static u_int32_t futex1 = 0, futex2 = 0;
+  */
+ static unsigned int nrequeue = 1;
  
- COMMON OPTIONS
- --------------
-+-r::
-+--repeat=::
-+Specify amount of times to repeat the run (default 10).
-+
- -f::
- --format=::
- Specify format style.
-diff --git a/tools/perf/bench/bench.h b/tools/perf/bench/bench.h
-index eba4670..3c4dd44 100644
---- a/tools/perf/bench/bench.h
-+++ b/tools/perf/bench/bench.h
-@@ -43,5 +43,6 @@ extern int bench_futex_requeue(int argc, const char **argv, const char *prefix);
- #define BENCH_FORMAT_UNKNOWN		-1
- 
- extern int bench_format;
-+extern unsigned int bench_repeat;
- 
- #endif
-diff --git a/tools/perf/builtin-bench.c b/tools/perf/builtin-bench.c
-index 1e6e777..b9a56fa 100644
---- a/tools/perf/builtin-bench.c
-+++ b/tools/perf/builtin-bench.c
-@@ -104,9 +104,11 @@ static const char *bench_format_str;
- 
- /* Output/formatting style, exported to benchmark modules: */
- int bench_format = BENCH_FORMAT_DEFAULT;
-+unsigned int bench_repeat = 10; /* default number of times to repeat the run */
- 
- static const struct option bench_options[] = {
- 	OPT_STRING('f', "format", &bench_format_str, "default", "Specify format style"),
-+	OPT_UINTEGER('r', "repeat",  &bench_repeat,   "Specify amount of times to repeat the run"),
+-/*
+- * There can be significant variance from run to run,
+- * the more repeats, the more exact the overall avg and
+- * the better idea of the futex latency.
+- */
+-static unsigned int repeat = 10;
+-
+ static pthread_t *worker;
+ static bool done = 0, silent = 0;
+ static pthread_mutex_t thread_lock;
+@@ -46,7 +39,6 @@ static unsigned int ncpus, threads_starting, nthreads = 0;
+ static const struct option options[] = {
+ 	OPT_UINTEGER('t', "threads",  &nthreads, "Specify amount of threads"),
+ 	OPT_UINTEGER('q', "nrequeue", &nrequeue, "Specify amount of threads to requeue at once"),
+-	OPT_UINTEGER('r', "repeat",   &repeat,   "Specify amount of times to repeat the run"),
+ 	OPT_BOOLEAN( 's', "silent",   &silent,   "Silent mode: do not display data/details"),
  	OPT_END()
  };
+@@ -146,7 +138,7 @@ int bench_futex_requeue(int argc, const char **argv,
+ 	pthread_cond_init(&thread_parent, NULL);
+ 	pthread_cond_init(&thread_worker, NULL);
  
-@@ -226,6 +228,11 @@ int cmd_bench(int argc, const char **argv, const char *prefix __maybe_unused)
- 		goto end;
- 	}
+-	for (j = 0; j < repeat && !done; j++) {
++	for (j = 0; j < bench_repeat && !done; j++) {
+ 		unsigned int nrequeued = 0;
+ 		struct timeval start, end, runtime;
  
-+	if (bench_repeat == 0) {
-+		printf("Invalid repeat option: Must specify a positive value\n");
-+		goto end;
-+	}
-+
- 	if (argc < 1) {
- 		print_usage();
- 		goto end;
+diff --git a/tools/perf/bench/futex-wake.c b/tools/perf/bench/futex-wake.c
+index d096169..50022cb 100644
+--- a/tools/perf/bench/futex-wake.c
++++ b/tools/perf/bench/futex-wake.c
+@@ -30,15 +30,8 @@ static u_int32_t futex1 = 0;
+  */
+ static unsigned int nwakes = 1;
+ 
+-/*
+- * There can be significant variance from run to run,
+- * the more repeats, the more exact the overall avg and
+- * the better idea of the futex latency.
+- */
+-static unsigned int repeat = 10;
+-
+ pthread_t *worker;
+-static bool done = 0, silent = 0;
++static bool done = false, silent = false;
+ static pthread_mutex_t thread_lock;
+ static pthread_cond_t thread_parent, thread_worker;
+ static struct stats waketime_stats, wakeup_stats;
+@@ -47,7 +40,6 @@ static unsigned int ncpus, threads_starting, nthreads = 0;
+ static const struct option options[] = {
+ 	OPT_UINTEGER('t', "threads", &nthreads, "Specify amount of threads"),
+ 	OPT_UINTEGER('w', "nwakes",  &nwakes,   "Specify amount of threads to wake at once"),
+-	OPT_UINTEGER('r', "repeat",  &repeat,   "Specify amount of times to repeat the run"),
+ 	OPT_BOOLEAN( 's', "silent",  &silent,   "Silent mode: do not display data/details"),
+ 	OPT_END()
+ };
+@@ -149,7 +141,7 @@ int bench_futex_wake(int argc, const char **argv,
+ 	pthread_cond_init(&thread_parent, NULL);
+ 	pthread_cond_init(&thread_worker, NULL);
+ 
+-	for (j = 0; j < repeat && !done; j++) {
++	for (j = 0; j < bench_repeat && !done; j++) {
+ 		unsigned int nwoken = 0;
+ 		struct timeval start, end, runtime;
+ 
