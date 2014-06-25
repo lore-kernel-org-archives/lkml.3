@@ -1,119 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756090AbaFYJzd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 05:55:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35150 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754079AbaFYJza (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 05:55:30 -0400
-Date: Wed, 25 Jun 2014 10:55:26 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/4] mm: vmscan: rework compaction-ready signaling in
- direct reclaim
-Message-ID: <20140625095526.GX10819@suse.de>
-References: <1403282030-29915-1-git-send-email-hannes@cmpxchg.org>
- <1403282030-29915-2-git-send-email-hannes@cmpxchg.org>
- <20140623130705.GM10819@suse.de>
- <20140623172056.GN7331@cmpxchg.org>
+	id S1756207AbaFYJz4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 05:55:56 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:53225 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752609AbaFYJzz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 05:55:55 -0400
+Message-ID: <53AA9C43.3020903@linux.vnet.ibm.com>
+Date: Wed, 25 Jun 2014 15:24:11 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20140623172056.GN7331@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
+Subject: Re: [PATCH 2/6] irq_work: Implement remote queueing
+References: <1402413309-3415-1-git-send-email-fweisbec@gmail.com> <1402413309-3415-3-git-send-email-fweisbec@gmail.com> <53A9E0A5.5040402@wwwdotorg.org> <20140625051234.GD6758@twins.programming.kicks-ass.net> <20140625051721.GG3588@twins.programming.kicks-ass.net> <53AA6E11.1000404@linux.vnet.ibm.com> <20140625093657.GN19860@laptop.programming.kicks-ass.net> <20140625093944.GV16155@laptop.programming.kicks-ass.net> <53AA9B68.4050104@linux.vnet.ibm.com>
+In-Reply-To: <53AA9B68.4050104@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14062509-3568-0000-0000-000005BFA8A8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 23, 2014 at 01:20:56PM -0400, Johannes Weiner wrote:
-> Hi Mel,
+On 06/25/2014 03:20 PM, Srivatsa S. Bhat wrote:
+> On 06/25/2014 03:09 PM, Peter Zijlstra wrote:
+>> On Wed, Jun 25, 2014 at 11:36:57AM +0200, Peter Zijlstra wrote:
+>>> On Wed, Jun 25, 2014 at 12:07:05PM +0530, Srivatsa S. Bhat wrote:
+>>>> I don't think irqs_disabled() is the problematic condition, since
+>>>> hotplug_cfg() invokes irq_work_run() from CPU_DYING context (which has
+>>>> irqs disabled). I guess you meant to remove the in_irq() check inside
+>>>> irq_work_run() instead?
+>>>
+>>> Yes, clearly I should not get up at 6am.. :-) Let me go do a new one.
+>>
+>> ---
+>> Subject: irq_work: Remove BUG_ON in irq_work_run()
+>> From: Peter Zijlstra <peterz@infradead.org>
+>> Date: Wed Jun 25 07:13:07 CEST 2014
+>>
+>> Because of a collision with 8d056c48e486 ("CPU hotplug, smp: flush any
+>> pending IPI callbacks before CPU offline"), which ends up calling
+>> hotplug_cfd()->flush_smp_call_function_queue()->irq_work_run(), which
+>> is not from IRQ context.
+>>
+>> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+>> Reported-by: Stephen Warren <swarren@wwwdotorg.org>
+>> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+>> Link: http://lkml.kernel.org/n/tip-busatzs2gvz4v62258agipuf@git.kernel.org
+>> ---
+>>  kernel/irq_work.c |   12 +-----------
+>>  1 file changed, 1 insertion(+), 11 deletions(-)
+>>
+>> Index: linux-2.6/kernel/irq_work.c
+>> ===================================================================
+>> --- linux-2.6.orig/kernel/irq_work.c
+>> +++ linux-2.6/kernel/irq_work.c
+>> @@ -160,21 +160,11 @@ static void irq_work_run_list(struct lli
+>>  	}
+>>  }
+>>
+>> -static void __irq_work_run(void)
 > 
-> On Mon, Jun 23, 2014 at 02:07:05PM +0100, Mel Gorman wrote:
-> > On Fri, Jun 20, 2014 at 12:33:48PM -0400, Johannes Weiner wrote:
-> > > Page reclaim for a higher-order page runs until compaction is ready,
-> > > then aborts and signals this situation through the return value of
-> > > shrink_zones().  This is an oddly specific signal to encode in the
-> > > return value of shrink_zones(), though, and can be quite confusing.
-> > > 
-> > > Introduce sc->compaction_ready and signal the compactability of the
-> > > zones out-of-band to free up the return value of shrink_zones() for
-> > > actual zone reclaimability.
-> > > 
-> > > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> > > ---
-> > >  mm/vmscan.c | 67 ++++++++++++++++++++++++++++---------------------------------
-> > >  1 file changed, 31 insertions(+), 36 deletions(-)
-> > > 
-> > > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > > index 19b5b8016209..ed1efb84c542 100644
-> > > --- a/mm/vmscan.c
-> > > +++ b/mm/vmscan.c
-> > > @@ -65,6 +65,9 @@ struct scan_control {
-> > >  	/* Number of pages freed so far during a call to shrink_zones() */
-> > >  	unsigned long nr_reclaimed;
-> > >  
-> > > +	/* One of the zones is ready for compaction */
-> > > +	int compaction_ready;
-> > > +
-> > >  	/* How many pages shrink_list() should reclaim */
-> > >  	unsigned long nr_to_reclaim;
-> > >  
-> > 
-> > You are not the criminal here but scan_control is larger than it needs
-> > to be and the stack usage of reclaim has reared its head again.
-> > 
-> > Add a preparation patch that convert sc->may* and sc->hibernation_mode
-> > to bool and moves them towards the end of the struct. Then add
-> > compaction_ready as a bool.
-> 
-> Good idea, I'll do that.
-> 
-
-Thanks.
-
-> > > @@ -2292,15 +2295,11 @@ static void shrink_zone(struct zone *zone, struct scan_control *sc)
-> > >  }
-> > >  
-> > >  /* Returns true if compaction should go ahead for a high-order request */
-> > > -static inline bool compaction_ready(struct zone *zone, struct scan_control *sc)
-> > > +static inline bool compaction_ready(struct zone *zone, int order)
-> > > 
-> > >  {
-> > 
-> > Why did you remove the use of sc->order? In this patch there is only one
-> > called of compaction_ready and it looks like
-> > 
-> >                      if (IS_ENABLED(CONFIG_COMPACTION) &&
-> >                          sc->order > PAGE_ALLOC_COSTLY_ORDER &&
-> >                          zonelist_zone_idx(z) <= requested_highidx &&
-> >                          compaction_ready(zone, sc->order)) {
-> > 
-> > So it's unclear why you changed the signature.
-> 
-> Everything else in compaction_ready() is about internal compaction
-> requirements, like checking for free pages and deferred compaction,
-> whereas this order check is more of a reclaim policy rule according to
-> the comment in the caller:
-> 
-> 			 ...
-> 			 * Even though compaction is invoked for any
-> 			 * non-zero order, only frequent costly order
-> 			 * reclamation is disruptive enough to become a
-> 			 * noticeable problem, like transparent huge
-> 			 * page allocations.
-> 			 */
-> 
-> But it's an unrelated in-the-area-anyway change, I can split it out -
-> or drop it entirely - if you prefer.
+> Hmm, irq_work_cpu_notify() calls __irq_work_run() in the CPU_DYING
+> phase, to by-pass BUG_ON(!in_irq()). How about doing the same thing
+> from hotplug_cfd() as well?
 > 
 
-It's ok as-is. It just seemed unrelated and seemed to do nothing. I was
-wondering if this was a rebasing artifact and some other change that
-required it got lost along the way by accident.
+Wait, that was a stupid idea. hotplug_cfd() already invokes irq_work_run
+indirectly via flush_smp_call_function_queue(). So irq_work_cpu_notify()
+doesn't need to invoke it again, AFAIU. So perhaps we can get rid of
+irq_work_cpu_notify() altogether?
 
--- 
-Mel Gorman
-SUSE Labs
+Regards,
+Srivatsa S. Bhat
+
+>> +static void irq_work_run(void)
+>>  {
+>>  	irq_work_run_list(&__get_cpu_var(raised_list));
+>>  	irq_work_run_list(&__get_cpu_var(lazy_list));
+>>  }
+>> -
+>> -/*
+>> - * Run the irq_work entries on this cpu. Requires to be ran from hardirq
+>> - * context with local IRQs disabled.
+>> - */
+>> -void irq_work_run(void)
+>> -{
+>> -	BUG_ON(!in_irq());
+>> -	__irq_work_run();
+>> -}
+>>  EXPORT_SYMBOL_GPL(irq_work_run);
+>>
+>>  /*
+>>
+> 
+
