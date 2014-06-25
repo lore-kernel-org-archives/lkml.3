@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754145AbaFYAGg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 20:06:36 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:41377 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754041AbaFYAGd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754082AbaFYAGd (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 24 Jun 2014 20:06:33 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:41348 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753562AbaFYAG3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 20:06:29 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: linux-arm-msm@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Mike Turquette <mturquette@linaro.org>
-Subject: [RFC/PATCH 10/12] cpufreq: Add a cpufreq-krait based on cpufreq-cpu0
-Date: Tue, 24 Jun 2014 17:06:21 -0700
-Message-Id: <1403654783-7176-11-git-send-email-sboyd@codeaurora.org>
+Subject: [RFC/PATCH 07/12] clk: qcom: Add support for Krait clocks
+Date: Tue, 24 Jun 2014 17:06:18 -0700
+Message-Id: <1403654783-7176-8-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
 In-Reply-To: <1403654783-7176-1-git-send-email-sboyd@codeaurora.org>
 References: <1403654783-7176-1-git-send-email-sboyd@codeaurora.org>
@@ -21,253 +21,188 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Krait processors have individual clocks for each CPU that can
-scale independently from one another. cpufreq-cpu0 is fairly
-close to this, but assumes that there is only one clock for all
-CPUs. Add a driver to support the Krait configuration.
-
-TODO: Merge into cpufreq-cpu0? Or make generic?
+The Krait clocks are made up of a series of muxes and a divider
+that choose between a fixed rate clock and dedicated HFPLLs for
+each CPU. Instead of using mmio accesses to remux parents, the
+Krait implementation exposes the remux control via cp15
+registers. Support these clocks.
 
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- drivers/cpufreq/Kconfig         |  13 +++
- drivers/cpufreq/Makefile        |   1 +
- drivers/cpufreq/cpufreq-krait.c | 190 ++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 204 insertions(+)
- create mode 100644 drivers/cpufreq/cpufreq-krait.c
+ drivers/clk/qcom/Makefile    |   1 +
+ drivers/clk/qcom/clk-krait.c | 121 +++++++++++++++++++++++++++++++++++++++++++
+ drivers/clk/qcom/clk-krait.h |  22 ++++++++
+ 3 files changed, 144 insertions(+)
+ create mode 100644 drivers/clk/qcom/clk-krait.c
+ create mode 100644 drivers/clk/qcom/clk-krait.h
 
-diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
-index ffe350f86bca..e9826c85a777 100644
---- a/drivers/cpufreq/Kconfig
-+++ b/drivers/cpufreq/Kconfig
-@@ -196,6 +196,19 @@ config GENERIC_CPUFREQ_CPU0
+diff --git a/drivers/clk/qcom/Makefile b/drivers/clk/qcom/Makefile
+index b733adbbad5a..b982d271d7db 100644
+--- a/drivers/clk/qcom/Makefile
++++ b/drivers/clk/qcom/Makefile
+@@ -7,6 +7,7 @@ clk-qcom-y += clk-rcg.o
+ clk-qcom-y += clk-rcg2.o
+ clk-qcom-y += clk-branch.o
+ clk-qcom-y += clk-generic.o
++clk-qcom-y += clk-krait.o
+ clk-qcom-y += clk-hfpll.o
+ clk-qcom-y += reset.o
  
- 	  If in doubt, say N.
- 
-+config GENERIC_CPUFREQ_KRAIT
-+	tristate "Krait cpufreq driver"
-+	depends on HAVE_CLK && OF
-+	# if CPU_THERMAL is on and THERMAL=m, CPU0 cannot be =y:
-+	depends on !CPU_THERMAL || THERMAL
-+	select PM_OPP
-+	help
-+	  This adds a generic cpufreq driver for CPU0 frequency management.
-+	  It supports both uniprocessor (UP) and symmetric multiprocessor (SMP)
-+	  systems which share clock and voltage across all CPUs.
-+
-+	  If in doubt, say N.
-+
- menu "x86 CPU frequency scaling drivers"
- depends on X86
- source "drivers/cpufreq/Kconfig.x86"
-diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
-index 738c8b7b17dc..f5c9f68dcc0f 100644
---- a/drivers/cpufreq/Makefile
-+++ b/drivers/cpufreq/Makefile
-@@ -14,6 +14,7 @@ obj-$(CONFIG_CPU_FREQ_GOV_CONSERVATIVE)	+= cpufreq_conservative.o
- obj-$(CONFIG_CPU_FREQ_GOV_COMMON)		+= cpufreq_governor.o
- 
- obj-$(CONFIG_GENERIC_CPUFREQ_CPU0)	+= cpufreq-cpu0.o
-+obj-$(CONFIG_CPUFREQ_KRAIT)		+= cpufreq-krait.o
- 
- ##################################################################################
- # x86 drivers.
-diff --git a/drivers/cpufreq/cpufreq-krait.c b/drivers/cpufreq/cpufreq-krait.c
+diff --git a/drivers/clk/qcom/clk-krait.c b/drivers/clk/qcom/clk-krait.c
 new file mode 100644
-index 000000000000..7b38b9c948e5
+index 000000000000..42834269a867
 --- /dev/null
-+++ b/drivers/cpufreq/cpufreq-krait.c
-@@ -0,0 +1,190 @@
++++ b/drivers/clk/qcom/clk-krait.c
+@@ -0,0 +1,121 @@
 +/*
-+ * Copyright (C) 2012 Freescale Semiconductor, Inc.
-+ * Copyright (c) 2014, The Linux Foundation. All rights reserved.
-+ *
-+ * The OPP code in function krait_set_target() is reused from
-+ * drivers/cpufreq/omap-cpufreq.c
++ * Copyright (c) 2013-2014, The Linux Foundation. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
 + */
 +
-+#include <linux/clk.h>
-+#include <linux/cpu.h>
-+#include <linux/cpu_cooling.h>
-+#include <linux/cpufreq.h>
-+#include <linux/cpumask.h>
-+#include <linux/err.h>
++#include <linux/kernel.h>
 +#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/pm_opp.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+#include <linux/thermal.h>
++#include <linux/init.h>
++#include <linux/io.h>
++#include <linux/delay.h>
++#include <linux/err.h>
++#include <linux/clk-provider.h>
++#include <linux/spinlock.h>
 +
-+static unsigned int transition_latency;
++#include <asm/krait-l2-accessors.h>
 +
-+static struct device *cpu_dev;
-+static DEFINE_PER_CPU(struct clk *, krait_cpu_clks);
-+static struct cpufreq_frequency_table *freq_table;
-+static struct thermal_cooling_device *cdev;
++#include "clk-krait.h"
 +
-+static int krait_set_target(struct cpufreq_policy *policy, unsigned int index)
++/* Secondary and primary muxes share the same cp15 register */
++static DEFINE_SPINLOCK(kpss_clock_reg_lock);
++
++#define LPL_SHIFT	8
++static void __kpss_mux_set_sel(struct mux_clk *mux, int sel)
 +{
-+	unsigned long volt = 0, volt_old = 0;
-+	unsigned int old_freq, new_freq;
-+	long freq_Hz, freq_exact;
-+	int ret;
-+	struct clk *cpu_clk;
++	unsigned long flags;
++	u32 regval;
 +
-+	cpu_clk = per_cpu(krait_cpu_clks, policy->cpu);
++	spin_lock_irqsave(&kpss_clock_reg_lock, flags);
++	regval = krait_get_l2_indirect_reg(mux->offset);
++	regval &= ~(mux->mask << mux->shift);
++	regval |= (sel & mux->mask) << mux->shift;
++	if (mux->priv) {
++		regval &= ~(mux->mask << (mux->shift + LPL_SHIFT));
++		regval |= (sel & mux->mask) << (mux->shift + LPL_SHIFT);
++	}
++	krait_set_l2_indirect_reg(mux->offset, regval);
++	spin_unlock_irqrestore(&kpss_clock_reg_lock, flags);
 +
-+	freq_Hz = clk_round_rate(cpu_clk, freq_table[index].frequency * 1000);
-+	if (freq_Hz <= 0)
-+		freq_Hz = freq_table[index].frequency * 1000;
-+
-+	freq_exact = freq_Hz;
-+	new_freq = freq_Hz / 1000;
-+	old_freq = clk_get_rate(cpu_clk) / 1000;
-+
-+	pr_debug("%u MHz, %ld mV --> %u MHz, %ld mV\n",
-+		 old_freq / 1000, volt_old ? volt_old / 1000 : -1,
-+		 new_freq / 1000, volt ? volt / 1000 : -1);
-+
-+	ret = clk_set_rate(cpu_clk, freq_exact);
-+	if (ret)
-+		pr_err("failed to set clock rate: %d\n", ret);
-+
-+	return ret;
++	/* Wait for switch to complete. */
++	mb();
++	udelay(1);
 +}
 +
-+static int krait_cpufreq_init(struct cpufreq_policy *policy)
++static int kpss_mux_set_sel(struct mux_clk *mux, int sel)
 +{
-+	int ret;
-+
-+	policy->clk = per_cpu(krait_cpu_clks, policy->cpu);
-+
-+	ret = cpufreq_table_validate_and_show(policy, freq_table);
-+	if (ret) {
-+		pr_err("%s: invalid frequency table: %d\n", __func__, ret);
-+		return ret;
-+	}
-+
-+	policy->cpuinfo.transition_latency = transition_latency;
-+
++	mux->en_mask = sel;
++	/* Don't touch mux if CPU is off as it won't work */
++	if (__clk_is_enabled(mux->hw.clk))
++		__kpss_mux_set_sel(mux, sel);
 +	return 0;
 +}
 +
-+static struct cpufreq_driver krait_cpufreq_driver = {
-+	.flags = CPUFREQ_STICKY,
-+	.verify = cpufreq_generic_frequency_table_verify,
-+	.target_index = krait_set_target,
-+	.get = cpufreq_generic_get,
-+	.init = krait_cpufreq_init,
-+	.name = "generic_krait",
-+	.attr = cpufreq_generic_attr,
++static int kpss_mux_get_sel(struct mux_clk *mux)
++{
++	u32 sel;
++
++	sel = krait_get_l2_indirect_reg(mux->offset);
++	sel >>= mux->shift;
++	sel &= mux->mask;
++	mux->en_mask = sel;
++
++	return sel;
++}
++
++static int kpss_mux_enable(struct mux_clk *mux)
++{
++	__kpss_mux_set_sel(mux, mux->en_mask);
++	return 0;
++}
++
++static void kpss_mux_disable(struct mux_clk *mux)
++{
++	__kpss_mux_set_sel(mux, mux->safe_sel);
++}
++
++const struct clk_mux_ops clk_mux_ops_kpss = {
++	.enable = kpss_mux_enable,
++	.disable = kpss_mux_disable,
++	.set_mux_sel = kpss_mux_set_sel,
++	.get_mux_sel = kpss_mux_get_sel,
 +};
++EXPORT_SYMBOL_GPL(clk_mux_ops_kpss);
 +
-+static int krait_cpufreq_probe(struct platform_device *pdev)
++/*
++ * The divider can divide by 2, 4, 6 and 8. But we only really need div-2. So
++ * force it to div-2 during handoff and treat it like a fixed div-2 clock.
++ */
++static int kpss_div2_get_div(struct div_clk *div)
 +{
-+	struct device_node *np;
-+	int ret;
-+	unsigned int cpu;
-+	struct device *dev;
-+	struct clk *clk;
++	unsigned long flags;
++	u32 regval;
++	int val;
 +
-+	cpu_dev = get_cpu_device(0);
-+	if (!cpu_dev) {
-+		pr_err("failed to get krait device\n");
-+		return -ENODEV;
-+	}
++	spin_lock_irqsave(&kpss_clock_reg_lock, flags);
++	regval = krait_get_l2_indirect_reg(div->offset);
++	val = (regval >> div->shift) & div->mask;
++	regval &= ~(div->mask << div->shift);
++	if (div->priv)
++		regval &= ~(div->mask << (div->shift + LPL_SHIFT));
++	krait_set_l2_indirect_reg(div->offset, regval);
++	spin_unlock_irqrestore(&kpss_clock_reg_lock, flags);
 +
-+	np = of_node_get(cpu_dev->of_node);
-+	if (!np) {
-+		pr_err("failed to find krait node\n");
-+		return -ENOENT;
-+	}
++	val = (val + 1) * 2;
++	WARN(val != 2, "Divider %s was configured to div-%d instead of 2!\n",
++		__clk_get_name(div->hw.clk), val);
 +
-+	for_each_possible_cpu(cpu) {
-+		dev = get_cpu_device(cpu);
-+		if (!dev) {
-+			pr_err("failed to get krait device\n");
-+			ret = -ENOENT;
-+			goto out_put_node;
-+		}
-+		per_cpu(krait_cpu_clks, cpu) = clk = devm_clk_get(dev, NULL);
-+		if (IS_ERR(clk)) {
-+			ret = PTR_ERR(clk);
-+			goto out_put_node;
-+		}
-+	}
-+
-+	ret = of_init_opp_table(cpu_dev);
-+	if (ret) {
-+		pr_err("failed to init OPP table: %d\n", ret);
-+		goto out_put_node;
-+	}
-+
-+	ret = dev_pm_opp_init_cpufreq_table(cpu_dev, &freq_table);
-+	if (ret) {
-+		pr_err("failed to init cpufreq table: %d\n", ret);
-+		goto out_put_node;
-+	}
-+
-+	if (of_property_read_u32(np, "clock-latency", &transition_latency))
-+		transition_latency = CPUFREQ_ETERNAL;
-+
-+	ret = cpufreq_register_driver(&krait_cpufreq_driver);
-+	if (ret) {
-+		pr_err("failed register driver: %d\n", ret);
-+		goto out_free_table;
-+	}
-+	of_node_put(np);
-+
-+	/*
-+	 * For now, just loading the cooling device;
-+	 * thermal DT code takes care of matching them.
-+	 */
-+	for_each_possible_cpu(cpu) {
-+		dev = get_cpu_device(cpu);
-+		np = of_node_get(dev->of_node);
-+		if (of_find_property(np, "#cooling-cells", NULL)) {
-+			cdev = of_cpufreq_cooling_register(np, cpumask_of(cpu));
-+			if (IS_ERR(cdev))
-+				pr_err("running cpufreq without cooling device: %ld\n",
-+				       PTR_ERR(cdev));
-+		}
-+		of_node_put(np);
-+	}
-+
-+	return 0;
-+
-+out_free_table:
-+	dev_pm_opp_free_cpufreq_table(cpu_dev, &freq_table);
-+out_put_node:
-+	of_node_put(np);
-+	return ret;
++	return 2;
 +}
 +
-+static int krait_cpufreq_remove(struct platform_device *pdev)
-+{
-+	cpufreq_cooling_unregister(cdev);
-+	cpufreq_unregister_driver(&krait_cpufreq_driver);
-+	dev_pm_opp_free_cpufreq_table(cpu_dev, &freq_table);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver krait_cpufreq_platdrv = {
-+	.driver = {
-+		.name	= "cpufreq-krait",
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe		= krait_cpufreq_probe,
-+	.remove		= krait_cpufreq_remove,
++const struct clk_div_ops clk_div_ops_kpss_div2 = {
++	.get_div = kpss_div2_get_div,
 +};
-+module_platform_driver(krait_cpufreq_platdrv);
++EXPORT_SYMBOL_GPL(clk_div_ops_kpss_div2);
+diff --git a/drivers/clk/qcom/clk-krait.h b/drivers/clk/qcom/clk-krait.h
+new file mode 100644
+index 000000000000..9c3eb38be542
+--- /dev/null
++++ b/drivers/clk/qcom/clk-krait.h
+@@ -0,0 +1,22 @@
++/*
++ * Copyright (c) 2013, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
 +
-+MODULE_DESCRIPTION("Krait CPUfreq driver");
-+MODULE_LICENSE("GPL v2");
++#ifndef __SOC_QCOM_CLOCK_KRAIT_H
++#define __SOC_QCOM_CLOCK_KRAIT_H
++
++#include <linux/clk/msm-clk-generic.h>
++
++extern const struct clk_mux_ops clk_mux_ops_kpss;
++extern const struct clk_div_ops clk_div_ops_kpss_div2;
++
++#endif
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
