@@ -1,65 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755957AbaFYJy6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 05:54:58 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:54159 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755878AbaFYJyx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 05:54:53 -0400
-Date: Wed, 25 Jun 2014 10:54:47 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Jingoo Han <jg1.han@samsung.com>, Bryan Wu <cooloney@gmail.com>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gnurou@gmail.com
-Subject: Re: [PATCH] pwm-backlight: use devm_gpiod_get_optional()
-Message-ID: <20140625095447.GT13803@lee--X1>
-References: <1403687898-26881-1-git-send-email-acourbot@nvidia.com>
+	id S1756090AbaFYJzd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 05:55:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35150 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754079AbaFYJza (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 05:55:30 -0400
+Date: Wed, 25 Jun 2014 10:55:26 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/4] mm: vmscan: rework compaction-ready signaling in
+ direct reclaim
+Message-ID: <20140625095526.GX10819@suse.de>
+References: <1403282030-29915-1-git-send-email-hannes@cmpxchg.org>
+ <1403282030-29915-2-git-send-email-hannes@cmpxchg.org>
+ <20140623130705.GM10819@suse.de>
+ <20140623172056.GN7331@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1403687898-26881-1-git-send-email-acourbot@nvidia.com>
+In-Reply-To: <20140623172056.GN7331@cmpxchg.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Make use of the new devm_gpiod_get_optional() to simplify the probe
-> code.
+On Mon, Jun 23, 2014 at 01:20:56PM -0400, Johannes Weiner wrote:
+> Hi Mel,
 > 
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> ---
->  drivers/video/backlight/pwm_bl.c | 7 ++-----
->  1 file changed, 2 insertions(+), 5 deletions(-)
+> On Mon, Jun 23, 2014 at 02:07:05PM +0100, Mel Gorman wrote:
+> > On Fri, Jun 20, 2014 at 12:33:48PM -0400, Johannes Weiner wrote:
+> > > Page reclaim for a higher-order page runs until compaction is ready,
+> > > then aborts and signals this situation through the return value of
+> > > shrink_zones().  This is an oddly specific signal to encode in the
+> > > return value of shrink_zones(), though, and can be quite confusing.
+> > > 
+> > > Introduce sc->compaction_ready and signal the compactability of the
+> > > zones out-of-band to free up the return value of shrink_zones() for
+> > > actual zone reclaimability.
+> > > 
+> > > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> > > ---
+> > >  mm/vmscan.c | 67 ++++++++++++++++++++++++++++---------------------------------
+> > >  1 file changed, 31 insertions(+), 36 deletions(-)
+> > > 
+> > > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > > index 19b5b8016209..ed1efb84c542 100644
+> > > --- a/mm/vmscan.c
+> > > +++ b/mm/vmscan.c
+> > > @@ -65,6 +65,9 @@ struct scan_control {
+> > >  	/* Number of pages freed so far during a call to shrink_zones() */
+> > >  	unsigned long nr_reclaimed;
+> > >  
+> > > +	/* One of the zones is ready for compaction */
+> > > +	int compaction_ready;
+> > > +
+> > >  	/* How many pages shrink_list() should reclaim */
+> > >  	unsigned long nr_to_reclaim;
+> > >  
+> > 
+> > You are not the criminal here but scan_control is larger than it needs
+> > to be and the stack usage of reclaim has reared its head again.
+> > 
+> > Add a preparation patch that convert sc->may* and sc->hibernation_mode
+> > to bool and moves them towards the end of the struct. Then add
+> > compaction_ready as a bool.
+> 
+> Good idea, I'll do that.
+> 
 
-Looks good.  Applied, thanks.
+Thanks.
 
-> diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
-> index 38ca88bc5c3e..d1e0a7c6cac7 100644
-> --- a/drivers/video/backlight/pwm_bl.c
-> +++ b/drivers/video/backlight/pwm_bl.c
-> @@ -245,13 +245,10 @@ static int pwm_backlight_probe(struct platform_device *pdev)
->  	pb->dev = &pdev->dev;
->  	pb->enabled = false;
->  
-> -	pb->enable_gpio = devm_gpiod_get(&pdev->dev, "enable");
-> +	pb->enable_gpio = devm_gpiod_get_optional(&pdev->dev, "enable");
->  	if (IS_ERR(pb->enable_gpio)) {
->  		ret = PTR_ERR(pb->enable_gpio);
-> -		if (ret == -ENOENT)
-> -			pb->enable_gpio = NULL;
-> -		else
-> -			goto err_alloc;
-> +		goto err_alloc;
->  	}
->  
->  	/*
+> > > @@ -2292,15 +2295,11 @@ static void shrink_zone(struct zone *zone, struct scan_control *sc)
+> > >  }
+> > >  
+> > >  /* Returns true if compaction should go ahead for a high-order request */
+> > > -static inline bool compaction_ready(struct zone *zone, struct scan_control *sc)
+> > > +static inline bool compaction_ready(struct zone *zone, int order)
+> > > 
+> > >  {
+> > 
+> > Why did you remove the use of sc->order? In this patch there is only one
+> > called of compaction_ready and it looks like
+> > 
+> >                      if (IS_ENABLED(CONFIG_COMPACTION) &&
+> >                          sc->order > PAGE_ALLOC_COSTLY_ORDER &&
+> >                          zonelist_zone_idx(z) <= requested_highidx &&
+> >                          compaction_ready(zone, sc->order)) {
+> > 
+> > So it's unclear why you changed the signature.
+> 
+> Everything else in compaction_ready() is about internal compaction
+> requirements, like checking for free pages and deferred compaction,
+> whereas this order check is more of a reclaim policy rule according to
+> the comment in the caller:
+> 
+> 			 ...
+> 			 * Even though compaction is invoked for any
+> 			 * non-zero order, only frequent costly order
+> 			 * reclamation is disruptive enough to become a
+> 			 * noticeable problem, like transparent huge
+> 			 * page allocations.
+> 			 */
+> 
+> But it's an unrelated in-the-area-anyway change, I can split it out -
+> or drop it entirely - if you prefer.
+> 
+
+It's ok as-is. It just seemed unrelated and seemed to do nothing. I was
+wondering if this was a rebasing artifact and some other change that
+required it got lost along the way by accident.
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Mel Gorman
+SUSE Labs
