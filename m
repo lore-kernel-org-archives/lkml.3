@@ -1,83 +1,288 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753968AbaFYAwu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 20:52:50 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:37876 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753387AbaFYAwq (ORCPT
+	id S1752851AbaFYA6D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 20:58:03 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:35957 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751862AbaFYA6A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 20:52:46 -0400
-Date: Tue, 24 Jun 2014 17:52:44 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Peter Wu <peter@lekensteyn.nl>
-cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+	Tue, 24 Jun 2014 20:58:00 -0400
+X-Original-SENDERIP: 10.177.220.145
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Wed, 25 Jun 2014 10:02:42 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 6/6] drivers/staging/rtl8821ae: replace magic number
- by macro
-In-Reply-To: <1455413.BevQxGKhmu@al>
-Message-ID: <alpine.DEB.2.02.1406241748040.22030@chino.kir.corp.google.com>
-References: <1403561511-8117-1-git-send-email-rickard_strandqvist@spectrumdigital.se> <1455413.BevQxGKhmu@al>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+Subject: Re: [PATCH v3 02/13] mm, compaction: defer each zone individually
+ instead of preferred zone
+Message-ID: <20140625010242.GB29373@js1304-P5Q-DELUXE>
+References: <1403279383-5862-1-git-send-email-vbabka@suse.cz>
+ <1403279383-5862-3-git-send-email-vbabka@suse.cz>
+ <20140624082306.GF4836@js1304-P5Q-DELUXE>
+ <53A99957.5050109@suse.cz>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53A99957.5050109@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Jun 2014, Peter Wu wrote:
-
-> (staging drivers are handled by Greg KH, cc'ing him)
+On Tue, Jun 24, 2014 at 05:29:27PM +0200, Vlastimil Babka wrote:
+> On 06/24/2014 10:23 AM, Joonsoo Kim wrote:
+> >On Fri, Jun 20, 2014 at 05:49:32PM +0200, Vlastimil Babka wrote:
+> >>When direct sync compaction is often unsuccessful, it may become deferred for
+> >>some time to avoid further useless attempts, both sync and async. Successful
+> >>high-order allocations un-defer compaction, while further unsuccessful
+> >>compaction attempts prolong the copmaction deferred period.
+> >>
+> >>Currently the checking and setting deferred status is performed only on the
+> >>preferred zone of the allocation that invoked direct compaction. But compaction
+> >>itself is attempted on all eligible zones in the zonelist, so the behavior is
+> >>suboptimal and may lead both to scenarios where 1) compaction is attempted
+> >>uselessly, or 2) where it's not attempted despite good chances of succeeding,
+> >>as shown on the examples below:
+> >>
+> >>1) A direct compaction with Normal preferred zone failed and set deferred
+> >>    compaction for the Normal zone. Another unrelated direct compaction with
+> >>    DMA32 as preferred zone will attempt to compact DMA32 zone even though
+> >>    the first compaction attempt also included DMA32 zone.
+> >>
+> >>    In another scenario, compaction with Normal preferred zone failed to compact
+> >>    Normal zone, but succeeded in the DMA32 zone, so it will not defer
+> >>    compaction. In the next attempt, it will try Normal zone which will fail
+> >>    again, instead of skipping Normal zone and trying DMA32 directly.
+> >>
+> >>2) Kswapd will balance DMA32 zone and reset defer status based on watermarks
+> >>    looking good. A direct compaction with preferred Normal zone will skip
+> >>    compaction of all zones including DMA32 because Normal was still deferred.
+> >>    The allocation might have succeeded in DMA32, but won't.
+> >>
+> >>This patch makes compaction deferring work on individual zone basis instead of
+> >>preferred zone. For each zone, it checks compaction_deferred() to decide if the
+> >>zone should be skipped. If watermarks fail after compacting the zone,
+> >>defer_compaction() is called. The zone where watermarks passed can still be
+> >>deferred when the allocation attempt is unsuccessful. When allocation is
+> >>successful, compaction_defer_reset() is called for the zone containing the
+> >>allocated page. This approach should approximate calling defer_compaction()
+> >>only on zones where compaction was attempted and did not yield allocated page.
+> >>There might be corner cases but that is inevitable as long as the decision
+> >>to stop compacting dues not guarantee that a page will be allocated.
+> >>
+> >>During testing on a two-node machine with a single very small Normal zone on
+> >>node 1, this patch has improved success rates in stress-highalloc mmtests
+> >>benchmark. The success here were previously made worse by commit 3a025760fc
+> >>("mm: page_alloc: spill to remote nodes before waking kswapd") as kswapd was
+> >>no longer resetting often enough the deferred compaction for the Normal zone,
+> >>and DMA32 zones on both nodes were thus not considered for compaction.
+> >>
+> >>Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+> >>Cc: Minchan Kim <minchan@kernel.org>
+> >>Cc: Mel Gorman <mgorman@suse.de>
+> >>Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> >>Cc: Michal Nazarewicz <mina86@mina86.com>
+> >>Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> >>Cc: Christoph Lameter <cl@linux.com>
+> >>Cc: Rik van Riel <riel@redhat.com>
+> >>Cc: David Rientjes <rientjes@google.com>
+> >>---
+> >>  include/linux/compaction.h |  6 ++++--
+> >>  mm/compaction.c            | 29 ++++++++++++++++++++++++-----
+> >>  mm/page_alloc.c            | 33 ++++++++++++++++++---------------
+> >>  3 files changed, 46 insertions(+), 22 deletions(-)
+> >>
+> >>diff --git a/include/linux/compaction.h b/include/linux/compaction.h
+> >>index 01e3132..76f9beb 100644
+> >>--- a/include/linux/compaction.h
+> >>+++ b/include/linux/compaction.h
+> >>@@ -22,7 +22,8 @@ extern int sysctl_extfrag_handler(struct ctl_table *table, int write,
+> >>  extern int fragmentation_index(struct zone *zone, unsigned int order);
+> >>  extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
+> >>  			int order, gfp_t gfp_mask, nodemask_t *mask,
+> >>-			enum migrate_mode mode, bool *contended);
+> >>+			enum migrate_mode mode, bool *contended, bool *deferred,
+> >>+			struct zone **candidate_zone);
+> >>  extern void compact_pgdat(pg_data_t *pgdat, int order);
+> >>  extern void reset_isolation_suitable(pg_data_t *pgdat);
+> >>  extern unsigned long compaction_suitable(struct zone *zone, int order);
+> >>@@ -91,7 +92,8 @@ static inline bool compaction_restarting(struct zone *zone, int order)
+> >>  #else
+> >>  static inline unsigned long try_to_compact_pages(struct zonelist *zonelist,
+> >>  			int order, gfp_t gfp_mask, nodemask_t *nodemask,
+> >>-			enum migrate_mode mode, bool *contended)
+> >>+			enum migrate_mode mode, bool *contended, bool *deferred,
+> >>+			struct zone **candidate_zone)
+> >>  {
+> >>  	return COMPACT_CONTINUE;
+> >>  }
+> >>diff --git a/mm/compaction.c b/mm/compaction.c
+> >>index 5175019..7c491d0 100644
+> >>--- a/mm/compaction.c
+> >>+++ b/mm/compaction.c
+> >>@@ -1122,13 +1122,15 @@ int sysctl_extfrag_threshold = 500;
+> >>   * @nodemask: The allowed nodes to allocate from
+> >>   * @mode: The migration mode for async, sync light, or sync migration
+> >>   * @contended: Return value that is true if compaction was aborted due to lock contention
+> >>- * @page: Optionally capture a free page of the requested order during compaction
+> >>+ * @deferred: Return value that is true if compaction was deferred in all zones
+> >>+ * @candidate_zone: Return the zone where we think allocation should succeed
+> >>   *
+> >>   * This is the main entry point for direct page compaction.
+> >>   */
+> >>  unsigned long try_to_compact_pages(struct zonelist *zonelist,
+> >>  			int order, gfp_t gfp_mask, nodemask_t *nodemask,
+> >>-			enum migrate_mode mode, bool *contended)
+> >>+			enum migrate_mode mode, bool *contended, bool *deferred,
+> >>+			struct zone **candidate_zone)
+> >>  {
+> >>  	enum zone_type high_zoneidx = gfp_zone(gfp_mask);
+> >>  	int may_enter_fs = gfp_mask & __GFP_FS;
+> >>@@ -1142,8 +1144,7 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
+> >>  	if (!order || !may_enter_fs || !may_perform_io)
+> >>  		return rc;
+> >>
+> >>-	count_compact_event(COMPACTSTALL);
+> >>-
+> >>+	*deferred = true;
+> >>  #ifdef CONFIG_CMA
+> >>  	if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
+> >>  		alloc_flags |= ALLOC_CMA;
+> >>@@ -1153,16 +1154,34 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
+> >>  								nodemask) {
+> >>  		int status;
+> >>
+> >>+		if (compaction_deferred(zone, order))
+> >>+			continue;
+> >>+
+> >>+		*deferred = false;
+> >>+
+> >>  		status = compact_zone_order(zone, order, gfp_mask, mode,
+> >>  						contended);
+> >>  		rc = max(status, rc);
+> >>
+> >>  		/* If a normal allocation would succeed, stop compacting */
+> >>  		if (zone_watermark_ok(zone, order, low_wmark_pages(zone), 0,
+> >>-				      alloc_flags))
+> >>+				      alloc_flags)) {
+> >>+			*candidate_zone = zone;
+> >>  			break;
+> >
+> >How about doing compaction_defer_reset() here?
+> >
+> >As you said before, although this check is successful, it doesn't ensure
+> >success of highorder allocation, because of some unknown reason(ex: racy
+> >allocation attempt steals this page). But, at least, passing this check
+> >means that we succeed compaction and there is much possibility to exit
+> >compaction without searching whole zone range.
 > 
-> On Tuesday 24 June 2014 00:11:51 Rickard Strandqvist wrote:
-> > For consistency with other drivers, replace a magic number by a macro.
-> > 
-> > Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> > Reviewed-by: Peter Wu <peter@lekensteyn.nl>
-> > ---
-> >  drivers/staging/rtl8821ae/rtl8821ae/hw.c  |    2 +-
-> >  drivers/staging/rtl8821ae/rtl8821ae/reg.h |    1 +
-> >  2 files changed, 2 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/staging/rtl8821ae/rtl8821ae/hw.c b/drivers/staging/rtl8821ae/rtl8821ae/hw.c
-> > index 1b8583b..1aa1661 100644
-> > --- a/drivers/staging/rtl8821ae/rtl8821ae/hw.c
-> > +++ b/drivers/staging/rtl8821ae/rtl8821ae/hw.c
-> > @@ -1623,7 +1623,7 @@ static int _rtl8821ae_set_media_status(struct ieee80211_hw *hw,
-> >  
-> >  	rtl_write_byte(rtlpriv, (MSR), bt_msr);
-> >  	rtlpriv->cfg->ops->led_control(hw, ledaction);
-> > -	if ((bt_msr & ~0xfc) == MSR_AP)
-> > +	if ((bt_msr & MSR_MASK) == MSR_AP)
-> >  		rtl_write_byte(rtlpriv, REG_BCNTCFG + 1, 0x00);
-> >  	else
-> >  		rtl_write_byte(rtlpriv, REG_BCNTCFG + 1, 0x66);
-> > diff --git a/drivers/staging/rtl8821ae/rtl8821ae/reg.h b/drivers/staging/rtl8821ae/rtl8821ae/reg.h
-> > index beffb42..4cb3ca9 100644
-> > --- a/drivers/staging/rtl8821ae/rtl8821ae/reg.h
-> > +++ b/drivers/staging/rtl8821ae/rtl8821ae/reg.h
-> > @@ -431,6 +431,7 @@
-> >  #define	MSR_ADHOC					0x01
-> >  #define	MSR_INFRA					0x02
-> >  #define	MSR_AP						0x03
-> > +#define	MSR_MASK					0x03
-> >  
-> >  #define	RRSR_RSC_OFFSET				21
-> >  #define	RRSR_SHORT_OFFSET			23
+> Well another reason is that the check is racy wrt NR_FREE counters
+> drift. But I think it tends to be false negative rather than false
+> positive. So it could work, and with page capture it would be quite
+> accurate. I'll try.
+> 
+> >So, highorder allocation failure doesn't means that we should defer
+> >compaction.
+> >
+> >>+		} else if (mode != MIGRATE_ASYNC) {
+> >>+			/*
+> >>+			 * We think that allocation won't succeed in this zone
+> >>+			 * so we defer compaction there. If it ends up
+> >>+			 * succeeding after all, it will be reset.
+> >>+			 */
+> >>+			defer_compaction(zone, order);
+> >>+		}
+> >>  	}
+> >>
+> >>+	/* If at least one zone wasn't deferred, we count a compaction stall */
+> >>+	if (!*deferred)
+> >>+		count_compact_event(COMPACTSTALL);
+> >>+
+> >
+> >Could you keep this counting in __alloc_pages_direct_compact()?
+> >It will help to understand how this statistic works.
+> 
+> Well, count_compact_event is defined in compaction.c and this would
+> be usage in page_alloc.c. I'm not sure if it helps.
 
-Doing this certainly is better than the old code, but if you're going to 
-add an MSR_MASK I think it would be better to define it and move all of 
-these MSR_* bits to a generalized bit/wireless/rtlwifi header since they 
-all need it and there's no changes between them.
+Yes, it is defined in compaction.c. But, others, COMPACTSUCCESS/FAIL
+are counted by __alloc_pages_direct_compact() in page_alloc.c so counting
+this also in __alloc_pages_direct_compact() would be better, IMHO.
 
-Notice how much of this handling is already wrong where rtlwifi drivers 
-are checking for bt_msr & 0xfc == MSR_AP which is obviously an impossible 
-condition, and those aren't even staging drivers.
+> 
+> >>  	return rc;
+> >>  }
+> >
+> >And if possible, it is better to makes deferred to one of compaction
+> >status likes as COMPACTION_SKIPPDED. It makes code more clear.
+> 
+> That could work inside try_to_compact_pages() as well.
+> 
+> >>
+> >>diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> >>index ee92384..6593f79 100644
+> >>--- a/mm/page_alloc.c
+> >>+++ b/mm/page_alloc.c
+> >>@@ -2238,18 +2238,17 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+> >>  	bool *contended_compaction, bool *deferred_compaction,
+> >>  	unsigned long *did_some_progress)
+> >>  {
+> >>-	if (!order)
+> >>-		return NULL;
+> >>+	struct zone *last_compact_zone = NULL;
+> >>
+> >>-	if (compaction_deferred(preferred_zone, order)) {
+> >>-		*deferred_compaction = true;
+> >>+	if (!order)
+> >>  		return NULL;
+> >>-	}
+> >>
+> >>  	current->flags |= PF_MEMALLOC;
+> >>  	*did_some_progress = try_to_compact_pages(zonelist, order, gfp_mask,
+> >>  						nodemask, mode,
+> >>-						contended_compaction);
+> >>+						contended_compaction,
+> >>+						deferred_compaction,
+> >>+						&last_compact_zone);
+> >>  	current->flags &= ~PF_MEMALLOC;
+> >>
+> >>  	if (*did_some_progress != COMPACT_SKIPPED) {
+> >>@@ -2263,27 +2262,31 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+> >>  				order, zonelist, high_zoneidx,
+> >>  				alloc_flags & ~ALLOC_NO_WATERMARKS,
+> >>  				preferred_zone, classzone_idx, migratetype);
+> >>+
+> >>  		if (page) {
+> >>-			preferred_zone->compact_blockskip_flush = false;
+> >>-			compaction_defer_reset(preferred_zone, order, true);
+> >>+			struct zone *zone = page_zone(page);
+> >>+
+> >>+			zone->compact_blockskip_flush = false;
+> >>+			compaction_defer_reset(zone, order, true);
+> >>  			count_vm_event(COMPACTSUCCESS);
+> >>  			return page;
+> >
+> >This snippet raise a though to me.
+> >Why don't we reset compaction_defer_reset() if we succeed to allocate
+> >highorder page on fastpath or some other path? If we succeed to
+> >allocate it on some other path rather than here, it means that the status of
+> >memory changes. So this deferred check would be stale test.
+> 
+> Hm, not sure if we want to do that in fast paths. As long as
+> somebody succeeds, that means nobody has to try checking for
+> deferred compaction and it doesn't matter. When they stop
+> succeeding, then it may be stale, yes. But is it worth polluting
+> fast paths with defer resets?
 
-A cleanup in this area would be most helpful.
+Yes, I don't think it is worth polluting fast paths with it.
+It is just my quick thought and just want to share the problem I
+realized. If you don't have any good solution to this, please skip
+this comment. :)
+
+Thanks.
