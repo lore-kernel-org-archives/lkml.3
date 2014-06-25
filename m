@@ -1,121 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794AbaFYHAJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 03:00:09 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:63385 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751687AbaFYHAH (ORCPT
+	id S1754566AbaFYHEX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 03:04:23 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:42827 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752483AbaFYHEV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 03:00:07 -0400
-Message-ID: <1403679595.21193.13.camel@debian>
-Subject: Re: [RESEND PATCH v2] mm/vmscan.c: wrap five parameters into
- writeback_stats for reducing the stack consumption
-From: Chen Yucong <slaoub@gmail.com>
-To: akpm@linux-foundation.org
-Cc: mgorman@suse.de, hannes@cmpxchg.org, mhocko@suse.cz, riel@redhat.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Date: Wed, 25 Jun 2014 14:59:55 +0800
-In-Reply-To: <1402639088-4845-1-git-send-email-slaoub@gmail.com>
-References: <1402639088-4845-1-git-send-email-slaoub@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
+	Wed, 25 Jun 2014 03:04:21 -0400
+Message-ID: <53AA746E.1030500@gmail.com>
+Date: Wed, 25 Jun 2014 10:04:14 +0300
+From: Avi Kivity <avi.kivity@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Marcelo Tosatti <mtosatti@redhat.com>, Andi Kleen <andi@firstfloor.org>
+CC: peterz@infradead.org, gleb@kernel.org, pbonzini@redhat.com,
+        eranian@google.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 4/4] kvm: Implement PEBS virtualization
+References: <1401412327-14810-1-git-send-email-andi@firstfloor.org> <1401412327-14810-5-git-send-email-andi@firstfloor.org> <53A6E0B9.10408@gmail.com> <20140622190225.GN5714@two.firstfloor.org> <20140624164514.GA25220@amt.cnet>
+In-Reply-To: <20140624164514.GA25220@amt.cnet>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-06-13 at 13:58 +0800, Chen Yucong wrote:
-> shrink_page_list() has too many arguments that have already reached ten.
-> Some of those arguments and temporary variables introduces extra 80 bytes
-> on the stack. This patch wraps five parameters into writeback_stats and removes
-> some temporary variables, thus making the relative functions to consume fewer
-> stack space.
-> 
-> Before mm/vmscan.c is changed:
->    text    data     bss     dec     hex filename
-> 6876698  957224  966656 8800578  864942 vmlinux-3.15
-> 
-> After mm/vmscan.c is changed:
->    text    data     bss     dec     hex filename
-> 6876506  957224  966656 8800386  864882 vmlinux-3.15
-> 
-> 
-> scripts/checkstack.pl can be used for checking the change of the target function stack.
-> 
-> Before mm/vmscan.c is changed:
-> 
-> 0xffffffff810af103 shrink_inactive_list []:		152
-> 0xffffffff810af43d shrink_inactive_list []:		152
-> -------------------------------------------------------------
-> 0xffffffff810aede8 reclaim_clean_pages_from_list []:	184
-> 0xffffffff810aeef8 reclaim_clean_pages_from_list []:	184
-> -------------------------------------------------------------
-> 0xffffffff810ae582 shrink_page_list []:			232
-> 0xffffffff810aedb5 shrink_page_list []:			232
-> 
-> After mm/vmscan.c is changed::
-> 
-> 0xffffffff810af078 shrink_inactive_list []:		120
-> 0xffffffff810af36d shrink_inactive_list []:		120
-> -------------------------------------------------------------
-> With: struct writeback_stats dummy = {};
-> 0xffffffff810aed6c reclaim_clean_pages_from_list []:    152
-> 0xffffffff810aee68 reclaim_clean_pages_from_list []:    152
-> -------------------------------------------------------------
-> With: static struct writeback_stats dummy ={};
-> 0xffffffff810aed69 reclaim_clean_pages_from_list []:    120
-> 0xffffffff810aee4d reclaim_clean_pages_from_list []:    120
-> --------------------------------------------------------------------------------------
-> 0xffffffff810ae586 shrink_page_list []:			184   ---> sub    $0xb8,%rsp
-> 0xffffffff810aed36 shrink_page_list []:			184   ---> add    $0xb8,%rsp
-> 
-> Via the above figures, we can find that the difference value of the stack is 32 for
-> shrink_inactive_list and reclaim_clean_pages_from_list, and this value is 48(232-184)
-> for shrink_page_list. From the hierarchy of functions called, the total difference
-> value is 80(32+48) for this change.
-> 
-Hi all, 
 
-Perhaps the fix that has been done by this patch does not quite make
-sense. But I still think it is necessary to explain why we should do
-this.
+On 06/24/2014 07:45 PM, Marcelo Tosatti wrote:
+> On Sun, Jun 22, 2014 at 09:02:25PM +0200, Andi Kleen wrote:
+>>> First, it's not sufficient to pin the debug store area, you also
+>>> have to pin the guest page tables that are used to map the debug
+>>> store.  But even if you do that, as soon as the guest fork()s, it
+>>> will create a new pgd which the host will be free to swap out.  The
+>>> processor can then attempt a PEBS store to an unmapped address which
+>>> will fail, even though the guest is configured correctly.
+>> That's a good point. You're right of course.
+>>
+>> The only way I can think around it would be to intercept CR3 writes
+>> while PEBS is active and always pin all the table pages leading
+>> to the PEBS buffer. That's slow, but should be only needed
+>> while PEBS is running.
+>>
+>> -Andi
+> Suppose that can be done separately from the pinned spte patchset.
+> And it requires accounting into mlock limits as well, as noted.
+>
+> One set of pagetables per pinned virtual address leading down to the
+> last translations is sufficient per-vcpu.
 
-thx!
-cyc
-
-
-Until now, shrink_page_list() has too many arguments that have already
-reached ten. For the kernel, this is not a good thing. Not only does it
-consume the stack space, but also the additional operations of the
-parameters increases the code size. In addition, it will increase the
-number of memory access, especially for those architectures that have
-relatively small number of registers. Therefore, limiting the number of
-arguments is probably a good thing.
-
-Via historical commit messages, we can know that those arguments related
-to writeback stats were introduced one by one instead of at the same
-time. We can not guarantee whether some new parameters will be
-introduced at some point in the future. If that happens, then relative
-code must be cleaned up. Perhaps we need to make some rules for kernel
-development, so that developers to know what action should be done when
-there are too many arguments that will be passed.
-
-This patch wraps five parameters into `struct writeback_stats' for
-reducing the stack consumption and code size. We can also use a array
-for those writeback stats, but `struct' is more clearly.
-
-
-Wrapping five parameters into `writeback_stats' save 320 bytes of text.
-
-   text    data     bss     dec     hex filename
-5701904 1274800 1052672 8029376  7a84c0 vmlinux-3.15-wrap
-5702224 1274800 1052672 8029696  7a8600 vmlinux-3.15
-
-At same time, it can save 128 bytes of stack.
-                                            3.15   3.15-wrap
-+0/-128 -128
-shrink_inactive_list                         136     120     -16
-shrink_page_list                             216     168     -48
-reclaim_clean_pages_from_list                184     120     -64
-
+Or 4, and use the CR3 exit filter to prevent vmexits among the last 4 
+LRU CR3 values.
