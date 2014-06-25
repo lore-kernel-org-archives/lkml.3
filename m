@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756542AbaFYVyr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 17:54:47 -0400
-Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:48643 "EHLO
-	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753932AbaFYVyq (ORCPT
+	id S1756944AbaFYVzF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 17:55:05 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:55566 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756585AbaFYVzB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 17:54:46 -0400
-From: Shuah Khan <shuah.kh@samsung.com>
-To: gregkh@linuxfoundation.org, akpm@linux-foundation.org, davidlohr@hp.com,
-        colin.king@canonical.com
-Cc: Shuah Khan <shuah.kh@samsung.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] tools: msgque improve error handling when not running as root
-Date: Wed, 25 Jun 2014 15:54:42 -0600
-Message-Id: <1403733282-12379-1-git-send-email-shuah.kh@samsung.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 25 Jun 2014 17:55:01 -0400
+Message-ID: <53AB4530.2050106@wwwdotorg.org>
+Date: Wed, 25 Jun 2014 15:54:56 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Andrew Bresticker <abrestic@chromium.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Kishon Vijay Abraham I <kishon@ti.com>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v1 5/9] of: Add NVIDIA Tegra XHCI controller binding
+References: <1403072180-4944-1-git-send-email-abrestic@chromium.org> <1403072180-4944-6-git-send-email-abrestic@chromium.org>
+In-Reply-To: <1403072180-4944-6-git-send-email-abrestic@chromium.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The test fails in the middle when it is not run as root while
-accessing /proc/sys/kernel/msg_next_id. Changed it to check
-for root at the beginning of the test and exit if not root.
+On 06/18/2014 12:16 AM, Andrew Bresticker wrote:
+> Add device-tree binding documentation for the XHCI controller present
+> on Tegra124 and later SoCs.
 
-Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
----
- tools/testing/selftests/ipc/msgque.c | 5 +++++
- 1 file changed, 5 insertions(+)
+> diff --git a/Documentation/devicetree/bindings/usb/nvidia,tegra124-xhci.txt b/Documentation/devicetree/bindings/usb/nvidia,tegra124-xhci.txt
 
-diff --git a/tools/testing/selftests/ipc/msgque.c b/tools/testing/selftests/ipc/msgque.c
-index aa290c0..552f081 100644
---- a/tools/testing/selftests/ipc/msgque.c
-+++ b/tools/testing/selftests/ipc/msgque.c
-@@ -193,6 +193,11 @@ int main(int argc, char **argv)
- 	int msg, pid, err;
- 	struct msgque_data msgque;
- 
-+	if (getuid() != 0) {
-+		printf("Please run the test as root - Exiting.\n");
-+		exit(1);
-+	}
-+
- 	msgque.key = ftok(argv[0], 822155650);
- 	if (msgque.key == -1) {
- 		printf("Can't make key\n");
--- 
-1.9.1
+> + - clock-names: Must include the following entries:
+> +    - xusb_host
+> +    - xusb_falcon_src
+> +    - xusb_ss
+> +    - xusb_ss_src
+> +    - xusb_hs_src
+> +    - xusb_fs_src
 
+Looking at include/dt-bindings/clock/tegra124-car.h I see a few entries
+potentially missing here:
+
+#define TEGRA124_CLK_XUSB_HOST_SRC 252
+#define TEGRA124_CLK_XUSB_DEV_SRC 256
+#define TEGRA124_CLK_XUSB_DEV 257
+#define TEGRA124_CLK_XUSB_SS_DIV2 312
+
+> +    - pll_u_480m
+
+Not just pll_u?
