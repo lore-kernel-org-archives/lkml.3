@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752745AbaFYTVo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 15:21:44 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:37258 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750807AbaFYTVn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 15:21:43 -0400
-From: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
-To: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] vt: disable console blanking by default
-Date: Wed, 25 Jun 2014 21:21:38 +0200
-User-Agent: KMail/1.13.7 (Linux/3.16.0-rc2; KDE/4.13.2; x86_64; ; )
-Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tomasz Torcz <tomek@pipebreaker.pl>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-References: <20140618092730.GD22226@mother.pipebreaker.pl> <20140625133930.223cccb5@alan.etchedpixels.co.uk>
-In-Reply-To: <20140625133930.223cccb5@alan.etchedpixels.co.uk>
+	id S1754051AbaFYT0o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 15:26:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2890 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752760AbaFYT0n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 15:26:43 -0400
+Date: Wed, 25 Jun 2014 21:25:47 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <rric@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Namhyung Kim <namhyung@gmail.com>, Jean Pihet <jean.pihet@linaro.org>
+Subject: Re: [PATCH] perf tool: Carve out ctype.h et al
+Message-ID: <20140625192547.GF1153@krava.brq.redhat.com>
+References: <1403688184-6917-1-git-send-email-bp@alien8.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201406252121.38263.a.miskiewicz@gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1403688184-6917-1-git-send-email-bp@alien8.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 25 of June 2014, One Thousand Gnomes wrote:
-> On Wed, 18 Jun 2014 11:27:31 +0200
+On Wed, Jun 25, 2014 at 11:23:04AM +0200, Borislav Petkov wrote:
+> From: Borislav Petkov <bp@suse.de>
 > 
-> Tomasz Torcz <tomek@pipebreaker.pl> wrote:
-> > >From ea7cf47e3230eda63aa6c46092719437f9bbae8e Mon Sep 17 00:00:00 2001
-> > 
-> > From: Tomasz Torcz <tomek@pipebreaker.pl>
-> > Date: Wed, 18 Jun 2014 11:18:06 +0200
-> > Subject: [PATCH] vt: disable console blanking by default
-> > 
-> >   Remove default 10 minute blank interval. Instead: never blank by
-> >   default.
-> >   "Screensaving" is no longer useful.  Today it only provides
-> >   obstacle when interacting with text console, especially through
-> >   remote lights-out management solutions.
+> Carve out ctype.* and util.* stuff into tools/lib/util/. We're keeping
+> those as standalone object files in TOOLS_OBJS and add them to the
+> targets that need them.
 > 
-> Screensaving is extremely useful as is power management, and power prices
-> are going up not down. We don't customise the upstream kernel just
-> because J Random User happens to want his defaults.
-> 
-> There are a couple of things you can sensibly do
-> 
-> 1. Just turn it off in software. It's run time configurable via setterm
-> 
-> 2. If you have a reliable way of detecting the presence of a remote
-> console device and that device supports reporting when a connection is
-> made/broken you could submit a patch to make it unblank on connect.
+> This way we don't do lib archives but single objects only.
 
-3. unblank & disable blanking on any oops? (probably problematic)
+heya,
+got following error;
 
-Anyway I dislike blanking here, too.
-
-> Alan
+[jolsa@krava perf]$ make
+  BUILD:   Doing 'make -j4' parallel build
+  CC       util/pmu.o
+  CC       util/parse-events-flex.o
+  SUBDIR   /home/jolsa/kernel.org/linux-perf/tools/lib/traceevent/
+util/pmu.c: In function ‘wordwrap’:
+util/pmu.c:788:3: error: implicit declaration of function ‘isspace’ [-Werror=implicit-function-declaration]
+   while (isspace(*s))
+   ^
+cc1: all warnings being treated as errors
+make[1]: *** [util/pmu.o] Error 1
+make[1]: *** Waiting for unfinished jobs....
+make: *** [all] Error 2
 
 
--- 
-Arkadiusz Miśkiewicz, arekm / maven.pl
+Anyway, so you moved hex2u64, ctype interface under tools/lib
+and made several Makefile changes to compile tools/lib objects.
+
+Besides that we'd need all those changes separated, who is the
+other user of this library? I dont see any in the patch.
+
+thanks,
+jirka
