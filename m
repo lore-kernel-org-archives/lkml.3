@@ -1,84 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752488AbaFYARl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 20:17:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55407 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751211AbaFYARj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 20:17:39 -0400
-Message-ID: <53AA151E.9090701@suse.de>
-Date: Wed, 25 Jun 2014 02:17:34 +0200
-From: =?ISO-8859-15?Q?Andreas_F=E4rber?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1753200AbaFYATu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 20:19:50 -0400
+Received: from mail-bn1blp0187.outbound.protection.outlook.com ([207.46.163.187]:9260
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752771AbaFYATt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 20:19:49 -0400
+X-WSS-ID: 0N7P7KV-07-R8M-02
+X-M-MSG: 
+Message-ID: <53AA158E.1040700@amd.com>
+Date: Tue, 24 Jun 2014 19:19:26 -0500
+From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-CC: Andy Gross <agross@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] pinctrl: msm: Add msm8960 definitions
-References: <1403633766-25796-1-git-send-email-bjorn.andersson@sonymobile.com>
-In-Reply-To: <1403633766-25796-1-git-send-email-bjorn.andersson@sonymobile.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 8bit
+To: Jason Cooper <jason@lakedaemon.net>
+CC: <marc.zyngier@arm.com>, <Catalin.Marinas@arm.com>, <Will.Deacon@arm.com>,
+        <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <Liviu.Dudau@arm.com>
+Subject: Re: [PATCH 0/2] Introduce ARM GICv2m MSI(-X) support
+References: <1403569980-12913-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <20140624122639.GL10202@titan.lakedaemon.net>
+In-Reply-To: <20140624122639.GL10202@titan.lakedaemon.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(479174003)(24454002)(377454003)(189002)(51704005)(199002)(83072002)(21056001)(20776003)(76482001)(97736001)(65816999)(83322001)(50986999)(83506001)(81542001)(76176999)(50466002)(68736004)(59896001)(87266999)(15975445006)(44976005)(101416001)(106466001)(19580405001)(33656002)(46102001)(99396002)(80316001)(105586002)(86362001)(74662001)(79102001)(74502001)(4396001)(65806001)(77982001)(102836001)(23756003)(87936001)(31966008)(65956001)(95666004)(47776003)(64706001)(19580395003)(84676001)(36756003)(64126003)(80022001)(81342001)(85306003)(92566001)(54356999)(85852003)(92726001);DIR:OUT;SFP:;SCL:1;SRVR:BY1PR0201MB0918;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
+X-Forefront-PRVS: 02530BD3AA
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 24.06.2014 20:16, schrieb Bjorn Andersson:
-> diff --git a/Documentation/devicetree/bindings/pinctrl/qcom,msm8960-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/qcom,msm8960-pinctrl.txt
-> new file mode 100644
-> index 0000000..6e79eea
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/pinctrl/qcom,msm8960-pinctrl.txt
-[...]
-> +Example:
-> +
-> +	msmgpio: pinctrl@800000 {
-> +		compatible = "qcom,msm8960-pinctrl";
-> +		reg = <0x800000 0x4000>;
-> +
-> +		gpio-controller;
-> +		#gpio-cells = <2>;
-> +		interrupt-controller;
-> +		#interrupt-cells = <2>;
-> +                interrupts = <0 32 0x4>;
+On 6/24/2014 7:26 AM, Jason Cooper wrote:
+> On Mon, Jun 23, 2014 at 07:32:58PM -0500, suravee.suthikulpanit@amd.com wrote:
+>> This patch set introduces support for MSI(-X) in GICv2m specification,
+>> which is implemented in some variation of GIC400.
+>>
+>> This depends on and has been tested with the V7 of "Add support for PCI in AArch64"
+>> (https://lkml.org/lkml/2014/3/14/320).
+>
+> Is this a build, boot, or runtime dependency?
+>
+> thx,
+>
+> Jason.
+>
 
-This line seems space-indented while surrounding ones are tab-indented.
+For all of the above.
 
-> +
-> +		pinctrl-names = "default";
-> +		pinctrl-0 = <&debug_uart>;
-> +
-> +		debug_uart: debug_uart {
+Suravee
 
-While at it, might debug-uart be a better node name? That seems the
-predominant convention and distinguishes from the label.
-
-Regards,
-Andreas
-
-> +			mux {
-> +				pins = "gpio34", "gpio35";
-> +				function = "gsbi8";
-> +			};
-> +
-> +			tx {
-> +				pins = "gpio34";
-> +				drive-strength = <4>;
-> +				bias-disable;
-> +			};
-> +
-> +			rx {
-> +				pins = "gpio35";
-> +				drive-strength = <2>;
-> +				bias-pull-up;
-> +			};
-> +		};
-> +	};
-[snip]
-
--- 
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
-GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
