@@ -1,50 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754038AbaFYDaO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 23:30:14 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:20536 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752423AbaFYDaN (ORCPT
+	id S1754012AbaFYDjO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 23:39:14 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:55564 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752423AbaFYDjN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 23:30:13 -0400
-X-IronPort-AV: E=Sophos;i="5.00,773,1396972800"; 
-   d="scan'208";a="32392783"
-From: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
-To: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>
-CC: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Randy Dunlap <rdunlap@infradead.org>
-Subject: [PATCH] cgroup: fix a typo in Documentation/cgroups/cgroups.txt
-Date: Wed, 25 Jun 2014 11:30:25 +0800
-Message-ID: <1403667025-13422-1-git-send-email-chenhanxiao@cn.fujitsu.com>
-X-Mailer: git-send-email 1.9.0
+	Tue, 24 Jun 2014 23:39:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.167.226.237]
+In-Reply-To: <53AA4108.6090302@akamai.com>
+References: <1401847955-3345-1-git-send-email-johunt@akamai.com>
+	<20140623151121.44f17779004e94ab620b837c@linux-foundation.org>
+	<53A8ADEC.6070406@akamai.com>
+	<20140623155118.e2446a6110a9889454db2386@linux-foundation.org>
+	<53A9899C.9040005@akamai.com>
+	<alpine.DEB.2.02.1406241740330.22030@chino.kir.corp.google.com>
+	<53AA4108.6090302@akamai.com>
+Date: Tue, 24 Jun 2014 23:39:12 -0400
+Message-ID: <CAPDOMVienF9gj8fAeqdXQRM9+v3jpFRygA1aL4DqiEU2dbH5tA@mail.gmail.com>
+Subject: Re: [PATCH] panic: add TAINT_SOFTLOCKUP
+From: Nick Krause <xerofoify@gmail.com>
+To: Josh Hunt <johunt@akamai.com>
+Cc: David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Baron, Jason" <jbaron@akamai.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-s/iff/if
+If you want to flush the ram issues back to disk,
+that may be a good idea otherwise I would just
+close this discussion.
+Cheers Nick
 
-Signed-off-by: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
----
- Documentation/cgroups/cgroups.txt | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/Documentation/cgroups/cgroups.txt b/Documentation/cgroups/cgroups.txt
-index 821de56..b614f42 100644
---- a/Documentation/cgroups/cgroups.txt
-+++ b/Documentation/cgroups/cgroups.txt
-@@ -562,7 +562,7 @@ cgroup_for_each_descendant_pre() for details.
- void css_offline(struct cgroup *cgrp);
- (cgroup_mutex held by caller)
- 
--This is the counterpart of css_online() and called iff css_online()
-+This is the counterpart of css_online() and called if css_online()
- has succeeded on @cgrp. This signifies the beginning of the end of
- @cgrp. @cgrp is being removed and the subsystem should start dropping
- all references it's holding on @cgrp. When all references are dropped,
--- 
-1.9.0
-
+On Tue, Jun 24, 2014 at 11:24 PM, Josh Hunt <johunt@akamai.com> wrote:
+> On 06/24/2014 07:45 PM, David Rientjes wrote:
+>>
+>> On Tue, 24 Jun 2014, Josh Hunt wrote:
+>>
+>>> Anyone you'd suggest adding to this thread to get other feedback about
+>>> tracking page allocation failures? I could also spin up a patch and cc
+>>> them.
+>>>
+>>
+>> Page allocation failures happen all the time, mostly because of
+>> large-order allocations (more than PAGE_ALLOC_COSTLY_ORDER) or allocations
+>> done with GFP_ATOMIC where it's impossible to reclaim or compact memory to
+>> allocate.  Because of this, they are fairly easy to trigger from userspace
+>> without having to do much.
+>>
+>> Why would this qualify for a taint?  I have never debugged a kernel crash
+>> that I traced back to an earlier page allocation failure and said "oh, if
+>> I had only known about that page allocation failure earlier!".  If one of
+>> them is going to cause an issue, it probably is at the point of the crash
+>> and you shouldn't have to "investigate" much.
+>>
+>
+> I guess I was thinking more of the case where all you have is the trace/dump
+> and for whatever reason the last bits which may contain the page allocation
+> failure info didn't get flushed to disk. In that case it'd be nice to know
+> what lead up to the crash. However, I do agree with your point and Andrew's
+> about the frequency and ease of triggering them which would make taint the
+> wrong place to account for them.
+>
+> Thanks
+> Josh
+>
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
