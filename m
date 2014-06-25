@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757076AbaFYNK4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 09:10:56 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:35688 "EHLO
+	id S1756976AbaFYNKO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 09:10:14 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:35637 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756418AbaFYNKT (ORCPT
+	with ESMTP id S1756913AbaFYNKH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 09:10:19 -0400
+	Wed, 25 Jun 2014 09:10:07 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: linux@maxim.org.za, Nicolas Ferre <nicolas.ferre@atmel.com>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
@@ -16,9 +16,9 @@ Cc: Boris Brezillon <boris@free-electrons.com>,
         Thomas Petazzoni <thomas@free-electrons.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH 13/13] AT91: PIT: Move the driver to drivers/clocksource
-Date: Wed, 25 Jun 2014 15:06:45 +0200
-Message-Id: <1403701605-26678-14-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH 05/13] AT91: dt: Remove init_time definitions
+Date: Wed, 25 Jun 2014 15:06:37 +0200
+Message-Id: <1403701605-26678-6-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1403701605-26678-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1403701605-26678-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -26,76 +26,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we don't depend on anyting in the mach-at91 directory, we can just
-move the driver to where it belongs.
+The current AT91 DT boards have a completely generic init_time definition.
+Remove them from the machine declaration.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- arch/arm/mach-at91/Kconfig                                     | 4 ----
- arch/arm/mach-at91/Makefile                                    | 1 -
- drivers/clocksource/Kconfig                                    | 4 ++++
- drivers/clocksource/Makefile                                   | 1 +
- {arch/arm/mach-at91 => drivers/clocksource}/at91sam926x_time.c | 0
- 5 files changed, 5 insertions(+), 5 deletions(-)
- rename {arch/arm/mach-at91 => drivers/clocksource}/at91sam926x_time.c (100%)
+ arch/arm/mach-at91/board-dt-sam9.c  | 11 -----------
+ arch/arm/mach-at91/board-dt-sama5.c | 10 ----------
+ 2 files changed, 21 deletions(-)
 
-diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
-index a64412a020d3..b10db0990999 100644
---- a/arch/arm/mach-at91/Kconfig
-+++ b/arch/arm/mach-at91/Kconfig
-@@ -36,10 +36,6 @@ config AT91_SAM9G45_RESET
- 	bool
- 	default !ARCH_AT91X40
+diff --git a/arch/arm/mach-at91/board-dt-sam9.c b/arch/arm/mach-at91/board-dt-sam9.c
+index a9fcdadfd929..3f80ceb3f444 100644
+--- a/arch/arm/mach-at91/board-dt-sam9.c
++++ b/arch/arm/mach-at91/board-dt-sam9.c
+@@ -14,7 +14,6 @@
+ #include <linux/of.h>
+ #include <linux/of_irq.h>
+ #include <linux/clk-provider.h>
+-#include <linux/clocksource.h>
  
--config AT91_SAM9_TIME
--	select CLKSRC_OF if OF
--	bool
+ #include <asm/setup.h>
+ #include <asm/irq.h>
+@@ -26,15 +25,6 @@
+ #include "board.h"
+ #include "generic.h"
+ 
 -
- config HAVE_AT91_SMD
- 	bool
+-static void __init sam9_dt_timer_init(void)
+-{
+-#if defined(CONFIG_COMMON_CLK)
+-	of_clk_init(NULL);
+-#endif
+-	clocksource_of_init();
+-}
+-
+ static const struct of_device_id irq_of_match[] __initconst = {
  
-diff --git a/arch/arm/mach-at91/Makefile b/arch/arm/mach-at91/Makefile
-index 78e9cec282f4..1a916ececbfd 100644
---- a/arch/arm/mach-at91/Makefile
-+++ b/arch/arm/mach-at91/Makefile
-@@ -10,7 +10,6 @@ obj-		:=
- obj-$(CONFIG_OLD_CLK_AT91)	+= clock.o
- obj-$(CONFIG_AT91_SAM9_ALT_RESET) += at91sam9_alt_reset.o
- obj-$(CONFIG_AT91_SAM9G45_RESET) += at91sam9g45_reset.o
--obj-$(CONFIG_AT91_SAM9_TIME)	+= at91sam926x_time.o
- obj-$(CONFIG_SOC_AT91SAM9)	+= sam9_smc.o
+ 	{ .compatible = "atmel,at91rm9200-aic", .data = at91_aic_of_init },
+@@ -53,7 +43,6 @@ static const char *at91_dt_board_compat[] __initdata = {
  
- # CPU-specific support
-diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
-index 065131cbfcc0..cd8b73ddbef3 100644
---- a/drivers/clocksource/Kconfig
-+++ b/drivers/clocksource/Kconfig
-@@ -118,6 +118,10 @@ config CLKSRC_ARM_GLOBAL_TIMER_SCHED_CLOCK
- 	help
- 	 Use ARM global timer clock source as sched_clock
+ DT_MACHINE_START(at91sam_dt, "Atmel AT91SAM (Device Tree)")
+ 	/* Maintainer: Atmel */
+-	.init_time	= sam9_dt_timer_init,
+ 	.map_io		= at91_map_io,
+ 	.handle_irq	= at91_aic_handle_irq,
+ 	.init_early	= at91_dt_initialize,
+diff --git a/arch/arm/mach-at91/board-dt-sama5.c b/arch/arm/mach-at91/board-dt-sama5.c
+index c07dd2395f36..030f4b65f449 100644
+--- a/arch/arm/mach-at91/board-dt-sama5.c
++++ b/arch/arm/mach-at91/board-dt-sama5.c
+@@ -17,7 +17,6 @@
+ #include <linux/of_platform.h>
+ #include <linux/phy.h>
+ #include <linux/clk-provider.h>
+-#include <linux/clocksource.h>
  
-+config AT91_SAM9_TIME
-+	select CLKSRC_OF if OF
-+	bool
-+
- config CLKSRC_METAG_GENERIC
- 	def_bool y if METAG
- 	help
-diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
-index 800b1303c236..3088928070f8 100644
---- a/drivers/clocksource/Makefile
-+++ b/drivers/clocksource/Makefile
-@@ -1,5 +1,6 @@
- obj-$(CONFIG_CLKSRC_OF)	+= clksrc-of.o
- obj-$(CONFIG_ATMEL_TCB_CLKSRC)	+= tcb_clksrc.o
-+obj-$(CONFIG_AT91_SAM9_TIME)	+= at91sam926x_time.o
- obj-$(CONFIG_X86_PM_TIMER)	+= acpi_pm.o
- obj-$(CONFIG_SCx200HR_TIMER)	+= scx200_hrt.o
- obj-$(CONFIG_CS5535_CLOCK_EVENT_SRC)	+= cs5535-clockevt.o
-diff --git a/arch/arm/mach-at91/at91sam926x_time.c b/drivers/clocksource/at91sam926x_time.c
-similarity index 100%
-rename from arch/arm/mach-at91/at91sam926x_time.c
-rename to drivers/clocksource/at91sam926x_time.c
+ #include <asm/setup.h>
+ #include <asm/irq.h>
+@@ -28,14 +27,6 @@
+ #include "at91_aic.h"
+ #include "generic.h"
+ 
+-static void __init sama5_dt_timer_init(void)
+-{
+-#if defined(CONFIG_COMMON_CLK)
+-	of_clk_init(NULL);
+-#endif
+-	clocksource_of_init();
+-}
+-
+ static const struct of_device_id irq_of_match[] __initconst = {
+ 
+ 	{ .compatible = "atmel,sama5d3-aic", .data = at91_aic5_of_init },
+@@ -81,7 +72,6 @@ static const char *sama5_dt_board_compat[] __initdata = {
+ 
+ DT_MACHINE_START(sama5_dt, "Atmel SAMA5 (Device Tree)")
+ 	/* Maintainer: Atmel */
+-	.init_time	= sama5_dt_timer_init,
+ 	.map_io		= at91_map_io,
+ 	.handle_irq	= at91_aic5_handle_irq,
+ 	.init_early	= at91_dt_initialize,
 -- 
 2.0.0
 
