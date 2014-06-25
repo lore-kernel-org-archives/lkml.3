@@ -1,103 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753954AbaFYBjW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 21:39:22 -0400
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:30160 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751826AbaFYBjV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 21:39:21 -0400
-Message-ID: <53AA280D.2030103@fb.com>
-Date: Tue, 24 Jun 2014 19:38:21 -0600
-From: Jens Axboe <axboe@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1754120AbaFYBk4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 21:40:56 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:45231 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751890AbaFYBky (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 21:40:54 -0400
+Date: Tue, 24 Jun 2014 20:40:16 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Rob Herring <robherring2@gmail.com>
+CC: Felipe Balbi <balbi@ti.com>, Benoit Cousson <bcousson@baylibre.com>,
+        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Rajendra Nayak <rnayak@ti.com>, Nishanth Menon <nm@ti.com>,
+        Sricharan R <r.sricharan@ti.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 1/2] arm: dts: am4372: let boards access all nodes
+ through phandles
+Message-ID: <20140625014016.GA21616@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1403547659-24558-1-git-send-email-balbi@ti.com>
+ <1403547659-24558-2-git-send-email-balbi@ti.com>
+ <CAL_JsqJx_DJqxpEJebi0Etfv5g7=eYje_53vd_44GykreA-rkQ@mail.gmail.com>
 MIME-Version: 1.0
-To: =?UTF-8?B?TWF0aWFzIEJqw7hybGluZw==?= <m@bjorling.me>,
-        <willy@linux.intel.com>, <keith.busch@intel.com>,
-        <sbradshaw@micron.com>, <linux-kernel@vger.kernel.org>,
-        <linux-nvme@lists.infradead.org>, <hch@infradead.org>,
-        <rlnelson@google.com>, <tom.leiming@gmail.com>
-Subject: Re: [PATCH v9] NVMe: Convert to blk-mq
-References: <1403651531-24891-1-git-send-email-m@bjorling.me> <1403651531-24891-2-git-send-email-m@bjorling.me>
-In-Reply-To: <1403651531-24891-2-git-send-email-m@bjorling.me>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-06-25_01:2014-06-24,2014-06-25,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 spamscore=0
- suspectscore=0 phishscore=0 adultscore=0 bulkscore=0 classifier=spam
- adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1406250013
-X-FB-Internal: deliver
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="HlL+5n6rz5pIUxbD"
+Content-Disposition: inline
+In-Reply-To: <CAL_JsqJx_DJqxpEJebi0Etfv5g7=eYje_53vd_44GykreA-rkQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-06-24 17:12, Matias Bjørling wrote:
-> +static int nvme_admin_init_request(void *data, struct request *req,
-> +				unsigned int hctx_idx, unsigned int rq_idx,
-> +				unsigned int numa_node)
->   {
-> -	return DIV_ROUND_UP(depth, 8) + (depth * sizeof(struct nvme_cmd_info));
-> +	struct nvme_dev *dev = data;
-> +	struct nvme_cmd_info *cmd = blk_mq_rq_to_pdu(req);
-> +	struct nvme_queue *nvmeq = dev->queues[0];
-> +
-> +	WARN_ON(!nvmeq);
-> +	WARN_ON(!cmd);
-> +	cmd->nvmeq = nvmeq;
-> +	return 0;
+--HlL+5n6rz5pIUxbD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Get rid of the WARN_ON(!cmd) - if that should trigger, we'll see the 
-obvious oops right after.
+Hi,
 
-> +static int nvme_init_request(void *data, struct request *req,
-> +				unsigned int hctx_idx, unsigned int rq_idx,
-> +				unsigned int numa_node)
-> +{
-> +	struct nvme_dev *dev = data;
-> +	struct nvme_cmd_info *cmd = blk_mq_rq_to_pdu(req);
-> +	struct nvme_queue *nvmeq = dev->queues[hctx_idx + 1];
-> +
-> +	WARN_ON(!nvmeq);
-> +	WARN_ON(!cmd);
-> +	cmd->nvmeq = nvmeq;
-> +	return 0;
+On Tue, Jun 24, 2014 at 04:11:48PM -0500, Rob Herring wrote:
+> On Mon, Jun 23, 2014 at 1:20 PM, Felipe Balbi <balbi@ti.com> wrote:
+> > by providing phandles to rtc, wdt, cpu and dispc nodes,
+> > boards can access them to add board-specific data.
+>=20
+> Strictly speaking, you are adding labels, not phandles. You can do
 
-Ditto
+heh, fair point. Easily editable when applying, though (?)
 
-> +/* Admin queue isn't initialized as a request queue. If at some point this
-> + * happens anyway, make sure to notify the user */
-> +static int nvme_admin_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
->   {
-> -	struct nvme_ns *ns = q->queuedata;
-> -	struct nvme_queue *nvmeq = get_nvmeq(ns->dev);
-> -	int result = -EBUSY;
-> -
-> -	if (!nvmeq) {
-> -		bio_endio(bio, -EIO);
-> -		return;
-> -	}
-> -
-> -	spin_lock_irq(&nvmeq->q_lock);
-> -	if (!nvmeq->q_suspended && bio_list_empty(&nvmeq->sq_cong))
-> -		result = nvme_submit_bio_queue(nvmeq, ns, bio);
-> -	if (unlikely(result)) {
-> -		if (!waitqueue_active(&nvmeq->sq_full))
-> -			add_wait_queue(&nvmeq->sq_full, &nvmeq->sq_cong_wait);
-> -		bio_list_add(&nvmeq->sq_cong, bio);
-> -	}
-> -
-> -	nvme_process_cq(nvmeq);
-> -	spin_unlock_irq(&nvmeq->q_lock);
-> -	put_nvmeq(nvmeq);
-> +	WARN_ON(1);
-> +	return BLK_MQ_RQ_QUEUE_ERROR;
+> phandles without using labels, but the syntax is not so obvious. I'd
+> tell you what it is but offhand I don't remember. :)
 
-That should be a WARN_ON_ONCE(1). In case it does trigger, you don't 
-want to see it tons of times, once is enough.
+something along the lines of using the full path ?
 
--- 
-Jens Axboe
+--=20
+balbi
 
+--HlL+5n6rz5pIUxbD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIbBAEBAgAGBQJTqih/AAoJEIaOsuA1yqREs7EP+KmPRAojfoBCwguTIiGQh4AJ
+0uUI1HD7WBWm3xrqIzsrz5leFhbytxsLmevLAxi1uWAuI+HNokwx6Kma4Nyha8RE
+Mv9rY9/ZJNtRFT2+zej8awlL0wTiKOVg6vHiSJVh4yh3lRkLLA12fpmipSOYRwDK
+mXkPtt+sSeV/EqLxU5MKN7kq7Vy19oYKTXGn57wHKlLnWI0xucJQMJR4JG2bFaka
+5ZWJSmyz3KgqsA4YNVOdxbXlUmzqCewgqvJij624oT/kPO5EGmd3pMXtKncOeGfl
+v9+2deuTGqQXzuErTULorcNjJuEY57WmdBRLHicunRYyZPqisjgS6keKSmlb2nnR
+z1qeitHYgocAXFScXl+j/I/jcswMR5pVYqoa86trPSiqCbZorQJh4U4oQKZFKpRZ
+i/jUQw9Q5ObG/en+yiBdGRed6zct41fDws0mJqLjNMXZUpKv2f2+21odtWU3Fg2P
+z95rDmd1tHWRuEgpqWTo7LE1VRf89dBShhUJPhPAKKt96XgDRLvO7q/9yevZPB5q
+cgH4/kgyZpH+mWq0njWWVFYF0pdEqLC3PjQw4pmnZGSQmQjB7L3ppX3HRGHJ6Wdh
+KQbh2cxBb+axGmGhsaGDSuxArD3CRkWGT/FZn3Tsm++/f/CRKAXMyhVZnFuTAhAW
+q8LOz2GdIcSMnFuXTEM=
+=+L+D
+-----END PGP SIGNATURE-----
+
+--HlL+5n6rz5pIUxbD--
