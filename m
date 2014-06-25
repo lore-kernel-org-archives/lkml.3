@@ -1,85 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758187AbaFYSBe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 14:01:34 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:43281 "EHLO
+	id S1758262AbaFYSDh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 14:03:37 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:43568 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757708AbaFYSBb (ORCPT
+	with ESMTP id S1757814AbaFYSDf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 14:01:31 -0400
+	Wed, 25 Jun 2014 14:03:35 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <devicetree@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        <jg1.han@samsung.com>, <bhelgaas@google.com>, <mohit.kumar@st.com>,
-        <linux-arm-kernel@lists.infradead.org>, <tony@atomide.com>,
-        <linux-kernel@vger.kernel.org>
-CC: <kishon@ti.com>, <grant.likely@linaro.org>, Rajendra Nayak <rnayak@ti.com>,
-        Tero Kristo <t-kristo@ti.com>, Paul Walmsley <paul@pwsan.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        Keerthy <j-keerthy@ti.com>
-Subject: [PATCH 4/8] ARM: dts: dra7xx-clocks: rename pcie clocks to accommodate second PHY instance
-Date: Wed, 25 Jun 2014 23:30:14 +0530
-Message-ID: <1403719218-9484-5-git-send-email-kishon@ti.com>
+        <linux-omap@vger.kernel.org>, <paul@pwsan.com>, <tony@atomide.com>,
+        <linux@arm.linux.org.uk>, <rnayak@ti.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+CC: <kishon@ti.com>
+Subject: [PATCH 0/2] arm: hwmod: dra7: Add PCIe data and PCIe PHY data
+Date: Wed, 25 Jun 2014 23:32:44 +0530
+Message-ID: <1403719366-9656-1-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1403719218-9484-1-git-send-email-kishon@ti.com>
-References: <1403719218-9484-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are two instances of PCIe PHY in DRA7xx. So renamed
-optfclk_pciephy_32khz, optfclk_pciephy_clk and optfclk_pciephy_div_clk to
-optfclk_pciephy1_32khz, optfclk_pciephy1_clk and optfclk_pciephy1_div_clk
-respectively. This is needed for adding the clocks for second PCIe PHY
-instance.
+[1] is split into separate series in order for individual subsystem
+Maintainers to pick up the patches. This series handles the PCIe
+hwmod data for DRA7.
 
-Cc: Rajendra Nayak <rnayak@ti.com>
-Cc: Tero Kristo <t-kristo@ti.com>
-Cc: Paul Walmsley <paul@pwsan.com>
-Cc: Tony Lindgren <tony@atomide.com>
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Kumar Gala <galak@codeaurora.org>
-Signed-off-by: Keerthy <j-keerthy@ti.com>
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- arch/arm/boot/dts/dra7xx-clocks.dtsi |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Please find the bootlog with these hwmod patches @ [2]
 
-diff --git a/arch/arm/boot/dts/dra7xx-clocks.dtsi b/arch/arm/boot/dts/dra7xx-clocks.dtsi
-index 3ff6d7c..fe5db55 100644
---- a/arch/arm/boot/dts/dra7xx-clocks.dtsi
-+++ b/arch/arm/boot/dts/dra7xx-clocks.dtsi
-@@ -1165,7 +1165,7 @@
- 		reg = <0x021c>, <0x0220>;
- 	};
- 
--	optfclk_pciephy_32khz: optfclk_pciephy_32khz@4a0093b0 {
-+	optfclk_pciephy1_32khz: optfclk_pciephy1_32khz@4a0093b0 {
- 		compatible = "ti,gate-clock";
- 		clocks = <&sys_32k_ck>;
- 		#clock-cells = <0>;
-@@ -1183,7 +1183,7 @@
- 		ti,max-div = <2>;
- 	};
- 
--	optfclk_pciephy_clk: optfclk_pciephy_clk@4a0093b0 {
-+	optfclk_pciephy1_clk: optfclk_pciephy1_clk@4a0093b0 {
- 		compatible = "ti,gate-clock";
- 		clocks = <&apll_pcie_ck>;
- 		#clock-cells = <0>;
-@@ -1191,7 +1191,7 @@
- 		ti,bit-shift = <9>;
- 	};
- 
--	optfclk_pciephy_div_clk: optfclk_pciephy_div_clk@4a0093b0 {
-+	optfclk_pciephy1_div_clk: optfclk_pciephy1_div_clk@4a0093b0 {
- 		compatible = "ti,gate-clock";
- 		clocks = <&optfclk_pciephy_div>;
- 		#clock-cells = <0>;
+[1] -> https://lkml.org/lkml/2014/5/29/258
+[2] -> http://paste.ubuntu.com/7701601/
+
+Kishon Vijay Abraham I (2):
+  arm: dra7xx: Add hwmod data for pcie1 phy and pcie2 phy
+  arm: dra7xx: Add hwmod data for pcie1 and pcie2 subsystems
+
+ arch/arm/mach-omap2/cm2_7xx.h             |    4 ++
+ arch/arm/mach-omap2/omap_hwmod_7xx_data.c |  112 +++++++++++++++++++++++++++++
+ arch/arm/mach-omap2/prm7xx.h              |    4 ++
+ 3 files changed, 120 insertions(+)
+
 -- 
 1.7.9.5
 
