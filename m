@@ -1,83 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757550AbaFYPii (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 11:38:38 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:50939 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757211AbaFYPih (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 11:38:37 -0400
-Message-ID: <53AAECCE.9070408@st.com>
-Date: Wed, 25 Jun 2014 17:37:50 +0200
-From: Maxime Coquelin <maxime.coquelin@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>
-Cc: Lee Jones <lee.jones@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	id S1757481AbaFYPlM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 11:41:12 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:60061 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1756909AbaFYPlL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 11:41:11 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Guenter Roeck'" <linux@roeck-us.net>,
+        =?utf-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
+	<u.kleine-koenig@pengutronix.de>
+CC: Russell King <linux@arm.linux.org.uk>,
+        Peter Zijlstra <peterz@infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel@stlinux.com" <kernel@stlinux.com>,
-        Patrice CHOTARD <patrice.chotard@st.com>,
-        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>
-Subject: Re: [PATCH] ARM: STi: DT: STiH41x: Convert all uppercase non-defines
- to lowercase
-References: <1401195188-23677-1-git-send-email-lee.jones@linaro.org>	<20140625145354.GK13518@lee--X1>	<53AAE603.500@st.com> <CAOesGMiR1tKZH7BeZUuiAPUsw=oRnUg6q--Nby+RROd=p6zMaA@mail.gmail.com>
-In-Reply-To: <CAOesGMiR1tKZH7BeZUuiAPUsw=oRnUg6q--Nby+RROd=p6zMaA@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.201.23.80]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-06-25_04:2014-06-25,2014-06-25,1970-01-01 signatures=0
+        Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        "Vincent Guittot" <vincent.guittot@linaro.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH v2] sched: Fix compiler warnings
+Thread-Topic: [PATCH v2] sched: Fix compiler warnings
+Thread-Index: AQHPkIa1Qh6RlHX42kq1WmxtMU9WYJuB9lcg
+Date: Wed, 25 Jun 2014 15:40:28 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D17265D81@AcuExch.aculab.com>
+References: <1403658329-13196-1-git-send-email-linux@roeck-us.net>
+ <20140625071416.GM14781@pengutronix.de> <53AADC63.8080106@roeck-us.net>
+ <20140625144955.GP14781@pengutronix.de> <53AAE4D2.5020104@roeck-us.net>
+In-Reply-To: <53AAE4D2.5020104@roeck-us.net>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s5PFfHHY009502
 
-Hi Olof,
+From: Guenter Roeck
+> On 06/25/2014 07:49 AM, Uwe Kleine-Knig wrote:
+> > Hello Guenter,
+> >
+> > On Wed, Jun 25, 2014 at 07:27:47AM -0700, Guenter Roeck wrote:
+> >>> Maybe the author's intention was:
+> >>>
+> >>> 	static inline int cpu_corepower_flags(void) __attribute__((const));
+> >>>
+> >>> ?
+> >>> This specifies that the function has no side effects and the return value
+> >>> only depends on the (here non-existing) function arguments.
+> >>>
+> >>
+> >> Possibly, but either I am missing something or this doesn't compile.
+> > You need to do a separate declaration:
+> >
+> > 	static inline int cpu_corepower_flags(void) __attribute__((const));
+> > 	static inline int cpu_corepower_flags(void)
+> > 	{
+> > 		...
+> 
+> Actually turns out one can use __attribute_const__, and it is
+> 
+> 	static inline int __attribute_const__ cpu_corepower_flags(void)
+> 
+> which turns out to be widely used.
+> 
+> I'll change that and resubmit after testing.
 
-On 06/25/2014 05:26 PM, Olof Johansson wrote:
-> `On Wed, Jun 25, 2014 at 8:08 AM, Maxime Coquelin 
-> <maxime.coquelin@st.com> wrote:
->> 
->> 
->> On 06/25/2014 04:53 PM, Lee Jones wrote:
->>>> Suggested-by: Olof Johansson <olof@lixom.net> Signed-off-by:
->>>> Lee Jones <lee.jones@linaro.org> --- 
->>>> arch/arm/boot/dts/stih415-pinctrl.dtsi   | 340
->>>> +++++++++++++++--------------- 
->>>> arch/arm/boot/dts/stih416-b2020-revE.dts |   6 +- 
->>>> arch/arm/boot/dts/stih416-pinctrl.dtsi   | 342
->>>> +++++++++++++++---------------- 
->>>> arch/arm/boot/dts/stih41x-b2000.dtsi     |   6 +- 
->>>> arch/arm/boot/dts/stih41x-b2020.dtsi     |   6 +- 5 files
->>>> changed, 350 insertions(+), 350 deletions(-)
->>> 
->>> What happened to this Maxime?
->>> 
->>> It was Acked by Olof, then died.  Did it slip through the net?
->>> 
->> 
->> You sent it to the ML after my last pull request for v3.16. I
->> think to take it for v3.17, but maybe you think it can go in next
->> v3.16 rc? If so, maybe Arnd or Olof can pick it directly, since
->> we only have this single patch for v3.16 fixes currently?
-> 
-> If you have only one patch, then please send it to us as a fresh
-> copy with git send-email to arm@kernel.org + the usual lists.
-> 
-> You need to apply it and test it on hardware before anyway, right?
-> We certainly can't do that for you.
+You don't need to tell the compiler that for an inline function.
 
-Sure, rebase and testing has to be done on our side.
+	David
 
-I will add this patch to my queue for v3.17.
-
-Regards,
-Maxime
-
-> 
-> 
-> 
-> -Olof
-> 
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
