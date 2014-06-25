@@ -1,119 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757890AbaFYQvW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 12:51:22 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:23896 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757872AbaFYQvU (ORCPT
+	id S1757914AbaFYQvl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 12:51:41 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59489 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757699AbaFYQuC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 12:51:20 -0400
-Message-ID: <53AAFDF7.2010607@oracle.com>
-Date: Wed, 25 Jun 2014 12:51:03 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Christoph Lameter <cl@gentwo.org>, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: mm: slub: invalid memory access in setup_object
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Wed, 25 Jun 2014 12:50:02 -0400
+From: Christoph Hellwig <hch@lst.de>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Bart Van Assche <bvanassche@fusionio.com>,
+        Robert Elliott <Elliott@hp.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 11/14] scsi: unwind blk_end_request_all and blk_end_request_err calls
+Date: Wed, 25 Jun 2014 18:51:58 +0200
+Message-Id: <1403715121-1201-12-git-send-email-hch@lst.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1403715121-1201-1-git-send-email-hch@lst.de>
+References: <1403715121-1201-1-git-send-email-hch@lst.de>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Replace the calls to the various blk_end_request variants with opencode
+equivalents.  Blk-mq is using a model that gives the driver control
+between the bio updates and the actual completion, and making the old
+code follow that same model allows us to keep the code more similar for
+both pathes.
 
-While fuzzing with trinity inside a KVM tools guest running the latest -next
-kernel I've stumbled on the following spew:
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+---
+ drivers/scsi/scsi_lib.c |   61 ++++++++++++++++++++++++++++++++---------------
+ 1 file changed, 42 insertions(+), 19 deletions(-)
 
-[  791.659908] BUG: unable to handle kernel paging request at ffff880302e12000
-[  791.661580] IP: memset (arch/x86/lib/memset_64.S:83)
-[  791.661580] PGD 17b7d067 PUD 704947067 PMD 70492f067 PTE 8000000302e12060
-[  791.661580] Oops: 0002 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[  791.661580] Dumping ftrace buffer:
-[  791.661580]    (ftrace buffer empty)
-[  791.667964] Modules linked in:
-[  791.667964] CPU: 13 PID: 10630 Comm: trinity-c20 Not tainted 3.16.0-rc2-next-20140624-sasha-00024-g332b58d #726
-[  791.669480] task: ffff8803d5123000 ti: ffff8803ba460000 task.ti: ffff8803ba460000
-[  791.669480] RIP: memset (arch/x86/lib/memset_64.S:83)
-[  791.669480] RSP: 0018:ffff8803ba463b18  EFLAGS: 00010003
-[  791.669480] RAX: 6b6b6b6b6b6b6b6b RBX: ffff880036851540 RCX: 0000000000000068
-[  791.669480] RDX: 0000000000002a77 RSI: 000000000000006b RDI: ffff880302e12000
-[  791.669480] RBP: ffff8803ba463b40 R08: 0000000000000001 R09: 0000000000000000
-[  791.669480] R10: ffff880302e11000 R11: ffffffffffffffd8 R12: ffff880302e11000
-[  791.669480] R13: 00000000000000bb R14: ffff880302e11000 R15: ffffffffffffffff
-[  791.669480] FS:  00007f37693b3700(0000) GS:ffff880334e00000(0000) knlGS:0000000000000000
-[  791.669480] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  791.669480] CR2: ffff880302e12000 CR3: 00000003b744f000 CR4: 00000000000006a0
-[  791.669480] Stack:
-[  791.669480]  ffffffff902f4273 ffff8803ba463b30 ffff880036851540 ffff880302e11000
-[  791.669480]  ffffea000c0b8440 ffff8803ba463b60 ffffffff902f48b0 ffff880036851540
-[  791.669480]  ffff880302e11000 ffff8803ba463bc0 ffffffff902f6886 00000000000000d0
-[  791.669480] Call Trace:
-[  791.669480] ? init_object (mm/slub.c:665)
-[  791.669480] setup_object.isra.34 (mm/slub.c:1008 mm/slub.c:1373)
-[  791.669480] new_slab (mm/slub.c:278 mm/slub.c:1412)
-[  791.669480] __slab_alloc (mm/slub.c:2186 mm/slub.c:2344)
-[  791.690803] ? kvm_clock_read (./arch/x86/include/asm/preempt.h:90 arch/x86/kernel/kvmclock.c:86)
-[  791.690803] ? copy_process (kernel/fork.c:306 kernel/fork.c:1193)
-[  791.690803] ? sched_clock (./arch/x86/include/asm/paravirt.h:192 arch/x86/kernel/tsc.c:305)
-[  791.690803] ? get_parent_ip (kernel/sched/core.c:2550)
-[  791.690803] kmem_cache_alloc_node (mm/slub.c:2417 mm/slub.c:2486)
-[  791.690803] ? sched_clock_cpu (kernel/sched/clock.c:311)
-[  791.690803] ? copy_process (kernel/fork.c:306 kernel/fork.c:1193)
-[  791.690803] copy_process (kernel/fork.c:306 kernel/fork.c:1193)
-[  791.690803] ? kvm_clock_read (./arch/x86/include/asm/preempt.h:90 arch/x86/kernel/kvmclock.c:86)
-[  791.690803] ? sched_clock (./arch/x86/include/asm/paravirt.h:192 arch/x86/kernel/tsc.c:305)
-[  791.690803] ? sched_clock_local (kernel/sched/clock.c:214)
-[  791.690803] ? put_lock_stats.isra.12 (./arch/x86/include/asm/preempt.h:98 kernel/locking/lockdep.c:254)
-[  791.690803] do_fork (kernel/fork.c:1609)
-[  791.690803] ? get_parent_ip (kernel/sched/core.c:2550)
-[  791.690803] ? context_tracking_user_exit (./arch/x86/include/asm/paravirt.h:809 (discriminator 2) kernel/context_tracking.c:184 (discriminator 2))
-[  791.690803] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
-[  791.690803] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2557 kernel/locking/lockdep.c:2599)
-[  791.690803] ? trace_hardirqs_on (kernel/locking/lockdep.c:2607)
-[  791.690803] SyS_clone (kernel/fork.c:1695)
-[  791.690803] stub_clone (arch/x86/kernel/entry_64.S:637)
-[  791.690803] ? tracesys (arch/x86/kernel/entry_64.S:542)
-[ 791.690803] Code: b8 01 01 01 01 01 01 01 01 48 0f af c1 41 89 f9 41 83 e1 07 75 70 48 89 d1 48 c1 e9 06 74 39 66 0f 1f 84 00 00 00 00 00 48 ff c9 <48> 89 07 48 89 47 08 48 89 47 10 48 89 47 18 48 89 47 20 48 89
-All code
-========
-   0:	b8 01 01 01 01       	mov    $0x1010101,%eax
-   5:	01 01                	add    %eax,(%rcx)
-   7:	01 01                	add    %eax,(%rcx)
-   9:	48 0f af c1          	imul   %rcx,%rax
-   d:	41 89 f9             	mov    %edi,%r9d
-  10:	41 83 e1 07          	and    $0x7,%r9d
-  14:	75 70                	jne    0x86
-  16:	48 89 d1             	mov    %rdx,%rcx
-  19:	48 c1 e9 06          	shr    $0x6,%rcx
-  1d:	74 39                	je     0x58
-  1f:	66 0f 1f 84 00 00 00 	nopw   0x0(%rax,%rax,1)
-  26:	00 00
-  28:	48 ff c9             	dec    %rcx
-  2b:*	48 89 07             	mov    %rax,(%rdi)		<-- trapping instruction
-  2e:	48 89 47 08          	mov    %rax,0x8(%rdi)
-  32:	48 89 47 10          	mov    %rax,0x10(%rdi)
-  36:	48 89 47 18          	mov    %rax,0x18(%rdi)
-  3a:	48 89 47 20          	mov    %rax,0x20(%rdi)
-  3e:	48 89 00             	mov    %rax,(%rax)
+diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+index a64b9d3..58534fd 100644
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -625,6 +625,37 @@ static void scsi_release_bidi_buffers(struct scsi_cmnd *cmd)
+ 	cmd->request->next_rq->special = NULL;
+ }
+ 
++static bool scsi_end_request(struct request *req, int error,
++		unsigned int bytes, unsigned int bidi_bytes)
++{
++	struct scsi_cmnd *cmd = req->special;
++	struct scsi_device *sdev = cmd->device;
++	struct request_queue *q = sdev->request_queue;
++	unsigned long flags;
++
++
++	if (blk_update_request(req, error, bytes))
++		return true;
++
++	/* Bidi request must be completed as a whole */
++	if (unlikely(bidi_bytes) &&
++	    blk_update_request(req->next_rq, error, bidi_bytes))
++		return true;
++
++	if (blk_queue_add_random(q))
++		add_disk_randomness(req->rq_disk);
++
++	spin_lock_irqsave(q->queue_lock, flags);
++	blk_finish_request(req, error);
++	spin_unlock_irqrestore(q->queue_lock, flags);
++
++	if (bidi_bytes)
++		scsi_release_bidi_buffers(cmd);
++	scsi_release_buffers(cmd);
++	scsi_next_command(cmd);
++	return false;
++}
++
+ /**
+  * __scsi_error_from_host_byte - translate SCSI error code into errno
+  * @cmd:	SCSI command (unused)
+@@ -697,7 +728,7 @@ static int __scsi_error_from_host_byte(struct scsi_cmnd *cmd, int result)
+  *		   be put back on the queue and retried using the same
+  *		   command as before, possibly after a delay.
+  *
+- *		c) We can call blk_end_request() with -EIO to fail
++ *		c) We can call scsi_end_request() with -EIO to fail
+  *		   the remainder of the request.
+  */
+ void scsi_io_completion(struct scsi_cmnd *cmd, unsigned int good_bytes)
+@@ -749,13 +780,9 @@ void scsi_io_completion(struct scsi_cmnd *cmd, unsigned int good_bytes)
+ 			 * both sides at once.
+ 			 */
+ 			req->next_rq->resid_len = scsi_in(cmd)->resid;
+-
+-			scsi_release_buffers(cmd);
+-			scsi_release_bidi_buffers(cmd);
+-
+-			blk_end_request_all(req, 0);
+-
+-			scsi_next_command(cmd);
++			if (scsi_end_request(req, 0, blk_rq_bytes(req),
++					blk_rq_bytes(req->next_rq)))
++				BUG();
+ 			return;
+ 		}
+ 	}
+@@ -794,15 +821,16 @@ void scsi_io_completion(struct scsi_cmnd *cmd, unsigned int good_bytes)
+ 	/*
+ 	 * If we finished all bytes in the request we are done now.
+ 	 */
+-	if (!blk_end_request(req, error, good_bytes))
+-		goto next_command;
++	if (!scsi_end_request(req, error, good_bytes, 0))
++		return;
+ 
+ 	/*
+ 	 * Kill remainder if no retrys.
+ 	 */
+ 	if (error && scsi_noretry_cmd(cmd)) {
+-		blk_end_request_all(req, error);
+-		goto next_command;
++		if (scsi_end_request(req, error, blk_rq_bytes(req), 0))
++			BUG();
++		return;
+ 	}
+ 
+ 	/*
+@@ -947,8 +975,8 @@ void scsi_io_completion(struct scsi_cmnd *cmd, unsigned int good_bytes)
+ 				scsi_print_sense("", cmd);
+ 			scsi_print_command(cmd);
+ 		}
+-		if (!blk_end_request_err(req, error))
+-			goto next_command;
++		if (!scsi_end_request(req, error, blk_rq_err_bytes(req), 0))
++			return;
+ 		/*FALLTHRU*/
+ 	case ACTION_REPREP:
+ 	requeue:
+@@ -967,11 +995,6 @@ void scsi_io_completion(struct scsi_cmnd *cmd, unsigned int good_bytes)
+ 		__scsi_queue_insert(cmd, SCSI_MLQUEUE_DEVICE_BUSY, 0);
+ 		break;
+ 	}
+-	return;
+-
+-next_command:
+-	scsi_release_buffers(cmd);
+-	scsi_next_command(cmd);
+ }
+ 
+ static int scsi_init_sgtable(struct request *req, struct scsi_data_buffer *sdb,
+-- 
+1.7.10.4
 
-Code starting with the faulting instruction
-===========================================
-   0:	48 89 07             	mov    %rax,(%rdi)
-   3:	48 89 47 08          	mov    %rax,0x8(%rdi)
-   7:	48 89 47 10          	mov    %rax,0x10(%rdi)
-   b:	48 89 47 18          	mov    %rax,0x18(%rdi)
-   f:	48 89 47 20          	mov    %rax,0x20(%rdi)
-  13:	48 89 00             	mov    %rax,(%rax)
-[  791.690803] RIP memset (arch/x86/lib/memset_64.S:83)
-[  791.690803]  RSP <ffff8803ba463b18>
-[  791.690803] CR2: ffff880302e12000
-
-Thanks,
-Sasha
