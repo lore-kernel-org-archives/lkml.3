@@ -1,148 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757498AbaFYP7n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 11:59:43 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:50068 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756769AbaFYP7m (ORCPT
+	id S1757387AbaFYQDi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 12:03:38 -0400
+Received: from qmta04.emeryville.ca.mail.comcast.net ([76.96.30.40]:43406 "EHLO
+	qmta04.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756887AbaFYQDh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 11:59:42 -0400
-From: Janne Kanniainen <janne.kanniainen@gmail.com>
-To: johan@kernel.org
-Cc: greg@kroah.com, bjorn@mork.no, jkosina@suse.cz, cooloney@gmail.com,
-        linux-kernel@vger.kernel.org, linux-leds@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-input@vger.kernel.org,
-        Janne Kanniainen <janne.kanniainen@gmail.com>
-Subject: [PATCH 2/2 v2] HID: leds: Use attribute-groups in MSI GT683R driver
-Date: Wed, 25 Jun 2014 18:59:26 +0300
-Message-Id: <1403711966-13003-1-git-send-email-janne.kanniainen@gmail.com>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <20140625115541.GA1409@localhost>
-References: <20140625115541.GA1409@localhost>
+	Wed, 25 Jun 2014 12:03:37 -0400
+From: Shuah Khan <shuah.kh@samsung.com>
+To: gregkh@linuxfoundation.org
+Cc: Shuah Khan <shuah.kh@samsung.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] tools: fix mq_open_tests compile warnings
+Date: Wed, 25 Jun 2014 10:03:33 -0600
+Message-Id: <1403712213-6529-1-git-send-email-shuah.kh@samsung.com>
+X-Mailer: git-send-email 1.9.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use attribute-groups to fix race condition.
+Fix several compile warnings - these are repeats like the ones
+below:
 
-Signed-off-by: Janne Kanniainen <janne.kanniainen@gmail.com>
+gcc -O2 -lrt mq_open_tests.c -o mq_open_tests
+mq_open_tests.c: In function ‘main’:
+mq_open_tests.c:295:2: warning: format ‘%d’ expects argument of type ‘int’, but argument 2 has type ‘rlim_t’ [-Wformat=]
+  printf("\tRLIMIT_MSGQUEUE(soft):\t\t%d\n", saved_limits.rlim_cur);
+  ^
+mq_open_tests.c: In function ‘shutdown’:
+mq_open_tests.c:83:9: warning: ignoring return value of ‘seteuid’, declared with attribute warn_unused_result [-Wunused-result]
+  seteuid(0);
+
+Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
 ---
- .../ABI/testing/sysfs-class-hid-driver-gt683r      |  6 +++--
- drivers/hid/hid-gt683r.c                           | 31 +++++++++++++---------
- 2 files changed, 22 insertions(+), 15 deletions(-)
+ tools/testing/selftests/mqueue/mq_open_tests.c | 20 ++++++++++++++------
+ 1 file changed, 14 insertions(+), 6 deletions(-)
 
-diff --git a/Documentation/ABI/testing/sysfs-class-hid-driver-gt683r b/Documentation/ABI/testing/sysfs-class-hid-driver-gt683r
-index 317e9d5..c97970a 100644
---- a/Documentation/ABI/testing/sysfs-class-hid-driver-gt683r
-+++ b/Documentation/ABI/testing/sysfs-class-hid-driver-gt683r
-@@ -1,9 +1,11 @@
--What:		/sys/class/hidraw/<hidraw>/device/leds_mode
-+What:		/sys/class/leds/<led>/msi_mode
- Date:		Jun 2014
- KernelVersion:	3.17
- Contact:	Janne Kanniainen <janne.kanniainen@gmail.com>
- Description:
--		Set the mode of LEDs
-+		Set the mode of LEDs. You should notice that changing the mode
-+		of one LED will update the mode of its two sibling devices as
-+		well
+diff --git a/tools/testing/selftests/mqueue/mq_open_tests.c b/tools/testing/selftests/mqueue/mq_open_tests.c
+index 711cc29..9c1a5d3 100644
+--- a/tools/testing/selftests/mqueue/mq_open_tests.c
++++ b/tools/testing/selftests/mqueue/mq_open_tests.c
+@@ -80,7 +80,8 @@ void shutdown(int exit_val, char *err_cause, int line_no)
+ 	if (in_shutdown++)
+ 		return;
  
- 		0 - normal
- 		1 - audio
-diff --git a/drivers/hid/hid-gt683r.c b/drivers/hid/hid-gt683r.c
-index 073bd80..aba6636 100644
---- a/drivers/hid/hid-gt683r.c
-+++ b/drivers/hid/hid-gt683r.c
-@@ -84,12 +84,13 @@ static void gt683r_brightness_set(struct led_classdev *led_cdev,
- 	}
- }
+-	seteuid(0);
++	if (seteuid(0) == -1)
++		perror("seteuid() failed");
  
--static ssize_t leds_mode_show(struct device *dev,
-+static ssize_t msi_mode_show(struct device *led_dev,
- 				struct device_attribute *attr,
- 				char *buf)
- {
- 	u8 sysfs_mode;
--	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-+	struct hid_device *hdev = container_of(led_dev->parent,
-+					struct hid_device, dev);
- 	struct gt683r_led *led = hid_get_drvdata(hdev);
+ 	if (queue != -1)
+ 		if (mq_close(queue))
+@@ -292,8 +293,10 @@ int main(int argc, char *argv[])
+ 	/* Tell the user our initial state */
+ 	printf("\nInitial system state:\n");
+ 	printf("\tUsing queue path:\t\t%s\n", queue_path);
+-	printf("\tRLIMIT_MSGQUEUE(soft):\t\t%d\n", saved_limits.rlim_cur);
+-	printf("\tRLIMIT_MSGQUEUE(hard):\t\t%d\n", saved_limits.rlim_max);
++	printf("\tRLIMIT_MSGQUEUE(soft):\t\t%ld\n",
++		(long) saved_limits.rlim_cur);
++	printf("\tRLIMIT_MSGQUEUE(hard):\t\t%ld\n",
++		(long) saved_limits.rlim_max);
+ 	printf("\tMaximum Message Size:\t\t%d\n", saved_max_msgsize);
+ 	printf("\tMaximum Queue Size:\t\t%d\n", saved_max_msgs);
+ 	if (default_settings) {
+@@ -308,8 +311,8 @@ int main(int argc, char *argv[])
+ 	validate_current_settings();
  
- 	if (led->mode == GT683R_LED_NORMAL)
-@@ -102,15 +103,15 @@ static ssize_t leds_mode_show(struct device *dev,
- 	return scnprintf(buf, PAGE_SIZE, "%u\n", sysfs_mode);
- }
- 
--static ssize_t leds_mode_store(struct device *dev,
-+static ssize_t msi_mode_store(struct device *led_dev,
- 				struct device_attribute *attr,
- 				const char *buf, size_t count)
- {
- 	u8 sysfs_mode;
--	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-+	struct hid_device *hdev = container_of(led_dev->parent,
-+					struct hid_device, dev);
- 	struct gt683r_led *led = hid_get_drvdata(hdev);
- 
--
- 	if (kstrtou8(buf, 10, &sysfs_mode) || sysfs_mode > 2)
- 		return -EINVAL;
- 
-@@ -212,7 +213,14 @@ fail:
- 	mutex_unlock(&led->lock);
- }
- 
--static DEVICE_ATTR_RW(leds_mode);
-+static DEVICE_ATTR_RW(msi_mode);
+ 	printf("Adjusted system state for testing:\n");
+-	printf("\tRLIMIT_MSGQUEUE(soft):\t\t%d\n", cur_limits.rlim_cur);
+-	printf("\tRLIMIT_MSGQUEUE(hard):\t\t%d\n", cur_limits.rlim_max);
++	printf("\tRLIMIT_MSGQUEUE(soft):\t\t%ld\n", (long) cur_limits.rlim_cur);
++	printf("\tRLIMIT_MSGQUEUE(hard):\t\t%ld\n", (long) cur_limits.rlim_max);
+ 	printf("\tMaximum Message Size:\t\t%d\n", cur_max_msgsize);
+ 	printf("\tMaximum Queue Size:\t\t%d\n", cur_max_msgs);
+ 	if (default_settings) {
+@@ -454,7 +457,12 @@ int main(int argc, char *argv[])
+ 	else
+ 		printf("Queue open with total size > 2GB when euid = 0 "
+ 		       "failed:\t\t\tPASS\n");
+-	seteuid(99);
 +
-+static struct attribute *gt683r_led_attrs[] = {
-+	&dev_attr_msi_mode.attr,
-+	NULL
-+};
++	if (seteuid(99) == -1) {
++		perror("seteuid() failed");
++		exit(1);
++	}
 +
-+ATTRIBUTE_GROUPS(gt683r_led);
- 
- static int gt683r_led_probe(struct hid_device *hdev,
- 			const struct hid_device_id *id)
-@@ -261,6 +269,8 @@ static int gt683r_led_probe(struct hid_device *hdev,
- 		led->led_devs[i].name = name;
- 		led->led_devs[i].max_brightness = 1;
- 		led->led_devs[i].brightness_set = gt683r_brightness_set;
-+		led->led_devs[i].groups = gt683r_led_groups;
-+
- 		ret = led_classdev_register(&hdev->dev, &led->led_devs[i]);
- 		if (ret) {
- 			hid_err(hdev, "could not register led device\n");
-@@ -268,17 +278,12 @@ static int gt683r_led_probe(struct hid_device *hdev,
- 		}
- 	}
- 
--	ret = device_create_file(&led->hdev->dev, &dev_attr_leds_mode);
--	if (ret) {
--		hid_err(hdev, "could not make mode attribute file\n");
--		goto fail;
--	}
--
- 	return 0;
- 
- fail:
- 	for (i = i - 1; i >= 0; i--)
- 		led_classdev_unregister(&led->led_devs[i]);
-+
- 	hid_hw_stop(hdev);
- 	return ret;
- }
-@@ -288,9 +293,9 @@ static void gt683r_led_remove(struct hid_device *hdev)
- 	int i;
- 	struct gt683r_led *led = hid_get_drvdata(hdev);
- 
--	device_remove_file(&hdev->dev, &dev_attr_leds_mode);
- 	for (i = 0; i < GT683R_LED_COUNT; i++)
- 		led_classdev_unregister(&led->led_devs[i]);
-+
- 	flush_work(&led->work);
- 	hid_hw_stop(hdev);
- }
+ 	attr.mq_maxmsg = cur_max_msgs;
+ 	attr.mq_msgsize = cur_max_msgsize;
+ 	if (test_queue_fail(&attr, &result))
 -- 
-1.9.2
+1.9.1
 
