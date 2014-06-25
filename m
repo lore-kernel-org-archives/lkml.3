@@ -1,100 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756071AbaFYIlr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 04:41:47 -0400
-Received: from nasmtp01.atmel.com ([192.199.1.245]:54300 "EHLO
-	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755157AbaFYIln (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 04:41:43 -0400
-Message-ID: <53AA8B11.6010907@atmel.com>
-Date: Wed, 25 Jun 2014 16:40:49 +0800
-From: Bo Shen <voice.shen@atmel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/2] ARM: at91/dt: describe rgmii ethernet phy connected
- to sama5d3xek boards
-References: <1403649878-28242-1-git-send-email-boris.brezillon@free-electrons.com> <1403649878-28242-2-git-send-email-boris.brezillon@free-electrons.com> <53AA735C.7050805@atmel.com> <53AA7A8C.1010304@free-electrons.com> <53AA7BC6.3020902@atmel.com> <53AA7E01.3090800@free-electrons.com>
-In-Reply-To: <53AA7E01.3090800@free-electrons.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.168.5.13]
+	id S1755937AbaFYIka (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 04:40:30 -0400
+Received: from mga11.intel.com ([192.55.52.93]:54011 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755811AbaFYIkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 04:40:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,544,1400050800"; 
+   d="scan'208";a="552973947"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        x86@kernel.org
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: [Patch V3 11/16] x86, irq, ACPI: Introduce a rwsem to protect IOAPIC operations from hotplug
+Date: Wed, 25 Jun 2014 16:40:42 +0800
+Message-Id: <1403685648-10103-12-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1403685648-10103-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1403685648-10103-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Boris,
+We are going to support ACPI based IOAPIC hotplug, so introduce a rwsem
+to protect IOAPIC data structures from IOAPIC hotplug. We choose to
+serialize in ACPI instead of in the IOAPIC core because:
+1) currently we are only plan to support ACPI based IOAPIC hotplug
+2) it's much more clean and easy
+3) It does't affect IOAPIC discovered by devicetree, SFI and mppparse.
 
-On 06/25/2014 03:45 PM, Boris BREZILLON wrote:
->
-> On 25/06/2014 09:35, Bo Shen wrote:
->> Hi Boris,
->>
->> On 06/25/2014 03:30 PM, Boris BREZILLON wrote:
->>> Hello Bo,
->>>
->>> On 25/06/2014 08:59, Bo Shen wrote:
->>>> Hi Boris,
->>>>
->>>> On 06/25/2014 06:44 AM, Boris BREZILLON wrote:
->>>>> Add ethernet-phy node to specify phy address (on the MDIO bus) and phy
->>>>> interrupt (connected to pin PB25).
->>>>>
->>>>> Define board specific delays to apply to RGMII signals.
->>>>>
->>>>> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
->>>>> ---
->>>>> arch/arm/boot/dts/sama5d3xcm.dtsi | 16 ++++++++++++++++
->>>>> 1 file changed, 16 insertions(+)
->>>>>
->>>>> diff --git a/arch/arm/boot/dts/sama5d3xcm.dtsi
->>>>> b/arch/arm/boot/dts/sama5d3xcm.dtsi
->>>>> index b0b1331..2185ad8 100644
->>>>> --- a/arch/arm/boot/dts/sama5d3xcm.dtsi
->>>>> +++ b/arch/arm/boot/dts/sama5d3xcm.dtsi
->>>>> @@ -34,6 +34,22 @@
->>>>>
->>>>> macb0: ethernet@f0028000 {
->>>>> phy-mode = "rgmii";
->>>>> + #address-cells = <1>;
->>>>> + #size-cells = <0>;
->>>>> +
->>>>> + ethernet-phy@1 {
->>>>
->>>> The GMAC PHY address is 0x7 while not 0x1.
->>>
->>> Are you sure of that ? I checked sama5d3x-ek schematics.
->>
->> On sama5d3x-ek schematic, it is EMAC PHY (ksz8051RNL, it's address is
->> 0x1), while not GMAC PHY. You should check the sama5d3x-CM schematic.
->
-> I checked "Figure 5-16. RONETIX GEthernet ETH0" and "Figure 5-15. EMBEST
-> GEthernet ETH0" of this document "11180A–ATARM–30-Jan-13", which,
-> AFAICT, are RGMII phy schematics of CPU Modules.
-> I might have an old datasheet though.
-> If this is the case could you point out the new one ?
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+ arch/x86/kernel/acpi/boot.c |   13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
-After checking the schematic carefully, I found it will make the user 
-confuse.
-
-When the PHY do strap the status of configuration pins. The phy address 
-pin are all pull up.
-
-The PHYADD2(LED2) pin pull up to v3.3, the PHYADD1 (LED1) pin pull up to 
-v3.3, the RX_CLK (PHADD0) pin pull up by default through sama5d3 pin.
-
-So, they are all "1", then the PHY address is 7.
-
-> Thanks,
->
-> Boris
-
-Best Regards,
-Bo Shen
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index 8c28023924bf..120b573f1e96 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -76,6 +76,8 @@ int acpi_fix_pin2_polarity __initdata;
+ static u64 acpi_lapic_addr __initdata = APIC_DEFAULT_PHYS_BASE;
+ #endif
+ 
++static DECLARE_RWSEM(acpi_ioapic_rwsem);
++
+ #ifndef __HAVE_ARCH_CMPXCHG
+ #warning ACPI uses CMPXCHG, i486 and later hardware
+ #endif
+@@ -608,8 +610,11 @@ void __init acpi_pic_sci_set_trigger(unsigned int irq, u16 trigger)
+ 
+ int acpi_gsi_to_irq(u32 gsi, unsigned int *irqp)
+ {
+-	int irq = mp_map_gsi_to_irq(gsi, IOAPIC_MAP_ALLOC | IOAPIC_MAP_CHECK);
++	int irq;
+ 
++	down_read(&acpi_ioapic_rwsem);
++	irq = mp_map_gsi_to_irq(gsi, IOAPIC_MAP_ALLOC | IOAPIC_MAP_CHECK);
++	up_read(&acpi_ioapic_rwsem);
+ 	if (irq >= 0) {
+ 		*irqp = irq;
+ 		return 0;
+@@ -650,7 +655,9 @@ static int acpi_register_gsi_ioapic(struct device *dev, u32 gsi,
+ 	int irq = gsi;
+ 
+ #ifdef CONFIG_X86_IO_APIC
++	down_read(&acpi_ioapic_rwsem);
+ 	irq = mp_register_gsi(dev, gsi, trigger, polarity);
++	up_read(&acpi_ioapic_rwsem);
+ #endif
+ 
+ 	return irq;
+@@ -659,7 +666,9 @@ static int acpi_register_gsi_ioapic(struct device *dev, u32 gsi,
+ static void acpi_unregister_gsi_ioapic(u32 gsi)
+ {
+ #ifdef CONFIG_X86_IO_APIC
++	down_read(&acpi_ioapic_rwsem);
+ 	mp_unregister_gsi(gsi);
++	up_read(&acpi_ioapic_rwsem);
+ #endif
+ }
+ 
+@@ -1185,7 +1194,9 @@ static void __init acpi_process_madt(void)
+ 			/*
+ 			 * Parse MADT IO-APIC entries
+ 			 */
++			down_write(&acpi_ioapic_rwsem);
+ 			error = acpi_parse_madt_ioapic_entries();
++			up_write(&acpi_ioapic_rwsem);
+ 			if (!error) {
+ 				acpi_set_irq_model_ioapic();
+ 
+-- 
+1.7.10.4
 
