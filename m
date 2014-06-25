@@ -1,97 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756926AbaFYNqC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 09:46:02 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:37463 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754073AbaFYNqA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 09:46:00 -0400
-Date: Wed, 25 Jun 2014 17:45:45 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-CC: <akpm@linux-foundation.org>, <cl@linux.com>, <rientjes@google.com>,
-        <penberg@kernel.org>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-Subject: Re: [PATCH -mm v3 8/8] slab: do not keep free objects/slabs on dead
- memcg caches
-Message-ID: <20140625134545.GB22340@esperanza>
-References: <cover.1402602126.git.vdavydov@parallels.com>
- <a985aec824cd35df381692fca83f7a8debc80305.1402602126.git.vdavydov@parallels.com>
- <20140624073840.GC4836@js1304-P5Q-DELUXE>
+	id S1757083AbaFYNq0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 09:46:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14265 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756944AbaFYNqY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 09:46:24 -0400
+Date: Wed, 25 Jun 2014 15:43:54 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        linux-api@vger.kernel.org, x86@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
+        linux-arch@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: Re: [PATCH v8 4/9] sched: move no_new_privs into new atomic flags
+Message-ID: <20140625134354.GA7892@redhat.com>
+References: <1403642893-23107-1-git-send-email-keescook@chromium.org> <1403642893-23107-5-git-send-email-keescook@chromium.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140624073840.GC4836@js1304-P5Q-DELUXE>
+In-Reply-To: <1403642893-23107-5-git-send-email-keescook@chromium.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 24, 2014 at 04:38:41PM +0900, Joonsoo Kim wrote:
-> On Fri, Jun 13, 2014 at 12:38:22AM +0400, Vladimir Davydov wrote:
-> And, you said that this way of implementation would be slow because
-> there could be many object in dead caches and this implementation
-> needs node spin_lock on each object freeing. Is it no problem now?
-> 
-> If you have any performance data about this implementation and
-> alternative one, could you share it?
+On 06/24, Kees Cook wrote:
+>
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -1307,8 +1307,7 @@ struct task_struct {
+>  				 * execve */
+>  	unsigned in_iowait:1;
+>
+> -	/* task may not gain privileges */
+> -	unsigned no_new_privs:1;
+> +	unsigned long atomic_flags; /* Flags needing atomic access. */
+>
+>  	/* Revert to default priority/policy when forking */
+>  	unsigned sched_reset_on_fork:1;
 
-I ran some tests on a 2 CPU x 6 core x 2 HT box. The kernel was compiled
-with a config taken from a popular distro, so it had most of debug
-options turned off.
+Agreed, personally I like it more than seccomp->flags.
 
----
+But probably it would be better to place the new member before/after
+other bitfields to save the space?
 
-TEST #1: Each logical CPU executes a task that frees 1M objects
-         allocated from the same cache. All frees are node-local.
+Oleg.
 
-RESULTS:
-
-objsize (bytes) | cache is dead? | objects free time (ms)
-----------------+----------------+-----------------------
-          64    |       -        |       373 +- 5
-           -    |       +        |      1300 +- 6
-                |                |
-         128    |       -        |       387 +- 6
-           -    |       +        |      1337 +- 6
-                |                |
-         256    |       -        |       484 +- 4
-           -    |       +        |      1407 +- 6
-                |                |
-         512    |       -        |       686 +-  5
-           -    |       +        |      1561 +- 18
-                |                |
-        1024    |       -        |      1073 +- 11
-           -    |       +        |      1897 +- 12
-
-TEST #2: Each logical CPU executes a task that removes 1M empty files
-         from its own RAMFS mount. All frees are node-local.
-
-RESULTS:
-
- cache is dead? | files removal time (s)
-----------------+----------------------------------
-      -         |       15.57 +- 0.55   (base)
-      +         |       16.80 +- 0.62   (base + 8%)
-
----
-
-So, according to TEST #1 the relative slowdown introduced by zapping per
-cpu arrays is really dreadful - it can be up to 4x! However, the
-absolute numbers aren't that huge - ~1 second for 24 million objects.
-If we do something else except kfree the slowdown shouldn't be that
-visible IMO.
-
-TEST #2 is an attempt to estimate how zapping of per cpu arrays will
-affect FS objects destruction, which is the most common case of dead
-caches usage. To avoid disk-bound operations it uses RAMFS. From the
-test results it follows that the relative slowdown of massive file
-deletion is within 2 stdev, which looks decent.
-
-Anyway, the alternative approach (reaping dead caches periodically)
-won't have this kfree slowdown at all. However, periodic reaping can
-become a real disaster as the system evolves and the number of dead
-caches grows. Currently I don't know how we can estimate real life
-effects of this. If you have any ideas, please let me know.
-
-Thanks.
