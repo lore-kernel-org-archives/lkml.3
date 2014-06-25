@@ -1,115 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932190AbaFYJJz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 05:09:55 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:44324 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932146AbaFYJJr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 05:09:47 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 5/6] OF: Utility helper functions for dynamic nodes
-To: Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Ioan Nicu <ioan.nicu.ext@nsn.com>,
-        ext Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-Cc: Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>, Joel Becker <jlbec@evilplan.org>,
-        devicetree@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
-        linux-i2c@vger.kernel.org, Mark Brown <broonie@kernel.org>,
-        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pete Popov <pete.popov@konsulko.com>,
-        Dan Malek <dan.malek@konsulko.com>,
-        Georgi Vlaev <georgi.vlaev@konsulko.com>
-In-Reply-To: <53A93259.8000301@nsn.com>
-References: <1403430039-15085-1-git-send-email-pantelis.antoniou@konsulko.com>
-	<1403430039-15085-6-git-send-email-pantelis.antoniou@konsulko.com>
-	<53A85549.7040809@nsn.com>
-	<6E91A461-4361-4A18-BE32-CECDD789C114@konsulko.com>
-	<20140623183343.GA10389@heimdall> <53A93259.8000301@nsn.com>
-Date: Wed, 25 Jun 2014 10:09:40 +0100
-Message-Id: <20140625090940.783DAC40D39@trevor.secretlab.ca>
+	id S1755882AbaFYJLH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 05:11:07 -0400
+Received: from mga01.intel.com ([192.55.52.88]:24678 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755411AbaFYI76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 04:59:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,544,1400050800"; 
+   d="scan'208";a="552982092"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
+        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>, Ashok Raj <ashok.raj@intel.com>,
+        Yijing Wang <wangyijing@huawei.com>, Tony Luck <tony.luck@intel.com>,
+        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
+        linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmaengine@vger.kernel.org
+Subject: [Patch Part3 V3 03/21] iommu/vt-d: introduce helper functions to improve code readability
+Date: Wed, 25 Jun 2014 17:02:29 +0800
+Message-Id: <1403686967-10887-4-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1403686967-10887-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1403686967-10887-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Jun 2014 10:10:01 +0200, Alexander Sverdlin <alexander.sverdlin@nsn.com> wrote:
-> Hi Pantelis, Grant,
-> 
-> On 23/06/14 20:33, Ioan Nicu wrote:
-> >>> On 22/06/14 11:40, ext Pantelis Antoniou wrote:
-> >>>> Introduce helper functions for working with the live DT tree,
-> >>>> all of them related to dynamically adding/removing nodes and
-> >>>> properties.
-> >>>>
-> >>>> __of_copy_property() copies a property dynamically
-> >>>> __of_create_empty_node() creates an empty node
-> >>>>
-> >>>> Bug fix about prop->len == 0 by Ionut Nicu <ioan.nicu.ext@nsn.com>
-> >>>
-> >>> Are you sure about this? (see below...)
-> >>>
-> > 
-> > Alexander is right, my fix was lost even though it's mentioned in this patch.
-> > 
-> >>>> Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-> >>>> ---
-> >>
-> >> [snip]
-> >>>> +
-> >>>> +	if (prop->length > 0) {
-> >>>        ^^^^^^^^^^^^^^^^^^^^^
-> >>> Seems, that length==0 case will still produce value==NULL results,
-> >>> which will brake some checks in the kernel... Or am I missing something in
-> >>> the new version?
-> >>>
-> >>
-> >> prop->value will be set to NULL, and length will be set to zero (kzalloc).
-> >> This is a normal zero length property.
-> >>
-> >> I don't know of any place in the kernel accessing the value if prop->length==0
-> >>
-> > 
-> > We have a simple use case. We have an overlay which adds an interrupt controller.
-> > If you look in drivers/of/irq.c, in of_irq_parse_raw():
-> > 
-> > [...]
-> > 	/* Now start the actual "proper" walk of the interrupt tree */
-> > 	while (ipar != NULL) {
-> > 		/* Now check if cursor is an interrupt-controller and if it is
-> > 		 * then we are done
-> > 		 */
-> > 		if (of_get_property(ipar, "interrupt-controller", NULL) !=
-> 
-> We have to define, if it's allowed for an empty property to have NULL value.
-> Several places in the kernel use of_get_property() to check for property existence.
-> We either have to make a tree-wide patch and replace of_get_property() with of_find_property() in those cases,
-> or ensure value != NULL in this copy function...
-> 
-> Grant, what do you think?
+Introduce domain_type_is_vm() and domain_type_is_vm_or_si() to improve
+code readability.
 
-I think it's a good cleanup, but until it happens, any new code needs to
-match the behaviour of fdt.c. In that case, making the value point to an
-empty string is a sane choice.  If you do the legwork of finding callers
-and fixing them up, then I'll apply it. Once done we can make the
-following change to fdt.c:
+Also kill useless macro DOMAIN_FLAG_P2P_MULTIPLE_DEVICES.
 
-- 			pp->value = (__be32 *)p;
-+ 			pp->value = sz ? (__be32 *)p : 0;
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+ drivers/iommu/intel-iommu.c |   59 +++++++++++++++++++------------------------
+ 1 file changed, 26 insertions(+), 33 deletions(-)
 
-pdt.c similarly needs to be updated.
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index 64a3c37d5cfa..3bac9785b054 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -321,16 +321,13 @@ static inline int first_pte_in_page(struct dma_pte *pte)
+ static struct dmar_domain *si_domain;
+ static int hw_pass_through = 1;
+ 
+-/* devices under the same p2p bridge are owned in one domain */
+-#define DOMAIN_FLAG_P2P_MULTIPLE_DEVICES (1 << 0)
+-
+ /* domain represents a virtual machine, more than one devices
+  * across iommus may be owned in one domain, e.g. kvm guest.
+  */
+-#define DOMAIN_FLAG_VIRTUAL_MACHINE	(1 << 1)
++#define DOMAIN_FLAG_VIRTUAL_MACHINE	(1 << 0)
+ 
+ /* si_domain contains mulitple devices */
+-#define DOMAIN_FLAG_STATIC_IDENTITY	(1 << 2)
++#define DOMAIN_FLAG_STATIC_IDENTITY	(1 << 1)
+ 
+ /* define the limit of IOMMUs supported in each domain */
+ #ifdef	CONFIG_X86
+@@ -540,6 +537,16 @@ void free_iova_mem(struct iova *iova)
+ 	kmem_cache_free(iommu_iova_cache, iova);
+ }
+ 
++static inline int domain_type_is_vm(struct dmar_domain *domain)
++{
++	return domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE;
++}
++
++static inline int domain_type_is_vm_or_si(struct dmar_domain *domain)
++{
++	return domain->flags & (DOMAIN_FLAG_VIRTUAL_MACHINE |
++				DOMAIN_FLAG_STATIC_IDENTITY);
++}
+ 
+ static int __iommu_calculate_agaw(struct intel_iommu *iommu, int max_gaw)
+ {
+@@ -580,9 +587,7 @@ static struct intel_iommu *domain_get_iommu(struct dmar_domain *domain)
+ 	int iommu_id;
+ 
+ 	/* si_domain and vm domain should not get here. */
+-	BUG_ON(domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE);
+-	BUG_ON(domain->flags & DOMAIN_FLAG_STATIC_IDENTITY);
+-
++	BUG_ON(domain_type_is_vm_or_si(domain));
+ 	iommu_id = find_first_bit(domain->iommu_bmp, g_num_of_iommus);
+ 	if (iommu_id < 0 || iommu_id >= g_num_of_iommus)
+ 		return NULL;
+@@ -1500,7 +1505,7 @@ static void free_dmar_iommu(struct intel_iommu *iommu)
+ 	free_context_table(iommu);
+ }
+ 
+-static struct dmar_domain *alloc_domain(bool vm)
++static struct dmar_domain *alloc_domain(int flags)
+ {
+ 	/* domain id for virtual machine, it won't be set in context */
+ 	static atomic_t vm_domid = ATOMIC_INIT(0);
+@@ -1510,16 +1515,13 @@ static struct dmar_domain *alloc_domain(bool vm)
+ 	if (!domain)
+ 		return NULL;
+ 
++	memset(domain, 0, sizeof(*domain));
+ 	domain->nid = -1;
+-	domain->iommu_count = 0;
+-	memset(domain->iommu_bmp, 0, sizeof(domain->iommu_bmp));
+-	domain->flags = 0;
++	domain->flags = flags;
+ 	spin_lock_init(&domain->iommu_lock);
+ 	INIT_LIST_HEAD(&domain->devices);
+-	if (vm) {
++	if (flags & DOMAIN_FLAG_VIRTUAL_MACHINE)
+ 		domain->id = atomic_inc_return(&vm_domid);
+-		domain->flags = DOMAIN_FLAG_VIRTUAL_MACHINE;
+-	}
+ 
+ 	return domain;
+ }
+@@ -1707,7 +1709,7 @@ static void domain_exit(struct dmar_domain *domain)
+ 	/* clear attached or cached domains */
+ 	rcu_read_lock();
+ 	for_each_active_iommu(iommu, drhd)
+-		if (domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE ||
++		if (domain_type_is_vm(domain) ||
+ 		    test_bit(iommu->seq_id, domain->iommu_bmp))
+ 			iommu_detach_domain(domain, iommu);
+ 	rcu_read_unlock();
+@@ -1749,8 +1751,7 @@ static int domain_context_mapping_one(struct dmar_domain *domain,
+ 	id = domain->id;
+ 	pgd = domain->pgd;
+ 
+-	if (domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE ||
+-	    domain->flags & DOMAIN_FLAG_STATIC_IDENTITY) {
++	if (domain_type_is_vm_or_si(domain)) {
+ 		int found = 0;
+ 
+ 		/* find an available domain id for this device in iommu */
+@@ -2116,7 +2117,7 @@ static void domain_remove_dev_info(struct dmar_domain *domain)
+ 		iommu_disable_dev_iotlb(info);
+ 		iommu_detach_dev(info->iommu, info->bus, info->devfn);
+ 
+-		if (domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE) {
++		if (domain_type_is_vm(domain)) {
+ 			iommu_detach_dependent_devices(info->iommu, info->dev);
+ 			/* clear this iommu in iommu_bmp, update iommu count
+ 			 * and capabilities
+@@ -2182,8 +2183,6 @@ static struct dmar_domain *dmar_insert_dev_info(struct intel_iommu *iommu,
+ 	info->dev = dev;
+ 	info->domain = domain;
+ 	info->iommu = iommu;
+-	if (!dev)
+-		domain->flags |= DOMAIN_FLAG_P2P_MULTIPLE_DEVICES;
+ 
+ 	spin_lock_irqsave(&device_domain_lock, flags);
+ 	if (dev)
+@@ -2258,7 +2257,7 @@ static struct dmar_domain *get_domain_for_dev(struct device *dev, int gaw)
+ 		goto error;
+ 
+ 	/* Allocate and initialize new domain for the device */
+-	domain = alloc_domain(false);
++	domain = alloc_domain(0);
+ 	if (!domain)
+ 		goto error;
+ 	if (iommu_attach_domain(domain, iommu)) {
+@@ -2422,12 +2421,10 @@ static int __init si_domain_init(int hw)
+ 	struct intel_iommu *iommu;
+ 	int nid, ret = 0;
+ 
+-	si_domain = alloc_domain(false);
++	si_domain = alloc_domain(DOMAIN_FLAG_STATIC_IDENTITY);
+ 	if (!si_domain)
+ 		return -EFAULT;
+ 
+-	si_domain->flags = DOMAIN_FLAG_STATIC_IDENTITY;
+-
+ 	for_each_active_iommu(iommu, drhd) {
+ 		ret = iommu_attach_domain(si_domain, iommu);
+ 		if (ret) {
+@@ -3874,9 +3871,7 @@ static int device_notifier(struct notifier_block *nb,
+ 
+ 	down_read(&dmar_global_lock);
+ 	domain_remove_one_dev_info(domain, dev);
+-	if (!(domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE) &&
+-	    !(domain->flags & DOMAIN_FLAG_STATIC_IDENTITY) &&
+-	    list_empty(&domain->devices))
++	if (!domain_type_is_vm_or_si(domain) && list_empty(&domain->devices))
+ 		domain_exit(domain);
+ 	up_read(&dmar_global_lock);
+ 
+@@ -4125,8 +4120,7 @@ static void domain_remove_one_dev_info(struct dmar_domain *domain,
+ 		domain_update_iommu_cap(domain);
+ 		spin_unlock_irqrestore(&domain->iommu_lock, tmp_flags);
+ 
+-		if (!(domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE) &&
+-		    !(domain->flags & DOMAIN_FLAG_STATIC_IDENTITY)) {
++		if (!domain_type_is_vm_or_si(domain)) {
+ 			spin_lock_irqsave(&iommu->lock, tmp_flags);
+ 			clear_bit(domain->id, iommu->domain_ids);
+ 			iommu->domains[domain->id] = NULL;
+@@ -4165,7 +4159,7 @@ static int intel_iommu_domain_init(struct iommu_domain *domain)
+ {
+ 	struct dmar_domain *dmar_domain;
+ 
+-	dmar_domain = alloc_domain(true);
++	dmar_domain = alloc_domain(DOMAIN_FLAG_VIRTUAL_MACHINE);
+ 	if (!dmar_domain) {
+ 		printk(KERN_ERR
+ 			"intel_iommu_domain_init: dmar_domain == NULL\n");
+@@ -4209,8 +4203,7 @@ static int intel_iommu_attach_device(struct iommu_domain *domain,
+ 
+ 		old_domain = find_domain(dev);
+ 		if (old_domain) {
+-			if (dmar_domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE ||
+-			    dmar_domain->flags & DOMAIN_FLAG_STATIC_IDENTITY)
++			if (domain_type_is_vm_or_si(dmar_domain))
+ 				domain_remove_one_dev_info(old_domain, dev);
+ 			else
+ 				domain_remove_dev_info(old_domain);
+-- 
+1.7.10.4
 
-I'm not overly worried though. That code has been in place for a very
-long time, so there is no rush. It can exist a while longer.
-
-g.
