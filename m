@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758088AbaFYQy7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 12:54:59 -0400
-Received: from slow1-d.mail.gandi.net ([217.70.178.86]:44888 "EHLO
-	slow1-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757824AbaFYQy5 (ORCPT
+	id S1757864AbaFYQzb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 12:55:31 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59436 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757311AbaFYQtv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 12:54:57 -0400
-X-Greylist: delayed 2925 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 Jun 2014 12:54:57 EDT
-X-Originating-IP: 50.43.32.211
-Date: Wed, 25 Jun 2014 08:46:29 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>,
-        gregkh@linux-foundation.org, akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] scripts/checkpatch.pl: Only emit LONG_LINE for --strict
-Message-ID: <20140625154629.GA21519@thin>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 25 Jun 2014 12:49:51 -0400
+From: Christoph Hellwig <hch@lst.de>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Bart Van Assche <bvanassche@fusionio.com>,
+        Robert Elliott <Elliott@hp.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 01/14] sd: don't use rq->cmd_len before setting it up
+Date: Wed, 25 Jun 2014 18:51:48 +0200
+Message-Id: <1403715121-1201-2-git-send-email-hch@lst.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1403715121-1201-1-git-send-email-hch@lst.de>
+References: <1403715121-1201-1-git-send-email-hch@lst.de>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Regardless of the long-standing debate over line width, checkpatch
-should not warn about it by default.  Too many users run checkpatch and
-blindly follow its recommendation by splitting long lines, which almost
-invariably results in worse code.  On rare occasions, the line-width
-limit encourages sensible refactoring of nested code into functions, but
-more frequently it just results in painfully over-wrapped code.  Turning
-this warning off by default will ensure that people who take the time to
-fix up checkpatch issues in drivers (especially staging drivers) don't
-waste time submitting patches that uglify code to quiet checkpatch's
-line-width limit.
+Unlike the old request code blk-mq doesn't initialize cmd_len with a
+default value, so don't rely on it being set in sd_setup_write_same_cmnd.
 
-The on-by-default DEEP_INDENTATION warning for lines indented more than
-6 levels deep makes more sense as a default, to encourage people to
-refactor, since it cannot be "fixed" by simply reformatting code.
-
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 ---
- scripts/checkpatch.pl | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/scsi/sd.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 010b18e..b2eb968 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2146,8 +2146,8 @@ sub process {
- 		    $line =~ /^\+\s*"[^"]*"\s*(?:\s*|,|\)\s*;)\s*$/) &&
- 		    $length > $max_line_length)
- 		{
--			WARN("LONG_LINE",
--			     "line over $max_line_length characters\n" . $herecurr);
-+			CHK("LONG_LINE",
-+			    "line over $max_line_length characters\n" . $herecurr);
- 		}
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index 9c86e3d..6ec4ffe 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -824,15 +824,16 @@ static int sd_setup_write_same_cmnd(struct scsi_device *sdp, struct request *rq)
  
- # Check for user-visible strings broken across lines, which breaks the ability
+ 	rq->__data_len = sdp->sector_size;
+ 	rq->timeout = SD_WRITE_SAME_TIMEOUT;
+-	memset(rq->cmd, 0, rq->cmd_len);
+ 
+ 	if (sdkp->ws16 || sector > 0xffffffff || nr_sectors > 0xffff) {
+ 		rq->cmd_len = 16;
++		memset(rq->cmd, 0, rq->cmd_len);
+ 		rq->cmd[0] = WRITE_SAME_16;
+ 		put_unaligned_be64(sector, &rq->cmd[2]);
+ 		put_unaligned_be32(nr_sectors, &rq->cmd[10]);
+ 	} else {
+ 		rq->cmd_len = 10;
++		memset(rq->cmd, 0, rq->cmd_len);
+ 		rq->cmd[0] = WRITE_SAME;
+ 		put_unaligned_be32(sector, &rq->cmd[2]);
+ 		put_unaligned_be16(nr_sectors, &rq->cmd[7]);
 -- 
-2.0.0
+1.7.10.4
 
