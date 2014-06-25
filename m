@@ -1,227 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757111AbaFYWhy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 18:37:54 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:47243 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757053AbaFYWhv (ORCPT
+	id S932111AbaFYWh4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 18:37:56 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:43074 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757075AbaFYWhy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 18:37:51 -0400
-Date: Wed, 25 Jun 2014 15:36:24 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Vlastimil Babka <vbabka@suse.cz>
-cc: Konstantin Khlebnikov <koct9i@gmail.com>, Hugh Dickins <hughd@google.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: mm: shm: hang in shmem_fallocate
-In-Reply-To: <53A9A7D8.2020703@suse.cz>
-Message-ID: <alpine.LSU.2.11.1406251152450.1580@eggly.anvils>
-References: <52AE7B10.2080201@oracle.com> <52F6898A.50101@oracle.com> <alpine.LSU.2.11.1402081841160.26825@eggly.anvils> <52F82E62.2010709@oracle.com> <539A0FC8.8090504@oracle.com> <alpine.LSU.2.11.1406151921070.2850@eggly.anvils>
- <53A9A7D8.2020703@suse.cz>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Wed, 25 Jun 2014 18:37:54 -0400
+Date: Wed, 25 Jun 2014 23:37:49 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Sudeep Holla <sudeep.holla@arm.com>
+Cc: linux-kernel@vger.kernel.org, Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 9/9] ARM: kernel: add outer cache support for cacheinfo
+	implementation
+Message-ID: <20140625223748.GM32514@n2100.arm.linux.org.uk>
+References: <1403717444-23559-1-git-send-email-sudeep.holla@arm.com> <1403717444-23559-10-git-send-email-sudeep.holla@arm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403717444-23559-10-git-send-email-sudeep.holla@arm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Jun 2014, Vlastimil Babka wrote:
-> On 06/16/2014 04:29 AM, Hugh Dickins wrote:
-> > On Thu, 12 Jun 2014, Sasha Levin wrote:
-> >> On 02/09/2014 08:41 PM, Sasha Levin wrote:
-> >>> On 02/08/2014 10:25 PM, Hugh Dickins wrote:
-> >>>> Would trinity be likely to have a thread or process repeatedly faulting
-> >>>> in pages from the hole while it is being punched?
-> >>>
-> >>> I can see how trinity would do that, but just to be certain - Cc davej.
-> >>>
-> >>> On 02/08/2014 10:25 PM, Hugh Dickins wrote:
-> >>>> Does this happen with other holepunch filesystems?  If it does not,
-> >>>> I'd suppose it's because the tmpfs fault-in-newly-created-page path
-> >>>> is lighter than a consistent disk-based filesystem's has to be.
-> >>>> But we don't want to make the tmpfs path heavier to match them.
-> >>>
-> >>> No, this is strictly limited to tmpfs, and AFAIK trinity tests hole
-> >>> punching in other filesystems and I make sure to get a bunch of those
-> >>> mounted before starting testing.
-> >>
-> >> Just pinging this one again. I still see hangs in -next where the hang
-> >> location looks same as before:
-> >>
-> > 
-> > Please give this patch a try.  It fixes what I can reproduce, but given
-> > your unexplained page_mapped() BUG in this area, we know there's more
-> > yet to be understood, so perhaps this patch won't do enough for you.
-> > 
-> 
-> Hi,
+On Wed, Jun 25, 2014 at 06:30:44PM +0100, Sudeep Holla wrote:
+> diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
+> index efc5cab..30ca151 100644
+> --- a/arch/arm/mm/cache-l2x0.c
+> +++ b/arch/arm/mm/cache-l2x0.c
+> @@ -105,6 +105,15 @@ static inline void l2c_unlock(void __iomem *base, unsigned num)
+>  	}
+>  }
+>  
+> +static void l2x0_getinfo(struct outer_cache_info *info)
+> +{
+> +	if (!info)
+> +		return;
 
-Sorry for the slow response: I have got confused, learnt more, and
-changed my mind, several times in the course of replying to you.
-I think this reply will be stable... though not final.
+Pointless NULL test.  If someone passes NULL to this function (which
+you never do in this file) then we want to know about it because _that_
+is a kernel bug - it is invalid to pass NULL.  Hence the kernel should
+oops.
 
-> 
-> since this got a CVE,
+Please, don't go around adding stupid NULL tests for conditions which
+should _never_ happen, instead, rely on the kernel to oops if these
+invalid conditions occur.  That's why we produce a backtrace from such
+events, to allow invalid conditions to be debugged and fixed.
 
-Oh.  CVE-2014-4171.  Couldn't locate that yesterday but see it now.
-Looks overrated to me (and amusing to see my pompous words about a
-"range notification mechanism" taken too seriously), but of course
-we do need to address it.
+Having stuff silently ignore in this way does not detect these bugs so
+they go by unnoticed.
 
-> I've been looking at backport to an older kernel where
+Take a moment to read some of the fs/ or kernel/ code, and you'll find
+a lack of NULL checks in there.  That's what gives that code performance,
+because it's not spending its time doing loads of useless NULL checks.
 
-Thanks a lot for looking into it.  I didn't think it was worth a
-Cc: stable@vger.kernel.org myself, but admit to being both naive
-and inconsistent about that.
+> @@ -894,6 +903,7 @@ static void __init __l2c_init(const struct l2c_init_data *data,
+>  		data->enable(l2x0_base, aux, data->num_lock);
+>  
+>  	outer_cache = fns;
+> +	outer_cache.get_info = l2x0_getinfo;
 
-> fallocate(FALLOC_FL_PUNCH_HOLE) is not yet supported, and there's also no
-> range notification mechanism yet. There's just madvise(MADV_REMOVE) and since
+NAK.  Think about it.
 
-Yes, that mechanism could be ported back pre-v3.5,
-but I agree with your preference not to.
-
-> it doesn't guarantee anything, it seems simpler just to give up retrying to
-
-Right, I don't think we have formally documented the instant of "full hole"
-that I strove for there, and it's probably not externally verifiable, nor
-guaranteed by other filesystems.  I just thought it a good QoS aim, but
-it has given us this problem.
-
-> truncate really everything. Then I realized that maybe it would work for
-> current kernel as well, without having to add any checks in the page fault
-> path. The semantics of fallocate(FALLOC_FL_PUNCH_HOLE) might look different
-> from madvise(MADV_REMOVE), but it seems to me that as long as it does discard
-> the old data from the range, it's fine from any information leak point of view.
-> If someone races page faulting, it IMHO doesn't matter if he gets a new zeroed
-> page before the parallel truncate has ended, or right after it has ended.
-
-Yes.  I disagree with your actual patch, for more than one reason,
-but it's in the right area; and I found myself growing to agree with
-you, that's it's better to have one kind of fix for all these releases,
-than one for v3.5..v3.15 and another for v3.1..v3.4.  (The CVE cites
-v3.0 too, I'm sceptical about that, but haven't tried it as yet.)
-
-If I'd realized that we were going to have to backport, I'd have spent
-longer looking for a patch like yours originally.  So my inclination
-now is to go your route, make a new patch for v3.16 and backports,
-and revert the f00cdc6df7d7 that has already gone in.
-
-> So I'm posting it here as a RFC. I haven't thought about the
-> i915_gem_object_truncate caller yet. I think that this path wouldn't satisfy
-
-My understanding is that i915_gem_object_truncate() is not a problem,
-that i915's dev->struct_mutex serializes all its relevant transitions,
-plus the object woudn't even be interestingly accessible to the user.
-
-> the new "lstart < inode->i_size" condition, but I don't know if it's "vulnerable"
-> to the problem.
-
-I don't think i915 is vulnerable, but if it is, that condition would
-be fine for it, as would be the patch I'm now thinking of.
-
-> 
-> -----8<-----
-> From: Vlastimil Babka <vbabka@suse.cz>
-> Subject: [RFC PATCH] shmem: prevent livelock between page fault and hole punching
-> 
-> ---
->  mm/shmem.c | 19 +++++++++++++++++++
->  1 file changed, 19 insertions(+)
-> 
-> diff --git a/mm/shmem.c b/mm/shmem.c
-> index f484c27..6d6005c 100644
-> --- a/mm/shmem.c
-> +++ b/mm/shmem.c
-> @@ -476,6 +476,25 @@ static void shmem_undo_range(struct inode *inode, loff_t lstart, loff_t lend,
->  		if (!pvec.nr) {
->  			if (index == start || unfalloc)
->  				break;
-> +                        /* 
-> +                         * When this condition is true, it means we were
-> +                         * called from fallocate(FALLOC_FL_PUNCH_HOLE).
-> +                         * To prevent a livelock when someone else is faulting
-> +                         * pages back, we are content with single pass and do
-> +                         * not retry with index = start. It's important that
-> +                         * previous page content has been discarded, and
-> +                         * faulter(s) got new zeroed pages.
-> +                         *
-> +                         * The other callsites are shmem_setattr (for
-> +                         * truncation) and shmem_evict_inode, which set i_size
-> +                         * to truncated size or 0, respectively, and then call
-> +                         * us with lstart == inode->i_size. There we do want to
-> +                         * retry, and livelock cannot happen for other reasons.
-> +                         *
-> +                         * XXX what about i915_gem_object_truncate?
-> +                         */
-
-I doubt you have ever faced such a criticism before, but I'm going
-to speak my mind and say that comment is too long!  A comment of that
-length is okay above or just inside or at a natural break in a function,
-but here it distracts too much from what the code is actually doing.
-
-In particular, the words "this condition" are so much closer to the
-condition above than the condition below, that it's rather confusing.
-
-/* Single pass when hole-punching to not livelock on racing faults */
-would have been enough (yes, I've cheated, that would be 2 or 4 lines).
-
-> +                        if (lstart < inode->i_size)
-
-For a long time I was going to suggest that you leave i_size out of it,
-and use "lend > 0" instead.  Then suddenly I realized that this is the
-wrong place for the test.  And then that it's not your fault, it's mine,
-in v3.1's d0823576bf4b "mm: pincer in truncate_inode_pages_range".
-Wow, that really pessimized the hole-punch case!
-
-When is pvec.nr 0?  When we've reached the end of the file.  Why should
-we go to the end of the file, when punching a hole at the start?  Ughh!
-
-> +                                break;
->  			index = start;
->  			continue;
->  		}
-> -- 
-> 1.8.4.5
-
-But there is another problem.  We cannot break out after one pass on
-shmem, because there's a possiblilty that a swap entry in the radix_tree
-got swizzled into a page just as it was about to be removed - your patch
-might then leave that data behind in the hole.
-
-As it happens, Konstantin Khlebnikov suggested a patch for that a few
-weeks ago, before noticing that it's already handled by the endless loop.
-If we make that loop no longer endless, we need to add in Konstantin's
-"if (shmem_free_swap) goto retry" patch.
-
-Right now I'm thinking that my idiocy in d0823576bf4b may actually
-be the whole of Trinity's problem: patch below.  If we waste time
-traversing the radix_tree to end-of-file, no wonder that concurrent
-faults have time to put something in the hole every time.
-
-Sasha, may I trespass on your time, and ask you to revert the previous
-patch from your tree, and give this patch below a try?  I am very
-interested to learn if in fact it fixes it for you (as it did for me).
-
-However, I am wasting your time, in that I think we shall decide that
-it's too unsafe to rely solely upon the patch below (what happens if
-1024 cpus are all faulting on it while we try to punch a 4MB hole at
-end of file? if we care).  I think we shall end up with the optimization
-below (or some such: it can be written in various ways), plus reverting
-d0823576bf4b's "index == start && " pincer, plus Konstantin's
-shmem_free_swap handling, rolled into a single patch; and a similar
-patch (without the swap part) for several functions in truncate.c.
-
-Hugh
-
---- 3.16-rc2/mm/shmem.c	2014-06-16 00:28:55.124076531 -0700
-+++ linux/mm/shmem.c	2014-06-25 10:28:47.063967052 -0700
-@@ -470,6 +470,7 @@ static void shmem_undo_range(struct inod
- 	for ( ; ; ) {
- 		cond_resched();
- 
-+		index = min(index, end);
- 		pvec.nr = find_get_entries(mapping, index,
- 				min(end - index, (pgoff_t)PAGEVEC_SIZE),
- 				pvec.pages, indices);
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
