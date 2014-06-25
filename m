@@ -1,83 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753562AbaFYA0Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 20:26:25 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:55723 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752722AbaFYA0R (ORCPT
+	id S1753918AbaFYA3S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 20:29:18 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:34451 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752920AbaFYA3R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 20:26:17 -0400
-Date: Tue, 24 Jun 2014 17:26:16 -0700 (PDT)
-Message-Id: <20140624.172616.757600677169858458.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-Cc: davej@redhat.com, akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, therbert@google.com
-Subject: Re: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CA+55aFx--+YxUWX5SGet0QxfDo2PcJj3x5tcwqiCTA9yiyi_bQ@mail.gmail.com>
-References: <20140616234254.GA15332@redhat.com>
-	<20140623234759.GA19138@redhat.com>
-	<CA+55aFx--+YxUWX5SGet0QxfDo2PcJj3x5tcwqiCTA9yiyi_bQ@mail.gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Tue, 24 Jun 2014 20:29:17 -0400
+Message-ID: <53AA17C5.4030304@gmail.com>
+Date: Wed, 25 Jun 2014 08:28:53 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Guenter Roeck <linux@roeck-us.net>, Liqin Chen <liqin.linux@gmail.com>,
+        Lennox Wu <lennox.wu@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arch/score/include/uapi/asm/ptrace.h: Add prefix 'SCORE_'
+ for related macros
+References: <53A66000.4010208@gmail.com> <53A6669B.1010701@roeck-us.net> <53A66A92.9040106@gmail.com> <53A6EDF6.2030203@roeck-us.net> <53A6EFEC.1020207@roeck-us.net> <53A79905.9020007@gmail.com> <53A97BF6.1060203@gmail.com> <53A98EBA.6050900@roeck-us.net>
+In-Reply-To: <53A98EBA.6050900@roeck-us.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 24 Jun 2014 17:26:17 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 24 Jun 2014 17:04:41 -0700
 
-> Ping?
 
-Tom please help look at this.
-
-> This is all related to the new checksumming code by Tom Herbert.
+On 06/24/2014 10:44 PM, Guenter Roeck wrote:
+> On 06/24/2014 06:24 AM, Chen Gang wrote:
+>> On 06/23/2014 11:03 AM, Chen Gang wrote:
+>>> On 06/22/2014 11:02 PM, Guenter Roeck wrote:
+>>>> On 06/22/2014 07:53 AM, Guenter Roeck wrote:
+>>>>> I did that, and managed to build gcc.
+>>>>>
+>>>>> However, when trying to compile score defconfig, I get internal
+>>>>> compiler errors in cc1
+>>>>> when compiling drivers/tty/tty_mutex.o and block/elevator.o.
+>>>>>
+>>>>>    CC      block/elevator.o
+>>>>> score-elf-gcc: internal compiler error: Segmentation fault (program
+>>>>> cc1)
+>>>>> 0x40c073 execute
+>>>>>       ../../gcc/gcc/gcc.c:2848
+>>>>> Please submit a full bug report,
+>>>>> with preprocessed source if appropriate.
+>>>>> Please include the complete backtrace with any bug report.
+>>>>> See <http://gcc.gnu.org/bugs.html> for instructions.
+>>>>> make[1]: *** [block/elevator.o] Error 4
+>>>>> make: *** [block/elevator.o] Error 2
+>>>>>
+>>>>> Do you see that as well ?
+>>>>>
+>>>>> This is with
+>>>>>
+>>>>> GNU assembler version 2.24.51 (score-elf) using BFD version (GNU
+>>>>> Binutils) 2.24.51.20140622
+>>>>>
+>>>>> and gcc configured with:
+>>>>>
+>>>>> Configured with: ../gcc/configure --prefix=/opt/kernel/score
+>>>>> --program-prefix=score-elf- \
+>>>>> --target=score-elf --without-header --disable-nls --enable-languages=c
+>>>>> --disable-threads \
+>>>>> --disable-shared --enable-werror=no
+>>>>> target_configargs=enable_vtable_verify=yes \
+>>>>> --enable-obsolete --disable-libssp --disable-libquadmath
+>>>>>
+>>>>> Tip of gcc source is commit d8686b0aa945a, tip of binutils source is
+>>>>> commit d17c74c1d41.
+>>>>> Your assembler fix is included in this version of binutils.
+>>>>>
+>>
+>> Can we repeated this issue, or it is random?  I have try it use my
+>> current gcc version, it has no issue.
+>>
+>> If it can be repeated in the latest version, I shall use version compine
+>> (and try step by step) to fix it.
+>>
+>> If real random issue, if possible, please help repeated and generate
+>> coredump file, and put it to a place to let me get back for analysing.
+>>
+> I got the same error each time. You should be able to reproduce it by
+> checking out the latest gcc. If that doesn't produce the error, try
+> checking out sha d8686b0aa945a. I didn't keep that compiler after the tip
+> of the gcc 4.9 branch worked, so I'd have to rebuild it myself
+> to reproduce it myself.
 > 
-> The oops seems to be "gso_make_checksum()" taking a checksum of
-> something that isn't mapped. Either the math for 'plen' is simply
-> wrong (maybe "csum_start" is not properly initialized), or maybe there
-> is a missing skb_pull() or similar, or the skb is fragmented and/or
-> needs kmapping.
+> Note that compilation of libssp failed with d8686b0aa945a, which is why
+> I disabled it. I didn't try to build it with 4.9.
 > 
-> It's not a NULL pointer dereference, the faulting address is
-> ffff8800aa1a8000, so it's some kind of invalid pointer arithmetic
-> found by DEBUG_PAGEALLOC.
-> 
-> The register information all looks reasonably sane (ie we have 11
-> 64-byte blocks to go - so it looks like the length of the csum is
-> reasonable), and the starting address was clearly ok too, so this is
-> the copying just traversing into a page that isn't allocated. That
-> really smells like a skb with multiple fragments to me. Can that
-> happen for the GSO code?
 
-This is the forwarding path and what's happening is:
+Thank you very much for your work.
 
-1) r8169 is allocating linear packets for rx and passing those into
-   the stack
+It is my chance to fix gcc issues which I have planed, I shall continue
+based on it, hope I can finish within this month (within 2014-06-30).
 
-2) those rx packets are being accumulated by the GRO layer into a GRO
-   packet, likely the GRO skb has segments composed of the data areas
-   of the second and subsequent accumulated rx frames
 
-3) The gro packet passes through IP forwarding then back out for
-   TX
+Thanks.
+-- 
+Chen Gang
 
-4) The destination device doesn't support TSO, so the GSO layer
-   starts segmenting it back into MTU sized frames
-
-And this is where the csum crash is happening.
-
-tcp_gso_segment() seems to call skb_segment before doing checksumming stuff
-such as gso_make_checksum, so SKB_GSO_CB()->csum_start should be initialized
-properly.
-
-tcp_gso_segment() makes sure that the headers are reachable in the linear
-area with the pskb_may_pull(skb, sizeof(*th)) call, and gso_make_checksum()
-is only working with the area up to SKB_GSO_CB()->csum_start which should
-be within this area for sure.
-
-Well, that's the precondition we seem to be relying upon, I suppose an
-assert is in order.
+Open, share, and attitude like air, water, and life which God blessed
