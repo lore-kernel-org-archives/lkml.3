@@ -1,41 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757341AbaFYOVX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 10:21:23 -0400
-Received: from w-smtp-out-7.wedos.net ([46.28.106.5]:55749 "EHLO
-	we2-f167.wedos.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756886AbaFYOVW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 10:21:22 -0400
+	id S1757135AbaFYOXm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 10:23:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56958 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755444AbaFYOXk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 10:23:40 -0400
 Date: Wed, 25 Jun 2014 16:21:21 +0200
-From: Josef Gajdusek <atx@atx.name>
-To: lm-sensors@lm-sensors.org
-Cc: jdelvare@suse.de, linux@roeck-us.net, linux-kernel@vger.kernel.org
-Subject: [PATCH] hwmon: (emc1403) Fix missing 'select REGMAP_I2C' in Kconfig
-Message-ID: <20140625142121.GA14873@dashie>
+From: Oleg Nesterov <oleg@redhat.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        linux-api@vger.kernel.org, x86@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
+        linux-arch@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: Re: [PATCH v8 9/9] seccomp: implement SECCOMP_FILTER_FLAG_TSYNC
+Message-ID: <20140625142121.GD7892@redhat.com>
+References: <1403642893-23107-1-git-send-email-keescook@chromium.org> <1403642893-23107-10-git-send-email-keescook@chromium.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1403642893-23107-10-git-send-email-keescook@chromium.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In commit 4cab259f, the emc1403 driver was converted to use regmap but the 
-necessary Kconfig option was not added.
+On 06/24, Kees Cook wrote:
+>
+> +static void seccomp_sync_threads(void)
+> +{
+> +	struct task_struct *thread, *caller;
+> +
+> +	BUG_ON(!spin_is_locked(&current->sighand->siglock));
+> +
+> +	/* Synchronize all threads. */
+> +	caller = current;
+> +	for_each_thread(caller, thread) {
+> +		/* Get a task reference for the new leaf node. */
+> +		get_seccomp_filter(caller);
+> +		/*
+> +		 * Drop the task reference to the shared ancestor since
+> +		 * current's path will hold a reference.  (This also
+> +		 * allows a put before the assignment.)
+> +		 */
+> +		put_seccomp_filter(thread);
+> +		thread->seccomp.filter = caller->seccomp.filter;
+> +		/* Opt the other thread into seccomp if needed.
+> +		 * As threads are considered to be trust-realm
+> +		 * equivalent (see ptrace_may_access), it is safe to
+> +		 * allow one thread to transition the other.
+> +		 */
+> +		if (thread->seccomp.mode == SECCOMP_MODE_DISABLED) {
+> +			/*
+> +			 * Don't let an unprivileged task work around
+> +			 * the no_new_privs restriction by creating
+> +			 * a thread that sets it up, enters seccomp,
+> +			 * then dies.
+> +			 */
+> +			if (task_no_new_privs(caller))
+> +				task_set_no_new_privs(thread);
+> +
+> +			seccomp_assign_mode(thread, SECCOMP_MODE_FILTER);
+> +		}
+> +	}
+> +}
 
-Signed-off-by: Josef Gajdusek <atx@atx.name>
----
-diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index 08531a1..bdb90a0 100644
---- a/drivers/hwmon/Kconfig
-+++ b/drivers/hwmon/Kconfig
-@@ -1176,6 +1176,7 @@ config SENSORS_DME1737
- config SENSORS_EMC1403
- 	tristate "SMSC EMC1403/23 thermal sensor"
- 	depends on I2C
-+	select REGMAP_I2C
- 	help
- 	  If you say yes here you get support for the SMSC EMC1403/23
- 	  temperature monitoring chip.
+OK, personally I think this all make sense. I even think that perhaps
+SECCOMP_FILTER_FLAG_TSYNC should allow filter == NULL, a thread might
+want to "sync" without adding the new filter, but this is minor/offtopic.
+
+But. Doesn't this change add the new security hole?
+
+Obviously, we should not allow to install a filter and then (say) exec
+a suid binary, that is why we have no_new_privs/LSM_UNSAFE_NO_NEW_PRIVS.
+
+But what if "thread->seccomp.filter = caller->seccomp.filter" races with
+any user of task_no_new_privs() ? Say, suppose this thread has already
+passed check_unsafe_exec/etc and it is going to exec the suid binary?
+
+Oleg.
 
