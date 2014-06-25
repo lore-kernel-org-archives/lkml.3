@@ -1,41 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756690AbaFYMip (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 08:38:45 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:48083 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752596AbaFYMio (ORCPT
+	id S1756743AbaFYMjo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 08:39:44 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:46113 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753733AbaFYMjn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 08:38:44 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19XAEYnEHpoRdzkfZfkV0f5rc4T6oedeUE=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 113AD599532
-Date: Wed, 25 Jun 2014 08:38:42 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] irqchip: fixes for v3.16
-Message-ID: <20140625123842.GQ10202@titan.lakedaemon.net>
+	Wed, 25 Jun 2014 08:39:43 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        <arm@kernel.org>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Bo Shen <voice.shen@atmel.com>, Paul Bolle <pebolle@tiscali.nl>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: [GIT PULL] at91: fixes for 3.16 #1 (bis)
+Date: Wed, 25 Jun 2014 14:39:40 +0200
+Message-ID: <1403699980-20797-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
+Organization: atmel
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas,
+Arnd, Olof, Kevin,
 
-Here's a round of fixes for irqchip.  They've been in -next a few days
-and are based on v3.16-rc1.
+An AT91 fixes batch for 3.16 that collects mainly DT modifications in relation
+to the recent move to CCF on a couple of platforms.
+The recent modifications also lead us to add tiny DT corrections that enable
+available features like sound or DMA use for 9rl NAND.
 
-Please pull.
+As the previous "fixes" pull-request will be re-spin for 3.17 and shall be
+ignored, I use the same tag name "at91-fixes".
 
-thx,
-
-Jason.
+Thanks, best regards,
 
 The following changes since commit 7171511eaec5bf23fb06078f59784a3a0626b38f:
 
@@ -43,35 +47,60 @@ The following changes since commit 7171511eaec5bf23fb06078f59784a3a0626b38f:
 
 are available in the git repository at:
 
-  git://git.infradead.org/users/jcooper/linux.git tags/irqchip-urgent-3.16
+  git://github.com/at91linux/linux-at91.git tags/at91-fixes
 
-for you to fetch changes up to 4f4366033945419b0c52118c29d3057d7c558765:
+for you to fetch changes up to fe6076a70dd7b50598a6b5ad7dad03f9322ecec9:
 
-  irqchip: spear_shirq: Fix interrupt offset (2014-06-21 23:26:39 +0000)
-
-----------------------------------------------------------------
-irqchip fixes for v3.16
-
- - armada-370-xp
-    - Mask all interrupts during init
-
- - brcmstb-l2
-    - interrupts are edge-sensitive
-
- - spear_shirq
-    - fix interrupt offset
+  ARM: at91/dt: sama5d3 crystals under the clocks node (2014-06-25 13:50:47 +0200)
 
 ----------------------------------------------------------------
-Florian Fainelli (1):
-      irqchip: brcmstb-l2: Level-2 interrupts are edge sensitive
+First AT91 fixes batch for 3.16:
+- drivers/misc fix for Kconfig PWM symbol
+- addition of DMA and DMA + nand on at91sam9rl
+- correction of several values in DT after conversion to CCF
+- addition of clock entries for sound for CCF enabled platforms
+- little defconfig update for sound in relation with previous item
+- move of crystals DT definitions to the /clocks node
 
-Thomas Gleixner (1):
-      irqchip: spear_shirq: Fix interrupt offset
+----------------------------------------------------------------
+Alexandre Belloni (9):
+      ARM: at91/dt: sam9x5: correct PLLA ICPLL and OUT values
+      ARM: at91/dt: sam9n12: correct PLLA ICPLL and OUT values
+      ARM: at91/dt: sam9261: correctly define mainck
+      ARM: at91/dt: define sam9261ek slow crystal frequency
+      ARM: at91/dt: sam9261 crystals under the clocks node
+      ARM: at91/dt: sam9n12 crystals under the clocks node
+      ARM: at91/dt: sam9rl crystals under the clocks node
+      ARM: at91/dt: sam9x5 crystals under the clocks node
+      ARM: at91/dt: sama5d3 crystals under the clocks node
 
-Thomas Petazzoni (1):
-      irqchip: armada-370-xp: Mask all interrupts during initialization.
+Bo Shen (4):
+      ARM: at91: sama5d3xek: switch sound to CCF
+      ARM: at91: at91sam9n12ek: switch sound to CCF
+      ARM: at91/at91_dt_defconfig: enable sound support
+      ARM: at91/sama5_defconfig: enable sound support
 
- drivers/irqchip/irq-armada-370-xp.c | 17 +++++++++++++++--
- drivers/irqchip/irq-brcmstb-l2.c    |  2 +-
- drivers/irqchip/spear-shirq.c       |  2 +-
- 3 files changed, 17 insertions(+), 4 deletions(-)
+Nicolas Ferre (3):
+      misc: atmel_pwm: fix Kconfig symbols
+      ARM: at91/dt: add DMA controller node to at91sam9rl
+      ARM: at91/dt: add NAND + DMA property for at91sam9rl
+
+ arch/arm/boot/dts/at91-sama5d3_xplained.dts | 12 +++++-----
+ arch/arm/boot/dts/at91sam9261.dtsi          | 30 +++++++++++++++----------
+ arch/arm/boot/dts/at91sam9261ek.dts         | 12 ++++++----
+ arch/arm/boot/dts/at91sam9n12.dtsi          | 24 ++++++++++----------
+ arch/arm/boot/dts/at91sam9n12ek.dts         | 18 ++++++++-------
+ arch/arm/boot/dts/at91sam9rl.dtsi           | 32 +++++++++++++++++----------
+ arch/arm/boot/dts/at91sam9rlek.dts          | 17 +++++++--------
+ arch/arm/boot/dts/at91sam9x5.dtsi           | 34 +++++++++++++++--------------
+ arch/arm/boot/dts/at91sam9x5cm.dtsi         | 12 +++++-----
+ arch/arm/boot/dts/sama5d3.dtsi              | 22 +++++++++----------
+ arch/arm/boot/dts/sama5d3xcm.dtsi           | 12 +++++-----
+ arch/arm/boot/dts/sama5d3xmb.dtsi           |  2 ++
+ arch/arm/configs/at91_dt_defconfig          | 10 +++++++++
+ arch/arm/configs/sama5_defconfig            |  5 +++++
+ drivers/misc/Kconfig                        |  2 +-
+ 15 files changed, 147 insertions(+), 97 deletions(-)
+
+-- 
+Nicolas Ferre
