@@ -1,101 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754726AbaFYI7u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 04:59:50 -0400
-Received: from mga01.intel.com ([192.55.52.88]:24678 "EHLO mga01.intel.com"
+	id S1754468AbaFYJOR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 05:14:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48009 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754485AbaFYI7q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 04:59:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,544,1400050800"; 
-   d="scan'208";a="552982029"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>, Ashok Raj <ashok.raj@intel.com>,
-        Yijing Wang <wangyijing@huawei.com>, Tony Luck <tony.luck@intel.com>,
-        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
-        linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dmaengine@vger.kernel.org
-Subject: [Patch Part3 V3 00/21] Enable support of Intel DMAR device hotplug
-Date: Wed, 25 Jun 2014 17:02:26 +0800
-Message-Id: <1403686967-10887-1-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1752352AbaFYJON (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 05:14:13 -0400
+Date: Wed, 25 Jun 2014 10:31:42 +0200 (CEST)
+From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
+X-X-Sender: lczerner@localhost.localdomain
+To: Eric Biggers <ebiggers3@gmail.com>
+cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] vfs: fix check for fallocate on active swapfile
+In-Reply-To: <1403671508-371-1-git-send-email-ebiggers3@gmail.com>
+Message-ID: <alpine.LFD.2.00.1406251030500.2171@localhost.localdomain>
+References: <1403671508-371-1-git-send-email-ebiggers3@gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When hot plugging a descrete IOH or a physical processor with embedded
-IIO, we need to handle DMAR(or IOMMU) unit in the PCIe host bridge if
-DMAR is in use. This patch set tries to enhance current DMAR/IOMMU/IR
-drivers to support hotplug and is based on latest mainstream kernel
-v3.16-rc2.
+On Tue, 24 Jun 2014, Eric Biggers wrote:
 
-Patch 1-13 are bugfixes and code improvement for current drivers.
-Patch 14-17 enhances DMAR framework to support hotplug
-Patch 18 enhances Intel interrupt remapping driver to support hotplug
-Patch 19 enhances error handling in Intel IR driver
-Patch 20 enhance Intel IOMMU to support hotplug
-Patch 21 enhance ACPI pci_root driver to handle DMAR units
+> Date: Tue, 24 Jun 2014 23:45:08 -0500
+> From: Eric Biggers <ebiggers3@gmail.com>
+> To: linux-fsdevel@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org, Eric Biggers <ebiggers3@gmail.com>
+> Subject: [PATCH] vfs: fix check for fallocate on active swapfile
+> 
+> Fix the broken check for calling sys_fallocate() on an active swapfile,
+> introduced by commit 0790b31b69374ddadefe ("fs: disallow all fallocate
+> operation on active swapfile").
 
-This patch set has been tested on Intel development machine.
-Appreciate any comments and tests. With this patch set and
-another IOAPIC hotplug patch set(http://www.mail-archive.com/linux-kernel
-@vger.kernel.org/msg671316.html) applied, we could support full functional
-socket hotplug on x86 platforms now.
+Oops, good catch, Thanks!
 
-V2->V3:
-1) rebase to latest v3.16-rc2
-2) fix a bug in detecting super page support when hot-adding IOMMU
+Reviewed-by: Lukas Czerner <lczerner@redhat.com>
 
-V1->V2:
-1) enhance the way to simplify intel_unmap_sg()
-2) rename dmar_device_hotplug() to dmar_device_add/remove()
-3) coding style improvment
-
-Best Regards!
-
-Jiang Liu (21):
-  iommu/vt-d: match segment number when searching for dev_iotlb capable
-    devices
-  iommu/vt-d: use correct domain id to flush virtual machine domains
-  iommu/vt-d: introduce helper functions to improve code readability
-  iommu/vt-d: introduce helper functions to make code symmetric for
-    readability
-  iommu/vt-d: only dynamically allocate domain id for virtual domains
-  iommu/vt-d: fix possible invalid memory access caused by
-    free_dmar_iommu()
-  iommu/vt-d: avoid freeing virtual machine domain in free_dmar_iommu()
-  iommu/VT-d: simplify include/linux/dmar.h
-  iommu/vt-d: change iommu_enable/disable_translation to return void
-  iommu/vt-d: simplify intel_unmap_sg() and kill duplicated code
-  iommu/vt-d: introduce helper domain_pfn_within_range() to simplify
-    code
-  iommu/vt-d: introduce helper function iova_size() to improve code
-    readability
-  iommu/vt-d: fix bug in computing domain's iommu_snooping flag
-  IOMMU/vt-d: introduce helper function dmar_walk_resources()
-  iommu/vt-d: dynamically allocate and free seq_id for DMAR units
-  iommu/vt-d: implement DMAR unit hotplug framework
-  iommu/vt-d: search _DSM method for DMAR hotplug
-  iommu/vt-d: enhance intel_irq_remapping driver to support DMAR unit
-    hotplug
-  iommu/vt-d: enhance error recovery in function
-    intel_enable_irq_remapping()
-  iommu/vt-d: enhance intel-iommu driver to support DMAR unit hotplug
-  pci, ACPI, iommu: enhance pci_root to support DMAR device hotplug
-
- drivers/acpi/pci_root.c             |   16 +-
- drivers/iommu/dmar.c                |  531 ++++++++++++++++++++------
- drivers/iommu/intel-iommu.c         |  718 +++++++++++++++++++++--------------
- drivers/iommu/intel_irq_remapping.c |  233 +++++++++---
- include/linux/dmar.h                |   86 +++--
- include/linux/iova.h                |    5 +
- 6 files changed, 1104 insertions(+), 485 deletions(-)
-
--- 
-1.7.10.4
-
+> 
+> Signed-off-by: Eric Biggers <ebiggers3@gmail.com>
+> ---
+>  fs/open.c | 5 ++---
+>  1 file changed, 2 insertions(+), 3 deletions(-)
+> 
+> diff --git a/fs/open.c b/fs/open.c
+> index 36662d0..d6fd3ac 100644
+> --- a/fs/open.c
+> +++ b/fs/open.c
+> @@ -263,11 +263,10 @@ int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
+>  		return -EPERM;
+>  
+>  	/*
+> -	 * We can not allow to do any fallocate operation on an active
+> -	 * swapfile
+> +	 * We cannot allow any fallocate operation on an active swapfile
+>  	 */
+>  	if (IS_SWAPFILE(inode))
+> -		ret = -ETXTBSY;
+> +		return -ETXTBSY;
+>  
+>  	/*
+>  	 * Revalidate the write permissions, in case security policy has
+> 
