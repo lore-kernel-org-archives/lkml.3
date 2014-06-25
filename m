@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756963AbaFYN1v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 09:27:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40280 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756585AbaFYN1q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 09:27:46 -0400
-From: Hannes Reinecke <hare@suse.de>
-To: James Bottomley <jbottomley@parallels.com>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-scsi@vger.kernel.org,
-        Hannes Reinecke <hare@suse.de>, Rusty Russel <rusty@rustcorp.com.au>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/4] Add module param type 'ullong'
-Date: Wed, 25 Jun 2014 15:27:37 +0200
-Message-Id: <1403702859-74437-3-git-send-email-hare@suse.de>
-X-Mailer: git-send-email 1.7.12.4
-In-Reply-To: <1403702859-74437-1-git-send-email-hare@suse.de>
-References: <1403702859-74437-1-git-send-email-hare@suse.de>
+	id S1757012AbaFYN3Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 09:29:24 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:33026 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756441AbaFYN3W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 09:29:22 -0400
+Message-ID: <53AACEA8.3010002@suse.cz>
+Date: Wed, 25 Jun 2014 15:29:12 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Guenter Roeck <linux@roeck-us.net>, satoru.takeuchi@gmail.com,
+        shuah.kh@samsung.com
+CC: stable@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3.12 000/111] 3.12.23-stable review
+References: <cover.1403512280.git.jslaby@suse.cz> <53A83FE7.8080904@roeck-us.net>
+In-Reply-To: <53A83FE7.8080904@roeck-us.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some driver might want to pass in an 64-bit value, so introduce
-a module param type 'ullong'.
+On 06/23/2014 04:55 PM, Guenter Roeck wrote:
+> On 06/23/2014 01:32 AM, Jiri Slaby wrote:
+>> This is the start of the stable review cycle for the 3.12.23 release.
+>> There are 111 patches in this series, all will be posted as a response
+>> to this one.  If anyone has any issues with these being applied, please
+>> let me know.
+>>
+>> Responses should be made by Wed Jun 25 08:31:21 2014
+>> Anything received after that time might be too late.
+>>
+> 
+> Build results:
+>     total: 144 pass: 136 skipped: 7 fail: 1
+> Failed builds:
+>     unicore32:defconfig
+> Qemu tests all passed.
+> 
+> Results are as expected. Details are available at
+...
+> The unicore32 build now passes in mainline. To get it to pass in 3.12,
+> you'd have to cherry-pick commit 1ff38c56cbd0
+> (arch/unicore32/mm/alignment.c:
+> include "asm/pgtable.h" to avoid compiling error) and backport commit
+> fbc6c4a13bbfb
+> (drivers/video/fbdev/fb-puv3.c: Add header files for function unifb_mmap).
+> The video file was moved from drivers/video/fb-puv3.c after 3.12, which
+> is why
+> the patch doesn't apply directly.
 
-Cc: Rusty Russel <rusty@rustcorp.com.au>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Signed-off-by: Hannes Reinecke <hare@suse.de>
-Reviewed-by: Christoph Hellwig <hch@infradead.org>
-Reviewed-by: Ewan Milne <emilne@redhat.com>
----
- include/linux/moduleparam.h | 5 +++++
- kernel/params.c             | 1 +
- 2 files changed, 6 insertions(+)
+Done.
 
-diff --git a/include/linux/moduleparam.h b/include/linux/moduleparam.h
-index b1990c5..494f99e 100644
---- a/include/linux/moduleparam.h
-+++ b/include/linux/moduleparam.h
-@@ -381,6 +381,11 @@ extern int param_set_ulong(const char *val, const struct kernel_param *kp);
- extern int param_get_ulong(char *buffer, const struct kernel_param *kp);
- #define param_check_ulong(name, p) __param_check(name, p, unsigned long)
- 
-+extern struct kernel_param_ops param_ops_ullong;
-+extern int param_set_ullong(const char *val, const struct kernel_param *kp);
-+extern int param_get_ullong(char *buffer, const struct kernel_param *kp);
-+#define param_check_ullong(name, p) __param_check(name, p, unsigned long long)
-+
- extern struct kernel_param_ops param_ops_charp;
- extern int param_set_charp(const char *val, const struct kernel_param *kp);
- extern int param_get_charp(char *buffer, const struct kernel_param *kp);
-diff --git a/kernel/params.c b/kernel/params.c
-index 1e52ca2..34f5270 100644
---- a/kernel/params.c
-+++ b/kernel/params.c
-@@ -256,6 +256,7 @@ STANDARD_PARAM_DEF(int, int, "%i", kstrtoint);
- STANDARD_PARAM_DEF(uint, unsigned int, "%u", kstrtouint);
- STANDARD_PARAM_DEF(long, long, "%li", kstrtol);
- STANDARD_PARAM_DEF(ulong, unsigned long, "%lu", kstrtoul);
-+STANDARD_PARAM_DEF(ullong, unsigned long long, "%llu", kstrtoull);
- 
- int param_set_charp(const char *val, const struct kernel_param *kp)
- {
+On 06/23/2014 06:45 PM, Shuah Khan wrote:
+> Compiled and booted on my test system. No dmesg regressions.
+
+On 06/24/2014 12:13 AM, Satoru Takeuchi wrote:
+> This kernel passed my test.
+
+Thank you all.
+
 -- 
-1.7.12.4
-
+js
+suse labs
