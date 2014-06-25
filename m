@@ -1,59 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757864AbaFYQzb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 12:55:31 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59436 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757311AbaFYQtv (ORCPT
+	id S1758095AbaFYQ4O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 12:56:14 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:59422 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757667AbaFYQ4L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 12:49:51 -0400
-From: Christoph Hellwig <hch@lst.de>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Bart Van Assche <bvanassche@fusionio.com>,
-        Robert Elliott <Elliott@hp.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 01/14] sd: don't use rq->cmd_len before setting it up
-Date: Wed, 25 Jun 2014 18:51:48 +0200
-Message-Id: <1403715121-1201-2-git-send-email-hch@lst.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1403715121-1201-1-git-send-email-hch@lst.de>
-References: <1403715121-1201-1-git-send-email-hch@lst.de>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 25 Jun 2014 12:56:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140623074440.GV18016@ZenIV.linux.org.uk>
+References: <20140621035144.GA8526@thunk.org>
+	<20140621055306.GP18016@ZenIV.linux.org.uk>
+	<20140621230922.GA13188@thunk.org>
+	<20140621234913.GQ18016@ZenIV.linux.org.uk>
+	<1403395400.2592.4.camel@jarvis.lan>
+	<20140622002618.GR18016@ZenIV.linux.org.uk>
+	<1403397164.2177.40.camel@dabdike.int.hansenpartnership.com>
+	<20140622005352.GS18016@ZenIV.linux.org.uk>
+	<20140622010032.GT18016@ZenIV.linux.org.uk>
+	<20140622115007.GA5333@thunk.org>
+	<20140623074440.GV18016@ZenIV.linux.org.uk>
+Date: Wed, 25 Jun 2014 09:56:09 -0700
+X-Google-Sender-Auth: WZaYRVFSnyeJwrTaAVm0ScP6oMs
+Message-ID: <CA+55aFyEHiq4UVg=JHH5y=B8UefH8Y3QnrFcnmXy5uLnCDiZbQ@mail.gmail.com>
+Subject: Re: [regression] fix 32-bit breakage in block device read(2) (was Re:
+ 32-bit bug in iovec iterator changes)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Dave Chinner <david@fromorbit.com>, Jens Axboe <axboe@fb.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unlike the old request code blk-mq doesn't initialize cmd_len with a
-default value, so don't rely on it being set in sd_setup_write_same_cmnd.
+Al,
+ just checking - did you expect me to take this from the email, or are
+you preparing a pull request?
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
----
- drivers/scsi/sd.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+               Linus
 
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index 9c86e3d..6ec4ffe 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -824,15 +824,16 @@ static int sd_setup_write_same_cmnd(struct scsi_device *sdp, struct request *rq)
- 
- 	rq->__data_len = sdp->sector_size;
- 	rq->timeout = SD_WRITE_SAME_TIMEOUT;
--	memset(rq->cmd, 0, rq->cmd_len);
- 
- 	if (sdkp->ws16 || sector > 0xffffffff || nr_sectors > 0xffff) {
- 		rq->cmd_len = 16;
-+		memset(rq->cmd, 0, rq->cmd_len);
- 		rq->cmd[0] = WRITE_SAME_16;
- 		put_unaligned_be64(sector, &rq->cmd[2]);
- 		put_unaligned_be32(nr_sectors, &rq->cmd[10]);
- 	} else {
- 		rq->cmd_len = 10;
-+		memset(rq->cmd, 0, rq->cmd_len);
- 		rq->cmd[0] = WRITE_SAME;
- 		put_unaligned_be32(sector, &rq->cmd[2]);
- 		put_unaligned_be16(nr_sectors, &rq->cmd[7]);
--- 
-1.7.10.4
-
+On Mon, Jun 23, 2014 at 12:44 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> OK, here it is, hopefully with sufficient comments:
