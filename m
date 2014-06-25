@@ -1,76 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753924AbaFYFJp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 01:09:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41351 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752369AbaFYFJo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 01:09:44 -0400
-Message-ID: <53AA5977.7030704@redhat.com>
-Date: Wed, 25 Jun 2014 01:09:11 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1753158AbaFYFMt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 01:12:49 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:43926 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750832AbaFYFMs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 01:12:48 -0400
+Date: Wed, 25 Jun 2014 07:12:34 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
+Subject: Re: [PATCH 2/6] irq_work: Implement remote queueing
+Message-ID: <20140625051234.GD6758@twins.programming.kicks-ass.net>
+References: <1402413309-3415-1-git-send-email-fweisbec@gmail.com>
+ <1402413309-3415-3-git-send-email-fweisbec@gmail.com>
+ <53A9E0A5.5040402@wwwdotorg.org>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: linux-kernel@vger.kernel.org, chegu_vinod@hp.com, peterz@infradead.com,
-        mgorman@suse.de, mingo@kernel.org
-Subject: Re: [PATCH 9/7] sched,numa: remove task_h_load from task_numa_compare
-References: <1403538095-31256-1-git-send-email-riel@redhat.com> <20140624151454.2a05082e@annuminas.surriel.com> <20140625050735.GB28774@twins.programming.kicks-ass.net>
-In-Reply-To: <20140625050735.GB28774@twins.programming.kicks-ass.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="yHgig3XI5r20tkjN"
+Content-Disposition: inline
+In-Reply-To: <53A9E0A5.5040402@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
 
-On 06/25/2014 01:07 AM, Peter Zijlstra wrote:
-> On Tue, Jun 24, 2014 at 03:14:54PM -0400, Rik van Riel wrote:
->> The function effective_load already makes the calculations that 
->> task_h_load makes. Making them twice can throw off the
->> calculations, and is generally a bad idea.
->> 
->> Signed-off-by: Rik van Riel <riel@redhat.com> --- 
->> kernel/sched/fair.c | 4 ++-- 1 file changed, 2 insertions(+), 2
->> deletions(-)
->> 
->> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c index
->> 1aaa3b4..318a275 100644 --- a/kernel/sched/fair.c +++
->> b/kernel/sched/fair.c @@ -1227,7 +1227,7 @@ static void
->> task_numa_compare(struct task_numa_env *env, dst_load =
->> env->dst_stats.load;
->> 
->> /* Calculate the effect of moving env->p from src to dst. */ -
->> load = task_h_load(env->p); +	load = env->p->se.load.weight; tg =
->> task_group(env->p); src_load += effective_load(tg, env->src_cpu,
->> -load, -load); dst_load += effective_load(tg, env->dst_cpu, load,
->> load); @@ -1251,7 +1251,7 @@ static void task_numa_compare(struct
->> task_numa_env *env,
->> 
->> if (cur) { /* Cur moves in the opposite direction. */ -		load =
->> task_h_load(cur); +		load = cur->se.load.weight; tg =
->> task_group(cur); src_load += effective_load(tg, env->src_cpu,
->> load, load); dst_load += effective_load(tg, env->dst_cpu, -load,
->> -load);
-> 
-> Shall I merge this into patch 3?
+--yHgig3XI5r20tkjN
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Please do, I guess that's where it belongs.
+On Tue, Jun 24, 2014 at 02:33:41PM -0600, Stephen Warren wrote:
+> On 06/10/2014 09:15 AM, Frederic Weisbecker wrote:
+> > irq work currently only supports local callbacks. However its code
+> > is mostly ready to run remote callbacks and we have some potential user.
+> >=20
+> > The full nohz subsystem currently open codes its own remote irq work
+> > on top of the scheduler ipi when it wants a CPU to reevaluate its next
+> > tick. However this ad hoc solution bloats the scheduler IPI.
+> >=20
+> > Lets just extend the irq work subsystem to support remote queuing on top
+> > of the generic SMP IPI to handle this kind of user. This shouldn't add
+> > noticeable overhead.
+>=20
+> I'm running next-20140624 on an ARM system, and this patch causes CPU
+> hot(un)plug to Oops for me; the following fires:
+>=20
+> void irq_work_run(void)
+> {
+> 	BUG_ON(!in_irq());
+>=20
+> I found that Linus's master (8b8f5d971584 "Merge tag 'compress-3.16-rc3'
+> of git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core")
+> works fine. I found that this commit inside the tip(?) tree works fine
+> (478850160636 "irq_work: Implement remote queueing"). However, if I
+> merge the two together, I hit that BUG_ON.
+>=20
+> I think the issue is:
+>=20
+> This commit adds a call from
+> generic_smp_call_function_single_interrupt() to irq_work_run().
+>=20
+> Srivatsa's patch adds a call from hotplug_cfd() to
+> flush_smp_call_function_queue() to, which I imagine happens in
+> non-interrupt context. Note that this patch moves most of the body of
+> generic_smp_call_function_single_interrupt() into
+> flush_smp_call_function_queue().
 
-- -- 
-All rights reversed
+Right you are.. I think I'll just remove the BUG_ON(), Frederic?
+
+--yHgig3XI5r20tkjN
+Content-Type: application/pgp-signature
+
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQEcBAEBAgAGBQJTqll3AAoJEM553pKExN6D9EcIAJA28G/oKfeDBPlt7p29vgGa
-xHBVRH9a9qGTyhyqxqXzlSvqBvoaEXED6mZq0nHqvDUgC5HyQ6LD4bWCfgFj1xKH
-oFTB4R5r9ef13lzPb4RlYJUvLO6MfDNyzs/Ekb+qO3+LmkSrim00nkZyKrAYeIOf
-JnsAcrlavR5hnlEM6oBNPfhpqOhj8JI0v8MKm4IPm20ib4bEeYn0zwLwG06keo24
-fa4mCr1Kd17wyPg8zx7nJ2UN5ZwVs0+SQ3JXWrFGhNawFFneBYi1n9UPwD+wPWuF
-5rupd35m64XmAdBXbs3vR03HehX2tQ6k710WRdcg021IMFQIFa5+9ZbG5xGZFT0=
-=NRBb
+iQIcBAEBAgAGBQJTqlpCAAoJEHZH4aRLwOS6AmUP/iSldcTeGrqUOOgoc790ZxB5
+O+lhuOkXPnwBjAcSyq7cw5l8Fh9WsIzwFWcJLyUp+c3O9eFSjwbFRG/lZQ9mPCGl
+deTtT2rGDT2W75UkpEGsrZRkkCRTCA1cUXcdiOmchi68oHB2GxUT6pas3U5QRtRC
+FH+fx2GDqCaejmvNMfriOPJ5ByDnH9tQxTnkZcrmbIWJShU8qNA6E1nfwe75VYZG
+TOUCeMVvAZF0OmDTfksvnYuM4gLOEo/idZeYbh0SC0HUsIegnPhOQyskfLmew/+T
+x4IZJgvWf2vV2eHF28FcMvtIxO9mqVMmv68ajxu94iJAdNKzEplxhQf3HaZCU0bZ
+JVEITW/mVyM9J50ajjKq/AJM4xBJtZGZoJTYUHGat5pth6ttNmf+t1qC/2Rlh6qC
+xu+4jOk2a2OKSXgR9qODoesOIOYTY94Kg2CbNvyn9WsSyywnzgsg2WEOWMJDlzyS
+Cm0GgPTlOJoQejL/YX00CG/ftKSnttwmaimdNpp07Mh4SKC4FL574Njx/W8JOwzh
+fCzv0FO2mutJ6Yjjy6f3cvcujiyRtXL6O1n3xYnt0/Mh//rq74B4g0Q8jBLui/9l
+VpRLZQZhjGMTRvr66xISlpR/aVQk5fFn8OEeRpng42C4DUobCzmaPGJ6H3fo7+hw
+TZIyLPsOSrU5AKleTr2F
+=BfeC
 -----END PGP SIGNATURE-----
+
+--yHgig3XI5r20tkjN--
