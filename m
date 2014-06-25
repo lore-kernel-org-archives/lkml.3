@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758108AbaFYSIr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 14:08:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56560 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758073AbaFYSIo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 14:08:44 -0400
-Date: Wed, 25 Jun 2014 20:07:05 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
-        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
-        linux-api@vger.kernel.org, x86@kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
-        linux-arch@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: Re: [PATCH v8 3/9] seccomp: introduce writer locking
-Message-ID: <20140625180705.GB18185@redhat.com>
-References: <1403642893-23107-1-git-send-email-keescook@chromium.org> <1403642893-23107-4-git-send-email-keescook@chromium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403642893-23107-4-git-send-email-keescook@chromium.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S932248AbaFYSJb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 14:09:31 -0400
+Received: from mailrelay010.isp.belgacom.be ([195.238.6.177]:35205 "EHLO
+	mailrelay010.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750851AbaFYSJa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 14:09:30 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AhMHABoPq1NXQ7ge/2dsb2JhbABZgw2rLgsFAZk6gQ4XdYRgI4EaN4hGAapxmBYXhWOJGR2ELQWPdIpdk2uDRDs
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Steve French <sfrench@samba.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] fs/cifs/file.c: replace count*size kzalloc by kcalloc
+Date: Wed, 25 Jun 2014 20:09:24 +0200
+Message-Id: <1403719764-18860-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24, Kees Cook wrote:
->
-> +static void copy_seccomp(struct task_struct *p)
-> +{
-> +#ifdef CONFIG_SECCOMP
-> +	/*
-> +	 * Must be called with sighand->lock held, which is common to
-> +	 * all threads in the group. Regardless, nothing special is
-> +	 * needed for the child since it is not yet in the tasklist.
-> +	 */
-> +	BUG_ON(!spin_is_locked(&current->sighand->siglock));
-> +
-> +	get_seccomp_filter(current);
-> +	p->seccomp = current->seccomp;
-> +
-> +	if (p->seccomp.mode != SECCOMP_MODE_DISABLED)
-> +		set_tsk_thread_flag(p, TIF_SECCOMP);
-> +#endif
-> +}
+kcalloc manages count*sizeof overflow.
 
-Wait. But what about no_new_privs? We should copy it as well...
+Cc: Steve French <sfrench@samba.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/cifs/file.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Perhaps this helper should be updated a bit and moved into seccomp.c so
-that seccomp_sync_threads() could use it too.
-
-Oleg.
+diff --git a/fs/cifs/file.c b/fs/cifs/file.c
+index e90a1e9..3c1967c 100644
+--- a/fs/cifs/file.c
++++ b/fs/cifs/file.c
+@@ -1058,7 +1058,7 @@ cifs_push_mandatory_locks(struct cifsFileInfo *cfile)
+ 
+ 	max_num = (max_buf - sizeof(struct smb_hdr)) /
+ 						sizeof(LOCKING_ANDX_RANGE);
+-	buf = kzalloc(max_num * sizeof(LOCKING_ANDX_RANGE), GFP_KERNEL);
++	buf = kcalloc(max_num, sizeof(LOCKING_ANDX_RANGE), GFP_KERNEL);
+ 	if (!buf) {
+ 		free_xid(xid);
+ 		return -ENOMEM;
+@@ -1393,7 +1393,7 @@ cifs_unlock_range(struct cifsFileInfo *cfile, struct file_lock *flock,
+ 
+ 	max_num = (max_buf - sizeof(struct smb_hdr)) /
+ 						sizeof(LOCKING_ANDX_RANGE);
+-	buf = kzalloc(max_num * sizeof(LOCKING_ANDX_RANGE), GFP_KERNEL);
++	buf = kcalloc(max_num, sizeof(LOCKING_ANDX_RANGE), GFP_KERNEL);
+ 	if (!buf)
+ 		return -ENOMEM;
+ 
+-- 
+1.9.1
 
