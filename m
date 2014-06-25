@@ -1,84 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757545AbaFYQF2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 12:05:28 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:60729 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1757510AbaFYQF0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 12:05:26 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: =?Windows-1252?Q?=27Uwe_Kleine-K=F6nig=27?= 
-	<u.kleine-koenig@pengutronix.de>
-CC: "'Guenter Roeck'" <linux@roeck-us.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Dietmar Eggemann" <dietmar.eggemann@arm.com>,
-        Ingo Molnar <mingo@redhat.com>, "Paul Mackerras" <paulus@samba.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH v2] sched: Fix compiler warnings
-Thread-Topic: [PATCH v2] sched: Fix compiler warnings
-Thread-Index: AQHPkIa1Qh6RlHX42kq1WmxtMU9WYJuB9lcg///y64CAABKcMA==
-Date: Wed, 25 Jun 2014 16:04:43 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D17265E10@AcuExch.aculab.com>
-References: <1403658329-13196-1-git-send-email-linux@roeck-us.net>
- <20140625071416.GM14781@pengutronix.de> <53AADC63.8080106@roeck-us.net>
- <20140625144955.GP14781@pengutronix.de> <53AAE4D2.5020104@roeck-us.net>
- <063D6719AE5E284EB5DD2968C1650D6D17265D81@AcuExch.aculab.com>
- <20140625155259.GQ14781@pengutronix.de>
-In-Reply-To: <20140625155259.GQ14781@pengutronix.de>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	id S1757567AbaFYQIf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 12:08:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17292 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756922AbaFYQIe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 12:08:34 -0400
+Message-ID: <53AAF3F0.3010700@redhat.com>
+Date: Wed, 25 Jun 2014 18:08:16 +0200
+From: Maurizio Lombardi <mlombard@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
+To: Purush Gupta <purush.gupta@nutanix.com>
+CC: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        xjtuwjp@gmail.com, lindar_liu@usish.com,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org,
+        Linux Kernel List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] scsi: pm8001: pm80xx_hwi.c: Cleaning up variable is set
+ more than once
+References: <1403704907-25672-1-git-send-email-rickard_strandqvist@spectrumdigital.se> <53AAEC1A.20905@redhat.com> <CAN7X1Un3-u-Q428-s1dYk5z4P-Bb=jO-N+x1T+PLhH1fDE1MRw@mail.gmail.com>
+In-Reply-To: <CAN7X1Un3-u-Q428-s1dYk5z4P-Bb=jO-N+x1T+PLhH1fDE1MRw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Uwe Kleine-König 
-> Hello,
+Hi,
+
+On 06/25/2014 05:41 PM, Purush Gupta wrote:
+> Its possible HW may require programming those fields?
+
+I'm looking at the code and it doesn't look so, did you see something suspicious?
+
+> May be original
+> contributor of the driver should review...No offense!
+
+I believe it requires the maintainer ACK and it takes precedence in any case, am I wrong?
+
+Regards,
+Maurizio Lombardi
+
 > 
-> On Wed, Jun 25, 2014 at 03:40:28PM +0000, David Laight wrote:
-> > From: Guenter Roeck
-> > > Actually turns out one can use __attribute_const__, and it is
-> > >
-> > > 	static inline int __attribute_const__ cpu_corepower_flags(void)
-> > >
-> > > which turns out to be widely used.
-> > >
-> > > I'll change that and resubmit after testing.
-> >
-> > You don't need to tell the compiler that for an inline function.
-> I didn't check for the functions in question here, but in general your
-> statement is wrong.
+> thanks,
+> Purush
 > 
-> For example:
 > 
-> static inline unsigned int __attribute_const__ read_cpuid_id(void)
-> {
-> 	return readl(BASEADDR_V7M_SCB + V7M_SCB_CPUID);
-> }
+> On Wed, Jun 25, 2014 at 8:34 AM, Maurizio Lombardi <mlombard@redhat.com>
+> wrote:
 > 
-> from arch/arm/include/asm/cputype.h. The V7M_SCB_CPUID register never
-> changes, but there is no way gcc can deduce that.
-
-Hmm... it all rather depends on the order of the optimisations and 
-inlining.
-
-I've tried to use 'restrict' on the parameters to an inline function
-in an attempt to get 'noalias' - but the reverse inference never
-seems to be applied.
-
-	David
-
-
-
+>> This one looks good to me,
+>>
+>> Reviewed-by: Maurizio Lombardi <mlombard@redhat.com>
+>>
+>> On 06/25/2014 04:01 PM, Rickard Strandqvist wrote:
+>>> A struct member variable is set to different values without having used
+>> in between.
+>>>
+>>> This was found using a static code analysis program called cppcheck
+>>>
+>>> Signed-off-by: Rickard Strandqvist <
+>> rickard_strandqvist@spectrumdigital.se>
+>>> ---
+>>>  drivers/scsi/pm8001/pm80xx_hwi.c |    1 -
+>>>  1 file changed, 1 deletion(-)
+>>>
+>>> diff --git a/drivers/scsi/pm8001/pm80xx_hwi.c
+>> b/drivers/scsi/pm8001/pm80xx_hwi.c
+>>> index d70587f..2698227 100644
+>>> --- a/drivers/scsi/pm8001/pm80xx_hwi.c
+>>> +++ b/drivers/scsi/pm8001/pm80xx_hwi.c
+>>> @@ -249,7 +249,6 @@ moreData:
+>>>                               sprintf(pm8001_ha->
+>>>                                       forensic_info.data_buf.direct_data,
+>>>                                               "%08x ", 4);
+>>> -                     pm8001_ha->forensic_info.data_buf.read_len =
+>> 0xFFFFFFFF;
+>>>                       pm8001_ha->forensic_info.data_buf.direct_len =  0;
+>>>                       pm8001_ha->forensic_info.data_buf.direct_offset =
+>> 0;
+>>>                       pm8001_ha->forensic_info.data_buf.read_len = 0;
+>>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+> 
