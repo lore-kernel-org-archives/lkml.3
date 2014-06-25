@@ -1,54 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755865AbaFYJBq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 05:01:46 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:33795 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753703AbaFYJBn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 05:01:43 -0400
-Date: Wed, 25 Jun 2014 10:01:10 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Jean Pihet <jean.pihet@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Sneha Priya <sneha.cse@hotmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: perf: allow tracing with kernel tracepoints events
-Message-ID: <20140625090110.GD6153@arm.com>
-References: <CAFrcx1n-cPXm=w+84gQiUjZoFKi7gYnvJ0BQ+8yXKS=k3nEt3g@mail.gmail.com>
- <1403025065-18001-1-git-send-email-jean.pihet@linaro.org>
- <20140618125355.GA2186@arm.com>
- <CAFrcx1mA7kXiG9wMQqn=zYPYqrpGxDYWfoMP97RvkkrMTvNoRw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFrcx1mA7kXiG9wMQqn=zYPYqrpGxDYWfoMP97RvkkrMTvNoRw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1755917AbaFYJCT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 05:02:19 -0400
+Received: from mga11.intel.com ([192.55.52.93]:46494 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755777AbaFYJB1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 05:01:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,544,1400050800"; 
+   d="scan'208";a="552982945"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
+        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <lenb@kernel.org>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>, Ashok Raj <ashok.raj@intel.com>,
+        Yijing Wang <wangyijing@huawei.com>, Tony Luck <tony.luck@intel.com>,
+        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
+        linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmaengine@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: [Patch Part3 V3 21/21] pci, ACPI, iommu: enhance pci_root to support DMAR device hotplug
+Date: Wed, 25 Jun 2014 17:02:47 +0800
+Message-Id: <1403686967-10887-22-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1403686967-10887-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1403686967-10887-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 09:10:35AM +0100, Jean Pihet wrote:
-> Hi Will,
+Finally enhance pci_root driver to support DMAR device hotplug when
+hot-plugging PCI host bridges.
 
-Hi Jean,
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+ drivers/acpi/pci_root.c |   16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
-> On 18 June 2014 14:53, Will Deacon <will.deacon@arm.com> wrote:
-> > On Tue, Jun 17, 2014 at 06:11:05PM +0100, Jean Pihet wrote:
-> >> Tested with perf record and tracepoints filtering (-e <tracepoint>), with
-> >> unwinding using fp (--call-graph fp) and dwarf info (--call-graph dwarf).
-> >
-> > Whilst the old ACPS unwinding only needs PC, FP and SP, is this definitely
-> > true for exidx and DWARF-based unwinding? Given that libunwind ends up
-> > running a state machine for the latter, can we guarantee that we won't hit
-> > instructions that require access to other general purpose registers?
-> Yes. dwarf unwinding does not need anything extra. Once seeded all the
-> rest is extracted from the dwarf trace info.
+diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
+index d388f13d48b4..99c2b9761c12 100644
+--- a/drivers/acpi/pci_root.c
++++ b/drivers/acpi/pci_root.c
+@@ -33,6 +33,7 @@
+ #include <linux/pci.h>
+ #include <linux/pci-acpi.h>
+ #include <linux/pci-aspm.h>
++#include <linux/dmar.h>
+ #include <linux/acpi.h>
+ #include <linux/slab.h>
+ #include <acpi/apei.h>	/* for acpi_hest_init() */
+@@ -511,6 +512,7 @@ static int acpi_pci_root_add(struct acpi_device *device,
+ 	struct acpi_pci_root *root;
+ 	acpi_handle handle = device->handle;
+ 	int no_aspm = 0, clear_aspm = 0;
++	bool hotadd = system_state != SYSTEM_BOOTING;
+ 
+ 	root = kzalloc(sizeof(struct acpi_pci_root), GFP_KERNEL);
+ 	if (!root)
+@@ -557,6 +559,11 @@ static int acpi_pci_root_add(struct acpi_device *device,
+ 	strcpy(acpi_device_class(device), ACPI_PCI_ROOT_CLASS);
+ 	device->driver_data = root;
+ 
++	if (hotadd && dmar_device_add(handle)) {
++		result = -ENXIO;
++		goto end;
++	}
++
+ 	pr_info(PREFIX "%s [%s] (domain %04x %pR)\n",
+ 	       acpi_device_name(device), acpi_device_bid(device),
+ 	       root->segment, &root->secondary);
+@@ -583,7 +590,7 @@ static int acpi_pci_root_add(struct acpi_device *device,
+ 			root->segment, (unsigned int)root->secondary.start);
+ 		device->driver_data = NULL;
+ 		result = -ENODEV;
+-		goto end;
++		goto remove_dmar;
+ 	}
+ 
+ 	if (clear_aspm) {
+@@ -597,7 +604,7 @@ static int acpi_pci_root_add(struct acpi_device *device,
+ 	if (device->wakeup.flags.run_wake)
+ 		device_set_run_wake(root->bus->bridge, true);
+ 
+-	if (system_state != SYSTEM_BOOTING) {
++	if (hotadd) {
+ 		pcibios_resource_survey_bus(root->bus);
+ 		pci_assign_unassigned_root_bus_resources(root->bus);
+ 	}
+@@ -607,6 +614,9 @@ static int acpi_pci_root_add(struct acpi_device *device,
+ 	pci_unlock_rescan_remove();
+ 	return 1;
+ 
++remove_dmar:
++	if (hotadd)
++		dmar_device_remove(handle);
+ end:
+ 	kfree(root);
+ 	return result;
+@@ -625,6 +635,8 @@ static void acpi_pci_root_remove(struct acpi_device *device)
+ 
+ 	pci_remove_root_bus(root->bus);
+ 
++	dmar_device_remove(device->handle);
++
+ 	pci_unlock_rescan_remove();
+ 
+ 	kfree(root);
+-- 
+1.7.10.4
 
-Ok, but what if the LR isn't saved on the stack, for example? What if the
-code you're trying to unwind is hand-written assembly annotated with CFI
-directives?
-
-Will
