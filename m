@@ -1,64 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757673AbaFYQX2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 12:23:28 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:38702 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757538AbaFYQXZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 12:23:25 -0400
-Message-ID: <53AAF779.8060006@wwwdotorg.org>
-Date: Wed, 25 Jun 2014 10:23:21 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1757701AbaFYQXf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 12:23:35 -0400
+Received: from mga14.intel.com ([192.55.52.115]:46170 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757664AbaFYQX1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 12:23:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,546,1400050800"; 
+   d="scan'208";a="553184710"
+Date: Thu, 26 Jun 2014 00:23:22 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Christoph Hellwig <hch@lst.de>, Micky Ching <micky_ching@realsil.com.cn>
+Cc: Hannes Reinecke <hare@suse.de>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [hch-scsi-queue:core-for-3.17 18/27]
+ drivers/staging/rts5208/rtsx.c:468:5: warning: format '%d' expects argument
+ of type 'int', but argument 4 has type 'u64'
+Message-ID: <20140625162322.GA8121@localhost>
+References: <53aaebe2.SHsdePtLmXw5IHwp%fengguang.wu@intel.com>
+ <20140625154140.GA16179@lst.de>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-CC: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Subject: Re: [PATCH 2/6] irq_work: Implement remote queueing
-References: <1402413309-3415-1-git-send-email-fweisbec@gmail.com> <1402413309-3415-3-git-send-email-fweisbec@gmail.com> <53A9E0A5.5040402@wwwdotorg.org> <20140625051234.GD6758@twins.programming.kicks-ass.net> <20140625051721.GG3588@twins.programming.kicks-ass.net> <53AA6E11.1000404@linux.vnet.ibm.com> <20140625093657.GN19860@laptop.programming.kicks-ass.net> <20140625093944.GV16155@laptop.programming.kicks-ass.net> <53AA9B68.4050104@linux.vnet.ibm.com> <53AA9C43.3020903@linux.vnet.ibm.com> <20140625101915.GO19860@laptop.programming.kicks-ass.net>
-In-Reply-To: <20140625101915.GO19860@laptop.programming.kicks-ass.net>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140625154140.GA16179@lst.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2014 04:19 AM, Peter Zijlstra wrote:
-> On Wed, Jun 25, 2014 at 03:24:11PM +0530, Srivatsa S. Bhat wrote:
->> Wait, that was a stupid idea. hotplug_cfd() already invokes irq_work_run
->> indirectly via flush_smp_call_function_queue(). So irq_work_cpu_notify()
->> doesn't need to invoke it again, AFAIU. So perhaps we can get rid of
->> irq_work_cpu_notify() altogether?
-> 
-> Just so...
-> 
-> getting up at 6am and sitting in an airport terminal doesn't seem to
-> agree with me; any more silly fail here?
-> 
-> ---
-> Subject: irq_work: Remove BUG_ON in irq_work_run()
-> From: Peter Zijlstra <peterz@infradead.org>
-> Date: Wed Jun 25 07:13:07 CEST 2014
-> 
-> Because of a collision with 8d056c48e486 ("CPU hotplug, smp: flush any
-> pending IPI callbacks before CPU offline"), which ends up calling
-> hotplug_cfd()->flush_smp_call_function_queue()->irq_work_run(), which
-> is not from IRQ context.
-> 
-> And since that already calls irq_work_run() from the hotplug path,
-> remove our entire hotplug handling.
+Hi Christoph,
 
-Tested-by: Stephen Warren <swarren@nvidia.com>
+On Wed, Jun 25, 2014 at 05:41:40PM +0200, Christoph Hellwig wrote:
+> Fengguang,
+> 
+> can you change the kbuild robot to only send warnings in the staging
+> drivers to the maintainers of those, and not people changing core code?
 
-[with the s/static// already mentioned in this thread, obviously:-)]
+The rule is currently CC the first bad commit's author and committer.
+In this case,
 
+        commit 4184a1e415257e3d2e75a5adf184de9ffaf82a7c
+        Author:     Hannes Reinecke <hare@suse.de>
+        AuthorDate: Wed Jun 25 15:27:36 2014 +0200
+        Commit:     Christoph Hellwig <hch@lst.de>
+        CommitDate: Wed Jun 25 16:21:45 2014 +0200
+
+            scsi: use 64-bit LUNs
+
+=>
+
+        TO: Hannes Reinecke <hare@suse.de>
+        CC: Christoph Hellwig <hch@lst.de>
+
+Do you mean adding rule
+
+        if error_file =~ /drivers\/staging/
+                TO/CC error_file's author/committer instead
+        end
+
+In this case,
+
+        TO: Micky Ching <micky_ching@realsil.com.cn>
+        CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+I agree that it'd be good for Micky to work out a fix for his staging
+driver. However due to the obvious dependency here, it looks best for
+you to include the fix together with "scsi: use 64-bit LUNs"?
+
+So in general it'd be good to keep all relevant people in the CC list.
+That is,
+
+        TO/CC first bad commit's author/committer
+        for each error_file =~ /drivers\/staging/
+                CC error_file's author/committer
+        end
+
+Thanks,
+Fengguang
