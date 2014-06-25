@@ -1,133 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754734AbaFYFnk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 01:43:40 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:48863 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752563AbaFYFni (ORCPT
+	id S1754763AbaFYFoy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 01:44:54 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:58897 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752564AbaFYFox (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 01:43:38 -0400
-Date: Wed, 25 Jun 2014 07:43:33 +0200
+	Wed, 25 Jun 2014 01:44:53 -0400
+Date: Wed, 25 Jun 2014 07:44:49 +0200
 From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
+To: Jiri Olsa <jolsa@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Davidlohr Bueso <davidlohr@hp.com>,
-        Don Zickus <dzickus@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
-        Jiri Olsa <jolsa@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Jan Kiszka <jan.kiszka@siemens.com>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 00/11] perf/core improvements and fixes
-Message-ID: <20140625054333.GC21231@gmail.com>
-References: <1403212433-2714-1-git-send-email-acme@kernel.org>
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [GIT PULL 0/7] perf/core improvements and fixes
+Message-ID: <20140625054449.GA7208@gmail.com>
+References: <1403510358-4573-1-git-send-email-jolsa@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1403212433-2714-1-git-send-email-acme@kernel.org>
+In-Reply-To: <1403510358-4573-1-git-send-email-jolsa@kernel.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Arnaldo Carvalho de Melo <acme@kernel.org> wrote:
+* Jiri Olsa <jolsa@kernel.org> wrote:
 
-> Hi Ingo,
+> hi Ingo,
+> please consider pulling
 > 
-> 	Please conseider pulling,
+> thanks,
+> jirka
 > 
-> - Arnaldo
 > 
-> The following changes since commit a10d60c08cc3bbea9195e2b36440f557373623eb:
+> The following changes since commit 4ba96195051be30160af6d5f5f83f9a055ab1f23:
 > 
->   sh, perf: Use common PMU interrupt disabled code (2014-06-19 19:37:51 +0200)
+>   Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf into perf/core (2014-06-13 08:19:06 +0200)
 > 
 > are available in the git repository at:
 > 
->   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git tags/perf-core-for-mingo
 > 
-> for you to fetch changes up to ecdac96899e3db3f428e4d2e978f25e3f8d35a6c:
+>   git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git tags/perf-core-for-mingo
 > 
->   perf bench sched-messaging: Drop barf() (2014-06-19 16:13:17 -0300)
+> for you to fetch changes up to 1545d8aca9ac1cb3f503fb9c29543d539d99c7af:
+> 
+>   tools lib traceevent: Clean up format of args in jbd2 plugin (2014-06-19 18:18:37 +0200)
 > 
 > ----------------------------------------------------------------
 > perf/core improvements and fixes:
 > 
-> User visible:
+> . Updates from trace-cmd for traceevent plugin_kvm plus args cleanup (Steven Rostedt, Jan Kiszka)
 > 
-> . Add --repeat global option to 'perf bench' to be used in benchmarks
->   such as the existing 'futex' one, that was modified to use it instead
->   of a local option. (Davidlohr Bueso)
-> 
-> . Fix fd -> pathname resolution in 'trace', be it using /proc or
->   a vfs_getname probe point. (Arnaldo Carvalho de Melo)
-> 
-> . Add suggestion of how to set perf_event_paranoid sysctl, to help
->   non-root users trying tools like 'trace' to get a working environment.
->   (Arnaldo Carvalho de Melo)
-> 
-> Fixes:
-> 
-> . Fix memory leak in the 'sched-messaging' perf bench test. (Davidlohr Bueso)
-> 
-> . The -o and -n 'perf bench mem' options are mutually exclusive, emit error
->   when both are specified. (Davidlohr Bueso)
-> 
-> . Fix scrollbar refresh row index in the ui browser, problem exposed now
->   that headers will be added and will be allowed to be switched on/off.
->   (Jiri Olsa)
-> 
-> Cleanups:
-> 
-> . Remove needless reassignments in 'trace' (Arnaldo Carvalho de Melo)
-> 
-> . Cache the is_exit syscall test in 'trace) (Arnaldo Carvalho de Melo)
-> 
-> . No need to reimplement err() in 'perf bench sched-messaging', drop barf().
->   (Davidlohr Bueso).
-> 
-> . Remove ev_name argument from perf_evsel__hists_browse, can be obtained
->   from the other parameters. (Jiri Olsa)
-> 
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 > 
 > ----------------------------------------------------------------
-> Arnaldo Carvalho de Melo (4):
->       perf trace: Fix up fd -> pathname resolution
->       perf evlist: Add suggestion of how to set perf_event_paranoid sysctl
->       perf trace: Remove needless reassignments
->       perf trace: Cache the is_exit syscall test
+> Jan Kiszka (3):
+>       tools lib traceevent: Report unknown VMX exit reasons with code
+>       tools lib traceevent: Factor out print_exit_reason in kvm plugin
+>       tools lib traceevent: Fix and cleanup kvm_nested_vmexit tracepoints
 > 
-> Davidlohr Bueso (5):
->       perf bench sched-messaging: Plug memleak
->       perf bench: Add --repeat option
->       perf bench futex: Use global --repeat option
->       perf bench mem: The -o and -n options are mutually exclusive
->       perf bench sched-messaging: Drop barf()
+> Steven Rostedt (3):
+>       tools lib traceevent: Fix format in plugin_kvm
+>       tools lib traceevent: Clean up format of args in cfg80211 plugin
+>       tools lib traceevent: Clean up format of args in jbd2 plugin
 > 
-> Jiri Olsa (2):
->       perf hists browser: Remove ev_name argument from perf_evsel__hists_browse
->       perf ui browser: Fix scrollbar refresh row index
+> Steven Rostedt (Red Hat) (1):
+>       tools lib traceevent: Add back in kvm plugins nested_vmexit events
 > 
->  tools/perf/Documentation/perf-bench.txt |  4 +++
->  tools/perf/bench/bench.h                |  1 +
->  tools/perf/bench/futex-requeue.c        | 10 +------
->  tools/perf/bench/futex-wake.c           | 12 ++-------
->  tools/perf/bench/mem-memcpy.c           |  5 ++++
->  tools/perf/bench/mem-memset.c           |  5 ++++
->  tools/perf/bench/sched-messaging.c      | 47 +++++++++++++++------------------
->  tools/perf/builtin-bench.c              |  7 +++++
->  tools/perf/builtin-trace.c              | 12 ++++-----
->  tools/perf/ui/browser.c                 |  2 +-
->  tools/perf/ui/browsers/hists.c          | 25 ++++++++----------
->  tools/perf/util/evlist.c                |  5 ++--
->  12 files changed, 67 insertions(+), 68 deletions(-)
+>  tools/lib/traceevent/plugin_cfg80211.c |  3 +-
+>  tools/lib/traceevent/plugin_jbd2.c     |  6 ++--
+>  tools/lib/traceevent/plugin_kvm.c      | 64 +++++++++++++++++++++++++++++-----
+>  3 files changed, 59 insertions(+), 14 deletions(-)
 
-Pulled, thanks a lot Arnaldo!
+Pulled, thanks a lot Jiri!
 
 	Ingo
