@@ -1,64 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758122AbaFYS0b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 14:26:31 -0400
-Received: from mailrelay010.isp.belgacom.be ([195.238.6.177]:7156 "EHLO
-	mailrelay010.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757671AbaFYS0a (ORCPT
+	id S1758133AbaFYS1X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 14:27:23 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:49478 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757657AbaFYS1W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 14:26:30 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhMHAAYUq1NXQ7ge/2dsb2JhbABZgw2rLgsFAZk6gQ4XdYRgI4EaN4hGAap3mBYXhWOJGR2ELQWaUZNrg0Q7
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        linux-nfs@vger.kernel.org
-Subject: [PATCH 1/1] FS/NFS: replace count*size kzalloc by kcalloc
-Date: Wed, 25 Jun 2014 20:26:21 +0200
-Message-Id: <1403720781-19319-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.1
+	Wed, 25 Jun 2014 14:27:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <1403720237-19131-1-git-send-email-fabf@skynet.be>
+References: <1403720237-19131-1-git-send-email-fabf@skynet.be>
+Date: Wed, 25 Jun 2014 11:27:21 -0700
+X-Google-Sender-Auth: 7dI8Z2r4a29CWFLmL8TZqAKWvmM
+Message-ID: <CA+55aFypOwqaxfMwG5H8QSsRyMrMV7ibW_k5CQdc=EPXYmrfLg@mail.gmail.com>
+Subject: Re: [PATCH 1/1] fs/omfs/inode.c: replace count*size kzalloc by kcalloc
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Bob Copeland <me@bobcopeland.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kcalloc manages count*sizeof overflow.
+On Wed, Jun 25, 2014 at 11:17 AM, Fabian Frederick <fabf@skynet.be> wrote:
+> kcalloc manages count*sizeof overflow.
 
-Cc: Trond Myklebust <trond.myklebust@primarydata.com>
-Cc: linux-nfs@vger.kernel.org
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/nfs/blocklayout/blocklayout.c  | 2 +-
- fs/nfs/filelayout/filelayoutdev.c | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+As far as I can tell, any overflow has happened long before, in
 
-diff --git a/fs/nfs/blocklayout/blocklayout.c b/fs/nfs/blocklayout/blocklayout.c
-index 9b431f4..b74d889 100644
---- a/fs/nfs/blocklayout/blocklayout.c
-+++ b/fs/nfs/blocklayout/blocklayout.c
-@@ -1063,7 +1063,7 @@ nfs4_blk_get_deviceinfo(struct nfs_server *server, const struct nfs_fh *fh,
- 		return ERR_PTR(-ENOMEM);
- 	}
- 
--	pages = kzalloc(max_pages * sizeof(struct page *), GFP_NOFS);
-+	pages = kcalloc(max_pages, sizeof(struct page *), GFP_NOFS);
- 	if (pages == NULL) {
- 		kfree(dev);
- 		return ERR_PTR(-ENOMEM);
-diff --git a/fs/nfs/filelayout/filelayoutdev.c b/fs/nfs/filelayout/filelayoutdev.c
-index 44bf014..48f8dcd 100644
---- a/fs/nfs/filelayout/filelayoutdev.c
-+++ b/fs/nfs/filelayout/filelayoutdev.c
-@@ -695,7 +695,7 @@ filelayout_get_device_info(struct inode *inode,
- 	if (pdev == NULL)
- 		return NULL;
- 
--	pages = kzalloc(max_pages * sizeof(struct page *), gfp_flags);
-+	pages = kcalloc(max_pages, sizeof(struct page *), gfp_flags);
- 	if (pages == NULL) {
- 		kfree(pdev);
- 		return NULL;
--- 
-1.9.1
+    bitmap_size = DIV_ROUND_UP(sbi->s_num_blocks, 8);
 
+where 'sbi->s_num_blocks' i san u64, and 'bitmap_size' is an 'int'.
+
+I don't think the patch is necessarily a bad thing, but I think it
+might be more important to sanity-check that part instead.
+
+              Linus
