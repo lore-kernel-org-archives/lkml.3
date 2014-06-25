@@ -1,134 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754104AbaFYBFr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 21:05:47 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:36830 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752833AbaFYBFp (ORCPT
+	id S1754218AbaFYBIc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 21:08:32 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:50053 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752205AbaFYBIa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 21:05:45 -0400
-From: Guenter Roeck <linux@roeck-us.net>
-To: Ingo Molnar <mingo@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Paul Mackerras <paulus@samba.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, Guenter Roeck <linux@roeck-us.net>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>
-Subject: [PATCH v2] sched: Fix compiler warnings
-Date: Tue, 24 Jun 2014 18:05:29 -0700
-Message-Id: <1403658329-13196-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
+	Tue, 24 Jun 2014 21:08:30 -0400
+X-IronPort-AV: E=Sophos;i="5.00,772,1396972800"; 
+   d="scan'208";a="32386321"
+Message-ID: <53AA1E5F.10800@cn.fujitsu.com>
+Date: Wed, 25 Jun 2014 08:57:03 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Li Zefan <lizefan@huawei.com>, David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        Cgroups <cgroups@vger.kernel.org>, <stable@vger.kernel.org>
+Subject: Re: [PATCH] mm/mempolicy: fix sleeping function called from invalid
+ context
+References: <53902A44.50005@cn.fujitsu.com> <20140605132339.ddf6df4a0cf5c14d17eb8691@linux-foundation.org> <539192F1.7050308@cn.fujitsu.com> <alpine.DEB.2.02.1406081539140.21744@chino.kir.corp.google.com> <539574F1.2060701@cn.fujitsu.com> <alpine.DEB.2.02.1406090209460.24247@chino.kir.corp.google.com> <53967465.7070908@huawei.com> <20140620210137.GA2059@mtj.dyndns.org> <53A8E23C.4050103@huawei.com> <20140624205832.GB14909@htj.dyndns.org>
+In-Reply-To: <20140624205832.GB14909@htj.dyndns.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.100]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 143e1e28cb (sched: Rework sched_domain topology definition)
-introduced a number of functions with a return value of 'const int'.
-gcc doesn't know what to do with that and, if the kernel is compiled
-with W=1, complains with the following warnings whenever sched.h
-is included.
+Hi Tejun,
+On 06/25/2014 04:58 AM, Tejun Heo wrote:
 
-include/linux/sched.h:875:25: warning:
-	type qualifiers ignored on function return type
-include/linux/sched.h:882:25: warning:
-	type qualifiers ignored on function return type
-include/linux/sched.h:889:25: warning:
-	type qualifiers ignored on function return type
-include/linux/sched.h:1002:21: warning:
-	type qualifiers ignored on function return type
+> Hello,
+> 
+> On Tue, Jun 24, 2014 at 10:28:12AM +0800, Li Zefan wrote:
+>>> I don't think the suggested patch breaks anything more than it was
+>>> broken before and we should probably apply it for the time being.  Li?
+>>
+>> Yeah, we should apply Gu Zheng's patch any way.
+> 
+> Gu Zheng, can you please respin the patch with updated explanation on
+> the temporary nature of the change.  I'll apply it once Li acks it.
 
-Commits fb2aa855 (sched, ARM: Create a dedicated scheduler topology table)
-and 607b45e9a (sched, powerpc: Create a dedicated topology table) introduce
-the same warning in the arm and powerpc code.
+OK, I'll resend it soon.
 
-Drop 'const' from the function declarations to fix the problem.
+Regards,
+Gu
 
-The fix for all three patches has to be applied together to avoid
-compilation failures for the affected architectures.
+> 
+> Thanks.
+> 
 
-Cc: Dietmar Eggemann <dietmar.eggemann@arm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Vincent Guittot <vincent.guittot@linaro.org>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
-v2: Fix problem in all affected architectures with a single patch
-    to avoid compilation errors.
-
- arch/arm/kernel/topology.c | 2 +-
- arch/powerpc/kernel/smp.c  | 2 +-
- include/linux/sched.h      | 8 ++++----
- 3 files changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
-index 9d85318..e35d880 100644
---- a/arch/arm/kernel/topology.c
-+++ b/arch/arm/kernel/topology.c
-@@ -275,7 +275,7 @@ void store_cpu_topology(unsigned int cpuid)
- 		cpu_topology[cpuid].socket_id, mpidr);
- }
- 
--static inline const int cpu_corepower_flags(void)
-+static inline int cpu_corepower_flags(void)
- {
- 	return SD_SHARE_PKG_RESOURCES  | SD_SHARE_POWERDOMAIN;
- }
-diff --git a/arch/powerpc/kernel/smp.c b/arch/powerpc/kernel/smp.c
-index 51a3ff7..1007fb8 100644
---- a/arch/powerpc/kernel/smp.c
-+++ b/arch/powerpc/kernel/smp.c
-@@ -747,7 +747,7 @@ int setup_profiling_timer(unsigned int multiplier)
- 
- #ifdef CONFIG_SCHED_SMT
- /* cpumask of CPUs with asymetric SMT dependancy */
--static const int powerpc_smt_flags(void)
-+static int powerpc_smt_flags(void)
- {
- 	int flags = SD_SHARE_CPUCAPACITY | SD_SHARE_PKG_RESOURCES;
- 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 306f4f0..0376b05 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -872,21 +872,21 @@ enum cpu_idle_type {
- #define SD_NUMA			0x4000	/* cross-node balancing */
- 
- #ifdef CONFIG_SCHED_SMT
--static inline const int cpu_smt_flags(void)
-+static inline int cpu_smt_flags(void)
- {
- 	return SD_SHARE_CPUCAPACITY | SD_SHARE_PKG_RESOURCES;
- }
- #endif
- 
- #ifdef CONFIG_SCHED_MC
--static inline const int cpu_core_flags(void)
-+static inline int cpu_core_flags(void)
- {
- 	return SD_SHARE_PKG_RESOURCES;
- }
- #endif
- 
- #ifdef CONFIG_NUMA
--static inline const int cpu_numa_flags(void)
-+static inline int cpu_numa_flags(void)
- {
- 	return SD_NUMA;
- }
-@@ -999,7 +999,7 @@ void free_sched_domains(cpumask_var_t doms[], unsigned int ndoms);
- bool cpus_share_cache(int this_cpu, int that_cpu);
- 
- typedef const struct cpumask *(*sched_domain_mask_f)(int cpu);
--typedef const int (*sched_domain_flags_f)(void);
-+typedef int (*sched_domain_flags_f)(void);
- 
- #define SDTL_OVERLAP	0x01
- 
--- 
-1.9.1
 
