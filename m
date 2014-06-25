@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751830AbaFYGZS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 02:25:18 -0400
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:60675 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752391AbaFYGZQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 02:25:16 -0400
-Date: Wed, 25 Jun 2014 08:25:11 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Aswin Chandramouleeswaran <aswin@hp.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arch,locking: Ciao arch_mutex_cpu_relax()
-Message-ID: <20140625062510.GB4260@osiris>
-References: <1403288473.10903.2.camel@buesod1.americas.hpqcorp.net>
- <20140623065835.GF19860@laptop.programming.kicks-ass.net>
- <1403622415.15523.4.camel@buesod1.americas.hpqcorp.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403622415.15523.4.camel@buesod1.americas.hpqcorp.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14062506-2966-0000-0000-0000004DDE02
+	id S1753658AbaFYGZu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 02:25:50 -0400
+Received: from mga02.intel.com ([134.134.136.20]:22750 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751415AbaFYGZt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 02:25:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,543,1400050800"; 
+   d="scan'208";a="563039882"
+Message-ID: <1403677528.7903.103.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH] sysctl: Add a feature to drop caches selectively
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: David Rientjes <rientjes@google.com>
+Cc: Maksym Planeta <mcsim.planeta@gmail.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Thomas Knauth <thomas.knauth@gmx.de>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 25 Jun 2014 09:25:28 +0300
+In-Reply-To: <alpine.DEB.2.02.1406241458140.29176@chino.kir.corp.google.com>
+References: <1403626213-7691-1-git-send-email-mcsim.planeta@gmail.com>
+	 <alpine.DEB.2.02.1406241458140.29176@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 24, 2014 at 08:06:55AM -0700, Davidlohr Bueso wrote:
-> On Mon, 2014-06-23 at 08:58 +0200, Peter Zijlstra wrote:
-> > While I like the general idea; does anyone have a better name for this?
-> > So in particular, the difference is that on s390:
-> > 
-> >  cpu_relax()                - yields the vcpu
-> >  arch_{,mutex_}cpu_relax()  - will actually spin-wait
+On Tue, 2014-06-24 at 14:59 -0700, David Rientjes wrote:
+> On Tue, 24 Jun 2014, Maksym Planeta wrote:
 > 
-> iirc Heiko had suggested cpu_relax_simple() in the past. I don't think
-> it's any better or worse than arch_cpu_relax(). For s390
-> cpu_relax_noyield() would perhaps be suitable, but not very descriptive
-> for the rest of the archs. I'm really lacking creativity for this name.
+> > To clean the page cache one can use /proc/sys/vm/drop_caches. But this
+> > drops the whole page cache. In contrast to that sdrop_caches enables
+> > ability to drop the page cache selectively by path string.
+> > 
+> > Suggested-by: Thomas Knauth <thomas.knauth@gmx.de>
+> > Signed-off-by: Maksym Planeta <mcsim.planeta@gmail.com>
+> 
+> Could you include some information in the commit message about why this is 
+> useful?  Specifically, why you want to drop pagecache only from a specific 
+> path.
+> 
+> The name of the sysctl is also quite non-descriptive.
 
-Maybe cpu_relax_spin() ? However that doesn't sound much better as well.
+Plus some explanations WRT why proc-based interface and what would be
+the alternatives, what if tomorrow we want to extend the functionality
+and drop caches only for certain file range, is this only for regular
+files or also for directories, why posix_fadvice(DONTNEED) is not
+sufficient.
+
+-- 
+Best Regards,
+Artem Bityutskiy
 
