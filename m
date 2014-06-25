@@ -1,71 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753729AbaFYDBG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 23:01:06 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:39699 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752256AbaFYDBE (ORCPT
+	id S1754121AbaFYDCe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 23:02:34 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:51594 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752423AbaFYDCd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 23:01:04 -0400
-Message-ID: <53AA3B6B.1040103@kernel.dk>
-Date: Tue, 24 Jun 2014 21:00:59 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 24 Jun 2014 23:02:33 -0400
+Date: Wed, 25 Jun 2014 11:02:25 +0800
+From: Wei Yang <weiyang@linux.vnet.ibm.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Wei Yang <weiyang@linux.vnet.ibm.com>, grant.likely@linaro.org,
+        xiaoguangrong@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivercore: refine commit 58b116b "drivercore: deferral
+ race condition fix"
+Message-ID: <20140625030225.GA23302@richard>
+Reply-To: Wei Yang <weiyang@linux.vnet.ibm.com>
+References: <1399612799-12251-1-git-send-email-weiyang@linux.vnet.ibm.com>
+ <20140521032143.GA8157@richard>
+ <20140528205245.GC10468@kroah.com>
 MIME-Version: 1.0
-To: Ming Lei <tom.leiming@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] blk-mq: run hw queue asynchronously in blk_mq_start_hw_queues
-References: <1403621588-25109-1-git-send-email-tom.leiming@gmail.com> <CACVXFVMWDBEhRhKQ1V2O9sWbAdQNb_RM0Nz_BA7Cn7P_OrvndQ@mail.gmail.com>
-In-Reply-To: <CACVXFVMWDBEhRhKQ1V2O9sWbAdQNb_RM0Nz_BA7Cn7P_OrvndQ@mail.gmail.com>
-Content-Type: multipart/mixed;
- boundary="------------030200000606090706060501"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140528205245.GC10468@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14062503-8878-0000-0000-00000D2B5C27
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------030200000606090706060501
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-
-On 2014-06-24 20:42, Ming Lei wrote:
-> On Tue, Jun 24, 2014 at 10:53 PM, Ming Lei <tom.leiming@gmail.com> wrote:
->>  From API view, it isn't good to run all hw queues synchronously
->> in one context, since it isn't correct for multi hw queue case.
->>
->> So this patch adds 'async' parameter to blk_mq_start_hw_queue(),
->> and make blk_mq_start_hw_queues() to run hw queues asynchronously
->> at default.
+On Wed, May 28, 2014 at 01:52:45PM -0700, Greg KH wrote:
+>On Wed, May 21, 2014 at 11:21:43AM +0800, Wei Yang wrote:
+>> Hi~
+>> 
+>> Is this fix reasonable?
 >
-> BTW, without the change, it is easy to trigger the WARN_ON() in
-> __blk_mq_run_hw_queue().
+>I'll leave this up to Grant...
 
-Why not just have it call blk_mq_run_hw_queue()? Pass in async == false, 
-but let the cpumask logic sort out if we need to force an async run.
+Hmm... not sure this is missed or Grant's mail address is not correct?
 
 -- 
-Jens Axboe
+Richard Yang
+Help you, Help me
 
-
---------------030200000606090706060501
-Content-Type: text/x-patch;
- name="start.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="start.patch"
-
-diff --git a/block/blk-mq.c b/block/blk-mq.c
-index 0ef2dc7f01bf..ad69ef657e85 100644
---- a/block/blk-mq.c
-+++ b/block/blk-mq.c
-@@ -878,7 +878,7 @@ void blk_mq_start_hw_queue(struct blk_mq_hw_ctx *hctx)
- 	clear_bit(BLK_MQ_S_STOPPED, &hctx->state);
- 
- 	preempt_disable();
--	__blk_mq_run_hw_queue(hctx);
-+	blk_mq_run_hw_queue(hctx, false);
- 	preempt_enable();
- }
- EXPORT_SYMBOL(blk_mq_start_hw_queue);
-
---------------030200000606090706060501--
