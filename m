@@ -1,136 +1,366 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755980AbaFYIki (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 04:40:38 -0400
-Received: from mga03.intel.com ([143.182.124.21]:15876 "EHLO mga03.intel.com"
+	id S1756095AbaFYIlt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 04:41:49 -0400
+Received: from mga01.intel.com ([192.55.52.88]:22015 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755811AbaFYIkc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 04:40:32 -0400
+	id S1755954AbaFYIkh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 04:40:37 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,544,1400050800"; 
-   d="scan'208";a="449717545"
-From: Yuyang Du <yuyang.du@intel.com>
-To: mingo@redhat.com, peterz@infradead.org, rafael.j.wysocki@intel.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Cc: arjan.van.de.ven@intel.com, len.brown@intel.com, alan.cox@intel.com,
-        mark.gross@intel.com, morten.rasmussen@arm.com,
-        vincent.guittot@linaro.org, dietmar.eggemann@arm.com,
-        rajeev.d.muralidhar@intel.com, vishwesh.m.rudramuni@intel.com,
-        nicole.chalhoub@intel.com, ajaya.durg@intel.com,
-        harinarayanan.seshadri@intel.com, jacob.jun.pan@linux.intel.com,
-        Yuyang Du <yuyang.du@intel.com>
-Subject: [RFC PATCH 8/9 v4] Implement Workload Consolidation in nohz_idle_balance
-Date: Wed, 25 Jun 2014 08:36:07 +0800
-Message-Id: <1403656568-32445-9-git-send-email-yuyang.du@intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1403656568-32445-1-git-send-email-yuyang.du@intel.com>
-References: <1403656568-32445-1-git-send-email-yuyang.du@intel.com>
+   d="scan'208";a="552974402"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Len Brown <lenb@kernel.org>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: [Patch V3 16/16] x86, irq, ACPI: Implement ACPI driver to support IOAPIC hotplug
+Date: Wed, 25 Jun 2014 16:40:47 +0800
+Message-Id: <1403685648-10103-17-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1403685648-10103-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1403685648-10103-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In periodic nohz idle balance, we skip kicking idle but non-consolidated CPUs.
+Enable support of IOAPIC hotplug by:
+1) reintroducing ACPI based IOAPIC driver
+2) enhance pci_root driver to hook hotplug events
 
-Signed-off-by: Yuyang Du <yuyang.du@intel.com>
+The ACPI IOAPIC driver is always enabled if system supports all of
+ACPI, PCI and IOAPIC.
+
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- kernel/sched/fair.c |   55 +++++++++++++++++++++++++++++++++++++++++----------
- 1 file changed, 45 insertions(+), 10 deletions(-)
+ drivers/acpi/Kconfig    |    6 ++
+ drivers/acpi/Makefile   |    1 +
+ drivers/acpi/internal.h |    7 ++
+ drivers/acpi/ioapic.c   |  236 +++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/acpi/pci_root.c |    3 +
+ 5 files changed, 253 insertions(+)
+ create mode 100644 drivers/acpi/ioapic.c
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index bf65fde..549f6e0 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -6983,10 +6983,45 @@ static struct {
+diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+index a34a22841002..2dab72ce2dc6 100644
+--- a/drivers/acpi/Kconfig
++++ b/drivers/acpi/Kconfig
+@@ -309,6 +309,12 @@ config ACPI_HOTPLUG_MEMORY
+ 	  To compile this driver as a module, choose M here:
+ 	  the module will be called acpi_memhotplug.
  
- static inline int find_new_ilb(void)
- {
--	int ilb = cpumask_first(nohz.idle_cpus_mask);
-+	int ilb;
- 
--	if (ilb < nr_cpu_ids && idle_cpu(ilb))
--		return ilb;
-+	/*
-+	 * Optimize for the case when we have no idle CPUs or only one
-+	 * idle CPU. Don't walk the sched_domain hierarchy in such cases
-+	 */
-+	if (cpumask_weight(nohz.idle_cpus_mask) < 2)
-+		return nr_cpu_ids;
++config ACPI_HOTPLUG_IOAPIC
++	bool
++	depends on PCI
++	depends on X86_IO_APIC
++	default y
 +
-+	ilb = cpumask_first(nohz.idle_cpus_mask);
+ config ACPI_SBS
+ 	tristate "Smart Battery System"
+ 	depends on X86
+diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
+index bf5702753c6e..e8e8dfe43be1 100644
+--- a/drivers/acpi/Makefile
++++ b/drivers/acpi/Makefile
+@@ -68,6 +68,7 @@ obj-$(CONFIG_ACPI_PROCESSOR)	+= processor.o
+ obj-y				+= container.o
+ obj-$(CONFIG_ACPI_THERMAL)	+= thermal.o
+ obj-y				+= acpi_memhotplug.o
++obj-$(CONFIG_ACPI_HOTPLUG_IOAPIC) += ioapic.o
+ obj-$(CONFIG_ACPI_BATTERY)	+= battery.o
+ obj-$(CONFIG_ACPI_SBS)		+= sbshc.o
+ obj-$(CONFIG_ACPI_SBS)		+= sbs.o
+diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
+index 7de5b603f272..136275c9572c 100644
+--- a/drivers/acpi/internal.h
++++ b/drivers/acpi/internal.h
+@@ -34,6 +34,13 @@ void acpi_pnp_init(void);
+ int acpi_sysfs_init(void);
+ void acpi_container_init(void);
+ void acpi_memory_hotplug_init(void);
++#ifdef	CONFIG_ACPI_HOTPLUG_IOAPIC
++int acpi_ioapic_add(struct acpi_pci_root *root);
++int acpi_ioapic_remove(struct acpi_pci_root *root);
++#else
++static inline int acpi_ioapic_add(struct acpi_pci_root *root) { return 0; }
++static inline int acpi_ioapic_remove(struct acpi_pci_root *root) { return 0; }
++#endif
+ #ifdef CONFIG_ACPI_DOCK
+ void register_dock_dependent_device(struct acpi_device *adev,
+ 				    acpi_handle dshandle);
+diff --git a/drivers/acpi/ioapic.c b/drivers/acpi/ioapic.c
+new file mode 100644
+index 000000000000..66d87a61ee5c
+--- /dev/null
++++ b/drivers/acpi/ioapic.c
+@@ -0,0 +1,236 @@
++/*
++ * IOAPIC/IOxAPIC/IOSAPIC driver
++ *
++ * Copyright (C) 2009 Fujitsu Limited.
++ * (c) Copyright 2009 Hewlett-Packard Development Company, L.P.
++ *
++ * Copyright (C) 2014 Intel Corporation
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * Based on original drivers/pci/ioapic.c
++ *	Yinghai Lu <yinghai@kernel.org>
++ *	Jiang Liu <jiang.liu@intel.com>
++ */
 +
-+	if (ilb < nr_cpu_ids && idle_cpu(ilb)) {
-+		struct sched_domain *sd;
-+		int this_cpu = smp_processor_id();
++/*
++ * This driver manages I/O APICs added by hotplug after boot.
++ * We try to claim all I/O APIC devices, but those present at boot were
++ * registered when we parsed the ACPI MADT, so we'll fail when we try to
++ * re-register them.
++ */
 +
-+		sd = per_cpu(sd_wc, this_cpu);
-+		if (sd) {
-+			struct cpumask *nonshielded_cpus = __get_cpu_var(load_balance_mask);
++#define pr_fmt(fmt) "ACPI : IOAPIC: " fmt
 +
-+			cpumask_copy(nonshielded_cpus, nohz.idle_cpus_mask);
++#include <linux/slab.h>
++#include <linux/acpi.h>
++#include <linux/pci.h>
++#include <acpi/acpi.h>
 +
-+			rcu_read_lock();
-+			wc_nonshielded_mask(this_cpu, sd, nonshielded_cpus);
-+			rcu_read_unlock();
++struct acpi_pci_ioapic {
++	acpi_handle	root_handle;
++	acpi_handle	handle;
++	u32		gsi_base;
++	struct resource	res;
++	struct pci_dev	*pdev;
++	struct list_head list;
++};
 +
-+			if (cpumask_weight(nonshielded_cpus) < 2)
-+				return nr_cpu_ids;
++static LIST_HEAD(ioapic_list);
++static DEFINE_MUTEX(ioapic_list_lock);
 +
-+			/*
-+			 * get idle load balancer again
-+			 */
-+			ilb = cpumask_first(nonshielded_cpus);
++static acpi_status setup_res(struct acpi_resource *acpi_res, void *data)
++{
++	struct resource *res = data;
 +
-+		    if (ilb < nr_cpu_ids && idle_cpu(ilb))
-+				return ilb;
++	memset(res, 0, sizeof(*res));
++	if (acpi_dev_resource_memory(acpi_res, res)) {
++		res->flags &= IORESOURCE_MEM;
++		if (res->flags)
++			return AE_OK;
++	} else if (acpi_dev_resource_address_space(acpi_res, res)) {
++		struct acpi_resource_address64 addr;
++
++		res->flags &= IORESOURCE_MEM;
++		if (res->flags &&
++		    ACPI_SUCCESS(acpi_resource_to_address64(acpi_res, &addr)) &&
++		    addr.info.mem.caching != ACPI_PREFETCHABLE_MEMORY) {
++			res->start += addr.translation_offset;
++			res->end += addr.translation_offset;
++			return AE_OK;
 +		}
-+		else
-+			return ilb;
 +	}
++	res->flags = 0;
++
++	return AE_OK;
++}
++
++static bool acpi_is_ioapic(acpi_handle handle, char **type)
++{
++	acpi_status status;
++	struct acpi_device_info *info;
++	char *hid = NULL;
++	bool match = false;
++
++	if (!acpi_has_method(handle, "_GSB"))
++		return false;
++
++	status = acpi_get_object_info(handle, &info);
++	if (ACPI_SUCCESS(status)) {
++		if (info->valid & ACPI_VALID_HID)
++			hid = info->hardware_id.string;
++		if (hid) {
++			if (strcmp(hid, "ACPI0009") == 0) {
++				*type = "IOxAPIC";
++				match = true;
++			} else if (strcmp(hid, "ACPI000A") == 0) {
++				*type = "IOAPIC";
++				match = true;
++			}
++		}
++		kfree(info);
++	}
++
++	return match;
++}
++
++static acpi_status handle_ioapic_add(acpi_handle handle, u32 lvl,
++				     void *context, void **rv)
++{
++	acpi_status status;
++	unsigned long long gsi_base;
++	struct acpi_pci_ioapic *ioapic;
++	struct pci_dev *dev = NULL;
++	struct resource *res = NULL;
++	char *type = NULL;
++
++	if (!acpi_is_ioapic(handle, &type))
++		return AE_OK;
++
++	mutex_lock(&ioapic_list_lock);
++	list_for_each_entry(ioapic, &ioapic_list, list)
++		if (ioapic->handle == handle) {
++			mutex_unlock(&ioapic_list_lock);
++			return AE_OK;
++		}
++
++	status = acpi_evaluate_integer(handle, "_GSB", NULL, &gsi_base);
++	if (ACPI_FAILURE(status)) {
++		acpi_handle_warn(handle, "failed to evaluate _GSB method\n");
++		goto exit;
++	}
++
++	ioapic = kzalloc(sizeof(*ioapic), GFP_KERNEL);
++	if (!ioapic) {
++		pr_err("cannot allocate memory for new IOAPIC\n");
++		goto exit;
++	} else {
++		ioapic->root_handle = (acpi_handle)context;
++		ioapic->handle = handle;
++		ioapic->gsi_base = (u32)gsi_base;
++		ioapic->res.flags = IORESOURCE_UNSET;
++	}
++
++	if (acpi_ioapic_registered(handle, (u32)gsi_base))
++		goto done;
++
++	dev = acpi_get_pci_dev(handle);
++	if (dev && pci_resource_len(dev, 0)) {
++		if (pci_enable_device(dev) < 0)
++			goto exit_put;
++		pci_set_master(dev);
++		if (pci_request_region(dev, 0, type))
++			goto exit_disable;
++		res = &dev->resource[0];
++		ioapic->pdev = dev;
++	} else {
++		pci_dev_put(dev);
++		dev = NULL;
++
++		res = &ioapic->res;
++		acpi_walk_resources(handle, METHOD_NAME__CRS, setup_res, res);
++		if (res->flags == IORESOURCE_UNSET) {
++			acpi_handle_warn(handle, "failed to get resource\n");
++			goto exit_free;
++		} else if (request_resource(&iomem_resource, res)) {
++			acpi_handle_warn(handle, "failed to insert resource\n");
++			goto exit_free;
++		}
++	}
++
++	if (acpi_register_ioapic(handle, res->start, (u32)gsi_base)) {
++		acpi_handle_warn(handle, "failed to register IOAPIC\n");
++		goto exit_release;
++	}
++done:
++	list_add(&ioapic->list, &ioapic_list);
++	mutex_unlock(&ioapic_list_lock);
++
++	if (dev)
++		dev_info(&dev->dev, "%s at %pR, GSI %u\n",
++			 type, res, (u32)gsi_base);
++	else
++		acpi_handle_info(handle, "%s at %pR, GSI %u\n",
++				 type, res, (u32)gsi_base);
++
++	return AE_OK;
++
++exit_release:
++	if (dev)
++		pci_release_region(dev, 0);
++	else
++		release_resource(res);
++exit_disable:
++	if (dev)
++		pci_disable_device(dev);
++exit_put:
++	if (dev)
++		pci_dev_put(dev);
++exit_free:
++	kfree(ioapic);
++exit:
++	mutex_unlock(&ioapic_list_lock);
++	*(acpi_status *)rv = AE_ERROR;
++	return AE_OK;
++}
++
++int acpi_ioapic_add(struct acpi_pci_root *root)
++{
++	acpi_status status, retval = AE_OK;
++
++	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, root->device->handle,
++				     UINT_MAX, handle_ioapic_add, NULL,
++				     root->device->handle, (void **)&retval);
++
++	return ACPI_SUCCESS(status) && ACPI_SUCCESS(retval) ? 0 : -ENODEV;
++}
++
++int acpi_ioapic_remove(struct acpi_pci_root *root)
++{
++	int retval = 0;
++	struct acpi_pci_ioapic *ioapic, *tmp;
++
++	mutex_lock(&ioapic_list_lock);
++	list_for_each_entry_safe(ioapic, tmp, &ioapic_list, list) {
++		if (root->device->handle != ioapic->root_handle)
++			continue;
++
++		if (acpi_unregister_ioapic(ioapic->handle, ioapic->gsi_base))
++			retval = -EBUSY;
++
++		if (ioapic->pdev) {
++			pci_release_region(ioapic->pdev, 0);
++			pci_disable_device(ioapic->pdev);
++			pci_dev_put(ioapic->pdev);
++		} else if (ioapic->res.flags != IORESOURCE_UNSET) {
++			release_resource(&ioapic->res);
++		}
++		list_del(&ioapic->list);
++		kfree(ioapic);
++	}
++	mutex_unlock(&ioapic_list_lock);
++
++	return retval;
++}
+diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
+index d388f13d48b4..e1223fac65ce 100644
+--- a/drivers/acpi/pci_root.c
++++ b/drivers/acpi/pci_root.c
+@@ -600,6 +600,7 @@ static int acpi_pci_root_add(struct acpi_device *device,
+ 	if (system_state != SYSTEM_BOOTING) {
+ 		pcibios_resource_survey_bus(root->bus);
+ 		pci_assign_unassigned_root_bus_resources(root->bus);
++		acpi_ioapic_add(root);
+ 	}
  
- 	return nr_cpu_ids;
- }
-@@ -7217,7 +7252,7 @@ out:
-  * In CONFIG_NO_HZ_COMMON case, the idle balance kickee will do the
-  * rebalancing for all the cpus for whom scheduler ticks are stopped.
-  */
--static void nohz_idle_balance(struct rq *this_rq, enum cpu_idle_type idle)
-+static void nohz_idle_balance(struct rq *this_rq, enum cpu_idle_type idle, struct cpumask *mask)
- {
- 	int this_cpu = this_rq->cpu;
- 	struct rq *rq;
-@@ -7227,7 +7262,7 @@ static void nohz_idle_balance(struct rq *this_rq, enum cpu_idle_type idle)
- 	    !test_bit(NOHZ_BALANCE_KICK, nohz_flags(this_cpu)))
- 		goto end;
+ 	pci_lock_rescan_remove();
+@@ -620,6 +621,8 @@ static void acpi_pci_root_remove(struct acpi_device *device)
  
--	for_each_cpu(balance_cpu, nohz.idle_cpus_mask) {
-+	for_each_cpu(balance_cpu, mask) {
- 		if (balance_cpu == this_cpu || !idle_cpu(balance_cpu))
- 			continue;
+ 	pci_stop_root_bus(root->bus);
  
-@@ -7280,10 +7315,10 @@ static inline int nohz_kick_needed(struct rq *rq)
- 	if (unlikely(rq->idle_balance))
- 		return 0;
++	WARN_ON(acpi_ioapic_remove(root));
++
+ 	device_set_run_wake(root->bus->bridge, false);
+ 	pci_acpi_remove_bus_pm_notifier(device);
  
--       /*
--	* We may be recently in ticked or tickless idle mode. At the first
--	* busy tick after returning from idle, we will update the busy stats.
--	*/
-+	/*
-+	 * We may be recently in ticked or tickless idle mode. At the first
-+	 * busy tick after returning from idle, we will update the busy stats.
-+	 */
- 	set_cpu_sd_state_busy();
- 	nohz_balance_exit_idle(cpu);
- 
-@@ -7326,7 +7361,7 @@ need_kick:
- 	return 1;
- }
- #else
--static void nohz_idle_balance(struct rq *this_rq, enum cpu_idle_type idle) { }
-+static void nohz_idle_balance(struct rq *this_rq, enum cpu_idle_type idle, struct cpumask *mask) { }
- #endif
- 
- /*
 -- 
-1.7.9.5
+1.7.10.4
 
