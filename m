@@ -1,73 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755360AbaFYUFv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 16:05:51 -0400
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:40693 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755284AbaFYUFu (ORCPT
+	id S1755455AbaFYUGv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 16:06:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47175 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752271AbaFYUGt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 16:05:50 -0400
-Message-ID: <1403726744.2581.3.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH] tools: msgque improve error handling when not running
- as root
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Shuah Khan <shuah.kh@samsung.com>
-Cc: gregkh@linuxfoundation.org, akpm@linux-foundation.org,
-        colin.king@canonical.com, linux-kernel@vger.kernel.org
-Date: Wed, 25 Jun 2014 13:05:44 -0700
-In-Reply-To: <1403725210-10245-1-git-send-email-shuah.kh@samsung.com>
-References: <1403725210-10245-1-git-send-email-shuah.kh@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+	Wed, 25 Jun 2014 16:06:49 -0400
+Date: Wed, 25 Jun 2014 13:06:48 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Ian Kent <raven@themaw.net>
+Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        autofs mailing list <autofs@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] autofs4 - fix false positive compile error
+Message-Id: <20140625130648.1e3cd0e578602918dc38bb6a@linux-foundation.org>
+In-Reply-To: <20140625124939.31035.84884.stgit@perseus.fritz.box>
+References: <20140625124939.31035.84884.stgit@perseus.fritz.box>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-06-25 at 13:40 -0600, Shuah Khan wrote:
-> The test fails in the middle when it is not run as root while
-> accessing /proc/sys/kernel/msg_next_id. Changed it to check
-> for root at the beginning of the test. Also added messages
-> to indicate start and test pass status.
+On Wed, 25 Jun 2014 20:49:39 +0800 Ian Kent <raven@themaw.net> wrote:
+
+> On strict build environments we can see:
 > 
-> Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
-> ---
->  tools/testing/selftests/ipc/msgque.c | 7 +++++++
->  1 file changed, 7 insertions(+)
+> fs/autofs4/inode.c: In function 'autofs4_fill_super':
+> fs/autofs4/inode.c:312: error: 'pgrp' may be used uninitialized in this
+> function
+> make[2]: *** [fs/autofs4/inode.o] Error 1
+> make[1]: *** [fs/autofs4] Error 2
+> make: *** [fs] Error 2
+> make: *** Waiting for unfinished jobs....
 > 
-> diff --git a/tools/testing/selftests/ipc/msgque.c b/tools/testing/selftests/ipc/msgque.c
-> index aa290c0..30c627a 100644
-> --- a/tools/testing/selftests/ipc/msgque.c
-> +++ b/tools/testing/selftests/ipc/msgque.c
-> @@ -193,6 +193,12 @@ int main(int argc, char **argv)
->  	int msg, pid, err;
->  	struct msgque_data msgque;
->  
-> +	if (getuid() != 0) {
-> +		fprintf(stderr, "Please run the test as root - Exiting.\n");
-> +		exit(1);
-> +	}
+> This is due to the use of pgrp_set being used to indicate pgrp has
+> has been set rather than initializing pgrp itself.
+> 
 
-Please use err(3).
+Yes, that code seems to be explicitly designed to trigger a gcc warning ;)
 
-> +	printf("Starting ipc tests:\n");
-
-This is unnecessary and adds nothing to the program.
-
->  	msgque.key = ftok(argv[0], 822155650);
->  	if (msgque.key == -1) {
->  		printf("Can't make key\n");
-> @@ -235,6 +241,7 @@ int main(int argc, char **argv)
->  		printf("Failed to test queue\n");
->  		goto err_out;
->  	}
-> +	printf("All ipc tests Passsed\n");
-
-So is this.
-
->  	return 0;
->  
->  err_destroy:
+What is a "strict build environment"?  Someone's using -Werror for the
+entire kernel?  That must make for a miserable life.
 
 
