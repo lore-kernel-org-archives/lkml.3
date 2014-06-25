@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932215AbaFYOq4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 10:46:56 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:18217 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756294AbaFYOqz (ORCPT
+	id S1757165AbaFYOub (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 10:50:31 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:43310 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756454AbaFYOua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 10:46:55 -0400
-Message-ID: <53AAE0D3.8030008@arm.com>
-Date: Wed, 25 Jun 2014 15:46:43 +0100
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Wed, 25 Jun 2014 10:50:30 -0400
+Date: Wed, 25 Jun 2014 16:49:55 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Ingo Molnar <mingo@redhat.com>, Russell King <linux@arm.linux.org.uk>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        linuxppc-dev@lists.ozlabs.org,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2] sched: Fix compiler warnings
+Message-ID: <20140625144955.GP14781@pengutronix.de>
+References: <1403658329-13196-1-git-send-email-linux@roeck-us.net>
+ <20140625071416.GM14781@pengutronix.de>
+ <53AADC63.8080106@roeck-us.net>
 MIME-Version: 1.0
-To: Peter Maydell <peter.maydell@linaro.org>
-CC: "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        arm-mail-list <linux-arm-kernel@lists.infradead.org>,
-        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Eric Auger <eric.auger@linaro.org>
-Subject: Re: [RFC PATCH 3/9] irqchip: GIC: Convert to EOImode == 1
-References: <1403688530-23273-1-git-send-email-marc.zyngier@arm.com> <1403688530-23273-4-git-send-email-marc.zyngier@arm.com> <CAFEAcA_naeGVc+Rsec=Ds6Lzf345nzFj3Wg2RWY-6LWYv3euNQ@mail.gmail.com>
-In-Reply-To: <CAFEAcA_naeGVc+Rsec=Ds6Lzf345nzFj3Wg2RWY-6LWYv3euNQ@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53AADC63.8080106@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25/06/14 15:06, Peter Maydell wrote:
-> On 25 June 2014 10:28, Marc Zyngier <marc.zyngier@arm.com> wrote:
->> For this case, the GIC architecture provides EOImode == 1, where:
->> - A write to the EOI register drops the priority of the interrupt and leaves
->> it active. Other interrupts at the same priority level can now be taken,
->> but the active interrupt cannot be taken again
->> - A write to the DIR marks the interrupt as inactive, meaning it can
->> now be taken again.
->>
->> We only enable this feature when booted in HYP mode. Also, as most device
->> trees are broken (they report the CPU interface size to be 4kB, while
->> the GICv2 CPU interface size is 8kB), output a warning if we're booted
->> in HYP mode, and disable the feature.
+Hello Guenter,
+
+On Wed, Jun 25, 2014 at 07:27:47AM -0700, Guenter Roeck wrote:
+> >Maybe the author's intention was:
+> >
+> >	static inline int cpu_corepower_flags(void) __attribute__((const));
+> >
+> >?
+> >This specifies that the function has no side effects and the return value
+> >only depends on the (here non-existing) function arguments.
+> >
 > 
-> Does that mean you guarantee not to write to the DEACTIVATE register
-> if not booted in Hyp mode? I ask because QEMU's GIC emulation doesn't
-> emulate that register, so it would be useful to know if this patch
-> means newer kernels are going to fall over under TCG QEMU...
+> Possibly, but either I am missing something or this doesn't compile.
+You need to do a separate declaration:
 
-So far, I only plan to support it when booted in HYP. But it may be that
-the split prio-drop/deactivate is also beneficial to threaded
-interrupts, saving the writes to the distributor to mask/unmask. That
-would require to be a bit more subtle in identifying a GICv2
-implementation (DT binding, probably).
+	static inline int cpu_corepower_flags(void) __attribute__((const));
+	static inline int cpu_corepower_flags(void)
+	{
+		...
 
-	M.
+Does this help?
+
+Best regards
+Uwe
+
 -- 
-Jazz is not dead. It just smells funny...
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
