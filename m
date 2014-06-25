@@ -1,110 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755879AbaFYKTU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 06:19:20 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:63529 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754719AbaFYKTQ (ORCPT
+	id S1755995AbaFYKTZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 06:19:25 -0400
+Received: from casper.infradead.org ([85.118.1.10]:57608 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755904AbaFYKTW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 06:19:16 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-47-53aaa2218b48
-Message-id: <1403691551.22107.9.camel@AMDC1943>
-Subject: Re: [PATCH v3 04/14] clk: max77686: Improve Maxim 77686 PMIC clocks
- binding
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
-        Daniel Stone <daniels@collabora.com>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 25 Jun 2014 12:19:11 +0200
-In-reply-to: <1403202040-12641-5-git-send-email-javier.martinez@collabora.co.uk>
-References: <1403202040-12641-1-git-send-email-javier.martinez@collabora.co.uk>
- <1403202040-12641-5-git-send-email-javier.martinez@collabora.co.uk>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.10.4-0ubuntu1
-MIME-version: 1.0
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnkeLIzCtJLcpLzFFi42I5/e/4FV3FRauCDe50i1ksuXiV3WLqwyds
-	Fpv6t7JbzD9yjtXi7LKDbBZHfxdY9C64ymZx/+tRRotvVzqYLDY9vsZqcXnXHDaLGef3MVk8
-	nXCRzeLU9c9sFqe7WS2mH3/LatG39hKbg6DH7IaLLB5/n19n8dhxdwmjx85Zd9k9Nq3qZPO4
-	c20Pm8e8k4Eem5fUe1w50cTq0bdlFaPH9Hk/mTw+b5IL4InisklJzcksSy3St0vgylj+ewJj
-	wQGhinv7jzI3ML7n62Lk4JAQMJG4ejigi5ETyBSTuHBvPVsXIxeHkMBSRokZj2YxQjifGSWW
-	P2tmAaniFdCXePviDTOILSwQJrHn0EUwm03AWGLz8iVsILaIgJ3EjdUPmUGamQUesUg82vKH
-	ESTBIqAqserBVFaQzZwCARJNW8sgFkxllFh5ci87SA2zgLrEpHmLmCFOUpaYt/8YE8RiQYkf
-	k++xQNTIS2xe85Z5AqPALCQts5CUzUJStoCReRWjaGppckFxUnqukV5xYm5xaV66XnJ+7iZG
-	SCR+3cG49JjVIUYBDkYlHt4AnlXBQqyJZcWVuYcYJTiYlUR4HecAhXhTEiurUovy44tKc1KL
-	DzEycXBKNTDqaeScuXbKm7W3vZWl6OTvS/tcArbP/Zqr2FDr4qVzKmeWhF7IfeaVogtFN7GZ
-	T5OcvvD199iItvLHImyX7793tV/r4nHA4On5c1l//RltrCUEnc//3ejhcUx42olZJueUv5jM
-	aHpkoljEWKA372tJGvPa7LRYqWlJQrPmKKdvPCr9xXfXouNKLMUZiYZazEXFiQBwhCFgogIA	AA==
+	Wed, 25 Jun 2014 06:19:22 -0400
+Date: Wed, 25 Jun 2014 12:19:15 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
+Subject: Re: [PATCH 2/6] irq_work: Implement remote queueing
+Message-ID: <20140625101915.GO19860@laptop.programming.kicks-ass.net>
+References: <1402413309-3415-1-git-send-email-fweisbec@gmail.com>
+ <1402413309-3415-3-git-send-email-fweisbec@gmail.com>
+ <53A9E0A5.5040402@wwwdotorg.org>
+ <20140625051234.GD6758@twins.programming.kicks-ass.net>
+ <20140625051721.GG3588@twins.programming.kicks-ass.net>
+ <53AA6E11.1000404@linux.vnet.ibm.com>
+ <20140625093657.GN19860@laptop.programming.kicks-ass.net>
+ <20140625093944.GV16155@laptop.programming.kicks-ass.net>
+ <53AA9B68.4050104@linux.vnet.ibm.com>
+ <53AA9C43.3020903@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53AA9C43.3020903@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On czw, 2014-06-19 at 20:20 +0200, Javier Martinez Canillas wrote:
-> Like most clock drivers, the Maxim 77686 PMIC clock binding
-> follows the convention that the "#clock-cells" property is
-> used to specify the number of cells in a clock provider.
-> 
-> But the binding document is not clear enough that it shall
-> be set to 1 since the PMIC support multiple clocks outputs.
-> 
-> Also, explain that the clocks identifiers are defined in a
-> header file that can be included by Device Tree source with
-> client nodes to avoid using magic numbers.
-> 
-> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> ---
->  .../devicetree/bindings/clock/maxim,max77686.txt          | 15 ++++++++++-----
->  1 file changed, 10 insertions(+), 5 deletions(-)
+On Wed, Jun 25, 2014 at 03:24:11PM +0530, Srivatsa S. Bhat wrote:
+> Wait, that was a stupid idea. hotplug_cfd() already invokes irq_work_run
+> indirectly via flush_smp_call_function_queue(). So irq_work_cpu_notify()
+> doesn't need to invoke it again, AFAIU. So perhaps we can get rid of
+> irq_work_cpu_notify() altogether?
 
-Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Just so...
 
-Best regards,
-Krzysztof
+getting up at 6am and sitting in an airport terminal doesn't seem to
+agree with me; any more silly fail here?
 
+---
+Subject: irq_work: Remove BUG_ON in irq_work_run()
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Wed Jun 25 07:13:07 CEST 2014
 
-> diff --git a/Documentation/devicetree/bindings/clock/maxim,max77686.txt b/Documentation/devicetree/bindings/clock/maxim,max77686.txt
-> index 96ce71b..8dea305 100644
-> --- a/Documentation/devicetree/bindings/clock/maxim,max77686.txt
-> +++ b/Documentation/devicetree/bindings/clock/maxim,max77686.txt
-> @@ -9,13 +9,18 @@ The MAX77686 contains three 32.768khz clock outputs that can be controlled
->  Following properties should be presend in main device node of the MFD chip.
->  
->  Required properties:
-> -- #clock-cells: simple one-cell clock specifier format is used, where the
-> -  only cell is used as an index of the clock inside the provider. Following
-> -  indices are allowed:
-> +
-> +- #clock-cells: from common clock binding; shall be set to 1.
-> +
-> +Each clock is assigned an identifier and client nodes can use this identifier
-> +to specify the clock which they consume. Following indices are allowed:
->      - 0: 32khz_ap clock,
->      - 1: 32khz_cp clock,
->      - 2: 32khz_pmic clock.
->  
-> +Clocks are defined as preprocessor macros in dt-bindings/clock/maxim,max77686.h
-> +header and can be used in device tree sources.
-> +
->  Example: Node of the MFD chip
->  
->  	max77686: max77686@09 {
-> @@ -33,6 +38,6 @@ Example: Clock consumer node
->  	foo@0 {
->  		compatible = "bar,foo";
->  		/* ... */
-> -		clock-names = "my-clock";
-> -		clocks = <&max77686 2>;
-> +		clock-names = "32khz_pmic";
-> +		clocks = <&max77686 MAX77686_CLK_PMIC>;
->  	};
+Because of a collision with 8d056c48e486 ("CPU hotplug, smp: flush any
+pending IPI callbacks before CPU offline"), which ends up calling
+hotplug_cfd()->flush_smp_call_function_queue()->irq_work_run(), which
+is not from IRQ context.
 
+And since that already calls irq_work_run() from the hotplug path,
+remove our entire hotplug handling.
+
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Reported-by: Stephen Warren <swarren@wwwdotorg.org>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/n/tip-busatzs2gvz4v62258agipuf@git.kernel.org
+---
+ kernel/irq_work.c |   48 +++++-------------------------------------------
+ 1 file changed, 5 insertions(+), 43 deletions(-)
+
+Index: linux-2.6/kernel/irq_work.c
+===================================================================
+--- linux-2.6.orig/kernel/irq_work.c
++++ linux-2.6/kernel/irq_work.c
+@@ -160,20 +160,14 @@ static void irq_work_run_list(struct lli
+ 	}
+ }
+ 
+-static void __irq_work_run(void)
+-{
+-	irq_work_run_list(&__get_cpu_var(raised_list));
+-	irq_work_run_list(&__get_cpu_var(lazy_list));
+-}
+-
+ /*
+- * Run the irq_work entries on this cpu. Requires to be ran from hardirq
+- * context with local IRQs disabled.
++ * hotplug calls this through:
++ *  hotplug_cfs() -> flush_smp_call_function_queue()
+  */
+-void irq_work_run(void)
++static void irq_work_run(void)
+ {
+-	BUG_ON(!in_irq());
+-	__irq_work_run();
++	irq_work_run_list(&__get_cpu_var(raised_list));
++	irq_work_run_list(&__get_cpu_var(lazy_list));
+ }
+ EXPORT_SYMBOL_GPL(irq_work_run);
+ 
+@@ -189,35 +183,3 @@ void irq_work_sync(struct irq_work *work
+ 		cpu_relax();
+ }
+ EXPORT_SYMBOL_GPL(irq_work_sync);
+-
+-#ifdef CONFIG_HOTPLUG_CPU
+-static int irq_work_cpu_notify(struct notifier_block *self,
+-			       unsigned long action, void *hcpu)
+-{
+-	long cpu = (long)hcpu;
+-
+-	switch (action) {
+-	case CPU_DYING:
+-		/* Called from stop_machine */
+-		if (WARN_ON_ONCE(cpu != smp_processor_id()))
+-			break;
+-		__irq_work_run();
+-		break;
+-	default:
+-		break;
+-	}
+-	return NOTIFY_OK;
+-}
+-
+-static struct notifier_block cpu_notify;
+-
+-static __init int irq_work_init_cpu_notifier(void)
+-{
+-	cpu_notify.notifier_call = irq_work_cpu_notify;
+-	cpu_notify.priority = 0;
+-	register_cpu_notifier(&cpu_notify);
+-	return 0;
+-}
+-device_initcall(irq_work_init_cpu_notifier);
+-
+-#endif /* CONFIG_HOTPLUG_CPU */
