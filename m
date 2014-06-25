@@ -1,84 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757447AbaFYPrR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 11:47:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40410 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757046AbaFYPrO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 11:47:14 -0400
-Date: Wed, 25 Jun 2014 11:46:50 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 04/13] mm, compaction: move pageblock checks up from
- isolate_migratepages_range()
-Message-ID: <20140625154650.GA21235@nhori.bos.redhat.com>
-References: <1403279383-5862-1-git-send-email-vbabka@suse.cz>
- <1403279383-5862-5-git-send-email-vbabka@suse.cz>
- <20140624045252.GA18289@nhori.bos.redhat.com>
- <53A99A88.1040500@suse.cz>
- <20140624165821.GC18289@nhori.bos.redhat.com>
- <53AA8D6B.6090301@suse.cz>
+	id S1757491AbaFYPri (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 11:47:38 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:52687 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756777AbaFYPrg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 11:47:36 -0400
+Date: Wed, 25 Jun 2014 08:47:31 -0700
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Kalle Valo <kvalo@qca.qualcomm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        ath10k@lists.infradead.org,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [PATCH 3/3] ath10k: add firmware files
+Message-ID: <20140625154731.GJ1390@garbanzo.do-not-panic.com>
+References: <20140314084501.23100.13103.stgit@x230>
+ <20140314084514.23100.72654.stgit@x230>
+ <CAB=NE6WW8yX4kdy02j2fT4g0JvYj4a_XkiqYtXKZSMB7FHuwNg@mail.gmail.com>
+ <1394996230.15764.113.camel@deadeye.wl.decadent.org.uk>
+ <CAB=NE6UP7dAwBHWUvtqAWksbrrdJ=vBRmT2PfcJPdeNhHfb7Kw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53AA8D6B.6090301@suse.cz>
+In-Reply-To: <CAB=NE6UP7dAwBHWUvtqAWksbrrdJ=vBRmT2PfcJPdeNhHfb7Kw@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 10:50:51AM +0200, Vlastimil Babka wrote:
-> On 06/24/2014 06:58 PM, Naoya Horiguchi wrote:
-> >On Tue, Jun 24, 2014 at 05:34:32PM +0200, Vlastimil Babka wrote:
-> >>On 06/24/2014 06:52 AM, Naoya Horiguchi wrote:
-> >>>>-	low_pfn = isolate_migratepages_range(zone, cc, low_pfn, end_pfn, false);
-> >>>>-	if (!low_pfn || cc->contended)
-> >>>>-		return ISOLATE_ABORT;
-> >>>>+		/* Do not scan within a memory hole */
-> >>>>+		if (!pfn_valid(low_pfn))
-> >>>>+			continue;
-> >>>>+
-> >>>>+		page = pfn_to_page(low_pfn);
-> >>>
-> >>>Can we move (page_zone != zone) check here as isolate_freepages() does?
+On Sun, Mar 16, 2014 at 01:17:52PM -0700, Luis R. Rodriguez wrote:
+> On Sun, Mar 16, 2014 at 11:57 AM, Ben Hutchings <ben@decadent.org.uk> wrote:
+> > On Fri, 2014-03-14 at 05:36 -0700, Luis R. Rodriguez wrote:
+> >> On Fri, Mar 14, 2014 at 1:45 AM, Kalle Valo <kvalo@qca.qualcomm.com> wrote:
+> > [...]
+> >> > + NO LICENSES OR OTHER RIGHTS,
+> >> > +WHETHER EXPRESS, IMPLIED, BASED ON ESTOPPEL OR OTHERWISE, ARE GRANTED
+> >> > +TO ANY PARTY'S PATENTS, PATENT APPLICATIONS, OR PATENTABLE INVENTIONS
+> >> > +BY VIRTUE OF THIS LICENSE OR THE DELIVERY OR PROVISION BY QUALCOMM
+> >> > +ATHEROS, INC. OF THE SOFTWARE.
 > >>
-> >>Duplicate perhaps, not sure about move.
+> >> This -- however is new to linux-firmware -- and I hereby raise a big
+> >> red fucking flag. All other licenses on linux-firmware provide at the
+> >> very least a limited patent grant. What makes Qualcomm special ?
+> > [...]
 > >
-> >Sorry for my unclearness.
-> >I meant that we had better do this check in per-pageblock loop (as the free
-> >scanner does) instead of in per-pfn loop (as we do now.)
+> > There are several licence texts that don't mention patents at all.  I'm
+> > assuming that the companies submitting firmware for inclusion in Linux
+> > or linux-firmware do intend to grant whatever licences are required to
+> > distribute it to end users.
 > 
-> Hm I see, the migration and free scanners really do this differently. Free
-> scanned per-pageblock, but migration scanner per-page.
-> Can we assume that zones will never overlap within a single pageblock?
+> Agreed, this would be the only fair thing.
+> 
+> > Several licence texts explicitly exclude patent licences relating to any
+> > *other* products of the same company, but that's quite redundant.
+> 
+> Sure.
+> 
+> > However this language seems to explicitly exclude *any* patent licence.
+> 
+> Yeap, they are making it crystal clear.
+> 
+> > You're right to raise a red flag because, assuming Qualcomm does have
+> > patents that cover the firmware alone, this seems to disallow
+> > redistribution in whatever jurisdictions those patents apply.
+> 
+> I'm also fearful of this setting a precedent for other vendors.
 
-Maybe not, we have no such assumption.
+<-- snip -->
 
-> The example dc9086004 seems to be overlapping at even higher alignment so it
-> should be safe only to check first page in pageblock.
-> And if it wasn't the case, then I guess the freepage scanner would already
-> hit some errors on such system?
+> To avoid patches as this one should we define some basic guidelines
+> for linux-firmware acceptable licenses?
 
-That's right. Such system might be rare so nobody detected it, I guess.
-So I was wrong, and page_zone check should be done in per-pfn loop in
-both scanner?
+How about this small change to clarify ?
 
-I just think that it might be good if we have an iterator to run over
-pfns only on a given zone (not that check page zone on each page,)
-but it introduces some more complexity on the scanners, so at this time
-we don't have to do it in this series.
+>From b0b9bd8328f797836ce0db6157232d017220594b Mon Sep 17 00:00:00 2001
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+Date: Wed, 25 Jun 2014 08:41:25 -0700
+Subject: [PATCH] README: clarify redistribution requirements covering patents
 
-> But if that's true, why does page_is_buddy test if pages are in the same
-> zone?
+Firmware licenses should include an implicit or explicit
+patent grant to end users for full device operation.
 
-Yeah, this is why we think we can't have the above mentioned assumption.
+Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+---
+ README | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-Thanks,
-Naoya Horiguchi
+diff --git a/README b/README
+index f2ed92e..d2a56ec 100644
+--- a/README
++++ b/README
+@@ -18,7 +18,10 @@ and also cc: to related mailing lists.
+ 
+ Your commit should include an update to the WHENCE file clearly
+ identifying the licence under which the firmware is available, and
+-that it is redistributable. If the licence is long and involved, it's
++that it is redistributable. Being redistributable includes ensuring
++the firmware license provided includes an implicit or explicit
++patent grant to end users to ensure full functionality of device
++operation with the firmware. If the licence is long and involved, it's
+ permitted to include it in a separate file and refer to it from the
+ WHENCE file.
+ And if it were possible, a changelog of the firmware itself.
+-- 
+2.0.0
+
