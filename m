@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756664AbaFYLIB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 07:08:01 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:41102 "EHLO
+	id S1756620AbaFYLIA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 07:08:00 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:41111 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756198AbaFYLHR (ORCPT
+	by vger.kernel.org with ESMTP id S1756209AbaFYLHR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 25 Jun 2014 07:07:17 -0400
 From: Jiri Slaby <jslaby@suse.cz>
@@ -13,11 +13,10 @@ Cc: tj@kernel.org, rostedt@goodmis.org, mingo@redhat.com,
         akpm@linux-foundation.org, andi@firstfloor.org,
         paulmck@linux.vnet.ibm.com, pavel@ucw.cz, jirislaby@gmail.com,
         Vojtech Pavlik <vojtech@suse.cz>, Michael Matz <matz@suse.de>,
-        Jiri Kosina <jkosina@suse.cz>, Jiri Slaby <jslaby@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH -repost 15/21] kgr: make a per-process 'in progress' flag a single bit
-Date: Wed, 25 Jun 2014 13:07:09 +0200
-Message-Id: <1403694435-3180-15-git-send-email-jslaby@suse.cz>
+        Jiri Kosina <jkosina@suse.cz>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH -repost 16/21] kgr: add support for missing functions
+Date: Wed, 25 Jun 2014 13:07:10 +0200
+Message-Id: <1403694435-3180-16-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1403694435-3180-1-git-send-email-jslaby@suse.cz>
 References: <1403694435-3180-1-git-send-email-jslaby@suse.cz>
@@ -25,180 +24,166 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Kosina <jkosina@suse.cz>
+Sometimes we want to patch a function which is in a module that is not
+currently loaded. In that case, patching would fail completely. So let
+the user decide whether it is fatal when the function to be patched is
+not found. If it is not, it is just skipped.  Other functions in the
+patch (if any) are still patched in that case.
 
-Having the per-task 'kgr_in_progress' flag stored as long is a waste
-of space. And manipulating it is likely slower than just performing
-single bit operations. Convert the flag to a thread info flag.
+Note that this approach expects newly loaded modules to be fixed
+already. No "deferred" patching happens on the module load.
 
-Additionally, making the KGR TI_flag part of _TIF_ALLWORK_MASK and
-_TIF_WORK_SYSCALL_ENTRY allows for offloading the flag manipulation to
-slow code paths.
-
-js: use *_tsk_thread_flag helpers
-
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
 ---
- arch/x86/include/asm/thread_info.h |  7 ++++---
- arch/x86/kernel/asm-offsets.c      |  1 -
- arch/x86/kernel/entry_64.S         | 12 +++++++++---
- include/linux/kgraft.h             |  5 ++---
- include/linux/sched.h              |  2 +-
- 5 files changed, 16 insertions(+), 11 deletions(-)
+ include/linux/kgraft.h          | 10 +++++++---
+ kernel/kgraft.c                 | 26 ++++++++++++++++++--------
+ samples/kgraft/kgraft_patcher.c |  4 ++--
+ 3 files changed, 27 insertions(+), 13 deletions(-)
 
-diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
-index e44c8fda9c43..53df17c72359 100644
---- a/arch/x86/include/asm/thread_info.h
-+++ b/arch/x86/include/asm/thread_info.h
-@@ -35,7 +35,6 @@ struct thread_info {
- 	void __user		*sysenter_return;
- 	unsigned int		sig_on_uaccess_error:1;
- 	unsigned int		uaccess_err:1;	/* uaccess failed */
--	unsigned long		kgr_in_progress;
- };
- 
- #define INIT_THREAD_INFO(tsk)			\
-@@ -88,6 +87,7 @@ struct thread_info {
- #define TIF_IO_BITMAP		22	/* uses I/O bitmap */
- #define TIF_FORCED_TF		24	/* true if TF in eflags artificially */
- #define TIF_BLOCKSTEP		25	/* set when we want DEBUGCTLMSR_BTF */
-+#define TIF_KGR_IN_PROGRESS	26	/* kGraft patching running */
- #define TIF_LAZY_MMU_UPDATES	27	/* task is updating the mmu lazily */
- #define TIF_SYSCALL_TRACEPOINT	28	/* syscall tracepoint instrumentation */
- #define TIF_ADDR32		29	/* 32-bit address space on 64 bits */
-@@ -112,6 +112,7 @@ struct thread_info {
- #define _TIF_IO_BITMAP		(1 << TIF_IO_BITMAP)
- #define _TIF_FORCED_TF		(1 << TIF_FORCED_TF)
- #define _TIF_BLOCKSTEP		(1 << TIF_BLOCKSTEP)
-+#define _TIF_KGR_IN_PROGRESS	(1 << TIF_KGR_IN_PROGRESS)
- #define _TIF_LAZY_MMU_UPDATES	(1 << TIF_LAZY_MMU_UPDATES)
- #define _TIF_SYSCALL_TRACEPOINT	(1 << TIF_SYSCALL_TRACEPOINT)
- #define _TIF_ADDR32		(1 << TIF_ADDR32)
-@@ -121,7 +122,7 @@ struct thread_info {
- #define _TIF_WORK_SYSCALL_ENTRY	\
- 	(_TIF_SYSCALL_TRACE | _TIF_SYSCALL_EMU | _TIF_SYSCALL_AUDIT |	\
- 	 _TIF_SECCOMP | _TIF_SINGLESTEP | _TIF_SYSCALL_TRACEPOINT |	\
--	 _TIF_NOHZ)
-+	 _TIF_NOHZ | _TIF_KGR_IN_PROGRESS)
- 
- /* work to do in syscall_trace_leave() */
- #define _TIF_WORK_SYSCALL_EXIT	\
-@@ -137,7 +138,7 @@ struct thread_info {
- /* work to do on any return to user space */
- #define _TIF_ALLWORK_MASK						\
- 	((0x0000FFFF & ~_TIF_SECCOMP) | _TIF_SYSCALL_TRACEPOINT |	\
--	_TIF_NOHZ)
-+	_TIF_NOHZ | _TIF_KGR_IN_PROGRESS)
- 
- /* Only used for 64 bit */
- #define _TIF_DO_NOTIFY_MASK						\
-diff --git a/arch/x86/kernel/asm-offsets.c b/arch/x86/kernel/asm-offsets.c
-index 0db0437967a2..9f6b9341950f 100644
---- a/arch/x86/kernel/asm-offsets.c
-+++ b/arch/x86/kernel/asm-offsets.c
-@@ -32,7 +32,6 @@ void common(void) {
- 	OFFSET(TI_flags, thread_info, flags);
- 	OFFSET(TI_status, thread_info, status);
- 	OFFSET(TI_addr_limit, thread_info, addr_limit);
--	OFFSET(TI_kgr_in_progress, thread_info, kgr_in_progress);
- 
- 	BLANK();
- 	OFFSET(crypto_tfm_ctx_offset, crypto_tfm, __crt_ctx);
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index a7c570abc918..edaa5abd58f9 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -409,7 +409,6 @@ GLOBAL(system_call_after_swapgs)
- 	movq  %rax,ORIG_RAX-ARGOFFSET(%rsp)
- 	movq  %rcx,RIP-ARGOFFSET(%rsp)
- 	CFI_REL_OFFSET rip,RIP-ARGOFFSET
--	movq $0, TI_kgr_in_progress+THREAD_INFO(%rsp,RIP-ARGOFFSET)
- 	testl $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
- 	jnz tracesys
- system_call_fastpath:
-@@ -434,7 +433,6 @@ sysret_check:
- 	LOCKDEP_SYS_EXIT
- 	DISABLE_INTERRUPTS(CLBR_NONE)
- 	TRACE_IRQS_OFF
--	movq $0, TI_kgr_in_progress+THREAD_INFO(%rsp,RIP-ARGOFFSET)
- 	movl TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET),%edx
- 	andl %edi,%edx
- 	jnz  sysret_careful
-@@ -454,6 +452,9 @@ sysret_check:
- 	/* Handle reschedules */
- 	/* edx:	work, edi: workmask */
- sysret_careful:
-+#if IS_ENABLED(CONFIG_KGRAFT)
-+	andl $~_TIF_KGR_IN_PROGRESS,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-+#endif
- 	bt $TIF_NEED_RESCHED,%edx
- 	jnc sysret_signal
- 	TRACE_IRQS_ON
-@@ -517,6 +518,9 @@ sysret_audit:
- 
- 	/* Do syscall tracing */
- tracesys:
-+#if IS_ENABLED(CONFIG_KGRAFT)
-+	andl $~_TIF_KGR_IN_PROGRESS,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-+#endif
- #ifdef CONFIG_AUDITSYSCALL
- 	testl $(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
- 	jz auditsys
-@@ -557,7 +561,6 @@ GLOBAL(int_ret_from_sys_call)
- GLOBAL(int_with_check)
- 	LOCKDEP_SYS_EXIT_IRQ
- 	GET_THREAD_INFO(%rcx)
--	movq $0, TI_kgr_in_progress(%rcx)
- 	movl TI_flags(%rcx),%edx
- 	andl %edi,%edx
- 	jnz   int_careful
-@@ -568,6 +571,9 @@ GLOBAL(int_with_check)
- 	/* First do a reschedule test. */
- 	/* edx:	work, edi: workmask */
- int_careful:
-+#if IS_ENABLED(CONFIG_KGRAFT)
-+	andl $~_TIF_KGR_IN_PROGRESS,TI_flags(%rcx)
-+#endif
- 	bt $TIF_NEED_RESCHED,%edx
- 	jnc  int_very_careful
- 	TRACE_IRQS_ON
 diff --git a/include/linux/kgraft.h b/include/linux/kgraft.h
-index 93bb1c50e079..92b642408b6f 100644
+index 92b642408b6f..4d8665f60cbc 100644
 --- a/include/linux/kgraft.h
 +++ b/include/linux/kgraft.h
-@@ -73,13 +73,12 @@ extern int kgr_start_patching(struct kgr_patch *);
+@@ -30,10 +30,13 @@
  
- static inline void kgr_mark_task_in_progress(struct task_struct *p)
+ struct kgr_patch {
+ 	bool __percpu *irq_use_new;
+-	const struct kgr_patch_fun {
++	struct kgr_patch_fun {
+ 		const char *name;
+ 		const char *new_name;
+ 
++		bool abort_if_missing;
++		bool applied;
++
+ 		void *new_function;
+ 
+ 		struct ftrace_ops *ftrace_ops_slow;
+@@ -51,16 +54,17 @@ struct kgr_loc_caches {
+ 	bool __percpu *irq_use_new;
+ };
+ 
+-#define KGR_PATCHED_FUNCTION(_name, _new_function)				\
++#define KGR_PATCHED_FUNCTION(_name, _new_function, abort)			\
+ 	static struct ftrace_ops __kgr_patch_ftrace_ops_slow_ ## _name = {	\
+ 		.flags = FTRACE_OPS_FL_SAVE_REGS,				\
+ 	};									\
+ 	static struct ftrace_ops __kgr_patch_ftrace_ops_fast_ ## _name = {	\
+ 		.flags = FTRACE_OPS_FL_SAVE_REGS,				\
+ 	};									\
+-	static const struct kgr_patch_fun __kgr_patch_ ## _name = {		\
++	static struct kgr_patch_fun __kgr_patch_ ## _name = {			\
+ 		.name = #_name,							\
+ 		.new_name = #_new_function,					\
++		.abort_if_missing = abort,					\
+ 		.new_function = _new_function,					\
+ 		.ftrace_ops_slow = &__kgr_patch_ftrace_ops_slow_ ## _name,	\
+ 		.ftrace_ops_fast = &__kgr_patch_ftrace_ops_fast_ ## _name,	\
+diff --git a/kernel/kgraft.c b/kernel/kgraft.c
+index d99171c6ea1d..121faefcbb28 100644
+--- a/kernel/kgraft.c
++++ b/kernel/kgraft.c
+@@ -28,7 +28,7 @@
+ #include <linux/workqueue.h>
+ 
+ static int kgr_patch_code(const struct kgr_patch *patch,
+-		const struct kgr_patch_fun *patch_fun, bool final);
++		struct kgr_patch_fun *patch_fun, bool final);
+ static void kgr_work_fn(struct work_struct *work);
+ 
+ static struct workqueue_struct *kgr_wq;
+@@ -87,7 +87,7 @@ static bool kgr_still_patching(void)
+ 
+ static void kgr_finalize(void)
  {
--	/* This is replaced by thread_flag later. */
--	set_bit(0, &task_thread_info(p)->kgr_in_progress);
-+	set_tsk_thread_flag(p, TIF_KGR_IN_PROGRESS);
+-	const struct kgr_patch_fun *const *patch_fun;
++	struct kgr_patch_fun *const *patch_fun;
+ 
+ 	for (patch_fun = kgr_patch->patches; *patch_fun; patch_fun++) {
+ 		int ret = kgr_patch_code(kgr_patch, *patch_fun, true);
+@@ -240,7 +240,7 @@ free_caches:
  }
  
- static inline bool kgr_task_in_progress(struct task_struct *p)
+ static int kgr_patch_code(const struct kgr_patch *patch,
+-		const struct kgr_patch_fun *patch_fun, bool final)
++		struct kgr_patch_fun *patch_fun, bool final)
  {
--	return test_bit(0, &task_thread_info(p)->kgr_in_progress);
-+	return test_tsk_thread_flag(p, TIF_KGR_IN_PROGRESS);
- }
+ 	struct ftrace_ops *new_ops;
+ 	struct kgr_loc_caches *caches;
+@@ -250,11 +250,16 @@ static int kgr_patch_code(const struct kgr_patch *patch,
+ 	/* Choose between slow and fast stub */
+ 	if (!final) {
+ 		err = kgr_init_ftrace_ops(patch_fun);
+-		if (err)
++		if (err) {
++			if (err == -ENOENT && !patch_fun->abort_if_missing)
++				return 0;
+ 			return err;
++		}
+ 		pr_debug("kgr: patching %s to slow stub\n", patch_fun->name);
+ 		new_ops = patch_fun->ftrace_ops_slow;
+ 	} else {
++		if (!patch_fun->applied)
++			return 0;
+ 		pr_debug("kgr: patching %s to fast stub\n", patch_fun->name);
+ 		new_ops = patch_fun->ftrace_ops_fast;
+ 	}
+@@ -290,7 +295,9 @@ static int kgr_patch_code(const struct kgr_patch *patch,
+ 			/* don't fail: we are only slower */
+ 			return 0;
+ 		}
+-	}
++	} else
++		patch_fun->applied = true;
++
+ 	pr_debug("kgr: redirection for %lx (%s) done\n", fentry_loc,
+ 			patch_fun->name);
  
- #endif /* IS_ENABLED(CONFIG_KGRAFT) */
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 6bc2d63a59c4..0c037f6bba55 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2977,7 +2977,7 @@ static inline void mm_init_owner(struct mm_struct *mm, struct task_struct *p)
- #if IS_ENABLED(CONFIG_KGRAFT)
- static inline void kgr_task_safe(struct task_struct *p)
+@@ -305,7 +312,7 @@ static int kgr_patch_code(const struct kgr_patch *patch,
+  */
+ int kgr_start_patching(struct kgr_patch *patch)
  {
--	clear_bit(0, &task_thread_info(p)->kgr_in_progress);
-+	clear_tsk_thread_flag(p, TIF_KGR_IN_PROGRESS);
+-	const struct kgr_patch_fun *const *patch_fun;
++	struct kgr_patch_fun *const *patch_fun;
+ 	int ret;
+ 
+ 	if (!kgr_initialized) {
+@@ -335,8 +342,11 @@ int kgr_start_patching(struct kgr_patch *patch)
+ 		 */
+ 		if (ret < 0) {
+ 			for (patch_fun--; patch_fun >= patch->patches;
+-					patch_fun--)
+-				unregister_ftrace_function((*patch_fun)->ftrace_ops_slow);
++					patch_fun--) {
++				if ((*patch_fun)->applied)
++					unregister_ftrace_function(
++						(*patch_fun)->ftrace_ops_slow);
++			}
+ 			goto unlock_free;
+ 		}
+ 	}
+diff --git a/samples/kgraft/kgraft_patcher.c b/samples/kgraft/kgraft_patcher.c
+index 7cb94f728128..5d02a908bc26 100644
+--- a/samples/kgraft/kgraft_patcher.c
++++ b/samples/kgraft/kgraft_patcher.c
+@@ -53,7 +53,7 @@ asmlinkage long kgr_new_sys_iopl(unsigned int level)
+ 
+ 	return 0;
  }
- #else
- static inline void kgr_task_safe(struct task_struct *p) { }
+-KGR_PATCHED_FUNCTION(SyS_iopl, kgr_new_sys_iopl);
++KGR_PATCHED_FUNCTION(SyS_iopl, kgr_new_sys_iopl, true);
+ 
+ static bool new_capable(int cap)
+ {
+@@ -61,7 +61,7 @@ static bool new_capable(int cap)
+ 
+ 	return ns_capable(&init_user_ns, cap);
+ }
+-KGR_PATCHED_FUNCTION(capable, new_capable);
++KGR_PATCHED_FUNCTION(capable, new_capable, true);
+ 
+ static struct kgr_patch patch = {
+ 	.patches = {
 -- 
 2.0.0
 
