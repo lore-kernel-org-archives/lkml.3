@@ -1,94 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755445AbaFYJjx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 05:39:53 -0400
-Received: from casper.infradead.org ([85.118.1.10]:57395 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751483AbaFYJjv (ORCPT
+	id S1755785AbaFYJkO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 05:40:14 -0400
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:51578 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753893AbaFYJkJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 05:39:51 -0400
-Date: Wed, 25 Jun 2014 11:39:44 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Subject: Re: [PATCH 2/6] irq_work: Implement remote queueing
-Message-ID: <20140625093944.GV16155@laptop.programming.kicks-ass.net>
-References: <1402413309-3415-1-git-send-email-fweisbec@gmail.com>
- <1402413309-3415-3-git-send-email-fweisbec@gmail.com>
- <53A9E0A5.5040402@wwwdotorg.org>
- <20140625051234.GD6758@twins.programming.kicks-ass.net>
- <20140625051721.GG3588@twins.programming.kicks-ass.net>
- <53AA6E11.1000404@linux.vnet.ibm.com>
- <20140625093657.GN19860@laptop.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140625093657.GN19860@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Wed, 25 Jun 2014 05:40:09 -0400
+Message-ID: <1403689208.1960.40.camel@x220>
+Subject: Re: [PATCH] [TRIVIAL] Documentation: Fix typo 'CONFIG_AFS'
+From: Paul Bolle <pebolle@tiscali.nl>
+To: David Howells <dhowells@redhat.com>
+Cc: Jiri Kosina <trivial@kernel.org>, linux-afs@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 25 Jun 2014 11:40:08 +0200
+In-Reply-To: <6075.1403687355@warthog.procyon.org.uk>
+References: <1403683888.1960.35.camel@x220>
+	 <6075.1403687355@warthog.procyon.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 25 Jun 2014 09:40:08.0450 (UTC) FILETIME=[73B0F620:01CF9059]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 11:36:57AM +0200, Peter Zijlstra wrote:
-> On Wed, Jun 25, 2014 at 12:07:05PM +0530, Srivatsa S. Bhat wrote:
-> > I don't think irqs_disabled() is the problematic condition, since
-> > hotplug_cfg() invokes irq_work_run() from CPU_DYING context (which has
-> > irqs disabled). I guess you meant to remove the in_irq() check inside
-> > irq_work_run() instead?
+On Wed, 2014-06-25 at 10:09 +0100, David Howells wrote:
+> Paul Bolle <pebolle@tiscali.nl> wrote:
+> > Perhaps AF_RXRPC should be dropped from this short list (it is selected
+> > if AFS_FS is set). But since I couldn't actually determine how AFS_FS
+> > and RXKAD interact I decided to not touch that list any further.
 > 
-> Yes, clearly I should not get up at 6am.. :-) Let me go do a new one.
+> The key_type_rxrpc key that the AFS fs or userspace passes to AF_RXRPC
+> indicates the protocol that AF_RXRPC should use.  The AFS fs doesn't need to
+> care how the security actually works and the token is opaque to it.
+> 
+> rxkad registers itself with AF_RXRPC, which maintains a list.  The
+> security_index is the number that appears in the protocol that indicates the
+> security driver to use.
 
----
-Subject: irq_work: Remove BUG_ON in irq_work_run()
-From: Peter Zijlstra <peterz@infradead.org>
-Date: Wed Jun 25 07:13:07 CEST 2014
+Thanks. That would have taken me quite a bit of time to figure out.
 
-Because of a collision with 8d056c48e486 ("CPU hotplug, smp: flush any
-pending IPI callbacks before CPU offline"), which ends up calling
-hotplug_cfd()->flush_smp_call_function_queue()->irq_work_run(), which
-is not from IRQ context.
+I'll leave that short list as is, unless you prefer that I send a v2
+dropping AF_RXRPC.
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Reported-by: Stephen Warren <swarren@wwwdotorg.org>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/n/tip-busatzs2gvz4v62258agipuf@git.kernel.org
----
- kernel/irq_work.c |   12 +-----------
- 1 file changed, 1 insertion(+), 11 deletions(-)
 
-Index: linux-2.6/kernel/irq_work.c
-===================================================================
---- linux-2.6.orig/kernel/irq_work.c
-+++ linux-2.6/kernel/irq_work.c
-@@ -160,21 +160,11 @@ static void irq_work_run_list(struct lli
- 	}
- }
- 
--static void __irq_work_run(void)
-+static void irq_work_run(void)
- {
- 	irq_work_run_list(&__get_cpu_var(raised_list));
- 	irq_work_run_list(&__get_cpu_var(lazy_list));
- }
--
--/*
-- * Run the irq_work entries on this cpu. Requires to be ran from hardirq
-- * context with local IRQs disabled.
-- */
--void irq_work_run(void)
--{
--	BUG_ON(!in_irq());
--	__irq_work_run();
--}
- EXPORT_SYMBOL_GPL(irq_work_run);
- 
- /*
+Paul Bolle
+
