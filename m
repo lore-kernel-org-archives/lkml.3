@@ -1,97 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755113AbaFYFuy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 01:50:54 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:51269 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754879AbaFYFt4 (ORCPT
+	id S1755179AbaFYFvD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 01:51:03 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:37902 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755129AbaFYFvA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 01:49:56 -0400
+	Wed, 25 Jun 2014 01:51:00 -0400
+Date: Wed, 25 Jun 2014 07:50:54 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>
+Subject: Re: [GIT PULL] liblockdep fixes for v3.15
+Message-ID: <20140625055054.GB7208@gmail.com>
+References: <53A31A47.5010904@oracle.com>
 MIME-Version: 1.0
-In-Reply-To: <53A9FCDB.6060805@cogentembedded.com>
-References: <1402056736-12674-1-git-send-email-gautam.vivek@samsung.com>
-	<1402056736-12674-3-git-send-email-gautam.vivek@samsung.com>
-	<CAODwPW-2tbDht8P=KsTyTyeBivFtFMiyCpxd0QFa-cUSRTpJjQ@mail.gmail.com>
-	<53A9FCDB.6060805@cogentembedded.com>
-Date: Wed, 25 Jun 2014 11:19:55 +0530
-X-Google-Sender-Auth: OIvO7rkHfivny-wAabY1FG455cg
-Message-ID: <CAFp+6iH_rxNpHZyFH6k5Got6YJ_RQMsm=95=pkRPitsxopsosA@mail.gmail.com>
-Subject: Re: [PATCH 2/4] usb: host: xhci-plat: Add support to get PHYs
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: Julius Werner <jwerner@chromium.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        kishon <kishon@ti.com>, Mathias Nyman <mathias.nyman@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53A31A47.5010904@oracle.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HI Sergei,
 
+* Sasha Levin <sasha.levin@oracle.com> wrote:
 
-On Wed, Jun 25, 2014 at 4:04 AM, Sergei Shtylyov
-<sergei.shtylyov@cogentembedded.com> wrote:
-> Hello.
->
->
-> On 06/10/2014 12:22 AM, Julius Werner wrote:
->
->>> diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
->>> index 9ffecd5..453d89e 100644
->>> --- a/drivers/usb/host/xhci.h
->>> +++ b/drivers/usb/host/xhci.h
->>> @@ -1582,6 +1582,9 @@ struct xhci_hcd {
->>>          u32                     port_status_u0;
->>>   /* Compliance Mode Timer Triggered every 2 seconds */
->>>   #define COMP_MODE_RCVRY_MSECS 2000
->>> +       /* phys for the controller */
->>> +       struct phy              *phy2_gen;
->>> +       struct phy              *phy3_gen;
->>>   };
->
->
->> I don't think adding new variables here and restricting most of this
->> logic to xhci-plat.c (in the next patch) is the best way to do it.
->
->
->    Indeed.
->
->
->> There's no conceptual reason why other host controllers (e.g. xhci-pci
->> or even EHCI) could not have a similar need to tune their PHY after
->> reset. PHYs are universal to all host controllers.
->
->
->> There is already a 'phy' member in struct usb_hcd which I think is
->> mostly unused right now. I think it would be much less
->> confusing/redundant to reuse that member for this purpose (you could
->> still set it up from xhci_plat_probe(), and then call it from
->> hcd_bus_resume() or something like that).
->
->
->    That member has type 'struct usb_phy *' while here we have 'struct phy *'
-> -- feel the difference.
->    I have already tried adding 'struct phy *gen_phy' to 'struct usb_hcd',
-> however Greg wasn't eager to pick that up so far. Here's the last posting of
-> my patch:
->
-> http://marc.info/?l=linux-usb&m=140145917506582
+> The following changes since commit 7171511eaec5bf23fb06078f59784a3a0626b38f:
+> 
+>   Linux 3.16-rc1 (2014-06-15 17:45:28 -1000)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/sashal/linux.git liblockdep-fixes
+> 
+> for you to fetch changes up to b2f8bdb50a426aa104f7a57ca823589869b8da6f:
+> 
+>   tools/liblockdep: fix comparison of a boolean value with a value of 2 (2014-06-19 13:08:10 -0400)
+> 
+> ----------------------------------------------------------------
+> zhangdianfang (1):
+>       tools/liblockdep: fix comparison of a boolean value with a value of 2
+> 
+>  tools/lib/lockdep/preload.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks for pointing to the patch, i have also been tracking this patch.
-I will try to rework using this patch and post the relevant patches.
+There's a couple of problems with the commit:
 
+ - Please capitalize the first word of the title, i.e.: "tools/liblockdep: Fix ..."
 
+ - Commit b2f8bdb is committed by you, but not signed off by you. I 
+   cannot pull SOB-less commits.
 
--- 
-Best Regards
-Vivek Gautam
-Samsung R&D Institute, Bangalore
-India
+ - It's not immediately obvious from the description why the change is 
+   made, please use the customary changelog style we use in the 
+   kernel:
+
+     " Current code does (A), this has a problem when (B).
+       We can improve this doing (C), because (D)."
+
+Thanks,
+
+	Ingo
