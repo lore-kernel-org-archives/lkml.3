@@ -1,46 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756995AbaFYOAx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 10:00:53 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:55226 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756662AbaFYOAv (ORCPT
+	id S1757100AbaFYOBV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 10:01:21 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:36497 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756888AbaFYOBU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 10:00:51 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: xjtuwjp@gmail.com, lindar_liu@usish.com
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] scsi: pm8001: pm80xx_hwi.c:  Cleaning up variable is set more than once
-Date: Wed, 25 Jun 2014 16:01:47 +0200
-Message-Id: <1403704907-25672-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 25 Jun 2014 10:01:20 -0400
+Message-ID: <53AAD62D.3030105@gmail.com>
+Date: Wed, 25 Jun 2014 08:01:17 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Stanislav Fomichev <stfomichev@yandex-team.ru>
+CC: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        acme@kernel.org, namhyung@kernel.org, artagnon@gmail.com,
+        rusty@rustcorp.com.au, bp@suse.de
+Subject: Re: [PATCH v4 0/4] perf timechart io mode
+References: <1403260191-10079-1-git-send-email-stfomichev@yandex-team.ru> <20140624084113.GC31390@krava.redhat.com> <20140624091022.GE20225@stfomichev-desktop.yandex.net> <20140624165712.GA10114@stfomichev-desktop.yandex.net> <53A9B7A4.9050805@gmail.com> <20140624185134.GB1148@krava.brq.redhat.com> <53A9CB6E.5080104@gmail.com> <20140625112019.GC21788@stfomichev-desktop.yandex.net>
+In-Reply-To: <20140625112019.GC21788@stfomichev-desktop.yandex.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A struct member variable is set to different values without having used in between.
+On 6/25/14, 5:20 AM, Stanislav Fomichev wrote:
+>>> maybe we dont need to fail in this case.. seems like it should
+>>> not be hard to detect, wanr and recover? ;-)
+> The easiest way is just to bail out and don't try to be smart, that's
+> what I do now.
+>
+> Another approach would be to just convert all my consistency
+> checks to warnings and skip invalid events (and hope it somehow works). I
+> think it makes sense when for some reason we have perf.data which
+> is not really consistent but we still want to get something out of it.
 
-This was found using a static code analysis program called cppcheck
+If the event type does not make sense how can you trust any other field 
+-- like event size?
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- drivers/scsi/pm8001/pm80xx_hwi.c |    1 -
- 1 file changed, 1 deletion(-)
+>
+>> seems to me it should not be happening at all. It seems like the head caught
+>> the tail and was not properly detected.
+> So you mean it perf record's fault?
+>
 
-diff --git a/drivers/scsi/pm8001/pm80xx_hwi.c b/drivers/scsi/pm8001/pm80xx_hwi.c
-index d70587f..2698227 100644
---- a/drivers/scsi/pm8001/pm80xx_hwi.c
-+++ b/drivers/scsi/pm8001/pm80xx_hwi.c
-@@ -249,7 +249,6 @@ moreData:
- 				sprintf(pm8001_ha->
- 					forensic_info.data_buf.direct_data,
- 						"%08x ", 4);
--			pm8001_ha->forensic_info.data_buf.read_len = 0xFFFFFFFF;
- 			pm8001_ha->forensic_info.data_buf.direct_len =  0;
- 			pm8001_ha->forensic_info.data_buf.direct_offset = 0;
- 			pm8001_ha->forensic_info.data_buf.read_len = 0;
--- 
-1.7.10.4
+In my cases I am running perf-record. At the end of the session it walks 
+the events and in too many cases I see the message:
 
+  0x113f80 [0x8]: failed to process type: 68
+
+So, yes I think something is happening during the record such as the 
+writer passing the reader and corrupting the buffers.
+
+David
