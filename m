@@ -1,81 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757538AbaFYQjf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 12:39:35 -0400
-Received: from mail-pb0-f74.google.com ([209.85.160.74]:61008 "EHLO
-	mail-pb0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757212AbaFYQjd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 12:39:33 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Wolfram Sang <wsa@the-dreams.de>, Kukjin Kim <kgene.kim@samsung.com>
-Cc: Tomasz Figa <tomasz.figa@gmail.com>, javier.martinez@collabora.co.uk,
-        ch.naveen@samsung.com, Doug Anderson <dianders@chromium.org>,
-        jg1.han@samsung.com, jdelvare@suse.de, sjg@google.com,
-        paul.gortmaker@windriver.com, standby24x7@gmail.com,
-        sachin.kamat@linaro.org, linux-i2c@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3] i2c: exynos5: Properly use the "noirq" variants of suspend/resume
-Date: Wed, 25 Jun 2014 09:39:20 -0700
-Message-Id: <1403714360-7581-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.0.0.526.g5318336
+	id S1757602AbaFYQl3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 12:41:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47563 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756944AbaFYQl1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 12:41:27 -0400
+Message-ID: <1403714445.755.112.camel@deneb.redhat.com>
+Subject: Re: [PATCH v8 4/4] drivers: net: Add APM X-Gene SoC ethernet driver
+ support.
+From: Mark Salter <msalter@redhat.com>
+To: Dann Frazier <dann.frazier@canonical.com>
+Cc: Iyappan Subramanian <isubramanian@apm.com>, davem@davemloft.net,
+        netdev@vger.kernel.org,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, jcm@redhat.com, patches@apm.com,
+        Ravi Patel <rapatel@apm.com>, Keyur Chudgar <kchudgar@apm.com>
+Date: Wed, 25 Jun 2014 12:40:45 -0400
+In-Reply-To: <CALdTtnvHt5mYMC3619E4F3KK0jPOw7mCpKE6bTn0Um6fdZ4rbw@mail.gmail.com>
+References: <1403306296-26198-1-git-send-email-isubramanian@apm.com>
+	 <1403306296-26198-5-git-send-email-isubramanian@apm.com>
+	 <CALdTtnvHt5mYMC3619E4F3KK0jPOw7mCpKE6bTn0Um6fdZ4rbw@mail.gmail.com>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The original code for the exynos i2c controller registered for the
-"noirq" variants.  However during review feedback it was moved to
-SIMPLE_DEV_PM_OPS without anyone noticing that it meant we were no
-longer actually "noirq" (despite functions named
-exynos5_i2c_suspend_noirq and exynos5_i2c_resume_noirq).
+On Tue, 2014-06-24 at 22:29 -0600, Dann Frazier wrote:
+> On Fri, Jun 20, 2014 at 5:18 PM, Iyappan Subramanian
+> > +       ring->desc_addr = dma_zalloc_coherent(dev, size, &ring->dma,
+> > +                                             GFP_KERNEL);
+> 
+> Iyappan,
+> When testing this driver on a 3.16-rc2 base, I'm finding that
+> desc_addr gets assigned to NULL here, which results in an oops later
+> on (see below).
+> 
+> I wasn't seeing this before (3.15 base), so I'm guessing something
+> changed upstream, or in my config, to change this behavior. But it
+> does illuminate a place where we could maybe use some better error
+> handling (also see below).
 
-i2c controllers that might have wakeup sources on them seem to need to
-resume at noirq time so that the individual drivers can actually read
-the i2c bus to handle their wakeup.
+https://lkml.org/lkml/2014/6/23/10
 
-NOTE: I took the original review feedback from Wolfram and added
-poweroff, thaw, freeze, restore.
-
-This patch has only been compile-tested since I don't have all the
-patches needed to make my machine using this i2c driver actually
-suspend/resume.
-
-Signed-off-by: Doug Anderson <dianders@chromium.org>
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
----
-Changes in v3:
-- Made the structure static.
-
-Changes in v2:
-- Added missing CONFIG_PM_SLEEP
-
- drivers/i2c/busses/i2c-exynos5.c | 12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-exynos5.c b/drivers/i2c/busses/i2c-exynos5.c
-index 63d2292..f9447a4 100644
---- a/drivers/i2c/busses/i2c-exynos5.c
-+++ b/drivers/i2c/busses/i2c-exynos5.c
-@@ -789,8 +789,16 @@ static int exynos5_i2c_resume_noirq(struct device *dev)
- }
- #endif
- 
--static SIMPLE_DEV_PM_OPS(exynos5_i2c_dev_pm_ops, exynos5_i2c_suspend_noirq,
--			 exynos5_i2c_resume_noirq);
-+static const struct dev_pm_ops exynos5_i2c_dev_pm_ops = {
-+#ifdef CONFIG_PM_SLEEP
-+	.suspend_noirq = exynos5_i2c_suspend_noirq,
-+	.resume_noirq = exynos5_i2c_resume_noirq,
-+	.freeze_noirq = exynos5_i2c_suspend_noirq,
-+	.thaw_noirq = exynos5_i2c_resume_noirq,
-+	.poweroff_noirq = exynos5_i2c_suspend_noirq,
-+	.restore_noirq = exynos5_i2c_resume_noirq,
-+#endif
-+};
- 
- static struct platform_driver exynos5_i2c_driver = {
- 	.probe		= exynos5_i2c_probe,
--- 
-2.0.0.526.g5318336
 
