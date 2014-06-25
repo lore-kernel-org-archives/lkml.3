@@ -1,97 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752725AbaFYGi6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 02:38:58 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:40254 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751419AbaFYGi4 (ORCPT
+	id S1753578AbaFYGlm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 02:41:42 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:37370 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751713AbaFYGll (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 02:38:56 -0400
-Message-ID: <53AA6E11.1000404@linux.vnet.ibm.com>
-Date: Wed, 25 Jun 2014 12:07:05 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 25 Jun 2014 02:41:41 -0400
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>,
-        Stephen Warren <swarren@wwwdotorg.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Subject: Re: [PATCH 2/6] irq_work: Implement remote queueing
-References: <1402413309-3415-1-git-send-email-fweisbec@gmail.com> <1402413309-3415-3-git-send-email-fweisbec@gmail.com> <53A9E0A5.5040402@wwwdotorg.org> <20140625051234.GD6758@twins.programming.kicks-ass.net> <20140625051721.GG3588@twins.programming.kicks-ass.net>
-In-Reply-To: <20140625051721.GG3588@twins.programming.kicks-ass.net>
+In-Reply-To: <1403658329-13196-1-git-send-email-linux@roeck-us.net>
+References: <1403658329-13196-1-git-send-email-linux@roeck-us.net>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Wed, 25 Jun 2014 08:41:20 +0200
+Message-ID: <CAKfTPtBzpuVf7Ts0YunD=38hONg2RT3Ymr-jvFxx4woa_Qt9tQ@mail.gmail.com>
+Subject: Re: [PATCH v2] sched: Fix compiler warnings
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Paul Mackerras <paulus@samba.org>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linuxppc-dev@lists.ozlabs.org,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14062506-0260-0000-0000-000005376A3C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2014 10:47 AM, Peter Zijlstra wrote:
-> On Wed, Jun 25, 2014 at 07:12:34AM +0200, Peter Zijlstra wrote:
->> On Tue, Jun 24, 2014 at 02:33:41PM -0600, Stephen Warren wrote:
->>> On 06/10/2014 09:15 AM, Frederic Weisbecker wrote:
->>>> irq work currently only supports local callbacks. However its code
->>>> is mostly ready to run remote callbacks and we have some potential user.
+On 25 June 2014 03:05, Guenter Roeck <linux@roeck-us.net> wrote:
+> Commit 143e1e28cb (sched: Rework sched_domain topology definition)
+> introduced a number of functions with a return value of 'const int'.
+> gcc doesn't know what to do with that and, if the kernel is compiled
+> with W=1, complains with the following warnings whenever sched.h
+> is included.
+>
+> include/linux/sched.h:875:25: warning:
+>         type qualifiers ignored on function return type
+> include/linux/sched.h:882:25: warning:
+>         type qualifiers ignored on function return type
+> include/linux/sched.h:889:25: warning:
+>         type qualifiers ignored on function return type
+> include/linux/sched.h:1002:21: warning:
+>         type qualifiers ignored on function return type
+>
+> Commits fb2aa855 (sched, ARM: Create a dedicated scheduler topology table)
+> and 607b45e9a (sched, powerpc: Create a dedicated topology table) introduce
+> the same warning in the arm and powerpc code.
+>
+> Drop 'const' from the function declarations to fix the problem.
+>
+> The fix for all three patches has to be applied together to avoid
+> compilation failures for the affected architectures.
+>
+> Cc: Dietmar Eggemann <dietmar.eggemann@arm.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: Vincent Guittot <vincent.guittot@linaro.org>
 
-[...]
+Acked-by Vincent Guittot <vincent.guittot@linaro.org>
 
->> Right you are.. I think I'll just remove the BUG_ON(), Frederic?
-> 
-> Something a little so like:
-> 
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 > ---
-> Subject: irq_work: Remove BUG_ON in irq_work_run_list()
-
-I think this should be irq_work_run(), see below...
-
-> From: Peter Zijlstra <peterz@infradead.org>
-> Date: Wed Jun 25 07:13:07 CEST 2014
-> 
-> Because of a collision with 8d056c48e486 ("CPU hotplug, smp: flush any
-> pending IPI callbacks before CPU offline"), which ends up calling
-> hotplug_cfd()->flush_smp_call_function_queue()->run_irq_work(), which
-
-
-s/run_irq_work/irq_work_run
-
-
-> is not from IRQ context.
-> 
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Reported-by: Stephen Warren <swarren@wwwdotorg.org>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> ---
->  kernel/irq_work.c |    2 --
->  1 file changed, 2 deletions(-)
-> 
-> --- a/kernel/irq_work.c
-> +++ b/kernel/irq_work.c
-> @@ -130,8 +130,6 @@ static void irq_work_run_list(struct lli
->  	struct irq_work *work;
->  	struct llist_node *llnode;
->  
-> -	BUG_ON(!irqs_disabled());
-> -
-
-I don't think irqs_disabled() is the problematic condition, since
-hotplug_cfg() invokes irq_work_run() from CPU_DYING context (which has
-irqs disabled). I guess you meant to remove the in_irq() check inside
-irq_work_run() instead?
-
-Regards,
-Srivatsa S. Bhat
-
->  	if (llist_empty(list))
->  		return;
->  
-> 
-
+> v2: Fix problem in all affected architectures with a single patch
+>     to avoid compilation errors.
+>
+>  arch/arm/kernel/topology.c | 2 +-
+>  arch/powerpc/kernel/smp.c  | 2 +-
+>  include/linux/sched.h      | 8 ++++----
+>  3 files changed, 6 insertions(+), 6 deletions(-)
+>
+> diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
+> index 9d85318..e35d880 100644
+> --- a/arch/arm/kernel/topology.c
+> +++ b/arch/arm/kernel/topology.c
+> @@ -275,7 +275,7 @@ void store_cpu_topology(unsigned int cpuid)
+>                 cpu_topology[cpuid].socket_id, mpidr);
+>  }
+>
+> -static inline const int cpu_corepower_flags(void)
+> +static inline int cpu_corepower_flags(void)
+>  {
+>         return SD_SHARE_PKG_RESOURCES  | SD_SHARE_POWERDOMAIN;
+>  }
+> diff --git a/arch/powerpc/kernel/smp.c b/arch/powerpc/kernel/smp.c
+> index 51a3ff7..1007fb8 100644
+> --- a/arch/powerpc/kernel/smp.c
+> +++ b/arch/powerpc/kernel/smp.c
+> @@ -747,7 +747,7 @@ int setup_profiling_timer(unsigned int multiplier)
+>
+>  #ifdef CONFIG_SCHED_SMT
+>  /* cpumask of CPUs with asymetric SMT dependancy */
+> -static const int powerpc_smt_flags(void)
+> +static int powerpc_smt_flags(void)
+>  {
+>         int flags = SD_SHARE_CPUCAPACITY | SD_SHARE_PKG_RESOURCES;
+>
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 306f4f0..0376b05 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -872,21 +872,21 @@ enum cpu_idle_type {
+>  #define SD_NUMA                        0x4000  /* cross-node balancing */
+>
+>  #ifdef CONFIG_SCHED_SMT
+> -static inline const int cpu_smt_flags(void)
+> +static inline int cpu_smt_flags(void)
+>  {
+>         return SD_SHARE_CPUCAPACITY | SD_SHARE_PKG_RESOURCES;
+>  }
+>  #endif
+>
+>  #ifdef CONFIG_SCHED_MC
+> -static inline const int cpu_core_flags(void)
+> +static inline int cpu_core_flags(void)
+>  {
+>         return SD_SHARE_PKG_RESOURCES;
+>  }
+>  #endif
+>
+>  #ifdef CONFIG_NUMA
+> -static inline const int cpu_numa_flags(void)
+> +static inline int cpu_numa_flags(void)
+>  {
+>         return SD_NUMA;
+>  }
+> @@ -999,7 +999,7 @@ void free_sched_domains(cpumask_var_t doms[], unsigned int ndoms);
+>  bool cpus_share_cache(int this_cpu, int that_cpu);
+>
+>  typedef const struct cpumask *(*sched_domain_mask_f)(int cpu);
+> -typedef const int (*sched_domain_flags_f)(void);
+> +typedef int (*sched_domain_flags_f)(void);
+>
+>  #define SDTL_OVERLAP   0x01
+>
+> --
+> 1.9.1
+>
