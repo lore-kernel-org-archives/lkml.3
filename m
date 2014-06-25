@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754184AbaFYDRD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 23:17:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32554 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754038AbaFYDRA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 23:17:00 -0400
-From: Mark Salter <msalter@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Jean Pihet <jean.pihet@linaro.org>, Mark Salter <msalter@redhat.com>
-Subject: [PATCH] perf: fix arm64 build error
-Date: Tue, 24 Jun 2014 23:16:45 -0400
-Message-Id: <1403666205-25346-1-git-send-email-msalter@redhat.com>
+	id S1753934AbaFYDY6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 23:24:58 -0400
+Received: from prod-mail-xrelay07.akamai.com ([72.246.2.115]:31693 "EHLO
+	prod-mail-xrelay07.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752423AbaFYDY5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jun 2014 23:24:57 -0400
+Message-ID: <53AA4108.6090302@akamai.com>
+Date: Tue, 24 Jun 2014 22:24:56 -0500
+From: Josh Hunt <johunt@akamai.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: David Rientjes <rientjes@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Baron, Jason" <jbaron@akamai.com>
+Subject: Re: [PATCH] panic: add TAINT_SOFTLOCKUP
+References: <1401847955-3345-1-git-send-email-johunt@akamai.com> <20140623151121.44f17779004e94ab620b837c@linux-foundation.org> <53A8ADEC.6070406@akamai.com> <20140623155118.e2446a6110a9889454db2386@linux-foundation.org> <53A9899C.9040005@akamai.com> <alpine.DEB.2.02.1406241740330.22030@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1406241740330.22030@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm seeing the following build error on arm64:
+On 06/24/2014 07:45 PM, David Rientjes wrote:
+> On Tue, 24 Jun 2014, Josh Hunt wrote:
+>
+>> Anyone you'd suggest adding to this thread to get other feedback about
+>> tracking page allocation failures? I could also spin up a patch and cc them.
+>>
+>
+> Page allocation failures happen all the time, mostly because of
+> large-order allocations (more than PAGE_ALLOC_COSTLY_ORDER) or allocations
+> done with GFP_ATOMIC where it's impossible to reclaim or compact memory to
+> allocate.  Because of this, they are fairly easy to trigger from userspace
+> without having to do much.
+>
+> Why would this qualify for a taint?  I have never debugged a kernel crash
+> that I traced back to an earlier page allocation failure and said "oh, if
+> I had only known about that page allocation failure earlier!".  If one of
+> them is going to cause an issue, it probably is at the point of the crash
+> and you shouldn't have to "investigate" much.
+>
 
-  In file included from util/event.c:3:0:
-  util/event.h:95:17: error: 'PERF_REGS_MAX' undeclared here (not in a function)
-    u64 cache_regs[PERF_REGS_MAX];
-                 ^
+I guess I was thinking more of the case where all you have is the 
+trace/dump and for whatever reason the last bits which may contain the 
+page allocation failure info didn't get flushed to disk. In that case 
+it'd be nice to know what lead up to the crash. However, I do agree with 
+your point and Andrew's about the frequency and ease of triggering them 
+which would make taint the wrong place to account for them.
 
-This patch adds a PEFF_REGS_MAX definition for arm64.
+Thanks
+Josh
 
-Signed-off-by: Mark Salter <msalter@redhat.com>
----
- tools/perf/arch/arm64/include/perf_regs.h | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/tools/perf/arch/arm64/include/perf_regs.h b/tools/perf/arch/arm64/include/perf_regs.h
-index e9441b9..1d3f39c 100644
---- a/tools/perf/arch/arm64/include/perf_regs.h
-+++ b/tools/perf/arch/arm64/include/perf_regs.h
-@@ -6,6 +6,8 @@
- #include <asm/perf_regs.h>
- 
- #define PERF_REGS_MASK	((1ULL << PERF_REG_ARM64_MAX) - 1)
-+#define PERF_REGS_MAX	PERF_REG_ARM64_MAX
-+
- #define PERF_REG_IP	PERF_REG_ARM64_PC
- #define PERF_REG_SP	PERF_REG_ARM64_SP
- 
--- 
-1.9.0
 
