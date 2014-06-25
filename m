@@ -1,76 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755830AbaFYJyu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 05:54:50 -0400
-Received: from mga14.intel.com ([192.55.52.115]:17963 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752596AbaFYJyt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 05:54:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,544,1400050800"; 
-   d="scan'208";a="553001892"
-Date: Wed, 25 Jun 2014 17:54:44 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Jet Chen <jet.chen@intel.com>,
-        Yuanhan Liu <yuanhan.liu@intel.com>, LKP <lkp@01.org>,
-        "Su, Tao" <tao.su@intel.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [cpufreq] kernel BUG at kernel/irq_work.c:175!
-Message-ID: <20140625095444.GA1635@localhost>
-References: <20140625093650.GD27280@localhost>
- <CAKohpo=qmJktRviycErY205xo=-MJ1NZG-uGidRXjO+aAEczEg@mail.gmail.com>
+	id S1755957AbaFYJy6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 05:54:58 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:54159 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755878AbaFYJyx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 05:54:53 -0400
+Date: Wed, 25 Jun 2014 10:54:47 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Jingoo Han <jg1.han@samsung.com>, Bryan Wu <cooloney@gmail.com>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gnurou@gmail.com
+Subject: Re: [PATCH] pwm-backlight: use devm_gpiod_get_optional()
+Message-ID: <20140625095447.GT13803@lee--X1>
+References: <1403687898-26881-1-git-send-email-acourbot@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAKohpo=qmJktRviycErY205xo=-MJ1NZG-uGidRXjO+aAEczEg@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1403687898-26881-1-git-send-email-acourbot@nvidia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Nothing specific to my tree, its there in linux-next and PeterZ is
-> already working on it:
+> Make use of the new devm_gpiod_get_optional() to simplify the probe
+> code.
 > 
-> https://lkml.org/lkml/2014/6/25/25
-
-That's great! Sorry I should have googled LKML before reporting this error.
-
-Fengguang
-
-> Last diff from him:
-> 
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
 > ---
->  kernel/irq_work.c |   12 +-----------
->  1 file changed, 1 insertion(+), 11 deletions(-)
-> 
-> Index: linux-2.6/kernel/irq_work.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/irq_work.c
-> +++ linux-2.6/kernel/irq_work.c
-> @@ -160,21 +160,11 @@ static void irq_work_run_list(struct lli
->         }
->  }
-> 
-> -static void __irq_work_run(void)
-> +static void irq_work_run(void)
->  {
->         irq_work_run_list(&__get_cpu_var(raised_list));
->         irq_work_run_list(&__get_cpu_var(lazy_list));
->  }
-> -
-> -/*
-> - * Run the irq_work entries on this cpu. Requires to be ran from hardirq
-> - * context with local IRQs disabled.
-> - */
-> -void irq_work_run(void)
-> -{
-> -       BUG_ON(!in_irq());
-> -       __irq_work_run();
-> -}
->  EXPORT_SYMBOL_GPL(irq_work_run);
+>  drivers/video/backlight/pwm_bl.c | 7 ++-----
+>  1 file changed, 2 insertions(+), 5 deletions(-)
+
+Looks good.  Applied, thanks.
+
+> diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
+> index 38ca88bc5c3e..d1e0a7c6cac7 100644
+> --- a/drivers/video/backlight/pwm_bl.c
+> +++ b/drivers/video/backlight/pwm_bl.c
+> @@ -245,13 +245,10 @@ static int pwm_backlight_probe(struct platform_device *pdev)
+>  	pb->dev = &pdev->dev;
+>  	pb->enabled = false;
+>  
+> -	pb->enable_gpio = devm_gpiod_get(&pdev->dev, "enable");
+> +	pb->enable_gpio = devm_gpiod_get_optional(&pdev->dev, "enable");
+>  	if (IS_ERR(pb->enable_gpio)) {
+>  		ret = PTR_ERR(pb->enable_gpio);
+> -		if (ret == -ENOENT)
+> -			pb->enable_gpio = NULL;
+> -		else
+> -			goto err_alloc;
+> +		goto err_alloc;
+>  	}
+>  
+>  	/*
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
