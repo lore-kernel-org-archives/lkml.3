@@ -1,46 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756217AbaFYWH3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 18:07:29 -0400
-Received: from exprod5og119.obsmtp.com ([64.18.0.189]:50566 "HELO
-	exprod5og119.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754214AbaFYWH2 (ORCPT
+	id S1756474AbaFYWI5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 18:08:57 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:11045 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754995AbaFYWIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 18:07:28 -0400
-From: Feng Kan <fkan@apm.com>
-To: tglx@linutronix.de, jason@lakedaemon.net, marc.zyngier@arm.com,
-        linux-kernel@vger.kernel.org, patches@apm.com
-Cc: Feng Kan <fkan@apm.com>
-Subject: [PATCH v2 0/2] irqchip: gic: Add support for GIC v2 bypass disable
-Date: Wed, 25 Jun 2014 15:07:19 -0700
-Message-Id: <1403734041-5112-1-git-send-email-fkan@apm.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 25 Jun 2014 18:08:55 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AsgGAJlHq1N5LEio/2dsb2JhbABYgw2rRAaZOgGBDRd1hAMBAQQBOhwjEAgDDgoJJQ8FJQMhE4g6B8N9FxaFTYkZB4RDBZpQk2yDVCs
+Date: Thu, 26 Jun 2014 08:08:40 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Austin Schuh <austin@peloton-tech.com>, xfs <xfs@oss.sgi.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: On-stack work item completion race? (was Re: XFS crash?)
+Message-ID: <20140625220840.GO9508@dastard>
+References: <CANGgnMZ0q9uE3NHj2i0SBK1d0vdKLx7QBJeFNb+YwP-5EAmejQ@mail.gmail.com>
+ <20140513063943.GQ26353@dastard>
+ <CANGgnMYn++1++UyX+D2d9GxPxtytpQJv0ThFwdxM-yX7xDWqiA@mail.gmail.com>
+ <20140513090321.GR26353@dastard>
+ <CANGgnMZqQc_NeaDpO_aX+bndmHrQ9VWo9mkfxhPBkRD-J=N6sQ@mail.gmail.com>
+ <CANGgnMZ8OwzfBj5m9H7c6q2yahGhU7oFZLsJfVxnWoqZExkZmQ@mail.gmail.com>
+ <20140624030240.GB9508@dastard>
+ <20140624032521.GA12164@htj.dyndns.org>
+ <20140625055641.GL9508@dastard>
+ <20140625141836.GC26883@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140625141836.GC26883@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series cleans up hex number in the gic driver and then adds
-the code to preserve GIC v2 bypass disable bits in the GIC driver.
+On Wed, Jun 25, 2014 at 10:18:36AM -0400, Tejun Heo wrote:
+> Hello, Dave.
+> 
+> On Wed, Jun 25, 2014 at 03:56:41PM +1000, Dave Chinner wrote:
+> > Hmmm - that's different from my understanding of what the original
+> > behaviour WQ_MEM_RECLAIM gave us. i.e. that WQ_MEM_RECLAIM
+> > workqueues had a rescuer thread created to guarantee that the
+> > *workqueue* could make forward progress executing work in a
+> > reclaim context.
+> 
+> From Documentation/workqueue.txt
+> 
+>   WQ_MEM_RECLAIM
+> 
+> 	All wq which might be used in the memory reclaim paths _MUST_
+> 	have this flag set.  The wq is guaranteed to have at least one
+> 	execution context regardless of memory pressure.
+> 
+> So, all that's guaranteed is that the workqueue has at least one
+> worker executing its work items.  If that one worker is serving a work
+> item which can't make forward progress, the workqueue is not
+> guaranteed to make forward progress.
 
-V2 Change:
-	seem my send email was not working correctly, resending this with
-        rebase pull.
-	- had to pull HaoJian's change out of arm-gic.h to keep consistency.
-	- replace GIC defines as noted by Marc
-	- remove GIC_CPU_DISABLE since it no longer used.
-	- fix gic_cpu_if_down as noted by Marc
+Adding that to the docco might be useful ;)
 
-PM path gic cpu ctrl register restore is not added here, I will have to 
-test that seperately once all the PM code is fully in place and submit it
-afterward.
+> > > As long as a WQ_RECLAIM workqueue dosen't depend upon itself,
+> > > forward-progress is guaranteed.
+> > 
+> > I can't find any documentation that actually defines what
+> > WQ_MEM_RECLAIM means, so I can't tell when or how this requirement
+> > came about. If it's true, then I suspect most of the WQ_MEM_RECLAIM
+> > workqueues in filesystems violate it. Can you point me at
+> > documentation/commits/code describing the constraints of
+> > WQ_MEM_RECLAIM and the reasons for it?
+> 
+> Documentation/workqueue.txt should be it but maybe we should be more
+> explicit.  The behavior is maintaining what the
+> pre-concurrency-management workqueue provided with static
+> per-workqueue workers.  Each workqueue reserved its workers (either
+> one per cpu or one globally) and it only supported single level of
+> concurrency on each CPU.  WQ_MEM_RECLAIM is providing equivalent
+> amount of forward progress guarantee and all the existing users
+> shouldn't have issues on this front.  If we have grown incorrect
+> usages from then on, we need to fix them.
 
-Feng Kan (2):
-  irqchip: gic: replace hex numbers with defines.
-  irqchip: gic: preserve gic V2 bypass bits in cpu ctrl register
+Ok, so it hasn't changed. We're still usingthem like we used the
+original workqueues, and we never, ever provided a guarantee of
+forwards progress for them, either. So if the workqueues haven't
+changed, and we haven't changed how we use workqueues, then
+something else is causing all our recent problems....
 
- drivers/irqchip/irq-gic.c | 82 +++++++++++++++++++++++++++++++++++------------
- 1 file changed, 62 insertions(+), 20 deletions(-)
+Thanks for the clarification, Tejun!
 
+Cheers,
+
+Dave.
 -- 
-1.9.1
-
+Dave Chinner
+david@fromorbit.com
