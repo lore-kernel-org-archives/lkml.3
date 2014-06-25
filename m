@@ -1,118 +1,396 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754347AbaFYTAP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 15:00:15 -0400
-Received: from 99-65-72-227.uvs.sntcca.sbcglobal.net ([99.65.72.227]:45593
-	"EHLO stargate3.asicdesigners.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752271AbaFYTAN (ORCPT
+	id S1754701AbaFYTC3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 15:02:29 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:59089 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750826AbaFYTC1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 15:00:13 -0400
-Message-ID: <53AB1BEC.4080107@chelsio.com>
-Date: Wed, 25 Jun 2014 11:58:52 -0700
-From: Casey Leedom <leedom@chelsio.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 25 Jun 2014 15:02:27 -0400
+Message-ID: <53AB1CC1.4010907@codeaurora.org>
+Date: Wed, 25 Jun 2014 12:02:25 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: "Luis R. Rodriguez" <mcgrof@suse.com>
-CC: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, tiwai@suse.de,
-        chunkeey@googlemail.com, cocci@systeme.lip6.fr, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        Philip Oswald <poswald@suse.com>,
-        Santosh Rastapur <santosh@chelsio.com>,
-        Jeffrey Cheung <jcheung@suse.com>, David Chang <dchang@suse.com>,
-        Hariprasad Shenai <hariprasad@chelsio.com>
-Subject: Re: [PATCH 2/3] cxgb4: make configuration load use request_firmware_direct()
-References: <1403649583-12707-1-git-send-email-mcgrof@do-not-panic.com> <1403649583-12707-3-git-send-email-mcgrof@do-not-panic.com> <D46B557B-AF4A-4E60-8D83-6181D406C64F@chelsio.com> <20140625015048.GI27687@wotan.suse.de> <53AB02F4.1090701@chelsio.com> <20140625173156.GW27687@wotan.suse.de>
-In-Reply-To: <20140625173156.GW27687@wotan.suse.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: rjw@rjwysocki.net, shawn.guo@linaro.org, linaro-kernel@lists.linaro.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        arvind.chauhan@arm.com, mturquette@linaro.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        spk.linux@gmail.com, thomas.ab@samsung.com, nm@ti.com,
+        t.figa@samsung.com, Mark Brown <broonie@kernel.org>,
+        Mark Rutland <Mark.Rutland@arm.com>
+Subject: Re: [PATCH 2/2] cpufreq: cpu0: Extend support beyond CPU0
+References: <cover.1403684824.git.viresh.kumar@linaro.org> <e9c0eef07745e561b9d12dcb50c3e2f7eb3e8880.1403684824.git.viresh.kumar@linaro.org>
+In-Reply-To: <e9c0eef07745e561b9d12dcb50c3e2f7eb3e8880.1403684824.git.viresh.kumar@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-   Okay, I'll leave the whole request_firmware{,_direct,_nowait}() thing 
-alone.  The request_firmware_direct() will "solve" a non-problem (since 
-all of our "firmware" files are _supposed to be_ always present.  (And 
-the 60 second timeout for udev to confirm that a file doesn't exist 
-seems like udev is just basically broken.)
+On 06/25/14 01:42, Viresh Kumar wrote:
+> cpufreq-cpu0 driver supports only platforms which have single clock line shared
+> among all CPUs.
+>
+> We already have platforms where this limitation doesn't hold true.For example on
+> Qualcomm's KRAIT all CPUs have separate clock line and so have separate
+> policies.
 
-   That aside, we still need to solve the real problem that we're 
-experiencing in that the boot-time load of cxgb4 is timing out on SLE12 
-because a maximum load timeout has been instituted in that distribution 
-for driver modules and if there are two 10Gb/s-BT adapters present in a 
-system which need both base firmware and BT PHY firmware, we exceed that 
-timeout.  The timeout really should be per device (since there ~could~ 
-be an arbitrary number of devices in a system) and there probably should 
-be a way for the driver to notify the kernel timeout mechanism that 
-forward progress is being made ...
+Krait is not all capitalized.
 
-Casey
+>
+> Instead of adding another driver for this (Stephen just tried that:
+> https://lkml.org/lkml/2014/6/24/918), we must reuse cpufreq-cpu0 driver.
+>
+> cpufreq-cpu0 must be updated to break the assumption on which it is based (all
+> cores sharing clock line) and this patch tries to do exactly that.
+>
+> As we don't have standard DT bindings to mention CPUs sharing clock-line, i.e.
+> affected_cpus, this patch also have few limitations. Though easy to fix once we
+> have proper bindings.
 
-On 06/25/14 10:31, Luis R. Rodriguez wrote:
-> On Wed, Jun 25, 2014 at 10:12:20AM -0700, Casey Leedom wrote:
->> On 06/24/14 18:50, Luis R. Rodriguez wrote:
->>> On Tue, Jun 24, 2014 at 03:54:44PM -0700, Casey Leedom wrote:
->>>> [[ Hopefully this makes it through to the kernel.org lists -- I’m using the
->>>>     Mac OS/X Mailer and it’s not clear how to force it not to use HTML format.
->>>>     -- Casey ]]
->>>>
->>>>     So does request_firmware_direct() only fail if the requested file is not
->>>>     present on the file system or does it fail in other cases as well?
->>> Same as before they are the same exact call with the only difference
->>> being udev is not used as an extra helper, so it saves the extra
->>> delay caused by udev. That's all.
->>>
->>>>     If it’s the former, then the change to cxgb4 is fine.
->>>>
->>>>     But if it’s the latter, then it’s definitely not okay.  While the driver
->>>>     _can_ continue running without the local on-disk Firmware Configuration
->>>>     File, that file can be used to significantly change the behavior and
->>>>     capabilities of the adapter and is user-customizable.  If a user makes
->>>>     changes to the local on-disk Firmware Configuration File and these are
->>>>     randomly silently ignored this will lead to highly annoying support issues.
->>> This just avoids udev, the request goes directly to the filesystem. The
->>> failure will happen when the file is not present just as before, the
->>> only difference here is skipping udev, it doesn't suffer from the extra
->>> 60 second timeout. There's another possible failure, when
->>> usermodehelper_read_trylock() fails but that is just as the code was before
->>> so this change doesn't introduce that as a new false check. When that
->>> triggers yout get a nasty WARN_ON() just as before.
->>    Huh, okay.  I guess I'm confused about the value of request_firmware()
->> and the User Device helper.  If request_firmware_direct() just goes to the
->> file system to grab the file and returns with ENOENT if it's not there,
->> then you could replace every usage of request_firmware() in the cxgb4
->> driver as far as I can see ...  Either the files are there and we'll use
->> them or they won't be and we'll have to cope with that.  Am I missing
->> something?
-> You're actually right specially given that udev firmware uploading will
-> hopefully eventually be removed eventually (it seems it was just one driver
-> that caused to consider waiting on the removal, some driver that required
-> looking for firmware on some custom path I think or used a custom loader), for
-> now however its best to keep things consistent otherwise we'd replace
-> everything already. The _direct() call then is best used for optional firmware
-> for now. Perhaps in the end will be that the non _direct() call will have an
-> explicit print to the ring buffer if the file was not found.
+It should be easy enough to read the clocks property from DT for all the
+CPU nodes and check to see if they're the same? I don't think we need an
+affected-cpus property. Also I'd like to see current DTs specifying the
+same data (clocks, regulators, opps) for each CPU node even if they all
+share the same clock, regulator, and opp. It seems that the cpu0 binding
+just wanted to save some space in the DT by consolidating them all under
+one node, but that seems misguided. Case in point, now that we have
+configurations that need more than one clock per cluster the code is
+complicated and the binding is not uniform.
+
 >
->>    And again, this definitely isn't going to solve the problem that started
->> this whole line of research:
-> I consider this research part of understanding and optimizing firmware
-> loading on cxgb4, in this case this would save 60 seconds for each
-> optional configuration file not present when loading, its not clear to
-> me how often devices don't have optional configs so its unclear to me the
-> exact savings in general, but if there's at least one user that should
-> speed things up.
+> Limitation: We only supports two types of platforms:
+> - All CPUs sharing same clock line, existing user platforms
+> - All CPUs have separate clock lines, KRAIT
 >
->> we're still going to time out the load of
->> cxgb4 if there are multiple 10Gb/s BT adapters in a system and we need to
->> load each one with both base firmware and PHY firmware.
-> Again, the timeout is *within* firmware_request(), firmware_release() does
-> not tell the firmware loader the timeout is over. The timeout is for the
-> kernel doing the hunt for the file.
+> And so platforms which have multiple clusters with multiple CPUs per cluster
+> aren't supported yet. We need proper bindings for that first.
 >
-> As I see it the next steps on the evaluation on firmware loading on cxgb4
-> would be to evaluate a clean strategy to split things up, and also would
-> appreciate feedback on the bus master thing. Perhaps best we continue that
-> discussoin on that thread?
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+>  .../devicetree/bindings/cpufreq/cpufreq-cpu0.txt   |   8 +-
+>  drivers/cpufreq/Kconfig                            |   5 +-
+>  drivers/cpufreq/cpufreq-cpu0.c                     | 280 +++++++++++++--------
+>  3 files changed, 190 insertions(+), 103 deletions(-)
 >
->    Luis
+> diff --git a/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt b/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt
+> index f055515..fa8861e 100644
+> --- a/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt
+> +++ b/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt
+> @@ -1,15 +1,17 @@
+>  Generic CPU0 cpufreq driver
+>  
+> -It is a generic cpufreq driver for CPU0 frequency management.  It
+> +It is a generic cpufreq driver for CPU frequency management.  It
+>  supports both uniprocessor (UP) and symmetric multiprocessor (SMP)
+> -systems which share clock and voltage across all CPUs.
+> +systems which share clock and voltage across all CPUs OR have separate
+> +clock and voltage for all CPUs.
+>  
+>  Both required and optional properties listed below must be defined
+>  under node /cpus/cpu@0.
+>  
+>  Required properties:
+>  - operating-points: Refer to Documentation/devicetree/bindings/power/opp.txt
+> -  for details
+> +  for details. This should either be present only in cpu@0, if CPUs share clock
+> +  line OR should be present in all cpu nodes, if they have separate clock lines.
+>  
+>  Optional properties:
+>  - clock-latency: Specify the possible maximum transition latency for clock,
+> diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
+> index ee1ae30..d29f6a0 100644
+> --- a/drivers/cpufreq/cpufreq-cpu0.c
+> +++ b/drivers/cpufreq/cpufreq-cpu0.c
+> @@ -25,34 +25,43 @@
+>  #include <linux/slab.h>
+>  #include <linux/thermal.h>
+>  
+> -static unsigned int transition_latency;
+> -static unsigned int voltage_tolerance; /* in percentage */
+> +struct private_data {
+> +	struct device *cpu_dev;
+> +	struct regulator *cpu_reg;
+> +	struct thermal_cooling_device *cdev;
+> +	unsigned int voltage_tolerance; /* in percentage */
+> +};
+>  
+> -static struct device *cpu_dev;
+> -static struct clk *cpu_clk;
+> -static struct regulator *cpu_reg;
+> -static struct cpufreq_frequency_table *freq_table;
+> -static struct thermal_cooling_device *cdev;
+> +/*
+> + * Currently this driver supports only two types of platforms:
+> + * - All CPUs sharing same clock line, clock_per_cpu == false
+> + * - All CPUs having separate clock lines, clock_per_cpu == true
+> + *
+> + * TODO: Scan affected/related CPUs from proper DT bindings
+> + */
+> +bool clock_per_cpu = false;
+>  
+>  static int cpu0_set_target(struct cpufreq_policy *policy, unsigned int index)
+>  {
+>  	struct dev_pm_opp *opp;
+> +	struct private_data *priv = policy->driver_data;
+>  	unsigned long volt = 0, volt_old = 0, tol = 0;
+>  	unsigned int old_freq, new_freq;
+>  	long freq_Hz, freq_exact;
+>  	int ret;
+>  
+> -	freq_Hz = clk_round_rate(cpu_clk, freq_table[index].frequency * 1000);
+> +	freq_Hz = clk_round_rate(policy->clk,
+> +				 policy->freq_table[index].frequency * 1000);
+>  	if (freq_Hz <= 0)
+> -		freq_Hz = freq_table[index].frequency * 1000;
+> +		freq_Hz = policy->freq_table[index].frequency * 1000;
+>  
+>  	freq_exact = freq_Hz;
+>  	new_freq = freq_Hz / 1000;
+> -	old_freq = clk_get_rate(cpu_clk) / 1000;
+> +	old_freq = clk_get_rate(policy->clk) / 1000;
+>  
+> -	if (!IS_ERR(cpu_reg)) {
+> +	if (!IS_ERR(priv->cpu_reg)) {
+>  		rcu_read_lock();
+> -		opp = dev_pm_opp_find_freq_ceil(cpu_dev, &freq_Hz);
+> +		opp = dev_pm_opp_find_freq_ceil(priv->cpu_dev, &freq_Hz);
+>  		if (IS_ERR(opp)) {
+>  			rcu_read_unlock();
+>  			pr_err("failed to find OPP for %ld\n", freq_Hz);
+> @@ -60,8 +69,8 @@ static int cpu0_set_target(struct cpufreq_policy *policy, unsigned int index)
+>  		}
+>  		volt = dev_pm_opp_get_voltage(opp);
+>  		rcu_read_unlock();
+> -		tol = volt * voltage_tolerance / 100;
+> -		volt_old = regulator_get_voltage(cpu_reg);
+> +		tol = volt * priv->voltage_tolerance / 100;
+> +		volt_old = regulator_get_voltage(priv->cpu_reg);
+>  	}
+>  
+>  	pr_debug("%u MHz, %ld mV --> %u MHz, %ld mV\n",
+
+This patch would be less noisy and easier to review if we used local
+variables in this function for cpu_req, voltage_tolerance, and cpu_clk.
+Can we do that please?
+
 >
+> @@ -99,77 +108,70 @@ static int cpu0_set_target(struct cpufreq_policy *policy, unsigned int index)
+>  
+>  static int cpu0_cpufreq_init(struct cpufreq_policy *policy)
+>  {
+> -	policy->clk = cpu_clk;
+> -	return cpufreq_generic_init(policy, freq_table, transition_latency);
+> -}
+> -
+> -static struct cpufreq_driver cpu0_cpufreq_driver = {
+> -	.flags = CPUFREQ_STICKY | CPUFREQ_NEED_INITIAL_FREQ_CHECK,
+> -	.verify = cpufreq_generic_frequency_table_verify,
+> -	.target_index = cpu0_set_target,
+> -	.get = cpufreq_generic_get,
+> -	.init = cpu0_cpufreq_init,
+> -	.name = "generic_cpu0",
+> -	.attr = cpufreq_generic_attr,
+> -};
+> -
+> -static int cpu0_cpufreq_probe(struct platform_device *pdev)
+> -{
+> +	struct cpufreq_frequency_table *freq_table;
+> +	struct private_data *priv;
+>  	struct device_node *np;
+> -	int ret;
+> +	char name[] = "cpuX";
+> +	int ret, cpu = policy->cpu;
+>  
+> -	cpu_dev = get_cpu_device(0);
+> -	if (!cpu_dev) {
+> -		pr_err("failed to get cpu0 device\n");
+> -		return -ENODEV;
+> +	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
+> +	if (!priv) {
+> +		pr_err("%s: Memory allocation failed\n", __func__);
+
+Useless allocation error message.
+
+> +		return -ENOMEM;
+>  	}
+>  
+> -	np = of_node_get(cpu_dev->of_node);
+> -	if (!np) {
+> -		pr_err("failed to find cpu0 node\n");
+> -		return -ENOENT;
+> -	}
+> +	/* Below calls can't fail from here */
+> +	priv->cpu_dev = get_cpu_device(cpu);
+> +	np = of_node_get(priv->cpu_dev->of_node);
+>  
+> -	cpu_reg = regulator_get_optional(cpu_dev, "cpu0");
+> -	if (IS_ERR(cpu_reg)) {
+> -		/*
+> -		 * If cpu0 regulator supply node is present, but regulator is
+> -		 * not yet registered, we should try defering probe.
+> -		 */
+> -		if (PTR_ERR(cpu_reg) == -EPROBE_DEFER) {
+> -			dev_err(cpu_dev, "cpu0 regulator not ready, retry\n");
+> -			ret = -EPROBE_DEFER;
+> -			goto out_put_node;
+> -		}
+> -		pr_warn("failed to get cpu0 regulator: %ld\n",
+> -			PTR_ERR(cpu_reg));
+> +	policy->clk = clk_get(priv->cpu_dev, NULL);
+> +	if (IS_ERR(policy->clk)) {
+> +		ret = PTR_ERR(policy->clk);
+> +		pr_err("%s: failed to get cpu%d clock: %d\n", __func__, cpu,
+> +		       ret);
+> +		goto out_put_node;
+>  	}
+
+This won't work all the time. We need probe defer to work for the clocks
+because sometimes CPU clocks are registered after this driver probes. In
+my case this is always true unless I play games with initcall levels.
+The same is true for regulators.
+
+>  
+> -	cpu_clk = clk_get(cpu_dev, NULL);
+> -	if (IS_ERR(cpu_clk)) {
+> -		ret = PTR_ERR(cpu_clk);
+> -		pr_err("failed to get cpu0 clock: %d\n", ret);
+> -		goto out_put_reg;
+> +	ret = of_init_opp_table(priv->cpu_dev);
+> +	if (ret) {
+> +		pr_err("%s: failed to init OPP table for cpu%d: %d\n", __func__,
+> +		       cpu, ret);
+> +		goto out_put_clk;
+>  	}
+>  
+> -	ret = of_init_opp_table(cpu_dev);
+> +	ret = dev_pm_opp_init_cpufreq_table(priv->cpu_dev, &freq_table);
+>  	if (ret) {
+> -		pr_err("failed to init OPP table: %d\n", ret);
+> +		pr_err("%s: failed to init cpufreq table for cpu%d: %d\n",
+> +		       __func__, cpu, ret);
+>  		goto out_put_clk;
+>  	}
+>  
+> -	ret = dev_pm_opp_init_cpufreq_table(cpu_dev, &freq_table);
+> +	ret = cpufreq_table_validate_and_show(policy, freq_table);
+>  	if (ret) {
+> -		pr_err("failed to init cpufreq table: %d\n", ret);
+> -		goto out_put_clk;
+> +		pr_err("%s: invalid frequency table for cpu%d: %d\n", __func__,
+> +		       cpu, ret);
+> +		goto out_put_reg;
+>  	}
+>  
+> -	of_property_read_u32(np, "voltage-tolerance", &voltage_tolerance);
+> +	/* Set mask of CPUs sharing clock line with policy->cpu */
+> +	if (!clock_per_cpu)
+> +		cpumask_setall(policy->cpus);
+>  
+> -	if (of_property_read_u32(np, "clock-latency", &transition_latency))
+> -		transition_latency = CPUFREQ_ETERNAL;
+> +	of_property_read_u32(np, "voltage-tolerance", &priv->voltage_tolerance);
+>  
+> -	if (!IS_ERR(cpu_reg)) {
+> +	if (of_property_read_u32(np, "clock-latency",
+> +				 &policy->cpuinfo.transition_latency))
+> +		policy->cpuinfo.transition_latency = CPUFREQ_ETERNAL;
+> +
+> +	/* NOTE: Supports only 10 CPUs: 0-9 */
+> +	WARN_ONCE(cpu > 9, "cpu: %d", cpu);
+
+Why would the supply name be called cpuN-supply? Why not use cpu-supply
+in each CPU node? That way there is no limit on the number of CPUs. We
+can always check for cpu0-supply first to be compatible with older DTs
+but going forward we should be able to just use cpu-supply.
+
+> +
+> +	name[3] = '0' + cpu;
+> +	priv->cpu_reg = regulator_get_optional(priv->cpu_dev, name);
+> +	if (IS_ERR(priv->cpu_reg)) {
+> +		pr_warn("%s: failed to get cpu%d's regulator: %ld\n", __func__,
+> +			cpu, PTR_ERR(priv->cpu_reg));
+> +	} else {
+>  		struct dev_pm_opp *opp;
+>  		unsigned long min_uV, max_uV;
+>  		int i;
+[...]
+> +
+> +static int cpu0_cpufreq_probe(struct platform_device *pdev)
+> +{
+> +	const struct property *prop;
+> +	struct device *cpu_dev;
+> +	struct regulator *cpu_reg;
+> +	int ret, cpu, count = 0;
+> +
+> +	/* Optimization for regulator's -EPROBE_DEFER case */
+> +	if (unlikely(clock_per_cpu))
+> +		goto scan_regulator;
+
+Why not look for the regulator first then?
+
+> +
+> +	/*
+> +	 * Scan all CPU nodes to set clock_per_cpu
+> +	 *
+> +	 * FIXME: Scan affected-CPUs from DT and remove this loop.
+> +	 */
+> +	for_each_possible_cpu(cpu) {
+> +		cpu_dev = get_cpu_device(cpu);
+> +		if (!cpu_dev) {
+> +			pr_err("%s: failed to get cpu%d device\n", __func__,
+> +			       cpu);
+> +			return -ENODEV;
+> +		}
+> +
+> +		/* Count how many CPU nodes have defined operating-points */
+> +		prop = of_find_property(cpu_dev->of_node, "operating-points",
+> +					NULL);
+> +		if (prop) {
+> +			count++;
+> +		} else if (cpu == 0) {
+> +			pr_err("%s: operating-points missing: cpu%d\n",
+> +			       __func__, cpu);
+> +			return -ENOENT;
+> +		}
+> +	}
+> +
+> +	/* Either one or all CPUs must have operating-points property */
+> +	if (count == cpu + 1) {
+
+Is this supposed to be count == cpu? At this point in the code count
+equals the number of CPUs present.
+
+> +		clock_per_cpu = true;
+> +	} else if (count != 1) {
+> +		pr_err("%s: operating-points missing for few CPUs\n", __func__);
+> +		return -ENOENT;
+> +	}
+> +
+> +scan_regulator:
+> +	/* Check only CPU0's regulator for EPROBE_DEFER */
+> +	cpu_dev = get_cpu_device(0); /* Can't fail now */
+> +	cpu_reg = regulator_get_optional(cpu_dev, "cpu0");
+> +	if (!IS_ERR(cpu_reg)) {
+> +		regulator_put(cpu_reg);
+> +	} else if (PTR_ERR(cpu_reg) == -EPROBE_DEFER) {
+> +		/*
+> +		 * If cpu0 regulator supply node is present, but regulator is
+> +		 * not yet registered, we should try defering probe.
+> +		 */
+> +		dev_err(cpu_dev, "cpu0 regulator not ready, retry\n");
+> +		return -EPROBE_DEFER;
+> +	}
+
+I don't think this driver should be using regulator_get_optional() (Mark
+B. please correct me if I'm wrong). I doubt a supply is actually
+optional for CPUs, just some DTs aren't specifying them. In those cases,
+the regulator core will insert a dummy supply and the code will work
+without having to check for probe defer and error pointers.
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
