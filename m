@@ -1,105 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753103AbaFYI5m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 04:57:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33710 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751601AbaFYI5i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753886AbaFYI6E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 04:58:04 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:33746 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751755AbaFYI5i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 25 Jun 2014 04:57:38 -0400
-Message-ID: <53AA8F00.4000902@suse.cz>
-Date: Wed, 25 Jun 2014 10:57:36 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+Date: Wed, 25 Jun 2014 09:57:04 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
+Cc: Marc Zyngier <Marc.Zyngier@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/2] arm/gic: Add supports for GICv2m MSI(-X)
+Message-ID: <20140625085703.GB29789@leverpostej>
+References: <1403569980-12913-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <1403569980-12913-3-git-send-email-suravee.suthikulpanit@amd.com>
+ <20140624101111.GD5856@leverpostej>
+ <53AA3A3A.2050401@amd.com>
 MIME-Version: 1.0
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-CC: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 12/13] mm, compaction: try to capture the just-created
- high-order freepage
-References: <1403279383-5862-1-git-send-email-vbabka@suse.cz> <1403279383-5862-13-git-send-email-vbabka@suse.cz> <20140625015733.GC12855@nhori.redhat.com>
-In-Reply-To: <20140625015733.GC12855@nhori.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53AA3A3A.2050401@amd.com>
+Thread-Topic: [PATCH 2/2] arm/gic: Add supports for GICv2m MSI(-X)
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2014 03:57 AM, Naoya Horiguchi wrote:
-> On Fri, Jun 20, 2014 at 05:49:42PM +0200, Vlastimil Babka wrote:
->> Compaction uses watermark checking to determine if it succeeded in creating
->> a high-order free page. My testing has shown that this is quite racy and it
->> can happen that watermark checking in compaction succeeds, and moments later
->> the watermark checking in page allocation fails, even though the number of
->> free pages has increased meanwhile.
->>
->> It should be more reliable if direct compaction captured the high-order free
->> page as soon as it detects it, and pass it back to allocation. This would
->> also reduce the window for somebody else to allocate the free page.
->>
->> Capture has been implemented before by 1fb3f8ca0e92 ("mm: compaction: capture
->> a suitable high-order page immediately when it is made available"), but later
->> reverted by 8fb74b9f ("mm: compaction: partially revert capture of suitable
->> high-order page") due to a bug.
->>
->> This patch differs from the previous attempt in two aspects:
->>
->> 1) The previous patch scanned free lists to capture the page. In this patch,
->>     only the cc->order aligned block that the migration scanner just finished
->>     is considered, but only if pages were actually isolated for migration in
->>     that block. Tracking cc->order aligned blocks also has benefits for the
->>     following patch that skips blocks where non-migratable pages were found.
->>
->> 2) The operations done in buffered_rmqueue() and get_page_from_freelist() are
->>     closely followed so that page capture mimics normal page allocation as much
->>     as possible. This includes operations such as prep_new_page() and
->>     page->pfmemalloc setting (that was missing in the previous attempt), zone
->>     statistics are updated etc. Due to subtleties with IRQ disabling and
->>     enabling this cannot be simply factored out from the normal allocation
->>     functions without affecting the fastpath.
->>
->> This patch has tripled compaction success rates (as recorded in vmstat) in
->> stress-highalloc mmtests benchmark, although allocation success rates increased
->> only by a few percent. Closer inspection shows that due to the racy watermark
->> checking and lack of lru_add_drain(), the allocations that resulted in direct
->> compactions were often failing, but later allocations succeeeded in the fast
->> path. So the benefit of the patch to allocation success rates may be limited,
->> but it improves the fairness in the sense that whoever spent the time
->> compacting has a higher change of benefitting from it, and also can stop
->> compacting sooner, as page availability is detected immediately. With better
->> success detection, the contribution of compaction to high-order allocation
->> success success rates is also no longer understated by the vmstats.
->>
->> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
->> Cc: Minchan Kim <minchan@kernel.org>
->> Cc: Mel Gorman <mgorman@suse.de>
->> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->> Cc: Michal Nazarewicz <mina86@mina86.com>
->> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
->> Cc: Christoph Lameter <cl@linux.com>
->> Cc: Rik van Riel <riel@redhat.com>
->> Cc: David Rientjes <rientjes@google.com>
->> ---
-> ...
->> @@ -669,6 +708,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
->>   				continue;
->>   			if (PageTransHuge(page)) {
->>   				low_pfn += (1 << compound_order(page)) - 1;
->> +				next_capture_pfn = low_pfn + 1;
->
-> Don't we need if (next_capture_pfn) here?
+On Wed, Jun 25, 2014 at 03:55:54AM +0100, Suravee Suthikulanit wrote:
+> Mark,
+> 
+> Thank you for all your comments. Please see my reply below. I have 
+> omitted the minor ones.
 
-Good catch, thanks! It should also use ALIGN properly as the non-locked 
-test above.
+Likewise.
 
-> Thanks,
-> Naoya Horiguchi
->
->>   				continue;
->>   			}
->>   		}
+> >> +static void free_msi_irq(struct gicv2m_msi_data *data, unsigned int irq)
+> >> +{
+> >> +       int pos;
+> >> +
+> >> +       spin_lock(&data->msi_cnt_lock);
+> >> +
+> >> +       pos = irq - data->spi_start;
+> >> +       if (pos >= 0 && pos < data->max_spi_cnt)
+> >
+> > Should either of these cases ever happen?
+> 
+> This is to check if the irq provided is within the MSI range.
 
+Sure, but surely this should only be called for the correct set of MSI
+IRQs? Allowing this to be called for arbitrary interrupts without
+reporting an error sounds wrong.
+
+[...]
+
+> >> +static int gicv2m_setup_msi_irq(struct msi_chip *chip, struct pci_dev *pdev,
+> >> +                     struct msi_desc *desc)
+> >> +{
+> >> +       int avail, irq = 0;
+> >> +       struct msi_msg msg;
+> >> +       phys_addr_t addr;
+> >> +       struct gicv2m_msi_data *data = to_gicv2m_msi_data(chip);
+> >> +
+> >> +       if (data == NULL) {
+> >
+> > If container_of returns NULL, you have bigger problems.
+> 
+> It was just sanity check. But, if you think this is obvious, I'll remove 
+> this check then.
+
+The issue is you check for NULL _after_ you've performed some pointer
+arithmetic. Because the msi_chip is the first element of
+gicv2m_msi_data, to_gicv2m_msi_data is currently an identity function
+with some type casting, but we should rely on that here. What if the
+msi_chip were moved to later in gicv2m_msi_data?
+
+If you want to check for NULL, check chip before
+to_gicv2m_msi_data(chip).
+
+[...]
+
+> >> +       /*
+> >> +       * MSI_TYPER:
+> >> +       *     [31:26] Reserved
+> >> +       *     [25:16] lowest SPI assigned to MSI
+> >> +       *     [15:10] Reserved
+> >> +       *     [9:0]   Numer of SPIs assigned to MSI
+> >> +       */
+> >> +       val = __raw_readl(msi->base + MSI_TYPER);
+> >
+> > Are you sure you want to use __raw_readl?
+> >
+> Probably not.  I am replacing this with ioread32(msi->base + MSI_TYPER).
+
+It's probably better to use readl() or a readl_relaxed() here for
+consistency with the rest of the ARM code, but otherwise that sounds
+sane.
+
+Thanks,
+Mark.
