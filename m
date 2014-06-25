@@ -1,62 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757301AbaFYPVH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 11:21:07 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:4579 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756887AbaFYPVF (ORCPT
+	id S1757253AbaFYPYO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 11:24:14 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:46328 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756515AbaFYPYN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 11:21:05 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 25 Jun 2014 08:14:57 -0700
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
-        Mike Turquette <mturquette@linaro.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] clk: define and export __clk_get_debug for providers
-Date: Wed, 25 Jun 2014 18:20:55 +0300
-Message-ID: <1403709655-6220-1-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
-X-NVConfidentiality: public
+	Wed, 25 Jun 2014 11:24:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+Date: Wed, 25 Jun 2014 23:24:12 +0800
+Message-ID: <CAJKoSVTGC+-v09aCDTV5HfnpDMVuPiGTe5-Y9TMu+2E+EzMotw@mail.gmail.com>
+Subject: [PATCH 1/2] staging: wlan-ng/hfa384x_usb.c: remove return statements
+ for void function
+From: Cheng-Wei Lee <lee.rhapsody@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sherif Shehab Aldin <shehabaldin.sherif@gmail.com>,
+        Avinash Kumar <avi.kp.137@gmail.com>,
+        Peter Senna Tschudin <peter.senna@gmail.com>
+Cc: devel <devel@driverdev.osuosl.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define and export a new function __clk_get_debug which returns the debugfs
-directory entry pointer. This can be used by clock providers to add debugfs
-entries which are not related to a specific clock type. Examples include the
-ability to measure the rate of a clock. It can also be used by modules to
-create new debugfs entries. This is useful if you want to expose features
-for testing which can potentially cause system instability such as allowing
-to change a clock's rate from userspace.
+This patch fixes the following checkpatch.pl issues in hfa384x_usb.c:
+WARNING: void function return statements are not generally useful
 
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+Signed-off-by: Quentin Lee <lee.rhapsody@gmail.com>
 ---
- drivers/clk/clk.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
+ drivers/staging/wlan-ng/hfa384x_usb.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 8b73ede..5fe7942 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -652,6 +652,15 @@ unsigned long __clk_get_flags(struct clk *clk)
- }
- EXPORT_SYMBOL_GPL(__clk_get_flags);
- 
-+struct dentry *__clk_get_dentry(struct clk *clk)
-+{
-+	if (!clk)
-+		return NULL;
+diff --git a/drivers/staging/wlan-ng/hfa384x_usb.c
+b/drivers/staging/wlan-ng/hfa384x_usb.c
+index 98343ff7..07cee56 100644
+--- a/drivers/staging/wlan-ng/hfa384x_usb.c
++++ b/drivers/staging/wlan-ng/hfa384x_usb.c
+@@ -3705,6 +3705,7 @@ static void hfa384x_usbout_callback(struct urb *urb)
+ 		case -EPIPE:
+ 			{
+ 				hfa384x_t *hw = wlandev->priv;
 +
-+	return clk->dentry;
-+}
-+EXPORT_SYMBOL_GPL(__clk_get_dentry);
-+
- bool __clk_is_prepared(struct clk *clk)
- {
- 	int ret;
+ 				netdev_warn(hw->wlandev->netdev,
+ 					    "%s tx pipe stalled: requesting reset\n",
+ 					    wlandev->netdev->name);
 -- 
-1.7.7.rc0.72.g4b5ea.dirty
-
+1.7.9.5
