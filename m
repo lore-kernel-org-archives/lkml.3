@@ -1,66 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755982AbaFYWct (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 18:32:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48606 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752104AbaFYWcr (ORCPT
+	id S1756936AbaFYWdP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 18:33:15 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:43064 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755213AbaFYWdN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 18:32:47 -0400
-Date: Wed, 25 Jun 2014 15:32:46 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Don Mullis <don.mullis@gmail.com>, Dave Chinner <david@fromorbit.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/4] lib: list_sort: Various minor improvements
-Message-Id: <20140625153246.3d3dbda781ce1af5524269ab@linux-foundation.org>
-In-Reply-To: <87egycoc8t.fsf@rasmusvillemoes.dk>
-References: <1403604392-23259-1-git-send-email-linux@rasmusvillemoes.dk>
-	<20140625145314.3e16af6998765b7aad860bf7@linux-foundation.org>
-	<87egycoc8t.fsf@rasmusvillemoes.dk>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 25 Jun 2014 18:33:13 -0400
+Date: Wed, 25 Jun 2014 23:33:02 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Sudeep Holla <sudeep.holla@arm.com>
+Cc: linux-kernel@vger.kernel.org, Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 8/9] ARM: kernel: add support for cpu cache information
+Message-ID: <20140625223302.GL32514@n2100.arm.linux.org.uk>
+References: <1403717444-23559-1-git-send-email-sudeep.holla@arm.com> <1403717444-23559-9-git-send-email-sudeep.holla@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403717444-23559-9-git-send-email-sudeep.holla@arm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Jun 2014 00:28:18 +0200 Rasmus Villemoes <linux@rasmusvillemoes.dk> wrote:
+On Wed, Jun 25, 2014 at 06:30:43PM +0100, Sudeep Holla wrote:
+> diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
+> index 38ddd9f..2c5ff0e 100644
+> --- a/arch/arm/kernel/Makefile
+> +++ b/arch/arm/kernel/Makefile
+> @@ -29,6 +29,7 @@ obj-y		+= entry-v7m.o v7m.o
+>  else
+>  obj-y		+= entry-armv.o
+>  endif
+> +obj-$(CONFIG_CPU_HAS_CACHE) += cacheinfo.o
+>  
+>  obj-$(CONFIG_OC_ETM)		+= etm.o
+>  obj-$(CONFIG_CPU_IDLE)		+= cpuidle.o
+> diff --git a/arch/arm/kernel/cacheinfo.c b/arch/arm/kernel/cacheinfo.c
+> new file mode 100644
+> index 0000000..ab70993
+> --- /dev/null
+> +++ b/arch/arm/kernel/cacheinfo.c
+> @@ -0,0 +1,229 @@
+> +/*
+> + *  ARM cacheinfo support
+> + *
+> + *  Copyright (C) 2014 ARM Ltd.
+> + *  All Rights Reserved
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#include <linux/bitops.h>
+> +#include <linux/cacheinfo.h>
+> +#include <linux/cpu.h>
+> +#include <linux/compiler.h>
+> +#include <linux/of.h>
+> +
+> +#include <asm/cputype.h>
+> +#include <asm/processor.h>
+> +
+> +#if __LINUX_ARM_ARCH__ < 7 /* pre ARMv7 */
 
-> > We may as well do the pr_foo() conversion as well.  As often happens,
-> > the results are quite pleasing.
-> >
-> > --- a/lib/list_sort.c~lib-list_sortc-convert-to-pr_foo
-> > +++ a/lib/list_sort.c
-> > @@ -1,3 +1,6 @@
-> > +
-> > +#define pr_fmt(fmt) "list_sort_test: " fmt
-> > +
-> >  #include <linux/kernel.h>
-> >  #include <linux/module.h>
-> >  #include <linux/list_sort.h>
-> > @@ -125,9 +128,8 @@ void list_sort(void *priv, struct list_h
-> >  		}
-> >  		if (lev > max_lev) {
-> >  			if (unlikely(lev >= ARRAY_SIZE(part)-1)) {
-> > -				printk_once(KERN_DEBUG "list passed to"
-> > -					" list_sort() too long for"
-> > -					" efficiency\n");
-> > +				pr_debug_once("list passed to list_sort() too "
-> > +					      "long for efficiency\n");
-> 
-> Minor comment: Won't this end up saying "list_sort_test: list passed to
-> ...", despite the list coming from a 'real' user? Maybe change the first
-> #define to '"list_sort: " fmt', the above message to "passed list too
-> long for efficiency", and redefine pr_fmt right after #ifdef
-> CONFIG_TEST_LIST_SORT.
+__LINUX_ARM_ARCH__ defines the minimum architecture version we are building
+for - we may support later versions than the architecture version denoted
+by this symbol.  It does not define which CPUs we are building for.  Are
+you sure that this is correct here?  What if we build a kernel supporting
+both v6 + v7, as the OMAP guys do?
 
-Yeah, I was hoping nobody would notice that ;)
+> +
+> +#define MAX_CACHE_LEVEL		1	/* Only 1 level supported */
+> +#define CTR_CTYPE_SHIFT		24
+> +#define CTR_CTYPE_MASK		(1 << CTR_CTYPE_SHIFT)
+> +
+> +struct ctr_info {
+> +	unsigned int cpuid_id;
+> +	unsigned int ctr;
+> +};
+> +
+> +static struct ctr_info cache_ctr_list[] = {
+> +};
 
-How about just
+This list needs to be populated.  Early CPUs (such as StrongARM) do not
+have the CTR register.
 
-		printk_once(KERN_DEBUG "list too long for efficiency\n");
+> +static int get_unimplemented_ctr(unsigned int *ctr)
+> +{
+> +	int i, cpuid_id = read_cpuid_id();
+> +
+> +	for (i = 0; i < ARRAY_SIZE(cache_ctr_list); i++)
+> +		if (cache_ctr_list[i].cpuid_id == cpuid_id) {
+> +			*ctr = cache_ctr_list[i].ctr;
+> +			return 0;
+> +		}
+> +	return -ENOENT;
+> +}
+> +
+> +static unsigned int get_ctr(void)
+> +{
+> +	unsigned int ctr;
+> +
+> +	if (get_unimplemented_ctr(&ctr))
+> +		asm volatile ("mrc p15, 0, %0, c0, c0, 1" : "=r" (ctr));
 
+read_cpuid_cachetype() ?
 
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
