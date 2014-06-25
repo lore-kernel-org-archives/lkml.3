@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757123AbaFYNi3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 09:38:29 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:18157 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757095AbaFYNi0 (ORCPT
+	id S1757042AbaFYNiX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 09:38:23 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:30113 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754582AbaFYNiT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 09:38:26 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-5b-53aad0c97ea5
+	Wed, 25 Jun 2014 09:38:19 -0400
+X-AuditID: cbfec7f5-b7f626d000004b39-91-53aad0c818a1
 From: Tomasz Figa <t.figa@samsung.com>
 To: linux-samsung-soc@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -20,122 +20,54 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Daniel Drake <drake@endlessm.com>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Tomasz Figa <t.figa@samsung.com>
-Subject: [PATCH v2 4/6] ARM: mm: l2x0: Add support for overriding prefetch
- settings
-Date: Wed, 25 Jun 2014 15:37:29 +0200
-Message-id: <1403703451-12233-5-git-send-email-t.figa@samsung.com>
+Subject: [PATCH v2 2/6] ARM: Get outer cache .write_sec callback from mach_desc
+ only if not NULL
+Date: Wed, 25 Jun 2014 15:37:27 +0200
+Message-id: <1403703451-12233-3-git-send-email-t.figa@samsung.com>
 X-Mailer: git-send-email 1.9.3
 In-reply-to: <1403703451-12233-1-git-send-email-t.figa@samsung.com>
 References: <1403703451-12233-1-git-send-email-t.figa@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDLMWRmVeSWpSXmKPExsVy+t/xK7onL6wKNujbZG3xaP5jZoveBVfZ
-	LLZ3zmC3mPJnOZPFpsfXWC0u75rDZjF7ST+LxYzz+5gsbl/mtVh75C67xeu+NcwW62e8ZrFY
-	tesPo8X+K14OfB4tzT1sHt++TmLxuNzXy+Sx6HuWx85Zd9k97lzbw+axeUm9R9+WVYwex29s
-	Z/L4vEkugCuKyyYlNSezLLVI3y6BK+P6vL8sBRelKq5fj21g/CraxcjBISFgIrH3rlgXIyeQ
-	KSZx4d56ti5GLg4hgaWMEv/PnGGHcPqYJD6fPcwGUsUmoCbxueERmC0ioCrxuW0BWBGzQAOL
-	xJXW62wgU4UFQiV659WB1LAA1WybsIkdxOYVcJL4vGMuG8Q2OYnebW+YQWxOAWeJC/P+sILY
-	QkA1854cYZzAyLuAkWEVo2hqaXJBcVJ6rqFecWJucWleul5yfu4mRkgIf9nBuPiY1SFGAQ5G
-	JR7eAJ5VwUKsiWXFlbmHGCU4mJVEeN33A4V4UxIrq1KL8uOLSnNSiw8xMnFwSjUwMi3Nvn+c
-	7wevxiJBL64jTaURgYKxG53yV9jvW8HD5qQwqb8qnfOOcFiI8Iy0p/NrPJi2pto62n/7NPFB
-	nmnStdlV/yanif0wupN2ZVbR0pqzdsy/wxZPCbx6RV5W5qSl9B9ZOVVllrB9pgunKeyRzV+d
-	/PGUpYPz5sM7lQO8dT4VFR659fyeEktxRqKhFnNRcSIALs340D8CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHLMWRmVeSWpSXmKPExsVy+t/xK7onLqwKNmjrMrd4NP8xs0Xvgqts
+	Fts7Z7BbTPmznMli0+NrrBaXd81hs5i9pJ/FYsb5fUwWty/zWqw9cpfd4nXfGmaL9TNes1is
+	2vWH0WL/FS8HPo+W5h42j29fJ7F4XO7rZfJY9D3LY+esu+wed67tYfPYvKTeo2/LKkaP4ze2
+	M3l83iQXwBXFZZOSmpNZllqkb5fAlXG8bxp7QTdnxaKdJ9gaGC+ydzFyckgImEicO/uVCcIW
+	k7hwbz1bFyMXh5DAUkaJj53fmCCcPiaJRXNvsYJUsQmoSXxueMQGYosIqEp8blvADlLELNDA
+	InGl9TpYQlggSaLl4XKwFSxARY9mPwdq5uDgFXCS6F1qDbFNTqJ32xtmEJtTwFniwrw/YPOF
+	gErmPTnCOIGRdwEjwypG0dTS5ILipPRcI73ixNzi0rx0veT83E2MkDD+uoNx6TGrQ4wCHIxK
+	PLwBPKuChVgTy4orcw8xSnAwK4nwuu8HCvGmJFZWpRblxxeV5qQWH2Jk4uCUamDkmR2m+eje
+	DwkXrZz8ay0B51rlN3ReL+3yCfXoXuqyqd0zYuGuicteeJm+XqQZtq7qhPWSrpsL/oYs+LdH
+	rLco8FP7tYyIcyzl0pyJGXILBC6KHvjMrJDmefX6yyW6C5yTlF+4ffvAI2wu0LQx1Vbeh/Mg
+	08obUtWaG+dzy21e81HCeuZOX1YlluKMREMt5qLiRADkoZlPQQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Certain platforms (i.e. Exynos) might need to set .write_sec callback
+from firmware initialization which is happenning in .init_early callback
+of machine descriptor. However current code will overwrite the pointer
+with whatever is present in machine descriptor, even though it can be
+already set earlier. This patch fixes this by making the assignment
+conditional, depending on whether current .write_sec callback is NULL.
+
 Signed-off-by: Tomasz Figa <t.figa@samsung.com>
 ---
- Documentation/devicetree/bindings/arm/l2cc.txt | 10 ++++++
- arch/arm/mm/cache-l2x0.c                       | 46 ++++++++++++++++++++++++++
- 2 files changed, 56 insertions(+)
+ arch/arm/kernel/irq.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/Documentation/devicetree/bindings/arm/l2cc.txt b/Documentation/devicetree/bindings/arm/l2cc.txt
-index b513cb8..8096fcd 100644
---- a/Documentation/devicetree/bindings/arm/l2cc.txt
-+++ b/Documentation/devicetree/bindings/arm/l2cc.txt
-@@ -44,6 +44,16 @@ Optional properties:
- - cache-id-part: cache id part number to be used if it is not present
-   on hardware
- - wt-override: If present then L2 is forced to Write through mode
-+- arm,double-linefill : Override double linefill enable setting. Enable if
-+  non-zero, disable if zero.
-+- arm,double-linefill-incr : Override double linefill on INCR read. Enable
-+  if non-zero, disable if zero.
-+- arm,double-linefill-wrap : Override double linefill on WRAP read. Enable
-+  if non-zero, disable if zero.
-+- arm,prefetch-drop : Override prefetch drop enable setting. Enable if non-zero,
-+  disable if zero.
-+- arm,prefetch-offset : Override prefetch offset value. Valid values are
-+  0-7, 15, 23, and 31.
+diff --git a/arch/arm/kernel/irq.c b/arch/arm/kernel/irq.c
+index 2c42576..e7383b9 100644
+--- a/arch/arm/kernel/irq.c
++++ b/arch/arm/kernel/irq.c
+@@ -125,7 +125,8 @@ void __init init_IRQ(void)
  
- Example:
- 
-diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
-index 6600fd9..fd23cce 100644
---- a/arch/arm/mm/cache-l2x0.c
-+++ b/arch/arm/mm/cache-l2x0.c
-@@ -1018,9 +1018,12 @@ static const struct l2c_init_data of_l2c220_data __initconst = {
- static void __init l2c310_of_parse(const struct device_node *np,
- 	u32 *aux_val, u32 *aux_mask)
- {
-+	bool set_prefetch = false;
- 	u32 data[3] = { 0, 0, 0 };
- 	u32 tag[3] = { 0, 0, 0 };
- 	u32 filter[2] = { 0, 0 };
-+	u32 prefetch;
-+	u32 val;
- 
- 	of_property_read_u32_array(np, "arm,tag-latency", tag, ARRAY_SIZE(tag));
- 	if (tag[0] && tag[1] && tag[2])
-@@ -1047,6 +1050,49 @@ static void __init l2c310_of_parse(const struct device_node *np,
- 		writel_relaxed((filter[0] & ~(SZ_1M - 1)) | L310_ADDR_FILTER_EN,
- 			       l2x0_base + L310_ADDR_FILTER_START);
- 	}
-+
-+	prefetch = readl_relaxed(l2x0_base + L310_PREFETCH_CTRL);
-+
-+	if (!of_property_read_u32(np, "arm,double-linefill", &val)) {
-+		if (val)
-+			prefetch |= L310_PREFETCH_CTRL_DBL_LINEFILL;
-+		else
-+			prefetch &= ~L310_PREFETCH_CTRL_DBL_LINEFILL;
-+		set_prefetch = true;
-+	}
-+
-+	if (!of_property_read_u32(np, "arm,double-linefill-incr", &val)) {
-+		if (val)
-+			prefetch |= L310_PREFETCH_CTRL_DBL_LINEFILL_INCR;
-+		else
-+			prefetch &= ~L310_PREFETCH_CTRL_DBL_LINEFILL_INCR;
-+		set_prefetch = true;
-+	}
-+
-+	if (!of_property_read_u32(np, "arm,double-linefill-wrap", &val)) {
-+		if (!val)
-+			prefetch |= L310_PREFETCH_CTRL_DBL_LINEFILL_WRAP;
-+		else
-+			prefetch &= ~L310_PREFETCH_CTRL_DBL_LINEFILL_WRAP;
-+		set_prefetch = true;
-+	}
-+
-+	if (!of_property_read_u32(np, "arm,prefetch-drop", &val)) {
-+		if (val)
-+			prefetch |= L310_PREFETCH_CTRL_PREFETCH_DROP;
-+		else
-+			prefetch &= ~L310_PREFETCH_CTRL_PREFETCH_DROP;
-+		set_prefetch = true;
-+	}
-+
-+	if (!of_property_read_u32(np, "arm,prefetch-offset", &val)) {
-+		prefetch &= ~L310_PREFETCH_CTRL_OFFSET_MASK;
-+		prefetch |= val & L310_PREFETCH_CTRL_OFFSET_MASK;
-+		set_prefetch = true;
-+	}
-+
-+	if (set_prefetch)
-+		l2c_write_sec(prefetch, l2x0_base, L310_PREFETCH_CTRL);
- }
- 
- static const struct l2c_init_data of_l2c310_data __initconst = {
+ 	if (IS_ENABLED(CONFIG_OF) && IS_ENABLED(CONFIG_CACHE_L2X0) &&
+ 	    (machine_desc->l2c_aux_mask || machine_desc->l2c_aux_val)) {
+-		outer_cache.write_sec = machine_desc->l2c_write_sec;
++		if (!outer_cache.write_sec)
++			outer_cache.write_sec = machine_desc->l2c_write_sec;
+ 		ret = l2x0_of_init(machine_desc->l2c_aux_val,
+ 				   machine_desc->l2c_aux_mask);
+ 		if (ret)
 -- 
 1.9.3
 
