@@ -1,100 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755267AbaFYJ2e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 05:28:34 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:51450 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753576AbaFYJ2b (ORCPT
+	id S1755580AbaFYJ3F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 05:29:05 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:51390 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755469AbaFYJ3A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 05:28:31 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Olav Haugan <ohaugan@codeaurora.org>, Rob Herring <robherring2@gmail.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Kumar Gala <galak@codeaurora.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Cho KyongHo <pullip.cho@samsung.com>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>
-Subject: Re: [PATCH v2] devicetree: Add generic IOMMU device tree bindings
-Date: Wed, 25 Jun 2014 11:27:50 +0200
-Message-ID: <4839521.56FtveYIl6@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140625091702.GF6153@arm.com>
-References: <1400877218-4113-1-git-send-email-thierry.reding@gmail.com> <4855051.rhxSrNMNLg@wuerfel> <20140625091702.GF6153@arm.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:DCSTItur5/icev3eVxc/qb8swYJ+WshyPeWW/8mo+t7
- jwA7qRo6UoRVS/0e97rBXHQ8PVz79NhsmsxP8lWQQbcfKVx6Wc
- 8jyryFSp+m4BHA86y7Sb1mMZW3gOLji+aT07rniEwGKBC1ZMsD
- 9b2arKkUExLxs6NS/YFms/xDnw3J2IQOgzD3Dilu+1lMOaAOLl
- o14RaCYNtWf1L/8EG6Obo1YPpETT/QSKRMovbxYOF644SXxzlj
- hAGKOYBGIeRQcU1L1+bbU3LtzeSi7p+Tk4/cLw5MAeQ1ANq7FK
- 9yEwa6GkiOaMGgzWXTW07WwbVZJiOSmUA60ITrUJ15UXPRIfPh
- EtkvGr+PM8e+Jf5toPGE=
+	Wed, 25 Jun 2014 05:29:00 -0400
+From: Marc Zyngier <marc.zyngier@arm.com>
+To: kvmarm@lists.cs.columbia.edu, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Cc: Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, eric.auger@linaro.org,
+        Christoffer Dall <christoffer.dall@linaro.org>
+Subject: [RFC PATCH 6/9] irqchip: GICv3: add support for forwarded interrupts
+Date: Wed, 25 Jun 2014 10:28:47 +0100
+Message-Id: <1403688530-23273-7-git-send-email-marc.zyngier@arm.com>
+X-Mailer: git-send-email 1.8.3.4
+In-Reply-To: <1403688530-23273-1-git-send-email-marc.zyngier@arm.com>
+References: <1403688530-23273-1-git-send-email-marc.zyngier@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 25 June 2014 10:17:02 Will Deacon wrote:
-> On Tue, Jun 24, 2014 at 07:20:56PM +0100, Arnd Bergmann wrote:
-> > On Tuesday 24 June 2014 19:11:50 Will Deacon wrote:
-> > > On Tue, Jun 24, 2014 at 06:57:44PM +0100, Olav Haugan wrote:
-> > > > We do describe the masked StreamID (SID) but we need to specify the mask
-> > > > that the SMMU should apply to the incoming SIDs, right?
-> > > > 
-> > > > We have a bus master that emits 43 unique SIDs. However, we have only 40
-> > > > SMMU_SMRn registers in the SMMU. So we need to mask out some of the
-> > > > incoming SID bits so that the 43 SIDs can match one of 40 entries in the
-> > > > SMR.
-> > > 
-> > > Hmm, so you're talking about stream matching, right? That doesn't belong in
-> > > the device-tree. I appreciate that the current driver does a terrible job at
-> > > allocating the SMRs (it's bloody difficult!), but we should try to improve
-> > > the dynamic behaviour instead of moving configuration of the SMMU out into
-> > > device-tree, where it's inflexible at best.
-> > > 
-> > > There have been patches previously posted by Andreas Herrmann helping here.
-> > > I'd be glad to see them revived.
-> > 
-> > Note that there are areas where we have in the past decided that dynamic
-> > configuration is just too hard for the kernel to do and that we're better
-> > off putting the configuration into DT. Pinctrl and clocks are at least
-> > partially in that category.
-> > 
-> > It's always best if you can get the kernel to do things in the ideal
-> > way where that is possible, but getting there may be just not worth it.
-> > 
-> > I have no idea where it should be for SMMU, but it's something to consider:
-> > if you can take reasonable shortcuts by reading parts of the configuration
-> > from DT, you may just as well do that.
-> 
-> I treat this in the same manner as the topology bindings we discussed
-> previously; we should do a best-effort to configure things dynamically and
-> solve corner-cases and quirks as special cases.
+Now that we've switched to EOImode == 1, prevent a forwarded interrupt
+from being deactivated after its priority has been dropped.
 
-I think the situation is a bit different here: It's less about the corner
-cases for the SMMU, but about the question whether it makes more sense to
-have the kernel figure out the settings, or have them come from DT
-all the time.
+Also add support for the interrupt state to be saved/restored.
 
-As I said, I can't tell which approach is best here, but it sounds to
-me we should either do dynamic configuration and get it right, or
-hardcode the configuration it all the time if we can't.
+Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+---
+ drivers/irqchip/irq-gic-v3-its.c   |  3 ++-
+ drivers/irqchip/irq-gic-v3.c       | 29 ++++++++++++++++++++++++++++-
+ include/linux/irqchip/arm-gic-v3.h |  2 ++
+ 3 files changed, 32 insertions(+), 2 deletions(-)
 
-	Arnd
+diff --git a/drivers/irqchip/irq-gic-v3-its.c b/drivers/irqchip/irq-gic-v3-its.c
+index 922f228..7c354ff 100644
+--- a/drivers/irqchip/irq-gic-v3-its.c
++++ b/drivers/irqchip/irq-gic-v3-its.c
+@@ -616,7 +616,8 @@ static void its_unmask_irq(struct irq_data *d)
+ static void its_eoi_irq(struct irq_data *d)
+ {
+ 	gic_write_eoir(d->hwirq);
+-	gic_write_dir(d->hwirq);
++	if (!irqd_irq_forwarded(d))
++		gic_write_dir(d->hwirq);
+ }
+ 
+ static int its_set_affinity(struct irq_data *d, const struct cpumask *mask_val,
+diff --git a/drivers/irqchip/irq-gic-v3.c b/drivers/irqchip/irq-gic-v3.c
+index 26a08ce..1f080d6 100644
+--- a/drivers/irqchip/irq-gic-v3.c
++++ b/drivers/irqchip/irq-gic-v3.c
+@@ -235,10 +235,35 @@ static void gic_unmask_irq(struct irq_data *d)
+ 	gic_poke_irq(d, GICD_ISENABLER);
+ }
+ 
++static void gic_irq_set_fwd_state(struct irq_data *d, u32 val, u32 mask)
++{
++	if (mask & IRQ_FWD_STATE_PENDING)
++		gic_poke_irq(d, (val & IRQ_FWD_STATE_PENDING) ? GICD_ISPENDR : GICD_ICPENDR);
++	if (mask & IRQ_FWD_STATE_ACTIVE)
++		gic_poke_irq(d, (val & IRQ_FWD_STATE_ACTIVE) ? GICD_ISACTIVER : GICD_ICACTIVER);
++	if (mask & IRQ_FWD_STATE_MASKED)
++		gic_poke_irq(d, (val & IRQ_FWD_STATE_MASKED) ? GICD_ICENABLER : GICD_ISENABLER);
++}
++
++static u32 gic_irq_get_fwd_state(struct irq_data *d, u32 mask)
++{
++	u32 val = 0;
++
++	if ((mask & IRQ_FWD_STATE_PENDING) && gic_peek_irq(d, GICD_ISPENDR))
++		val |= IRQ_FWD_STATE_PENDING;
++	if ((mask & IRQ_FWD_STATE_ACTIVE) && gic_peek_irq(d, GICD_ISACTIVER))
++		val |= IRQ_FWD_STATE_ACTIVE;
++	if ((mask & IRQ_FWD_STATE_MASKED) && !gic_peek_irq(d, GICD_ISENABLER))
++		val |= IRQ_FWD_STATE_MASKED;
++
++	return val;
++}
++
+ static void gic_eoi_irq(struct irq_data *d)
+ {
+ 	gic_write_eoir(gic_irq(d));
+-	gic_write_dir(gic_irq(d));
++	if (!irqd_irq_forwarded(d))
++		gic_write_dir(gic_irq(d));
+ }
+ 
+ static int gic_set_type(struct irq_data *d, unsigned int type)
+@@ -598,6 +623,8 @@ static struct irq_chip gic_chip = {
+ 	.irq_eoi		= gic_eoi_irq,
+ 	.irq_set_type		= gic_set_type,
+ 	.irq_set_affinity	= gic_set_affinity,
++	.irq_get_fwd_state	= gic_irq_get_fwd_state,
++	.irq_set_fwd_state	= gic_irq_set_fwd_state,
+ };
+ 
+ static struct irq_chip *its_chip;
+diff --git a/include/linux/irqchip/arm-gic-v3.h b/include/linux/irqchip/arm-gic-v3.h
+index a0bff2f..0e74c19 100644
+--- a/include/linux/irqchip/arm-gic-v3.h
++++ b/include/linux/irqchip/arm-gic-v3.h
+@@ -90,6 +90,8 @@
+ #define GICR_SYNCR			0x00C0
+ #define GICR_MOVLPIR			0x0100
+ #define GICR_MOVALLR			0x0110
++#define GICR_ISACTIVER			GICD_ISACTIVER
++#define GICR_ICACTIVER			GICD_ICACTIVER
+ #define GICR_IDREGS			GICD_IDREGS
+ #define GICR_PIDR2			GICD_PIDR2
+ 
+-- 
+1.8.3.4
+
