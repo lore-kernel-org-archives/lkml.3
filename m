@@ -1,105 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932189AbaFYPIP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 11:08:15 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:52270 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756769AbaFYPIM (ORCPT
+	id S932241AbaFYPJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 11:09:57 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:48598 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756481AbaFYPJ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 11:08:12 -0400
+	Wed, 25 Jun 2014 11:09:56 -0400
+Message-ID: <53AAE603.500@st.com>
+Date: Wed, 25 Jun 2014 17:08:51 +0200
+From: Maxime Coquelin <maxime.coquelin@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <20140625142121.GD7892@redhat.com>
-References: <1403642893-23107-1-git-send-email-keescook@chromium.org>
-	<1403642893-23107-10-git-send-email-keescook@chromium.org>
-	<20140625142121.GD7892@redhat.com>
-Date: Wed, 25 Jun 2014 08:08:11 -0700
-X-Google-Sender-Auth: r_1Qo0KhVxpzl5aIumz0oJDUf2o
-Message-ID: <CAGXu5jJtLrjbobZC1FD4WV-Jm2p7cRGa1aSPK-d_isnfCZAHdA@mail.gmail.com>
-Subject: Re: [PATCH v8 9/9] seccomp: implement SECCOMP_FILTER_FLAG_TSYNC
-From: Kees Cook <keescook@chromium.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Andy Lutomirski <luto@amacapital.net>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
-        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Lee Jones <lee.jones@linaro.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Cc: <kernel@stlinux.com>, <olof@lixom.net>, <patrice.chotard@st.com>,
+        <srinivas.kandagatla@gmail.com>
+Subject: Re: [PATCH] ARM: STi: DT: STiH41x: Convert all uppercase non-defines
+ to lowercase
+References: <1401195188-23677-1-git-send-email-lee.jones@linaro.org> <20140625145354.GK13518@lee--X1>
+In-Reply-To: <20140625145354.GK13518@lee--X1>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.201.23.80]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-06-25_04:2014-06-25,2014-06-25,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 7:21 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 06/24, Kees Cook wrote:
->>
->> +static void seccomp_sync_threads(void)
->> +{
->> +     struct task_struct *thread, *caller;
->> +
->> +     BUG_ON(!spin_is_locked(&current->sighand->siglock));
->> +
->> +     /* Synchronize all threads. */
->> +     caller = current;
->> +     for_each_thread(caller, thread) {
->> +             /* Get a task reference for the new leaf node. */
->> +             get_seccomp_filter(caller);
->> +             /*
->> +              * Drop the task reference to the shared ancestor since
->> +              * current's path will hold a reference.  (This also
->> +              * allows a put before the assignment.)
->> +              */
->> +             put_seccomp_filter(thread);
->> +             thread->seccomp.filter = caller->seccomp.filter;
->> +             /* Opt the other thread into seccomp if needed.
->> +              * As threads are considered to be trust-realm
->> +              * equivalent (see ptrace_may_access), it is safe to
->> +              * allow one thread to transition the other.
->> +              */
->> +             if (thread->seccomp.mode == SECCOMP_MODE_DISABLED) {
->> +                     /*
->> +                      * Don't let an unprivileged task work around
->> +                      * the no_new_privs restriction by creating
->> +                      * a thread that sets it up, enters seccomp,
->> +                      * then dies.
->> +                      */
->> +                     if (task_no_new_privs(caller))
->> +                             task_set_no_new_privs(thread);
->> +
->> +                     seccomp_assign_mode(thread, SECCOMP_MODE_FILTER);
->> +             }
->> +     }
->> +}
->
-> OK, personally I think this all make sense. I even think that perhaps
-> SECCOMP_FILTER_FLAG_TSYNC should allow filter == NULL, a thread might
-> want to "sync" without adding the new filter, but this is minor/offtopic.
->
-> But. Doesn't this change add a new security hole?
->
-> Obviously, we should not allow to install a filter and then (say) exec
-> a suid binary, that is why we have no_new_privs/LSM_UNSAFE_NO_NEW_PRIVS.
->
-> But what if "thread->seccomp.filter = caller->seccomp.filter" races with
-> any user of task_no_new_privs() ? Say, suppose this thread has already
-> passed check_unsafe_exec/etc and it is going to exec the suid binary?
 
-Oh, ew. Yeah. It looks like there's a cred lock to be held to combat this?
 
-I wonder if changes to nnp need to "flushed" during syscall entry
-instead of getting updated externally/asynchronously? That way it
-won't be out of sync with the seccomp mode/filters.
+On 06/25/2014 04:53 PM, Lee Jones wrote:
+>> Suggested-by: Olof Johansson <olof@lixom.net>
+>> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+>> ---
+>>  arch/arm/boot/dts/stih415-pinctrl.dtsi   | 340 +++++++++++++++---------------
+>>  arch/arm/boot/dts/stih416-b2020-revE.dts |   6 +-
+>>  arch/arm/boot/dts/stih416-pinctrl.dtsi   | 342 +++++++++++++++----------------
+>>  arch/arm/boot/dts/stih41x-b2000.dtsi     |   6 +-
+>>  arch/arm/boot/dts/stih41x-b2020.dtsi     |   6 +-
+>>  5 files changed, 350 insertions(+), 350 deletions(-)
+> 
+> What happened to this Maxime?
+> 
+> It was Acked by Olof, then died.  Did it slip through the net?
+> 
 
-Perhaps secure computing needs to check some (maybe seccomp-only)
-atomic flags and flip on the "real" nnp if found?
+You sent it to the ML after my last pull request for v3.16.
+I think to take it for v3.17, but maybe you think it can go in next v3.16 rc?
+If so, maybe Arnd or Olof can pick it directly, since we only have this single
+patch for v3.16 fixes currently?
 
--Kees
+Anyway, you will have to rebase it I think, since stih416-b2020-revE.dts has
+been renamed to stih416-b2020e.dts.
 
--- 
-Kees Cook
-Chrome OS Security
+Don't hesitate to add my:
+Acked-by: Maxime Coquelin <maxime.coquelin@st.com>
+
+Regards,
+Maxime
+
