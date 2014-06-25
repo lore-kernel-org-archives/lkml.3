@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757887AbaFYRJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 13:09:59 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:37858 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757813AbaFYRJy (ORCPT
+	id S1757924AbaFYRKD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 13:10:03 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:60953 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757815AbaFYRJy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 25 Jun 2014 13:09:54 -0400
 X-Google-Original-Sender: <johan@hovold.com>
@@ -18,9 +18,9 @@ Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Jiri Kosina <jkosina@suse.cz>,
         =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
         Johan Hovold <johan@kernel.org>
-Subject: [PATCH 02/13] leds: lm3550: fix attribute-creation race
-Date: Wed, 25 Jun 2014 19:08:45 +0200
-Message-Id: <1403716136-32694-3-git-send-email-johan@kernel.org>
+Subject: [PATCH 06/13] leds: max8997: fix attribute-creation race
+Date: Wed, 25 Jun 2014 19:08:49 +0200
+Message-Id: <1403716136-32694-7-git-send-email-johan@kernel.org>
 X-Mailer: git-send-email 1.8.5.5
 In-Reply-To: <1403716136-32694-1-git-send-email-johan@kernel.org>
 References: <1403716136-32694-1-git-send-email-johan@kernel.org>
@@ -33,60 +33,56 @@ during probe in order to avoid racing with userspace.
 
 Signed-off-by: Johan Hovold <johan@kernel.org>
 ---
- drivers/leds/leds-lm3530.c | 20 +++++++-------------
- 1 file changed, 7 insertions(+), 13 deletions(-)
+ drivers/leds/leds-max8997.c | 16 +++++++---------
+ 1 file changed, 7 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/leds/leds-lm3530.c b/drivers/leds/leds-lm3530.c
-index 652368c2ea9a..91325de3cd33 100644
---- a/drivers/leds/leds-lm3530.c
-+++ b/drivers/leds/leds-lm3530.c
-@@ -400,6 +400,12 @@ static ssize_t lm3530_mode_set(struct device *dev, struct device_attribute
- }
- static DEVICE_ATTR(mode, 0644, lm3530_mode_get, lm3530_mode_set);
+diff --git a/drivers/leds/leds-max8997.c b/drivers/leds/leds-max8997.c
+index f449a8bdddc7..607bc2755aba 100644
+--- a/drivers/leds/leds-max8997.c
++++ b/drivers/leds/leds-max8997.c
+@@ -229,6 +229,12 @@ static ssize_t max8997_led_store_mode(struct device *dev,
  
-+static struct attribute *lm3530_attrs[] = {
+ static DEVICE_ATTR(mode, 0644, max8997_led_show_mode, max8997_led_store_mode);
+ 
++static struct attribute *max8997_attrs[] = {
 +	&dev_attr_mode.attr,
 +	NULL
 +};
-+ATTRIBUTE_GROUPS(lm3530);
++ATTRIBUTE_GROUPS(max8997);
 +
- static int lm3530_probe(struct i2c_client *client,
- 			   const struct i2c_device_id *id)
+ static int max8997_led_probe(struct platform_device *pdev)
  {
-@@ -436,6 +442,7 @@ static int lm3530_probe(struct i2c_client *client,
- 	drvdata->led_dev.name = LM3530_LED_DEV;
- 	drvdata->led_dev.brightness_set = lm3530_brightness_set;
- 	drvdata->led_dev.max_brightness = MAX_BRIGHTNESS;
-+	drvdata->led_dev.groups = lm3530_groups;
+ 	struct max8997_dev *iodev = dev_get_drvdata(pdev->dev.parent);
+@@ -253,6 +259,7 @@ static int max8997_led_probe(struct platform_device *pdev)
+ 	led->cdev.brightness_set = max8997_led_brightness_set;
+ 	led->cdev.flags |= LED_CORE_SUSPENDRESUME;
+ 	led->cdev.brightness = 0;
++	led->cdev.groups = max8997_groups;
+ 	led->iodev = iodev;
  
- 	i2c_set_clientdata(client, drvdata);
+ 	/* initialize mode and brightness according to platform_data */
+@@ -281,14 +288,6 @@ static int max8997_led_probe(struct platform_device *pdev)
+ 	if (ret < 0)
+ 		return ret;
  
-@@ -461,26 +468,13 @@ static int lm3530_probe(struct i2c_client *client,
- 		return err;
- 	}
- 
--	err = device_create_file(drvdata->led_dev.dev, &dev_attr_mode);
--	if (err < 0) {
--		dev_err(&client->dev, "File device creation failed: %d\n", err);
--		err = -ENODEV;
--		goto err_create_file;
+-	ret = device_create_file(led->cdev.dev, &dev_attr_mode);
+-	if (ret != 0) {
+-		dev_err(&pdev->dev,
+-			"failed to create file: %d\n", ret);
+-		led_classdev_unregister(&led->cdev);
+-		return ret;
 -	}
 -
  	return 0;
--
--err_create_file:
--	led_classdev_unregister(&drvdata->led_dev);
--	return err;
  }
  
- static int lm3530_remove(struct i2c_client *client)
+@@ -296,7 +295,6 @@ static int max8997_led_remove(struct platform_device *pdev)
  {
- 	struct lm3530_data *drvdata = i2c_get_clientdata(client);
+ 	struct max8997_led *led = platform_get_drvdata(pdev);
  
--	device_remove_file(drvdata->led_dev.dev, &dev_attr_mode);
--
- 	lm3530_led_disable(drvdata);
- 	led_classdev_unregister(&drvdata->led_dev);
+-	device_remove_file(led->cdev.dev, &dev_attr_mode);
+ 	led_classdev_unregister(&led->cdev);
+ 
  	return 0;
 -- 
 1.8.5.5
