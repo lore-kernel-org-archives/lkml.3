@@ -1,143 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758074AbaFYQym (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 12:54:42 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59446 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757623AbaFYQtx (ORCPT
+	id S1758088AbaFYQy7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 12:54:59 -0400
+Received: from slow1-d.mail.gandi.net ([217.70.178.86]:44888 "EHLO
+	slow1-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757824AbaFYQy5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 12:49:53 -0400
-From: Christoph Hellwig <hch@lst.de>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Bart Van Assche <bvanassche@fusionio.com>,
-        Robert Elliott <Elliott@hp.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 03/14] scsi: centralize command re-queueing in scsi_dispatch_fn
-Date: Wed, 25 Jun 2014 18:51:50 +0200
-Message-Id: <1403715121-1201-4-git-send-email-hch@lst.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1403715121-1201-1-git-send-email-hch@lst.de>
-References: <1403715121-1201-1-git-send-email-hch@lst.de>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 25 Jun 2014 12:54:57 -0400
+X-Greylist: delayed 2925 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 Jun 2014 12:54:57 EDT
+X-Originating-IP: 50.43.32.211
+Date: Wed, 25 Jun 2014 08:46:29 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>,
+        gregkh@linux-foundation.org, akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] scripts/checkpatch.pl: Only emit LONG_LINE for --strict
+Message-ID: <20140625154629.GA21519@thin>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make sure we only have the logic for requeing commands in one place.
+Regardless of the long-standing debate over line width, checkpatch
+should not warn about it by default.  Too many users run checkpatch and
+blindly follow its recommendation by splitting long lines, which almost
+invariably results in worse code.  On rare occasions, the line-width
+limit encourages sensible refactoring of nested code into functions, but
+more frequently it just results in painfully over-wrapped code.  Turning
+this warning off by default will ensure that people who take the time to
+fix up checkpatch issues in drivers (especially staging drivers) don't
+waste time submitting patches that uglify code to quiet checkpatch's
+line-width limit.
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+The on-by-default DEEP_INDENTATION warning for lines indented more than
+6 levels deep makes more sense as a default, to encourage people to
+refactor, since it cannot be "fixed" by simply reformatting code.
+
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
 ---
- drivers/scsi/scsi.c     |   35 ++++++++++++-----------------------
- drivers/scsi/scsi_lib.c |    9 ++++++---
- 2 files changed, 18 insertions(+), 26 deletions(-)
+ scripts/checkpatch.pl | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
-index ce5b4e5..dcc43fd 100644
---- a/drivers/scsi/scsi.c
-+++ b/drivers/scsi/scsi.c
-@@ -648,9 +648,7 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
- 		 * returns an immediate error upwards, and signals
- 		 * that the device is no longer present */
- 		cmd->result = DID_NO_CONNECT << 16;
--		scsi_done(cmd);
--		/* return 0 (because the command has been processed) */
--		goto out;
-+		goto done;
- 	}
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 010b18e..b2eb968 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -2146,8 +2146,8 @@ sub process {
+ 		    $line =~ /^\+\s*"[^"]*"\s*(?:\s*|,|\)\s*;)\s*$/) &&
+ 		    $length > $max_line_length)
+ 		{
+-			WARN("LONG_LINE",
+-			     "line over $max_line_length characters\n" . $herecurr);
++			CHK("LONG_LINE",
++			    "line over $max_line_length characters\n" . $herecurr);
+ 		}
  
- 	/* Check to see if the scsi lld made this device blocked. */
-@@ -662,17 +660,9 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
- 		 * occur until the device transitions out of the
- 		 * suspend state.
- 		 */
--
--		scsi_queue_insert(cmd, SCSI_MLQUEUE_DEVICE_BUSY);
--
- 		SCSI_LOG_MLQUEUE(3, scmd_printk(KERN_INFO, cmd,
- 			"queuecommand : device blocked\n"));
--
--		/*
--		 * NOTE: rtn is still zero here because we don't need the
--		 * queue to be plugged on return (it's already stopped)
--		 */
--		goto out;
-+		return SCSI_MLQUEUE_DEVICE_BUSY;
- 	}
- 
- 	/*
-@@ -696,20 +686,19 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
- 			       "cdb_size=%d host->max_cmd_len=%d\n",
- 			       cmd->cmd_len, cmd->device->host->max_cmd_len));
- 		cmd->result = (DID_ABORT << 16);
--
--		scsi_done(cmd);
--		goto out;
-+		goto done;
- 	}
- 
- 	if (unlikely(host->shost_state == SHOST_DEL)) {
- 		cmd->result = (DID_NO_CONNECT << 16);
--		scsi_done(cmd);
--	} else {
--		trace_scsi_dispatch_cmd_start(cmd);
--		cmd->scsi_done = scsi_done;
--		rtn = host->hostt->queuecommand(host, cmd);
-+		goto done;
-+
- 	}
- 
-+	trace_scsi_dispatch_cmd_start(cmd);
-+
-+	cmd->scsi_done = scsi_done;
-+	rtn = host->hostt->queuecommand(host, cmd);
- 	if (rtn) {
- 		trace_scsi_dispatch_cmd_error(cmd, rtn);
- 		if (rtn != SCSI_MLQUEUE_DEVICE_BUSY &&
-@@ -718,12 +707,12 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
- 
- 		SCSI_LOG_MLQUEUE(3, scmd_printk(KERN_INFO, cmd,
- 			"queuecommand : request rejected\n"));
--
--		scsi_queue_insert(cmd, rtn);
- 	}
- 
-- out:
- 	return rtn;
-+ done:
-+	scsi_done(cmd);
-+	return 0;
- }
- 
- /**
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index 2667c75..63bf844 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -1583,9 +1583,12 @@ static void scsi_request_fn(struct request_queue *q)
- 		 * Dispatch the command to the low-level driver.
- 		 */
- 		rtn = scsi_dispatch_cmd(cmd);
--		spin_lock_irq(q->queue_lock);
--		if (rtn)
-+		if (rtn) {
-+			scsi_queue_insert(cmd, rtn);
-+			spin_lock_irq(q->queue_lock);
- 			goto out_delay;
-+		}
-+		spin_lock_irq(q->queue_lock);
- 	}
- 
- 	return;
-@@ -1605,7 +1608,7 @@ static void scsi_request_fn(struct request_queue *q)
- 	blk_requeue_request(q, req);
- 	sdev->device_busy--;
- out_delay:
--	if (sdev->device_busy == 0)
-+	if (sdev->device_busy == 0 && !scsi_device_blocked(sdev))
- 		blk_delay_queue(q, SCSI_QUEUE_DELAY);
- }
- 
+ # Check for user-visible strings broken across lines, which breaks the ability
 -- 
-1.7.10.4
+2.0.0
 
