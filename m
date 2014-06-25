@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757726AbaFYRH2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 13:07:28 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:25711 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757033AbaFYRH1 (ORCPT
+	id S1757684AbaFYRIG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 13:08:06 -0400
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:61601 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757251AbaFYRIE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 13:07:27 -0400
-Message-ID: <1403716041.2626.1.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH 9/9] perf bench: futex: Support operations for shared
- futexes
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: jolsa@kernel.org, mitake@dcl.info.waseda.ac.jp, aswin@hp.com,
-        linux-kernel@vger.kernel.org, Darren Hart <darren@dvhart.com>
-Date: Wed, 25 Jun 2014 10:07:21 -0700
-In-Reply-To: <20140619170507.GA31524@kernel.org>
-References: <1402942467-10671-1-git-send-email-davidlohr@hp.com>
-	 <1402942467-10671-10-git-send-email-davidlohr@hp.com>
-	 <20140619164124.GH20252@kernel.org>
-	 <1403196229.29394.10.camel@buesod1.americas.hpqcorp.net>
-	 <20140619170507.GA31524@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 25 Jun 2014 13:08:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <53A9FE04.2000306@hp.com>
+References: <20140403191558.GA8745@thunk.org>
+	<alpine.LFD.2.11.1406242251230.23403@eddie.linux-mips.org>
+	<53A9FE04.2000306@hp.com>
+Date: Wed, 25 Jun 2014 10:08:02 -0700
+X-Google-Sender-Auth: xJZJX9uhRj7K2e0e3G4s7yhuWfo
+Message-ID: <CA+55aFzbC9QgO46m2H47NbUMWssDm-t4YQ8bJggGrZj2h-_9EQ@mail.gmail.com>
+Subject: Re: [GIT PULL] ext4 changes for 3.15
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>,
+        "Theodore Ts'o" <tytso@mit.edu>
+Cc: "Maciej W. Rozycki" <macro@linux-mips.org>,
+        T Makphaibulchoke <tmac@hp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-06-19 at 14:05 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Thu, Jun 19, 2014 at 09:43:49AM -0700, Davidlohr Bueso escreveu:
-> > On Thu, 2014-06-19 at 13:41 -0300, Arnaldo Carvalho de Melo wrote:
-> > > Em Mon, Jun 16, 2014 at 11:14:27AM -0700, Davidlohr Bueso escreveu:
-> > > > Unlike futex-hash, requeuing and wakeup benchmarks do not support
-> > > > shared futexes, limiting the usefulness of the programs. Correct
-> > > > this, and allow using the local -S parameter. The default remains
-> > > > using private futexes.
-> > > 
-> > > Also isn't this benchmark related to something Darren did? Just checking
-> > > why he isn't in the CC list, Darren, does this all sound fine to you?
-> > 
-> > Darren is well aware of these benchmarks, and we've discussed the topic
-> > in the past. This change doesn't conflict with what he maintains in the
-> > futextest suite.
-> 
-> Ok, thanks, just checking :-)
+Ted,
+ going through pending issues, and wondering if I'm expected to pick
+this up directly? The original came through your tree (commit
+1f3e55fe02d1: "fs/mbcache.c: doucple the locking of local from global
+data") and is in 3.15 too, so the patch should be marked for stable as
+well.
 
-Hi Arnaldo, curious as to why this one wasn't picked up.
+It's hopefully limited to just very bad gcc versions for odd
+architectures, so it's not exactly high-impact, but still..
 
-Thanks,
-Davidlohr
+      Linus
 
+On Tue, Jun 24, 2014 at 3:39 PM, Thavatchai Makphaibulchoke
+<thavatchai.makpahibulchoke@hp.com> wrote:
+>
+> I've submitted the fix, using ilog2, and could be found at,
+>
+> https://lkml.org/lkml/2014/5/30/462
