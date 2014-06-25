@@ -1,50 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757430AbaFYO4j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 10:56:39 -0400
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:36767 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757232AbaFYO4h (ORCPT
+	id S1757074AbaFYPAO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 11:00:14 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:47173 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756454AbaFYPAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 10:56:37 -0400
-Date: Wed, 25 Jun 2014 10:56:34 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Benjamin LaHaise <bcrl@kvack.org>
-Cc: cl@linux-foundation.org, kmo@daterainc.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] percpu-refcount, aio: use percpu_ref_cancel_init()
- in ioctx_alloc()
-Message-ID: <20140625145634.GD26883@htj.dyndns.org>
-References: <1403053685-28240-1-git-send-email-tj@kernel.org>
- <1403053685-28240-2-git-send-email-tj@kernel.org>
- <20140625143112.GR23137@kvack.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140625143112.GR23137@kvack.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 25 Jun 2014 11:00:12 -0400
+Message-ID: <53AAE3F2.9060809@gmail.com>
+Date: Wed, 25 Jun 2014 17:00:02 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+To: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
+	<antoine.tenart@free-electrons.com>
+CC: alexandre.belloni@free-electrons.com, thomas.petazzoni@free-electrons.com,
+        zmxu@marvell.com, jszhang@marvell.com,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/5] ARM: berlin: add SMP support
+References: <1401897826-11711-1-git-send-email-antoine.tenart@free-electrons.com> <1401897826-11711-2-git-send-email-antoine.tenart@free-electrons.com>
+In-Reply-To: <1401897826-11711-2-git-send-email-antoine.tenart@free-electrons.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Benjamin.
+On 06/04/2014 06:03 PM, Antoine Ténart wrote:
+> Adds SMP support for Berlin SoCs. Secondary CPUs are reset, then
+> execute the instruction we put in the reset exception register, setting
+> the pc at the address contained in the software reset address register,
+> which is the physical address of the Berlin secondary startup.
+>
+> This implementation avoid using the pen lock mechanism.
+>
+> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
 
-On Wed, Jun 25, 2014 at 10:31:12AM -0400, Benjamin LaHaise wrote:
-> On Tue, Jun 17, 2014 at 09:08:00PM -0400, Tejun Heo wrote:
-> > ioctx_alloc() reaches inside percpu_ref and directly frees
-> > ->pcpu_count in its failure path, which is quite gross.  percpu_ref
-> > has been providing a proper interface to do this,
-> > percpu_ref_cancel_init(), for quite some time now.  Let's use that
-> > instead.
-> 
-> I applied this to my aio-next tree at git://git.kvack.org/~bcrl/aio-next.git .
+Applied to berlin/soc with Andrew's Reviewed-by.
 
-It'd probably easier if I route this through percpu tree with the rest
-of changes as there are further changes on the aio side (trivial but
-still), so we'd end up having to do pulling dance back and forth.  The
-changes on aio side are mostly trivial.  Can I route them through
-percpu tree with your acks?
+Thanks!
 
-Thanks.
-
--- 
-tejun
