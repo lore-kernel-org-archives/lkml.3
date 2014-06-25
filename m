@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754330AbaFYUDi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 16:03:38 -0400
-Received: from mailsec109.isp.belgacom.be ([195.238.20.105]:48612 "EHLO
-	mailsec109.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752271AbaFYUDh convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 16:03:37 -0400
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=hrMHww2J628ocjRUNFs3+6iRWpMu/XOKFNGLEpm+GMs= c=1 sm=2
- a=GiGEYH1j2gIA:10 a=IkcTkHD0fZMA:10 a=LCqXdekRAAAA:8
- a=V68G2WrADEM0UCLtYHkA:9 a=QEXdDO2ut3YA:10 a=IlL50OqVX4wA:10
- a=kg13SUJnC57vgy3Y:21 a=ynMhTyXUDK5GWuln:21
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ag4GAMwqq1PD7hTT/2dsb2JhbABZgw1Sg0enJQZPAQGYaQGBDhZ1hAMBAQQBIwQiMAULBQYOCgICGA4CAlcGARIRiCkMpRSGf5cpF4EqhDmIZjMHgneBTAWuPINEOw
-Date: Wed, 25 Jun 2014 22:03:26 +0200 (CEST)
-From: Fabian Frederick <fabf@skynet.be>
-Reply-To: Fabian Frederick <fabf@skynet.be>
-To: Bob Copeland <me@bobcopeland.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Message-ID: <810210906.61891.1403726606049.open-xchange@webmail.nmp.skynet.be>
-In-Reply-To: <20140625190250.GB399@localhost>
-References: <1403720237-19131-1-git-send-email-fabf@skynet.be> <CA+55aFypOwqaxfMwG5H8QSsRyMrMV7ibW_k5CQdc=EPXYmrfLg@mail.gmail.com> <20140625190250.GB399@localhost>
-Subject: Re: [PATCH 1/1] fs/omfs/inode.c: replace count*size kzalloc by
- kcalloc
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Priority: 3
-Importance: Medium
-X-Mailer: Open-Xchange Mailer v7.2.2-Rev27
+	id S1754899AbaFYUE3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 16:04:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47161 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752666AbaFYUE1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 16:04:27 -0400
+Date: Wed, 25 Jun 2014 13:04:25 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Alexander Graf <agraf@suse.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [PATCH v3 -next 0/9] CMA: generalize CMA reserved area
+ management code
+Message-Id: <20140625130425.609ad4293781f5ac81772bf9@linux-foundation.org>
+In-Reply-To: <53AAC1B4.5000204@samsung.com>
+References: <1402897251-23639-1-git-send-email-iamjoonsoo.kim@lge.com>
+	<539EB4C7.3080106@samsung.com>
+	<20140617012507.GA6825@js1304-P5Q-DELUXE>
+	<20140618135144.297c785260f9e2aebead867c@linux-foundation.org>
+	<53AAC1B4.5000204@samsung.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 25 Jun 2014 14:33:56 +0200 Marek Szyprowski <m.szyprowski@samsung.com> wrote:
 
+> > That's probably easier.  Marek, I'll merge these into -mm (and hence
+> > -next and git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git)
+> > and shall hold them pending you review/ack/test/etc, OK?
+> 
+> Ok. I've tested them and they work fine. I'm sorry that you had to wait for
+> me for a few days. You can now add:
+> 
+> Acked-and-tested-by: Marek Szyprowski <m.szyprowski@samsung.com>
 
-> Le 25 juin 2014 à 21:02, Bob Copeland <me@bobcopeland.com> a écrit :
->
->
-> On Wed, Jun 25, 2014 at 11:27:21AM -0700, Linus Torvalds wrote:
-> > On Wed, Jun 25, 2014 at 11:17 AM, Fabian Frederick <fabf@skynet.be> wrote:
-> > > kcalloc manages count*sizeof overflow.
-> >
-> > As far as I can tell, any overflow has happened long before, in
-> >
-> >     bitmap_size = DIV_ROUND_UP(sbi->s_num_blocks, 8);
-> >
-> > where 'sbi->s_num_blocks' i san u64, and 'bitmap_size' is an 'int'.
-> >
-> > I don't think the patch is necessarily a bad thing, but I think it
-> > might be more important to sanity-check that part instead.
->
-> Agreed - even though the FS data structures support 64-bit block
-> count, I've never seen an OMFS fs with more than about 2M blocks
-> (typical device had 20 gigs w/ 8k blocks).  So it would make
-> sense to bail in omfs_fill_super if that number is greater than
-> 2^31 or so.
-We could use unsigned int for bitmap instead of int or simply u64 ?
- 
->
-> (I am fine with the kcalloc patch too, though.)
+Thanks.
 
->
-> --
-> Bob Copeland %% www.bobcopeland.com
+> I've also rebased my pending patches onto this set (I will send them soon).
+> 
+> The question is now if you want to keep the discussed patches in your 
+> -mm tree,
+> or should I take them to my -next branch. If you like to keep them, I assume
+> you will also take the patches which depends on the discussed changes.
+
+Yup, that works.
