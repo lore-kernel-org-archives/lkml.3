@@ -1,45 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932308AbaFYRBM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 13:01:12 -0400
-Received: from verein.lst.de ([213.95.11.211]:49866 "EHLO newverein.lst.de"
+	id S932335AbaFYRCx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 13:02:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32789 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932257AbaFYRBL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 13:01:11 -0400
-Date: Wed, 25 Jun 2014 19:01:07 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Micky Ching <micky_ching@realsil.com.cn>, Hannes Reinecke <hare@suse.de>,
-        linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [hch-scsi-queue:core-for-3.17 18/27]
-	drivers/staging/rts5208/rtsx.c:468:5: warning: format '%d' expects
-	argument of type 'int', but argument 4 has type 'u64'
-Message-ID: <20140625170107.GA21606@lst.de>
-References: <53aaebe2.SHsdePtLmXw5IHwp%fengguang.wu@intel.com> <20140625154140.GA16179@lst.de> <20140625162322.GA8121@localhost>
+	id S1755985AbaFYRCw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 13:02:52 -0400
+Date: Wed, 25 Jun 2014 19:00:39 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Andy Lutomirski <luto@amacapital.net>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH v8 5/9] seccomp: split mode set routines
+Message-ID: <20140625170039.GB14720@redhat.com>
+References: <1403642893-23107-1-git-send-email-keescook@chromium.org> <1403642893-23107-6-git-send-email-keescook@chromium.org> <20140625135121.GB7892@redhat.com> <CAGXu5jJkFxh4K=40xuh6tu3kUf4oJM8Dry+4upBdRieW3FNLgw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140625162322.GA8121@localhost>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <CAGXu5jJkFxh4K=40xuh6tu3kUf4oJM8Dry+4upBdRieW3FNLgw@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 26, 2014 at 12:23:22AM +0800, Fengguang Wu wrote:
-> Do you mean adding rule
-> 
->         if error_file =~ /drivers\/staging/
->                 TO/CC error_file's author/committer instead
->         end
+On 06/25, Kees Cook wrote:
+>
+> On Wed, Jun 25, 2014 at 6:51 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> > On 06/24, Kees Cook wrote:
+> >>
+> >> +static inline void seccomp_assign_mode(struct task_struct *task,
+> >> +                                    unsigned long seccomp_mode)
+> >> +{
+> >> +     BUG_ON(!spin_is_locked(&task->sighand->siglock));
+> >> +
+> >> +     task->seccomp.mode = seccomp_mode;
+> >> +     set_tsk_thread_flag(task, TIF_SECCOMP);
+> >> +}
+> >
+> > OK, but unless task == current this can race with secure_computing().
+> > I think this needs smp_mb__before_atomic() and secure_computing() needs
+> > rmb() after test_bit(TIF_SECCOMP).
+> >
+> > Otherwise, can't __secure_computing() hit BUG() if it sees the old
+> > mode == SECCOMP_MODE_DISABLED ?
+> >
+> > Or seccomp_run_filters() can see ->filters == NULL and WARN(),
+> > smp_load_acquire() only serializes that LOAD with the subsequent memory
+> > operations.
+>
+> Hm, actually, now I'm worried about smp_load_acquire() being too slow
+> in run_filters().
+>
+> The ordering must be:
+> - task->seccomp.filter must be valid before
+> - task->seccomp.mode is set, which must be valid before
+> - TIF_SECCOMP is set
+>
+> But I don't want to impact secure_computing(). What's the best way to
+> make sure this ordering is respected?
 
-Yes.
+Cough, confused... can't understand even after I read the email from Andy.
 
-> I agree that it'd be good for Micky to work out a fix for his staging
-> driver. However due to the obvious dependency here, it looks best for
-> you to include the fix together with "scsi: use 64-bit LUNs"?
+We do not care if __secure_computing() misses the recently added filter,
+this can happen anyway, whatever we do.
 
-drivers/staging was only allowed in as long as it doesn't impact core
-code and maintainers don't have to deal with the mess in there.  So
-no drivers/staging/ changes should be burdened on core code.
+seccomp.mode is frozen after we set it != SECCOMP_MODE_DISABLED.
+
+So we should only worry if set_tsk_thread_flag(TIF_SECCOMP) actually
+changes this bit and makes __secure_computing() possible. If we add
+smp_mb__before_atomic() into seccomp_assign_mode() and rmb() at the
+start of __secure_computing() everything should be fine?
+
+Oleg.
 
