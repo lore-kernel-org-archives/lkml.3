@@ -1,80 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755794AbaFYJSZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 05:18:25 -0400
-Received: from 33.106-14-84.ripe.coltfrance.com ([84.14.106.33]:44646 "EHLO
-	proxy.6wind.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754634AbaFYJSX (ORCPT
+	id S1756003AbaFYJTB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 05:19:01 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:12438 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752688AbaFYJS6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 05:18:23 -0400
-X-Greylist: delayed 465 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 Jun 2014 05:18:22 EDT
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-To: mingo@redhat.com, peterz@infradead.org
-Cc: linux-kernel@vger.kernel.org, Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>
-Subject: [PATCH] sched: fix warnings in linux/sched.h
-Date: Wed, 25 Jun 2014 11:10:11 +0200
-Message-Id: <1403687411-27059-1-git-send-email-nicolas.dichtel@6wind.com>
-X-Mailer: git-send-email 1.9.0
+	Wed, 25 Jun 2014 05:18:58 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 25 Jun 2014 02:09:08 -0700
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Thierry Reding <thierry.reding@gmail.com>,
+        Jingoo Han <jg1.han@samsung.com>, Bryan Wu <cooloney@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>
+CC: <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <gnurou@gmail.com>, Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH] pwm-backlight: use devm_gpiod_get_optional()
+Date: Wed, 25 Jun 2014 18:18:18 +0900
+Message-ID: <1403687898-26881-1-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 2.0.0
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seen when compiling with W=1.
+Make use of the new devm_gpiod_get_optional() to simplify the probe
+code.
 
-Warnings were:
-In file included from arch/x86/kernel/asm-offsets.c:9:0:
-include/linux/sched.h:875:25: warning: type qualifiers ignored on function return type [-Wignored-qualifiers]
-include/linux/sched.h:882:25: warning: type qualifiers ignored on function return type [-Wignored-qualifiers]
-include/linux/sched.h:1002:21: warning: type qualifiers ignored on function return type [-Wignored-qualifiers]
-
-It was introduced by commit 143e1e28cb40 ("sched: Rework sched_domain topology
-definition").
-
-CC: Vincent Guittot <vincent.guittot@linaro.org>
-Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
 ---
- include/linux/sched.h | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/video/backlight/pwm_bl.c | 7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 306f4f0c987a..0376b054a0d0 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -872,21 +872,21 @@ enum cpu_idle_type {
- #define SD_NUMA			0x4000	/* cross-node balancing */
+diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
+index 38ca88bc5c3e..d1e0a7c6cac7 100644
+--- a/drivers/video/backlight/pwm_bl.c
++++ b/drivers/video/backlight/pwm_bl.c
+@@ -245,13 +245,10 @@ static int pwm_backlight_probe(struct platform_device *pdev)
+ 	pb->dev = &pdev->dev;
+ 	pb->enabled = false;
  
- #ifdef CONFIG_SCHED_SMT
--static inline const int cpu_smt_flags(void)
-+static inline int cpu_smt_flags(void)
- {
- 	return SD_SHARE_CPUCAPACITY | SD_SHARE_PKG_RESOURCES;
- }
- #endif
+-	pb->enable_gpio = devm_gpiod_get(&pdev->dev, "enable");
++	pb->enable_gpio = devm_gpiod_get_optional(&pdev->dev, "enable");
+ 	if (IS_ERR(pb->enable_gpio)) {
+ 		ret = PTR_ERR(pb->enable_gpio);
+-		if (ret == -ENOENT)
+-			pb->enable_gpio = NULL;
+-		else
+-			goto err_alloc;
++		goto err_alloc;
+ 	}
  
- #ifdef CONFIG_SCHED_MC
--static inline const int cpu_core_flags(void)
-+static inline int cpu_core_flags(void)
- {
- 	return SD_SHARE_PKG_RESOURCES;
- }
- #endif
- 
- #ifdef CONFIG_NUMA
--static inline const int cpu_numa_flags(void)
-+static inline int cpu_numa_flags(void)
- {
- 	return SD_NUMA;
- }
-@@ -999,7 +999,7 @@ void free_sched_domains(cpumask_var_t doms[], unsigned int ndoms);
- bool cpus_share_cache(int this_cpu, int that_cpu);
- 
- typedef const struct cpumask *(*sched_domain_mask_f)(int cpu);
--typedef const int (*sched_domain_flags_f)(void);
-+typedef int (*sched_domain_flags_f)(void);
- 
- #define SDTL_OVERLAP	0x01
- 
+ 	/*
 -- 
-1.9.0
+2.0.0
 
