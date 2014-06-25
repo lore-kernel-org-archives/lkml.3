@@ -1,135 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752600AbaFYSZb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 14:25:31 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:61475 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755144AbaFYSZ1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 14:25:27 -0400
+	id S1758077AbaFYS0T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 14:26:19 -0400
+Received: from mga11.intel.com ([192.55.52.93]:36094 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757671AbaFYS0S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 14:26:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,547,1400050800"; 
+   d="scan'208";a="560905895"
+Date: Wed, 25 Jun 2014 21:26:09 +0300
+From: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Daniel Vetter <daniel@ffwll.ch>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [Intel-gfx] Regression in i915 driver in 3.16-rc2
+Message-ID: <20140625182609.GY27580@intel.com>
+References: <20140108161713.GT4770@phenom.ffwll.local>
+ <Pine.LNX.4.44L0.1406251358001.871-300000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <CALCETrXr+g6tM+9gQJKKnGj_XoyXi+7ZQpAWjykhOAErpE8MBw@mail.gmail.com>
-References: <1403642893-23107-1-git-send-email-keescook@chromium.org>
-	<1403642893-23107-10-git-send-email-keescook@chromium.org>
-	<20140625142121.GD7892@redhat.com>
-	<CAGXu5jJtLrjbobZC1FD4WV-Jm2p7cRGa1aSPK-d_isnfCZAHdA@mail.gmail.com>
-	<20140625165209.GA14720@redhat.com>
-	<CAGXu5jLHDew1fifGY_mWgwcH7evm0T8rqSnBrw4XpoAXGK+t-Q@mail.gmail.com>
-	<20140625172410.GA17133@redhat.com>
-	<CAGXu5jKkLS3++_dtWHnjWudVvaSR9DRwjNG3q00SmSy6XoCMaw@mail.gmail.com>
-	<CALCETrXr+g6tM+9gQJKKnGj_XoyXi+7ZQpAWjykhOAErpE8MBw@mail.gmail.com>
-Date: Wed, 25 Jun 2014 11:25:26 -0700
-X-Google-Sender-Auth: dB6MJ5EzhM8zcf7qBytVy1FBcfE
-Message-ID: <CAGXu5j+Gw8V5qFueWJiA2rEntALFQ1KXOJaPg3OcJZKDCibyMg@mail.gmail.com>
-Subject: Re: [PATCH v8 9/9] seccomp: implement SECCOMP_FILTER_FLAG_TSYNC
-From: Kees Cook <keescook@chromium.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
-        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <Pine.LNX.4.44L0.1406251358001.871-300000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 11:09 AM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Wed, Jun 25, 2014 at 10:57 AM, Kees Cook <keescook@chromium.org> wrote:
->> On Wed, Jun 25, 2014 at 10:24 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->>> On 06/25, Kees Cook wrote:
->>>>
->>>> On Wed, Jun 25, 2014 at 9:52 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->>>> >
->>>> > Yes, at least this should close the race with suid-exec. And there are no
->>>> > other users. Except apparmor, and I hope you will check it because I simply
->>>> > do not know what it does ;)
->>>> >
->>>> >> I wonder if changes to nnp need to "flushed" during syscall entry
->>>> >> instead of getting updated externally/asynchronously? That way it
->>>> >> won't be out of sync with the seccomp mode/filters.
->>>> >>
->>>> >> Perhaps secure computing needs to check some (maybe seccomp-only)
->>>> >> atomic flags and flip on the "real" nnp if found?
->>>> >
->>>> > Not sure I understand you, could you clarify?
->>>>
->>>> Instead of having TSYNC change the nnp bit, it can set a new flag, say:
->>>>
->>>>     task->seccomp.flags |= SECCOMP_NEEDS_NNP;
->>>>
->>>> This would be set along with seccomp.mode, seccomp.filter, and
->>>> TIF_SECCOMP. Then, during the next secure_computing() call that thread
->>>> makes, it would check the flag:
->>>>
->>>>     if (task->seccomp.flags & SECCOMP_NEEDS_NNP)
->>>>         task->nnp = 1;
->>>>
->>>> This means that nnp couldn't change in the middle of a running syscall.
->>>
->>> Aha, so you were worried about the same thing. Not sure we need this,
->>> but at least I understand you and...
->>>
->>>> Hmmm. Perhaps this doesn't solve anything, though? Perhaps my proposal
->>>> above would actually make things worse, since now we'd have a thread
->>>> with seccomp set up, and no nnp. If it was in the middle of exec,
->>>> we're still causing a problem.
->>>
->>> Yes ;)
->>>
->>>> I think we'd also need a way to either delay the seccomp changes, or
->>>> to notice this condition during exec. Bleh.
->>>
->>> Hmm. confused again,
->>
->> I mean to suggest that the tsync changes would be stored in each
->> thread, but somewhere other than the true seccomp struct, but with
->> TIF_SECCOMP set. When entering secure_computing(), current would check
->> for the "changes to sync", and apply them, then start the syscall. In
->> this way, we can never race a syscall (like exec).
->
-> I'm not sure that helps.  If you set a pending filter part-way through
-> exec, and exec copies that pending filter but doesn't notice NNP, then
-> there's an exploitable race.
->
->>
->>>> What actually happens with a multi-threaded process calls exec? I
->>>> assume all the other threads are destroyed?
->>>
->>> Yes. But this is the point-of-no-return, de_thread() is called after the execing
->>> thared has already passed (say) check_unsafe_exec().
->>>
->>> However, do_execve() takes cred_guard_mutex at the start in prepare_bprm_creds()
->>> and drops it in install_exec_creds(), so it should solve the problem?
->>
->> I can't tell yet. I'm still trying to understand the order of
->> operations here. It looks like de_thread() takes the sighand lock.
->> do_execve_common does:
->>
->> prepare_bprm_creds (takes cred_guard_mutex)
->> check_unsafe_exec (checks nnp to set LSM_UNSAFE_NO_NEW_PRIVS)
->> prepare_binprm (handles suid escalation, checks nnp separately)
->>     security_bprm_set_creds (checks LSM_UNSAFE_NO_NEW_PRIVS)
->> exec_binprm
->>     load_elf_binary
->>         flush_old_exec
->>             de_thread (takes and releases sighand->lock)
->>         install_exec_creds (releases cred_guard_mutex)
->>
->> I don't see a way to use cred_guard_mutex during tsync (which holds
->> sighand->lock) without dead-locking. What were you considering here?
->
-> Grab cred_guard_mutex and then sighand->lock, perhaps?
+On Wed, Jun 25, 2014 at 02:06:55PM -0400, Alan Stern wrote:
+> Daniel:
+> 
+> I encountered a new problem in the i915 driver the first time I booted 
+> a 3.16-rc kernel on this computer.  When it switched over to the frame 
+> buffer driver, the screen went blank and stayed that way.
+> 
+> 3.15 works okay.
+> 
+> Attached are log extracts from 3.15 and 3.16 (both with drm.debug=0xe
+> in the boot command line).  The timestamps have been stripped out for
+> easy diff comparison.  These are the result of
+> 
+> 	dmesg | egrep 'drm|i915|frame'
+> 
+> with a couple of irrelevant lines removed.  I can send the complete 
+> logs if you need them.
+> 
+> Alan Stern
 
-Ah, yes, task->signal is like sighand: shared across all threads.
+> Kernel command line: BOOT_IMAGE=/boot/test-3.x root=/dev/hda8 ro console=ttyS0,115200 console=tty0 earlyprintk=serial,ttyS0,115200 no_console_suspend drm.debug=0xe vconsole.keymap=us vconsole.font=latarcyrheb-sun16 LANG=en_US.UTF-8 usbcore.dyndbg=+p ehci_hcd.dyndbg=+p
+> [drm] Initialized drm 1.1.0 20060810
+> [drm:i915_dump_device_info] i915 device info: gen=2, pciid=0x2572 flags=has_overlay,overlay_needs_physical,
+> [drm:intel_detect_pch] No PCH found.
+> [drm] Memory usable by graphics device = 128M
+> [drm:i915_gem_gtt_init] GMADR size = 128M
+> [drm:i915_gem_gtt_init] GTT stolen size = 8M
+> [drm:i915_gem_gtt_init] ppgtt mode: 0
+> [drm:intel_opregion_setup] graphic opregion physical addr: 0x0
+> [drm:intel_opregion_setup] ACPI OpRegion not supported!
+> [drm] Supports vblank timestamp caching Rev 2 (21.10.2013).
+> [drm] Driver supports precise vblank timestamp query.
+> [drm:init_vbt_defaults] Set default to SSC at 66667 kHz
+> [drm:parse_general_features] BDB_GENERAL_FEATURES int_tv_support 1 int_crt_support 0 lvds_use_ssc 0 lvds_ssc_freq 48000 display_clock_mode 0 fdi_rx_polarity_inverted 0
+                                                                     ^^^^^^^^^^^^^^^^^
+
+This should get your display back:
+http://patchwork.freedesktop.org/patch/28508/
 
 -- 
-Kees Cook
-Chrome OS Security
+Ville Syrjälä
+Intel OTC
