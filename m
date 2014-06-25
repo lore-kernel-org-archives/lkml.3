@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755680AbaFYTGw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 15:06:52 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:60757 "EHLO
+	id S1754950AbaFYTHY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 15:07:24 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:60733 "EHLO
 	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755744AbaFYTE1 (ORCPT
+	with ESMTP id S1755458AbaFYTEW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 15:04:27 -0400
+	Wed, 25 Jun 2014 15:04:22 -0400
 From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 To: Lee Jones <lee.jones@linaro.org>
 Cc: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
@@ -22,9 +22,9 @@ Cc: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
         linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
         linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH v4 08/14] mfd: max77802: Add DT binding documentation
-Date: Wed, 25 Jun 2014 21:03:32 +0200
-Message-Id: <1403723019-6212-9-git-send-email-javier.martinez@collabora.co.uk>
+Subject: [PATCH v4 06/14] clk: max77686: Convert to the generic max clock driver
+Date: Wed, 25 Jun 2014 21:03:30 +0200
+Message-Id: <1403723019-6212-7-git-send-email-javier.martinez@collabora.co.uk>
 X-Mailer: git-send-email 2.0.0.rc2
 In-Reply-To: <1403723019-6212-1-git-send-email-javier.martinez@collabora.co.uk>
 References: <1403723019-6212-1-git-send-email-javier.martinez@collabora.co.uk>
@@ -32,125 +32,252 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add Device Tree binding documentation for Maxim 77802 PMIC.
+Clocks drivers for Maxim PMIC are very similar so they can
+be converted to use the generic Maxim clock driver.
+
+Also, while being there use module_platform_driver() helper
+macro to eliminate more boilerplate code.
 
 Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
 
 Changes since v3: None
 
-Changes since v2:
- - Explain better the Dynamic Voltage Scaling (DVS) support in some Buck
-   regulators and the max77802,pmic-buck-{dvs,selb}-gpios properties.
-   Suggested by Mark Brown.
+ drivers/clk/Kconfig        |   1 +
+ drivers/clk/clk-max77686.c | 176 +++------------------------------------------
+ 2 files changed, 9 insertions(+), 168 deletions(-)
 
- Documentation/devicetree/bindings/mfd/max77802.txt | 97 ++++++++++++++++++++++
- 1 file changed, 97 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mfd/max77802.txt
-
-diff --git a/Documentation/devicetree/bindings/mfd/max77802.txt b/Documentation/devicetree/bindings/mfd/max77802.txt
-new file mode 100644
-index 0000000..f3b67c5
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/max77802.txt
-@@ -0,0 +1,97 @@
-+Maxim MAX77802 multi-function device
-+
-+MAX77802 is a Mulitifunction device with PMIC, RTC and Charger on chip. It is
-+interfaced to host controller using i2c interface. PMIC, Charger and RTC
-+submodules are addressed using same i2c slave address.
-+
-+Buck regulators 1, 2, 3, 4 and 6 include Dynamic Voltage Scaling (DVS) that
-+allows each output voltage to change dynamically. Each Buck output voltage
-+is selected using a set of external inputs: DVS1-3 and SELB1, 2, 3 and 6.
-+
-+There are 8 DVS registers that can be used to configure the output voltage
-+for each Buck regulator and which one is active is controled by DVSx lines.
-+
-+SELBx lines are used to control if individual Buck lines are ON or OFF.
-+
-+This document describes the binding for mfd device and PMIC submodule.
-+
-+Binding for the built-in 32k clock generator block is defined separately
-+in bindings/clk/maxim,max77802.txt file.
-+
-+Required properties:
-+- compatible : Must be "maxim,max77802";
-+- reg : Specifies the i2c slave address of PMIC block.
-+- interrupts : This i2c device has an IRQ line connected to the main SoC.
-+- interrupt-parent : The parent interrupt controller.
-+
-+Optional properties:
-+- max77802,pmic-buck-default-dvs-idx: We'll always write this DVS index in the
-+  PMIC for Bucks with DVS.
-+  NOTE: at the moment these bindings don't include enough details for actual
-+  GPIO-DVS--this just lets you choose which single slot to use.
-+
-+- max77802,pmic-buck-dvs-gpios: A GPIO array where each GPIO is connected to a
-+  DVS line. We'll try to set these GPIOs to match pmic-buck-default-dvs-idx at
-+  probe time if they are defined. If some or all of these GPIOs are not defined
-+  it's assumed that the board has any missing GPIOs hardwired to match
-+  pmic-buck-default-dvs-idx.
-+
-+- max77802,pmic-buck-selb-gpios: A GPIO array where each GPIO is connected to a
-+  SELBx line. Should be five values: 1, 2, 3, 4, 6. It is strongly suggested to
-+  include these GPIOs if there's any chance that changing DVS GPIOs one line at
-+  a time might glitch your DVS values.
-+
-+Optional node:
-+- regulators : The regulators of max77802 have to be instantiated
-+  under subnode named "regulators" using the following format.
-+
-+	regulator_name {
-+		standard regulator constraints....
-+	};
-+	refer Documentation/devicetree/bindings/regulator/regulator.txt
-+
-+  The regulator node name should be initialized with a string
-+to get matched with their hardware counterparts as follow:
-+
-+	-LDOn 	:	for LDOs, where n can lie in range 1 to 35.
-+			example: LDO1, LDO2, LDO35.
-+	-BUCKn 	:	for BUCKs, where n can lie in range 1 to 10.
-+			example: BUCK1, BUCK5, BUCK10.
-+Example:
-+
-+	max77802@09 {
-+		compatible = "maxim,max77802";
-+		interrupt-parent = <&wakeup_eint>;
-+		interrupts = <26 0>;
-+		reg = <0x09>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		max77802,pmic-buck-default-dvs-idx = <1>;
-+		max77802,pmic-buck-dvs-gpios = <&gpy7 6 0>,
-+					       <&gpj4 2 0>,
-+					       <&gpj4 3 0>;
-+		max77802,pmic-buck-selb-gpios = <&gph0 2 0>,
-+						<&gph0 3 0>,
-+						<&gph0 4 0>,
-+						<&gph0 5 0>,
-+						<&gph0 6 0>;
-+
-+		regulators {
-+			ldo11_reg: LDO11 {
-+				regulator-compatible = "LDO11";
-+				regulator-name = "vdd_ldo11";
-+				regulator-min-microvolt = <1900000>;
-+				regulator-max-microvolt = <1900000>;
-+				regulator-always-on;
-+			};
-+
-+			buck1_reg {
-+				regulator-compatible = "BUCK1";
-+				regulator-name = "vdd_mif";
-+				regulator-min-microvolt = <950000>;
-+				regulator-max-microvolt = <1300000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+	};
+diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+index 73f78e8..3fd4270 100644
+--- a/drivers/clk/Kconfig
++++ b/drivers/clk/Kconfig
+@@ -38,6 +38,7 @@ config COMMON_CLK_MAX_GEN
+ config COMMON_CLK_MAX77686
+ 	tristate "Clock driver for Maxim 77686 MFD"
+ 	depends on MFD_MAX77686
++	select COMMON_CLK_MAX_GEN
+ 	---help---
+ 	  This driver supports Maxim 77686 crystal oscillator clock. 
+ 
+diff --git a/drivers/clk/clk-max77686.c b/drivers/clk/clk-max77686.c
+index 185b611..ed0beb4 100644
+--- a/drivers/clk/clk-max77686.c
++++ b/drivers/clk/clk-max77686.c
+@@ -31,187 +31,37 @@
+ #include <linux/clkdev.h>
+ 
+ #include <dt-bindings/clock/maxim,max77686.h>
+-
+-struct max77686_clk {
+-	struct max77686_dev *iodev;
+-	u32 mask;
+-	struct clk_hw hw;
+-	struct clk_lookup *lookup;
+-};
+-
+-static struct max77686_clk *to_max77686_clk(struct clk_hw *hw)
+-{
+-	return container_of(hw, struct max77686_clk, hw);
+-}
+-
+-static int max77686_clk_prepare(struct clk_hw *hw)
+-{
+-	struct max77686_clk *max77686 = to_max77686_clk(hw);
+-
+-	return regmap_update_bits(max77686->iodev->regmap,
+-				  MAX77686_REG_32KHZ, max77686->mask,
+-				  max77686->mask);
+-}
+-
+-static void max77686_clk_unprepare(struct clk_hw *hw)
+-{
+-	struct max77686_clk *max77686 = to_max77686_clk(hw);
+-
+-	regmap_update_bits(max77686->iodev->regmap,
+-		MAX77686_REG_32KHZ, max77686->mask, ~max77686->mask);
+-}
+-
+-static int max77686_clk_is_prepared(struct clk_hw *hw)
+-{
+-	struct max77686_clk *max77686 = to_max77686_clk(hw);
+-	int ret;
+-	u32 val;
+-
+-	ret = regmap_read(max77686->iodev->regmap,
+-				MAX77686_REG_32KHZ, &val);
+-
+-	if (ret < 0)
+-		return -EINVAL;
+-
+-	return val & max77686->mask;
+-}
+-
+-static unsigned long max77686_recalc_rate(struct clk_hw *hw,
+-					  unsigned long parent_rate)
+-{
+-	return 32768;
+-}
+-
+-static struct clk_ops max77686_clk_ops = {
+-	.prepare	= max77686_clk_prepare,
+-	.unprepare	= max77686_clk_unprepare,
+-	.is_prepared	= max77686_clk_is_prepared,
+-	.recalc_rate	= max77686_recalc_rate,
+-};
++#include "clk-max-gen.h"
+ 
+ static struct clk_init_data max77686_clks_init[MAX77686_CLKS_NUM] = {
+ 	[MAX77686_CLK_AP] = {
+ 		.name = "32khz_ap",
+-		.ops = &max77686_clk_ops,
++		.ops = &max_gen_clk_ops,
+ 		.flags = CLK_IS_ROOT,
+ 	},
+ 	[MAX77686_CLK_CP] = {
+ 		.name = "32khz_cp",
+-		.ops = &max77686_clk_ops,
++		.ops = &max_gen_clk_ops,
+ 		.flags = CLK_IS_ROOT,
+ 	},
+ 	[MAX77686_CLK_PMIC] = {
+ 		.name = "32khz_pmic",
+-		.ops = &max77686_clk_ops,
++		.ops = &max_gen_clk_ops,
+ 		.flags = CLK_IS_ROOT,
+ 	},
+ };
+ 
+-static struct clk *max77686_clk_register(struct device *dev,
+-				struct max77686_clk *max77686)
+-{
+-	struct clk *clk;
+-	struct clk_hw *hw = &max77686->hw;
+-
+-	clk = clk_register(dev, hw);
+-	if (IS_ERR(clk))
+-		return clk;
+-
+-	max77686->lookup = kzalloc(sizeof(struct clk_lookup), GFP_KERNEL);
+-	if (!max77686->lookup)
+-		return ERR_PTR(-ENOMEM);
+-
+-	max77686->lookup->con_id = hw->init->name;
+-	max77686->lookup->clk = clk;
+-
+-	clkdev_add(max77686->lookup);
+-
+-	return clk;
+-}
+-
+ static int max77686_clk_probe(struct platform_device *pdev)
+ {
+ 	struct max77686_dev *iodev = dev_get_drvdata(pdev->dev.parent);
+-	struct max77686_clk *max77686_clks[MAX77686_CLKS_NUM];
+-	struct clk **clocks;
+-	int i, ret;
+-
+-	clocks = devm_kzalloc(&pdev->dev, sizeof(struct clk *)
+-					* MAX77686_CLKS_NUM, GFP_KERNEL);
+-	if (!clocks)
+-		return -ENOMEM;
+-
+-	for (i = 0; i < MAX77686_CLKS_NUM; i++) {
+-		max77686_clks[i] = devm_kzalloc(&pdev->dev,
+-					sizeof(struct max77686_clk), GFP_KERNEL);
+-		if (!max77686_clks[i])
+-			return -ENOMEM;
+-	}
+-
+-	for (i = 0; i < MAX77686_CLKS_NUM; i++) {
+-		max77686_clks[i]->iodev = iodev;
+-		max77686_clks[i]->mask = 1 << i;
+-		max77686_clks[i]->hw.init = &max77686_clks_init[i];
+-
+-		clocks[i] = max77686_clk_register(&pdev->dev, max77686_clks[i]);
+-		if (IS_ERR(clocks[i])) {
+-			ret = PTR_ERR(clocks[i]);
+-			dev_err(&pdev->dev, "failed to register %s\n",
+-				max77686_clks[i]->hw.init->name);
+-			goto err_clocks;
+-		}
+-	}
+-
+-	platform_set_drvdata(pdev, clocks);
+-
+-	if (iodev->dev->of_node) {
+-		struct clk_onecell_data *of_data;
+-
+-		of_data = devm_kzalloc(&pdev->dev,
+-					sizeof(*of_data), GFP_KERNEL);
+-		if (!of_data) {
+-			ret = -ENOMEM;
+-			goto err_clocks;
+-		}
+ 
+-		of_data->clks = clocks;
+-		of_data->clk_num = MAX77686_CLKS_NUM;
+-		ret = of_clk_add_provider(iodev->dev->of_node,
+-					of_clk_src_onecell_get, of_data);
+-		if (ret) {
+-			dev_err(&pdev->dev, "failed to register OF clock provider\n");
+-			goto err_clocks;
+-		}
+-	}
+-
+-	return 0;
+-
+-err_clocks:
+-	for (--i; i >= 0; --i) {
+-		clkdev_drop(max77686_clks[i]->lookup);
+-		clk_unregister(max77686_clks[i]->hw.clk);
+-	}
+-
+-	return ret;
++	return max_gen_clk_probe(pdev, iodev->regmap, MAX77686_REG_32KHZ,
++				 max77686_clks_init, MAX77686_CLKS_NUM);
+ }
+ 
+ static int max77686_clk_remove(struct platform_device *pdev)
+ {
+-	struct max77686_dev *iodev = dev_get_drvdata(pdev->dev.parent);
+-	struct clk **clocks = platform_get_drvdata(pdev);
+-	int i;
+-
+-	if (iodev->dev->of_node)
+-		of_clk_del_provider(iodev->dev->of_node);
+-
+-	for (i = 0; i < MAX77686_CLKS_NUM; i++) {
+-		struct clk_hw *hw = __clk_get_hw(clocks[i]);
+-		struct max77686_clk *max77686 = to_max77686_clk(hw);
+-
+-		clkdev_drop(max77686->lookup);
+-		clk_unregister(clocks[i]);
+-	}
+-	return 0;
++	return max_gen_clk_remove(pdev, MAX77686_CLKS_NUM);
+ }
+ 
+ static const struct platform_device_id max77686_clk_id[] = {
+@@ -230,17 +80,7 @@ static struct platform_driver max77686_clk_driver = {
+ 	.id_table = max77686_clk_id,
+ };
+ 
+-static int __init max77686_clk_init(void)
+-{
+-	return platform_driver_register(&max77686_clk_driver);
+-}
+-subsys_initcall(max77686_clk_init);
+-
+-static void __init max77686_clk_cleanup(void)
+-{
+-	platform_driver_unregister(&max77686_clk_driver);
+-}
+-module_exit(max77686_clk_cleanup);
++module_platform_driver(max77686_clk_driver);
+ 
+ MODULE_DESCRIPTION("MAXIM 77686 Clock Driver");
+ MODULE_AUTHOR("Jonghwa Lee <jonghwa3.lee@samsung.com>");
 -- 
 2.0.0.rc2
 
