@@ -1,95 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754906AbaFYH0D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 03:26:03 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:38624 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754752AbaFYH0A (ORCPT
+	id S1755069AbaFYH1F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 03:27:05 -0400
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:55550 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752912AbaFYH1D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 03:26:00 -0400
-From: Tim Kryger <tim.kryger@gmail.com>
-To: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Sachin Kamat <spk.linux@gmail.com>
-Cc: Tim Kryger <tim.kryger@gmail.com>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] mmc: sdhci: Improve external VDD regulator support
-Date: Wed, 25 Jun 2014 00:25:34 -0700
-Message-Id: <1403681134-12616-1-git-send-email-tim.kryger@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 25 Jun 2014 03:27:03 -0400
+X-IronPort-AV: E=Sophos;i="5.01,544,1400050800"; 
+   d="scan'208";a="35881436"
+Message-ID: <53AA799F.7030807@broadcom.com>
+Date: Wed, 25 Jun 2014 09:26:23 +0200
+From: Arend van Spriel <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, <tiwai@suse.de>,
+        <chunkeey@googlemail.com>, <leedom@chelsio.com>,
+        <cocci@systeme.lip6.fr>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, "Luis R. Rodriguez" <mcgrof@suse.com>,
+        <linux-wireless@vger.kernel.org>
+Subject: Re: [PATCH 3/3] p54: use request_firmware_direct() for optional EEPROM
+ override
+References: <1403649583-12707-1-git-send-email-mcgrof@do-not-panic.com> <1403649583-12707-4-git-send-email-mcgrof@do-not-panic.com>
+In-Reply-To: <1403649583-12707-4-git-send-email-mcgrof@do-not-panic.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A standard compliant SDHCI can itself supply VDD at 1.8, 3.0, or 3.3v.
-Several vendors ignore this and instead rely upon external regulators
-to supply VDD.  While the external regulators typically can supply one
-of the standard SDHCI voltage levels, there is no real reason for this
-to be a hard requirement.
+On 25-06-14 00:39, Luis R. Rodriguez wrote:
+> From: "Luis R. Rodriguez" <mcgrof@suse.com>
+>
+> The p54 driver uses request_firmware() twice, once for actual
+> firmware and then another time for an optional user overide on
+> EEPROM, 3826.eeprom. The custom EEPROM  is optional but if not
+> present we'll introduce an extra lag of 60 seconds with udev
+> present. Annotate we don't want udev nonsense here to avoid
+> the lag in case its not present.
 
-This patch alters the SDHCI driver such that external VDD regulators
-that provide voltages other than the three mentioned above may be used
-so long as they can supply a voltage that meets the needs of the card.
+I guess the fact that EEPROM is optional does not matter much. If doing 
+a second request you could always use request_firmware_direct(), right?
 
-In the case that an external VDD regulator is provided, it is reasonable
-to ignore the voltage capabilities of the host controller and allow the
-external regulator to set the OCR mask.  Additionally, there is no need
-to convert a VDD voltage request into one of the standard SDHCI voltage
-levels or program it in the host controller's power control register.
+Regards,
+Arend
 
-Signed-off-by: Tim Kryger <tim.kryger@gmail.com>
-Tested-by: Sachin Kamat <spk.linux@gmail.com>
----
-
-This change corrects a regression observed on Exynos platforms that was
-triggered by "mmc: sdhci: Use mmc core regulator infrastucture"
-
-https://www.mail-archive.com/linux-mmc@vger.kernel.org/msg27101.html
-
- drivers/mmc/host/sdhci.c |   16 +++++++++-------
- 1 file changed, 9 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index c23a872..07a2426 100644
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -1226,6 +1226,13 @@ static void sdhci_set_power(struct sdhci_host *host, unsigned char mode,
- 	struct mmc_host *mmc = host->mmc;
- 	u8 pwr = 0;
- 
-+	if (!IS_ERR(mmc->supply.vmmc)) {
-+		spin_unlock_irq(&host->lock);
-+		mmc_regulator_set_ocr(host->mmc, mmc->supply.vmmc, vdd);
-+		spin_lock_irq(&host->lock);
-+		return;
-+	}
-+
- 	if (mode != MMC_POWER_OFF) {
- 		switch (1 << vdd) {
- 		case MMC_VDD_165_195:
-@@ -1284,12 +1291,6 @@ static void sdhci_set_power(struct sdhci_host *host, unsigned char mode,
- 		if (host->quirks & SDHCI_QUIRK_DELAY_AFTER_POWER)
- 			mdelay(10);
- 	}
--
--	if (!IS_ERR(mmc->supply.vmmc)) {
--		spin_unlock_irq(&host->lock);
--		mmc_regulator_set_ocr(host->mmc, mmc->supply.vmmc, vdd);
--		spin_lock_irq(&host->lock);
--	}
- }
- 
- /*****************************************************************************\
-@@ -3092,8 +3093,9 @@ int sdhci_add_host(struct sdhci_host *host)
- 				   SDHCI_MAX_CURRENT_MULTIPLIER;
- 	}
- 
-+	/* If OCR set by external regulators, use it instead */
- 	if (mmc->ocr_avail)
--		ocr_avail &= mmc->ocr_avail;
-+		ocr_avail = mmc->ocr_avail;
- 
- 	if (host->ocr_mask)
- 		ocr_avail &= host->ocr_mask;
--- 
-1.7.9.5
+> This was found with the following SmPL patch.
+>
+> @ firmware_not_critical @
+> expression cf;
+> expression config_file;
+> expression dev;
+> int ret;
+> identifier l;
+> statement S;
+> @@
+>
+> -	ret = request_firmware(&cf, config_file, dev);
+> +	ret = request_firmware_direct(&cf, config_file, dev);
+> 	if (ret < 0) {
+> 		... when != goto l;
+> 		    when != return ret;
+> 		    when any
+> 	} else {
+> 		...
+> 		release_firmware(cf);
+> 		...
+> 	}
+>
+> Cc: Takashi Iwai <tiwai@suse.de>
+> Cc: Christian Lamparter <chunkeey@googlemail.com>
+> Cc: linux-wireless@vger.kernel.org
+> Cc: cocci@systeme.lip6.fr
+> Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+> ---
+>   drivers/net/wireless/p54/p54spi.c | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/net/wireless/p54/p54spi.c b/drivers/net/wireless/p54/p54spi.c
+> index de15171..63de5ee 100644
+> --- a/drivers/net/wireless/p54/p54spi.c
+> +++ b/drivers/net/wireless/p54/p54spi.c
+> @@ -193,7 +193,7 @@ static int p54spi_request_eeprom(struct ieee80211_hw *dev)
+>   	/* allow users to customize their eeprom.
+>   	 */
+>
+> -	ret = request_firmware(&eeprom, "3826.eeprom", &priv->spi->dev);
+> +	ret = request_firmware_direct(&eeprom, "3826.eeprom", &priv->spi->dev);
+>   	if (ret < 0) {
+>   #ifdef CONFIG_P54_SPI_DEFAULT_EEPROM
+>   		dev_info(&priv->spi->dev, "loading default eeprom...\n");
+>
 
