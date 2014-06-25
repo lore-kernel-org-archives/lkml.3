@@ -1,110 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756881AbaFYLO4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 07:14:56 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:64658 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756558AbaFYLOx (ORCPT
+	id S1756608AbaFYLOw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 07:14:52 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36706 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754073AbaFYLOt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 07:14:53 -0400
-Date: Wed, 25 Jun 2014 13:11:20 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        =?utf-8?Q?Beno=C3=AEt?= Cousson <bcousson@baylibre.com>,
+	Wed, 25 Jun 2014 07:14:49 -0400
+Date: Wed, 25 Jun 2014 12:14:43 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Rob Herring <robherring2@gmail.com>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
         Tony Lindgren <tony@atomide.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH] arm/arm64: DT: Fix GICv2 CPU interface size
-Message-ID: <20140625111119.GA21208@ulmo>
-References: <1403692675-26503-1-git-send-email-marc.zyngier@arm.com>
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Rajendra Nayak <rnayak@ti.com>, Nishanth Menon <nm@ti.com>,
+        Sricharan R <r.sricharan@ti.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 1/2] arm: dts: am4372: let boards access all nodes
+ through phandles
+Message-ID: <20140625111443.GG14495@leverpostej>
+References: <1403547659-24558-1-git-send-email-balbi@ti.com>
+ <1403547659-24558-2-git-send-email-balbi@ti.com>
+ <CAL_JsqJx_DJqxpEJebi0Etfv5g7=eYje_53vd_44GykreA-rkQ@mail.gmail.com>
+ <20140625014016.GA21616@saruman.home>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="r5Pyd7+fXNt84Ff3"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1403692675-26503-1-git-send-email-marc.zyngier@arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140625014016.GA21616@saruman.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 25, 2014 at 02:40:16AM +0100, Felipe Balbi wrote:
+> Hi,
+> 
+> On Tue, Jun 24, 2014 at 04:11:48PM -0500, Rob Herring wrote:
+> > On Mon, Jun 23, 2014 at 1:20 PM, Felipe Balbi <balbi@ti.com> wrote:
+> > > by providing phandles to rtc, wdt, cpu and dispc nodes,
+> > > boards can access them to add board-specific data.
+> > 
+> > Strictly speaking, you are adding labels, not phandles. You can do
+> 
+> heh, fair point. Easily editable when applying, though (?)
+> 
+> > phandles without using labels, but the syntax is not so obvious. I'd
+> > tell you what it is but offhand I don't remember. :)
+> 
+> something along the lines of using the full path ?
 
---r5Pyd7+fXNt84Ff3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yup. The full path in braces:
 
-On Wed, Jun 25, 2014 at 11:37:54AM +0100, Marc Zyngier wrote:
-> All the Cortex-{A7,A15} implementations are using a GICv2. Same for
-> the current arm64 platforms.
->=20
-> Turns out that most of these platforms have described their GIC CPU
-> interface size as being 4kB. while it is actually 8kB (the GICC_DIR
-> register lives at offset 0x1000).
->=20
-> This was found when converting the GIC driver to use EOImode=3D=3D1 on
-> GICv2-based systems. It uses the GICC_DIR register, and the result
-> is a very early firework...
->=20
-> Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
-> ---
->  arch/arm/boot/dts/axm55xx.dtsi              | 2 +-
->  arch/arm/boot/dts/dra7.dtsi                 | 2 +-
->  arch/arm/boot/dts/ecx-2000.dts              | 2 +-
->  arch/arm/boot/dts/exynos3250.dtsi           | 2 +-
->  arch/arm/boot/dts/exynos5.dtsi              | 2 +-
->  arch/arm/boot/dts/exynos5260.dtsi           | 2 +-
->  arch/arm/boot/dts/exynos5410.dtsi           | 2 +-
->  arch/arm/boot/dts/exynos5440.dtsi           | 2 +-
->  arch/arm/boot/dts/omap5.dtsi                | 2 +-
->  arch/arm/boot/dts/r8a73a4.dtsi              | 2 +-
->  arch/arm/boot/dts/r8a7790.dtsi              | 2 +-
->  arch/arm/boot/dts/r8a7791.dtsi              | 2 +-
->  arch/arm/boot/dts/sun6i-a31.dtsi            | 2 +-
->  arch/arm/boot/dts/sun7i-a20.dtsi            | 2 +-
->  arch/arm/boot/dts/tegra114.dtsi             | 2 +-
->  arch/arm/boot/dts/tegra124.dtsi             | 2 +-
->  arch/arm/boot/dts/vexpress-v2p-ca15-tc1.dts | 2 +-
->  arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts  | 2 +-
->  arch/arm64/boot/dts/apm-storm.dtsi          | 2 +-
->  arch/arm64/boot/dts/foundation-v8.dts       | 2 +-
->  arch/arm64/boot/dts/rtsm_ve-aemv8a.dts      | 2 +-
->  21 files changed, 21 insertions(+), 21 deletions(-)
+	phandle-property = <&{/full/path/to/node@0xDEAD}>;
 
-For the Tegra114 and Tegra124 patches:
-
-Tested-by: Thierry Reding <treding@nvidia.com>
-Acked-by: Thierry Reding <treding@nvidia.com>
-
---r5Pyd7+fXNt84Ff3
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJTqq5XAAoJEN0jrNd/PrOhoC0P/jXztf2IbSTJQysE0s7omsj+
-CxUeiQvvehmzx26bly9L8C62C/rlPWgGCWTN8lWZcKEINwphiC6ndXlsuO3V4FOX
-sW22wV27JYacm034SkbF9GQia9pMsFRIEdf1En8Ky46eLUqYXJX97qyPwWMaNMVu
-z2rd/gFkWl/RjyaPuLXKG2R50CKE31WyC7IHn4Y8SQDOMue8UITPMbhKk4jK8esO
-iiDJL1K+ECeajj3fyCZKc3vLd7+4b0rE+zwUk41dPVkts2NKC1vhcSyUZfjvAoFi
-193PDNYFzey5Wb4f7tq6YdHEsiNYNckE2LnISHjvPFbbysZw4QUFJRWirFgH635F
-yZgqNr1Mx772g0w15MMxulqqkqQYetjWCwHTtqfjmbnW2uUIxMYEH06x+Eg3K9Ti
-Lf+BGXOx5s5Ga6SB2nFClj6nclnJuP7JTvRvklNoU4GSU9WNnC7ujzcNNA+KIKD8
-zJr+yfSAdhhftN+N/183KHS+kYreoxpu91V1ogYozZHEdBRuFc3YzQyzkJfUzds/
-8rA0Eo3YmqL0ygdAMb0pT+lnwz6QLRN24HGLrnVCLbj0FvYTJ5T4kiFF6qd9/RA8
-QDGsSiinPllgZqcHyYJoMvpZKj1IlK0/EqdBky+3QmVLkoNvgGD9XMwX/YFAq8Oj
-e1EZkj0GHfLrULVU7H+P
-=KkJ3
------END PGP SIGNATURE-----
-
---r5Pyd7+fXNt84Ff3--
+Mark.
