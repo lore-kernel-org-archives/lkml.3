@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754754AbaFYSwk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 14:52:40 -0400
-Received: from mout.kundenserver.de ([212.227.126.130]:57163 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752942AbaFYSwi (ORCPT
+	id S1754876AbaFYSxE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 14:53:04 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:37246 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752271AbaFYSxB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 14:52:38 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Olof Johansson <olof@lixom.net>, arm@kernel.org, pebolle@tiscali.nl,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: Re: [GIT PULL] at91: fixes for 3.16 #1 (ter)
-Date: Wed, 25 Jun 2014 20:49:59 +0200
-Message-ID: <4184712.OOQdXC98UK@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1403713316-28253-1-git-send-email-nicolas.ferre@atmel.com>
-References: <1403713316-28253-1-git-send-email-nicolas.ferre@atmel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:bC9kXin3feM75dfDZTw2/SZhNfbZGn7vKAIYTU9lap8
- 21HjFHxYO1R5rOBAHlpEO5OP3KrTO0c0IHAhY8HKWGdQ8uX2rr
- b8IZmw83PwDuZgOXmKAlgbXpQlR0/Ywp3ExNDRdQAM/KNUOmdq
- hmf3n0a4O4OTgn/cjFh5rIcxjCXFmayKJPIE6rzqFhZ/Jqrmub
- piExAlLILQ1LS7J1Md1K8ww1XthjdiDcd8t+P3CMpuViRxRWnV
- yp58Q+eXSv0qTV1J9iT2QQqRQlYb+qWb6+k+iuCr1f+mF27iOx
- rCMiEW9FrFSTEAQCu7GubTt3m/xuLCVIEoBfdLD3kHR7Wi9Vaj
- oCT53qZ4EfPiKciO2hrQ=
+	Wed, 25 Jun 2014 14:53:01 -0400
+Date: Wed, 25 Jun 2014 11:52:58 -0700 (PDT)
+Message-Id: <20140625.115258.1446490446271879078.davem@davemloft.net>
+To: davej@redhat.com
+Cc: torvalds@linux-foundation.org, therbert@google.com,
+        akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tcp: fix setting csum_start in tcp_gso_segment
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20140625141052.GA1096@redhat.com>
+References: <alpine.DEB.2.02.1406242056330.29780@tomh.mtv.corp.google.com>
+	<CA+55aFxyZP_jXT-bLyFjJMp4WfVZp5vFtpu+-6_qCi46xkceQg@mail.gmail.com>
+	<20140625141052.GA1096@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 25 Jun 2014 11:53:01 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 25 June 2014 18:21:56 Nicolas Ferre wrote:
-> Arnd, Olof, Kevin,
-> 
-> An AT91 fixes batch for 3.16 that collects mainly DT fixes in relation
-> to the recent move to CCF on a couple of platforms.
-> A Kconfig symbol fix in drivers/misc is also included.
-> 
-> As the previous "fixes" pull-requests will be re-spin for 3.17 and shall be
-> ignored, I use the same tag name "at91-fixes".
-> 
-> Thanks, best regards,
-> 
-> The following changes since commit 7171511eaec5bf23fb06078f59784a3a0626b38f:
-> 
->   Linux 3.16-rc1 (2014-06-15 17:45:28 -1000)
-> 
-> are available in the git repository at:
-> 
->   git://github.com/at91linux/linux-at91.git tags/at91-fixes
-> 
-> for you to fetch changes up to 971dc9ce106110745f246337f229013589354536:
-> 
->   ARM: at91/dt: sam9261: remove slow RC osc (2014-06-25 18:00:17 +0200)
-> 
-> ----------------------------------------------------------------
-> First AT91 fixes batch for 3.16:
-> - drivers/misc fix for Kconfig PWM symbol
-> - correction of several values in DT after conversion to CCF
-> - fix at91sam9261/at91sam9261ek mistake in slow crystal vs. slow RC osc
+From: Dave Jones <davej@redhat.com>
+Date: Wed, 25 Jun 2014 10:10:52 -0400
 
-Pulled and sent out again now. Thanks for following up so quickly.
+> On Tue, Jun 24, 2014 at 09:17:25PM -0700, Linus Torvalds wrote:
+>  > On Tue, Jun 24, 2014 at 9:03 PM, Tom Herbert <therbert@google.com> wrote:
+>  > >
+>  > > It looks like a likely culprit is that SKB_GSO_CB()->csum_start is
+>  > > not set correctly when doing non-scatter gather. We are using
+>  > > offset as opposed to doffset.
+>  > >
+>  > > Reported-by: Dave Jones <davej@redhat.com>
+>  > 
+>  > DaveJ, I think you triggered this in five minutes on your box, and I
+>  > don't recall seeing anybody else reporting the oops (and google
+>  > doesn't find anything in the last month). So it's presumably somewhat
+>  > hw-specific. Does this fix the problem?
+> 
+> It's survived routing ~1GB of packets overnight, so I'd call this good.
 
-	Arnd
+Tom, please adjust the Subject line as suggested by Eric Dumazet and add
+a Tested-by: for Dave.
+
+Thanks!
