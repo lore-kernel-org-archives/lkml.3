@@ -1,126 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932096AbaFYMfi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 08:35:38 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:35119 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752337AbaFYMfh (ORCPT
+	id S1756690AbaFYMip (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 08:38:45 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:48083 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752596AbaFYMio (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 08:35:37 -0400
-From: Chen Yucong <slaoub@gmail.com>
-To: mgorman@suse.de
-Cc: hannes@cmpxchg.org, mhocko@suse.cz, riel@redhat.com,
-        akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Chen Yucong <slaoub@gmail.com>
-Subject: [RESEND PATCH] mm: kswapd: clean up the kswapd
-Date: Wed, 25 Jun 2014 20:35:17 +0800
-Message-Id: <1403699717-23744-1-git-send-email-slaoub@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 25 Jun 2014 08:38:44 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19XAEYnEHpoRdzkfZfkV0f5rc4T6oedeUE=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 113AD599532
+Date: Wed, 25 Jun 2014 08:38:42 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] irqchip: fixes for v3.16
+Message-ID: <20140625123842.GQ10202@titan.lakedaemon.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The type of variables(order, new_order, and balanced_order) has some
-flaws. According to the *order* argument for kswapd_try_to_sleep() and
-balance_pgdat() and the *order* field of scan_control, they should be
-defined as 'int' rather than 'unsigned long' or 'unsigned'. At the same
-time, the type of the return value of balance_pgdat() should also be
-changed from 'unsigned long' to 'int', based on its comment "Returns
-the final order kswapd was reclaiming at".
+Thomas,
 
-This patch also does minimal cleanup, which makes the kswapd more clarify.
+Here's a round of fixes for irqchip.  They've been in -next a few days
+and are based on v3.16-rc1.
 
-The output of `size' command:
+Please pull.
 
-   text    data     bss     dec     hex filename
-5773502 1277496  929792 7980790  79c6f6 vmlinux-3.16-rc1
-5773502 1277496  929792 7980790  79c6f6 vmlinux-3.16-rc1-fix
+thx,
 
-The output of checkstack.pl:
-        3.16-rc1    3.16-rc1-fix
-kswapd    104          104
+Jason.
 
-Signed-off-by: Chen Yucong <slaoub@gmail.com>
----
- mm/vmscan.c |   36 +++++++++++++++++++-----------------
- 1 file changed, 19 insertions(+), 17 deletions(-)
+The following changes since commit 7171511eaec5bf23fb06078f59784a3a0626b38f:
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index a8ffe4e..37b3453 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -3070,8 +3070,7 @@ static bool kswapd_shrink_zone(struct zone *zone,
-  * interoperates with the page allocator fallback scheme to ensure that aging
-  * of pages is balanced across the zones.
-  */
--static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
--							int *classzone_idx)
-+static int balance_pgdat(pg_data_t *pgdat, int order, int *classzone_idx)
- {
- 	int i;
- 	int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
-@@ -3332,8 +3331,8 @@ static void kswapd_try_to_sleep(pg_data_t *pgdat, int order, int classzone_idx)
-  */
- static int kswapd(void *p)
- {
--	unsigned long order, new_order;
--	unsigned balanced_order;
-+	int order, new_order;
-+	int balanced_order;
- 	int classzone_idx, new_classzone_idx;
- 	int balanced_classzone_idx;
- 	pg_data_t *pgdat = (pg_data_t*)p;
-@@ -3371,34 +3370,37 @@ static int kswapd(void *p)
- 	balanced_classzone_idx = classzone_idx;
- 	for ( ; ; ) {
- 		bool ret;
-+		bool sleep = true;
- 
- 		/*
- 		 * If the last balance_pgdat was unsuccessful it's unlikely a
- 		 * new request of a similar or harder type will succeed soon
- 		 * so consider going to sleep on the basis we reclaimed at
- 		 */
--		if (balanced_classzone_idx >= new_classzone_idx &&
--					balanced_order == new_order) {
-+		if (balanced_classzone_idx >= classzone_idx &&
-+					balanced_order == order) {
- 			new_order = pgdat->kswapd_max_order;
- 			new_classzone_idx = pgdat->classzone_idx;
--			pgdat->kswapd_max_order =  0;
-+			pgdat->kswapd_max_order = 0;
- 			pgdat->classzone_idx = pgdat->nr_zones - 1;
-+
-+			if (order < new_order ||
-+					classzone_idx > new_classzone_idx) {
-+				/*
-+				 * Don't sleep if someone wants a larger 'order'
-+				 * allocation or has tighter zone constraints
-+				 */
-+				order = new_order;
-+				classzone_idx = new_classzone_idx;
-+				sleep = false;
-+			}
- 		}
- 
--		if (order < new_order || classzone_idx > new_classzone_idx) {
--			/*
--			 * Don't sleep if someone wants a larger 'order'
--			 * allocation or has tigher zone constraints
--			 */
--			order = new_order;
--			classzone_idx = new_classzone_idx;
--		} else {
-+		if (sleep) {
- 			kswapd_try_to_sleep(pgdat, balanced_order,
- 						balanced_classzone_idx);
- 			order = pgdat->kswapd_max_order;
- 			classzone_idx = pgdat->classzone_idx;
--			new_order = order;
--			new_classzone_idx = classzone_idx;
- 			pgdat->kswapd_max_order = 0;
- 			pgdat->classzone_idx = pgdat->nr_zones - 1;
- 		}
--- 
-1.7.10.4
+  Linux 3.16-rc1 (2014-06-15 17:45:28 -1000)
 
+are available in the git repository at:
+
+  git://git.infradead.org/users/jcooper/linux.git tags/irqchip-urgent-3.16
+
+for you to fetch changes up to 4f4366033945419b0c52118c29d3057d7c558765:
+
+  irqchip: spear_shirq: Fix interrupt offset (2014-06-21 23:26:39 +0000)
+
+----------------------------------------------------------------
+irqchip fixes for v3.16
+
+ - armada-370-xp
+    - Mask all interrupts during init
+
+ - brcmstb-l2
+    - interrupts are edge-sensitive
+
+ - spear_shirq
+    - fix interrupt offset
+
+----------------------------------------------------------------
+Florian Fainelli (1):
+      irqchip: brcmstb-l2: Level-2 interrupts are edge sensitive
+
+Thomas Gleixner (1):
+      irqchip: spear_shirq: Fix interrupt offset
+
+Thomas Petazzoni (1):
+      irqchip: armada-370-xp: Mask all interrupts during initialization.
+
+ drivers/irqchip/irq-armada-370-xp.c | 17 +++++++++++++++--
+ drivers/irqchip/irq-brcmstb-l2.c    |  2 +-
+ drivers/irqchip/spear-shirq.c       |  2 +-
+ 3 files changed, 17 insertions(+), 4 deletions(-)
