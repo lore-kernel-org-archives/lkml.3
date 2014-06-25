@@ -1,141 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753578AbaFYGlm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 02:41:42 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:37370 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751713AbaFYGll (ORCPT
+	id S1752722AbaFYGsk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 02:48:40 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:57890 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751415AbaFYGsj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 02:41:41 -0400
+	Wed, 25 Jun 2014 02:48:39 -0400
+Message-ID: <53AA70C0.2000806@redhat.com>
+Date: Wed, 25 Jun 2014 08:48:32 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <1403658329-13196-1-git-send-email-linux@roeck-us.net>
-References: <1403658329-13196-1-git-send-email-linux@roeck-us.net>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Wed, 25 Jun 2014 08:41:20 +0200
-Message-ID: <CAKfTPtBzpuVf7Ts0YunD=38hONg2RT3Ymr-jvFxx4woa_Qt9tQ@mail.gmail.com>
-Subject: Re: [PATCH v2] sched: Fix compiler warnings
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Paul Mackerras <paulus@samba.org>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linuxppc-dev@lists.ozlabs.org,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Chen, Tiejun" <tiejun.chen@intel.com>, daniel.vetter@ffwll.ch,
+        jani.nikula@linux.intel.com, airlied@linux.ie
+CC: intel-gfx@lists.freedesktop.org, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        qemu-devel@nongnu.org
+Subject: Re: [RFC][PATCH] gpu:drm:i915:intel_detect_pch: back to check devfn
+ instead of check class type
+References: <1403171631-3452-1-git-send-email-tiejun.chen@intel.com> <53A42DAA.80406@redhat.com> <53A692F9.3060200@intel.com>
+In-Reply-To: <53A692F9.3060200@intel.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 June 2014 03:05, Guenter Roeck <linux@roeck-us.net> wrote:
-> Commit 143e1e28cb (sched: Rework sched_domain topology definition)
-> introduced a number of functions with a return value of 'const int'.
-> gcc doesn't know what to do with that and, if the kernel is compiled
-> with W=1, complains with the following warnings whenever sched.h
-> is included.
->
-> include/linux/sched.h:875:25: warning:
->         type qualifiers ignored on function return type
-> include/linux/sched.h:882:25: warning:
->         type qualifiers ignored on function return type
-> include/linux/sched.h:889:25: warning:
->         type qualifiers ignored on function return type
-> include/linux/sched.h:1002:21: warning:
->         type qualifiers ignored on function return type
->
-> Commits fb2aa855 (sched, ARM: Create a dedicated scheduler topology table)
-> and 607b45e9a (sched, powerpc: Create a dedicated topology table) introduce
-> the same warning in the arm and powerpc code.
->
-> Drop 'const' from the function declarations to fix the problem.
->
-> The fix for all three patches has to be applied together to avoid
-> compilation failures for the affected architectures.
->
-> Cc: Dietmar Eggemann <dietmar.eggemann@arm.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Vincent Guittot <vincent.guittot@linaro.org>
+Il 22/06/2014 10:25, Chen, Tiejun ha scritto:
+> In qemu-upstream, as you commented we can't create this as a ISA class
+> type explicitly.
 
-Acked-by Vincent Guittot <vincent.guittot@linaro.org>
+Note I didn't say that QEMU doesn't like having two ISA bridges.
 
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> ---
-> v2: Fix problem in all affected architectures with a single patch
->     to avoid compilation errors.
->
->  arch/arm/kernel/topology.c | 2 +-
->  arch/powerpc/kernel/smp.c  | 2 +-
->  include/linux/sched.h      | 8 ++++----
->  3 files changed, 6 insertions(+), 6 deletions(-)
->
-> diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
-> index 9d85318..e35d880 100644
-> --- a/arch/arm/kernel/topology.c
-> +++ b/arch/arm/kernel/topology.c
-> @@ -275,7 +275,7 @@ void store_cpu_topology(unsigned int cpuid)
->                 cpu_topology[cpuid].socket_id, mpidr);
->  }
->
-> -static inline const int cpu_corepower_flags(void)
-> +static inline int cpu_corepower_flags(void)
->  {
->         return SD_SHARE_PKG_RESOURCES  | SD_SHARE_POWERDOMAIN;
->  }
-> diff --git a/arch/powerpc/kernel/smp.c b/arch/powerpc/kernel/smp.c
-> index 51a3ff7..1007fb8 100644
-> --- a/arch/powerpc/kernel/smp.c
-> +++ b/arch/powerpc/kernel/smp.c
-> @@ -747,7 +747,7 @@ int setup_profiling_timer(unsigned int multiplier)
->
->  #ifdef CONFIG_SCHED_SMT
->  /* cpumask of CPUs with asymetric SMT dependancy */
-> -static const int powerpc_smt_flags(void)
-> +static int powerpc_smt_flags(void)
->  {
->         int flags = SD_SHARE_CPUCAPACITY | SD_SHARE_PKG_RESOURCES;
->
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 306f4f0..0376b05 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -872,21 +872,21 @@ enum cpu_idle_type {
->  #define SD_NUMA                        0x4000  /* cross-node balancing */
->
->  #ifdef CONFIG_SCHED_SMT
-> -static inline const int cpu_smt_flags(void)
-> +static inline int cpu_smt_flags(void)
->  {
->         return SD_SHARE_CPUCAPACITY | SD_SHARE_PKG_RESOURCES;
->  }
->  #endif
->
->  #ifdef CONFIG_SCHED_MC
-> -static inline const int cpu_core_flags(void)
-> +static inline int cpu_core_flags(void)
->  {
->         return SD_SHARE_PKG_RESOURCES;
->  }
->  #endif
->
->  #ifdef CONFIG_NUMA
-> -static inline const int cpu_numa_flags(void)
-> +static inline int cpu_numa_flags(void)
->  {
->         return SD_NUMA;
->  }
-> @@ -999,7 +999,7 @@ void free_sched_domains(cpumask_var_t doms[], unsigned int ndoms);
->  bool cpus_share_cache(int this_cpu, int that_cpu);
->
->  typedef const struct cpumask *(*sched_domain_mask_f)(int cpu);
-> -typedef const int (*sched_domain_flags_f)(void);
-> +typedef int (*sched_domain_flags_f)(void);
->
->  #define SDTL_OVERLAP   0x01
->
-> --
-> 1.9.1
->
+I commented that the firmware will see two ISA bridges and will try to 
+initialize both of them.  It currently doesn't just because it only 
+knows of two southbridge PCI IDs, and both of them are old or relatively 
+old (PIIX3/4 and ICH9).
+
+But what would happen if you did graphics passthrough on a machine with 
+an ICH9 southbridge?  Your code will create the PIIX4 ISA bridge, and 
+will create an ICH9 southbridge just to please the i915 driver.  The 
+BIOS will recognize the ICH9's vendor/device ids and try to initialize 
+it.  It will write to the configuration space to set up PCI PIRQ[A-H] 
+routing, for example, which makes no sense since your ICH9 is just a 
+dummy device.
+
+Second problem.  Your IGD passthrough code currently works with QEMU's 
+PIIX4-based machine.  But what happens if you try to extend it, so that 
+it works with QEMU's ICH9-based machine?  That's a more modern machine 
+that has a PCIe chipset and hence has its ISA bridge at 00:1f.0.  Now 
+you have a conflict.
+
+In other words, if you want IGD passthrough in QEMU, you need a solution 
+that is future-proof.
+
+> So we compromise by faking this ISA bridge without ISA
+> class type setting (as I recall you already said this way is slightly
+> better).
+
+It is only slightly better, but the right solution is to fix the driver. 
+  There is absolutely zero reason why a graphics driver should know 
+about the vendor/device ids of the PCH.
+
+The right way could be to make QEMU add a vendor-specific capability to 
+the video device. The driver can probe for that capability before 
+looking at the PCI bus.  QEMU can add the capability to the list, it is 
+easy because all accesses to the video device's configuration space trap 
+to QEMU.  Then you do not need to add fake devices to the machine.
+
+In fact, it would be nice if Intel added such a capability on the next 
+generation of integrated graphics, too.  On real hardware, ACPI or some 
+other kind of firmware can probe the PCH at 00:1f.0 and initialize that 
+vendor-specific capability.  QEMU would just forward the value from the 
+host, so that virtualized guests never depend on the PCH at 00:1f.0.
+
+Paolo
+
+> Maybe we will figure better way in the future. But anyway, this
+> is always registered as 00:15.0, right? So I think the i915 driver can
+> go back to probe the devfn like the native environment.
+
