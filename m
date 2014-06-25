@@ -1,196 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755727AbaFYIjv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 04:39:51 -0400
-Received: from mga14.intel.com ([192.55.52.115]:23575 "EHLO mga14.intel.com"
+	id S1755766AbaFYIj4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 04:39:56 -0400
+Received: from mga03.intel.com ([143.182.124.21]:15789 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755616AbaFYIjl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 04:39:41 -0400
+	id S1755616AbaFYIjx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 04:39:53 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,544,1400050800"; 
-   d="scan'208";a="552973913"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        x86@kernel.org, Jiang Liu <jiang.liu@linux.intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Prarit Bhargava <prarit@redhat.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
-Subject: [Patch V3 10/16] x86, irq: Refine mp_register_ioapic() to prepare for IOAPIC hotplug
-Date: Wed, 25 Jun 2014 16:40:41 +0800
-Message-Id: <1403685648-10103-11-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1403685648-10103-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1403685648-10103-1-git-send-email-jiang.liu@linux.intel.com>
+   d="scan'208";a="449717427"
+From: Yuyang Du <yuyang.du@intel.com>
+To: mingo@redhat.com, peterz@infradead.org, rafael.j.wysocki@intel.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Cc: arjan.van.de.ven@intel.com, len.brown@intel.com, alan.cox@intel.com,
+        mark.gross@intel.com, morten.rasmussen@arm.com,
+        vincent.guittot@linaro.org, dietmar.eggemann@arm.com,
+        rajeev.d.muralidhar@intel.com, vishwesh.m.rudramuni@intel.com,
+        nicole.chalhoub@intel.com, ajaya.durg@intel.com,
+        harinarayanan.seshadri@intel.com, jacob.jun.pan@linux.intel.com,
+        Yuyang Du <yuyang.du@intel.com>
+Subject: [RFC PATCH 2/9 v4] sched: Precise accumulated time and acount runnable number in update_entity_runnable_avg
+Date: Wed, 25 Jun 2014 08:36:01 +0800
+Message-Id: <1403656568-32445-3-git-send-email-yuyang.du@intel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1403656568-32445-1-git-send-email-yuyang.du@intel.com>
+References: <1403656568-32445-1-git-send-email-yuyang.du@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Refine mp_register_ioapic() to prepare for IOAPIC hotplug by:
-1) change return value from void to int.
-2) check for gsi range conflicts
-3) check for IOAPIC physical address conflicts
-4) enhance the way to allocate IOAPIC index
+The current amount of time already accumulated against next period is
+determined by:
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+	delta_w = sa->runnable_avg_period % 1024
+
+Considering the runnable_avg_period is the sum of an infinite series, this
+method looks gross, even the error would be no more than 1024 (~1ms).
+But precisely accounting this is not hard, just use a variable period_contrib
+to record it.
+
+The current runnable argument is either 1 or 0, indicating whether this entity
+is runnable or not. In order to account the number of runnables as well, change
+how runnable_avg_sum is accumulated.
+
+Signed-off-by: Yuyang Du <yuyang.du@intel.com>
 ---
- arch/x86/include/asm/io_apic.h |    4 +-
- arch/x86/kernel/apic/io_apic.c |   80 ++++++++++++++++++++++++----------------
- 2 files changed, 51 insertions(+), 33 deletions(-)
+ include/linux/sched.h |    1 +
+ kernel/sched/fair.c   |   12 ++++++++----
+ 2 files changed, 9 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index 0b31aebd9405..94d05bd6586f 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -188,8 +188,8 @@ extern int mp_find_ioapic_pin(int ioapic, u32 gsi);
- extern u32 mp_pin_to_gsi(int ioapic, int pin);
- extern int mp_map_gsi_to_irq(u32 gsi, unsigned int flags);
- extern void mp_unmap_irq(int irq);
--extern void mp_register_ioapic(int id, u32 address, u32 gsi_base,
--			       struct ioapic_domain_cfg *cfg);
-+extern int mp_register_ioapic(int id, u32 address, u32 gsi_base,
-+			      struct ioapic_domain_cfg *cfg);
- extern int mp_irqdomain_map(struct irq_domain *domain, unsigned int virq,
- 			    irq_hw_number_t hwirq);
- extern void mp_irqdomain_unmap(struct irq_domain *domain, unsigned int virq);
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 1510734d5cbb..18b5ce0c2bc9 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -3825,20 +3825,6 @@ int mp_find_ioapic_pin(int ioapic, u32 gsi)
- 	return gsi - gsi_cfg->gsi_base;
- }
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 306f4f0..1b1997d 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1074,6 +1074,7 @@ struct sched_avg {
+ 	 * choices of y < 1-2^(-32)*1024.
+ 	 */
+ 	u32 runnable_avg_sum, runnable_avg_period;
++	u32 period_contrib;
+ 	u64 last_runnable_update;
+ 	s64 decay_count;
+ 	unsigned long load_avg_contrib;
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 1a2d04f..e914e32 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2294,10 +2294,12 @@ static __always_inline int __update_entity_runnable_avg(u64 now,
+ 	sa->last_runnable_update = now;
  
--static int bad_ioapic(unsigned long address)
--{
--	if (nr_ioapics >= MAX_IO_APICS) {
--		pr_warn("WARNING: Max # of I/O APICs (%d) exceeded (found %d), skipping\n",
--			MAX_IO_APICS, nr_ioapics);
--		return 1;
--	}
--	if (!address) {
--		pr_warn("WARNING: Bogus (zero) I/O APIC address found in table, skipping!\n");
--		return 1;
--	}
--	return 0;
--}
--
- static int bad_ioapic_register(int idx)
- {
- 	union IO_APIC_reg_00 reg_00;
-@@ -3858,29 +3844,44 @@ static int bad_ioapic_register(int idx)
- 	return 0;
- }
+ 	/* delta_w is the amount already accumulated against our next period */
+-	delta_w = sa->runnable_avg_period % 1024;
++	delta_w = sa->period_contrib;
+ 	if (delta + delta_w >= 1024) {
+ 		/* period roll-over */
+ 		decayed = 1;
++		/* how much left for next period will start over, we don't know yet */
++		sa->period_contrib = 0;
  
--void mp_register_ioapic(int id, u32 address, u32 gsi_base,
--			struct ioapic_domain_cfg *cfg)
-+static int find_free_ioapic_entry(void)
- {
--	int idx = 0;
--	int entries;
-+	return nr_ioapics;
-+}
-+
-+int mp_register_ioapic(int id, u32 address, u32 gsi_base,
-+		       struct ioapic_domain_cfg *cfg)
-+{
-+	u32 gsi_end;
-+	int idx, ioapic, entries;
- 	struct mp_ioapic_gsi *gsi_cfg;
+ 		/*
+ 		 * Now that we know we're crossing a period boundary, figure
+@@ -2306,7 +2308,7 @@ static __always_inline int __update_entity_runnable_avg(u64 now,
+ 		 */
+ 		delta_w = 1024 - delta_w;
+ 		if (runnable)
+-			sa->runnable_avg_sum += delta_w;
++			sa->runnable_avg_sum += runnable * delta_w;
+ 		sa->runnable_avg_period += delta_w;
  
--	if (bad_ioapic(address))
--		return;
-+	if (!address) {
-+		pr_warn("Bogus (zero) I/O APIC address found, skipping!\n");
-+		return -EINVAL;
-+	}
-+	for_each_ioapic(ioapic)
-+		if (ioapics[ioapic].mp_config.apicaddr == address) {
-+			pr_warn("address 0x%x conflicts with IOAPIC%d\n",
-+				address, ioapic);
-+			return -EEXIST;
-+		}
- 
--	idx = nr_ioapics;
-+	idx = find_free_ioapic_entry();
-+	if (idx >= MAX_IO_APICS) {
-+		pr_warn("Max # of I/O APICs (%d) exceeded (found %d), skipping\n",
-+			MAX_IO_APICS, idx);
-+		return -ENOSPC;
-+	}
- 
- 	ioapics[idx].mp_config.type = MP_IOAPIC;
- 	ioapics[idx].mp_config.flags = MPC_APIC_USABLE;
- 	ioapics[idx].mp_config.apicaddr = address;
--	ioapics[idx].irqdomain = NULL;
--	ioapics[idx].irqdomain_cfg = *cfg;
- 
- 	set_fixmap_nocache(FIX_IO_APIC_BASE_0 + idx, address);
--
- 	if (bad_ioapic_register(idx)) {
- 		clear_fixmap(FIX_IO_APIC_BASE_0 + idx);
--		return;
-+		return -ENODEV;
+ 		delta -= delta_w;
+@@ -2323,15 +2325,17 @@ static __always_inline int __update_entity_runnable_avg(u64 now,
+ 		/* Efficiently calculate \sum (1..n_period) 1024*y^i */
+ 		runnable_contrib = __compute_runnable_contrib(periods);
+ 		if (runnable)
+-			sa->runnable_avg_sum += runnable_contrib;
++			sa->runnable_avg_sum += runnable * runnable_contrib;
+ 		sa->runnable_avg_period += runnable_contrib;
  	}
  
- 	ioapics[idx].mp_config.apicid = io_apic_unique_id(idx, id);
-@@ -3891,24 +3892,41 @@ void mp_register_ioapic(int id, u32 address, u32 gsi_base,
- 	 * and to prevent reprogramming of IOAPIC pins (PCI GSIs).
- 	 */
- 	entries = io_apic_get_redir_entries(idx);
-+	gsi_end = gsi_base + entries - 1;
-+	for_each_ioapic(ioapic) {
-+		gsi_cfg = mp_ioapic_gsi_routing(ioapic);
-+		if ((gsi_base >= gsi_cfg->gsi_base &&
-+		     gsi_base <= gsi_cfg->gsi_end) ||
-+		    (gsi_end >= gsi_cfg->gsi_base &&
-+		     gsi_end <= gsi_cfg->gsi_end)) {
-+			pr_warn("GSI range [%u-%u] for new IOAPIC conflicts with GSI[%u-%u]\n",
-+				gsi_base, gsi_end,
-+				gsi_cfg->gsi_base, gsi_cfg->gsi_end);
-+			clear_fixmap(FIX_IO_APIC_BASE_0 + idx);
-+			return -ENOSPC;
-+		}
-+	}
- 	gsi_cfg = mp_ioapic_gsi_routing(idx);
- 	gsi_cfg->gsi_base = gsi_base;
--	gsi_cfg->gsi_end = gsi_base + entries - 1;
-+	gsi_cfg->gsi_end = gsi_end;
+ 	/* Remainder of delta accrued against u_0` */
+ 	if (runnable)
+-		sa->runnable_avg_sum += delta;
++		sa->runnable_avg_sum += runnable * delta;
+ 	sa->runnable_avg_period += delta;
  
--	/*
--	 * The number of IO-APIC IRQ registers (== #pins):
--	 */
--	ioapics[idx].nr_registers = entries;
-+	ioapics[idx].irqdomain = NULL;
-+	ioapics[idx].irqdomain_cfg = *cfg;
- 
- 	if (gsi_cfg->gsi_end >= gsi_top)
- 		gsi_top = gsi_cfg->gsi_end + 1;
-+	if (nr_ioapics <= idx)
-+		nr_ioapics = idx + 1;
++	sa->period_contrib += delta;
 +
-+	/* Set nr_registers to mark entry present */
-+	ioapics[idx].nr_registers = entries;
- 
- 	pr_info("IOAPIC[%d]: apic_id %d, version %d, address 0x%x, GSI %d-%d\n",
- 		idx, mpc_ioapic_id(idx),
- 		mpc_ioapic_ver(idx), mpc_ioapic_addr(idx),
- 		gsi_cfg->gsi_base, gsi_cfg->gsi_end);
- 
--	nr_ioapics++;
-+	return 0;
+ 	return decayed;
  }
  
- int mp_irqdomain_map(struct irq_domain *domain, unsigned int virq,
 -- 
-1.7.10.4
+1.7.9.5
 
