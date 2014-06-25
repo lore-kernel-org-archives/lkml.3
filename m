@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755960AbaFYVLx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 17:11:53 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	id S1756591AbaFYVMQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 17:12:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48488 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755560AbaFYVLw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 17:11:52 -0400
-Message-ID: <53AB3B12.5000605@nod.at>
-Date: Wed, 25 Jun 2014 23:11:46 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1755544AbaFYVMO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 17:12:14 -0400
+Message-ID: <53AB3B28.3040708@suse.de>
+Date: Wed, 25 Jun 2014 23:12:08 +0200
+From: Alexander Graf <agraf@suse.de>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Heiko Schocher <hs@denx.de>, linux-mtd@lists.infradead.org
-CC: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Mike Snitzer <snitzer@redhat.com>, Wolfgang Denk <wd@denx.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ubi: fix correct rb_tree node comparison in add_vol
-References: <1403594718-20595-1-git-send-email-hs@denx.de>
-In-Reply-To: <1403594718-20595-1-git-send-email-hs@denx.de>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15
+To: Alexey Kardashevskiy <aik@ozlabs.ru>, linuxppc-dev@lists.ozlabs.org
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Gleb Natapov <gleb@kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org
+Subject: Re: [PATCH 0/3] Prepare for in-kernel VFIO DMA operations acceleration
+References: <1401953144-19186-1-git-send-email-aik@ozlabs.ru> <53905B14.5020204@suse.de> <5391094D.7090104@ozlabs.ru>
+In-Reply-To: <5391094D.7090104@ozlabs.ru>
+Content-Type: text/plain; charset=KOI8-R; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 24.06.2014 09:25, schrieb Heiko Schocher:
-> Commit 604b592e6fd3c98f21435e1181ba7723ffc24715 ("UBI: fix rb_tree node comparison in add_map")
-> 
-> introduced problems with attaching ubi fastmap images,
-> created with older kernel.
-> 
-> As in ubi_find_av() from attach.c is
-> [...]
->                 if (vol_id > av->vol_id)
->                         p = p->rb_left;
->                 else
->                         p = p->rb_right;
-> 
-> sync this logic also in add_vol() with this.
-> 
-> With this patch attaching older ubi images works again.
-> 
-> Signed-off-by: Heiko Schocher <hs@denx.de>
 
-Thanks a lot for fixing this!
+On 06.06.14 02:20, Alexey Kardashevskiy wrote:
+> On 06/05/2014 09:57 PM, Alexander Graf wrote:
+>> On 05.06.14 09:25, Alexey Kardashevskiy wrote:
+>>> This reserves 2 capability numbers.
+>>>
+>>> This implements an extended version of KVM_CREATE_SPAPR_TCE_64 ioctl.
+>>>
+>>> Please advise how to proceed with these patches as I suspect that
+>>> first two should go via Paolo's tree while the last one via Alex Graf's tree
+>>> (correct?).
+>> They would just go via my tree, but only be actually allocated (read:
+>> mergable to qemu) when they hit Paolo's tree.
+>>
+>> In fact, I don't think it makes sense to split them off at all.
+>
+> So? Are these patches going anywhere? Thanks.
 
-Acked-by: Richard Weinberger <richard@nod.at>
+So? Are you going to address the comments?
 
-Thanks,
-//richard
+
+Alex
+
