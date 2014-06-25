@@ -1,50 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754360AbaFYDvl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 23:51:41 -0400
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:47560 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752599AbaFYDvj (ORCPT
+	id S1751610AbaFYEBY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 00:01:24 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:55725 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750699AbaFYEBW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jun 2014 23:51:39 -0400
+	Wed, 25 Jun 2014 00:01:22 -0400
 MIME-Version: 1.0
-In-Reply-To: <CA+mtBx8F3XPU5bLfKc046Oz8thp50FZadLfAAfe-Hw2HU9sjsA@mail.gmail.com>
-References: <20140616234254.GA15332@redhat.com>
-	<20140623234759.GA19138@redhat.com>
-	<CA+55aFx--+YxUWX5SGet0QxfDo2PcJj3x5tcwqiCTA9yiyi_bQ@mail.gmail.com>
-	<20140624.172616.757600677169858458.davem@davemloft.net>
-	<CA+mtBx8F3XPU5bLfKc046Oz8thp50FZadLfAAfe-Hw2HU9sjsA@mail.gmail.com>
-Date: Tue, 24 Jun 2014 20:51:39 -0700
-Message-ID: <CA+mtBx9o3QZJHyzJ8iXR=th5gJBeFkWLR5T-8a_g9CExKKb3nQ@mail.gmail.com>
-Subject: Re: [GIT] Networking
-From: Tom Herbert <therbert@google.com>
-To: David Miller <davem@davemloft.net>
-Cc: torvalds@linux-foundation.org, davej@redhat.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Netdev List <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1403616338.4230.8.camel@weser.hi.pengutronix.de>
+References: <1403603667-11302-1-git-send-email-acourbot@nvidia.com>
+ <1403603667-11302-3-git-send-email-acourbot@nvidia.com> <20140624100220.GK32514@n2100.arm.linux.org.uk>
+ <53A953E6.2030503@nvidia.com> <53A95910.20104@nvidia.com> <CAAVeFu+rbCViC87kYCLfxGV18iYq=Pa0ABb+L=iNiYPLn+mR8Q@mail.gmail.com>
+ <53A96EC5.3030701@canonical.com> <1403616338.4230.8.camel@weser.hi.pengutronix.de>
+From: =?UTF-8?Q?St=C3=A9phane_Marchesin?= <stephane.marchesin@gmail.com>
+Date: Tue, 24 Jun 2014 21:00:41 -0700
+Message-ID: <CACP_E+KECMyusuZd6hpzthL-RpfUOJpWh0EABf1DGAeaXc00aA@mail.gmail.com>
+Subject: Re: [Nouveau] [PATCH v2 2/3] drm/ttm: introduce dma cache sync helpers
+To: Lucas Stach <l.stach@pengutronix.de>
+Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I believe in the no scatter-gather case of  skb_segment is not set
-correctly. Will post a patch momentarily.
+On Tue, Jun 24, 2014 at 6:25 AM, Lucas Stach <l.stach@pengutronix.de> wrote:
+> Am Dienstag, den 24.06.2014, 14:27 +0200 schrieb Maarten Lankhorst:
+>> op 24-06-14 14:23, Alexandre Courbot schreef:
+>> > On Tue, Jun 24, 2014 at 7:55 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+>> >> On 06/24/2014 07:33 PM, Alexandre Courbot wrote:
+>> >>> On 06/24/2014 07:02 PM, Russell King - ARM Linux wrote:
+>> >>>> On Tue, Jun 24, 2014 at 06:54:26PM +0900, Alexandre Courbot wrote:
+>> >>>>> From: Lucas Stach <dev@lynxeye.de>
+>> >>>>>
+>> >>>>> On architectures for which access to GPU memory is non-coherent,
+>> >>>>> caches need to be flushed and invalidated explicitly at the
+>> >>>>> appropriate places. Introduce two small helpers to make things
+>> >>>>> easy for TTM-based drivers.
+>> >>>>
+>> >>>> Have you run this with DMA API debugging enabled?  I suspect you haven't,
+>> >>>> and I recommend that you do.
+>> >>>
+>> >>> # cat /sys/kernel/debug/dma-api/error_count
+>> >>> 162621
+>> >>>
+>> >>> (╯°□°）╯︵ ┻━┻)
+>> >>
+>> >> *puts table back on its feet*
+>> >>
+>> >> So, yeah - TTM memory is not allocated using the DMA API, hence we cannot
+>> >> use the DMA API to sync it. Thanks Russell for pointing it out.
+>> >>
+>> >> The only alternative I see here is to flush the CPU caches when syncing for
+>> >> the device, and invalidate them for the other direction. Of course if the
+>> >> device has caches on its side as well the opposite operation must also be
+>> >> done for it. Guess the only way is to handle it all by ourselves here. :/
+>> > ... and it really sucks. Basically if we cannot use the DMA API here
+>> > we will lose the convenience of having a portable API that does just
+>> > the right thing for the underlying platform. Without it we would have
+>> > to duplicate arm_iommu_sync_single_for_cpu/device() and we would only
+>> > have support for ARM.
+>> >
+>> > The usage of the DMA API that we are doing might be illegal, but in
+>> > essence it does exactly what we need - at least for ARM. What are the
+>> > alternatives?
+>> Convert TTM to use the dma api? :-)
+>
+> Actually TTM already has a page alloc backend using the DMA API. It's
+> just not used for the standard case right now.
+>
+> I would argue that we should just use this page allocator (which has the
+> side effect of getting pages from CMA if available -> you are actually
+> free to change the caching) and do away with the other allocator in the
+> ARM case.
 
-On Tue, Jun 24, 2014 at 8:05 PM, Tom Herbert <therbert@google.com> wrote:
->> tcp_gso_segment() makes sure that the headers are reachable in the linear
->> area with the pskb_may_pull(skb, sizeof(*th)) call, and gso_make_checksum()
->> is only working with the area up to SKB_GSO_CB()->csum_start which should
->> be within this area for sure.
->>
-> Seems likely that csum_start is not properly initialized in this path.
-> I am thinking that this may have happened in GRO path on a checksum
-> error where CHECKSUM_PARTIAL (and hence csum) is not set. That would
-> explain the infrequency of the occurrence,  and also previously not
-> setting csum would have just resulted in sending a corrupted packet
-> not a crash.
->
->> Well, that's the precondition we seem to be relying upon, I suppose an
->> assert is in order.
->
-> Assert on SKB_GSO_CB()->csum_start == 0 would confirm my suspicion.
+CMA comes with its own set of (severe) limitations though, in
+particular it's not possible to map arbitrary CPU pages into the GPU
+without incurring a copy, you add arbitrary memory limits etc. Overall
+that's not really a good pick for the long term...
+
+Stéphane
