@@ -1,73 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755573AbaFYLEn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 07:04:43 -0400
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:58127 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753849AbaFYLEm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 07:04:42 -0400
+	id S1755916AbaFYLFa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 07:05:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13775 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754214AbaFYLF3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 07:05:29 -0400
+Date: Wed, 25 Jun 2014 14:05:39 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, mst@redhat.com,
+        nab@linux-iscsi.org, romain@orebokech.com
+Subject: [PULL] vhost: cleanups and fixes
+Message-ID: <20140625110539.GA7386@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1406251200051.15939@pobox.suse.cz>
-References: <20140619213329.478113470@goodmis.org>
-	<alpine.LNX.2.00.1406192349400.15014@pobox.suse.cz>
-	<20140619185810.4137e14b@gandalf.local.home>
-	<alpine.LNX.2.00.1406200100520.15014@pobox.suse.cz>
-	<20140619191923.1365850a@gandalf.local.home>
-	<alpine.LNX.2.00.1406200123220.15014@pobox.suse.cz>
-	<20140619193635.1949b469@gandalf.local.home>
-	<alpine.LNX.2.00.1406200137310.15014@pobox.suse.cz>
-	<20140620143525.GB8769@pathway.suse.cz>
-	<CALYGNiM3OH64ULh63cCarTitbjUatZP0mckJ3N9CDusP3mFMRg@mail.gmail.com>
-	<alpine.LNX.2.00.1406251200051.15939@pobox.suse.cz>
-Date: Wed, 25 Jun 2014 15:04:41 +0400
-Message-ID: <CALYGNiOT9XkiE1Q=AimOt42UkQ430Qy89cseNLVaMf96O9=FJw@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/3] x86/nmi: Print all cpu stacks from NMI safely
-From: Konstantin Khlebnikov <koct9i@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: =?UTF-8?B?UGV0ciBNbMOhZGVr?= <pmladek@suse.cz>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Jan Kara <jack@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Dave Anderson <anderson@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 2:01 PM, Jiri Kosina <jkosina@suse.cz> wrote:
-> On Tue, 24 Jun 2014, Konstantin Khlebnikov wrote:
->
->> Originally I thought that seizing all cpus one by one and printing from
->> the initiator is a best approach and I've started preparing arguments
->> against over-engineered printk...
->
-> By "seizing" I guess you mean sending IPI, right?
->
-> What do you do if you'd interrupt it in the middle of printk() in order
-> not to deadlock by trying to take the buffer lock on the initiator CPU?
+The following changes since commit a497c3ba1d97fc69c1e78e7b96435ba8c2cb42ee:
 
-Yep, under "seize" I mean NMI IPI which gathering state of registers from cpu.
-Also it can keep cpu in nmi handler while initiator cpu unwinds its stack trace.
-Code of dump-all-stack in arch/sparc does something like that.
+  Linux 3.16-rc2 (2014-06-21 19:02:54 -1000)
 
-You're right, moving printk from one cpu to another doesn't fixes recursion,
-but we could send NMI IPI under logbuf_lock. I don't think that this is good
-approach, but it seems realistic. Of course all printing from other NMI
-handlers must be done in some weird way.
+are available in the git repository at:
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git tags/for_linus
 
-I like that context-depend printk routing from this patchset.
-I'm just not quite happy with this straight forward implementation.
-Rerouting flow into different buffers might serve different purposes,
-it must make code simpler instead of adding yet another knot.
-For example printk continuation might use it too.
+for you to fetch changes up to 68404441557d8db5ac853379a4fb9c1adedea4fd:
 
->
-> --
-> Jiri Kosina
-> SUSE Labs
+  vhost-scsi: don't open-code kvfree (2014-06-23 09:22:48 +0300)
+
+----------------------------------------------------------------
+vhost: infrastructure fixes for 3.16
+
+Two cleanup patches removing code duplication that got introduced by changes in
+rc1.  Not fixing crashes, but I'd rather not carry the duplicate code until the
+next merge window.
+
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+
+----------------------------------------------------------------
+Michael S. Tsirkin (1):
+      vhost-scsi: don't open-code kvfree
+
+Romain Francoise (1):
+      vhost-net: don't open-code kvfree
+
+ drivers/vhost/net.c  | 12 ++----------
+ drivers/vhost/scsi.c | 12 ++----------
+ 2 files changed, 4 insertions(+), 20 deletions(-)
