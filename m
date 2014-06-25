@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754852AbaFYIoh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 04:44:37 -0400
-Received: from mga03.intel.com ([143.182.124.21]:15864 "EHLO mga03.intel.com"
+	id S1754335AbaFYIoe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 04:44:34 -0400
+Received: from mga03.intel.com ([143.182.124.21]:15876 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755893AbaFYIk0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 04:40:26 -0400
+	id S1755900AbaFYIk1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 04:40:27 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,544,1400050800"; 
-   d="scan'208";a="449717455"
+   d="scan'208";a="449717491"
 From: Yuyang Du <yuyang.du@intel.com>
 To: mingo@redhat.com, peterz@infradead.org, rafael.j.wysocki@intel.com,
         linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
@@ -19,9 +19,9 @@ Cc: arjan.van.de.ven@intel.com, len.brown@intel.com, alan.cox@intel.com,
         nicole.chalhoub@intel.com, ajaya.durg@intel.com,
         harinarayanan.seshadri@intel.com, jacob.jun.pan@linux.intel.com,
         Yuyang Du <yuyang.du@intel.com>
-Subject: [RFC PATCH 4/9 v4] Define SD_WORKLOAD_CONSOLIDATION and attach to sched_domain
-Date: Wed, 25 Jun 2014 08:36:03 +0800
-Message-Id: <1403656568-32445-5-git-send-email-yuyang.du@intel.com>
+Subject: [RFC PATCH 5/9 v4] Workload Consolidation: Consolidating workload to a subset of CPUs if possible
+Date: Wed, 25 Jun 2014 08:36:04 +0800
+Message-Id: <1403656568-32445-6-git-send-email-yuyang.du@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1403656568-32445-1-git-send-email-yuyang.du@intel.com>
 References: <1403656568-32445-1-git-send-email-yuyang.du@intel.com>
@@ -29,200 +29,395 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Workload Consolidation is completely CPU topology and policy driven. To do so,
-we define SD_WORKLOAD_CONSOLIDATION, and add some fields in sched_domain struct:
+CPU CC is a per CPU metric. To determine whether to consolidate or not,
+the formula is based on a heuristic. Suppose we have 2 CPUs, their task
+concurrency over time is ('-' means no task, 'x' having tasks):
 
-1) total_groups is the group number in total in this domain
-2) group_number is this CPU's group sequence number
-3) consolidating_coeff is the coefficient for consolidating CPUs, and is changeable
-   via sysctl tool to make consolidation more aggressive or less
-4) first_group is the pointer to this domain's first group ordered by CPU number
+1)
+CPU0: ---xxxx---------- (CC[0])
+CPU1: ---------xxxx---- (CC[1])
 
-This patchset enables SD_WORKLOAD_CONSOLIDATION in MC domain by default. But we need
-to come up with a better way to determine on which architecture this flag should be
-enabled or not. Thanks to PeterZ and Dietmar for pointing this out and help me
-finally understand it.
+2)
+CPU0: ---xxxx---------- (CC[0])
+CPU1: ---xxxx---------- (CC[1])
+
+If we consolidate CPU0 and CPU1, the consolidated CC will be: CC' = CC[0] +
+CC[1] for case 1 and CC'' = (CC[0] + CC[1]) * 2 for case 2. For the cases in
+between case 1 and 2 in terms of how xxx overlaps, the CC should be between
+CC' and CC''. So, we uniformly use the following formula: (suppose we consolidate
+m CPUs to n CPUs, m > n):
+
+(CC[0] + CC[1] + ... + CC[m-2] + CC[m-1]) * (n + log(m-n)) >=<? (1 * n) * n *
+consolidating_coefficient
+
+The consolidating_coefficient could be like 100 (%) or more or less.
+
+TODO:
+1) need sched statistics
+2) whether or not to consolidate is decided every time we need it. Not efficient.
+3) really want to be used for multi-socket machines, but the decision to consolidation
+   is time-consuming if CPU number increase significantly, need to remedy this
 
 Signed-off-by: Yuyang Du <yuyang.du@intel.com>
 ---
- include/linux/sched.h |    8 +++++++-
- kernel/sched/core.c   |   46 ++++++++++++++++++++++++++++++++++++++++++----
- kernel/sched/sched.h  |   13 ++++++++++---
- 3 files changed, 59 insertions(+), 8 deletions(-)
+ kernel/sched/fair.c |  332 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 332 insertions(+)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 1b1997d..a339467 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -870,6 +870,7 @@ enum cpu_idle_type {
- #define SD_PREFER_SIBLING	0x1000	/* Prefer to place tasks in a sibling domain */
- #define SD_OVERLAP		0x2000	/* sched_domains of this level overlap */
- #define SD_NUMA			0x4000	/* cross-node balancing */
-+#define SD_WORKLOAD_CONSOLIDATION  0x8000  /* consolidate CPU workload */
- 
- #ifdef CONFIG_SCHED_SMT
- static inline const int cpu_smt_flags(void)
-@@ -881,7 +882,7 @@ static inline const int cpu_smt_flags(void)
- #ifdef CONFIG_SCHED_MC
- static inline const int cpu_core_flags(void)
- {
--	return SD_SHARE_PKG_RESOURCES;
-+	return SD_SHARE_PKG_RESOURCES | SD_WORKLOAD_CONSOLIDATION;
- }
- #endif
- 
-@@ -973,6 +974,11 @@ struct sched_domain {
- 		struct rcu_head rcu;	/* used during destruction */
- 	};
- 
-+	unsigned int total_groups;			/* total group number */
-+	unsigned int group_number;			/* this CPU's group sequence */
-+	unsigned int consolidating_coeff;	/* consolidating coefficient */
-+	struct sched_group *first_group;	/* ordered by CPU number */
-+
- 	unsigned int span_weight;
- 	/*
- 	 * Span of all CPUs in this domain.
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 3bdf01b..da3cd74 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -4941,7 +4941,7 @@ set_table_entry(struct ctl_table *entry,
- static struct ctl_table *
- sd_alloc_ctl_domain_table(struct sched_domain *sd)
- {
--	struct ctl_table *table = sd_alloc_ctl_entry(14);
-+	struct ctl_table *table = sd_alloc_ctl_entry(15);
- 
- 	if (table == NULL)
- 		return NULL;
-@@ -4974,7 +4974,9 @@ sd_alloc_ctl_domain_table(struct sched_domain *sd)
- 		sizeof(long), 0644, proc_doulongvec_minmax, false);
- 	set_table_entry(&table[12], "name", sd->name,
- 		CORENAME_MAX_SIZE, 0444, proc_dostring, false);
--	/* &table[13] is terminator */
-+	set_table_entry(&table[13], "consolidating_coeff", &sd->consolidating_coeff,
-+		sizeof(int), 0644, proc_dointvec, false);
-+	/* &table[14] is terminator */
- 
- 	return table;
- }
-@@ -5586,7 +5588,7 @@ static void update_top_cache_domain(int cpu)
- 	int id = cpu;
- 	int size = 1;
- 
--	sd = highest_flag_domain(cpu, SD_SHARE_PKG_RESOURCES);
-+	sd = highest_flag_domain(cpu, SD_SHARE_PKG_RESOURCES, 1);
- 	if (sd) {
- 		id = cpumask_first(sched_domain_span(sd));
- 		size = cpumask_weight(sched_domain_span(sd));
-@@ -5601,10 +5603,41 @@ static void update_top_cache_domain(int cpu)
- 	sd = lowest_flag_domain(cpu, SD_NUMA);
- 	rcu_assign_pointer(per_cpu(sd_numa, cpu), sd);
- 
--	sd = highest_flag_domain(cpu, SD_ASYM_PACKING);
-+	sd = highest_flag_domain(cpu, SD_ASYM_PACKING, 1);
- 	rcu_assign_pointer(per_cpu(sd_asym, cpu), sd);
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index c4270cf..7f80058 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -6749,6 +6749,8 @@ update_next_balance(struct sched_domain *sd, int cpu_busy, unsigned long *next_b
+ 		*next_balance = next;
  }
  
-+
-+DEFINE_PER_CPU(struct sched_domain *, sd_wc);
-+
-+static void update_wc_domain(struct sched_domain *sd, int cpu)
-+{
-+	while (sd) {
-+		int i = 0, j = 0, first, min = INT_MAX;
-+		struct sched_group *group;
-+
-+		group = sd->groups;
-+		first = group_first_cpu(group);
-+		do {
-+			int k = group_first_cpu(group);
-+			i += 1;
-+			if (k < first)
-+				j += 1;
-+			if (k < min) {
-+				sd->first_group = group;
-+				min = k;
-+			}
-+		} while (group = group->next, group != sd->groups);
-+
-+		sd->total_groups = i;
-+		sd->group_number = j;
-+		sd = sd->parent;
-+	}
-+
-+	sd = highest_flag_domain(cpu, SD_WORKLOAD_CONSOLIDATION, 0);
-+	rcu_assign_pointer(per_cpu(sd_wc, cpu), sd);
-+}
++static DEFINE_PER_CPU(cpumask_var_t, local_cpu_mask);
 +
  /*
-  * Attach the domain 'sd' to 'cpu' as its base domain. Callers must
-  * hold the hotplug lock.
-@@ -5653,6 +5686,8 @@ cpu_attach_domain(struct sched_domain *sd, struct root_domain *rd, int cpu)
- 	destroy_sched_domains(tmp, cpu);
- 
- 	update_top_cache_domain(cpu);
-+
-+	update_wc_domain(sd, cpu);
- }
- 
- /* cpus with isolated domains */
-@@ -6069,6 +6104,7 @@ sd_init(struct sched_domain_topology_level *tl, int cpu)
- #ifdef CONFIG_SCHED_DEBUG
- 		.name			= tl->name,
- #endif
-+		.consolidating_coeff = 0,
- 	};
- 
- 	/*
-@@ -6098,6 +6134,8 @@ sd_init(struct sched_domain_topology_level *tl, int cpu)
- 		}
- 
- #endif
-+	} else if (sd->flags & SD_WORKLOAD_CONSOLIDATION) {
-+		sd->consolidating_coeff = 160;
- 	} else {
- 		sd->flags |= SD_PREFER_SIBLING;
- 		sd->cache_nice_tries = 1;
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index eb47ce2..a2a7230 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -695,16 +695,22 @@ extern void sched_ttwu_pending(void);
-  *		be returned.
-  * @flag:	The flag to check for the highest sched_domain
-  *		for the given cpu.
-+ * @all: The flag is contained by all sched_domains from the hightest down
-  *
-  * Returns the highest sched_domain of a cpu which contains the given flag.
-  */
--static inline struct sched_domain *highest_flag_domain(int cpu, int flag)
-+static inline struct
-+sched_domain *highest_flag_domain(int cpu, int flag, int all)
+  * idle_balance is called by schedule() if this_cpu is about to become
+  * idle. Attempts to pull tasks from other CPUs.
+@@ -7805,6 +7807,12 @@ void print_cfs_stats(struct seq_file *m, int cpu)
+ __init void init_sched_fair_class(void)
  {
- 	struct sched_domain *sd, *hsd = NULL;
+ #ifdef CONFIG_SMP
++	unsigned int i;
++	for_each_possible_cpu(i) {
++		zalloc_cpumask_var_node(&per_cpu(local_cpu_mask, i),
++					GFP_KERNEL, cpu_to_node(i));
++	}
++
+ 	open_softirq(SCHED_SOFTIRQ, run_rebalance_domains);
  
- 	for_each_domain(cpu, sd) {
--		if (!(sd->flags & flag))
--			break;
-+		if (!(sd->flags & flag)) {
-+			if (all)
-+				break;
-+			else
-+				continue;
-+		}
- 		hsd = sd;
+ #ifdef CONFIG_NO_HZ_COMMON
+@@ -7841,4 +7849,328 @@ static void update_cpu_concurrency(struct rq *rq)
+ 		sa->load_avg_contrib /= (sa->runnable_avg_period + 1);
  	}
- 
-@@ -729,6 +735,7 @@ DECLARE_PER_CPU(int, sd_llc_id);
- DECLARE_PER_CPU(struct sched_domain *, sd_numa);
- DECLARE_PER_CPU(struct sched_domain *, sd_busy);
- DECLARE_PER_CPU(struct sched_domain *, sd_asym);
-+DECLARE_PER_CPU(struct sched_domain *, sd_wc);
- 
- struct sched_group_capacity {
- 	atomic_t ref;
+ }
++
++static inline u32 cc_weight(unsigned int nr_running)
++{
++   return nr_running << NICE_0_SHIFT;
++}
++
++static inline unsigned long get_cpu_concurrency(int cpu)
++{
++	return cpu_rq(cpu)->avg.load_avg_contrib;
++}
++
++static inline u64 sched_group_cc(struct sched_group *sg)
++{
++	u64 sg_cc = 0;
++	int i;
++
++	for_each_cpu(i, sched_group_cpus(sg))
++		sg_cc += get_cpu_concurrency(i) * capacity_of(i);
++
++	return sg_cc;
++}
++
++static inline u64 sched_domain_cc(struct sched_domain *sd)
++{
++	struct sched_group *sg = sd->groups;
++	u64 sd_cc = 0;
++
++	do {
++		sd_cc += sched_group_cc(sg);
++		sg = sg->next;
++	} while (sg != sd->groups);
++
++	return sd_cc;
++}
++
++static inline struct sched_group *
++find_lowest_cc_group(struct sched_group *sg, int span)
++{
++	u64 grp_cc, min = ULLONG_MAX;
++	struct sched_group *lowest = NULL;
++	int i;
++
++	for (i = 0; i < span; ++i) {
++		grp_cc = sched_group_cc(sg);
++
++		if (grp_cc < min) {
++			min = grp_cc;
++			lowest = sg;
++		}
++
++		sg = sg->next;
++	}
++
++	return lowest;
++}
++
++static inline u64 __calc_cc_thr(int cpus, unsigned int asym_cc)
++{
++	u64 thr = cpus;
++
++	thr *= cc_weight(1);
++	thr *= asym_cc;
++	thr <<= SCHED_CAPACITY_SHIFT;
++
++	return thr;
++}
++
++/*
++ * Can @src_cc of @src_nr CPUs be consolidated to @dst_cc of @dst_nr CPUs
++ *
++ * CC is per CPU average. The cosnolidated CC depends on the overlapped
++ * running of the CPUs before consolidation. Suppose we have 2 CPUs,
++ * their CC over time is ('-' means idle, 'x' means running):
++ *
++ * Case 1
++ * CPU0: ---xxxx---------- (CC[0])
++ * CPU1: ---------xxxx---- (CC[1])
++ *
++ * Case 2
++ * CPU0: ---xxxx---------- (CC[0])
++ * CPU1: ---xxxx---------- (CC[1])
++ *
++ * If we consolidate CPU0 and CPU1, the consolidated CC will be: CC' =
++ * CC[0] + CC[1] for case 1 and CC'' = (CC[0] + CC[1]) * 2 for case 2.
++ * For the cases in between case 1 and 2 in terms of how xxx overlaps,
++ * the CC should be between CC' and CC''. So, we use this heuristic to
++ * calc consolidated CC (suppose we consolidate m CPUs to n CPUs, m > n):
++ *
++ * (CC[0] + CC[1] + ... + CC[m-2] + CC[m-1]) * (n + log(m-n)) >=<? (1 *
++ * n) * n * consolidating_coefficient
++ *
++ * The consolidating_coefficient could be like 100% or more or less.
++ */
++static inline int
++__can_consolidate_cc(u64 src_cc, int src_nr, u64 dst_cc, int dst_nr)
++{
++	dst_cc *= dst_nr;
++	src_nr -= dst_nr;
++
++	if (unlikely(src_nr <= 0))
++		return 0;
++
++	src_nr = ilog2(src_nr);
++	src_nr += dst_nr;
++	src_cc *= src_nr;
++
++	if (src_cc > dst_cc)
++		return 0;
++
++	return 1;
++}
++
++/*
++ * find the consolidated group according to the CC of this domain's CPUs
++ */
++static struct sched_group * wc_find_group(struct sched_domain *sd,
++	struct task_struct *p, int this_cpu)
++{
++	int half, sg_weight, ns_half = 0;
++	struct sched_group *sg;
++	u64 sd_cc;
++
++	half = DIV_ROUND_CLOSEST(sd->total_groups, 2);
++	sg_weight = sd->groups->group_weight;
++
++	sd_cc = sched_domain_cc(sd);
++	sd_cc *= 100;
++
++	while (half) {
++		int allowed = 0, i;
++		int cpus = sg_weight * half;
++		u64 threshold = __calc_cc_thr(cpus,
++			sd->consolidating_coeff);
++
++		/*
++		 * we did not consider the added cc by this
++		 * wakeup (mostly from fork/exec)
++		 */
++		if (!__can_consolidate_cc(sd_cc, sd->span_weight,
++			threshold, cpus))
++			break;
++
++		sg = sd->first_group;
++		for (i = 0; i < half; ++i) {
++			/* if it has no cpus allowed */
++			if (!cpumask_intersects(sched_group_cpus(sg),
++					tsk_cpus_allowed(p)))
++				continue;
++
++			allowed = 1;
++			sg = sg->next;
++		}
++
++		if (!allowed)
++			break;
++
++		ns_half = half;
++		half /= 2;
++	}
++
++	if (!ns_half)
++		return NULL;
++
++	if (ns_half == 1)
++		return sd->first_group;
++
++	return find_lowest_cc_group(sd->first_group, ns_half);
++}
++
++/*
++ * For the majority of architectures, we have the following assumption:
++ * 1) every sched_group has the same weight
++ * 2) every CPU has the same computing power
++ */
++static inline int __nonshielded_groups(struct sched_domain *sd)
++{
++	int half, sg_weight, ret = 0;
++	u64 sd_cc;
++
++	half = DIV_ROUND_CLOSEST(sd->total_groups, 2);
++	sg_weight = sd->groups->group_weight;
++
++	sd_cc = sched_domain_cc(sd);
++	sd_cc *= 100;
++
++	while (half) {
++		int cpus = sg_weight * half;
++		u64 threshold = __calc_cc_thr(cpus,
++			sd->consolidating_coeff);
++
++		if (!__can_consolidate_cc(sd_cc, sd->span_weight,
++			threshold, cpus))
++			return ret;
++
++		ret = half;
++		half /= 2;
++	}
++
++	return ret;
++}
++
++/*
++ * if we decide to move workload from CPUx to CPUy (consolidating workload
++ * to CPUy), then we call CPUx nonshielded and CPUy shielded in the following.
++ *
++ * wc_nonshielded_mask - return the nonshielded CPUs in the @mask.
++ *
++ * traverse downward the sched_domain tree when the sched_domain contains
++ * flag SD_WORKLOAD_CONSOLIDATION, each sd may have more than two groups
++ */
++static void
++wc_nonshielded_mask(int cpu, struct sched_domain *sd, struct cpumask *mask)
++{
++	struct cpumask *nonshielded_cpus = __get_cpu_var(local_cpu_mask);
++	int i;
++
++	while (sd) {
++		struct sched_group *sg;
++		int this_sg_nr, ns_half;
++
++		if (!(sd->flags & SD_WORKLOAD_CONSOLIDATION)) {
++			sd = sd->child;
++			continue;
++		}
++
++		ns_half = __nonshielded_groups(sd);
++
++		if (!ns_half)
++			break;
++
++		cpumask_clear(nonshielded_cpus);
++		sg = sd->first_group;
++
++		for (i = 0; i < ns_half; ++i) {
++			cpumask_or(nonshielded_cpus, nonshielded_cpus,
++				sched_group_cpus(sg));
++			sg = sg->next;
++		}
++
++		cpumask_and(mask, mask, nonshielded_cpus);
++
++		this_sg_nr = sd->group_number;
++		if (this_sg_nr)
++			break;
++
++		sd = sd->child;
++	}
++}
++
++/*
++ * unload src_cpu to dst_cpu
++ */
++static void unload_cpu(int src_cpu, int dst_cpu)
++{
++	unsigned long flags;
++	struct rq *src_rq = cpu_rq(src_cpu);
++	int unload = 0;
++
++	raw_spin_lock_irqsave(&src_rq->lock, flags);
++
++	if (!src_rq->active_balance) {
++		src_rq->active_balance = 1;
++		src_rq->push_cpu = dst_cpu;
++		unload = 1;
++	}
++
++	raw_spin_unlock_irqrestore(&src_rq->lock, flags);
++
++	if (unload)
++		stop_one_cpu_nowait(src_cpu, active_load_balance_cpu_stop,
++			src_rq, &src_rq->active_balance_work);
++}
++
++static inline int find_lowest_cc_cpu(struct cpumask *mask)
++{
++	u64 cpu_cc, min = ULLONG_MAX;
++	int i, lowest = nr_cpu_ids;
++
++	for_each_cpu(i, mask) {
++		cpu_cc = get_cpu_concurrency(i) * capacity_of(i);
++
++		if (cpu_cc < min) {
++			min = cpu_cc;
++			lowest = i;
++		}
++	}
++
++	return lowest;
++}
++
++/*
++ * find the lowest cc cpu in shielded and nonshielded cpus,
++ * aggressively unload the shielded to the nonshielded
++ */
++static void wc_unload(struct cpumask *nonshielded, struct sched_domain *sd)
++{
++	int src_cpu = nr_cpu_ids, dst_cpu, cpu = smp_processor_id();
++	struct cpumask *shielded_cpus = __get_cpu_var(local_cpu_mask);
++	u64 cpu_cc, min = ULLONG_MAX;
++
++	cpumask_andnot(shielded_cpus, sched_domain_span(sd), nonshielded);
++
++	for_each_cpu(cpu, shielded_cpus) {
++		if (cpu_rq(cpu)->nr_running <= 0)
++			continue;
++
++		cpu_cc = get_cpu_concurrency(cpu) * capacity_of(cpu);
++		if (cpu_cc < min) {
++			min = cpu_cc;
++			src_cpu = cpu;
++		}
++	}
++
++	if (src_cpu >= nr_cpu_ids)
++		return;
++
++	dst_cpu = find_lowest_cc_cpu(nonshielded);
++	if (dst_cpu >= nr_cpu_ids)
++		return;
++
++	if (src_cpu != dst_cpu)
++		unload_cpu(src_cpu, dst_cpu);
++}
++
+ #endif /* CONFIG_SMP */
 -- 
 1.7.9.5
 
