@@ -1,69 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757165AbaFYOub (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 10:50:31 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:43310 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756454AbaFYOua (ORCPT
+	id S1757257AbaFYOv2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 10:51:28 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:52820 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756559AbaFYOvZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 10:50:30 -0400
-Date: Wed, 25 Jun 2014 16:49:55 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Ingo Molnar <mingo@redhat.com>, Russell King <linux@arm.linux.org.uk>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        linuxppc-dev@lists.ozlabs.org,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2] sched: Fix compiler warnings
-Message-ID: <20140625144955.GP14781@pengutronix.de>
-References: <1403658329-13196-1-git-send-email-linux@roeck-us.net>
- <20140625071416.GM14781@pengutronix.de>
- <53AADC63.8080106@roeck-us.net>
+	Wed, 25 Jun 2014 10:51:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53AADC63.8080106@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20140625135121.GB7892@redhat.com>
+References: <1403642893-23107-1-git-send-email-keescook@chromium.org>
+	<1403642893-23107-6-git-send-email-keescook@chromium.org>
+	<20140625135121.GB7892@redhat.com>
+Date: Wed, 25 Jun 2014 07:51:25 -0700
+X-Google-Sender-Auth: RCNeIVkYTQv2tceTvFHUOTo4kcM
+Message-ID: <CAGXu5jJkFxh4K=40xuh6tu3kUf4oJM8Dry+4upBdRieW3FNLgw@mail.gmail.com>
+Subject: Re: [PATCH v8 5/9] seccomp: split mode set routines
+From: Kees Cook <keescook@chromium.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Andy Lutomirski <luto@amacapital.net>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Guenter,
+On Wed, Jun 25, 2014 at 6:51 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 06/24, Kees Cook wrote:
+>>
+>> +static inline void seccomp_assign_mode(struct task_struct *task,
+>> +                                    unsigned long seccomp_mode)
+>> +{
+>> +     BUG_ON(!spin_is_locked(&task->sighand->siglock));
+>> +
+>> +     task->seccomp.mode = seccomp_mode;
+>> +     set_tsk_thread_flag(task, TIF_SECCOMP);
+>> +}
+>
+> OK, but unless task == current this can race with secure_computing().
+> I think this needs smp_mb__before_atomic() and secure_computing() needs
+> rmb() after test_bit(TIF_SECCOMP).
+>
+> Otherwise, can't __secure_computing() hit BUG() if it sees the old
+> mode == SECCOMP_MODE_DISABLED ?
+>
+> Or seccomp_run_filters() can see ->filters == NULL and WARN(),
+> smp_load_acquire() only serializes that LOAD with the subsequent memory
+> operations.
 
-On Wed, Jun 25, 2014 at 07:27:47AM -0700, Guenter Roeck wrote:
-> >Maybe the author's intention was:
-> >
-> >	static inline int cpu_corepower_flags(void) __attribute__((const));
-> >
-> >?
-> >This specifies that the function has no side effects and the return value
-> >only depends on the (here non-existing) function arguments.
-> >
-> 
-> Possibly, but either I am missing something or this doesn't compile.
-You need to do a separate declaration:
+Hm, actually, now I'm worried about smp_load_acquire() being too slow
+in run_filters().
 
-	static inline int cpu_corepower_flags(void) __attribute__((const));
-	static inline int cpu_corepower_flags(void)
-	{
-		...
+The ordering must be:
+- task->seccomp.filter must be valid before
+- task->seccomp.mode is set, which must be valid before
+- TIF_SECCOMP is set
 
-Does this help?
+But I don't want to impact secure_computing(). What's the best way to
+make sure this ordering is respected?
 
-Best regards
-Uwe
+-Kees
 
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Kees Cook
+Chrome OS Security
