@@ -1,175 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757950AbaFYQwR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 12:52:17 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:57935 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755985AbaFYQwL convert rfc822-to-8bit (ORCPT
+	id S1757695AbaFYQt6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 12:49:58 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59458 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757656AbaFYQt4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 12:52:11 -0400
-From: bsegall@google.com
-To: Kirill Tkhai <ktkhai@parallels.com>
-Cc: <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>, <khorenko@parallels.com>,
-        Paul Turner <pjt@google.com>, <tkhai@yandex.ru>
-Subject: Re: [PATCH v2 1/3] sched/fair: Disable runtime_enabled on dying rq
-References: <20140624074148.8738.57690.stgit@tkhai>
-	<1403596432.3462.26.camel@tkhai>
-	<xm26wqc6z1c8.fsf@sword-of-the-dawn.mtv.corp.google.com>
-	<53A9CB23.1080708@yandex.ru>
-	<xm26pphyyvbl.fsf@sword-of-the-dawn.mtv.corp.google.com>
-	<53A9D0F1.5080305@yandex.ru> <1403682814.3462.33.camel@tkhai>
-Date: Wed, 25 Jun 2014 09:52:07 -0700
-In-Reply-To: <1403682814.3462.33.camel@tkhai> (Kirill Tkhai's message of "Wed,
-	25 Jun 2014 11:53:34 +0400")
-Message-ID: <xm26ionpyls8.fsf@sword-of-the-dawn.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 25 Jun 2014 12:49:56 -0400
+From: Christoph Hellwig <hch@lst.de>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Bart Van Assche <bvanassche@fusionio.com>,
+        Robert Elliott <Elliott@hp.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 05/14] scsi: push host_lock down into scsi_{host,target}_queue_ready
+Date: Wed, 25 Jun 2014 18:51:52 +0200
+Message-Id: <1403715121-1201-6-git-send-email-hch@lst.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1403715121-1201-1-git-send-email-hch@lst.de>
+References: <1403715121-1201-1-git-send-email-hch@lst.de>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kirill Tkhai <ktkhai@parallels.com> writes:
+Prepare for not taking a host-wide lock in the dispatch path by pushing
+the lock down into the places that actually need it.  Note that this
+patch is just a preparation step, as it will actually increase lock
+roundtrips and thus decrease performance on its own.
 
-> В Вт, 24/06/2014 в 23:26 +0400, Kirill Tkhai пишет:
->> On 24.06.2014 23:13, bsegall@google.com wrote:
->> > Kirill Tkhai <tkhai@yandex.ru> writes:
->> > 
->> >> On 24.06.2014 21:03, bsegall@google.com wrote:
->> >>> Kirill Tkhai <ktkhai@parallels.com> writes:
->> >>>
->> >>>> We kill rq->rd on the CPU_DOWN_PREPARE stage:
->> >>>>
->> >>>> 	cpuset_cpu_inactive -> cpuset_update_active_cpus -> partition_sched_domains ->
->> >>>> 	-> cpu_attach_domain -> rq_attach_root -> set_rq_offline
->> >>>>
->> >>>> This unthrottles all throttled cfs_rqs.
->> >>>>
->> >>>> But the cpu is still able to call schedule() till
->> >>>>
->> >>>> 	take_cpu_down->__cpu_disable()
->> >>>>
->> >>>> is called from stop_machine.
->> >>>>
->> >>>> This case the tasks from just unthrottled cfs_rqs are pickable
->> >>>> in a standard scheduler way, and they are picked by dying cpu.
->> >>>> The cfs_rqs becomes throttled again, and migrate_tasks()
->> >>>> in migration_call skips their tasks (one more unthrottle
->> >>>> in migrate_tasks()->CPU_DYING does not happen, because rq->rd
->> >>>> is already NULL).
->> >>>>
->> >>>> Patch sets runtime_enabled to zero. This guarantees, the runtime
->> >>>> is not accounted, and the cfs_rqs won't exceed given
->> >>>> cfs_rq->runtime_remaining = 1, and tasks will be pickable
->> >>>> in migrate_tasks(). runtime_enabled is recalculated again
->> >>>> when rq becomes online again.
->> >>>>
->> >>>> Ben Segall also noticed, we always enable runtime in
->> >>>> tg_set_cfs_bandwidth(). Actually, we should do that for online
->> >>>> cpus only. To fix that, we check if a cpu is online when
->> >>>> its rq is locked. This guarantees we do not have races with
->> >>>> set_rq_offline(), which also requires rq->lock.
->> >>>>
->> >>>> v2: Fix race with tg_set_cfs_bandwidth().
->> >>>>     Move cfs_rq->runtime_enabled=0 above unthrottle_cfs_rq().
->> >>>>
->> >>>> Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
->> >>>> CC: Konstantin Khorenko <khorenko@parallels.com>
->> >>>> CC: Ben Segall <bsegall@google.com>
->> >>>> CC: Paul Turner <pjt@google.com>
->> >>>> CC: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
->> >>>> CC: Mike Galbraith <umgwanakikbuti@gmail.com>
->> >>>> CC: Peter Zijlstra <peterz@infradead.org>
->> >>>> CC: Ingo Molnar <mingo@kernel.org>
->> >>>> ---
->> >>>>  kernel/sched/core.c |   15 +++++++++++----
->> >>>>  kernel/sched/fair.c |   22 ++++++++++++++++++++++
->> >>>>  2 files changed, 33 insertions(+), 4 deletions(-)
->> >>>>
->> >>>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
->> >>>> index 7f3063c..707a3c5 100644
->> >>>> --- a/kernel/sched/core.c
->> >>>> +++ b/kernel/sched/core.c
->> >>>> @@ -7842,11 +7842,18 @@ static int tg_set_cfs_bandwidth(struct task_group *tg, u64 period, u64 quota)
->> >>>>  		struct rq *rq = cfs_rq->rq;
->> >>>>  
->> >>>>  		raw_spin_lock_irq(&rq->lock);
->> >>>> -		cfs_rq->runtime_enabled = runtime_enabled;
->> >>>> -		cfs_rq->runtime_remaining = 0;
->> >>>> +		/*
->> >>>> +		 * Do not enable runtime on offline runqueues. We specially
->> >>>> +		 * make it disabled in unthrottle_offline_cfs_rqs().
->> >>>> +		 */
->> >>>> +		if (cpu_online(i)) {
->> >>>> +			cfs_rq->runtime_enabled = runtime_enabled;
->> >>>> +			cfs_rq->runtime_remaining = 0;
->> >>>> +
->> >>>> +			if (cfs_rq->throttled)
->> >>>> +				unthrottle_cfs_rq(cfs_rq);
->> >>>> +		}
->> >>>
->> >>> We can just do for_each_online_cpu, yes? Also we probably need
->> >>> get_online_cpus/put_online_cpus, and/or want cpu_active_mask instead
->> >>> right?
->> >>>
->> >>
->> >> Yes, we can use for_each_online_cpu/for_each_active_cpu with
->> >> get_online_cpus() taken. But it adds one more lock dependence.
->> >> This looks worse for me.
->> > 
->> > I mean, you need get_online_cpus anyway - cpu_online is just a test
->> > against the same mask that for_each_online_cpu uses, and without taking
->> > the lock you can still race with offlining and reset runtime_enabled.
->> > 
->> 
->> Oh, I see. Thanks.
->
-> But we can check for rq->online, don't we? How about this?
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+---
+ drivers/scsi/scsi_lib.c |   75 ++++++++++++++++++++++++-----------------------
+ 1 file changed, 39 insertions(+), 36 deletions(-)
 
-Yeah, that should work.
->
->     sched/fair: Disable runtime_enabled on dying rq
->     
->     We kill rq->rd on the CPU_DOWN_PREPARE stage:
->     
->     	cpuset_cpu_inactive -> cpuset_update_active_cpus -> partition_sched_domains ->
->     	-> cpu_attach_domain -> rq_attach_root -> set_rq_offline
->     
->     This unthrottles all throttled cfs_rqs.
->     
->     But the cpu is still able to call schedule() till
->     
->     	take_cpu_down->__cpu_disable()
->     
->     is called from stop_machine.
->     
->     This case the tasks from just unthrottled cfs_rqs are pickable
->     in a standard scheduler way, and they are picked by dying cpu.
->     The cfs_rqs becomes throttled again, and migrate_tasks()
->     in migration_call skips their tasks (one more unthrottle
->     in migrate_tasks()->CPU_DYING does not happen, because rq->rd
->     is already NULL).
->     
->     Patch sets runtime_enabled to zero. This guarantees, the runtime
->     is not accounted, and the cfs_rqs won't exceed given
->     cfs_rq->runtime_remaining = 1, and tasks will be pickable
->     in migrate_tasks(). runtime_enabled is recalculated again
->     when rq becomes online again.
->     
->     Ben Segall also noticed, we always enable runtime in
->     tg_set_cfs_bandwidth(). Actually, we should do that for online
->     cpus only. To fix that, we check if a cpu is online when
->     its rq is locked. This guarantees we do not have races with
->     set_rq_offline(), which also requires rq->lock.
->     
->     v2: Fix race with tg_set_cfs_bandwidth().
->         Move cfs_rq->runtime_enabled=0 above unthrottle_cfs_rq().
->     v3: Check for rq->online instead of cpu_active.
->     
->     Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+index 6989b6f..18e6449 100644
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -1300,18 +1300,18 @@ static inline int scsi_dev_queue_ready(struct request_queue *q,
+ /*
+  * scsi_target_queue_ready: checks if there we can send commands to target
+  * @sdev: scsi device on starget to check.
+- *
+- * Called with the host lock held.
+  */
+ static inline int scsi_target_queue_ready(struct Scsi_Host *shost,
+ 					   struct scsi_device *sdev)
+ {
+ 	struct scsi_target *starget = scsi_target(sdev);
++	int ret = 0;
+ 
++	spin_lock_irq(shost->host_lock);
+ 	if (starget->single_lun) {
+ 		if (starget->starget_sdev_user &&
+ 		    starget->starget_sdev_user != sdev)
+-			return 0;
++			goto out;
+ 		starget->starget_sdev_user = sdev;
+ 	}
+ 
+@@ -1319,57 +1319,66 @@ static inline int scsi_target_queue_ready(struct Scsi_Host *shost,
+ 		/*
+ 		 * unblock after target_blocked iterates to zero
+ 		 */
+-		if (--starget->target_blocked == 0) {
+-			SCSI_LOG_MLQUEUE(3, starget_printk(KERN_INFO, starget,
+-					 "unblocking target at zero depth\n"));
+-		} else
+-			return 0;
++		if (--starget->target_blocked != 0)
++			goto out;
++
++		SCSI_LOG_MLQUEUE(3, starget_printk(KERN_INFO, starget,
++				 "unblocking target at zero depth\n"));
+ 	}
+ 
+ 	if (scsi_target_is_busy(starget)) {
+ 		list_move_tail(&sdev->starved_entry, &shost->starved_list);
+-		return 0;
++		goto out;
+ 	}
+ 
+-	return 1;
++	scsi_target(sdev)->target_busy++;
++	ret = 1;
++out:
++	spin_unlock_irq(shost->host_lock);
++	return ret;
+ }
+ 
+ /*
+  * scsi_host_queue_ready: if we can send requests to shost, return 1 else
+  * return 0. We must end up running the queue again whenever 0 is
+  * returned, else IO can hang.
+- *
+- * Called with host_lock held.
+  */
+ static inline int scsi_host_queue_ready(struct request_queue *q,
+ 				   struct Scsi_Host *shost,
+ 				   struct scsi_device *sdev)
+ {
++	int ret = 0;
++
++	spin_lock_irq(shost->host_lock);
++
+ 	if (scsi_host_in_recovery(shost))
+-		return 0;
++		goto out;
+ 	if (shost->host_busy == 0 && shost->host_blocked) {
+ 		/*
+ 		 * unblock after host_blocked iterates to zero
+ 		 */
+-		if (--shost->host_blocked == 0) {
+-			SCSI_LOG_MLQUEUE(3,
+-				shost_printk(KERN_INFO, shost,
+-					     "unblocking host at zero depth\n"));
+-		} else {
+-			return 0;
+-		}
++		if (--shost->host_blocked != 0)
++			goto out;
++
++		SCSI_LOG_MLQUEUE(3,
++			shost_printk(KERN_INFO, shost,
++				     "unblocking host at zero depth\n"));
+ 	}
+ 	if (scsi_host_is_busy(shost)) {
+ 		if (list_empty(&sdev->starved_entry))
+ 			list_add_tail(&sdev->starved_entry, &shost->starved_list);
+-		return 0;
++		goto out;
+ 	}
+ 
+ 	/* We're OK to process the command, so we can't be starved */
+ 	if (!list_empty(&sdev->starved_entry))
+ 		list_del_init(&sdev->starved_entry);
+ 
+-	return 1;
++	shost->host_busy++;
++	ret = 1;
++out:
++	spin_unlock_irq(shost->host_lock);
++	return ret;
+ }
+ 
+ /*
+@@ -1550,7 +1559,7 @@ static void scsi_request_fn(struct request_queue *q)
+ 			blk_start_request(req);
+ 		sdev->device_busy++;
+ 
+-		spin_unlock(q->queue_lock);
++		spin_unlock_irq(q->queue_lock);
+ 		cmd = req->special;
+ 		if (unlikely(cmd == NULL)) {
+ 			printk(KERN_CRIT "impossible request in %s.\n"
+@@ -1560,7 +1569,6 @@ static void scsi_request_fn(struct request_queue *q)
+ 			blk_dump_rq_flags(req, "foo");
+ 			BUG();
+ 		}
+-		spin_lock(shost->host_lock);
+ 
+ 		/*
+ 		 * We hit this when the driver is using a host wide
+@@ -1571,9 +1579,11 @@ static void scsi_request_fn(struct request_queue *q)
+ 		 * a run when a tag is freed.
+ 		 */
+ 		if (blk_queue_tagged(q) && !blk_rq_tagged(req)) {
++			spin_lock_irq(shost->host_lock);
+ 			if (list_empty(&sdev->starved_entry))
+ 				list_add_tail(&sdev->starved_entry,
+ 					      &shost->starved_list);
++			spin_unlock_irq(shost->host_lock);
+ 			goto not_ready;
+ 		}
+ 
+@@ -1581,16 +1591,7 @@ static void scsi_request_fn(struct request_queue *q)
+ 			goto not_ready;
+ 
+ 		if (!scsi_host_queue_ready(q, shost, sdev))
+-			goto not_ready;
+-
+-		scsi_target(sdev)->target_busy++;
+-		shost->host_busy++;
+-
+-		/*
+-		 * XXX(hch): This is rather suboptimal, scsi_dispatch_cmd will
+-		 *		take the lock again.
+-		 */
+-		spin_unlock_irq(shost->host_lock);
++			goto host_not_ready;
+ 
+ 		/*
+ 		 * Finally, initialize any error handling parameters, and set up
+@@ -1613,9 +1614,11 @@ static void scsi_request_fn(struct request_queue *q)
+ 
+ 	return;
+ 
+- not_ready:
++ host_not_ready:
++	spin_lock_irq(shost->host_lock);
++	scsi_target(sdev)->target_busy--;
+ 	spin_unlock_irq(shost->host_lock);
+-
++ not_ready:
+ 	/*
+ 	 * lock q, handle tag, requeue req, and decrement device_busy. We
+ 	 * must return with queue_lock held.
+-- 
+1.7.10.4
 
-Reviewed-by: Ben Segall <bsegall@google.com>
