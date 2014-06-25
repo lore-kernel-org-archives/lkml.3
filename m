@@ -1,158 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756194AbaFYXDj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 19:03:39 -0400
-Received: from exprod5og103.obsmtp.com ([64.18.0.145]:50694 "HELO
-	exprod5og103.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757133AbaFYXDh (ORCPT
+	id S1757615AbaFYXFH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 19:05:07 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:43113 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756638AbaFYXFF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 19:03:37 -0400
-From: Feng Kan <fkan@apm.com>
-To: dbaryshkov@gmail.com, catalin.marinas@arm.com, dwmw2@infradead.org,
-        arnd@arndb.de, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        patches@apm.com
-Cc: Feng Kan <fkan@apm.com>
-Subject: [PATCH V7 1/6] power: reset: Add generic SYSCON register mapped reset
-Date: Wed, 25 Jun 2014 16:03:21 -0700
-Message-Id: <1403737406-6474-2-git-send-email-fkan@apm.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403737406-6474-1-git-send-email-fkan@apm.com>
-References: <1403737406-6474-1-git-send-email-fkan@apm.com>
+	Wed, 25 Jun 2014 19:05:05 -0400
+Date: Thu, 26 Jun 2014 00:04:50 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Dann Frazier <dann.frazier@canonical.com>
+Cc: Iyappan Subramanian <isubramanian@apm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        jcm@redhat.com, netdev@vger.kernel.org, patches@apm.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Keyur Chudgar <kchudgar@apm.com>, davem@davemloft.net,
+        linux-arm-kernel@lists.infradead.org, Ravi Patel <rapatel@apm.com>
+Subject: Re: [PATCH v8 4/4] drivers: net: Add APM X-Gene SoC ethernet
+	driver support.
+Message-ID: <20140625230450.GO32514@n2100.arm.linux.org.uk>
+References: <1403306296-26198-1-git-send-email-isubramanian@apm.com> <1403306296-26198-5-git-send-email-isubramanian@apm.com> <CALdTtnvHt5mYMC3619E4F3KK0jPOw7mCpKE6bTn0Um6fdZ4rbw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALdTtnvHt5mYMC3619E4F3KK0jPOw7mCpKE6bTn0Um6fdZ4rbw@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a generic SYSCON register mapped reset mechanism.
+On Tue, Jun 24, 2014 at 10:29:48PM -0600, Dann Frazier wrote:
+> On Fri, Jun 20, 2014 at 5:18 PM, Iyappan Subramanian
+> <isubramanian@apm.com> wrote:
+> > +       ring->desc_addr = dma_zalloc_coherent(dev, size, &ring->dma,
+> > +                                             GFP_KERNEL);
+> 
+> Iyappan,
+> When testing this driver on a 3.16-rc2 base, I'm finding that
+> desc_addr gets assigned to NULL here, which results in an oops later
+> on (see below).
 
-Signed-off-by: Feng Kan <fkan@apm.com>
----
- drivers/power/reset/Kconfig         |  6 +++
- drivers/power/reset/Makefile        |  1 +
- drivers/power/reset/syscon-reboot.c | 91 +++++++++++++++++++++++++++++++++++++
- 3 files changed, 98 insertions(+)
- create mode 100644 drivers/power/reset/syscon-reboot.c
+Note that on failure here...
 
-diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
-index bdcf517..7035236 100644
---- a/drivers/power/reset/Kconfig
-+++ b/drivers/power/reset/Kconfig
-@@ -80,3 +80,9 @@ config POWER_RESET_KEYSTONE
- 	help
- 	  Reboot support for the KEYSTONE SoCs.
- 
-+config POWER_RESET_SYSCON
-+	bool "Generic SYSCON regmap reset driver"
-+	depends on ARCH_XGENE
-+	depends on POWER_RESET && MFD_SYSCON
-+	help
-+	  Reboot support for generic SYSCON mapped register reset.
-diff --git a/drivers/power/reset/Makefile b/drivers/power/reset/Makefile
-index dde2e8b..b1b5ab3 100644
---- a/drivers/power/reset/Makefile
-+++ b/drivers/power/reset/Makefile
-@@ -8,3 +8,4 @@ obj-$(CONFIG_POWER_RESET_SUN6I) += sun6i-reboot.o
- obj-$(CONFIG_POWER_RESET_VEXPRESS) += vexpress-poweroff.o
- obj-$(CONFIG_POWER_RESET_XGENE) += xgene-reboot.o
- obj-$(CONFIG_POWER_RESET_KEYSTONE) += keystone-reset.o
-+obj-$(CONFIG_POWER_RESET_SYSCON) += syscon-reboot.o
-diff --git a/drivers/power/reset/syscon-reboot.c b/drivers/power/reset/syscon-reboot.c
-new file mode 100644
-index 0000000..9c15ba5
---- /dev/null
-+++ b/drivers/power/reset/syscon-reboot.c
-@@ -0,0 +1,91 @@
-+/*
-+ * Generic Syscon Reboot Driver
-+ *
-+ * Copyright (c) 2013, Applied Micro Circuits Corporation
-+ * Author: Feng Kan <fkan@apm.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation; either version 2 of
-+ * the License, or (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+#include <linux/io.h>
-+#include <linux/of_device.h>
-+#include <linux/of_address.h>
-+#include <linux/platform_device.h>
-+#include <linux/stat.h>
-+#include <linux/slab.h>
-+#include <linux/mfd/syscon.h>
-+#include <linux/regmap.h>
-+#include <linux/reboot.h>
-+#include <asm/system_misc.h>
-+
-+struct syscon_reboot_context {
-+	struct regmap *map;
-+	u32 offset;
-+	u32 mask;
-+};
-+
-+static struct syscon_reboot_context *syscon_reboot_ctx;
-+
-+static void syscon_restart(enum reboot_mode reboot_mode, const char *cmd)
-+{
-+	struct syscon_reboot_context *ctx = syscon_reboot_ctx;
-+	unsigned long timeout;
-+
-+	/* Issue the reboot */
-+	if (ctx->map)
-+		regmap_write(ctx->map, ctx->offset, ctx->mask);
-+
-+	timeout = jiffies + HZ;
-+	while (time_before(jiffies, timeout))
-+		cpu_relax();
-+
-+	pr_emerg("Unable to restart system\n");
-+}
-+
-+static int syscon_reboot_probe(struct platform_device *pdev)
-+{
-+	struct syscon_reboot_context *ctx;
-+	struct device *dev = &pdev->dev;
-+
-+	ctx = devm_kzalloc(&pdev->dev, sizeof(*ctx), GFP_KERNEL);
-+	if (!ctx) {
-+		dev_err(&pdev->dev, "out of memory for context\n");
-+		return -ENOMEM;
-+	}
-+
-+	ctx->map = syscon_regmap_lookup_by_phandle(dev->of_node, "regmap");
-+	if (IS_ERR(ctx->map))
-+		return PTR_ERR(ctx->map);
-+
-+	if (of_property_read_u32(pdev->dev.of_node, "offset", &ctx->offset))
-+		return -EINVAL;
-+
-+	if (of_property_read_u32(pdev->dev.of_node, "mask", &ctx->mask))
-+		return -EINVAL;
-+
-+	arm_pm_restart = syscon_restart;
-+	syscon_reboot_ctx = ctx;
-+
-+	return 0;
-+}
-+
-+static struct of_device_id syscon_reboot_of_match[] = {
-+	{ .compatible = "syscon-reboot" },
-+	{}
-+};
-+
-+static struct platform_driver syscon_reboot_driver = {
-+	.probe = syscon_reboot_probe,
-+	.driver = {
-+		.name = "syscon-reboot",
-+		.of_match_table = syscon_reboot_of_match,
-+	},
-+};
-+module_platform_driver(syscon_reboot_driver);
+> > +       if (!ring->desc_addr)
+> > +               goto err;
+
+we jump to 'err'.
+
+> > +err:
+> > +       dma_free_coherent(dev, size, ring->desc_addr, ring->dma);
+
+which then tries to call dma_free_coherent on a NULL pointer, and
+possibly undefined ring->dma value.  That's not a nice thing to do,
+and will probably lead to problems.  I know that none of the ARM
+flavours of this function will handle this gracefully, and neither
+does x86's version either.  So this is very probably illegal.
+
+> > +static int xgene_enet_create_desc_rings(struct net_device *ndev)
+> > +{
+> > +       struct xgene_enet_pdata *pdata = netdev_priv(ndev);
+> > +       struct device *dev = &pdata->pdev->dev;
+> > +       struct xgene_enet_desc_ring *rx_ring, *tx_ring, *cp_ring;
+> > +       struct xgene_enet_desc_ring *buf_pool = NULL;
+> > +       u8 cpu_bufnum = 0, eth_bufnum = 0;
+> > +       u8 bp_bufnum = 0x20;
+> > +       u16 ring_id, ring_num = 0;
+> > +       int ret;
+> > +
+> > +       /* allocate rx descriptor ring */
+> > +       ring_id = xgene_enet_get_ring_id(RING_OWNER_CPU, cpu_bufnum++);
+> > +       rx_ring = xgene_enet_create_desc_ring(ndev, ring_num++,
+> > +                                             RING_CFGSIZE_16KB, ring_id);
+> > +       if (IS_ERR_OR_NULL(rx_ring)) {
+> > +               ret = PTR_ERR(rx_ring);
+> > +               goto err;
+> > +       }
+> 
+> Here we test for IS_ERR_OR_NULL. In the oops I'm hitting, rx_ring is
+> NULL here - but PTR_ERR() apparently returns 0 in that case. So this
+> function ends up returning no error.
+
+Yes, IS_ERR_OR_NULL is evil for this very reason and should be avoided
+where possible.  There were discussions a while back about removing it,
+or at least deprecating it because it causes more bugs (exactly of this
+type) than it solves.
+
 -- 
-1.9.1
-
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
