@@ -1,49 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757582AbaFYQqq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 12:46:46 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:44637 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757033AbaFYQqp (ORCPT
+	id S1757579AbaFYQtw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 12:49:52 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59432 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757240AbaFYQtv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 12:46:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <CACE9dm8AR_0S9gB13T_tydBcYtJEtXmEOc_GRx_Qtfbw+pKM2w@mail.gmail.com>
-References: <CACVXFVPn4muw+zD+TPAJh2miB5R326iFT4ZBS-Tdehz0XrsyDQ@mail.gmail.com>
-	<cover.1402672110.git.d.kasatkin@samsung.com>
-	<248c69602c96d68aea1ffb4cb75e77ec38b6b75f.1402672110.git.d.kasatkin@samsung.com>
-	<CACVXFVMQYk=k8fONkoHVHo7wELK7TgWVQpKeCMAZaTyXHZgePQ@mail.gmail.com>
-	<CACE9dm8AR_0S9gB13T_tydBcYtJEtXmEOc_GRx_Qtfbw+pKM2w@mail.gmail.com>
-Date: Wed, 25 Jun 2014 19:46:41 +0300
-Message-ID: <CACE9dm9bSLTMuaobgZNF+Xe7GxZZKjqedK91PsTjYrJWafMGiw@mail.gmail.com>
-Subject: Re: [PATCH v2 1/1] firmware: read firmware size using i_size_read()
-From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 25 Jun 2014 12:49:51 -0400
+From: Christoph Hellwig <hch@lst.de>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Bart Van Assche <bvanassche@fusionio.com>,
+        Robert Elliott <Elliott@hp.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: scsi-mq V2
+Date: Wed, 25 Jun 2014 18:51:47 +0200
+Message-Id: <1403715121-1201-1-git-send-email-hch@lst.de>
+X-Mailer: git-send-email 1.7.10.4
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 June 2014 19:06, Dmitry Kasatkin <dmitry.kasatkin@gmail.com> wrote:
-> On 13 June 2014 19:03, Ming Lei <ming.lei@canonical.com> wrote:
->> On Fri, Jun 13, 2014 at 11:09 PM, Dmitry Kasatkin
->> <d.kasatkin@samsung.com> wrote:
->>> There is no need to read attr because inode structure contains size
->>> of the file. Use i_size_read() instead.
->>>
->>> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
->>
->> Acked-by: Ming Lei <ming.lei@canonical.com>
->>
+This is the second post of the scsi-mq series.
 
+At this point the code is ready for merging and use by developers and early
+adopters.  The core blk-mq code isn't that suitable for slow devices
+yet, mostly due to the lack of an I/O scheduler, but Jens is working on it.
+Similarly there is no dm-multipath support for drivers using blk-mq yet,
+but I'm working on it.  It should also be noted that the code doesn't
+actually support multiple hardware queues or fine grained tuning of the
+blk-mq parameters yet.  All these could be added fairly easily as soon
+as low-level drivers want to make use of them.
 
-Hi,
+The amount of chances to the existing code are fairly small, and mostly
+speedups or cleanups that also apply to the old path as well.  Because
+of this I also haven't bothered to put it under a config option, just
+like the blk-mq core.
 
-BTW. To what tree it is applied?
+The usage of blk-mq dramatically decreases CPU usage under all workloads going
+down from 100% CPU usage that the old setup can hit easily to usually less
+than 20% for maxing out storage subsystems with 512byte reads and writes,
+and it allows to easily archive millions of IOPS.  Bart and Robert have
+helped with some very detailed measurements that they might be able to send
+in reply to this, although these usually involve significantly reworked low
+level drivers to avoid other bottle necks.
 
--- 
-Thanks,
-Dmitry
+One major objection to previous iterations of this code was the simple
+replacement of the host_lock with atomic counters for the host and busy
+counters.  The host_lock avoidance on it's own already improves performance,
+and with the patch to avoid maintaining the per-target busy counter unless
+needed we now replace a lock round trip on the host_lock with just a single
+atomic increment in the submission path, and a single atomic decrement in
+completion path, which should provide benefits even for the oddest RISC
+architecture.  Longer term I'd still love to get rid of these entirely
+and use the counters in blk-mq, but due to the difference in how they
+are maintained this doesn't seem feasible as long as we still need to
+support the legacy request code path.
+
+Changes from V1:
+ - rebased on top of the core-for-3.17 branch, most notable the
+   scsi logging changes
+ - fixed handling of cmd_list to prevent crashes for some heavy
+   workloads
+ - fixed incorrect handling of !target->can_queue
+ - avoid scheduling a workqueue on I/O completions when no queues
+   are congested
+
+In addition to the patches in this thread there also is a git available at:
+
+	git://git.infradead.org/users/hch/scsi.git scsi-mq.2
+
+This work was sponsored by the ION division of Fusion IO.
+
