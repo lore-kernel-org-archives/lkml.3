@@ -1,77 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755926AbaFYIu6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 04:50:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33579 "EHLO mx2.suse.de"
+	id S1755996AbaFYIvY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 04:51:24 -0400
+Received: from mga01.intel.com ([192.55.52.88]:21797 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755672AbaFYIuz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 04:50:55 -0400
-Message-ID: <53AA8D6B.6090301@suse.cz>
-Date: Wed, 25 Jun 2014 10:50:51 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-CC: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 04/13] mm, compaction: move pageblock checks up from
- isolate_migratepages_range()
-References: <1403279383-5862-1-git-send-email-vbabka@suse.cz> <1403279383-5862-5-git-send-email-vbabka@suse.cz> <20140624045252.GA18289@nhori.bos.redhat.com> <53A99A88.1040500@suse.cz> <20140624165821.GC18289@nhori.bos.redhat.com>
-In-Reply-To: <20140624165821.GC18289@nhori.bos.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755239AbaFYIjc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 04:39:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,544,1400050800"; 
+   d="scan'208";a="552973799"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        x86@kernel.org, Jiang Liu <jiang.liu@linux.intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Prarit Bhargava <prarit@redhat.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [Patch V3 07/16] x86, ioapic: Find usable ioapic id for 64bit.
+Date: Wed, 25 Jun 2014 16:40:38 +0800
+Message-Id: <1403685648-10103-8-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1403685648-10103-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1403685648-10103-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24/2014 06:58 PM, Naoya Horiguchi wrote:
-> On Tue, Jun 24, 2014 at 05:34:32PM +0200, Vlastimil Babka wrote:
->> On 06/24/2014 06:52 AM, Naoya Horiguchi wrote:
->>>> -	low_pfn = isolate_migratepages_range(zone, cc, low_pfn, end_pfn, false);
->>>> -	if (!low_pfn || cc->contended)
->>>> -		return ISOLATE_ABORT;
->>>> +		/* Do not scan within a memory hole */
->>>> +		if (!pfn_valid(low_pfn))
->>>> +			continue;
->>>> +
->>>> +		page = pfn_to_page(low_pfn);
->>>
->>> Can we move (page_zone != zone) check here as isolate_freepages() does?
->>
->> Duplicate perhaps, not sure about move.
->
-> Sorry for my unclearness.
-> I meant that we had better do this check in per-pageblock loop (as the free
-> scanner does) instead of in per-pfn loop (as we do now.)
+From: Yinghai Lu <yinghai@kernel.org>
 
-Hm I see, the migration and free scanners really do this differently. 
-Free scanned per-pageblock, but migration scanner per-page.
-Can we assume that zones will never overlap within a single pageblock?
-The example dc9086004 seems to be overlapping at even higher alignment 
-so it should be safe only to check first page in pageblock.
-And if it wasn't the case, then I guess the freepage scanner would 
-already hit some errors on such system?
+Checking the id in register, if that is duplicated, will pick one and
+update id register.
 
-But if that's true, why does page_is_buddy test if pages are in the same 
-zone?
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+ arch/x86/kernel/apic/io_apic.c |   38 +++++++++++++++++++++++++++++++++-----
+ 1 file changed, 33 insertions(+), 5 deletions(-)
 
->> Does CMA make sure that all pages
->> are in the same zone?
->
-> It seems not, CMA just specifies start pfn and end pfn, so it can cover
-> multiple zones.
-> And we also have a case of node overlapping as commented in commit dc9086004
-> "mm: compaction: check for overlapping nodes during isolation for migration".
-> So we need this check in compaction side.
->
-> Thanks,
-> Naoya Horiguchi
->
->> Common sense tells me it would be useless otherwise,
->> but I haven't checked if we can rely on it.
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index b7296d4ca0a1..a068bf558657 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -3570,26 +3570,54 @@ static int __init io_apic_get_unique_id(int ioapic, int apic_id)
+ 	return apic_id;
+ }
+ 
+-static u8 __init io_apic_unique_id(u8 id)
++static u8 io_apic_unique_id(int idx, u8 id)
+ {
+ 	if ((boot_cpu_data.x86_vendor == X86_VENDOR_INTEL) &&
+ 	    !APIC_XAPIC(apic_version[boot_cpu_physical_apicid]))
+-		return io_apic_get_unique_id(nr_ioapics, id);
++		return io_apic_get_unique_id(idx, id);
+ 	else
+ 		return id;
+ }
+ #else
+-static u8 __init io_apic_unique_id(u8 id)
++static u8 io_apic_unique_id(int idx, u8 id)
+ {
+ 	int i;
++	u8 new_id;
++	unsigned long flags;
+ 	DECLARE_BITMAP(used, 256);
++	union IO_APIC_reg_00 reg_00;
+ 
+ 	bitmap_zero(used, 256);
+ 	for_each_ioapic(i)
+ 		__set_bit(mpc_ioapic_id(i), used);
+ 	if (!test_bit(id, used))
+ 		return id;
+-	return find_first_zero_bit(used, 256);
++
++	/* check register at first */
++	raw_spin_lock_irqsave(&ioapic_lock, flags);
++	reg_00.raw = io_apic_read(idx, 0);
++	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
++	new_id = reg_00.bits.ID;
++	if (!test_bit(new_id, used)) {
++		apic_printk(APIC_VERBOSE, KERN_INFO
++			"IOAPIC[%d]: Using reg apic_id %d instead of %d\n",
++			 idx, new_id, id);
++		return new_id;
++	}
++
++	new_id = find_first_zero_bit(used, 256);
++	reg_00.bits.ID = new_id;
++	raw_spin_lock_irqsave(&ioapic_lock, flags);
++	io_apic_write(idx, 0, reg_00.raw);
++	reg_00.raw = io_apic_read(idx, 0);
++	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
++
++	/* Sanity check */
++	if (reg_00.bits.ID != new_id)
++		pr_warn("IOAPIC[%d]: Unable to change apic_id to %d!\n",
++			idx, new_id);
++
++	return new_id;
+ }
+ #endif
+ 
+@@ -3855,7 +3883,7 @@ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base,
+ 		return;
+ 	}
+ 
+-	ioapics[idx].mp_config.apicid = io_apic_unique_id(id);
++	ioapics[idx].mp_config.apicid = io_apic_unique_id(idx, id);
+ 	ioapics[idx].mp_config.apicver = io_apic_get_version(idx);
+ 
+ 	/*
+-- 
+1.7.10.4
 
