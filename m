@@ -1,120 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755136AbaFYK7i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 06:59:38 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:46710 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753055AbaFYK7g (ORCPT
+	id S1755573AbaFYLEn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 07:04:43 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:58127 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753849AbaFYLEm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 06:59:36 -0400
-Message-ID: <53AAAB30.8080505@linux.vnet.ibm.com>
-Date: Wed, 25 Jun 2014 16:27:52 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 25 Jun 2014 07:04:42 -0400
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
+In-Reply-To: <alpine.LNX.2.00.1406251200051.15939@pobox.suse.cz>
+References: <20140619213329.478113470@goodmis.org>
+	<alpine.LNX.2.00.1406192349400.15014@pobox.suse.cz>
+	<20140619185810.4137e14b@gandalf.local.home>
+	<alpine.LNX.2.00.1406200100520.15014@pobox.suse.cz>
+	<20140619191923.1365850a@gandalf.local.home>
+	<alpine.LNX.2.00.1406200123220.15014@pobox.suse.cz>
+	<20140619193635.1949b469@gandalf.local.home>
+	<alpine.LNX.2.00.1406200137310.15014@pobox.suse.cz>
+	<20140620143525.GB8769@pathway.suse.cz>
+	<CALYGNiM3OH64ULh63cCarTitbjUatZP0mckJ3N9CDusP3mFMRg@mail.gmail.com>
+	<alpine.LNX.2.00.1406251200051.15939@pobox.suse.cz>
+Date: Wed, 25 Jun 2014 15:04:41 +0400
+Message-ID: <CALYGNiOT9XkiE1Q=AimOt42UkQ430Qy89cseNLVaMf96O9=FJw@mail.gmail.com>
+Subject: Re: [RFC][PATCH 0/3] x86/nmi: Print all cpu stacks from NMI safely
+From: Konstantin Khlebnikov <koct9i@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: =?UTF-8?B?UGV0ciBNbMOhZGVr?= <pmladek@suse.cz>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Subject: Re: [PATCH 2/6] irq_work: Implement remote queueing
-References: <1402413309-3415-1-git-send-email-fweisbec@gmail.com> <1402413309-3415-3-git-send-email-fweisbec@gmail.com> <53A9E0A5.5040402@wwwdotorg.org> <20140625051234.GD6758@twins.programming.kicks-ass.net> <20140625051721.GG3588@twins.programming.kicks-ass.net> <53AA6E11.1000404@linux.vnet.ibm.com> <20140625093657.GN19860@laptop.programming.kicks-ass.net> <20140625093944.GV16155@laptop.programming.kicks-ass.net> <53AA9B68.4050104@linux.vnet.ibm.com> <53AA9C43.3020903@linux.vnet.ibm.com> <20140625101915.GO19860@laptop.programming.kicks-ass.net>
-In-Reply-To: <20140625101915.GO19860@laptop.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14062510-1396-0000-0000-0000051A4654
+        Michal Hocko <mhocko@suse.cz>, Jan Kara <jack@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Dave Anderson <anderson@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2014 03:49 PM, Peter Zijlstra wrote:
-> On Wed, Jun 25, 2014 at 03:24:11PM +0530, Srivatsa S. Bhat wrote:
->> Wait, that was a stupid idea. hotplug_cfd() already invokes irq_work_run
->> indirectly via flush_smp_call_function_queue(). So irq_work_cpu_notify()
->> doesn't need to invoke it again, AFAIU. So perhaps we can get rid of
->> irq_work_cpu_notify() altogether?
-> 
-> Just so...
-> 
-> getting up at 6am and sitting in an airport terminal doesn't seem to
-> agree with me;
+On Wed, Jun 25, 2014 at 2:01 PM, Jiri Kosina <jkosina@suse.cz> wrote:
+> On Tue, 24 Jun 2014, Konstantin Khlebnikov wrote:
+>
+>> Originally I thought that seizing all cpus one by one and printing from
+>> the initiator is a best approach and I've started preparing arguments
+>> against over-engineered printk...
+>
+> By "seizing" I guess you mean sending IPI, right?
+>
+> What do you do if you'd interrupt it in the middle of printk() in order
+> not to deadlock by trying to take the buffer lock on the initiator CPU?
 
-Haha :-)
+Yep, under "seize" I mean NMI IPI which gathering state of registers from cpu.
+Also it can keep cpu in nmi handler while initiator cpu unwinds its stack trace.
+Code of dump-all-stack in arch/sparc does something like that.
 
-> any more silly fail here?
-> 
-
-A few minor nits below..
-
-> ---
-> Subject: irq_work: Remove BUG_ON in irq_work_run()
-> From: Peter Zijlstra <peterz@infradead.org>
-> Date: Wed Jun 25 07:13:07 CEST 2014
-> 
-> Because of a collision with 8d056c48e486 ("CPU hotplug, smp: flush any
-> pending IPI callbacks before CPU offline"), which ends up calling
-> hotplug_cfd()->flush_smp_call_function_queue()->irq_work_run(), which
-> is not from IRQ context.
-> 
-> And since that already calls irq_work_run() from the hotplug path,
-> remove our entire hotplug handling.
-> 
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Reported-by: Stephen Warren <swarren@wwwdotorg.org>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> Link: http://lkml.kernel.org/n/tip-busatzs2gvz4v62258agipuf@git.kernel.org
-> ---
->  kernel/irq_work.c |   48 +++++-------------------------------------------
->  1 file changed, 5 insertions(+), 43 deletions(-)
-> 
-> Index: linux-2.6/kernel/irq_work.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/irq_work.c
-> +++ linux-2.6/kernel/irq_work.c
-> @@ -160,20 +160,14 @@ static void irq_work_run_list(struct lli
->  	}
->  }
-> 
-> -static void __irq_work_run(void)
-> -{
-> -	irq_work_run_list(&__get_cpu_var(raised_list));
-> -	irq_work_run_list(&__get_cpu_var(lazy_list));
-> -}
-> -
->  /*
-> - * Run the irq_work entries on this cpu. Requires to be ran from hardirq
-> - * context with local IRQs disabled.
-> + * hotplug calls this through:
-> + *  hotplug_cfs() -> flush_smp_call_function_queue()
-
-s/hotplug_cfs/hotplug_cfd
-
->   */
-> -void irq_work_run(void)
-> +static void irq_work_run(void)
-
-s/static//
-
->  {
-> -	BUG_ON(!in_irq());
-> -	__irq_work_run();
-> +	irq_work_run_list(&__get_cpu_var(raised_list));
-> +	irq_work_run_list(&__get_cpu_var(lazy_list));
->  }
->  EXPORT_SYMBOL_GPL(irq_work_run);
-
-With those 2 changes, everything looks good to me.
-
-Regards,
-Srivatsa S. Bhat
+You're right, moving printk from one cpu to another doesn't fixes recursion,
+but we could send NMI IPI under logbuf_lock. I don't think that this is good
+approach, but it seems realistic. Of course all printing from other NMI
+handlers must be done in some weird way.
 
 
+I like that context-depend printk routing from this patchset.
+I'm just not quite happy with this straight forward implementation.
+Rerouting flow into different buffers might serve different purposes,
+it must make code simpler instead of adding yet another knot.
+For example printk continuation might use it too.
 
+>
+> --
+> Jiri Kosina
+> SUSE Labs
