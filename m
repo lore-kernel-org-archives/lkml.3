@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754357AbaFYAH3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jun 2014 20:07:29 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:41377 "EHLO
+	id S1754297AbaFYAH0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jun 2014 20:07:26 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:41381 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753994AbaFYAGc (ORCPT
+	with ESMTP id S1754012AbaFYAGc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 24 Jun 2014 20:06:32 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: linux-arm-msm@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Mike Turquette <mturquette@linaro.org>
-Subject: [RFC/PATCH 08/12] clk: qcom: Add KPSS ACC/GCC driver
-Date: Tue, 24 Jun 2014 17:06:19 -0700
-Message-Id: <1403654783-7176-9-git-send-email-sboyd@codeaurora.org>
+Subject: [RFC/PATCH 05/12] clk: qcom: Add HFPLL driver
+Date: Tue, 24 Jun 2014 17:06:16 -0700
+Message-Id: <1403654783-7176-6-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
 In-Reply-To: <1403654783-7176-1-git-send-email-sboyd@codeaurora.org>
 References: <1403654783-7176-1-git-send-email-sboyd@codeaurora.org>
@@ -21,52 +21,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ACC and GCC regions present in KPSSv1 contain registers to
-control clocks and power to each Krait CPU and L2. For CPUfreq
-purposes probe these devices and expose a mux clock that chooses
-between PXO and PLL8.
+On some devices (MSM8974 for example), the HFPLLs are
+instantiated within the Krait processor subsystem as separate
+register regions. Add a driver for these PLLs so that we can
+provide HFPLL clocks for use by the system.
 
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- drivers/clk/qcom/Kconfig    |   8 +++
- drivers/clk/qcom/Makefile   |   1 +
- drivers/clk/qcom/kpss-xcc.c | 115 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 124 insertions(+)
- create mode 100644 drivers/clk/qcom/kpss-xcc.c
+ drivers/clk/qcom/Kconfig  |   8 ++++
+ drivers/clk/qcom/Makefile |   1 +
+ drivers/clk/qcom/hfpll.c  | 110 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 119 insertions(+)
+ create mode 100644 drivers/clk/qcom/hfpll.c
 
 diff --git a/drivers/clk/qcom/Kconfig b/drivers/clk/qcom/Kconfig
-index 425bcfe3c39a..247f042dc110 100644
+index 7f696b7d4422..425bcfe3c39a 100644
 --- a/drivers/clk/qcom/Kconfig
 +++ b/drivers/clk/qcom/Kconfig
-@@ -53,3 +53,11 @@ config QCOM_HFPLL
- 	  Support for the high-frequency PLLs present on Qualcomm devices.
- 	  Say Y if you want to support CPU frequency scaling on devices
- 	  such as MSM8974, APQ8084, etc.
+@@ -45,3 +45,11 @@ config MSM_MMCC_8974
+ 	  Support for the multimedia clock controller on msm8974 devices.
+ 	  Say Y if you want to support multimedia devices such as display,
+ 	  graphics, video encode/decode, camera, etc.
 +
-+config KPSS_XCC
-+	tristate "KPSS Clock Controller"
++config QCOM_HFPLL
++	tristate "High-Frequency PLL (HFPLL) Clock Controller"
 +	depends on COMMON_CLK_QCOM
 +	help
-+	  Support for the Krait ACC and GCC clock controllers. Say Y
-+	  if you want to support CPU frequency scaling on devices such
-+	  as MSM8960, APQ8064, etc.
++	  Support for the high-frequency PLLs present on Qualcomm devices.
++	  Say Y if you want to support CPU frequency scaling on devices
++	  such as MSM8974, APQ8084, etc.
 diff --git a/drivers/clk/qcom/Makefile b/drivers/clk/qcom/Makefile
-index b982d271d7db..bb4666733bd9 100644
+index 1a0b561bd105..b733adbbad5a 100644
 --- a/drivers/clk/qcom/Makefile
 +++ b/drivers/clk/qcom/Makefile
-@@ -16,4 +16,5 @@ obj-$(CONFIG_MSM_GCC_8960) += gcc-msm8960.o
+@@ -15,3 +15,4 @@ obj-$(CONFIG_MSM_GCC_8960) += gcc-msm8960.o
  obj-$(CONFIG_MSM_GCC_8974) += gcc-msm8974.o
  obj-$(CONFIG_MSM_MMCC_8960) += mmcc-msm8960.o
  obj-$(CONFIG_MSM_MMCC_8974) += mmcc-msm8974.o
-+obj-$(CONFIG_KPSS_XCC) += kpss-xcc.o
- obj-$(CONFIG_QCOM_HFPLL) += hfpll.o
-diff --git a/drivers/clk/qcom/kpss-xcc.c b/drivers/clk/qcom/kpss-xcc.c
++obj-$(CONFIG_QCOM_HFPLL) += hfpll.o
+diff --git a/drivers/clk/qcom/hfpll.c b/drivers/clk/qcom/hfpll.c
 new file mode 100644
-index 000000000000..1061668d48c0
+index 000000000000..701a377d35c1
 --- /dev/null
-+++ b/drivers/clk/qcom/kpss-xcc.c
-@@ -0,0 +1,115 @@
-+/* Copyright (c) 2014, The Linux Foundation. All rights reserved.
++++ b/drivers/clk/qcom/hfpll.c
+@@ -0,0 +1,110 @@
++/*
++ * Copyright (c) 2013-2014, The Linux Foundation. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 and
@@ -82,105 +82,99 @@ index 000000000000..1061668d48c0
 +#include <linux/init.h>
 +#include <linux/module.h>
 +#include <linux/platform_device.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
 +#include <linux/of.h>
-+#include <linux/of_device.h>
 +#include <linux/clk.h>
 +#include <linux/clk-provider.h>
-+#include <linux/clk/msm-clk-generic.h>
++#include <linux/regmap.h>
 +
-+static int kpss_xcc_set_mux_sel(struct mux_clk *clk, int sel)
++#include "clk-regmap.h"
++#include "clk-hfpll.h"
++
++static const struct hfpll_data hdata = {
++	.mode_reg = 0x00,
++	.l_reg = 0x04,
++	.m_reg = 0x08,
++	.n_reg = 0x0c,
++	.user_reg = 0x10,
++	.config_reg = 0x14,
++	.config_val = 0x430405d,
++	.status_reg = 0x1c,
++	.lock_bit = 16,
++
++	.user_val = 0x8,
++	.user_vco_mask = 0x100000,
++	.low_vco_max_rate = 1248000000,
++	.min_rate = 537600000UL,
++	.max_rate = 2900000000UL,
++};
++
++static const struct of_device_id qcom_hfpll_match_table[] = {
++	{ .compatible = "qcom,hfpll" },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, qcom_hfpll_match_table);
++
++static struct regmap_config hfpll_regmap_config = {
++	.reg_bits	= 32,
++	.reg_stride	= 4,
++	.val_bits	= 32,
++	.max_register	= 0x30,
++	.fast_io	= true,
++};
++
++static int qcom_hfpll_probe(struct platform_device *pdev)
 +{
-+	writel_relaxed(sel, clk->base + clk->offset);
-+	return 0;
-+}
-+
-+static int kpss_xcc_get_mux_sel(struct mux_clk *clk)
-+{
-+	return readl_relaxed(clk->base + clk->offset);
-+}
-+
-+static const struct clk_mux_ops kpss_xcc_ops = {
-+	.set_mux_sel = kpss_xcc_set_mux_sel,
-+	.get_mux_sel = kpss_xcc_get_mux_sel,
-+};
-+
-+static const char *aux_parents[] = {
-+	"pll8_vote",
-+	"pxo",
-+};
-+
-+static u8 aux_parent_map[] = {
-+	3,
-+	0,
-+};
-+
-+static const struct of_device_id kpss_xcc_match_table[] = {
-+	{ .compatible = "qcom,kpss-acc-v1", .data = (void *)1UL },
-+	{ .compatible = "qcom,kpss-gcc" },
-+	{}
-+};
-+MODULE_DEVICE_TABLE(of, kpss_xcc_match_table);
-+
-+static int kpss_xcc_driver_probe(struct platform_device *pdev)
-+{
-+	const struct of_device_id *id;
 +	struct clk *clk;
 +	struct resource *res;
++	struct device *dev = &pdev->dev;
 +	void __iomem *base;
-+	struct mux_clk *mux_clk;
++	struct regmap *regmap;
++	struct clk_hfpll *h;
 +	struct clk_init_data init = {
-+		.parent_names = aux_parents,
-+		.num_parents = 2,
-+		.ops = &clk_ops_gen_mux,
++		.parent_names = (const char *[]){ "xo" },
++		.num_parents = 1,
++		.ops = &clk_ops_hfpll,
 +	};
 +
-+	id = of_match_device(kpss_xcc_match_table, &pdev->dev);
-+	if (!id)
-+		return -ENODEV;
++	h = devm_kzalloc(dev, sizeof(*h), GFP_KERNEL);
++	if (!h)
++		return -ENOMEM;
 +
 +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	base = devm_ioremap_resource(&pdev->dev, res);
++	base = devm_ioremap_resource(dev, res);
 +	if (IS_ERR(base))
 +		return PTR_ERR(base);
 +
-+	mux_clk = devm_kzalloc(&pdev->dev, sizeof(*mux_clk), GFP_KERNEL);
-+	if (!mux_clk)
-+		return -ENOMEM;
++	regmap = devm_regmap_init_mmio(&pdev->dev, base, &hfpll_regmap_config);
++	if (IS_ERR(regmap))
++		return PTR_ERR(regmap);
 +
-+	mux_clk->mask = 0x3;
-+	mux_clk->parent_map = aux_parent_map;
-+	mux_clk->ops = &kpss_xcc_ops;
-+	mux_clk->base = base;
-+	mux_clk->hw.init = &init;
++	if (of_property_read_string_index(dev->of_node, "clock-output-names",
++						  0, &init.name))
++		return -ENODEV;
 +
-+	if (id->data) {
-+		if (of_property_read_string_index(pdev->dev.of_node,
-+					"clock-output-names", 0, &init.name))
-+			return -ENODEV;
-+		mux_clk->offset = 0x14;
-+	} else {
-+		init.name = "acpu_l2_aux";
-+		mux_clk->offset = 0x28;
-+	}
++	h->d = &hdata;
++	h->clkr.hw.init = &init;
++	spin_lock_init(&h->lock);
 +
-+	clk = devm_clk_register(&pdev->dev, &mux_clk->hw);
++	clk = devm_clk_register_regmap(&pdev->dev, &h->clkr);
 +
 +	return PTR_ERR_OR_ZERO(clk);
 +}
 +
-+static struct platform_driver kpss_xcc_driver = {
-+	.probe = kpss_xcc_driver_probe,
-+	.driver = {
-+		.name = "kpss-xcc",
-+		.of_match_table = kpss_xcc_match_table,
-+		.owner = THIS_MODULE,
++static struct platform_driver qcom_hfpll_driver = {
++	.probe		= qcom_hfpll_probe,
++	.driver		= {
++		.name	= "qcom-hfpll",
++		.owner	= THIS_MODULE,
++		.of_match_table = qcom_hfpll_match_table,
 +	},
 +};
-+module_platform_driver(kpss_xcc_driver);
++module_platform_driver(qcom_hfpll_driver);
 +
++MODULE_DESCRIPTION("QCOM HFPLL Clock Driver");
 +MODULE_LICENSE("GPL v2");
++MODULE_ALIAS("platform:qcom-hfpll");
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
