@@ -1,111 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757333AbaFYOhl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 10:37:41 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:42611 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757066AbaFYOhk (ORCPT
+	id S1757374AbaFYOiv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 10:38:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53342 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756992AbaFYOit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 10:37:40 -0400
-Date: Wed, 25 Jun 2014 15:37:28 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Daniel Drake <drake@endlessm.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v2 0/6] Enable L2 cache support on Exynos4210/4x12 SoCs
-Message-ID: <20140625143728.GN3705@n2100.arm.linux.org.uk>
-References: <1403703451-12233-1-git-send-email-t.figa@samsung.com> <20140625135039.GM3705@n2100.arm.linux.org.uk> <53AAD8FC.9040306@samsung.com>
+	Wed, 25 Jun 2014 10:38:49 -0400
+Date: Wed, 25 Jun 2014 14:38:31 +0000
+From: Serge Hallyn <serge.hallyn@ubuntu.com>
+To: "chenhanxiao@cn.fujitsu.com" <chenhanxiao@cn.fujitsu.com>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Richard Weinberger <richard@nod.at>,
+        "containers@lists.linux-foundation.org" 
+	<containers@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, David Howells <dhowells@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
+Subject: Re: [PATCH v2] ns: introduce getnspid syscall
+Message-ID: <20140625143831.GB17169@ubuntumail>
+References: <1403259512-10510-1-git-send-email-chenhanxiao@cn.fujitsu.com>
+ <53A414B2.20108@nod.at>
+ <5871495633F38949900D2BF2DC04883E54ECC5@G08CNEXMBPEKD02.g08.fujitsu.local>
+ <20140623133230.GA31817@mail.hallyn.com>
+ <5871495633F38949900D2BF2DC04883E551F09@G08CNEXMBPEKD02.g08.fujitsu.local>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <53AAD8FC.9040306@samsung.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5871495633F38949900D2BF2DC04883E551F09@G08CNEXMBPEKD02.g08.fujitsu.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 04:13:16PM +0200, Tomasz Figa wrote:
-> On 25.06.2014 15:50, Russell King - ARM Linux wrote:
-> > On Wed, Jun 25, 2014 at 03:37:25PM +0200, Tomasz Figa wrote:
-> >> This series intends to add support for L2 cache on Exynos4 SoCs on boards
-> >> running under secure firmware, which requires certain initialization steps
-> >> to be done with help of firmware, as selected registers are writable only
-> >> from secure mode.
-> > 
-> > What I said in my message on June 12th applies to this series.  I'm
-> > not having the virtual address exposed via the write_sec call.
-> > 
-> > Yes, you need to read other registers in order to use your secure
-> > firmware implementation.  Let's fix that by providing a better write_sec
-> > interface so you don't have to read back these registers, rather than
-> > working around this short-coming.
+Quoting chenhanxiao@cn.fujitsu.com (chenhanxiao@cn.fujitsu.com):
+> Hi,
 > 
-> Do you have anything in particular in mind? I would be glad to implement
-> it and send patches.
-
-As I've already said, you are not the only ones who need fuller information
-to make your secure monitor calls.  So, what that implies is that rather
-than the interface being "please write register X with value V", and then
-having platforms work-around that by reading various registers, we need
-a more flexible interface which passes the desired state.
-
-> > That's exactly what I meant when I talked on June 12th about turning
-> > cache-l2x0.c back into a pile of crap.  You're working around problems
-> > rather than fixing the underlying issue, as seems to be standard
-> > platform maintainer behaviour when things like core ARM code is
-> > concerned.  This is why things devolve over time into piles of crap,
-> > because platforms just hack around problems rather than fixing the
-> > root cause of the problem.
+> > -----Original Message-----
+> > From: Serge E. Hallyn [mailto:serge@hallyn.com]
+> > Sent: Monday, June 23, 2014 9:33 PM
+> > To: Chen, Hanxiao/陈 晗霄
+> > Cc: Richard Weinberger; containers@lists.linux-foundation.org;
+> > linux-kernel@vger.kernel.org; Pavel Emelyanov; linux-api@vger.kernel.org;
+> > Serge Hallyn; Oleg Nesterov; David Howells; Eric W. Biederman; Al Viro
+> > Subject: Re: [PATCH v2] ns: introduce getnspid syscall
+> > 
+> > > > >
+> > > >
+> > > > I don't think that adding a new system call for this is a good solution.
+> > > > We need a more generic way. I bet people are interested in more than just
+> > PID
+> > > > numbers.
+> > >
+> > > Could you please give some hints on how to expand this interface?
+> > >
+> > > >
+> > > > I agree with Eric that a procfs solution is more appropriate.
+> > > >
+> > >
+> > > Procfs is a good solution, but syscall is not bad though.
+> > 
+> > I might be inclined to agree, except that in this case you are still
+> > needing mounted procfs anyway to get the proc/$pid/ns/pid fds.
+> > 
+> > I'm sorry, I've not been watching this thread, so this probably has been
+> > considered and decided against, but I'm going to ask anyway.  Keeping
+> > in mind both checkpoint-restart and and introspection for use in a
+> > setns'd commend, why not make it
+> > 
+> > pid_t getnspid(pid_t query_pid, pid_t observer_pid)
+> > 
+> > which returns the process id of query_pid as seen from observer_pid's
+> > pidns?
+> > 
 > 
-> I'm not sure what part of my patches exactly is turning cache-l2x0.c
-> into a pile of crap. On the contrary, I believe that working around the
-> firmware brokenness on platform level, while keeping the core code
-> simple does the opposite.
+> But this could be confused in nested ns.
+> 
+> Ex:
+> (thanks for Pavel's figure)
+>     init_pid_ns    ns1         ns2
+> t1  2
+> t2   `- 3          1 
+> t3       `- 4      `- 5        1
+> t4  5
+> 
+> a) getnspid(1, 1):
+> We expected it could return t2's pid(2nd 1 as pid
 
-What you're doing is making the future maintanence of cache-l2x0.c
-harder by breaking the modularity of it.  By exposing the virtual
-address of the registers, reading the registers and getting your
-secure monitor to write them back, you're making assumptions about
-the behaviours inside cache-l2x0.c - while this may seem to be a no-op
-think about what happens a few years down the line when someone needs
-to change how this stuff operates, and you've long since moved on to
-new pastures and aren't around to answer questions on the exynos
-implementation.
+Clearly the passed-in pids should be interpreted as relative
+to current's pidns.  There can be no ambiguity at that point,
+unless I'm overlooking something.
 
-Compare that to modifying the implementation to give the secure
-monitors what they want - the desired state of the secure registers
-when enabling and resuming the L2 cache.  The API becomes much
-clearer, and maintainable, because - from the core persective,
-there isn't a load of platforms doing weird crap with an API which
-doesn't really fit what they're trying to do.
-
-So, if we accept your patches as is and let that approach continue,
-then years down the line, cleaning up the crap that you've deposited
-becomes much harder, and we end up either having to break Exynos
-declaring it as a SoC we just don't give a damn about it, or keep the
-old interface.  That is bad news which ever way you look at it.
-
-Quite simply, if a job is worth doing, then it's worth doing well and
-properly.
-
-The reason we have l2c_write_sec() right now is that when I sorted out
-the existing shitpile that platform maintainers had turned that code
-into over the years, it was the interface which suited the current
-implementations.  As the secure APIs are typically confidential, there
-is no way to consider what other alternatives are out there, so this
-is something that is going to have to remain flexible - in other words,
-it needs to remain long term maintainable, so that it can change.  So,
-working around it's short-comings in platform code is totally the wrong
-thing to do.
-
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+> such as systemd in init_pid_ns),
+> but t3'pid is also an appropriate result.
+> We may get more than one returns.
+> 
+> b) getnspid(5, 1):
+> (1st 5 was expected as  pid in ns1)
+> t3'pid and t4's pid could both be the answer.
+> We could not determine which one is what we want.
+> 
+> So something unique like fds of ns should be
+> a better reference. 
+> 
+> Thanks,
+> - Chen
+> 
+> > 
+> > > Procfs works for me, but that seems could not fit
+> > > Pavel's requirement.
+> > > His opinion is that a syscall is a more generic interface
+> > > than proc files, and  also very helpful.
+> > > And syscall could tell whether a pid lives in a specific pid namespace,
+> > > much convenient than procfs.
+> > >
+> > > Thanks,
+> > > - Chen
+> > 
+> > > _______________________________________________
+> > > Containers mailing list
+> > > Containers@lists.linux-foundation.org
+> > > https://lists.linuxfoundation.org/mailman/listinfo/containers
+> 
+> _______________________________________________
+> Containers mailing list
+> Containers@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/containers
