@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932074AbaFYLJm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 07:09:42 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:41120 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756223AbaFYLHR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 07:07:17 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: linux-kernel@vger.kernel.org
-Cc: tj@kernel.org, rostedt@goodmis.org, mingo@redhat.com,
-        akpm@linux-foundation.org, andi@firstfloor.org,
-        paulmck@linux.vnet.ibm.com, pavel@ucw.cz, jirislaby@gmail.com,
-        Vojtech Pavlik <vojtech@suse.cz>, Michael Matz <matz@suse.de>,
-        Jiri Kosina <jkosina@suse.cz>, Libor Pechacek <lpechacek@suse.cz>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH -repost 20/21] kgr: rephrase the "kGraft failed" message
-Date: Wed, 25 Jun 2014 13:07:14 +0200
-Message-Id: <1403694435-3180-20-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1403694435-3180-1-git-send-email-jslaby@suse.cz>
-References: <1403694435-3180-1-git-send-email-jslaby@suse.cz>
+	id S1756369AbaFYLM3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 07:12:29 -0400
+Received: from mga11.intel.com ([192.55.52.93]:30487 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752843AbaFYLMJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 07:12:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,545,1400050800"; 
+   d="scan'208";a="560702727"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [RFC v2 5/7] perf: add a pmu capability for "exclusive" events
+In-Reply-To: <20140624171819.GQ3213@twins.programming.kicks-ass.net>
+References: <1402501310-31940-1-git-send-email-alexander.shishkin@linux.intel.com> <1402501310-31940-6-git-send-email-alexander.shishkin@linux.intel.com> <20140624171819.GQ3213@twins.programming.kicks-ass.net>
+User-Agent: Notmuch/0.17+49~gaa57e9d (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Wed, 25 Jun 2014 14:12:05 +0300
+Message-ID: <87ionpxmyi.fsf@ashishki-desk.ger.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Libor Pechacek <lpechacek@suse.cz>
+Peter Zijlstra <peterz@infradead.org> writes:
 
-kGraft not succeeding on the first attempt can hardly be called a
-failure.  kGraft is merely waiting for sleeping processes to wake up
-and get out of the way.
+> On Wed, Jun 11, 2014 at 06:41:48PM +0300, Alexander Shishkin wrote:
+>> +static bool exclusive_event_ok(struct perf_event *event,
+>> +			      struct perf_event_context *ctx)
+>> +{
+>> +	struct perf_event *iter_event;
+>> +
+>> +	if (!(event->pmu->capabilities & PERF_PMU_CAP_EXCLUSIVE))
+>> +		return true;
+>> +
+>> +	list_for_each_entry(iter_event, &ctx->event_list, event_entry) {
+>> +		if (exclusive_event_match(iter_event, event))
+>> +			return false;
+>> +	}
+>
+> This list iteration needs either rcu or ctx->lock or ctx->mutex, and the
+> two callsites below don't have either afaict.
 
-Signed-off-by: Libor Pechacek <lpechacek@suse.cz>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- kernel/kgraft.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+True, this needs to be done before perf_install_in_context() under the
+same ctx->mutex. Thanks!
 
-diff --git a/kernel/kgraft.c b/kernel/kgraft.c
-index 1247f1c60b09..90ef7fba6d0a 100644
---- a/kernel/kgraft.c
-+++ b/kernel/kgraft.c
-@@ -108,7 +108,7 @@ static void kgr_finalize(void)
- static void kgr_work_fn(struct work_struct *work)
- {
- 	if (kgr_still_patching()) {
--		pr_info("kgr failed after timeout (%d), still in degraded mode\n",
-+		pr_info("kgr still in progress after timeout (%d)\n",
- 			KGR_TIMEOUT);
- 		/* recheck again later */
- 		queue_delayed_work(kgr_wq, &kgr_work, KGR_TIMEOUT * HZ);
--- 
-2.0.0
-
+Regards,
+--
+Alex
