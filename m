@@ -1,126 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756154AbaFYJGV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 05:06:21 -0400
-Received: from mga11.intel.com ([192.55.52.93]:42158 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755620AbaFYJBB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 05:01:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,544,1400050800"; 
-   d="scan'208";a="552982571"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>, Ashok Raj <ashok.raj@intel.com>,
-        Yijing Wang <wangyijing@huawei.com>, Tony Luck <tony.luck@intel.com>,
-        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
-        linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dmaengine@vger.kernel.org
-Subject: [Patch Part3 V3 13/21] iommu/vt-d: fix bug in computing domain's iommu_snooping flag
-Date: Wed, 25 Jun 2014 17:02:39 +0800
-Message-Id: <1403686967-10887-14-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1403686967-10887-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1403686967-10887-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1756210AbaFYJHA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 05:07:00 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:43665 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753893AbaFYJG6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 05:06:58 -0400
+Date: Wed, 25 Jun 2014 17:06:46 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Stephan Mueller <smueller@chronox.de>
+Cc: kbuild test robot <fengguang.wu@intel.com>, kbuild@01.org,
+        Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Subject: Re: [PATCH] Potential NULL pointer deference in drbg_ctr_df
+Message-ID: <20140625090646.GB8727@gondor.apana.org.au>
+References: <20140620202418.GZ5015@mwanda>
+ <4892293.kf6KiPx6BS@myon.chronox.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4892293.kf6KiPx6BS@myon.chronox.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-IOMMU units may dynamically attached to/detached from domains,
-so we should scan all active IOMMU units when computing iommu_snooping
-flag for a domain instead of only scanning IOMMU units associated
-with the domain.
+On Sat, Jun 21, 2014 at 02:26:29PM +0200, Stephan Mueller wrote:
+> The handling of additional input data / personalization string data may
+> be subject to a NULL pointer deference for the CTR DRBG. The
+> caller-provided data may be NULL which must be caught by the DRBG.
+> 
+> Reported-by: kbuild test robot <fengguang.wu@intel.com>
+> Signed-off-by: Stephan Mueller <smueller@chronox.de>
+> ---
+>  crypto/drbg.c | 23 +++++++++++++----------
+>  1 file changed, 13 insertions(+), 10 deletions(-)
+> 
+> diff --git a/crypto/drbg.c b/crypto/drbg.c
+> index faaa2ce..8e7c302 100644
+> --- a/crypto/drbg.c
+> +++ b/crypto/drbg.c
+> @@ -513,17 +513,20 @@ static int drbg_ctr_df(struct drbg_state *drbg,
+>  	drbg_string_fill(&S2, L_N, sizeof(L_N));
+>  	drbg_string_fill(&S4, pad, padlen);
+>  	S1.next = &S2;
+> -	S2.next = addtl;
+>  
+> -	/*
+> -	 * splice in addtl between S2 and S4 -- we place S4 at the end of the
+> -	 * input data chain
+> -	 */
+> -	tempstr = addtl;
+> -	for (; NULL != tempstr; tempstr = tempstr->next)
+> -		if (NULL == tempstr->next)
+> -			break;
+> -	tempstr->next = &S4;
+> +	if (NULL == addtl) {
+> +		S2.next = &S4;
+> +	} else {
+> +		/*
+> +		 * splice in addtl between S2 and S4 -- we place S4 at the end
+> +		 * of the input data chain
+> +		 */
+> +		S2.next = addtl;
+> +		tempstr = addtl;
+> +		while (tempstr->next)
+> +			tempstr = tempstr->next;
+> +		tempstr->next = &S4;
 
-Also check snooping and superpage capabilities when hot-adding DMAR units.
-
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
----
- drivers/iommu/intel-iommu.c |   42 ++++++++++++++++++++++++------------------
- 1 file changed, 24 insertions(+), 18 deletions(-)
-
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index d94468ae2947..91dc85f63c41 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -634,50 +634,56 @@ static void domain_update_iommu_coherency(struct dmar_domain *domain)
- 	rcu_read_unlock();
- }
- 
--static void domain_update_iommu_snooping(struct dmar_domain *domain)
-+static int domain_update_iommu_snooping(struct intel_iommu *skip)
- {
--	int i;
--
--	domain->iommu_snooping = 1;
-+	struct dmar_drhd_unit *drhd;
-+	struct intel_iommu *iommu;
-+	int ret = 1;
- 
--	for_each_set_bit(i, domain->iommu_bmp, g_num_of_iommus) {
--		if (!ecap_sc_support(g_iommus[i]->ecap)) {
--			domain->iommu_snooping = 0;
--			break;
-+	rcu_read_lock();
-+	for_each_active_iommu(iommu, drhd) {
-+		if (iommu != skip) {
-+			if (!ecap_sc_support(iommu->ecap)) {
-+				ret = 0;
-+				break;
-+			}
- 		}
- 	}
-+	rcu_read_unlock();
-+
-+	return ret;
- }
- 
--static void domain_update_iommu_superpage(struct dmar_domain *domain)
-+static int domain_update_iommu_superpage(struct intel_iommu *skip)
- {
- 	struct dmar_drhd_unit *drhd;
--	struct intel_iommu *iommu = NULL;
-+	struct intel_iommu *iommu;
- 	int mask = 0xf;
- 
- 	if (!intel_iommu_superpage) {
--		domain->iommu_superpage = 0;
--		return;
-+		return 0;
- 	}
- 
- 	/* set iommu_superpage to the smallest common denominator */
- 	rcu_read_lock();
- 	for_each_active_iommu(iommu, drhd) {
--		mask &= cap_super_page_val(iommu->cap);
--		if (!mask) {
--			break;
-+		if (iommu != skip) {
-+			mask &= cap_super_page_val(iommu->cap);
-+			if (!mask)
-+				break;
- 		}
- 	}
- 	rcu_read_unlock();
- 
--	domain->iommu_superpage = fls(mask);
-+	return fls(mask);
- }
- 
- /* Some capabilities may be different across iommus */
- static void domain_update_iommu_cap(struct dmar_domain *domain)
- {
- 	domain_update_iommu_coherency(domain);
--	domain_update_iommu_snooping(domain);
--	domain_update_iommu_superpage(domain);
-+	domain->iommu_snooping = domain_update_iommu_snooping(NULL);
-+	domain->iommu_superpage = domain_update_iommu_superpage(NULL);
- }
- 
- static struct intel_iommu *device_to_iommu(struct device *dev, u8 *bus, u8 *devfn)
+You've still got exactly the same NULL dereference.
 -- 
-1.7.10.4
-
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
