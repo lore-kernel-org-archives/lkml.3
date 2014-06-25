@@ -1,98 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756372AbaFYWAl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 18:00:41 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:36835 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754214AbaFYWAj (ORCPT
+	id S1756657AbaFYWCP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 18:02:15 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:51730 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754995AbaFYWCN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 18:00:39 -0400
+	Wed, 25 Jun 2014 18:02:13 -0400
+Message-ID: <53AB46E0.5010908@wwwdotorg.org>
+Date: Wed, 25 Jun 2014 16:02:08 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <53A9337F.50707@redhat.com>
-References: <1398882591-30422-1-git-send-email-chema@google.com>
-	<1401389758-13252-1-git-send-email-chema@google.com>
-	<5387C8AD.6000909@redhat.com>
-	<CA+ZOOTNobzzJPgQnVVZ+b6rRD=0_pdjUB8q5FQVkbO+dob0BSg@mail.gmail.com>
-	<538C6FD8.9040305@redhat.com>
-	<CAMEtUuyduk1sHBeVm=d5GYEgB4ma7sVFYeBLdapbeEpQY9nA1Q@mail.gmail.com>
-	<538D884E.5030007@redhat.com>
-	<CAMEtUuxK5hV_eORRLaSHSiwF5X82Ae91vL6W0-6au48v8H6bAA@mail.gmail.com>
-	<CA+ZOOTPdDDeGxZVGXVRZmjkxqkGefgDLrawo_9YXbjwTQ_FLzA@mail.gmail.com>
-	<538EDE1A.8060305@redhat.com>
-	<CA+ZOOTONwNt2xpwUc=tqhP=m31KZTzij-rrAHVh6g3hVYgKaEw@mail.gmail.com>
-	<53A9337F.50707@redhat.com>
-Date: Wed, 25 Jun 2014 15:00:38 -0700
-Message-ID: <CA+ZOOTNSW-SFaX8zbBqoz8nGtkqBshcagTHt6HMLokczV6xZ6g@mail.gmail.com>
-Subject: Re: [PATCH v6 net-next 1/4] net: flow_dissector: avoid multiple calls
- in eBPF
-From: Chema Gonzalez <chema@google.com>
-To: Daniel Borkmann <dborkman@redhat.com>
-Cc: Alexei Starovoitov <ast@plumgrid.com>, Ingo Molnar <mingo@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, David Miller <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Andrew Bresticker <abrestic@chromium.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Kishon Vijay Abraham I <kishon@ti.com>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v1 2/9] mailbox: Add NVIDIA Tegra XUSB mailbox driver
+References: <1403072180-4944-1-git-send-email-abrestic@chromium.org> <1403072180-4944-3-git-send-email-abrestic@chromium.org>
+In-Reply-To: <1403072180-4944-3-git-send-email-abrestic@chromium.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 24, 2014 at 1:14 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
->> This is a high-level decision, more than a technical one. Do we want
->> to freeze classic BPF development in linux, even before we have a
->> complete eBPF replacement, and zero eBPF tool (libpcap) support?
->
->
-> In my opinion, I don't think we strictly have to hard-freeze it. The
-> only concern I see is that conceptually hooking into the flow_dissector
-> to read out all keys for further processing on top of them 1) sort
-> of breaks/bypasses the concept of BPF (as it's actually the task of
-> BPF itself for doing this),
-I don't think we want to do flow dissection using BPF insns. It's not
-easy to write BPF insns, and we already have kernel code that does
-that. IMO that's what eBPF calls/BPF ancillary loads are for (e.g.
-vlan access).
+On 06/18/2014 12:16 AM, Andrew Bresticker wrote:
+> The Tegra XHCI controller communicates requests to the host through
+> a mailbox interface.  Host drivers which can handle these requests,
+> such as the Tegra XUSB pad controller driver and upcoming Tegra XHCI
+> host controller driver, can send messages and register to be notified
+> of incoming messages.
 
-> 2) effectively freezes any changes to the
-> flow_dissector as BPF applications making use of it now depend on the
-> provided offsets for doing further processing on top of them, 3) it
-Remember that my approach does not have (user-visible) offsets. It
-uses the eBPF stack to dump the output (struct flow_keys) of the flow
-dissector (skb_flow_dissect()). The only dependencies we're adding is
-that, once we provide a BPF ancillary load to access e.g. thoff, we
-have to keep providing it.
+> diff --git a/include/linux/tegra-xusb-mbox.h b/include/linux/tegra-xusb-mbox.h
 
-> can already be resolved by (re-)writing the kernel's flow dissector
-> in C-like syntax in user space iff eBPF can be loaded from there with
-> similar performance. So shouldn't we rather work towards that as a
-> more generic approach/goal in the mid term and w/o having to maintain
-> a very short term intermediate solution that we need to special case
-> along the code and have to carry around forever ...
-Once (if) we reach the point where we can do eBPF filters in "C-like
-syntax," I'd agree with you that it would be nice to be able to reuse
-the same function inside the kernel and as an eBPF library. The same
-probably applies to other network functions. Now, I'm not sure what's
-the model to reuse: Are we planning to re-write (maybe "re-write" is
-too strong, as we will probably only need some minor changes) some of
-the kernel functions into this "C--" language so that eBPF can use
-them? Do other people agree with this vision?
+> +extern int tegra_xusb_mbox_register_notifier(struct tegra_xusb_mbox *mbox,
+> +					     struct notifier_block *nb);
+> +extern void tegra_xusb_mbox_unregister_notifier(struct tegra_xusb_mbox *mbox,
+> +						struct notifier_block *nb);
+> +extern int tegra_xusb_mbox_send(struct tegra_xusb_mbox *mbox,
+> +				enum tegra_xusb_mbox_cmd cmd, u32 data);
+> +extern struct tegra_xusb_mbox *
+> +tegra_xusb_mbox_lookup_by_phandle(struct device_node *np, const char *prop);
 
-There's still the problem of whether we want to obsolete classic BPF
-in the kernel before the tools (libpcap mainly) accept eBPF. This can
-take a lot.
-
-Finally, what's the user's CLI interface you have in mind? Right now,
-tcpdump expressions are very handy: I know I can pass "ip[2:2] ==
-1500" or "(tcp[13] & 0x03)" to any libpcap-based application. This is
-very handy to log into a machine, and quickly run tcpdump to get the
-packets I'm interested on. What would be the model for using C-- eBPF
-filters in the same manner?
-
-Thanks again,
--Chema
+This seems to use a custom API. I've seen mention of a mailbox
+subsystem, and I assume that has a standardized API. Should this driver
+implement that instead?
