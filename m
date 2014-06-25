@@ -1,47 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752912AbaFYS4h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 14:56:37 -0400
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:46632 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745AbaFYS4g (ORCPT
+	id S1753335AbaFYS6h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 14:58:37 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:40941 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752642AbaFYS6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 14:56:36 -0400
+	Wed, 25 Jun 2014 14:58:36 -0400
 MIME-Version: 1.0
-X-Originating-IP: [80.196.35.44]
-In-Reply-To: <20140625113715.GA4525@infradead.org>
-References: <1403651531-24891-1-git-send-email-m@bjorling.me>
-	<1403651531-24891-2-git-send-email-m@bjorling.me>
-	<20140625113715.GA4525@infradead.org>
-Date: Wed, 25 Jun 2014 20:56:35 +0200
-Message-ID: <CAOu_J6nTcEjEpAe+S7Wg9SxUj_u=QitsDjYkKmCpaGP1MAexhw@mail.gmail.com>
-Subject: Re: [PATCH v9] NVMe: Convert to blk-mq
-From: =?UTF-8?Q?Matias_Bj=C3=B8rling?= <m@bjorling.me>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Matthew Wilcox <willy@linux.intel.com>,
-        Keith Busch <keith.busch@intel.com>,
-        "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com>,
-        Jens Axboe <axboe@fb.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-nvme <linux-nvme@lists.infradead.org>,
-        Rob Nelson <rlnelson@google.com>, Ming Lei <tom.leiming@gmail.com>
+Date: Wed, 25 Jun 2014 12:58:35 -0600
+X-Google-Sender-Auth: W2dT0MIXNOsYKRS9vCEN1tOiJho
+Message-ID: <CALtpbwjVVyFNOOYHcZw8+WHENoDZKzeZ80MCdNpROzX2mXa0Eg@mail.gmail.com>
+Subject: Invalid date in a commit
+From: Sasha Pachev <sasha@asksasha.com>
+To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 1:37 PM, Christoph Hellwig <hch@infradead.org> wrote:
-> On Wed, Jun 25, 2014 at 01:12:11AM +0200, Matias Bj??rling wrote:
->> This converts the current NVMe driver to utilize the blk-mq layer.
->>
->> Contributions in this patch from:
->>
->>   Sam Bradshaw <sbradshaw@micron.com>
->>   Jens Axboe <axboe@kernel.dk>
->>   Keith Busch <keith.busch@intel.com>
->>   Christoph Hellwig <hch@infradead.org>
->>   Robert Nelson <rlnelson@google.com>
->
-> Is there really something from me in here except for a bit of review?
->
+I am looking at
 
-Only the review. Do you want me to change it to a Reviewed-by?
+http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=12ca45fea91cfbb09df828bea958b47348caee6d
+
+author Daniel Vetter <daniel.vetter@ffwll.ch>2037-04-25 08:08:26 (GMT)
+committer Eric Anholt <eric@anholt.net>2009-11-30 17:44:23 (GMT)
+
+Looks like there was a problem with the clock for Daniel. Should that be fixed?
+
+-- 
+Sasha Pachev
+
+Fast Running Blog.
+http://fastrunningblog.com
+Run. Blog. Improve. Repeat.
