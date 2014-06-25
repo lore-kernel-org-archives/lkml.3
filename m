@@ -1,69 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756088AbaFYKUI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 06:20:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35633 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755432AbaFYKUF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 06:20:05 -0400
-Date: Wed, 25 Jun 2014 11:19:54 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: riel@redhat.com
-Cc: linux-kernel@vger.kernel.org, chegu_vinod@hp.com, peterz@infradead.com,
-        mingo@kernel.org
-Subject: Re: [PATCH 7/7] sched,numa: change scan period code to match intent
-Message-ID: <20140625101954.GY10819@suse.de>
-References: <1403538095-31256-1-git-send-email-riel@redhat.com>
- <1403538095-31256-8-git-send-email-riel@redhat.com>
+	id S1756116AbaFYKVn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 06:21:43 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:26328 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752569AbaFYKVl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 06:21:41 -0400
+Message-ID: <53AAA2B0.1070103@atmel.com>
+Date: Wed, 25 Jun 2014 12:21:36 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1403538095-31256-8-git-send-email-riel@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/6] ARM: at91: more clocks fixes for 3.16
+References: <1403023308-20533-1-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1403023308-20533-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 23, 2014 at 11:41:35AM -0400, riel@redhat.com wrote:
-> From: Rik van Riel <riel@redhat.com>
+On 17/06/2014 18:41, Alexandre Belloni :
+> Hi,
 > 
-> Reading through the scan period code and comment, it appears the
-> intent was to slow down NUMA scanning when a majority of accesses
-> are on the local node, specifically a local:remote ratio of 3:1.
+> This patch set fixes more issues with the clocks on AT91:
 > 
-> However, the code actually tests local / (local + remote), and
-> the actual cut-off point was around 30% local accesses, well before
-> a task has actually converged on a node.
+> The first patch define the slow crystal on the at91sam9261ek board
 > 
-> Changing the threshold to 7 means scanning slows down when a task
-> has around 70% of its accesses local, which appears to match the
-> intent of the code more closely.
+> The next patchs are moving all the clocks that were under the root under a
+> "clocks" node to be consistent accross all architecture.
 > 
-> Cc: Mel Gorman <mgorman@suse.de>
-> Signed-off-by: Rik van Riel <riel@redhat.com>
+> Alexandre Belloni (6):
+>   ARM: at91/dt: define sam9261ek slow crystal frequency
+>   ARM: at91/dt: sam9261 crystals under the clocks node
+>   ARM: at91/dt: sam9n12 crystals under the clocks node
+>   ARM: at91/dt: sam9rl crystals under the clocks node
+>   ARM: at91/dt: sam9x5 crystals under the clocks node
+>   ARM: at91/dt: sama5d3 crystals under the clocks node
 
-The threshold is indeed very low and was selected to favour slowing
-down scanning over convergence time. This was with the intent that we
-should never perform worse than disabling NUMA balancing -- an aim that
-has mixed results with recent Java-based workloads. With slower scanning,
-we converge eventually so for long-lived workloads we're ok.  On the other
-hand if scan rate is continually high and we're not converging then system
-overhead stays consistently high. I considered the slow convergence to be
-the lesser of two possible evils.
+On the whole series:
 
-At the time of writing there were basic workloads that were only seeing about
-20-30% locality hence that threshold. Since then, things have changed that
-may affect that decision -- pseudo-interleaving was introduced for example.
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+And stacked on 3.16-fixes branch.
 
-I've no problem with the patch because it could do with re-evaluation in
-the context of the other recent changes so
+Best regards,
 
-Acked-by: Mel Gorman <mgorman@suse.de>
 
-Watch for consistently high scanning activity or high system CPU usage and
-if either is reported it's worth looking to see if that 70% threshold is
-ever been reached.
+>  arch/arm/boot/dts/at91-sama5d3_xplained.dts | 12 +++++++-----
+>  arch/arm/boot/dts/at91sam9261.dtsi          | 20 ++++++++++---------
+>  arch/arm/boot/dts/at91sam9261ek.dts         | 12 ++++++++----
+>  arch/arm/boot/dts/at91sam9n12.dtsi          | 20 ++++++++++---------
+>  arch/arm/boot/dts/at91sam9n12ek.dts         | 16 +++++++--------
+>  arch/arm/boot/dts/at91sam9rl.dtsi           | 22 ++++++++++-----------
+>  arch/arm/boot/dts/at91sam9rlek.dts          | 17 ++++++++--------
+>  arch/arm/boot/dts/at91sam9x5.dtsi           | 30 +++++++++++++++--------------
+>  arch/arm/boot/dts/at91sam9x5cm.dtsi         | 12 +++++++-----
+>  arch/arm/boot/dts/sama5d3.dtsi              | 22 ++++++++++-----------
+>  arch/arm/boot/dts/sama5d3xcm.dtsi           | 12 +++++++-----
+>  11 files changed, 105 insertions(+), 90 deletions(-)
+> 
+
 
 -- 
-Mel Gorman
-SUSE Labs
+Nicolas Ferre
