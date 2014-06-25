@@ -1,242 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756410AbaFYKkv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 06:40:51 -0400
-Received: from mail-bn1lp0142.outbound.protection.outlook.com ([207.46.163.142]:17825
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754426AbaFYKkt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 06:40:49 -0400
-Date: Wed, 25 Jun 2014 16:06:15 +0530
-From: "Reddy, Sreekanth" <Sreekanth.Reddy@avagotech.com>
-To: <jejb@kernel.org>, <JBottomley@Parallels.com>
-CC: <linux-scsi@vger.kernel.org>, <Sathya.Prakash@avagotech.com>,
-        <Nagalakshmi.Nandigama@avagotech.com>, <sreekanth.reddy@avagotech.com>,
-        <linux-kernel@vger.kernel.org>, <hch@infradead.org>,
-        <martin.petersen@oracle.com>
-Subject: [RESEND][PATCH 09/10][SCSI]mpt2sas: Added module parameter
- 'unblock_io' to unblock IO's during disk addition
-Message-ID: <20140625103615.GA12959@avagotech.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-EOPAttributedMessage: 0
-X-Matching-Connectors: 130481664462983323;(f081dce6-2920-4dfc-23e8-08d07091c5e3);()
-X-Forefront-Antispam-Report: CIP:192.19.220.100;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(189002)(77096002)(106466001)(46102001)(57986006)(85306003)(23726002)(36756003)(107046001)(76506005)(74502001)(54356999)(99396002)(80022001)(6806004)(83506001)(33656002)(50466002)(47776003)(64706001)(74662001)(31966008)(105596002)(87936001)(20776003)(16796002)(46406003)(95666004)(4396001)(85852003)(26826002)(92566001)(19580395003)(44976005)(79102001)(97756001)(19580405001)(76482001)(81542001)(77982001)(83322001)(86362001)(50986999)(21056001)(83072002)(102836001)(92726001)(81342001)(2101003);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR07MB025;H:COSEXCH10.lsi.com;FPR:;MLV:ovrnspm;PTR:cosexch10.lsi.com;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 02530BD3AA
-Authentication-Results: spf=softfail (sender IP is 192.19.220.100)
- smtp.mailfrom=Sreekanth.Reddy@avagotech.com; 
+	id S1756549AbaFYKlY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 06:41:24 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:35861 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752683AbaFYKlW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 06:41:22 -0400
+X-AuditID: cbfee691-b7f2f6d0000040c4-92-53aaa7500084
+From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+To: linux-samsung-soc@vger.kernel.org, linux-i2c@vger.kernel.org
+Cc: naveenkrishna.ch@gmail.com, linux-arm-kernel@lists.infradead.org,
+        sjg@chromium.org, linux-kernel@vger.kernel.org, wsa@the-dreams.de,
+        cpgs@samsung.com, broonie@kernel.org
+Subject: [PATCH 1/2] i2c: exynos5: remove an unnecessary read of FIFO_STATUS
+ register
+Date: Wed, 25 Jun 2014 16:08:16 +0530
+Message-id: <1403692697-7381-1-git-send-email-ch.naveen@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrILMWRmVeSWpSXmKPExsWyRsSkRjdg+apgg6erlSymPnzCZvHykKbF
+	psfXWC06/n5htLi8aw6bxYzz+5gsFm37z2zxbcs2RouVJ2YxO3B6zG64yOKxc9Zddo9NqzrZ
+	PDYvqffo27KK0ePkqScsHp83yQWwR3HZpKTmZJalFunbJXBl9G9fzFJwjK3iwtf/jA2MB1m7
+	GDk5JARMJDpfz2WHsMUkLtxbz9bFyMUhJLCUUeLX8/PsMEVrf2yBSixilJjYfJMFwulnkjjY
+	epAFpIpNwEzi4KLVYB0iAg4S89Z+ZwcpYhbYyCixZ/kFsH3CAuESHS3XmUFsFgFViRc9a8Hi
+	vAIuEr8OrgIaxAG0TkFiziQbkF4JgXnsEtMn72SDqBeQ+Db5EFSNrMSmA8wQ10lKHFxxg2UC
+	o+ACRoZVjKKpBckFxUnpRaZ6xYm5xaV56XrJ+bmbGIHBffrfs4k7GO8fsD7EmAw0biKzlGhy
+	PjA68kriDY3NjCxMTUyNjcwtzUgTVhLnTX+UFCQkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qB
+	kePEtMAFT/bWSZxLXb8r9Vf6IYYeFm6defYrY2LLAyJj5Xfabj7tt1bi1NFvuobqL9ZF3zv2
+	9b1jdFzVjNOdnOHR5/pNnu7e5lz52PBct4PNI33tvyGcJhfcjSKeFIUeYhM8PufHBR8HH259
+	IeYfjDYX3qxWEPZhnmO1ft2tE3/Pn/4Rx1FjrcRSnJFoqMVcVJwIAAUXqUWEAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrAIsWRmVeSWpSXmKPExsVy+t9jAd2A5auCDT7PlbKY+vAJm8XLQ5oW
+	mx5fY7Xo+PuF0eLyrjlsFjPO72OyWLTtP7PFty3bGC1WnpjF7MDpMbvhIovHzll32T02repk
+	89i8pN6jb8sqRo+Tp56weHzeJBfAHtXAaJORmpiSWqSQmpecn5KZl26r5B0c7xxvamZgqGto
+	aWGupJCXmJtqq+TiE6DrlpkDdJmSQlliTilQKCCxuFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0
+	kLCGMaN/+2KWgmNsFRe+/mdsYDzI2sXIySEhYCKx9scWNghbTOLCvfVANheHkMAiRomJzTdZ
+	IJx+JomDrQdZQKrYBMwkDi5azQ5iiwg4SMxb+50dpIhZYCOjxJ7lF8DGCguES3S0XGcGsVkE
+	VCVe9KwFi/MKuEj8OrgKaBAH0DoFiTmTbCYwci9gZFjFKJpakFxQnJSea6hXnJhbXJqXrpec
+	n7uJERw7z6R2MK5ssDjEKMDBqMTDe2H2ymAh1sSy4srcQ4wSHMxKIryOc1YFC/GmJFZWpRbl
+	xxeV5qQWH2I0BVo+kVlKNDkfGNd5JfGGxibmpsamliYWJmaWSuK8B1qtA4UE0hNLUrNTUwtS
+	i2D6mDg4pRoYZ8cyxvHUfH+5a8a6dUYuBx7oR+y7HLj7ncGt64+usnw5szJeMHCX4boTH+77
+	z2KaVPvvr/5DHw1PY9Odj3oms/58onTxI9+UfxLZHXUNkiFKDd7P6qdl32hYwHOsvbNVa1M5
+	y0f/xurGDtudrDG7knLy9eb/qLqomM+4x3j11ipmqzM7eV99U2Ipzkg01GIuKk4EALZCWNyz	AgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch removes an extra read of FIFO_STATUS register in the interrrupt
+service routine. Which is read again before the actual use.
 
-During hot-plugging of a disk(having a flaky link) the disk addition
-stops and any further disk addition or removal doesn't happen on that controller.
-
-This is because, when driver receives DELAY_NOT_RESPONDING for a disk when it is undergoing
-addition in the SCSI Mid layer, the driver would block the I/O to that disk
-resulting in a deadlock. i.e the disk addition work couldn't be completed
-as it can't send any I/O to the disk as I/Os are blocked. Any device removal (TARGET_NOT_RESPONDING)
-or link update(RC_PHY_CHANGED) couldn't be processed as they are in the queue
-to get processed after disk addition.
-
-Description of Change:
-To handle such cases, unblock the I/Os to the disk in ISR context if the disk is undergoing
-addition. The I/Os would get unblocked only if the driver receives RC_PHY_CHANGED reason
-code when the device addition is within the SAS Transport layer.
-
-An module parameter 'unblock_io' is introduced which needs to be set to have this
-functionality enabled. By default this functionality is disabled.
-
-Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
+Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
 ---
- drivers/scsi/mpt2sas/mpt2sas_base.h      |    3 +
- drivers/scsi/mpt2sas/mpt2sas_scsih.c     |   67 ++++++++++++++++++++++++++---
- drivers/scsi/mpt2sas/mpt2sas_transport.c |   13 ++++++
- 3 files changed, 76 insertions(+), 7 deletions(-)
+ drivers/i2c/busses/i2c-exynos5.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.h b/drivers/scsi/mpt2sas/mpt2sas_base.h
-index 32181a6..7de7ba4 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_base.h
-+++ b/drivers/scsi/mpt2sas/mpt2sas_base.h
-@@ -356,6 +356,8 @@ struct _internal_cmd {
-  * @phy: phy identifier provided in sas device page 0
-  * @responding: used in _scsih_sas_device_mark_responding
-  * @pfa_led_on: flag for PFA LED status
-+ * @pend_sas_rphy_add: flag to check if device is in sas_rphy_add()
-+ *			addition routine
-  */
- struct _sas_device {
- 	struct list_head list;
-@@ -375,6 +377,7 @@ struct _sas_device {
- 	u8	phy;
- 	u8	responding;
- 	u8	pfa_led_on;
-+	u8	pend_sas_rphy_add;
- };
+diff --git a/drivers/i2c/busses/i2c-exynos5.c b/drivers/i2c/busses/i2c-exynos5.c
+index 63d2292..0d1a7bc 100644
+--- a/drivers/i2c/busses/i2c-exynos5.c
++++ b/drivers/i2c/busses/i2c-exynos5.c
+@@ -405,7 +405,6 @@ static irqreturn_t exynos5_i2c_irq(int irqno, void *dev_id)
  
- /**
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_scsih.c b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-index 4a0728a..b08d8fd 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-@@ -105,6 +105,11 @@ static int missing_delay[2] = {-1, -1};
- module_param_array(missing_delay, int, NULL, 0);
- MODULE_PARM_DESC(missing_delay, " device missing delay , io missing delay");
+ 	int_status = readl(i2c->regs + HSI2C_INT_STATUS);
+ 	writel(int_status, i2c->regs + HSI2C_INT_STATUS);
+-	fifo_status = readl(i2c->regs + HSI2C_FIFO_STATUS);
  
-+static int unblock_io;
-+module_param(unblock_io, int, 0);
-+MODULE_PARM_DESC(unblock_io,
-+"unblocks I/O if set to 1 when device is undergoing addition (default=0)");
-+
- /* scsi-mid layer global parmeter is max_report_luns, which is 511 */
- #define MPT2SAS_MAX_LUN (16895)
- static int max_lun = MPT2SAS_MAX_LUN;
-@@ -2972,6 +2977,34 @@ _scsih_ublock_io_device(struct MPT2SAS_ADAPTER *ioc, u64 sas_address)
- }
- 
- /**
-+ * _scsih_ublock_io_device_to_running - set the device state to SDEV_RUNNING
-+ * @ioc: per adapter object
-+ * @sas_addr: sas address
-+ *
-+ * unblock the device to receive IO during device addition. Device
-+ * responsiveness is not checked before unblocking
-+ */
-+static void
-+_scsih_ublock_io_device_to_running(struct MPT2SAS_ADAPTER *ioc, u64 sas_address)
-+{
-+	struct MPT2SAS_DEVICE *sas_device_priv_data;
-+	struct scsi_device *sdev;
-+
-+	shost_for_each_device(sdev, ioc->shost) {
-+		sas_device_priv_data = sdev->hostdata;
-+		if (!sas_device_priv_data)
-+			continue;
-+		if (sas_device_priv_data->sas_target->sas_address
-+		    != sas_address)
-+			continue;
-+		if (sas_device_priv_data->block) {
-+			sas_device_priv_data->block = 0;
-+			scsi_internal_device_unblock(sdev, SDEV_RUNNING);
-+		}
-+	}
-+}
-+
-+/**
-  * _scsih_block_io_all_device - set the device state to SDEV_BLOCK
-  * @ioc: per adapter object
-  * @handle: device handle
-@@ -3081,21 +3114,23 @@ _scsih_block_io_to_children_attached_to_ex(struct MPT2SAS_ADAPTER *ioc,
- }
- 
- /**
-- * _scsih_block_io_to_children_attached_directly
-+ * _scsih_handle_io_to_children_attached_directly
-  * @ioc: per adapter object
-  * @event_data: topology change event data
-  *
-- * This routine set sdev state to SDEV_BLOCK for all devices
-- * direct attached during device pull.
-+ * This routine set sdev state to SDEV_BLOCK or SDEV_RUNNING for all devices
-+ * direct attached during device pull/reconnect.
-  */
- static void
--_scsih_block_io_to_children_attached_directly(struct MPT2SAS_ADAPTER *ioc,
--    Mpi2EventDataSasTopologyChangeList_t *event_data)
-+_scsih_handle_io_to_children_attached_directly(struct MPT2SAS_ADAPTER *ioc,
-+	Mpi2EventDataSasTopologyChangeList_t *event_data)
- {
- 	int i;
- 	u16 handle;
- 	u16 reason_code;
- 	u8 phy_number;
-+	struct _sas_device *sas_device;
-+	u8 link_rate, prev_link_rate;
- 
- 	for (i = 0; i < event_data->NumEntries; i++) {
- 		handle = le16_to_cpu(event_data->PHY[i].AttachedDevHandle);
-@@ -3106,6 +3141,24 @@ _scsih_block_io_to_children_attached_directly(struct MPT2SAS_ADAPTER *ioc,
- 		    MPI2_EVENT_SAS_TOPO_RC_MASK;
- 		if (reason_code == MPI2_EVENT_SAS_TOPO_RC_DELAY_NOT_RESPONDING)
- 			_scsih_block_io_device(ioc, handle);
-+		else if ((reason_code == MPI2_EVENT_SAS_TOPO_RC_PHY_CHANGED) &&
-+		    (unblock_io == 1)) {
-+			/* unblock only if device is in the process of addition
-+			 * within the SCSI Mid Layer (sas_rphy_add) to prevent
-+			 * deadlock. Unblocking in other cases can lead to data
-+			 * corruption */
-+
-+			link_rate = event_data->PHY[i].LinkRate >> 4;
-+			prev_link_rate = event_data->PHY[i].LinkRate & 0xF;
-+			sas_device = _scsih_sas_device_find_by_handle(ioc,
-+					handle);
-+			if (!sas_device)
-+				continue;
-+			if ((link_rate > prev_link_rate) &&
-+			    (sas_device->pend_sas_rphy_add == 1))
-+				_scsih_ublock_io_device_to_running(ioc,
-+				    sas_device->sas_address);
-+		}
- 	}
- }
- 
-@@ -3497,7 +3550,7 @@ _scsih_check_topo_delete_events(struct MPT2SAS_ADAPTER *ioc,
- 
- 	expander_handle = le16_to_cpu(event_data->ExpanderDevHandle);
- 	if (expander_handle < ioc->sas_hba.num_phys) {
--		_scsih_block_io_to_children_attached_directly(ioc, event_data);
-+		_scsih_handle_io_to_children_attached_directly(ioc, event_data);
- 		return;
- 	}
- 	if (event_data->ExpStatus ==
-@@ -3515,7 +3568,7 @@ _scsih_check_topo_delete_events(struct MPT2SAS_ADAPTER *ioc,
- 				_scsih_block_io_device(ioc, handle);
- 		} while (test_and_clear_bit(handle, ioc->blocking_handles));
- 	} else if (event_data->ExpStatus == MPI2_EVENT_SAS_TOPO_ES_RESPONDING)
--		_scsih_block_io_to_children_attached_directly(ioc, event_data);
-+		_scsih_handle_io_to_children_attached_directly(ioc, event_data);
- 
- 	if (event_data->ExpStatus != MPI2_EVENT_SAS_TOPO_ES_NOT_RESPONDING)
- 		return;
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_transport.c b/drivers/scsi/mpt2sas/mpt2sas_transport.c
-index 0d1d064..f09f5f3 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_transport.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_transport.c
-@@ -654,6 +654,7 @@ mpt2sas_transport_port_add(struct MPT2SAS_ADAPTER *ioc, u16 handle,
- 	unsigned long flags;
- 	struct _sas_node *sas_node;
- 	struct sas_rphy *rphy;
-+	struct _sas_device *sas_device = NULL;
- 	int i;
- 	struct sas_port *port;
- 
-@@ -736,10 +737,22 @@ mpt2sas_transport_port_add(struct MPT2SAS_ADAPTER *ioc, u16 handle,
- 		    mpt2sas_port->remote_identify.device_type);
- 
- 	rphy->identify = mpt2sas_port->remote_identify;
-+	if (mpt2sas_port->remote_identify.device_type == SAS_END_DEVICE) {
-+		sas_device = mpt2sas_scsih_sas_device_find_by_sas_address(ioc,
-+		    mpt2sas_port->remote_identify.sas_address);
-+		if (!sas_device) {
-+			printk(MPT2SAS_ERR_FMT "failure at %s:%d/%s()!\n",
-+			    ioc->name, __FILE__, __LINE__, __func__);
-+			goto out_fail;
-+		}
-+		sas_device->pend_sas_rphy_add = 1;
-+	}
- 	if ((sas_rphy_add(rphy))) {
- 		printk(MPT2SAS_ERR_FMT "failure at %s:%d/%s()!\n",
- 		    ioc->name, __FILE__, __LINE__, __func__);
- 	}
-+	if (mpt2sas_port->remote_identify.device_type == SAS_END_DEVICE)
-+		sas_device->pend_sas_rphy_add = 0;
- 	if ((ioc->logging_level & MPT_DEBUG_TRANSPORT))
- 		dev_printk(KERN_INFO, &rphy->dev, "add: handle(0x%04x), "
- 		    "sas_addr(0x%016llx)\n", handle,
+ 	/* handle interrupt related to the transfer status */
+ 	if (int_status & HSI2C_INT_I2C) {
 -- 
-1.7.1
+1.7.9.5
 
