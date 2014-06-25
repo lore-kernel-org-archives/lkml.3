@@ -1,80 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754904AbaFYFzu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 01:55:50 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:35504 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752883AbaFYFzs (ORCPT
+	id S1755007AbaFYF4r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 01:56:47 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:50263 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754624AbaFYF4q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 01:55:48 -0400
+	Wed, 25 Jun 2014 01:56:46 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AhBFAMVjqlN5LEioPGdsb2JhbABagw2IUKMmBpk6AYEQFwQBAQEBODWEAwEBBAE6HCMFCwgDDgoJJQ8FJQMHGhOIOgfIVRcWhU2IQlcHhEMFmlCXQCuBMg
+Date: Wed, 25 Jun 2014 15:56:41 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Austin Schuh <austin@peloton-tech.com>, xfs <xfs@oss.sgi.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: On-stack work item completion race? (was Re: XFS crash?)
+Message-ID: <20140625055641.GL9508@dastard>
+References: <CANGgnMa80WwQ8zSkL52yYegmQURVQeZiBFv41=FQXMZJ_NaEDw@mail.gmail.com>
+ <20140513034647.GA5421@dastard>
+ <CANGgnMZ0q9uE3NHj2i0SBK1d0vdKLx7QBJeFNb+YwP-5EAmejQ@mail.gmail.com>
+ <20140513063943.GQ26353@dastard>
+ <CANGgnMYn++1++UyX+D2d9GxPxtytpQJv0ThFwdxM-yX7xDWqiA@mail.gmail.com>
+ <20140513090321.GR26353@dastard>
+ <CANGgnMZqQc_NeaDpO_aX+bndmHrQ9VWo9mkfxhPBkRD-J=N6sQ@mail.gmail.com>
+ <CANGgnMZ8OwzfBj5m9H7c6q2yahGhU7oFZLsJfVxnWoqZExkZmQ@mail.gmail.com>
+ <20140624030240.GB9508@dastard>
+ <20140624032521.GA12164@htj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <1403646310.29061.61.camel@joe-AO725>
-References: <1403477209-14612-1-git-send-email-minipli@googlemail.com>
-	<1403477762.18747.14.camel@joe-AO725>
-	<CA+rthh8D=r1kW6iDb0MqfHwA4OW-oXSA+B1AXe-0Cqperz6ZRQ@mail.gmail.com>
-	<1403505219.18747.37.camel@joe-AO725>
-	<87egyeqt03.fsf@rasmusvillemoes.dk>
-	<CA+rthh8XwC80hq8z07k+=0J7MDA6tUtLff+J=qMuzYqTNyLKww@mail.gmail.com>
-	<1403638620.29061.35.camel@joe-AO725>
-	<CA+rthh9qGpkicfR+C7Qz1uOF4HUaVANVyq6YaH_Rx-80L_-YvQ@mail.gmail.com>
-	<1403641843.29061.51.camel@joe-AO725>
-	<CA+rthh89rYOyUd58vJO_0Nu_j+zrAMwUYSitRbT=MVoz9pO5Lw@mail.gmail.com>
-	<1403643440.29061.56.camel@joe-AO725>
-	<CA+rthh9gKVWix4E0ENPFBXgUMpjnb8_+aeNUi3iZpAnqzo8C1w@mail.gmail.com>
-	<1403646310.29061.61.camel@joe-AO725>
-Date: Wed, 25 Jun 2014 07:55:47 +0200
-Message-ID: <CA+rthh8anKnxA7XuZb4BHB4a7w=Oo3LhUuD2UOwGfv2SGxLs0w@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/3] Mark literal strings in __init / __exit code
-From: Mathias Krause <minipli@googlemail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140624032521.GA12164@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 June 2014 23:45, Joe Perches <joe@perches.com> wrote:
-> On Tue, 2014-06-24 at 23:06 +0200, Mathias Krause wrote:
->> On 24 June 2014 22:57, Joe Perches <joe@perches.com> wrote:
->> > On Tue, 2014-06-24 at 22:41 +0200, Mathias Krause wrote:
->> >> And all of those strings should be in the .rodata section, now. But
->> >> why you're asking?
->> > Because now they will be duplicated in .rodata
->> > and the __init section no?
->> No. A string marked with __init_str() will only life in the
->> .init.rodata section. No duplication.
->
-> Unless the same string is used in another bit
-> of code.  Then there's duplication.
+On Mon, Jun 23, 2014 at 11:25:21PM -0400, Tejun Heo wrote:
+> Hello,
+> 
+> On Tue, Jun 24, 2014 at 01:02:40PM +1000, Dave Chinner wrote:
+> > As I understand it, what then happens is that the workqueue code
+> > grabs another kworker thread and runs the next work item in it's
+> > queue. IOWs, work items can block, but doing that does not prevent
+> > execution of other work items queued on other work queues or even on
+> > the same work queue. Tejun, did I get that correct?
+> 
+> Yes, as long as the workqueue is under its @max_active limit and has
+> access to an existing kworker or can create a new one, it'll start
+> executing the next work item immediately; however, the guaranteed
+> level of concurrency is 1 even for WQ_RECLAIM workqueues.  IOW, the
+> work items queued on a workqueue must be able to make forward progress
+> with single work item if the work items are being depended upon for
+> memory reclaim.
 
-Rather, unless the same string gets used in an __init and a non-__init
-section of the same compilation unit. Otherwise it would be only in
-one section. But having the same string used in two sections of the
-same compilation unit should be a rather rare case. Merging strings
-across multiple compilation units does not happen, anyway -- not now,
-not with the new macros.
+Hmmm - that's different from my understanding of what the original
+behaviour WQ_MEM_RECLAIM gave us. i.e. that WQ_MEM_RECLAIM
+workqueues had a rescuer thread created to guarantee that the
+*workqueue* could make forward progress executing work in a
+reclaim context.
 
->
->> Having duplicated strings in .rodata and .init.rodata is also no
->> problem as the latter will be freed.
->
-> They increase image size.
+The concept that the *work being executed* needs to guarantee
+forwards progress is something I've never heard stated before.
+That worries me a lot, especially with all the memory reclaim
+problems that have surfaced in the past couple of months....
 
-But as this is a rare case, it shouldn't matter, really. The
-compression should compensate that, compressing multiple occurrences
-of the same string efficiently.
+> As long as a WQ_RECLAIM workqueue dosen't depend upon itself,
+> forward-progress is guaranteed.
 
-In the more likely case, strings used only in __init code, we would
-have no image size increase but an increase of free memory after
-initialization.
+I can't find any documentation that actually defines what
+WQ_MEM_RECLAIM means, so I can't tell when or how this requirement
+came about. If it's true, then I suspect most of the WQ_MEM_RECLAIM
+workqueues in filesystems violate it. Can you point me at
+documentation/commits/code describing the constraints of
+WQ_MEM_RECLAIM and the reasons for it?
 
+Cheers,
 
-Thanks,
-Mathias
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
