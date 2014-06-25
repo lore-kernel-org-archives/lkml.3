@@ -1,49 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757543AbaFYPhX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 11:37:23 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:50697 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757236AbaFYPhV (ORCPT
+	id S1757527AbaFYPhW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 11:37:22 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:42292 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757066AbaFYPhU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 11:37:21 -0400
-Date: Wed, 25 Jun 2014 11:37:18 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Benjamin LaHaise <bcrl@kvack.org>
-Cc: cl@linux-foundation.org, kmo@daterainc.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] percpu-refcount, aio: use percpu_ref_cancel_init()
- in ioctx_alloc()
-Message-ID: <20140625153718.GF26883@htj.dyndns.org>
-References: <1403053685-28240-1-git-send-email-tj@kernel.org>
- <1403053685-28240-2-git-send-email-tj@kernel.org>
- <20140625143112.GR23137@kvack.org>
- <20140625145634.GD26883@htj.dyndns.org>
- <20140625153520.GT23137@kvack.org>
+	Wed, 25 Jun 2014 11:37:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140625153520.GT23137@kvack.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1403710120.22753.15.camel@joe-AO725>
+References: <CAJKoSVTGC+-v09aCDTV5HfnpDMVuPiGTe5-Y9TMu+2E+EzMotw@mail.gmail.com>
+	<1403710120.22753.15.camel@joe-AO725>
+Date: Wed, 25 Jun 2014 23:37:20 +0800
+Message-ID: <CAJKoSVS-_jd8x71yhBLdtt9yJA-wqA48Hy2F76vDSi51yYRE2w@mail.gmail.com>
+Subject: Re: [PATCH 1/2] staging: wlan-ng/hfa384x_usb.c: remove return
+ statements for void function
+From: Cheng-Wei Lee <lee.rhapsody@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sherif Shehab Aldin <shehabaldin.sherif@gmail.com>,
+        Avinash Kumar <avi.kp.137@gmail.com>,
+        Peter Senna Tschudin <peter.senna@gmail.com>,
+        devel <devel@driverdev.osuosl.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 11:35:20AM -0400, Benjamin LaHaise wrote:
-> Hi Tejun,
-> 
-> On Wed, Jun 25, 2014 at 10:56:34AM -0400, Tejun Heo wrote:
-> > Hello, Benjamin.
-> ...
-> > It'd probably easier if I route this through percpu tree with the rest
-> > of changes as there are further changes on the aio side (trivial but
-> > still), so we'd end up having to do pulling dance back and forth.  The
-> > changes on aio side are mostly trivial.  Can I route them through
-> > percpu tree with your acks?
-> 
-> Sure, no problem -- add my acks and proceed.  I don't think there should 
-> be any conflicts.  Cheers,
+Dear all,
 
-Thanks a lot!
+Thanks Joe's reminder. I've resent patch.
 
--- 
-tejun
+Sincerely,
+Quentin
+
+2014-06-25 23:28 GMT+08:00, Joe Perches <joe@perches.com>:
+> On Wed, 2014-06-25 at 23:24 +0800, Cheng-Wei Lee wrote:
+>> This patch fixes the following checkpatch.pl issues in hfa384x_usb.c:
+>> WARNING: void function return statements are not generally useful
+>
+> subject/code mismatch.
+>
+>> Signed-off-by: Quentin Lee <lee.rhapsody@gmail.com>
+>> ---
+>>  drivers/staging/wlan-ng/hfa384x_usb.c |    1 +
+>>  1 file changed, 1 insertion(+)
+>>
+>> diff --git a/drivers/staging/wlan-ng/hfa384x_usb.c
+>> b/drivers/staging/wlan-ng/hfa384x_usb.c
+>> index 98343ff7..07cee56 100644
+>> --- a/drivers/staging/wlan-ng/hfa384x_usb.c
+>> +++ b/drivers/staging/wlan-ng/hfa384x_usb.c
+>> @@ -3705,6 +3705,7 @@ static void hfa384x_usbout_callback(struct urb
+>> *urb)
+>>  		case -EPIPE:
+>>  			{
+>>  				hfa384x_t *hw = wlandev->priv;
+>> +
+>>  				netdev_warn(hw->wlandev->netdev,
+>>  					    "%s tx pipe stalled: requesting reset\n",
+>>  					    wlandev->netdev->name);
+>
+>
+>
+>
