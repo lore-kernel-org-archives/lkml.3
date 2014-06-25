@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757193AbaFYNjE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 09:39:04 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:57284 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756856AbaFYNiV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756943AbaFYNiV (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 25 Jun 2014 09:38:21 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-5c-53aad0ca9642
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:10486 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754202AbaFYNiT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 09:38:19 -0400
+X-AuditID: cbfec7f5-b7f626d000004b39-8a-53aad0c76d19
 From: Tomasz Figa <t.figa@samsung.com>
 To: linux-samsung-soc@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -20,126 +20,82 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Daniel Drake <drake@endlessm.com>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Tomasz Figa <t.figa@samsung.com>
-Subject: [PATCH v2 5/6] ARM: EXYNOS: Add .write_sec outer cache callback for
- L2C-310
-Date: Wed, 25 Jun 2014 15:37:30 +0200
-Message-id: <1403703451-12233-6-git-send-email-t.figa@samsung.com>
+Subject: [PATCH v2 0/6] Enable L2 cache support on Exynos4210/4x12 SoCs
+Date: Wed, 25 Jun 2014 15:37:25 +0200
+Message-id: <1403703451-12233-1-git-send-email-t.figa@samsung.com>
 X-Mailer: git-send-email 1.9.3
-In-reply-to: <1403703451-12233-1-git-send-email-t.figa@samsung.com>
-References: <1403703451-12233-1-git-send-email-t.figa@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLLMWRmVeSWpSXmKPExsVy+t/xK7qnLqwKNvj+Td7i0fzHzBa9C66y
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOLMWRmVeSWpSXmKPExsVy+t/xK7rHL6wKNtj0Ut/i0fzHzBa9C66y
 	WWzvnMFuMeXPciaLTY+vsVpc3jWHzWL2kn4Wixnn9zFZ3L7Ma7H2yF12i9d9a5gt1s94zWKx
 	atcfRov9V7wc+DxamnvYPL59ncTicbmvl8lj0fcsj52z7rJ73Lm2h81j85J6j74tqxg9jt/Y
-	zuTxeZNcAFcUl01Kak5mWWqRvl0CV8arM7UFs8Ur7p2aw9jA2CDcxcjJISFgItHXfp4VwhaT
-	uHBvPVsXIxeHkMBSRon32+8ygySEBPqYJKYvTwOx2QTUJD43PGIDsUUEVCU+ty1gB2lgFmhg
-	kbjSeh0sISwQJtHWeY8dxGYBKjr4fyZYnFfASeLf2kvMENvkJHq3vQGzOQWcJS7M+8MKscxJ
-	Yt6TI4wTGHkXMDKsYhRNLU0uKE5KzzXUK07MLS7NS9dLzs/dxAgJ4i87GBcfszrEKMDBqMTD
-	G8CzKliINbGsuDL3EKMEB7OSCK/7fqAQb0piZVVqUX58UWlOavEhRiYOTqkGRu3wJQKl7Zv6
-	J8dwdbdct2iedI9PNdeCyU4lJZX3VEmXatXa4j33WFjC3hm8PqD4tdWe3yLDZYmJk4OPs0hr
-	+tHZxrPPHrn7Z6FSYdzUyB6n3qVXBA/ErCq0uf8ognvexY1P9ZWObdyyQcrYzdW4vvHm4pRV
-	h18YJixUXh9RONkttlnKWCJFiaU4I9FQi7moOBEAeBOJzEACAAA=
+	zuTxeZNcAFcUl01Kak5mWWqRvl0CV8bDtsmsBd0SFV9+vGdvYHwr1MXIySEhYCLxu7OTHcIW
+	k7hwbz1bFyMXh5DAUkaJXwteskM4fUwSN1/eZwSpYhNQk/jc8IgNxBYRUJX43LYArIhZoIFF
+	4krrdbCEsIC7xP3Dz8DGsgAVTbzTB2bzCjhJPGpbywqxTk6id9sb5gmM3AsYGVYxiqaWJhcU
+	J6XnGukVJ+YWl+al6yXn525ihATm1x2MS49ZHWIU4GBU4uEN4FkVLMSaWFZcmXuIUYKDWUmE
+	130/UIg3JbGyKrUoP76oNCe1+BAjEwenVAPj7QsTeVZ6FHqEzdM+Z6vle8B65sY3wd+VeWqa
+	5Zj6DBmLO3g5bW4qz0is1WqylBZ2FzRJLSmQOXnkUrJxW/XfUxffpf7kaXAO2KN+6vdVz/TS
+	C/Lrw7bVaxyXfVPjo9q06BC3+pl9h1g/cPHwrd+aJLXzCjPLpc70XbsPL2mUZJp73/TZuZtK
+	LMUZiYZazEXFiQArJXwzKgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Exynos4 SoCs equipped with an L2C-310 cache controller and running under
-secure firmware require certain registers of aforementioned IP to be
-accessed only from secure mode. This means that SMC calls are required
-for certain register writes. To handle this, an implementation of
-.write_sec callback is provided by this patch.
+This series intends to add support for L2 cache on Exynos4 SoCs on boards
+running under secure firmware, which requires certain initialization steps
+to be done with help of firmware, as selected registers are writable only
+from secure mode.
 
-Signed-off-by: Tomasz Figa <t.figa@samsung.com>
----
- arch/arm/mach-exynos/firmware.c | 63 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 63 insertions(+)
+First four patches extend existing support for secure write in L2C driver
+to account for design of secure firmware running on Exynos. Namely:
+ 1) direct read access to certain registers is needed on Exynos, because
+    secure firmware calls set several registers at once,
+ 2) not all boards are running secure firmware, so .write_sec callback
+    needs to be installed in Exynos firmware ops initialization code,
+ 3) write access to {DATA,TAG}_LATENCY_CTRL registers fron non-secure world
+    is not allowed and so must use l2c_write_sec as well,
+ 4) on certain boards, default value of prefetch register is incorrect
+    and must be overridden at L2C initialization.
+Patches 1-3 might affect other platforms using .write_sec callback, so
+I'd like to kindly ask any interested people for testing.
 
-diff --git a/arch/arm/mach-exynos/firmware.c b/arch/arm/mach-exynos/firmware.c
-index eb91d23..def7bb4 100644
---- a/arch/arm/mach-exynos/firmware.c
-+++ b/arch/arm/mach-exynos/firmware.c
-@@ -14,7 +14,9 @@
- #include <linux/of.h>
- #include <linux/of_address.h>
- 
-+#include <asm/cputype.h>
- #include <asm/firmware.h>
-+#include <asm/hardware/cache-l2x0.h>
- 
- #include <mach/map.h>
- 
-@@ -70,6 +72,57 @@ static const struct firmware_ops exynos_firmware_ops = {
- 	.cpu_boot		= exynos_cpu_boot,
- };
- 
-+static void exynos_l2_write_sec(unsigned long val, void __iomem *base,
-+				unsigned reg)
-+{
-+	switch (reg) {
-+	case L2X0_CTRL:
-+		if (val & L2X0_CTRL_EN)
-+			exynos_smc(SMC_CMD_L2X0INVALL, 0, 0, 0);
-+		exynos_smc(SMC_CMD_L2X0CTRL, val, 0, 0);
-+		break;
-+
-+	case L2X0_AUX_CTRL:
-+		exynos_smc(SMC_CMD_L2X0SETUP2,
-+				readl_relaxed(base + L310_POWER_CTRL),
-+				val, 0);
-+		break;
-+
-+	case L2X0_DEBUG_CTRL:
-+		exynos_smc(SMC_CMD_L2X0DEBUG, val, 0, 0);
-+		break;
-+
-+	case L310_TAG_LATENCY_CTRL:
-+		exynos_smc(SMC_CMD_L2X0SETUP1,
-+				val,
-+				readl_relaxed(base + L310_DATA_LATENCY_CTRL),
-+				readl_relaxed(base + L310_PREFETCH_CTRL));
-+		break;
-+
-+	case L310_DATA_LATENCY_CTRL:
-+		exynos_smc(SMC_CMD_L2X0SETUP1,
-+				readl_relaxed(base + L310_TAG_LATENCY_CTRL),
-+				val,
-+				readl_relaxed(base + L310_PREFETCH_CTRL));
-+		break;
-+
-+	case L310_PREFETCH_CTRL:
-+		exynos_smc(SMC_CMD_L2X0SETUP1,
-+				readl_relaxed(base + L310_TAG_LATENCY_CTRL),
-+				readl_relaxed(base + L310_DATA_LATENCY_CTRL),
-+				val);
-+		break;
-+
-+	case L310_POWER_CTRL:
-+		exynos_smc(SMC_CMD_L2X0SETUP2, val,
-+				readl_relaxed(base + L2X0_AUX_CTRL), 0);
-+		break;
-+
-+	default:
-+		WARN_ONCE(1, "%s: ignoring write to reg 0x%x\n", __func__, reg);
-+	}
-+}
-+
- void __init exynos_firmware_init(void)
- {
- 	struct device_node *nd;
-@@ -89,4 +142,14 @@ void __init exynos_firmware_init(void)
- 	pr_info("Running under secure firmware.\n");
- 
- 	register_firmware_ops(&exynos_firmware_ops);
-+
-+	/*
-+	 * Exynos 4 SoCs (based on Cortex A9 and equipped with L2C-310),
-+	 * running under secure firmware, require certain registers of L2
-+	 * cache controller to be written in secure mode. Here .write_sec
-+	 * callback is provided to perform necessary SMC calls.
-+	 */
-+	if (IS_ENABLED(CONFIG_CACHE_L2X0)
-+	    && read_cpuid_part_number() == ARM_CPU_PART_CORTEX_A9)
-+		outer_cache.write_sec = exynos_l2_write_sec;
- }
+Further two patches add impelmentation of .write_sec for Exynos secure
+firmware and necessary DT nodes to enable L2 cache.
+
+Tested on Exynos4210-based Universal C210 and Trats (both without secure
+firmware) and Exynos4412-based TRATS2 and ODROID-U3 boards (both with secure
+firmware).
+
+Changes since v1:
+(https://www.mail-archive.com/linux-omap@vger.kernel.org/msg106323.html)
+ - rebased onto for-next branch of linux-samsung tree,
+ - changed argument order of outer_cache.write_sec() callback to match
+   l2c_write_sec() function in cache-l2x0.c,
+ - added support of overriding of prefetch settings to work around incorrect
+   default settings on certain Exynos4x12-based boards,
+ - added call to firmware to invalidate whole L2 cache before setting enable
+   bit in L2C control register (required by Exynos secure firmware).
+
+Tomasz Figa (6):
+  ARM: mm: cache-l2x0: Add base address argument to write_sec callback
+  ARM: Get outer cache .write_sec callback from mach_desc only if not
+    NULL
+  ARM: mm: cache-l2x0: Use l2c_write_sec() for LATENCY_CTRL registers
+  ARM: mm: l2x0: Add support for overriding prefetch settings
+  ARM: EXYNOS: Add .write_sec outer cache callback for L2C-310
+  ARM: dts: exynos4: Add nodes for L2 cache controller
+
+ Documentation/devicetree/bindings/arm/l2cc.txt | 10 ++++
+ arch/arm/boot/dts/exynos4210.dtsi              |  9 ++++
+ arch/arm/boot/dts/exynos4x12.dtsi              | 14 ++++++
+ arch/arm/include/asm/mach/arch.h               |  3 +-
+ arch/arm/include/asm/outercache.h              |  2 +-
+ arch/arm/kernel/irq.c                          |  3 +-
+ arch/arm/mach-exynos/firmware.c                | 63 +++++++++++++++++++++++++
+ arch/arm/mach-highbank/highbank.c              |  3 +-
+ arch/arm/mach-omap2/omap4-common.c             |  3 +-
+ arch/arm/mach-ux500/cache-l2x0.c               |  3 +-
+ arch/arm/mm/cache-l2x0.c                       | 64 ++++++++++++++++++++++----
+ 11 files changed, 162 insertions(+), 15 deletions(-)
+
 -- 
 1.9.3
 
