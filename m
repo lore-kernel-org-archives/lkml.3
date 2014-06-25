@@ -1,109 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756034AbaFYIkn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 04:40:43 -0400
-Received: from mga03.intel.com ([143.182.124.21]:15882 "EHLO mga03.intel.com"
+	id S1756006AbaFYIkl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 04:40:41 -0400
+Received: from mga11.intel.com ([192.55.52.93]:54011 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755947AbaFYIkf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 04:40:35 -0400
+	id S1755348AbaFYIkc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 04:40:32 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,544,1400050800"; 
-   d="scan'208";a="449717598"
-From: Yuyang Du <yuyang.du@intel.com>
-To: mingo@redhat.com, peterz@infradead.org, rafael.j.wysocki@intel.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Cc: arjan.van.de.ven@intel.com, len.brown@intel.com, alan.cox@intel.com,
-        mark.gross@intel.com, morten.rasmussen@arm.com,
-        vincent.guittot@linaro.org, dietmar.eggemann@arm.com,
-        rajeev.d.muralidhar@intel.com, vishwesh.m.rudramuni@intel.com,
-        nicole.chalhoub@intel.com, ajaya.durg@intel.com,
-        harinarayanan.seshadri@intel.com, jacob.jun.pan@linux.intel.com,
-        Yuyang Du <yuyang.du@intel.com>
-Subject: [RFC PATCH 9/9 v4] Implement Workload Consolidation in periodic load balance
-Date: Wed, 25 Jun 2014 08:36:08 +0800
-Message-Id: <1403656568-32445-10-git-send-email-yuyang.du@intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1403656568-32445-1-git-send-email-yuyang.du@intel.com>
-References: <1403656568-32445-1-git-send-email-yuyang.du@intel.com>
+   d="scan'208";a="552974249"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        x86@kernel.org, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, Jiang Liu <jiang.liu@linux.intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Prarit Bhargava <prarit@redhat.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        linux-pm@vger.kernel.org
+Subject: [Patch V3 14/16] x86, irq: Introduce helper to check whether an IOAPIC has been registered
+Date: Wed, 25 Jun 2014 16:40:45 +0800
+Message-Id: <1403685648-10103-15-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1403685648-10103-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1403685648-10103-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1) Skip pulling task to the non-consolidated CPUs.
+Introduce acpi_ioapic_registered() to check whether an IOAPIC has already
+been registered, it will be used when enabling IOAPIC hotplug.
 
-2) In addition, for consolidated Idle CPU, we aggressively pull tasks from
-   non-consolidated CPUs.
-
-Signed-off-by: Yuyang Du <yuyang.du@intel.com>
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- kernel/sched/fair.c |   50 +++++++++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 43 insertions(+), 7 deletions(-)
+ arch/x86/include/asm/io_apic.h |    1 +
+ arch/x86/kernel/acpi/boot.c    |   11 +++++++++++
+ arch/x86/kernel/apic/io_apic.c |   11 +++++++++++
+ include/linux/acpi.h           |    1 +
+ 4 files changed, 24 insertions(+)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 549f6e0..7fcd2d0 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -7371,17 +7371,53 @@ static void nohz_idle_balance(struct rq *this_rq, enum cpu_idle_type idle, struc
- static void run_rebalance_domains(struct softirq_action *h)
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index ce63cf34c93c..0db2b7037e4b 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -191,6 +191,7 @@ extern void mp_unmap_irq(int irq);
+ extern int mp_register_ioapic(int id, u32 address, u32 gsi_base,
+ 			      struct ioapic_domain_cfg *cfg);
+ extern int mp_unregister_ioapic(u32 gsi_base);
++extern int mp_ioapic_registered(u32 gsi_base);
+ extern int mp_irqdomain_map(struct irq_domain *domain, unsigned int virq,
+ 			    irq_hw_number_t hwirq);
+ extern void mp_irqdomain_unmap(struct irq_domain *domain, unsigned int virq);
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index 28d50c70cac9..2a133f594e66 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -814,6 +814,17 @@ int acpi_unregister_ioapic(acpi_handle handle, u32 gsi_base)
+ }
+ EXPORT_SYMBOL(acpi_unregister_ioapic);
+ 
++int acpi_ioapic_registered(acpi_handle handle, u32 gsi_base)
++{
++	int ret;
++
++	down_write(&acpi_ioapic_rwsem);
++	ret  = mp_ioapic_registered(gsi_base);
++	up_write(&acpi_ioapic_rwsem);
++
++	return ret;
++}
++
+ static int __init acpi_parse_sbf(struct acpi_table_header *table)
  {
- 	struct rq *this_rq = this_rq();
-+	int this_cpu = cpu_of(this_rq);
-+	struct sched_domain *sd;
- 	enum cpu_idle_type idle = this_rq->idle_balance ?
- 						CPU_IDLE : CPU_NOT_IDLE;
- 
--	rebalance_domains(this_rq, idle);
-+	sd = per_cpu(sd_wc, this_cpu);
-+	if (sd) {
-+		struct cpumask *nonshielded_cpus = __get_cpu_var(load_balance_mask);
- 
--	/*
--	 * If this cpu has a pending nohz_balance_kick, then do the
--	 * balancing on behalf of the other idle cpus whose ticks are
--	 * stopped.
--	 */
--	nohz_idle_balance(this_rq, idle);
-+		/*
-+		 * if we encounter shielded cpus here, don't do balance on them
-+		 */
-+		cpumask_copy(nonshielded_cpus, cpu_active_mask);
-+
-+		rcu_read_lock();
-+		wc_nonshielded_mask(this_cpu, sd, nonshielded_cpus);
-+		rcu_read_unlock();
-+
-+		/*
-+		 * aggressively unload the shielded cpus to unshielded cpus
-+		 */
-+		wc_unload(nonshielded_cpus, sd);
-+
-+		if (cpumask_test_cpu(this_cpu, nonshielded_cpus)) {
-+			struct cpumask *idle_cpus = __get_cpu_var(local_cpu_mask);
-+			cpumask_and(idle_cpus, nonshielded_cpus, nohz.idle_cpus_mask);
-+
-+			rebalance_domains(this_rq, idle);
-+
-+			/*
-+			 * If this cpu has a pending nohz_balance_kick, then do the
-+			 * balancing on behalf of the other idle cpus whose ticks are
-+			 * stopped.
-+			 */
-+			nohz_idle_balance(this_rq, idle, idle_cpus);
-+		}
-+	}
-+	else {
-+		rebalance_domains(this_rq, idle);
-+
-+		/*
-+		 * If this cpu has a pending nohz_balance_kick, then do the
-+		 * balancing on behalf of the other idle cpus whose ticks are
-+		 * stopped.
-+		 */
-+		nohz_idle_balance(this_rq, idle, nohz.idle_cpus_mask);
-+	}
+ 	struct acpi_table_boot *sb;
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 5711689e4307..3410f1f467db 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -4005,6 +4005,17 @@ int mp_unregister_ioapic(u32 gsi_base)
+ 	return 0;
  }
  
- /*
++int mp_ioapic_registered(u32 gsi_base)
++{
++	int ioapic;
++
++	for_each_ioapic(ioapic)
++		if (ioapics[ioapic].gsi_config.gsi_base == gsi_base)
++			return 1;
++
++	return 0;
++}
++
+ int mp_irqdomain_map(struct irq_domain *domain, unsigned int virq,
+ 		     irq_hw_number_t hwirq)
+ {
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index fb2bc50f330e..1294512b07e5 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -155,6 +155,7 @@ int acpi_get_ioapic_id(acpi_handle handle, u32 gsi_base, u64 *phys_addr);
+ 
+ int acpi_register_ioapic(acpi_handle handle, u64 phys_addr, u32 gsi_base);
+ int acpi_unregister_ioapic(acpi_handle handle, u32 gsi_base);
++int acpi_ioapic_registered(acpi_handle handle, u32 gsi_base);
+ void acpi_irq_stats_init(void);
+ extern u32 acpi_irq_handled;
+ extern u32 acpi_irq_not_handled;
 -- 
-1.7.9.5
+1.7.10.4
 
