@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756292AbaFYMDi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 08:03:38 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:42745 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752942AbaFYMDh (ORCPT
+	id S1756078AbaFYMMK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 08:12:10 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:57518 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754540AbaFYMMI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 08:03:37 -0400
-Date: Wed, 25 Jun 2014 13:03:31 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Alexandre Courbot <acourbot@nvidia.com>, Jingoo Han <jg1.han@samsung.com>,
-        Bryan Wu <cooloney@gmail.com>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gnurou@gmail.com
-Subject: Re: [PATCH] pwm-backlight: use devm_gpiod_get_optional()
-Message-ID: <20140625120331.GE13518@lee--X1>
-References: <1403687898-26881-1-git-send-email-acourbot@nvidia.com>
- <20140625095447.GT13803@lee--X1>
- <20140625111346.GB21208@ulmo>
+	Wed, 25 Jun 2014 08:12:08 -0400
+Date: Wed, 25 Jun 2014 14:11:56 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [RFC v2 2/7] perf: add AUX area to ring buffer for raw data
+ streams
+Message-ID: <20140625121156.GA3935@laptop>
+References: <1402501310-31940-1-git-send-email-alexander.shishkin@linux.intel.com>
+ <1402501310-31940-3-git-send-email-alexander.shishkin@linux.intel.com>
+ <20140624171943.GR3213@twins.programming.kicks-ass.net>
+ <87lhslxn2s.fsf@ashishki-desk.ger.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140625111346.GB21208@ulmo>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87lhslxn2s.fsf@ashishki-desk.ger.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Jun 2014, Thierry Reding wrote:
-> On Wed, Jun 25, 2014 at 10:54:47AM +0100, Lee Jones wrote:
-> > > Make use of the new devm_gpiod_get_optional() to simplify the probe
-> > > code.
-> > > 
-> > > Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> > > ---
-> > >  drivers/video/backlight/pwm_bl.c | 7 ++-----
-> > >  1 file changed, 2 insertions(+), 5 deletions(-)
-> > 
-> > Looks good.  Applied, thanks.
+On Wed, Jun 25, 2014 at 02:09:31PM +0300, Alexander Shishkin wrote:
+> Peter Zijlstra <peterz@infradead.org> writes:
 > 
-> Technically pwm_bl.c is my turf. However I only adopted it way back when
-> the backlight subsystem was orphaned, but it seems Jingoo, Bryan and you
-> are taking good care of it these days, so perhaps it would be a good
-> idea to move it back to your custody?
+> > On Wed, Jun 11, 2014 at 06:41:45PM +0300, Alexander Shishkin wrote:
+> >> +	/*
+> >> +	 * Set up pmu-private data structures for an AUX area
+> >> +	 */
+> >> +	void *(*setup_aux)		(int cpu, void **pages,
+> >> +					 int nr_pages, bool overwrite);
+> >> +					/* optional */
+> >> +
+> >> +	/*
+> >> +	 * Free pmu-private AUX data structures
+> >> +	 */
+> >> +	void (*free_aux)		(void *aux); /* optional */
+> >
+> > I was hoping you could replace those with a PERF_CAP_AUX or something
+> > and then have one generic allocation routine like you provide in the
+> > subsequent patches.
+> 
+> I need these to allocate pmu-specific SG tables now, which I don't see
+> how to generalize nicely. User-visible aux_pages are allocated in the
+> generic rb_alloc_aux().
+> 
+> As for sg tables, the alternative would be to allocate them in the
+> event::pmu::add() path, which is probably not very good for
+> performance, unless I'm missing something? Like, I can allocate stuff in
+> the first add() and then free it in event::destroy().
+> 
+> Or, we can assume a generic sg table format and allocate them in the
+> generic code, but then we'll need more capabilities to indicate at least
+> the size of a table entry. PT needs 64 bits per entry, ARM's TMC needs
+> 32 and the non-SG PT will still need some tables. But I'd rather leave
+> this part to the pmu drivers. What do you think?
 
-Yeah, the whole 'driver maintainer' sketch could get pretty complex.
-It's pretty clean-cut in the PWM subsystem as only one exists, but
-Backlight and MFD have a whole bunch, and I don't usually wait for
-them to Ack/Nack before applying or providing review comments.
-
-I'm happy to play it however you like really.  I'm sure the boys and I
-can handle it if you so wish.  Even better if you would say in the
-MAINTAINERS file and provide review comments when patches are
-submitted.  I do think all 'drivers/video/backlight' changes should go
-in via the Backlight tree though.
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Ah, I wasn't aware.. too bad. Maybe add this to the changelog.
