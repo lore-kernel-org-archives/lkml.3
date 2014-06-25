@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757158AbaFYOoS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 10:44:18 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:33038 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756454AbaFYOoP (ORCPT
+	id S932215AbaFYOq4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 10:46:56 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:18217 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756294AbaFYOqz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 10:44:15 -0400
+	Wed, 25 Jun 2014 10:46:55 -0400
+Message-ID: <53AAE0D3.8030008@arm.com>
+Date: Wed, 25 Jun 2014 15:46:43 +0100
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <20140625134354.GA7892@redhat.com>
-References: <1403642893-23107-1-git-send-email-keescook@chromium.org>
-	<1403642893-23107-5-git-send-email-keescook@chromium.org>
-	<20140625134354.GA7892@redhat.com>
-Date: Wed, 25 Jun 2014 07:44:15 -0700
-X-Google-Sender-Auth: 0nCLCSOhkNigsvazxcb0T8pkDus
-Message-ID: <CAGXu5j+yutPBpEq3qiVwAMT6q0y36bwM2ksBvj-=6AqkWAgaGQ@mail.gmail.com>
-Subject: Re: [PATCH v8 4/9] sched: move no_new_privs into new atomic flags
-From: Kees Cook <keescook@chromium.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Andy Lutomirski <luto@amacapital.net>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
-        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
+To: Peter Maydell <peter.maydell@linaro.org>
+CC: "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        arm-mail-list <linux-arm-kernel@lists.infradead.org>,
+        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Eric Auger <eric.auger@linaro.org>
+Subject: Re: [RFC PATCH 3/9] irqchip: GIC: Convert to EOImode == 1
+References: <1403688530-23273-1-git-send-email-marc.zyngier@arm.com> <1403688530-23273-4-git-send-email-marc.zyngier@arm.com> <CAFEAcA_naeGVc+Rsec=Ds6Lzf345nzFj3Wg2RWY-6LWYv3euNQ@mail.gmail.com>
+In-Reply-To: <CAFEAcA_naeGVc+Rsec=Ds6Lzf345nzFj3Wg2RWY-6LWYv3euNQ@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 6:43 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 06/24, Kees Cook wrote:
+On 25/06/14 15:06, Peter Maydell wrote:
+> On 25 June 2014 10:28, Marc Zyngier <marc.zyngier@arm.com> wrote:
+>> For this case, the GIC architecture provides EOImode == 1, where:
+>> - A write to the EOI register drops the priority of the interrupt and leaves
+>> it active. Other interrupts at the same priority level can now be taken,
+>> but the active interrupt cannot be taken again
+>> - A write to the DIR marks the interrupt as inactive, meaning it can
+>> now be taken again.
 >>
->> --- a/include/linux/sched.h
->> +++ b/include/linux/sched.h
->> @@ -1307,8 +1307,7 @@ struct task_struct {
->>                                * execve */
->>       unsigned in_iowait:1;
->>
->> -     /* task may not gain privileges */
->> -     unsigned no_new_privs:1;
->> +     unsigned long atomic_flags; /* Flags needing atomic access. */
->>
->>       /* Revert to default priority/policy when forking */
->>       unsigned sched_reset_on_fork:1;
->
-> Agreed, personally I like it more than seccomp->flags.
->
-> But probably it would be better to place the new member before/after
-> other bitfields to save the space?
+>> We only enable this feature when booted in HYP mode. Also, as most device
+>> trees are broken (they report the CPU interface size to be 4kB, while
+>> the GICv2 CPU interface size is 8kB), output a warning if we're booted
+>> in HYP mode, and disable the feature.
+> 
+> Does that mean you guarantee not to write to the DEACTIVATE register
+> if not booted in Hyp mode? I ask because QEMU's GIC emulation doesn't
+> emulate that register, so it would be useful to know if this patch
+> means newer kernels are going to fall over under TCG QEMU...
 
-Sure, I'll move it down. (Though I thought the compiler was smarter about that.)
+So far, I only plan to support it when booted in HYP. But it may be that
+the split prio-drop/deactivate is also beneficial to threaded
+interrupts, saving the writes to the distributor to mask/unmask. That
+would require to be a bit more subtle in identifying a GICv2
+implementation (DT binding, probably).
 
--Kees
-
+	M.
 -- 
-Kees Cook
-Chrome OS Security
+Jazz is not dead. It just smells funny...
