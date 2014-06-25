@@ -1,65 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754468AbaFYJOR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 05:14:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48009 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752352AbaFYJON (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 05:14:13 -0400
-Date: Wed, 25 Jun 2014 10:31:42 +0200 (CEST)
-From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
-X-X-Sender: lczerner@localhost.localdomain
-To: Eric Biggers <ebiggers3@gmail.com>
-cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] vfs: fix check for fallocate on active swapfile
-In-Reply-To: <1403671508-371-1-git-send-email-ebiggers3@gmail.com>
-Message-ID: <alpine.LFD.2.00.1406251030500.2171@localhost.localdomain>
-References: <1403671508-371-1-git-send-email-ebiggers3@gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755657AbaFYJOe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 05:14:34 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:37150 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755104AbaFYJOa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 05:14:30 -0400
+From: Zhangfei Gao <zhangfei.gao@linaro.org>
+To: Kishon Vijay Abraham I <kishon@ti.com>, arnd@arndb.de,
+        mark.rutland@arm.com, haifeng.yan@linaro.org, jchxue@gmail.com,
+        zhangfei.gao@linaro.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org
+Subject: [PATCH v2 0/2] phy: add hix5hd2-sata-phy driver
+Date: Wed, 25 Jun 2014 17:14:06 +0800
+Message-Id: <1403687648-29082-1-git-send-email-zhangfei.gao@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Jun 2014, Eric Biggers wrote:
+v2:
+Suggested by Mark
+Remove hisilicon,reg-init and init the register in phy-hix5hd2-sata.c
+Change property name accordingly.
 
-> Date: Tue, 24 Jun 2014 23:45:08 -0500
-> From: Eric Biggers <ebiggers3@gmail.com>
-> To: linux-fsdevel@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org, Eric Biggers <ebiggers3@gmail.com>
-> Subject: [PATCH] vfs: fix check for fallocate on active swapfile
-> 
-> Fix the broken check for calling sys_fallocate() on an active swapfile,
-> introduced by commit 0790b31b69374ddadefe ("fs: disallow all fallocate
-> operation on active swapfile").
+Jiancheng Xue (2):
+  Documentation: Document Hisilicon hix5hd2 sata PHY
+  phy: add hix5hd2-sata-phy driver
 
-Oops, good catch, Thanks!
+ .../devicetree/bindings/phy/hix5hd2-sata-phy.txt   |   22 +++
+ drivers/phy/Kconfig                                |    8 +
+ drivers/phy/Makefile                               |    1 +
+ drivers/phy/phy-hix5hd2-sata.c                     |  190 ++++++++++++++++++++
+ 4 files changed, 221 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/phy/hix5hd2-sata-phy.txt
+ create mode 100644 drivers/phy/phy-hix5hd2-sata.c
 
-Reviewed-by: Lukas Czerner <lczerner@redhat.com>
+-- 
+1.7.9.5
 
-> 
-> Signed-off-by: Eric Biggers <ebiggers3@gmail.com>
-> ---
->  fs/open.c | 5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff --git a/fs/open.c b/fs/open.c
-> index 36662d0..d6fd3ac 100644
-> --- a/fs/open.c
-> +++ b/fs/open.c
-> @@ -263,11 +263,10 @@ int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
->  		return -EPERM;
->  
->  	/*
-> -	 * We can not allow to do any fallocate operation on an active
-> -	 * swapfile
-> +	 * We cannot allow any fallocate operation on an active swapfile
->  	 */
->  	if (IS_SWAPFILE(inode))
-> -		ret = -ETXTBSY;
-> +		return -ETXTBSY;
->  
->  	/*
->  	 * Revalidate the write permissions, in case security policy has
-> 
