@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757933AbaFYRbE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 13:31:04 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54832 "EHLO
+	id S1757957AbaFYRbI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 13:31:08 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:55014 "EHLO
 	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757830AbaFYRai (ORCPT
+	by vger.kernel.org with ESMTP id S1757665AbaFYRbF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 13:30:38 -0400
+	Wed, 25 Jun 2014 13:31:05 -0400
 From: Sudeep Holla <sudeep.holla@arm.com>
 To: linux-kernel@vger.kernel.org
 Cc: sudeep.holla@arm.com, Heiko Carstens <heiko.carstens@de.ibm.com>,
         Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 1/9] drivers: base: add new class "cpu" to group cpu devices
-Date: Wed, 25 Jun 2014 18:30:36 +0100
-Message-Id: <1403717444-23559-2-git-send-email-sudeep.holla@arm.com>
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 7/9] ARM64: kernel: add support for cpu cache information
+Date: Wed, 25 Jun 2014 18:30:42 +0100
+Message-Id: <1403717444-23559-8-git-send-email-sudeep.holla@arm.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1403717444-23559-1-git-send-email-sudeep.holla@arm.com>
 References: <1403717444-23559-1-git-send-email-sudeep.holla@arm.com>
@@ -24,153 +27,181 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sudeep Holla <sudeep.holla@arm.com>
 
-This patch creates a new class called "cpu" and assigns it to all the
-cpu devices. This helps in grouping all the cpu devices and associated
-child devices under the same class.
+This patch adds support for cacheinfo on ARM64.
 
-This patch also:
-1. modifies the get_parent_device to return the legacy path
-   (/sys/devices/system/cpu/..) for the cpu class devices to support
-   existing sysfs ABI
-2. avoids creating link in the class directory pointing to the device as
-   there would be per-cpu instance of these devices with the same name
-3. makes sure subsystem symlink continues pointing to cpu bus instead of
-   cpu class for cpu devices
+On ARMv8, the cache hierarchy can be identified through Cache Level ID
+(CLIDR) register while the cache geometry is provided by Cache Size ID
+(CCSIDR) register.
+
+Since the architecture doesn't provide any way of detecting the cpus
+sharing particular cache, device tree is used for the same purpose.
 
 Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org
 ---
- drivers/base/core.c | 39 +++++++++++++++++++++++++++++++++------
- drivers/base/cpu.c  |  7 +++++++
- include/linux/cpu.h |  2 ++
- 3 files changed, 42 insertions(+), 6 deletions(-)
+ arch/arm64/kernel/Makefile    |   3 +-
+ arch/arm64/kernel/cacheinfo.c | 135 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 137 insertions(+), 1 deletion(-)
+ create mode 100644 arch/arm64/kernel/cacheinfo.c
 
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index 20da3ad..fe622e2 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -10,6 +10,7 @@
-  *
-  */
+diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
+index cdaedad..754a3d0 100644
+--- a/arch/arm64/kernel/Makefile
++++ b/arch/arm64/kernel/Makefile
+@@ -15,7 +15,8 @@ CFLAGS_REMOVE_return_address.o = -pg
+ arm64-obj-y		:= cputable.o debug-monitors.o entry.o irq.o fpsimd.o	\
+ 			   entry-fpsimd.o process.o ptrace.o setup.o signal.o	\
+ 			   sys.o stacktrace.o time.o traps.o io.o vdso.o	\
+-			   hyp-stub.o psci.o cpu_ops.o insn.o return_address.o
++			   hyp-stub.o psci.o cpu_ops.o insn.o return_address.o	\
++			   cacheinfo.o
  
+ arm64-obj-$(CONFIG_COMPAT)		+= sys32.o kuser32.o signal32.o 	\
+ 					   sys_compat.o
+diff --git a/arch/arm64/kernel/cacheinfo.c b/arch/arm64/kernel/cacheinfo.c
+new file mode 100644
+index 0000000..a6f81cc
+--- /dev/null
++++ b/arch/arm64/kernel/cacheinfo.c
+@@ -0,0 +1,135 @@
++/*
++ *  ARM64 cacheinfo support
++ *
++ *  Copyright (C) 2014 ARM Ltd.
++ *  All Rights Reserved
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/bitops.h>
++#include <linux/cacheinfo.h>
 +#include <linux/cpu.h>
- #include <linux/device.h>
- #include <linux/err.h>
- #include <linux/init.h>
-@@ -742,6 +743,12 @@ static struct kobject *get_device_parent(struct device *dev,
- 			return &block_class.p->subsys.kobj;
- 		}
- #endif
-+		/*
-+		 * if the device is in cpu class, then use the default/legacy
-+		 * /sys/devices/system/cpu/.. path
-+		 */
-+		if (dev->class == cpu_class)
-+			return &parent->kobj;
- 
- 		/*
- 		 * If we have no parent, we live in "virtual".
-@@ -808,11 +815,17 @@ static int device_add_class_symlinks(struct device *dev)
- 	if (!dev->class)
- 		return 0;
- 
--	error = sysfs_create_link(&dev->kobj,
--				  &dev->class->p->subsys.kobj,
--				  "subsystem");
--	if (error)
--		goto out;
-+	/*
-+	 * the subsystem symlink in each cpu device needs to continue
-+	 * pointing to cpu bus
-+	 */
-+	if (dev->bus != &cpu_subsys) {
-+		error = sysfs_create_link(&dev->kobj,
-+					  &dev->class->p->subsys.kobj,
-+					  "subsystem");
-+		if (error)
-+			goto out;
++#include <linux/compiler.h>
++#include <linux/of.h>
++
++#include <asm/processor.h>
++
++#define MAX_CACHE_LEVEL			7	/* Max 7 level supported */
++/* Ctypen, bits[3(n - 1) + 2 : 3(n - 1)], for n = 1 to 7 */
++#define CLIDR_CTYPE_SHIFT(level)	(3 * (level - 1))
++#define CLIDR_CTYPE_MASK(level)		(7 << CLIDR_CTYPE_SHIFT(level))
++#define CLIDR_CTYPE(clidr, level)	\
++	(((clidr) & CLIDR_CTYPE_MASK(level)) >> CLIDR_CTYPE_SHIFT(level))
++
++static inline enum cache_type get_cache_type(int level)
++{
++	unsigned int clidr;
++
++	if (level > MAX_CACHE_LEVEL)
++		return CACHE_TYPE_NOCACHE;
++	asm volatile ("mrs     %0, clidr_el1" : "=r" (clidr));
++	return CLIDR_CTYPE(clidr, level);
++}
++
++/*
++ * NumSets, bits[27:13] - (Number of sets in cache) - 1
++ * Associativity, bits[12:3] - (Associativity of cache) - 1
++ * LineSize, bits[2:0] - (Log2(Number of words in cache line)) - 2
++ */
++#define CCSIDR_WRITE_THROUGH	BIT(31)
++#define CCSIDR_WRITE_BACK	BIT(30)
++#define CCSIDR_READ_ALLOCATE	BIT(29)
++#define CCSIDR_WRITE_ALLOCATE	BIT(28)
++#define CCSIDR_LINESIZE_MASK	0x7
++#define CCSIDR_ASSOCIAT_SHIFT	3
++#define CCSIDR_ASSOCIAT_MASK	0x3FF
++#define CCSIDR_NUMSETS_SHIFT	13
++#define CCSIDR_NUMSETS_MASK	0x7FF
++
++/*
++ * Which cache CCSIDR represents depends on CSSELR value
++ * Make sure no one else changes CSSELR during this
++ * smp_call_function_single prevents preemption for us
++ */
++static inline u32 get_ccsidr(u32 csselr)
++{
++	u32 ccsidr;
++
++	/* Put value into CSSELR */
++	asm volatile("msr csselr_el1, %x0" : : "r" (csselr));
++	isb();
++	/* Read result out of CCSIDR */
++	asm volatile("mrs %0, ccsidr_el1" : "=r" (ccsidr));
++
++	return ccsidr;
++}
++
++static void ci_leaf_init(struct cacheinfo *this_leaf,
++			 enum cache_type type, unsigned int level)
++{
++	bool is_instr_cache = type & CACHE_TYPE_INST;
++	u32 tmp = get_ccsidr((level - 1) << 1 | is_instr_cache);
++
++	this_leaf->level = level;
++	this_leaf->type = type;
++	this_leaf->coherency_line_size =
++	    (1 << ((tmp & CCSIDR_LINESIZE_MASK) + 2)) * 4;
++	this_leaf->number_of_sets =
++	    ((tmp >> CCSIDR_NUMSETS_SHIFT) & CCSIDR_NUMSETS_MASK) + 1;
++	this_leaf->ways_of_associativity =
++	    ((tmp >> CCSIDR_ASSOCIAT_SHIFT) & CCSIDR_ASSOCIAT_MASK) + 1;
++	this_leaf->size = this_leaf->number_of_sets *
++	    this_leaf->coherency_line_size * this_leaf->ways_of_associativity;
++	this_leaf->attributes =
++		((tmp & CCSIDR_WRITE_THROUGH) ? CACHE_WRITE_THROUGH : 0) |
++		((tmp & CCSIDR_WRITE_BACK) ? CACHE_WRITE_BACK : 0) |
++		((tmp & CCSIDR_READ_ALLOCATE) ? CACHE_READ_ALLOCATE : 0) |
++		((tmp & CCSIDR_WRITE_ALLOCATE) ? CACHE_WRITE_ALLOCATE : 0);
++}
++
++int init_cache_level(unsigned int cpu)
++{
++	unsigned int ctype, level = 1, leaves = 0;
++	struct cpu_cacheinfo *this_cpu_ci = get_cpu_cacheinfo(cpu);
++
++	if (!this_cpu_ci)
++		return -EINVAL;
++
++	do {
++		ctype = get_cache_type(level);
++		if (ctype == CACHE_TYPE_NOCACHE)
++			break;
++		/* Separate instruction and data caches */
++		leaves += (ctype == CACHE_TYPE_SEPARATE) ? 2 : 1;
++	} while (++level <= MAX_CACHE_LEVEL);
++
++	this_cpu_ci->num_levels = level - 1;
++	this_cpu_ci->num_leaves = leaves;
++	return 0;
++}
++
++int populate_cache_leaves(unsigned int cpu)
++{
++	unsigned int level, idx;
++	enum cache_type type;
++	struct cpu_cacheinfo *this_cpu_ci = get_cpu_cacheinfo(cpu);
++	struct cacheinfo *this_leaf = this_cpu_ci->info_list;
++
++	for (idx = 0, level = 1; level <= this_cpu_ci->num_levels &&
++	     idx < this_cpu_ci->num_leaves; idx++, level++) {
++		if (!this_leaf)
++			return -EINVAL;
++
++		type = get_cache_type(level);
++		if (type == CACHE_TYPE_SEPARATE) {
++			ci_leaf_init(this_leaf++, CACHE_TYPE_DATA, level);
++			ci_leaf_init(this_leaf++, CACHE_TYPE_INST, level);
++		} else {
++			ci_leaf_init(this_leaf++, type, level);
++		}
 +	}
- 
- 	if (dev->parent && device_is_not_partition(dev)) {
- 		error = sysfs_create_link(&dev->kobj, &dev->parent->kobj,
-@@ -826,6 +839,13 @@ static int device_add_class_symlinks(struct device *dev)
- 	if (sysfs_deprecated && dev->class == &block_class)
- 		return 0;
- #endif
-+	/*
-+	 * don't create a link in the cpu class directory pointing to the
-+	 * device as there would be per-cpu instance of these devices with
-+	 * the same name
-+	 */
-+	if (dev->class == cpu_class)
-+		return 0;
- 
- 	/* link in the class directory pointing to the device */
- 	error = sysfs_create_link(&dev->class->p->subsys.kobj,
-@@ -851,11 +871,18 @@ static void device_remove_class_symlinks(struct device *dev)
- 
- 	if (dev->parent && device_is_not_partition(dev))
- 		sysfs_remove_link(&dev->kobj, "device");
--	sysfs_remove_link(&dev->kobj, "subsystem");
-+
-+	/* if subsystem points to cpu bus, bus_remove_device will remove it */
-+	if (dev->bus != &cpu_subsys)
-+		sysfs_remove_link(&dev->kobj, "subsystem");
- #ifdef CONFIG_BLOCK
- 	if (sysfs_deprecated && dev->class == &block_class)
- 		return;
- #endif
-+	/* symlinks are not created for cpu class devices, nothing to remove */
-+	if (dev->class == cpu_class)
-+		return;
-+
- 	sysfs_delete_link(&dev->class->p->subsys.kobj, &dev->kobj, dev_name(dev));
- }
- 
-diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
-index 006b1bc..056b885 100644
---- a/drivers/base/cpu.c
-+++ b/drivers/base/cpu.c
-@@ -322,6 +322,7 @@ static int cpu_uevent(struct device *dev, struct kobj_uevent_env *env)
- }
- #endif
- 
-+struct class *cpu_class;
- /*
-  * register_cpu - Setup a sysfs device for a CPU.
-  * @cpu - cpu->hotpluggable field set to 1 will generate a control file in
-@@ -338,6 +339,8 @@ int register_cpu(struct cpu *cpu, int num)
- 	memset(&cpu->dev, 0x00, sizeof(struct device));
- 	cpu->dev.id = num;
- 	cpu->dev.bus = &cpu_subsys;
-+	cpu->dev.parent = cpu_subsys.dev_root;
-+	cpu->dev.class = cpu_class;
- 	cpu->dev.release = cpu_device_release;
- 	cpu->dev.offline_disabled = !cpu->hotpluggable;
- 	cpu->dev.offline = !cpu_online(num);
-@@ -423,5 +426,9 @@ void __init cpu_dev_init(void)
- 	if (subsys_system_register(&cpu_subsys, cpu_root_attr_groups))
- 		panic("Failed to register CPU subsystem");
- 
-+	cpu_class = class_create(THIS_MODULE, "cpu");
-+	if (IS_ERR(cpu_class))
-+		panic("Failed to register CPU class");
-+
- 	cpu_dev_register_generic();
- }
-diff --git a/include/linux/cpu.h b/include/linux/cpu.h
-index 95978ad..8c0fc9b 100644
---- a/include/linux/cpu.h
-+++ b/include/linux/cpu.h
-@@ -39,6 +39,8 @@ extern void cpu_remove_dev_attr(struct device_attribute *attr);
- extern int cpu_add_dev_attr_group(struct attribute_group *attrs);
- extern void cpu_remove_dev_attr_group(struct attribute_group *attrs);
- 
-+extern struct class *cpu_class;
-+
- #ifdef CONFIG_HOTPLUG_CPU
- extern void unregister_cpu(struct cpu *cpu);
- extern ssize_t arch_cpu_probe(const char *, size_t);
++	return 0;
++}
 -- 
 1.8.3.2
 
