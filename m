@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757764AbaFYQuE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 12:50:04 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59484 "EHLO
+	id S1757832AbaFYQuf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 12:50:35 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59503 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757728AbaFYQuB (ORCPT
+	with ESMTP id S1757580AbaFYQuG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 12:50:01 -0400
+	Wed, 25 Jun 2014 12:50:06 -0400
 From: Christoph Hellwig <hch@lst.de>
 To: James Bottomley <James.Bottomley@HansenPartnership.com>
 Cc: Jens Axboe <axboe@kernel.dk>, Bart Van Assche <bvanassche@fusionio.com>,
         Robert Elliott <Elliott@hp.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 10/14] scsi: only maintain target_blocked if the driver has a target queue limit
-Date: Wed, 25 Jun 2014 18:51:57 +0200
-Message-Id: <1403715121-1201-11-git-send-email-hch@lst.de>
+        linux-kernel@vger.kernel.org, Hiral Patel <hiralpat@cisco.com>,
+        Suma Ramars <sramars@cisco.com>, Brian Uchino <buchino@cisco.com>
+Subject: [PATCH 14/14] fnic: reject device resets without assigned tags for the blk-mq case
+Date: Wed, 25 Jun 2014 18:52:01 +0200
+Message-Id: <1403715121-1201-15-git-send-email-hch@lst.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1403715121-1201-1-git-send-email-hch@lst.de>
 References: <1403715121-1201-1-git-send-email-hch@lst.de>
@@ -24,79 +25,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This saves us an atomic operation for each I/O submission and completion
-for the usual case where the driver doesn't set a per-target can_queue
-value.  Only a few iscsi hardware offload drivers set the per-target
-can_queue value at the moment.
+Current the midlayer fakes up a struct request for the explicit reset
+ioctls, and those don't have a tag allocated to them.  The fnic driver pokes
+into midlayer structures to paper over this design issue, but that won't
+work for the blk-mq case.
+
+Either someone who can actually test the hardware will have to come up with
+a similar hack for the blk-mq case, or we'll have to bite the bullet and fix
+the way the EH ioctls work for real, but until that happens we fail these
+explicit requests here.
 
 Signed-off-by: Christoph Hellwig <hch@lst.de>
+Cc: Hiral Patel <hiralpat@cisco.com>
+Cc: Suma Ramars <sramars@cisco.com>
+Cc: Brian Uchino <buchino@cisco.com>
 ---
- drivers/scsi/scsi_lib.c |   17 ++++++++++++-----
- 1 file changed, 12 insertions(+), 5 deletions(-)
+ drivers/scsi/fnic/fnic_scsi.c |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index a39d5ba..a64b9d3 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -295,7 +295,8 @@ void scsi_device_unbusy(struct scsi_device *sdev)
- 	unsigned long flags;
+diff --git a/drivers/scsi/fnic/fnic_scsi.c b/drivers/scsi/fnic/fnic_scsi.c
+index 3f88f56..961bdf5 100644
+--- a/drivers/scsi/fnic/fnic_scsi.c
++++ b/drivers/scsi/fnic/fnic_scsi.c
+@@ -2224,6 +2224,22 @@ int fnic_device_reset(struct scsi_cmnd *sc)
  
- 	atomic_dec(&shost->host_busy);
--	atomic_dec(&starget->target_busy);
-+	if (starget->can_queue > 0)
-+		atomic_dec(&starget->target_busy);
- 
- 	if (unlikely(scsi_host_in_recovery(shost) &&
- 		     (shost->host_failed || shost->host_eh_scheduled))) {
-@@ -1335,6 +1336,9 @@ static inline int scsi_target_queue_ready(struct Scsi_Host *shost,
- 		spin_unlock_irq(shost->host_lock);
- 	}
- 
-+	if (starget->can_queue <= 0)
-+		return 1;
+ 	tag = sc->request->tag;
+ 	if (unlikely(tag < 0)) {
++		/*
++		 * XXX(hch): current the midlayer fakes up a struct
++		 * request for the explicit reset ioctls, and those
++		 * don't have a tag allocated to them.  The below
++		 * code pokes into midlayer structures to paper over
++		 * this design issue, but that won't work for blk-mq.
++		 *
++		 * Either someone who can actually test the hardware
++		 * will have to come up with a similar hack for the
++		 * blk-mq case, or we'll have to bite the bullet and
++		 * fix the way the EH ioctls work for real, but until
++		 * that happens we fail these explicit requests here.
++		 */
++		if (shost_use_blk_mq(sc->device->host))
++			goto fnic_device_reset_end;
 +
- 	busy = atomic_inc_return(&starget->target_busy) - 1;
- 	if (busy == 0 && atomic_read(&starget->target_blocked) > 0) {
- 		if (atomic_dec_return(&starget->target_blocked) > 0)
-@@ -1344,7 +1348,7 @@ static inline int scsi_target_queue_ready(struct Scsi_Host *shost,
- 				 "unblocking target at zero depth\n"));
- 	}
- 
--	if (starget->can_queue > 0 && busy >= starget->can_queue)
-+	if (busy >= starget->can_queue)
- 		goto starved;
- 	if (atomic_read(&starget->target_blocked) > 0)
- 		goto starved;
-@@ -1356,7 +1360,8 @@ starved:
- 	list_move_tail(&sdev->starved_entry, &shost->starved_list);
- 	spin_unlock_irq(shost->host_lock);
- out_dec:
--	atomic_dec(&starget->target_busy);
-+	if (starget->can_queue > 0)
-+		atomic_dec(&starget->target_busy);
- 	return 0;
- }
- 
-@@ -1473,7 +1478,8 @@ static void scsi_kill_request(struct request *req, struct request_queue *q)
- 	 */
- 	atomic_inc(&sdev->device_busy);
- 	atomic_inc(&shost->host_busy);
--	atomic_inc(&starget->target_busy);
-+	if (starget->can_queue > 0)
-+		atomic_inc(&starget->target_busy);
- 
- 	blk_complete_request(req);
- }
-@@ -1642,7 +1648,8 @@ static void scsi_request_fn(struct request_queue *q)
- 	return;
- 
-  host_not_ready:
--	atomic_dec(&scsi_target(sdev)->target_busy);
-+	if (scsi_target(sdev)->can_queue > 0)
-+		atomic_dec(&scsi_target(sdev)->target_busy);
-  not_ready:
- 	/*
- 	 * lock q, handle tag, requeue req, and decrement device_busy. We
+ 		tag = fnic_scsi_host_start_tag(fnic, sc);
+ 		if (unlikely(tag == SCSI_NO_TAG))
+ 			goto fnic_device_reset_end;
 -- 
 1.7.10.4
 
