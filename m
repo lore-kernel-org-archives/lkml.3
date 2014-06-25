@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756199AbaFYWyq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 18:54:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48723 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753993AbaFYWyp (ORCPT
+	id S1756521AbaFYWy5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 18:54:57 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:43087 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755226AbaFYWyq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 18:54:45 -0400
-Date: Wed, 25 Jun 2014 15:54:43 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Stefan Bader <stefan.bader@canonical.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: fs/stat: Reduce memory requirements for stat_open
-Message-Id: <20140625155443.9b0db555884e2fcc284f2842@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.02.1406251551460.4592@chino.kir.corp.google.com>
-References: <1402578017-16637-1-git-send-email-stefan.bader@canonical.com>
-	<20140612134149.GC4296@osiris>
-	<5399B301.9030108@canonical.com>
-	<alpine.DEB.2.02.1406241642280.22030@chino.kir.corp.google.com>
-	<53AA746A.3030303@canonical.com>
-	<alpine.DEB.2.02.1406251551460.4592@chino.kir.corp.google.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 25 Jun 2014 18:54:46 -0400
+Date: Wed, 25 Jun 2014 23:54:34 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Tomasz Figa <t.figa@samsung.com>
+Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>
+Subject: Re: [PATCH 2/2] ARM: EXYNOS: Add support for firmware-assisted
+	suspend/resume
+Message-ID: <20140625225434.GN32514@n2100.arm.linux.org.uk>
+References: <1403713114-18923-1-git-send-email-t.figa@samsung.com> <1403713114-18923-3-git-send-email-t.figa@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403713114-18923-3-git-send-email-t.figa@samsung.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Jun 2014 15:52:30 -0700 (PDT) David Rientjes <rientjes@google.com> wrote:
+On Wed, Jun 25, 2014 at 06:18:34PM +0200, Tomasz Figa wrote:
+> +static int exynos_suspend(void)
+> +{
+> +	/* Save Power control and Diagnostic registers */
+> +	asm ("mrc p15, 0, %0, c15, c0, 0\n"
+> +		"mrc p15, 0, %1, c15, c0, 1\n"
+> +		: "=r" (cp15_power), "=r" (cp15_diag) : : "cc");
+> +
+> +	writel(EXYNOS_SLEEP_MAGIC, sysram_ns_base_addr + EXYNOS_BOOT_FLAG);
+> +	writel(virt_to_phys(cpu_resume),
+> +		sysram_ns_base_addr + EXYNOS_BOOT_ADDR);
+> +
+> +	return cpu_suspend(0, exynos_cpu_suspend);
+> +}
+> +
+> +static int exynos_resume(void)
+> +{
+> +	exynos_smc(SMC_CMD_C15RESUME, cp15_power, cp15_diag, 0);
 
-> On Wed, 25 Jun 2014, Stefan Bader wrote:
-> 
-> > Heiko and I both had the same issue. Since some x86 hardware also reaches a lot
-> > of CPUs (hyperthreads included), we bumped the possible number of CPUs to 256 at
-> > least for the 64bit kernel. And that resulted in failed accesses to /proc/stat
-> > when memory became fragmented.
-> > So the first patch will avoid this on most systems. I have not seen this myself,
-> > but I would expect him to be happy with 1/2 already. For really excessive
-> > hardware 2/2 will close the gap.
-> > Since this is no critical bug, I am fine with 3.17, too. I have not done so,
-> > yet, but I could let our reporter try the patches (again, probably not verifying
-> > the second part). Just waited to do so to see whether the code settles down to
-> > these changes.
-> > 
-> 
-> Ok, thanks.  Looks like
-> 
-> proc-stat-convert-to-single_open_size.patch
-> fs-seq_file-fallback-to-vmalloc-allocation.patch
-> 
-> are destined for 3.17.
+I am told that these two registers are not expected to change value
+once the MMU is on.  This presents something of a problem where the
+secure monitor is involved, because what that means is that this
+really needs to be done before we get to C code.
 
-Actually I've bumped them into the 3.16 queue, cc stable.
+OMAP has similar issues where it needs to restore the L2 cache
+setup via SMC calls before the MMU is enabled, and they deal with
+this via some hand-crafted assembly code which runs prior to calling
+into cpu_resume.
+
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
