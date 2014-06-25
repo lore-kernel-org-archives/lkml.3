@@ -1,82 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755574AbaFYKTS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 06:19:18 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:25785 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755081AbaFYKTQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 06:19:16 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: <linux-arm-kernel@lists.infradead.org>
-CC: <linux-kernel@vger.kernel.org>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH] ARM: at91/dt: sam9261: remove slow RC osc
-Date: Wed, 25 Jun 2014 12:19:14 +0200
-Message-ID: <1403691554-22096-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
+	id S1756088AbaFYKUI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 06:20:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35633 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755432AbaFYKUF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 06:20:05 -0400
+Date: Wed, 25 Jun 2014 11:19:54 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: riel@redhat.com
+Cc: linux-kernel@vger.kernel.org, chegu_vinod@hp.com, peterz@infradead.com,
+        mingo@kernel.org
+Subject: Re: [PATCH 7/7] sched,numa: change scan period code to match intent
+Message-ID: <20140625101954.GY10819@suse.de>
+References: <1403538095-31256-1-git-send-email-riel@redhat.com>
+ <1403538095-31256-8-git-send-email-riel@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1403538095-31256-8-git-send-email-riel@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+On Mon, Jun 23, 2014 at 11:41:35AM -0400, riel@redhat.com wrote:
+> From: Rik van Riel <riel@redhat.com>
+> 
+> Reading through the scan period code and comment, it appears the
+> intent was to slow down NUMA scanning when a majority of accesses
+> are on the local node, specifically a local:remote ratio of 3:1.
+> 
+> However, the code actually tests local / (local + remote), and
+> the actual cut-off point was around 30% local accesses, well before
+> a task has actually converged on a node.
+> 
+> Changing the threshold to 7 means scanning slows down when a task
+> has around 70% of its accesses local, which appears to match the
+> intent of the code more closely.
+> 
+> Cc: Mel Gorman <mgorman@suse.de>
+> Signed-off-by: Rik van Riel <riel@redhat.com>
 
-The at91sam9261 doesn't actually have a slow RC oscillator, remove it from the
-dtsi.
+The threshold is indeed very low and was selected to favour slowing
+down scanning over convergence time. This was with the intent that we
+should never perform worse than disabling NUMA balancing -- an aim that
+has mixed results with recent Java-based workloads. With slower scanning,
+we converge eventually so for long-lived workloads we're ok.  On the other
+hand if scan rate is continually high and we're not converging then system
+overhead stays consistently high. I considered the slow convergence to be
+the lesser of two possible evils.
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Acked-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- arch/arm/boot/dts/at91sam9261.dtsi | 17 ++---------------
- 1 file changed, 2 insertions(+), 15 deletions(-)
+At the time of writing there were basic workloads that were only seeing about
+20-30% locality hence that threshold. Since then, things have changed that
+may affect that decision -- pseudo-interleaving was introduced for example.
 
-diff --git a/arch/arm/boot/dts/at91sam9261.dtsi b/arch/arm/boot/dts/at91sam9261.dtsi
-index c8e8b92df51b..a81aab4281a7 100644
---- a/arch/arm/boot/dts/at91sam9261.dtsi
-+++ b/arch/arm/boot/dts/at91sam9261.dtsi
-@@ -570,19 +570,6 @@
- 				#size-cells = <0>;
- 				#interrupt-cells = <1>;
- 
--				slow_rc_osc: slow_rc_osc {
--					compatible = "fixed-clock";
--					#clock-cells = <0>;
--					clock-frequency = <32768>;
--					clock-accuracy = <50000000>;
--				};
--
--				clk32k: slck {
--					compatible = "atmel,at91sam9260-clk-slow";
--					#clock-cells = <0>;
--					clocks = <&slow_rc_osc &slow_xtal>;
--				};
--
- 				main_osc: main_osc {
- 					compatible = "atmel,at91rm9200-clk-main-osc";
- 					#clock-cells = <0>;
-@@ -623,7 +610,7 @@
- 					compatible = "atmel,at91rm9200-clk-master";
- 					#clock-cells = <0>;
- 					interrupts-extended = <&pmc AT91_PMC_MCKRDY>;
--					clocks = <&clk32k>, <&main>, <&plla>, <&pllb>;
-+					clocks = <&slow_xtal>, <&main>, <&plla>, <&pllb>;
- 					atmel,clk-output-range = <0 94000000>;
- 					atmel,clk-divisors = <1 2 4 0>;
- 				};
-@@ -640,7 +627,7 @@
- 					#address-cells = <1>;
- 					#size-cells = <0>;
- 					interrupt-parent = <&pmc>;
--					clocks = <&clk32k>, <&main>, <&plla>, <&pllb>;
-+					clocks = <&slow_xtal>, <&main>, <&plla>, <&pllb>;
- 
- 					prog0: prog0 {
- 						#clock-cells = <0>;
+I've no problem with the patch because it could do with re-evaluation in
+the context of the other recent changes so
+
+Acked-by: Mel Gorman <mgorman@suse.de>
+
+Watch for consistently high scanning activity or high system CPU usage and
+if either is reported it's worth looking to see if that 70% threshold is
+ever been reached.
+
 -- 
-1.8.2.2
-
+Mel Gorman
+SUSE Labs
