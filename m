@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756797AbaFYMkI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 08:40:08 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:50466 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754195AbaFYMkG (ORCPT
+	id S1756812AbaFYMli (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 08:41:38 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:63407 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755297AbaFYMlh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 08:40:06 -0400
-Date: Wed, 25 Jun 2014 13:39:30 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Tomasz Torcz <tomek@pipebreaker.pl>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] vt: disable console blanking by default
-Message-ID: <20140625133930.223cccb5@alan.etchedpixels.co.uk>
-In-Reply-To: <20140618092730.GD22226@mother.pipebreaker.pl>
-References: <20140618092730.GD22226@mother.pipebreaker.pl>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Wed, 25 Jun 2014 08:41:37 -0400
+Message-ID: <53AAC376.7050705@linaro.org>
+Date: Wed, 25 Jun 2014 20:41:26 +0800
+From: zhangfei <zhangfei.gao@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Kishon Vijay Abraham I <kishon@ti.com>, mark.rutland@arm.com,
+        haifeng.yan@linaro.org, jchxue@gmail.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Jiancheng Xue <xuejiancheng@huawei.com>
+Subject: Re: [PATCH v2 1/2] Documentation: Document Hisilicon hix5hd2 sata
+ PHY
+References: <1403687648-29082-1-git-send-email-zhangfei.gao@linaro.org> <1403687648-29082-2-git-send-email-zhangfei.gao@linaro.org> <201406251416.49561.arnd@arndb.de>
+In-Reply-To: <201406251416.49561.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Jun 2014 11:27:31 +0200
-Tomasz Torcz <tomek@pipebreaker.pl> wrote:
 
-> 
-> >From ea7cf47e3230eda63aa6c46092719437f9bbae8e Mon Sep 17 00:00:00 2001
-> From: Tomasz Torcz <tomek@pipebreaker.pl>
-> Date: Wed, 18 Jun 2014 11:18:06 +0200
-> Subject: [PATCH] vt: disable console blanking by default
-> 
->   Remove default 10 minute blank interval. Instead: never blank by
->   default.
->   "Screensaving" is no longer useful.  Today it only provides
->   obstacle when interacting with text console, especially through
->   remote lights-out management solutions.
 
-Screensaving is extremely useful as is power management, and power prices
-are going up not down. We don't customise the upstream kernel just
-because J Random User happens to want his defaults.
+On 06/25/2014 08:16 PM, Arnd Bergmann wrote:
+> On Wednesday 25 June 2014, Zhangfei Gao wrote:
+>> From: Jiancheng Xue <xuejiancheng@huawei.com>
+>>
+>> Add necessary binding documentation SATA PHY on Hisilicon hix5hd2 soc.
+>>
+>> Signed-off-by: Jiancheng Xue <xuejiancheng@huawei.com>
+>> Signed-off-by: Zhangfei Gao <zhangfei.gao@linaro.org>
+>
+> We have had a couple of PHY drivers that were initially meant to be
+> single-purpose but then turned out to be for hardware that could
+> be put into multiple modes (SATA, gbit ethernet, PCIe, ...). Are
+> you sure that this particular device is SATA-only?
+>
 
-There are a couple of things you can sensibly do
+Yes, double confimed.
+Hix5hd2 phy diver only support sata phy, in fact, current soc only 
+support synposis phy, since some internal physical link.
+And hix5hd2 ethernet phy is already in hix5hd2_gmac.c.
+No pcie support on hix5hd2 platfrom.
 
-1. Just turn it off in software. It's run time configurable via setterm
-
-2. If you have a reliable way of detecting the presence of a remote
-console device and that device supports reporting when a connection is
-made/broken you could submit a patch to make it unblank on connect.
-
-Alan
+Thanks
