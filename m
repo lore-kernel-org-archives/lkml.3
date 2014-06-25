@@ -1,120 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757729AbaFYQ6y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 12:58:54 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:28172 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757648AbaFYQ6w (ORCPT
+	id S1757857AbaFYQ7L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 12:59:11 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:51628 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757812AbaFYQ7J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 12:58:52 -0400
-Message-ID: <53AAFF9B.5000403@oracle.com>
-Date: Wed, 25 Jun 2014 12:58:03 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 25 Jun 2014 12:59:09 -0400
+Message-ID: <53AAFF74.8090308@linux.vnet.ibm.com>
+Date: Wed, 25 Jun 2014 22:27:24 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Hans Verkuil <hverkuil@xs4all.nl>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        linux-media@vger.kernel.org
-CC: Sakari Ailus <sakari.ailus@iki.fi>, Katsuya MATSUBARA <matsu@igel.co.jp>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        linux-sh@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH v7] media: vb2: Take queue or device lock in mmap-related
- vb2 ioctl handlers
-References: <201308061239.27188.hverkuil@xs4all.nl> <1375819848-2658-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <537F5315.8030705@xs4all.nl>
-In-Reply-To: <537F5315.8030705@xs4all.nl>
-X-Enigmail-Version: 1.6
+To: Peter Zijlstra <peterz@infradead.org>,
+        Stephen Warren <swarren@wwwdotorg.org>
+CC: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
+Subject: Re: [PATCH 2/6] irq_work: Implement remote queueing
+References: <53A9E0A5.5040402@wwwdotorg.org> <20140625051234.GD6758@twins.programming.kicks-ass.net> <20140625051721.GG3588@twins.programming.kicks-ass.net> <53AA6E11.1000404@linux.vnet.ibm.com> <20140625093657.GN19860@laptop.programming.kicks-ass.net> <20140625093944.GV16155@laptop.programming.kicks-ass.net> <53AA9B68.4050104@linux.vnet.ibm.com> <53AA9C43.3020903@linux.vnet.ibm.com> <20140625101915.GO19860@laptop.programming.kicks-ass.net> <53AAF779.8060006@wwwdotorg.org> <20140625163820.GC3935@laptop>
+In-Reply-To: <20140625163820.GC3935@laptop>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14062516-1618-0000-0000-0000007530DC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping?
+On 06/25/2014 10:08 PM, Peter Zijlstra wrote:
+> On Wed, Jun 25, 2014 at 10:23:21AM -0600, Stephen Warren wrote:
+>> On 06/25/2014 04:19 AM, Peter Zijlstra wrote:
+>>> On Wed, Jun 25, 2014 at 03:24:11PM +0530, Srivatsa S. Bhat wrote:
+>>>> Wait, that was a stupid idea. hotplug_cfd() already invokes irq_work_run
+>>>> indirectly via flush_smp_call_function_queue(). So irq_work_cpu_notify()
+>>>> doesn't need to invoke it again, AFAIU. So perhaps we can get rid of
+>>>> irq_work_cpu_notify() altogether?
+>>>
+>>> Just so...
+>>>
+>>> getting up at 6am and sitting in an airport terminal doesn't seem to
+>>> agree with me; any more silly fail here?
+>>>
+>>> ---
+>>> Subject: irq_work: Remove BUG_ON in irq_work_run()
+>>> From: Peter Zijlstra <peterz@infradead.org>
+>>> Date: Wed Jun 25 07:13:07 CEST 2014
+>>>
+>>> Because of a collision with 8d056c48e486 ("CPU hotplug, smp: flush any
+>>> pending IPI callbacks before CPU offline"), which ends up calling
+>>> hotplug_cfd()->flush_smp_call_function_queue()->irq_work_run(), which
+>>> is not from IRQ context.
+>>>
+>>> And since that already calls irq_work_run() from the hotplug path,
+>>> remove our entire hotplug handling.
+>>
+>> Tested-by: Stephen Warren <swarren@nvidia.com>
+>>
+>> [with the s/static// already mentioned in this thread, obviously:-)]
+> 
+> Right; I pushed out a fixed version right before loosing my tubes at the
+> airport :-)
+> 
+> https://git.kernel.org/cgit/linux/kernel/git/peterz/queue.git/commit/?h=timers/nohz&id=921d8b81281ecdca686369f52165d04fa3505bd7
+> 
 
-On 05/23/2014 09:54 AM, Hans Verkuil wrote:
-> Hi Laurent,
+This version looks good.
+
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+
+Regards,
+Srivatsa S. Bhat
+
+
+> I've not gotten wu build bot spam on it so it must be good ;-)
 > 
-> This patch caused a circular locking dependency as reported by Sasha Levin:
-> 
-> https://lkml.org/lkml/2014/5/5/366
-> 
-> The reason is that copy_to/from_user is called in video_usercopy() with the
-> core lock held. The copy functions can fault which takes the mmap_sem. If it
-> was just video_usercopy() then it would be fairly easy to solve this, but
-> the copy_to_/from_user functions are also called from read and write and they
-> can be used in other unexpected places.
-> 
-> I'm not sure if vb2_fop_get_unmapped_area() is a problem. I suspect (but I'm
-> not sure) that when that one is called the mmap_sem isn't taken, in which
-> case taking the lock is fine.
-> 
-> But taking the lock in vb2_fop_mmap() does cause lockdep problems.
-> 
-> Ideally I would like to drop taking that lock in vb2_fop_mmap and resolve the
-> race condition that it intended to fix in a different way.
-> 
-> Regards,
-> 
-> 	Hans
-> 
-> On 08/06/2013 10:10 PM, Laurent Pinchart wrote:
->> The vb2_fop_mmap() and vb2_fop_get_unmapped_area() functions are plug-in
->> implementation of the mmap() and get_unmapped_area() file operations
->> that calls vb2_mmap() and vb2_get_unmapped_area() on the queue
->> associated with the video device. Neither the
->> vb2_fop_mmap/vb2_fop_get_unmapped_area nor the
->> v4l2_mmap/vb2_get_unmapped_area functions in the V4L2 core take any
->> lock, leading to race conditions between mmap/get_unmapped_area and
->> other buffer-related ioctls such as VIDIOC_REQBUFS.
->>
->> Fix it by taking the queue or device lock around the vb2_mmap() and
->> vb2_get_unmapped_area() calls.
->>
->> Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
->> ---
->>  drivers/media/v4l2-core/videobuf2-core.c | 18 ++++++++++++++++--
->>  1 file changed, 16 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/media/v4l2-core/videobuf2-core.c b/drivers/media/v4l2-core/videobuf2-core.c
->> index 9fc4bab..c9b50c7 100644
->> --- a/drivers/media/v4l2-core/videobuf2-core.c
->> +++ b/drivers/media/v4l2-core/videobuf2-core.c
->> @@ -2578,8 +2578,15 @@ EXPORT_SYMBOL_GPL(vb2_ioctl_expbuf);
->>  int vb2_fop_mmap(struct file *file, struct vm_area_struct *vma)
->>  {
->>  	struct video_device *vdev = video_devdata(file);
->> +	struct mutex *lock = vdev->queue->lock ? vdev->queue->lock : vdev->lock;
->> +	int err;
->>  
->> -	return vb2_mmap(vdev->queue, vma);
->> +	if (lock && mutex_lock_interruptible(lock))
->> +		return -ERESTARTSYS;
->> +	err = vb2_mmap(vdev->queue, vma);
->> +	if (lock)
->> +		mutex_unlock(lock);
->> +	return err;
->>  }
->>  EXPORT_SYMBOL_GPL(vb2_fop_mmap);
->>  
->> @@ -2685,8 +2692,15 @@ unsigned long vb2_fop_get_unmapped_area(struct file *file, unsigned long addr,
->>  		unsigned long len, unsigned long pgoff, unsigned long flags)
->>  {
->>  	struct video_device *vdev = video_devdata(file);
->> +	struct mutex *lock = vdev->queue->lock ? vdev->queue->lock : vdev->lock;
->> +	int ret;
->>  
->> -	return vb2_get_unmapped_area(vdev->queue, addr, len, pgoff, flags);
->> +	if (lock && mutex_lock_interruptible(lock))
->> +		return -ERESTARTSYS;
->> +	ret = vb2_get_unmapped_area(vdev->queue, addr, len, pgoff, flags);
->> +	if (lock)
->> +		mutex_unlock(lock);
->> +	return ret;
->>  }
->>  EXPORT_SYMBOL_GPL(vb2_fop_get_unmapped_area);
->>  #endif
->>
+> In any case, I'll add your tested-by and update later this evening.
 > 
 
