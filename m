@@ -1,108 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751678AbaFZTvT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 15:51:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50526 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751596AbaFZTvR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 15:51:17 -0400
-Date: Thu, 26 Jun 2014 15:50:36 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-mm@kvack.org, akpm@linux-foundation.org, tony.luck@intel.com,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        dave.hansen@linux.intel.com
-Subject: Re: [PATCH] hwpoison: Fix race with changing page during offlining
-Message-ID: <20140626195036.GA5311@nhori.redhat.com>
-References: <1403806972-14267-1-git-send-email-andi@firstfloor.org>
+	id S1751454AbaFZT4c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 15:56:32 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:57871 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750737AbaFZT4b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 15:56:31 -0400
+Date: Thu, 26 Jun 2014 21:56:29 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: x86@kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH] x86_64,entry: Fix RCX for traced syscalls
+Message-ID: <20140626195629.GC5714@two.firstfloor.org>
+References: <55466fbd36df1d011876135cf7ca5d40c05029c7.1403809591.git.luto@amacapital.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1403806972-14267-1-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <55466fbd36df1d011876135cf7ca5d40c05029c7.1403809591.git.luto@amacapital.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you for testing/reporting.
+> show RCX == RIP even under strace.
 
-On Thu, Jun 26, 2014 at 11:22:52AM -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> While running the mcelog test suite on 3.14 I hit the following VM_BUG_ON:
-> 
-> soft_offline: 0x56d4: unknown non LRU page type 3ffff800008000
+If you think it's really worth the extra instruction?
 
-This line comes from error path in get_any_page(), I guess this function was
-called for a thp (due to the race between thp collapse and soft offlining.)
-But in this case soft offlining is not tried, so there's no harm from this.
+It's not wrong, but it's not clear if it's useful.
 
-> page:ffffea000015b400 count:3 mapcount:2097169 mapping:          (null) index:0xffff8800056d7000
-> page flags: 0x3ffff800004081(locked|slab|head)
-> ------------[ cut here ]------------
-> kernel BUG at mm/rmap.c:1495!
-
-This seems to be caused by calling try_to_unmap() for a slab page, which
-was called from hwpoison_user_mappings().
+-Andi
 
 > 
-> I think what happened is that a LRU page turned into a slab page in parallel
-> with offlining. memory_failure initially tests for this case, but doesn't
-> retest later after the page has been locked.
-> 
-> This patch fixes this race. It also check for the case that the page
-> changed compound pages.
-> 
-> Unfortunately since it's a race I wasn't able to reproduce later,
-> so the specific case is not tested.
-> 
-> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Cc: dave.hansen@linux.intel.com
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 > ---
->  mm/memory-failure.c | 16 ++++++++++++++++
->  1 file changed, 16 insertions(+)
+>  arch/x86/kernel/entry_64.S | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
 > 
-> diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-> index 90002ea..e277726a 100644
-> --- a/mm/memory-failure.c
-> +++ b/mm/memory-failure.c
-> @@ -1143,6 +1143,22 @@ int memory_failure(unsigned long pfn, int trapno, int flags)
->  	lock_page(hpage);
->  
->  	/*
-> +	 * The page could have turned into a non LRU page or
-> +	 * changed compound pages during the locking.
-> +	 * If this happens just bail out.
-> +	 */
-> +	if (compound_head(p) != hpage) {
-> +		action_result(pfn, "different compound page after locking", IGNORED);
-> +		res = -EBUSY;
-> +		goto out;
-> +	}
+> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+> index b25ca96..6624e18 100644
+> --- a/arch/x86/kernel/entry_64.S
+> +++ b/arch/x86/kernel/entry_64.S
+> @@ -143,7 +143,8 @@ ENDPROC(native_usergs_sysret64)
+>  	movq \tmp,RSP+\offset(%rsp)
+>  	movq $__USER_DS,SS+\offset(%rsp)
+>  	movq $__USER_CS,CS+\offset(%rsp)
+> -	movq $-1,RCX+\offset(%rsp)
+> +	movq RIP+\offset(%rsp),\tmp  /* get rip */
+> +	movq \tmp,RCX+\offset(%rsp)  /* copy it to rcx as sysret would do */
+>  	movq R11+\offset(%rsp),\tmp  /* get eflags */
+>  	movq \tmp,EFLAGS+\offset(%rsp)
+>  	.endm
+> -- 
+> 1.9.3
+> 
 
-This is a useful check.
-
-> +	if (!PageLRU(hpage)) {
-> +		action_result(pfn, "non LRU after locking", IGNORED);
-> +		res = -EBUSY;
-> +		goto out;
-> +	}
-
-I think this makes sense in v3.14, but maybe redundant if the patch "hwpoison:
-fix the handling path of the victimized page frame that belong to non-LRU"
-from Chen Yucong is merged into mainline (now it's in linux-mmotm).
-
-And I think that the problem you report is caused by another part of hwpoison
-code, because we have PageSlab check at the beginning of hwpoison_user_mappings(),
-so if LRU page truned into slab page just before locking the page, we never
-reach try_to_unmap().
-I think this was caused by the code around lock migration after thp split
-in hwpoison_user_mappings(), which was introduced in commit 54b9dd14d09f
-("mm/memory-failure.c: shift page lock from head page to tail page after thp split").
-I guess the tail page (raw error page) was freed and turned into Slab page
-just after thp split and before locking the error page.
-So possible solution is to do page status check again after thp split.
-
-Thanks,
-Naoya Horiguchi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
