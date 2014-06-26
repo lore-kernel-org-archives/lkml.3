@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932506AbaFZMSB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 08:18:01 -0400
-Received: from smtprelay0164.hostedemail.com ([216.40.44.164]:34142 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932110AbaFZMR7 (ORCPT
+	id S1757638AbaFZMWe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 08:22:34 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:9700 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757431AbaFZMWb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 08:17:59 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 10,1,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:196:355:379:541:599:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1622:1711:1730:1747:1777:1792:2393:2525:2560:2563:2682:2685:2828:2859:2895:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3870:3871:3873:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:5007:6119:6671:7652:9025:10004:10400:10848:11026:11232:11658:11914:12043:12296:12438:12517:12519:12555:12740:13007:13025:13069:13095:13161:13229:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Cus
-X-HE-Tag: nose42_b2f2f4b00720
-X-Filterd-Recvd-Size: 2232
-Message-ID: <1403785075.7977.46.camel@joe-AO725>
-Subject: Re: [PATCH v2] scsi: bnx2i: bnx2i_iscsi.c:  Cleaning up variable is
- set more than once
-From: Joe Perches <joe@perches.com>
-To: Maurizio Lombardi <mlombard@redhat.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Eddie Wai <eddie.wai@broadcom.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 26 Jun 2014 05:17:55 -0700
-In-Reply-To: <53AC0E2A.4040907@redhat.com>
-References: <1403783689-10457-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	 <1403784303.7977.38.camel@joe-AO725> <53AC0E2A.4040907@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 26 Jun 2014 08:22:31 -0400
+X-AuditID: cbfee68e-b7fb96d000004bfc-c0-53ac108590ac
+From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+To: linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org
+Cc: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dianders@chromium.org, gregkh@linuxfoundation.org,
+        naveenkrishna.ch@gmail.com, cpgs@samsung.com
+Subject: [PATCH 0/3] ARM: DTS: create common dtsi for Peach pit and pi boards
+Date: Thu, 26 Jun 2014 17:49:05 +0530
+Message-id: <1403785148-20792-1-git-send-email-ch.naveen@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrELMWRmVeSWpSXmKPExsWyRsSkVrdVYE2wwf5HvBYvD2lazD9yjtXi
+	7LKDbBbNi9ezWcw78o7F4vKuOWwWM87vY7JYtO0/swOHx+yGiyweO2fdZffYP3cNu0ffllWM
+	Hp83yQWwRnHZpKTmZJalFunbJXBlHJ7RxVKwm6Pi+MU3jA2MX9i6GDk5JARMJG5tuwVli0lc
+	uLcezBYSWMooMeFxEUzN8dufmboYuYDi0xklGp7MZoNw+pkkDs6cwgpSxSZgJnFw0Wp2EFtE
+	wFFix5x/YB3MAgsYJVp3rWYCSQgL+Ep8utEMZrMIqEocW3wdrIFXwFWi7/4foEEcQOsUJOZM
+	sgHplRBoZ5dovdfECFEvIPFt8iEWiBpZiU0HmCGuk5Q4uOIGywRGwQWMDKsYRVMLkguKk9KL
+	jPSKE3OLS/PS9ZLzczcxAsP39L9nfTsYbx6wPsSYDDRuIrOUaHI+MPzzSuINjc2MLExNTI2N
+	zC3NSBNWEudd9DApSEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVAOj7dXqOu7sNU1XU0IDooOX
+	fGh+n2OvcUScYb6MvMFtxmcfpoTuf1Gq+T1rY8zlg0crBCs83Oo7J0q+PRLPLMn6cK6Dlsoy
+	fYscpno2mbW6vU8qbhp1n9x7Y8v7RVcScrQDd7+7LLB5cZzI4ysH7oZrbqvw5Hh+YiLHmqij
+	Gxlbn8Vd73KffcdPiaU4I9FQi7moOBEAhlMRZ3UCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEIsWRmVeSWpSXmKPExsVy+t9jQd1WgTXBBounsFm8PKRpMf/IOVaL
+	s8sOslk0L17PZjHvyDsWi8u75rBZzDi/j8li0bb/zA4cHrMbLrJ47Jx1l91j/9w17B59W1Yx
+	enzeJBfAGtXAaJORmpiSWqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6Dr
+	lpkDdIuSQlliTilQKCCxuFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCGMePwjC6Wgt0cFccv
+	vmFsYPzC1sXIySEhYCJx/PZnJghbTOLCvfVAcS4OIYHpjBINT2ZDOf1MEgdnTmEFqWITMJM4
+	uGg1O4gtIuAosWPOPyaQImaBBYwSrbtWg40SFvCV+HSjGcxmEVCVOLb4OlgDr4CrRN/9P0CD
+	OIDWKUjMmWQzgZF7ASPDKkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYzg+HgmtYNxZYPFIUYB
+	DkYlHt4Pj1cFC7EmlhVX5h5ilOBgVhLhFfm9OliINyWxsiq1KD++qDQntfgQoynQ8onMUqLJ
+	+cDYzSuJNzQ2MTc1NrU0sTAxs1QS5z3Qah0oJJCeWJKanZpakFoE08fEwSnVwBjPWbHgVvac
+	dXqLqr5dYV93RW+7wLqHtoVsf5a81mcR4zM9MtMhahmzv9O3SR3Z7PMOuz+r2Cr1vixn4fmW
+	nBnuAr/WR/qqXnp888+5lVte5aoeZb0XdShFM6Wj1WNfLaP/s35zjU0/tFXuWF7K26hc2PtT
+	JWSOgYRcf8PLq1s7SlomSnGuMFRiKc5INNRiLipOBAAzfMwrpQIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-06-26 at 14:12 +0200, Maurizio Lombardi wrote:
-> 
-> On 06/26/2014 02:05 PM, Joe Perches wrote:
-> > On Thu, 2014-06-26 at 13:54 +0200, Rickard Strandqvist wrote:
-> >> A struct member variable is set to different values without having used in between.
-> > []
-> >> diff --git a/drivers/scsi/bnx2i/bnx2i_iscsi.c b/drivers/scsi/bnx2i/bnx2i_iscsi.c
-> > []
-> >> @@ -1643,12 +1643,11 @@ static void bnx2i_conn_get_stats(struct iscsi_cls_conn *cls_conn,
-> >>  	stats->r2t_pdus = conn->r2t_pdus_cnt;
-> >>  	stats->tmfcmd_pdus = conn->tmfcmd_pdus_cnt;
-> >>  	stats->tmfrsp_pdus = conn->tmfrsp_pdus_cnt;
-> >> -	stats->custom_length = 3;
-> >>  	strcpy(stats->custom[2].desc, "eh_abort_cnt");
-> >>  	stats->custom[2].value = conn->eh_abort_cnt;
-> >>  	stats->digest_err = 0;
-> >>  	stats->timeout_err = 0;
-> >> -	stats->custom_length = 0;
-> >> +	stats->custom_length = 3;
-> > 
-> > You are changing custom_length from 0 to 3.
-> > 
-> > Why is this correct?
-> 
-> http://marc.info/?l=linux-scsi&m=140371670511706&w=2
+This patchset does the following
+1. Create a common dtsi file cros-exynos-peach.dtsi for
+   exynos5420-peach-pit.dts and exynos5800-peach-pi.dts
+2. Adds the ADC based Thermistor nodes and enables them in peach_pit.dts
+   and peach_pi.dts
+3. Adds the ADC based Thermistor nodes for Exynos5250 based Snow
+4. Corrects the vendor prefix for thermistors in exynos4412-trats2.dts
 
-Then the subject and commit message are wrong and need
-to be updated to reflect your text.
+Naveen Krishna Chatradhi (3):
+  ARM: DTS: use new compatible string for thermistors in trats2
+  ARM: DTS: Add NTC thermistor nodes to Exynos5250 based Snow
+  ARM: DTS: Add common dts file for Peach PIT and PI along with ADC
+    nodes
 
-This is a bugfix, not a cleanup.
+ arch/arm/boot/dts/cros-exynos-peach.dtsi   |   41 ++++++++++++++++++++++++++++
+ arch/arm/boot/dts/exynos4412-trats2.dts    |    4 +--
+ arch/arm/boot/dts/exynos5250-snow.dts      |   34 +++++++++++++++++++++++
+ arch/arm/boot/dts/exynos5420-peach-pit.dts |    6 ++++
+ arch/arm/boot/dts/exynos5800-peach-pi.dts  |    6 ++++
+ 5 files changed, 89 insertions(+), 2 deletions(-)
+ create mode 100644 arch/arm/boot/dts/cros-exynos-peach.dtsi
 
+-- 
+1.7.9.5
 
