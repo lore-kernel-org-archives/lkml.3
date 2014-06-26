@@ -1,75 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756988AbaFZCqE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 22:46:04 -0400
-Received: from mail-qg0-f49.google.com ([209.85.192.49]:54324 "EHLO
-	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753576AbaFZCqB (ORCPT
+	id S1757421AbaFZCvb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 22:51:31 -0400
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:37683 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754834AbaFZCva (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 22:46:01 -0400
+	Wed, 25 Jun 2014 22:51:30 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAMwGMjwAkKidt-B_aenConMbtsk6uSAcfJqXw0r6X2vyADo7Wg@mail.gmail.com>
-References: <CAMwGMjwmdcePeeT5rbZNxCVD7f-bgYgrwBW21hzEV20tkKg9Yg@mail.gmail.com>
-	<53AAEC38.1030506@samsung.com>
-	<CAMwGMjwAkKidt-B_aenConMbtsk6uSAcfJqXw0r6X2vyADo7Wg@mail.gmail.com>
-Date: Wed, 25 Jun 2014 22:46:00 -0400
-X-Google-Sender-Auth: E-Om2T0E-gqJztRd0PL_t8jowiM
-Message-ID: <CAMwGMjw6gxKSJ1dH=jx0htV9r=HDtYwqbx3OyZz2gWbt_f-4sQ@mail.gmail.com>
-Subject: Re: USB_MUSB_DA8XX with g_multi.ko
-From: Jon Ringle <jon@ringle.org>
-To: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-Cc: Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20140625201416.GH19569@lukather>
+References: <1403603980-31101-1-git-send-email-wens@csie.org> <20140625201416.GH19569@lukather>
+From: Chen-Yu Tsai <wens@csie.org>
+Date: Thu, 26 Jun 2014 10:51:08 +0800
+X-Google-Sender-Auth: TpXFgfO1_QatxZyVWn4efoXWSWU
+Message-ID: <CAGb2v65RZfdFKRGdWTph=W6jyccNo420ZSfdeFmWGpwnbHdYZQ@mail.gmail.com>
+Subject: Re: [PATCH v3 0/6] clk: sunxi: fixes, cleanups and A23 basic clocks
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        Emilio Lopez <emilio@elopez.com.ar>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-sunxi <linux-sunxi@googlegroups.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 11:52 AM, Jon Ringle <jon@ringle.org> wrote:
-> On Wed, Jun 25, 2014 at 11:35 AM, Andrzej Pietrasiewicz
-> <andrzej.p@samsung.com> wrote:
->> W dniu 25.06.2014 17:13, Jon Ringle pisze:
+On Thu, Jun 26, 2014 at 4:14 AM, Maxime Ripard
+<maxime.ripard@free-electrons.com> wrote:
+> On Tue, Jun 24, 2014 at 05:59:34PM +0800, Chen-Yu Tsai wrote:
+>> Hi everyone,
 >>
->>> In commit 787f5627bec80094db487bfcb401e9744f181aed
->>> usb: musb: make davinci and da8xx glues depend on BROKEN
->>>
->>> USB_MUSB_DA8XX was marked as BROKEN
->>>
->>> A few months ago, we updated the linux kernel on our AM1808 SoC based
->>> embedded board from Linux 2.6.33 to the latest long term 3.12.
->>>
->>> I am interested in having the USB gadget support on my board, so I
->>> removed BROKEN on USB_MUSB_DA8XX. I found that when I modprobe
->>> g_ether, g_serial, and g_mass_storage (by themselves), they all appear
->>> to work as expected, but if I try to use g_multi to have a composite
->>> device supporting all three simultaneously, I run into failure during
->>> initialization.
->>>
+>> This is a followup series to my A23 bare-minimum bringup series [1],
+>> which adds basic clock support for the A23 SoC. It is one of many
+>> split up from the original A23 series [2]. Yet to come are more
+>> clocks, reset controllers, pinctrl, prcm, and mmc.
 >>
->> <snip>
+>> The first patch fixes the reworked clock protection code merged in
+>> 3.16-rc1, which unintentionally made clock gates unprotectable.
 >>
+>> The second patch moves the remaining "ahb_sdram" clock to the
+>> protected clock list, now that it works.
 >>
->>>
->>>> From this I can see that it's failing on the following call in
->>>> fsg_bind():
->>>
->>> ep = usb_ep_autoconfig(gadget, &fsg_fs_bulk_in_desc);
->>>
+>> The third patch adds support for factor clocks that have an N factor
+>> not starting from 0. This is found on some PLLs in A31/A23.
 >>
->> Just a random guess (I don't know your hardware): how many bulk,
->> iso and interrupt endpoints does your hardware provide? Perhaps you
->> just run out of endpoints?
+>> The fourth patch adds table-based dividers for div clocks, as some
+>> clocks, such as apb0 divider on sun4/5/7i, apb1 on sun6/8i and axi
+>> on sun8i.
+>>
+>> The fifth patch adds support for the basic clocks in the A23, just
+>> PLL1 for cpus, and the system bus clocks and gates.
+>>
+>> The last patch adds the DT nodes for the newly added clocks.
+>>
+>> Patch 1 should be merged for 3.16, while the rest should go in 3.17.
 >
-> Perhaps... From the documentation it appears that I can have 4
-> simultaneous RX/TX endpoints... Is this not enough?
+> Why should it go in for 3.16? Is there any user for it yet?
 
-I now see that each function seems to require 2 endpoints, so with 4
-endpoints available, I can only have two functions with this hardware.
-I tested this successfully with g_adm_ms.ko having both serial and
-mass storage working. The only thing I needed to do was to remove the
-BROKEN dependency on USB_MUSB_DA8XX. Is there anything else I would
-have to do besides just removing BROKEN to get this accepted back into
-the kernel source tree?
+Yes. Your patch
 
-Jon
+   efb3184 clk: sun6i: Protect SDRAM gating bit
+
+from the series that added the new clock protection code.
+This adds "ahb1_sdram" to the list.
+
+Now, on my sun8i tablet, disabling "ahb1_sdram" doesn't seem to
+affect the system. So I'm not sure what this clock actually does.
+
+
+ChenYu
