@@ -1,459 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751771AbaFZUko (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 16:40:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55298 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750974AbaFZUkn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 16:40:43 -0400
-Date: Thu, 26 Jun 2014 16:39:59 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: linux-kernel@vger.kernel.org, kexec@lists.infradead.org
-Cc: ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org, greg@kroah.com,
-        bp@alien8.de, dyoung@redhat.com, chaowang@redhat.com, bhe@redhat.com,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH 00/15][V4] kexec: A new system call to allow in kernel
- loading
-Message-ID: <20140626203958.GD11136@redhat.com>
-References: <1403814824-7587-1-git-send-email-vgoyal@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403814824-7587-1-git-send-email-vgoyal@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751770AbaFZUm5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 16:42:57 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:51447 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751329AbaFZUm4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 16:42:56 -0400
+From: Michael Grzeschik <m.grzeschik@pengutronix.de>
+To: linux-mtd@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, dwmw2@infradead.org, kernel@pengutronix.de
+Subject: [PATCH 2/2] mxc_nand: use our own read_page function
+Date: Thu, 26 Jun 2014 22:42:48 +0200
+Message-Id: <1403815368-29469-2-git-send-email-m.grzeschik@pengutronix.de>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1403815368-29469-1-git-send-email-m.grzeschik@pengutronix.de>
+References: <1403815368-29469-1-git-send-email-m.grzeschik@pengutronix.de>
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:a236:9fff:fe00:814
+X-SA-Exim-Mail-From: mgr@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 26, 2014 at 04:33:29PM -0400, Vivek Goyal wrote:
-> Hi,
-> 
-> This is V4 of the patchset. Previous versions were posted here.
-> 
-> V1: https://lkml.org/lkml/2013/11/20/540
-> V2: https://lkml.org/lkml/2014/1/27/331
-> V3: https://lkml.org/lkml/2014/6/3/432
->
+The current approach of the read_page function is to iterate over all
+subpages and call the correct_data function. The correct_data function
+currently does the same. It iterates over all subpages and checks for
+correctable and uncorrectable data. This redundant call for each
+subpage leads to miscalculations.
 
-I used following kexec-tools patch to test my changes.
+This patch changes the driver to use its own read_page function in which
+we call the correct_data function only once per page. With that we do
+the failure and correct statistics counting inside this function.
 
-Thanks
-Vivek
-
-kexec-tools: Provide an option to make use of new system call
-
-This patch provides and option --kexec-file-syscall, to force use of
-new system call for kexec. Default is to continue to use old syscall.
-
-Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
 ---
- kexec/arch/x86_64/kexec-bzImage64.c |   86 +++++++++++++++++++++++
- kexec/kexec-syscall.h               |   32 ++++++++
- kexec/kexec.c                       |  132 +++++++++++++++++++++++++++++++++++-
- kexec/kexec.h                       |   11 ++-
- 4 files changed, 257 insertions(+), 4 deletions(-)
+ drivers/mtd/nand/mxc_nand.c | 73 ++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 69 insertions(+), 4 deletions(-)
 
-Index: kexec-tools/kexec/kexec.c
-===================================================================
---- kexec-tools.orig/kexec/kexec.c	2014-06-17 13:15:37.723825990 -0400
-+++ kexec-tools/kexec/kexec.c	2014-06-26 15:19:59.064940065 -0400
-@@ -51,6 +51,8 @@
- unsigned long long mem_min = 0;
- unsigned long long mem_max = ULONG_MAX;
- static unsigned long kexec_flags = 0;
-+/* Flags for kexec file (fd) based syscall */
-+static unsigned long kexec_file_flags = 0;
- int kexec_debug = 0;
+diff --git a/drivers/mtd/nand/mxc_nand.c b/drivers/mtd/nand/mxc_nand.c
+index 7fd495e..09e3682 100644
+--- a/drivers/mtd/nand/mxc_nand.c
++++ b/drivers/mtd/nand/mxc_nand.c
+@@ -141,6 +141,8 @@ struct mxc_nand_host;
  
- void dbgprint_mem_range(const char *prefix, struct memory_range *mr, int nr_mr)
-@@ -787,6 +789,19 @@ static int my_load(const char *type, int
- 	return result;
- }
- 
-+static int kexec_file_unload(unsigned long kexec_file_flags)
-+{
-+	int ret = 0;
-+
-+	ret = kexec_file_load(-1, -1, 0, NULL, kexec_file_flags);
-+	if (ret != 0) {
-+		/* The unload failed, print some debugging information */
-+		fprintf(stderr, "kexec_file_load(unload) failed\n: %s\n",
-+			strerror(errno));
-+	}
-+	return ret;
-+}
-+
- static int k_unload (unsigned long kexec_flags)
- {
- 	int result;
-@@ -925,6 +940,7 @@ void usage(void)
- 	       "                      (0 means it's not jump back or\n"
- 	       "                      preserve context)\n"
- 	       "                      to original kernel.\n"
-+	       " -s --kexec-file-syscall Use file based syscall for kexec operation\n"
- 	       " -d, --debug           Enable debugging to help spot a failure.\n"
- 	       "\n"
- 	       "Supported kernel file types and options: \n");
-@@ -1072,6 +1088,82 @@ char *concat_cmdline(const char *base, c
- 	return cmdline;
- }
- 
-+/* New file based kexec system call related code */
-+static int do_kexec_file_load(int fileind, int argc, char **argv,
-+			unsigned long flags) {
-+
-+	char *kernel;
-+	int kernel_fd, i;
-+	struct kexec_info info;
-+	int ret = 0;
-+	char *kernel_buf;
-+	off_t kernel_size;
-+
-+	memset(&info, 0, sizeof(info));
-+	info.segment = NULL;
-+	info.nr_segments = 0;
-+	info.entry = NULL;
-+	info.backup_start = 0;
-+	info.kexec_flags = flags;
-+
-+	info.file_mode = 1;
-+	info.initrd_fd = -1;
-+
-+	if (argc - fileind <= 0) {
-+		fprintf(stderr, "No kernel specified\n");
-+		usage();
-+		return -1;
-+	}
-+
-+	kernel = argv[fileind];
-+
-+	kernel_fd = open(kernel, O_RDONLY);
-+	if (kernel_fd == -1) {
-+		fprintf(stderr, "Failed to open file %s:%s\n", kernel,
-+				strerror(errno));
-+		return -1;
-+	}
-+
-+	/* slurp in the input kernel */
-+	kernel_buf = slurp_decompress_file(kernel, &kernel_size);
-+
-+	for (i = 0; i < file_types; i++) {
-+		if (file_type[i].probe(kernel_buf, kernel_size) >= 0)
-+			break;
-+	}
-+
-+	if (i == file_types) {
-+		fprintf(stderr, "Cannot determine the file type " "of %s\n",
-+				kernel);
-+		return -1;
-+	}
-+
-+	ret = file_type[i].load(argc, argv, kernel_buf, kernel_size, &info);
-+	if (ret < 0) {
-+		fprintf(stderr, "Cannot load %s\n", kernel);
-+		return ret;
-+	}
-+
-+	if (!is_kexec_file_load_implemented()) {
-+		fprintf(stderr, "syscall kexec_file_load not available.\n");
-+		return -1;
-+	}
-+
-+	/*
-+	 * If there is no initramfs, set KEXEC_FILE_NO_INITRAMFS flag so that
-+	 * kernel does not return error with negative initrd_fd.
-+	 */
-+	if (info.initrd_fd == -1)
-+		info.kexec_flags |= KEXEC_FILE_NO_INITRAMFS;
-+
-+	ret = kexec_file_load(kernel_fd, info.initrd_fd, info.command_line_len,
-+			info.command_line, info.kexec_flags);
-+	if (ret != 0)
-+		fprintf(stderr, "kexec_file_load failed: %s\n",
-+					strerror(errno));
-+	return ret;
-+}
-+
- 
- int main(int argc, char *argv[])
- {
-@@ -1083,6 +1175,7 @@ int main(int argc, char *argv[])
- 	int do_ifdown = 0;
- 	int do_unload = 0;
- 	int do_reuse_initrd = 0;
-+	int do_kexec_file_syscall = 0;
- 	void *entry = 0;
- 	char *type = 0;
- 	char *endptr;
-@@ -1095,6 +1188,23 @@ int main(int argc, char *argv[])
- 	};
- 	static const char short_options[] = KEXEC_ALL_OPT_STR;
- 
-+	/*
-+	 * First check if --use-kexec-file-syscall is set. That changes lot of
-+	 * things
-+	 */
-+	while ((opt = getopt_long(argc, argv, short_options,
-+				  options, 0)) != -1) {
-+		switch(opt) {
-+		case OPT_KEXEC_FILE_SYSCALL:
-+			do_kexec_file_syscall = 1;
-+			break;
-+		}
-+	}
-+
-+	/* Reset getopt for the next pass. */
-+	opterr = 1;
-+	optind = 1;
-+
- 	while ((opt = getopt_long(argc, argv, short_options,
- 				  options, 0)) != -1) {
- 		switch(opt) {
-@@ -1127,6 +1237,8 @@ int main(int argc, char *argv[])
- 			do_shutdown = 0;
- 			do_sync = 0;
- 			do_unload = 1;
-+			if (do_kexec_file_syscall)
-+				kexec_file_flags |= KEXEC_FILE_UNLOAD;
- 			break;
- 		case OPT_EXEC:
- 			do_load = 0;
-@@ -1169,7 +1281,10 @@ int main(int argc, char *argv[])
- 			do_exec = 0;
- 			do_shutdown = 0;
- 			do_sync = 0;
--			kexec_flags = KEXEC_ON_CRASH;
-+			if (do_kexec_file_syscall)
-+				kexec_file_flags |= KEXEC_FILE_ON_CRASH;
-+			else
-+				kexec_flags = KEXEC_ON_CRASH;
- 			break;
- 		case OPT_MEM_MIN:
- 			mem_min = strtoul(optarg, &endptr, 0);
-@@ -1194,6 +1309,9 @@ int main(int argc, char *argv[])
- 		case OPT_REUSE_INITRD:
- 			do_reuse_initrd = 1;
- 			break;
-+		case OPT_KEXEC_FILE_SYSCALL:
-+			/* We already parsed it. Nothing to do. */
-+			break;
- 		default:
- 			break;
- 		}
-@@ -1238,10 +1356,18 @@ int main(int argc, char *argv[])
- 	}
- 
- 	if (do_unload) {
--		result = k_unload(kexec_flags);
-+		if (do_kexec_file_syscall)
-+			result = kexec_file_unload(kexec_file_flags);
-+		else
-+			result = k_unload(kexec_flags);
- 	}
- 	if (do_load && (result == 0)) {
--		result = my_load(type, fileind, argc, argv, kexec_flags, entry);
-+		if (do_kexec_file_syscall)
-+			result = do_kexec_file_load(fileind, argc, argv,
-+						 kexec_file_flags);
-+		else
-+			result = my_load(type, fileind, argc, argv,
-+						kexec_flags, entry);
- 	}
- 	/* Don't shutdown unless there is something to reboot to! */
- 	if ((result == 0) && (do_shutdown || do_exec) && !kexec_loaded()) {
-Index: kexec-tools/kexec/kexec.h
-===================================================================
---- kexec-tools.orig/kexec/kexec.h	2014-06-17 13:15:37.723825990 -0400
-+++ kexec-tools/kexec/kexec.h	2014-06-17 13:44:14.634927130 -0400
-@@ -156,6 +156,13 @@ struct kexec_info {
- 	unsigned long kexec_flags;
- 	unsigned long backup_src_start;
- 	unsigned long backup_src_size;
-+	/* Set to 1 if we are using kexec file syscall */
-+	unsigned long file_mode :1;
-+
-+	/* Filled by kernel image processing code */
-+	int initrd_fd;
-+	char *command_line;
-+	int command_line_len;
- };
- 
- struct arch_map_entry {
-@@ -207,6 +214,7 @@ extern int file_types;
- #define OPT_UNLOAD		'u'
- #define OPT_TYPE		't'
- #define OPT_PANIC		'p'
-+#define OPT_KEXEC_FILE_SYSCALL	's'
- #define OPT_MEM_MIN             256
- #define OPT_MEM_MAX             257
- #define OPT_REUSE_INITRD	258
-@@ -230,9 +238,10 @@ extern int file_types;
- 	{ "mem-min",		1, 0, OPT_MEM_MIN }, \
- 	{ "mem-max",		1, 0, OPT_MEM_MAX }, \
- 	{ "reuseinitrd",	0, 0, OPT_REUSE_INITRD }, \
-+	{ "kexec-file-syscall",	0, 0, OPT_KEXEC_FILE_SYSCALL }, \
- 	{ "debug",		0, 0, OPT_DEBUG }, \
- 
--#define KEXEC_OPT_STR "h?vdfxluet:p"
-+#define KEXEC_OPT_STR "h?vdfxluet:ps"
- 
- extern void dbgprint_mem_range(const char *prefix, struct memory_range *mr, int nr_mr);
- extern void die(const char *fmt, ...)
-Index: kexec-tools/kexec/arch/x86_64/kexec-bzImage64.c
-===================================================================
---- kexec-tools.orig/kexec/arch/x86_64/kexec-bzImage64.c	2014-06-17 13:15:37.723825990 -0400
-+++ kexec-tools/kexec/arch/x86_64/kexec-bzImage64.c	2014-06-17 13:17:39.916833188 -0400
-@@ -235,6 +235,89 @@ static int do_bzImage64_load(struct kexe
+ struct mxc_nand_devtype_data {
+ 	void (*preset)(struct mtd_info *);
++	int (*read_page)(struct mtd_info *mtd, struct nand_chip *chip,
++			uint8_t *buf, int oob_required, int page);
+ 	void (*send_cmd)(struct mxc_nand_host *, uint16_t, int);
+ 	void (*send_addr)(struct mxc_nand_host *, uint16_t, int);
+ 	void (*send_page)(struct mtd_info *, unsigned int);
+@@ -649,6 +651,59 @@ static int mxc_nand_correct_data_v1(struct mtd_info *mtd, u_char *dat,
  	return 0;
  }
  
-+/* This assumes file is being loaded using file based kexec2 syscall */
-+int bzImage64_load_file(int argc, char **argv, struct kexec_info *info)
++/**
++ * mxc_nand_read_page_hwecc_v2_v3 - [REPLACEABLE] hardware ECC based page read function
++ * @mtd: mtd info structure
++ * @chip: nand chip info structure
++ * @buf: buffer to store read data
++ * @oob_required: caller requires OOB data read to chip->oob_poi
++ * @page: page number to read
++ *
++ * Not for syndrome calculating ECC controllers which need a special oob layout.
++ */
++static int
++mxc_nand_read_page_hwecc_v2_v3(struct mtd_info *mtd,
++			       struct nand_chip *chip,
++			       uint8_t *buf, int oob_required, int page)
 +{
-+	int ret = 0;
-+	char *command_line = NULL, *tmp_cmdline = NULL;
-+	const char *ramdisk = NULL, *append = NULL;
-+	int entry_16bit = 0, entry_32bit = 0;
-+	int opt;
-+	int command_line_len;
++	int i, eccsize = chip->ecc.size;
++	struct nand_chip *nand_chip = mtd->priv;
++	struct mxc_nand_host *host = nand_chip->priv;
++	int eccbytes = chip->ecc.bytes;
++	int eccsteps = chip->ecc.steps;
++	uint8_t *p = buf;
++	uint8_t *ecc_calc = chip->buffers->ecccalc;
++	uint8_t *ecc_code = chip->buffers->ecccode;
++	uint32_t *eccpos = chip->ecc.layout->eccpos;
++	unsigned int max_bitflips = 0;
++	u32 ecc_stat, err;
++	int stat;
 +
-+	/* See options.h -- add any more there, too. */
-+	static const struct option options[] = {
-+		KEXEC_ARCH_OPTIONS
-+		{ "command-line",	1, 0, OPT_APPEND },
-+		{ "append",		1, 0, OPT_APPEND },
-+		{ "reuse-cmdline",	0, 0, OPT_REUSE_CMDLINE },
-+		{ "initrd",		1, 0, OPT_RAMDISK },
-+		{ "ramdisk",		1, 0, OPT_RAMDISK },
-+		{ "real-mode",		0, 0, OPT_REAL_MODE },
-+		{ "entry-32bit",	0, 0, OPT_ENTRY_32BIT },
-+		{ 0,			0, 0, 0 },
-+	};
-+	static const char short_options[] = KEXEC_ARCH_OPT_STR "d";
++	ecc_stat = host->devtype_data->get_ecc_status(host);
++	for (i = 0; eccsteps; eccsteps--, i += eccbytes, p += eccsize) {
++		err = ecc_stat & 0xf;
++		chip->ecc.hwctl(mtd, NAND_ECC_READ);
++		chip->read_buf(mtd, p, eccsize);
++		chip->ecc.calculate(mtd, p, &ecc_calc[i]);
++		ecc_stat >>= 4;
 +
-+	while ((opt = getopt_long(argc, argv, short_options, options, 0)) != -1) {
-+		switch (opt) {
-+		default:
-+			/* Ignore core options */
-+			if (opt < OPT_ARCH_MAX)
-+				break;
-+		case OPT_APPEND:
-+			append = optarg;
-+			break;
-+		case OPT_REUSE_CMDLINE:
-+			tmp_cmdline = get_command_line();
-+			break;
-+		case OPT_RAMDISK:
-+			ramdisk = optarg;
-+			break;
-+		case OPT_REAL_MODE:
-+			entry_16bit = 1;
-+			break;
-+		case OPT_ENTRY_32BIT:
-+			entry_32bit = 1;
-+			break;
-+		}
 +	}
-+	command_line = concat_cmdline(tmp_cmdline, append);
-+	if (tmp_cmdline)
-+		free(tmp_cmdline);
-+	command_line_len = 0;
-+	if (command_line) {
-+		command_line_len = strlen(command_line) + 1;
-+	} else {
-+		command_line = strdup("\0");
-+		command_line_len = 1;
-+	}
++	ecc_stat = host->devtype_data->get_ecc_status(host);
++	chip->read_buf(mtd, chip->oob_poi, mtd->oobsize);
 +
-+	if (entry_16bit || entry_32bit) {
-+		fprintf(stderr, "Kexec2 syscall does not support 16bit"
-+			" or 32bit entry yet\n");
-+		ret = -1;
-+		goto out;
-+	}
++	for (i = 0; i < chip->ecc.total; i++)
++		ecc_code[i] = chip->oob_poi[eccpos[i]];
 +
-+	if (ramdisk) {
-+		info->initrd_fd = open(ramdisk, O_RDONLY);
-+		if (info->initrd_fd == -1) {
-+			fprintf(stderr, "Could not open initrd file %s:%s\n",
-+					ramdisk, strerror(errno));
-+			ret = -1;
-+			goto out;
-+		}
-+	}
++	eccsteps = chip->ecc.steps;
++	p = buf;
 +
-+	info->command_line = command_line;
-+	info->command_line_len = command_line_len;
-+	return ret;
-+out:
-+	free(command_line);
-+	return ret;
++	stat = chip->ecc.correct(mtd, p, &ecc_code[i], &ecc_calc[i]);
++	max_bitflips = max_t(unsigned int, max_bitflips, stat);
++
++	return max_bitflips;
 +}
 +
- int bzImage64_load(int argc, char **argv, const char *buf, off_t len,
- 	struct kexec_info *info)
++
+ static int mxc_nand_correct_data_v2_v3(struct mtd_info *mtd, u_char *dat,
+ 				 u_char *read_ecc, u_char *calc_ecc)
  {
-@@ -247,6 +330,9 @@ int bzImage64_load(int argc, char **argv
- 	int opt;
- 	int result;
+@@ -656,7 +711,7 @@ static int mxc_nand_correct_data_v2_v3(struct mtd_info *mtd, u_char *dat,
+ 	struct mxc_nand_host *host = nand_chip->priv;
+ 	u32 ecc_stat, err;
+ 	int no_subpages = 1;
+-	int ret = 0;
++	int ret = 0, broken = 0;
+ 	u8 ecc_bit_mask, err_limit = 0x1;
  
-+	if (info->file_mode)
-+		return bzImage64_load_file(argc, argv, info);
-+
- 	/* See options.h -- add any more there, too. */
- 	static const struct option options[] = {
- 		KEXEC_ARCH_OPTIONS
-Index: kexec-tools/kexec/kexec-syscall.h
-===================================================================
---- kexec-tools.orig/kexec/kexec-syscall.h	2014-06-17 13:15:37.723825990 -0400
-+++ kexec-tools/kexec/kexec-syscall.h	2014-06-26 15:19:59.063940065 -0400
-@@ -53,6 +53,19 @@
- #endif
- #endif /*ifndef __NR_kexec_load*/
+ 	ecc_bit_mask = 0xf;
+@@ -673,15 +728,21 @@ static int mxc_nand_correct_data_v2_v3(struct mtd_info *mtd, u_char *dat,
+ 	do {
+ 		err = ecc_stat & ecc_bit_mask;
+ 		if (err > err_limit) {
+-			printk(KERN_WARNING "UnCorrectable RS-ECC Error\n");
+-			return -1;
++			broken++;
+ 		} else {
+ 			ret += err;
+ 		}
+ 		ecc_stat >>= 4;
+ 	} while (--no_subpages);
  
-+#ifndef __NR_kexec_file_load
+-	pr_debug("%d Symbol Correctable RS-ECC Error\n", ret);
++	mtd->ecc_stats.corrected += ret;
++	if (ret)
++		printk("%d Symbol Correctable RS-ECC Error\n", ret);
 +
-+#ifdef __x86_64__
-+#define __NR_kexec_file_load	317
-+#endif
-+
-+#ifndef __NR_kexec_file_load
-+/* system call not available for the arch */
-+#define __NR_kexec_file_load	0xffffffff	/* system call not available */
-+#endif
-+
-+#endif /*ifndef __NR_kexec_file_load*/
-+
- struct kexec_segment;
++	mtd->ecc_stats.failed += broken;
++	if (broken)
++		printk(KERN_WARNING "%d Symbol UnCorrectable RS-ECC Error\n",
++			 broken);
  
- static inline long kexec_load(void *entry, unsigned long nr_segments,
-@@ -61,10 +74,29 @@ static inline long kexec_load(void *entr
- 	return (long) syscall(__NR_kexec_load, entry, nr_segments, segments, flags);
+ 	return ret;
  }
+@@ -1244,6 +1305,7 @@ static const struct mxc_nand_devtype_data imx27_nand_devtype_data = {
+ /* v21: i.MX25, i.MX35 */
+ static const struct mxc_nand_devtype_data imx25_nand_devtype_data = {
+ 	.preset = preset_v2,
++	.read_page = mxc_nand_read_page_hwecc_v2_v3,
+ 	.send_cmd = send_cmd_v1_v2,
+ 	.send_addr = send_addr_v1_v2,
+ 	.send_page = send_page_v2,
+@@ -1270,6 +1332,7 @@ static const struct mxc_nand_devtype_data imx25_nand_devtype_data = {
+ /* v3.2a: i.MX51 */
+ static const struct mxc_nand_devtype_data imx51_nand_devtype_data = {
+ 	.preset = preset_v3,
++	.read_page = mxc_nand_read_page_hwecc_v2_v3,
+ 	.send_cmd = send_cmd_v3,
+ 	.send_addr = send_addr_v3,
+ 	.send_page = send_page_v3,
+@@ -1297,6 +1360,7 @@ static const struct mxc_nand_devtype_data imx51_nand_devtype_data = {
+ /* v3.2b: i.MX53 */
+ static const struct mxc_nand_devtype_data imx53_nand_devtype_data = {
+ 	.preset = preset_v3,
++	.read_page = mxc_nand_read_page_hwecc_v2_v3,
+ 	.send_cmd = send_cmd_v3,
+ 	.send_addr = send_addr_v3,
+ 	.send_page = send_page_v3,
+@@ -1517,6 +1581,7 @@ static int mxcnd_probe(struct platform_device *pdev)
+ 	this->ecc.layout = host->devtype_data->ecclayout_512;
  
-+static inline int is_kexec_file_load_implemented(void) {
-+	if (__NR_kexec_file_load != 0xffffffff)
-+		return 1;
-+	return 0;
-+}
-+
-+static inline long kexec_file_load(int kernel_fd, int initrd_fd,
-+			unsigned long cmdline_len, const char *cmdline_ptr,
-+			unsigned long flags)
-+{
-+	return (long) syscall(__NR_kexec_file_load, kernel_fd, initrd_fd,
-+				cmdline_len, cmdline_ptr, flags);
-+}
-+
- #define KEXEC_ON_CRASH		0x00000001
- #define KEXEC_PRESERVE_CONTEXT	0x00000002
- #define KEXEC_ARCH_MASK		0xffff0000
- 
-+/* Flags for kexec file based system call */
-+#define KEXEC_FILE_UNLOAD	0x00000001
-+#define KEXEC_FILE_ON_CRASH	0x00000002
-+#define KEXEC_FILE_NO_INITRAMFS	0x00000004
-+
- /* These values match the ELF architecture values. 
-  * Unless there is a good reason that should continue to be the case.
-  */
+ 	if (host->pdata.hw_ecc) {
++		this->ecc.read_page = host->devtype_data->read_page;
+ 		this->ecc.calculate = mxc_nand_calculate_ecc;
+ 		this->ecc.hwctl = mxc_nand_enable_hwecc;
+ 		this->ecc.correct = host->devtype_data->correct_data;
+-- 
+2.0.0
+
