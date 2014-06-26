@@ -1,64 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757488AbaFZBNX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 21:13:23 -0400
-Received: from mail-bn1lp0141.outbound.protection.outlook.com ([207.46.163.141]:4798
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755871AbaFZBNV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 21:13:21 -0400
-Date: Wed, 25 Jun 2014 20:08:11 -0500
-From: Kim Phillips <kim.phillips@freescale.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: <a.motakis@virtualopensystems.com>, <alex.williamson@redhat.com>,
-        <kvmarm@lists.cs.columbia.edu>, <iommu@lists.linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, <kvm@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <jhovold@gmail.com>,
-        <will.deacon@arm.com>, <a.rigo@virtualopensystems.com>,
-        <rob.herring@calxeda.com>, <stuart.yoder@freescale.com>,
-        <rob@landley.net>, <grant.likely@linaro.org>,
-        <tech@virtualopensystems.com>, <clbchenlibo.chen@huawei.com>,
-        <christoffer.dall@linaro.org>, <eric.auger@linaro.org>,
-        Julien Grall <julien.grall@linaro.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
-        Alexander Graf <agraf@suse.de>
-Subject: Re: [PATCH] driver core: platform: add device binding path
- 'driver_override'
-Message-ID: <20140625200811.9363cac92fdbc9810bf5aa65@freescale.com>
-In-Reply-To: <20140603042842.GD14668@kroah.com>
-References: <1398700371-20096-1-git-send-email-a.motakis@virtualopensystems.com>
-	<1398700371-20096-2-git-send-email-a.motakis@virtualopensystems.com>
-	<20140602194258.5135925bf3c71b9c010fb409@freescale.com>
-	<20140603042842.GD14668@kroah.com>
-Organization: Freescale Semiconductor, Inc.
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
+	id S1757288AbaFZBQQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 21:16:16 -0400
+Received: from mga03.intel.com ([143.182.124.21]:6661 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753872AbaFZBQO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 21:16:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,548,1400050800"; 
+   d="scan'208";a="450081001"
+From: "Chen, Alvin" <alvin.chen@intel.com>
+To: Jingoo Han <jg1.han@samsung.com>
+CC: "'Alan Stern'" <stern@rowland.harvard.edu>,
+        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>
+Subject: RE: [PATCH] USB: ehci-pci: USB host controller support for Intel
+ Quark X1000
+Thread-Topic: [PATCH] USB: ehci-pci: USB host controller support for Intel
+ Quark X1000
+Thread-Index: Ac+PgeFF5BxdJArRXUevrLYTW6T4oQAj3wJQADH4evA=
+Date: Thu, 26 Jun 2014 01:16:08 +0000
+Message-ID: <4656BEB6164FC34F8171C6538F1A595B2E94729E@SHSMSX101.ccr.corp.intel.com>
+References: <1403625103-28078-1-git-send-email-alvin.chen@intel.com>
+ <1403625103-28078-2-git-send-email-alvin.chen@intel.com>
+ <000301cf9012$49d34f70$dd79ee50$%han@samsung.com>
+In-Reply-To: <000301cf9012$49d34f70$dd79ee50$%han@samsung.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(164054003)(199002)(24454002)(51704005)(189002)(4396001)(69596002)(84676001)(85306003)(93886003)(31966008)(74662001)(89996001)(99396002)(83072002)(26826002)(81156004)(86362001)(44976005)(6806004)(81342001)(19580395003)(83322001)(88136002)(19580405001)(81542001)(107046002)(106466001)(50226001)(76176999)(105606002)(104166001)(100306002)(97736001)(87286001)(93916002)(77156001)(50986999)(23726002)(36756003)(20776003)(64706001)(95666004)(92726001)(47776003)(46406003)(76482001)(79102001)(80022001)(92566001)(77982001)(33646001)(68736004)(85852003)(74502001)(87936001)(21056001)(62966002)(102836001)(104016002)(46102001)(50466002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB345;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 02543CD7CD
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=Kim.Phillips@freescale.com; 
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Jun 2014 21:28:42 -0700
-Greg KH <gregkh@linuxfoundation.org> wrote:
-
-> On Mon, Jun 02, 2014 at 07:42:58PM -0500, Kim Phillips wrote:
-> > You are the platform driver core maintainer: can you apply this to
-> > your driver-core tree now?
+> > This patch is to enable USB host controller for Intel Quark X1000. Add
+> > pci quirks to adjust the packet buffer in/out threshold value, and
+> > ensure EHCI packet buffer i/o threshold value is reconfigured to half.
 > 
-> Yes, I will after this merge window ends, it's too late for 3.16-rc1
-> with the window opening up a week early, sorry.
+> Please add more detailed description. For example, why is it necessary to
+> reconfigure the threshold value?
+> 
+This patch try to reconfigure the threshold value as maximal (0x7F DWord) as possible since the default value is just 0x20 DWord, and I will update the description.
 
-How about now?  fwiw, I just checked: it still applies cleanly.
+> >
+> > +
+> > +#define EHCI_INSNREG01		0x84
+> > +#define EHCI_INSNREG01_THRESH	0x007F007F	/* Threshold value */
+> 
+> What does this magic number mean?
+> Would you make it more readable?
+0x84 is the register offset, and the high word of '0x007F007F' is the out threshold and the low word is the in threshold. I will use some micros to make it more readable to avoid magic number in PATCH v2.
 
-Thanks,
 
-Kim
+
+> > +void usb_set_qrk_bulk_thresh(struct pci_dev *pdev) {
+> > +	void __iomem *base, *op_reg_base;
+> > +	u8 cap_length;
+> > +	u32 val;
+> > +
+> > +	if (!mmio_resource_enabled(pdev, 0))
+> > +		return;
+> > +
+> > +	base = pci_ioremap_bar(pdev, 0);
+> > +	if (base == NULL)
+> > +		return;
+> > +
+> > +	cap_length = readb(base);
+> > +	op_reg_base = base + cap_length;
+> > +
+> > +	val = readl(op_reg_base + EHCI_INSNREG01);
+> > +	dev_printk(KERN_INFO, &pdev->dev, "INSNREG01 is 0x%08x\n", val);
+> > +
+> > +	val = EHCI_INSNREG01_THRESH;
+> > +
+> > +	writel(val, op_reg_base + EHCI_INSNREG01);
+> > +
+> > +	val = readl(op_reg_base + EHCI_INSNREG01);
+> > +	dev_printk(KERN_INFO, &pdev->dev, "INSNREG01 is 0x%08x\n", val);
+> 
+> As Alan Stern said, These INFO message are noisy.
+> DEBUG level looks better.
+These messages are not necessary, I will remove them.
+
+
+
+> Best regards,
+> Jingoo Han
+> 
+> > +
+> > --
+> > 1.7.9.5
+
