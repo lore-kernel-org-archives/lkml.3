@@ -1,81 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753187AbaFZFYo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 01:24:44 -0400
-Received: from mga01.intel.com ([192.55.52.88]:30082 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751765AbaFZFYm convert rfc822-to-8bit (ORCPT
+	id S1753376AbaFZF07 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 01:26:59 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:40980 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752799AbaFZF05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 01:24:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,548,1400050800"; 
-   d="scan'208";a="553469362"
-From: "Chen, Alvin" <alvin.chen@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Ong, Boon Leong" <boon.leong.ong@intel.com>
-Subject: RE: [PATCH] USB: ehci-pci: USB host controller support for Intel
- Quark X1000
-Thread-Topic: [PATCH] USB: ehci-pci: USB host controller support for Intel
- Quark X1000
-Thread-Index: AQHPj7VO5BxdJArRXUevrLYTW6T4oZuBj+kg
-Date: Thu, 26 Jun 2014 05:24:39 +0000
-Message-ID: <4656BEB6164FC34F8171C6538F1A595B2E94733A@SHSMSX101.ccr.corp.intel.com>
-References: <1403625103-28078-2-git-send-email-alvin.chen@intel.com>
- <Pine.LNX.4.44L0.1406240959270.990-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1406240959270.990-100000@iolanthe.rowland.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 26 Jun 2014 01:26:57 -0400
+Message-ID: <53ABAF1E.5030405@free-electrons.com>
+Date: Thu, 26 Jun 2014 07:26:54 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
+To: Maxime Ripard <maxime.ripard@free-electrons.com>, linux@maxim.org.za,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+CC: Boris Brezillon <boris@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Thomas Petazzoni <thomas@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 13/13] AT91: PIT: Move the driver to drivers/clocksource
+References: <1403701605-26678-1-git-send-email-maxime.ripard@free-electrons.com> <1403701605-26678-14-git-send-email-maxime.ripard@free-electrons.com>
+In-Reply-To: <1403701605-26678-14-git-send-email-maxime.ripard@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > This patch is to enable USB host controller for Intel Quark X1000. Add 
->> pci quirks to adjust the packet buffer in/out threshold value, and 
-> >ensure EHCI packet buffer i/o threshold value is reconfigured to half
+
+On 25/06/2014 15:06, Maxime Ripard wrote:
+> Now that we don't depend on anyting in the mach-at91 directory, we can just
+> move the driver to where it belongs.
 >
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> ---
+>  arch/arm/mach-at91/Kconfig                                     | 4 ----
+>  arch/arm/mach-at91/Makefile                                    | 1 -
+>  drivers/clocksource/Kconfig                                    | 4 ++++
+>  drivers/clocksource/Makefile                                   | 1 +
+>  {arch/arm/mach-at91 => drivers/clocksource}/at91sam926x_time.c | 0
+>  5 files changed, 5 insertions(+), 5 deletions(-)
+>  rename {arch/arm/mach-at91 => drivers/clocksource}/at91sam926x_time.c (100%)
 >
-> What is the packet buffer in/out threshold value and why does it need to be
-> reconfigured to half?
-> 
-I go through the hardware specification carefully again. The EHCI buffer packet depth can be 512 bytes, and the in/out threshold is programmable and can be programmed to 512 bytes (0x80 DWord) only when isochronous/interrupt transactions are not initiated by the host controller. The default threshold value for Quark X1000 is 0x20 DWord, so this patch try to program it as maximal as possible, and it is 0x7F Dword since the host controller initiates isochronous/interrupt transactions .
+> diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
+> index a64412a020d3..b10db0990999 100644
+> --- a/arch/arm/mach-at91/Kconfig
+> +++ b/arch/arm/mach-at91/Kconfig
+> @@ -36,10 +36,6 @@ config AT91_SAM9G45_RESET
+>  	bool
+>  	default !ARCH_AT91X40
+>  
+> -config AT91_SAM9_TIME
+> -	select CLKSRC_OF if OF
+> -	bool
+> -
+>  config HAVE_AT91_SMD
+>  	bool
+>  
+> diff --git a/arch/arm/mach-at91/Makefile b/arch/arm/mach-at91/Makefile
+> index 78e9cec282f4..1a916ececbfd 100644
+> --- a/arch/arm/mach-at91/Makefile
+> +++ b/arch/arm/mach-at91/Makefile
+> @@ -10,7 +10,6 @@ obj-		:=
+>  obj-$(CONFIG_OLD_CLK_AT91)	+= clock.o
+>  obj-$(CONFIG_AT91_SAM9_ALT_RESET) += at91sam9_alt_reset.o
+>  obj-$(CONFIG_AT91_SAM9G45_RESET) += at91sam9g45_reset.o
+> -obj-$(CONFIG_AT91_SAM9_TIME)	+= at91sam926x_time.o
+>  obj-$(CONFIG_SOC_AT91SAM9)	+= sam9_smc.o
+>  
+>  # CPU-specific support
+> diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
+> index 065131cbfcc0..cd8b73ddbef3 100644
+> --- a/drivers/clocksource/Kconfig
+> +++ b/drivers/clocksource/Kconfig
+> @@ -118,6 +118,10 @@ config CLKSRC_ARM_GLOBAL_TIMER_SCHED_CLOCK
+>  	help
+>  	 Use ARM global timer clock source as sched_clock
+>  
+> +config AT91_SAM9_TIME
+> +	select CLKSRC_OF if OF
+> +	bool
+> +
+>  config CLKSRC_METAG_GENERIC
+>  	def_bool y if METAG
+>  	help
+> diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
+> index 800b1303c236..3088928070f8 100644
+> --- a/drivers/clocksource/Makefile
+> +++ b/drivers/clocksource/Makefile
+> @@ -1,5 +1,6 @@
+>  obj-$(CONFIG_CLKSRC_OF)	+= clksrc-of.o
+>  obj-$(CONFIG_ATMEL_TCB_CLKSRC)	+= tcb_clksrc.o
+> +obj-$(CONFIG_AT91_SAM9_TIME)	+= at91sam926x_time.o
 
-I will update the description in PATCH v2.
+I would rename both Kconfig and source file name into ATMEL_PIT and
+atmel_pit.c (or AT91_PIT and atmel_pit.c) to cleary show that this
+driver add support for the PIT block.
 
-> > +	val = readl(op_reg_base + EHCI_INSNREG01);
-> > +	dev_printk(KERN_INFO, &pdev->dev, "INSNREG01 is 0x%08x\n", val);
-> > +
-> > +	val = EHCI_INSNREG01_THRESH;
-> > +
-> > +	writel(val, op_reg_base + EHCI_INSNREG01);
-> > +
-> > +	val = readl(op_reg_base + EHCI_INSNREG01);
-> > +	dev_printk(KERN_INFO, &pdev->dev, "INSNREG01 is 0x%08x\n", val);
-> 
-> What good will these log messages do anybody?  Is there any reason not to
-> make them debug messages?  Or even leave them out entirely, since you
-> pretty much know beforehand what they're going to say?
-> 
-These messages are not necessary, I will remove them.
+>  obj-$(CONFIG_X86_PM_TIMER)	+= acpi_pm.o
+>  obj-$(CONFIG_SCx200HR_TIMER)	+= scx200_hrt.o
+>  obj-$(CONFIG_CS5535_CLOCK_EVENT_SRC)	+= cs5535-clockevt.o
+> diff --git a/arch/arm/mach-at91/at91sam926x_time.c b/drivers/clocksource/at91sam926x_time.c
+> similarity index 100%
+> rename from arch/arm/mach-at91/at91sam926x_time.c
+> rename to drivers/clocksource/at91sam926x_time.c
 
-> > +
-> > +	iounmap(base);
-> > +
-> > +}
-> > +EXPORT_SYMBOL_GPL(usb_set_qrk_bulk_thresh);
-> 
-> None of this material belongs in pci-quirks.c.  Please move it into ehci-pci.c.
-> 
-
-OK. I will move them to ehci-pci.c, since these two functions will not be called by other modules.
-
-> Alan Stern
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
 
