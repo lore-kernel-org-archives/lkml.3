@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756054AbaFZNlx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 09:41:53 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:45617 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751783AbaFZNlv (ORCPT
+	id S932164AbaFZNn1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 09:43:27 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:59443 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751557AbaFZNn0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 09:41:51 -0400
+	Thu, 26 Jun 2014 09:43:26 -0400
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>
+To: Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
+        Maxime Coquelin <maxime.coquelin@st.com>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Rob Herring <robh+dt@kernel.org>, linux-kernel@vger.kernel.org,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, linux-arm-kernel@lists.infradead.org,
+        kernel@stlinux.com, linux-kernel@vger.kernel.org,
         devicetree@vger.kernel.org
-Subject: [PATCH] pinctrl: pinctrl-single.c:  Cleaning up values that are never used
-Date: Thu, 26 Jun 2014 15:43:01 +0200
-Message-Id: <1403790181-11506-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Subject: [PATCH] pinctrl: pinctrl-st.c:  Cleaning up values that are never used
+Date: Thu, 26 Jun 2014 15:44:32 +0200
+Message-Id: <1403790272-11635-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,26 +31,34 @@ This was found using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/pinctrl/pinctrl-single.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/pinctrl/pinctrl-st.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/pinctrl/pinctrl-single.c b/drivers/pinctrl/pinctrl-single.c
-index 2960557..36fd7aa 100644
---- a/drivers/pinctrl/pinctrl-single.c
-+++ b/drivers/pinctrl/pinctrl-single.c
-@@ -1739,11 +1739,10 @@ static void pcs_irq_chain_handler(unsigned int irq, struct irq_desc *desc)
- {
- 	struct pcs_soc_data *pcs_soc = irq_desc_get_handler_data(desc);
- 	struct irq_chip *chip;
--	int res;
+diff --git a/drivers/pinctrl/pinctrl-st.c b/drivers/pinctrl/pinctrl-st.c
+index 1bd6363bc9..d3bd687 100644
+--- a/drivers/pinctrl/pinctrl-st.c
++++ b/drivers/pinctrl/pinctrl-st.c
+@@ -1178,9 +1178,7 @@ static int st_pctl_dt_parse_groups(struct device_node *np,
+ 	const __be32 *list;
+ 	struct property *pp;
+ 	struct st_pinconf *conf;
+-	phandle phandle;
+ 	struct device_node *pins;
+-	u32 pin;
+ 	int i = 0, npins = 0, nr_props;
  
- 	chip = irq_get_chip(irq);
- 	chained_irq_enter(chip, desc);
--	res = pcs_irq_handle(pcs_soc);
-+	pcs_irq_handle(pcs_soc);
- 	/* REVISIT: export and add handle_bad_irq(irq, desc)? */
- 	chained_irq_exit(chip, desc);
+ 	pins = of_get_child_by_name(np, "st,pins");
+@@ -1218,8 +1216,8 @@ static int st_pctl_dt_parse_groups(struct device_node *np,
+ 		conf = &grp->pin_conf[i];
  
+ 		/* bank & offset */
+-		phandle = be32_to_cpup(list++);
+-		pin = be32_to_cpup(list++);
++		be32_to_cpup(list++);
++		be32_to_cpup(list++);
+ 		conf->pin = of_get_named_gpio(pins, pp->name, 0);
+ 		conf->name = pp->name;
+ 		grp->pins[i] = conf->pin;
 -- 
 1.7.10.4
 
