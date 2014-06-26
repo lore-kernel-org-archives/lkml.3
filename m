@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757818AbaFZQPT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 12:15:19 -0400
-Received: from forward-corp1f.mail.yandex.net ([95.108.130.40]:50158 "EHLO
-	forward-corp1f.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756870AbaFZQPN (ORCPT
+	id S1757772AbaFZQPR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 12:15:17 -0400
+Received: from forward-corp1e.mail.yandex.net ([77.88.60.199]:49703 "EHLO
+	forward-corp1e.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757268AbaFZQPO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 12:15:13 -0400
-X-Yandex-Uniq: 6d4967fb-c0ef-4cf2-b361-aa9f110b7970
+	Thu, 26 Jun 2014 12:15:14 -0400
+X-Yandex-Uniq: 15d4fc76-3857-4a53-88a5-18db8f5b9501
 Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
 From: Stanislav Fomichev <stfomichev@yandex-team.ru>
 To: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
         acme@kernel.org, dsahern@gmail.com, stfomichev@yandex-team.ru,
         jolsa@redhat.com
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 5/5] perf trace: add possibility to switch off syscall events
-Date: Thu, 26 Jun 2014 20:14:28 +0400
-Message-Id: <1403799268-1367-6-git-send-email-stfomichev@yandex-team.ru>
+Subject: [PATCH 3/5] perf trace: add pagefaults record and replay support
+Date: Thu, 26 Jun 2014 20:14:26 +0400
+Message-Id: <1403799268-1367-4-git-send-email-stfomichev@yandex-team.ru>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403799268-1367-1-git-send-email-stfomichev@yandex-team.ru>
 References: <1403799268-1367-1-git-send-email-stfomichev@yandex-team.ru>
@@ -24,158 +24,130 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, we may either trace syscalls or syscalls+pagefaults. We'd
-like to be able to trace *only* pagefaults and this commit implements
-this feature.
+Previous commit added live pagefault trace support, this one adds
+record and replay support.
 
 Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
 ---
- tools/perf/Documentation/perf-trace.txt |  7 ++++
- tools/perf/builtin-trace.c              | 58 ++++++++++++++++++---------------
- 2 files changed, 39 insertions(+), 26 deletions(-)
+ tools/perf/builtin-trace.c | 63 +++++++++++++++++++++++++++++++++-------------
+ 1 file changed, 45 insertions(+), 18 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-trace.txt b/tools/perf/Documentation/perf-trace.txt
-index 2d7e041122dc..42ee3361ee43 100644
---- a/tools/perf/Documentation/perf-trace.txt
-+++ b/tools/perf/Documentation/perf-trace.txt
-@@ -112,6 +112,9 @@ the thread executes on the designated CPUs. Default is to monitor all CPUs.
- 	Trace pagefaults. Optionally, you can specify whether you want minor,
- 	major or all pagefaults. Default value is maj.
- 
-+--syscalls::
-+	Trace system calls. This options is enabled by default.
-+
- PAGEFAULTS
- ----------
- 
-@@ -135,6 +138,10 @@ for both IP and fault address in the form of dso@symbol+offset.
- EXAMPLES
- --------
- 
-+Trace only major pagefaults:
-+
-+ $ perf trace --no-syscalls -F
-+
- Trace syscalls, major and minor pagefaults:
- 
-  $ perf trace -F all
 diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 73d1266e6303..fb620ddc2230 100644
+index 9e6f0eb4063f..38f3dedcbb4a 100644
 --- a/tools/perf/builtin-trace.c
 +++ b/tools/perf/builtin-trace.c
-@@ -1215,6 +1215,7 @@ struct trace {
- 	bool			summary_only;
- 	bool			show_comm;
- 	bool			show_tool_stats;
-+	bool			trace_syscalls;
- 	int			trace_pgfaults;
- };
+@@ -1897,7 +1897,7 @@ static int parse_target_str(struct trace *trace)
+ 	return 0;
+ }
  
-@@ -1937,17 +1938,19 @@ static int trace__record(struct trace *trace, int argc, const char **argv)
- 	for (i = 0; i < ARRAY_SIZE(record_args); i++)
- 		rec_argv[j++] = record_args[i];
+-static int trace__record(int argc, const char **argv)
++static int trace__record(struct trace *trace, int argc, const char **argv)
+ {
+ 	unsigned int rec_argc, i, j;
+ 	const char **rec_argv;
+@@ -1906,34 +1906,52 @@ static int trace__record(int argc, const char **argv)
+ 		"-R",
+ 		"-m", "1024",
+ 		"-c", "1",
+-		"-e",
+ 	};
  
--	for (i = 0; i < sc_args_nr; i++)
--		rec_argv[j++] = sc_args[i];
--
--	/* event string may be different for older kernels - e.g., RHEL6 */
--	if (is_valid_tracepoint("raw_syscalls:sys_enter"))
--		rec_argv[j++] = "raw_syscalls:sys_enter,raw_syscalls:sys_exit";
--	else if (is_valid_tracepoint("syscalls:sys_enter"))
--		rec_argv[j++] = "syscalls:sys_enter,syscalls:sys_exit";
--	else {
--		pr_err("Neither raw_syscalls nor syscalls events exist.\n");
--		return -1;
-+	if (trace->trace_syscalls) {
-+		for (i = 0; i < sc_args_nr; i++)
-+			rec_argv[j++] = sc_args[i];
++	const char * const sc_args[] = { "-e", };
++	unsigned int sc_args_nr = ARRAY_SIZE(sc_args);
++	const char * const majpf_args[] = { "-e", "major-faults" };
++	unsigned int majpf_args_nr = ARRAY_SIZE(majpf_args);
++	const char * const minpf_args[] = { "-e", "minor-faults" };
++	unsigned int minpf_args_nr = ARRAY_SIZE(minpf_args);
 +
-+		/* event string may be different for older kernels - e.g., RHEL6 */
-+		if (is_valid_tracepoint("raw_syscalls:sys_enter"))
-+			rec_argv[j++] = "raw_syscalls:sys_enter,raw_syscalls:sys_exit";
-+		else if (is_valid_tracepoint("syscalls:sys_enter"))
-+			rec_argv[j++] = "syscalls:sys_enter,syscalls:sys_exit";
-+		else {
-+			pr_err("Neither raw_syscalls nor syscalls events exist.\n");
-+			return -1;
-+		}
- 	}
+ 	/* +1 is for the event string below */
+-	rec_argc = ARRAY_SIZE(record_args) + 1 + argc;
++	rec_argc = ARRAY_SIZE(record_args) + sc_args_nr + 1 +
++		majpf_args_nr + minpf_args_nr + argc;
+ 	rec_argv = calloc(rec_argc + 1, sizeof(char *));
  
- 	if (trace->trace_pgfaults & TRACE_PFMAJ)
-@@ -2020,10 +2023,13 @@ static int trace__run(struct trace *trace, int argc, const char **argv)
+ 	if (rec_argv == NULL)
+ 		return -ENOMEM;
+ 
++	j = 0;
+ 	for (i = 0; i < ARRAY_SIZE(record_args); i++)
+-		rec_argv[i] = record_args[i];
++		rec_argv[j++] = record_args[i];
++
++	for (i = 0; i < sc_args_nr; i++)
++		rec_argv[j++] = sc_args[i];
+ 
+ 	/* event string may be different for older kernels - e.g., RHEL6 */
+ 	if (is_valid_tracepoint("raw_syscalls:sys_enter"))
+-		rec_argv[i] = "raw_syscalls:sys_enter,raw_syscalls:sys_exit";
++		rec_argv[j++] = "raw_syscalls:sys_enter,raw_syscalls:sys_exit";
+ 	else if (is_valid_tracepoint("syscalls:sys_enter"))
+-		rec_argv[i] = "syscalls:sys_enter,syscalls:sys_exit";
++		rec_argv[j++] = "syscalls:sys_enter,syscalls:sys_exit";
+ 	else {
+ 		pr_err("Neither raw_syscalls nor syscalls events exist.\n");
+ 		return -1;
+ 	}
+-	i++;
+ 
+-	for (j = 0; j < (unsigned int)argc; j++, i++)
+-		rec_argv[i] = argv[j];
++	if (trace->trace_pgfaults & TRACE_PFMAJ)
++		for (i = 0; i < majpf_args_nr; i++)
++			rec_argv[j++] = majpf_args[i];
++
++	if (trace->trace_pgfaults & TRACE_PFMIN)
++		for (i = 0; i < minpf_args_nr; i++)
++			rec_argv[j++] = minpf_args[i];
++
++	for (i = 0; i < (unsigned int)argc; i++)
++		rec_argv[j++] = argv[i];
+ 
+-	return cmd_record(i, rec_argv, NULL);
++	return cmd_record(j, rec_argv, NULL);
+ }
+ 
+ static size_t trace__fprintf_thread_summary(struct trace *trace, FILE *fp);
+@@ -2224,6 +2242,14 @@ static int trace__replay(struct trace *trace)
  		goto out;
  	}
  
--	if (perf_evlist__add_syscall_newtp(evlist, trace__sys_enter, trace__sys_exit))
-+	if (trace->trace_syscalls &&
-+	    perf_evlist__add_syscall_newtp(evlist, trace__sys_enter,
-+					   trace__sys_exit))
- 		goto out_error_tp;
- 
--	perf_evlist__add_vfs_getname(evlist);
-+	if (trace->trace_syscalls)
-+		perf_evlist__add_vfs_getname(evlist);
- 
- 	if ((trace->trace_pgfaults & TRACE_PFMAJ) &&
- 	    perf_evlist__add_pgfault(evlist, PERF_COUNT_SW_PAGE_FAULTS_MAJ))
-@@ -2225,13 +2231,10 @@ static int trace__replay(struct trace *trace)
- 	if (evsel == NULL)
- 		evsel = perf_evlist__find_tracepoint_by_name(session->evlist,
- 							     "syscalls:sys_enter");
--	if (evsel == NULL) {
--		pr_err("Data file does not have raw_syscalls:sys_enter event\n");
--		goto out;
--	}
- 
--	if (perf_evsel__init_syscall_tp(evsel, trace__sys_enter) < 0 ||
--	    perf_evsel__init_sc_tp_ptr_field(evsel, args)) {
-+	if (evsel &&
-+	    (perf_evsel__init_syscall_tp(evsel, trace__sys_enter) < 0 ||
-+	    perf_evsel__init_sc_tp_ptr_field(evsel, args))) {
- 		pr_err("Error during initialize raw_syscalls:sys_enter event\n");
- 		goto out;
- 	}
-@@ -2241,13 +2244,9 @@ static int trace__replay(struct trace *trace)
- 	if (evsel == NULL)
- 		evsel = perf_evlist__find_tracepoint_by_name(session->evlist,
- 							     "syscalls:sys_exit");
--	if (evsel == NULL) {
--		pr_err("Data file does not have raw_syscalls:sys_exit event\n");
--		goto out;
--	}
--
--	if (perf_evsel__init_syscall_tp(evsel, trace__sys_exit) < 0 ||
--	    perf_evsel__init_sc_tp_uint_field(evsel, ret)) {
-+	if (evsel &&
-+	    (perf_evsel__init_syscall_tp(evsel, trace__sys_exit) < 0 ||
-+	    perf_evsel__init_sc_tp_uint_field(evsel, ret))) {
- 		pr_err("Error during initialize raw_syscalls:sys_exit event\n");
- 		goto out;
- 	}
-@@ -2451,6 +2450,7 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
- 		},
- 		.output = stdout,
- 		.show_comm = true,
-+		.trace_syscalls = true,
- 	};
- 	const char *output_name = NULL;
- 	const char *ev_qualifier_str = NULL;
-@@ -2490,6 +2490,7 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
- 		    "Show all syscalls and summary with statistics"),
- 	OPT_CALLBACK_DEFAULT('F', "pf", &trace.trace_pgfaults, "all|maj|min",
- 		     "Trace pagefaults", parse_pagefaults, "maj"),
-+	OPT_BOOLEAN(0, "syscalls", &trace.trace_syscalls, "Trace syscalls"),
- 	OPT_END()
- 	};
- 	int err;
-@@ -2510,6 +2511,11 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
- 	if (trace.summary_only)
- 		trace.summary = trace.summary_only;
- 
-+	if (!trace.trace_syscalls && !trace.trace_pgfaults) {
-+		pr_err("Please specify something to trace.\n");
-+		return -1;
++	evlist__for_each(session->evlist, evsel) {
++		if (evsel->attr.type == PERF_TYPE_SOFTWARE &&
++		    (evsel->attr.config == PERF_COUNT_SW_PAGE_FAULTS_MAJ ||
++		     evsel->attr.config == PERF_COUNT_SW_PAGE_FAULTS_MIN ||
++		     evsel->attr.config == PERF_COUNT_SW_PAGE_FAULTS))
++			evsel->handler = trace__pgfault;
 +	}
++
+ 	err = parse_target_str(trace);
+ 	if (err != 0)
+ 		goto out;
+@@ -2458,20 +2484,21 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	int err;
+ 	char bf[BUFSIZ];
+ 
+-	if ((argc > 1) && (strcmp(argv[1], "record") == 0))
+-		return trace__record(argc-2, &argv[2]);
+-
+-	argc = parse_options(argc, argv, trace_options, trace_usage, 0);
+-
+-	/* summary_only implies summary option, but don't overwrite summary if set */
+-	if (trace.summary_only)
+-		trace.summary = trace.summary_only;
++	argc = parse_options(argc, argv, trace_options, trace_usage,
++			     PARSE_OPT_STOP_AT_NON_OPTION);
+ 
+ 	if (trace.trace_pgfaults) {
+ 		trace.opts.sample_address = true;
+ 		trace.opts.sample_time = true;
+ 	}
+ 
++	if ((argc >= 1) && (strcmp(argv[0], "record") == 0))
++		return trace__record(&trace, argc-1, &argv[1]);
++
++	/* summary_only implies summary option, but don't overwrite summary if set */
++	if (trace.summary_only)
++		trace.summary = trace.summary_only;
 +
  	if (output_name != NULL) {
  		err = trace__open_output(&trace, output_name);
