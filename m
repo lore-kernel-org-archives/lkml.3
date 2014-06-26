@@ -1,62 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757394AbaFZCHa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 22:07:30 -0400
-Received: from smtprelay0020.hostedemail.com ([216.40.44.20]:44837 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755519AbaFZCH2 (ORCPT
+	id S1757595AbaFZCJF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 22:09:05 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:41212 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755308AbaFZCJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 22:07:28 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1714:1730:1747:1777:1792:1801:2393:2559:2562:2828:3138:3139:3140:3141:3142:3351:3622:3865:3866:3868:3870:3871:3873:4321:4605:5007:6119:7652:7903:10004:10400:10848:11232:11658:11914:12043:12214:12438:12517:12519:12555:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: sign92_40d10c7b5a911
-X-Filterd-Recvd-Size: 2127
-Message-ID: <1403748444.7977.2.camel@joe-AO725>
-Subject: Re: [PATCH] staging: wlan-ng/hfa384x_usb.c: add blank line after
- declarations
-From: Joe Perches <joe@perches.com>
-To: Cheng-Wei Lee <lee.rhapsody@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sherif Shehab Aldin <shehabaldin.sherif@gmail.com>,
-        Avinash Kumar <avi.kp.137@gmail.com>,
-        Peter Senna Tschudin <peter.senna@gmail.com>,
-        devel <devel@driverdev.osuosl.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Wed, 25 Jun 2014 19:07:24 -0700
-In-Reply-To: <CAJKoSVSBBawWBzOmQixTf+DZpWLk1YyNao2-5ESM1-VdTWnFpg@mail.gmail.com>
-References: <CAJKoSVSBBawWBzOmQixTf+DZpWLk1YyNao2-5ESM1-VdTWnFpg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 25 Jun 2014 22:09:03 -0400
+From: Ming Lei <ming.lei@canonical.com>
+To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-api@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Stefan Hajnoczi <stefanha@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH v2 0/2] block: virtio-blk: support multi vq per virtio-blk
+Date: Thu, 26 Jun 2014 10:08:44 +0800
+Message-Id: <1403748526-1923-1-git-send-email-ming.lei@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-06-26 at 09:55 +0800, Cheng-Wei Lee wrote:
-> This patch fixes the following checkpatch.pl issues in hfa384x_usb.c:
-> WARNING: Missing a blank line after declarations
+Hi,
 
-This time you've got the right subject, and right type of content,
-but unfortunately, the content is wrapped and can't be applied.
+These patches try to support multi virtual queues(multi-vq) in one
+virtio-blk device, and maps each virtual queue(vq) to blk-mq's
+hardware queue.
 
-Please read Documentation/email-clients.txt
-and resubmit.
+With this approach, both scalability and performance on virtio-blk
+device can get improved.
 
-> diff --git a/drivers/staging/wlan-ng/hfa384x_usb.c
-> b/drivers/staging/wlan-ng/hfa384x_usb.c
-> index 98343ff7..07cee56 100644
-> --- a/drivers/staging/wlan-ng/hfa384x_usb.c
-> +++ b/drivers/staging/wlan-ng/hfa384x_usb.c
-> @@ -3705,6 +3705,7 @@ static void hfa384x_usbout_callback(struct urb *urb)
->                 case -EPIPE:
->                         {
->                                 hfa384x_t *hw = wlandev->priv;
-> +
->                                 netdev_warn(hw->wlandev->netdev,
->                                             "%s tx pipe stalled:
-> requesting reset\n",
->                                             wlandev->netdev->name);
-> --
+For verifying the improvement, I implements virtio-blk multi-vq over
+qemu's dataplane feature, and both handling host notification
+from each vq and processing host I/O are still kept in the per-device
+iothread context, the change is based on qemu v2.0.0 release, and
+can be accessed from below tree:
+
+	git://kernel.ubuntu.com/ming/qemu.git #v2.0.0-virtblk-mq.1
+
+For enabling the multi-vq feature, 'num_queues=N' need to be added into
+'-device virtio-blk-pci ...' of qemu command line, and suggest to pass
+'vectors=N+1' to keep one MSI irq vector per each vq, and the feature
+depends on x-data-plane.
+
+Fio(libaio, randread, iodepth=64, bs=4K, jobs=N) is run inside VM to
+verify the improvement.
+
+I just create a small quadcore VM and run fio inside the VM, and
+num_queues of the virtio-blk device is set as 2, but looks the
+improvement is still obvious.
+
+1), about scalability
+- without mutli-vq feature
+	-- jobs=2, thoughput: 145K iops
+	-- jobs=4, thoughput: 100K iops
+- with mutli-vq feature
+	-- jobs=2, thoughput: 193K iops
+	-- jobs=4, thoughput: 202K iops
+
+2), about thoughput
+- without mutli-vq feature
+	-- thoughput: 145K iops
+- with mutli-vq feature
+	-- thoughput: 202K iops
+
+So in my test, even for a quad-core VM, if the virtqueue number
+is increased from 1 to 2, both scalability and performance can
+get improved a lot.
+
+TODO:
+	- adjust vq's irq smp_affinity according to blk-mq hw queue's cpumask
+
+V2: (suggestions from Michael and Dave Chinner)
+	- allocate virtqueues' pointers dynamically
+	- make sure the per-queue spinlock isn't kept in same cache line
+	- make each queue's name different
+
+V1:
+	- remove RFC since no one objects
+	- add '__u8 unused' for pending as suggested by Rusty
+	- use virtio_cread_feature() directly, suggested by Rusty
+
+Thanks,
+--
+Ming Lei
 
 
