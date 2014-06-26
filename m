@@ -1,101 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754154AbaFZGSu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 02:18:50 -0400
-Received: from jablonecka.jablonka.cz ([91.219.244.36]:42471 "EHLO
-	jablonecka.jablonka.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752790AbaFZGSt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 02:18:49 -0400
-X-Greylist: delayed 1699 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 Jun 2014 02:18:48 EDT
-Date: Thu, 26 Jun 2014 07:50:25 +0200
-From: Vojtech Pavlik <vojtech@suse.cz>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org, tj@kernel.org,
-        rostedt@goodmis.org, mingo@redhat.com, akpm@linux-foundation.org,
-        andi@firstfloor.org, paulmck@linux.vnet.ibm.com, pavel@ucw.cz,
-        jirislaby@gmail.com, Michael Matz <matz@suse.de>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: Re: [PATCH 00/21] kGraft
-Message-ID: <20140626055025.GA5660@suse.cz>
-References: <1403694329-3064-1-git-send-email-jslaby@suse.cz>
- <20140625135421.67cd5f5f@alan.etchedpixels.co.uk>
- <alpine.LNX.2.00.1406251748170.15939@pobox.suse.cz>
+	id S1753619AbaFZGXH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 02:23:07 -0400
+Received: from ozlabs.org ([103.22.144.67]:51422 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752790AbaFZGXF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 02:23:05 -0400
+Date: Thu, 26 Jun 2014 16:22:57 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Luis R. Rodriguez" <mcgrof@suse.com>, Petr Mladek <pmladek@suse.cz>
+Subject: linux-next: build failure after merge of the akpm-current tree
+Message-ID: <20140626162257.45f8e2aa@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-2
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.LNX.2.00.1406251748170.15939@pobox.suse.cz>
-X-Bounce-Cookie: It's a lemon tree, dear Watson!
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/4iev0dQvO52y3YmY+_m3rjm"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 05:54:50PM +0200, Jiri Kosina wrote:
-> > -		wait_event_freezable(khubd_wait,
-> > +		wait_event_freezable(khubd_wait,
-> >   ({ kgr_task_safe(current);
-> > 
-> > The changes are somewhat ugly with all the kgraft crap leaking into plces
-> > like jbd and freezer and usb. That says to me its not well isolated and
-> > there must be a better way of hiding that kgr stuff so we don't have to
-> > kepe putting more code into all the kthreads, and inevitably missing them
-> > or have people getting it wrong.
-> 
-> Tejun commented on this very issue during the first RFC submission a 
-> couple weeks ago. Part of his proposal was actually to take this as a good 
-> pretext to review the existing kernel threads, as the idea is that a big 
-> portion of those could easily be converted to workqueues.
+--Sig_/4iev0dQvO52y3YmY+_m3rjm
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-In the past few years there was a significant proliferation of kernel
-threads just for cases where something needs to be done from a process
-context now and then.
+Hi Andrew,
 
-This is underlined by the fact that on an average installation there are
-more kernel threads than real userspace processes.
+After merging the akpm tree, today's linux-next build (powerpc
+ppc44x_defconfig) failed like this:
 
-Converting these bits to workqueues would then also take care of their
-interaction with freezer, kthread_stop. The main loop code wouldn't have
-to be replicated over and over with slight variations. kgr_taks_safe
-would then plug into that rather elegantly.
+kernel/printk/printk.c: In function 'log_buf_add_cpu':
+kernel/printk/printk.c:269:37: error: 'CONFIG_LOG_CPU_MAX_BUF_SHIFT' undecl=
+ared (first use in this function)
+ #define __LOG_CPU_MAX_BUF_LEN (1 << CONFIG_LOG_CPU_MAX_BUF_SHIFT)
+                                     ^
+kernel/printk/printk.c:864:42: note: in expansion of macro '__LOG_CPU_MAX_B=
+UF_LEN'
+  cpu_extra =3D (num_possible_cpus() - 1) * __LOG_CPU_MAX_BUF_LEN;
+                                          ^
+kernel/printk/printk.c:269:37: note: each undeclared identifier is reported=
+ only once for each function it appears in
+ #define __LOG_CPU_MAX_BUF_LEN (1 << CONFIG_LOG_CPU_MAX_BUF_SHIFT)
+                                     ^
+kernel/printk/printk.c:864:42: note: in expansion of macro '__LOG_CPU_MAX_B=
+UF_LEN'
+  cpu_extra =3D (num_possible_cpus() - 1) * __LOG_CPU_MAX_BUF_LEN;
+                                          ^
 
-In the absence of this rework, kGraft hijacks the freezer and
-kthread_stop to pinpoint the 'end' of the main loop of most kernel
-threads and annotates the rest that doesn't handle freezing or stopping
-with kgr_task_safe directly.
+Caused by commit 58209adf633e ("printk: allow increasing the ring
+buffer depending on the number of CPUs").  CONFIG_LOG_CPU_MAX_BUF_SHIFT
+is not defined for this configuration.
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> It of course has its own implications, such as not being able to 
-> prioritize that easily, but there is probably a lot of low-hanging fruits 
-> where driver authors and their grandmas have been creating kthreads where 
-> workqueue would suffice.
+--Sig_/4iev0dQvO52y3YmY+_m3rjm
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-Indeed, on the other hand, there are enough workqueues today and on
-realtime systems the need for prioritizing them exists already.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-> But it's a very long term goal, and it's probably impractical to make 
-> kGraft dependent on it.
+iQIcBAEBCAAGBQJTq7xGAAoJEMDTa8Ir7ZwV57MP/2Qp3HzZctBV+3t2jcpBHRKS
+laNDfOjUno5ILbzyr6uY0ravTYS7ytwb7p4AduQS6ImHOY9f0d85ym32bqF5ePCp
+B6j5IJUJAlX5OP4Emaq0B1De74MrhttqEgMpDYjznKBHjtrFDIy/X16gBnvfNPiB
+t8SpuYMhG4RPn3g+9XskxtgWp8SLZExP9nzvrEk+gT3aaoWI3CT94lyYTFVBU3f7
+GiCGhu4NtMBW1SNB28qkqSOCXDUN3U8EO/oyWWI4YS6XwibXaHgpwbll50w2lWn6
+EyKMdOc62ov19vncG8lkOT1c/yvvczD0qVg2DlsDBJWY+owc1mcDeaRsgCkRaF+Z
+tTbyazIORt/aH/aUK0zTZS4HgRb7hwrfFYM+ajl5MVuja5Rwty0CkR4lWSvMugXO
+IjNkGPrIsEFoNfui5EIbtFzbBdoFjybBAckwkE5d7KGg2gqOXcq9Fuw+AdPryMi0
+Nq4hZejOShwiNa/UnBwYcT62kSLJTdi2kjc7uA9Tog+fv25+Hd7YgfzNK1BjNsnt
+f3ylcAqz4DjBkjp/b5z2qlUYPYea+BNQCndJDOQwsQVO8FcoYzgHOlNGAaldOcSk
+17TTa8USFVP0IuMpdgpSiobSkvndtSh0X1IF+wyUfWiv6d2+ZKnZhK4W9IErJYin
+Jg8u21m8XiimwkfSNukk
+=+uBF
+-----END PGP SIGNATURE-----
 
-Should the kernel thread changes turn to be a big issue, we could do the
-initial submission without them and depend on the kthread->workqueue
-rework. Once we add support for multiple patches in progress, the fact
-that we don't support kernel threads would not be as painful.
- 
-> > You add instructions to various hotpaths (despite the CONFIG
-> > comment).
-> 
-> Kernel entry is hidden behind _TIF_WORK_SYSCALL_ENTRY and
-> _TIF_ALLWORK_MASK, so it doesn't add any overhead if kGraft is not
-> enabled. What other hot paths do you refer to?
-
-As Jiøí says, I don't see any hot path where kGraft would add
-instructions: Kernel exit and entry are handled outside the hot path
-in the _TIF_WORK_SYSCALL_ENTRY and _TIF_ALLWORK_MASK handlers. [patch 15/21]
-
-It adds instructions into the main loops of kernel threads, but those
-can hardly be called hot paths as they mostly sleep for long times.
-
--- 
-Vojtech Pavlik
-Director SUSE Labs
+--Sig_/4iev0dQvO52y3YmY+_m3rjm--
