@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755462AbaFZHNk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 03:13:40 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:48352 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755308AbaFZHNh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 03:13:37 -0400
+	id S1755653AbaFZHNs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 03:13:48 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:35130 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755308AbaFZHNo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 03:13:44 -0400
 From: Sricharan R <r.sricharan@ti.com>
 To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <tony@atomide.com>, <santosh.shilimkar@ti.com>, <nm@ti.com>,
         <rnayak@ti.com>, <linux@arm.linux.org.uk>, <r.sricharan@ti.com>,
         <tglx@linutronix.de>, <jason@lakedaemon.net>, <joe@perches.com>
-Subject: [PATCH V4 05/16] irqchip: crossbar: Change allocation logic by reversing search for free irqs
-Date: Thu, 26 Jun 2014 12:40:23 +0530
-Message-ID: <1403766634-18543-6-git-send-email-r.sricharan@ti.com>
+Subject: [PATCH V4 08/16] irqchip: crossbar: Fix kerneldoc warning
+Date: Thu, 26 Jun 2014 12:40:26 +0530
+Message-ID: <1403766634-18543-9-git-send-email-r.sricharan@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1403766634-18543-1-git-send-email-r.sricharan@ti.com>
 References: <1403766634-18543-1-git-send-email-r.sricharan@ti.com>
@@ -27,51 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nishanth Menon <nm@ti.com>
 
-Reverse the search algorithm to ensure that address mapping and IRQ
-allocation logics are proper. This makes the below bugs visible sooner.
+Adding missing properties for kerneldoc (@write) and cleanup
+of harmless warnings while we are here.
 
-class 1. address space errors -> example:
-reg = <a size_b>
-ti,max-irqs =  is a wrong parameter
-
-class 2: irq-reserved list - which decides which entries in the
-address space is not actually wired in
-
-class 3: wrong list of routable-irqs.
-
-In general allocating from max to min tends to have benefits in
-ensuring the different issues that may be present in dts is easily
-caught at definition time, rather than at a later point in time.
+kerneldoc warnings:
+Warning(drivers/irqchip/irq-crossbar.c:27): missing initial short description on line:
+ * struct crossbar_device: crossbar device description
+Info(drivers/irqchip/irq-crossbar.c:27): Scanning doc for struct
+Warning(drivers/irqchip/irq-crossbar.c:39): No description found for parameter 'write'
+2 warnings
 
 Signed-off-by: Nishanth Menon <nm@ti.com>
 Signed-off-by: Sricharan R <r.sricharan@ti.com>
 Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 ---
- drivers/irqchip/irq-crossbar.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/irqchip/irq-crossbar.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/irqchip/irq-crossbar.c b/drivers/irqchip/irq-crossbar.c
-index 4be30c0..a39cb31 100644
+index f7eda9f..cee556b 100644
 --- a/drivers/irqchip/irq-crossbar.c
 +++ b/drivers/irqchip/irq-crossbar.c
-@@ -58,7 +58,7 @@ static inline int get_prev_map_irq(int cb_no)
- {
- 	int i;
+@@ -22,12 +22,14 @@
+ #define IRQ_SKIP	-3
+ #define GIC_IRQ_START	32
  
--	for (i = 0; i < cb->int_max; i++)
-+	for (i = cb->int_max - 1; i >= 0; i--)
- 		if (cb->irq_map[i] == cb_no)
- 			return i;
- 
-@@ -69,7 +69,7 @@ static inline int allocate_free_irq(int cb_no)
- {
- 	int i;
- 
--	for (i = 0; i < cb->int_max; i++) {
-+	for (i = cb->int_max - 1; i >= 0; i--) {
- 		if (cb->irq_map[i] == IRQ_FREE) {
- 			cb->irq_map[i] = cb_no;
- 			return i;
+-/*
++/**
++ * struct crossbar_device - crossbar device description
+  * @int_max: maximum number of supported interrupts
+  * @safe_map: safe default value to initialize the crossbar
+  * @irq_map: array of interrupts to crossbar number mapping
+  * @crossbar_base: crossbar base address
+  * @register_offsets: offsets for each irq number
++ * @write: register write function pointer
+  */
+ struct crossbar_device {
+ 	uint int_max;
 -- 
 1.7.9.5
 
