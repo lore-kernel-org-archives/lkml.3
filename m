@@ -1,93 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932220AbaFZQUD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 12:20:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38161 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755410AbaFZQUA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 12:20:00 -0400
-Date: Thu, 26 Jun 2014 17:19:56 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Jens Axboe <axboe@kernel.dk>,
-        Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH 6/6] cfq: Increase default value of target_latency
-Message-ID: <20140626161955.GH10819@suse.de>
-References: <1403683129-10814-1-git-send-email-mgorman@suse.de>
- <1403683129-10814-7-git-send-email-mgorman@suse.de>
- <x491tub65t9.fsf@segfault.boston.devel.redhat.com>
+	id S1756906AbaFZQWi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 12:22:38 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:43299 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754498AbaFZQWg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 12:22:36 -0400
+From: Josef Bacik <jbacik@fb.com>
+To: <linux-kernel@vger.kernel.org>, <rostedt@goodmis.org>
+Subject: [PATCH] trace-cmd: handle NULL comm name in .dat file
+Date: Thu, 26 Jun 2014 09:22:12 -0700
+Message-ID: <1403799732-30308-1-git-send-email-jbacik@fb.com>
+X-Mailer: git-send-email 2.0.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <x491tub65t9.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-06-26_06:2014-06-26,2014-06-26,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=22.4078557653337
+ compositescore=0.997695897463551 urlsuspect_oldscore=0.997695897463551
+ suspectscore=2 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=62764
+ rbsscore=0.997695897463551 spamscore=0
+ recipient_to_sender_domain_totalscore=6 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1406260166
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 26, 2014 at 11:36:50AM -0400, Jeff Moyer wrote:
-> Mel Gorman <mgorman@suse.de> writes:
-> 
-> > The existing CFQ default target_latency results in very poor performance
-> > for larger numbers of threads doing sequential reads. While this can be
-> > easily described as a tuning problem for users, it is one that is tricky
-> > to detect. This patch updates the default to benefit smaller machines.
-> > Dave Chinner points out that it is dangerous to assume that people know
-> > how to tune their IO scheduler. Jeff Moyer asked what workloads even
-> > care about threaded readers but it's reasonable to assume file,
-> > media, database and multi-user servers all experience large sequential
-> > readers from multiple sources at the same time.
-> 
-> Right, and I guess I hadn't considered that case as I thought folks used
-> more than one spinning disk for such workloads.
-> 
+Sometimes the comm field in the trace.dat file can be empty which means that the
+event parsing stuff can pass a NULL into pevent_register_comm.  To fix this just
+check if we are NULL and generate a bogus comm name for that PID.  This keeps us
+from segfaulting.  Thanks,
 
-They probably are but by and large my IO testing is based on simple
-storage. The reasoning is that if we get the simple case wrong then we
-probably are getting the complex case wrong too or at least not performing
-as well as we should. I also don't use SSD on my own machines for the
-same reason.
+Signed-off-by: Josef Bacik <jbacik@fb.com>
+---
+ event-parse.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-> My main reservation about this change is that you've only provided
-> numbers for one benchmark. 
-
-The other obvious one to run would be pgbench workloads but it's a rathole of
-arguing whether the configuration is valid and whether it's inappropriate
-to test on simple storage. The tiobench tests alone take a long time to
-complete -- 1.5 hours on a simple machine, 7 hours on a low-end NUMA machine.
-
-> To bump the default target_latency, ideally
-> we'd know how it affects other workloads.  However, I'm having a hard
-> time justifying putting any time into this for a couple of reasons:
-> 1) blk-mq pretty much does away with the i/o scheduler, and that is the
->    future
-> 2) there is work in progress to convert cfq into bfq, and that will
->    essentially make any effort put into this irrelevant (so it might be
->    interesting to test your workload with bfq)
-> 
-
-Ok, you've convinced me and I'll drop this patch. For anyone based on
-kernels from around this time they can tune CFQ or buy a better disk.
-Hopefully they will find this via Google.
-
-	There are multiple process sequential read regressions that are
-	getting progressively worse since 3.0 that are partially explained
-	by changes to CFQ. You may have experienced this if you are using
-	a kernel somewhere between 3.3 and 3.15. It's not really a bug in
-	CFQ but a difference in objectives. CFQ in later kernels is more
-	fair to threads and this partially sacrifices overall throughput
-	for lower latency experienced by each of the processes.  If you
-	see that the problem goes away using a different IO scheduler but
-	need to use CFQ for whatever reason then tune target_latency to
-	higher values. 600 appears to work reasonable well for a single
-	disk but you may need higher. Keep an eye on IO fairness if that
-	is something that your workload is sensitive to it. Your other
-	option is to disable low_latency in CFQ. As always, check what the
-	most recent kernel is particularly if there have been interesting
-	things happening in either the blk-mq or with the bfq IO scheduler.
-
+diff --git a/event-parse.c b/event-parse.c
+index 18b3587..00304fe 100644
+--- a/event-parse.c
++++ b/event-parse.c
+@@ -303,7 +303,10 @@ int pevent_register_comm(struct pevent *pevent, const char *comm, int pid)
+ 	if (!item)
+ 		return -1;
+ 
+-	item->comm = strdup(comm);
++	if (comm)
++		item->comm = strdup(comm);
++	else
++		item->comm = strdup("<...>");
+ 	if (!item->comm) {
+ 		free(item);
+ 		return -1;
 -- 
-Mel Gorman
-SUSE Labs
+2.0.0
+
