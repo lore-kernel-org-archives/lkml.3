@@ -1,91 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751525AbaFZTGL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 15:06:11 -0400
-Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:4012 "EHLO
-	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751361AbaFZTGK (ORCPT
+	id S1751238AbaFZTIx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 15:08:53 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:49618 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750844AbaFZTIv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 15:06:10 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ak8KAHFurFNXQz8N/2dsb2JhbABagw2rSAUBAQEBAQEFAW2Yf4ENF3WEMS8jgRo3iEYBwi0XhWSJHB2ELQWPeopfizqIO4NEOw
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Bob Copeland <me@bobcopeland.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH V2] FS/OMFS: block number sanity check during fill_super operation
-Date: Thu, 26 Jun 2014 21:04:10 +0200
-Message-Id: <1403809450-11750-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	Thu, 26 Jun 2014 15:08:51 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: x86@kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>, Andi Kleen <andi@firstfloor.org>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH] x86_64,entry: Fix RCX for traced syscalls
+Date: Thu, 26 Jun 2014 12:08:43 -0700
+Message-Id: <55466fbd36df1d011876135cf7ca5d40c05029c7.1403809591.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch defines maximum block number to 2^31.
-It also converts bitmap_size and array_size to
-unsigned int in omfs_get_imap.
+The int_ret_from_sys_call and syscall tracing code disagrees with
+the sysret path as to the value of RCX.
 
-Suggested-By: Linus Torvalds <torvalds@linux-foundation.org>
-Suggested-By: Bob Copeland <me@bobcopeland.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Bob Copeland <me@bobcopeland.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
+The Intel SDM, the AMD APM, and my laptop all agree that sysret
+returns with RCX == RIP.  The syscall tracing code does not respect
+this property.
+
+For example, this program:
+
+int main()
+{
+	extern const char syscall_rip[];
+	unsigned long rcx = 1;
+	unsigned long orig_rcx = rcx;
+	asm ("mov $-1, %%eax\n\t"
+	     "syscall\n\t"
+	     "syscall_rip:"
+	     : "+c" (rcx) : : "r11");
+	printf("syscall: RCX = %lX  RIP = %lX  orig RCX = %lx\n",
+	       rcx, (unsigned long)syscall_rip, orig_rcx);
+	return 0;
+}
+
+prints:
+syscall: RCX = 400556  RIP = 400556  orig RCX = 1
+
+Running it under strace gives this instead:
+syscall: RCX = FFFFFFFFFFFFFFFF  RIP = 400556  orig RCX = 1
+
+This changes FIXUP_TOP_OF_STACK to match sysret, causing the test to
+show RCX == RIP even under strace.
+
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
+ arch/x86/kernel/entry_64.S | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-This is untested.
-
-V2: 
-   use 1ul<<31 instead of 1<<31 to avoid comparing to negative value
-   (suggested by Linus Torvalds).
-
- fs/omfs/inode.c   | 10 +++++++---
- fs/omfs/omfs_fs.h |  1 +
- 2 files changed, 8 insertions(+), 3 deletions(-)
-
-diff --git a/fs/omfs/inode.c b/fs/omfs/inode.c
-index ec58c76..70d1d93 100644
---- a/fs/omfs/inode.c
-+++ b/fs/omfs/inode.c
-@@ -306,9 +306,7 @@ static const struct super_operations omfs_sops = {
-  */
- static int omfs_get_imap(struct super_block *sb)
- {
--	int bitmap_size;
--	int array_size;
--	int count;
-+	unsigned int bitmap_size, count, array_size;
- 	struct omfs_sb_info *sbi = OMFS_SB(sb);
- 	struct buffer_head *bh;
- 	unsigned long **ptr;
-@@ -473,6 +471,12 @@ static int omfs_fill_super(struct super_block *sb, void *data, int silent)
- 	sbi->s_sys_blocksize = be32_to_cpu(omfs_sb->s_sys_blocksize);
- 	mutex_init(&sbi->s_bitmap_lock);
- 
-+	if (sbi->s_num_blocks > OMFS_MAX_BLOCKS) {
-+		printk(KERN_ERR "omfs: sysblock number (%llx) is out of range\n",
-+		       (unsigned long long)sbi->s_num_blocks);
-+		goto out_brelse_bh;
-+	}
-+
- 	if (sbi->s_sys_blocksize > PAGE_SIZE) {
- 		printk(KERN_ERR "omfs: sysblock size (%d) is out of range\n",
- 			sbi->s_sys_blocksize);
-diff --git a/fs/omfs/omfs_fs.h b/fs/omfs/omfs_fs.h
-index ee5e432..83a9833 100644
---- a/fs/omfs/omfs_fs.h
-+++ b/fs/omfs/omfs_fs.h
-@@ -18,6 +18,7 @@
- #define OMFS_XOR_COUNT 19
- #define OMFS_MAX_BLOCK_SIZE 8192
- #define OMFS_MAX_CLUSTER_SIZE 8
-+#define OMFS_MAX_BLOCKS (1ul << 31)
- 
- struct omfs_super_block {
- 	char s_fill1[256];
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index b25ca96..6624e18 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -143,7 +143,8 @@ ENDPROC(native_usergs_sysret64)
+ 	movq \tmp,RSP+\offset(%rsp)
+ 	movq $__USER_DS,SS+\offset(%rsp)
+ 	movq $__USER_CS,CS+\offset(%rsp)
+-	movq $-1,RCX+\offset(%rsp)
++	movq RIP+\offset(%rsp),\tmp  /* get rip */
++	movq \tmp,RCX+\offset(%rsp)  /* copy it to rcx as sysret would do */
+ 	movq R11+\offset(%rsp),\tmp  /* get eflags */
+ 	movq \tmp,EFLAGS+\offset(%rsp)
+ 	.endm
 -- 
-1.8.4.5
+1.9.3
 
