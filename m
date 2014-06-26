@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755181AbaFZKNl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 06:13:41 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:42702 "EHLO
+	id S1756834AbaFZKOS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 06:14:18 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:42714 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750755AbaFZKNk (ORCPT
+	with ESMTP id S1753169AbaFZKNk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 26 Jun 2014 06:13:40 -0400
 From: Boris BREZILLON <boris.brezillon@free-electrons.com>
@@ -15,40 +15,62 @@ To: Nicolas Ferre <nicolas.ferre@atmel.com>,
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
         Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v2 0/2] ARM: at91: remove phy fixup for sama5d3xek boards
-Date: Thu, 26 Jun 2014 12:13:33 +0200
-Message-Id: <1403777615-25685-1-git-send-email-boris.brezillon@free-electrons.com>
+Subject: [PATCH v2 2/2] ARM: at91: remove phy fixup for sama5d3xek boards
+Date: Thu, 26 Jun 2014 12:13:35 +0200
+Message-Id: <1403777615-25685-3-git-send-email-boris.brezillon@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1403777615-25685-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1403777615-25685-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+These board specific delays are now configured through micrel's specific
+DT bindings (see Documentation/devicetree/bindings/net/micrel-ksz9021.txt).
 
-This patch removes a board specific hook for sama5d3xek boards from the
-sama5d3 generic DT board file.
+Remove this phy fixup registration from sama5 DT machine file to keep it
+as generic as possible.
 
-This hook (which register a phy fixup configuring board specific delays
-in the ksz9021 ethernet phy) is now replaced by the appropriate DT
-properties definitions in the sama5d3xcm.dtsi file.
-
-Best Regards,
-
-Boris
-
-Changes since v1:
- - fix txc-skew-ps and rxc-skew-ps delays
- - remove phy address info to handle Ronetix and Embest HW designs
-
-Boris BREZILLON (2):
-  ARM: at91/dt: describe rgmii ethernet phy connected to sama5d3xek
-    boards
-  ARM: at91: remove phy fixup for sama5d3xek boards
-
- arch/arm/boot/dts/sama5d3xcm.dtsi   | 15 +++++++++++++++
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+---
  arch/arm/mach-at91/board-dt-sama5.c | 22 ----------------------
- 2 files changed, 15 insertions(+), 22 deletions(-)
+ 1 file changed, 22 deletions(-)
 
+diff --git a/arch/arm/mach-at91/board-dt-sama5.c b/arch/arm/mach-at91/board-dt-sama5.c
+index d6fe04b..8c5814f 100644
+--- a/arch/arm/mach-at91/board-dt-sama5.c
++++ b/arch/arm/mach-at91/board-dt-sama5.c
+@@ -35,30 +35,8 @@ static void __init sama5_dt_timer_init(void)
+ 	at91sam926x_pit_init();
+ }
+ 
+-static int ksz9021rn_phy_fixup(struct phy_device *phy)
+-{
+-	int value;
+-
+-	/* Set delay values */
+-	value = MICREL_KSZ9021_RGMII_CLK_CTRL_PAD_SCEW | 0x8000;
+-	phy_write(phy, MICREL_KSZ9021_EXTREG_CTRL, value);
+-	value = 0xF2F4;
+-	phy_write(phy, MICREL_KSZ9021_EXTREG_DATA_WRITE, value);
+-	value = MICREL_KSZ9021_RGMII_RX_DATA_PAD_SCEW | 0x8000;
+-	phy_write(phy, MICREL_KSZ9021_EXTREG_CTRL, value);
+-	value = 0x2222;
+-	phy_write(phy, MICREL_KSZ9021_EXTREG_DATA_WRITE, value);
+-
+-	return 0;
+-}
+-
+ static void __init sama5_dt_device_init(void)
+ {
+-	if (of_machine_is_compatible("atmel,sama5d3xcm") &&
+-	    IS_ENABLED(CONFIG_PHYLIB))
+-		phy_register_fixup_for_uid(PHY_ID_KSZ9021, MICREL_PHY_ID_MASK,
+-			ksz9021rn_phy_fixup);
+-
+ 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+ }
+ 
 -- 
 1.8.3.2
 
