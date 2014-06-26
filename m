@@ -1,100 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435AbaFZF2S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 01:28:18 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:57546 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751557AbaFZF2Q (ORCPT
+	id S1753466AbaFZF3e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 01:29:34 -0400
+Received: from smtprelay0038.hostedemail.com ([216.40.44.38]:53395 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753050AbaFZF3d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 01:28:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <53ABAA34.6070006@kernel.dk>
-References: <1403748526-1923-1-git-send-email-ming.lei@canonical.com>
-	<53ABAA34.6070006@kernel.dk>
-Date: Thu, 26 Jun 2014 13:28:13 +0800
-Message-ID: <CACVXFVN4_uRKF4vsvACF43d9Km1rY8Qomwbs+6j2=PFz2eB2+w@mail.gmail.com>
-Subject: Re: [PATCH v2 0/2] block: virtio-blk: support multi vq per virtio-blk
-From: Ming Lei <ming.lei@canonical.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-api@vger.kernel.org,
-        Linux Virtualization <virtualization@lists.linux-foundation.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Stefan Hajnoczi <stefanha@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 26 Jun 2014 01:29:33 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3871:3872:3873:3874:4321:4823:5007:6691:7652:10004:10400:10848:11232:11658:11914:12296:12517:12519:12740:13019:13069:13161:13229:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: beam96_5333f85452241
+X-Filterd-Recvd-Size: 1633
+Message-ID: <1403760570.7977.28.camel@joe-AO725>
+Subject: Re: [PATCH] scripts/checkpatch.pl: Only emit LONG_LINE for --strict
+From: Joe Perches <joe@perches.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Andy Whitcroft <apw@canonical.com>, gregkh@linux-foundation.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Date: Wed, 25 Jun 2014 22:29:30 -0700
+In-Reply-To: <20140626050824.GB1645@thin>
+References: <20140625154629.GA21519@thin>
+	 <1403741107.28663.9.camel@joe-AO725> <20140626022448.GA22091@thin>
+	 <1403749983.7977.6.camel@joe-AO725> <20140626034430.GA22836@thin>
+	 <1403756211.7977.22.camel@joe-AO725> <20140626050824.GB1645@thin>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 26, 2014 at 1:05 PM, Jens Axboe <axboe@kernel.dk> wrote:
-> On 2014-06-25 20:08, Ming Lei wrote:
->>
->> Hi,
->>
->> These patches try to support multi virtual queues(multi-vq) in one
->> virtio-blk device, and maps each virtual queue(vq) to blk-mq's
->> hardware queue.
->>
->> With this approach, both scalability and performance on virtio-blk
->> device can get improved.
->>
->> For verifying the improvement, I implements virtio-blk multi-vq over
->> qemu's dataplane feature, and both handling host notification
->> from each vq and processing host I/O are still kept in the per-device
->> iothread context, the change is based on qemu v2.0.0 release, and
->> can be accessed from below tree:
->>
->>         git://kernel.ubuntu.com/ming/qemu.git #v2.0.0-virtblk-mq.1
->>
->> For enabling the multi-vq feature, 'num_queues=N' need to be added into
->> '-device virtio-blk-pci ...' of qemu command line, and suggest to pass
->> 'vectors=N+1' to keep one MSI irq vector per each vq, and the feature
->> depends on x-data-plane.
->>
->> Fio(libaio, randread, iodepth=64, bs=4K, jobs=N) is run inside VM to
->> verify the improvement.
->>
->> I just create a small quadcore VM and run fio inside the VM, and
->> num_queues of the virtio-blk device is set as 2, but looks the
->> improvement is still obvious.
->>
->> 1), about scalability
->> - without mutli-vq feature
->>         -- jobs=2, thoughput: 145K iops
->>         -- jobs=4, thoughput: 100K iops
->> - with mutli-vq feature
->>         -- jobs=2, thoughput: 193K iops
->>         -- jobs=4, thoughput: 202K iops
->>
->> 2), about thoughput
->> - without mutli-vq feature
->>         -- thoughput: 145K iops
->> - with mutli-vq feature
->>         -- thoughput: 202K iops
->
->
-> Of these numbers, I think it's important to highlight that the 2 thread case
-> is 33% faster and the 2 -> 4 thread case scales linearly (100%) while the
-> pre-patch case sees negative scaling going from 2 -> 4 threads (-39%).
+On Wed, 2014-06-25 at 22:08 -0700, Josh Triplett wrote:
 
-This is because my qemu implementation on multi vq only uses
-single iothread to handle requests from all vqs, and the only iothread
-is already at full load now, that said on host side the
-same fio test(single job) results is ~200K iops too.
+> Now, arguably the four leading tabs on those lines suggest the need for
+> some code refactoring; personally, I'd suggest changing DEEP_INDENTATION
+> to flag 4+ tabs rather than 6+ tabs as it currently does.
 
->
-> I haven't run your patches yet, but from looking at the code, it looks good.
-> It's pretty straightforward. See feel free to add my reviewed-by.
+There are _way too many_ 4+ tab indents for that to
+be sensible.
 
-Thanks a lot.
+> "trigraphs"?  Do you mean ternaries?  Yeah,
 
->
-> Rusty, do you want to ack this (and I'll slurp it up for 3.17) or take this
-> yourself? Or something else?
+Yup, those.
 
-That is great if this can be merged to 3.17.
+> Yeah, that one makes sense: if you have a comment to the right of a long
+> line, and the comment is what's making it long, it's easy enough to move
+> the comment before the line.
 
-Thanks,
---
-Ming Lei
+
+
