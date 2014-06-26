@@ -1,45 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757619AbaFZBR6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 21:17:58 -0400
-Received: from imap.thunk.org ([74.207.234.97]:58615 "EHLO imap.thunk.org"
+	id S1757677AbaFZBSH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 21:18:07 -0400
+Received: from mga02.intel.com ([134.134.136.20]:42867 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757232AbaFZBR5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 21:17:57 -0400
-Date: Wed, 25 Jun 2014 21:17:51 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Jan Kara <jack@suse.cz>
-Subject: Re: [PATCH 1/1] FS/JBD:replace count*size kmalloc by kmalloc_array
-Message-ID: <20140626011751.GA6826@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Fabian Frederick <fabf@skynet.be>, linux-kernel@vger.kernel.org,
-	Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>
-References: <1403722146-19657-1-git-send-email-fabf@skynet.be>
+	id S1757640AbaFZBSD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 21:18:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,548,1400050800"; 
+   d="scan'208";a="563569888"
+From: "Chen, Alvin" <alvin.chen@intel.com>
+To: David Laight <David.Laight@ACULAB.COM>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Alan Stern <stern@rowland.harvard.edu>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>
+Subject: RE: [PATCH] USB: ehci-pci: USB host controller support for Intel
+ Quark X1000
+Thread-Topic: [PATCH] USB: ehci-pci: USB host controller support for Intel
+ Quark X1000
+Thread-Index: AQHPj6/C5BxdJArRXUevrLYTW6T4oZuBj0uwgAAC7LCAAQbhQA==
+Date: Thu, 26 Jun 2014 01:17:28 +0000
+Message-ID: <4656BEB6164FC34F8171C6538F1A595B2E9472BE@SHSMSX101.ccr.corp.intel.com>
+References: <1403625103-28078-1-git-send-email-alvin.chen@intel.com>
+ <1403625103-28078-2-git-send-email-alvin.chen@intel.com>
+ <20140624132527.GB1215@kroah.com>
+ <4656BEB6164FC34F8171C6538F1A595B2E946EF1@SHSMSX101.ccr.corp.intel.com>
+ <063D6719AE5E284EB5DD2968C1650D6D17264B1D@AcuExch.aculab.com>
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D17264B1D@AcuExch.aculab.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403722146-19657-1-git-send-email-fabf@skynet.be>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 08:49:06PM +0200, Fabian Frederick wrote:
-> kmalloc_array manages count*sizeof overflow.
+> >
+> > OK, I will change ' usb_is_intel_qrk ' to ' usb_is_intel_quark'.
+> 
+> Or even usb_is_intel_quark_x1000() ?
+> 
+OK, I will change the function name as your suggestion to make it more specific.
 
-Except in these call sites, overflow is impossible.
+> 	David
+> 
+> 
 
-kmalloc_array() is useful when count is coming from an unvalidated
-source.  But in this case, the count is either a fixed, hard-coded
-value (256), or the size of n*count is *guaranteed* to be less than
-the page size.
-
-So this just adds some extra code which is pointless (assuming the
-compiler isn't smart enough to optimize it out).
-
-	       	     	       		   - Ted
