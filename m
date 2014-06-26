@@ -1,64 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751972AbaFZEnh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 00:43:37 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:60526 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750770AbaFZEng (ORCPT
+	id S1752604AbaFZEuu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 00:50:50 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:61712 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750770AbaFZEut (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 00:43:36 -0400
-X-Originating-IP: 50.43.32.211
-Date: Wed, 25 Jun 2014 21:43:27 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Greg KH <gregkh@linux-foundation.org>
-Cc: Joe Perches <joe@perches.com>, Andy Whitcroft <apw@canonical.com>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] scripts/checkpatch.pl: Only emit LONG_LINE for --strict
-Message-ID: <20140626044327.GA1645@thin>
-References: <20140625154629.GA21519@thin>
- <1403741107.28663.9.camel@joe-AO725>
- <20140626022448.GA22091@thin>
- <20140626035959.GE904@kroah.com>
+	Thu, 26 Jun 2014 00:50:49 -0400
+Message-ID: <53ABA6A4.8090400@kernel.dk>
+Date: Wed, 25 Jun 2014 22:50:44 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140626035959.GE904@kroah.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Christoph Hellwig <hch@lst.de>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: Bart Van Assche <bvanassche@fusionio.com>, Robert Elliott <Elliott@hp.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: scsi-mq V2
+References: <1403715121-1201-1-git-send-email-hch@lst.de>
+In-Reply-To: <1403715121-1201-1-git-send-email-hch@lst.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 11:59:59PM -0400, Greg KH wrote:
-> On Wed, Jun 25, 2014 at 07:24:49PM -0700, Josh Triplett wrote:
-> > On Wed, Jun 25, 2014 at 05:05:07PM -0700, Joe Perches wrote:
-> > > On Wed, 2014-06-25 at 08:46 -0700, Josh Triplett wrote:
-> > > > Regardless of the long-standing debate over line width, checkpatch
-> > > > should not warn about it by default.
-> > > 
-> > > I'm not getting involved here.
-> > > 
-> > > I don't care much one way or another.
-> > > 
-> > > I did submit a patch where I ignored 80
-> > > columns recently and I was told to try
-> > > again by the maintainer.
-> > 
-> > I'm not asking you to get involved in the Great Line Length Debate;
-> > that's why I didn't attempt to patch CodingStyle or similar.  However, I
-> > think it makes sense for *checkpatch* to stop emitting this warning.
-> > 
-> > I'm hoping that Greg will chime in, as the maintainer of staging and the
-> > recipient of a huge number of checkpatch-motivated patches.
-> 
-> I have no problem with the existing checkpatch.pl tool and it calling
-> out 80 columns as a problem that needs to be fixed.  So I don't like
-> this patch at all.
+On 2014-06-25 10:51, Christoph Hellwig wrote:
+> This is the second post of the scsi-mq series.
+>
+> At this point the code is ready for merging and use by developers and early
+> adopters.  The core blk-mq code isn't that suitable for slow devices
+> yet, mostly due to the lack of an I/O scheduler, but Jens is working on it.
+> Similarly there is no dm-multipath support for drivers using blk-mq yet,
+> but I'm working on it.  It should also be noted that the code doesn't
+> actually support multiple hardware queues or fine grained tuning of the
+> blk-mq parameters yet.  All these could be added fairly easily as soon
+> as low-level drivers want to make use of them.
+>
+> The amount of chances to the existing code are fairly small, and mostly
+> speedups or cleanups that also apply to the old path as well.  Because
+> of this I also haven't bothered to put it under a config option, just
+> like the blk-mq core.
+>
+> The usage of blk-mq dramatically decreases CPU usage under all workloads going
+> down from 100% CPU usage that the old setup can hit easily to usually less
+> than 20% for maxing out storage subsystems with 512byte reads and writes,
+> and it allows to easily archive millions of IOPS.  Bart and Robert have
+> helped with some very detailed measurements that they might be able to send
+> in reply to this, although these usually involve significantly reworked low
+> level drivers to avoid other bottle necks.
+>
+> One major objection to previous iterations of this code was the simple
+> replacement of the host_lock with atomic counters for the host and busy
+> counters.  The host_lock avoidance on it's own already improves performance,
+> and with the patch to avoid maintaining the per-target busy counter unless
+> needed we now replace a lock round trip on the host_lock with just a single
+> atomic increment in the submission path, and a single atomic decrement in
+> completion path, which should provide benefits even for the oddest RISC
+> architecture.  Longer term I'd still love to get rid of these entirely
+> and use the counters in blk-mq, but due to the difference in how they
+> are maintained this doesn't seem feasible as long as we still need to
+> support the legacy request code path.
+>
+> Changes from V1:
+>   - rebased on top of the core-for-3.17 branch, most notable the
+>     scsi logging changes
+>   - fixed handling of cmd_list to prevent crashes for some heavy
+>     workloads
+>   - fixed incorrect handling of !target->can_queue
+>   - avoid scheduling a workqueue on I/O completions when no queues
+>     are congested
+>
+> In addition to the patches in this thread there also is a git available at:
+>
+> 	git://git.infradead.org/users/hch/scsi.git scsi-mq.2
 
-I'd like to stop seeing patches go by that produce heavily over-wrapped
-code that becomes less readable; it's far easier to fix checkpatch than
-to tell people to ignore its false positives.
+You can add my acked/reviewed-by to the series.
 
-How would you feel about a patch that flagged long lines with a warning
-in patch mode, but not in file mode?
+-- 
+Jens Axboe
 
-- Josh Triplett
