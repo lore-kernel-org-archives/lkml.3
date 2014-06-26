@@ -1,63 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752306AbaFZEIw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 00:08:52 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:59762 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750850AbaFZEIv (ORCPT
+	id S1751584AbaFZEQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 00:16:56 -0400
+Received: from smtprelay0150.hostedemail.com ([216.40.44.150]:48491 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750721AbaFZEQz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 00:08:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140625150318.4355468ab59a5293e870605e@linux-foundation.org>
-References: <20140624201606.18273.44270.stgit@zurg>
-	<20140624201614.18273.39034.stgit@zurg>
-	<20140625150318.4355468ab59a5293e870605e@linux-foundation.org>
-Date: Thu, 26 Jun 2014 08:08:50 +0400
-Message-ID: <CALYGNiOtO9bV2RJuM_42fc-R_9aHpjkfRxX7V_zy=GBX68UW_A@mail.gmail.com>
-Subject: Re: [PATCH 3/3] mm: catch memory commitment underflow
-From: Konstantin Khlebnikov <koct9i@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>, Hugh Dickins <hughd@google.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 26 Jun 2014 00:16:55 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1362:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:1801:2198:2199:2393:2553:2559:2562:2828:2914:3138:3139:3140:3141:3142:3354:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4321:4605:5007:6119:7652:7903:7974:8957:9010:9121:9149:9163:10004:10226:10400:10848:11026:11232:11658:11876:11914:12043:12294:12438:12517:12519:12555:12663:12740:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: arch99_1efdeeebf8838
+X-Filterd-Recvd-Size: 3391
+Message-ID: <1403756211.7977.22.camel@joe-AO725>
+Subject: Re: [PATCH] scripts/checkpatch.pl: Only emit LONG_LINE for --strict
+From: Joe Perches <joe@perches.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Andy Whitcroft <apw@canonical.com>, gregkh@linux-foundation.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Date: Wed, 25 Jun 2014 21:16:51 -0700
+In-Reply-To: <20140626034430.GA22836@thin>
+References: <20140625154629.GA21519@thin>
+	 <1403741107.28663.9.camel@joe-AO725> <20140626022448.GA22091@thin>
+	 <1403749983.7977.6.camel@joe-AO725> <20140626034430.GA22836@thin>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 26, 2014 at 2:03 AM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Wed, 25 Jun 2014 00:16:14 +0400 Konstantin Khlebnikov <koct9i@gmail.com> wrote:
->
->> This patch prints warning (if CONFIG_DEBUG_VM=y) when
->> memory commitment becomes too negative.
->>
->> ...
->>
->> --- a/mm/mmap.c
->> +++ b/mm/mmap.c
->> @@ -134,6 +134,12 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
->>  {
->>       unsigned long free, allowed, reserve;
->>
->> +#ifdef CONFIG_DEBUG_VM
->> +     WARN_ONCE(percpu_counter_read(&vm_committed_as) <
->> +                     -(s64)vm_committed_as_batch * num_online_cpus(),
->> +                     "memory commitment underflow");
->> +#endif
->> +
->>       vm_acct_memory(pages);
->
-> The changelog doesn't describe the reasons for making the change.
->
-> I assume this warning will detect the situation which the previous two
-> patches just fixed?
+On Wed, 2014-06-25 at 20:44 -0700, Josh Triplett wrote:
+> On Wed, Jun 25, 2014 at 07:33:03PM -0700, Joe Perches wrote:
+> > On Wed, 2014-06-25 at 19:24 -0700, Josh Triplett wrote:
+> > > On Wed, Jun 25, 2014 at 05:05:07PM -0700, Joe Perches wrote:
+> > > > On Wed, 2014-06-25 at 08:46 -0700, Josh Triplett wrote:
+> > > > > Regardless of the long-standing debate over line width, checkpatch
+> > > > > should not warn about it by default.
+> > > > 
+> > > > I'm not getting involved here.
+> > > > I don't care much one way or another.
+> > []
+> > > I'm not asking you to get involved in the Great Line Length Debate;
+> > > that's why I didn't attempt to patch CodingStyle or similar.  However, I
+> > > think it makes sense for *checkpatch* to stop emitting this warning.
+> > 
+> > I think checkpatch should encourage people to write code in
+> > a style that matches CodingStyle as well as the predominant
+> > styles used in the rest of the kernel.
+> 
+> Not arguing with that, but in this particular case the warning seems
+> counterproductive to that goal, especially compared to the
+> DEEP_INDENTATION warning.  More subjective or "to taste" issues tend
+> to have lower severity in checkpatch.  And CodingStyle *already* says
+> "unless exceeding 80 columns significantly increases
+> readability"
 
-Yep. Otherwise there is no way to validate these bugs, /proc/meminfo
-hides negative values.
+Just some suggestions off the top of my head.
 
-> Why not use VM_WARN_ON_ONCE()?
+If the goal is to reduce long line lengths, then maybe
+more warnings or --strict tests for things like:
 
-This patch is older than this macro.
-Previously I've sent it in the last september and it was ignored. Now
-I've found it again in my backlog.
+long variable names: (pick a length)
+
+	some_long_variable_name_with_a_color
+
+consecutive dereferences where a temporary might be better:
+
+	foo->bar[baz].member1 = 1;
+	foo->bar[baz].member2 = 2;
+
+Multiple logical tests on a single line:
+
+	foo > bar && baz < quz && etc...
+
+Arguments after column 80
+                                                                                                   1
+         1         2         3         4         5         6         7         8         9         0
+1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
+	result = some_long_function(some_arg(arg1, arg2), another_arg(arg3, arg4), 4);
+
+where a single argument of a short length before a
+statement terminating ; may be ignored, but a longer
+argument list may not.
+
+Long trigraphs:
+
+	should be on multiple lines
+
+Comments beyond 80 column
+
+	No idea what's right.
+
+etc...
+
+
