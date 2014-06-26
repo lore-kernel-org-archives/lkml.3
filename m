@@ -1,82 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756646AbaFZA2Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 20:28:16 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:40153 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753356AbaFZA2P (ORCPT
+	id S1757171AbaFZAaf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 20:30:35 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:43351 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754496AbaFZAae (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 20:28:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <1403716401.10214.2.camel@lbirv-waie-lx2.broadcom.com>
-References: <1403705059-25834-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	<53AADC16.9080301@redhat.com>
-	<1403716401.10214.2.camel@lbirv-waie-lx2.broadcom.com>
-Date: Thu, 26 Jun 2014 02:28:14 +0200
-Message-ID: <CAFo99gbp-CeoT-3rNkNJX1m79G+5zi7pJLjX9kYq=FEf1isn=g@mail.gmail.com>
-Subject: Re: [PATCH] scsi: bnx2i: bnx2i_iscsi.c: Cleaning up variable is set
- more than once
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Eddie Wai <eddie.wai@broadcom.com>
-Cc: Maurizio Lombardi <mlombard@redhat.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org,
+	Wed, 25 Jun 2014 20:30:34 -0400
+Date: Wed, 25 Jun 2014 17:30:19 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Wu Yu-Chen <lennox.wu@gmail.com>
+Cc: Chen Gang <gang.chen.5i5j@gmail.com>, David Rientjes <rientjes@google.com>,
+        Liqin Chen <liqin.linux@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: [PATCH v2] rch/score/include/uapi/asm/ptrace.h: Add prefix
+ 'SCORE_' for related macros
+Message-ID: <20140626003019.GA28457@roeck-us.net>
+References: <BAY404-EAS3244E3E66FF1100E4753CC9B0180@phx.gbl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BAY404-EAS3244E3E66FF1100E4753CC9B0180@phx.gbl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-06-25 19:13 GMT+02:00 Eddie Wai <eddie.wai@broadcom.com>:
-> On Wed, 2014-06-25 at 16:26 +0200, Maurizio Lombardi wrote:
->> Hi,
->>
->> On 06/25/2014 04:04 PM, Rickard Strandqvist wrote:
->> > A struct member variable is set to different values without having used in between.
->> >
->> > This was found using a static code analysis program called cppcheck
->> >
->> > Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
->> > ---
->> >  drivers/scsi/bnx2i/bnx2i_iscsi.c |    1 -
->> >  1 file changed, 1 deletion(-)
->> >
->> > diff --git a/drivers/scsi/bnx2i/bnx2i_iscsi.c b/drivers/scsi/bnx2i/bnx2i_iscsi.c
->> > index 166543f..fdf7bc3 100644
->> > --- a/drivers/scsi/bnx2i/bnx2i_iscsi.c
->> > +++ b/drivers/scsi/bnx2i/bnx2i_iscsi.c
->> > @@ -1643,7 +1643,6 @@ static void bnx2i_conn_get_stats(struct iscsi_cls_conn *cls_conn,
->> >     stats->r2t_pdus = conn->r2t_pdus_cnt;
->> >     stats->tmfcmd_pdus = conn->tmfcmd_pdus_cnt;
->> >     stats->tmfrsp_pdus = conn->tmfrsp_pdus_cnt;
->> > -   stats->custom_length = 3;
->> >     strcpy(stats->custom[2].desc, "eh_abort_cnt");
->> >     stats->custom[2].value = conn->eh_abort_cnt;
->> >     stats->digest_err = 0;
->> >
->>
->> Eddie,
->>
->> The code modifies the content of stats->custom[2], so shouldn't custom_length be set to 3?
->> Why is it set to zero at the end of this function?
-> Nice find.  This is literally a day1 bug.  Yes, I agree that the
-> custom_length should be left at 3.  Otherwise, the nlmsg replied back to
-> the application would not have the custom message.  Thanks.
->>
->> Regards,
->> Maurizio Lombardi
->
->
+On Thu, Jun 26, 2014 at 12:05:33AM +0000, Wu Yu-Chen wrote:
+> As I said, these macros are useless currently. I don’t think users will use these macros since the kernel doesn’t respond these macros. However, you are welcome to provide your idea 😊
+> 
+Just drop them entirely.
 
-
-Hi, and thank you!
-
-If it's not obvious, I do all my fixes without changing the previous
-intent. But obviously it is not always right, rather it is one of main
-reasons to fix this type of error :)
-
-But I'll make a new patch then, with = 3 ?
-
-
-Kind regards
-Rickard Strandqvist
+Guenter
