@@ -1,92 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751058AbaFZS6m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 14:58:42 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:44717 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750703AbaFZS6k (ORCPT
+	id S1751293AbaFZS67 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 14:58:59 -0400
+Received: from smtprelay0190.hostedemail.com ([216.40.44.190]:51610 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751197AbaFZS66 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 14:58:40 -0400
-Message-ID: <53AC6D6F.5000308@gmail.com>
-Date: Thu, 26 Jun 2014 11:58:55 -0700
-From: Rajat Jain <rajatxjain@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-CC: Guenter Roeck <groeck@juniper.net>, Rajat Jain <rajatjain@juniper.net>,
-        rajatjain.linux@gmail.com
-Subject: [PATCH] pciehp: Remove the field controller->no_cmd_completed
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 26 Jun 2014 14:58:58 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3350:3622:3876:3877:4321:5007:6114:6642:7652:10004:10400:10848:11026:11232:11658:11914:12043:12438:12517:12519:12740:13019:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: trees54_13abed993435b
+X-Filterd-Recvd-Size: 1418
+Message-ID: <1403809133.7977.63.camel@joe-AO725>
+Subject: Re: [PATCH] ecryptfs: Drop cast
+From: Joe Perches <joe@perches.com>
+To: Himangi Saraogi <himangi774@gmail.com>
+Cc: Tyler Hicks <tyhicks@canonical.com>, ecryptfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, julia.lawall@lip6.fr
+Date: Thu, 26 Jun 2014 11:58:53 -0700
+In-Reply-To: <20140626184233.GA4275@himangi-Dell>
+References: <20140626184233.GA4275@himangi-Dell>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After following recent cleanups by Bjorn:
+On Fri, 2014-06-27 at 00:12 +0530, Himangi Saraogi wrote:
+> This patch does away with casts on void * as they are unnecessary.
+[]
+> diff --git a/fs/ecryptfs/inode.c b/fs/ecryptfs/inode.c
+[]
+> @@ -53,7 +53,7 @@ static void unlock_dir(struct dentry *dir)
+>  
+>  static int ecryptfs_inode_test(struct inode *inode, void *lower_inode)
+>  {
+> -	if (ecryptfs_inode_to_lower(inode) == (struct inode *)lower_inode)
+> +	if (ecryptfs_inode_to_lower(inode) == lower_inode)
+>  		return 1;
+>  	return 0;
+>  }
 
-http://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/log/?h=pci/hotplug
+True, but perhaps this should be
 
-2cc56f3 PCI: pciehp: Remove assumptions about which commands cause
-40b9608 PCI: pciehp: Compute timeout from hotplug command start time
-3461a06 PCI: pciehp: Wait for hotplug command completion lazily
-4283c70 PCI: pciehp: Make pcie_wait_cmd() self-contained
+{
+	return ecryptfs_inode_to_lower(inode) == lower_inode;
+}
 
-the bitfield no_cmd_complete is not really needed anymore, as there is
-only a single occurance of its use. Hence remove the unnecessary bit
-field, and use existing macro NO_CMD_CMPL() instead.
 
-Signed-off-by: Rajat Jain <rajatxjain@gmail.com>
-Signed-off-by: Rajat Jain <rajatjain@juniper.net>
-Signed-off-by: Guenter Roeck <groeck@juniper.net>
----
-(This is rebased on top of Bjorn's pci/hotplug branch mentioned above)
-
- drivers/pci/hotplug/pciehp.h     |    1 -
- drivers/pci/hotplug/pciehp_hpc.c |   11 +----------
- 2 files changed, 1 insertion(+), 11 deletions(-)
-
-diff --git a/drivers/pci/hotplug/pciehp.h b/drivers/pci/hotplug/pciehp.h
-index c496258..9e5a9fb 100644
---- a/drivers/pci/hotplug/pciehp.h
-+++ b/drivers/pci/hotplug/pciehp.h
-@@ -96,7 +96,6 @@ struct controller {
- 	struct timer_list poll_timer;
- 	unsigned long cmd_started;	/* jiffies */
- 	unsigned int cmd_busy:1;
--	unsigned int no_cmd_complete:1;
- 	unsigned int link_active_reporting:1;
- 	unsigned int notification_enabled:1;
- 	unsigned int power_fault_detected;
-diff --git a/drivers/pci/hotplug/pciehp_hpc.c b/drivers/pci/hotplug/pciehp_hpc.c
-index a3a5c65..f7c3709 100644
---- a/drivers/pci/hotplug/pciehp_hpc.c
-+++ b/drivers/pci/hotplug/pciehp_hpc.c
-@@ -140,7 +140,7 @@ static void pcie_wait_cmd(struct controller *ctrl)
- 	 * If the controller does not generate notifications for command
- 	 * completions, we never need to wait between writes.
- 	 */
--	if (ctrl->no_cmd_complete)
-+	if (NO_CMD_CMPL(ctrl))
- 		return;
- 
- 	if (!ctrl->cmd_busy)
-@@ -772,15 +772,6 @@ struct controller *pcie_init(struct pcie_device *dev)
- 	init_waitqueue_head(&ctrl->queue);
- 	dbg_ctrl(ctrl);
- 
--	/*
--	 * Controller doesn't notify of command completion if the "No
--	 * Command Completed Support" bit is set in Slot Capabilities.
--	 * If set, it means the controller can accept hotplug commands
--	 * with no delay between them.
--	 */
--	if (NO_CMD_CMPL(ctrl))
--		ctrl->no_cmd_complete = 1;
--
- 	/* Check if Data Link Layer Link Active Reporting is implemented */
- 	pcie_capability_read_dword(pdev, PCI_EXP_LNKCAP, &link_cap);
- 	if (link_cap & PCI_EXP_LNKCAP_DLLLARC) {
--- 
-1.7.9.5
 
