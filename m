@@ -1,119 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755783AbaFZPRx (ORCPT <rfc822;w@1wt.eu>);
+	id S1756892AbaFZPR4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 11:17:56 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:37177 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752751AbaFZPRx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 26 Jun 2014 11:17:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46147 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752751AbaFZPRv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 11:17:51 -0400
-Message-ID: <53AC3991.1020003@redhat.com>
-Date: Thu, 26 Jun 2014 17:17:37 +0200
-From: Maurizio Lombardi <mlombard@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+Date: Thu, 26 Jun 2014 11:17:49 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Christopher Covington <cov@codeaurora.org>
+Cc: Ingo Molnar <mingo@redhat.com>, Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH] RFC: Add signal command to trace events
+Message-ID: <20140626111749.3234d4d4@gandalf.local.home>
+In-Reply-To: <1403791044-2214-1-git-send-email-cov@codeaurora.org>
+References: <1403791044-2214-1-git-send-email-cov@codeaurora.org>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Ming Lei <ming.lei@canonical.com>, Jens Axboe <axboe@kernel.dk>,
-        linux-kernel@vger.kernel.org
-CC: Dongsu Park <dongsu.park@profitbricks.com>, Christoph Hellwig <hch@lst.de>,
-        Kent Overstreet <kmo@daterainc.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] block/bio.c: update bi_iter.bi_size before recounting
- segments
-References: <1401350380-31072-1-git-send-email-ming.lei@canonical.com>
-In-Reply-To: <1401350380-31072-1-git-send-email-ming.lei@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+[ Added Oleg who is the guru of signals ;-) ]
 
-I don't see this patch in linux-next yet nor a review.
+On Thu, 26 Jun 2014 09:57:21 -0400
+Christopher Covington <cov@codeaurora.org> wrote:
 
-Jens, Andrew; did you notice it?
+> This stops a process after an event has been triggered a given
+> number of times. For example:
+> 
+> [[ -d /sys/kernel/debug/tracing ]] || \
+>   mount -t debugfs none /sys/kernel/debug
+> echo "p:myevent $(which myapp):0x700" > /sys/kernel/debug/tracing/uprobe_events
+> echo 1 > /sys/kernel/debug/tracing/events/uprobes/myevent/enable
+> echo 'signal:3' > /sys/kernel/debug/tracing/events/uprobes/myevent/trigger
+> myapp
+> myapp
+> myapp &
+> 
+> Here, the 0x700 offset is the entry to main(). On the third
+> invocation of the program, the process is stopped.
+> 
 
-On 05/29/2014 09:59 AM, Ming Lei wrote:
-> The patch of "bio: modify __bio_add_page() to accept pages that
-> don't start a new segment" changes the way for adding one page
-> to bio:
-> 
-> 	- previously by adding page after checking successfully
-> 	- now by trying to add page and recover if it fails
-> 
-> Unfortunately the patch forgets to update bio->bi_iter.bi_size
-> before trying to add page, then the last vector for holding
-> the added page may not be covered if recouning segments is needed,
-> so bio->bi_phys_segments may become not consistent with the
-> actual bio page buffers after the page is added successfully
-> to the bio(after bi_iter.bi_size is added by 'len')
-> 
-> Suppose the page in the last vector can't be merged to bio, tragedy
-> will happen when __bio_add_page() is called to add another page:
-> 
-> 	- blk_recount_segments() is called and the actual segments get
-> 	figured out correctly
-> 
-> 	- the actual segments may become queue_max_segments(q) plus one
-> 	in failure path
-> 
-> 	- driver will find the segment count is too big to handle.
-> 
-> The patch fixes the virtio-blk oops bug reported from Jet Chen in
-> below link:
-> 
-> 	http://marc.info/?l=linux-kernel&m=140113053817095&w=2
-> 
-> Cc: Jens Axboe <axboe@kernel.dk>
-> Cc: Maurizio Lombardi <mlombard@redhat.com>
-> Cc: Dongsu Park <dongsu.park@profitbricks.com>
-> Cc: Christoph Hellwig <hch@lst.de>
-> Cc: Kent Overstreet <kmo@daterainc.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Reported-by: Jet Chen <jet.chen@intel.com>
-> Tested-by: Jet Chen <jet.chen@intel.com>
-> Signed-off-by: Ming Lei <ming.lei@canonical.com>
+Interesting trigger. I can see this being useful.
+
+> Signed-off-by: Christopher Covington <cov@codeaurora.org>
 > ---
-> Andrew, could you put the patch in your -mm tree
-> because the previous two patches were routed from
-> your tree?
+>  include/linux/ftrace_event.h        |  1 +
+>  kernel/trace/trace_events_trigger.c | 73 +++++++++++++++++++++++++++++++++++++
+>  2 files changed, 74 insertions(+)
 > 
->  block/bio.c |    4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/block/bio.c b/block/bio.c
-> index 0443694..f9bae56 100644
-> --- a/block/bio.c
-> +++ b/block/bio.c
-> @@ -744,6 +744,7 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
->  				}
->  			}
+> diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+> index cff3106..7bca0df 100644
+> --- a/include/linux/ftrace_event.h
+> +++ b/include/linux/ftrace_event.h
+> @@ -402,6 +402,7 @@ enum event_trigger_type {
+>  	ETT_SNAPSHOT		= (1 << 1),
+>  	ETT_STACKTRACE		= (1 << 2),
+>  	ETT_EVENT_ENABLE	= (1 << 3),
+> +	ETT_SIGNAL		= (1 << 4),
+>  };
 >  
-> +			bio->bi_iter.bi_size += len;
->  			goto done;
->  		}
->  	}
-> @@ -761,6 +762,7 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
->  	bvec->bv_offset = offset;
->  	bio->bi_vcnt++;
->  	bio->bi_phys_segments++;
-> +	bio->bi_iter.bi_size += len;
+>  extern void destroy_preds(struct ftrace_event_file *file);
+> diff --git a/kernel/trace/trace_events_trigger.c b/kernel/trace/trace_events_trigger.c
+> index 4747b47..d0599fa 100644
+> --- a/kernel/trace/trace_events_trigger.c
+> +++ b/kernel/trace/trace_events_trigger.c
+> @@ -1042,6 +1042,78 @@ static __init int register_trigger_stacktrace_cmd(void)
+>  static __init int register_trigger_stacktrace_cmd(void) { return 0; }
+>  #endif /* CONFIG_STACKTRACE */
 >  
->  	/*
->  	 * Perform a recount if the number of segments is greater
-> @@ -802,7 +804,6 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
->  		bio->bi_flags &= ~(1 << BIO_SEG_VALID);
+> +//ifdef CONFIG_TRACER_SIGNAL
+> +static void
+> +signal_trigger(struct event_trigger_data *data)
+> +{
+> +	force_sig(SIGSTOP, current);
+
+Here's the issue though. Events can happen most anywhere. An event
+context you need to be very careful what you do. force_sig() is not a
+light weight function by any means. Basically, anything that grabs
+spinlocks must be extremely careful, because you can have an event in
+most functions and you may have just introduced a inverse locking
+order. Can you take the signal spinlock when holding the rq lock?
+There's several tracepoints that are called while holding the rq lock.
+
+But don't fret. All is not lost.
+
+What can be done is use irq_work instead. This is very useful as well.
+Although it will have a delayed effect. Maybe you can do the following:
+
+	if (irqs_disabled())
+		irq_work_queue(...);
+	else
+		force_sig(...);
+
+That is, if interrupts are enabled, it is pretty much guaranteed that
+calling force_sig() is safe. Heck, interrupts can do it. If not, then
+we need to delay the action, because it may not be safe. Unfortunately,
+I believe uprobe tracepoints are called with interrupts diasbled (at
+least it shows that in my trace of a uprobe).
+
+-- Steve
+
+> +}
+> +
+> +static void
+> +signal_count_trigger(struct event_trigger_data *data)
+> +{
+> +	switch(data->count) {
+> +	case 0:
+> +		return;
+> +	case 1:
+> +		signal_trigger(data);
+> +		// fall through
+> +	default:
+> +		(data->count)--;
+> +	}
+> +}
+> +
+> +static int
+> +signal_trigger_print(struct seq_file *m, struct event_trigger_ops *ops,
+> +		       struct event_trigger_data *data)
+> +{
+> +	return event_trigger_print("signal", m, (void *)data->count,
+> +				   data->filter_str);
+> +}
+> +
+> +static struct event_trigger_ops signal_trigger_ops = {
+> +	.func			= signal_trigger,
+> +	.print			= signal_trigger_print,
+> +	.init			= event_trigger_init,
+> +	.free			= event_trigger_free,
+> +};
+> +
+> +static struct event_trigger_ops signal_count_trigger_ops = {
+> +	.func			= signal_count_trigger,
+> +	.print			= signal_trigger_print,
+> +	.init			= event_trigger_init,
+> +	.free			= event_trigger_free,
+> +};
+> +
+> +static struct event_trigger_ops *
+> +signal_get_trigger_ops(char *cmd, char *param)
+> +{
+> +	return param ? &signal_count_trigger_ops : &signal_trigger_ops;
+> +}
+> +
+> +static struct event_command trigger_signal_cmd = {
+> +	.name			= "signal",
+> +	.trigger_type		= ETT_SIGNAL,
+> +	.func			= event_trigger_callback,
+> +	.reg			= register_trigger,
+> +	.unreg			= unregister_trigger,
+> +	.get_trigger_ops	= signal_get_trigger_ops,
+> +	.set_filter		= set_trigger_filter,
+> +};
+> +
+> +static __init int register_trigger_signal_cmd(void)
+> +{
+> +	int ret;
+> +
+> +	ret = register_event_command(&trigger_signal_cmd);
+> +	WARN_ON(ret < 0);
+> +
+> +	return ret;
+> +}
+> +/* else
+> +static __init int register_trigger_signal_cmd(void) { return 0; }
+> +endif CONFIG_TRACER_SIGNAL */
+> +
+>  static __init void unregister_trigger_traceon_traceoff_cmds(void)
+>  {
+>  	unregister_event_command(&trigger_traceon_cmd);
+> @@ -1432,6 +1504,7 @@ __init int register_trigger_cmds(void)
+>  	register_trigger_snapshot_cmd();
+>  	register_trigger_stacktrace_cmd();
+>  	register_trigger_enable_disable_cmds();
+> +	register_trigger_signal_cmd();
 >  
->   done:
-> -	bio->bi_iter.bi_size += len;
->  	return len;
->  
->   failed:
-> @@ -810,6 +811,7 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
->  	bvec->bv_len = 0;
->  	bvec->bv_offset = 0;
->  	bio->bi_vcnt--;
-> +	bio->bi_iter.bi_size -= len;
->  	blk_recount_segments(q, bio);
 >  	return 0;
 >  }
-> 
+
