@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752207AbaFZWBd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 18:01:33 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:39724 "EHLO
+	id S1752258AbaFZWBo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 18:01:44 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:39542 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750844AbaFZWBb (ORCPT
+	by vger.kernel.org with ESMTP id S1751233AbaFZWBd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 18:01:31 -0400
-Message-Id: <20140626220129.452783019@goodmis.org>
+	Thu, 26 Jun 2014 18:01:33 -0400
+Message-Id: <20140626220130.356038089@goodmis.org>
 User-Agent: quilt/0.63-1
-Date: Thu, 26 Jun 2014 17:49:02 -0400
+Date: Thu, 26 Jun 2014 17:49:05 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
@@ -20,12 +20,12 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Dave Anderson <anderson@redhat.com>, Petr Mladek <pmladek@suse.cz>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Konstantin Khlebnikov <koct9i@gmail.com>
-Subject: [RFC][PATCH 1/5 v2] tracing: Add trace_seq_buffer_ptr() helper function
+Subject: [RFC][PATCH 4/5 v2] printk: Add per_cpu printk func to allow printk to be diverted
 References: <20140626214901.596791200@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0001-tracing-Add-trace_seq_buffer_ptr-helper-function.patch
-X-RR-Connecting-IP: 107.14.168.118:25
+Content-Disposition: inline; filename=0004-printk-Add-per_cpu-printk-func-to-allow-printk-to-be.patch
+X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -33,204 +33,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-There's several locations in the kernel that open code the calculation
-of the next location in the trace_seq buffer. This is usually done with
+Being able to divert printk to call another function besides the normal
+logging is useful for such things like NMI handling. If some functions
+are to be called from NMI that does printk() it is possible to lock up
+the box if the nmi handler triggers when another printk is happening.
 
-  p->buffer + p->len
+One example of this use is to perform a stack trace on all CPUs via NMI.
+But if the NMI is to do the printk() it can cause the system to lock up.
+By allowing the printk to be diverted to another function that can safely
+record the printk output and then print it when it in a safe context
+then NMIs will be safe to call these functions like show_regs().
 
-Instead of having this open coded, supply a helper function in the
-header to do it for them. This function is called trace_seq_buffer_ptr().
+Link: http://lkml.kernel.org/p/20140619213952.209176403@goodmis.org
 
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/x86/kvm/mmutrace.h     |  2 +-
- drivers/scsi/scsi_trace.c   | 16 ++++++++--------
- include/linux/trace_seq.h   | 15 +++++++++++++++
- kernel/trace/trace_output.c | 14 +++++++-------
- 4 files changed, 31 insertions(+), 16 deletions(-)
+ include/linux/percpu.h |  3 +++
+ include/linux/printk.h |  2 ++
+ kernel/printk/printk.c | 38 +++++++++++++++++++++++++++++---------
+ 3 files changed, 34 insertions(+), 9 deletions(-)
 
-diff --git a/arch/x86/kvm/mmutrace.h b/arch/x86/kvm/mmutrace.h
-index 9d2e0ffcb190..2e5652b62fd6 100644
---- a/arch/x86/kvm/mmutrace.h
-+++ b/arch/x86/kvm/mmutrace.h
-@@ -22,7 +22,7 @@
- 	__entry->unsync = sp->unsync;
+diff --git a/include/linux/percpu.h b/include/linux/percpu.h
+index 8419053d0f2e..9997c92ce3bd 100644
+--- a/include/linux/percpu.h
++++ b/include/linux/percpu.h
+@@ -802,4 +802,7 @@ do { __this_cpu_preempt_check("or");					\
+ 	(__this_cpu_preempt_check("cmpxchg_double"),__pcpu_double_call_return_bool(raw_cpu_cmpxchg_double_, (pcp1), (pcp2), (oval1), (oval2), (nval1), (nval2)))
+ #endif
  
- #define KVM_MMU_PAGE_PRINTK() ({				        \
--	const char *ret = p->buffer + p->len;				\
-+	const char *ret = trace_seq_buffer_ptr(p);			\
- 	static const char *access_str[] = {			        \
- 		"---", "--x", "w--", "w-x", "-u-", "-ux", "wu-", "wux"  \
- 	};							        \
-diff --git a/drivers/scsi/scsi_trace.c b/drivers/scsi/scsi_trace.c
-index 2bea4f0b684a..503594e5f76d 100644
---- a/drivers/scsi/scsi_trace.c
-+++ b/drivers/scsi/scsi_trace.c
-@@ -28,7 +28,7 @@ scsi_trace_misc(struct trace_seq *, unsigned char *, int);
- static const char *
- scsi_trace_rw6(struct trace_seq *p, unsigned char *cdb, int len)
- {
--	const char *ret = p->buffer + p->len;
-+	const char *ret = trace_seq_buffer_ptr(p);
- 	sector_t lba = 0, txlen = 0;
- 
- 	lba |= ((cdb[1] & 0x1F) << 16);
-@@ -46,7 +46,7 @@ scsi_trace_rw6(struct trace_seq *p, unsigned char *cdb, int len)
- static const char *
- scsi_trace_rw10(struct trace_seq *p, unsigned char *cdb, int len)
- {
--	const char *ret = p->buffer + p->len;
-+	const char *ret = trace_seq_buffer_ptr(p);
- 	sector_t lba = 0, txlen = 0;
- 
- 	lba |= (cdb[2] << 24);
-@@ -71,7 +71,7 @@ scsi_trace_rw10(struct trace_seq *p, unsigned char *cdb, int len)
- static const char *
- scsi_trace_rw12(struct trace_seq *p, unsigned char *cdb, int len)
- {
--	const char *ret = p->buffer + p->len;
-+	const char *ret = trace_seq_buffer_ptr(p);
- 	sector_t lba = 0, txlen = 0;
- 
- 	lba |= (cdb[2] << 24);
-@@ -94,7 +94,7 @@ scsi_trace_rw12(struct trace_seq *p, unsigned char *cdb, int len)
- static const char *
- scsi_trace_rw16(struct trace_seq *p, unsigned char *cdb, int len)
- {
--	const char *ret = p->buffer + p->len;
-+	const char *ret = trace_seq_buffer_ptr(p);
- 	sector_t lba = 0, txlen = 0;
- 
- 	lba |= ((u64)cdb[2] << 56);
-@@ -125,7 +125,7 @@ scsi_trace_rw16(struct trace_seq *p, unsigned char *cdb, int len)
- static const char *
- scsi_trace_rw32(struct trace_seq *p, unsigned char *cdb, int len)
- {
--	const char *ret = p->buffer + p->len, *cmd;
-+	const char *ret = trace_seq_buffer_ptr(p), *cmd;
- 	sector_t lba = 0, txlen = 0;
- 	u32 ei_lbrt = 0;
- 
-@@ -180,7 +180,7 @@ out:
- static const char *
- scsi_trace_unmap(struct trace_seq *p, unsigned char *cdb, int len)
- {
--	const char *ret = p->buffer + p->len;
-+	const char *ret = trace_seq_buffer_ptr(p);
- 	unsigned int regions = cdb[7] << 8 | cdb[8];
- 
- 	trace_seq_printf(p, "regions=%u", (regions - 8) / 16);
-@@ -192,7 +192,7 @@ scsi_trace_unmap(struct trace_seq *p, unsigned char *cdb, int len)
- static const char *
- scsi_trace_service_action_in(struct trace_seq *p, unsigned char *cdb, int len)
- {
--	const char *ret = p->buffer + p->len, *cmd;
-+	const char *ret = trace_seq_buffer_ptr(p), *cmd;
- 	sector_t lba = 0;
- 	u32 alloc_len = 0;
- 
-@@ -247,7 +247,7 @@ scsi_trace_varlen(struct trace_seq *p, unsigned char *cdb, int len)
- static const char *
- scsi_trace_misc(struct trace_seq *p, unsigned char *cdb, int len)
- {
--	const char *ret = p->buffer + p->len;
-+	const char *ret = trace_seq_buffer_ptr(p);
- 
- 	trace_seq_printf(p, "-");
- 	trace_seq_putc(p, 0);
-diff --git a/include/linux/trace_seq.h b/include/linux/trace_seq.h
-index dd85753e1bb0..ea6c9dea79e3 100644
---- a/include/linux/trace_seq.h
-+++ b/include/linux/trace_seq.h
-@@ -25,6 +25,21 @@ trace_seq_init(struct trace_seq *s)
- 	s->full = 0;
- }
- 
-+/**
-+ * trace_seq_buffer_ptr - return pointer to next location in buffer
-+ * @s: trace sequence descriptor
-+ *
-+ * Returns the pointer to the buffer where the next write to
-+ * the buffer will happen. This is useful to save the location
-+ * that is about to be written to and then return the result
-+ * of that write.
-+ */
-+static inline unsigned char *
-+trace_seq_buffer_ptr(struct trace_seq *s)
-+{
-+	return s->buffer + s->len;
-+}
++/* To avoid include hell, as printk can not declare this, we declare it here */
++DECLARE_PER_CPU(printk_func_t, printk_func);
 +
- /*
-  * Currently only defined when tracing is enabled.
+ #endif /* __LINUX_PERCPU_H */
+diff --git a/include/linux/printk.h b/include/linux/printk.h
+index 319ff7e53efb..e26310b2d2fd 100644
+--- a/include/linux/printk.h
++++ b/include/linux/printk.h
+@@ -159,6 +159,8 @@ extern int kptr_restrict;
+ 
+ extern void wake_up_klogd(void);
+ 
++typedef int(*printk_func_t)(const char *fmt, va_list args);
++
+ void log_buf_kexec_setup(void);
+ void __init setup_log_buf(int early);
+ void dump_stack_set_arch_desc(const char *fmt, ...);
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index ea2d5f6962ed..e3581f95ba5c 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -1764,6 +1764,30 @@ asmlinkage int printk_emit(int facility, int level,
+ }
+ EXPORT_SYMBOL(printk_emit);
+ 
++int vprintk_default(const char *fmt, va_list args)
++{
++	int r;
++
++#ifdef CONFIG_KGDB_KDB
++	if (unlikely(kdb_trap_printk)) {
++		r = vkdb_printf(fmt, args);
++		return r;
++	}
++#endif
++	r = vprintk_emit(0, -1, NULL, 0, fmt, args);
++
++	return r;
++}
++EXPORT_SYMBOL_GPL(vprintk_default);
++
++/*
++ * This allows printk to be diverted to another function per cpu.
++ * This is useful for calling printk functions from within NMI
++ * without worrying about race conditions that can lock up the
++ * box.
++ */
++DEFINE_PER_CPU(printk_func_t, printk_func) = vprintk_default;
++
+ /**
+  * printk - print a kernel message
+  * @fmt: format string
+@@ -1787,19 +1811,15 @@ EXPORT_SYMBOL(printk_emit);
   */
-diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
-index b8930f79a04b..c6977d5a9b12 100644
---- a/kernel/trace/trace_output.c
-+++ b/kernel/trace/trace_output.c
-@@ -75,7 +75,7 @@ ftrace_print_flags_seq(struct trace_seq *p, const char *delim,
+ asmlinkage __visible int printk(const char *fmt, ...)
  {
- 	unsigned long mask;
- 	const char *str;
--	const char *ret = p->buffer + p->len;
-+	const char *ret = trace_seq_buffer_ptr(p);
- 	int i, first = 1;
++	printk_func_t vprintk_func;
+ 	va_list args;
+ 	int r;
  
- 	for (i = 0;  flag_array[i].name && flags; i++) {
-@@ -111,7 +111,7 @@ ftrace_print_symbols_seq(struct trace_seq *p, unsigned long val,
- 			 const struct trace_print_flags *symbol_array)
- {
- 	int i;
--	const char *ret = p->buffer + p->len;
-+	const char *ret = trace_seq_buffer_ptr(p);
+-#ifdef CONFIG_KGDB_KDB
+-	if (unlikely(kdb_trap_printk)) {
+-		va_start(args, fmt);
+-		r = vkdb_printf(fmt, args);
+-		va_end(args);
+-		return r;
+-	}
+-#endif
+ 	va_start(args, fmt);
+-	r = vprintk_emit(0, -1, NULL, 0, fmt, args);
++	preempt_disable();
++	vprintk_func = this_cpu_read(printk_func);
++	r = vprintk_func(fmt, args);
++	preempt_enable();
+ 	va_end(args);
  
- 	for (i = 0;  symbol_array[i].name; i++) {
- 
-@@ -122,7 +122,7 @@ ftrace_print_symbols_seq(struct trace_seq *p, unsigned long val,
- 		break;
- 	}
- 
--	if (ret == (const char *)(p->buffer + p->len))
-+	if (ret == (const char *)(trace_seq_buffer_ptr(p)))
- 		trace_seq_printf(p, "0x%lx", val);
- 		
- 	trace_seq_putc(p, 0);
-@@ -137,7 +137,7 @@ ftrace_print_symbols_seq_u64(struct trace_seq *p, unsigned long long val,
- 			 const struct trace_print_flags_u64 *symbol_array)
- {
- 	int i;
--	const char *ret = p->buffer + p->len;
-+	const char *ret = trace_seq_buffer_ptr(p);
- 
- 	for (i = 0;  symbol_array[i].name; i++) {
- 
-@@ -148,7 +148,7 @@ ftrace_print_symbols_seq_u64(struct trace_seq *p, unsigned long long val,
- 		break;
- 	}
- 
--	if (ret == (const char *)(p->buffer + p->len))
-+	if (ret == (const char *)(trace_seq_buffer_ptr(p)))
- 		trace_seq_printf(p, "0x%llx", val);
- 
- 	trace_seq_putc(p, 0);
-@@ -162,7 +162,7 @@ const char *
- ftrace_print_bitmask_seq(struct trace_seq *p, void *bitmask_ptr,
- 			 unsigned int bitmask_size)
- {
--	const char *ret = p->buffer + p->len;
-+	const char *ret = trace_seq_buffer_ptr(p);
- 
- 	trace_seq_bitmask(p, bitmask_ptr, bitmask_size * 8);
- 	trace_seq_putc(p, 0);
-@@ -175,7 +175,7 @@ const char *
- ftrace_print_hex_seq(struct trace_seq *p, const unsigned char *buf, int buf_len)
- {
- 	int i;
--	const char *ret = p->buffer + p->len;
-+	const char *ret = trace_seq_buffer_ptr(p);
- 
- 	for (i = 0; i < buf_len; i++)
- 		trace_seq_printf(p, "%s%2.2x", i == 0 ? "" : " ", buf[i]);
+ 	return r;
 -- 
 2.0.0
 
