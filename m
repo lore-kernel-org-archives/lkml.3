@@ -1,106 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757894AbaFZSTs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 14:19:48 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:33292 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932289AbaFZSQX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 14:16:23 -0400
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
-        Daniel Stone <daniels@collabora.com>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v5 02/14] mfd: max77686: Allow the max77686 rtc to wakeup the system
-Date: Thu, 26 Jun 2014 20:15:34 +0200
-Message-Id: <1403806546-31122-3-git-send-email-javier.martinez@collabora.co.uk>
-X-Mailer: git-send-email 2.0.0.rc2
-In-Reply-To: <1403806546-31122-1-git-send-email-javier.martinez@collabora.co.uk>
-References: <1403806546-31122-1-git-send-email-javier.martinez@collabora.co.uk>
+	id S1751272AbaFZSXK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 14:23:10 -0400
+Received: from mga09.intel.com ([134.134.136.24]:9282 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750862AbaFZSXI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 14:23:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,554,1400050800"; 
+   d="scan'208";a="564021718"
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-mm@kvack.org
+Cc: akpm@linux-foundation.org, tony.luck@intel.com,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        dave.hansen@linux.intel.com
+Subject: [PATCH] hwpoison: Fix race with changing page during offlining
+Date: Thu, 26 Jun 2014 11:22:52 -0700
+Message-Id: <1403806972-14267-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Doug Anderson <dianders@chromium.org>
+From: Andi Kleen <ak@linux.intel.com>
 
-The max77686 includes an RTC that keeps power during suspend.  It's
-convenient to be able to use it as a wakeup source.
+While running the mcelog test suite on 3.14 I hit the following VM_BUG_ON:
 
-NOTE: due to wakeup ordering problems this patch alone doesn't work so
-well on exynos5250-snow.  You also need something that brings the i2c
-bus up before the max77686 wakeup runs.
+soft_offline: 0x56d4: unknown non LRU page type 3ffff800008000
+page:ffffea000015b400 count:3 mapcount:2097169 mapping:          (null) index:0xffff8800056d7000
+page flags: 0x3ffff800004081(locked|slab|head)
+------------[ cut here ]------------
+kernel BUG at mm/rmap.c:1495!
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
-Reviewed-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+I think what happened is that a LRU page turned into a slab page in parallel
+with offlining. memory_failure initially tests for this case, but doesn't
+retest later after the page has been locked.
+
+This patch fixes this race. It also check for the case that the page
+changed compound pages.
+
+Unfortunately since it's a race I wasn't able to reproduce later,
+so the specific case is not tested.
+
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: dave.hansen@linux.intel.com
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
+ mm/memory-failure.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
-Changes since v4: None
-
-Changes since v3:
- - Keep the note that this patch needs another change due wakeup
-   ordering problems.
-
- drivers/rtc/rtc-max77686.c | 28 ++++++++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
-
-diff --git a/drivers/rtc/rtc-max77686.c b/drivers/rtc/rtc-max77686.c
-index d20a7f0..c1c6055 100644
---- a/drivers/rtc/rtc-max77686.c
-+++ b/drivers/rtc/rtc-max77686.c
-@@ -583,6 +583,33 @@ static void max77686_rtc_shutdown(struct platform_device *pdev)
- #endif /* MAX77686_RTC_WTSR_SMPL */
- }
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index 90002ea..e277726a 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1143,6 +1143,22 @@ int memory_failure(unsigned long pfn, int trapno, int flags)
+ 	lock_page(hpage);
  
-+#ifdef CONFIG_PM_SLEEP
-+static int max77686_rtc_suspend(struct device *dev)
-+{
-+	if (device_may_wakeup(dev)) {
-+		struct max77686_rtc_info *info = dev_get_drvdata(dev);
-+
-+		return enable_irq_wake(info->virq);
+ 	/*
++	 * The page could have turned into a non LRU page or
++	 * changed compound pages during the locking.
++	 * If this happens just bail out.
++	 */
++	if (compound_head(p) != hpage) {
++		action_result(pfn, "different compound page after locking", IGNORED);
++		res = -EBUSY;
++		goto out;
++	}
++	if (!PageLRU(hpage)) {
++		action_result(pfn, "non LRU after locking", IGNORED);
++		res = -EBUSY;
++		goto out;
 +	}
 +
-+	return 0;
-+}
-+
-+static int max77686_rtc_resume(struct device *dev)
-+{
-+	if (device_may_wakeup(dev)) {
-+		struct max77686_rtc_info *info = dev_get_drvdata(dev);
-+
-+		return disable_irq_wake(info->virq);
-+	}
-+
-+	return 0;
-+}
-+#endif
-+
-+static SIMPLE_DEV_PM_OPS(max77686_rtc_pm_ops,
-+			 max77686_rtc_suspend, max77686_rtc_resume);
-+
- static const struct platform_device_id rtc_id[] = {
- 	{ "max77686-rtc", 0 },
- 	{},
-@@ -592,6 +619,7 @@ static struct platform_driver max77686_rtc_driver = {
- 	.driver		= {
- 		.name	= "max77686-rtc",
- 		.owner	= THIS_MODULE,
-+		.pm	= &max77686_rtc_pm_ops,
- 	},
- 	.probe		= max77686_rtc_probe,
- 	.shutdown	= max77686_rtc_shutdown,
++	/*
+ 	 * We use page flags to determine what action should be taken, but
+ 	 * the flags can be modified by the error containment action.  One
+ 	 * example is an mlocked page, where PG_mlocked is cleared by
 -- 
-2.0.0.rc2
+1.9.3
 
