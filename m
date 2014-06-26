@@ -1,201 +1,416 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752213AbaFZUfT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 16:35:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4236 "EHLO mx1.redhat.com"
+	id S1752279AbaFZUf3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 16:35:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5894 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751745AbaFZUfR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 16:35:17 -0400
+	id S1751877AbaFZUfZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 16:35:25 -0400
 From: Vivek Goyal <vgoyal@redhat.com>
 To: linux-kernel@vger.kernel.org, kexec@lists.infradead.org
 Cc: ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org, greg@kroah.com,
         bp@alien8.de, dyoung@redhat.com, chaowang@redhat.com, bhe@redhat.com,
         akpm@linux-foundation.org, Vivek Goyal <vgoyal@redhat.com>
-Subject: [PATCH 05/15] kexec: Use common function for kimage_normal_alloc() and kimage_crash_alloc()
-Date: Thu, 26 Jun 2014 16:33:34 -0400
-Message-Id: <1403814824-7587-6-git-send-email-vgoyal@redhat.com>
+Subject: [PATCH 11/15] purgatory: Core purgatory functionality
+Date: Thu, 26 Jun 2014 16:33:40 -0400
+Message-Id: <1403814824-7587-12-git-send-email-vgoyal@redhat.com>
 In-Reply-To: <1403814824-7587-1-git-send-email-vgoyal@redhat.com>
 References: <1403814824-7587-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kimage_normal_alloc() and kimage_crash_alloc() are doing lot of similar
-things and differ only little. So instead of having two separate functions
-create a common function kimage_alloc_init() and pass it the "flags"
-argument which tells whether it is normal kexec or kexec_on_panic. And
-this function should be able to deal with both the cases.
+Create a stand alone relocatable object purgatory which runs between two
+kernels. This name, concept and some code has been taken from kexec-tools.
+Idea is that this code runs after a crash and it runs in minimal environment.
+So keep it separate from rest of the kernel and in long term we will have
+to practically do no maintenance of this code.
 
-This consolidation also helps later where we can use a common function
-kimage_file_alloc_init() to handle normal and crash cases for new file
-based kexec syscall.
+This code also has the logic to do verify sha256 hashes of various
+segments which have been loaded into memory. So first we verify that
+the kernel we are jumping to is fine and has not been corrupted and
+make progress only if checsums are verified.
+
+This code also takes care of copying some memory contents to backup region.
 
 Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 ---
- kernel/kexec.c | 105 +++++++++++++++++++--------------------------------------
- 1 file changed, 34 insertions(+), 71 deletions(-)
+ arch/x86/Kbuild                   |   4 ++
+ arch/x86/Makefile                 |   8 +++
+ arch/x86/purgatory/Makefile       |  30 +++++++++++
+ arch/x86/purgatory/entry64.S      | 101 ++++++++++++++++++++++++++++++++++++++
+ arch/x86/purgatory/purgatory.c    |  72 +++++++++++++++++++++++++++
+ arch/x86/purgatory/setup-x86_64.S |  58 ++++++++++++++++++++++
+ arch/x86/purgatory/stack.S        |  19 +++++++
+ arch/x86/purgatory/string.c       |  13 +++++
+ 8 files changed, 305 insertions(+)
+ create mode 100644 arch/x86/purgatory/Makefile
+ create mode 100644 arch/x86/purgatory/entry64.S
+ create mode 100644 arch/x86/purgatory/purgatory.c
+ create mode 100644 arch/x86/purgatory/setup-x86_64.S
+ create mode 100644 arch/x86/purgatory/stack.S
+ create mode 100644 arch/x86/purgatory/string.c
 
-diff --git a/kernel/kexec.c b/kernel/kexec.c
-index 44e823e..c69ce00 100644
---- a/kernel/kexec.c
-+++ b/kernel/kexec.c
-@@ -260,12 +260,20 @@ static struct kimage *do_kimage_alloc_init(void)
+diff --git a/arch/x86/Kbuild b/arch/x86/Kbuild
+index e5287d8..61b6d51 100644
+--- a/arch/x86/Kbuild
++++ b/arch/x86/Kbuild
+@@ -16,3 +16,7 @@ obj-$(CONFIG_IA32_EMULATION) += ia32/
  
- static void kimage_free_page_list(struct list_head *list);
+ obj-y += platform/
+ obj-y += net/
++
++ifeq ($(CONFIG_X86_64),y)
++obj-$(CONFIG_KEXEC) += purgatory/
++endif
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index 33f71b0..dc302a7 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -186,6 +186,14 @@ archscripts: scripts_basic
+ archheaders:
+ 	$(Q)$(MAKE) $(build)=arch/x86/syscalls all
  
--static int kimage_normal_alloc(struct kimage **rimage, unsigned long entry,
--				unsigned long nr_segments,
--				struct kexec_segment __user *segments)
-+static int kimage_alloc_init(struct kimage **rimage, unsigned long entry,
-+			     unsigned long nr_segments,
-+			     struct kexec_segment __user *segments,
-+			     unsigned long flags)
- {
--	int result;
++archprepare:
++ifeq ($(CONFIG_KEXEC),y)
++# Build only for 64bit. No loaders for 32bit yet.
++ ifeq ($(CONFIG_X86_64),y)
++	$(Q)$(MAKE) $(build)=arch/x86/purgatory arch/x86/purgatory/kexec-purgatory.c
++ endif
++endif
++
+ ###
+ # Kernel objects
+ 
+diff --git a/arch/x86/purgatory/Makefile b/arch/x86/purgatory/Makefile
+new file mode 100644
+index 0000000..e5829dd
+--- /dev/null
++++ b/arch/x86/purgatory/Makefile
+@@ -0,0 +1,30 @@
++purgatory-y := purgatory.o stack.o setup-x86_$(BITS).o sha256.o entry64.o string.o
++
++targets += $(purgatory-y)
++PURGATORY_OBJS = $(addprefix $(obj)/,$(purgatory-y))
++
++LDFLAGS_purgatory.ro := -e purgatory_start -r --no-undefined -nostdlib -z nodefaultlib
++targets += purgatory.ro
++
++# Default KBUILD_CFLAGS can have -pg option set when FTRACE is enabled. That
++# in turn leaves some undefined symbols like __fentry__ in purgatory and not
++# sure how to relocate those. Like kexec-tools, use custom flags.
++
++KBUILD_CFLAGS := -fno-strict-aliasing -Wall -Wstrict-prototypes -fno-zero-initialized-in-bss -fno-builtin -ffreestanding -c -MD -Os -mcmodel=large
++
++$(obj)/purgatory.ro: $(PURGATORY_OBJS) FORCE
++		$(call if_changed,ld)
++
++targets += kexec-purgatory.c
++
++quiet_cmd_bin2c = BIN2C   $@
++      cmd_bin2c = cat $(obj)/purgatory.ro | $(srctree)/scripts/basic/bin2c kexec_purgatory > $(obj)/kexec-purgatory.c
++
++$(obj)/kexec-purgatory.c: $(obj)/purgatory.ro FORCE
++	$(call if_changed,bin2c)
++
++
++# No loaders for 32bits yet.
++ifeq ($(CONFIG_X86_64),y)
++ obj-$(CONFIG_KEXEC)		+= kexec-purgatory.o
++endif
+diff --git a/arch/x86/purgatory/entry64.S b/arch/x86/purgatory/entry64.S
+new file mode 100644
+index 0000000..be3249d
+--- /dev/null
++++ b/arch/x86/purgatory/entry64.S
+@@ -0,0 +1,101 @@
++/*
++ * Copyright (C) 2003,2004  Eric Biederman (ebiederm@xmission.com)
++ * Copyright (C) 2014  Red Hat Inc.
++
++ * Author(s): Vivek Goyal <vgoyal@redhat.com>
++ *
++ * This code has been taken from kexec-tools.
++ *
++ * This source code is licensed under the GNU General Public License,
++ * Version 2.  See the file COPYING for more details.
++ */
++
++	.text
++	.balign 16
++	.code64
++	.globl entry64, entry64_regs
++
++
++entry64:
++	/* Setup a gdt that should be preserved */
++	lgdt gdt(%rip)
++
++	/* load the data segments */
++	movl    $0x18, %eax     /* data segment */
++	movl    %eax, %ds
++	movl    %eax, %es
++	movl    %eax, %ss
++	movl    %eax, %fs
++	movl    %eax, %gs
++
++	/* Setup new stack */
++	leaq    stack_init(%rip), %rsp
++	pushq   $0x10 /* CS */
++	leaq    new_cs_exit(%rip), %rax
++	pushq   %rax
++	lretq
++new_cs_exit:
++
++	/* Load the registers */
++	movq	rax(%rip), %rax
++	movq	rbx(%rip), %rbx
++	movq	rcx(%rip), %rcx
++	movq	rdx(%rip), %rdx
++	movq	rsi(%rip), %rsi
++	movq	rdi(%rip), %rdi
++	movq    rsp(%rip), %rsp
++	movq	rbp(%rip), %rbp
++	movq	r8(%rip), %r8
++	movq	r9(%rip), %r9
++	movq	r10(%rip), %r10
++	movq	r11(%rip), %r11
++	movq	r12(%rip), %r12
++	movq	r13(%rip), %r13
++	movq	r14(%rip), %r14
++	movq	r15(%rip), %r15
++
++	/* Jump to the new code... */
++	jmpq	*rip(%rip)
++
++	.section ".rodata"
++	.balign 4
++entry64_regs:
++rax:	.quad 0x0
++rbx:	.quad 0x0
++rcx:	.quad 0x0
++rdx:	.quad 0x0
++rsi:	.quad 0x0
++rdi:	.quad 0x0
++rsp:	.quad 0x0
++rbp:	.quad 0x0
++r8:	.quad 0x0
++r9:	.quad 0x0
++r10:	.quad 0x0
++r11:	.quad 0x0
++r12:	.quad 0x0
++r13:	.quad 0x0
++r14:	.quad 0x0
++r15:	.quad 0x0
++rip:	.quad 0x0
++	.size entry64_regs, . - entry64_regs
++
++	/* GDT */
++	.section ".rodata"
++	.balign 16
++gdt:
++	/* 0x00 unusable segment
++	 * 0x08 unused
++	 * so use them as gdt ptr
++	 */
++	.word gdt_end - gdt - 1
++	.quad gdt
++	.word 0, 0, 0
++
++	/* 0x10 4GB flat code segment */
++	.word 0xFFFF, 0x0000, 0x9A00, 0x00AF
++
++	/* 0x18 4GB flat data segment */
++	.word 0xFFFF, 0x0000, 0x9200, 0x00CF
++gdt_end:
++stack:	.quad   0, 0
++stack_init:
+diff --git a/arch/x86/purgatory/purgatory.c b/arch/x86/purgatory/purgatory.c
+new file mode 100644
+index 0000000..25e068b
+--- /dev/null
++++ b/arch/x86/purgatory/purgatory.c
+@@ -0,0 +1,72 @@
++/*
++ * purgatory: Runs between two kernels
++ *
++ * Copyright (C) 2014 Red Hat Inc.
++ *
++ * Author:
++ *       Vivek Goyal <vgoyal@redhat.com>
++ *
++ * This source code is licensed under the GNU General Public License,
++ * Version 2.  See the file COPYING for more details.
++ */
++
++#include "sha256.h"
++#include "../boot/string.h"
++
++struct sha_region {
++	unsigned long start;
++	unsigned long len;
++};
++
++unsigned long backup_dest = 0;
++unsigned long backup_src = 0;
++unsigned long backup_sz = 0;
++
++u8 sha256_digest[SHA256_DIGEST_SIZE] = { 0 };
++
++struct sha_region sha_regions[16] = {};
++
++/*
++ * On x86, second kernel requries first 640K of memory to boot. Copy
++ * first 640K to a backup region in reserved memory range so that second
++ * kernel can use first 640K.
++ */
++static int copy_backup_region(void)
++{
++	if (backup_dest)
++		memcpy((void *)backup_dest, (void *)backup_src, backup_sz);
++
++	return 0;
++}
++
++int verify_sha256_digest(void)
++{
++	struct sha_region *ptr, *end;
++	u8 digest[SHA256_DIGEST_SIZE];
++	struct sha256_state sctx;
++
++	sha256_init(&sctx);
++	end = &sha_regions[sizeof(sha_regions)/sizeof(sha_regions[0])];
++	for (ptr = sha_regions; ptr < end; ptr++)
++		sha256_update(&sctx, (uint8_t *)(ptr->start), ptr->len);
++
++	sha256_final(&sctx, digest);
++
++	if (memcmp(digest, sha256_digest, sizeof(digest)))
++		return 1;
++
++	return 0;
++}
++
++void purgatory(void)
++{
 +	int ret;
- 	struct kimage *image;
-+	bool kexec_on_panic = flags & KEXEC_ON_CRASH;
 +
-+	if (kexec_on_panic) {
-+		/* Verify we have a valid entry point */
-+		if ((entry < crashk_res.start) || (entry > crashk_res.end))
-+			return -EADDRNOTAVAIL;
++	ret = verify_sha256_digest();
++	if (ret) {
++		/* loop forever */
++		for (;;)
++			;
 +	}
- 
- 	/* Allocate and initialize a controlling structure */
- 	image = do_kimage_alloc_init();
-@@ -274,20 +282,26 @@ static int kimage_normal_alloc(struct kimage **rimage, unsigned long entry,
- 
- 	image->start = entry;
- 
--	result = copy_user_segment_list(image, nr_segments, segments);
--	if (result)
-+	ret = copy_user_segment_list(image, nr_segments, segments);
-+	if (ret)
- 		goto out_free_image;
- 
--	result = sanity_check_segment_list(image);
--	if (result)
-+	ret = sanity_check_segment_list(image);
-+	if (ret)
- 		goto out_free_image;
- 
-+	 /* Enable the special crash kernel control page allocation policy. */
-+	if (kexec_on_panic) {
-+		image->control_page = crashk_res.start;
-+		image->type = KEXEC_TYPE_CRASH;
-+	}
++	copy_backup_region();
++}
+diff --git a/arch/x86/purgatory/setup-x86_64.S b/arch/x86/purgatory/setup-x86_64.S
+new file mode 100644
+index 0000000..fe3c91b
+--- /dev/null
++++ b/arch/x86/purgatory/setup-x86_64.S
+@@ -0,0 +1,58 @@
++/*
++ * purgatory:  setup code
++ *
++ * Copyright (C) 2003,2004  Eric Biederman (ebiederm@xmission.com)
++ * Copyright (C) 2014 Red Hat Inc.
++ *
++ * This code has been taken from kexec-tools.
++ *
++ * This source code is licensed under the GNU General Public License,
++ * Version 2.  See the file COPYING for more details.
++ */
 +
- 	/*
- 	 * Find a location for the control code buffer, and add it
- 	 * the vector of segments so that it's pages will also be
- 	 * counted as destination pages.
- 	 */
--	result = -ENOMEM;
-+	ret = -ENOMEM;
- 	image->control_code_page = kimage_alloc_control_pages(image,
- 					   get_order(KEXEC_CONTROL_PAGE_SIZE));
- 	if (!image->control_code_page) {
-@@ -295,10 +309,12 @@ static int kimage_normal_alloc(struct kimage **rimage, unsigned long entry,
- 		goto out_free_image;
- 	}
- 
--	image->swap_page = kimage_alloc_control_pages(image, 0);
--	if (!image->swap_page) {
--		pr_err("Could not allocate swap buffer\n");
--		goto out_free_control_pages;
-+	if (!kexec_on_panic) {
-+		image->swap_page = kimage_alloc_control_pages(image, 0);
-+		if (!image->swap_page) {
-+			pr_err("Could not allocate swap buffer\n");
-+			goto out_free_control_pages;
-+		}
- 	}
- 
- 	*rimage = image;
-@@ -307,60 +323,7 @@ out_free_control_pages:
- 	kimage_free_page_list(&image->control_pages);
- out_free_image:
- 	kfree(image);
--	return result;
--}
--
--static int kimage_crash_alloc(struct kimage **rimage, unsigned long entry,
--				unsigned long nr_segments,
--				struct kexec_segment __user *segments)
--{
--	int result;
--	struct kimage *image;
--
--	/* Verify we have a valid entry point */
--	if ((entry < crashk_res.start) || (entry > crashk_res.end))
--		return -EADDRNOTAVAIL;
--
--	/* Allocate and initialize a controlling structure */
--	image = do_kimage_alloc_init();
--	if (!image)
--		return -ENOMEM;
--
--	image->start = entry;
--
--	/* Enable the special crash kernel control page
--	 * allocation policy.
--	 */
--	image->control_page = crashk_res.start;
--	image->type = KEXEC_TYPE_CRASH;
--
--	result = copy_user_segment_list(image, nr_segments, segments);
--	if (result)
--		goto out_free_image;
--
--	result = sanity_check_segment_list(image);
--	if (result)
--		goto out_free_image;
--
--	/*
--	 * Find a location for the control code buffer, and add
--	 * the vector of segments so that it's pages will also be
--	 * counted as destination pages.
--	 */
--	result = -ENOMEM;
--	image->control_code_page = kimage_alloc_control_pages(image,
--					   get_order(KEXEC_CONTROL_PAGE_SIZE));
--	if (!image->control_code_page) {
--		pr_err("Could not allocate control_code_buffer\n");
--		goto out_free_image;
--	}
--
--	*rimage = image;
--	return 0;
--
--out_free_image:
--	kfree(image);
--	return result;
-+	return ret;
- }
- 
- static int kimage_is_destination_range(struct kimage *image,
-@@ -1003,16 +966,16 @@ SYSCALL_DEFINE4(kexec_load, unsigned long, entry, unsigned long, nr_segments,
- 
- 		/* Loading another kernel to reboot into */
- 		if ((flags & KEXEC_ON_CRASH) == 0)
--			result = kimage_normal_alloc(&image, entry,
--							nr_segments, segments);
-+			result = kimage_alloc_init(&image, entry, nr_segments,
-+						   segments, flags);
- 		/* Loading another kernel to switch to if this one crashes */
- 		else if (flags & KEXEC_ON_CRASH) {
- 			/* Free any current crash dump kernel before
- 			 * we corrupt it.
- 			 */
- 			kimage_free(xchg(&kexec_crash_image, NULL));
--			result = kimage_crash_alloc(&image, entry,
--						     nr_segments, segments);
-+			result = kimage_alloc_init(&image, entry, nr_segments,
-+						   segments, flags);
- 			crash_map_reserved_pages();
- 		}
- 		if (result)
++	.text
++	.globl purgatory_start
++	.balign 16
++purgatory_start:
++	.code64
++
++	/* Load a gdt so I know what the segment registers are */
++	lgdt	gdt(%rip)
++
++	/* load the data segments */
++	movl	$0x18, %eax	/* data segment */
++	movl	%eax, %ds
++	movl	%eax, %es
++	movl	%eax, %ss
++	movl	%eax, %fs
++	movl	%eax, %gs
++
++	/* Setup a stack */
++	leaq	lstack_end(%rip), %rsp
++
++	/* Call the C code */
++	call purgatory
++	jmp	entry64
++
++	.section ".rodata"
++	.balign 16
++gdt:	/* 0x00 unusable segment
++	 * 0x08 unused
++	 * so use them as the gdt ptr
++	 */
++	.word	gdt_end - gdt - 1
++	.quad	gdt
++	.word	0, 0, 0
++
++	/* 0x10 4GB flat code segment */
++	.word	0xFFFF, 0x0000, 0x9A00, 0x00AF
++
++	/* 0x18 4GB flat data segment */
++	.word	0xFFFF, 0x0000, 0x9200, 0x00CF
++gdt_end:
++
++	.bss
++	.balign 4096
++lstack:
++	.skip 4096
++lstack_end:
+diff --git a/arch/x86/purgatory/stack.S b/arch/x86/purgatory/stack.S
+new file mode 100644
+index 0000000..3cefba1
+--- /dev/null
++++ b/arch/x86/purgatory/stack.S
+@@ -0,0 +1,19 @@
++/*
++ * purgatory:  stack
++ *
++ * Copyright (C) 2014 Red Hat Inc.
++ *
++ * This source code is licensed under the GNU General Public License,
++ * Version 2.  See the file COPYING for more details.
++ */
++
++	/* A stack for the loaded kernel.
++	 * Seperate and in the data section so it can be prepopulated.
++	 */
++	.data
++	.balign 4096
++	.globl stack, stack_end
++
++stack:
++	.skip 4096
++stack_end:
+diff --git a/arch/x86/purgatory/string.c b/arch/x86/purgatory/string.c
+new file mode 100644
+index 0000000..d886b1f
+--- /dev/null
++++ b/arch/x86/purgatory/string.c
+@@ -0,0 +1,13 @@
++/*
++ * Simple string functions.
++ *
++ * Copyright (C) 2014 Red Hat Inc.
++ *
++ * Author:
++ *       Vivek Goyal <vgoyal@redhat.com>
++ *
++ * This source code is licensed under the GNU General Public License,
++ * Version 2.  See the file COPYING for more details.
++ */
++
++#include "../boot/string.c"
 -- 
 1.9.0
 
