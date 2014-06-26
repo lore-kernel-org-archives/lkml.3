@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751464AbaFZUNT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 16:13:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33171 "EHLO mail.zytor.com"
+	id S1751569AbaFZUO6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 16:14:58 -0400
+Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:40802
+	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751122AbaFZUNS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 16:13:18 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CALCETrWJD4kvoCxxb9y19uMakChmxamveKDceDOhyjYzFkJoUA@mail.gmail.com>
-References: <55466fbd36df1d011876135cf7ca5d40c05029c7.1403809591.git.luto@amacapital.net> <20140626195629.GC5714@two.firstfloor.org> <CALCETrVBKno2skh3zR=1GYuojwPhYPLD=1HFcLMXjStS+0SPJQ@mail.gmail.com> <CALCETrWJD4kvoCxxb9y19uMakChmxamveKDceDOhyjYzFkJoUA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [PATCH] x86_64,entry: Fix RCX for traced syscalls
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Thu, 26 Jun 2014 13:12:35 -0700
-To: Andy Lutomirski <luto@amacapital.net>, Andi Kleen <andi@firstfloor.org>
-CC: X86 ML <x86@kernel.org>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@alien8.de>
-Message-ID: <7919ae8b-958b-4b12-a5f4-8be2c3df3824@email.android.com>
+	id S1750878AbaFZUO5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 16:14:57 -0400
+X-Greylist: delayed 303 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 Jun 2014 16:14:57 EDT
+x-originating-ip: 72.167.245.219
+From: Yue Zhang <yuezha@microsoft.com>
+To: kys@microsoft.com, haiyangz@microsoft.com,
+        driverdev-devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
+        olaf@aepfle.de, jasowang@redhat.com, apw@canonical.com
+Cc: decui@microsoft.com, huishao@microsoft.com
+Subject: [PATCH] Tools: hv: fix file overwriting of hv_fcopy_daemon
+Date: Thu, 26 Jun 2014 14:09:28 -0700
+Message-Id: <1403816968-15419-1-git-send-email-yuezha@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The real question is if we care that sysret and iter don't match.  On 32 bits the situation is even more complex.
+From: Yue Zhang <yuezha@microsoft.com>
 
-On June 26, 2014 1:00:22 PM PDT, Andy Lutomirski <luto@amacapital.net> wrote:
->On Thu, Jun 26, 2014 at 12:59 PM, Andy Lutomirski <luto@amacapital.net>
->wrote:
->> On Thu, Jun 26, 2014 at 12:56 PM, Andi Kleen <andi@firstfloor.org>
->wrote:
->>>> show RCX == RIP even under strace.
->>>
->>> If you think it's really worth the extra instruction?
->>
->> Hard to say.  That extra instruction only happens on slow paths, so I
->> suspect the slowdown is negligible.  On the other hand, having
->syscall
->> show a blatant difference in behavior between traced and untraced
->> processes seems unfortunate.
->>
->>>
->>> It's not wrong, but it's not clear if it's useful.
->
->Also, if anyone ever wants to add some code to switch back from iret
->to sysret when sysret will work, this is a prerequisite.  Otherwise
->sysret will never match iret.  (I'm not immediately planning on doing
->this, but I can imagine workloads (e.g. UML) for which it would be a
->big improvement.)
->
->--Andy
+hv_fcopy_daemon fails to overwrite a file if the target file already
+exits.
 
+Add O_TRUNC flag on opening.
+
+Signed-off-by: Yue Zhang <yuezha@microsoft.com>
+---
+ tools/hv/hv_fcopy_daemon.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/tools/hv/hv_fcopy_daemon.c b/tools/hv/hv_fcopy_daemon.c
+index fba1c75..01eee6b 100644
+--- a/tools/hv/hv_fcopy_daemon.c
++++ b/tools/hv/hv_fcopy_daemon.c
+@@ -88,7 +88,8 @@ static int hv_start_fcopy(struct hv_start_fcopy *smsg)
+ 		}
+ 	}
+ 
+-	target_fd = open(target_fname, O_RDWR | O_CREAT | O_CLOEXEC, 0744);
++	target_fd = open(target_fname,
++				O_RDWR | O_CREAT | O_TRUNC | O_CLOEXEC, 0744);
+ 	if (target_fd == -1) {
+ 		syslog(LOG_INFO, "Open Failed: %s", strerror(errno));
+ 		goto done;
 -- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+1.9.1
+
