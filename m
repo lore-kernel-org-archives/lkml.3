@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755947AbaFZNiw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 09:38:52 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:36230 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755261AbaFZNiu (ORCPT
+	id S1756021AbaFZNkX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 09:40:23 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:45406 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751765AbaFZNkV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 09:38:50 -0400
+	Thu, 26 Jun 2014 09:40:21 -0400
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
+To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Linus Walleij <linus.walleij@linaro.org>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] mfd: ab8500-debugfs.c:  Cleaning up values that are never used
-Date: Thu, 26 Jun 2014 15:40:00 +0200
-Message-Id: <1403790000-11334-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: [PATCH] pinctrl: pinctrl-at91.c:  Cleaning up values that are never used
+Date: Thu, 26 Jun 2014 15:41:31 +0200
+Message-Id: <1403790091-11423-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,27 +28,25 @@ This was found using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/mfd/ab8500-debugfs.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/pinctrl/pinctrl-at91.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mfd/ab8500-debugfs.c b/drivers/mfd/ab8500-debugfs.c
-index d1a22aa..d514e36 100644
---- a/drivers/mfd/ab8500-debugfs.c
-+++ b/drivers/mfd/ab8500-debugfs.c
-@@ -1350,12 +1350,11 @@ static int ab8500_print_all_banks(struct seq_file *s, void *p)
+diff --git a/drivers/pinctrl/pinctrl-at91.c b/drivers/pinctrl/pinctrl-at91.c
+index 421493c..9854a29 100644
+--- a/drivers/pinctrl/pinctrl-at91.c
++++ b/drivers/pinctrl/pinctrl-at91.c
+@@ -793,9 +793,9 @@ static void at91_pinconf_dbg_show(struct pinctrl_dev *pctldev,
+ 				   struct seq_file *s, unsigned pin_id)
  {
- 	struct device *dev = s->private;
- 	unsigned int i;
--	int err;
+ 	unsigned long config;
+-	int ret, val, num_conf = 0;
++	int val, num_conf = 0;
  
- 	seq_printf(s, AB8500_NAME_STRING " register values:\n");
+-	ret = at91_pinconf_get(pctldev, pin_id, &config);
++	at91_pinconf_get(pctldev, pin_id, &config);
  
- 	for (i = 0; i < AB8500_NUM_BANKS; i++) {
--		err = seq_printf(s, " bank 0x%02X:\n", i);
-+		seq_printf(s, " bank 0x%02X:\n", i);
- 
- 		ab8500_registers_print(dev, i, s);
- 	}
+ 	DBG_SHOW_FLAG(MULTI_DRIVE);
+ 	DBG_SHOW_FLAG(PULL_UP);
 -- 
 1.7.10.4
 
