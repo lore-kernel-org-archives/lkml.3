@@ -1,101 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755871AbaFZOxn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 10:53:43 -0400
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:59259 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752751AbaFZOxl convert rfc822-to-8bit (ORCPT
+	id S1756280AbaFZO4N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 10:56:13 -0400
+Received: from na01-by1-obe.ptr.o365filtering.com ([64.4.22.89]:18255 "EHLO
+	na01-by1-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751765AbaFZO4K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 10:53:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <CACP_E+KECMyusuZd6hpzthL-RpfUOJpWh0EABf1DGAeaXc00aA@mail.gmail.com>
-References: <1403603667-11302-1-git-send-email-acourbot@nvidia.com>
- <1403603667-11302-3-git-send-email-acourbot@nvidia.com> <20140624100220.GK32514@n2100.arm.linux.org.uk>
- <53A953E6.2030503@nvidia.com> <53A95910.20104@nvidia.com> <CAAVeFu+rbCViC87kYCLfxGV18iYq=Pa0ABb+L=iNiYPLn+mR8Q@mail.gmail.com>
- <53A96EC5.3030701@canonical.com> <1403616338.4230.8.camel@weser.hi.pengutronix.de>
- <CACP_E+KECMyusuZd6hpzthL-RpfUOJpWh0EABf1DGAeaXc00aA@mail.gmail.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Thu, 26 Jun 2014 23:53:20 +0900
-Message-ID: <CAAVeFuLU04rk1DWMhVJV=ktVCpq4js38p1ipCr1jh1x72b=GZw@mail.gmail.com>
-Subject: Re: [Nouveau] [PATCH v2 2/3] drm/ttm: introduce dma cache sync helpers
-To: =?UTF-8?Q?St=C3=A9phane_Marchesin?= <stephane.marchesin@gmail.com>
-Cc: Lucas Stach <l.stach@pengutronix.de>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+	Thu, 26 Jun 2014 10:56:10 -0400
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: Olaf Hering <olaf@aepfle.de>
+CC: Greg KH <greg@kroah.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        "davem@davemloft.net" <davem@davemloft.net>
+Subject: RE: [PATCH net-next] hyperv: Add handler for
+ RNDIS_STATUS_NETWORK_CHANGE event
+Thread-Topic: [PATCH net-next] hyperv: Add handler for
+ RNDIS_STATUS_NETWORK_CHANGE event
+Thread-Index: AQHPjB+WQKkwvkUXekGWoyJ+QmEz5Zt55UEAgAAEPICAADyUMIAEqgwA///ZfgCAAH5ugP//tltAgAB+poD//6PcsACSRsmAAAHL1dA=
+Date: Thu, 26 Jun 2014 14:55:11 +0000
+Message-ID: <072cf0ff85474ca8af2c3930f822ecad@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+References: <1403228076-7596-1-git-send-email-haiyangz@microsoft.com>
+ <20140620045704.GA4850@aepfle.de> <20140620051213.GA9960@kroah.com>
+ <ff458d1b896d4a70a32fa7709911274c@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+ <20140623080242.GA16924@aepfle.de>
+ <06b508cbb6b949f4b3e13e7797948e56@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+ <20140623131723.GA7026@aepfle.de>
+ <5fb9ddebb68d456ab87979b5cc3830ec@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+ <20140623162705.GA5957@aepfle.de>
+ <4ee8be5360a44b5abfa6df871ec45527@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+ <20140626084539.GA32471@aepfle.de>
+In-Reply-To: <20140626084539.GA32471@aepfle.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.59.235.233]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:131.107.159.99;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(24454002)(51704005)(189002)(199002)(377454003)(13464003)(51914003)(64706001)(47776003)(20776003)(93886003)(66066001)(80022001)(79102001)(81542001)(99396002)(44976005)(107046002)(92566001)(46102001)(2656002)(6806004)(83322001)(23676002)(97736001)(85852003)(83072002)(77982001)(87936001)(19580395003)(19580405001)(2009001)(84676001)(68736004)(81342001)(4396001)(21056001)(85326001)(86612001)(54356999)(50986999)(106466001)(77096999)(76176999)(31966008)(74662001)(33646001)(76482001)(74502001)(50466002)(106116001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2SR01MB594;H:hybrid.exchange.microsoft.com;FPR:;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 02543CD7CD
+X-OriginatorOrg: msft.ccsctp.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s5QEuKYl018399
 
-On Wed, Jun 25, 2014 at 1:00 PM, St√©phane Marchesin
-<stephane.marchesin@gmail.com> wrote:
-> On Tue, Jun 24, 2014 at 6:25 AM, Lucas Stach <l.stach@pengutronix.de> wrote:
->> Am Dienstag, den 24.06.2014, 14:27 +0200 schrieb Maarten Lankhorst:
->>> op 24-06-14 14:23, Alexandre Courbot schreef:
->>> > On Tue, Jun 24, 2014 at 7:55 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
->>> >> On 06/24/2014 07:33 PM, Alexandre Courbot wrote:
->>> >>> On 06/24/2014 07:02 PM, Russell King - ARM Linux wrote:
->>> >>>> On Tue, Jun 24, 2014 at 06:54:26PM +0900, Alexandre Courbot wrote:
->>> >>>>> From: Lucas Stach <dev@lynxeye.de>
->>> >>>>>
->>> >>>>> On architectures for which access to GPU memory is non-coherent,
->>> >>>>> caches need to be flushed and invalidated explicitly at the
->>> >>>>> appropriate places. Introduce two small helpers to make things
->>> >>>>> easy for TTM-based drivers.
->>> >>>>
->>> >>>> Have you run this with DMA API debugging enabled?  I suspect you haven't,
->>> >>>> and I recommend that you do.
->>> >>>
->>> >>> # cat /sys/kernel/debug/dma-api/error_count
->>> >>> 162621
->>> >>>
->>> >>> (‚ïØ¬∞‚ñ°¬∞Ôºâ‚ïØÔ∏µ ‚îª‚îÅ‚îª)
->>> >>
->>> >> *puts table back on its feet*
->>> >>
->>> >> So, yeah - TTM memory is not allocated using the DMA API, hence we cannot
->>> >> use the DMA API to sync it. Thanks Russell for pointing it out.
->>> >>
->>> >> The only alternative I see here is to flush the CPU caches when syncing for
->>> >> the device, and invalidate them for the other direction. Of course if the
->>> >> device has caches on its side as well the opposite operation must also be
->>> >> done for it. Guess the only way is to handle it all by ourselves here. :/
->>> > ... and it really sucks. Basically if we cannot use the DMA API here
->>> > we will lose the convenience of having a portable API that does just
->>> > the right thing for the underlying platform. Without it we would have
->>> > to duplicate arm_iommu_sync_single_for_cpu/device() and we would only
->>> > have support for ARM.
->>> >
->>> > The usage of the DMA API that we are doing might be illegal, but in
->>> > essence it does exactly what we need - at least for ARM. What are the
->>> > alternatives?
->>> Convert TTM to use the dma api? :-)
->>
->> Actually TTM already has a page alloc backend using the DMA API. It's
->> just not used for the standard case right now.
->>
->> I would argue that we should just use this page allocator (which has the
->> side effect of getting pages from CMA if available -> you are actually
->> free to change the caching) and do away with the other allocator in the
->> ARM case.
->
-> CMA comes with its own set of (severe) limitations though, in
-> particular it's not possible to map arbitrary CPU pages into the GPU
-> without incurring a copy, you add arbitrary memory limits etc. Overall
-> that's not really a good pick for the long term...
 
-We don't plan to rely on CMA for too long. IOMMU support is on the way
-and should make our life easier, although no matter the source of
-memory, we will still have the issue of the lowmem mappings. So far it
-sounds like CMA is the only way to "undo" them, so in the end it may
-come down to whether or not the multi-mapping contraint applies to
-TK1. I will tap into our internal sources of knowledge to try and
-figure this one out.
+
+> -----Original Message-----
+> From: Olaf Hering [mailto:olaf@aepfle.de]
+> Sent: Thursday, June 26, 2014 4:46 AM
+> To: Haiyang Zhang
+> Cc: Greg KH; netdev@vger.kernel.org; jasowang@redhat.com; driverdev-
+> devel@linuxdriverproject.org; linux-kernel@vger.kernel.org;
+> davem@davemloft.net
+> Subject: Re: [PATCH net-next] hyperv: Add handler for
+> RNDIS_STATUS_NETWORK_CHANGE event
+> 
+> On Mon, Jun 23, Haiyang Zhang wrote:
+> 
+> > Yes, there is a link down/up event from the host, we currently call
+> > netif_carrier_off() / netif_carrier_on() with these events. Will
+> > hotplug scripts be triggered by netif_carrier_off/on? Where are the scripts
+> located at (SLES)?
+> 
+> In /etc/sysconfig/network/ifcfg-eth0 STARTMODE= should be set to "ifplugd",
+> this will most likely fix this sort of setup.
+
+Thanks for the info! I'll let our team know.
+
+- Haiyang
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
