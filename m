@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757638AbaFZMWe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 08:22:34 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:9700 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757431AbaFZMWb (ORCPT
+	id S1757782AbaFZMWt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 08:22:49 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:49376 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757493AbaFZMWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 08:22:31 -0400
-X-AuditID: cbfee68e-b7fb96d000004bfc-c0-53ac108590ac
+	Thu, 26 Jun 2014 08:22:46 -0400
+X-AuditID: cbfee68f-b7fef6d000003970-c7-53ac10930d46
 From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
 To: linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org
 Cc: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
         dianders@chromium.org, gregkh@linuxfoundation.org,
-        naveenkrishna.ch@gmail.com, cpgs@samsung.com
-Subject: [PATCH 0/3] ARM: DTS: create common dtsi for Peach pit and pi boards
-Date: Thu, 26 Jun 2014 17:49:05 +0530
-Message-id: <1403785148-20792-1-git-send-email-ch.naveen@samsung.com>
+        naveenkrishna.ch@gmail.com, cpgs@samsung.com,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Subject: [PATCH 1/3] ARM: DTS: use new compatible string for thermistors in
+ trats2
+Date: Thu, 26 Jun 2014 17:49:06 +0530
+Message-id: <1403785148-20792-2-git-send-email-ch.naveen@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrELMWRmVeSWpSXmKPExsWyRsSkVrdVYE2wwf5HvBYvD2lazD9yjtXi
-	7LKDbBbNi9ezWcw78o7F4vKuOWwWM87vY7JYtO0/swOHx+yGiyweO2fdZffYP3cNu0ffllWM
-	Hp83yQWwRnHZpKTmZJalFunbJXBlHJ7RxVKwm6Pi+MU3jA2MX9i6GDk5JARMJG5tuwVli0lc
-	uLcezBYSWMooMeFxEUzN8dufmboYuYDi0xklGp7MZoNw+pkkDs6cwgpSxSZgJnFw0Wp2EFtE
-	wFFix5x/YB3MAgsYJVp3rWYCSQgL+Ep8utEMZrMIqEocW3wdrIFXwFWi7/4foEEcQOsUJOZM
-	sgHplRBoZ5dovdfECFEvIPFt8iEWiBpZiU0HmCGuk5Q4uOIGywRGwQWMDKsYRVMLkguKk9KL
-	jPSKE3OLS/PS9ZLzczcxAsP39L9nfTsYbx6wPsSYDDRuIrOUaHI+MPzzSuINjc2MLExNTI2N
-	zC3NSBNWEudd9DApSEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVAOj7dXqOu7sNU1XU0IDooOX
-	fGh+n2OvcUScYb6MvMFtxmcfpoTuf1Gq+T1rY8zlg0crBCs83Oo7J0q+PRLPLMn6cK6Dlsoy
-	fYscpno2mbW6vU8qbhp1n9x7Y8v7RVcScrQDd7+7LLB5cZzI4ysH7oZrbqvw5Hh+YiLHmqij
-	Gxlbn8Vd73KffcdPiaU4I9FQi7moOBEAhlMRZ3UCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEIsWRmVeSWpSXmKPExsVy+t9jQd1WgTXBBounsFm8PKRpMf/IOVaL
-	s8sOslk0L17PZjHvyDsWi8u75rBZzDi/j8li0bb/zA4cHrMbLrJ47Jx1l91j/9w17B59W1Yx
-	enzeJBfAGtXAaJORmpiSWqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6Dr
-	lpkDdIuSQlliTilQKCCxuFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCGMePwjC6Wgt0cFccv
-	vmFsYPzC1sXIySEhYCJx/PZnJghbTOLCvfVAcS4OIYHpjBINT2ZDOf1MEgdnTmEFqWITMJM4
-	uGg1O4gtIuAosWPOPyaQImaBBYwSrbtWg40SFvCV+HSjGcxmEVCVOLb4OlgDr4CrRN/9P0CD
-	OIDWKUjMmWQzgZF7ASPDKkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYzg+HgmtYNxZYPFIUYB
-	DkYlHt4Pj1cFC7EmlhVX5h5ilOBgVhLhFfm9OliINyWxsiq1KD++qDQntfgQoynQ8onMUqLJ
-	+cDYzSuJNzQ2MTc1NrU0sTAxs1QS5z3Qah0oJJCeWJKanZpakFoE08fEwSnVwBjPWbHgVvac
-	dXqLqr5dYV93RW+7wLqHtoVsf5a81mcR4zM9MtMhahmzv9O3SR3Z7PMOuz+r2Cr1vixn4fmW
-	nBnuAr/WR/qqXnp888+5lVte5aoeZb0XdShFM6Wj1WNfLaP/s35zjU0/tFXuWF7K26hc2PtT
-	JWSOgYRcf8PLq1s7SlomSnGuMFRiKc5INNRiLipOBAAzfMwrpQIAAA==
+In-reply-to: <1403785148-20792-1-git-send-email-ch.naveen@samsung.com>
+References: <1403785148-20792-1-git-send-email-ch.naveen@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLLMWRmVeSWpSXmKPExsWyRsSkTneywJpggzn/jCxeHtK0uP7lOavF
+	/CPnWC3OLjvIZtG8eD2bxbwj71gsLu+aw2Yx4/w+JotF2/4zO3B6zG64yOKxc9Zddo/9c9ew
+	e/RtWcXo8XmTXABrFJdNSmpOZllqkb5dAlfG/KvTWQsOclfseHmTpYHxIGcXIweHhICJRPcr
+	iy5GTiBTTOLCvfVsXYxcHEICSxklbr65zghT87DLFSI+nVGi+9sfVginn0ni6ZwXLCDdbAJm
+	EgcXrWYHsUUEHCV2zPnHBFLELHCMUWLfvPmMIAlhgRCJV2feghWxCKhKvD3bA9bMK+Aqsb5z
+	OxPENgWJOZNsQMKcAm4SLR8OsICEhYBKrl2UBxkpIbCOXeJc52o2iDECEt8mH2KBaJWV2HSA
+	GeIZSYmDK26wTGAUXsDIsIpRNLUguaA4Kb3IWK84Mbe4NC9dLzk/dxMjMOhP/3vWv4Px7gHr
+	Q4zJQOMmMkuJJucDoyavJN7Q2MzIwtTE1NjI3NKMNGElcd77D5OChATSE0tSs1NTC1KL4otK
+	c1KLDzEycXBKNTC28BRo9jz/tKmtzHlZ8BxhBuWnixyL7c5yBrw6f8rSQDX+1AGXNPYrxhn7
+	f69madi++KiwxF0tnjTbhe1dCTpJt2Jsr/rFr/ocMy9L+1LV0+rv61R1zrVU2ix9d3Bxr/Nz
+	Jz83T94dRmpbF27kk/2nLPX2c0Rit7XqxuQlCYEGdkbHrlgfXKzEUpyRaKjFXFScCAARSNwv
+	kAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLIsWRmVeSWpSXmKPExsVy+t9jQd3JAmuCDf5P1rJ4eUjT4vqX56wW
+	84+cY7U4u+wgm0Xz4vVsFvOOvGOxuLxrDpvFjPP7mCwWbfvP7MDpMbvhIovHzll32T32z13D
+	7tG3ZRWjx+dNcgGsUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2
+	Si4+AbpumTlABykplCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCWsYM+Zfnc5a
+	cJC7YsfLmywNjAc5uxg5OCQETCQedrl2MXICmWISF+6tZ+ti5OIQEpjOKNH97Q8rhNPPJPF0
+	zgsWkCo2ATOJg4tWs4PYIgKOEjvm/GMCKWIWOMYosW/efEaQhLBAiMSrM2/BilgEVCXenu0B
+	a+YVcJVY37mdCWKzgsScSTYgYU4BN4mWDwdYQMJCQCXXLspPYORdwMiwilE0tSC5oDgpPddI
+	rzgxt7g0L10vOT93EyM4qp5J72Bc1WBxiFGAg1GJh/fD41XBQqyJZcWVuYcYJTiYlUR47/Ov
+	CRbiTUmsrEotyo8vKs1JLT7EaAp000RmKdHkfGDE55XEGxqbmJsam1qaWJiYWSqJ8x5stQ4U
+	EkhPLEnNTk0tSC2C6WPi4JRqYLRr28gyc9Ntsc2piw9Hf3+9Yd4J/rVfVA/fsT7geSXHn2mh
+	6Lz+FJu6voLQC+/l/bVez5lu67HwtvasyMX7p3w8xrZ/1puCXexnWuRnM/6eL2/E6jPzVbBA
+	/OS7lxb+swy60Ps6db1x3H8hk1tmEaf2T3+9vGWvwxOZCyL9rS5WcfNiVbbUvmxQYinOSDTU
+	Yi4qTgQAQSXoQsACAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -47,28 +53,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset does the following
-1. Create a common dtsi file cros-exynos-peach.dtsi for
-   exynos5420-peach-pit.dts and exynos5800-peach-pi.dts
-2. Adds the ADC based Thermistor nodes and enables them in peach_pit.dts
-   and peach_pi.dts
-3. Adds the ADC based Thermistor nodes for Exynos5250 based Snow
-4. Corrects the vendor prefix for thermistors in exynos4412-trats2.dts
+As Murata Manufactures the NTC based thermistors. The vendor
+name in the compatibility is preposed to change to "murata"
 
-Naveen Krishna Chatradhi (3):
-  ARM: DTS: use new compatible string for thermistors in trats2
-  ARM: DTS: Add NTC thermistor nodes to Exynos5250 based Snow
-  ARM: DTS: Add common dts file for Peach PIT and PI along with ADC
-    nodes
+This patch uses the new compatibility string in exynos4412 based
+Trats2 board.
 
- arch/arm/boot/dts/cros-exynos-peach.dtsi   |   41 ++++++++++++++++++++++++++++
- arch/arm/boot/dts/exynos4412-trats2.dts    |    4 +--
- arch/arm/boot/dts/exynos5250-snow.dts      |   34 +++++++++++++++++++++++
- arch/arm/boot/dts/exynos5420-peach-pit.dts |    6 ++++
- arch/arm/boot/dts/exynos5800-peach-pi.dts  |    6 ++++
- 5 files changed, 89 insertions(+), 2 deletions(-)
- create mode 100644 arch/arm/boot/dts/cros-exynos-peach.dtsi
+Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Cc: Chanwoo Choi <cw00.choi@samsung.com>
+Reviewed-by: Chanwoo Choi <cw00.choi@samsung.com>
+---
+This patch is carried forward (tracking purpose) along with the other
+dts changes in the patch set discussed
+http://www.spinics.net/lists/linux-iio/msg13486.html
 
+This patch was posted
+http://www.spinics.net/lists/linux-samsung-soc/msg33037.html
+
+
+ arch/arm/boot/dts/exynos4412-trats2.dts |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/exynos4412-trats2.dts b/arch/arm/boot/dts/exynos4412-trats2.dts
+index 11967f4..d35755a 100644
+--- a/arch/arm/boot/dts/exynos4412-trats2.dts
++++ b/arch/arm/boot/dts/exynos4412-trats2.dts
+@@ -771,7 +771,7 @@
+ 	};
+ 
+ 	thermistor-ap@0 {
+-		compatible = "ntc,ncp15wb473";
++		compatible = "murata,ncp15wb473";
+ 		pullup-uv = <1800000>;	 /* VCC_1.8V_AP */
+ 		pullup-ohm = <100000>;	 /* 100K */
+ 		pulldown-ohm = <100000>; /* 100K */
+@@ -779,7 +779,7 @@
+ 	};
+ 
+ 	thermistor-battery@1 {
+-		compatible = "ntc,ncp15wb473";
++		compatible = "murata,ncp15wb473";
+ 		pullup-uv = <1800000>;	 /* VCC_1.8V_AP */
+ 		pullup-ohm = <100000>;	 /* 100K */
+ 		pulldown-ohm = <100000>; /* 100K */
 -- 
 1.7.9.5
 
