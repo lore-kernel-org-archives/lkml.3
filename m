@@ -1,165 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755540AbaFZOMQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 10:12:16 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:25011 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755273AbaFZOMO (ORCPT
+	id S1756005AbaFZOPa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 10:15:30 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55404 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753449AbaFZOP2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 10:12:14 -0400
-Message-ID: <53AC2A3C.6030707@arm.com>
-Date: Thu, 26 Jun 2014 15:12:12 +0100
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Thu, 26 Jun 2014 10:15:28 -0400
+Date: Thu, 26 Jun 2014 15:14:45 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Liviu Dudau <Liviu.Dudau@arm.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-pci <linux-pci@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Jon Masters <jonathan@jonmasters.org>
+Subject: Re: [PATCH v7 1/6] pci: Introduce pci_register_io_range() helper
+ function.
+Message-ID: <20140626141444.GB5134@arm.com>
+References: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com>
+ <20140405001953.GE15806@google.com>
+ <20140407083120.GE17163@e106497-lin.cambridge.arm.com>
+ <5183143.FxBNM0xTAV@wuerfel>
+ <CAErSpo4iEV6khP63ZTF+YUTKi9WLFXzMv13nxw15y3qDg15Ztg@mail.gmail.com>
+ <20140626085926.GB11244@arm.com>
+ <20140626093029.GB12812@e106497-lin.cambridge.arm.com>
+ <20140626141138.GC15296@arm.com>
 MIME-Version: 1.0
-To: Eric Auger <eric.auger@linaro.org>
-CC: "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Christoffer Dall <christoffer.dall@linaro.org>
-Subject: Re: [RFC PATCH 0/9] ARM: Forwarding physical interrupts to a guest
- VM
-References: <1403688530-23273-1-git-send-email-marc.zyngier@arm.com> <53AAE242.3060405@linaro.org> <53ABE88C.1010401@arm.com> <53AC1906.90103@linaro.org>
-In-Reply-To: <53AC1906.90103@linaro.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140626141138.GC15296@arm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/06/14 13:58, Eric Auger wrote:
-> On 06/26/2014 11:31 AM, Marc Zyngier wrote:
->> Hi Eric,
->>
->> On 25/06/14 15:52, Eric Auger wrote:
->>> On 06/25/2014 11:28 AM, Marc Zyngier wrote:
->>>> The GIC architecture (ARM's Generic Interrupt Controller) allows an
->>>> active physical interrupt to be forwarded to a guest, and the guest to
->>>> indirectly perform the deactivation of the interrupt by performing an
->>>> EOI on the virtual interrupt (see for example the GICv2 spec, 3.2.1).
->>>>
->>>> So far, Linux doesn't have this notion, which is a bit of a pain.
->>>>
->>>> This patch series introduce two generic features:
->>>>
->>>> - A way to mark an interrupt as "forwarded": this allows an irq_chip
->>>>   to know that it shouldn't perform the deactivation itself
->>>> - A way to save/restore the "state" of a "forwarded" interrupt
->>>>
->>>> The series then adapts both GIC drivers to switch to EOImode == 1
->>>> (split priority drop and deactivation), to support this "forwarded"
->>>> feature and hacks the KVM/ARM timer backend to use all of this.
->>>>
->>>> This requires yet another bit of surgery in the vgic code in order to
->>>> allow a mapping between physical interrupts and virtual
->>>> ones. Hopefully, this should plug into VFIO and the whole irqfd thing,
->>>> but I don't understand any of that just yet (Eric?)
->>>
->>> Hello Marc,
-> Hi Marc
->>>
->>> Thanks for the patch, it brings a very interesting capability for
->>> improving the performance of KVM device assignment.
->>>
->>> From the integration pov I understand we need to
->>> 1) call irq_set_fwd_state to tell the gic the physical IRQ is forwarded
->>> and not deactivate it
->>
->> That would be irqd_set_irq_forwarded().
->>
->> irq_{g,s}et_fwd_state() are used when you're actually sharing a device
->> between guests, and need to context-switch its HW interrupt state
->> (typically, the timer). I wouldn't expect VFIO to use this, as the
->> device is exclusively assigned to a guest.
-> OK
->>
->>> 2) call vgic_map_phys_irq to the tell the vgic it must program the LRs
->>> accordingly.
->>>
->>> We currently have the vfio driver VFIO_DEVICE_SET_IRQS user API that
->>> makes possible to tell: device IRQ index #i (i=0, 1, 2 for my xgmac)
->>> shall trigger this fd.
->>> At that point it would be possible to tell the GIC the physical IRQ
->>> corresponding to i is forwarded.
->>>
->>> On the other hand we have KVM_IRQFD that enables to tell KVM: when this
->>> fd is triggered, you implement its handler in KVM irqfd framework and
->>> the handler injects the provided irchip.pin(gsi)=virtualIRQ - the famous
->>> GSI routing table - into this VM.
->>>
->>> Building the vgic map table hence requires to do some glue around vfio
->>> and irqfd info: physical IRQ ->(vfio) fd ->(irqfd) gsi.
->>>
->>> As such I would say those 2 user APIs(VFIO and IRQFD) are not fully
->>> adapted to put that in place but this may be feasible. Previous
->>> KVM_ASSIGN_DEV_IRQ was directly associated the pIRQ and vIRQ.
->>>
->>> we should be able to remove the physical IRQ mask in the vfio driver
->>> (this masking is done when triggering the fd and the IRQ is unmasked
->>> when the virtual IRQ is completed). It was there because the physical
->>> IRQ was completed and could hit again. Now with 2 stage completion the
->>> same IRQ cannot hit while guest has not not DIR'ed the IRQ so it fixes
->>> the issue I guess.
->>
->> Yes, that's exactly the idea.
->>
->>> Since we do not have EOI trap anymore we cannot trigger level-sensitive
->>> resamplefd in irqfd (this would be an ARM specificity)
->>
->> For a level interrupt, we still have the EOI maintenance interrupt,
->> which we could hook into to perform whatever resampling we need.
+On Thu, Jun 26, 2014 at 03:11:38PM +0100, Catalin Marinas wrote:
+> On Thu, Jun 26, 2014 at 10:30:29AM +0100, Liviu Dudau wrote:
+> > On Thu, Jun 26, 2014 at 09:59:26AM +0100, Catalin Marinas wrote:
+> > > Although a bit late, I'm raising this now and hopefully we'll come to a
+> > > conclusion soon. Delaying arm64 PCIe support even further is not a real
+> > > option, which leaves us with:
+> > > 
+> > > 1. Someone else (with enough PCIe knowledge) volunteering to take over
+> > >    soon or
+> > > 2. Dropping Liviu's work and going for an arm64-specific implementation
+> > >    (most likely based on the arm32 implementation, see below)
+> [...]
+> > > In conclusion, unless someone volunteers for the first option fairly
+> > > soon, we'll post the alternative patches for review and take it from
+> > > there.
+> > 
+> > That would be a huge step backwards IMO and a huge dissapointment. If
+> > you go with the alternative patches from Will you will basically reset
+> > every partner's implementation that has been built on top of my
+> > patches (when they did so with the understanding that my series will be
+> > the one ARM will support and publish) *and* make anyone's attempt to
+> > create a generic implementation harder, as they will have to undo this
+> > code to remove the arch-specific parts.
 > 
-> Sorry I am confused by the above sentence. I thought you removed
-> maintenance IRQ for both edge and level-sensitive IRQS? Thought also the
-> 2 features were exclusive, ie EOI maintenance IRQ (only if HW bit = 0)
-> and forward with HWbit = 1, since occupying GICH_LR[19:10].Sorry if I
-> misunderstood your code or the spec.
+> I fully agree and the alternative patchset is definitely _not_ my
+> preferred solution. You can read this email as a request for help to
+> complete the work (whether it comes from ARM, Linaro or other interested
+> parties). I don't mean taking over the whole patchset but potentially
+> helping with other arch conversion (microblaze, arm multi-platform).
 
-Blah. Of course you're right. HW and EOI are mutually exclusive. Typical
-morning brain fart.
+I feel it's also worth pointing out that I didn't write that code with the
+intention of getting it merged, nor as a competing solution to what Liviu
+was proposing at the time. It was merely a development tool to enable some
+of the SMMU and GICv3 work that Marc and I have been working on recently.
 
->>
->> The thing is, I don't think we need it at all. If the IRQ line is still
->> up, we'll take another interrupt right away. So it is not so much that
->> we cannot trigger the resample mechanism, it is just that it seems to
->> become useless. What do you think?
-> 
-> Yes indeed I think it becomes useless. Besides as far as I understand
-> resamplefd feature is not mandatory. There is a capability associated to
-> it, KVM_CAP_IRQFD_RESAMPLE. Also if we want to use it we pass the
-> KVM_IRQFD_FLAG_RESAMPLE as irqfd flag.
-
-OK, that's pretty good then. We can just avoid supporting it.
-
->>
->>> A last comment/question, wouldn't it be possible to inject the vIRQ
->>> (programming the LR) direcly in the irqchip, instead of relying on VFIO
->>> to trigger an eventfd whose handler does the job? This could be an
->>> optional capavility per forwarded IRQ. Of course this would create a
->>> relationship between gic and vgic. Do you see it as ugly - I dare to ask - ?
->>
->> I would say that it is what the interrupt handler is for. We could
->> entirely bypass the eventfd, and inject the interrupt from the VFIO
->> interrupt handler, couldn't we?
-> 
-> The problem is the VFIO driver currently is not meant for that. It is
-> meant to trigger an eventfd and that's it. Anyway we may need to invent
-> something new around existing API semantics.
-
-Indeed. We're in uncharted territories, and we may need to wire things
-in a slightly different way. Which is fine, as long as we preserve the
-userspace API.
-
-But this looks very much like an optimization we can look at later, once
-we bet the basics up and running.
-
-Thanks,
-
-	M.
--- 
-Jazz is not dead. It just smells funny...
+Will
