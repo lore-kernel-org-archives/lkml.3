@@ -1,34 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932469AbaFZRjo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 13:39:44 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:28832 "EHLO
+	id S1758150AbaFZRk2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 13:40:28 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:25284 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932445AbaFZRjm convert rfc822-to-8bit
+	by vger.kernel.org with ESMTP id S1758119AbaFZRkY convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 13:39:42 -0400
-Date: Thu, 26 Jun 2014 13:39:41 -0400
+	Thu, 26 Jun 2014 13:40:24 -0400
+Date: Thu, 26 Jun 2014 13:40:22 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Mike Frysinger <vapier@gentoo.org>
-Subject: Re: [RFA][PATCH 24/27] Blackfin: ftrace: Remove check of obsolete
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        Will Deacon <will.deacon@arm.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: Re: [RFA][PATCH 25/27] arm64, ftrace: Remove check of obsolete
  variable function_trace_stop
-Message-ID: <20140626133941.174fdb2e@gandalf.local.home>
-In-Reply-To: <20140626165853.211937817@goodmis.org>
+Message-ID: <20140626134022.540c536e@gandalf.local.home>
+In-Reply-To: <20140626165853.482575534@goodmis.org>
 References: <20140626165221.736847419@goodmis.org>
-	<20140626165853.211937817@goodmis.org>
+	<20140626165853.482575534@goodmis.org>
 X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
-X-RR-Connecting-IP: 107.14.168.142:25
+X-RR-Connecting-IP: 107.14.168.118:25
 X-Cloudmark-Score: 0
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Jun 2014 12:52:45 -0400
+On Thu, 26 Jun 2014 12:52:46 -0400
 Steven Rostedt <rostedt@goodmis.org> wrote:
 
 > From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
@@ -36,7 +36,11 @@ Steven Rostedt <rostedt@goodmis.org> wrote:
 > Nothing sets function_trace_stop to disable function tracing anymore.
 > Remove the check for it in the arch code.
 > 
-> [ Please test this on your arch ]
+> arm64 was broken anyway, as it had an ifdef testing
+>  CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST which is only set if
+> the arch supports the code (which it obviously did not), and
+> it was testing a non existent ftrace_trace_stop instead of
+> function_trace_stop.
 
 >From the cover letter, you were not Cc'd on.
 
@@ -69,59 +73,27 @@ intact.
 -- Steve
 
 > 
-> Cc: Mike Frysinger <vapier@gentoo.org>
+> Cc: AKASHI Takahiro <takahiro.akashi@linaro.org>
+> Cc: Will Deacon <will.deacon@arm.com>
 > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 > ---
->  arch/blackfin/Kconfig               |  1 -
->  arch/blackfin/kernel/ftrace-entry.S | 18 ------------------
->  2 files changed, 19 deletions(-)
+>  arch/arm64/kernel/entry-ftrace.S | 5 -----
+>  1 file changed, 5 deletions(-)
 > 
-> diff --git a/arch/blackfin/Kconfig b/arch/blackfin/Kconfig
-> index f81e7b989fff..ed30699cc635 100644
-> --- a/arch/blackfin/Kconfig
-> +++ b/arch/blackfin/Kconfig
-> @@ -18,7 +18,6 @@ config BLACKFIN
->  	select HAVE_FTRACE_MCOUNT_RECORD
->  	select HAVE_FUNCTION_GRAPH_TRACER
->  	select HAVE_FUNCTION_TRACER
-> -	select HAVE_FUNCTION_TRACE_MCOUNT_TEST
->  	select HAVE_IDE
->  	select HAVE_KERNEL_GZIP if RAMKERNEL
->  	select HAVE_KERNEL_BZIP2 if RAMKERNEL
-> diff --git a/arch/blackfin/kernel/ftrace-entry.S b/arch/blackfin/kernel/ftrace-entry.S
-> index 7eed00bbd26d..28d059540424 100644
-> --- a/arch/blackfin/kernel/ftrace-entry.S
-> +++ b/arch/blackfin/kernel/ftrace-entry.S
-> @@ -33,15 +33,6 @@ ENDPROC(__mcount)
->   * function will be waiting there.  mmmm pie.
+> diff --git a/arch/arm64/kernel/entry-ftrace.S b/arch/arm64/kernel/entry-ftrace.S
+> index b051871f2965..1b1e330e6849 100644
+> --- a/arch/arm64/kernel/entry-ftrace.S
+> +++ b/arch/arm64/kernel/entry-ftrace.S
+> @@ -96,11 +96,6 @@
+>   *     - ftrace_graph_caller to set up an exit hook
 >   */
->  ENTRY(_ftrace_caller)
-> -# ifdef CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST
-> -	/* optional micro optimization: return if stopped */
-> -	p1.l = _function_trace_stop;
-> -	p1.h = _function_trace_stop;
-> -	r3 = [p1];
-> -	cc = r3 == 0;
-> -	if ! cc jump _ftrace_stub (bp);
-> -# endif
-> -
->  	/* save first/second/third function arg and the return register */
->  	[--sp] = r2;
->  	[--sp] = r0;
-> @@ -83,15 +74,6 @@ ENDPROC(_ftrace_caller)
+>  ENTRY(_mcount)
+> -#ifdef CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST
+> -	ldr	x0, =ftrace_trace_stop
+> -	ldr	x0, [x0]		// if ftrace_trace_stop
+> -	ret				//   return;
+> -#endif
+>  	mcount_enter
 >  
->  /* See documentation for _ftrace_caller */
->  ENTRY(__mcount)
-> -# ifdef CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST
-> -	/* optional micro optimization: return if stopped */
-> -	p1.l = _function_trace_stop;
-> -	p1.h = _function_trace_stop;
-> -	r3 = [p1];
-> -	cc = r3 == 0;
-> -	if ! cc jump _ftrace_stub (bp);
-> -# endif
-> -
->  	/* save third function arg early so we can do testing below */
->  	[--sp] = r2;
->  
+>  	ldr	x0, =ftrace_trace_function
 
