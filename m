@@ -1,56 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752920AbaFZDok (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 23:44:40 -0400
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:42639 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751024AbaFZDoj (ORCPT
+	id S1753782AbaFZDpy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 23:45:54 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:58464 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753118AbaFZDpx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 23:44:39 -0400
-X-Originating-IP: 50.43.32.211
-Date: Wed, 25 Jun 2014 20:44:30 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Joe Perches <joe@perches.com>
-Cc: Andy Whitcroft <apw@canonical.com>, gregkh@linux-foundation.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] scripts/checkpatch.pl: Only emit LONG_LINE for --strict
-Message-ID: <20140626034430.GA22836@thin>
-References: <20140625154629.GA21519@thin>
- <1403741107.28663.9.camel@joe-AO725>
- <20140626022448.GA22091@thin>
- <1403749983.7977.6.camel@joe-AO725>
+	Wed, 25 Jun 2014 23:45:53 -0400
+Date: Wed, 25 Jun 2014 20:44:28 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Konstantin Khlebnikov <koct9i@gmail.com>
+cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] shmem: fix double uncharge in __shmem_file_setup()
+In-Reply-To: <20140624201606.18273.44270.stgit@zurg>
+Message-ID: <alpine.LSU.2.11.1406252039290.30620@eggly.anvils>
+References: <20140624201606.18273.44270.stgit@zurg>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403749983.7977.6.camel@joe-AO725>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 07:33:03PM -0700, Joe Perches wrote:
-> On Wed, 2014-06-25 at 19:24 -0700, Josh Triplett wrote:
-> > On Wed, Jun 25, 2014 at 05:05:07PM -0700, Joe Perches wrote:
-> > > On Wed, 2014-06-25 at 08:46 -0700, Josh Triplett wrote:
-> > > > Regardless of the long-standing debate over line width, checkpatch
-> > > > should not warn about it by default.
-> > > 
-> > > I'm not getting involved here.
-> > > I don't care much one way or another.
-> []
-> > I'm not asking you to get involved in the Great Line Length Debate;
-> > that's why I didn't attempt to patch CodingStyle or similar.  However, I
-> > think it makes sense for *checkpatch* to stop emitting this warning.
+On Wed, 25 Jun 2014, Konstantin Khlebnikov wrote:
+
+> If __shmem_file_setup() fails on struct file allocation it uncharges memory
+> commitment twice: first by shmem_unacct_size() and second time implicitly in
+> shmem_evict_inode() when it kills newly created inode.
+> This patch removes shmem_unacct_size() from error path if inode already here.
 > 
-> I think checkpatch should encourage people to write code in
-> a style that matches CodingStyle as well as the predominant
-> styles used in the rest of the kernel.
+> Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
 
-Not arguing with that, but in this particular case the warning seems
-counterproductive to that goal, especially compared to the
-DEEP_INDENTATION warning.  More subjective or "to taste" issues tend
-to have lower severity in checkpatch.  And CodingStyle *already* says
-"unless exceeding 80 columns significantly increases
-readability"
+Acked-by: Hugh Dickins <hughd@google.com>
 
-- Josh Triplett
+Thank you for the patch, and thank you for your patience (or perhaps for
+your kindly concealed impatience): I realize that this (and the other two)
+have been languishing in the must-get-to-look-at-it-sometime end of my
+mailbox for nine months now - sorry.
+
+> ---
+>  mm/shmem.c |   12 ++++++------
+>  1 file changed, 6 insertions(+), 6 deletions(-)
+> 
+> diff --git a/mm/shmem.c b/mm/shmem.c
+> index 8f419cf..0aabcbd 100644
+> --- a/mm/shmem.c
+> +++ b/mm/shmem.c
+> @@ -2895,16 +2895,16 @@ static struct file *__shmem_file_setup(const char *name, loff_t size,
+>  	this.len = strlen(name);
+>  	this.hash = 0; /* will go */
+>  	sb = shm_mnt->mnt_sb;
+> +	path.mnt = mntget(shm_mnt);
+>  	path.dentry = d_alloc_pseudo(sb, &this);
+>  	if (!path.dentry)
+>  		goto put_memory;
+>  	d_set_d_op(path.dentry, &anon_ops);
+> -	path.mnt = mntget(shm_mnt);
+>  
+>  	res = ERR_PTR(-ENOSPC);
+>  	inode = shmem_get_inode(sb, NULL, S_IFREG | S_IRWXUGO, 0, flags);
+>  	if (!inode)
+> -		goto put_dentry;
+> +		goto put_memory;
+>  
+>  	inode->i_flags |= i_flags;
+>  	d_instantiate(path.dentry, inode);
+> @@ -2912,19 +2912,19 @@ static struct file *__shmem_file_setup(const char *name, loff_t size,
+>  	clear_nlink(inode);	/* It is unlinked */
+>  	res = ERR_PTR(ramfs_nommu_expand_for_mapping(inode, size));
+>  	if (IS_ERR(res))
+> -		goto put_dentry;
+> +		goto put_path;
+>  
+>  	res = alloc_file(&path, FMODE_WRITE | FMODE_READ,
+>  		  &shmem_file_operations);
+>  	if (IS_ERR(res))
+> -		goto put_dentry;
+> +		goto put_path;
+>  
+>  	return res;
+>  
+> -put_dentry:
+> -	path_put(&path);
+>  put_memory:
+>  	shmem_unacct_size(flags, size);
+> +put_path:
+> +	path_put(&path);
+>  	return res;
+>  }
+>  
