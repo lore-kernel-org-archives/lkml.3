@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932229AbaFZRfU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 13:35:20 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:25108 "EHLO
+	id S932353AbaFZRfv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 13:35:51 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:24658 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757824AbaFZRfQ convert rfc822-to-8bit
+	by vger.kernel.org with ESMTP id S932262AbaFZRft convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 13:35:16 -0400
-Date: Thu, 26 Jun 2014 13:35:15 -0400
+	Thu, 26 Jun 2014 13:35:49 -0400
+Date: Thu, 26 Jun 2014 13:35:48 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
-To: Matt Fleming <matt@console-pimps.org>, Paul Mundt <lethal@linux-sh.org>
+To: Helge Deller <deller@gmx.de>, Kyle McMartin <kyle@mcmartin.ca>
 Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: Re: [RFA][PATCH 19/27] sh: ftrace: Remove check of obsolete
+Subject: Re: [RFA][PATCH 20/27] parisc: ftrace: Remove check of obsolete
  variable function_trace_stop
-Message-ID: <20140626133515.4c87c40d@gandalf.local.home>
-In-Reply-To: <20140626165852.312670231@goodmis.org>
+Message-ID: <20140626133548.03f7b90a@gandalf.local.home>
+In-Reply-To: <20140626165852.497955187@goodmis.org>
 References: <20140626165221.736847419@goodmis.org>
-	<20140626165852.312670231@goodmis.org>
+	<20140626165852.497955187@goodmis.org>
 X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -27,15 +27,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Jun 2014 12:52:40 -0400
+On Thu, 26 Jun 2014 12:52:41 -0400
 Steven Rostedt <rostedt@goodmis.org> wrote:
 
 > From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 > 
 > Nothing sets function_trace_stop to disable function tracing anymore.
 > Remove the check for it in the arch code.
-> 
-> [ Please test this on your arch ]
 
 >From the cover letter, you were not Cc'd on.
 
@@ -68,87 +66,38 @@ intact.
 -- Steve
 
 > 
-> Cc: Matt Fleming <matt@console-pimps.org>
-> Cc: Paul Mundt <lethal@linux-sh.org>
+> Cc: Helge Deller <deller@gmx.de>
+> Cc: Kyle McMartin <kyle@mcmartin.ca>
 > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 > ---
->  arch/sh/Kconfig      |  1 -
->  arch/sh/lib/mcount.S | 24 ++----------------------
->  2 files changed, 2 insertions(+), 23 deletions(-)
+>  arch/parisc/Kconfig         | 1 -
+>  arch/parisc/kernel/ftrace.c | 3 ---
+>  2 files changed, 4 deletions(-)
 > 
-> diff --git a/arch/sh/Kconfig b/arch/sh/Kconfig
-> index 834b67c4db5a..aa2df3eaeb29 100644
-> --- a/arch/sh/Kconfig
-> +++ b/arch/sh/Kconfig
-> @@ -57,7 +57,6 @@ config SUPERH32
->  	select HAVE_FUNCTION_TRACER
->  	select HAVE_FTRACE_MCOUNT_RECORD
->  	select HAVE_DYNAMIC_FTRACE
-> -	select HAVE_FUNCTION_TRACE_MCOUNT_TEST
->  	select HAVE_FTRACE_NMI_ENTER if DYNAMIC_FTRACE
->  	select ARCH_WANT_IPC_PARSE_VERSION
->  	select HAVE_FUNCTION_GRAPH_TRACER
-> diff --git a/arch/sh/lib/mcount.S b/arch/sh/lib/mcount.S
-> index 52aa2011d753..7a8572f9d58b 100644
-> --- a/arch/sh/lib/mcount.S
-> +++ b/arch/sh/lib/mcount.S
-> @@ -92,13 +92,6 @@ mcount:
->  	rts
->  	 nop
->  #else
-> -#ifndef CONFIG_DYNAMIC_FTRACE
-> -	mov.l	.Lfunction_trace_stop, r0
-> -	mov.l	@r0, r0
-> -	tst	r0, r0
-> -	bf	ftrace_stub
-> -#endif
+> diff --git a/arch/parisc/Kconfig b/arch/parisc/Kconfig
+> index 108d48e652af..6e75e2030927 100644
+> --- a/arch/parisc/Kconfig
+> +++ b/arch/parisc/Kconfig
+> @@ -6,7 +6,6 @@ config PARISC
+>  	select HAVE_OPROFILE
+>  	select HAVE_FUNCTION_TRACER if 64BIT
+>  	select HAVE_FUNCTION_GRAPH_TRACER if 64BIT
+> -	select HAVE_FUNCTION_TRACE_MCOUNT_TEST if 64BIT
+>  	select ARCH_WANT_FRAME_POINTERS
+>  	select RTC_CLASS
+>  	select RTC_DRV_GENERIC
+> diff --git a/arch/parisc/kernel/ftrace.c b/arch/parisc/kernel/ftrace.c
+> index 5512ab32c5e0..559d400f9385 100644
+> --- a/arch/parisc/kernel/ftrace.c
+> +++ b/arch/parisc/kernel/ftrace.c
+> @@ -155,9 +155,6 @@ void ftrace_function_trampoline(unsigned long parent,
+>  {
+>  	extern ftrace_func_t ftrace_trace_function;
+>  
+> -	if (function_trace_stop)
+> -		return;
 > -
->  	MCOUNT_ENTER()
->  
->  #ifdef CONFIG_DYNAMIC_FTRACE
-> @@ -174,11 +167,6 @@ ftrace_graph_call:
->  
->  	.globl ftrace_caller
->  ftrace_caller:
-> -	mov.l	.Lfunction_trace_stop, r0
-> -	mov.l	@r0, r0
-> -	tst	r0, r0
-> -	bf	ftrace_stub
-> -
->  	MCOUNT_ENTER()
->  
->  	.globl ftrace_call
-> @@ -196,8 +184,6 @@ ftrace_call:
->  #endif /* CONFIG_DYNAMIC_FTRACE */
->  
->  	.align 2
-> -.Lfunction_trace_stop:
-> -	.long	function_trace_stop
->  
->  /*
->   * NOTE: From here on the locations of the .Lftrace_stub label and
-> @@ -217,12 +203,7 @@ ftrace_stub:
->  #ifdef CONFIG_FUNCTION_GRAPH_TRACER
->  	.globl	ftrace_graph_caller
->  ftrace_graph_caller:
-> -	mov.l	2f, r0
-> -	mov.l	@r0, r0
-> -	tst	r0, r0
-> -	bt	1f
-> -
-> -	mov.l	3f, r1
-> +	mov.l	2f, r1
->  	jmp	@r1
->  	 nop
->  1:
-> @@ -242,8 +223,7 @@ ftrace_graph_caller:
->  	MCOUNT_LEAVE()
->  
->  	.align 2
-> -2:	.long	function_trace_stop
-> -3:	.long	skip_trace
-> +2:	.long	skip_trace
->  .Lprepare_ftrace_return:
->  	.long	prepare_ftrace_return
->  
+>  	if (ftrace_trace_function != ftrace_stub) {
+>  		ftrace_trace_function(parent, self_addr);
+>  		return;
 
