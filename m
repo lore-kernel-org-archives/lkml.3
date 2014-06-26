@@ -1,115 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484AbaFZFaY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 01:30:24 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:41013 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751544AbaFZFaX (ORCPT
+	id S1753476AbaFZFeG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 01:34:06 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:3785 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751765AbaFZFeF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 01:30:23 -0400
-Message-ID: <53ABAFEC.9070500@free-electrons.com>
-Date: Thu, 26 Jun 2014 07:30:20 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 26 Jun 2014 01:34:05 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 25 Jun 2014 22:27:53 -0700
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Ben Skeggs <bskeggs@redhat.com>, Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>
+CC: <nouveau@lists.freedesktop.org>, <dri-devel@lists.freedesktop.org>,
+        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <gnurou@gmail.com>, Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH v3 0/3] drm/nouveau: support for probing platform devices
+Date: Thu, 26 Jun 2014 14:33:31 +0900
+Message-ID: <1403760814-26148-1-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 2.0.0
+X-NVConfidentiality: public
 MIME-Version: 1.0
-To: Maxime Ripard <maxime.ripard@free-electrons.com>, linux@maxim.org.za,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: Boris Brezillon <boris@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Thomas Petazzoni <thomas@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/13] AT91: PIT: Cleanups and move to drivers/clocksource
-References: <1403701605-26678-1-git-send-email-maxime.ripard@free-electrons.com>
-In-Reply-To: <1403701605-26678-1-git-send-email-maxime.ripard@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Maxime,
+This series adds support for probing platform devices on Nouveau, as well as
+the DT bindings for GK20A. It doesn't enable the GPU yet on Tegra boards since
+a few extra things need to be supported before that.
 
-On 25/06/2014 15:06, Maxime Ripard wrote:
-> Hi everyone,
->
-> This series cleans up the PIT driver in order for it to not depend on
-> anything in mach-at91 anymore, and in the end move it out of
-> mach-at91.
->
-> Along the way, these patches also do a bit of cleanup.
->
-> This has been tested on a G45-EK without DT and an Xplained with DT.
+This version is mostly identical to v2 but fixes an important issue: the drvdata
+must be set to the drm_device for sysfs to work, so the platform device
+structure now includes the nouveau_device flattened into it to let us compute
+the address of one from the other. Since the platform device resources (clocks,
+regulators, ...) need to live longer than the nouveau_device, they are stored
+into their own structure which is allocated separately.
 
-Except for the 2 nitpicks in patch 9 and 13, this series looks good to me.
-I was a bit afraid to see code for non DT board support go into this new
-driver (or driver rework), but you managed to get rid of all global
-variables and non static functions thanks to the early device approach,
-and that's great!
+Changes since v2:
+* Allocate the nouveau_device flattened into the nouveau_platform_device to
+  be able to compute one from another easily, without having to ressort on the
+  drvdata which is required to store the drm_device.
+* Only propose the platform driver if a supported arch (Tegra for now) is
+  enabled.
+* Move structure definitions into their own header file as some subdevs (e.g.
+  clocks) will need to use them.
 
-Thanks for your work.
+Changes since v1:
+* Moved the platform device driver to its own module. This allows it to be more
+  self-contained and saves us the need to export too many functions from
+  nouveau_drm and nouveau_platform.
+* Register the DRM device without using the platform helpers, which is made
+  possible by drm_dev_set_unique(). This allows us to catch and register the
+  DRM device during platform probe.
+* Fixed the clock names in the DT bindings.
+* Removed the patches enabling GK20A on Venice2 and Jetson TK1 as support
+  is not complete yet.
 
-Boris
+Alexandre Courbot (2):
+  drm/nouveau: support for probing platform devices
+  ARM: tegra: of: add GK20A device tree binding
 
->
-> Thanks,
-> Maxime
->
-> Maxime Ripard (13):
->   AT91: PIT: Follow the general coding rules
->   AT91: generic.h: Add include safe guards
->   AT91: PIT: Use of_have_populated_dt instead of CONFIG_OF
->   AT91: PIT: Rework probe functions
->   AT91: dt: Remove init_time definitions
->   AT91: PIT: Use consistent exit path in probe
->   AT91: PIT: Use pr_fmt
->   AT91: PIT: use request_irq instead of setup_irq
->   AT91: PIT: (Almost) remove the global variables
->   AT91: soc: Add init_time callback
->   AT91: Convert the boards to the init_time callback
->   AT91: PIT: Convert to an early_platform_device
->   AT91: PIT: Move the driver to drivers/clocksource
->
->  arch/arm/mach-at91/Kconfig              |   3 -
->  arch/arm/mach-at91/Makefile             |   1 -
->  arch/arm/mach-at91/at91sam9260.c        |  34 +++-
->  arch/arm/mach-at91/at91sam9261.c        |  34 +++-
->  arch/arm/mach-at91/at91sam9263.c        |  34 +++-
->  arch/arm/mach-at91/at91sam926x_time.c   | 294 ------------------------------
->  arch/arm/mach-at91/at91sam9g45.c        |  35 +++-
->  arch/arm/mach-at91/at91sam9rl.c         |  34 +++-
->  arch/arm/mach-at91/board-afeb-9260v1.c  |   2 +-
->  arch/arm/mach-at91/board-cam60.c        |   2 +-
->  arch/arm/mach-at91/board-cpu9krea.c     |   2 +-
->  arch/arm/mach-at91/board-dt-sam9.c      |  10 --
->  arch/arm/mach-at91/board-dt-sama5.c     |   9 -
->  arch/arm/mach-at91/board-flexibity.c    |   2 +-
->  arch/arm/mach-at91/board-foxg20.c       |   2 +-
->  arch/arm/mach-at91/board-gsia18s.c      |   2 +-
->  arch/arm/mach-at91/board-pcontrol-g20.c |   2 +-
->  arch/arm/mach-at91/board-sam9-l9260.c   |   2 +-
->  arch/arm/mach-at91/board-sam9260ek.c    |   2 +-
->  arch/arm/mach-at91/board-sam9261ek.c    |   4 +-
->  arch/arm/mach-at91/board-sam9263ek.c    |   2 +-
->  arch/arm/mach-at91/board-sam9g20ek.c    |   4 +-
->  arch/arm/mach-at91/board-sam9m10g45ek.c |   2 +-
->  arch/arm/mach-at91/board-sam9rlek.c     |   2 +-
->  arch/arm/mach-at91/board-snapper9260.c  |   2 +-
->  arch/arm/mach-at91/board-stamp9g20.c    |   4 +-
->  arch/arm/mach-at91/generic.h            |   8 +-
->  arch/arm/mach-at91/setup.c              |   5 +
->  arch/arm/mach-at91/soc.h                |   1 +
->  drivers/clocksource/Kconfig             |   4 +
->  drivers/clocksource/Makefile            |   1 +
->  drivers/clocksource/at91sam926x_time.c  | 304 ++++++++++++++++++++++++++++++++
->  32 files changed, 506 insertions(+), 343 deletions(-)
->  delete mode 100644 arch/arm/mach-at91/at91sam926x_time.c
->  create mode 100644 drivers/clocksource/at91sam926x_time.c
->
+Thierry Reding (1):
+  ARM: tegra: add GK20A GPU to Tegra124 DT
+
+ .../devicetree/bindings/gpu/nvidia,gk20a.txt       |  43 +++++
+ arch/arm/boot/dts/tegra124.dtsi                    |  15 ++
+ drivers/gpu/drm/nouveau/Kconfig                    |   8 +
+ drivers/gpu/drm/nouveau/Makefile                   |   3 +
+ drivers/gpu/drm/nouveau/nouveau_drm.c              |  53 ++++--
+ drivers/gpu/drm/nouveau/nouveau_drm.h              |   8 +
+ drivers/gpu/drm/nouveau/nouveau_platform.c         | 182 +++++++++++++++++++++
+ drivers/gpu/drm/nouveau/nouveau_platform.h         |  49 ++++++
+ 8 files changed, 347 insertions(+), 14 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/gpu/nvidia,gk20a.txt
+ create mode 100644 drivers/gpu/drm/nouveau/nouveau_platform.c
+ create mode 100644 drivers/gpu/drm/nouveau/nouveau_platform.h
 
 -- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+2.0.0
 
