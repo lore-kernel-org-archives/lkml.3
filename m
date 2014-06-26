@@ -1,76 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755457AbaFZHbS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 03:31:18 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:41316 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753360AbaFZHbQ (ORCPT
+	id S1755176AbaFZHej (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 03:34:39 -0400
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:53288 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754709AbaFZHeg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 03:31:16 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18hUYbe8RNWZadi577zxHNN
-Date: Thu, 26 Jun 2014 00:31:16 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: Roger Quadros <rogerq@ti.com>, rnayak@ti.com, balbi@ti.com, nsekhar@ti.com,
-        kishon@ti.com, george.cherian@ti.com, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: DRA7-evm: Enable SATA PHY and USB PHY power supplies
-Message-ID: <20140626073115.GD28884@atomide.com>
-References: <1403700996-27105-1-git-send-email-rogerq@ti.com>
- <53AB4CE0.6020705@ti.com>
+	Thu, 26 Jun 2014 03:34:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53AB4CE0.6020705@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <53AB1CC1.4010907@codeaurora.org>
+References: <cover.1403684824.git.viresh.kumar@linaro.org>
+	<e9c0eef07745e561b9d12dcb50c3e2f7eb3e8880.1403684824.git.viresh.kumar@linaro.org>
+	<53AB1CC1.4010907@codeaurora.org>
+Date: Thu, 26 Jun 2014 13:04:35 +0530
+Message-ID: <CAKohpokK+2hJ=pbLsjaqE_R3yBKcP-BwmH6RYdNRv69O-4ah8Q@mail.gmail.com>
+Subject: Re: [PATCH 2/2] cpufreq: cpu0: Extend support beyond CPU0
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Stephen Boyd <sboyd@codeaurora.org>, Mark Brown <broonie@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Shawn Guo <shawn.guo@linaro.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arvind Chauhan <arvind.chauhan@arm.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-arm-msm@vger.kernel.org, Sachin Kamat <spk.linux@gmail.com>,
+        Thomas P Abraham <thomas.ab@samsung.com>, Nishanth Menon <nm@ti.com>,
+        Tomasz Figa <t.figa@samsung.com>, Mark Rutland <Mark.Rutland@arm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nishanth Menon <nm@ti.com> [140625 15:29]:
-> On 06/25/2014 07:56 AM, Roger Quadros wrote:
-> > The SATA and USB PHYs need the 1.8V and 3.3V supplies.
-> > The PHY drivers/framework don't yet support regulator
-> > supply so we have to keep these regulators always-on till
-> > then.
-> > 
-> > Signed-off-by: Roger Quadros <rogerq@ti.com>
-> > ---
-> >  arch/arm/boot/dts/dra7-evm.dts | 2 ++
-> >  1 file changed, 2 insertions(+)
-> > 
-> > diff --git a/arch/arm/boot/dts/dra7-evm.dts b/arch/arm/boot/dts/dra7-evm.dts
-> > index 4adc280..99a1f79 100644
-> > --- a/arch/arm/boot/dts/dra7-evm.dts
-> > +++ b/arch/arm/boot/dts/dra7-evm.dts
-> > @@ -241,6 +241,7 @@
-> >  					regulator-min-microvolt = <1800000>;
-> >  					regulator-max-microvolt = <1800000>;
-> >  					regulator-boot-on;
-> > +					regulator-always-on;
-> >  				};
-> >  
-> >  				ldo9_reg: ldo9 {
-> > @@ -266,6 +267,7 @@
-> >  					regulator-min-microvolt = <3300000>;
-> >  					regulator-max-microvolt = <3300000>;
-> >  					regulator-boot-on;
-> > +					regulator-always-on;
-> >  				};
-> >  			};
-> >  		};
-> > 
-> 
-> Why not fix phy driver/framework as needed? the trouble is people
-> always forget to remove always-on... who actually audits old logs and
-> fixes stuff back up?
+On 26 June 2014 00:32, Stephen Boyd <sboyd@codeaurora.org> wrote:
 
-Yes I agree let's not play with the regulator-always-on unless
-absolutely necessary.
+>> +     cpu_reg = regulator_get_optional(cpu_dev, "cpu0");
 
-Regards,
+> I don't think this driver should be using regulator_get_optional() (Mark
+> B. please correct me if I'm wrong). I doubt a supply is actually
+> optional for CPUs, just some DTs aren't specifying them. In those cases,
+> the regulator core will insert a dummy supply and the code will work
+> without having to check for probe defer and error pointers.
 
-Tony
+This is what Mark did earlier, don't know if he would like to revert it:
+7d74897 (cpufreq: cpufreq-cpu0: Use devm_regulator_get_optional()).
