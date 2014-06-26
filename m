@@ -1,81 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753619AbaFZGXH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 02:23:07 -0400
-Received: from ozlabs.org ([103.22.144.67]:51422 "EHLO ozlabs.org"
+	id S1753634AbaFZG2b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 02:28:31 -0400
+Received: from mout.gmx.com ([74.208.4.201]:59750 "EHLO mout.gmx.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752790AbaFZGXF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 02:23:05 -0400
-Date: Thu, 26 Jun 2014 16:22:57 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Luis R. Rodriguez" <mcgrof@suse.com>, Petr Mladek <pmladek@suse.cz>
-Subject: linux-next: build failure after merge of the akpm-current tree
-Message-ID: <20140626162257.45f8e2aa@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1752814AbaFZG23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 02:28:29 -0400
+Date: Thu, 26 Jun 2014 11:57:51 +0530 (IST)
+From: Govindarajulu Varadarajan <_govind@gmx.com>
+X-X-Sender: gvaradar@ws.cisco
+To: Joe Perches <joe@perches.com>
+cc: linux-kernel@vger.kernel.org, Christian Benvenuti <benve@cisco.com>,
+        Sujith Sankar <ssujith@cisco.com>,
+        Govindarajulu Varadarajan <_govind@gmx.com>,
+        Neel Patel <neepatel@cisco.com>, netdev@vger.kernel.org
+Subject: Re: [PATCH 10/22] enic: Use pci_zalloc_consistent
+In-Reply-To: <cfd907966b8feaaa1c2ecbd537a7a0ef3fc98141.1403530604.git.joe@perches.com>
+Message-ID: <alpine.LNX.2.03.1406261157070.1438@ws.cisco>
+References: <cover.1403530604.git.joe@perches.com> <cfd907966b8feaaa1c2ecbd537a7a0ef3fc98141.1403530604.git.joe@perches.com>
+User-Agent: Alpine 2.03 (LNX 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/4iev0dQvO52y3YmY+_m3rjm"; protocol="application/pgp-signature"
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+X-Provags-ID: V03:K0:w7WpRFh/KXSzH872tKkA74bkSObjpo95mj+kliiHVsBlYFh1T5q
+ AlVQR+Lc8AcLjK1rckSEUz8Xkcruuvd45dA9g+xUZDP1TMxh67xlS93YFsm0P/4iAH7G88r
+ i89/s2R/2H+MNZeqV/p2CGLoWn1pDBZTnhUjpgPnM1bc/r/B2V5DSss4vr3DsjZOE+wSTB5
+ yYU9Xr0yyH+HIHnoEEU3Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/4iev0dQvO52y3YmY+_m3rjm
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
 
-Hi Andrew,
 
-After merging the akpm tree, today's linux-next build (powerpc
-ppc44x_defconfig) failed like this:
+On Mon, 23 Jun 2014, Joe Perches wrote:
 
-kernel/printk/printk.c: In function 'log_buf_add_cpu':
-kernel/printk/printk.c:269:37: error: 'CONFIG_LOG_CPU_MAX_BUF_SHIFT' undecl=
-ared (first use in this function)
- #define __LOG_CPU_MAX_BUF_LEN (1 << CONFIG_LOG_CPU_MAX_BUF_SHIFT)
-                                     ^
-kernel/printk/printk.c:864:42: note: in expansion of macro '__LOG_CPU_MAX_B=
-UF_LEN'
-  cpu_extra =3D (num_possible_cpus() - 1) * __LOG_CPU_MAX_BUF_LEN;
-                                          ^
-kernel/printk/printk.c:269:37: note: each undeclared identifier is reported=
- only once for each function it appears in
- #define __LOG_CPU_MAX_BUF_LEN (1 << CONFIG_LOG_CPU_MAX_BUF_SHIFT)
-                                     ^
-kernel/printk/printk.c:864:42: note: in expansion of macro '__LOG_CPU_MAX_B=
-UF_LEN'
-  cpu_extra =3D (num_possible_cpus() - 1) * __LOG_CPU_MAX_BUF_LEN;
-                                          ^
+> Remove the now unnecessary memset too.
+>
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-Caused by commit 58209adf633e ("printk: allow increasing the ring
-buffer depending on the number of CPUs").  CONFIG_LOG_CPU_MAX_BUF_SHIFT
-is not defined for this configuration.
+Looks good, thanks
+Acked-by: Govindarajulu Varadarajan <_govind@gmx.com>
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/4iev0dQvO52y3YmY+_m3rjm
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJTq7xGAAoJEMDTa8Ir7ZwV57MP/2Qp3HzZctBV+3t2jcpBHRKS
-laNDfOjUno5ILbzyr6uY0ravTYS7ytwb7p4AduQS6ImHOY9f0d85ym32bqF5ePCp
-B6j5IJUJAlX5OP4Emaq0B1De74MrhttqEgMpDYjznKBHjtrFDIy/X16gBnvfNPiB
-t8SpuYMhG4RPn3g+9XskxtgWp8SLZExP9nzvrEk+gT3aaoWI3CT94lyYTFVBU3f7
-GiCGhu4NtMBW1SNB28qkqSOCXDUN3U8EO/oyWWI4YS6XwibXaHgpwbll50w2lWn6
-EyKMdOc62ov19vncG8lkOT1c/yvvczD0qVg2DlsDBJWY+owc1mcDeaRsgCkRaF+Z
-tTbyazIORt/aH/aUK0zTZS4HgRb7hwrfFYM+ajl5MVuja5Rwty0CkR4lWSvMugXO
-IjNkGPrIsEFoNfui5EIbtFzbBdoFjybBAckwkE5d7KGg2gqOXcq9Fuw+AdPryMi0
-Nq4hZejOShwiNa/UnBwYcT62kSLJTdi2kjc7uA9Tog+fv25+Hd7YgfzNK1BjNsnt
-f3ylcAqz4DjBkjp/b5z2qlUYPYea+BNQCndJDOQwsQVO8FcoYzgHOlNGAaldOcSk
-17TTa8USFVP0IuMpdgpSiobSkvndtSh0X1IF+wyUfWiv6d2+ZKnZhK4W9IErJYin
-Jg8u21m8XiimwkfSNukk
-=+uBF
------END PGP SIGNATURE-----
-
---Sig_/4iev0dQvO52y3YmY+_m3rjm--
+> ---
+> drivers/net/ethernet/cisco/enic/vnic_dev.c | 8 +++-----
+> 1 file changed, 3 insertions(+), 5 deletions(-)
+>
+> diff --git a/drivers/net/ethernet/cisco/enic/vnic_dev.c b/drivers/net/ethernet/cisco/enic/vnic_dev.c
+> index e86a45c..8a4799c 100644
+> --- a/drivers/net/ethernet/cisco/enic/vnic_dev.c
+> +++ b/drivers/net/ethernet/cisco/enic/vnic_dev.c
+> @@ -432,14 +432,12 @@ int vnic_dev_fw_info(struct vnic_dev *vdev,
+> 	int err = 0;
+>
+> 	if (!vdev->fw_info) {
+> -		vdev->fw_info = pci_alloc_consistent(vdev->pdev,
+> -			sizeof(struct vnic_devcmd_fw_info),
+> -			&vdev->fw_info_pa);
+> +		vdev->fw_info = pci_zalloc_consistent(vdev->pdev,
+> +						      sizeof(struct vnic_devcmd_fw_info),
+> +						      &vdev->fw_info_pa);
+> 		if (!vdev->fw_info)
+> 			return -ENOMEM;
+>
+> -		memset(vdev->fw_info, 0, sizeof(struct vnic_devcmd_fw_info));
+> -
+> 		a0 = vdev->fw_info_pa;
+> 		a1 = sizeof(struct vnic_devcmd_fw_info);
+>
+> -- 
+> 1.8.1.2.459.gbcd45b4.dirty
+>
+>
