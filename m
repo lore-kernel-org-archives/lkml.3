@@ -1,47 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752046AbaFZUAp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 16:00:45 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:39910 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751609AbaFZUAo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 16:00:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <CALCETrVBKno2skh3zR=1GYuojwPhYPLD=1HFcLMXjStS+0SPJQ@mail.gmail.com>
-References: <55466fbd36df1d011876135cf7ca5d40c05029c7.1403809591.git.luto@amacapital.net>
- <20140626195629.GC5714@two.firstfloor.org> <CALCETrVBKno2skh3zR=1GYuojwPhYPLD=1HFcLMXjStS+0SPJQ@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 26 Jun 2014 13:00:22 -0700
-Message-ID: <CALCETrWJD4kvoCxxb9y19uMakChmxamveKDceDOhyjYzFkJoUA@mail.gmail.com>
-Subject: Re: [PATCH] x86_64,entry: Fix RCX for traced syscalls
-To: Andi Kleen <andi@firstfloor.org>
-Cc: X86 ML <x86@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@alien8.de>
-Content-Type: text/plain; charset=UTF-8
+	id S1752095AbaFZUBN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 16:01:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44236 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750944AbaFZUBL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 16:01:11 -0400
+From: Rafael Aquini <aquini@redhat.com>
+To: linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
+Subject: [PATCH v2] mm: export NR_SHMEM via sysinfo(2) / si_meminfo() interfaces
+Date: Thu, 26 Jun 2014 17:00:17 -0300
+Message-Id: <198dc298821a20a476656dccc85a8d77f166c61a.1403812625.git.aquini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 26, 2014 at 12:59 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Thu, Jun 26, 2014 at 12:56 PM, Andi Kleen <andi@firstfloor.org> wrote:
->>> show RCX == RIP even under strace.
->>
->> If you think it's really worth the extra instruction?
->
-> Hard to say.  That extra instruction only happens on slow paths, so I
-> suspect the slowdown is negligible.  On the other hand, having syscall
-> show a blatant difference in behavior between traced and untraced
-> processes seems unfortunate.
->
->>
->> It's not wrong, but it's not clear if it's useful.
+Historically, we exported shared pages to userspace via sysinfo(2) sharedram
+and /proc/meminfo's "MemShared" fields. With the advent of tmpfs, from kernel
+v2.4 onward, that old way for accounting shared mem was deemed inaccurate and
+we started to export a hard-coded 0 for sysinfo.sharedram. Later on, during
+the 2.6 timeframe, "MemShared" got re-introduced to /proc/meminfo re-branded
+as "Shmem", but we're still reporting sysinfo.sharedmem as that old hard-coded
+zero, which makes the "shared memory" report inconsistent across interfaces.
 
-Also, if anyone ever wants to add some code to switch back from iret
-to sysret when sysret will work, this is a prerequisite.  Otherwise
-sysret will never match iret.  (I'm not immediately planning on doing
-this, but I can imagine workloads (e.g. UML) for which it would be a
-big improvement.)
+This patch leverages the addition of explicit accounting for pages used by
+shmem/tmpfs -- "4b02108 mm: oom analysis: add shmem vmstat" -- in order to
+make the users of sysinfo(2) and si_meminfo*() friends aware of that
+vmstat entry and make them report it consistently across the interfaces,
+as well to make sysinfo(2) returned data consistent with our current API
+documentation states.
 
---Andy
+Signed-off-by: Rafael Aquini <aquini@redhat.com>
+---
+Changelog from v1:
+- updated commit log message to include historical context       (kosaki-san)
+
+ drivers/base/node.c | 2 +-
+ fs/proc/meminfo.c   | 2 +-
+ mm/page_alloc.c     | 3 ++-
+ 3 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/base/node.c b/drivers/base/node.c
+index 8f7ed99..c6d3ae0 100644
+--- a/drivers/base/node.c
++++ b/drivers/base/node.c
+@@ -126,7 +126,7 @@ static ssize_t node_read_meminfo(struct device *dev,
+ 		       nid, K(node_page_state(nid, NR_FILE_PAGES)),
+ 		       nid, K(node_page_state(nid, NR_FILE_MAPPED)),
+ 		       nid, K(node_page_state(nid, NR_ANON_PAGES)),
+-		       nid, K(node_page_state(nid, NR_SHMEM)),
++		       nid, K(i.sharedram),
+ 		       nid, node_page_state(nid, NR_KERNEL_STACK) *
+ 				THREAD_SIZE / 1024,
+ 		       nid, K(node_page_state(nid, NR_PAGETABLE)),
+diff --git a/fs/proc/meminfo.c b/fs/proc/meminfo.c
+index 7445af0..aa1eee0 100644
+--- a/fs/proc/meminfo.c
++++ b/fs/proc/meminfo.c
+@@ -168,7 +168,7 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
+ 		K(global_page_state(NR_WRITEBACK)),
+ 		K(global_page_state(NR_ANON_PAGES)),
+ 		K(global_page_state(NR_FILE_MAPPED)),
+-		K(global_page_state(NR_SHMEM)),
++		K(i.sharedram),
+ 		K(global_page_state(NR_SLAB_RECLAIMABLE) +
+ 				global_page_state(NR_SLAB_UNRECLAIMABLE)),
+ 		K(global_page_state(NR_SLAB_RECLAIMABLE)),
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 20d17f8..f72ea38 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -3040,7 +3040,7 @@ static inline void show_node(struct zone *zone)
+ void si_meminfo(struct sysinfo *val)
+ {
+ 	val->totalram = totalram_pages;
+-	val->sharedram = 0;
++	val->sharedram = global_page_state(NR_SHMEM);
+ 	val->freeram = global_page_state(NR_FREE_PAGES);
+ 	val->bufferram = nr_blockdev_pages();
+ 	val->totalhigh = totalhigh_pages;
+@@ -3060,6 +3060,7 @@ void si_meminfo_node(struct sysinfo *val, int nid)
+ 	for (zone_type = 0; zone_type < MAX_NR_ZONES; zone_type++)
+ 		managed_pages += pgdat->node_zones[zone_type].managed_pages;
+ 	val->totalram = managed_pages;
++	val->sharedram = node_page_state(nid, NR_SHMEM);
+ 	val->freeram = node_page_state(nid, NR_FREE_PAGES);
+ #ifdef CONFIG_HIGHMEM
+ 	val->totalhigh = pgdat->node_zones[ZONE_HIGHMEM].managed_pages;
+-- 
+1.9.3
+
