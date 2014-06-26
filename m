@@ -1,47 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756036AbaFZHkr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 03:40:47 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:60426 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755958AbaFZHkp (ORCPT
+	id S1756053AbaFZHmO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 03:42:14 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:57885 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755342AbaFZHmM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 03:40:45 -0400
-Date: Thu, 26 Jun 2014 00:40:33 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Matias Bj??rling <m@bjorling.me>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Keith Busch <keith.busch@intel.com>,
-        "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com>,
-        Jens Axboe <axboe@fb.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-nvme <linux-nvme@lists.infradead.org>,
-        Rob Nelson <rlnelson@google.com>, Ming Lei <tom.leiming@gmail.com>
-Subject: Re: [PATCH v9] NVMe: Convert to blk-mq
-Message-ID: <20140626074033.GA26094@infradead.org>
-References: <1403651531-24891-1-git-send-email-m@bjorling.me>
- <1403651531-24891-2-git-send-email-m@bjorling.me>
- <20140625113715.GA4525@infradead.org>
- <CAOu_J6nTcEjEpAe+S7Wg9SxUj_u=QitsDjYkKmCpaGP1MAexhw@mail.gmail.com>
+	Thu, 26 Jun 2014 03:42:12 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+JRfLN3lAEwTuv0raLIzOb
+Date: Thu, 26 Jun 2014 00:42:09 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Sricharan R <r.sricharan@ti.com>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        santosh.shilimkar@ti.com, nm@ti.com, rnayak@ti.com,
+        linux@arm.linux.org.uk, tglx@linutronix.de, jason@lakedaemon.net,
+        joe@perches.com
+Subject: Re: [PATCH V4 00/16] irqchip: crossbar: Driver fixes
+Message-ID: <20140626074209.GE28884@atomide.com>
+References: <1403766634-18543-1-git-send-email-r.sricharan@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAOu_J6nTcEjEpAe+S7Wg9SxUj_u=QitsDjYkKmCpaGP1MAexhw@mail.gmail.com>
+In-Reply-To: <1403766634-18543-1-git-send-email-r.sricharan@ti.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 08:56:35PM +0200, Matias Bj??rling wrote:
-> Only the review. Do you want me to change it to a Reviewed-by?
+* Sricharan R <r.sricharan@ti.com> [140626 00:14]:
+> This series does some cleanups, fixes for handling two interrupts
+> getting mapped twice to same crossbar and provides support for
+> hardwired IRQ and crossbar definitions.
+> 
+> On certain platforms such as DRA7, SPIs 0, 1, 2, 3, 5, 6, 10,
+> 131, 132, 133 are direct wired to hardware blocks bypassing
+> crossbar. This quirky implementation is *NOT* supposed to be the
+> expectation of crossbar hardware usage. This series adds support
+> to represent such hard-wired irqs through DT and avoid generic
+> allocation/programming of crossbar in the driver.
+> 
+> This way of supporting hard-wired irqs was a result of
+> the below discussions.
+> http://www.spinics.net/lists/arm-kernel/msg329946.html
+> 
+> Based on 3.16 rc2 mainline.
 
+Jason, once these patches look OK for merging, can you please
+set them up into an immutable branch so I too can merge them in?
 
-I've not really don't a formal review of the latest patch yet.  I plan
-to do it, and will give me Reviewed-by-tag then.  For now I don't think
-I'm actually significant enough to be mentioned in the patch.
+The immutable branch is needed so I can eventually apply
+the related .dts changes to enable the crossbar interrupts.
 
-If you need to fill the patch description some details on the conversion
-and performance numbers might be useful :)
+Regards,
 
+Tony
