@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751968AbaFZXQg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 19:16:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45219 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751312AbaFZXQf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 19:16:35 -0400
-Date: Fri, 27 Jun 2014 01:16:30 +0200
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, gregkh@linuxfoundation.org,
-        hpa@linux.intel.com, linux-kernel@vger.kernel.org,
-        Andrew Lunn <andrew@lunn.ch>, Stephen Warren <swarren@wwwdotorg.org>,
-        Michal Hocko <mhocko@suse.cz>, Petr Mladek <pmladek@suse.cz>,
-        Joe Perches <joe@perches.com>, Arun KS <arunks.linux@gmail.com>,
-        Kees Cook <keescook@chromium.org>, Davidlohr Bueso <davidlohr@hp.com>,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: Re: [PATCH v8 4/4] printk: allow increasing the ring buffer
-	depending on the number of CPUs
-Message-ID: <20140626231630.GI27687@wotan.suse.de>
-References: <1403124337-14886-1-git-send-email-mcgrof@do-not-panic.com> <1403124337-14886-4-git-send-email-mcgrof@do-not-panic.com> <20140623154134.43ac7ab63896cd9ebcba84b6@linux-foundation.org> <20140624002050.GC27687@wotan.suse.de> <20140623174533.88663e64.akpm@linux-foundation.org> <20140624010554.GF27687@wotan.suse.de> <20140626144117.3412feee6234786be098259d@linux-foundation.org>
+	id S1751902AbaFZXSW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 19:18:22 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:46177 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751306AbaFZXSU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 19:18:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140626144117.3412feee6234786be098259d@linux-foundation.org>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <20140626161055.GX32514@n2100.arm.linux.org.uk>
+References: <1403603667-11302-1-git-send-email-acourbot@nvidia.com>
+ <1403603667-11302-3-git-send-email-acourbot@nvidia.com> <20140624100220.GK32514@n2100.arm.linux.org.uk>
+ <53A953E6.2030503@nvidia.com> <53A95910.20104@nvidia.com> <CAAVeFu+rbCViC87kYCLfxGV18iYq=Pa0ABb+L=iNiYPLn+mR8Q@mail.gmail.com>
+ <53A96EC5.3030701@canonical.com> <1403616338.4230.8.camel@weser.hi.pengutronix.de>
+ <CACP_E+KECMyusuZd6hpzthL-RpfUOJpWh0EABf1DGAeaXc00aA@mail.gmail.com>
+ <CAAVeFuLU04rk1DWMhVJV=ktVCpq4js38p1ipCr1jh1x72b=GZw@mail.gmail.com> <20140626161055.GX32514@n2100.arm.linux.org.uk>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Fri, 27 Jun 2014 08:17:59 +0900
+Message-ID: <CAAVeFuK5L9+nCP=KZTBSG9OifJrFKcfQdCYuBEQbZ2+s9FmFdQ@mail.gmail.com>
+Subject: Re: [Nouveau] [PATCH v2 2/3] drm/ttm: introduce dma cache sync helpers
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: =?UTF-8?Q?St=C3=A9phane_Marchesin?= <stephane.marchesin@gmail.com>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 26, 2014 at 02:41:17PM -0700, Andrew Morton wrote:
-> On Tue, 24 Jun 2014 03:05:54 +0200 "Luis R. Rodriguez" <mcgrof@suse.com> wrote:
-> 
-> > > > Ah, because its cpu_extra, not total_cpu_space that is being
-> > > > computed, the goal was to see how much extra junk on the
-> > > > worst case a CPU might contribute. The __LOG_BUF_LEN is the
-> > > > default size, so we combine both.
-> > > 
-> > > Well...  why?  Isn't it simpler and more direct to say "I want at least
-> > > 32k per CPU"?
-> > 
-> > That's certainly another way to go about this, but the original motivation
-> > was trying to figure out the additional *extra* junk a CPU might spewed out,
-> > it set out with an assumption of a base start from the first CPU booting the
-> > system and that first CPU using the default kernel ring buffer size. The
-> > language in the patch describes the worst case extra CPU junk contributed,
-> > rather than a specific full split of the kernel ring buffer as that's typically
-> > how extra junk is spewered out to the ring bufer and the concern. In general
-> > on idle each CPU only contributes about only 1 to max 2 lines. The focus then
-> > is the worst case on contribution.
-> 
-> I don't think I understood all that ;)
+On Fri, Jun 27, 2014 at 1:10 AM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Thu, Jun 26, 2014 at 11:53:20PM +0900, Alexandre Courbot wrote:
+>> We don't plan to rely on CMA for too long. IOMMU support is on the way
+>> and should make our life easier, although no matter the source of
+>> memory, we will still have the issue of the lowmem mappings.
+>
+> When it comes to DMA memory, talking about lowmem vs highmem is utterly
+> meaningless.
+>
+> The lowmem/highmem split is entirely a software concept and is completely
+> adjustable.  An extreme example is that you can boot any platform with
+> more than 32MB of memory with 32MB of lowmem and the remainder as
+> highmem.
 
-Yeah if that made *you* squint a simpler approach would be better, regardless
-of how technically correct the above explanation may be.
-
-> > Another note --  since this option depends on SMP and !BASE_SMALL technically 
-> > num_possible_cpus() won't ever return something smaller than or equal to 1
-> > but because of the default values chosen the -1 on the compuation does affect
-> > whether or not this will trigger on > 64 CPUs or >= 64 CPUs, keeping the
-> > -1 means we require > 64 CPUs.
-> 
-> hm, that sounds like more complexity.
-> 
-> > This all can be changed however we like but the language and explained logic
-> > would just need to be changed.
-> 
-> Let's start out simple.  What's wrong with doing
-> 
-> 	log buf len = max(__LOG_BUF_LEN, nr_possible_cpus * per-cpu log buf len)
-
-Sure, you already took in the patch series though so how would you like to
-handle a respin, you just drop the last patch and we respin it?
-
-  Luis
+True, but isn't it also the case that all lowmem is already mapped in
+the kernel address space, and that re-mapping this memory with
+different cache settings (e.g. by creating a WC mapping for user-space
+to write into) is undefined on ARM and must be avoided? That is the
+issue I was referring to.
