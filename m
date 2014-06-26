@@ -1,104 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070AbaFZXPf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 19:15:35 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:38225 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751329AbaFZXPe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 19:15:34 -0400
+	id S1751968AbaFZXQg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 19:16:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45219 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751312AbaFZXQf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 19:16:35 -0400
+Date: Fri, 27 Jun 2014 01:16:30 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, gregkh@linuxfoundation.org,
+        hpa@linux.intel.com, linux-kernel@vger.kernel.org,
+        Andrew Lunn <andrew@lunn.ch>, Stephen Warren <swarren@wwwdotorg.org>,
+        Michal Hocko <mhocko@suse.cz>, Petr Mladek <pmladek@suse.cz>,
+        Joe Perches <joe@perches.com>, Arun KS <arunks.linux@gmail.com>,
+        Kees Cook <keescook@chromium.org>, Davidlohr Bueso <davidlohr@hp.com>,
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [PATCH v8 4/4] printk: allow increasing the ring buffer
+	depending on the number of CPUs
+Message-ID: <20140626231630.GI27687@wotan.suse.de>
+References: <1403124337-14886-1-git-send-email-mcgrof@do-not-panic.com> <1403124337-14886-4-git-send-email-mcgrof@do-not-panic.com> <20140623154134.43ac7ab63896cd9ebcba84b6@linux-foundation.org> <20140624002050.GC27687@wotan.suse.de> <20140623174533.88663e64.akpm@linux-foundation.org> <20140624010554.GF27687@wotan.suse.de> <20140626144117.3412feee6234786be098259d@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <53ACA5B3.3010702@intel.com>
-References: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com>
- <1403084656-27284-3-git-send-email-qiaowei.ren@intel.com> <53A884B2.5070702@mit.edu>
- <53A88806.1060908@intel.com> <CALCETrXYZZiZsDiUvvZd0636+qHP9a0sHTN6wt_ZKjvLaeeBzw@mail.gmail.com>
- <53A88DE4.8050107@intel.com> <CALCETrWBbkFzQR3tz1TphqxiGYycvzrFrKc=ghzMynbem=d7rg@mail.gmail.com>
- <9E0BE1322F2F2246BD820DA9FC397ADE016AF41C@shsmsx102.ccr.corp.intel.com>
- <CALCETrX+iS5N8bCUm_O-1E4GPu4oG-SuFJoJjx_+S054K9-6pw@mail.gmail.com>
- <9E0BE1322F2F2246BD820DA9FC397ADE016B26AB@shsmsx102.ccr.corp.intel.com>
- <CALCETrWmmVC2qQtL0Js_Y7LvSPdTh5Hpk6c5ZG3Rt8uTJBWoHQ@mail.gmail.com>
- <CALCETrUD3L5Ta_v+NqgUrTk7Ok3zE=CRg0rqeKthOj2OORCLKQ@mail.gmail.com>
- <53AB42E1.4090102@intel.com> <CALCETrVTTh9yuXH0hfcOpytyBd25K6thPfqqUBQtnOqx90ZRqw@mail.gmail.com>
- <53ACA5B3.3010702@intel.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 26 Jun 2014 16:15:12 -0700
-Message-ID: <CALCETrVceOhRunCg1b9Q3VL10Kcb+uA-HFUURnq5f2S63_jACg@mail.gmail.com>
-Subject: Re: [PATCH v6 02/10] x86, mpx: add MPX specific mmap interface
-To: Dave Hansen <dave.hansen@intel.com>
-Cc: "Ren, Qiaowei" <qiaowei.ren@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        X86 ML <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140626144117.3412feee6234786be098259d@linux-foundation.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 26, 2014 at 3:58 PM, Dave Hansen <dave.hansen@intel.com> wrote:
-> On 06/26/2014 03:19 PM, Andy Lutomirski wrote:
->> On Wed, Jun 25, 2014 at 2:45 PM, Dave Hansen <dave.hansen@intel.com> wrote:
->>> On 06/25/2014 02:05 PM, Andy Lutomirski wrote:
->>>> Hmm.  the memfd_create thing may be able to do this for you.  If you
->>>> created a per-mm memfd and mapped it, it all just might work.
->>>
->>> memfd_create() seems to bring a fair amount of baggage along (the fd
->>> part :) if all we want is a marker.  Really, all we need is _a_ bit, and
->>> some way to plumb to userspace the RSS values of VMAs with that bit set.
->>>
->>> Creating and mmap()'ing a fd seems a rather roundabout way to get there.
->>
->> Hmm.  So does VM_MPX, though.  If this stuff were done entirely in
->> userspace, then memfd_create would be exactly the right solution, I
->> think.
->>
->> Would it work to just scan the bound directory to figure out how many
->> bound tables exist?
->
-> Theoretically, perhaps.
->
-> Practically, the bounds directory is 2GB, and it is likely to be very
-> sparse.  You would have to walk the page tables finding where pages were
-> mapped, then search the mapped pages for bounds table entries.
->
-> Assuming that it was aligned and minimally populated, that's a *MINIMUM*
-> search looking for a PGD entry, then you have to look at 512 PUD
-> entries.  A full search would have to look at half a million ptes.
-> That's just finding out how sparse the first level of the tables are
-> before you've looked at a byte of actual data, and if they were empty.
->
-> We could keep another, parallel, data structure that handles this better
-> other than the hardware tables.  Like, say, an rbtree that stores ranges
-> of virtual addresses.  We could call them vm_area_somethings ... wait a
-> sec... we have a structure like that. ;)
->
->
+On Thu, Jun 26, 2014 at 02:41:17PM -0700, Andrew Morton wrote:
+> On Tue, 24 Jun 2014 03:05:54 +0200 "Luis R. Rodriguez" <mcgrof@suse.com> wrote:
+> 
+> > > > Ah, because its cpu_extra, not total_cpu_space that is being
+> > > > computed, the goal was to see how much extra junk on the
+> > > > worst case a CPU might contribute. The __LOG_BUF_LEN is the
+> > > > default size, so we combine both.
+> > > 
+> > > Well...  why?  Isn't it simpler and more direct to say "I want at least
+> > > 32k per CPU"?
+> > 
+> > That's certainly another way to go about this, but the original motivation
+> > was trying to figure out the additional *extra* junk a CPU might spewed out,
+> > it set out with an assumption of a base start from the first CPU booting the
+> > system and that first CPU using the default kernel ring buffer size. The
+> > language in the patch describes the worst case extra CPU junk contributed,
+> > rather than a specific full split of the kernel ring buffer as that's typically
+> > how extra junk is spewered out to the ring bufer and the concern. In general
+> > on idle each CPU only contributes about only 1 to max 2 lines. The focus then
+> > is the worst case on contribution.
+> 
+> I don't think I understood all that ;)
 
-So here's my mental image of how I might do this if I were doing it
-entirely in userspace: I'd create a file or memfd for the bound tables
-and another for the bound directory.  These files would be *huge*: the
-bound directory file would be 2GB and the bounds table file would be
-2^48 bytes or whatever it is.  (Maybe even bigger?)
+Yeah if that made *you* squint a simpler approach would be better, regardless
+of how technically correct the above explanation may be.
 
-Then I'd just map pieces of those files wherever they'd need to be,
-and I'd make the mappings sparse.  I suspect that you don't actually
-want a vma for each piece of bound table that gets mapped -- the space
-of vmas could end up incredibly sparse.  So I'd at least map (in the
-vma sense, not the pte sense) and entire bound table at a time.  And
-I'd probably just map the bound directory in one big piece.
+> > Another note --  since this option depends on SMP and !BASE_SMALL technically 
+> > num_possible_cpus() won't ever return something smaller than or equal to 1
+> > but because of the default values chosen the -1 on the compuation does affect
+> > whether or not this will trigger on > 64 CPUs or >= 64 CPUs, keeping the
+> > -1 means we require > 64 CPUs.
+> 
+> hm, that sounds like more complexity.
+> 
+> > This all can be changed however we like but the language and explained logic
+> > would just need to be changed.
+> 
+> Let's start out simple.  What's wrong with doing
+> 
+> 	log buf len = max(__LOG_BUF_LEN, nr_possible_cpus * per-cpu log buf len)
 
-Then I'd populate it in the fault handler.
+Sure, you already took in the patch series though so how would you like to
+handle a respin, you just drop the last patch and we respin it?
 
-This is almost what the code is doing, I think, modulo the files.
-
-This has one killer problem: these mappings need to be private (cowed
-on fork).  So memfd is no good.  There's got to be an easyish way to
-modify the mm code to allow anonymous maps with vm_ops.  Maybe a new
-mmap_region parameter or something?  Maybe even a special anon_vma,
-but I don't really understand how those work.
-
-
-Also, egads: what happens when a bound table entry is associated with
-a MAP_SHARED page?
-
---Andy
+  Luis
