@@ -1,66 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754664AbaFZP0v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 11:26:51 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:6840 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752137AbaFZP0t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 11:26:49 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 26 Jun 2014 08:16:54 -0700
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] clk: tegra124: init table updates
-Date: Thu, 26 Jun 2014 18:26:43 +0300
-Message-ID: <1403796403-26443-1-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
-X-NVConfidentiality: public
+	id S1755153AbaFZPfT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 11:35:19 -0400
+Received: from wolff.to ([98.103.208.27]:50284 "HELO wolff.to"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752149AbaFZPfS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 11:35:18 -0400
+Date: Thu, 26 Jun 2014 10:27:19 -0500
+From: Bruno Wolff III <bruno@wolff.to>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Dave Chinner <david@fromorbit.com>, Jens Axboe <axboe@fb.com>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: [regression] fix 32-bit breakage in block device read(2) (was
+ Re: 32-bit bug in iovec iterator changes)
+Message-ID: <20140626152719.GA15967@wolff.to>
+References: <20140621055306.GP18016@ZenIV.linux.org.uk>
+ <20140621230922.GA13188@thunk.org>
+ <20140621234913.GQ18016@ZenIV.linux.org.uk>
+ <1403395400.2592.4.camel@jarvis.lan>
+ <20140622002618.GR18016@ZenIV.linux.org.uk>
+ <1403397164.2177.40.camel@dabdike.int.hansenpartnership.com>
+ <20140622005352.GS18016@ZenIV.linux.org.uk>
+ <20140622010032.GT18016@ZenIV.linux.org.uk>
+ <20140622115007.GA5333@thunk.org>
+ <20140623074440.GV18016@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <20140623074440.GV18016@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ensure some clocks critical for system operation are always on. Also enable
-csite for JTAG debugging and set the tsensor clock frequency for the upcoming
-soctherm driver.
+On Mon, Jun 23, 2014 at 08:44:40 +0100,
+  Al Viro <viro@ZenIV.linux.org.uk> wrote:
+>
+>blkdev_read_iter() wants to cap the iov_iter by the amount of
+>data remaining to the end of device.  That's what iov_iter_truncate()
+>is for (trim iter->count if it's above the given limit).  So far,
+>so good, but the argument of iov_iter_truncate() is size_t, so on
+>32bit boxen (in case of a large device) we end up with that upper
+>limit truncated down to 32 bits *before* comparing it with iter->count.
 
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
-
----
-
-Changes in v2:
- * Fix missing word in description
- * Add hclk and pclk clocks
----
- drivers/clk/tegra/clk-tegra124.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/clk/tegra/clk-tegra124.c b/drivers/clk/tegra/clk-tegra124.c
-index 80efe51..1e3a79a 100644
---- a/drivers/clk/tegra/clk-tegra124.c
-+++ b/drivers/clk/tegra/clk-tegra124.c
-@@ -1369,6 +1369,13 @@ static struct tegra_clk_init_table init_table[] __initdata = {
- 	{TEGRA124_CLK_XUSB_HS_SRC, TEGRA124_CLK_PLL_U_60M, 60000000, 0},
- 	{TEGRA124_CLK_XUSB_FALCON_SRC, TEGRA124_CLK_PLL_RE_OUT, 224000000, 0},
- 	{TEGRA124_CLK_XUSB_HOST_SRC, TEGRA124_CLK_PLL_RE_OUT, 112000000, 0},
-+	{TEGRA124_CLK_EMC, TEGRA124_CLK_CLK_MAX, 0, 1},
-+	{TEGRA124_CLK_CCLK_G, TEGRA124_CLK_CLK_MAX, 0, 1},
-+	{TEGRA124_CLK_MSELECT, TEGRA124_CLK_CLK_MAX, 0, 1},
-+	{TEGRA124_CLK_HCLK, TEGRA124_CLK_CLK_MAX, 0, 1},
-+	{TEGRA124_CLK_PCLK, TEGRA124_CLK_CLK_MAX, 0, 1},
-+	{TEGRA124_CLK_CSITE, TEGRA124_CLK_CLK_MAX, 0, 1},
-+	{TEGRA124_CLK_TSENSOR, TEGRA124_CLK_CLK_M, 40000, 0},
- 	/* This MUST be the last entry. */
- 	{TEGRA124_CLK_CLK_MAX, TEGRA124_CLK_CLK_MAX, 0, 0},
- };
--- 
-1.7.7.rc0.72.g4b5ea.dirty
-
+This seems to fix a problem I had 
+(https://bugzilla.kernel.org/show_bug.cgi?id=78711) with a partition device 
+(/dev/sda3) being zero size on 3.16 kernels. However I am having some 
+other issues with 3.16 on i686 and the amount of testing was the raid 
+array using /dev/sda3 appeared to start (which it hadn't previously), but 
+the system hung before finishing the boot process.
