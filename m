@@ -1,82 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752367AbaFZE7D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 00:59:03 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:42234 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750770AbaFZE7B (ORCPT
+	id S1752561AbaFZFGA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 01:06:00 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:64816 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750960AbaFZFF7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 00:59:01 -0400
+	Thu, 26 Jun 2014 01:05:59 -0400
+Message-ID: <53ABAA34.6070006@kernel.dk>
+Date: Wed, 25 Jun 2014 23:05:56 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <CAK5sBcEVHYQutEm9Lh3eGX8_6zKLV-m3XfYKtnfPs8CBExpHqg@mail.gmail.com>
-References: <1403692697-7381-1-git-send-email-ch.naveen@samsung.com>
- <1403692697-7381-2-git-send-email-ch.naveen@samsung.com> <CAK5sBcEVHYQutEm9Lh3eGX8_6zKLV-m3XfYKtnfPs8CBExpHqg@mail.gmail.com>
-From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-Date: Thu, 26 Jun 2014 10:28:39 +0530
-Message-ID: <CAHfPSqBMbT=H5_3acXrRH=zJf-KkWQ-wasbMtkuDj8ewy6QpMg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] i2c: exynos5: fix minor styling nits
-To: Sachin Kamat <spk.linux@gmail.com>
-Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        linux-i2c@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        sjg@chromium.org, open list <linux-kernel@vger.kernel.org>,
-        Wolfram Sang <wsa@the-dreams.de>, cpgs@samsung.com, broonie@kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Ming Lei <ming.lei@canonical.com>, linux-kernel@vger.kernel.org
+CC: Rusty Russell <rusty@rustcorp.com.au>, linux-api@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Stefan Hajnoczi <stefanha@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: Re: [PATCH v2 0/2] block: virtio-blk: support multi vq per virtio-blk
+References: <1403748526-1923-1-git-send-email-ming.lei@canonical.com>
+In-Reply-To: <1403748526-1923-1-git-send-email-ming.lei@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Sachin,
-
-On 25 June 2014 16:19, Sachin Kamat <spk.linux@gmail.com> wrote:
-> Hi Naveen,
+On 2014-06-25 20:08, Ming Lei wrote:
+> Hi,
 >
-> On Wed, Jun 25, 2014 at 4:08 PM, Naveen Krishna Chatradhi
-> <ch.naveen@samsung.com> wrote:
->> This patch removes an extra line and fixes a styling nit
->> in exynos5_i2c_message_start()
->>
->> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
->> ---
->>  drivers/i2c/busses/i2c-exynos5.c |    3 +--
->>  1 file changed, 1 insertion(+), 2 deletions(-)
->>
->> diff --git a/drivers/i2c/busses/i2c-exynos5.c b/drivers/i2c/busses/i2c-exynos5.c
->> index 0d1a7bc..4c2e6f3 100644
->> --- a/drivers/i2c/busses/i2c-exynos5.c
->> +++ b/drivers/i2c/busses/i2c-exynos5.c
->> @@ -525,7 +525,7 @@ static void exynos5_i2c_message_start(struct exynos5_i2c *i2c, int stop)
->>         if (i2c->msg->flags & I2C_M_RD) {
->>                 i2c_ctl |= HSI2C_RXCHON;
->>
->> -               i2c_auto_conf = HSI2C_READ_WRITE;
->> +               i2c_auto_conf |= HSI2C_READ_WRITE;
+> These patches try to support multi virtual queues(multi-vq) in one
+> virtio-blk device, and maps each virtual queue(vq) to blk-mq's
+> hardware queue.
 >
-> This change looks more than just a styling nit. Please update the commit message
-> accordingly.
-
-Yea, change looks so.
-
-But, This is not an going to change the way code works.
-
-As, i2c_auto_conf is initialized to '0' at the beginning of the function
-and  HSI2C_READ_WRITE is defined as (1u << 16)
-
-This being the 1st usage, I thought using "|=" is better way of assignment.
-
-Will edit the commit message accordingly.
-
+> With this approach, both scalability and performance on virtio-blk
+> device can get improved.
 >
-> --
-> Regards,
-> Sachin.
+> For verifying the improvement, I implements virtio-blk multi-vq over
+> qemu's dataplane feature, and both handling host notification
+> from each vq and processing host I/O are still kept in the per-device
+> iothread context, the change is based on qemu v2.0.0 release, and
+> can be accessed from below tree:
+>
+> 	git://kernel.ubuntu.com/ming/qemu.git #v2.0.0-virtblk-mq.1
+>
+> For enabling the multi-vq feature, 'num_queues=N' need to be added into
+> '-device virtio-blk-pci ...' of qemu command line, and suggest to pass
+> 'vectors=N+1' to keep one MSI irq vector per each vq, and the feature
+> depends on x-data-plane.
+>
+> Fio(libaio, randread, iodepth=64, bs=4K, jobs=N) is run inside VM to
+> verify the improvement.
+>
+> I just create a small quadcore VM and run fio inside the VM, and
+> num_queues of the virtio-blk device is set as 2, but looks the
+> improvement is still obvious.
+>
+> 1), about scalability
+> - without mutli-vq feature
+> 	-- jobs=2, thoughput: 145K iops
+> 	-- jobs=4, thoughput: 100K iops
+> - with mutli-vq feature
+> 	-- jobs=2, thoughput: 193K iops
+> 	-- jobs=4, thoughput: 202K iops
+>
+> 2), about thoughput
+> - without mutli-vq feature
+> 	-- thoughput: 145K iops
+> - with mutli-vq feature
+> 	-- thoughput: 202K iops
 
-Thanks,
+Of these numbers, I think it's important to highlight that the 2 thread 
+case is 33% faster and the 2 -> 4 thread case scales linearly (100%) 
+while the pre-patch case sees negative scaling going from 2 -> 4 threads 
+(-39%).
 
+I haven't run your patches yet, but from looking at the code, it looks 
+good. It's pretty straightforward. See feel free to add my reviewed-by.
+
+Rusty, do you want to ack this (and I'll slurp it up for 3.17) or take 
+this yourself? Or something else?
 
 
 -- 
-Shine bright,
-(: Nav :)
+Jens Axboe
+
