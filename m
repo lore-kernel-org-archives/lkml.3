@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751423AbaFZSps (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 14:45:48 -0400
-Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:54992 "EHLO
-	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751189AbaFZSpr (ORCPT
+	id S1751290AbaFZSuR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 14:50:17 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:44316 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750944AbaFZSuP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 14:45:47 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqIQAPpprFNXQz8N/2dsb2JhbABagw2CSYEAqAEBAQEBAQEFAW2YewICAYEMF3WEAwEBBAE6HCMFCwgDGC45HgYTiDoMAcI1F4VkiRwHhEMBBI96il4BizqIO4NEOw
-Date: Thu, 26 Jun 2014 20:44:03 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Bob Copeland <me@bobcopeland.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/1] FS/OMFS: block number sanity check during
- fill_super operation
-Message-Id: <20140626204403.d4fadfadbfbba95a319b41f4@skynet.be>
-In-Reply-To: <CA+55aFw2wVG7e2BLUt2oPeeo-zwZTavGHkD1oGSpyerMBfqTpw@mail.gmail.com>
-References: <1403802228-8385-1-git-send-email-fabf@skynet.be>
-	<CA+55aFwMNDegPgCD6AAKUUA-YCvViTp2nbwNkVojErrDkuFeUA@mail.gmail.com>
-	<20140626202636.7b601260c02ecc45c3c87316@skynet.be>
-	<CA+55aFw2wVG7e2BLUt2oPeeo-zwZTavGHkD1oGSpyerMBfqTpw@mail.gmail.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 26 Jun 2014 14:50:15 -0400
+Date: Thu, 26 Jun 2014 19:50:05 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Sudeep Holla <sudeep.holla@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <robh@kernel.org>,
+        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "linux390@de.ibm.com" <linux390@de.ibm.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/9] drivers: base: support cpu cache information
+	interface to userspace via sysfs
+Message-ID: <20140626185005.GA32514@n2100.arm.linux.org.uk>
+References: <1403717444-23559-1-git-send-email-sudeep.holla@arm.com> <1403717444-23559-3-git-send-email-sudeep.holla@arm.com> <20140625222355.GK32514@n2100.arm.linux.org.uk> <53AC695C.2090406@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53AC695C.2090406@arm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Jun 2014 11:35:57 -0700
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+On Thu, Jun 26, 2014 at 07:41:32PM +0100, Sudeep Holla wrote:
+> Hi,
+>
+> On 25/06/14 23:23, Russell King - ARM Linux wrote:
+>> On Wed, Jun 25, 2014 at 06:30:37PM +0100, Sudeep Holla wrote:
+>>> +		coherency_line_size: the minimum amount of data that gets transferred
+>>
+>> So, what value to do envision this taking for a CPU where the cache
+>> line size is 32 bytes, but each cache line has two dirty bits which
+>> allow it to only evict either the upper or lower 16 bytes depending
+>> on which are dirty?
+>>
+>
+> IIUC most of existing implementations of cacheinfo on various architectures
+> are representing the cache line size as coherency_line_size, in which case I
+> need fix the definition in this file.
 
-> On Jun 26, 2014 11:28 AM, "Fabian Frederick" <fabf@skynet.be> wrote:
-> >
-> >    Sorry but I don't see a problem with 2^31 value.
-> 
-> It's not really 2^31.
-> 
-> It's *negative* 2^31.
-> 
-> 1 is "int", so it's a signed number. With the shift it ends up being a
-> signed number with the high bit set. That's just a bad bad idea.
-> 
-> Now, it just so happens that if you always compare it with unsigned
-> numbers, C promotion rules will end up promoting it to unsigned and it
-> happens to *work*, but that is more luck than design.
-> 
-> So I'd suggest using 0x80000000 (which is unsigned) or use (1ul<<31) or
-> similar explicit C typing.
+As an example, here's an extract from the SA110 TRM:
 
-Ok, I understand now. Thanks a lot for taking the time to explain Linus.
-It really means a lot to me.
+StrongARM contains a 16KByte writeback data cache. The DC has 512 lines
+of 32 bytes (8 words), arranged as a 32 way set associative cache, and
+uses the virtual addresses generated by the processor. A line also
+contains the physical address the block was fetched from and two dirty
+bits. There is a dirty bit associated with both the first and second
+half of the block. When a store hits in the cache the dirty bit
+associated with it is set. When a block is evicted from the cache the
+dirty bits are used to decide if all, half, or none of the block will
+be written back to memory using the physical address stored with the
+block. The DC is always reloaded a line at a time (8 words).
 
-Fabian
-> 
->      Linus
+> BTW will there be any architectural way of finding such configuration ?
+
+Not that I know of.
+
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
