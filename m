@@ -1,51 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757713AbaFZCdg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 22:33:36 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:13993 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757262AbaFZCdf (ORCPT
+	id S1756988AbaFZCqE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 22:46:04 -0400
+Received: from mail-qg0-f49.google.com ([209.85.192.49]:54324 "EHLO
+	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753576AbaFZCqB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 22:33:35 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 25 Jun 2014 19:27:25 -0700
-Message-ID: <53AB867A.901@nvidia.com>
-Date: Thu, 26 Jun 2014 11:33:30 +0900
-From: Alexandre Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 25 Jun 2014 22:46:01 -0400
 MIME-Version: 1.0
-To: Tomasz Figa <t.figa@samsung.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@nvidia.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>
-Subject: Re: [PATCH 1/2] ARM: firmware: Introduce suspend and resume operations
-References: <1403713114-18923-1-git-send-email-t.figa@samsung.com> <1403713114-18923-2-git-send-email-t.figa@samsung.com>
-In-Reply-To: <1403713114-18923-2-git-send-email-t.figa@samsung.com>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAMwGMjwAkKidt-B_aenConMbtsk6uSAcfJqXw0r6X2vyADo7Wg@mail.gmail.com>
+References: <CAMwGMjwmdcePeeT5rbZNxCVD7f-bgYgrwBW21hzEV20tkKg9Yg@mail.gmail.com>
+	<53AAEC38.1030506@samsung.com>
+	<CAMwGMjwAkKidt-B_aenConMbtsk6uSAcfJqXw0r6X2vyADo7Wg@mail.gmail.com>
+Date: Wed, 25 Jun 2014 22:46:00 -0400
+X-Google-Sender-Auth: E-Om2T0E-gqJztRd0PL_t8jowiM
+Message-ID: <CAMwGMjw6gxKSJ1dH=jx0htV9r=HDtYwqbx3OyZz2gWbt_f-4sQ@mail.gmail.com>
+Subject: Re: USB_MUSB_DA8XX with g_multi.ko
+From: Jon Ringle <jon@ringle.org>
+To: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+Cc: Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2014 01:18 AM, Tomasz Figa wrote:
-> This patch extends the firmware_ops structure with two new callbacks:
-> .suspend() and .resume(). The former is intended to ask the firmware to
-> save all its volatile state and suspend the system, without returning
-> back to the kernel in between. The latter is to be called early by
-> very low level platform suspend code after waking up to restore low
-> level hardware state, which can't be restored in non-secure mode.
+On Wed, Jun 25, 2014 at 11:52 AM, Jon Ringle <jon@ringle.org> wrote:
+> On Wed, Jun 25, 2014 at 11:35 AM, Andrzej Pietrasiewicz
+> <andrzej.p@samsung.com> wrote:
+>> W dniu 25.06.2014 17:13, Jon Ringle pisze:
+>>
+>>> In commit 787f5627bec80094db487bfcb401e9744f181aed
+>>> usb: musb: make davinci and da8xx glues depend on BROKEN
+>>>
+>>> USB_MUSB_DA8XX was marked as BROKEN
+>>>
+>>> A few months ago, we updated the linux kernel on our AM1808 SoC based
+>>> embedded board from Linux 2.6.33 to the latest long term 3.12.
+>>>
+>>> I am interested in having the USB gadget support on my board, so I
+>>> removed BROKEN on USB_MUSB_DA8XX. I found that when I modprobe
+>>> g_ether, g_serial, and g_mass_storage (by themselves), they all appear
+>>> to work as expected, but if I try to use g_multi to have a composite
+>>> device supporting all three simultaneously, I run into failure during
+>>> initialization.
+>>>
+>>
+>> <snip>
+>>
+>>
+>>>
+>>>> From this I can see that it's failing on the following call in
+>>>> fsg_bind():
+>>>
+>>> ep = usb_ep_autoconfig(gadget, &fsg_fs_bulk_in_desc);
+>>>
+>>
+>> Just a random guess (I don't know your hardware): how many bulk,
+>> iso and interrupt endpoints does your hardware provide? Perhaps you
+>> just run out of endpoints?
 >
-> While at it, outdated version of the structure is removed from the
-> documentation and replaced with a reference to the header file.
+> Perhaps... From the documentation it appears that I can have 4
+> simultaneous RX/TX endpoints... Is this not enough?
 
-Acked-by: Alexandre Courbot <acourbot@nvidia.com>
+I now see that each function seems to require 2 endpoints, so with 4
+endpoints available, I can only have two functions with this hardware.
+I tested this successfully with g_adm_ms.ko having both serial and
+mass storage working. The only thing I needed to do was to remove the
+BROKEN dependency on USB_MUSB_DA8XX. Is there anything else I would
+have to do besides just removing BROKEN to get this accepted back into
+the kernel source tree?
+
+Jon
