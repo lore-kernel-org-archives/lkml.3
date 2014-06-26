@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757277AbaFZAJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 20:09:28 -0400
-Received: from smtprelay0022.hostedemail.com ([216.40.44.22]:41397 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753302AbaFZAJ1 (ORCPT
+	id S1754848AbaFZAMm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 20:12:42 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:56198 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752688AbaFZAMl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 20:09:27 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:2194:2199:2393:2525:2560:2563:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3350:3622:3770:3865:3868:3870:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:5007:7652:7903:8599:9025:10004:10400:10848:11232:11658:11914:12043:12292:12296:12517:12519:12555:12682:12740:13069:13255:13311:13357:13845:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:n
-X-HE-Tag: clock63_34e8a7e82120b
-X-Filterd-Recvd-Size: 1759
-Message-ID: <1403741362.28663.12.camel@joe-AO725>
-Subject: Re: [PATCH 2/2] staging: wlan-ng/hfa384x_usb.c: remove return
- statements for void function
-From: Joe Perches <joe@perches.com>
-To: Cheng-Wei Lee <lee.rhapsody@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sherif Shehab Aldin <shehabaldin.sherif@gmail.com>,
-        Avinash Kumar <avi.kp.137@gmail.com>,
-        Peter Senna Tschudin <peter.senna@gmail.com>,
-        devel <devel@driverdev.osuosl.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Wed, 25 Jun 2014 17:09:22 -0700
-In-Reply-To: <CAJKoSVRLvPe+5tae=buV3j12L612tdaYAWMT303GO71NF-w27g@mail.gmail.com>
-References: <CAJKoSVRLvPe+5tae=buV3j12L612tdaYAWMT303GO71NF-w27g@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 25 Jun 2014 20:12:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140625225451.GB1534@t510.redhat.com>
+References: <4b46c5b21263c446923caf3da3f0dca6febc7b55.1403709665.git.aquini@redhat.com>
+ <6B2BA408B38BA1478B473C31C3D2074E341D585464@SV-EXCHANGE1.Corp.FC.LOCAL>
+ <20140625201603.GA1534@t510.redhat.com> <6B2BA408B38BA1478B473C31C3D2074E341D585503@SV-EXCHANGE1.Corp.FC.LOCAL>
+ <20140625225451.GB1534@t510.redhat.com>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Wed, 25 Jun 2014 20:12:20 -0400
+X-Google-Sender-Auth: u6YRuriLmfusOOACxEmUyF79eA0
+Message-ID: <CAHGf_=qahsLFA4763KzFf5CgvgcE1cjxJrzNafQR49-cNJZKuw@mail.gmail.com>
+Subject: Re: [PATCH] mm: export NR_SHMEM via sysinfo(2) / si_meminfo() interfaces
+To: Rafael Aquini <aquini@redhat.com>
+Cc: Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-06-25 at 23:35 +0800, Cheng-Wei Lee wrote:
-> This patch fixes the following checkpatch.pl issues in hfa384x_usb.c:
-> WARNING: Missing a blank line after declarations
+> I agree that reporting the amount of shared pages in that historically fashion
+> might not be interesting for userspace tools resorting to sysinfo(2),
+> nowadays.
+>
+> OTOH, our documentation implies we do return shared memory there, and FWIW,
+> considering the other places we do export the "shared memory" concept to
+> userspace nowadays, we are suggesting it's the amount of tmpfs/shmem, and not the
+> amount of shared mapped pages it historiacally represented once. What is really
+> confusing is having a field that supposedely/expectedely would return the amount
+> of shmem to userspace queries, but instead returns a hard-coded zero (0).
+>
+> I could easily find out that there were some user complaint/confusion on this
+> semantic inconsistency in the past, as in:
+> https://groups.google.com/forum/#!topic/comp.os.linux.development.system/ogWVn6XdvGA
+>
+> or in:
+> http://marc.info/?l=net-snmp-cvs&m=132148788500667
+>
+> which suggests users seem to always have understood it as being shmem/tmpfs
+> usage, as the /proc/meminfo field "MemShared" was tied direclty to
+> sysinfo.sharedram. Historically we reported shared memory that way, and
+> when it wasn't accurately meaning that anymore a 0 was hardcoded there to
+> potentially not break compatibility with older tools (older than 2.4).
+> In 2.6 we got rid of meminfo's "MemShared" until 2009, when you sort of
+> re-introduced it re-branded as Shmem. IMO, we should leverage what we
+> have in kernel now and take this change to make the exposed data consistent
+> across the interfaces that export it today -- sysinfo(2) & /proc/meminfo.
+>
+> This is not a hard requirement, though, but rather a simple maintenance
+> nitpick from code review.
 
-Still has a mismatch between subject and code
-
-> diff --git a/drivers/staging/wlan-ng/hfa384x_usb.c
-[]
-> @@ -3533,7 +3533,7 @@ static void hfa384x_usbin_rx(wlandevice_t
-> *wlandev, struct sk_buff *skb)
->  	}
-> 
->  done:
-> -	return;
-> +	pr_debug("hfa384x_usbin_rx: done\n");
-
-I suggest you just leave the return,
-
-Any checkpatch suggestion this was needed was a false
-positive that should be resolved by this patch:
-
-http://article.gmane.org/gmane.linux.kernel/1728891
-
-
+Ok, ack then. But please update a patch description and repost w/
+ccing linux-api@vger.kernel.org. Someone might have a specific concern
+about a compatibility.
