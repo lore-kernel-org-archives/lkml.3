@@ -1,75 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753563AbaFZMxj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 08:53:39 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:22737 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960AbaFZMxh (ORCPT
+	id S932110AbaFZMzG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 08:55:06 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:35076 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752708AbaFZMzE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 08:53:37 -0400
-X-AuditID: cbfee68e-b7fb96d000004bfc-83-53ac17cf11c2
-From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-To: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
-Cc: naveenkrishna.ch@gmail.com, linux@roeck-us.net, cpgs@samsung.com,
-        herbert@gondor.apana.org.au
-Subject: [PATCH] hwmon: ntc_thermistor: correct the information printed during
- probe
-Date: Thu, 26 Jun 2014 18:20:14 +0530
-Message-id: <1403787014-5858-1-git-send-email-ch.naveen@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJLMWRmVeSWpSXmKPExsWyRsSkRve8+Jpgg92rLC1eHtK06H4lY3F5
-	1xw2iycLzzBZ3Jm2l81i0bb/zA5sHjtn3WX32HZA1ePBxN1A3vcGdo++LasYPT5vkgtgi+Ky
-	SUnNySxLLdK3S+DKOPB/N3tBK1vFw/uPGBsYf7N0MXJySAiYSPx91MsGYYtJXLi3Hsjm4hAS
-	WMooMWP3ZkaYohuHLjJCJBYxSvz++pAVJCEk0M8k8euiKojNJmAmcXDRanYQW0TAWmLf8l1g
-	U5kFkiUaX/wH2yYsECax4+VxZhCbRUBVYu2d9UD1HBy8Ai4Sd/+4gpgSAgoScybZgKySEPjN
-	JvHl1i12iHIBiW+TD7FA1MhKbDrADHGapMTBFTdYJjAKLmBkWMUomlqQXFCclF5kpFecmFtc
-	mpeul5yfu4kRGKyn/z3r28F484D1IcZkoHETmaVEk/OBwZ5XEm9obGZkYWpiamxkbmlGmrCS
-	OO+ih0lBQgLpiSWp2ampBalF8UWlOanFhxiZODilGhj5bKrM/Zfyq7l25+gtOXA/f/3PqVdM
-	b716pTUr8zqH+3qFAKufMS+bTiT5P/uwRHKq8oGb6pW5foplySH3OvJC7yrvvsEpvfdzxScu
-	7xaT3zG9pZ6derdm7rZRdFLWbdkouc+MudWx+L5NjNzWnt6t/SaNu/wnGN+Z78iWska+bs93
-	v+K0MCWW4oxEQy3mouJEAPmRr4psAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgkeLIzCtJLcpLzFFi42I5/e+xgO558TXBBleuG1i8PKRp0f1KxuLy
-	rjlsFk8WnmGyuDNtL5vFom3/mR3YPHbOusvuse2AqseDibuBvO8N7B59W1YxenzeJBfAFtXA
-	aJORmpiSWqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDdISSQlli
-	TilQKCCxuFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCGMePA/93sBa1sFQ/vP2JsYPzN0sXI
-	ySEhYCJx49BFRghbTOLCvfVsXYxcHEICixglfn99yAqSEBLoZ5L4dVEVxGYTMJM4uGg1O4gt
-	ImAtsW/5LjYQm1kgWaLxxX+wocICYRI7Xh5nBrFZBFQl1t5ZD1TPwcEr4CJx948riCkhoCAx
-	Z5LNBEbuBYwMqxhFUwuSC4qT0nON9IoTc4tL89L1kvNzNzGCY+GZ9A7GVQ0WhxgFOBiVeHg/
-	PF4VLMSaWFZcmXuIUYKDWUmE9z7/mmAh3pTEyqrUovz4otKc1OJDjKZAuycyS4km5wPjNK8k
-	3tDYxNzU2NTSxMLEzFJJnPdgq3WgkEB6YklqdmpqQWoRTB8TB6dUA2Pqhr5+H99DRRtfux2f
-	fZGz2cDPIy3ukUhU6Sz109wtsU4uW0JD6zPduRLNOe0/ta4MPXfWcnWb2ROTFVs9nhy//Hbz
-	XMvvG5XLrh/83y/vVLH80trICiM+c5GY/9ltTv8Z3uVF9W1inFScmV/xLiypQ09s4dpDf5Qc
-	r0pdOLkywvJjXT37KSWW4oxEQy3mouJEAF/EUCubAgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 26 Jun 2014 08:55:04 -0400
+Date: Thu, 26 Jun 2014 14:54:19 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: linux@maxim.org.za, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Boris Brezillon <boris@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Thomas Petazzoni <thomas@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 13/13] AT91: PIT: Move the driver to drivers/clocksource
+Message-ID: <20140626125419.GC3385@lukather>
+References: <1403701605-26678-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1403701605-26678-14-git-send-email-maxime.ripard@free-electrons.com>
+ <53ABAF1E.5030405@free-electrons.com>
+ <20140626093006.GB3385@lukather>
+ <53AC0882.3010601@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ncSAzJYg3Aa9+CRW"
+Content-Disposition: inline
+In-Reply-To: <53AC0882.3010601@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, dev_info() at the end of the probe says
-"type:%s ". But, prints the pdev->name.
 
-This patch uses "pdev_id->name" which prints the thermistor type.
+--ncSAzJYg3Aa9+CRW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+On Thu, Jun 26, 2014 at 01:48:18PM +0200, Boris BREZILLON wrote:
+>=20
+> On 26/06/2014 11:30, Maxime Ripard wrote:
+> > Hi Boris,
+> >
+> > On Thu, Jun 26, 2014 at 07:26:54AM +0200, Boris BREZILLON wrote:
+> >> On 25/06/2014 15:06, Maxime Ripard wrote:
+> >>> Now that we don't depend on anyting in the mach-at91 directory, we ca=
+n just
+> >>> move the driver to where it belongs.
+> >>>
+> >>> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> >>> ---
+> >>>  arch/arm/mach-at91/Kconfig                                     | 4 -=
 ---
- drivers/hwmon/ntc_thermistor.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> >>>  arch/arm/mach-at91/Makefile                                    | 1 -
+> >>>  drivers/clocksource/Kconfig                                    | 4 +=
++++
+> >>>  drivers/clocksource/Makefile                                   | 1 +
+> >>>  {arch/arm/mach-at91 =3D> drivers/clocksource}/at91sam926x_time.c | 0
+> >>>  5 files changed, 5 insertions(+), 5 deletions(-)
+> >>>  rename {arch/arm/mach-at91 =3D> drivers/clocksource}/at91sam926x_tim=
+e.c (100%)
+> >>>
+> >>> diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
+> >>> index a64412a020d3..b10db0990999 100644
+> >>> --- a/arch/arm/mach-at91/Kconfig
+> >>> +++ b/arch/arm/mach-at91/Kconfig
+> >>> @@ -36,10 +36,6 @@ config AT91_SAM9G45_RESET
+> >>>  	bool
+> >>>  	default !ARCH_AT91X40
+> >>> =20
+> >>> -config AT91_SAM9_TIME
+> >>> -	select CLKSRC_OF if OF
+> >>> -	bool
+> >>> -
+> >>>  config HAVE_AT91_SMD
+> >>>  	bool
+> >>> =20
+> >>> diff --git a/arch/arm/mach-at91/Makefile b/arch/arm/mach-at91/Makefile
+> >>> index 78e9cec282f4..1a916ececbfd 100644
+> >>> --- a/arch/arm/mach-at91/Makefile
+> >>> +++ b/arch/arm/mach-at91/Makefile
+> >>> @@ -10,7 +10,6 @@ obj-		:=3D
+> >>>  obj-$(CONFIG_OLD_CLK_AT91)	+=3D clock.o
+> >>>  obj-$(CONFIG_AT91_SAM9_ALT_RESET) +=3D at91sam9_alt_reset.o
+> >>>  obj-$(CONFIG_AT91_SAM9G45_RESET) +=3D at91sam9g45_reset.o
+> >>> -obj-$(CONFIG_AT91_SAM9_TIME)	+=3D at91sam926x_time.o
+> >>>  obj-$(CONFIG_SOC_AT91SAM9)	+=3D sam9_smc.o
+> >>> =20
+> >>>  # CPU-specific support
+> >>> diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
+> >>> index 065131cbfcc0..cd8b73ddbef3 100644
+> >>> --- a/drivers/clocksource/Kconfig
+> >>> +++ b/drivers/clocksource/Kconfig
+> >>> @@ -118,6 +118,10 @@ config CLKSRC_ARM_GLOBAL_TIMER_SCHED_CLOCK
+> >>>  	help
+> >>>  	 Use ARM global timer clock source as sched_clock
+> >>> =20
+> >>> +config AT91_SAM9_TIME
+> >>> +	select CLKSRC_OF if OF
+> >>> +	bool
+> >>> +
+> >>>  config CLKSRC_METAG_GENERIC
+> >>>  	def_bool y if METAG
+> >>>  	help
+> >>> diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makef=
+ile
+> >>> index 800b1303c236..3088928070f8 100644
+> >>> --- a/drivers/clocksource/Makefile
+> >>> +++ b/drivers/clocksource/Makefile
+> >>> @@ -1,5 +1,6 @@
+> >>>  obj-$(CONFIG_CLKSRC_OF)	+=3D clksrc-of.o
+> >>>  obj-$(CONFIG_ATMEL_TCB_CLKSRC)	+=3D tcb_clksrc.o
+> >>> +obj-$(CONFIG_AT91_SAM9_TIME)	+=3D at91sam926x_time.o
+> >> I would rename both Kconfig and source file name into ATMEL_PIT and
+> >> atmel_pit.c (or AT91_PIT and atmel_pit.c) to cleary show that this
+> >> driver add support for the PIT block.
+> > I actually had the same idea, but older AT91 SoCs (rm9200, for
+> > example) also mention the PIT, even though the IP is different.
+>=20
+> I checked at91rm9200 datasheet, and indeed it mention the concept of PIT
+> (Periodic Interval Timer), but the HW block is called ST (System Timer).
+>=20
+> How about using the name ATMEL_PIT for this driver and later use
+> ATMEL_ST when we decide to move at91rm9200_time.c driver into
+> drivers/clocksource ?
 
-diff --git a/drivers/hwmon/ntc_thermistor.c b/drivers/hwmon/ntc_thermistor.c
-index bdfbe91..ae66f42 100644
---- a/drivers/hwmon/ntc_thermistor.c
-+++ b/drivers/hwmon/ntc_thermistor.c
-@@ -512,7 +512,7 @@ static int ntc_thermistor_probe(struct platform_device *pdev)
- 	}
- 
- 	dev_info(&pdev->dev, "Thermistor type: %s successfully probed.\n",
--								pdev->name);
-+								pdev_id->name);
- 
- 	return 0;
- err_after_sysfs:
--- 
-1.7.9.5
+Works for me.
 
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--ncSAzJYg3Aa9+CRW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTrBf7AAoJEBx+YmzsjxAgv+sP/1QwvXCIwnoC6Z1E4Dy6gpVM
+kyUVRiK8BIm9foZ4uiJJULe5Lj46bF8d2ZIsjvMmiKSg/7rXuVCXmNbFybp6RxNV
+0i6MnVnjsi00Nt6r39Hcg9b1QIiGdYG6BmvrEbkrMsmdHxDrj3r1wqQAHdQklRAK
+PPX7tks7qRv7DP/VT9BSambNjkB5JkC5UJqRAP4/TtYvm2qgg+45BgR6zB+G1frM
+ip+hny63A1NF2Oqa7fe2qv7Uq1V8NDpOSsvsRjLQ6p1gtZ6EjlampT1qb5u/3lq8
+5n9yBa1vO4zZnXvtylw1Hx9sH6cAse1LE12X9JdboVyIydZQ7H+T/T11Zzqyu3E5
+ta5aG1TtoZMbnQUY+jqJzUDS7H5PZ1k7lPWSo9S6RBhuP05oVG3W6fXUv9xxRDcn
+2/7ItEmf540Wtd7hi2EjP70Hk2yDhAgyrySZZ0zjX46QxC8zw6mGQVl5lprW3/26
+gt6NsRkOZHeTy/+q1T90d76l/lHrODKT5nHu5sgQEjrBbQN6uUbVOkI7m2yw5QX0
+xjyD/vqoP1ocxQ7XUXhuaGYBZWsJgJtgABi1wiM2+eZ3szR4Y0TpQokG4ra3LING
+izkW4oBS6ieALt1Cfr5VB0jLVYOIuy/KGV2MJFuxzgDINlzotZblkL8juCgKMWbb
+TCHpcLue/imgZn8oyv4z
+=LbC9
+-----END PGP SIGNATURE-----
+
+--ncSAzJYg3Aa9+CRW--
