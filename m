@@ -1,96 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752095AbaFZUBN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 16:01:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44236 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750944AbaFZUBL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 16:01:11 -0400
-From: Rafael Aquini <aquini@redhat.com>
-To: linux-mm@kvack.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
-Subject: [PATCH v2] mm: export NR_SHMEM via sysinfo(2) / si_meminfo() interfaces
-Date: Thu, 26 Jun 2014 17:00:17 -0300
-Message-Id: <198dc298821a20a476656dccc85a8d77f166c61a.1403812625.git.aquini@redhat.com>
+	id S1752121AbaFZUBf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 16:01:35 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:37752 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751432AbaFZUBK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 16:01:10 -0400
+Message-ID: <53AC7BFD.2070806@free-electrons.com>
+Date: Thu, 26 Jun 2014 22:01:01 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Florian Fainelli <f.fainelli@gmail.com>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>, netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH v2 1/2] ARM: at91/dt: describe rgmii ethernet phy connected
+ to sama5d3xek boards
+References: <1403777615-25685-1-git-send-email-boris.brezillon@free-electrons.com> <1403777615-25685-2-git-send-email-boris.brezillon@free-electrons.com> <CAGVrzcbYAEMsU1SFSH761H0isQ4z1M++KK_GLf0OAbGS48YUmw@mail.gmail.com>
+In-Reply-To: <CAGVrzcbYAEMsU1SFSH761H0isQ4z1M++KK_GLf0OAbGS48YUmw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Historically, we exported shared pages to userspace via sysinfo(2) sharedram
-and /proc/meminfo's "MemShared" fields. With the advent of tmpfs, from kernel
-v2.4 onward, that old way for accounting shared mem was deemed inaccurate and
-we started to export a hard-coded 0 for sysinfo.sharedram. Later on, during
-the 2.6 timeframe, "MemShared" got re-introduced to /proc/meminfo re-branded
-as "Shmem", but we're still reporting sysinfo.sharedmem as that old hard-coded
-zero, which makes the "shared memory" report inconsistent across interfaces.
+Hi Florian,
 
-This patch leverages the addition of explicit accounting for pages used by
-shmem/tmpfs -- "4b02108 mm: oom analysis: add shmem vmstat" -- in order to
-make the users of sysinfo(2) and si_meminfo*() friends aware of that
-vmstat entry and make them report it consistently across the interfaces,
-as well to make sysinfo(2) returned data consistent with our current API
-documentation states.
+On 26/06/2014 20:15, Florian Fainelli wrote:
+> Hi Boris,
+>
+> 2014-06-26 3:13 GMT-07:00 Boris BREZILLON <boris.brezillon@free-electrons.com>:
+>> Add ethernet-phy node and specify phy interrupt (connected to pin PB25).
+>>
+>> The PHY address is not specified here because atmel have 2 different
+>> designs
+>> for its CPU modules: one is connecting PHYAD[0-2] pins to pull up resistors
+>> (Embest design) and the other one is connection PHYAD0 to a pull up
+>> resistor and PHYAD[1-2] to pull down resistors (Ronetix design).
+>> As a result, Ronetix design will have its PHY available at address 0x1 and
+>> Embest design at 0x7.
+>> Let the net PHY core automatically detect the PHY address by scanning the
+>> MDIO bus.
+> I though the compatible string was listed as a required property, but
+> it is not. The 'reg' property however is listed as required, although
+> the of_miodbus_register() works just fine without it, although that is
+> a Linux-specific implementation detail.
 
-Signed-off-by: Rafael Aquini <aquini@redhat.com>
----
-Changelog from v1:
-- updated commit log message to include historical context       (kosaki-san)
+Indeed, it's listed in the required property list of the DT binding doc,
+but the code implement auto detection if reg is missing.
+However this line [1] clearly shows that specifying the reg property is
+the preferred way of doing things.
 
- drivers/base/node.c | 2 +-
- fs/proc/meminfo.c   | 2 +-
- mm/page_alloc.c     | 3 ++-
- 3 files changed, 4 insertions(+), 3 deletions(-)
+I could define 2 different sama5d3xcm.dtsi (sama5d3xcm-ronetix.dtsi and
+sama5d3xcm-embest.dtsi) to avoid this dirty hack,
+but then we would have 2 more dtb and the user would have to determine
+which CPU module he owns to choose the appropriate dtb.
+If at91, arm-soc and DT maintainers agree with this approach I can
+definitely propose something.
 
-diff --git a/drivers/base/node.c b/drivers/base/node.c
-index 8f7ed99..c6d3ae0 100644
---- a/drivers/base/node.c
-+++ b/drivers/base/node.c
-@@ -126,7 +126,7 @@ static ssize_t node_read_meminfo(struct device *dev,
- 		       nid, K(node_page_state(nid, NR_FILE_PAGES)),
- 		       nid, K(node_page_state(nid, NR_FILE_MAPPED)),
- 		       nid, K(node_page_state(nid, NR_ANON_PAGES)),
--		       nid, K(node_page_state(nid, NR_SHMEM)),
-+		       nid, K(i.sharedram),
- 		       nid, node_page_state(nid, NR_KERNEL_STACK) *
- 				THREAD_SIZE / 1024,
- 		       nid, K(node_page_state(nid, NR_PAGETABLE)),
-diff --git a/fs/proc/meminfo.c b/fs/proc/meminfo.c
-index 7445af0..aa1eee0 100644
---- a/fs/proc/meminfo.c
-+++ b/fs/proc/meminfo.c
-@@ -168,7 +168,7 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
- 		K(global_page_state(NR_WRITEBACK)),
- 		K(global_page_state(NR_ANON_PAGES)),
- 		K(global_page_state(NR_FILE_MAPPED)),
--		K(global_page_state(NR_SHMEM)),
-+		K(i.sharedram),
- 		K(global_page_state(NR_SLAB_RECLAIMABLE) +
- 				global_page_state(NR_SLAB_UNRECLAIMABLE)),
- 		K(global_page_state(NR_SLAB_RECLAIMABLE)),
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 20d17f8..f72ea38 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -3040,7 +3040,7 @@ static inline void show_node(struct zone *zone)
- void si_meminfo(struct sysinfo *val)
- {
- 	val->totalram = totalram_pages;
--	val->sharedram = 0;
-+	val->sharedram = global_page_state(NR_SHMEM);
- 	val->freeram = global_page_state(NR_FREE_PAGES);
- 	val->bufferram = nr_blockdev_pages();
- 	val->totalhigh = totalhigh_pages;
-@@ -3060,6 +3060,7 @@ void si_meminfo_node(struct sysinfo *val, int nid)
- 	for (zone_type = 0; zone_type < MAX_NR_ZONES; zone_type++)
- 		managed_pages += pgdat->node_zones[zone_type].managed_pages;
- 	val->totalram = managed_pages;
-+	val->sharedram = node_page_state(nid, NR_SHMEM);
- 	val->freeram = node_page_state(nid, NR_FREE_PAGES);
- #ifdef CONFIG_HIGHMEM
- 	val->totalhigh = pgdat->node_zones[ZONE_HIGHMEM].managed_pages;
+>
+>> Define board specific delays to apply to RGMII signals.
+>>
+>> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> Reviewed-by: Florian Fainelli <f.fainelli@gmail.com>
+
+Thanks for your review.
+
+Best Regards,
+
+Boris
+
+[1] http://lxr.free-electrons.com/source/drivers/of/of_mdio.c#L187
+
 -- 
-1.9.3
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
 
