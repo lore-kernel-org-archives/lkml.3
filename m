@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964952AbaFZSQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 14:16:57 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:33363 "EHLO
+	id S965000AbaFZSRI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 14:17:08 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:33402 "EHLO
 	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932205AbaFZSQw (ORCPT
+	with ESMTP id S964970AbaFZSRC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 14:16:52 -0400
+	Thu, 26 Jun 2014 14:17:02 -0400
 From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 To: Lee Jones <lee.jones@linaro.org>
 Cc: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
@@ -23,9 +23,9 @@ Cc: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
         linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
         linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH v5 09/14] regmap: Add regmap_reg_copy function
-Date: Thu, 26 Jun 2014 20:15:41 +0200
-Message-Id: <1403806546-31122-10-git-send-email-javier.martinez@collabora.co.uk>
+Subject: [PATCH v5 12/14] clk: max77802: Add DT binding documentation
+Date: Thu, 26 Jun 2014 20:15:44 +0200
+Message-Id: <1403806546-31122-13-git-send-email-javier.martinez@collabora.co.uk>
 X-Mailer: git-send-email 2.0.0.rc2
 In-Reply-To: <1403806546-31122-1-git-send-email-javier.martinez@collabora.co.uk>
 References: <1403806546-31122-1-git-send-email-javier.martinez@collabora.co.uk>
@@ -33,95 +33,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some device drivers using the register map API need to copy the
-value from one register to another. Even though it can be done
-with a combination of regmap_read() and regmap_write(), it is
-better to have a function to avoid code duplication and also it
-sanity check and do it atomically by holding the regmap lock.
+Add Device Tree binding documentation for the clocks
+outputs in the Maxim 77802 Power Management IC.
 
 Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 ---
 
 Changes since v4: None
 
-Changes since v3: None
+Changes since v3:
+ - Don't use the same clock driver name in clock-names since it's a consumer
+   concept and most probably will be different. Suggested by Doug Anderson.
 
- drivers/base/regmap/regmap.c | 34 ++++++++++++++++++++++++++++++++++
- include/linux/regmap.h       |  9 +++++++++
- 2 files changed, 43 insertions(+)
+Changes since v2:
+ - Split the DT binding documentation in a separate patch.
 
-diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index 74d8c06..a2e0b04 100644
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -2555,6 +2555,40 @@ int regmap_parse_val(struct regmap *map, const void *buf,
- }
- EXPORT_SYMBOL_GPL(regmap_parse_val);
- 
-+/**
-+ * regmap_reg_copy(): Copy a value from a single register to another one
-+ *
-+ * @map: Register map to operate on
-+ * @dest: Register to copy the value to
-+ * @src: Register to copy the value from
-+ *
-+ * A value of zero will be returned on success, a negative errno will
-+ * be returned in error cases.
-+ */
-+int regmap_reg_copy(struct regmap *map, unsigned int dest, unsigned int src)
-+{
-+	int val;
-+	int ret = 0;
+ .../devicetree/bindings/clock/maxim,max77802.txt   | 42 ++++++++++++++++++++++
+ 1 file changed, 42 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/clock/maxim,max77802.txt
+
+diff --git a/Documentation/devicetree/bindings/clock/maxim,max77802.txt b/Documentation/devicetree/bindings/clock/maxim,max77802.txt
+new file mode 100644
+index 0000000..26bc4f7
+--- /dev/null
++++ b/Documentation/devicetree/bindings/clock/maxim,max77802.txt
+@@ -0,0 +1,42 @@
++Binding for Maxim MAX77802 32k clock generator block
 +
-+	if (dest == src)
-+		return ret;
++This is a part of device tree bindings of MAX77802 multi-function device.
++More information can be found in bindings/mfd/max77802.txt file.
 +
-+	if (dest % map->reg_stride ||
-+	    src % map->reg_stride)
-+		return -EINVAL;
++The MAX77802 contains two 32.768khz clock outputs that can be controlled
++(gated/ungated) over I2C.
 +
-+	map->lock(map->lock_arg);
++Following properties should be presend in main device node of the MFD chip.
 +
-+	ret = _regmap_read(map, src, &val);
-+	if (!ret)
-+		ret = _regmap_write(map, dest, val);
++Required properties:
 +
-+	map->unlock(map->lock_arg);
++- #clock-cells: from common clock binding; shall be set to 1.
 +
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(regmap_reg_copy);
++Each clock is assigned an identifier and client nodes can use this identifier
++to specify the clock which they consume. Following indices are allowed:
++     - 0: 32khz_ap clock,
++     - 1: 32khz_cp clock.
 +
- static int __init regmap_initcall(void)
- {
- 	regmap_debugfs_initcall();
-diff --git a/include/linux/regmap.h b/include/linux/regmap.h
-index 7b0e4b4..116c22b 100644
---- a/include/linux/regmap.h
-+++ b/include/linux/regmap.h
-@@ -445,6 +445,8 @@ int regmap_register_patch(struct regmap *map, const struct reg_default *regs,
- int regmap_parse_val(struct regmap *map, const void *buf,
- 				unsigned int *val);
- 
-+int regmap_reg_copy(struct regmap *map, unsigned int dest, unsigned int src);
++Clocks are defined as preprocessor macros in dt-bindings/clock/maxim,max77802.h
++header and can be used in device tree sources.
 +
- static inline bool regmap_reg_in_range(unsigned int reg,
- 				       const struct regmap_range *range)
- {
-@@ -723,6 +725,13 @@ static inline int regmap_parse_val(struct regmap *map, const void *buf,
- 	return -EINVAL;
- }
- 
-+static inline int regmap_reg_copy(struct regmap *map, unsigned int dest,
-+				  unsigned int src)
-+{
-+	WARN_ONCE(1, "regmap API is disabled");
-+	return -EINVAL;
-+}
++Example: Node of the MFD chip
 +
- static inline struct regmap *dev_get_regmap(struct device *dev,
- 					    const char *name)
- {
++	max77802: max77802@09 {
++		compatible = "maxim,max77802";
++		interrupt-parent = <&wakeup_eint>;
++		interrupts = <26 0>;
++		reg = <0x09>;
++		#clock-cells = <1>;
++
++		/* ... */
++	};
++
++Example: Clock consumer node
++
++	foo@0 {
++		compatible = "bar,foo";
++		/* ... */
++		clock-names = "my-clock";
++		clocks = <&max77802 MAX77802_CLK_32K_AP>;
++	};
 -- 
 2.0.0.rc2
 
