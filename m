@@ -1,95 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757555AbaFZBJz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 21:09:55 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:28513 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755308AbaFZBJx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 21:09:53 -0400
-X-IronPort-AV: E=Sophos;i="5.00,779,1396972800"; 
-   d="scan'208";a="32447147"
-Message-ID: <53AB7030.3030905@cn.fujitsu.com>
-Date: Thu, 26 Jun 2014 08:58:24 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1757488AbaFZBNX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 21:13:23 -0400
+Received: from mail-bn1lp0141.outbound.protection.outlook.com ([207.46.163.141]:4798
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755871AbaFZBNV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 21:13:21 -0400
+Date: Wed, 25 Jun 2014 20:08:11 -0500
+From: Kim Phillips <kim.phillips@freescale.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: <a.motakis@virtualopensystems.com>, <alex.williamson@redhat.com>,
+        <kvmarm@lists.cs.columbia.edu>, <iommu@lists.linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <kvm@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <jhovold@gmail.com>,
+        <will.deacon@arm.com>, <a.rigo@virtualopensystems.com>,
+        <rob.herring@calxeda.com>, <stuart.yoder@freescale.com>,
+        <rob@landley.net>, <grant.likely@linaro.org>,
+        <tech@virtualopensystems.com>, <clbchenlibo.chen@huawei.com>,
+        <christoffer.dall@linaro.org>, <eric.auger@linaro.org>,
+        Julien Grall <julien.grall@linaro.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
+        Alexander Graf <agraf@suse.de>
+Subject: Re: [PATCH] driver core: platform: add device binding path
+ 'driver_override'
+Message-ID: <20140625200811.9363cac92fdbc9810bf5aa65@freescale.com>
+In-Reply-To: <20140603042842.GD14668@kroah.com>
+References: <1398700371-20096-1-git-send-email-a.motakis@virtualopensystems.com>
+	<1398700371-20096-2-git-send-email-a.motakis@virtualopensystems.com>
+	<20140602194258.5135925bf3c71b9c010fb409@freescale.com>
+	<20140603042842.GD14668@kroah.com>
+Organization: Freescale Semiconductor, Inc.
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, <linux-mm@kvack.org>,
-        Cgroups <cgroups@vger.kernel.org>, <stable@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>, David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH V2] mm/mempolicy: fix sleeping function called from invalid
- context
-References: <53AA2C7E.3050707@cn.fujitsu.com> <20140625134345.GA26883@htj.dyndns.org>
-In-Reply-To: <20140625134345.GA26883@htj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.100]
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(164054003)(199002)(24454002)(51704005)(189002)(4396001)(69596002)(84676001)(85306003)(93886003)(31966008)(74662001)(89996001)(99396002)(83072002)(26826002)(81156004)(86362001)(44976005)(6806004)(81342001)(19580395003)(83322001)(88136002)(19580405001)(81542001)(107046002)(106466001)(50226001)(76176999)(105606002)(104166001)(100306002)(97736001)(87286001)(93916002)(77156001)(50986999)(23726002)(36756003)(20776003)(64706001)(95666004)(92726001)(47776003)(46406003)(76482001)(79102001)(80022001)(92566001)(77982001)(33646001)(68736004)(85852003)(74502001)(87936001)(21056001)(62966002)(102836001)(104016002)(46102001)(50466002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB345;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 02543CD7CD
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=Kim.Phillips@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2014 09:43 PM, Tejun Heo wrote:
+On Mon, 2 Jun 2014 21:28:42 -0700
+Greg KH <gregkh@linuxfoundation.org> wrote:
 
-> On Wed, Jun 25, 2014 at 09:57:18AM +0800, Gu Zheng wrote:
->> When runing with the kernel(3.15-rc7+), the follow bug occurs:
->> [ 9969.258987] BUG: sleeping function called from invalid context at kernel/locking/mutex.c:586
->> [ 9969.359906] in_atomic(): 1, irqs_disabled(): 0, pid: 160655, name: python
->> [ 9969.441175] INFO: lockdep is turned off.
->> [ 9969.488184] CPU: 26 PID: 160655 Comm: python Tainted: G       A      3.15.0-rc7+ #85
->> [ 9969.581032] Hardware name: FUJITSU-SV PRIMEQUEST 1800E/SB, BIOS PRIMEQUEST 1000 Series BIOS Version 1.39 11/16/2012
->> [ 9969.706052]  ffffffff81a20e60 ffff8803e941fbd0 ffffffff8162f523 ffff8803e941fd18
->> [ 9969.795323]  ffff8803e941fbe0 ffffffff8109995a ffff8803e941fc58 ffffffff81633e6c
->> [ 9969.884710]  ffffffff811ba5dc ffff880405c6b480 ffff88041fdd90a0 0000000000002000
->> [ 9969.974071] Call Trace:
->> [ 9970.003403]  [<ffffffff8162f523>] dump_stack+0x4d/0x66
->> [ 9970.065074]  [<ffffffff8109995a>] __might_sleep+0xfa/0x130
->> [ 9970.130743]  [<ffffffff81633e6c>] mutex_lock_nested+0x3c/0x4f0
->> [ 9970.200638]  [<ffffffff811ba5dc>] ? kmem_cache_alloc+0x1bc/0x210
->> [ 9970.272610]  [<ffffffff81105807>] cpuset_mems_allowed+0x27/0x140
->> [ 9970.344584]  [<ffffffff811b1303>] ? __mpol_dup+0x63/0x150
->> [ 9970.409282]  [<ffffffff811b1385>] __mpol_dup+0xe5/0x150
->> [ 9970.471897]  [<ffffffff811b1303>] ? __mpol_dup+0x63/0x150
->> [ 9970.536585]  [<ffffffff81068c86>] ? copy_process.part.23+0x606/0x1d40
->> [ 9970.613763]  [<ffffffff810bf28d>] ? trace_hardirqs_on+0xd/0x10
->> [ 9970.683660]  [<ffffffff810ddddf>] ? monotonic_to_bootbased+0x2f/0x50
->> [ 9970.759795]  [<ffffffff81068cf0>] copy_process.part.23+0x670/0x1d40
->> [ 9970.834885]  [<ffffffff8106a598>] do_fork+0xd8/0x380
->> [ 9970.894375]  [<ffffffff81110e4c>] ? __audit_syscall_entry+0x9c/0xf0
->> [ 9970.969470]  [<ffffffff8106a8c6>] SyS_clone+0x16/0x20
->> [ 9971.030011]  [<ffffffff81642009>] stub_clone+0x69/0x90
->> [ 9971.091573]  [<ffffffff81641c29>] ? system_call_fastpath+0x16/0x1b
->>
->> The cause is that cpuset_mems_allowed() try to take mutex_lock(&callback_mutex)
->> under the rcu_read_lock(which was hold in __mpol_dup()). And in cpuset_mems_allowed(),
->> the access to cpuset is under rcu_read_lock, so in __mpol_dup, we can reduce the
->> rcu_read_lock protection region to protect the access to cpuset only in
->> current_cpuset_is_being_rebound(). So that we can avoid this bug.
->> This patch is a temporary solution that just addresses the bug mentioned above,
->> can not fix the long-standing issue about cpuset.mems rebinding on fork():
->> "
->> When the forker's task_struct is duplicated (which includes ->mems_allowed)
->> and it races with an update to cpuset_being_rebound in update_tasks_nodemask()
->> then the task's mems_allowed doesn't get updated. And the child task's
->> mems_allowed can be wrong if the cpuset's nodemask changes before the
->> child has been added to the cgroup's tasklist.
->> "
->>
->> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
->> Cc: stable <stable@vger.kernel.org>
+> On Mon, Jun 02, 2014 at 07:42:58PM -0500, Kim Phillips wrote:
+> > You are the platform driver core maintainer: can you apply this to
+> > your driver-core tree now?
 > 
-> Applied to cgroup/for-3.16-fixes w/ minor updates to patch subject and
-> description.  Please format the text to 80 columns.  The error
-> messages are fine but it's usually nicer to remove the timestamps.
+> Yes, I will after this merge window ends, it's too late for 3.16-rc1
+> with the window opening up a week early, sorry.
 
-Got it, and thanks for your reminder and suggestion.
+How about now?  fwiw, I just checked: it still applies cleanly.
 
-Best regards,
-Gu
+Thanks,
 
-> 
-> Thanks.
-> 
-
-
+Kim
