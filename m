@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756161AbaFZJQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 05:16:28 -0400
-Received: from fgwmail.fujitsu.co.jp ([164.71.1.133]:39299 "EHLO
-	fgwmail.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753449AbaFZJQ0 (ORCPT
+	id S1755876AbaFZJRc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 05:17:32 -0400
+Received: from fgwmail2.fujitsu.co.jp ([164.71.1.135]:57614 "EHLO
+	fgwmail2.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753430AbaFZJRb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 05:16:26 -0400
+	Thu, 26 Jun 2014 05:17:31 -0400
 X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <53ABE4D4.1020308@jp.fujitsu.com>
-Date: Thu, 26 Jun 2014 18:16:04 +0900
+Message-ID: <53ABE50F.3040900@jp.fujitsu.com>
+Date: Thu, 26 Jun 2014 18:17:03 +0900
 From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
@@ -24,7 +24,7 @@ CC: Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
         Oleg Nesterov <oleg@redhat.com>,
         Preeti U Murthy <preeti@linux.vnet.ibm.com>,
         Denys Vlasenko <vda.linux@googlemail.com>
-Subject: [PATCH 7/8] cputime: generic iowait accounting for VIRT_CPU_ACCOUNTING
+Subject: [PATCH 8/8] cputime: iowait aware idle tick accounting
 References: <53ABE28F.6010402@jp.fujitsu.com>
 In-Reply-To: <53ABE28F.6010402@jp.fujitsu.com>
 Content-Type: text/plain; charset=ISO-2022-JP
@@ -33,183 +33,192 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get iowait's timestamp for accounting w/ VIRT_CPU_ACCOUNTING_GEN.
-(currently arm is only user of this?)
+By changes in vtime* codes by previous patches, now account_idle_time()
+become a function to be called only from tick-accounting codes.
 
-At last of this series of changes, introduce common function
-vtime_iowait_exit to replace all arch_record_iowait_exit.
+Introduce __account_idle_ticks() to do iowait accounting in ticks
+properly. For this purpose record jiffies at end of iowait.
 
-Not-tested-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Not-Tested-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
 ---
- arch/ia64/include/asm/cputime.h    |    2 --
- arch/ia64/kernel/time.c            |    2 +-
- arch/powerpc/include/asm/cputime.h |    3 ---
- arch/powerpc/kernel/time.c         |    2 +-
- arch/s390/include/asm/cputime.h    |    2 --
- arch/s390/kernel/vtime.c           |    2 +-
- include/linux/vtime.h              |    3 +++
- kernel/sched/core.c                |    4 +---
- kernel/sched/cputime.c             |   25 +++++++++++++++++++++++--
- 9 files changed, 30 insertions(+), 15 deletions(-)
+ include/linux/kernel_stat.h |    1 +
+ kernel/sched/core.c         |    1 +
+ kernel/sched/cputime.c      |   68 +++++++++++++++++++++++++++++-------------
+ kernel/sched/sched.h        |    1 +
+ 4 files changed, 50 insertions(+), 21 deletions(-)
 
-diff --git a/arch/ia64/include/asm/cputime.h b/arch/ia64/include/asm/cputime.h
-index 6089cbd..e2d3f5b 100644
---- a/arch/ia64/include/asm/cputime.h
-+++ b/arch/ia64/include/asm/cputime.h
-@@ -24,8 +24,6 @@
- # include <asm/processor.h>
- # include <asm-generic/cputime_nsecs.h>
- extern void arch_vtime_task_switch(struct task_struct *tsk);
--extern void ia64_record_iowait_exit(int cpu);
--# define arch_record_iowait_exit(cpu) ia64_record_iowait_exit(cpu)
- #endif /* CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
+diff --git a/include/linux/kernel_stat.h b/include/linux/kernel_stat.h
+index ecbc52f..bdea2f7 100644
+--- a/include/linux/kernel_stat.h
++++ b/include/linux/kernel_stat.h
+@@ -85,6 +85,7 @@ extern unsigned long long task_delta_exec(struct task_struct *);
+ extern void account_user_time(struct task_struct *, cputime_t, cputime_t);
+ extern void account_system_time(struct task_struct *, int, cputime_t, cputime_t);
+ extern void account_steal_time(cputime_t);
++extern void account_iowait_time(cputime_t);
+ extern void account_idle_time(cputime_t);
  
- #endif /* __IA64_CPUTIME_H */
-diff --git a/arch/ia64/kernel/time.c b/arch/ia64/kernel/time.c
-index 37c907d..4b34346 100644
---- a/arch/ia64/kernel/time.c
-+++ b/arch/ia64/kernel/time.c
-@@ -143,7 +143,7 @@ EXPORT_SYMBOL_GPL(vtime_account_system);
-  */
- DEFINE_PER_CPU(u64, ia64_iowait_exit);
- 
--void ia64_record_iowait_exit(int cpu)
-+void vtime_iowait_exit(int cpu)
- {
- 	/* FIXME: ITC might not synchronized between cpus/sockets */
-         per_cpu(ia64_iowait_exit, cpu) = ia64_get_itc();
-diff --git a/arch/powerpc/include/asm/cputime.h b/arch/powerpc/include/asm/cputime.h
-index f33a801..607559a 100644
---- a/arch/powerpc/include/asm/cputime.h
-+++ b/arch/powerpc/include/asm/cputime.h
-@@ -230,9 +230,6 @@ static inline cputime_t clock_t_to_cputime(const unsigned long clk)
- 
- static inline void arch_vtime_task_switch(struct task_struct *tsk) { }
- 
--void ppc_record_iowait_exit(int cpu);
--#define arch_record_iowait_exit(cpu) ppc_record_iowait_exit(cpu)
--
- #endif /* __KERNEL__ */
- #endif /* CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
- #endif /* __POWERPC_CPUTIME_H */
-diff --git a/arch/powerpc/kernel/time.c b/arch/powerpc/kernel/time.c
-index 879d97a..7afddc1 100644
---- a/arch/powerpc/kernel/time.c
-+++ b/arch/powerpc/kernel/time.c
-@@ -355,7 +355,7 @@ EXPORT_SYMBOL_GPL(vtime_account_system);
- 
- DEFINE_PER_CPU(u64, vtime_iowait_exit);
- 
--void ppc_record_iowait_exit(int cpu)
-+void vtime_iowait_exit(int cpu)
- {
- 	per_cpu(vtime_iowait_exit, cpu) = mftb();
- }
-diff --git a/arch/s390/include/asm/cputime.h b/arch/s390/include/asm/cputime.h
-index f4f882d..e136328 100644
---- a/arch/s390/include/asm/cputime.h
-+++ b/arch/s390/include/asm/cputime.h
-@@ -180,10 +180,8 @@ struct s390_idle_data {
- DECLARE_PER_CPU(struct s390_idle_data, s390_idle);
- 
- void s390_get_idle_and_iowait(int cpu, cputime64_t reti, cputime64_t retw);
--void s390_record_iowait_exit(int cpu);
- 
- #define arch_idle_and_iowait(cpu, i, w) s390_get_idle_and_iowait(cpu, i, w)
--#define arch_record_iowait_exit(cpu) s390_save_iowait_exit(cpu)
- 
- static inline int s390_nohz_delay(int cpu)
- {
-diff --git a/arch/s390/kernel/vtime.c b/arch/s390/kernel/vtime.c
-index f945cbd..123fa74 100644
---- a/arch/s390/kernel/vtime.c
-+++ b/arch/s390/kernel/vtime.c
-@@ -214,7 +214,7 @@ void s390_get_idle_and_iowait(int cpu, cputime64_t *reti, cputime64_t *retw)
- 	}
- }
- 
--void s390_record_iowait_exit(int cpu)
-+void vtime_iowait_exit(int cpu)
- {
- 	struct s390_idle_data *idle = &per_cpu(s390_idle, cpu);
- 
-diff --git a/include/linux/vtime.h b/include/linux/vtime.h
-index c5165fd..7f4632a 100644
---- a/include/linux/vtime.h
-+++ b/include/linux/vtime.h
-@@ -49,6 +49,7 @@ static inline void vtime_task_switch(struct task_struct *prev)
- }
- #endif /* __ARCH_HAS_VTIME_TASK_SWITCH */
- 
-+extern void vtime_iowait_exit(int cpu);
- extern void vtime_account_system(struct task_struct *tsk);
- extern void vtime_account_idle(struct task_struct *tsk);
- extern void vtime_account_user(struct task_struct *tsk);
-@@ -66,8 +67,10 @@ static inline void vtime_account_irq_enter(struct task_struct *tsk)
- 
- #else /* !CONFIG_VIRT_CPU_ACCOUNTING */
- 
-+static inline void vtime_iowait_exit(int cpu) { }
- static inline void vtime_task_switch(struct task_struct *prev) { }
- static inline void vtime_account_system(struct task_struct *tsk) { }
-+static inline void vtime_account_idle(struct task_struct *tsk) { }
- static inline void vtime_account_user(struct task_struct *tsk) { }
- static inline void vtime_account_irq_enter(struct task_struct *tsk) { }
- #endif /* !CONFIG_VIRT_CPU_ACCOUNTING */
+ #ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 52abf79..f8eec61 100644
+index f8eec61..5d3ebc3 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -4345,9 +4345,7 @@ static inline void iowait_stop(struct rq *rq)
- 	raw_spin_lock(&rq->iowait_lock);
- 	rq->nr_iowait--;
+@@ -4347,6 +4347,7 @@ static inline void iowait_stop(struct rq *rq)
  	if (!rq->nr_iowait && rq != this_rq()) {
--#ifdef arch_record_iowait_exit
--		arch_record_iowait_exit(rq->cpu);
--#endif
-+		vtime_iowait_exit(rq->cpu);
+ 		vtime_iowait_exit(rq->cpu);
  		rq->last_iowait = ktime_get();
++		rq->last_iowait_jiffies = jiffies;
  	}
  	raw_spin_unlock(&rq->iowait_lock);
+ }
 diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index 283e011..866a3ff 100644
+index 866a3ff..42a0e99 100644
 --- a/kernel/sched/cputime.c
 +++ b/kernel/sched/cputime.c
-@@ -741,11 +741,32 @@ void vtime_guest_exit(struct task_struct *tsk)
+@@ -240,40 +240,65 @@ void account_steal_time(cputime_t cputime)
  }
- EXPORT_SYMBOL_GPL(vtime_guest_exit);
  
-+DEFINE_PER_CPU(unsigned long long, vtime_exit_iowait);
-+
-+void vtime_iowait_exit(int cpu)
+ /*
++ * Account for iowait time.
++ * @cputime: the cpu time spent in io wait
++ */
++void account_iowait_time(cputime_t cputime)
 +{
-+	/* FIXME: don't compare local clock on different cpus */
-+	per_cpu(vtime_exit_iowait, cpu) = local_clock();
++	u64 *cpustat = kcpustat_this_cpu->cpustat;
++
++	cpustat[CPUTIME_IOWAIT] += (__force u64) cputime;
 +}
 +
- void vtime_account_idle(struct task_struct *tsk)
++/*
++ * Account for idle time.
++ * @cputime: the cpu time spent in idle wait
++ */
++void account_idle_time(cputime_t cputime)
++{
++	u64 *cpustat = kcpustat_this_cpu->cpustat;
++
++	cpustat[CPUTIME_IDLE] += (__force u64) cputime;
++}
++
++/*
+  * Account for idle and iowait time in a dulation.
+  * @idle_enter: time stamp at idle entry
+  * @iowait_exit: time stamp when nr_iowait dropped to 0
+  * @idle_exit: time stamp at idle exit
+  */
+-void account_idle_and_iowait(cputime_t idle_enter, cputime_t iowait_exit, cputime_t idle_exit)
++void account_idle_and_iowait(cputime_t idle_enter, cputime_t iowait_exit,
++			     cputime_t idle_exit)
  {
--	cputime_t delta_cpu = get_vtime_delta(tsk);
-+	unsigned long long now, delta;
-+	cputime_t delta_cpu, idle_cpu;
-+
-+	now = local_clock();
-+	if (now < tsk->vtime_snap)
-+		return;
-+
-+	delta = now - tsk->vtime_snap;
-+
-+	WARN_ON_ONCE(tsk->vtime_snap_whence == VTIME_SLEEPING);
-+	tsk->vtime_snap += delta;
-+
-+	delta_cpu = nsecs_to_cputime(delta);
-+	idle_cpu = nsecs_to_cputime(now - per_cpu_var(vtime_exit_iowait));
+-	u64 *cpustat = kcpustat_this_cpu->cpustat;
+ 	struct rq *rq = this_rq();
  
--	account_idle_time(delta_cpu);
-+	account_idle_and_iowait(0, delta_cpu - idle_cpu, delta_cpu);
+ 	if (rq->nr_iowait > 0 || iowait_exit > idle_exit) {
+-		cpustat[CPUTIME_IOWAIT] += (__force u64) idle_exit - idle_enter;
++		account_iowait_time(idle_exit - idle_enter);
+ 	} else if (iowait_exit > idle_enter) {
+-		cpustat[CPUTIME_IOWAIT] += (__force u64) iowait_exit - idle_enter;
+-		cpustat[CPUTIME_IDLE] += (__force u64) idle_exit - iowait_exit;
++		account_iowait_time(iowait_exit - idle_enter);
++		account_idle_time(idle_exit - iowait_exit);
+ 	} else {
+-		cpustat[CPUTIME_IDLE] += (__force u64) idle_exit - idle_enter;
++		account_idle_time(idle_exit - idle_enter);
+ 	}
  }
  
- void arch_vtime_task_switch(struct task_struct *prev)
+ /*
+- * Account for idle time.
+- * @cputime: the cpu time spent in idle wait (sometimes include iowait time)
++ * Account for idle and iowait time.
++ * @ticks: ticks spent in idle/io wait
+  */
+-void account_idle_time(cputime_t cputime)
++static void __account_idle_ticks(int ticks)
+ {
+-	u64 *cpustat = kcpustat_this_cpu->cpustat;
+ 	struct rq *rq = this_rq();
++	unsigned long no_io_ticks = jiffies - rq->last_iowait_jiffies;
+ 
+-	/* FIXME */
+-	if (rq->nr_iowait > 0)
+-		cpustat[CPUTIME_IOWAIT] += (__force u64) cputime;
+-	else
+-		cpustat[CPUTIME_IDLE] += (__force u64) cputime;
++	if (rq->nr_iowait > 0) {
++		account_iowait_time(jiffies_to_cputime(ticks));
++	} else if (no_io_ticks < ticks) {
++		account_iowait_time(jiffies_to_cputime(ticks - no_io_ticks));
++		account_idle_time(jiffies_to_cputime(no_io_ticks));
++	} else {
++		account_idle_time(jiffies_to_cputime(ticks));
++	}
+ }
+ 
+ static __always_inline bool steal_account_process_tick(void)
+@@ -380,11 +405,11 @@ static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
+ 	} else if (user_tick) {
+ 		account_user_time(p, cputime, scaled);
+ 	} else if (p == rq->idle) {
+-		account_idle_time(cputime);
++		__account_idle_ticks(ticks);
+ 	} else if (p->flags & PF_VCPU) { /* System time or guest time */
+ 		account_guest_time(p, cputime, scaled);
+ 	} else {
+-		__account_system_time(p, cputime, scaled,	CPUTIME_SYSTEM);
++		__account_system_time(p, cputime, scaled, CPUTIME_SYSTEM);
+ 	}
+ }
+ 
+@@ -396,7 +421,8 @@ static void irqtime_account_idle_ticks(int ticks)
+ }
+ #else /* CONFIG_IRQ_TIME_ACCOUNTING */
+ static inline void irqtime_account_idle_ticks(int ticks) {}
+-static inline void irqtime_account_process_tick(struct task_struct *p, int user_tick,
++static inline void irqtime_account_process_tick(struct task_struct *p,
++						int user_tick,
+ 						struct rq *rq, int nr_ticks) {}
+ #endif /* CONFIG_IRQ_TIME_ACCOUNTING */
+ 
+@@ -499,7 +525,7 @@ void account_process_tick(struct task_struct *p, int user_tick)
+ 		account_system_time(p, HARDIRQ_OFFSET, cputime_one_jiffy,
+ 				    one_jiffy_scaled);
+ 	else
+-		account_idle_time(cputime_one_jiffy);
++		__account_idle_ticks(1);
+ }
+ 
+ /*
+@@ -514,7 +540,7 @@ void account_steal_ticks(unsigned long ticks)
+ 
+ /*
+  * Account multiple ticks of idle time.
+- * @ticks: number of stolen ticks
++ * @ticks: number of idle ticks
+  */
+ void account_idle_ticks(unsigned long ticks)
+ {
+@@ -524,7 +550,7 @@ void account_idle_ticks(unsigned long ticks)
+ 		return;
+ 	}
+ 
+-	account_idle_time(jiffies_to_cputime(ticks));
++	__account_idle_ticks(ticks);
+ }
+ 
+ /*
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 4ddfddc..e5fb7b5 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -564,6 +564,7 @@ struct rq {
+ 	raw_spinlock_t	iowait_lock ____cacheline_aligned;
+ 	unsigned int	nr_iowait;
+ 	ktime_t		last_iowait;
++	unsigned long	last_iowait_jiffies;
+ 
+ #ifdef CONFIG_SMP
+ 	struct root_domain *rd;
 -- 
 1.7.1
 
