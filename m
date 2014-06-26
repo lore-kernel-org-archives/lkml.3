@@ -1,80 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757632AbaFZQvr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 12:51:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42161 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756813AbaFZQvq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 12:51:46 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Jens Axboe <axboe@kernel.dk>,
-        Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH 6/6] cfq: Increase default value of target_latency
-References: <1403683129-10814-1-git-send-email-mgorman@suse.de>
-	<1403683129-10814-7-git-send-email-mgorman@suse.de>
-	<x491tub65t9.fsf@segfault.boston.devel.redhat.com>
-	<20140626161955.GH10819@suse.de>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Thu, 26 Jun 2014 12:50:32 -0400
-In-Reply-To: <20140626161955.GH10819@suse.de> (Mel Gorman's message of "Thu,
-	26 Jun 2014 17:19:56 +0100")
-Message-ID: <x49simr4ntz.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1757715AbaFZQyE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 12:54:04 -0400
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:48231 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756110AbaFZQyB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 12:54:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <CAD=FV=W=e-5LJRacxA-sSUUn8cBB5oCHJkwz=Py7iU2fdERVRA@mail.gmail.com>
+References: <1403785148-20792-1-git-send-email-ch.naveen@samsung.com>
+ <1403785148-20792-3-git-send-email-ch.naveen@samsung.com> <CAD=FV=W=e-5LJRacxA-sSUUn8cBB5oCHJkwz=Py7iU2fdERVRA@mail.gmail.com>
+From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
+Date: Thu, 26 Jun 2014 22:23:40 +0530
+Message-ID: <CAHfPSqBYbUsmmwRv5E1xvLs1eW+wnqtLn7-nx-q4Fvt29k3mEA@mail.gmail.com>
+Subject: Re: [PATCH 2/3] ARM: DTS: Add NTC thermistor nodes to Exynos5250
+ based Snow
+To: Doug Anderson <dianders@chromium.org>, Kukjin Kim <kgene.kim@samsung.com>
+Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-iio <linux-iio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "cpgs ." <cpgs@samsung.com>, Tushar Behera <tushar.b@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mel Gorman <mgorman@suse.de> writes:
+Hello Doug and Kukjin,
 
-> On Thu, Jun 26, 2014 at 11:36:50AM -0400, Jeff Moyer wrote:
->> Right, and I guess I hadn't considered that case as I thought folks used
->> more than one spinning disk for such workloads.
->> 
+On 26 June 2014 21:16, Doug Anderson <dianders@chromium.org> wrote:
+> Naveen,
 >
-> They probably are but by and large my IO testing is based on simple
-> storage. The reasoning is that if we get the simple case wrong then we
-> probably are getting the complex case wrong too or at least not performing
-> as well as we should. I also don't use SSD on my own machines for the
-> same reason.
-
-A single disk is actually the hard case in this instance, but I
-understand what you're saying.  ;-)
-
->> My main reservation about this change is that you've only provided
->> numbers for one benchmark. 
+> On Thu, Jun 26, 2014 at 5:19 AM, Naveen Krishna Chatradhi
+> <ch.naveen@samsung.com> wrote:
+>> Exynos5250 based Snow board has 4 NTC thermistors to measure
+>> temperatures at various points on the board.
+>>
+>> IIO based ADC becomes the parent and NTC thermistors are the childs,
+>> via the HWMON interface.
+>>
+>> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+>> ---
+>> Posted earlier by Doug Anderson @ https://lkml.org/lkml/2013/3/27/453
+>>
+>> This patch depends on (1/4 and 2/4 patches of) patchset posted
+>> http://www.spinics.net/lists/linux-iio/msg13486.html
+>> Which were applied on to Guenter Roeck's tree.
+>>
+>> cat sysfs entries exported by hwmon for 4 thermistors
+>> and verified the values on Snow.
+>>
+>>  arch/arm/boot/dts/exynos5250-snow.dts |   34 +++++++++++++++++++++++++++++++++
+>>  1 file changed, 34 insertions(+)
 >
-> The other obvious one to run would be pgbench workloads but it's a rathole of
-> arguing whether the configuration is valid and whether it's inappropriate
-> to test on simple storage. The tiobench tests alone take a long time to
-> complete -- 1.5 hours on a simple machine, 7 hours on a low-end NUMA machine.
-
-And we should probably run our standard set of I/O exercisers at the
-very least.  But, like I said, it seems like wasted effort.
-
->> To bump the default target_latency, ideally
->> we'd know how it affects other workloads.  However, I'm having a hard
->> time justifying putting any time into this for a couple of reasons:
->> 1) blk-mq pretty much does away with the i/o scheduler, and that is the
->>    future
->> 2) there is work in progress to convert cfq into bfq, and that will
->>    essentially make any effort put into this irrelevant (so it might be
->>    interesting to test your workload with bfq)
->> 
+> NAK.
 >
-> Ok, you've convinced me and I'll drop this patch. For anyone based on
-> kernels from around this time they can tune CFQ or buy a better disk.
-> Hopefully they will find this via Google.
+> The first chunk of exynos5250-snow devices have the thermistors
+> populated, but a huge chunk of devices also _don't_ have them
+> populated.
 
-Funny, I wasn't weighing in against your patch.  I was merely indicating
-that I personally wasn't going to invest the time to validate it.  But,
-if you're ok with dropping it, that's obviously fine with me.
+I've realized only the rev4 and before boards have thermistors
+while going through the git logs of snow related dts files
+in an older chrome kernel.
 
-Cheers,
-Jeff
+
+>
+> If I remember my history properly, rev3 and earlier all had
+> thermistors.  Some of rev4 might have thermistors (I never got a clear
+> answer).  ...and rev5 definitely doesn't have resistors.  Aside from
+> thermistors there's no good reason to differentiate rev3 and rev4
+> (they just have different memory).  The upstream kernel may eventually
+> need to differentiate rev4 and rev5 since they have a different audio
+> codec.
+
+I've found one patch which says, "No thermistors on Rev5 and above boards"
+I still thought, we should support few boards out there.
+
+But, i din't knew they were removed completely.
+
+>
+> See <https://chromium-review.googlesource.com/#/c/170841/> for some
+> descriptions of the different revisions of snow and how they were
+> handled in the Chrome OS tree.
+
+Got it now, Thanks
+
+>
+> See <https://chromium-review.googlesource.com/#/c/186357/> for
+> thermistors talk.  Patch set #1 actually split out rev3, but we then
+> decided that we really didn't need to use the thermistors on any of
+> the revisions so the later patchsets just totally take them out.
+
+So, no need of thermistor nodes on Snow.
+I thought https://lkml.org/lkml/2013/3/27/453 patch is missed out.
+
+>
+> -Doug
+
+Kukjin, Sorry for the confusion. Please drop this one.
+
+-- 
+Thanks,
+(: Nav :)
