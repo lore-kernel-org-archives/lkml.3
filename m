@@ -1,98 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757635AbaFZMEr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 08:04:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:60623 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757415AbaFZMEo (ORCPT
+	id S1757776AbaFZMFM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 08:05:12 -0400
+Received: from smtprelay0189.hostedemail.com ([216.40.44.189]:33172 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757743AbaFZMFI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 08:04:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <1403775708-22244-1-git-send-email-ming.lei@canonical.com>
-References: <1403775708-22244-1-git-send-email-ming.lei@canonical.com>
-Date: Thu, 26 Jun 2014 20:04:41 +0800
-Message-ID: <CACVXFVMHPdEzai32jRmLt7qGMFcUqFb8OunF0tzySpKoLWWiwQ@mail.gmail.com>
-Subject: Re: [PATCH v3 0/2] block: virtio-blk: support multi vq per virtio-blk
-From: Ming Lei <ming.lei@canonical.com>
-To: Jens Axboe <axboe@kernel.dk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-api@vger.kernel.org,
-        Linux Virtualization <virtualization@lists.linux-foundation.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Stefan Hajnoczi <stefanha@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 26 Jun 2014 08:05:08 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3351:3622:3867:3870:3871:3873:4321:5007:6119:7652:10004:10400:10848:11026:11232:11658:11914:12043:12296:12438:12517:12519:12740:13069:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: teeth68_2c599d537ce3b
+X-Filterd-Recvd-Size: 1796
+Message-ID: <1403784303.7977.38.camel@joe-AO725>
+Subject: Re: [PATCH v2] scsi: bnx2i: bnx2i_iscsi.c:  Cleaning up variable is
+ set more than once
+From: Joe Perches <joe@perches.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Eddie Wai <eddie.wai@broadcom.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Thu, 26 Jun 2014 05:05:03 -0700
+In-Reply-To: <1403783689-10457-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1403783689-10457-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 26, 2014 at 5:41 PM, Ming Lei <ming.lei@canonical.com> wrote:
-> Hi,
->
-> These patches try to support multi virtual queues(multi-vq) in one
-> virtio-blk device, and maps each virtual queue(vq) to blk-mq's
-> hardware queue.
->
-> With this approach, both scalability and performance on virtio-blk
-> device can get improved.
->
-> For verifying the improvement, I implements virtio-blk multi-vq over
-> qemu's dataplane feature, and both handling host notification
-> from each vq and processing host I/O are still kept in the per-device
-> iothread context, the change is based on qemu v2.0.0 release, and
-> can be accessed from below tree:
->
->         git://kernel.ubuntu.com/ming/qemu.git #v2.0.0-virtblk-mq.1
->
-> For enabling the multi-vq feature, 'num_queues=N' need to be added into
-> '-device virtio-blk-pci ...' of qemu command line, and suggest to pass
-> 'vectors=N+1' to keep one MSI irq vector per each vq, and the feature
-> depends on x-data-plane.
->
-> Fio(libaio, randread, iodepth=64, bs=4K, jobs=N) is run inside VM to
-> verify the improvement.
->
-> I just create a small quadcore VM and run fio inside the VM, and
-> num_queues of the virtio-blk device is set as 2, but looks the
-> improvement is still obvious. The host is 2 sockets, 8cores(16threads)
-> server.
->
-> 1), about scalability
-> - jobs = 2, thoughput: +33%
-> - jobs = 4, thoughput: +100%
->
-> 2), about top thoughput: +39%
->
-> So in my test, even for a quad-core VM, if the virtqueue number
-> is increased from 1 to 2, both scalability and performance can
-> get improved a lot.
->
-> In above qemu implementation of virtio-blk-mq device, only one
-> IOthread handles requests from all vqs, and the above throughput
-> data has been very close to same fio test in host side with single
-> job. So more improvement should be observed once more IOthreads are
-> used for handling requests from multi vqs.
->
-> TODO:
->         - adjust vq's irq smp_affinity according to blk-mq hw queue's cpumask
->
-> V3:
->         - fix use-after-free on vq->name reported by Michael
->
-> V2: (suggestions from Michael and Dave Chinner)
->         - allocate virtqueues' pointers dynamically
->         - make sure the per-queue spinlock isn't kept in same cache line
->         - make each queue's name different
->
-> V1:
->         - remove RFC since no one objects
->         - add '__u8 unused' for pending as suggested by Rusty
->         - use virtio_cread_feature() directly, suggested by Rusty
+On Thu, 2014-06-26 at 13:54 +0200, Rickard Strandqvist wrote:
+> A struct member variable is set to different values without having used in between.
+[]
+> diff --git a/drivers/scsi/bnx2i/bnx2i_iscsi.c b/drivers/scsi/bnx2i/bnx2i_iscsi.c
+[]
+> @@ -1643,12 +1643,11 @@ static void bnx2i_conn_get_stats(struct iscsi_cls_conn *cls_conn,
+>  	stats->r2t_pdus = conn->r2t_pdus_cnt;
+>  	stats->tmfcmd_pdus = conn->tmfcmd_pdus_cnt;
+>  	stats->tmfrsp_pdus = conn->tmfrsp_pdus_cnt;
+> -	stats->custom_length = 3;
+>  	strcpy(stats->custom[2].desc, "eh_abort_cnt");
+>  	stats->custom[2].value = conn->eh_abort_cnt;
+>  	stats->digest_err = 0;
+>  	stats->timeout_err = 0;
+> -	stats->custom_length = 0;
+> +	stats->custom_length = 3;
 
-Sorry, please add Jens' reviewed-by.
+You are changing custom_length from 0 to 3.
 
-    Reviewed-by: Jens Axboe <axboe@kernel.dk>
+Why is this correct?
 
-Thanks,
---
-Ming Lei
+
