@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756306AbaFZHOb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 03:14:31 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:48394 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756110AbaFZHO1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 03:14:27 -0400
+	id S1756009AbaFZHOL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 03:14:11 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:35145 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755737AbaFZHOH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 03:14:07 -0400
 From: Sricharan R <r.sricharan@ti.com>
 To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <tony@atomide.com>, <santosh.shilimkar@ti.com>, <nm@ti.com>,
         <rnayak@ti.com>, <linux@arm.linux.org.uk>, <r.sricharan@ti.com>,
         <tglx@linutronix.de>, <jason@lakedaemon.net>, <joe@perches.com>
-Subject: [PATCH V4 16/16] irqchip: crossbar: Allow for quirky hardware with direct hardwiring of GIC
-Date: Thu, 26 Jun 2014 12:40:34 +0530
-Message-ID: <1403766634-18543-17-git-send-email-r.sricharan@ti.com>
+Subject: [PATCH V4 13/16] irqchip: crossbar: Introduce ti,max-crossbar-sources to identify valid crossbar mapping
+Date: Thu, 26 Jun 2014 12:40:31 +0530
+Message-ID: <1403766634-18543-14-git-send-email-r.sricharan@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1403766634-18543-1-git-send-email-r.sricharan@ti.com>
 References: <1403766634-18543-1-git-send-email-r.sricharan@ti.com>
@@ -27,92 +26,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nishanth Menon <nm@ti.com>
 
-On certain platforms such as DRA7, SPIs 0, 1, 2, 3, 5, 6, 10, 131,
-132, 133 are direct wired to hardware blocks bypassing crossbar.
-This quirky implementation is *NOT* supposed to be the expectation
-of crossbar hardware usage. However, these are already marked in our
-description of the hardware with SKIP and RESERVED where appropriate.
-
-Unfortunately, we need to be able to refer to these hardwired IRQs.
-So, to request these, crossbar driver can use the existing information
-from it's table that these SKIP/RESERVED maps are direct wired sources
-and generic allocation/programming of crossbar should be avoided.
+Currently we attempt to map any crossbar value to an IRQ, however,
+this is not correct from hardware perspective. There is a max crossbar
+event number upto which hardware supports. So describe the same in
+device tree using 'ti,max-crossbar-sources' property and use it to
+validate requests.
 
 Signed-off-by: Nishanth Menon <nm@ti.com>
 Signed-off-by: Sricharan R <r.sricharan@ti.com>
 Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 ---
- .../devicetree/bindings/arm/omap/crossbar.txt      |   12 ++++++++++--
- drivers/irqchip/irq-crossbar.c                     |   20 ++++++++++++++++++--
- 2 files changed, 28 insertions(+), 4 deletions(-)
+ .../devicetree/bindings/arm/omap/crossbar.txt      |    2 ++
+ drivers/irqchip/irq-crossbar.c                     |   21 ++++++++++++++++++--
+ 2 files changed, 21 insertions(+), 2 deletions(-)
 
 diff --git a/Documentation/devicetree/bindings/arm/omap/crossbar.txt b/Documentation/devicetree/bindings/arm/omap/crossbar.txt
-index 35356b6..51a85c3 100644
+index 5f45c78..6923531 100644
 --- a/Documentation/devicetree/bindings/arm/omap/crossbar.txt
 +++ b/Documentation/devicetree/bindings/arm/omap/crossbar.txt
-@@ -44,8 +44,10 @@ Documentation/devicetree/bindings/arm/gic.txt for further details.
- 
- An interrupt consumer on an SoC using crossbar will use:
- 	interrupts = <GIC_SPI request_number interrupt_level>
--request number shall be between 0 to that described by
--"ti,max-crossbar-sources"
-+When the request number is between 0 to that described by
-+"ti,max-crossbar-sources", it is assumed to be a crossbar mapping. If the
-+request_number is greater than "ti,max-crossbar-sources", then it is mapped as a
-+quirky hardware mapping direct to GIC.
- 
- Example:
- 	device_x@0x4a023000 {
-@@ -53,3 +55,9 @@ Example:
- 		interrupts = <GIC_SPI 8 IRQ_TYPE_LEVEL_HIGH>;
- 		...
- 	};
-+
-+	device_y@0x4a033000 {
-+		/* Direct mapped GIC SPI 1 used */
-+		interrupts = <GIC_SPI DIRECT_IRQ(1) IRQ_TYPE_LEVEL_HIGH>;
-+		...
-+	};
+@@ -10,6 +10,7 @@ Required properties:
+ - compatible : Should be "ti,irq-crossbar"
+ - reg: Base address and the size of the crossbar registers.
+ - ti,max-irqs: Total number of irqs available at the interrupt controller.
++- ti,max-crossbar-sources: Maximum number of crossbar sources that can be routed.
+ - ti,reg-size: Size of a individual register in bytes. Every individual
+ 	    register is assumed to be of same size. Valid sizes are 1, 2, 4.
+ - ti,irqs-reserved: List of the reserved irq lines that are not muxed using
+@@ -30,6 +31,7 @@ Examples:
+ 			compatible = "ti,irq-crossbar";
+ 			reg = <0x4a002a48 0x130>;
+ 			ti,max-irqs = <160>;
++			ti,max-crossbar-sources = <MAX_SOURCES>;
+ 			ti,reg-size = <2>;
+ 			ti,irqs-reserved = <0 1 2 3 5 6 131 132 139 140>;
+ 			ti,irqs-skip = <10 133 139 140>;
 diff --git a/drivers/irqchip/irq-crossbar.c b/drivers/irqchip/irq-crossbar.c
-index 83f803b..85c2985 100644
+index 518d712..c9f068c 100644
 --- a/drivers/irqchip/irq-crossbar.c
 +++ b/drivers/irqchip/irq-crossbar.c
-@@ -86,8 +86,13 @@ static inline int allocate_free_irq(int cb_no)
- 
- static inline bool needs_crossbar_write(irq_hw_number_t hw)
- {
--	if (hw > GIC_IRQ_START)
--		return true;
-+	int cb_no;
-+
-+	if (hw > GIC_IRQ_START) {
-+		cb_no = cb->irq_map[hw - GIC_IRQ_START];
-+		if (cb_no != IRQ_RESERVED && cb_no != IRQ_SKIP)
-+			return true;
-+	}
- 
- 	return false;
- }
-@@ -130,8 +135,19 @@ static int crossbar_domain_xlate(struct irq_domain *d,
+@@ -26,6 +26,7 @@
+  * struct crossbar_device - crossbar device description
+  * @int_max: maximum number of supported interrupts
+  * @safe_map: safe default value to initialize the crossbar
++ * @max_crossbar_sources: Maximum number of crossbar sources
+  * @irq_map: array of interrupts to crossbar number mapping
+  * @crossbar_base: crossbar base address
+  * @register_offsets: offsets for each irq number
+@@ -34,6 +35,7 @@
+ struct crossbar_device {
+ 	uint int_max;
+ 	uint safe_map;
++	uint max_crossbar_sources;
+ 	uint *irq_map;
+ 	void __iomem *crossbar_base;
+ 	int *register_offsets;
+@@ -117,12 +119,19 @@ static int crossbar_domain_xlate(struct irq_domain *d,
+ 				 unsigned int *out_type)
  {
  	int ret;
- 	int req_num = intspec[1];
-+	int direct_map_num;
++	int req_num = intspec[1];
  
- 	if (req_num >= cb->max_crossbar_sources) {
-+		direct_map_num = req_num - cb->max_crossbar_sources;
-+		if (direct_map_num < cb->int_max) {
-+			ret = cb->irq_map[direct_map_num];
-+			if (ret == IRQ_RESERVED || ret == IRQ_SKIP) {
-+				/* We use the interrupt num as h/w irq num */
-+				ret = direct_map_num;
-+				goto found;
-+			}
-+		}
+-	ret = get_prev_map_irq(intspec[1]);
++	if (req_num >= cb->max_crossbar_sources) {
++		pr_err("%s: requested crossbar number %d > max %d\n",
++		       __func__, req_num, cb->max_crossbar_sources);
++		return -EINVAL;
++	}
 +
- 		pr_err("%s: requested crossbar number %d > max %d\n",
- 		       __func__, req_num, cb->max_crossbar_sources);
- 		return -EINVAL;
++	ret = get_prev_map_irq(req_num);
+ 	if (ret >= 0)
+ 		goto found;
+ 
+-	ret = allocate_free_irq(intspec[1]);
++	ret = allocate_free_irq(req_num);
+ 
+ 	if (ret < 0)
+ 		return ret;
+@@ -153,6 +162,14 @@ static int __init crossbar_of_init(struct device_node *node)
+ 	if (!cb->crossbar_base)
+ 		goto err_cb;
+ 
++	of_property_read_u32(node, "ti,max-crossbar-sources",
++			     &cb->max_crossbar_sources);
++	if (!cb->max_crossbar_sources) {
++		pr_err("missing 'ti,max-crossbar-sources' property\n");
++		ret = -EINVAL;
++		goto err_base;
++	}
++
+ 	of_property_read_u32(node, "ti,max-irqs", &max);
+ 	if (!max) {
+ 		pr_err("missing 'ti,max-irqs' property\n");
 -- 
 1.7.9.5
 
