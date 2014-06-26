@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754925AbaFZHNS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 03:13:18 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:48736 "EHLO arroyo.ext.ti.com"
+	id S1755292AbaFZHNb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 03:13:31 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:48379 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753358AbaFZHNO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 03:13:14 -0400
+	id S1755204AbaFZHN3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 03:13:29 -0400
 From: Sricharan R <r.sricharan@ti.com>
 To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <tony@atomide.com>, <santosh.shilimkar@ti.com>, <nm@ti.com>,
         <rnayak@ti.com>, <linux@arm.linux.org.uk>, <r.sricharan@ti.com>,
         <tglx@linutronix.de>, <jason@lakedaemon.net>, <joe@perches.com>
-Subject: [PATCH V4 01/16] irqchip: crossbar: Dont use '0' to mark reserved interrupts
-Date: Thu, 26 Jun 2014 12:40:19 +0530
-Message-ID: <1403766634-18543-2-git-send-email-r.sricharan@ti.com>
+Subject: [PATCH V4 04/16] irqchip: crossbar: Initialise the crossbar with a safe value
+Date: Thu, 26 Jun 2014 12:40:22 +0530
+Message-ID: <1403766634-18543-5-git-send-email-r.sricharan@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1403766634-18543-1-git-send-email-r.sricharan@ti.com>
 References: <1403766634-18543-1-git-send-email-r.sricharan@ti.com>
@@ -26,47 +26,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nishanth Menon <nm@ti.com>
 
-Today '0' is actually reserved, but may not be the same in the future.
+Since crossbar is s/w configurable, the initial settings of the
+crossbar cannot be assumed to be sane. This implies that:
+a) On initialization all un-reserved crossbars must be initialized to
+   a known 'safe' value.
+b) When unmapping the interrupt, the safe value must be written to
+   ensure that the crossbar mapping matches with interrupt controller
+   usage.
 
-So, use a flag to mark the GIC interrupts that are reserved.
+So provide a safe value in the dt data to map if
+'0' is not safe for the platform and use it during init and unmap
+
+While at this, fix the below checkpatch warning.
+Fixes checkpatch warning:
+WARNING: Unnecessary space before function pointer arguments
+ #37: FILE: drivers/irqchip/irq-crossbar.c:37:
+ +	void (*write) (int, int);
 
 Signed-off-by: Nishanth Menon <nm@ti.com>
 Signed-off-by: Sricharan R <r.sricharan@ti.com>
 Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 ---
- drivers/irqchip/irq-crossbar.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ .../devicetree/bindings/arm/omap/crossbar.txt      |    3 +++
+ drivers/irqchip/irq-crossbar.c                     |   19 +++++++++++++++++--
+ 2 files changed, 20 insertions(+), 2 deletions(-)
 
+diff --git a/Documentation/devicetree/bindings/arm/omap/crossbar.txt b/Documentation/devicetree/bindings/arm/omap/crossbar.txt
+index 0795765..5f45c78 100644
+--- a/Documentation/devicetree/bindings/arm/omap/crossbar.txt
++++ b/Documentation/devicetree/bindings/arm/omap/crossbar.txt
+@@ -22,6 +22,9 @@ Optional properties:
+   SOC-specific hard-wiring of those irqs which unexpectedly bypasses the
+   crossbar. These irqs have a crossbar register, but still cannot be used.
+ 
++- ti,irqs-safe-map: integer which maps to a safe configuration to use
++  when the interrupt controller irq is unused (when not provided, default is 0)
++
+ Examples:
+ 		crossbar_mpu: @4a020000 {
+ 			compatible = "ti,irq-crossbar";
 diff --git a/drivers/irqchip/irq-crossbar.c b/drivers/irqchip/irq-crossbar.c
-index 3d15d16..20105bc 100644
+index 0533a71..4be30c0 100644
 --- a/drivers/irqchip/irq-crossbar.c
 +++ b/drivers/irqchip/irq-crossbar.c
-@@ -17,6 +17,7 @@
- #include <linux/irqchip/arm-gic.h>
- 
- #define IRQ_FREE	-1
-+#define IRQ_RESERVED	-2
- #define GIC_IRQ_START	32
+@@ -23,16 +23,18 @@
  
  /*
-@@ -139,7 +140,7 @@ static int __init crossbar_of_init(struct device_node *node)
- 				pr_err("Invalid reserved entry\n");
- 				goto err3;
- 			}
--			cb->irq_map[entry] = 0;
-+			cb->irq_map[entry] = IRQ_RESERVED;
- 		}
+  * @int_max: maximum number of supported interrupts
++ * @safe_map: safe default value to initialize the crossbar
+  * @irq_map: array of interrupts to crossbar number mapping
+  * @crossbar_base: crossbar base address
+  * @register_offsets: offsets for each irq number
+  */
+ struct crossbar_device {
+ 	uint int_max;
++	uint safe_map;
+ 	uint *irq_map;
+ 	void __iomem *crossbar_base;
+ 	int *register_offsets;
+-	void (*write) (int, int);
++	void (*write)(int, int);
+ };
+ 
+ static struct crossbar_device *cb;
+@@ -88,8 +90,10 @@ static void crossbar_domain_unmap(struct irq_domain *d, unsigned int irq)
+ {
+ 	irq_hw_number_t hw = irq_get_irq_data(irq)->hwirq;
+ 
+-	if (hw > GIC_IRQ_START)
++	if (hw > GIC_IRQ_START) {
+ 		cb->irq_map[hw - GIC_IRQ_START] = IRQ_FREE;
++		cb->write(hw - GIC_IRQ_START, cb->safe_map);
++	}
+ }
+ 
+ static int crossbar_domain_xlate(struct irq_domain *d,
+@@ -214,6 +218,17 @@ static int __init crossbar_of_init(struct device_node *node)
+ 		reserved += size;
  	}
  
-@@ -170,7 +171,7 @@ static int __init crossbar_of_init(struct device_node *node)
- 	 * reserved irqs. so find and store the offsets once.
- 	 */
- 	for (i = 0; i < max; i++) {
--		if (!cb->irq_map[i])
-+		if (cb->irq_map[i] == IRQ_RESERVED)
- 			continue;
++	of_property_read_u32(node, "ti,irqs-safe-map", &cb->safe_map);
++
++	/* Initialize the crossbar with safe map to start with */
++	for (i = 0; i < max; i++) {
++		if (cb->irq_map[i] == IRQ_RESERVED ||
++		    cb->irq_map[i] == IRQ_SKIP)
++			continue;
++
++		cb->write(i, cb->safe_map);
++	}
++
+ 	register_routable_domain_ops(&routable_irq_domain_ops);
+ 	return 0;
  
- 		cb->register_offsets[i] = reserved;
 -- 
 1.7.9.5
 
