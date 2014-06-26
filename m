@@ -1,751 +1,373 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752439AbaFZUgd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 16:36:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29305 "EHLO mx1.redhat.com"
+	id S1752496AbaFZUgv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 16:36:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30897 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752264AbaFZUf2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 16:35:28 -0400
+	id S1752246AbaFZUf1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 16:35:27 -0400
 From: Vivek Goyal <vgoyal@redhat.com>
 To: linux-kernel@vger.kernel.org, kexec@lists.infradead.org
 Cc: ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org, greg@kroah.com,
         bp@alien8.de, dyoung@redhat.com, chaowang@redhat.com, bhe@redhat.com,
         akpm@linux-foundation.org, Vivek Goyal <vgoyal@redhat.com>
-Subject: [PATCH 09/15] kexec: Implementation of new syscall kexec_file_load
-Date: Thu, 26 Jun 2014 16:33:38 -0400
-Message-Id: <1403814824-7587-10-git-send-email-vgoyal@redhat.com>
+Subject: [PATCH 10/15] purgatory/sha256: Provide implementation of sha256 in purgaotory context
+Date: Thu, 26 Jun 2014 16:33:39 -0400
+Message-Id: <1403814824-7587-11-git-send-email-vgoyal@redhat.com>
 In-Reply-To: <1403814824-7587-1-git-send-email-vgoyal@redhat.com>
 References: <1403814824-7587-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previous patch provided the interface definition and this patch prvides
-implementation of new syscall.
+Next two patches provide code for purgatory. This is a code which does
+not link against the kernel and runs stand alone. This code runs between
+two kernels. One of the primary purpose of this code is to verify the
+digest of newly loaded kernel and making sure it matches the digest
+computed at kernel load time.
 
-Previously segment list was prepared in user space. Now user space just
-passes kernel fd, initrd fd and command line and kernel will create a
-segment list internally.
+We use sha256 for calculating digest of kexec segmetns. Purgatory can't
+use stanard crypto API as that API is not available in purgatory context.
 
-This patch contains generic part of the code. Actual segment preparation
-and loading is done by arch and image specific loader. Which comes in
-next patch.
+Hence, I have copied code from crypto/sha256_generic.c and compiled it
+with purgaotry code so that it could be used. I could not
+#include sha256_generic.c file here as some of the function signature
+requiered little tweaking. Original functions work with crypto API but
+these ones don't
+
+So instead of doing #include on sha256_generic.c I just copied relevant
+portions of code into arch/x86/purgatory/sha256.c. Now we shouldn't have to
+touch this code at all. Do let me know if there are better ways to handle it.
+
+This patch does not enable compiling of this code. That happens in next
+patch. I wanted to highlight this change in a separate patch for easy
+review.
 
 Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 ---
- arch/x86/kernel/machine_kexec_64.c |  45 ++++
- include/linux/kexec.h              |  53 ++++
- include/uapi/linux/kexec.h         |  11 +
- kernel/kexec.c                     | 478 ++++++++++++++++++++++++++++++++++++-
- 4 files changed, 582 insertions(+), 5 deletions(-)
+ arch/x86/purgatory/sha256.c | 283 ++++++++++++++++++++++++++++++++++++++++++++
+ arch/x86/purgatory/sha256.h |  22 ++++
+ 2 files changed, 305 insertions(+)
+ create mode 100644 arch/x86/purgatory/sha256.c
+ create mode 100644 arch/x86/purgatory/sha256.h
 
-diff --git a/arch/x86/kernel/machine_kexec_64.c b/arch/x86/kernel/machine_kexec_64.c
-index 679cef0..c8875b5 100644
---- a/arch/x86/kernel/machine_kexec_64.c
-+++ b/arch/x86/kernel/machine_kexec_64.c
-@@ -22,6 +22,10 @@
- #include <asm/mmu_context.h>
- #include <asm/debugreg.h>
- 
-+static struct kexec_file_ops *kexec_file_loaders[] = {
-+		NULL,
-+};
-+
- static void free_transition_pgtable(struct kimage *image)
- {
- 	free_page((unsigned long)image->arch.pud);
-@@ -283,3 +287,44 @@ void arch_crash_save_vmcoreinfo(void)
- 			      (unsigned long)&_text - __START_KERNEL);
- }
- 
-+/* arch-dependent functionality related to kexec file-based syscall */
-+
-+int arch_kexec_kernel_image_probe(struct kimage *image, void *buf,
-+				  unsigned long buf_len)
-+{
-+	int i, ret = -ENOEXEC;
-+	struct kexec_file_ops *fops;
-+
-+	for (i = 0; i < ARRAY_SIZE(kexec_file_loaders); i++) {
-+		fops = kexec_file_loaders[i];
-+		if (!fops || !fops->probe)
-+			continue;
-+
-+		ret = fops->probe(buf, buf_len);
-+		if (!ret) {
-+			image->fops = fops;
-+			return ret;
-+		}
-+	}
-+
-+	return ret;
-+}
-+
-+void *arch_kexec_kernel_image_load(struct kimage *image)
-+{
-+	if (!image->fops || !image->fops->load)
-+		return ERR_PTR(-ENOEXEC);
-+
-+	return image->fops->load(image, image->kernel_buf,
-+				 image->kernel_buf_len, image->initrd_buf,
-+				 image->initrd_buf_len, image->cmdline_buf,
-+				 image->cmdline_buf_len);
-+}
-+
-+int arch_kimage_file_post_load_cleanup(struct kimage *image)
-+{
-+	if (!image->fops || !image->fops->cleanup)
-+		return 0;
-+
-+	return image->fops->cleanup(image);
-+}
-diff --git a/include/linux/kexec.h b/include/linux/kexec.h
-index 66d56ac..8e80901 100644
---- a/include/linux/kexec.h
-+++ b/include/linux/kexec.h
-@@ -121,13 +121,57 @@ struct kimage {
- #define KEXEC_TYPE_DEFAULT 0
- #define KEXEC_TYPE_CRASH   1
- 	unsigned int preserve_context : 1;
-+	/* If set, we are using file mode kexec syscall */
-+	unsigned int file_mode:1;
- 
- #ifdef ARCH_HAS_KIMAGE_ARCH
- 	struct kimage_arch arch;
- #endif
-+
-+	/* Additional fields for file based kexec syscall */
-+	void *kernel_buf;
-+	unsigned long kernel_buf_len;
-+
-+	void *initrd_buf;
-+	unsigned long initrd_buf_len;
-+
-+	char *cmdline_buf;
-+	unsigned long cmdline_buf_len;
-+
-+	/* File operations provided by image loader */
-+	struct kexec_file_ops *fops;
-+
-+	/* Image loader handling the kernel can store a pointer here */
-+	void *image_loader_data;
- };
- 
+diff --git a/arch/x86/purgatory/sha256.c b/arch/x86/purgatory/sha256.c
+new file mode 100644
+index 0000000..548ca67
+--- /dev/null
++++ b/arch/x86/purgatory/sha256.c
+@@ -0,0 +1,283 @@
 +/*
-+ * Keeps track of buffer parameters as provided by caller for requesting
-+ * memory placement of buffer.
++ * SHA-256, as specified in
++ * http://csrc.nist.gov/groups/STM/cavp/documents/shs/sha256-384-512.pdf
++ *
++ * SHA-256 code by Jean-Luc Cooke <jlcooke@certainkey.com>.
++ *
++ * Copyright (c) Jean-Luc Cooke <jlcooke@certainkey.com>
++ * Copyright (c) Andrew McDonald <andrew@mcdonald.org.uk>
++ * Copyright (c) 2002 James Morris <jmorris@intercode.com.au>
++ * Copyright (c) 2014 Red Hat Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the Free
++ * Software Foundation; either version 2 of the License, or (at your option)
++ * any later version.
 + */
-+struct kexec_buf {
-+	struct kimage *image;
-+	char *buffer;
-+	unsigned long bufsz;
-+	unsigned long memsz;
-+	unsigned long buf_align;
-+	unsigned long buf_min;
-+	unsigned long buf_max;
-+	bool top_down;		/* allocate from top of memory hole */
-+};
- 
-+typedef int (kexec_probe_t)(const char *kernel_buf, unsigned long kernel_size);
-+typedef void *(kexec_load_t)(struct kimage *image, char *kernel_buf,
-+			     unsigned long kernel_len, char *initrd,
-+			     unsigned long initrd_len, char *cmdline,
-+			     unsigned long cmdline_len);
-+typedef int (kexec_cleanup_t)(struct kimage *image);
 +
-+struct kexec_file_ops {
-+	kexec_probe_t *probe;
-+	kexec_load_t *load;
-+	kexec_cleanup_t *cleanup;
-+};
- 
- /* kexec interface functions */
- extern void machine_kexec(struct kimage *image);
-@@ -138,6 +182,11 @@ extern asmlinkage long sys_kexec_load(unsigned long entry,
- 					struct kexec_segment __user *segments,
- 					unsigned long flags);
- extern int kernel_kexec(void);
-+extern int kexec_add_buffer(struct kimage *image, char *buffer,
-+			    unsigned long bufsz, unsigned long memsz,
-+			    unsigned long buf_align, unsigned long buf_min,
-+			    unsigned long buf_max, bool top_down,
-+			    unsigned long *load_addr);
- extern struct page *kimage_alloc_control_pages(struct kimage *image,
- 						unsigned int order);
- extern void crash_kexec(struct pt_regs *);
-@@ -188,6 +237,10 @@ extern int kexec_load_disabled;
- #define KEXEC_FLAGS    (KEXEC_ON_CRASH | KEXEC_PRESERVE_CONTEXT)
- #endif
- 
-+/* List of defined/legal kexec file flags */
-+#define KEXEC_FILE_FLAGS	(KEXEC_FILE_UNLOAD | KEXEC_FILE_ON_CRASH | \
-+				 KEXEC_FILE_NO_INITRAMFS)
++#include <linux/bitops.h>
++#include <asm/byteorder.h>
++#include "sha256.h"
++#include "../boot/string.h"
 +
- #define VMCOREINFO_BYTES           (4096)
- #define VMCOREINFO_NOTE_NAME       "VMCOREINFO"
- #define VMCOREINFO_NOTE_NAME_BYTES ALIGN(sizeof(VMCOREINFO_NOTE_NAME), 4)
-diff --git a/include/uapi/linux/kexec.h b/include/uapi/linux/kexec.h
-index d6629d4..6925f5b 100644
---- a/include/uapi/linux/kexec.h
-+++ b/include/uapi/linux/kexec.h
-@@ -13,6 +13,17 @@
- #define KEXEC_PRESERVE_CONTEXT	0x00000002
- #define KEXEC_ARCH_MASK		0xffff0000
- 
-+/*
-+ * Kexec file load interface flags.
-+ * KEXEC_FILE_UNLOAD : Unload already loaded kexec/kdump image.
-+ * KEXEC_FILE_ON_CRASH : Load/unload operation belongs to kdump image.
-+ * KEXEC_FILE_NO_INITRAMFS : No initramfs is being loaded. Ignore the initrd
-+ *                           fd field.
-+ */
-+#define KEXEC_FILE_UNLOAD	0x00000001
-+#define KEXEC_FILE_ON_CRASH	0x00000002
-+#define KEXEC_FILE_NO_INITRAMFS	0x00000004
-+
- /* These values match the ELF architecture values.
-  * Unless there is a good reason that should continue to be the case.
-  */
-diff --git a/kernel/kexec.c b/kernel/kexec.c
-index bdda717..e5e0f6a 100644
---- a/kernel/kexec.c
-+++ b/kernel/kexec.c
-@@ -6,6 +6,8 @@
-  * Version 2.  See the file COPYING for more details.
-  */
- 
-+#define pr_fmt(fmt)	"kexec: " fmt
-+
- #include <linux/capability.h>
- #include <linux/mm.h>
- #include <linux/file.h>
-@@ -326,6 +328,215 @@ out_free_image:
- 	return ret;
- }
- 
-+static int copy_file_from_fd(int fd, void **buf, unsigned long *buf_len)
++static inline u32 Ch(u32 x, u32 y, u32 z)
 +{
-+	struct fd f = fdget(fd);
-+	int ret = 0;
-+	struct kstat stat;
-+	loff_t pos;
-+	ssize_t bytes = 0;
-+
-+	if (!f.file)
-+		return -EBADF;
-+
-+	ret = vfs_getattr(&f.file->f_path, &stat);
-+	if (ret)
-+		goto out;
-+
-+	if (stat.size > INT_MAX) {
-+		ret = -EFBIG;
-+		goto out;
-+	}
-+
-+	/* Don't hand 0 to vmalloc, it whines. */
-+	if (stat.size == 0) {
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+
-+	*buf = vmalloc(stat.size);
-+	if (!*buf) {
-+		ret = -ENOMEM;
-+		goto out;
-+	}
-+
-+	pos = 0;
-+	while (pos < stat.size) {
-+		bytes = kernel_read(f.file, pos, (char *)(*buf) + pos,
-+				    stat.size - pos);
-+		if (bytes < 0) {
-+			vfree(*buf);
-+			ret = bytes;
-+			goto out;
-+		}
-+
-+		if (bytes == 0)
-+			break;
-+		pos += bytes;
-+	}
-+
-+	*buf_len = pos;
-+out:
-+	fdput(f);
-+	return ret;
++	return z ^ (x & (y ^ z));
 +}
 +
-+/* Architectures can provide this probe function */
-+int __weak arch_kexec_kernel_image_probe(struct kimage *image, void *buf,
-+					 unsigned long buf_len)
++static inline u32 Maj(u32 x, u32 y, u32 z)
 +{
-+	return -ENOEXEC;
++	return (x & y) | (z & (x | y));
 +}
 +
-+void * __weak arch_kexec_kernel_image_load(struct kimage *image)
++#define e0(x)       (ror32(x, 2) ^ ror32(x, 13) ^ ror32(x, 22))
++#define e1(x)       (ror32(x, 6) ^ ror32(x, 11) ^ ror32(x, 25))
++#define s0(x)       (ror32(x, 7) ^ ror32(x, 18) ^ (x >> 3))
++#define s1(x)       (ror32(x, 17) ^ ror32(x, 19) ^ (x >> 10))
++
++static inline void LOAD_OP(int I, u32 *W, const u8 *input)
 +{
-+	return ERR_PTR(-ENOEXEC);
++	W[I] = __be32_to_cpu(((__be32 *)(input))[I]);
 +}
 +
-+void __weak arch_kimage_file_post_load_cleanup(struct kimage *image)
++static inline void BLEND_OP(int I, u32 *W)
 +{
++	W[I] = s1(W[I-2]) + W[I-7] + s0(W[I-15]) + W[I-16];
 +}
 +
-+/*
-+ * Free up memory used by kernel, initrd, and comand line. This is temporary
-+ * memory allocation which is not needed any more after these buffers have
-+ * been loaded into separate segments and have been copied elsewhere.
-+ */
-+static void kimage_file_post_load_cleanup(struct kimage *image)
++static void sha256_transform(u32 *state, const u8 *input)
 +{
-+	vfree(image->kernel_buf);
-+	image->kernel_buf = NULL;
++	u32 a, b, c, d, e, f, g, h, t1, t2;
++	u32 W[64];
++	int i;
 +
-+	vfree(image->initrd_buf);
-+	image->initrd_buf = NULL;
++	/* load the input */
++	for (i = 0; i < 16; i++)
++		LOAD_OP(i, W, input);
 +
-+	kfree(image->cmdline_buf);
-+	image->cmdline_buf = NULL;
++	/* now blend */
++	for (i = 16; i < 64; i++)
++		BLEND_OP(i, W);
 +
-+	/* See if architecture has anything to cleanup post load */
-+	arch_kimage_file_post_load_cleanup(image);
++	/* load the state into our registers */
++	a = state[0];  b = state[1];  c = state[2];  d = state[3];
++	e = state[4];  f = state[5];  g = state[6];  h = state[7];
++
++	/* now iterate */
++	t1 = h + e1(e) + Ch(e, f, g) + 0x428a2f98 + W[0];
++	t2 = e0(a) + Maj(a, b, c);    d += t1;    h = t1 + t2;
++	t1 = g + e1(d) + Ch(d, e, f) + 0x71374491 + W[1];
++	t2 = e0(h) + Maj(h, a, b);    c += t1;    g = t1 + t2;
++	t1 = f + e1(c) + Ch(c, d, e) + 0xb5c0fbcf + W[2];
++	t2 = e0(g) + Maj(g, h, a);    b += t1;    f = t1 + t2;
++	t1 = e + e1(b) + Ch(b, c, d) + 0xe9b5dba5 + W[3];
++	t2 = e0(f) + Maj(f, g, h);    a += t1;    e = t1 + t2;
++	t1 = d + e1(a) + Ch(a, b, c) + 0x3956c25b + W[4];
++	t2 = e0(e) + Maj(e, f, g);    h += t1;    d = t1 + t2;
++	t1 = c + e1(h) + Ch(h, a, b) + 0x59f111f1 + W[5];
++	t2 = e0(d) + Maj(d, e, f);    g += t1;    c = t1 + t2;
++	t1 = b + e1(g) + Ch(g, h, a) + 0x923f82a4 + W[6];
++	t2 = e0(c) + Maj(c, d, e);    f += t1;    b = t1 + t2;
++	t1 = a + e1(f) + Ch(f, g, h) + 0xab1c5ed5 + W[7];
++	t2 = e0(b) + Maj(b, c, d);    e += t1;    a = t1 + t2;
++
++	t1 = h + e1(e) + Ch(e, f, g) + 0xd807aa98 + W[8];
++	t2 = e0(a) + Maj(a, b, c);    d += t1;    h = t1 + t2;
++	t1 = g + e1(d) + Ch(d, e, f) + 0x12835b01 + W[9];
++	t2 = e0(h) + Maj(h, a, b);    c += t1;    g = t1 + t2;
++	t1 = f + e1(c) + Ch(c, d, e) + 0x243185be + W[10];
++	t2 = e0(g) + Maj(g, h, a);    b += t1;    f = t1 + t2;
++	t1 = e + e1(b) + Ch(b, c, d) + 0x550c7dc3 + W[11];
++	t2 = e0(f) + Maj(f, g, h);    a += t1;    e = t1 + t2;
++	t1 = d + e1(a) + Ch(a, b, c) + 0x72be5d74 + W[12];
++	t2 = e0(e) + Maj(e, f, g);    h += t1;    d = t1 + t2;
++	t1 = c + e1(h) + Ch(h, a, b) + 0x80deb1fe + W[13];
++	t2 = e0(d) + Maj(d, e, f);    g += t1;    c = t1 + t2;
++	t1 = b + e1(g) + Ch(g, h, a) + 0x9bdc06a7 + W[14];
++	t2 = e0(c) + Maj(c, d, e);    f += t1;    b = t1 + t2;
++	t1 = a + e1(f) + Ch(f, g, h) + 0xc19bf174 + W[15];
++	t2 = e0(b) + Maj(b, c, d);    e += t1;    a = t1+t2;
++
++	t1 = h + e1(e) + Ch(e, f, g) + 0xe49b69c1 + W[16];
++	t2 = e0(a) + Maj(a, b, c);    d += t1;    h = t1+t2;
++	t1 = g + e1(d) + Ch(d, e, f) + 0xefbe4786 + W[17];
++	t2 = e0(h) + Maj(h, a, b);    c += t1;    g = t1+t2;
++	t1 = f + e1(c) + Ch(c, d, e) + 0x0fc19dc6 + W[18];
++	t2 = e0(g) + Maj(g, h, a);    b += t1;    f = t1+t2;
++	t1 = e + e1(b) + Ch(b, c, d) + 0x240ca1cc + W[19];
++	t2 = e0(f) + Maj(f, g, h);    a += t1;    e = t1+t2;
++	t1 = d + e1(a) + Ch(a, b, c) + 0x2de92c6f + W[20];
++	t2 = e0(e) + Maj(e, f, g);    h += t1;    d = t1+t2;
++	t1 = c + e1(h) + Ch(h, a, b) + 0x4a7484aa + W[21];
++	t2 = e0(d) + Maj(d, e, f);    g += t1;    c = t1+t2;
++	t1 = b + e1(g) + Ch(g, h, a) + 0x5cb0a9dc + W[22];
++	t2 = e0(c) + Maj(c, d, e);    f += t1;    b = t1+t2;
++	t1 = a + e1(f) + Ch(f, g, h) + 0x76f988da + W[23];
++	t2 = e0(b) + Maj(b, c, d);    e += t1;    a = t1+t2;
++
++	t1 = h + e1(e) + Ch(e, f, g) + 0x983e5152 + W[24];
++	t2 = e0(a) + Maj(a, b, c);    d += t1;    h = t1+t2;
++	t1 = g + e1(d) + Ch(d, e, f) + 0xa831c66d + W[25];
++	t2 = e0(h) + Maj(h, a, b);    c += t1;    g = t1+t2;
++	t1 = f + e1(c) + Ch(c, d, e) + 0xb00327c8 + W[26];
++	t2 = e0(g) + Maj(g, h, a);    b += t1;    f = t1+t2;
++	t1 = e + e1(b) + Ch(b, c, d) + 0xbf597fc7 + W[27];
++	t2 = e0(f) + Maj(f, g, h);    a += t1;    e = t1+t2;
++	t1 = d + e1(a) + Ch(a, b, c) + 0xc6e00bf3 + W[28];
++	t2 = e0(e) + Maj(e, f, g);    h += t1;    d = t1+t2;
++	t1 = c + e1(h) + Ch(h, a, b) + 0xd5a79147 + W[29];
++	t2 = e0(d) + Maj(d, e, f);    g += t1;    c = t1+t2;
++	t1 = b + e1(g) + Ch(g, h, a) + 0x06ca6351 + W[30];
++	t2 = e0(c) + Maj(c, d, e);    f += t1;    b = t1+t2;
++	t1 = a + e1(f) + Ch(f, g, h) + 0x14292967 + W[31];
++	t2 = e0(b) + Maj(b, c, d);    e += t1;    a = t1+t2;
++
++	t1 = h + e1(e) + Ch(e, f, g) + 0x27b70a85 + W[32];
++	t2 = e0(a) + Maj(a, b, c);    d += t1;    h = t1+t2;
++	t1 = g + e1(d) + Ch(d, e, f) + 0x2e1b2138 + W[33];
++	t2 = e0(h) + Maj(h, a, b);    c += t1;    g = t1+t2;
++	t1 = f + e1(c) + Ch(c, d, e) + 0x4d2c6dfc + W[34];
++	t2 = e0(g) + Maj(g, h, a);    b += t1;    f = t1+t2;
++	t1 = e + e1(b) + Ch(b, c, d) + 0x53380d13 + W[35];
++	t2 = e0(f) + Maj(f, g, h);    a += t1;    e = t1+t2;
++	t1 = d + e1(a) + Ch(a, b, c) + 0x650a7354 + W[36];
++	t2 = e0(e) + Maj(e, f, g);    h += t1;    d = t1+t2;
++	t1 = c + e1(h) + Ch(h, a, b) + 0x766a0abb + W[37];
++	t2 = e0(d) + Maj(d, e, f);    g += t1;    c = t1+t2;
++	t1 = b + e1(g) + Ch(g, h, a) + 0x81c2c92e + W[38];
++	t2 = e0(c) + Maj(c, d, e);    f += t1;    b = t1+t2;
++	t1 = a + e1(f) + Ch(f, g, h) + 0x92722c85 + W[39];
++	t2 = e0(b) + Maj(b, c, d);    e += t1;    a = t1+t2;
++
++	t1 = h + e1(e) + Ch(e, f, g) + 0xa2bfe8a1 + W[40];
++	t2 = e0(a) + Maj(a, b, c);    d += t1;    h = t1+t2;
++	t1 = g + e1(d) + Ch(d, e, f) + 0xa81a664b + W[41];
++	t2 = e0(h) + Maj(h, a, b);    c += t1;    g = t1+t2;
++	t1 = f + e1(c) + Ch(c, d, e) + 0xc24b8b70 + W[42];
++	t2 = e0(g) + Maj(g, h, a);    b += t1;    f = t1+t2;
++	t1 = e + e1(b) + Ch(b, c, d) + 0xc76c51a3 + W[43];
++	t2 = e0(f) + Maj(f, g, h);    a += t1;    e = t1+t2;
++	t1 = d + e1(a) + Ch(a, b, c) + 0xd192e819 + W[44];
++	t2 = e0(e) + Maj(e, f, g);    h += t1;    d = t1+t2;
++	t1 = c + e1(h) + Ch(h, a, b) + 0xd6990624 + W[45];
++	t2 = e0(d) + Maj(d, e, f);    g += t1;    c = t1+t2;
++	t1 = b + e1(g) + Ch(g, h, a) + 0xf40e3585 + W[46];
++	t2 = e0(c) + Maj(c, d, e);    f += t1;    b = t1+t2;
++	t1 = a + e1(f) + Ch(f, g, h) + 0x106aa070 + W[47];
++	t2 = e0(b) + Maj(b, c, d);    e += t1;    a = t1+t2;
++
++	t1 = h + e1(e) + Ch(e, f, g) + 0x19a4c116 + W[48];
++	t2 = e0(a) + Maj(a, b, c);    d += t1;    h = t1+t2;
++	t1 = g + e1(d) + Ch(d, e, f) + 0x1e376c08 + W[49];
++	t2 = e0(h) + Maj(h, a, b);    c += t1;    g = t1+t2;
++	t1 = f + e1(c) + Ch(c, d, e) + 0x2748774c + W[50];
++	t2 = e0(g) + Maj(g, h, a);    b += t1;    f = t1+t2;
++	t1 = e + e1(b) + Ch(b, c, d) + 0x34b0bcb5 + W[51];
++	t2 = e0(f) + Maj(f, g, h);    a += t1;    e = t1+t2;
++	t1 = d + e1(a) + Ch(a, b, c) + 0x391c0cb3 + W[52];
++	t2 = e0(e) + Maj(e, f, g);    h += t1;    d = t1+t2;
++	t1 = c + e1(h) + Ch(h, a, b) + 0x4ed8aa4a + W[53];
++	t2 = e0(d) + Maj(d, e, f);    g += t1;    c = t1+t2;
++	t1 = b + e1(g) + Ch(g, h, a) + 0x5b9cca4f + W[54];
++	t2 = e0(c) + Maj(c, d, e);    f += t1;    b = t1+t2;
++	t1 = a + e1(f) + Ch(f, g, h) + 0x682e6ff3 + W[55];
++	t2 = e0(b) + Maj(b, c, d);    e += t1;    a = t1+t2;
++
++	t1 = h + e1(e) + Ch(e, f, g) + 0x748f82ee + W[56];
++	t2 = e0(a) + Maj(a, b, c);    d += t1;    h = t1+t2;
++	t1 = g + e1(d) + Ch(d, e, f) + 0x78a5636f + W[57];
++	t2 = e0(h) + Maj(h, a, b);    c += t1;    g = t1+t2;
++	t1 = f + e1(c) + Ch(c, d, e) + 0x84c87814 + W[58];
++	t2 = e0(g) + Maj(g, h, a);    b += t1;    f = t1+t2;
++	t1 = e + e1(b) + Ch(b, c, d) + 0x8cc70208 + W[59];
++	t2 = e0(f) + Maj(f, g, h);    a += t1;    e = t1+t2;
++	t1 = d + e1(a) + Ch(a, b, c) + 0x90befffa + W[60];
++	t2 = e0(e) + Maj(e, f, g);    h += t1;    d = t1+t2;
++	t1 = c + e1(h) + Ch(h, a, b) + 0xa4506ceb + W[61];
++	t2 = e0(d) + Maj(d, e, f);    g += t1;    c = t1+t2;
++	t1 = b + e1(g) + Ch(g, h, a) + 0xbef9a3f7 + W[62];
++	t2 = e0(c) + Maj(c, d, e);    f += t1;    b = t1+t2;
++	t1 = a + e1(f) + Ch(f, g, h) + 0xc67178f2 + W[63];
++	t2 = e0(b) + Maj(b, c, d);    e += t1;    a = t1+t2;
++
++	state[0] += a; state[1] += b; state[2] += c; state[3] += d;
++	state[4] += e; state[5] += f; state[6] += g; state[7] += h;
++
++	/* clear any sensitive info... */
++	a = b = c = d = e = f = g = h = t1 = t2 = 0;
++	memset(W, 0, 64 * sizeof(u32));
 +}
 +
-+/*
-+ * In file mode list of segments is prepared by kernel. Copy relevant
-+ * data from user space, do error checking, prepare segment list
-+ */
-+static int
-+kimage_file_prepare_segments(struct kimage *image, int kernel_fd, int initrd_fd,
-+			     const char __user *cmdline_ptr,
-+			     unsigned long cmdline_len, unsigned flags)
++int sha256_init(struct sha256_state *sctx)
 +{
-+	int ret = 0;
-+	void *ldata;
-+
-+	ret = copy_file_from_fd(kernel_fd, &image->kernel_buf,
-+				&image->kernel_buf_len);
-+	if (ret)
-+		return ret;
-+
-+	/* Call arch image probe handlers */
-+	ret = arch_kexec_kernel_image_probe(image, image->kernel_buf,
-+					    image->kernel_buf_len);
-+
-+	if (ret)
-+		goto out;
-+
-+	/* It is possible that there no initramfs is being loaded */
-+	if (!(flags & KEXEC_FILE_NO_INITRAMFS)) {
-+		ret = copy_file_from_fd(initrd_fd, &image->initrd_buf,
-+					&image->initrd_buf_len);
-+		if (ret)
-+			goto out;
-+	}
-+
-+	if (cmdline_len) {
-+		image->cmdline_buf = kzalloc(cmdline_len, GFP_KERNEL);
-+		if (!image->cmdline_buf) {
-+			ret = -ENOMEM;
-+			goto out;
-+		}
-+
-+		ret = copy_from_user(image->cmdline_buf, cmdline_ptr,
-+				     cmdline_len);
-+		if (ret) {
-+			ret = -EFAULT;
-+			goto out;
-+		}
-+
-+		image->cmdline_buf_len = cmdline_len;
-+
-+		/* command line should be a string with last byte null */
-+		if (image->cmdline_buf[cmdline_len - 1] != '\0') {
-+			ret = -EINVAL;
-+			goto out;
-+		}
-+	}
-+
-+	/* Call arch image load handlers */
-+	ldata = arch_kexec_kernel_image_load(image);
-+
-+	if (IS_ERR(ldata)) {
-+		ret = PTR_ERR(ldata);
-+		goto out;
-+	}
-+
-+	image->image_loader_data = ldata;
-+out:
-+	/* In case of error, free up all allocated memory in this function */
-+	if (ret)
-+		kimage_file_post_load_cleanup(image);
-+	return ret;
-+}
-+
-+static int
-+kimage_file_alloc_init(struct kimage **rimage, int kernel_fd,
-+		       int initrd_fd, const char __user *cmdline_ptr,
-+		       unsigned long cmdline_len, unsigned long flags)
-+{
-+	int ret;
-+	struct kimage *image;
-+
-+	image = do_kimage_alloc_init();
-+	if (!image)
-+		return -ENOMEM;
-+
-+	image->file_mode = 1;
-+
-+	ret = kimage_file_prepare_segments(image, kernel_fd, initrd_fd,
-+					   cmdline_ptr, cmdline_len, flags);
-+	if (ret)
-+		goto out_free_image;
-+
-+	ret = sanity_check_segment_list(image);
-+	if (ret)
-+		goto out_free_post_load_bufs;
-+
-+	ret = -ENOMEM;
-+	image->control_code_page = kimage_alloc_control_pages(image,
-+					   get_order(KEXEC_CONTROL_PAGE_SIZE));
-+	if (!image->control_code_page) {
-+		pr_err("Could not allocate control_code_buffer\n");
-+		goto out_free_post_load_bufs;
-+	}
-+
-+	image->swap_page = kimage_alloc_control_pages(image, 0);
-+	if (!image->swap_page) {
-+		pr_err(KERN_ERR "Could not allocate swap buffer\n");
-+		goto out_free_control_pages;
-+	}
-+
-+	*rimage = image;
-+	return 0;
-+out_free_control_pages:
-+	kimage_free_page_list(&image->control_pages);
-+out_free_post_load_bufs:
-+	kimage_file_post_load_cleanup(image);
-+	kfree(image->image_loader_data);
-+out_free_image:
-+	kfree(image);
-+	return ret;
-+}
-+
- static int kimage_is_destination_range(struct kimage *image,
- 					unsigned long start,
- 					unsigned long end)
-@@ -643,6 +854,16 @@ static void kimage_free(struct kimage *image)
- 
- 	/* Free the kexec control pages... */
- 	kimage_free_page_list(&image->control_pages);
-+
-+	kfree(image->image_loader_data);
-+
-+	/*
-+	 * Free up any temporary buffers allocated. This might hit if
-+	 * error occurred much later after buffer allocation.
-+	 */
-+	if (image->file_mode)
-+		kimage_file_post_load_cleanup(image);
-+
- 	kfree(image);
- }
- 
-@@ -771,10 +992,14 @@ static int kimage_load_normal_segment(struct kimage *image,
- 	unsigned long maddr;
- 	size_t ubytes, mbytes;
- 	int result;
--	unsigned char __user *buf;
-+	unsigned char __user *buf = NULL;
-+	unsigned char *kbuf = NULL;
- 
- 	result = 0;
--	buf = segment->buf;
-+	if (image->file_mode)
-+		kbuf = segment->kbuf;
-+	else
-+		buf = segment->buf;
- 	ubytes = segment->bufsz;
- 	mbytes = segment->memsz;
- 	maddr = segment->mem;
-@@ -806,7 +1031,11 @@ static int kimage_load_normal_segment(struct kimage *image,
- 				PAGE_SIZE - (maddr & ~PAGE_MASK));
- 		uchunk = min(ubytes, mchunk);
- 
--		result = copy_from_user(ptr, buf, uchunk);
-+		/* For file based kexec, source pages are in kernel memory */
-+		if (image->file_mode)
-+			memcpy(ptr, kbuf, uchunk);
-+		else
-+			result = copy_from_user(ptr, buf, uchunk);
- 		kunmap(page);
- 		if (result) {
- 			result = -EFAULT;
-@@ -814,7 +1043,10 @@ static int kimage_load_normal_segment(struct kimage *image,
- 		}
- 		ubytes -= uchunk;
- 		maddr  += mchunk;
--		buf    += mchunk;
-+		if (image->file_mode)
-+			kbuf += mchunk;
-+		else
-+			buf += mchunk;
- 		mbytes -= mchunk;
- 	}
- out:
-@@ -1061,7 +1293,72 @@ SYSCALL_DEFINE5(kexec_file_load, int, kernel_fd, int, initrd_fd,
- 		unsigned long, cmdline_len, const char __user *, cmdline_ptr,
- 		unsigned long, flags)
- {
--	return -ENOSYS;
-+	int ret = 0, i;
-+	struct kimage **dest_image, *image;
-+
-+	/* We only trust the superuser with rebooting the system. */
-+	if (!capable(CAP_SYS_BOOT) || kexec_load_disabled)
-+		return -EPERM;
-+
-+	/* Make sure we have a legal set of flags */
-+	if (flags != (flags & KEXEC_FILE_FLAGS))
-+		return -EINVAL;
-+
-+	image = NULL;
-+
-+	if (!mutex_trylock(&kexec_mutex))
-+		return -EBUSY;
-+
-+	dest_image = &kexec_image;
-+	if (flags & KEXEC_FILE_ON_CRASH)
-+		dest_image = &kexec_crash_image;
-+
-+	if (flags & KEXEC_FILE_UNLOAD)
-+		goto exchange;
-+
-+	/*
-+	 * In case of crash, new kernel gets loaded in reserved region. It is
-+	 * same memory where old crash kernel might be loaded. Free any
-+	 * current crash dump kernel before we corrupt it.
-+	 */
-+	if (flags & KEXEC_FILE_ON_CRASH)
-+		kimage_free(xchg(&kexec_crash_image, NULL));
-+
-+	ret = kimage_file_alloc_init(&image, kernel_fd, initrd_fd, cmdline_ptr,
-+				     cmdline_len, flags);
-+	if (ret)
-+		goto out;
-+
-+	ret = machine_kexec_prepare(image);
-+	if (ret)
-+		goto out;
-+
-+	for (i = 0; i < image->nr_segments; i++) {
-+		struct kexec_segment *ksegment;
-+
-+		ksegment = &image->segment[i];
-+		pr_debug("Loading segment %d: buf=0x%p bufsz=0x%zx mem=0x%lx memsz=0x%zx\n",
-+			 i, ksegment->buf, ksegment->bufsz, ksegment->mem,
-+			 ksegment->memsz);
-+
-+		ret = kimage_load_segment(image, &image->segment[i]);
-+		if (ret)
-+			goto out;
-+	}
-+
-+	kimage_terminate(image);
-+
-+	/*
-+	 * Free up any temporary buffers allocated which are not needed
-+	 * after image has been loaded
-+	 */
-+	kimage_file_post_load_cleanup(image);
-+exchange:
-+	image = xchg(dest_image, image);
-+out:
-+	mutex_unlock(&kexec_mutex);
-+	kimage_free(image);
-+	return ret;
- }
- 
- void crash_kexec(struct pt_regs *regs)
-@@ -1616,6 +1913,177 @@ static int __init crash_save_vmcoreinfo_init(void)
- 
- subsys_initcall(crash_save_vmcoreinfo_init);
- 
-+static int __kexec_add_segment(struct kimage *image, char *buf,
-+			       unsigned long bufsz, unsigned long mem,
-+			       unsigned long memsz)
-+{
-+	struct kexec_segment *ksegment;
-+
-+	ksegment = &image->segment[image->nr_segments];
-+	ksegment->kbuf = buf;
-+	ksegment->bufsz = bufsz;
-+	ksegment->mem = mem;
-+	ksegment->memsz = memsz;
-+	image->nr_segments++;
++	sctx->state[0] = SHA256_H0;
++	sctx->state[1] = SHA256_H1;
++	sctx->state[2] = SHA256_H2;
++	sctx->state[3] = SHA256_H3;
++	sctx->state[4] = SHA256_H4;
++	sctx->state[5] = SHA256_H5;
++	sctx->state[6] = SHA256_H6;
++	sctx->state[7] = SHA256_H7;
++	sctx->count = 0;
 +
 +	return 0;
 +}
 +
-+static int locate_mem_hole_top_down(unsigned long start, unsigned long end,
-+				    struct kexec_buf *kbuf)
++int sha256_update(struct sha256_state *sctx, const u8 *data, unsigned int len)
 +{
-+	struct kimage *image = kbuf->image;
-+	unsigned long temp_start, temp_end;
++	unsigned int partial, done;
++	const u8 *src;
 +
-+	temp_end = min(end, kbuf->buf_max);
-+	temp_start = temp_end - kbuf->memsz;
++	partial = sctx->count & 0x3f;
++	sctx->count += len;
++	done = 0;
++	src = data;
 +
-+	do {
-+		/* align down start */
-+		temp_start = temp_start & (~(kbuf->buf_align - 1));
-+
-+		if (temp_start < start || temp_start < kbuf->buf_min)
-+			return 0;
-+
-+		temp_end = temp_start + kbuf->memsz - 1;
-+
-+		/*
-+		 * Make sure this does not conflict with any of existing
-+		 * segments
-+		 */
-+		if (kimage_is_destination_range(image, temp_start, temp_end)) {
-+			temp_start = temp_start - PAGE_SIZE;
-+			continue;
++	if ((partial + len) > 63) {
++		if (partial) {
++			done = -partial;
++			memcpy(sctx->buf + partial, data, done + 64);
++			src = sctx->buf;
 +		}
 +
-+		/* We found a suitable memory range */
-+		break;
-+	} while (1);
++		do {
++			sha256_transform(sctx->state, src);
++			done += 64;
++			src = data + done;
++		} while (done + 63 < len);
 +
-+	/* If we are here, we found a suitable memory range */
-+	__kexec_add_segment(image, kbuf->buffer, kbuf->bufsz, temp_start,
-+			    kbuf->memsz);
-+
-+	/* Success, stop navigating through remaining System RAM ranges */
-+	return 1;
-+}
-+
-+static int locate_mem_hole_bottom_up(unsigned long start, unsigned long end,
-+				     struct kexec_buf *kbuf)
-+{
-+	struct kimage *image = kbuf->image;
-+	unsigned long temp_start, temp_end;
-+
-+	temp_start = max(start, kbuf->buf_min);
-+
-+	do {
-+		temp_start = ALIGN(temp_start, kbuf->buf_align);
-+		temp_end = temp_start + kbuf->memsz - 1;
-+
-+		if (temp_end > end || temp_end > kbuf->buf_max)
-+			return 0;
-+		/*
-+		 * Make sure this does not conflict with any of existing
-+		 * segments
-+		 */
-+		if (kimage_is_destination_range(image, temp_start, temp_end)) {
-+			temp_start = temp_start + PAGE_SIZE;
-+			continue;
-+		}
-+
-+		/* We found a suitable memory range */
-+		break;
-+	} while (1);
-+
-+	/* If we are here, we found a suitable memory range */
-+	__kexec_add_segment(image, kbuf->buffer, kbuf->bufsz, temp_start,
-+			    kbuf->memsz);
-+
-+	/* Success, stop navigating through remaining System RAM ranges */
-+	return 1;
-+}
-+
-+static int locate_mem_hole_callback(u64 start, u64 end, void *arg)
-+{
-+	struct kexec_buf *kbuf = (struct kexec_buf *)arg;
-+	unsigned long sz = end - start + 1;
-+
-+	/* Returning 0 will take to next memory range */
-+	if (sz < kbuf->memsz)
-+		return 0;
-+
-+	if (end < kbuf->buf_min || start > kbuf->buf_max)
-+		return 0;
-+
-+	/*
-+	 * Allocate memory top down with-in ram range. Otherwise bottom up
-+	 * allocation.
-+	 */
-+	if (kbuf->top_down)
-+		return locate_mem_hole_top_down(start, end, kbuf);
-+	else
-+		return locate_mem_hole_bottom_up(start, end, kbuf);
-+}
-+
-+/*
-+ * Helper function for placing a buffer in a kexec segment. This assumes
-+ * that kexec_mutex is held.
-+ */
-+int kexec_add_buffer(struct kimage *image, char *buffer, unsigned long bufsz,
-+		     unsigned long memsz, unsigned long buf_align,
-+		     unsigned long buf_min, unsigned long buf_max,
-+		     bool top_down, unsigned long *load_addr)
-+{
-+
-+	struct kexec_segment *ksegment;
-+	struct kexec_buf buf, *kbuf;
-+	int ret;
-+
-+	/* Currently adding segment this way is allowed only in file mode */
-+	if (!image->file_mode)
-+		return -EINVAL;
-+
-+	if (image->nr_segments >= KEXEC_SEGMENT_MAX)
-+		return -EINVAL;
-+
-+	/*
-+	 * Make sure we are not trying to add buffer after allocating
-+	 * control pages. All segments need to be placed first before
-+	 * any control pages are allocated. As control page allocation
-+	 * logic goes through list of segments to make sure there are
-+	 * no destination overlaps.
-+	 */
-+	if (!list_empty(&image->control_pages)) {
-+		WARN_ON(1);
-+		return -EINVAL;
++		partial = 0;
 +	}
++	memcpy(sctx->buf + partial, src, len - done);
 +
-+	memset(&buf, 0, sizeof(struct kexec_buf));
-+	kbuf = &buf;
-+	kbuf->image = image;
-+	kbuf->buffer = buffer;
-+	kbuf->bufsz = bufsz;
-+
-+	kbuf->memsz = ALIGN(memsz, PAGE_SIZE);
-+	kbuf->buf_align = max(buf_align, PAGE_SIZE);
-+	kbuf->buf_min = buf_min;
-+	kbuf->buf_max = buf_max;
-+	kbuf->top_down = top_down;
-+
-+	/* Walk the RAM ranges and allocate a suitable range for the buffer */
-+	ret = walk_system_ram_res(0, -1, kbuf, locate_mem_hole_callback);
-+	if (ret != 1) {
-+		/* A suitable memory range could not be found for buffer */
-+		return -EADDRNOTAVAIL;
-+	}
-+
-+	/* Found a suitable memory range */
-+	ksegment = &image->segment[image->nr_segments - 1];
-+	*load_addr = ksegment->mem;
 +	return 0;
 +}
 +
++int sha256_final(struct sha256_state *sctx, u8 *out)
++{
++	__be32 *dst = (__be32 *)out;
++	__be64 bits;
++	unsigned int index, pad_len;
++	int i;
++	static const u8 padding[64] = { 0x80, };
 +
- /*
-  * Move into place and start executing a preloaded standalone
-  * executable.  If nothing was preloaded return an error.
++	/* Save number of bits */
++	bits = cpu_to_be64(sctx->count << 3);
++
++	/* Pad out to 56 mod 64. */
++	index = sctx->count & 0x3f;
++	pad_len = (index < 56) ? (56 - index) : ((64+56) - index);
++	sha256_update(sctx, padding, pad_len);
++
++	/* Append length (before padding) */
++	sha256_update(sctx, (const u8 *)&bits, sizeof(bits));
++
++	/* Store state in digest */
++	for (i = 0; i < 8; i++)
++		dst[i] = cpu_to_be32(sctx->state[i]);
++
++	/* Zeroize sensitive information. */
++	memset(sctx, 0, sizeof(*sctx));
++
++	return 0;
++}
+diff --git a/arch/x86/purgatory/sha256.h b/arch/x86/purgatory/sha256.h
+new file mode 100644
+index 0000000..bd15a41
+--- /dev/null
++++ b/arch/x86/purgatory/sha256.h
+@@ -0,0 +1,22 @@
++/*
++ *  Copyright (C) 2014 Red Hat Inc.
++ *
++ *  Author: Vivek Goyal <vgoyal@redhat.com>
++ *
++ * This source code is licensed under the GNU General Public License,
++ * Version 2.  See the file COPYING for more details.
++ */
++
++#ifndef SHA256_H
++#define SHA256_H
++
++
++#include <linux/types.h>
++#include <crypto/sha.h>
++
++extern int sha256_init(struct sha256_state *sctx);
++extern int sha256_update(struct sha256_state *sctx, const u8 *input,
++				unsigned int length);
++extern int sha256_final(struct sha256_state *sctx, u8 *hash);
++
++#endif /* SHA256_H */
 -- 
 1.9.0
 
