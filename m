@@ -1,84 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757398AbaFZLpd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 07:45:33 -0400
-Received: from mail-yh0-f52.google.com ([209.85.213.52]:47011 "EHLO
-	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757039AbaFZLpc (ORCPT
+	id S932156AbaFZLqN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 07:46:13 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:12566 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757039AbaFZLqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 07:45:32 -0400
-MIME-Version: 1.0
-In-Reply-To: <1772413.506pXYt1XL@sifl>
-References: <1402502130-26400-1-git-send-email-gidisrael@gmail.com>
- <3604441.fZpjWNppGq@sifl> <CAMuHMdVJ7zv0qqhZNMNXihm4Kqv9WA9yyMe3F9ptUZyDjvEnTg@mail.gmail.com>
- <1772413.506pXYt1XL@sifl>
-From: "Gideon D'souza" <gidisrael@gmail.com>
-Date: Thu, 26 Jun 2014 17:15:11 +0530
-Message-ID: <CAPNrq4wa2+7-KD5hkiH_bEehy6CMjKPgQdxKVrLzWZmW4Qa8fg@mail.gmail.com>
-Subject: Re: [PATCH 1/1] security: Used macros from compiler.h instead of __attribute__((...))
-To: Paul Moore <paul@paul-moore.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, sds@tycho.nsa.gov,
-        Eric Paris <eparis@parisplace.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-security-module@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 26 Jun 2014 07:46:11 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-3e-53ac080043c3
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Russell King <linux@arm.linux.org.uk>, Kukjin Kim <kgene.kim@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH RESEND] ARM: EXYNOS: Do not calculate boot address twice
+Date: Thu, 26 Jun 2014 13:46:03 +0200
+Message-id: <1403783163-28638-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrIJMWRmVeSWpSXmKPExsVy+t/xa7oMHGuCDT6+tLbYOGM9q8XrF4YW
+	vQuuslmcbXrDbrHp8TVWi8u75rBZzDi/j8ni9mVei7VH7rJbnPzTy2ixfsZrFgduj5bmHjaP
+	O9f2sHlsXlLv0bdlFaPH501yAaxRXDYpqTmZZalF+nYJXBkfZ85iLnjOUdGy5R1TA+NS9i5G
+	Tg4JAROJRxs2MkHYYhIX7q1n62Lk4hASWMoo0bVvOhOE08ck8ehlCwtIFZuAscTm5UvAqkQE
+	djBKLL93mR3EYRaYyCSxpe0HWJWwgIfEz6vvmUFsFgFViat9h8F28Aq4Sxz7/o4ZYp+cxMlj
+	k1knMHIvYGRYxSiaWppcUJyUnmuoV5yYW1yal66XnJ+7iRESTF92MC4+ZnWIUYCDUYmHV2Lu
+	6mAh1sSy4srcQ4wSHMxKIrwiv4FCvCmJlVWpRfnxRaU5qcWHGJk4OKUaGMO95iUFx98qFrJ1
+	f+L5kGXH4fczZsnYrdsizdTzMOD/2yX/Ds9P0Gqx/HzdebPiq4v98x7dNOteuPop5xTB7WI2
+	cmu224UJpZzPOexy8cOpZu4X3yya/Fr/xUQxMzyOtv2tLWsVHcvim+6jNe+92q+Jrz6Wqekq
+	qbO9n7WjuC93xXrJp9xVu5VYijMSDbWYi4oTAf1w82QEAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Paul and Geert,
+Commit b3205dea8fbf ("ARM: EXYNOS: Map SYSRAM through generic DT
+bindings") introduced local variable boot_reg where boot address from
+cpu_boot_reg() call is stored. Re-use it instead calling cpu_boot_reg()
+again.
 
-Sorry I didn't response quick enough, I was out of town on a trip.
-Just got back.
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+---
+ arch/arm/mach-exynos/platsmp.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Didn't even think of LLVM honestly but that is an excellent point and
-I'll try compiling with it.
+diff --git a/arch/arm/mach-exynos/platsmp.c b/arch/arm/mach-exynos/platsmp.c
+index 1c8d31e39520..55ed2e6729c5 100644
+--- a/arch/arm/mach-exynos/platsmp.c
++++ b/arch/arm/mach-exynos/platsmp.c
+@@ -155,7 +155,7 @@ static int exynos_boot_secondary(unsigned int cpu, struct task_struct *idle)
+ 				ret = PTR_ERR(boot_reg);
+ 				goto fail;
+ 			}
+-			__raw_writel(boot_addr, cpu_boot_reg(phys_cpu));
++			__raw_writel(boot_addr, boot_reg);
+ 		}
+ 
+ 		call_firmware_op(cpu_boot, phys_cpu);
+@@ -242,7 +242,7 @@ static void __init exynos_smp_prepare_cpus(unsigned int max_cpus)
+ 
+ 			if (IS_ERR(boot_reg))
+ 				break;
+-			__raw_writel(boot_addr, cpu_boot_reg(phys_cpu));
++			__raw_writel(boot_addr, boot_reg);
+ 		}
+ 	}
+ }
+-- 
+1.9.1
 
-Paul, thanks for applying my patch.
-
-Regards,
-Gideon
-
-On Thu, Jun 19, 2014 at 2:28 AM, Paul Moore <paul@paul-moore.com> wrote:
-> On Wednesday, June 18, 2014 10:08:13 PM Geert Uytterhoeven wrote:
->> On Wed, Jun 18, 2014 at 8:50 PM, Paul Moore <paul@paul-moore.com> wrote:
->> > On Wednesday, June 11, 2014 09:25:30 PM Gideon Israel Dsouza wrote:
->> >> To increase compiler portability there is <linux/compiler.h> which
->> >> provides convenience macros for various gcc constructs.  Eg: __packed
->> >> for __attribute__((packed)).
->> >>
->> >> This patch is part of a large task I've taken to clean the gcc
->> >> specific attributes and use the the macros instead.
->> >>
->> >> Signed-off-by: Gideon Israel Dsouza <gidisrael@gmail.com>
->> >> ---
->> >>
->> >>  security/selinux/include/security.h | 3 ++-
->> >>  1 file changed, 2 insertions(+), 1 deletion(-)
->> >
->> > From what I can tell this should still work with both the LLVM and Intel
->> > compilers, is that correct?
->>
->> That's the idea of the compiler-agnostic attribute macros.
->
-> I just wanted to make sure as I personally only really use gcc and don't
-> pretend to be up on all the details regarding other compilers.
->
->> Interestingly, only include/linux/compiler-gcc.h defines __packed.
->
-> From what I could tell by looking at the code, the other compilers all define
-> __GNUC__ so they get the __packed macro as part of the gcc configuration.  I
-> believe the LLVM and Intel compilers would only need to redefine __packed if
-> they wanted/needed a different definition.
->
->> As it's already in heavy use, I can only assume both LLVM and the Intel
->> compilers handle both "__packed" (without a special definition) and the
->> gcc-specific "__attribute__((packed))".
->
-> Yep, seems reasonable.  I'll go ahead and apply the patch.
->
-> --
-> paul moore
-> www.paul-moore.com
->
