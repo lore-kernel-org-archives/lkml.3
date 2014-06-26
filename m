@@ -1,53 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751293AbaFZS67 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 14:58:59 -0400
-Received: from smtprelay0190.hostedemail.com ([216.40.44.190]:51610 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751197AbaFZS66 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 14:58:58 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3350:3622:3876:3877:4321:5007:6114:6642:7652:10004:10400:10848:11026:11232:11658:11914:12043:12438:12517:12519:12740:13019:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: trees54_13abed993435b
-X-Filterd-Recvd-Size: 1418
-Message-ID: <1403809133.7977.63.camel@joe-AO725>
-Subject: Re: [PATCH] ecryptfs: Drop cast
-From: Joe Perches <joe@perches.com>
-To: Himangi Saraogi <himangi774@gmail.com>
-Cc: Tyler Hicks <tyhicks@canonical.com>, ecryptfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, julia.lawall@lip6.fr
-Date: Thu, 26 Jun 2014 11:58:53 -0700
-In-Reply-To: <20140626184233.GA4275@himangi-Dell>
-References: <20140626184233.GA4275@himangi-Dell>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
+	id S1751385AbaFZTCI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 15:02:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12612 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750849AbaFZTCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 15:02:06 -0400
+Message-ID: <1403809223.31091.137.camel@ul30vt.home>
+Subject: Re: [RFC PATCH v6 04/20] iommu/arm-smmu: add capability
+ IOMMU_CAP_INTR_REMAP
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "Chalamarla, Tirumalesh" <Tirumalesh.Chalamarla@caviumnetworks.com>
+Cc: Joerg Roedel <joro@8bytes.org>, Will Deacon <will.deacon@arm.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        "stuart.yoder@freescale.com" <stuart.yoder@freescale.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "tech@virtualopensystems.com" <tech@virtualopensystems.com>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        "moderated list:ARM SMMU DRIVER" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Thu, 26 Jun 2014 13:00:23 -0600
+In-Reply-To: <b085e02e72dc424d9624c3e810951087@BY2PR07MB203.namprd07.prod.outlook.com>
+References: <1401987808-23596-1-git-send-email-a.motakis@virtualopensystems.com>
+	 <1401987808-23596-5-git-send-email-a.motakis@virtualopensystems.com>
+	 <20140608103129.GC3279@lvm> <20140616145344.GD18986@8bytes.org>
+	 <20140616151329.GQ16758@arm.com> <20140616152157.GB31771@8bytes.org>
+	 <20140616152526.GR16758@arm.com> <20140616153832.GC31771@8bytes.org>
+	 <9353770066894e85809e1e443b71d1cd@BY2PR07MB203.namprd07.prod.outlook.com>
+	 <748dccbbd3284521af4659ccbbb11453@BY2PR07MB203.namprd07.prod.outlook.com>
+	 <b085e02e72dc424d9624c3e810951087@BY2PR07MB203.namprd07.prod.outlook.com>
+Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-06-27 at 00:12 +0530, Himangi Saraogi wrote:
-> This patch does away with casts on void * as they are unnecessary.
-[]
-> diff --git a/fs/ecryptfs/inode.c b/fs/ecryptfs/inode.c
-[]
-> @@ -53,7 +53,7 @@ static void unlock_dir(struct dentry *dir)
+On Thu, 2014-06-26 at 18:41 +0000, Chalamarla, Tirumalesh wrote:
+> Sorry there was a type,
+> 
+> The question is:
 >  
->  static int ecryptfs_inode_test(struct inode *inode, void *lower_inode)
->  {
-> -	if (ecryptfs_inode_to_lower(inode) == (struct inode *)lower_inode)
-> +	if (ecryptfs_inode_to_lower(inode) == lower_inode)
->  		return 1;
->  	return 0;
->  }
+>             How is VFIO restricting software from writing to MSI/MSI-X vectors of the device. 
 
-True, but perhaps this should be
+All interrupts are configured via ioctl, not MSI config space or the
+MSI-X vector table in MMIO space.  VFIO protects the MSI config area by
+virtualizing it (you can't actually write the physical enable bit or
+address/data through VFIO).  The MSI-X vector table is protected by
+preventing read, write, or mmap access to it.  QEMU provides further
+virtualization above the basics provided by VFIO.  We really can't
+guarantee that devices don't have backdoors to configure these though.
+See the realtek quirk in QEMU for an example of a device that has such a
+backdoor.  That's why we require interrupt remapping, so that a device
+that does this can only hurt the guest, and require the user to opt-out
+if they feel they have a sufficiently trusted guest.  Thanks,
 
-{
-	return ecryptfs_inode_to_lower(inode) == lower_inode;
-}
+Alex
+
+> 
+> -----Original Message-----
+> From: Chalamarla, Tirumalesh 
+> Sent: Thursday, June 26, 2014 11:16 AM
+> To: Chalamarla, Tirumalesh; Joerg Roedel; Will Deacon
+> Cc: kvm@vger.kernel.org; open list; alex.williamson@redhat.com; stuart.yoder@freescale.com; iommu@lists.linux-foundation.org; tech@virtualopensystems.com; kvmarm@lists.cs.columbia.edu; moderated list:ARM SMMU DRIVER
+> Subject: RE: [RFC PATCH v6 04/20] iommu/arm-smmu: add capability IOMMU_CAP_INTR_REMAP
+> 
+> When I say emulating ITS, I mean translating guest ITS commands to physical ITS commands  and placing them in physical queue. 
+> 
+> Regards,
+> Tirumalesh.
+> 
+> -----Original Message-----
+> From: kvmarm-bounces@lists.cs.columbia.edu [mailto:kvmarm-bounces@lists.cs.columbia.edu] On Behalf Of Chalamarla, Tirumalesh
+> Sent: Thursday, June 26, 2014 11:08 AM
+> To: Joerg Roedel; Will Deacon
+> Cc: kvm@vger.kernel.org; open list; alex.williamson@redhat.com; stuart.yoder@freescale.com; iommu@lists.linux-foundation.org; tech@virtualopensystems.com; kvmarm@lists.cs.columbia.edu; moderated list:ARM SMMU DRIVER
+> Subject: RE: [RFC PATCH v6 04/20] iommu/arm-smmu: add capability IOMMU_CAP_INTR_REMAP
+> 
+> Forgive me if this discussion is not relative here, but I thought it is.  
+> 
+> How is VFIO restricting devices from writing  to MSI/MSI-X, Is all the vector area is mapped by VFIO to trap the accesses.  I am asking this because we might need to emulate ITS somewhere either in KVM or VFIO to provide direct access to devices.
+> And I don't see any mentions on that.   I think this flag needs to be set by ITS emulation.
+> 
+> Regards,
+> Tirumalesh.
+> 
+> -----Original Message-----
+> From: kvmarm-bounces@lists.cs.columbia.edu [mailto:kvmarm-bounces@lists.cs.columbia.edu] On Behalf Of Joerg Roedel
+> Sent: Monday, June 16, 2014 8:39 AM
+> To: Will Deacon
+> Cc: stuart.yoder@freescale.com; kvm@vger.kernel.org; open list; iommu@lists.linux-foundation.org; alex.williamson@redhat.com; moderated list:ARM SMMU DRIVER; tech@virtualopensystems.com; kvmarm@lists.cs.columbia.edu; Christoffer Dall
+> Subject: Re: [RFC PATCH v6 04/20] iommu/arm-smmu: add capability IOMMU_CAP_INTR_REMAP
+> 
+> On Mon, Jun 16, 2014 at 04:25:26PM +0100, Will Deacon wrote:
+> > Ok, thanks. In which case, I think this is really a combined property 
+> > of the SMMU and the interrupt controller, so we might need some extra 
+> > code so that the SMMU can check that the interrupt controller for the 
+> > device is also capable of interrupt remapping.
+> 
+> Right, that this is part of IOMMU code has more or less historic reasons on x86. Interrupt remapping is purely implemented in the IOMMU there, so on ARM some clue-code between interrupt controler and smmu is needed.
+> 
+> 
+> 	Joerg
+> 
+> 
+> _______________________________________________
+> kvmarm mailing list
+> kvmarm@lists.cs.columbia.edu
+> https://lists.cs.columbia.edu/mailman/listinfo/kvmarm
+> _______________________________________________
+> kvmarm mailing list
+> kvmarm@lists.cs.columbia.edu
+> https://lists.cs.columbia.edu/mailman/listinfo/kvmarm
 
 
 
