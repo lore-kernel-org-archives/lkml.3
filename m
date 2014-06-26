@@ -1,32 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751723AbaFZVlU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 17:41:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33206 "EHLO
+	id S1751562AbaFZVvJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 17:51:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33317 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750844AbaFZVlT (ORCPT
+	with ESMTP id S1750703AbaFZVvH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 17:41:19 -0400
-Date: Thu, 26 Jun 2014 14:41:17 -0700
+	Thu, 26 Jun 2014 17:51:07 -0400
+Date: Thu, 26 Jun 2014 14:51:06 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
-To: "Luis R. Rodriguez" <mcgrof@suse.com>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, gregkh@linuxfoundation.org,
-        hpa@linux.intel.com, linux-kernel@vger.kernel.org,
-        Andrew Lunn <andrew@lunn.ch>, Stephen Warren <swarren@wwwdotorg.org>,
-        Michal Hocko <mhocko@suse.cz>, Petr Mladek <pmladek@suse.cz>,
-        Joe Perches <joe@perches.com>, Arun KS <arunks.linux@gmail.com>,
-        Kees Cook <keescook@chromium.org>, Davidlohr Bueso <davidlohr@hp.com>,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: Re: [PATCH v8 4/4] printk: allow increasing the ring buffer
- depending on the number of CPUs
-Message-Id: <20140626144117.3412feee6234786be098259d@linux-foundation.org>
-In-Reply-To: <20140624010554.GF27687@wotan.suse.de>
-References: <1403124337-14886-1-git-send-email-mcgrof@do-not-panic.com>
-	<1403124337-14886-4-git-send-email-mcgrof@do-not-panic.com>
-	<20140623154134.43ac7ab63896cd9ebcba84b6@linux-foundation.org>
-	<20140624002050.GC27687@wotan.suse.de>
-	<20140623174533.88663e64.akpm@linux-foundation.org>
-	<20140624010554.GF27687@wotan.suse.de>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: gregkh@linuxfoundation.org, keescook@chromium.org, michael@ellerman.id.au,
+        fweisbec@gmail.com, benh@kernel.crashing.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tools: selftests - create a separate hotplug target
+Message-Id: <20140626145106.83d8a15bfa07270b00e5d24b@linux-foundation.org>
+In-Reply-To: <1403814836-16964-1-git-send-email-shuah.kh@samsung.com>
+References: <1403814836-16964-1-git-send-email-shuah.kh@samsung.com>
 X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -35,41 +25,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Jun 2014 03:05:54 +0200 "Luis R. Rodriguez" <mcgrof@suse.com> wrote:
+On Thu, 26 Jun 2014 14:33:56 -0600 Shuah Khan <shuah.kh@samsung.com> wrote:
 
-> > > Ah, because its cpu_extra, not total_cpu_space that is being
-> > > computed, the goal was to see how much extra junk on the
-> > > worst case a CPU might contribute. The __LOG_BUF_LEN is the
-> > > default size, so we combine both.
-> > 
-> > Well...  why?  Isn't it simpler and more direct to say "I want at least
-> > 32k per CPU"?
-> 
-> That's certainly another way to go about this, but the original motivation
-> was trying to figure out the additional *extra* junk a CPU might spewed out,
-> it set out with an assumption of a base start from the first CPU booting the
-> system and that first CPU using the default kernel ring buffer size. The
-> language in the patch describes the worst case extra CPU junk contributed,
-> rather than a specific full split of the kernel ring buffer as that's typically
-> how extra junk is spewered out to the ring bufer and the concern. In general
-> on idle each CPU only contributes about only 1 to max 2 lines. The focus then
-> is the worst case on contribution.
+> On some systems, hotplug tests could hang forever waiting for cpu and
+> memory to be ready to be offlined. A special hotplug target is created,
+> which will help run non-hotplug tests and run hotplug tests as a special
+> case. Individual hotplug tests can still be run as a special target
+> targeted for a single subsystem.
 
-I don't think I understood all that ;)
+This is a bit sad.  The general philosophy with selftests is that they
+should run to completion even if the kernel/hardware which they are
+testing isn't available - they should work it out for themselves.
 
-> Another note --  since this option depends on SMP and !BASE_SMALL technically 
-> num_possible_cpus() won't ever return something smaller than or equal to 1
-> but because of the default values chosen the -1 on the compuation does affect
-> whether or not this will trigger on > 64 CPUs or >= 64 CPUs, keeping the
-> -1 means we require > 64 CPUs.
+But that's obviously a problem with hotplug.  And with networking or
+anything else which needs external action.
 
-hm, that sounds like more complexity.
+On the other hand, networking has loopback and the kernel supports cpu
+hotplug simulation via procfs.  So perhaps the cpu and memory hotplug
+tests should be redone so they do the plug/unplug injection themselves,
+so they can run without external intervention?
 
-> This all can be changed however we like but the language and explained logic
-> would just need to be changed.
+Failing that, all I can think of is timeouts or some silly "press any
+key to continue" operator intervention.
 
-Let's start out simple.  What's wrong with doing
-
-	log buf len = max(__LOG_BUF_LEN, nr_possible_cpus * per-cpu log buf len)
-
-?
