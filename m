@@ -1,97 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751584AbaFZEQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 00:16:56 -0400
-Received: from smtprelay0150.hostedemail.com ([216.40.44.150]:48491 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750721AbaFZEQz (ORCPT
+	id S1751874AbaFZEgj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 00:36:39 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:35228 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750770AbaFZEgi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 00:16:55 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1362:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:1801:2198:2199:2393:2553:2559:2562:2828:2914:3138:3139:3140:3141:3142:3354:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4321:4605:5007:6119:7652:7903:7974:8957:9010:9121:9149:9163:10004:10226:10400:10848:11026:11232:11658:11876:11914:12043:12294:12438:12517:12519:12555:12663:12740:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: arch99_1efdeeebf8838
-X-Filterd-Recvd-Size: 3391
-Message-ID: <1403756211.7977.22.camel@joe-AO725>
-Subject: Re: [PATCH] scripts/checkpatch.pl: Only emit LONG_LINE for --strict
-From: Joe Perches <joe@perches.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: Andy Whitcroft <apw@canonical.com>, gregkh@linux-foundation.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Date: Wed, 25 Jun 2014 21:16:51 -0700
-In-Reply-To: <20140626034430.GA22836@thin>
-References: <20140625154629.GA21519@thin>
-	 <1403741107.28663.9.camel@joe-AO725> <20140626022448.GA22091@thin>
-	 <1403749983.7977.6.camel@joe-AO725> <20140626034430.GA22836@thin>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 26 Jun 2014 00:36:38 -0400
+Date: Wed, 25 Jun 2014 21:36:34 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: torvalds@linux-foundation.org
+Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] hwmon fixes for 3.16-rc3
+Message-ID: <20140626043634.GA4242@roeck-us.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BXVAT5kNtrzKuDFl"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-06-25 at 20:44 -0700, Josh Triplett wrote:
-> On Wed, Jun 25, 2014 at 07:33:03PM -0700, Joe Perches wrote:
-> > On Wed, 2014-06-25 at 19:24 -0700, Josh Triplett wrote:
-> > > On Wed, Jun 25, 2014 at 05:05:07PM -0700, Joe Perches wrote:
-> > > > On Wed, 2014-06-25 at 08:46 -0700, Josh Triplett wrote:
-> > > > > Regardless of the long-standing debate over line width, checkpatch
-> > > > > should not warn about it by default.
-> > > > 
-> > > > I'm not getting involved here.
-> > > > I don't care much one way or another.
-> > []
-> > > I'm not asking you to get involved in the Great Line Length Debate;
-> > > that's why I didn't attempt to patch CodingStyle or similar.  However, I
-> > > think it makes sense for *checkpatch* to stop emitting this warning.
-> > 
-> > I think checkpatch should encourage people to write code in
-> > a style that matches CodingStyle as well as the predominant
-> > styles used in the rest of the kernel.
-> 
-> Not arguing with that, but in this particular case the warning seems
-> counterproductive to that goal, especially compared to the
-> DEEP_INDENTATION warning.  More subjective or "to taste" issues tend
-> to have lower severity in checkpatch.  And CodingStyle *already* says
-> "unless exceeding 80 columns significantly increases
-> readability"
 
-Just some suggestions off the top of my head.
+--BXVAT5kNtrzKuDFl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-If the goal is to reduce long line lengths, then maybe
-more warnings or --strict tests for things like:
+Hi Linus,
 
-long variable names: (pick a length)
+Please pull hwmon fixes for Linux 3.16-rc3 from signed tag:
 
-	some_long_variable_name_with_a_color
+    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
 
-consecutive dereferences where a temporary might be better:
+Thanks,
+Guenter
+------
 
-	foo->bar[baz].member1 = 1;
-	foo->bar[baz].member2 = 2;
+The following changes since commit a497c3ba1d97fc69c1e78e7b96435ba8c2cb42ee:
 
-Multiple logical tests on a single line:
+  Linux 3.16-rc2 (2014-06-21 19:02:54 -1000)
 
-	foo > bar && baz < quz && etc...
+are available in the git repository at:
 
-Arguments after column 80
-                                                                                                   1
-         1         2         3         4         5         6         7         8         9         0
-1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
-	result = some_long_function(some_arg(arg1, arg2), another_arg(arg3, arg4), 4);
+  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/hwmon-for-linus
 
-where a single argument of a short length before a
-statement terminating ; may be ignored, but a longer
-argument list may not.
+for you to fetch changes up to d26e0da783adbb94977f60dec9a035b427813b83:
 
-Long trigraphs:
+  hwmon: (gpio-fan) Change name used in hwmon_device_register_with_groups (2014-06-25 15:16:09 -0700)
 
-	should be on multiple lines
+----------------------------------------------------------------
+Various minor fixes
 
-Comments beyond 80 column
+----------------------------------------------------------------
+Axel Lin (1):
+      hwmon: (w83l786ng) Report correct minimum fan speed
 
-	No idea what's right.
+Josef Gajdusek (1):
+      hwmon: (emc1403) Fix missing 'select REGMAP_I2C' in Kconfig
 
-etc...
+Julien D'Ascenzio (1):
+      hwmon: (gpio-fan) Change name used in hwmon_device_register_with_groups
 
+Naveen Krishna Chatradhi (2):
+      devicetree: bindings: Document murata vendor prefix
+      hwmon: (ntc_thermistor) Use the manufacturer name properly
 
+ .../devicetree/bindings/arm/samsung/exynos-adc.txt   |  2 +-
+ .../devicetree/bindings/hwmon/ntc_thermistor.txt     | 20 ++++++++++++++------
+ .../devicetree/bindings/vendor-prefixes.txt          |  1 +
+ Documentation/hwmon/ntc_thermistor                   |  8 ++++----
+ drivers/hwmon/Kconfig                                |  6 ++++--
+ drivers/hwmon/gpio-fan.c                             |  2 +-
+ drivers/hwmon/ntc_thermistor.c                       | 14 +++++++++++++-
+ drivers/hwmon/w83l786ng.c                            |  2 +-
+ 8 files changed, 39 insertions(+), 16 deletions(-)
+
+--BXVAT5kNtrzKuDFl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTq6NSAAoJEMsfJm/On5mBNo4P/AjkFjGcDtYmvzvI2l6qXPLM
+EAZ7GmX8fTRUNHm6mX0uZEUUm2aGtcouFjteCfiia2NMqJfiKCEuwSNnsc9FBbZr
+Kd4UQEilmRHJxuB0qe2quTm+4DBYOp/sHGJJd3U0EY8HdZtMjQW+Zhnd/hS6mSXM
+5VYs05kREvAOJ4gdqgbaarwOzUleI8gYOwnEend/ECDBlmNT6y4FlovsDJaWt4am
+lG4uLHKiG8Zcp20VHpTDNoHlsIGd3U9o42+Z/Z7X/N75BXVXALQix3I3F3Cr2Grp
+l2Pcqdc2ARKs7oE3MeT+GXm2SPzHDZ7EQhzzeVQJkyJPLOiHlAnKftrueI5+vE7C
+tQGaBWIDMX2PpGkPoLmUP2ZlyxcmeeBZnknfdoMf2e/UlJ6k3cNQCZUmLc9g1b9g
+xTrGNa+LBrod2QClY2RaKsj5oQSXDg8blbr4XnNk8+mshhXweWBEWZCWPGfnFzs/
+lkGEU4v2A+Yl2ipf7L7TBEeJJapHcqwTrJ99Sn/wfiY4YXKUt/2xgJMBzYwKaw4B
+bN0cZ7hMEXCNsaXnC/+jyAXBaDqW4OEaGQUcZ85OAMRzA+Nzot+ZQ6Vx6YXYBJrA
+4kwZ5DfuGjXZ/7m+Lrjq2E4DI2Mlgsv10LWqCGHv9A4Kq9GSi1RmMs0FWuM7a+YM
+K8YyH3oEBwjBi09a/oAn
+=+3Bk
+-----END PGP SIGNATURE-----
+
+--BXVAT5kNtrzKuDFl--
