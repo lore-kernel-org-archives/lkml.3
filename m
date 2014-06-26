@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755754AbaFZMhR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 08:37:17 -0400
-Received: from mail-wg0-f73.google.com ([74.125.82.73]:41541 "EHLO
-	mail-wg0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754917AbaFZMhO (ORCPT
+	id S1757125AbaFZMhW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 08:37:22 -0400
+Received: from e24smtp01.br.ibm.com ([32.104.18.85]:50095 "EHLO
+	e24smtp01.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755101AbaFZMhT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 08:37:14 -0400
-Date: Thu, 26 Jun 2014 13:37:10 +0100
-From: David Drysdale <drysdale@google.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Will Drewry <wad@chromium.org>, Julien Tinnes <jln@chromium.org>,
-        linux-api@vger.kernel.org, x86@kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
-        linux-arch@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: Re: [PATCH v7 2/9] seccomp: split filter prep from check and apply
-Message-ID: <20140626123710.GA16204@google.com>
-References: <1403560693-21809-1-git-send-email-keescook@chromium.org>
- <1403560693-21809-3-git-send-email-keescook@chromium.org>
+	Thu, 26 Jun 2014 08:37:19 -0400
+Date: Thu, 26 Jun 2014 09:37:09 -0300
+From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Hariprasad Shenai <hariprasad@chelsio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] cxgb4: use dev_port to identify ports
+Message-ID: <20140626123709.GA9256@oc0268524204.ibm.com>
+References: <1403354888-15600-1-git-send-email-cascardo@linux.vnet.ibm.com>
+ <CAB=NE6VWa4O0nycSo55ip075MEXXB_0k4wVnorSziRQmKRUmLg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1403560693-21809-3-git-send-email-keescook@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAB=NE6VWa4O0nycSo55ip075MEXXB_0k4wVnorSziRQmKRUmLg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14062612-1524-0000-0000-00000A1D4549
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 23, 2014 at 02:58:06PM -0700, Kees Cook wrote:
-> In preparation for adding seccomp locking, move filter creation away
-> from where it is checked and applied. This will allow for locking where
-> no memory allocation is happening. The validation, filter attachment,
-> and seccomp mode setting can all happen under the future locks.
+On Wed, Jun 25, 2014 at 04:08:21PM -0700, Luis R. Rodriguez wrote:
+> On Sat, Jun 21, 2014 at 5:48 AM, Thadeu Lima de Souza Cascardo
+> <cascardo@linux.vnet.ibm.com> wrote:
+> > That use was removed by commit
+> > 8c367fcbe6549195d2eb11e62bea233f811aad41 ("cxgb4: Do not set
+> > net_device::dev_id to VI index"), since dev_id should be used only when
+> > devices share the same MAC address.
+> >
+> > Using dev_port for cxgb4 allows different ports on the same PCI function
+> > to be identified.
 > 
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> ---
->  kernel/seccomp.c |   97 +++++++++++++++++++++++++++++++++++++-----------------
->  1 file changed, 67 insertions(+), 30 deletions(-)
+> Can you describe what issues were introduced because of this then?
 > 
-> diff --git a/kernel/seccomp.c b/kernel/seccomp.c
-> index afb916c7e890..edc8c79ed16d 100644
-> --- a/kernel/seccomp.c
-> +++ b/kernel/seccomp.c
-> @@ -515,6 +551,7 @@ static long seccomp_set_mode(unsigned long seccomp_mode, char __user *filter)
->  	current->seccomp.mode = seccomp_mode;
->  	set_thread_flag(TIF_SECCOMP);
->  out:
-> +	seccomp_filter_free(prepared);
->  	return ret;
->  }
+>   Luis
+> 
 
-I think this needs to be inside #ifdef CONFIG_SECCOMP_FILTER to match
-the definition of seccomp_filter_free:
+udevd builtin net-id cannot rename the interfaces, since it relies on
+the dev_id for interfaces on the same PCI function. I am going to send a
+patch to use dev_port instead, and fallback to dev_id, and copy netdev.
 
-../kernel/seccomp.c:554:2: error: implicit declaration of function ‘seccomp_filter_free’ [-Werror=implicit-function-declaration]
-
+Regards.
+Cascardo.
 
