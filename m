@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753290AbaFZI3p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 04:29:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55819 "EHLO mx2.suse.de"
+	id S1753459AbaFZIeI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 04:34:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55875 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751857AbaFZI3m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 04:29:42 -0400
-Date: Thu, 26 Jun 2014 10:29:40 +0200
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Petr Mladek <pmladek@suse.cz>
-Subject: Re: linux-next: build failure after merge of the akpm-current tree
-Message-ID: <20140626082940.GE27687@wotan.suse.de>
-References: <20140626162257.45f8e2aa@canb.auug.org.au>
+	id S1750770AbaFZIeF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 04:34:05 -0400
+Date: Thu, 26 Jun 2014 10:34:03 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Jiri Slaby <jslaby@suse.cz>
+cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        linux-kernel@vger.kernel.org, tj@kernel.org, rostedt@goodmis.org,
+        mingo@redhat.com, akpm@linux-foundation.org, andi@firstfloor.org,
+        paulmck@linux.vnet.ibm.com, pavel@ucw.cz, jirislaby@gmail.com,
+        Vojtech Pavlik <vojtech@suse.cz>, Michael Matz <matz@suse.de>,
+        Udo Seidel <udoseidel@gmx.de>
+Subject: Re: [PATCH -repost 05/21] kgr: update Kconfig documentation
+In-Reply-To: <53ABD8FB.9000700@suse.cz>
+Message-ID: <alpine.LNX.2.00.1406261030210.15939@pobox.suse.cz>
+References: <1403694435-3180-1-git-send-email-jslaby@suse.cz> <1403694435-3180-5-git-send-email-jslaby@suse.cz> <20140625134212.4fb38e14@alan.etchedpixels.co.uk> <53ABD8FB.9000700@suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140626162257.45f8e2aa@canb.auug.org.au>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 26, 2014 at 04:22:57PM +1000, Stephen Rothwell wrote:
-> Hi Andrew,
-> 
-> After merging the akpm tree, today's linux-next build (powerpc
-> ppc44x_defconfig) failed like this:
-> 
-> kernel/printk/printk.c: In function 'log_buf_add_cpu':
-> kernel/printk/printk.c:269:37: error: 'CONFIG_LOG_CPU_MAX_BUF_SHIFT' undeclared (first use in this function)
->  #define __LOG_CPU_MAX_BUF_LEN (1 << CONFIG_LOG_CPU_MAX_BUF_SHIFT)
->                                      ^
-> kernel/printk/printk.c:864:42: note: in expansion of macro '__LOG_CPU_MAX_BUF_LEN'
->   cpu_extra = (num_possible_cpus() - 1) * __LOG_CPU_MAX_BUF_LEN;
->                                           ^
-> kernel/printk/printk.c:269:37: note: each undeclared identifier is reported only once for each function it appears in
->  #define __LOG_CPU_MAX_BUF_LEN (1 << CONFIG_LOG_CPU_MAX_BUF_SHIFT)
->                                      ^
-> kernel/printk/printk.c:864:42: note: in expansion of macro '__LOG_CPU_MAX_BUF_LEN'
->   cpu_extra = (num_possible_cpus() - 1) * __LOG_CPU_MAX_BUF_LEN;
->                                           ^
-> 
-> Caused by commit 58209adf633e ("printk: allow increasing the ring
-> buffer depending on the number of CPUs").  CONFIG_LOG_CPU_MAX_BUF_SHIFT
-> is not defined for this configuration.
+On Thu, 26 Jun 2014, Jiri Slaby wrote:
 
-diff --git a/init/Kconfig b/init/Kconfig
-index 573d3f6..2339118 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -822,10 +822,9 @@ config LOG_BUF_SHIFT
- 
- config LOG_CPU_MAX_BUF_SHIFT
- 	int "CPU kernel log buffer size contribution (13 => 8 KB, 17 => 128KB)"
--	range 0 21
--	default 12
--	depends on SMP
--	depends on !BASE_SMALL
-+	range 0 21 if SMP && !BASE_SMALL
-+	default 12 if SMP && !BASE_SMALL
-+	default 0 if !SMP || BASE_SMALL
- 	help
- 	  The kernel ring buffer will get additional data logged onto it
- 	  when multiple CPUs are supported. Typically the contributions are
+> >> ---
+> >>  kernel/Kconfig.kgraft | 3 +++
+> >>  samples/Kconfig       | 4 ++++
+> >>  2 files changed, 7 insertions(+)
+> >>
+> >> diff --git a/kernel/Kconfig.kgraft b/kernel/Kconfig.kgraft
+> >> index f38d82c06580..bead93646071 100644
+> >> --- a/kernel/Kconfig.kgraft
+> >> +++ b/kernel/Kconfig.kgraft
+> >> @@ -5,3 +5,6 @@ config KGRAFT
+> >>  	bool "kGraft infrastructure"
+> >>  	depends on DYNAMIC_FTRACE_WITH_REGS
+> >>  	depends on HAVE_KGRAFT
+> >> +	help
+> >> +	  Select this to enable kGraft online kernel patching. The
+> >> +	  runtime price is zero, so it is safe to say Y here.
+> >> diff --git a/samples/Kconfig b/samples/Kconfi
+> > 
+> > The runtime impact is that you've just introduced a virus and trojan
+> > writers delight into your kernel. There's a balance between convenience
+> > and security but given most users will never use kgraft this advice seems
+> > incorrect.
+> 
+> This now writes:
+> +       help
+> +         Select this to enable kGraft online kernel patching. The
+> +         runtime price is nearly zero, so it is safe to say Y here
+> +         provided you are aware of all the consequences (e.g. in
+> +         security).
+> 
+> Is it OK with you?
+
+This might cause a false impression that we are actually opening a 
+security hole into a system, which is not true at all.
+
+Yes, backdoor writeres might (or might not) make use of kGraft API, but 
+they have gazillion of other comparable options (*probes, ftrace, 
+text_poke(), ...).
+
+I'd perhaps propose something like
+
+"Select this to enable kGraft live kernel patching. The runtime penalty is 
+nearly zero, so it is safe to say Y here if you want the kernel to expose 
+API for live patching to modules".
+
+-- 
+Jiri Kosina
+SUSE Labs
