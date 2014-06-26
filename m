@@ -1,142 +1,296 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757865AbaFZQ6y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 12:58:54 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:58678 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756132AbaFZQ6t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 12:58:49 -0400
-Message-Id: <20140626165848.568062800@goodmis.org>
-User-Agent: quilt/0.63-1
-Date: Thu, 26 Jun 2014 12:52:25 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Jiri Kosina <jkosina@suse.cz>,
-        Josh Poimboeuf <notifications@github.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [RFA][PATCH 04/27] ftrace-graph: Remove dependency of ftrace_stop() from
- ftrace_graph_stop()
-References: <20140626165221.736847419@goodmis.org>
+	id S1758098AbaFZRDX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 13:03:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18699 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757958AbaFZRDW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 13:03:22 -0400
+Date: Thu, 26 Jun 2014 19:01:43 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1] rcu: uninline rcu_lock_acquire() and rcu_lock_release()
+Message-ID: <20140626170143.GA28565@redhat.com>
+References: <20140626170116.GA28558@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0004-ftrace-graph-Remove-dependency-of-ftrace_stop-from-f.patch
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140626170116.GA28558@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+Uninline rcu_lock_acquire() and rcu_lock_release() to shrink .text/data.
+The difference in "size vmlinux" looks good,
 
-ftrace_stop() is going away as it disables parts of function tracing
-that affects users that should not be affected. But ftrace_graph_stop()
-is built on ftrace_stop(). Here's another example of killing all of
-function tracing because something went wrong with function graph
-tracing.
+with CONFIG_DEBUG_LOCK_ALLOC
 
-Instead of disabling all users of function tracing on function graph
-error, disable only function graph tracing.
+	- 5377829 3018320 14757888 23154037
+	+ 5352229 3010160 14757888 23120277
 
-A new function is created called ftrace_graph_is_dead(). This is called
-in strategic paths to prevent function graph from doing more harm and
-allowing at least a warning to be printed before the system crashes.
+33760 bytes saved.
 
-NOTE: ftrace_stop() is still used until all the archs are converted over
-to use ftrace_graph_is_dead(). After that, ftrace_stop() will be removed.
+with CONFIG_DEBUG_LOCK_ALLOC + CONFIG_PROVE_RCU + CONFIG_TREE_RCU_TRACE
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+	- 5682283 3022936 14757888 23463107
+	+ 5578667 3026776 14757888 23363331
+
+saves 99776 bytes.
+
+However, this obviously means that the "warn once" logic is moved from
+the current callers of rcu_lockdep_assert(rcu_is_watching()) to update.c.
+
+Also, with this patch we do not bother to report which function abused
+rcu_is_watching(), this should be clear from dump_stack().
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- include/linux/ftrace.h               |  1 +
- kernel/trace/ftrace.c                |  5 -----
- kernel/trace/trace_functions_graph.c | 35 +++++++++++++++++++++++++++++++++++
- 3 files changed, 36 insertions(+), 5 deletions(-)
+ include/linux/rcupdate.h |   55 ++++++++++++++++++++++---------------------
+ include/linux/srcu.h     |    4 +-
+ kernel/rcu/rcu.h         |    6 ++--
+ kernel/rcu/update.c      |   57 ++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 90 insertions(+), 32 deletions(-)
 
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 11e18fd58b1a..ec059c343e78 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -750,6 +750,7 @@ extern char __irqentry_text_end[];
- extern int register_ftrace_graph(trace_func_graph_ret_t retfunc,
- 				trace_func_graph_ent_t entryfunc);
- 
-+extern bool ftrace_graph_is_dead(void);
- extern void ftrace_graph_stop(void);
- 
- /* The current handlers in use */
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 3a6d44c76af7..823984c20262 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -5439,9 +5439,4 @@ void ftrace_graph_exit_task(struct task_struct *t)
- 
- 	kfree(ret_stack);
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 5a75d19..a5b1631 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -379,18 +379,34 @@ static inline bool rcu_lockdep_current_cpu_online(void)
  }
+ #endif /* #else #if defined(CONFIG_HOTPLUG_CPU) && defined(CONFIG_PROVE_RCU) */
+ 
+-#ifdef CONFIG_DEBUG_LOCK_ALLOC
 -
--void ftrace_graph_stop(void)
--{
--	ftrace_stop();
--}
- #endif
-diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
-index 4de3e57f723c..3604690be70b 100644
---- a/kernel/trace/trace_functions_graph.c
-+++ b/kernel/trace/trace_functions_graph.c
-@@ -15,6 +15,38 @@
- #include "trace.h"
- #include "trace_output.h"
+-static inline void rcu_lock_acquire(struct lockdep_map *map)
++static inline void __rcu_lock_acquire(struct lockdep_map *map, unsigned long ip)
+ {
+-	lock_acquire(map, 0, 0, 2, 0, NULL, _THIS_IP_);
++	lock_acquire(map, 0, 0, 2, 0, NULL, ip);
+ }
  
-+static bool kill_ftrace_graph;
+-static inline void rcu_lock_release(struct lockdep_map *map)
++static inline void __rcu_lock_release(struct lockdep_map *map, unsigned long ip)
+ {
+-	lock_release(map, 1, _THIS_IP_);
++	lock_release(map, 1, ip);
+ }
+ 
++#if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_PROVE_RCU)
++extern void rcu_lock_acquire(void);
++extern void rcu_lock_release(void);
++extern void rcu_lock_acquire_bh(void);
++extern void rcu_lock_release_bh(void);
++extern void rcu_lock_acquire_sched(void);
++extern void rcu_lock_release_sched(void);
++#else
++#define rcu_lock_acquire()		do { } while (0)
++#define rcu_lock_release()		do { } while (0)
++#define rcu_lock_acquire_bh()		do { } while (0)
++#define rcu_lock_release_bh()		do { } while (0)
++#define rcu_lock_acquire_sched()	do { } while (0)
++#define rcu_lock_release_sched()	do { } while (0)
++#endif
 +
-+/**
-+ * ftrace_graph_is_dead - returns true if ftrace_graph_stop() was called
-+ *
-+ * ftrace_graph_stop() is called when a severe error is detected in
-+ * the function graph tracing. This function is called by the critical
-+ * paths of function graph to keep those paths from doing any more harm.
-+ */
-+bool ftrace_graph_is_dead(void)
++#ifdef CONFIG_DEBUG_LOCK_ALLOC
++
+ extern struct lockdep_map rcu_lock_map;
+ extern struct lockdep_map rcu_bh_lock_map;
+ extern struct lockdep_map rcu_sched_lock_map;
+@@ -489,9 +505,6 @@ static inline int rcu_read_lock_sched_held(void)
+ 
+ #else /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
+ 
+-# define rcu_lock_acquire(a)		do { } while (0)
+-# define rcu_lock_release(a)		do { } while (0)
+-
+ static inline int rcu_read_lock_held(void)
+ {
+ 	return 1;
+@@ -866,9 +879,7 @@ static inline void rcu_read_lock(void)
+ {
+ 	__rcu_read_lock();
+ 	__acquire(RCU);
+-	rcu_lock_acquire(&rcu_lock_map);
+-	rcu_lockdep_assert(rcu_is_watching(),
+-			   "rcu_read_lock() used illegally while idle");
++	rcu_lock_acquire();
+ }
+ 
+ /*
+@@ -888,9 +899,7 @@ static inline void rcu_read_lock(void)
+  */
+ static inline void rcu_read_unlock(void)
+ {
+-	rcu_lockdep_assert(rcu_is_watching(),
+-			   "rcu_read_unlock() used illegally while idle");
+-	rcu_lock_release(&rcu_lock_map);
++	rcu_lock_release();
+ 	__release(RCU);
+ 	__rcu_read_unlock();
+ }
+@@ -916,9 +925,7 @@ static inline void rcu_read_lock_bh(void)
+ {
+ 	local_bh_disable();
+ 	__acquire(RCU_BH);
+-	rcu_lock_acquire(&rcu_bh_lock_map);
+-	rcu_lockdep_assert(rcu_is_watching(),
+-			   "rcu_read_lock_bh() used illegally while idle");
++	rcu_lock_acquire_bh();
+ }
+ 
+ /*
+@@ -928,9 +935,7 @@ static inline void rcu_read_lock_bh(void)
+  */
+ static inline void rcu_read_unlock_bh(void)
+ {
+-	rcu_lockdep_assert(rcu_is_watching(),
+-			   "rcu_read_unlock_bh() used illegally while idle");
+-	rcu_lock_release(&rcu_bh_lock_map);
++	rcu_lock_release_bh();
+ 	__release(RCU_BH);
+ 	local_bh_enable();
+ }
+@@ -952,9 +957,7 @@ static inline void rcu_read_lock_sched(void)
+ {
+ 	preempt_disable();
+ 	__acquire(RCU_SCHED);
+-	rcu_lock_acquire(&rcu_sched_lock_map);
+-	rcu_lockdep_assert(rcu_is_watching(),
+-			   "rcu_read_lock_sched() used illegally while idle");
++	rcu_lock_acquire_sched();
+ }
+ 
+ /* Used by lockdep and tracing: cannot be traced, cannot call lockdep. */
+@@ -971,9 +974,7 @@ static inline notrace void rcu_read_lock_sched_notrace(void)
+  */
+ static inline void rcu_read_unlock_sched(void)
+ {
+-	rcu_lockdep_assert(rcu_is_watching(),
+-			   "rcu_read_unlock_sched() used illegally while idle");
+-	rcu_lock_release(&rcu_sched_lock_map);
++	rcu_lock_release_sched();
+ 	__release(RCU_SCHED);
+ 	preempt_enable();
+ }
+diff --git a/include/linux/srcu.h b/include/linux/srcu.h
+index a2783cb..5c06289 100644
+--- a/include/linux/srcu.h
++++ b/include/linux/srcu.h
+@@ -219,7 +219,7 @@ static inline int srcu_read_lock(struct srcu_struct *sp) __acquires(sp)
+ {
+ 	int retval = __srcu_read_lock(sp);
+ 
+-	rcu_lock_acquire(&(sp)->dep_map);
++	__rcu_lock_acquire(&(sp)->dep_map, _THIS_IP_);
+ 	return retval;
+ }
+ 
+@@ -233,7 +233,7 @@ static inline int srcu_read_lock(struct srcu_struct *sp) __acquires(sp)
+ static inline void srcu_read_unlock(struct srcu_struct *sp, int idx)
+ 	__releases(sp)
+ {
+-	rcu_lock_release(&(sp)->dep_map);
++	__rcu_lock_release(&(sp)->dep_map, _THIS_IP_);
+ 	__srcu_read_unlock(sp, idx);
+ }
+ 
+diff --git a/kernel/rcu/rcu.h b/kernel/rcu/rcu.h
+index bfda272..5702910 100644
+--- a/kernel/rcu/rcu.h
++++ b/kernel/rcu/rcu.h
+@@ -103,16 +103,16 @@ static inline bool __rcu_reclaim(const char *rn, struct rcu_head *head)
+ {
+ 	unsigned long offset = (unsigned long)head->func;
+ 
+-	rcu_lock_acquire(&rcu_callback_map);
++	__rcu_lock_acquire(&rcu_callback_map, _THIS_IP_);
+ 	if (__is_kfree_rcu_offset(offset)) {
+ 		RCU_TRACE(trace_rcu_invoke_kfree_callback(rn, head, offset));
+ 		kfree((void *)head - offset);
+-		rcu_lock_release(&rcu_callback_map);
++		__rcu_lock_release(&rcu_callback_map, _THIS_IP_);
+ 		return 1;
+ 	} else {
+ 		RCU_TRACE(trace_rcu_invoke_callback(rn, head));
+ 		head->func(head);
+-		rcu_lock_release(&rcu_callback_map);
++		__rcu_lock_release(&rcu_callback_map, _THIS_IP_);
+ 		return 0;
+ 	}
+ }
+diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
+index a2aeb4d..bf98a37 100644
+--- a/kernel/rcu/update.c
++++ b/kernel/rcu/update.c
+@@ -168,6 +168,63 @@ EXPORT_SYMBOL_GPL(rcu_read_lock_bh_held);
+ 
+ #endif /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
+ 
++#if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_PROVE_RCU)
++
++static void rcu_lockdep_assert_watching(void)
 +{
-+	return kill_ftrace_graph;
++	rcu_lockdep_assert(rcu_is_watching(), "RCU used illegally while idle");
 +}
 +
-+/**
-+ * ftrace_graph_stop - set to permanently disable function graph tracincg
-+ *
-+ * In case of an error int function graph tracing, this is called
-+ * to try to keep function graph tracing from causing any more harm.
-+ * Usually this is pretty severe and this is called to try to at least
-+ * get a warning out to the user.
-+ */
-+void ftrace_graph_stop(void)
++static void rcu_acquire_map(struct lockdep_map *map, unsigned long ip)
 +{
-+	kill_ftrace_graph = true;
-+	/*
-+	 * ftrace_stop() will be removed when all archs are updated to
-+	 * use ftrace_graph_is_dead()
-+	 */
-+	ftrace_stop();
++	__rcu_lock_acquire(map, ip);
++	rcu_lockdep_assert_watching();
 +}
 +
- /* When set, irq functions will be ignored */
- static int ftrace_graph_skip_irqs;
- 
-@@ -92,6 +124,9 @@ ftrace_push_return_trace(unsigned long ret, unsigned long func, int *depth,
- 	unsigned long long calltime;
- 	int index;
- 
-+	if (unlikely(ftrace_graph_is_dead()))
-+		return -EBUSY;
++static void rcu_release_map(struct lockdep_map *map, unsigned long ip)
++{
++	rcu_lockdep_assert_watching();
++	__rcu_lock_release(&rcu_lock_map, ip);
++}
 +
- 	if (!current->ret_stack)
- 		return -EBUSY;
- 
++void rcu_lock_acquire(void)
++{
++	rcu_acquire_map(&rcu_lock_map, _RET_IP_);
++}
++EXPORT_SYMBOL(rcu_lock_acquire);
++
++void rcu_lock_release(void)
++{
++	rcu_release_map(&rcu_lock_map, _RET_IP_);
++}
++EXPORT_SYMBOL(rcu_lock_release);
++
++void rcu_lock_acquire_bh(void)
++{
++	rcu_acquire_map(&rcu_bh_lock_map, _RET_IP_);
++}
++EXPORT_SYMBOL(rcu_lock_acquire_bh);
++
++void rcu_lock_release_bh(void)
++{
++	rcu_release_map(&rcu_bh_lock_map, _RET_IP_);
++}
++EXPORT_SYMBOL(rcu_lock_release_bh);
++
++void rcu_lock_acquire_sched(void)
++{
++	rcu_acquire_map(&rcu_sched_lock_map, _RET_IP_);
++}
++EXPORT_SYMBOL(rcu_lock_acquire_sched);
++
++void rcu_lock_release_sched(void)
++{
++	rcu_release_map(&rcu_sched_lock_map, _RET_IP_);
++}
++EXPORT_SYMBOL(rcu_lock_release_sched);
++
++#endif
++
+ struct rcu_synchronize {
+ 	struct rcu_head head;
+ 	struct completion completion;
 -- 
-2.0.0
+1.5.5.1
 
 
