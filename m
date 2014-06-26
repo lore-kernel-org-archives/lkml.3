@@ -1,154 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752059AbaFZUnq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 16:43:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15835 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751904AbaFZUno (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 16:43:44 -0400
-Date: Thu, 26 Jun 2014 16:43:03 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        mtk.manpages@gmail.com
-Cc: ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org, greg@kroah.com,
-        bp@alien8.de, dyoung@redhat.com, chaowang@redhat.com, bhe@redhat.com,
-        akpm@linux-foundation.org, linux-api@vger.kernel.org
-Subject: Re: [PATCH 08/15] kexec: New syscall kexec_file_load() declaration
-Message-ID: <20140626204303.GE11136@redhat.com>
-References: <1403814824-7587-1-git-send-email-vgoyal@redhat.com>
- <1403814824-7587-9-git-send-email-vgoyal@redhat.com>
+	id S1752134AbaFZUnv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 16:43:51 -0400
+Received: from mail-by2lp0236.outbound.protection.outlook.com ([207.46.163.236]:28088
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751904AbaFZUns convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 16:43:48 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: "Yue Zhang (OSTC DEV)" <yuezha@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "apw@canonical.com" <apw@canonical.com>
+CC: Dexuan Cui <decui@microsoft.com>, Thomas Shao <huishao@microsoft.com>
+Subject: RE: [PATCH] Tools: hv: fix file overwriting of hv_fcopy_daemon
+Thread-Topic: [PATCH] Tools: hv: fix file overwriting of hv_fcopy_daemon
+Thread-Index: AQHPkXqZAHj0PqEENkSegLhluqQpVJuD2uTw
+Date: Thu, 26 Jun 2014 20:43:46 +0000
+Message-ID: <9aa07d3dad7c448da7ee7a3e007e0140@BY2PR03MB299.namprd03.prod.outlook.com>
+References: <1403816968-15419-1-git-send-email-yuezha@microsoft.com>
+In-Reply-To: <1403816968-15419-1-git-send-email-yuezha@microsoft.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [131.107.147.182]
+x-microsoft-antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
+x-o365ent-eop-header: Message processed by -  O365_ENT: Allow from ranges
+ (Engineering ONLY)
+x-forefront-prvs: 02543CD7CD
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(13464003)(51704005)(377454003)(199002)(189002)(74316001)(81342001)(50986999)(95666004)(76176999)(106356001)(107046002)(66066001)(85852003)(81542001)(80022001)(83072002)(105586002)(33646001)(77982001)(54356999)(99286002)(76482001)(76576001)(46102001)(101416001)(19580395003)(31966008)(19580405001)(83322001)(21056001)(86612001)(87936001)(99396002)(64706001)(85306003)(86362001)(74502001)(1511001)(106116001)(20776003)(2201001)(4396001)(74662001)(92566001)(2656002)(79102001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB298;H:BY2PR03MB299.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403814824-7587-9-git-send-email-vgoyal@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 26, 2014 at 04:33:37PM -0400, Vivek Goyal wrote:
-> This is the new syscall kexec_file_load() declaration/interface. I have
-> reserved the syscall number only for x86_64 so far. Other architectures
-> (including i386) can reserve syscall number when they enable the support
-> for this new syscall.
+
+
+> -----Original Message-----
+> From: Yue Zhang [mailto:yuezha@microsoft.com]
+> Sent: Thursday, June 26, 2014 2:09 PM
+> To: KY Srinivasan; Haiyang Zhang; driverdev-devel@linuxdriverproject.org;
+> linux-kernel@vger.kernel.org; olaf@aepfle.de; jasowang@redhat.com;
+> apw@canonical.com
+> Cc: Dexuan Cui; Thomas Shao
+> Subject: [PATCH] Tools: hv: fix file overwriting of hv_fcopy_daemon
 > 
-> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
-> CC: linux-api@vger.kernel.org
+> From: Yue Zhang <yuezha@microsoft.com>
+> 
+> hv_fcopy_daemon fails to overwrite a file if the target file already exits.
+> 
+> Add O_TRUNC flag on opening.
+> 
+> Signed-off-by: Yue Zhang <yuezha@microsoft.com>
+> ---
+>  tools/hv/hv_fcopy_daemon.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/tools/hv/hv_fcopy_daemon.c b/tools/hv/hv_fcopy_daemon.c
+> index fba1c75..01eee6b 100644
+> --- a/tools/hv/hv_fcopy_daemon.c
+> +++ b/tools/hv/hv_fcopy_daemon.c
+> @@ -88,7 +88,8 @@ static int hv_start_fcopy(struct hv_start_fcopy *smsg)
+>  		}
+>  	}
+> 
+> -	target_fd = open(target_fname, O_RDWR | O_CREAT | O_CLOEXEC,
+> 0744);
+> +	target_fd = open(target_fname,
+> +				O_RDWR | O_CREAT | O_TRUNC |
+Please align O_RDWR to align with the first argument (target_fname). 
 
-Hi Michael,
-
-As per feedback last time, I enhanced the existing man page to include
-details of this new syscall. Here is the patch.
-
-Thanks
-Vivek
-
-
-Subject: kexec_file_load() syscall man page
-
-We already have man page for kexec_load() syscall. This patch adds details
-of kexec_file_load() to same man page.
-
-Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
----
- man2/kexec_file_load.2 |    1 
- man2/kexec_load.2      |   55 +++++++++++++++++++++++++++++++++++++++++++------
- 2 files changed, 50 insertions(+), 6 deletions(-)
-
-Index: man-pages/man2/kexec_file_load.2
-===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ man-pages/man2/kexec_file_load.2	2014-06-25 17:39:12.056441803 -0400
-@@ -0,0 +1 @@
-+.so man2/kexec_load.2
-Index: man-pages/man2/kexec_load.2
-===================================================================
---- man-pages.orig/man2/kexec_load.2	2014-06-25 17:36:09.237453355 -0400
-+++ man-pages/man2/kexec_load.2	2014-06-26 11:11:49.599810213 -0400
-@@ -25,17 +25,26 @@
- .\"
- .TH KEXEC_LOAD 2 2012-07-13 "Linux" "Linux Programmer's Manual"
- .SH NAME
--kexec_load \- load a new kernel for later execution
-+kexec_load, kexec_file_load \- load a new kernel for later execution
- .SH SYNOPSIS
- .B #include <linux/kexec.h>
- .br
-+
- .BI "long kexec_load(unsigned long " entry ", unsigned long " nr_segments ","
- .br
- .BI "                struct kexec_segment *" segments \
- ", unsigned long " flags ");"
-+.br
-+
-+.BI "int kexec_file_load(int " kernel_fd ", int " initrd_fd ","
-+.br
-+.BI "                    unsigned long " cmdline_len  \
-+", const char *" cmdline ","
-+.br
-+.BI "                    unsigned long " flags ");"
- 
- .IR Note :
--There is no glibc wrapper for this system call; see NOTES.
-+There are no glibc wrappers for these system calls; see NOTES.
- .SH DESCRIPTION
- The
- .BR kexec_load ()
-@@ -111,11 +120,42 @@ struct kexec_segment {
- The kernel image defined by
- .I segments
- is copied from the calling process into previously reserved memory.
-+.SS kexec_file_load()
-+The
-+.BR kexec_file_load ()
-+system call is similar to
-+.BR kexec_load(),
-+but it takes a different set of arguments. It reads kernel to be loaded from
-+file descriptor
-+.IR kernel_fd
-+and initrd to be loaded from file descriptor
-+.IR initrd_fd .
-+It also takes length of kernel command line in
-+.IR cmdline_len
-+and pointer to command line in
-+.IR cmdline .
-+
-+The
-+.IR flags
-+argument is a mask which allows control over system call operation. The
-+following values can be specified in
-+.IR flags
-+
-+.TP
-+.BR KEXEC_FILE_UNLOAD
-+Unload currently loaded kernel.
-+.TP
-+.BR KEXEC_FILE_ON_CRASH
-+Load kernel in memory region reserved for crash kernel. This kernel is
-+booted into if currently running kernel crashes.
-+.TP
-+.BR KEXEC_FILE_NO_INITRAMFS
-+Loading initrd/initramfs is optional. Specify this flag if no initramfs
-+is being loaded. If this flag is set, kernel will ignore the value passed
-+in
-+.IR initrd_fd
- .SH RETURN VALUE
--On success,
--.BR kexec_load ()
--returns 0.
--On error, \-1 is returned and
-+On success, these system calls returns 0.  On error, \-1 is returned and
- .I errno
- is set to indicate the error.
- .SH ERRORS
-@@ -135,6 +175,9 @@ is too large
- The caller does not have the
- .BR CAP_SYS_BOOT
- capability.
-+.TP
-+.B ENOEXEC
-+kernel_fd does not refer to an open file. Or kernel can't load this file.
- .SH VERSIONS
- The
- .BR kexec_load ()
+K. Y
 
