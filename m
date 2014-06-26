@@ -1,125 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932356AbaFZLsW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 07:48:22 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:34699 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932176AbaFZLsV (ORCPT
+	id S1757222AbaFZLvd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 07:51:33 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:61493 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756280AbaFZLva (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 07:48:21 -0400
-Message-ID: <53AC0882.3010601@free-electrons.com>
-Date: Thu, 26 Jun 2014 13:48:18 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 26 Jun 2014 07:51:30 -0400
 MIME-Version: 1.0
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-CC: linux@maxim.org.za, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Boris Brezillon <boris@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Thomas Petazzoni <thomas@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 13/13] AT91: PIT: Move the driver to drivers/clocksource
-References: <1403701605-26678-1-git-send-email-maxime.ripard@free-electrons.com> <1403701605-26678-14-git-send-email-maxime.ripard@free-electrons.com> <53ABAF1E.5030405@free-electrons.com> <20140626093006.GB3385@lukather>
-In-Reply-To: <20140626093006.GB3385@lukather>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1403723019-6212-6-git-send-email-javier.martinez@collabora.co.uk>
+References: <1403723019-6212-1-git-send-email-javier.martinez@collabora.co.uk>
+	<1403723019-6212-6-git-send-email-javier.martinez@collabora.co.uk>
+Date: Thu, 26 Jun 2014 17:21:29 +0530
+Message-ID: <CAKew6eWt-0c4gxGX7C7KtRrxR=9h9BSUmN3a2aWQtuT40cva1w@mail.gmail.com>
+Subject: Re: [PATCH v4 05/14] clk: Add generic driver for Maxim PMIC clocks
+From: Yadwinder Singh Brar <yadi.brar01@gmail.com>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
+        Daniel Stone <daniels@collabora.com>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Javier,
 
-On 26/06/2014 11:30, Maxime Ripard wrote:
-> Hi Boris,
+Sorry for jumping in late, but just one concern mentioned inline.
+
+[ .. ]
+
+> +
+> +static unsigned long max_gen_recalc_rate(struct clk_hw *hw,
+> +                                        unsigned long parent_rate)
+> +{
+> +       return 32768;
+> +}
+
+Isn't more safer(correct), if it check and return 0 when clk is
+disabled(unprepared) ?
+
+Regards,
+Yadwinder
+
+> +
+> +struct clk_ops max_gen_clk_ops = {
+> +       .prepare        = max_gen_clk_prepare,
+> +       .unprepare      = max_gen_clk_unprepare,
+> +       .is_prepared    = max_gen_clk_is_prepared,
+> +       .recalc_rate    = max_gen_recalc_rate,
+> +};
+> +EXPORT_SYMBOL_GPL(max_gen_clk_ops);
+> +
+> +static struct clk *max_gen_clk_register(struct device *dev,
+> +                                       struct max_gen_clk *max_gen)
+> +{
+> +       struct clk *clk;
+> +       struct clk_hw *hw = &max_gen->hw;
+> +
+> +       clk = clk_register(dev, hw);
+> +       if (IS_ERR(clk))
+> +               return clk;
+> +
+> +       max_gen->lookup = kzalloc(sizeof(struct clk_lookup), GFP_KERNEL);
+> +       if (!max_gen->lookup)
+> +               return ERR_PTR(-ENOMEM);
+> +
+> +       max_gen->lookup->con_id = hw->init->name;
+> +       max_gen->lookup->clk = clk;
+> +
+> +       clkdev_add(max_gen->lookup);
+> +
+> +       return clk;
+> +}
+> +
+> +int max_gen_clk_probe(struct platform_device *pdev, struct regmap *regmap,
+> +                     u32 reg, struct clk_init_data *clks_init, int num_init)
+> +{
+> +       int i, ret;
+> +       struct max_gen_clk *max_gen_clks;
+> +       struct clk **clocks;
+> +       struct device *dev = &pdev->dev;
+> +
+> +       clocks = devm_kzalloc(dev, sizeof(struct clk *) * num_init, GFP_KERNEL);
+> +       if (!clocks)
+> +               return -ENOMEM;
+> +
+> +       max_gen_clks = devm_kzalloc(dev, sizeof(struct max_gen_clk)
+> +                                   * num_init, GFP_KERNEL);
+> +       if (!max_gen_clks)
+> +               return -ENOMEM;
+> +
+> +       for (i = 0; i < num_init; i++) {
+> +               max_gen_clks[i].regmap = regmap;
+> +               max_gen_clks[i].mask = 1 << i;
+> +               max_gen_clks[i].reg = reg;
+> +               max_gen_clks[i].hw.init = &clks_init[i];
+> +
+> +               clocks[i] = max_gen_clk_register(dev, &max_gen_clks[i]);
+> +               if (IS_ERR(clocks[i])) {
+> +                       ret = PTR_ERR(clocks[i]);
+> +                       dev_err(dev, "failed to register %s\n",
+> +                               max_gen_clks[i].hw.init->name);
+> +                       goto err_clocks;
+> +               }
+> +       }
+> +
+> +       platform_set_drvdata(pdev, clocks);
+> +
+> +       if (dev->of_node) {
+> +               struct clk_onecell_data *of_data;
+> +
+> +               of_data = devm_kzalloc(dev, sizeof(*of_data), GFP_KERNEL);
+> +               if (!of_data) {
+> +                       ret = -ENOMEM;
+> +                       goto err_clocks;
+> +               }
+> +
+> +               of_data->clks = clocks;
+> +               of_data->clk_num = num_init;
+> +               ret = of_clk_add_provider(dev->of_node, of_clk_src_onecell_get,
+> +                                         of_data);
+> +
+> +               if (ret) {
+> +                       dev_err(dev, "failed to register OF clock provider\n");
+> +                       goto err_clocks;
+> +               }
+> +       }
+> +
+> +       return 0;
+> +
+> +err_clocks:
+> +       for (--i; i >= 0; --i) {
+> +               clkdev_drop(max_gen_clks[i].lookup);
+> +               clk_unregister(max_gen_clks[i].hw.clk);
+> +       }
+> +
+> +       return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(max_gen_clk_probe);
+> +
+> +int max_gen_clk_remove(struct platform_device *pdev, int num_init)
+> +{
+> +       struct clk **clocks = platform_get_drvdata(pdev);
+> +       struct device *dev = pdev->dev.parent;
+> +       int i;
+> +
+> +       if (dev->of_node)
+> +               of_clk_del_provider(dev->of_node);
+> +
+> +       for (i = 0; i < num_init; i++) {
+> +               struct clk_hw *hw = __clk_get_hw(clocks[i]);
+> +               struct max_gen_clk *max_gen = to_max_gen_clk(hw);
+> +
+> +               clkdev_drop(max_gen->lookup);
+> +               clk_unregister(clocks[i]);
+> +       }
+> +       return 0;
+> +}
+> +EXPORT_SYMBOL_GPL(max_gen_clk_remove);
+> diff --git a/drivers/clk/clk-max-gen.h b/drivers/clk/clk-max-gen.h
+> new file mode 100644
+> index 0000000..997e86f
+> --- /dev/null
+> +++ b/drivers/clk/clk-max-gen.h
+> @@ -0,0 +1,32 @@
+> +/*
+> + * clk-max-gen.h - Generic clock driver for Maxim PMICs clocks
+> + *
+> + * Copyright (C) 2014 Google, Inc
+> + *
+> + * This program is free software; you can redistribute  it and/or modify it
+> + * under  the terms of  the GNU General  Public License as published by the
+> + * Free Software Foundation;  either version 2 of the  License, or (at your
+> + * option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + */
+> +
+> +#ifndef __CLK_MAX_GEN_H__
+> +#define __CLK_MAX_GEN_H__
+> +
+> +#include <linux/types.h>
+> +#include <linux/device.h>
+> +#include <linux/clkdev.h>
+> +#include <linux/regmap.h>
+> +#include <linux/platform_device.h>
+> +
+> +int max_gen_clk_probe(struct platform_device *pdev, struct regmap *regmap,
+> +                     u32 reg, struct clk_init_data *clks_init, int num_init);
+> +int max_gen_clk_remove(struct platform_device *pdev, int num_init);
+> +extern struct clk_ops max_gen_clk_ops;
+> +
+> +#endif /* __CLK_MAX_GEN_H__ */
+> --
+> 2.0.0.rc2
 >
-> On Thu, Jun 26, 2014 at 07:26:54AM +0200, Boris BREZILLON wrote:
->> On 25/06/2014 15:06, Maxime Ripard wrote:
->>> Now that we don't depend on anyting in the mach-at91 directory, we can just
->>> move the driver to where it belongs.
->>>
->>> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
->>> ---
->>>  arch/arm/mach-at91/Kconfig                                     | 4 ----
->>>  arch/arm/mach-at91/Makefile                                    | 1 -
->>>  drivers/clocksource/Kconfig                                    | 4 ++++
->>>  drivers/clocksource/Makefile                                   | 1 +
->>>  {arch/arm/mach-at91 => drivers/clocksource}/at91sam926x_time.c | 0
->>>  5 files changed, 5 insertions(+), 5 deletions(-)
->>>  rename {arch/arm/mach-at91 => drivers/clocksource}/at91sam926x_time.c (100%)
->>>
->>> diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
->>> index a64412a020d3..b10db0990999 100644
->>> --- a/arch/arm/mach-at91/Kconfig
->>> +++ b/arch/arm/mach-at91/Kconfig
->>> @@ -36,10 +36,6 @@ config AT91_SAM9G45_RESET
->>>  	bool
->>>  	default !ARCH_AT91X40
->>>  
->>> -config AT91_SAM9_TIME
->>> -	select CLKSRC_OF if OF
->>> -	bool
->>> -
->>>  config HAVE_AT91_SMD
->>>  	bool
->>>  
->>> diff --git a/arch/arm/mach-at91/Makefile b/arch/arm/mach-at91/Makefile
->>> index 78e9cec282f4..1a916ececbfd 100644
->>> --- a/arch/arm/mach-at91/Makefile
->>> +++ b/arch/arm/mach-at91/Makefile
->>> @@ -10,7 +10,6 @@ obj-		:=
->>>  obj-$(CONFIG_OLD_CLK_AT91)	+= clock.o
->>>  obj-$(CONFIG_AT91_SAM9_ALT_RESET) += at91sam9_alt_reset.o
->>>  obj-$(CONFIG_AT91_SAM9G45_RESET) += at91sam9g45_reset.o
->>> -obj-$(CONFIG_AT91_SAM9_TIME)	+= at91sam926x_time.o
->>>  obj-$(CONFIG_SOC_AT91SAM9)	+= sam9_smc.o
->>>  
->>>  # CPU-specific support
->>> diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
->>> index 065131cbfcc0..cd8b73ddbef3 100644
->>> --- a/drivers/clocksource/Kconfig
->>> +++ b/drivers/clocksource/Kconfig
->>> @@ -118,6 +118,10 @@ config CLKSRC_ARM_GLOBAL_TIMER_SCHED_CLOCK
->>>  	help
->>>  	 Use ARM global timer clock source as sched_clock
->>>  
->>> +config AT91_SAM9_TIME
->>> +	select CLKSRC_OF if OF
->>> +	bool
->>> +
->>>  config CLKSRC_METAG_GENERIC
->>>  	def_bool y if METAG
->>>  	help
->>> diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
->>> index 800b1303c236..3088928070f8 100644
->>> --- a/drivers/clocksource/Makefile
->>> +++ b/drivers/clocksource/Makefile
->>> @@ -1,5 +1,6 @@
->>>  obj-$(CONFIG_CLKSRC_OF)	+= clksrc-of.o
->>>  obj-$(CONFIG_ATMEL_TCB_CLKSRC)	+= tcb_clksrc.o
->>> +obj-$(CONFIG_AT91_SAM9_TIME)	+= at91sam926x_time.o
->> I would rename both Kconfig and source file name into ATMEL_PIT and
->> atmel_pit.c (or AT91_PIT and atmel_pit.c) to cleary show that this
->> driver add support for the PIT block.
-> I actually had the same idea, but older AT91 SoCs (rm9200, for
-> example) also mention the PIT, even though the IP is different.
-
-I checked at91rm9200 datasheet, and indeed it mention the concept of PIT
-(Periodic Interval Timer), but the HW block is called ST (System Timer).
-
-How about using the name ATMEL_PIT for this driver and later use
-ATMEL_ST when we decide to move at91rm9200_time.c driver into
-drivers/clocksource ?
-
->
-> Since AT91_PIT was just too generic and only added confusion, I left
-> it as is, but maybe we can find a better name.
->
-> Maxime
->
-
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
-
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
