@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757594AbaFZSTY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 14:19:24 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:33313 "EHLO
+	id S1757894AbaFZSTs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 14:19:48 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:33292 "EHLO
 	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964852AbaFZSQ3 (ORCPT
+	with ESMTP id S932289AbaFZSQX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 14:16:29 -0400
+	Thu, 26 Jun 2014 14:16:23 -0400
 From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 To: Lee Jones <lee.jones@linaro.org>
 Cc: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
@@ -21,11 +21,10 @@ Cc: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>,
         Yadwinder Singh Brar <yadi.brar01@gmail.com>,
         linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH v5 04/14] clk: max77686: Improve Maxim 77686 PMIC clocks binding
-Date: Thu, 26 Jun 2014 20:15:36 +0200
-Message-Id: <1403806546-31122-5-git-send-email-javier.martinez@collabora.co.uk>
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v5 02/14] mfd: max77686: Allow the max77686 rtc to wakeup the system
+Date: Thu, 26 Jun 2014 20:15:34 +0200
+Message-Id: <1403806546-31122-3-git-send-email-javier.martinez@collabora.co.uk>
 X-Mailer: git-send-email 2.0.0.rc2
 In-Reply-To: <1403806546-31122-1-git-send-email-javier.martinez@collabora.co.uk>
 References: <1403806546-31122-1-git-send-email-javier.martinez@collabora.co.uk>
@@ -33,65 +32,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Like most clock drivers, the Maxim 77686 PMIC clock binding
-follows the convention that the "#clock-cells" property is
-used to specify the number of cells in a clock provider.
+From: Doug Anderson <dianders@chromium.org>
 
-But the binding document is not clear enough that it shall
-be set to 1 since the PMIC support multiple clocks outputs.
+The max77686 includes an RTC that keeps power during suspend.  It's
+convenient to be able to use it as a wakeup source.
 
-Also, explain that the clocks identifiers are defined in a
-header file that can be included by Device Tree source with
-client nodes to avoid using magic numbers.
+NOTE: due to wakeup ordering problems this patch alone doesn't work so
+well on exynos5250-snow.  You also need something that brings the i2c
+bus up before the max77686 wakeup runs.
 
-Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+Reviewed-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Reviewed-by: Doug Anderson <dianders@chromium.org>
 ---
 
 Changes since v4: None
 
 Changes since v3:
- - Don't change clock-names property to make clear that it's
-   the consumer clock name and should not match the producer clock.
-   Suggested by Doug Anderson.
+ - Keep the note that this patch needs another change due wakeup
+   ordering problems.
 
- Documentation/devicetree/bindings/clock/maxim,max77686.txt | 13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ drivers/rtc/rtc-max77686.c | 28 ++++++++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/clock/maxim,max77686.txt b/Documentation/devicetree/bindings/clock/maxim,max77686.txt
-index 96ce71b..48e00bb 100644
---- a/Documentation/devicetree/bindings/clock/maxim,max77686.txt
-+++ b/Documentation/devicetree/bindings/clock/maxim,max77686.txt
-@@ -9,13 +9,18 @@ The MAX77686 contains three 32.768khz clock outputs that can be controlled
- Following properties should be presend in main device node of the MFD chip.
+diff --git a/drivers/rtc/rtc-max77686.c b/drivers/rtc/rtc-max77686.c
+index d20a7f0..c1c6055 100644
+--- a/drivers/rtc/rtc-max77686.c
++++ b/drivers/rtc/rtc-max77686.c
+@@ -583,6 +583,33 @@ static void max77686_rtc_shutdown(struct platform_device *pdev)
+ #endif /* MAX77686_RTC_WTSR_SMPL */
+ }
  
- Required properties:
--- #clock-cells: simple one-cell clock specifier format is used, where the
--  only cell is used as an index of the clock inside the provider. Following
--  indices are allowed:
++#ifdef CONFIG_PM_SLEEP
++static int max77686_rtc_suspend(struct device *dev)
++{
++	if (device_may_wakeup(dev)) {
++		struct max77686_rtc_info *info = dev_get_drvdata(dev);
 +
-+- #clock-cells: from common clock binding; shall be set to 1.
++		return enable_irq_wake(info->virq);
++	}
 +
-+Each clock is assigned an identifier and client nodes can use this identifier
-+to specify the clock which they consume. Following indices are allowed:
-     - 0: 32khz_ap clock,
-     - 1: 32khz_cp clock,
-     - 2: 32khz_pmic clock.
- 
-+Clocks are defined as preprocessor macros in dt-bindings/clock/maxim,max77686.h
-+header and can be used in device tree sources.
++	return 0;
++}
 +
- Example: Node of the MFD chip
- 
- 	max77686: max77686@09 {
-@@ -34,5 +39,5 @@ Example: Clock consumer node
- 		compatible = "bar,foo";
- 		/* ... */
- 		clock-names = "my-clock";
--		clocks = <&max77686 2>;
-+		clocks = <&max77686 MAX77686_CLK_PMIC>;
- 	};
++static int max77686_rtc_resume(struct device *dev)
++{
++	if (device_may_wakeup(dev)) {
++		struct max77686_rtc_info *info = dev_get_drvdata(dev);
++
++		return disable_irq_wake(info->virq);
++	}
++
++	return 0;
++}
++#endif
++
++static SIMPLE_DEV_PM_OPS(max77686_rtc_pm_ops,
++			 max77686_rtc_suspend, max77686_rtc_resume);
++
+ static const struct platform_device_id rtc_id[] = {
+ 	{ "max77686-rtc", 0 },
+ 	{},
+@@ -592,6 +619,7 @@ static struct platform_driver max77686_rtc_driver = {
+ 	.driver		= {
+ 		.name	= "max77686-rtc",
+ 		.owner	= THIS_MODULE,
++		.pm	= &max77686_rtc_pm_ops,
+ 	},
+ 	.probe		= max77686_rtc_probe,
+ 	.shutdown	= max77686_rtc_shutdown,
 -- 
 2.0.0.rc2
 
