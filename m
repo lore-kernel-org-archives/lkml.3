@@ -1,94 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964793AbaFZRgo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 13:36:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39757 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756633AbaFZRgn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 13:36:43 -0400
-Date: Thu, 26 Jun 2014 19:36:40 +0200
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the akpm-current tree
-Message-ID: <20140626173640.GF27687@wotan.suse.de>
-References: <20140626162257.45f8e2aa@canb.auug.org.au> <20140626082940.GE27687@wotan.suse.de> <20140626114512.GO8769@pathway.suse.cz>
+	id S1758064AbaFZRhq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 13:37:46 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:23331 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753555AbaFZRhp convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 13:37:45 -0400
+Date: Thu, 26 Jun 2014 13:37:43 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: Re: [RFA][PATCH 21/27] MIPS: ftrace: Remove check of obsolete
+ variable function_trace_stop
+Message-ID: <20140626133743.43f76e37@gandalf.local.home>
+In-Reply-To: <20140626165852.665644919@goodmis.org>
+References: <20140626165221.736847419@goodmis.org>
+	<20140626165852.665644919@goodmis.org>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140626114512.GO8769@pathway.suse.cz>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 26, 2014 at 01:45:13PM +0200, Petr Mládek wrote:
-> On Thu 2014-06-26 10:29:40, Luis R. Rodriguez wrote:
-> > On Thu, Jun 26, 2014 at 04:22:57PM +1000, Stephen Rothwell wrote:
-> > > Hi Andrew,
-> > > 
-> > > After merging the akpm tree, today's linux-next build (powerpc
-> > > ppc44x_defconfig) failed like this:
-> > > 
-> > > kernel/printk/printk.c: In function 'log_buf_add_cpu':
-> > > kernel/printk/printk.c:269:37: error: 'CONFIG_LOG_CPU_MAX_BUF_SHIFT' undeclared (first use in this function)
-> > >  #define __LOG_CPU_MAX_BUF_LEN (1 << CONFIG_LOG_CPU_MAX_BUF_SHIFT)
-> > >                                      ^
-> > > kernel/printk/printk.c:864:42: note: in expansion of macro '__LOG_CPU_MAX_BUF_LEN'
-> > >   cpu_extra = (num_possible_cpus() - 1) * __LOG_CPU_MAX_BUF_LEN;
-> > >                                           ^
-> > > kernel/printk/printk.c:269:37: note: each undeclared identifier is reported only once for each function it appears in
-> > >  #define __LOG_CPU_MAX_BUF_LEN (1 << CONFIG_LOG_CPU_MAX_BUF_SHIFT)
-> > >                                      ^
-> > > kernel/printk/printk.c:864:42: note: in expansion of macro '__LOG_CPU_MAX_BUF_LEN'
-> > >   cpu_extra = (num_possible_cpus() - 1) * __LOG_CPU_MAX_BUF_LEN;
-> > >                                           ^
-> > > 
-> > > Caused by commit 58209adf633e ("printk: allow increasing the ring
-> > > buffer depending on the number of CPUs").  CONFIG_LOG_CPU_MAX_BUF_SHIFT
-> > > is not defined for this configuration.
-> > 
-> > diff --git a/init/Kconfig b/init/Kconfig
-> > index 573d3f6..2339118 100644
-> > --- a/init/Kconfig
-> > +++ b/init/Kconfig
-> > @@ -822,10 +822,9 @@ config LOG_BUF_SHIFT
-> >  
-> >  config LOG_CPU_MAX_BUF_SHIFT
-> >  	int "CPU kernel log buffer size contribution (13 => 8 KB, 17 => 128KB)"
-> > -	range 0 21
-> > -	default 12
-> > -	depends on SMP
-> > -	depends on !BASE_SMALL
-> > +	range 0 21 if SMP && !BASE_SMALL
-> > +	default 12 if SMP && !BASE_SMALL
-> > +	default 0 if !SMP || BASE_SMALL
-> 
-> There are situations when the default value is not defined, for
-> example, when both SMP and BASE_SMALL are set.
-> 
-> I would ignore SMP. It is handled in the code. If SMP is not defined,
-> num_possible_cpus() returns 1 and "cpu_extra" is always 0. Then we
-> could have:
-> 
->        range 0 21
->        default 12 if !BASE_SMALL
->        default 0 if BASE_SMALL
-> 
-> 
-> What about the following patch? It does the above change. Plus
-> it tries to make the help text better readable. It says the basic
-> details first. Then it says other useful information in
-> separate paragraphs. Also I removed the computation example. It was
-> not easy to parse. Interested people might want to look into sources.
-> 
-> It could be merged into
-> printk-allow-increasing-the-ring-buffer-depending-on-the-number-of-cpus.patch
+On Thu, 26 Jun 2014 12:52:42 -0400
+Steven Rostedt <rostedt@goodmis.org> wrote:
 
-Looks good to me, Andrew let me know how you prefer to amend queued up patches
-on your end.
+> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> 
+> Nothing sets function_trace_stop to disable function tracing anymore.
+> Remove the check for it in the arch code.
+> 
+> [ Please test this on your arch ]
+> 
 
-  Luis
+Bah! I forgot to add you to the Cc of this email :-p
+
+Anyway,
+
+>From the cover letter, you were not Cc'd on.
+
+Anyway, as there is no more reason to set function_trace_stop it is time
+to remove it. Unfortunately it's in several archs in assembly. Most of
+the assembly looks rather straight forward and I removed them myself.
+But I was only able to compile test them (for archs: arm64, metag, and
+microblaze I do not have my cross tools set up for them and did not
+even compile test it). But I would really love it if people can
+download their patch and test it out. You only need the patches that go
+against your arch and to really test it, also include the patch titled: 
+
+ ftrace: Remove check for HAVE_FUNCTION_TRACE_MCOUNT_TEST
+
+Otherwise your arch patch will call the list op that still does the
+check. That is, if you want to test suspend and resume on your arch.
+
+As you may see, there are patches to the ftrace infrastructure that
+depend on the arch patches being implemented. I removed the
+functionality from the infrastructure, then removed it from the archs,
+and then finally removed the existence of the function_trace_stop
+variable, which would cause the archs to fail to compile if that were
+to go first.
+
+If you can test your arch and give me your acked-by, I would appreciate
+it. Otherwise, if you need this to go through your tree, I would ask you
+to set up a dedicated branch that I can pull from to keep this order
+intact.
+
+-- Steve
+
+
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  arch/mips/Kconfig         | 1 -
+>  arch/mips/kernel/mcount.S | 7 -------
+>  2 files changed, 8 deletions(-)
+> 
+> diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+> index 7a469acee33c..9ca52987fcd5 100644
+> --- a/arch/mips/Kconfig
+> +++ b/arch/mips/Kconfig
+> @@ -15,7 +15,6 @@ config MIPS
+>  	select HAVE_BPF_JIT if !CPU_MICROMIPS
+>  	select ARCH_HAVE_CUSTOM_GPIO_H
+>  	select HAVE_FUNCTION_TRACER
+> -	select HAVE_FUNCTION_TRACE_MCOUNT_TEST
+>  	select HAVE_DYNAMIC_FTRACE
+>  	select HAVE_FTRACE_MCOUNT_RECORD
+>  	select HAVE_C_RECORDMCOUNT
+> diff --git a/arch/mips/kernel/mcount.S b/arch/mips/kernel/mcount.S
+> index 539b6294b613..00940d1d5c4f 100644
+> --- a/arch/mips/kernel/mcount.S
+> +++ b/arch/mips/kernel/mcount.S
+> @@ -74,10 +74,6 @@ _mcount:
+>  #endif
+>  
+>  	/* When tracing is activated, it calls ftrace_caller+8 (aka here) */
+> -	lw	t1, function_trace_stop
+> -	bnez	t1, ftrace_stub
+> -	 nop
+> -
+>  	MCOUNT_SAVE_REGS
+>  #ifdef KBUILD_MCOUNT_RA_ADDRESS
+>  	PTR_S	MCOUNT_RA_ADDRESS_REG, PT_R12(sp)
+> @@ -105,9 +101,6 @@ ftrace_stub:
+>  #else	/* ! CONFIG_DYNAMIC_FTRACE */
+>  
+>  NESTED(_mcount, PT_SIZE, ra)
+> -	lw	t1, function_trace_stop
+> -	bnez	t1, ftrace_stub
+> -	 nop
+>  	PTR_LA	t1, ftrace_stub
+>  	PTR_L	t2, ftrace_trace_function /* Prepare t2 for (1) */
+>  	bne	t1, t2, static_trace
+
