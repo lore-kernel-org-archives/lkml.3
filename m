@@ -1,71 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932481AbaFZMQN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 08:16:13 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:60295 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932409AbaFZMP7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 08:15:59 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-24-53ac0ef6eca8
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Russell King <linux@arm.linux.org.uk>, Kukjin Kim <kgene.kim@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH RESEND 1/2] ARM: multi_v7_defconfig: Enable clock and RTC
- driver for S2M and S5M
-Date: Thu, 26 Jun 2014 14:15:43 +0200
-Message-id: <1403784944-12890-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNJMWRmVeSWpSXmKPExsVy+t/xq7rf+NYEG5y6YW3xd9IxdouNM9az
-	Wrx+YWjRu+Aqm8XZpjfsFpseX2O1uLxrDpvFjPP7mCxuX+a1WHvkLrvFqeuf2SzWz3jN4sDj
-	0dLcw+bx+9ckRo/NS+o9rpxoYvXo27KK0ePzJrkAtigum5TUnMyy1CJ9uwSujFPXO1gLjrNX
-	3D5ygbGB8QRbFyMnh4SAicSrlg4WCFtM4sK99UBxLg4hgaWMEhemTGSCcPqYJGb+nQhWxSZg
-	LLF5+RKwKhGBHYwSy+9dZgdxmAVWMkl8ODmJEaRKWCBJ4v/Dw0wgNouAqsSbBT1g+3gF3CWu
-	X73PDrFPTuLkscmsExi5FzAyrGIUTS1NLihOSs810itOzC0uzUvXS87P3cQICbCvOxiXHrM6
-	xCjAwajEw3sibHWwEGtiWXFl7iFGCQ5mJRFekd9AId6UxMqq1KL8+KLSnNTiQ4xMHJxSDYy3
-	Il02rXI6qC2ZEjc5RGSDP8s6GZl/M1uC+Gus+45qh3oHFkppKGhfvP1C3y0+brJsfeiZe+8m
-	+9i8ELI2q/x0yrDki43CabsmnZ9Ptdn2HTzZvThQjSM27eg+A885PmxZc1MmHbBv9q4QeJE/
-	zStad5nkvNyr8WyFc2ukNk2UZNp83tq3WYmlOCPRUIu5qDgRAFRJ8E0OAgAA
+	id S932453AbaFZMQJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 08:16:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46482 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932426AbaFZMQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 08:16:04 -0400
+Date: Thu, 26 Jun 2014 14:14:33 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <rric@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Namhyung Kim <namhyung@gmail.com>, Jean Pihet <jean.pihet@linaro.org>
+Subject: Re: [PATCH] perf tool: Carve out ctype.h et al
+Message-ID: <20140626121433.GA2600@krava.brq.redhat.com>
+References: <1403688184-6917-1-git-send-email-bp@alien8.de>
+ <20140625192547.GF1153@krava.brq.redhat.com>
+ <20140625203836.GD13845@pd.tnic>
+ <20140625211757.GD18773@kernel.org>
+ <20140626073802.GC1177@krava.brq.redhat.com>
+ <20140626103223.GB1284@pd.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140626103223.GB1284@pd.tnic>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The config enables already Samsung's PMIC-s MFD and regulator (S2MPS11
-and S5M8767) drivers. Enable also drivers for the rest of these PMIC-s
-features: clock and RTC.
+On Thu, Jun 26, 2014 at 12:32:23PM +0200, Borislav Petkov wrote:
+> On Thu, Jun 26, 2014 at 09:38:02AM +0200, Jiri Olsa wrote:
+> > yep, tip/perf/core maybe plus merges from acme/perf/core and
+> > jolsa/perf/core should do it ;-)
+> 
+> Ok, just did this (jolsa/perf/coreas up-to-date) nd I still can't
+> trigger the build failure:
+> 
+> commit f05523d9b9aaf18fb28acd009dc9142b2da16380
+> Merge: 80f0ae409ee9 07100877ea8f
+> Author: Borislav Petkov <bp@suse.de>
+> Date:   Thu Jun 26 11:59:07 2014 +0200
+> 
+>     Merge remote-tracking branch 'acme/perf/core' into ptool-v0.5.2
+> 
+> commit 80f0ae409ee945d598fa982efff53d9f887cc5d5
+> Merge: d7933ab727ed 2f88993d53c5
+> Author: Borislav Petkov <bp@suse.de>
+> Date:   Thu Jun 26 11:58:24 2014 +0200
+> 
+>     Merge remote-tracking branch 'tip/master' into rc2+-3
+> 
+> commit d7933ab727ed035bdf420d7381b831ba959cecc5
+> Merge: 2a80ff867f35 ce36d9ab3bab
+> Author: Linus Torvalds <torvalds@linux-foundation.org>
+> Date:   Wed Jun 25 21:47:28 2014 -0700
+> 
+>     Merge branch 'for-next' of git://git.samba.org/sfrench/cifs-2.6
+> 
+> 
+> 
+> Maybe we're having different libraries installed?
+> 
+> Auto-detecting system features:
+> ...                         dwarf: [ on  ]
+> ...                         glibc: [ on  ]
+> ...                          gtk2: [ on  ]
+> ...                      libaudit: [ on  ]
+> ...                        libbfd: [ OFF ]
+> ...                        libelf: [ on  ]
+> ...                       libnuma: [ on  ]
+> ...                       libperl: [ on  ]
+> ...                     libpython: [ on  ]
+> ...                      libslang: [ on  ]
+> ...                     libunwind: [ on  ]
+> ...            libdw-dwarf-unwind: [ OFF ]
+> ...     DWARF post unwind library: libunwind
+> 
+> jirka?
+> 
+> Here's the patch again, attached.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- arch/arm/configs/multi_v7_defconfig | 2 ++
- 1 file changed, 2 insertions(+)
+this one compiles ok for me
 
-diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
-index be1a3455a9fe..d578ebbc05a0 100644
---- a/arch/arm/configs/multi_v7_defconfig
-+++ b/arch/arm/configs/multi_v7_defconfig
-@@ -334,6 +334,7 @@ CONFIG_RTC_DRV_VT8500=y
- CONFIG_RTC_DRV_SUNXI=y
- CONFIG_RTC_DRV_MV=y
- CONFIG_RTC_DRV_TEGRA=y
-+CONFIG_RTC_DRV_S5M=y
- CONFIG_DMADEVICES=y
- CONFIG_DW_DMAC=y
- CONFIG_MV_XOR=y
-@@ -355,6 +356,7 @@ CONFIG_SERIO_NVEC_PS2=y
- CONFIG_NVEC_POWER=y
- CONFIG_QCOM_GSBI=y
- CONFIG_COMMON_CLK_QCOM=y
-+CONFIG_COMMON_CLK_S2MPS11=y
- CONFIG_MSM_GCC_8660=y
- CONFIG_MSM_MMCC_8960=y
- CONFIG_MSM_MMCC_8974=y
--- 
-1.9.1
-
+jirka
