@@ -1,235 +1,751 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752394AbaFZUgM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 16:36:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11942 "EHLO mx1.redhat.com"
+	id S1752439AbaFZUgd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 16:36:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29305 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752275AbaFZUf3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 16:35:29 -0400
+	id S1752264AbaFZUf2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 16:35:28 -0400
 From: Vivek Goyal <vgoyal@redhat.com>
 To: linux-kernel@vger.kernel.org, kexec@lists.infradead.org
 Cc: ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org, greg@kroah.com,
         bp@alien8.de, dyoung@redhat.com, chaowang@redhat.com, bhe@redhat.com,
-        akpm@linux-foundation.org, Vivek Goyal <vgoyal@redhat.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 06/15] resource: Provide new functions to walk through resources
-Date: Thu, 26 Jun 2014 16:33:35 -0400
-Message-Id: <1403814824-7587-7-git-send-email-vgoyal@redhat.com>
+        akpm@linux-foundation.org, Vivek Goyal <vgoyal@redhat.com>
+Subject: [PATCH 09/15] kexec: Implementation of new syscall kexec_file_load
+Date: Thu, 26 Jun 2014 16:33:38 -0400
+Message-Id: <1403814824-7587-10-git-send-email-vgoyal@redhat.com>
 In-Reply-To: <1403814824-7587-1-git-send-email-vgoyal@redhat.com>
 References: <1403814824-7587-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have added two more functions to walk through resources.
+Previous patch provided the interface definition and this patch prvides
+implementation of new syscall.
 
-Currently walk_system_ram_range() deals with pfn and /proc/iomem can contain
-partial pages. By dealing in pfn, callback function loses the info that
-last page of a memory range is a partial page and not the full page. So
-I implemented walk_system_ram_res() which returns u64 values to callback
-functions and now it properly return start and end address.
+Previously segment list was prepared in user space. Now user space just
+passes kernel fd, initrd fd and command line and kernel will create a
+segment list internally.
 
-walk_system_ram_range() uses find_next_system_ram() to find the next
-ram resource. This in turn only travels through siblings of top level
-child and does not travers through all the nodes of the resoruce tree. I
-also need another function where I can walk through all the resources,
-for example figure out where "GART" aperture is. Figure out where
-ACPI memory is.
-
-So I wrote another function walk_iomem_res() which walks through all
-/proc/iomem resources and returns matches as asked by caller. Caller
-can specify "name" of resource, start and end and flags.
-
-Got rid of find_next_system_ram_res() and instead implemented more
-generic find_next_iomem_res() which can be used to traverse top level
-children only based on an argument.
+This patch contains generic part of the code. Actual segment preparation
+and loading is done by arch and image specific loader. Which comes in
+next patch.
 
 Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
 ---
- include/linux/ioport.h |   6 +++
- kernel/resource.c      | 101 ++++++++++++++++++++++++++++++++++++++++++++-----
- 2 files changed, 98 insertions(+), 9 deletions(-)
+ arch/x86/kernel/machine_kexec_64.c |  45 ++++
+ include/linux/kexec.h              |  53 ++++
+ include/uapi/linux/kexec.h         |  11 +
+ kernel/kexec.c                     | 478 ++++++++++++++++++++++++++++++++++++-
+ 4 files changed, 582 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/ioport.h b/include/linux/ioport.h
-index 5e3a906..142ec54 100644
---- a/include/linux/ioport.h
-+++ b/include/linux/ioport.h
-@@ -237,6 +237,12 @@ extern int iomem_is_exclusive(u64 addr);
- extern int
- walk_system_ram_range(unsigned long start_pfn, unsigned long nr_pages,
- 		void *arg, int (*func)(unsigned long, unsigned long, void *));
-+extern int
-+walk_system_ram_res(u64 start, u64 end, void *arg,
-+		    int (*func)(u64, u64, void *));
-+extern int
-+walk_iomem_res(char *name, unsigned long flags, u64 start, u64 end, void *arg,
-+	       int (*func)(u64, u64, void *));
+diff --git a/arch/x86/kernel/machine_kexec_64.c b/arch/x86/kernel/machine_kexec_64.c
+index 679cef0..c8875b5 100644
+--- a/arch/x86/kernel/machine_kexec_64.c
++++ b/arch/x86/kernel/machine_kexec_64.c
+@@ -22,6 +22,10 @@
+ #include <asm/mmu_context.h>
+ #include <asm/debugreg.h>
  
- /* True if any part of r1 overlaps r2 */
- static inline bool resource_overlaps(struct resource *r1, struct resource *r2)
-diff --git a/kernel/resource.c b/kernel/resource.c
-index 3c2237a..da14b8d 100644
---- a/kernel/resource.c
-+++ b/kernel/resource.c
-@@ -59,10 +59,12 @@ static DEFINE_RWLOCK(resource_lock);
- static struct resource *bootmem_resource_free;
- static DEFINE_SPINLOCK(bootmem_resource_lock);
- 
--static void *r_next(struct seq_file *m, void *v, loff_t *pos)
-+static struct resource *next_resource(struct resource *p, bool sibling_only)
- {
--	struct resource *p = v;
--	(*pos)++;
-+	/* Caller wants to traverse through siblings only */
-+	if (sibling_only)
-+		return p->sibling;
++static struct kexec_file_ops *kexec_file_loaders[] = {
++		NULL,
++};
 +
- 	if (p->child)
- 		return p->child;
- 	while (!p->sibling && p->parent)
-@@ -70,6 +72,13 @@ static void *r_next(struct seq_file *m, void *v, loff_t *pos)
- 	return p->sibling;
+ static void free_transition_pgtable(struct kimage *image)
+ {
+ 	free_page((unsigned long)image->arch.pud);
+@@ -283,3 +287,44 @@ void arch_crash_save_vmcoreinfo(void)
+ 			      (unsigned long)&_text - __START_KERNEL);
  }
  
-+static void *r_next(struct seq_file *m, void *v, loff_t *pos)
++/* arch-dependent functionality related to kexec file-based syscall */
++
++int arch_kexec_kernel_image_probe(struct kimage *image, void *buf,
++				  unsigned long buf_len)
 +{
-+	struct resource *p = v;
-+	(*pos)++;
-+	return (void *)next_resource(p, false);
++	int i, ret = -ENOEXEC;
++	struct kexec_file_ops *fops;
++
++	for (i = 0; i < ARRAY_SIZE(kexec_file_loaders); i++) {
++		fops = kexec_file_loaders[i];
++		if (!fops || !fops->probe)
++			continue;
++
++		ret = fops->probe(buf, buf_len);
++		if (!ret) {
++			image->fops = fops;
++			return ret;
++		}
++	}
++
++	return ret;
 +}
 +
- #ifdef CONFIG_PROC_FS
++void *arch_kexec_kernel_image_load(struct kimage *image)
++{
++	if (!image->fops || !image->fops->load)
++		return ERR_PTR(-ENOEXEC);
++
++	return image->fops->load(image, image->kernel_buf,
++				 image->kernel_buf_len, image->initrd_buf,
++				 image->initrd_buf_len, image->cmdline_buf,
++				 image->cmdline_buf_len);
++}
++
++int arch_kimage_file_post_load_cleanup(struct kimage *image)
++{
++	if (!image->fops || !image->fops->cleanup)
++		return 0;
++
++	return image->fops->cleanup(image);
++}
+diff --git a/include/linux/kexec.h b/include/linux/kexec.h
+index 66d56ac..8e80901 100644
+--- a/include/linux/kexec.h
++++ b/include/linux/kexec.h
+@@ -121,13 +121,57 @@ struct kimage {
+ #define KEXEC_TYPE_DEFAULT 0
+ #define KEXEC_TYPE_CRASH   1
+ 	unsigned int preserve_context : 1;
++	/* If set, we are using file mode kexec syscall */
++	unsigned int file_mode:1;
  
- enum { MAX_IORES_LEVEL = 5 };
-@@ -322,16 +331,19 @@ int release_resource(struct resource *old)
+ #ifdef ARCH_HAS_KIMAGE_ARCH
+ 	struct kimage_arch arch;
+ #endif
++
++	/* Additional fields for file based kexec syscall */
++	void *kernel_buf;
++	unsigned long kernel_buf_len;
++
++	void *initrd_buf;
++	unsigned long initrd_buf_len;
++
++	char *cmdline_buf;
++	unsigned long cmdline_buf_len;
++
++	/* File operations provided by image loader */
++	struct kexec_file_ops *fops;
++
++	/* Image loader handling the kernel can store a pointer here */
++	void *image_loader_data;
+ };
  
- EXPORT_SYMBOL(release_resource);
++/*
++ * Keeps track of buffer parameters as provided by caller for requesting
++ * memory placement of buffer.
++ */
++struct kexec_buf {
++	struct kimage *image;
++	char *buffer;
++	unsigned long bufsz;
++	unsigned long memsz;
++	unsigned long buf_align;
++	unsigned long buf_min;
++	unsigned long buf_max;
++	bool top_down;		/* allocate from top of memory hole */
++};
  
--#if !defined(CONFIG_ARCH_HAS_WALK_MEMORY)
- /*
-- * Finds the lowest memory reosurce exists within [res->start.res->end)
-+ * Finds the lowest iomem reosurce exists with-in [res->start.res->end)
-  * the caller must specify res->start, res->end, res->flags and "name".
-  * If found, returns 0, res is overwritten, if not found, returns -1.
-+ * This walks through whole tree and not just first level children
-+ * until and unless first_level_children_only is true.
++typedef int (kexec_probe_t)(const char *kernel_buf, unsigned long kernel_size);
++typedef void *(kexec_load_t)(struct kimage *image, char *kernel_buf,
++			     unsigned long kernel_len, char *initrd,
++			     unsigned long initrd_len, char *cmdline,
++			     unsigned long cmdline_len);
++typedef int (kexec_cleanup_t)(struct kimage *image);
++
++struct kexec_file_ops {
++	kexec_probe_t *probe;
++	kexec_load_t *load;
++	kexec_cleanup_t *cleanup;
++};
+ 
+ /* kexec interface functions */
+ extern void machine_kexec(struct kimage *image);
+@@ -138,6 +182,11 @@ extern asmlinkage long sys_kexec_load(unsigned long entry,
+ 					struct kexec_segment __user *segments,
+ 					unsigned long flags);
+ extern int kernel_kexec(void);
++extern int kexec_add_buffer(struct kimage *image, char *buffer,
++			    unsigned long bufsz, unsigned long memsz,
++			    unsigned long buf_align, unsigned long buf_min,
++			    unsigned long buf_max, bool top_down,
++			    unsigned long *load_addr);
+ extern struct page *kimage_alloc_control_pages(struct kimage *image,
+ 						unsigned int order);
+ extern void crash_kexec(struct pt_regs *);
+@@ -188,6 +237,10 @@ extern int kexec_load_disabled;
+ #define KEXEC_FLAGS    (KEXEC_ON_CRASH | KEXEC_PRESERVE_CONTEXT)
+ #endif
+ 
++/* List of defined/legal kexec file flags */
++#define KEXEC_FILE_FLAGS	(KEXEC_FILE_UNLOAD | KEXEC_FILE_ON_CRASH | \
++				 KEXEC_FILE_NO_INITRAMFS)
++
+ #define VMCOREINFO_BYTES           (4096)
+ #define VMCOREINFO_NOTE_NAME       "VMCOREINFO"
+ #define VMCOREINFO_NOTE_NAME_BYTES ALIGN(sizeof(VMCOREINFO_NOTE_NAME), 4)
+diff --git a/include/uapi/linux/kexec.h b/include/uapi/linux/kexec.h
+index d6629d4..6925f5b 100644
+--- a/include/uapi/linux/kexec.h
++++ b/include/uapi/linux/kexec.h
+@@ -13,6 +13,17 @@
+ #define KEXEC_PRESERVE_CONTEXT	0x00000002
+ #define KEXEC_ARCH_MASK		0xffff0000
+ 
++/*
++ * Kexec file load interface flags.
++ * KEXEC_FILE_UNLOAD : Unload already loaded kexec/kdump image.
++ * KEXEC_FILE_ON_CRASH : Load/unload operation belongs to kdump image.
++ * KEXEC_FILE_NO_INITRAMFS : No initramfs is being loaded. Ignore the initrd
++ *                           fd field.
++ */
++#define KEXEC_FILE_UNLOAD	0x00000001
++#define KEXEC_FILE_ON_CRASH	0x00000002
++#define KEXEC_FILE_NO_INITRAMFS	0x00000004
++
+ /* These values match the ELF architecture values.
+  * Unless there is a good reason that should continue to be the case.
   */
--static int find_next_system_ram(struct resource *res, char *name)
-+static int find_next_iomem_res(struct resource *res, char *name,
-+			       bool first_level_children_only)
- {
- 	resource_size_t start, end;
- 	struct resource *p;
-+	bool sibling_only = false;
+diff --git a/kernel/kexec.c b/kernel/kexec.c
+index bdda717..e5e0f6a 100644
+--- a/kernel/kexec.c
++++ b/kernel/kexec.c
+@@ -6,6 +6,8 @@
+  * Version 2.  See the file COPYING for more details.
+  */
  
- 	BUG_ON(!res);
- 
-@@ -340,8 +352,14 @@ static int find_next_system_ram(struct resource *res, char *name)
- 	BUG_ON(start >= end);
- 
- 	read_lock(&resource_lock);
--	for (p = iomem_resource.child; p ; p = p->sibling) {
--		/* system ram is just marked as IORESOURCE_MEM */
++#define pr_fmt(fmt)	"kexec: " fmt
 +
-+	if (first_level_children_only) {
-+		p = iomem_resource.child;
-+		sibling_only = true;
-+	} else
-+		p = &iomem_resource;
-+
-+	while ((p = next_resource(p, sibling_only))) {
- 		if (p->flags != res->flags)
- 			continue;
- 		if (name && strcmp(p->name, name))
-@@ -353,6 +371,7 @@ static int find_next_system_ram(struct resource *res, char *name)
- 		if ((p->end >= start) && (p->start < end))
- 			break;
- 	}
-+
- 	read_unlock(&resource_lock);
- 	if (!p)
- 		return -1;
-@@ -365,6 +384,70 @@ static int find_next_system_ram(struct resource *res, char *name)
+ #include <linux/capability.h>
+ #include <linux/mm.h>
+ #include <linux/file.h>
+@@ -326,6 +328,215 @@ out_free_image:
+ 	return ret;
  }
  
++static int copy_file_from_fd(int fd, void **buf, unsigned long *buf_len)
++{
++	struct fd f = fdget(fd);
++	int ret = 0;
++	struct kstat stat;
++	loff_t pos;
++	ssize_t bytes = 0;
++
++	if (!f.file)
++		return -EBADF;
++
++	ret = vfs_getattr(&f.file->f_path, &stat);
++	if (ret)
++		goto out;
++
++	if (stat.size > INT_MAX) {
++		ret = -EFBIG;
++		goto out;
++	}
++
++	/* Don't hand 0 to vmalloc, it whines. */
++	if (stat.size == 0) {
++		ret = -EINVAL;
++		goto out;
++	}
++
++	*buf = vmalloc(stat.size);
++	if (!*buf) {
++		ret = -ENOMEM;
++		goto out;
++	}
++
++	pos = 0;
++	while (pos < stat.size) {
++		bytes = kernel_read(f.file, pos, (char *)(*buf) + pos,
++				    stat.size - pos);
++		if (bytes < 0) {
++			vfree(*buf);
++			ret = bytes;
++			goto out;
++		}
++
++		if (bytes == 0)
++			break;
++		pos += bytes;
++	}
++
++	*buf_len = pos;
++out:
++	fdput(f);
++	return ret;
++}
++
++/* Architectures can provide this probe function */
++int __weak arch_kexec_kernel_image_probe(struct kimage *image, void *buf,
++					 unsigned long buf_len)
++{
++	return -ENOEXEC;
++}
++
++void * __weak arch_kexec_kernel_image_load(struct kimage *image)
++{
++	return ERR_PTR(-ENOEXEC);
++}
++
++void __weak arch_kimage_file_post_load_cleanup(struct kimage *image)
++{
++}
++
++/*
++ * Free up memory used by kernel, initrd, and comand line. This is temporary
++ * memory allocation which is not needed any more after these buffers have
++ * been loaded into separate segments and have been copied elsewhere.
++ */
++static void kimage_file_post_load_cleanup(struct kimage *image)
++{
++	vfree(image->kernel_buf);
++	image->kernel_buf = NULL;
++
++	vfree(image->initrd_buf);
++	image->initrd_buf = NULL;
++
++	kfree(image->cmdline_buf);
++	image->cmdline_buf = NULL;
++
++	/* See if architecture has anything to cleanup post load */
++	arch_kimage_file_post_load_cleanup(image);
++}
++
++/*
++ * In file mode list of segments is prepared by kernel. Copy relevant
++ * data from user space, do error checking, prepare segment list
++ */
++static int
++kimage_file_prepare_segments(struct kimage *image, int kernel_fd, int initrd_fd,
++			     const char __user *cmdline_ptr,
++			     unsigned long cmdline_len, unsigned flags)
++{
++	int ret = 0;
++	void *ldata;
++
++	ret = copy_file_from_fd(kernel_fd, &image->kernel_buf,
++				&image->kernel_buf_len);
++	if (ret)
++		return ret;
++
++	/* Call arch image probe handlers */
++	ret = arch_kexec_kernel_image_probe(image, image->kernel_buf,
++					    image->kernel_buf_len);
++
++	if (ret)
++		goto out;
++
++	/* It is possible that there no initramfs is being loaded */
++	if (!(flags & KEXEC_FILE_NO_INITRAMFS)) {
++		ret = copy_file_from_fd(initrd_fd, &image->initrd_buf,
++					&image->initrd_buf_len);
++		if (ret)
++			goto out;
++	}
++
++	if (cmdline_len) {
++		image->cmdline_buf = kzalloc(cmdline_len, GFP_KERNEL);
++		if (!image->cmdline_buf) {
++			ret = -ENOMEM;
++			goto out;
++		}
++
++		ret = copy_from_user(image->cmdline_buf, cmdline_ptr,
++				     cmdline_len);
++		if (ret) {
++			ret = -EFAULT;
++			goto out;
++		}
++
++		image->cmdline_buf_len = cmdline_len;
++
++		/* command line should be a string with last byte null */
++		if (image->cmdline_buf[cmdline_len - 1] != '\0') {
++			ret = -EINVAL;
++			goto out;
++		}
++	}
++
++	/* Call arch image load handlers */
++	ldata = arch_kexec_kernel_image_load(image);
++
++	if (IS_ERR(ldata)) {
++		ret = PTR_ERR(ldata);
++		goto out;
++	}
++
++	image->image_loader_data = ldata;
++out:
++	/* In case of error, free up all allocated memory in this function */
++	if (ret)
++		kimage_file_post_load_cleanup(image);
++	return ret;
++}
++
++static int
++kimage_file_alloc_init(struct kimage **rimage, int kernel_fd,
++		       int initrd_fd, const char __user *cmdline_ptr,
++		       unsigned long cmdline_len, unsigned long flags)
++{
++	int ret;
++	struct kimage *image;
++
++	image = do_kimage_alloc_init();
++	if (!image)
++		return -ENOMEM;
++
++	image->file_mode = 1;
++
++	ret = kimage_file_prepare_segments(image, kernel_fd, initrd_fd,
++					   cmdline_ptr, cmdline_len, flags);
++	if (ret)
++		goto out_free_image;
++
++	ret = sanity_check_segment_list(image);
++	if (ret)
++		goto out_free_post_load_bufs;
++
++	ret = -ENOMEM;
++	image->control_code_page = kimage_alloc_control_pages(image,
++					   get_order(KEXEC_CONTROL_PAGE_SIZE));
++	if (!image->control_code_page) {
++		pr_err("Could not allocate control_code_buffer\n");
++		goto out_free_post_load_bufs;
++	}
++
++	image->swap_page = kimage_alloc_control_pages(image, 0);
++	if (!image->swap_page) {
++		pr_err(KERN_ERR "Could not allocate swap buffer\n");
++		goto out_free_control_pages;
++	}
++
++	*rimage = image;
++	return 0;
++out_free_control_pages:
++	kimage_free_page_list(&image->control_pages);
++out_free_post_load_bufs:
++	kimage_file_post_load_cleanup(image);
++	kfree(image->image_loader_data);
++out_free_image:
++	kfree(image);
++	return ret;
++}
++
+ static int kimage_is_destination_range(struct kimage *image,
+ 					unsigned long start,
+ 					unsigned long end)
+@@ -643,6 +854,16 @@ static void kimage_free(struct kimage *image)
+ 
+ 	/* Free the kexec control pages... */
+ 	kimage_free_page_list(&image->control_pages);
++
++	kfree(image->image_loader_data);
++
++	/*
++	 * Free up any temporary buffers allocated. This might hit if
++	 * error occurred much later after buffer allocation.
++	 */
++	if (image->file_mode)
++		kimage_file_post_load_cleanup(image);
++
+ 	kfree(image);
+ }
+ 
+@@ -771,10 +992,14 @@ static int kimage_load_normal_segment(struct kimage *image,
+ 	unsigned long maddr;
+ 	size_t ubytes, mbytes;
+ 	int result;
+-	unsigned char __user *buf;
++	unsigned char __user *buf = NULL;
++	unsigned char *kbuf = NULL;
+ 
+ 	result = 0;
+-	buf = segment->buf;
++	if (image->file_mode)
++		kbuf = segment->kbuf;
++	else
++		buf = segment->buf;
+ 	ubytes = segment->bufsz;
+ 	mbytes = segment->memsz;
+ 	maddr = segment->mem;
+@@ -806,7 +1031,11 @@ static int kimage_load_normal_segment(struct kimage *image,
+ 				PAGE_SIZE - (maddr & ~PAGE_MASK));
+ 		uchunk = min(ubytes, mchunk);
+ 
+-		result = copy_from_user(ptr, buf, uchunk);
++		/* For file based kexec, source pages are in kernel memory */
++		if (image->file_mode)
++			memcpy(ptr, kbuf, uchunk);
++		else
++			result = copy_from_user(ptr, buf, uchunk);
+ 		kunmap(page);
+ 		if (result) {
+ 			result = -EFAULT;
+@@ -814,7 +1043,10 @@ static int kimage_load_normal_segment(struct kimage *image,
+ 		}
+ 		ubytes -= uchunk;
+ 		maddr  += mchunk;
+-		buf    += mchunk;
++		if (image->file_mode)
++			kbuf += mchunk;
++		else
++			buf += mchunk;
+ 		mbytes -= mchunk;
+ 	}
+ out:
+@@ -1061,7 +1293,72 @@ SYSCALL_DEFINE5(kexec_file_load, int, kernel_fd, int, initrd_fd,
+ 		unsigned long, cmdline_len, const char __user *, cmdline_ptr,
+ 		unsigned long, flags)
+ {
+-	return -ENOSYS;
++	int ret = 0, i;
++	struct kimage **dest_image, *image;
++
++	/* We only trust the superuser with rebooting the system. */
++	if (!capable(CAP_SYS_BOOT) || kexec_load_disabled)
++		return -EPERM;
++
++	/* Make sure we have a legal set of flags */
++	if (flags != (flags & KEXEC_FILE_FLAGS))
++		return -EINVAL;
++
++	image = NULL;
++
++	if (!mutex_trylock(&kexec_mutex))
++		return -EBUSY;
++
++	dest_image = &kexec_image;
++	if (flags & KEXEC_FILE_ON_CRASH)
++		dest_image = &kexec_crash_image;
++
++	if (flags & KEXEC_FILE_UNLOAD)
++		goto exchange;
++
++	/*
++	 * In case of crash, new kernel gets loaded in reserved region. It is
++	 * same memory where old crash kernel might be loaded. Free any
++	 * current crash dump kernel before we corrupt it.
++	 */
++	if (flags & KEXEC_FILE_ON_CRASH)
++		kimage_free(xchg(&kexec_crash_image, NULL));
++
++	ret = kimage_file_alloc_init(&image, kernel_fd, initrd_fd, cmdline_ptr,
++				     cmdline_len, flags);
++	if (ret)
++		goto out;
++
++	ret = machine_kexec_prepare(image);
++	if (ret)
++		goto out;
++
++	for (i = 0; i < image->nr_segments; i++) {
++		struct kexec_segment *ksegment;
++
++		ksegment = &image->segment[i];
++		pr_debug("Loading segment %d: buf=0x%p bufsz=0x%zx mem=0x%lx memsz=0x%zx\n",
++			 i, ksegment->buf, ksegment->bufsz, ksegment->mem,
++			 ksegment->memsz);
++
++		ret = kimage_load_segment(image, &image->segment[i]);
++		if (ret)
++			goto out;
++	}
++
++	kimage_terminate(image);
++
++	/*
++	 * Free up any temporary buffers allocated which are not needed
++	 * after image has been loaded
++	 */
++	kimage_file_post_load_cleanup(image);
++exchange:
++	image = xchg(dest_image, image);
++out:
++	mutex_unlock(&kexec_mutex);
++	kimage_free(image);
++	return ret;
+ }
+ 
+ void crash_kexec(struct pt_regs *regs)
+@@ -1616,6 +1913,177 @@ static int __init crash_save_vmcoreinfo_init(void)
+ 
+ subsys_initcall(crash_save_vmcoreinfo_init);
+ 
++static int __kexec_add_segment(struct kimage *image, char *buf,
++			       unsigned long bufsz, unsigned long mem,
++			       unsigned long memsz)
++{
++	struct kexec_segment *ksegment;
++
++	ksegment = &image->segment[image->nr_segments];
++	ksegment->kbuf = buf;
++	ksegment->bufsz = bufsz;
++	ksegment->mem = mem;
++	ksegment->memsz = memsz;
++	image->nr_segments++;
++
++	return 0;
++}
++
++static int locate_mem_hole_top_down(unsigned long start, unsigned long end,
++				    struct kexec_buf *kbuf)
++{
++	struct kimage *image = kbuf->image;
++	unsigned long temp_start, temp_end;
++
++	temp_end = min(end, kbuf->buf_max);
++	temp_start = temp_end - kbuf->memsz;
++
++	do {
++		/* align down start */
++		temp_start = temp_start & (~(kbuf->buf_align - 1));
++
++		if (temp_start < start || temp_start < kbuf->buf_min)
++			return 0;
++
++		temp_end = temp_start + kbuf->memsz - 1;
++
++		/*
++		 * Make sure this does not conflict with any of existing
++		 * segments
++		 */
++		if (kimage_is_destination_range(image, temp_start, temp_end)) {
++			temp_start = temp_start - PAGE_SIZE;
++			continue;
++		}
++
++		/* We found a suitable memory range */
++		break;
++	} while (1);
++
++	/* If we are here, we found a suitable memory range */
++	__kexec_add_segment(image, kbuf->buffer, kbuf->bufsz, temp_start,
++			    kbuf->memsz);
++
++	/* Success, stop navigating through remaining System RAM ranges */
++	return 1;
++}
++
++static int locate_mem_hole_bottom_up(unsigned long start, unsigned long end,
++				     struct kexec_buf *kbuf)
++{
++	struct kimage *image = kbuf->image;
++	unsigned long temp_start, temp_end;
++
++	temp_start = max(start, kbuf->buf_min);
++
++	do {
++		temp_start = ALIGN(temp_start, kbuf->buf_align);
++		temp_end = temp_start + kbuf->memsz - 1;
++
++		if (temp_end > end || temp_end > kbuf->buf_max)
++			return 0;
++		/*
++		 * Make sure this does not conflict with any of existing
++		 * segments
++		 */
++		if (kimage_is_destination_range(image, temp_start, temp_end)) {
++			temp_start = temp_start + PAGE_SIZE;
++			continue;
++		}
++
++		/* We found a suitable memory range */
++		break;
++	} while (1);
++
++	/* If we are here, we found a suitable memory range */
++	__kexec_add_segment(image, kbuf->buffer, kbuf->bufsz, temp_start,
++			    kbuf->memsz);
++
++	/* Success, stop navigating through remaining System RAM ranges */
++	return 1;
++}
++
++static int locate_mem_hole_callback(u64 start, u64 end, void *arg)
++{
++	struct kexec_buf *kbuf = (struct kexec_buf *)arg;
++	unsigned long sz = end - start + 1;
++
++	/* Returning 0 will take to next memory range */
++	if (sz < kbuf->memsz)
++		return 0;
++
++	if (end < kbuf->buf_min || start > kbuf->buf_max)
++		return 0;
++
++	/*
++	 * Allocate memory top down with-in ram range. Otherwise bottom up
++	 * allocation.
++	 */
++	if (kbuf->top_down)
++		return locate_mem_hole_top_down(start, end, kbuf);
++	else
++		return locate_mem_hole_bottom_up(start, end, kbuf);
++}
++
++/*
++ * Helper function for placing a buffer in a kexec segment. This assumes
++ * that kexec_mutex is held.
++ */
++int kexec_add_buffer(struct kimage *image, char *buffer, unsigned long bufsz,
++		     unsigned long memsz, unsigned long buf_align,
++		     unsigned long buf_min, unsigned long buf_max,
++		     bool top_down, unsigned long *load_addr)
++{
++
++	struct kexec_segment *ksegment;
++	struct kexec_buf buf, *kbuf;
++	int ret;
++
++	/* Currently adding segment this way is allowed only in file mode */
++	if (!image->file_mode)
++		return -EINVAL;
++
++	if (image->nr_segments >= KEXEC_SEGMENT_MAX)
++		return -EINVAL;
++
++	/*
++	 * Make sure we are not trying to add buffer after allocating
++	 * control pages. All segments need to be placed first before
++	 * any control pages are allocated. As control page allocation
++	 * logic goes through list of segments to make sure there are
++	 * no destination overlaps.
++	 */
++	if (!list_empty(&image->control_pages)) {
++		WARN_ON(1);
++		return -EINVAL;
++	}
++
++	memset(&buf, 0, sizeof(struct kexec_buf));
++	kbuf = &buf;
++	kbuf->image = image;
++	kbuf->buffer = buffer;
++	kbuf->bufsz = bufsz;
++
++	kbuf->memsz = ALIGN(memsz, PAGE_SIZE);
++	kbuf->buf_align = max(buf_align, PAGE_SIZE);
++	kbuf->buf_min = buf_min;
++	kbuf->buf_max = buf_max;
++	kbuf->top_down = top_down;
++
++	/* Walk the RAM ranges and allocate a suitable range for the buffer */
++	ret = walk_system_ram_res(0, -1, kbuf, locate_mem_hole_callback);
++	if (ret != 1) {
++		/* A suitable memory range could not be found for buffer */
++		return -EADDRNOTAVAIL;
++	}
++
++	/* Found a suitable memory range */
++	ksegment = &image->segment[image->nr_segments - 1];
++	*load_addr = ksegment->mem;
++	return 0;
++}
++
++
  /*
-+ * Walks through iomem resources and calls func() with matching resource
-+ * ranges. This walks through whole tree and not just first level children.
-+ * All the memory ranges which overlap start,end and also match flags and
-+ * name are valid candidates.
-+ *
-+ * @name: name of resource
-+ * @flags: resource flags
-+ * @start: start addr
-+ * @end: end addr
-+ */
-+int walk_iomem_res(char *name, unsigned long flags, u64 start, u64 end,
-+		void *arg, int (*func)(u64, u64, void *))
-+{
-+	struct resource res;
-+	u64 orig_end;
-+	int ret = -1;
-+
-+	res.start = start;
-+	res.end = end;
-+	res.flags = flags;
-+	orig_end = res.end;
-+	while ((res.start < res.end) &&
-+		(!find_next_iomem_res(&res, name, false))) {
-+		ret = (*func)(res.start, res.end, arg);
-+		if (ret)
-+			break;
-+		res.start = res.end + 1;
-+		res.end = orig_end;
-+	}
-+	return ret;
-+}
-+
-+/*
-+ * This function calls callback against all memory range of "System RAM"
-+ * which are marked as IORESOURCE_MEM and IORESOUCE_BUSY.
-+ * Now, this function is only for "System RAM". This function deals with
-+ * full ranges and not pfn. If resources are not pfn aligned, dealing
-+ * with pfn can truncate ranges.
-+ */
-+int walk_system_ram_res(u64 start, u64 end, void *arg,
-+				int (*func)(u64, u64, void *))
-+{
-+	struct resource res;
-+	u64 orig_end;
-+	int ret = -1;
-+
-+	res.start = start;
-+	res.end = end;
-+	res.flags = IORESOURCE_MEM | IORESOURCE_BUSY;
-+	orig_end = res.end;
-+	while ((res.start < res.end) &&
-+		(!find_next_iomem_res(&res, "System RAM", true))) {
-+		ret = (*func)(res.start, res.end, arg);
-+		if (ret)
-+			break;
-+		res.start = res.end + 1;
-+		res.end = orig_end;
-+	}
-+	return ret;
-+}
-+
-+#if !defined(CONFIG_ARCH_HAS_WALK_MEMORY)
-+
-+/*
-  * This function calls callback against all memory range of "System RAM"
-  * which are marked as IORESOURCE_MEM and IORESOUCE_BUSY.
-  * Now, this function is only for "System RAM".
-@@ -382,7 +465,7 @@ int walk_system_ram_range(unsigned long start_pfn, unsigned long nr_pages,
- 	res.flags = IORESOURCE_MEM | IORESOURCE_BUSY;
- 	orig_end = res.end;
- 	while ((res.start < res.end) &&
--		(find_next_system_ram(&res, "System RAM") >= 0)) {
-+		(find_next_iomem_res(&res, "System RAM", true) >= 0)) {
- 		pfn = (res.start + PAGE_SIZE - 1) >> PAGE_SHIFT;
- 		end_pfn = (res.end + 1) >> PAGE_SHIFT;
- 		if (end_pfn > pfn)
+  * Move into place and start executing a preloaded standalone
+  * executable.  If nothing was preloaded return an error.
 -- 
 1.9.0
 
