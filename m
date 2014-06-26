@@ -1,109 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751516AbaFZTu7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 15:50:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34921 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751392AbaFZTu5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 15:50:57 -0400
-Date: Thu, 26 Jun 2014 14:50:52 -0500
-From: Tyler Hicks <tyhicks@canonical.com>
-To: Himangi Saraogi <himangi774@gmail.com>
-Cc: ecryptfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        julia.lawall@lip6.fr, Joe Perches <joe@perches.com>
-Subject: Re: [PATCH v2] ecryptfs: Drop cast
-Message-ID: <20140626195051.GB22973@boyd>
-References: <20140626194159.GA7163@himangi-Dell>
+	id S1751678AbaFZTvT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 15:51:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50526 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751596AbaFZTvR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 15:51:17 -0400
+Date: Thu, 26 Jun 2014 15:50:36 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-mm@kvack.org, akpm@linux-foundation.org, tony.luck@intel.com,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        dave.hansen@linux.intel.com
+Subject: Re: [PATCH] hwpoison: Fix race with changing page during offlining
+Message-ID: <20140626195036.GA5311@nhori.redhat.com>
+References: <1403806972-14267-1-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="V0207lvV8h4k8FAm"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140626194159.GA7163@himangi-Dell>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1403806972-14267-1-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Thank you for testing/reporting.
 
---V0207lvV8h4k8FAm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Jun 26, 2014 at 11:22:52AM -0700, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> While running the mcelog test suite on 3.14 I hit the following VM_BUG_ON:
+> 
+> soft_offline: 0x56d4: unknown non LRU page type 3ffff800008000
 
-On 2014-06-27 01:11:59, Himangi Saraogi wrote:
-> This patch does away with cast on void * and the if as it is unnecessary.
->=20
-> The following Coccinelle semantic patch was used for making the change:
->=20
-> @r@
-> expression x;
-> void* e;
-> type T;
-> identifier f;
-> @@
->=20
-> (
->   *((T *)e)
-> |
->   ((T *)x)[...]
-> |
->   ((T *)x)->f
-> |
-> - (T *)
->   e
-> )
->=20
-> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+This line comes from error path in get_any_page(), I guess this function was
+called for a thp (due to the race between thp collapse and soft offlining.)
+But in this case soft offlining is not tried, so there's no harm from this.
+
+> page:ffffea000015b400 count:3 mapcount:2097169 mapping:          (null) index:0xffff8800056d7000
+> page flags: 0x3ffff800004081(locked|slab|head)
+> ------------[ cut here ]------------
+> kernel BUG at mm/rmap.c:1495!
+
+This seems to be caused by calling try_to_unmap() for a slab page, which
+was called from hwpoison_user_mappings().
+
+> 
+> I think what happened is that a LRU page turned into a slab page in parallel
+> with offlining. memory_failure initially tests for this case, but doesn't
+> retest later after the page has been locked.
+> 
+> This patch fixes this race. It also check for the case that the page
+> changed compound pages.
+> 
+> Unfortunately since it's a race I wasn't able to reproduce later,
+> so the specific case is not tested.
+> 
+> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: dave.hansen@linux.intel.com
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
 > ---
-> v2: remove the if statement
->  fs/ecryptfs/inode.c | 4 +---
->  1 file changed, 1 insertion(+), 3 deletions(-)
+>  mm/memory-failure.c | 16 ++++++++++++++++
+>  1 file changed, 16 insertions(+)
+> 
+> diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+> index 90002ea..e277726a 100644
+> --- a/mm/memory-failure.c
+> +++ b/mm/memory-failure.c
+> @@ -1143,6 +1143,22 @@ int memory_failure(unsigned long pfn, int trapno, int flags)
+>  	lock_page(hpage);
+>  
+>  	/*
+> +	 * The page could have turned into a non LRU page or
+> +	 * changed compound pages during the locking.
+> +	 * If this happens just bail out.
+> +	 */
+> +	if (compound_head(p) != hpage) {
+> +		action_result(pfn, "different compound page after locking", IGNORED);
+> +		res = -EBUSY;
+> +		goto out;
+> +	}
 
-Thanks! This looks good to me. I'll take the patch from here.
+This is a useful check.
 
-Tyler
+> +	if (!PageLRU(hpage)) {
+> +		action_result(pfn, "non LRU after locking", IGNORED);
+> +		res = -EBUSY;
+> +		goto out;
+> +	}
 
->=20
-> diff --git a/fs/ecryptfs/inode.c b/fs/ecryptfs/inode.c
-> index 4d6c7e4..e67f9f0 100644
-> --- a/fs/ecryptfs/inode.c
-> +++ b/fs/ecryptfs/inode.c
-> @@ -53,9 +53,7 @@ static void unlock_dir(struct dentry *dir)
-> =20
->  static int ecryptfs_inode_test(struct inode *inode, void *lower_inode)
->  {
-> -	if (ecryptfs_inode_to_lower(inode) =3D=3D (struct inode *)lower_inode)
-> -		return 1;
-> -	return 0;
-> +	return ecryptfs_inode_to_lower(inode) =3D=3D lower_inode;
->  }
-> =20
->  static int ecryptfs_inode_set(struct inode *inode, void *opaque)
-> --=20
-> 1.9.1
->=20
+I think this makes sense in v3.14, but maybe redundant if the patch "hwpoison:
+fix the handling path of the victimized page frame that belong to non-LRU"
+from Chen Yucong is merged into mainline (now it's in linux-mmotm).
 
---V0207lvV8h4k8FAm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+And I think that the problem you report is caused by another part of hwpoison
+code, because we have PageSlab check at the beginning of hwpoison_user_mappings(),
+so if LRU page truned into slab page just before locking the page, we never
+reach try_to_unmap().
+I think this was caused by the code around lock migration after thp split
+in hwpoison_user_mappings(), which was introduced in commit 54b9dd14d09f
+("mm/memory-failure.c: shift page lock from head page to tail page after thp split").
+I guess the tail page (raw error page) was freed and turned into Slab page
+just after thp split and before locking the error page.
+So possible solution is to do page status check again after thp split.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBCgAGBQJTrHmbAAoJENaSAD2qAscKNk8QAMpTc/fJn00WdAENvtcHntZU
-ZWDxhcGH2uNHPoYV/ROSk7Oh9k2T3AN2dlCDnRurMI9AuYgx+tHy1yeidWrOmE3v
-+Muav8JC0oZR3iWA2dpPzJ47xwp6bbGLAftXk+51mERLATyJ5ukBiua1Bu+h0A/W
-jYUA9J2TNIgjYMCgXPzN5pu0VswMkR8oy1Hi1FOL2jlhcOEPPczG/bIHInowDpPr
-lTqwAp3Z3c3wiDT47xrtZOy/uNN8Ygm+tcxPeMIFwVDhMWRBt2gg5ra07GFyyJ/i
-ghOFZPnqqBc6lEstUOvtcIFvpSfnpdIUVftk2sNZZxIAwY305wZ7g0/1Gm+rt7cp
-fumMAz2UIORuJ4wY6ZvM7W2DsGIm1EzD3QoufD3WrV8XUvpm/EjyLGa9Gm2Jr0xf
-4zkUe7ZEHQZoX4NEudvGCxhLvypSEB6DMJys9buYy8CF5/BaxwnuF1kj5DlJZ35m
-es9RP57ZjNDiRl7sur883JGpaiX8XA85wpiH6V6llZai75wrP3254jjbusgXIV1B
-vY2XDhlfFlf1TYzsknulJvzWbNIM7R5TRDRw5vZblr5J0W4yUbpW5ScIc5OSwSc8
-nxSeKTAenCCZvn5S0OkS1pv0201vZWfhB8TSsPGX6tHti3YVJnG8tajTLU63UCQv
-IhPWtxHzWP3wg2lU49UT
-=Cl0H
------END PGP SIGNATURE-----
-
---V0207lvV8h4k8FAm--
+Thanks,
+Naoya Horiguchi
