@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757959AbaFZRdM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 13:33:12 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:12318 "EHLO
+	id S1758011AbaFZReb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 13:34:31 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:24639 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756110AbaFZRdL convert rfc822-to-8bit
+	by vger.kernel.org with ESMTP id S1757829AbaFZRea convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 13:33:11 -0400
-Date: Thu, 26 Jun 2014 13:33:08 -0400
+	Thu, 26 Jun 2014 13:34:30 -0400
+Date: Thu, 26 Jun 2014 13:34:28 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
-To: Chris Metcalf <cmetcalf@tilera.com>
+To: "David S. Miller" <davem@davemloft.net>
 Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: Re: [RFA][PATCH 17/27] tile: ftrace: Remove check of obsolete
+Subject: Re: [RFA][PATCH 18/27] sparc64,ftrace: Remove check of obsolete
  variable function_trace_stop
-Message-ID: <20140626133308.627842d0@gandalf.local.home>
-In-Reply-To: <20140626165852.012558348@goodmis.org>
+Message-ID: <20140626133428.4909e53a@gandalf.local.home>
+In-Reply-To: <20140626165852.160038235@goodmis.org>
 References: <20140626165221.736847419@goodmis.org>
-	<20140626165852.012558348@goodmis.org>
+	<20140626165852.160038235@goodmis.org>
 X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -27,7 +27,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Jun 2014 12:52:38 -0400
+On Thu, 26 Jun 2014 12:52:39 -0400
 Steven Rostedt <rostedt@goodmis.org> wrote:
 
 > From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
@@ -37,7 +37,7 @@ Steven Rostedt <rostedt@goodmis.org> wrote:
 > 
 > [ Please test this on your arch ]
 
->From the cover letter (you were not Cc'd on)
+>From the cover letter, you were not Cc'd on.
 
 Anyway, as there is no more reason to set function_trace_stop it is time
 to remove it. Unfortunately it's in several archs in assembly. Most of
@@ -68,59 +68,52 @@ intact.
 -- Steve
 
 > 
-> Cc: Chris Metcalf <cmetcalf@tilera.com>
+> Cc: David S. Miller <davem@davemloft.net>
 > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 > ---
->  arch/tile/Kconfig            |  1 -
->  arch/tile/kernel/mcount_64.S | 18 ------------------
->  2 files changed, 19 deletions(-)
+>  arch/sparc/Kconfig      |  1 -
+>  arch/sparc/lib/mcount.S | 10 ++--------
+>  2 files changed, 2 insertions(+), 9 deletions(-)
 > 
-> diff --git a/arch/tile/Kconfig b/arch/tile/Kconfig
-> index 4f3006b600e3..7fcd492adbfc 100644
-> --- a/arch/tile/Kconfig
-> +++ b/arch/tile/Kconfig
-> @@ -128,7 +128,6 @@ config TILEGX
->  	select SPARSE_IRQ
->  	select GENERIC_IRQ_LEGACY_ALLOC_HWIRQ
+> diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
+> index 29f2e988c56a..abd7d5575a7d 100644
+> --- a/arch/sparc/Kconfig
+> +++ b/arch/sparc/Kconfig
+> @@ -55,7 +55,6 @@ config SPARC64
 >  	select HAVE_FUNCTION_TRACER
-> -	select HAVE_FUNCTION_TRACE_MCOUNT_TEST
 >  	select HAVE_FUNCTION_GRAPH_TRACER
->  	select HAVE_DYNAMIC_FTRACE
->  	select HAVE_FTRACE_MCOUNT_RECORD
-> diff --git a/arch/tile/kernel/mcount_64.S b/arch/tile/kernel/mcount_64.S
-> index 70d7bb0c4d8f..3c2b8d5e1d1a 100644
-> --- a/arch/tile/kernel/mcount_64.S
-> +++ b/arch/tile/kernel/mcount_64.S
-> @@ -77,15 +77,6 @@ STD_ENDPROC(__mcount)
->  
->  	.align	64
->  STD_ENTRY(ftrace_caller)
-> -	moveli	r11, hw2_last(function_trace_stop)
-> -	{ shl16insli	r11, r11, hw1(function_trace_stop); move r12, lr }
-> -	{ shl16insli	r11, r11, hw0(function_trace_stop); move lr, r10 }
-> -	ld	r11, r11
-> -	beqz	r11, 1f
-> -	jrp	r12
-> -
-> -1:
-> -	{ move	r10, lr; move	lr, r12 }
->  	MCOUNT_SAVE_REGS
->  
->  	/* arg1: self return address */
-> @@ -119,15 +110,6 @@ STD_ENDPROC(ftrace_caller)
->  
->  	.align	64
->  STD_ENTRY(__mcount)
-> -	moveli	r11, hw2_last(function_trace_stop)
-> -	{ shl16insli	r11, r11, hw1(function_trace_stop); move r12, lr }
-> -	{ shl16insli	r11, r11, hw0(function_trace_stop); move lr, r10 }
-> -	ld	r11, r11
-> -	beqz	r11, 1f
-> -	jrp	r12
-> -
-> -1:
-> -	{ move	r10, lr; move	lr, r12 }
->  	{
->  	 moveli	r11, hw2_last(ftrace_trace_function)
->  	 moveli	r13, hw2_last(ftrace_stub)
+>  	select HAVE_FUNCTION_GRAPH_FP_TEST
+> -	select HAVE_FUNCTION_TRACE_MCOUNT_TEST
+>  	select HAVE_KRETPROBES
+>  	select HAVE_KPROBES
+>  	select HAVE_RCU_TABLE_FREE if SMP
+> diff --git a/arch/sparc/lib/mcount.S b/arch/sparc/lib/mcount.S
+> index 3ad6cbdc2163..0b0ed4d34219 100644
+> --- a/arch/sparc/lib/mcount.S
+> +++ b/arch/sparc/lib/mcount.S
+> @@ -24,10 +24,7 @@ mcount:
+>  #ifdef CONFIG_DYNAMIC_FTRACE
+>  	/* Do nothing, the retl/nop below is all we need.  */
+>  #else
+> -	sethi		%hi(function_trace_stop), %g1
+> -	lduw		[%g1 + %lo(function_trace_stop)], %g2
+> -	brnz,pn		%g2, 2f
+> -	 sethi		%hi(ftrace_trace_function), %g1
+> +	sethi		%hi(ftrace_trace_function), %g1
+>  	sethi		%hi(ftrace_stub), %g2
+>  	ldx		[%g1 + %lo(ftrace_trace_function)], %g1
+>  	or		%g2, %lo(ftrace_stub), %g2
+> @@ -80,11 +77,8 @@ ftrace_stub:
+>  	.globl		ftrace_caller
+>  	.type		ftrace_caller,#function
+>  ftrace_caller:
+> -	sethi		%hi(function_trace_stop), %g1
+>  	mov		%i7, %g2
+> -	lduw		[%g1 + %lo(function_trace_stop)], %g1
+> -	brnz,pn		%g1, ftrace_stub
+> -	 mov		%fp, %g3
+> +	mov		%fp, %g3
+>  	save		%sp, -176, %sp
+>  	mov		%g2, %o1
+>  	mov		%g2, %l0
 
