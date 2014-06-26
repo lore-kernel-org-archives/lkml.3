@@ -1,74 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751610AbaFZTpU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 15:45:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14348 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750844AbaFZTpS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 15:45:18 -0400
-Date: Thu, 26 Jun 2014 21:43:44 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/1] rcu: uninline rcu_lock_acquire() and
-	rcu_lock_release()
-Message-ID: <20140626194344.GA23225@redhat.com>
-References: <20140626170116.GA28558@redhat.com> <20140626170143.GA28565@redhat.com> <20140626173327.GA1001@redhat.com> <20140626183657.GA18550@redhat.com> <20140626192117.GW4603@linux.vnet.ibm.com>
+	id S1751369AbaFZTur (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 15:50:47 -0400
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:50316 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750844AbaFZTup (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 15:50:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140626192117.GW4603@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CAFLxGvxfBt7OvW=a2Kz08GLHSEiiOZsN-vB19CXnQiwqFxqMsA@mail.gmail.com>
+References: <CANGgnMbHckBQdKGN_N5Q6qEKc9n1CenxvMpeXog1NbSdL8UrTw@mail.gmail.com>
+ <CANGgnMYDXerOUDOO9-RHMJKadKACA2KBGskZwoP-1ZwAhDEfVA@mail.gmail.com> <CAFLxGvxfBt7OvW=a2Kz08GLHSEiiOZsN-vB19CXnQiwqFxqMsA@mail.gmail.com>
+From: Austin Schuh <austin@peloton-tech.com>
+Date: Thu, 26 Jun 2014 12:50:24 -0700
+Message-ID: <CANGgnMYVoP-Z0Bv-VDEkJnvfa7Fi4-zY2F4A0PhMewGvwo3VVw@mail.gmail.com>
+Subject: Re: Filesystem lockup with CONFIG_PREEMPT_RT
+To: Richard Weinberger <richard.weinberger@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        rt-users <linux-rt-users@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=047d7b2e15df332bda04fcc28216
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26, Paul E. McKenney wrote:
+--047d7b2e15df332bda04fcc28216
+Content-Type: text/plain; charset=UTF-8
+
+On Wed, May 21, 2014 at 12:33 AM, Richard Weinberger
+<richard.weinberger@gmail.com> wrote:
+> CC'ing RT folks
 >
-> On Thu, Jun 26, 2014 at 08:36:57PM +0200, Oleg Nesterov wrote:
->
-> > > +static void rcu_release_map(struct lockdep_map *map, unsigned long ip)
-> > > +{
-> > > +	rcu_lockdep_assert_watching();
-> > > +	__rcu_lock_release(&map, ip);
-> >
-> > "map", not "&map". I fixed this before I sent v2, but apparently forgot to
-> > -add before --amend.
-> >
-> > Sorry for noise.
->
-> Not a problem!  Looks generally sane, but with a bit of adjustment
-> still needed.
->
-> I got some test failures on v2:
->
-> o	Build breakage if built with CONFIG_DEBUG_LOCK_ALLOC=n.  I believe
-> 	that the best way to fix this is to #ifdef out the bodies of
-> 	__rcu_lock_acquire() and __rcu_lock_release(), but maybe you
-> 	have something else in mind.
+> On Wed, May 21, 2014 at 8:23 AM, Austin Schuh <austin@peloton-tech.com> wrote:
+>> On Tue, May 13, 2014 at 7:29 PM, Austin Schuh <austin@peloton-tech.com> wrote:
+>>> Hi,
+>>>
+>>> I am observing a filesystem lockup with XFS on a CONFIG_PREEMPT_RT
+>>> patched kernel.  I have currently only triggered it using dpkg.  Dave
+>>> Chinner on the XFS mailing list suggested that it was a rt-kernel
+>>> workqueue issue as opposed to a XFS problem after looking at the
+>>> kernel messages.
 
-Damn ;) Will fix and send v4. Thanks.
+I've got a 100% reproducible test case that doesn't involve a
+filesystem.  I wrote a module that triggers the bug when the device is
+written to, making it easy to enable tracing during the event and
+capture everything.
 
-> o	Lockdep splat as follows, which might well be due to the
-> 	"&map" that you noted above:
+It looks like rw_semaphores don't trigger wq_worker_sleeping to run
+when work goes to sleep on a rw_semaphore.  This only happens with the
+RT patches, not with the mainline kernel.  I'm foreseeing a second
+deadlock/bug coming into play shortly.  If a task holding the work
+pool spinlock gets preempted, and we need to schedule more work from
+another worker thread which was just blocked by a mutex, we'll then
+end up trying to go to sleep on 2 locks at once.
 
-Yes, this should be hopefully fixed. Note that
+That is getting a bit deep into the scheduler for me...  Any
+suggestions on how to fix it?
 
-> 	[    0.000000] [ BUG: bad unlock balance detected! ]
-> 	[    0.000000] 3.16.0-rc1+ #1 Not tainted
-> 	[    0.000000] -------------------------------------
-> 	[    0.000000] swapper/0 is trying to release lock (X?à<81>ÿÿÿÿ<97>^Sò<81>ÿÿÿÿX?à<81>ÿÿÿÿ{±ò<81>@B^O) at:
+Austin
 
-prints garbage.
+--047d7b2e15df332bda04fcc28216
+Content-Type: text/x-csrc; charset=US-ASCII; name="killer_module.c"
+Content-Disposition: attachment; filename="killer_module.c"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hwwg8kj90
 
-> And a few other things noted below.
-
-Yes, will, do.
-
-Thanks!
-
-Oleg.
-
+I2luY2x1ZGUgPGxpbnV4L21vZHVsZS5oPgojaW5jbHVkZSA8bGludXgva2VybmVsLmg+CiNpbmNs
+dWRlIDxsaW51eC9pbml0Lmg+CiNpbmNsdWRlIDxsaW51eC9mcy5oPgojaW5jbHVkZSA8YXNtL3Vh
+Y2Nlc3MuaD4KI2luY2x1ZGUgPGxpbnV4L3NlbWFwaG9yZS5oPgoKc3RhdGljIGludCBkZXZpY2Vf
+b3BlbihzdHJ1Y3QgaW5vZGUgKiwgc3RydWN0IGZpbGUgKik7CnN0YXRpYyBpbnQgZGV2aWNlX3Jl
+bGVhc2Uoc3RydWN0IGlub2RlICosIHN0cnVjdCBmaWxlICopOwpzdGF0aWMgc3NpemVfdCBkZXZp
+Y2VfcmVhZChzdHJ1Y3QgZmlsZSAqLCBjaGFyICosIHNpemVfdCwgbG9mZl90ICopOwpzdGF0aWMg
+c3NpemVfdCBkZXZpY2Vfd3JpdGUoc3RydWN0IGZpbGUgKiwgY29uc3QgY2hhciAqLCBzaXplX3Qs
+IGxvZmZfdCAqKTsKCi8vIERldiBuYW1lIGFzIGl0IGFwcGVhcnMgaW4gL3Byb2MvZGV2aWNlcwoj
+ZGVmaW5lIERFVklDRV9OQU1FICJhc2NodWgiCgovLyBNYWpvciBudW1iZXIgYXNzaWduZWQgdG8g
+b3VyIGRldmljZSBkcml2ZXIKc3RhdGljIGludCBtYWpvcjsKc3RhdGljIHN0cnVjdCB3b3JrcXVl
+dWVfc3RydWN0ICpsb2NrdXBfd3ExOwpzdGF0aWMgc3RydWN0IHdvcmtxdWV1ZV9zdHJ1Y3QgKmxv
+Y2t1cF93cTI7CgpzdGF0aWMgc3RydWN0IGZpbGVfb3BlcmF0aW9ucyBmb3BzID0gewogIC5yZWFk
+ID0gZGV2aWNlX3JlYWQsCiAgLndyaXRlID0gZGV2aWNlX3dyaXRlLAogIC5vcGVuID0gZGV2aWNl
+X29wZW4sCiAgLnJlbGVhc2UgPSBkZXZpY2VfcmVsZWFzZQp9OwoKc3RhdGljIGludCBfX2luaXQg
+aW5pdF9raWxsZXJfbW9kdWxlKHZvaWQpIHsKCiAgbG9ja3VwX3dxMSA9IGFsbG9jX3dvcmtxdWV1
+ZSgibG9ja3VwX3dxMSIsIFdRX01FTV9SRUNMQUlNLCAwKTsKICBpZiAoIWxvY2t1cF93cTEpIHJl
+dHVybiAtRU5PTUVNOwoKICBsb2NrdXBfd3EyID0gYWxsb2Nfd29ya3F1ZXVlKCJsb2NrdXBfd3Ey
+IiwgV1FfTUVNX1JFQ0xBSU0sIDApOwogIGlmICghbG9ja3VwX3dxMikgewogICAgZGVzdHJveV93
+b3JrcXVldWUobG9ja3VwX3dxMSk7CiAgICByZXR1cm4gLUVOT01FTTsKICB9CgogIG1ham9yID0g
+cmVnaXN0ZXJfY2hyZGV2KDAsIERFVklDRV9OQU1FLCAmZm9wcyk7CiAgaWYgKG1ham9yIDwgMCkg
+ewogICAgcHJpbnRrKEtFUk5fQUxFUlQgIlJlZ2lzdGVyaW5nIGNoYXIgZGV2aWNlIGZhaWxlZCB3
+aXRoICVkXG4iLCBtYWpvcik7CiAgICBkZXN0cm95X3dvcmtxdWV1ZShsb2NrdXBfd3ExKTsKICAg
+IGRlc3Ryb3lfd29ya3F1ZXVlKGxvY2t1cF93cTIpOwoKICAgIHJldHVybiBtYWpvcjsKICB9Cgog
+IHByaW50ayhLRVJOX0lORk8gIidta25vZCAvZGV2LyVzIGMgJWQgMCcuXG4iLCBERVZJQ0VfTkFN
+RSwgbWFqb3IpOwoKICAvLyBBIG5vbiAwIHJldHVybiBtZWFucyBpbml0X21vZHVsZSBmYWlsZWQ7
+IG1vZHVsZSBjYW4ndCBiZSBsb2FkZWQuCiAgcmV0dXJuIDA7Cn0KCi8vIENhbGxlZCB3aGVuIGEg
+cHJvY2VzcyB0cmllcyB0byBvcGVuIHRoZSBkZXZpY2UgZmlsZS4Kc3RhdGljIGludCBkZXZpY2Vf
+b3BlbihzdHJ1Y3QgaW5vZGUgKmlub2RlLCBzdHJ1Y3QgZmlsZSAqZmlsZSkgewogIHRyeV9tb2R1
+bGVfZ2V0KFRISVNfTU9EVUxFKTsKICByZXR1cm4gMDsKfQoKLy8gQ2FsbGVkIHdoZW4gYSBwcm9j
+ZXNzIGNsb3NlcyB0aGUgZGV2aWNlIGZpbGUuCnN0YXRpYyBpbnQgZGV2aWNlX3JlbGVhc2Uoc3Ry
+dWN0IGlub2RlICppbm9kZSwgc3RydWN0IGZpbGUgKmZpbGUpIHsKICAvLyBEZWNyZW1lbnQgdGhl
+IHVzYWdlIGNvdW50LCBvciBlbHNlIG9uY2UgeW91IG9wZW5lZCB0aGUgZmlsZSwgeW91J2xsIG5l
+dmVyCiAgLy8gZ2V0IGdldCByaWQgb2YgdGhlIG1vZHVsZS4KICBtb2R1bGVfcHV0KFRISVNfTU9E
+VUxFKTsKCiAgcmV0dXJuIDA7Cn0KCnN0YXRpYyBzc2l6ZV90IGRldmljZV9yZWFkKHN0cnVjdCBm
+aWxlICpmaWxwLCBjaGFyICpidWZmZXIsIHNpemVfdCBsZW5ndGgsCiAgICAgICAgICAgICAgICAg
+ICAgICAgICAgIGxvZmZfdCAqb2Zmc2V0KSB7CiAgcmV0dXJuIDA7Cn0KCiNpZiAwCgojZGVmaW5l
+IFNFTV9JTklUKHNlbSkgc2VtYV9pbml0KHNlbSwgMSkKI2RlZmluZSBTRU1fVFlQRSBzdHJ1Y3Qg
+c2VtYXBob3JlCiNkZWZpbmUgU0VNX0RPV04oc2VtKSBkb3duKHNlbSkKI2RlZmluZSBTRU1fVVAo
+c2VtKSB1cChzZW0pCgojZWxzZQoKI2RlZmluZSBTRU1fSU5JVChzZW0pIGluaXRfcndzZW0oc2Vt
+KQojZGVmaW5lIFNFTV9UWVBFIHN0cnVjdCByd19zZW1hcGhvcmUKI2RlZmluZSBTRU1fRE9XTihz
+ZW0pIGRvd25fd3JpdGVfbmVzdGVkKHNlbSwgMCkKI2RlZmluZSBTRU1fVVAoc2VtKSB1cF93cml0
+ZShzZW0pCgojZW5kaWYKCnN0cnVjdCBteXdvcmsgewogIHN0cnVjdCB3b3JrX3N0cnVjdCB3b3Jr
+OwogIGludCBpbmRleDsKICBTRU1fVFlQRSAqc2VtOwp9OwoKc3RhdGljIHZvaWQgd29yazEoc3Ry
+dWN0IHdvcmtfc3RydWN0ICp3b3JrKSB7CiAgc3RydWN0IG15d29yayAqbXlfd29yayA9IGNvbnRh
+aW5lcl9vZih3b3JrLCBzdHJ1Y3QgbXl3b3JrLCB3b3JrKTsKICB0cmFjZV9wcmludGsoIndvcmsx
+IENhbGxlZCB3aXRoIGluZGV4ICVkXG4iLCBteV93b3JrLT5pbmRleCk7Cn0KCnN0YXRpYyB2b2lk
+IHdvcmsyKHN0cnVjdCB3b3JrX3N0cnVjdCAqd29yaykgewogIHN0cnVjdCBteXdvcmsgKm15X3dv
+cmsgPSBjb250YWluZXJfb2Yod29yaywgc3RydWN0IG15d29yaywgd29yayk7CiAgdHJhY2VfcHJp
+bnRrKCJ3b3JrMiBDYWxsZWQgd2l0aCBpbmRleCAlZFxuIiwgbXlfd29yay0+aW5kZXgpOwogIFNF
+TV9ET1dOKG15X3dvcmstPnNlbSk7CiAgU0VNX1VQKG15X3dvcmstPnNlbSk7CiAgdHJhY2VfcHJp
+bnRrKCJ3b3JrMiBGaW5pc2hlZCB3aXRoIGluZGV4ICVkXG4iLCBteV93b3JrLT5pbmRleCk7Cn0K
+CgpzdGF0aWMgc3NpemVfdCBkZXZpY2Vfd3JpdGUoc3RydWN0IGZpbGUgKmZpbHAsIGNvbnN0IGNo
+YXIgKmJ1ZmYsIHNpemVfdCBsZW4sCiAgICAgICAgICAgICAgICAgICAgICAgICAgICBsb2ZmX3Qg
+Km9mZikgewogIFNFTV9UWVBFIHdyaXRlX3NlbTsKICBTRU1fSU5JVCgmd3JpdGVfc2VtKTsKICAK
+ICBzdHJ1Y3QgbXl3b3JrIG15X3dvcmsxOwogIHN0cnVjdCBteXdvcmsgbXlfd29yazI7CiAgdHJh
+Y2VfcHJpbnRrKCJsb2NrdXBfd3ExICVwIGxvY2t1cF93cTIgJXBcbiIsIGxvY2t1cF93cTEsIGxv
+Y2t1cF93cTIpOwoKICB0cmFjZV9wcmludGsoIkdvdCBhIHdyaXRlXG4iKTsKCiAgU0VNX0RPV04o
+JndyaXRlX3NlbSk7CiAgbXlfd29yazEuaW5kZXggPSBsZW47CiAgbXlfd29yazEuc2VtID0gJndy
+aXRlX3NlbTsKICBJTklUX1dPUktfT05TVEFDSygmbXlfd29yazEud29yaywgd29yazEpOwoKICBt
+eV93b3JrMi5pbmRleCA9IGxlbjsKICBteV93b3JrMi5zZW0gPSAmd3JpdGVfc2VtOwogIElOSVRf
+V09SS19PTlNUQUNLKCZteV93b3JrMi53b3JrLCB3b3JrMik7CgogIHF1ZXVlX3dvcmsobG9ja3Vw
+X3dxMiwgJm15X3dvcmsyLndvcmspOwoKICBxdWV1ZV93b3JrKGxvY2t1cF93cTEsICZteV93b3Jr
+MS53b3JrKTsKICBmbHVzaF93b3JrKCZteV93b3JrMS53b3JrKTsKICBkZXN0cm95X3dvcmtfb25f
+c3RhY2soJm15X3dvcmsxLndvcmspOwoKICBTRU1fVVAoJndyaXRlX3NlbSk7CgogIGZsdXNoX3dv
+cmsoJm15X3dvcmsyLndvcmspOwogIGRlc3Ryb3lfd29ya19vbl9zdGFjaygmbXlfd29yazIud29y
+ayk7CiAgdHJhY2VfcHJpbnRrKCJXcml0ZSBkb25lXG4iKTsKICB0cmFjaW5nX29mZigpOwoKICBy
+ZXR1cm4gbGVuOwp9CgpzdGF0aWMgdm9pZCBfX2V4aXQgY2xlYW51cF9raWxsZXJfbW9kdWxlKHZv
+aWQpIHsKICBwcmludGsoS0VSTl9JTkZPICJHb29kYnllIHdvcmxkIDEuXG4iKTsKICB1bnJlZ2lz
+dGVyX2NocmRldihtYWpvciwgREVWSUNFX05BTUUpOwoJZGVzdHJveV93b3JrcXVldWUobG9ja3Vw
+X3dxMSk7CglkZXN0cm95X3dvcmtxdWV1ZShsb2NrdXBfd3EyKTsKfQoKbW9kdWxlX2luaXQoaW5p
+dF9raWxsZXJfbW9kdWxlKTsKbW9kdWxlX2V4aXQoY2xlYW51cF9raWxsZXJfbW9kdWxlKTsKCk1P
+RFVMRV9MSUNFTlNFKCJHUEwiKTsKTU9EVUxFX0FVVEhPUigiQXVzdGluIFNjaHVoIDxhdXN0aW5A
+cGVsb3Rvbi10ZWNoLmNvbT4iKTsKTU9EVUxFX0RFU0NSSVBUSU9OKCJUcmlnZ2VycyBhIHdvcmtx
+dWV1ZSBidWcgb24gd3JpdGUuIik7Cg==
+--047d7b2e15df332bda04fcc28216--
