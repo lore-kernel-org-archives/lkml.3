@@ -1,119 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756896AbaFZLNN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 07:13:13 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:33010 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754661AbaFZLNM (ORCPT
+	id S1757045AbaFZLS4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 07:18:56 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:2368 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755190AbaFZLSy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 07:13:12 -0400
-Message-ID: <53AC003E.2010608@collabora.co.uk>
-Date: Thu, 26 Jun 2014 13:13:02 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Thu, 26 Jun 2014 07:18:54 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 26 Jun 2014 04:12:42 -0700
+Message-ID: <53AC019A.40404@nvidia.com>
+Date: Thu, 26 Jun 2014 14:18:50 +0300
+From: Mikko Perttunen <mperttunen@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-CC: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
-        Daniel Stone <daniels@collabora.com>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 07/14] mfd: Add driver for Maxim 77802 Power Management
- IC
-References: <1403723019-6212-1-git-send-email-javier.martinez@collabora.co.uk> <1403723019-6212-8-git-send-email-javier.martinez@collabora.co.uk> <1403775093.27156.13.camel@AMDC1943>
-In-Reply-To: <1403775093.27156.13.camel@AMDC1943>
-Content-Type: text/plain; charset=UTF-8
+To: Stephen Warren <swarren@wwwdotorg.org>, "tj@kernel.org" <tj@kernel.org>
+CC: "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
+Subject: Re: [PATCH v2 6/7] ata: Add support for the Tegra124 SATA controller
+References: <1403101406-15439-1-git-send-email-mperttunen@nvidia.com> <1403101406-15439-7-git-send-email-mperttunen@nvidia.com> <53A9D31A.6030307@wwwdotorg.org>
+In-Reply-To: <53A9D31A.6030307@wwwdotorg.org>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Krzysztof,
+FWIW, from IRC, the series
 
-Thanks a lot for your feedback.
+ > Tested-by: Steev Klimaszewski <steev@gentoo.org>
 
-On 06/26/2014 11:31 AM, Krzysztof Kozlowski wrote:
-> Hi,
-> 
-> Just a few nit-picks below but overall everything looks fine:
-> 
-> Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> 
-> 
-
->> +
->> +static int max77802_i2c_probe(struct i2c_client *i2c,
->> +			      const struct i2c_device_id *id)
->> +{
->> +	struct max77802_dev *max77802 = NULL;
->> +	struct max77802_platform_data *pdata = dev_get_platdata(&i2c->dev);
->> +	unsigned int data;
->> +	int ret = 0;
->> +
->> +	if (i2c->dev.of_node)
->> +		pdata = max77802_i2c_parse_dt_pdata(&i2c->dev);
->> +
->> +	if (!pdata) {
->> +		dev_err(&i2c->dev, "No platform data found.\n");
->> +		return -EIO;
->> +	}
->> +
->> +	max77802 = devm_kzalloc(&i2c->dev, sizeof(struct max77802_dev),
->> +				GFP_KERNEL);
->> +	if (max77802 == NULL)
-> 
-> It is inconsistent. Before you used "(!pd)" and "(!pdata)" so maybe
-> stick to one format?
+On 24/06/14 22:35, Stephen Warren wrote:
+> On 06/18/2014 08:23 AM, Mikko Perttunen wrote:
+>> This adds support for the integrated AHCI-compliant Serial ATA
+>> controller present on the NVIDIA Tegra124 system-on-chip.
 >
-
-Right, I'll change to "(!max77802)" as well to be consistent.
-
->> +
->> +#ifdef CONFIG_PM_SLEEP
->> +static int max77802_suspend(struct device *dev)
->> +{
->> +	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
->> +	struct max77802_dev *max77802 = i2c_get_clientdata(i2c);
->> +
->> +	if (device_may_wakeup(dev))
->> +		enable_irq_wake(max77802->irq);
->> +
->> +	disable_irq(max77802->irq);
-> 
-> Can you add short comment why this is needed? I know why but just for
-> future generations which will wonder: "why do we need to disable the IRQ
-> while suspending?" :). Especially that this is rather a workaround for
-> issue in other driver (I2C bus).
+> At a quick glance, this looks fine to me now. I'll wait for an ack to
+> take this patch through the Tegra tree, for the reasons I mentioned in
+> response to v1.
 >
-
-Good idea, I'll add a comment here on next version so code archaeologists can
-figure out what what's going on here.
-
->> +
->> +#define MAX77802_IRQSRC_PMIC            (0)
-> 
-> Shouldn't it be BIT(0) or BIT(1)? It looks odd.
-> 
->> +#define MAX77802_IRQSRC_RTC	        BIT(0)
-> 
-> Anyway, are these defines used anywhere? Seems not. 
-> 
-
-Yes, these defines were used in the max77802-irq.c so is a left over from the
-regmap IRQ chip refactoring. I'll remove these and also the ones from max77686
-driver.
-
-> Best regards,
-> Krzysztof
-> 
-> 
-
-Best regards
-Javier
