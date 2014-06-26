@@ -1,103 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932353AbaFZRfv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 13:35:51 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:24658 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932262AbaFZRft convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 13:35:49 -0400
-Date: Thu, 26 Jun 2014 13:35:48 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Helge Deller <deller@gmx.de>, Kyle McMartin <kyle@mcmartin.ca>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: Re: [RFA][PATCH 20/27] parisc: ftrace: Remove check of obsolete
- variable function_trace_stop
-Message-ID: <20140626133548.03f7b90a@gandalf.local.home>
-In-Reply-To: <20140626165852.497955187@goodmis.org>
-References: <20140626165221.736847419@goodmis.org>
-	<20140626165852.497955187@goodmis.org>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S964793AbaFZRgo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 13:36:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39757 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756633AbaFZRgn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 13:36:43 -0400
+Date: Thu, 26 Jun 2014 19:36:40 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the akpm-current tree
+Message-ID: <20140626173640.GF27687@wotan.suse.de>
+References: <20140626162257.45f8e2aa@canb.auug.org.au> <20140626082940.GE27687@wotan.suse.de> <20140626114512.GO8769@pathway.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140626114512.GO8769@pathway.suse.cz>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Jun 2014 12:52:41 -0400
-Steven Rostedt <rostedt@goodmis.org> wrote:
-
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+On Thu, Jun 26, 2014 at 01:45:13PM +0200, Petr Mládek wrote:
+> On Thu 2014-06-26 10:29:40, Luis R. Rodriguez wrote:
+> > On Thu, Jun 26, 2014 at 04:22:57PM +1000, Stephen Rothwell wrote:
+> > > Hi Andrew,
+> > > 
+> > > After merging the akpm tree, today's linux-next build (powerpc
+> > > ppc44x_defconfig) failed like this:
+> > > 
+> > > kernel/printk/printk.c: In function 'log_buf_add_cpu':
+> > > kernel/printk/printk.c:269:37: error: 'CONFIG_LOG_CPU_MAX_BUF_SHIFT' undeclared (first use in this function)
+> > >  #define __LOG_CPU_MAX_BUF_LEN (1 << CONFIG_LOG_CPU_MAX_BUF_SHIFT)
+> > >                                      ^
+> > > kernel/printk/printk.c:864:42: note: in expansion of macro '__LOG_CPU_MAX_BUF_LEN'
+> > >   cpu_extra = (num_possible_cpus() - 1) * __LOG_CPU_MAX_BUF_LEN;
+> > >                                           ^
+> > > kernel/printk/printk.c:269:37: note: each undeclared identifier is reported only once for each function it appears in
+> > >  #define __LOG_CPU_MAX_BUF_LEN (1 << CONFIG_LOG_CPU_MAX_BUF_SHIFT)
+> > >                                      ^
+> > > kernel/printk/printk.c:864:42: note: in expansion of macro '__LOG_CPU_MAX_BUF_LEN'
+> > >   cpu_extra = (num_possible_cpus() - 1) * __LOG_CPU_MAX_BUF_LEN;
+> > >                                           ^
+> > > 
+> > > Caused by commit 58209adf633e ("printk: allow increasing the ring
+> > > buffer depending on the number of CPUs").  CONFIG_LOG_CPU_MAX_BUF_SHIFT
+> > > is not defined for this configuration.
+> > 
+> > diff --git a/init/Kconfig b/init/Kconfig
+> > index 573d3f6..2339118 100644
+> > --- a/init/Kconfig
+> > +++ b/init/Kconfig
+> > @@ -822,10 +822,9 @@ config LOG_BUF_SHIFT
+> >  
+> >  config LOG_CPU_MAX_BUF_SHIFT
+> >  	int "CPU kernel log buffer size contribution (13 => 8 KB, 17 => 128KB)"
+> > -	range 0 21
+> > -	default 12
+> > -	depends on SMP
+> > -	depends on !BASE_SMALL
+> > +	range 0 21 if SMP && !BASE_SMALL
+> > +	default 12 if SMP && !BASE_SMALL
+> > +	default 0 if !SMP || BASE_SMALL
 > 
-> Nothing sets function_trace_stop to disable function tracing anymore.
-> Remove the check for it in the arch code.
-
->From the cover letter, you were not Cc'd on.
-
-Anyway, as there is no more reason to set function_trace_stop it is time
-to remove it. Unfortunately it's in several archs in assembly. Most of
-the assembly looks rather straight forward and I removed them myself.
-But I was only able to compile test them (for archs: arm64, metag, and
-microblaze I do not have my cross tools set up for them and did not
-even compile test it). But I would really love it if people can
-download their patch and test it out. You only need the patches that go
-against your arch and to really test it, also include the patch titled: 
-
- ftrace: Remove check for HAVE_FUNCTION_TRACE_MCOUNT_TEST
-
-Otherwise your arch patch will call the list op that still does the
-check. That is, if you want to test suspend and resume on your arch.
-
-As you may see, there are patches to the ftrace infrastructure that
-depend on the arch patches being implemented. I removed the
-functionality from the infrastructure, then removed it from the archs,
-and then finally removed the existence of the function_trace_stop
-variable, which would cause the archs to fail to compile if that were
-to go first.
-
-If you can test your arch and give me your acked-by, I would appreciate
-it. Otherwise, if you need this to go through your tree, I would ask you
-to set up a dedicated branch that I can pull from to keep this order
-intact.
-
--- Steve
-
+> There are situations when the default value is not defined, for
+> example, when both SMP and BASE_SMALL are set.
 > 
-> Cc: Helge Deller <deller@gmx.de>
-> Cc: Kyle McMartin <kyle@mcmartin.ca>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  arch/parisc/Kconfig         | 1 -
->  arch/parisc/kernel/ftrace.c | 3 ---
->  2 files changed, 4 deletions(-)
+> I would ignore SMP. It is handled in the code. If SMP is not defined,
+> num_possible_cpus() returns 1 and "cpu_extra" is always 0. Then we
+> could have:
 > 
-> diff --git a/arch/parisc/Kconfig b/arch/parisc/Kconfig
-> index 108d48e652af..6e75e2030927 100644
-> --- a/arch/parisc/Kconfig
-> +++ b/arch/parisc/Kconfig
-> @@ -6,7 +6,6 @@ config PARISC
->  	select HAVE_OPROFILE
->  	select HAVE_FUNCTION_TRACER if 64BIT
->  	select HAVE_FUNCTION_GRAPH_TRACER if 64BIT
-> -	select HAVE_FUNCTION_TRACE_MCOUNT_TEST if 64BIT
->  	select ARCH_WANT_FRAME_POINTERS
->  	select RTC_CLASS
->  	select RTC_DRV_GENERIC
-> diff --git a/arch/parisc/kernel/ftrace.c b/arch/parisc/kernel/ftrace.c
-> index 5512ab32c5e0..559d400f9385 100644
-> --- a/arch/parisc/kernel/ftrace.c
-> +++ b/arch/parisc/kernel/ftrace.c
-> @@ -155,9 +155,6 @@ void ftrace_function_trampoline(unsigned long parent,
->  {
->  	extern ftrace_func_t ftrace_trace_function;
->  
-> -	if (function_trace_stop)
-> -		return;
-> -
->  	if (ftrace_trace_function != ftrace_stub) {
->  		ftrace_trace_function(parent, self_addr);
->  		return;
+>        range 0 21
+>        default 12 if !BASE_SMALL
+>        default 0 if BASE_SMALL
+> 
+> 
+> What about the following patch? It does the above change. Plus
+> it tries to make the help text better readable. It says the basic
+> details first. Then it says other useful information in
+> separate paragraphs. Also I removed the computation example. It was
+> not easy to parse. Interested people might want to look into sources.
+> 
+> It could be merged into
+> printk-allow-increasing-the-ring-buffer-depending-on-the-number-of-cpus.patch
 
+Looks good to me, Andrew let me know how you prefer to amend queued up patches
+on your end.
+
+  Luis
