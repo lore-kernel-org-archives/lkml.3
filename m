@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757838AbaFZRRS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 13:17:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39799 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757785AbaFZRRQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 13:17:16 -0400
-Date: Thu, 26 Jun 2014 19:15:30 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Christopher Covington <cov@codeaurora.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>
-Subject: Re: [PATCH] RFC: Add signal command to trace events
-Message-ID: <20140626171530.GB28565@redhat.com>
-References: <1403791044-2214-1-git-send-email-cov@codeaurora.org> <20140626111749.3234d4d4@gandalf.local.home> <20140626162943.GA9970@redhat.com> <20140626124832.6ecd327d@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140626124832.6ecd327d@gandalf.local.home>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1757958AbaFZRRg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 13:17:36 -0400
+Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:41791 "EHLO
+	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757898AbaFZRRf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 13:17:35 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ak8KAKhUrFNXQz8N/2dsb2JhbABagw2rRQUBAQEBAQEFAW2Yf4ENF3WEYCOBGjeIRgHCCxeFZIkcHYQtBY96il+LOog7g0Q7Lw
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>,
+        Peter Oberparleiter <oberpar@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] kernel/gcov/fs.c: remove unnecessary null test before debugfs_remove
+Date: Thu, 26 Jun 2014 19:16:15 +0200
+Message-Id: <1403802975-8711-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26, Steven Rostedt wrote:
->
-> On Thu, 26 Jun 2014 18:29:43 +0200
-> Oleg Nesterov <oleg@redhat.com> wrote:
->
-> > On 06/26, Steven Rostedt wrote:
-> > >
-> > > [ Added Oleg who is the guru of signals ;-) ]
-> >
-> > Thanks,
-> >
-> > I didn't see the patch, so I can only guess what it does,
-> >
->
-> I didn't crop the patch on my reply. But if you want me to bounce it to
-> you I can.
+This fixes checkpatch warning:
 
-I was going to find it on lkml.org, but yes, thanks, please forward it to me ;)
+"WARNING: debugfs_remove(NULL) is safe this check is probably not required"
 
-Oleg.
+Cc: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ kernel/gcov/fs.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/kernel/gcov/fs.c b/kernel/gcov/fs.c
+index 15ff01a..edf67c4 100644
+--- a/kernel/gcov/fs.c
++++ b/kernel/gcov/fs.c
+@@ -784,8 +784,7 @@ static __init int gcov_fs_init(void)
+ 
+ err_remove:
+ 	pr_err("init failed\n");
+-	if (root_node.dentry)
+-		debugfs_remove(root_node.dentry);
++	debugfs_remove(root_node.dentry);
+ 
+ 	return rc;
+ }
+-- 
+1.8.4.5
 
