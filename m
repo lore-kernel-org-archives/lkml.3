@@ -1,86 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752121AbaFZUBf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 16:01:35 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:37752 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751432AbaFZUBK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 16:01:10 -0400
-Message-ID: <53AC7BFD.2070806@free-electrons.com>
-Date: Thu, 26 Jun 2014 22:01:01 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751464AbaFZUNT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 16:13:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33171 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751122AbaFZUNS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 16:13:18 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CALCETrWJD4kvoCxxb9y19uMakChmxamveKDceDOhyjYzFkJoUA@mail.gmail.com>
+References: <55466fbd36df1d011876135cf7ca5d40c05029c7.1403809591.git.luto@amacapital.net> <20140626195629.GC5714@two.firstfloor.org> <CALCETrVBKno2skh3zR=1GYuojwPhYPLD=1HFcLMXjStS+0SPJQ@mail.gmail.com> <CALCETrWJD4kvoCxxb9y19uMakChmxamveKDceDOhyjYzFkJoUA@mail.gmail.com>
 MIME-Version: 1.0
-To: Florian Fainelli <f.fainelli@gmail.com>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>, netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH v2 1/2] ARM: at91/dt: describe rgmii ethernet phy connected
- to sama5d3xek boards
-References: <1403777615-25685-1-git-send-email-boris.brezillon@free-electrons.com> <1403777615-25685-2-git-send-email-boris.brezillon@free-electrons.com> <CAGVrzcbYAEMsU1SFSH761H0isQ4z1M++KK_GLf0OAbGS48YUmw@mail.gmail.com>
-In-Reply-To: <CAGVrzcbYAEMsU1SFSH761H0isQ4z1M++KK_GLf0OAbGS48YUmw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH] x86_64,entry: Fix RCX for traced syscalls
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Thu, 26 Jun 2014 13:12:35 -0700
+To: Andy Lutomirski <luto@amacapital.net>, Andi Kleen <andi@firstfloor.org>
+CC: X86 ML <x86@kernel.org>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@alien8.de>
+Message-ID: <7919ae8b-958b-4b12-a5f4-8be2c3df3824@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Florian,
+The real question is if we care that sysret and iter don't match.  On 32 bits the situation is even more complex.
 
-On 26/06/2014 20:15, Florian Fainelli wrote:
-> Hi Boris,
->
-> 2014-06-26 3:13 GMT-07:00 Boris BREZILLON <boris.brezillon@free-electrons.com>:
->> Add ethernet-phy node and specify phy interrupt (connected to pin PB25).
+On June 26, 2014 1:00:22 PM PDT, Andy Lutomirski <luto@amacapital.net> wrote:
+>On Thu, Jun 26, 2014 at 12:59 PM, Andy Lutomirski <luto@amacapital.net>
+>wrote:
+>> On Thu, Jun 26, 2014 at 12:56 PM, Andi Kleen <andi@firstfloor.org>
+>wrote:
+>>>> show RCX == RIP even under strace.
+>>>
+>>> If you think it's really worth the extra instruction?
 >>
->> The PHY address is not specified here because atmel have 2 different
->> designs
->> for its CPU modules: one is connecting PHYAD[0-2] pins to pull up resistors
->> (Embest design) and the other one is connection PHYAD0 to a pull up
->> resistor and PHYAD[1-2] to pull down resistors (Ronetix design).
->> As a result, Ronetix design will have its PHY available at address 0x1 and
->> Embest design at 0x7.
->> Let the net PHY core automatically detect the PHY address by scanning the
->> MDIO bus.
-> I though the compatible string was listed as a required property, but
-> it is not. The 'reg' property however is listed as required, although
-> the of_miodbus_register() works just fine without it, although that is
-> a Linux-specific implementation detail.
-
-Indeed, it's listed in the required property list of the DT binding doc,
-but the code implement auto detection if reg is missing.
-However this line [1] clearly shows that specifying the reg property is
-the preferred way of doing things.
-
-I could define 2 different sama5d3xcm.dtsi (sama5d3xcm-ronetix.dtsi and
-sama5d3xcm-embest.dtsi) to avoid this dirty hack,
-but then we would have 2 more dtb and the user would have to determine
-which CPU module he owns to choose the appropriate dtb.
-If at91, arm-soc and DT maintainers agree with this approach I can
-definitely propose something.
-
->
->> Define board specific delays to apply to RGMII signals.
+>> Hard to say.  That extra instruction only happens on slow paths, so I
+>> suspect the slowdown is negligible.  On the other hand, having
+>syscall
+>> show a blatant difference in behavior between traced and untraced
+>> processes seems unfortunate.
 >>
->> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> Reviewed-by: Florian Fainelli <f.fainelli@gmail.com>
-
-Thanks for your review.
-
-Best Regards,
-
-Boris
-
-[1] http://lxr.free-electrons.com/source/drivers/of/of_mdio.c#L187
+>>>
+>>> It's not wrong, but it's not clear if it's useful.
+>
+>Also, if anyone ever wants to add some code to switch back from iret
+>to sysret when sysret will work, this is a prerequisite.  Otherwise
+>sysret will never match iret.  (I'm not immediately planning on doing
+>this, but I can imagine workloads (e.g. UML) for which it would be a
+>big improvement.)
+>
+>--Andy
 
 -- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
-
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
