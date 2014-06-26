@@ -1,47 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755176AbaFZHej (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 03:34:39 -0400
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:53288 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754709AbaFZHeg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 03:34:36 -0400
+	id S1755519AbaFZHg4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 03:36:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61768 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753414AbaFZHgz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 03:36:55 -0400
+Date: Thu, 26 Jun 2014 09:36:05 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <rric@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Namhyung Kim <namhyung@gmail.com>, Jean Pihet <jean.pihet@linaro.org>
+Subject: Re: [PATCH] perf tool: Carve out ctype.h et al
+Message-ID: <20140626073605.GB1177@krava.brq.redhat.com>
+References: <1403688184-6917-1-git-send-email-bp@alien8.de>
+ <20140625192547.GF1153@krava.brq.redhat.com>
+ <20140625194254.GC18773@kernel.org>
+ <20140625201147.GB13845@pd.tnic>
 MIME-Version: 1.0
-In-Reply-To: <53AB1CC1.4010907@codeaurora.org>
-References: <cover.1403684824.git.viresh.kumar@linaro.org>
-	<e9c0eef07745e561b9d12dcb50c3e2f7eb3e8880.1403684824.git.viresh.kumar@linaro.org>
-	<53AB1CC1.4010907@codeaurora.org>
-Date: Thu, 26 Jun 2014 13:04:35 +0530
-Message-ID: <CAKohpokK+2hJ=pbLsjaqE_R3yBKcP-BwmH6RYdNRv69O-4ah8Q@mail.gmail.com>
-Subject: Re: [PATCH 2/2] cpufreq: cpu0: Extend support beyond CPU0
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Stephen Boyd <sboyd@codeaurora.org>, Mark Brown <broonie@kernel.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Shawn Guo <shawn.guo@linaro.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arvind Chauhan <arvind.chauhan@arm.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-arm-msm@vger.kernel.org, Sachin Kamat <spk.linux@gmail.com>,
-        Thomas P Abraham <thomas.ab@samsung.com>, Nishanth Menon <nm@ti.com>,
-        Tomasz Figa <t.figa@samsung.com>, Mark Rutland <Mark.Rutland@arm.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140625201147.GB13845@pd.tnic>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 June 2014 00:32, Stephen Boyd <sboyd@codeaurora.org> wrote:
+On Wed, Jun 25, 2014 at 10:11:47PM +0200, Borislav Petkov wrote:
+> On Wed, Jun 25, 2014 at 04:42:54PM -0300, Arnaldo Carvalho de Melo wrote:
+> > Probably will come in a separate patchkit that is dependent on this,
+> > but not strictly related?
+> 
+> Yeah, so roughly speaking, we want to carve out the code which opens and
+> handles events in perf tool so that we can use it in other tools. In the
 
->> +     cpu_reg = regulator_get_optional(cpu_dev, "cpu0");
+this functionality is inside evlist/evsel/target(...) objects
 
-> I don't think this driver should be using regulator_get_optional() (Mark
-> B. please correct me if I'm wrong). I doubt a supply is actually
-> optional for CPUs, just some DTs aren't specifying them. In those cases,
-> the regulator core will insert a dummy supply and the code will work
-> without having to check for probe defer and error pointers.
+> particular example with the ras daemon, we want to be able to open a
+> tracepoint in userspace and read from it.
 
-This is what Mark did earlier, don't know if he would like to revert it:
-7d74897 (cpufreq: cpufreq-cpu0: Use devm_regulator_get_optional()).
+the ras daemon is not in tree yet is it? cant find it..
+
+> 
+> We're doing this piecewise because perf tool changes too fast and I've
+> done a full conversion patchset a couple of times already only to
+> realize that it grows obsolete practically only days after sending it
+> out. (Btw, for that it is all your fault, of course :-P). Which makes
+> preparing a full patchset almost impossible.
+> 
+> Does this explanation make sense?
+
+I think we should librarize only stuff we will share. Whats the plan
+about the ras daemon (if I did not overlook it) to be put into tools?
+
+thanks,
+jirka
