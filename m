@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932164AbaFZNn1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 09:43:27 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:59443 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751557AbaFZNn0 (ORCPT
+	id S932274AbaFZNpB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 09:45:01 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:63541 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932160AbaFZNpA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 09:43:26 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Maxime Coquelin <maxime.coquelin@st.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, linux-arm-kernel@lists.infradead.org,
-        kernel@stlinux.com, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: [PATCH] pinctrl: pinctrl-st.c:  Cleaning up values that are never used
-Date: Thu, 26 Jun 2014 15:44:32 +0200
-Message-Id: <1403790272-11635-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 26 Jun 2014 09:45:00 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-scsi@vger.kernel.org
+Cc: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        jbottomley@parallels.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] [SCSI] hpsa: fix non-x86 builds
+Date: Thu, 26 Jun 2014 15:44:52 +0200
+Message-ID: <6003317.KPlAy1USkq@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:5Cg076d5BoYboukCtZcLH7t6NRqcJCnlEUlPrhqFEXm
+ avTIHDrn8HWFIpmASwzjQIvEU2YJEIcBzNVkUBP+WtVMEq7iVt
+ aPQhtoKP165Xay3xFuEMmGqtWeoQssCwO5Vak6S9ioEv2dr5DC
+ 8aZdNQlZqJ4rLHlAVLmZcRecM3eT+U6sCEW7y9e3T/Q4jihAIz
+ ZgPr+/eiuUcF3Hs1ZpTEYu8lYbpOKvXviyGtCMUAl3UKmwieoZ
+ 0/pvrBPUAHRLiMpi64QwvJflRZxyClD1gqFw9OZaKkDCExKgdV
+ mZXrfutiwuq21c4q4sukFWYqdwoGR/oNx3VGhxZ9nQoll3e4oJ
+ r0Nod96SeN+2TCRDk99g=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove variable that are never used
+commit 28e134464734 "[SCSI] hpsa: enable unit attention reporting"
+turns on unit attention notifications, but got the change wrong for
+all architectures other than x86, which now store an uninitialized
+value into the device register.
 
-This was found using a static code analysis program called cppcheck.
+Gcc helpfully warns about this:
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- drivers/pinctrl/pinctrl-st.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+../drivers/scsi/hpsa.c: In function 'hpsa_set_driver_support_bits':
+../drivers/scsi/hpsa.c:6373:17: warning: 'driver_support' is used uninitialized in this function [-Wuninitialized]
+  driver_support |= ENABLE_UNIT_ATTN;
+                 ^
 
-diff --git a/drivers/pinctrl/pinctrl-st.c b/drivers/pinctrl/pinctrl-st.c
-index 1bd6363bc9..d3bd687 100644
---- a/drivers/pinctrl/pinctrl-st.c
-+++ b/drivers/pinctrl/pinctrl-st.c
-@@ -1178,9 +1178,7 @@ static int st_pctl_dt_parse_groups(struct device_node *np,
- 	const __be32 *list;
- 	struct property *pp;
- 	struct st_pinconf *conf;
--	phandle phandle;
- 	struct device_node *pins;
--	u32 pin;
- 	int i = 0, npins = 0, nr_props;
+This moves the #ifdef so only the prefetch-enable is conditional
+on x86, not also reading the initial register contents. 
+
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Fixes: 28e134464734 "[SCSI] hpsa: enable unit attention reporting"
+Cc: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+Cc: stable@vger.kernel.org # v3.14+
+
+diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+index 31184b3..d0e487c 100644
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -6365,9 +6365,9 @@ static inline void hpsa_set_driver_support_bits(struct ctlr_info *h)
+ {
+ 	u32 driver_support;
  
- 	pins = of_get_child_by_name(np, "st,pins");
-@@ -1218,8 +1216,8 @@ static int st_pctl_dt_parse_groups(struct device_node *np,
- 		conf = &grp->pin_conf[i];
- 
- 		/* bank & offset */
--		phandle = be32_to_cpup(list++);
--		pin = be32_to_cpup(list++);
-+		be32_to_cpup(list++);
-+		be32_to_cpup(list++);
- 		conf->pin = of_get_named_gpio(pins, pp->name, 0);
- 		conf->name = pp->name;
- 		grp->pins[i] = conf->pin;
--- 
-1.7.10.4
+-#ifdef CONFIG_X86
+-	/* Need to enable prefetch in the SCSI core for 6400 in x86 */
+ 	driver_support = readl(&(h->cfgtable->driver_support));
++	/* Need to enable prefetch in the SCSI core for 6400 in x86 */
++#ifdef CONFIG_X86
+ 	driver_support |= ENABLE_SCSI_PREFETCH;
+ #endif
+ 	driver_support |= ENABLE_UNIT_ATTN;
 
