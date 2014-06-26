@@ -1,158 +1,388 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751696AbaFZTKg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 15:10:36 -0400
-Received: from mail-bl2lp0211.outbound.protection.outlook.com ([207.46.163.211]:4748
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750878AbaFZTKf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 15:10:35 -0400
-From: "Chalamarla, Tirumalesh" <Tirumalesh.Chalamarla@caviumnetworks.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: Joerg Roedel <joro@8bytes.org>, Will Deacon <will.deacon@arm.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        "stuart.yoder@freescale.com" <stuart.yoder@freescale.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "tech@virtualopensystems.com" <tech@virtualopensystems.com>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        "moderated list:ARM SMMU DRIVER" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [RFC PATCH v6 04/20] iommu/arm-smmu: add capability
- IOMMU_CAP_INTR_REMAP
-Thread-Topic: [RFC PATCH v6 04/20] iommu/arm-smmu: add capability
- IOMMU_CAP_INTR_REMAP
-Thread-Index: AQHPgOBbNdL1uGTtt0GgwoLMBshUy5tnB9yAgAzb7QCAAAWEgIAAAl8AgAAA+ACAAAOpAIAP3+jggAAC4JCAAAc+EIAABbCAgAAA8PA=
-Date: Thu, 26 Jun 2014 19:10:16 +0000
-Message-ID: <ec8dbbcb991e4d73b73f4b4f98342445@BY2PR07MB203.namprd07.prod.outlook.com>
-References: <1401987808-23596-1-git-send-email-a.motakis@virtualopensystems.com>
-	 <1401987808-23596-5-git-send-email-a.motakis@virtualopensystems.com>
-	 <20140608103129.GC3279@lvm> <20140616145344.GD18986@8bytes.org>
-	 <20140616151329.GQ16758@arm.com> <20140616152157.GB31771@8bytes.org>
-	 <20140616152526.GR16758@arm.com> <20140616153832.GC31771@8bytes.org>
-	 <9353770066894e85809e1e443b71d1cd@BY2PR07MB203.namprd07.prod.outlook.com>
-	 <748dccbbd3284521af4659ccbbb11453@BY2PR07MB203.namprd07.prod.outlook.com>
-	 <b085e02e72dc424d9624c3e810951087@BY2PR07MB203.namprd07.prod.outlook.com>
- <1403809223.31091.137.camel@ul30vt.home>
-In-Reply-To: <1403809223.31091.137.camel@ul30vt.home>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [64.2.3.195]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:
-x-forefront-prvs: 02543CD7CD
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(51704005)(51914003)(377424004)(189002)(164054003)(199002)(377454003)(13464003)(24454002)(95666004)(15975445006)(77096002)(66066001)(46102001)(74662001)(106116001)(106356001)(80022001)(74502001)(85306003)(19580395003)(101416001)(19580405001)(107046002)(105586002)(83322001)(93886003)(83072002)(92566001)(81542001)(54356999)(4396001)(77982001)(86362001)(76576001)(81342001)(21056001)(76482001)(87936001)(74316001)(64706001)(31966008)(85852003)(50986999)(20776003)(76176999)(79102001)(2656002)(33646001)(99396002)(24736002)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR07MB202;H:BY2PR07MB203.namprd07.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
+	id S1751470AbaFZTVY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 15:21:24 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:45723 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751064AbaFZTVW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 15:21:22 -0400
+Date: Thu, 26 Jun 2014 12:21:17 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 1/1] rcu: uninline rcu_lock_acquire() and
+ rcu_lock_release()
+Message-ID: <20140626192117.GW4603@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140626170116.GA28558@redhat.com>
+ <20140626170143.GA28565@redhat.com>
+ <20140626173327.GA1001@redhat.com>
+ <20140626183657.GA18550@redhat.com>
 MIME-Version: 1.0
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-OriginatorOrg: caviumnetworks.com
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140626183657.GA18550@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14062619-9332-0000-0000-00000135C041
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s5QJAgBE020115
 
-Thanks for the clarification Alex, Thatâ€™s exactly my point, why are we relying on  QEMU or something else to emulate the MSI space when we can directly give access to devices using ITS (of course with a small emulation code).
-This way we are also benefited from all ITS services like VCPU migration etc.  
+On Thu, Jun 26, 2014 at 08:36:57PM +0200, Oleg Nesterov wrote:
+> On 06/26, Oleg Nesterov wrote:
+> >
+> > On 06/26, Oleg Nesterov wrote:
+> > >
+> > > +static void rcu_release_map(struct lockdep_map *map, unsigned long ip)
+> > > +{
+> > > +	rcu_lockdep_assert_watching();
+> > > +	__rcu_lock_release(&rcu_lock_map, ip);
+> >                             ^^^^^^^^^^^^
+> > OOPS. This should be "map". Please see v2 below.
+> 
+> Argh. Probably you should simply ignore me.
 
-What about non QEMU VFIO users, for example, if I wanted to use VFIO to assign a device to a user process I don't need to depend on QEMU.   I thought this is one of the main goals of vfio to make it independent of hypervisors.     
+My day has been a bit like that as well.  I can only be thankful
+for source-code control systems such as git...
 
-Thanks,
-Tirumalesh. 
-          
+> > +static void rcu_release_map(struct lockdep_map *map, unsigned long ip)
+> > +{
+> > +	rcu_lockdep_assert_watching();
+> > +	__rcu_lock_release(&map, ip);
+> 
+> "map", not "&map". I fixed this before I sent v2, but apparently forgot to
+> -add before --amend.
+> 
+> Sorry for noise.
 
------Original Message-----
-From: Alex Williamson [mailto:alex.williamson@redhat.com] 
-Sent: Thursday, June 26, 2014 12:00 PM
-To: Chalamarla, Tirumalesh
-Cc: Joerg Roedel; Will Deacon; kvm@vger.kernel.org; open list; stuart.yoder@freescale.com; iommu@lists.linux-foundation.org; tech@virtualopensystems.com; kvmarm@lists.cs.columbia.edu; moderated list:ARM SMMU DRIVER
-Subject: Re: [RFC PATCH v6 04/20] iommu/arm-smmu: add capability IOMMU_CAP_INTR_REMAP
+Not a problem!  Looks generally sane, but with a bit of adjustment
+still needed.
 
-On Thu, 2014-06-26 at 18:41 +0000, Chalamarla, Tirumalesh wrote:
-> Sorry there was a type,
-> 
-> The question is:
->  
->             How is VFIO restricting software from writing to MSI/MSI-X vectors of the device. 
+I got some test failures on v2:
 
-All interrupts are configured via ioctl, not MSI config space or the MSI-X vector table in MMIO space.  VFIO protects the MSI config area by virtualizing it (you can't actually write the physical enable bit or address/data through VFIO).  The MSI-X vector table is protected by preventing read, write, or mmap access to it.  QEMU provides further virtualization above the basics provided by VFIO.  We really can't guarantee that devices don't have backdoors to configure these though.
-See the realtek quirk in QEMU for an example of a device that has such a backdoor.  That's why we require interrupt remapping, so that a device that does this can only hurt the guest, and require the user to opt-out if they feel they have a sufficiently trusted guest.  Thanks,
+o	Build breakage if built with CONFIG_DEBUG_LOCK_ALLOC=n.  I believe
+	that the best way to fix this is to #ifdef out the bodies of
+	__rcu_lock_acquire() and __rcu_lock_release(), but maybe you
+	have something else in mind.
 
-Alex
+o	Lockdep splat as follows, which might well be due to the
+	"&map" that you noted above:
 
-> 
-> -----Original Message-----
-> From: Chalamarla, Tirumalesh
-> Sent: Thursday, June 26, 2014 11:16 AM
-> To: Chalamarla, Tirumalesh; Joerg Roedel; Will Deacon
-> Cc: kvm@vger.kernel.org; open list; alex.williamson@redhat.com; 
-> stuart.yoder@freescale.com; iommu@lists.linux-foundation.org; 
-> tech@virtualopensystems.com; kvmarm@lists.cs.columbia.edu; moderated 
-> list:ARM SMMU DRIVER
-> Subject: RE: [RFC PATCH v6 04/20] iommu/arm-smmu: add capability 
-> IOMMU_CAP_INTR_REMAP
-> 
-> When I say emulating ITS, I mean translating guest ITS commands to physical ITS commands  and placing them in physical queue. 
-> 
-> Regards,
-> Tirumalesh.
-> 
-> -----Original Message-----
-> From: kvmarm-bounces@lists.cs.columbia.edu 
-> [mailto:kvmarm-bounces@lists.cs.columbia.edu] On Behalf Of Chalamarla, 
-> Tirumalesh
-> Sent: Thursday, June 26, 2014 11:08 AM
-> To: Joerg Roedel; Will Deacon
-> Cc: kvm@vger.kernel.org; open list; alex.williamson@redhat.com; 
-> stuart.yoder@freescale.com; iommu@lists.linux-foundation.org; 
-> tech@virtualopensystems.com; kvmarm@lists.cs.columbia.edu; moderated 
-> list:ARM SMMU DRIVER
-> Subject: RE: [RFC PATCH v6 04/20] iommu/arm-smmu: add capability 
-> IOMMU_CAP_INTR_REMAP
-> 
-> Forgive me if this discussion is not relative here, but I thought it is.  
-> 
-> How is VFIO restricting devices from writing  to MSI/MSI-X, Is all the vector area is mapped by VFIO to trap the accesses.  I am asking this because we might need to emulate ITS somewhere either in KVM or VFIO to provide direct access to devices.
-> And I don't see any mentions on that.   I think this flag needs to be set by ITS emulation.
-> 
-> Regards,
-> Tirumalesh.
-> 
-> -----Original Message-----
-> From: kvmarm-bounces@lists.cs.columbia.edu 
-> [mailto:kvmarm-bounces@lists.cs.columbia.edu] On Behalf Of Joerg 
-> Roedel
-> Sent: Monday, June 16, 2014 8:39 AM
-> To: Will Deacon
-> Cc: stuart.yoder@freescale.com; kvm@vger.kernel.org; open list; 
-> iommu@lists.linux-foundation.org; alex.williamson@redhat.com; 
-> moderated list:ARM SMMU DRIVER; tech@virtualopensystems.com; 
-> kvmarm@lists.cs.columbia.edu; Christoffer Dall
-> Subject: Re: [RFC PATCH v6 04/20] iommu/arm-smmu: add capability 
-> IOMMU_CAP_INTR_REMAP
-> 
-> On Mon, Jun 16, 2014 at 04:25:26PM +0100, Will Deacon wrote:
-> > Ok, thanks. In which case, I think this is really a combined 
-> > property of the SMMU and the interrupt controller, so we might need 
-> > some extra code so that the SMMU can check that the interrupt 
-> > controller for the device is also capable of interrupt remapping.
-> 
-> Right, that this is part of IOMMU code has more or less historic reasons on x86. Interrupt remapping is purely implemented in the IOMMU there, so on ARM some clue-code between interrupt controler and smmu is needed.
-> 
-> 
-> 	Joerg
-> 
-> 
-> _______________________________________________
-> kvmarm mailing list
-> kvmarm@lists.cs.columbia.edu
-> https://lists.cs.columbia.edu/mailman/listinfo/kvmarm
-> _______________________________________________
-> kvmarm mailing list
-> kvmarm@lists.cs.columbia.edu
-> https://lists.cs.columbia.edu/mailman/listinfo/kvmarm
+	[    0.000000] =====================================
+	[    0.000000] [ BUG: bad unlock balance detected! ]
+	[    0.000000] 3.16.0-rc1+ #1 Not tainted
+	[    0.000000] -------------------------------------
+	[    0.000000] swapper/0 is trying to release lock (X?à<81>ÿÿÿÿ<97>^Sò<81>ÿÿÿÿX?à<81>ÿÿÿÿ{±ò<81>@B^O) at:
+	[    0.000000] [<ffffffff8107cb61>] init_idle+0xc1/0x150
+	[    0.000000] but there are no more locks to release!
 
+And a few other things noted below.
 
+							Thanx, Paul
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> -------------------------------------------------------------------------------
+> Subject: [PATCH v3 1/1] rcu: uninline rcu_lock_acquire() and rcu_lock_release()
+> 
+> Uninline rcu_lock_acquire() and rcu_lock_release() to shrink .text/data.
+> The difference in "size vmlinux" looks good,
+> 
+> with CONFIG_DEBUG_LOCK_ALLOC
+> 
+> 	- 5377829 3018320 14757888 23154037
+> 	+ 5352229 3010160 14757888 23120277
+> 
+> 33760 bytes saved.
+> 
+> with CONFIG_DEBUG_LOCK_ALLOC + CONFIG_PROVE_RCU + CONFIG_TREE_RCU_TRACE
+> 
+> 	- 5682283 3022936 14757888 23463107
+> 	+ 5578667 3026776 14757888 23363331
+> 
+> saves 99776 bytes.
+
+Nice savings!
+
+> However, this obviously means that the "warn once" logic is moved from
+> the current callers of rcu_lockdep_assert(rcu_is_watching()) to update.c.
+
+Which should be fine.
+
+> Also, with this patch we do not bother to report which function abused
+> rcu_is_watching(), this should be clear from dump_stack().
+
+Which also should be fine.  I was going to suggest a macro wrapper, but
+that would of course bloat the kernel with the function names...
+
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  include/linux/rcupdate.h |   55 ++++++++++++++++++++++---------------------
+>  include/linux/srcu.h     |    4 +-
+>  kernel/rcu/rcu.h         |    6 ++--
+>  kernel/rcu/update.c      |   57 ++++++++++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 90 insertions(+), 32 deletions(-)
+> 
+> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> index 5a75d19..a5b1631 100644
+> --- a/include/linux/rcupdate.h
+> +++ b/include/linux/rcupdate.h
+> @@ -379,18 +379,34 @@ static inline bool rcu_lockdep_current_cpu_online(void)
+>  }
+>  #endif /* #else #if defined(CONFIG_HOTPLUG_CPU) && defined(CONFIG_PROVE_RCU) */
+> 
+> -#ifdef CONFIG_DEBUG_LOCK_ALLOC
+> -
+> -static inline void rcu_lock_acquire(struct lockdep_map *map)
+> +static inline void __rcu_lock_acquire(struct lockdep_map *map, unsigned long ip)
+>  {
+> -	lock_acquire(map, 0, 0, 2, 0, NULL, _THIS_IP_);
+> +	lock_acquire(map, 0, 0, 2, 0, NULL, ip);
+
+I believe that the above line of code needs to be under #ifdef
+CONFIG_DEBUG_LOCK_ALLOC, otherwise we get build failures due to
+accesses to #ifdefed-out structure members and variables.
+
+>  }
+> 
+> -static inline void rcu_lock_release(struct lockdep_map *map)
+> +static inline void __rcu_lock_release(struct lockdep_map *map, unsigned long ip)
+>  {
+> -	lock_release(map, 1, _THIS_IP_);
+> +	lock_release(map, 1, ip);
+
+Ditto.
+
+>  }
+> 
+> +#if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_PROVE_RCU)
+
+"#ifdef CONFIG_DEBUG_LOCK_ALLOC" should suffice here.  If CONFIG_PROVE_RCU
+is set, then CONFIG_DEBUG_LOCK_ALLOC is guaranteed to also be set.
+
+> +extern void rcu_lock_acquire(void);
+> +extern void rcu_lock_release(void);
+> +extern void rcu_lock_acquire_bh(void);
+> +extern void rcu_lock_release_bh(void);
+> +extern void rcu_lock_acquire_sched(void);
+> +extern void rcu_lock_release_sched(void);
+> +#else
+> +#define rcu_lock_acquire()		do { } while (0)
+> +#define rcu_lock_release()		do { } while (0)
+> +#define rcu_lock_acquire_bh()		do { } while (0)
+> +#define rcu_lock_release_bh()		do { } while (0)
+> +#define rcu_lock_acquire_sched()	do { } while (0)
+> +#define rcu_lock_release_sched()	do { } while (0)
+> +#endif
+> +
+> +#ifdef CONFIG_DEBUG_LOCK_ALLOC
+> +
+>  extern struct lockdep_map rcu_lock_map;
+>  extern struct lockdep_map rcu_bh_lock_map;
+>  extern struct lockdep_map rcu_sched_lock_map;
+> @@ -489,9 +505,6 @@ static inline int rcu_read_lock_sched_held(void)
+> 
+>  #else /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
+> 
+> -# define rcu_lock_acquire(a)		do { } while (0)
+> -# define rcu_lock_release(a)		do { } while (0)
+> -
+>  static inline int rcu_read_lock_held(void)
+>  {
+>  	return 1;
+> @@ -866,9 +879,7 @@ static inline void rcu_read_lock(void)
+>  {
+>  	__rcu_read_lock();
+>  	__acquire(RCU);
+> -	rcu_lock_acquire(&rcu_lock_map);
+> -	rcu_lockdep_assert(rcu_is_watching(),
+> -			   "rcu_read_lock() used illegally while idle");
+> +	rcu_lock_acquire();
+>  }
+> 
+>  /*
+> @@ -888,9 +899,7 @@ static inline void rcu_read_lock(void)
+>   */
+>  static inline void rcu_read_unlock(void)
+>  {
+> -	rcu_lockdep_assert(rcu_is_watching(),
+> -			   "rcu_read_unlock() used illegally while idle");
+> -	rcu_lock_release(&rcu_lock_map);
+> +	rcu_lock_release();
+>  	__release(RCU);
+>  	__rcu_read_unlock();
+>  }
+> @@ -916,9 +925,7 @@ static inline void rcu_read_lock_bh(void)
+>  {
+>  	local_bh_disable();
+>  	__acquire(RCU_BH);
+> -	rcu_lock_acquire(&rcu_bh_lock_map);
+> -	rcu_lockdep_assert(rcu_is_watching(),
+> -			   "rcu_read_lock_bh() used illegally while idle");
+> +	rcu_lock_acquire_bh();
+>  }
+> 
+>  /*
+> @@ -928,9 +935,7 @@ static inline void rcu_read_lock_bh(void)
+>   */
+>  static inline void rcu_read_unlock_bh(void)
+>  {
+> -	rcu_lockdep_assert(rcu_is_watching(),
+> -			   "rcu_read_unlock_bh() used illegally while idle");
+> -	rcu_lock_release(&rcu_bh_lock_map);
+> +	rcu_lock_release_bh();
+>  	__release(RCU_BH);
+>  	local_bh_enable();
+>  }
+> @@ -952,9 +957,7 @@ static inline void rcu_read_lock_sched(void)
+>  {
+>  	preempt_disable();
+>  	__acquire(RCU_SCHED);
+> -	rcu_lock_acquire(&rcu_sched_lock_map);
+> -	rcu_lockdep_assert(rcu_is_watching(),
+> -			   "rcu_read_lock_sched() used illegally while idle");
+> +	rcu_lock_acquire_sched();
+>  }
+> 
+>  /* Used by lockdep and tracing: cannot be traced, cannot call lockdep. */
+> @@ -971,9 +974,7 @@ static inline notrace void rcu_read_lock_sched_notrace(void)
+>   */
+>  static inline void rcu_read_unlock_sched(void)
+>  {
+> -	rcu_lockdep_assert(rcu_is_watching(),
+> -			   "rcu_read_unlock_sched() used illegally while idle");
+> -	rcu_lock_release(&rcu_sched_lock_map);
+> +	rcu_lock_release_sched();
+>  	__release(RCU_SCHED);
+>  	preempt_enable();
+>  }
+> diff --git a/include/linux/srcu.h b/include/linux/srcu.h
+> index a2783cb..5c06289 100644
+> --- a/include/linux/srcu.h
+> +++ b/include/linux/srcu.h
+> @@ -219,7 +219,7 @@ static inline int srcu_read_lock(struct srcu_struct *sp) __acquires(sp)
+>  {
+>  	int retval = __srcu_read_lock(sp);
+> 
+> -	rcu_lock_acquire(&(sp)->dep_map);
+> +	__rcu_lock_acquire(&(sp)->dep_map, _THIS_IP_);
+>  	return retval;
+>  }
+> 
+> @@ -233,7 +233,7 @@ static inline int srcu_read_lock(struct srcu_struct *sp) __acquires(sp)
+>  static inline void srcu_read_unlock(struct srcu_struct *sp, int idx)
+>  	__releases(sp)
+>  {
+> -	rcu_lock_release(&(sp)->dep_map);
+> +	__rcu_lock_release(&(sp)->dep_map, _THIS_IP_);
+>  	__srcu_read_unlock(sp, idx);
+>  }
+> 
+> diff --git a/kernel/rcu/rcu.h b/kernel/rcu/rcu.h
+> index bfda272..5702910 100644
+> --- a/kernel/rcu/rcu.h
+> +++ b/kernel/rcu/rcu.h
+> @@ -103,16 +103,16 @@ static inline bool __rcu_reclaim(const char *rn, struct rcu_head *head)
+>  {
+>  	unsigned long offset = (unsigned long)head->func;
+> 
+> -	rcu_lock_acquire(&rcu_callback_map);
+> +	__rcu_lock_acquire(&rcu_callback_map, _THIS_IP_);
+>  	if (__is_kfree_rcu_offset(offset)) {
+>  		RCU_TRACE(trace_rcu_invoke_kfree_callback(rn, head, offset));
+>  		kfree((void *)head - offset);
+> -		rcu_lock_release(&rcu_callback_map);
+> +		__rcu_lock_release(&rcu_callback_map, _THIS_IP_);
+>  		return 1;
+
+Commit 08c11a77e8 in my -rcu tree chose a particularly bad time to
+change this to "true" and the "0" below to "false".  Could you
+please rebase on top of that commit?  (Easy enough for me to
+hand-edit the patch, but the way today is going, I will probably
+mess it up.)
+
+>  	} else {
+>  		RCU_TRACE(trace_rcu_invoke_callback(rn, head));
+>  		head->func(head);
+> -		rcu_lock_release(&rcu_callback_map);
+> +		__rcu_lock_release(&rcu_callback_map, _THIS_IP_);
+>  		return 0;
+>  	}
+>  }
+> diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
+> index a2aeb4d..9cbdf52 100644
+> --- a/kernel/rcu/update.c
+> +++ b/kernel/rcu/update.c
+> @@ -168,6 +168,63 @@ EXPORT_SYMBOL_GPL(rcu_read_lock_bh_held);
+> 
+>  #endif /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
+> 
+> +#if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_PROVE_RCU)
+> +
+> +static void rcu_lockdep_assert_watching(void)
+> +{
+> +	rcu_lockdep_assert(rcu_is_watching(), "RCU used illegally while idle");
+> +}
+> +
+> +static void rcu_acquire_map(struct lockdep_map *map, unsigned long ip)
+> +{
+> +	__rcu_lock_acquire(map, ip);
+> +	rcu_lockdep_assert_watching();
+> +}
+> +
+> +static void rcu_release_map(struct lockdep_map *map, unsigned long ip)
+> +{
+> +	rcu_lockdep_assert_watching();
+> +	__rcu_lock_release(map, ip);
+> +}
+> +
+> +void rcu_lock_acquire(void)
+> +{
+> +	rcu_acquire_map(&rcu_lock_map, _RET_IP_);
+> +}
+> +EXPORT_SYMBOL(rcu_lock_acquire);
+> +
+> +void rcu_lock_release(void)
+> +{
+> +	rcu_release_map(&rcu_lock_map, _RET_IP_);
+> +}
+> +EXPORT_SYMBOL(rcu_lock_release);
+> +
+> +void rcu_lock_acquire_bh(void)
+> +{
+> +	rcu_acquire_map(&rcu_bh_lock_map, _RET_IP_);
+> +}
+> +EXPORT_SYMBOL(rcu_lock_acquire_bh);
+> +
+> +void rcu_lock_release_bh(void)
+> +{
+> +	rcu_release_map(&rcu_bh_lock_map, _RET_IP_);
+> +}
+> +EXPORT_SYMBOL(rcu_lock_release_bh);
+> +
+> +void rcu_lock_acquire_sched(void)
+> +{
+> +	rcu_acquire_map(&rcu_sched_lock_map, _RET_IP_);
+> +}
+> +EXPORT_SYMBOL(rcu_lock_acquire_sched);
+> +
+> +void rcu_lock_release_sched(void)
+> +{
+> +	rcu_release_map(&rcu_sched_lock_map, _RET_IP_);
+> +}
+> +EXPORT_SYMBOL(rcu_lock_release_sched);
+> +
+> +#endif
+> +
+>  struct rcu_synchronize {
+>  	struct rcu_head head;
+>  	struct completion completion;
+> -- 
+> 1.5.5.1
+> 
+> 
+
