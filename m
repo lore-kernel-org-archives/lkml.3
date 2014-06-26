@@ -1,76 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751238AbaFZTIx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 15:08:53 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:49618 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750844AbaFZTIv (ORCPT
+	id S1751543AbaFZTJb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 15:09:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58726 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750930AbaFZTJ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 15:08:51 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-To: x86@kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: Borislav Petkov <bp@alien8.de>, Andi Kleen <andi@firstfloor.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH] x86_64,entry: Fix RCX for traced syscalls
-Date: Thu, 26 Jun 2014 12:08:43 -0700
-Message-Id: <55466fbd36df1d011876135cf7ca5d40c05029c7.1403809591.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.9.3
+	Thu, 26 Jun 2014 15:09:29 -0400
+Date: Thu, 26 Jun 2014 15:09:13 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
+        shuah.kh@samsung.com, stable@vger.kernel.org
+Subject: Re: [PATCH 3.15 00/61] 3.15.2-stable review
+Message-ID: <20140626190913.GA5565@kroah.com>
+References: <20140624154952.751713761@linuxfoundation.org>
+ <53AA0A34.8080300@roeck-us.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53AA0A34.8080300@roeck-us.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The int_ret_from_sys_call and syscall tracing code disagrees with
-the sysret path as to the value of RCX.
+On Tue, Jun 24, 2014 at 04:31:00PM -0700, Guenter Roeck wrote:
+> On 06/24/2014 08:50 AM, Greg Kroah-Hartman wrote:
+> >This is the start of the stable review cycle for the 3.15.2 release.
+> >There are 61 patches in this series, all will be posted as a response
+> >to this one.  If anyone has any issues with these being applied, please
+> >let me know.
+> >
+> >Responses should be made by Thu Jun 26 15:49:36 UTC 2014.
+> >Anything received after that time might be too late.
+> >
+> 
+> Build results:
+> 	total: 144 pass: 136 skipped: 5 fail: 3
+> Failed builds:
+> 	powerpc:allmodconfig (binutils 2.23)
+> 	powerpc:allmodconfig (binutils 2.24)
+> 	unicore32:defconfig
+> 
+> Qemu tests all passed.
+> 
+> Results are as expected. Again, unicore32:defconfig would be an easy fix if so desired.
 
-The Intel SDM, the AMD APM, and my laptop all agree that sysret
-returns with RCX == RIP.  The syscall tracing code does not respect
-this property.
+Thanks for testing all of these.
 
-For example, this program:
+As the maintainer of the architecture doesn't seem to care about
+unicore32, I don't see the need to spend any time / effort on it either
+:(
 
-int main()
-{
-	extern const char syscall_rip[];
-	unsigned long rcx = 1;
-	unsigned long orig_rcx = rcx;
-	asm ("mov $-1, %%eax\n\t"
-	     "syscall\n\t"
-	     "syscall_rip:"
-	     : "+c" (rcx) : : "r11");
-	printf("syscall: RCX = %lX  RIP = %lX  orig RCX = %lx\n",
-	       rcx, (unsigned long)syscall_rip, orig_rcx);
-	return 0;
-}
+thanks,
 
-prints:
-syscall: RCX = 400556  RIP = 400556  orig RCX = 1
-
-Running it under strace gives this instead:
-syscall: RCX = FFFFFFFFFFFFFFFF  RIP = 400556  orig RCX = 1
-
-This changes FIXUP_TOP_OF_STACK to match sysret, causing the test to
-show RCX == RIP even under strace.
-
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
- arch/x86/kernel/entry_64.S | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index b25ca96..6624e18 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -143,7 +143,8 @@ ENDPROC(native_usergs_sysret64)
- 	movq \tmp,RSP+\offset(%rsp)
- 	movq $__USER_DS,SS+\offset(%rsp)
- 	movq $__USER_CS,CS+\offset(%rsp)
--	movq $-1,RCX+\offset(%rsp)
-+	movq RIP+\offset(%rsp),\tmp  /* get rip */
-+	movq \tmp,RCX+\offset(%rsp)  /* copy it to rcx as sysret would do */
- 	movq R11+\offset(%rsp),\tmp  /* get eflags */
- 	movq \tmp,EFLAGS+\offset(%rsp)
- 	.endm
--- 
-1.9.3
-
+greg k-h
