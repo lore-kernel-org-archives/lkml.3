@@ -1,72 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757601AbaFZDg1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 23:36:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50984 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752104AbaFZDg0 (ORCPT
+	id S1752920AbaFZDok (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 23:44:40 -0400
+Received: from relay5-d.mail.gandi.net ([217.70.183.197]:42639 "EHLO
+	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751024AbaFZDoj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 23:36:26 -0400
-Date: Wed, 25 Jun 2014 23:36:08 -0400
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Dexuan Cui <decui@microsoft.com>
-Cc: "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tomi.valkeinen@ti.com" <tomi.valkeinen@ti.com>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: Re: [PATCH] video: hyperv: hyperv_fb: refresh the VM screen by force
- on VM panic
-Message-ID: <20140626033608.GA32654@kroah.com>
-References: <1403569757-2622-1-git-send-email-decui@microsoft.com>
- <20140624135101.GB10115@kroah.com>
- <EE124450C0AAF944A40DD71E61F878C98353C6@SINEX14MBXC418.southpacific.corp.microsoft.com>
+	Wed, 25 Jun 2014 23:44:39 -0400
+X-Originating-IP: 50.43.32.211
+Date: Wed, 25 Jun 2014 20:44:30 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Joe Perches <joe@perches.com>
+Cc: Andy Whitcroft <apw@canonical.com>, gregkh@linux-foundation.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] scripts/checkpatch.pl: Only emit LONG_LINE for --strict
+Message-ID: <20140626034430.GA22836@thin>
+References: <20140625154629.GA21519@thin>
+ <1403741107.28663.9.camel@joe-AO725>
+ <20140626022448.GA22091@thin>
+ <1403749983.7977.6.camel@joe-AO725>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <EE124450C0AAF944A40DD71E61F878C98353C6@SINEX14MBXC418.southpacific.corp.microsoft.com>
+In-Reply-To: <1403749983.7977.6.camel@joe-AO725>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 24, 2014 at 09:44:14PM +0000, Dexuan Cui wrote:
-> >On Tue, Jun 24, 2014 at 08:29:17AM +0800, Dexuan Cui wrote:
-> >> Currently the VSC has no chance to notify the VSP of the dirty rectangle on VM
-> >> panic because the notification work is done in a workqueue, and in panic() the
-> >> kernel typically ends up in an infinite loop, and a typical kernel config has
-> >> CONFIG_PREEMPT_VOLUNTARY=y and CONFIG_PREEMPT is not set, so a context switch
-> >> can't happen in panic() and the workqueue won't have a chance to run. As a
-> >> result, the VM Connection window can't refresh until it's closed and we
-> >> re-connect to the VM.
-> >> 
-> >> We can register a handler on panic_notifier_list: the handler can notify
-> >> the VSC and switch the framebuffer driver to a "synchronous mode", meaning
-> >> the VSC flushes any future framebuffer change to the VSP immediately.
-> >> 
-> >> MS-TFS: 157532
+On Wed, Jun 25, 2014 at 07:33:03PM -0700, Joe Perches wrote:
+> On Wed, 2014-06-25 at 19:24 -0700, Josh Triplett wrote:
+> > On Wed, Jun 25, 2014 at 05:05:07PM -0700, Joe Perches wrote:
+> > > On Wed, 2014-06-25 at 08:46 -0700, Josh Triplett wrote:
+> > > > Regardless of the long-standing debate over line width, checkpatch
+> > > > should not warn about it by default.
+> > > 
+> > > I'm not getting involved here.
+> > > I don't care much one way or another.
+> []
+> > I'm not asking you to get involved in the Great Line Length Debate;
+> > that's why I didn't attempt to patch CodingStyle or similar.  However, I
+> > think it makes sense for *checkpatch* to stop emitting this warning.
 > 
-> > What is this line for?
-> 
-> Hi Greg,
-> This line is for our internal bug repository.
-> We have an automated system to correlate bugs with fixes so that our test
-> team knows when a bug fix has been accepted upstream and they need to
-> write a new test case for it. 
-> 
-> The MS-TFS line has appeared in the commit description for a while if you
-> search for it in 'git log'  of linux-next.
-> 
-> Please let us know if you have further comments.
+> I think checkpatch should encourage people to write code in
+> a style that matches CodingStyle as well as the predominant
+> styles used in the rest of the kernel.
 
-Please don't add marker lines like this that provide no relevancy to
-anyone else.  I don't allow gerrit ids for the same reason.  If you want
-to refer to a public bug tracker, that's great, otherwise, don't
-include it.
+Not arguing with that, but in this particular case the warning seems
+counterproductive to that goal, especially compared to the
+DEEP_INDENTATION warning.  More subjective or "to taste" issues tend
+to have lower severity in checkpatch.  And CodingStyle *already* says
+"unless exceeding 80 columns significantly increases
+readability"
 
-greg k-h
+- Josh Triplett
