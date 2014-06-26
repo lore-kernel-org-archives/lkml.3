@@ -1,90 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757315AbaFZA5k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 20:57:40 -0400
-Received: from mga11.intel.com ([192.55.52.93]:41874 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756728AbaFZA5j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 20:57:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="357430413"
-Message-ID: <53AB6FFF.4000506@linux.intel.com>
-Date: Thu, 26 Jun 2014 08:57:35 +0800
-From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1757396AbaFZA55 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 20:57:57 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:37456 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756728AbaFZA5z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 20:57:55 -0400
+Message-ID: <53AB700C.20808@linaro.org>
+Date: Thu, 26 Jun 2014 09:57:48 +0900
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Liu hua <sdu.liu@huawei.com>, "Luck, Tony" <tony.luck@intel.com>,
-        "anton@enomsg.org" <anton@enomsg.org>,
-        "ccross@android.com" <ccross@android.com>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Wang Nan <wangnan0@huawei.com>,
-        "peifeiyue@huawei.com" <peifeiyue@huawei.com>,
-        Liu ShuoX <shuox.liu@intel.com>, Rocher@vger.kernel.org,
-        Jeremy <jeremy.rocher@intel.com>
-Subject: Re: Should Pstore(ramoops) records customized information?
-References: <539E6D4D.5000802@huawei.com> <53A164DB.1020305@huawei.com> <3908561D78D1C84285E8C5FCA982C28F32838E10@ORSMSX114.amr.corp.intel.com> <53A2D5BB.5040500@huawei.com> <3908561D78D1C84285E8C5FCA982C28F3283A5E3@ORSMSX114.amr.corp.intel.com> <53A41125.4080802@huawei.com> <53AA1A9F.8030108@linux.intel.com> <53AAC9D8.4010204@huawei.com>
-In-Reply-To: <53AAC9D8.4010204@huawei.com>
+To: Mark Salter <msalter@redhat.com>
+CC: wad@chromium.org, catalin.marinas@arm.com, will.deacon@arm.com,
+        arndb@arndb.de, dsaxena@linaro.org,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        linux-kernel@vger.kernel.org, patches@linaro.org
+Subject: Re: [PATCH_v4 0/2] arm64: Add seccomp support
+References: <1394705823-12465-1-git-send-email-takahiro.akashi@linaro.org>	 <1394862604-29105-1-git-send-email-takahiro.akashi@linaro.org> <1403708017.755.86.camel@deneb.redhat.com>
+In-Reply-To: <1403708017.755.86.camel@deneb.redhat.com>
 Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/25/2014 11:53 PM, Mark Salter wrote:
+> What is the current status of this patch series? Is it on track
+> for 3.17?
 
-On 2014/6/25 21:08, Liu hua wrote:
-> 于 2014/6/25 8:41, Zhang, Yanmin 写道:
->> On 2014/6/20 18:47, Liu hua wrote:
->>> On 2014/6/20 7:42, Luck, Tony wrote:
->>>
->>>>> BTW, I note that "extern struct pstore_info *psinfo" locates in
->>>>> fs/pstore/internal.h. So users out of directory "fs/pstore/" can not use pstore to
->>>>> record messages. We do not want other kernel users to use pstore, right?  And can we
->>>>> break this?
->>>> Yes we can make some interface visible to the rest of the kernel ... probably
->>>> not the raw "*psinfo" though. Perhaps the pstore_alloc_ring_buffer() and
->>>> pstore_write_ring_buffer() functions should be the ones exported to the
->>>> rest of the kernel.
->>>>
->>>>> ditoo.. Since other backends like efi and erst may can not privide such ring buffer.
->>>>> So pstore_alloc_ring_buffer should be a funciton pointer of pstore_info struct.
->>>> Yes - that allows less capable backend like ERST and efivars to not provide the
->>>> service.  Since it becomes internal, you can drop the "pstore_" prefix.  E.g.
->>>> something like:
->>>>
->>>> int pstore_alloc_ring_buffer(char *name, int size)
->>>> {
->>>>      return psinfo->alloc_ring_buffer(name, size);
->>>> }
->>>> EXPORT_SYMBOL_GPL(pstore_alloc_ring_buffer);
->>>>
->>>> ... and you have to find/make some global header for the "extern" declaration.
->>> I will make these RFC patch series according to our discussion. Thanks you very to
->>> valuable advice.
->> Sorry for seeing your email late.We already worked out some patches to restructure
->> pstore. Would you like to try patchset http://article.gmane.org/gmane.linux.kernel/1697680/?
+I assume not as I saw no comments on this so far.
+But I will re-post a new version soon or later due to recent changes on seccomp.
+
+-Takahiro AKASHI
+
+> On Sat, 2014-03-15 at 14:50 +0900, AKASHI Takahiro wrote:
+>> (Please apply this patch after my ftrace patch and audit patch in order
+>> to avoid some conflict on arm64/Kconfig.)
 >>
->> We have more patches available to add some flags to disable/enable specific zones.
-> That's great! I have tried your patches. BTW, Your patches do not work on ARM platform,
-> before I changed linker scripts;
-
-Initially, we just implemented it on x86. It's easy to extend it to ARM. Mostly change the arm
-vmlinux.lds.S to add the sections. Pls. also change setup_arch to allocate memory blocks for
-pstore.
-In the patchset, there is an example patch, including reserve memory and zone examples.
-Pls. reference it.
-
->   And can we use this method in modules(I failed to do that)?
-
-It's a good question. There are many approaches to support modules.
-1) Define the zone in built-in files and export it.Then, you can use it in module.
-2) Define the zone and new tracer functions in built-in files and export
-the tracer functions.
-
+>> This patch enables secure computing (system call filtering) on arm64.
+>> System calls can be allowed or denied by loaded bpf-style rules.
+>> Architecture specific part is to run secure_computing() on syscall entry
+>> and check the result. See [2/2]
+>>
+>> Prerequisites are:
+>>   * "arm64: make a single hook to syscall_trace() for all syscall features" patch
+>>   * "arm64: split syscall_trace() into separate functions for enter/exit" patch
+>>   * "arm64: Add audit support" patch
+>>   * "arm64: is_compat_task is defined both in asm/compat.h and
+>>      linux/compat.h" patch
+>>
+>> This code is tested on ARMv8 fast model using libseccomp v2.1.1 with
+>> modifications for arm64 and verified by its "live" tests, 20, 21 and 24.
+>>
+>> Changes v3 -> v4:
+>> * removed the following patch and moved it to "arm64: prerequisites for
+>>    audit and ftrace" patchset since it is required for audit and ftrace in
+>>    case of !COMPAT, too.
+>>    "arm64: is_compat_task is defined both in asm/compat.h and linux/compat.h"
+>>
+>> Changes v2 -> v3:
+>> * removed unnecessary 'type cast' operations [2/3]
+>> * check for a return value (-1) of secure_computing() explicitly [2/3]
+>> * aligned with the patch, "arm64: split syscall_trace() into separate
+>>    functions for enter/exit" [2/3]
+>> * changed default of CONFIG_SECCOMP to n [2/3]
+>>
+>> Changes v1 -> v2:
+>> * added generic seccomp.h for arm64 to utilize it [1,2/3]
+>> * changed syscall_trace() to return more meaningful value (-EPERM)
+>>    on seccomp failure case [2/3]
+>> * aligned with the change in "arm64: make a single hook to syscall_trace()
+>>    for all syscall features" v2 [2/3]
+>> * removed is_compat_task() definition from compat.h [3/3]
+>>
+>> AKASHI Takahiro (2):
+>>    asm-generic: Add generic seccomp.h for secure computing mode 1
+>>    arm64: Add seccomp support
+>>
+>>   arch/arm64/Kconfig               | 14 ++++++++++++++
+>>   arch/arm64/include/asm/seccomp.h | 25 +++++++++++++++++++++++++
+>>   arch/arm64/include/asm/unistd.h  |  3 +++
+>>   arch/arm64/kernel/entry.S        |  4 ++++
+>>   arch/arm64/kernel/ptrace.c       |  6 ++++++
+>>   include/asm-generic/seccomp.h    | 28 ++++++++++++++++++++++++++++
+>>   6 files changed, 80 insertions(+)
+>>   create mode 100644 arch/arm64/include/asm/seccomp.h
+>>   create mode 100644 include/asm-generic/seccomp.h
+>>
 >
-> After a quick glance and try, I think my idea is a little different from yours. I will reply you
-> later.
-
-Pls. Share your opinions. We are improving pstore to make it easier to be used.
-
+>
