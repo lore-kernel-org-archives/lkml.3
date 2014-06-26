@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755237AbaFZJI5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 05:08:57 -0400
-Received: from fgwmail.fujitsu.co.jp ([164.71.1.133]:44489 "EHLO
+	id S1755597AbaFZJKK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 05:10:10 -0400
+Received: from fgwmail.fujitsu.co.jp ([164.71.1.133]:37492 "EHLO
 	fgwmail.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750831AbaFZJIx (ORCPT
+	with ESMTP id S1754007AbaFZJKH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 05:08:53 -0400
+	Thu, 26 Jun 2014 05:10:07 -0400
 X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <53ABE30F.7000404@jp.fujitsu.com>
-Date: Thu, 26 Jun 2014 18:08:31 +0900
+Message-ID: <53ABE351.9000602@jp.fujitsu.com>
+Date: Thu, 26 Jun 2014 18:09:37 +0900
 From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
@@ -24,148 +24,162 @@ CC: Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
         Oleg Nesterov <oleg@redhat.com>,
         Preeti U Murthy <preeti@linux.vnet.ibm.com>,
         Denys Vlasenko <vda.linux@googlemail.com>
-Subject: [PATCH 1/8] cputime, sched: record last_iowait
+Subject: [PATCH 2/8] cputime, nohz: handle last_iowait for nohz
 References: <53ABE28F.6010402@jp.fujitsu.com>
 In-Reply-To: <53ABE28F.6010402@jp.fujitsu.com>
 Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Record the timestamp when nr_iowait of idle cpu is dropped to 0 by
-running cpu who pick a task which have call io_schedule() before
-entering idle.
+Now observer cpu can refer both of idle entry time and iowait exit
+time of observed sleeping cpu, so observer can get idle/iowait time
+of sleeping cpu by calculating cputimes not accounted yet.
 
-It is the time point that cpu's state have changed from "iowait"
-to "idle". Following patch use it for updated idle accounting.
-
-Suggested-by: Peter Zijlstra <peterz@infradead.org>
 Not-Tested-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
 ---
- kernel/sched/core.c    |   40 ++++++++++++++++++++++++++++------------
- kernel/sched/cputime.c |    2 +-
- kernel/sched/sched.h   |    4 +++-
- 3 files changed, 32 insertions(+), 14 deletions(-)
+ include/linux/sched.h    |    1 +
+ kernel/sched/core.c      |   27 +++++++++++++++++++++++++
+ kernel/time/tick-sched.c |   48 +++++++++++++++++++++++++++++++++------------
+ 3 files changed, 63 insertions(+), 13 deletions(-)
 
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 306f4f0..29e1af0 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -168,6 +168,7 @@ extern int nr_processes(void);
+ extern unsigned long nr_running(void);
+ extern unsigned long nr_iowait(void);
+ extern unsigned long nr_iowait_cpu(int cpu);
++extern void nr_iowait_deltas(int cpu, ktime_t start, ktime_t now, ktime_t *iowait, ktime_t *idle);
+ extern unsigned long this_cpu_load(void);
+ 
+ 
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 3bdf01b..e759238 100644
+index e759238..814ee2e 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -2374,15 +2374,14 @@ unsigned long nr_iowait(void)
- 	unsigned long i, sum = 0;
- 
- 	for_each_possible_cpu(i)
--		sum += atomic_read(&cpu_rq(i)->nr_iowait);
-+		sum += cpu_rq(i)->nr_iowait;
- 
- 	return sum;
+@@ -2384,6 +2384,33 @@ unsigned long nr_iowait_cpu(int cpu)
+ 	return cpu_rq(cpu)->nr_iowait;
  }
  
- unsigned long nr_iowait_cpu(int cpu)
- {
--	struct rq *this = cpu_rq(cpu);
--	return atomic_read(&this->nr_iowait);
-+	return cpu_rq(cpu)->nr_iowait;
- }
- 
++/*
++ * nr_iowait_deltas - divide idle time into idle delta and iowait delta
++ *
++ * @start: time stamp at start of idle span
++ * @now: time stamp at end of idle span
++ * @iowait_delta: address to store calculated iowait
++ * @idle_delta: address to store calculated idle
++ */
++void nr_iowait_deltas(int cpu, ktime_t start, ktime_t now,
++		      ktime_t *iowait_delta, ktime_t *idle_delta)
++{
++	struct rq *rq = cpu_rq(cpu);
++
++	raw_spin_lock(&rq->iowait_lock);
++	if (rq->nr_iowait || ktime_compare(rq->last_iowait, now) > 0) {
++		*iowait_delta = ktime_sub(now, start);
++		*idle_delta = ktime_set(0, 0);
++	} else if (ktime_compare(rq->last_iowait, start) > 0) {
++		*iowait_delta = ktime_sub(rq->last_iowait, start);
++		*idle_delta = ktime_sub(now, rq->last_iowait);
++	} else {
++		*iowait_delta = ktime_set(0, 0);
++		*idle_delta = ktime_sub(now, start);
++	}
++	raw_spin_unlock(&rq->iowait_lock);
++}
++
  #ifdef CONFIG_SMP
-@@ -4305,6 +4304,24 @@ out_irq:
- }
- EXPORT_SYMBOL_GPL(yield_to);
  
-+static inline void iowait_start(struct rq *rq)
-+{
-+	raw_spin_lock(&rq->iowait_lock);
-+	rq->nr_iowait++;
-+	raw_spin_unlock(&rq->iowait_lock);
-+	current->in_iowait = 1;
-+}
-+
-+static inline void iowait_stop(struct rq *rq)
-+{
-+	current->in_iowait = 0;
-+	raw_spin_lock(&rq->iowait_lock);
-+	rq->nr_iowait--;
-+	if (!rq->nr_iowait && rq != this_rq())
-+		rq->last_iowait = ktime_get();
-+	raw_spin_unlock(&rq->iowait_lock);
-+}
-+
  /*
-  * This task is about to go to sleep on IO. Increment rq->nr_iowait so
-  * that process accounting knows that this is a task in IO wait state.
-@@ -4314,12 +4331,10 @@ void __sched io_schedule(void)
- 	struct rq *rq = raw_rq();
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 44eb187..8d23af5 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -408,16 +408,22 @@ static void tick_nohz_update_jiffies(ktime_t now)
  
- 	delayacct_blkio_start();
--	atomic_inc(&rq->nr_iowait);
-+	iowait_start(rq);
- 	blk_flush_plug(current);
--	current->in_iowait = 1;
- 	schedule();
--	current->in_iowait = 0;
--	atomic_dec(&rq->nr_iowait);
-+	iowait_stop(rq);
- 	delayacct_blkio_end();
- }
- EXPORT_SYMBOL(io_schedule);
-@@ -4330,12 +4345,10 @@ long __sched io_schedule_timeout(long timeout)
- 	long ret;
+ static void tick_nohz_stop_idle(struct tick_sched *ts, ktime_t now)
+ {
+-	ktime_t delta;
++	static const ktime_t ktime_zero = { .tv64 = 0 };
++	ktime_t iowait_delta = ktime_zero, idle_delta = ktime_zero;
  
- 	delayacct_blkio_start();
--	atomic_inc(&rq->nr_iowait);
-+	iowait_start(rq);
- 	blk_flush_plug(current);
--	current->in_iowait = 1;
- 	ret = schedule_timeout(timeout);
--	current->in_iowait = 0;
--	atomic_dec(&rq->nr_iowait);
-+	iowait_stop(rq);
- 	delayacct_blkio_end();
- 	return ret;
- }
-@@ -6994,7 +7007,10 @@ void __init sched_init(void)
- #endif
- #endif
- 		init_rq_hrtick(rq);
--		atomic_set(&rq->nr_iowait, 0);
+ 	write_seqcount_begin(&ts->idle_sleeptime_seq);
+ 
+ 	/* Updates the per cpu time idle statistics counters */
+-	delta = ktime_sub(now, ts->idle_entrytime);
+-	if (nr_iowait_cpu(smp_processor_id()) > 0)
+-		ts->iowait_sleeptime = ktime_add(ts->iowait_sleeptime, delta);
+-	else
+-		ts->idle_sleeptime = ktime_add(ts->idle_sleeptime, delta);
++	if (ts->idle_active == 2) {
++		nr_iowait_deltas(smp_processor_id(), ts->idle_entrytime, now,
++				 &iowait_delta, &idle_delta);
++		ts->iowait_sleeptime = ktime_add(ts->iowait_sleeptime,
++						 iowait_delta);
++	} else {
++		idle_delta = ktime_sub(now, ts->idle_entrytime);
++	}
++	ts->idle_sleeptime = ktime_add(ts->idle_sleeptime, idle_delta);
 +
-+		raw_spin_lock_init(&rq->iowait_lock);
-+		rq->nr_iowait = 0;
-+		rq->last_iowait = ktime_get();
- 	}
+ 	ts->idle_entrytime = now;
+ 	ts->idle_active = 0;
  
- 	set_load_weight(&init_task);
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index 72fdf06..a028604 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -248,7 +248,7 @@ void account_idle_time(cputime_t cputime)
- 	u64 *cpustat = kcpustat_this_cpu->cpustat;
- 	struct rq *rq = this_rq();
+@@ -432,7 +438,13 @@ static ktime_t tick_nohz_start_idle(struct tick_sched *ts)
  
--	if (atomic_read(&rq->nr_iowait) > 0)
-+	if (rq->nr_iowait > 0)
- 		cpustat[CPUTIME_IOWAIT] += (__force u64) cputime;
- 	else
- 		cpustat[CPUTIME_IDLE] += (__force u64) cputime;
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 31cc02e..4ddfddc 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -561,7 +561,9 @@ struct rq {
- 	u64 clock;
- 	u64 clock_task;
+ 	write_seqcount_begin(&ts->idle_sleeptime_seq);
+ 	ts->idle_entrytime = now;
+-	ts->idle_active = 1;
++	/*
++	 * idle_active:
++	 *  0: cpu is not idle
++	 *  1: cpu is performing idle
++	 *  2: cpu is performing iowait and idle
++	 */
++	ts->idle_active = 1 + !!nr_iowait_cpu(smp_processor_id());
+ 	write_seqcount_end(&ts->idle_sleeptime_seq);
  
--	atomic_t nr_iowait;
-+	raw_spinlock_t	iowait_lock ____cacheline_aligned;
-+	unsigned int	nr_iowait;
-+	ktime_t		last_iowait;
+ 	sched_clock_idle_sleep_event();
+@@ -467,10 +479,18 @@ u64 get_cpu_idle_time_us(int cpu, u64 *wall)
  
- #ifdef CONFIG_SMP
- 	struct root_domain *rd;
+ 	do {
+ 		seq = read_seqcount_begin(&ts->idle_sleeptime_seq);
+- 
+-		if (ts->idle_active && !nr_iowait_cpu(cpu)) {
+-			ktime_t delta = ktime_sub(now, ts->idle_entrytime);
+ 
++		if (ts->idle_active) {
++			ktime_t delta;
++
++			if (ts->idle_active == 2) {
++				ktime_t unused;
++
++				nr_iowait_deltas(cpu, ts->idle_entrytime, now,
++						 &unused, &delta);
++			} else {
++				delta = ktime_sub(now, ts->idle_entrytime);
++			}
+ 			idle = ktime_add(ts->idle_sleeptime, delta);
+ 		} else {
+ 			idle = ts->idle_sleeptime;
+@@ -510,10 +530,12 @@ u64 get_cpu_iowait_time_us(int cpu, u64 *wall)
+ 
+ 	do {
+ 		seq = read_seqcount_begin(&ts->idle_sleeptime_seq);
+- 
+-		if (ts->idle_active && nr_iowait_cpu(cpu) > 0) {
+-			ktime_t delta = ktime_sub(now, ts->idle_entrytime);
+ 
++		if (ts->idle_active == 2) {
++			ktime_t delta, unused;
++
++			nr_iowait_deltas(cpu, ts->idle_entrytime, now,
++					 &delta, &unused);
+ 			iowait = ktime_add(ts->iowait_sleeptime, delta);
+ 		} else {
+ 			iowait = ts->iowait_sleeptime;
 -- 
 1.7.1
 
