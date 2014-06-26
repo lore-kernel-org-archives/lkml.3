@@ -1,82 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757569AbaFZBQg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 21:16:36 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:55637 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757421AbaFZBQe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 21:16:34 -0400
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "Alexander E. Patrakov" <patrakov@gmail.com>,
-        Nitin Gupta <ngupta@vflare.org>, Jerome Marchand <jmarchan@redhat.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Minchan Kim <minchan@kernel.org>, stable@vger.kernel.org
-Subject: [PATCH] zram: revalidate disk after capacity change
-Date: Thu, 26 Jun 2014 10:16:25 +0900
-Message-Id: <1403745385-18952-1-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 2.0.0
+	id S1757619AbaFZBR6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 21:17:58 -0400
+Received: from imap.thunk.org ([74.207.234.97]:58615 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757232AbaFZBR5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 21:17:57 -0400
+Date: Wed, 25 Jun 2014 21:17:51 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Jan Kara <jack@suse.cz>
+Subject: Re: [PATCH 1/1] FS/JBD:replace count*size kmalloc by kmalloc_array
+Message-ID: <20140626011751.GA6826@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Fabian Frederick <fabf@skynet.be>, linux-kernel@vger.kernel.org,
+	Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>
+References: <1403722146-19657-1-git-send-email-fabf@skynet.be>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403722146-19657-1-git-send-email-fabf@skynet.be>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alexander reported mkswap on /dev/zram0 is failed if other process
-is opening the block device file.
+On Wed, Jun 25, 2014 at 08:49:06PM +0200, Fabian Frederick wrote:
+> kmalloc_array manages count*sizeof overflow.
 
-Step is as follows,
+Except in these call sites, overflow is impossible.
 
-0. Reset the unused zram device.
-1. Use a program that opens /dev/zram0 with O_RDWR and sleeps
-   until killed.
-2. While that program sleeps, echo the correct value to
-   /sys/block/zram0/disksize.
-3. Verify (e.g. in /proc/partitions) that the disk size is applied
-   correctly. It is.
-4. While that program still sleeps, attempt to mkswap /dev/zram0.
-   This fails: mkswap: error: swap area needs to be at least 40 KiB
+kmalloc_array() is useful when count is coming from an unvalidated
+source.  But in this case, the count is either a fixed, hard-coded
+value (256), or the size of n*count is *guaranteed* to be less than
+the page size.
 
-When I investigated, the size get by ioctl(fd, BLKGETSIZE64, xxx)
-on mkswap to get a size of blockdev was zero although zram0 has
-right size by 2.
+So this just adds some extra code which is pointless (assuming the
+compiler isn't smart enough to optimize it out).
 
-The reason is zram didn't revalidate disk after changing capacity
-so that size of blockdev's inode is not uptodate until all of file
-is close.
-
-This patch should fix the BUG.
-
-Cc: stable@vger.kernel.org
-Reported-and-Tested-by: Alexander E. Patrakov <patrakov@gmail.com>
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- drivers/block/zram/zram_drv.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-index 48eccb3..089e72c 100644
---- a/drivers/block/zram/zram_drv.c
-+++ b/drivers/block/zram/zram_drv.c
-@@ -622,8 +622,10 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
- 	memset(&zram->stats, 0, sizeof(zram->stats));
- 
- 	zram->disksize = 0;
--	if (reset_capacity)
-+	if (reset_capacity) {
- 		set_capacity(zram->disk, 0);
-+		revalidate_disk(zram->disk);
-+	}
- 	up_write(&zram->init_lock);
- }
- 
-@@ -664,6 +666,7 @@ static ssize_t disksize_store(struct device *dev,
- 	zram->comp = comp;
- 	zram->disksize = disksize;
- 	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
-+	revalidate_disk(zram->disk);
- 	up_write(&zram->init_lock);
- 	return len;
- 
--- 
-2.0.0
-
+	       	     	       		   - Ted
