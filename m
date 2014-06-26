@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755292AbaFZHNb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 03:13:31 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:48379 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755204AbaFZHN3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 03:13:29 -0400
+	id S1755462AbaFZHNk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 03:13:40 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:48352 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755308AbaFZHNh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 03:13:37 -0400
 From: Sricharan R <r.sricharan@ti.com>
 To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <tony@atomide.com>, <santosh.shilimkar@ti.com>, <nm@ti.com>,
         <rnayak@ti.com>, <linux@arm.linux.org.uk>, <r.sricharan@ti.com>,
         <tglx@linutronix.de>, <jason@lakedaemon.net>, <joe@perches.com>
-Subject: [PATCH V4 04/16] irqchip: crossbar: Initialise the crossbar with a safe value
-Date: Thu, 26 Jun 2014 12:40:22 +0530
-Message-ID: <1403766634-18543-5-git-send-email-r.sricharan@ti.com>
+Subject: [PATCH V4 05/16] irqchip: crossbar: Change allocation logic by reversing search for free irqs
+Date: Thu, 26 Jun 2014 12:40:23 +0530
+Message-ID: <1403766634-18543-6-git-send-email-r.sricharan@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1403766634-18543-1-git-send-email-r.sricharan@ti.com>
 References: <1403766634-18543-1-git-send-email-r.sricharan@ti.com>
@@ -26,99 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nishanth Menon <nm@ti.com>
 
-Since crossbar is s/w configurable, the initial settings of the
-crossbar cannot be assumed to be sane. This implies that:
-a) On initialization all un-reserved crossbars must be initialized to
-   a known 'safe' value.
-b) When unmapping the interrupt, the safe value must be written to
-   ensure that the crossbar mapping matches with interrupt controller
-   usage.
+Reverse the search algorithm to ensure that address mapping and IRQ
+allocation logics are proper. This makes the below bugs visible sooner.
 
-So provide a safe value in the dt data to map if
-'0' is not safe for the platform and use it during init and unmap
+class 1. address space errors -> example:
+reg = <a size_b>
+ti,max-irqs =  is a wrong parameter
 
-While at this, fix the below checkpatch warning.
-Fixes checkpatch warning:
-WARNING: Unnecessary space before function pointer arguments
- #37: FILE: drivers/irqchip/irq-crossbar.c:37:
- +	void (*write) (int, int);
+class 2: irq-reserved list - which decides which entries in the
+address space is not actually wired in
+
+class 3: wrong list of routable-irqs.
+
+In general allocating from max to min tends to have benefits in
+ensuring the different issues that may be present in dts is easily
+caught at definition time, rather than at a later point in time.
 
 Signed-off-by: Nishanth Menon <nm@ti.com>
 Signed-off-by: Sricharan R <r.sricharan@ti.com>
 Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 ---
- .../devicetree/bindings/arm/omap/crossbar.txt      |    3 +++
- drivers/irqchip/irq-crossbar.c                     |   19 +++++++++++++++++--
- 2 files changed, 20 insertions(+), 2 deletions(-)
+ drivers/irqchip/irq-crossbar.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/arm/omap/crossbar.txt b/Documentation/devicetree/bindings/arm/omap/crossbar.txt
-index 0795765..5f45c78 100644
---- a/Documentation/devicetree/bindings/arm/omap/crossbar.txt
-+++ b/Documentation/devicetree/bindings/arm/omap/crossbar.txt
-@@ -22,6 +22,9 @@ Optional properties:
-   SOC-specific hard-wiring of those irqs which unexpectedly bypasses the
-   crossbar. These irqs have a crossbar register, but still cannot be used.
- 
-+- ti,irqs-safe-map: integer which maps to a safe configuration to use
-+  when the interrupt controller irq is unused (when not provided, default is 0)
-+
- Examples:
- 		crossbar_mpu: @4a020000 {
- 			compatible = "ti,irq-crossbar";
 diff --git a/drivers/irqchip/irq-crossbar.c b/drivers/irqchip/irq-crossbar.c
-index 0533a71..4be30c0 100644
+index 4be30c0..a39cb31 100644
 --- a/drivers/irqchip/irq-crossbar.c
 +++ b/drivers/irqchip/irq-crossbar.c
-@@ -23,16 +23,18 @@
- 
- /*
-  * @int_max: maximum number of supported interrupts
-+ * @safe_map: safe default value to initialize the crossbar
-  * @irq_map: array of interrupts to crossbar number mapping
-  * @crossbar_base: crossbar base address
-  * @register_offsets: offsets for each irq number
-  */
- struct crossbar_device {
- 	uint int_max;
-+	uint safe_map;
- 	uint *irq_map;
- 	void __iomem *crossbar_base;
- 	int *register_offsets;
--	void (*write) (int, int);
-+	void (*write)(int, int);
- };
- 
- static struct crossbar_device *cb;
-@@ -88,8 +90,10 @@ static void crossbar_domain_unmap(struct irq_domain *d, unsigned int irq)
+@@ -58,7 +58,7 @@ static inline int get_prev_map_irq(int cb_no)
  {
- 	irq_hw_number_t hw = irq_get_irq_data(irq)->hwirq;
+ 	int i;
  
--	if (hw > GIC_IRQ_START)
-+	if (hw > GIC_IRQ_START) {
- 		cb->irq_map[hw - GIC_IRQ_START] = IRQ_FREE;
-+		cb->write(hw - GIC_IRQ_START, cb->safe_map);
-+	}
- }
+-	for (i = 0; i < cb->int_max; i++)
++	for (i = cb->int_max - 1; i >= 0; i--)
+ 		if (cb->irq_map[i] == cb_no)
+ 			return i;
  
- static int crossbar_domain_xlate(struct irq_domain *d,
-@@ -214,6 +218,17 @@ static int __init crossbar_of_init(struct device_node *node)
- 		reserved += size;
- 	}
+@@ -69,7 +69,7 @@ static inline int allocate_free_irq(int cb_no)
+ {
+ 	int i;
  
-+	of_property_read_u32(node, "ti,irqs-safe-map", &cb->safe_map);
-+
-+	/* Initialize the crossbar with safe map to start with */
-+	for (i = 0; i < max; i++) {
-+		if (cb->irq_map[i] == IRQ_RESERVED ||
-+		    cb->irq_map[i] == IRQ_SKIP)
-+			continue;
-+
-+		cb->write(i, cb->safe_map);
-+	}
-+
- 	register_routable_domain_ops(&routable_irq_domain_ops);
- 	return 0;
- 
+-	for (i = 0; i < cb->int_max; i++) {
++	for (i = cb->int_max - 1; i >= 0; i--) {
+ 		if (cb->irq_map[i] == IRQ_FREE) {
+ 			cb->irq_map[i] = cb_no;
+ 			return i;
 -- 
 1.7.9.5
 
