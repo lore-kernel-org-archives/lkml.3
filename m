@@ -1,271 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756242AbaFZJCM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 05:02:12 -0400
-Received: from fgwmail3.fujitsu.co.jp ([164.71.1.134]:47537 "EHLO
-	fgwmail4.fujitsu.co.jp" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756169AbaFZJCJ (ORCPT
+	id S1756376AbaFZJEM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 05:04:12 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:40911 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755011AbaFZJEI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 05:02:09 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <53ABE13F.5030203@jp.fujitsu.com>
-Date: Thu, 26 Jun 2014 18:00:47 +0900
-From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Denys Vlasenko <vda.linux@googlemail.com>, stable@vger.kernel.org
-Subject: [PATCH] nohz: make updating sleep stats local, add seqcount
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Thu, 26 Jun 2014 05:04:08 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfec7f4-b7fac6d000006cfe-e4-53abe200eeb4
+Content-transfer-encoding: 8BIT
+Message-id: <1403773439.27156.1.camel@AMDC1943>
+Subject: Re: [PATCH v4 02/14] mfd: max77686: Allow the max77686 rtc to wakeup
+ the system
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
+        Daniel Stone <daniels@collabora.com>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Thu, 26 Jun 2014 11:03:59 +0200
+In-reply-to: <1403723019-6212-3-git-send-email-javier.martinez@collabora.co.uk>
+References: <1403723019-6212-1-git-send-email-javier.martinez@collabora.co.uk>
+ <1403723019-6212-3-git-send-email-javier.martinez@collabora.co.uk>
+X-Mailer: Evolution 3.10.4-0ubuntu1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjkeLIzCtJLcpLzFFi42I5/e/4ZV2GR6uDDdavtbZYcvEqu8XUh0/Y
+	LDb1b2W3mH/kHKvF2WUH2SyO/i6w6F1wlc3i/tejjBbfrnQwWWx6fI3V4vKuOWwWM87vY7J4
+	OuEim8Wp65/ZLE53s1pMP/6W1aJv7SU2B0GP2Q0XWTz+Pr/O4rHj7hJGj52z7rJ7bFrVyeZx
+	59oeNo95JwM9Ni+p97hyoonVo2/LKkaP6fN+Mnl83iQXwBPFZZOSmpNZllqkb5fAlXHkynLm
+	giWCFZtW7GRrYPzK28XIySEhYCLR83YNK4QtJnHh3nq2LkYuDiGBpYwSrftWgCV4BQQlfky+
+	x9LFyMHBLCAvceRSNkiYWUBdYtK8RcwQ9Z8ZJa71PWIEqeEV0JeYsTEFpEZYIEqie3InI4jN
+	JmAssXn5EjYQW0TATuLG6odgvcwCj1gkHm35A1bEIqAqceffXyYQm1PAX+LsvnnsEAsmM0rM
+	efQP6lJliXn7jzFNYBSYheS+WQj3zUJy3wJG5lWMoqmlyQXFSem5hnrFibnFpXnpesn5uZsY
+	IXH4ZQfj4mNWhxgFOBiVeHgl5q4OFmJNLCuuzD3EKMHBrCTC23kHKMSbklhZlVqUH19UmpNa
+	fIiRiYNTqoFx07XOSTcXuKaHf59Tc+zX6j996//wVga035Kocz67pif9+u7/GZo5uXO1p5qp
+	3m499aCNQb74sMn7R7O2ih6/L+kl/lJhzQn+iKdXblR0hV/ZpSyz8dnrqO0h9osUPzlesax/
+	a7iegWlNxUarnRHvtL9GainrOW3i1Cv+9GGVmPnkvSveThHbosRSnJFoqMVcVJwIACXvPRGh	AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since update_ts_time_stats() has no exclusive control while it can
-be called from both of local cpu and remote cpu, sleep stats will go
-wrong if updates conflict, and stats can be referred while update is
-going on. It will cause bloat and/or hiccup (jump and turn back) of
-idle/iowait values appeared in /proc/stats.
+On śro, 2014-06-25 at 21:03 +0200, Javier Martinez Canillas wrote:
+> From: Doug Anderson <dianders@chromium.org>
+> 
+> The max77686 includes an RTC that keeps power during suspend.  It's
+> convenient to be able to use it as a wakeup source.
+> 
+> NOTE: due to wakeup ordering problems this patch alone doesn't work so
+> well on exynos5250-snow.  You also need something that brings the i2c
+> bus up before the max77686 wakeup runs.
+> 
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> Reviewed-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> ---
+> 
+> Changes since v3:
+>  - Keep the note that this patch needs another change due wakeup
+>    ordering problems.
+> 
+>  drivers/rtc/rtc-max77686.c | 28 ++++++++++++++++++++++++++++
+>  1 file changed, 28 insertions(+)
 
-  - Stop updating from get_cpu_{idle,iowait}_time_us():
-    It is hard to get reasonable performance with having exclusive
-    locking for multiple writers. To limit the update areas to
-    local, remove update functionality from these functions.
-    It makes time stats to be updated by woken cpu only, so there
-    are only one writer now.
+Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-  - Adds seqcount:
-    It should be the minimum implementation to avoid possible races
-    between multiple readers vs. single writer. This lock protects:
-    idle_active, idle_entrytime, idle_sleeptime, iowait_sleeptime.
+Best regards,
+Krzysztof
 
-Minor cleanups included:
 
-  - Rename last_update_time to wall:
-    Now these function do not perform update. Change arg name and
-    comments to fit new behavior.
-
-  - Now there is no other way to reach update_ts_time_stats(), fold
-    this static routine into tick_nohz_stop_idle().
-
-v5: rebased onto v3.16-rc2.
-    update patch description, separate from following changes.
-    (patch body does not changed from 1/2 of v4)
-v1-4: https://lkml.org/lkml/2014/4/17/120
-
-Signed-off-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Reported-by: Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>
-Reported-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: <stable@vger.kernel.org>
----
- include/linux/tick.h     |    5 ++-
- kernel/time/tick-sched.c |   75 ++++++++++++++++++++++------------------------
- 2 files changed, 39 insertions(+), 41 deletions(-)
-
-diff --git a/include/linux/tick.h b/include/linux/tick.h
-index b84773c..00dd98d 100644
---- a/include/linux/tick.h
-+++ b/include/linux/tick.h
-@@ -62,6 +62,7 @@ struct tick_sched {
- 	unsigned long			idle_calls;
- 	unsigned long			idle_sleeps;
- 	int				idle_active;
-+	seqcount_t			idle_sleeptime_seq;
- 	ktime_t				idle_entrytime;
- 	ktime_t				idle_waketime;
- 	ktime_t				idle_exittime;
-@@ -137,8 +138,8 @@ extern void tick_nohz_idle_enter(void);
- extern void tick_nohz_idle_exit(void);
- extern void tick_nohz_irq_exit(void);
- extern ktime_t tick_nohz_get_sleep_length(void);
--extern u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time);
--extern u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time);
-+extern u64 get_cpu_idle_time_us(int cpu, u64 *wall);
-+extern u64 get_cpu_iowait_time_us(int cpu, u64 *wall);
- 
- # else /* !CONFIG_NO_HZ_COMMON */
- static inline int tick_nohz_tick_stopped(void)
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 6558b7a..44eb187 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -406,33 +406,23 @@ static void tick_nohz_update_jiffies(ktime_t now)
- 	touch_softlockup_watchdog();
- }
- 
--/*
-- * Updates the per cpu time idle statistics counters
-- */
--static void
--update_ts_time_stats(int cpu, struct tick_sched *ts, ktime_t now, u64 *last_update_time)
-+static void tick_nohz_stop_idle(struct tick_sched *ts, ktime_t now)
- {
- 	ktime_t delta;
- 
--	if (ts->idle_active) {
--		delta = ktime_sub(now, ts->idle_entrytime);
--		if (nr_iowait_cpu(cpu) > 0)
--			ts->iowait_sleeptime = ktime_add(ts->iowait_sleeptime, delta);
--		else
--			ts->idle_sleeptime = ktime_add(ts->idle_sleeptime, delta);
--		ts->idle_entrytime = now;
--	}
--
--	if (last_update_time)
--		*last_update_time = ktime_to_us(now);
-+	write_seqcount_begin(&ts->idle_sleeptime_seq);
- 
--}
--
--static void tick_nohz_stop_idle(struct tick_sched *ts, ktime_t now)
--{
--	update_ts_time_stats(smp_processor_id(), ts, now, NULL);
-+	/* Updates the per cpu time idle statistics counters */
-+	delta = ktime_sub(now, ts->idle_entrytime);
-+	if (nr_iowait_cpu(smp_processor_id()) > 0)
-+		ts->iowait_sleeptime = ktime_add(ts->iowait_sleeptime, delta);
-+	else
-+		ts->idle_sleeptime = ktime_add(ts->idle_sleeptime, delta);
-+	ts->idle_entrytime = now;
- 	ts->idle_active = 0;
- 
-+	write_seqcount_end(&ts->idle_sleeptime_seq);
-+
- 	sched_clock_idle_wakeup_event(0);
- }
- 
-@@ -440,8 +430,11 @@ static ktime_t tick_nohz_start_idle(struct tick_sched *ts)
- {
- 	ktime_t now = ktime_get();
- 
-+	write_seqcount_begin(&ts->idle_sleeptime_seq);
- 	ts->idle_entrytime = now;
- 	ts->idle_active = 1;
-+	write_seqcount_end(&ts->idle_sleeptime_seq);
-+
- 	sched_clock_idle_sleep_event();
- 	return now;
- }
-@@ -449,10 +442,9 @@ static ktime_t tick_nohz_start_idle(struct tick_sched *ts)
- /**
-  * get_cpu_idle_time_us - get the total idle time of a cpu
-  * @cpu: CPU number to query
-- * @last_update_time: variable to store update time in. Do not update
-- * counters if NULL.
-+ * @wall: variable to store current wall time in.
-  *
-- * Return the cummulative idle time (since boot) for a given
-+ * Return the cumulative idle time (since boot) for a given
-  * CPU, in microseconds.
-  *
-  * This time is measured via accounting rather than sampling,
-@@ -460,19 +452,22 @@ static ktime_t tick_nohz_start_idle(struct tick_sched *ts)
-  *
-  * This function returns -1 if NOHZ is not enabled.
-  */
--u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time)
-+u64 get_cpu_idle_time_us(int cpu, u64 *wall)
- {
- 	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
- 	ktime_t now, idle;
-+	unsigned int seq;
- 
- 	if (!tick_nohz_active)
- 		return -1;
- 
- 	now = ktime_get();
--	if (last_update_time) {
--		update_ts_time_stats(cpu, ts, now, last_update_time);
--		idle = ts->idle_sleeptime;
--	} else {
-+	if (wall)
-+		*wall = ktime_to_us(now);
-+
-+	do {
-+		seq = read_seqcount_begin(&ts->idle_sleeptime_seq);
-+ 
- 		if (ts->idle_active && !nr_iowait_cpu(cpu)) {
- 			ktime_t delta = ktime_sub(now, ts->idle_entrytime);
- 
-@@ -480,7 +475,7 @@ u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time)
- 		} else {
- 			idle = ts->idle_sleeptime;
- 		}
--	}
-+	} while (read_seqcount_retry(&ts->idle_sleeptime_seq, seq));
- 
- 	return ktime_to_us(idle);
- 
-@@ -490,10 +485,9 @@ EXPORT_SYMBOL_GPL(get_cpu_idle_time_us);
- /**
-  * get_cpu_iowait_time_us - get the total iowait time of a cpu
-  * @cpu: CPU number to query
-- * @last_update_time: variable to store update time in. Do not update
-- * counters if NULL.
-+ * @wall: variable to store current wall time in.
-  *
-- * Return the cummulative iowait time (since boot) for a given
-+ * Return the cumulative iowait time (since boot) for a given
-  * CPU, in microseconds.
-  *
-  * This time is measured via accounting rather than sampling,
-@@ -501,19 +495,22 @@ EXPORT_SYMBOL_GPL(get_cpu_idle_time_us);
-  *
-  * This function returns -1 if NOHZ is not enabled.
-  */
--u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time)
-+u64 get_cpu_iowait_time_us(int cpu, u64 *wall)
- {
- 	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
- 	ktime_t now, iowait;
-+	unsigned int seq;
- 
- 	if (!tick_nohz_active)
- 		return -1;
- 
- 	now = ktime_get();
--	if (last_update_time) {
--		update_ts_time_stats(cpu, ts, now, last_update_time);
--		iowait = ts->iowait_sleeptime;
--	} else {
-+	if (wall)
-+		*wall = ktime_to_us(now);
-+
-+	do {
-+		seq = read_seqcount_begin(&ts->idle_sleeptime_seq);
-+ 
- 		if (ts->idle_active && nr_iowait_cpu(cpu) > 0) {
- 			ktime_t delta = ktime_sub(now, ts->idle_entrytime);
- 
-@@ -521,7 +518,7 @@ u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time)
- 		} else {
- 			iowait = ts->iowait_sleeptime;
- 		}
--	}
-+	} while (read_seqcount_retry(&ts->idle_sleeptime_seq, seq));
- 
- 	return ktime_to_us(iowait);
- }
--- 
-1.7.1
-
+> diff --git a/drivers/rtc/rtc-max77686.c b/drivers/rtc/rtc-max77686.c
+> index d20a7f0..c1c6055 100644
+> --- a/drivers/rtc/rtc-max77686.c
+> +++ b/drivers/rtc/rtc-max77686.c
+> @@ -583,6 +583,33 @@ static void max77686_rtc_shutdown(struct platform_device *pdev)
+>  #endif /* MAX77686_RTC_WTSR_SMPL */
+>  }
+>  
+> +#ifdef CONFIG_PM_SLEEP
+> +static int max77686_rtc_suspend(struct device *dev)
+> +{
+> +	if (device_may_wakeup(dev)) {
+> +		struct max77686_rtc_info *info = dev_get_drvdata(dev);
+> +
+> +		return enable_irq_wake(info->virq);
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int max77686_rtc_resume(struct device *dev)
+> +{
+> +	if (device_may_wakeup(dev)) {
+> +		struct max77686_rtc_info *info = dev_get_drvdata(dev);
+> +
+> +		return disable_irq_wake(info->virq);
+> +	}
+> +
+> +	return 0;
+> +}
+> +#endif
+> +
+> +static SIMPLE_DEV_PM_OPS(max77686_rtc_pm_ops,
+> +			 max77686_rtc_suspend, max77686_rtc_resume);
+> +
+>  static const struct platform_device_id rtc_id[] = {
+>  	{ "max77686-rtc", 0 },
+>  	{},
+> @@ -592,6 +619,7 @@ static struct platform_driver max77686_rtc_driver = {
+>  	.driver		= {
+>  		.name	= "max77686-rtc",
+>  		.owner	= THIS_MODULE,
+> +		.pm	= &max77686_rtc_pm_ops,
+>  	},
+>  	.probe		= max77686_rtc_probe,
+>  	.shutdown	= max77686_rtc_shutdown,
 
