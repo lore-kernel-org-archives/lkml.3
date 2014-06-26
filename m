@@ -1,165 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752866AbaFZFIf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 01:08:35 -0400
-Received: from relay6-d.mail.gandi.net ([217.70.183.198]:52535 "EHLO
-	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751137AbaFZFIe (ORCPT
+	id S1752860AbaFZFML (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 01:12:11 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:40931 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750770AbaFZFMK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 01:08:34 -0400
-X-Originating-IP: 50.43.32.211
-Date: Wed, 25 Jun 2014 22:08:24 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Joe Perches <joe@perches.com>
-Cc: Andy Whitcroft <apw@canonical.com>, gregkh@linux-foundation.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] scripts/checkpatch.pl: Only emit LONG_LINE for --strict
-Message-ID: <20140626050824.GB1645@thin>
-References: <20140625154629.GA21519@thin>
- <1403741107.28663.9.camel@joe-AO725>
- <20140626022448.GA22091@thin>
- <1403749983.7977.6.camel@joe-AO725>
- <20140626034430.GA22836@thin>
- <1403756211.7977.22.camel@joe-AO725>
+	Thu, 26 Jun 2014 01:12:10 -0400
+Message-ID: <53ABABA6.1060205@free-electrons.com>
+Date: Thu, 26 Jun 2014 07:12:06 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403756211.7977.22.camel@joe-AO725>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Maxime Ripard <maxime.ripard@free-electrons.com>, linux@maxim.org.za,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+CC: Boris Brezillon <boris@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Thomas Petazzoni <thomas@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 09/13] AT91: PIT: (Almost) remove the global variables
+References: <1403701605-26678-1-git-send-email-maxime.ripard@free-electrons.com> <1403701605-26678-10-git-send-email-maxime.ripard@free-electrons.com>
+In-Reply-To: <1403701605-26678-10-git-send-email-maxime.ripard@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 09:16:51PM -0700, Joe Perches wrote:
-> On Wed, 2014-06-25 at 20:44 -0700, Josh Triplett wrote:
-> > On Wed, Jun 25, 2014 at 07:33:03PM -0700, Joe Perches wrote:
-> > > On Wed, 2014-06-25 at 19:24 -0700, Josh Triplett wrote:
-> > > > On Wed, Jun 25, 2014 at 05:05:07PM -0700, Joe Perches wrote:
-> > > > > On Wed, 2014-06-25 at 08:46 -0700, Josh Triplett wrote:
-> > > > > > Regardless of the long-standing debate over line width, checkpatch
-> > > > > > should not warn about it by default.
-> > > > > 
-> > > > > I'm not getting involved here.
-> > > > > I don't care much one way or another.
-> > > []
-> > > > I'm not asking you to get involved in the Great Line Length Debate;
-> > > > that's why I didn't attempt to patch CodingStyle or similar.  However, I
-> > > > think it makes sense for *checkpatch* to stop emitting this warning.
-> > > 
-> > > I think checkpatch should encourage people to write code in
-> > > a style that matches CodingStyle as well as the predominant
-> > > styles used in the rest of the kernel.
-> > 
-> > Not arguing with that, but in this particular case the warning seems
-> > counterproductive to that goal, especially compared to the
-> > DEEP_INDENTATION warning.  More subjective or "to taste" issues tend
-> > to have lower severity in checkpatch.  And CodingStyle *already* says
-> > "unless exceeding 80 columns significantly increases
-> > readability"
-> 
-> Just some suggestions off the top of my head.
-> 
-> If the goal is to reduce long line lengths, then maybe
-> more warnings or --strict tests for things like:
+Hello Maxime,
 
-The goal is to make code more readable; a length guideline can help with
-that, but a hard limit does more harm than good.  And notably, we don't
-*have* a hard limit, we have a guideline; however, checkpatch routinely
-gets treated as a hard requirement rather than a guideline, and as such
-it should avoid tests that have a high false-positive rate, which
-LONG_LINE does.
+On 25/06/2014 15:06, Maxime Ripard wrote:
+> The timer driver is using some global variables to define some variables it has
+> to use in most of its functions, like the base address.
+>
+> Use some container_of calls to have a single dynamic (and local) variable to
+> hold this content.
+>
+> The only exception is in the !DT case, where the call chain to
+> at91sam926x_ioremap_pit and then at91sam926x_pit_init as init_time makes it
+> hard for the moment to pass the physical address of the timer.
+>
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> ---
+>  arch/arm/mach-at91/at91sam926x_time.c | 179 ++++++++++++++++++++--------------
+>  1 file changed, 108 insertions(+), 71 deletions(-)
+>
+> diff --git a/arch/arm/mach-at91/at91sam926x_time.c b/arch/arm/mach-at91/at91sam926x_time.c
+> index 9678ac391a81..f2c463567beb 100644
+> --- a/arch/arm/mach-at91/at91sam926x_time.c
+> +++ b/arch/arm/mach-at91/at91sam926x_time.c
+> @@ -20,6 +20,7 @@
+>  #include <linux/of.h>
+>  #include <linux/of_address.h>
+>  #include <linux/of_irq.h>
+> +#include <linux/slab.h>
+>  
 
-> long variable names: (pick a length)
-> 
-> 	some_long_variable_name_with_a_color
+[...]
 
-To avoid encouraging people to disemvowel their variables.  I'd suggest
-flagging identifiers_with_too_many_words or IdentifiersWithTooManyWords
-instead.
+>  	unsigned	bits;
+> @@ -186,67 +195,95 @@ static void __init at91sam926x_pit_common_init(unsigned int pit_irq)
+>  	 * Use our actual MCK to figure out how many MCK/16 ticks per
+>  	 * 1/HZ period (instead of a compile-time constant LATCH).
+>  	 */
+> -	pit_rate = clk_get_rate(mck) / 16;
+> -	pit_cycle = (pit_rate + HZ/2) / HZ;
+> -	WARN_ON(((pit_cycle - 1) & ~AT91_PIT_PIV) != 0);
+> +	pit_rate = clk_get_rate(data->mck) / 16;
+> +	data->cycle = (pit_rate + HZ/2) / HZ;
 
-> consecutive dereferences where a temporary might be better:
-> 
-> 	foo->bar[baz].member1 = 1;
-> 	foo->bar[baz].member2 = 2;
+You could use DIV_ROUND_CLOSEST here.
 
-That one seems better done with coccinelle, actually.
+Regards,
 
-> Multiple logical tests on a single line:
-> 
-> 	foo > bar && baz < quz && etc...
+Boris
 
-If any individual test takes up a significant number of columns, sure.
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
 
-> Arguments after column 80
->                                                                                                    1
->          1         2         3         4         5         6         7         8         9         0
-> 1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
-> 	result = some_long_function(some_arg(arg1, arg2), another_arg(arg3, arg4), 4);
-> 
-> where a single argument of a short length before a
-> statement terminating ; may be ignored, but a longer
-> argument list may not.
-
-That one seems like one of the most common cases where the 80-column
-rule can result in less readable code.  On the one hand, in the case
-above, something like this would usually (but not always) improve the
-code:
-
-	result = some_long_function(
-			some_arg(arg1, arg2),
-			another_arg(arg1, arg2),
-			4);
-
-On the other hand, breaking within the arguments of some_arg or
-another_arg seems completely and utterly wrong, and breaking around a
-binary operator within the argument list would likewise make it painful
-to read.  I've seen things like that in numerous patches. where a single
-expression that would only take ~100ish characters gets broken across
-half a dozen lines because it starts with a few tabs worth of
-indentation and has moderate-length (but completely reasonable) names:
-
-				result = sensible_function_name(
-						sensible_variable_name,
-						something(smallish)
-							+ something_else,
-						variable_name
-							& ~SOME_BIT_NAME);
-
-That seems far more readable if written as
-
-				result = sensible_function_name(
-						sensible_variable_name,
-						something(smallish) + something_else,
-						variable_name & ~SOME_BIT_NAME);
-
-even though the last two lines extend past 80 characters.
-
-Now, arguably the four leading tabs on those lines suggest the need for
-some code refactoring; personally, I'd suggest changing DEEP_INDENTATION
-to flag 4+ tabs rather than 6+ tabs as it currently does.  That would
-mirror CodingStyle, which says "The answer to that is that if you need
-more than 3 levels of indentation, you're screwed anyway, and should fix
-your program."  To avoid flagging too much existing code that has >4
-levels of indentation but short, simple code, I'd suggest specifically
-matching lines that have >4 tabs *and* >80 columns, and flagging the
-indentation as the cause of the problem rather than the >80 columns.
-
-I'm going to try sending a patch that keeps the existing 80-column
-warning, but changes the message and guidance based on the content of
-the line.
-
-> Long trigraphs:
-> 
-> 	should be on multiple lines
-
-"trigraphs"?  Do you mean ternaries?  Yeah, that's a good case where if
-the three components of the ternary together are too long, that's a
-natural splitting point that shouldn't make the code less readable.
-
-> Comments beyond 80 column
-
-Yeah, that one makes sense: if you have a comment to the right of a long
-line, and the comment is what's making it long, it's easy enough to move
-the comment before the line.
-
-- Josh Triplett
