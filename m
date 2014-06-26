@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755332AbaFZIvu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 04:51:50 -0400
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:39437 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751857AbaFZIvs (ORCPT
+	id S1755496AbaFZIwJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 04:52:09 -0400
+Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.162]:10693 "EHLO
+	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751857AbaFZIwF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 04:51:48 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@rjwysocki.net
-Cc: linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arvind.chauhan@arm.com,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH] cpufreq: report driver's successful {un}registration
-Date: Thu, 26 Jun 2014 14:21:30 +0530
-Message-Id: <9e68cba2bf41923630ea93de7c3d17637f175895.1403772686.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 2.0.0.rc2
+	Thu, 26 Jun 2014 04:52:05 -0400
+X-Greylist: delayed 378 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 Jun 2014 04:52:05 EDT
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+yackYocTD1iAi8x+OWi/zfN1cLnBYfssBY9SQMKk8kCovkkmJbh+VP2spQG3tvMeGW7W
+X-RZG-CLASS-ID: mo00
+Date: Thu, 26 Jun 2014 10:45:39 +0200
+From: Olaf Hering <olaf@aepfle.de>
+To: Haiyang Zhang <haiyangz@microsoft.com>
+Cc: Greg KH <greg@kroah.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "davem@davemloft.net" <davem@davemloft.net>
+Subject: Re: [PATCH net-next] hyperv: Add handler for
+ RNDIS_STATUS_NETWORK_CHANGE event
+Message-ID: <20140626084539.GA32471@aepfle.de>
+References: <1403228076-7596-1-git-send-email-haiyangz@microsoft.com>
+ <20140620045704.GA4850@aepfle.de>
+ <20140620051213.GA9960@kroah.com>
+ <ff458d1b896d4a70a32fa7709911274c@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+ <20140623080242.GA16924@aepfle.de>
+ <06b508cbb6b949f4b3e13e7797948e56@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+ <20140623131723.GA7026@aepfle.de>
+ <5fb9ddebb68d456ab87979b5cc3830ec@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+ <20140623162705.GA5957@aepfle.de>
+ <4ee8be5360a44b5abfa6df871ec45527@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4ee8be5360a44b5abfa6df871ec45527@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+User-Agent: Mutt/1.5.22.rev6346 (2013-10-29)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We do report driver's successful {un}registration from cpufreq core, but is done
-with pr_debug() and so this doesn't appear in boot logs.
+On Mon, Jun 23, Haiyang Zhang wrote:
 
-Convert this to pr_info() to make it visible in logs.
+> Yes, there is a link down/up event from the host, we currently call netif_carrier_off() 
+> / netif_carrier_on() with these events. Will hotplug scripts be triggered by 
+> netif_carrier_off/on? Where are the scripts located at (SLES)?
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/cpufreq.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+In /etc/sysconfig/network/ifcfg-eth0 STARTMODE= should be set to
+"ifplugd", this will most likely fix this sort of setup.
 
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 62259d2..63d8f8f 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -2468,7 +2468,7 @@ int cpufreq_register_driver(struct cpufreq_driver *driver_data)
- 	}
- 
- 	register_hotcpu_notifier(&cpufreq_cpu_notifier);
--	pr_debug("driver %s up and running\n", driver_data->name);
-+	pr_info("driver %s up and running\n", driver_data->name);
- 
- 	return 0;
- err_if_unreg:
-@@ -2499,7 +2499,7 @@ int cpufreq_unregister_driver(struct cpufreq_driver *driver)
- 	if (!cpufreq_driver || (driver != cpufreq_driver))
- 		return -EINVAL;
- 
--	pr_debug("unregistering driver %s\n", driver->name);
-+	pr_info("unregistering driver %s\n", driver->name);
- 
- 	subsys_interface_unregister(&cpufreq_interface);
- 	if (cpufreq_boost_supported())
--- 
-2.0.0.rc2
-
+Olaf
