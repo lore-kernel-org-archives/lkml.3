@@ -1,51 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753719AbaFZJVM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 05:21:12 -0400
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:41997 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750831AbaFZJVK (ORCPT
+	id S1754889AbaFZJY2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 05:24:28 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:59246 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752708AbaFZJY1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 05:21:10 -0400
+	Thu, 26 Jun 2014 05:24:27 -0400
 MIME-Version: 1.0
-X-Originating-IP: [80.196.35.44]
-In-Reply-To: <20140626074033.GA26094@infradead.org>
-References: <1403651531-24891-1-git-send-email-m@bjorling.me>
-	<1403651531-24891-2-git-send-email-m@bjorling.me>
-	<20140625113715.GA4525@infradead.org>
-	<CAOu_J6nTcEjEpAe+S7Wg9SxUj_u=QitsDjYkKmCpaGP1MAexhw@mail.gmail.com>
-	<20140626074033.GA26094@infradead.org>
-Date: Thu, 26 Jun 2014 11:21:09 +0200
-Message-ID: <CAOu_J6mfpmQ7N4nfeo9ecD7esF=VMhbmHdgAb=qQMf4DS5_W2w@mail.gmail.com>
-Subject: Re: [PATCH v9] NVMe: Convert to blk-mq
-From: =?UTF-8?Q?Matias_Bj=C3=B8rling?= <m@bjorling.me>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Keith Busch <keith.busch@intel.com>, Rob Nelson <rlnelson@google.com>,
-        Jens Axboe <axboe@fb.com>, Ming Lei <tom.leiming@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-nvme <linux-nvme@lists.infradead.org>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com>
+In-Reply-To: <1403696634-12779-1-git-send-email-t.figa@samsung.com>
+References: <1403618235-19353-5-git-send-email-t.figa@samsung.com>
+	<1403696634-12779-1-git-send-email-t.figa@samsung.com>
+Date: Thu, 26 Jun 2014 10:24:23 +0100
+Message-ID: <CAD8Lp46X_urw=ayVZNL8Af9pMUD4st7tAtuMvkrg+A6YsxpiMw@mail.gmail.com>
+Subject: Re: [PATCH v2 4/6] ARM: SAMSUNG: Restore Samsung PM Debug functionality
+From: Daniel Drake <drake@endlessm.com>
+To: Tomasz Figa <t.figa@samsung.com>
+Cc: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 26, 2014 at 9:40 AM, Christoph Hellwig <hch@infradead.org> wrote:
-> On Wed, Jun 25, 2014 at 08:56:35PM +0200, Matias Bj??rling wrote:
->> Only the review. Do you want me to change it to a Reviewed-by?
->
->
-> I've not really don't a formal review of the latest patch yet.  I plan
-> to do it, and will give me Reviewed-by-tag then.  For now I don't think
-> I'm actually significant enough to be mentioned in the patch.
+On Wed, Jun 25, 2014 at 12:43 PM, Tomasz Figa <t.figa@samsung.com> wrote:
+> Due to recently merged patches and previous merge conflicts, the Samsung
+> PM Debug functionality no longer can be enabled. This patch fixes
+> incorrect dependency of SAMSUNG_PM_DEBUG on an integer symbol and adds
+> missing header inclusion.
 
-Ok
+I replaced the original patch with this updated version and can
+confirm that the option now appears in the menu again, and compile
+succeeds when set to yes.
 
->
-> If you need to fill the patch description some details on the conversion
-> and performance numbers might be useful :)
->
-
-Agree, I was thinking of doing this now that the changes have cooled
-down. Thanks. :)
+Thanks
+Daniel
