@@ -1,82 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755808AbaFZMtR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 08:49:17 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:51138 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755258AbaFZMtO (ORCPT
+	id S932123AbaFZMs4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 08:48:56 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:45041 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750770AbaFZMsy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 08:49:14 -0400
-Message-ID: <1403786949.2017.66.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [PATCH 1/1] ima: fix fallback to use new_sync_read()
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Dmitry Kasatkin <d.kasatkin@samsung.com>
-Cc: linux-ima-devel@lists.sourceforge.net,
-        linux-security-module@vger.kernel.org, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org, dmitry.kasatkin@gmail.com
-Date: Thu, 26 Jun 2014 08:49:09 -0400
-In-Reply-To: <ffb4808ed8ce0dddbc96c566ccca2c9b39005643.1403616439.git.d.kasatkin@samsung.com>
-References: <ffb4808ed8ce0dddbc96c566ccca2c9b39005643.1403616439.git.d.kasatkin@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	Thu, 26 Jun 2014 08:48:54 -0400
+Message-ID: <53AC16A3.2060609@linaro.org>
+Date: Thu, 26 Jun 2014 13:48:35 +0100
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+CC: Russell King <linux@arm.linux.org.uk>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kgdb-bugreport@lists.sourceforge.net, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Colin Cross <ccross@android.com>, kernel-team@android.com,
+        Rob Herring <robherring2@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH v6 4/4] ARM: Add KGDB/KDB FIQ debugger generic code
+References: <1403174303-25456-1-git-send-email-daniel.thompson@linaro.org> <1403623097-1153-1-git-send-email-daniel.thompson@linaro.org> <1403623097-1153-5-git-send-email-daniel.thompson@linaro.org> <alpine.LFD.2.11.1406241201180.16842@knanqh.ubzr>
+In-Reply-To: <alpine.LFD.2.11.1406241201180.16842@knanqh.ubzr>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14062612-8236-0000-0000-00000365CEFA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-06-24 at 16:27 +0300, Dmitry Kasatkin wrote: 
-> 3.16 commit aad4f8bb42af06371aa0e85bf0cd9d52c0494985
-> 'switch simple generic_file_aio_read() users to ->read_iter()'
-> replaced ->aio_read with ->read_iter in most of the file systems
-> and introduced new_sync_read() as a replacement for do_sync_read().
+On 24/06/14 17:22, Nicolas Pitre wrote:
+> On Tue, 24 Jun 2014, Daniel Thompson wrote:
 > 
-> Most of file systems set '->read' and ima_kernel_read is not affected.
-> When ->read is not set, this patch adopts fallback call changes from the
-> vfs_read.
-
-So every time there are changes in vfs_read(), we're going to have to
-play catch up.  A better solution would be to refactor vfs_read() so
-that we could call it.
-
-Mimi
-
-
-> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
-> ---
->  security/integrity/ima/ima_crypto.c | 8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
+>> From: Anton Vorontsov <anton.vorontsov@linaro.org>
+>>
+>> The FIQ debugger may be used to debug situations when the kernel stuck
+>> in uninterruptable sections, e.g. the kernel infinitely loops or
+>> deadlocked in an interrupt or with interrupts disabled.
+>>
+>> By default KGDB FIQ is disabled in runtime, but can be enabled with
+>> kgdb_fiq.enable=1 kernel command line option.
+>>
+>> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+>> Signed-off-by: John Stultz <john.stultz@linaro.org>
+>> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+>> Cc: Russell King <linux@arm.linux.org.uk>
+>> Cc: Ben Dooks <ben.dooks@codethink.co.uk>
+>> Cc: Dave Martin <Dave.Martin@arm.com>
+>> ---
+>>  arch/arm/Kconfig                 |   2 +
+>>  arch/arm/Kconfig.debug           |  18 ++++++
+>>  arch/arm/include/asm/kgdb.h      |   7 +++
+>>  arch/arm/kernel/Makefile         |   1 +
+>>  arch/arm/kernel/kgdb_fiq.c       | 124 +++++++++++++++++++++++++++++++++++++++
+>>  arch/arm/kernel/kgdb_fiq_entry.S |  87 +++++++++++++++++++++++++++
+>>  6 files changed, 239 insertions(+)
+>>  create mode 100644 arch/arm/kernel/kgdb_fiq.c
+>>  create mode 100644 arch/arm/kernel/kgdb_fiq_entry.S
 > 
-> diff --git a/security/integrity/ima/ima_crypto.c b/security/integrity/ima/ima_crypto.c
-> index ccd0ac8..b126a78 100644
-> --- a/security/integrity/ima/ima_crypto.c
-> +++ b/security/integrity/ima/ima_crypto.c
-> @@ -40,19 +40,19 @@ static int ima_kernel_read(struct file *file, loff_t offset,
->  {
->  	mm_segment_t old_fs;
->  	char __user *buf = addr;
-> -	ssize_t ret;
-> +	ssize_t ret = -EINVAL;
+> [...]
 > 
->  	if (!(file->f_mode & FMODE_READ))
->  		return -EBADF;
-> -	if (!file->f_op->read && !file->f_op->aio_read)
-> -		return -EINVAL;
+>> +static long kgdb_fiq_setup_stack(void *info)
+>> +{
+>> +	struct pt_regs regs;
+>> +
+>> +	regs.ARM_sp = __get_free_pages(GFP_KERNEL, THREAD_SIZE_ORDER) +
+>> +			THREAD_START_SP;
+>> +	WARN_ON(!regs.ARM_sp);
 > 
->  	old_fs = get_fs();
->  	set_fs(get_ds());
->  	if (file->f_op->read)
->  		ret = file->f_op->read(file, buf, count, &offset);
-> -	else
-> +	else if (file->f_op->aio_read)
->  		ret = do_sync_read(file, buf, count, &offset);
-> +	else if (file->f_op->read_iter)
-> +		ret = new_sync_read(file, buf, count, &offset);
->  	set_fs(old_fs);
->  	return ret;
->  }
+> Isn't this rather fatal if you can't allocate any stack? Why not using 
+> BUG_ON(), or better yet propagate a proper error code back?
 
+Thanks for raising this.
+
+I think we can get rid of the allocation altogether. This stack is *way*
+oversized (it only needs to be 12 bytes).
+
+
+>> +
+>> +	set_fiq_regs(&regs);
+>> +	return 0;
+>> +}
+>> +
+>> +/**
+>> + * kgdb_fiq_enable_nmi - Manage NMI-triggered entry to KGDB
+>> + * @on: Flag to either enable or disable an NMI
+>> + *
+>> + * This function manages NMIs that usually cause KGDB to enter. That is, not
+>> + * all NMIs should be enabled or disabled, but only those that issue
+>> + * kgdb_handle_exception().
+>> + *
+>> + * The call counts disable requests, and thus allows to nest disables. But
+>> + * trying to enable already enabled NMI is an error.
+>> + */
+>> +static void kgdb_fiq_enable_nmi(bool on)
+>> +{
+>> +	static atomic_t cnt;
+>> +	int ret;
+>> +
+>> +	ret = atomic_add_return(on ? 1 : -1, &cnt);
+>> +	if (ret > 1 && on) {
+>> +		/*
+>> +		 * There should be only one instance that calls this function
+>> +		 * in "enable, disable" order. All other users must call
+>> +		 * disable first, then enable. If not, something is wrong.
+>> +		 */
+>> +		WARN_ON(1);
+>> +		return;
+>> +	}
+> 
+> Minor style suggestion:
+> 
+> 	/*
+> 	 * There should be only one instance that calls this function
+> 	 * in "enable, disable" order. All other users must call
+> 	 * disable first, then enable. If not, something is wrong.
+> 	 */
+> 	if (WARN_ON(ret > 1 && on))
+> 		return;
+
+Will adopt this style.
+
+
+> Other than that...
+> 
+> Acked-by: Nicolas Pitre <nico@linaro.org>
+
+Thanks for review.
 
