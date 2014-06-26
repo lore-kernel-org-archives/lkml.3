@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932256AbaFZQ66 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 12:58:58 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:56035 "EHLO
+	id S1757953AbaFZQ65 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 12:58:57 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:25973 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757779AbaFZQ6w (ORCPT
+	by vger.kernel.org with ESMTP id S1757785AbaFZQ6w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 26 Jun 2014 12:58:52 -0400
-Message-Id: <20140626165851.208049368@goodmis.org>
+Message-Id: <20140626165850.311953940@goodmis.org>
 User-Agent: quilt/0.63-1
-Date: Thu, 26 Jun 2014 12:52:35 -0400
+Date: Thu, 26 Jun 2014 12:52:31 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
@@ -17,13 +17,14 @@ Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>, Jiri Kosina <jkosina@suse.cz>,
-        Josh Poimboeuf <notifications@github.com>
-Subject: [RFA][PATCH 14/27] ftrace: Remove function_trace_stop check from list func
+        Josh Poimboeuf <notifications@github.com>,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: [RFA][PATCH 10/27] sh: ftrace: Add call to ftrace_graph_is_dead() in function graph code
 References: <20140626165221.736847419@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0014-ftrace-Remove-function_trace_stop-check-from-list-fu.patch
-X-RR-Connecting-IP: 107.14.168.118:25
+Content-Disposition: inline; filename=0010-sh-ftrace-Add-call-to-ftrace_graph_is_dead-in-functi.patch
+X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,43 +32,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-function_trace_stop is no longer used to stop function tracing.
-Remove the check from __ftrace_ops_list_func().
+ftrace_stop() is going away as it disables parts of function tracing
+that affects users that should not be affected. But ftrace_graph_stop()
+is built on ftrace_stop(). Here's another example of killing all of
+function tracing because something went wrong with function graph
+tracing.
 
-Also, call FTRACE_WARN_ON() instead of setting function_trace_stop
-if a ops has no func to call.
+Instead of disabling all users of function tracing on function graph
+error, disable only function graph tracing. To do this, the arch code
+must call ftrace_graph_is_dead() before it implements function graph.
 
+Cc: Paul Mundt <lethal@linux-sh.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/ftrace.c | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ arch/sh/kernel/ftrace.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 1e4e9bbb8dfa..34994885bb1d 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -4692,9 +4692,6 @@ __ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip,
- 	struct ftrace_ops *op;
- 	int bit;
+diff --git a/arch/sh/kernel/ftrace.c b/arch/sh/kernel/ftrace.c
+index 3c74f53db6db..079d70e6d74b 100644
+--- a/arch/sh/kernel/ftrace.c
++++ b/arch/sh/kernel/ftrace.c
+@@ -344,6 +344,9 @@ void prepare_ftrace_return(unsigned long *parent, unsigned long self_addr)
+ 	struct ftrace_graph_ent trace;
+ 	unsigned long return_hooker = (unsigned long)&return_to_handler;
  
--	if (function_trace_stop)
--		return;
--
- 	bit = trace_test_and_set_recursion(TRACE_LIST_START, TRACE_LIST_MAX);
- 	if (bit < 0)
++	if (unlikely(ftrace_graph_is_dead()))
++		return;
++
+ 	if (unlikely(atomic_read(&current->tracing_graph_pause)))
  		return;
-@@ -4706,9 +4703,8 @@ __ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip,
- 	preempt_disable_notrace();
- 	do_for_each_ftrace_op(op, ftrace_ops_list) {
- 		if (ftrace_ops_test(op, ip, regs)) {
--			if (WARN_ON(!op->func)) {
--				function_trace_stop = 1;
--				printk("op=%p %pS\n", op, op);
-+			if (FTRACE_WARN_ON(!op->func)) {
-+				pr_warn("op=%p %pS\n", op, op);
- 				goto out;
- 			}
- 			op->func(ip, parent_ip, op, regs);
+ 
 -- 
 2.0.0
 
