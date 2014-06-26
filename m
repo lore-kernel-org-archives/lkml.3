@@ -1,125 +1,257 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756376AbaFZJEM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 05:04:12 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:40911 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755011AbaFZJEI (ORCPT
+	id S1754898AbaFZJGs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 05:06:48 -0400
+Received: from fgwmail.fujitsu.co.jp ([164.71.1.133]:44246 "EHLO
+	fgwmail.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751018AbaFZJGq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 05:04:08 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfec7f4-b7fac6d000006cfe-e4-53abe200eeb4
-Content-transfer-encoding: 8BIT
-Message-id: <1403773439.27156.1.camel@AMDC1943>
-Subject: Re: [PATCH v4 02/14] mfd: max77686: Allow the max77686 rtc to wakeup
- the system
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
-        Daniel Stone <daniels@collabora.com>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 26 Jun 2014 11:03:59 +0200
-In-reply-to: <1403723019-6212-3-git-send-email-javier.martinez@collabora.co.uk>
-References: <1403723019-6212-1-git-send-email-javier.martinez@collabora.co.uk>
- <1403723019-6212-3-git-send-email-javier.martinez@collabora.co.uk>
-X-Mailer: Evolution 3.10.4-0ubuntu1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjkeLIzCtJLcpLzFFi42I5/e/4ZV2GR6uDDdavtbZYcvEqu8XUh0/Y
-	LDb1b2W3mH/kHKvF2WUH2SyO/i6w6F1wlc3i/tejjBbfrnQwWWx6fI3V4vKuOWwWM87vY7J4
-	OuEim8Wp65/ZLE53s1pMP/6W1aJv7SU2B0GP2Q0XWTz+Pr/O4rHj7hJGj52z7rJ7bFrVyeZx
-	59oeNo95JwM9Ni+p97hyoonVo2/LKkaP6fN+Mnl83iQXwBPFZZOSmpNZllqkb5fAlXHkynLm
-	giWCFZtW7GRrYPzK28XIySEhYCLR83YNK4QtJnHh3nq2LkYuDiGBpYwSrftWgCV4BQQlfky+
-	x9LFyMHBLCAvceRSNkiYWUBdYtK8RcwQ9Z8ZJa71PWIEqeEV0JeYsTEFpEZYIEqie3InI4jN
-	JmAssXn5EjYQW0TATuLG6odgvcwCj1gkHm35A1bEIqAqceffXyYQm1PAX+LsvnnsEAsmM0rM
-	efQP6lJliXn7jzFNYBSYheS+WQj3zUJy3wJG5lWMoqmlyQXFSem5hnrFibnFpXnpesn5uZsY
-	IXH4ZQfj4mNWhxgFOBiVeHgl5q4OFmJNLCuuzD3EKMHBrCTC23kHKMSbklhZlVqUH19UmpNa
-	fIiRiYNTqoFx07XOSTcXuKaHf59Tc+zX6j996//wVga035Kocz67pif9+u7/GZo5uXO1p5qp
-	3m499aCNQb74sMn7R7O2ih6/L+kl/lJhzQn+iKdXblR0hV/ZpSyz8dnrqO0h9osUPzlesax/
-	a7iegWlNxUarnRHvtL9GainrOW3i1Cv+9GGVmPnkvSveThHbosRSnJFoqMVcVJwIACXvPRGh	AgAA
+	Thu, 26 Jun 2014 05:06:46 -0400
+X-Greylist: delayed 318 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 Jun 2014 05:06:46 EDT
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <53ABE28F.6010402@jp.fujitsu.com>
+Date: Thu, 26 Jun 2014 18:06:23 +0900
+From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+CC: Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Denys Vlasenko <vda.linux@googlemail.com>
+Subject: [RFC PATCH 0/8] rework iowait accounting
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On śro, 2014-06-25 at 21:03 +0200, Javier Martinez Canillas wrote:
-> From: Doug Anderson <dianders@chromium.org>
-> 
-> The max77686 includes an RTC that keeps power during suspend.  It's
-> convenient to be able to use it as a wakeup source.
-> 
-> NOTE: due to wakeup ordering problems this patch alone doesn't work so
-> well on exynos5250-snow.  You also need something that brings the i2c
-> bus up before the max77686 wakeup runs.
-> 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> Reviewed-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> ---
-> 
-> Changes since v3:
->  - Keep the note that this patch needs another change due wakeup
->    ordering problems.
-> 
->  drivers/rtc/rtc-max77686.c | 28 ++++++++++++++++++++++++++++
->  1 file changed, 28 insertions(+)
+This mail is 5th try to fix an issue that iowait of /proc/stat can
+go backward. Originally reported by Tetsuo and Fernando at last year,
+Mar 2013.
 
-Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-
-Best regards,
-Krzysztof
+Previous v1-v4 were proposal to apply my patch set, but this v5 is
+request for comment, with untested patches to draw up a blueprint.
 
 
-> diff --git a/drivers/rtc/rtc-max77686.c b/drivers/rtc/rtc-max77686.c
-> index d20a7f0..c1c6055 100644
-> --- a/drivers/rtc/rtc-max77686.c
-> +++ b/drivers/rtc/rtc-max77686.c
-> @@ -583,6 +583,33 @@ static void max77686_rtc_shutdown(struct platform_device *pdev)
->  #endif /* MAX77686_RTC_WTSR_SMPL */
->  }
->  
-> +#ifdef CONFIG_PM_SLEEP
-> +static int max77686_rtc_suspend(struct device *dev)
-> +{
-> +	if (device_may_wakeup(dev)) {
-> +		struct max77686_rtc_info *info = dev_get_drvdata(dev);
-> +
-> +		return enable_irq_wake(info->virq);
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int max77686_rtc_resume(struct device *dev)
-> +{
-> +	if (device_may_wakeup(dev)) {
-> +		struct max77686_rtc_info *info = dev_get_drvdata(dev);
-> +
-> +		return disable_irq_wake(info->virq);
-> +	}
-> +
-> +	return 0;
-> +}
-> +#endif
-> +
-> +static SIMPLE_DEV_PM_OPS(max77686_rtc_pm_ops,
-> +			 max77686_rtc_suspend, max77686_rtc_resume);
-> +
->  static const struct platform_device_id rtc_id[] = {
->  	{ "max77686-rtc", 0 },
->  	{},
-> @@ -592,6 +619,7 @@ static struct platform_driver max77686_rtc_driver = {
->  	.driver		= {
->  		.name	= "max77686-rtc",
->  		.owner	= THIS_MODULE,
-> +		.pm	= &max77686_rtc_pm_ops,
->  	},
->  	.probe		= max77686_rtc_probe,
->  	.shutdown	= max77686_rtc_shutdown,
+[OBSERVED PROBLEM]
+
+  Tetsuo and Fernando reported that the idle/iowait time obtained
+  through /proc/stat is not monotonic.
+
+  There were 2 causes:
+
+
+  [1]: sleep stats has no exclusive control
+    (This is one of what my previous patch aimed to solve)
+
+    Since NO_HZ kernel can stop tick interrupts while the cpu
+    is in idle, sleep stats (=cpu's idle time and iowait time)
+    are not updated constantly. It means if we refer stats of
+    idle cpu then it will contain stale values updated before
+    the cpu start idle. To avoid this, kernel records timestamp
+    at idle entry and provide function to return calculated
+    (rather) proper stats by adding duration of idle.
+
+    However there was no locking between readers/writer of
+    the sleep stats and timestamp. So in cases if sleep stats
+    are updated while calculation for reader is in progress,
+    calculated stats will go wrong and lose monotonicity with
+    previous/next values.
+
+    This cause backwarding trouble in both of idle and iowait.
+
+
+  [2]: zeroing nr_iowait is not tracked in long idle
+
+    Assume that a cpu was in idle for 30 ticks, and that nr_iowait
+    was dropped to 0 between 17th tick and 18th tick. In constant
+    updating manner by tick interrupts, iowait get 17 ticks to be
+    accounted and after that idle get 13 ticks to be accounted.
+
+    Then, how about in NO_HZ kernel?
+    Let see the following short simulation:
+
+    * given:
+    *   idle time stats: idle=1000, iowait=100
+    *   stamp at idle entry: entry=50
+    *   nr tasks waiting io: nr_iowait=1
+    *
+    * 1st reader temporary assigns delta as iowait
+    * (but does not account delta to time stats)):
+    *   1st reader's query @ now = 60:
+    *     idle=1000
+    *     iowait=110 (=100+(60-50))
+    *
+    * then blocked task is queued to runqueue of other active cpu,
+    * woken up from io_schedule{,_timeout}() and do atomic_dec()
+    * from the remote:
+    *   nr_iowait=0
+    *
+    * and in 2nd turn reader assign delta as idle:
+    *   2nd reader's query @ now = 70:
+    *     idle=1020 (=1000+(70-50))
+    *     iowait=100
+    *
+    * at last cpu wakes up @ now = 80:
+    *   idle time stats: idle=1030, iowait=100
+
+    You can see that iowait is decreased from 110 to 100.
+    And there were more than 10 ticks should have been accounted
+    as iowait but not accounted at all at last.
+
+    This cause backwarding trouble only in iowait. Because nr_iowait
+    is never incremented from remote cpus.
+
+
+  Solution for [1] is easy - just add proper exclusive control.
+  But I stumbled over the [2].
+
+
+
+[FURTHER INVESTIGATION]
+
+  I'd like to point following facts:
+
+  - s390 kernel is supposed to have problem [2]
+
+    Not only NO_HZ kernel but also s390 kernel can stop tick
+    interrupts while the cpu is in idle. Therefore s390 provides
+    function s390_get_idle_time() which return idle duration of
+    target sleeping cpu. /proc/stat use this and "nr_iowait at
+    read is performed" to get stats of idle cpu. So consecutive
+    readers may do different accounting for the idle duration
+    if nr_iowait have changed around them.
+    (Refer 4/8 of following pseudo code set)
+
+  - common account_idle_time() takes cputime, not tick
+
+    account_idle_time() uses nr_iowait in this function to
+    determine whether cputime given as argument should be
+    accounted as idle time or iowait time. If this function was
+    only called from tick interrupts and cputime was always equal
+    to one tick, then it will make sense on some level.
+    However it is called from non-tick accounting (for example,
+    state-transition based accounting, a.k.a. VIRT_CPU_ACCOUNTING)
+    codes and take long and short cputime.
+
+    While it is OK that accounting idle duration as iowait if
+    nr_iowait is greater than 0 at the end of idle state, it is
+    not always OK that accounting idle duration as idle if
+    nr_iowait is 0 at the end of idle state.
+    (Refer 3/8 of following pseudo code set)
+
+  - cputime's resolution is better than tick in some architecture
+
+    Some arch using VIRT_CPU_ACCOUNTING have cputime in better
+    resolution like nano seconds. Even though iowait accounting
+    is performed based on tick interrupts and accounted value is
+    not precise compared to other values like sys/user.
+
+
+[Request for Comments]
+
+  So, as the first step to solve this bunch of problems, I wrote
+  some pseudo codes for review to check my direction. These codes
+  look like usual patch set but !! _NOT_TESTED_COMPLETELY_ !!
+  Now I don't have s390/ia64/ppc test box so I didn't even check
+  these pass the compiler :-p
+
+  What I want to do here is:
+
+  - record timestamp at the end of iowait (decrement nr_iowait
+    from 1 to 0) and use it for iowait time accounting
+    (This idea is what PeterZ suggested)
+
+  - use same strategy for basic tick-accounting, NO_HZ kernel,
+    s390 and other VIRT_CPU_ACCOUNTING architectures.
+
+  Still I'm concerning performance impact by changing scheduler
+  core codes and also possible troubles by comparing timestamps
+  from different clocks.
+
+  These codes are based on following patch on top of v3.16-rc2:
+    [PATCH] nohz: make updating sleep stats local, add seqcount
+
+  I'd like to ask you:
+
+    - Do you think if I continue this direction these blueprints
+      would be acceptable change?
+
+    - Or shall we kill iowait completely?
+
+    - Are there any good workaround or band-aid for stable kernels?
+
+  Please give me your comment and let me know if you have better
+  idea to solve this problem.
+
+  Any comments are welcome.
+
+[References]:
+
+  First report from Fernando:
+    [RFC] iowait/idle time accounting hiccups in NOHZ kernels
+    https://lkml.org/lkml/2013/3/18/962
+  Steps to reproduce guided by Tetsuo:
+    https://lkml.org/lkml/2013/4/1/201
+
+  1st patchset from Frederic:
+    [PATCH 0/4] nohz: Fix racy sleeptime stats
+    https://lkml.org/lkml/2013/8/8/638
+    [PATCH RESEND 0/4] nohz: Fix racy sleeptime stats
+    https://lkml.org/lkml/2013/8/16/274
+
+  2nd patchset from Frederic:
+    [RFC PATCH 0/5] nohz: Fix racy sleeptime stats v2
+    https://lkml.org/lkml/2013/10/19/86
+
+  My previous patch set:
+    [PATCH 0/2] nohz: fix idle accounting in NO_HZ kernels
+    https://lkml.org/lkml/2014/3/23/256
+    [PATCH 0/2 v2] nohz: fix idle accounting in NO_HZ kernels
+    https://lkml.org/lkml/2014/3/30/315
+    [PATCH v3 0/2] nohz: fix idle accounting in NO_HZ kernels
+    https://lkml.org/lkml/2014/4/10/133
+    [PATCH v4 0/2] nohz: fix idle accounting in NO_HZ kernels
+    https://lkml.org/lkml/2014/4/17/120
+
+  Further reading:
+    SMP iowait stats
+    https://www.kernel.org/pub/linux/kernel/people/wli/vm/iowait/iowait-2.5.45-6
+
+Thanks,
+H.Seto
+
+---
+
+Hidetoshi Seto (8):
+      cputime, sched: record last_iowait
+      cputime, nohz: handle last_iowait for nohz
+      cputime: introduce account_idle_and_iowait
+      cputime, s390: introduce s390_get_idle_and_iowait
+      cputime, ia64: update iowait accounting
+      cputime, ppc: update iowait accounting
+      cputime: generic iowait accounting for VIRT_CPU_ACCOUNTING
+      cputime: iowait aware idle tick accounting
+
+ arch/ia64/kernel/time.c         |   43 +++++++++++++++++-
+ arch/powerpc/kernel/time.c      |   21 +++++++--
+ arch/s390/include/asm/cputime.h |    5 +-
+ arch/s390/kernel/vtime.c        |   40 ++++++++++++++---
+ fs/proc/stat.c                  |   20 +++++---
+ include/linux/kernel_stat.h     |    1 +
+ include/linux/sched.h           |    1 +
+ include/linux/vtime.h           |    3 +
+ kernel/sched/core.c             |   70 ++++++++++++++++++++++++-----
+ kernel/sched/cputime.c          |   93 ++++++++++++++++++++++++++++++++++-----
+ kernel/sched/sched.h            |    5 ++-
+ kernel/time/tick-sched.c        |   48 +++++++++++++++-----
+ 12 files changed, 290 insertions(+), 60 deletions(-)
+
 
