@@ -1,99 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932210AbaFZSPl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 14:15:41 -0400
-Received: from mail-by2lp0237.outbound.protection.outlook.com ([207.46.163.237]:10437
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750731AbaFZSPk convert rfc822-to-8bit (ORCPT
+	id S932397AbaFZSP5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 14:15:57 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:64801 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932289AbaFZSPy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 14:15:40 -0400
-From: "Chalamarla, Tirumalesh" <Tirumalesh.Chalamarla@caviumnetworks.com>
-To: "Chalamarla, Tirumalesh" <Tirumalesh.Chalamarla@caviumnetworks.com>,
-        "Joerg Roedel" <joro@8bytes.org>, Will Deacon <will.deacon@arm.com>
-CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
-        "stuart.yoder@freescale.com" <stuart.yoder@freescale.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "tech@virtualopensystems.com" <tech@virtualopensystems.com>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        "moderated list:ARM SMMU DRIVER" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [RFC PATCH v6 04/20] iommu/arm-smmu: add capability
- IOMMU_CAP_INTR_REMAP
-Thread-Topic: [RFC PATCH v6 04/20] iommu/arm-smmu: add capability
- IOMMU_CAP_INTR_REMAP
-Thread-Index: AQHPgOBbNdL1uGTtt0GgwoLMBshUy5tnB9yAgAzb7QCAAAWEgIAAAl8AgAAA+ACAAAOpAIAP3+jggAAC4JA=
-Date: Thu, 26 Jun 2014 18:15:37 +0000
-Message-ID: <748dccbbd3284521af4659ccbbb11453@BY2PR07MB203.namprd07.prod.outlook.com>
-References: <1401987808-23596-1-git-send-email-a.motakis@virtualopensystems.com>
- <1401987808-23596-5-git-send-email-a.motakis@virtualopensystems.com>
- <20140608103129.GC3279@lvm> <20140616145344.GD18986@8bytes.org>
- <20140616151329.GQ16758@arm.com> <20140616152157.GB31771@8bytes.org>
- <20140616152526.GR16758@arm.com> <20140616153832.GC31771@8bytes.org>
- <9353770066894e85809e1e443b71d1cd@BY2PR07MB203.namprd07.prod.outlook.com>
-In-Reply-To: <9353770066894e85809e1e443b71d1cd@BY2PR07MB203.namprd07.prod.outlook.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [64.2.3.195]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:
-x-forefront-prvs: 02543CD7CD
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(189002)(199002)(377454003)(24454002)(13464003)(19580405001)(83322001)(19580395003)(106356001)(76576001)(107046002)(99396002)(76176999)(54356999)(50986999)(106116001)(105586002)(4396001)(80022001)(66066001)(93886003)(46102001)(20776003)(81542001)(95666004)(64706001)(21056001)(15975445006)(81342001)(79102001)(77096002)(76482001)(85306003)(77982001)(2656002)(87936001)(85852003)(83072002)(92566001)(86362001)(101416001)(74316001)(33646001)(74502001)(74662001)(31966008)(24736002)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR07MB204;H:BY2PR07MB203.namprd07.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 26 Jun 2014 14:15:54 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: caviumnetworks.com
+In-Reply-To: <1403777615-25685-2-git-send-email-boris.brezillon@free-electrons.com>
+References: <1403777615-25685-1-git-send-email-boris.brezillon@free-electrons.com>
+ <1403777615-25685-2-git-send-email-boris.brezillon@free-electrons.com>
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Thu, 26 Jun 2014 11:15:13 -0700
+Message-ID: <CAGVrzcbYAEMsU1SFSH761H0isQ4z1M++KK_GLf0OAbGS48YUmw@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] ARM: at91/dt: describe rgmii ethernet phy
+ connected to sama5d3xek boards
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>, netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "David S. Miller" <davem@davemloft.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When I say emulating ITS, I mean translating guest ITS commands to physical ITS commands  and placing them in physical queue. 
+Hi Boris,
 
-Regards,
-Tirumalesh.
+2014-06-26 3:13 GMT-07:00 Boris BREZILLON <boris.brezillon@free-electrons.com>:
+> Add ethernet-phy node and specify phy interrupt (connected to pin PB25).
+>
+> The PHY address is not specified here because atmel have 2 different
+> designs
+> for its CPU modules: one is connecting PHYAD[0-2] pins to pull up resistors
+> (Embest design) and the other one is connection PHYAD0 to a pull up
+> resistor and PHYAD[1-2] to pull down resistors (Ronetix design).
+> As a result, Ronetix design will have its PHY available at address 0x1 and
+> Embest design at 0x7.
+> Let the net PHY core automatically detect the PHY address by scanning the
+> MDIO bus.
 
------Original Message-----
-From: kvmarm-bounces@lists.cs.columbia.edu [mailto:kvmarm-bounces@lists.cs.columbia.edu] On Behalf Of Chalamarla, Tirumalesh
-Sent: Thursday, June 26, 2014 11:08 AM
-To: Joerg Roedel; Will Deacon
-Cc: kvm@vger.kernel.org; open list; alex.williamson@redhat.com; stuart.yoder@freescale.com; iommu@lists.linux-foundation.org; tech@virtualopensystems.com; kvmarm@lists.cs.columbia.edu; moderated list:ARM SMMU DRIVER
-Subject: RE: [RFC PATCH v6 04/20] iommu/arm-smmu: add capability IOMMU_CAP_INTR_REMAP
+I though the compatible string was listed as a required property, but
+it is not. The 'reg' property however is listed as required, although
+the of_miodbus_register() works just fine without it, although that is
+a Linux-specific implementation detail.
 
-Forgive me if this discussion is not relative here, but I thought it is.  
+>
+> Define board specific delays to apply to RGMII signals.
+>
+> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
 
-How is VFIO restricting devices from writing  to MSI/MSI-X, Is all the vector area is mapped by VFIO to trap the accesses.  I am asking this because we might need to emulate ITS somewhere either in KVM or VFIO to provide direct access to devices.
-And I don't see any mentions on that.   I think this flag needs to be set by ITS emulation.
+Reviewed-by: Florian Fainelli <f.fainelli@gmail.com>
 
-Regards,
-Tirumalesh.
+> ---
+>  arch/arm/boot/dts/sama5d3xcm.dtsi | 15 +++++++++++++++
+>  1 file changed, 15 insertions(+)
+>
+> diff --git a/arch/arm/boot/dts/sama5d3xcm.dtsi b/arch/arm/boot/dts/sama5d3xcm.dtsi
+> index b0b1331..fc68bae 100644
+> --- a/arch/arm/boot/dts/sama5d3xcm.dtsi
+> +++ b/arch/arm/boot/dts/sama5d3xcm.dtsi
+> @@ -34,6 +34,21 @@
+>
+>                         macb0: ethernet@f0028000 {
+>                                 phy-mode = "rgmii";
+> +                               #address-cells = <1>;
+> +                               #size-cells = <0>;
+> +
+> +                               ethernet-phy {
+> +                                       interrupt-parent = <&pioB>;
+> +                                       interrupts = <25 IRQ_TYPE_EDGE_FALLING>;
+> +                                       txen-skew-ps = <800>;
+> +                                       txc-skew-ps = <3000>;
+> +                                       rxdv-skew-ps = <400>;
+> +                                       rxc-skew-ps = <3000>;
+> +                                       rxd0-skew-ps = <400>;
+> +                                       rxd1-skew-ps = <400>;
+> +                                       rxd2-skew-ps = <400>;
+> +                                       rxd3-skew-ps = <400>;
+> +                               };
+>                         };
+>
+>                         pmc: pmc@fffffc00 {
+> --
+> 1.8.3.2
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
------Original Message-----
-From: kvmarm-bounces@lists.cs.columbia.edu [mailto:kvmarm-bounces@lists.cs.columbia.edu] On Behalf Of Joerg Roedel
-Sent: Monday, June 16, 2014 8:39 AM
-To: Will Deacon
-Cc: stuart.yoder@freescale.com; kvm@vger.kernel.org; open list; iommu@lists.linux-foundation.org; alex.williamson@redhat.com; moderated list:ARM SMMU DRIVER; tech@virtualopensystems.com; kvmarm@lists.cs.columbia.edu; Christoffer Dall
-Subject: Re: [RFC PATCH v6 04/20] iommu/arm-smmu: add capability IOMMU_CAP_INTR_REMAP
-
-On Mon, Jun 16, 2014 at 04:25:26PM +0100, Will Deacon wrote:
-> Ok, thanks. In which case, I think this is really a combined property 
-> of the SMMU and the interrupt controller, so we might need some extra 
-> code so that the SMMU can check that the interrupt controller for the 
-> device is also capable of interrupt remapping.
-
-Right, that this is part of IOMMU code has more or less historic reasons on x86. Interrupt remapping is purely implemented in the IOMMU there, so on ARM some clue-code between interrupt controler and smmu is needed.
 
 
-	Joerg
-
-
-_______________________________________________
-kvmarm mailing list
-kvmarm@lists.cs.columbia.edu
-https://lists.cs.columbia.edu/mailman/listinfo/kvmarm
-_______________________________________________
-kvmarm mailing list
-kvmarm@lists.cs.columbia.edu
-https://lists.cs.columbia.edu/mailman/listinfo/kvmarm
+-- 
+Florian
