@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757868AbaFZMXI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 08:23:08 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:20186 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757844AbaFZMXF (ORCPT
+	id S1757891AbaFZMX1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 08:23:27 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:49454 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757415AbaFZMXY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 08:23:05 -0400
-X-AuditID: cbfee690-b7fb56d000003439-fd-53ac10a77999
+	Thu, 26 Jun 2014 08:23:24 -0400
+X-AuditID: cbfee68e-b7fb96d000004bfc-18-53ac10b9a5a1
 From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
 To: linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org
 Cc: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
         dianders@chromium.org, gregkh@linuxfoundation.org,
         naveenkrishna.ch@gmail.com, cpgs@samsung.com
-Subject: [PATCH 2/3] ARM: DTS: Add NTC thermistor nodes to Exynos5250 based Snow
-Date: Thu, 26 Jun 2014 17:49:07 +0530
-Message-id: <1403785148-20792-3-git-send-email-ch.naveen@samsung.com>
+Subject: [PATCH 3/3] ARM: DTS: Add common dts file for Peach PIT and PI along
+ with ADC nodes
+Date: Thu, 26 Jun 2014 17:49:08 +0530
+Message-id: <1403785148-20792-4-git-send-email-ch.naveen@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1403785148-20792-1-git-send-email-ch.naveen@samsung.com>
 References: <1403785148-20792-1-git-send-email-ch.naveen@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBLMWRmVeSWpSXmKPExsWyRsSkTne5wJpgg5kbVCxeHtK0mH/kHKvF
-	2WUH2SyaF69ns5h35B2LxeVdc9gsZpzfx2SxaNt/ZgcOj9kNF1k8ds66y+6xf+4ado++LasY
-	PT5vkgtgjeKySUnNySxLLdK3S+DK2HjqAlvBSr6KBUc6mRsY13B3MXJySAiYSNzumsgCYYtJ
-	XLi3nq2LkYtDSGApo8Trr2fYYIpmPv/ODpGYzihx5cVnoAQHkNPPJDFDEaSGTcBM4uCi1ewg
-	toiAo8SOOf+YQOqZBRYwSrTuWs0EkhAWCJDYf+Ur2DYWAVWJmd9bwWxeAVeJxV19zCAzJQQU
-	JOZMsgEJcwq4SbR8OMACscpV4tpFeZCREgKL2CXezF/NDDFGQOLb5EMsEK2yEpsOMEOcLClx
-	cMUNlgmMwgsYGVYxiqYWJBcUJ6UXmegVJ+YWl+al6yXn525iBIb66X/PJuxgvHfA+hBjMtC4
-	icxSosn5wFjJK4k3NDYzsjA1MTU2Mrc0I01YSZxX7VFSkJBAemJJanZqakFqUXxRaU5q8SFG
-	Jg5OqQbG5YwPVFpqq8K5S9xi8sLr2kNc+vfoN9/adfFwmVJ+Bd+9JdZzdu6+vWs57wQR5RJW
-	/xJftqc3JnBwaOyu+xF64dPvK3Z+SQrMstOXtnBM6yybIauWHKbwUrVyTmyhaEjQY4/mx8Gt
-	JU2CdS33HQpNFGdwHuucfN36rpiDXItyXOdC+w6L+UosxRmJhlrMRcWJAGiAgJGLAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOIsWRmVeSWpSXmKPExsVy+t9jQd3lAmuCDV4dkrZ4eUjTYv6Rc6wW
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOLMWRmVeSWpSXmKPExsWyRsSkRneXwJpgg1UcFi8PaVrMP3KO1eLs
+	soNsFs2L17NZzDvyjsXi8q45bBYzzu9jsli07T+zA4fH7IaLLB47Z91l99g/dw27R9+WVYwe
+	nzfJBbBGcdmkpOZklqUW6dslcGV8u76ZueC0bMXxbQfYGxiXSHQxcnBICJhIvDzq18XICWSK
+	SVy4t56ti5GLQ0hgKaPEw2VXWCASJhIXlkxjB7GFBKYzSsz8VA9R1M8kcfjJSbAiNgEziYOL
+	VoMViQg4SuyY848JpIhZYAGjROuu1UwgCWGBOIlPLzaBFbEIqEr8+7UQrJlXwFXi4tUZbBAX
+	KUjMmWQDEuYUcJNo+XCABSQsBFRy7aI8yEgJgWXsEv9mnGeFGCMg8W3yIRaIVlmJTQeYIW6W
+	lDi44gbLBEbhBYwMqxhFUwuSC4qT0ouM9IoTc4tL89L1kvNzNzECA/30v2d9OxhvHrA+xJgM
+	NG4is5Rocj4wUvJK4g2NzYwsTE1MjY3MLc1IE1YS5130MClISCA9sSQ1OzW1ILUovqg0J7X4
+	ECMTB6dUA+PG8HINhqSTD2Uf/9Z5I6S8YXaMscA1/h26Ch8SnGY6cX/yaQ1hmWW5xmutuwKD
+	2P6mi8GlumtvqPyZ7zGRV3zWLIkVczeadZin8L/a28+xi12YfQbfUbPYP2dLJolrN+ctbcrb
+	fWXm1M2+nSaH/PSPC2eu38LRE8n+PeHL7i3/rd15v69y26HEUpyRaKjFXFScCABtsW80igIA	AA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBIsWRmVeSWpSXmKPExsVy+t9jQd2dAmuCDeb95LJ4eUjTYv6Rc6wW
 	Z5cdZLNoXryezWLekXcsFpd3zWGzmHF+H5PFom3/mR04PGY3XGTx2DnrLrvH/rlr2D36tqxi
 	9Pi8SS6ANaqB0SYjNTEltUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DX
-	LTMH6BYlhbLEnFKgUEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGENY8bGUxfYClbyVSw4
-	0sncwLiGu4uRk0NCwERi5vPv7BC2mMSFe+vZuhi5OIQEpjNKXHnxGcjhAHL6mSRmKILUsAmY
-	SRxctBqsXkTAUWLHnH9MIPXMAgsYJVp3rWYCSQgLBEjsv/KVBcRmEVCVmPm9FczmFXCVWNzV
-	xwwyU0JAQWLOJBuQMKeAm0TLhwMsEKtcJa5dlJ/AyLuAkWEVo2hqQXJBcVJ6rqFecWJucWle
-	ul5yfu4mRnAkPZPawbiyweIQowAHoxIP74fHq4KFWBPLiitzDzFKcDArifCK/F4dLMSbklhZ
-	lVqUH19UmpNafIjRFOimicxSosn5wCjPK4k3NDYxNzU2tTSxMDGzVBLnPdBqHSgkkJ5Ykpqd
-	mlqQWgTTx8TBKdXAuHFNfFpB7/eId3OPcWsttArlK/Vq7dGzmjSnIaf187bJ7Ps5tN8J9e0J
-	Xzpj6ZmSwLof/Trfnnbtn2az5vHWfQf88pdvWy3/b/2CZ0pcJ+esf+B7/8vqYMaf81vSxFeJ
-	pda9nGV7y1d2QtNq+5L0q1Pe5YpvLW8Os3nx9t7blZKmAYohqryS6UosxRmJhlrMRcWJAA42
-	aOq6AgAA
+	LTMH6BYlhbLEnFKgUEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGENY8a365uZC07LVhzf
+	doC9gXGJRBcjJ4eEgInEhSXT2CFsMYkL99azgdhCAtMZJWZ+qu9i5AKy+5kkDj85yQKSYBMw
+	kzi4aDVYg4iAo8SOOf+YQIqYBRYwSrTuWs0EkhAWiJP49GITWBGLgKrEv18LwZp5BVwlLl6d
+	AbSBA2ibgsScSTYgYU4BN4mWDwdYQMJCQCXXLspPYORdwMiwilE0tSC5oDgpPddIrzgxt7g0
+	L10vOT93EyM4lp5J72Bc1WBxiFGAg1GJh/fD41XBQqyJZcWVuYcYJTiYlUR47/OvCRbiTUms
+	rEotyo8vKs1JLT7EaAp000RmKdHkfGCc55XEGxqbmJsam1qaWJiYWSqJ8x5stQ4UEkhPLEnN
+	Tk0tSC2C6WPi4JRqYDTnDtTt2vJYUCP99y7z4KVNy91OZ/Ut2JewedfO5edur5gYP2d93Z6n
+	95pLI4r+nZEVb0jRLGVp9P35Z/KMu0dFHxW7C5+6I2t2Zg+v1JNwwxoL9iV1CzZPrXTnfrur
+	JnX7x/ATMzT+pPO+OlgbuqTc8r/WrrUX57f0l4lwTvlnXXZspkHG5TAlluKMREMt5qLiRACu
+	CIXGuwIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -50,71 +51,132 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Exynos5250 based Snow board has 4 NTC thermistors to measure
-temperatures at various points on the board.
+DTS files exynos5420-peach-pit.dts and exynos5800-peach-pi.dts
+have lots of device tree nodes in common.
 
-IIO based ADC becomes the parent and NTC thermistors are the childs,
-via the HWMON interface.
+This patch creates a cros-exynos-peach.dts file, which can carry the
+device tree nodes common across exynos5420-peach-pit.dts and
+exynos5800-peach-pi.dts. Starting with ADC based Thermistor nodes.
+
+Also, enables ADC based thermistors for peach_pi and peach_pit.
 
 Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
 ---
-Posted earlier by Doug Anderson @ https://lkml.org/lkml/2013/3/27/453
+This patchset needs
+"[PATCH v4 00/14] Add Maxim 77802 PMIC support" by "Javier Martinez Canillas"
+Posted  https://lkml.org/lkml/2014/6/25/668
 
-This patch depends on (1/4 and 2/4 patches of) patchset posted 
-http://www.spinics.net/lists/linux-iio/msg13486.html
-Which were applied on to Guenter Roeck's tree.
+Intention is to slowly move the common DT nodes across exynos5420-peach-pit.dts
+and exynos5800-peach-pi.dts into cros-exynos-peach.dts
+
+I'm unsure of the naming conventions for dts files
+   Named it "cros-exynos-peach.dts" as below.
+   used for "cros" + based on "exynos" + boards named "peach" in common.
 
 cat sysfs entries exported by hwmon for 4 thermistors
-and verified the values on Snow.
+and verified the values on peach pit.
 
- arch/arm/boot/dts/exynos5250-snow.dts |   34 +++++++++++++++++++++++++++++++++
- 1 file changed, 34 insertions(+)
+ arch/arm/boot/dts/cros-exynos-peach.dtsi   |   41 ++++++++++++++++++++++++++++
+ arch/arm/boot/dts/exynos5420-peach-pit.dts |    6 ++++
+ arch/arm/boot/dts/exynos5800-peach-pi.dts  |    6 ++++
+ 3 files changed, 53 insertions(+)
+ create mode 100644 arch/arm/boot/dts/cros-exynos-peach.dtsi
 
-diff --git a/arch/arm/boot/dts/exynos5250-snow.dts b/arch/arm/boot/dts/exynos5250-snow.dts
-index 7bd2df1..0fa7067 100644
---- a/arch/arm/boot/dts/exynos5250-snow.dts
-+++ b/arch/arm/boot/dts/exynos5250-snow.dts
-@@ -20,6 +20,40 @@
- 		i2c104 = &i2c_104;
- 	};
- 
-+	adc@12D10000 {
-+		status = "okay";
-+		vdd-supply = <&buck5_reg>;
+diff --git a/arch/arm/boot/dts/cros-exynos-peach.dtsi b/arch/arm/boot/dts/cros-exynos-peach.dtsi
+new file mode 100644
+index 0000000..86135bd
+--- /dev/null
++++ b/arch/arm/boot/dts/cros-exynos-peach.dtsi
+@@ -0,0 +1,41 @@
++/*
++ * Common device tree include for Exynos5420 based Peach PIT and
++ * Exynos5800 based Peach PI.
++ *
++ * Copyright (c) 2014 Samsung Electronics Co., Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++*/
 +
-+		ncp15wb473@3 {
-+			compatible = "murata,ncp15wb473";
-+			pullup-uv = <1800000>;
-+			pullup-ohm = <47000>;
-+			pulldown-ohm = <0>;
-+			io-channels = <&adc 3>;
-+		};
-+		ncp15wb473@4 {
-+			compatible = "murata,ncp15wb473";
-+			pullup-uv = <1800000>;
-+			pullup-ohm = <47000>;
-+			pulldown-ohm = <0>;
-+			io-channels = <&adc 4>;
-+		};
-+		ncp15wb473@5 {
-+			compatible = "murata,ncp15wb473";
-+			pullup-uv = <1800000>;
-+			pullup-ohm = <47000>;
-+			pulldown-ohm = <0>;
-+			io-channels = <&adc 5>;
-+		};
-+		ncp15wb473@6 {
-+			compatible = "murata,ncp15wb473";
-+			pullup-uv = <1800000>;
-+			pullup-ohm = <47000>;
-+			pulldown-ohm = <0>;
-+			io-channels = <&adc 6>;
-+		};
++&adc {
++	ncp15wb473@3 {
++		compatible = "murata,ncp15wb473";
++		pullup-uv = <1800000>;
++		pullup-ohm = <47000>;
++		pulldown-ohm = <0>;
++		io-channels = <&adc 3>;
 +	};
-+
- 	rtc@101E0000 {
- 		status = "okay";
++	ncp15wb473@4 {
++		compatible = "murata,ncp15wb473";
++		pullup-uv = <1800000>;
++		pullup-ohm = <47000>;
++		pulldown-ohm = <0>;
++		io-channels = <&adc 4>;
++	};
++	ncp15wb473@5 {
++		compatible = "murata,ncp15wb473";
++		pullup-uv = <1800000>;
++		pullup-ohm = <47000>;
++		pulldown-ohm = <0>;
++		io-channels = <&adc 5>;
++	};
++	ncp15wb473@6 {
++		compatible = "murata,ncp15wb473";
++		pullup-uv = <1800000>;
++		pullup-ohm = <47000>;
++		pulldown-ohm = <0>;
++		io-channels = <&adc 6>;
++	};
++};
+diff --git a/arch/arm/boot/dts/exynos5420-peach-pit.dts b/arch/arm/boot/dts/exynos5420-peach-pit.dts
+index d124394..682b9c2 100644
+--- a/arch/arm/boot/dts/exynos5420-peach-pit.dts
++++ b/arch/arm/boot/dts/exynos5420-peach-pit.dts
+@@ -12,6 +12,7 @@
+ #include <dt-bindings/input/input.h>
+ #include <dt-bindings/gpio/gpio.h>
+ #include "exynos5420.dtsi"
++#include "cros-exynos-peach.dtsi"
+ 
+ / {
+ 	model = "Google Peach Pit Rev 6+";
+@@ -101,6 +102,11 @@
  	};
+ };
+ 
++&adc {
++	status = "okay";
++	vdd-supply = <&ldo9_reg>;
++};
++
+ &dp {
+ 	status = "okay";
+ 	pinctrl-names = "default";
+diff --git a/arch/arm/boot/dts/exynos5800-peach-pi.dts b/arch/arm/boot/dts/exynos5800-peach-pi.dts
+index c36c9ce..7552173 100644
+--- a/arch/arm/boot/dts/exynos5800-peach-pi.dts
++++ b/arch/arm/boot/dts/exynos5800-peach-pi.dts
+@@ -12,6 +12,7 @@
+ #include <dt-bindings/input/input.h>
+ #include <dt-bindings/gpio/gpio.h>
+ #include "exynos5800.dtsi"
++#include "cros-exynos-peach.dtsi"
+ 
+ / {
+ 	model = "Google Peach Pi Rev 10+";
+@@ -99,6 +100,11 @@
+ 	};
+ };
+ 
++&adc {
++	status = "okay";
++	vdd-supply = <&ldo9_reg>;
++};
++
+ &dp {
+ 	status = "okay";
+ 	pinctrl-names = "default";
 -- 
 1.7.9.5
 
