@@ -1,127 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757568AbaFZMAW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 08:00:22 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:39795 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753929AbaFZMAU (ORCPT
+	id S1757510AbaFZMCu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 08:02:50 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:59551 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757114AbaFZMCr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 08:00:20 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-07-53ac0b4c6b45
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Tomasz Figa <t.figa@samsung.com>, Mike Turquette <mturquette@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH RESEND] clk: samsung: Make of_device_id array const
-Date: Thu, 26 Jun 2014 14:00:06 +0200
-Message-id: <1403784006-17605-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOJMWRmVeSWpSXmKPExsVy+t/xK7o+3GuCDRatULZ4/cLQonfBVTaL
-	TY+vsVpc3jWHzWLG+X1MFk8nXGSzWD/jNYsDu8eda3vYPDYvqffo27KK0ePzJrkAligum5TU
-	nMyy1CJ9uwSujE+v+9gK5spX9Ly+ztbAeEOqi5GTQ0LARGL2xVVsELaYxIV764FsLg4hgaWM
-	ErPXfIRy+pgkXvV/YwapYhMwlti8fAlYQkTgNqPE5SM32EESzAKGEj/f/QGzhQWcJb6cOcgC
-	YrMIqEpM/3GfsYuRg4NXwF1i524LiG1yEiePTWadwMi9gJFhFaNoamlyQXFSeq6RXnFibnFp
-	Xrpecn7uJkZIYHzdwbj0mNUhRgEORiUe3hNhq4OFWBPLiitzDzFKcDArifCK/AYK8aYkVlal
-	FuXHF5XmpBYfYmTi4JRqYMxTuqnRsEFRWzL3ZaaHS8jqv4vTHG3O7WLNmXzn56wklX0f9rV9
-	mi8p+N6jtW329OUcokGG8Xmf/c9U1vbuvPm6ZPrBtHsfJ0+QvbhkS47Vl8PNWnP7tM5b9Zuc
-	WV7WLdDyQ/JaGEMjp8Pt3w8blhQuSFKtZmgzqDK9oDBnj8fFFCfzvzlbkpRYijMSDbWYi4oT
-	AesZUeDqAQAA
+	Thu, 26 Jun 2014 08:02:47 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-de-53ac0be49c8b
+Message-id: <53AC0BCC.1010608@samsung.com>
+Date: Thu, 26 Jun 2014 14:02:20 +0200
+From: Tomasz Figa <t.figa@samsung.com>
+Organization: Samsung R&D Institute Poland
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.5.0
+MIME-version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        devicetree@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Daniel Drake <drake@endlessm.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>
+Subject: Re: [PATCH 0/3] Deterministic UART numbering on Samsung SoCs
+References: <1403781875-5425-1-git-send-email-t.figa@samsung.com>
+ <20140626113939.GP32514@n2100.arm.linux.org.uk>
+In-reply-to: <20140626113939.GP32514@n2100.arm.linux.org.uk>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgkeLIzCtJLcpLzFFi42I5/e/4Zd0n3GuCDVZt17WYf+Qcq8Wj+Y+Z
+	LZoXr2ez+Px7F6tF74KrbBabHl9jtbi8aw6bxYzz+5gszizuZbe4fZnXYu2Ru+wWS69fZLJo
+	3XuE3WLVrj+MDnwea+atYfRoae5h81j0Pctj56y77B6bVnWyeeyfu4bdY/OSeo++LasYPc4s
+	OMLu8XmTXABXFJdNSmpOZllqkb5dAlfG1p4tbAUPBSvWHfBtYNzK18XIySEhYCLxZMk0Nghb
+	TOLCvfVANheHkMBSRomJn5czQzifGSV+T7jGBFLFK6AlceDGYrAOFgFViUer3jKD2GwCahKf
+	Gx6BxfmBatY0XWfpYuTgEBWIkHh8QQiiVVDix+R7LCC2iICpxLVHz8BamQXuMkss2hEPYgsL
+	uEo8eX6UEcQWEiiWOHn+LCPIGE4BG4mTzRYQ5ToS+1shbmYWkJfYvOYt8wRGwVlINsxCUjYL
+	SdkCRuZVjKKppckFxUnpuYZ6xYm5xaV56XrJ+bmbGCGx9mUH4+JjVocYBTgYlXh4JeauDhZi
+	TSwrrsw9xCjBwawkwivyGyjEm5JYWZValB9fVJqTWnyIkYmDU6qBcWPw0gNrbh79/HmjQFPG
+	63dRfr+FBXZ3ShzJL8nYWXj9VfX5Y3dyde9HzLzOYSVuVTrtdYWugbV+55pposrth/q3VdhP
+	Pn3npewm2QkN2xl/+CsbLWVYOeW2c4Oa40Y7y3dfnbPe5tyK73D9uP5GyOeMi1e0Qz2Oss/y
+	LHk679pdoeBDJlcaXiixFGckGmoxFxUnAgBlE8y5kwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Array of struct of_device_id may be be const as expected by
-of_match_table field and of_find_matching_node_and_match() function.
+On 26.06.2014 13:39, Russell King - ARM Linux wrote:
+> On Thu, Jun 26, 2014 at 01:24:32PM +0200, Tomasz Figa wrote:
+>> Current Samsung UART driver relies on probe order of particular
+>> samsung-uart instances, which makes it impossible to get proper
+>> initialization of ports when not all ports are available on board,
+>> not even saying of deterministic device naming.
+>>
+>> This series intends to fix this situation by adding support to parse
+>> aliases from device tree and use them to assign instance IDs to
+>> particular port instances.
+> 
+> How about instead exporting the path/id information so that userspace
+> can create /dev/serial/by-{path,id}/... for internal devices instead?
+> 
+> The problem you're raising is very much the same problem you have when
+> there are multiple USB serial devices connected to the machine - you
+> just get a bunch of /dev/ttyUSB* devices which are unordered (they can
+> change on each boot, or change order if you disconnect and reconnect
+> them.)
+> 
+> /dev/serial/by-{path,id}/ allows for a much more stable path.
+> 
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- drivers/clk/samsung/clk-exynos4.c    | 2 +-
- drivers/clk/samsung/clk-exynos5250.c | 2 +-
- drivers/clk/samsung/clk-exynos5420.c | 2 +-
- drivers/clk/samsung/clk-exynos5440.c | 2 +-
- drivers/clk/samsung/clk.c            | 2 +-
- drivers/clk/samsung/clk.h            | 2 +-
- 6 files changed, 6 insertions(+), 6 deletions(-)
+The problem being solved has slightly different constraints than the one
+with USB serials you mentioned:
 
-diff --git a/drivers/clk/samsung/clk-exynos4.c b/drivers/clk/samsung/clk-exynos4.c
-index 4f150c9dd38c..ca6688483390 100644
---- a/drivers/clk/samsung/clk-exynos4.c
-+++ b/drivers/clk/samsung/clk-exynos4.c
-@@ -1070,7 +1070,7 @@ static void __init exynos4_clk_register_finpll(struct samsung_clk_provider *ctx)
- 
- }
- 
--static struct of_device_id ext_clk_match[] __initdata = {
-+static const struct of_device_id ext_clk_match[] __initconst = {
- 	{ .compatible = "samsung,clock-xxti", .data = (void *)0, },
- 	{ .compatible = "samsung,clock-xusbxti", .data = (void *)1, },
- 	{},
-diff --git a/drivers/clk/samsung/clk-exynos5250.c b/drivers/clk/samsung/clk-exynos5250.c
-index 1fad4c5e3f5d..0af3e4ff0eb5 100644
---- a/drivers/clk/samsung/clk-exynos5250.c
-+++ b/drivers/clk/samsung/clk-exynos5250.c
-@@ -748,7 +748,7 @@ static struct samsung_pll_clock exynos5250_plls[nr_plls] __initdata = {
- 		VPLL_LOCK, VPLL_CON0, NULL),
- };
- 
--static struct of_device_id ext_clk_match[] __initdata = {
-+static const struct of_device_id ext_clk_match[] __initconst = {
- 	{ .compatible = "samsung,clock-xxti", .data = (void *)0, },
- 	{ },
- };
-diff --git a/drivers/clk/samsung/clk-exynos5420.c b/drivers/clk/samsung/clk-exynos5420.c
-index 9d7d7eed03fd..007b5ef8bc1c 100644
---- a/drivers/clk/samsung/clk-exynos5420.c
-+++ b/drivers/clk/samsung/clk-exynos5420.c
-@@ -1167,7 +1167,7 @@ static struct samsung_pll_clock exynos5x_plls[nr_plls] __initdata = {
- 		KPLL_CON0, NULL),
- };
- 
--static struct of_device_id ext_clk_match[] __initdata = {
-+static const struct of_device_id ext_clk_match[] __initconst = {
- 	{ .compatible = "samsung,exynos5420-oscclk", .data = (void *)0, },
- 	{ },
- };
-diff --git a/drivers/clk/samsung/clk-exynos5440.c b/drivers/clk/samsung/clk-exynos5440.c
-index 647f1440aa6a..6e8b40a3b143 100644
---- a/drivers/clk/samsung/clk-exynos5440.c
-+++ b/drivers/clk/samsung/clk-exynos5440.c
-@@ -84,7 +84,7 @@ static struct samsung_gate_clock exynos5440_gate_clks[] __initdata = {
- 	GATE(CLK_CS250_O, "cs250_o", "cs250", CLKEN_OV_VAL, 19, 0, 0),
- };
- 
--static struct of_device_id ext_clk_match[] __initdata = {
-+static const struct of_device_id ext_clk_match[] __initconst = {
- 	{ .compatible = "samsung,clock-xtal", .data = (void *)0, },
- 	{},
- };
-diff --git a/drivers/clk/samsung/clk.c b/drivers/clk/samsung/clk.c
-index 49629c71c9e7..2413677b42fe 100644
---- a/drivers/clk/samsung/clk.c
-+++ b/drivers/clk/samsung/clk.c
-@@ -284,7 +284,7 @@ void __init samsung_clk_register_gate(struct samsung_clk_provider *ctx,
- void __init samsung_clk_of_register_fixed_ext(struct samsung_clk_provider *ctx,
- 			struct samsung_fixed_rate_clock *fixed_rate_clk,
- 			unsigned int nr_fixed_rate_clk,
--			struct of_device_id *clk_matches)
-+			const struct of_device_id *clk_matches)
- {
- 	const struct of_device_id *match;
- 	struct device_node *clk_np;
-diff --git a/drivers/clk/samsung/clk.h b/drivers/clk/samsung/clk.h
-index 9693b80d924f..150a9ebc0266 100644
---- a/drivers/clk/samsung/clk.h
-+++ b/drivers/clk/samsung/clk.h
-@@ -331,7 +331,7 @@ extern void __init samsung_clk_of_register_fixed_ext(
- 			struct samsung_clk_provider *ctx,
- 			struct samsung_fixed_rate_clock *fixed_rate_clk,
- 			unsigned int nr_fixed_rate_clk,
--			struct of_device_id *clk_matches);
-+			const struct of_device_id *clk_matches);
- 
- extern void samsung_clk_add_lookup(struct samsung_clk_provider *ctx,
- 			struct clk *clk, unsigned int id);
--- 
-1.9.1
+- basically Samsung UART already has its own namespace (ttySAC) and the
+order inside it is well-defined - instance ID shall be the hardware
+instance number as specified by documentation. The ports vary in certain
+aspects and the ID is important knowledge of the driver. The problem
+here was broken implementation of assigning IDs based on probe order,
+which worked only because on all Exynos platforms all ports have been
+always registered (which we want to change now and keep unused ones
+"disabled" in DT),
 
+- we already have a lot of userspace depending on the aforementioned
+ttySAC namespace and proper ordering of instances there. While I believe
+the proper solution as of today would be to go back to standard ttyS
+namespace and make userspace use a smarter way of identifying the
+instances (e.g. by path or id, as you suggested), I don't think this
+will make anyone's life easier with current assumptions,
+
+- correct me if I'm wrong, but I don't think the
+/dev/serial/by-{path,id} would be handled in kernel's console= parameter.
+
+Best regards,
+Tomasz
