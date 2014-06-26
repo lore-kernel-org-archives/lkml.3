@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757953AbaFZQ65 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 12:58:57 -0400
+	id S1757926AbaFZQ64 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 12:58:56 -0400
 Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:25973 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757785AbaFZQ6w (ORCPT
+	by vger.kernel.org with ESMTP id S1757250AbaFZQ6u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 12:58:52 -0400
-Message-Id: <20140626165850.311953940@goodmis.org>
+	Thu, 26 Jun 2014 12:58:50 -0400
+Message-Id: <20140626165848.347125039@goodmis.org>
 User-Agent: quilt/0.63-1
-Date: Thu, 26 Jun 2014 12:52:31 -0400
+Date: Thu, 26 Jun 2014 12:52:24 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
@@ -17,13 +17,12 @@ Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>, Jiri Kosina <jkosina@suse.cz>,
-        Josh Poimboeuf <notifications@github.com>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: [RFA][PATCH 10/27] sh: ftrace: Add call to ftrace_graph_is_dead() in function graph code
+        Josh Poimboeuf <notifications@github.com>
+Subject: [RFA][PATCH 03/27] tracing: Remove ftrace_stop/start() from reading the trace file
 References: <20140626165221.736847419@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0010-sh-ftrace-Add-call-to-ftrace_graph_is_dead-in-functi.patch
+Content-Disposition: inline; filename=0003-tracing-Remove-ftrace_stop-start-from-reading-the-tr.patch
 X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
@@ -32,36 +31,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-ftrace_stop() is going away as it disables parts of function tracing
-that affects users that should not be affected. But ftrace_graph_stop()
-is built on ftrace_stop(). Here's another example of killing all of
-function tracing because something went wrong with function graph
-tracing.
+Disabling reading and writing to the trace file should not be able to
+disable all function tracing callbacks. There's other users today
+(like kprobes and perf). Reading a trace file should not stop those
+from happening.
 
-Instead of disabling all users of function tracing on function graph
-error, disable only function graph tracing. To do this, the arch code
-must call ftrace_graph_is_dead() before it implements function graph.
-
-Cc: Paul Mundt <lethal@linux-sh.org>
+Cc: stable@vger.kernel.org # 3.0+
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/sh/kernel/ftrace.c | 3 +++
- 1 file changed, 3 insertions(+)
+ kernel/trace/trace.c | 2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/arch/sh/kernel/ftrace.c b/arch/sh/kernel/ftrace.c
-index 3c74f53db6db..079d70e6d74b 100644
---- a/arch/sh/kernel/ftrace.c
-+++ b/arch/sh/kernel/ftrace.c
-@@ -344,6 +344,9 @@ void prepare_ftrace_return(unsigned long *parent, unsigned long self_addr)
- 	struct ftrace_graph_ent trace;
- 	unsigned long return_hooker = (unsigned long)&return_to_handler;
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index eeb233cbac4f..433a50ffc73e 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -1372,7 +1372,6 @@ void tracing_start(void)
  
-+	if (unlikely(ftrace_graph_is_dead()))
-+		return;
-+
- 	if (unlikely(atomic_read(&current->tracing_graph_pause)))
- 		return;
+ 	arch_spin_unlock(&global_trace.max_lock);
  
+-	ftrace_start();
+  out:
+ 	raw_spin_unlock_irqrestore(&global_trace.start_lock, flags);
+ }
+@@ -1419,7 +1418,6 @@ void tracing_stop(void)
+ 	struct ring_buffer *buffer;
+ 	unsigned long flags;
+ 
+-	ftrace_stop();
+ 	raw_spin_lock_irqsave(&global_trace.start_lock, flags);
+ 	if (global_trace.stop_count++)
+ 		goto out;
 -- 
 2.0.0
 
