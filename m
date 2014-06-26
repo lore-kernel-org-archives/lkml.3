@@ -1,64 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756906AbaFZQWi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 12:22:38 -0400
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:43299 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754498AbaFZQWg (ORCPT
+	id S1757103AbaFZQ3z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 12:29:55 -0400
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:60708 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752838AbaFZQ3w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 12:22:36 -0400
-From: Josef Bacik <jbacik@fb.com>
-To: <linux-kernel@vger.kernel.org>, <rostedt@goodmis.org>
-Subject: [PATCH] trace-cmd: handle NULL comm name in .dat file
-Date: Thu, 26 Jun 2014 09:22:12 -0700
-Message-ID: <1403799732-30308-1-git-send-email-jbacik@fb.com>
-X-Mailer: git-send-email 2.0.0
+	Thu, 26 Jun 2014 12:29:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [192.168.16.4]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-06-26_06:2014-06-26,2014-06-26,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
- kscore.compositescore=0 circleOfTrustscore=22.4078557653337
- compositescore=0.997695897463551 urlsuspect_oldscore=0.997695897463551
- suspectscore=2 recipient_domain_to_sender_totalscore=0 phishscore=0
- bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=62764
- rbsscore=0.997695897463551 spamscore=0
- recipient_to_sender_domain_totalscore=6 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1406260166
-X-FB-Internal: deliver
+In-Reply-To: <53AC47E3.2030306@collabora.co.uk>
+References: <1403723019-6212-1-git-send-email-javier.martinez@collabora.co.uk>
+	<1403723019-6212-8-git-send-email-javier.martinez@collabora.co.uk>
+	<1403775093.27156.13.camel@AMDC1943>
+	<53AC003E.2010608@collabora.co.uk>
+	<CAD=FV=U5sBQ4VDG65D4rTnfruo5XzQH_EMs4SMpO4BjY1UHA5Q@mail.gmail.com>
+	<53AC47E3.2030306@collabora.co.uk>
+Date: Thu, 26 Jun 2014 09:29:51 -0700
+X-Google-Sender-Auth: zF_xOgCJAF7n5s2qth7t0bUiv2k
+Message-ID: <CAD=FV=Xtkfa5yJSWYDcBvBycMqN-U5F-vdbJeo1h3ksCbqkqgw@mail.gmail.com>
+Subject: Re: [PATCH v4 07/14] mfd: Add driver for Maxim 77802 Power Management IC
+From: Doug Anderson <dianders@chromium.org>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
+        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
+        Daniel Stone <daniels@collabora.com>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sometimes the comm field in the trace.dat file can be empty which means that the
-event parsing stuff can pass a NULL into pevent_register_comm.  To fix this just
-check if we are NULL and generate a bogus comm name for that PID.  This keeps us
-from segfaulting.  Thanks,
+Javier,
 
-Signed-off-by: Josef Bacik <jbacik@fb.com>
----
- event-parse.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+On Thu, Jun 26, 2014 at 9:18 AM, Javier Martinez Canillas
+<javier.martinez@collabora.co.uk> wrote:
+> Hello Doug,
+>
+> On 06/26/2014 06:12 PM, Doug Anderson wrote:
+>> Javier,
+>>
+>> On Thu, Jun 26, 2014 at 4:13 AM, Javier Martinez Canillas
+>> <javier.martinez@collabora.co.uk> wrote:
+>>>>> +
+>>>>> +#ifdef CONFIG_PM_SLEEP
+>>>>> +static int max77802_suspend(struct device *dev)
+>>>>> +{
+>>>>> +    struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
+>>>>> +    struct max77802_dev *max77802 = i2c_get_clientdata(i2c);
+>>>>> +
+>>>>> +    if (device_may_wakeup(dev))
+>>>>> +            enable_irq_wake(max77802->irq);
+>>>>> +
+>>>>> +    disable_irq(max77802->irq);
+>>>>
+>>>> Can you add short comment why this is needed? I know why but just for
+>>>> future generations which will wonder: "why do we need to disable the IRQ
+>>>> while suspending?" :). Especially that this is rather a workaround for
+>>>> issue in other driver (I2C bus).
+>>>>
+>>>
+>>> Good idea, I'll add a comment here on next version so code archaeologists can
+>>> figure out what what's going on here.
+>>
+>> Is the disable_irq() needed if you have
+>> <https://patchwork.kernel.org/patch/4421891/>?
+>>
+>
+> Probably not but I added the following comment:
+>
+>         /*
+>          * The IRQ must be disabled during suspend since due wakeup
+>          * ordering issues it may be possible that the I2C controller
+>          * is still suspended when the interrupt happens so the IRQ
+>          * handler will fail to read the I2C bus.
+>          */
+>         disable_irq(max77802->irq);
+>
+> since in theory this PMIC can be used in other SoCs besides
+> Exynos5420/Exynos5800 and it may be possible that the I2C controller driver for
+> these other SoCs may not resume at noirq time.
+>
+> But on a second thought, this PMIC seems to be designed specially for these two
+> Exynos SoCs so I guess it's safe to assume that it is not needed?
 
-diff --git a/event-parse.c b/event-parse.c
-index 18b3587..00304fe 100644
---- a/event-parse.c
-+++ b/event-parse.c
-@@ -303,7 +303,10 @@ int pevent_register_comm(struct pevent *pevent, const char *comm, int pid)
- 	if (!item)
- 		return -1;
- 
--	item->comm = strdup(comm);
-+	if (comm)
-+		item->comm = strdup(comm);
-+	else
-+		item->comm = strdup("<...>");
- 	if (!item->comm) {
- 		free(item);
- 		return -1;
--- 
-2.0.0
+Right, there's a close coupling between PMICs and SoCs.  The PMIC has
+special sequencing and default voltage levels that were tuned exactly
+for this SoC.
 
+Note: Wolfram has not actually responded to my patch much less
+accepted it.  It's entirely possible that in another month or two
+we'll hear back a big fat NAK.  In that case your solution will be the
+best one I can think of.
+
+
+-Doug
