@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757964AbaFZSBq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 14:01:46 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:37547 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757879AbaFZSBp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 14:01:45 -0400
-From: Pranith Kumar <bobby.prani@gmail.com>
-To: trivial@kernel.org, jkosina@suse.cz, Randy Dunlap <rdunlap@infradead.org>,
-        linux-doc@vger.kernel.org (open list:DOCUMENTATION),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH 1/1] doc: atomic-ops.txt: correct return value info about atomic_add_unless
-Date: Thu, 26 Jun 2014 11:00:49 -0700
-Message-Id: <1403805649-9830-1-git-send-email-bobby.prani@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	id S1757824AbaFZSFY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 14:05:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1979 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750731AbaFZSFX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 14:05:23 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Jens Axboe <axboe@kernel.dk>,
+        Dave Chinner <david@fromorbit.com>
+Subject: Re: [PATCH 6/6] cfq: Increase default value of target_latency
+References: <1403683129-10814-1-git-send-email-mgorman@suse.de>
+	<1403683129-10814-7-git-send-email-mgorman@suse.de>
+	<x491tub65t9.fsf@segfault.boston.devel.redhat.com>
+	<20140626161955.GH10819@suse.de>
+	<x49simr4ntz.fsf@segfault.boston.devel.redhat.com>
+	<20140626174500.GI10819@suse.de>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Thu, 26 Jun 2014 14:04:34 -0400
+In-Reply-To: <20140626174500.GI10819@suse.de> (Mel Gorman's message of "Thu,
+	26 Jun 2014 18:45:00 +0100")
+Message-ID: <x49k3834kel.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
----
- Documentation/atomic_ops.txt | 9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+Mel Gorman <mgorman@suse.de> writes:
 
-diff --git a/Documentation/atomic_ops.txt b/Documentation/atomic_ops.txt
-index 68542fe..d3ad657 100644
---- a/Documentation/atomic_ops.txt
-+++ b/Documentation/atomic_ops.txt
-@@ -271,16 +271,13 @@ Finally:
- 
- 	int atomic_add_unless(atomic_t *v, int a, int u);
- 
--If the atomic value v is not equal to u, this function adds a to v, and
--returns non zero. If v is equal to u then it returns zero. This is done as
--an atomic operation.
-+If the atomic value v is not equal to u, this function adds a to v.
-+It returns the old value of v. It is done as an atomic operation.
- 
--atomic_add_unless requires explicit memory barriers around the operation
--unless it fails (returns 0).
-+atomic_add_unless requires explicit memory barriers around the operation.
- 
- atomic_inc_not_zero, equivalent to atomic_add_unless(v, 1, 0)
- 
--
- If a caller requires memory barrier semantics around an atomic_t
- operation which does not return a value, a set of interfaces are
- defined which accomplish this:
--- 
-1.9.1
+>> And we should probably run our standard set of I/O exercisers at the
+>> very least.  But, like I said, it seems like wasted effort.
+>> 
+>
+> Out of curiousity, what do you consider to be the standard set of I/O
+> exercisers?
 
+Yes, that was vague, sorry.  I was referring to any io generator that
+will perform sequential and random I/O (writes, re-writes, reads, random
+writes, random reads, strided reads, backwards reads, etc).  We use
+iozone internally, testing both buffered and direct I/O, varying file
+and record sizes and across multiple file systems.  Data sets that fall
+inside of the page cache tend to have a high standard deviation, so, as
+an I/O guy, I ignore those.  ;-)
+
+Cheers,
+Jeff
