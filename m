@@ -1,83 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758043AbaFZSIa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 14:08:30 -0400
-Received: from mail-by2lp0235.outbound.protection.outlook.com ([207.46.163.235]:7360
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754775AbaFZSI3 convert rfc822-to-8bit (ORCPT
+	id S1758091AbaFZSJG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 14:09:06 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:51046 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754775AbaFZSJC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 14:08:29 -0400
-From: "Chalamarla, Tirumalesh" <Tirumalesh.Chalamarla@caviumnetworks.com>
-To: Joerg Roedel <joro@8bytes.org>, Will Deacon <will.deacon@arm.com>
-CC: "stuart.yoder@freescale.com" <stuart.yoder@freescale.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
-        "moderated list:ARM SMMU DRIVER" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "tech@virtualopensystems.com" <tech@virtualopensystems.com>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        Christoffer Dall <christoffer.dall@linaro.org>
-Subject: RE: [RFC PATCH v6 04/20] iommu/arm-smmu: add capability
- IOMMU_CAP_INTR_REMAP
-Thread-Topic: [RFC PATCH v6 04/20] iommu/arm-smmu: add capability
- IOMMU_CAP_INTR_REMAP
-Thread-Index: AQHPgOBbNdL1uGTtt0GgwoLMBshUy5tnB9yAgAzb7QCAAAWEgIAAAl8AgAAA+ACAAAOpAIAP3+jg
-Date: Thu, 26 Jun 2014 18:08:25 +0000
-Message-ID: <9353770066894e85809e1e443b71d1cd@BY2PR07MB203.namprd07.prod.outlook.com>
-References: <1401987808-23596-1-git-send-email-a.motakis@virtualopensystems.com>
- <1401987808-23596-5-git-send-email-a.motakis@virtualopensystems.com>
- <20140608103129.GC3279@lvm> <20140616145344.GD18986@8bytes.org>
- <20140616151329.GQ16758@arm.com> <20140616152157.GB31771@8bytes.org>
- <20140616152526.GR16758@arm.com> <20140616153832.GC31771@8bytes.org>
-In-Reply-To: <20140616153832.GC31771@8bytes.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [64.2.3.195]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:
-x-forefront-prvs: 02543CD7CD
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(24454002)(13464003)(199002)(189002)(377454003)(85306003)(99396002)(64706001)(20776003)(33646001)(92566001)(76482001)(50986999)(81542001)(80022001)(79102001)(77096002)(81342001)(66066001)(86362001)(4396001)(105586002)(83322001)(76576001)(15975445006)(106116001)(19580405001)(54356999)(106356001)(19580395003)(74662001)(31966008)(74502001)(107046002)(21056001)(76176999)(74316001)(46102001)(93886003)(77982001)(2656002)(101416001)(95666004)(83072002)(87936001)(85852003)(24736002)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR07MB203;H:BY2PR07MB203.namprd07.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 26 Jun 2014 14:09:02 -0400
+Message-ID: <53AC61B9.5030408@wwwdotorg.org>
+Date: Thu, 26 Jun 2014 12:08:57 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-X-OriginatorOrg: caviumnetworks.com
+To: Andrew Bresticker <abrestic@chromium.org>
+CC: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-usb@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Kishon Vijay Abraham I <kishon@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        balbi@ti.com
+Subject: Re: [PATCH v1 4/9] pinctrl: tegra-xusb: Add USB PHY support
+References: <1403072180-4944-1-git-send-email-abrestic@chromium.org>	<1403072180-4944-5-git-send-email-abrestic@chromium.org>	<53AB493F.3030802@wwwdotorg.org> <CAL1qeaHhoqEPu-j+drNiRMyeutz=qqZPxSP8H+v-sgjZSfS5tQ@mail.gmail.com>
+In-Reply-To: <CAL1qeaHhoqEPu-j+drNiRMyeutz=qqZPxSP8H+v-sgjZSfS5tQ@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Forgive me if this discussion is not relative here, but I thought it is.  
+On 06/25/2014 05:30 PM, Andrew Bresticker wrote:
+> On Wed, Jun 25, 2014 at 3:12 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>> On 06/18/2014 12:16 AM, Andrew Bresticker wrote:
+>>> In addition to the PCIe and SATA PHYs, the XUSB pad controller also
+>>> supports 3 UTMI, 2 HSIC, and 2 USB3 PHYs.  Each USB3 PHY uses a single
+>>> PCIe or SATA lane and is mapped to one of the three UTMI ports.
+>>>
+>>
+>>> diff --git a/drivers/pinctrl/pinctrl-tegra-xusb.c b/drivers/pinctrl/pinctrl-tegra-xusb.c
+>>
+>>> @@ -372,6 +720,193 @@ static int tegra_xusb_padctl_pinconf_group_set(struct pinctrl_dev *pinctrl,
+>>>                       padctl_writel(padctl, regval, lane->offset);
+>>>                       break;
+>>>
+>>> +             case TEGRA_XUSB_PADCTL_USB3_PORT_NUM:
+>>> +                     if (value >= TEGRA_XUSB_PADCTL_USB3_PORTS) {
+>>> +                             dev_err(padctl->dev, "Invalid USB3 port: %lu\n",
+>>> +                                     value);
+>>> +                             return -EINVAL;
+>>> +                     }
+>>> +                     if (!is_pcie_sata_lane(group)) {
+>>> +                             dev_err(padctl->dev,
+>>> +                                     "USB3 port not applicable for pin %d\n",
+>>> +                                     group);
+>>> +                             return -EINVAL;
+>>> +                     }
+>>> +                     padctl->usb3_ports[value].lane = group;
+>>> +                     break;
+>>
+>> It feels odd to use pinctrl for a SW-only purpose. In other words, that
+>> chunk of code isn't writing the pinconf data to HW, but rather some
+>> internal variable.
+> 
+> Well the mapping of lanes to USB3 ports is a hardware property and we
+> do use it when programming the hardware later to choose which set of
+> lane registers to program given a USB3 port, but it's true that it's
+> not some value we program into HW directly.
+> 
+>> Perhaps it would make more sense for the DT binding to represent this
+>> data directly in a custom property that's parsed at probe() time. That
+>> way, pinctrl only touches "real" HW stuff.
+> 
+> I'm on the fence about this.  If you or others feel strongly about
+> this then I can make it a separate DT property and move it out of the
+> pinctrl properties.
 
-How is VFIO restricting devices from writing  to MSI/MSI-X,
-Is all the vector area is mapped by VFIO to trap the accesses.  I am asking this because we might need to emulate ITS somewhere either in KVM or VFIO to provide direct access to devices.
-And I don't see any mentions on that.   I think this flag needs to be set by ITS emulation.
-
-Regards,
-Tirumalesh.
-
------Original Message-----
-From: kvmarm-bounces@lists.cs.columbia.edu [mailto:kvmarm-bounces@lists.cs.columbia.edu] On Behalf Of Joerg Roedel
-Sent: Monday, June 16, 2014 8:39 AM
-To: Will Deacon
-Cc: stuart.yoder@freescale.com; kvm@vger.kernel.org; open list; iommu@lists.linux-foundation.org; alex.williamson@redhat.com; moderated list:ARM SMMU DRIVER; tech@virtualopensystems.com; kvmarm@lists.cs.columbia.edu; Christoffer Dall
-Subject: Re: [RFC PATCH v6 04/20] iommu/arm-smmu: add capability IOMMU_CAP_INTR_REMAP
-
-On Mon, Jun 16, 2014 at 04:25:26PM +0100, Will Deacon wrote:
-> Ok, thanks. In which case, I think this is really a combined property 
-> of the SMMU and the interrupt controller, so we might need some extra 
-> code so that the SMMU can check that the interrupt controller for the 
-> device is also capable of interrupt remapping.
-
-Right, that this is part of IOMMU code has more or less historic reasons on x86. Interrupt remapping is purely implemented in the IOMMU there, so on ARM some clue-code between interrupt controler and smmu is needed.
-
-
-	Joerg
-
-
-_______________________________________________
-kvmarm mailing list
-kvmarm@lists.cs.columbia.edu
-https://lists.cs.columbia.edu/mailman/listinfo/kvmarm
+I'd certainly prefer to use pinctrl bindings only for things that get
+directly written into HW. Other configuration data should be easy to
+retrieve directly from properties.
