@@ -1,78 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755860AbaFZOhs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 10:37:48 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:40373 "EHLO zene.cmpxchg.org"
+	id S1755273AbaFZOme (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 10:42:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18152 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753449AbaFZOhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 10:37:47 -0400
-Date: Thu, 26 Jun 2014 10:37:38 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, Jeff Moyer <jmoyer@redhat.com>,
-        Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH 5/6] mm: page_alloc: Reduce cost of dirty zone balancing
-Message-ID: <20140626143738.GS7331@cmpxchg.org>
-References: <1403683129-10814-1-git-send-email-mgorman@suse.de>
- <1403683129-10814-6-git-send-email-mgorman@suse.de>
- <20140625163528.11368b86ef7d0a38cf9d1255@linux-foundation.org>
- <20140626084314.GE10819@suse.de>
+	id S1751765AbaFZOmc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 10:42:32 -0400
+Date: Thu, 26 Jun 2014 10:41:58 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Jerome Marchand <jmarchan@redhat.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: Re: [PATCH v3 04/13] smaps: remove mem_size_stats->vma and use
+ walk_page_vma()
+Message-ID: <20140626144158.GA8885@nhori.redhat.com>
+References: <1403295099-6407-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1403295099-6407-5-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <53AC21A8.5090703@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140626084314.GE10819@suse.de>
+In-Reply-To: <53AC21A8.5090703@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 26, 2014 at 09:43:14AM +0100, Mel Gorman wrote:
-> On Wed, Jun 25, 2014 at 04:35:28PM -0700, Andrew Morton wrote:
-> > On Wed, 25 Jun 2014 08:58:48 +0100 Mel Gorman <mgorman@suse.de> wrote:
+Hi Jerome,
+
+On Thu, Jun 26, 2014 at 03:35:36PM +0200, Jerome Marchand wrote:
+> On 06/20/2014 10:11 PM, Naoya Horiguchi wrote:
+> > pagewalk.c can handle vma in itself, so we don't have to pass vma via
+> > walk->private. And show_smap() walks pages on vma basis, so using
+> > walk_page_vma() is preferable.
 > > 
-> > > @@ -325,7 +321,14 @@ static unsigned long zone_dirty_limit(struct zone *zone)
-> > >   */
-> > >  bool zone_dirty_ok(struct zone *zone)
-> > >  {
-> > > -	unsigned long limit = zone_dirty_limit(zone);
-> > > +	unsigned long limit = zone->dirty_limit_cached;
-> > > +	struct task_struct *tsk = current;
-> > > +
-> > > +	if (tsk->flags & PF_LESS_THROTTLE || rt_task(tsk)) {
-> > > +		limit = zone_dirty_limit(zone);
-> > > +		zone->dirty_limit_cached = limit;
-> > > +		limit += limit / 4;
-> > > +	}
+> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> > ---
+> >  fs/proc/task_mmu.c | 10 ++++------
+> >  1 file changed, 4 insertions(+), 6 deletions(-)
 > > 
-> > Could we get a comment in here explaining what we're doing and why
-> > PF_LESS_THROTTLE and rt_task control whether we do it?
-> > 
+> > diff --git v3.16-rc1.orig/fs/proc/task_mmu.c v3.16-rc1/fs/proc/task_mmu.c
+> > index cfa63ee92c96..9b6c7d4fd3f4 100644
+> > --- v3.16-rc1.orig/fs/proc/task_mmu.c
+> > +++ v3.16-rc1/fs/proc/task_mmu.c
+> > @@ -430,7 +430,6 @@ const struct file_operations proc_tid_maps_operations = {
+> >  
+> >  #ifdef CONFIG_PROC_PAGE_MONITOR
+> >  struct mem_size_stats {
+> > -	struct vm_area_struct *vma;
+> >  	unsigned long resident;
+> >  	unsigned long shared_clean;
+> >  	unsigned long shared_dirty;
+> > @@ -449,7 +448,7 @@ static void smaps_pte_entry(pte_t ptent, unsigned long addr,
+> >  		unsigned long ptent_size, struct mm_walk *walk)
+> >  {
+> >  	struct mem_size_stats *mss = walk->private;
+> > -	struct vm_area_struct *vma = mss->vma;
+> > +	struct vm_area_struct *vma = walk->vma;
+> >  	pgoff_t pgoff = linear_page_index(vma, addr);
+> >  	struct page *page = NULL;
+> >  	int mapcount;
+> > @@ -501,7 +500,7 @@ static int smaps_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+> >  			   struct mm_walk *walk)
+> >  {
+> >  	struct mem_size_stats *mss = walk->private;
+> > -	struct vm_area_struct *vma = mss->vma;
+> > +	struct vm_area_struct *vma = walk->vma;
+> >  	pte_t *pte;
+> >  	spinlock_t *ptl;
+> >  
+> > @@ -590,14 +589,13 @@ static int show_smap(struct seq_file *m, void *v, int is_pid)
+> >  	struct mm_walk smaps_walk = {
+> >  		.pmd_entry = smaps_pte_range,
+> >  		.mm = vma->vm_mm,
+> > +		.vma = vma,
 > 
->         /*
->          * The dirty limits are lifted by 1/4 for PF_LESS_THROTTLE (ie. nfsd)
->          * and real-time tasks to prioritise their allocations.
->          * PF_LESS_THROTTLE tasks may be cleaning memory and rt tasks may be
->          * blocking tasks that can clean pages.
->          */
-> 
-> That's fairly weak though. It would also seem reasonable to just delete
-> this check and allow PF_LESS_THROTTLE and rt_tasks to fall into the slow
-> path if dirty pages are already fairly distributed between zones.
-> Johannes, any objection to that limit raising logic being deleted?
+> Seems redundant: walk_page_vma() sets walk.vma anyway and so does
+> walk_page_range(). Is there any case when the caller should set .vma itself?
 
-I copied that over from global_dirty_limits() such that the big
-picture and the per-zone picture have the same view - otherwise these
-tasks fall back to first fit zone allocations before global limits
-start throttling dirtiers and waking up the flushers.  This increases
-the probability of reclaim running into dirty pages.
+Correct, no need to set in caller side, thank you.
 
-Would you remove it from global_dirty_limits() as well?
-
-On that note, I don't really understand why global_dirty_limits()
-raises the *background* limit for less-throttle/rt tasks, shouldn't it
-only raise the dirty limit?  Sure, the throttle point is somewhere
-between the two limits, but we don't really want to defer waking up
-the flushers for them.
+Naoya Horiguchi
