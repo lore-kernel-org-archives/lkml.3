@@ -1,539 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751639AbaFZVHI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 17:07:08 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:34875 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750957AbaFZVHE (ORCPT
+	id S1751674AbaFZVOA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 17:14:00 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:37567 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750974AbaFZVN7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 17:07:04 -0400
-From: Andy Gross <agross@codeaurora.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-spi@vger.kernel.org, Sagar Dharia <sdharia@codeaurora.org>,
-        Daniel Sneddon <dsneddon@codeaurora.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        Andy Gross <agross@codeaurora.org>
-Subject: [PATCH] spi: qup: Add DMA capabilities
-Date: Thu, 26 Jun 2014 16:06:21 -0500
-Message-Id: <1403816781-31008-1-git-send-email-agross@codeaurora.org>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 26 Jun 2014 17:13:59 -0400
+MIME-Version: 1.0
+Date: Thu, 26 Jun 2014 14:13:58 -0700
+Message-ID: <CALEwOpovb2aamUp6On4NXhS8Fjuaxfhqc1EyJDG9MayZako8nQ@mail.gmail.com>
+Subject: Sporadic ESP payload corruption when using IPSec in NAT-T Transport Mode
+From: Evan Gilman <evan@pagerduty.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds DMA capabilities to the spi-qup driver.  If DMA channels are
-present, the QUP will use DMA instead of block mode for transfers to/from SPI
-peripherals for transactions larger than the length of a block.
+Hi all
 
-Signed-off-by: Andy Gross <agross@codeaurora.org>
----
- .../devicetree/bindings/spi/qcom,spi-qup.txt       |   10 +
- drivers/spi/spi-qup.c                              |  361 ++++++++++++++++++--
- 2 files changed, 350 insertions(+), 21 deletions(-)
+We have a couple Ubuntu 10.04 hosts with kernel version 3.14.5 which
+are experiencing TCP payload corruption when using IPSec in NAT-T
+transport mode. All are running under Xen at third party providers.
+When communicating with other hosts using IPSec, we see that these
+corrupt TCP PDUs are still being received by the remote listener, even
+though the TCP checksum is invalid.
 
-diff --git a/Documentation/devicetree/bindings/spi/qcom,spi-qup.txt b/Documentation/devicetree/bindings/spi/qcom,spi-qup.txt
-index b82a268..4d8977a 100644
---- a/Documentation/devicetree/bindings/spi/qcom,spi-qup.txt
-+++ b/Documentation/devicetree/bindings/spi/qcom,spi-qup.txt
-@@ -23,6 +23,12 @@ Optional properties:
- - spi-max-frequency: Specifies maximum SPI clock frequency,
-                      Units - Hz. Definition as per
-                      Documentation/devicetree/bindings/spi/spi-bus.txt
-+- dmas :             Two DMA channel specifiers following the convention outlined
-+                     in bindings/dma/dma.txt
-+- dma-names:         Names for the dma channels, if present. There must be at
-+                     least one channel named "tx" for transmit and named "rx" for
-+                     receive.
-+
- 
- SPI slave nodes must be children of the SPI master node and can contain
- properties described in Documentation/devicetree/bindings/spi/spi-bus.txt
-@@ -41,6 +47,10 @@ Example:
- 		clocks = <&gcc GCC_BLSP2_QUP2_SPI_APPS_CLK>, <&gcc GCC_BLSP2_AHB_CLK>;
- 		clock-names = "core", "iface";
- 
-+		dmas = <&blsp2_bam 2>,
-+			<&blsp2_bam 3>;
-+		dma-names = "rx", "tx";
-+
- 		pinctrl-names = "default";
- 		pinctrl-0 = <&spi8_default>;
- 
-diff --git a/drivers/spi/spi-qup.c b/drivers/spi/spi-qup.c
-index fc1de86..9b01db5 100644
---- a/drivers/spi/spi-qup.c
-+++ b/drivers/spi/spi-qup.c
-@@ -22,6 +22,8 @@
- #include <linux/platform_device.h>
- #include <linux/pm_runtime.h>
- #include <linux/spi/spi.h>
-+#include <linux/dmaengine.h>
-+#include <linux/dma-mapping.h>
- 
- #define QUP_CONFIG			0x0000
- #define QUP_STATE			0x0004
-@@ -116,6 +118,8 @@
- 
- #define SPI_NUM_CHIPSELECTS		4
- 
-+#define SPI_MAX_XFER			(SZ_64K - 64)
-+
- /* high speed mode is when bus rate is greater then 26MHz */
- #define SPI_HS_MIN_RATE			26000000
- #define SPI_MAX_RATE			50000000
-@@ -142,6 +146,17 @@ struct spi_qup {
- 	int			w_size;	/* bytes per SPI word */
- 	int			tx_bytes;
- 	int			rx_bytes;
-+
-+	int			use_dma;
-+
-+	struct dma_chan		*rx_chan;
-+	struct dma_slave_config	rx_conf;
-+	struct dma_chan		*tx_chan;
-+	struct dma_slave_config tx_conf;
-+	dma_addr_t		rx_dma;
-+	dma_addr_t		tx_dma;
-+	void			*dummy;
-+	atomic_t		dma_outstanding;
- };
- 
- 
-@@ -265,6 +280,221 @@ static void spi_qup_fifo_write(struct spi_qup *controller,
- 	}
- }
- 
-+static void qup_dma_callback(void *data)
-+{
-+	struct spi_qup *controller = data;
-+
-+	if (atomic_dec_and_test(&controller->dma_outstanding))
-+		complete(&controller->done);
-+}
-+
-+static int spi_qup_do_dma(struct spi_qup *controller, struct spi_transfer *xfer)
-+{
-+	struct dma_async_tx_descriptor *rxd, *txd;
-+	dma_cookie_t rx_cookie, tx_cookie;
-+	u32 xfer_len, rx_align = 0, tx_align = 0, n_words;
-+	struct scatterlist tx_sg[2], rx_sg[2];
-+	int ret = 0;
-+	u32 bytes_to_xfer = xfer->len;
-+	u32 offset = 0;
-+	u32 rx_nents = 0, tx_nents = 0;
-+	dma_addr_t rx_dma = 0, tx_dma = 0, rx_dummy_dma = 0, tx_dummy_dma = 0;
-+
-+
-+	if (xfer->rx_buf) {
-+		rx_dma = dma_map_single(controller->dev, xfer->rx_buf,
-+			xfer->len, DMA_FROM_DEVICE);
-+
-+		if (dma_mapping_error(controller->dev, rx_dma)) {
-+			ret = -ENOMEM;
-+			return ret;
-+		}
-+
-+		/* check to see if we need dummy buffer for leftover bytes */
-+		rx_align = xfer->len % controller->in_blk_sz;
-+		if (rx_align) {
-+			rx_dummy_dma = dma_map_single(controller->dev,
-+				controller->dummy, controller->in_fifo_sz,
-+				DMA_FROM_DEVICE);
-+
-+			if (dma_mapping_error(controller->dev, rx_dummy_dma)) {
-+				ret = -ENOMEM;
-+				goto err_map_rx_dummy;
-+			}
-+		}
-+	}
-+
-+	if (xfer->tx_buf) {
-+		tx_dma = dma_map_single(controller->dev,
-+			(void *)xfer->tx_buf, xfer->len, DMA_TO_DEVICE);
-+
-+		if (dma_mapping_error(controller->dev, tx_dma)) {
-+			ret = -ENOMEM;
-+			goto err_map_tx;
-+		}
-+
-+		/* check to see if we need dummy buffer for leftover bytes */
-+		tx_align = xfer->len % controller->out_blk_sz;
-+		if (tx_align) {
-+			memcpy(controller->dummy + SZ_1K,
-+				xfer->tx_buf + xfer->len - tx_align,
-+				tx_align);
-+			memset(controller->dummy + SZ_1K + tx_align, 0,
-+				controller->out_blk_sz - tx_align);
-+
-+			tx_dummy_dma = dma_map_single(controller->dev,
-+				controller->dummy + SZ_1K,
-+				controller->out_blk_sz, DMA_TO_DEVICE);
-+
-+			if (dma_mapping_error(controller->dev, tx_dummy_dma)) {
-+				ret = -ENOMEM;
-+				goto err_map_tx_dummy;
-+			}
-+		}
-+	}
-+
-+	atomic_set(&controller->dma_outstanding, 0);
-+
-+	while (bytes_to_xfer > 0) {
-+		xfer_len = min_t(u32, bytes_to_xfer, SPI_MAX_XFER);
-+		n_words = DIV_ROUND_UP(xfer_len, controller->w_size);
-+
-+		/* write out current word count to controller */
-+		writel_relaxed(n_words, controller->base + QUP_MX_INPUT_CNT);
-+		writel_relaxed(n_words, controller->base + QUP_MX_OUTPUT_CNT);
-+
-+		reinit_completion(&controller->done);
-+
-+		if (xfer->tx_buf) {
-+			/* recalc align for each transaction */
-+			tx_align = xfer_len % controller->out_blk_sz;
-+
-+			if (tx_align)
-+				tx_nents = 2;
-+			else
-+				tx_nents = 1;
-+
-+			/* initialize scatterlists */
-+			sg_init_table(tx_sg, tx_nents);
-+			sg_dma_len(&tx_sg[0]) = xfer_len - tx_align;
-+			sg_dma_address(&tx_sg[0]) = tx_dma + offset;
-+
-+			/* account for non block size transfer */
-+			if (tx_align) {
-+				sg_dma_len(&tx_sg[1]) = controller->out_blk_sz;
-+				sg_dma_address(&tx_sg[1]) = tx_dummy_dma;
-+			}
-+
-+			txd = dmaengine_prep_slave_sg(controller->tx_chan,
-+					tx_sg, tx_nents, DMA_MEM_TO_DEV, 0);
-+			if (!txd) {
-+				ret = -ENOMEM;
-+				goto err_unmap;
-+			}
-+
-+			atomic_inc(&controller->dma_outstanding);
-+
-+			txd->callback = qup_dma_callback;
-+			txd->callback_param = controller;
-+
-+			tx_cookie = dmaengine_submit(txd);
-+
-+			dma_async_issue_pending(controller->tx_chan);
-+		}
-+
-+		if (xfer->rx_buf) {
-+			/* recalc align for each transaction */
-+			rx_align = xfer_len % controller->in_blk_sz;
-+
-+			if (rx_align)
-+				rx_nents = 2;
-+			else
-+				rx_nents = 1;
-+
-+			/* initialize scatterlists */
-+			sg_init_table(rx_sg, rx_nents);
-+			sg_dma_address(&rx_sg[0]) = rx_dma + offset;
-+			sg_dma_len(&rx_sg[0]) = xfer_len - rx_align;
-+
-+			/* account for non block size transfer */
-+			if (rx_align) {
-+				sg_dma_len(&rx_sg[1]) = controller->in_blk_sz;
-+				sg_dma_address(&rx_sg[1]) = rx_dummy_dma;
-+			}
-+
-+			rxd = dmaengine_prep_slave_sg(controller->rx_chan,
-+					rx_sg, rx_nents, DMA_DEV_TO_MEM, 0);
-+			if (!rxd) {
-+				ret = -ENOMEM;
-+				goto err_unmap;
-+			}
-+
-+			atomic_inc(&controller->dma_outstanding);
-+
-+			rxd->callback = qup_dma_callback;
-+			rxd->callback_param = controller;
-+
-+			rx_cookie = dmaengine_submit(rxd);
-+
-+			dma_async_issue_pending(controller->rx_chan);
-+		}
-+
-+		if (spi_qup_set_state(controller, QUP_STATE_RUN)) {
-+			dev_warn(controller->dev, "cannot set EXECUTE state\n");
-+			goto err_unmap;
-+		}
-+
-+		if (!wait_for_completion_timeout(&controller->done,
-+			msecs_to_jiffies(1000))) {
-+			ret = -ETIMEDOUT;
-+
-+			/* clear out all the DMA transactions */
-+			if (xfer->tx_buf)
-+				dmaengine_terminate_all(controller->tx_chan);
-+			if (xfer->rx_buf)
-+				dmaengine_terminate_all(controller->rx_chan);
-+
-+			goto err_unmap;
-+		}
-+
-+		if (rx_align)
-+			memcpy(xfer->rx_buf + offset + xfer->len - rx_align,
-+				controller->dummy, rx_align);
-+
-+		/* adjust remaining bytes to transfer */
-+		bytes_to_xfer -= xfer_len;
-+		offset += xfer_len;
-+
-+
-+		/* reset mini-core state so we can program next transaction */
-+		if (spi_qup_set_state(controller, QUP_STATE_RESET)) {
-+			dev_err(controller->dev, "cannot set RESET state\n");
-+			goto err_unmap;
-+		}
-+	}
-+
-+	ret = 0;
-+
-+err_unmap:
-+	if (tx_align)
-+		dma_unmap_single(controller->dev, tx_dummy_dma,
-+			controller->out_fifo_sz, DMA_TO_DEVICE);
-+err_map_tx_dummy:
-+	if (xfer->tx_buf)
-+		dma_unmap_single(controller->dev, tx_dma, xfer->len,
-+			DMA_TO_DEVICE);
-+err_map_tx:
-+	if (rx_align)
-+		dma_unmap_single(controller->dev, rx_dummy_dma,
-+			controller->in_fifo_sz, DMA_FROM_DEVICE);
-+err_map_rx_dummy:
-+	if (xfer->rx_buf)
-+		dma_unmap_single(controller->dev, rx_dma, xfer->len,
-+			DMA_FROM_DEVICE);
-+
-+	return ret;
-+}
-+
- static irqreturn_t spi_qup_qup_irq(int irq, void *dev_id)
- {
- 	struct spi_qup *controller = dev_id;
-@@ -314,11 +544,13 @@ static irqreturn_t spi_qup_qup_irq(int irq, void *dev_id)
- 		error = -EIO;
- 	}
- 
--	if (opflags & QUP_OP_IN_SERVICE_FLAG)
--		spi_qup_fifo_read(controller, xfer);
-+	if (!controller->use_dma) {
-+		if (opflags & QUP_OP_IN_SERVICE_FLAG)
-+			spi_qup_fifo_read(controller, xfer);
- 
--	if (opflags & QUP_OP_OUT_SERVICE_FLAG)
--		spi_qup_fifo_write(controller, xfer);
-+		if (opflags & QUP_OP_OUT_SERVICE_FLAG)
-+			spi_qup_fifo_write(controller, xfer);
-+	}
- 
- 	spin_lock_irqsave(&controller->lock, flags);
- 	controller->error = error;
-@@ -338,6 +570,8 @@ static int spi_qup_io_config(struct spi_device *spi, struct spi_transfer *xfer)
- 	struct spi_qup *controller = spi_master_get_devdata(spi->master);
- 	u32 config, iomode, mode;
- 	int ret, n_words, w_size;
-+	size_t dma_align = dma_get_cache_alignment();
-+	u32 dma_available = 0;
- 
- 	if (spi->mode & SPI_LOOP && xfer->len > controller->in_fifo_sz) {
- 		dev_err(controller->dev, "too big size for loopback %d > %d\n",
-@@ -366,6 +600,11 @@ static int spi_qup_io_config(struct spi_device *spi, struct spi_transfer *xfer)
- 	n_words = xfer->len / w_size;
- 	controller->w_size = w_size;
- 
-+	if (controller->rx_chan &&
-+		IS_ALIGNED((size_t)xfer->tx_buf, dma_align) &&
-+		IS_ALIGNED((size_t)xfer->rx_buf, dma_align))
-+		dma_available = 1;
-+
- 	if (n_words <= (controller->in_fifo_sz / sizeof(u32))) {
- 		mode = QUP_IO_M_MODE_FIFO;
- 		writel_relaxed(n_words, controller->base + QUP_MX_READ_CNT);
-@@ -373,19 +612,31 @@ static int spi_qup_io_config(struct spi_device *spi, struct spi_transfer *xfer)
- 		/* must be zero for FIFO */
- 		writel_relaxed(0, controller->base + QUP_MX_INPUT_CNT);
- 		writel_relaxed(0, controller->base + QUP_MX_OUTPUT_CNT);
--	} else {
-+		controller->use_dma = 0;
-+	} else if (!dma_available) {
- 		mode = QUP_IO_M_MODE_BLOCK;
- 		writel_relaxed(n_words, controller->base + QUP_MX_INPUT_CNT);
- 		writel_relaxed(n_words, controller->base + QUP_MX_OUTPUT_CNT);
- 		/* must be zero for BLOCK and BAM */
- 		writel_relaxed(0, controller->base + QUP_MX_READ_CNT);
- 		writel_relaxed(0, controller->base + QUP_MX_WRITE_CNT);
-+		controller->use_dma = 0;
-+	} else {
-+		mode = QUP_IO_M_MODE_DMOV;
-+		writel_relaxed(0, controller->base + QUP_MX_READ_CNT);
-+		writel_relaxed(0, controller->base + QUP_MX_WRITE_CNT);
-+		controller->use_dma = 1;
- 	}
- 
- 	iomode = readl_relaxed(controller->base + QUP_IO_M_MODES);
- 	/* Set input and output transfer mode */
- 	iomode &= ~(QUP_IO_M_INPUT_MODE_MASK | QUP_IO_M_OUTPUT_MODE_MASK);
--	iomode &= ~(QUP_IO_M_PACK_EN | QUP_IO_M_UNPACK_EN);
-+
-+	if (!controller->use_dma)
-+		iomode &= ~(QUP_IO_M_PACK_EN | QUP_IO_M_UNPACK_EN);
-+	else
-+		iomode |= QUP_IO_M_PACK_EN | QUP_IO_M_UNPACK_EN;
-+
- 	iomode |= (mode << QUP_IO_M_OUTPUT_MODE_MASK_SHIFT);
- 	iomode |= (mode << QUP_IO_M_INPUT_MODE_MASK_SHIFT);
- 
-@@ -418,6 +669,14 @@ static int spi_qup_io_config(struct spi_device *spi, struct spi_transfer *xfer)
- 	config &= ~(QUP_CONFIG_NO_INPUT | QUP_CONFIG_NO_OUTPUT | QUP_CONFIG_N);
- 	config |= xfer->bits_per_word - 1;
- 	config |= QUP_CONFIG_SPI_MODE;
-+
-+	if (controller->use_dma) {
-+		if (!xfer->tx_buf)
-+			config |= QUP_CONFIG_NO_OUTPUT;
-+		if (!xfer->rx_buf)
-+			config |= QUP_CONFIG_NO_INPUT;
-+	}
-+
- 	writel_relaxed(config, controller->base + QUP_CONFIG);
- 
- 	writel_relaxed(0, controller->base + QUP_OPERATIONAL_MASK);
-@@ -474,25 +733,29 @@ static int spi_qup_transfer_one(struct spi_master *master,
- 	controller->tx_bytes = 0;
- 	spin_unlock_irqrestore(&controller->lock, flags);
- 
--	if (spi_qup_set_state(controller, QUP_STATE_RUN)) {
--		dev_warn(controller->dev, "cannot set RUN state\n");
--		goto exit;
--	}
-+	if (controller->use_dma) {
-+		ret = spi_qup_do_dma(controller, xfer);
-+	} else {
-+		if (spi_qup_set_state(controller, QUP_STATE_RUN)) {
-+			dev_warn(controller->dev, "cannot set RUN state\n");
-+			goto exit;
-+		}
- 
--	if (spi_qup_set_state(controller, QUP_STATE_PAUSE)) {
--		dev_warn(controller->dev, "cannot set PAUSE state\n");
--		goto exit;
--	}
-+		if (spi_qup_set_state(controller, QUP_STATE_PAUSE)) {
-+			dev_warn(controller->dev, "cannot set PAUSE state\n");
-+			goto exit;
-+		}
- 
--	spi_qup_fifo_write(controller, xfer);
-+		spi_qup_fifo_write(controller, xfer);
- 
--	if (spi_qup_set_state(controller, QUP_STATE_RUN)) {
--		dev_warn(controller->dev, "cannot set EXECUTE state\n");
--		goto exit;
--	}
-+		if (spi_qup_set_state(controller, QUP_STATE_RUN)) {
-+			dev_warn(controller->dev, "cannot set EXECUTE state\n");
-+			goto exit;
-+		}
- 
--	if (!wait_for_completion_timeout(&controller->done, timeout))
--		ret = -ETIMEDOUT;
-+		if (!wait_for_completion_timeout(&controller->done, timeout))
-+			ret = -ETIMEDOUT;
-+	}
- exit:
- 	spi_qup_set_state(controller, QUP_STATE_RESET);
- 	spin_lock_irqsave(&controller->lock, flags);
-@@ -580,6 +843,7 @@ static int spi_qup_probe(struct platform_device *pdev)
- 	master->transfer_one = spi_qup_transfer_one;
- 	master->dev.of_node = pdev->dev.of_node;
- 	master->auto_runtime_pm = true;
-+	master->dma_alignment = dma_get_cache_alignment();
- 
- 	platform_set_drvdata(pdev, master);
- 
-@@ -632,6 +896,56 @@ static int spi_qup_probe(struct platform_device *pdev)
- 	writel_relaxed(SPI_ERROR_CLK_UNDER_RUN | SPI_ERROR_CLK_OVER_RUN,
- 		       base + SPI_ERROR_FLAGS_EN);
- 
-+	/* allocate dma resources, if available */
-+	controller->rx_chan = dma_request_slave_channel(&pdev->dev, "rx");
-+	if (controller->rx_chan) {
-+		controller->tx_chan =
-+			dma_request_slave_channel(&pdev->dev, "tx");
-+
-+		if (!controller->tx_chan) {
-+			dev_err(&pdev->dev, "Failed to allocate dma tx chan");
-+			dma_release_channel(controller->rx_chan);
-+		}
-+
-+		/* set DMA parameters */
-+		controller->rx_conf.device_fc = 1;
-+		controller->rx_conf.src_addr = res->start + QUP_INPUT_FIFO;
-+		controller->rx_conf.src_maxburst = controller->in_blk_sz;
-+
-+		controller->tx_conf.device_fc = 1;
-+		controller->tx_conf.dst_addr = res->start + QUP_OUTPUT_FIFO;
-+		controller->tx_conf.dst_maxburst = controller->out_blk_sz;
-+
-+		if (dmaengine_slave_config(controller->rx_chan,
-+				&controller->rx_conf)) {
-+			dev_err(&pdev->dev, "failed to configure RX channel\n");
-+
-+			dma_release_channel(controller->rx_chan);
-+			dma_release_channel(controller->tx_chan);
-+			controller->tx_chan = NULL;
-+			controller->rx_chan = NULL;
-+		} else if (dmaengine_slave_config(controller->tx_chan,
-+				&controller->tx_conf)) {
-+			dev_err(&pdev->dev, "failed to configure TX channel\n");
-+
-+			dma_release_channel(controller->rx_chan);
-+			dma_release_channel(controller->tx_chan);
-+			controller->tx_chan = NULL;
-+			controller->rx_chan = NULL;
-+		}
-+
-+		controller->dummy = devm_kmalloc(controller->dev, PAGE_SIZE,
-+			GFP_KERNEL);
-+
-+		if (!controller->dummy) {
-+			dma_release_channel(controller->rx_chan);
-+			dma_release_channel(controller->tx_chan);
-+			controller->tx_chan = NULL;
-+			controller->rx_chan = NULL;
-+		}
-+	}
-+
-+
- 	writel_relaxed(0, base + SPI_CONFIG);
- 	writel_relaxed(SPI_IO_C_NO_TRI_STATE, base + SPI_IO_CONTROL);
- 
-@@ -741,6 +1055,11 @@ static int spi_qup_remove(struct platform_device *pdev)
- 	if (ret)
- 		return ret;
- 
-+	if (controller->rx_chan)
-+		dma_release_channel(controller->rx_chan);
-+	if (controller->tx_chan)
-+		dma_release_channel(controller->tx_chan);
-+
- 	clk_disable_unprepare(controller->cclk);
- 	clk_disable_unprepare(controller->iclk);
- 
+All other checksums (IPSec authentication header and IP checksum) are
+good. So, we are thinking that corruption is happening during the ESP
+encapsulation and decapsulation phase (IPSec required for
+reproduction). The corruption occurs sporadically, and we have not
+found any one payload/packet combination that will reliably trigger
+it, though we can typically reproduce it in less than 30 minutes. We
+can do it very simply by reading from /dev/zero with dd and piping
+through netcat. It occurs whenever a 3.14.5 kernel is involved at
+either end of the conversation. I can send captures to those who are
+interested. Does any of this sound familiar?
+
+Steps and observations so far:
+- tcpdump running on both sender and receiver
+- ESP looks sane on the outside. TCP payload corruption can be seen
+only after decryption
+- Once reproduced, you may see only one or two problem packets come through
+- Sometimes corruption is witnessed on the wire (suspected
+encapsulation corruption)
+- Sometimes corruption is _not_ witnessed on the wire, though the test
+surfaces corruption (suspected decapsulation corruption)
+- Corruption not witnessed over connections without a governing IPSec policy
+- Corruption not witnessed after changing previously misbehaving hosts
+to kernel version 2.6.32.
+
+You can find the kernel config for the affected host here:
+https://gist.github.com/evan2645/2c28d46e81d2b4c8f251
+
+On another note, it seems the assumption that TCP payloads are safe
+when encapsulated by ESP, and therefore the checksum need not be
+verified, is a false one. It has certainly caused us a great deal of
+pain. Is there a significant reason for bypassing TCP checksum
+validation when using IPSec Transport Mode?
+
+We are still trying to locate the exact spot in which the corruption
+is occurring - any suggestions on how we could do that? We have not
+seen this problem under Ubuntu 10.04 with kernel version 2.6.32.
+Thanks in advance!
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+evan
