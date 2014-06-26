@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751501AbaFZU3H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 16:29:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22570 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750974AbaFZU3F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 16:29:05 -0400
-Message-ID: <53AC7D54.4010407@redhat.com>
-Date: Thu, 26 Jun 2014 16:06:44 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Rafael Aquini <aquini@redhat.com>, linux-mm@kvack.org
-CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
-Subject: Re: [PATCH v2] mm: export NR_SHMEM via sysinfo(2) / si_meminfo()
- interfaces
-References: <198dc298821a20a476656dccc85a8d77f166c61a.1403812625.git.aquini@redhat.com>
-In-Reply-To: <198dc298821a20a476656dccc85a8d77f166c61a.1403812625.git.aquini@redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751614AbaFZUa2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 16:30:28 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:58832 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750974AbaFZUa0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 16:30:26 -0400
+From: Andy Gross <agross@codeaurora.org>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Dan Williams <dan.j.williams@intel.com>, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-arm-msm@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
+        devicetree@vger.kernel.org, Andy Gross <agross@codeaurora.org>
+Subject: [PATCH 0/2] Add Qualcomm ADM dmaengine driver
+Date: Thu, 26 Jun 2014 15:30:14 -0500
+Message-Id: <1403814616-23917-1-git-send-email-agross@codeaurora.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2014 04:00 PM, Rafael Aquini wrote:
-> Historically, we exported shared pages to userspace via sysinfo(2) sharedram
-> and /proc/meminfo's "MemShared" fields. With the advent of tmpfs, from kernel
-> v2.4 onward, that old way for accounting shared mem was deemed inaccurate and
-> we started to export a hard-coded 0 for sysinfo.sharedram. Later on, during
-> the 2.6 timeframe, "MemShared" got re-introduced to /proc/meminfo re-branded
-> as "Shmem", but we're still reporting sysinfo.sharedmem as that old hard-coded
-> zero, which makes the "shared memory" report inconsistent across interfaces.
-> 
-> This patch leverages the addition of explicit accounting for pages used by
-> shmem/tmpfs -- "4b02108 mm: oom analysis: add shmem vmstat" -- in order to
-> make the users of sysinfo(2) and si_meminfo*() friends aware of that
-> vmstat entry and make them report it consistently across the interfaces,
-> as well to make sysinfo(2) returned data consistent with our current API
-> documentation states.
-> 
-> Signed-off-by: Rafael Aquini <aquini@redhat.com>
+This patch set introduces the dmaengine driver for the Qualcomm Application
+Data Mover (ADM) DMA controller present on MSM8960, APQ8064, and IPQ8064
+devices.
 
-Acked-by: Rik van Riel <riel@redhat.com>
+The initial version of this driver will only support slave DMA operations
+between system memory and peripherals.  Flow control via the CRCI (client rate
+control interface) is supported and can be configured via device tree
+configuration.  Flow control usage is required for some peripheral devices.
+
+Andy Gross (2):
+  dmaengine: Add QCOM ADM DMA driver
+  dmaengine: qcom_adm: Add device tree binding
+
+ Documentation/devicetree/bindings/dma/qcom_adm.txt |   60 ++
+ drivers/dma/Kconfig                                |   10 +
+ drivers/dma/Makefile                               |    1 +
+ drivers/dma/qcom_adm.c                             |  872 ++++++++++++++++++++
+ 4 files changed, 943 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/dma/qcom_adm.txt
+ create mode 100644 drivers/dma/qcom_adm.c
+
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
