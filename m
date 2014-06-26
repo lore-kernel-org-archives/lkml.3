@@ -1,160 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755556AbaFZJai (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 05:30:38 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:56547 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755204AbaFZJad convert rfc822-to-8bit (ORCPT
+	id S1755878AbaFZJax (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 05:30:53 -0400
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:55677 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755366AbaFZJaf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 05:30:33 -0400
-Date: Thu, 26 Jun 2014 10:30:29 +0100
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Jon Masters <jonathan@jonmasters.org>
-Subject: Re: [PATCH v7 1/6] pci: Introduce pci_register_io_range() helper
- function.
-Message-ID: <20140626093029.GB12812@e106497-lin.cambridge.arm.com>
-Mail-Followup-To: Catalin Marinas <catalin.marinas@arm.com>,
-	Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
-	linux-pci <linux-pci@vger.kernel.org>,
-	Will Deacon <Will.Deacon@arm.com>,
-	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-	linaro-kernel <linaro-kernel@lists.linaro.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-	LAKML <linux-arm-kernel@lists.infradead.org>,
-	Tanmay Inamdar <tinamdar@apm.com>,
-	Grant Likely <grant.likely@secretlab.ca>,
-	Jon Masters <jonathan@jonmasters.org>
-References: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com>
- <20140405001953.GE15806@google.com>
- <20140407083120.GE17163@e106497-lin.cambridge.arm.com>
- <5183143.FxBNM0xTAV@wuerfel>
- <CAErSpo4iEV6khP63ZTF+YUTKi9WLFXzMv13nxw15y3qDg15Ztg@mail.gmail.com>
- <20140626085926.GB11244@arm.com>
+	Thu, 26 Jun 2014 05:30:35 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140626085926.GB11244@arm.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 26 Jun 2014 09:30:20.0421 (UTC) FILETIME=[3F9C9B50:01CF9121]
-X-MC-Unique: 114062610303011501
+In-Reply-To: <1403703728.20275.33.camel@sauron.fi.intel.com>
+References: <1403626213-7691-1-git-send-email-mcsim.planeta@gmail.com>
+	<alpine.DEB.2.02.1406241458140.29176@chino.kir.corp.google.com>
+	<1403677528.7903.103.camel@sauron.fi.intel.com>
+	<CABhLV03_PNFiwsvt+yitcsKxz5TeVECCFavdNkbgQ+XzQqASaw@mail.gmail.com>
+	<1403690184.20275.11.camel@sauron.fi.intel.com>
+	<CABhLV02COaH=qP=Snd7YJtcVOvm9NTmY58QuiTQoPZxH3NemPQ@mail.gmail.com>
+	<1403703728.20275.33.camel@sauron.fi.intel.com>
+Date: Thu, 26 Jun 2014 11:30:34 +0200
+Message-ID: <CAM3PqV6NFkjfBEm25V6WScxCvAvTFNkhCYJv+GAvFJ5pZ_E-Zw@mail.gmail.com>
+Subject: Re: [PATCH] sysctl: Add a feature to drop caches selectively
+From: Maksym Planeta <mcsim.planeta@gmail.com>
+To: dedekind1@gmail.com
+Cc: Thomas Knauth <thomas.knauth@gmx.de>, David Rientjes <rientjes@google.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 26, 2014 at 09:59:26AM +0100, Catalin Marinas wrote:
-> (sorry for replying to a months old thread)
-> 
-> On Mon, Apr 07, 2014 at 06:58:24PM +0100, Bjorn Helgaas wrote:
-> > On Mon, Apr 7, 2014 at 5:36 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > 
-> > > I think migrating other architectures to use the same code should be
-> > > a separate effort from adding a generic implementation that can be
-> > > used by arm64. It's probably a good idea to have patches to convert
-> > > arm32 and/or microblaze.
-> > 
-> > Let me reiterate that I am 100% in favor of replacing arch-specific
-> > code with more generic implementations.
-> > 
-> > However, I am not 100% in favor of doing it as separate efforts
-> > (although maybe I could be convinced).  The reasons I hesitate are
-> > that (1) if only one architecture uses a new "generic" implementation,
-> > we really don't know whether it is generic enough, (2) until I see the
-> > patches to convert other architectures, I have to assume that I'm the
-> > one who will write them, and (3) as soon as we add the code to
-> > drivers/pci, it becomes partly my headache to maintain it, even if
-> > only one arch benefits from it.
-> 
-> I agree and understand your point.
-> 
-> > Please don't think I'm questioning anyone's intent or good will.  It's
-> > just that I understand the business pressures, and I know how hard it
-> > can be to justify this sort of work to one's management, especially
-> > after the immediate problem has been solved.
-> 
-> But, unfortunately, that's something we failed to address in reasonable
-> time (even though I was one of the proponents of the generic PCIe
-> implementation). This work is very likely to slip further into the late
-> part of this year and I am aware that several ARM partners are blocked
-> on the (upstream) availability of PCIe support for the arm64 kernel.
-> 
-> Although a bit late, I'm raising this now and hopefully we'll come to a
-> conclusion soon. Delaying arm64 PCIe support even further is not a real
-> option, which leaves us with:
-> 
-> 1. Someone else (with enough PCIe knowledge) volunteering to take over
->    soon or
-> 2. Dropping Liviu's work and going for an arm64-specific implementation
->    (most likely based on the arm32 implementation, see below)
-> 
-> First option is ideal but there is work to do as laid out by Arnd here:
-> 
-> http://article.gmane.org/gmane.linux.kernel/1679304
-> 
-> The latest patches from Liviu are here (they only target arm64 and there
-> are additional comments to be addressed from the above thread):
-> 
-> http://linux-arm.org/git?p=linux-ld.git;a=shortlog;h=refs/heads/for-upstream/pci-next
-> 
-> The main reason for the second option is timing. We could temporarily
-> move Liviu's code under arch/arm64 with the hope that we generalise it
-> later. However, the risk is even higher that once the code is in
-> mainline, the generic implementation won't happen. In which case, I
-> don't see much point in departing from the arm32 PCI API, making bios32
-> clone the best second option.
-> 
-> For the alternative implementation above, we already have a heavily cut
-> down version of the arm32 PCI support but only tested in a virtual
-> environment so far:
-> 
-> https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/log/?h=pci/bios32
-> 
-> In conclusion, unless someone volunteers for the first option fairly
-> soon, we'll post the alternative patches for review and take it from
-> there.
+> With a binary interface like an ioctl I can see how you could have extra
+> unused fields which you can ignore now and let people start adding extra
+> options like the range in the future.
 
-That would be a huge step backwards IMO and a huge dissapointment. If
-you go with the alternative patches from Will you will basically reset
-every partner's implementation that has been built on top of my
-patches (when they did so with the understanding that my series will be
-the one ARM will support and publish) *and* make anyone's attempt to
-create a generic implementation harder, as they will have to undo this
-code to remove the arch-specific parts.
+Yes, ioctl is another possibility. But I would argue that sysctl is
+more convenient interface, because idea of sdrop_caches is similar to
+drop_caches's one and it is convenient to have these interfaces in the
+same place. But if sdrop_caches uses procfs it seems that there is no
+easy way to pass parameters of different types in one write operation.
 
-While I have part of a personal blame to carry as I have dragged some
-of the work for too long, there are things that I could not have done
-differently due to internal pressure inside the project I work on. It
-is my intent to resume work on it as soon as possible, but life is
-such at the moment that I have to dedicate my time to other things.
+> Other questions I'd ask would be - how about the access control model?
+> Will only root be able to drop caches? Why can't I drop caches for my
+> own file?
 
-Best regards,
-Liviu
+Access control model is the same as for drop_caches. This means that
+only root can write to this file. But it is easy to add a feature that
+allows any user to clean page cache of inodes that this user owns.
 
-> 
-> Thanks.
-> 
-> -- 
-> Catalin
+2014-06-25 15:42 GMT+02:00 Artem Bityutskiy <dedekind1@gmail.com>:
+> On Wed, 2014-06-25 at 15:23 +0200, Thomas Knauth wrote:
+>> On Wed, Jun 25, 2014 at 11:56 AM, Artem Bityutskiy <dedekind1@gmail.com> wrote:
+>> > Thanks for the answer, although you forgot to comment on the question
+>> > about possibly extending the new interface to work with file ranges in
+>> > the future. For example, I have a 2 TiB file, and I am only interested
+>> > in dropping caches for the first couple of gigabytes. Would I extend
+>> > your interface, or would I come up with another one?
+>>
+>> Ah, didn't quite understand what was meant with file ranges. Again, we
+>> had not considered this so far. I guess you could make a distinction
+>> between directories and files here. If the path points to a file, you
+>> can have an optional argument indicating the range of bytes you would
+>> like to drop. Something like
+>>
+>> echo "my-file 0-1000,8000-1000" > /proc/sys/vm/sdrop_cache
+>>
+>> If this is desirable, we can add it to the patch.
+>
+> With a binary interface like an ioctl I can see how you could have extra
+> unused fields which you can ignore now and let people start adding extra
+> options like the range in the future.
+>
+> With this kind of interface I am not sure how to do this.
+>
+> Other questions I'd ask would be - how about the access control model?
+> Will only root be able to drop caches? Why can't I drop caches for my
+> own file?
+>
+> I did not put much thinking into this, but it looks like ioctl could be
+> a better interface for the task you are trying to solve...
+>
+> Sorry if I am a bit vague, I am mostly trying to make you guys give this
+> more thoughts, and come up with a deeper analysis. Interfaces are very
+> important to get right, or as right as possible...
+>
+> --
+> Best Regards,
+> Artem Bityutskiy
+>
+
+
 
 -- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
-
+Regards,
+Maksym Planeta.
