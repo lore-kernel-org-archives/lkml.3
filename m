@@ -1,93 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756237AbaFZOo5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 10:44:57 -0400
-Received: from mail6.autoliv.com ([195.33.130.243]:60345 "EHLO
-	mail6.autoliv.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754832AbaFZOo4 convert rfc822-to-8bit (ORCPT
+	id S932207AbaFZOu3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 10:50:29 -0400
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:61927 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753893AbaFZOu1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 10:44:56 -0400
-From: Mattis Lorentzon <Mattis.Lorentzon@autoliv.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Fredrik Noring <fredrik.noring@autoliv.com>
-Subject: RE: Oops: 17 SMP ARM (v3.16-rc2)
-Thread-Topic: Oops: 17 SMP ARM (v3.16-rc2)
-Thread-Index: Ac+QeuMIv4ry9FBDTNKHf1ccZ0ioqQAu3GGAAAUkuuA=
-Date: Thu, 26 Jun 2014 14:44:52 +0000
-Message-ID: <C4A61A5CA4AD2246942F4BA6F20ACB80435655E9@ALVA-EXMB04.alv.autoliv.int>
-References: <C4A61A5CA4AD2246942F4BA6F20ACB804356534D@ALVA-EXMB04.alv.autoliv.int>
- <20140626140115.GQ32514@n2100.arm.linux.org.uk>
-In-Reply-To: <20140626140115.GQ32514@n2100.arm.linux.org.uk>
-Accept-Language: sv-SE, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.14.8.137]
-x-tm-as-product-ver: SMEX-10.2.0.2087-7.500.1017-20780.006
-x-tm-as-result: No--39.887000-8.000000-31
-x-tm-as-user-approved-sender: No
-x-tm-as-user-blocked-sender: No
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 26 Jun 2014 10:50:27 -0400
 MIME-Version: 1.0
+In-Reply-To: <1403618295.4230.13.camel@weser.hi.pengutronix.de>
+References: <1403603667-11302-1-git-send-email-acourbot@nvidia.com>
+ <1403603667-11302-3-git-send-email-acourbot@nvidia.com> <20140624100220.GK32514@n2100.arm.linux.org.uk>
+ <53A953E6.2030503@nvidia.com> <53A95910.20104@nvidia.com> <CAAVeFu+rbCViC87kYCLfxGV18iYq=Pa0ABb+L=iNiYPLn+mR8Q@mail.gmail.com>
+ <53A96EC5.3030701@canonical.com> <1403616338.4230.8.camel@weser.hi.pengutronix.de>
+ <CAAVeFuLcC30BdWierY8Bg0vBmfNCaB=Qs34h790jGB=BRYvGAg@mail.gmail.com> <1403618295.4230.13.camel@weser.hi.pengutronix.de>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Thu, 26 Jun 2014 23:50:04 +0900
+Message-ID: <CAAVeFu+74HhBQM3Zr3O5Must5-SX8OGi9wwmegQfHcFnKiyG=w@mail.gmail.com>
+Subject: Re: [Nouveau] [PATCH v2 2/3] drm/ttm: introduce dma cache sync helpers
+To: Lucas Stach <l.stach@pengutronix.de>
+Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you for your reply,
+On Tue, Jun 24, 2014 at 10:58 PM, Lucas Stach <l.stach@pengutronix.de> wrote:
+> Am Dienstag, den 24.06.2014, 22:52 +0900 schrieb Alexandre Courbot:
+>> On Tue, Jun 24, 2014 at 10:25 PM, Lucas Stach <l.stach@pengutronix.de> wrote:
+>> > Am Dienstag, den 24.06.2014, 14:27 +0200 schrieb Maarten Lankhorst:
+>> >> op 24-06-14 14:23, Alexandre Courbot schreef:
+>> >> > On Tue, Jun 24, 2014 at 7:55 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+>> >> >> On 06/24/2014 07:33 PM, Alexandre Courbot wrote:
+>> >> >>> On 06/24/2014 07:02 PM, Russell King - ARM Linux wrote:
+>> >> >>>> On Tue, Jun 24, 2014 at 06:54:26PM +0900, Alexandre Courbot wrote:
+>> >> >>>>> From: Lucas Stach <dev@lynxeye.de>
+>> >> >>>>>
+>> >> >>>>> On architectures for which access to GPU memory is non-coherent,
+>> >> >>>>> caches need to be flushed and invalidated explicitly at the
+>> >> >>>>> appropriate places. Introduce two small helpers to make things
+>> >> >>>>> easy for TTM-based drivers.
+>> >> >>>>
+>> >> >>>> Have you run this with DMA API debugging enabled?  I suspect you haven't,
+>> >> >>>> and I recommend that you do.
+>> >> >>>
+>> >> >>> # cat /sys/kernel/debug/dma-api/error_count
+>> >> >>> 162621
+>> >> >>>
+>> >> >>> (╯°□°）╯︵ ┻━┻)
+>> >> >>
+>> >> >> *puts table back on its feet*
+>> >> >>
+>> >> >> So, yeah - TTM memory is not allocated using the DMA API, hence we cannot
+>> >> >> use the DMA API to sync it. Thanks Russell for pointing it out.
+>> >> >>
+>> >> >> The only alternative I see here is to flush the CPU caches when syncing for
+>> >> >> the device, and invalidate them for the other direction. Of course if the
+>> >> >> device has caches on its side as well the opposite operation must also be
+>> >> >> done for it. Guess the only way is to handle it all by ourselves here. :/
+>> >> > ... and it really sucks. Basically if we cannot use the DMA API here
+>> >> > we will lose the convenience of having a portable API that does just
+>> >> > the right thing for the underlying platform. Without it we would have
+>> >> > to duplicate arm_iommu_sync_single_for_cpu/device() and we would only
+>> >> > have support for ARM.
+>> >> >
+>> >> > The usage of the DMA API that we are doing might be illegal, but in
+>> >> > essence it does exactly what we need - at least for ARM. What are the
+>> >> > alternatives?
+>> >> Convert TTM to use the dma api? :-)
+>> >
+>> > Actually TTM already has a page alloc backend using the DMA API. It's
+>> > just not used for the standard case right now.
+>>
+>> Indeed, and Nouveau even already makes use of it if CONFIG_SWIOTLB is
+>> set apparently.
+>>
+>> > I would argue that we should just use this page allocator (which has the
+>> > side effect of getting pages from CMA if available -> you are actually
+>> > free to change the caching) and do away with the other allocator in the
+>> > ARM case.
+>>
+>> Mm? Does it mean that CMA memory is not mapped into lowmem? That would
+>> certainly help in the present case, but I wonder how useful it will be
+>> once the iommu support is in place. Will also need to consider
+>> performance of such coherent memory for e.g. user-space mappings.
+>>
+>> Anyway, I will experiment a bit with this tomorrow, thanks!
+>
+> CMA memory is reserved before the lowmem section mapping is set up. It
+> is then mapped with individual 4k pages before giving it back to the
+> buddy allocator.
+> This means CMA pages in use by the kernel are mapped into lowmem, but
+> they are actually unmapped from lowmem once you allocate them as DMA
+> memory.
 
-> On Wed, Jun 25, 2014 at 01:55:05PM +0000, Mattis Lorentzon wrote:
-> > I have a similar issue with v3.16-rc2 as previously reported by Waldemar
-> Brodkorb for v3.15-rc4.
-> > https://lkml.org/lkml/2014/5/9/330
-> 
-> This URL returns no useful information.  I find that lkml.org is broken more
-> times than not in recent years.  Please use a different archive site when
-> referring to posts, thanks.
+Tried enabling the DMA page allocation for GK20A. The great news is
+that with it caching works as expected and that DMA API debugging does
+not complain anymore when calling the sync functions. Actually, since
+the DMA page allocator returns coherent memory, there is no need for
+these sync functions anymore, which makes things easier. This seems to
+be the simplest way towards enabling GK20A - albeit performance
+suffers a little, but we can revisit that later once we have IOMMU
+support.
 
-http://lkml.iu.edu/hypermail/linux/kernel/1405.1/01114.html
+I would not claim that we are fully compliant with what the DMA API
+expects though. For instance, pages allocated for TTM via
+dma_alloc_coherent() are later re-mapped in ttm_bo_kmap_ttm() using
+vmap(), potentially with a different pgprot. The waste of address
+space produced by these two simultaneous mappings aside, is this even
+allowed? And when it comes to mapping these pages to user-space, TTM
+does it without calling dma_mmap_coherent(), and again with whatever
+flags we give it. IIUC memory allocated through the DMA API should
+only be touched through the vaddr returned by dma_alloc_coherent(), or
+through mappings provided by other DMA API functions. So is TTM
+misusing the DMA API here?
 
-> I have had two iMX6 platforms running root-NFS for about the last six to nine
-> months with various workloads, and have never seen this oops.
-> Unfortunately, the description above gives very little information for what
-> the mechanism to trigger this bug may be.  For example, if I wanted to
-> reproduce it, what would I need to do?
+In general, should we still be afraid of non-identical mappings on
+modern CPUs like the A15 found in Tegra K1? I have heard contradictory
+information so far and would really like to be able to understand this
+once and for all, as it would give us more choices as for which memory
+provider we can use.
 
-We have managed to trigger the Oops by just transferring a large file over nfs
-cat /mnt/foo > /dev/null
-where foo is a file that is approximately 2 GB. There may be some packet losses
-on this network, perhaps this differs from your workload?
-
-> > The error is sporadic and it seems to occur more frequently when using
-> perf.
-> 
-> So it occurs when not using perf?
-
-Yes, certainly, see above.
-
-We have done some more investigations, please find it in this mail:
-
-http://lkml.iu.edu/hypermail/linux/kernel/1406.3/02190.html
-
-The Oops seems to have been introduced somewhere between v3.12 and v3.13:
-
-- The Oops is reproducible within seconds when running Linux 3.16-rc2.
-- We have observed the Oops on 8 different hardware units and two different chipsets (Freescale i.MX6 and Xilinx Zynq).
-- The Oops has not been seen on Linux 3.12 so it appears to be good.
-- The Oops has been seen on Linux 3.13, 3.14, 3.15, 3.16-rc2 so these appear to be bad.
-
-Configs and a couple of Oops reports are attached to the linked mail.
-
-Best regards,
-Mattis Lorentzon
-***************************************************************
-Consider the environment before printing this message.
-
-To read Autoliv's Information and Confidentiality Notice, follow this link:
-http://www.autoliv.com/disclaimer.html
-***************************************************************
-
+Thanks,
+Alex.
