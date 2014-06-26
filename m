@@ -1,125 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757548AbaFZBHD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 21:07:03 -0400
-Received: from mail-bn1blp0186.outbound.protection.outlook.com ([207.46.163.186]:31829
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757489AbaFZBHB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 21:07:01 -0400
-Date: Wed, 25 Jun 2014 19:45:51 -0500
-From: Kim Phillips <kim.phillips@freescale.com>
-To: Marc Zyngier <marc.zyngier@arm.com>
-CC: Will Deacon <will.deacon@arm.com>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Eric Auger <eric.auger@linaro.org>,
-        Kim Phillips <kim.phillips@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Alex Williamson" <alex.williamson@redhat.com>,
-        Antonios Motakis <a.motakis@virtualopensystems.com>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH 2/2 v2] ARM: KVM: user_mem_abort: support stage 2 MMIO page
- mapping
-Message-ID: <20140625194551.a6443252bf913023159d25fd@freescale.com>
-In-Reply-To: <53A9556D.3000003@arm.com>
-References: <1395785294-2545-1-git-send-email-kim.phillips@linaro.org>
-	<1395785294-2545-2-git-send-email-kim.phillips@linaro.org>
-	<20140506180448.GH3066@lvm>	<87bnvaotei.fsf@approximate.cambridge.arm.com>
-	<20140507145557.GJ3066@lvm>	<20140624102327.GA9121@arm.com>
-	<53A9556D.3000003@arm.com>
-Organization: Freescale Semiconductor, Inc.
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
+	id S1757555AbaFZBJz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 21:09:55 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:28513 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755308AbaFZBJx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 21:09:53 -0400
+X-IronPort-AV: E=Sophos;i="5.00,779,1396972800"; 
+   d="scan'208";a="32447147"
+Message-ID: <53AB7030.3030905@cn.fujitsu.com>
+Date: Thu, 26 Jun 2014 08:58:24 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Tejun Heo <tj@kernel.org>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, <linux-mm@kvack.org>,
+        Cgroups <cgroups@vger.kernel.org>, <stable@vger.kernel.org>,
+        Li Zefan <lizefan@huawei.com>, David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH V2] mm/mempolicy: fix sleeping function called from invalid
+ context
+References: <53AA2C7E.3050707@cn.fujitsu.com> <20140625134345.GA26883@htj.dyndns.org>
+In-Reply-To: <20140625134345.GA26883@htj.dyndns.org>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199002)(46102001)(69596002)(99396002)(87286001)(19580405001)(83322001)(87936001)(6806004)(88136002)(100306002)(20776003)(81542001)(81342001)(89996001)(68736004)(44976005)(50466002)(19580395003)(47776003)(104166001)(92566001)(21056001)(102836001)(92726001)(4396001)(85852003)(76482001)(26826002)(80022001)(50986999)(79102001)(93916002)(46406003)(76176999)(50226001)(86362001)(36756003)(93886003)(77982001)(74502001)(74662001)(31966008)(83072002)(95666004)(81156004)(104016002)(97736001)(105606002)(85306003)(23726002)(77156001)(33646001)(64706001)(84676001)(62966002)(106466001)(107046002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB091;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
-X-Forefront-PRVS: 02543CD7CD
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=Kim.Phillips@freescale.com; 
-X-OriginatorOrg: freescale.com
+X-Originating-IP: [10.167.226.100]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kim Phillips <kim.phillips@linaro.org>
+On 06/25/2014 09:43 PM, Tejun Heo wrote:
 
-A userspace process can map device MMIO memory via VFIO or /dev/mem,
-e.g., for platform device passthrough support in QEMU.
+> On Wed, Jun 25, 2014 at 09:57:18AM +0800, Gu Zheng wrote:
+>> When runing with the kernel(3.15-rc7+), the follow bug occurs:
+>> [ 9969.258987] BUG: sleeping function called from invalid context at kernel/locking/mutex.c:586
+>> [ 9969.359906] in_atomic(): 1, irqs_disabled(): 0, pid: 160655, name: python
+>> [ 9969.441175] INFO: lockdep is turned off.
+>> [ 9969.488184] CPU: 26 PID: 160655 Comm: python Tainted: G       A      3.15.0-rc7+ #85
+>> [ 9969.581032] Hardware name: FUJITSU-SV PRIMEQUEST 1800E/SB, BIOS PRIMEQUEST 1000 Series BIOS Version 1.39 11/16/2012
+>> [ 9969.706052]  ffffffff81a20e60 ffff8803e941fbd0 ffffffff8162f523 ffff8803e941fd18
+>> [ 9969.795323]  ffff8803e941fbe0 ffffffff8109995a ffff8803e941fc58 ffffffff81633e6c
+>> [ 9969.884710]  ffffffff811ba5dc ffff880405c6b480 ffff88041fdd90a0 0000000000002000
+>> [ 9969.974071] Call Trace:
+>> [ 9970.003403]  [<ffffffff8162f523>] dump_stack+0x4d/0x66
+>> [ 9970.065074]  [<ffffffff8109995a>] __might_sleep+0xfa/0x130
+>> [ 9970.130743]  [<ffffffff81633e6c>] mutex_lock_nested+0x3c/0x4f0
+>> [ 9970.200638]  [<ffffffff811ba5dc>] ? kmem_cache_alloc+0x1bc/0x210
+>> [ 9970.272610]  [<ffffffff81105807>] cpuset_mems_allowed+0x27/0x140
+>> [ 9970.344584]  [<ffffffff811b1303>] ? __mpol_dup+0x63/0x150
+>> [ 9970.409282]  [<ffffffff811b1385>] __mpol_dup+0xe5/0x150
+>> [ 9970.471897]  [<ffffffff811b1303>] ? __mpol_dup+0x63/0x150
+>> [ 9970.536585]  [<ffffffff81068c86>] ? copy_process.part.23+0x606/0x1d40
+>> [ 9970.613763]  [<ffffffff810bf28d>] ? trace_hardirqs_on+0xd/0x10
+>> [ 9970.683660]  [<ffffffff810ddddf>] ? monotonic_to_bootbased+0x2f/0x50
+>> [ 9970.759795]  [<ffffffff81068cf0>] copy_process.part.23+0x670/0x1d40
+>> [ 9970.834885]  [<ffffffff8106a598>] do_fork+0xd8/0x380
+>> [ 9970.894375]  [<ffffffff81110e4c>] ? __audit_syscall_entry+0x9c/0xf0
+>> [ 9970.969470]  [<ffffffff8106a8c6>] SyS_clone+0x16/0x20
+>> [ 9971.030011]  [<ffffffff81642009>] stub_clone+0x69/0x90
+>> [ 9971.091573]  [<ffffffff81641c29>] ? system_call_fastpath+0x16/0x1b
+>>
+>> The cause is that cpuset_mems_allowed() try to take mutex_lock(&callback_mutex)
+>> under the rcu_read_lock(which was hold in __mpol_dup()). And in cpuset_mems_allowed(),
+>> the access to cpuset is under rcu_read_lock, so in __mpol_dup, we can reduce the
+>> rcu_read_lock protection region to protect the access to cpuset only in
+>> current_cpuset_is_being_rebound(). So that we can avoid this bug.
+>> This patch is a temporary solution that just addresses the bug mentioned above,
+>> can not fix the long-standing issue about cpuset.mems rebinding on fork():
+>> "
+>> When the forker's task_struct is duplicated (which includes ->mems_allowed)
+>> and it races with an update to cpuset_being_rebound in update_tasks_nodemask()
+>> then the task's mems_allowed doesn't get updated. And the child task's
+>> mems_allowed can be wrong if the cpuset's nodemask changes before the
+>> child has been added to the cgroup's tasklist.
+>> "
+>>
+>> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+>> Cc: stable <stable@vger.kernel.org>
+> 
+> Applied to cgroup/for-3.16-fixes w/ minor updates to patch subject and
+> description.  Please format the text to 80 columns.  The error
+> messages are fine but it's usually nicer to remove the timestamps.
 
-During early development, we found the PAGE_S2 memory type being used
-for MMIO mappings.  This patch corrects that by using the more strongly
-ordered memory type for device MMIO mappings: PAGE_S2_DEVICE.
+Got it, and thanks for your reminder and suggestion.
 
-Signed-off-by: Kim Phillips <kim.phillips@linaro.org>
-Acked-by: Christoffer Dall <christoffer.dall@linaro.org>
----
-Hi, here's a v2, upon request:
+Best regards,
+Gu
 
-- rebased onto today's mainline ToT
-- mmu.o-build tested only (ToT build doesn't complete)
-- made commit text less terse
-- added Christoffer's ack
+> 
+> Thanks.
+> 
 
-Cheers,
-
-Kim
-
- arch/arm/kvm/mmu.c | 11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
-
-diff --git a/arch/arm/kvm/mmu.c b/arch/arm/kvm/mmu.c
-index 16f8049..69af021 100644
---- a/arch/arm/kvm/mmu.c
-+++ b/arch/arm/kvm/mmu.c
-@@ -748,6 +748,7 @@ static int user_mem_abort(struct kvm_vcpu *vcpu, phys_addr_t fault_ipa,
- 	struct kvm_mmu_memory_cache *memcache = &vcpu->arch.mmu_page_cache;
- 	struct vm_area_struct *vma;
- 	pfn_t pfn;
-+	pgprot_t mem_type = PAGE_S2;
- 
- 	write_fault = kvm_is_write_fault(kvm_vcpu_get_hsr(vcpu));
- 	if (fault_status == FSC_PERM && !write_fault) {
-@@ -798,6 +799,9 @@ static int user_mem_abort(struct kvm_vcpu *vcpu, phys_addr_t fault_ipa,
- 	if (is_error_pfn(pfn))
- 		return -EFAULT;
- 
-+	if (kvm_is_mmio_pfn(pfn))
-+		mem_type = PAGE_S2_DEVICE;
-+
- 	spin_lock(&kvm->mmu_lock);
- 	if (mmu_notifier_retry(kvm, mmu_seq))
- 		goto out_unlock;
-@@ -805,7 +809,7 @@ static int user_mem_abort(struct kvm_vcpu *vcpu, phys_addr_t fault_ipa,
- 		hugetlb = transparent_hugepage_adjust(&pfn, &fault_ipa);
- 
- 	if (hugetlb) {
--		pmd_t new_pmd = pfn_pmd(pfn, PAGE_S2);
-+		pmd_t new_pmd = pfn_pmd(pfn, mem_type);
- 		new_pmd = pmd_mkhuge(new_pmd);
- 		if (writable) {
- 			kvm_set_s2pmd_writable(&new_pmd);
-@@ -814,13 +818,14 @@ static int user_mem_abort(struct kvm_vcpu *vcpu, phys_addr_t fault_ipa,
- 		coherent_cache_guest_page(vcpu, hva & PMD_MASK, PMD_SIZE);
- 		ret = stage2_set_pmd_huge(kvm, memcache, fault_ipa, &new_pmd);
- 	} else {
--		pte_t new_pte = pfn_pte(pfn, PAGE_S2);
-+		pte_t new_pte = pfn_pte(pfn, mem_type);
- 		if (writable) {
- 			kvm_set_s2pte_writable(&new_pte);
- 			kvm_set_pfn_dirty(pfn);
- 		}
- 		coherent_cache_guest_page(vcpu, hva, PAGE_SIZE);
--		ret = stage2_set_pte(kvm, memcache, fault_ipa, &new_pte, false);
-+		ret = stage2_set_pte(kvm, memcache, fault_ipa, &new_pte,
-+				     mem_type == PAGE_S2_DEVICE);
- 	}
- 
- 
--- 
-2.0.0
 
