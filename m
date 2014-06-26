@@ -1,121 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755193AbaFZIyM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 04:54:12 -0400
-Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:54106 "EHLO
-	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751759AbaFZIyK (ORCPT
+	id S1755722AbaFZIzm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 04:55:42 -0400
+Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:48235 "EHLO
+	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753430AbaFZIzk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 04:54:10 -0400
-Message-ID: <1403772848.22592.8.camel@x220>
-Subject: [PATCH] staging: unisys: remove unused macros
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Benjamin Romer <benjamin.romer@unisys.com>,
-        David Kershner <david.kershner@unisys.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        sparmaintainer@unisys.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Thu, 26 Jun 2014 10:54:08 +0200
+	Thu, 26 Jun 2014 04:55:40 -0400
+Subject: Re: [PATCH 0/4] GenWQE: patches to improve RAS features (v2)
+From: Frank Haverkamp <haver@linux.vnet.ibm.com>
+Reply-To: haver@linux.vnet.ibm.com
+To: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
+In-Reply-To: <1403713327-27976-1-git-send-email-klebers@linux.vnet.ibm.com>
+References: <1403713327-27976-1-git-send-email-klebers@linux.vnet.ibm.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Organization: IBM
+Date: Thu, 26 Jun 2014 10:55:33 +0200
+Message-ID: <1403772933.25754.1.camel@oc7383187364.ibm.com>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 26 Jun 2014 08:54:08.0229 (UTC) FILETIME=[30E26950:01CF911C]
-X-RcptDomain: vger.kernel.org
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14062608-5024-0000-0000-00000081CF43
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The macros CONFIG_SPAR_GUEST, GUESTDRIVERBUILD, and NOAUTOVERSION are
-defined in Makefiles for the Unisys SPAR driver. They are never used.
-Remove the lines that define these macros.
+Hi Kleber,
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Compile tested only, on top of next-20140626, by fiddling with BROKEN
-and setting all CONFIG_UNISYS* options to y.
+Am Mittwoch, den 25.06.2014, 13:22 -0300 schrieb Kleber Sacilotto de
+Souza:
+> Hi,
+> 
+> I'm sending a v2 of this patch series, removing the patch that bumps the
+> driver version number, and including a trivial one that removes an unnecessary
+> include.
+> 
+> Kleber Sacilotto de Souza (4):
+>   GenWQE: Add sysfs interface for bitstream reload
+>   GenWQE: Add support for EEH error recovery
+>   GenWQE: Improve hardware error recovery
+>   GenWQE: Remove unecessary include
+> 
+>  Documentation/ABI/testing/sysfs-driver-genwqe |    9 +
+>  drivers/misc/genwqe/Kconfig                   |    6 +
+>  drivers/misc/genwqe/card_base.c               |  215 +++++++++++++++++++++++--
+>  drivers/misc/genwqe/card_base.h               |    2 +
+>  drivers/misc/genwqe/card_ddcb.c               |   24 +++-
+>  drivers/misc/genwqe/card_debugfs.c            |    7 +
+>  drivers/misc/genwqe/card_dev.c                |    5 +
+>  drivers/misc/genwqe/card_sysfs.c              |   25 +++
+>  drivers/misc/genwqe/card_utils.c              |   10 ++
+>  include/uapi/linux/genwqe/genwqe_card.h       |    1 +
+>  10 files changed, 285 insertions(+), 19 deletions(-)
+> 
 
- drivers/staging/unisys/channels/Makefile     | 2 --
- drivers/staging/unisys/uislib/Makefile       | 3 ---
- drivers/staging/unisys/virthba/Makefile      | 3 ---
- drivers/staging/unisys/virtpci/Makefile      | 3 ---
- drivers/staging/unisys/visorchannel/Makefile | 2 --
- drivers/staging/unisys/visorchipset/Makefile | 2 --
- drivers/staging/unisys/visorutil/Makefile    | 1 -
- 7 files changed, 16 deletions(-)
+Thanks for resubmitting the patches.
 
-diff --git a/drivers/staging/unisys/channels/Makefile b/drivers/staging/unisys/channels/Makefile
-index e60b0aef4dcd..adc184206035 100644
---- a/drivers/staging/unisys/channels/Makefile
-+++ b/drivers/staging/unisys/channels/Makefile
-@@ -9,5 +9,3 @@ visorchannelstub-y := channel.o chanstub.o
- ccflags-y += -Idrivers/staging/unisys/include
- ccflags-y += -Idrivers/staging/unisys/common-spar/include
- ccflags-y += -Idrivers/staging/unisys/common-spar/include/channels
--ccflags-y += -DCONFIG_SPAR_GUEST -DGUESTDRIVERBUILD -DNOAUTOVERSION
--
-diff --git a/drivers/staging/unisys/uislib/Makefile b/drivers/staging/unisys/uislib/Makefile
-index 6e44d49458f5..08e620d17497 100644
---- a/drivers/staging/unisys/uislib/Makefile
-+++ b/drivers/staging/unisys/uislib/Makefile
-@@ -12,6 +12,3 @@ ccflags-y += -Idrivers/staging/unisys/visorchipset
- ccflags-y += -Idrivers/staging/unisys/sparstopdriver
- ccflags-y += -Idrivers/staging/unisys/common-spar/include
- ccflags-y += -Idrivers/staging/unisys/common-spar/include/channels
--
--ccflags-y += -DCONFIG_SPAR_GUEST -DGUESTDRIVERBUILD -DNOAUTOVERSION
--
-diff --git a/drivers/staging/unisys/virthba/Makefile b/drivers/staging/unisys/virthba/Makefile
-index 632b1c08b975..ba55ae12488e 100644
---- a/drivers/staging/unisys/virthba/Makefile
-+++ b/drivers/staging/unisys/virthba/Makefile
-@@ -11,6 +11,3 @@ ccflags-y += -Idrivers/staging/unisys/visorchipset
- ccflags-y += -Idrivers/staging/unisys/virtpci
- ccflags-y += -Idrivers/staging/unisys/common-spar/include
- ccflags-y += -Idrivers/staging/unisys/common-spar/include/channels
--
--ccflags-y += -DCONFIG_SPAR_GUEST -DGUESTDRIVERBUILD -DNOAUTOVERSION
--
-diff --git a/drivers/staging/unisys/virtpci/Makefile b/drivers/staging/unisys/virtpci/Makefile
-index f9399aabddd1..a26c696219a5 100644
---- a/drivers/staging/unisys/virtpci/Makefile
-+++ b/drivers/staging/unisys/virtpci/Makefile
-@@ -8,6 +8,3 @@ ccflags-y += -Idrivers/staging/unisys/include
- ccflags-y += -Idrivers/staging/unisys/uislib
- ccflags-y += -Idrivers/staging/unisys/common-spar/include
- ccflags-y += -Idrivers/staging/unisys/common-spar/include/channels
--
--ccflags-y += -DCONFIG_SPAR_GUEST -DGUESTDRIVERBUILD -DNOAUTOVERSION
--
-diff --git a/drivers/staging/unisys/visorchannel/Makefile b/drivers/staging/unisys/visorchannel/Makefile
-index f0060be55bc5..e079c96b1cdf 100644
---- a/drivers/staging/unisys/visorchannel/Makefile
-+++ b/drivers/staging/unisys/visorchannel/Makefile
-@@ -10,5 +10,3 @@ ccflags-y += -Idrivers/staging/unisys/include
- ccflags-y += -Idrivers/staging/unisys/common-spar/include
- ccflags-y += -Idrivers/staging/unisys/common-spar/include/channels
- ccflags-y += -Idrivers/staging/unisys/visorutil
--ccflags-y += -DCONFIG_SPAR_GUEST -DGUESTDRIVERBUILD -DNOAUTOVERSION
--
-diff --git a/drivers/staging/unisys/visorchipset/Makefile b/drivers/staging/unisys/visorchipset/Makefile
-index ead4b9c02715..5071878e57da 100644
---- a/drivers/staging/unisys/visorchipset/Makefile
-+++ b/drivers/staging/unisys/visorchipset/Makefile
-@@ -14,5 +14,3 @@ ccflags-y += -Idrivers/staging/unisys/common-spar/include
- ccflags-y += -Idrivers/staging/unisys/common-spar/include/channels
- ccflags-y += -Idrivers/staging/unisys/visorutil
- ccflags-y += -Iinclude/generated
--ccflags-y += -DCONFIG_SPAR_GUEST -DGUESTDRIVERBUILD -DNOAUTOVERSION
--
-diff --git a/drivers/staging/unisys/visorutil/Makefile b/drivers/staging/unisys/visorutil/Makefile
-index 3f463888dcec..d871bbb78cef 100644
---- a/drivers/staging/unisys/visorutil/Makefile
-+++ b/drivers/staging/unisys/visorutil/Makefile
-@@ -8,4 +8,3 @@ visorutil-y := charqueue.o  easyproc.o  periodic_work.o  procobjecttree.o  \
- 		memregion_direct.o visorkmodutils.o
- 
- ccflags-y += -Idrivers/staging/unisys/include
--ccflags-y += -DCONFIG_SPAR_GUEST -DGUESTDRIVERBUILD -DNOAUTOVERSION
--- 
-1.9.3
+Acked-by: Frank Haverkamp <haver@linux.vnet.ibm.com>
+
 
