@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751978AbaFZUuN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 16:50:13 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:42973 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751830AbaFZUuI (ORCPT
+	id S1752166AbaFZUvY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 16:51:24 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:55813 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751884AbaFZUuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 16:50:08 -0400
+	Thu, 26 Jun 2014 16:50:12 -0400
 From: Thierry Reding <thierry.reding@gmail.com>
 To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
@@ -23,9 +23,9 @@ Cc: Cho KyongHo <pullip.cho@samsung.com>,
         devicetree@vger.kernel.org, iommu@lists.linux-foundation.org,
         linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [RFC 06/10] ARM: tegra: tegra124: Enable IOMMU for display controllers
-Date: Thu, 26 Jun 2014 22:49:46 +0200
-Message-Id: <1403815790-8548-7-git-send-email-thierry.reding@gmail.com>
+Subject: [RFC 08/10] ARM: tegra: Select ARM_DMA_USE_IOMMU
+Date: Thu, 26 Jun 2014 22:49:48 +0200
+Message-Id: <1403815790-8548-9-git-send-email-thierry.reding@gmail.com>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1403815790-8548-1-git-send-email-thierry.reding@gmail.com>
 References: <1403815790-8548-1-git-send-email-thierry.reding@gmail.com>
@@ -35,44 +35,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Thierry Reding <treding@nvidia.com>
 
-Add an iommus property to each of the display controllers and encode the
-SWGROUP in the specifier.
+This enables IOMMU interoperation with the DMA mapping API so that
+clients that use the DMA mapping API can seemlessly make use of an
+existing IOMMU.
 
 Signed-off-by: Thierry Reding <treding@nvidia.com>
 ---
- arch/arm/boot/dts/tegra124.dtsi | 5 +++++
- 1 file changed, 5 insertions(+)
+ arch/arm/mach-tegra/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/arm/boot/dts/tegra124.dtsi b/arch/arm/boot/dts/tegra124.dtsi
-index efa0f0c519be..82751d2878c4 100644
---- a/arch/arm/boot/dts/tegra124.dtsi
-+++ b/arch/arm/boot/dts/tegra124.dtsi
-@@ -3,6 +3,7 @@
- #include <dt-bindings/pinctrl/pinctrl-tegra.h>
- #include <dt-bindings/pinctrl/pinctrl-tegra-xusb.h>
- #include <dt-bindings/interrupt-controller/arm-gic.h>
-+#include <dt-bindings/memory/tegra124-mc.h>
- 
- #include "skeleton.dtsi"
- 
-@@ -104,6 +105,8 @@
- 			reset-names = "dc";
- 
- 			nvidia,head = <0>;
-+
-+			iommus = <&mc TEGRA_SWGROUP_DC>;
- 		};
- 
- 		dc@0,54240000 {
-@@ -117,6 +120,8 @@
- 			reset-names = "dc";
- 
- 			nvidia,head = <1>;
-+
-+			iommus = <&mc TEGRA_SWGROUP_DCB>;
- 		};
- 
- 		hdmi@0,54280000 {
+diff --git a/arch/arm/mach-tegra/Kconfig b/arch/arm/mach-tegra/Kconfig
+index a52d96366919..20bc43975bde 100644
+--- a/arch/arm/mach-tegra/Kconfig
++++ b/arch/arm/mach-tegra/Kconfig
+@@ -2,6 +2,7 @@ menuconfig ARCH_TEGRA
+ 	bool "NVIDIA Tegra" if ARCH_MULTI_V7
+ 	select ARCH_REQUIRE_GPIOLIB
+ 	select ARCH_SUPPORTS_TRUSTED_FOUNDATIONS
++	select ARM_DMA_USE_IOMMU
+ 	select ARM_GIC
+ 	select CLKSRC_MMIO
+ 	select HAVE_ARM_SCU if SMP
 -- 
 2.0.0
 
