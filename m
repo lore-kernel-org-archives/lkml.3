@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757702AbaFZQPP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 12:15:15 -0400
-Received: from forward-corp1f.mail.yandex.net ([95.108.130.40]:50150 "EHLO
+	id S1757900AbaFZQQA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 12:16:00 -0400
+Received: from forward-corp1f.mail.yandex.net ([95.108.130.40]:50166 "EHLO
 	forward-corp1f.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754485AbaFZQPM (ORCPT
+	by vger.kernel.org with ESMTP id S1757629AbaFZQPO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 12:15:12 -0400
-X-Yandex-Uniq: 73bb85bd-5711-44d0-9922-92e73238d17a
+	Thu, 26 Jun 2014 12:15:14 -0400
+X-Yandex-Uniq: 0eff0457-f496-4dac-8850-607134dfaef5
 Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
 From: Stanislav Fomichev <stfomichev@yandex-team.ru>
 To: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
         acme@kernel.org, dsahern@gmail.com, stfomichev@yandex-team.ru,
         jolsa@redhat.com
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/5] perf trace: add perf_event parameter to tracepoint_handler
-Date: Thu, 26 Jun 2014 20:14:24 +0400
-Message-Id: <1403799268-1367-2-git-send-email-stfomichev@yandex-team.ru>
+Subject: [PATCH 4/5] perf trace: add pagefault statistics
+Date: Thu, 26 Jun 2014 20:14:27 +0400
+Message-Id: <1403799268-1367-5-git-send-email-stfomichev@yandex-team.ru>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403799268-1367-1-git-send-email-stfomichev@yandex-team.ru>
 References: <1403799268-1367-1-git-send-email-stfomichev@yandex-team.ru>
@@ -24,83 +24,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It will be used by next pagefault tracing patches in the series.
+'perf trace' can show summary of events using -S option. This commit
+also reports number of major/minor pagefault events in this summary.
 
 Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
 ---
- tools/perf/builtin-trace.c | 11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ tools/perf/builtin-trace.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
 diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index f954c26de231..a9b542918da0 100644
+index 38f3dedcbb4a..73d1266e6303 100644
 --- a/tools/perf/builtin-trace.c
 +++ b/tools/perf/builtin-trace.c
-@@ -1535,6 +1535,7 @@ static size_t syscall__scnprintf_args(struct syscall *sc, char *bf, size_t size,
- }
+@@ -1132,6 +1132,7 @@ struct thread_trace {
+ 	u64		  exit_time;
+ 	bool		  entry_pending;
+ 	unsigned long	  nr_events;
++	unsigned long	  pfmaj, pfmin;
+ 	char		  *entry_str;
+ 	double		  runtime_ms;
+ 	struct {
+@@ -1803,8 +1804,17 @@ static int trace__pgfault(struct trace *trace,
+ 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+ 	struct addr_location al;
+ 	char map_type = 'd';
++	struct thread_trace *ttrace;
  
- typedef int (*tracepoint_handler)(struct trace *trace, struct perf_evsel *evsel,
-+				  union perf_event *event,
- 				  struct perf_sample *sample);
+ 	thread = machine__findnew_thread(trace->host, sample->pid, sample->tid);
++	ttrace = thread__trace(thread, trace->output);
++	if (ttrace == NULL)
++		return -1;
++
++	if (evsel->attr.config == PERF_COUNT_SW_PAGE_FAULTS_MAJ)
++		ttrace->pfmaj++;
++	else
++		ttrace->pfmin++;
  
- static struct syscall *trace__syscall_info(struct trace *trace,
-@@ -1607,6 +1608,7 @@ static void thread__update_stats(struct thread_trace *ttrace,
- }
- 
- static int trace__sys_enter(struct trace *trace, struct perf_evsel *evsel,
-+			    union perf_event *event __maybe_unused,
- 			    struct perf_sample *sample)
- {
- 	char *msg;
-@@ -1656,6 +1658,7 @@ static int trace__sys_enter(struct trace *trace, struct perf_evsel *evsel,
- }
- 
- static int trace__sys_exit(struct trace *trace, struct perf_evsel *evsel,
-+			   union perf_event *event __maybe_unused,
- 			   struct perf_sample *sample)
- {
- 	int ret;
-@@ -1735,6 +1738,7 @@ static int trace__sys_exit(struct trace *trace, struct perf_evsel *evsel,
- }
- 
- static int trace__vfs_getname(struct trace *trace, struct perf_evsel *evsel,
-+			      union perf_event *event __maybe_unused,
- 			      struct perf_sample *sample)
- {
- 	trace->last_vfs_getname = perf_evsel__rawptr(evsel, sample, "pathname");
-@@ -1742,6 +1746,7 @@ static int trace__vfs_getname(struct trace *trace, struct perf_evsel *evsel,
- }
- 
- static int trace__sched_stat_runtime(struct trace *trace, struct perf_evsel *evsel,
-+				     union perf_event *event __maybe_unused,
- 				     struct perf_sample *sample)
- {
-         u64 runtime = perf_evsel__intval(evsel, sample, "runtime");
-@@ -1781,7 +1786,7 @@ static bool skip_sample(struct trace *trace, struct perf_sample *sample)
- }
- 
- static int trace__process_sample(struct perf_tool *tool,
--				 union perf_event *event __maybe_unused,
-+				 union perf_event *event,
- 				 struct perf_sample *sample,
- 				 struct perf_evsel *evsel,
- 				 struct machine *machine __maybe_unused)
-@@ -1799,7 +1804,7 @@ static int trace__process_sample(struct perf_tool *tool,
- 
- 	if (handler) {
- 		++trace->nr_events;
--		handler(trace, evsel, sample);
-+		handler(trace, evsel, event, sample);
- 	}
- 
- 	return err;
-@@ -1990,7 +1995,7 @@ static int trace__run(struct trace *trace, int argc, const char **argv)
- 			}
- 
- 			handler = evsel->handler;
--			handler(trace, evsel, &sample);
-+			handler(trace, evsel, event, &sample);
- next_event:
- 			perf_evlist__mmap_consume(evlist, i);
+ 	thread__find_addr_location(thread, trace->host, cpumode, MAP__FUNCTION,
+ 			      sample->ip, &al);
+@@ -2347,6 +2357,7 @@ static int trace__fprintf_one_thread(struct thread *thread, void *priv)
+ 	printed += fprintf(fp, " %s (%d), ", thread__comm_str(thread), thread->tid);
+ 	printed += fprintf(fp, "%lu events, ", ttrace->nr_events);
+ 	printed += fprintf(fp, "%.1f%%", ratio);
++	printed += fprintf(fp, ", %lu:%lu faults", ttrace->pfmaj, ttrace->pfmin);
+ 	printed += fprintf(fp, ", %.3f msec\n", ttrace->runtime_ms);
+ 	printed += thread__dump_stats(ttrace, trace, fp);
  
 -- 
 1.9.1
