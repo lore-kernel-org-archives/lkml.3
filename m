@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965018AbaFZSRN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 14:17:13 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:33425 "EHLO
+	id S965041AbaFZSRo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 14:17:44 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:33408 "EHLO
 	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964998AbaFZSRJ (ORCPT
+	with ESMTP id S964956AbaFZSRG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 14:17:09 -0400
+	Thu, 26 Jun 2014 14:17:06 -0400
 From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 To: Lee Jones <lee.jones@linaro.org>
 Cc: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
@@ -23,9 +23,9 @@ Cc: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
         linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
         linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH v5 14/14] ARM: dts: Add max77802 to exynos5420-peach-pit and exynos5800-peach-pi
-Date: Thu, 26 Jun 2014 20:15:46 +0200
-Message-Id: <1403806546-31122-15-git-send-email-javier.martinez@collabora.co.uk>
+Subject: [PATCH v5 13/14] rtc: Add driver for Maxim 77802 PMIC Real-Time-Clock
+Date: Thu, 26 Jun 2014 20:15:45 +0200
+Message-Id: <1403806546-31122-14-git-send-email-javier.martinez@collabora.co.uk>
 X-Mailer: git-send-email 2.0.0.rc2
 In-Reply-To: <1403806546-31122-1-git-send-email-javier.martinez@collabora.co.uk>
 References: <1403806546-31122-1-git-send-email-javier.martinez@collabora.co.uk>
@@ -33,785 +33,699 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peach pit and pi boards uses a Maxim 77802 power management
-IC to drive regulators and its Real Time Clock. This patch
-adds support for this chip.
-
-These are the device nodes and pinctrl configuration that
-are present on the Peach pit DeviceTree source file in the
-the Chrome OS kernel 3.8 tree.
+The MAX7802 PMIC has a Real-Time-Clock (RTC) with two alarms.
+This patch adds support for the RTC and is based on a driver
+added by Simon Glass to the Chrome OS kernel 3.8 tree.
 
 Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Tested-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
 ---
 
 Changes since v4: None
 
-Changes since v3:
- - Add support for Exynos5800 based Peach pi board. Suggested by Doug Anderson.
- - Model the actual regulators relationship instead of a simplistic model.
-   Suggested by Mark Brown.
+Changes since v3: None
 
-Changes since v2: None
+ drivers/rtc/Kconfig        |  10 +
+ drivers/rtc/Makefile       |   1 +
+ drivers/rtc/rtc-max77802.c | 637 +++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 648 insertions(+)
+ create mode 100644 drivers/rtc/rtc-max77802.c
 
-Changes since v1:
- - Use "regulators" for child node instead of "voltage-regulators" to be
-   consistent with other PMIC. Suggested by Mark Brown.
- - Use regulators node names instead of the deprecated "regulator-compatible"
-   property. Suggested by Mark Brown.
-
- arch/arm/boot/dts/exynos5420-peach-pit.dts | 343 +++++++++++++++++++++++++++++
- arch/arm/boot/dts/exynos5800-peach-pi.dts  | 343 +++++++++++++++++++++++++++++
- 2 files changed, 686 insertions(+)
-
-diff --git a/arch/arm/boot/dts/exynos5420-peach-pit.dts b/arch/arm/boot/dts/exynos5420-peach-pit.dts
-index b2f1237..d124394 100644
---- a/arch/arm/boot/dts/exynos5420-peach-pit.dts
-+++ b/arch/arm/boot/dts/exynos5420-peach-pit.dts
-@@ -143,6 +143,311 @@
- 	ddc = <&i2c_2>;
- };
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index 0754f5c..e0b6495 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -288,6 +288,16 @@ config RTC_DRV_MAX77686
+ 	  This driver can also be built as a module. If so, the module
+ 	  will be called rtc-max77686.
  
-+&hsi2c_4 {
-+	status = "okay";
-+	clock-frequency = <400000>;
++config RTC_DRV_MAX77802
++	tristate "Maxim MAX77802"
++	depends on MFD_MAX77802
++	help
++	  If you say yes here you will get support for the
++	  RTC of Maxim MAX77802 PMIC.
 +
-+	max77802-pmic@9 {
-+		compatible = "maxim,max77802";
-+		interrupt-parent = <&gpx3>;
-+		interrupts = <1 0>;
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&max77802_irq>, <&pmic_selb>,
-+			    <&pmic_dvs_1>, <&pmic_dvs_2>, <&pmic_dvs_3>;
-+		wakeup-source;
-+		reg = <0x9>;
-+		#clock-cells = <1>;
++	  This driver can also be built as a module. If so, the module
++	  will be called rtc-max77802.
 +
-+		/* Using idx 1 means warm reset will get good voltage */
-+		max77802,pmic-buck-default-dvs-idx = <1>;
-+		max77802,pmic-buck-dvs-gpios = <&gpy7 6 GPIO_ACTIVE_HIGH>,
-+					       <&gpj4 2 GPIO_ACTIVE_HIGH>,
-+					       <&gpj4 3 GPIO_ACTIVE_HIGH>;
-+		max77802,pmic-buck-selb-gpios = <&gph0 2 GPIO_ACTIVE_HIGH>,
-+						<&gph0 3 GPIO_ACTIVE_HIGH>,
-+						<&gph0 4 GPIO_ACTIVE_HIGH>,
-+						<&gph0 5 GPIO_ACTIVE_HIGH>,
-+						<&gph0 6 GPIO_ACTIVE_HIGH>;
+ config RTC_DRV_RS5C372
+ 	tristate "Ricoh R2025S/D, RS5C372A/B, RV5C386, RV5C387A"
+ 	help
+diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+index 70347d0..247de78 100644
+--- a/drivers/rtc/Makefile
++++ b/drivers/rtc/Makefile
+@@ -81,6 +81,7 @@ obj-$(CONFIG_RTC_DRV_MAX8998)	+= rtc-max8998.o
+ obj-$(CONFIG_RTC_DRV_MAX8997)	+= rtc-max8997.o
+ obj-$(CONFIG_RTC_DRV_MAX6902)	+= rtc-max6902.o
+ obj-$(CONFIG_RTC_DRV_MAX77686)	+= rtc-max77686.o
++obj-$(CONFIG_RTC_DRV_MAX77802)  += rtc-max77802.o
+ obj-$(CONFIG_RTC_DRV_MC13XXX)	+= rtc-mc13xxx.o
+ obj-$(CONFIG_RTC_DRV_MCP795)	+= rtc-mcp795.o
+ obj-$(CONFIG_RTC_DRV_MSM6242)	+= rtc-msm6242.o
+diff --git a/drivers/rtc/rtc-max77802.c b/drivers/rtc/rtc-max77802.c
+new file mode 100644
+index 0000000..7e5d031
+--- /dev/null
++++ b/drivers/rtc/rtc-max77802.c
+@@ -0,0 +1,637 @@
++/*
++ * RTC driver for Maxim MAX77802
++ *
++ * Copyright (C) 2013 Google, Inc
++ *
++ * Copyright (C) 2012 Samsung Electronics Co.Ltd
++ *
++ *  based on rtc-max8997.c
++ *
++ *  This program is free software; you can redistribute  it and/or modify it
++ *  under  the terms of  the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the  License, or (at your
++ *  option) any later version.
++ *
++ */
 +
-+		inb1-supply = <&tps65090_dcdc2>;
-+		inb2-supply = <&tps65090_dcdc1>;
-+		inb3-supply = <&tps65090_dcdc2>;
-+		inb4-supply = <&tps65090_dcdc2>;
-+		inb5-supply = <&tps65090_dcdc1>;
-+		inb6-supply = <&tps65090_dcdc2>;
-+		inb7-supply = <&tps65090_dcdc1>;
-+		inb8-supply = <&tps65090_dcdc1>;
-+		inb9-supply = <&tps65090_dcdc1>;
-+		inb10-supply = <&tps65090_dcdc1>;
++#include <linux/slab.h>
++#include <linux/rtc.h>
++#include <linux/delay.h>
++#include <linux/mutex.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/mfd/max77802-private.h>
++#include <linux/irqdomain.h>
++#include <linux/regmap.h>
 +
-+		inl1-supply = <&buck5_reg>;
-+		inl2-supply = <&buck7_reg>;
-+		inl3-supply = <&buck9_reg>;
-+		inl4-supply = <&buck9_reg>;
-+		inl5-supply = <&buck9_reg>;
-+		inl6-supply = <&tps65090_dcdc2>;
-+		inl7-supply = <&buck9_reg>;
-+		inl9-supply = <&tps65090_dcdc2>;
-+		inl10-supply = <&buck7_reg>;
++/* RTC Control Register */
++#define BCD_EN_SHIFT			0
++#define BCD_EN_MASK			(1 << BCD_EN_SHIFT)
++#define MODEL24_SHIFT			1
++#define MODEL24_MASK			(1 << MODEL24_SHIFT)
++/* RTC Update Register1 */
++#define RTC_UDR_SHIFT			0
++#define RTC_UDR_MASK			(1 << RTC_UDR_SHIFT)
++#define RTC_RBUDR_SHIFT			4
++#define RTC_RBUDR_MASK			(1 << RTC_RBUDR_SHIFT)
++/* WTSR and SMPL Register */
++#define WTSRT_SHIFT			0
++#define SMPLT_SHIFT			2
++#define WTSR_EN_SHIFT			6
++#define SMPL_EN_SHIFT			7
++#define WTSRT_MASK			(3 << WTSRT_SHIFT)
++#define SMPLT_MASK			(3 << SMPLT_SHIFT)
++#define WTSR_EN_MASK			(1 << WTSR_EN_SHIFT)
++#define SMPL_EN_MASK			(1 << SMPL_EN_SHIFT)
++/* RTC Hour register */
++#define HOUR_PM_SHIFT			6
++#define HOUR_PM_MASK			(1 << HOUR_PM_SHIFT)
++/* RTC Alarm Enable */
++#define ALARM_ENABLE_SHIFT		7
++#define ALARM_ENABLE_MASK		(1 << ALARM_ENABLE_SHIFT)
 +
-+		regulators {
-+			buck1_reg: BUCK1 {
-+				regulator-name = "vdd_mif";
-+				regulator-min-microvolt = <800000>;
-+				regulator-max-microvolt = <1300000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+				regulator-ramp-delay = <12500>;
-+			};
-+			buck2_reg: BUCK2 {
-+				regulator-name = "vdd_arm_real";
-+				regulator-min-microvolt = <800000>;
-+				regulator-max-microvolt = <1500000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+				regulator-ramp-delay = <12500>;
-+			};
-+			buck3_reg: BUCK3 {
-+				regulator-name = "vdd_int_real";
-+				regulator-min-microvolt = <800000>;
-+				regulator-max-microvolt = <1400000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+				regulator-ramp-delay = <12500>;
-+			};
-+			buck4_reg: BUCK4 {
-+				regulator-name = "vdd_g3d";
-+				regulator-min-microvolt = <700000>;
-+				regulator-max-microvolt = <1400000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+				regulator-ramp-delay = <12500>;
-+			};
-+			buck5_reg: BUCK5 {
-+				regulator-name = "vdd_1v2";
-+				regulator-min-microvolt = <1200000>;
-+				regulator-max-microvolt = <1200000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+			buck6_reg: BUCK6 {
-+				regulator-name = "vdd_kfc";
-+				regulator-min-microvolt = <800000>;
-+				regulator-max-microvolt = <1500000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+				regulator-ramp-delay = <12500>;
-+			};
-+			buck7_reg: BUCK7 {
-+				regulator-name = "vdd_1v35";
-+				regulator-min-microvolt = <1350000>;
-+				regulator-max-microvolt = <1350000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+			buck8_reg: BUCK8 {
-+				regulator-name = "vdd_emmc";
-+				regulator-min-microvolt = <2850000>;
-+				regulator-max-microvolt = <2850000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+			buck9_reg: BUCK9 {
-+				regulator-name = "vdd_2v";
-+				regulator-min-microvolt = <2000000>;
-+				regulator-max-microvolt = <2000000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+			buck10_reg: BUCK10 {
-+				regulator-name = "vdd_1v8";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+			ldo1_reg: LDO1 {
-+				regulator-name = "vdd_1v0";
-+				regulator-min-microvolt = <1000000>;
-+				regulator-max-microvolt = <1000000>;
-+				regulator-always-on;
-+			};
-+			ldo2_reg: LDO2 {
-+				regulator-name = "vdd_1v2_2";
-+				regulator-min-microvolt = <1200000>;
-+				regulator-max-microvolt = <1200000>;
-+			};
-+			ldo3_reg: LDO3 {
-+				regulator-name = "vdd_1v8_3";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+			};
-+			vqmmc_sdcard: ldo4_reg: LDO4 {
-+				regulator-name = "vdd_sd";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <2800000>;
-+				regulator-always-on;
++/* For the RTCAE1 register, we write this value to enable the alarm */
++#define ALARM_ENABLE_VALUE		0x77
 +
-+			};
-+			ldo5_reg: LDO5 {
-+				regulator-name = "vdd_1v8_5";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+			};
-+			ldo6_reg: LDO6 {
-+				regulator-name = "vdd_1v8_6";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+			};
-+			ldo7_reg: LDO7 {
-+				regulator-name = "vdd_1v8_7";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+			};
-+			ldo8_reg: LDO8 {
-+				regulator-name = "vdd_ldo8";
-+				regulator-min-microvolt = <1000000>;
-+				regulator-max-microvolt = <1000000>;
-+				regulator-always-on;
-+			};
-+			ldo9_reg: LDO9 {
-+				regulator-name = "vdd_ldo9";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+			};
-+			ldo10_reg: LDO10 {
-+				regulator-name = "vdd_ldo10";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+			};
-+			ldo11_reg: LDO11 {
-+				regulator-name = "vdd_ldo11";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+			};
-+			ldo12_reg: LDO12 {
-+				regulator-name = "vdd_ldo12";
-+				regulator-min-microvolt = <3000000>;
-+				regulator-max-microvolt = <3000000>;
-+				regulator-always-on;
-+			};
-+			ldo13_reg: LDO13 {
-+				regulator-name = "vdd_ldo13";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+			};
-+			ldo14_reg: LDO14 {
-+				regulator-name = "vdd_ldo14";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+			};
-+			ldo15_reg: LDO15 {
-+				regulator-name = "vdd_ldo15";
-+				regulator-min-microvolt = <1000000>;
-+				regulator-max-microvolt = <1000000>;
-+				regulator-always-on;
-+			};
-+			ldo17_reg: LDO17 {
-+				regulator-name = "vdd_g3ds";
-+				regulator-min-microvolt = <900000>;
-+				regulator-max-microvolt = <1400000>;
-+				regulator-always-on;
-+			};
-+			ldo18_reg: LDO18 {
-+				regulator-name = "ldo_18";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+			};
-+			ldo19_reg: LDO19 {
-+				regulator-name = "ldo_19";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+			};
-+			ldo20_reg: LDO20 {
-+				regulator-name = "ldo_20";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+			};
-+			ldo21_reg: LDO21 {
-+				regulator-name = "ldo_21";
-+				regulator-min-microvolt = <2800000>;
-+				regulator-max-microvolt = <2800000>;
-+			};
-+			ldo23_reg: LDO23 {
-+				regulator-name = "ld0_23";
-+				regulator-min-microvolt = <3300000>;
-+				regulator-max-microvolt = <3300000>;
-+			};
-+			ldo24_reg: LDO24 {
-+				regulator-name = "ldo_24";
-+				regulator-min-microvolt = <2800000>;
-+				regulator-max-microvolt = <2800000>;
-+			};
-+			ldo25_reg: LDO25 {
-+				regulator-name = "ldo_25";
-+				regulator-min-microvolt = <3300000>;
-+				regulator-max-microvolt = <3300000>;
-+			};
-+			ldo26_reg: LDO26 {
-+				regulator-name = "ldo_26";
-+				regulator-min-microvolt = <1200000>;
-+				regulator-max-microvolt = <1200000>;
-+			};
-+			ldo27_reg: LDO27 {
-+				regulator-name = "ldo_27";
-+				regulator-min-microvolt = <1200000>;
-+				regulator-max-microvolt = <1200000>;
-+			};
-+			ldo28_reg: LDO28 {
-+				regulator-name = "ldo_28";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+			};
-+			ldo29_reg: LDO29 {
-+				regulator-name = "ldo_29";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+			};
-+			ldo30_reg: LDO30 {
-+				regulator-name = "vdd_mifs";
-+				regulator-min-microvolt = <1000000>;
-+				regulator-max-microvolt = <1000000>;
-+				regulator-always-on;
-+			};
-+			ldo32_reg: LDO32 {
-+				regulator-name = "ldo_32";
-+				regulator-min-microvolt = <3000000>;
-+				regulator-max-microvolt = <3000000>;
-+			};
-+			ldo33_reg: LDO33 {
-+				regulator-name = "ldo_33";
-+				regulator-min-microvolt = <2800000>;
-+				regulator-max-microvolt = <2800000>;
-+			};
-+			ldo34_reg: LDO34 {
-+				regulator-name = "ldo_34";
-+				regulator-min-microvolt = <3000000>;
-+				regulator-max-microvolt = <3000000>;
-+			};
-+			ldo35_reg: LDO35 {
-+				regulator-name = "ldo_35";
-+				regulator-min-microvolt = <1200000>;
-+				regulator-max-microvolt = <1200000>;
-+				inl2-supply = <&buck7_reg>;
-+			};
-+		};
-+	};
++#define MAX77802_RTC_UPDATE_DELAY_US	200
++#undef MAX77802_RTC_WTSR_SMPL
++
++enum {
++	RTC_SEC = 0,
++	RTC_MIN,
++	RTC_HOUR,
++	RTC_WEEKDAY,
++	RTC_MONTH,
++	RTC_YEAR,
++	RTC_DATE,
++	RTC_NR_TIME
 +};
 +
- &hsi2c_7 {
- 	status = "okay";
- 
-@@ -264,12 +569,42 @@
- 		samsung,pin-drv = <0>;
- 	};
- 
-+	max77802_irq: max77802-irq {
-+		samsung,pins = "gpx3-1";
-+		samsung,pin-function = <0>;
-+		samsung,pin-pud = <0>;
-+		samsung,pin-drv = <0>;
-+	};
++struct max77802_rtc_info {
++	struct device		*dev;
++	struct max77802_dev	*max77802;
++	struct i2c_client	*rtc;
++	struct rtc_device	*rtc_dev;
++	struct mutex		lock;
 +
- 	hdmi_hpd_irq: hdmi-hpd-irq {
- 		samsung,pins = "gpx3-7";
- 		samsung,pin-function = <0>;
- 		samsung,pin-pud = <1>;
- 		samsung,pin-drv = <0>;
- 	};
++	struct regmap		*regmap;
 +
-+	pmic_dvs_1: pmic-dvs-1 {
-+		samsung,pins = "gpy7-6";
-+		samsung,pin-function = <1>;
-+		samsung,pin-pud = <0>;
-+		samsung,pin-drv = <0>;
-+	};
++	int virq;
++	int rtc_24hr_mode;
 +};
 +
-+&pinctrl_2 {
-+	pmic_dvs_2: pmic-dvs-2 {
-+		samsung,pins = "gpj4-2";
-+		samsung,pin-function = <1>;
-+		samsung,pin-pud = <0>;
-+		samsung,pin-drv = <0>;
-+	};
-+
-+	pmic_dvs_3: pmic-dvs-3 {
-+		samsung,pins = "gpj4-3";
-+		samsung,pin-function = <1>;
-+		samsung,pin-pud = <0>;
-+		samsung,pin-drv = <0>;
-+	};
- };
- 
- &pinctrl_3 {
-@@ -299,6 +634,14 @@
- 		samsung,pin-pud = <0>;
- 		samsung,pin-drv = <0>;
- 	};
-+
-+	pmic_selb: pmic-selb {
-+		samsung,pins = "gph0-2", "gph0-3", "gph0-4", "gph0-5",
-+			       "gph0-6";
-+		samsung,pin-function = <1>;
-+		samsung,pin-pud = <0>;
-+		samsung,pin-drv = <0>;
-+	};
- };
- 
- &rtc {
-diff --git a/arch/arm/boot/dts/exynos5800-peach-pi.dts b/arch/arm/boot/dts/exynos5800-peach-pi.dts
-index 5c60bbe..c36c9ce 100644
---- a/arch/arm/boot/dts/exynos5800-peach-pi.dts
-+++ b/arch/arm/boot/dts/exynos5800-peach-pi.dts
-@@ -141,6 +141,311 @@
- 	ddc = <&i2c_2>;
- };
- 
-+&hsi2c_4 {
-+	status = "okay";
-+	clock-frequency = <400000>;
-+
-+	max77802-pmic@9 {
-+		compatible = "maxim,max77802";
-+		interrupt-parent = <&gpx3>;
-+		interrupts = <1 0>;
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&max77802_irq>, <&pmic_selb>,
-+			    <&pmic_dvs_1>, <&pmic_dvs_2>, <&pmic_dvs_3>;
-+		wakeup-source;
-+		reg = <0x9>;
-+		#clock-cells = <1>;
-+
-+		/* Using idx 1 means warm reset will get good voltage */
-+		max77802,pmic-buck-default-dvs-idx = <1>;
-+		max77802,pmic-buck-dvs-gpios = <&gpy7 6 GPIO_ACTIVE_HIGH>,
-+					       <&gpj4 2 GPIO_ACTIVE_HIGH>,
-+					       <&gpj4 3 GPIO_ACTIVE_HIGH>;
-+		max77802,pmic-buck-selb-gpios = <&gph0 2 GPIO_ACTIVE_HIGH>,
-+						<&gph0 3 GPIO_ACTIVE_HIGH>,
-+						<&gph0 4 GPIO_ACTIVE_HIGH>,
-+						<&gph0 5 GPIO_ACTIVE_HIGH>,
-+						<&gph0 6 GPIO_ACTIVE_HIGH>;
-+
-+		inb1-supply = <&tps65090_dcdc2>;
-+		inb2-supply = <&tps65090_dcdc1>;
-+		inb3-supply = <&tps65090_dcdc2>;
-+		inb4-supply = <&tps65090_dcdc2>;
-+		inb5-supply = <&tps65090_dcdc1>;
-+		inb6-supply = <&tps65090_dcdc2>;
-+		inb7-supply = <&tps65090_dcdc1>;
-+		inb8-supply = <&tps65090_dcdc1>;
-+		inb9-supply = <&tps65090_dcdc1>;
-+		inb10-supply = <&tps65090_dcdc1>;
-+
-+		inl1-supply = <&buck5_reg>;
-+		inl2-supply = <&buck7_reg>;
-+		inl3-supply = <&buck9_reg>;
-+		inl4-supply = <&buck9_reg>;
-+		inl5-supply = <&buck9_reg>;
-+		inl6-supply = <&tps65090_dcdc2>;
-+		inl7-supply = <&buck9_reg>;
-+		inl9-supply = <&tps65090_dcdc2>;
-+		inl10-supply = <&buck7_reg>;
-+
-+		regulators {
-+			buck1_reg: BUCK1 {
-+				regulator-name = "vdd_mif";
-+				regulator-min-microvolt = <800000>;
-+				regulator-max-microvolt = <1300000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+				regulator-ramp-delay = <12500>;
-+			};
-+			buck2_reg: BUCK2 {
-+				regulator-name = "vdd_arm_real";
-+				regulator-min-microvolt = <800000>;
-+				regulator-max-microvolt = <1500000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+				regulator-ramp-delay = <12500>;
-+			};
-+			buck3_reg: BUCK3 {
-+				regulator-name = "vdd_int_real";
-+				regulator-min-microvolt = <800000>;
-+				regulator-max-microvolt = <1400000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+				regulator-ramp-delay = <12500>;
-+			};
-+			buck4_reg: BUCK4 {
-+				regulator-name = "vdd_g3d";
-+				regulator-min-microvolt = <700000>;
-+				regulator-max-microvolt = <1400000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+				regulator-ramp-delay = <12500>;
-+			};
-+			buck5_reg: BUCK5 {
-+				regulator-name = "vdd_1v2";
-+				regulator-min-microvolt = <1200000>;
-+				regulator-max-microvolt = <1200000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+			buck6_reg: BUCK6 {
-+				regulator-name = "vdd_kfc";
-+				regulator-min-microvolt = <800000>;
-+				regulator-max-microvolt = <1500000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+				regulator-ramp-delay = <12500>;
-+			};
-+			buck7_reg: BUCK7 {
-+				regulator-name = "vdd_1v35";
-+				regulator-min-microvolt = <1350000>;
-+				regulator-max-microvolt = <1350000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+			buck8_reg: BUCK8 {
-+				regulator-name = "vdd_emmc";
-+				regulator-min-microvolt = <2850000>;
-+				regulator-max-microvolt = <2850000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+			buck9_reg: BUCK9 {
-+				regulator-name = "vdd_2v";
-+				regulator-min-microvolt = <2000000>;
-+				regulator-max-microvolt = <2000000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+			buck10_reg: BUCK10 {
-+				regulator-name = "vdd_1v8";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+			ldo1_reg: LDO1 {
-+				regulator-name = "vdd_1v0";
-+				regulator-min-microvolt = <1000000>;
-+				regulator-max-microvolt = <1000000>;
-+				regulator-always-on;
-+			};
-+			ldo2_reg: LDO2 {
-+				regulator-name = "vdd_1v2_2";
-+				regulator-min-microvolt = <1200000>;
-+				regulator-max-microvolt = <1200000>;
-+			};
-+			ldo3_reg: LDO3 {
-+				regulator-name = "vdd_1v8_3";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+			};
-+			vqmmc_sdcard: ldo4_reg: LDO4 {
-+				regulator-name = "vdd_sd";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <2800000>;
-+				regulator-always-on;
-+
-+			};
-+			ldo5_reg: LDO5 {
-+				regulator-name = "vdd_1v8_5";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+			};
-+			ldo6_reg: LDO6 {
-+				regulator-name = "vdd_1v8_6";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+			};
-+			ldo7_reg: LDO7 {
-+				regulator-name = "vdd_1v8_7";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+			};
-+			ldo8_reg: LDO8 {
-+				regulator-name = "vdd_ldo8";
-+				regulator-min-microvolt = <1000000>;
-+				regulator-max-microvolt = <1000000>;
-+				regulator-always-on;
-+			};
-+			ldo9_reg: LDO9 {
-+				regulator-name = "vdd_ldo9";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+			};
-+			ldo10_reg: LDO10 {
-+				regulator-name = "vdd_ldo10";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+			};
-+			ldo11_reg: LDO11 {
-+				regulator-name = "vdd_ldo11";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+			};
-+			ldo12_reg: LDO12 {
-+				regulator-name = "vdd_ldo12";
-+				regulator-min-microvolt = <3000000>;
-+				regulator-max-microvolt = <3000000>;
-+				regulator-always-on;
-+			};
-+			ldo13_reg: LDO13 {
-+				regulator-name = "vdd_ldo13";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+			};
-+			ldo14_reg: LDO14 {
-+				regulator-name = "vdd_ldo14";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+			};
-+			ldo15_reg: LDO15 {
-+				regulator-name = "vdd_ldo15";
-+				regulator-min-microvolt = <1000000>;
-+				regulator-max-microvolt = <1000000>;
-+				regulator-always-on;
-+			};
-+			ldo17_reg: LDO17 {
-+				regulator-name = "vdd_g3ds";
-+				regulator-min-microvolt = <900000>;
-+				regulator-max-microvolt = <1400000>;
-+				regulator-always-on;
-+			};
-+			ldo18_reg: LDO18 {
-+				regulator-name = "ldo_18";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+			};
-+			ldo19_reg: LDO19 {
-+				regulator-name = "ldo_19";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+			};
-+			ldo20_reg: LDO20 {
-+				regulator-name = "ldo_20";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+			};
-+			ldo21_reg: LDO21 {
-+				regulator-name = "ldo_21";
-+				regulator-min-microvolt = <2800000>;
-+				regulator-max-microvolt = <2800000>;
-+			};
-+			ldo23_reg: LDO23 {
-+				regulator-name = "ld0_23";
-+				regulator-min-microvolt = <3300000>;
-+				regulator-max-microvolt = <3300000>;
-+			};
-+			ldo24_reg: LDO24 {
-+				regulator-name = "ldo_24";
-+				regulator-min-microvolt = <2800000>;
-+				regulator-max-microvolt = <2800000>;
-+			};
-+			ldo25_reg: LDO25 {
-+				regulator-name = "ldo_25";
-+				regulator-min-microvolt = <3300000>;
-+				regulator-max-microvolt = <3300000>;
-+			};
-+			ldo26_reg: LDO26 {
-+				regulator-name = "ldo_26";
-+				regulator-min-microvolt = <1200000>;
-+				regulator-max-microvolt = <1200000>;
-+			};
-+			ldo27_reg: LDO27 {
-+				regulator-name = "ldo_27";
-+				regulator-min-microvolt = <1200000>;
-+				regulator-max-microvolt = <1200000>;
-+			};
-+			ldo28_reg: LDO28 {
-+				regulator-name = "ldo_28";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+			};
-+			ldo29_reg: LDO29 {
-+				regulator-name = "ldo_29";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+			};
-+			ldo30_reg: LDO30 {
-+				regulator-name = "vdd_mifs";
-+				regulator-min-microvolt = <1000000>;
-+				regulator-max-microvolt = <1000000>;
-+				regulator-always-on;
-+			};
-+			ldo32_reg: LDO32 {
-+				regulator-name = "ldo_32";
-+				regulator-min-microvolt = <3000000>;
-+				regulator-max-microvolt = <3000000>;
-+			};
-+			ldo33_reg: LDO33 {
-+				regulator-name = "ldo_33";
-+				regulator-min-microvolt = <2800000>;
-+				regulator-max-microvolt = <2800000>;
-+			};
-+			ldo34_reg: LDO34 {
-+				regulator-name = "ldo_34";
-+				regulator-min-microvolt = <3000000>;
-+				regulator-max-microvolt = <3000000>;
-+			};
-+			ldo35_reg: LDO35 {
-+				regulator-name = "ldo_35";
-+				regulator-min-microvolt = <1200000>;
-+				regulator-max-microvolt = <1200000>;
-+				inl2-supply = <&buck7_reg>;
-+			};
-+		};
-+	};
++enum MAX77802_RTC_OP {
++	MAX77802_RTC_WRITE,
++	MAX77802_RTC_READ,
 +};
 +
- &hsi2c_7 {
- 	status = "okay";
- 
-@@ -262,12 +567,42 @@
- 		samsung,pin-drv = <0>;
- 	};
- 
-+	max77802_irq: max77802-irq {
-+		samsung,pins = "gpx3-1";
-+		samsung,pin-function = <0>;
-+		samsung,pin-pud = <0>;
-+		samsung,pin-drv = <0>;
-+	};
++static inline int max77802_rtc_calculate_wday(u8 shifted)
++{
++	int counter = -1;
 +
- 	hdmi_hpd_irq: hdmi-hpd-irq {
- 		samsung,pins = "gpx3-7";
- 		samsung,pin-function = <0>;
- 		samsung,pin-pud = <1>;
- 		samsung,pin-drv = <0>;
- 	};
++	while (shifted) {
++		shifted >>= 1;
++		counter++;
++	}
 +
-+	pmic_dvs_1: pmic-dvs-1 {
-+		samsung,pins = "gpy7-6";
-+		samsung,pin-function = <1>;
-+		samsung,pin-pud = <0>;
-+		samsung,pin-drv = <0>;
-+	};
++	return counter;
++}
++
++static void max77802_rtc_data_to_tm(u8 *data, struct rtc_time *tm,
++				   int rtc_24hr_mode)
++{
++	tm->tm_sec = data[RTC_SEC] & 0xff;
++	tm->tm_min = data[RTC_MIN] & 0xff;
++	if (rtc_24hr_mode)
++		tm->tm_hour = data[RTC_HOUR] & 0x1f;
++	else {
++		tm->tm_hour = data[RTC_HOUR] & 0x0f;
++		if (data[RTC_HOUR] & HOUR_PM_MASK)
++			tm->tm_hour += 12;
++	}
++
++	tm->tm_wday = max77802_rtc_calculate_wday(data[RTC_WEEKDAY] & 0xff);
++	tm->tm_mday = data[RTC_DATE] & 0x1f;
++	tm->tm_mon = (data[RTC_MONTH] & 0x0f) - 1;
++
++	tm->tm_year = data[RTC_YEAR] & 0xff;
++	tm->tm_yday = 0;
++	tm->tm_isdst = 0;
++}
++
++static int max77802_rtc_tm_to_data(struct rtc_time *tm, u8 *data)
++{
++	data[RTC_SEC] = tm->tm_sec;
++	data[RTC_MIN] = tm->tm_min;
++	data[RTC_HOUR] = tm->tm_hour;
++	data[RTC_WEEKDAY] = 1 << tm->tm_wday;
++	data[RTC_DATE] = tm->tm_mday;
++	data[RTC_MONTH] = tm->tm_mon + 1;
++	data[RTC_YEAR] = tm->tm_year;
++
++	return 0;
++}
++
++static int max77802_rtc_update(struct max77802_rtc_info *info,
++	enum MAX77802_RTC_OP op)
++{
++	int ret;
++	unsigned int data;
++
++	if (op == MAX77802_RTC_WRITE)
++		data = 1 << RTC_UDR_SHIFT;
++	else
++		data = 1 << RTC_RBUDR_SHIFT;
++
++	ret = regmap_update_bits(info->max77802->regmap,
++				 MAX77802_RTC_UPDATE0, data, data);
++	if (ret < 0)
++		dev_err(info->dev, "%s: fail to write update reg(ret=%d, data=0x%x)\n",
++				__func__, ret, data);
++	else {
++		/* Minimum delay required before RTC update. */
++		usleep_range(MAX77802_RTC_UPDATE_DELAY_US,
++			     MAX77802_RTC_UPDATE_DELAY_US * 2);
++	}
++
++	return ret;
++}
++
++static int max77802_rtc_read_time(struct device *dev, struct rtc_time *tm)
++{
++	struct max77802_rtc_info *info = dev_get_drvdata(dev);
++	u8 data[RTC_NR_TIME];
++	int ret;
++
++	mutex_lock(&info->lock);
++
++	ret = max77802_rtc_update(info, MAX77802_RTC_READ);
++	if (ret < 0)
++		goto out;
++
++	ret = regmap_bulk_read(info->max77802->regmap,
++				MAX77802_RTC_SEC, data, RTC_NR_TIME);
++	if (ret < 0) {
++		dev_err(info->dev, "%s: fail to read time reg(%d)\n", __func__,
++			ret);
++		goto out;
++	}
++
++	max77802_rtc_data_to_tm(data, tm, info->rtc_24hr_mode);
++
++	ret = rtc_valid_tm(tm);
++
++out:
++	mutex_unlock(&info->lock);
++	return ret;
++}
++
++static int max77802_rtc_set_time(struct device *dev, struct rtc_time *tm)
++{
++	struct max77802_rtc_info *info = dev_get_drvdata(dev);
++	u8 data[RTC_NR_TIME];
++	int ret;
++
++	ret = max77802_rtc_tm_to_data(tm, data);
++	if (ret < 0)
++		return ret;
++
++	mutex_lock(&info->lock);
++
++	ret = regmap_bulk_write(info->max77802->regmap,
++				 MAX77802_RTC_SEC, data, RTC_NR_TIME);
++	if (ret < 0) {
++		dev_err(info->dev, "%s: fail to write time reg(%d)\n", __func__,
++			ret);
++		goto out;
++	}
++
++	ret = max77802_rtc_update(info, MAX77802_RTC_WRITE);
++
++out:
++	mutex_unlock(&info->lock);
++	return ret;
++}
++
++static int max77802_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
++{
++	struct max77802_rtc_info *info = dev_get_drvdata(dev);
++	u8 data[RTC_NR_TIME];
++	unsigned int val;
++	int ret;
++
++	mutex_lock(&info->lock);
++
++	ret = max77802_rtc_update(info, MAX77802_RTC_READ);
++	if (ret < 0)
++		goto out;
++
++	ret = regmap_bulk_read(info->max77802->regmap,
++				 MAX77802_ALARM1_SEC, data, RTC_NR_TIME);
++	if (ret < 0) {
++		dev_err(info->dev, "%s:%d fail to read alarm reg(%d)\n",
++				__func__, __LINE__, ret);
++		goto out;
++	}
++
++	max77802_rtc_data_to_tm(data, &alrm->time, info->rtc_24hr_mode);
++
++	alrm->enabled = 0;
++	ret = regmap_read(info->max77802->regmap,
++			  MAX77802_RTC_AE1, &val);
++	if (ret < 0) {
++		dev_err(info->dev, "%s:%d fail to read alarm enable(%d)\n",
++			__func__, __LINE__, ret);
++		goto out;
++	}
++	if (val)
++		alrm->enabled = 1;
++
++	alrm->pending = 0;
++	ret = regmap_read(info->max77802->regmap, MAX77802_REG_STATUS2, &val);
++	if (ret < 0) {
++		dev_err(info->dev, "%s:%d fail to read status2 reg(%d)\n",
++				__func__, __LINE__, ret);
++		goto out;
++	}
++
++	if (val & (1 << 2)) /* RTCA1 */
++		alrm->pending = 1;
++
++out:
++	mutex_unlock(&info->lock);
++	return 0;
++}
++
++static int max77802_rtc_stop_alarm(struct max77802_rtc_info *info)
++{
++	int ret;
++
++	if (!mutex_is_locked(&info->lock))
++		dev_warn(info->dev, "%s: should have mutex locked\n", __func__);
++
++	ret = max77802_rtc_update(info, MAX77802_RTC_READ);
++	if (ret < 0)
++		goto out;
++
++	ret = regmap_write(info->max77802->regmap,
++			   MAX77802_RTC_AE1, 0);
++	if (ret < 0) {
++		dev_err(info->dev, "%s: fail to write alarm reg(%d)\n",
++			__func__, ret);
++		goto out;
++	}
++
++	ret = max77802_rtc_update(info, MAX77802_RTC_WRITE);
++out:
++	return ret;
++}
++
++static int max77802_rtc_start_alarm(struct max77802_rtc_info *info)
++{
++	int ret;
++
++	if (!mutex_is_locked(&info->lock))
++		dev_warn(info->dev, "%s: should have mutex locked\n",
++			 __func__);
++
++	ret = max77802_rtc_update(info, MAX77802_RTC_READ);
++	if (ret < 0)
++		goto out;
++
++	ret = regmap_write(info->max77802->regmap,
++				   MAX77802_RTC_AE1,
++				   ALARM_ENABLE_VALUE);
++
++	if (ret < 0) {
++		dev_err(info->dev, "%s: fail to read alarm reg(%d)\n",
++				__func__, ret);
++		goto out;
++	}
++
++	ret = max77802_rtc_update(info, MAX77802_RTC_WRITE);
++out:
++	return ret;
++}
++
++static int max77802_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
++{
++	struct max77802_rtc_info *info = dev_get_drvdata(dev);
++	u8 data[RTC_NR_TIME];
++	int ret;
++
++	ret = max77802_rtc_tm_to_data(&alrm->time, data);
++	if (ret < 0)
++		return ret;
++
++	mutex_lock(&info->lock);
++
++	ret = max77802_rtc_stop_alarm(info);
++	if (ret < 0)
++		goto out;
++
++	ret = regmap_bulk_write(info->max77802->regmap,
++				 MAX77802_ALARM1_SEC, data, RTC_NR_TIME);
++
++	if (ret < 0) {
++		dev_err(info->dev, "%s: fail to write alarm reg(%d)\n",
++				__func__, ret);
++		goto out;
++	}
++
++	ret = max77802_rtc_update(info, MAX77802_RTC_WRITE);
++	if (ret < 0)
++		goto out;
++
++	if (alrm->enabled)
++		ret = max77802_rtc_start_alarm(info);
++out:
++	mutex_unlock(&info->lock);
++	return ret;
++}
++
++static int max77802_rtc_alarm_irq_enable(struct device *dev,
++					 unsigned int enabled)
++{
++	struct max77802_rtc_info *info = dev_get_drvdata(dev);
++	int ret;
++
++	mutex_lock(&info->lock);
++	if (enabled)
++		ret = max77802_rtc_start_alarm(info);
++	else
++		ret = max77802_rtc_stop_alarm(info);
++	mutex_unlock(&info->lock);
++
++	return ret;
++}
++
++static irqreturn_t max77802_rtc_alarm_irq(int irq, void *data)
++{
++	struct max77802_rtc_info *info = data;
++
++	dev_info(info->dev, "%s:irq(%d)\n", __func__, irq);
++
++	rtc_update_irq(info->rtc_dev, 1, RTC_IRQF | RTC_AF);
++
++	return IRQ_HANDLED;
++}
++
++static const struct rtc_class_ops max77802_rtc_ops = {
++	.read_time = max77802_rtc_read_time,
++	.set_time = max77802_rtc_set_time,
++	.read_alarm = max77802_rtc_read_alarm,
++	.set_alarm = max77802_rtc_set_alarm,
++	.alarm_irq_enable = max77802_rtc_alarm_irq_enable,
 +};
 +
-+&pinctrl_2 {
-+	pmic_dvs_2: pmic-dvs-2 {
-+		samsung,pins = "gpj4-2";
-+		samsung,pin-function = <1>;
-+		samsung,pin-pud = <0>;
-+		samsung,pin-drv = <0>;
-+	};
++#ifdef MAX77802_RTC_WTSR_SMPL
++static void max77802_rtc_enable_wtsr(struct max77802_rtc_info *info, bool enable)
++{
++	int ret;
++	unsigned int val, mask;
 +
-+	pmic_dvs_3: pmic-dvs-3 {
-+		samsung,pins = "gpj4-3";
-+		samsung,pin-function = <1>;
-+		samsung,pin-pud = <0>;
-+		samsung,pin-drv = <0>;
-+	};
- };
- 
- &pinctrl_3 {
-@@ -297,6 +632,14 @@
- 		samsung,pin-pud = <0>;
- 		samsung,pin-drv = <0>;
- 	};
++	if (enable)
++		val = (1 << WTSR_EN_SHIFT) | (3 << WTSRT_SHIFT);
++	else
++		val = 0;
 +
-+	pmic_selb: pmic-selb {
-+		samsung,pins = "gph0-2", "gph0-3", "gph0-4", "gph0-5",
-+			       "gph0-6";
-+		samsung,pin-function = <1>;
-+		samsung,pin-pud = <0>;
-+		samsung,pin-drv = <0>;
-+	};
- };
- 
- &rtc {
++	mask = WTSR_EN_MASK | WTSRT_MASK;
++
++	dev_info(info->dev, "%s: %s WTSR\n", __func__,
++			enable ? "enable" : "disable");
++
++	ret = regmap_update_bits(info->max77802->regmap,
++				 MAX77802_WTSR_SMPL_CNTL, mask, val);
++	if (ret < 0) {
++		dev_err(info->dev, "%s: fail to update WTSR reg(%d)\n",
++				__func__, ret);
++		return;
++	}
++
++	max77802_rtc_update(info, MAX77802_RTC_WRITE);
++}
++
++static void max77802_rtc_enable_smpl(struct max77802_rtc_info *info, bool enable)
++{
++	int ret;
++	unsigned int val, mask;
++
++	if (enable)
++		val = (1 << SMPL_EN_SHIFT) | (0 << SMPLT_SHIFT);
++	else
++		val = 0;
++
++	mask = SMPL_EN_MASK | SMPLT_MASK;
++
++	dev_info(info->dev, "%s: %s SMPL\n", __func__,
++			enable ? "enable" : "disable");
++
++	ret = regmap_update_bits(info->max77802->regmap,
++				 MAX77802_WTSR_SMPL_CNTL, mask, val);
++	if (ret < 0) {
++		dev_err(info->dev, "%s: fail to update SMPL reg(%d)\n",
++				__func__, ret);
++		return;
++	}
++
++	max77802_rtc_update(info, MAX77802_RTC_WRITE);
++
++	val = 0;
++	regmap_read(info->max77802->regmap, MAX77802_WTSR_SMPL_CNTL, &val);
++	dev_info(info->dev, "%s: WTSR_SMPL(0x%02x)\n", __func__, val);
++}
++#endif /* MAX77802_RTC_WTSR_SMPL */
++
++static int max77802_rtc_init_reg(struct max77802_rtc_info *info)
++{
++	u8 data[2];
++	int ret;
++
++	max77802_rtc_update(info, MAX77802_RTC_READ);
++
++	/* Set RTC control register : Binary mode, 24hour mdoe */
++	data[0] = (1 << BCD_EN_SHIFT) | (1 << MODEL24_SHIFT);
++	data[1] = (0 << BCD_EN_SHIFT) | (1 << MODEL24_SHIFT);
++
++	info->rtc_24hr_mode = 1;
++
++	ret = regmap_bulk_write(info->max77802->regmap,
++				MAX77802_RTC_CONTROLM, data, 2);
++	if (ret < 0) {
++		dev_err(info->dev, "%s: fail to write controlm reg(%d)\n",
++				__func__, ret);
++		return ret;
++	}
++
++	ret = max77802_rtc_update(info, MAX77802_RTC_WRITE);
++
++	/* Mask control register */
++	max77802_rtc_update(info, MAX77802_RTC_READ);
++
++	ret = regmap_update_bits(info->max77802->regmap,
++				 MAX77802_RTC_CONTROLM, 0x0, 0x3);
++	if (ret < 0) {
++		dev_err(info->dev, "%s: fail to mask CONTROLM reg(%d)\n",
++				__func__, ret);
++		return ret;
++	}
++
++	ret = max77802_rtc_update(info, MAX77802_RTC_WRITE);
++
++	return ret;
++}
++
++static int max77802_rtc_probe(struct platform_device *pdev)
++{
++	struct max77802_dev *max77802 = dev_get_drvdata(pdev->dev.parent);
++	struct max77802_rtc_info *info;
++	int ret;
++
++	dev_info(&pdev->dev, "%s\n", __func__);
++
++	info = devm_kzalloc(&pdev->dev, sizeof(struct max77802_rtc_info),
++			    GFP_KERNEL);
++	if (!info)
++		return -ENOMEM;
++
++	mutex_init(&info->lock);
++	info->dev = &pdev->dev;
++	info->max77802 = max77802;
++	info->rtc = max77802->i2c;
++
++	platform_set_drvdata(pdev, info);
++
++	ret = max77802_rtc_init_reg(info);
++
++	if (ret < 0) {
++		dev_err(&pdev->dev, "Failed to initialize RTC reg:%d\n", ret);
++		return ret;
++	}
++
++#ifdef MAX77802_RTC_WTSR_SMPL
++	max77802_rtc_enable_wtsr(info, true);
++	max77802_rtc_enable_smpl(info, true);
++#endif
++
++	device_init_wakeup(&pdev->dev, 1);
++
++	info->rtc_dev = devm_rtc_device_register(&pdev->dev, "max77802-rtc",
++						 &max77802_rtc_ops, THIS_MODULE);
++
++	if (IS_ERR(info->rtc_dev)) {
++		dev_info(&pdev->dev, "%s: fail\n", __func__);
++
++		ret = PTR_ERR(info->rtc_dev);
++		dev_err(&pdev->dev, "Failed to register RTC device: %d\n", ret);
++		if (ret == 0)
++			ret = -EINVAL;
++		return ret;
++	}
++	info->virq = regmap_irq_get_virq(max77802->rtc_irq_data,
++					 MAX77802_RTCIRQ_RTCA1);
++
++	if (info->virq <= 0) {
++		dev_err(&pdev->dev, "Failed to get virtual IRQ %d\n",
++			MAX77802_RTCIRQ_RTCA1);
++		ret = -EINVAL;
++		return ret;
++	}
++
++	ret = devm_request_threaded_irq(&pdev->dev, info->virq, NULL,
++					max77802_rtc_alarm_irq, 0, "rtc-alarm1",
++					info);
++	if (ret < 0)
++		dev_err(&pdev->dev, "Failed to request alarm IRQ: %d: %d\n",
++			info->virq, ret);
++
++	return ret;
++}
++
++static int max77802_rtc_remove(struct platform_device *pdev)
++{
++	struct max77802_rtc_info *info = platform_get_drvdata(pdev);
++
++	free_irq(info->virq, info);
++	rtc_device_unregister(info->rtc_dev);
++
++	return 0;
++}
++
++static void max77802_rtc_shutdown(struct platform_device *pdev)
++{
++#ifdef MAX77802_RTC_WTSR_SMPL
++	struct max77802_rtc_info *info = platform_get_drvdata(pdev);
++	int i;
++	u8 val = 0;
++
++	for (i = 0; i < 3; i++) {
++		max77802_rtc_enable_wtsr(info, false);
++		regmap_read(info->max77802->regmap,
++			    MAX77802_WTSR_SMPL_CNTL, &val);
++		dev_info(info->dev, "%s: WTSR_SMPL reg(0x%02x)\n", __func__,
++				val);
++		if (val & WTSR_EN_MASK) {
++			dev_emerg(info->dev, "%s: fail to disable WTSR\n",
++					__func__);
++		} else {
++			dev_info(info->dev, "%s: success to disable WTSR\n",
++					__func__);
++			break;
++		}
++	}
++
++	/* Disable SMPL when power off */
++	max77802_rtc_enable_smpl(info, false);
++#endif /* MAX77802_RTC_WTSR_SMPL */
++}
++
++#ifdef CONFIG_PM_SLEEP
++static int max77802_rtc_suspend(struct device *dev)
++{
++	if (device_may_wakeup(dev)) {
++		struct max77802_rtc_info *info = dev_get_drvdata(dev);
++
++		return enable_irq_wake(info->virq);
++	}
++
++	return 0;
++}
++
++static int max77802_rtc_resume(struct device *dev)
++{
++	if (device_may_wakeup(dev)) {
++		struct max77802_rtc_info *info = dev_get_drvdata(dev);
++
++		return disable_irq_wake(info->virq);
++	}
++
++	return 0;
++}
++#endif
++
++static SIMPLE_DEV_PM_OPS(max77802_rtc_pm_ops,
++			 max77802_rtc_suspend, max77802_rtc_resume);
++
++static const struct platform_device_id rtc_id[] = {
++	{ "max77802-rtc", 0 },
++	{},
++};
++
++static struct platform_driver max77802_rtc_driver = {
++	.driver		= {
++		.name	= "max77802-rtc",
++		.owner	= THIS_MODULE,
++		.pm	= &max77802_rtc_pm_ops,
++	},
++	.probe		= max77802_rtc_probe,
++	.remove		= max77802_rtc_remove,
++	.shutdown	= max77802_rtc_shutdown,
++	.id_table	= rtc_id,
++};
++
++module_platform_driver(max77802_rtc_driver);
++
++MODULE_DESCRIPTION("Maxim MAX77802 RTC driver");
++MODULE_AUTHOR("Simon Glass <sjg@chromium.org>");
++MODULE_LICENSE("GPL");
 -- 
 2.0.0.rc2
 
