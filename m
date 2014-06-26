@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969AbaFZFeQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 01:34:16 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:1342 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753360AbaFZFeM (ORCPT
+	id S1754622AbaFZFel (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 01:34:41 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:3794 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753563AbaFZFeJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 01:34:12 -0400
+	Thu, 26 Jun 2014 01:34:09 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 25 Jun 2014 22:24:18 -0700
+	by hqnvupgp08.nvidia.com on Wed, 25 Jun 2014 22:27:59 -0700
 From: Alexandre Courbot <acourbot@nvidia.com>
 To: Ben Skeggs <bskeggs@redhat.com>, Stephen Warren <swarren@wwwdotorg.org>,
         Thierry Reding <thierry.reding@gmail.com>
 CC: <nouveau@lists.freedesktop.org>, <dri-devel@lists.freedesktop.org>,
         <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <gnurou@gmail.com>, Thierry Reding <treding@nvidia.com>,
-        Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH v3 3/3] ARM: tegra: add GK20A GPU to Tegra124 DT
-Date: Thu, 26 Jun 2014 14:33:34 +0900
-Message-ID: <1403760814-26148-4-git-send-email-acourbot@nvidia.com>
+        <gnurou@gmail.com>, Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH v3 2/3] ARM: tegra: of: add GK20A device tree binding
+Date: Thu, 26 Jun 2014 14:33:33 +0900
+Message-ID: <1403760814-26148-3-git-send-email-acourbot@nvidia.com>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1403760814-26148-1-git-send-email-acourbot@nvidia.com>
 References: <1403760814-26148-1-git-send-email-acourbot@nvidia.com>
@@ -29,24 +28,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thierry Reding <treding@nvidia.com>
+Add the device tree binding documentation for the GK20A GPU used in
+Tegra K1 SoCs.
 
-Add the GK20A device node to Tegra124's device tree.
-
-Signed-off-by: Thierry Reding <treding@nvidia.com>
 Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+Acked-by: Stephen Warren <swarren@nvidia.com>
 ---
- arch/arm/boot/dts/tegra124.dtsi | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+ .../devicetree/bindings/gpu/nvidia,gk20a.txt       | 43 ++++++++++++++++++++++
+ 1 file changed, 43 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/gpu/nvidia,gk20a.txt
 
-diff --git a/arch/arm/boot/dts/tegra124.dtsi b/arch/arm/boot/dts/tegra124.dtsi
-index d675186d8eba..cc9e7504c2da 100644
---- a/arch/arm/boot/dts/tegra124.dtsi
-+++ b/arch/arm/boot/dts/tegra124.dtsi
-@@ -102,6 +102,21 @@
- 			(GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_HIGH)>;
- 	};
- 
+diff --git a/Documentation/devicetree/bindings/gpu/nvidia,gk20a.txt b/Documentation/devicetree/bindings/gpu/nvidia,gk20a.txt
+new file mode 100644
+index 000000000000..23bfe8e1f7cc
+--- /dev/null
++++ b/Documentation/devicetree/bindings/gpu/nvidia,gk20a.txt
+@@ -0,0 +1,43 @@
++NVIDIA GK20A Graphics Processing Unit
++
++Required properties:
++- compatible: "nvidia,<chip>-<gpu>"
++  Currently recognized values:
++  - nvidia,tegra124-gk20a
++- reg: Physical base address and length of the controller's registers.
++  Must contain two entries:
++  - first entry for bar0
++  - second entry for bar1
++- interrupts: Must contain an entry for each entry in interrupt-names.
++  See ../interrupt-controller/interrupts.txt for details.
++- interrupt-names: Must include the following entries:
++  - stall
++  - nonstall
++- vdd-supply: regulator for supply voltage.
++- clocks: Must contain an entry for each entry in clock-names.
++  See ../clocks/clock-bindings.txt for details.
++- clock-names: Must include the following entries:
++  - gpu
++  - pwr
++- resets: Must contain an entry for each entry in reset-names.
++  See ../reset/reset.txt for details.
++- reset-names: Must include the following entries:
++  - gpu
++
++Example:
++
 +	gpu@0,57000000 {
 +		compatible = "nvidia,gk20a";
 +		reg = <0x0 0x57000000 0x0 0x01000000>,
@@ -54,6 +79,7 @@ index d675186d8eba..cc9e7504c2da 100644
 +		interrupts = <GIC_SPI 157 IRQ_TYPE_LEVEL_HIGH>,
 +			     <GIC_SPI 158 IRQ_TYPE_LEVEL_HIGH>;
 +		interrupt-names = "stall", "nonstall";
++		vdd-supply = <&vdd_gpu>;
 +		clocks = <&tegra_car TEGRA124_CLK_GPU>,
 +			 <&tegra_car TEGRA124_CLK_PLL_P_OUT5>;
 +		clock-names = "gpu", "pwr";
@@ -61,10 +87,6 @@ index d675186d8eba..cc9e7504c2da 100644
 +		reset-names = "gpu";
 +		status = "disabled";
 +	};
-+
- 	timer@0,60005000 {
- 		compatible = "nvidia,tegra124-timer", "nvidia,tegra20-timer";
- 		reg = <0x0 0x60005000 0x0 0x400>;
 -- 
 2.0.0
 
