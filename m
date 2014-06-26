@@ -1,88 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752561AbaFZFGA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 01:06:00 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:64816 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960AbaFZFF7 (ORCPT
+	id S1752866AbaFZFIf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 01:08:35 -0400
+Received: from relay6-d.mail.gandi.net ([217.70.183.198]:52535 "EHLO
+	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751137AbaFZFIe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 01:05:59 -0400
-Message-ID: <53ABAA34.6070006@kernel.dk>
-Date: Wed, 25 Jun 2014 23:05:56 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 26 Jun 2014 01:08:34 -0400
+X-Originating-IP: 50.43.32.211
+Date: Wed, 25 Jun 2014 22:08:24 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Joe Perches <joe@perches.com>
+Cc: Andy Whitcroft <apw@canonical.com>, gregkh@linux-foundation.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] scripts/checkpatch.pl: Only emit LONG_LINE for --strict
+Message-ID: <20140626050824.GB1645@thin>
+References: <20140625154629.GA21519@thin>
+ <1403741107.28663.9.camel@joe-AO725>
+ <20140626022448.GA22091@thin>
+ <1403749983.7977.6.camel@joe-AO725>
+ <20140626034430.GA22836@thin>
+ <1403756211.7977.22.camel@joe-AO725>
 MIME-Version: 1.0
-To: Ming Lei <ming.lei@canonical.com>, linux-kernel@vger.kernel.org
-CC: Rusty Russell <rusty@rustcorp.com.au>, linux-api@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Stefan Hajnoczi <stefanha@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: Re: [PATCH v2 0/2] block: virtio-blk: support multi vq per virtio-blk
-References: <1403748526-1923-1-git-send-email-ming.lei@canonical.com>
-In-Reply-To: <1403748526-1923-1-git-send-email-ming.lei@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403756211.7977.22.camel@joe-AO725>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-06-25 20:08, Ming Lei wrote:
-> Hi,
->
-> These patches try to support multi virtual queues(multi-vq) in one
-> virtio-blk device, and maps each virtual queue(vq) to blk-mq's
-> hardware queue.
->
-> With this approach, both scalability and performance on virtio-blk
-> device can get improved.
->
-> For verifying the improvement, I implements virtio-blk multi-vq over
-> qemu's dataplane feature, and both handling host notification
-> from each vq and processing host I/O are still kept in the per-device
-> iothread context, the change is based on qemu v2.0.0 release, and
-> can be accessed from below tree:
->
-> 	git://kernel.ubuntu.com/ming/qemu.git #v2.0.0-virtblk-mq.1
->
-> For enabling the multi-vq feature, 'num_queues=N' need to be added into
-> '-device virtio-blk-pci ...' of qemu command line, and suggest to pass
-> 'vectors=N+1' to keep one MSI irq vector per each vq, and the feature
-> depends on x-data-plane.
->
-> Fio(libaio, randread, iodepth=64, bs=4K, jobs=N) is run inside VM to
-> verify the improvement.
->
-> I just create a small quadcore VM and run fio inside the VM, and
-> num_queues of the virtio-blk device is set as 2, but looks the
-> improvement is still obvious.
->
-> 1), about scalability
-> - without mutli-vq feature
-> 	-- jobs=2, thoughput: 145K iops
-> 	-- jobs=4, thoughput: 100K iops
-> - with mutli-vq feature
-> 	-- jobs=2, thoughput: 193K iops
-> 	-- jobs=4, thoughput: 202K iops
->
-> 2), about thoughput
-> - without mutli-vq feature
-> 	-- thoughput: 145K iops
-> - with mutli-vq feature
-> 	-- thoughput: 202K iops
+On Wed, Jun 25, 2014 at 09:16:51PM -0700, Joe Perches wrote:
+> On Wed, 2014-06-25 at 20:44 -0700, Josh Triplett wrote:
+> > On Wed, Jun 25, 2014 at 07:33:03PM -0700, Joe Perches wrote:
+> > > On Wed, 2014-06-25 at 19:24 -0700, Josh Triplett wrote:
+> > > > On Wed, Jun 25, 2014 at 05:05:07PM -0700, Joe Perches wrote:
+> > > > > On Wed, 2014-06-25 at 08:46 -0700, Josh Triplett wrote:
+> > > > > > Regardless of the long-standing debate over line width, checkpatch
+> > > > > > should not warn about it by default.
+> > > > > 
+> > > > > I'm not getting involved here.
+> > > > > I don't care much one way or another.
+> > > []
+> > > > I'm not asking you to get involved in the Great Line Length Debate;
+> > > > that's why I didn't attempt to patch CodingStyle or similar.  However, I
+> > > > think it makes sense for *checkpatch* to stop emitting this warning.
+> > > 
+> > > I think checkpatch should encourage people to write code in
+> > > a style that matches CodingStyle as well as the predominant
+> > > styles used in the rest of the kernel.
+> > 
+> > Not arguing with that, but in this particular case the warning seems
+> > counterproductive to that goal, especially compared to the
+> > DEEP_INDENTATION warning.  More subjective or "to taste" issues tend
+> > to have lower severity in checkpatch.  And CodingStyle *already* says
+> > "unless exceeding 80 columns significantly increases
+> > readability"
+> 
+> Just some suggestions off the top of my head.
+> 
+> If the goal is to reduce long line lengths, then maybe
+> more warnings or --strict tests for things like:
 
-Of these numbers, I think it's important to highlight that the 2 thread 
-case is 33% faster and the 2 -> 4 thread case scales linearly (100%) 
-while the pre-patch case sees negative scaling going from 2 -> 4 threads 
-(-39%).
+The goal is to make code more readable; a length guideline can help with
+that, but a hard limit does more harm than good.  And notably, we don't
+*have* a hard limit, we have a guideline; however, checkpatch routinely
+gets treated as a hard requirement rather than a guideline, and as such
+it should avoid tests that have a high false-positive rate, which
+LONG_LINE does.
 
-I haven't run your patches yet, but from looking at the code, it looks 
-good. It's pretty straightforward. See feel free to add my reviewed-by.
+> long variable names: (pick a length)
+> 
+> 	some_long_variable_name_with_a_color
 
-Rusty, do you want to ack this (and I'll slurp it up for 3.17) or take 
-this yourself? Or something else?
+To avoid encouraging people to disemvowel their variables.  I'd suggest
+flagging identifiers_with_too_many_words or IdentifiersWithTooManyWords
+instead.
 
+> consecutive dereferences where a temporary might be better:
+> 
+> 	foo->bar[baz].member1 = 1;
+> 	foo->bar[baz].member2 = 2;
 
--- 
-Jens Axboe
+That one seems better done with coccinelle, actually.
 
+> Multiple logical tests on a single line:
+> 
+> 	foo > bar && baz < quz && etc...
+
+If any individual test takes up a significant number of columns, sure.
+
+> Arguments after column 80
+>                                                                                                    1
+>          1         2         3         4         5         6         7         8         9         0
+> 1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
+> 	result = some_long_function(some_arg(arg1, arg2), another_arg(arg3, arg4), 4);
+> 
+> where a single argument of a short length before a
+> statement terminating ; may be ignored, but a longer
+> argument list may not.
+
+That one seems like one of the most common cases where the 80-column
+rule can result in less readable code.  On the one hand, in the case
+above, something like this would usually (but not always) improve the
+code:
+
+	result = some_long_function(
+			some_arg(arg1, arg2),
+			another_arg(arg1, arg2),
+			4);
+
+On the other hand, breaking within the arguments of some_arg or
+another_arg seems completely and utterly wrong, and breaking around a
+binary operator within the argument list would likewise make it painful
+to read.  I've seen things like that in numerous patches. where a single
+expression that would only take ~100ish characters gets broken across
+half a dozen lines because it starts with a few tabs worth of
+indentation and has moderate-length (but completely reasonable) names:
+
+				result = sensible_function_name(
+						sensible_variable_name,
+						something(smallish)
+							+ something_else,
+						variable_name
+							& ~SOME_BIT_NAME);
+
+That seems far more readable if written as
+
+				result = sensible_function_name(
+						sensible_variable_name,
+						something(smallish) + something_else,
+						variable_name & ~SOME_BIT_NAME);
+
+even though the last two lines extend past 80 characters.
+
+Now, arguably the four leading tabs on those lines suggest the need for
+some code refactoring; personally, I'd suggest changing DEEP_INDENTATION
+to flag 4+ tabs rather than 6+ tabs as it currently does.  That would
+mirror CodingStyle, which says "The answer to that is that if you need
+more than 3 levels of indentation, you're screwed anyway, and should fix
+your program."  To avoid flagging too much existing code that has >4
+levels of indentation but short, simple code, I'd suggest specifically
+matching lines that have >4 tabs *and* >80 columns, and flagging the
+indentation as the cause of the problem rather than the >80 columns.
+
+I'm going to try sending a patch that keeps the existing 80-column
+warning, but changes the message and guidance based on the content of
+the line.
+
+> Long trigraphs:
+> 
+> 	should be on multiple lines
+
+"trigraphs"?  Do you mean ternaries?  Yeah, that's a good case where if
+the three components of the ternary together are too long, that's a
+natural splitting point that shouldn't make the code less readable.
+
+> Comments beyond 80 column
+
+Yeah, that one makes sense: if you have a comment to the right of a long
+line, and the comment is what's making it long, it's easy enough to move
+the comment before the line.
+
+- Josh Triplett
