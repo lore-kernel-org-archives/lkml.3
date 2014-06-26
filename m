@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756800AbaFZKtQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 06:49:16 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:1344 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756595AbaFZKtM (ORCPT
+	id S1756737AbaFZKwt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 06:52:49 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:46633 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753358AbaFZKwr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 06:49:12 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 26 Jun 2014 03:43:01 -0700
-Date: Thu, 26 Jun 2014 13:49:09 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] clk: define and export __clk_get_debug for providers
-Message-ID: <20140626104909.GD3679@tbergstrom-lnx.Nvidia.com>
-References: <1403713591-17179-1-git-send-email-pdeschrijver@nvidia.com>
- <44039675.8s16pHQIVH@wuerfel>
+	Thu, 26 Jun 2014 06:52:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <44039675.8s16pHQIVH@wuerfel>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53AB1CC1.4010907@codeaurora.org>
+References: <cover.1403684824.git.viresh.kumar@linaro.org>
+	<e9c0eef07745e561b9d12dcb50c3e2f7eb3e8880.1403684824.git.viresh.kumar@linaro.org>
+	<53AB1CC1.4010907@codeaurora.org>
+Date: Thu, 26 Jun 2014 16:22:46 +0530
+Message-ID: <CAKohpo=Q7eWNwcK6KF9_U-zD0g=96QHW9hiQupLpV5GqoWE+mA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] cpufreq: cpu0: Extend support beyond CPU0
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Shawn Guo <shawn.guo@linaro.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arvind Chauhan <arvind.chauhan@arm.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-arm-msm@vger.kernel.org, Sachin Kamat <spk.linux@gmail.com>,
+        Thomas P Abraham <thomas.ab@samsung.com>, Nishanth Menon <nm@ti.com>,
+        Tomasz Figa <t.figa@samsung.com>, Mark Brown <broonie@kernel.org>,
+        Mark Rutland <Mark.Rutland@arm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 08:07:37PM +0200, Arnd Bergmann wrote:
-> On Wednesday 25 June 2014 19:26:31 Peter De Schrijver wrote:
-> > Define and export a new function __clk_get_debug which returns the debugfs
-> > directory entry pointer. This can be used by clock providers to add debugfs
-> > entries which are not related to a specific clock type. Examples include the
-> > ability to measure the rate of a clock. It can also be used by modules to
-> > create new debugfs entries. This is useful if you want to expose features
-> > for testing which can potentially cause system instability such as allowing
-> > to change a clock's rate from userspace.
-> > 
-> > Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
-> > 
-> 
-> Just an idea, but would it be better to add a pair of functions to add/remove
-> debugfs files rather than exposing the dentry itself?
-> 
+On 26 June 2014 00:32, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> I don't think this driver should be using regulator_get_optional() (Mark
+> B. please correct me if I'm wrong). I doubt a supply is actually
+> optional for CPUs, just some DTs aren't specifying them. In those cases,
+> the regulator core will insert a dummy supply and the code will work
+> without having to check for probe defer and error pointers.
 
-Ok. Will do that.
+Hi Stephen,
 
-Cheers,
+Thanks for your comments.
 
-Peter.
+Leaving the above one, I have tried to fix all you mentioned. And it surely
+looks much better now.
+
+I would like to wait for a day or two before sending V2, as people might
+be reviewing it and the above issue is still wide open..
+
+But in case you wanna test it (completely changed I must say, but
+for good), its here:
+
+git://git.linaro.org/people/viresh.kumar/linux.git cpufreq/cpu0-krait-v2
+
+Let me know if you still find it childish :)
