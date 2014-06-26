@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757542AbaFZC3A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 22:29:00 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46838 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757207AbaFZC26 (ORCPT
+	id S1757574AbaFZCdJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 22:33:09 -0400
+Received: from smtprelay0199.hostedemail.com ([216.40.44.199]:45776 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755438AbaFZCdH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 22:28:58 -0400
-X-Sasl-enc: mlrUuzZ1+UFG0jFfomHTmurAl6AeJFAFLUt8xgwyaDLb 1403749737
-Message-ID: <1403749735.2969.25.camel@perseus.fritz.box>
-Subject: Re: [PATCH] autofs4 - fix false positive compile error
-From: Ian Kent <raven@themaw.net>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        autofs mailing list <autofs@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Thu, 26 Jun 2014 10:28:55 +0800
-In-Reply-To: <20140625130648.1e3cd0e578602918dc38bb6a@linux-foundation.org>
-References: <20140625124939.31035.84884.stgit@perseus.fritz.box>
-	 <20140625130648.1e3cd0e578602918dc38bb6a@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+	Wed, 25 Jun 2014 22:33:07 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2693:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3872:3873:3874:4321:5007:6119:7652:7903:8957:10004:10226:10400:10848:11232:11658:11914:12294:12517:12519:12663:12740:13019:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: side92_8f5ef2aaa7559
+X-Filterd-Recvd-Size: 1818
+Message-ID: <1403749983.7977.6.camel@joe-AO725>
+Subject: Re: [PATCH] scripts/checkpatch.pl: Only emit LONG_LINE for --strict
+From: Joe Perches <joe@perches.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Andy Whitcroft <apw@canonical.com>, gregkh@linux-foundation.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Date: Wed, 25 Jun 2014 19:33:03 -0700
+In-Reply-To: <20140626022448.GA22091@thin>
+References: <20140625154629.GA21519@thin>
+	 <1403741107.28663.9.camel@joe-AO725> <20140626022448.GA22091@thin>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-06-25 at 13:06 -0700, Andrew Morton wrote:
-> On Wed, 25 Jun 2014 20:49:39 +0800 Ian Kent <raven@themaw.net> wrote:
-> 
-> > On strict build environments we can see:
+On Wed, 2014-06-25 at 19:24 -0700, Josh Triplett wrote:
+> On Wed, Jun 25, 2014 at 05:05:07PM -0700, Joe Perches wrote:
+> > On Wed, 2014-06-25 at 08:46 -0700, Josh Triplett wrote:
+> > > Regardless of the long-standing debate over line width, checkpatch
+> > > should not warn about it by default.
 > > 
-> > fs/autofs4/inode.c: In function 'autofs4_fill_super':
-> > fs/autofs4/inode.c:312: error: 'pgrp' may be used uninitialized in this
-> > function
-> > make[2]: *** [fs/autofs4/inode.o] Error 1
-> > make[1]: *** [fs/autofs4] Error 2
-> > make: *** [fs] Error 2
-> > make: *** Waiting for unfinished jobs....
-> > 
-> > This is due to the use of pgrp_set being used to indicate pgrp has
-> > has been set rather than initializing pgrp itself.
-> > 
-> 
-> Yes, that code seems to be explicitly designed to trigger a gcc warning ;)
-> 
-> What is a "strict build environment"?  Someone's using -Werror for the
-> entire kernel?  That must make for a miserable life.
+> > I'm not getting involved here.
+> > I don't care much one way or another.
+[]
+> I'm not asking you to get involved in the Great Line Length Debate;
+> that's why I didn't attempt to patch CodingStyle or similar.  However, I
+> think it makes sense for *checkpatch* to stop emitting this warning.
 
-Yes, TBH I was a bit surprised myself.
-It resulted from a RHEL-6.6 patch submission.
+I think checkpatch should encourage people to write code in
+a style that matches CodingStyle as well as the predominant
+styles used in the rest of the kernel.
 
-I didn't notice it and ended up missing an internal (RedHat) patch
-submission deadline as my original interest in these was the result of
-an upstream discussion and I stupidly relied on my upstream testing.
+> I'm hoping that Greg will chime in, as the maintainer of staging and the
+> recipient of a huge number of checkpatch-motivated patches.
 
-It might just be that our internal up and coming file system tree is
-specifically more fussy but never the less I got caught out.
 
-Ian
 
