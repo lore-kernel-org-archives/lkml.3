@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757723AbaFZP4k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 11:56:40 -0400
-Received: from mirror2.csie.ntu.edu.tw ([140.112.30.76]:42116 "EHLO
+	id S1757395AbaFZP4J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 11:56:09 -0400
+Received: from mirror2.csie.ntu.edu.tw ([140.112.30.76]:42106 "EHLO
 	mirror2.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757161AbaFZP4X (ORCPT
+	with ESMTP id S1756072AbaFZP4G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 11:56:23 -0400
+	Thu, 26 Jun 2014 11:56:06 -0400
 From: Chen-Yu Tsai <wens@csie.org>
 To: Maxime Ripard <maxime.ripard@free-electrons.com>,
         Mike Turquette <mturquette@linaro.org>,
@@ -14,257 +14,87 @@ To: Maxime Ripard <maxime.ripard@free-electrons.com>,
 Cc: Chen-Yu Tsai <wens@csie.org>, linux-arm-kernel@lists.infradead.org,
         devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-sunxi@googlegroups.com
-Subject: [PATCH v4 5/6] clk: sunxi: Add A23 clocks support
-Date: Thu, 26 Jun 2014 23:55:43 +0800
-Message-Id: <1403798144-32188-6-git-send-email-wens@csie.org>
+Subject: [PATCH v4 0/6] clk: sunxi: fixes, cleanups and A23 basic clocks
+Date: Thu, 26 Jun 2014 23:55:38 +0800
+Message-Id: <1403798144-32188-1-git-send-email-wens@csie.org>
 X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1403798144-32188-1-git-send-email-wens@csie.org>
-References: <1403798144-32188-1-git-send-email-wens@csie.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The clock control unit on the A23 is similar to the one found on the A31.
+Hi everyone,
 
-The AHB1, APB1, APB2 gates on the A23 are almost identical to the ones
-on the A31, but some outputs are missing.
+This is v4 of the sun8i clock series, which adds basic clock
+support for the A23 SoC. It is based on my initial sun8i bring
+up series [1]. This series was split up from the original A23
+series [2]. Yet to come are more clocks, reset controllers,
+prcm, pinctrl, and mmc.
 
-The main CPU PLL (PLL1) however is like that on older Allwinner SoCs,
-such as the A10 or A20, but the N factor starts from 1 instead of 0.
+The first patch fixes the reworked clock protection code merged in
+3.16-rc1, which unintentionally made clock gates unprotectable.
 
-This patch adds support for PLL1 and all the basic clock muxes and gates.
+The second patch moves the remaining "ahb_sdram" clock to the
+protected clock list, now that it works.
 
-Signed-off-by: Chen-Yu Tsai <wens@csie.org>
-Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- Documentation/devicetree/bindings/clock/sunxi.txt |   5 ++
- drivers/clk/sunxi/clk-sunxi.c                     | 101 ++++++++++++++++++++++
- 2 files changed, 106 insertions(+)
+The third patch adds support for factor clocks that have an N factor
+not starting from 0. This is found on some PLLs in A31/A23.
 
-diff --git a/Documentation/devicetree/bindings/clock/sunxi.txt b/Documentation/devicetree/bindings/clock/sunxi.txt
-index b9ec668..18030ce 100644
---- a/Documentation/devicetree/bindings/clock/sunxi.txt
-+++ b/Documentation/devicetree/bindings/clock/sunxi.txt
-@@ -9,11 +9,13 @@ Required properties:
- 	"allwinner,sun4i-a10-osc-clk" - for a gatable oscillator
- 	"allwinner,sun4i-a10-pll1-clk" - for the main PLL clock and PLL4
- 	"allwinner,sun6i-a31-pll1-clk" - for the main PLL clock on A31
-+	"allwinner,sun8i-a23-pll1-clk" - for the main PLL clock on A23
- 	"allwinner,sun4i-a10-pll5-clk" - for the PLL5 clock
- 	"allwinner,sun4i-a10-pll6-clk" - for the PLL6 clock
- 	"allwinner,sun6i-a31-pll6-clk" - for the PLL6 clock on A31
- 	"allwinner,sun4i-a10-cpu-clk" - for the CPU multiplexer clock
- 	"allwinner,sun4i-a10-axi-clk" - for the AXI clock
-+	"allwinner,sun8i-a23-axi-clk" - for the AXI clock on A23
- 	"allwinner,sun4i-a10-axi-gates-clk" - for the AXI gates
- 	"allwinner,sun4i-a10-ahb-clk" - for the AHB clock
- 	"allwinner,sun4i-a10-ahb-gates-clk" - for the AHB gates on A10
-@@ -23,6 +25,7 @@ Required properties:
- 	"allwinner,sun6i-a31-ar100-clk" - for the AR100 on A31
- 	"allwinner,sun6i-a31-ahb1-mux-clk" - for the AHB1 multiplexer on A31
- 	"allwinner,sun6i-a31-ahb1-gates-clk" - for the AHB1 gates on A31
-+	"allwinner,sun8i-a23-ahb1-gates-clk" - for the AHB1 gates on A23
- 	"allwinner,sun4i-a10-apb0-clk" - for the APB0 clock
- 	"allwinner,sun6i-a31-apb0-clk" - for the APB0 clock on A31
- 	"allwinner,sun4i-a10-apb0-gates-clk" - for the APB0 gates on A10
-@@ -37,8 +40,10 @@ Required properties:
- 	"allwinner,sun5i-a10s-apb1-gates-clk" - for the APB1 gates on A10s
- 	"allwinner,sun6i-a31-apb1-gates-clk" - for the APB1 gates on A31
- 	"allwinner,sun7i-a20-apb1-gates-clk" - for the APB1 gates on A20
-+	"allwinner,sun8i-a23-apb1-gates-clk" - for the APB1 gates on A23
- 	"allwinner,sun6i-a31-apb2-div-clk" - for the APB2 gates on A31
- 	"allwinner,sun6i-a31-apb2-gates-clk" - for the APB2 gates on A31
-+	"allwinner,sun8i-a23-apb2-gates-clk" - for the APB2 gates on A23
- 	"allwinner,sun4i-a10-mod0-clk" - for the module 0 family of clocks
- 	"allwinner,sun7i-a20-out-clk" - for the external output clocks
- 	"allwinner,sun7i-a20-gmac-clk" - for the GMAC clock module on A20/A31
-diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
-index 6fe9492..8975972 100644
---- a/drivers/clk/sunxi/clk-sunxi.c
-+++ b/drivers/clk/sunxi/clk-sunxi.c
-@@ -164,6 +164,54 @@ static void sun6i_a31_get_pll1_factors(u32 *freq, u32 parent_rate,
- }
- 
- /**
-+ * sun8i_a23_get_pll1_factors() - calculates n, k, m, p factors for PLL1
-+ * PLL1 rate is calculated as follows
-+ * rate = (parent_rate * (n + 1) * (k + 1) >> p) / (m + 1);
-+ * parent_rate is always 24Mhz
-+ */
-+
-+static void sun8i_a23_get_pll1_factors(u32 *freq, u32 parent_rate,
-+				   u8 *n, u8 *k, u8 *m, u8 *p)
-+{
-+	u8 div;
-+
-+	/* Normalize value to a 6M multiple */
-+	div = *freq / 6000000;
-+	*freq = 6000000 * div;
-+
-+	/* we were called to round the frequency, we can now return */
-+	if (n == NULL)
-+		return;
-+
-+	/* m is always zero for pll1 */
-+	*m = 0;
-+
-+	/* k is 1 only on these cases */
-+	if (*freq >= 768000000 || *freq == 42000000 || *freq == 54000000)
-+		*k = 1;
-+	else
-+		*k = 0;
-+
-+	/* p will be 2 for divs under 20 and odd divs under 32 */
-+	if (div < 20 || (div < 32 && (div & 1)))
-+		*p = 2;
-+
-+	/* p will be 1 for even divs under 32, divs under 40 and odd pairs
-+	 * of divs between 40-62 */
-+	else if (div < 40 || (div < 64 && (div & 2)))
-+		*p = 1;
-+
-+	/* any other entries have p = 0 */
-+	else
-+		*p = 0;
-+
-+	/* calculate a suitable n based on k and p */
-+	div <<= *p;
-+	div /= (*k + 1);
-+	*n = div / 4 - 1;
-+}
-+
-+/**
-  * sun4i_get_pll5_factors() - calculates n, k factors for PLL5
-  * PLL5 rate is calculated as follows
-  * rate = parent_rate * n * (k + 1)
-@@ -422,6 +470,18 @@ static struct clk_factors_config sun6i_a31_pll1_config = {
- 	.mwidth = 2,
- };
- 
-+static struct clk_factors_config sun8i_a23_pll1_config = {
-+	.nshift = 8,
-+	.nwidth = 5,
-+	.kshift = 4,
-+	.kwidth = 2,
-+	.mshift = 0,
-+	.mwidth = 2,
-+	.pshift = 16,
-+	.pwidth = 2,
-+	.n_start = 1,
-+};
-+
- static struct clk_factors_config sun4i_pll5_config = {
- 	.nshift = 8,
- 	.nwidth = 5,
-@@ -471,6 +531,12 @@ static const struct factors_data sun6i_a31_pll1_data __initconst = {
- 	.getter = sun6i_a31_get_pll1_factors,
- };
- 
-+static const struct factors_data sun8i_a23_pll1_data __initconst = {
-+	.enable = 31,
-+	.table = &sun8i_a23_pll1_config,
-+	.getter = sun8i_a23_get_pll1_factors,
-+};
-+
- static const struct factors_data sun7i_a20_pll4_data __initconst = {
- 	.enable = 31,
- 	.table = &sun4i_pll5_config,
-@@ -673,6 +739,23 @@ static const struct div_data sun4i_axi_data __initconst = {
- 	.width	= 2,
- };
- 
-+static const struct clk_div_table sun8i_a23_axi_table[] __initconst = {
-+	{ .val = 0, .div = 1 },
-+	{ .val = 1, .div = 2 },
-+	{ .val = 2, .div = 3 },
-+	{ .val = 3, .div = 4 },
-+	{ .val = 4, .div = 4 },
-+	{ .val = 5, .div = 4 },
-+	{ .val = 6, .div = 4 },
-+	{ .val = 7, .div = 4 },
-+	{ } /* sentinel */
-+};
-+
-+static const struct div_data sun8i_a23_axi_data __initconst = {
-+	.width	= 3,
-+	.table	= sun8i_a23_axi_table,
-+};
-+
- static const struct div_data sun4i_ahb_data __initconst = {
- 	.shift	= 4,
- 	.pow	= 1,
-@@ -805,6 +888,10 @@ static const struct gates_data sun7i_a20_ahb_gates_data __initconst = {
- 	.mask = { 0x12f77fff, 0x16ff3f },
- };
- 
-+static const struct gates_data sun8i_a23_ahb1_gates_data __initconst = {
-+	.mask = {0x25386742, 0x2505111},
-+};
-+
- static const struct gates_data sun4i_apb0_gates_data __initconst = {
- 	.mask = {0x4EF},
- };
-@@ -837,6 +924,10 @@ static const struct gates_data sun6i_a31_apb1_gates_data __initconst = {
- 	.mask = {0x3031},
- };
- 
-+static const struct gates_data sun8i_a23_apb1_gates_data __initconst = {
-+	.mask = {0x3021},
-+};
-+
- static const struct gates_data sun6i_a31_apb2_gates_data __initconst = {
- 	.mask = {0x3F000F},
- };
-@@ -845,6 +936,10 @@ static const struct gates_data sun7i_a20_apb1_gates_data __initconst = {
- 	.mask = { 0xff80ff },
- };
- 
-+static const struct gates_data sun8i_a23_apb2_gates_data __initconst = {
-+	.mask = {0x1F0007},
-+};
-+
- static const struct gates_data sun4i_a10_usb_gates_data __initconst = {
- 	.mask = {0x1C0},
- 	.reset_mask = 0x07,
-@@ -1100,6 +1195,7 @@ free_clkdata:
- static const struct of_device_id clk_factors_match[] __initconst = {
- 	{.compatible = "allwinner,sun4i-a10-pll1-clk", .data = &sun4i_pll1_data,},
- 	{.compatible = "allwinner,sun6i-a31-pll1-clk", .data = &sun6i_a31_pll1_data,},
-+	{.compatible = "allwinner,sun8i-a23-pll1-clk", .data = &sun8i_a23_pll1_data,},
- 	{.compatible = "allwinner,sun7i-a20-pll4-clk", .data = &sun7i_a20_pll4_data,},
- 	{.compatible = "allwinner,sun6i-a31-pll6-clk", .data = &sun6i_a31_pll6_data,},
- 	{.compatible = "allwinner,sun4i-a10-apb1-clk", .data = &sun4i_apb1_data,},
-@@ -1111,6 +1207,7 @@ static const struct of_device_id clk_factors_match[] __initconst = {
- /* Matches for divider clocks */
- static const struct of_device_id clk_div_match[] __initconst = {
- 	{.compatible = "allwinner,sun4i-a10-axi-clk", .data = &sun4i_axi_data,},
-+	{.compatible = "allwinner,sun8i-a23-axi-clk", .data = &sun8i_a23_axi_data,},
- 	{.compatible = "allwinner,sun4i-a10-ahb-clk", .data = &sun4i_ahb_data,},
- 	{.compatible = "allwinner,sun4i-a10-apb0-clk", .data = &sun4i_apb0_data,},
- 	{.compatible = "allwinner,sun6i-a31-apb2-div-clk", .data = &sun6i_a31_apb2_div_data,},
-@@ -1140,6 +1237,7 @@ static const struct of_device_id clk_gates_match[] __initconst = {
- 	{.compatible = "allwinner,sun5i-a13-ahb-gates-clk", .data = &sun5i_a13_ahb_gates_data,},
- 	{.compatible = "allwinner,sun6i-a31-ahb1-gates-clk", .data = &sun6i_a31_ahb1_gates_data,},
- 	{.compatible = "allwinner,sun7i-a20-ahb-gates-clk", .data = &sun7i_a20_ahb_gates_data,},
-+	{.compatible = "allwinner,sun8i-a23-ahb1-gates-clk", .data = &sun8i_a23_ahb1_gates_data,},
- 	{.compatible = "allwinner,sun4i-a10-apb0-gates-clk", .data = &sun4i_apb0_gates_data,},
- 	{.compatible = "allwinner,sun5i-a10s-apb0-gates-clk", .data = &sun5i_a10s_apb0_gates_data,},
- 	{.compatible = "allwinner,sun5i-a13-apb0-gates-clk", .data = &sun5i_a13_apb0_gates_data,},
-@@ -1149,7 +1247,9 @@ static const struct of_device_id clk_gates_match[] __initconst = {
- 	{.compatible = "allwinner,sun5i-a13-apb1-gates-clk", .data = &sun5i_a13_apb1_gates_data,},
- 	{.compatible = "allwinner,sun6i-a31-apb1-gates-clk", .data = &sun6i_a31_apb1_gates_data,},
- 	{.compatible = "allwinner,sun7i-a20-apb1-gates-clk", .data = &sun7i_a20_apb1_gates_data,},
-+	{.compatible = "allwinner,sun8i-a23-apb1-gates-clk", .data = &sun8i_a23_apb1_gates_data,},
- 	{.compatible = "allwinner,sun6i-a31-apb2-gates-clk", .data = &sun6i_a31_apb2_gates_data,},
-+	{.compatible = "allwinner,sun8i-a23-apb2-gates-clk", .data = &sun8i_a23_apb2_gates_data,},
- 	{.compatible = "allwinner,sun4i-a10-usb-clk", .data = &sun4i_a10_usb_gates_data,},
- 	{.compatible = "allwinner,sun5i-a13-usb-clk", .data = &sun5i_a13_usb_gates_data,},
- 	{.compatible = "allwinner,sun6i-a31-usb-clk", .data = &sun6i_a31_usb_gates_data,},
-@@ -1236,3 +1336,4 @@ static void __init sun6i_init_clocks(struct device_node *node)
- 			  ARRAY_SIZE(sun6i_critical_clocks));
- }
- CLK_OF_DECLARE(sun6i_a31_clk_init, "allwinner,sun6i-a31", sun6i_init_clocks);
-+CLK_OF_DECLARE(sun8i_a23_clk_init, "allwinner,sun8i-a23", sun6i_init_clocks);
+The fourth patch adds table-based dividers for div clocks, as some
+clocks, such as apb0 divider on sun4/5/7i, apb1 on sun6/8i and axi
+on sun8i.
+
+The fifth patch adds support for the basic clocks in the A23, just
+PLL1 for cpus, and the system bus clocks and gates.
+
+The last patch adds the DT nodes for the newly added clocks, and
+updates clock phandles for existing peripherals, the uarts.
+
+Originally I intended for patch 1 to be merged as a fix for 3.16.
+However, the only user of the affected code, sun6i's "ahb1_sdram"
+clock, doesn't seem to result in any runtime issues. So this whole
+series can go into 3.17.
+
+
+Related changes since v3:
+
+  - Dropped fields with default values from sun8i_a23_axi_div_data
+  - Added Maxime's Acked-by
+  - Fixed incorrect compatible string for axi clock node
+  - Updated clock phandles for uarts in dtsi
+
+Related changes since v2:
+
+  - Rewrote factor clocks to support any (0~255) N factor starting value
+
+Related changes since v1:
+
+  - Added "clk: sunxi: Add support for table-based divider clocks"
+  - Added table-based divider axi clock
+  - Fixed incorrectly squashed fixups
+
+
+Cheers
+ChenYu
+
+
+  [1] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-June/265211.html
+  [2] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-May/259097.html
+
+Chen-Yu Tsai (6):
+  clk: sunxi: register clock gates with clkdev
+  clk: sunxi: move "ahb_sdram" to protected clock list
+  clk: sunxi: Support factor clocks with N factor starting not from 0
+  clk: sunxi: Add support for table-based divider clocks
+  clk: sunxi: Add A23 clocks support
+  ARM: sun8i: Add basic clock nodes to the DTSI
+
+ Documentation/devicetree/bindings/clock/sunxi.txt |   5 +
+ arch/arm/boot/dts/sun8i-a23.dtsi                  | 125 +++++++++++++++++++++-
+ drivers/clk/sunxi/clk-factors.c                   |   2 +-
+ drivers/clk/sunxi/clk-factors.h                   |   1 +
+ drivers/clk/sunxi/clk-sunxi.c                     | 119 ++++++++++++++++++--
+ 5 files changed, 237 insertions(+), 15 deletions(-)
+
 -- 
 2.0.0
 
