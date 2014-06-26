@@ -1,80 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756280AbaFZO4N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 10:56:13 -0400
-Received: from na01-by1-obe.ptr.o365filtering.com ([64.4.22.89]:18255 "EHLO
-	na01-by1-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751765AbaFZO4K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 10:56:10 -0400
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: Olaf Hering <olaf@aepfle.de>
-CC: Greg KH <greg@kroah.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "davem@davemloft.net" <davem@davemloft.net>
-Subject: RE: [PATCH net-next] hyperv: Add handler for
- RNDIS_STATUS_NETWORK_CHANGE event
-Thread-Topic: [PATCH net-next] hyperv: Add handler for
- RNDIS_STATUS_NETWORK_CHANGE event
-Thread-Index: AQHPjB+WQKkwvkUXekGWoyJ+QmEz5Zt55UEAgAAEPICAADyUMIAEqgwA///ZfgCAAH5ugP//tltAgAB+poD//6PcsACSRsmAAAHL1dA=
-Date: Thu, 26 Jun 2014 14:55:11 +0000
-Message-ID: <072cf0ff85474ca8af2c3930f822ecad@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-References: <1403228076-7596-1-git-send-email-haiyangz@microsoft.com>
- <20140620045704.GA4850@aepfle.de> <20140620051213.GA9960@kroah.com>
- <ff458d1b896d4a70a32fa7709911274c@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
- <20140623080242.GA16924@aepfle.de>
- <06b508cbb6b949f4b3e13e7797948e56@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
- <20140623131723.GA7026@aepfle.de>
- <5fb9ddebb68d456ab87979b5cc3830ec@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
- <20140623162705.GA5957@aepfle.de>
- <4ee8be5360a44b5abfa6df871ec45527@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
- <20140626084539.GA32471@aepfle.de>
-In-Reply-To: <20140626084539.GA32471@aepfle.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.59.235.233]
-Content-Type: text/plain; charset="utf-8"
+	id S1756739AbaFZO4j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 10:56:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36505 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753430AbaFZO4i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 10:56:38 -0400
+Date: Thu, 26 Jun 2014 15:56:32 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Jeff Moyer <jmoyer@redhat.com>,
+        Dave Chinner <david@fromorbit.com>
+Subject: Re: [PATCH 5/6] mm: page_alloc: Reduce cost of dirty zone balancing
+Message-ID: <20140626145632.GG10819@suse.de>
+References: <1403683129-10814-1-git-send-email-mgorman@suse.de>
+ <1403683129-10814-6-git-send-email-mgorman@suse.de>
+ <20140625163528.11368b86ef7d0a38cf9d1255@linux-foundation.org>
+ <20140626084314.GE10819@suse.de>
+ <20140626143738.GS7331@cmpxchg.org>
 MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:131.107.159.99;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(24454002)(51704005)(189002)(199002)(377454003)(13464003)(51914003)(64706001)(47776003)(20776003)(93886003)(66066001)(80022001)(79102001)(81542001)(99396002)(44976005)(107046002)(92566001)(46102001)(2656002)(6806004)(83322001)(23676002)(97736001)(85852003)(83072002)(77982001)(87936001)(19580395003)(19580405001)(2009001)(84676001)(68736004)(81342001)(4396001)(21056001)(85326001)(86612001)(54356999)(50986999)(106466001)(77096999)(76176999)(31966008)(74662001)(33646001)(76482001)(74502001)(50466002)(106116001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2SR01MB594;H:hybrid.exchange.microsoft.com;FPR:;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 02543CD7CD
-X-OriginatorOrg: msft.ccsctp.net
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20140626143738.GS7331@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s5QEuKYl018399
 
-
-
-> -----Original Message-----
-> From: Olaf Hering [mailto:olaf@aepfle.de]
-> Sent: Thursday, June 26, 2014 4:46 AM
-> To: Haiyang Zhang
-> Cc: Greg KH; netdev@vger.kernel.org; jasowang@redhat.com; driverdev-
-> devel@linuxdriverproject.org; linux-kernel@vger.kernel.org;
-> davem@davemloft.net
-> Subject: Re: [PATCH net-next] hyperv: Add handler for
-> RNDIS_STATUS_NETWORK_CHANGE event
+On Thu, Jun 26, 2014 at 10:37:38AM -0400, Johannes Weiner wrote:
+> On Thu, Jun 26, 2014 at 09:43:14AM +0100, Mel Gorman wrote:
+> > On Wed, Jun 25, 2014 at 04:35:28PM -0700, Andrew Morton wrote:
+> > > On Wed, 25 Jun 2014 08:58:48 +0100 Mel Gorman <mgorman@suse.de> wrote:
+> > > 
+> > > > @@ -325,7 +321,14 @@ static unsigned long zone_dirty_limit(struct zone *zone)
+> > > >   */
+> > > >  bool zone_dirty_ok(struct zone *zone)
+> > > >  {
+> > > > -	unsigned long limit = zone_dirty_limit(zone);
+> > > > +	unsigned long limit = zone->dirty_limit_cached;
+> > > > +	struct task_struct *tsk = current;
+> > > > +
+> > > > +	if (tsk->flags & PF_LESS_THROTTLE || rt_task(tsk)) {
+> > > > +		limit = zone_dirty_limit(zone);
+> > > > +		zone->dirty_limit_cached = limit;
+> > > > +		limit += limit / 4;
+> > > > +	}
+> > > 
+> > > Could we get a comment in here explaining what we're doing and why
+> > > PF_LESS_THROTTLE and rt_task control whether we do it?
+> > > 
+> > 
+> >         /*
+> >          * The dirty limits are lifted by 1/4 for PF_LESS_THROTTLE (ie. nfsd)
+> >          * and real-time tasks to prioritise their allocations.
+> >          * PF_LESS_THROTTLE tasks may be cleaning memory and rt tasks may be
+> >          * blocking tasks that can clean pages.
+> >          */
+> > 
+> > That's fairly weak though. It would also seem reasonable to just delete
+> > this check and allow PF_LESS_THROTTLE and rt_tasks to fall into the slow
+> > path if dirty pages are already fairly distributed between zones.
+> > Johannes, any objection to that limit raising logic being deleted?
 > 
-> On Mon, Jun 23, Haiyang Zhang wrote:
+> I copied that over from global_dirty_limits() such that the big
+> picture and the per-zone picture have the same view - otherwise these
+> tasks fall back to first fit zone allocations before global limits
+> start throttling dirtiers and waking up the flushers.  This increases
+> the probability of reclaim running into dirty pages.
 > 
-> > Yes, there is a link down/up event from the host, we currently call
-> > netif_carrier_off() / netif_carrier_on() with these events. Will
-> > hotplug scripts be triggered by netif_carrier_off/on? Where are the scripts
-> located at (SLES)?
+> Would you remove it from global_dirty_limits() as well?
 > 
-> In /etc/sysconfig/network/ifcfg-eth0 STARTMODE= should be set to "ifplugd",
-> this will most likely fix this sort of setup.
+> On that note, I don't really understand why global_dirty_limits()
+> raises the *background* limit for less-throttle/rt tasks, shouldn't it
+> only raise the dirty limit?  Sure, the throttle point is somewhere
+> between the two limits, but we don't really want to defer waking up
+> the flushers for them.
 
-Thanks for the info! I'll let our team know.
+All of which is fair enough and is something that should be examined on
+a rainy day (shouldn't take too long in Ireland). I'm not going to touch
+it within this series though. It's outside the scope of what I'm trying
+to do here -- restore performance of tiobench and bonnie++ to as close to
+3.0 levels as possible. The series is tripping up enough on the fair zone
+and CFQ aspects as it is without increasing the scope :(
 
-- Haiyang
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+-- 
+Mel Gorman
+SUSE Labs
