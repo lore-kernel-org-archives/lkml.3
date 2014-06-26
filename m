@@ -1,83 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755796AbaFZKg4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 06:36:56 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59863 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750755AbaFZKgz (ORCPT
+	id S1756576AbaFZKhA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 06:37:00 -0400
+Received: from mailgw1.uni-kl.de ([131.246.120.220]:37718 "EHLO
+	mailgw1.uni-kl.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750755AbaFZKg6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 06:36:55 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Mateusz Guzik <mguzik@redhat.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Luis Henriques <luis.henriques@canonical.com>,
-        kernel-team@lists.ubuntu.com
-Subject: [3.11.y.z extended stable] Patch "NFS: populate ->net in mount data when remounting" has been added to staging queue
-Date: Thu, 26 Jun 2014 11:36:52 +0100
-Message-Id: <1403779012-12350-1-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-X-Extended-Stable: 3.11
+	Thu, 26 Jun 2014 06:36:58 -0400
+Message-ID: <53ABF7C4.1000906@itwm.fraunhofer.de>
+Date: Thu, 26 Jun 2014 12:36:52 +0200
+From: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: dedekind1@gmail.com, Dave Chinner <david@fromorbit.com>
+CC: Thomas Knauth <thomas.knauth@gmx.de>, David Rientjes <rientjes@google.com>,
+        Maksym Planeta <mcsim.planeta@gmail.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sysctl: Add a feature to drop caches selectively
+References: <1403626213-7691-1-git-send-email-mcsim.planeta@gmail.com>	 <alpine.DEB.2.02.1406241458140.29176@chino.kir.corp.google.com>	 <1403677528.7903.103.camel@sauron.fi.intel.com>	 <CABhLV03_PNFiwsvt+yitcsKxz5TeVECCFavdNkbgQ+XzQqASaw@mail.gmail.com>	 <20140626010606.GT4453@dastard> <1403763199.20275.39.camel@sauron.fi.intel.com>
+In-Reply-To: <1403763199.20275.39.camel@sauron.fi.intel.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ITWM-CharSet: UTF-8
+X-ITWM-Scanned-By: mail2.itwm.fhg.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a note to let you know that I have just added a patch titled
+On 06/26/2014 08:13 AM, Artem Bityutskiy wrote:
+> On Thu, 2014-06-26 at 11:06 +1000, Dave Chinner wrote:
+>> Your particular use case can be handled by directing your benchmark
+>> at a filesystem mount point and unmounting the filesystem in between
+>> benchmark runs. There is no ned to adding kernel functionality for
+>> somethign that can be so easily acheived by other means, especially
+>> in benchmark environments where *everything* is tightly controlled.
+>
+> If I was a benchmark writer, I would not be willing running it as root
+> to be able to mount/unmount, I would not be willing to require the
+> customer creating special dedicated partitions for the benchmark,
+> because this is too user-unfriendly. Or do I make incorrect assumptions?
 
-    NFS: populate ->net in mount data when remounting
+But why a sysctl then? And also don't see a point for that at all, why 
+can't the benchmark use posix_fadvise(POSIX_FADV_DONTNEED)?
 
-to the linux-3.11.y-queue branch of the 3.11.y.z extended stable tree 
-which can be found at:
 
- http://kernel.ubuntu.com/git?p=ubuntu/linux.git;a=shortlog;h=refs/heads/linux-3.11.y-queue
+Cheers,
+Bernd
 
-If you, or anyone else, feels it should not be added to this tree, please 
-reply to this email.
-
-For more information about the 3.11.y.z tree, see
-https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
-
-Thanks.
--Luis
-
-------
-
->From a544eeb67d3723b24eed458549e60cfa9221c7df Mon Sep 17 00:00:00 2001
-From: Mateusz Guzik <mguzik@redhat.com>
-Date: Tue, 10 Jun 2014 12:44:12 +0200
-Subject: NFS: populate ->net in mount data when remounting
-
-commit a914722f333b3359d2f4f12919380a334176bb89 upstream.
-
-Otherwise the kernel oopses when remounting with IPv6 server because
-net is dereferenced in dev_get_by_name.
-
-Use net ns of current thread so that dev_get_by_name does not operate on
-foreign ns. Changing the address is prohibited anyway so this should not
-affect anything.
-
-Signed-off-by: Mateusz Guzik <mguzik@redhat.com>
-Cc: linux-nfs@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
-[ luis: backported to 3.11: adjusted context ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- fs/nfs/super.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/fs/nfs/super.c b/fs/nfs/super.c
-index f6db66d8f647..928bb8c1680e 100644
---- a/fs/nfs/super.c
-+++ b/fs/nfs/super.c
-@@ -2178,6 +2178,7 @@ nfs_remount(struct super_block *sb, int *flags, char *raw_data)
- 	data->timeo = 10U * nfss->client->cl_timeout->to_initval / HZ;
- 	data->nfs_server.port = nfss->port;
- 	data->nfs_server.addrlen = nfss->nfs_client->cl_addrlen;
-+	data->net = current->nsproxy->net_ns;
- 	memcpy(&data->nfs_server.address, &nfss->nfs_client->cl_addr,
- 		data->nfs_server.addrlen);
-
---
-1.9.1
 
