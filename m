@@ -1,510 +1,421 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757480AbaFZB4c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 21:56:32 -0400
-Received: from mga14.intel.com ([192.55.52.115]:15611 "EHLO mga14.intel.com"
+	id S932279AbaFZCAU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 22:00:20 -0400
+Received: from mga01.intel.com ([192.55.52.88]:6999 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754810AbaFZB4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 21:56:31 -0400
+	id S1756784AbaFZCAR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 22:00:17 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,548,1400050800"; 
-   d="scan'208";a="553410497"
-Date: Thu, 26 Jun 2014 09:56:16 +0800
+   d="scan'208";a="553411887"
+Date: Thu, 26 Jun 2014 10:00:11 +0800
 From: Fengguang Wu <fengguang.wu@intel.com>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: Dave Hansen <dave.hansen@intel.com>, LKML <linux-kernel@vger.kernel.org>,
         lkp@01.org, Jet Chen <jet.chen@intel.com>
-Subject: [rcu] 0acd7c39a85: +11.0% will-it-scale.scalability
-Message-ID: <20140626015616.GD12239@localhost>
+Subject: [rcu] 34577530114: +247.4% qperf.tcp.bw, -3.3% turbostat.Pkg_W
+Message-ID: <20140626020011.GE12239@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/mixed; boundary="vtzGhvizbBRQ85DL"
 Content-Disposition: inline
 User-Agent: Heirloom mailx 12.5 6/20/10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+
+--vtzGhvizbBRQ85DL
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
 Hi Paul,
 
-FYI, we are pleased to notice big performance gains in some
-will-it-scale test cases:
+We are pleased to notice huge throughput increases in the qperf/iperf
+tests, together with noticeable reduce of power consumption!
 
-git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu_cond_resched.2014.06.20c
-commit 0acd7c39a85836d90451b6c278c5cfdd21c055f3 ("rcu: Add RCU_COND_RESCHED_QS for large systems")
+git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/dev
+commit 34577530114e9b1de10f3aa9665bb28c8ce585ba ("rcu: Bind grace-period kthreads to non-NO_HZ_FULL CPUs")
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-      0.30 ~ 2%     +14.3%       0.34 ~ 3%  lkp-sbx04/will-it-scale/open1
-      0.34 ~ 3%      +8.1%       0.37 ~ 1%  nhm4/will-it-scale/read1
-      0.64 ~ 3%     +11.0%       0.71 ~ 2%  TOTAL will-it-scale.scalability
+  8.23e+08 ~ 6%    +247.4%  2.859e+09 ~ 0%  bens/qperf/600s
+  8.23e+08 ~ 6%    +247.4%  2.859e+09 ~ 0%  TOTAL qperf.tcp.bw
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-    592828 ~ 1%      +3.8%     615531 ~ 1%  lkp-sbx04/will-it-scale/open1
-    592828 ~ 1%      +3.8%     615531 ~ 1%  TOTAL will-it-scale.per_process_ops
+ 7.065e+09 ~ 3%    +210.0%   2.19e+10 ~ 8%  bens/iperf/300s-tcp
+ 7.065e+09 ~ 3%    +210.0%   2.19e+10 ~ 8%  TOTAL iperf.tcp.sender.bps
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-      1689 ~ 0%    +498.1%      10107 ~ 2%  lkp-sbx04/will-it-scale/unlink2
-      1689 ~ 0%    +498.1%      10107 ~ 2%  TOTAL slabinfo.dentry.active_slabs
+ 7.065e+09 ~ 3%    +210.0%   2.19e+10 ~ 8%  bens/iperf/300s-tcp
+ 7.065e+09 ~ 3%    +210.0%   2.19e+10 ~ 8%  TOTAL iperf.tcp.receiver.bps
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-     72052 ~ 0%    +489.8%     424930 ~ 2%  lkp-sbx04/will-it-scale/unlink2
-     72052 ~ 0%    +489.8%     424930 ~ 2%  TOTAL slabinfo.Acpi-State.num_objs
+ 7.718e+08 ~ 3%    +177.8%  2.144e+09 ~ 1%  bens/qperf/600s
+ 7.718e+08 ~ 3%    +177.8%  2.144e+09 ~ 1%  TOTAL qperf.udp.recv_bw
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-     71629 ~ 0%    +492.6%     424494 ~ 2%  lkp-sbx04/will-it-scale/unlink2
-     71629 ~ 0%    +492.6%     424494 ~ 2%  TOTAL slabinfo.Acpi-State.active_objs
+ 7.745e+08 ~ 3%    +177.0%  2.145e+09 ~ 1%  bens/qperf/600s
+ 7.745e+08 ~ 3%    +177.0%  2.145e+09 ~ 1%  TOTAL qperf.udp.send_bw
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-      1689 ~ 0%    +498.1%      10107 ~ 2%  lkp-sbx04/will-it-scale/unlink2
-      1689 ~ 0%    +498.1%      10107 ~ 2%  TOTAL slabinfo.dentry.num_slabs
+  1.65e+09 ~ 1%      +4.3%  1.721e+09 ~ 0%  bens/qperf/600s
+  1.65e+09 ~ 1%      +4.3%  1.721e+09 ~ 0%  TOTAL qperf.sctp.bw
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-      1412 ~ 0%    +490.0%       8331 ~ 2%  lkp-sbx04/will-it-scale/unlink2
-      1412 ~ 0%    +490.0%       8331 ~ 2%  TOTAL slabinfo.Acpi-State.active_slabs
+     13579 ~ 1%      -2.3%      13264 ~ 1%  bens/qperf/600s
+     13579 ~ 1%      -2.3%      13264 ~ 1%  TOTAL qperf.sctp.latency
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-     70980 ~ 0%    +498.1%     424517 ~ 2%  lkp-sbx04/will-it-scale/unlink2
-     70980 ~ 0%    +498.1%     424517 ~ 2%  TOTAL slabinfo.dentry.num_objs
+      8545 ~ 0%      +1.9%       8705 ~ 0%  bens/qperf/600s
+      8545 ~ 0%      +1.9%       8705 ~ 0%  TOTAL qperf.udp.latency
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-     70444 ~ 0%    +502.0%     424054 ~ 2%  lkp-sbx04/will-it-scale/unlink2
-     70444 ~ 0%    +502.0%     424054 ~ 2%  TOTAL slabinfo.dentry.active_objs
+     12770 ~ 0%      -1.0%      12637 ~ 0%  ivb43/netperf/300s-25%-TCP_CRR
+     12770 ~ 0%      -1.0%      12637 ~ 0%  TOTAL netperf.Throughput_tps
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-       472 ~ 0%   +1557.0%       7827 ~ 2%  lkp-sbx04/will-it-scale/unlink2
-       472 ~ 0%   +1557.0%       7827 ~ 2%  TOTAL slabinfo.shmem_inode_cache.num_slabs
+      1015 ~ 2%     -92.1%         80 ~24%  ivb43/netperf/300s-25%-TCP_CRR
+      1015 ~ 2%     -92.1%         80 ~24%  TOTAL cpuidle.POLL.usage
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-       472 ~ 0%   +1557.0%       7827 ~ 2%  lkp-sbx04/will-it-scale/unlink2
-       472 ~ 0%   +1557.0%       7827 ~ 2%  TOTAL slabinfo.shmem_inode_cache.active_slabs
+    104620 ~31%     -83.2%      17544 ~11%  ivb43/netperf/300s-25%-TCP_CRR
+    104620 ~31%     -83.2%      17544 ~11%  TOTAL numa-vmstat.node1.numa_other
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-     22697 ~ 0%   +1555.5%     375756 ~ 2%  lkp-sbx04/will-it-scale/unlink2
-     22697 ~ 0%   +1555.5%     375756 ~ 2%  TOTAL slabinfo.shmem_inode_cache.num_objs
+      0.12 ~ 7%     -73.3%       0.03 ~12%  ivb43/netperf/300s-25%-TCP_CRR
+      0.12 ~ 7%     -73.3%       0.03 ~12%  TOTAL turbostat.%c3
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-     22297 ~ 0%   +1584.0%     375494 ~ 2%  lkp-sbx04/will-it-scale/unlink2
-     22297 ~ 0%   +1584.0%     375494 ~ 2%  TOTAL slabinfo.shmem_inode_cache.active_objs
+  53226067 ~ 3%     -78.2%   11579930 ~14%  ivb43/netperf/300s-25%-TCP_CRR
+   3327687 ~28%     +86.6%    6208767 ~42%  ivb44/pigz/25%-128K
+  56553754 ~ 4%     -68.5%   17788697 ~24%  TOTAL cpuidle.C1E-IVT.time
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-      1412 ~ 0%    +490.0%       8331 ~ 2%  lkp-sbx04/will-it-scale/unlink2
-      1412 ~ 0%    +490.0%       8331 ~ 2%  TOTAL slabinfo.Acpi-State.num_slabs
+    878601 ~ 3%     -75.2%     217607 ~12%  ivb43/netperf/300s-25%-TCP_CRR
+      9282 ~27%     +99.2%      18495 ~49%  ivb44/pigz/25%-128K
+    887884 ~ 4%     -73.4%     236102 ~15%  TOTAL cpuidle.C1E-IVT.usage
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-    230182 ~ 2%    +214.7%     724407 ~ 1%  lkp-sbx04/will-it-scale/open1
-     29926 ~ 1%   +1179.6%     382938 ~ 2%  lkp-sbx04/will-it-scale/unlink2
-    260108 ~ 2%    +325.7%    1107345 ~ 1%  TOTAL slabinfo.kmalloc-256.active_objs
+  28174239 ~ 6%     -61.0%   10981001 ~ 8%  ivb43/netperf/300s-25%-TCP_CRR
+  28174239 ~ 6%     -61.0%   10981001 ~ 8%  TOTAL cpuidle.C3-IVT.time
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-      3605 ~ 2%    +214.1%      11325 ~ 1%  lkp-sbx04/will-it-scale/open1
-       478 ~ 1%   +1153.4%       5991 ~ 2%  lkp-sbx04/will-it-scale/unlink2
-      4083 ~ 2%    +324.1%      17316 ~ 1%  TOTAL slabinfo.kmalloc-256.num_slabs
+       237 ~20%    +141.1%        572 ~ 9%  xbm/pigz/25%-512K
+       237 ~20%    +141.1%        572 ~ 9%  TOTAL cpuidle.C3-SNB.usage
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-      3605 ~ 2%    +214.1%      11325 ~ 1%  lkp-sbx04/will-it-scale/open1
-       478 ~ 1%   +1153.4%       5991 ~ 2%  lkp-sbx04/will-it-scale/unlink2
-      4083 ~ 2%    +324.1%      17316 ~ 1%  TOTAL slabinfo.kmalloc-256.active_slabs
+   8192746 ~ 3%    +202.8%   24806641 ~ 7%  bens/iperf/300s-tcp
+  15458478 ~ 1%     +69.2%   26148854 ~ 0%  bens/qperf/600s
+  23651225 ~ 2%    +115.4%   50955496 ~ 4%  TOTAL proc-vmstat.numa_hit
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-    230776 ~ 2%    +214.1%     724862 ~ 1%  lkp-sbx04/will-it-scale/open1
-     30619 ~ 1%   +1152.4%     383473 ~ 2%  lkp-sbx04/will-it-scale/unlink2
-    261395 ~ 2%    +324.0%    1108335 ~ 1%  TOTAL slabinfo.kmalloc-256.num_objs
+   8192746 ~ 3%    +202.8%   24806641 ~ 7%  bens/iperf/300s-tcp
+  15458478 ~ 1%     +69.2%   26148854 ~ 0%  bens/qperf/600s
+  23651225 ~ 2%    +115.4%   50955496 ~ 4%  TOTAL proc-vmstat.numa_local
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-     38033 ~ 2%     +85.2%      70426 ~ 3%  lkp-sbx04/will-it-scale/open1
-     27083 ~ 8%    +375.9%     128878 ~ 1%  lkp-sbx04/will-it-scale/unlink2
-     65116 ~ 4%    +206.1%     199305 ~ 2%  TOTAL numa-meminfo.node1.SUnreclaim
+  63502648 ~ 3%    +209.1%  1.963e+08 ~ 8%  bens/iperf/300s-tcp
+ 2.191e+08 ~ 1%     +55.9%  3.416e+08 ~ 0%  bens/qperf/600s
+ 2.826e+08 ~ 2%     +90.3%  5.379e+08 ~ 3%  TOTAL proc-vmstat.pgfree
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-      9470 ~ 1%     +87.6%      17770 ~ 4%  lkp-sbx04/will-it-scale/open1
-      6769 ~ 8%    +375.7%      32201 ~ 1%  lkp-sbx04/will-it-scale/unlink2
-     16240 ~ 4%    +207.7%      49971 ~ 2%  TOTAL numa-vmstat.node1.nr_slab_unreclaimable
+  15752293 ~ 3%    +209.0%   48677753 ~ 8%  bens/iperf/300s-tcp
+  54168455 ~ 1%     +56.0%   84483873 ~ 0%  bens/qperf/600s
+  69920749 ~ 2%     +90.4%  133161627 ~ 3%  TOTAL proc-vmstat.pgalloc_normal
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-    302149 ~ 1%     -73.4%      80465 ~ 0%  lkp-nex05/will-it-scale/lock1
-    853141 ~ 2%     -66.6%     284788 ~ 3%  lkp-sbx04/will-it-scale/open1
-    693207 ~ 0%     -82.6%     120744 ~ 9%  lkp-sbx04/will-it-scale/unlink2
-    434870 ~ 2%     -63.8%     157362 ~ 1%  lkp-wsx01/will-it-scale/futex2
-     55884 ~ 5%     -55.3%      24956 ~ 4%  nhm4/will-it-scale/read1
-   2339252 ~ 1%     -71.4%     668317 ~ 3%  TOTAL softirqs.RCU
+   9737163 ~ 2%     -56.7%    4213811 ~ 6%  ivb43/netperf/300s-25%-TCP_CRR
+   9737163 ~ 2%     -56.7%    4213811 ~ 6%  TOTAL cpuidle.C6-IVT.usage
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-     51492 ~ 3%     +75.4%      90311 ~ 2%  lkp-sbx04/will-it-scale/open1
-     39615 ~ 2%    +332.8%     171468 ~ 1%  lkp-sbx04/will-it-scale/unlink2
-     91107 ~ 3%    +187.3%     261779 ~ 1%  TOTAL numa-meminfo.node0.SUnreclaim
+   5033341 ~ 3%    +192.9%   14743041 ~12%  bens/iperf/300s-tcp
+  21147143 ~ 0%     +30.9%   27679992 ~ 0%  bens/qperf/600s
+  26180485 ~ 1%     +62.0%   42423033 ~ 4%  TOTAL softirqs.NET_RX
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-  18566237 ~32%    +133.3%   43314913 ~21%  lkp-sbx04/will-it-scale/open1
-  22235565 ~30%    +176.7%   61536286 ~21%  lkp-sbx04/will-it-scale/unlink2
-  40801803 ~31%    +157.0%  104851199 ~21%  TOTAL cpuidle.C1-SNB.time
+      0.45 ~37%    +109.7%       0.95 ~34%  bens/qperf/600s
+      0.45 ~37%    +109.7%       0.95 ~34%  TOTAL perf-profile.cpu-cycles.copy_user_generic_string.skb_copy_datagram_iovec.tcp_recvmsg.inet_recvmsg.sock_aio_read
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-     12835 ~ 4%     +76.6%      22664 ~ 3%  lkp-sbx04/will-it-scale/open1
-      9928 ~ 2%    +331.3%      42820 ~ 1%  lkp-sbx04/will-it-scale/unlink2
-     22764 ~ 3%    +187.7%      65484 ~ 1%  TOTAL numa-vmstat.node0.nr_slab_unreclaimable
+     87907 ~29%    +145.9%     216127 ~27%  xbm/pigz/25%-512K
+     87907 ~29%    +145.9%     216127 ~27%  TOTAL cpuidle.C3-SNB.time
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-    149956 ~ 1%     +81.6%     272270 ~ 1%  lkp-sbx04/will-it-scale/open1
-    112319 ~ 0%    +312.8%     463620 ~ 1%  lkp-sbx04/will-it-scale/unlink2
-    262275 ~ 1%    +180.6%     735890 ~ 1%  TOTAL meminfo.SUnreclaim
+    646521 ~ 7%     -49.5%     326622 ~ 9%  ivb43/netperf/300s-25%-TCP_CRR
+    646521 ~ 7%     -49.5%     326622 ~ 9%  TOTAL cpuidle.C3-IVT.usage
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-     49308 ~ 4%     +66.6%      82136 ~ 3%  lkp-sbx04/will-it-scale/open1
-     38437 ~ 5%    +314.4%     159290 ~ 2%  lkp-sbx04/will-it-scale/unlink2
-     87745 ~ 4%    +175.1%     241426 ~ 2%  TOTAL numa-meminfo.node1.Slab
+       658 ~13%    +109.3%       1377 ~11%  xbm/pigz/25%-512K
+       658 ~13%    +109.3%       1377 ~11%  TOTAL cpuidle.C1E-SNB.usage
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-     37339 ~ 1%     +81.4%      67717 ~ 1%  lkp-sbx04/will-it-scale/open1
-     28028 ~ 0%    +313.1%     115797 ~ 1%  lkp-sbx04/will-it-scale/unlink2
-     65368 ~ 1%    +180.7%     183514 ~ 1%  TOTAL proc-vmstat.nr_slab_unreclaimable
+  47748828 ~ 3%    +209.2%  1.476e+08 ~ 8%  bens/iperf/300s-tcp
+  1.65e+08 ~ 1%     +55.9%  2.571e+08 ~ 0%  bens/qperf/600s
+   2741315 ~ 3%      +7.4%    2943780 ~ 5%  ivb43/netperf/300s-25%-TCP_CRR
+ 2.155e+08 ~ 2%     +89.2%  4.077e+08 ~ 3%  TOTAL proc-vmstat.pgalloc_dma32
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-     31729 ~ 8%     +79.4%      56907 ~ 2%  lkp-sbx04/will-it-scale/open1
-     22831 ~ 6%    +295.0%      90181 ~ 2%  lkp-sbx04/will-it-scale/unlink2
-     54560 ~ 7%    +169.6%     147088 ~ 2%  TOTAL numa-meminfo.node2.SUnreclaim
+ 2.826e+08 ~ 9%     -31.4%  1.938e+08 ~16%  lkp-sb03/nuttcp/300s
+ 2.826e+08 ~ 9%     -31.4%  1.938e+08 ~16%  TOTAL cpuidle.C1-SNB.time
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-      8014 ~ 9%     +77.4%      14215 ~ 3%  lkp-sbx04/will-it-scale/open1
-      5703 ~ 6%    +294.5%      22500 ~ 2%  lkp-sbx04/will-it-scale/unlink2
-     13717 ~ 8%    +167.6%      36715 ~ 2%  TOTAL numa-vmstat.node2.nr_slab_unreclaimable
+     47008 ~ 4%     +52.7%      71784 ~ 4%  bens/qperf/600s
+     20704 ~ 4%     +49.2%      30899 ~ 3%  xbm/pigz/25%-512K
+     67712 ~ 4%     +51.6%     102683 ~ 4%  TOTAL softirqs.RCU
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-     14049 ~ 9%    +162.8%      36926 ~ 2%  lkp-sbx04/will-it-scale/unlink2
-     14049 ~ 9%    +162.8%      36926 ~ 2%  TOTAL numa-meminfo.node0.SReclaimable
+      8643 ~ 7%     -32.8%       5805 ~ 1%  ivb43/netperf/300s-25%-TCP_CRR
+      8643 ~ 7%     -32.8%       5805 ~ 1%  TOTAL proc-vmstat.numa_hint_faults
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-      3505 ~ 9%    +163.0%       9218 ~ 1%  lkp-sbx04/will-it-scale/unlink2
-      3505 ~ 9%    +163.0%       9218 ~ 1%  TOTAL numa-vmstat.node0.nr_slab_reclaimable
+      8949 ~ 7%     -31.5%       6129 ~ 1%  ivb43/netperf/300s-25%-TCP_CRR
+      8949 ~ 7%     -31.5%       6129 ~ 1%  TOTAL proc-vmstat.numa_pte_updates
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-      2840 ~ 6%    +167.5%       7598 ~ 4%  lkp-sbx04/will-it-scale/unlink2
-      2840 ~ 6%    +167.5%       7598 ~ 4%  TOTAL numa-vmstat.node1.nr_slab_reclaimable
+     29.25 ~ 0%     +41.8%      41.49 ~ 1%  ivb43/netperf/300s-25%-TCP_CRR
+     29.25 ~ 0%     +41.8%      41.49 ~ 1%  TOTAL turbostat.%c6
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-     11353 ~ 6%    +167.9%      30411 ~ 4%  lkp-sbx04/will-it-scale/unlink2
-     11353 ~ 6%    +167.9%      30411 ~ 4%  TOTAL numa-meminfo.node1.SReclaimable
+       486 ~ 6%     -26.3%        358 ~ 8%  ivb43/netperf/300s-25%-TCP_CRR
+       524 ~ 9%     -24.4%        396 ~ 6%  ivb44/pigz/25%-128K
+       486 ~ 6%     -31.6%        332 ~ 7%  lkp-sb03/nuttcp/300s
+      1497 ~ 7%     -27.4%       1088 ~ 7%  TOTAL slabinfo.kmem_cache.num_objs
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-     62873 ~ 2%     +60.7%     101060 ~ 2%  lkp-sbx04/will-it-scale/open1
-     53665 ~ 2%    +288.3%     208395 ~ 1%  lkp-sbx04/will-it-scale/unlink2
-    116538 ~ 2%    +165.5%     309456 ~ 1%  TOTAL numa-meminfo.node0.Slab
+       486 ~ 6%     -26.3%        358 ~ 8%  ivb43/netperf/300s-25%-TCP_CRR
+       524 ~ 9%     -24.4%        396 ~ 6%  ivb44/pigz/25%-128K
+       486 ~ 6%     -31.6%        332 ~ 7%  lkp-sb03/nuttcp/300s
+      1497 ~ 7%     -27.4%       1088 ~ 7%  TOTAL slabinfo.kmem_cache.active_objs
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-    195370 ~ 0%     +62.8%     318033 ~ 1%  lkp-sbx04/will-it-scale/open1
-    161158 ~ 0%    +258.0%     576939 ~ 1%  lkp-sbx04/will-it-scale/unlink2
-    356528 ~ 0%    +151.0%     894972 ~ 1%  TOTAL meminfo.Slab
+      7914 ~ 6%     -29.6%       5575 ~ 1%  ivb43/netperf/300s-25%-TCP_CRR
+      7914 ~ 6%     -29.6%       5575 ~ 1%  TOTAL proc-vmstat.numa_hint_faults_local
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-     28175 ~ 2%     +78.7%      50339 ~ 4%  lkp-sbx04/will-it-scale/open1
-     22550 ~10%    +211.4%      70229 ~ 5%  lkp-sbx04/will-it-scale/unlink2
-     50725 ~ 6%    +137.7%     120568 ~ 5%  TOTAL numa-meminfo.node3.SUnreclaim
+     37.08 ~ 0%     -34.3%      24.36 ~ 2%  ivb43/netperf/300s-25%-TCP_CRR
+     12.48 ~ 3%     -13.8%      10.76 ~ 6%  lkp-sb03/nuttcp/300s
+     49.56 ~ 1%     -29.2%      35.11 ~ 3%  TOTAL turbostat.%c1
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-      7070 ~ 3%     +77.8%      12570 ~ 4%  lkp-sbx04/will-it-scale/open1
-      5633 ~10%    +211.2%      17532 ~ 5%  lkp-sbx04/will-it-scale/unlink2
-     12704 ~ 6%    +137.0%      30102 ~ 5%  TOTAL numa-vmstat.node3.nr_slab_unreclaimable
+       596 ~ 5%     -21.5%        468 ~ 6%  ivb43/netperf/300s-25%-TCP_CRR
+       634 ~ 7%     -20.2%        506 ~ 5%  ivb44/pigz/25%-128K
+       596 ~ 5%     -25.8%        442 ~ 5%  lkp-sb03/nuttcp/300s
+      1827 ~ 6%     -22.4%       1418 ~ 5%  TOTAL slabinfo.kmem_cache_node.active_objs
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-     48838 ~ 1%    +132.0%     113319 ~ 1%  lkp-sbx04/will-it-scale/unlink2
-     48838 ~ 1%    +132.0%     113319 ~ 1%  TOTAL meminfo.SReclaimable
+     98347 ~ 1%     +66.0%     163290 ~ 9%  bens/iperf/300s-tcp
+    263164 ~ 0%     +15.4%     303781 ~ 1%  bens/qperf/600s
+    181866 ~ 3%     -15.0%     154551 ~ 7%  ivb44/pigz/25%-128K
+     16865 ~ 1%     +14.6%      19322 ~ 4%  xbm/pigz/25%-512K
+    560243 ~ 1%     +14.4%     640945 ~ 5%  TOTAL softirqs.SCHED
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-     12200 ~ 1%    +132.1%      28313 ~ 1%  lkp-sbx04/will-it-scale/unlink2
-     12200 ~ 1%    +132.1%      28313 ~ 1%  TOTAL proc-vmstat.nr_slab_reclaimable
+       614 ~ 5%     -20.8%        486 ~ 6%  ivb43/netperf/300s-25%-TCP_CRR
+       652 ~ 7%     -19.6%        524 ~ 4%  ivb44/pigz/25%-128K
+       614 ~ 5%     -25.0%        460 ~ 5%  lkp-sb03/nuttcp/300s
+      1881 ~ 5%     -21.8%       1472 ~ 5%  TOTAL slabinfo.kmem_cache_node.num_objs
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-     39455 ~ 5%     +58.3%      62461 ~ 3%  lkp-sbx04/will-it-scale/open1
-     33103 ~10%    +172.9%      90331 ~ 3%  lkp-sbx04/will-it-scale/unlink2
-     72559 ~ 7%    +110.6%     152793 ~ 3%  TOTAL numa-meminfo.node3.Slab
+      1.05 ~ 6%     -20.1%       0.84 ~ 5%  bens/qperf/600s
+      1.05 ~ 6%     -20.1%       0.84 ~ 5%  TOTAL perf-profile.cpu-cycles.tcp_rcv_established.tcp_v4_do_rcv.tcp_prequeue_process.tcp_recvmsg.inet_recvmsg
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-     43199 ~ 8%     +57.6%      68080 ~ 4%  lkp-sbx04/will-it-scale/open1
-     35542 ~ 7%    +224.5%     115339 ~ 2%  lkp-sbx04/will-it-scale/unlink2
-     31726 ~ 7%     +15.3%      36592 ~12%  lkp-wsx01/will-it-scale/futex2
-    110469 ~ 7%     +99.2%     220012 ~ 4%  TOTAL numa-meminfo.node2.Slab
+     10097 ~ 0%     +26.7%      12797 ~ 2%  bens/qperf/600s
+     10097 ~ 0%     +26.7%      12797 ~ 2%  TOTAL softirqs.HRTIMER
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-     12710 ~12%     +97.9%      25157 ~ 5%  lkp-sbx04/will-it-scale/unlink2
-     12710 ~12%     +97.9%      25157 ~ 5%  TOTAL numa-meminfo.node2.SReclaimable
+      0.78 ~ 3%     +22.5%       0.96 ~ 3%  bens/qperf/600s
+      0.78 ~ 3%     +22.5%       0.96 ~ 3%  TOTAL perf-profile.cpu-cycles.tcp_v4_rcv.ip_local_deliver_finish.ip_local_deliver.ip_rcv_finish.ip_rcv
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-      3179 ~11%     +97.5%       6279 ~ 5%  lkp-sbx04/will-it-scale/unlink2
-      3179 ~11%     +97.5%       6279 ~ 5%  TOTAL numa-vmstat.node2.nr_slab_reclaimable
+ 2.835e+09 ~ 0%     -16.5%  2.368e+09 ~ 0%  ivb43/netperf/300s-25%-TCP_CRR
+ 2.835e+09 ~ 0%     -16.5%  2.368e+09 ~ 0%  TOTAL cpuidle.C1-IVT.time
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-     10553 ~ 9%     +90.5%      20102 ~ 6%  lkp-sbx04/will-it-scale/unlink2
-     10553 ~ 9%     +90.5%      20102 ~ 6%  TOTAL numa-meminfo.node3.SReclaimable
+   5915033 ~13%     +14.3%    6761676 ~ 7%  ivb43/netperf/300s-25%-TCP_CRR
+   5915033 ~13%     +14.3%    6761676 ~ 7%  TOTAL meminfo.DirectMap2M
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-      2644 ~10%     +89.9%       5020 ~ 6%  lkp-sbx04/will-it-scale/unlink2
-      2644 ~10%     +89.9%       5020 ~ 6%  TOTAL numa-vmstat.node3.nr_slab_reclaimable
+    264559 ~ 0%     +15.6%     305707 ~ 0%  bens/iperf/300s-tcp
+    264559 ~ 0%     +15.6%     305707 ~ 0%  TOTAL softirqs.TIMER
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-      6034 ~26%     +16.1%       7008 ~22%  lkp-sbx04/will-it-scale/open1
-      6034 ~26%     +16.1%       7008 ~22%  TOTAL numa-vmstat.node2.nr_active_file
+     92365 ~ 3%     -12.9%      80487 ~ 9%  ivb44/pigz/25%-128K
+     92365 ~ 3%     -12.9%      80487 ~ 9%  TOTAL meminfo.DirectMap4k
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-     24139 ~26%     +16.1%      28033 ~22%  lkp-sbx04/will-it-scale/open1
-     24139 ~26%     +16.1%      28033 ~22%  TOTAL numa-meminfo.node2.Active(file)
+  24143956 ~ 3%      -8.1%   22198708 ~ 5%  ivb43/netperf/300s-25%-TCP_CRR
+  24143956 ~ 3%      -8.1%   22198708 ~ 5%  TOTAL numa-numastat.node1.numa_hit
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-      0.55 ~35%     +94.2%       1.08 ~14%  lkp-sbx04/will-it-scale/unlink2
-      0.55 ~35%     +94.2%       1.08 ~14%  TOTAL perf-profile.cpu-cycles.rcu_nocb_kthread.kthread.ret_from_fork
+  24140149 ~ 3%      -8.1%   22196166 ~ 5%  ivb43/netperf/300s-25%-TCP_CRR
+  24140149 ~ 3%      -8.1%   22196166 ~ 5%  TOTAL numa-numastat.node1.local_node
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-    498234 ~ 1%     -35.9%     319244 ~ 1%  lkp-sbx04/will-it-scale/open1
-    425531 ~ 2%     -39.8%     256020 ~ 2%  lkp-sbx04/will-it-scale/unlink2
-    923765 ~ 2%     -37.7%     575264 ~ 2%  TOTAL cpuidle.C7-SNB.usage
+  12512229 ~ 3%      -7.6%   11556940 ~ 6%  ivb43/netperf/300s-25%-TCP_CRR
+  12512229 ~ 3%      -7.6%   11556940 ~ 6%  TOTAL numa-vmstat.node1.numa_hit
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-       327 ~ 9%     -26.2%        241 ~21%  lkp-nex05/will-it-scale/lock1
-       327 ~ 9%     -26.2%        241 ~21%  TOTAL slabinfo.blkdev_ioc.num_objs
+  12407607 ~ 3%      -7.0%   11539395 ~ 6%  ivb43/netperf/300s-25%-TCP_CRR
+  12407607 ~ 3%      -7.0%   11539395 ~ 6%  TOTAL numa-vmstat.node1.numa_local
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-       327 ~ 9%     -26.2%        241 ~21%  lkp-nex05/will-it-scale/lock1
-       327 ~ 9%     -26.2%        241 ~21%  TOTAL slabinfo.blkdev_ioc.active_objs
+  25536237 ~ 3%      +6.8%   27272147 ~ 5%  ivb43/netperf/300s-25%-TCP_CRR
+  25536237 ~ 3%      +6.8%   27272147 ~ 5%  TOTAL numa-numastat.node0.local_node
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-   4608661 ~ 5%     +15.0%    5300401 ~ 3%  lkp-sbx04/will-it-scale/open1
-    631679 ~ 4%     +64.1%    1036539 ~ 1%  lkp-sbx04/will-it-scale/unlink2
-   5240340 ~ 5%     +20.9%    6336941 ~ 3%  TOTAL numa-numastat.node2.numa_hit
+  25538777 ~ 3%      +6.8%   27275952 ~ 5%  ivb43/netperf/300s-25%-TCP_CRR
+  25538777 ~ 3%      +6.8%   27275952 ~ 5%  TOTAL numa-numastat.node0.numa_hit
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-   4606166 ~ 5%     +15.0%    5298738 ~ 3%  lkp-sbx04/will-it-scale/open1
-    630014 ~ 4%     +64.4%    1035707 ~ 1%  lkp-sbx04/will-it-scale/unlink2
-   5236180 ~ 5%     +21.0%    6334445 ~ 3%  TOTAL numa-numastat.node2.local_node
+      1159 ~ 3%     -10.9%       1033 ~ 1%  xbm/pigz/25%-512K
+      1159 ~ 3%     -10.9%       1033 ~ 1%  TOTAL slabinfo.kmalloc-96.num_objs
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-   6319649 ~ 2%     +11.6%    7054325 ~ 3%  lkp-sbx04/will-it-scale/open1
-   1017618 ~ 3%     +59.6%    1624227 ~ 1%  lkp-sbx04/will-it-scale/unlink2
-   7337268 ~ 3%     +18.3%    8678552 ~ 2%  TOTAL numa-numastat.node1.local_node
+      1159 ~ 3%     -10.9%       1033 ~ 1%  xbm/pigz/25%-512K
+      1159 ~ 3%     -10.9%       1033 ~ 1%  TOTAL slabinfo.kmalloc-96.active_objs
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-   6323803 ~ 2%     +11.6%    7058478 ~ 3%  lkp-sbx04/will-it-scale/open1
-   1021772 ~ 3%     +59.4%    1628381 ~ 1%  lkp-sbx04/will-it-scale/unlink2
-   7345576 ~ 3%     +18.3%    8686859 ~ 2%  TOTAL numa-numastat.node1.numa_hit
+      1.33 ~ 2%     -10.5%       1.19 ~ 3%  bens/qperf/600s
+      1.33 ~ 2%     -10.5%       1.19 ~ 3%  TOTAL perf-profile.cpu-cycles.tcp_sendmsg.inet_sendmsg.sock_aio_write.do_sync_write.vfs_write
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-   3533020 ~ 7%     +16.2%    4106277 ~ 3%  lkp-sbx04/will-it-scale/open1
-    529616 ~ 6%     +59.8%     846268 ~ 2%  lkp-sbx04/will-it-scale/unlink2
-   4062636 ~ 7%     +21.9%    4952546 ~ 3%  TOTAL numa-numastat.node3.local_node
+      1126 ~ 1%      -9.7%       1017 ~ 1%  bens/iperf/300s-tcp
+      1126 ~ 1%      -9.7%       1017 ~ 1%  TOTAL proc-vmstat.pgactivate
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-   3534685 ~ 7%     +16.2%    4108772 ~ 3%  lkp-sbx04/will-it-scale/open1
-    532111 ~ 6%     +59.7%     849592 ~ 2%  lkp-sbx04/will-it-scale/unlink2
-   4066797 ~ 7%     +21.9%    4958364 ~ 3%  TOTAL numa-numastat.node3.numa_hit
+     12269 ~ 4%      +5.5%      12946 ~ 4%  ivb43/netperf/300s-25%-TCP_CRR
+     12269 ~ 4%      +5.5%      12946 ~ 4%  TOTAL slabinfo.kmalloc-192.num_objs
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-    699767 ~ 4%     +30.0%     909550 ~ 2%  lkp-sbx04/will-it-scale/unlink2
-    699767 ~ 4%     +30.0%     909550 ~ 2%  TOTAL numa-vmstat.node1.numa_local
+     12258 ~ 4%      +5.6%      12946 ~ 4%  ivb43/netperf/300s-25%-TCP_CRR
+     12258 ~ 4%      +5.6%      12946 ~ 4%  TOTAL slabinfo.kmalloc-192.active_objs
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-    710327 ~ 4%     +29.5%     920095 ~ 2%  lkp-sbx04/will-it-scale/unlink2
-    710327 ~ 4%     +29.5%     920095 ~ 2%  TOTAL numa-vmstat.node1.numa_hit
+      1.16 ~ 4%      +9.2%       1.26 ~ 3%  ivb43/netperf/300s-25%-TCP_CRR
+      1.16 ~ 4%      +9.2%       1.26 ~ 3%  TOTAL perf-profile.cpu-cycles.get_next_timer_interrupt.tick_nohz_stop_sched_tick.__tick_nohz_idle_enter.tick_nohz_idle_enter.cpu_idle_loop
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-    355465 ~ 3%     +32.2%     469857 ~ 1%  lkp-sbx04/will-it-scale/unlink2
-    355465 ~ 3%     +32.2%     469857 ~ 1%  TOTAL numa-vmstat.node2.numa_local
+      3135 ~ 2%      +8.4%       3398 ~ 1%  ivb44/pigz/25%-128K
+      3135 ~ 2%      +8.4%       3398 ~ 1%  TOTAL slabinfo.task_xstate.active_objs
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-    401800 ~ 0%     +30.8%     525635 ~ 1%  lkp-sbx04/will-it-scale/unlink2
-    401800 ~ 0%     +30.8%     525635 ~ 1%  TOTAL numa-meminfo.node1.MemUsed
+      3135 ~ 2%      +8.4%       3398 ~ 1%  ivb44/pigz/25%-128K
+      3135 ~ 2%      +8.4%       3398 ~ 1%  TOTAL slabinfo.task_xstate.num_objs
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-    330376 ~ 1%     +11.7%     369194 ~ 1%  lkp-sbx04/will-it-scale/open1
-    327252 ~ 0%     +47.0%     480920 ~ 1%  lkp-sbx04/will-it-scale/unlink2
-    657628 ~ 0%     +29.3%     850114 ~ 1%  TOTAL numa-meminfo.node0.MemUsed
+     11496 ~ 5%     -96.2%        435 ~12%  bens/iperf/300s-tcp
+     23777 ~ 1%     -86.3%       3264 ~10%  bens/qperf/600s
+     22961 ~ 1%     -76.7%       5351 ~ 4%  ivb44/pigz/25%-128K
+     13976 ~ 2%     -97.5%        349 ~22%  lkp-sb03/nuttcp/300s
+     11345 ~ 0%     -88.0%       1361 ~25%  xbm/pigz/25%-512K
+     83555 ~ 2%     -87.1%      10761 ~ 9%  TOTAL time.involuntary_context_switches
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-    395008 ~ 2%     +28.8%     508797 ~ 1%  lkp-sbx04/will-it-scale/unlink2
-    395008 ~ 2%     +28.8%     508797 ~ 1%  TOTAL numa-vmstat.node2.numa_hit
+  36820683 ~ 0%     +17.5%   43253042 ~ 0%  bens/qperf/600s
+  36820683 ~ 0%     +17.5%   43253042 ~ 0%  TOTAL time.voluntary_context_switches
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-  84008013 ~ 4%     +12.5%   94488610 ~ 1%  lkp-sbx04/will-it-scale/open1
-  20904484 ~ 1%     +35.9%   28407692 ~ 0%  lkp-sbx04/will-it-scale/unlink2
- 104912497 ~ 3%     +17.1%  122896302 ~ 1%  TOTAL proc-vmstat.pgalloc_normal
+     13302 ~ 0%     +49.0%      19817 ~14%  bens/iperf/300s-tcp
+     62977 ~ 0%     +17.3%      73856 ~ 0%  bens/qperf/600s
+     76279 ~ 0%     +22.8%      93674 ~ 3%  TOTAL vmstat.system.in
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-        20 ~19%     +69.3%         34 ~32%  lkp-sbx04/will-it-scale/unlink2
-        20 ~19%     +69.3%         34 ~32%  TOTAL cpuidle.C6-SNB.usage
+     23681 ~ 0%     +48.9%      35273 ~15%  bens/iperf/300s-tcp
+    122654 ~ 0%     +17.4%     143989 ~ 0%  bens/qperf/600s
+    759769 ~ 0%     -10.5%     680088 ~ 0%  ivb43/netperf/300s-25%-TCP_CRR
+    906105 ~ 0%      -5.2%     859351 ~ 1%  TOTAL vmstat.system.cs
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-  90818481 ~ 4%     +12.2%  1.019e+08 ~ 1%  lkp-sbx04/will-it-scale/open1
-  24507722 ~ 1%     +32.8%   32552022 ~ 0%  lkp-sbx04/will-it-scale/unlink2
- 1.153e+08 ~ 3%     +16.6%  1.344e+08 ~ 1%  TOTAL proc-vmstat.pgfree
+       144 ~ 0%      +5.4%        152 ~ 0%  bens/qperf/600s
+       144 ~ 0%      +5.4%        152 ~ 0%  TOTAL time.percent_of_cpu_this_job_got
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-  23331601 ~ 4%     +11.8%   26096052 ~ 1%  lkp-sbx04/will-it-scale/open1
-   7360836 ~ 1%     +29.1%    9500981 ~ 0%  lkp-sbx04/will-it-scale/unlink2
-  30692438 ~ 3%     +16.0%   35597034 ~ 1%  TOTAL proc-vmstat.numa_local
+       122 ~ 0%      -4.2%        116 ~ 0%  ivb43/netperf/300s-25%-TCP_CRR
+           ~ 0%      -4.2%            ~ 0%  TOTAL turbostat.Cor_W
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-  23344069 ~ 4%     +11.8%   26108517 ~ 1%  lkp-sbx04/will-it-scale/open1
-   7373303 ~ 1%     +29.0%    9513445 ~ 0%  lkp-sbx04/will-it-scale/unlink2
-  30717373 ~ 3%     +16.0%   35621962 ~ 1%  TOTAL proc-vmstat.numa_hit
+       299 ~ 0%      -2.8%        290 ~ 2%  bens/iperf/300s-tcp
+       863 ~ 0%      +5.2%        908 ~ 0%  bens/qperf/600s
+      1162 ~ 0%      +3.2%       1199 ~ 0%  TOTAL time.system_time
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-    293077 ~ 3%      +9.2%     320181 ~ 3%  lkp-sbx04/will-it-scale/open1
-    289901 ~ 3%     +29.0%     374077 ~ 2%  lkp-sbx04/will-it-scale/unlink2
-    582978 ~ 3%     +19.1%     694258 ~ 2%  TOTAL numa-meminfo.node2.MemUsed
+       153 ~ 0%      -3.3%        147 ~ 0%  ivb43/netperf/300s-25%-TCP_CRR
+           ~ 0%      -3.3%            ~ 0%  TOTAL turbostat.Pkg_W
 
-acf426994c75e38  0acd7c39a85836d90451b6c27  
+221031cb1b33258  34577530114e9b1de10f3aa96  
 ---------------  -------------------------  
-      1.34 ~10%     -18.2%       1.10 ~ 6%  lkp-sbx04/will-it-scale/open1
-      1.34 ~10%     -18.2%       1.10 ~ 6%  TOTAL perf-profile.cpu-cycles.task_work_add.filp_close.__close_fd.sys_close.system_call_fastpath
-
-acf426994c75e38  0acd7c39a85836d90451b6c27  
----------------  -------------------------  
-    310408 ~ 3%     +17.2%     363768 ~ 4%  lkp-sbx04/will-it-scale/unlink2
-    310408 ~ 3%     +17.2%     363768 ~ 4%  TOTAL numa-vmstat.node3.numa_local
-
-acf426994c75e38  0acd7c39a85836d90451b6c27  
----------------  -------------------------  
-    278872 ~ 3%     +18.9%     331653 ~ 2%  lkp-sbx04/will-it-scale/unlink2
-    278872 ~ 3%     +18.9%     331653 ~ 2%  TOTAL numa-meminfo.node3.MemUsed
-
-acf426994c75e38  0acd7c39a85836d90451b6c27  
----------------  -------------------------  
-      1.83 ~ 3%     +17.5%       2.15 ~ 3%  nhm4/will-it-scale/read1
-      1.83 ~ 3%     +17.5%       2.15 ~ 3%  TOTAL perf-profile.cpu-cycles.find_lock_entry.shmem_getpage_gfp.shmem_file_read_iter.new_sync_read.vfs_read
-
-acf426994c75e38  0acd7c39a85836d90451b6c27  
----------------  -------------------------  
-    350441 ~ 3%     +15.4%     404433 ~ 4%  lkp-sbx04/will-it-scale/unlink2
-    350441 ~ 3%     +15.4%     404433 ~ 4%  TOTAL numa-vmstat.node3.numa_hit
-
-acf426994c75e38  0acd7c39a85836d90451b6c27  
----------------  -------------------------  
-     11130 ~ 1%     +18.7%      13216 ~ 2%  lkp-nex05/will-it-scale/lock1
-     13337 ~ 2%     +15.2%      15360 ~ 4%  lkp-sbx04/will-it-scale/unlink2
-     12236 ~ 1%     +16.4%      14247 ~ 1%  lkp-wsx01/will-it-scale/futex2
-     36704 ~ 2%     +16.7%      42823 ~ 3%  TOTAL slabinfo.kmalloc-192.num_objs
-
-acf426994c75e38  0acd7c39a85836d90451b6c27  
----------------  -------------------------  
-     11130 ~ 1%     +18.6%      13206 ~ 2%  lkp-nex05/will-it-scale/lock1
-     13337 ~ 2%     +14.8%      15306 ~ 4%  lkp-sbx04/will-it-scale/unlink2
-     12236 ~ 1%     +16.4%      14247 ~ 1%  lkp-wsx01/will-it-scale/futex2
-     36704 ~ 2%     +16.5%      42760 ~ 3%  TOTAL slabinfo.kmalloc-192.active_objs
-
-acf426994c75e38  0acd7c39a85836d90451b6c27  
----------------  -------------------------  
-   6819069 ~ 3%      +8.6%    7407793 ~ 2%  lkp-sbx04/will-it-scale/open1
-   3615190 ~ 1%     +15.2%    4164246 ~ 0%  lkp-sbx04/will-it-scale/unlink2
-  10434260 ~ 2%     +10.9%   11572039 ~ 1%  TOTAL proc-vmstat.pgalloc_dma32
-
-acf426994c75e38  0acd7c39a85836d90451b6c27  
----------------  -------------------------  
-   8856248 ~ 3%      +8.6%    9619086 ~ 2%  lkp-sbx04/will-it-scale/open1
-   5216071 ~ 2%     +14.6%    5979211 ~ 0%  lkp-sbx04/will-it-scale/unlink2
-  14072319 ~ 2%     +10.8%   15598298 ~ 1%  TOTAL numa-numastat.node0.local_node
-
-acf426994c75e38  0acd7c39a85836d90451b6c27  
----------------  -------------------------  
-   8860401 ~ 3%      +8.6%    9623240 ~ 2%  lkp-sbx04/will-it-scale/open1
-   5220224 ~ 2%     +14.6%    5983365 ~ 0%  lkp-sbx04/will-it-scale/unlink2
-  14080626 ~ 2%     +10.8%   15606605 ~ 1%  TOTAL numa-numastat.node0.numa_hit
-
-acf426994c75e38  0acd7c39a85836d90451b6c27  
----------------  -------------------------  
-      4865 ~ 2%     +13.5%       5524 ~ 6%  lkp-sbx04/will-it-scale/open1
-      4865 ~ 2%     +13.5%       5524 ~ 6%  TOTAL cpuidle.C1-SNB.usage
-
-acf426994c75e38  0acd7c39a85836d90451b6c27  
----------------  -------------------------  
-      2231 ~ 5%      +9.1%       2434 ~ 7%  lkp-sbx04/will-it-scale/unlink2
-      2231 ~ 5%      +9.1%       2434 ~ 7%  TOTAL numa-meminfo.node3.KernelStack
-
-acf426994c75e38  0acd7c39a85836d90451b6c27  
----------------  -------------------------  
-      2438 ~ 2%     +10.7%       2700 ~ 1%  lkp-nex05/will-it-scale/lock1
-      2438 ~ 2%     +10.7%       2700 ~ 1%  TOTAL slabinfo.signal_cache.num_objs
-
-acf426994c75e38  0acd7c39a85836d90451b6c27  
----------------  -------------------------  
-     17183 ~ 1%    +131.6%      39791 ~ 0%  lkp-nex05/will-it-scale/lock1
-     67122 ~ 3%     -18.0%      55048 ~ 0%  lkp-sbx04/will-it-scale/open1
-     67648 ~ 6%     -18.5%      55135 ~ 0%  lkp-sbx04/will-it-scale/unlink2
-     21242 ~ 0%     +99.3%      42326 ~ 0%  lkp-wsx01/will-it-scale/futex2
-      6224 ~ 3%     +52.1%       9468 ~ 2%  nhm4/will-it-scale/read1
-    179420 ~ 4%     +12.5%     201771 ~ 0%  TOTAL time.involuntary_context_switches
-
-acf426994c75e38  0acd7c39a85836d90451b6c27  
----------------  -------------------------  
-      1054 ~ 1%     +19.4%       1258 ~ 1%  lkp-nex05/will-it-scale/lock1
-      4445 ~ 1%     -40.5%       2645 ~ 0%  lkp-sbx04/will-it-scale/open1
-      3861 ~ 0%     -55.5%       1717 ~ 1%  lkp-sbx04/will-it-scale/unlink2
-      1142 ~ 1%     +15.4%       1318 ~ 1%  lkp-wsx01/will-it-scale/futex2
-       527 ~ 1%     +18.1%        622 ~ 1%  nhm4/will-it-scale/read1
-     11030 ~ 1%     -31.4%       7562 ~ 1%  TOTAL vmstat.system.cs
+     33.55 ~ 0%      +1.7%      34.12 ~ 0%  ivb43/netperf/300s-25%-TCP_CRR
+     33.55 ~ 0%      +1.7%      34.12 ~ 0%  TOTAL turbostat.%c0
 
 
 Legend:
@@ -512,42 +423,61 @@ Legend:
 	[+-]XX% - change percent
 
 
+                                 iperf.tcp.sender.bps
+
+  2.4e+10 ++----------O--------------------------------------O--------------+
+          O     O  O     O     O  O  O  O  O  O  O  O  O        O           |
+  2.2e+10 ++ O              O                                      O        |
+    2e+10 ++                                                                |
+          |                                               O                 |
+  1.8e+10 ++                                                                |
+  1.6e+10 ++                                                                |
+          |                                                                 |
+  1.4e+10 ++                                                                |
+  1.2e+10 ++                                                                |
+          |                                                                 |
+    1e+10 ++                                                                |
+    8e+09 ++                                                                |
+          *..*..*..*..*..*..*..*..*..*..*..*..*..*..*..*..*..*..*..*..*..*..*
+    6e+09 ++----------------------------------------------------------------+
+
+
+                                iperf.tcp.receiver.bps
+
+  2.4e+10 ++----------O--------------------------------------O--------------+
+          O     O  O     O     O  O  O  O  O  O  O  O  O        O           |
+  2.2e+10 ++ O              O                                      O        |
+    2e+10 ++                                                                |
+          |                                               O                 |
+  1.8e+10 ++                                                                |
+  1.6e+10 ++                                                                |
+          |                                                                 |
+  1.4e+10 ++                                                                |
+  1.2e+10 ++                                                                |
+          |                                                                 |
+    1e+10 ++                                                                |
+    8e+09 ++                                                                |
+          *..*..*..*..*..*..*..*..*..*..*..*..*..*..*..*..*..*..*..*..*..*..*
+    6e+09 ++----------------------------------------------------------------+
+
+
                           time.involuntary_context_switches
 
-  75000 *+--*----------------*----------------------------------------------+
-        |                   : +                                             |
-        |      *...*..      :  +               *                            |
-  70000 ++            *... :    +             + +                           |
-        |                 *      *...*..     +   +    .*                    |
-        |                               *...*     + ..                      |
-  65000 ++                                         *                        |
+  14000 ++------------------------------------------------------------------+
         |                                                                   |
-  60000 ++                                                                  |
+  12000 *+.        .*..  ..*..*..*..*..  .*..*..*..*..*..  ..*..*..*..*..   *
+        |    .*..*.    *.              *.                *.               ..|
+  10000 ++ *.                                                            *  |
         |                                                                   |
+   8000 ++                                                                  |
         |                                                                   |
-  55000 O+  O  O      O   O  O   O   O  O   O  O   O   O  O   O  O   O  O   O
-        |          O                                                        |
+   6000 ++                                                                  |
         |                                                                   |
-  50000 ++------------------------------------------------------------------+
-
-
-                                 vmstat.system.cs
-
-  6000 ++-------------------------------------------------------------------+
-       |                                                                    |
-  5500 *+..*..*...*...*..*...*..*...                                        |
-       |                            *.                                      |
-  5000 ++                             ..                                    |
-       |                                                                    |
-  4500 ++                               *..*...*...*..                      |
-       |                                              *                     |
-  4000 ++                                                                   |
-       |                                                                    |
-  3500 ++                                                                   |
-       |                                                                    |
-  3000 ++                                                                   |
-       |   O          O         O   O   O  O   O      O      O       O  O   O
-  2500 O+-----O---O------O---O---------------------O------O------O----------+
+   4000 ++                                                                  |
+        |                                                                   |
+   2000 ++                                                                  |
+        |     O                                          O                  |
+      0 O+-O-----O--O--O---O--O--O--O--O--O--O--O--O--O------O--O--O--------+
 
 
 	[*] bisect-good sample
@@ -561,3 +491,12 @@ design or configuration may affect actual performance.
 
 Thanks,
 Fengguang
+
+--vtzGhvizbBRQ85DL
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename=reproduce
+
+./iperf3 -s
+./iperf3 -t 300 -f M -J -c 127.0.0.1
+
+--vtzGhvizbBRQ85DL--
