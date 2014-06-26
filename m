@@ -1,164 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755304AbaFZNcs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 09:32:48 -0400
-Received: from mail-qg0-f49.google.com ([209.85.192.49]:58530 "EHLO
-	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751759AbaFZNcr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 09:32:47 -0400
+	id S1755381AbaFZNfw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 09:35:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38721 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751765AbaFZNfu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 09:35:50 -0400
+Message-ID: <53AC21A8.5090703@redhat.com>
+Date: Thu, 26 Jun 2014 15:35:36 +0200
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <1403723019-6212-1-git-send-email-javier.martinez@collabora.co.uk>
-References: <1403723019-6212-1-git-send-email-javier.martinez@collabora.co.uk>
-From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-Date: Thu, 26 Jun 2014 19:02:25 +0530
-Message-ID: <CAHfPSqB9620OiHxd_w3ReS6gg7PzYK1eN11rH6Z6boai0x=2og@mail.gmail.com>
-Subject: Re: [PATCH v4 00/14] Add Maxim 77802 PMIC support
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
-        Daniel Stone <daniels@collabora.com>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        devicetree@vger.kernel.org,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: Re: [PATCH v3 04/13] smaps: remove mem_size_stats->vma and use walk_page_vma()
+References: <1403295099-6407-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1403295099-6407-5-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1403295099-6407-5-git-send-email-n-horiguchi@ah.jp.nec.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Javier,
+On 06/20/2014 10:11 PM, Naoya Horiguchi wrote:
+> pagewalk.c can handle vma in itself, so we don't have to pass vma via
+> walk->private. And show_smap() walks pages on vma basis, so using
+> walk_page_vma() is preferable.
+> 
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> ---
+>  fs/proc/task_mmu.c | 10 ++++------
+>  1 file changed, 4 insertions(+), 6 deletions(-)
+> 
+> diff --git v3.16-rc1.orig/fs/proc/task_mmu.c v3.16-rc1/fs/proc/task_mmu.c
+> index cfa63ee92c96..9b6c7d4fd3f4 100644
+> --- v3.16-rc1.orig/fs/proc/task_mmu.c
+> +++ v3.16-rc1/fs/proc/task_mmu.c
+> @@ -430,7 +430,6 @@ const struct file_operations proc_tid_maps_operations = {
+>  
+>  #ifdef CONFIG_PROC_PAGE_MONITOR
+>  struct mem_size_stats {
+> -	struct vm_area_struct *vma;
+>  	unsigned long resident;
+>  	unsigned long shared_clean;
+>  	unsigned long shared_dirty;
+> @@ -449,7 +448,7 @@ static void smaps_pte_entry(pte_t ptent, unsigned long addr,
+>  		unsigned long ptent_size, struct mm_walk *walk)
+>  {
+>  	struct mem_size_stats *mss = walk->private;
+> -	struct vm_area_struct *vma = mss->vma;
+> +	struct vm_area_struct *vma = walk->vma;
+>  	pgoff_t pgoff = linear_page_index(vma, addr);
+>  	struct page *page = NULL;
+>  	int mapcount;
+> @@ -501,7 +500,7 @@ static int smaps_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+>  			   struct mm_walk *walk)
+>  {
+>  	struct mem_size_stats *mss = walk->private;
+> -	struct vm_area_struct *vma = mss->vma;
+> +	struct vm_area_struct *vma = walk->vma;
+>  	pte_t *pte;
+>  	spinlock_t *ptl;
+>  
+> @@ -590,14 +589,13 @@ static int show_smap(struct seq_file *m, void *v, int is_pid)
+>  	struct mm_walk smaps_walk = {
+>  		.pmd_entry = smaps_pte_range,
+>  		.mm = vma->vm_mm,
+> +		.vma = vma,
 
-On 26 June 2014 00:33, Javier Martinez Canillas
-<javier.martinez@collabora.co.uk> wrote:
-> MAX77802 is a PMIC that contains 10 high efficiency Buck regulators,
-> 32 Low-dropout (LDO) regulators, two 32kHz buffered clock outputs,
-> a Real-Time-Clock (RTC) and a I2C interface to program the individual
-> regulators, clocks and the RTC.
->
-> This fourth version of the patch-set addresses several issues pointed
-> out by Mark Brown, Doug Anderson and Krzysztof Kozlowski The individual
-> changes are added on each patch change log.
->
-> This series are based on drivers added by Simon Glass to the Chrome OS
-> kernel and adds support for the Maxim 77802 Power Management IC, their
-> regulators, clocks, RTC and I2C interface.
->
-> NOTE: This version of the series model the real power scheme for Maxim
-> 77802 regulators instead of a simplistic model like in older versions.
-> So these changes depend on patch:
->
-> "[PATCH v3] ARM: dts: Add cros_ec to exynos5420-peach-pit and exynos5800-peach-pi"
-> https://patchwork.kernel.org/patch/4411351/
->
-> which adds tps65090 support to Peach boards since regulators from this
-> PMIC supply power to a set of MAX77802 regulators.
->
-> The patch-set has been tested on both Daisy/Snow (max77686) and Peach
-> pit (max77802) Chromebooks and it's composed of the following patches:
->
-> Doug Anderson (1):
->   mfd: max77686: Allow the max77686 rtc to wakeup the system
->
-> Javier Martinez Canillas (13):
->   mfd: max77686: Convert to use regmap_irq
->   clk: max77686: Add DT include for MAX77686 PMIC clock
->   clk: max77686: Improve Maxim 77686 PMIC clocks binding
->   clk: Add generic driver for Maxim PMIC clocks
->   clk: max77686: Convert to the generic max clock driver
->   mfd: Add driver for Maxim 77802 Power Management IC
->   mfd: max77802: Add DT binding documentation
->   regmap: Add regmap_reg_copy function
->   regulator: Add driver for Maxim 77802 PMIC regulators
->   clk: Add driver for Maxim 77802 PMIC clocks
->   clk: max77802: Add DT binding documentation
->   rtc: Add driver for Maxim 77802 PMIC Real-Time-Clock
->   ARM: dts: Add max77802 to exynos5420-peach-pit and exynos5800-peach-pi
->
->  .../devicetree/bindings/clock/maxim,max77686.txt   |  15 +-
->  .../devicetree/bindings/clock/maxim,max77802.txt   |  42 ++
->  Documentation/devicetree/bindings/mfd/max77802.txt |  97 +++
->  arch/arm/boot/dts/exynos5420-peach-pit.dts         | 343 ++++++++++
->  arch/arm/boot/dts/exynos5800-peach-pi.dts          | 343 ++++++++++
->  drivers/base/regmap/regmap.c                       |  34 +
->  drivers/clk/Kconfig                                |  11 +
->  drivers/clk/Makefile                               |   2 +
->  drivers/clk/clk-max-gen.c                          | 195 ++++++
->  drivers/clk/clk-max-gen.h                          |  32 +
->  drivers/clk/clk-max77686.c                         | 183 +-----
->  drivers/clk/clk-max77802.c                         |  99 +++
->  drivers/mfd/Kconfig                                |  15 +
->  drivers/mfd/Makefile                               |   3 +-
->  drivers/mfd/max77686-irq.c                         | 319 ----------
->  drivers/mfd/max77686.c                             |  97 ++-
->  drivers/mfd/max77802.c                             | 366 +++++++++++
->  drivers/regulator/Kconfig                          |   9 +
->  drivers/regulator/Makefile                         |   1 +
->  drivers/regulator/max77802.c                       | 694 +++++++++++++++++++++
->  drivers/rtc/Kconfig                                |  10 +
->  drivers/rtc/Makefile                               |   1 +
->  drivers/rtc/rtc-max77686.c                         |  55 +-
->  drivers/rtc/rtc-max77802.c                         | 637 +++++++++++++++++++
->  include/dt-bindings/clock/maxim,max77686.h         |  23 +
->  include/dt-bindings/clock/maxim,max77802.h         |  22 +
->  include/linux/mfd/max77686-private.h               |  28 +-
->  include/linux/mfd/max77686.h                       |   2 -
->  include/linux/mfd/max77802-private.h               | 307 +++++++++
->  include/linux/mfd/max77802.h                       | 121 ++++
->  include/linux/regmap.h                             |   9 +
->  31 files changed, 3583 insertions(+), 532 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/clock/maxim,max77802.txt
->  create mode 100644 Documentation/devicetree/bindings/mfd/max77802.txt
->  create mode 100644 drivers/clk/clk-max-gen.c
->  create mode 100644 drivers/clk/clk-max-gen.h
->  create mode 100644 drivers/clk/clk-max77802.c
->  delete mode 100644 drivers/mfd/max77686-irq.c
->  create mode 100644 drivers/mfd/max77802.c
->  create mode 100644 drivers/regulator/max77802.c
->  create mode 100644 drivers/rtc/rtc-max77802.c
->  create mode 100644 include/dt-bindings/clock/maxim,max77686.h
->  create mode 100644 include/dt-bindings/clock/maxim,max77802.h
->  create mode 100644 include/linux/mfd/max77802-private.h
->  create mode 100644 include/linux/mfd/max77802.h
->
-> --
-> 2.0.0.rc2
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Seems redundant: walk_page_vma() sets walk.vma anyway and so does
+walk_page_range(). Is there any case when the caller should set .vma itself?
 
-With this patchset
-+
-[PATCH 0/4 v2] hwmon: ntc_thermistor: prepose vendor prefix change
-http://www.spinics.net/lists/linux-samsung-soc/msg33034.html
-+
-spi: s3c64xx: fix broken "cs_gpios" usage in the driver
-http://comments.gmane.org/gmane.linux.kernel.samsung-soc/33102
-+
-[PATCH v2] ARM: dts: Add cros_ec to exynos5420-peach-pit and exynos5800-peach-pi
-http://www.gossamer-threads.com/lists/linux/kernel/1951591
+Jerome
 
-Tested on Peach PIT and PI boards.
+>  		.private = &mss,
+>  	};
+>  
+>  	memset(&mss, 0, sizeof mss);
+> -	mss.vma = vma;
+>  	/* mmap_sem is held in m_start */
+> -	if (vma->vm_mm && !is_vm_hugetlb_page(vma))
+> -		walk_page_range(vma->vm_start, vma->vm_end, &smaps_walk);
+> +	walk_page_vma(vma, &smaps_walk);
+>  
+>  	show_map_vma(m, vma, is_pid);
+>  
+> 
 
-1. Max77802 seems to probe and configure the supplies properly.
-    Verified via the sysfs entries exported by the regulators.
-
-2. ADC probes fine and Thermistors report proper values,
-    ADC requires vdd_supply = "ldo09_reg".
-
-Tested-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-
--- 
-Shine bright,
-(: Nav :)
