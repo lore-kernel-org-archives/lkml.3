@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756737AbaFZKwt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 06:52:49 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:46633 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753358AbaFZKwr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 06:52:47 -0400
+	id S1756524AbaFZLEj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 07:04:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7909 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754661AbaFZLEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 07:04:37 -0400
+Message-ID: <53ABFE3E.80500@redhat.com>
+Date: Thu, 26 Jun 2014 12:04:30 +0100
+From: Steven Whitehouse <swhiteho@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <53AB1CC1.4010907@codeaurora.org>
-References: <cover.1403684824.git.viresh.kumar@linaro.org>
-	<e9c0eef07745e561b9d12dcb50c3e2f7eb3e8880.1403684824.git.viresh.kumar@linaro.org>
-	<53AB1CC1.4010907@codeaurora.org>
-Date: Thu, 26 Jun 2014 16:22:46 +0530
-Message-ID: <CAKohpo=Q7eWNwcK6KF9_U-zD0g=96QHW9hiQupLpV5GqoWE+mA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] cpufreq: cpu0: Extend support beyond CPU0
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Shawn Guo <shawn.guo@linaro.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arvind Chauhan <arvind.chauhan@arm.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-arm-msm@vger.kernel.org, Sachin Kamat <spk.linux@gmail.com>,
-        Thomas P Abraham <thomas.ab@samsung.com>, Nishanth Menon <nm@ti.com>,
-        Tomasz Figa <t.figa@samsung.com>, Mark Brown <broonie@kernel.org>,
-        Mark Rutland <Mark.Rutland@arm.com>
-Content-Type: text/plain; charset=UTF-8
+To: Fabian Frederick <fabf@skynet.be>, linux-kernel@vger.kernel.org
+CC: cluster-devel@redhat.com
+Subject: Re: [PATCH 1/1] fs/gfs2/lock_dlm.c: replace count*size kzalloc by
+ kcalloc
+References: <1403721645-19455-1-git-send-email-fabf@skynet.be>
+In-Reply-To: <1403721645-19455-1-git-send-email-fabf@skynet.be>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 June 2014 00:32, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> I don't think this driver should be using regulator_get_optional() (Mark
-> B. please correct me if I'm wrong). I doubt a supply is actually
-> optional for CPUs, just some DTs aren't specifying them. In those cases,
-> the regulator core will insert a dummy supply and the code will work
-> without having to check for probe defer and error pointers.
+Hi,
 
-Hi Stephen,
+Now in the -nmw git tree. Thanks,
 
-Thanks for your comments.
+Steve.
 
-Leaving the above one, I have tried to fix all you mentioned. And it surely
-looks much better now.
+On 25/06/14 19:40, Fabian Frederick wrote:
+> kcalloc manages count*sizeof overflow.
+>
+> Cc: Steven Whitehouse <swhiteho@redhat.com>
+> Cc: cluster-devel@redhat.com
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> ---
+>   fs/gfs2/lock_dlm.c | 4 ++--
+>   1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/fs/gfs2/lock_dlm.c b/fs/gfs2/lock_dlm.c
+> index 91f274d..4fafea1 100644
+> --- a/fs/gfs2/lock_dlm.c
+> +++ b/fs/gfs2/lock_dlm.c
+> @@ -1036,8 +1036,8 @@ static int set_recover_size(struct gfs2_sbd *sdp, struct dlm_slot *slots,
+>   
+>   	new_size = old_size + RECOVER_SIZE_INC;
+>   
+> -	submit = kzalloc(new_size * sizeof(uint32_t), GFP_NOFS);
+> -	result = kzalloc(new_size * sizeof(uint32_t), GFP_NOFS);
+> +	submit = kcalloc(new_size, sizeof(uint32_t), GFP_NOFS);
+> +	result = kcalloc(new_size, sizeof(uint32_t), GFP_NOFS);
+>   	if (!submit || !result) {
+>   		kfree(submit);
+>   		kfree(result);
 
-I would like to wait for a day or two before sending V2, as people might
-be reviewing it and the above issue is still wide open..
-
-But in case you wanna test it (completely changed I must say, but
-for good), its here:
-
-git://git.linaro.org/people/viresh.kumar/linux.git cpufreq/cpu0-krait-v2
-
-Let me know if you still find it childish :)
