@@ -1,56 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756674AbaFYX7b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 19:59:31 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:53115 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753356AbaFYX73 (ORCPT
+	id S1756699AbaFZAFN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 20:05:13 -0400
+Received: from smtprelay0182.hostedemail.com ([216.40.44.182]:41214 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752688AbaFZAFL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 19:59:29 -0400
-Message-ID: <53AB625A.5040305@ozlabs.ru>
-Date: Thu, 26 Jun 2014 09:59:22 +1000
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Alexander Graf <agraf@suse.de>, linuxppc-dev@lists.ozlabs.org
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Gleb Natapov <gleb@kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org
-Subject: Re: [PATCH 0/3] Prepare for in-kernel VFIO DMA operations acceleration
-References: <1401953144-19186-1-git-send-email-aik@ozlabs.ru> <53905B14.5020204@suse.de> <5391094D.7090104@ozlabs.ru> <53AB3B28.3040708@suse.de>
-In-Reply-To: <53AB3B28.3040708@suse.de>
-Content-Type: text/plain; charset=KOI8-R
+	Wed, 25 Jun 2014 20:05:11 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1567:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3866:3867:3868:3872:4321:5007:6119:7652:7903:10004:10400:10848:11232:11658:11914:12517:12519:12663:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: mark98_fe583d395335
+X-Filterd-Recvd-Size: 1185
+Message-ID: <1403741107.28663.9.camel@joe-AO725>
+Subject: Re: [PATCH] scripts/checkpatch.pl: Only emit LONG_LINE for --strict
+From: Joe Perches <joe@perches.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Andy Whitcroft <apw@canonical.com>, gregkh@linux-foundation.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Date: Wed, 25 Jun 2014 17:05:07 -0700
+In-Reply-To: <20140625154629.GA21519@thin>
+References: <20140625154629.GA21519@thin>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2014 07:12 AM, Alexander Graf wrote:
-> 
-> On 06.06.14 02:20, Alexey Kardashevskiy wrote:
->> On 06/05/2014 09:57 PM, Alexander Graf wrote:
->>> On 05.06.14 09:25, Alexey Kardashevskiy wrote:
->>>> This reserves 2 capability numbers.
->>>>
->>>> This implements an extended version of KVM_CREATE_SPAPR_TCE_64 ioctl.
->>>>
->>>> Please advise how to proceed with these patches as I suspect that
->>>> first two should go via Paolo's tree while the last one via Alex Graf's
->>>> tree
->>>> (correct?).
->>> They would just go via my tree, but only be actually allocated (read:
->>> mergable to qemu) when they hit Paolo's tree.
->>>
->>> In fact, I don't think it makes sense to split them off at all.
->>
->> So? Are these patches going anywhere? Thanks.
-> 
-> So? Are you going to address the comments?
+On Wed, 2014-06-25 at 08:46 -0700, Josh Triplett wrote:
+> Regardless of the long-standing debate over line width, checkpatch
+> should not warn about it by default.
 
-Sorry, I cannot find here anything to fix. Ben asked some questions, I
-answered and there were no objections. What do I miss this time?...
+I'm not getting involved here.
+
+I don't care much one way or another.
+
+I did submit a patch where I ignored 80
+columns recently and I was told to try
+again by the maintainer.
 
 
--- 
-Alexey
