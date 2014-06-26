@@ -1,22 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752005AbaFZWsO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 18:48:14 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:4130 "EHLO
+	id S1752040AbaFZWvh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 18:51:37 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:39248 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751508AbaFZWsN (ORCPT
+	by vger.kernel.org with ESMTP id S1751405AbaFZWvf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 18:48:13 -0400
-Date: Thu, 26 Jun 2014 18:48:11 -0400
+	Thu, 26 Jun 2014 18:51:35 -0400
+Date: Thu, 26 Jun 2014 18:51:34 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
-To: Kirill Tkhai <tkhai@yandex.ru>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] sched/rt: Check if rt_se has neighbour in
- requeue_task_rt()
-Message-ID: <20140626184811.252a66c0@gandalf.local.home>
-In-Reply-To: <722151372892539@web1e.yandex.ru>
-References: <722151372892539@web1e.yandex.ru>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, Michal Hocko <mhocko@suse.cz>,
+        Jan Kara <jack@suse.cz>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Dave Anderson <anderson@redhat.com>, Petr Mladek <pmladek@suse.cz>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>
+Subject: Re: [RFC][PATCH 5/5 v2] x86/nmi: Perform a safe NMI stack trace on
+ all CPUs
+Message-ID: <20140626185134.63ba5ee3@gandalf.local.home>
+In-Reply-To: <20140626220130.764213722@goodmis.org>
+References: <20140626214901.596791200@goodmis.org>
+	<20140626220130.764213722@goodmis.org>
 X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -27,125 +35,177 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter,
+This patch got rejected by lkml:
 
-A blast from the past. I'm cleaning out my INBOX and I found this patch
-under the rug. I know I had a holiday when it was sent (date is July 4th,
-Yay! fireworks).
+>>> linux-kernel@vger.kernel.org (reading confirmation): 550 5.7.1 Content-Policy reject msg: Wrong MIME labeling on 8-bit character texts. BF:<H 0>; S1751405AbaFZWBb  
 
-Anyway, there was no comments to it. What do you think.
-
-I haven't reviewed it much but I have a small comment by doing a quick
-review (embedded).
-
-On Thu, 04 Jul 2013 03:02:19 +0400
-Kirill Tkhai <tkhai@yandex.ru> wrote:
-
-> 1)requeue_task_rt: check if entity's next and prev are not the same element.
-> This guarantees entity is queued and it is not the only in the prio list.
-> Return 1 if at least one rt_se from the stack was really requeued.
-> 
-> 2)Remove on_rt_rq check from requeue_rt_entity() because it is useless now.
-> Furthermore, it doesn't handle single rt_se case.
-> 
-> 3)Make pretty task_tick_rt() more pretty.
-> 
-> Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
-> CC: Steven Rostedt <rostedt@goodmis.org>
-> CC: Ingo Molnar <mingo@redhat.com>
-> CC: Peter Zijlstra <peterz@infradead.org>
-> ---
->  kernel/sched/rt.c |   49 +++++++++++++++++++++++--------------------------
->  1 files changed, 23 insertions(+), 26 deletions(-)
-> diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-> index 01970c8..3213503 100644
-> --- a/kernel/sched/rt.c
-> +++ b/kernel/sched/rt.c
-> @@ -1135,29 +1135,37 @@ static void dequeue_task_rt(struct rq *rq, struct task_struct *p, int flags)
->   * Put task to the head or the end of the run list without the overhead of
->   * dequeue followed by enqueue.
->   */
-> -static void
-> +static inline void
-
-No need for the "inline" here. It's only used once and it's static. Gcc
-will inline it naturally.
+I guess quilt couldn't handle Petr's last name (I changed it to 'a'
+here).
 
 -- Steve
 
 
->  requeue_rt_entity(struct rt_rq *rt_rq, struct sched_rt_entity *rt_se, int head)
->  {
-> -	if (on_rt_rq(rt_se)) {
-> -		struct rt_prio_array *array = &rt_rq->active;
-> -		struct list_head *queue = array->queue + rt_se_prio(rt_se);
-> +	struct rt_prio_array *array = &rt_rq->active;
-> +	struct list_head *queue = array->queue + rt_se_prio(rt_se);
+On Thu, 26 Jun 2014 17:49:06 -0400
+Steven Rostedt <rostedt@goodmis.org> wrote:
+
+> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> 
+> When trigger_all_cpu_backtrace() is called on x86, it will trigger an
+> NMI on each CPU and call show_regs(). But this can lead to a hard lock
+> up if the NMI comes in on another printk().
+> 
+> In order to avoid this, when the NMI triggers, it switches the printk
+> routine for that CPU to call a NMI safe printk function that records the
+> printk in a per_cpu seq_buf descriptor. After all NMIs have finished
+> recording its data, the trace_seqs are printed in a safe context.
+> 
+> Link: http://lkml.kernel.org/p/20140619213952.360076309@goodmis.org
+> 
+> Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+> V2 - updated to use seq_buf instead of trace_seq.
+>    - Keep original printk loglevel, do not strip it, but use it.
+>      (suggested by Petr Mladek)
+>    - Updated comments
+>    - Removed return of true (noticed by Petr Mladek)
+> ---
+>  arch/x86/kernel/apic/hw_nmi.c | 84 +++++++++++++++++++++++++++++++++++++++++--
+>  1 file changed, 81 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
+> index c3fcb5de5083..91ddba672839 100644
+> --- a/arch/x86/kernel/apic/hw_nmi.c
+> +++ b/arch/x86/kernel/apic/hw_nmi.c
+> @@ -18,6 +18,7 @@
+>  #include <linux/nmi.h>
+>  #include <linux/module.h>
+>  #include <linux/delay.h>
+> +#include <linux/seq_buf.h>
 >  
-> -		if (head)
-> -			list_move(&rt_se->run_list, queue);
-> -		else
-> -			list_move_tail(&rt_se->run_list, queue);
-> -	}
-> +	if (head)
-> +		list_move(&rt_se->run_list, queue);
-> +	else
-> +		list_move_tail(&rt_se->run_list, queue);
->  }
+>  #ifdef CONFIG_HARDLOCKUP_DETECTOR
+>  u64 hw_nmi_get_sample_period(int watchdog_thresh)
+> @@ -30,11 +31,31 @@ u64 hw_nmi_get_sample_period(int watchdog_thresh)
+>  /* For reliability, we're prepared to waste bits here. */
+>  static DECLARE_BITMAP(backtrace_mask, NR_CPUS) __read_mostly;
 >  
-> -static void requeue_task_rt(struct rq *rq, struct task_struct *p, int head)
-> +static int requeue_task_rt(struct rq *rq, struct task_struct *p, int head)
->  {
->  	struct sched_rt_entity *rt_se = &p->rt;
-> -	struct rt_rq *rt_rq;
-> +	int requeued = 0;
->  
->  	for_each_sched_rt_entity(rt_se) {
-> -		rt_rq = rt_rq_of_se(rt_se);
-> -		requeue_rt_entity(rt_rq, rt_se, head);
-> +		/*
-> +		 * Requeue to the head or tail of prio queue if
-> +		 * rt_se is queued and it is not the only element
-> +		 */
-> +		if (rt_se->run_list.prev != rt_se->run_list.next) {
-> +			struct rt_rq *rt_rq = rt_rq_of_se(rt_se);
+> +#define NMI_BUF_SIZE		4096
 > +
-> +			requeue_rt_entity(rt_rq, rt_se, head);
-> +			requeued = 1;
-> +		}
+> +struct nmi_seq_buf {
+> +	unsigned char		buffer[NMI_BUF_SIZE];
+> +	struct seq_buf		seq;
+> +};
+> +
+> +/* Safe printing in NMI context */
+> +static DEFINE_PER_CPU(struct nmi_seq_buf, nmi_print_seq);
+> +
+>  /* "in progress" flag of arch_trigger_all_cpu_backtrace */
+>  static unsigned long backtrace_flag;
+>  
+> +static void print_seq_line(struct nmi_seq_buf *s, int last, int pos)
+> +{
+> +	const char *buf = s->buffer + last;
+> +
+> +	printk("%.*s", (pos - last) + 1, buf);
+> +}
+> +
+>  void arch_trigger_all_cpu_backtrace(void)
+>  {
+> +	struct nmi_seq_buf *s;
+> +	int len;
+> +	int cpu;
+>  	int i;
+>  
+>  	if (test_and_set_bit(0, &backtrace_flag))
+> @@ -44,6 +65,15 @@ void arch_trigger_all_cpu_backtrace(void)
+>  		 */
+>  		return;
+>  
+> +	/*
+> +	 * Set up per_cpu seq_buf buffers that the NMIs running on the other
+> +	 * CPUs will write to.
+> +	 */
+> +	for_each_possible_cpu(cpu) {
+> +		s = &per_cpu(nmi_print_seq, cpu);
+> +		seq_buf_init(&s->seq, s->buffer, NMI_BUF_SIZE);
+> +	}
+> +
+>  	cpumask_copy(to_cpumask(backtrace_mask), cpu_online_mask);
+>  
+>  	printk(KERN_INFO "sending NMI to all CPUs:\n");
+> @@ -56,10 +86,56 @@ void arch_trigger_all_cpu_backtrace(void)
+>  		mdelay(1);
 >  	}
+>  
+> +	/*
+> +	 * Now that all the NMIs have triggered, we can dump out their
+> +	 * back traces safely to the console.
+> +	 */
+> +	for_each_possible_cpu(cpu) {
+> +		int last_i = 0;
 > +
-> +	return requeued;
+> +		s = &per_cpu(nmi_print_seq, cpu);
+> +		len = s->seq.len;
+> +		if (!len)
+> +			continue;
+> +
+> +		/* Print line by line. */
+> +		for (i = 0; i < len; i++) {
+> +			if (s->buffer[i] == '\n') {
+> +				print_seq_line(s, last_i, i);
+> +				last_i = i + 1;
+> +			}
+> +		}
+> +		if (last_i < i - 1) {
+> +			print_seq_line(s, last_i, i);
+> +			pr_cont("\n");
+> +		}
+> +	}
+> +
+>  	clear_bit(0, &backtrace_flag);
+>  	smp_mb__after_atomic();
 >  }
 >  
->  static void yield_task_rt(struct rq *rq)
-> @@ -1912,8 +1920,6 @@ static void watchdog(struct rq *rq, struct task_struct *p)
->  
->  static void task_tick_rt(struct rq *rq, struct task_struct *p, int queued)
+> +/*
+> + * It is not safe to call printk() directly from NMI handlers.
+> + * It may be fine if the NMI detected a lock up and we have no choice
+> + * but to do so, but doing a NMI on all other CPUs to get a back trace
+> + * can be done with a sysrq-l. We don't want that to lock up, which
+> + * can happen if the NMI interrupts a printk in progress.
+> + *
+> + * Instead, we redirect the vprintk() to this nmi_vprintk() that writes
+> + * the content into a per cpu seq_buf buffer. Then when the NMIs are
+> + * all done, we can safely dump the contents of the seq_buf to a printk()
+> + * from a non NMI context.
+> + */
+> +static int nmi_vprintk(const char *fmt, va_list args)
+> +{
+> +	struct nmi_seq_buf *s = this_cpu_ptr(&nmi_print_seq);
+> +	unsigned int len = s->seq.len;
+> +
+> +	seq_buf_vprintf(&s->seq, fmt, args);
+> +	return s->seq.len - len;
+> +}
+> +
+>  static int
+>  arch_trigger_all_cpu_backtrace_handler(unsigned int cmd, struct pt_regs *regs)
 >  {
-> -	struct sched_rt_entity *rt_se = &p->rt;
-> -
->  	update_curr_rt(rq);
+> @@ -68,12 +144,14 @@ arch_trigger_all_cpu_backtrace_handler(unsigned int cmd, struct pt_regs *regs)
+>  	cpu = smp_processor_id();
 >  
->  	watchdog(rq, p);
-> @@ -1930,17 +1936,8 @@ static void task_tick_rt(struct rq *rq, struct task_struct *p, int queued)
+>  	if (cpumask_test_cpu(cpu, to_cpumask(backtrace_mask))) {
+> -		static arch_spinlock_t lock = __ARCH_SPIN_LOCK_UNLOCKED;
+> +		printk_func_t printk_func_save = this_cpu_read(printk_func);
 >  
->  	p->rt.time_slice = sched_rr_timeslice;
->  
-> -	/*
-> -	 * Requeue to the end of queue if we (and all of our ancestors) are the
-> -	 * only element on the queue
-> -	 */
-> -	for_each_sched_rt_entity(rt_se) {
-> -		if (rt_se->run_list.prev != rt_se->run_list.next) {
-> -			requeue_task_rt(rq, p, 0);
-> -			set_tsk_need_resched(p);
-> -			return;
-> -		}
-> -	}
-> +	if (requeue_task_rt(rq, p, 0))
-> +		set_tsk_need_resched(p);
->  }
->  
->  static void set_curr_task_rt(struct rq *rq)
+> -		arch_spin_lock(&lock);
+> +		/* Replace printk to write into the NMI seq */
+> +		this_cpu_write(printk_func, nmi_vprintk);
+>  		printk(KERN_WARNING "NMI backtrace for cpu %d\n", cpu);
+>  		show_regs(regs);
+> -		arch_spin_unlock(&lock);
+> +		this_cpu_write(printk_func, printk_func_save);
+> +
+>  		cpumask_clear_cpu(cpu, to_cpumask(backtrace_mask));
+>  		return NMI_HANDLED;
+>  	}
 
