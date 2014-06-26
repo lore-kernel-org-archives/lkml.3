@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756555AbaFZPhJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 11:37:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59648 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755144AbaFZPhH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 11:37:07 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Jens Axboe <axboe@kernel.dk>,
-        Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH 6/6] cfq: Increase default value of target_latency
-References: <1403683129-10814-1-git-send-email-mgorman@suse.de>
-	<1403683129-10814-7-git-send-email-mgorman@suse.de>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Thu, 26 Jun 2014 11:36:50 -0400
-In-Reply-To: <1403683129-10814-7-git-send-email-mgorman@suse.de> (Mel Gorman's
-	message of "Wed, 25 Jun 2014 08:58:49 +0100")
-Message-ID: <x491tub65t9.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1756924AbaFZPhd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 11:37:33 -0400
+Received: from www.linutronix.de ([62.245.132.108]:43796 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756650AbaFZPhb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 11:37:31 -0400
+Message-ID: <53AC3E37.1010603@linutronix.de>
+Date: Thu, 26 Jun 2014 17:37:27 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tzanussi@gmail.com, jolsa@kernel.org, namhyung@kernel.org,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/core] perf script/python: Print array argument as string
+References: <1401338695-18837-1-git-send-email-namhyung@kernel.org> <tip-e646fe730a324098a718f1c9b2f349efb99d5457@git.kernel.org>
+In-Reply-To: <tip-e646fe730a324098a718f1c9b2f349efb99d5457@git.kernel.org>
+X-Enigmail-Version: 1.6+git0.20140323
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mel Gorman <mgorman@suse.de> writes:
+On 06/12/2014 02:01 PM, tip-bot for Namhyung Kim wrote:
 
-> The existing CFQ default target_latency results in very poor performance
-> for larger numbers of threads doing sequential reads. While this can be
-> easily described as a tuning problem for users, it is one that is tricky
-> to detect. This patch updates the default to benefit smaller machines.
-> Dave Chinner points out that it is dangerous to assume that people know
-> how to tune their IO scheduler. Jeff Moyer asked what workloads even
-> care about threaded readers but it's reasonable to assume file,
-> media, database and multi-user servers all experience large sequential
-> readers from multiple sources at the same time.
+> Commit-ID:  e646fe730a324098a718f1c9b2f349efb99d5457
+> Gitweb:     http://git.kernel.org/tip/e646fe730a324098a718f1c9b2f349efb99d5457
+> Author:     Namhyung Kim <namhyung@kernel.org>
+> AuthorDate: Thu, 29 May 2014 13:44:55 +0900
+> Committer:  Jiri Olsa <jolsa@kernel.org>
+> CommitDate: Mon, 9 Jun 2014 12:21:03 +0200
+> 
+> perf script/python: Print array argument as string
+> 
+> With the Sebastian's change of handling num array argument (of raw
+> syscall enter), the script still failed to work like this:
 
-Right, and I guess I hadn't considered that case as I thought folks used
-more than one spinning disk for such workloads.
+This patch got merged. It fixes something that was introduced by
+  "perf script: move the number processing into its own function" [0]
+  "perf script: handle the num array type in python properly" [1]
 
-My main reservation about this change is that you've only provided
-numbers for one benchmark.  To bump the default target_latency, ideally
-we'd know how it affects other workloads.  However, I'm having a hard
-time justifying putting any time into this for a couple of reasons:
-1) blk-mq pretty much does away with the i/o scheduler, and that is the
-   future
-2) there is work in progress to convert cfq into bfq, and that will
-   essentially make any effort put into this irrelevant (so it might be
-   interesting to test your workload with bfq)
+which was not yet merged.
 
-Cheers,
-Jeff
+[0] lkml.kernel.org/r/1401207274-8170-1-git-send-email-bigeasy@linutronix.de
+[1] lkml.kernel.org/r/1401207274-8170-2-git-send-email-bigeasy@linutronix.de
+
+>   $ perf record -e raw_syscalls:* sleep 1
+>   $ perf script -g python
+>   $ perf script -s perf-script.py
+>   ...
+>   Traceback (most recent call last):
+>     File "perf-script.py", line 42, in raw_syscalls__sys_enter
+>       (id, args),
+>   TypeError: %u format: a number is required, not list
+>   Fatal Python error: problem in Python trace event handler
+>   Aborted (core dumped)
+> 
+> This is because the generated script tries to print the array arg as
+> unsigned integer (%u).  Since the python seems to convert arguments to
+> strings by default, just using %s solved the problem for me.
+
+Sebastian
