@@ -1,71 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932274AbaFZNpB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 09:45:01 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:63541 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932160AbaFZNpA (ORCPT
+	id S932341AbaFZNqW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 09:46:22 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:59195 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932294AbaFZNqV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 09:45:00 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-scsi@vger.kernel.org
-Cc: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        jbottomley@parallels.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] [SCSI] hpsa: fix non-x86 builds
-Date: Thu, 26 Jun 2014 15:44:52 +0200
-Message-ID: <6003317.KPlAy1USkq@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+	Thu, 26 Jun 2014 09:46:21 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53AC242B.3020903@roeck-us.net>
+Date: Thu, 26 Jun 2014 06:46:19 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:5Cg076d5BoYboukCtZcLH7t6NRqcJCnlEUlPrhqFEXm
- avTIHDrn8HWFIpmASwzjQIvEU2YJEIcBzNVkUBP+WtVMEq7iVt
- aPQhtoKP165Xay3xFuEMmGqtWeoQssCwO5Vak6S9ioEv2dr5DC
- 8aZdNQlZqJ4rLHlAVLmZcRecM3eT+U6sCEW7y9e3T/Q4jihAIz
- ZgPr+/eiuUcF3Hs1ZpTEYu8lYbpOKvXviyGtCMUAl3UKmwieoZ
- 0/pvrBPUAHRLiMpi64QwvJflRZxyClD1gqFw9OZaKkDCExKgdV
- mZXrfutiwuq21c4q4sukFWYqdwoGR/oNx3VGhxZ9nQoll3e4oJ
- r0Nod96SeN+2TCRDk99g=
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
+CC: naveenkrishna.ch@gmail.com, cpgs@samsung.com, herbert@gondor.apana.org.au
+Subject: Re: [PATCH] hwmon: ntc_thermistor: correct the information printed
+ during probe
+References: <1403787014-5858-1-git-send-email-ch.naveen@samsung.com>
+In-Reply-To: <1403787014-5858-1-git-send-email-ch.naveen@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 28e134464734 "[SCSI] hpsa: enable unit attention reporting"
-turns on unit attention notifications, but got the change wrong for
-all architectures other than x86, which now store an uninitialized
-value into the device register.
+On 06/26/2014 05:50 AM, Naveen Krishna Chatradhi wrote:
+> Currently, dev_info() at the end of the probe says
+> "type:%s ". But, prints the pdev->name.
+>
+> This patch uses "pdev_id->name" which prints the thermistor type.
+>
+> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
 
-Gcc helpfully warns about this:
+Another good catch.
 
-../drivers/scsi/hpsa.c: In function 'hpsa_set_driver_support_bits':
-../drivers/scsi/hpsa.c:6373:17: warning: 'driver_support' is used uninitialized in this function [-Wuninitialized]
-  driver_support |= ENABLE_UNIT_ATTN;
-                 ^
+Applied, thanks.
 
-This moves the #ifdef so only the prefetch-enable is conditional
-on x86, not also reading the initial register contents. 
-
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Fixes: 28e134464734 "[SCSI] hpsa: enable unit attention reporting"
-Cc: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-Cc: stable@vger.kernel.org # v3.14+
-
-diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index 31184b3..d0e487c 100644
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -6365,9 +6365,9 @@ static inline void hpsa_set_driver_support_bits(struct ctlr_info *h)
- {
- 	u32 driver_support;
- 
--#ifdef CONFIG_X86
--	/* Need to enable prefetch in the SCSI core for 6400 in x86 */
- 	driver_support = readl(&(h->cfgtable->driver_support));
-+	/* Need to enable prefetch in the SCSI core for 6400 in x86 */
-+#ifdef CONFIG_X86
- 	driver_support |= ENABLE_SCSI_PREFETCH;
- #endif
- 	driver_support |= ENABLE_UNIT_ATTN;
+Guenter
 
