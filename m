@@ -1,93 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757396AbaFZA55 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 20:57:57 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:37456 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756728AbaFZA5z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 20:57:55 -0400
-Message-ID: <53AB700C.20808@linaro.org>
-Date: Thu, 26 Jun 2014 09:57:48 +0900
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Mark Salter <msalter@redhat.com>
-CC: wad@chromium.org, catalin.marinas@arm.com, will.deacon@arm.com,
-        arndb@arndb.de, dsaxena@linaro.org,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        linux-kernel@vger.kernel.org, patches@linaro.org
-Subject: Re: [PATCH_v4 0/2] arm64: Add seccomp support
-References: <1394705823-12465-1-git-send-email-takahiro.akashi@linaro.org>	 <1394862604-29105-1-git-send-email-takahiro.akashi@linaro.org> <1403708017.755.86.camel@deneb.redhat.com>
-In-Reply-To: <1403708017.755.86.camel@deneb.redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1757427AbaFZA7V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 20:59:21 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:33607
+	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755914AbaFZA7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jun 2014 20:59:19 -0400
+X-Greylist: delayed 303 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 Jun 2014 20:59:19 EDT
+x-originating-ip: 72.167.245.219
+From: Dexuan Cui <decui@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        driverdev-devel@linuxdriverproject.org, plagnioj@jcrosoft.com,
+        tomi.valkeinen@ti.com, linux-fbdev@vger.kernel.org, olaf@aepfle.de,
+        apw@canonical.com, jasowang@redhat.com
+Subject: [PATCH] video: hyperv: hyperv_fb: refresh the VM screen by force on VM panic
+Date: Wed, 25 Jun 2014 18:53:46 -0700
+Message-Id: <1403747626-11426-1-git-send-email-decui@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2014 11:53 PM, Mark Salter wrote:
-> What is the current status of this patch series? Is it on track
-> for 3.17?
+Currently the VSC has no chance to notify the VSP of the dirty rectangle on VM
+panic because the notification work is done in a workqueue, and in panic() the
+kernel typically ends up in an infinite loop, and a typical kernel config has
+CONFIG_PREEMPT_VOLUNTARY=y and CONFIG_PREEMPT is not set, so a context switch
+can't happen in panic() and the workqueue won't have a chance to run. As a
+result, the VM Connection window can't refresh until it's closed and we
+re-connect to the VM.
 
-I assume not as I saw no comments on this so far.
-But I will re-post a new version soon or later due to recent changes on seccomp.
+We can register a handler on panic_notifier_list: the handler can notify
+the VSC and switch the framebuffer driver to a "synchronous mode", meaning
+the VSC flushes any future framebuffer change to the VSP immediately.
+MS-TFS: 157532
 
--Takahiro AKASHI
+Signed-off-by: Dexuan Cui <decui@microsoft.com>
+Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+---
+ drivers/video/fbdev/hyperv_fb.c | 58 ++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 55 insertions(+), 3 deletions(-)
 
-> On Sat, 2014-03-15 at 14:50 +0900, AKASHI Takahiro wrote:
->> (Please apply this patch after my ftrace patch and audit patch in order
->> to avoid some conflict on arm64/Kconfig.)
->>
->> This patch enables secure computing (system call filtering) on arm64.
->> System calls can be allowed or denied by loaded bpf-style rules.
->> Architecture specific part is to run secure_computing() on syscall entry
->> and check the result. See [2/2]
->>
->> Prerequisites are:
->>   * "arm64: make a single hook to syscall_trace() for all syscall features" patch
->>   * "arm64: split syscall_trace() into separate functions for enter/exit" patch
->>   * "arm64: Add audit support" patch
->>   * "arm64: is_compat_task is defined both in asm/compat.h and
->>      linux/compat.h" patch
->>
->> This code is tested on ARMv8 fast model using libseccomp v2.1.1 with
->> modifications for arm64 and verified by its "live" tests, 20, 21 and 24.
->>
->> Changes v3 -> v4:
->> * removed the following patch and moved it to "arm64: prerequisites for
->>    audit and ftrace" patchset since it is required for audit and ftrace in
->>    case of !COMPAT, too.
->>    "arm64: is_compat_task is defined both in asm/compat.h and linux/compat.h"
->>
->> Changes v2 -> v3:
->> * removed unnecessary 'type cast' operations [2/3]
->> * check for a return value (-1) of secure_computing() explicitly [2/3]
->> * aligned with the patch, "arm64: split syscall_trace() into separate
->>    functions for enter/exit" [2/3]
->> * changed default of CONFIG_SECCOMP to n [2/3]
->>
->> Changes v1 -> v2:
->> * added generic seccomp.h for arm64 to utilize it [1,2/3]
->> * changed syscall_trace() to return more meaningful value (-EPERM)
->>    on seccomp failure case [2/3]
->> * aligned with the change in "arm64: make a single hook to syscall_trace()
->>    for all syscall features" v2 [2/3]
->> * removed is_compat_task() definition from compat.h [3/3]
->>
->> AKASHI Takahiro (2):
->>    asm-generic: Add generic seccomp.h for secure computing mode 1
->>    arm64: Add seccomp support
->>
->>   arch/arm64/Kconfig               | 14 ++++++++++++++
->>   arch/arm64/include/asm/seccomp.h | 25 +++++++++++++++++++++++++
->>   arch/arm64/include/asm/unistd.h  |  3 +++
->>   arch/arm64/kernel/entry.S        |  4 ++++
->>   arch/arm64/kernel/ptrace.c       |  6 ++++++
->>   include/asm-generic/seccomp.h    | 28 ++++++++++++++++++++++++++++
->>   6 files changed, 80 insertions(+)
->>   create mode 100644 arch/arm64/include/asm/seccomp.h
->>   create mode 100644 include/asm-generic/seccomp.h
->>
->
->
+diff --git a/drivers/video/fbdev/hyperv_fb.c b/drivers/video/fbdev/hyperv_fb.c
+index e23392e..291d171 100644
+--- a/drivers/video/fbdev/hyperv_fb.c
++++ b/drivers/video/fbdev/hyperv_fb.c
+@@ -226,11 +226,16 @@ struct hvfb_par {
+ 	u8 recv_buf[MAX_VMBUS_PKT_SIZE];
+ };
+ 
++static struct fb_info *hvfb_info;
++
+ static uint screen_width = HVFB_WIDTH;
+ static uint screen_height = HVFB_HEIGHT;
+ static uint screen_depth;
+ static uint screen_fb_size;
+ 
++/* If true, the VSC notifies the VSP on every framebuffer change */
++static bool synchronous_fb;
++
+ /* Send message to Hyper-V host */
+ static inline int synthvid_send(struct hv_device *hdev,
+ 				struct synthvid_msg *msg)
+@@ -532,6 +537,20 @@ static void hvfb_update_work(struct work_struct *w)
+ 		schedule_delayed_work(&par->dwork, HVFB_UPDATE_DELAY);
+ }
+ 
++static int hvfb_on_panic(struct notifier_block *nb,
++			unsigned long e, void *p)
++{
++	if (hvfb_info)
++		synthvid_update(hvfb_info);
++
++	synchronous_fb = true;
++
++	return NOTIFY_DONE;
++}
++
++static struct notifier_block hvfb_panic_nb = {
++	.notifier_call = hvfb_on_panic,
++};
+ 
+ /* Framebuffer operation handlers */
+ 
+@@ -582,14 +601,41 @@ static int hvfb_blank(int blank, struct fb_info *info)
+ 	return 1;	/* get fb_blank to set the colormap to all black */
+ }
+ 
++static void hvfb_cfb_fillrect(struct fb_info *p,
++				const struct fb_fillrect *rect)
++{
++	cfb_fillrect(p, rect);
++
++	if (unlikely(synchronous_fb))
++		synthvid_update(p);
++}
++
++static void hvfb_cfb_copyarea(struct fb_info *p,
++				const struct fb_copyarea *area)
++{
++	cfb_copyarea(p, area);
++
++	if (unlikely(synchronous_fb))
++		synthvid_update(p);
++}
++
++static void hvfb_cfb_imageblit(struct fb_info *p,
++				const struct fb_image *image)
++{
++	cfb_imageblit(p, image);
++
++	if (unlikely(synchronous_fb))
++		synthvid_update(p);
++}
++
+ static struct fb_ops hvfb_ops = {
+ 	.owner = THIS_MODULE,
+ 	.fb_check_var = hvfb_check_var,
+ 	.fb_set_par = hvfb_set_par,
+ 	.fb_setcolreg = hvfb_setcolreg,
+-	.fb_fillrect = cfb_fillrect,
+-	.fb_copyarea = cfb_copyarea,
+-	.fb_imageblit = cfb_imageblit,
++	.fb_fillrect = hvfb_cfb_fillrect,
++	.fb_copyarea = hvfb_cfb_copyarea,
++	.fb_imageblit = hvfb_cfb_imageblit,
+ 	.fb_blank = hvfb_blank,
+ };
+ 
+@@ -801,6 +847,9 @@ static int hvfb_probe(struct hv_device *hdev,
+ 
+ 	par->fb_ready = true;
+ 
++	hvfb_info = info;
++	atomic_notifier_chain_register(&panic_notifier_list, &hvfb_panic_nb);
++
+ 	return 0;
+ 
+ error:
+@@ -820,6 +869,9 @@ static int hvfb_remove(struct hv_device *hdev)
+ 	struct fb_info *info = hv_get_drvdata(hdev);
+ 	struct hvfb_par *par = info->par;
+ 
++	atomic_notifier_chain_unregister(&panic_notifier_list, &hvfb_panic_nb);
++	hvfb_info = NULL;
++
+ 	par->update = false;
+ 	par->fb_ready = false;
+ 
+-- 
+1.9.1
+
