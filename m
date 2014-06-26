@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755534AbaFZOfk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 10:35:40 -0400
-Received: from g2t2354.austin.hp.com ([15.217.128.53]:9237 "EHLO
-	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750755AbaFZOfj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 10:35:39 -0400
-Date: Thu, 26 Jun 2014 09:34:45 -0500
-From: scameron@beardog.cce.hp.com
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-scsi@vger.kernel.org, jbottomley@parallels.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        scameron@beardog.cce.hp.com
-Subject: Re: [PATCH] [SCSI] hpsa: fix non-x86 builds
-Message-ID: <20140626143445.GO25166@beardog.cce.hp.com>
-References: <6003317.KPlAy1USkq@wuerfel>
-Mime-Version: 1.0
+	id S1755860AbaFZOhs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 10:37:48 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:40373 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753449AbaFZOhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 10:37:47 -0400
+Date: Thu, 26 Jun 2014 10:37:38 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Jeff Moyer <jmoyer@redhat.com>,
+        Dave Chinner <david@fromorbit.com>
+Subject: Re: [PATCH 5/6] mm: page_alloc: Reduce cost of dirty zone balancing
+Message-ID: <20140626143738.GS7331@cmpxchg.org>
+References: <1403683129-10814-1-git-send-email-mgorman@suse.de>
+ <1403683129-10814-6-git-send-email-mgorman@suse.de>
+ <20140625163528.11368b86ef7d0a38cf9d1255@linux-foundation.org>
+ <20140626084314.GE10819@suse.de>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <6003317.KPlAy1USkq@wuerfel>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <20140626084314.GE10819@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 26, 2014 at 03:44:52PM +0200, Arnd Bergmann wrote:
-> commit 28e134464734 "[SCSI] hpsa: enable unit attention reporting"
-> turns on unit attention notifications, but got the change wrong for
-> all architectures other than x86, which now store an uninitialized
-> value into the device register.
+On Thu, Jun 26, 2014 at 09:43:14AM +0100, Mel Gorman wrote:
+> On Wed, Jun 25, 2014 at 04:35:28PM -0700, Andrew Morton wrote:
+> > On Wed, 25 Jun 2014 08:58:48 +0100 Mel Gorman <mgorman@suse.de> wrote:
+> > 
+> > > @@ -325,7 +321,14 @@ static unsigned long zone_dirty_limit(struct zone *zone)
+> > >   */
+> > >  bool zone_dirty_ok(struct zone *zone)
+> > >  {
+> > > -	unsigned long limit = zone_dirty_limit(zone);
+> > > +	unsigned long limit = zone->dirty_limit_cached;
+> > > +	struct task_struct *tsk = current;
+> > > +
+> > > +	if (tsk->flags & PF_LESS_THROTTLE || rt_task(tsk)) {
+> > > +		limit = zone_dirty_limit(zone);
+> > > +		zone->dirty_limit_cached = limit;
+> > > +		limit += limit / 4;
+> > > +	}
+> > 
+> > Could we get a comment in here explaining what we're doing and why
+> > PF_LESS_THROTTLE and rt_task control whether we do it?
+> > 
 > 
-> Gcc helpfully warns about this:
+>         /*
+>          * The dirty limits are lifted by 1/4 for PF_LESS_THROTTLE (ie. nfsd)
+>          * and real-time tasks to prioritise their allocations.
+>          * PF_LESS_THROTTLE tasks may be cleaning memory and rt tasks may be
+>          * blocking tasks that can clean pages.
+>          */
 > 
-> ../drivers/scsi/hpsa.c: In function 'hpsa_set_driver_support_bits':
-> ../drivers/scsi/hpsa.c:6373:17: warning: 'driver_support' is used uninitialized in this function [-Wuninitialized]
->   driver_support |= ENABLE_UNIT_ATTN;
->                  ^
-> 
-> This moves the #ifdef so only the prefetch-enable is conditional
-> on x86, not also reading the initial register contents. 
-> 
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Fixes: 28e134464734 "[SCSI] hpsa: enable unit attention reporting"
-> Cc: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-> Cc: stable@vger.kernel.org # v3.14+
-> 
-> diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-> index 31184b3..d0e487c 100644
-> --- a/drivers/scsi/hpsa.c
-> +++ b/drivers/scsi/hpsa.c
-> @@ -6365,9 +6365,9 @@ static inline void hpsa_set_driver_support_bits(struct ctlr_info *h)
->  {
->  	u32 driver_support;
->  
-> -#ifdef CONFIG_X86
-> -	/* Need to enable prefetch in the SCSI core for 6400 in x86 */
->  	driver_support = readl(&(h->cfgtable->driver_support));
-> +	/* Need to enable prefetch in the SCSI core for 6400 in x86 */
-> +#ifdef CONFIG_X86
->  	driver_support |= ENABLE_SCSI_PREFETCH;
->  #endif
->  	driver_support |= ENABLE_UNIT_ATTN;
+> That's fairly weak though. It would also seem reasonable to just delete
+> this check and allow PF_LESS_THROTTLE and rt_tasks to fall into the slow
+> path if dirty pages are already fairly distributed between zones.
+> Johannes, any objection to that limit raising logic being deleted?
 
-Thanks.
+I copied that over from global_dirty_limits() such that the big
+picture and the per-zone picture have the same view - otherwise these
+tasks fall back to first fit zone allocations before global limits
+start throttling dirtiers and waking up the flushers.  This increases
+the probability of reclaim running into dirty pages.
 
--- steve
+Would you remove it from global_dirty_limits() as well?
 
+On that note, I don't really understand why global_dirty_limits()
+raises the *background* limit for less-throttle/rt tasks, shouldn't it
+only raise the dirty limit?  Sure, the throttle point is somewhere
+between the two limits, but we don't really want to defer waking up
+the flushers for them.
