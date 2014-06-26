@@ -1,55 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757677AbaFZBSH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jun 2014 21:18:07 -0400
-Received: from mga02.intel.com ([134.134.136.20]:42867 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757640AbaFZBSD convert rfc822-to-8bit (ORCPT
+	id S1757053AbaFZBjF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jun 2014 21:39:05 -0400
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:53858 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755308AbaFZBjD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jun 2014 21:18:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,548,1400050800"; 
-   d="scan'208";a="563569888"
-From: "Chen, Alvin" <alvin.chen@intel.com>
-To: David Laight <David.Laight@ACULAB.COM>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Alan Stern <stern@rowland.harvard.edu>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Ong, Boon Leong" <boon.leong.ong@intel.com>
-Subject: RE: [PATCH] USB: ehci-pci: USB host controller support for Intel
- Quark X1000
-Thread-Topic: [PATCH] USB: ehci-pci: USB host controller support for Intel
- Quark X1000
-Thread-Index: AQHPj6/C5BxdJArRXUevrLYTW6T4oZuBj0uwgAAC7LCAAQbhQA==
-Date: Thu, 26 Jun 2014 01:17:28 +0000
-Message-ID: <4656BEB6164FC34F8171C6538F1A595B2E9472BE@SHSMSX101.ccr.corp.intel.com>
-References: <1403625103-28078-1-git-send-email-alvin.chen@intel.com>
- <1403625103-28078-2-git-send-email-alvin.chen@intel.com>
- <20140624132527.GB1215@kroah.com>
- <4656BEB6164FC34F8171C6538F1A595B2E946EF1@SHSMSX101.ccr.corp.intel.com>
- <063D6719AE5E284EB5DD2968C1650D6D17264B1D@AcuExch.aculab.com>
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D17264B1D@AcuExch.aculab.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 25 Jun 2014 21:39:03 -0400
 MIME-Version: 1.0
+In-Reply-To: <1403737406-6474-2-git-send-email-fkan@apm.com>
+References: <1403737406-6474-1-git-send-email-fkan@apm.com> <1403737406-6474-2-git-send-email-fkan@apm.com>
+From: Chen-Yu Tsai <wens@csie.org>
+Date: Thu, 26 Jun 2014 09:38:41 +0800
+X-Google-Sender-Auth: FPK8xSYkLGgV0aFy7YL_98KiW1M
+Message-ID: <CAGb2v65mGXDGb8Y045kehKufpMZWnfBm4dBJarJeOa8j-3g0RQ@mail.gmail.com>
+Subject: Re: [PATCH V7 1/6] power: reset: Add generic SYSCON register mapped reset
+To: Feng Kan <fkan@apm.com>
+Cc: dbaryshkov@gmail.com, catalin.marinas@arm.com, dwmw2@infradead.org,
+        Arnd Bergmann <arnd@arndb.de>, devicetree <devicetree@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, patches@apm.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >
-> > OK, I will change ' usb_is_intel_qrk ' to ' usb_is_intel_quark'.
-> 
-> Or even usb_is_intel_quark_x1000() ?
-> 
-OK, I will change the function name as your suggestion to make it more specific.
+On Thu, Jun 26, 2014 at 7:03 AM, Feng Kan <fkan@apm.com> wrote:
+> Add a generic SYSCON register mapped reset mechanism.
+>
+> Signed-off-by: Feng Kan <fkan@apm.com>
+> ---
+>  drivers/power/reset/Kconfig         |  6 +++
+>  drivers/power/reset/Makefile        |  1 +
+>  drivers/power/reset/syscon-reboot.c | 91 +++++++++++++++++++++++++++++++++++++
+>  3 files changed, 98 insertions(+)
+>  create mode 100644 drivers/power/reset/syscon-reboot.c
+>
+> diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
+> index bdcf517..7035236 100644
+> --- a/drivers/power/reset/Kconfig
+> +++ b/drivers/power/reset/Kconfig
+> @@ -80,3 +80,9 @@ config POWER_RESET_KEYSTONE
+>         help
+>           Reboot support for the KEYSTONE SoCs.
+>
+> +config POWER_RESET_SYSCON
+> +       bool "Generic SYSCON regmap reset driver"
+> +       depends on ARCH_XGENE
 
-> 	David
-> 
-> 
+If this is supposed to be generic, why are you depending on
+a certain platform?
 
+
+ChenYu
+
+> +       depends on POWER_RESET && MFD_SYSCON
+> +       help
+> +         Reboot support for generic SYSCON mapped register reset.
+> diff --git a/drivers/power/reset/Makefile b/drivers/power/reset/Makefile
+> index dde2e8b..b1b5ab3 100644
+> --- a/drivers/power/reset/Makefile
+> +++ b/drivers/power/reset/Makefile
+> @@ -8,3 +8,4 @@ obj-$(CONFIG_POWER_RESET_SUN6I) += sun6i-reboot.o
+>  obj-$(CONFIG_POWER_RESET_VEXPRESS) += vexpress-poweroff.o
+>  obj-$(CONFIG_POWER_RESET_XGENE) += xgene-reboot.o
+>  obj-$(CONFIG_POWER_RESET_KEYSTONE) += keystone-reset.o
+> +obj-$(CONFIG_POWER_RESET_SYSCON) += syscon-reboot.o
+> diff --git a/drivers/power/reset/syscon-reboot.c b/drivers/power/reset/syscon-reboot.c
+> new file mode 100644
+> index 0000000..9c15ba5
+> --- /dev/null
+> +++ b/drivers/power/reset/syscon-reboot.c
+> @@ -0,0 +1,91 @@
+> +/*
+> + * Generic Syscon Reboot Driver
+> + *
+> + * Copyright (c) 2013, Applied Micro Circuits Corporation
+> + * Author: Feng Kan <fkan@apm.com>
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License as
+> + * published by the Free Software Foundation; either version 2 of
+> + * the License, or (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +#include <linux/io.h>
+> +#include <linux/of_device.h>
+> +#include <linux/of_address.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/stat.h>
+> +#include <linux/slab.h>
+> +#include <linux/mfd/syscon.h>
+> +#include <linux/regmap.h>
+> +#include <linux/reboot.h>
+> +#include <asm/system_misc.h>
+> +
+> +struct syscon_reboot_context {
+> +       struct regmap *map;
+> +       u32 offset;
+> +       u32 mask;
+> +};
+> +
+> +static struct syscon_reboot_context *syscon_reboot_ctx;
+> +
+> +static void syscon_restart(enum reboot_mode reboot_mode, const char *cmd)
+> +{
+> +       struct syscon_reboot_context *ctx = syscon_reboot_ctx;
+> +       unsigned long timeout;
+> +
+> +       /* Issue the reboot */
+> +       if (ctx->map)
+> +               regmap_write(ctx->map, ctx->offset, ctx->mask);
+> +
+> +       timeout = jiffies + HZ;
+> +       while (time_before(jiffies, timeout))
+> +               cpu_relax();
+> +
+> +       pr_emerg("Unable to restart system\n");
+> +}
+> +
+> +static int syscon_reboot_probe(struct platform_device *pdev)
+> +{
+> +       struct syscon_reboot_context *ctx;
+> +       struct device *dev = &pdev->dev;
+> +
+> +       ctx = devm_kzalloc(&pdev->dev, sizeof(*ctx), GFP_KERNEL);
+> +       if (!ctx) {
+> +               dev_err(&pdev->dev, "out of memory for context\n");
+> +               return -ENOMEM;
+> +       }
+> +
+> +       ctx->map = syscon_regmap_lookup_by_phandle(dev->of_node, "regmap");
+> +       if (IS_ERR(ctx->map))
+> +               return PTR_ERR(ctx->map);
+> +
+> +       if (of_property_read_u32(pdev->dev.of_node, "offset", &ctx->offset))
+> +               return -EINVAL;
+> +
+> +       if (of_property_read_u32(pdev->dev.of_node, "mask", &ctx->mask))
+> +               return -EINVAL;
+> +
+> +       arm_pm_restart = syscon_restart;
+> +       syscon_reboot_ctx = ctx;
+> +
+> +       return 0;
+> +}
+> +
+> +static struct of_device_id syscon_reboot_of_match[] = {
+> +       { .compatible = "syscon-reboot" },
+> +       {}
+> +};
+> +
+> +static struct platform_driver syscon_reboot_driver = {
+> +       .probe = syscon_reboot_probe,
+> +       .driver = {
+> +               .name = "syscon-reboot",
+> +               .of_match_table = syscon_reboot_of_match,
+> +       },
+> +};
+> +module_platform_driver(syscon_reboot_driver);
+> --
+> 1.9.1
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
