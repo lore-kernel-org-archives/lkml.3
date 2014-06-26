@@ -1,54 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757824AbaFZSFY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 14:05:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1979 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750731AbaFZSFX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 14:05:23 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Jens Axboe <axboe@kernel.dk>,
-        Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH 6/6] cfq: Increase default value of target_latency
-References: <1403683129-10814-1-git-send-email-mgorman@suse.de>
-	<1403683129-10814-7-git-send-email-mgorman@suse.de>
-	<x491tub65t9.fsf@segfault.boston.devel.redhat.com>
-	<20140626161955.GH10819@suse.de>
-	<x49simr4ntz.fsf@segfault.boston.devel.redhat.com>
-	<20140626174500.GI10819@suse.de>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Thu, 26 Jun 2014 14:04:34 -0400
-In-Reply-To: <20140626174500.GI10819@suse.de> (Mel Gorman's message of "Thu,
-	26 Jun 2014 18:45:00 +0100")
-Message-ID: <x49k3834kel.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1758001AbaFZSHW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 14:07:22 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:49075 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754076AbaFZSHT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 14:07:19 -0400
+Message-ID: <53AC6152.5060908@wwwdotorg.org>
+Date: Thu, 26 Jun 2014 12:07:14 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Andrew Bresticker <abrestic@chromium.org>
+CC: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-usb@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Kishon Vijay Abraham I <kishon@ti.com>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v1 6/9] usb: xhci: Add NVIDIA Tegra XHCI host-controller
+ driver
+References: <1403072180-4944-1-git-send-email-abrestic@chromium.org>	<1403072180-4944-7-git-send-email-abrestic@chromium.org>	<53AB4F2D.2060208@wwwdotorg.org> <CAL1qeaFhfYdW06Md10eGVYWBrRR+f1yykVYHNp5+9-t1C9joPQ@mail.gmail.com>
+In-Reply-To: <CAL1qeaFhfYdW06Md10eGVYWBrRR+f1yykVYHNp5+9-t1C9joPQ@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mel Gorman <mgorman@suse.de> writes:
+On 06/25/2014 06:06 PM, Andrew Bresticker wrote:
+> On Wed, Jun 25, 2014 at 3:37 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>> On 06/18/2014 12:16 AM, Andrew Bresticker wrote:
+>>> Add support for the on-chip XHCI host controller present on Tegra SoCs.
+>>>
+>>> The driver is currently very basic: it loads the controller with its
+>>> firmware, starts the controller, and is able to service messages sent
+>>> by the controller's firmware.  The hardware supports device mode as
+>>> well as runtime power-gating, but support for these is not yet
+>>> implemented here.
 
->> And we should probably run our standard set of I/O exercisers at the
->> very least.  But, like I said, it seems like wasted effort.
->> 
->
-> Out of curiousity, what do you consider to be the standard set of I/O
-> exercisers?
+>>> diff --git a/drivers/usb/host/xhci-tegra.c b/drivers/usb/host/xhci-tegra.c
 
-Yes, that was vague, sorry.  I was referring to any io generator that
-will perform sequential and random I/O (writes, re-writes, reads, random
-writes, random reads, strided reads, backwards reads, etc).  We use
-iozone internally, testing both buffered and direct I/O, varying file
-and record sizes and across multiple file systems.  Data sets that fall
-inside of the page cache tend to have a high standard deviation, so, as
-an I/O guy, I ignore those.  ;-)
+>>> +static int tegra_xhci_set_ss_clk(struct tegra_xhci_hcd *tegra,
+>>> +                              unsigned long rate)
+>>
+>>> +     switch (rate) {
+>>> +     case TEGRA_XHCI_SS_CLK_HIGH_SPEED:
+>>> +             /* Reparent to PLLU_480M. Set div first to avoid overclocking */
+>>> +             old_parent_rate = clk_get_rate(clk_get_parent(clk));
+>>> +             new_parent_rate = clk_get_rate(tegra->pll_u_480m);
+>>> +             div = new_parent_rate / rate;
+>>> +             ret = clk_set_rate(clk, old_parent_rate / div);
+>>> +             if (ret)
+>>> +                     return ret;
+>>> +             ret = clk_set_parent(clk, tegra->pll_u_480m);
+>>> +             if (ret)
+>>> +                     return ret;
+>>
+>> Don't you need to call clk_set_rate() again after reparenting, since the
+>> divisor will be different, and the rounding too.
+> 
+> Nope, the divider we set before remains in-tact after clk_set_parent().
 
-Cheers,
-Jeff
+Oh I see, the clk_set_rate() call is setting up div so it's appropriate
+after the new parent is selected.
+
+Wouldn't it be better to just stop the clock, assert reset, reparent the
+clock, and then set the desired rate directly?
