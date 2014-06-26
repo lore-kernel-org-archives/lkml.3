@@ -1,71 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751940AbaFZWfe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 18:35:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44874 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751830AbaFZWf0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 18:35:26 -0400
-Date: Fri, 27 Jun 2014 00:35:23 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Himangi Saraogi <himangi774@gmail.com>
-cc: Stefan Achatz <erazor_de@users.sourceforge.net>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        julia.lawall@lip6.fr
-Subject: Re: [PATCH] HID: roccat: Drop cast
-In-Reply-To: <20140626172852.GA2878@himangi-Dell>
-Message-ID: <alpine.LNX.2.00.1406270035140.21386@pobox.suse.cz>
-References: <20140626172852.GA2878@himangi-Dell>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751830AbaFZWnr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 18:43:47 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:38379 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750974AbaFZWnq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 18:43:46 -0400
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+To: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Sascha Hauer <kernel@pengutronix.de>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/5] ARM: Centralize the access to the SCU register
+Date: Fri, 27 Jun 2014 00:43:23 +0200
+Message-Id: <1403822608-31158-1-git-send-email-gregory.clement@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Jun 2014, Himangi Saraogi wrote:
+Hello,
 
-> This patch removes the cast on data of type void* as it is not needed.
-> The following Coccinelle semantic patch was used for making the change:
-> 
-> @r@
-> expression x;
-> void* e;
-> type T;
-> identifier f;
-> @@
-> 
-> (
->   *((T *)e)
-> |
->   ((T *)x)[...]
-> |
->   ((T *)x)->f
-> |
-> - (T *)
->   e
-> )
-> 
-> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
-> ---
->  drivers/hid/hid-roccat-lua.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/hid/hid-roccat-lua.c b/drivers/hid/hid-roccat-lua.c
-> index 6adc0fa..65e2e76 100644
-> --- a/drivers/hid/hid-roccat-lua.c
-> +++ b/drivers/hid/hid-roccat-lua.c
-> @@ -61,7 +61,7 @@ static ssize_t lua_sysfs_write(struct file *fp, struct kobject *kobj,
->  		return -EINVAL;
->  
->  	mutex_lock(&lua->lua_lock);
-> -	retval = roccat_common2_send(usb_dev, command, (void *)buf, real_size);
-> +	retval = roccat_common2_send(usb_dev, command, buf, real_size);
->  	mutex_unlock(&lua->lua_lock);
+Following the feedback I go on the patch "ARM: mvebu: Enable SCU
+Speculative linefills to L2 for Armada 375/38x" :
+http://thread.gmane.org/gmane.linux.ports.arm.kernel/335961/focus=335993
 
-Applied, thanks.
+I take the opportunity of adding new functions in smp_scu.c to
+centralize the other access done on the SCU register from C file in
+this file.
+
+The first patch is a preliminary clean-up in smp_scu.c.
+
+The second and the third patches add functions to manipulate the SCU
+control register.
+
+The forth patch use the new scu_spec_linefills_enable()
+function. Enabling SCU Speculative linefills to L2 for Armada 375/38x
+was the reason of this series.
+
+The last patch removed a direct access to the SCU register by an
+access through the new scu_standby_enable() function. For this one I
+have just checked that the kernel can be built using the
+imx_v6_v7_defconfig config, but I didn't test it on an imx6 hardware.
+
+Thanks,
+
+Gregory CLEMENT (4):
+  ARM: smp_scu: Used defined value instead of literal constant
+  ARM: smp_scu: Add the enable speculative linefills operation
+  ARM: smp_scu: Add the enable standby operation
+  ARM: imx6q: Use the new function scu_standby_enable()
+
+Nadav Haklai (1):
+  ARM: mvebu: Enable SCU Speculative linefills to L2 for Armada 375/38x
+
+ arch/arm/include/asm/smp_scu.h |  5 ++++
+ arch/arm/kernel/smp_scu.c      | 52 ++++++++++++++++++++++++++++++++++++++----
+ arch/arm/mach-imx/platsmp.c    |  7 +-----
+ arch/arm/mach-mvebu/board-v7.c |  1 +
+ 4 files changed, 55 insertions(+), 10 deletions(-)
 
 -- 
-Jiri Kosina
-SUSE Labs
+1.8.1.2
+
