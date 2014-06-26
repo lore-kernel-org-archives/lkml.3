@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754742AbaFZG4j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 02:56:39 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:49320 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753451AbaFZG4g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 02:56:36 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] of: Transactional DT support.
-To: Dan Malek <dan.malek@konsulko.com>,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-Cc: Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>, Joel Becker <jlbec@evilplan.org>,
-        devicetree@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
-        linux-i2c@vger.kernel.org, Mark Brown <broonie@kernel.org>,
-        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pete Popov <pete.popov@konsulko.com>,
-        Georgi Vlaev <georgi.vlaev@konsulko.com>
-In-Reply-To: <2B23E906-3099-4775-B471-58BEB1542A36@konsulko.com>
-References: <1403430093-15132-1-git-send-email-pantelis.antoniou@konsulko.com>
-	<20140625140641.F10F0C40B59@trevor.secretlab.ca>
-	<C0AB3C41-C0BE-4F50-A4DB-843EAC8C8F6F@konsulko.com>
-	<2B23E906-3099-4775-B471-58BEB1542A36@konsulko.com>
-Date: Thu, 26 Jun 2014 07:56:30 +0100
-Message-Id: <20140626065630.626CFC40E5E@trevor.secretlab.ca>
+	id S1754925AbaFZHNS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 03:13:18 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:48736 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753358AbaFZHNO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 03:13:14 -0400
+From: Sricharan R <r.sricharan@ti.com>
+To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: <tony@atomide.com>, <santosh.shilimkar@ti.com>, <nm@ti.com>,
+        <rnayak@ti.com>, <linux@arm.linux.org.uk>, <r.sricharan@ti.com>,
+        <tglx@linutronix.de>, <jason@lakedaemon.net>, <joe@perches.com>
+Subject: [PATCH V4 01/16] irqchip: crossbar: Dont use '0' to mark reserved interrupts
+Date: Thu, 26 Jun 2014 12:40:19 +0530
+Message-ID: <1403766634-18543-2-git-send-email-r.sricharan@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1403766634-18543-1-git-send-email-r.sricharan@ti.com>
+References: <1403766634-18543-1-git-send-email-r.sricharan@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Jun 2014 12:20:16 -0700, Dan Malek <dan.malek@konsulko.com> wrote:
-> 
-> On Jun 25, 2014, at 7:48 AM, Pantelis Antoniou <pantelis.antoniou@konsulko.com> wrote:
-> 
-> >>> +int of_transaction_commit(struct of_transaction *oft);
-> >> 
-> >> How about of_transaction_apply()?
-> >> 
-> > 
-> > Sure.
-> 
-> LOL!  Panto, you give in too easily :)
-> 
-> Any transaction state diagrams I've seen always have a "commit" phase/state, never anything called "apply."  So, of_transaction_commit() is exactly the proper name.
+From: Nishanth Menon <nm@ti.com>
 
-Hahaha. my suggestiong on name is conditional on my earlier comment to
-make the API bulk-change instead of transaction oriented. Commit is
-indeed the right name for a transactional model.
+Today '0' is actually reserved, but may not be the same in the future.
 
-g.
+So, use a flag to mark the GIC interrupts that are reserved.
+
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Signed-off-by: Sricharan R <r.sricharan@ti.com>
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+---
+ drivers/irqchip/irq-crossbar.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/irqchip/irq-crossbar.c b/drivers/irqchip/irq-crossbar.c
+index 3d15d16..20105bc 100644
+--- a/drivers/irqchip/irq-crossbar.c
++++ b/drivers/irqchip/irq-crossbar.c
+@@ -17,6 +17,7 @@
+ #include <linux/irqchip/arm-gic.h>
+ 
+ #define IRQ_FREE	-1
++#define IRQ_RESERVED	-2
+ #define GIC_IRQ_START	32
+ 
+ /*
+@@ -139,7 +140,7 @@ static int __init crossbar_of_init(struct device_node *node)
+ 				pr_err("Invalid reserved entry\n");
+ 				goto err3;
+ 			}
+-			cb->irq_map[entry] = 0;
++			cb->irq_map[entry] = IRQ_RESERVED;
+ 		}
+ 	}
+ 
+@@ -170,7 +171,7 @@ static int __init crossbar_of_init(struct device_node *node)
+ 	 * reserved irqs. so find and store the offsets once.
+ 	 */
+ 	for (i = 0; i < max; i++) {
+-		if (!cb->irq_map[i])
++		if (cb->irq_map[i] == IRQ_RESERVED)
+ 			continue;
+ 
+ 		cb->register_offsets[i] = reserved;
+-- 
+1.7.9.5
 
