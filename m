@@ -1,211 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752040AbaFZWvh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 18:51:37 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:39248 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751405AbaFZWvf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 18:51:35 -0400
-Date: Thu, 26 Jun 2014 18:51:34 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, Michal Hocko <mhocko@suse.cz>,
-        Jan Kara <jack@suse.cz>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Dave Anderson <anderson@redhat.com>, Petr Mladek <pmladek@suse.cz>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>
-Subject: Re: [RFC][PATCH 5/5 v2] x86/nmi: Perform a safe NMI stack trace on
- all CPUs
-Message-ID: <20140626185134.63ba5ee3@gandalf.local.home>
-In-Reply-To: <20140626220130.764213722@goodmis.org>
-References: <20140626214901.596791200@goodmis.org>
-	<20140626220130.764213722@goodmis.org>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	id S1752216AbaFZWvk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 18:51:40 -0400
+Received: from mail.ispras.ru ([83.149.199.45]:40228 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751877AbaFZWvi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 18:51:38 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: "John W. Linville" <linville@tuxdriver.com>,
+        Fariya Fatima <fariyaf@gmail.com>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ldv-project@linuxtesting.org
+Subject: [PATCH 2/2] rsi: fix memory leaks and error handling in rsi_91x_usb
+Date: Fri, 27 Jun 2014 02:51:25 +0400
+Message-Id: <1403823085-10464-2-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403823085-10464-1-git-send-email-khoroshilov@ispras.ru>
+References: <1403823085-10464-1-git-send-email-khoroshilov@ispras.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch got rejected by lkml:
+The patch fixes a couple of issues:
+- absence of deallocation of rsi_dev->rx_usb_urb[0] in the driver;
+- potential NULL pointer dereference because of lack of checks for memory
+  allocation success in rsi_init_usb_interface().
 
->>> linux-kernel@vger.kernel.org (reading confirmation): 550 5.7.1 Content-Policy reject msg: Wrong MIME labeling on 8-bit character texts. BF:<H 0>; S1751405AbaFZWBb  
+By the way, it makes rsi_probe() returning error code instead of 1
+and fixes comments regarding returning values.
 
-I guess quilt couldn't handle Petr's last name (I changed it to 'a'
-here).
+Found by Linux Driver Verification project (linuxtesting.org).
 
--- Steve
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/net/wireless/rsi/rsi_91x_usb.c | 58 ++++++++++++++++++++++------------
+ 1 file changed, 38 insertions(+), 20 deletions(-)
 
-
-On Thu, 26 Jun 2014 17:49:06 -0400
-Steven Rostedt <rostedt@goodmis.org> wrote:
-
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> 
-> When trigger_all_cpu_backtrace() is called on x86, it will trigger an
-> NMI on each CPU and call show_regs(). But this can lead to a hard lock
-> up if the NMI comes in on another printk().
-> 
-> In order to avoid this, when the NMI triggers, it switches the printk
-> routine for that CPU to call a NMI safe printk function that records the
-> printk in a per_cpu seq_buf descriptor. After all NMIs have finished
-> recording its data, the trace_seqs are printed in a safe context.
-> 
-> Link: http://lkml.kernel.org/p/20140619213952.360076309@goodmis.org
-> 
-> Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
-> V2 - updated to use seq_buf instead of trace_seq.
->    - Keep original printk loglevel, do not strip it, but use it.
->      (suggested by Petr Mladek)
->    - Updated comments
->    - Removed return of true (noticed by Petr Mladek)
-> ---
->  arch/x86/kernel/apic/hw_nmi.c | 84 +++++++++++++++++++++++++++++++++++++++++--
->  1 file changed, 81 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
-> index c3fcb5de5083..91ddba672839 100644
-> --- a/arch/x86/kernel/apic/hw_nmi.c
-> +++ b/arch/x86/kernel/apic/hw_nmi.c
-> @@ -18,6 +18,7 @@
->  #include <linux/nmi.h>
->  #include <linux/module.h>
->  #include <linux/delay.h>
-> +#include <linux/seq_buf.h>
->  
->  #ifdef CONFIG_HARDLOCKUP_DETECTOR
->  u64 hw_nmi_get_sample_period(int watchdog_thresh)
-> @@ -30,11 +31,31 @@ u64 hw_nmi_get_sample_period(int watchdog_thresh)
->  /* For reliability, we're prepared to waste bits here. */
->  static DECLARE_BITMAP(backtrace_mask, NR_CPUS) __read_mostly;
->  
-> +#define NMI_BUF_SIZE		4096
-> +
-> +struct nmi_seq_buf {
-> +	unsigned char		buffer[NMI_BUF_SIZE];
-> +	struct seq_buf		seq;
-> +};
-> +
-> +/* Safe printing in NMI context */
-> +static DEFINE_PER_CPU(struct nmi_seq_buf, nmi_print_seq);
-> +
->  /* "in progress" flag of arch_trigger_all_cpu_backtrace */
->  static unsigned long backtrace_flag;
->  
-> +static void print_seq_line(struct nmi_seq_buf *s, int last, int pos)
-> +{
-> +	const char *buf = s->buffer + last;
-> +
-> +	printk("%.*s", (pos - last) + 1, buf);
-> +}
-> +
->  void arch_trigger_all_cpu_backtrace(void)
->  {
-> +	struct nmi_seq_buf *s;
-> +	int len;
-> +	int cpu;
->  	int i;
->  
->  	if (test_and_set_bit(0, &backtrace_flag))
-> @@ -44,6 +65,15 @@ void arch_trigger_all_cpu_backtrace(void)
->  		 */
->  		return;
->  
-> +	/*
-> +	 * Set up per_cpu seq_buf buffers that the NMIs running on the other
-> +	 * CPUs will write to.
-> +	 */
-> +	for_each_possible_cpu(cpu) {
-> +		s = &per_cpu(nmi_print_seq, cpu);
-> +		seq_buf_init(&s->seq, s->buffer, NMI_BUF_SIZE);
-> +	}
-> +
->  	cpumask_copy(to_cpumask(backtrace_mask), cpu_online_mask);
->  
->  	printk(KERN_INFO "sending NMI to all CPUs:\n");
-> @@ -56,10 +86,56 @@ void arch_trigger_all_cpu_backtrace(void)
->  		mdelay(1);
->  	}
->  
-> +	/*
-> +	 * Now that all the NMIs have triggered, we can dump out their
-> +	 * back traces safely to the console.
-> +	 */
-> +	for_each_possible_cpu(cpu) {
-> +		int last_i = 0;
-> +
-> +		s = &per_cpu(nmi_print_seq, cpu);
-> +		len = s->seq.len;
-> +		if (!len)
-> +			continue;
-> +
-> +		/* Print line by line. */
-> +		for (i = 0; i < len; i++) {
-> +			if (s->buffer[i] == '\n') {
-> +				print_seq_line(s, last_i, i);
-> +				last_i = i + 1;
-> +			}
-> +		}
-> +		if (last_i < i - 1) {
-> +			print_seq_line(s, last_i, i);
-> +			pr_cont("\n");
-> +		}
-> +	}
-> +
->  	clear_bit(0, &backtrace_flag);
->  	smp_mb__after_atomic();
->  }
->  
-> +/*
-> + * It is not safe to call printk() directly from NMI handlers.
-> + * It may be fine if the NMI detected a lock up and we have no choice
-> + * but to do so, but doing a NMI on all other CPUs to get a back trace
-> + * can be done with a sysrq-l. We don't want that to lock up, which
-> + * can happen if the NMI interrupts a printk in progress.
-> + *
-> + * Instead, we redirect the vprintk() to this nmi_vprintk() that writes
-> + * the content into a per cpu seq_buf buffer. Then when the NMIs are
-> + * all done, we can safely dump the contents of the seq_buf to a printk()
-> + * from a non NMI context.
-> + */
-> +static int nmi_vprintk(const char *fmt, va_list args)
-> +{
-> +	struct nmi_seq_buf *s = this_cpu_ptr(&nmi_print_seq);
-> +	unsigned int len = s->seq.len;
-> +
-> +	seq_buf_vprintf(&s->seq, fmt, args);
-> +	return s->seq.len - len;
-> +}
-> +
->  static int
->  arch_trigger_all_cpu_backtrace_handler(unsigned int cmd, struct pt_regs *regs)
->  {
-> @@ -68,12 +144,14 @@ arch_trigger_all_cpu_backtrace_handler(unsigned int cmd, struct pt_regs *regs)
->  	cpu = smp_processor_id();
->  
->  	if (cpumask_test_cpu(cpu, to_cpumask(backtrace_mask))) {
-> -		static arch_spinlock_t lock = __ARCH_SPIN_LOCK_UNLOCKED;
-> +		printk_func_t printk_func_save = this_cpu_read(printk_func);
->  
-> -		arch_spin_lock(&lock);
-> +		/* Replace printk to write into the NMI seq */
-> +		this_cpu_write(printk_func, nmi_vprintk);
->  		printk(KERN_WARNING "NMI backtrace for cpu %d\n", cpu);
->  		show_regs(regs);
-> -		arch_spin_unlock(&lock);
-> +		this_cpu_write(printk_func, printk_func_save);
-> +
->  		cpumask_clear_cpu(cpu, to_cpumask(backtrace_mask));
->  		return NMI_HANDLED;
->  	}
+diff --git a/drivers/net/wireless/rsi/rsi_91x_usb.c b/drivers/net/wireless/rsi/rsi_91x_usb.c
+index 2e0254606e3d..de4d100b84dd 100644
+--- a/drivers/net/wireless/rsi/rsi_91x_usb.c
++++ b/drivers/net/wireless/rsi/rsi_91x_usb.c
+@@ -25,7 +25,7 @@
+  * @len: Length to be written.
+  * @endpoint: Type of endpoint.
+  *
+- * Return: status: 0 on success, -1 on failure.
++ * Return: status: 0 on success, a negative error code on failure.
+  */
+ static int rsi_usb_card_write(struct rsi_hw *adapter,
+ 			      void *buf,
+@@ -60,7 +60,7 @@ static int rsi_usb_card_write(struct rsi_hw *adapter,
+  * @data: Pointer to the data that has to be written.
+  * @count: Number of multiple bytes to be written.
+  *
+- * Return: 0 on success, -1 on failure.
++ * Return: 0 on success, a negative error code on failure.
+  */
+ static int rsi_write_multiple(struct rsi_hw *adapter,
+ 			      u8 endpoint,
+@@ -147,7 +147,7 @@ static int rsi_find_bulk_in_and_out_endpoints(struct usb_interface *interface,
+  * @value: Value to be read.
+  * @len: length of data to be read.
+  *
+- * Return: status: 0 on success, -1 on failure.
++ * Return: status: 0 on success, a negative error code on failure.
+  */
+ static int rsi_usb_reg_read(struct usb_device *usbdev,
+ 			    u32 reg,
+@@ -189,7 +189,7 @@ static int rsi_usb_reg_read(struct usb_device *usbdev,
+  * @value: Value to write.
+  * @len: Length of data to be written.
+  *
+- * Return: status: 0 on success, -1 on failure.
++ * Return: status: 0 on success, a negative error code on failure.
+  */
+ static int rsi_usb_reg_write(struct usb_device *usbdev,
+ 			     u32 reg,
+@@ -249,7 +249,7 @@ static void rsi_rx_done_handler(struct urb *urb)
+  * rsi_rx_urb_submit() - This function submits the given URB to the USB stack.
+  * @adapter: Pointer to the adapter structure.
+  *
+- * Return: 0 on success, -1 on failure.
++ * Return: 0 on success, a negative error code on failure.
+  */
+ static int rsi_rx_urb_submit(struct rsi_hw *adapter)
+ {
+@@ -281,7 +281,7 @@ static int rsi_rx_urb_submit(struct rsi_hw *adapter)
+  * @data: Pointer to the data that has to be written.
+  * @count: Number of multiple bytes to be written on to the registers.
+  *
+- * Return: status: 0 on success, -1 on failure.
++ * Return: status: 0 on success, a negative error code on failure.
+  */
+ int rsi_usb_write_register_multiple(struct rsi_hw *adapter,
+ 				    u32 addr,
+@@ -331,7 +331,7 @@ int rsi_usb_write_register_multiple(struct rsi_hw *adapter,
+  * @pkt: Pointer to the data to be written on to the card.
+  * @len: Length of the data to be written on to the card.
+  *
+- * Return: 0 on success, -1 on failure.
++ * Return: 0 on success, a negative error code on failure.
+  */
+ static int rsi_usb_host_intf_write_pkt(struct rsi_hw *adapter,
+ 				       u8 *pkt,
+@@ -359,6 +359,7 @@ static void rsi_deinit_usb_interface(struct rsi_hw *adapter)
+ 	struct rsi_91x_usbdev *dev = (struct rsi_91x_usbdev *)adapter->rsi_dev;
+ 
+ 	rsi_kill_thread(&dev->rx_thread);
++	usb_free_urb(dev->rx_usb_urb[0]);
+ 	kfree(adapter->priv->rx_data_pkt);
+ 	kfree(dev->tx_buffer);
+ }
+@@ -368,7 +369,7 @@ static void rsi_deinit_usb_interface(struct rsi_hw *adapter)
+  * @adapter: Pointer to the adapter structure.
+  * @pfunction: Pointer to USB interface structure.
+  *
+- * Return: 0 on success, -1 on failure.
++ * Return: 0 on success, a negative error code on failure.
+  */
+ static int rsi_init_usb_interface(struct rsi_hw *adapter,
+ 				  struct usb_interface *pfunction)
+@@ -398,7 +399,15 @@ static int rsi_init_usb_interface(struct rsi_hw *adapter,
+ 	}
+ 
+ 	rsi_dev->tx_buffer = kmalloc(2048, GFP_KERNEL);
++	if (!rsi_dev->tx_buffer) {
++		status = -ENOMEM;
++		goto fail_tx;
++	}
+ 	rsi_dev->rx_usb_urb[0] = usb_alloc_urb(0, GFP_KERNEL);
++	if (!rsi_dev->rx_usb_urb[0]) {
++		status = -ENOMEM;
++		goto fail_rx;
++	}
+ 	rsi_dev->rx_usb_urb[0]->transfer_buffer = adapter->priv->rx_data_pkt;
+ 	rsi_dev->tx_blk_size = 252;
+ 
+@@ -413,7 +422,7 @@ static int rsi_init_usb_interface(struct rsi_hw *adapter,
+ 				    rsi_usb_rx_thread, "RX-Thread");
+ 	if (status) {
+ 		rsi_dbg(ERR_ZONE, "%s: Unable to init rx thrd\n", __func__);
+-		goto fail;
++		goto fail_thread;
+ 	}
+ 
+ #ifdef CONFIG_RSI_DEBUGFS
+@@ -424,8 +433,11 @@ static int rsi_init_usb_interface(struct rsi_hw *adapter,
+ 	rsi_dbg(INIT_ZONE, "%s: Enabled the interface\n", __func__);
+ 	return 0;
+ 
+-fail:
++fail_thread:
++	usb_free_urb(rsi_dev->rx_usb_urb[0]);
++fail_rx:
+ 	kfree(rsi_dev->tx_buffer);
++fail_tx:
+ 	kfree(common->rx_data_pkt);
+ 	return status;
+ }
+@@ -437,7 +449,7 @@ fail:
+  * @pfunction: Pointer to the USB interface structure.
+  * @id: Pointer to the usb_device_id structure.
+  *
+- * Return: 0 on success, -1 on failure.
++ * Return: 0 on success, a negative error code on failure.
+  */
+ static int rsi_probe(struct usb_interface *pfunction,
+ 		     const struct usb_device_id *id)
+@@ -445,6 +457,7 @@ static int rsi_probe(struct usb_interface *pfunction,
+ 	struct rsi_hw *adapter;
+ 	struct rsi_91x_usbdev *dev;
+ 	u16 fw_status;
++	int status;
+ 
+ 	rsi_dbg(INIT_ZONE, "%s: Init function called\n", __func__);
+ 
+@@ -452,10 +465,11 @@ static int rsi_probe(struct usb_interface *pfunction,
+ 	if (!adapter) {
+ 		rsi_dbg(ERR_ZONE, "%s: Failed to init os intf ops\n",
+ 			__func__);
+-		return 1;
++		return -ENOMEM;
+ 	}
+ 
+-	if (rsi_init_usb_interface(adapter, pfunction)) {
++	status = rsi_init_usb_interface(adapter, pfunction);
++	if (status) {
+ 		rsi_dbg(ERR_ZONE, "%s: Failed to init usb interface\n",
+ 			__func__);
+ 		goto err;
+@@ -465,26 +479,30 @@ static int rsi_probe(struct usb_interface *pfunction,
+ 
+ 	dev = (struct rsi_91x_usbdev *)adapter->rsi_dev;
+ 
+-	if (rsi_usb_reg_read(dev->usbdev, FW_STATUS_REG, &fw_status, 2) < 0)
++	status = rsi_usb_reg_read(dev->usbdev, FW_STATUS_REG, &fw_status, 2);
++	if (status)
+ 		goto err1;
+ 	else
+ 		fw_status &= 1;
+ 
+ 	if (!fw_status) {
+-		if (rsi_usb_device_init(adapter->priv)) {
++		status = rsi_usb_device_init(adapter->priv);
++		if (status) {
+ 			rsi_dbg(ERR_ZONE, "%s: Failed in device init\n",
+ 				__func__);
+ 			goto err1;
+ 		}
+ 
+-		if (rsi_usb_reg_write(dev->usbdev,
+-				      USB_INTERNAL_REG_1,
+-				      RSI_USB_READY_MAGIC_NUM, 1) < 0)
++		status = rsi_usb_reg_write(dev->usbdev,
++					   USB_INTERNAL_REG_1,
++					   RSI_USB_READY_MAGIC_NUM, 1);
++		if (status)
+ 			goto err1;
+ 		rsi_dbg(INIT_ZONE, "%s: Performed device init\n", __func__);
+ 	}
+ 
+-	if (rsi_rx_urb_submit(adapter))
++	status = rsi_rx_urb_submit(adapter);
++	if (status)
+ 		goto err1;
+ 
+ 	return 0;
+@@ -493,7 +511,7 @@ err1:
+ err:
+ 	rsi_91x_deinit(adapter);
+ 	rsi_dbg(ERR_ZONE, "%s: Failed in probe...Exiting\n", __func__);
+-	return 1;
++	return status;
+ }
+ 
+ /**
+-- 
+1.9.1
 
