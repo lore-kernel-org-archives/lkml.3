@@ -1,93 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752437AbaF0CzI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 22:55:08 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:37452 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751836AbaF0CzF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 22:55:05 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Am5BAO3brFN5LEioPGdsb2JhbABbgw2EGoQ3ow0BAQEBAQEGmWoBgQgXBAEBAQE4NYQDAQEFIw8BIyMQCAECGAICBSECAg8FJQMHGhOIQYkPnCWdLBcXgRSEOYkcB4J3gUwFmliXSis
-Date: Fri, 27 Jun 2014 12:55:01 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
-Cc: =?utf-8?B?THVrw6HFoQ==?= Czerner <lczerner@redhat.com>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Thomas Knauth <thomas.knauth@gmx.de>,
-        David Rientjes <rientjes@google.com>,
-        Maksym Planeta <mcsim.planeta@gmail.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sysctl: Add a feature to drop caches selectively
-Message-ID: <20140627025501.GY9508@dastard>
-References: <1403626213-7691-1-git-send-email-mcsim.planeta@gmail.com>
- <alpine.DEB.2.02.1406241458140.29176@chino.kir.corp.google.com>
- <1403677528.7903.103.camel@sauron.fi.intel.com>
- <CABhLV03_PNFiwsvt+yitcsKxz5TeVECCFavdNkbgQ+XzQqASaw@mail.gmail.com>
- <20140626010606.GT4453@dastard>
- <1403763199.20275.39.camel@sauron.fi.intel.com>
- <53ABF7C4.1000906@itwm.fraunhofer.de>
- <1403782263.20275.59.camel@sauron.fi.intel.com>
- <alpine.LFD.2.00.1406261349320.2172@localhost.localdomain>
- <53AC0DB4.7070701@itwm.fraunhofer.de>
+	id S1752447AbaF0DDA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 23:03:00 -0400
+Received: from mail-bn1lp0142.outbound.protection.outlook.com ([207.46.163.142]:2209
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751139AbaF0DC6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 23:02:58 -0400
+From: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>
+To: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <rob@landley.net>, <michal.simek@xilinx.com>,
+        <grant.likely@linaro.org>, <gregkh@linuxfoundation.org>,
+        <jason@lakedaemon.net>, <ezequiel.garcia@free-electrons.com>,
+        <arnd@arndb.de>, <dwmw2@infradead.org>, <computersforpeace@gmail.com>,
+        <artem.bityutskiy@linux.intel.com>, <pekon@ti.com>,
+        <jussi.kivilinna@iki.fi>, <acourbot@nvidia.com>,
+        <ivan.khoronzhuk@ti.com>, <joern@logfs.org>
+CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mtd@lists.infradead.org>,
+        <kpc528@gmail.com>, <kalluripunnaiahchoudary@gmail.com>,
+        Punnaiah Choudary Kalluri <punnaia@xilinx.com>
+Subject: [PATCH RFC v3 0/2] Add arm pl353 smc driver for xilinx zynq soc
+Date: Fri, 27 Jun 2014 08:32:40 +0530
+X-Mailer: git-send-email 1.7.4
+X-RCIS-Action: ALLOW
+Message-ID: <637e4278-66b3-4a40-8fe2-9dc97ea643ba@BN1AFFO11FD026.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(189002)(199002)(243025005)(44976005)(50466002)(15975445006)(53416004)(81542001)(81342001)(87286001)(70736001)(33646001)(83072002)(74316001)(62966002)(107046002)(48376002)(50986999)(85852003)(99396002)(15202345003)(92566001)(88136002)(31696002)(85306003)(2201001)(80022001)(92726001)(87936001)(104016002)(20776003)(50226001)(74662001)(86362001)(79102001)(74502001)(104166001)(77096002)(95666004)(19580395003)(93916002)(46102001)(4396001)(21056001)(77156001)(102836001)(31966008)(76482001)(89996001)(47776003)(83322001)(77982001)(6806004)(1496007)(106466001)(921003)(1121002)(2101003)(217873001)(83996005)(23106004);DIR:OUT;SFP:;SCL:1;SRVR:BN1AFFO11HUB011;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53AC0DB4.7070701@itwm.fraunhofer.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: xilinx.onmicrosoft.com
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 0255DF69B9
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=punnaiah.choudary.kalluri@xilinx.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 26, 2014 at 02:10:28PM +0200, Bernd Schubert wrote:
-> On 06/26/2014 01:57 PM, Lukáš Czerner wrote:
-> >On Thu, 26 Jun 2014, Artem Bityutskiy wrote:
-> >>On Thu, 2014-06-26 at 12:36 +0200, Bernd Schubert wrote:
-> >>>On 06/26/2014 08:13 AM, Artem Bityutskiy wrote:
-> >>>>On Thu, 2014-06-26 at 11:06 +1000, Dave Chinner wrote:
-> >>>>>Your particular use case can be handled by directing your benchmark
-> >>>>>at a filesystem mount point and unmounting the filesystem in between
-> >>>>>benchmark runs. There is no ned to adding kernel functionality for
-> >>>>>somethign that can be so easily acheived by other means, especially
-> >>>>>in benchmark environments where *everything* is tightly controlled.
-> >>>>
-> >>>>If I was a benchmark writer, I would not be willing running it as root
-> >>>>to be able to mount/unmount, I would not be willing to require the
-> >>>>customer creating special dedicated partitions for the benchmark,
-> >>>>because this is too user-unfriendly. Or do I make incorrect assumptions?
-> >>>
-> >>>But why a sysctl then? And also don't see a point for that at all, why
-> >>>can't the benchmark use posix_fadvise(POSIX_FADV_DONTNEED)?
-> >>
-> >>The latter question was answered - people want a way to drop caches for
-> >>a file. They need a method which guarantees that the caches are dropped.
-> >>They do not need an advisory method which does not give any guarantees.
-> 
-> I'm not sure if a benchmark really needs that so much that
-> FADV_DONTNEED isn't sufficient.
-> Personally I would also like to know if FADV_DONTNEED succeeded.
-> I.e. 'ql-fstest' is to check if the written pattern went to the
-> block device and currently it does not know if data really had been
-> dropped from the page cache. As it reads files several times this is
-> not critical, but only would be a nice to have - nothing worth to
-> add a new syscall.
+The following patches add arm pl353 static memory controller driver for
+xilinx zynq soc. The arm pl353 smc supports two interfaces i.e nand and
+nor/sram memory interfaces. The current implementation supports only a
+single SMC instance and nand specific configuration.
 
-ql-test is not a benchmark, it's a data integrity test. The re-read
-verification problem is easily solved by using direct IO to read the
-files directly without going through the page cache. Indeed, direct
-IO will invalidate cached pages over the range it reads before it
-does the read, so the guarantee that you are after - no cached pages
-when the read is done - is also fulfilled by the direct IO read...
+xilinx zynq TRM link:
+http://www.xilinx.com/support/documentation/user_guides/ug585-Zynq-7000-TRM.pdf
 
-I really don't understand why people keep trying to make cached IO
-behave like uncached IO when we already have uncached IO
-interfaces....
+ARM pl353 smc TRM link:
+http://infocenter.arm.com/help/topic/com.arm.doc.ddi0380g/
+DDI0380G_smc_pl350_series_r2p1_trm.pdf
 
-Cheers,
+Punnaiah Choudary Kalluri (2):
+  Devicetree: Add pl353 smc controller devicetree binding information
+  memory: pl353: Add driver for arm pl353 static memory controller
 
-Dave.
+ .../bindings/memory-controllers/pl353-smc.txt      |   53 ++
+ drivers/memory/Kconfig                             |    6 +
+ drivers/memory/Makefile                            |    1 +
+ drivers/memory/pl353-smc.c                         |  569 ++++++++++++++++++++
+ include/linux/memory/pl353-smc.h                   |   34 ++
+ 5 files changed, 663 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/memory-controllers/pl353-smc.txt
+ create mode 100644 drivers/memory/pl353-smc.c
+ create mode 100644 include/linux/memory/pl353-smc.h
+
 -- 
-Dave Chinner
-david@fromorbit.com
+1.7.4
+
+
