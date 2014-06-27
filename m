@@ -1,269 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751804AbaF0S1b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 14:27:31 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:37267 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751065AbaF0S13 (ORCPT
+	id S1752131AbaF0S2L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 14:28:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41917 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750862AbaF0S2I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 14:27:29 -0400
-Date: Fri, 27 Jun 2014 14:27:28 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-cc: Allen Yu <alleny@nvidia.com>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Linux-pm mailing list <linux-pm@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: [RFC] Add "rpm_not_supported" flag
-In-Reply-To: <3098868.U0NfB8kYvJ@vostro.rjw.lan>
-Message-ID: <Pine.LNX.4.44L0.1406271417120.875-100000@iolanthe.rowland.org>
+	Fri, 27 Jun 2014 14:28:08 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: lwn@lwn.net
+Subject: [3.8.y.z extended stable] Linux 3.8.13.25
+Date: Fri, 27 Jun 2014 11:28:02 -0700
+Message-Id: <1403893683-23342-1-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+X-Extended-Stable: 3.8
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Jun 2014, Rafael J. Wysocki wrote:
+I am announcing the release of the Linux 3.8.13.25 kernel.
 
-> On Sunday, June 22, 2014 12:45:42 PM Alan Stern wrote:
-> > On Sun, 22 Jun 2014, Rafael J. Wysocki wrote:
-> > 
-> > > > How would you treat them specially?  Add a "runtime_pm_not_supported" 
-> > > > flag?
-> > > 
-> > > I thought about a "runtime PM has been enabled at least once" flag rather
-> > > that would be set by pm_runtime_enable() every time it is called and never
-> > > cleared.  That would allow the core to distinguish between "runtime PM
-> > > disabled temporarily" and "runtime PM not used" which turn out to be
-> > > sufficiently different cases.
-> > 
-> > Interesting idea, but it can't tell the difference between "runtime PM
-> > not supported" and "runtime PM not enabled yet".  I think a simple "not
-> > supported" flag will be more straightforward.
-> 
-> The question is who will set the "unsupported" flag (think devices without
-> drivers etc.).  Or perhaps the idea is that it will be set to start with?
+The updated 3.8.y tree can be found at: 
+  git://kernel.ubuntu.com/ubuntu/linux.git linux-3.8.y
+and can be browsed at:
+  http://kernel.ubuntu.com/git?p=ubuntu/linux.git;h=refs/heads/linux-3.8.y;a=shortlog
 
-Drivers or subsystems will set the flag.  It should not be set for
-devices without drivers or subsystems, because the flag means that the
-hardware doesn't support runtime power management, and the kernel
-wouldn't know this if there was no driver or subsystem.
+The diff from v3.8.13.24 is posted as a follow-up to this email.
 
-The flag will not be set to start with.  The idea is that you set it 
-when you know for certain that the device cannot be power-managed, but 
-you still want the Runtime PM API to work with the device.  In 
-particular, calls to pm_runtime_resume() will succeed.
+The 3.8.y extended stable tree is maintained by the Ubuntu Kernel Team.
+For more info, see https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
 
-> > > Yes.  The core definitely needs to be able to distinguish between the
-> > > "runtime PM disabled temporarily" and "runtime PM not supported/not used"
-> > > situations.
-> > 
-> > Let me work out a patch, and we'll see what you think.  For the time
-> > being we can stick with our "runtime PM must be disabled (or in error)  
-> > when the status is changed" approach.
-> 
-> OK
+ -Kamal
 
-The patch is below.  I haven't tested it with anything meaningful, but 
-it seems straightforward enough.
+-- 
+ Makefile                                      |   2 +-
+ arch/arm/boot/dts/imx53.dtsi                  |   2 +-
+ arch/arm/include/asm/uaccess.h                |   3 +-
+ arch/arm/mach-imx/devices/platform-ipu-core.c |   2 +-
+ arch/arm/mach-omap2/cclock3xxx_data.c         |   3 +-
+ arch/powerpc/Makefile                         |   4 +-
+ arch/powerpc/include/asm/ppc_asm.h            |   7 +-
+ arch/x86/include/asm/hugetlb.h                |   1 +
+ arch/x86/kernel/ldt.c                         |   4 +-
+ arch/x86/vdso/vdso32-setup.c                  |   8 +
+ drivers/acpi/blacklist.c                      |  13 ++
+ drivers/crypto/caam/error.c                   |  10 +-
+ drivers/dma/mv_xor.c                          |   8 +-
+ drivers/gpu/drm/radeon/radeon_bios.c          |  14 ++
+ drivers/gpu/drm/radeon/radeon_kms.c           |  57 +++---
+ drivers/gpu/drm/radeon/radeon_object.c        |  38 ++--
+ drivers/hwmon/emc1403.c                       |   4 +-
+ drivers/i2c/busses/i2c-designware-core.c      |   3 +
+ drivers/i2c/busses/i2c-rcar.c                 |   9 +-
+ drivers/i2c/busses/i2c-s3c2410.c              |   2 +-
+ drivers/input/mouse/synaptics.c               |  10 +-
+ drivers/iommu/amd_iommu.c                     |   2 +-
+ drivers/md/dm-crypt.c                         |  61 ++-----
+ drivers/md/md.c                               |   7 +-
+ drivers/media/i2c/ov7670.c                    |   2 +-
+ drivers/media/media-device.c                  |   1 +
+ drivers/media/tuners/fc2580.c                 |   6 +-
+ drivers/media/tuners/fc2580_priv.h            |   1 +
+ drivers/media/v4l2-core/v4l2-compat-ioctl32.c |  12 +-
+ drivers/net/can/sja1000/peak_pci.c            |  14 +-
+ drivers/net/ethernet/ti/cpsw.c                |   4 +
+ drivers/pci/hotplug/shpchp_ctrl.c             |   4 +-
+ drivers/staging/speakup/main.c                |   1 +
+ drivers/staging/speakup/selection.c           |  38 +++-
+ drivers/staging/speakup/speakup.h             |   1 +
+ drivers/target/target_core_configfs.c         |   5 +
+ drivers/usb/core/driver.c                     |   9 +-
+ drivers/usb/core/hub.c                        |  15 +-
+ drivers/usb/host/xhci-mem.c                   |  20 +--
+ drivers/usb/serial/ftdi_sio.c                 |   2 +
+ drivers/usb/serial/ftdi_sio_ids.h             |   5 +
+ drivers/usb/serial/io_ti.c                    |   2 +-
+ drivers/usb/serial/io_usbvend.h               |   2 +-
+ drivers/usb/serial/option.c                   |   2 +
+ fs/nfsd/nfs4acl.c                             |  17 +-
+ fs/nfsd/nfs4state.c                           |  16 +-
+ include/linux/interrupt.h                     |   5 +
+ kernel/events/core.c                          |  16 +-
+ kernel/futex.c                                | 239 ++++++++++++++++++++------
+ kernel/hrtimer.c                              |   8 +-
+ kernel/sched/core.c                           |   5 +-
+ kernel/sched/cpupri.c                         |   3 +-
+ kernel/sched/cputime.c                        |  32 ++--
+ mm/memory-failure.c                           |  17 +-
+ mm/mremap.c                                   |   9 +-
+ mm/percpu.c                                   |   2 +-
+ mm/rmap.c                                     |   3 +-
+ net/ceph/messenger.c                          |  20 ++-
+ sound/pci/hda/hda_intel.c                     |   3 +
+ sound/pci/hda/patch_realtek.c                 |  10 +-
+ sound/soc/codecs/wm8962.c                     |  15 +-
+ sound/soc/codecs/wm8962.h                     |   4 +
+ 62 files changed, 581 insertions(+), 263 deletions(-)
 
-One side point: The patch changes the string displayed for the 
-power/runtime_status attribute file when disable_depth > 0.  Instead of 
-"unsupported", it will now say "disabled".  The attribute will contain 
-"not supported" when the new flag is set.
+Alan Stern (1):
+      USB: Avoid runtime suspend loops for HCDs that can't handle suspend/resume
 
-Is this acceptable?
+Alex Deucher (1):
+      drm/radeon: handle non-VGA class pci devices with ATRM
 
-Alan Stern
+Alex Williamson (1):
+      iommu/amd: Fix interrupt remapping for aliased devices
 
+Alexej Starschenko (1):
+      USB: serial: option: add support for Novatel E371 PCIe card
 
+Andrey Ryabinin (2):
+      ARM: 8051/1: put_user: fix possible data corruption in put_user
+      mm: rmap: fix use-after-free in __put_anon_vma
 
- Documentation/power/runtime_pm.txt |   20 +++++++++++++++++++-
- drivers/base/power/runtime.c       |   36 ++++++++++++++++++++++++++++++++++--
- drivers/base/power/sysfs.c         |    6 ++++--
- include/linux/pm.h                 |    1 +
- include/linux/pm_runtime.h         |    2 ++
- 5 files changed, 60 insertions(+), 5 deletions(-)
+Anthony Iliopoulos (1):
+      x86, mm, hugetlb: Add missing TLB page invalidation for hugetlb_cow()
 
-Index: usb-3.16/Documentation/power/runtime_pm.txt
-===================================================================
---- usb-3.16.orig/Documentation/power/runtime_pm.txt
-+++ usb-3.16/Documentation/power/runtime_pm.txt
-@@ -233,6 +233,10 @@ defined in include/linux/pm.h:
-       equal to zero); the initial value of it is 1 (i.e. runtime PM is
-       initially disabled for all devices)
- 
-+  int rpm_not_supported;
-+    - if set, the device does not support runtime power management; attempts to
-+      suspend the device will fail with -EOPNOTSUPP
-+
-   int runtime_error;
-     - if set, there was a fatal error (one of the callbacks returned error code
-       as described in Section 2), so the helper funtions will not work until
-@@ -419,6 +423,11 @@ drivers/base/power/runtime.c and include
-   void pm_suspend_ignore_children(struct device *dev, bool enable);
-     - set/unset the power.ignore_children flag of the device
- 
-+  void pm_runtime_not_supported(struct device *dev);
-+    - set the device's 'power.rpm_not_supported' flag, set the device's runtime
-+      status to 'active', and increment the device's usage counter; this action
-+      is irreversible
-+
-   int pm_runtime_set_active(struct device *dev);
-     - clear the device's 'power.runtime_error' flag, set the device's runtime
-       PM status to 'active' and update its parent's counter of 'active'
-@@ -432,7 +441,7 @@ drivers/base/power/runtime.c and include
-       PM status to 'suspended' and update its parent's counter of 'active'
-       children as appropriate (it is only valid to use this function if
-       'power.runtime_error' is set or 'power.disable_depth' is greater than
--      zero)
-+      zero, and 'power.rpm_not_supported' must be zero)
- 
-   bool pm_runtime_active(struct device *dev);
-     - return true if the device's runtime PM status is 'active' or its
-@@ -586,6 +595,15 @@ value of /sys/devices/.../power/control
- manage the device at run time, the driver may confuse it by using
- pm_runtime_forbid() this way.
- 
-+If a driver supports runtime PM but one of its devices does not, the driver
-+can call pm_runtime_not_supported() before calling pm_runtime_enable().  After
-+that, calls to pm_runtime_resume() and related functions will succeed, but
-+attempts to suspend the device will fail (much like what happens after calling
-+pm_runtime_forbid(), except that pm_runtime_not_supported() cannot be undone by
-+either the kernel or the user).  It is not necessary to call
-+pm_runtime_set_active() for the device; pm_runtime_not_supported() sets the
-+runtime PM status to 'active'.
-+
- 6. Runtime PM and System Sleep
- 
- Runtime PM and system sleep (i.e., system suspend and hibernation, also known
-Index: usb-3.16/include/linux/pm.h
-===================================================================
---- usb-3.16.orig/include/linux/pm.h
-+++ usb-3.16/include/linux/pm.h
-@@ -584,6 +584,7 @@ struct dev_pm_info {
- 	atomic_t		usage_count;
- 	atomic_t		child_count;
- 	unsigned int		disable_depth:3;
-+	unsigned int		rpm_not_supported:1;
- 	unsigned int		idle_notification:1;
- 	unsigned int		request_pending:1;
- 	unsigned int		deferred_resume:1;
-Index: usb-3.16/include/linux/pm_runtime.h
-===================================================================
---- usb-3.16.orig/include/linux/pm_runtime.h
-+++ usb-3.16/include/linux/pm_runtime.h
-@@ -47,6 +47,7 @@ extern int __pm_runtime_set_status(struc
- extern int pm_runtime_barrier(struct device *dev);
- extern void pm_runtime_enable(struct device *dev);
- extern void __pm_runtime_disable(struct device *dev, bool check_resume);
-+extern void pm_runtime_not_supported(struct device *dev);
- extern void pm_runtime_allow(struct device *dev);
- extern void pm_runtime_forbid(struct device *dev);
- extern void pm_runtime_no_callbacks(struct device *dev);
-@@ -144,6 +145,7 @@ static inline int __pm_runtime_set_statu
- static inline int pm_runtime_barrier(struct device *dev) { return 0; }
- static inline void pm_runtime_enable(struct device *dev) {}
- static inline void __pm_runtime_disable(struct device *dev, bool c) {}
-+static inline void pm_runtime_not_supported(struct device *dev) {}
- static inline void pm_runtime_allow(struct device *dev) {}
- static inline void pm_runtime_forbid(struct device *dev) {}
- 
-Index: usb-3.16/drivers/base/power/runtime.c
-===================================================================
---- usb-3.16.orig/drivers/base/power/runtime.c
-+++ usb-3.16/drivers/base/power/runtime.c
-@@ -239,7 +239,9 @@ static int rpm_check_suspend_allowed(str
- {
- 	int retval = 0;
- 
--	if (dev->power.runtime_error)
-+	if (dev->power.rpm_not_supported)
-+		retval = -EOPNOTSUPP;
-+	else if (dev->power.runtime_error)
- 		retval = -EINVAL;
- 	else if (dev->power.disable_depth > 0)
- 		retval = -EACCES;
-@@ -974,7 +976,9 @@ EXPORT_SYMBOL_GPL(__pm_runtime_resume);
-  * RPM_SUSPENDED, as long as that reflects the actual state of the device.
-  * However, if the device has a parent and the parent is not active, and the
-  * parent's power.ignore_children flag is unset, the device's status cannot be
-- * set to RPM_ACTIVE, so -EBUSY is returned in that case.
-+ * set to RPM_ACTIVE, so -EBUSY is returned in that case.  If the device's
-+ * power.rpm_not_supported flag is set then the device's status cannot be set
-+ * to RPM_SUSPENDED, so -EOPNOTSUPP is returned in that case.
-  *
-  * If successful, __pm_runtime_set_status() clears the power.runtime_error field
-  * and the device parent's counter of unsuspended children is modified to
-@@ -1002,6 +1006,11 @@ int __pm_runtime_set_status(struct devic
- 		goto out_set;
- 
- 	if (status == RPM_SUSPENDED) {
-+		if (dev->power.rpm_not_supported) {
-+			error = -EOPNOTSUPP;
-+			goto out;
-+		}
-+
- 		/* It always is possible to set the status to 'suspended'. */
- 		if (parent) {
- 			atomic_add_unless(&parent->power.child_count, -1, 0);
-@@ -1195,6 +1204,26 @@ void pm_runtime_enable(struct device *de
- EXPORT_SYMBOL_GPL(pm_runtime_enable);
- 
- /**
-+ * pm_runtime_not_supported - A device doesn't support runtime PM
-+ * @dev: Device to handle.
-+ *
-+ * Set @dev->power.rpm_not_supported, indicating the @dev doesn't support
-+ * runtime PM and consequently must always be in the RPM_ACTIVE state.
-+ *
-+ * For good measure, also set runtime_status to RPM_ACTIVE and increment
-+ * usage_count.
-+ */
-+void pm_runtime_not_supported(struct device *dev)
-+{
-+	spin_lock_irq(&dev->power.lock);
-+	dev->power.rpm_not_supported = 1;
-+	dev->power.runtime_status = RPM_ACTIVE;
-+	atomic_inc(&dev->power.usage_count);
-+	spin_unlock_irq(&dev->power.lock);
-+}
-+EXPORT_SYMBOL_GPL(pm_runtime_not_supported);
-+
-+/**
-  * pm_runtime_forbid - Block runtime PM of a device.
-  * @dev: Device to handle.
-  *
-@@ -1415,6 +1444,9 @@ void pm_runtime_remove(struct device *de
-  *
-  * Typically this function may be invoked from a system suspend callback to make
-  * sure the device is put into low power state.
-+ *
-+ * If the device's power.rpm_not_supported flag is set, the result of calling
-+ * this function is undefined.
-  */
- int pm_runtime_force_suspend(struct device *dev)
- {
-Index: usb-3.16/drivers/base/power/sysfs.c
-===================================================================
---- usb-3.16.orig/drivers/base/power/sysfs.c
-+++ usb-3.16/drivers/base/power/sysfs.c
-@@ -163,10 +163,12 @@ static ssize_t rtpm_status_show(struct d
- {
- 	const char *p;
- 
--	if (dev->power.runtime_error) {
-+	if (dev->power.rpm_not_supported) {
-+		p = "not supported\n";
-+	} else if (dev->power.runtime_error) {
- 		p = "error\n";
- 	} else if (dev->power.disable_depth) {
--		p = "unsupported\n";
-+		p = "disabled\n";
- 	} else {
- 		switch (dev->power.runtime_status) {
- 		case RPM_SUSPENDED:
+Antti Palosaari (1):
+      [media] fc2580: fix tuning failure on 32-bit arch
+
+Arnd Bergmann (1):
+      genirq: Provide irq_force_affinity fallback for non-SMP
+
+Ben Hutchings (1):
+      Staging: speakup: Move pasting into a work item
+
+Charles Keepax (1):
+      ASoC: wm8962: Update register CLASS_D_CONTROL_1 to be non-volatile
+
+Chen Yucong (1):
+      hwpoison, hugetlb: lock_page/unlock_page does not match for handling a free hugepage
+
+Christian König (1):
+      drm/radeon: also try GART for CPU accessed buffers
+
+Chunwei Chen (1):
+      libceph: fix corruption when using page_count 0 page in rbd
+
+Du, Wenkai (1):
+      i2c: designware: Mask all interrupts during i2c controller enable
+
+Emil Goode (1):
+      ARM: imx: fix error handling in ipu device registration
+
+Ezequiel Garcia (1):
+      dma: mv_xor: Flush descriptors before activating a channel
+
+George McCollister (1):
+      USB: ftdi_sio: add NovaTech OrionLXm product ID
+
+Guennadi Liakhovetski (2):
+      [media] V4L2: ov7670: fix a wrong index, potentially Oopsing the kernel from user-space
+      [media] V4L2: fix VIDIOC_CREATE_BUFS in 64- / 32-bit compatibility mode
+
+Guenter Roeck (1):
+      powerpc: Fix 64 bit builds with binutils 2.24
+
+Hans de Goede (3):
+      ACPI / blacklist: Add dmi_enable_osi_linux quirk for Asus EEE PC 1015PX
+      Input: synaptics - add min/max quirk for the ThinkPad W540
+      Input: synaptics - T540p - unify with other LEN0034 models
+
+Horia Geanta (1):
+      crypto: caam - add allocation failure handling in SPRINTFCAT macro
+
+J. Bruce Fields (2):
+      nfsd4: remove lockowner when removing lock stateid
+      nfsd4: warn on finding lockowner without stateid's
+
+Jianyu Zhan (1):
+      percpu: make pcpu_alloc_chunk() use pcpu_mem_free() instead of kfree()
+
+Jiri Olsa (1):
+      perf: Prevent false warning in perf_swevent_add
+
+Johan Hovold (2):
+      net: cpsw: fix null dereference at probe
+      USB: io_ti: fix firmware download on big-endian machines (part 2)
+
+Josef Gajdusek (2):
+      hwmon: (emc1403) fix inverted store_hyst()
+      hwmon: (emc1403) Support full range of known chip revision numbers
+
+Jérôme Glisse (1):
+      drm/radeon: avoid segfault on device open when accel is not working.
+
+Kamal Mostafa (1):
+      Linux 3.8.13.25
+
+Kinglong Mee (1):
+      NFSD: Call ->set_acl with a NULL ACL structure if no entries
+
+Kirill A. Shutemov (1):
+      mm, thp: close race between mremap() and split_huge_page()
+
+Laurent Pinchart (1):
+      ARM: OMAP3: clock: Back-propagate rate change from cam_mclk to dpll4_m5 on all OMAP3 platforms
+
+Linus Torvalds (1):
+      x86-64, modify_ldt: Make support for 16-bit segments a runtime option
+
+Marcel Apfelbaum (1):
+      PCI: shpchp: Check bridge's secondary (not primary) bus speed
+
+Mathias Nyman (1):
+      xhci: delete endpoints from bandwidth list before freeing whole device
+
+Mikulas Patocka (1):
+      dm crypt: fix cpu hotplug crash by removing per-cpu structure
+
+Naoya Horiguchi (1):
+      mm/memory-failure.c: fix memory leak by race between poison and unpoison
+
+NeilBrown (2):
+      md: avoid possible spinning md thread at shutdown.
+      md: always set MD_RECOVERY_INTR when aborting a reshape or other "resync".
+
+Nicholas Bellinger (1):
+      target: Fix alua_access_state attribute OOPs for un-configured devices
+
+Olof Johansson (1):
+      i2c: s3c2410: resume race fix
+
+Peter Zijlstra (2):
+      perf: Limit perf_event_attr::sample_period to 63 bits
+      sched/deadline: Change sched_getparam() behaviour vs SCHED_DEADLINE
+
+Ronan Marquet (1):
+      ALSA: hda/realtek - Correction of fixup codes for PB V7900 laptop
+
+Salva Peiró (1):
+      [media] media-device: fix infoleak in ioctl media_enum_entities()
+
+Sascha Hauer (1):
+      ARM: dts: i.MX53: Fix ipu register space size
+
+Stephane Grosjean (1):
+      can: peak_pci: prevent use after free at netdev removal
+
+Steven Rostedt (Red Hat) (1):
+      sched: Use CPUPRI_NR_PRIORITIES instead of MAX_RT_PRIO in cpupri check
+
+Takashi Iwai (2):
+      ALSA: hda - Fix onboard audio on Intel H97/Z97 chipsets
+      ALSA: hda/realtek - Fix COEF widget NID for ALC260 replacer fixup
+
+Thomas Gleixner (7):
+      sched: Sanitize irq accounting madness
+      futex: Add another early deadlock detection check
+      futex: Prevent attaching to kernel threads
+      futex-prevent-requeue-pi-on-same-futex.patch futex: Forbid uaddr == uaddr2 in futex_requeue(..., requeue_pi=1)
+      futex: Validate atomic acquisition in futex_lock_pi_atomic()
+      futex: Always cleanup owner tid in unlock_pi
+      futex: Make lookup_pi_state more robust
+
+Trond Myklebust (1):
+      NFSd: call rpc_destroy_wait_queue() from free_client()
+
+Viresh Kumar (1):
+      hrtimer: Set expiry time before switch_hrtimer_base()
+
+Wolfram Sang (1):
+      i2c: rcar: bail out on zero length transfers
 
