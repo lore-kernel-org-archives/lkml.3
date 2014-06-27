@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753900AbaF0N0n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 09:26:43 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:54098 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753773AbaF0N0l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753874AbaF0N0l (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 27 Jun 2014 09:26:41 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:34309 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752367AbaF0N0e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 09:26:34 -0400
 From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
 To: mturquette@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
         mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
@@ -14,12 +14,10 @@ To: mturquette@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
 Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         kernel@stlinux.com, Lee Jones <lee.jones@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
-        Maxime Coquelin <maxime.coquelin@st.com>,
-        Olivier Bideau <olivier.bideau@st.com>
-Subject: [PATCH v2 05/14] drivers: clk: st: STiH407: Support for Flexgen Clocks
-Date: Fri, 27 Jun 2014 15:25:02 +0200
-Message-Id: <1403875511-7710-6-git-send-email-gabriel.fernandez@linaro.org>
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Subject: [PATCH v2 02/14] drivers: clk: st: use static const for stm_fs tables
+Date: Fri, 27 Jun 2014 15:24:59 +0200
+Message-Id: <1403875511-7710-3-git-send-email-gabriel.fernandez@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403875511-7710-1-git-send-email-gabriel.fernandez@linaro.org>
 References: <1403875511-7710-1-git-send-email-gabriel.fernandez@linaro.org>
@@ -29,368 +27,148 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is the Flexgen implementation reusing as much as possible
-of Common Clock Framework functions.
-
-The idea is to have an instance of "struct flexgen" per output clock.
-It represents the clock cross bar (by a mux element), and the pre and final dividers
-(using dividers and gates elements).
-
-Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
-Signed-off-by: Olivier Bideau <olivier.bideau@st.com>
-Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Acked-by: Peter Griffin <peter.griffin@linaro.org>
+converts stm_fs tables into static const
 ---
- drivers/clk/st/Makefile      |   2 +-
- drivers/clk/st/clk-flexgen.c | 332 +++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 333 insertions(+), 1 deletion(-)
- create mode 100644 drivers/clk/st/clk-flexgen.c
+ drivers/clk/st/clkgen-fsyn.c | 34 +++++++++++++++++-----------------
+ 1 file changed, 17 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/clk/st/Makefile b/drivers/clk/st/Makefile
-index c7455ff..ede7b2f 100644
---- a/drivers/clk/st/Makefile
-+++ b/drivers/clk/st/Makefile
-@@ -1 +1 @@
--obj-y += clkgen-mux.o clkgen-pll.o clkgen-fsyn.o
-+obj-y += clkgen-mux.o clkgen-pll.o clkgen-fsyn.o clk-flexgen.o
-diff --git a/drivers/clk/st/clk-flexgen.c b/drivers/clk/st/clk-flexgen.c
-new file mode 100644
-index 0000000..c12d0c1
---- /dev/null
-+++ b/drivers/clk/st/clk-flexgen.c
-@@ -0,0 +1,332 @@
-+/*
-+ * clk-flexgen.c
-+ *
-+ * Copyright (C) ST-Microelectronics SA 2013
-+ * Author:  Maxime Coquelin <maxime.coquelin@st.com> for ST-Microelectronics.
-+ * License terms:  GNU General Public License (GPL), version 2  */
-+
-+#include <linux/clk-provider.h>
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/io.h>
-+#include <linux/err.h>
-+#include <linux/string.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+
-+struct flexgen {
-+	struct clk_hw hw;
-+
-+	/* Crossbar */
-+	struct clk_mux mux;
-+	/* Pre-divisor's gate */
-+	struct clk_gate pgate;
-+	/* Pre-divisor */
-+	struct clk_divider pdiv;
-+	/* Final divisor's gate */
-+	struct clk_gate fgate;
-+	/* Final divisor */
-+	struct clk_divider fdiv;
-+};
-+
-+#define to_flexgen(_hw) container_of(_hw, struct flexgen, hw)
-+
-+static int flexgen_enable(struct clk_hw *hw)
-+{
-+	struct flexgen *flexgen = to_flexgen(hw);
-+	struct clk_hw *pgate_hw = &flexgen->pgate.hw;
-+	struct clk_hw *fgate_hw = &flexgen->fgate.hw;
-+
-+	pgate_hw->clk = hw->clk;
-+	fgate_hw->clk = hw->clk;
-+
-+	clk_gate_ops.enable(pgate_hw);
-+
-+	clk_gate_ops.enable(fgate_hw);
-+
-+	pr_debug("%s: flexgen output enabled\n", __clk_get_name(hw->clk));
-+	return 0;
-+}
-+
-+static void flexgen_disable(struct clk_hw *hw)
-+{
-+	struct flexgen *flexgen = to_flexgen(hw);
-+	struct clk_hw *fgate_hw = &flexgen->fgate.hw;
-+
-+	/* disable only the final gate */
-+	fgate_hw->clk = hw->clk;
-+
-+	clk_gate_ops.disable(fgate_hw);
-+
-+	pr_debug("%s: flexgen output disabled\n", __clk_get_name(hw->clk));
-+}
-+
-+static int flexgen_is_enabled(struct clk_hw *hw)
-+{
-+	struct flexgen *flexgen = to_flexgen(hw);
-+	struct clk_hw *fgate_hw = &flexgen->fgate.hw;
-+
-+	fgate_hw->clk = hw->clk;
-+
-+	if (!clk_gate_ops.is_enabled(fgate_hw))
-+		return 0;
-+
-+	return 1;
-+}
-+
-+static u8 flexgen_get_parent(struct clk_hw *hw)
-+{
-+	struct flexgen *flexgen = to_flexgen(hw);
-+	struct clk_hw *mux_hw = &flexgen->mux.hw;
-+
-+	mux_hw->clk = hw->clk;
-+
-+	return clk_mux_ops.get_parent(mux_hw);
-+}
-+
-+static int flexgen_set_parent(struct clk_hw *hw, u8 index)
-+{
-+	struct flexgen *flexgen = to_flexgen(hw);
-+	struct clk_hw *mux_hw = &flexgen->mux.hw;
-+
-+	mux_hw->clk = hw->clk;
-+
-+	return clk_mux_ops.set_parent(mux_hw, index);
-+}
-+
-+static inline unsigned long
-+clk_best_div(unsigned long parent_rate, unsigned long rate)
-+{
-+	return parent_rate / rate + ((rate > (2*(parent_rate % rate))) ? 0 : 1);
-+}
-+
-+static long flexgen_round_rate(struct clk_hw *hw, unsigned long rate,
-+				   unsigned long *prate)
-+{
-+	unsigned long div;
-+
-+	/* Round div according to exact prate and wished rate */
-+	div = clk_best_div(*prate, rate);
-+
-+	if (__clk_get_flags(hw->clk) & CLK_SET_RATE_PARENT) {
-+		*prate = rate * div;
-+		return rate;
-+	} else
-+		return *prate / div;
-+}
-+
-+unsigned long flexgen_recalc_rate(struct clk_hw *hw,
-+		unsigned long parent_rate)
-+{
-+	struct flexgen *flexgen = to_flexgen(hw);
-+	struct clk_hw *pdiv_hw = &flexgen->pdiv.hw;
-+	struct clk_hw *fdiv_hw = &flexgen->fdiv.hw;
-+	unsigned long mid_rate;
-+
-+	pdiv_hw->clk = hw->clk;
-+	fdiv_hw->clk = hw->clk;
-+
-+	mid_rate = clk_divider_ops.recalc_rate(pdiv_hw, parent_rate);
-+
-+	return clk_divider_ops.recalc_rate(fdiv_hw, mid_rate);
-+}
-+
-+static int flexgen_set_rate(struct clk_hw *hw, unsigned long rate,
-+				unsigned long parent_rate)
-+{
-+	struct flexgen *flexgen = to_flexgen(hw);
-+	struct clk_hw *pdiv_hw = &flexgen->pdiv.hw;
-+	struct clk_hw *fdiv_hw = &flexgen->fdiv.hw;
-+	unsigned long primary_div = 0;
-+	int ret = 0;
-+
-+	pdiv_hw->clk = hw->clk;
-+	fdiv_hw->clk = hw->clk;
-+
-+	primary_div = clk_best_div(parent_rate, rate);
-+
-+	clk_divider_ops.set_rate(fdiv_hw, parent_rate, parent_rate);
-+	ret = clk_divider_ops.set_rate(pdiv_hw, rate, rate * primary_div);
-+
-+	return ret;
-+}
-+
-+static const struct clk_ops flexgen_ops = {
-+	.enable = flexgen_enable,
-+	.disable = flexgen_disable,
-+	.is_enabled = flexgen_is_enabled,
-+	.get_parent = flexgen_get_parent,
-+	.set_parent = flexgen_set_parent,
-+	.round_rate = flexgen_round_rate,
-+	.recalc_rate = flexgen_recalc_rate,
-+	.set_rate = flexgen_set_rate,
-+};
-+
-+struct clk *clk_register_flexgen(const char *name,
-+				const char **parent_names, u8 num_parents,
-+				void __iomem *reg, spinlock_t *lock, u32 idx,
-+				unsigned long flexgen_flags) {
-+	struct flexgen *fgxbar;
-+	struct clk *clk;
-+	struct clk_init_data init;
-+	u32  xbar_shift;
-+	void __iomem *xbar_reg, *fdiv_reg;
-+
-+	fgxbar = kzalloc(sizeof(struct flexgen), GFP_KERNEL);
-+	if (!fgxbar)
-+		return ERR_PTR(-ENOMEM);
-+
-+	init.name = name;
-+	init.ops = &flexgen_ops;
-+	init.flags = CLK_IS_BASIC | flexgen_flags;
-+	init.parent_names = parent_names;
-+	init.num_parents = num_parents;
-+
-+	xbar_reg = reg + 0x18 + (idx & ~0x3);
-+	xbar_shift = (idx % 4) * 0x8;
-+	fdiv_reg = reg + 0x164 + idx * 4;
-+
-+	/* Crossbar element config */
-+	fgxbar->mux.lock = lock;
-+	fgxbar->mux.mask = BIT(6) - 1;
-+	fgxbar->mux.reg = xbar_reg;
-+	fgxbar->mux.shift = xbar_shift;
-+	fgxbar->mux.table = NULL;
-+
-+
-+	/* Pre-divider's gate config (in xbar register)*/
-+	fgxbar->pgate.lock = lock;
-+	fgxbar->pgate.reg = xbar_reg;
-+	fgxbar->pgate.bit_idx = xbar_shift + 6;
-+
-+	/* Pre-divider config */
-+	fgxbar->pdiv.lock = lock;
-+	fgxbar->pdiv.reg = reg + 0x58 + idx * 4;
-+	fgxbar->pdiv.width = 10;
-+
-+	/* Final divider's gate config */
-+	fgxbar->fgate.lock = lock;
-+	fgxbar->fgate.reg = fdiv_reg;
-+	fgxbar->fgate.bit_idx = 6;
-+
-+	/* Final divider config */
-+	fgxbar->fdiv.lock = lock;
-+	fgxbar->fdiv.reg = fdiv_reg;
-+	fgxbar->fdiv.width = 6;
-+
-+	fgxbar->hw.init = &init;
-+
-+	clk = clk_register(NULL, &fgxbar->hw);
-+	if (IS_ERR(clk))
-+		kfree(fgxbar);
-+	else
-+		pr_debug("%s: parent %s rate %u\n",
-+			__clk_get_name(clk),
-+			__clk_get_name(clk_get_parent(clk)),
-+			(unsigned int)clk_get_rate(clk));
-+	return clk;
-+}
-+
-+static const char ** __init flexgen_get_parents(struct device_node *np,
-+						       int *num_parents)
-+{
-+	const char **parents;
-+	int nparents, i;
-+
-+	nparents = of_count_phandle_with_args(np, "clocks", "#clock-cells");
-+	if (WARN_ON(nparents <= 0))
-+		return NULL;
-+
-+	parents = kcalloc(nparents, sizeof(const char *), GFP_KERNEL);
-+	if (!parents)
-+		return NULL;
-+
-+	for (i = 0; i < nparents; i++)
-+		parents[i] = of_clk_get_parent_name(np, i);
-+
-+	*num_parents = nparents;
-+	return parents;
-+}
-+
-+void __init st_of_flexgen_setup(struct device_node *np)
-+{
-+	struct device_node *pnode;
-+	void __iomem *reg;
-+	struct clk_onecell_data *clk_data;
-+	const char **parents;
-+	int num_parents, i;
-+	spinlock_t *rlock = NULL;
-+	unsigned long flex_flags = 0;
-+
-+	pnode = of_get_parent(np);
-+	if (!pnode)
-+		return;
-+
-+	reg = of_iomap(pnode, 0);
-+	if (!reg)
-+		return;
-+
-+	parents = flexgen_get_parents(np, &num_parents);
-+	if (!parents)
-+		return;
-+
-+	clk_data = kzalloc(sizeof(*clk_data), GFP_KERNEL);
-+	if (!clk_data)
-+		goto err;
-+
-+	clk_data->clk_num = of_property_count_strings(np ,
-+			"clock-output-names");
-+	if (clk_data->clk_num <= 0) {
-+		pr_err("%s: Failed to get number of output clocks (%d)",
-+				__func__, clk_data->clk_num);
-+		goto err;
-+	}
-+
-+	clk_data->clks = kcalloc(clk_data->clk_num, sizeof(struct clk *),
-+			GFP_KERNEL);
-+	if (!clk_data->clks)
-+		goto err;
-+
-+	rlock = kzalloc(sizeof(spinlock_t), GFP_KERNEL);
-+	if (!rlock)
-+		goto err;
-+
-+	for (i = 0; i < clk_data->clk_num; i++) {
-+		struct clk *clk;
-+		const char *clk_name;
-+
-+		if (of_property_read_string_index(np, "clock-output-names",
-+						  i, &clk_name)) {
-+			break;
-+		}
-+
-+		/*
-+		 * If we read an empty clock name then the output is unused
-+		 */
-+		if (*clk_name == '\0')
-+			continue;
-+
-+		clk = clk_register_flexgen(clk_name, parents, num_parents,
-+					   reg, rlock, i, flex_flags);
-+
-+		if (IS_ERR(clk))
-+			goto err;
-+
-+		clk_data->clks[i] = clk;
-+	}
-+
-+	kfree(parents);
-+	of_clk_add_provider(np, of_clk_src_onecell_get, clk_data);
-+
-+	return;
-+
-+err:
-+	if (clk_data)
-+		kfree(clk_data->clks);
-+	kfree(clk_data);
-+	kfree(parents);
-+	kfree(rlock);
-+
-+	return;
-+}
-+CLK_OF_DECLARE(flexgen, "st,flexgen", st_of_flexgen_setup);
+diff --git a/drivers/clk/st/clkgen-fsyn.c b/drivers/clk/st/clkgen-fsyn.c
+index 4f53ee0..a7e5db4 100644
+--- a/drivers/clk/st/clkgen-fsyn.c
++++ b/drivers/clk/st/clkgen-fsyn.c
+@@ -41,7 +41,7 @@ struct stm_fs {
+ 	unsigned long nsdiv;
+ };
+ 
+-static struct stm_fs fs216c65_rtbl[] = {
++static const struct stm_fs fs216c65_rtbl[] = {
+ 	{ .mdiv = 0x1f, .pe = 0x0,	.sdiv = 0x7,	.nsdiv = 0 },	/* 312.5 Khz */
+ 	{ .mdiv = 0x17, .pe = 0x25ed,	.sdiv = 0x1,	.nsdiv = 0 },	/* 27    MHz */
+ 	{ .mdiv = 0x1a, .pe = 0x7b36,	.sdiv = 0x2,	.nsdiv = 1 },	/* 36.87 MHz */
+@@ -49,13 +49,13 @@ static struct stm_fs fs216c65_rtbl[] = {
+ 	{ .mdiv = 0x11, .pe = 0x1c72,	.sdiv = 0x1,	.nsdiv = 1 },	/* 108   MHz */
+ };
+ 
+-static struct stm_fs fs432c65_rtbl[] = {
++static const struct stm_fs fs432c65_rtbl[] = {
+ 	{ .mdiv = 0x1f, .pe = 0x0,	.sdiv = 0x7,	.nsdiv = 0 },	/* 625   Khz */
+ 	{ .mdiv = 0x11, .pe = 0x1c72,	.sdiv = 0x2,	.nsdiv = 1 },	/* 108   MHz */
+ 	{ .mdiv = 0x19, .pe = 0x121a,	.sdiv = 0x0,	.nsdiv = 1 },	/* 297   MHz */
+ };
+ 
+-static struct stm_fs fs660c32_rtbl[] = {
++static const struct stm_fs fs660c32_rtbl[] = {
+ 	{ .mdiv = 0x01, .pe = 0x2aaa,	.sdiv = 0x8,	.nsdiv = 0 },	/* 600   KHz */
+ 	{ .mdiv = 0x02, .pe = 0x3d33,	.sdiv = 0x0,	.nsdiv = 0 },	/* 148.5 Mhz */
+ 	{ .mdiv = 0x13, .pe = 0x5bcc,	.sdiv = 0x0,	.nsdiv = 1 },	/* 297   Mhz */
+@@ -82,9 +82,9 @@ struct clkgen_quadfs_data {
+ 	struct clkgen_field nsdiv[QUADFS_MAX_CHAN];
+ 
+ 	const struct clk_ops *pll_ops;
+-	struct stm_fs *rtbl;
++	const struct stm_fs *rtbl;
+ 	u8 rtbl_cnt;
+-	int  (*get_rate)(unsigned long , struct stm_fs *,
++	int  (*get_rate)(unsigned long , const struct stm_fs *,
+ 			unsigned long *);
+ };
+ 
+@@ -94,11 +94,11 @@ static const struct clk_ops st_quadfs_fs216c65_ops;
+ static const struct clk_ops st_quadfs_fs432c65_ops;
+ static const struct clk_ops st_quadfs_fs660c32_ops;
+ 
+-static int clk_fs216c65_get_rate(unsigned long, struct stm_fs *,
++static int clk_fs216c65_get_rate(unsigned long, const struct stm_fs *,
+ 		unsigned long *);
+-static int clk_fs432c65_get_rate(unsigned long, struct stm_fs *,
++static int clk_fs432c65_get_rate(unsigned long, const struct stm_fs *,
+ 		unsigned long *);
+-static int clk_fs660c32_dig_get_rate(unsigned long, struct stm_fs *,
++static int clk_fs660c32_dig_get_rate(unsigned long, const struct stm_fs *,
+ 		unsigned long *);
+ /*
+  * Values for all of the standalone instances of this clock
+@@ -106,7 +106,7 @@ static int clk_fs660c32_dig_get_rate(unsigned long, struct stm_fs *,
+  * that the individual channel standby control bits (nsb) are in the
+  * first register along with the PLL control bits.
+  */
+-static struct clkgen_quadfs_data st_fs216c65_416 = {
++static const struct clkgen_quadfs_data st_fs216c65_416 = {
+ 	/* 416 specific */
+ 	.npda	= CLKGEN_FIELD(0x0, 0x1, 14),
+ 	.nsb	= { CLKGEN_FIELD(0x0, 0x1, 10),
+@@ -143,7 +143,7 @@ static struct clkgen_quadfs_data st_fs216c65_416 = {
+ 	.get_rate	= clk_fs216c65_get_rate,
+ };
+ 
+-static struct clkgen_quadfs_data st_fs432c65_416 = {
++static const struct clkgen_quadfs_data st_fs432c65_416 = {
+ 	.npda	= CLKGEN_FIELD(0x0, 0x1, 14),
+ 	.nsb	= { CLKGEN_FIELD(0x0, 0x1, 10),
+ 		    CLKGEN_FIELD(0x0, 0x1, 11),
+@@ -179,7 +179,7 @@ static struct clkgen_quadfs_data st_fs432c65_416 = {
+ 	.get_rate	= clk_fs432c65_get_rate,
+ };
+ 
+-static struct clkgen_quadfs_data st_fs660c32_E_416 = {
++static const struct clkgen_quadfs_data st_fs660c32_E_416 = {
+ 	.npda	= CLKGEN_FIELD(0x0, 0x1, 14),
+ 	.nsb	= { CLKGEN_FIELD(0x0, 0x1, 10),
+ 		    CLKGEN_FIELD(0x0, 0x1, 11),
+@@ -215,7 +215,7 @@ static struct clkgen_quadfs_data st_fs660c32_E_416 = {
+ 	.get_rate	= clk_fs660c32_dig_get_rate,
+ };
+ 
+-static struct clkgen_quadfs_data st_fs660c32_F_416 = {
++static const struct clkgen_quadfs_data st_fs660c32_F_416 = {
+ 	.npda	= CLKGEN_FIELD(0x0, 0x1, 14),
+ 	.nsb	= { CLKGEN_FIELD(0x0, 0x1, 10),
+ 		    CLKGEN_FIELD(0x0, 0x1, 11),
+@@ -650,7 +650,7 @@ static int quadfs_fsynth_is_enabled(struct clk_hw *hw)
+ 
+ #define P15			(uint64_t)(1 << 15)
+ 
+-static int clk_fs216c65_get_rate(unsigned long input, struct stm_fs *fs,
++static int clk_fs216c65_get_rate(unsigned long input, const struct stm_fs *fs,
+ 		unsigned long *rate)
+ {
+ 	uint64_t res;
+@@ -670,7 +670,7 @@ static int clk_fs216c65_get_rate(unsigned long input, struct stm_fs *fs,
+ 	return 0;
+ }
+ 
+-static int clk_fs432c65_get_rate(unsigned long input, struct stm_fs *fs,
++static int clk_fs432c65_get_rate(unsigned long input, const struct stm_fs *fs,
+ 		unsigned long *rate)
+ {
+ 	uint64_t res;
+@@ -693,7 +693,7 @@ static int clk_fs432c65_get_rate(unsigned long input, struct stm_fs *fs,
+ #define P20		(uint64_t)(1 << 20)
+ 
+ static int clk_fs660c32_dig_get_rate(unsigned long input,
+-				struct stm_fs *fs, unsigned long *rate)
++				const struct stm_fs *fs, unsigned long *rate)
+ {
+ 	unsigned long s = (1 << fs->sdiv);
+ 	unsigned long ns;
+@@ -749,7 +749,7 @@ static long quadfs_find_best_rate(struct clk_hw *hw, unsigned long drate,
+ {
+ 	struct st_clk_quadfs_fsynth *fs = to_quadfs_fsynth(hw);
+ 	int (*clk_fs_get_rate)(unsigned long ,
+-				struct stm_fs *, unsigned long *);
++				const struct stm_fs *, unsigned long *);
+ 	struct stm_fs prev_params;
+ 	unsigned long prev_rate, rate = 0;
+ 	unsigned long diff_rate, prev_diff_rate = ~0;
+@@ -793,7 +793,7 @@ static unsigned long quadfs_recalc_rate(struct clk_hw *hw,
+ 	unsigned long rate = 0;
+ 	struct stm_fs params;
+ 	int (*clk_fs_get_rate)(unsigned long ,
+-				struct stm_fs *, unsigned long *);
++				const struct stm_fs *, unsigned long *);
+ 
+ 	clk_fs_get_rate = fs->data->get_rate;
+ 
 -- 
 1.9.1
 
