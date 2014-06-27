@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751914AbaF0Rev (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 13:34:51 -0400
-Received: from mga09.intel.com ([134.134.136.24]:43369 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751675AbaF0Reu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 13:34:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,561,1400050800"; 
-   d="scan'208";a="564598054"
-Message-ID: <53ADAB39.6030403@intel.com>
-Date: Fri, 27 Jun 2014 10:34:49 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: "Ren, Qiaowei" <qiaowei.ren@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        X86 ML <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>
-Subject: Re: [PATCH v6 02/10] x86, mpx: add MPX specific mmap interface
-References: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com> <1403084656-27284-3-git-send-email-qiaowei.ren@intel.com> <53A884B2.5070702@mit.edu> <53A88806.1060908@intel.com> <CALCETrXYZZiZsDiUvvZd0636+qHP9a0sHTN6wt_ZKjvLaeeBzw@mail.gmail.com> <53A88DE4.8050107@intel.com> <CALCETrWBbkFzQR3tz1TphqxiGYycvzrFrKc=ghzMynbem=d7rg@mail.gmail.com> <9E0BE1322F2F2246BD820DA9FC397ADE016AF41C@shsmsx102.ccr.corp.intel.com> <CALCETrX+iS5N8bCUm_O-1E4GPu4oG-SuFJoJjx_+S054K9-6pw@mail.gmail.com> <9E0BE1322F2F2246BD820DA9FC397ADE016B26AB@shsmsx102.ccr.corp.intel.com> <CALCETrWmmVC2qQtL0Js_Y7LvSPdTh5Hpk6c5ZG3Rt8uTJBWoHQ@mail.gmail.com> <CALCETrUD3L5Ta_v+NqgUrTk7Ok3zE=CRg0rqeKthOj2OORCLKQ@mail.gmail.com> <53AB42E1.4090102@intel.com> <CALCETrVTTh9yuXH0hfcOpytyBd25K6thPfqqUBQtnOqx90ZRqw@mail.gmail.com> <53ACA5B3.3010702@intel.com> <CALCETrVceOhRunCg1b9Q3VL10Kcb+uA-HFUURnq5f2S63_jACg@mail.gmail.com> <53ACB8A7.9050002@intel.com> <CALCETrVR9QB3QvA2x_JjAXCFoqMw4B+byFTPDC3gQMUC1C-2NA@mail.gmail.com>
-In-Reply-To: <CALCETrVR9QB3QvA2x_JjAXCFoqMw4B+byFTPDC3gQMUC1C-2NA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1752090AbaF0RfA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 13:35:00 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:45398 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751953AbaF0Re5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 13:34:57 -0400
+Message-ID: <1403890493.5830.33.camel@marge.simpson.net>
+Subject: Re: Filesystem lockup with CONFIG_PREEMPT_RT
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Austin Schuh <austin@peloton-tech.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Weinberger <richard.weinberger@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        rt-users <linux-rt-users@vger.kernel.org>
+Date: Fri, 27 Jun 2014 19:34:53 +0200
+In-Reply-To: <20140627100157.6b0143a5@gandalf.local.home>
+References: <CANGgnMbHckBQdKGN_N5Q6qEKc9n1CenxvMpeXog1NbSdL8UrTw@mail.gmail.com>
+	 <CANGgnMYDXerOUDOO9-RHMJKadKACA2KBGskZwoP-1ZwAhDEfVA@mail.gmail.com>
+	 <CAFLxGvxfBt7OvW=a2Kz08GLHSEiiOZsN-vB19CXnQiwqFxqMsA@mail.gmail.com>
+	 <CANGgnMYVoP-Z0Bv-VDEkJnvfa7Fi4-zY2F4A0PhMewGvwo3VVw@mail.gmail.com>
+	 <alpine.DEB.2.10.1406270027300.5170@nanos>
+	 <CANGgnMa+qtgJ3wwg_h5Rynw5vEvZpQZ6PvaUfXNQ8+Y3Yu5U0g@mail.gmail.com>
+	 <1403873856.5827.56.camel@marge.simpson.net>
+	 <20140627100157.6b0143a5@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2014 05:26 PM, Andy Lutomirski wrote:
-> On Thu, Jun 26, 2014 at 5:19 PM, Dave Hansen <dave.hansen@intel.com> wrote:
->> On 06/26/2014 04:15 PM, Andy Lutomirski wrote:
->>> Also, egads: what happens when a bound table entry is associated with
->>> a MAP_SHARED page?
->>
->> Bounds table entries are for pointers.  Do we keep pointers inside of
->> MAP_SHARED-mapped things? :)
-> 
-> Sure, if it's MAP_SHARED | MAP_ANONYMOUS.  For example:
-> 
-> struct thing {
->   struct thing *next;
-> };
-> 
-> struct thing *storage = mmap(..., MAP_SHARED | MAP_ANONYMOUS, ...);
-> storage[0].next = &storage[1];
-> fork();
-> 
-> I'm not suggesting that this needs to *work* in the first incarnation of this :)
+On Fri, 2014-06-27 at 10:01 -0400, Steven Rostedt wrote:
 
-I'm not sure I'm seeing the issue.
+> This seems like a lot of hacks.
 
-I'm claiming that we need COW behavior for the bounds tables, at least
-by default.  If userspace knows enough about the ways that it is using
-the tables and knows how to share them, let it go to town.  The kernel
-will permit this kind of usage model, but we simply won't be helping
-with the management of the tables when userspace creates them.
+It is exactly that, lacking proper pooper-scooper, show rt kernel how to
+not step in it.
 
-You've demonstrated a case where userspace might theoretically might
-want to share bounds tables (although I think it's pretty dangerous).
-It's equally theoretically possible that userspace might *not* want to
-share the tables for instance if one process narrowed the bounds and the
-other did not.
+> I'm wondering if it would work if we
+> just have the rt_spin_lock_slowlock not call schedule(), but call
+> __schedule() directly. I mean it would keep with the mainline paradigm
+> as spinlocks don't sleep there, and one going to sleep in the -rt
+> kernel is similar to it being preempted by a very long NMI.
+
+Problem being that we do sleep there, do need wakeup.  I have a hack
+that turns them back into spinning locks, but it.. works too :)
+
+> Does a spin_lock going to sleep really need to do all the presched and
+> postsched work?
+
+It would be lovely if we didn't have to do any of that.  On the IO bit,
+I haven't seen hard evidence that the spinlock bit is absolutely
+required (better not be, it doesn't guarantee anything), but the
+combined hack did kill IO deadlock of multiple filesystems.
+
+-Mike
+
