@@ -1,85 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751589AbaF0RKn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 13:10:43 -0400
-Received: from mailout1.w2.samsung.com ([211.189.100.11]:37240 "EHLO
-	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751308AbaF0RKm (ORCPT
+	id S1751817AbaF0RLi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 13:11:38 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:62146 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751093AbaF0RLh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 13:10:42 -0400
-X-AuditID: cbfec37b-b7fbe6d000006742-6f-53ada5901886
-Message-id: <53ADA58D.4070307@samsung.com>
-Date: Fri, 27 Jun 2014 11:10:37 -0600
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.6.0
-MIME-version: 1.0
+	Fri, 27 Jun 2014 13:11:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140624160857.ebb638c4c69c1d290f64d01f@linux-foundation.org>
+References: <1400958369-3588-1-git-send-email-ddstreet@ieee.org>
+ <1401747586-11861-1-git-send-email-ddstreet@ieee.org> <1401747586-11861-4-git-send-email-ddstreet@ieee.org>
+ <20140623144614.d4549fa0aecb03b7b8044bc7@linux-foundation.org>
+ <CALZtONDKmM8nRv3tqZThc8mC3Dmrxqj7if5-yAeivnfCbfwENw@mail.gmail.com> <20140624160857.ebb638c4c69c1d290f64d01f@linux-foundation.org>
+From: Dan Streetman <ddstreet@ieee.org>
+Date: Fri, 27 Jun 2014 13:11:15 -0400
+X-Google-Sender-Auth: otkHK8S5CbCrFPYcoEsZ9lzPQdU
+Message-ID: <CALZtONDab98oHJsPqHVMxS0aEfMBTYdJFx3p-ODr3Dke_x5m0g@mail.gmail.com>
+Subject: Re: [PATCHv4 3/6] mm/zpool: implement common zpool api to zbud/zsmalloc
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: gregkh@linuxfoundation.org, keescook@chromium.org, michael@ellerman.id.au,
-        fweisbec@gmail.com, benh@kernel.crashing.org,
-        linux-kernel@vger.kernel.org, Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [PATCH] tools: selftests - create a separate hotplug target
-References: <1403814836-16964-1-git-send-email-shuah.kh@samsung.com>
- <20140626145106.83d8a15bfa07270b00e5d24b@linux-foundation.org>
-In-reply-to: <20140626145106.83d8a15bfa07270b00e5d24b@linux-foundation.org>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.134.209]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJLMWRmVeSWpSXmKPExsVy+t9hX90JS9cGG6x9LWIxZ/0aNosPTa3M
-	FjNfdzNZNC9ez2ZxpjvX4vKuOWwWlyetZHJg95jdcJHFY9HLBhaPnbPusnv0vGlh9Tgx4zeL
-	x/65a9g9Pm+SC2CP4rJJSc3JLEst0rdL4Mp4euQee8FsvoqXvaYNjNu5uxg5OSQETCQuX77E
-	CGGLSVy4t56ti5GLQ0hgGaPE0wX/mUESQgK9TBLX59lCJLYxSnT/fcwCkuAV0JJ49GUFWBGL
-	gKrE7/8v2UFsNgF1ic+vd7BDNMtJNC1ZDVYjKhAhcaDvGStEr6DEj8n3wOaICOhKrHq+ixlk
-	AbPAAUaJC992gRUJC3hI7J35hRVicyujxJ+/vWBTOQW8JWa9/sEEYjMLWEusnLSNEcKWl9i8
-	5i3U2coSfy6fYoL4TVliYuNtlgmMIrOQLJ+FpH0WkvYFjMyrGMVKi5MLipPSUyuM9IoTc4tL
-	89L1kvNzNzFCoqt6B+PdrzaHGAU4GJV4eD+2rQ0WYk0sK67MPcQowcGsJML7aD5QiDclsbIq
-	tSg/vqg0J7X4ECMTB6dUA2PRheMBl7SCz9xTvtDIZvBbPKqe0/7BKjazKdEfPylWrH3991eh
-	xOImnbY/Ua53/JfJ3Hm/UclHIvVQacdEptNzDN+kLf4r3iNTc85s3kNnpS8B22csc03eoJAq
-	obtTzO1Jl6bep3sp385UrNjU0dV79FjIR4UNAkdXP7W/dFyH36YjUn9lyQQlluKMREMt5qLi
-	RACcZ7/IjAIAAA==
+Cc: Seth Jennings <sjennings@variantweb.net>, Minchan Kim <minchan@kernel.org>,
+        Weijie Yang <weijie.yang@samsung.com>, Nitin Gupta <ngupta@vflare.org>,
+        Bob Liu <bob.liu@oracle.com>, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2014 03:51 PM, Andrew Morton wrote:
-> On Thu, 26 Jun 2014 14:33:56 -0600 Shuah Khan <shuah.kh@samsung.com> wrote:
+On Tue, Jun 24, 2014 at 7:08 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Tue, 24 Jun 2014 11:39:12 -0400 Dan Streetman <ddstreet@ieee.org> wrote:
 >
->> On some systems, hotplug tests could hang forever waiting for cpu and
->> memory to be ready to be offlined. A special hotplug target is created,
->> which will help run non-hotplug tests and run hotplug tests as a special
->> case. Individual hotplug tests can still be run as a special target
->> targeted for a single subsystem.
+>> On Mon, Jun 23, 2014 at 5:46 PM, Andrew Morton
+>> <akpm@linux-foundation.org> wrote:
+>> > On Mon,  2 Jun 2014 18:19:43 -0400 Dan Streetman <ddstreet@ieee.org> wrote:
+>> >
+>> >> Add zpool api.
+>> >>
+>> >> zpool provides an interface for memory storage, typically of compressed
+>> >> memory.  Users can select what backend to use; currently the only
+>> >> implementations are zbud, a low density implementation with up to
+>> >> two compressed pages per storage page, and zsmalloc, a higher density
+>> >> implementation with multiple compressed pages per storage page.
+>> >>
+>> >> ...
+>> >>
+>> >> +/**
+>> >> + * zpool_create_pool() - Create a new zpool
+>> >> + * @type     The type of the zpool to create (e.g. zbud, zsmalloc)
+>> >> + * @flags    What GFP flags should be used when the zpool allocates memory.
+>> >> + * @ops              The optional ops callback.
+>> >> + *
+>> >> + * This creates a new zpool of the specified type.  The zpool will use the
+>> >> + * given flags when allocating any memory.  If the ops param is NULL, then
+>> >> + * the created zpool will not be shrinkable.
+>> >> + *
+>> >> + * Returns: New zpool on success, NULL on failure.
+>> >> + */
+>> >> +struct zpool *zpool_create_pool(char *type, gfp_t flags,
+>> >> +                     struct zpool_ops *ops);
+>> >
+>> > It is unconventional to document the API in the .h file.  It's better
+>> > to put the documentation where people expect to find it.
+>> >
+>> > It's irritating for me (for example) because this kernel convention has
+>> > permitted me to train my tags system to ignore prototypes in headers.
+>> > But if I want to find the zpool_create_pool documentation I will need
+>> > to jump through hoops.
+>>
+>> Got it, I will move it to the .c file.
+>>
+>> I noticed you pulled these into -mm, do you want me to send follow-on
+>> patches for these changes, or actually update the origin patches and
+>> resend the patch set?
 >
-> This is a bit sad.  The general philosophy with selftests is that they
-> should run to completion even if the kernel/hardware which they are
-> testing isn't available - they should work it out for themselves.
+> Full resend, I guess.  I often add things which are
+> not-quite-fully-baked to give them a bit of testing, check for
+> integration with other changes, etc.
 >
-> But that's obviously a problem with hotplug.  And with networking or
-> anything else which needs external action.
+>> >
+>> >>
+>> >> ...
+>> >>
+>> >> +
+>> >> +struct zpool *zpool_create_pool(char *type, gfp_t flags,
+>> >> +                     struct zpool_ops *ops)
+>> >> +{
+>> >> +     struct zpool_driver *driver;
+>> >> +     struct zpool *zpool;
+>> >> +
+>> >> +     pr_info("creating pool type %s\n", type);
+>> >> +
+>> >> +     spin_lock(&drivers_lock);
+>> >> +     driver = zpool_get_driver(type);
+>> >> +     spin_unlock(&drivers_lock);
+>> >
+>> > Racy against unregister.  Can be solved with a standard get/put
+>> > refcounting implementation.  Or perhaps a big fat mutex.
 >
-> On the other hand, networking has loopback and the kernel supports cpu
-> hotplug simulation via procfs.  So perhaps the cpu and memory hotplug
-> tests should be redone so they do the plug/unplug injection themselves,
-> so they can run without external intervention?
+> Was there a decision here?
 
-Changing/running the tests in a safe mode (least possibility of hang)
-mode is another option. This way the tests are run in normal mode with
-reduced scope. Memory hotplug test has the ratio option and when I
-specified low ratio 1-5%, it completed in a few seconds.
+What I tried to do, with the final patch in the set, was use module
+usage counting combined with function documentation - in
+zpool_create_pool() the zpool_get_driver() does try_module_get()
+before releasing the spinlock, so if the driver *only* calls
+unregister from its module exit function, I think we should be good -
+once zpool_create_pool() gets the driver module, the driver won't
+enter its exit function and thus won't unregister; and if the driver
+module has started its exit function, try_module_get() will return
+failure and zpool_create_pool() will return failure.
 
-cpu-hotplug test will require changes. I am working on a change to
-offline a user specified # of cpus instead offlining all hotpluggable
-cpus and then onlining them again at the end of the test.
+Now, if we remove the restriction that the driver module can only
+unregister from its module exit function, then we would need an
+additional refcount (we could use module_refcount() but the module may
+have refcounts unrelated to us) and unregister would need a return
+value, to indicate failure.  I think the problem I had with that is,
+in the driver module's exit function it can't abort if unregister
+fails; but with the module refcounting, unregister shouldn't ever fail
+in the driver's exit function...
 
-When all selftests are run, safe mode hotplug tests will be run.
+So should I remove the unregister function doc asking to only call
+unregister from the module exit function, and add a separate refcount
+to the driver get/put functions?  I don't think we need to use a kref,
+since we don't want to free the driver once kref == 0, we want to be
+able to check in the unregister function if there are any refs, so
+just an atomic_t should work.  And we would still need to keep the
+module get/put, too, so it would be something like:
 
-Does this approach sound reasonable?
+  spin_lock(&drivers_lock);
+...
+  bool got = try_module_get(driver->owner);
+  if (got)
+    atomic_inc(driver->refs);
+  spin_unlock(&drivers_lock);
+  return got ? driver : NULL;
 
--- Shuah
+with the appropriate atomic_dec in zpool_put_driver(), and unregister
+would change to:
 
--- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+int zpool_unregister_driver(struct zpool_driver *driver)
+{
+  spin_lock(&drivers_lock);
+  if (atomic_read(driver->refs) > 0) {
+    spin_unlock(&drivers_lock);
+    return -EBUSY;
+  }
+  list_del(&driver->list);
+  spin_unlock(&drivers_lock);
+  return 0;
+}
+
+
+>
+>> >> +void zpool_destroy_pool(struct zpool *zpool)
+>> >> +{
+>> >> +     pr_info("destroying pool type %s\n", zpool->type);
+>> >> +
+>> >> +     spin_lock(&pools_lock);
+>> >> +     list_del(&zpool->list);
+>> >> +     spin_unlock(&pools_lock);
+>> >> +     zpool->driver->destroy(zpool->pool);
+>> >> +     kfree(zpool);
+>> >> +}
+>> >
+>> > What are the lifecycle rules here?  How do we know that nobody else can
+>> > be concurrently using this pool?
+>>
+>> Well I think with zpools, as well as direct use of zsmalloc and zbud
+>> pools, whoever creates a pool is responsible for making sure it's no
+>> longer in use before destroying it.
+>
+> Sounds reasonable.  Perhaps there's some convenient WARN_ON we can put
+> in here to check that.
+
+Since zpool's just a passthrough, there's no simple way of it telling
+if a pool is in use or not, but warnings could be added to
+zbud/zsmalloc's destroy functions.  zs_destroy_pool() already does
+check and pr_info() if any non-empty pools are destroyed.
+
+>
+>>  I think in most use cases, pool
+>> creators won't be sharing their pools, so there should be no issue
+>> with concurrent use.  In fact, concurrent pool use it probably a bad
+>> idea in general - zsmalloc for example relies on per-cpu data during
+>> handle mapping, so concurrent use of a single pool might result in the
+>> per-cpu data being overwritten if multiple users of a single pool
+>> tried to map and use different handles from the same cpu.
+>
+> That's all a bit waffly.  Either we support concurrent use or we don't!
+
+I think I got offtrack talking about pool creators and pool users.
+zpool, and zbud/zsmalloc, really don't care about *who* is calling
+each of their functions.  Only concurrency matters, and most of the
+functions are safe for concurrent use, protected internally by
+spinlocks, etc in each pool driver (zbud/zsmalloc).  The map/unmap
+functions are a notable exception, but the function doc for
+zpool_map_handle() clarifies the restrictions for how to call it and
+what the implementation may do (hold spinlocks, disable preempt/ints)
+and that the caller should call unmap quickly after using the mapped
+handle.  And whoever creates the pool will need to also destroy the
+pool, or at least handle coordinating who and when the pool is
+destroyed (beyond warning, i don't think there is much the pool driver
+can do when a non-empty pool is destroyed.  Maybe don't destroy the
+pool, but that risks leaking memory if nobody ever uses the pool
+again).
+
+I'll review zbud and zsmalloc again to make sure each function is
+threadsafe, and state that in each zpool function doc, or make sure to
+clarify any restrictions.
+
+Since you already mentioned a few changes, let me get an updated patch
+set sent, I'll try to send that by Monday, and we can go from there if
+more changes are needed.  Thanks for the review!
+
+
+>
+>> Should some use/sharing restrictions be added to the zpool documentation?
+>
+> Sure.  And the code if possible.  If a second user tries to use a pool
+> which is already in use, that attempt should just fail, with WARN,
+> printk, return -EBUSY, whatever.
