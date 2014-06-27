@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753368AbaF0KTt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 06:19:49 -0400
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:65123 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752952AbaF0KTq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 06:19:46 -0400
-Date: Fri, 27 Jun 2014 11:19:40 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Jim Davis <jim.epost@gmail.com>, sfr@canb.auug.org.au,
-        linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, sbkim73@samsung.com,
-        sameo@linux.intel.com, grant.likely@linaro.org, robh+dt@kernel.org,
-        devicetree <devicetree@vger.kernel.org>
-Subject: Re: mfd: sec-core requires regulators
-Message-ID: <20140627101940.GJ19645@lee--X1>
-References: <CA+r1ZhhFYip3Jp2c3d8tNpD-vK8Pkf7DzrKTtk6Gy8uOOO3Ucw@mail.gmail.com>
- <29237234.T7oGEGKuvp@wuerfel>
- <20140624154833.GR13803@lee--X1>
- <6906564.1ehoeq1QjB@wuerfel>
- <20140627090957.GG19645@lee--X1>
+	id S1753400AbaF0KT6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 06:19:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57600 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752952AbaF0KTz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 06:19:55 -0400
+Message-ID: <53AD4514.9040708@redhat.com>
+Date: Fri, 27 Jun 2014 12:19:00 +0200
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140627090957.GG19645@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Chema Gonzalez <chema@google.com>
+CC: Alexei Starovoitov <ast@plumgrid.com>, Ingo Molnar <mingo@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, David Miller <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v6 net-next 1/4] net: flow_dissector: avoid multiple calls
+ in eBPF
+References: <1398882591-30422-1-git-send-email-chema@google.com> <1401389758-13252-1-git-send-email-chema@google.com> <5387C8AD.6000909@redhat.com> <CA+ZOOTNobzzJPgQnVVZ+b6rRD=0_pdjUB8q5FQVkbO+dob0BSg@mail.gmail.com> <538C6FD8.9040305@redhat.com> <CAMEtUuyduk1sHBeVm=d5GYEgB4ma7sVFYeBLdapbeEpQY9nA1Q@mail.gmail.com> <538D884E.5030007@redhat.com> <CAMEtUuxK5hV_eORRLaSHSiwF5X82Ae91vL6W0-6au48v8H6bAA@mail.gmail.com> <CA+ZOOTPdDDeGxZVGXVRZmjkxqkGefgDLrawo_9YXbjwTQ_FLzA@mail.gmail.com> <538EDE1A.8060305@redhat.com> <CA+ZOOTONwNt2xpwUc=tqhP=m31KZTzij-rrAHVh6g3hVYgKaEw@mail.gmail.com> <53A9337F.50707@redhat.com> <CA+ZOOTNSW-SFaX8zbBqoz8nGtkqBshcagTHt6HMLokczV6xZ6g@mail.gmail.com>
+In-Reply-To: <CA+ZOOTNSW-SFaX8zbBqoz8nGtkqBshcagTHt6HMLokczV6xZ6g@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Jun 2014, Lee Jones wrote:
+On 06/26/2014 12:00 AM, Chema Gonzalez wrote:
+...
+> There's still the problem of whether we want to obsolete classic BPF
+> in the kernel before the tools (libpcap mainly) accept eBPF. This can
+> take a lot.
+>
+> Finally, what's the user's CLI interface you have in mind? Right now,
+> tcpdump expressions are very handy: I know I can pass "ip[2:2] ==
+> 1500" or "(tcp[13] & 0x03)" to any libpcap-based application. This is
+> very handy to log into a machine, and quickly run tcpdump to get the
+> packets I'm interested on. What would be the model for using C-- eBPF
+> filters in the same manner?
 
-> On Tue, 24 Jun 2014, Arnd Bergmann wrote:
-> 
-> > The newly added sec-core mfd module calls the regulator_suspend_prepare()
-> > function, which is only available if the regulator API is provided. This
-> > matches the usage of the driver, so we can just add a Kconfig dependency.
-> > 
-> > Reported-by: Jim Davis <jim.epost@gmail.com>
-> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> 
-> Thanks for re-sending Arnd, patch applied.
-
-Slight change of plan - this appears to have been fixed by 591123e.
-
-> > diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> > index 207c433..1caa3c5 100644
-> > --- a/drivers/mfd/Kconfig
-> > +++ b/drivers/mfd/Kconfig
-> > @@ -582,7 +582,7 @@ config MFD_RC5T583
-> >  
-> >  config MFD_SEC_CORE
-> >         bool "SAMSUNG Electronics PMIC Series Support"
-> > -       depends on I2C=y
-> > +       depends on I2C=y && REGULATOR
-> >         select MFD_CORE
-> >         select REGMAP_I2C
-> >         select REGMAP_IRQ
-> 
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Yes, imho, it's a valid question to ask. I think there are a couple
+of possibilities for libpcap/tcpdump from a user point of view (note,
+I don't strictly think it's the _only_ main user though): 1) iff a
+llvm and/or gcc backend gets merged from the compiler side, one could
+add a cli interface to run the generated opcodes from a file for
+advanced filters while perhaps classic BPF continues to be supported
+via its high-level filter expressions; 2) there could be a Linux-only
+compiler in libpcap that translates and makes use of full eBPF (though
+significantly more effort to implement); 3) libpcap continues to use
+classic BPF as it's currently doing.
