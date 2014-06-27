@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752803AbaF0H3l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 03:29:41 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:8335 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751598AbaF0H3k (ORCPT
+	id S1752847AbaF0Hbo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 03:31:44 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:6715 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750756AbaF0Hbn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 03:29:40 -0400
+	Fri, 27 Jun 2014 03:31:43 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 27 Jun 2014 00:23:16 -0700
-Date: Fri, 27 Jun 2014 10:29:09 +0300
+	by hqnvupgp08.nvidia.com on Fri, 27 Jun 2014 00:25:29 -0700
+Date: Fri, 27 Jun 2014 10:31:40 +0300
 From: Peter De Schrijver <pdeschrijver@nvidia.com>
 To: Mike Turquette <mturquette@linaro.org>
 CC: "linux-arm-kernel@lists.infradead.org" 
@@ -17,7 +17,7 @@ CC: "linux-arm-kernel@lists.infradead.org"
         "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Subject: Re: [PATCH RESEND] clk: flatten clk tree in debugfs
-Message-ID: <20140627072909.GJ3679@tbergstrom-lnx.Nvidia.com>
+Message-ID: <20140627073140.GK3679@tbergstrom-lnx.Nvidia.com>
 References: <1401462237-14954-1-git-send-email-pdeschrijver@nvidia.com>
  <20140613080239.GO5961@tbergstrom-lnx.Nvidia.com>
  <20140626163906.GI3679@tbergstrom-lnx.Nvidia.com>
