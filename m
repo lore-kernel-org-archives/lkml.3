@@ -1,98 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753461AbaF0LUQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 07:20:16 -0400
-Received: from mga03.intel.com ([143.182.124.21]:54112 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753285AbaF0LUO convert rfc822-to-8bit (ORCPT
+	id S1753379AbaF0LVs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 07:21:48 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:58349 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752779AbaF0LVr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 07:20:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,560,1400050800"; 
-   d="scan'208";a="450711519"
-From: "Dilger, Andreas" <andreas.dilger@intel.com>
-To: Arnd Bergmann <arnd@arndb.de>,
+	Fri, 27 Jun 2014 07:21:47 -0400
+Message-ID: <53AD53E9.8030105@arm.com>
+Date: Fri, 27 Jun 2014 12:22:17 +0100
+From: Sudeep Holla <sudeep.holla@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Mark Rutland <mark.rutland@arm.com>
+CC: Sudeep Holla <sudeep.holla@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>
-CC: Greg KH <greg@kroah.com>, dann frazier <dann.frazier@canonical.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Peng Tao <bergwolf@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Drokin, Oleg" <oleg.drokin@intel.com>
-Subject: Re: [PATCH] staging/lustre: disable virtual block device for 64K
- pages
-Thread-Topic: [PATCH] staging/lustre: disable virtual block device for 64K
- pages
-Thread-Index: AQHPjIKJKbyy+hxxPkuFf74N5IPJWpuE6zoA
-Date: Fri, 27 Jun 2014 11:20:06 +0000
-Message-ID: <CFD2ABC9.ADA2F%andreas.dilger@intel.com>
-References: <20140619183321.GA23200@fluid.dannf>
- <20140619191051.GA26573@kroah.com> <4592947.kMtdJTsB2U@wuerfel>
-In-Reply-To: <4592947.kMtdJTsB2U@wuerfel>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.252.128.239]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <237E3D2B61C7E24BA07B20FE6A10FC16@intel.com>
+Subject: Re: [PATCH 7/9] ARM64: kernel: add support for cpu cache information
+References: <1403717444-23559-1-git-send-email-sudeep.holla@arm.com> <1403717444-23559-8-git-send-email-sudeep.holla@arm.com> <20140627103611.GE7262@leverpostej>
+In-Reply-To: <20140627103611.GE7262@leverpostej>
+X-OriginalArrivalTime: 27 Jun 2014 11:21:44.0604 (UTC) FILETIME=[FA1BBDC0:01CF91F9]
+X-MC-Unique: 114062712214514501
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch looks mostly OK, though I see there is also a
-CONFIG_PPC_256K_PAGES
-define that should probably be handled.
+Hi Mark,
 
-Cheers, Andreas
+Thanks for the review.
 
-On 2014/06/20, 6:23 AM, "Arnd Bergmann" <arnd@arndb.de> wrote:
-
->The lustre virtual block device cannot handle 64K pages and fails at
->compile
->time. To avoid running into this error, let's disable the Kconfig option
->for this driver in cases it doesn't support.
+On 27/06/14 11:36, Mark Rutland wrote:
+> Hi Sudeep,
 >
->Reported-by: Dann Frazier <dann.frazier@canonical.com>
->Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> On Wed, Jun 25, 2014 at 06:30:42PM +0100, Sudeep Holla wrote:
+>> From: Sudeep Holla <sudeep.holla@arm.com>
+>>
+>> This patch adds support for cacheinfo on ARM64.
+>>
+>> On ARMv8, the cache hierarchy can be identified through Cache Level ID
+>> (CLIDR) register while the cache geometry is provided by Cache Size ID
+>> (CCSIDR) register.
+>>
+>> Since the architecture doesn't provide any way of detecting the cpus
+>> sharing particular cache, device tree is used for the same purpose.
+>>
+>> Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+>> Cc: Catalin Marinas <catalin.marinas@arm.com>
+>> Cc: Will Deacon <will.deacon@arm.com>
+>> Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+>> Cc: linux-arm-kernel@lists.infradead.org
+>> ---
+>>   arch/arm64/kernel/Makefile    |   3 +-
+>>   arch/arm64/kernel/cacheinfo.c | 135 ++++++++++++++++++++++++++++++++++++++++++
+>>   2 files changed, 137 insertions(+), 1 deletion(-)
+>>   create mode 100644 arch/arm64/kernel/cacheinfo.c
 >
->---
->On Thursday 19 June 2014 12:10:51 Greg KH wrote:
->> On Thu, Jun 19, 2014 at 12:33:21PM -0600, dann frazier wrote:
->> > drivers/staging/lustre/lustre/llite/lloop.c:523:18: error: previously
->>used here
->> >   CLASSERT(PAGE_CACHE_SIZE < (1 << (sizeof(unsigned short) * 8)));
->> >                   ^
->> 
->> Looks like lustre can't handle 64K page sizes, so it refuses to build :(
->> 
->> I sugest turning this code off, you really don't want to be running it
->> anyway...
+> [...]
 >
->something like this?
+>> +static inline enum cache_type get_cache_type(int level)
+>> +{
+>> +	unsigned int clidr;
+>> +
+>> +	if (level > MAX_CACHE_LEVEL)
+>> +		return CACHE_TYPE_NOCACHE;
+>> +	asm volatile ("mrs     %0, clidr_el1" : "=r" (clidr));
 >
->diff --git a/drivers/staging/lustre/lustre/Kconfig
->b/drivers/staging/lustre/lustre/Kconfig
->index 209e4c7..4f65ba1 100644
->--- a/drivers/staging/lustre/lustre/Kconfig
->+++ b/drivers/staging/lustre/lustre/Kconfig
->@@ -57,4 +57,5 @@ config LUSTRE_TRANSLATE_ERRNOS
-> config LUSTRE_LLITE_LLOOP
-> 	tristate "Lustre virtual block device"
-> 	depends on LUSTRE_FS && BLOCK
->+	depends on !PPC_64K_PAGES && !ARM64_64K_PAGES
-> 	default m
->
+> Can't that allocate a w register?
 >
 
+That should be fine, as all of these cache info registers are 32-bit.
 
-Cheers, Andreas
--- 
-Andreas Dilger
+> You can make clidr a u64 to avoid that.
+>
 
-Lustre Software Architect
-Intel High Performance Data Division
+What would be the preference ?
+Using w registers for all these cache registers or using u64 with x registers?
 
+>> +	return CLIDR_CTYPE(clidr, level);
+>> +}
+>> +
+>> +/*
+>> + * NumSets, bits[27:13] - (Number of sets in cache) - 1
+>> + * Associativity, bits[12:3] - (Associativity of cache) - 1
+>> + * LineSize, bits[2:0] - (Log2(Number of words in cache line)) - 2
+>> + */
+>> +#define CCSIDR_WRITE_THROUGH	BIT(31)
+>> +#define CCSIDR_WRITE_BACK	BIT(30)
+>> +#define CCSIDR_READ_ALLOCATE	BIT(29)
+>> +#define CCSIDR_WRITE_ALLOCATE	BIT(28)
+>> +#define CCSIDR_LINESIZE_MASK	0x7
+>> +#define CCSIDR_ASSOCIAT_SHIFT	3
+>> +#define CCSIDR_ASSOCIAT_MASK	0x3FF
+>
+> ASSOCIAT doesn't quite roll off of the tongue...
+>
+
+I have no idea why I chose that incomplete name :(
+
+>> +#define CCSIDR_NUMSETS_SHIFT	13
+>> +#define CCSIDR_NUMSETS_MASK	0x7FF
+>> +
+>> +/*
+>> + * Which cache CCSIDR represents depends on CSSELR value
+>> + * Make sure no one else changes CSSELR during this
+>> + * smp_call_function_single prevents preemption for us
+>> + */
+>> +static inline u32 get_ccsidr(u32 csselr)
+>> +{
+>> +	u32 ccsidr;
+>> +
+>> +	/* Put value into CSSELR */
+>> +	asm volatile("msr csselr_el1, %x0" : : "r" (csselr));
+>
+> This looks a little dodgy. I think GCC can leave the upper 32 bits in a
+> random state. Why not cast csselr to a u64 here?
+>
+>> +	isb();
+>> +	/* Read result out of CCSIDR */
+>> +	asm volatile("mrs %0, ccsidr_el1" : "=r" (ccsidr));
+>> +
+>> +	return ccsidr;
+>
+> Similarly it might make sense to make the temporary variable a u64.
+>
+> [...]
+>
+>> +int init_cache_level(unsigned int cpu)
+>> +{
+>> +	unsigned int ctype, level = 1, leaves = 0;
+>> +	struct cpu_cacheinfo *this_cpu_ci = get_cpu_cacheinfo(cpu);
+>> +
+>> +	if (!this_cpu_ci)
+>> +		return -EINVAL;
+>> +
+>> +	do {
+>> +		ctype = get_cache_type(level);
+>> +		if (ctype == CACHE_TYPE_NOCACHE)
+>> +			break;
+>> +		/* Separate instruction and data caches */
+>> +		leaves += (ctype == CACHE_TYPE_SEPARATE) ? 2 : 1;
+>> +	} while (++level <= MAX_CACHE_LEVEL);
+>
+> I think this would be clearer with:
+>
+> for (level = 1; level <= MAX_CACHE_LEVEL; level++)
+>
+> We do something like that in populate_cache_leaves below.
+>
+
+Right will change it.
 
