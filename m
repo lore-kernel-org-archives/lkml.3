@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752695AbaF0ESt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 00:18:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36252 "EHLO
+	id S1752730AbaF0ETG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 00:19:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36278 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751725AbaF0ESq (ORCPT
+	with ESMTP id S1752430AbaF0ETC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 00:18:46 -0400
-Date: Thu, 26 Jun 2014 21:08:25 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Cheng-Wei Lee <lee.rhapsody@gmail.com>
-Cc: Sherif Shehab Aldin <shehabaldin.sherif@gmail.com>,
-        Avinash Kumar <avi.kp.137@gmail.com>,
-        Peter Senna Tschudin <peter.senna@gmail.com>,
-        devel <devel@driverdev.osuosl.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] staging: wlan-ng/hfa384x_usb.c: add blank line after
- declarations
-Message-ID: <20140627010825.GA13959@kroah.com>
-References: <CAJKoSVTS8vEtND1frBmU8mzZckR3DRC+jPbUGFTswAM-n6J+VQ@mail.gmail.com>
+	Fri, 27 Jun 2014 00:19:02 -0400
+Date: Fri, 27 Jun 2014 00:07:50 -0400
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Steven Noonan <steven@uplinklabs.net>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>, lwn@lwn.net,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: Linux 3.15.2
+Message-ID: <20140627040750.GA341@kroah.com>
+References: <20140626192657.GA24804@kroah.com>
+ <CA+5PVA5-KVc3FnwB6qcj+f22Sh4vuMydE_kHD=5mwMFpiVJ+DQ@mail.gmail.com>
+ <CAKbGBLj+F3yTAg8vPJqHeVvvoH0e6KpC2hH3fxuOu24T8XOhuw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAJKoSVTS8vEtND1frBmU8mzZckR3DRC+jPbUGFTswAM-n6J+VQ@mail.gmail.com>
+In-Reply-To: <CAKbGBLj+F3yTAg8vPJqHeVvvoH0e6KpC2hH3fxuOu24T8XOhuw@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 26, 2014 at 10:43:55PM +0800, Cheng-Wei Lee wrote:
-> This patch fixes the following checkpatch.pl issues in hfa384x_usb.c:
-> WARNING: Missing a blank line after declarations
+On Thu, Jun 26, 2014 at 08:52:10PM -0700, Steven Noonan wrote:
+> On Thu, Jun 26, 2014 at 5:23 PM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
+> > On Thu, Jun 26, 2014 at 3:26 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> >> I'm announcing the release of the 3.15.2 kernel.
+> >>
+> >> All users of the 3.15 kernel series must upgrade.
+> >>
+> >> The updated 3.15.y git tree can be found at:
+> >>         git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.15.y
+> >> and can be browsed at the normal kernel.org git web browser:
+> >>         http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
+> >
+> > Is the patch for this stuck somewhere on kernel.org?  I see
+> > patch-3.14.9.xz, but patch-3.15.2.xz is missing on both the kernel.org
+> > front page and the 3.x http directory where we'd normally find it.
+> >
 > 
-> Signed-off-by: Quentin Lee <lee.rhapsody@gmail.com>
-> ---
->  drivers/staging/wlan-ng/hfa384x_usb.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/staging/wlan-ng/hfa384x_usb.c
-> b/drivers/staging/wlan-ng/hfa384x_usb.c
-> index 98343ff7..07cee56 100644
-> --- a/drivers/staging/wlan-ng/hfa384x_usb.c
-> +++ b/drivers/staging/wlan-ng/hfa384x_usb.c
-> @@ -3705,6 +3705,7 @@ static void hfa384x_usbout_callback(struct urb *urb)
->  		case -EPIPE:
->  			{
->  				hfa384x_t *hw = wlandev->priv;
-> +
->  				netdev_warn(hw->wlandev->netdev,
->  					    "%s tx pipe stalled: requesting reset\n",
->  					    wlandev->netdev->name);
-> -- 
-> 1.7.9.5
+> Indeed, the patch for 3.10.45 is also missing.
 
-You have sent a bunch of patches, and no "version" information as to
-which ones to apply and which ones superseed others.
+I tried to push out the kernels from the Newark airport, and the emails
+went out, and part of the tarballs / patches, but not everything before
+my connection got dropped and I had to get on a plane back to Seattle.
 
-So I've deleted them all from my inbox, can you please resend the proper
-ones that you wish to have applied?
+I'll repush them again and they should show up soon.
 
-thanks,
+sorry about that,
 
 greg k-h
