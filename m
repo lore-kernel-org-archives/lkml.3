@@ -1,79 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751756AbaF0Tjj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 15:39:39 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:45488 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751087AbaF0Tji (ORCPT
+	id S1751726AbaF0Tpz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 15:45:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44328 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750714AbaF0Tpy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 15:39:38 -0400
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-To: linux-firmware@kernel.org
-Cc: "Luis R. Rodriguez" <mcgrof@suse.com>, netdev@vger.kernel.org,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] README: clarify redistribution requirements covering patents
-Date: Fri, 27 Jun 2014 12:39:27 -0700
-Message-Id: <1403897967-5894-1-git-send-email-mcgrof@do-not-panic.com>
-X-Mailer: git-send-email 1.9.1
+	Fri, 27 Jun 2014 15:45:54 -0400
+Date: Fri, 27 Jun 2014 12:45:52 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: shuah.kh@samsung.com
+Cc: gregkh@linuxfoundation.org, keescook@chromium.org, michael@ellerman.id.au,
+        fweisbec@gmail.com, benh@kernel.crashing.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tools: selftests - create a separate hotplug target
+Message-Id: <20140627124552.d834ecd58c416c0a2d0dae02@linux-foundation.org>
+In-Reply-To: <53ADA58D.4070307@samsung.com>
+References: <1403814836-16964-1-git-send-email-shuah.kh@samsung.com>
+	<20140626145106.83d8a15bfa07270b00e5d24b@linux-foundation.org>
+	<53ADA58D.4070307@samsung.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
+On Fri, 27 Jun 2014 11:10:37 -0600 Shuah Khan <shuah.kh@samsung.com> wrote:
 
-Firmware licenses on linux-firmware should include an implicit
-or explicit patent grant to end users for full device operation
-otherwise it would start making linux-firmware useless for many
-Linux distributions which have positions against patent encumbered
-software [0] [1] [2] and it would mean cherry picking firmware files
-out. It can also mean making it problematic to redistribute linux-firmware
-in some jurisdictions which could have different positions on
-patents, or have already outlawed software patents.
+> On 06/26/2014 03:51 PM, Andrew Morton wrote:
+> > On Thu, 26 Jun 2014 14:33:56 -0600 Shuah Khan <shuah.kh@samsung.com> wrote:
+> >
+> >> On some systems, hotplug tests could hang forever waiting for cpu and
+> >> memory to be ready to be offlined. A special hotplug target is created,
+> >> which will help run non-hotplug tests and run hotplug tests as a special
+> >> case. Individual hotplug tests can still be run as a special target
+> >> targeted for a single subsystem.
+> >
+> > This is a bit sad.  The general philosophy with selftests is that they
+> > should run to completion even if the kernel/hardware which they are
+> > testing isn't available - they should work it out for themselves.
+> >
+> > But that's obviously a problem with hotplug.  And with networking or
+> > anything else which needs external action.
+> >
+> > On the other hand, networking has loopback and the kernel supports cpu
+> > hotplug simulation via procfs.  So perhaps the cpu and memory hotplug
+> > tests should be redone so they do the plug/unplug injection themselves,
+> > so they can run without external intervention?
+> 
+> Changing/running the tests in a safe mode (least possibility of hang)
+> mode is another option. This way the tests are run in normal mode with
+> reduced scope. Memory hotplug test has the ratio option and when I
+> specified low ratio 1-5%, it completed in a few seconds.
+> 
+> cpu-hotplug test will require changes. I am working on a change to
+> offline a user specified # of cpus instead offlining all hotpluggable
+> cpus and then onlining them again at the end of the test.
+> 
+> When all selftests are run, safe mode hotplug tests will be run.
+> 
+> Does this approach sound reasonable?
 
-Licenses with implicit patent grants are allowed given that otherwise
-we couldn't carry permissively licensed firmwares which would be silly,
-but using permissively licensed firmware files which remove patent
-grants explicitly are not allowed.
-
-A clarifications is needed as one attempt was already made to include
-firmware encumbered by patents without a grant [3] and it was decided
-we would not allow these. We clarify this to make this requirement
-explicit and prevent these type of further attempts.
-
-[0] https://www.debian.org/legal/patent
-[1] http://fedoraproject.org/wiki/Software_Patents#Red_Hat.27s_position_on_Software_Patents
-[2] http://www.openinventionnetwork.com/about-us/
-[3] https://lkml.org/lkml/2014/3/14/182
-
-Cc: netdev@vger.kernel.org
-Cc: linux-wireless@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
----
-
-This wasn't clear and at one point one entity already tried to get
-included a firmware that explicitly removes any patent grants for
-users.
-
- README | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
-
-diff --git a/README b/README
-index f2ed92e..d2a56ec 100644
---- a/README
-+++ b/README
-@@ -18,7 +18,10 @@ and also cc: to related mailing lists.
- 
- Your commit should include an update to the WHENCE file clearly
- identifying the licence under which the firmware is available, and
--that it is redistributable. If the licence is long and involved, it's
-+that it is redistributable. Being redistributable includes ensuring
-+the firmware license provided includes an implicit or explicit
-+patent grant to end users to ensure full functionality of device
-+operation with the firmware. If the licence is long and involved, it's
- permitted to include it in a separate file and refer to it from the
- WHENCE file.
- And if it were possible, a changelog of the firmware itself.
--- 
-2.0.0
+I don't know really.  You know more about this than I - what advantages
+does the separate-make-target approach have over this approach?
 
