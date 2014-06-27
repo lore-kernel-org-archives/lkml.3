@@ -1,85 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754335AbaF0XUO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 19:20:14 -0400
-Received: from mail-by2lp0236.outbound.protection.outlook.com ([207.46.163.236]:28200
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751745AbaF0XUM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 19:20:12 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: "Yue Zhang (OSTC DEV)" <yuezha@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "apw@canonical.com" <apw@canonical.com>
-CC: Dexuan Cui <decui@microsoft.com>, Thomas Shao <huishao@microsoft.com>
-Subject: RE: [PATCH] Tools: hv: fix file overwriting of hv_fcopy_daemon
-Thread-Topic: [PATCH] Tools: hv: fix file overwriting of hv_fcopy_daemon
-Thread-Index: AQHPkl3sCu+G7SXcCkCbF+fIpgaFm5uFl1Eg
-Date: Fri, 27 Jun 2014 23:20:10 +0000
-Message-ID: <ec1eb9430bac4572a0dad7dc2f9a6332@BY2PR03MB299.namprd03.prod.outlook.com>
-References: <1403914608-21604-1-git-send-email-yuezha@microsoft.com>
-In-Reply-To: <1403914608-21604-1-git-send-email-yuezha@microsoft.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [50.135.110.52]
-x-microsoft-antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
-x-forefront-prvs: 0255DF69B9
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(377454003)(199002)(189002)(13464003)(51704005)(19580405001)(64706001)(83322001)(66066001)(85852003)(83072002)(80022001)(101416001)(76482001)(20776003)(92566001)(19580395003)(77982001)(33646001)(46102001)(76576001)(2656002)(50986999)(87936001)(54356999)(4396001)(81342001)(21056001)(76176999)(106356001)(31966008)(99286002)(95666004)(85306003)(86362001)(2201001)(74316001)(99396002)(105586002)(81542001)(107046002)(106116001)(74662001)(1511001)(79102001)(74502001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB300;H:BY2PR03MB299.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: microsoft.onmicrosoft.com
+	id S1754557AbaF0XX7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 19:23:59 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:33592 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753256AbaF0XXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 19:23:54 -0400
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Kees Cook <keescook@chromium.org>, Oleg Nesterov <oleg@redhat.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        linux-api@vger.kernel.org, x86@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
+        linux-arch@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: [PATCH v9 06/11] MIPS: add seccomp syscall
+Date: Fri, 27 Jun 2014 16:22:55 -0700
+Message-Id: <1403911380-27787-7-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1403911380-27787-1-git-send-email-keescook@chromium.org>
+References: <1403911380-27787-1-git-send-email-keescook@chromium.org>
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Wires up the new seccomp syscall.
 
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ arch/mips/include/uapi/asm/unistd.h |   15 +++++++++------
+ arch/mips/kernel/scall32-o32.S      |    1 +
+ arch/mips/kernel/scall64-64.S       |    1 +
+ arch/mips/kernel/scall64-n32.S      |    1 +
+ arch/mips/kernel/scall64-o32.S      |    1 +
+ 5 files changed, 13 insertions(+), 6 deletions(-)
 
-> -----Original Message-----
-> From: Yue Zhang [mailto:yuezha@microsoft.com]
-> Sent: Friday, June 27, 2014 5:17 PM
-> To: KY Srinivasan; Haiyang Zhang; driverdev-devel@linuxdriverproject.org;
-> linux-kernel@vger.kernel.org; olaf@aepfle.de; jasowang@redhat.com;
-> apw@canonical.com
-> Cc: Dexuan Cui; Thomas Shao
-> Subject: [PATCH] Tools: hv: fix file overwriting of hv_fcopy_daemon
-> 
-> From: Yue Zhang <yuezha@microsoft.com>
-> 
-> hv_fcopy_daemon fails to overwrite a file if the target file already exits.
-> 
-> Add O_TRUNC flag on opening.
-> 
-> MS-TFS: 341345
-You need to include Greg in the "to list". Also get rid of the MS-TFS tag.
+diff --git a/arch/mips/include/uapi/asm/unistd.h b/arch/mips/include/uapi/asm/unistd.h
+index 5805414777e0..9bc13eaf9d67 100644
+--- a/arch/mips/include/uapi/asm/unistd.h
++++ b/arch/mips/include/uapi/asm/unistd.h
+@@ -372,16 +372,17 @@
+ #define __NR_sched_setattr		(__NR_Linux + 349)
+ #define __NR_sched_getattr		(__NR_Linux + 350)
+ #define __NR_renameat2			(__NR_Linux + 351)
++#define __NR_seccomp			(__NR_Linux + 352)
+ 
+ /*
+  * Offset of the last Linux o32 flavoured syscall
+  */
+-#define __NR_Linux_syscalls		351
++#define __NR_Linux_syscalls		352
+ 
+ #endif /* _MIPS_SIM == _MIPS_SIM_ABI32 */
+ 
+ #define __NR_O32_Linux			4000
+-#define __NR_O32_Linux_syscalls		351
++#define __NR_O32_Linux_syscalls		352
+ 
+ #if _MIPS_SIM == _MIPS_SIM_ABI64
+ 
+@@ -701,16 +702,17 @@
+ #define __NR_sched_setattr		(__NR_Linux + 309)
+ #define __NR_sched_getattr		(__NR_Linux + 310)
+ #define __NR_renameat2			(__NR_Linux + 311)
++#define __NR_seccomp			(__NR_Linux + 312)
+ 
+ /*
+  * Offset of the last Linux 64-bit flavoured syscall
+  */
+-#define __NR_Linux_syscalls		311
++#define __NR_Linux_syscalls		312
+ 
+ #endif /* _MIPS_SIM == _MIPS_SIM_ABI64 */
+ 
+ #define __NR_64_Linux			5000
+-#define __NR_64_Linux_syscalls		311
++#define __NR_64_Linux_syscalls		312
+ 
+ #if _MIPS_SIM == _MIPS_SIM_NABI32
+ 
+@@ -1034,15 +1036,16 @@
+ #define __NR_sched_setattr		(__NR_Linux + 313)
+ #define __NR_sched_getattr		(__NR_Linux + 314)
+ #define __NR_renameat2			(__NR_Linux + 315)
++#define __NR_seccomp			(__NR_Linux + 316)
+ 
+ /*
+  * Offset of the last N32 flavoured syscall
+  */
+-#define __NR_Linux_syscalls		315
++#define __NR_Linux_syscalls		316
+ 
+ #endif /* _MIPS_SIM == _MIPS_SIM_NABI32 */
+ 
+ #define __NR_N32_Linux			6000
+-#define __NR_N32_Linux_syscalls		315
++#define __NR_N32_Linux_syscalls		316
+ 
+ #endif /* _UAPI_ASM_UNISTD_H */
+diff --git a/arch/mips/kernel/scall32-o32.S b/arch/mips/kernel/scall32-o32.S
+index 3245474f19d5..ab02d14f1b5c 100644
+--- a/arch/mips/kernel/scall32-o32.S
++++ b/arch/mips/kernel/scall32-o32.S
+@@ -578,3 +578,4 @@ EXPORT(sys_call_table)
+ 	PTR	sys_sched_setattr
+ 	PTR	sys_sched_getattr		/* 4350 */
+ 	PTR	sys_renameat2
++	PTR	sys_seccomp
+diff --git a/arch/mips/kernel/scall64-64.S b/arch/mips/kernel/scall64-64.S
+index be2fedd4ae33..010dccf128ec 100644
+--- a/arch/mips/kernel/scall64-64.S
++++ b/arch/mips/kernel/scall64-64.S
+@@ -431,4 +431,5 @@ EXPORT(sys_call_table)
+ 	PTR	sys_sched_setattr
+ 	PTR	sys_sched_getattr		/* 5310 */
+ 	PTR	sys_renameat2
++	PTR	sys_seccomp
+ 	.size	sys_call_table,.-sys_call_table
+diff --git a/arch/mips/kernel/scall64-n32.S b/arch/mips/kernel/scall64-n32.S
+index c1dbcda4b816..c3b3b6525df5 100644
+--- a/arch/mips/kernel/scall64-n32.S
++++ b/arch/mips/kernel/scall64-n32.S
+@@ -424,4 +424,5 @@ EXPORT(sysn32_call_table)
+ 	PTR	sys_sched_setattr
+ 	PTR	sys_sched_getattr
+ 	PTR	sys_renameat2			/* 6315 */
++	PTR	sys_seccomp
+ 	.size	sysn32_call_table,.-sysn32_call_table
+diff --git a/arch/mips/kernel/scall64-o32.S b/arch/mips/kernel/scall64-o32.S
+index f1343ccd7ed7..bb1550b1f501 100644
+--- a/arch/mips/kernel/scall64-o32.S
++++ b/arch/mips/kernel/scall64-o32.S
+@@ -557,4 +557,5 @@ EXPORT(sys32_call_table)
+ 	PTR	sys_sched_setattr
+ 	PTR	sys_sched_getattr		/* 4350 */
+ 	PTR	sys_renameat2
++	PTR	sys_seccomp
+ 	.size	sys32_call_table,.-sys32_call_table
+-- 
+1.7.9.5
 
-> 
-> Signed-off-by: Yue Zhang <yuezha@microsoft.com>
-> ---
->  tools/hv/hv_fcopy_daemon.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/tools/hv/hv_fcopy_daemon.c b/tools/hv/hv_fcopy_daemon.c
-> index fba1c75..2a86297 100644
-> --- a/tools/hv/hv_fcopy_daemon.c
-> +++ b/tools/hv/hv_fcopy_daemon.c
-> @@ -88,7 +88,8 @@ static int hv_start_fcopy(struct hv_start_fcopy *smsg)
->  		}
->  	}
-> 
-> -	target_fd = open(target_fname, O_RDWR | O_CREAT | O_CLOEXEC,
-> 0744);
-> +	target_fd = open(target_fname,
-> +			O_RDWR | O_CREAT | O_TRUNC | O_CLOEXEC,
-> 0744);
-Please align properly and there is no need for three lines here.
-
-K. Y
