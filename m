@@ -1,49 +1,396 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753539AbaF0NYg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 09:24:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11435 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752779AbaF0NYf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 09:24:35 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1403620852-16476-2-git-send-email-zohar@linux.vnet.ibm.com>
-References: <1403620852-16476-2-git-send-email-zohar@linux.vnet.ibm.com> <1403620852-16476-1-git-send-email-zohar@linux.vnet.ibm.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: dhowells@redhat.com, keyrings <keyrings@linux-nfs.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Josh Boyer <jwboyer@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-Subject: Re: [PATCH v6 1/6] KEYS: special dot prefixed keyring name bug fix
-Date: Fri, 27 Jun 2014 14:24:20 +0100
-Message-ID: <7422.1403875460@warthog.procyon.org.uk>
+	id S1753900AbaF0N0n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 09:26:43 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:54098 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753773AbaF0N0l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 09:26:41 -0400
+From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
+To: mturquette@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kernel@stlinux.com, Lee Jones <lee.jones@linaro.org>,
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
+        Maxime Coquelin <maxime.coquelin@st.com>,
+        Olivier Bideau <olivier.bideau@st.com>
+Subject: [PATCH v2 05/14] drivers: clk: st: STiH407: Support for Flexgen Clocks
+Date: Fri, 27 Jun 2014 15:25:02 +0200
+Message-Id: <1403875511-7710-6-git-send-email-gabriel.fernandez@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403875511-7710-1-git-send-email-gabriel.fernandez@linaro.org>
+References: <1403875511-7710-1-git-send-email-gabriel.fernandez@linaro.org>
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-06-27_03:2014-06-27,2014-06-27,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+This patch is the Flexgen implementation reusing as much as possible
+of Common Clock Framework functions.
 
-> Dot prefixed keyring names are supposed to be reserved for the
-> kernel, but add_key() calls key_get_type_from_user(), which
-> incorrectly verifies the 'type' field, not the 'description' field.
-> This patch verifies the 'description' field isn't dot prefixed,
-> when creating a new keyring, and removes the dot prefix test in
-> key_get_type_from_user().
-> 
-> Changelog v6:
-> - whitespace and other cleanup
-> 
-> Changelog v5:
-> - Only prevent userspace from creating a dot prefixed keyring, not
->   regular keys  - Dmitry
-> 
-> Reported-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
-> Cc: David Howells <dhowells@redhat.com>
-> Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+The idea is to have an instance of "struct flexgen" per output clock.
+It represents the clock cross bar (by a mux element), and the pre and final dividers
+(using dividers and gates elements).
 
-Acked-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
+Signed-off-by: Olivier Bideau <olivier.bideau@st.com>
+Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Acked-by: Peter Griffin <peter.griffin@linaro.org>
+---
+ drivers/clk/st/Makefile      |   2 +-
+ drivers/clk/st/clk-flexgen.c | 332 +++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 333 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/clk/st/clk-flexgen.c
+
+diff --git a/drivers/clk/st/Makefile b/drivers/clk/st/Makefile
+index c7455ff..ede7b2f 100644
+--- a/drivers/clk/st/Makefile
++++ b/drivers/clk/st/Makefile
+@@ -1 +1 @@
+-obj-y += clkgen-mux.o clkgen-pll.o clkgen-fsyn.o
++obj-y += clkgen-mux.o clkgen-pll.o clkgen-fsyn.o clk-flexgen.o
+diff --git a/drivers/clk/st/clk-flexgen.c b/drivers/clk/st/clk-flexgen.c
+new file mode 100644
+index 0000000..c12d0c1
+--- /dev/null
++++ b/drivers/clk/st/clk-flexgen.c
+@@ -0,0 +1,332 @@
++/*
++ * clk-flexgen.c
++ *
++ * Copyright (C) ST-Microelectronics SA 2013
++ * Author:  Maxime Coquelin <maxime.coquelin@st.com> for ST-Microelectronics.
++ * License terms:  GNU General Public License (GPL), version 2  */
++
++#include <linux/clk-provider.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/io.h>
++#include <linux/err.h>
++#include <linux/string.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++
++struct flexgen {
++	struct clk_hw hw;
++
++	/* Crossbar */
++	struct clk_mux mux;
++	/* Pre-divisor's gate */
++	struct clk_gate pgate;
++	/* Pre-divisor */
++	struct clk_divider pdiv;
++	/* Final divisor's gate */
++	struct clk_gate fgate;
++	/* Final divisor */
++	struct clk_divider fdiv;
++};
++
++#define to_flexgen(_hw) container_of(_hw, struct flexgen, hw)
++
++static int flexgen_enable(struct clk_hw *hw)
++{
++	struct flexgen *flexgen = to_flexgen(hw);
++	struct clk_hw *pgate_hw = &flexgen->pgate.hw;
++	struct clk_hw *fgate_hw = &flexgen->fgate.hw;
++
++	pgate_hw->clk = hw->clk;
++	fgate_hw->clk = hw->clk;
++
++	clk_gate_ops.enable(pgate_hw);
++
++	clk_gate_ops.enable(fgate_hw);
++
++	pr_debug("%s: flexgen output enabled\n", __clk_get_name(hw->clk));
++	return 0;
++}
++
++static void flexgen_disable(struct clk_hw *hw)
++{
++	struct flexgen *flexgen = to_flexgen(hw);
++	struct clk_hw *fgate_hw = &flexgen->fgate.hw;
++
++	/* disable only the final gate */
++	fgate_hw->clk = hw->clk;
++
++	clk_gate_ops.disable(fgate_hw);
++
++	pr_debug("%s: flexgen output disabled\n", __clk_get_name(hw->clk));
++}
++
++static int flexgen_is_enabled(struct clk_hw *hw)
++{
++	struct flexgen *flexgen = to_flexgen(hw);
++	struct clk_hw *fgate_hw = &flexgen->fgate.hw;
++
++	fgate_hw->clk = hw->clk;
++
++	if (!clk_gate_ops.is_enabled(fgate_hw))
++		return 0;
++
++	return 1;
++}
++
++static u8 flexgen_get_parent(struct clk_hw *hw)
++{
++	struct flexgen *flexgen = to_flexgen(hw);
++	struct clk_hw *mux_hw = &flexgen->mux.hw;
++
++	mux_hw->clk = hw->clk;
++
++	return clk_mux_ops.get_parent(mux_hw);
++}
++
++static int flexgen_set_parent(struct clk_hw *hw, u8 index)
++{
++	struct flexgen *flexgen = to_flexgen(hw);
++	struct clk_hw *mux_hw = &flexgen->mux.hw;
++
++	mux_hw->clk = hw->clk;
++
++	return clk_mux_ops.set_parent(mux_hw, index);
++}
++
++static inline unsigned long
++clk_best_div(unsigned long parent_rate, unsigned long rate)
++{
++	return parent_rate / rate + ((rate > (2*(parent_rate % rate))) ? 0 : 1);
++}
++
++static long flexgen_round_rate(struct clk_hw *hw, unsigned long rate,
++				   unsigned long *prate)
++{
++	unsigned long div;
++
++	/* Round div according to exact prate and wished rate */
++	div = clk_best_div(*prate, rate);
++
++	if (__clk_get_flags(hw->clk) & CLK_SET_RATE_PARENT) {
++		*prate = rate * div;
++		return rate;
++	} else
++		return *prate / div;
++}
++
++unsigned long flexgen_recalc_rate(struct clk_hw *hw,
++		unsigned long parent_rate)
++{
++	struct flexgen *flexgen = to_flexgen(hw);
++	struct clk_hw *pdiv_hw = &flexgen->pdiv.hw;
++	struct clk_hw *fdiv_hw = &flexgen->fdiv.hw;
++	unsigned long mid_rate;
++
++	pdiv_hw->clk = hw->clk;
++	fdiv_hw->clk = hw->clk;
++
++	mid_rate = clk_divider_ops.recalc_rate(pdiv_hw, parent_rate);
++
++	return clk_divider_ops.recalc_rate(fdiv_hw, mid_rate);
++}
++
++static int flexgen_set_rate(struct clk_hw *hw, unsigned long rate,
++				unsigned long parent_rate)
++{
++	struct flexgen *flexgen = to_flexgen(hw);
++	struct clk_hw *pdiv_hw = &flexgen->pdiv.hw;
++	struct clk_hw *fdiv_hw = &flexgen->fdiv.hw;
++	unsigned long primary_div = 0;
++	int ret = 0;
++
++	pdiv_hw->clk = hw->clk;
++	fdiv_hw->clk = hw->clk;
++
++	primary_div = clk_best_div(parent_rate, rate);
++
++	clk_divider_ops.set_rate(fdiv_hw, parent_rate, parent_rate);
++	ret = clk_divider_ops.set_rate(pdiv_hw, rate, rate * primary_div);
++
++	return ret;
++}
++
++static const struct clk_ops flexgen_ops = {
++	.enable = flexgen_enable,
++	.disable = flexgen_disable,
++	.is_enabled = flexgen_is_enabled,
++	.get_parent = flexgen_get_parent,
++	.set_parent = flexgen_set_parent,
++	.round_rate = flexgen_round_rate,
++	.recalc_rate = flexgen_recalc_rate,
++	.set_rate = flexgen_set_rate,
++};
++
++struct clk *clk_register_flexgen(const char *name,
++				const char **parent_names, u8 num_parents,
++				void __iomem *reg, spinlock_t *lock, u32 idx,
++				unsigned long flexgen_flags) {
++	struct flexgen *fgxbar;
++	struct clk *clk;
++	struct clk_init_data init;
++	u32  xbar_shift;
++	void __iomem *xbar_reg, *fdiv_reg;
++
++	fgxbar = kzalloc(sizeof(struct flexgen), GFP_KERNEL);
++	if (!fgxbar)
++		return ERR_PTR(-ENOMEM);
++
++	init.name = name;
++	init.ops = &flexgen_ops;
++	init.flags = CLK_IS_BASIC | flexgen_flags;
++	init.parent_names = parent_names;
++	init.num_parents = num_parents;
++
++	xbar_reg = reg + 0x18 + (idx & ~0x3);
++	xbar_shift = (idx % 4) * 0x8;
++	fdiv_reg = reg + 0x164 + idx * 4;
++
++	/* Crossbar element config */
++	fgxbar->mux.lock = lock;
++	fgxbar->mux.mask = BIT(6) - 1;
++	fgxbar->mux.reg = xbar_reg;
++	fgxbar->mux.shift = xbar_shift;
++	fgxbar->mux.table = NULL;
++
++
++	/* Pre-divider's gate config (in xbar register)*/
++	fgxbar->pgate.lock = lock;
++	fgxbar->pgate.reg = xbar_reg;
++	fgxbar->pgate.bit_idx = xbar_shift + 6;
++
++	/* Pre-divider config */
++	fgxbar->pdiv.lock = lock;
++	fgxbar->pdiv.reg = reg + 0x58 + idx * 4;
++	fgxbar->pdiv.width = 10;
++
++	/* Final divider's gate config */
++	fgxbar->fgate.lock = lock;
++	fgxbar->fgate.reg = fdiv_reg;
++	fgxbar->fgate.bit_idx = 6;
++
++	/* Final divider config */
++	fgxbar->fdiv.lock = lock;
++	fgxbar->fdiv.reg = fdiv_reg;
++	fgxbar->fdiv.width = 6;
++
++	fgxbar->hw.init = &init;
++
++	clk = clk_register(NULL, &fgxbar->hw);
++	if (IS_ERR(clk))
++		kfree(fgxbar);
++	else
++		pr_debug("%s: parent %s rate %u\n",
++			__clk_get_name(clk),
++			__clk_get_name(clk_get_parent(clk)),
++			(unsigned int)clk_get_rate(clk));
++	return clk;
++}
++
++static const char ** __init flexgen_get_parents(struct device_node *np,
++						       int *num_parents)
++{
++	const char **parents;
++	int nparents, i;
++
++	nparents = of_count_phandle_with_args(np, "clocks", "#clock-cells");
++	if (WARN_ON(nparents <= 0))
++		return NULL;
++
++	parents = kcalloc(nparents, sizeof(const char *), GFP_KERNEL);
++	if (!parents)
++		return NULL;
++
++	for (i = 0; i < nparents; i++)
++		parents[i] = of_clk_get_parent_name(np, i);
++
++	*num_parents = nparents;
++	return parents;
++}
++
++void __init st_of_flexgen_setup(struct device_node *np)
++{
++	struct device_node *pnode;
++	void __iomem *reg;
++	struct clk_onecell_data *clk_data;
++	const char **parents;
++	int num_parents, i;
++	spinlock_t *rlock = NULL;
++	unsigned long flex_flags = 0;
++
++	pnode = of_get_parent(np);
++	if (!pnode)
++		return;
++
++	reg = of_iomap(pnode, 0);
++	if (!reg)
++		return;
++
++	parents = flexgen_get_parents(np, &num_parents);
++	if (!parents)
++		return;
++
++	clk_data = kzalloc(sizeof(*clk_data), GFP_KERNEL);
++	if (!clk_data)
++		goto err;
++
++	clk_data->clk_num = of_property_count_strings(np ,
++			"clock-output-names");
++	if (clk_data->clk_num <= 0) {
++		pr_err("%s: Failed to get number of output clocks (%d)",
++				__func__, clk_data->clk_num);
++		goto err;
++	}
++
++	clk_data->clks = kcalloc(clk_data->clk_num, sizeof(struct clk *),
++			GFP_KERNEL);
++	if (!clk_data->clks)
++		goto err;
++
++	rlock = kzalloc(sizeof(spinlock_t), GFP_KERNEL);
++	if (!rlock)
++		goto err;
++
++	for (i = 0; i < clk_data->clk_num; i++) {
++		struct clk *clk;
++		const char *clk_name;
++
++		if (of_property_read_string_index(np, "clock-output-names",
++						  i, &clk_name)) {
++			break;
++		}
++
++		/*
++		 * If we read an empty clock name then the output is unused
++		 */
++		if (*clk_name == '\0')
++			continue;
++
++		clk = clk_register_flexgen(clk_name, parents, num_parents,
++					   reg, rlock, i, flex_flags);
++
++		if (IS_ERR(clk))
++			goto err;
++
++		clk_data->clks[i] = clk;
++	}
++
++	kfree(parents);
++	of_clk_add_provider(np, of_clk_src_onecell_get, clk_data);
++
++	return;
++
++err:
++	if (clk_data)
++		kfree(clk_data->clks);
++	kfree(clk_data);
++	kfree(parents);
++	kfree(rlock);
++
++	return;
++}
++CLK_OF_DECLARE(flexgen, "st,flexgen", st_of_flexgen_setup);
+-- 
+1.9.1
+
