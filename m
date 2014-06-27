@@ -1,60 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752209AbaF0TLD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 15:11:03 -0400
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:45223 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750862AbaF0TLC (ORCPT
+	id S1752592AbaF0TLg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 15:11:36 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:42067 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751570AbaF0TLe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 15:11:02 -0400
-From: Alex Elder <elder@linaro.org>
-To: akpm@linux-foundation.org
-Cc: pmladek@suse.cz, jack@suse.cz, joe@perches.com, john.stultz@linaro.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] printk: tweak do_syslog() to match comments
-Date: Fri, 27 Jun 2014 14:11:01 -0500
-Message-Id: <1403896261-15464-1-git-send-email-elder@linaro.org>
-X-Mailer: git-send-email 1.9.1
+	Fri, 27 Jun 2014 15:11:34 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAGXu5jL5rN6=2-SwHiiEVuGVain-T7Ucg2PsN7u08vQ5Rxz6Mg@mail.gmail.com>
+References: <1403642893-23107-1-git-send-email-keescook@chromium.org>
+ <1403642893-23107-6-git-send-email-keescook@chromium.org> <20140625135121.GB7892@redhat.com>
+ <CAGXu5jJkFxh4K=40xuh6tu3kUf4oJM8Dry+4upBdRieW3FNLgw@mail.gmail.com>
+ <CALCETrUBNmLnpa+LM91om2RSpR6SjupP-EdefzhU1Me4nv3Dfw@mail.gmail.com>
+ <CAGXu5j+J11zJnuFR8bYKAXizAHhCx4R+uJE_QH6zC3q2udkpaQ@mail.gmail.com>
+ <CALCETrVrs8sb19+UUqyFEpAFzTih5dkAwn-WpQjfgPcPJMpP5g@mail.gmail.com>
+ <20140625173245.GA17695@redhat.com> <CALCETrUc65H+fn6dtMdYnB_xR39wcmgDdTbdR3fFRjyrndJhgA@mail.gmail.com>
+ <20140625175136.GA18185@redhat.com> <CAGXu5jL17k6=GXju6x+eLU20FMwBHhnuRiHoQD1Bzj_EmpiKjg@mail.gmail.com>
+ <CALCETrVNwhWSPNiBiZmgP1nD9zLJPTk6cH0yo=85rbxTPTYFRg@mail.gmail.com>
+ <CAGXu5jLavA8FJD8m-1y4wO0uzh3qvvMmajAg0Lrr1Cn_Om3a3w@mail.gmail.com>
+ <CALCETrUPxTxseJ=sOhD9CyJPtOqCR5sL8yx7KezLmLZcFSFNMA@mail.gmail.com>
+ <CAGXu5j+wPvAuo6pVc_XoJqv7CvW6yDf3YE6P7tFwtO9hfcUUsg@mail.gmail.com>
+ <CALCETrWr+5n_w+q-fNc0G55eUteN57sm+7-bPCXKb7acmLu0Cg@mail.gmail.com> <CAGXu5jL5rN6=2-SwHiiEVuGVain-T7Ucg2PsN7u08vQ5Rxz6Mg@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 27 Jun 2014 12:11:12 -0700
+Message-ID: <CALCETrUdAWyigafb=tFafRkFYgWdXKwhRs0n5SYsef4KVyJ-eQ@mail.gmail.com>
+Subject: Re: [PATCH v8 5/9] seccomp: split mode set routines
+To: Kees Cook <keescook@chromium.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In do_syslog() there's a path used by kmsg_poll() and kmsg_read()
-that only needs to know whether there's any data available to read
-(and not its size).  These callers only check for non-zero return.
-As a shortcut, do_syslog() returns the difference between what
-has been logged and what has been "seen."
+On Fri, Jun 27, 2014 at 12:04 PM, Kees Cook <keescook@chromium.org> wrote:
+> On Fri, Jun 27, 2014 at 11:56 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> On Fri, Jun 27, 2014 at 11:52 AM, Kees Cook <keescook@chromium.org> wrote:
+>>> On Fri, Jun 27, 2014 at 11:39 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>>> On Fri, Jun 27, 2014 at 11:33 AM, Kees Cook <keescook@chromium.org> wrote:
+>>>>> On Wed, Jun 25, 2014 at 11:07 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>>>>> On Wed, Jun 25, 2014 at 11:00 AM, Kees Cook <keescook@chromium.org> wrote:
+>>>>>>> On Wed, Jun 25, 2014 at 10:51 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>>>>>>>> On 06/25, Andy Lutomirski wrote:
+>>>>>>>>>
+>>>>>>>>> On Wed, Jun 25, 2014 at 10:32 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>>>>>>>>> > On 06/25, Andy Lutomirski wrote:
+>>>>>>>>> >>
+>>>>>>>>> >> Write the filter, then smp_mb (or maybe a weaker barrier is okay),
+>>>>>>>>> >> then set the bit.
+>>>>>>>>> >
+>>>>>>>>> > Yes, exactly, this is what I meant. Plas rmb() in __secure_computing().
+>>>>>>>>> >
+>>>>>>>>> > But I still can't understand the rest of your discussion about the
+>>>>>>>>> > ordering we need ;)
+>>>>>>>>>
+>>>>>>>>> Let me try again from scratch.
+>>>>>>>>>
+>>>>>>>>> Currently there are three relevant variables: TIF_SECCOMP,
+>>>>>>>>> seccomp.mode, and seccomp.filter.  __secure_computing needs
+>>>>>>>>> seccomp.mode and seccomp.filter to be in sync, and it wants (but
+>>>>>>>>> doesn't really need) TIF_SECCOMP to be in sync as well.
+>>>>>>>>>
+>>>>>>>>> My suggestion is to rearrange it a bit.  Move mode into seccomp.filter
+>>>>>>>>> (so that filter == NULL implies no seccomp) and don't check
+>>>>>>>
+>>>>>>> This would require that we reimplement mode 1 seccomp via mode 2
+>>>>>>> filters. Which isn't too hard, but may add complexity.
+>>>>>>>
+>>>>>>>>> TIF_SECCOMP in secure_computing.  Then turning on seccomp is entirely
+>>>>>>>>> atomic except for the fact that the seccomp hooks won't be called if
+>>>>>>>>> filter != NULL but !TIF_SECCOMP.  This removes all ordering
+>>>>>>>>> requirements.
+>>>>>>>>
+>>>>>>>> Ah, got it, thanks. Perhaps I missed somehing, but to me this looks like
+>>>>>>>> unnecessary complication at first glance.
+>>>>>>>>
+>>>>>>>> We alredy have TIF_SECCOMP, we need it anyway, and we should only care
+>>>>>>>> about the case when this bit is actually set, so that we can race with
+>>>>>>>> the 1st call of __secure_computing().
+>>>>>>>>
+>>>>>>>> Otherwise we are fine: we can miss the new filter anyway, ->mode can't
+>>>>>>>> be changed it is already nonzero.
+>>>>>>>>
+>>>>>>>>> Alternatively, __secure_computing could still BUG_ON(!seccomp.filter).
+>>>>>>>>> In that case, filter needs to be set before TIF_SECCOMP is set, but
+>>>>>>>>> that's straightforward.
+>>>>>>>>
+>>>>>>>> Yep. And this is how seccomp_assign_mode() already works? It is called
+>>>>>>>> after we change ->filter chain, it changes ->mode before set(TIF_SECCOMP)
+>>>>>>>> just it lacks a barrier.
+>>>>>>>
+>>>>>>> Right, I think the best solution is to add the barrier. I was
+>>>>>>> concerned that adding the read barrier in secure_computing would have
+>>>>>>> a performance impact, though.
+>>>>>>>
+>>>>>>
+>>>>>> I can't speak for ARM, but I think that all of the read barriers are
+>>>>>> essentially free on x86.  (smp_mb is a very different story, but that
+>>>>>> shouldn't be needed here.)
+>>>>>
+>>>>> It looks like SMP ARM issues dsb for rmb, which seems a bit expensive.
+>>>>> http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0204g/CIHJFGFE.html
+>>>>>
+>>>>> If I skip the rmb in the secure_computing call before checking mode,
+>>>>> it sounds like I run the risk of racing an out-of-order TIF_SECCOMP vs
+>>>>> mode and filter. This seems unlikely to me, given an addition of the
+>>>>> smp_mb__before_atomic() during the seccomp_assign_mode()? I guess I
+>>>>> don't have a sense of how aggressively ARM might do data caching in
+>>>>> this area. Could the other thread actually see TIF_SECCOMP get set but
+>>>>> still have an out of date copy of seccomp.mode?
+>>>>>
+>>>>> I really want to avoid adding anything to the secure_computing()
+>>>>> execution path. :(
+>>>>
+>>>> Hence my suggestion to make the ordering not matter.  No ordering
+>>>> requirement, no barriers.
+>>>
+>>> I may be misunderstanding something, but I think there's still an
+>>> ordering problem. We'll have TIF_SECCOMP already, so if we enter
+>>> secure_computing with a NULL filter, we'll kill the process.
+>>>
+>>> Merging .mode and .filter would remove one of the race failure paths:
+>>> having TIF_SECCOMP and not having a mode set (leading to BUG). With
+>>> the merge, we could still race and land in the same place as have
+>>> TIF_SECCOMP and mode==2, but filter==NULL, leading to WARN and kill.
+>>
+>> You could just make secure_computing do nothing if filter == NULL.
+>> It's probably faster to test that than TIF_SECCOMP anyway, since you
+>> need to read the filter cacheline regardless, and testing a regular
+>> variable for non-NULLness might be faster than an atomic bit test
+>> operation.  (Or may not -- I don't know.)
+>
+> I am uncomfortable about making filter == NULL be a "fail open"
+> condition if TIF_SECCOMP is set.
 
-The comments say that the "count of records" should be returned but
-it's not.  Instead it returns (log_next_idx - syslog_idx), which is
-a difference between buffer offsets--and the result could be negative.
+I'm unconvinced here.  TIF_SECCOMP unset is already a fail-open
+condition if filter is set.
 
-The behavior is the same (it'll be zero or not in the same cases),
-but the count of records is more meaningful and it matches what the
-comments say.  So change the code to return that.
-
-Signed-off-by: Alex Elder <elder@linaro.org>
----
-This patch is also available here:
-    http://git.linaro.org/landing-teams/working/broadcom/kernel.git
-    Branch review/do_syslog_tweak
-
- kernel/printk/printk.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index ea2d5f6..f4a92e8 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -1310,7 +1310,7 @@ int do_syslog(int type, char __user *buf, int len, bool from_file)
- 			 * for pending data, not the size; return the count of
- 			 * records, not the length.
- 			 */
--			error = log_next_idx - syslog_idx;
-+			error = log_next_seq - syslog_seq;
- 		} else {
- 			u64 seq = syslog_seq;
- 			u32 idx = syslog_idx;
--- 
-1.9.1
-
+--Andy
