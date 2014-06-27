@@ -1,106 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753453AbaF0NOX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 09:14:23 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:44303 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752717AbaF0NOW (ORCPT
+	id S1753688AbaF0NQm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 09:16:42 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:63048 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752604AbaF0NQk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 09:14:22 -0400
-Date: Fri, 27 Jun 2014 16:14:16 +0300
-From: Sami Laine <laine.j.sami@gmail.com>
-To: devel@driverdev.osuosl.org
-Cc: gregkh@linuxfoundation.org, andreas.dilger@intel.com, bergwolf@gmail.com,
-        green@linuxhacker.ru, jinshan.xiong@intel.com, john.hammond@intel.com,
-        fabio.falzoi84@gmail.com, behlendorf1@llnl.gov,
-        andrew_perepechko@xyratex.com, linux-kernel@vger.kernel.org,
-        trivial@kernel.org
-Subject: [PATCH next-20140627] drivers/staging/lustre/lustre/llite: sparse
- warning corrections
-Message-ID: <20140627131415.GA17223@outside>
+	Fri, 27 Jun 2014 09:16:40 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Will Deacon <will.deacon@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Michal Simek <monstr@monstr.eu>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>, LKML <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Jon Masters <jonathan@jonmasters.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH v7 1/6] pci: Introduce pci_register_io_range() helper function.
+Date: Fri, 27 Jun 2014 15:16:28 +0200
+Message-ID: <7528887.J1DnSBg239@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140627124949.GR26276@arm.com>
+References: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com> <6381366.2IfqZj1r0B@wuerfel> <20140627124949.GR26276@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:ugG0KX+6HUDmdE8jkIl+85sVDi42YfgJn4nkgIRJFMv
+ UPzoIK/2EXtB8mjwmFUG+DqR4BCG3GoGtf12QF/wKX1iu8WNCr
+ qs2v626+6ufCNCrpim2hJTba5oBSQYM+BuhDog6BA7u4M8QHi+
+ oJigPL2IstLEi4VxiE8XsSVi7lk0PV/xFT8SWZwek6IDdUm/jy
+ FqzVyUofSz8Xi83VPBHUMrC++lkXJGSnX1/FJM28h2LpubJ1BA
+ O46+pfhJQ9ueATWYWwSGRuV2NzevJhjp5CpQd8XbVtsA+l+i7f
+ bNSphIQNJezzyJ+XnsXmFr+lktOe5DDppgodiv/2TbxP0xAqZO
+ jyn5InxIUEAk4KZY0de0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sami Laine <laine.j.sami@gmail.com>
+On Friday 27 June 2014 13:49:49 Will Deacon wrote:
+> On Fri, Jun 27, 2014 at 12:03:34PM +0100, Arnd Bergmann wrote:
+> > On Thursday 26 June 2014 19:44:21 Rob Herring wrote:
+> > > I don't agree arm32 is harder than microblaze. Yes, converting ALL of
+> > > arm would be, but that is not necessary. With Liviu's latest branch
+> > > the hacks I previously needed are gone (thanks!), and this is all I
+> > > need to get Versatile PCI working (under QEMU):
+> > 
+> > I meant converting all of arm32 would be harder, but I agree we don't
+> > have to do it. It would be nice to convert all of the drivers/pci/host
+> > drivers though, iow all multiplatform-enabled ones, and leaving the
+> > current arm32 pci implementation for the platforms we don't want to
+> > convert to multiplatform anyway (footbridge, iop, ixp4xx, ks8695 (?),
+> > pxa, sa1100).
+> 
+> I'm more than happy to convert the generic host controller we merged
+> recently, but I'd probably want the core changes merged first so that I
+> know I'm not wasting my time!
 
-Sparse warning corrections: NULL-pointers as NULL instead of static 0's.
+That is definitely fine with me, but it's Bjorn's decision.
 
-Signed-off-by: Sami Laine <laine.j.sami@gmail.com>
----
-diff --git a/drivers/staging/lustre/lustre/llite/lproc_llite.c b/drivers/staging/lustre/lustre/llite/lproc_llite.c
-index 77ee9e5..d9c874c 100644
---- a/drivers/staging/lustre/lustre/llite/lproc_llite.c
-+++ b/drivers/staging/lustre/lustre/llite/lproc_llite.c
-@@ -811,37 +811,38 @@ static ssize_t ll_xattr_cache_seq_write(struct file *file, const char *buffer,
- LPROC_SEQ_FOPS(ll_xattr_cache);
- 
- static struct lprocfs_vars lprocfs_llite_obd_vars[] = {
--	{ "uuid",	  &ll_sb_uuid_fops,	  0, 0 },
-+	{ "uuid",	  &ll_sb_uuid_fops,	  NULL, 0 },
- 	//{ "mntpt_path",   ll_rd_path,	     0, 0 },
--	{ "fstype",       &ll_fstype_fops,	  0, 0 },
--	{ "site",	  &ll_site_stats_fops,    0, 0 },
--	{ "blocksize",    &ll_blksize_fops,	  0, 0 },
--	{ "kbytestotal",  &ll_kbytestotal_fops,   0, 0 },
--	{ "kbytesfree",   &ll_kbytesfree_fops,    0, 0 },
--	{ "kbytesavail",  &ll_kbytesavail_fops,   0, 0 },
--	{ "filestotal",   &ll_filestotal_fops,    0, 0 },
--	{ "filesfree",    &ll_filesfree_fops,	  0, 0 },
--	{ "client_type",  &ll_client_type_fops,   0, 0 },
-+	{ "fstype",       &ll_fstype_fops,	  NULL, 0 },
-+	{ "site",	  &ll_site_stats_fops,    NULL, 0 },
-+	{ "blocksize",    &ll_blksize_fops,	  NULL, 0 },
-+	{ "kbytestotal",  &ll_kbytestotal_fops,   NULL, 0 },
-+	{ "kbytesfree",   &ll_kbytesfree_fops,    NULL, 0 },
-+	{ "kbytesavail",  &ll_kbytesavail_fops,   NULL, 0 },
-+	{ "filestotal",   &ll_filestotal_fops,    NULL, 0 },
-+	{ "filesfree",    &ll_filesfree_fops,	  NULL, 0 },
-+	{ "client_type",  &ll_client_type_fops,   NULL, 0 },
- 	//{ "filegroups",   lprocfs_rd_filegroups,  0, 0 },
--	{ "max_read_ahead_mb", &ll_max_readahead_mb_fops, 0 },
--	{ "max_read_ahead_per_file_mb", &ll_max_readahead_per_file_mb_fops, 0 },
--	{ "max_read_ahead_whole_mb", &ll_max_read_ahead_whole_mb_fops, 0 },
--	{ "max_cached_mb",    &ll_max_cached_mb_fops, 0 },
--	{ "checksum_pages",   &ll_checksum_fops, 0 },
--	{ "max_rw_chunk",     &ll_max_rw_chunk_fops, 0 },
--	{ "stats_track_pid",  &ll_track_pid_fops, 0 },
--	{ "stats_track_ppid", &ll_track_ppid_fops, 0 },
--	{ "stats_track_gid",  &ll_track_gid_fops, 0 },
--	{ "statahead_max",    &ll_statahead_max_fops, 0 },
--	{ "statahead_agl",    &ll_statahead_agl_fops, 0 },
--	{ "statahead_stats",  &ll_statahead_stats_fops, 0, 0 },
--	{ "lazystatfs",       &ll_lazystatfs_fops, 0 },
--	{ "max_easize",       &ll_max_easize_fops, 0, 0 },
--	{ "default_easize",   &ll_defult_easize_fops, 0, 0 },
--	{ "max_cookiesize",   &ll_max_cookiesize_fops, 0, 0 },
--	{ "default_cookiesize", &ll_defult_cookiesize_fops, 0, 0 },
--	{ "sbi_flags",	      &ll_sbi_flags_fops, 0, 0 },
--	{ "xattr_cache",      &ll_xattr_cache_fops, 0, 0 },
-+	{ "max_read_ahead_mb", &ll_max_readahead_mb_fops, NULL },
-+	{ "max_read_ahead_per_file_mb", &ll_max_readahead_per_file_mb_fops,
-+		NULL },
-+	{ "max_read_ahead_whole_mb", &ll_max_read_ahead_whole_mb_fops, NULL },
-+	{ "max_cached_mb",    &ll_max_cached_mb_fops, NULL },
-+	{ "checksum_pages",   &ll_checksum_fops, NULL },
-+	{ "max_rw_chunk",     &ll_max_rw_chunk_fops, NULL },
-+	{ "stats_track_pid",  &ll_track_pid_fops, NULL },
-+	{ "stats_track_ppid", &ll_track_ppid_fops, NULL },
-+	{ "stats_track_gid",  &ll_track_gid_fops, NULL },
-+	{ "statahead_max",    &ll_statahead_max_fops, NULL },
-+	{ "statahead_agl",    &ll_statahead_agl_fops, NULL },
-+	{ "statahead_stats",  &ll_statahead_stats_fops, NULL, 0 },
-+	{ "lazystatfs",       &ll_lazystatfs_fops, NULL },
-+	{ "max_easize",       &ll_max_easize_fops, NULL, 0 },
-+	{ "default_easize",   &ll_defult_easize_fops, NULL, 0 },
-+	{ "max_cookiesize",   &ll_max_cookiesize_fops, NULL, 0 },
-+	{ "default_cookiesize", &ll_defult_cookiesize_fops, NULL, 0 },
-+	{ "sbi_flags",	      &ll_sbi_flags_fops, NULL, 0 },
-+	{ "xattr_cache",      &ll_xattr_cache_fops, NULL, 0 },
- 	{ 0 }
- };
- 
+	Arnd
