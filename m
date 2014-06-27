@@ -1,108 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753711AbaF0UWC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 16:22:02 -0400
-Received: from outrelay06.libero.it ([212.52.84.110]:43741 "EHLO
-	outrelay06.libero.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752851AbaF0UV5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 16:21:57 -0400
-X-CTCH-Spam: Bulk
-X-CTCH-RefID: str=0001.0A0C0203.53AD9140.0036,ss=3,sh,re=0.000,fgs=0
-X-libjamoibt: 1823
-Message-ID: <53A16E6603332939@outrelay06.libero.it> (added by
-	    postmaster@outrelay06.libero.it)
-Reply-To: <mrsjacquelinemurchi@gmail.com>
-From: "Frau Jacqueline Benett-Baggs Murchie" 
-	<mrsjacquelinegt_2010@libero.it>
-Subject: KANN ICH DEPONIEREN 18.000.000,00 GBP IN IHREM KONTO ?
-Date: Sat, 28 Jun 2014 01:51:42 +0530
+	id S1754044AbaF0UWg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 16:22:36 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:53210 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753926AbaF0UWe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 16:22:34 -0400
+X-IronPort-AV: E=Sophos;i="5.01,563,1400025600"; 
+   d="scan'208";a="148136578"
+Message-ID: <53ADD269.5050802@citrix.com>
+Date: Fri, 27 Jun 2014 21:22:01 +0100
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
+To: David Miller <davem@davemloft.net>
+CC: <steffen.klassert@secunet.com>, <minipli@googlemail.com>,
+        <dborkman@redhat.com>, <tgraf@suug.ch>, <joe@perches.com>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <xen-devel@lists.xenproject.org>
+Subject: Re: [PATCH net-next] pktgen: Fill the payload optionally with a pattern
+References: <1403642415-9560-1-git-send-email-zoltan.kiss@citrix.com>	<20140625.175417.231387590142784357.davem@davemloft.net>	<53AD32E3.7030405@schaman.hu> <20140627.123028.1903125579029261105.davem@davemloft.net>
+In-Reply-To: <20140627.123028.1903125579029261105.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-To: unlisted-recipients:; (no To-header on input)
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Guten Tag ,
+On 27/06/14 20:30, David Miller wrote:
+> From: Zoltan Kiss <zoltan.kiss@schaman.hu>
+> Date: Fri, 27 Jun 2014 10:01:23 +0100
+>
+>> On 26/06/14 01:54, David Miller wrote:
+>>> From: Zoltan Kiss <zoltan.kiss@citrix.com>
+>>> Date: Tue, 24 Jun 2014 21:40:15 +0100
+>>>
+>>>> Introduces a new flag called PATTERN, which puts a non-periodic,
+>>>> predicatble
+>>>> pattern into the payload. This was useful to reproduce an otherwise
+>>>> intermittent
+>>>> bug in xen-netback [1], where checksum checking doesn't help.
+>>>> The pattern is a repetition of " %lu", a series of increasing numbers
+>>>> divided by
+>>>> space. The value of the number is the size of the preceding payload
+>>>> area. E.g.
+>>>> " 1 3 5"..." 1000 1005 1010"
+>>>> If the pattern is used, every frag will have its own page, unlike
+>>>> before, so it
+>>>> needs more memory.
+>>>>
+>>>> [1] 5837574: xen-netback: Fix grant ref resolution in RX path
+>>>>
+>>>> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+>>> You are changing the page allocation strategy regardless of the
+>>> pattern
+>>> setting, this is undesirable.
+>>>
+>>> It may be significantly faster to use the same page for all the frags,
+>>> and this is absolutely critical for pktgen usage where every
+>>> nanosecond
+>>> of performance counts.
+>> If the PATTERN flag is not used, it always using the pages[0] page, so
+>> it falls back to the original way.
+>
+> That's now what I see.
+>
+> If the size exceeds a page, the current code will use the same page over
+> and over again.
+>
+> Your new code always increments 'i' and allocates a new page, regardless
+> of whether the PATTERN flag is set.
+>
+> Or do I misread your changes?
 
+My first patch uses fragpage to index the pages array, and it is always 
+0, if the PATTERN frag were not specified. (i was incremented by the old 
+code as well btw.)
+The second one (see it in the other thread) adds individual frag size 
+and offset, if that exceeds PAGE_SIZE, then it always reallocate the 
+page, but I guess that's not a terrible thing, as the aim here is not 
+performance testing, but finding bugs. But I can add a further checking 
+to compare the allocation order of the current page with the required one.
+Also, I think I should keep the __GFP_ZERO flags for every page 
+allocation. Even if I fill up the frag with a pattern, it's better to 
+have a deterministic content on the rest of the page, just in case some 
+royal screwup leaks data from the rest of the page.
+Also, turning off the PATTERN flag doesn't reallocate the pages, so the 
+next packet will have the pattern from the previous instead of zeros.
 
-  Bitte nehmen Sie meine aufrichtigen Entschuldigungen an, wenn meine E-mail Ihre
- pers?nliche Ethik nicht trifft.
-
-
-  F?r ich wei?, dass dies wie ein vollst?ndiges Eindringen zu Ihrer Ruhe scheinen
- kann, aber zurzeit ,dies ist meine Option f?r Kommunikation zu Ihnen.
-  Dies k?nnte fremd oder wahrscheinlich unwahr scheinen,wegen der Hoehe von
- Ausschuss E-mail,die wir t?glich empfangen, aber ich glaube, dass dies noch der
- echteste Weg ist, einen wahren Charakter zu kontaktieren.Ich heisse Frau
- Jacqueline Benett-Baggs Murchie {Eine Vereinigten Staaten von amerikanischer
- Frau},eine Witwe zu Sp?tem Herrn Benett-Baggs Murchie {Mein Ehemann hat mit
- einem ?l refinary Lukoil in Russland f?r 31 Jahre gearbeitet} Vor seinem
- tragischen Tod in Japan 11. M?rz. 2011.
-
-
-  Mein Ehemann war auf einer Gesch?ftsreise nach Japan Wenn der h?ssliche
- Vorfall, der ihn von mir weggenommen hat, gestreikt hat. Hier ist eine
- Verbindung f?r Fotos der Katastrophe {http://www.boston.com/bigpicture/2011/03/massive_earthquake_hits_japan.h
- tml}Ich
- bin 74years alt und leide an lange Zeit Krebs von der Speiser?hre. Ich bin jetzt
- im Krankenhaus {NCI Hospital PT 13717, Jalan BBN 2/1, Putra Nilai, Negeri
- Sembilan, 71800], Malaysia.
-
-
-  Von allen Anzeigen verschlechtert sich meine Bedingung wirklich und es ist
- ziemlich offensichtlich, dass ich mehr als zwei Monate {gem?? medizinischen
- Berichten von einem Arzt}nicht leben werde.Dies ist, weil die Krebsphase zu
- einer sehr schlechten Phase erreichen hat.Mein sp?ter Ehemann war sehr
- wohlhabend und reich und nach seinem Tod,ich habe alle sein Gesch?ft und
- Reichtum geerbt.
-
-
-  Mein Ehemann hat die Summe von ?18.000.000,00 GBP mit einer Bank in Schottland
- deponiert, Mein Ehemann und ich haben geplant, dieses Geld Zu Benutzen, Und
- ?ffnungs-h?he Eine Gewebefirma Vor Dem Japan Tsunami Krise. Mein Ehemann hat
- mich der Nutznie?er des Treuhandverm?gens genannt, weil wir keine Kinder gehabt
- haben.
-  Da ich nichts habe, f?r mehr zu leben.Der Arzt hat mir geraten,dass ich f?r
- mehr als zwei Monate nicht leben kann,so habe ich mich jetzt entschieden, Teil
- von diesem Reichtum zu teilen,zur Entwicklung von dem wenigen privilegierten
- Leute in Europa beizutragen,da dies die Wunsch von meinem Ehemann Herrn
- Benett-Baggs Murchie bevor seinem Tod ist.
-
-
-  Ich habe Behandlung f?r meinen ?sophagealen Krebs erlebt. Ich habe, da meine
- F?higkeit verloren hat, zu reden, und meine ?rzte haben mir erz?hlt, dass ich
- nur ein paar Wochen habe, zu leben.Des meines Ehemanns Familienwunsch mich
- Verstorbene Um diesen Reichtum zu erlangen. Ich kann mit der Qual nicht leben,
- von dieser riesigen Verantwortung zu welchem des meines sp?ten Ehemanns
- Familienmitglieds anzuvertrauen Weil sie Ungl?ubigen sind. Ich will diesen
- Fonds, zu WOHLT?TIGKEITEN ORGANISATIONEN verteilt zu werden. Bitte, Ich will
- Sie, mir Vertreter zu helfen, als der Nutznie?er, die Fonds von der Bank zu
- sammeln und verteilen Sie zu Wohlt?tigkeit.
-
-
-  Ich bete ehrlich,dass dieses Geld,wenn es zu Ihnen ?berweist ist,sollen Sie
- versichern,dass es f?r den gesagten Zweck benutzt werden muss.Weil ich darauf
- gekommen bin,dass jene Reichtumerwerbung ohne Christus zu erfahren, ist
- Eitelkeit auf Eitelkeit.F?r Ihre Hilfe,habe ich 30% von diesem gesamten Geld
- {?18.000.000,00}f?r Sie gelegt, auf Grund Ihrer pers?nlichen Bem?hung, die Sie
- f?r Ihren pers?nlichen Gebrauch sofort das Geld auf Sie ?berweist ist,
- abziehenwerden.Zuletzt,ich bete und hoffe, dass wenn das Geld schlie?lich auf
- Sie ?berweisen ist, werden Sie es umsichtig gem?? meinem Willen und Gott
- benutzen {der 70% vom Geld zum wenigen privilegierten in Europa zu spenden}.
-
-
-
-
- Ihres in Christus.
-
-
- Frau Jacqueline Benett-Baggs Murchie
- E-MAIL : mrsjacquelinemurchi@gmail.com
+Zoli
