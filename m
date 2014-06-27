@@ -1,93 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754044AbaF0UWg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 16:22:36 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:53210 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753926AbaF0UWe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 16:22:34 -0400
-X-IronPort-AV: E=Sophos;i="5.01,563,1400025600"; 
-   d="scan'208";a="148136578"
-Message-ID: <53ADD269.5050802@citrix.com>
-Date: Fri, 27 Jun 2014 21:22:01 +0100
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753672AbaF0UZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 16:25:56 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:47466 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751264AbaF0UZy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 16:25:54 -0400
+Message-ID: <53ADD34D.4020709@infradead.org>
+Date: Fri, 27 Jun 2014 13:25:49 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <steffen.klassert@secunet.com>, <minipli@googlemail.com>,
-        <dborkman@redhat.com>, <tgraf@suug.ch>, <joe@perches.com>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <xen-devel@lists.xenproject.org>
-Subject: Re: [PATCH net-next] pktgen: Fill the payload optionally with a pattern
-References: <1403642415-9560-1-git-send-email-zoltan.kiss@citrix.com>	<20140625.175417.231387590142784357.davem@davemloft.net>	<53AD32E3.7030405@schaman.hu> <20140627.123028.1903125579029261105.davem@davemloft.net>
-In-Reply-To: <20140627.123028.1903125579029261105.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA2
+To: =?ISO-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>
+CC: Pavel Machek <pavel@ucw.cz>, Valdis Kletnieks <valdis.kletnieks@vt.edu>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        platform-driver-x86@vger.kernel.org,
+        Sonal Santan <sonal.santan@gmail.com>
+Subject: Re: [PATCH v2] Documentation: Rename hpfall.c => freefall.c, fixes
+ for Dell
+References: <1399114077-19314-3-git-send-email-pali.rohar@gmail.com> <20140614085328.GC15326@Nokia-N900> <201406161355.03998@pali> <201406272108.10901@pali>
+In-Reply-To: <201406272108.10901@pali>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27/06/14 20:30, David Miller wrote:
-> From: Zoltan Kiss <zoltan.kiss@schaman.hu>
-> Date: Fri, 27 Jun 2014 10:01:23 +0100
->
->> On 26/06/14 01:54, David Miller wrote:
->>> From: Zoltan Kiss <zoltan.kiss@citrix.com>
->>> Date: Tue, 24 Jun 2014 21:40:15 +0100
->>>
->>>> Introduces a new flag called PATTERN, which puts a non-periodic,
->>>> predicatble
->>>> pattern into the payload. This was useful to reproduce an otherwise
->>>> intermittent
->>>> bug in xen-netback [1], where checksum checking doesn't help.
->>>> The pattern is a repetition of " %lu", a series of increasing numbers
->>>> divided by
->>>> space. The value of the number is the size of the preceding payload
->>>> area. E.g.
->>>> " 1 3 5"..." 1000 1005 1010"
->>>> If the pattern is used, every frag will have its own page, unlike
->>>> before, so it
->>>> needs more memory.
+On 06/27/14 12:08, Pali Rohár wrote:
+> On Monday 16 June 2014 13:55:03 Pali Rohár wrote:
+>> On Saturday 14 June 2014 10:53:29 Pavel Machek wrote:
+>>> On Wed 2014-06-11 10:02:07, Pali Roh?r wrote:
+>>>> Dell kernel driver dell-smo8800 provides same freefall
+>>>> interface as hp_accel so program hpfall.c works also on
+>>>> Dell laptops. So rename it to freefall.c.
 >>>>
->>>> [1] 5837574: xen-netback: Fix grant ref resolution in RX path
+>>>> Dell driver does not provide hp::hddprotect led so make
+>>>> sure that freefall.c works also if hp::hddprotect does
+>>>> not exist in sysfs.
 >>>>
->>>> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
->>> You are changing the page allocation strategy regardless of the
->>> pattern
->>> setting, this is undesirable.
+>>>> Additionally write info to syslog.
+>>>>
+>>>> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+>>>> Cc: Sonal Santan <sonal.santan@gmail.com>
+>>>> ---
+>>>> Changes since v1:
+>>>> * Fixed warnings: Missing a blank line after declarations
+>>>> ---
+>>>>
+>>>>  Documentation/laptops/00-INDEX   |    4 +-
+>>>>  Documentation/laptops/freefall.c |  177
+>>>>  ++++++++++++++++++++++++++++++++++++++
+>>>>  Documentation/laptops/hpfall.c   |  146
+>>>>  ------------------------------- 3 files changed, 179
+>>>>  insertions(+), 148 deletions(-) create mode 100644
+>>>>  Documentation/laptops/freefall.c delete mode 100644
+>>>>  Documentation/laptops/hpfall.c
 >>>
->>> It may be significantly faster to use the same page for all the frags,
->>> and this is absolutely critical for pktgen usage where every
->>> nanosecond
->>> of performance counts.
->> If the PATTERN flag is not used, it always using the pages[0] page, so
->> it falls back to the original way.
->
-> That's now what I see.
->
-> If the size exceeds a page, the current code will use the same page over
-> and over again.
->
-> Your new code always increments 'i' and allocates a new page, regardless
-> of whether the PATTERN flag is set.
->
-> Or do I misread your changes?
+>>> Acked-by: Pavel Machek <pavel@ucw.cz>
+>>>
+>>> 						Pavel
+>>
+>> Randy, Matthew: PING
+>>
+>> first patch which implementing dell-smo8800.ko was merged, but
+>> this patch which updating documentation and fall daemon *not*.
+> 
+> PING.
+> 
+> What is with this patch? Why was still not set to Linus in doc or 
+> platform pull request?
+> 
 
-My first patch uses fragpage to index the pages array, and it is always 
-0, if the PATTERN frag were not specified. (i was incremented by the old 
-code as well btw.)
-The second one (see it in the other thread) adds individual frag size 
-and offset, if that exceeds PAGE_SIZE, then it always reallocate the 
-page, but I guess that's not a terrible thing, as the aim here is not 
-performance testing, but finding bugs. But I can add a further checking 
-to compare the allocation order of the current page with the required one.
-Also, I think I should keep the __GFP_ZERO flags for every page 
-allocation. Even if I fill up the frag with a pattern, it's better to 
-have a deterministic content on the rest of the page, just in case some 
-royal screwup leaks data from the rest of the page.
-Also, turning off the PATTERN flag doesn't reallocate the pages, so the 
-next packet will have the pattern from the previous instead of zeros.
+Sorry, I was on vacation this week, but that does not explain the previous
+delays.
 
-Zoli
+I'll merge it sometime this weekend.
+
+Thanks.
+
+-- 
+~Randy
