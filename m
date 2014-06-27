@@ -1,59 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754159AbaF0QAE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 12:00:04 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:40438 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753367AbaF0QAC (ORCPT
+	id S1753451AbaF0QEf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 12:04:35 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:27101 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751150AbaF0QEe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 12:00:02 -0400
-Message-ID: <53AD94FD.2070400@wwwdotorg.org>
-Date: Fri, 27 Jun 2014 09:59:57 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
+	Fri, 27 Jun 2014 12:04:34 -0400
+Date: Fri, 27 Jun 2014 17:04:10 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: David Rientjes <rientjes@google.com>
+Cc: "msalter@redhat.com" <msalter@redhat.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] clk: tegra: export clock names for debugging
-References: <1403797705-26910-1-git-send-email-pdeschrijver@nvidia.com> <53AC41B0.40307@wwwdotorg.org> <20140627121954.GR3679@tbergstrom-lnx.Nvidia.com>
-In-Reply-To: <20140627121954.GR3679@tbergstrom-lnx.Nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH] arm64: fix CONFIG_ZONE_DMA on systems with no 32-bit
+ addressable DRAM
+Message-ID: <20140627160410.GM15296@arm.com>
+References: <1403499940-11258-1-git-send-email-msalter@redhat.com>
+ <alpine.DEB.2.02.1406241718210.22030@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1406241718210.22030@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27/2014 06:19 AM, Peter De Schrijver wrote:
-> On Thu, Jun 26, 2014 at 05:52:16PM +0200, Stephen Warren wrote:
->> On 06/26/2014 09:48 AM, Peter De Schrijver wrote:
->>> When writing a module for testing or debugging purposes, there is no way to
->>> get hold of clk handles. This patch solves this by exposing all valid clocks
->>> as clkdev's for the virtual device tegra-clk-debug.
->>
->> This is to support clk_get_sys()?
->>
+On Wed, Jun 25, 2014 at 01:26:02AM +0100, David Rientjes wrote:
+> On Mon, 23 Jun 2014, Mark Salter wrote:
 > 
-> Yes.
+> > Commit 2d5a5612bc (arm64: Limit the CMA buffer to 32-bit if ZONE_DMA)
+> > forces the CMA buffer to be 32-bit addressable if CONFIG_ZONE_DMA is
+> > defined. This breaks CMA on platforms with no 32-bit addressable DRAM.
+> > This patch checks to make sure there is 32-bit addressable DRAM before
+> > setting the 32-bit limit. If there is none, no limit is placed on the
+> > CMA buffer. This allows a single kernel (with CONFIG_ZONE_DMA defined)
+> > to support platforms requiring the 32-bit limit and platforms with no
+> > 32-bit limit.
+> > 
+> > Signed-off-by: Mark Salter <msalter@redhat.com>
+> > ---
+> >  arch/arm64/mm/init.c | 11 ++++++++++-
+> >  1 file changed, 10 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/arch/arm64/mm/init.c b/arch/arm64/mm/init.c
+> > index c5415e2..2925576 100644
+> > --- a/arch/arm64/mm/init.c
+> > +++ b/arch/arm64/mm/init.c
+> > @@ -149,8 +149,17 @@ void __init arm64_memblock_init(void)
+> >  	early_init_fdt_scan_reserved_mem();
+> >  
+> >  	/* 4GB maximum for 32-bit only capable devices */
+> > -	if (IS_ENABLED(CONFIG_ZONE_DMA))
+> > +	if (IS_ENABLED(CONFIG_ZONE_DMA)) {
+> >  		dma_phys_limit = dma_to_phys(NULL, DMA_BIT_MASK(32)) + 1;
+> > +		/*
+> > +		 * If platform doesn't have DRAM within the dma_phys_limit,
+> > +		 * remove the limit altogether. This allows one kernel (with
+> > +		 * CONFIG_ZONE_DMA defined) to support platforms with 32-bit
+> > +		 * only devices and platforms with no 32-bit DRAM.
+> > +		 */
+> > +		if (dma_phys_limit <= memblock_start_of_DRAM())
+> > +			dma_phys_limit = 0;
+> > +	}
+> >  	dma_contiguous_reserve(dma_phys_limit);
+> >  
+> >  	memblock_allow_resize();
 > 
->> I guess this seems fine, so feel free to apply it, but I slightly wonder
->> why not just include this change as part of the presumably local and
->> never-to-be-upstreamed test/dev module?
-> 
-> The idea is to allow local debug modules to get hold of the struct clk *. I
-> don't think that's possible without using clk_get_sys()?
+> It is a shame that we have very similar logic, all dependent on 
+> memblock_start_of_DRAM(), in both zone_sizes_init() and 
+> arm64_memblock_init() and the latter having to be called before the 
+> former.  I assume there's no way to make this cleaner in the bootstrap 
+> code so the dma_to_phys(NULL, DMA_BIT_MASK(32)) + 1 limit can be handled 
+> properly in a single location?
 
-Well, for a debug hack you can always just add extra clock entries into
-some DT node and so avoid clk_get_sys:-)
+Probably and I suggested something along the lines of only calculating
+it once in reply to the "[PATCH] arm64: make CONFIG_ZONE_DMA user
+settable" message. I'll follow up on the other thread (Mark considers
+there's a penalty issue with all memory in the DMA zone).
 
-My point wasn't so much about not using clk_get_sys in a debug driver,
-but more that if this patch is only required to support non-upstreamed
-debug code, perhaps this patch should stay downstream along with that
-non-upstreamed debug code. That said, I'm not really objecting to it,
-just making a minor comment.
+-- 
+Catalin
