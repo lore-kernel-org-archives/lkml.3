@@ -1,50 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753654AbaF0Llh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 07:41:37 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:37810 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753457AbaF0Llg (ORCPT
+	id S1753699AbaF0LmQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 07:42:16 -0400
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:56009 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752825AbaF0LmO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 07:41:36 -0400
-Message-ID: <53AD586A.40900@redhat.com>
-Date: Fri, 27 Jun 2014 13:41:30 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Fri, 27 Jun 2014 07:42:14 -0400
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, lkml <linux-kernel@vger.kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, x86-ml <x86@kernel.org>,
-        kvm@vger.kernel.org, =?UTF-8?B?SsO2cmcgUsO2ZGVs?= <joro@8bytes.org>
-Subject: Re: __schedule #DF splat
-References: <20140625153227.GA13845@pd.tnic> <20140625202650.GC13845@pd.tnic> <20140627101831.GB23153@pd.tnic>
-In-Reply-To: <20140627101831.GB23153@pd.tnic>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Date: Fri, 27 Jun 2014 19:42:14 +0800
+Message-ID: <CAJKoSVTZ6ca2+S0HkSkpFYjDOrUvihF05pr6jJnm29b7yzxAkg@mail.gmail.com>
+Subject: [PATCH] staging: wlan-ng/hfa384x_usb.c: add blank line after declarations
+From: Cheng-Wei Lee <lee.rhapsody@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sherif Shehab Aldin <shehabaldin.sherif@gmail.com>,
+        Avinash Kumar <avi.kp.137@gmail.com>,
+        Peter Senna Tschudin <peter.senna@gmail.com>
+Cc: devel <devel@driverdev.osuosl.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 27/06/2014 12:18, Borislav Petkov ha scritto:
-> Joerg says I should bisect but I'm busy with other stuff. If people are
-> interested in chasing this further, I could free up some time to do
-> so...
+This patch fixes the following checkpatch.pl issues in hfa384x_usb.c:
+WARNING: Missing a blank line after declarations
 
-Please first try "-M pc-1.7" on the 2.0 QEMU.  If it fails, please do 
-bisect it.  A QEMU bisection between one release only usually takes only 
-half an hour or so for me.
+Signed-off-by: Quentin Lee <lee.rhapsody@gmail.com>
+---
+ drivers/staging/wlan-ng/hfa384x_usb.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-I use
-
-../configure --target-list=x86_64-softmmu && make distclean &&
-../configure --target-list=x86_64-softmmu &&
-make -j8 subdir-x86_64-softmmu
-
-Until it's below 50 commits.  After that point just "make -j8 
-subdir-x86_64-softmmu" should do.  This ensures that build system 
-changes do not bite you as you move back and forth in time.
-
-Thanks!
-
-Paolo
+diff --git a/drivers/staging/wlan-ng/hfa384x_usb.c
+b/drivers/staging/wlan-ng/hfa384x_usb.c
+index 98343ff7..07cee56 100644
+--- a/drivers/staging/wlan-ng/hfa384x_usb.c
++++ b/drivers/staging/wlan-ng/hfa384x_usb.c
+@@ -3705,6 +3705,7 @@ static void hfa384x_usbout_callback(struct urb *urb)
+ 		case -EPIPE:
+ 			{
+ 				hfa384x_t *hw = wlandev->priv;
++
+ 				netdev_warn(hw->wlandev->netdev,
+ 					    "%s tx pipe stalled: requesting reset\n",
+ 					    wlandev->netdev->name);
+-- 
+1.7.9.5
