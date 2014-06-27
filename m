@@ -1,65 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367AbaF0QIw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 12:08:52 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:41076 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751023AbaF0QIt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 12:08:49 -0400
-Date: Fri, 27 Jun 2014 18:08:41 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, x86-ml <x86@kernel.org>,
-        Tony Luck <tony.luck@intel.com>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] 2 RAS fixes for 3.17, refreshed
-Message-ID: <20140627160841.GH23153@pd.tnic>
-References: <20140622164603.GA3385@pd.tnic>
- <20140624132439.GH4439@pd.tnic>
- <20140624132701.GB28885@laptop.dumpdata.com>
- <20140627150155.GG23153@pd.tnic>
- <53AD89FB.7090609@oracle.com>
+	id S1753681AbaF0QJg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 12:09:36 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33098 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753142AbaF0QJe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 12:09:34 -0400
+Date: Fri, 27 Jun 2014 17:09:02 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Beniamino Galvani <b.galvani@gmail.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Wenyou Yang <wenyou.yang@atmel.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Heiko Stuebner <heiko@sntech.de>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Message-ID: <20140627160902.GR23300@sirena.org.uk>
+References: <1403451105-31929-1-git-send-email-b.galvani@gmail.com>
+ <1403451105-31929-2-git-send-email-b.galvani@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="jIKIjq1mcf2dngXY"
 Content-Disposition: inline
-In-Reply-To: <53AD89FB.7090609@oracle.com>
+In-Reply-To: <1403451105-31929-2-git-send-email-b.galvani@gmail.com>
+X-Cookie: But it does move!
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/5] regulator: act8865: fix parsing of platform data
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 27, 2014 at 11:12:59AM -0400, Boris Ostrovsky wrote:
-> Yes, it fails because xen_late_init_mcelog() registers /dev/mcelog and (I
-> think) it happens before mcheck_init_device().
 
-Yes, mcheck_init_device is device_initcall_sync() while
-xen_late_init_mcelog() is device_initcall().
+--jIKIjq1mcf2dngXY
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> In other words, misc_register() expected to fail in mcheck/mce.c on
-> (privileged?) PV guests (provided right CONFIG_XEN_* is set).
+On Sun, Jun 22, 2014 at 05:31:41PM +0200, Beniamino Galvani wrote:
+> The driver loops through all available regulators (ACT8865_REG_NUM)
+> and accesses pdata->regulators[i].platform_data without checking the
+> actual value of num_regulators in platform data, potentially causing a
+> invalid memory access.
 
-So
+Applied, thanks.
 
-	cef12ee52b05 ("xen/mce: Add mcelog support for Xen platform")
+--jIKIjq1mcf2dngXY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-made it this way so that xen's init routine runs first.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-So it is not the case that misc_register() fails often on xen but it is
-*supposed* to fail by design, when running in dom0. And *then* you need
-the notifier *not* unregistered on the error path so that the timers do
-get deleted properly.
+iQIcBAEBAgAGBQJTrZcbAAoJELSic+t+oim9pccP/1JEECFhxMIuuJIwGyPgTRcE
+Y9AF6y90pqSTlKjvctCRag2nVzpD9l8XGqdGASsagIaZFrsFi+McxARz7iVFguvP
+2v2CtnA6UOOvXJFC3xvpI0X+WCDl95wj2CfTCrX4QXF4/pxIkArEfxO05UsRW1os
+ucgz1xY9G7hjA5QRYsJ/aCBM2W/ZZ87p58X+NBMZ/P3akV/JZv6WxNfDdaEmZZYm
+lH7aBOCooMkU+j9p4N/tiqs59c3uwu28kz+rF/ehsxtH8bcBwQ2Qnr+JX1zLwlya
+3odHFP8hSQhdFWIrfxVaSaFBgsRcRb4hQZnnNbXgf4i1dFBz2SoMoJa5TUTwugaz
+4iDLzAwFnlZm72sMwYq+RXvT1JrpQu08Gh1iYB4I+UCuGYB1PscIngddGwx+d24C
+2kq6qbj+5/kQKEMOLdY2o7oidQe4BdsNNifwHIIE6WLfS6bIiyr76ctatjRol2qZ
+GOvDfynBPEZ81aKOi8biB3JfOnUCV7+qACTHBWEM54A3Fm4ZZsZQSNQeBFNLk6da
+r5QyG6d7k3p2FGkTh2jm5kGjwTzAya9HRpq5miB3s9m6GIGxNnX1nq2mClWX2j7F
+ZCjdEv2vPoN602xlahkRah7PCAxAAg5YXEze7vKXuUjfmjXtwdSZLAa0wUPzrCZX
+XYaNAUgIjYVkboSn4K6j
+=0ZDs
+-----END PGP SIGNATURE-----
 
-Ok, I see it now. Frankly, I'm not really sure I want to rush this in
-now because it might break something else, Who TF knows what.
-
-Right now my gut feeling tells me we should still queue it for 3.17 and
-have it run for a while in linux-next. We can backport it to stable
-later after some testing...
-
-Hmmm.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+--jIKIjq1mcf2dngXY--
