@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753490AbaF0Mtt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 08:49:49 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:35503 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752306AbaF0Mtr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 08:49:47 -0400
-Date: Fri, 27 Jun 2014 13:49:49 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Rob Herring <robherring2@gmail.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jon Masters <jonathan@jonmasters.org>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Michal Simek <monstr@monstr.eu>
-Subject: Re: [PATCH v7 1/6] pci: Introduce pci_register_io_range() helper
- function.
-Message-ID: <20140627124949.GR26276@arm.com>
-References: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com>
- <20140626085926.GB11244@arm.com>
- <CAL_JsqKCHf6VXR3FFcBSu1xuhP54dYsAJCZwT-X9p5iTZAOJfQ@mail.gmail.com>
- <6381366.2IfqZj1r0B@wuerfel>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6381366.2IfqZj1r0B@wuerfel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753601AbaF0MvI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 08:51:08 -0400
+Received: from mail.sth.sze.hu ([193.224.129.230]:55079 "EHLO mail.sth.sze.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750858AbaF0MvG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 08:51:06 -0400
+From: Andras@mail.sth.sze.hu, Kovacs@mail.sth.sze.hu
+To: Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Andras Kovacs <andras@sth.sze.hu>
+Subject: [PATCH 1/1] Add support for Corsair usb dongle
+Date: Fri, 27 Jun 2014 14:50:11 +0200
+Message-Id: <1403873411-12889-1-git-send-email-andras@sth.sze.hu>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 27, 2014 at 12:03:34PM +0100, Arnd Bergmann wrote:
-> On Thursday 26 June 2014 19:44:21 Rob Herring wrote:
-> > I don't agree arm32 is harder than microblaze. Yes, converting ALL of
-> > arm would be, but that is not necessary. With Liviu's latest branch
-> > the hacks I previously needed are gone (thanks!), and this is all I
-> > need to get Versatile PCI working (under QEMU):
-> 
-> I meant converting all of arm32 would be harder, but I agree we don't
-> have to do it. It would be nice to convert all of the drivers/pci/host
-> drivers though, iow all multiplatform-enabled ones, and leaving the
-> current arm32 pci implementation for the platforms we don't want to
-> convert to multiplatform anyway (footbridge, iop, ixp4xx, ks8695 (?),
-> pxa, sa1100).
+From: Andras Kovacs <andras@sth.sze.hu>
 
-I'm more than happy to convert the generic host controller we merged
-recently, but I'd probably want the core changes merged first so that I
-know I'm not wasting my time!
+Corsair USB Dongles are shipped with Corsair AXi series PSUs.
+These are cp210x serial usb devices, so make driver detect these.
+I have a program, that can get information from these PSUs.
 
-Will
+Tested with 2 different dongles shipped with Corsair AX860i and
+AX1200i units.
+
+Signed-off-by: Andras Kovacs <andras@sth.sze.hu>
+---
+ drivers/usb/serial/cp210x.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
+index 762e4a5..330df5c 100644
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -153,6 +153,7 @@ static const struct usb_device_id id_table[] = {
+ 	{ USB_DEVICE(0x1843, 0x0200) }, /* Vaisala USB Instrument Cable */
+ 	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
+ 	{ USB_DEVICE(0x1ADB, 0x0001) }, /* Schweitzer Engineering C662 Cable */
++	{ USB_DEVICE(0x1B1C, 0x1C00) }, /* Corsair USB Dongle */
+ 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
+ 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
+ 	{ USB_DEVICE(0x1E29, 0x0501) }, /* Festo CMSP */
+-- 
+1.7.10.4
+
