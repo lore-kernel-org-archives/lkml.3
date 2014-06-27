@@ -1,177 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752901AbaF0IGZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 04:06:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50215 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751836AbaF0IGT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 04:06:19 -0400
-Message-ID: <53AD25F6.6030007@suse.de>
-Date: Fri, 27 Jun 2014 10:06:14 +0200
-From: =?ISO-8859-15?Q?Andreas_F=E4rber?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752928AbaF0IJF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 04:09:05 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:45804 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752462AbaF0II7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 04:08:59 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Jingoo Han'" <jg1.han@samsung.com>,
+        "'Chen, Alvin'" <alvin.chen@intel.com>,
+        "'Alan Stern'" <stern@rowland.harvard.edu>
+CC: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "'Sergei Shtylyov'" <sergei.shtylyov@cogentembedded.com>,
+        "'Boon Leong Ong'" <boon.leong.ong@intel.com>
+Subject: RE: [PATCH v2] USB: ehci-pci: USB host controller support for Intel
+ Quark X1000
+Thread-Topic: [PATCH v2] USB: ehci-pci: USB host controller support for
+ Intel Quark X1000
+Thread-Index: AQHPkbfEDtgm/h3R10ChmJIAlPb4S5uETZIAgAAA9ICAAEqUIA==
+Date: Fri, 27 Jun 2014 08:08:09 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D17267F31@AcuExch.aculab.com>
+References: <1403868276-12558-1-git-send-email-alvin.chen@intel.com>
+ <1403868276-12558-2-git-send-email-alvin.chen@intel.com>
+ <000401cf91c0$e3a98600$aafc9200$%han@samsung.com>
+ <000601cf91c1$5d25fcc0$1771f640$%han@samsung.com>
+In-Reply-To: <000601cf91c1$5d25fcc0$1771f640$%han@samsung.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Lee Jones <lee.jones@linaro.org>
-CC: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
-        Daniel Stone <daniels@collabora.com>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 08/14] mfd: max77802: Add DT binding documentation
-References: <1403806546-31122-1-git-send-email-javier.martinez@collabora.co.uk> <1403806546-31122-9-git-send-email-javier.martinez@collabora.co.uk>
-In-Reply-To: <1403806546-31122-9-git-send-email-javier.martinez@collabora.co.uk>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 26.06.2014 20:15, schrieb Javier Martinez Canillas:
-> Add Device Tree binding documentation for Maxim 77802 PMIC.
-> 
-> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> ---
-> 
-> Changes since v4: None
-> 
-> Changes since v3: None
-> 
-> Changes since v2:
->  - Explain better the Dynamic Voltage Scaling (DVS) support in some Buck
->    regulators and the max77802,pmic-buck-{dvs,selb}-gpios properties.
->    Suggested by Mark Brown.
-> 
->  Documentation/devicetree/bindings/mfd/max77802.txt | 97 ++++++++++++++++++++++
->  1 file changed, 97 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/mfd/max77802.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/mfd/max77802.txt b/Documentation/devicetree/bindings/mfd/max77802.txt
-> new file mode 100644
-> index 0000000..f3b67c5
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/mfd/max77802.txt
-> @@ -0,0 +1,97 @@
-> +Maxim MAX77802 multi-function device
-> +
-> +MAX77802 is a Mulitifunction device with PMIC, RTC and Charger on chip. It is
+From: Jingoo Han
 
-"Multifunction"?
+...
+> /* The maximal threshold value is 0x80, which means 512 bytes */
+> #define EHCI_THRESHOLD_512BYTES		0x80
+> #define EHCI_THRESHOLD_508BYTES		0x79
 
-> +interfaced to host controller using i2c interface. PMIC, Charger and RTC
-> +submodules are addressed using same i2c slave address.
-> +
-> +Buck regulators 1, 2, 3, 4 and 6 include Dynamic Voltage Scaling (DVS) that
-> +allows each output voltage to change dynamically. Each Buck output voltage
-> +is selected using a set of external inputs: DVS1-3 and SELB1, 2, 3 and 6.
-> +
-> +There are 8 DVS registers that can be used to configure the output voltage
-> +for each Buck regulator and which one is active is controled by DVSx lines.
-> +
-> +SELBx lines are used to control if individual Buck lines are ON or OFF.
-> +
-> +This document describes the binding for mfd device and PMIC submodule.
-> +
-> +Binding for the built-in 32k clock generator block is defined separately
-> +in bindings/clk/maxim,max77802.txt file.
-> +
-> +Required properties:
-> +- compatible : Must be "maxim,max77802";
-> +- reg : Specifies the i2c slave address of PMIC block.
-> +- interrupts : This i2c device has an IRQ line connected to the main SoC.
-> +- interrupt-parent : The parent interrupt controller.
-> +
-> +Optional properties:
-> +- max77802,pmic-buck-default-dvs-idx: We'll always write this DVS index in the
-> +  PMIC for Bucks with DVS.
-> +  NOTE: at the moment these bindings don't include enough details for actual
-> +  GPIO-DVS--this just lets you choose which single slot to use.
-> +
-> +- max77802,pmic-buck-dvs-gpios: A GPIO array where each GPIO is connected to a
-> +  DVS line. We'll try to set these GPIOs to match pmic-buck-default-dvs-idx at
-> +  probe time if they are defined. If some or all of these GPIOs are not defined
-> +  it's assumed that the board has any missing GPIOs hardwired to match
-> +  pmic-buck-default-dvs-idx.
-> +
-> +- max77802,pmic-buck-selb-gpios: A GPIO array where each GPIO is connected to a
-> +  SELBx line. Should be five values: 1, 2, 3, 4, 6. It is strongly suggested to
-> +  include these GPIOs if there's any chance that changing DVS GPIOs one line at
-> +  a time might glitch your DVS values.
-> +
-> +Optional node:
-> +- regulators : The regulators of max77802 have to be instantiated
-> +  under subnode named "regulators" using the following format.
-> +
-> +	regulator_name {
+It would be better to define these using expressions. So:
+#define EHCI_THRESHOLD_512BYTES		(512u / 8u)
+#define EHCI_THRESHOLD_508BYTES		(508u / 8u)
 
-The convention, I was told, would be regulator-name as node name.
+Then you might decide to use:
+#define EHCI_THRESHOLD(size) ((size) / 8u)
 
-> +		standard regulator constraints....
-> +	};
-> +	refer Documentation/devicetree/bindings/regulator/regulator.txt
-> +
-> +  The regulator node name should be initialized with a string
-> +to get matched with their hardware counterparts as follow:
-> +
-> +	-LDOn 	:	for LDOs, where n can lie in range 1 to 35.
-> +			example: LDO1, LDO2, LDO35.
-> +	-BUCKn 	:	for BUCKs, where n can lie in range 1 to 10.
-> +			example: BUCK1, BUCK5, BUCK10.
-> +Example:
-> +
-> +	max77802@09 {
-> +		compatible = "maxim,max77802";
-> +		interrupt-parent = <&wakeup_eint>;
-> +		interrupts = <26 0>;
-> +		reg = <0x09>;
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +
-> +		max77802,pmic-buck-default-dvs-idx = <1>;
-> +		max77802,pmic-buck-dvs-gpios = <&gpy7 6 0>,
-> +					       <&gpj4 2 0>,
-> +					       <&gpj4 3 0>;
-> +		max77802,pmic-buck-selb-gpios = <&gph0 2 0>,
-> +						<&gph0 3 0>,
-> +						<&gph0 4 0>,
-> +						<&gph0 5 0>,
-> +						<&gph0 6 0>;
-> +
-> +		regulators {
-> +			ldo11_reg: LDO11 {
-> +				regulator-compatible = "LDO11";
-> +				regulator-name = "vdd_ldo11";
-> +				regulator-min-microvolt = <1900000>;
-> +				regulator-max-microvolt = <1900000>;
-> +				regulator-always-on;
-> +			};
-> +
-> +			buck1_reg {
+Then realise that the names are not generic EHCI, so need some
+driver-specific prefix (for namespace reasons).
 
-Missing ": BUCK1"
+And that the defines are probably limit values, and should
+be named as such.
 
-> +				regulator-compatible = "BUCK1";
-> +				regulator-name = "vdd_mif";
-> +				regulator-min-microvolt = <950000>;
-> +				regulator-max-microvolt = <1300000>;
-> +				regulator-always-on;
-> +				regulator-boot-on;
-> +			};
-> +	};
+	David
 
-Regards,
-Andreas
 
--- 
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
-GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
+
