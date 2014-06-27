@@ -1,62 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752965AbaF0Hs5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 03:48:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49897 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751836AbaF0Hs4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 03:48:56 -0400
-Message-ID: <53AD21E5.1030609@suse.de>
-Date: Fri, 27 Jun 2014 09:48:53 +0200
-From: =?ISO-8859-15?Q?Andreas_F=E4rber?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1753007AbaF0Hux (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 03:50:53 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:62315 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752750AbaF0Huv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 03:50:51 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: zhangfei <zhangfei.gao@linaro.org>, mark.rutland@arm.com,
+        devicetree@vger.kernel.org, haifeng.yan@linaro.org,
+        linux-kernel@vger.kernel.org, Kishon Vijay Abraham I <kishon@ti.com>,
+        jchxue@gmail.com, Jiancheng Xue <xuejiancheng@huawei.com>
+Subject: Re: [PATCH v2 1/2] Documentation: Document Hisilicon hix5hd2 sata PHY
+Date: Fri, 27 Jun 2014 09:50:46 +0200
+Message-ID: <11262017.C011KreL6u@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <53ACE6EE.4050300@linaro.org>
+References: <1403687648-29082-1-git-send-email-zhangfei.gao@linaro.org> <4989178.vejv39dnj8@wuerfel> <53ACE6EE.4050300@linaro.org>
 MIME-Version: 1.0
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Lee Jones <lee.jones@linaro.org>
-CC: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
-        Daniel Stone <daniels@collabora.com>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 03/14] clk: max77686: Add DT include for MAX77686 PMIC
- clock
-References: <1403806546-31122-1-git-send-email-javier.martinez@collabora.co.uk> <1403806546-31122-4-git-send-email-javier.martinez@collabora.co.uk>
-In-Reply-To: <1403806546-31122-4-git-send-email-javier.martinez@collabora.co.uk>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:ZFoMd0ud1yVbrEuCft36j9hfS9yJ9MtC1ohmb0H9x6C
+ BWhu8sKn0B0uJYQWTV7Zge/IAiuVxzRdBWuDBpGxl4gLyq8Vt9
+ nO9DJsZLog4vwK3lqC74phYRq2w+AJVd04TPnCK+rX+xkw0y1H
+ Ssv5xvChviWw9y0QhHpudDbxO0xqFTAsyN+E/qYSfa5JZlYeb7
+ mOpUEr1Zcrim8KopBzD8qx3F5ospxJb7B+WzFWLcxBEN5noEHJ
+ gvxF8kF2OulpNJ1j3Rq5CeQyA8KvuZBnWCwSlb05Roh6uIhWZG
+ 2fBvBXCeqbvetFtDte/U1+IxXtDzHm+vNqqf5N+pXJYvSDLJOp
+ x/2XchJT03H2ea7c+i6k=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 26.06.2014 20:15, schrieb Javier Martinez Canillas:
-> This patch adds a dt-binding include for Maxim 77686
-> PMIC clock IDs that can be to be shared between the
-
-"can be shared"?
-
-Regards,
-Andreas
-
-> clk-max77686 clock driver and DeviceTree source files.
+On Friday 27 June 2014 11:37:18 zhangfei wrote:
+> >
 > 
-> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> ---
+> Sorry for the confusion.
 > 
-> Changes since v4: None
-> 
-> Changes since v3: None
+> The phy is rather an analog controller, without standard register.
+> Instead, the phy interface is just some pin / analog interface.
+> The register is in fact hix5hd2 register, controls all the analog 
+> output, including reset, power, speed, para tunning.
 
--- 
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
-GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
+Ok, thanks for the explanation.
+
+> Even the same phy is used in other soc, they can not share this driver, 
+> since the connection must be different, as well as internal soc register 
+> layout.
+> Only if the same controller & phy are reused in other hisilicon soc, 
+> this driver can be shared.
+> 
+> Since what we control is hix5hd2 controller itself, so it may not 
+> suitable to put snps here.
+
+Makes sense.
+
+> And about hix5hd2 name: x is not wildcard.
+> 
+> Currently hix5hd2 is series of hi3716c v200, hi3719c v100, hi3718c v100.
+> They are same soc, except minus pin assembles different.
+> 
+> However, not all hi37x is in this series, for example hi3716c v100 is a 
+> different soc.
+> 
+> In the future hi3719m, hi3718m may also plan to add to hix5hd2 series.
+> The difference will be different cpu core number, different gpu core 
+> number. Also use different ethernet controller.
+
+Ah, I think you explained this before, sorry for misremembering it.
+ 
+> So we may still keep "hisilicon,hix5hd2-sata-phy" unchanged.
+> What do you think?
+
+Yes, please keep this string, it's good.
+
+Thanks for your patience,
+
+	Arnd
