@@ -1,295 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752569AbaF0FwS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 01:52:18 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:56233 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751127AbaF0FwQ (ORCPT
+	id S1752697AbaF0Fwv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 01:52:51 -0400
+Received: from smtprelay0084.hostedemail.com ([216.40.44.84]:49602 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750734AbaF0Fwu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 01:52:16 -0400
-X-Original-SENDERIP: 10.177.220.145
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Fri, 27 Jun 2014 14:57:08 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+	Fri, 27 Jun 2014 01:52:50 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:2915:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3873:4321:5007:7652:7904:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: money59_3595b5106181e
+X-Filterd-Recvd-Size: 1589
+Message-ID: <1403848366.7977.92.camel@joe-AO725>
+Subject: Re: [PATCH] HID: roccat: Drop cast
+From: Joe Perches <joe@perches.com>
+To: Julia Lawall <julia.lawall@lip6.fr>
+Cc: Himangi Saraogi <himangi774@gmail.com>,
+        Stefan Achatz <erazor_de@users.sourceforge.net>,
+        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 04/13] mm, compaction: move pageblock checks up from
- isolate_migratepages_range()
-Message-ID: <20140627055708.GA9511@js1304-P5Q-DELUXE>
-References: <1403279383-5862-1-git-send-email-vbabka@suse.cz>
- <1403279383-5862-5-git-send-email-vbabka@suse.cz>
- <20140624083325.GG4836@js1304-P5Q-DELUXE>
- <53A99C7A.7000806@suse.cz>
- <20140625005335.GA29373@js1304-P5Q-DELUXE>
- <53AA8F67.5020700@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53AA8F67.5020700@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Thu, 26 Jun 2014 22:52:46 -0700
+In-Reply-To: <alpine.DEB.2.02.1406270729110.2016@localhost6.localdomain6>
+References: <20140626172852.GA2878@himangi-Dell>
+	 <1403804286.7977.58.camel@joe-AO725>
+	 <alpine.DEB.2.02.1406270729110.2016@localhost6.localdomain6>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 10:59:19AM +0200, Vlastimil Babka wrote:
-> On 06/25/2014 02:53 AM, Joonsoo Kim wrote:
-> >On Tue, Jun 24, 2014 at 05:42:50PM +0200, Vlastimil Babka wrote:
-> >>On 06/24/2014 10:33 AM, Joonsoo Kim wrote:
-> >>>On Fri, Jun 20, 2014 at 05:49:34PM +0200, Vlastimil Babka wrote:
-> >>>>isolate_migratepages_range() is the main function of the compaction scanner,
-> >>>>called either on a single pageblock by isolate_migratepages() during regular
-> >>>>compaction, or on an arbitrary range by CMA's __alloc_contig_migrate_range().
-> >>>>It currently perfoms two pageblock-wide compaction suitability checks, and
-> >>>>because of the CMA callpath, it tracks if it crossed a pageblock boundary in
-> >>>>order to repeat those checks.
-> >>>>
-> >>>>However, closer inspection shows that those checks are always true for CMA:
-> >>>>- isolation_suitable() is true because CMA sets cc->ignore_skip_hint to true
-> >>>>- migrate_async_suitable() check is skipped because CMA uses sync compaction
-> >>>>
-> >>>>We can therefore move the checks to isolate_migratepages(), reducing variables
-> >>>>and simplifying isolate_migratepages_range(). The update_pageblock_skip()
-> >>>>function also no longer needs set_unsuitable parameter.
-> >>>>
-> >>>>Furthermore, going back to compact_zone() and compact_finished() when pageblock
-> >>>>is unsuitable is wasteful - the checks are meant to skip pageblocks quickly.
-> >>>>The patch therefore also introduces a simple loop into isolate_migratepages()
-> >>>>so that it does not return immediately on pageblock checks, but keeps going
-> >>>>until isolate_migratepages_range() gets called once. Similarily to
-> >>>>isolate_freepages(), the function periodically checks if it needs to reschedule
-> >>>>or abort async compaction.
-> >>>>
-> >>>>Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-> >>>>Cc: Minchan Kim <minchan@kernel.org>
-> >>>>Cc: Mel Gorman <mgorman@suse.de>
-> >>>>Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> >>>>Cc: Michal Nazarewicz <mina86@mina86.com>
-> >>>>Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> >>>>Cc: Christoph Lameter <cl@linux.com>
-> >>>>Cc: Rik van Riel <riel@redhat.com>
-> >>>>Cc: David Rientjes <rientjes@google.com>
-> >>>>---
-> >>>>  mm/compaction.c | 112 +++++++++++++++++++++++++++++---------------------------
-> >>>>  1 file changed, 59 insertions(+), 53 deletions(-)
-> >>>>
-> >>>>diff --git a/mm/compaction.c b/mm/compaction.c
-> >>>>index 3064a7f..ebe30c9 100644
-> >>>>--- a/mm/compaction.c
-> >>>>+++ b/mm/compaction.c
-> >>>>@@ -132,7 +132,7 @@ void reset_isolation_suitable(pg_data_t *pgdat)
-> >>>>   */
-> >>>>  static void update_pageblock_skip(struct compact_control *cc,
-> >>>>  			struct page *page, unsigned long nr_isolated,
-> >>>>-			bool set_unsuitable, bool migrate_scanner)
-> >>>>+			bool migrate_scanner)
-> >>>>  {
-> >>>>  	struct zone *zone = cc->zone;
-> >>>>  	unsigned long pfn;
-> >>>>@@ -146,12 +146,7 @@ static void update_pageblock_skip(struct compact_control *cc,
-> >>>>  	if (nr_isolated)
-> >>>>  		return;
-> >>>>
-> >>>>-	/*
-> >>>>-	 * Only skip pageblocks when all forms of compaction will be known to
-> >>>>-	 * fail in the near future.
-> >>>>-	 */
-> >>>>-	if (set_unsuitable)
-> >>>>-		set_pageblock_skip(page);
-> >>>>+	set_pageblock_skip(page);
-> >>>>
-> >>>>  	pfn = page_to_pfn(page);
-> >>>>
-> >>>>@@ -180,7 +175,7 @@ static inline bool isolation_suitable(struct compact_control *cc,
-> >>>>
-> >>>>  static void update_pageblock_skip(struct compact_control *cc,
-> >>>>  			struct page *page, unsigned long nr_isolated,
-> >>>>-			bool set_unsuitable, bool migrate_scanner)
-> >>>>+			bool migrate_scanner)
-> >>>>  {
-> >>>>  }
-> >>>>  #endif /* CONFIG_COMPACTION */
-> >>>>@@ -345,8 +340,7 @@ isolate_fail:
-> >>>>
-> >>>>  	/* Update the pageblock-skip if the whole pageblock was scanned */
-> >>>>  	if (blockpfn == end_pfn)
-> >>>>-		update_pageblock_skip(cc, valid_page, total_isolated, true,
-> >>>>-				      false);
-> >>>>+		update_pageblock_skip(cc, valid_page, total_isolated, false);
-> >>>>
-> >>>>  	count_compact_events(COMPACTFREE_SCANNED, nr_scanned);
-> >>>>  	if (total_isolated)
-> >>>>@@ -474,14 +468,12 @@ unsigned long
-> >>>>  isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
-> >>>>  		unsigned long low_pfn, unsigned long end_pfn, bool unevictable)
-> >>>>  {
-> >>>>-	unsigned long last_pageblock_nr = 0, pageblock_nr;
-> >>>>  	unsigned long nr_scanned = 0, nr_isolated = 0;
-> >>>>  	struct list_head *migratelist = &cc->migratepages;
-> >>>>  	struct lruvec *lruvec;
-> >>>>  	unsigned long flags;
-> >>>>  	bool locked = false;
-> >>>>  	struct page *page = NULL, *valid_page = NULL;
-> >>>>-	bool set_unsuitable = true;
-> >>>>  	const isolate_mode_t mode = (cc->mode == MIGRATE_ASYNC ?
-> >>>>  					ISOLATE_ASYNC_MIGRATE : 0) |
-> >>>>  				    (unevictable ? ISOLATE_UNEVICTABLE : 0);
-> >>>>@@ -545,28 +537,6 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
-> >>>>  		if (!valid_page)
-> >>>>  			valid_page = page;
-> >>>>
-> >>>>-		/* If isolation recently failed, do not retry */
-> >>>>-		pageblock_nr = low_pfn >> pageblock_order;
-> >>>>-		if (last_pageblock_nr != pageblock_nr) {
-> >>>>-			int mt;
-> >>>>-
-> >>>>-			last_pageblock_nr = pageblock_nr;
-> >>>>-			if (!isolation_suitable(cc, page))
-> >>>>-				goto next_pageblock;
-> >>>>-
-> >>>>-			/*
-> >>>>-			 * For async migration, also only scan in MOVABLE
-> >>>>-			 * blocks. Async migration is optimistic to see if
-> >>>>-			 * the minimum amount of work satisfies the allocation
-> >>>>-			 */
-> >>>>-			mt = get_pageblock_migratetype(page);
-> >>>>-			if (cc->mode == MIGRATE_ASYNC &&
-> >>>>-			    !migrate_async_suitable(mt)) {
-> >>>>-				set_unsuitable = false;
-> >>>>-				goto next_pageblock;
-> >>>>-			}
-> >>>>-		}
-> >>>>-
-> >>>>  		/*
-> >>>>  		 * Skip if free. page_order cannot be used without zone->lock
-> >>>>  		 * as nothing prevents parallel allocations or buddy merging.
-> >>>>@@ -668,8 +638,7 @@ next_pageblock:
-> >>>>  	 * if the whole pageblock was scanned without isolating any page.
-> >>>>  	 */
-> >>>>  	if (low_pfn == end_pfn)
-> >>>>-		update_pageblock_skip(cc, valid_page, nr_isolated,
-> >>>>-				      set_unsuitable, true);
-> >>>>+		update_pageblock_skip(cc, valid_page, nr_isolated, true);
-> >>>>
-> >>>>  	trace_mm_compaction_isolate_migratepages(nr_scanned, nr_isolated);
-> >>>>
-> >>>>@@ -840,34 +809,74 @@ typedef enum {
-> >>>>  } isolate_migrate_t;
-> >>>>
-> >>>>  /*
-> >>>>- * Isolate all pages that can be migrated from the block pointed to by
-> >>>>- * the migrate scanner within compact_control.
-> >>>>+ * Isolate all pages that can be migrated from the first suitable block,
-> >>>>+ * starting at the block pointed to by the migrate scanner pfn within
-> >>>>+ * compact_control.
-> >>>>   */
-> >>>>  static isolate_migrate_t isolate_migratepages(struct zone *zone,
-> >>>>  					struct compact_control *cc)
-> >>>>  {
-> >>>>  	unsigned long low_pfn, end_pfn;
-> >>>>+	struct page *page;
-> >>>>
-> >>>>-	/* Do not scan outside zone boundaries */
-> >>>>-	low_pfn = max(cc->migrate_pfn, zone->zone_start_pfn);
-> >>>>+	/* Start at where we last stopped, or beginning of the zone */
-> >>>>+	low_pfn = cc->migrate_pfn;
-> >>>>
-> >>>>  	/* Only scan within a pageblock boundary */
-> >>>>  	end_pfn = ALIGN(low_pfn + 1, pageblock_nr_pages);
-> >>>>
-> >>>>-	/* Do not cross the free scanner or scan within a memory hole */
-> >>>>-	if (end_pfn > cc->free_pfn || !pfn_valid(low_pfn)) {
-> >>>>-		cc->migrate_pfn = end_pfn;
-> >>>>-		return ISOLATE_NONE;
-> >>>>-	}
-> >>>>+	/*
-> >>>>+	 * Iterate over whole pageblocks until we find the first suitable.
-> >>>>+	 * Do not cross the free scanner.
-> >>>>+	 */
-> >>>>+	for (; end_pfn <= cc->free_pfn;
-> >>>>+			low_pfn = end_pfn, end_pfn += pageblock_nr_pages) {
-> >>>>+
-> >>>>+		/*
-> >>>>+		 * This can potentially iterate a massively long zone with
-> >>>>+		 * many pageblocks unsuitable, so periodically check if we
-> >>>>+		 * need to schedule, or even abort async compaction.
-> >>>>+		 */
-> >>>>+		if (!(low_pfn % (SWAP_CLUSTER_MAX * pageblock_nr_pages))
-> >>>>+						&& compact_should_abort(cc))
-> >>>>+			break;
-> >>>>
-> >>>>-	/* Perform the isolation */
-> >>>>-	low_pfn = isolate_migratepages_range(zone, cc, low_pfn, end_pfn, false);
-> >>>>-	if (!low_pfn || cc->contended)
-> >>>>-		return ISOLATE_ABORT;
-> >>>>+		/* Do not scan within a memory hole */
-> >>>>+		if (!pfn_valid(low_pfn))
-> >>>>+			continue;
-> >>>>+
-> >>>>+		page = pfn_to_page(low_pfn);
-> >>>>+		/* If isolation recently failed, do not retry */
-> >>>>+		if (!isolation_suitable(cc, page))
-> >>>>+			continue;
-> >>>>
-> >>>>+		/*
-> >>>>+		 * For async compaction, also only scan in MOVABLE blocks.
-> >>>>+		 * Async compaction is optimistic to see if the minimum amount
-> >>>>+		 * of work satisfies the allocation.
-> >>>>+		 */
-> >>>>+		if (cc->mode == MIGRATE_ASYNC &&
-> >>>>+		    !migrate_async_suitable(get_pageblock_migratetype(page)))
-> >>>>+			continue;
-> >>>>+
-> >>>>+		/* Perform the isolation */
-> >>>>+		low_pfn = isolate_migratepages_range(zone, cc, low_pfn,
-> >>>>+								end_pfn, false);
-> >>>>+		if (!low_pfn || cc->contended)
-> >>>>+			return ISOLATE_ABORT;
-> >>>>+
-> >>>>+		/*
-> >>>>+		 * Either we isolated something and proceed with migration. Or
-> >>>>+		 * we failed and compact_zone should decide if we should
-> >>>>+		 * continue or not.
-> >>>>+		 */
-> >>>>+		break;
-> >>>>+	}
-> >>>>+
-> >>>>+	/* Record where migration scanner will be restarted */
-> >>>
-> >>>If we make isolate_migratepages* interface like as isolate_freepages*,
-> >>>we can get more clean and micro optimized code. Because
-> >>>isolate_migratepages_range() can handle arbitrary range and this patch
-> >>>make isolate_migratepages() also handle arbitrary range, there would
-> >>>be some redundant codes. :)
-> >>
-> >>I'm not sure if it's worth already. Where is the arbitrary range
-> >>adding overhead? I can only imagine that next_pageblock: label could
-> >>do a 'break;' instead of setting up next_capture_pfn, but that's
-> >>about it AFAICS.
-> >
-> >In fact, there is just minor overhead, pfn_valid().
-> >And isolate_freepages variants seems to do this correctly. :)
-> >
-> >Someone could wonder why there are two isolate_migratepages variants
-> >with arbitrary range compaction ability. IMHO, one
-> >isolate_migratepage_xxx for pageblock range and two
-> >isolate_migratepage_yyy/zzz for compaction and CMA is better
-> >architecture.
+On Fri, 2014-06-27 at 07:29 +0200, Julia Lawall wrote:
+> On Thu, 26 Jun 2014, Joe Perches wrote:
+> > The cast of a const void * to a void * was odd.
+> > 
+> > Maybe a mechanism to verify appropriateness of
+> > loss of constness for any pointer might be useful.
 > 
-> OK, I will try. But we need to resolve the "where to test for
-> page_zone() == cc->zone?" question.
+> I tried the following, but didn't find anything interesting:
 > 
+> @disable drop_cast@
+> type T;
+> const T e;
+> @@
+> 
+> * (T)e
 
-Hello,
+What code does this match?
+Do you have an example match?
 
-I have no idea here. :)
-I saw the discussion between you and Naoya, and I also wonder when
-we should check page_zone == cc->zone. Maybe we need help from more
-experienced developers such as Andrew and others.
+This doesn't find a cast of a void type like:
 
-Thanks.
+void func(const void * const p)
+{
+	char *p2 = p;
+
+	p2[0] = 1;
+}
+
+
