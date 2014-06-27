@@ -1,42 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752467AbaF0DZi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 23:25:38 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:64809 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751909AbaF0DZh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 23:25:37 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53ACE42E.5060105@roeck-us.net>
-Date: Thu, 26 Jun 2014 20:25:34 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Chen Gang <gang.chen.5i5j@gmail.com>, Lennox Wu <lennox.wu@gmail.com>
-CC: David Rientjes <rientjes@google.com>, Liqin Chen <liqin.linux@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3] arch/score/include/uapi/asm/ptrace.h: Remove the macros
- which not be used currently
-References: <53AC10CB.3000007@gmail.com>	<alpine.DEB.2.02.1406261456150.12443@chino.kir.corp.google.com>	<53ACACB6.6000505@gmail.com> <CAF0htA6=16TDoO0kDDmGipAx17rQZpo7essy5K1sO0=mX--8Lg@mail.gmail.com> <53ACDB42.1070501@gmail.com>
-In-Reply-To: <53ACDB42.1070501@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752550AbaF0D1l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 23:27:41 -0400
+Received: from mga03.intel.com ([143.182.124.21]:43769 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751660AbaF0D1k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 23:27:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,558,1400050800"; 
+   d="scan'208";a="450586219"
+From: "Chen, Alvin" <alvin.chen@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        David Laight <David.Laight@ACULAB.COM>,
+        Boon Leong Ong <boon.leong.ong@intel.com>
+Subject: [PATCH v2] USB: ehci-pci: Add support for Intel Quark X1000 USB host controller
+Date: Fri, 27 Jun 2014 04:24:35 -0700
+Message-Id: <1403868276-12558-1-git-send-email-alvin.chen@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2014 07:47 PM, Chen Gang wrote:
-> On 06/27/2014 10:11 AM, Lennox Wu wrote:
->> Acked-by: Lennox Wu <lennox.wu@gmail.com>
->>
->
-> OK, thank, and excuse me, I am not quite familiar with the version
-> merging of upstream kernel: "who will apply it, next, if it is past all
-> reviewers' checking".
->
+From: "Alvin (Weike) Chen" <alvin.chen@intel.com>
 
-Normal procedure would be for Lennox (as maintainer) to send a pull request to Linus.
+Hi,
+Intel Quark X1000 consists of one USB host controller which can be PCI enumerated.
+And the exsiting EHCI-PCI framework supports it with the default packet buffer in/out
+threshold. We reconfigure the in/out threshold as maximal as possible.
 
-Guenter
+Bryan O'Donoghue (1):
+  USB: ehci-pci: USB host controller support for Intel Quark X1000
+
+ drivers/usb/host/ehci-pci.c |   43 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 43 insertions(+)
+
+-- 
+1.7.9.5
 
