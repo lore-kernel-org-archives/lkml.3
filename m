@@ -1,62 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752961AbaF0JbZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 05:31:25 -0400
-Received: from bby1mta02.pmc-sierra.com ([216.241.235.117]:40387 "EHLO
-	bby1mta02.pmc-sierra.bc.ca" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752652AbaF0JbY convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 05:31:24 -0400
-X-Greylist: delayed 1474 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 Jun 2014 05:31:24 EDT
-From: Suresh Thiagarajan <Suresh.Thiagarajan@pmcs.com>
-To: Jack Wang <xjtuwjp@gmail.com>,
-        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-CC: "lindar_liu@usish.com" <lindar_liu@usish.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] scsi: pm8001: pm80xx_hwi.c:  Cleaning up variable is
- set more than once
-Thread-Topic: [PATCH] scsi: pm8001: pm80xx_hwi.c:  Cleaning up variable is
- set more than once
-Thread-Index: AQHPkH3l8ZEfYWLRc0SQD33RbsdVb5uDgCIAgAEpYIA=
-Date: Fri, 27 Jun 2014 09:06:49 +0000
-Message-ID: <CE2C58F938F4C44EA74FFF880BAA7E5E1CD730A3@BBYEXM02.pmc-sierra.internal>
-References: <1403704907-25672-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
- <53ABD51C.5050806@gmail.com>
-In-Reply-To: <53ABD51C.5050806@gmail.com>
-Accept-Language: en-US, en-CA
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [216.241.227.4]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753110AbaF0JdH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 05:33:07 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:33835 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751127AbaF0JdE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 05:33:04 -0400
+Message-ID: <53AD3A48.4090307@collabora.co.uk>
+Date: Fri, 27 Jun 2014 11:32:56 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
+To: Lee Jones <lee.jones@linaro.org>
+CC: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
+        Daniel Stone <daniels@collabora.com>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 02/14] mfd: max77686: Allow the max77686 rtc to wakeup
+ the system
+References: <1403806546-31122-1-git-send-email-javier.martinez@collabora.co.uk> <1403806546-31122-3-git-send-email-javier.martinez@collabora.co.uk> <20140627092149.GH19645@lee--X1>
+In-Reply-To: <20140627092149.GH19645@lee--X1>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Lee,
 
+On 06/27/2014 11:21 AM, Lee Jones wrote:
+> On Thu, 26 Jun 2014, Javier Martinez Canillas wrote:
+> 
+>> From: Doug Anderson <dianders@chromium.org>
+>> 
+>> The max77686 includes an RTC that keeps power during suspend.  It's
+>> convenient to be able to use it as a wakeup source.
+>> 
+>> NOTE: due to wakeup ordering problems this patch alone doesn't work so
+>> well on exynos5250-snow.  You also need something that brings the i2c
+>> bus up before the max77686 wakeup runs.
+>> 
+>> Signed-off-by: Doug Anderson <dianders@chromium.org>
+>> Reviewed-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+>> Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+>> ---
+>> 
+>> Changes since v4: None
+>> 
+>> Changes since v3:
+>>  - Keep the note that this patch needs another change due wakeup
+>>    ordering problems.
+>> 
+>>  drivers/rtc/rtc-max77686.c | 28 ++++++++++++++++++++++++++++
+>>  1 file changed, 28 insertions(+)
+> 
+> This patch doesn't actually touch the MFD subsystem directly.  Can you
+> change the $SUBJECT line accordingly please?
+> 
 
-On Thu, Jun 26, 2014 at 1:50 PM, Maurizio Lombardi <mlombard@redhat.com> wrote:
-> On 06/26/2014 10:09 AM, Jack Wang wrote:
->> Thanks Rickard,
->>
->> From my point of view, looks good, but I'd like to get review from Anand
->> (cc-ed).
->
-> I would like to add that I noticed that this fields is only set and appears to be never used,
-> maybe it could be completely removed.
+You're right, I'll change the $subject.
 
-You are correct. The whole forensic_info structure itself is not used or referred anywhere. I will remove it and send a patch.
-
-Regards,
-Suresh Thiagarajan
->
-> Regards,
-> Maurizio Lombardi
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Best regards,
+Javier
