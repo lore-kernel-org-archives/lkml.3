@@ -1,258 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752586AbaF0DEW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 23:04:22 -0400
-Received: from mail-bn1blp0188.outbound.protection.outlook.com ([207.46.163.188]:55010
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751899AbaF0DET (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 23:04:19 -0400
-From: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>
-To: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <rob@landley.net>, <michal.simek@xilinx.com>,
-        <grant.likely@linaro.org>, <gregkh@linuxfoundation.org>,
-        <jason@lakedaemon.net>, <ezequiel.garcia@free-electrons.com>,
-        <arnd@arndb.de>, <dwmw2@infradead.org>, <computersforpeace@gmail.com>,
-        <artem.bityutskiy@linux.intel.com>, <pekon@ti.com>,
-        <jussi.kivilinna@iki.fi>, <acourbot@nvidia.com>,
-        <ivan.khoronzhuk@ti.com>, <joern@logfs.org>
-CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-mtd@lists.infradead.org>,
-        <kpc528@gmail.com>, <kalluripunnaiahchoudary@gmail.com>,
-        Punnaiah Choudary Kalluri <punnaia@xilinx.com>
-Subject: [PATCH RFC v3 3/4] nand: pl353: Add ONDIE ECC support
-Date: Fri, 27 Jun 2014 08:33:58 +0530
-X-Mailer: git-send-email 1.7.4
-In-Reply-To: <1403838239-4140-1-git-send-email-punnaia@xilinx.com>
-References: <1403838239-4140-1-git-send-email-punnaia@xilinx.com>
-X-RCIS-Action: ALLOW
-Message-ID: <eb265357-7edd-4a14-bfa4-e84b9160be49@BL2FFO11FD041.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(189002)(199002)(106466001)(88136002)(76176999)(104166001)(95666004)(62966002)(1496007)(89996001)(77096002)(77156001)(20776003)(6806004)(47776003)(104016002)(21056001)(4396001)(86362001)(48376002)(79102001)(92726001)(85852003)(76482001)(31966008)(53416004)(74662001)(50986999)(44976005)(19580405001)(50466002)(83072002)(50226001)(81342001)(81542001)(83322001)(77982001)(19580395003)(93916002)(87286001)(74502001)(99396002)(33646001)(87936001)(80022001)(70736001)(2201001)(46102001)(31696002)(102836001)(74316001)(85306003)(107046002)(92566001)(1121002)(921003)(217873001)(83996005)(2101003)(23106004);DIR:OUT;SFP:;SCL:1;SRVR:BL2FFO11HUB060;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: xilinx.onmicrosoft.com
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 0255DF69B9
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=punnaiah.choudary.kalluri@xilinx.com; 
+	id S1752404AbaF0DOX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 23:14:23 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:52320 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751139AbaF0DOW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 23:14:22 -0400
+Message-ID: <1403838855.7854.1.camel@dabdike>
+Subject: Re: [RFC][PATCH 1/5 v2] tracing: Add trace_seq_buffer_ptr() helper
+ function
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, Michal Hocko <mhocko@suse.cz>,
+        Jan Kara <jack@suse.cz>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Dave Anderson <anderson@redhat.com>, Petr Mladek <pmladek@suse.cz>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        linux-scsi@vger.kernel.org
+Date: Thu, 26 Jun 2014 20:14:15 -0700
+In-Reply-To: <20140626210603.3f797c0c@gandalf.local.home>
+References: <20140626214901.596791200@goodmis.org>
+	 <20140626220129.452783019@goodmis.org>
+	 <20140626210603.3f797c0c@gandalf.local.home>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.12.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added ONDIE ECC support. Currently this ecc mode is supported for
-specific micron parts with oob size 64 bytes.
+On Thu, 2014-06-26 at 21:06 -0400, Steven Rostedt wrote:
+> As this patch is in my 3.17 queue and it touches the kvm and scsi
+> tracepoint code, I figured I should at least do the courtesy of
+> notifying the maintainers of those subsystems.
+> 
+> Do you have any issues with this going through my tree? If not, please
+> give me an Acked-by.
 
-Signed-off-by: Punnaiah Choudary Kalluri <punnaia@xilinx.com>
----
- drivers/mtd/nand/pl353_nand.c |  131 +++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 127 insertions(+), 4 deletions(-)
+Missing cc to linux-scsi added.
 
-diff --git a/drivers/mtd/nand/pl353_nand.c b/drivers/mtd/nand/pl353_nand.c
-index eca205f..4f56c7f 100644
---- a/drivers/mtd/nand/pl353_nand.c
-+++ b/drivers/mtd/nand/pl353_nand.c
-@@ -140,6 +140,48 @@ static struct nand_ecclayout nand_oob_64 = {
- 		 .length = 50} }
- };
- 
-+static struct nand_ecclayout ondie_nand_oob_64 = {
-+	.eccbytes = 32,
-+
-+	.eccpos = {
-+		8, 9, 10, 11, 12, 13, 14, 15,
-+		24, 25, 26, 27, 28, 29, 30, 31,
-+		40, 41, 42, 43, 44, 45, 46, 47,
-+		56, 57, 58, 59, 60, 61, 62, 63
-+	},
-+
-+	.oobfree = {
-+		{ .offset = 4, .length = 4 },
-+		{ .offset = 20, .length = 4 },
-+		{ .offset = 36, .length = 4 },
-+		{ .offset = 52, .length = 4 }
-+	}
-+};
-+
-+/* Generic flash bbt decriptors */
-+static uint8_t bbt_pattern[] = { 'B', 'b', 't', '0' };
-+static uint8_t mirror_pattern[] = { '1', 't', 'b', 'B' };
-+
-+static struct nand_bbt_descr bbt_main_descr = {
-+	.options = NAND_BBT_LASTBLOCK | NAND_BBT_CREATE | NAND_BBT_WRITE
-+		| NAND_BBT_2BIT | NAND_BBT_VERSION | NAND_BBT_PERCHIP,
-+	.offs = 4,
-+	.len = 4,
-+	.veroffs = 20,
-+	.maxblocks = 4,
-+	.pattern = bbt_pattern
-+};
-+
-+static struct nand_bbt_descr bbt_mirror_descr = {
-+	.options = NAND_BBT_LASTBLOCK | NAND_BBT_CREATE | NAND_BBT_WRITE
-+		| NAND_BBT_2BIT | NAND_BBT_VERSION | NAND_BBT_PERCHIP,
-+	.offs = 4,
-+	.len = 4,
-+	.veroffs = 20,
-+	.maxblocks = 4,
-+	.pattern = mirror_pattern
-+};
-+
- /**
-  * pl353_nand_calculate_hwecc - Calculate Hardware ECC
-  * @mtd:	Pointer to the mtd_info structure
-@@ -816,15 +858,74 @@ static int pl353_nand_device_ready(struct mtd_info *mtd)
- }
- 
- /**
-+ * pl353_nand_detect_ondie_ecc - Get the flash ondie ecc state
-+ * @mtd:	Pointer to the mtd_info structure
-+ *
-+ * This function enables the ondie ecc for the Micron ondie ecc capable devices
-+ *
-+ * Return:	1 on detect, 0 if fail to detect
-+ */
-+static int pl353_nand_detect_ondie_ecc(struct mtd_info *mtd)
-+{
-+	struct nand_chip *nand_chip = mtd->priv;
-+	u8 maf_id, dev_id, i, get_feature;
-+	u8 set_feature[4] = { 0x08, 0x00, 0x00, 0x00 };
-+
-+	/* Check if On-Die ECC flash */
-+	nand_chip->cmdfunc(mtd, NAND_CMD_RESET, -1, -1);
-+	nand_chip->cmdfunc(mtd, NAND_CMD_READID, 0x00, -1);
-+
-+	/* Read manufacturer and device IDs */
-+	maf_id = readb(nand_chip->IO_ADDR_R);
-+	dev_id = readb(nand_chip->IO_ADDR_R);
-+
-+	if ((maf_id == NAND_MFR_MICRON) &&
-+	    ((dev_id == 0xf1) || (dev_id == 0xa1) ||
-+	     (dev_id == 0xb1) || (dev_id == 0xaa) ||
-+	     (dev_id == 0xba) || (dev_id == 0xda) ||
-+	     (dev_id == 0xca) || (dev_id == 0xac) ||
-+	     (dev_id == 0xbc) || (dev_id == 0xdc) ||
-+	     (dev_id == 0xcc) || (dev_id == 0xa3) ||
-+	     (dev_id == 0xb3) ||
-+	     (dev_id == 0xd3) || (dev_id == 0xc3))) {
-+
-+		nand_chip->cmdfunc(mtd, NAND_CMD_GET_FEATURES,
-+				   ONDIE_ECC_FEATURE_ADDR, -1);
-+		get_feature = readb(nand_chip->IO_ADDR_R);
-+
-+		if (get_feature & 0x08) {
-+			return 1;
-+		} else {
-+			nand_chip->cmdfunc(mtd, NAND_CMD_SET_FEATURES,
-+					   ONDIE_ECC_FEATURE_ADDR, -1);
-+			for (i = 0; i < 4; i++)
-+				writeb(set_feature[i], nand_chip->IO_ADDR_W);
-+
-+			ndelay(1000);
-+
-+			nand_chip->cmdfunc(mtd, NAND_CMD_GET_FEATURES,
-+					   ONDIE_ECC_FEATURE_ADDR, -1);
-+			get_feature = readb(nand_chip->IO_ADDR_R);
-+
-+			if (get_feature & 0x08)
-+				return 1;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+/**
-  * pl353_nand_ecc_init - Initialize the ecc information as per the ecc mode
-  * @mtd:	Pointer to the mtd_info structure
-+ * @ondie_ecc_state:	ondie ecc status
-  *
-  * This function initializes the ecc block and functional pointers as per the
-  * ecc mode
-  *
-  * Return:	Zero on success and error on failure.
-  */
--static int pl353_nand_ecc_init(struct mtd_info *mtd)
-+static int pl353_nand_ecc_init(struct mtd_info *mtd, int ondie_ecc_state)
- {
- 	struct nand_chip *nand_chip = mtd->priv;
- 	struct pl353_nand_info *xnand =
-@@ -838,12 +939,28 @@ static int pl353_nand_ecc_init(struct mtd_info *mtd)
- 
- 	switch (xnand->ecc_mode) {
- 	case NAND_ECC_HW:
--		if (mtd->writesize > 2048) {
-+		if ((mtd->writesize > 2048) || ((ondie_ecc_state) &&
-+						(mtd->oobsize != 64))) {
- 			pr_warn("hardware ECC not possible\n");
- 			return -ENOTSUPP;
- 		}
- 
- 		nand_chip->ecc.mode = NAND_ECC_HW;
-+		if (ondie_ecc_state) {
-+			/* Bypass the controller ECC block */
-+			pl353_smc_set_ecc_mode(PL353_SMC_ECCMODE_BYPASS);
-+			nand_chip->ecc.bytes = 0;
-+			nand_chip->ecc.layout = &ondie_nand_oob_64;
-+			nand_chip->ecc.read_page = pl353_nand_read_page_raw;
-+			nand_chip->ecc.write_page = pl353_nand_write_page_raw;
-+			nand_chip->ecc.size = mtd->writesize;
-+			/*
-+			 * On-Die ECC spare bytes offset 8 is used for ECC codes
-+			 * Use the BBT pattern descriptors
-+			 */
-+			nand_chip->bbt_td = &bbt_main_descr;
-+			nand_chip->bbt_md = &bbt_mirror_descr;
-+		} else {
- 		nand_chip->ecc.calculate = pl353_nand_calculate_hwecc;
- 		nand_chip->ecc.correct = pl353_nand_correct_data;
- 		nand_chip->ecc.hwctl = NULL;
-@@ -852,13 +969,17 @@ static int pl353_nand_ecc_init(struct mtd_info *mtd)
- 		nand_chip->ecc.write_page = pl353_nand_write_page_hwecc;
- 		pl353_smc_set_ecc_pg_size(mtd->writesize);
- 		pl353_smc_set_ecc_mode(PL353_SMC_ECCMODE_APB);
--		/* Hardware ECC generates 3 bytes ECC code for each 512 bytes */
-+			/*
-+			 * Hardware ECC generates 3 bytes ECC code for each
-+			 * 512 bytes
-+			 */
- 		nand_chip->ecc.bytes = 3;
- 
- 		if (mtd->oobsize == 16)
- 			nand_chip->ecc.layout = &nand_oob_16;
- 		else
- 			nand_chip->ecc.layout = &nand_oob_64;
-+		}
- 
- 		break;
- 	case NAND_ECC_SOFT:
-@@ -900,6 +1021,7 @@ static int pl353_nand_probe(struct platform_device *pdev)
- 	struct nand_chip *nand_chip;
- 	struct resource *res;
- 	struct mtd_part_parser_data ppdata;
-+	int ondie_ecc_state;
- 
- 	xnand = devm_kzalloc(&pdev->dev, sizeof(*xnand), GFP_KERNEL);
- 	if (!xnand)
-@@ -942,6 +1064,7 @@ static int pl353_nand_probe(struct platform_device *pdev)
- 
- 	platform_set_drvdata(pdev, xnand);
- 
-+	ondie_ecc_state = pl353_nand_detect_ondie_ecc(mtd);
- 	/* first scan to find the device and get the page size */
- 	if (nand_scan_ident(mtd, 1, NULL)) {
- 		dev_err(&pdev->dev, "nand_scan_ident for NAND failed\n");
-@@ -952,7 +1075,7 @@ static int pl353_nand_probe(struct platform_device *pdev)
- 	if (xnand->ecc_mode < 0)
- 		xnand->ecc_mode = NAND_ECC_HW;
- 
--	if (pl353_nand_ecc_init(mtd))
-+	if (pl353_nand_ecc_init(mtd, ondie_ecc_state))
- 		return -ENOTSUPP;
- 
- 	if (nand_chip->options & NAND_BUSWIDTH_16)
--- 
-1.7.4
+Hannes has a set of patches to move logging to trace points.  I don't
+think there's a clash but I'd like him to comment before you do this.
+
+James
+
+
+> Thanks!
+> 
+> -- Steve
+> 
+> On Thu, 26 Jun 2014 17:49:02 -0400
+> Steven Rostedt <rostedt@goodmis.org> wrote:
+> 
+> > From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> > 
+> > There's several locations in the kernel that open code the calculation
+> > of the next location in the trace_seq buffer. This is usually done with
+> > 
+> >   p->buffer + p->len
+> > 
+> > Instead of having this open coded, supply a helper function in the
+> > header to do it for them. This function is called trace_seq_buffer_ptr().
+> > 
+> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> > ---
+> >  arch/x86/kvm/mmutrace.h     |  2 +-
+> >  drivers/scsi/scsi_trace.c   | 16 ++++++++--------
+> >  include/linux/trace_seq.h   | 15 +++++++++++++++
+> >  kernel/trace/trace_output.c | 14 +++++++-------
+> >  4 files changed, 31 insertions(+), 16 deletions(-)
+> > 
+> > diff --git a/arch/x86/kvm/mmutrace.h b/arch/x86/kvm/mmutrace.h
+> > index 9d2e0ffcb190..2e5652b62fd6 100644
+> > --- a/arch/x86/kvm/mmutrace.h
+> > +++ b/arch/x86/kvm/mmutrace.h
+> > @@ -22,7 +22,7 @@
+> >  	__entry->unsync = sp->unsync;
+> >  
+> >  #define KVM_MMU_PAGE_PRINTK() ({				        \
+> > -	const char *ret = p->buffer + p->len;				\
+> > +	const char *ret = trace_seq_buffer_ptr(p);			\
+> >  	static const char *access_str[] = {			        \
+> >  		"---", "--x", "w--", "w-x", "-u-", "-ux", "wu-", "wux"  \
+> >  	};							        \
+> > diff --git a/drivers/scsi/scsi_trace.c b/drivers/scsi/scsi_trace.c
+> > index 2bea4f0b684a..503594e5f76d 100644
+> > --- a/drivers/scsi/scsi_trace.c
+> > +++ b/drivers/scsi/scsi_trace.c
+> > @@ -28,7 +28,7 @@ scsi_trace_misc(struct trace_seq *, unsigned char *, int);
+> >  static const char *
+> >  scsi_trace_rw6(struct trace_seq *p, unsigned char *cdb, int len)
+> >  {
+> > -	const char *ret = p->buffer + p->len;
+> > +	const char *ret = trace_seq_buffer_ptr(p);
+> >  	sector_t lba = 0, txlen = 0;
+> >  
+> >  	lba |= ((cdb[1] & 0x1F) << 16);
+> > @@ -46,7 +46,7 @@ scsi_trace_rw6(struct trace_seq *p, unsigned char *cdb, int len)
+> >  static const char *
+> >  scsi_trace_rw10(struct trace_seq *p, unsigned char *cdb, int len)
+> >  {
+> > -	const char *ret = p->buffer + p->len;
+> > +	const char *ret = trace_seq_buffer_ptr(p);
+> >  	sector_t lba = 0, txlen = 0;
+> >  
+> >  	lba |= (cdb[2] << 24);
+> > @@ -71,7 +71,7 @@ scsi_trace_rw10(struct trace_seq *p, unsigned char *cdb, int len)
+> >  static const char *
+> >  scsi_trace_rw12(struct trace_seq *p, unsigned char *cdb, int len)
+> >  {
+> > -	const char *ret = p->buffer + p->len;
+> > +	const char *ret = trace_seq_buffer_ptr(p);
+> >  	sector_t lba = 0, txlen = 0;
+> >  
+> >  	lba |= (cdb[2] << 24);
+> > @@ -94,7 +94,7 @@ scsi_trace_rw12(struct trace_seq *p, unsigned char *cdb, int len)
+> >  static const char *
+> >  scsi_trace_rw16(struct trace_seq *p, unsigned char *cdb, int len)
+> >  {
+> > -	const char *ret = p->buffer + p->len;
+> > +	const char *ret = trace_seq_buffer_ptr(p);
+> >  	sector_t lba = 0, txlen = 0;
+> >  
+> >  	lba |= ((u64)cdb[2] << 56);
+> > @@ -125,7 +125,7 @@ scsi_trace_rw16(struct trace_seq *p, unsigned char *cdb, int len)
+> >  static const char *
+> >  scsi_trace_rw32(struct trace_seq *p, unsigned char *cdb, int len)
+> >  {
+> > -	const char *ret = p->buffer + p->len, *cmd;
+> > +	const char *ret = trace_seq_buffer_ptr(p), *cmd;
+> >  	sector_t lba = 0, txlen = 0;
+> >  	u32 ei_lbrt = 0;
+> >  
+> > @@ -180,7 +180,7 @@ out:
+> >  static const char *
+> >  scsi_trace_unmap(struct trace_seq *p, unsigned char *cdb, int len)
+> >  {
+> > -	const char *ret = p->buffer + p->len;
+> > +	const char *ret = trace_seq_buffer_ptr(p);
+> >  	unsigned int regions = cdb[7] << 8 | cdb[8];
+> >  
+> >  	trace_seq_printf(p, "regions=%u", (regions - 8) / 16);
+> > @@ -192,7 +192,7 @@ scsi_trace_unmap(struct trace_seq *p, unsigned char *cdb, int len)
+> >  static const char *
+> >  scsi_trace_service_action_in(struct trace_seq *p, unsigned char *cdb, int len)
+> >  {
+> > -	const char *ret = p->buffer + p->len, *cmd;
+> > +	const char *ret = trace_seq_buffer_ptr(p), *cmd;
+> >  	sector_t lba = 0;
+> >  	u32 alloc_len = 0;
+> >  
+> > @@ -247,7 +247,7 @@ scsi_trace_varlen(struct trace_seq *p, unsigned char *cdb, int len)
+> >  static const char *
+> >  scsi_trace_misc(struct trace_seq *p, unsigned char *cdb, int len)
+> >  {
+> > -	const char *ret = p->buffer + p->len;
+> > +	const char *ret = trace_seq_buffer_ptr(p);
+> >  
+> >  	trace_seq_printf(p, "-");
+> >  	trace_seq_putc(p, 0);
+> > diff --git a/include/linux/trace_seq.h b/include/linux/trace_seq.h
+> > index dd85753e1bb0..ea6c9dea79e3 100644
+> > --- a/include/linux/trace_seq.h
+> > +++ b/include/linux/trace_seq.h
+> > @@ -25,6 +25,21 @@ trace_seq_init(struct trace_seq *s)
+> >  	s->full = 0;
+> >  }
+> >  
+> > +/**
+> > + * trace_seq_buffer_ptr - return pointer to next location in buffer
+> > + * @s: trace sequence descriptor
+> > + *
+> > + * Returns the pointer to the buffer where the next write to
+> > + * the buffer will happen. This is useful to save the location
+> > + * that is about to be written to and then return the result
+> > + * of that write.
+> > + */
+> > +static inline unsigned char *
+> > +trace_seq_buffer_ptr(struct trace_seq *s)
+> > +{
+> > +	return s->buffer + s->len;
+> > +}
+> > +
+> >  /*
+> >   * Currently only defined when tracing is enabled.
+> >   */
+> > diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
+> > index b8930f79a04b..c6977d5a9b12 100644
+> > --- a/kernel/trace/trace_output.c
+> > +++ b/kernel/trace/trace_output.c
+> > @@ -75,7 +75,7 @@ ftrace_print_flags_seq(struct trace_seq *p, const char *delim,
+> >  {
+> >  	unsigned long mask;
+> >  	const char *str;
+> > -	const char *ret = p->buffer + p->len;
+> > +	const char *ret = trace_seq_buffer_ptr(p);
+> >  	int i, first = 1;
+> >  
+> >  	for (i = 0;  flag_array[i].name && flags; i++) {
+> > @@ -111,7 +111,7 @@ ftrace_print_symbols_seq(struct trace_seq *p, unsigned long val,
+> >  			 const struct trace_print_flags *symbol_array)
+> >  {
+> >  	int i;
+> > -	const char *ret = p->buffer + p->len;
+> > +	const char *ret = trace_seq_buffer_ptr(p);
+> >  
+> >  	for (i = 0;  symbol_array[i].name; i++) {
+> >  
+> > @@ -122,7 +122,7 @@ ftrace_print_symbols_seq(struct trace_seq *p, unsigned long val,
+> >  		break;
+> >  	}
+> >  
+> > -	if (ret == (const char *)(p->buffer + p->len))
+> > +	if (ret == (const char *)(trace_seq_buffer_ptr(p)))
+> >  		trace_seq_printf(p, "0x%lx", val);
+> >  		
+> >  	trace_seq_putc(p, 0);
+> > @@ -137,7 +137,7 @@ ftrace_print_symbols_seq_u64(struct trace_seq *p, unsigned long long val,
+> >  			 const struct trace_print_flags_u64 *symbol_array)
+> >  {
+> >  	int i;
+> > -	const char *ret = p->buffer + p->len;
+> > +	const char *ret = trace_seq_buffer_ptr(p);
+> >  
+> >  	for (i = 0;  symbol_array[i].name; i++) {
+> >  
+> > @@ -148,7 +148,7 @@ ftrace_print_symbols_seq_u64(struct trace_seq *p, unsigned long long val,
+> >  		break;
+> >  	}
+> >  
+> > -	if (ret == (const char *)(p->buffer + p->len))
+> > +	if (ret == (const char *)(trace_seq_buffer_ptr(p)))
+> >  		trace_seq_printf(p, "0x%llx", val);
+> >  
+> >  	trace_seq_putc(p, 0);
+> > @@ -162,7 +162,7 @@ const char *
+> >  ftrace_print_bitmask_seq(struct trace_seq *p, void *bitmask_ptr,
+> >  			 unsigned int bitmask_size)
+> >  {
+> > -	const char *ret = p->buffer + p->len;
+> > +	const char *ret = trace_seq_buffer_ptr(p);
+> >  
+> >  	trace_seq_bitmask(p, bitmask_ptr, bitmask_size * 8);
+> >  	trace_seq_putc(p, 0);
+> > @@ -175,7 +175,7 @@ const char *
+> >  ftrace_print_hex_seq(struct trace_seq *p, const unsigned char *buf, int buf_len)
+> >  {
+> >  	int i;
+> > -	const char *ret = p->buffer + p->len;
+> > +	const char *ret = trace_seq_buffer_ptr(p);
+> >  
+> >  	for (i = 0; i < buf_len; i++)
+> >  		trace_seq_printf(p, "%s%2.2x", i == 0 ? "" : " ", buf[i]);
+
 
 
