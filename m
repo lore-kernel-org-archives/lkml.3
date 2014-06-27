@@ -1,63 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752697AbaF0Fwv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 01:52:51 -0400
-Received: from smtprelay0084.hostedemail.com ([216.40.44.84]:49602 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750734AbaF0Fwu (ORCPT
+	id S1752721AbaF0Fz5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 01:55:57 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:57057 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750729AbaF0Fz4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 01:52:50 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:2915:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3873:4321:5007:7652:7904:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: money59_3595b5106181e
-X-Filterd-Recvd-Size: 1589
-Message-ID: <1403848366.7977.92.camel@joe-AO725>
-Subject: Re: [PATCH] HID: roccat: Drop cast
-From: Joe Perches <joe@perches.com>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: Himangi Saraogi <himangi774@gmail.com>,
-        Stefan Achatz <erazor_de@users.sourceforge.net>,
-        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 26 Jun 2014 22:52:46 -0700
-In-Reply-To: <alpine.DEB.2.02.1406270729110.2016@localhost6.localdomain6>
-References: <20140626172852.GA2878@himangi-Dell>
-	 <1403804286.7977.58.camel@joe-AO725>
-	 <alpine.DEB.2.02.1406270729110.2016@localhost6.localdomain6>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 27 Jun 2014 01:55:56 -0400
+X-Original-SENDERIP: 10.177.220.145
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Fri, 27 Jun 2014 15:00:47 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Michal Nazarewicz <mina86@mina86.com>
+Cc: Mark Salter <msalter@redhat.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC] mm: cma: move init_cma_reserved_pageblock to cma.c
+Message-ID: <20140627060047.GB9511@js1304-P5Q-DELUXE>
+References: <1403650082-10056-1-git-send-email-mina86@mina86.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1403650082-10056-1-git-send-email-mina86@mina86.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-06-27 at 07:29 +0200, Julia Lawall wrote:
-> On Thu, 26 Jun 2014, Joe Perches wrote:
-> > The cast of a const void * to a void * was odd.
-> > 
-> > Maybe a mechanism to verify appropriateness of
-> > loss of constness for any pointer might be useful.
+On Wed, Jun 25, 2014 at 12:48:02AM +0200, Michal Nazarewicz wrote:
+> With [f495d26: “generalize CMA reserved area management
+> functionality”] patch CMA has its place under mm directory now so
+> there is no need to shoehorn a highly CMA specific functions inside of
+> page_alloc.c.
 > 
-> I tried the following, but didn't find anything interesting:
+> As such move init_cma_reserved_pageblock from mm/page_alloc.c to
+> mm/cma.c, rename it to cma_init_reserved_pageblock and refactor
+> a little.
 > 
-> @disable drop_cast@
-> type T;
-> const T e;
-> @@
+> Most importantly, if a !pfn_valid(pfn) is encountered, just
+> return -EINVAL instead of warning and trying to continue the
+> initialisation of the area.  It's not clear, to me at least, what good
+> is continuing the work on a PFN that is known to be invalid.
 > 
-> * (T)e
+> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
 
-What code does this match?
-Do you have an example match?
+Acked-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-This doesn't find a cast of a void type like:
+One question below.
 
-void func(const void * const p)
-{
-	char *p2 = p;
+> ---
+>  include/linux/gfp.h |  3 --
+>  mm/cma.c            | 85 +++++++++++++++++++++++++++++++++++++++++------------
+>  mm/page_alloc.c     | 31 -------------------
+>  3 files changed, 66 insertions(+), 53 deletions(-)
+> 
+> diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+> index 5e7219d..107793e9 100644
+> --- a/include/linux/gfp.h
+> +++ b/include/linux/gfp.h
+> @@ -415,9 +415,6 @@ extern int alloc_contig_range(unsigned long start, unsigned long end,
+>  			      unsigned migratetype);
+>  extern void free_contig_range(unsigned long pfn, unsigned nr_pages);
+>  
+> -/* CMA stuff */
+> -extern void init_cma_reserved_pageblock(struct page *page);
+> -
+>  #endif
+>  
+>  #endif /* __LINUX_GFP_H */
+> diff --git a/mm/cma.c b/mm/cma.c
+> index c17751c..843b2b6 100644
+> --- a/mm/cma.c
+> +++ b/mm/cma.c
+> @@ -28,11 +28,14 @@
+>  #include <linux/err.h>
+>  #include <linux/mm.h>
+>  #include <linux/mutex.h>
+> +#include <linux/page-isolation.h>
+>  #include <linux/sizes.h>
+>  #include <linux/slab.h>
+>  #include <linux/log2.h>
+>  #include <linux/cma.h>
+>  
+> +#include "internal.h"
+> +
+>  struct cma {
+>  	unsigned long	base_pfn;
+>  	unsigned long	count;
+> @@ -83,37 +86,81 @@ static void cma_clear_bitmap(struct cma *cma, unsigned long pfn, int count)
+>  	mutex_unlock(&cma->lock);
+>  }
+>  
+> +/* Free whole pageblock and set its migration type to MIGRATE_CMA. */
+> +static int __init cma_init_reserved_pageblock(struct zone *zone,
+> +					      unsigned long pageblock_pfn)
+> +{
+> +	unsigned long pfn, nr_pages, i;
+> +	struct page *page, *p;
+> +	unsigned order;
+> +
+> +	pfn = pageblock_pfn;
+> +	if (!pfn_valid(pfn))
+> +		goto invalid_pfn;
+> +	page = pfn_to_page(pfn);
+> +
+> +	p = page;
+> +	i = pageblock_nr_pages;
+> +	do {
+> +		if (!pfn_valid(pfn))
+> +			goto invalid_pfn;
+> +
+> +		/*
+> +		 * alloc_contig_range requires the pfn range specified to be
+> +		 * in the same zone. Make this simple by forcing the entire
+> +		 * CMA resv range to be in the same zone.
+> +		 */
+> +		if (page_zone(p) != zone) {
+> +			pr_err("pfn %lu belongs to %s, expecting %s\n",
+> +			       pfn, page_zone(p)->name, zone->name);
+> +			return -EINVAL;
+> +		}
+> +
+> +		__ClearPageReserved(p);
+> +		set_page_count(p, 0);
+> +	} while (++p, ++pfn, --i);
 
-	p2[0] = 1;
-}
+So, when we meet fail condition, __ClearPageReserved, set_page_count()
+are already executed for some pages. Is that no problem?
 
-
+Thanks.
