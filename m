@@ -1,101 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753863AbaF0MfL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 08:35:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14953 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750879AbaF0MfH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 08:35:07 -0400
-Date: Fri, 27 Jun 2014 08:35:03 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-cc: linux-scsi@vger.kernel.org, target-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] target: fix deadlock on unload
-In-Reply-To: <1403842714.22367.8.camel@haakon3.risingtidesystems.com>
-Message-ID: <alpine.LRH.2.02.1406270816160.24505@file01.intranet.prod.int.rdu2.redhat.com>
-References: <alpine.LRH.2.02.1406231329430.8277@file01.intranet.prod.int.rdu2.redhat.com> <1403842714.22367.8.camel@haakon3.risingtidesystems.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1753389AbaF0Mom (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 08:44:42 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:35438 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751972AbaF0Mok (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 08:44:40 -0400
+Date: Fri, 27 Jun 2014 13:44:21 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Jiri Kosina <jkosina@suse.cz>,
+        Josh Poimboeuf <notifications@github.com>,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>
+Subject: Re: [RFA][PATCH 25/27] arm64, ftrace: Remove check of obsolete
+ variable function_trace_stop
+Message-ID: <20140627124421.GP26276@arm.com>
+References: <20140626165221.736847419@goodmis.org>
+ <20140626165853.482575534@goodmis.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140626165853.482575534@goodmis.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Steve,
 
-
-On Thu, 26 Jun 2014, Nicholas A. Bellinger wrote:
-
-> Hi Mikulas,
+On Thu, Jun 26, 2014 at 05:52:46PM +0100, Steven Rostedt wrote:
+> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 > 
-> On Mon, 2014-06-23 at 13:42 -0400, Mikulas Patocka wrote:
-> > target: fix deadlock on unload
-> > 
-> > On uniprocessor preemptible kernel, target core deadlocks on unload. The
-> > following events happen:
-> > * iscsit_del_np is called
-> > * it calls send_sig(SIGINT, np->np_thread, 1);
-> > * the scheduler switches to the np_thread
-> > * the np_thread is woken up, it sees that kthread_should_stop() returns
-> >   false, so it doesn't terminate
-> > * the np_thread clears signals with flush_signals(current); and goes back
-> >   to sleep in iscsit_accept_np
-> > * the scheduler switches back to iscsit_del_np
-> > * iscsit_del_np calls kthread_stop(np->np_thread);
-> > * the np_thread is waiting in iscsit_accept_np and it doesn't respond to
-> >   kthread_stop
-> > 
-> > The deadlock could be resolved if the administrator sends SIGINT signal to
-> > the np_thread with killall -INT iscsi_np
-> > 
-> > The reproducible deadlock was introduced in commit
-> > db6077fd0b7dd41dc6ff18329cec979379071f87, but the thread-stopping code was
-> > racy even before.
-> > 
-> > This patch fixes the problem. Using kthread_should_stop to stop the
-> > np_thread is unreliable, so we test np_thread_state instead. If
-> > np_thread_state equals ISCSI_NP_THREAD_SHUTDOWN, the thread exits.
-> > 
-> > Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-> > Cc: stable@vger.kernel.org
-> > 
+> Nothing sets function_trace_stop to disable function tracing anymore.
+> Remove the check for it in the arch code.
 > 
-> Apologies for the delayed response..
+> arm64 was broken anyway, as it had an ifdef testing
+>  CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST which is only set if
+> the arch supports the code (which it obviously did not), and
+> it was testing a non existent ftrace_trace_stop instead of
+> function_trace_stop.
+
+Yeah, the current code is total crap. Well spotted.
+
+> Cc: AKASHI Takahiro <takahiro.akashi@linaro.org>
+> Cc: Will Deacon <will.deacon@arm.com>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  arch/arm64/kernel/entry-ftrace.S | 5 -----
+>  1 file changed, 5 deletions(-)
+
+  Acked-by: Will Deacon <will.deacon@arm.com>
+
+I'm happy for you to take this via the ftrace tree, along with the rest of
+the series.
+
+I successfully ran the ftrace self tests with this applied (on top of
+"ftrace: Remove check for HAVE_FUNCTION_TRACE_MCOUNT_TEST"), but note
+that I don't have a platform with working suspend/resume right now.
+
+Cheers,
+
+Will
+
+> diff --git a/arch/arm64/kernel/entry-ftrace.S b/arch/arm64/kernel/entry-ftrace.S
+> index b051871f2965..1b1e330e6849 100644
+> --- a/arch/arm64/kernel/entry-ftrace.S
+> +++ b/arch/arm64/kernel/entry-ftrace.S
+> @@ -96,11 +96,6 @@
+>   *     - ftrace_graph_caller to set up an exit hook
+>   */
+>  ENTRY(_mcount)
+> -#ifdef CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST
+> -	ldr	x0, =ftrace_trace_stop
+> -	ldr	x0, [x0]		// if ftrace_trace_stop
+> -	ret				//   return;
+> -#endif
+>  	mcount_enter
+>  
+>  	ldr	x0, =ftrace_trace_function
+> -- 
+> 2.0.0
 > 
-> Applied to target-pending/master and including in the next -rc3 PULL
-> request.
 > 
-> Also FYI, I've added '3.12+' to the stable tag to match how far back
-> commit db6077fd0 has been included in stable.
 > 
-> Thanks,
-> 
-> --nab
-
-Hi
-
-I think db6077fd0 should be backported to stable kernels beginning with 
-3.10 (because they set np->np_thread = NULL in 
-__iscsi_target_login_thread). The current 3.10-stable branch misses this 
-patch.
-
-
-This patch for unload deadlock should be backported to all stable kernels 
-(because unload is racy there), but because of different code, we should 
-make a different patch for old stable branches.
-
-For example in 3.4.95, __iscsi_target_login_thread contains this code:
-        spin_lock_bh(&np->np_thread_lock);
-        if (np->np_thread_state == ISCSI_NP_THREAD_RESET) {
-                np->np_thread_state = ISCSI_NP_THREAD_ACTIVE;
-                complete(&np->np_restart_comp);
-        } else {
-                np->np_thread_state = ISCSI_NP_THREAD_ACTIVE;
-        }
-        spin_unlock_bh(&np->np_thread_lock);
-If the state is ISCSI_NP_THREAD_SHUTDOWN, the above piece of code will 
-change it to ISCSI_NP_THREAD_ACTIVE and open the same kthread_should_stop 
-race.
-
-Mikulas
