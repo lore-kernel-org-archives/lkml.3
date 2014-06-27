@@ -1,260 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752782AbaF0HiG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 03:38:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35585 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750756AbaF0HiE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 03:38:04 -0400
-Message-ID: <53AD1F46.2080005@redhat.com>
-Date: Fri, 27 Jun 2014 09:37:42 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
+	id S1752881AbaF0HlQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 03:41:16 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:4675 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752808AbaF0HlN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 03:41:13 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 27 Jun 2014 00:31:15 -0700
+Message-ID: <53AD2020.1050802@nvidia.com>
+Date: Fri, 27 Jun 2014 15:41:20 +0800
+From: Joseph Lo <josephl@nvidia.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, Michal Hocko <mhocko@suse.cz>,
-        Jan Kara <jack@suse.cz>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Dave Anderson <anderson@redhat.com>, Petr Mladek <pmladek@suse.cz>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>,
-        Gleb Natapov <gleb@kernel.org>
-Subject: Re: [RFC][PATCH 1/5 v2] tracing: Add trace_seq_buffer_ptr() helper
- function
-References: <20140626214901.596791200@goodmis.org>	<20140626220129.452783019@goodmis.org> <20140626210603.3f797c0c@gandalf.local.home>
-In-Reply-To: <20140626210603.3f797c0c@gandalf.local.home>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Thierry Reding <thierry.reding@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "Kumar Gala" <galak@codeaurora.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "Arnd Bergmann" <arnd@arndb.de>, Will Deacon <will.deacon@arm.com>,
+        Joerg Roedel <joro@8bytes.org>
+CC: Cho KyongHo <pullip.cho@samsung.com>,
+        Grant Grundler <grundler@chromium.org>,
+        Dave Martin <Dave.Martin@arm.com>, Marc Zyngier <marc.zyngier@arm.com>,
+        Hiroshi Doyu <hdoyu@nvidia.com>, Olav Haugan <ohaugan@codeaurora.org>,
+        Paul Walmsley <pwalmsley@nvidia.com>,
+        Rhyland Klein <rklein@nvidia.com>, Allen Martin <AMartin@nvidia.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC 04/10] memory: Add Tegra124 memory controller support
+References: <1403815790-8548-1-git-send-email-thierry.reding@gmail.com> <1403815790-8548-5-git-send-email-thierry.reding@gmail.com>
+In-Reply-To: <1403815790-8548-5-git-send-email-thierry.reding@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 27/06/2014 03:06, Steven Rostedt ha scritto:
->
-> As this patch is in my 3.17 queue and it touches the kvm and scsi
-> tracepoint code, I figured I should at least do the courtesy of
-> notifying the maintainers of those subsystems.
->
-> Do you have any issues with this going through my tree? If not, please
-> give me an Acked-by.
+Hi Thierry,
 
-No problem absolutely.
+On 06/27/2014 04:49 AM, Thierry Reding wrote:
+[snip]
+> +
+> +#define MC_INTSTATUS 0x000
+> +#define  MC_INT_DECERR_MTS (1 << 16)
+> +#define  MC_INT_SECERR_SEC (1 << 13)
+> +#define  MC_INT_DECERR_VPR (1 << 12)
+> +#define  MC_INT_INVALID_APB_ASID_UPDATE (1 << 11)
+> +#define  MC_INT_INVALID_SMMU_PAGE (1 << 10)
+> +#define  MC_INT_ARBITRATION_EMEM (1 << 9)
+> +#define  MC_INT_SECURITY_VIOLATION (1 << 8)
+> +#define  MC_INT_DECERR_EMEM (1 << 6)
+> +#define MC_INTMASK 0x004
+> +#define MC_ERR_STATUS 0x08
+> +#define MC_ERR_ADR 0x0c
+> +
+[snip]
+> +
+> +#define SMMU_PDE_ATTR          (SMMU_PDE_READABLE | SMMU_PDE_WRITABLE | \
+> +                                SMMU_PDE_NONSECURE)
+> +#define SMMU_PTE_ATTR          (SMMU_PTE_READABLE | SMMU_PTE_WRITABLE | \
+> +                                SMMU_PTE_NONSECURE)
+> +
+> +#define SMMU_PDE_VACANT(n)     (((n) << 10) | SMMU_PDE_ATTR)
+> +#define SMMU_PTE_VACANT(n)     (((n) << 12) | SMMU_PTE_ATTR)
 
-Acked-by: Paolo Bonzini <pbonzini@redhat.com>
+There is an ISR to catch the invalid SMMU translation. Do you want to 
+modify the identity mapping with read/write attribute of the unused SMMU 
+pages?
 
-Paolo
+This can make sure we capture the invalid SMMU translation. And helps 
+for driver to capture issues when using SMMU.
 
-> Thanks!
->
-> -- Steve
->
-> On Thu, 26 Jun 2014 17:49:02 -0400
-> Steven Rostedt <rostedt@goodmis.org> wrote:
->
->> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
->>
->> There's several locations in the kernel that open code the calculation
->> of the next location in the trace_seq buffer. This is usually done with
->>
->>   p->buffer + p->len
->>
->> Instead of having this open coded, supply a helper function in the
->> header to do it for them. This function is called trace_seq_buffer_ptr().
->>
->> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
->> ---
->>  arch/x86/kvm/mmutrace.h     |  2 +-
->>  drivers/scsi/scsi_trace.c   | 16 ++++++++--------
->>  include/linux/trace_seq.h   | 15 +++++++++++++++
->>  kernel/trace/trace_output.c | 14 +++++++-------
->>  4 files changed, 31 insertions(+), 16 deletions(-)
->>
->> diff --git a/arch/x86/kvm/mmutrace.h b/arch/x86/kvm/mmutrace.h
->> index 9d2e0ffcb190..2e5652b62fd6 100644
->> --- a/arch/x86/kvm/mmutrace.h
->> +++ b/arch/x86/kvm/mmutrace.h
->> @@ -22,7 +22,7 @@
->>  	__entry->unsync = sp->unsync;
->>
->>  #define KVM_MMU_PAGE_PRINTK() ({				        \
->> -	const char *ret = p->buffer + p->len;				\
->> +	const char *ret = trace_seq_buffer_ptr(p);			\
->>  	static const char *access_str[] = {			        \
->>  		"---", "--x", "w--", "w-x", "-u-", "-ux", "wu-", "wux"  \
->>  	};							        \
->> diff --git a/drivers/scsi/scsi_trace.c b/drivers/scsi/scsi_trace.c
->> index 2bea4f0b684a..503594e5f76d 100644
->> --- a/drivers/scsi/scsi_trace.c
->> +++ b/drivers/scsi/scsi_trace.c
->> @@ -28,7 +28,7 @@ scsi_trace_misc(struct trace_seq *, unsigned char *, int);
->>  static const char *
->>  scsi_trace_rw6(struct trace_seq *p, unsigned char *cdb, int len)
->>  {
->> -	const char *ret = p->buffer + p->len;
->> +	const char *ret = trace_seq_buffer_ptr(p);
->>  	sector_t lba = 0, txlen = 0;
->>
->>  	lba |= ((cdb[1] & 0x1F) << 16);
->> @@ -46,7 +46,7 @@ scsi_trace_rw6(struct trace_seq *p, unsigned char *cdb, int len)
->>  static const char *
->>  scsi_trace_rw10(struct trace_seq *p, unsigned char *cdb, int len)
->>  {
->> -	const char *ret = p->buffer + p->len;
->> +	const char *ret = trace_seq_buffer_ptr(p);
->>  	sector_t lba = 0, txlen = 0;
->>
->>  	lba |= (cdb[2] << 24);
->> @@ -71,7 +71,7 @@ scsi_trace_rw10(struct trace_seq *p, unsigned char *cdb, int len)
->>  static const char *
->>  scsi_trace_rw12(struct trace_seq *p, unsigned char *cdb, int len)
->>  {
->> -	const char *ret = p->buffer + p->len;
->> +	const char *ret = trace_seq_buffer_ptr(p);
->>  	sector_t lba = 0, txlen = 0;
->>
->>  	lba |= (cdb[2] << 24);
->> @@ -94,7 +94,7 @@ scsi_trace_rw12(struct trace_seq *p, unsigned char *cdb, int len)
->>  static const char *
->>  scsi_trace_rw16(struct trace_seq *p, unsigned char *cdb, int len)
->>  {
->> -	const char *ret = p->buffer + p->len;
->> +	const char *ret = trace_seq_buffer_ptr(p);
->>  	sector_t lba = 0, txlen = 0;
->>
->>  	lba |= ((u64)cdb[2] << 56);
->> @@ -125,7 +125,7 @@ scsi_trace_rw16(struct trace_seq *p, unsigned char *cdb, int len)
->>  static const char *
->>  scsi_trace_rw32(struct trace_seq *p, unsigned char *cdb, int len)
->>  {
->> -	const char *ret = p->buffer + p->len, *cmd;
->> +	const char *ret = trace_seq_buffer_ptr(p), *cmd;
->>  	sector_t lba = 0, txlen = 0;
->>  	u32 ei_lbrt = 0;
->>
->> @@ -180,7 +180,7 @@ out:
->>  static const char *
->>  scsi_trace_unmap(struct trace_seq *p, unsigned char *cdb, int len)
->>  {
->> -	const char *ret = p->buffer + p->len;
->> +	const char *ret = trace_seq_buffer_ptr(p);
->>  	unsigned int regions = cdb[7] << 8 | cdb[8];
->>
->>  	trace_seq_printf(p, "regions=%u", (regions - 8) / 16);
->> @@ -192,7 +192,7 @@ scsi_trace_unmap(struct trace_seq *p, unsigned char *cdb, int len)
->>  static const char *
->>  scsi_trace_service_action_in(struct trace_seq *p, unsigned char *cdb, int len)
->>  {
->> -	const char *ret = p->buffer + p->len, *cmd;
->> +	const char *ret = trace_seq_buffer_ptr(p), *cmd;
->>  	sector_t lba = 0;
->>  	u32 alloc_len = 0;
->>
->> @@ -247,7 +247,7 @@ scsi_trace_varlen(struct trace_seq *p, unsigned char *cdb, int len)
->>  static const char *
->>  scsi_trace_misc(struct trace_seq *p, unsigned char *cdb, int len)
->>  {
->> -	const char *ret = p->buffer + p->len;
->> +	const char *ret = trace_seq_buffer_ptr(p);
->>
->>  	trace_seq_printf(p, "-");
->>  	trace_seq_putc(p, 0);
->> diff --git a/include/linux/trace_seq.h b/include/linux/trace_seq.h
->> index dd85753e1bb0..ea6c9dea79e3 100644
->> --- a/include/linux/trace_seq.h
->> +++ b/include/linux/trace_seq.h
->> @@ -25,6 +25,21 @@ trace_seq_init(struct trace_seq *s)
->>  	s->full = 0;
->>  }
->>
->> +/**
->> + * trace_seq_buffer_ptr - return pointer to next location in buffer
->> + * @s: trace sequence descriptor
->> + *
->> + * Returns the pointer to the buffer where the next write to
->> + * the buffer will happen. This is useful to save the location
->> + * that is about to be written to and then return the result
->> + * of that write.
->> + */
->> +static inline unsigned char *
->> +trace_seq_buffer_ptr(struct trace_seq *s)
->> +{
->> +	return s->buffer + s->len;
->> +}
->> +
->>  /*
->>   * Currently only defined when tracing is enabled.
->>   */
->> diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
->> index b8930f79a04b..c6977d5a9b12 100644
->> --- a/kernel/trace/trace_output.c
->> +++ b/kernel/trace/trace_output.c
->> @@ -75,7 +75,7 @@ ftrace_print_flags_seq(struct trace_seq *p, const char *delim,
->>  {
->>  	unsigned long mask;
->>  	const char *str;
->> -	const char *ret = p->buffer + p->len;
->> +	const char *ret = trace_seq_buffer_ptr(p);
->>  	int i, first = 1;
->>
->>  	for (i = 0;  flag_array[i].name && flags; i++) {
->> @@ -111,7 +111,7 @@ ftrace_print_symbols_seq(struct trace_seq *p, unsigned long val,
->>  			 const struct trace_print_flags *symbol_array)
->>  {
->>  	int i;
->> -	const char *ret = p->buffer + p->len;
->> +	const char *ret = trace_seq_buffer_ptr(p);
->>
->>  	for (i = 0;  symbol_array[i].name; i++) {
->>
->> @@ -122,7 +122,7 @@ ftrace_print_symbols_seq(struct trace_seq *p, unsigned long val,
->>  		break;
->>  	}
->>
->> -	if (ret == (const char *)(p->buffer + p->len))
->> +	if (ret == (const char *)(trace_seq_buffer_ptr(p)))
->>  		trace_seq_printf(p, "0x%lx", val);
->>  		
->>  	trace_seq_putc(p, 0);
->> @@ -137,7 +137,7 @@ ftrace_print_symbols_seq_u64(struct trace_seq *p, unsigned long long val,
->>  			 const struct trace_print_flags_u64 *symbol_array)
->>  {
->>  	int i;
->> -	const char *ret = p->buffer + p->len;
->> +	const char *ret = trace_seq_buffer_ptr(p);
->>
->>  	for (i = 0;  symbol_array[i].name; i++) {
->>
->> @@ -148,7 +148,7 @@ ftrace_print_symbols_seq_u64(struct trace_seq *p, unsigned long long val,
->>  		break;
->>  	}
->>
->> -	if (ret == (const char *)(p->buffer + p->len))
->> +	if (ret == (const char *)(trace_seq_buffer_ptr(p)))
->>  		trace_seq_printf(p, "0x%llx", val);
->>
->>  	trace_seq_putc(p, 0);
->> @@ -162,7 +162,7 @@ const char *
->>  ftrace_print_bitmask_seq(struct trace_seq *p, void *bitmask_ptr,
->>  			 unsigned int bitmask_size)
->>  {
->> -	const char *ret = p->buffer + p->len;
->> +	const char *ret = trace_seq_buffer_ptr(p);
->>
->>  	trace_seq_bitmask(p, bitmask_ptr, bitmask_size * 8);
->>  	trace_seq_putc(p, 0);
->> @@ -175,7 +175,7 @@ const char *
->>  ftrace_print_hex_seq(struct trace_seq *p, const unsigned char *buf, int buf_len)
->>  {
->>  	int i;
->> -	const char *ret = p->buffer + p->len;
->> +	const char *ret = trace_seq_buffer_ptr(p);
->>
->>  	for (i = 0; i < buf_len; i++)
->>  		trace_seq_printf(p, "%s%2.2x", i == 0 ? "" : " ", buf[i]);
->
+-joseph
 
+> +static irqreturn_t tegra124_mc_irq(int irq, void *data)
+> +{
+> +       struct tegra_mc *mc = data;
+> +       u32 value, status, mask;
+> +
+> +       /* mask all interrupts to avoid flooding */
+> +       mask = mc_readl(mc, MC_INTMASK);
+> +       mc_writel(mc, 0, MC_INTMASK);
+> +
+> +       status = mc_readl(mc, MC_INTSTATUS);
+> +       mc_writel(mc, status, MC_INTSTATUS);
+> +
+> +       dev_dbg(mc->dev, "INTSTATUS: %08x\n", status);
+> +
+> +       if (status & MC_INT_DECERR_MTS)
+> +               dev_dbg(mc->dev, "  DECERR_MTS\n");
+> +
+> +       if (status & MC_INT_SECERR_SEC)
+> +               dev_dbg(mc->dev, "  SECERR_SEC\n");
+> +
+> +       if (status & MC_INT_DECERR_VPR)
+> +               dev_dbg(mc->dev, "  DECERR_VPR\n");
+> +
+> +       if (status & MC_INT_INVALID_APB_ASID_UPDATE)
+> +               dev_dbg(mc->dev, "  INVALID_APB_ASID_UPDATE\n");
+> +
+> +       if (status & MC_INT_INVALID_SMMU_PAGE)
+> +               dev_dbg(mc->dev, "  INVALID_SMMU_PAGE\n");
+> +
+> +       if (status & MC_INT_ARBITRATION_EMEM)
+> +               dev_dbg(mc->dev, "  ARBITRATION_EMEM\n");
+> +
+> +       if (status & MC_INT_SECURITY_VIOLATION)
+> +               dev_dbg(mc->dev, "  SECURITY_VIOLATION\n");
+> +
+> +       if (status & MC_INT_DECERR_EMEM)
+> +               dev_dbg(mc->dev, "  DECERR_EMEM\n");
+> +
+> +       value = mc_readl(mc, MC_ERR_STATUS);
+> +
+> +       dev_dbg(mc->dev, "ERR_STATUS: %08x\n", value);
+> +       dev_dbg(mc->dev, "  type: %x\n", (value >> 28) & 0x7);
+> +       dev_dbg(mc->dev, "  protection: %x\n", (value >> 25) & 0x7);
+> +       dev_dbg(mc->dev, "  adr_hi: %x\n", (value >> 20) & 0x3);
+> +       dev_dbg(mc->dev, "  swap: %x\n", (value >> 18) & 0x1);
+> +       dev_dbg(mc->dev, "  security: %x\n", (value >> 17) & 0x1);
+> +       dev_dbg(mc->dev, "  r/w: %x\n", (value >> 16) & 0x1);
+> +       dev_dbg(mc->dev, "  adr1: %x\n", (value >> 12) & 0x7);
+> +       dev_dbg(mc->dev, "  client: %x\n", value & 0x7f);
+> +
+> +       value = mc_readl(mc, MC_ERR_ADR);
+> +       dev_dbg(mc->dev, "ERR_ADR: %08x\n", value);
+> +
+> +       mc_writel(mc, mask, MC_INTMASK);
+> +
+> +       return IRQ_HANDLED;
+> +}
+> +
