@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752155AbaF0ULh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 16:11:37 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:37460 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750831AbaF0ULg (ORCPT
+	id S1753301AbaF0ULq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 16:11:46 -0400
+Received: from mailrelay005.isp.belgacom.be ([195.238.6.171]:46474 "EHLO
+	mailrelay005.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752799AbaF0ULo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 16:11:36 -0400
-Date: Fri, 27 Jun 2014 16:11:35 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Allen Yu <alleny@nvidia.com>,
-        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Linux-pm mailing list <linux-pm@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] Add "rpm_not_supported" flag
-In-Reply-To: <20140627192238.GA7646@kroah.com>
-Message-ID: <Pine.LNX.4.44L0.1406271606000.875-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 27 Jun 2014 16:11:44 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AkcHALnOrVNXQCoO/2dsb2JhbABagw1Sqx0FAQEBAQEBBQFtAZkCgQ0XdYRgI4EaN4hGAcROF4VkiD1kHYQtBY96imOBRol5iDyCAIFEO4Ex
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, "Theodore Ts'o" <tytso@mit.edu>,
+        Joe Perches <joe@perches.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] scripts/checkpatch.pl: update kmalloc_array/kcalloc conversion warning
+Date: Fri, 27 Jun 2014 22:10:23 +0200
+Message-Id: <1403899823-4461-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Jun 2014, Greg Kroah-Hartman wrote:
+Avoid automatic k[mz]alloc with multiplies conversions
 
-> > One side point: The patch changes the string displayed for the 
-> > power/runtime_status attribute file when disable_depth > 0.  Instead of 
-> > "unsupported", it will now say "disabled".  The attribute will contain 
-> > "not supported" when the new flag is set.
-> > 
-> > Is this acceptable?
-> 
-> Why change the "unsupported" string?  Can't we just leave that one
-> alone?  I'd prefer to not break userspace tools...
+Inspired-by: "Theodore Ts'o" <tytso@mit.edu>
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ scripts/checkpatch.pl | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I changed it because it's wrong.  disable_depth > 0 means that runtime 
-PM has temporarily been disabled, or was never enabled in the first 
-place.  It doesn't mean that runtime PM is unsupported.
-
-In fact, the word "unsupported" is ambiguous.  Does it mean unsupported 
-by the hardware or unsupported by the kernel?  The hardware can't 
-change, but the kernel can be altered by loading a module.
-
-If that change is too intrusive, I can remove it from the patch.
-
-Alan Stern
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 182be0f..cf58a7a 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -4427,7 +4427,7 @@ sub process {
+ 			$newfunc = "kcalloc" if ($oldfunc eq "kzalloc");
+ 			if ($a1 =~ /^sizeof\s*\S/ || $a2 =~ /^sizeof\s*\S/) {
+ 				if (WARN("ALLOC_WITH_MULTIPLY",
+-					 "Prefer $newfunc over $oldfunc with multiply\n" . $herecurr) &&
++					 "Prefer $newfunc over $oldfunc with multiply when arguments are not fixed or come from unvalidated source\n" . $herecurr) &&
+ 				    $fix) {
+ 					my $r1 = $a1;
+ 					my $r2 = $a2;
+-- 
+1.8.4.5
 
