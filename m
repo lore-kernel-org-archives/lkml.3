@@ -1,83 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752968AbaF0Hww (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 03:52:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50002 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752652AbaF0Hwv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 03:52:51 -0400
-Message-ID: <53AD22D0.9000403@suse.de>
-Date: Fri, 27 Jun 2014 09:52:48 +0200
-From: =?ISO-8859-15?Q?Andreas_F=E4rber?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1753054AbaF0HxN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 03:53:13 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:38054 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753030AbaF0HxL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 03:53:11 -0400
+Message-ID: <53AD22D8.2090301@atmel.com>
+Date: Fri, 27 Jun 2014 09:52:56 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Lee Jones <lee.jones@linaro.org>
-CC: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
-        Daniel Stone <daniels@collabora.com>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 12/14] clk: max77802: Add DT binding documentation
-References: <1403806546-31122-1-git-send-email-javier.martinez@collabora.co.uk> <1403806546-31122-13-git-send-email-javier.martinez@collabora.co.uk>
-In-Reply-To: <1403806546-31122-13-git-send-email-javier.martinez@collabora.co.uk>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 8bit
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Florian Fainelli <f.fainelli@gmail.com>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        "Alexandre Belloni" <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>, netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Shen, Voice" <Voice.Shen@atmel.com>
+Subject: Re: [PATCH v2 1/2] ARM: at91/dt: describe rgmii ethernet phy connected
+ to sama5d3xek boards
+References: <1403777615-25685-1-git-send-email-boris.brezillon@free-electrons.com> <1403777615-25685-2-git-send-email-boris.brezillon@free-electrons.com> <CAGVrzcbYAEMsU1SFSH761H0isQ4z1M++KK_GLf0OAbGS48YUmw@mail.gmail.com> <53AC7BFD.2070806@free-electrons.com>
+In-Reply-To: <53AC7BFD.2070806@free-electrons.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 26.06.2014 20:15, schrieb Javier Martinez Canillas:
-> Add Device Tree binding documentation for the clocks
-> outputs in the Maxim 77802 Power Management IC.
+On 26/06/2014 22:01, Boris BREZILLON :
+> Hi Florian,
 > 
-> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> ---
+> On 26/06/2014 20:15, Florian Fainelli wrote:
+>> Hi Boris,
+>>
+>> 2014-06-26 3:13 GMT-07:00 Boris BREZILLON <boris.brezillon@free-electrons.com>:
+>>> Add ethernet-phy node and specify phy interrupt (connected to pin PB25).
+>>>
+>>> The PHY address is not specified here because atmel have 2 different
+>>> designs
+>>> for its CPU modules: one is connecting PHYAD[0-2] pins to pull up resistors
+>>> (Embest design) and the other one is connection PHYAD0 to a pull up
+>>> resistor and PHYAD[1-2] to pull down resistors (Ronetix design).
+>>> As a result, Ronetix design will have its PHY available at address 0x1 and
+>>> Embest design at 0x7.
+>>> Let the net PHY core automatically detect the PHY address by scanning the
+>>> MDIO bus.
+>> I though the compatible string was listed as a required property, but
+>> it is not. The 'reg' property however is listed as required, although
+>> the of_miodbus_register() works just fine without it, although that is
+>> a Linux-specific implementation detail.
 > 
-> Changes since v4: None
+> Indeed, it's listed in the required property list of the DT binding doc,
+> but the code implement auto detection if reg is missing.
+> However this line [1] clearly shows that specifying the reg property is
+> the preferred way of doing things.
 > 
-> Changes since v3:
->  - Don't use the same clock driver name in clock-names since it's a consumer
->    concept and most probably will be different. Suggested by Doug Anderson.
-> 
-> Changes since v2:
->  - Split the DT binding documentation in a separate patch.
-> 
->  .../devicetree/bindings/clock/maxim,max77802.txt   | 42 ++++++++++++++++++++++
->  1 file changed, 42 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/clock/maxim,max77802.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/clock/maxim,max77802.txt b/Documentation/devicetree/bindings/clock/maxim,max77802.txt
-> new file mode 100644
-> index 0000000..26bc4f7
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/clock/maxim,max77802.txt
-> @@ -0,0 +1,42 @@
-> +Binding for Maxim MAX77802 32k clock generator block
-> +
-> +This is a part of device tree bindings of MAX77802 multi-function device.
-> +More information can be found in bindings/mfd/max77802.txt file.
-> +
-> +The MAX77802 contains two 32.768khz clock outputs that can be controlled
-> +(gated/ungated) over I2C.
-> +
-> +Following properties should be presend in main device node of the MFD chip.
+> I could define 2 different sama5d3xcm.dtsi (sama5d3xcm-ronetix.dtsi and
+> sama5d3xcm-embest.dtsi) to avoid this dirty hack,
+> but then we would have 2 more dtb and the user would have to determine
+> which CPU module he owns to choose the appropriate dtb.
+> If at91, arm-soc and DT maintainers agree with this approach I can
+> definitely propose something.
 
-"present"
+Yes Boris, I definitively prefer not to add another .dtsi file for this
+series if we can avoid it.
 
-Regards,
-Andreas
+So, I would push for this "reg-less" solution. If it is chosen, you can
+add my:
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+
+Thanks, bye.
+
+
+>>> Define board specific delays to apply to RGMII signals.
+>>>
+>>> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+>> Reviewed-by: Florian Fainelli <f.fainelli@gmail.com>
+> 
+> Thanks for your review.
+> 
+> Best Regards,
+> 
+> Boris
+> 
+> [1] http://lxr.free-electrons.com/source/drivers/of/of_mdio.c#L187
+> 
+
 
 -- 
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
-GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
+Nicolas Ferre
