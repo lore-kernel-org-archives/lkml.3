@@ -1,67 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752328AbaF0ByJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 21:54:09 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:44117 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751725AbaF0ByH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 21:54:07 -0400
-Content-Type: text/plain; charset="utf-8"
+	id S1752292AbaF0CIL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 22:08:11 -0400
+Received: from sabe.cs.wisc.edu ([128.105.6.20]:45637 "EHLO sabe.cs.wisc.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751139AbaF0CIJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 22:08:09 -0400
+Message-ID: <53ACD1FA.8050600@cs.wisc.edu>
+Date: Thu, 26 Jun 2014 21:07:54 -0500
+From: Mike Christie <michaelc@cs.wisc.edu>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130917 Thunderbird/17.0.9
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Stephen Boyd <sboyd@codeaurora.org>,
-        "Viresh Kumar" <viresh.kumar@linaro.org>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <53ACB568.4000903@codeaurora.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "Shawn Guo" <shawn.guo@linaro.org>,
-        "Lists linaro-kernel" <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        "Arvind Chauhan" <arvind.chauhan@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-arm-msm@vger.kernel.org, "Sachin Kamat" <spk.linux@gmail.com>,
-        "Thomas P Abraham" <thomas.ab@samsung.com>,
-        "Nishanth Menon" <nm@ti.com>, "Tomasz Figa" <t.figa@samsung.com>,
-        "Mark Brown" <broonie@kernel.org>,
-        "Mark Rutland" <Mark.Rutland@arm.com>
-References: <cover.1403684824.git.viresh.kumar@linaro.org>
- <e9c0eef07745e561b9d12dcb50c3e2f7eb3e8880.1403684824.git.viresh.kumar@linaro.org>
- <53AB1CC1.4010907@codeaurora.org>
- <CAKohpo=Q7eWNwcK6KF9_U-zD0g=96QHW9hiQupLpV5GqoWE+mA@mail.gmail.com>
- <53ACB568.4000903@codeaurora.org>
-Message-ID: <20140627015354.32686.83046@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH 2/2] cpufreq: cpu0: Extend support beyond CPU0
-Date: Thu, 26 Jun 2014 18:53:54 -0700
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+CC: Eddie Wai <eddie.wai@broadcom.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] scsi: bnx2i: bnx2i_iscsi.c:  Fix variable which was
+ set to the wrong value
+References: <1403802633-23726-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+In-Reply-To: <1403802633-23726-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Stephen Boyd (2014-06-26 17:06:00)
-> Finally, checking for equivalent pointers from clk_get() will work now,
-
-Please don't do that. Even though it works for the current
-implementation, comparing those pointers from a driver violates how
-clkdev is supposed to work. The pointer returned by clk_get should only
-be dereferenced by a driver to check if it is an error code. Anything
-besides an error code is no business of the driver.
-
-> but it isn't future-proof if/when the clock framework starts returning
-> dynamically allocated clock pointers for each clk_get() invocation.
-> Maybe we need a function in the common clock framework that tells us if
-> the clocks are the same either via DT or by taking two clock pointers?
-
-I looked through the patch briefly and did not see why we would need to
-do this. Any hint?
-
-Thanks,
-Mike
-
+On 06/26/2014 12:10 PM, Rickard Strandqvist wrote:
+> After some discussion, all agreed that the previous value was incorrect.
 > 
-> -- 
-> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-> hosted by The Linux Foundation
-> 
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+
+This is better but still sort of incorrect as userspace would be getting 2
+bogus entries at indexes 0 and 1. be2iscsi is also broken but it actually
+was telling userspace it had no entries when it had one. The patch below
+fixes both drivers. Tested here with both drivers.
+
+
+[PATCH] bnx2i, be2iscsi: fix custom stats length
+
+The custom stats is an array with custom_length indicating the length
+of the array. This patch fixes bnx2i and be2iscsi's setting of the
+custom stats. They both just have the one, eh_abort_cnt, so that should
+be in the first entry of the custom array and custom_length should then
+be one.
+
+Signed-off-by: Mike Christie <michaelc@cs.wisc.edu>
+Acked-by: Eddie Wai <eddie.wai@broadcom.com>
+
+diff --git a/drivers/scsi/be2iscsi/be_iscsi.c b/drivers/scsi/be2iscsi/be_iscsi.c
+index fd284ff..8616281 100644
+--- a/drivers/scsi/be2iscsi/be_iscsi.c
++++ b/drivers/scsi/be2iscsi/be_iscsi.c
+@@ -914,7 +914,7 @@ void beiscsi_conn_get_stats(struct iscsi_cls_conn *cls_conn,
+ 	stats->r2t_pdus = conn->r2t_pdus_cnt;
+ 	stats->digest_err = 0;
+ 	stats->timeout_err = 0;
+-	stats->custom_length = 0;
++	stats->custom_length = 1;
+ 	strcpy(stats->custom[0].desc, "eh_abort_cnt");
+ 	stats->custom[0].value = conn->eh_abort_cnt;
+ }
+diff --git a/drivers/scsi/bnx2i/bnx2i_iscsi.c b/drivers/scsi/bnx2i/bnx2i_iscsi.c
+index 166543f..9bd9b81 100644
+--- a/drivers/scsi/bnx2i/bnx2i_iscsi.c
++++ b/drivers/scsi/bnx2i/bnx2i_iscsi.c
+@@ -1643,12 +1643,11 @@ static void bnx2i_conn_get_stats(struct iscsi_cls_conn *cls_conn,
+ 	stats->r2t_pdus = conn->r2t_pdus_cnt;
+ 	stats->tmfcmd_pdus = conn->tmfcmd_pdus_cnt;
+ 	stats->tmfrsp_pdus = conn->tmfrsp_pdus_cnt;
+-	stats->custom_length = 3;
+-	strcpy(stats->custom[2].desc, "eh_abort_cnt");
+-	stats->custom[2].value = conn->eh_abort_cnt;
+ 	stats->digest_err = 0;
+ 	stats->timeout_err = 0;
+-	stats->custom_length = 0;
++	strcpy(stats->custom[0].desc, "eh_abort_cnt");
++	stats->custom[0].value = conn->eh_abort_cnt;
++	stats->custom_length = 1;
+ }
+ 
+ 
+
