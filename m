@@ -1,74 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753848AbaF0TRV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 15:17:21 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:34894 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751570AbaF0TRU (ORCPT
+	id S1754196AbaF0TRz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 15:17:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43856 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752561AbaF0TRy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 15:17:20 -0400
-Date: Fri, 27 Jun 2014 15:17:18 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH 2/2] trace-cmd: [BUGFIX] Don't die if an instance does
- not have 'current_tracer' file
-Message-ID: <20140627151718.22f22685@gandalf.local.home>
-In-Reply-To: <20140624022345.14037.44275.stgit@yuno-kbuild.novalocal>
-References: <20140624022340.14037.63549.stgit@yuno-kbuild.novalocal>
-	<20140624022345.14037.44275.stgit@yuno-kbuild.novalocal>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
+	Fri, 27 Jun 2014 15:17:54 -0400
+Date: Fri, 27 Jun 2014 12:17:52 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dan Streetman <ddstreet@ieee.org>
+Cc: Seth Jennings <sjennings@variantweb.net>, Minchan Kim <minchan@kernel.org>,
+        Weijie Yang <weijie.yang@samsung.com>, Nitin Gupta <ngupta@vflare.org>,
+        Bob Liu <bob.liu@oracle.com>, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv4 3/6] mm/zpool: implement common zpool api to
+ zbud/zsmalloc
+Message-Id: <20140627121752.21c559c3404d665adbaa5b23@linux-foundation.org>
+In-Reply-To: <CALZtONDab98oHJsPqHVMxS0aEfMBTYdJFx3p-ODr3Dke_x5m0g@mail.gmail.com>
+References: <1400958369-3588-1-git-send-email-ddstreet@ieee.org>
+	<1401747586-11861-1-git-send-email-ddstreet@ieee.org>
+	<1401747586-11861-4-git-send-email-ddstreet@ieee.org>
+	<20140623144614.d4549fa0aecb03b7b8044bc7@linux-foundation.org>
+	<CALZtONDKmM8nRv3tqZThc8mC3Dmrxqj7if5-yAeivnfCbfwENw@mail.gmail.com>
+	<20140624160857.ebb638c4c69c1d290f64d01f@linux-foundation.org>
+	<CALZtONDab98oHJsPqHVMxS0aEfMBTYdJFx3p-ODr3Dke_x5m0g@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Jun 2014 02:23:45 +0000
-Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com> wrote:
+On Fri, 27 Jun 2014 13:11:15 -0400 Dan Streetman <ddstreet@ieee.org> wrote:
 
-> Current trace-cmd requires 'current_tracer' file for an instance, and if
-> the file is nothing, trace-cmd dies. However, current_tracer file was
-> introduced from 607e2ea167e patch in Linux kernel 3.14-rc3, so current
-> trace-cmd cannot use multiple buffers for old kernels.
+> >> >> +struct zpool *zpool_create_pool(char *type, gfp_t flags,
+> >> >> +                     struct zpool_ops *ops)
+> >> >> +{
+> >> >> +     struct zpool_driver *driver;
+> >> >> +     struct zpool *zpool;
+> >> >> +
+> >> >> +     pr_info("creating pool type %s\n", type);
+> >> >> +
+> >> >> +     spin_lock(&drivers_lock);
+> >> >> +     driver = zpool_get_driver(type);
+> >> >> +     spin_unlock(&drivers_lock);
+> >> >
+> >> > Racy against unregister.  Can be solved with a standard get/put
+> >> > refcounting implementation.  Or perhaps a big fat mutex.
+> >
+> > Was there a decision here?
 > 
-> This patch avoids to die if current_tracer file is nothing in an instance
-> and the plugin name is "nop". This is because old kernels always trace
-> as nop mode in an instance.
+> What I tried to do, with the final patch in the set, was use module
+> usage counting combined with function documentation - in
+> zpool_create_pool() the zpool_get_driver() does try_module_get()
+> before releasing the spinlock, so if the driver *only* calls
+> unregister from its module exit function, I think we should be good -
+> once zpool_create_pool() gets the driver module, the driver won't
+> enter its exit function and thus won't unregister; and if the driver
+> module has started its exit function, try_module_get() will return
+> failure and zpool_create_pool() will return failure.
 > 
-> <How to test>
-> 1) # ./trace-cmd record -B foo -e sched
+> Now, if we remove the restriction that the driver module can only
+> unregister from its module exit function, then we would need an
+> additional refcount (we could use module_refcount() but the module may
+> have refcounts unrelated to us) and unregister would need a return
+> value, to indicate failure.  I think the problem I had with that is,
+> in the driver module's exit function it can't abort if unregister
+> fails; but with the module refcounting, unregister shouldn't ever fail
+> in the driver's exit function...
 > 
-> Before introducing this patch, following error message is output in an old
-> kernel:
-> 
->  trace-cmd: Permission denied
->    writing to '/sys/kernel/debug/tracing/instances/foo/current_tracer'
-> 
-> trace-cmd dies in disable_trace() calling set_plugin("nop").
-> After introducing this patch, trace-cmd works fine in both old kernels and
-> current kernel.
-> 
-> 2) # ./trace-cmd record -B foo -e sched -p nop
-> 
-> It also works fine after introducing this patch in both old kernels and current
-> kernel.
-> 
-> 3) # ./trace-cmd record -B foo -e sched -p function
-> 
-> For old kernels, it dies because an user should not set plugin tracer.
-> For current kernel, it works fine.
-> 
-> Note that this patch was tested for kernel 3.11.9-200 and 3.15.0-rc2+.
-> 
-> Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
+> So should I remove the unregister function doc asking to only call
+> unregister from the module exit function, and add a separate refcount
+> to the driver get/put functions?  I don't think we need to use a kref,
+> since we don't want to free the driver once kref == 0, we want to be
+> able to check in the unregister function if there are any refs, so
+> just an atomic_t should work.  And we would still need to keep the
+> module get/put, too, so it would be something like:
 
-Applied, thanks!
+I'm not sure I understood all that.  But I don't want to understand it
+in this context!  Readers should be able to gather all this from
+looking at the code.
 
--- Steve
+>   spin_lock(&drivers_lock);
+> ...
+>   bool got = try_module_get(driver->owner);
+>   if (got)
+>     atomic_inc(driver->refs);
+>   spin_unlock(&drivers_lock);
+>   return got ? driver : NULL;
+> 
+> with the appropriate atomic_dec in zpool_put_driver(), and unregister
+> would change to:
+> 
+> int zpool_unregister_driver(struct zpool_driver *driver)
+> {
+>   spin_lock(&drivers_lock);
+>   if (atomic_read(driver->refs) > 0) {
+>     spin_unlock(&drivers_lock);
+>     return -EBUSY;
+>   }
+>   list_del(&driver->list);
+>   spin_unlock(&drivers_lock);
+>   return 0;
+> }
+
+It sounds like that will work.
