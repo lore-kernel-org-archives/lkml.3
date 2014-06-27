@@ -1,63 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259AbaF0JKK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 05:10:10 -0400
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:55264 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753227AbaF0JKE (ORCPT
+	id S1752934AbaF0JOi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 05:14:38 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:45269 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751127AbaF0JOh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 05:10:04 -0400
-Date: Fri, 27 Jun 2014 10:09:58 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Jim Davis <jim.epost@gmail.com>, sfr@canb.auug.org.au,
-        linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, sbkim73@samsung.com,
-        sameo@linux.intel.com, grant.likely@linaro.org, robh+dt@kernel.org,
-        devicetree <devicetree@vger.kernel.org>
-Subject: Re: mfd: sec-core requires regulators
-Message-ID: <20140627090957.GG19645@lee--X1>
-References: <CA+r1ZhhFYip3Jp2c3d8tNpD-vK8Pkf7DzrKTtk6Gy8uOOO3Ucw@mail.gmail.com>
- <29237234.T7oGEGKuvp@wuerfel>
- <20140624154833.GR13803@lee--X1>
- <6906564.1ehoeq1QjB@wuerfel>
+	Fri, 27 Jun 2014 05:14:37 -0400
+Message-ID: <53AD35A8.7030908@huawei.com>
+Date: Fri, 27 Jun 2014 17:13:12 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <6906564.1ehoeq1QjB@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH v2 1/3] cgroup: fix mount failure in a corner case
+References: <53AD18D0.3090100@huawei.com> <53AD2852.2060304@huawei.com>
+In-Reply-To: <53AD2852.2060304@huawei.com>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Jun 2014, Arnd Bergmann wrote:
+Made a mistake again.. :(
 
-> The newly added sec-core mfd module calls the regulator_suspend_prepare()
-> function, which is only available if the regulator API is provided. This
-> matches the usage of the driver, so we can just add a Kconfig dependency.
-> 
-> Reported-by: Jim Davis <jim.epost@gmail.com>
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-Thanks for re-sending Arnd, patch applied.
+==============
 
-> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> index 207c433..1caa3c5 100644
-> --- a/drivers/mfd/Kconfig
-> +++ b/drivers/mfd/Kconfig
-> @@ -582,7 +582,7 @@ config MFD_RC5T583
->  
->  config MFD_SEC_CORE
->         bool "SAMSUNG Electronics PMIC Series Support"
-> -       depends on I2C=y
-> +       depends on I2C=y && REGULATOR
->         select MFD_CORE
->         select REGMAP_I2C
->         select REGMAP_IRQ
+From: Li Zefan <lizefan@huawei.com>
+Subject: [PATCH 1/3] cgroup: fix mount failure in a corner case
 
+  # cat test.sh
+  #! /bin/bash
+
+  mount -t cgroup -o cpu xxx /cgroup
+  umount /cgroup
+
+  mount -t cgroup -o cpu,cpuacct xxx /cgroup
+  umount /cgroup
+  # ./test.sh
+  mount: xxx already mounted or /cgroup busy
+  mount: according to mtab, xxx is already mounted on /cgroup
+
+It's because the cgroupfs_root of the first mount was under destruction
+asynchronously.
+
+Fix this by delaying and then retrying mount for this case.
+
+v2:
+- use percpu_ref_tryget_live() rather that introducing
+  percpu_ref_alive(). (Tejun)
+- adjust comment.
+
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+---
+ kernel/cgroup.c | 29 +++++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
+
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 1c65f24..b94449f 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1648,10 +1648,12 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
+ 			 int flags, const char *unused_dev_name,
+ 			 void *data)
+ {
++	struct cgroup_subsys *ss;
+ 	struct cgroup_root *root;
+ 	struct cgroup_sb_opts opts;
+ 	struct dentry *dentry;
+ 	int ret;
++	int i, j = -1;
+ 	bool new_sb;
+ 
+ 	/*
+@@ -1677,6 +1679,25 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
+ 		goto out_unlock;
+ 	}
+ 
++	/*
++	 * Destruction of cgroup root is asynchronous, so we may fail to
++	 * mount a cgroupfs if it immediately follows a umount. Let's wait
++	 * a little bit and retry.
++	 */
++	for_each_subsys(ss, i) {
++		if (!(opts.subsys_mask & (1 << i)) ||
++		    ss->root == &cgrp_dfl_root)
++			continue;
++
++		if (!percpu_ref_tryget_live(&ss->root->cgrp.self.refcnt)) {
++			mutex_unlock(&cgroup_mutex);
++			msleep(10);
++			ret = restart_syscall();
++			goto out_free;
++		}
++		j = i;
++	}
++
+ 	for_each_root(root) {
+ 		bool name_match = false;
+ 
+@@ -1763,6 +1784,14 @@ out_free:
+ 	kfree(opts.release_agent);
+ 	kfree(opts.name);
+ 
++	for_each_subsys(ss, i) {
++		if (i > j)
++			break;
++		if (!(opts.subsys_mask & (1 << i)))
++			continue;
++		cgroup_put(&ss->root->cgrp);
++	}
++
+ 	if (ret)
+ 		return ERR_PTR(ret);
+ 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.8.0.2
+
