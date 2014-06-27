@@ -1,84 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753672AbaF0UZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 16:25:56 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:47466 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751264AbaF0UZy (ORCPT
+	id S1752370AbaF0Udc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 16:33:32 -0400
+Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:58875 "EHLO
+	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750714AbaF0Udb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 16:25:54 -0400
-Message-ID: <53ADD34D.4020709@infradead.org>
-Date: Fri, 27 Jun 2014 13:25:49 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>
-CC: Pavel Machek <pavel@ucw.cz>, Valdis Kletnieks <valdis.kletnieks@vt.edu>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org,
-        Sonal Santan <sonal.santan@gmail.com>
-Subject: Re: [PATCH v2] Documentation: Rename hpfall.c => freefall.c, fixes
- for Dell
-References: <1399114077-19314-3-git-send-email-pali.rohar@gmail.com> <20140614085328.GC15326@Nokia-N900> <201406161355.03998@pali> <201406272108.10901@pali>
-In-Reply-To: <201406272108.10901@pali>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+	Fri, 27 Jun 2014 16:33:31 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AowOACPUrVNXQCoO/2dsb2JhbABbgw2rbwUBAQEBAQEFAW0Bl0uBN4ENF3WEYCOBGjeIRgHEUxeFZIkhHYQtBZpdiz+IPIIAgUQ7
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Sumit Semwal <sumit.semwal@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-media@vger.kernel.org
+Subject: [PATCH 1/1] drivers/base/dma-buf.c: replace dma_buf_uninit_debugfs by debugfs_remove_recursive
+Date: Fri, 27 Jun 2014 22:32:10 +0200
+Message-Id: <1403901130-8156-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27/14 12:08, Pali Rohár wrote:
-> On Monday 16 June 2014 13:55:03 Pali Rohár wrote:
->> On Saturday 14 June 2014 10:53:29 Pavel Machek wrote:
->>> On Wed 2014-06-11 10:02:07, Pali Roh?r wrote:
->>>> Dell kernel driver dell-smo8800 provides same freefall
->>>> interface as hp_accel so program hpfall.c works also on
->>>> Dell laptops. So rename it to freefall.c.
->>>>
->>>> Dell driver does not provide hp::hddprotect led so make
->>>> sure that freefall.c works also if hp::hddprotect does
->>>> not exist in sysfs.
->>>>
->>>> Additionally write info to syslog.
->>>>
->>>> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
->>>> Cc: Sonal Santan <sonal.santan@gmail.com>
->>>> ---
->>>> Changes since v1:
->>>> * Fixed warnings: Missing a blank line after declarations
->>>> ---
->>>>
->>>>  Documentation/laptops/00-INDEX   |    4 +-
->>>>  Documentation/laptops/freefall.c |  177
->>>>  ++++++++++++++++++++++++++++++++++++++
->>>>  Documentation/laptops/hpfall.c   |  146
->>>>  ------------------------------- 3 files changed, 179
->>>>  insertions(+), 148 deletions(-) create mode 100644
->>>>  Documentation/laptops/freefall.c delete mode 100644
->>>>  Documentation/laptops/hpfall.c
->>>
->>> Acked-by: Pavel Machek <pavel@ucw.cz>
->>>
->>> 						Pavel
->>
->> Randy, Matthew: PING
->>
->> first patch which implementing dell-smo8800.ko was merged, but
->> this patch which updating documentation and fall daemon *not*.
-> 
-> PING.
-> 
-> What is with this patch? Why was still not set to Linus in doc or 
-> platform pull request?
-> 
+null test before debugfs_remove_recursive is not needed so one line function
+dma_buf_uninit_debugfs can be removed.
 
-Sorry, I was on vacation this week, but that does not explain the previous
-delays.
+This patch calls debugfs_remove_recursive under CONFIG_DEBUG_FS
 
-I'll merge it sometime this weekend.
+Cc: Sumit Semwal <sumit.semwal@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-media@vger.kernel.org
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
 
-Thanks.
+This is untested.
 
+ drivers/base/dma-buf.c | 13 +++----------
+ 1 file changed, 3 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/base/dma-buf.c b/drivers/base/dma-buf.c
+index 840c7fa..184c0cb 100644
+--- a/drivers/base/dma-buf.c
++++ b/drivers/base/dma-buf.c
+@@ -701,12 +701,6 @@ static int dma_buf_init_debugfs(void)
+ 	return err;
+ }
+ 
+-static void dma_buf_uninit_debugfs(void)
+-{
+-	if (dma_buf_debugfs_dir)
+-		debugfs_remove_recursive(dma_buf_debugfs_dir);
+-}
+-
+ int dma_buf_debugfs_create_file(const char *name,
+ 				int (*write)(struct seq_file *))
+ {
+@@ -722,9 +716,6 @@ static inline int dma_buf_init_debugfs(void)
+ {
+ 	return 0;
+ }
+-static inline void dma_buf_uninit_debugfs(void)
+-{
+-}
+ #endif
+ 
+ static int __init dma_buf_init(void)
+@@ -738,6 +729,8 @@ subsys_initcall(dma_buf_init);
+ 
+ static void __exit dma_buf_deinit(void)
+ {
+-	dma_buf_uninit_debugfs();
++#ifdef CONFIG_DEBUG_FS
++	debugfs_remove_recursive(dma_buf_debugfs_dir);
++#endif
+ }
+ __exitcall(dma_buf_deinit);
 -- 
-~Randy
+1.8.4.5
+
