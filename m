@@ -1,59 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753363AbaF0KSk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 06:18:40 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:55132 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752826AbaF0KSj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 06:18:39 -0400
-Date: Fri, 27 Jun 2014 12:18:31 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: lkml <linux-kernel@vger.kernel.org>, Paolo Bonzini <pbonzini@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, x86-ml <x86@kernel.org>,
-        kvm@vger.kernel.org, =?utf-8?B?SsO2cmcgUsO2ZGVs?= <joro@8bytes.org>
-Subject: Re: __schedule #DF splat
-Message-ID: <20140627101831.GB23153@pd.tnic>
-References: <20140625153227.GA13845@pd.tnic>
- <20140625202650.GC13845@pd.tnic>
+	id S1753368AbaF0KTt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 06:19:49 -0400
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:65123 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752952AbaF0KTq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 06:19:46 -0400
+Date: Fri, 27 Jun 2014 11:19:40 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Jim Davis <jim.epost@gmail.com>, sfr@canb.auug.org.au,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, sbkim73@samsung.com,
+        sameo@linux.intel.com, grant.likely@linaro.org, robh+dt@kernel.org,
+        devicetree <devicetree@vger.kernel.org>
+Subject: Re: mfd: sec-core requires regulators
+Message-ID: <20140627101940.GJ19645@lee--X1>
+References: <CA+r1ZhhFYip3Jp2c3d8tNpD-vK8Pkf7DzrKTtk6Gy8uOOO3Ucw@mail.gmail.com>
+ <29237234.T7oGEGKuvp@wuerfel>
+ <20140624154833.GR13803@lee--X1>
+ <6906564.1ehoeq1QjB@wuerfel>
+ <20140627090957.GG19645@lee--X1>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140625202650.GC13845@pd.tnic>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140627090957.GG19645@lee--X1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 10:26:50PM +0200, Borislav Petkov wrote:
-> On Wed, Jun 25, 2014 at 05:32:28PM +0200, Borislav Petkov wrote:
-> > Hi guys,
-> > 
-> > so I'm looking at this splat below when booting current linus+tip/master
-> > in a kvm guest. Initially I thought this is something related to the
-> > PARAVIRT gunk but it happens with and without it.
+On Fri, 27 Jun 2014, Lee Jones wrote:
+
+> On Tue, 24 Jun 2014, Arnd Bergmann wrote:
 > 
-> Ok, here's a cleaner splat. I went and rebuilt qemu to latest master
-> from today to rule out some breakage there but it still fires.
+> > The newly added sec-core mfd module calls the regulator_suspend_prepare()
+> > function, which is only available if the regulator API is provided. This
+> > matches the usage of the driver, so we can just add a Kconfig dependency.
+> > 
+> > Reported-by: Jim Davis <jim.epost@gmail.com>
+> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> 
+> Thanks for re-sending Arnd, patch applied.
 
-Ok, another observation: I was using qemu from sources from the other day:
+Slight change of plan - this appears to have been fixed by 591123e.
 
-v2.0.0-1806-g2b5b7ae917e8
-
-Switching back to the installed one:
-
-$ qemu-system-x86_64 --version
-QEMU emulator version 1.7.1 (Debian 1.7.0+dfsg-6), Copyright (c) 2003-2008 Fabrice Bellard
-
-fixes the issue.
-
-Joerg says I should bisect but I'm busy with other stuff. If people are
-interested in chasing this further, I could free up some time to do
-so...
+> > diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> > index 207c433..1caa3c5 100644
+> > --- a/drivers/mfd/Kconfig
+> > +++ b/drivers/mfd/Kconfig
+> > @@ -582,7 +582,7 @@ config MFD_RC5T583
+> >  
+> >  config MFD_SEC_CORE
+> >         bool "SAMSUNG Electronics PMIC Series Support"
+> > -       depends on I2C=y
+> > +       depends on I2C=y && REGULATOR
+> >         select MFD_CORE
+> >         select REGMAP_I2C
+> >         select REGMAP_IRQ
+> 
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
