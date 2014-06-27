@@ -1,557 +1,541 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754345AbaF0PVB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 11:21:01 -0400
-Received: from mail-bn1lp0140.outbound.protection.outlook.com ([207.46.163.140]:47803
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753943AbaF0PUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 11:20:54 -0400
-From: <tthayer@altera.com>
-To: <robherring2@gmail.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <rob@landley.net>, <linux@arm.linux.org.uk>, <dinguyen@altera.com>,
-        <dougthompson@xmission.com>, <grant.likely@linaro.org>, <bp@alien8.de>
-CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-edac@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <tthayer.linux@gmail.com>,
-        <tthayer@altera.com>
-Subject: [PATCHv8 3/3] edac: altera: Add Altera SDRAM Controller EDAC support.
-Date: Fri, 27 Jun 2014 10:26:59 -0500
-Message-ID: <1403882819-24929-4-git-send-email-tthayer@altera.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1403882819-24929-1-git-send-email-tthayer@altera.com>
-References: <1403882819-24929-1-git-send-email-tthayer@altera.com>
+	id S1754419AbaF0PVd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 11:21:33 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:49043 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754399AbaF0PVa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 11:21:30 -0400
+Date: Fri, 27 Jun 2014 08:21:24 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: linux-kernel@vger.kernel.org, riel@redhat.com, mingo@kernel.org,
+        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH RFC tip/core/rcu] Parallelize and economize NOCB kthread
+ wakeups
+Message-ID: <20140627152124.GE4603@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140627142038.GA22942@linux.vnet.ibm.com>
+ <1303487209.5407.1403881287626.JavaMail.zimbra@efficios.com>
+ <874076734.5414.1403881997638.JavaMail.zimbra@efficios.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(22564002)(199002)(575784001)(86152002)(21056001)(31966008)(92566001)(86362001)(74502001)(92726001)(2201001)(93916002)(33646001)(48376002)(87286001)(87936001)(74662001)(50466002)(89996001)(88136002)(102836001)(4396001)(107046002)(85852003)(105596002)(83072002)(50226001)(104166001)(36756003)(99396002)(76176999)(95666004)(106466001)(77156001)(97736001)(50986999)(42186005)(85306003)(62966002)(76482001)(46102001)(77982001)(83322001)(44976005)(6806004)(81542001)(20776003)(19580395003)(64706001)(19580405001)(77096002)(68736004)(47776003)(81342001)(80022001)(79102001)(84676001)(921003)(1121002)(2101003);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB136;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 0255DF69B9
-Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
- smtp.mailfrom=tthayer@altera.com; 
-X-OriginatorOrg: altera.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <874076734.5414.1403881997638.JavaMail.zimbra@efficios.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14062715-8236-0000-0000-0000036ED9C6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thor Thayer <tthayer@altera.com>
+On Fri, Jun 27, 2014 at 03:13:17PM +0000, Mathieu Desnoyers wrote:
+> ----- Original Message -----
+> > From: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
+> > To: paulmck@linux.vnet.ibm.com
+> > Cc: linux-kernel@vger.kernel.org, riel@redhat.com, mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+> > akpm@linux-foundation.org, josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+> > rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+> > oleg@redhat.com, sbw@mit.edu
+> > Sent: Friday, June 27, 2014 11:01:27 AM
+> > Subject: Re: [PATCH RFC tip/core/rcu] Parallelize and economize NOCB kthread wakeups
+> > 
+> > ----- Original Message -----
+> > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > > To: linux-kernel@vger.kernel.org, riel@redhat.com
+> > > Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+> > > akpm@linux-foundation.org, "mathieu desnoyers"
+> > > <mathieu.desnoyers@efficios.com>, josh@joshtriplett.org, niv@us.ibm.com,
+> > > tglx@linutronix.de, peterz@infradead.org,
+> > > rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
+> > > dvhart@linux.intel.com, fweisbec@gmail.com,
+> > > oleg@redhat.com, sbw@mit.edu
+> > > Sent: Friday, June 27, 2014 10:20:38 AM
+> > > Subject: [PATCH RFC tip/core/rcu] Parallelize and economize NOCB kthread
+> > > wakeups
+> > > 
+> > > An 80-CPU system with a context-switch-heavy workload can require so
+> > > many NOCB kthread wakeups that the RCU grace-period kthreads spend several
+> > > tens of percent of a CPU just awakening things.  This clearly will not
+> > > scale well: If you add enough CPUs, the RCU grace-period kthreads would
+> > > get behind, increasing grace-period latency.
+> > > 
+> > > To avoid this problem, this commit divides the NOCB kthreads into leaders
+> > > and followers, where the grace-period kthreads awaken the leaders each of
+> > > whom in turn awakens its followers.  By default, the number of groups of
+> > > kthreads is the square root of the number of CPUs, but this default may
+> > > be overridden using the rcutree.rcu_nocb_leader_stride boot parameter.
+> > > This reduces the number of wakeups done per grace period by the RCU
+> > > grace-period kthread by the square root of the number of CPUs, but of
+> > > course by shifting those wakeups to the leaders.  In addition, because
+> > > the leaders do grace periods on behalf of their respective followers,
+> > > the number of wakeups of the followers decreases by up to a factor of two.
+> > > Instead of being awakened once when new callbacks arrive and again
+> > > at the end of the grace period, the followers are awakened only at
+> > > the end of the grace period.
+> > > 
+> > > For a numerical example, in a 4096-CPU system, the grace-period kthread
+> > > would awaken 64 leaders, each of which would awaken its 63 followers
+> > > at the end of the grace period.  This compares favorably with the 79
+> > > wakeups for the grace-period kthread on an 80-CPU system.
+> > 
+> > If I understand your approach correctly, it looks like the callbacks
+> > are moved from the follower threads (per CPU) to leader threads (for
+> > a group of CPUs). I'm concerned that moving those callbacks to leader
+> > threads would increase cache trashing, since the callbacks would be
+> > often executed from a different CPU than the CPU which enqueued the
+> > work. In a case where cgroups/affinity are used to pin kthreads to
+> > specific CPUs to minimize cache trashing, I'm concerned that this
+> > approach could degrade performance.
+> > 
+> > Would there be another way to distribute the wake up that would keep
+> > callbacks local to their enqueuing CPU ?
+> > 
+> > Or am I missing something important ?
+> 
+> What I appear to have missed is that the leader moves the callbacks
+> from the follower's structure _to_ another list within that same
+> follower's structure, which ensures that callbacks are executed
+> locally by the follower.
+> 
+> Sorry for the noise. ;-)
 
-This patch adds support for the CycloneV and ArriaV SDRAM controllers. 
-Correction and reporting of SBEs, Panic on DBEs.
+Not a problem, and thank you for looking at the patch!
 
-Signed-off-by: Thor Thayer <tthayer@altera.com>
----
-v2: Use the SDRAM controller registers to calculate memory size
-    instead of the Device Tree. Update To & Cc list. Add maintainer
-    information.
+							Thanx, Paul
 
-v3: EDAC driver cleanup based on comments from Mailing list.
-
-v4: Panic on DBE. Add macro around inject-error reads to prevent
-    them from being optimized out. Remove of_match_ptr since this
-    will always use Device Tree.
-
-v5: Addition of printk to trigger function to ensure read vars
-    are not optimized out.
-
-v6: Changes to split out shared SDRAM controller reg (offset 0x00)
-    as a syscon device and allocate ECC specific SDRAM registers
-    to EDAC.
-
-v7: No changes. Bump for consistency.
-
-v8: Alphabetize headers.
----
- drivers/edac/Kconfig       |    9 +
- drivers/edac/Makefile      |    2 +
- drivers/edac/altera_edac.c |  449 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 460 insertions(+)
- create mode 100644 drivers/edac/altera_edac.c
-
-diff --git a/drivers/edac/Kconfig b/drivers/edac/Kconfig
-index 878f090..4f4d379 100644
---- a/drivers/edac/Kconfig
-+++ b/drivers/edac/Kconfig
-@@ -368,4 +368,13 @@ config EDAC_OCTEON_PCI
- 	  Support for error detection and correction on the
- 	  Cavium Octeon family of SOCs.
- 
-+config EDAC_ALTERA_MC
-+	bool "Altera SDRAM Memory Controller EDAC"
-+	depends on EDAC_MM_EDAC && ARCH_SOCFPGA
-+	help
-+	  Support for error detection and correction on the
-+	  Altera SDRAM memory controller. Note that the
-+	  preloader must initialize the SDRAM before loading
-+	  the kernel.
-+
- endif # EDAC
-diff --git a/drivers/edac/Makefile b/drivers/edac/Makefile
-index 4154ed6..9741336 100644
---- a/drivers/edac/Makefile
-+++ b/drivers/edac/Makefile
-@@ -64,3 +64,5 @@ obj-$(CONFIG_EDAC_OCTEON_PC)		+= octeon_edac-pc.o
- obj-$(CONFIG_EDAC_OCTEON_L2C)		+= octeon_edac-l2c.o
- obj-$(CONFIG_EDAC_OCTEON_LMC)		+= octeon_edac-lmc.o
- obj-$(CONFIG_EDAC_OCTEON_PCI)		+= octeon_edac-pci.o
-+
-+obj-$(CONFIG_EDAC_ALTERA_MC)	        += altera_edac.o
-diff --git a/drivers/edac/altera_edac.c b/drivers/edac/altera_edac.c
-new file mode 100644
-index 0000000..73254f9
---- /dev/null
-+++ b/drivers/edac/altera_edac.c
-@@ -0,0 +1,449 @@
-+/*
-+ *  Copyright Altera Corporation (C) 2014. All rights reserved.
-+ *  Copyright 2011-2012 Calxeda, Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+
-+ *
-+ * Adapted from the highbank_mc_edac driver
-+ *
-+ */
-+
-+#include <linux/ctype.h>
-+#include <linux/edac.h>
-+#include <linux/interrupt.h>
-+#include <linux/kernel.h>
-+#include <linux/mfd/syscon.h>
-+#include <linux/of_platform.h>
-+#include <linux/platform_device.h>
-+#include <linux/regmap.h>
-+#include <linux/types.h>
-+#include <linux/uaccess.h>
-+
-+#include "edac_core.h"
-+#include "edac_module.h"
-+
-+#define EDAC_MOD_STR		"altera_edac"
-+#define EDAC_VERSION		"1"
-+
-+/* SDRAM Controller CtrlCfg Register */
-+#define CTLCFG			0x00
-+
-+/* SDRAM Controller CtrlCfg Register Bit Masks */
-+#define CTLCFG_ECC_EN		0x400
-+#define CTLCFG_ECC_CORR_EN	0x800
-+#define CTLCFG_GEN_SB_ERR	0x2000
-+#define CTLCFG_GEN_DB_ERR	0x4000
-+
-+#define CTLCFG_ECC_AUTO_EN	(CTLCFG_ECC_EN | \
-+				 CTLCFG_ECC_CORR_EN)
-+
-+/* SDRAM Controller ECC Register Offset */
-+#define ECC_REG_OFFSET		0x2C
-+
-+/* SDRAM Controller Address Width Register */
-+#define DRAMADDRW		(0x2C-ECC_REG_OFFSET)
-+
-+/* SDRAM Controller Address Widths Field Register */
-+#define DRAMADDRW_COLBIT_MASK	0x001F
-+#define DRAMADDRW_COLBIT_LSB	0
-+#define DRAMADDRW_ROWBIT_MASK	0x03E0
-+#define DRAMADDRW_ROWBIT_LSB	5
-+#define DRAMADDRW_BANKBIT_MASK	0x1C00
-+#define DRAMADDRW_BANKBIT_LSB	10
-+#define DRAMADDRW_CSBIT_MASK	0xE000
-+#define DRAMADDRW_CSBIT_LSB	13
-+
-+/* SDRAM Controller Interface Data Width Register */
-+#define DRAMIFWIDTH		(0x30-ECC_REG_OFFSET)
-+
-+/* SDRAM Controller Interface Data Width Defines */
-+#define DRAMIFWIDTH_16B_ECC	24
-+#define DRAMIFWIDTH_32B_ECC	40
-+
-+/* SDRAM Controller DRAM Status Register */
-+#define DRAMSTS			(0x38-ECC_REG_OFFSET)
-+
-+/* SDRAM Controller DRAM Status Register Bit Masks */
-+#define DRAMSTS_SBEERR		0x04
-+#define DRAMSTS_DBEERR		0x08
-+#define DRAMSTS_CORR_DROP	0x10
-+
-+/* SDRAM Controller DRAM IRQ Register */
-+#define DRAMINTR		(0x3C-ECC_REG_OFFSET)
-+
-+/* SDRAM Controller DRAM IRQ Register Bit Masks */
-+#define DRAMINTR_INTREN		0x01
-+#define DRAMINTR_SBEMASK	0x02
-+#define DRAMINTR_DBEMASK	0x04
-+#define DRAMINTR_CORRDROPMASK	0x08
-+#define DRAMINTR_INTRCLR	0x10
-+
-+/* SDRAM Controller Single Bit Error Count Register */
-+#define SBECOUNT		(0x40-ECC_REG_OFFSET)
-+
-+/* SDRAM Controller Single Bit Error Count Register Bit Masks */
-+#define SBECOUNT_MASK		0x0F
-+
-+/* SDRAM Controller Double Bit Error Count Register */
-+#define DBECOUNT		(0x44-ECC_REG_OFFSET)
-+
-+/* SDRAM Controller Double Bit Error Count Register Bit Masks */
-+#define DBECOUNT_MASK		0x0F
-+
-+/* SDRAM Controller ECC Error Address Register */
-+#define ERRADDR			(0x48-ECC_REG_OFFSET)
-+
-+/* SDRAM Controller ECC Error Address Register Bit Masks */
-+#define ERRADDR_MASK		0xFFFFFFFF
-+
-+/* SDRAM Controller ECC Autocorrect Drop Count Register */
-+#define DROPCOUNT		(0x4C-ECC_REG_OFFSET)
-+
-+/* SDRAM Controller ECC Autocorrect Drop Count Register Bit Masks */
-+#define DROPCOUNT_MASK		0x0F
-+
-+/* SDRAM Controller ECC AutoCorrect Address Register */
-+#define DROPADDR		(0x50-ECC_REG_OFFSET)
-+
-+/* SDRAM Controller ECC AutoCorrect Error Address Register Bit Masks */
-+#define DROPADDR_MASK		0xFFFFFFFF
-+
-+/* Altera SDRAM Memory Controller data */
-+struct altr_sdram_mc_data {
-+	struct regmap *mc_vconfig;
-+	void __iomem  *mc_vecc_regs;
-+};
-+
-+static irqreturn_t altr_sdram_mc_err_handler(int irq, void *dev_id)
-+{
-+	struct mem_ctl_info *mci = dev_id;
-+	struct altr_sdram_mc_data *drvdata = mci->pvt_info;
-+	u32 status, err_count, err_addr;
-+
-+	/* Error Address is shared by both SBE & DBE */
-+	err_addr = readl(drvdata->mc_vecc_regs + ERRADDR);
-+
-+	status = readl(drvdata->mc_vecc_regs + DRAMSTS);
-+
-+	if (status & DRAMSTS_DBEERR) {
-+		err_count = readl(drvdata->mc_vecc_regs + DBECOUNT);
-+		panic("\nEDAC: [%d Uncorrectable errors @ 0x%08X]\n",
-+		      err_count, err_addr);
-+	}
-+	if (status & DRAMSTS_SBEERR) {
-+		err_count = readl(drvdata->mc_vecc_regs + SBECOUNT);
-+		edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci, err_count,
-+				     err_addr >> PAGE_SHIFT,
-+				     err_addr & ~PAGE_MASK, 0,
-+				     0, 0, -1, mci->ctl_name, "");
-+	}
-+
-+	writel((DRAMINTR_INTRCLR | DRAMINTR_INTREN),
-+	       drvdata->mc_vecc_regs + DRAMINTR);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+#ifdef CONFIG_EDAC_DEBUG
-+static ssize_t altr_sdr_mc_err_inject_write(struct file *file,
-+					    const char __user *data,
-+					    size_t count, loff_t *ppos)
-+{
-+	struct mem_ctl_info *mci = file->private_data;
-+	struct altr_sdram_mc_data *drvdata = mci->pvt_info;
-+	u32 *ptemp;
-+	dma_addr_t dma_handle;
-+	u32 reg, read_reg;
-+
-+	ptemp = dma_alloc_coherent(mci->pdev, 16, &dma_handle, GFP_KERNEL);
-+	if (IS_ERR(ptemp)) {
-+		dma_free_coherent(mci->pdev, 16, ptemp, dma_handle);
-+		edac_printk(KERN_ERR, EDAC_MC,
-+			    "Inject: Buffer Allocation error\n");
-+		return -ENOMEM;
-+	}
-+
-+	regmap_read(drvdata->mc_vconfig, CTLCFG, &read_reg);
-+	read_reg &= ~(CTLCFG_GEN_SB_ERR | CTLCFG_GEN_DB_ERR);
-+
-+	if (count == 3) {
-+		dev_alert(mci->pdev, "EDAC Inject Double bit error\n");
-+		regmap_write(drvdata->mc_vconfig, CTLCFG,
-+			     (read_reg | CTLCFG_GEN_DB_ERR));
-+	} else {
-+		dev_alert(mci->pdev, "EDAC Inject Single bit error\n");
-+		regmap_write(drvdata->mc_vconfig,	CTLCFG,
-+			     (read_reg | CTLCFG_GEN_SB_ERR));
-+	}
-+
-+	ptemp[0] = 0x5A5A5A5A;
-+	ptemp[1] = 0xA5A5A5A5;
-+	/* Clear the error injection bits */
-+	regmap_write(drvdata->mc_vconfig, CTLCFG, read_reg);
-+	/* Ensure it has been written out */
-+	wmb();
-+
-+	/*
-+	 * To trigger the error, we need to read the data back
-+	 * (the data was written with errors above)
-+	 * The ACCESS_ONCE macros are used to prevent the
-+	 * compiler optimizing these reads out.
-+	 */
-+	reg = ACCESS_ONCE(ptemp[0]);
-+	read_reg = ACCESS_ONCE(ptemp[1]);
-+	/* Force Read */
-+	rmb();
-+
-+	edac_printk(KERN_ALERT, EDAC_MC, "Read Data [0x%X, 0x%X]\n",
-+		    reg, read_reg);
-+
-+	dma_free_coherent(mci->pdev, 16, ptemp, dma_handle);
-+
-+	return count;
-+}
-+
-+static const struct file_operations altr_sdr_mc_debug_inject_fops = {
-+	.open = simple_open,
-+	.write = altr_sdr_mc_err_inject_write,
-+	.llseek = generic_file_llseek,
-+};
-+
-+static void altr_sdr_mc_create_debugfs_nodes(struct mem_ctl_info *mci)
-+{
-+	if (mci->debugfs)
-+		debugfs_create_file("inject_ctrl", S_IWUSR, mci->debugfs, mci,
-+				    &altr_sdr_mc_debug_inject_fops);
-+}
-+#else
-+static void altr_sdr_mc_create_debugfs_nodes(struct mem_ctl_info *mci)
-+{}
-+#endif
-+
-+/* Get total memory size in bytes */
-+static u32 altr_sdram_get_total_mem_size(void __iomem *mc_vbase)
-+{
-+	u32 size;
-+	u32 read_reg, row, bank, col, cs, width;
-+
-+	read_reg = readl(mc_vbase + DRAMADDRW);
-+
-+	width = readl(mc_vbase + DRAMIFWIDTH);
-+
-+	col = (read_reg & DRAMADDRW_COLBIT_MASK) >>
-+		DRAMADDRW_COLBIT_LSB;
-+	row = (read_reg & DRAMADDRW_ROWBIT_MASK) >>
-+		DRAMADDRW_ROWBIT_LSB;
-+	bank = (read_reg & DRAMADDRW_BANKBIT_MASK) >>
-+		DRAMADDRW_BANKBIT_LSB;
-+	cs = (read_reg & DRAMADDRW_CSBIT_MASK) >>
-+		DRAMADDRW_CSBIT_LSB;
-+
-+	/* Correct for ECC as its not addressible */
-+	if (width == DRAMIFWIDTH_32B_ECC)
-+		width = 32;
-+	if (width == DRAMIFWIDTH_16B_ECC)
-+		width = 16;
-+
-+	/* calculate the SDRAM size base on this info */
-+	size = 1 << (row + bank + col);
-+	size = size * cs * (width / 8);
-+
-+	return size;
-+}
-+
-+static int altr_sdram_probe(struct platform_device *pdev)
-+{
-+	struct edac_mc_layer layers[2];
-+	struct mem_ctl_info *mci;
-+	struct altr_sdram_mc_data *drvdata;
-+	struct regmap *mc_vconfig;
-+	void __iomem *mc_vregs;
-+	struct dimm_info *dimm;
-+	u32 read_reg, mem_size;
-+	struct resource *r;
-+	int irq;
-+	int res = 0;
-+
-+	/* Validate the SDRAM controller has ECC enabled */
-+	/* Grab the register values from the sdr-ctl in device tree */
-+	mc_vconfig = syscon_regmap_lookup_by_compatible("altr,sdr-ctl");
-+	if (IS_ERR(mc_vconfig)) {
-+		edac_printk(KERN_ERR, EDAC_MC,
-+			    "regmap for altr,sdr-ctl lookup failed.\n");
-+		return -ENODEV;
-+	}
-+
-+	if (regmap_read(mc_vconfig, CTLCFG, &read_reg) ||
-+	    ((read_reg & CTLCFG_ECC_AUTO_EN) !=	CTLCFG_ECC_AUTO_EN)) {
-+		edac_printk(KERN_ERR, EDAC_MC,
-+			    "No ECC/ECC disabled [0x%08X]\n", read_reg);
-+		return -ENODEV;
-+	}
-+
-+	/* Allocate the ECC Registers */
-+	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!r) {
-+		edac_printk(KERN_ERR, EDAC_MC, "Unable to get mem resource\n");
-+		return -ENODEV;
-+	}
-+
-+	if (!devres_open_group(&pdev->dev, NULL, GFP_KERNEL)) {
-+		res = -ENOMEM;
-+		goto err;
-+	}
-+
-+	mc_vregs = devm_ioremap_resource(&pdev->dev, r);
-+	if (IS_ERR(mc_vregs)) {
-+		edac_printk(KERN_ERR, EDAC_MC,
-+			    "Error while requesting mem region\n");
-+		res = PTR_ERR(mc_vregs);
-+		goto err;
-+	}
-+
-+	edac_printk(KERN_ERR, EDAC_MC,
-+		    "Allocated [%p] with [start:0x%X size:%d]\n", mc_vregs,
-+		    r->start, resource_size(r));
-+
-+	/* Grab memory size from SDRAM Controller registers. */
-+	mem_size = altr_sdram_get_total_mem_size(mc_vregs);
-+	if (mem_size <= 0) {
-+		edac_printk(KERN_ERR, EDAC_MC,
-+			    "Unable to calculate memory size\n");
-+		res = -ENODEV;
-+		goto err;
-+	}
-+
-+	edac_printk(KERN_ERR, EDAC_MC,
-+		    "SDRAM Memory size %d [0x%X]\n", mem_size, mem_size);
-+
-+	/* Ensure the SDRAM Interrupt is disabled and cleared */
-+	writel(DRAMINTR_INTRCLR, mc_vregs + DRAMINTR);
-+
-+	irq = platform_get_irq(pdev, 0);
-+	if (irq < 0) {
-+		edac_printk(KERN_ERR, EDAC_MC,
-+			    "No irq %d in DT\n", irq);
-+		res = -ENODEV;
-+		goto err;
-+	}
-+
-+	layers[0].type = EDAC_MC_LAYER_CHIP_SELECT;
-+	layers[0].size = 1;
-+	layers[0].is_virt_csrow = true;
-+	layers[1].type = EDAC_MC_LAYER_CHANNEL;
-+	layers[1].size = 1;
-+	layers[1].is_virt_csrow = false;
-+	mci = edac_mc_alloc(0, ARRAY_SIZE(layers), layers,
-+			    sizeof(struct altr_sdram_mc_data));
-+	if (!mci) {
-+		edac_printk(KERN_ERR, EDAC_MC,
-+			    "Unable to allocate edac mci\n");
-+		res = -ENOMEM;
-+		goto err;
-+	}
-+
-+	mci->pdev = &pdev->dev;
-+	drvdata = mci->pvt_info;
-+	drvdata->mc_vconfig = mc_vconfig;
-+	drvdata->mc_vecc_regs = mc_vregs;
-+	platform_set_drvdata(pdev, mci);
-+
-+	mci->mtype_cap = MEM_FLAG_DDR3;
-+	mci->edac_ctl_cap = EDAC_FLAG_NONE | EDAC_FLAG_SECDED;
-+	mci->edac_cap = EDAC_FLAG_SECDED;
-+	mci->mod_name = EDAC_MOD_STR;
-+	mci->mod_ver = EDAC_VERSION;
-+	mci->ctl_name = dev_name(&pdev->dev);
-+	mci->scrub_mode = SCRUB_SW_SRC;
-+	mci->dev_name = dev_name(&pdev->dev);
-+
-+	dimm = *mci->dimms;
-+	dimm->nr_pages = ((mem_size - 1) >> PAGE_SHIFT) + 1;
-+	dimm->grain = 8;
-+	dimm->dtype = DEV_X8;
-+	dimm->mtype = MEM_DDR3;
-+	dimm->edac_mode = EDAC_SECDED;
-+
-+	res = edac_mc_add_mc(mci);
-+	if (res < 0)
-+		goto free;
-+
-+	res = devm_request_irq(&pdev->dev, irq, altr_sdram_mc_err_handler,
-+			       0, dev_name(&pdev->dev), mci);
-+	if (res < 0) {
-+		edac_mc_printk(mci, KERN_ERR,
-+			       "Unable to request irq %d\n", irq);
-+		res = -ENODEV;
-+		goto err2;
-+	}
-+
-+	writel((DRAMINTR_INTRCLR | DRAMINTR_INTREN), mc_vregs + DRAMINTR);
-+	if ((readl(mc_vregs + DRAMINTR) & (DRAMINTR_INTRCLR | DRAMINTR_INTREN))
-+		 != DRAMINTR_INTREN) {
-+		edac_mc_printk(mci, KERN_ERR,
-+			       "Error enabling SDRAM ECC IRQ\n");
-+		res = -ENODEV;
-+		goto err2;
-+	}
-+
-+	altr_sdr_mc_create_debugfs_nodes(mci);
-+
-+	devres_close_group(&pdev->dev, NULL);
-+
-+	return 0;
-+
-+err2:
-+	edac_mc_del_mc(&pdev->dev);
-+free:
-+	edac_mc_free(mci);
-+err:
-+	devres_release_group(&pdev->dev, NULL);
-+	edac_printk(KERN_ERR, EDAC_MC,
-+		    "EDAC Probe Failed; Error %d\n", res);
-+
-+	return res;
-+}
-+
-+static int altr_sdram_remove(struct platform_device *pdev)
-+{
-+	struct mem_ctl_info *mci = platform_get_drvdata(pdev);
-+
-+	edac_mc_del_mc(&pdev->dev);
-+	edac_mc_free(mci);
-+	platform_set_drvdata(pdev, NULL);
-+
-+	return 0;
-+}
-+
-+static const struct of_device_id altr_sdram_ctrl_of_match[] = {
-+	{ .compatible = "altr,sdram-edac", },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, altr_sdram_ctrl_of_match);
-+
-+static struct platform_driver altr_sdram_edac_driver = {
-+	.probe = altr_sdram_probe,
-+	.remove = altr_sdram_remove,
-+	.driver = {
-+		.name = "altr_sdram_edac",
-+		.of_match_table = altr_sdram_ctrl_of_match,
-+	},
-+};
-+
-+module_platform_driver(altr_sdram_edac_driver);
-+
-+MODULE_LICENSE("GPL v2");
-+MODULE_AUTHOR("Altera Corporation");
-+MODULE_DESCRIPTION("EDAC Driver for Altera SDRAM Controller");
--- 
-1.7.9.5
+> Thanks,
+> 
+> Mathieu
+> 
+> > 
+> > Thanks,
+> > 
+> > Mathieu
+> > 
+> > > 
+> > > Reported-by: Rik van Riel <riel@redhat.com>
+> > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > 
+> > > diff --git a/Documentation/kernel-parameters.txt
+> > > b/Documentation/kernel-parameters.txt
+> > > index 6eaa9cdb7094..affed6434ec8 100644
+> > > --- a/Documentation/kernel-parameters.txt
+> > > +++ b/Documentation/kernel-parameters.txt
+> > > @@ -2796,6 +2796,13 @@ bytes respectively. Such letter suffixes can also be
+> > > entirely omitted.
+> > >  			quiescent states.  Units are jiffies, minimum
+> > >  			value is one, and maximum value is HZ.
+> > >  
+> > > +	rcutree.rcu_nocb_leader_stride= [KNL]
+> > > +			Set the number of NOCB kthread groups, which
+> > > +			defaults to the square root of the number of
+> > > +			CPUs.  Larger numbers reduces the wakeup overhead
+> > > +			on the per-CPU grace-period kthreads, but increases
+> > > +			that same overhead on each group's leader.
+> > > +
+> > >  	rcutree.qhimark= [KNL]
+> > >  			Set threshold of queued RCU callbacks beyond which
+> > >  			batch limiting is disabled.
+> > > diff --git a/kernel/rcu/tree.h b/kernel/rcu/tree.h
+> > > index bf2c1e669691..de12fa5a860b 100644
+> > > --- a/kernel/rcu/tree.h
+> > > +++ b/kernel/rcu/tree.h
+> > > @@ -331,11 +331,29 @@ struct rcu_data {
+> > >  	struct rcu_head **nocb_tail;
+> > >  	atomic_long_t nocb_q_count;	/* # CBs waiting for kthread */
+> > >  	atomic_long_t nocb_q_count_lazy; /*  (approximate). */
+> > > +	struct rcu_head *nocb_follower_head; /* CBs ready to invoke. */
+> > > +	struct rcu_head **nocb_follower_tail;
+> > > +	atomic_long_t nocb_follower_count; /* # CBs ready to invoke. */
+> > > +	atomic_long_t nocb_follower_count_lazy; /*  (approximate). */
+> > >  	int nocb_p_count;		/* # CBs being invoked by kthread */
+> > >  	int nocb_p_count_lazy;		/*  (approximate). */
+> > >  	wait_queue_head_t nocb_wq;	/* For nocb kthreads to sleep on. */
+> > >  	struct task_struct *nocb_kthread;
+> > >  	bool nocb_defer_wakeup;		/* Defer wakeup of nocb_kthread. */
+> > > +
+> > > +	/* The following fields are used by the leader, hence own cacheline. */
+> > > +	struct rcu_head *nocb_gp_head ____cacheline_internodealigned_in_smp;
+> > > +					/* CBs waiting for GP. */
+> > > +	struct rcu_head **nocb_gp_tail;
+> > > +	long nocb_gp_count;
+> > > +	long nocb_gp_count_lazy;
+> > > +	bool nocb_leader_wake;		/* Is the nocb leader thread awake? */
+> > > +	struct rcu_data *nocb_next_follower;
+> > > +					/* Next follower in wakeup chain. */
+> > > +
+> > > +	/* The following fields are used by the follower, hence new cachline. */
+> > > +	struct rcu_data *nocb_leader ____cacheline_internodealigned_in_smp;
+> > > +					/* Leader CPU takes GP-end wakeups. */
+> > >  #endif /* #ifdef CONFIG_RCU_NOCB_CPU */
+> > >  
+> > >  	/* 8) RCU CPU stall data. */
+> > > @@ -583,8 +601,14 @@ static bool rcu_nohz_full_cpu(struct rcu_state *rsp);
+> > >  /* Sum up queue lengths for tracing. */
+> > >  static inline void rcu_nocb_q_lengths(struct rcu_data *rdp, long *ql, long
+> > >  *qll)
+> > >  {
+> > > -	*ql = atomic_long_read(&rdp->nocb_q_count) + rdp->nocb_p_count;
+> > > -	*qll = atomic_long_read(&rdp->nocb_q_count_lazy) +
+> > > rdp->nocb_p_count_lazy;
+> > > +	*ql = atomic_long_read(&rdp->nocb_q_count) +
+> > > +	      rdp->nocb_p_count +
+> > > +	      atomic_long_read(&rdp->nocb_follower_count) +
+> > > +	      rdp->nocb_p_count + rdp->nocb_gp_count;
+> > > +	*qll = atomic_long_read(&rdp->nocb_q_count_lazy) +
+> > > +	       rdp->nocb_p_count_lazy +
+> > > +	       atomic_long_read(&rdp->nocb_follower_count_lazy) +
+> > > +	       rdp->nocb_p_count_lazy + rdp->nocb_gp_count_lazy;
+> > >  }
+> > >  #else /* #ifdef CONFIG_RCU_NOCB_CPU */
+> > >  static inline void rcu_nocb_q_lengths(struct rcu_data *rdp, long *ql, long
+> > >  *qll)
+> > > diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+> > > index cbc2c45265e2..58fbb8204d15 100644
+> > > --- a/kernel/rcu/tree_plugin.h
+> > > +++ b/kernel/rcu/tree_plugin.h
+> > > @@ -2060,6 +2060,22 @@ bool rcu_is_nocb_cpu(int cpu)
+> > >  #endif /* #ifndef CONFIG_RCU_NOCB_CPU_ALL */
+> > >  
+> > >  /*
+> > > + * Kick the leader kthread for this NOCB group.
+> > > + */
+> > > +static void wake_nocb_leader(struct rcu_data *rdp, bool force)
+> > > +{
+> > > +	struct rcu_data *rdp_leader = rdp->nocb_leader;
+> > > +
+> > > +	if (!ACCESS_ONCE(rdp_leader->nocb_kthread))
+> > > +		return;
+> > > +	if (!ACCESS_ONCE(rdp_leader->nocb_leader_wake) || force) {
+> > > +		/* Prior xchg orders against prior callback enqueue. */
+> > > +		ACCESS_ONCE(rdp_leader->nocb_leader_wake) = true;
+> > > +		wake_up(&rdp_leader->nocb_wq);
+> > > +	}
+> > > +}
+> > > +
+> > > +/*
+> > >   * Enqueue the specified string of rcu_head structures onto the specified
+> > >   * CPU's no-CBs lists.  The CPU is specified by rdp, the head of the
+> > >   * string by rhp, and the tail of the string by rhtp.  The non-lazy/lazy
+> > > @@ -2093,7 +2109,8 @@ static void __call_rcu_nocb_enqueue(struct rcu_data
+> > > *rdp,
+> > >  	len = atomic_long_read(&rdp->nocb_q_count);
+> > >  	if (old_rhpp == &rdp->nocb_head) {
+> > >  		if (!irqs_disabled_flags(flags)) {
+> > > -			wake_up(&rdp->nocb_wq); /* ... if queue was empty ... */
+> > > +			/* ... if queue was empty ... */
+> > > +			wake_nocb_leader(rdp, false);
+> > >  			trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu,
+> > >  					    TPS("WakeEmpty"));
+> > >  		} else {
+> > > @@ -2103,7 +2120,8 @@ static void __call_rcu_nocb_enqueue(struct rcu_data
+> > > *rdp,
+> > >  		}
+> > >  		rdp->qlen_last_fqs_check = 0;
+> > >  	} else if (len > rdp->qlen_last_fqs_check + qhimark) {
+> > > -		wake_up_process(t); /* ... or if many callbacks queued. */
+> > > +		/* ... or if many callbacks queued. */
+> > > +		wake_nocb_leader(rdp, true);
+> > >  		rdp->qlen_last_fqs_check = LONG_MAX / 2;
+> > >  		trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu, TPS("WakeOvf"));
+> > >  	} else {
+> > > @@ -2213,13 +2231,150 @@ static void rcu_nocb_wait_gp(struct rcu_data *rdp)
+> > >  }
+> > >  
+> > >  /*
+> > > + * Leaders come here to wait for additional callbacks to show up.
+> > > + * This function does not return until callbacks appear.
+> > > + */
+> > > +static void nocb_leader_wait(struct rcu_data *my_rdp)
+> > > +{
+> > > +	bool firsttime = true;
+> > > +	bool gotcbs;
+> > > +	struct rcu_data *rdp;
+> > > +	struct rcu_head **tail;
+> > > +
+> > > +wait_again:
+> > > +
+> > > +	/* Wait for callbacks to appear. */
+> > > +	if (!rcu_nocb_poll) {
+> > > +		trace_rcu_nocb_wake(my_rdp->rsp->name, my_rdp->cpu, "Sleep");
+> > > +		wait_event_interruptible(my_rdp->nocb_wq,
+> > > +					 ACCESS_ONCE(my_rdp->nocb_leader_wake));
+> > > +		/* Memory barrier handled by smp_mb() calls below and repoll. */
+> > > +	} else if (firsttime) {
+> > > +		firsttime = false; /* Don't drown trace log with "Poll"! */
+> > > +		trace_rcu_nocb_wake(my_rdp->rsp->name, my_rdp->cpu, "Poll");
+> > > +	}
+> > > +
+> > > +	/*
+> > > +	 * Each pass through the following loop checks a follower for CBs.
+> > > +	 * We are our own first follower.  Any CBs found are moved to
+> > > +	 * nocb_gp_head, where they await a grace period.
+> > > +	 */
+> > > +	gotcbs = false;
+> > > +	for (rdp = my_rdp; rdp; rdp = rdp->nocb_next_follower) {
+> > > +		rdp->nocb_gp_head = ACCESS_ONCE(rdp->nocb_head);
+> > > +		if (!rdp->nocb_gp_head)
+> > > +			continue;  /* No CBs here, try next follower. */
+> > > +
+> > > +		/* Move callbacks to wait-for-GP list, which is empty. */
+> > > +		ACCESS_ONCE(rdp->nocb_head) = NULL;
+> > > +		rdp->nocb_gp_tail = xchg(&rdp->nocb_tail, &rdp->nocb_head);
+> > > +		rdp->nocb_gp_count = atomic_xchg(&rdp->nocb_q_count, 0);
+> > > +		rdp->nocb_gp_count_lazy =
+> > > +			atomic_xchg(&rdp->nocb_q_count_lazy, 0);
+> > > +		gotcbs = true;
+> > > +	}
+> > > +
+> > > +	/*
+> > > +	 * If there were no callbacks, sleep a bit, rescan after a
+> > > +	 * memory barrier, and go retry.
+> > > +	 */
+> > > +	if (unlikely(!gotcbs)) {
+> > > +		if (!rcu_nocb_poll)
+> > > +			trace_rcu_nocb_wake(my_rdp->rsp->name, my_rdp->cpu,
+> > > +					    "WokeEmpty");
+> > > +		flush_signals(current);
+> > > +		schedule_timeout_interruptible(1);
+> > > +
+> > > +		/* Rescan in case we were a victim of memory ordering. */
+> > > +		my_rdp->nocb_leader_wake = false;
+> > > +		smp_mb();  /* Ensure _wake false before scan. */
+> > > +		for (rdp = my_rdp; rdp; rdp = rdp->nocb_next_follower)
+> > > +			if (ACCESS_ONCE(rdp->nocb_head)) {
+> > > +				/* Found CB, so short-circuit next wait. */
+> > > +				my_rdp->nocb_leader_wake = true;
+> > > +				break;
+> > > +			}
+> > > +		goto wait_again;
+> > > +	}
+> > > +
+> > > +	/* Wait for one grace period. */
+> > > +	rcu_nocb_wait_gp(my_rdp);
+> > > +
+> > > +	/*
+> > > +	 * We left ->nocb_leader_wake set to reduce cache thrashing.
+> > > +	 * We clear it now, but recheck for new callbacks while
+> > > +	 * traversing our follower list.
+> > > +	 */
+> > > +	my_rdp->nocb_leader_wake = false;
+> > > +	smp_mb(); /* Ensure _wake false before scan of ->nocb_head. */
+> > > +
+> > > +	/* Each pass through the following loop wakes a follower, if needed. */
+> > > +	for (rdp = my_rdp; rdp; rdp = rdp->nocb_next_follower) {
+> > > +		if (ACCESS_ONCE(rdp->nocb_head))
+> > > +			my_rdp->nocb_leader_wake = true; /* No need to wait. */
+> > > +		if (!rdp->nocb_gp_head)
+> > > +			continue; /* No CBs, so no need to wake follower. */
+> > > +
+> > > +		/* Append callbacks to follower's "done" list. */
+> > > +		tail = xchg(&rdp->nocb_follower_tail, rdp->nocb_gp_tail);
+> > > +		*tail = rdp->nocb_gp_head;
+> > > +		atomic_long_add(rdp->nocb_gp_count, &rdp->nocb_follower_count);
+> > > +		atomic_long_add(rdp->nocb_gp_count_lazy,
+> > > +				&rdp->nocb_follower_count_lazy);
+> > > +		if (rdp != my_rdp && tail == &rdp->nocb_follower_head) {
+> > > +			/*
+> > > +			 * List was empty, wake up the follower.
+> > > +			 * Memory barriers supplied by atomic_long_add().
+> > > +			 */
+> > > +			wake_up(&rdp->nocb_wq);
+> > > +		}
+> > > +	}
+> > > +
+> > > +	/* If we (the leader) don't have CBs, go wait some more. */
+> > > +	if (!my_rdp->nocb_follower_head)
+> > > +		goto wait_again;
+> > > +}
+> > > +
+> > > +/*
+> > > + * Followers come here to wait for additional callbacks to show up.
+> > > + * This function does not return until callbacks appear.
+> > > + */
+> > > +static void nocb_follower_wait(struct rcu_data *rdp)
+> > > +{
+> > > +	bool firsttime = true;
+> > > +
+> > > +	for (;;) {
+> > > +		if (!rcu_nocb_poll) {
+> > > +			trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu,
+> > > +					    "FollowerSleep");
+> > > +			wait_event_interruptible(rdp->nocb_wq,
+> > > +						 ACCESS_ONCE(rdp->nocb_follower_head));
+> > > +		} else if (firsttime) {
+> > > +			/* Don't drown trace log with "Poll"! */
+> > > +			firsttime = false;
+> > > +			trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu, "Poll");
+> > > +		}
+> > > +		if (smp_load_acquire(&rdp->nocb_follower_head)) {
+> > > +			/* ^^^ Ensure CB invocation follows _head test. */
+> > > +			return;
+> > > +		}
+> > > +		if (!rcu_nocb_poll)
+> > > +			trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu,
+> > > +					    "WokeEmpty");
+> > > +		flush_signals(current);
+> > > +		schedule_timeout_interruptible(1);
+> > > +	}
+> > > +}
+> > > +
+> > > +/*
+> > >   * Per-rcu_data kthread, but only for no-CBs CPUs.  Each kthread invokes
+> > > - * callbacks queued by the corresponding no-CBs CPU.
+> > > + * callbacks queued by the corresponding no-CBs CPU, however, there is
+> > > + * an optional leader-follower relationship so that the grace-period
+> > > + * kthreads don't have to do quite so many wakeups.
+> > >   */
+> > >  static int rcu_nocb_kthread(void *arg)
+> > >  {
+> > >  	int c, cl;
+> > > -	bool firsttime = 1;
+> > >  	struct rcu_head *list;
+> > >  	struct rcu_head *next;
+> > >  	struct rcu_head **tail;
+> > > @@ -2227,41 +2382,22 @@ static int rcu_nocb_kthread(void *arg)
+> > >  
+> > >  	/* Each pass through this loop invokes one batch of callbacks */
+> > >  	for (;;) {
+> > > -		/* If not polling, wait for next batch of callbacks. */
+> > > -		if (!rcu_nocb_poll) {
+> > > -			trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu,
+> > > -					    TPS("Sleep"));
+> > > -			wait_event_interruptible(rdp->nocb_wq, rdp->nocb_head);
+> > > -			/* Memory barrier provide by xchg() below. */
+> > > -		} else if (firsttime) {
+> > > -			firsttime = 0;
+> > > -			trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu,
+> > > -					    TPS("Poll"));
+> > > -		}
+> > > -		list = ACCESS_ONCE(rdp->nocb_head);
+> > > -		if (!list) {
+> > > -			if (!rcu_nocb_poll)
+> > > -				trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu,
+> > > -						    TPS("WokeEmpty"));
+> > > -			schedule_timeout_interruptible(1);
+> > > -			flush_signals(current);
+> > > -			continue;
+> > > -		}
+> > > -		firsttime = 1;
+> > > -		trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu,
+> > > -				    TPS("WokeNonEmpty"));
+> > > -
+> > > -		/*
+> > > -		 * Extract queued callbacks, update counts, and wait
+> > > -		 * for a grace period to elapse.
+> > > -		 */
+> > > -		ACCESS_ONCE(rdp->nocb_head) = NULL;
+> > > -		tail = xchg(&rdp->nocb_tail, &rdp->nocb_head);
+> > > -		c = atomic_long_xchg(&rdp->nocb_q_count, 0);
+> > > -		cl = atomic_long_xchg(&rdp->nocb_q_count_lazy, 0);
+> > > -		ACCESS_ONCE(rdp->nocb_p_count) += c;
+> > > -		ACCESS_ONCE(rdp->nocb_p_count_lazy) += cl;
+> > > -		rcu_nocb_wait_gp(rdp);
+> > > +		/* Wait for callbacks. */
+> > > +		if (rdp->nocb_leader == rdp)
+> > > +			nocb_leader_wait(rdp);
+> > > +		else
+> > > +			nocb_follower_wait(rdp);
+> > > +
+> > > +		/* Pull the ready-to-invoke callbacks onto local list. */
+> > > +		list = ACCESS_ONCE(rdp->nocb_follower_head);
+> > > +		BUG_ON(!list);
+> > > +		trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu, "WokeNonEmpty");
+> > > +		ACCESS_ONCE(rdp->nocb_follower_head) = NULL;
+> > > +		tail = xchg(&rdp->nocb_follower_tail, &rdp->nocb_follower_head);
+> > > +		c = atomic_long_xchg(&rdp->nocb_follower_count, 0);
+> > > +		cl = atomic_long_xchg(&rdp->nocb_follower_count_lazy, 0);
+> > > +		rdp->nocb_p_count += c;
+> > > +		rdp->nocb_p_count_lazy += cl;
+> > >  
+> > >  		/* Each pass through the following loop invokes a callback. */
+> > >  		trace_rcu_batch_start(rdp->rsp->name, cl, c, -1);
+> > > @@ -2305,7 +2441,7 @@ static void do_nocb_deferred_wakeup(struct rcu_data
+> > > *rdp)
+> > >  	if (!rcu_nocb_need_deferred_wakeup(rdp))
+> > >  		return;
+> > >  	ACCESS_ONCE(rdp->nocb_defer_wakeup) = false;
+> > > -	wake_up(&rdp->nocb_wq);
+> > > +	wake_nocb_leader(rdp, false);
+> > >  	trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu, TPS("DeferredWakeEmpty"));
+> > >  }
+> > >  
+> > > @@ -2314,19 +2450,53 @@ static void __init
+> > > rcu_boot_init_nocb_percpu_data(struct rcu_data *rdp)
+> > >  {
+> > >  	rdp->nocb_tail = &rdp->nocb_head;
+> > >  	init_waitqueue_head(&rdp->nocb_wq);
+> > > +	rdp->nocb_follower_tail = &rdp->nocb_follower_head;
+> > >  }
+> > >  
+> > > -/* Create a kthread for each RCU flavor for each no-CBs CPU. */
+> > > +/* How many follower CPU IDs per leader?  Default of -1 for
+> > > sqrt(nr_cpu_ids). */
+> > > +static int rcu_nocb_leader_stride = -1;
+> > > +module_param(rcu_nocb_leader_stride, int, 0444);
+> > > +
+> > > +/*
+> > > + * Create a kthread for each RCU flavor for each no-CBs CPU.
+> > > + * Also initialize leader-follower relationships.
+> > > + */
+> > >  static void __init rcu_spawn_nocb_kthreads(struct rcu_state *rsp)
+> > >  {
+> > >  	int cpu;
+> > > +	int ls = rcu_nocb_leader_stride;
+> > > +	int nl = 0;  /* Next leader. */
+> > >  	struct rcu_data *rdp;
+> > > +	struct rcu_data *rdp_leader = NULL;  /* Suppress misguided gcc warn. */
+> > > +	struct rcu_data *rdp_prev = NULL;
+> > >  	struct task_struct *t;
+> > >  
+> > >  	if (rcu_nocb_mask == NULL)
+> > >  		return;
+> > > +	if (ls == -1) {
+> > > +		ls = int_sqrt(nr_cpu_ids);
+> > > +		rcu_nocb_leader_stride = ls;
+> > > +	}
+> > > +
+> > > +	/*
+> > > +	 * Each pass through this loop sets up one rcu_data structure and
+> > > +	 * spawns one rcu_nocb_kthread().
+> > > +	 */
+> > >  	for_each_cpu(cpu, rcu_nocb_mask) {
+> > >  		rdp = per_cpu_ptr(rsp->rda, cpu);
+> > > +		if (rdp->cpu >= nl) {
+> > > +			/* New leader, set up for followers & next leader. */
+> > > +			nl = DIV_ROUND_UP(rdp->cpu + 1, ls) * ls;
+> > > +			rdp->nocb_leader = rdp;
+> > > +			rdp_leader = rdp;
+> > > +		} else {
+> > > +			/* Another follower, link to previous leader. */
+> > > +			rdp->nocb_leader = rdp_leader;
+> > > +			rdp_prev->nocb_next_follower = rdp;
+> > > +		}
+> > > +		rdp_prev = rdp;
+> > > +
+> > > +		/* Spawn the kthread for this CPU. */
+> > >  		t = kthread_run(rcu_nocb_kthread, rdp,
+> > >  				"rcuo%c/%d", rsp->abbr, cpu);
+> > >  		BUG_ON(IS_ERR(t));
+> > > 
+> > > 
+> > 
+> > --
+> > Mathieu Desnoyers
+> > EfficiOS Inc.
+> > http://www.efficios.com
+> > 
+> 
+> -- 
+> Mathieu Desnoyers
+> EfficiOS Inc.
+> http://www.efficios.com
+> 
 
