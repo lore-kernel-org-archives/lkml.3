@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753550AbaF0LzD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 07:55:03 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:32893 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753163AbaF0LzB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 07:55:01 -0400
-Date: Fri, 27 Jun 2014 12:54:46 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>
-Message-ID: <20140627115446.GM23300@sirena.org.uk>
-References: <20140527085755.4eab635574991c688f980685@skynet.be>
+	id S1753643AbaF0Lzy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 07:55:54 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:54876 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752740AbaF0Lzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 07:55:52 -0400
+Date: Fri, 27 Jun 2014 13:55:45 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, x86-ml <x86@kernel.org>,
+        kvm@vger.kernel.org, =?utf-8?B?SsO2cmcgUsO2ZGVs?= <joro@8bytes.org>
+Subject: Re: __schedule #DF splat
+Message-ID: <20140627115545.GC23153@pd.tnic>
+References: <20140625153227.GA13845@pd.tnic>
+ <20140625202650.GC13845@pd.tnic>
+ <20140627101831.GB23153@pd.tnic>
+ <53AD586A.40900@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="KHHg66sM3ACL179N"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140527085755.4eab635574991c688f980685@skynet.be>
-X-Cookie: But it does move!
+In-Reply-To: <53AD586A.40900@redhat.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/1] sound/soc/codecs/wm0010.c: add static to local
- variable
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jun 27, 2014 at 01:41:30PM +0200, Paolo Bonzini wrote:
+> Il 27/06/2014 12:18, Borislav Petkov ha scritto:
+> >Joerg says I should bisect but I'm busy with other stuff. If people are
+> >interested in chasing this further, I could free up some time to do
+> >so...
+> 
+> Please first try "-M pc-1.7" on the 2.0 QEMU.  If it fails, please do bisect
+> it.  A QEMU bisection between one release only usually takes only half an
+> hour or so for me.
+> 
+> I use
+> 
+> ../configure --target-list=x86_64-softmmu && make distclean &&
+> ../configure --target-list=x86_64-softmmu &&
+> make -j8 subdir-x86_64-softmmu
+> 
+> Until it's below 50 commits.  After that point just "make -j8
+> subdir-x86_64-softmmu" should do.  This ensures that build system changes do
+> not bite you as you move back and forth in time.
 
---KHHg66sM3ACL179N
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Ok, thanks for the help.
 
-On Tue, May 27, 2014 at 08:57:55AM +0200, Fabian Frederick wrote:
-> Also add const to array
+However, as it always happens, right after sending the mail, I triggered
+it with the qemu installed on the system too :-( I.e., qemu 1.7.1.
 
-Applied, please submit patches following the process in
-SubmittingPatches - CC the relevant maintainers and lists and use a
-subject line in the normal format for the subsystem.
+So we will try to debug the #DF first to find out why kvm is injecting
+it in the first place. I'll keep you posted.
 
---KHHg66sM3ACL179N
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+-- 
+Regards/Gruss,
+    Boris.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJTrVuDAAoJELSic+t+oim9edsP/jJ5esR0FdZe7ndIa8KlPW3o
-Imm5KiBXC8VnKAXf1TqLVv6uUkoeSVBYyIrt0a2D7QH0PoiZuT99o7dCVnfiPMq8
-BSWlJns8ZFCv7w48lxs4l4WklVUr3AK2MPxZHLSEetNauroIgfpyD+oXY4ubn1zd
-efrSKLG+YXu9XhFP64U1YO6q6brnnxN7+yYGDuwetqTApykAPC+vYyb2Qm9GUuCE
-2bHzc1rKfsX9BLYP6fQRGG3CRting3bkSvzBHvkA97LvC6+LmOkrV8fN3qUS9WPq
-itvZSnkK83lmxdNeUPGiGFT14V9bMAGQHXFAfU3rXJ9/MWuoSNqZWlRLis1Q7DEB
-eorPKMHZp87qCI6LK4upA0Mc4n7k6eHB0eMS/GtFieted68K7dgCvkigpI5H8R0C
-oGNyQLQBIphEzWXHThWynGf6jZlrkwnEye5i508RyqD751Eh2IwKHpXTal7lubw+
-QnrKgYGGf5NdYe3bcjbBmjUaNt46RTtor5zSm259cXH9dDaWwLg3QXMaEaRpqmuW
-s5ZlD8GylpZNEGQCMzyhgYrGTTuwihueBFfkyahy22HbmrYKbaJho8IKn1tea3iA
-KZr2bISXyALwzMMMgEp0c+vMxHbHEJkhQlVW04TxW/aJjk04eRmARWvreovZn1B4
-NK2AYUpK3L8CCN5jI1xS
-=58y7
------END PGP SIGNATURE-----
-
---KHHg66sM3ACL179N--
+Sent from a fat crate under my desk. Formatting is fine.
+--
