@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752202AbaF0SEo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 14:04:44 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:40292 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751906AbaF0SEl (ORCPT
+	id S1753338AbaF0SGo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 14:06:44 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:46702 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752131AbaF0SEn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 14:04:41 -0400
+	Fri, 27 Jun 2014 14:04:43 -0400
 From: mathieu.poirier@linaro.org
 To: linus.walleij@linaro.org, will.deacon@arm.com, linux@arm.linux.org.uk,
         daniel.thompson@linaro.org, robherring2@gmail.com
@@ -17,9 +17,9 @@ Cc: mathieu.poirier@linaro.org, arve@android.com, john.stultz@linaro.org,
         marcin.jabrzyk@gmail.com, r.sengupta@samsung.com,
         robbelibobban@gmail.com, Tony.Armitstead@arm.com, patches@linaro.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/9 v2] coresight-tpiu: add CoreSight TPIU driver
-Date: Fri, 27 Jun 2014 12:04:15 -0600
-Message-Id: <1403892261-25026-4-git-send-email-mathieu.poirier@linaro.org>
+Subject: [PATCH 4/9 v2] coresight-etb: add CoreSight ETB driver
+Date: Fri, 27 Jun 2014 12:04:16 -0600
+Message-Id: <1403892261-25026-5-git-send-email-mathieu.poirier@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403892261-25026-1-git-send-email-mathieu.poirier@linaro.org>
 References: <1403892261-25026-1-git-send-email-mathieu.poirier@linaro.org>
@@ -29,35 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Pratik Patel <pratikp@codeaurora.org>
 
-This driver manages CoreSight TPIU (Trace Port Interface Unit)
-which acts as a sink. TPIU is typically connected to some offchip
-hardware hosting a storage buffer.
+This driver manages CoreSight ETB (Embedded Trace Buffer) which
+acts as a circular buffer sink collecting generated trace data.
 
 Signed-off-by: Pratik Patel <pratikp@codeaurora.org>
 Signed-off-by: Panchaxari Prasannamurthy <panchaxari.prasannamurthy@linaro.org>
 Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
 ---
- drivers/coresight/Makefile         |   2 +-
- drivers/coresight/coresight-tpiu.c | 223 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 224 insertions(+), 1 deletion(-)
- create mode 100644 drivers/coresight/coresight-tpiu.c
+ drivers/coresight/Makefile        |   3 +-
+ drivers/coresight/coresight-etb.c | 557 ++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 559 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/coresight/coresight-etb.c
 
 diff --git a/drivers/coresight/Makefile b/drivers/coresight/Makefile
-index 16e26c5..540df99 100644
+index 540df99..8d4443b 100644
 --- a/drivers/coresight/Makefile
 +++ b/drivers/coresight/Makefile
-@@ -3,4 +3,4 @@
+@@ -3,4 +3,5 @@
  #
  obj-$(CONFIG_CORESIGHT) += coresight.o
  obj-$(CONFIG_OF) += of_coresight.o
--obj-$(CONFIG_CORESIGHT_LINKS_AND_SINKS) += coresight-tmc.o
-+obj-$(CONFIG_CORESIGHT_LINKS_AND_SINKS) += coresight-tmc.o coresight-tpiu.o
-diff --git a/drivers/coresight/coresight-tpiu.c b/drivers/coresight/coresight-tpiu.c
+-obj-$(CONFIG_CORESIGHT_LINKS_AND_SINKS) += coresight-tmc.o coresight-tpiu.o
++obj-$(CONFIG_CORESIGHT_LINKS_AND_SINKS) += coresight-tmc.o coresight-tpiu.o \
++					   coresight-etb.o
+diff --git a/drivers/coresight/coresight-etb.c b/drivers/coresight/coresight-etb.c
 new file mode 100644
-index 0000000..67bc431
+index 0000000..062d343
 --- /dev/null
-+++ b/drivers/coresight/coresight-tpiu.c
-@@ -0,0 +1,223 @@
++++ b/drivers/coresight/coresight-etb.c
+@@ -0,0 +1,557 @@
 +/* Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -73,121 +73,434 @@ index 0000000..67bc431
 +#include <linux/kernel.h>
 +#include <linux/module.h>
 +#include <linux/init.h>
++#include <linux/types.h>
 +#include <linux/device.h>
 +#include <linux/io.h>
 +#include <linux/err.h>
++#include <linux/fs.h>
++#include <linux/miscdevice.h>
++#include <linux/uaccess.h>
 +#include <linux/slab.h>
++#include <linux/delay.h>
++#include <linux/spinlock.h>
 +#include <linux/clk.h>
++#include <linux/seq_file.h>
 +#include <linux/of_coresight.h>
 +#include <linux/coresight.h>
 +#include <linux/amba/bus.h>
 +
 +#include "coresight-priv.h"
 +
-+#define TPIU_SUPP_PORTSZ	(0x000)
-+#define TPIU_CURR_PORTSZ	(0x004)
-+#define TPIU_SUPP_TRIGMODES	(0x100)
-+#define TPIU_TRIG_CNTRVAL	(0x104)
-+#define TPIU_TRIG_MULT		(0x108)
-+#define TPIU_SUPP_TESTPATM	(0x200)
-+#define TPIU_CURR_TESTPATM	(0x204)
-+#define TPIU_TEST_PATREPCNTR	(0x208)
-+#define TPIU_FFSR		(0x300)
-+#define TPIU_FFCR		(0x304)
-+#define TPIU_FSYNC_CNTR		(0x308)
-+#define TPIU_EXTCTL_INPORT	(0x400)
-+#define TPIU_EXTCTL_OUTPORT	(0x404)
-+#define TPIU_ITTRFLINACK	(0xEE4)
-+#define TPIU_ITTRFLIN		(0xEE8)
-+#define TPIU_ITATBDATA0		(0xEEC)
-+#define TPIU_ITATBCTR2		(0xEF0)
-+#define TPIU_ITATBCTR1		(0xEF4)
-+#define TPIU_ITATBCTR0		(0xEF8)
++#define ETB_RAM_DEPTH_REG	(0x004)
++#define ETB_STATUS_REG		(0x00C)
++#define ETB_RAM_READ_DATA_REG	(0x010)
++#define ETB_RAM_READ_POINTER	(0x014)
++#define ETB_RAM_WRITE_POINTER	(0x018)
++#define ETB_TRG			(0x01C)
++#define ETB_CTL_REG		(0x020)
++#define ETB_RWD_REG		(0x024)
++#define ETB_FFSR		(0x300)
++#define ETB_FFCR		(0x304)
++#define ETB_ITMISCOP0		(0xEE0)
++#define ETB_ITTRFLINACK		(0xEE4)
++#define ETB_ITTRFLIN		(0xEE8)
++#define ETB_ITATBDATA0		(0xEEC)
++#define ETB_ITATBCTR2		(0xEF0)
++#define ETB_ITATBCTR1		(0xEF4)
++#define ETB_ITATBCTR0		(0xEF8)
 +
-+/** register definition **/
++/** register description **/
++/* STS - 0x00C */
++#define ETB_STATUS_RAM_FULL	BIT(0)
++/* CTL - 0x020 */
++#define ETB_CTL_CAPT_EN		BIT(0)
 +/* FFCR - 0x304 */
-+#define FFCR_FON_MAN		BIT(6)
++#define ETB_FFCR_EN_FTC		BIT(0)
++#define ETB_FFCR_FON_MAN	BIT(6)
++#define ETB_FFCR_STOP_FI	BIT(12)
++#define ETB_FFCR_STOP_TRIGGER	BIT(13)
 +
-+struct tpiu_drvdata {
++#define ETB_FFCR_BIT		6
++#define ETB_FFSR_BIT		1
++#define ETB_FRAME_SIZE_WORDS	4
++
++struct etb_drvdata {
 +	void __iomem		*base;
 +	struct device		*dev;
 +	struct coresight_device	*csdev;
++	struct miscdevice	miscdev;
 +	struct clk		*clk;
++	spinlock_t		spinlock;
++	bool			reading;
++	atomic_t		in_use;
++	u8			*buf;
++	u32			buffer_depth;
++	bool			enable;
++	u32			trigger_cntr;
 +};
 +
-+static void tpiu_enable_hw(struct tpiu_drvdata *drvdata)
++static unsigned int etb_get_buffer_depth(struct etb_drvdata *drvdata)
 +{
-+	CS_UNLOCK(drvdata->base);
-+
-+	/* TODO: fill this up */
-+
-+	CS_LOCK(drvdata->base);
-+}
-+
-+static int tpiu_enable(struct coresight_device *csdev)
-+{
-+	struct tpiu_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
 +	int ret;
++	u32 depth = 0;
 +
 +	ret = clk_prepare_enable(drvdata->clk);
 +	if (ret)
 +		return ret;
 +
-+	tpiu_enable_hw(drvdata);
++	/* RO registers don't need locking */
++	depth = cs_readl(drvdata->base, ETB_RAM_DEPTH_REG);
 +
-+	dev_info(drvdata->dev, "TPIU enabled\n");
-+	return 0;
++	clk_disable_unprepare(drvdata->clk);
++	return depth;
 +}
 +
-+static void tpiu_disable_hw(struct tpiu_drvdata *drvdata)
++static void etb_enable_hw(struct etb_drvdata *drvdata)
 +{
++	int i;
++	u32 depth;
++
 +	CS_UNLOCK(drvdata->base);
 +
-+	/* clear formatter controle reg. */
-+	cs_writel(drvdata->base, 0x0, TPIU_FFCR);
-+	/* generate manual flush */
-+	cs_writel(drvdata->base, FFCR_FON_MAN, TPIU_FFCR);
++	depth = drvdata->buffer_depth;
++	/* reset write RAM pointer address */
++	cs_writel(drvdata->base, 0x0, ETB_RAM_WRITE_POINTER);
++	/* clear entire RAM buffer */
++	for (i = 0; i < depth; i++)
++		cs_writel(drvdata->base, 0x0, ETB_RWD_REG);
++
++	/* reset write RAM pointer address */
++	cs_writel(drvdata->base, 0x0, ETB_RAM_WRITE_POINTER);
++	/* reset read RAM pointer address */
++	cs_writel(drvdata->base, 0x0, ETB_RAM_READ_POINTER);
++
++	cs_writel(drvdata->base, drvdata->trigger_cntr, ETB_TRG);
++	cs_writel(drvdata->base,
++		  ETB_FFCR_EN_FTC |
++		  ETB_FFCR_STOP_TRIGGER,
++		  ETB_FFCR);
++	/* ETB trace capture enable */
++	cs_writel(drvdata->base, ETB_CTL_CAPT_EN, ETB_CTL_REG);
 +
 +	CS_LOCK(drvdata->base);
 +}
 +
-+static void tpiu_disable(struct coresight_device *csdev)
++static int etb_enable(struct coresight_device *csdev)
 +{
-+	struct tpiu_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
++	struct etb_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
++	int ret;
++	unsigned long flags;
 +
-+	tpiu_disable_hw(drvdata);
++	ret = clk_prepare_enable(drvdata->clk);
++	if (ret)
++		return ret;
++
++	spin_lock_irqsave(&drvdata->spinlock, flags);
++	etb_enable_hw(drvdata);
++	drvdata->enable = true;
++	spin_unlock_irqrestore(&drvdata->spinlock, flags);
++
++	dev_info(drvdata->dev, "ETB enabled\n");
++	return 0;
++}
++
++static void etb_disable_hw(struct etb_drvdata *drvdata)
++{
++	int i;
++	u32 ffcr;
++
++	CS_UNLOCK(drvdata->base);
++
++	ffcr = cs_readl(drvdata->base, ETB_FFCR);
++	/* stop formatter when a stop has completed */
++	ffcr |= ETB_FFCR_STOP_FI;
++	cs_writel(drvdata->base, ffcr, ETB_FFCR);
++	/* manually generate a flush of the system */
++	ffcr |= ETB_FFCR_FON_MAN;
++	cs_writel(drvdata->base, ffcr, ETB_FFCR);
++	for (i = TIMEOUT_US;
++	     BVAL(cs_readl(drvdata->base, ETB_FFCR), ETB_FFCR_BIT) != 0
++	     && i > 0; i--)
++		udelay(1);
++	WARN(i == 0, "timeout while flushing DRVDATA, ETB_FFCR: %#x\n",
++	     cs_readl(drvdata->base, ETB_FFCR));
++
++	/* disable trace capture */
++	cs_writel(drvdata->base, 0x0, ETB_CTL_REG);
++	for (i = TIMEOUT_US;
++	     BVAL(cs_readl(drvdata->base, ETB_FFSR), ETB_FFSR_BIT) != 1
++	     && i > 0; i--)
++		udelay(1);
++	WARN(i == 0, "timeout while disabling DRVDATA, ETB_FFSR: %#x\n",
++	     cs_readl(drvdata->base, ETB_FFSR));
++
++	CS_LOCK(drvdata->base);
++}
++
++static void etb_dump_hw(struct etb_drvdata *drvdata)
++{
++	int i;
++	u8 *buf_ptr;
++	u32 read_data, depth;
++	u32 read_ptr, write_ptr;
++	u32 frame_off, frame_endoff;
++
++	CS_UNLOCK(drvdata->base);
++
++	read_ptr = cs_readl(drvdata->base, ETB_RAM_READ_POINTER);
++	write_ptr = cs_readl(drvdata->base, ETB_RAM_WRITE_POINTER);
++
++	frame_off = write_ptr % ETB_FRAME_SIZE_WORDS;
++	frame_endoff = ETB_FRAME_SIZE_WORDS - frame_off;
++	if (frame_off) {
++		dev_err(drvdata->dev,
++			"write_ptr: %lu not aligned to formatter frame size\n",
++			(unsigned long)write_ptr);
++		dev_err(drvdata->dev, "frameoff: %lu, frame_endoff: %lu\n",
++			(unsigned long)frame_off, (unsigned long)frame_endoff);
++		write_ptr += frame_endoff;
++	}
++
++	if ((cs_readl(drvdata->base, ETB_STATUS_REG)
++		      & ETB_STATUS_RAM_FULL) == 0)
++		cs_writel(drvdata->base, 0x0, ETB_RAM_READ_POINTER);
++	else
++		cs_writel(drvdata->base, write_ptr, ETB_RAM_READ_POINTER);
++
++	depth = drvdata->buffer_depth;
++	buf_ptr = drvdata->buf;
++	for (i = 0; i < depth; i++) {
++		read_data = cs_readl(drvdata->base, ETB_RAM_READ_DATA_REG);
++		*buf_ptr++ = read_data >> 0;
++		*buf_ptr++ = read_data >> 8;
++		*buf_ptr++ = read_data >> 16;
++		*buf_ptr++ = read_data >> 24;
++	}
++
++	if (frame_off) {
++		buf_ptr -= (frame_endoff * 4);
++		for (i = 0; i < frame_endoff; i++) {
++			*buf_ptr++ = 0x0;
++			*buf_ptr++ = 0x0;
++			*buf_ptr++ = 0x0;
++			*buf_ptr++ = 0x0;
++		}
++	}
++
++	cs_writel(drvdata->base, read_ptr, ETB_RAM_READ_POINTER);
++
++	CS_LOCK(drvdata->base);
++}
++
++static void etb_disable(struct coresight_device *csdev)
++{
++	struct etb_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
++	unsigned long flags;
++
++	spin_lock_irqsave(&drvdata->spinlock, flags);
++	etb_disable_hw(drvdata);
++	etb_dump_hw(drvdata);
++	drvdata->enable = false;
++	spin_unlock_irqrestore(&drvdata->spinlock, flags);
 +
 +	clk_disable_unprepare(drvdata->clk);
 +
-+	dev_info(drvdata->dev, "TPIU disabled\n");
++	dev_info(drvdata->dev, "ETB disabled\n");
 +}
 +
-+static void tpiu_abort(struct coresight_device *csdev)
++static void etb_abort(struct coresight_device *csdev)
 +{
-+	struct tpiu_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
++	struct etb_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
++	unsigned long flags;
 +
-+	tpiu_disable_hw(drvdata);
++	spin_lock_irqsave(&drvdata->spinlock, flags);
++	etb_disable_hw(drvdata);
++	etb_dump_hw(drvdata);
++	drvdata->enable = false;
++	spin_unlock_irqrestore(&drvdata->spinlock, flags);
 +
-+	dev_info(drvdata->dev, "TPIU aborted\n");
++	dev_info(drvdata->dev, "ETB aborted\n");
 +}
 +
-+static const struct coresight_ops_sink tpiu_sink_ops = {
-+	.enable		= tpiu_enable,
-+	.disable	= tpiu_disable,
-+	.abort		= tpiu_abort,
++static const struct coresight_ops_sink etb_sink_ops = {
++	.enable		= etb_enable,
++	.disable	= etb_disable,
++	.abort		= etb_abort,
 +};
 +
-+static const struct coresight_ops tpiu_cs_ops = {
-+	.sink_ops	= &tpiu_sink_ops,
++static const struct coresight_ops etb_cs_ops = {
++	.sink_ops	= &etb_sink_ops,
 +};
 +
-+static int tpiu_probe(struct amba_device *adev, const struct amba_id *id)
++static void etb_dump(struct etb_drvdata *drvdata)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&drvdata->spinlock, flags);
++	if (drvdata->enable) {
++		etb_disable_hw(drvdata);
++		etb_dump_hw(drvdata);
++		etb_enable_hw(drvdata);
++	}
++	spin_unlock_irqrestore(&drvdata->spinlock, flags);
++
++	dev_info(drvdata->dev, "ETB dumped\n");
++}
++
++static int etb_open(struct inode *inode, struct file *file)
++{
++	struct etb_drvdata *drvdata = container_of(file->private_data,
++						   struct etb_drvdata, miscdev);
++
++	if (atomic_cmpxchg(&drvdata->in_use, 0, 1))
++		return -EBUSY;
++
++	dev_dbg(drvdata->dev, "%s: successfully opened\n", __func__);
++	return 0;
++}
++
++static ssize_t etb_read(struct file *file, char __user *data,
++				size_t len, loff_t *ppos)
++{
++	u32 depth;
++	struct etb_drvdata *drvdata = container_of(file->private_data,
++						   struct etb_drvdata, miscdev);
++
++	if (drvdata->reading == false) {
++		etb_dump(drvdata);
++		drvdata->reading = true;
++	}
++
++	depth = drvdata->buffer_depth;
++	if (*ppos + len > depth * 4)
++		len = depth * 4 - *ppos;
++
++	if (copy_to_user(data, drvdata->buf + *ppos, len)) {
++		dev_dbg(drvdata->dev, "%s: copy_to_user failed\n", __func__);
++		return -EFAULT;
++	}
++
++	*ppos += len;
++
++	dev_dbg(drvdata->dev, "%s: %d bytes copied, %d bytes left\n",
++		__func__, len, (int) (depth * 4 - *ppos));
++	return len;
++}
++
++static int etb_release(struct inode *inode, struct file *file)
++{
++	struct etb_drvdata *drvdata = container_of(file->private_data,
++						   struct etb_drvdata, miscdev);
++
++	drvdata->reading = false;
++	atomic_set(&drvdata->in_use, 0);
++
++	dev_dbg(drvdata->dev, "%s: released\n", __func__);
++	return 0;
++}
++
++static const struct file_operations etb_fops = {
++	.owner		= THIS_MODULE,
++	.open		= etb_open,
++	.read		= etb_read,
++	.release	= etb_release,
++	.llseek		= no_llseek,
++};
++
++static ssize_t debugfs_status_show(struct seq_file *f, void *ptr)
++{
++	int ret;
++	unsigned long flags;
++	u32 etb_rdr, etb_sr, etb_rrp, etb_rwp;
++	u32 etb_trg, etb_cr, etb_ffsr, etb_ffcr;
++	struct etb_drvdata *drvdata = f->private;
++
++	ret = clk_prepare_enable(drvdata->clk);
++	if (ret)
++		goto out;
++
++	spin_lock_irqsave(&drvdata->spinlock, flags);
++	CS_UNLOCK(drvdata->base);
++
++	etb_rdr = cs_readl(drvdata->base, ETB_RAM_DEPTH_REG);
++	etb_sr = cs_readl(drvdata->base, ETB_STATUS_REG);
++	etb_rrp = cs_readl(drvdata->base, ETB_RAM_READ_POINTER);
++	etb_rwp = cs_readl(drvdata->base, ETB_RAM_WRITE_POINTER);
++	etb_trg = cs_readl(drvdata->base, ETB_TRG);
++	etb_cr = cs_readl(drvdata->base, ETB_CTL_REG);
++	etb_ffsr = cs_readl(drvdata->base, ETB_FFSR);
++	etb_ffcr = cs_readl(drvdata->base, ETB_FFCR);
++
++	CS_LOCK(drvdata->base);
++	spin_unlock_irqrestore(&drvdata->spinlock, flags);
++
++	clk_disable_unprepare(drvdata->clk);
++
++	seq_printf(f,
++		   "Depth:\t\t0x%x\n"
++		   "Status:\t\t0x%x\n"
++		   "RAM read ptr:\t0x%x\n"
++		   "RAM wrt ptr:\t0x%x\n"
++		   "Trigger cnt:\t0x%x\n"
++		   "Control:\t0x%x\n"
++		   "Flush status:\t0x%x\n"
++		   "Flush ctrl:\t0x%x\n",
++		   etb_rdr, etb_sr, etb_rrp, etb_rwp,
++		   etb_trg, etb_cr, etb_ffsr, etb_ffcr);
++out:
++	return 0;
++}
++
++static int debugfs_status_show_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, debugfs_status_show, inode->i_private);
++}
++
++static const struct file_operations debugfs_status_ops = {
++	.open = debugfs_status_show_open,
++	.read = seq_read,
++	.llseek = seq_lseek,
++	.release = single_release,
++};
++
++static const struct coresight_ops_entry debugfs_status_entry = {
++	.name = "status",
++	.mode = S_IRUGO,
++	.ops = &debugfs_status_ops,
++};
++
++static ssize_t debugfs_trigger_cntr_get(void *data, u64 *val)
++{
++	struct etb_drvdata *drvdata = data;
++
++	*val = drvdata->trigger_cntr;
++	return 0;
++}
++
++static ssize_t debugfs_trigger_cntr_set(void *data, u64 val)
++{
++	struct etb_drvdata *drvdata = data;
++
++	drvdata->trigger_cntr = val;
++	return 0;
++}
++CORESIGHT_DEBUGFS_ENTRY(debugfs_trigger_cntr, "trigger_cntr",
++			S_IRUGO | S_IWUSR, debugfs_trigger_cntr_get,
++			debugfs_trigger_cntr_set, "%llu\n");
++
++static const struct coresight_ops_entry *etb_attr_grps[] = {
++	&debugfs_trigger_cntr_entry,
++	&debugfs_status_entry,
++	NULL,
++};
++
++static int etb_probe(struct amba_device *adev, const struct amba_id *id)
 +{
 +	int ret;
 +	void __iomem *base;
 +	struct device *dev = &adev->dev;
 +	struct coresight_platform_data *pdata = NULL;
-+	struct tpiu_drvdata *drvdata;
++	struct etb_drvdata *drvdata;
 +	struct resource *res = &adev->res;
 +	struct coresight_desc *desc;
 +	struct device_node *np = adev->dev.of_node;
@@ -213,74 +526,95 @@ index 0000000..67bc431
 +
 +	drvdata->base = base;
 +
++	spin_lock_init(&drvdata->spinlock);
++
 +	drvdata->clk = adev->pclk;
 +	ret = clk_prepare_enable(drvdata->clk);
 +	if (ret)
 +		return ret;
 +
-+	/* Disable tpiu to support older devices */
-+	tpiu_disable_hw(drvdata);
-+
++	drvdata->buffer_depth =  etb_get_buffer_depth(drvdata);
 +	clk_disable_unprepare(drvdata->clk);
++
++	if (drvdata->buffer_depth < 0)
++		return -EINVAL;
++
++	drvdata->buf = devm_kzalloc(dev,
++				    drvdata->buffer_depth * 4, GFP_KERNEL);
++	if (!drvdata->buf)
++		return -ENOMEM;
 +
 +	desc = devm_kzalloc(dev, sizeof(*desc), GFP_KERNEL);
 +	if (!desc)
 +		return -ENOMEM;
 +
 +	desc->type = CORESIGHT_DEV_TYPE_SINK;
-+	desc->subtype.sink_subtype = CORESIGHT_DEV_SUBTYPE_SINK_PORT;
-+	desc->ops = &tpiu_cs_ops;
++	desc->subtype.sink_subtype = CORESIGHT_DEV_SUBTYPE_SINK_BUFFER;
++	desc->ops = &etb_cs_ops;
 +	desc->pdata = pdata;
 +	desc->dev = dev;
++	desc->debugfs_ops = etb_attr_grps;
 +	desc->owner = THIS_MODULE;
 +	drvdata->csdev = coresight_register(desc);
 +	if (IS_ERR(drvdata->csdev))
 +		return PTR_ERR(drvdata->csdev);
 +
-+	dev_info(dev, "TPIU initialized\n");
++	drvdata->miscdev.name = pdata->name;
++	drvdata->miscdev.minor = MISC_DYNAMIC_MINOR;
++	drvdata->miscdev.fops = &etb_fops;
++	ret = misc_register(&drvdata->miscdev);
++	if (ret)
++		goto err_misc_register;
++
++	dev_info(dev, "ETB initialized\n");
 +	return 0;
++
++err_misc_register:
++	coresight_unregister(drvdata->csdev);
++	return ret;
 +}
 +
-+static int tpiu_remove(struct amba_device *adev)
++static int etb_remove(struct amba_device *adev)
 +{
-+	struct tpiu_drvdata *drvdata = amba_get_drvdata(adev);
++	struct etb_drvdata *drvdata = amba_get_drvdata(adev);
 +
++	misc_deregister(&drvdata->miscdev);
 +	coresight_unregister(drvdata->csdev);
 +	return 0;
 +}
 +
-+static struct amba_id tpiu_ids[] = {
++static struct amba_id etb_ids[] = {
 +	{
-+		.id	= 0x0003b912,
++		.id	= 0x0003b907,
 +		.mask	= 0x0003ffff,
 +	},
 +	{ 0, 0},
 +};
 +
-+static struct amba_driver tpiu_driver = {
++static struct amba_driver etb_driver = {
 +	.drv = {
-+		.name	= "coresight-tpiu",
++		.name	= "coresight-etb",
 +		.owner	= THIS_MODULE,
 +	},
-+	.probe		= tpiu_probe,
-+	.remove		= tpiu_remove,
-+	.id_table	= tpiu_ids,
++	.probe		= etb_probe,
++	.remove		= etb_remove,
++	.id_table	= etb_ids,
 +};
 +
-+static int __init tpiu_init(void)
++static int __init etb_init(void)
 +{
-+	return amba_driver_register(&tpiu_driver);
++	return amba_driver_register(&etb_driver);
 +}
-+module_init(tpiu_init);
++module_init(etb_init);
 +
-+static void __exit tpiu_exit(void)
++static void __exit etb_exit(void)
 +{
-+	amba_driver_unregister(&tpiu_driver);
++	amba_driver_unregister(&etb_driver);
 +}
-+module_exit(tpiu_exit);
++module_exit(etb_exit);
 +
 +MODULE_LICENSE("GPL v2");
-+MODULE_DESCRIPTION("CoreSight Trace Port Interface Unit driver");
++MODULE_DESCRIPTION("CoreSight Embedded Trace Buffer driver");
 -- 
 1.9.1
 
