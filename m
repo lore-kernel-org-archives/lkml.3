@@ -1,63 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752792AbaF0HXv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 03:23:51 -0400
-Received: from mout.kundenserver.de ([212.227.126.130]:50855 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752600AbaF0HXu (ORCPT
+	id S1752842AbaF0HYM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 03:24:12 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:34313 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751598AbaF0HYK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 03:23:50 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Feng Kan <fkan@apm.com>
-Cc: Chen-Yu Tsai <wens@csie.org>, dbaryshkov <dbaryshkov@gmail.com>,
-        Catalin Marinas <catalin.marinas@arm.com>, dwmw2 <dwmw2@infradead.org>,
-        devicetree <devicetree@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, patches <patches@apm.com>
-Subject: Re: [PATCH V7 1/6] power: reset: Add generic SYSCON register mapped reset
-Date: Fri, 27 Jun 2014 09:23:32 +0200
-Message-ID: <12435553.7pqAlNHzh1@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAL85gmCOzaT+dJf9e8Uj-w3v1nq8Qjg-EXfWDN5kdrU2k=kHJQ@mail.gmail.com>
-References: <1403737406-6474-1-git-send-email-fkan@apm.com> <CAGb2v65mGXDGb8Y045kehKufpMZWnfBm4dBJarJeOa8j-3g0RQ@mail.gmail.com> <CAL85gmCOzaT+dJf9e8Uj-w3v1nq8Qjg-EXfWDN5kdrU2k=kHJQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:4CzPILJiY3VYh+P1/mfbNfcnrb0TPgu4wcE0D7zTf48
- hwAp8GwyTn/4tAne0UbucUy/nY1PU4PmacDLgGhqakeLqkJvZt
- ZQtcX22F0ilUrfKEkc2WDgm20ppAdy4FT8Q0p6eCg+TVtHptii
- 3m32gB1OVlZqk/x/0mWLZqS1wamjxplMdYrX2JrCYTTXKAP60G
- ZahYZAmvVbA8gwTTaOQHaQH8KTHq0ZEjzRqJdUcY7923P1qoFj
- rJh23K3kocEL//RZhjRJlHINMlQKTcXmLRKlMdshfnkEbuik8W
- Y6w8mJyz6URRtQvLsy3QfgFQcWYv6zNpqR/e81Qs/7DbNUExO3
- DgQBuQ3Q4qlhtFFPpFaU=
+	Fri, 27 Jun 2014 03:24:10 -0400
+From: Junxiao Bi <junxiao.bi@oracle.com>
+To: linux-kernel@vger.kernel.org
+Cc: axboe@kernel.dk, joe.jin@oracle.com
+Subject: [PATCH] block: fix uint overflow when merging io requests
+Date: Fri, 27 Jun 2014 15:24:22 +0800
+Message-Id: <1403853862-16565-1-git-send-email-junxiao.bi@oracle.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 26 June 2014 09:51:14 Feng Kan wrote:
-> >> diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
-> >> index bdcf517..7035236 100644
-> >> --- a/drivers/power/reset/Kconfig
-> >> +++ b/drivers/power/reset/Kconfig
-> >> @@ -80,3 +80,9 @@ config POWER_RESET_KEYSTONE
-> >>         help
-> >>           Reboot support for the KEYSTONE SoCs.
-> >>
-> >> +config POWER_RESET_SYSCON
-> >> +       bool "Generic SYSCON regmap reset driver"
-> >> +       depends on ARCH_XGENE
-> >
-> > If this is supposed to be generic, why are you depending on
-> > a certain platform?
-> 
-> Yes, the problem was that it was breaking the x86 build.
+This uint overflow will cause req->__data_len < req->bio->bi_size,
+this will confuse block layer and device driver.
 
-You probably need to list the exact dependencies then, at least make
-it depend on MFD_SYSCON and OF. We generally want all drivers to
-build without warnings on all architectures. You can limit it to
-(ARM || ARM64 || COMPILE_TEST) if you don't want it to show up on
-x86 by default, but it should still be possible to build it when
-COMPILE_TEST is set.
+I watched a panic caused by this when mkfs.ext4 a volume of a large
+virtual disk on vm guest, blkdev_issue_discard() issue two bio with
+a total size over UINT_MAX, but the check in ll_back_merge_fn() didn't
+take affect due to the overflow and they were merged into one request.
+After the request is done, in blk_end_request_all(), BUG_ON(pending)
+was triggered and kernel panic. "pending" is true is because
+blk_update_request() return ture when req->__data_len is less
+than req->bio->bi_size.
 
-	Arnd
+Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
+---
+ block/blk-merge.c |   40 ++++++++++++++++++++++++++++++++++------
+ 1 file changed, 34 insertions(+), 6 deletions(-)
+
+diff --git a/block/blk-merge.c b/block/blk-merge.c
+index b3bf0df..340c0a7 100644
+--- a/block/blk-merge.c
++++ b/block/blk-merge.c
+@@ -325,11 +325,41 @@ no_merge:
+ 	return 0;
+ }
+ 
+-int ll_back_merge_fn(struct request_queue *q, struct request *req,
++static inline bool ll_allow_merge_bio(struct request *req,
+ 		     struct bio *bio)
+ {
+ 	if (blk_rq_sectors(req) + bio_sectors(bio) >
+-	    blk_rq_get_max_sectors(req)) {
++		blk_rq_get_max_sectors(req))
++		return false;
++
++	/* check uint overflow */
++	if (blk_rq_sectors(req) + bio_sectors(bio) < blk_rq_sectors(req)
++		|| blk_rq_sectors(req) + bio_sectors(bio) < bio_sectors(bio))
++		return false;
++
++	return true;
++}
++
++static inline bool ll_allow_merge_req(struct request *req,
++		     struct request *next)
++{
++	if (blk_rq_sectors(req) + blk_rq_sectors(next) >
++		blk_rq_get_max_sectors(req))
++		return false;
++
++	/* check uint overflow */
++	if (blk_rq_sectors(req) + blk_rq_sectors(next) < blk_rq_sectors(req)
++		|| blk_rq_sectors(req) + blk_rq_sectors(next) <
++		blk_rq_sectors(next))
++		return false;
++
++	return true;
++}
++
++int ll_back_merge_fn(struct request_queue *q, struct request *req,
++		     struct bio *bio)
++{
++	if (!ll_allow_merge_bio(req, bio)) {
+ 		req->cmd_flags |= REQ_NOMERGE;
+ 		if (req == q->last_merge)
+ 			q->last_merge = NULL;
+@@ -346,8 +376,7 @@ int ll_back_merge_fn(struct request_queue *q, struct request *req,
+ int ll_front_merge_fn(struct request_queue *q, struct request *req,
+ 		      struct bio *bio)
+ {
+-	if (blk_rq_sectors(req) + bio_sectors(bio) >
+-	    blk_rq_get_max_sectors(req)) {
++	if (!ll_allow_merge_bio(req, bio)) {
+ 		req->cmd_flags |= REQ_NOMERGE;
+ 		if (req == q->last_merge)
+ 			q->last_merge = NULL;
+@@ -389,8 +418,7 @@ static int ll_merge_requests_fn(struct request_queue *q, struct request *req,
+ 	/*
+ 	 * Will it become too large?
+ 	 */
+-	if ((blk_rq_sectors(req) + blk_rq_sectors(next)) >
+-	    blk_rq_get_max_sectors(req))
++	if (!ll_allow_merge_req(req, next))
+ 		return 0;
+ 
+ 	total_phys_segments = req->nr_phys_segments + next->nr_phys_segments;
+-- 
+1.7.9.5
+
