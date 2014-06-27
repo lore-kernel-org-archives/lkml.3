@@ -1,116 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753182AbaF0JVS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 05:21:18 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:48793 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751598AbaF0JVP (ORCPT
+	id S1753232AbaF0JVZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 05:21:25 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:33572 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751598AbaF0JVU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 05:21:15 -0400
-Message-ID: <53AD3788.4090101@codeaurora.org>
-Date: Fri, 27 Jun 2014 02:21:12 -0700
-From: Laura Abbott <lauraa@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>
-CC: Nicolas Pitre <nicolas.pitre@linaro.org>, Andrew Lunn <andrew@lunn.ch>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-mm@kvack.org,
-        Daniel Walker <dwalker@fifo99.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        David Brown <davidb@codeaurora.org>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Jason Cooper <jason@lakedaemon.net>, linux-arm-msm@vger.kernel.org,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Ben Dooks <ben-linux@fluff.org>, linux-arm-kernel@lists.infradead.org,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        linux-kernel@vger.kernel.org,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>, kernel@pengutronix.de,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCHv5 2/2] arm: Get rid of meminfo
-References: <1396544698-15596-1-git-send-email-lauraa@codeaurora.org> <1396544698-15596-3-git-send-email-lauraa@codeaurora.org> <20140623091754.GD14781@pengutronix.de> <53A8927B.3020409@codeaurora.org> <20140624084936.GJ14781@pengutronix.de>
-In-Reply-To: <20140624084936.GJ14781@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+	Fri, 27 Jun 2014 05:21:20 -0400
+From: Kiran Kumar Raparthy <kiran.kumar@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: "hyungseoung.yoo" <hyungseoung.yoo@samsung.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Jaikumar Ganesh <jaikumarg@android.com>,
+        Kiran Raparthy <kiran.kumar@linaro.org>
+Subject: [PATCH - RESEND] Bluetooth: Keep master role when SCO or eSCO is active
+Date: Fri, 27 Jun 2014 14:50:13 +0530
+Message-Id: <1403860813-360-1-git-send-email-kiran.kumar@linaro.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/24/2014 1:49 AM, Uwe Kleine-König wrote:
-> Hi Laura,
-> 
-> On Mon, Jun 23, 2014 at 01:47:55PM -0700, Laura Abbott wrote:
->> Thanks for the report.
-> Thanks for your reply to address it :-)
-> Are you already aware of the mail with Message-Id:
-> CAGa+x85H510fNGTXJHGYfQybRa2FGgg2NyCgJ8rmjJ6TE7GNbA@mail.gmail.com ?
-> Seems to be another fall-out but I think you were not on Cc.
-> 
->> On 6/23/2014 2:17 AM, Uwe Kleine-König wrote:
->>> This patch is in 3.16-rc1 as 1c2f87c22566cd057bc8cde10c37ae9da1a1bb76
->>> now.
->>>
->>> Unfortunately it makes my efm32 machine unbootable.
->>>
->>> With earlyprintk enabled I get the following output:
->>>
->>> [    0.000000] Booting Linux on physical CPU 0x0
->>> [    0.000000] Linux version 3.15.0-rc1-00028-g1c2f87c22566-dirty (ukleinek@perseus) (gcc version 4.7.2 (OSELAS.Toolchain-2012.12.1) ) #280 PREEMPT Mon Jun 23 11:05:34 CEST 2014
->>> [    0.000000] CPU: ARMv7-M [412fc231] revision 1 (ARMv7M), cr=00000000
->>> [    0.000000] CPU: unknown data cache, unknown instruction cache
->>> [    0.000000] Machine model: Energy Micro Giant Gecko Development Kit
->>> [    0.000000] debug: ignoring loglevel setting.
->>> [    0.000000] bootconsole [earlycon0] enabled
->>> [    0.000000] On node 0 totalpages: 1024
->>> [    0.000000] free_area_init_node: node 0, pgdat 880208f4, node_mem_map 00000000
->>> [    0.000000]   Normal zone: 3840 pages exceeds freesize 1024
->>
->> This looks off. The number of pages for the memmap exceeds the available free
->> size. Working backwards, I think the wrong bounds are being calculated in
->> find_limits in arch/arm/mm/init.c . max_low is now calculated via the current
->> limit but nommu never sets a limit unlike the mmu case. Can you try the
->> following patch and see if it fixes the issue? If this doesn't work, can
->> you share working bootup logs so I can do a bit more compare and contrast?
->>
->> Thanks,
->> Laura
->>
->> ---8<----
->> From 9b19241d577caf91928e26e55413047d1be90feb Mon Sep 17 00:00:00 2001
->> From: Laura Abbott <lauraa@codeaurora.org>
->> Date: Mon, 23 Jun 2014 13:26:56 -0700
->> Subject: [PATCH] arm: Set memblock limit for nommu
->>
->> Commit 1c2f87c (ARM: 8025/1: Get rid of meminfo) changed find_limits
->> to use memblock_get_current_limit for calculating the max_low pfn.
->> nommu targets never actually set a limit on memblock though which
->> means memblock_get_current_limit will just return the default
->> value. Set the memblock_limit to be the end of DDR to make sure
-> s/DDR/RAM/ ?
-> 
->> bounds are calculated correctly.
-> This patch makes my machine boot. Full boot log appended below.
-> (Side note: I place my dtb in the SRAM at 0x10000000 but don't add this to
-> the available memory because it's only 128 KiB in size and so too small
-> to be worth to track. Not sure this is allowed?!)
-> 
-> Thanks
-> Uwe
-> 
+From: "hyungseoung.yoo" <hyungseoung.yoo@samsung.com>
+
+Preserve the master role when SCO or eSCO is active
+as this improves compatability with lots of
+headset and chipset combinations.
+
+This is one of the number of patches from the Android AOSP
+common.git tree, which is used on almost all Android devices.
+It looks like it would improve support for compatibility with
+lot of headset,so I wanted to submit it for review to see
+if it should go upstream.
+
+v3: Fixed formatting issues pointed by Sergei
+
+Cc: Marcel Holtmann <marcel@holtmann.org>
+Cc: Gustavo Padovan <gustavo@padovan.org>
+Cc: Johan Hedberg <johan.hedberg@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: linux-bluetooth@vger.kernel.org
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: Android Kernel Team <kernel-team@android.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Signed-off-by: hyungseoung.yoo <hyungseoung.yoo@samsung.com>
+Signed-off-by: Jaikumar Ganesh <jaikumarg@android.com>
+[kiran: Added context to commit message]
+Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
+---
+ net/bluetooth/hci_event.c | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
+index 15010a2..cfb1355 100644
+--- a/net/bluetooth/hci_event.c
++++ b/net/bluetooth/hci_event.c
+@@ -1915,6 +1915,14 @@ unlock:
+ 	hci_conn_check_pending(hdev);
+ }
  
-I put this in the patch tracker as 8086/1
-
-Thanks,
-Laura
-
++static inline bool is_sco_active(struct hci_dev *hdev)
++{
++	if (hci_conn_hash_lookup_state(hdev, SCO_LINK, BT_CONNECTED) ||
++	    hci_conn_hash_lookup_state(hdev, ESCO_LINK, BT_CONNECTED))
++		return true;
++	return false;
++}
++
+ static void hci_conn_request_evt(struct hci_dev *hdev, struct sk_buff *skb)
+ {
+ 	struct hci_ev_conn_request *ev = (void *) skb->data;
+@@ -1961,7 +1969,9 @@ static void hci_conn_request_evt(struct hci_dev *hdev, struct sk_buff *skb)
+ 
+ 			bacpy(&cp.bdaddr, &ev->bdaddr);
+ 
+-			if (lmp_rswitch_capable(hdev) && (mask & HCI_LM_MASTER))
++			if (lmp_rswitch_capable(hdev) &&
++			    ((mask & HCI_LM_MASTER) ||
++			    is_sco_active(hdev)))
+ 				cp.role = 0x00; /* Become master */
+ 			else
+ 				cp.role = 0x01; /* Remain slave */
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+1.8.2.1
+
