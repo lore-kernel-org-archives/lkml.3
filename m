@@ -1,189 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753327AbaF0K3i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 06:29:38 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:11833 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753239AbaF0K3f (ORCPT
+	id S1753131AbaF0Keh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 06:34:37 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:32788 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750756AbaF0Kef (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 06:29:35 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 27 Jun 2014 03:19:36 -0700
-From: Alexandre Courbot <acourbot@nvidia.com>
-To: Ben Skeggs <bskeggs@redhat.com>
-CC: <nouveau@lists.freedesktop.org>, <dri-devel@lists.freedesktop.org>,
-        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <gnurou@gmail.com>, Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH 2/2] drm/gk20a: add BAR instance
-Date: Fri, 27 Jun 2014 19:28:51 +0900
-Message-ID: <1403864931-4663-2-git-send-email-acourbot@nvidia.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1403864931-4663-1-git-send-email-acourbot@nvidia.com>
-References: <1403864931-4663-1-git-send-email-acourbot@nvidia.com>
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 27 Jun 2014 06:34:35 -0400
+X-AuditID: cbfec7f5-b7f626d000004b39-47-53ad48b869ee
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>,
+        Tushar Behera <tushar.behera@linaro.org>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>, stable@vger.kernel.org
+Subject: [PATCH] clk: s2mps11: Fix double free corruption during driver unbind
+Date: Fri, 27 Jun 2014 12:34:24 +0200
+Message-id: <1403865264-29062-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrAJMWRmVeSWpSXmKPExsVy+t/xK7o7PNYGG7z4KGqxccZ6VovXLwwt
+	zja9Ybe4vGsOm8XaI3fZLZ5OuMhmsWDjI0aL9TNes1i0/93LZjFn+jsmBy6PO9f2sHn0bVnF
+	6PF5k1wAcxSXTUpqTmZZapG+XQJXxrXLi1gLfutUfPi+h62BcY5qFyMHh4SAicTHiYVdjJxA
+	ppjEhXvr2boYuTiEBJYySiz/e4wdJCEk0MckceNrCIjNJmAssXn5EjYQW0TAQ2LTnXksIA3M
+	AneZJKbcusYCMlRYwE/i6SsHkBoWAVWJT3N/MYPYvALuEidurGOBWCYncfLYZNYJjNwLGBlW
+	MYqmliYXFCel5xrpFSfmFpfmpesl5+duYoSEytcdjEuPWR1iFOBgVOLhPXl2TbAQa2JZcWXu
+	IUYJDmYlEV4Zm7XBQrwpiZVVqUX58UWlOanFhxiZODilGhhLtESfbwuanah+J45h2tE6/6g/
+	XBknFF9e2Md24EkUz5b+smKduq9XJ0ttvM9zeOFusWStNSUOnJPlk57rS78+/kfproHQL8MM
+	PrXv25PPz8z6FLuteqPHyoYplYsM/1RVay8vaFc/69ciz2d2asmvH+38iQfyRU2Mzwr8za6O
+	EesJesK7TkiJpTgj0VCLuag4EQCCSGaN8wEAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-GK20A's BAR is functionally identical to NVC0's, but do not support
-being ioremapped write-combined. Create a BAR instance for GK20A that
-reflect that state.
+After unbinding the driver memory was corrupted by double free of
+clk_lookup structure. This lead to OOPS when re-binding the driver
+again.
 
-Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+The driver allocated memory for 'clk_lookup' with devm_kzalloc. During
+driver removal this memory was freed twice: once by clkdev_drop() and
+second by devm code.
+
+Kernel panic log:
+[   30.839284] Unable to handle kernel paging request at virtual address 5f343173
+[   30.846476] pgd = dee14000
+[   30.849165] [5f343173] *pgd=00000000
+[   30.852703] Internal error: Oops: 805 [#1] PREEMPT SMP ARM
+[   30.858166] Modules linked in:
+[   30.861208] CPU: 0 PID: 1 Comm: bash Not tainted 3.16.0-rc2-00239-g94bdf617b07e-dirty #40
+[   30.869364] task: df478000 ti: df480000 task.ti: df480000
+[   30.874752] PC is at clkdev_add+0x2c/0x38
+[   30.878738] LR is at clkdev_add+0x18/0x38
+[   30.882732] pc : [<c0350908>]    lr : [<c03508f4>]    psr: 60000013
+[   30.882732] sp : df481e78  ip : 00000001  fp : c0700ed8
+[   30.894187] r10: 0000000c  r9 : 00000000  r8 : c07b0e3c
+[   30.899396] r7 : 00000002  r6 : df45f9d0  r5 : df421390  r4 : c0700d6c
+[   30.905906] r3 : 5f343173  r2 : c0700d84  r1 : 60000013  r0 : c0700d6c
+[   30.912417] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+[   30.919534] Control: 10c53c7d  Table: 5ee1406a  DAC: 00000015
+[   30.925262] Process bash (pid: 1, stack limit = 0xdf480240)
+[   30.930817] Stack: (0xdf481e78 to 0xdf482000)
+[   30.935159] 1e60:                                                       00001000 df6de610
+[   30.943321] 1e80: df7f4558 c0355650 c05ec6ec c0700eb0 df6de600 df7f4510 dec9d69c 00000014
+[   30.951480] 1ea0: 00167b48 df6de610 c0700e30 c0713518 00000000 c0700e30 dec9d69c 00000006
+[   30.959639] 1ec0: 00167b48 c02c1b7c c02c1b64 df6de610 c07aff48 c02c0420 c06fb150 c047cc20
+[   30.967798] 1ee0: df6de610 df6de610 c0700e30 df6de644 c06fb150 0000000c dec9d690 c02bef90
+[   30.975957] 1f00: dec9c6c0 dece4c00 df481f80 dece4c00 0000000c c02be73c 0000000c c016ca8c
+[   30.984116] 1f20: c016ca48 00000000 00000000 c016c1f4 00000000 00000000 b6f18000 df481f80
+[   30.992276] 1f40: df7f66c0 0000000c df480000 df480000 b6f18000 c011094c df47839c 60000013
+[   31.000435] 1f60: 00000000 00000000 df7f66c0 df7f66c0 0000000c df480000 b6f18000 c0110dd4
+[   31.008594] 1f80: 00000000 00000000 0000000c b6ec05d8 0000000c b6f18000 00000004 c000f2a8
+[   31.016753] 1fa0: 00001000 c000f0e0 b6ec05d8 0000000c 00000001 b6f18000 0000000c 00000000
+[   31.024912] 1fc0: b6ec05d8 0000000c b6f18000 00000004 0000000c 00000001 00000000 00167b48
+[   31.033071] 1fe0: 00000000 bed83a80 b6e004f0 b6e5122c 60000010 00000001 ffffffff ffffffff
+[   31.041248] [<c0350908>] (clkdev_add) from [<c0355650>] (s2mps11_clk_probe+0x2b4/0x3b4)
+[   31.049223] [<c0355650>] (s2mps11_clk_probe) from [<c02c1b7c>] (platform_drv_probe+0x18/0x48)
+[   31.057728] [<c02c1b7c>] (platform_drv_probe) from [<c02c0420>] (driver_probe_device+0x13c/0x384)
+[   31.066579] [<c02c0420>] (driver_probe_device) from [<c02bef90>] (bind_store+0x88/0xd8)
+[   31.074564] [<c02bef90>] (bind_store) from [<c02be73c>] (drv_attr_store+0x20/0x2c)
+[   31.082118] [<c02be73c>] (drv_attr_store) from [<c016ca8c>] (sysfs_kf_write+0x44/0x48)
+[   31.090016] [<c016ca8c>] (sysfs_kf_write) from [<c016c1f4>] (kernfs_fop_write+0xc0/0x17c)
+[   31.098176] [<c016c1f4>] (kernfs_fop_write) from [<c011094c>] (vfs_write+0xa0/0x1c4)
+[   31.105899] [<c011094c>] (vfs_write) from [<c0110dd4>] (SyS_write+0x40/0x8c)
+[   31.112931] [<c0110dd4>] (SyS_write) from [<c000f0e0>] (ret_fast_syscall+0x0/0x3c)
+[   31.120481] Code: e2842018 e584501c e1a00004 e885000c (e5835000)
+[   31.126596] ---[ end trace efad45bfa3a61b05 ]---
+[   31.131181] Kernel panic - not syncing: Fatal exception
+[   31.136368] CPU1: stopping
+[   31.139054] CPU: 1 PID: 0 Comm: swapper/1 Tainted: G      D       3.16.0-rc2-00239-g94bdf617b07e-dirty #40
+[   31.148697] [<c0016480>] (unwind_backtrace) from [<c0012950>] (show_stack+0x10/0x14)
+[   31.156419] [<c0012950>] (show_stack) from [<c0480db8>] (dump_stack+0x80/0xcc)
+[   31.163622] [<c0480db8>] (dump_stack) from [<c001499c>] (handle_IPI+0x130/0x15c)
+[   31.170998] [<c001499c>] (handle_IPI) from [<c000862c>] (gic_handle_irq+0x60/0x68)
+[   31.178549] [<c000862c>] (gic_handle_irq) from [<c0013480>] (__irq_svc+0x40/0x70)
+[   31.186009] Exception stack(0xdf4bdf88 to 0xdf4bdfd0)
+[   31.191046] df80:                   ffffffed 00000000 00000000 00000000 df4bc000 c06d042c
+[   31.199207] dfa0: 00000000 ffffffed c06d03c0 00000000 c070c288 00000000 00000000 df4bdfd0
+[   31.207363] dfc0: c0010324 c0010328 60000013 ffffffff
+[   31.212402] [<c0013480>] (__irq_svc) from [<c0010328>] (arch_cpu_idle+0x28/0x30)
+[   31.219783] [<c0010328>] (arch_cpu_idle) from [<c005f150>] (cpu_startup_entry+0x2c4/0x3f0)
+[   31.228027] [<c005f150>] (cpu_startup_entry) from [<400086c4>] (0x400086c4)
+[   31.234968] ---[ end Kernel panic - not syncing: Fatal exception
+
+Fixes: 7cc560dea415 ("clk: s2mps11: Add support for s2mps11")
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- drivers/gpu/drm/nouveau/Makefile                  |  1 +
- drivers/gpu/drm/nouveau/core/engine/device/nve0.c |  2 +-
- drivers/gpu/drm/nouveau/core/include/subdev/bar.h |  1 +
- drivers/gpu/drm/nouveau/core/subdev/bar/gk20a.c   | 54 +++++++++++++++++++++++
- drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c    |  6 +--
- drivers/gpu/drm/nouveau/core/subdev/bar/priv.h    |  6 +++
- 6 files changed, 66 insertions(+), 4 deletions(-)
- create mode 100644 drivers/gpu/drm/nouveau/core/subdev/bar/gk20a.c
+ drivers/clk/clk-s2mps11.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/nouveau/Makefile b/drivers/gpu/drm/nouveau/Makefile
-index 8b307e143632..11d9561d67c1 100644
---- a/drivers/gpu/drm/nouveau/Makefile
-+++ b/drivers/gpu/drm/nouveau/Makefile
-@@ -26,6 +26,7 @@ nouveau-y += core/core/subdev.o
- nouveau-y += core/subdev/bar/base.o
- nouveau-y += core/subdev/bar/nv50.o
- nouveau-y += core/subdev/bar/nvc0.o
-+nouveau-y += core/subdev/bar/gk20a.o
- nouveau-y += core/subdev/bios/base.o
- nouveau-y += core/subdev/bios/bit.o
- nouveau-y += core/subdev/bios/boost.o
-diff --git a/drivers/gpu/drm/nouveau/core/engine/device/nve0.c b/drivers/gpu/drm/nouveau/core/engine/device/nve0.c
-index 2d1e97d4264f..a2b9ccc48f66 100644
---- a/drivers/gpu/drm/nouveau/core/engine/device/nve0.c
-+++ b/drivers/gpu/drm/nouveau/core/engine/device/nve0.c
-@@ -165,7 +165,7 @@ nve0_identify(struct nouveau_device *device)
- 		device->oclass[NVDEV_SUBDEV_IBUS   ] = &gk20a_ibus_oclass;
- 		device->oclass[NVDEV_SUBDEV_INSTMEM] = nv50_instmem_oclass;
- 		device->oclass[NVDEV_SUBDEV_VM     ] = &nvc0_vmmgr_oclass;
--		device->oclass[NVDEV_SUBDEV_BAR    ] = &nvc0_bar_oclass;
-+		device->oclass[NVDEV_SUBDEV_BAR    ] = &gk20a_bar_oclass;
- 		device->oclass[NVDEV_ENGINE_DMAOBJ ] = &nvd0_dmaeng_oclass;
- 		device->oclass[NVDEV_ENGINE_FIFO   ] =  gk20a_fifo_oclass;
- 		device->oclass[NVDEV_ENGINE_SW     ] =  nvc0_software_oclass;
-diff --git a/drivers/gpu/drm/nouveau/core/include/subdev/bar.h b/drivers/gpu/drm/nouveau/core/include/subdev/bar.h
-index 9002cbb6432b..be037fac534c 100644
---- a/drivers/gpu/drm/nouveau/core/include/subdev/bar.h
-+++ b/drivers/gpu/drm/nouveau/core/include/subdev/bar.h
-@@ -33,5 +33,6 @@ nouveau_bar(void *obj)
+diff --git a/drivers/clk/clk-s2mps11.c b/drivers/clk/clk-s2mps11.c
+index 9b7b5859a420..27157f456ebe 100644
+--- a/drivers/clk/clk-s2mps11.c
++++ b/drivers/clk/clk-s2mps11.c
+@@ -230,8 +230,8 @@ static int s2mps11_clk_probe(struct platform_device *pdev)
+ 			goto err_reg;
+ 		}
  
- extern struct nouveau_oclass nv50_bar_oclass;
- extern struct nouveau_oclass nvc0_bar_oclass;
-+extern struct nouveau_oclass gk20a_bar_oclass;
- 
- #endif
-diff --git a/drivers/gpu/drm/nouveau/core/subdev/bar/gk20a.c b/drivers/gpu/drm/nouveau/core/subdev/bar/gk20a.c
-new file mode 100644
-index 000000000000..cc7c3db211d1
---- /dev/null
-+++ b/drivers/gpu/drm/nouveau/core/subdev/bar/gk20a.c
-@@ -0,0 +1,54 @@
-+/*
-+ * Copyright (c) 2014, NVIDIA CORPORATION. All rights reserved.
-+ *
-+ * Permission is hereby granted, free of charge, to any person obtaining a
-+ * copy of this software and associated documentation files (the "Software"),
-+ * to deal in the Software without restriction, including without limitation
-+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
-+ * and/or sell copies of the Software, and to permit persons to whom the
-+ * Software is furnished to do so, subject to the following conditions:
-+ *
-+ * The above copyright notice and this permission notice shall be included in
-+ * all copies or substantial portions of the Software.
-+ *
-+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
-+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-+ * DEALINGS IN THE SOFTWARE.
-+ */
-+
-+#include <subdev/bar.h>
-+
-+#include "priv.h"
-+
-+int
-+gk20a_bar_ctor(struct nouveau_object *parent, struct nouveau_object *engine,
-+	       struct nouveau_oclass *oclass, void *data, u32 size,
-+	       struct nouveau_object **pobject)
-+{
-+	struct nouveau_bar *bar;
-+	int ret;
-+
-+	ret = nvc0_bar_ctor(parent, engine, oclass, data, size, pobject);
-+	if (ret)
-+		return ret;
-+
-+	bar = *pobject;
-+	bar->iomap_uncached = true;
-+
-+	return 0;
-+}
-+
-+struct nouveau_oclass
-+gk20a_bar_oclass = {
-+	.handle = NV_SUBDEV(BAR, 0xea),
-+	.ofuncs = &(struct nouveau_ofuncs) {
-+		.ctor = gk20a_bar_ctor,
-+		.dtor = nvc0_bar_dtor,
-+		.init = nvc0_bar_init,
-+		.fini = _nouveau_bar_fini,
-+	},
-+};
-diff --git a/drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c b/drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c
-index ca8139b9ab27..0a44459844e3 100644
---- a/drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c
-+++ b/drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c
-@@ -133,7 +133,7 @@ nvc0_bar_init_vm(struct nvc0_bar_priv *priv, struct nvc0_bar_priv_vm *bar_vm,
- 	return 0;
- }
- 
--static int
-+int
- nvc0_bar_ctor(struct nouveau_object *parent, struct nouveau_object *engine,
- 	      struct nouveau_oclass *oclass, void *data, u32 size,
- 	      struct nouveau_object **pobject)
-@@ -169,7 +169,7 @@ nvc0_bar_ctor(struct nouveau_object *parent, struct nouveau_object *engine,
- 	return 0;
- }
- 
--static void
-+void
- nvc0_bar_dtor(struct nouveau_object *object)
- {
- 	struct nvc0_bar_priv *priv = (void *)object;
-@@ -188,7 +188,7 @@ nvc0_bar_dtor(struct nouveau_object *object)
- 	nouveau_bar_destroy(&priv->base);
- }
- 
--static int
-+int
- nvc0_bar_init(struct nouveau_object *object)
- {
- 	struct nvc0_bar_priv *priv = (void *)object;
-diff --git a/drivers/gpu/drm/nouveau/core/subdev/bar/priv.h b/drivers/gpu/drm/nouveau/core/subdev/bar/priv.h
-index ffad8f337ead..3ee8b1476d00 100644
---- a/drivers/gpu/drm/nouveau/core/subdev/bar/priv.h
-+++ b/drivers/gpu/drm/nouveau/core/subdev/bar/priv.h
-@@ -23,4 +23,10 @@ int  nouveau_bar_alloc(struct nouveau_bar *, struct nouveau_object *,
- 
- void nv84_bar_flush(struct nouveau_bar *);
- 
-+int nvc0_bar_ctor(struct nouveau_object *, struct nouveau_object *,
-+		  struct nouveau_oclass *, void *, u32,
-+		  struct nouveau_object **);
-+void nvc0_bar_dtor(struct nouveau_object *);
-+int nvc0_bar_init(struct nouveau_object *);
-+
- #endif
+-		s2mps11_clk->lookup = devm_kzalloc(&pdev->dev,
+-					sizeof(struct clk_lookup), GFP_KERNEL);
++		s2mps11_clk->lookup = kzalloc(sizeof(struct clk_lookup),
++				GFP_KERNEL);
+ 		if (!s2mps11_clk->lookup) {
+ 			ret = -ENOMEM;
+ 			goto err_lup;
 -- 
-2.0.0
+1.9.1
 
