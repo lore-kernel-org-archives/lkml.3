@@ -1,156 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753882AbaF0Obv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 10:31:51 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:35205 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752845AbaF0Obu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 10:31:50 -0400
-Date: Fri, 27 Jun 2014 10:31:49 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Chen, Alvin" <alvin.chen@intel.com>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        David Laight <David.Laight@ACULAB.COM>,
-        Boon Leong Ong <boon.leong.ong@intel.com>
-Subject: Re: [PATCH v2] USB: ehci-pci: USB host controller support for Intel
- Quark X1000
-In-Reply-To: <1403868276-12558-2-git-send-email-alvin.chen@intel.com>
-Message-ID: <Pine.LNX.4.44L0.1406271016280.875-100000@iolanthe.rowland.org>
+	id S1753667AbaF0Ocv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 10:32:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60041 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752740AbaF0Oct (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 10:32:49 -0400
+Date: Fri, 27 Jun 2014 16:32:46 +0200
+From: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, Michal Hocko <mhocko@suse.cz>,
+        Jan Kara <jack@suse.cz>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Dave Anderson <anderson@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>
+Subject: Re: [RFC][PATCH 5/5 v2] x86/nmi: Perform a safe NMI stack trace on
+ all CPUs
+Message-ID: <20140627143246.GE23205@pathway.suse.cz>
+References: <20140626214901.596791200@goodmis.org>
+ <20140626220130.764213722@goodmis.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140626220130.764213722@goodmis.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Jun 2014, Chen, Alvin wrote:
-
-> From: Bryan O'Donoghue <bryan.odonoghue@intel.com>
+On Thu 2014-06-26 17:49:06, Steven Rostedt wrote:
+> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 > 
-> The EHCI packet buffer in/out threshold is programmable for Intel Quark X1000 USB host
-> controller, and the default value is 0x20 dwords. The in/out threshold can be programmed
-> to 0x80 dwords, but only when isochronous/interrupt transactions are not initiated by
-> the USB host controller. This patch is to reconfigure the packet buffer in/out threshold
-> as maximal as possible, and it is 0x7F dwords since the USB host controller initiates
-> isochronous/interrupt transactions.
+> When trigger_all_cpu_backtrace() is called on x86, it will trigger an
+> NMI on each CPU and call show_regs(). But this can lead to a hard lock
+> up if the NMI comes in on another printk().
+> 
+> In order to avoid this, when the NMI triggers, it switches the printk
+> routine for that CPU to call a NMI safe printk function that records the
+> printk in a per_cpu seq_buf descriptor. After all NMIs have finished
+> recording its data, the trace_seqs are printed in a safe context.
+> 
+> Link: http://lkml.kernel.org/p/20140619213952.360076309@goodmis.org
+> 
+> Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-This is still incomplete.  _Why_ do you want to increase the threshold?  
-Does it fix a problem?  Does it improve performance?
+It seems to work very well.
 
-Also, the lines are too long.  They should be wrapped before 80 
-columns.
+Tested-by: Petr Mladek <pmladek@suse.cz>
 
-> Signed-off-by: Bryan O'Donoghue <bryan.odonoghue@intel.com>
-> Signed-off-by: Alvin (Weike) Chen <alvin.chen@intel.com>
+See one comment below.
+
 > ---
-> changelog v2:
-> *Change the function name from 'usb_is_intel_qrk' to 'usb_is_intel_quark_x1000'.
-> *Move the functions 'usb_is_intel_quark_x1000' and 'usb_set_qrk_bulk_thresh'
->  from 'pci-quirks.c' to 'ehci-pci.c'.
-> *Remove unnecessary kernel message in the function of 'usb_set_qrk_bulk_thresh'.
-> *Remove 'unlikely' in the functions of 'ehci_pci_reinit'.
-> *Add white space after 'if'.
-> *Update the descriptions to make it more clearly.
-> *Add Micros to avoid magic number.
+> V2 - updated to use seq_buf instead of trace_seq.
+>    - Keep original printk loglevel, do not strip it, but use it.
+>      (suggested by Petr Mládek)
+>    - Updated comments
+>    - Removed return of true (noticed by Petr Mládek)
+> ---
+>  arch/x86/kernel/apic/hw_nmi.c | 84 +++++++++++++++++++++++++++++++++++++++++--
+>  1 file changed, 81 insertions(+), 3 deletions(-)
 > 
->  drivers/usb/host/ehci-pci.c |   45 +++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 45 insertions(+)
-> 
-> diff --git a/drivers/usb/host/ehci-pci.c b/drivers/usb/host/ehci-pci.c
-> index 3e86bf4..ca29f34 100644
-> --- a/drivers/usb/host/ehci-pci.c
-> +++ b/drivers/usb/host/ehci-pci.c
-> @@ -35,6 +35,47 @@ static const char hcd_name[] = "ehci-pci";
->  #define PCI_DEVICE_ID_INTEL_CE4100_USB	0x2e70
+> diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
+> index c3fcb5de5083..91ddba672839 100644
+> --- a/arch/x86/kernel/apic/hw_nmi.c
+> +++ b/arch/x86/kernel/apic/hw_nmi.c
+> @@ -18,6 +18,7 @@
+>  #include <linux/nmi.h>
+>  #include <linux/module.h>
+>  #include <linux/delay.h>
+> +#include <linux/seq_buf.h>
 >  
->  /*-------------------------------------------------------------------------*/
-> +#define PCI_DEVICE_ID_INTEL_QUARK_X1000_SOC		0x0939
-> +static inline bool usb_is_intel_quark_x1000(struct pci_dev *pdev)
-> +{
-> +	return pdev->vendor == PCI_VENDOR_ID_INTEL &&
-> +		pdev->device == PCI_DEVICE_ID_INTEL_QUARK_X1000_SOC;
-> +
-> +}
-
-The "usb_" prefix in the name isn't needed, because this is a static 
-routine.
-
-> +
-> +/* Register offset of in/out threshold */
-> +#define EHCI_INSNREG01		    0x84
-> +/* The maximal threshold is 0x80 Dword */
-> +#define EHCI_MAX_THRESHOLD      0X80
-> +/* Lower word is 'in' threshold, and higher word is 'out' threshold*/
-> +#define EHCI_INSNREG01_THRESH \
-> +	((EHCI_MAX_THRESHOLD - 1)<<16 | (EHCI_MAX_THRESHOLD - 1))
-
-This looks a little peculiar, because someone reading the code would
-expect you to use the maximal threshold.
-
-Also the formatting isn't quite right.  There should be a space before 
-the closing */ of a comment, and there should be spaces around the << 
-operator.
-
-> +static void usb_set_qrk_bulk_thresh(struct pci_dev *pdev)
-> +{
-> +	void __iomem *base, *op_reg_base;
-> +	u8 cap_length;
-> +	u32 val;
-> +	u16 cmd;
-> +
-> +	if (!pci_resource_start(pdev, 0))
-> +		return;
-> +
-> +	if (pci_read_config_word(pdev, PCI_COMMAND, &cmd)
-> +		|| !(cmd & PCI_COMMAND_MEMORY))
-> +		return;
-> +
-> +	base = pci_ioremap_bar(pdev, 0);
-> +	if (base == NULL)
-> +		return;
-> +
-> +	cap_length = readb(base);
-> +	op_reg_base = base + cap_length;
-> +
-> +	val = EHCI_INSNREG01_THRESH;
-> +	writel(val, op_reg_base + EHCI_INSNREG01);
-> +
-> +	iounmap(base);
-> +}
-
-This is much more complicted that it needs to be.  When this routine 
-runs, the controller has already been memory-mapped.  All you need to 
-do is:
-
-	ehci_writel(ehci, EHCI_INSNREG01_THRESH,
-			ehci->regs->insnreg01_thresh);
-
-Since it's only one statement, you don't even need to put this in a
-separate function.  It can go directly into ehci_pci_reinit().
-
-Also, in include/linux/usb/ehci_defs.h, you'll have to add:
-
-#define insnreg01_thresh	hostpc[0]
-
-with an explanatory comment, near the definition of the HOSTPC 
-register.
-
->  /* called after powerup, by probe or system-pm "wakeup" */
->  static int ehci_pci_reinit(struct ehci_hcd *ehci, struct pci_dev *pdev)
-> @@ -50,6 +91,10 @@ static int ehci_pci_reinit(struct ehci_hcd *ehci, struct pci_dev *pdev)
->  	if (!retval)
->  		ehci_dbg(ehci, "MWI active\n");
+>  #ifdef CONFIG_HARDLOCKUP_DETECTOR
+>  u64 hw_nmi_get_sample_period(int watchdog_thresh)
+> @@ -30,11 +31,31 @@ u64 hw_nmi_get_sample_period(int watchdog_thresh)
+>  /* For reliability, we're prepared to waste bits here. */
+>  static DECLARE_BITMAP(backtrace_mask, NR_CPUS) __read_mostly;
 >  
-> +	/* Reset the threshold limit */
-> +	if (usb_is_intel_quark_x1000(pdev))
-> +		usb_set_qrk_bulk_thresh(pdev);
+> +#define NMI_BUF_SIZE		4096
 > +
->  	return 0;
+> +struct nmi_seq_buf {
+> +	unsigned char		buffer[NMI_BUF_SIZE];
+> +	struct seq_buf		seq;
+> +};
+> +
+> +/* Safe printing in NMI context */
+> +static DEFINE_PER_CPU(struct nmi_seq_buf, nmi_print_seq);
+> +
+>  /* "in progress" flag of arch_trigger_all_cpu_backtrace */
+>  static unsigned long backtrace_flag;
+>  
+> +static void print_seq_line(struct nmi_seq_buf *s, int last, int pos)
+> +{
+> +	const char *buf = s->buffer + last;
+> +
+> +	printk("%.*s", (pos - last) + 1, buf);
+> +}
+> +
+>  void arch_trigger_all_cpu_backtrace(void)
+>  {
+> +	struct nmi_seq_buf *s;
+> +	int len;
+> +	int cpu;
+>  	int i;
+>  
+>  	if (test_and_set_bit(0, &backtrace_flag))
+> @@ -44,6 +65,15 @@ void arch_trigger_all_cpu_backtrace(void)
+>  		 */
+>  		return;
+>  
+> +	/*
+> +	 * Set up per_cpu seq_buf buffers that the NMIs running on the other
+> +	 * CPUs will write to.
+> +	 */
+> +	for_each_possible_cpu(cpu) {
+> +		s = &per_cpu(nmi_print_seq, cpu);
+> +		seq_buf_init(&s->seq, s->buffer, NMI_BUF_SIZE);
+> +	}
+> +
+>  	cpumask_copy(to_cpumask(backtrace_mask), cpu_online_mask);
+>  
+>  	printk(KERN_INFO "sending NMI to all CPUs:\n");
+> @@ -56,10 +86,56 @@ void arch_trigger_all_cpu_backtrace(void)
+>  		mdelay(1);
+>  	}
+>  
+> +	/*
+> +	 * Now that all the NMIs have triggered, we can dump out their
+> +	 * back traces safely to the console.
+> +	 */
+> +	for_each_possible_cpu(cpu) {
+> +		int last_i = 0;
+> +
+> +		s = &per_cpu(nmi_print_seq, cpu);
+> +		len = s->seq.len;
+> +		if (!len)
+> +			continue;
+> +
+> +		/* Print line by line. */
+> +		for (i = 0; i < len; i++) {
+> +			if (s->buffer[i] == '\n') {
+> +				print_seq_line(s, last_i, i);
+> +				last_i = i + 1;
+> +			}
+> +		}
+> +		if (last_i < i - 1) {
+> +			print_seq_line(s, last_i, i);
+> +			pr_cont("\n");
+> +		}
+> +	}
+> +
+>  	clear_bit(0, &backtrace_flag);
+>  	smp_mb__after_atomic();
 >  }
+>  
+> +/*
+> + * It is not safe to call printk() directly from NMI handlers.
+> + * It may be fine if the NMI detected a lock up and we have no choice
+> + * but to do so, but doing a NMI on all other CPUs to get a back trace
+> + * can be done with a sysrq-l. We don't want that to lock up, which
+> + * can happen if the NMI interrupts a printk in progress.
+> + *
+> + * Instead, we redirect the vprintk() to this nmi_vprintk() that writes
+> + * the content into a per cpu seq_buf buffer. Then when the NMIs are
+> + * all done, we can safely dump the contents of the seq_buf to a printk()
+> + * from a non NMI context.
+> + */
 
-Alan Stern
+I would move this comment above #define NMI_BUF_SIZE
+It should be on top because it helps to understand many other tricks that are
+used above.
 
+Regards,
+Petr
+
+> +static int nmi_vprintk(const char *fmt, va_list args)
+> +{
+> +	struct nmi_seq_buf *s = this_cpu_ptr(&nmi_print_seq);
+> +	unsigned int len = s->seq.len;
+> +
+> +	seq_buf_vprintf(&s->seq, fmt, args);
+> +	return s->seq.len - len;
+> +}
+> +
+>  static int
+>  arch_trigger_all_cpu_backtrace_handler(unsigned int cmd, struct pt_regs *regs)
+>  {
+> @@ -68,12 +144,14 @@ arch_trigger_all_cpu_backtrace_handler(unsigned int cmd, struct pt_regs *regs)
+>  	cpu = smp_processor_id();
+>  
+>  	if (cpumask_test_cpu(cpu, to_cpumask(backtrace_mask))) {
+> -		static arch_spinlock_t lock = __ARCH_SPIN_LOCK_UNLOCKED;
+> +		printk_func_t printk_func_save = this_cpu_read(printk_func);
+>  
+> -		arch_spin_lock(&lock);
+> +		/* Replace printk to write into the NMI seq */
+> +		this_cpu_write(printk_func, nmi_vprintk);
+>  		printk(KERN_WARNING "NMI backtrace for cpu %d\n", cpu);
+>  		show_regs(regs);
+> -		arch_spin_unlock(&lock);
+> +		this_cpu_write(printk_func, printk_func_save);
+> +
+>  		cpumask_clear_cpu(cpu, to_cpumask(backtrace_mask));
+>  		return NMI_HANDLED;
+>  	}
+> -- 
+> 2.0.0
+> 
+> 
