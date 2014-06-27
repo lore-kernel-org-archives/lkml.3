@@ -1,83 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753112AbaF0JUI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 05:20:08 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:56037 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750756AbaF0JUG (ORCPT
+	id S1753182AbaF0JVS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 05:21:18 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:48793 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751598AbaF0JVP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 05:20:06 -0400
-Message-ID: <53AD36E1.1010700@ti.com>
-Date: Fri, 27 Jun 2014 14:48:25 +0530
-From: Keerthy <a0393675@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Fri, 27 Jun 2014 05:21:15 -0400
+Message-ID: <53AD3788.4090101@codeaurora.org>
+Date: Fri, 27 Jun 2014 02:21:12 -0700
+From: Laura Abbott <lauraa@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Nishanth Menon <nm@ti.com>
-CC: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Keerthy <j-keerthy@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <t-kristo@ti.com>
-Subject: Re: [PATCH] regulator: tps65917: Fix SMPS enable/disable/is_enable
-References: <1403807494-23907-1-git-send-email-nm@ti.com>
-In-Reply-To: <1403807494-23907-1-git-send-email-nm@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+To: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>
+CC: Nicolas Pitre <nicolas.pitre@linaro.org>, Andrew Lunn <andrew@lunn.ch>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Grant Likely <grant.likely@secretlab.ca>, linux-mm@kvack.org,
+        Daniel Walker <dwalker@fifo99.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        David Brown <davidb@codeaurora.org>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Jason Cooper <jason@lakedaemon.net>, linux-arm-msm@vger.kernel.org,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Ben Dooks <ben-linux@fluff.org>, linux-arm-kernel@lists.infradead.org,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        linux-kernel@vger.kernel.org,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>, kernel@pengutronix.de,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCHv5 2/2] arm: Get rid of meminfo
+References: <1396544698-15596-1-git-send-email-lauraa@codeaurora.org> <1396544698-15596-3-git-send-email-lauraa@codeaurora.org> <20140623091754.GD14781@pengutronix.de> <53A8927B.3020409@codeaurora.org> <20140624084936.GJ14781@pengutronix.de>
+In-Reply-To: <20140624084936.GJ14781@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Nishanth,
+On 6/24/2014 1:49 AM, Uwe Kleine-König wrote:
+> Hi Laura,
+> 
+> On Mon, Jun 23, 2014 at 01:47:55PM -0700, Laura Abbott wrote:
+>> Thanks for the report.
+> Thanks for your reply to address it :-)
+> Are you already aware of the mail with Message-Id:
+> CAGa+x85H510fNGTXJHGYfQybRa2FGgg2NyCgJ8rmjJ6TE7GNbA@mail.gmail.com ?
+> Seems to be another fall-out but I think you were not on Cc.
+> 
+>> On 6/23/2014 2:17 AM, Uwe Kleine-König wrote:
+>>> This patch is in 3.16-rc1 as 1c2f87c22566cd057bc8cde10c37ae9da1a1bb76
+>>> now.
+>>>
+>>> Unfortunately it makes my efm32 machine unbootable.
+>>>
+>>> With earlyprintk enabled I get the following output:
+>>>
+>>> [    0.000000] Booting Linux on physical CPU 0x0
+>>> [    0.000000] Linux version 3.15.0-rc1-00028-g1c2f87c22566-dirty (ukleinek@perseus) (gcc version 4.7.2 (OSELAS.Toolchain-2012.12.1) ) #280 PREEMPT Mon Jun 23 11:05:34 CEST 2014
+>>> [    0.000000] CPU: ARMv7-M [412fc231] revision 1 (ARMv7M), cr=00000000
+>>> [    0.000000] CPU: unknown data cache, unknown instruction cache
+>>> [    0.000000] Machine model: Energy Micro Giant Gecko Development Kit
+>>> [    0.000000] debug: ignoring loglevel setting.
+>>> [    0.000000] bootconsole [earlycon0] enabled
+>>> [    0.000000] On node 0 totalpages: 1024
+>>> [    0.000000] free_area_init_node: node 0, pgdat 880208f4, node_mem_map 00000000
+>>> [    0.000000]   Normal zone: 3840 pages exceeds freesize 1024
+>>
+>> This looks off. The number of pages for the memmap exceeds the available free
+>> size. Working backwards, I think the wrong bounds are being calculated in
+>> find_limits in arch/arm/mm/init.c . max_low is now calculated via the current
+>> limit but nommu never sets a limit unlike the mmu case. Can you try the
+>> following patch and see if it fixes the issue? If this doesn't work, can
+>> you share working bootup logs so I can do a bit more compare and contrast?
+>>
+>> Thanks,
+>> Laura
+>>
+>> ---8<----
+>> From 9b19241d577caf91928e26e55413047d1be90feb Mon Sep 17 00:00:00 2001
+>> From: Laura Abbott <lauraa@codeaurora.org>
+>> Date: Mon, 23 Jun 2014 13:26:56 -0700
+>> Subject: [PATCH] arm: Set memblock limit for nommu
+>>
+>> Commit 1c2f87c (ARM: 8025/1: Get rid of meminfo) changed find_limits
+>> to use memblock_get_current_limit for calculating the max_low pfn.
+>> nommu targets never actually set a limit on memblock though which
+>> means memblock_get_current_limit will just return the default
+>> value. Set the memblock_limit to be the end of DDR to make sure
+> s/DDR/RAM/ ?
+> 
+>> bounds are calculated correctly.
+> This patch makes my machine boot. Full boot log appended below.
+> (Side note: I place my dtb in the SRAM at 0x10000000 but don't add this to
+> the available memory because it's only 128 KiB in size and so too small
+> to be worth to track. Not sure this is allowed?!)
+> 
+> Thanks
+> Uwe
+> 
+ 
+I put this in the patch tracker as 8086/1
 
-On Friday 27 June 2014 12:01 AM, Nishanth Menon wrote:
-> We use regmap regulator ops to enable/disable and check if regulator
-> is enabled for various SMPS. However, these depend on valid
-> enable_reg, enable_mask and enable_value in regulator descriptor.
->
-> So, similar to fix we did in commit 318dbb02b50c
-> ("regulator: palmas: Fix SMPS enable/disable/is_enabled"), populate the
-> same for TPS65917 SMPS registration. LDO definitions are already in place.
->
-> Fixes: d6f83370ed97 ("regulator: palmas: Add tps65917 PMIC support")
-> Signed-off-by: Nishanth Menon <nm@ti.com>
-> ---
->
-> Applies on:
-> 	git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git
-> branch: topic/palmas (4c0c9ca Merge remote-tracking branch 'regulator/fix/palmas' into regulator-palmas)
->
-> Note: Ignored the minor style check from checkpatch --strict as fixing
-> it would create an 80 char warning
->
->   drivers/regulator/palmas-regulator.c |    8 ++++++++
->   1 file changed, 8 insertions(+)
->
-> diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
-> index 7c8b441..c7aa1b1 100644
-> --- a/drivers/regulator/palmas-regulator.c
-> +++ b/drivers/regulator/palmas-regulator.c
-> @@ -1333,6 +1333,14 @@ static int tps65917_smps_registration(struct palmas_pmic *pmic,
->   		pmic->current_reg_mode[id] = reg &
->   				PALMAS_SMPS12_CTRL_MODE_ACTIVE_MASK;
->   
-> +		pmic->desc[id].enable_reg =
-> +				PALMAS_BASE_TO_REG(PALMAS_SMPS_BASE,
-> +					palmas_regs_info[id].ctrl_addr);
+Thanks,
+Laura
 
-This is wrong. Please change palmas_regs_info[id].ctrl_addr to
-ddata->palmas_regs_info[id].ctrl_addr. The palmas_regs_info
-should come from the driver data for specific instances as the regmap
-is different for the different PMICs we support.
-
-Once you make the above changes please feel free to add
-Tested-by: Keerthy <j-keerthy@ti.com>.
-
-> +		pmic->desc[id].enable_mask =
-> +				PALMAS_SMPS12_CTRL_MODE_ACTIVE_MASK;
-> +		/* set_mode overrides this value */
-> +		pmic->desc[id].enable_val = SMPS_CTRL_MODE_ON;
-> +
->   		pmic->desc[id].type = REGULATOR_VOLTAGE;
->   		pmic->desc[id].owner = THIS_MODULE;
->   
-
-Regards,
-Keerthy
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
