@@ -1,43 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752711AbaF0GYM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 02:24:12 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:46009 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752344AbaF0GYJ (ORCPT
+	id S1752699AbaF0Gcm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 02:32:42 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:48465 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751127AbaF0Gck (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 02:24:09 -0400
-Date: Fri, 27 Jun 2014 07:24:06 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Matt Fleming <matt.fleming@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2 v2] efilinux: set ext_ramdisk_* for huge initrd
-Message-ID: <20140627062406.GA7539@console-pimps.org>
-References: <1403731467-1527-1-git-send-email-yinghai@kernel.org>
+	Fri, 27 Jun 2014 02:32:40 -0400
+Message-ID: <53AD1001.4090405@huawei.com>
+Date: Fri, 27 Jun 2014 14:32:33 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403731467-1527-1-git-send-email-yinghai@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH 5/5] cgroup: fix a race between cgroup_mount() and cgroup_kill_sb()
+References: <53994943.60703@huawei.com> <539949A1.90301@huawei.com> <20140620193521.GB28324@mtj.dyndns.org> <53A8D2B8.4080107@huawei.com> <20140624210119.GC14909@htj.dyndns.org> <53AA2C4F.30808@huawei.com> <20140625150053.GE26883@htj.dyndns.org>
+In-Reply-To: <20140625150053.GE26883@htj.dyndns.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020202.53AD1003.00A4,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2011-05-27 18:58:46
+X-Mirapoint-Loop-Id: f01f84052cc1bb9fda976dd61b5c00ac
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Jun, at 02:24:27PM, Yinghai Lu wrote:
-> We could load it high if it is more than 2G when kernel support
-> LOAD_ABOVE_4G.
+On 2014/6/25 23:00, Tejun Heo wrote:
+> Hey,
 > 
-> -v2: Use macro instead of (1<<1) directly for LOAD_ABOVE_4G.
+> On Wed, Jun 25, 2014 at 09:56:31AM +0800, Li Zefan wrote:
+>>> Hmmm?  Why does that matter?  The only region in cgroup_mount() which
+>>> needs to be put inside such mutex would be root lookup, no?
+>>
+>> unfortunately that won't help. I think what you suggest is:
+>>
+>> cgroup_mount()
+>> {
+>> 	mutex_lock();
+>> 	lookup_cgroup_root();
+>> 	mutex_unlock();
+>> 	kernfs_mount();
+>> }
+>>
+>> cgroup_kill_sb()
+>> {
+>> 	mutex_lock();
+>> 	percpu_ref_kill();
+>> 	mutex_Unlock();
+>> 	kernfs_kill_sb();
+>> }
+>>
+>> See, we may still be destroying the superblock after we've succeeded
+>> in getting the refcnt of cgroup root.
 > 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Sure, but now the decision to kill is synchronized so the other side
+> can interlock with it.  e.g.
 > 
-> ---
->  loaders/bzimage/bzimage.c |    9 ++++++++-
->  loaders/bzimage/bzimage.h |   15 +++++++++++++--
->  2 files changed, 21 insertions(+), 3 deletions(-)
+> cgroup_mount()
+> {
+> 	mutex_lock();
+> 	lookup_cgroup_root();
+> 	if (root isn't killed yet)
+> 		root->this_better_stay_alive++;
+> 	mutex_unlock();
+> 	kernfs_mount();
+> }
+> 
+> cgroup_kill_sb()
+> {
+> 	mutex_lock();
+> 	if (check whether root can be killed)
+> 		percpu_ref_kill();
+> 	mutex_unlock();
+> 	if (the above condition was true)
+> 		kernfs_kill_sb();
+> }
+> 
 
-Applied, thanks!
+This looks nasty, and I don't think it's correct. If we skip the call
+to kernfs_kill_sb(), kernfs_super_info won't be freed but super_block
+will, so we will end up either leaking memory or accessing invalid
+memory. There are other problems like returning with sb->s_umount still
+held.
 
--- 
-Matt Fleming, Intel Open Source Technology Center
