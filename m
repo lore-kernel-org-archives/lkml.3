@@ -1,123 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753146AbaF0J5F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 05:57:05 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:34625 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750756AbaF0J5B (ORCPT
+	id S1753211AbaF0J5Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 05:57:16 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:34929 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750756AbaF0J5N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 05:57:01 -0400
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linaro-mm-sig@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] dma-mapping: Provide write-combine allocations
-Date: Fri, 27 Jun 2014 11:56:58 +0200
-Message-Id: <1403863018-20033-1-git-send-email-thierry.reding@gmail.com>
-X-Mailer: git-send-email 2.0.0
+	Fri, 27 Jun 2014 05:57:13 -0400
+Date: Fri, 27 Jun 2014 18:56:08 +0900
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: himangi774@gmail.com, peter.p.waskiewicz.jr@intel.com,
+        sachin.kamat@linaro.org, fempsci@gmail.com, weo@weo1.de,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/3] staging: cxt1e1: count fragmented packet properly.
+Message-ID: <20140627095608.GA9427@devel.8.8.4.4>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thierry Reding <treding@nvidia.com>
+OS_mem_token_tlen() is same return value as OS_mem_token_len().
+That means packet count is always 1. So OS_mem_token_tlen()
+must be total length of packet and OS_mem_token_len() has a
+length of fragmented packet. And then it can count total
+count of fragmented packets properly.
 
-Provide an implementation for dma_{alloc,free,mmap}_writecombine() when
-the architecture supports DMA attributes.
+And OS_mem_token_next() returns NULL, it will be dereferencing
+a NULL pointer. So it must return next fragmented packet buffer as
+sk_buff.
 
-Signed-off-by: Thierry Reding <treding@nvidia.com>
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
 ---
-Changes in v2:
-- Add a generic dma_mmap_writecombine() function
+I'm not sure of this patch and not tested.(just only build test).
+Please review for this.
+Thanks.
 
- arch/arm/include/asm/dma-mapping.h       | 16 ----------------
- include/asm-generic/dma-mapping-common.h |  8 --------
- include/linux/dma-mapping.h              | 26 ++++++++++++++++++++++++++
- 3 files changed, 26 insertions(+), 24 deletions(-)
+ drivers/staging/cxt1e1/musycc.c              |   52 +++++++++++++++-----------
+ drivers/staging/cxt1e1/sbecom_inline_linux.h |    4 +-
+ 2 files changed, 32 insertions(+), 24 deletions(-)
 
-diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
-index c45b61a4b4a5..85738b200023 100644
---- a/arch/arm/include/asm/dma-mapping.h
-+++ b/arch/arm/include/asm/dma-mapping.h
-@@ -265,22 +265,6 @@ extern int arm_dma_mmap(struct device *dev, struct vm_area_struct *vma,
- 			void *cpu_addr, dma_addr_t dma_addr, size_t size,
- 			struct dma_attrs *attrs);
+diff --git a/drivers/staging/cxt1e1/musycc.c b/drivers/staging/cxt1e1/musycc.c
+index 563076c..5fc45a4 100644
+--- a/drivers/staging/cxt1e1/musycc.c
++++ b/drivers/staging/cxt1e1/musycc.c
+@@ -1579,8 +1579,8 @@ musycc_start_xmit(ci_t *ci, int channum, void *mem_token)
+ 	mch_t      *ch;
+ 	struct mdesc *md;
+ 	void       *m2;
+-	int         txd_need_cnt;
+-	u_int32_t   len;
++	int         txd_need_cnt = 0;
++	u_int32_t   len, data_len;
  
--static inline void *dma_alloc_writecombine(struct device *dev, size_t size,
--				       dma_addr_t *dma_handle, gfp_t flag)
--{
--	DEFINE_DMA_ATTRS(attrs);
--	dma_set_attr(DMA_ATTR_WRITE_COMBINE, &attrs);
--	return dma_alloc_attrs(dev, size, dma_handle, flag, &attrs);
--}
--
--static inline void dma_free_writecombine(struct device *dev, size_t size,
--				     void *cpu_addr, dma_addr_t dma_handle)
--{
--	DEFINE_DMA_ATTRS(attrs);
--	dma_set_attr(DMA_ATTR_WRITE_COMBINE, &attrs);
--	return dma_free_attrs(dev, size, cpu_addr, dma_handle, &attrs);
--}
--
- /*
-  * This can be called during early boot to increase the size of the atomic
-  * coherent DMA pool above the default value of 256KiB. It must be called
-diff --git a/include/asm-generic/dma-mapping-common.h b/include/asm-generic/dma-mapping-common.h
-index de8bf89940f8..d137431bf26f 100644
---- a/include/asm-generic/dma-mapping-common.h
-+++ b/include/asm-generic/dma-mapping-common.h
-@@ -205,14 +205,6 @@ dma_mmap_attrs(struct device *dev, struct vm_area_struct *vma, void *cpu_addr,
- 
- #define dma_mmap_coherent(d, v, c, h, s) dma_mmap_attrs(d, v, c, h, s, NULL)
- 
--static inline int dma_mmap_writecombine(struct device *dev, struct vm_area_struct *vma,
--		      void *cpu_addr, dma_addr_t dma_addr, size_t size)
--{
--	DEFINE_DMA_ATTRS(attrs);
--	dma_set_attr(DMA_ATTR_WRITE_COMBINE, &attrs);
--	return dma_mmap_attrs(dev, vma, cpu_addr, dma_addr, size, &attrs);
--}
--
- int
- dma_common_get_sgtable(struct device *dev, struct sg_table *sgt,
- 		       void *cpu_addr, dma_addr_t dma_addr, size_t size);
-diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
-index 931b70986272..d5d388160f42 100644
---- a/include/linux/dma-mapping.h
-+++ b/include/linux/dma-mapping.h
-@@ -263,6 +263,32 @@ struct dma_attrs;
- #define dma_unmap_sg_attrs(dev, sgl, nents, dir, attrs) \
- 	dma_unmap_sg(dev, sgl, nents, dir)
- 
-+#else
-+static inline void *dma_alloc_writecombine(struct device *dev, size_t size,
-+					   dma_addr_t *dma_addr, gfp_t gfp)
-+{
-+	DEFINE_DMA_ATTRS(attrs);
-+	dma_set_attr(DMA_ATTR_WRITE_COMBINE, &attrs);
-+	return dma_alloc_attrs(dev, size, dma_addr, gfp, &attrs);
-+}
+ 	ch = sd_find_chan(ci, channum);
+ 	if (!ch)
+@@ -1611,13 +1611,16 @@ musycc_start_xmit(ci_t *ci, int channum, void *mem_token)
+ 	/** Determine total amount of data to be sent **/
+ 	/***********************************************/
+ 	m2 = mem_token;
+-	txd_need_cnt = 0;
+-	for (len = OS_mem_token_tlen(m2); len > 0;
+-	     m2 = (void *) OS_mem_token_next(m2)) {
+-		if (!OS_mem_token_len(m2))
+-			continue;
+-		txd_need_cnt++;
+-		len -= OS_mem_token_len(m2);
++	len = OS_mem_token_tlen(m2);
 +
-+static inline void dma_free_writecombine(struct device *dev, size_t size,
-+					 void *cpu_addr, dma_addr_t dma_addr)
-+{
-+	DEFINE_DMA_ATTRS(attrs);
-+	dma_set_attr(DMA_ATTR_WRITE_COMBINE, &attrs);
-+	return dma_free_attrs(dev, size, cpu_addr, dma_addr, &attrs);
-+}
++	while (m2 && len > 0) {
++		data_len = OS_mem_token_len(m2);
++		if (data_len) {
++			len -= data_len;
++			txd_need_cnt++;
++		}
 +
-+static inline int dma_mmap_writecombine(struct device *dev,
-+					struct vm_area_struct *vma,
-+					void *cpu_addr, dma_addr_t dma_addr,
-+					size_t size)
-+{
-+	DEFINE_DMA_ATTRS(attrs);
-+	dma_set_attr(DMA_ATTR_WRITE_COMBINE, &attrs);
-+	return dma_mmap_attrs(dev, vma, cpu_addr, dma_addr, size, &attrs);
-+}
- #endif /* CONFIG_HAVE_DMA_ATTRS */
++		m2 = OS_mem_token_next(m2);
+ 	}
  
- #ifdef CONFIG_NEED_DMA_MAP_STATE
+ 	if (txd_need_cnt == 0) {
+@@ -1658,13 +1661,18 @@ musycc_start_xmit(ci_t *ci, int channum, void *mem_token)
+ 	/**************************************************/
+ 	m2 = mem_token;
+ 	md = ch->txd_usr_add;           /* get current available descriptor */
++	len = OS_mem_token_tlen(m2);
+ 
+-	for (len = OS_mem_token_tlen(m2); len > 0; m2 = OS_mem_token_next(m2)) {
+-		int         u = OS_mem_token_len(m2);
++	while (m2 && len > 0) {
++		u_int32_t data_len = OS_mem_token_len(m2);
++		u_int32_t status = 0;
+ 
+-		if (!u)
++		if (!data_len) {
++			m2 = OS_mem_token_next(m2);
+ 			continue;
+-		len -= u;
++		}
++
++		len -= data_len;
+ 
+ 		/*
+ 		 * Enable following chunks, yet wait to enable the FIRST chunk until
+@@ -1672,25 +1680,24 @@ musycc_start_xmit(ci_t *ci, int channum, void *mem_token)
+ 		 */
+ 		if (md != ch->txd_usr_add)  /* not first chunk */
+ 			/* transfer ownership from HOST to MUSYCC */
+-			u |= MUSYCC_TX_OWNED;
++			status |= MUSYCC_TX_OWNED;
+ 
+ 		if (len)                    /* not last chunk */
+-			u |= EOBIRQ_ENABLE;
++			status |= EOBIRQ_ENABLE;
+ 		else if (ch->p.chan_mode == CFG_CH_PROTO_TRANS) {
+ 			/*
+ 			 * Per MUSYCC Ref 6.4.9 for Transparent Mode, the host must
+ 			 * always clear EOMIRQ_ENABLE in every Transmit Buffer Descriptor
+ 			 * (IE. don't set herein).
+ 			 */
+-			u |= EOBIRQ_ENABLE;
++			status |= EOBIRQ_ENABLE;
+ 		} else
+-			u |= EOMIRQ_ENABLE;     /* EOM, last HDLC chunk */
+-
++			status |= EOMIRQ_ENABLE;     /* EOM, last HDLC chunk */
+ 
+ 		/* last chunk in hdlc mode */
+-		u |= (ch->p.idlecode << IDLE_CODE);
++		status |= (ch->p.idlecode << IDLE_CODE);
+ 		if (ch->p.pad_fill_count) {
+-			u |= (PADFILL_ENABLE | (ch->p.pad_fill_count << EXTRA_FLAGS));
++			status |= (PADFILL_ENABLE | (ch->p.pad_fill_count << EXTRA_FLAGS));
+ 		}
+ 		/* Fill in mds on last segment, others set ZERO
+ 		 * so that entire token is removed ONLY when ALL
+@@ -1700,13 +1707,14 @@ musycc_start_xmit(ci_t *ci, int channum, void *mem_token)
+ 
+ 		md->data = cpu_to_le32(__pa(OS_mem_token_data(m2)));
+ 		FLUSH_MEM_WRITE();
+-		md->status = cpu_to_le32(u);
++		md->status = cpu_to_le32(status);
+ 		--ch->txd_free;
+ 		md = md->snext;
++
++		m2 = OS_mem_token_next(m2);
+ 	}
+ 	FLUSH_MEM_WRITE();
+ 
+-
+ 	/*
+ 	 * Now transfer ownership of first chunk from HOST to MUSYCC in order to
+ 	 * fire-off this XMIT.
+diff --git a/drivers/staging/cxt1e1/sbecom_inline_linux.h b/drivers/staging/cxt1e1/sbecom_inline_linux.h
+index af2bffe..a99073b 100644
+--- a/drivers/staging/cxt1e1/sbecom_inline_linux.h
++++ b/drivers/staging/cxt1e1/sbecom_inline_linux.h
+@@ -82,14 +82,14 @@ OS_mem_token_data (void *token)
+ static inline void *
+ OS_mem_token_next (void *token)
+ {
+-    return NULL;
++    return ((struct sk_buff*)token)->next;
+ }
+ 
+ 
+ static inline int
+ OS_mem_token_len (void *token)
+ {
+-    return ((struct sk_buff *) token)->len;
++    return ((struct sk_buff *) token)->data_len;
+ }
+ 
+ 
 -- 
-2.0.0
+1.7.1
 
