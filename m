@@ -1,41 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752220AbaF0Ron (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 13:44:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42972 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751755AbaF0Rol (ORCPT
+	id S1752310AbaF0Rov (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 13:44:51 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:39604 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752243AbaF0Rot (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 13:44:41 -0400
-Date: Fri, 27 Jun 2014 10:48:52 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>
-Subject: Re: [PATCH v2 2/3] kernfs: introduce kernfs_pin_sb()
-Message-ID: <20140627174852.GA1653@kroah.com>
-References: <53AD18D0.3090100@huawei.com>
- <53AD18F8.4050501@huawei.com>
- <20140627150141.GB4044@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140627150141.GB4044@htj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 27 Jun 2014 13:44:49 -0400
+Message-ID: <1403891079.9446.12.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [PATCH v6 4/6] KEYS: validate certificate trust only with
+ selected owner key
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        keyrings <keyrings@linux-nfs.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Josh Boyer <jwboyer@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+Date: Fri, 27 Jun 2014 13:44:39 -0400
+In-Reply-To: <7771.1403877346@warthog.procyon.org.uk>
+References: <1403620852-16476-5-git-send-email-zohar@linux.vnet.ibm.com>
+	 <1403620852-16476-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <7771.1403877346@warthog.procyon.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14062717-0928-0000-0000-000003064712
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 27, 2014 at 11:01:41AM -0400, Tejun Heo wrote:
-> On Fri, Jun 27, 2014 at 03:10:48PM +0800, Li Zefan wrote:
-> > kernfs_pin_sb() tries to get a refcnt of the superblock.
-> > 
-> > This will be used by cgroupfs.
+On Fri, 2014-06-27 at 14:55 +0100, David Howells wrote: 
+> Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
 > 
-> Greg, this is pretty much cgroup specific due to the way cgroup
-> dynamically manages multiple hierarchies.  Can I route this through
-> cgroup/for-3.16-fixes w/ stable cc'd?
+> > This patch defines a new kernel parameter 'keys_ownerid' to identify
+> > the owner's key which must be used for trust validation of certificates.
+> 
+> "ca_keys" or "only_ca" instead, maybe?
 
-Please do:
+Neither of these names reflect the concept of the machine owner or a
+local key.  The initial patches named it 'owner_keyid'.  If kernel
+parameters don't need to be prefixed with the subsystem, we could revert
+the name change or call it localca_keyid.
 
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Mimi
+
