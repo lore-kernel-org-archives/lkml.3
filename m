@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752420AbaF0CLo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 22:11:44 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:44402 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751406AbaF0CLn (ORCPT
+	id S1752358AbaF0CP6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 22:15:58 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:43184 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751139AbaF0CP4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 22:11:43 -0400
+	Thu, 26 Jun 2014 22:15:56 -0400
 MIME-Version: 1.0
-In-Reply-To: <53ACACB6.6000505@gmail.com>
-References: <53AC10CB.3000007@gmail.com>
-	<alpine.DEB.2.02.1406261456150.12443@chino.kir.corp.google.com>
-	<53ACACB6.6000505@gmail.com>
-Date: Fri, 27 Jun 2014 10:11:42 +0800
-Message-ID: <CAF0htA6=16TDoO0kDDmGipAx17rQZpo7essy5K1sO0=mX--8Lg@mail.gmail.com>
-Subject: Re: [PATCH v3] arch/score/include/uapi/asm/ptrace.h: Remove the
- macros which not be used currently
-From: Lennox Wu <lennox.wu@gmail.com>
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-Cc: David Rientjes <rientjes@google.com>, Guenter Roeck <linux@roeck-us.net>,
-        Liqin Chen <liqin.linux@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20140627015354.32686.83046@quantum>
+References: <cover.1403684824.git.viresh.kumar@linaro.org>
+	<e9c0eef07745e561b9d12dcb50c3e2f7eb3e8880.1403684824.git.viresh.kumar@linaro.org>
+	<53AB1CC1.4010907@codeaurora.org>
+	<CAKohpo=Q7eWNwcK6KF9_U-zD0g=96QHW9hiQupLpV5GqoWE+mA@mail.gmail.com>
+	<53ACB568.4000903@codeaurora.org>
+	<20140627015354.32686.83046@quantum>
+Date: Fri, 27 Jun 2014 07:45:55 +0530
+Message-ID: <CAKohponvN3rAvJrfi4TojFcq5gq7r2oNE4Q0_NtwBHmEZ8waBA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] cpufreq: cpu0: Extend support beyond CPU0
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arvind Chauhan <arvind.chauhan@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-arm-msm@vger.kernel.org, Sachin Kamat <spk.linux@gmail.com>,
+        Thomas P Abraham <thomas.ab@samsung.com>, Nishanth Menon <nm@ti.com>,
+        Tomasz Figa <t.figa@samsung.com>, Mark Brown <broonie@kernel.org>,
+        Mark Rutland <Mark.Rutland@arm.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Lennox Wu <lennox.wu@gmail.com>
+On 27 June 2014 07:23, Mike Turquette <mturquette@linaro.org> wrote:
+>> but it isn't future-proof if/when the clock framework starts returning
+>> dynamically allocated clock pointers for each clk_get() invocation.
+>> Maybe we need a function in the common clock framework that tells us if
+>> the clocks are the same either via DT or by taking two clock pointers?
+>
+> I looked through the patch briefly and did not see why we would need to
+> do this. Any hint?
 
-2014-06-27 7:28 GMT+08:00 Chen Gang <gang.chen.5i5j@gmail.com>:
->
->
-> On 06/27/2014 05:56 AM, David Rientjes wrote:
->> On Thu, 26 Jun 2014, Chen Gang wrote:
->>
->>> 'COUNTER' and other same kind macros are too common to use, and easy to
->>> get conflict with other modules.
->>>
->>> At present, they are not used, so it is OK to simply remove them. And the
->>> related warning (allmodconfig with score):
->>>
->>>     CC [M]  drivers/md/raid1.o
->>>   In file included from drivers/md/raid1.c:42:0:
->>>   drivers/md/bitmap.h:93:0: warning: "COUNTER" redefined
->>>    #define COUNTER(x) (((bitmap_counter_t) x) & COUNTER_MAX)
->>>    ^
->>>   In file included from ./arch/score/include/asm/ptrace.h:4:0,
->>>                    from include/linux/sched.h:31,
->>>                    from include/linux/blkdev.h:4,
->>>                    from drivers/md/raid1.c:36:
->>>   ./arch/score/include/uapi/asm/ptrace.h:13:0: note: this is the location of the previous definition
->>>    #define COUNTER  38
->>>
->>>
->>> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
->>
->> Acked-by: David Rientjes <rientjes@google.com>
->>
->
-> OK, thanks. And also thank all of you for your discussions.
->
-> Thanks.
-> --
-> Chen Gang
->
-> Open, share, and attitude like air, water, and life which God blessed
+We want to know which CPUs are sharing clock line, so that we can
+fill affected-cpus field of cpufreq core.
