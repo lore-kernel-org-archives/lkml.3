@@ -1,196 +1,476 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751918AbaF0E4A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 00:56:00 -0400
-Received: from mail-bl2lp0210.outbound.protection.outlook.com ([207.46.163.210]:6464
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750729AbaF0Ez7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 00:55:59 -0400
-Date: Fri, 27 Jun 2014 11:25:07 +0800
-From: Peter Chen <peter.chen@freescale.com>
-To: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-CC: <sebastian.hesselbarth@gmail.com>, <alexandre.belloni@free-electrons.com>,
-        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
-        <jszhang@marvell.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 07/12] usb: chipidea: add a generic driver
-Message-ID: <20140627032506.GA18039@shlinux1.ap.freescale.net>
-References: <1403606121-6368-1-git-send-email-antoine.tenart@free-electrons.com>
- <1403606121-6368-8-git-send-email-antoine.tenart@free-electrons.com>
+	id S1752199AbaF0FDG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 01:03:06 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:59413 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750729AbaF0FDE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 01:03:04 -0400
+Message-ID: <53ACFAFF.8090303@gmail.com>
+Date: Fri, 27 Jun 2014 07:02:55 +0200
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1403606121-6368-8-git-send-email-antoine.tenart@free-electrons.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(51704005)(24454002)(189002)(199002)(85852003)(102836001)(83072002)(33656002)(97736001)(92726001)(87936001)(92566001)(77982001)(68736004)(575784001)(69596002)(84676001)(86362001)(83506001)(46102001)(19580395003)(26826002)(19580405001)(83322001)(6806004)(44976005)(74502001)(31966008)(76482001)(79102001)(85306003)(50466002)(99396002)(76176999)(54356999)(74662001)(50986999)(21056001)(106466001)(81542001)(81156004)(81342001)(107046002)(95666004)(20776003)(47776003)(64706001)(105606002)(104016002)(80022001)(23756003)(4396001)(41533002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB090;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
-X-Forefront-PRVS: 0255DF69B9
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=Peter.Chen@freescale.com; 
-X-OriginatorOrg: freescale.com
+To: Jeff Layton <jlayton@primarydata.com>, libc-alpha@sourceware.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+CC: mtk.manpages@gmail.com, "Theodore Ts'o" <tytso@mit.edu>,
+        Rich Felker <dalias@libc.org>, samba-technical@lists.samba.org,
+        Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>,
+        "Carlos O'Donell" <carlos@redhat.com>,
+        Stefan Metzmacher <metze@samba.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Boaz Harrosh <bharrosh@panasas.com>, "Alfred M. Szmidt" <ams@gnu.org>,
+        =?UTF-8?B?T25kxZllaiBCw61sa2E=?= <neleai@seznam.cz>
+Subject: Re: [PATCH resend #4] fcntl-linux.h: add new definitions and manual
+ updates for open file description locks
+References: <1403812655-18369-1-git-send-email-jlayton@primarydata.com>
+In-Reply-To: <1403812655-18369-1-git-send-email-jlayton@primarydata.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 24, 2014 at 12:35:16PM +0200, Antoine Ténart wrote:
-> Add a generic ChipIdea driver, with optional PHY and clock, to support
-> ChipIdea controllers that doesn't need specific functions.
+On 06/26/2014 09:57 PM, Jeff Layton wrote:
+> From: Jeff Layton <jlayton@poochiereds.net>
 > 
-> Needed for the Marvell Berlin SoCs SUB controllers.
+> Open file description locks have been merged into the Linux kernel for
+> v3.15.  Add the appropriate command-value definitions and an update to
+> the manual that describes their usage.
+
+What's the hold-up here? Jeff's patches have been reviewed by at least
+me and Carlos. It'd be nice if they made it in before the 2.20 code freeze...
+
+Cheers,
+
+Michael
+
+
+> ChangeLog:
 > 
-> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+> 2014-04-24  Jeff Layton  <jlayton@poochiereds.net>
+> 
+> 	[BZ#16839]
+> 	* manual/llio.texi: add section about open file description locks
+> 
+> 	* manual/examples/ofdlocks.c:
+> 	  example of open file description lock usage
+> 
+> 	* sysdeps/unix/sysv/linux/bits/fcntl-linux.h:
+> 	  (F_OFD_GETLK, F_OFD_SETLK, F_OFD_SETLKW): New macros.
 > ---
->  drivers/usb/chipidea/Makefile          |   1 +
->  drivers/usb/chipidea/ci_hdrc_generic.c | 108 +++++++++++++++++++++++++++++++++
->  2 files changed, 109 insertions(+)
->  create mode 100644 drivers/usb/chipidea/ci_hdrc_generic.c
+>  manual/examples/ofdlocks.c                 |  77 +++++++++
+>  manual/llio.texi                           | 241 ++++++++++++++++++++++++++++-
+>  sysdeps/unix/sysv/linux/bits/fcntl-linux.h |  17 ++
+>  3 files changed, 332 insertions(+), 3 deletions(-)
+>  create mode 100644 manual/examples/ofdlocks.c
 > 
-> diff --git a/drivers/usb/chipidea/Makefile b/drivers/usb/chipidea/Makefile
-> index 2f099c7df7b5..c705f0fe7a00 100644
-> --- a/drivers/usb/chipidea/Makefile
-> +++ b/drivers/usb/chipidea/Makefile
-> @@ -20,4 +20,5 @@ endif
->  
->  ifneq ($(CONFIG_OF),)
->  	obj-$(CONFIG_USB_CHIPIDEA)	+= usbmisc_imx.o ci_hdrc_imx.o
-> +	obj-$(CONFIG_USB_CHIPIDEA)	+= ci_hdrc_generic.o
->  endif
-
-As a generic driver, you may need to support both dt and non-dt
-solution.
-
-> diff --git a/drivers/usb/chipidea/ci_hdrc_generic.c b/drivers/usb/chipidea/ci_hdrc_generic.c
+> diff --git a/manual/examples/ofdlocks.c b/manual/examples/ofdlocks.c
 > new file mode 100644
-> index 000000000000..27520710a1f7
+> index 000000000000..85e193cdabe6
 > --- /dev/null
-> +++ b/drivers/usb/chipidea/ci_hdrc_generic.c
-> @@ -0,0 +1,108 @@
-> +/*
-> + * Copyright (C) 2014 Marvell Technology Group Ltd.
-> + *
-> + * Antoine Ténart <antoine.tenart@free-electrons.com>
-> + *
-> + * This file is licensed under the terms of the GNU General Public
-> + * License version 2. This program is licensed "as is" without any
-> + * warranty of any kind, whether express or implied.
-> + */
+> +++ b/manual/examples/ofdlocks.c
+> @@ -0,0 +1,77 @@
+> +/* Open File Description Locks Usage Example
+> +   Copyright (C) 1991-2014 Free Software Foundation, Inc.
 > +
-> +#include <linux/clk.h>
-> +#include <linux/module.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/usb/chipidea.h>
-> +#include <linux/usb/hcd.h>
-> +#include <linux/usb/ulpi.h>
+> +   This program is free software; you can redistribute it and/or
+> +   modify it under the terms of the GNU General Public License
+> +   as published by the Free Software Foundation; either version 2
+> +   of the License, or (at your option) any later version.
 > +
-> +#include "ci.h"
+> +   This program is distributed in the hope that it will be useful,
+> +   but WITHOUT ANY WARRANTY; without even the implied warranty of
+> +   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> +   GNU General Public License for more details.
 > +
-> +struct ci_hdrc_generic_priv {
-> +	struct platform_device	*ci_pdev;
-> +	struct clk		*clk;
-> +};
+> +   You should have received a copy of the GNU General Public License
+> +   along with this program; if not, see <http://www.gnu.org/licenses/>.
+> +*/
 > +
-> +static int ci_hdrc_generic_probe(struct platform_device *pdev)
+> +#define _GNU_SOURCE
+> +#include <stdio.h>
+> +#include <sys/types.h>
+> +#include <sys/stat.h>
+> +#include <unistd.h>
+> +#include <fcntl.h>
+> +#include <pthread.h>
+> +
+> +#define FILENAME	"/tmp/foo"
+> +#define NUM_THREADS	3
+> +#define ITERATIONS	5
+> +
+> +void *
+> +thread_start (void *arg)
 > +{
-> +	struct device *dev = &pdev->dev;
-> +	struct ci_hdrc_generic_priv *priv;
-> +	struct ci_hdrc_platform_data ci_pdata = {
-> +		.name		= "ci_hdrc",
-
-How about this using dev_name(&pdev->dev) for name?
-
-> +		.capoffset	= DEF_CAPOFFSET,
-> +		.flags		= CI_HDRC_REQUIRE_TRANSCEIVER |
-> +				  CI_HDRC_DISABLE_STREAMING,
-> +	};
-> +	int ret;
+> +  int i, fd, len;
+> +  long tid = (long) arg;
+> +  char buf[256];
+> +  struct flock lck = {
+> +    .l_whence = SEEK_SET,
+> +    .l_start = 0,
+> +    .l_len = 1,
+> +  };
 > +
-> +	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
-> +	if (!priv)
-> +		return -ENOMEM;
+> +  fd = open ("/tmp/foo", O_RDWR | O_CREAT, 0666);
 > +
-> +	priv->clk = devm_clk_get(dev, NULL);
-> +	if (!IS_ERR(priv->clk)) {
-> +		ret = clk_prepare_enable(priv->clk);
-> +		if (ret) {
-> +			dev_err(dev, "failed to enable the clock: %d\n", ret);
-> +			return ret;
-> +		}
-> +	}
+> +  for (i = 0; i < ITERATIONS; i++)
+> +    {
+> +      lck.l_type = F_WRLCK;
+> +      fcntl (fd, F_OFD_SETLKW, &lck);
 > +
-> +	ci_pdata.phy = devm_usb_get_phy_by_phandle(dev, "usb-phy", 0);
-> +	if (IS_ERR(ci_pdata.phy))
-> +		/* PHY is optional */
-> +		ci_pdata.phy = NULL;
+> +      len = sprintf (buf, "%d: tid=%ld fd=%d\n", i, tid, fd);
 > +
-> +	priv->ci_pdev = ci_hdrc_add_device(dev, pdev->resource,
-> +				     pdev->num_resources, &ci_pdata);
-> +	if (IS_ERR(priv->ci_pdev)) {
-> +		ret = PTR_ERR(priv->ci_pdev);
-> +		if (ret != -EPROBE_DEFER)
-> +			dev_err(dev,
-> +				"failed to register ci_hdrc platform device: %d\n",
-> +				ret);
-> +		goto clk_err;
-> +	}
+> +      lseek (fd, 0, SEEK_END);
+> +      write (fd, buf, len);
+> +      fsync (fd);
 > +
-> +	platform_set_drvdata(pdev, priv);
+> +      lck.l_type = F_UNLCK;
+> +      fcntl (fd, F_OFD_SETLK, &lck);
 > +
-> +	pm_runtime_no_callbacks(dev);
-> +	pm_runtime_enable(dev);
-> +
-> +	return 0;
-> +
-> +clk_err:
-> +	clk_disable_unprepare(priv->clk);
-
-You may need to add "if (!IS_ERR(priv->clk))"
-
-> +	return ret;
+> +      /* sleep to ensure lock is yielded to another thread */
+> +      usleep (1);
+> +    }
+> +  pthread_exit (NULL);
 > +}
 > +
-> +static int ci_hdrc_generic_remove(struct platform_device *pdev)
+> +int
+> +main (int argc, char **argv)
 > +{
-> +	struct ci_hdrc_generic_priv *priv = platform_get_drvdata(pdev);
+> +  long i;
+> +  pthread_t threads[NUM_THREADS];
 > +
-> +	pm_runtime_disable(&pdev->dev);
-> +	ci_hdrc_remove_device(priv->ci_pdev);
-> +	clk_disable_unprepare(priv->clk);
+> +  truncate (FILENAME, 0);
 > +
-> +	return 0;
+> +  for (i = 0; i < NUM_THREADS; i++)
+> +    pthread_create (&threads[i], NULL, thread_start, (void *) i);
+> +
+> +  pthread_exit (NULL);
+> +  return 0;
 > +}
+> diff --git a/manual/llio.texi b/manual/llio.texi
+> index 6f8adfc607d7..864060dc7140 100644
+> --- a/manual/llio.texi
+> +++ b/manual/llio.texi
+> @@ -57,6 +57,10 @@ directly.)
+>                                           flags associated with open files.
+>  * File Locks::                          Fcntl commands for implementing
+>                                           file locking.
+> +* Open File Description Locks::         Fcntl commands for implementing
+> +                                         open file description locking.
+> +* Open File Description Locks Example:: An example of open file description lock
+> +                                         usage
+>  * Interrupt Input::                     Getting an asynchronous signal when
+>                                           input arrives.
+>  * IOCTLs::                              Generic I/O Control operations.
+> @@ -2890,7 +2894,7 @@ Get flags associated with the open file.  @xref{File Status Flags}.
+>  Set flags associated with the open file.  @xref{File Status Flags}.
+>  
+>  @item F_GETLK
+> -Get a file lock.  @xref{File Locks}.
+> +Test a file lock.  @xref{File Locks}.
+>  
+>  @item F_SETLK
+>  Set or clear a file lock.  @xref{File Locks}.
+> @@ -2898,6 +2902,18 @@ Set or clear a file lock.  @xref{File Locks}.
+>  @item F_SETLKW
+>  Like @code{F_SETLK}, but wait for completion.  @xref{File Locks}.
+>  
+> +@item F_OFD_GETLK
+> +Test an open file description lock.  @xref{Open File Description Locks}.
+> +Specific to Linux.
 > +
-> +static const struct of_device_id ci_hdrc_generic_of_match[] = {
-> +	{ .compatible = "chipidea-usb" },
-> +	{ }
-> +};
-
-Even as a generic driver, you can also use your own compatible string.
-
-> +MODULE_DEVICE_TABLE(of, ci_hdrc_generic_of_match);
+> +@item F_OFD_SETLK
+> +Set or clear an open file description lock.  @xref{Open File Description Locks}.
+> +Specific to Linux.
 > +
-> +static struct platform_driver ci_hdrc_generic_driver = {
-> +	.probe	= ci_hdrc_generic_probe,
-> +	.remove	= ci_hdrc_generic_remove,
-> +	.driver	= {
-> +		.name		= "chipidea-usb",
-> +		.owner		= THIS_MODULE,
-> +		.of_match_table	= ci_hdrc_generic_of_match,
-> +	},
-> +};
-> +module_platform_driver(ci_hdrc_generic_driver);
+> +@item F_OFD_SETLKW
+> +Like @code{F_OFD_SETLK}, but block until lock is acquired.
+> +@xref{Open File Description Locks}.  Specific to Linux.
 > +
-> +MODULE_DESCRIPTION("Generic ChipIdea HDRC USB binding");
-> +MODULE_AUTHOR("Antoine Ténart <antoine.tenart@free-electrons.com>");
-> +MODULE_LICENSE("GPL");
-> -- 
-> 1.9.1
+>  @item F_GETOWN
+>  Get process or process group ID to receive @code{SIGIO} signals.
+>  @xref{Interrupt Input}.
+> @@ -3576,6 +3592,10 @@ set_nonblock_flag (int desc, int value)
+>  
+>  @cindex file locks
+>  @cindex record locking
+> +This section describes record locks that are associated with the process.
+> +There is also a different type of record lock that is associated with the
+> +open file description instead of the process.  @xref{Open File Description Locks}.
+> +
+>  The remaining @code{fcntl} commands are used to support @dfn{record
+>  locking}, which permits multiple cooperating programs to prevent each
+>  other from simultaneously accessing parts of a file in error-prone
+> @@ -3641,7 +3661,10 @@ the file.
+>  @item pid_t l_pid
+>  This field is the process ID (@pxref{Process Creation Concepts}) of the
+>  process holding the lock.  It is filled in by calling @code{fcntl} with
+> -the @code{F_GETLK} command, but is ignored when making a lock.
+> +the @code{F_GETLK} command, but is ignored when making a lock.  If the
+> +conflicting lock is an open file description lock
+> +(@pxref{Open File Description Locks}), then this field will be set to
+> +@math{-1}.
+>  @end table
+>  @end deftp
+>  
+> @@ -3813,10 +3836,222 @@ that part of the file for writing.
+>  
+>  @c ??? This section could use an example program.
+>  
+> -Remember that file locks are only a @emph{voluntary} protocol for
+> +Remember that file locks are only an @emph{advisory} protocol for
+>  controlling access to a file.  There is still potential for access to
+>  the file by programs that don't use the lock protocol.
+>  
+> +@node Open File Description Locks
+> +@section Open File Description Locks
+> +
+> +In contrast to process-associated record locks (@pxref{File Locks}),
+> +open file description record locks are associated with an open file
+> +description rather than a process.
+> +
+> +Using @code{fcntl} to apply an open file description lock on a region that
+> +already has an existing open file description lock that was created via the
+> +same file descriptor will never cause a lock conflict.
+> +
+> +Open file description locks are also inherited by child processes across
+> +@code{fork}, or @code{clone} with @code{CLONE_FILES} set
+> +(@pxref{Creating a Process}), along with the file descriptor.
+> +
+> +It is important to distinguish between the open file @emph{description} (an
+> +instance of an open file, usually created by a call to @code{open}) and
+> +an open file @emph{descriptor}, which is a numeric value that refers to the
+> +open file description.  The locks described here are associated with the
+> +open file @emph{description} and not the open file @emph{descriptor}.
+> +
+> +Using @code{dup} (@pxref{Duplicating Descriptors}) to copy a file
+> +descriptor does not give you a new open file description, but rather copies a
+> +reference to an existing open file description and assigns it to a new
+> +file descriptor.  Thus, open file description locks set on a file
+> +descriptor cloned by @code{dup} will never conflict with open file
+> +description locks set on the original descriptor since they refer to the
+> +same open file description.  Depending on the range and type of lock
+> +involved, the original lock may be modified by a @code{F_OFD_SETLK} or
+> +@code{F_OFD_SETLKW} command in this situation however.
+> +
+> +Open file description locks always conflict with process-associated locks,
+> +even if acquired by the same process or on the same open file
+> +descriptor.
+> +
+> +Open file description locks use the same @code{struct flock} as
+> +process-associated locks as an argument (@pxref{File Locks}) and the
+> +macros for the @code{command} values are also declared in the header file
+> +@file{fcntl.h}. To use them, the macro @code{_GNU_SOURCE} must be
+> +defined prior to including any header file.
+> +
+> +In contrast to process-associated locks, any @code{struct flock} used as
+> +an argument to open file description lock commands must have the @code{l_pid}
+> +value set to @math{0}.  Also, when returning information about an
+> +open file description lock in a @code{F_GETLK} or @code{F_OFD_GETLK} request,
+> +the @code{l_pid} field in @code{struct flock} will be set to @math{-1}
+> +to indicate that the lock is not associated with a process.
+> +
+> +When the same @code{struct flock} is reused as an argument to a
+> +@code{F_OFD_SETLK} or @code{F_OFD_SETLKW} request after being used for an
+> +@code{F_OFD_GETLK} request, it is necessary to inspect and reset the
+> +@code{l_pid} field to @math{0}.
+> +
+> +@pindex fcntl.h.
+> +
+> +@deftypevr Macro int F_OFD_GETLK
+> +This macro is used as the @var{command} argument to @code{fcntl}, to
+> +specify that it should get information about a lock.  This command
+> +requires a third argument of type @w{@code{struct flock *}} to be passed
+> +to @code{fcntl}, so that the form of the call is:
+> +
+> +@smallexample
+> +fcntl (@var{filedes}, F_OFD_GETLK, @var{lockp})
+> +@end smallexample
+> +
+> +If there is a lock already in place that would block the lock described
+> +by the @var{lockp} argument, information about that lock is written to
+> +@code{*@var{lockp}}.  Existing locks are not reported if they are
+> +compatible with making a new lock as specified.  Thus, you should
+> +specify a lock type of @code{F_WRLCK} if you want to find out about both
+> +read and write locks, or @code{F_RDLCK} if you want to find out about
+> +write locks only.
+> +
+> +There might be more than one lock affecting the region specified by the
+> +@var{lockp} argument, but @code{fcntl} only returns information about
+> +one of them. Which lock is returned in this situation is undefined.
+> +
+> +The @code{l_whence} member of the @var{lockp} structure are set to
+> +@code{SEEK_SET} and the @code{l_start} and @code{l_len} fields are set
+> +to identify the locked region.
+> +
+> +If no conflicting lock exists, the only change to the @var{lockp} structure
+> +is to update the @code{l_type} field to the value @code{F_UNLCK}.
+> +
+> +The normal return value from @code{fcntl} with this command is either @math{0}
+> +on success or @math{-1}, which indicates an error. The following @code{errno}
+> +error conditions are defined for this command:
+> +
+> +@table @code
+> +@item EBADF
+> +The @var{filedes} argument is invalid.
+> +
+> +@item EINVAL
+> +Either the @var{lockp} argument doesn't specify valid lock information,
+> +the operating system kernel doesn't support open file description locks, or the file
+> +associated with @var{filedes} doesn't support locks.
+> +@end table
+> +@end deftypevr
+> +
+> +@comment fcntl.h
+> +@comment POSIX.1
+> +@deftypevr Macro int F_OFD_SETLK
+> +This macro is used as the @var{command} argument to @code{fcntl}, to
+> +specify that it should set or clear a lock.  This command requires a
+> +third argument of type @w{@code{struct flock *}} to be passed to
+> +@code{fcntl}, so that the form of the call is:
+> +
+> +@smallexample
+> +fcntl (@var{filedes}, F_OFD_SETLK, @var{lockp})
+> +@end smallexample
+> +
+> +If the open file already has a lock on any part of the
+> +region, the old lock on that part is replaced with the new lock.  You
+> +can remove a lock by specifying a lock type of @code{F_UNLCK}.
+> +
+> +If the lock cannot be set, @code{fcntl} returns immediately with a value
+> +of @math{-1}.  This command does not wait for other tasks
+> +to release locks.  If @code{fcntl} succeeds, it returns @math{0}.
+> +
+> +The following @code{errno} error conditions are defined for this
+> +command:
+> +
+> +@table @code
+> +@item EAGAIN
+> +The lock cannot be set because it is blocked by an existing lock on the
+> +file.
+> +
+> +@item EBADF
+> +Either: the @var{filedes} argument is invalid; you requested a read lock
+> +but the @var{filedes} is not open for read access; or, you requested a
+> +write lock but the @var{filedes} is not open for write access.
+> +
+> +@item EINVAL
+> +Either the @var{lockp} argument doesn't specify valid lock information,
+> +the operating system kernel doesn't support open file description locks, or the
+> +file associated with @var{filedes} doesn't support locks.
+> +
+> +@item ENOLCK
+> +The system has run out of file lock resources; there are already too
+> +many file locks in place.
+> +
+> +Well-designed file systems never report this error, because they have no
+> +limitation on the number of locks.  However, you must still take account
+> +of the possibility of this error, as it could result from network access
+> +to a file system on another machine.
+> +@end table
+> +@end deftypevr
+> +
+> +@comment fcntl.h
+> +@comment POSIX.1
+> +@deftypevr Macro int F_OFD_SETLKW
+> +This macro is used as the @var{command} argument to @code{fcntl}, to
+> +specify that it should set or clear a lock.  It is just like the
+> +@code{F_OFD_SETLK} command, but causes the process to wait until the request
+> +can be completed.
+> +
+> +This command requires a third argument of type @code{struct flock *}, as
+> +for the @code{F_OFD_SETLK} command.
+> +
+> +The @code{fcntl} return values and errors are the same as for the
+> +@code{F_OFD_SETLK} command, but these additional @code{errno} error conditions
+> +are defined for this command:
+> +
+> +@table @code
+> +@item EINTR
+> +The function was interrupted by a signal while it was waiting.
+> +@xref{Interrupted Primitives}.
+> +
+> +@end table
+> +@end deftypevr
+> +
+> +Open file description locks are useful in the same sorts of situations as
+> +process-associated locks. They can also be used to synchronize file
+> +access between threads within the same process by having each thread perform
+> +its own @code{open} of the file, to obtain its own open file description.
+> +
+> +Because open file description locks are automatically freed only upon
+> +closing the last file descriptor that refers to the open file
+> +description, this locking mechanism avoids the possibility that locks
+> +are inadvertently released due to a library routine opening and closing
+> +a file without the application being aware.
+> +
+> +As with process-associated locks, open file description locks are advisory.
+> +
+> +@node Open File Description Locks Example
+> +@section Open File Description Locks Example
+> +
+> +Here is an example of using open file description locks in a threaded
+> +program. If this program used process-associated locks, then it would be
+> +subject to data corruption because process-associated locks are shared
+> +by the threads inside a process, and thus cannot be used by one thread
+> +to lock out another thread in the same process.
+> +
+> +Proper error handling has been omitted in the following program for
+> +brevity.
+> +
+> +@smallexample
+> +@include ofdlocks.c.texi
+> +@end smallexample
+> +
+> +This example creates three threads each of which loops five times,
+> +appending to the file.  Access to the file is serialized via open file
+> +description locks. If we compile and run the above program, we'll end up
+> +with /tmp/foo that has 15 lines in it.
+> +
+> +If we, however, were to replace the @code{F_OFD_SETLK} and
+> +@code{F_OFD_SETLKW} commands with their process-associated lock
+> +equivalents, the locking essentially becomes a noop since it is all done
+> +within the context of the same process. That leads to data corruption
+> +(typically manifested as missing lines) as some threads race in and
+> +overwrite the data written by others.
+> +
+>  @node Interrupt Input
+>  @section Interrupt-Driven Input
+>  
+> diff --git a/sysdeps/unix/sysv/linux/bits/fcntl-linux.h b/sysdeps/unix/sysv/linux/bits/fcntl-linux.h
+> index 527eb5c8b5d9..b5b5d0fbfa4c 100644
+> --- a/sysdeps/unix/sysv/linux/bits/fcntl-linux.h
+> +++ b/sysdeps/unix/sysv/linux/bits/fcntl-linux.h
+> @@ -117,6 +117,23 @@
+>  # define F_SETLKW64	14	/* Set record locking info (blocking).	*/
+>  #endif
+>  
+> +/* open file description locks.
+> +
+> +   Usually record locks held by a process are released on *any* close and are
+> +   not inherited across a fork.
+> +
+> +   These cmd values will set locks that conflict with process-associated record
+> +   locks, but are "owned" by the opened file description, not the process.
+> +   This means that they are inherited across fork or clone with CLONE_FILES
+> +   like BSD (flock) locks, and they are only released automatically when the
+> +   last reference to the the file description against which they were acquired
+> +   is put. */
+> +#if __USE_GNU
+> +# define F_OFD_GETLK	36
+> +# define F_OFD_SETLK	37
+> +# define F_OFD_SETLKW	38
+> +#endif
+> +
+>  #ifdef __USE_LARGEFILE64
+>  # define O_LARGEFILE __O_LARGEFILE
+>  #endif
 > 
+
 
 -- 
-
-Best Regards,
-Peter Chen
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
