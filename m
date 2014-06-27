@@ -1,53 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753429AbaF0Nf2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 09:35:28 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:35762 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752367AbaF0Nf0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 09:35:26 -0400
-From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Stephen Warren <swarren@nvidia.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com, Lee Jones <lee.jones@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Subject: [RESEND PATCH] ARM: multi_v7_defconfig: add ST Keyscan driver
-Date: Fri, 27 Jun 2014 15:34:21 +0200
-Message-Id: <1403876061-8519-1-git-send-email-gabriel.fernandez@linaro.org>
-X-Mailer: git-send-email 1.9.1
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-06-27_03:2014-06-27,2014-06-27,1970-01-01 signatures=0
+	id S1753662AbaF0NhV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 09:37:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58581 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753527AbaF0NhT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 09:37:19 -0400
+Date: Fri, 27 Jun 2014 15:37:16 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Pavel Machek <pavel@ucw.cz>
+cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux-pm mailing list <linux-pm@lists.osdl.org>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>
+Subject: Re: 3.15-rc: regression in suspend
+In-Reply-To: <20140625223522.GA5923@xo-6d-61-c0.localdomain>
+Message-ID: <alpine.LNX.2.00.1406271537000.21386@pobox.suse.cz>
+References: <alpine.LRH.2.00.1405141435510.30793@twin.jikos.cz> <20140514155759.GB9723@amd.pavel.ucw.cz> <20140514182046.GA13342@amd.pavel.ucw.cz> <alpine.LNX.2.00.1405151727380.16459@pobox.suse.cz> <CAKMK7uFEjDGSpdB0xDPL09GZ8N7aFrNA530HbRLyfTPx5SkLQw@mail.gmail.com>
+ <20140607120614.GB5309@amd.pavel.ucw.cz> <20140607231124.GA3611@amd.pavel.ucw.cz> <CAKMK7uEALofLiEA3m-QKjygC=YZNjaEtUMfbpbXinMoim1ygkw@mail.gmail.com> <20140609102328.GA25332@amd.pavel.ucw.cz> <alpine.LNX.2.00.1406091302560.20782@pobox.suse.cz>
+ <20140625223522.GA5923@xo-6d-61-c0.localdomain>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds KEYBOARD_ST_KEYSCAN config
+On Thu, 26 Jun 2014, Pavel Machek wrote:
 
-Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Acked-by: Lee Jones <lee.jones@linaro.org>
----
- arch/arm/configs/multi_v7_defconfig | 1 +
- 1 file changed, 1 insertion(+)
+> Ok, so I have set up machines for ktest / autobisect, and found out that 
+> 3.16-rc1 no longer has that problem. Oh well, bisect would not be fun, 
+> anyway...
 
-diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
-index 19dbddb..c123e35 100644
---- a/arch/arm/configs/multi_v7_defconfig
-+++ b/arch/arm/configs/multi_v7_defconfig
-@@ -155,6 +155,7 @@ CONFIG_INPUT_EVDEV=y
- CONFIG_KEYBOARD_GPIO=y
- CONFIG_KEYBOARD_TEGRA=y
- CONFIG_KEYBOARD_SPEAR=y
-+CONFIG_KEYBOARD_ST_KEYSCAN=y
- CONFIG_KEYBOARD_CROS_EC=y
- CONFIG_MOUSE_PS2_ELANTECH=y
- CONFIG_INPUT_MISC=y
+I am still seeing the problem with 3.16-rc2.
+
 -- 
-1.9.1
-
+Jiri Kosina
+SUSE Labs
