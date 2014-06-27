@@ -1,52 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754414AbaF0XYU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 19:24:20 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:33103
-	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
+	id S1754480AbaF0XX5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 19:23:57 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:58722 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753843AbaF0XYT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 19:24:19 -0400
-x-originating-ip: 72.167.245.219
-From: Yue Zhang <yuezha@microsoft.com>
-To: kys@microsoft.com, haiyangz@microsoft.com,
-        driverdev-devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        olaf@aepfle.de, jasowang@redhat.com, apw@canonical.com
-Cc: decui@microsoft.com, huishao@microsoft.com
-Subject: [PATCH v2] Tools: hv: fix file overwriting of hv_fcopy_daemon
-Date: Fri, 27 Jun 2014 17:23:57 -0700
-Message-Id: <1403915037-21658-1-git-send-email-yuezha@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1753840AbaF0XXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 19:23:51 -0400
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Kees Cook <keescook@chromium.org>, Oleg Nesterov <oleg@redhat.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        linux-api@vger.kernel.org, x86@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
+        linux-arch@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: [PATCH v9 0/11] seccomp: add thread sync ability
+Date: Fri, 27 Jun 2014 16:22:49 -0700
+Message-Id: <1403911380-27787-1-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.7.9.5
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yue Zhang <yuezha@microsoft.com>
+This adds the ability for threads to request seccomp filter
+synchronization across their thread group (at filter attach time).
+For example, for Chrome to make sure graphic driver threads are fully
+confined after seccomp filters have been attached.
 
-hv_fcopy_daemon fails to overwrite a file if the target file already
-exits.
+To support this, locking on seccomp changes via thread-group-shared
+sighand lock is introduced, along with refactoring of no_new_privs. Races
+with thread creation are handled via delayed duplication of the seccomp
+task struct field.
 
-Add O_TRUNC flag on opening.
+This includes a new syscall (instead of adding a new prctl option),
+as suggested by Andy Lutomirski and Michael Kerrisk.
 
-Signed-off-by: Yue Zhang <yuezha@microsoft.com>
----
- tools/hv/hv_fcopy_daemon.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Thanks!
 
-diff --git a/tools/hv/hv_fcopy_daemon.c b/tools/hv/hv_fcopy_daemon.c
-index fba1c75..2a86297 100644
---- a/tools/hv/hv_fcopy_daemon.c
-+++ b/tools/hv/hv_fcopy_daemon.c
-@@ -88,7 +88,8 @@ static int hv_start_fcopy(struct hv_start_fcopy *smsg)
- 		}
- 	}
- 
--	target_fd = open(target_fname, O_RDWR | O_CREAT | O_CLOEXEC, 0744);
-+	target_fd = open(target_fname,
-+			O_RDWR | O_CREAT | O_TRUNC | O_CLOEXEC, 0744);
- 	if (target_fd == -1) {
- 		syslog(LOG_INFO, "Open Failed: %s", strerror(errno));
- 		goto done;
--- 
-1.9.1
+-Kees
+
+v9:
+ - rearranged/split patches to make things more reviewable
+ - added use of cred_guard_mutex to solve exec race (oleg, luto)
+ - added barriers for TIF_SECCOMP vs seccomp.mode race (oleg, luto)
+ - fixed missed copying of nnp state after v8 refactor (oleg)
+v8:
+ - drop use of tasklist_lock, appears redundant against sighand (oleg)
+ - reduced use of smp_load_acquire to logical minimum (oleg)
+ - change nnp to a task struct held atomic flags field (oleg, luto)
+ - drop needless irqflags changes in fork.c for holding sighand lock (oleg)
+ - cleaned up use of thread for-each loop (oleg)
+ - rearranged patch order to keep syscall changes adjacent
+ - added example code to manpage (mtk)
+v7:
+ - rebase on Linus's tree (merged with network bpf changes)
+ - wrote manpage text documenting API (follows this series)
+v6:
+ - switch from seccomp-specific lock to thread-group lock to gain atomicity
+ - implement seccomp syscall across all architectures with seccomp filter
+ - clean up sparse warnings around locking
+v5:
+ - move includes around (drysdale)
+ - drop set_nnp return value (luto)
+ - use smp_load_acquire/store_release (luto)
+ - merge nnp changes to seccomp always, fewer ifdef (luto)
+v4:
+ - cleaned up locking further, as noticed by David Drysdale
+v3:
+ - added SECCOMP_EXT_ACT_FILTER for new filter install options
+v2:
+ - reworked to avoid clone races
 
