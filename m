@@ -1,103 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754035AbaF0U4u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 16:56:50 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:43235 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753348AbaF0U4r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 16:56:47 -0400
+	id S1754151AbaF0U5M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 16:57:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35343 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752936AbaF0U5K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 16:57:10 -0400
+Date: Fri, 27 Jun 2014 16:56:54 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Mike Snitzer <snitzer@redhat.com>
+cc: Joe Thornber <thornber@redhat.com>,
+        device-mapper development <dm-devel@redhat.com>,
+        linux-kernel@vger.kernel.org, Minfei Huang <huangminfei@ucloud.cn>,
+        linux-raid@vger.kernel.org, agk@redhat.com
+Subject: Re: dm-io: Prevent the danging point of the sync io callback
+ function
+In-Reply-To: <20140627192904.GA21254@redhat.com>
+Message-ID: <alpine.LRH.2.02.1406271654360.9941@file01.intranet.prod.int.rdu2.redhat.com>
+References: <1403841690-4401-1-git-send-email-huangminfei@ucloud.cn> <20140627151105.GA30592@debian> <alpine.LRH.2.02.1406271432430.18515@file01.intranet.prod.int.rdu2.redhat.com> <20140627192904.GA21254@redhat.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20140627195559.GA31661@redhat.com>
-References: <CAGXu5j+J11zJnuFR8bYKAXizAHhCx4R+uJE_QH6zC3q2udkpaQ@mail.gmail.com>
-	<CALCETrVrs8sb19+UUqyFEpAFzTih5dkAwn-WpQjfgPcPJMpP5g@mail.gmail.com>
-	<20140625173245.GA17695@redhat.com>
-	<CALCETrUc65H+fn6dtMdYnB_xR39wcmgDdTbdR3fFRjyrndJhgA@mail.gmail.com>
-	<20140625175136.GA18185@redhat.com>
-	<CAGXu5jL17k6=GXju6x+eLU20FMwBHhnuRiHoQD1Bzj_EmpiKjg@mail.gmail.com>
-	<CALCETrVNwhWSPNiBiZmgP1nD9zLJPTk6cH0yo=85rbxTPTYFRg@mail.gmail.com>
-	<CAGXu5jLavA8FJD8m-1y4wO0uzh3qvvMmajAg0Lrr1Cn_Om3a3w@mail.gmail.com>
-	<20140627192753.GA30752@redhat.com>
-	<CALCETrVbJqfG6oBaZEjj7H3pPa1oVJx6QXAYc5zZ6o-niV=WKQ@mail.gmail.com>
-	<20140627195559.GA31661@redhat.com>
-Date: Fri, 27 Jun 2014 13:56:46 -0700
-X-Google-Sender-Auth: pUW8GcfQARe8nbSPsvc5-gYYfhQ
-Message-ID: <CAGXu5j+M+MHkxNMSaQ+RqYrty=1Fgur6_duSnL8DAZ_SazeJ7w@mail.gmail.com>
-Subject: Re: [PATCH v8 5/9] seccomp: split mode set routines
-From: Kees Cook <keescook@chromium.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andy Lutomirski <luto@amacapital.net>, LKML <linux-kernel@vger.kernel.org>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
-        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 27, 2014 at 12:55 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 06/27, Andy Lutomirski wrote:
->>
->> On Fri, Jun 27, 2014 at 12:27 PM, Oleg Nesterov <oleg@redhat.com> wrote:
->> > On 06/27, Kees Cook wrote:
->> >>
->> >> It looks like SMP ARM issues dsb for rmb, which seems a bit expensive.
->> >> http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0204g/CIHJFGFE.htm
->> >>
->> >> ...
->> >>
->> >> I really want to avoid adding anything to the secure_computing()
->> >> execution path. :(
->> >
->> > I must have missed something but I do not understand your concerns.
->> >
->> > __secure_computing() is not trivial, and we are going to execute the
->> > filters. Do you really think rmb() can add the noticeable difference?
->> >
->> > Not to mention that we can only get here if we take the slow syscall
->> > enter path due to TIF_SECCOMP...
->> >
->>
->> On my box, with my fancy multi-phase seccomp patches, the total
->> seccomp overhead for a very short filter is about 13ns.  Adding a full
->> barrier would add several ns, I think.
->
-> I am just curious, does this 13ns overhead include the penalty from the
-> slow syscall enter path triggered by TIF_SECCOMP ?
->
->> Admittedly, this is x86, not ARM, so comparisons here are completely
->> bogus.  And that read memory barrier doesn't even need an instruction
->> on x86.  But still, let's try to keep this fast.
->
-> Well, I am not going to insist...
->
-> But imo it would be better to make it correct in a most simple way, then
-> we can optimize this code and see if there is a noticeable difference.
->
-> Not only we can change the ordering, we can remove the BUG_ON's and just
-> accept the fact the __secure_computing() can race with sys_seccomp() from
-> another thread.
->
-> If nothing else, it would be much simpler to discuss this patch if it comes
-> as a separate change.
 
-Yeah, the way I want to go is to add the rmb() for now (it gets us
-"correctness"), and then later deal with any potential performance
-problems on ARM at a later time. (At present, I'm unable to perform
-any timings on ARM -- maybe next week.)
 
-I will send the v9 series in a moment here...
+On Fri, 27 Jun 2014, Mike Snitzer wrote:
 
--Kees
+> On Fri, Jun 27 2014 at  2:44pm -0400,
+> Mikulas Patocka <mpatocka@redhat.com> wrote:
+> 
+> > 
+> > 
+> > On Fri, 27 Jun 2014, Joe Thornber wrote:
+> > 
+> > > On Fri, Jun 27, 2014 at 12:01:30PM +0800, Minfei Huang wrote:
+> > > > The io address in callback function will become the danging point,
+> > > > cause by the thread of sync io wakes up by other threads
+> > > > and return to relieve the io address,
+> > > 
+> > > Yes, well found.  I prefer the following fix however.
+> > > 
+> > > - Joe
+> > 
+> > It seems ok.
+> > 
+> > The patch is too big, I think the only change that needs to be done to fix 
+> > the bug is to replace "struct task_struct *sleeper;" with "struct 
+> > completion *completion;", replace "if (io->sleeper) 
+> > wake_up_process(io->sleeper);" with "if (io->completion) 
+> > complete(io->completion);" and declare the completion in sync_io() and 
+> > wait on it instead of "while (1)" loop there.
+> 
+> Here is the minimalist fix you suggested (I agree that splitting out a
+> minimalist fix is useful):
 
--- 
-Kees Cook
-Chrome OS Security
+Acked-by: Mikulas Patocka <mpatocka@redhat.com>
+
+>  drivers/md/dm-io.c | 22 ++++++++--------------
+>  1 file changed, 8 insertions(+), 14 deletions(-)
+> 
+> diff --git a/drivers/md/dm-io.c b/drivers/md/dm-io.c
+> index 2a20986..e60c2ea 100644
+> --- a/drivers/md/dm-io.c
+> +++ b/drivers/md/dm-io.c
+> @@ -10,6 +10,7 @@
+>  #include <linux/device-mapper.h>
+>  
+>  #include <linux/bio.h>
+> +#include <linux/completion.h>
+>  #include <linux/mempool.h>
+>  #include <linux/module.h>
+>  #include <linux/sched.h>
+> @@ -32,7 +33,7 @@ struct dm_io_client {
+>  struct io {
+>  	unsigned long error_bits;
+>  	atomic_t count;
+> -	struct task_struct *sleeper;
+> +	struct completion *wait;
+>  	struct dm_io_client *client;
+>  	io_notify_fn callback;
+>  	void *context;
+> @@ -121,8 +122,8 @@ static void dec_count(struct io *io, unsigned int region, int error)
+>  			invalidate_kernel_vmap_range(io->vma_invalidate_address,
+>  						     io->vma_invalidate_size);
+>  
+> -		if (io->sleeper)
+> -			wake_up_process(io->sleeper);
+> +		if (io->wait)
+> +			complete(io->wait);
+>  
+>  		else {
+>  			unsigned long r = io->error_bits;
+> @@ -385,6 +386,7 @@ static int sync_io(struct dm_io_client *client, unsigned int num_regions,
+>  	 */
+>  	volatile char io_[sizeof(struct io) + __alignof__(struct io) - 1];
+>  	struct io *io = (struct io *)PTR_ALIGN(&io_, __alignof__(struct io));
+> +	DECLARE_COMPLETION_ONSTACK(wait);
+>  
+>  	if (num_regions > 1 && (rw & RW_MASK) != WRITE) {
+>  		WARN_ON(1);
+> @@ -393,7 +395,7 @@ static int sync_io(struct dm_io_client *client, unsigned int num_regions,
+>  
+>  	io->error_bits = 0;
+>  	atomic_set(&io->count, 1); /* see dispatch_io() */
+> -	io->sleeper = current;
+> +	io->wait = &wait;
+>  	io->client = client;
+>  
+>  	io->vma_invalidate_address = dp->vma_invalidate_address;
+> @@ -401,15 +403,7 @@ static int sync_io(struct dm_io_client *client, unsigned int num_regions,
+>  
+>  	dispatch_io(rw, num_regions, where, dp, io, 1);
+>  
+> -	while (1) {
+> -		set_current_state(TASK_UNINTERRUPTIBLE);
+> -
+> -		if (!atomic_read(&io->count))
+> -			break;
+> -
+> -		io_schedule();
+> -	}
+> -	set_current_state(TASK_RUNNING);
+> +	wait_for_completion_io(&wait);
+>  
+>  	if (error_bits)
+>  		*error_bits = io->error_bits;
+> @@ -432,7 +426,7 @@ static int async_io(struct dm_io_client *client, unsigned int num_regions,
+>  	io = mempool_alloc(client->pool, GFP_NOIO);
+>  	io->error_bits = 0;
+>  	atomic_set(&io->count, 1); /* see dispatch_io() */
+> -	io->sleeper = NULL;
+> +	io->wait = NULL;
+>  	io->client = client;
+>  	io->callback = fn;
+>  	io->context = context;
+> 
