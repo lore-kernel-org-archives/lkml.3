@@ -1,50 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752426AbaF0CrI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 22:47:08 -0400
-Received: from imap.thunk.org ([74.207.234.97]:60418 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751406AbaF0CrH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 22:47:07 -0400
-Date: Thu, 26 Jun 2014 22:46:59 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: ext4: total breakdown on USB hdd, 3.0 kernel
-Message-ID: <20140627024659.GF6826@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Pavel Machek <pavel@ucw.cz>,
-	kernel list <linux-kernel@vger.kernel.org>
-References: <20140626202021.GA8512@xo-6d-61-c0.localdomain>
- <20140626203052.GA9449@xo-6d-61-c0.localdomain>
+	id S1752509AbaF0Crh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 22:47:37 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35406 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752337AbaF0Crg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 22:47:36 -0400
+Message-ID: <53ACDB42.1070501@gmail.com>
+Date: Fri, 27 Jun 2014 10:47:30 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140626203052.GA9449@xo-6d-61-c0.localdomain>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: Lennox Wu <lennox.wu@gmail.com>
+CC: David Rientjes <rientjes@google.com>, Guenter Roeck <linux@roeck-us.net>,
+        Liqin Chen <liqin.linux@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] arch/score/include/uapi/asm/ptrace.h: Remove the macros
+ which not be used currently
+References: <53AC10CB.3000007@gmail.com>	<alpine.DEB.2.02.1406261456150.12443@chino.kir.corp.google.com>	<53ACACB6.6000505@gmail.com> <CAF0htA6=16TDoO0kDDmGipAx17rQZpo7essy5K1sO0=mX--8Lg@mail.gmail.com>
+In-Reply-To: <CAF0htA6=16TDoO0kDDmGipAx17rQZpo7essy5K1sO0=mX--8Lg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 26, 2014 at 10:30:52PM +0200, Pavel Machek wrote:
+On 06/27/2014 10:11 AM, Lennox Wu wrote:
+> Acked-by: Lennox Wu <lennox.wu@gmail.com>
 > 
-> It looks like the filesystem contains _way_ too many 0xffff's:
 
-That sounds like it's a hardware issue.  It may be that the controller
-did something insane while trying to do a write at the point when the
-disk drive was disconnected (and so the drive suffered a power drop).
+OK, thank, and excuse me, I am not quite familiar with the version
+merging of upstream kernel: "who will apply it, next, if it is past all
+reviewers' checking".
 
-> I saved beggining of the filesystem using cat /dev/sdc4 | gzip -9 - > /dev/sda3, but
-> then ran out of patience. So there may be something for analysis, but...
 
-The way to snapshot just the metadata blocks for analysis is:
+Thanks.
+-- 
+Chen Gang
 
-e2image -r /dev/hdc4 | bzip2 > ~/hdc4.e2i.bz2
-
-But in this case, it's I doubt it will be very helpful, because
-fundamentally, this appears to be a hardware issue.
-
-       	    	       	       	       - Ted
+Open, share, and attitude like air, water, and life which God blessed
