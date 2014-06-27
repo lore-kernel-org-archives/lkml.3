@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752924AbaF0SGK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 14:06:10 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:47634 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752210AbaF0SEp (ORCPT
+	id S1752202AbaF0SEo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 14:04:44 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:40292 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751906AbaF0SEl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 14:04:45 -0400
+	Fri, 27 Jun 2014 14:04:41 -0400
 From: mathieu.poirier@linaro.org
 To: linus.walleij@linaro.org, will.deacon@arm.com, linux@arm.linux.org.uk,
         daniel.thompson@linaro.org, robherring2@gmail.com
@@ -17,9 +17,9 @@ Cc: mathieu.poirier@linaro.org, arve@android.com, john.stultz@linaro.org,
         marcin.jabrzyk@gmail.com, r.sengupta@samsung.com,
         robbelibobban@gmail.com, Tony.Armitstead@arm.com, patches@linaro.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/9 v2] coresight-funnel: add CoreSight Funnel driver
-Date: Fri, 27 Jun 2014 12:04:17 -0600
-Message-Id: <1403892261-25026-6-git-send-email-mathieu.poirier@linaro.org>
+Subject: [PATCH 3/9 v2] coresight-tpiu: add CoreSight TPIU driver
+Date: Fri, 27 Jun 2014 12:04:15 -0600
+Message-Id: <1403892261-25026-4-git-send-email-mathieu.poirier@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403892261-25026-1-git-send-email-mathieu.poirier@linaro.org>
 References: <1403892261-25026-1-git-send-email-mathieu.poirier@linaro.org>
@@ -29,37 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Pratik Patel <pratikp@codeaurora.org>
 
-This driver manages CoreSight Funnel which acts as a link.
-Funnels have multiple input ports (typically 8) each of which
-represents an input trace data stream. These multiple input trace
-data streams are interleaved into a single output stream coming
-out of the Funnel.
+This driver manages CoreSight TPIU (Trace Port Interface Unit)
+which acts as a sink. TPIU is typically connected to some offchip
+hardware hosting a storage buffer.
 
 Signed-off-by: Pratik Patel <pratikp@codeaurora.org>
 Signed-off-by: Panchaxari Prasannamurthy <panchaxari.prasannamurthy@linaro.org>
 Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
 ---
- drivers/coresight/Makefile           |   2 +-
- drivers/coresight/coresight-funnel.c | 252 +++++++++++++++++++++++++++++++++++
- 2 files changed, 253 insertions(+), 1 deletion(-)
- create mode 100644 drivers/coresight/coresight-funnel.c
+ drivers/coresight/Makefile         |   2 +-
+ drivers/coresight/coresight-tpiu.c | 223 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 224 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/coresight/coresight-tpiu.c
 
 diff --git a/drivers/coresight/Makefile b/drivers/coresight/Makefile
-index 8d4443b..1f66804 100644
+index 16e26c5..540df99 100644
 --- a/drivers/coresight/Makefile
 +++ b/drivers/coresight/Makefile
-@@ -4,4 +4,4 @@
+@@ -3,4 +3,4 @@
+ #
  obj-$(CONFIG_CORESIGHT) += coresight.o
  obj-$(CONFIG_OF) += of_coresight.o
- obj-$(CONFIG_CORESIGHT_LINKS_AND_SINKS) += coresight-tmc.o coresight-tpiu.o \
--					   coresight-etb.o
-+					   coresight-etb.o coresight-funnel.o
-diff --git a/drivers/coresight/coresight-funnel.c b/drivers/coresight/coresight-funnel.c
+-obj-$(CONFIG_CORESIGHT_LINKS_AND_SINKS) += coresight-tmc.o
++obj-$(CONFIG_CORESIGHT_LINKS_AND_SINKS) += coresight-tmc.o coresight-tpiu.o
+diff --git a/drivers/coresight/coresight-tpiu.c b/drivers/coresight/coresight-tpiu.c
 new file mode 100644
-index 0000000..62c5fec
+index 0000000..67bc431
 --- /dev/null
-+++ b/drivers/coresight/coresight-funnel.c
-@@ -0,0 +1,252 @@
++++ b/drivers/coresight/coresight-tpiu.c
+@@ -0,0 +1,223 @@
 +/* Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -75,10 +73,9 @@ index 0000000..62c5fec
 +#include <linux/kernel.h>
 +#include <linux/module.h>
 +#include <linux/init.h>
-+#include <linux/types.h>
 +#include <linux/device.h>
++#include <linux/io.h>
 +#include <linux/err.h>
-+#include <linux/fs.h>
 +#include <linux/slab.h>
 +#include <linux/clk.h>
 +#include <linux/of_coresight.h>
@@ -87,145 +84,110 @@ index 0000000..62c5fec
 +
 +#include "coresight-priv.h"
 +
-+#define FUNNEL_FUNCTL		(0x000)
-+#define FUNNEL_PRICTL		(0x004)
++#define TPIU_SUPP_PORTSZ	(0x000)
++#define TPIU_CURR_PORTSZ	(0x004)
++#define TPIU_SUPP_TRIGMODES	(0x100)
++#define TPIU_TRIG_CNTRVAL	(0x104)
++#define TPIU_TRIG_MULT		(0x108)
++#define TPIU_SUPP_TESTPATM	(0x200)
++#define TPIU_CURR_TESTPATM	(0x204)
++#define TPIU_TEST_PATREPCNTR	(0x208)
++#define TPIU_FFSR		(0x300)
++#define TPIU_FFCR		(0x304)
++#define TPIU_FSYNC_CNTR		(0x308)
++#define TPIU_EXTCTL_INPORT	(0x400)
++#define TPIU_EXTCTL_OUTPORT	(0x404)
++#define TPIU_ITTRFLINACK	(0xEE4)
++#define TPIU_ITTRFLIN		(0xEE8)
++#define TPIU_ITATBDATA0		(0xEEC)
++#define TPIU_ITATBCTR2		(0xEF0)
++#define TPIU_ITATBCTR1		(0xEF4)
++#define TPIU_ITATBCTR0		(0xEF8)
 +
-+#define FUNNEL_HOLDTIME_MASK	(0xF00)
-+#define FUNNEL_HOLDTIME_SHFT	(0x8)
-+#define FUNNEL_HOLDTIME		(0x7 << FUNNEL_HOLDTIME_SHFT)
++/** register definition **/
++/* FFCR - 0x304 */
++#define FFCR_FON_MAN		BIT(6)
 +
-+struct funnel_drvdata {
++struct tpiu_drvdata {
 +	void __iomem		*base;
 +	struct device		*dev;
 +	struct coresight_device	*csdev;
 +	struct clk		*clk;
-+	u32			priority;
 +};
 +
-+static void funnel_enable_hw(struct funnel_drvdata *drvdata, int port)
++static void tpiu_enable_hw(struct tpiu_drvdata *drvdata)
 +{
-+	u32 functl;
-+
 +	CS_UNLOCK(drvdata->base);
 +
-+	functl = cs_readl(drvdata->base, FUNNEL_FUNCTL);
-+	functl &= ~FUNNEL_HOLDTIME_MASK;
-+	functl |= FUNNEL_HOLDTIME;
-+	functl |= (1 << port);
-+	cs_writel(drvdata->base, functl, FUNNEL_FUNCTL);
-+	cs_writel(drvdata->base, drvdata->priority, FUNNEL_PRICTL);
++	/* TODO: fill this up */
 +
 +	CS_LOCK(drvdata->base);
 +}
 +
-+static int funnel_enable(struct coresight_device *csdev, int inport,
-+			 int outport)
++static int tpiu_enable(struct coresight_device *csdev)
 +{
-+	struct funnel_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
++	struct tpiu_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
 +	int ret;
 +
 +	ret = clk_prepare_enable(drvdata->clk);
 +	if (ret)
 +		return ret;
 +
-+	funnel_enable_hw(drvdata, inport);
++	tpiu_enable_hw(drvdata);
 +
-+	dev_info(drvdata->dev, "FUNNEL inport %d enabled\n", inport);
++	dev_info(drvdata->dev, "TPIU enabled\n");
 +	return 0;
 +}
 +
-+static void funnel_disable_hw(struct funnel_drvdata *drvdata, int inport)
++static void tpiu_disable_hw(struct tpiu_drvdata *drvdata)
 +{
-+	u32 functl;
-+
 +	CS_UNLOCK(drvdata->base);
 +
-+	functl = cs_readl(drvdata->base, FUNNEL_FUNCTL);
-+	functl &= ~(1 << inport);
-+	cs_writel(drvdata->base, functl, FUNNEL_FUNCTL);
++	/* clear formatter controle reg. */
++	cs_writel(drvdata->base, 0x0, TPIU_FFCR);
++	/* generate manual flush */
++	cs_writel(drvdata->base, FFCR_FON_MAN, TPIU_FFCR);
 +
 +	CS_LOCK(drvdata->base);
 +}
 +
-+static void funnel_disable(struct coresight_device *csdev, int inport,
-+			   int outport)
++static void tpiu_disable(struct coresight_device *csdev)
 +{
-+	struct funnel_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
++	struct tpiu_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
 +
-+	funnel_disable_hw(drvdata, inport);
++	tpiu_disable_hw(drvdata);
 +
 +	clk_disable_unprepare(drvdata->clk);
 +
-+	dev_info(drvdata->dev, "FUNNEL inport %d disabled\n", inport);
++	dev_info(drvdata->dev, "TPIU disabled\n");
 +}
 +
-+static const struct coresight_ops_link funnel_link_ops = {
-+	.enable		= funnel_enable,
-+	.disable	= funnel_disable,
++static void tpiu_abort(struct coresight_device *csdev)
++{
++	struct tpiu_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
++
++	tpiu_disable_hw(drvdata);
++
++	dev_info(drvdata->dev, "TPIU aborted\n");
++}
++
++static const struct coresight_ops_sink tpiu_sink_ops = {
++	.enable		= tpiu_enable,
++	.disable	= tpiu_disable,
++	.abort		= tpiu_abort,
 +};
 +
-+static const struct coresight_ops funnel_cs_ops = {
-+	.link_ops	= &funnel_link_ops,
++static const struct coresight_ops tpiu_cs_ops = {
++	.sink_ops	= &tpiu_sink_ops,
 +};
 +
-+static ssize_t debugfs_funnel_priority_get(void *data, u64 *val)
++static int tpiu_probe(struct amba_device *adev, const struct amba_id *id)
 +{
-+	struct funnel_drvdata *drvdata = data;
-+
-+	*val = drvdata->priority;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_funnel_priority_set(void *data, u64 val)
-+{
-+	struct funnel_drvdata *drvdata = data;
-+
-+	drvdata->priority = val;
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_funnel_priority, "priority",
-+			S_IRUGO | S_IWUSR, debugfs_funnel_priority_get,
-+			debugfs_funnel_priority_set, "%llu\n");
-+
-+static u32 get_funnel_ctrl_hw(struct funnel_drvdata *drvdata)
-+{
-+	u32 functl;
-+
-+	CS_UNLOCK(drvdata->base);
-+	functl = cs_readl(drvdata->base, FUNNEL_FUNCTL);
-+	CS_LOCK(drvdata->base);
-+
-+	return functl;
-+}
-+
-+static ssize_t debugfs_funnel_ctrl_get(void *data, u64 *val)
-+{
-+	struct funnel_drvdata *drvdata = data;
-+
-+	if (clk_prepare_enable(drvdata->clk))
-+		goto out;
-+
-+	*val = get_funnel_ctrl_hw(drvdata);
-+	clk_disable_unprepare(drvdata->clk);
-+out:
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_funnel_ctrl, "funnel_ctrl",
-+			S_IRUGO, debugfs_funnel_ctrl_get,
-+			NULL, "%llu\n");
-+
-+static const struct coresight_ops_entry *funnel_attr_grps[] = {
-+	&debugfs_funnel_priority_entry,
-+	&debugfs_funnel_ctrl_entry,
-+	NULL,
-+};
-+
-+static int funnel_probe(struct amba_device *adev, const struct amba_id *id)
-+{
++	int ret;
 +	void __iomem *base;
 +	struct device *dev = &adev->dev;
 +	struct coresight_platform_data *pdata = NULL;
-+	struct funnel_drvdata *drvdata;
++	struct tpiu_drvdata *drvdata;
 +	struct resource *res = &adev->res;
 +	struct coresight_desc *desc;
 +	struct device_node *np = adev->dev.of_node;
@@ -252,66 +214,73 @@ index 0000000..62c5fec
 +	drvdata->base = base;
 +
 +	drvdata->clk = adev->pclk;
++	ret = clk_prepare_enable(drvdata->clk);
++	if (ret)
++		return ret;
++
++	/* Disable tpiu to support older devices */
++	tpiu_disable_hw(drvdata);
++
++	clk_disable_unprepare(drvdata->clk);
 +
 +	desc = devm_kzalloc(dev, sizeof(*desc), GFP_KERNEL);
 +	if (!desc)
 +		return -ENOMEM;
 +
-+	desc->type = CORESIGHT_DEV_TYPE_LINK;
-+	desc->subtype.link_subtype = CORESIGHT_DEV_SUBTYPE_LINK_MERG;
-+	desc->ops = &funnel_cs_ops;
++	desc->type = CORESIGHT_DEV_TYPE_SINK;
++	desc->subtype.sink_subtype = CORESIGHT_DEV_SUBTYPE_SINK_PORT;
++	desc->ops = &tpiu_cs_ops;
 +	desc->pdata = pdata;
 +	desc->dev = dev;
-+	desc->debugfs_ops = funnel_attr_grps;
 +	desc->owner = THIS_MODULE;
 +	drvdata->csdev = coresight_register(desc);
 +	if (IS_ERR(drvdata->csdev))
 +		return PTR_ERR(drvdata->csdev);
 +
-+	dev_info(dev, "FUNNEL initialized\n");
++	dev_info(dev, "TPIU initialized\n");
 +	return 0;
 +}
 +
-+static int funnel_remove(struct amba_device *adev)
++static int tpiu_remove(struct amba_device *adev)
 +{
-+	struct funnel_drvdata *drvdata = amba_get_drvdata(adev);
++	struct tpiu_drvdata *drvdata = amba_get_drvdata(adev);
 +
 +	coresight_unregister(drvdata->csdev);
 +	return 0;
 +}
 +
-+static struct amba_id funnel_ids[] = {
++static struct amba_id tpiu_ids[] = {
 +	{
-+		.id     = 0x0003b908,
-+		.mask   = 0x0003ffff,
++		.id	= 0x0003b912,
++		.mask	= 0x0003ffff,
 +	},
 +	{ 0, 0},
 +};
 +
-+static struct amba_driver funnel_driver = {
++static struct amba_driver tpiu_driver = {
 +	.drv = {
-+		.name	= "coresight-funnel",
++		.name	= "coresight-tpiu",
 +		.owner	= THIS_MODULE,
 +	},
-+	.probe		= funnel_probe,
-+	.remove		= funnel_remove,
-+	.id_table	= funnel_ids,
++	.probe		= tpiu_probe,
++	.remove		= tpiu_remove,
++	.id_table	= tpiu_ids,
 +};
 +
-+static int __init funnel_init(void)
++static int __init tpiu_init(void)
 +{
-+	return amba_driver_register(&funnel_driver);
++	return amba_driver_register(&tpiu_driver);
 +}
-+module_init(funnel_init);
++module_init(tpiu_init);
 +
-+static void __exit funnel_exit(void)
++static void __exit tpiu_exit(void)
 +{
-+	amba_driver_unregister(&funnel_driver);
++	amba_driver_unregister(&tpiu_driver);
 +}
-+module_exit(funnel_exit);
++module_exit(tpiu_exit);
 +
 +MODULE_LICENSE("GPL v2");
-+MODULE_DESCRIPTION("CoreSight Funnel driver");
++MODULE_DESCRIPTION("CoreSight Trace Port Interface Unit driver");
 -- 
 1.9.1
 
