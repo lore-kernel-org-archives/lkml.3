@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752072AbaF0SEk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 14:04:40 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:46601 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751906AbaF0SEf (ORCPT
+	id S1752289AbaF0SEq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 14:04:46 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:49723 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752065AbaF0SEj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 14:04:35 -0400
+	Fri, 27 Jun 2014 14:04:39 -0400
 From: mathieu.poirier@linaro.org
 To: linus.walleij@linaro.org, will.deacon@arm.com, linux@arm.linux.org.uk,
         daniel.thompson@linaro.org, robherring2@gmail.com
@@ -17,104 +17,862 @@ Cc: mathieu.poirier@linaro.org, arve@android.com, john.stultz@linaro.org,
         marcin.jabrzyk@gmail.com, r.sengupta@samsung.com,
         robbelibobban@gmail.com, Tony.Armitstead@arm.com, patches@linaro.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/9 v2] Coresight framework and drivers 
-Date: Fri, 27 Jun 2014 12:04:12 -0600
-Message-Id: <1403892261-25026-1-git-send-email-mathieu.poirier@linaro.org>
+Subject: [PATCH 2/9 v2] coresight-tmc: add CoreSight TMC driver
+Date: Fri, 27 Jun 2014 12:04:14 -0600
+Message-Id: <1403892261-25026-3-git-send-email-mathieu.poirier@linaro.org>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403892261-25026-1-git-send-email-mathieu.poirier@linaro.org>
+References: <1403892261-25026-1-git-send-email-mathieu.poirier@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mathieu Poirier <mathieu.poirier@linaro.org>
+From: Pratik Patel <pratikp@codeaurora.org>
 
-This set is addressing comments received after the May 30th
-submission[1].  More specifically:
+This driver manages CoreSight TMC (Trace Memory Controller) which
+can act as a link or a sink depending upon its configuration. It
+can present itself as an ETF (Embedded Trace FIFO) or ETR
+(Embedded Trace Router).
 
-.All drivers have been converted to use the AMBA bus
- interface.
-.Debugfs entries are now created with a macro.
-.A header file was created for the ETM driver to allow
- for the reuse of constant definition.
-.Error path on some drivers have been corrected.
-.All types converted from uintX_t to uX.
-.All numeric constant have been replaced with #defines and
- comments added where necessary.
-.Removal of "coresight-id" and "coresigh-name" DT bindings.
-.Move all DT connections specification to use the generic
- graph bindings.
-.The removal of the replicator driver since it doesn't show
- on the AMBA bus.  Drivers for enhanced replicators that have
- a configuration space can be added when the need arises.
+ETF when configured in circular buffer mode acts as a trace
+collection sink. When configured in HW fifo mode it acts as link.
+ETR always acts as a sink and can be used to route data to memory
+allocated in RAM.
 
-Regards,
-Mathieu
-
-[1]. http://thread.gmane.org/gmane.linux.kernel/1714785
-
-Mathieu Poirier (3):
-  coresight: adding support for beagle and beagleXM
-  coresight: adding basic support for Vexpress TC2
-  ARM: removing support for etb/etm in "arch/arm/kernel/"
-
-Pratik Patel (6):
-  coresight: add CoreSight core layer framework
-  coresight-tmc: add CoreSight TMC driver
-  coresight-tpiu: add CoreSight TPIU driver
-  coresight-etb: add CoreSight ETB driver
-  coresight-funnel: add CoreSight Funnel driver
-  coresight-etm: add CoreSight ETM/PTM driver
-
- .../devicetree/bindings/arm/coresight.txt          |  141 ++
- arch/arm/boot/dts/omap3-beagle-xm.dts              |   28 +
- arch/arm/boot/dts/omap3-beagle.dts                 |   28 +
- arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts         |  174 +++
- arch/arm/include/asm/hardware/coresight.h          |  157 --
- arch/arm/include/asm/hardware/cp14.h               |  540 +++++++
- arch/arm/kernel/Makefile                           |    1 -
- arch/arm/kernel/etm.c                              |  654 ---------
- arch/arm/kernel/hw_breakpoint.c                    |    4 +-
- arch/arm/mach-omap2/Kconfig                        |    8 -
- arch/arm/mach-omap2/Makefile                       |    1 -
- arch/arm/mach-omap2/emu.c                          |   50 -
- drivers/Kconfig                                    |    2 +
- drivers/Makefile                                   |    1 +
- drivers/amba/bus.c                                 |    2 +-
- drivers/coresight/Kconfig                          |   39 +
- drivers/coresight/Makefile                         |    8 +
- drivers/coresight/coresight-etb.c                  |  557 ++++++++
- drivers/coresight/coresight-etm-cp14.c             |  506 +++++++
- drivers/coresight/coresight-etm.c                  | 1507 ++++++++++++++++++++
- drivers/coresight/coresight-etm.h                  |  192 +++
- drivers/coresight/coresight-funnel.c               |  252 ++++
- drivers/coresight/coresight-priv.h                 |   69 +
- drivers/coresight/coresight-tmc.c                  |  791 ++++++++++
- drivers/coresight/coresight-tpiu.c                 |  223 +++
- drivers/coresight/coresight.c                      |  680 +++++++++
- drivers/coresight/of_coresight.c                   |  207 +++
- include/linux/amba/bus.h                           |    1 +
- include/linux/coresight.h                          |  190 +++
- include/linux/of_coresight.h                       |   27 +
- 30 files changed, 6166 insertions(+), 874 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/arm/coresight.txt
- delete mode 100644 arch/arm/include/asm/hardware/coresight.h
- create mode 100644 arch/arm/include/asm/hardware/cp14.h
- delete mode 100644 arch/arm/kernel/etm.c
- delete mode 100644 arch/arm/mach-omap2/emu.c
- create mode 100644 drivers/coresight/Kconfig
- create mode 100644 drivers/coresight/Makefile
- create mode 100644 drivers/coresight/coresight-etb.c
- create mode 100644 drivers/coresight/coresight-etm-cp14.c
- create mode 100644 drivers/coresight/coresight-etm.c
- create mode 100644 drivers/coresight/coresight-etm.h
- create mode 100644 drivers/coresight/coresight-funnel.c
- create mode 100644 drivers/coresight/coresight-priv.h
+Signed-off-by: Pratik Patel <pratikp@codeaurora.org>
+Signed-off-by: Panchaxari Prasannamurthy <panchaxari.prasannamurthy@linaro.org>
+Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+---
+ drivers/coresight/Kconfig         |  10 +
+ drivers/coresight/Makefile        |   1 +
+ drivers/coresight/coresight-tmc.c | 791 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 802 insertions(+)
  create mode 100644 drivers/coresight/coresight-tmc.c
- create mode 100644 drivers/coresight/coresight-tpiu.c
- create mode 100644 drivers/coresight/coresight.c
- create mode 100644 drivers/coresight/of_coresight.c
- create mode 100644 include/linux/coresight.h
- create mode 100644 include/linux/of_coresight.h
 
+diff --git a/drivers/coresight/Kconfig b/drivers/coresight/Kconfig
+index fdd4d08..48a78bb 100644
+--- a/drivers/coresight/Kconfig
++++ b/drivers/coresight/Kconfig
+@@ -8,3 +8,13 @@ menuconfig CORESIGHT
+ 	  the right series of components on user input via sysfs. It also
+ 	  provides status information to user space applications through
+ 	  the debugfs interface.
++
++if CORESIGHT
++
++config CORESIGHT_LINKS_AND_SINKS
++	bool "CoreSight Link and Sink drivers"
++	help
++	  This enables support for CoreSight link and sink drivers that are
++	  responsible for transporting and collecting the trace data
++	  respectively.
++endif
+diff --git a/drivers/coresight/Makefile b/drivers/coresight/Makefile
+index 218e3b5..16e26c5 100644
+--- a/drivers/coresight/Makefile
++++ b/drivers/coresight/Makefile
+@@ -3,3 +3,4 @@
+ #
+ obj-$(CONFIG_CORESIGHT) += coresight.o
+ obj-$(CONFIG_OF) += of_coresight.o
++obj-$(CONFIG_CORESIGHT_LINKS_AND_SINKS) += coresight-tmc.o
+diff --git a/drivers/coresight/coresight-tmc.c b/drivers/coresight/coresight-tmc.c
+new file mode 100644
+index 0000000..201cdac
+--- /dev/null
++++ b/drivers/coresight/coresight-tmc.c
+@@ -0,0 +1,791 @@
++/* Copyright (c) 2012, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/types.h>
++#include <linux/device.h>
++#include <linux/io.h>
++#include <linux/err.h>
++#include <linux/fs.h>
++#include <linux/miscdevice.h>
++#include <linux/uaccess.h>
++#include <linux/slab.h>
++#include <linux/dma-mapping.h>
++#include <linux/delay.h>
++#include <linux/spinlock.h>
++#include <linux/clk.h>
++#include <linux/of.h>
++#include <linux/of_coresight.h>
++#include <linux/coresight.h>
++#include <linux/amba/bus.h>
++
++#include "coresight-priv.h"
++
++#define TMC_RSZ			(0x004)
++#define TMC_STS			(0x00C)
++#define TMC_RRD			(0x010)
++#define TMC_RRP			(0x014)
++#define TMC_RWP			(0x018)
++#define TMC_TRG			(0x01C)
++#define TMC_CTL			(0x020)
++#define TMC_RWD			(0x024)
++#define TMC_MODE		(0x028)
++#define TMC_LBUFLEVEL		(0x02C)
++#define TMC_CBUFLEVEL		(0x030)
++#define TMC_BUFWM		(0x034)
++#define TMC_RRPHI		(0x038)
++#define TMC_RWPHI		(0x03C)
++#define TMC_AXICTL		(0x110)
++#define TMC_DBALO		(0x118)
++#define TMC_DBAHI		(0x11C)
++#define TMC_FFSR		(0x300)
++#define TMC_FFCR		(0x304)
++#define TMC_PSCR		(0x308)
++#define TMC_ITMISCOP0		(0xEE0)
++#define TMC_ITTRFLIN		(0xEE8)
++#define TMC_ITATBDATA0		(0xEEC)
++#define TMC_ITATBCTR2		(0xEF0)
++#define TMC_ITATBCTR1		(0xEF4)
++#define TMC_ITATBCTR0		(0xEF8)
++
++/** register description **/
++/* TMC_CTL - 0x020 */
++#define TMC_CTL_CAPT_EN		BIT(0)
++/* TMC_STS - 0x00C */
++#define TMC_STS_TRIGGERED	BIT(1)
++/* TMC_AXICTL - 0x110 */
++#define TMC_AXICTL_PROT_CTL_B0	BIT(0)
++#define TMC_AXICTL_PROT_CTL_B1	BIT(1)
++#define TMC_AXICTL_SCT_GAT_MODE	BIT(7)
++#define TMC_AXICTL_WR_BURST_LEN 0xF00
++/* TMC_FFCR - 0x304 */
++#define TMC_FFCR_EN_FMT		BIT(0)
++#define TMC_FFCR_EN_TI		BIT(1)
++#define TMC_FFCR_FON_FLIN	BIT(4)
++#define TMC_FFCR_FON_TRIG_EVT	BIT(5)
++#define TMC_FFCR_FLUSHMAN	BIT(6)
++#define TMC_FFCR_TRIGON_TRIGIN	BIT(8)
++#define TMC_FFCR_STOP_ON_FLUSH	BIT(12)
++
++#define TMC_STS_TRIGGERED_BIT	2
++#define TMC_FFCR_FLUSHMAN_BIT	6
++
++enum tmc_config_type {
++	TMC_CONFIG_TYPE_ETB,
++	TMC_CONFIG_TYPE_ETR,
++	TMC_CONFIG_TYPE_ETF,
++};
++
++enum tmc_mode {
++	TMC_MODE_CIRCULAR_BUFFER,
++	TMC_MODE_SOFTWARE_FIFO,
++	TMC_MODE_HARDWARE_FIFO,
++};
++
++enum tmc_mem_intf_width {
++	TMC_MEM_INTF_WIDTH_32BITS	= 0x2,
++	TMC_MEM_INTF_WIDTH_64BITS	= 0x3,
++	TMC_MEM_INTF_WIDTH_128BITS	= 0x4,
++	TMC_MEM_INTF_WIDTH_256BITS	= 0x5,
++};
++
++struct tmc_drvdata {
++	void __iomem		*base;
++	struct device		*dev;
++	struct coresight_device	*csdev;
++	struct miscdevice	miscdev;
++	struct clk		*clk;
++	spinlock_t		spinlock;
++	int			read_count;
++	bool			reading;
++	char			*buf;
++	dma_addr_t		paddr;
++	void __iomem		*vaddr;
++	u32			size;
++	bool			enable;
++	enum tmc_config_type	config_type;
++	u32			trigger_cntr;
++};
++
++static void tmc_wait_for_ready(struct tmc_drvdata *drvdata)
++{
++	int i;
++
++	/* Ensure formatter, unformatter and hardware fifo are empty */
++	for (i = TIMEOUT_US;
++	     BVAL(cs_readl(drvdata->base, TMC_STS), TMC_STS_TRIGGERED_BIT) != 1
++	     && i > 0; i--)
++		udelay(1);
++
++	WARN(i == 0,
++	     "timeout while waiting for TMC ready, TMC_STS: %#x\n",
++	     cs_readl(drvdata->base, TMC_STS));
++}
++
++static void tmc_flush_and_stop(struct tmc_drvdata *drvdata)
++{
++	int i;
++	u32 ffcr;
++
++	ffcr = cs_readl(drvdata->base, TMC_FFCR);
++	ffcr |= TMC_FFCR_STOP_ON_FLUSH;
++	cs_writel(drvdata->base, ffcr, TMC_FFCR);
++	ffcr |= TMC_FFCR_FLUSHMAN;
++	cs_writel(drvdata->base, ffcr, TMC_FFCR);
++	/* Ensure flush completes */
++	for (i = TIMEOUT_US;
++	     BVAL(cs_readl(drvdata->base, TMC_FFCR), TMC_FFCR_FLUSHMAN_BIT) != 0
++	     && i > 0; i--)
++		udelay(1);
++
++	WARN(i == 0,
++	     "timeout while flushing TMC, TMC_FFCR: %#x\n",
++	     cs_readl(drvdata->base, TMC_FFCR));
++
++	tmc_wait_for_ready(drvdata);
++}
++
++static void tmc_enable_hw(struct tmc_drvdata *drvdata)
++{
++	cs_writel(drvdata->base, TMC_CTL_CAPT_EN, TMC_CTL);
++}
++
++static void tmc_disable_hw(struct tmc_drvdata *drvdata)
++{
++	cs_writel(drvdata->base, 0x0, TMC_CTL);
++}
++
++static void tmc_etb_enable_hw(struct tmc_drvdata *drvdata)
++{
++	/* Zero out the memory to help with debug */
++	memset(drvdata->buf, 0, drvdata->size);
++
++	CS_UNLOCK(drvdata->base);
++
++	cs_writel(drvdata->base, TMC_MODE_CIRCULAR_BUFFER, TMC_MODE);
++	cs_writel(drvdata->base, (TMC_FFCR_EN_FMT | TMC_FFCR_EN_TI |
++				  TMC_FFCR_FON_FLIN | TMC_FFCR_FON_TRIG_EVT |
++				  TMC_FFCR_TRIGON_TRIGIN),
++				  TMC_FFCR);
++
++	cs_writel(drvdata->base, drvdata->trigger_cntr, TMC_TRG);
++	tmc_enable_hw(drvdata);
++
++	CS_LOCK(drvdata->base);
++}
++
++static void tmc_etr_enable_hw(struct tmc_drvdata *drvdata)
++{
++	u32 axictl;
++
++	/* Zero out the memory to help with debug */
++	memset(drvdata->vaddr, 0, drvdata->size);
++
++	CS_UNLOCK(drvdata->base);
++
++	cs_writel(drvdata->base, drvdata->size / 4, TMC_RSZ);
++	cs_writel(drvdata->base, TMC_MODE_CIRCULAR_BUFFER, TMC_MODE);
++
++	axictl = cs_readl(drvdata->base, TMC_AXICTL);
++	axictl |= TMC_AXICTL_WR_BURST_LEN;
++	cs_writel(drvdata->base, axictl, TMC_AXICTL);
++	axictl &= ~TMC_AXICTL_SCT_GAT_MODE;
++	cs_writel(drvdata->base, axictl, TMC_AXICTL);
++	 axictl = (axictl &
++		   ~(TMC_AXICTL_PROT_CTL_B0 | TMC_AXICTL_PROT_CTL_B1)) |
++		   TMC_AXICTL_PROT_CTL_B1;
++	cs_writel(drvdata->base, axictl, TMC_AXICTL);
++
++	cs_writel(drvdata->base, drvdata->paddr, TMC_DBALO);
++	cs_writel(drvdata->base, 0x0, TMC_DBAHI);
++	cs_writel(drvdata->base, (TMC_FFCR_EN_FMT | TMC_FFCR_EN_TI |
++				  TMC_FFCR_FON_FLIN | TMC_FFCR_FON_TRIG_EVT |
++				  TMC_FFCR_TRIGON_TRIGIN),
++				  TMC_FFCR);
++	cs_writel(drvdata->base, drvdata->trigger_cntr, TMC_TRG);
++	tmc_enable_hw(drvdata);
++
++	CS_LOCK(drvdata->base);
++}
++
++static void tmc_etf_enable_hw(struct tmc_drvdata *drvdata)
++{
++	CS_UNLOCK(drvdata->base);
++
++	cs_writel(drvdata->base, TMC_MODE_HARDWARE_FIFO, TMC_MODE);
++	cs_writel(drvdata->base,
++		  (TMC_FFCR_EN_FMT | TMC_FFCR_EN_TI),
++		  TMC_FFCR);
++	cs_writel(drvdata->base, 0x0, TMC_BUFWM);
++	tmc_enable_hw(drvdata);
++
++	CS_LOCK(drvdata->base);
++}
++
++static int tmc_enable(struct tmc_drvdata *drvdata, enum tmc_mode mode)
++{
++	int ret;
++	unsigned long flags;
++
++	ret = clk_prepare_enable(drvdata->clk);
++	if (ret)
++		return ret;
++
++	spin_lock_irqsave(&drvdata->spinlock, flags);
++	if (drvdata->reading) {
++		spin_unlock_irqrestore(&drvdata->spinlock, flags);
++		clk_disable_unprepare(drvdata->clk);
++		return -EBUSY;
++	}
++
++	if (drvdata->config_type == TMC_CONFIG_TYPE_ETB) {
++		tmc_etb_enable_hw(drvdata);
++	} else if (drvdata->config_type == TMC_CONFIG_TYPE_ETR) {
++		tmc_etr_enable_hw(drvdata);
++	} else {
++		if (mode == TMC_MODE_CIRCULAR_BUFFER)
++			tmc_etb_enable_hw(drvdata);
++		else
++			tmc_etf_enable_hw(drvdata);
++	}
++	drvdata->enable = true;
++	spin_unlock_irqrestore(&drvdata->spinlock, flags);
++
++	dev_info(drvdata->dev, "TMC enabled\n");
++	return 0;
++}
++
++static int tmc_enable_sink(struct coresight_device *csdev)
++{
++	struct tmc_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
++
++	return tmc_enable(drvdata, TMC_MODE_CIRCULAR_BUFFER);
++}
++
++static int tmc_enable_link(struct coresight_device *csdev, int inport,
++			   int outport)
++{
++	struct tmc_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
++
++	return tmc_enable(drvdata, TMC_MODE_HARDWARE_FIFO);
++}
++
++static void tmc_etb_dump_hw(struct tmc_drvdata *drvdata)
++{
++	enum tmc_mem_intf_width memwidth;
++	u8 memwords;
++	char *bufp;
++	u32 read_data;
++	int i;
++
++	memwidth = BMVAL(cs_readl(drvdata->base, CORESIGHT_DEVID), 8, 10);
++	if (memwidth == TMC_MEM_INTF_WIDTH_32BITS)
++		memwords = 1;
++	else if (memwidth == TMC_MEM_INTF_WIDTH_64BITS)
++		memwords = 2;
++	else if (memwidth == TMC_MEM_INTF_WIDTH_128BITS)
++		memwords = 4;
++	else
++		memwords = 8;
++
++	bufp = drvdata->buf;
++	while (1) {
++		for (i = 0; i < memwords; i++) {
++			read_data = cs_readl(drvdata->base, TMC_RRD);
++			if (read_data == 0xFFFFFFFF)
++				return;
++			memcpy(bufp, &read_data, 4);
++			bufp += 4;
++		}
++	}
++}
++
++static void tmc_etb_disable_hw(struct tmc_drvdata *drvdata)
++{
++	CS_UNLOCK(drvdata->base);
++
++	tmc_flush_and_stop(drvdata);
++	tmc_etb_dump_hw(drvdata);
++	tmc_disable_hw(drvdata);
++
++	CS_LOCK(drvdata->base);
++}
++
++static void tmc_etr_dump_hw(struct tmc_drvdata *drvdata)
++{
++	u32 rwp, rwphi;
++
++	rwp = cs_readl(drvdata->base, TMC_RWP);
++	rwphi = cs_readl(drvdata->base, TMC_RWPHI);
++
++	if (BVAL(cs_readl(drvdata->base, TMC_STS), 0))
++		drvdata->buf = drvdata->vaddr + rwp - drvdata->paddr;
++	else
++		drvdata->buf = drvdata->vaddr;
++}
++
++static void tmc_etr_disable_hw(struct tmc_drvdata *drvdata)
++{
++	CS_UNLOCK(drvdata->base);
++
++	tmc_flush_and_stop(drvdata);
++	tmc_etr_dump_hw(drvdata);
++	tmc_disable_hw(drvdata);
++
++	CS_LOCK(drvdata->base);
++}
++
++static void tmc_etf_disable_hw(struct tmc_drvdata *drvdata)
++{
++	CS_UNLOCK(drvdata->base);
++
++	tmc_flush_and_stop(drvdata);
++	tmc_disable_hw(drvdata);
++
++	CS_LOCK(drvdata->base);
++}
++
++static void tmc_disable(struct tmc_drvdata *drvdata, enum tmc_mode mode)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&drvdata->spinlock, flags);
++	if (drvdata->reading)
++		goto out;
++
++	if (drvdata->config_type == TMC_CONFIG_TYPE_ETB) {
++		tmc_etb_disable_hw(drvdata);
++	} else if (drvdata->config_type == TMC_CONFIG_TYPE_ETR) {
++		tmc_etr_disable_hw(drvdata);
++	} else {
++		if (mode == TMC_MODE_CIRCULAR_BUFFER)
++			tmc_etb_disable_hw(drvdata);
++		else
++			tmc_etf_disable_hw(drvdata);
++	}
++out:
++	drvdata->enable = false;
++	spin_unlock_irqrestore(&drvdata->spinlock, flags);
++
++	clk_disable_unprepare(drvdata->clk);
++
++	dev_info(drvdata->dev, "TMC disabled\n");
++}
++
++static void tmc_disable_sink(struct coresight_device *csdev)
++{
++	struct tmc_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
++
++	tmc_disable(drvdata, TMC_MODE_CIRCULAR_BUFFER);
++}
++
++static void tmc_disable_link(struct coresight_device *csdev, int inport,
++			     int outport)
++{
++	struct tmc_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
++
++	tmc_disable(drvdata, TMC_MODE_HARDWARE_FIFO);
++}
++
++static void tmc_abort(struct coresight_device *csdev)
++{
++	struct tmc_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
++	unsigned long flags;
++	enum tmc_mode mode;
++
++	spin_lock_irqsave(&drvdata->spinlock, flags);
++	if (drvdata->reading)
++		goto out0;
++
++	if (drvdata->config_type == TMC_CONFIG_TYPE_ETB) {
++		tmc_etb_disable_hw(drvdata);
++	} else if (drvdata->config_type == TMC_CONFIG_TYPE_ETR) {
++		tmc_etr_disable_hw(drvdata);
++	} else {
++		mode = cs_readl(drvdata->base, TMC_MODE);
++		if (mode == TMC_MODE_CIRCULAR_BUFFER)
++			tmc_etb_disable_hw(drvdata);
++		else
++			goto out1;
++	}
++out0:
++	drvdata->enable = false;
++	spin_unlock_irqrestore(&drvdata->spinlock, flags);
++
++	dev_info(drvdata->dev, "TMC aborted\n");
++	return;
++out1:
++	spin_unlock_irqrestore(&drvdata->spinlock, flags);
++}
++
++static const struct coresight_ops_sink tmc_sink_ops = {
++	.enable		= tmc_enable_sink,
++	.disable	= tmc_disable_sink,
++	.abort		= tmc_abort,
++};
++
++static const struct coresight_ops_link tmc_link_ops = {
++	.enable		= tmc_enable_link,
++	.disable	= tmc_disable_link,
++};
++
++static const struct coresight_ops tmc_etb_cs_ops = {
++	.sink_ops	= &tmc_sink_ops,
++};
++
++static const struct coresight_ops tmc_etr_cs_ops = {
++	.sink_ops	= &tmc_sink_ops,
++};
++
++static const struct coresight_ops tmc_etf_cs_ops = {
++	.sink_ops	= &tmc_sink_ops,
++	.link_ops	= &tmc_link_ops,
++};
++
++static int tmc_read_prepare(struct tmc_drvdata *drvdata)
++{
++	int ret;
++	unsigned long flags;
++	enum tmc_mode mode;
++
++	spin_lock_irqsave(&drvdata->spinlock, flags);
++	if (!drvdata->enable)
++		goto out;
++
++	if (drvdata->config_type == TMC_CONFIG_TYPE_ETB) {
++		tmc_etb_disable_hw(drvdata);
++	} else if (drvdata->config_type == TMC_CONFIG_TYPE_ETR) {
++		tmc_etr_disable_hw(drvdata);
++	} else {
++		mode = cs_readl(drvdata->base, TMC_MODE);
++		if (mode == TMC_MODE_CIRCULAR_BUFFER) {
++			tmc_etb_disable_hw(drvdata);
++		} else {
++			ret = -ENODEV;
++			goto err;
++		}
++	}
++out:
++	drvdata->reading = true;
++	spin_unlock_irqrestore(&drvdata->spinlock, flags);
++
++	dev_info(drvdata->dev, "TMC read start\n");
++	return 0;
++err:
++	spin_unlock_irqrestore(&drvdata->spinlock, flags);
++	return ret;
++}
++
++static void tmc_read_unprepare(struct tmc_drvdata *drvdata)
++{
++	unsigned long flags;
++	enum tmc_mode mode;
++
++	spin_lock_irqsave(&drvdata->spinlock, flags);
++	if (!drvdata->enable)
++		goto out;
++
++	if (drvdata->config_type == TMC_CONFIG_TYPE_ETB) {
++		tmc_etb_enable_hw(drvdata);
++	} else if (drvdata->config_type == TMC_CONFIG_TYPE_ETR) {
++		tmc_etr_enable_hw(drvdata);
++	} else {
++		mode = cs_readl(drvdata->base, TMC_MODE);
++		if (mode == TMC_MODE_CIRCULAR_BUFFER)
++			tmc_etb_enable_hw(drvdata);
++	}
++out:
++	drvdata->reading = false;
++	spin_unlock_irqrestore(&drvdata->spinlock, flags);
++
++	dev_info(drvdata->dev, "TMC read end\n");
++}
++
++static int tmc_open(struct inode *inode, struct file *file)
++{
++	struct tmc_drvdata *drvdata = container_of(file->private_data,
++						   struct tmc_drvdata, miscdev);
++	int ret = 0;
++
++	if (drvdata->read_count++)
++		goto out;
++
++	ret = tmc_read_prepare(drvdata);
++	if (ret)
++		return ret;
++out:
++	nonseekable_open(inode, file);
++
++	dev_dbg(drvdata->dev, "%s: successfully opened\n", __func__);
++	return 0;
++}
++
++static ssize_t tmc_read(struct file *file, char __user *data, size_t len,
++			loff_t *ppos)
++{
++	struct tmc_drvdata *drvdata = container_of(file->private_data,
++						   struct tmc_drvdata, miscdev);
++	char *bufp = drvdata->buf + *ppos;
++
++	if (*ppos + len > drvdata->size)
++		len = drvdata->size - *ppos;
++
++	if (drvdata->config_type == TMC_CONFIG_TYPE_ETR) {
++		if (bufp == (char *)(drvdata->vaddr + drvdata->size))
++			bufp = drvdata->vaddr;
++		else if (bufp > (char *)(drvdata->vaddr + drvdata->size))
++			bufp -= drvdata->size;
++		if ((bufp + len) > (char *)(drvdata->vaddr + drvdata->size))
++			len = (char *)(drvdata->vaddr + drvdata->size) - bufp;
++	}
++
++	if (copy_to_user(data, bufp, len)) {
++		dev_dbg(drvdata->dev, "%s: copy_to_user failed\n", __func__);
++		return -EFAULT;
++	}
++
++	*ppos += len;
++
++	dev_dbg(drvdata->dev, "%s: %d bytes copied, %d bytes left\n",
++		__func__, len, (int) (drvdata->size - *ppos));
++	return len;
++}
++
++static int tmc_release(struct inode *inode, struct file *file)
++{
++	struct tmc_drvdata *drvdata = container_of(file->private_data,
++						   struct tmc_drvdata, miscdev);
++
++	if (--drvdata->read_count) {
++		if (drvdata->read_count < 0) {
++			WARN_ONCE(1, "mismatched close\n");
++			drvdata->read_count = 0;
++		}
++		goto out;
++	}
++
++	tmc_read_unprepare(drvdata);
++out:
++	dev_dbg(drvdata->dev, "%s: released\n", __func__);
++	return 0;
++}
++
++static const struct file_operations tmc_fops = {
++	.owner		= THIS_MODULE,
++	.open		= tmc_open,
++	.read		= tmc_read,
++	.release	= tmc_release,
++	.llseek		= no_llseek,
++};
++
++static ssize_t debugfs_trigger_cntr_get(void *data, u64 *val)
++{
++	struct tmc_drvdata *drvdata = data;
++
++	*val = drvdata->trigger_cntr;
++	return 0;
++}
++
++static ssize_t debugfs_trigger_cntr_set(void *data, u64 val)
++{
++	struct tmc_drvdata *drvdata = data;
++
++	drvdata->trigger_cntr = val;
++	return 0;
++}
++CORESIGHT_DEBUGFS_ENTRY(debugfs_trigger_cntr, "trigger_cntr",
++			S_IRUGO | S_IWUSR, debugfs_trigger_cntr_get,
++			debugfs_trigger_cntr_set, "%llu\n");
++
++static const struct coresight_ops_entry *tmc_etb_attr_grps[] = {
++	&debugfs_trigger_cntr_entry,
++	NULL,
++};
++
++static const struct coresight_ops_entry *tmc_etr_attr_grps[] = {
++	&debugfs_trigger_cntr_entry,
++	NULL,
++};
++
++static const struct coresight_ops_entry *tmc_etf_attr_grps[] = {
++	&debugfs_trigger_cntr_entry,
++	NULL,
++};
++
++static int tmc_probe(struct amba_device *adev, const struct amba_id *id)
++{
++	int ret = 0;
++	u32 devid;
++	void __iomem *base;
++	struct device *dev = &adev->dev;
++	struct coresight_platform_data *pdata = NULL;
++	struct tmc_drvdata *drvdata;
++	struct resource *res = &adev->res;
++	struct coresight_desc *desc;
++	struct device_node *np = adev->dev.of_node;
++
++	if (np) {
++		pdata = of_get_coresight_platform_data(dev, np);
++		if (IS_ERR(pdata))
++			return PTR_ERR(pdata);
++		adev->dev.platform_data = pdata;
++	}
++
++	drvdata = devm_kzalloc(dev, sizeof(*drvdata), GFP_KERNEL);
++	if (!drvdata)
++		return -ENOMEM;
++
++	drvdata->dev = &adev->dev;
++	dev_set_drvdata(dev, drvdata);
++
++	/* validity for the resource is already checked by the AMBA core */
++	base = devm_ioremap_resource(dev, res);
++	if (IS_ERR(base))
++		return PTR_ERR(base);
++
++	drvdata->base = base;
++
++	spin_lock_init(&drvdata->spinlock);
++
++	drvdata->clk = adev->pclk;
++	ret = clk_prepare_enable(drvdata->clk);
++	if (ret)
++		return ret;
++
++	devid = cs_readl(drvdata->base, CORESIGHT_DEVID);
++	drvdata->config_type = BMVAL(devid, 6, 7);
++
++	if (drvdata->config_type == TMC_CONFIG_TYPE_ETR) {
++		if (np)
++			ret = of_property_read_u32(np,
++						   "arm,buffer-size",
++						   &drvdata->size);
++		if (ret)
++			drvdata->size = SZ_1M;
++	} else {
++		drvdata->size = cs_readl(drvdata->base, TMC_RSZ) * 4;
++	}
++
++	clk_disable_unprepare(drvdata->clk);
++
++	if (drvdata->config_type == TMC_CONFIG_TYPE_ETR) {
++		drvdata->vaddr = dma_alloc_coherent(dev, drvdata->size,
++						&drvdata->paddr, GFP_KERNEL);
++		if (!drvdata->vaddr)
++			return -ENOMEM;
++
++		memset(drvdata->vaddr, 0, drvdata->size);
++		drvdata->buf = drvdata->vaddr;
++	} else {
++		drvdata->buf = devm_kzalloc(dev, drvdata->size, GFP_KERNEL);
++		if (!drvdata->buf)
++			return -ENOMEM;
++	}
++
++	desc = devm_kzalloc(dev, sizeof(*desc), GFP_KERNEL);
++	if (!desc) {
++		ret = -ENOMEM;
++		goto err_devm_kzalloc;
++	}
++
++	desc->pdata = pdata;
++	desc->dev = dev;
++	desc->owner = THIS_MODULE;
++	desc->subtype.sink_subtype = CORESIGHT_DEV_SUBTYPE_SINK_BUFFER;
++
++	if (drvdata->config_type == TMC_CONFIG_TYPE_ETB) {
++		desc->type = CORESIGHT_DEV_TYPE_SINK;
++		desc->ops = &tmc_etb_cs_ops;
++		desc->debugfs_ops = tmc_etb_attr_grps;
++	} else if (drvdata->config_type == TMC_CONFIG_TYPE_ETR) {
++		desc->type = CORESIGHT_DEV_TYPE_SINK;
++		desc->ops = &tmc_etr_cs_ops;
++		desc->debugfs_ops = tmc_etr_attr_grps;
++	} else {
++		desc->type = CORESIGHT_DEV_TYPE_LINKSINK;
++		desc->subtype.link_subtype = CORESIGHT_DEV_SUBTYPE_LINK_FIFO;
++		desc->ops = &tmc_etf_cs_ops;
++		desc->debugfs_ops = tmc_etf_attr_grps;
++	}
++
++	drvdata->csdev = coresight_register(desc);
++	if (IS_ERR(drvdata->csdev)) {
++		ret = PTR_ERR(drvdata->csdev);
++		goto err_devm_kzalloc;
++	}
++
++	drvdata->miscdev.name = pdata->name;
++	drvdata->miscdev.minor = MISC_DYNAMIC_MINOR;
++	drvdata->miscdev.fops = &tmc_fops;
++	ret = misc_register(&drvdata->miscdev);
++	if (ret)
++		goto err_misc_register;
++
++	dev_info(dev, "TMC initialized\n");
++	return 0;
++
++err_misc_register:
++	coresight_unregister(drvdata->csdev);
++err_devm_kzalloc:
++	if (drvdata->config_type == TMC_CONFIG_TYPE_ETR)
++		dma_free_coherent(dev, drvdata->size,
++				&drvdata->paddr, GFP_KERNEL);
++	return ret;
++}
++
++static int tmc_remove(struct amba_device *adev)
++{
++	struct tmc_drvdata *drvdata = amba_get_drvdata(adev);
++
++	misc_deregister(&drvdata->miscdev);
++	coresight_unregister(drvdata->csdev);
++	if (drvdata->config_type == TMC_CONFIG_TYPE_ETR)
++		dma_free_coherent(drvdata->dev, drvdata->size,
++				  &drvdata->paddr, GFP_KERNEL);
++
++	return 0;
++}
++
++static struct amba_id tmc_ids[] = {
++	{
++		.id     = 0x0003b961,
++		.mask   = 0x0003ffff,
++	},
++	{ 0, 0},
++};
++
++static struct amba_driver tmc_driver = {
++	.drv = {
++		.name   = "coresight-tmc",
++		.owner  = THIS_MODULE,
++	},
++	.probe		= tmc_probe,
++	.remove		= tmc_remove,
++	.id_table	= tmc_ids,
++};
++
++static int __init tmc_init(void)
++{
++	return amba_driver_register(&tmc_driver);
++}
++module_init(tmc_init);
++
++static void __exit tmc_exit(void)
++{
++	amba_driver_unregister(&tmc_driver);
++}
++module_exit(tmc_exit);
++
++MODULE_LICENSE("GPL v2");
++MODULE_DESCRIPTION("CoreSight Trace Memory Controller driver");
 -- 
 1.9.1
 
