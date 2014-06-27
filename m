@@ -1,55 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751679AbaF0QbR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 12:31:17 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:45394 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751246AbaF0QbP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 12:31:15 -0400
-Date: Fri, 27 Jun 2014 17:31:08 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Fredrik Noring <fredrik.noring@autoliv.com>
-Cc: Mattis Lorentzon <Mattis.Lorentzon@autoliv.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: Oops: 17 SMP ARM (v3.16-rc2)
-Message-ID: <20140627163108.GP32514@n2100.arm.linux.org.uk>
-References: <C4A61A5CA4AD2246942F4BA6F20ACB804356534D@ALVA-EXMB04.alv.autoliv.int> <20140626140115.GQ32514@n2100.arm.linux.org.uk> <C4A61A5CA4AD2246942F4BA6F20ACB80435655E9@ALVA-EXMB04.alv.autoliv.int> <20140626151424.GT32514@n2100.arm.linux.org.uk> <20140627112151.GF32514@n2100.arm.linux.org.uk> <3FFB61A7A8473C49831AF20FA193534A43CADFA7@ALVA-EXMB01.alv.autoliv.int>
+	id S1751717AbaF0Qc1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 12:32:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35208 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750971AbaF0Qc0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 12:32:26 -0400
+Date: Fri, 27 Jun 2014 12:31:41 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org,
+        greg@kroah.com, bp@alien8.de, dyoung@redhat.com, chaowang@redhat.com,
+        bhe@redhat.com
+Subject: Re: [PATCH 09/15] kexec: Implementation of new syscall
+ kexec_file_load
+Message-ID: <20140627163141.GE13337@redhat.com>
+References: <1403814824-7587-1-git-send-email-vgoyal@redhat.com>
+ <1403814824-7587-10-git-send-email-vgoyal@redhat.com>
+ <20140626135826.d1679d6eb5b7bd0f82dd7deb@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <3FFB61A7A8473C49831AF20FA193534A43CADFA7@ALVA-EXMB01.alv.autoliv.int>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20140626135826.d1679d6eb5b7bd0f82dd7deb@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Fredrik,
+On Thu, Jun 26, 2014 at 01:58:26PM -0700, Andrew Morton wrote:
 
-On Fri, Jun 27, 2014 at 04:16:57PM +0000, Fredrik Noring wrote:
-> Please find below a trace that appeared once with 3.16-rc2. Perhaps it is of
-> some interest?
+[..]
+> > +	while (pos < stat.size) {
+> > +		bytes = kernel_read(f.file, pos, (char *)(*buf) + pos,
+> > +				    stat.size - pos);
+> > +		if (bytes < 0) {
+> > +			vfree(*buf);
+> > +			ret = bytes;
+> > +			goto out;
+> > +		}
+> > +
+> > +		if (bytes == 0)
+> > +			break;
+> 
+> Here we can get a short read: (pos < stat.size).  Seems to me that it
+> is risky to return this result to the caller as if all is well.
 
-It's not that serious... I know that the FEC ethernet driver is
-horrendously racy (I have had a patch set for about the last six months
-which fixes some of its problems) but as I've had a lot of patches to
-deal with, and it's been pushed to the back of the queue...
+Hi Andrew,
 
-The races don't lead to data corruption though, merely timeouts and
-some lost packets.
+That's a good point. Please find attached the patch which fixes both
+the issues.
 
-Now because things have changed during the last merge window, I've got
-an even bigger problem sorting through that patch set and getting it
-back into a submittable state.  I've just sent out v2 for it onto the
-netdev@vger.kernel.org mailing list.
+Thanks
+Vivek
 
-The initial version (marked RFC) attracted very little interest from
-testers, or acks.  I'd very much like to have some testing of it, so
-if you want to try it out, I can provide you with a git URL, patches
-or a combined patch.
 
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+
+Subject: kexec: Return error if file bytes are less then file size 
+
+If number of bytes read from file are not same as file size, return error.
+
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+---
+ kernel/kexec.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+Index: linux-2.6/kernel/kexec.c
+===================================================================
+--- linux-2.6.orig/kernel/kexec.c	2014-06-27 09:55:41.826755422 -0400
++++ linux-2.6/kernel/kexec.c	2014-06-27 10:04:23.409024171 -0400
+@@ -343,7 +343,7 @@ out_free_image:
+ static int copy_file_from_fd(int fd, void **buf, unsigned long *buf_len)
+ {
+ 	struct fd f = fdget(fd);
+-	int ret = 0;
++	int ret;
+ 	struct kstat stat;
+ 	loff_t pos;
+ 	ssize_t bytes = 0;
+@@ -387,6 +387,12 @@ static int copy_file_from_fd(int fd, voi
+ 		pos += bytes;
+ 	}
+ 
++	if (pos != stat.size) {
++		ret = -EBADF;
++		vfree(*buf);
++		goto out;
++	}
++
+ 	*buf_len = pos;
+ out:
+ 	fdput(f);
