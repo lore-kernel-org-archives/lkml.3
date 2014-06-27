@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753249AbaF0JV7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 05:21:59 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:56108 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752736AbaF0JV5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 05:21:57 -0400
-Date: Fri, 27 Jun 2014 10:21:49 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
-        Daniel Stone <daniels@collabora.com>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 02/14] mfd: max77686: Allow the max77686 rtc to wakeup
- the system
-Message-ID: <20140627092149.GH19645@lee--X1>
-References: <1403806546-31122-1-git-send-email-javier.martinez@collabora.co.uk>
- <1403806546-31122-3-git-send-email-javier.martinez@collabora.co.uk>
+	id S1753286AbaF0JWg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 05:22:36 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:56291 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751127AbaF0JWe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 05:22:34 -0400
+Date: Fri, 27 Jun 2014 11:22:27 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Xie XiuQi <xiexiuqi@huawei.com>
+Cc: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
+        "Chen, Gong" <gong.chen@linux.intel.com>, tony.luck@intel.com,
+        joe@perches.com, m.chehab@samsung.com, arozansk@redhat.com,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Li Bin <huawei.libin@huawei.com>
+Subject: Re: [PATCH v3 4/9] ACPI, x86: Extended error log driver for x86
+ platform
+Message-ID: <20140627092227.GA23153@pd.tnic>
+References: <1382084624-10857-1-git-send-email-gong.chen@linux.intel.com>
+ <1382084624-10857-5-git-send-email-gong.chen@linux.intel.com>
+ <52612BA4.2060906@linux.vnet.ibm.com>
+ <53AD0275.7020003@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1403806546-31122-3-git-send-email-javier.martinez@collabora.co.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53AD0275.7020003@huawei.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Jun 2014, Javier Martinez Canillas wrote:
+On Fri, Jun 27, 2014 at 01:34:45PM +0800, Xie XiuQi wrote:
+> The call graph is like this,
+> do_machine_check
+>  -> mce_log
+>   -> atomic_notifier_call_chain(&x86_mce_decoder_chain ...)
+>    -> ...
+>     -> extlog_print
+>      -> print_extlog_rcd
+>       -> __print_extlog_rcd
+>        -> printk
+> 
+> There's a logbuf_lock in printk. If logbuf_lock is held by other cpu,
+> it'll lead to an infinity spin here. Isn't it?
 
-> From: Doug Anderson <dianders@chromium.org>
-> 
-> The max77686 includes an RTC that keeps power during suspend.  It's
-> convenient to be able to use it as a wakeup source.
-> 
-> NOTE: due to wakeup ordering problems this patch alone doesn't work so
-> well on exynos5250-snow.  You also need something that brings the i2c
-> bus up before the max77686 wakeup runs.
-> 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> Reviewed-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> ---
-> 
-> Changes since v4: None
-> 
-> Changes since v3:
->  - Keep the note that this patch needs another change due wakeup
->    ordering problems.
-> 
->  drivers/rtc/rtc-max77686.c | 28 ++++++++++++++++++++++++++++
->  1 file changed, 28 insertions(+)
+Yes, but we want to take the risk and print something out before the
+machine dies instead of waiting to get into printk-safe context first
+and maybe corrupt state.
 
-This patch doesn't actually touch the MFD subsystem directly.  Can you
-change the $SUBJECT line accordingly please?
+Besides, there's work currently going on to make printk safe in atomic
+context so...
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
