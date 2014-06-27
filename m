@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753684AbaF0MBP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 08:01:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18170 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753419AbaF0MBN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 08:01:13 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Joe Lawrence <joe.lawrence@stratus.com>
-Cc: Jens Axboe <axboe@kernel.dk>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/2] block,scsi: fixup blk_get_request dead queue scenarios
-References: <1401909633-25931-1-git-send-email-joe.lawrence@stratus.com>
-	<x49wqc34psf.fsf@segfault.boston.devel.redhat.com>
-	<53AC461D.6080004@kernel.dk>
-	<x49oaxf4mfo.fsf@segfault.boston.devel.redhat.com>
-	<alpine.DEB.2.02.1406262319140.16358@jlaw-desktop.mno.stratus.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Fri, 27 Jun 2014 07:59:59 -0400
-In-Reply-To: <alpine.DEB.2.02.1406262319140.16358@jlaw-desktop.mno.stratus.com>
-	(Joe Lawrence's message of "Thu, 26 Jun 2014 23:23:29 -0400")
-Message-ID: <x49egyaef5s.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1753754AbaF0MCI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 08:02:08 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:51734 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752868AbaF0MCF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 08:02:05 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/OH5JnNUaAop3PMQ6+J1VONKGBTH4cJl4=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 1A7D659BA03
+Date: Fri, 27 Jun 2014 08:01:51 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Sricharan R <r.sricharan@ti.com>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, santosh.shilimkar@ti.com, nm@ti.com,
+        rnayak@ti.com, linux@arm.linux.org.uk, tglx@linutronix.de,
+        joe@perches.com
+Subject: Re: [PATCH V4 00/16] irqchip: crossbar: Driver fixes
+Message-ID: <20140627120151.GC23978@titan.lakedaemon.net>
+References: <1403766634-18543-1-git-send-email-r.sricharan@ti.com>
+ <20140626074209.GE28884@atomide.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140626074209.GE28884@atomide.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe Lawrence <joe.lawrence@stratus.com> writes:
+On Thu, Jun 26, 2014 at 12:42:09AM -0700, Tony Lindgren wrote:
+> * Sricharan R <r.sricharan@ti.com> [140626 00:14]:
+> > This series does some cleanups, fixes for handling two interrupts
+> > getting mapped twice to same crossbar and provides support for
+> > hardwired IRQ and crossbar definitions.
+> > 
+> > On certain platforms such as DRA7, SPIs 0, 1, 2, 3, 5, 6, 10,
+> > 131, 132, 133 are direct wired to hardware blocks bypassing
+> > crossbar. This quirky implementation is *NOT* supposed to be the
+> > expectation of crossbar hardware usage. This series adds support
+> > to represent such hard-wired irqs through DT and avoid generic
+> > allocation/programming of crossbar in the driver.
+> > 
+> > This way of supporting hard-wired irqs was a result of
+> > the below discussions.
+> > http://www.spinics.net/lists/arm-kernel/msg329946.html
+> > 
+> > Based on 3.16 rc2 mainline.
+> 
+> Jason, once these patches look OK for merging, can you please
+> set them up into an immutable branch so I too can merge them in?
 
-> On Thu, 26 Jun 2014, Jeff Moyer wrote:
->> Thanks, Jens.  Joe, the patches don't apply anymore... would you mind
->> sending an updated set so Jens doesn't have to do the fixups?  I think
->> you also need to convert blk_mq_alloc_request, I didn't see that in your
->> patch.
->
-> Hi Jeff,
->
-> I have a new set that applies on top of 3.16-rc2... but before posting, I 
-> wasn't sure what needs to be converted w/regard to blk_mq_alloc_request.  
-> As far as I can tell, the new multi-queue block IO queueing implementation 
-> via blk_mq_alloc_request should be safe from this bug as it doesn't 
-> include any dead queue checks that introduce early exits.
+Sure thing.
 
-Hi, Joe,
+thx,
 
-blk_mq_alloc_request will return NULL if blk_mq_queue_enter() returns
-non-zero.
-
-Cheers,
-Jeff
+Jason.
