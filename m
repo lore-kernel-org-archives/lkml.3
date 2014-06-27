@@ -1,162 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752050AbaF0S47 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 14:56:59 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:51004 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751597AbaF0S4y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 14:56:54 -0400
+	id S1752340AbaF0S5K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 14:57:10 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:40782 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751693AbaF0S5G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 14:57:06 -0400
+Date: Fri, 27 Jun 2014 14:57:00 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 4/5] mm: page_alloc: Reduce cost of the fair zone
+ allocation policy
+Message-ID: <20140627185700.GV7331@cmpxchg.org>
+References: <1403856880-12597-1-git-send-email-mgorman@suse.de>
+ <1403856880-12597-5-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <CAGXu5j+wPvAuo6pVc_XoJqv7CvW6yDf3YE6P7tFwtO9hfcUUsg@mail.gmail.com>
-References: <1403642893-23107-1-git-send-email-keescook@chromium.org>
- <1403642893-23107-6-git-send-email-keescook@chromium.org> <20140625135121.GB7892@redhat.com>
- <CAGXu5jJkFxh4K=40xuh6tu3kUf4oJM8Dry+4upBdRieW3FNLgw@mail.gmail.com>
- <CALCETrUBNmLnpa+LM91om2RSpR6SjupP-EdefzhU1Me4nv3Dfw@mail.gmail.com>
- <CAGXu5j+J11zJnuFR8bYKAXizAHhCx4R+uJE_QH6zC3q2udkpaQ@mail.gmail.com>
- <CALCETrVrs8sb19+UUqyFEpAFzTih5dkAwn-WpQjfgPcPJMpP5g@mail.gmail.com>
- <20140625173245.GA17695@redhat.com> <CALCETrUc65H+fn6dtMdYnB_xR39wcmgDdTbdR3fFRjyrndJhgA@mail.gmail.com>
- <20140625175136.GA18185@redhat.com> <CAGXu5jL17k6=GXju6x+eLU20FMwBHhnuRiHoQD1Bzj_EmpiKjg@mail.gmail.com>
- <CALCETrVNwhWSPNiBiZmgP1nD9zLJPTk6cH0yo=85rbxTPTYFRg@mail.gmail.com>
- <CAGXu5jLavA8FJD8m-1y4wO0uzh3qvvMmajAg0Lrr1Cn_Om3a3w@mail.gmail.com>
- <CALCETrUPxTxseJ=sOhD9CyJPtOqCR5sL8yx7KezLmLZcFSFNMA@mail.gmail.com> <CAGXu5j+wPvAuo6pVc_XoJqv7CvW6yDf3YE6P7tFwtO9hfcUUsg@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 27 Jun 2014 11:56:32 -0700
-Message-ID: <CALCETrWr+5n_w+q-fNc0G55eUteN57sm+7-bPCXKb7acmLu0Cg@mail.gmail.com>
-Subject: Re: [PATCH v8 5/9] seccomp: split mode set routines
-To: Kees Cook <keescook@chromium.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
-        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403856880-12597-5-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 27, 2014 at 11:52 AM, Kees Cook <keescook@chromium.org> wrote:
-> On Fri, Jun 27, 2014 at 11:39 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->> On Fri, Jun 27, 2014 at 11:33 AM, Kees Cook <keescook@chromium.org> wrote:
->>> On Wed, Jun 25, 2014 at 11:07 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->>>> On Wed, Jun 25, 2014 at 11:00 AM, Kees Cook <keescook@chromium.org> wrote:
->>>>> On Wed, Jun 25, 2014 at 10:51 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->>>>>> On 06/25, Andy Lutomirski wrote:
->>>>>>>
->>>>>>> On Wed, Jun 25, 2014 at 10:32 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->>>>>>> > On 06/25, Andy Lutomirski wrote:
->>>>>>> >>
->>>>>>> >> Write the filter, then smp_mb (or maybe a weaker barrier is okay),
->>>>>>> >> then set the bit.
->>>>>>> >
->>>>>>> > Yes, exactly, this is what I meant. Plas rmb() in __secure_computing().
->>>>>>> >
->>>>>>> > But I still can't understand the rest of your discussion about the
->>>>>>> > ordering we need ;)
->>>>>>>
->>>>>>> Let me try again from scratch.
->>>>>>>
->>>>>>> Currently there are three relevant variables: TIF_SECCOMP,
->>>>>>> seccomp.mode, and seccomp.filter.  __secure_computing needs
->>>>>>> seccomp.mode and seccomp.filter to be in sync, and it wants (but
->>>>>>> doesn't really need) TIF_SECCOMP to be in sync as well.
->>>>>>>
->>>>>>> My suggestion is to rearrange it a bit.  Move mode into seccomp.filter
->>>>>>> (so that filter == NULL implies no seccomp) and don't check
->>>>>
->>>>> This would require that we reimplement mode 1 seccomp via mode 2
->>>>> filters. Which isn't too hard, but may add complexity.
->>>>>
->>>>>>> TIF_SECCOMP in secure_computing.  Then turning on seccomp is entirely
->>>>>>> atomic except for the fact that the seccomp hooks won't be called if
->>>>>>> filter != NULL but !TIF_SECCOMP.  This removes all ordering
->>>>>>> requirements.
->>>>>>
->>>>>> Ah, got it, thanks. Perhaps I missed somehing, but to me this looks like
->>>>>> unnecessary complication at first glance.
->>>>>>
->>>>>> We alredy have TIF_SECCOMP, we need it anyway, and we should only care
->>>>>> about the case when this bit is actually set, so that we can race with
->>>>>> the 1st call of __secure_computing().
->>>>>>
->>>>>> Otherwise we are fine: we can miss the new filter anyway, ->mode can't
->>>>>> be changed it is already nonzero.
->>>>>>
->>>>>>> Alternatively, __secure_computing could still BUG_ON(!seccomp.filter).
->>>>>>> In that case, filter needs to be set before TIF_SECCOMP is set, but
->>>>>>> that's straightforward.
->>>>>>
->>>>>> Yep. And this is how seccomp_assign_mode() already works? It is called
->>>>>> after we change ->filter chain, it changes ->mode before set(TIF_SECCOMP)
->>>>>> just it lacks a barrier.
->>>>>
->>>>> Right, I think the best solution is to add the barrier. I was
->>>>> concerned that adding the read barrier in secure_computing would have
->>>>> a performance impact, though.
->>>>>
->>>>
->>>> I can't speak for ARM, but I think that all of the read barriers are
->>>> essentially free on x86.  (smp_mb is a very different story, but that
->>>> shouldn't be needed here.)
->>>
->>> It looks like SMP ARM issues dsb for rmb, which seems a bit expensive.
->>> http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0204g/CIHJFGFE.html
->>>
->>> If I skip the rmb in the secure_computing call before checking mode,
->>> it sounds like I run the risk of racing an out-of-order TIF_SECCOMP vs
->>> mode and filter. This seems unlikely to me, given an addition of the
->>> smp_mb__before_atomic() during the seccomp_assign_mode()? I guess I
->>> don't have a sense of how aggressively ARM might do data caching in
->>> this area. Could the other thread actually see TIF_SECCOMP get set but
->>> still have an out of date copy of seccomp.mode?
->>>
->>> I really want to avoid adding anything to the secure_computing()
->>> execution path. :(
->>
->> Hence my suggestion to make the ordering not matter.  No ordering
->> requirement, no barriers.
->
-> I may be misunderstanding something, but I think there's still an
-> ordering problem. We'll have TIF_SECCOMP already, so if we enter
-> secure_computing with a NULL filter, we'll kill the process.
->
-> Merging .mode and .filter would remove one of the race failure paths:
-> having TIF_SECCOMP and not having a mode set (leading to BUG). With
-> the merge, we could still race and land in the same place as have
-> TIF_SECCOMP and mode==2, but filter==NULL, leading to WARN and kill.
+On Fri, Jun 27, 2014 at 09:14:39AM +0100, Mel Gorman wrote:
+> The fair zone allocation policy round-robins allocations between zones
+> within a node to avoid age inversion problems during reclaim. If the
+> first allocation fails, the batch counts is reset and a second attempt
+> made before entering the slow path.
+> 
+> One assumption made with this scheme is that batches expire at roughly the
+> same time and the resets each time are justified. This assumption does not
+> hold when zones reach their low watermark as the batches will be consumed
+> at uneven rates.  Allocation failure due to watermark depletion result in
+> additional zonelist scans for the reset and another watermark check before
+> hitting the slowpath.
+> 
+> This patch makes a number of changes that should reduce the overall cost
+> 
+> o Do not apply the fair zone policy to small zones such as DMA
+> o Abort the fair zone allocation policy once remote or small zones are
+>   encountered
+> o Use a simplier scan when resetting NR_ALLOC_BATCH
+> o Use a simple flag to identify depleted zones instead of accessing a
+>   potentially write-intensive cache line for counters
+> o Track zones who met the watermark but failed the NR_ALLOC_BATCH check
+>   to avoid doing a rescan of the zonelist when the counters are reset
+> 
+> On UMA machines, the effect is marginal. Even judging from system CPU
+> usage it's small for the tiobench test
+> 
+>           3.16.0-rc2  3.16.0-rc2
+>             checklow    fairzone
+> User          396.24      396.23
+> System        395.23      391.50
+> Elapsed      5182.65     5165.49
 
-You could just make secure_computing do nothing if filter == NULL.
-It's probably faster to test that than TIF_SECCOMP anyway, since you
-need to read the filter cacheline regardless, and testing a regular
-variable for non-NULLness might be faster than an atomic bit test
-operation.  (Or may not -- I don't know.)
+The next patch reports fairzone at 5182.86 again, so I'm guessing this
+patch is not actually reliably reducing the runtime to 5165.49, that's
+just runtime variation.
 
->
-> I guess the question is how large is the race risk on ARM? Is it
-> possible to have TIF_SECCOMP that far out of sync for the thread?
+> And the number of pages allocated from each zone is comparable
+> 
+>                             3.16.0-rc2  3.16.0-rc2
+>                               checklow    fairzone
+> DMA allocs                           0           0
+> DMA32 allocs                   7374217     7920241
+> Normal allocs                999277551   996568115
 
-Dunno.  I don't like leaving crashy known races around.
+Wow, the DMA32 zone gets less than 1% of the allocations.  What are
+the zone sizes in this machine?
 
---Andy
+> @@ -1908,6 +1912,20 @@ static bool zone_allows_reclaim(struct zone *local_zone, struct zone *zone)
+>  
+>  #endif	/* CONFIG_NUMA */
+>  
+> +static void reset_alloc_batches(struct zone *preferred_zone)
+> +{
+> +	struct zone *zone = preferred_zone->zone_pgdat->node_zones;
+> +
+> +	do {
+> +		if (!zone_is_fair_depleted(zone))
+> +			continue;
+> +		mod_zone_page_state(zone, NR_ALLOC_BATCH,
+> +			high_wmark_pages(zone) - low_wmark_pages(zone) -
+> +			atomic_long_read(&zone->vm_stat[NR_ALLOC_BATCH]));
+> +		zone_clear_flag(zone, ZONE_FAIR_DEPLETED);
+> +	} while (zone++ != preferred_zone);
 
+get_page_from_freelist() looks at the batches in zonelist order, why
+reset them in node_zones order?  Sure they are the same for all the
+cases we care about now, but it's a non-obvious cross-depedency...
 
+Does this even make a measurable difference?  It's a slow path after
+you fixed the excessive resets below.
 
->
-> -Kees
->
-> --
-> Kees Cook
-> Chrome OS Security
+> @@ -2073,8 +2093,25 @@ this_zone_full:
+>  		 * for !PFMEMALLOC purposes.
+>  		 */
+>  		page->pfmemalloc = !!(alloc_flags & ALLOC_NO_WATERMARKS);
+> +		return page;
+> +	}
+>  
+> -	return page;
+> +	if ((alloc_flags & ALLOC_FAIR) && nr_fair_skipped) {
+> +		alloc_flags &= ~ALLOC_FAIR;
+> +		zonelist_rescan = true;
+> +		reset_alloc_batches(preferred_zone);
+> +	}
 
+Yes, it happens quite often that get_page_from_freelist() fails due to
+watermarks while all the batches are fine, so resetting the batches
+and rescanning the zonelist is kind of a waste of time.  However, in
+this situation, we are waiting for kswapd to make progress on the
+watermarks, and it doesn't really matter where we are wasting time...
 
+In this micro benchmark that doesn't really do much besides allocating
+and reclaiming IO-less cache pages, the performance difference is less
+than 1% with this patch applied:
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+old: 19.835353264 seconds time elapsed                                          ( +-  0.39% )
+new: 19.587258161 seconds time elapsed                                          ( +-  0.34% )
+
+But overall I agree with this particular change.
+
+> @@ -2748,33 +2763,18 @@ retry_cpuset:
+>  		goto out;
+>  	classzone_idx = zonelist_zone_idx(preferred_zoneref);
+>  
+> +	if (zonelist->fair_enabled)
+> +		alloc_flags |= ALLOC_FAIR;
+>  #ifdef CONFIG_CMA
+>  	if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
+>  		alloc_flags |= ALLOC_CMA;
+>  #endif
+> -retry:
+>  	/* First allocation attempt */
+>  	page = get_page_from_freelist(gfp_mask|__GFP_HARDWALL, nodemask, order,
+>  			zonelist, high_zoneidx, alloc_flags,
+>  			preferred_zone, classzone_idx, migratetype);
+>  	if (unlikely(!page)) {
+>  		/*
+> -		 * The first pass makes sure allocations are spread
+> -		 * fairly within the local node.  However, the local
+> -		 * node might have free pages left after the fairness
+> -		 * batches are exhausted, and remote zones haven't
+> -		 * even been considered yet.  Try once more without
+> -		 * fairness, and include remote zones now, before
+> -		 * entering the slowpath and waking kswapd: prefer
+> -		 * spilling to a remote zone over swapping locally.
+> -		 */
+
+I wrote this comment, so I don't know how helpful it is to others, but
+the retry logic in get_page_from_freelist() seems a little naked
+without any explanation.
+
+> -		if (alloc_flags & ALLOC_FAIR) {
+> -			reset_alloc_batches(zonelist, high_zoneidx,
+> -					    preferred_zone);
+> -			alloc_flags &= ~ALLOC_FAIR;
+> -			goto retry;
+> -		}
+> -		/*
+>  		 * Runtime PM, block IO and its error handling path
+>  		 * can deadlock because I/O on the device might not
+>  		 * complete.
+> @@ -3287,10 +3287,18 @@ void show_free_areas(unsigned int filter)
+>  	show_swap_cache_info();
+>  }
+>  
+> -static void zoneref_set_zone(struct zone *zone, struct zoneref *zoneref)
+> +static int zoneref_set_zone(pg_data_t *pgdat, struct zone *zone,
+> +			struct zoneref *zoneref, struct zone *preferred_zone)
+>  {
+> +	int zone_type = zone_idx(zone);
+> +	bool fair_enabled = zone_local(zone, preferred_zone);
+> +	if (zone_type == 0 &&
+> +			zone->managed_pages < (pgdat->node_present_pages >> 4))
+> +		fair_enabled = false;
+
+This needs a comment.
+
+>  	zoneref->zone = zone;
+> -	zoneref->zone_idx = zone_idx(zone);
+> +	zoneref->zone_idx = zone_type;
+> +	return fair_enabled;
+>  }
+>  
+>  /*
+> @@ -3303,17 +3311,26 @@ static int build_zonelists_node(pg_data_t *pgdat, struct zonelist *zonelist,
+>  {
+>  	struct zone *zone;
+>  	enum zone_type zone_type = MAX_NR_ZONES;
+> +	struct zone *preferred_zone = NULL;
+> +	int nr_fair = 0;
+>  
+>  	do {
+>  		zone_type--;
+>  		zone = pgdat->node_zones + zone_type;
+>  		if (populated_zone(zone)) {
+> -			zoneref_set_zone(zone,
+> -				&zonelist->_zonerefs[nr_zones++]);
+> +			if (!preferred_zone)
+> +				preferred_zone = zone;
+> +
+> +			nr_fair += zoneref_set_zone(pgdat, zone,
+> +				&zonelist->_zonerefs[nr_zones++],
+> +				preferred_zone);
+
+Passing preferred_zone to determine locality seems pointless when you
+walk the zones of a single node.
+
+And the return value of zoneref_set_zone() is fairly unexpected.
+
+It's probably better to determine fair_enabled in the callsite, that
+would fix both problems, and write a separate helper that tests if a
+zone is eligible for fair treatment (type && managed_pages test).
+
+>  			check_highest_zone(zone_type);
+>  		}
+>  	} while (zone_type);
+>  
+> +	if (nr_fair <= 1)
+> +		zonelist->fair_enabled = false;
+> +
+>  	return nr_zones;
+>  }
+>  
+> @@ -3538,8 +3555,9 @@ static void build_zonelists_in_zone_order(pg_data_t *pgdat, int nr_nodes)
+>  {
+>  	int pos, j, node;
+>  	int zone_type;		/* needs to be signed */
+> -	struct zone *z;
+> +	struct zone *z, *preferred_zone = NULL;
+>  	struct zonelist *zonelist;
+> +	int nr_fair = 0;
+>  
+>  	zonelist = &pgdat->node_zonelists[0];
+>  	pos = 0;
+> @@ -3547,15 +3565,25 @@ static void build_zonelists_in_zone_order(pg_data_t *pgdat, int nr_nodes)
+>  		for (j = 0; j < nr_nodes; j++) {
+>  			node = node_order[j];
+>  			z = &NODE_DATA(node)->node_zones[zone_type];
+> +			if (!preferred_zone)
+> +				preferred_zone = z;
+>  			if (populated_zone(z)) {
+> -				zoneref_set_zone(z,
+> -					&zonelist->_zonerefs[pos++]);
+> +				nr_fair += zoneref_set_zone(pgdat, z,
+> +					&zonelist->_zonerefs[pos++],
+> +					preferred_zone);
+>  				check_highest_zone(zone_type);
+>  			}
+>  		}
+>  	}
+>  	zonelist->_zonerefs[pos].zone = NULL;
+>  	zonelist->_zonerefs[pos].zone_idx = 0;
+> +
+> +	/*
+> +	 * For this policy, the fair zone allocation policy is disabled as the
+> +	 * stated priority is to preserve lower zones, not balance them fairly.
+> +	 */
+> +	if (nr_fair == 1 || nr_online_nodes > 1)
+> +		zonelist->fair_enabled = false;
+>  }
+>  
+>  static int default_zonelist_order(void)
