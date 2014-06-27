@@ -1,135 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752752AbaF0Gum (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 02:50:42 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:44237 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751467AbaF0Gul (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 02:50:41 -0400
-Date: Fri, 27 Jun 2014 07:50:36 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes
-Message-ID: <alpine.DEB.2.00.1406270748210.22306@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752787AbaF0Gw4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 02:52:56 -0400
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:60168 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751598AbaF0Gwz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 02:52:55 -0400
+Date: Thu, 26 Jun 2014 23:52:45 -0700
+From: Martin Lau <kafai@fb.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: <linux-kernel@vger.kernel.org>, <clm@fb.com>
+Subject: Re: [PATCH] ring-buffer: Fix polling on trace_pipe
+Message-ID: <20140627065243.GA2826@devbig242.prn2.facebook.com>
+References: <20140610060637.GA14045@devbig242.prn2.facebook.com>
+ <20140610114915.5fe24841@gandalf.local.home>
+ <20140611055814.GA30265@devbig242.prn2.facebook.com>
+ <20140626183445.GA2663@devbig242.prn2.facebook.com>
+ <20140626205327.5b526302@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/mixed; boundary="45Z9DzgjV8m4Oswq"
+Content-Disposition: inline
+In-Reply-To: <20140626205327.5b526302@gandalf.local.home>
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-06-27_03:2014-06-26,2014-06-27,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=22.6900859407804
+ compositescore=0.997695897463551 urlsuspect_oldscore=0.997695897463551
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=64355
+ rbsscore=0.997695897463551 spamscore=0
+ recipient_to_sender_domain_totalscore=6 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1406270086
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--45Z9DzgjV8m4Oswq
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
 
-Hi Linus,
+Hi Steve,
 
-exynos, i915 and msm fixes and one core fix.
+I retried the test program (with the kernel patch).  It does block from
+time to time.  I spotted the ee.events is not set to EPOLLIN before
+calling epll_ctl(eft, EPOLL_CTL_ADD,...).  I fixed it and ran
+the test in a bash-loop.
 
-exynos: hdmi power off and mixer issues,
-msm: iommu, build fixes,
-i915: regression races and warns!
+I have the kafai-2 version attached (with some more logging in case
+if it still blocks).
 
-Dave.
+Can you retry?
 
-The following changes since commit a497c3ba1d97fc69c1e78e7b96435ba8c2cb42ee:
+Thanks,
+Martin
 
-  Linux 3.16-rc2 (2014-06-21 19:02:54 -1000)
+On Thu, Jun 26, 2014 at 08:53:27PM -0400, Steven Rostedt wrote:
+> On Thu, 26 Jun 2014 11:34:46 -0700
+> Martin Lau <kafai@fb.com> wrote:
+> 
+> > Hi Steve,
+> > 
+> > Can the modified test program reproduce the problem in your test setup?
+> 
+> Ah sorry, got distracted by other work.
+> 
+> OK, I just tried it out, and here's my results:
+> 
+> I ran you code with my current kernel and this is what I got:
+> 
+> # ./ftrace-test-epoll-kafai 
+>            <...>-3183  [002] ...1    81.777891: tracing_mark_write:
+> some data 3183: waitting for more data......
+> 3184: written more data
+> 
+> And it just hung there.
+> 
+> 
+> Then I applied your patch, compiled and booted it, and ran the test
+> again, and I got this:
+> 
+> # ./ftrace-test-epoll-kafai
+> 
+> It just hung there. No forward progress.
+> 
+> I don't think that was the result you intended.
+> 
+> -- Steve
+> 
+> 
 
-are available in the git repository at:
+--45Z9DzgjV8m4Oswq
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: attachment; filename="ftrace-test-epoll-kafai-2.c"
 
-  git://people.freedesktop.org/~airlied/linux drm-fixes
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/epoll.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <assert.h>
 
-for you to fetch changes up to 0fcb70c30131aac40f62ba13f89963d5c13b48a7:
+static const char * debugfs_list[] = {
+	"/debug/tracing",
+	"/sys/kernel/debug/tracing",
+	"/d/tracing",
+	NULL,
+};
 
-  Merge tag 'drm-intel-fixes-2014-06-26' of git://anongit.freedesktop.org/drm-intel into drm-fixes (2014-06-27 15:04:06 +1000)
+static const char *debugfs;
+static int markfd;
+static int trace_pipe_fd;
 
-----------------------------------------------------------------
+static void alog(const char *name, int ret)
+{
+	printf("%d: %s: %d\n", getpid(), name, ret);
+}
 
-Andrzej Hajda (1):
-      drm/exynos: disable unused windows on apply
+static const char *find_debugfs(void)
+{
+	struct stat st;
+	int i;
+	int r;
 
-Chris Wilson (2):
-      drm/i915: Only mark the ctx as initialised after a SET_CONTEXT operation
-      drm/i915: Hold the table lock whilst walking the file's idr and counting the objects in debugfs
+	for (i = 0; debugfs_list[i]; i++) {
+		r = stat(debugfs_list[i], &st);
+		if (r < 0)
+			continue;
+		if (S_ISDIR(st.st_mode))
+			return debugfs_list[i];
+	}
+	return NULL;
+}
 
-Dan Carpenter (1):
-      drm/exynos: change zero to NULL for sparse
+static char * make_path(const char *file)
+{
+	char *path;
+	int size;
 
-Dave Airlie (3):
-      Merge branch 'msm-fixes-3.16' of git://people.freedesktop.org/~robclark/linux into drm-fixes
-      Merge branch 'exynos-drm-fixes' of git://git.kernel.org/.../daeinki/drm-exynos into drm-fixes
-      Merge tag 'drm-intel-fixes-2014-06-26' of git://anongit.freedesktop.org/drm-intel into drm-fixes
+	size = strlen(debugfs) + strlen(file) + 2;
+	path = malloc(size);
+	if (!path) {
+		perror("malloc");
+		exit(-1);
+	}
+	sprintf(path, "%s/%s", debugfs, file);
+	return path;
+}
 
-Fabian Frederick (1):
-      drm/msm: use PAGE_ALIGNED instead of IS_ALIGNED(PAGE_SIZE)
+static void mark_write(const char *str)
+{
+	int ret;
+	ret = write(markfd, str, strlen(str));
+	alog("write(markfd)", ret);
+}
 
-Imre Deak (1):
-      drm/i915: cache hw power well enabled state
+static void read_trace_pipe(void)
+{
+	char buf[1024];
+	int r;
 
-Inki Dae (1):
-      drm/exynos: hdmi: fix power order issue
+	while ((r = read(trace_pipe_fd, buf, 1024)) > 0)
+		printf("%.*s", r, buf);
+}
 
-Jani Nikula (1):
-      drm/i915: default to having backlight if VBT not available
+int main (int argc, char **argv)
+{
+	struct epoll_event ee;
+	char *marker;
+	char *pipe;
+	int efd;
+	int ret;
+	pid_t dwrt_pid;
 
-Matwey V. Kornilov (1):
-      drm/msm: Replace type of paddr to uint32_t.
+	debugfs = find_debugfs();
+	if (!debugfs) {
+		fprintf(stderr, "Could not find debugfs\n");
+		exit(-1);
+	}
 
-Peter Griffin (1):
-      drm/msm: storage class should be before const qualifier
+	marker = make_path("trace_marker");
+	pipe = make_path("trace_pipe");
 
-Rahul Sharma (5):
-      drm/exynos: set power state variable after enabling clocks and power
-      drm/exynos: stop mixer before gating clocks during poweroff
-      drm/exynos: allow multiple layer updates per vsync for mixer
-      drm/exynos: soft reset mixer before reconfigure after power-on
-      drm/exynos: enable vsync interrupt while waiting for vblank
+	markfd = open(marker, O_WRONLY);
+	if (markfd < 0) {
+		perror("marker");
+		exit(-1);
+	}
+	trace_pipe_fd = open(pipe, O_RDONLY|O_NONBLOCK);
+	if (trace_pipe_fd < 0) {
+		perror("trace_pipe");
+		exit(-1);
+	}
 
-Rodrigo Vivi (1):
-      drm/i915: BDW: Adding Reserved PCI IDs.
+	efd = epoll_create(1);
+	if (efd < 0) {
+		perror("epoll_create");
+		exit(-1);
+	}
 
-Sachin Kamat (1):
-      drm/exynos: Fix de-registration ordering
+	mark_write("some data");
+	memset(&ee, 0, sizeof(ee));
+	ee.events = EPOLLIN;
+	ret = epoll_ctl(efd, EPOLL_CTL_ADD, trace_pipe_fd, &ee);
+	if (ret < 0) {
+		perror("epoll_ctl");
+		exit(-1);
+	}
+	alog("waiting data......", 0);
+	ret = epoll_wait(efd, &ee, 1, -1);
+	alog("epoll_wait()", ret);
+	read_trace_pipe();
+	dwrt_pid = fork();
+	assert(dwrt_pid != -1);
+	if (dwrt_pid == 0) {
+		sleep(10);
+		mark_write("more data");
+	} else {
+		alog("waiting form more data......", 0);
+		ret = epoll_wait(efd, &ee, 1, -1);
+		alog("epoll_wait()", ret);
+		read_trace_pipe();
+		wait(NULL);
+	}
+	return 0;
+}
 
-Shobhit Kumar (1):
-      drm/i915: vlv_prepare_pll is only needed in case of non DSI interfaces
-
-Stephane Viau (2):
-      drm/msm/hdmi: set hdp clock rate before prepare_enable
-      drm/msm: fix IOMMU cleanup for -EPROBE_DEFER
-
-Tomasz Figa (1):
-      drm/exynos: dpi: Fix NULL pointer dereference with legacy bindings
-
-Zhaowei Yuan (1):
-      drm: fix NULL pointer access by wrong ioctl
-
- drivers/gpu/drm/drm_drv.c                 |  3 +-
- drivers/gpu/drm/exynos/exynos_drm_dpi.c   |  2 +-
- drivers/gpu/drm/exynos/exynos_drm_drv.c   |  8 ++---
- drivers/gpu/drm/exynos/exynos_drm_drv.h   |  2 +-
- drivers/gpu/drm/exynos/exynos_drm_fimd.c  |  2 ++
- drivers/gpu/drm/exynos/exynos_hdmi.c      | 19 ++++++++++++
- drivers/gpu/drm/exynos/exynos_mixer.c     | 50 +++++++++++++++++++++----------
- drivers/gpu/drm/exynos/regs-mixer.h       |  1 +
- drivers/gpu/drm/i915/i915_debugfs.c       |  2 ++
- drivers/gpu/drm/i915/i915_drv.h           |  2 ++
- drivers/gpu/drm/i915/i915_gem_context.c   |  8 +++--
- drivers/gpu/drm/i915/intel_bios.c         |  6 ++--
- drivers/gpu/drm/i915/intel_display.c      | 13 ++++----
- drivers/gpu/drm/i915/intel_drv.h          |  4 +--
- drivers/gpu/drm/i915/intel_pm.c           | 37 ++++++++++-------------
- drivers/gpu/drm/msm/hdmi/hdmi.c           |  2 ++
- drivers/gpu/drm/msm/hdmi/hdmi.h           |  1 +
- drivers/gpu/drm/msm/hdmi/hdmi_connector.c |  8 +++++
- drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.c   | 22 ++++++++++----
- drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.h   |  1 +
- drivers/gpu/drm/msm/msm_drv.c             |  2 +-
- drivers/gpu/drm/msm/msm_fbdev.c           |  2 +-
- drivers/gpu/drm/msm/msm_gem.c             |  6 ++++
- drivers/gpu/drm/msm/msm_iommu.c           | 23 ++++++++++++--
- drivers/gpu/drm/msm/msm_mmu.h             |  1 +
- include/drm/i915_pciids.h                 | 12 ++++++--
- 26 files changed, 169 insertions(+), 70 deletions(-)
- mode change 100644 => 100755 drivers/gpu/drm/drm_drv.c
+--45Z9DzgjV8m4Oswq--
