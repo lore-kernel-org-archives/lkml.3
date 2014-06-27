@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762AbaF0GLi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 02:11:38 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:16990 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752652AbaF0GL1 (ORCPT
+	id S1752802AbaF0GLy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 02:11:54 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:29651 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751467AbaF0GLY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 02:11:27 -0400
-X-AuditID: cbfee68d-b7fd46d000005f36-a1-53ad0b0c1576
+	Fri, 27 Jun 2014 02:11:24 -0400
+X-AuditID: cbfee690-b7fb56d000003439-24-53ad0b0ae340
 From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
 To: linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org
 Cc: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
         dianders@chromium.org, gregkh@linuxfoundation.org,
-        naveenkrishna.ch@gmail.com, cpgs@samsung.com
-Subject: [PATCH v2 2/2] ARM: DTS: Add thermistor dts fragment used by exynos
- based Peach boards
-Date: Fri, 27 Jun 2014 11:38:15 +0530
-Message-id: <1403849295-29538-3-git-send-email-ch.naveen@samsung.com>
+        naveenkrishna.ch@gmail.com, cpgs@samsung.com,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Subject: [PATCH v2 1/2] ARM: DTS: use new compatible string for thermistors in
+ trats2
+Date: Fri, 27 Jun 2014 11:38:14 +0530
+Message-id: <1403849295-29538-2-git-send-email-ch.naveen@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1403849295-29538-1-git-send-email-ch.naveen@samsung.com>
 References: <1403849295-29538-1-git-send-email-ch.naveen@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOLMWRmVeSWpSXmKPExsWyRsSkRpeHe22wwdOTehYvD2lazD9yjtXi
-	7LKDbBbNi9ezWcw78o7F4vKuOWwWM87vY7JYtO0/swOHx+yGiyweO2fdZffYP3cNu0ffllWM
-	Hp83yQWwRnHZpKTmZJalFunbJXBl/N7wiL3ggWRFz6rVrA2MXaJdjJwcEgImEn9mfWGHsMUk
-	Ltxbz9bFyMUhJLCUUWLfnG9ACQ6wojOrpUFqhASmM0q8mVQEUdPPJDFr1T4mkASbgJnEwUWr
-	wQaJCDhK7JjzjwmkiFlgAaNE667VYEXCAokSz5qOgA1lEVCVaPyiAGLyCrhKXFwfCrFKQWLO
-	JBuQYk4BN4l3bR+YIda6Svx8v5MFZKKEwCJ2iR/v2sEmsggISHybfIgFoldWYtMBZohXJCUO
-	rrjBMoFReAEjwypG0dSC5ILipPQiQ73ixNzi0rx0veT83E2MwEA//e9Z7w7G2wesDzEmA42b
-	yCwlmpwPjJS8knhDYzMjC1MTU2Mjc0sz0oSVxHmTHiYFCQmkJ5akZqemFqQWxReV5qQWH2Jk
-	4uCUamBkcbQzNvx3NaDnwcV3Mhd/qQWft+v5L1mhs7XOJvPl4fV9GY0r1T0Xq8tWXP9gH3l9
-	aqbozS2q4RrrJ1Q9M1h2VV3/vVjO9rtuNx5nZp7ZseL2TLUFP7KD9oqJp7WoLjhic/KlZcMp
-	48KIx8r+bjFZjrnn+Yx4HUNmp9r/3fq82X3qRqn4lReUWIozEg21mIuKEwHtlu3yigIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGIsWRmVeSWpSXmKPExsVy+t9jQV0e7rXBBs/Xq1m8PKRpMf/IOVaL
-	s8sOslk0L17PZjHvyDsWi8u75rBZzDi/j8li0bb/zA4cHrMbLrJ47Jx1l91j/9w17B59W1Yx
-	enzeJBfAGtXAaJORmpiSWqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6Dr
-	lpkDdIuSQlliTilQKCCxuFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCGMeP3hkfsBQ8kK3pW
-	rWZtYOwS7WLk4JAQMJE4s1q6i5ETyBSTuHBvPRuILSQwnVHizaSiLkYuILufSWLWqn1MIAk2
-	ATOJg4tWs4PYIgKOEjvm/GMCKWIWWMAo0bprNViRsECixLOmI+wgC1gEVCUavyiAmLwCrhIX
-	14dCrFWQmDPJBqSYU8BN4l3bB2aIta4SP9/vZJnAyLuAkWEVo2hqQXJBcVJ6rqFecWJucWle
-	ul5yfu4mRnAcPZPawbiyweIQowAHoxIPr4HHmmAh1sSy4srcQ4wSHMxKIrwv7wGFeFMSK6tS
-	i/Lji0pzUosPMZoCnTSRWUo0OR8Y43kl8YbGJuamxqaWJhYmZpZK4rwHWq0DhQTSE0tSs1NT
-	C1KLYPqYODilGhhP/g56dnpB9YPUw/+Mzrb4/a/xvune8mXnrOPfxeerGATzxBeo8G8L+7n2
-	/JTD/X4r7BJ7/gcefikmlBp+4HG1wNnb6u+1pieEcfzPWJEy8RbrjryaF284Z9pVz7XWmak7
-	S2UCp0vrHfOkOqe8i7pxi2vVs09Y7il7yTThsukkmyZtUxE5M08lluKMREMt5qLiRAC0JQUh
-	uQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPLMWRmVeSWpSXmKPExsWyRsSkTpeLe22wwY4NEhYvD2laXP/ynNVi
+	/pFzrBZnlx1ks2hevJ7NYt6RdywWl3fNYbOYcX4fk8Wibf+ZHTg9ZjdcZPHYOesuu8f+uWvY
+	Pfq2rGL0+LxJLoA1issmJTUnsyy1SN8ugStj8z6DgtucFS/Wf2FrYPzO3sXIySEhYCKx7+Ji
+	NghbTOLCvfVANheHkMBSRokr14+zwhR1n1nEBJGYziixeM11qKp+Jol701+BtbMJmEkcXLQa
+	bKyIgKPEjjn/wDqYBY4xSuybN58RJCEsEC7xavFtJhCbRUBV4nf/cRYQm1fAVWLKg/1A6ziA
+	1ilIzJlkAxLmFHCTeNf2gRnEFgIq+fl+JwvITAmBVewSm6dfY4GYIyDxbfIhFoheWYlNB5gh
+	rpaUOLjiBssERuEFjAyrGEVTC5ILipPSi0z0ihNzi0vz0vWS83M3MQID//S/ZxN2MN47YH2I
+	MRlo3ERmKdHkfGDk5JXEGxqbGVmYmpgaG5lbmpEmrCTOq/YoKUhIID2xJDU7NbUgtSi+qDQn
+	tfgQIxMHp1QDYwYDc2+s1t8nbC5F3A/nhG5kzj14y/zVoQUXvku4m/Zu3RaQ76r/o2qjZTnr
+	gcree+Urq5dOkdTc+8zZvHPnxmtrq9+2SW9kzCnnslIzWecif2bG7Wmu4uEn03q+vH07bSYD
+	c6rZhFdc590rHVItHc9rnbo18/llNmbOrP1xnVFL9S84BqwWVWIpzkg01GIuKk4EAPo/uG2S	AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHIsWRmVeSWpSXmKPExsVy+t9jQV0u7rXBBste8Vu8PKRpcf3Lc1aL
+	+UfOsVqcXXaQzaJ58Xo2i3lH3rFYXN41h81ixvl9TBaLtv1nduD0mN1wkcVj56y77B77565h
+	9+jbsorR4/MmuQDWqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRb
+	JRefAF23zBygg5QUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhDWMGZv3GRTc
+	5qx4sf4LWwPjd/YuRk4OCQETie4zi5ggbDGJC/fWs3UxcnEICUxnlFi85jqU088kcW/6KzaQ
+	KjYBM4mDi1aDdYsIOErsmPOPCaSIWeAYo8S+efMZQRLCAuESrxbfBhvLIqAq8bv/OAuIzSvg
+	KjHlwX7WLkYOoHUKEnMm2YCEOQXcJN61fWAGsYWASn6+38kygZF3ASPDKkbR1ILkguKk9FxD
+	veLE3OLSvHS95PzcTYzguHomtYNxZYPFIUYBDkYlHl4DjzXBQqyJZcWVuYcYJTiYlUR4X94D
+	CvGmJFZWpRblxxeV5qQWH2I0BTpqIrOUaHI+MObzSuINjU3MTY1NLU0sTMwslcR5D7RaBwoJ
+	pCeWpGanphakFsH0MXFwSjUwOgts65T2ZJaLCGBPqOrVjO/5pzXl0mppuWze7mTHnsC53q/3
+	LN0YHOcQ0fj56zv+ttAcPx/NcvkT4pn/+IX5WlYWudpyRa2eYOES4s+29zPfKVVRL8ZVBVOE
+	rjx+M8vqA5/0nPyYDe+Wmm5YwfB+0/XQiVUKTZ0Gx7LSugsOrLldyap16Z0SS3FGoqEWc1Fx
+	IgBTNOH7wQIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -51,122 +52,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch creates a thermistor fragment carrying the NTC Thermistor
-nodes as children of the IIO based ADC.
+As Murata Manufactures the NTC based thermistors. The vendor
+name in the compatibility is preposed to change to "murata"
 
-This fragment is included in exynos5420-peach-pit.dts and
-exynos5800-peach-pi.dts.
+This patch uses the new compatibility string in exynos4412 based
+Trats2 board.
 
 Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Cc: Chanwoo Choi <cw00.choi@samsung.com>
+Reviewed-by: Chanwoo Choi <cw00.choi@samsung.com>
 ---
-Changes since v1:
-As per the comments https://lkml.org/lkml/2014/6/26/271
-and discussion about fragments vs common dtsi
-@ http://patchwork.ozlabs.org/patch/362633/.
+Changes since v1: None
 
-Created a thermistors fragment instead of a common dtsi file
+ arch/arm/boot/dts/exynos4412-trats2.dts |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-cat sysfs entries exported by hwmon for 4 thermistors
-and verified the values on Peach pit and pi boards.
-
- arch/arm/boot/dts/cros-adc-thermistors.dtsi |   44 +++++++++++++++++++++++++++
- arch/arm/boot/dts/exynos5420-peach-pit.dts  |    6 ++++
- arch/arm/boot/dts/exynos5800-peach-pi.dts   |    6 ++++
- 3 files changed, 56 insertions(+)
- create mode 100644 arch/arm/boot/dts/cros-adc-thermistors.dtsi
-
-diff --git a/arch/arm/boot/dts/cros-adc-thermistors.dtsi b/arch/arm/boot/dts/cros-adc-thermistors.dtsi
-new file mode 100644
-index 0000000..17fce72
---- /dev/null
-+++ b/arch/arm/boot/dts/cros-adc-thermistors.dtsi
-@@ -0,0 +1,44 @@
-+/*
-+ * Thermistor dts fragment for devices that use Thermistors as
-+ * children of the IIO based ADC.
-+ *
-+ * Currently, used by Exynos5420 based Peach PIT and
-+ * Exynos5800 based Peach PI.
-+ *
-+ * Copyright (c) 2014 Samsung Electronics Co., Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+*/
-+
-+&adc {
-+	ncp15wb473@3 {
-+		compatible = "murata,ncp15wb473";
-+		pullup-uv = <1800000>;
-+		pullup-ohm = <47000>;
-+		pulldown-ohm = <0>;
-+		io-channels = <&adc 3>;
-+	};
-+	ncp15wb473@4 {
-+		compatible = "murata,ncp15wb473";
-+		pullup-uv = <1800000>;
-+		pullup-ohm = <47000>;
-+		pulldown-ohm = <0>;
-+		io-channels = <&adc 4>;
-+	};
-+	ncp15wb473@5 {
-+		compatible = "murata,ncp15wb473";
-+		pullup-uv = <1800000>;
-+		pullup-ohm = <47000>;
-+		pulldown-ohm = <0>;
-+		io-channels = <&adc 5>;
-+	};
-+	ncp15wb473@6 {
-+		compatible = "murata,ncp15wb473";
-+		pullup-uv = <1800000>;
-+		pullup-ohm = <47000>;
-+		pulldown-ohm = <0>;
-+		io-channels = <&adc 6>;
-+	};
-+};
-diff --git a/arch/arm/boot/dts/exynos5420-peach-pit.dts b/arch/arm/boot/dts/exynos5420-peach-pit.dts
-index d124394..7c64009 100644
---- a/arch/arm/boot/dts/exynos5420-peach-pit.dts
-+++ b/arch/arm/boot/dts/exynos5420-peach-pit.dts
-@@ -101,6 +101,11 @@
+diff --git a/arch/arm/boot/dts/exynos4412-trats2.dts b/arch/arm/boot/dts/exynos4412-trats2.dts
+index 11967f4..d35755a 100644
+--- a/arch/arm/boot/dts/exynos4412-trats2.dts
++++ b/arch/arm/boot/dts/exynos4412-trats2.dts
+@@ -771,7 +771,7 @@
  	};
- };
  
-+&adc {
-+	status = "okay";
-+	vdd-supply = <&ldo9_reg>;
-+};
-+
- &dp {
- 	status = "okay";
- 	pinctrl-names = "default";
-@@ -775,3 +780,4 @@
- };
- 
- #include "cros-ec-keyboard.dtsi"
-+#include "cros-adc-thermistors.dtsi"
-diff --git a/arch/arm/boot/dts/exynos5800-peach-pi.dts b/arch/arm/boot/dts/exynos5800-peach-pi.dts
-index c36c9ce..4fd48b9 100644
---- a/arch/arm/boot/dts/exynos5800-peach-pi.dts
-+++ b/arch/arm/boot/dts/exynos5800-peach-pi.dts
-@@ -99,6 +99,11 @@
+ 	thermistor-ap@0 {
+-		compatible = "ntc,ncp15wb473";
++		compatible = "murata,ncp15wb473";
+ 		pullup-uv = <1800000>;	 /* VCC_1.8V_AP */
+ 		pullup-ohm = <100000>;	 /* 100K */
+ 		pulldown-ohm = <100000>; /* 100K */
+@@ -779,7 +779,7 @@
  	};
- };
  
-+&adc {
-+	status = "okay";
-+	vdd-supply = <&ldo9_reg>;
-+};
-+
- &dp {
- 	status = "okay";
- 	pinctrl-names = "default";
-@@ -773,3 +778,4 @@
- };
- 
- #include "cros-ec-keyboard.dtsi"
-+#include "cros-adc-thermistors.dtsi"
+ 	thermistor-battery@1 {
+-		compatible = "ntc,ncp15wb473";
++		compatible = "murata,ncp15wb473";
+ 		pullup-uv = <1800000>;	 /* VCC_1.8V_AP */
+ 		pullup-ohm = <100000>;	 /* 100K */
+ 		pulldown-ohm = <100000>; /* 100K */
 -- 
 1.7.9.5
 
