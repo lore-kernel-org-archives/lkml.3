@@ -1,34 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752384AbaF0GWa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 02:22:30 -0400
-Received: from 184-82-29-211.superslickydeals.com ([184.82.29.211]:40272 "EHLO
-	smtp1.qihuxinsheng.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1750729AbaF0GW3 (ORCPT
+	id S1752711AbaF0GYM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 02:24:12 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:46009 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752344AbaF0GYJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 02:22:29 -0400
-Date: Fri, 27 Jun 2014 14:22:25 +0800
-From: "Emma" <kingbirdsales07@live.cn>
-Reply-To: sales@kingbirdmachinery.com
-Reply-To: kingbirdsales07@live.cn
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: SUPPLY MARINE PEOPELLER
-Message-ID: <201406271422255877914@smtp1.qihuxinsheng.com>
-X-Mailer: Foxmail 6, 10, 201, 20 [cn]
+	Fri, 27 Jun 2014 02:24:09 -0400
+Date: Fri, 27 Jun 2014 07:24:06 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Matt Fleming <matt.fleming@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2 v2] efilinux: set ext_ramdisk_* for huge initrd
+Message-ID: <20140627062406.GA7539@console-pimps.org>
+References: <1403731467-1527-1-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="GB2312"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403731467-1527-1-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s5R6MqwW022971
 
-Hi, sir,
-We saw your information from internet, wondering if we have chance to cooperate with Marine propeller  products?
-We accept OEM and ODM with competitive price ,if you like ,i can send you the catalogue to refer.ok?
-May be you are already have your own supplier ,it¡¯s ok ,just give a chance to be your second choice,ok?
-You can add my skype for convenience:kingbirdsales09, my email :kingbirdsales07@live.cn.
-Thank you !
+On Wed, 25 Jun, at 02:24:27PM, Yinghai Lu wrote:
+> We could load it high if it is more than 2G when kernel support
+> LOAD_ABOVE_4G.
+> 
+> -v2: Use macro instead of (1<<1) directly for LOAD_ABOVE_4G.
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> 
+> ---
+>  loaders/bzimage/bzimage.c |    9 ++++++++-
+>  loaders/bzimage/bzimage.h |   15 +++++++++++++--
+>  2 files changed, 21 insertions(+), 3 deletions(-)
 
-Emmaÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Applied, thanks!
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
