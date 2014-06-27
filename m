@@ -1,45 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751533AbaF0Q3S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 12:29:18 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:46754 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750862AbaF0Q3R (ORCPT
+	id S1751679AbaF0QbR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 12:31:17 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:45394 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751246AbaF0QbP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 12:29:17 -0400
-MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:157d:19a6:92bf:f0af:3806]
-In-Reply-To: <20140627090303.GB23300@sirena.org.uk>
-References: <20140620203858.GA14718@himangi-Dell>
-	<1403849258-21779-1-git-send-email-olof@lixom.net>
-	<20140627090303.GB23300@sirena.org.uk>
-Date: Fri, 27 Jun 2014 09:29:16 -0700
-Message-ID: <CAOesGMhOjiqix9wKto=e0xM5=8B1eXhnmEMGgY=jLOCad6VmkA@mail.gmail.com>
-Subject: Re: [PATCH] spi: omap-uwire: fix compilation failure
-From: Olof Johansson <olof@lixom.net>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-spi@vger.kernel.org,
+	Fri, 27 Jun 2014 12:31:15 -0400
+Date: Fri, 27 Jun 2014 17:31:08 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Fredrik Noring <fredrik.noring@autoliv.com>
+Cc: Mattis Lorentzon <Mattis.Lorentzon@autoliv.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Himangi Saraogi <himangi774@gmail.com>,
-        Julia Lawall <julia.lawall@lip6.fr>
-Content-Type: text/plain; charset=UTF-8
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: Oops: 17 SMP ARM (v3.16-rc2)
+Message-ID: <20140627163108.GP32514@n2100.arm.linux.org.uk>
+References: <C4A61A5CA4AD2246942F4BA6F20ACB804356534D@ALVA-EXMB04.alv.autoliv.int> <20140626140115.GQ32514@n2100.arm.linux.org.uk> <C4A61A5CA4AD2246942F4BA6F20ACB80435655E9@ALVA-EXMB04.alv.autoliv.int> <20140626151424.GT32514@n2100.arm.linux.org.uk> <20140627112151.GF32514@n2100.arm.linux.org.uk> <3FFB61A7A8473C49831AF20FA193534A43CADFA7@ALVA-EXMB01.alv.autoliv.int>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3FFB61A7A8473C49831AF20FA193534A43CADFA7@ALVA-EXMB01.alv.autoliv.int>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 27, 2014 at 2:03 AM, Mark Brown <broonie@kernel.org> wrote:
-> On Thu, Jun 26, 2014 at 11:07:38PM -0700, Olof Johansson wrote:
->> Patch 'spi: omap-uwire: use devm_ functions' (b3f6a57506b8) introduced a
->> build error due to a missing include file. Add it.
->
-> A similar patch was applied a few days ago.
+Hi Fredrik,
 
-Ah, cool. I've seen the build breakage a couple of days including last
-night's next and I didn't notice a patch for it based on a quick
-search.
+On Fri, Jun 27, 2014 at 04:16:57PM +0000, Fredrik Noring wrote:
+> Please find below a trace that appeared once with 3.16-rc2. Perhaps it is of
+> some interest?
 
-http://arm-soc.lixom.net/buildlogs/next/next-20140627/buildall.arm.omap1_defconfig.log.failed
-http://arm-soc.lixom.net/buildlogs/next/next-20140626/buildall.arm.omap1_defconfig.log.failed
+It's not that serious... I know that the FEC ethernet driver is
+horrendously racy (I have had a patch set for about the last six months
+which fixes some of its problems) but as I've had a lot of patches to
+deal with, and it's been pushed to the back of the queue...
 
+The races don't lead to data corruption though, merely timeouts and
+some lost packets.
 
--Olof
+Now because things have changed during the last merge window, I've got
+an even bigger problem sorting through that patch set and getting it
+back into a submittable state.  I've just sent out v2 for it onto the
+netdev@vger.kernel.org mailing list.
+
+The initial version (marked RFC) attracted very little interest from
+testers, or acks.  I'd very much like to have some testing of it, so
+if you want to try it out, I can provide you with a git URL, patches
+or a combined patch.
+
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
