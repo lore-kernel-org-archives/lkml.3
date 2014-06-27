@@ -1,82 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753782AbaF0T5q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 15:57:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65381 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751493AbaF0T5n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 15:57:43 -0400
-Date: Fri, 27 Jun 2014 21:55:59 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
-        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH v8 5/9] seccomp: split mode set routines
-Message-ID: <20140627195559.GA31661@redhat.com>
-References: <CAGXu5j+J11zJnuFR8bYKAXizAHhCx4R+uJE_QH6zC3q2udkpaQ@mail.gmail.com> <CALCETrVrs8sb19+UUqyFEpAFzTih5dkAwn-WpQjfgPcPJMpP5g@mail.gmail.com> <20140625173245.GA17695@redhat.com> <CALCETrUc65H+fn6dtMdYnB_xR39wcmgDdTbdR3fFRjyrndJhgA@mail.gmail.com> <20140625175136.GA18185@redhat.com> <CAGXu5jL17k6=GXju6x+eLU20FMwBHhnuRiHoQD1Bzj_EmpiKjg@mail.gmail.com> <CALCETrVNwhWSPNiBiZmgP1nD9zLJPTk6cH0yo=85rbxTPTYFRg@mail.gmail.com> <CAGXu5jLavA8FJD8m-1y4wO0uzh3qvvMmajAg0Lrr1Cn_Om3a3w@mail.gmail.com> <20140627192753.GA30752@redhat.com> <CALCETrVbJqfG6oBaZEjj7H3pPa1oVJx6QXAYc5zZ6o-niV=WKQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrVbJqfG6oBaZEjj7H3pPa1oVJx6QXAYc5zZ6o-niV=WKQ@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754007AbaF0T6O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 15:58:14 -0400
+Received: from mail-ob0-f202.google.com ([209.85.214.202]:64564 "EHLO
+	mail-ob0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751246AbaF0T4q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 15:56:46 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Lee Jones <lee.jones@linaro.org>, Wolfram Sang <wsa@the-dreams.de>,
+        Mark Brown <broonie@kernel.org>
+Cc: Vincent Palatin <vpalatin@chromium.org>,
+        Bill Richardson <wfrichar@chromium.org>,
+        Randall Spangler <rspangler@chromium.org>, sjg@chromium.org,
+        afaerber@suse.de, stephan@synkhronix.com, olof@lixom.net,
+        Doug Anderson <dianders@chromium.org>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3/3] i2c: cros_ec: Support a limited i2c tunnel for exynos5250-spring
+Date: Fri, 27 Jun 2014 12:56:13 -0700
+Message-Id: <1403898973-19571-4-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 2.0.0.526.g5318336
+In-Reply-To: <1403898973-19571-1-git-send-email-dianders@chromium.org>
+References: <1403898973-19571-1-git-send-email-dianders@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27, Andy Lutomirski wrote:
->
-> On Fri, Jun 27, 2014 at 12:27 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> > On 06/27, Kees Cook wrote:
-> >>
-> >> It looks like SMP ARM issues dsb for rmb, which seems a bit expensive.
-> >> http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0204g/CIHJFGFE.htm
-> >>
-> >> ...
-> >>
-> >> I really want to avoid adding anything to the secure_computing()
-> >> execution path. :(
-> >
-> > I must have missed something but I do not understand your concerns.
-> >
-> > __secure_computing() is not trivial, and we are going to execute the
-> > filters. Do you really think rmb() can add the noticeable difference?
-> >
-> > Not to mention that we can only get here if we take the slow syscall
-> > enter path due to TIF_SECCOMP...
-> >
->
-> On my box, with my fancy multi-phase seccomp patches, the total
-> seccomp overhead for a very short filter is about 13ns.  Adding a full
-> barrier would add several ns, I think.
+On exynos5250-spring the battery and tps65090 regulator are sitting on
+an i2c bus behind the EC (much like on exynos5420-peach-pit).  However
+on spring we don't have the full EC_CMD_I2C_PASSTHRU command.
 
-I am just curious, does this 13ns overhead include the penalty from the
-slow syscall enter path triggered by TIF_SECCOMP ?
+For the production kernel of spring we used a solution like this:
+- Fork the tps65090 driver and make a version that talks straight to
+  the cros_ec MFD driver and sends special EC commands for talking to
+  the regulator.
+- Add code into the i2c tunnel to look for i2c transfers and convert
+  them into special EC commands for talking to the battery.
 
-> Admittedly, this is x86, not ARM, so comparisons here are completely
-> bogus.  And that read memory barrier doesn't even need an instruction
-> on x86.  But still, let's try to keep this fast.
+For reference:
+* http://crosreview.com/66116
+* https://chromium.googlesource.com/chromiumos/third_party/kernel/+/chromeos-3.8/drivers/regulator/cros_ec-tps65090.c
 
-Well, I am not going to insist...
+The above solution works great but is a bunch of code.  It appears
+that we can make do with the limited i2c passthrough commands that
+actually happened to be present on the exynos5250-spring EC.  Doing
+this we can present ourselves as supporting a small subset of smbus.
+We might need to do a few extra transfers here and there but we don't
+need any extra code.
 
-But imo it would be better to make it correct in a most simple way, then
-we can optimize this code and see if there is a noticeable difference.
+Seriss-cc: linux-samsung-soc
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+ drivers/i2c/busses/i2c-cros-ec-tunnel.c | 92 ++++++++++++++++++++++++++++++++-
+ 1 file changed, 91 insertions(+), 1 deletion(-)
 
-Not only we can change the ordering, we can remove the BUG_ON's and just
-accept the fact the __secure_computing() can race with sys_seccomp() from
-another thread.
-
-If nothing else, it would be much simpler to discuss this patch if it comes
-as a separate change.
-
-Oleg.
+diff --git a/drivers/i2c/busses/i2c-cros-ec-tunnel.c b/drivers/i2c/busses/i2c-cros-ec-tunnel.c
+index 6d7d009..c52c491 100644
+--- a/drivers/i2c/busses/i2c-cros-ec-tunnel.c
++++ b/drivers/i2c/busses/i2c-cros-ec-tunnel.c
+@@ -38,6 +38,76 @@ struct ec_i2c_device {
+ 	u8 response_buf[256];
+ };
+ 
++static int ec_smbus_xfer(struct i2c_adapter *adap, u16 addr,
++			   unsigned short flags, char read_write,
++			   u8 command, int size, union i2c_smbus_data *data)
++{
++	struct ec_i2c_device *bus = adap->algo_data;
++	struct cros_ec_command msg = {};
++	int result;
++
++	if (read_write == I2C_SMBUS_WRITE) {
++		struct ec_params_i2c_write params;
++
++		params.addr = addr << 1;
++		params.port = bus->remote_bus;
++		params.offset = command;
++
++		if (size == I2C_SMBUS_WORD_DATA) {
++			params.data = data->word;
++			params.write_size = 16;
++		} else if (size == I2C_SMBUS_BYTE_DATA) {
++			params.data = data->byte;
++			params.write_size = 8;
++		} else {
++			return -EINVAL;
++		}
++
++		msg.command = EC_CMD_I2C_WRITE;
++		msg.outdata = (uint8_t *)&params;
++		msg.outsize = sizeof(params);
++
++		result = bus->ec->cmd_xfer(bus->ec, &msg);
++		if (result < 0)
++			return -EIO;
++
++		return 0;
++	} else if (read_write == I2C_SMBUS_READ) {
++		struct ec_params_i2c_read params;
++		struct ec_response_i2c_read response;
++
++		params.addr = addr << 1;
++		params.port = bus->remote_bus;
++		params.offset = command;
++
++		if (size == I2C_SMBUS_WORD_DATA)
++			params.read_size = 16;
++		else if (size == I2C_SMBUS_BYTE_DATA)
++			params.read_size = 8;
++		else
++			return -EINVAL;
++
++		msg.command = EC_CMD_I2C_READ;
++		msg.outdata = (uint8_t *)&params;
++		msg.outsize = sizeof(params);
++		msg.indata = (uint8_t *)&response;
++		msg.insize = sizeof(response);
++
++		result = bus->ec->cmd_xfer(bus->ec, &msg);
++		if (result < 0)
++			return -EIO;
++
++		if (size == I2C_SMBUS_WORD_DATA)
++			data->word = response.data;
++		else
++			data->byte = response.data;
++
++		return 0;
++	}
++
++	return -EINVAL;
++}
++
+ /**
+  * ec_i2c_count_message - Count bytes needed for ec_i2c_construct_message
+  *
+@@ -233,6 +303,11 @@ static int ec_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg i2c_msgs[],
+ 	if (result < 0)
+ 		goto exit;
+ 
++	if (msg.result == EC_RES_INVALID_COMMAND) {
++		result = -EINVAL;
++		goto exit;
++	}
++
+ 	result = ec_i2c_parse_response(response, i2c_msgs, &num);
+ 	if (result < 0)
+ 		goto exit;
+@@ -258,6 +333,16 @@ static const struct i2c_algorithm ec_i2c_algorithm = {
+ 	.functionality	= ec_i2c_functionality,
+ };
+ 
++static u32 ec_smbus_functionality(struct i2c_adapter *adap)
++{
++	return I2C_FUNC_SMBUS_BYTE_DATA | I2C_FUNC_SMBUS_WORD_DATA;
++}
++
++static const struct i2c_algorithm ec_i2c_limited_algorithm = {
++	.smbus_xfer	= ec_smbus_xfer,
++	.functionality	= ec_smbus_functionality,
++};
++
+ static int ec_i2c_probe(struct platform_device *pdev)
+ {
+ 	struct device_node *np = pdev->dev.of_node;
+@@ -288,11 +373,16 @@ static int ec_i2c_probe(struct platform_device *pdev)
+ 
+ 	bus->adap.owner = THIS_MODULE;
+ 	strlcpy(bus->adap.name, "cros-ec-i2c-tunnel", sizeof(bus->adap.name));
+-	bus->adap.algo = &ec_i2c_algorithm;
+ 	bus->adap.algo_data = bus;
+ 	bus->adap.dev.parent = &pdev->dev;
+ 	bus->adap.dev.of_node = np;
+ 
++	/* Test if we can support full passthrough or just limited */
++	if (ec_i2c_xfer(&bus->adap, NULL, 0) == 0)
++		bus->adap.algo = &ec_i2c_algorithm;
++	else
++		bus->adap.algo = &ec_i2c_limited_algorithm;
++
+ 	err = i2c_add_adapter(&bus->adap);
+ 	if (err) {
+ 		dev_err(dev, "cannot register i2c adapter\n");
+-- 
+2.0.0.526.g5318336
 
