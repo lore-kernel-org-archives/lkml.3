@@ -1,73 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753321AbaF0IOt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 04:14:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50405 "EHLO mx2.suse.de"
+	id S1753344AbaF0IOz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 04:14:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50426 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752960AbaF0IOo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 04:14:44 -0400
+	id S1753261AbaF0IOt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 04:14:49 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linux Kernel <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
         Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
         Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 0/5] Improve sequential read throughput v3
-Date: Fri, 27 Jun 2014 09:14:35 +0100
-Message-Id: <1403856880-12597-1-git-send-email-mgorman@suse.de>
+Subject: [PATCH 5/5] mm: page_alloc: Reduce cost of dirty zone balancing
+Date: Fri, 27 Jun 2014 09:14:40 +0100
+Message-Id: <1403856880-12597-6-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1403856880-12597-1-git-send-email-mgorman@suse.de>
+References: <1403856880-12597-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changelog since V2
-o Simply fair zone policy cost reduction
-o Drop CFQ patch
-
-Changelog since v1
-o Rebase to v3.16-rc2
-o Move CFQ patch to end of series where it can be rejected easier if necessary
-o Introduce page-reclaim related patch related to kswapd/fairzone interactions
-o Rework fast zone policy patch
-
-IO performance since 3.0 has been a mixed bag. In many respects we are
-better and in some we are worse and one of those places is sequential
-read throughput. This is visible in a number of benchmarks but I looked
-at tiobench the closest. This is using ext3 on a mid-range desktop and
-the series applied.
-
-                                      3.16.0-rc2            3.16.0-rc2
-                                         vanilla             lessdirty
-Min    SeqRead-MB/sec-1         120.92 (  0.00%)      140.73 ( 16.38%)
-Min    SeqRead-MB/sec-2         100.25 (  0.00%)      117.43 ( 17.14%)
-Min    SeqRead-MB/sec-4          96.27 (  0.00%)      109.01 ( 13.23%)
-Min    SeqRead-MB/sec-8          83.55 (  0.00%)       90.86 (  8.75%)
-Min    SeqRead-MB/sec-16         66.77 (  0.00%)       74.12 ( 11.01%)
-
-Overall system CPU usage is reduced
+When allocating a page cache page for writing the allocator makes an attempt
+to proportionally distribute dirty pages between populated zones. The call
+to zone_dirty_ok is more expensive than expected because of the number of
+vmstats it examines. This patch caches some of that information to reduce
+the cost. It means the proportional allocation is based on stale data but
+the heuristic should not need perfectly accurate information. As before,
+the benefit is marginal but cumulative and depends on the size of the
+machine. For a very small machine the effect is visible in system CPU time
+for a tiobench test but it'll vary between workloads.
 
           3.16.0-rc2  3.16.0-rc2
-             vanilla lessdirty-v3
-User          390.13      390.20
-System        404.41      379.08
-Elapsed      5412.45     5123.74
+            fairzone   lessdirty
+User          393.76      389.03
+System        391.50      388.64
+Elapsed      5182.86     5186.28
 
-This series does not fully restore throughput performance to 3.0 levels
-but it brings it close for lower thread counts. Higher thread counts are
-known to be worse than 3.0 due to CFQ changes but there is no appetite
-for changing the defaults there.
+Even though the benefit is small it's generally worthwhile reducing overhead
+in the page allocator as it has a tendency to creep up over time.
 
- include/linux/mmzone.h         | 210 ++++++++++++++++++++++-------------------
- include/linux/writeback.h      |   1 +
- include/trace/events/pagemap.h |  16 ++--
- mm/internal.h                  |   1 +
- mm/mm_init.c                   |   4 +-
- mm/page-writeback.c            |  23 +++--
- mm/page_alloc.c                | 173 ++++++++++++++++++++-------------
- mm/swap.c                      |   4 +-
- mm/vmscan.c                    |  16 ++--
- mm/vmstat.c                    |   4 +-
- 10 files changed, 258 insertions(+), 194 deletions(-)
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ include/linux/mmzone.h    |  2 ++
+ include/linux/writeback.h |  1 +
+ mm/internal.h             |  1 +
+ mm/page-writeback.c       | 23 +++++++++++++++--------
+ mm/page_alloc.c           | 16 ++++++++++++----
+ 5 files changed, 31 insertions(+), 12 deletions(-)
 
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index f7f93d4..cd7a3d4 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -480,6 +480,8 @@ struct zone {
+ 	/* zone flags, see below */
+ 	unsigned long		flags;
+ 
++	unsigned long		dirty_limit_cached;
++
+ 	ZONE_PADDING(_pad2_)
+ 
+ 	/* Write-intensive fields used by page reclaim */
+diff --git a/include/linux/writeback.h b/include/linux/writeback.h
+index 5777c13..90190d4 100644
+--- a/include/linux/writeback.h
++++ b/include/linux/writeback.h
+@@ -121,6 +121,7 @@ static inline void laptop_sync_completion(void) { }
+ #endif
+ void throttle_vm_writeout(gfp_t gfp_mask);
+ bool zone_dirty_ok(struct zone *zone);
++unsigned long zone_dirty_limit(struct zone *zone);
+ 
+ extern unsigned long global_dirty_limit;
+ 
+diff --git a/mm/internal.h b/mm/internal.h
+index 7f22a11f..f31e3b2 100644
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -370,5 +370,6 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
+ #define ALLOC_CPUSET		0x40 /* check for correct cpuset */
+ #define ALLOC_CMA		0x80 /* allow allocations from CMA areas */
+ #define ALLOC_FAIR		0x100 /* fair zone allocation */
++#define ALLOC_DIRTY		0x200 /* spread GFP_WRITE allocations */
+ 
+ #endif	/* __MM_INTERNAL_H */
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index 518e2c3..a7d11b1 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -256,8 +256,6 @@ static unsigned long global_dirtyable_memory(void)
+  * Calculate the dirty thresholds based on sysctl parameters
+  * - vm.dirty_background_ratio  or  vm.dirty_background_bytes
+  * - vm.dirty_ratio             or  vm.dirty_bytes
+- * The dirty limits will be lifted by 1/4 for PF_LESS_THROTTLE (ie. nfsd) and
+- * real-time tasks.
+  */
+ void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
+ {
+@@ -298,10 +296,9 @@ void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
+  * Returns the maximum number of dirty pages allowed in a zone, based
+  * on the zone's dirtyable memory.
+  */
+-static unsigned long zone_dirty_limit(struct zone *zone)
++unsigned long zone_dirty_limit(struct zone *zone)
+ {
+ 	unsigned long zone_memory = zone_dirtyable_memory(zone);
+-	struct task_struct *tsk = current;
+ 	unsigned long dirty;
+ 
+ 	if (vm_dirty_bytes)
+@@ -310,9 +307,6 @@ static unsigned long zone_dirty_limit(struct zone *zone)
+ 	else
+ 		dirty = vm_dirty_ratio * zone_memory / 100;
+ 
+-	if (tsk->flags & PF_LESS_THROTTLE || rt_task(tsk))
+-		dirty += dirty / 4;
+-
+ 	return dirty;
+ }
+ 
+@@ -325,7 +319,20 @@ static unsigned long zone_dirty_limit(struct zone *zone)
+  */
+ bool zone_dirty_ok(struct zone *zone)
+ {
+-	unsigned long limit = zone_dirty_limit(zone);
++	unsigned long limit = zone->dirty_limit_cached;
++	struct task_struct *tsk = current;
++
++	/*
++	 * The dirty limits are lifted by 1/4 for PF_LESS_THROTTLE (ie. nfsd)
++	 * and real-time tasks to prioritise their allocations.
++	 * PF_LESS_THROTTLE tasks may be cleaning memory and rt tasks may be
++	 * blocking tasks that can clean pages.
++	 */
++	if (tsk->flags & PF_LESS_THROTTLE || rt_task(tsk)) {
++		limit = zone_dirty_limit(zone);
++		zone->dirty_limit_cached = limit;
++		limit += limit / 4;
++	}
+ 
+ 	return zone_page_state(zone, NR_FILE_DIRTY) +
+ 	       zone_page_state(zone, NR_UNSTABLE_NFS) +
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index d2ed2e0..cf8e858 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1941,9 +1941,7 @@ get_page_from_freelist(gfp_t gfp_mask, nodemask_t *nodemask, unsigned int order,
+ 	nodemask_t *allowednodes = NULL;/* zonelist_cache approximation */
+ 	int zlc_active = 0;		/* set if using zonelist_cache */
+ 	int did_zlc_setup = 0;		/* just call zlc_setup() one time */
+-	bool consider_zone_dirty = (alloc_flags & ALLOC_WMARK_LOW) &&
+-				(gfp_mask & __GFP_WRITE);
+-	int nr_fair_skipped = 0;
++	int nr_fair_skipped = 0, nr_fail_dirty = 0;
+ 	bool zonelist_rescan;
+ 
+ zonelist_scan:
+@@ -2005,8 +2003,11 @@ zonelist_scan:
+ 		 * will require awareness of zones in the
+ 		 * dirty-throttling and the flusher threads.
+ 		 */
+-		if (consider_zone_dirty && !zone_dirty_ok(zone))
++		if ((alloc_flags & ALLOC_DIRTY) && !zone_dirty_ok(zone)) {
++			nr_fail_dirty++;
++			zone->dirty_limit_cached = zone_dirty_limit(zone);
+ 			continue;
++		}
+ 
+ 		mark = zone->watermark[alloc_flags & ALLOC_WMARK_MASK];
+ 		if (!zone_watermark_ok(zone, order, mark,
+@@ -2108,6 +2109,11 @@ this_zone_full:
+ 		zonelist_rescan = true;
+ 	}
+ 
++	if ((alloc_flags & ALLOC_DIRTY) && nr_fail_dirty) {
++		alloc_flags &= ~ALLOC_DIRTY;
++		zonelist_rescan = true;
++	}
++
+ 	if (zonelist_rescan)
+ 		goto zonelist_scan;
+ 
+@@ -2765,6 +2771,8 @@ retry_cpuset:
+ 
+ 	if (zonelist->fair_enabled)
+ 		alloc_flags |= ALLOC_FAIR;
++	if (gfp_mask & __GFP_WRITE)
++		alloc_flags |= ALLOC_DIRTY;
+ #ifdef CONFIG_CMA
+ 	if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
+ 		alloc_flags |= ALLOC_CMA;
 -- 
 1.8.4.5
 
