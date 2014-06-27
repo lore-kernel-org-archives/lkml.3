@@ -1,81 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753497AbaF0ISu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 04:18:50 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:39388 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753059AbaF0ISr (ORCPT
+	id S1753236AbaF0IUH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 04:20:07 -0400
+Received: from mga03.intel.com ([143.182.124.21]:17857 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753089AbaF0IUE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 04:18:47 -0400
-Date: Fri, 27 Jun 2014 10:18:44 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] iommu: Constify struct iommu_ops
-Message-ID: <20140627081844.GA10835@ulmo>
-References: <1403809494-31432-1-git-send-email-thierry.reding@gmail.com>
+	Fri, 27 Jun 2014 04:20:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,559,1400050800"; 
+   d="scan'208";a="450662787"
+From: "Chen, Alvin" <alvin.chen@intel.com>
+To: David Laight <David.Laight@ACULAB.COM>,
+        "'Jingoo Han'" <jg1.han@samsung.com>,
+        "'Alan Stern'" <stern@rowland.harvard.edu>
+CC: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "'Sergei Shtylyov'" <sergei.shtylyov@cogentembedded.com>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>
+Subject: RE: [PATCH v2] USB: ehci-pci: USB host controller support for Intel
+ Quark X1000
+Thread-Topic: [PATCH v2] USB: ehci-pci: USB host controller support for
+ Intel Quark X1000
+Thread-Index: Ac+Rt9/9zWiRva72R+WEYUnwzn5RXwABGaNAAAEzYAD//7WYgP//eAsw
+Date: Fri, 27 Jun 2014 08:20:00 +0000
+Message-ID: <4656BEB6164FC34F8171C6538F1A595B2E947646@SHSMSX101.ccr.corp.intel.com>
+References: <1403868276-12558-1-git-send-email-alvin.chen@intel.com>
+ <1403868276-12558-2-git-send-email-alvin.chen@intel.com>
+ <000401cf91c0$e3a98600$aafc9200$%han@samsung.com>
+ <000601cf91c1$5d25fcc0$1771f640$%han@samsung.com>
+ <063D6719AE5E284EB5DD2968C1650D6D17267F31@AcuExch.aculab.com>
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D17267F31@AcuExch.aculab.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="k+w/mQv8wyuph6w0"
-Content-Disposition: inline
-In-Reply-To: <1403809494-31432-1-git-send-email-thierry.reding@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---k+w/mQv8wyuph6w0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Thu, Jun 26, 2014 at 09:04:54PM +0200, Thierry Reding wrote:
-> From: Thierry Reding <treding@nvidia.com>
->=20
-> This structure is read-only data and should never be modified.
->=20
-> Signed-off-by: Thierry Reding <treding@nvidia.com>
-> ---
->  drivers/iommu/amd_iommu.c       |  4 ++--
->  drivers/iommu/arm-smmu.c        |  2 +-
->  drivers/iommu/exynos-iommu.c    |  2 +-
->  drivers/iommu/fsl_pamu_domain.c |  2 +-
->  drivers/iommu/intel-iommu.c     |  4 ++--
->  drivers/iommu/iommu.c           | 19 ++++++++++++++-----
->  drivers/iommu/ipmmu-vmsa.c      |  2 +-
->  drivers/iommu/msm_iommu.c       |  2 +-
->  drivers/iommu/omap-iommu.c      |  2 +-
->  drivers/iommu/shmobile-iommu.c  |  2 +-
->  drivers/iommu/tegra-gart.c      |  2 +-
->  drivers/iommu/tegra-smmu.c      |  2 +-
->  include/linux/iommu.h           |  4 ++--
->  13 files changed, 29 insertions(+), 20 deletions(-)
+> -----Original Message-----
+> From: David Laight [mailto:David.Laight@ACULAB.COM]
+> Sent: Friday, June 27, 2014 4:08 PM
+> ...
+> > /* The maximal threshold value is 0x80, which means 512 bytes */
+> > #define EHCI_THRESHOLD_512BYTES		0x80
+> > #define EHCI_THRESHOLD_508BYTES		0x79
+> 
+> It would be better to define these using expressions. So:
+> #define EHCI_THRESHOLD_512BYTES		(512u / 8u)
+> #define EHCI_THRESHOLD_508BYTES		(508u / 8u)
+> 
+Just to clarify, the threshold value set to register is in dword, so '0x80' means 0x80 dwords (512 bytes), and 508 bytes is not 0x79, it is 0x7F.
 
-I noticed that this patch is missing a hunk to include/linux/device.h
-and I've sent a v2 to address this. Apologies for the noise.
+> Then you might decide to use:
+> #define EHCI_THRESHOLD(size) ((size) / 8u)
+> 
+> Then realise that the names are not generic EHCI, so need some driver-specific
+> prefix (for namespace reasons).
+> 
+How about the following?
+#define INTEL_QUARK_X1000_EHCI_THRESHOLD(size) ((size) / 4u)  /* threshold value is in dword*/
 
-Thierry
+> And that the defines are probably limit values, and should be named as such.
+> 
+> 	David
+> 
+> 
 
---k+w/mQv8wyuph6w0
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJTrSjkAAoJEN0jrNd/PrOheW4QAI5fiSMIn1dMUzE3mYFP4OMu
-R5zlK+Yr3E2PQdNfgp0It9sxA/RjXo0GVGMLVKw7wtDVLb3AOyBoKvYzj7oVu9TJ
-PjFTlTJo3zMukjjAKXlPgE3DP9IUI0le7tzdOaBqrqt2edBgYb6LaLDg43Su32/h
-UmZijdFxEiiq8YEyqpQMibYjznKE//XwLtecynyhDRkiGdZc/pisnUxtW2EU5kZr
-Pf+owBsMS8ua4SsR7SPYy3EZBcc0VascYwkQUOEXbsBRjmjkAKfWEIQyHfaHNZtm
-EbTELeCIjxQ5Am/O2C2OBlNZ+TAOgQ5Myu7a09M5YJTLOm974Fr++2Liw0fUGNb3
-4YMVJ6dmWBa1l342yR+wTVeeBkoWurIbvvGpTlEbwpMosP0HkQSGcTtxCnx2vMcT
-4SJLS/HmkAeKI4b88E/VUvc4YsRUXW+HGvu2RlirFkfu4ZsD1R4lqRbv6MztY72H
-TXPyf21sybdnW8Y4LiwI+gwxIhnMfJN7hwFOKBVi+taLwnGsD1bmen5r6vNBlKUx
-pl+/cXU54QLPfI2U/BLi3Z7VToDBVQOSufaB2lPajzi9sTLIh9N7+ES6q3TH9JsK
-vhODDx3JlqabA6SuNcQglfA1bB1faE79eJfj31roaa+bqJNlOQG7O4ZD7CQGbRfJ
-EipwOH90UoomyvXozCWY
-=M3e9
------END PGP SIGNATURE-----
-
---k+w/mQv8wyuph6w0--
