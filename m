@@ -1,39 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753410AbaF0Nxf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 09:53:35 -0400
-Received: from mail.kernel.org ([198.145.19.201]:45858 "EHLO mail.kernel.org"
+	id S1753720AbaF0Ny2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 09:54:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33234 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752866AbaF0Nxe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 09:53:34 -0400
-Date: Fri, 27 Jun 2014 10:53:30 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Stanislav Fomichev <stfomichev@yandex-team.ru>
-Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
-        dsahern@gmail.com, jolsa@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] perf trace: add pagefault statistics
-Message-ID: <20140627135330.GF18773@kernel.org>
-References: <1403799268-1367-1-git-send-email-stfomichev@yandex-team.ru>
- <1403799268-1367-5-git-send-email-stfomichev@yandex-team.ru>
- <20140626194115.GE18773@kernel.org>
- <20140627084307.GF21788@stfomichev-desktop.yandex.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140627084307.GF21788@stfomichev-desktop.yandex.net>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752866AbaF0Ny1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 09:54:27 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1403620852-16476-6-git-send-email-zohar@linux.vnet.ibm.com>
+References: <1403620852-16476-6-git-send-email-zohar@linux.vnet.ibm.com> <1403620852-16476-1-git-send-email-zohar@linux.vnet.ibm.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: dhowells@redhat.com, Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        keyrings <keyrings@linux-nfs.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Josh Boyer <jwboyer@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+Subject: Re: [PATCH v6 5/6] KEYS: validate certificate trust only with builtin keys
+Date: Fri, 27 Jun 2014 14:54:11 +0100
+Message-ID: <7729.1403877251@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Jun 27, 2014 at 12:43:07PM +0400, Stanislav Fomichev escreveu:
-> > Where is it?
-> >  usleep (19155), 151 events, 84.4%, 0:68 faults, 0.000 msec
->                                       ^^^^^^^^^^^
-> 				      maj:min
+Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
 
-Ok, thanks for the explanation, I'll add that to the commit log and
-check if the documentation mentions that in the statistics section.
+> +static bool builtin_keys;
 
-- Arnaldo
+Could we call this something like "use_builtin_keys_only"?
+
+Looks okay otherwise.
+
+David
