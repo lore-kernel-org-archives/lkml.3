@@ -1,81 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753007AbaF0Hux (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 03:50:53 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:62315 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752750AbaF0Huv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 03:50:51 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: zhangfei <zhangfei.gao@linaro.org>, mark.rutland@arm.com,
-        devicetree@vger.kernel.org, haifeng.yan@linaro.org,
-        linux-kernel@vger.kernel.org, Kishon Vijay Abraham I <kishon@ti.com>,
-        jchxue@gmail.com, Jiancheng Xue <xuejiancheng@huawei.com>
-Subject: Re: [PATCH v2 1/2] Documentation: Document Hisilicon hix5hd2 sata PHY
-Date: Fri, 27 Jun 2014 09:50:46 +0200
-Message-ID: <11262017.C011KreL6u@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <53ACE6EE.4050300@linaro.org>
-References: <1403687648-29082-1-git-send-email-zhangfei.gao@linaro.org> <4989178.vejv39dnj8@wuerfel> <53ACE6EE.4050300@linaro.org>
+	id S1752968AbaF0Hww (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 03:52:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50002 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752652AbaF0Hwv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 03:52:51 -0400
+Message-ID: <53AD22D0.9000403@suse.de>
+Date: Fri, 27 Jun 2014 09:52:48 +0200
+From: =?ISO-8859-15?Q?Andreas_F=E4rber?= <afaerber@suse.de>
+Organization: SUSE LINUX Products GmbH
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:ZFoMd0ud1yVbrEuCft36j9hfS9yJ9MtC1ohmb0H9x6C
- BWhu8sKn0B0uJYQWTV7Zge/IAiuVxzRdBWuDBpGxl4gLyq8Vt9
- nO9DJsZLog4vwK3lqC74phYRq2w+AJVd04TPnCK+rX+xkw0y1H
- Ssv5xvChviWw9y0QhHpudDbxO0xqFTAsyN+E/qYSfa5JZlYeb7
- mOpUEr1Zcrim8KopBzD8qx3F5ospxJb7B+WzFWLcxBEN5noEHJ
- gvxF8kF2OulpNJ1j3Rq5CeQyA8KvuZBnWCwSlb05Roh6uIhWZG
- 2fBvBXCeqbvetFtDte/U1+IxXtDzHm+vNqqf5N+pXJYvSDLJOp
- x/2XchJT03H2ea7c+i6k=
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Lee Jones <lee.jones@linaro.org>
+CC: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
+        Daniel Stone <daniels@collabora.com>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 12/14] clk: max77802: Add DT binding documentation
+References: <1403806546-31122-1-git-send-email-javier.martinez@collabora.co.uk> <1403806546-31122-13-git-send-email-javier.martinez@collabora.co.uk>
+In-Reply-To: <1403806546-31122-13-git-send-email-javier.martinez@collabora.co.uk>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 27 June 2014 11:37:18 zhangfei wrote:
-> >
+Am 26.06.2014 20:15, schrieb Javier Martinez Canillas:
+> Add Device Tree binding documentation for the clocks
+> outputs in the Maxim 77802 Power Management IC.
 > 
-> Sorry for the confusion.
+> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> ---
 > 
-> The phy is rather an analog controller, without standard register.
-> Instead, the phy interface is just some pin / analog interface.
-> The register is in fact hix5hd2 register, controls all the analog 
-> output, including reset, power, speed, para tunning.
-
-Ok, thanks for the explanation.
-
-> Even the same phy is used in other soc, they can not share this driver, 
-> since the connection must be different, as well as internal soc register 
-> layout.
-> Only if the same controller & phy are reused in other hisilicon soc, 
-> this driver can be shared.
+> Changes since v4: None
 > 
-> Since what we control is hix5hd2 controller itself, so it may not 
-> suitable to put snps here.
-
-Makes sense.
-
-> And about hix5hd2 name: x is not wildcard.
+> Changes since v3:
+>  - Don't use the same clock driver name in clock-names since it's a consumer
+>    concept and most probably will be different. Suggested by Doug Anderson.
 > 
-> Currently hix5hd2 is series of hi3716c v200, hi3719c v100, hi3718c v100.
-> They are same soc, except minus pin assembles different.
+> Changes since v2:
+>  - Split the DT binding documentation in a separate patch.
 > 
-> However, not all hi37x is in this series, for example hi3716c v100 is a 
-> different soc.
+>  .../devicetree/bindings/clock/maxim,max77802.txt   | 42 ++++++++++++++++++++++
+>  1 file changed, 42 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/clock/maxim,max77802.txt
 > 
-> In the future hi3719m, hi3718m may also plan to add to hix5hd2 series.
-> The difference will be different cpu core number, different gpu core 
-> number. Also use different ethernet controller.
+> diff --git a/Documentation/devicetree/bindings/clock/maxim,max77802.txt b/Documentation/devicetree/bindings/clock/maxim,max77802.txt
+> new file mode 100644
+> index 0000000..26bc4f7
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/clock/maxim,max77802.txt
+> @@ -0,0 +1,42 @@
+> +Binding for Maxim MAX77802 32k clock generator block
+> +
+> +This is a part of device tree bindings of MAX77802 multi-function device.
+> +More information can be found in bindings/mfd/max77802.txt file.
+> +
+> +The MAX77802 contains two 32.768khz clock outputs that can be controlled
+> +(gated/ungated) over I2C.
+> +
+> +Following properties should be presend in main device node of the MFD chip.
 
-Ah, I think you explained this before, sorry for misremembering it.
- 
-> So we may still keep "hisilicon,hix5hd2-sata-phy" unchanged.
-> What do you think?
+"present"
 
-Yes, please keep this string, it's good.
+Regards,
+Andreas
 
-Thanks for your patience,
-
-	Arnd
+-- 
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
+GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
