@@ -1,227 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751817AbaF0RLi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 13:11:38 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:62146 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751093AbaF0RLh (ORCPT
+	id S1751934AbaF0ROF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 13:14:05 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:40169 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751308AbaF0ROD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 13:11:37 -0400
+	Fri, 27 Jun 2014 13:14:03 -0400
+Date: Fri, 27 Jun 2014 10:13:59 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: josh@joshtriplett.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: rcu: NULL ptr deref on boot
+Message-ID: <20140627171359.GG4603@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <53ADA04B.3010707@oracle.com>
 MIME-Version: 1.0
-In-Reply-To: <20140624160857.ebb638c4c69c1d290f64d01f@linux-foundation.org>
-References: <1400958369-3588-1-git-send-email-ddstreet@ieee.org>
- <1401747586-11861-1-git-send-email-ddstreet@ieee.org> <1401747586-11861-4-git-send-email-ddstreet@ieee.org>
- <20140623144614.d4549fa0aecb03b7b8044bc7@linux-foundation.org>
- <CALZtONDKmM8nRv3tqZThc8mC3Dmrxqj7if5-yAeivnfCbfwENw@mail.gmail.com> <20140624160857.ebb638c4c69c1d290f64d01f@linux-foundation.org>
-From: Dan Streetman <ddstreet@ieee.org>
-Date: Fri, 27 Jun 2014 13:11:15 -0400
-X-Google-Sender-Auth: otkHK8S5CbCrFPYcoEsZ9lzPQdU
-Message-ID: <CALZtONDab98oHJsPqHVMxS0aEfMBTYdJFx3p-ODr3Dke_x5m0g@mail.gmail.com>
-Subject: Re: [PATCHv4 3/6] mm/zpool: implement common zpool api to zbud/zsmalloc
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Seth Jennings <sjennings@variantweb.net>, Minchan Kim <minchan@kernel.org>,
-        Weijie Yang <weijie.yang@samsung.com>, Nitin Gupta <ngupta@vflare.org>,
-        Bob Liu <bob.liu@oracle.com>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53ADA04B.3010707@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14062717-1542-0000-0000-000002E5284B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 24, 2014 at 7:08 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Tue, 24 Jun 2014 11:39:12 -0400 Dan Streetman <ddstreet@ieee.org> wrote:
->
->> On Mon, Jun 23, 2014 at 5:46 PM, Andrew Morton
->> <akpm@linux-foundation.org> wrote:
->> > On Mon,  2 Jun 2014 18:19:43 -0400 Dan Streetman <ddstreet@ieee.org> wrote:
->> >
->> >> Add zpool api.
->> >>
->> >> zpool provides an interface for memory storage, typically of compressed
->> >> memory.  Users can select what backend to use; currently the only
->> >> implementations are zbud, a low density implementation with up to
->> >> two compressed pages per storage page, and zsmalloc, a higher density
->> >> implementation with multiple compressed pages per storage page.
->> >>
->> >> ...
->> >>
->> >> +/**
->> >> + * zpool_create_pool() - Create a new zpool
->> >> + * @type     The type of the zpool to create (e.g. zbud, zsmalloc)
->> >> + * @flags    What GFP flags should be used when the zpool allocates memory.
->> >> + * @ops              The optional ops callback.
->> >> + *
->> >> + * This creates a new zpool of the specified type.  The zpool will use the
->> >> + * given flags when allocating any memory.  If the ops param is NULL, then
->> >> + * the created zpool will not be shrinkable.
->> >> + *
->> >> + * Returns: New zpool on success, NULL on failure.
->> >> + */
->> >> +struct zpool *zpool_create_pool(char *type, gfp_t flags,
->> >> +                     struct zpool_ops *ops);
->> >
->> > It is unconventional to document the API in the .h file.  It's better
->> > to put the documentation where people expect to find it.
->> >
->> > It's irritating for me (for example) because this kernel convention has
->> > permitted me to train my tags system to ignore prototypes in headers.
->> > But if I want to find the zpool_create_pool documentation I will need
->> > to jump through hoops.
->>
->> Got it, I will move it to the .c file.
->>
->> I noticed you pulled these into -mm, do you want me to send follow-on
->> patches for these changes, or actually update the origin patches and
->> resend the patch set?
->
-> Full resend, I guess.  I often add things which are
-> not-quite-fully-baked to give them a bit of testing, check for
-> integration with other changes, etc.
->
->> >
->> >>
->> >> ...
->> >>
->> >> +
->> >> +struct zpool *zpool_create_pool(char *type, gfp_t flags,
->> >> +                     struct zpool_ops *ops)
->> >> +{
->> >> +     struct zpool_driver *driver;
->> >> +     struct zpool *zpool;
->> >> +
->> >> +     pr_info("creating pool type %s\n", type);
->> >> +
->> >> +     spin_lock(&drivers_lock);
->> >> +     driver = zpool_get_driver(type);
->> >> +     spin_unlock(&drivers_lock);
->> >
->> > Racy against unregister.  Can be solved with a standard get/put
->> > refcounting implementation.  Or perhaps a big fat mutex.
->
-> Was there a decision here?
+On Fri, Jun 27, 2014 at 12:48:11PM -0400, Sasha Levin wrote:
+> Hi Paul,
+> 
+> I've noticed the following on boot with the latest -next kernel:
+> 
+> [    0.000000] WARNING: CPU: 0 PID: 0 at arch/x86/kernel/cpu/common.c:1439 warn_pre_alternatives+0x1e/0x20()
+> [    0.000000] You're using static_cpu_has before alternatives have run!
+> [    0.000000] Modules linked in:
+> [    0.000000] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.16.0-rc2-next-20140627-sasha-00023-g5d10814-dirty #734
+> [    0.000000]  0000000000000009 ffffffff9d003c48 ffffffff9b525423 0000000000000002
+> [    0.000000]  ffffffff9d003c98 ffffffff9d003c88 ffffffff98168aec ffffffff9d003d58
+> [    0.000000]  0000000000000000 ffffffff9d003e78 0000000000000000 0000000000000002
+> [    0.000000] Call Trace:
+> [    0.000000] dump_stack (lib/dump_stack.c:52)
+> [    0.000000] warn_slowpath_common (kernel/panic.c:431)
+> [    0.000000] warn_slowpath_fmt (kernel/panic.c:446)
+> [    0.000000] ? irq_return (arch/x86/kernel/entry_64.S:842)
+> [    0.000000] warn_pre_alternatives (arch/x86/kernel/cpu/common.c:1440)
+> [    0.000000] __do_page_fault (./arch/x86/include/asm/cpufeature.h:423 arch/x86/mm/fault.c:1022 arch/x86/mm/fault.c:1112)
+> [    0.000000] ? trace_hardirqs_off_caller (kernel/locking/lockdep.c:2638 (discriminator 2))
+> [    0.000000] ? trace_hardirqs_off (kernel/locking/lockdep.c:2645)
+> [    0.000000] ? __slab_alloc (mm/slub.c:2364 (discriminator 1))
+> [    0.000000] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
+> [    0.000000] ? trace_hardirqs_off_caller (kernel/locking/lockdep.c:2638 (discriminator 2))
+> [    0.000000] ? error_sti (arch/x86/kernel/entry_64.S:1419)
+> [    0.000000] trace_do_page_fault (arch/x86/mm/fault.c:1313 include/linux/jump_label.h:115 include/linux/context_tracking_state.h:27 include/linux/context_tracking.h:45 arch/x86/mm/fault.c:1314)
+> [    0.000000] do_async_page_fault (arch/x86/kernel/kvm.c:264)
+> [    0.000000] async_page_fault (arch/x86/kernel/entry_64.S:1322)
+> [    0.000000] ? tick_nohz_init (include/linux/bitmap.h:165 include/linux/cpumask.h:333 kernel/time/tick-sched.c:344 kernel/time/tick-sched.c:356)
+> [    0.000000] ? tick_nohz_init (include/linux/bitmap.h:164 include/linux/cpumask.h:333 kernel/time/tick-sched.c:344 kernel/time/tick-sched.c:356)
+> [    0.000000] start_kernel (init/main.c:581)
+> [    0.000000] ? set_init_arg (init/main.c:281)
+> [    0.000000] ? early_idt_handlers (arch/x86/kernel/head_64.S:340)
+> [    0.000000] x86_64_start_reservations (arch/x86/kernel/head64.c:194)
+> [    0.000000] x86_64_start_kernel (arch/x86/kernel/head64.c:183)
+> [    0.000000] ---[ end trace 4d5ff9f2f68c4233 ]---
+> [    0.000000] BUG: unable to handle kernel NULL pointer dereference at           (null)
+> [    0.000000] IP: tick_nohz_init (include/linux/bitmap.h:165 include/linux/cpumask.h:333 kernel/time/tick-sched.c:344 kernel/time/tick-sched.c:356)
+> [    0.000000] PGD 0
+> [    0.000000] Oops: 0002 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> [    0.000000] Modules linked in:
+> [    0.000000] CPU: 0 PID: 0 Comm: swapper/0 Tainted: G        W      3.16.0-rc2-next-20140627-sasha-00023-g5d10814-dirty #734
+> [    0.000000] task: ffffffff9d0354c0 ti: ffffffff9d000000 task.ti: ffffffff9d000000
+> [    0.000000] RIP: tick_nohz_init (include/linux/bitmap.h:165 include/linux/cpumask.h:333 kernel/time/tick-sched.c:344 kernel/time/tick-sched.c:356)
+> [    0.000000] RSP: 0000:ffffffff9d003f28  EFLAGS: 00010002
+> [    0.000000] RAX: 0000000000000000 RBX: ffff88003684d480 RCX: 0000000000000008
+> [    0.000000] RDX: 0000000000000014 RSI: ffff88003684d480 RDI: 0000000000000000
+> [    0.000000] RBP: ffffffff9d003f38 R08: ffff88003684d480 R09: ffff88003684d480
+> [    0.000000] R10: ffff88003684d480 R11: 0000000000000001 R12: ffffffff9e5fd020
+> [    0.000000] R13: ffff88070282ca00 R14: ffffffff9e607ae0 R15: 00000000000146f0
+> [    0.000000] FS:  0000000000000000(0000) GS:ffff880036e00000(0000) knlGS:0000000000000000
+> [    0.000000] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [    0.000000] CR2: 0000000000000000 CR3: 000000001d02e000 CR4: 00000000000006b0
+> [    0.000000] Stack:
+> [    0.000000]  ffffffffffffffff ffffffff9e5fd020 ffffffff9d003f88 ffffffff9e4c9f09
+> [    0.000000]  ffffffff9e4c98fd 00000000000146f0 ffffffff9d003f78 ffffffff9e607ae0
+> [    0.000000]  0000000000000020 ffffffff9e4c9117 00000000ffffffff 0000ffffffff9e4c
+> [    0.000000] Call Trace:
+> [    0.000000] start_kernel (init/main.c:581)
+> [    0.000000] ? set_init_arg (init/main.c:281)
+> [    0.000000] ? early_idt_handlers (arch/x86/kernel/head_64.S:340)
+> [    0.000000] x86_64_start_reservations (arch/x86/kernel/head64.c:194)
+> [    0.000000] x86_64_start_kernel (arch/x86/kernel/head64.c:183)
+> [ 0.000000] Code: e8 d0 84 66 fa 89 c7 48 89 de e8 b0 46 02 fd 48 63 0d 4f 91 dd ff 31 c0 48 8b 3d 5e 1f 1c 01 48 83 c1 3f 48 c1 f9 03 48 83 e1 f8 <f3> aa 48 8b 1d 49 1f 1c 01 e8 9c 84 66 fa 89 c7 e8 25 3c d1 f9
+> All code
+> ========
+>    0:	e8 d0 84 66 fa       	callq  0xfffffffffa6684d5
+>    5:	89 c7                	mov    %eax,%edi
+>    7:	48 89 de             	mov    %rbx,%rsi
+>    a:	e8 b0 46 02 fd       	callq  0xfffffffffd0246bf
+>    f:	48 63 0d 4f 91 dd ff 	movslq -0x226eb1(%rip),%rcx        # 0xffffffffffdd9165
+>   16:	31 c0                	xor    %eax,%eax
+>   18:	48 8b 3d 5e 1f 1c 01 	mov    0x11c1f5e(%rip),%rdi        # 0x11c1f7d
+>   1f:	48 83 c1 3f          	add    $0x3f,%rcx
+>   23:	48 c1 f9 03          	sar    $0x3,%rcx
+>   27:	48 83 e1 f8          	and    $0xfffffffffffffff8,%rcx
+>   2b:	f3 aa                	rep stos %al,%es:*(%rdi)		<-- trapping instruction
+>   2d:	48 8b 1d 49 1f 1c 01 	mov    0x11c1f49(%rip),%rbx        # 0x11c1f7d
+>   34:	e8 9c 84 66 fa       	callq  0xfffffffffa6684d5
+>   39:	89 c7                	mov    %eax,%edi
+>   3b:	e8 25 3c d1 f9       	callq  0xfffffffff9d13c65
+> 	...
+> 
+> Code starting with the faulting instruction
+> ===========================================
+>    0:	f3 aa                	rep stos %al,%es:(%rdi)
+>    2:	48 8b 1d 49 1f 1c 01 	mov    0x11c1f49(%rip),%rbx        # 0x11c1f52
+>    9:	e8 9c 84 66 fa       	callq  0xfffffffffa6684aa
+>    e:	89 c7                	mov    %eax,%edi
+>   10:	e8 25 3c d1 f9       	callq  0xfffffffff9d13c3a
+> 	...
+> [    0.000000] RIP tick_nohz_init (include/linux/bitmap.h:165 include/linux/cpumask.h:333 kernel/time/tick-sched.c:344 kernel/time/tick-sched.c:356)
+> [    0.000000]  RSP <ffffffff9d003f28>
+> [    0.000000] CR2: 0000000000000000
+> 
+> Bisection pointed me to "rcu: Bind grace-period kthreads to non-NO_HZ_FULL CPUs".
 
-What I tried to do, with the final patch in the set, was use module
-usage counting combined with function documentation - in
-zpool_create_pool() the zpool_get_driver() does try_module_get()
-before releasing the spinlock, so if the driver *only* calls
-unregister from its module exit function, I think we should be good -
-once zpool_create_pool() gets the driver module, the driver won't
-enter its exit function and thus won't unregister; and if the driver
-module has started its exit function, try_module_get() will return
-failure and zpool_create_pool() will return failure.
+Yikes!  tick_nohz_full_mask is allocated not in one place, but two!
 
-Now, if we remove the restriction that the driver module can only
-unregister from its module exit function, then we would need an
-additional refcount (we could use module_refcount() but the module may
-have refcounts unrelated to us) and unregister would need a return
-value, to indicate failure.  I think the problem I had with that is,
-in the driver module's exit function it can't abort if unregister
-fails; but with the module refcounting, unregister shouldn't ever fail
-in the driver's exit function...
+Does the following patch help?
 
-So should I remove the unregister function doc asking to only call
-unregister from the module exit function, and add a separate refcount
-to the driver get/put functions?  I don't think we need to use a kref,
-since we don't want to free the driver once kref == 0, we want to be
-able to check in the unregister function if there are any refs, so
-just an atomic_t should work.  And we would still need to keep the
-module get/put, too, so it would be something like:
+							Thanx, Paul
 
-  spin_lock(&drivers_lock);
-...
-  bool got = try_module_get(driver->owner);
-  if (got)
-    atomic_inc(driver->refs);
-  spin_unlock(&drivers_lock);
-  return got ? driver : NULL;
+------------------------------------------------------------------------
 
-with the appropriate atomic_dec in zpool_put_driver(), and unregister
-would change to:
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 07ae1cc39063..e023134d63a1 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -336,6 +336,10 @@ static int tick_nohz_init_all(void)
+ 		pr_err("NO_HZ: Can't allocate full dynticks cpumask\n");
+ 		return err;
+ 	}
++	if (!alloc_cpumask_var(&tick_nohz_not_full_mask, GFP_KERNEL)) {
++		pr_err("NO_HZ: Can't allocate not-full dynticks cpumask\n");
++		return err;
++	}
+ 	err = 0;
+ 	cpumask_setall(tick_nohz_full_mask);
+ 	cpumask_clear_cpu(smp_processor_id(), tick_nohz_full_mask);
 
-int zpool_unregister_driver(struct zpool_driver *driver)
-{
-  spin_lock(&drivers_lock);
-  if (atomic_read(driver->refs) > 0) {
-    spin_unlock(&drivers_lock);
-    return -EBUSY;
-  }
-  list_del(&driver->list);
-  spin_unlock(&drivers_lock);
-  return 0;
-}
-
-
->
->> >> +void zpool_destroy_pool(struct zpool *zpool)
->> >> +{
->> >> +     pr_info("destroying pool type %s\n", zpool->type);
->> >> +
->> >> +     spin_lock(&pools_lock);
->> >> +     list_del(&zpool->list);
->> >> +     spin_unlock(&pools_lock);
->> >> +     zpool->driver->destroy(zpool->pool);
->> >> +     kfree(zpool);
->> >> +}
->> >
->> > What are the lifecycle rules here?  How do we know that nobody else can
->> > be concurrently using this pool?
->>
->> Well I think with zpools, as well as direct use of zsmalloc and zbud
->> pools, whoever creates a pool is responsible for making sure it's no
->> longer in use before destroying it.
->
-> Sounds reasonable.  Perhaps there's some convenient WARN_ON we can put
-> in here to check that.
-
-Since zpool's just a passthrough, there's no simple way of it telling
-if a pool is in use or not, but warnings could be added to
-zbud/zsmalloc's destroy functions.  zs_destroy_pool() already does
-check and pr_info() if any non-empty pools are destroyed.
-
->
->>  I think in most use cases, pool
->> creators won't be sharing their pools, so there should be no issue
->> with concurrent use.  In fact, concurrent pool use it probably a bad
->> idea in general - zsmalloc for example relies on per-cpu data during
->> handle mapping, so concurrent use of a single pool might result in the
->> per-cpu data being overwritten if multiple users of a single pool
->> tried to map and use different handles from the same cpu.
->
-> That's all a bit waffly.  Either we support concurrent use or we don't!
-
-I think I got offtrack talking about pool creators and pool users.
-zpool, and zbud/zsmalloc, really don't care about *who* is calling
-each of their functions.  Only concurrency matters, and most of the
-functions are safe for concurrent use, protected internally by
-spinlocks, etc in each pool driver (zbud/zsmalloc).  The map/unmap
-functions are a notable exception, but the function doc for
-zpool_map_handle() clarifies the restrictions for how to call it and
-what the implementation may do (hold spinlocks, disable preempt/ints)
-and that the caller should call unmap quickly after using the mapped
-handle.  And whoever creates the pool will need to also destroy the
-pool, or at least handle coordinating who and when the pool is
-destroyed (beyond warning, i don't think there is much the pool driver
-can do when a non-empty pool is destroyed.  Maybe don't destroy the
-pool, but that risks leaking memory if nobody ever uses the pool
-again).
-
-I'll review zbud and zsmalloc again to make sure each function is
-threadsafe, and state that in each zpool function doc, or make sure to
-clarify any restrictions.
-
-Since you already mentioned a few changes, let me get an updated patch
-set sent, I'll try to send that by Monday, and we can go from there if
-more changes are needed.  Thanks for the review!
-
-
->
->> Should some use/sharing restrictions be added to the zpool documentation?
->
-> Sure.  And the code if possible.  If a second user tries to use a pool
-> which is already in use, that attempt should just fail, with WARN,
-> printk, return -EBUSY, whatever.
