@@ -1,74 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752880AbaF0ItP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 04:49:15 -0400
-Received: from awesome.dsw2k3.info ([217.188.63.246]:33954 "EHLO
-	awesome.dsw2k3.info" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752462AbaF0ItM (ORCPT
+	id S1753009AbaF0Iu0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 04:50:26 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:65305 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750756AbaF0IuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 04:49:12 -0400
-X-Greylist: delayed 445 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 Jun 2014 04:49:12 EDT
-Date: Fri, 27 Jun 2014 10:41:39 +0200
-From: Matthias Schniedermeyer <ms@citd.de>
-To: =?iso-8859-1?B?THVr4T8=?= Czerner <lczerner@redhat.com>
-Cc: Artem Bityutskiy <dedekind1@gmail.com>,
-        Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
-        Dave Chinner <david@fromorbit.com>,
-        Thomas Knauth <thomas.knauth@gmx.de>,
-        David Rientjes <rientjes@google.com>,
-        Maksym Planeta <mcsim.planeta@gmail.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sysctl: Add a feature to drop caches selectively
-Message-ID: <20140627084139.GA29704@citd.de>
-References: <1403626213-7691-1-git-send-email-mcsim.planeta@gmail.com>
- <alpine.DEB.2.02.1406241458140.29176@chino.kir.corp.google.com>
- <1403677528.7903.103.camel@sauron.fi.intel.com>
- <CABhLV03_PNFiwsvt+yitcsKxz5TeVECCFavdNkbgQ+XzQqASaw@mail.gmail.com>
- <20140626010606.GT4453@dastard>
- <1403763199.20275.39.camel@sauron.fi.intel.com>
- <53ABF7C4.1000906@itwm.fraunhofer.de>
- <1403782263.20275.59.camel@sauron.fi.intel.com>
- <alpine.LFD.2.00.1406261349320.2172@localhost.localdomain>
+	Fri, 27 Jun 2014 04:50:23 -0400
+Date: Fri, 27 Jun 2014 09:47:22 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: "Chalamarla, Tirumalesh" <Tirumalesh.Chalamarla@caviumnetworks.com>,
+        Joerg Roedel <joro@8bytes.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        "stuart.yoder@freescale.com" <stuart.yoder@freescale.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "tech@virtualopensystems.com" <tech@virtualopensystems.com>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        "moderated list:ARM SMMU DRIVER" 
+	<linux-arm-kernel@lists.infradead.org>,
+        marc.zyngier@arm.com
+Subject: Re: [RFC PATCH v6 04/20] iommu/arm-smmu: add capability
+ IOMMU_CAP_INTR_REMAP
+Message-ID: <20140627084722.GB26276@arm.com>
+References: <20140616151329.GQ16758@arm.com>
+ <20140616152157.GB31771@8bytes.org>
+ <20140616152526.GR16758@arm.com>
+ <20140616153832.GC31771@8bytes.org>
+ <9353770066894e85809e1e443b71d1cd@BY2PR07MB203.namprd07.prod.outlook.com>
+ <748dccbbd3284521af4659ccbbb11453@BY2PR07MB203.namprd07.prod.outlook.com>
+ <b085e02e72dc424d9624c3e810951087@BY2PR07MB203.namprd07.prod.outlook.com>
+ <1403809223.31091.137.camel@ul30vt.home>
+ <ec8dbbcb991e4d73b73f4b4f98342445@BY2PR07MB203.namprd07.prod.outlook.com>
+ <1403811384.31091.151.camel@ul30vt.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.LFD.2.00.1406261349320.2172@localhost.localdomain>
+In-Reply-To: <1403811384.31091.151.camel@ul30vt.home>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26.06.2014 13:57, Luká? Czerner wrote:
-
-> > So if the authors want to sell this new interface (in whatever form) to
-> > the kernel community, they should start with providing a solid use-case,
-> > with some more details, explore alternatives and show how the
-> > alternatives do not work for them.
+On Thu, Jun 26, 2014 at 08:36:24PM +0100, Alex Williamson wrote:
+> On Thu, 2014-06-26 at 19:10 +0000, Chalamarla, Tirumalesh wrote:
+> > Thanks for the clarification Alex, Thatâ€™s exactly my point, why are we
+> > relying on  QEMU or something else to emulate the MSI space when we can
+> > directly give access to devices using ITS (of course with a small
+> > emulation code).  This way we are also benefited from all ITS services
+> > like VCPU migration etc.  
 > 
-> Yes please, let's see some solid use-case for this.
+> I have no idea what ITS is.
 
-Personally i would want it to verify files after copying them:
-Especially while moving files:
-- Copy a file
-- <drop cache>
-- Verify that it really is correct on stable storage
-- Remove original file
+ITS is the MSI doorbell for GICv3 (ARM's latest interrupt controller).
 
-Currently i choose either of the 3 ways:
-- drop_caches
-- umount/mount
-- Write more data than memory in machine (Which is only an 
-approximnation and you have to verify in the same order the files were 
-written, so it is likely that any cache was thrashed in the meantime)
+I agree that we will need an ITS emulation if we want to use MSIs in the
+guest, and I believe that Marc (CC'd) had already started thinking about
+that.
 
-But having a way to selectivly "destory" the cache of a file would make 
-this task easier.
+> > What about non QEMU VFIO users, for example, if I wanted to use VFIO to
+> > assign a device to a user process I don't need to depend on QEMU.   I
+> > thought this is one of the main goals of vfio to make it independent of
+> > hypervisors.     
+> 
+> Where did QEMU become a requirement?  Maybe I'm missing something in the
+> ARM part of the conversation that got chopped off, but this is exactly
+> why we have the VFIO/QEMU split that we do.  VFIO provides basic
+> virtualization for config space and restricts access to other areas that
+> users shouldn't be allowed to change.  QEMU is just one example of a
+> userspace VFIO driver.  QEMU takes the decomposed device exposed through
+> the VFIO ABI and re-creates a PCI device out of it.  VFIO itself has no
+> dependency on QEMU.  Thanks,
 
+I also don't understand the QEMU part here. The MSI emulation would be in
+the kernel, just like the GICv2 emulation that we already have. For
+userspace drivers, wouldn't you just use eventfd rather than bother with
+emulating MSIs?
 
+Finally, the interrupt remapping part is about the SMMU preventing MSI
+writes to arbitrary portions of the host address space. The ITS is about
+routing interrupts to CPUs.
 
-
--- 
-
-Matthias
+Will
