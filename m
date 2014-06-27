@@ -1,85 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753351AbaF0Kyo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 06:54:44 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:61384 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752826AbaF0Kyn (ORCPT
+	id S1753391AbaF0Kz2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 06:55:28 -0400
+Received: from mailout4.w2.samsung.com ([211.189.100.14]:38365 "EHLO
+	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753136AbaF0Kz0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 06:54:43 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Hiroshi DOyu <hdoyu@nvidia.com>, Thierry Reding <thierry.reding@gmail.com>,
-        Mark Rutland <mark.rutland@arm.com>, Will Deacon <will.deacon@arm.com>,
-        Paul Walmsley <pwalmsley@nvidia.com>, Pawel Moll <pawel.moll@arm.com>,
-        Joerg Roedel <joro@8bytes.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Marc Zyngier <marc.zyngier@arm.com>, Dave Martin <Dave.Martin@arm.com>,
-        Olav Haugan <ohaugan@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Grant Grundler <grundler@chromium.org>,
-        Allen Martin <AMartin@nvidia.com>, Rob Herring <robh+dt@kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Cho KyongHo <pullip.cho@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        Kumar Gala <galak@codeaurora.org>, Rhyland Klein <rklein@nvidia.com>
-Subject: Re: [RFC 09/10] drm/tegra: Add IOMMU support
-Date: Fri, 27 Jun 2014 12:54:20 +0200
-Message-ID: <4455459.GtiCHWk2CB@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140627124614.050be2e406a4b9a02d9fe97c@nvidia.com>
-References: <1403815790-8548-1-git-send-email-thierry.reding@gmail.com> <1403815790-8548-10-git-send-email-thierry.reding@gmail.com> <20140627124614.050be2e406a4b9a02d9fe97c@nvidia.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:QKSmYn+uRy5Gotz2EuigdcZ5QuF/zBQMuUIUphzV5k7
- s8UmvyKHTMIQOfdOkyMFdtRPMlqcjtUuIRce1T2CFhfPQlyi3g
- SeOM90HMo+Z3vRwZf0o2oduKzCGWEDDg5LArIgk3BLn8FnlcDx
- Stg1x06znAd9oBq7v46BIXKxpSujNBWFJyOBFC0ahMEz9BIVxZ
- 0BpcTTx4x5s3LkBG5B/K22X4qA9Ms5pvyUhdmg3HlMRMdqEuhY
- PdpfgwYI+9gMgaBXhqC6Pqnc2TntbJ6yr6P2VmIM3awXqTo8oh
- 2raw0j2Vy5LLHXh18U4Jkbr7c7RXri/NxQipV3lz+WJwS2VGy9
- qvzqr+jRy8dw+s/6PHGs=
+	Fri, 27 Jun 2014 06:55:26 -0400
+X-AuditID: cbfec373-b7fd56d0000060dc-9f-53ad4d9c52cb
+Date: Fri, 27 Jun 2014 07:55:20 -0300
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org
+Subject: Re: [PATCH 07/22] media: Use pci_zalloc_consistent
+Message-id: <20140627075520.19af50ff.m.chehab@samsung.com>
+In-reply-to: <53AD2951.5040903@xs4all.nl>
+References: <cover.1403530604.git.joe@perches.com>
+ <a7fe4c3fb2422b3c2eaaebe4772c36469906a303.1403530604.git.joe@perches.com>
+ <53AD2951.5040903@xs4all.nl>
+X-Mailer: Claws Mail 3.10.0 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrELMWRmVeSWpSXmKPExsVy+t/hQN05vmuDDc5cMLU4NfkZk8Xs+49Z
+	LC7vmsNm0bNhK6sDi8eXVdeYPT5vkvM49fUzewBzFJdNSmpOZllqkb5dAlfGp+07mQpO21es
+	3XOLqYGxxaiLkYNDQsBE4vNEzi5GTiBTTOLCvfVsILaQwBJGid4PFV2MXEB2A5NE8/xzrCAJ
+	FgFViU1PuplAbDYBI4lXjS1gcRGg+Otdv5hBbGaBOIlD72czgcwXFrCWuLuPBSTMK2Al8evY
+	czaQMKeApsSDp+YQ4+cySmz+vIkV4gZniQvNy6HqBSV+TL7HAjFSS2LztiZWCFteYvOat8wT
+	GAVmISmbhaRsFpKyBYzMqxhFS4uTC4qT0nON9IoTc4tL89L1kvNzNzFCwrV4B+OLDVaHGAU4
+	GJV4eBesWhMsxJpYVlyZe4hRgoNZSYR3ssfaYCHelMTKqtSi/Pii0pzU4kOMTBycUg2MBZX7
+	fgYpS1Rt0zCWX5kgbzOjYoO1/7G8CW48cz35Fkeuvde8h82mpEr5p9muK31C69y35yjK/s9k
+	8JxoMq9tx7/f4k4ZMun1SSfMRd9ZyvrtPHwxK2330+UMb49f8Nn2+s0khU8e03Sm/P/Z9yjC
+	4P4a1W8n3bxPsGaHT3irccEqqXVvDj+nEktxRqKhFnNRcSIAOJ+qejUCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 27 June 2014 12:46:14 Hiroshi DOyu wrote:
+Em Fri, 27 Jun 2014 10:20:33 +0200
+Hans Verkuil <hverkuil@xs4all.nl> escreveu:
+
+> Hi Joe,
 > 
-> Thierry Reding <thierry.reding@gmail.com> writes:
+> For the media subsystem:
 > 
-> > From: Thierry Reding <treding@nvidia.com>
+> Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
+
+Err... I would rather prefer to apply this patch on our subsystem, in order
+to avoid potential conflicts with other patches. Not really a big deal, as
+those drivers aren't being touched for a while, but who knows what patches
+may appear for them up to the next merge tree?
+
+Regards,
+Mauro
+
+> 
+> Regards,
+> 
+> 	Hans
+> 
+> On 06/23/2014 03:41 PM, Joe Perches wrote:
+> > Remove the now unnecessary memset too.
 > >
-> > When an IOMMU device is available on the platform bus, allocate an IOMMU
-> > domain and attach the display controllers to it. The display controllers
-> > can then scan out non-contiguous buffers by mapping them through the
-> > IOMMU.
-> >
-> > Signed-off-by: Thierry Reding <treding@nvidia.com>
+> > Signed-off-by: Joe Perches <joe@perches.com>
 > > ---
-> > @@ -1283,8 +1284,18 @@ static int tegra_dc_init(struct host1x_client *client)
-> >  {
-> >         struct drm_device *drm = dev_get_drvdata(client->parent);
-> >         struct tegra_dc *dc = host1x_client_to_dc(client);
-> > +       struct tegra_drm *tegra = drm->dev_private;
-> >         int err;
+> >   drivers/media/common/saa7146/saa7146_core.c       | 15 ++++++---------
+> >   drivers/media/common/saa7146/saa7146_fops.c       |  5 +++--
+> >   drivers/media/pci/bt8xx/bt878.c                   | 16 ++++------------
+> >   drivers/media/pci/ngene/ngene-core.c              |  7 +++----
+> >   drivers/media/usb/ttusb-budget/dvb-ttusb-budget.c | 11 +++--------
+> >   drivers/media/usb/ttusb-dec/ttusb_dec.c           | 11 +++--------
+> >   6 files changed, 22 insertions(+), 43 deletions(-)
 > >
-> > +       if (tegra->domain) {
-> > +               err = iommu_attach_device(tegra->domain, dc->dev);
-> 
-> I wanted to keep device drivers iommu-free with the following:
-> 
-> http://patchwork.ozlabs.org/patch/354074/
-> 
-
-We definitely need something like your series to make iommus work transparently
-on ARM for normal devices, using the of_dma_configure() to look up the correct
-iommu per device and initialize it.
-
-However, any devices that work with multiple iommu domains cannot do that
-and still need to use the iommu API directy. I believe the tegra drm code
-falls into this category.
-
-	Arnd
+> > diff --git a/drivers/media/common/saa7146/saa7146_core.c b/drivers/media/common/saa7146/saa7146_core.c
+> > index 34b0d0d..97afee6 100644
+> > --- a/drivers/media/common/saa7146/saa7146_core.c
+> > +++ b/drivers/media/common/saa7146/saa7146_core.c
+> > @@ -421,23 +421,20 @@ static int saa7146_init_one(struct pci_dev *pci, const struct pci_device_id *ent
+> >   	err = -ENOMEM;
+> >
+> >   	/* get memory for various stuff */
+> > -	dev->d_rps0.cpu_addr = pci_alloc_consistent(pci, SAA7146_RPS_MEM,
+> > -						    &dev->d_rps0.dma_handle);
+> > +	dev->d_rps0.cpu_addr = pci_zalloc_consistent(pci, SAA7146_RPS_MEM,
+> > +						     &dev->d_rps0.dma_handle);
+> >   	if (!dev->d_rps0.cpu_addr)
+> >   		goto err_free_irq;
+> > -	memset(dev->d_rps0.cpu_addr, 0x0, SAA7146_RPS_MEM);
+> >
+> > -	dev->d_rps1.cpu_addr = pci_alloc_consistent(pci, SAA7146_RPS_MEM,
+> > -						    &dev->d_rps1.dma_handle);
+> > +	dev->d_rps1.cpu_addr = pci_zalloc_consistent(pci, SAA7146_RPS_MEM,
+> > +						     &dev->d_rps1.dma_handle);
+> >   	if (!dev->d_rps1.cpu_addr)
+> >   		goto err_free_rps0;
+> > -	memset(dev->d_rps1.cpu_addr, 0x0, SAA7146_RPS_MEM);
+> >
+> > -	dev->d_i2c.cpu_addr = pci_alloc_consistent(pci, SAA7146_RPS_MEM,
+> > -						   &dev->d_i2c.dma_handle);
+> > +	dev->d_i2c.cpu_addr = pci_zalloc_consistent(pci, SAA7146_RPS_MEM,
+> > +						    &dev->d_i2c.dma_handle);
+> >   	if (!dev->d_i2c.cpu_addr)
+> >   		goto err_free_rps1;
+> > -	memset(dev->d_i2c.cpu_addr, 0x0, SAA7146_RPS_MEM);
+> >
+> >   	/* the rest + print status message */
+> >
+> > diff --git a/drivers/media/common/saa7146/saa7146_fops.c b/drivers/media/common/saa7146/saa7146_fops.c
+> > index eda01bc..a776a80 100644
+> > --- a/drivers/media/common/saa7146/saa7146_fops.c
+> > +++ b/drivers/media/common/saa7146/saa7146_fops.c
+> > @@ -520,14 +520,15 @@ int saa7146_vv_init(struct saa7146_dev* dev, struct saa7146_ext_vv *ext_vv)
+> >   	   configuration data) */
+> >   	dev->ext_vv_data = ext_vv;
+> >
+> > -	vv->d_clipping.cpu_addr = pci_alloc_consistent(dev->pci, SAA7146_CLIPPING_MEM, &vv->d_clipping.dma_handle);
+> > +	vv->d_clipping.cpu_addr =
+> > +		pci_zalloc_consistent(dev->pci, SAA7146_CLIPPING_MEM,
+> > +				      &vv->d_clipping.dma_handle);
+> >   	if( NULL == vv->d_clipping.cpu_addr ) {
+> >   		ERR("out of memory. aborting.\n");
+> >   		kfree(vv);
+> >   		v4l2_ctrl_handler_free(hdl);
+> >   		return -1;
+> >   	}
+> > -	memset(vv->d_clipping.cpu_addr, 0x0, SAA7146_CLIPPING_MEM);
+> >
+> >   	saa7146_video_uops.init(dev,vv);
+> >   	if (dev->ext_vv_data->capabilities & V4L2_CAP_VBI_CAPTURE)
+> > diff --git a/drivers/media/pci/bt8xx/bt878.c b/drivers/media/pci/bt8xx/bt878.c
+> > index d0c281f..1176583 100644
+> > --- a/drivers/media/pci/bt8xx/bt878.c
+> > +++ b/drivers/media/pci/bt8xx/bt878.c
+> > @@ -101,28 +101,20 @@ static int bt878_mem_alloc(struct bt878 *bt)
+> >   	if (!bt->buf_cpu) {
+> >   		bt->buf_size = 128 * 1024;
+> >
+> > -		bt->buf_cpu =
+> > -		    pci_alloc_consistent(bt->dev, bt->buf_size,
+> > -					 &bt->buf_dma);
+> > -
+> > +		bt->buf_cpu = pci_zalloc_consistent(bt->dev, bt->buf_size,
+> > +						    &bt->buf_dma);
+> >   		if (!bt->buf_cpu)
+> >   			return -ENOMEM;
+> > -
+> > -		memset(bt->buf_cpu, 0, bt->buf_size);
+> >   	}
+> >
+> >   	if (!bt->risc_cpu) {
+> >   		bt->risc_size = PAGE_SIZE;
+> > -		bt->risc_cpu =
+> > -		    pci_alloc_consistent(bt->dev, bt->risc_size,
+> > -					 &bt->risc_dma);
+> > -
+> > +		bt->risc_cpu = pci_zalloc_consistent(bt->dev, bt->risc_size,
+> > +						     &bt->risc_dma);
+> >   		if (!bt->risc_cpu) {
+> >   			bt878_mem_free(bt);
+> >   			return -ENOMEM;
+> >   		}
+> > -
+> > -		memset(bt->risc_cpu, 0, bt->risc_size);
+> >   	}
+> >
+> >   	return 0;
+> > diff --git a/drivers/media/pci/ngene/ngene-core.c b/drivers/media/pci/ngene/ngene-core.c
+> > index 970e833..37dc149 100644
+> > --- a/drivers/media/pci/ngene/ngene-core.c
+> > +++ b/drivers/media/pci/ngene/ngene-core.c
+> > @@ -1078,12 +1078,11 @@ static int AllocCommonBuffers(struct ngene *dev)
+> >   	dev->ngenetohost = dev->FWInterfaceBuffer + 256;
+> >   	dev->EventBuffer = dev->FWInterfaceBuffer + 512;
+> >
+> > -	dev->OverflowBuffer = pci_alloc_consistent(dev->pci_dev,
+> > -						   OVERFLOW_BUFFER_SIZE,
+> > -						   &dev->PAOverflowBuffer);
+> > +	dev->OverflowBuffer = pci_zalloc_consistent(dev->pci_dev,
+> > +						    OVERFLOW_BUFFER_SIZE,
+> > +						    &dev->PAOverflowBuffer);
+> >   	if (!dev->OverflowBuffer)
+> >   		return -ENOMEM;
+> > -	memset(dev->OverflowBuffer, 0, OVERFLOW_BUFFER_SIZE);
+> >
+> >   	for (i = STREAM_VIDEOIN1; i < MAX_STREAM; i++) {
+> >   		int type = dev->card_info->io_type[i];
+> > diff --git a/drivers/media/usb/ttusb-budget/dvb-ttusb-budget.c b/drivers/media/usb/ttusb-budget/dvb-ttusb-budget.c
+> > index f8a60c1..0d3194a 100644
+> > --- a/drivers/media/usb/ttusb-budget/dvb-ttusb-budget.c
+> > +++ b/drivers/media/usb/ttusb-budget/dvb-ttusb-budget.c
+> > @@ -804,11 +804,9 @@ static int ttusb_alloc_iso_urbs(struct ttusb *ttusb)
+> >   {
+> >   	int i;
+> >
+> > -	ttusb->iso_buffer = pci_alloc_consistent(NULL,
+> > -						 ISO_FRAME_SIZE *
+> > -						 FRAMES_PER_ISO_BUF *
+> > -						 ISO_BUF_COUNT,
+> > -						 &ttusb->iso_dma_handle);
+> > +	ttusb->iso_buffer = pci_zalloc_consistent(NULL,
+> > +						  ISO_FRAME_SIZE * FRAMES_PER_ISO_BUF * ISO_BUF_COUNT,
+> > +						  &ttusb->iso_dma_handle);
+> >
+> >   	if (!ttusb->iso_buffer) {
+> >   		dprintk("%s: pci_alloc_consistent - not enough memory\n",
+> > @@ -816,9 +814,6 @@ static int ttusb_alloc_iso_urbs(struct ttusb *ttusb)
+> >   		return -ENOMEM;
+> >   	}
+> >
+> > -	memset(ttusb->iso_buffer, 0,
+> > -	       ISO_FRAME_SIZE * FRAMES_PER_ISO_BUF * ISO_BUF_COUNT);
+> > -
+> >   	for (i = 0; i < ISO_BUF_COUNT; i++) {
+> >   		struct urb *urb;
+> >
+> > diff --git a/drivers/media/usb/ttusb-dec/ttusb_dec.c b/drivers/media/usb/ttusb-dec/ttusb_dec.c
+> > index 29724af..15ab584 100644
+> > --- a/drivers/media/usb/ttusb-dec/ttusb_dec.c
+> > +++ b/drivers/media/usb/ttusb-dec/ttusb_dec.c
+> > @@ -1151,11 +1151,9 @@ static int ttusb_dec_alloc_iso_urbs(struct ttusb_dec *dec)
+> >
+> >   	dprintk("%s\n", __func__);
+> >
+> > -	dec->iso_buffer = pci_alloc_consistent(NULL,
+> > -					       ISO_FRAME_SIZE *
+> > -					       (FRAMES_PER_ISO_BUF *
+> > -						ISO_BUF_COUNT),
+> > -					       &dec->iso_dma_handle);
+> > +	dec->iso_buffer = pci_zalloc_consistent(NULL,
+> > +						ISO_FRAME_SIZE * (FRAMES_PER_ISO_BUF * ISO_BUF_COUNT),
+> > +						&dec->iso_dma_handle);
+> >
+> >   	if (!dec->iso_buffer) {
+> >   		dprintk("%s: pci_alloc_consistent - not enough memory\n",
+> > @@ -1163,9 +1161,6 @@ static int ttusb_dec_alloc_iso_urbs(struct ttusb_dec *dec)
+> >   		return -ENOMEM;
+> >   	}
+> >
+> > -	memset(dec->iso_buffer, 0,
+> > -	       ISO_FRAME_SIZE * (FRAMES_PER_ISO_BUF * ISO_BUF_COUNT));
+> > -
+> >   	for (i = 0; i < ISO_BUF_COUNT; i++) {
+> >   		struct urb *urb;
+> >
+> >
