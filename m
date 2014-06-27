@@ -1,62 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752245AbaF0AGk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 20:06:40 -0400
-Received: from ozlabs.org ([103.22.144.67]:52704 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751777AbaF0AGj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 20:06:39 -0400
-Date: Fri, 27 Jun 2014 10:06:32 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: bad commits in the ext4 tree
-Message-ID: <20140627100632.05e6c3ca@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1752363AbaF0AIK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 20:08:10 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:36741 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751783AbaF0AII (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 20:08:08 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/w5bl/3s3M/vCt8eeoKK7g4I"; protocol="application/pgp-signature"
+In-Reply-To: <alpine.DEB.2.10.1406270027300.5170@nanos>
+References: <CANGgnMbHckBQdKGN_N5Q6qEKc9n1CenxvMpeXog1NbSdL8UrTw@mail.gmail.com>
+ <CANGgnMYDXerOUDOO9-RHMJKadKACA2KBGskZwoP-1ZwAhDEfVA@mail.gmail.com>
+ <CAFLxGvxfBt7OvW=a2Kz08GLHSEiiOZsN-vB19CXnQiwqFxqMsA@mail.gmail.com>
+ <CANGgnMYVoP-Z0Bv-VDEkJnvfa7Fi4-zY2F4A0PhMewGvwo3VVw@mail.gmail.com> <alpine.DEB.2.10.1406270027300.5170@nanos>
+From: Austin Schuh <austin@peloton-tech.com>
+Date: Thu, 26 Jun 2014 17:07:47 -0700
+Message-ID: <CANGgnMa+qtgJ3wwg_h5Rynw5vEvZpQZ6PvaUfXNQ8+Y3Yu5U0g@mail.gmail.com>
+Subject: Re: Filesystem lockup with CONFIG_PREEMPT_RT
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Richard Weinberger <richard.weinberger@gmail.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        rt-users <linux-rt-users@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/w5bl/3s3M/vCt8eeoKK7g4I
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Thu, Jun 26, 2014 at 3:35 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Thu, 26 Jun 2014, Austin Schuh wrote:
+>> On Wed, May 21, 2014 at 12:33 AM, Richard Weinberger
+>> <richard.weinberger@gmail.com> wrote:
+>> > CC'ing RT folks
+>> >
+>> > On Wed, May 21, 2014 at 8:23 AM, Austin Schuh <austin@peloton-tech.com> wrote:
+>> >> On Tue, May 13, 2014 at 7:29 PM, Austin Schuh <austin@peloton-tech.com> wrote:
+>> >>> Hi,
+>> >>>
+>> >>> I am observing a filesystem lockup with XFS on a CONFIG_PREEMPT_RT
+>> >>> patched kernel.  I have currently only triggered it using dpkg.  Dave
+>> >>> Chinner on the XFS mailing list suggested that it was a rt-kernel
+>> >>> workqueue issue as opposed to a XFS problem after looking at the
+>> >>> kernel messages.
+>>
+>> I've got a 100% reproducible test case that doesn't involve a
+>> filesystem.  I wrote a module that triggers the bug when the device is
+>> written to, making it easy to enable tracing during the event and
+>> capture everything.
+>>
+>> It looks like rw_semaphores don't trigger wq_worker_sleeping to run
+>> when work goes to sleep on a rw_semaphore.  This only happens with the
+>> RT patches, not with the mainline kernel.  I'm foreseeing a second
+>> deadlock/bug coming into play shortly.  If a task holding the work
+>> pool spinlock gets preempted, and we need to schedule more work from
+>> another worker thread which was just blocked by a mutex, we'll then
+>> end up trying to go to sleep on 2 locks at once.
+>
+> I remember vaguely, that I've seen and analyzed that quite some time
+> ago. I can't page in all the gory details right now, but I have a look
+> how the related code changed in the last couple of years tomorrow
+> morning with an awake brain.
+>
+> Steven, you did some analysis on that IIRC, or was that just related
+> to rw_locks?
+>
+> Thanks,
+>
+>         tglx
 
-Hi Ted,
+If I'm reading the rt patch correctly, wq_worker_sleeping was moved
+out of __schedule to sched_submit_work.  It looks like that changes
+the conditions under which wq_worker_sleeping is called.  It used to
+be called whenever a task was going to sleep (I think).  It looks like
+it is called now if the task is going to sleep, and if the task isn't
+blocked on a PI mutex (I think).
 
-I noticed commit 14b02deff1ae ("[regression] fix 32-bit breakage in
-block device read(2)") in the ext4 tree today.  This commit is commited
-by you, but has not Signed-off-by from you ... it is also in Linus'
-tree today.
+If I try the following experiment
 
-Commit e43bb4e612b4 ("ext4: decrement free clusters/inodes
-counters when block group declared bad") also has no S-o-b from you.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+ static inline void sched_submit_work(struct task_struct *tsk)
+ {
++   if (tsk->state && tsk->flags & PF_WQ_WORKER) {
++     wq_worker_sleeping(tsk);
++     return;
++   }
 
---Sig_/w5bl/3s3M/vCt8eeoKK7g4I
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+and then remove the call later in the function, I am able to pass my test.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Unfortunately, I then get a recursive pool spinlock BUG_ON after a
+while (as I would expect), and it all blows up.
 
-iQIcBAEBCAAGBQJTrLWNAAoJEMDTa8Ir7ZwVK8sP/i46yyHCmi+SoD1IYlzNBqU+
-DWyZ+aUd2skIJy39Mcvx+u0GuutM8+b4pJIZyurkzIJH2l7wrms9dqvp6hXNltLd
-+Y4Ls+Gq6JCXxHTioANlGO3TiUF7wfT90fiWIUI485uRXHfCKdoWEN9S6Ss/Ff2q
-GL1YQk341rF2osuPx7W60+9kyWn5NlKeSdBUx2f1La/jD6zKrO9lLPdtesdLUfQY
-6DEekYYj3LZ+nVxSSZf4vptGUafkNZROHDdbzYmf7toEqsPeJTVjFvuaghbHSOnR
-+SE5ii731KBCidSk6qDu73wRuAFpCWS0cRoJ6aY4m3fCf+/Kod++/7qr7NM8JhLU
-2cEYe8MrM0kA+m2Ehomiqi+zjF8AmNVDfgt/tG8we/WqGBMMYSKfnHmM87ycqbS2
-P0LSU9+e2TaY7hJG6iAZRMx1toyHSLNNdyb10y6o8ExzNLlg16BR1uctBviwa8FJ
-ljADd2p8nbrzuVYEmQAT9gH3roXF1iTfAj+7HRhPICrkvQkjQbrLSj5oeZfZ3Kzn
-6zMhStnJx5YTmxphiMkrjorhpjx0qE3eAu8stOmV5OkmFRfr243xhd39x1qaC61K
-Q8f4t2FIB0kwDFPC1uZfpgiyVpL+cpABkE2vdbHPTLqxBP4r70b+IKPb4LYNq4tZ
-CASHY759hZh9ON2llSUq
-=k+Bs
------END PGP SIGNATURE-----
+I'm not sure where to go from there.  Any changes to the workpool to
+try to fix that will be hard, or could affect latency significantly.
 
---Sig_/w5bl/3s3M/vCt8eeoKK7g4I--
+Austin
