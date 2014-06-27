@@ -1,58 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753400AbaF0KT6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 06:19:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57600 "EHLO mx1.redhat.com"
+	id S1753397AbaF0KWR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 06:22:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45192 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752952AbaF0KTz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 06:19:55 -0400
-Message-ID: <53AD4514.9040708@redhat.com>
-Date: Fri, 27 Jun 2014 12:19:00 +0200
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752825AbaF0KWP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 06:22:15 -0400
+Message-ID: <53AD45CD.8060902@redhat.com>
+Date: Fri, 27 Jun 2014 12:22:05 +0200
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Chema Gonzalez <chema@google.com>
-CC: Alexei Starovoitov <ast@plumgrid.com>, Ingo Molnar <mingo@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, David Miller <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6 net-next 1/4] net: flow_dissector: avoid multiple calls
- in eBPF
-References: <1398882591-30422-1-git-send-email-chema@google.com> <1401389758-13252-1-git-send-email-chema@google.com> <5387C8AD.6000909@redhat.com> <CA+ZOOTNobzzJPgQnVVZ+b6rRD=0_pdjUB8q5FQVkbO+dob0BSg@mail.gmail.com> <538C6FD8.9040305@redhat.com> <CAMEtUuyduk1sHBeVm=d5GYEgB4ma7sVFYeBLdapbeEpQY9nA1Q@mail.gmail.com> <538D884E.5030007@redhat.com> <CAMEtUuxK5hV_eORRLaSHSiwF5X82Ae91vL6W0-6au48v8H6bAA@mail.gmail.com> <CA+ZOOTPdDDeGxZVGXVRZmjkxqkGefgDLrawo_9YXbjwTQ_FLzA@mail.gmail.com> <538EDE1A.8060305@redhat.com> <CA+ZOOTONwNt2xpwUc=tqhP=m31KZTzij-rrAHVh6g3hVYgKaEw@mail.gmail.com> <53A9337F.50707@redhat.com> <CA+ZOOTNSW-SFaX8zbBqoz8nGtkqBshcagTHt6HMLokczV6xZ6g@mail.gmail.com>
-In-Reply-To: <CA+ZOOTNSW-SFaX8zbBqoz8nGtkqBshcagTHt6HMLokczV6xZ6g@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org, "Alexander E. Patrakov" <patrakov@gmail.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] zram: revalidate disk after capacity change
+References: <1403745385-18952-1-git-send-email-minchan@kernel.org>
+In-Reply-To: <1403745385-18952-1-git-send-email-minchan@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2014 12:00 AM, Chema Gonzalez wrote:
-...
-> There's still the problem of whether we want to obsolete classic BPF
-> in the kernel before the tools (libpcap mainly) accept eBPF. This can
-> take a lot.
->
-> Finally, what's the user's CLI interface you have in mind? Right now,
-> tcpdump expressions are very handy: I know I can pass "ip[2:2] ==
-> 1500" or "(tcp[13] & 0x03)" to any libpcap-based application. This is
-> very handy to log into a machine, and quickly run tcpdump to get the
-> packets I'm interested on. What would be the model for using C-- eBPF
-> filters in the same manner?
+On 06/26/2014 03:16 AM, Minchan Kim wrote:
+> Alexander reported mkswap on /dev/zram0 is failed if other process
+> is opening the block device file.
+> 
+> Step is as follows,
+> 
+> 0. Reset the unused zram device.
+> 1. Use a program that opens /dev/zram0 with O_RDWR and sleeps
+>    until killed.
+> 2. While that program sleeps, echo the correct value to
+>    /sys/block/zram0/disksize.
+> 3. Verify (e.g. in /proc/partitions) that the disk size is applied
+>    correctly. It is.
+> 4. While that program still sleeps, attempt to mkswap /dev/zram0.
+>    This fails: mkswap: error: swap area needs to be at least 40 KiB
+> 
+> When I investigated, the size get by ioctl(fd, BLKGETSIZE64, xxx)
+> on mkswap to get a size of blockdev was zero although zram0 has
+> right size by 2.
+> 
+> The reason is zram didn't revalidate disk after changing capacity
+> so that size of blockdev's inode is not uptodate until all of file
+> is close.
 
-Yes, imho, it's a valid question to ask. I think there are a couple
-of possibilities for libpcap/tcpdump from a user point of view (note,
-I don't strictly think it's the _only_ main user though): 1) iff a
-llvm and/or gcc backend gets merged from the compiler side, one could
-add a cli interface to run the generated opcodes from a file for
-advanced filters while perhaps classic BPF continues to be supported
-via its high-level filter expressions; 2) there could be a Linux-only
-compiler in libpcap that translates and makes use of full eBPF (though
-significantly more effort to implement); 3) libpcap continues to use
-classic BPF as it's currently doing.
+Acked-by: Jerome Marchand <jmarchan@redhat.com>
+
+> 
+> This patch should fix the BUG.
+> 
+> Cc: stable@vger.kernel.org
+> Reported-and-Tested-by: Alexander E. Patrakov <patrakov@gmail.com>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  drivers/block/zram/zram_drv.c | 5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> index 48eccb3..089e72c 100644
+> --- a/drivers/block/zram/zram_drv.c
+> +++ b/drivers/block/zram/zram_drv.c
+> @@ -622,8 +622,10 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+>  	memset(&zram->stats, 0, sizeof(zram->stats));
+>  
+>  	zram->disksize = 0;
+> -	if (reset_capacity)
+> +	if (reset_capacity) {
+>  		set_capacity(zram->disk, 0);
+> +		revalidate_disk(zram->disk);
+> +	}
+>  	up_write(&zram->init_lock);
+>  }
+>  
+> @@ -664,6 +666,7 @@ static ssize_t disksize_store(struct device *dev,
+>  	zram->comp = comp;
+>  	zram->disksize = disksize;
+>  	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
+> +	revalidate_disk(zram->disk);
+>  	up_write(&zram->init_lock);
+>  	return len;
+>  
+> 
+
