@@ -1,150 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751934AbaF0ROF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 13:14:05 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:40169 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751308AbaF0ROD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 13:14:03 -0400
-Date: Fri, 27 Jun 2014 10:13:59 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: josh@joshtriplett.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: rcu: NULL ptr deref on boot
-Message-ID: <20140627171359.GG4603@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <53ADA04B.3010707@oracle.com>
+	id S1752007AbaF0RPJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 13:15:09 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:57858 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751403AbaF0RPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 13:15:07 -0400
+Date: Fri, 27 Jun 2014 12:15:03 -0500
+From: Nishanth Menon <nm@ti.com>
+To: Keerthy <a0393675@ti.com>
+CC: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Keerthy <j-keerthy@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <t-kristo@ti.com>
+Subject: Re: [PATCH] regulator: tps65917: Fix SMPS enable/disable/is_enable
+Message-ID: <20140627171503.GA26734@kahuna>
+References: <1403807494-23907-1-git-send-email-nm@ti.com>
+ <53AD36E1.1010700@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <53ADA04B.3010707@oracle.com>
+In-Reply-To: <53AD36E1.1010700@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14062717-1542-0000-0000-000002E5284B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 27, 2014 at 12:48:11PM -0400, Sasha Levin wrote:
-> Hi Paul,
+On 14:48-20140627, Keerthy wrote:
+> Hello Nishanth,
 > 
-> I've noticed the following on boot with the latest -next kernel:
+> On Friday 27 June 2014 12:01 AM, Nishanth Menon wrote:
+> >We use regmap regulator ops to enable/disable and check if regulator
+> >is enabled for various SMPS. However, these depend on valid
+> >enable_reg, enable_mask and enable_value in regulator descriptor.
+> >
+> >So, similar to fix we did in commit 318dbb02b50c
+> >("regulator: palmas: Fix SMPS enable/disable/is_enabled"), populate the
+> >same for TPS65917 SMPS registration. LDO definitions are already in place.
+> >
+> >Fixes: d6f83370ed97 ("regulator: palmas: Add tps65917 PMIC support")
+> >Signed-off-by: Nishanth Menon <nm@ti.com>
+> >---
+> >
+> >Applies on:
+> >	git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git
+> >branch: topic/palmas (4c0c9ca Merge remote-tracking branch 'regulator/fix/palmas' into regulator-palmas)
+> >
+> >Note: Ignored the minor style check from checkpatch --strict as fixing
+> >it would create an 80 char warning
+> >
+> >  drivers/regulator/palmas-regulator.c |    8 ++++++++
+> >  1 file changed, 8 insertions(+)
+> >
+> >diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
+> >index 7c8b441..c7aa1b1 100644
+> >--- a/drivers/regulator/palmas-regulator.c
+> >+++ b/drivers/regulator/palmas-regulator.c
+> >@@ -1333,6 +1333,14 @@ static int tps65917_smps_registration(struct palmas_pmic *pmic,
+> >  		pmic->current_reg_mode[id] = reg &
+> >  				PALMAS_SMPS12_CTRL_MODE_ACTIVE_MASK;
+> >+		pmic->desc[id].enable_reg =
+> >+				PALMAS_BASE_TO_REG(PALMAS_SMPS_BASE,
+> >+					palmas_regs_info[id].ctrl_addr);
 > 
-> [    0.000000] WARNING: CPU: 0 PID: 0 at arch/x86/kernel/cpu/common.c:1439 warn_pre_alternatives+0x1e/0x20()
-> [    0.000000] You're using static_cpu_has before alternatives have run!
-> [    0.000000] Modules linked in:
-> [    0.000000] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.16.0-rc2-next-20140627-sasha-00023-g5d10814-dirty #734
-> [    0.000000]  0000000000000009 ffffffff9d003c48 ffffffff9b525423 0000000000000002
-> [    0.000000]  ffffffff9d003c98 ffffffff9d003c88 ffffffff98168aec ffffffff9d003d58
-> [    0.000000]  0000000000000000 ffffffff9d003e78 0000000000000000 0000000000000002
-> [    0.000000] Call Trace:
-> [    0.000000] dump_stack (lib/dump_stack.c:52)
-> [    0.000000] warn_slowpath_common (kernel/panic.c:431)
-> [    0.000000] warn_slowpath_fmt (kernel/panic.c:446)
-> [    0.000000] ? irq_return (arch/x86/kernel/entry_64.S:842)
-> [    0.000000] warn_pre_alternatives (arch/x86/kernel/cpu/common.c:1440)
-> [    0.000000] __do_page_fault (./arch/x86/include/asm/cpufeature.h:423 arch/x86/mm/fault.c:1022 arch/x86/mm/fault.c:1112)
-> [    0.000000] ? trace_hardirqs_off_caller (kernel/locking/lockdep.c:2638 (discriminator 2))
-> [    0.000000] ? trace_hardirqs_off (kernel/locking/lockdep.c:2645)
-> [    0.000000] ? __slab_alloc (mm/slub.c:2364 (discriminator 1))
-> [    0.000000] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
-> [    0.000000] ? trace_hardirqs_off_caller (kernel/locking/lockdep.c:2638 (discriminator 2))
-> [    0.000000] ? error_sti (arch/x86/kernel/entry_64.S:1419)
-> [    0.000000] trace_do_page_fault (arch/x86/mm/fault.c:1313 include/linux/jump_label.h:115 include/linux/context_tracking_state.h:27 include/linux/context_tracking.h:45 arch/x86/mm/fault.c:1314)
-> [    0.000000] do_async_page_fault (arch/x86/kernel/kvm.c:264)
-> [    0.000000] async_page_fault (arch/x86/kernel/entry_64.S:1322)
-> [    0.000000] ? tick_nohz_init (include/linux/bitmap.h:165 include/linux/cpumask.h:333 kernel/time/tick-sched.c:344 kernel/time/tick-sched.c:356)
-> [    0.000000] ? tick_nohz_init (include/linux/bitmap.h:164 include/linux/cpumask.h:333 kernel/time/tick-sched.c:344 kernel/time/tick-sched.c:356)
-> [    0.000000] start_kernel (init/main.c:581)
-> [    0.000000] ? set_init_arg (init/main.c:281)
-> [    0.000000] ? early_idt_handlers (arch/x86/kernel/head_64.S:340)
-> [    0.000000] x86_64_start_reservations (arch/x86/kernel/head64.c:194)
-> [    0.000000] x86_64_start_kernel (arch/x86/kernel/head64.c:183)
-> [    0.000000] ---[ end trace 4d5ff9f2f68c4233 ]---
-> [    0.000000] BUG: unable to handle kernel NULL pointer dereference at           (null)
-> [    0.000000] IP: tick_nohz_init (include/linux/bitmap.h:165 include/linux/cpumask.h:333 kernel/time/tick-sched.c:344 kernel/time/tick-sched.c:356)
-> [    0.000000] PGD 0
-> [    0.000000] Oops: 0002 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> [    0.000000] Modules linked in:
-> [    0.000000] CPU: 0 PID: 0 Comm: swapper/0 Tainted: G        W      3.16.0-rc2-next-20140627-sasha-00023-g5d10814-dirty #734
-> [    0.000000] task: ffffffff9d0354c0 ti: ffffffff9d000000 task.ti: ffffffff9d000000
-> [    0.000000] RIP: tick_nohz_init (include/linux/bitmap.h:165 include/linux/cpumask.h:333 kernel/time/tick-sched.c:344 kernel/time/tick-sched.c:356)
-> [    0.000000] RSP: 0000:ffffffff9d003f28  EFLAGS: 00010002
-> [    0.000000] RAX: 0000000000000000 RBX: ffff88003684d480 RCX: 0000000000000008
-> [    0.000000] RDX: 0000000000000014 RSI: ffff88003684d480 RDI: 0000000000000000
-> [    0.000000] RBP: ffffffff9d003f38 R08: ffff88003684d480 R09: ffff88003684d480
-> [    0.000000] R10: ffff88003684d480 R11: 0000000000000001 R12: ffffffff9e5fd020
-> [    0.000000] R13: ffff88070282ca00 R14: ffffffff9e607ae0 R15: 00000000000146f0
-> [    0.000000] FS:  0000000000000000(0000) GS:ffff880036e00000(0000) knlGS:0000000000000000
-> [    0.000000] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [    0.000000] CR2: 0000000000000000 CR3: 000000001d02e000 CR4: 00000000000006b0
-> [    0.000000] Stack:
-> [    0.000000]  ffffffffffffffff ffffffff9e5fd020 ffffffff9d003f88 ffffffff9e4c9f09
-> [    0.000000]  ffffffff9e4c98fd 00000000000146f0 ffffffff9d003f78 ffffffff9e607ae0
-> [    0.000000]  0000000000000020 ffffffff9e4c9117 00000000ffffffff 0000ffffffff9e4c
-> [    0.000000] Call Trace:
-> [    0.000000] start_kernel (init/main.c:581)
-> [    0.000000] ? set_init_arg (init/main.c:281)
-> [    0.000000] ? early_idt_handlers (arch/x86/kernel/head_64.S:340)
-> [    0.000000] x86_64_start_reservations (arch/x86/kernel/head64.c:194)
-> [    0.000000] x86_64_start_kernel (arch/x86/kernel/head64.c:183)
-> [ 0.000000] Code: e8 d0 84 66 fa 89 c7 48 89 de e8 b0 46 02 fd 48 63 0d 4f 91 dd ff 31 c0 48 8b 3d 5e 1f 1c 01 48 83 c1 3f 48 c1 f9 03 48 83 e1 f8 <f3> aa 48 8b 1d 49 1f 1c 01 e8 9c 84 66 fa 89 c7 e8 25 3c d1 f9
-> All code
-> ========
->    0:	e8 d0 84 66 fa       	callq  0xfffffffffa6684d5
->    5:	89 c7                	mov    %eax,%edi
->    7:	48 89 de             	mov    %rbx,%rsi
->    a:	e8 b0 46 02 fd       	callq  0xfffffffffd0246bf
->    f:	48 63 0d 4f 91 dd ff 	movslq -0x226eb1(%rip),%rcx        # 0xffffffffffdd9165
->   16:	31 c0                	xor    %eax,%eax
->   18:	48 8b 3d 5e 1f 1c 01 	mov    0x11c1f5e(%rip),%rdi        # 0x11c1f7d
->   1f:	48 83 c1 3f          	add    $0x3f,%rcx
->   23:	48 c1 f9 03          	sar    $0x3,%rcx
->   27:	48 83 e1 f8          	and    $0xfffffffffffffff8,%rcx
->   2b:	f3 aa                	rep stos %al,%es:*(%rdi)		<-- trapping instruction
->   2d:	48 8b 1d 49 1f 1c 01 	mov    0x11c1f49(%rip),%rbx        # 0x11c1f7d
->   34:	e8 9c 84 66 fa       	callq  0xfffffffffa6684d5
->   39:	89 c7                	mov    %eax,%edi
->   3b:	e8 25 3c d1 f9       	callq  0xfffffffff9d13c65
-> 	...
+> This is wrong. Please change palmas_regs_info[id].ctrl_addr to
+> ddata->palmas_regs_info[id].ctrl_addr. The palmas_regs_info
+> should come from the driver data for specific instances as the regmap
+> is different for the different PMICs we support.
 > 
-> Code starting with the faulting instruction
-> ===========================================
->    0:	f3 aa                	rep stos %al,%es:(%rdi)
->    2:	48 8b 1d 49 1f 1c 01 	mov    0x11c1f49(%rip),%rbx        # 0x11c1f52
->    9:	e8 9c 84 66 fa       	callq  0xfffffffffa6684aa
->    e:	89 c7                	mov    %eax,%edi
->   10:	e8 25 3c d1 f9       	callq  0xfffffffff9d13c3a
-> 	...
-> [    0.000000] RIP tick_nohz_init (include/linux/bitmap.h:165 include/linux/cpumask.h:333 kernel/time/tick-sched.c:344 kernel/time/tick-sched.c:356)
-> [    0.000000]  RSP <ffffffff9d003f28>
-> [    0.000000] CR2: 0000000000000000
-> 
-> Bisection pointed me to "rcu: Bind grace-period kthreads to non-NO_HZ_FULL CPUs".
+> Once you make the above changes please feel free to add
 
-Yikes!  tick_nohz_full_mask is allocated not in one place, but two!
+Uggh.. just realized... since I was testing CPUFREQ with SMPS1 never
+realized it. and searched elsewhere on topic/palmas branch as well..
+Looks like we should make the following changes? since the register data
+is now a parameter and it so happened that palmas_reg_info was mapping
+back to a valid variable and the error is easily missed - so rename the
+variable as well - I can break this up as proper series of patches for
+topic/palmas - let me know what you think..
 
-Does the following patch help?
 
-							Thanx, Paul
-
-------------------------------------------------------------------------
-
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 07ae1cc39063..e023134d63a1 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -336,6 +336,10 @@ static int tick_nohz_init_all(void)
- 		pr_err("NO_HZ: Can't allocate full dynticks cpumask\n");
- 		return err;
- 	}
-+	if (!alloc_cpumask_var(&tick_nohz_not_full_mask, GFP_KERNEL)) {
-+		pr_err("NO_HZ: Can't allocate not-full dynticks cpumask\n");
-+		return err;
-+	}
- 	err = 0;
- 	cpumask_setall(tick_nohz_full_mask);
- 	cpumask_clear_cpu(smp_processor_id(), tick_nohz_full_mask);
-
+diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
+index 7c8b441..86fefdfb 100644
+--- a/drivers/regulator/palmas-regulator.c
++++ b/drivers/regulator/palmas-regulator.c
+@@ -41,7 +41,7 @@ static const struct regulator_linear_range smps_high_ranges[] = {
+ 	REGULATOR_LINEAR_RANGE(3300000, 0x7A, 0x7f, 0),
+ };
+ 
+-static struct regs_info palmas_regs_info[] = {
++static struct regs_info palmas_generic_regs_info[] = {
+ 	{
+ 		.name		= "SMPS12",
+ 		.sname		= "smps1-in",
+@@ -1165,18 +1165,18 @@ static int palmas_smps_registration(struct palmas_pmic *pmic,
+ 			pmic->desc[id].ops = &palmas_ops_smps10;
+ 			pmic->desc[id].vsel_reg =
+ 					PALMAS_BASE_TO_REG(PALMAS_SMPS_BASE,
+-							PALMAS_SMPS10_CTRL);
++					        ddata->palmas_regs_info[id].ctrl_addr);
+ 			pmic->desc[id].vsel_mask = SMPS10_VSEL;
+ 			pmic->desc[id].enable_reg =
+ 					PALMAS_BASE_TO_REG(PALMAS_SMPS_BASE,
+-							PALMAS_SMPS10_CTRL);
++					        ddata->palmas_regs_info[id].ctrl_addr);
+ 			if (id == PALMAS_REG_SMPS10_OUT1)
+ 				pmic->desc[id].enable_mask = SMPS10_SWITCH_EN;
+ 			else
+ 				pmic->desc[id].enable_mask = SMPS10_BOOST_EN;
+ 			pmic->desc[id].bypass_reg =
+ 					PALMAS_BASE_TO_REG(PALMAS_SMPS_BASE,
+-							PALMAS_SMPS10_CTRL);
++					        ddata->palmas_regs_info[id].ctrl_addr);
+ 			pmic->desc[id].bypass_mask = SMPS10_BYPASS_EN;
+ 			pmic->desc[id].min_uV = 3750000;
+ 			pmic->desc[id].uV_step = 1250000;
+@@ -1188,7 +1188,7 @@ static int palmas_smps_registration(struct palmas_pmic *pmic,
+ 			 * otherwise we error in probe with unsupportable
+ 			 * ranges. Read the current smps mode for later use.
+ 			 */
+-			addr = palmas_regs_info[id].vsel_addr;
++			addr = ddata->palmas_regs_info[id].vsel_addr;
+ 			pmic->desc[id].n_linear_ranges = 3;
+ 
+ 			ret = palmas_smps_read(pmic->palmas, addr, &reg);
+@@ -1209,12 +1209,12 @@ static int palmas_smps_registration(struct palmas_pmic *pmic,
+ 			pmic->desc[id].n_voltages = PALMAS_SMPS_NUM_VOLTAGES;
+ 			pmic->desc[id].vsel_reg =
+ 					PALMAS_BASE_TO_REG(PALMAS_SMPS_BASE,
+-						palmas_regs_info[id].vsel_addr);
++						ddata->palmas_regs_info[id].vsel_addr);
+ 			pmic->desc[id].vsel_mask =
+ 					PALMAS_SMPS12_VOLTAGE_VSEL_MASK;
+ 
+ 			/* Read the smps mode for later use. */
+-			addr = palmas_regs_info[id].ctrl_addr;
++			addr = ddata->palmas_regs_info[id].ctrl_addr;
+ 			ret = palmas_smps_read(pmic->palmas, addr, &reg);
+ 			if (ret)
+ 				return ret;
+@@ -1223,7 +1223,7 @@ static int palmas_smps_registration(struct palmas_pmic *pmic,
+ 
+ 			pmic->desc[id].enable_reg =
+ 					PALMAS_BASE_TO_REG(PALMAS_SMPS_BASE,
+-						palmas_regs_info[id].ctrl_addr);
++						ddata->palmas_regs_info[id].ctrl_addr);
+ 			pmic->desc[id].enable_mask =
+ 					PALMAS_SMPS12_CTRL_MODE_ACTIVE_MASK;
+ 			/* set_mode overrides this value */
+@@ -1319,7 +1319,7 @@ static int tps65917_smps_registration(struct palmas_pmic *pmic,
+ 		pmic->desc[id].n_voltages = PALMAS_SMPS_NUM_VOLTAGES;
+ 		pmic->desc[id].vsel_reg =
+ 				PALMAS_BASE_TO_REG(PALMAS_SMPS_BASE,
+-						   tps65917_regs_info[id].vsel_addr);
++					        ddata->palmas_regs_info[id].vsel_addr);
+ 		pmic->desc[id].vsel_mask =
+ 				PALMAS_SMPS12_VOLTAGE_VSEL_MASK;
+ 
+@@ -1414,7 +1414,7 @@ struct palmas_pmic_driver_data palmas_ddata = {
+ 	.ldo_begin = PALMAS_REG_LDO1,
+ 	.ldo_end = PALMAS_REG_LDOUSB,
+ 	.max_reg = PALMAS_NUM_REGS,
+-	.palmas_regs_info = palmas_regs_info,
++	.palmas_regs_info = palmas_generic_regs_info,
+ 	.palmas_matches = palmas_matches,
+ 	.sleep_req_info = palma_sleep_req_info,
+ 	.smps_register = palmas_smps_registration,
+-- 
+Regards,
+Nishanth Menon
