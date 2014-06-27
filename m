@@ -1,110 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753195AbaF0Jl0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 05:41:26 -0400
-Received: from senator.holtmann.net ([87.106.208.187]:39792 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752830AbaF0JlY convert rfc822-to-8bit (ORCPT
+	id S1753216AbaF0Jme (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 05:42:34 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:33864 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752779AbaF0Jmd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 05:41:24 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
-Subject: Re: [PATCH - RESEND] Bluetooth: Keep master role when SCO or eSCO is active
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <1403860813-360-1-git-send-email-kiran.kumar@linaro.org>
-Date: Fri, 27 Jun 2014 11:41:15 +0200
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "hyungseoung.yoo" <hyungseoung.yoo@samsung.com>,
-        "Gustavo F. Padovan" <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Jaikumar Ganesh <jaikumarg@android.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <1C876A95-8077-4BA9-9A16-8AEB9C6AF117@holtmann.org>
-References: <1403860813-360-1-git-send-email-kiran.kumar@linaro.org>
-To: Kiran Kumar Raparthy <kiran.kumar@linaro.org>
-X-Mailer: Apple Mail (2.1878.2)
+	Fri, 27 Jun 2014 05:42:33 -0400
+Message-ID: <53AD3C81.7070607@collabora.co.uk>
+Date: Fri, 27 Jun 2014 11:42:25 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+MIME-Version: 1.0
+To: Lee Jones <lee.jones@linaro.org>
+CC: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
+        Daniel Stone <daniels@collabora.com>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 10/14] regulator: Add driver for Maxim 77802 PMIC regulators
+References: <1403806546-31122-1-git-send-email-javier.martinez@collabora.co.uk> <1403806546-31122-11-git-send-email-javier.martinez@collabora.co.uk> <20140627092611.GI19645@lee--X1>
+In-Reply-To: <20140627092611.GI19645@lee--X1>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kiran,
+Hello Lee,
 
-> Preserve the master role when SCO or eSCO is active
-> as this improves compatability with lots of
-> headset and chipset combinations.
+Thanks a lot for your feedback.
 
-this comment is pretty much non-sense. If you have an incoming BR/EDR connection, then by default you will be slave. The acceptor is the slave, there is no way of preserving the master role. You never had it in the first place.
-
-So lets assume you have an existing connection with a different device, then yes it could be beneficial to not enter a scatternet situation. Assume you are already master in the existing connection, then sure, staying master here is beneficial since you don't want to maintain a second connection and you want to drive the piconet. However what happens when you are slave in the existing connection. Are you forcing now master role on the new connection or better stay slave. Or check if you might be able to become master for both devices and thus move them into a single piconet.
-
-> This is one of the number of patches from the Android AOSP
-> common.git tree, which is used on almost all Android devices.
-> It looks like it would improve support for compatibility with
-> lot of headset,so I wanted to submit it for review to see
-> if it should go upstream.
+On 06/27/2014 11:26 AM, Lee Jones wrote:
+> On Thu, 26 Jun 2014, Javier Martinez Canillas wrote:
+>> The MAX77802 PMIC has 10 high-efficiency Buck and 32 Low-dropout
+>> (LDO) regulators. This patch adds support for all these regulators
+>> found on the MAX77802 PMIC and is based on a driver added by Simon
+>> Glass to the Chrome OS kernel 3.8 tree.
+>> 
+>> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+>> Tested-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+>> ---
+>> 
+>> Changes since v4: None
+>> 
+>> Changes since v3:
+>>  - Set the supply_name for regulators to lookup their parent supply node.
+>>    Suggested by Mark Brown.
+>>  - Change Exyno5 for Exynos5420/Exynos5800 in regulator driver Kconfig.
+>>    Suggested by Doug Anderson.
+>> 
+>> Changes since v2:
+>>  - Use dev_warn() instead pr_warn(). Suggested by Mark Brown.
+>>  - Add a generic function to regmap core to copy registers instead of
+>>    having a driver-specific function. Suggested by Mark Brown.
+>>  - Remove unnecessary probe debug log. Suggested by Mark Brown.
+>>  - Set struct regulator_config dev field to MFD instead of the platform dev.
+>>    Suggested by Mark Brown.
+>>  - Read the regulators operational mode from the hardware registers instead
+>>    of setting to normal as default on probe. Suggested by Mark Brown.
+>>  - Remove unnecessary cross-subsystem dependencies. Suggested by Lee Jones.
+>> 
+>> Changes since v1:
+>>  - Remove unneeded check if num_regulators != MAX77802_MAX_REGULATORS.
+>>  - Fix .set_suspend_mode handler comment and split regulators ops for
+>>    regulators that behave differently. Suggested by Mark Brown.
+>>  - Use module_platform_driver() instead of having init/exit functions.
+>>    Suggested by Mark Brown.
+>>  - Use the new descriptor-based GPIO interface instead of the deprecated
+>>    integer based GPIO one. Suggested by Mark Brown.
+>>  - Look for "regulators" child node instead of "voltage-regulators" to be
+>>    consistent with other PMIC drivers. Suggested by Mark Brown.
+>> 
+>>  drivers/mfd/max77802.c               |   8 +-
+>>  drivers/regulator/Kconfig            |   9 +
+>>  drivers/regulator/Makefile           |   1 +
+>>  drivers/regulator/max77802.c         | 694 +++++++++++++++++++++++++++++++++++
+>>  include/linux/mfd/max77802-private.h |   3 -
+>>  5 files changed, 711 insertions(+), 4 deletions(-)
+>>  create mode 100644 drivers/regulator/max77802.c
+>> 
+>> diff --git a/drivers/mfd/max77802.c b/drivers/mfd/max77802.c
+>> index 3d477fb..79d36b6 100644
+>> --- a/drivers/mfd/max77802.c
+>> +++ b/drivers/mfd/max77802.c
+>> @@ -228,7 +228,7 @@ static int max77802_i2c_probe(struct i2c_client *i2c,
+>>  
+>>  	max77802 = devm_kzalloc(&i2c->dev, sizeof(struct max77802_dev),
+>>  				GFP_KERNEL);
+>> -	if (max77802 == NULL)
+>> +	if (!max77802)
+>>  		return -ENOMEM;
+>>  
+>>  	i2c_set_clientdata(i2c, max77802);
+>> @@ -315,6 +315,12 @@ static int max77802_suspend(struct device *dev)
+>>  	if (device_may_wakeup(dev))
+>>  		enable_irq_wake(max77802->irq);
+>>  
+>> +	/*
+>> +	 * The IRQ must be disabled during suspend since due wakeup
+>> +	 * ordering issues it may be possible that the I2C controller
+>> +	 * is still suspended when the interrupt happens so the IRQ
+>> +	 * handler will fail to read the I2C bus.
+>> +	 */
 > 
-> v3: Fixed formatting issues pointed by Sergei
+> Please re-word this, the English is a little off.
 > 
-> Cc: Marcel Holtmann <marcel@holtmann.org>
-> Cc: Gustavo Padovan <gustavo@padovan.org>
-> Cc: Johan Hedberg <johan.hedberg@gmail.com>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: linux-bluetooth@vger.kernel.org
-> Cc: netdev@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Cc: Android Kernel Team <kernel-team@android.com>
-> Cc: John Stultz <john.stultz@linaro.org>
-> Signed-off-by: hyungseoung.yoo <hyungseoung.yoo@samsung.com>
-> Signed-off-by: Jaikumar Ganesh <jaikumarg@android.com>
-> [kiran: Added context to commit message]
-> Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
 
-I am pretty sick of just blasting patches to everybody on the planet. Patches concerning Bluetooth subsystem should be send to linux-bluetooth@vger.kernel.org only. There is no point in spamming everybody else.
+Ok, I found that drivers/mfd/max14577.c has a similar comment so I'll just reuse
+that one since explains it way better.
 
-> ---
-> net/bluetooth/hci_event.c | 12 +++++++++++-
-> 1 file changed, 11 insertions(+), 1 deletion(-)
+>>  	disable_irq(max77802->irq);
+>>  
+>>  	return 0;
 > 
-> diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
-> index 15010a2..cfb1355 100644
-> --- a/net/bluetooth/hci_event.c
-> +++ b/net/bluetooth/hci_event.c
-> @@ -1915,6 +1915,14 @@ unlock:
-> 	hci_conn_check_pending(hdev);
-> }
-> 
-> +static inline bool is_sco_active(struct hci_dev *hdev)
-> +{
-> +	if (hci_conn_hash_lookup_state(hdev, SCO_LINK, BT_CONNECTED) ||
-> +	    hci_conn_hash_lookup_state(hdev, ESCO_LINK, BT_CONNECTED))
-> +		return true;
-> +	return false;
-> +}
-> +
-> static void hci_conn_request_evt(struct hci_dev *hdev, struct sk_buff *skb)
-> {
-> 	struct hci_ev_conn_request *ev = (void *) skb->data;
-> @@ -1961,7 +1969,9 @@ static void hci_conn_request_evt(struct hci_dev *hdev, struct sk_buff *skb)
-> 
-> 			bacpy(&cp.bdaddr, &ev->bdaddr);
-> 
-> -			if (lmp_rswitch_capable(hdev) && (mask & HCI_LM_MASTER))
-> +			if (lmp_rswitch_capable(hdev) &&
-> +			    ((mask & HCI_LM_MASTER) ||
-> +			    is_sco_active(hdev)))
-> 				cp.role = 0x00; /* Become master */
-> 			else
-> 				cp.role = 0x01; /* Remain slave */
+> Please separate the MFD changes out.  There is no need for them to be
+> munged in with regulator changes.
+>
 
-So this is a policy that takes global affect and might not be the what all devices want to do. The problem now is that acceptors force slave role on the initiator. It might be the case that the initiator can not facilitate the slave role here. And that results in connection failures with certain devices. Not a good idea.
+Yes, when preparing v5 I squashed the mfd driver changes into the patch adding
+the regulator driver by mistake instead with the one adding the mfd driver.
+Sorry about that...
 
-Where I am standing this should be a policy that the SCO sockets that are active can enforce. So on a SCO socket you might set that you want to stay master. And that policy, if set, then gets enforced here. That allows other profiles to pick whatever policy they want.
+I'll wait for your complete review so I can fix all the issues you find and post
+a v6.
 
-Regards
-
-Marcel
-
+Best regards,
+Javier
