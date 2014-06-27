@@ -1,43 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752535AbaF0CsF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 22:48:05 -0400
-Received: from imap.thunk.org ([74.207.234.97]:60424 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751725AbaF0CsD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 22:48:03 -0400
-Date: Thu, 26 Jun 2014 22:48:01 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: ext4: total breakdown on USB hdd, 3.0 kernel
-Message-ID: <20140627024801.GG6826@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Pavel Machek <pavel@ucw.cz>,
-	kernel list <linux-kernel@vger.kernel.org>
-References: <20140626202021.GA8512@xo-6d-61-c0.localdomain>
- <20140626203052.GA9449@xo-6d-61-c0.localdomain>
- <20140626205049.GA11577@xo-6d-61-c0.localdomain>
+	id S1752571AbaF0Csj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 22:48:39 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:17177 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752337AbaF0Csi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jun 2014 22:48:38 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Al9BALfarFN5LEioPGdsb2JhbABbgw2IUaMNAQEBAQEBBplqAYEIFwQBAQEBODWEAwEBBTocIxAIAw4KCSUPBSUDBxoTiEHCXxcXhU2JHAeEQwWaWJdKKw
+Date: Fri, 27 Jun 2014 12:48:34 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: Thomas Knauth <thomas.knauth@gmx.de>, David Rientjes <rientjes@google.com>,
+        Maksym Planeta <mcsim.planeta@gmail.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sysctl: Add a feature to drop caches selectively
+Message-ID: <20140627024834.GX9508@dastard>
+References: <1403626213-7691-1-git-send-email-mcsim.planeta@gmail.com>
+ <alpine.DEB.2.02.1406241458140.29176@chino.kir.corp.google.com>
+ <1403677528.7903.103.camel@sauron.fi.intel.com>
+ <CABhLV03_PNFiwsvt+yitcsKxz5TeVECCFavdNkbgQ+XzQqASaw@mail.gmail.com>
+ <20140626010606.GT4453@dastard>
+ <1403763199.20275.39.camel@sauron.fi.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140626205049.GA11577@xo-6d-61-c0.localdomain>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <1403763199.20275.39.camel@sauron.fi.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 26, 2014 at 10:50:49PM +0200, Pavel Machek wrote:
+On Thu, Jun 26, 2014 at 09:13:19AM +0300, Artem Bityutskiy wrote:
+> On Thu, 2014-06-26 at 11:06 +1000, Dave Chinner wrote:
+> > Your particular use case can be handled by directing your benchmark
+> > at a filesystem mount point and unmounting the filesystem in between 
+> > benchmark runs. There is no ned to adding kernel functionality for
+> > somethign that can be so easily acheived by other means, especially
+> > in benchmark environments where *everything* is tightly controlled.
 > 
-> And for every bug in kernel, there's one in fsck: I did not expect it, but fsck actually
-> suceeded, and marked fs as clean. But second fsck had issues with /lost+found...
+> If I was a benchmark writer, I would not be willing running it as root
+> to be able to mount/unmount, I would not be willing to require the
+> customer creating special dedicated partitions for the benchmark,
+> because this is too user-unfriendly. Or do I make incorrect assumptions?
 
-I'd need the previous fsck transcript to have any idea what might have
-happened.  I'll note though you are using an ancient version of e2fsck
-(1.41.12, and there have been a huge number of bug fixes since
-May 2010....)
+Just add the dev/mntpt to /etc/fstab and add "user" to the
+configuration and the need for root goes away.
 
-						- Ted
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
