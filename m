@@ -1,110 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752033AbaF0Su0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 14:50:26 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:61900 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751231AbaF0SuY (ORCPT
+	id S1752440AbaF0Svg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 14:51:36 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:14146 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751447AbaF0Sve convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 14:50:24 -0400
+	Fri, 27 Jun 2014 14:51:34 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 27 Jun 2014 11:45:18 -0700
+From: Ken Adams <KAdams@nvidia.com>
+To: Alex Courbot <acourbot@nvidia.com>, Ben Skeggs <bskeggs@redhat.com>
+CC: "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gnurou@gmail.com" <gnurou@gmail.com>
+Date: Fri, 27 Jun 2014 11:51:31 -0700
+Subject: Re: [PATCH v2] drm/gk20a: add BAR instance
+Thread-Topic: [PATCH v2] drm/gk20a: add BAR instance
+Thread-Index: Ac+SONCFrX90J/3HQGWcoLVKVTpSyg==
+Message-ID: <CFD332E4.8F1A4%kadams@nvidia.com>
+In-Reply-To: <1403869014-16209-1-git-send-email-acourbot@nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Microsoft-MacOutlook/14.3.6.130613
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <1403716136-32694-12-git-send-email-johan@kernel.org>
-References: <1403716136-32694-1-git-send-email-johan@kernel.org>
-	<1403716136-32694-12-git-send-email-johan@kernel.org>
-Date: Fri, 27 Jun 2014 11:50:23 -0700
-Message-ID: <CAKdAkRSaurygSeXdt09MpLGaXojJ1YW3SzTn1pBz2076hF514Q@mail.gmail.com>
-Subject: Re: [PATCH 11/13] input: lm8323: fix attribute-creation race
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Johan Hovold <johan@kernel.org>
-Cc: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, linux-leds@vger.kernel.org,
-        Janne Kanniainen <janne.kanniainen@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>,
-        =?UTF-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 10:08 AM, Johan Hovold <johan@kernel.org> wrote:
-> Use the attribute groups of the led-class to create the time attribute
-> during probe in order to avoid racing with userspace.
->
-> Signed-off-by: Johan Hovold <johan@kernel.org>
+quick note re: tegra and gpu bars...
 
-Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+to this point we've explicitly avoided providing user-mode mappings due to
+power management issues, etc.
+looks to me like this would allow such mappings.  is that the case?  are
+there any paths which would require such mappings to function properly?
 
-> ---
->  drivers/input/keyboard/lm8323.c | 22 +++++++++-------------
->  1 file changed, 9 insertions(+), 13 deletions(-)
->
-> diff --git a/drivers/input/keyboard/lm8323.c b/drivers/input/keyboard/lm8323.c
-> index 0b42118cbf8f..cb32e2b506b7 100644
-> --- a/drivers/input/keyboard/lm8323.c
-> +++ b/drivers/input/keyboard/lm8323.c
-> @@ -558,6 +558,12 @@ static ssize_t lm8323_pwm_store_time(struct device *dev,
->  }
->  static DEVICE_ATTR(time, 0644, lm8323_pwm_show_time, lm8323_pwm_store_time);
->
-> +static struct attribute *lm8323_pwm_attrs[] = {
-> +       &dev_attr_time.attr,
-> +       NULL
-> +};
-> +ATTRIBUTE_GROUPS(lm8323_pwm);
-> +
->  static int init_pwm(struct lm8323_chip *lm, int id, struct device *dev,
->                     const char *name)
->  {
-> @@ -580,16 +586,11 @@ static int init_pwm(struct lm8323_chip *lm, int id, struct device *dev,
->         if (name) {
->                 pwm->cdev.name = name;
->                 pwm->cdev.brightness_set = lm8323_pwm_set_brightness;
-> +               pwm->cdev.groups = lm8323_pwm_groups;
->                 if (led_classdev_register(dev, &pwm->cdev) < 0) {
->                         dev_err(dev, "couldn't register PWM %d\n", id);
->                         return -1;
->                 }
-> -               if (device_create_file(pwm->cdev.dev,
-> -                                       &dev_attr_time) < 0) {
-> -                       dev_err(dev, "couldn't register time attribute\n");
-> -                       led_classdev_unregister(&pwm->cdev);
-> -                       return -1;
-> -               }
->                 pwm->enabled = true;
->         }
->
-> @@ -753,11 +754,8 @@ fail3:
->         device_remove_file(&client->dev, &dev_attr_disable_kp);
->  fail2:
->         while (--pwm >= 0)
-> -               if (lm->pwm[pwm].enabled) {
-> -                       device_remove_file(lm->pwm[pwm].cdev.dev,
-> -                                          &dev_attr_time);
-> +               if (lm->pwm[pwm].enabled)
->                         led_classdev_unregister(&lm->pwm[pwm].cdev);
-> -               }
->  fail1:
->         input_free_device(idev);
->         kfree(lm);
-> @@ -777,10 +775,8 @@ static int lm8323_remove(struct i2c_client *client)
->         device_remove_file(&lm->client->dev, &dev_attr_disable_kp);
->
->         for (i = 0; i < 3; i++)
-> -               if (lm->pwm[i].enabled) {
-> -                       device_remove_file(lm->pwm[i].cdev.dev, &dev_attr_time);
-> +               if (lm->pwm[i].enabled)
->                         led_classdev_unregister(&lm->pwm[i].cdev);
-> -               }
->
->         kfree(lm);
->
-> --
-> 1.8.5.5
->
+thanks
+---
+ken
 
-Thanks.
+p.s.: hello :)
 
--- 
-Dmitry
+On 6/27/14 7:36 AM, "Alex Courbot" <acourbot@nvidia.com> wrote:
+
+>GK20A's BAR is functionally identical to NVC0's, but do not support
+>being ioremapped write-combined. Create a BAR instance for GK20A that
+>reflect that state.
+>
+>Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+>---
+>Changes since v1:
+>- Fix compilation warning due to missing cast
+>
+>Patch 1 of the series was ok and thus has not been resent.
+>
+> drivers/gpu/drm/nouveau/Makefile                  |  1 +
+> drivers/gpu/drm/nouveau/core/engine/device/nve0.c |  2 +-
+> drivers/gpu/drm/nouveau/core/include/subdev/bar.h |  1 +
+> drivers/gpu/drm/nouveau/core/subdev/bar/gk20a.c   | 54
+>+++++++++++++++++++++++
+> drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c    |  6 +--
+> drivers/gpu/drm/nouveau/core/subdev/bar/priv.h    |  6 +++
+> 6 files changed, 66 insertions(+), 4 deletions(-)
+> create mode 100644 drivers/gpu/drm/nouveau/core/subdev/bar/gk20a.c
+>
+>diff --git a/drivers/gpu/drm/nouveau/Makefile
+>b/drivers/gpu/drm/nouveau/Makefile
+>index 8b307e143632..11d9561d67c1 100644
+>--- a/drivers/gpu/drm/nouveau/Makefile
+>+++ b/drivers/gpu/drm/nouveau/Makefile
+>@@ -26,6 +26,7 @@ nouveau-y += core/core/subdev.o
+> nouveau-y += core/subdev/bar/base.o
+> nouveau-y += core/subdev/bar/nv50.o
+> nouveau-y += core/subdev/bar/nvc0.o
+>+nouveau-y += core/subdev/bar/gk20a.o
+> nouveau-y += core/subdev/bios/base.o
+> nouveau-y += core/subdev/bios/bit.o
+> nouveau-y += core/subdev/bios/boost.o
+>diff --git a/drivers/gpu/drm/nouveau/core/engine/device/nve0.c
+>b/drivers/gpu/drm/nouveau/core/engine/device/nve0.c
+>index 2d1e97d4264f..a2b9ccc48f66 100644
+>--- a/drivers/gpu/drm/nouveau/core/engine/device/nve0.c
+>+++ b/drivers/gpu/drm/nouveau/core/engine/device/nve0.c
+>@@ -165,7 +165,7 @@ nve0_identify(struct nouveau_device *device)
+> 		device->oclass[NVDEV_SUBDEV_IBUS   ] = &gk20a_ibus_oclass;
+> 		device->oclass[NVDEV_SUBDEV_INSTMEM] = nv50_instmem_oclass;
+> 		device->oclass[NVDEV_SUBDEV_VM     ] = &nvc0_vmmgr_oclass;
+>-		device->oclass[NVDEV_SUBDEV_BAR    ] = &nvc0_bar_oclass;
+>+		device->oclass[NVDEV_SUBDEV_BAR    ] = &gk20a_bar_oclass;
+> 		device->oclass[NVDEV_ENGINE_DMAOBJ ] = &nvd0_dmaeng_oclass;
+> 		device->oclass[NVDEV_ENGINE_FIFO   ] =  gk20a_fifo_oclass;
+> 		device->oclass[NVDEV_ENGINE_SW     ] =  nvc0_software_oclass;
+>diff --git a/drivers/gpu/drm/nouveau/core/include/subdev/bar.h
+>b/drivers/gpu/drm/nouveau/core/include/subdev/bar.h
+>index 9002cbb6432b..be037fac534c 100644
+>--- a/drivers/gpu/drm/nouveau/core/include/subdev/bar.h
+>+++ b/drivers/gpu/drm/nouveau/core/include/subdev/bar.h
+>@@ -33,5 +33,6 @@ nouveau_bar(void *obj)
+> 
+> extern struct nouveau_oclass nv50_bar_oclass;
+> extern struct nouveau_oclass nvc0_bar_oclass;
+>+extern struct nouveau_oclass gk20a_bar_oclass;
+> 
+> #endif
+>diff --git a/drivers/gpu/drm/nouveau/core/subdev/bar/gk20a.c
+>b/drivers/gpu/drm/nouveau/core/subdev/bar/gk20a.c
+>new file mode 100644
+>index 000000000000..bf877af9d3bd
+>--- /dev/null
+>+++ b/drivers/gpu/drm/nouveau/core/subdev/bar/gk20a.c
+>@@ -0,0 +1,54 @@
+>+/*
+>+ * Copyright (c) 2014, NVIDIA CORPORATION. All rights reserved.
+>+ *
+>+ * Permission is hereby granted, free of charge, to any person obtaining
+>a
+>+ * copy of this software and associated documentation files (the
+>"Software"),
+>+ * to deal in the Software without restriction, including without
+>limitation
+>+ * the rights to use, copy, modify, merge, publish, distribute,
+>sublicense,
+>+ * and/or sell copies of the Software, and to permit persons to whom the
+>+ * Software is furnished to do so, subject to the following conditions:
+>+ *
+>+ * The above copyright notice and this permission notice shall be
+>included in
+>+ * all copies or substantial portions of the Software.
+>+ *
+>+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+>EXPRESS OR
+>+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+>MERCHANTABILITY,
+>+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT
+>SHALL
+>+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+>OTHER
+>+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+>ARISING
+>+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+>+ * DEALINGS IN THE SOFTWARE.
+>+ */
+>+
+>+#include <subdev/bar.h>
+>+
+>+#include "priv.h"
+>+
+>+int
+>+gk20a_bar_ctor(struct nouveau_object *parent, struct nouveau_object
+>*engine,
+>+	       struct nouveau_oclass *oclass, void *data, u32 size,
+>+	       struct nouveau_object **pobject)
+>+{
+>+	struct nouveau_bar *bar;
+>+	int ret;
+>+
+>+	ret = nvc0_bar_ctor(parent, engine, oclass, data, size, pobject);
+>+	if (ret)
+>+		return ret;
+>+
+>+	bar = (struct nouveau_bar *)*pobject;
+>+	bar->iomap_uncached = true;
+>+
+>+	return 0;
+>+}
+>+
+>+struct nouveau_oclass
+>+gk20a_bar_oclass = {
+>+	.handle = NV_SUBDEV(BAR, 0xea),
+>+	.ofuncs = &(struct nouveau_ofuncs) {
+>+		.ctor = gk20a_bar_ctor,
+>+		.dtor = nvc0_bar_dtor,
+>+		.init = nvc0_bar_init,
+>+		.fini = _nouveau_bar_fini,
+>+	},
+>+};
+>diff --git a/drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c
+>b/drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c
+>index ca8139b9ab27..0a44459844e3 100644
+>--- a/drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c
+>+++ b/drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c
+>@@ -133,7 +133,7 @@ nvc0_bar_init_vm(struct nvc0_bar_priv *priv, struct
+>nvc0_bar_priv_vm *bar_vm,
+> 	return 0;
+> }
+> 
+>-static int
+>+int
+> nvc0_bar_ctor(struct nouveau_object *parent, struct nouveau_object
+>*engine,
+> 	      struct nouveau_oclass *oclass, void *data, u32 size,
+> 	      struct nouveau_object **pobject)
+>@@ -169,7 +169,7 @@ nvc0_bar_ctor(struct nouveau_object *parent, struct
+>nouveau_object *engine,
+> 	return 0;
+> }
+> 
+>-static void
+>+void
+> nvc0_bar_dtor(struct nouveau_object *object)
+> {
+> 	struct nvc0_bar_priv *priv = (void *)object;
+>@@ -188,7 +188,7 @@ nvc0_bar_dtor(struct nouveau_object *object)
+> 	nouveau_bar_destroy(&priv->base);
+> }
+> 
+>-static int
+>+int
+> nvc0_bar_init(struct nouveau_object *object)
+> {
+> 	struct nvc0_bar_priv *priv = (void *)object;
+>diff --git a/drivers/gpu/drm/nouveau/core/subdev/bar/priv.h
+>b/drivers/gpu/drm/nouveau/core/subdev/bar/priv.h
+>index ffad8f337ead..3ee8b1476d00 100644
+>--- a/drivers/gpu/drm/nouveau/core/subdev/bar/priv.h
+>+++ b/drivers/gpu/drm/nouveau/core/subdev/bar/priv.h
+>@@ -23,4 +23,10 @@ int  nouveau_bar_alloc(struct nouveau_bar *, struct
+>nouveau_object *,
+> 
+> void nv84_bar_flush(struct nouveau_bar *);
+> 
+>+int nvc0_bar_ctor(struct nouveau_object *, struct nouveau_object *,
+>+		  struct nouveau_oclass *, void *, u32,
+>+		  struct nouveau_object **);
+>+void nvc0_bar_dtor(struct nouveau_object *);
+>+int nvc0_bar_init(struct nouveau_object *);
+>+
+> #endif
+>-- 
+>2.0.0
+>
+>--
+>To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
