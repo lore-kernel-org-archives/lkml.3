@@ -1,63 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752703AbaF0Sr6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 14:47:58 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:41696 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751179AbaF0Srz (ORCPT
+	id S1752033AbaF0Su0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 14:50:26 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:61900 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751231AbaF0SuY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 14:47:55 -0400
+	Fri, 27 Jun 2014 14:50:24 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140627123109.GA29156@katana>
-References: <1403115247-8853-1-git-send-email-dianders@chromium.org>
-	<1403115247-8853-8-git-send-email-dianders@chromium.org>
-	<20140627123109.GA29156@katana>
-Date: Fri, 27 Jun 2014 11:47:55 -0700
-Message-ID: <CAKdAkRRuG2sAbwD+WU-w95AkLsHC7CBHmB60+rLn=ZqhSUF+sA@mail.gmail.com>
-Subject: Re: [PATCH v2 07/10] mfd: cros_ec: cleanup: Remove EC wrapper functions
+In-Reply-To: <1403716136-32694-12-git-send-email-johan@kernel.org>
+References: <1403716136-32694-1-git-send-email-johan@kernel.org>
+	<1403716136-32694-12-git-send-email-johan@kernel.org>
+Date: Fri, 27 Jun 2014 11:50:23 -0700
+Message-ID: <CAKdAkRSaurygSeXdt09MpLGaXojJ1YW3SzTn1pBz2076hF514Q@mail.gmail.com>
+Subject: Re: [PATCH 11/13] input: lm8323: fix attribute-creation race
 From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Doug Anderson <dianders@chromium.org>, Lee Jones <lee.jones@linaro.org>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Bill Richardson <wfrichar@chromium.org>,
-        Simon Glass <sjg@chromium.org>, Mark Brown <broonie@kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>, linux-i2c@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
+To: Johan Hovold <johan@kernel.org>
+Cc: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, linux-leds@vger.kernel.org,
+        Janne Kanniainen <janne.kanniainen@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>,
+        =?UTF-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 27, 2014 at 5:31 AM, Wolfram Sang <wsa@the-dreams.de> wrote:
-> On Wed, Jun 18, 2014 at 11:14:04AM -0700, Doug Anderson wrote:
->> From: Bill Richardson <wfrichar@chromium.org>
->>
->> Remove the three wrapper functions that talk to the EC without passing all
->> the desired arguments and just use the underlying communication function
->> that passes everything in a struct intead.
->>
->> This is internal code refactoring only. Nothing should change.
->>
->> Signed-off-by: Bill Richardson <wfrichar@chromium.org>
->> Signed-off-by: Doug Anderson <dianders@chromium.org>
->> Acked-by: Lee Jones <lee.jones@linaro.org>
->> Reviewed-by: Simon Glass <sjg@chromium.org>
+On Wed, Jun 25, 2014 at 10:08 AM, Johan Hovold <johan@kernel.org> wrote:
+> Use the attribute groups of the led-class to create the time attribute
+> during probe in order to avoid racing with userspace.
 >
-> For the I2C part:
->
-> Acked-by: Wolfram Sang <wsa@the-dreams.de>
->
-
-I'm good with input bits as well.
+> Signed-off-by: Johan Hovold <johan@kernel.org>
 
 Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+
+> ---
+>  drivers/input/keyboard/lm8323.c | 22 +++++++++-------------
+>  1 file changed, 9 insertions(+), 13 deletions(-)
+>
+> diff --git a/drivers/input/keyboard/lm8323.c b/drivers/input/keyboard/lm8323.c
+> index 0b42118cbf8f..cb32e2b506b7 100644
+> --- a/drivers/input/keyboard/lm8323.c
+> +++ b/drivers/input/keyboard/lm8323.c
+> @@ -558,6 +558,12 @@ static ssize_t lm8323_pwm_store_time(struct device *dev,
+>  }
+>  static DEVICE_ATTR(time, 0644, lm8323_pwm_show_time, lm8323_pwm_store_time);
+>
+> +static struct attribute *lm8323_pwm_attrs[] = {
+> +       &dev_attr_time.attr,
+> +       NULL
+> +};
+> +ATTRIBUTE_GROUPS(lm8323_pwm);
+> +
+>  static int init_pwm(struct lm8323_chip *lm, int id, struct device *dev,
+>                     const char *name)
+>  {
+> @@ -580,16 +586,11 @@ static int init_pwm(struct lm8323_chip *lm, int id, struct device *dev,
+>         if (name) {
+>                 pwm->cdev.name = name;
+>                 pwm->cdev.brightness_set = lm8323_pwm_set_brightness;
+> +               pwm->cdev.groups = lm8323_pwm_groups;
+>                 if (led_classdev_register(dev, &pwm->cdev) < 0) {
+>                         dev_err(dev, "couldn't register PWM %d\n", id);
+>                         return -1;
+>                 }
+> -               if (device_create_file(pwm->cdev.dev,
+> -                                       &dev_attr_time) < 0) {
+> -                       dev_err(dev, "couldn't register time attribute\n");
+> -                       led_classdev_unregister(&pwm->cdev);
+> -                       return -1;
+> -               }
+>                 pwm->enabled = true;
+>         }
+>
+> @@ -753,11 +754,8 @@ fail3:
+>         device_remove_file(&client->dev, &dev_attr_disable_kp);
+>  fail2:
+>         while (--pwm >= 0)
+> -               if (lm->pwm[pwm].enabled) {
+> -                       device_remove_file(lm->pwm[pwm].cdev.dev,
+> -                                          &dev_attr_time);
+> +               if (lm->pwm[pwm].enabled)
+>                         led_classdev_unregister(&lm->pwm[pwm].cdev);
+> -               }
+>  fail1:
+>         input_free_device(idev);
+>         kfree(lm);
+> @@ -777,10 +775,8 @@ static int lm8323_remove(struct i2c_client *client)
+>         device_remove_file(&lm->client->dev, &dev_attr_disable_kp);
+>
+>         for (i = 0; i < 3; i++)
+> -               if (lm->pwm[i].enabled) {
+> -                       device_remove_file(lm->pwm[i].cdev.dev, &dev_attr_time);
+> +               if (lm->pwm[i].enabled)
+>                         led_classdev_unregister(&lm->pwm[i].cdev);
+> -               }
+>
+>         kfree(lm);
+>
+> --
+> 1.8.5.5
+>
 
 Thanks.
 
