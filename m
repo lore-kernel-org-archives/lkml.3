@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753344AbaF0IOz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 04:14:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50426 "EHLO mx2.suse.de"
+	id S1753398AbaF0IPx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 04:15:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50422 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753261AbaF0IOt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 04:14:49 -0400
+	id S1753292AbaF0IOs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 04:14:48 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linux Kernel <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
         Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
         Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 5/5] mm: page_alloc: Reduce cost of dirty zone balancing
-Date: Fri, 27 Jun 2014 09:14:40 +0100
-Message-Id: <1403856880-12597-6-git-send-email-mgorman@suse.de>
+Subject: [PATCH 4/5] mm: page_alloc: Reduce cost of the fair zone allocation policy
+Date: Fri, 27 Jun 2014 09:14:39 +0100
+Message-Id: <1403856880-12597-5-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1403856880-12597-1-git-send-email-mgorman@suse.de>
 References: <1403856880-12597-1-git-send-email-mgorman@suse.de>
@@ -21,176 +21,388 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When allocating a page cache page for writing the allocator makes an attempt
-to proportionally distribute dirty pages between populated zones. The call
-to zone_dirty_ok is more expensive than expected because of the number of
-vmstats it examines. This patch caches some of that information to reduce
-the cost. It means the proportional allocation is based on stale data but
-the heuristic should not need perfectly accurate information. As before,
-the benefit is marginal but cumulative and depends on the size of the
-machine. For a very small machine the effect is visible in system CPU time
-for a tiobench test but it'll vary between workloads.
+The fair zone allocation policy round-robins allocations between zones
+within a node to avoid age inversion problems during reclaim. If the
+first allocation fails, the batch counts is reset and a second attempt
+made before entering the slow path.
+
+One assumption made with this scheme is that batches expire at roughly the
+same time and the resets each time are justified. This assumption does not
+hold when zones reach their low watermark as the batches will be consumed
+at uneven rates.  Allocation failure due to watermark depletion result in
+additional zonelist scans for the reset and another watermark check before
+hitting the slowpath.
+
+This patch makes a number of changes that should reduce the overall cost
+
+o Do not apply the fair zone policy to small zones such as DMA
+o Abort the fair zone allocation policy once remote or small zones are
+  encountered
+o Use a simplier scan when resetting NR_ALLOC_BATCH
+o Use a simple flag to identify depleted zones instead of accessing a
+  potentially write-intensive cache line for counters
+o Track zones who met the watermark but failed the NR_ALLOC_BATCH check
+  to avoid doing a rescan of the zonelist when the counters are reset
+
+On UMA machines, the effect is marginal. Even judging from system CPU
+usage it's small for the tiobench test
 
           3.16.0-rc2  3.16.0-rc2
-            fairzone   lessdirty
-User          393.76      389.03
-System        391.50      388.64
-Elapsed      5182.86     5186.28
+            checklow    fairzone
+User          396.24      396.23
+System        395.23      391.50
+Elapsed      5182.65     5165.49
 
-Even though the benefit is small it's generally worthwhile reducing overhead
-in the page allocator as it has a tendency to creep up over time.
+And the number of pages allocated from each zone is comparable
+
+                            3.16.0-rc2  3.16.0-rc2
+                              checklow    fairzone
+DMA allocs                           0           0
+DMA32 allocs                   7374217     7920241
+Normal allocs                999277551   996568115
+
+On NUMA machines, the scanning overhead is higher as zones are scanned
+that are ineligible for use by zone allocation policy. This patch fixes
+the zone-order zonelist policy and reduces the numbers of zones scanned
+by the allocator.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/linux/mmzone.h    |  2 ++
- include/linux/writeback.h |  1 +
- mm/internal.h             |  1 +
- mm/page-writeback.c       | 23 +++++++++++++++--------
- mm/page_alloc.c           | 16 ++++++++++++----
- 5 files changed, 31 insertions(+), 12 deletions(-)
+ include/linux/mmzone.h |   7 +++
+ mm/mm_init.c           |   4 +-
+ mm/page_alloc.c        | 146 +++++++++++++++++++++++++++++--------------------
+ 3 files changed, 96 insertions(+), 61 deletions(-)
 
 diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index f7f93d4..cd7a3d4 100644
+index a2f6443..f7f93d4 100644
 --- a/include/linux/mmzone.h
 +++ b/include/linux/mmzone.h
-@@ -480,6 +480,8 @@ struct zone {
- 	/* zone flags, see below */
- 	unsigned long		flags;
+@@ -534,6 +534,7 @@ typedef enum {
+ 	ZONE_WRITEBACK,			/* reclaim scanning has recently found
+ 					 * many pages under writeback
+ 					 */
++	ZONE_FAIR_DEPLETED,		/* fair zone policy batch depleted */
+ } zone_flags_t;
  
-+	unsigned long		dirty_limit_cached;
-+
- 	ZONE_PADDING(_pad2_)
- 
- 	/* Write-intensive fields used by page reclaim */
-diff --git a/include/linux/writeback.h b/include/linux/writeback.h
-index 5777c13..90190d4 100644
---- a/include/linux/writeback.h
-+++ b/include/linux/writeback.h
-@@ -121,6 +121,7 @@ static inline void laptop_sync_completion(void) { }
- #endif
- void throttle_vm_writeout(gfp_t gfp_mask);
- bool zone_dirty_ok(struct zone *zone);
-+unsigned long zone_dirty_limit(struct zone *zone);
- 
- extern unsigned long global_dirty_limit;
- 
-diff --git a/mm/internal.h b/mm/internal.h
-index 7f22a11f..f31e3b2 100644
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -370,5 +370,6 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
- #define ALLOC_CPUSET		0x40 /* check for correct cpuset */
- #define ALLOC_CMA		0x80 /* allow allocations from CMA areas */
- #define ALLOC_FAIR		0x100 /* fair zone allocation */
-+#define ALLOC_DIRTY		0x200 /* spread GFP_WRITE allocations */
- 
- #endif	/* __MM_INTERNAL_H */
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 518e2c3..a7d11b1 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -256,8 +256,6 @@ static unsigned long global_dirtyable_memory(void)
-  * Calculate the dirty thresholds based on sysctl parameters
-  * - vm.dirty_background_ratio  or  vm.dirty_background_bytes
-  * - vm.dirty_ratio             or  vm.dirty_bytes
-- * The dirty limits will be lifted by 1/4 for PF_LESS_THROTTLE (ie. nfsd) and
-- * real-time tasks.
-  */
- void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
- {
-@@ -298,10 +296,9 @@ void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
-  * Returns the maximum number of dirty pages allowed in a zone, based
-  * on the zone's dirtyable memory.
-  */
--static unsigned long zone_dirty_limit(struct zone *zone)
-+unsigned long zone_dirty_limit(struct zone *zone)
- {
- 	unsigned long zone_memory = zone_dirtyable_memory(zone);
--	struct task_struct *tsk = current;
- 	unsigned long dirty;
- 
- 	if (vm_dirty_bytes)
-@@ -310,9 +307,6 @@ static unsigned long zone_dirty_limit(struct zone *zone)
- 	else
- 		dirty = vm_dirty_ratio * zone_memory / 100;
- 
--	if (tsk->flags & PF_LESS_THROTTLE || rt_task(tsk))
--		dirty += dirty / 4;
--
- 	return dirty;
+ static inline void zone_set_flag(struct zone *zone, zone_flags_t flag)
+@@ -571,6 +572,11 @@ static inline int zone_is_reclaim_locked(const struct zone *zone)
+ 	return test_bit(ZONE_RECLAIM_LOCKED, &zone->flags);
  }
  
-@@ -325,7 +319,20 @@ static unsigned long zone_dirty_limit(struct zone *zone)
-  */
- bool zone_dirty_ok(struct zone *zone)
- {
--	unsigned long limit = zone_dirty_limit(zone);
-+	unsigned long limit = zone->dirty_limit_cached;
-+	struct task_struct *tsk = current;
++static inline int zone_is_fair_depleted(const struct zone *zone)
++{
++	return test_bit(ZONE_FAIR_DEPLETED, &zone->flags);
++}
 +
-+	/*
-+	 * The dirty limits are lifted by 1/4 for PF_LESS_THROTTLE (ie. nfsd)
-+	 * and real-time tasks to prioritise their allocations.
-+	 * PF_LESS_THROTTLE tasks may be cleaning memory and rt tasks may be
-+	 * blocking tasks that can clean pages.
-+	 */
-+	if (tsk->flags & PF_LESS_THROTTLE || rt_task(tsk)) {
-+		limit = zone_dirty_limit(zone);
-+		zone->dirty_limit_cached = limit;
-+		limit += limit / 4;
-+	}
+ static inline int zone_is_oom_locked(const struct zone *zone)
+ {
+ 	return test_bit(ZONE_OOM_LOCKED, &zone->flags);
+@@ -716,6 +722,7 @@ struct zoneref {
+ struct zonelist {
+ 	struct zonelist_cache *zlcache_ptr;		     // NULL or &zlcache
+ 	struct zoneref _zonerefs[MAX_ZONES_PER_ZONELIST + 1];
++	bool fair_enabled;	/* eligible for fair zone policy */
+ #ifdef CONFIG_NUMA
+ 	struct zonelist_cache zlcache;			     // optional ...
+ #endif
+diff --git a/mm/mm_init.c b/mm/mm_init.c
+index 4074caf..27ef4fa 100644
+--- a/mm/mm_init.c
++++ b/mm/mm_init.c
+@@ -47,9 +47,9 @@ void mminit_verify_zonelist(void)
+ 				continue;
  
- 	return zone_page_state(zone, NR_FILE_DIRTY) +
- 	       zone_page_state(zone, NR_UNSTABLE_NFS) +
+ 			/* Print information about the zonelist */
+-			printk(KERN_DEBUG "mminit::zonelist %s %d:%s = ",
++			printk(KERN_DEBUG "mminit::zonelist %s %d:%s(%s) = ",
+ 				listid > 0 ? "thisnode" : "general", nid,
+-				zone->name);
++				zone->name, zonelist->fair_enabled ? "F" : "");
+ 
+ 			/* Iterate the zonelist */
+ 			for_each_zone_zonelist(zone, z, zonelist, zoneid) {
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index d2ed2e0..cf8e858 100644
+index ebbdbcd..d2ed2e0 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -1941,9 +1941,7 @@ get_page_from_freelist(gfp_t gfp_mask, nodemask_t *nodemask, unsigned int order,
- 	nodemask_t *allowednodes = NULL;/* zonelist_cache approximation */
- 	int zlc_active = 0;		/* set if using zonelist_cache */
- 	int did_zlc_setup = 0;		/* just call zlc_setup() one time */
--	bool consider_zone_dirty = (alloc_flags & ALLOC_WMARK_LOW) &&
--				(gfp_mask & __GFP_WRITE);
--	int nr_fair_skipped = 0;
-+	int nr_fair_skipped = 0, nr_fail_dirty = 0;
- 	bool zonelist_rescan;
- 
- zonelist_scan:
-@@ -2005,8 +2003,11 @@ zonelist_scan:
- 		 * will require awareness of zones in the
- 		 * dirty-throttling and the flusher threads.
- 		 */
--		if (consider_zone_dirty && !zone_dirty_ok(zone))
-+		if ((alloc_flags & ALLOC_DIRTY) && !zone_dirty_ok(zone)) {
-+			nr_fail_dirty++;
-+			zone->dirty_limit_cached = zone_dirty_limit(zone);
- 			continue;
-+		}
- 
- 		mark = zone->watermark[alloc_flags & ALLOC_WMARK_MASK];
- 		if (!zone_watermark_ok(zone, order, mark,
-@@ -2108,6 +2109,11 @@ this_zone_full:
- 		zonelist_rescan = true;
+@@ -1544,7 +1544,7 @@ int split_free_page(struct page *page)
+ static inline
+ struct page *buffered_rmqueue(struct zone *preferred_zone,
+ 			struct zone *zone, unsigned int order,
+-			gfp_t gfp_flags, int migratetype)
++			gfp_t gfp_flags, int migratetype, bool acct_fair)
+ {
+ 	unsigned long flags;
+ 	struct page *page;
+@@ -1596,7 +1596,11 @@ again:
+ 					  get_freepage_migratetype(page));
  	}
  
-+	if ((alloc_flags & ALLOC_DIRTY) && nr_fail_dirty) {
-+		alloc_flags &= ~ALLOC_DIRTY;
+-	__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
++	if (acct_fair) {
++		__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
++		if (zone_page_state(zone, NR_ALLOC_BATCH) == 0)
++			zone_set_flag(zone, ZONE_FAIR_DEPLETED);
++	}
+ 
+ 	__count_zone_vm_events(PGALLOC, zone, 1 << order);
+ 	zone_statistics(preferred_zone, zone, gfp_flags);
+@@ -1908,6 +1912,20 @@ static bool zone_allows_reclaim(struct zone *local_zone, struct zone *zone)
+ 
+ #endif	/* CONFIG_NUMA */
+ 
++static void reset_alloc_batches(struct zone *preferred_zone)
++{
++	struct zone *zone = preferred_zone->zone_pgdat->node_zones;
++
++	do {
++		if (!zone_is_fair_depleted(zone))
++			continue;
++		mod_zone_page_state(zone, NR_ALLOC_BATCH,
++			high_wmark_pages(zone) - low_wmark_pages(zone) -
++			atomic_long_read(&zone->vm_stat[NR_ALLOC_BATCH]));
++		zone_clear_flag(zone, ZONE_FAIR_DEPLETED);
++	} while (zone++ != preferred_zone);
++}
++
+ /*
+  * get_page_from_freelist goes through the zonelist trying to allocate
+  * a page.
+@@ -1925,8 +1943,11 @@ get_page_from_freelist(gfp_t gfp_mask, nodemask_t *nodemask, unsigned int order,
+ 	int did_zlc_setup = 0;		/* just call zlc_setup() one time */
+ 	bool consider_zone_dirty = (alloc_flags & ALLOC_WMARK_LOW) &&
+ 				(gfp_mask & __GFP_WRITE);
++	int nr_fair_skipped = 0;
++	bool zonelist_rescan;
+ 
+ zonelist_scan:
++	zonelist_rescan = false;
+ 	/*
+ 	 * Scan zonelist, looking for a zone with enough free.
+ 	 * See also __cpuset_node_allowed_softwall() comment in kernel/cpuset.c.
+@@ -1950,10 +1971,14 @@ zonelist_scan:
+ 		 */
+ 		if (alloc_flags & ALLOC_FAIR) {
+ 			if (!zone_local(preferred_zone, zone))
++				break;
++
++			if (zone_is_fair_depleted(zone)) {
++				nr_fair_skipped++;
+ 				continue;
+-			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
+-				continue;
++			}
+ 		}
++
+ 		/*
+ 		 * When allocating a page cache page for writing, we
+ 		 * want to get it from a zone that is within its dirty
+@@ -2050,21 +2075,16 @@ zonelist_scan:
+ 
+ try_this_zone:
+ 		page = buffered_rmqueue(preferred_zone, zone, order,
+-						gfp_mask, migratetype);
++				gfp_mask, migratetype, zonelist->fair_enabled);
+ 		if (page)
+ 			break;
++
+ this_zone_full:
+ 		if (IS_ENABLED(CONFIG_NUMA) && zlc_active)
+ 			zlc_mark_zone_full(zonelist, z);
+ 	}
+ 
+-	if (unlikely(IS_ENABLED(CONFIG_NUMA) && page == NULL && zlc_active)) {
+-		/* Disable zlc cache for second zonelist scan */
+-		zlc_active = 0;
+-		goto zonelist_scan;
+-	}
+-
+-	if (page)
++	if (page) {
+ 		/*
+ 		 * page->pfmemalloc is set when ALLOC_NO_WATERMARKS was
+ 		 * necessary to allocate the page. The expectation is
+@@ -2073,8 +2093,25 @@ this_zone_full:
+ 		 * for !PFMEMALLOC purposes.
+ 		 */
+ 		page->pfmemalloc = !!(alloc_flags & ALLOC_NO_WATERMARKS);
++		return page;
++	}
+ 
+-	return page;
++	if ((alloc_flags & ALLOC_FAIR) && nr_fair_skipped) {
++		alloc_flags &= ~ALLOC_FAIR;
++		zonelist_rescan = true;
++		reset_alloc_batches(preferred_zone);
++	}
++
++	if (unlikely(IS_ENABLED(CONFIG_NUMA) && zlc_active)) {
++		/* Disable zlc cache for second zonelist scan */
++		zlc_active = 0;
 +		zonelist_rescan = true;
 +	}
 +
- 	if (zonelist_rescan)
- 		goto zonelist_scan;
++	if (zonelist_rescan)
++		goto zonelist_scan;
++
++	return NULL;
+ }
  
-@@ -2765,6 +2771,8 @@ retry_cpuset:
+ /*
+@@ -2395,28 +2432,6 @@ __alloc_pages_high_priority(gfp_t gfp_mask, unsigned int order,
+ 	return page;
+ }
  
- 	if (zonelist->fair_enabled)
- 		alloc_flags |= ALLOC_FAIR;
-+	if (gfp_mask & __GFP_WRITE)
-+		alloc_flags |= ALLOC_DIRTY;
+-static void reset_alloc_batches(struct zonelist *zonelist,
+-				enum zone_type high_zoneidx,
+-				struct zone *preferred_zone)
+-{
+-	struct zoneref *z;
+-	struct zone *zone;
+-
+-	for_each_zone_zonelist(zone, z, zonelist, high_zoneidx) {
+-		/*
+-		 * Only reset the batches of zones that were actually
+-		 * considered in the fairness pass, we don't want to
+-		 * trash fairness information for zones that are not
+-		 * actually part of this zonelist's round-robin cycle.
+-		 */
+-		if (!zone_local(preferred_zone, zone))
+-			continue;
+-		mod_zone_page_state(zone, NR_ALLOC_BATCH,
+-			high_wmark_pages(zone) - low_wmark_pages(zone) -
+-			atomic_long_read(&zone->vm_stat[NR_ALLOC_BATCH]));
+-	}
+-}
+-
+ static void wake_all_kswapds(unsigned int order,
+ 			     struct zonelist *zonelist,
+ 			     enum zone_type high_zoneidx,
+@@ -2748,33 +2763,18 @@ retry_cpuset:
+ 		goto out;
+ 	classzone_idx = zonelist_zone_idx(preferred_zoneref);
+ 
++	if (zonelist->fair_enabled)
++		alloc_flags |= ALLOC_FAIR;
  #ifdef CONFIG_CMA
  	if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
  		alloc_flags |= ALLOC_CMA;
+ #endif
+-retry:
+ 	/* First allocation attempt */
+ 	page = get_page_from_freelist(gfp_mask|__GFP_HARDWALL, nodemask, order,
+ 			zonelist, high_zoneidx, alloc_flags,
+ 			preferred_zone, classzone_idx, migratetype);
+ 	if (unlikely(!page)) {
+ 		/*
+-		 * The first pass makes sure allocations are spread
+-		 * fairly within the local node.  However, the local
+-		 * node might have free pages left after the fairness
+-		 * batches are exhausted, and remote zones haven't
+-		 * even been considered yet.  Try once more without
+-		 * fairness, and include remote zones now, before
+-		 * entering the slowpath and waking kswapd: prefer
+-		 * spilling to a remote zone over swapping locally.
+-		 */
+-		if (alloc_flags & ALLOC_FAIR) {
+-			reset_alloc_batches(zonelist, high_zoneidx,
+-					    preferred_zone);
+-			alloc_flags &= ~ALLOC_FAIR;
+-			goto retry;
+-		}
+-		/*
+ 		 * Runtime PM, block IO and its error handling path
+ 		 * can deadlock because I/O on the device might not
+ 		 * complete.
+@@ -3287,10 +3287,18 @@ void show_free_areas(unsigned int filter)
+ 	show_swap_cache_info();
+ }
+ 
+-static void zoneref_set_zone(struct zone *zone, struct zoneref *zoneref)
++static int zoneref_set_zone(pg_data_t *pgdat, struct zone *zone,
++			struct zoneref *zoneref, struct zone *preferred_zone)
+ {
++	int zone_type = zone_idx(zone);
++	bool fair_enabled = zone_local(zone, preferred_zone);
++	if (zone_type == 0 &&
++			zone->managed_pages < (pgdat->node_present_pages >> 4))
++		fair_enabled = false;
++
+ 	zoneref->zone = zone;
+-	zoneref->zone_idx = zone_idx(zone);
++	zoneref->zone_idx = zone_type;
++	return fair_enabled;
+ }
+ 
+ /*
+@@ -3303,17 +3311,26 @@ static int build_zonelists_node(pg_data_t *pgdat, struct zonelist *zonelist,
+ {
+ 	struct zone *zone;
+ 	enum zone_type zone_type = MAX_NR_ZONES;
++	struct zone *preferred_zone = NULL;
++	int nr_fair = 0;
+ 
+ 	do {
+ 		zone_type--;
+ 		zone = pgdat->node_zones + zone_type;
+ 		if (populated_zone(zone)) {
+-			zoneref_set_zone(zone,
+-				&zonelist->_zonerefs[nr_zones++]);
++			if (!preferred_zone)
++				preferred_zone = zone;
++
++			nr_fair += zoneref_set_zone(pgdat, zone,
++				&zonelist->_zonerefs[nr_zones++],
++				preferred_zone);
+ 			check_highest_zone(zone_type);
+ 		}
+ 	} while (zone_type);
+ 
++	if (nr_fair <= 1)
++		zonelist->fair_enabled = false;
++
+ 	return nr_zones;
+ }
+ 
+@@ -3538,8 +3555,9 @@ static void build_zonelists_in_zone_order(pg_data_t *pgdat, int nr_nodes)
+ {
+ 	int pos, j, node;
+ 	int zone_type;		/* needs to be signed */
+-	struct zone *z;
++	struct zone *z, *preferred_zone = NULL;
+ 	struct zonelist *zonelist;
++	int nr_fair = 0;
+ 
+ 	zonelist = &pgdat->node_zonelists[0];
+ 	pos = 0;
+@@ -3547,15 +3565,25 @@ static void build_zonelists_in_zone_order(pg_data_t *pgdat, int nr_nodes)
+ 		for (j = 0; j < nr_nodes; j++) {
+ 			node = node_order[j];
+ 			z = &NODE_DATA(node)->node_zones[zone_type];
++			if (!preferred_zone)
++				preferred_zone = z;
+ 			if (populated_zone(z)) {
+-				zoneref_set_zone(z,
+-					&zonelist->_zonerefs[pos++]);
++				nr_fair += zoneref_set_zone(pgdat, z,
++					&zonelist->_zonerefs[pos++],
++					preferred_zone);
+ 				check_highest_zone(zone_type);
+ 			}
+ 		}
+ 	}
+ 	zonelist->_zonerefs[pos].zone = NULL;
+ 	zonelist->_zonerefs[pos].zone_idx = 0;
++
++	/*
++	 * For this policy, the fair zone allocation policy is disabled as the
++	 * stated priority is to preserve lower zones, not balance them fairly.
++	 */
++	if (nr_fair == 1 || nr_online_nodes > 1)
++		zonelist->fair_enabled = false;
+ }
+ 
+ static int default_zonelist_order(void)
 -- 
 1.8.4.5
 
