@@ -1,65 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751624AbaF0Q6W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 12:58:22 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:22091 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750971AbaF0Q6V (ORCPT
+	id S1751589AbaF0RKn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 13:10:43 -0400
+Received: from mailout1.w2.samsung.com ([211.189.100.11]:37240 "EHLO
+	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751308AbaF0RKm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 12:58:21 -0400
-Message-ID: <53ADA30C.7090908@oracle.com>
-Date: Fri, 27 Jun 2014 12:59:56 -0400
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, x86-ml <x86@kernel.org>,
-        Tony Luck <tony.luck@intel.com>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] 2 RAS fixes for 3.17, refreshed
-References: <20140622164603.GA3385@pd.tnic> <20140624132439.GH4439@pd.tnic> <20140624132701.GB28885@laptop.dumpdata.com> <20140627150155.GG23153@pd.tnic> <53AD89FB.7090609@oracle.com> <20140627160841.GH23153@pd.tnic>
-In-Reply-To: <20140627160841.GH23153@pd.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Fri, 27 Jun 2014 13:10:42 -0400
+X-AuditID: cbfec37b-b7fbe6d000006742-6f-53ada5901886
+Message-id: <53ADA58D.4070307@samsung.com>
+Date: Fri, 27 Jun 2014 11:10:37 -0600
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.6.0
+MIME-version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: gregkh@linuxfoundation.org, keescook@chromium.org, michael@ellerman.id.au,
+        fweisbec@gmail.com, benh@kernel.crashing.org,
+        linux-kernel@vger.kernel.org, Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: [PATCH] tools: selftests - create a separate hotplug target
+References: <1403814836-16964-1-git-send-email-shuah.kh@samsung.com>
+ <20140626145106.83d8a15bfa07270b00e5d24b@linux-foundation.org>
+In-reply-to: <20140626145106.83d8a15bfa07270b00e5d24b@linux-foundation.org>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.134.209]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJLMWRmVeSWpSXmKPExsVy+t9hX90JS9cGG6x9LWIxZ/0aNosPTa3M
+	FjNfdzNZNC9ez2ZxpjvX4vKuOWwWlyetZHJg95jdcJHFY9HLBhaPnbPusnv0vGlh9Tgx4zeL
+	x/65a9g9Pm+SC2CP4rJJSc3JLEst0rdL4Mp4euQee8FsvoqXvaYNjNu5uxg5OSQETCQuX77E
+	CGGLSVy4t56ti5GLQ0hgGaPE0wX/mUESQgK9TBLX59lCJLYxSnT/fcwCkuAV0JJ49GUFWBGL
+	gKrE7/8v2UFsNgF1ic+vd7BDNMtJNC1ZDVYjKhAhcaDvGStEr6DEj8n3wOaICOhKrHq+ixlk
+	AbPAAUaJC992gRUJC3hI7J35hRVicyujxJ+/vWBTOQW8JWa9/sEEYjMLWEusnLSNEcKWl9i8
+	5i3U2coSfy6fYoL4TVliYuNtlgmMIrOQLJ+FpH0WkvYFjMyrGMVKi5MLipPSUyuM9IoTc4tL
+	89L1kvNzNzFCoqt6B+PdrzaHGAU4GJV4eD+2rQ0WYk0sK67MPcQowcGsJML7aD5QiDclsbIq
+	tSg/vqg0J7X4ECMTB6dUA2PRheMBl7SCz9xTvtDIZvBbPKqe0/7BKjazKdEfPylWrH3991eh
+	xOImnbY/Ua53/JfJ3Hm/UclHIvVQacdEptNzDN+kLf4r3iNTc85s3kNnpS8B22csc03eoJAq
+	obtTzO1Jl6bep3sp385UrNjU0dV79FjIR4UNAkdXP7W/dFyH36YjUn9lyQQlluKMREMt5qLi
+	RACcZ7/IjAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27/2014 12:08 PM, Borislav Petkov wrote:
-> On Fri, Jun 27, 2014 at 11:12:59AM -0400, Boris Ostrovsky wrote:
->> Yes, it fails because xen_late_init_mcelog() registers /dev/mcelog and (I
->> think) it happens before mcheck_init_device().
-> Yes, mcheck_init_device is device_initcall_sync() while
-> xen_late_init_mcelog() is device_initcall().
+On 06/26/2014 03:51 PM, Andrew Morton wrote:
+> On Thu, 26 Jun 2014 14:33:56 -0600 Shuah Khan <shuah.kh@samsung.com> wrote:
 >
->> In other words, misc_register() expected to fail in mcheck/mce.c on
->> (privileged?) PV guests (provided right CONFIG_XEN_* is set).
-> So
+>> On some systems, hotplug tests could hang forever waiting for cpu and
+>> memory to be ready to be offlined. A special hotplug target is created,
+>> which will help run non-hotplug tests and run hotplug tests as a special
+>> case. Individual hotplug tests can still be run as a special target
+>> targeted for a single subsystem.
 >
-> 	cef12ee52b05 ("xen/mce: Add mcelog support for Xen platform")
+> This is a bit sad.  The general philosophy with selftests is that they
+> should run to completion even if the kernel/hardware which they are
+> testing isn't available - they should work it out for themselves.
 >
-> made it this way so that xen's init routine runs first.
+> But that's obviously a problem with hotplug.  And with networking or
+> anything else which needs external action.
 >
-> So it is not the case that misc_register() fails often on xen but it is
-> *supposed* to fail by design, when running in dom0. And *then* you need
-> the notifier *not* unregistered on the error path so that the timers do
-> get deleted properly.
->
-> Ok, I see it now. Frankly, I'm not really sure I want to rush this in
-> now because it might break something else, Who TF knows what.
->
-> Right now my gut feeling tells me we should still queue it for 3.17 and
-> have it run for a while in linux-next. We can backport it to stable
-> later after some testing...
+> On the other hand, networking has loopback and the kernel supports cpu
+> hotplug simulation via procfs.  So perhaps the cpu and memory hotplug
+> tests should be redone so they do the plug/unplug injection themselves,
+> so they can run without external intervention?
 
-I don't have a problem with having it soak in linux-next for a while but 
-I am not too crazy about releasing 3.16 with this bug (even knowing that 
-there will be a backport later). When we hit this problem the results 
-are rather unpleasant in that it's not immediately clear what's happened.
+Changing/running the tests in a safe mode (least possibility of hang)
+mode is another option. This way the tests are run in normal mode with
+reduced scope. Memory hotplug test has the ratio option and when I
+specified low ratio 1-5%, it completed in a few seconds.
 
-We are still at rc2 so we have 3-4 weeks before 3.16 goes out.
+cpu-hotplug test will require changes. I am working on a change to
+offline a user specified # of cpus instead offlining all hotpluggable
+cpus and then onlining them again at the end of the test.
 
+When all selftests are run, safe mode hotplug tests will be run.
 
--boris
+Does this approach sound reasonable?
 
+-- Shuah
 
+-- 
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
