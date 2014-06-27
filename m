@@ -1,63 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752900AbaF0UEN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 16:04:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44469 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750831AbaF0UEM (ORCPT
+	id S1752471AbaF0UIo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 16:08:44 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:45339 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751496AbaF0UIm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 16:04:12 -0400
-Date: Fri, 27 Jun 2014 13:04:11 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: shuah.kh@samsung.com
-Cc: gregkh@linuxfoundation.org, keescook@chromium.org, michael@ellerman.id.au,
-        fweisbec@gmail.com, benh@kernel.crashing.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tools: selftests - create a separate hotplug target
-Message-Id: <20140627130411.d351b6543787b826f5ba1b34@linux-foundation.org>
-In-Reply-To: <53ADCD3B.3000209@samsung.com>
-References: <1403814836-16964-1-git-send-email-shuah.kh@samsung.com>
-	<20140626145106.83d8a15bfa07270b00e5d24b@linux-foundation.org>
-	<53ADA58D.4070307@samsung.com>
-	<20140627124552.d834ecd58c416c0a2d0dae02@linux-foundation.org>
-	<53ADCD3B.3000209@samsung.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 27 Jun 2014 16:08:42 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140627195559.GA31661@redhat.com>
+References: <CAGXu5j+J11zJnuFR8bYKAXizAHhCx4R+uJE_QH6zC3q2udkpaQ@mail.gmail.com>
+ <CALCETrVrs8sb19+UUqyFEpAFzTih5dkAwn-WpQjfgPcPJMpP5g@mail.gmail.com>
+ <20140625173245.GA17695@redhat.com> <CALCETrUc65H+fn6dtMdYnB_xR39wcmgDdTbdR3fFRjyrndJhgA@mail.gmail.com>
+ <20140625175136.GA18185@redhat.com> <CAGXu5jL17k6=GXju6x+eLU20FMwBHhnuRiHoQD1Bzj_EmpiKjg@mail.gmail.com>
+ <CALCETrVNwhWSPNiBiZmgP1nD9zLJPTk6cH0yo=85rbxTPTYFRg@mail.gmail.com>
+ <CAGXu5jLavA8FJD8m-1y4wO0uzh3qvvMmajAg0Lrr1Cn_Om3a3w@mail.gmail.com>
+ <20140627192753.GA30752@redhat.com> <CALCETrVbJqfG6oBaZEjj7H3pPa1oVJx6QXAYc5zZ6o-niV=WKQ@mail.gmail.com>
+ <20140627195559.GA31661@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 27 Jun 2014 13:08:20 -0700
+Message-ID: <CALCETrUxGbTet--zJiKX4BqbOaw2MDBPqT18HaQOdf7zwWWtEw@mail.gmail.com>
+Subject: Re: [PATCH v8 5/9] seccomp: split mode set routines
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Jun 2014 13:59:55 -0600 Shuah Khan <shuah.kh@samsung.com> wrote:
+On Fri, Jun 27, 2014 at 12:55 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 06/27, Andy Lutomirski wrote:
+>>
+>> On Fri, Jun 27, 2014 at 12:27 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+>> > On 06/27, Kees Cook wrote:
+>> >>
+>> >> It looks like SMP ARM issues dsb for rmb, which seems a bit expensive.
+>> >> http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0204g/CIHJFGFE.htm
+>> >>
+>> >> ...
+>> >>
+>> >> I really want to avoid adding anything to the secure_computing()
+>> >> execution path. :(
+>> >
+>> > I must have missed something but I do not understand your concerns.
+>> >
+>> > __secure_computing() is not trivial, and we are going to execute the
+>> > filters. Do you really think rmb() can add the noticeable difference?
+>> >
+>> > Not to mention that we can only get here if we take the slow syscall
+>> > enter path due to TIF_SECCOMP...
+>> >
+>>
+>> On my box, with my fancy multi-phase seccomp patches, the total
+>> seccomp overhead for a very short filter is about 13ns.  Adding a full
+>> barrier would add several ns, I think.
+>
+> I am just curious, does this 13ns overhead include the penalty from the
+> slow syscall enter path triggered by TIF_SECCOMP ?
 
-> > I don't know really.  You know more about this than I - what advantages
-> > does the separate-make-target approach have over this approach?
-> >
-> 
-> Currently these tests run with full range - i.e try to offline
-> all cpus that are hotpluggable and try to offline all memory
-> that is hotpluggable. This results in hangs.
-> 
-> Creating a separate target the way I did it in this patch excludes these
-> tests all together. i.e when somebody runs:
-> 
-> make -C tools/testing/selftests run_tests
-> 
-> hotplug tests don't run.
-> 
-> Instead, with a few changes, tests can be run with a reduced scope so
-> a % of the memory gets offlined as opposed to all of it and the same
-> thing with cpus. This way hotplug code gets tested as opposed to
-> being excluded in a default test run case.
-> 
-> However, if limited scope testing isn't useful, separate target is
-> better until tests can be made safe to run without hangs.
+Yes, which is more or less the whole point of that patch series.  I
+rewrote part of the TIF_SECCOMP-but-no-tracing case in assembly :)
 
-hm, OK.  So it sounds like the best solution would be to run the
-limited tests by default and to require special intervention to run the
-full tests.
+I'm playing with rewriting it in C, but it's looking like it'll be a
+bit more far-reaching than I was hoping.
 
-I guess a separate make target is a suitable way of running the full
-tests.  We could use an environment variable or various other things.
-
+--Andy
