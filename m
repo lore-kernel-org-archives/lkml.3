@@ -1,88 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752852AbaF0W5s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 18:57:48 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:56351 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752246AbaF0W5q (ORCPT
+	id S1752837AbaF0XFJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 19:05:09 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:60247 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751273AbaF0XFF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 18:57:46 -0400
-Message-ID: <53ADF6E6.6090705@wwwdotorg.org>
-Date: Fri, 27 Jun 2014 16:57:42 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Fri, 27 Jun 2014 19:05:05 -0400
+Date: Fri, 27 Jun 2014 18:04:33 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+CC: Felipe Balbi <balbi@ti.com>, <sebastian.hesselbarth@gmail.com>,
+        <alexandre.belloni@free-electrons.com>,
+        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
+        <jszhang@marvell.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>
+Subject: Re: [PATCH v2 05/12] usb: phy: add the Berlin USB PHY driver
+Message-ID: <20140627230433.GC762@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1403606121-6368-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1403606121-6368-6-git-send-email-antoine.tenart@free-electrons.com>
+ <20140627155622.GL8069@saruman.home>
+ <20140627160557.GA6622@kwain>
 MIME-Version: 1.0
-To: Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Rabin Vincent <rabin.vincent@stericsson.com>,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC 5/5] clk: Add floor and ceiling constraints to clock rates
-References: <1403855872-14749-1-git-send-email-tomeu.vizoso@collabora.com> <1403855872-14749-6-git-send-email-tomeu.vizoso@collabora.com>
-In-Reply-To: <1403855872-14749-6-git-send-email-tomeu.vizoso@collabora.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UFHRwCdBEJvubb2X"
+Content-Disposition: inline
+In-Reply-To: <20140627160557.GA6622@kwain>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27/2014 01:57 AM, Tomeu Vizoso wrote:
-> Adds a way for clock consumers to set maximum and minimum rates. This can be
-> used for thermal drivers to set ceiling rates, or by misc. drivers to set
-> floor rates to assure a minimum performance level.
+--UFHRwCdBEJvubb2X
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+On Fri, Jun 27, 2014 at 06:05:57PM +0200, Antoine T=E9nart wrote:
+> Hi Felipe,
+>=20
+> On Fri, Jun 27, 2014 at 10:56:22AM -0500, Felipe Balbi wrote:
+> > On Tue, Jun 24, 2014 at 12:35:14PM +0200, Antoine T=E9nart wrote:
+> > > Add the driver driving the Marvell Berlin USB PHY. This allows to
+> > > initialize the PHY and to use it from the USB driver later.
+> > >=20
+> > > Signed-off-by: Antoine T=E9nart <antoine.tenart@free-electrons.com>
+> >=20
+> > since this is a brand new driver, it should go to drivers/phy instead.
+>=20
+> This PHY is used by a ChipIdea USB driver, which uses the provided
+> common function for ChipIdea. These functions use the usb_phy framework.
+> That's why this PHY driver is there.
 
-> +static struct rate_constraint *__ensure_constraint(struct clk *clk_user,
-> +						   enum constraint_type type)
+right, but you can add support for the new PHY layer which would help
+other users convert their PHY drivers to the new PHY framework.
 
-> +	if (!found) {
-> +		constraint = kzalloc(sizeof(*constraint), GFP_KERNEL);
-> +		if (!constraint) {
-> +			pr_err("%s: could not allocate constraint\n", __func__);
+--=20
+balbi
 
-Doesn't kzalloc print an error itself if the allocation fails? I've
-certainly seen quite a few patches ripping out custom "allocation
-failed" errors in code.
+--UFHRwCdBEJvubb2X
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> +void __clk_free_clk(struct clk *clk_user)
-> +{
-> +	struct clk_core *clk = clk_to_clk_core(clk_user);
-> +	struct rate_constraint *constraint;
-> +	struct hlist_node *tmp;
-> +
-> +	hlist_for_each_entry_safe(constraint, tmp, &clk->rate_constraints, node) {
-> +		if (constraint->dev_id == clk_user->dev_id &&
-> +		    constraint->con_id == clk_user->con_id) {
-> +			hlist_del(&constraint->node);
-> +			kfree(constraint);
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-Perhaps the list of constraints should be indexed by the client clk
-structure, so that test should be:
+iQIcBAEBAgAGBQJTrfiBAAoJEIaOsuA1yqRE+jcP/2MTPeE8myy+i7CRNagDApsq
+9vMSZDEjxu68jxaeUes1X0dGl5hbeOs91UWP56PtcEDOsw1UQX2nP+kQnO8L8YCm
+L9d8GYs0XtqhwgkLT5mn56cJB4AbkRkE5FEt2OLseYQEPpoaRWgFZsv5ofjxr2zV
+PtUwMNcUrV4jUVxdYPs8Vvt0mjTp0yRm+jDMair2uAJa6B8yXLVDtEfXRT0I4bDh
+fvGgHk6mQB7QqIBPDK/1kXJHGbwTmFxaPuGTjJTWsKSs9wfAoDwTlppSkUqlhY5C
+4VKoN9eT9j4C5merWO/NUq5r/kflNScYYHLY4KmVSiKPmJQT9CLUx26pfP1mLL61
+vdH1fXTSMggBVNNNcyOHmWxcGG0l5INiE9bjb1d8QYJrMI7n+rnWqsFACpWkU3ya
+2MFFwq6rGc9i0X5aaozYkEkadKvQbBHIKnXEjvvsujTmjYkzBEhSPUpKFrCIFSzV
+rwBAZH/9H0ccO5j0I76lu4Xzm7PInFU143j+YIoTji8EJEVQqfr+C60KJ3yZkV21
+/eY40/WldYD6tpQ7Tw0q09ALQQNpOs3ffrDFKvTLRPNB6eQFiNmI2PKlSRoFyUyW
+bPA5OXmfXO8XpkkvblHvupJfNjAD3rhsBVR5sh8FNUTbXk72JkrUQdt4mlO4rkHt
+K8KPBQ4g3QXEHN/m7Kqo
+=BaoT
+-----END PGP SIGNATURE-----
 
-if (constraint->clk_user == clk_user)
-
-It might be a bit more work, but perhaps the constraints should simply
-be stored directly in the struct clk rater than the struct clk_core.
-That would require a nested loop to apply constraints though; first over
-each struct clk associated with a struct clk_core, then over each
-constraints in that struct clk. It would slightly simplify
-adding/removing constraints though, and store the constraints at their
-"source".
-
-> diff --git a/include/linux/clk.h b/include/linux/clk.h
-
-> +int clk_set_floor_rate(struct clk *clk, unsigned long rate);
-
-> +int clk_set_ceiling_rate(struct clk *clk, unsigned long rate);
-
-Additions functions to explicitly remove any previously requested
-floor/ceiling rate might be useful. The same effect could be achieved by
-a floor of 0 or a very high ceiling, but it feels cleaner to remove them.
-
-Overall, this series seems to implement the right kind of concept to me.
-It'll certainly stop us (NVIDIA at least) wanting to create all kinds of
-"virtual" clock objects (and associated clock IDs and device tree clock
-IDs) to achieve a similar effect.
+--UFHRwCdBEJvubb2X--
