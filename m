@@ -1,71 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240AbaF0TSu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 15:18:50 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:42307 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752377AbaF0TSs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 15:18:48 -0400
-Date: Fri, 27 Jun 2014 21:18:45 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Jiri Slaby <jslaby@suse.cz>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        linux-kernel@vger.kernel.org, tj@kernel.org, rostedt@goodmis.org,
-        mingo@redhat.com, akpm@linux-foundation.org, andi@firstfloor.org,
-        paulmck@linux.vnet.ibm.com, jirislaby@gmail.com,
-        Vojtech Pavlik <vojtech@suse.cz>, Michael Matz <matz@suse.de>,
-        Udo Seidel <udoseidel@gmx.de>
-Subject: Re: [PATCH -repost 05/21] kgr: update Kconfig documentation
-Message-ID: <20140627191845.GA1408@xo-6d-61-c0.localdomain>
-References: <1403694435-3180-1-git-send-email-jslaby@suse.cz>
- <1403694435-3180-5-git-send-email-jslaby@suse.cz>
- <20140625134212.4fb38e14@alan.etchedpixels.co.uk>
- <53ABD8FB.9000700@suse.cz>
- <alpine.LNX.2.00.1406261030210.15939@pobox.suse.cz>
+	id S1753017AbaF0TVP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 15:21:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20792 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751570AbaF0TVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 15:21:13 -0400
+Date: Fri, 27 Jun 2014 15:19:42 -0400
+From: Jarod Wilson <jarod@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Stephan Mueller <stephan.mueller@atsec.com>,
+        linux-crypto@vger.kernel.org
+Subject: Re: [PATCH] crypto/fips: only panic on bad/missing crypto mod
+ signatures
+Message-ID: <20140627191942.GE20825@redhat.com>
+References: <1403896374-62781-1-git-send-email-jarod@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1406261030210.15939@pobox.suse.cz>
+In-Reply-To: <1403896374-62781-1-git-send-email-jarod@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Fri, Jun 27, 2014 at 03:12:54PM -0400, Jarod Wilson wrote:
+> Per further discussion with NIST, the requirements for FIPS state that
+> we only need to panic the system on failed kernel module signature checks
+> for crypto subsystem modules. This moves the fips-mode-only module
+> signature check out of the generic module loading code, into the crypto
+> subsystem, at points where we can catch both algorithm module loads and
+> mode module loads. At the same time, make CONFIG_CRYPTO_FIPS dependent on
+> CONFIG_MODULE_SIG, as this is entirely necessary for FIPS mode.
+...
+> --- a/crypto/algapi.c
+> +++ b/crypto/algapi.c
+...
+> @@ -430,6 +436,12 @@ int crypto_register_template(struct crypto_template *tmpl)
+>  
+>  	down_write(&crypto_alg_sem);
+>  
+> +#ifdef CONFIG_CRYPTO_FIPS
+> +	if (fips_enabled && tmpl->module && !tmpl->module->sig_ok)
+> +		panic("Module %s signature verification failed in FIPS mode\n",
+> +		      tmpl->module->name);
+> +#endif
+> +
 
-> > This now writes:
-> > +       help
-> > +         Select this to enable kGraft online kernel patching. The
-> > +         runtime price is nearly zero, so it is safe to say Y here
-> > +         provided you are aware of all the consequences (e.g. in
-> > +         security).
-> > 
-> > Is it OK with you?
-> 
-> This might cause a false impression that we are actually opening a 
-> security hole into a system, which is not true at all.
-> 
-> Yes, backdoor writeres might (or might not) make use of kGraft API, but 
-> they have gazillion of other comparable options (*probes, ftrace, 
-> text_poke(), ...).
-> 
-> I'd perhaps propose something like
-> 
-> "Select this to enable kGraft live kernel patching. The runtime penalty is 
-> nearly zero, so it is safe to say Y here if you want the kernel to expose 
-> API for live patching to modules".
-
-Well. People that are not distro vendors will not prepare patches for
-themselves, right? And patches prepared for suse will not work on
-self-configured kernels.
-
-So probably everyone should say "N" here...
-
-
-                                           				Pavel
+Forgot to mention: the panic locations within the functions don't really
+matter a whole lot right this moment, but Stephan pointed out the
+possibility of a future FIPS standard that might not require a panic, thus
+the crypto_register_template check being done after the down_write() so
+that you could do a goto out; instead of a panic here and have things more
+or less behave.
 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Jarod Wilson
+jarod@redhat.com
+
