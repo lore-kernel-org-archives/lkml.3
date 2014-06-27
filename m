@@ -1,63 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752197AbaF0RyT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 13:54:19 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:27387 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751616AbaF0RyS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 13:54:18 -0400
-Date: Fri, 27 Jun 2014 13:54:15 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: Austin Schuh <austin@peloton-tech.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        rt-users <linux-rt-users@vger.kernel.org>
-Subject: Re: Filesystem lockup with CONFIG_PREEMPT_RT
-Message-ID: <20140627135415.7246e87e@gandalf.local.home>
-In-Reply-To: <1403890493.5830.33.camel@marge.simpson.net>
-References: <CANGgnMbHckBQdKGN_N5Q6qEKc9n1CenxvMpeXog1NbSdL8UrTw@mail.gmail.com>
-	<CANGgnMYDXerOUDOO9-RHMJKadKACA2KBGskZwoP-1ZwAhDEfVA@mail.gmail.com>
-	<CAFLxGvxfBt7OvW=a2Kz08GLHSEiiOZsN-vB19CXnQiwqFxqMsA@mail.gmail.com>
-	<CANGgnMYVoP-Z0Bv-VDEkJnvfa7Fi4-zY2F4A0PhMewGvwo3VVw@mail.gmail.com>
-	<alpine.DEB.2.10.1406270027300.5170@nanos>
-	<CANGgnMa+qtgJ3wwg_h5Rynw5vEvZpQZ6PvaUfXNQ8+Y3Yu5U0g@mail.gmail.com>
-	<1403873856.5827.56.camel@marge.simpson.net>
-	<20140627100157.6b0143a5@gandalf.local.home>
-	<1403890493.5830.33.camel@marge.simpson.net>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1751502AbaF0SBw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 14:01:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22590 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750990AbaF0SBv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 14:01:51 -0400
+Date: Fri, 27 Jun 2014 12:34:23 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: linux-kernel@vger.kernel.org, kexec@lists.infradead.org
+Cc: ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org, greg@kroah.com,
+        bp@alien8.de, dyoung@redhat.com, chaowang@redhat.com, bhe@redhat.com,
+        akpm@linux-foundation.org
+Subject: [PATCH 16/15] kexec: Fix freeing up for image loader data loading
+Message-ID: <20140627163423.GG13337@redhat.com>
+References: <1403814824-7587-1-git-send-email-vgoyal@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403814824-7587-1-git-send-email-vgoyal@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Jun 2014 19:34:53 +0200
-Mike Galbraith <umgwanakikbuti@gmail.com> wrote:
 
-> On Fri, 2014-06-27 at 10:01 -0400, Steven Rostedt wrote:
-> 
-> > This seems like a lot of hacks.
-> 
-> It is exactly that, lacking proper pooper-scooper, show rt kernel how to
-> not step in it.
-> 
-> > I'm wondering if it would work if we
-> > just have the rt_spin_lock_slowlock not call schedule(), but call
-> > __schedule() directly. I mean it would keep with the mainline paradigm
-> > as spinlocks don't sleep there, and one going to sleep in the -rt
-> > kernel is similar to it being preempted by a very long NMI.
-> 
-> Problem being that we do sleep there, do need wakeup.  I have a hack
-> that turns them back into spinning locks, but it.. works too :)
+During testing I noticed a crash. Which in turn showed that there are
+problems with how I am freeing up image->image_loader_data.
 
-Why do we need the wakeup? the owner of the lock should wake it up
-shouldn't it?
+In one case I am freeing up kimage->image_loader_data first and then
+calling up arch to free up which might have been contained in that
+structure. That's wrong.
 
+I have done little cleanup and this should fix the issues around
+freeing up of loader data.
 
--- Steve
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+---
+ arch/x86/kernel/kexec-bzimage64.c  |    4 ++--
+ arch/x86/kernel/machine_kexec_64.c |    2 +-
+ include/linux/kexec.h              |    2 +-
+ kernel/kexec.c                     |   11 ++++++++---
+ 4 files changed, 12 insertions(+), 7 deletions(-)
+
+Index: linux-2.6/arch/x86/kernel/machine_kexec_64.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/machine_kexec_64.c	2014-06-27 09:55:41.824755401 -0400
++++ linux-2.6/arch/x86/kernel/machine_kexec_64.c	2014-06-27 11:02:02.607548946 -0400
+@@ -369,7 +369,7 @@ int arch_kimage_file_post_load_cleanup(s
+ 	if (!image->fops || !image->fops->cleanup)
+ 		return 0;
+ 
+-	return image->fops->cleanup(image);
++	return image->fops->cleanup(image->image_loader_data);
+ }
+ 
+ /*
+Index: linux-2.6/include/linux/kexec.h
+===================================================================
+--- linux-2.6.orig/include/linux/kexec.h	2014-06-27 09:55:41.695754029 -0400
++++ linux-2.6/include/linux/kexec.h	2014-06-27 11:04:28.467151813 -0400
+@@ -190,7 +190,7 @@ typedef void *(kexec_load_t)(struct kima
+ 			     unsigned long kernel_len, char *initrd,
+ 			     unsigned long initrd_len, char *cmdline,
+ 			     unsigned long cmdline_len);
+-typedef int (kexec_cleanup_t)(struct kimage *image);
++typedef int (kexec_cleanup_t)(void *loader_data);
+ 
+ struct kexec_file_ops {
+ 	kexec_probe_t *probe;
+Index: linux-2.6/arch/x86/kernel/kexec-bzimage64.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/kexec-bzimage64.c	2014-06-27 09:55:41.872755912 -0400
++++ linux-2.6/arch/x86/kernel/kexec-bzimage64.c	2014-06-27 11:05:42.151963710 -0400
+@@ -512,9 +512,9 @@ out_free_params:
+ }
+ 
+ /* This cleanup function is called after various segments have been loaded */
+-int bzImage64_cleanup(struct kimage *image)
++int bzImage64_cleanup(void *loader_data)
+ {
+-	struct bzimage64_data *ldata = image->image_loader_data;
++	struct bzimage64_data *ldata = loader_data;
+ 
+ 	if (!ldata)
+ 		return 0;
+Index: linux-2.6/kernel/kexec.c
+===================================================================
+--- linux-2.6.orig/kernel/kexec.c	2014-06-27 10:04:23.409024171 -0400
++++ linux-2.6/kernel/kexec.c	2014-06-27 11:45:14.684874978 -0400
+@@ -459,6 +459,14 @@ static void kimage_file_post_load_cleanu
+ 
+ 	/* See if architecture has anything to cleanup post load */
+ 	arch_kimage_file_post_load_cleanup(image);
++
++	/*
++	 * Above call should have called into bootloader to free up
++	 * any data stored in kimage->image_loader_data. It should
++	 * be ok now to free it up.
++	 */
++	kfree(image->image_loader_data);
++	image->image_loader_data = NULL;
+ }
+ 
+ /*
+@@ -584,7 +592,6 @@ out_free_control_pages:
+ 	kimage_free_page_list(&image->control_pages);
+ out_free_post_load_bufs:
+ 	kimage_file_post_load_cleanup(image);
+-	kfree(image->image_loader_data);
+ out_free_image:
+ 	kfree(image);
+ 	return ret;
+@@ -908,8 +915,6 @@ static void kimage_free(struct kimage *i
+ 	/* Free the kexec control pages... */
+ 	kimage_free_page_list(&image->control_pages);
+ 
+-	kfree(image->image_loader_data);
+-
+ 	/*
+ 	 * Free up any temporary buffers allocated. This might hit if
+ 	 * error occurred much later after buffer allocation.
