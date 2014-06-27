@@ -1,78 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752471AbaF0UIo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 16:08:44 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:45339 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751496AbaF0UIm (ORCPT
+	id S1752155AbaF0ULh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 16:11:37 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:37460 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750831AbaF0ULg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 16:08:42 -0400
+	Fri, 27 Jun 2014 16:11:36 -0400
+Date: Fri, 27 Jun 2014 16:11:35 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Allen Yu <alleny@nvidia.com>,
+        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Linux-pm mailing list <linux-pm@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] Add "rpm_not_supported" flag
+In-Reply-To: <20140627192238.GA7646@kroah.com>
+Message-ID: <Pine.LNX.4.44L0.1406271606000.875-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <20140627195559.GA31661@redhat.com>
-References: <CAGXu5j+J11zJnuFR8bYKAXizAHhCx4R+uJE_QH6zC3q2udkpaQ@mail.gmail.com>
- <CALCETrVrs8sb19+UUqyFEpAFzTih5dkAwn-WpQjfgPcPJMpP5g@mail.gmail.com>
- <20140625173245.GA17695@redhat.com> <CALCETrUc65H+fn6dtMdYnB_xR39wcmgDdTbdR3fFRjyrndJhgA@mail.gmail.com>
- <20140625175136.GA18185@redhat.com> <CAGXu5jL17k6=GXju6x+eLU20FMwBHhnuRiHoQD1Bzj_EmpiKjg@mail.gmail.com>
- <CALCETrVNwhWSPNiBiZmgP1nD9zLJPTk6cH0yo=85rbxTPTYFRg@mail.gmail.com>
- <CAGXu5jLavA8FJD8m-1y4wO0uzh3qvvMmajAg0Lrr1Cn_Om3a3w@mail.gmail.com>
- <20140627192753.GA30752@redhat.com> <CALCETrVbJqfG6oBaZEjj7H3pPa1oVJx6QXAYc5zZ6o-niV=WKQ@mail.gmail.com>
- <20140627195559.GA31661@redhat.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 27 Jun 2014 13:08:20 -0700
-Message-ID: <CALCETrUxGbTet--zJiKX4BqbOaw2MDBPqT18HaQOdf7zwWWtEw@mail.gmail.com>
-Subject: Re: [PATCH v8 5/9] seccomp: split mode set routines
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
-        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 27, 2014 at 12:55 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 06/27, Andy Lutomirski wrote:
->>
->> On Fri, Jun 27, 2014 at 12:27 PM, Oleg Nesterov <oleg@redhat.com> wrote:
->> > On 06/27, Kees Cook wrote:
->> >>
->> >> It looks like SMP ARM issues dsb for rmb, which seems a bit expensive.
->> >> http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0204g/CIHJFGFE.htm
->> >>
->> >> ...
->> >>
->> >> I really want to avoid adding anything to the secure_computing()
->> >> execution path. :(
->> >
->> > I must have missed something but I do not understand your concerns.
->> >
->> > __secure_computing() is not trivial, and we are going to execute the
->> > filters. Do you really think rmb() can add the noticeable difference?
->> >
->> > Not to mention that we can only get here if we take the slow syscall
->> > enter path due to TIF_SECCOMP...
->> >
->>
->> On my box, with my fancy multi-phase seccomp patches, the total
->> seccomp overhead for a very short filter is about 13ns.  Adding a full
->> barrier would add several ns, I think.
->
-> I am just curious, does this 13ns overhead include the penalty from the
-> slow syscall enter path triggered by TIF_SECCOMP ?
+On Fri, 27 Jun 2014, Greg Kroah-Hartman wrote:
 
-Yes, which is more or less the whole point of that patch series.  I
-rewrote part of the TIF_SECCOMP-but-no-tracing case in assembly :)
+> > One side point: The patch changes the string displayed for the 
+> > power/runtime_status attribute file when disable_depth > 0.  Instead of 
+> > "unsupported", it will now say "disabled".  The attribute will contain 
+> > "not supported" when the new flag is set.
+> > 
+> > Is this acceptable?
+> 
+> Why change the "unsupported" string?  Can't we just leave that one
+> alone?  I'd prefer to not break userspace tools...
 
-I'm playing with rewriting it in C, but it's looking like it'll be a
-bit more far-reaching than I was hoping.
+I changed it because it's wrong.  disable_depth > 0 means that runtime 
+PM has temporarily been disabled, or was never enabled in the first 
+place.  It doesn't mean that runtime PM is unsupported.
 
---Andy
+In fact, the word "unsupported" is ambiguous.  Does it mean unsupported 
+by the hardware or unsupported by the kernel?  The hardware can't 
+change, but the kernel can be altered by loading a module.
+
+If that change is too intrusive, I can remove it from the patch.
+
+Alan Stern
+
