@@ -1,73 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753279AbaF0Kvu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 06:51:50 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:32830 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752825AbaF0Kvs (ORCPT
+	id S1753351AbaF0Kyo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 06:54:44 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:61384 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752826AbaF0Kyn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 06:51:48 -0400
-Date: Fri, 27 Jun 2014 11:50:57 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Andy Gross <agross@codeaurora.org>
-Cc: linux-spi@vger.kernel.org, Sagar Dharia <sdharia@codeaurora.org>,
-        Daniel Sneddon <dsneddon@codeaurora.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org
-Message-ID: <20140627105057.GF23300@sirena.org.uk>
-References: <1403816781-31008-1-git-send-email-agross@codeaurora.org>
+	Fri, 27 Jun 2014 06:54:43 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Hiroshi DOyu <hdoyu@nvidia.com>, Thierry Reding <thierry.reding@gmail.com>,
+        Mark Rutland <mark.rutland@arm.com>, Will Deacon <will.deacon@arm.com>,
+        Paul Walmsley <pwalmsley@nvidia.com>, Pawel Moll <pawel.moll@arm.com>,
+        Joerg Roedel <joro@8bytes.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Marc Zyngier <marc.zyngier@arm.com>, Dave Martin <Dave.Martin@arm.com>,
+        Olav Haugan <ohaugan@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Grant Grundler <grundler@chromium.org>,
+        Allen Martin <AMartin@nvidia.com>, Rob Herring <robh+dt@kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Cho KyongHo <pullip.cho@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        Kumar Gala <galak@codeaurora.org>, Rhyland Klein <rklein@nvidia.com>
+Subject: Re: [RFC 09/10] drm/tegra: Add IOMMU support
+Date: Fri, 27 Jun 2014 12:54:20 +0200
+Message-ID: <4455459.GtiCHWk2CB@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140627124614.050be2e406a4b9a02d9fe97c@nvidia.com>
+References: <1403815790-8548-1-git-send-email-thierry.reding@gmail.com> <1403815790-8548-10-git-send-email-thierry.reding@gmail.com> <20140627124614.050be2e406a4b9a02d9fe97c@nvidia.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3ozdenm5Azl6mQ8k"
-Content-Disposition: inline
-In-Reply-To: <1403816781-31008-1-git-send-email-agross@codeaurora.org>
-X-Cookie: But it does move!
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] spi: qup: Add DMA capabilities
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:QKSmYn+uRy5Gotz2EuigdcZ5QuF/zBQMuUIUphzV5k7
+ s8UmvyKHTMIQOfdOkyMFdtRPMlqcjtUuIRce1T2CFhfPQlyi3g
+ SeOM90HMo+Z3vRwZf0o2oduKzCGWEDDg5LArIgk3BLn8FnlcDx
+ Stg1x06znAd9oBq7v46BIXKxpSujNBWFJyOBFC0ahMEz9BIVxZ
+ 0BpcTTx4x5s3LkBG5B/K22X4qA9Ms5pvyUhdmg3HlMRMdqEuhY
+ PdpfgwYI+9gMgaBXhqC6Pqnc2TntbJ6yr6P2VmIM3awXqTo8oh
+ 2raw0j2Vy5LLHXh18U4Jkbr7c7RXri/NxQipV3lz+WJwS2VGy9
+ qvzqr+jRy8dw+s/6PHGs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Friday 27 June 2014 12:46:14 Hiroshi DOyu wrote:
+> 
+> Thierry Reding <thierry.reding@gmail.com> writes:
+> 
+> > From: Thierry Reding <treding@nvidia.com>
+> >
+> > When an IOMMU device is available on the platform bus, allocate an IOMMU
+> > domain and attach the display controllers to it. The display controllers
+> > can then scan out non-contiguous buffers by mapping them through the
+> > IOMMU.
+> >
+> > Signed-off-by: Thierry Reding <treding@nvidia.com>
+> > ---
+> > @@ -1283,8 +1284,18 @@ static int tegra_dc_init(struct host1x_client *client)
+> >  {
+> >         struct drm_device *drm = dev_get_drvdata(client->parent);
+> >         struct tegra_dc *dc = host1x_client_to_dc(client);
+> > +       struct tegra_drm *tegra = drm->dev_private;
+> >         int err;
+> >
+> > +       if (tegra->domain) {
+> > +               err = iommu_attach_device(tegra->domain, dc->dev);
+> 
+> I wanted to keep device drivers iommu-free with the following:
+> 
+> http://patchwork.ozlabs.org/patch/354074/
+> 
 
---3ozdenm5Azl6mQ8k
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+We definitely need something like your series to make iommus work transparently
+on ARM for normal devices, using the of_dma_configure() to look up the correct
+iommu per device and initialize it.
 
-On Thu, Jun 26, 2014 at 04:06:21PM -0500, Andy Gross wrote:
+However, any devices that work with multiple iommu domains cannot do that
+and still need to use the iommu API directy. I believe the tegra drm code
+falls into this category.
 
-> +	if (xfer->rx_buf) {
-> +		rx_dma = dma_map_single(controller->dev, xfer->rx_buf,
-> +			xfer->len, DMA_FROM_DEVICE);
-
-It would be better to use the core DMA mapping code rather than open
-coding.  This code won't work for vmalloc()ed addresses, or physically
-non-contiguous addresses unless there's an IOMMU fixing things up.
-
---3ozdenm5Azl6mQ8k
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJTrUyOAAoJELSic+t+oim9g64P/0DCLX3QOf409MCNcPwrkB4k
-CO/xvPxt70PNhbPO/Ari3MdqcuLJv1PtobDMlSFEgiWtE5ApwK7CbFX4O84aYjFb
-mtiTQQc29mjvPzoJ2DNcfNuch4880/CseAdHBYvcgsG6787UDSt7eLJjDJLuRmnX
-ccpoPKwbkPAq0klGWOGZ6vf3Kjeu4YA6Iq+s83CYhQEJ0uZr+YTBHPuauhRNsFAM
-sJ7YTkc3jTLmM4nIWBtol/llL0byZcdpD/TCPwCrXqoeYJDaTqhZJ/RjFgsxKtlf
-1F1gyPk4Nay/mqJ8d3HU/Yx4jj/k1rYeJAVsFvff7jwusY3+Sqyq81K6naohsi0x
-PccU9xMiSv5QVBka/2i3MawsAoiqwRI1xNSY2Z1o14neJI1jz1iffMhLKuu48FwJ
-hD1NXVYqm6msbGSav5KSnySuxoBZuekOty/kl3vX08mVlOmVuWnJSMnVUygK9mX9
-sx1NCVdg1XL85mhyShqVH9SGM8XAh5eu2mmrJo3MyRQM7V7GqBNakRpQ9OfOFTQo
-HptjIMpNwy68EkBPlS/stIO6RDWQ6W48bBcQyoUOJBuhZOY3lCx/hkYx3aI3ceBs
-nLTWAyF00He0WLu50679lmg8vfxGiuIRjDC/jble/bGcWbzSRc9G1UPwdo3MmHH7
-pKlT3865UCYcX0hEjxLc
-=YGCI
------END PGP SIGNATURE-----
-
---3ozdenm5Azl6mQ8k--
+	Arnd
