@@ -1,52 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753505AbaF0MSi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 08:18:38 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:17755 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752825AbaF0MSg (ORCPT
+	id S1753608AbaF0MTM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 08:19:12 -0400
+Received: from smtprelay.synopsys.com ([198.182.60.111]:56286 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752740AbaF0MTL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 08:18:36 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 27 Jun 2014 05:08:37 -0700
-Date: Fri, 27 Jun 2014 15:18:33 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Mikko Perttunen <mperttunen@nvidia.com>
-CC: "rui.zhang@intel.com" <rui.zhang@intel.com>,
-        "edubezval@gmail.com" <edubezval@gmail.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        Matthew Longnecker <MLongnecker@nvidia.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 5/6] clk: tegra: Add soctherm and tsensor clocks to
- Tegra124 init table
-Message-ID: <20140627121833.GQ3679@tbergstrom-lnx.Nvidia.com>
-References: <1403856699-2140-1-git-send-email-mperttunen@nvidia.com>
- <1403856699-2140-6-git-send-email-mperttunen@nvidia.com>
-MIME-Version: 1.0
+	Fri, 27 Jun 2014 08:19:11 -0400
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: lkml <linux-kernel@vger.kernel.org>,
+        Anton Kolesov <Anton.Kolesov@synopsys.com>,
+        Paul Bolle <pebolle@tiscali.nl>, Noam Camus <noamc@ezchip.com>,
+        Francois Bedard <Francois.Bedard@synopsys.com>
+Subject: [GIT PULL] ARC Fixes for 3.16
+Thread-Topic: [GIT PULL] ARC Fixes for 3.16
+Thread-Index: Ac+SAfyejMifW8rqQv2r+mLGIisGcg==
+Date: Fri, 27 Jun 2014 12:19:05 +0000
+Message-ID: <C2D7FE5348E1B147BCA15975FBA230751A6BA363@IN01WEMBXA.internal.synopsys.com>
+Accept-Language: en-US, en-IN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.12.196.93]
 Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1403856699-2140-6-git-send-email-mperttunen@nvidia.com>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 27, 2014 at 10:11:38AM +0200, Mikko Perttunen wrote:
-> This adds the two clocks, soctherm and tsensor, to the T124 initialization table.
-> They are required for soctherm-based thermal sensing.
-> 
-> Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
-> ---
-> Peter, one more zero for TSENSOR, please :)
+Hi Linus,
 
-Ah :) I will take this into clk-tegra-3.17
+Please pull ARC fixes for 3.16
 
-Cheers,
+Thx,
+-Vineet
 
-Peter.
+------------------>
+The following changes since commit 7171511eaec5bf23fb06078f59784a3a0626b38f:
+
+  Linux 3.16-rc1 (2014-06-15 17:45:28 -1000)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/vgupta/arc.git/
+tags/arc-fixes-for-3.16
+
+for you to fetch changes up to 2328af0c9ce89d3ec121ba832c4e6faeff9e70ac:
+
+  ARC: [SMP] Enable icache coherency (2014-06-26 11:59:01 +0530)
+
+----------------------------------------------------------------
+ARC fixes for 3.16
+
+Some SMP changes, a ptrace request for NPTL debugging,
+bunch of build breakages/warnings
+
+----------------------------------------------------------------
+Anton Kolesov (1):
+      ARC: Implement ptrace(PTRACE_GET_THREAD_AREA)
+
+Noam Camus (1):
+      ARC: [SMP] Fix IPI IRQ registration
+
+Paul Bolle (1):
+      ARC: remove checks for CONFIG_ARC_MMU_V4
+
+Vineet Gupta (4):
+      ARC: fix build warning in devtree
+      ARC: Fix build breakage for !CONFIG_ARC_DW2_UNWIND
+      ARC: optimize kernel bss clearing in early boot code
+      ARC: [SMP] Enable icache coherency
+
+ arch/arc/include/asm/cache.h       |  4 ++--
+ arch/arc/include/uapi/asm/ptrace.h |  1 +
+ arch/arc/kernel/ctx_sw_asm.S       |  2 +-
+ arch/arc/kernel/devtree.c          |  2 +-
+ arch/arc/kernel/head.S             |  7 ++++---
+ arch/arc/kernel/ptrace.c           |  4 ++++
+ arch/arc/kernel/smp.c              | 15 +++++++++++++--
+ arch/arc/kernel/vmlinux.lds.S      |  2 +-
+ arch/arc/mm/cache_arc700.c         | 25 +++++++++++++++++++------
+ 9 files changed, 46 insertions(+), 16 deletions(-)
