@@ -1,191 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753086AbaF0Ium (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 04:50:42 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:33788 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753021AbaF0Iue (ORCPT
+	id S1753127AbaF0Iur (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 04:50:47 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:53673 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753083AbaF0Ium (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 04:50:34 -0400
-Message-ID: <53AD3052.40901@collabora.co.uk>
-Date: Fri, 27 Jun 2014 10:50:26 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Fri, 27 Jun 2014 04:50:42 -0400
+Message-ID: <53AD2F99.1010004@ahsoftware.de>
+Date: Fri, 27 Jun 2014 10:47:21 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: =?ISO-8859-15?Q?Andreas_F=E4rber?= <afaerber@suse.de>,
-        Lee Jones <lee.jones@linaro.org>
-CC: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
-        Daniel Stone <daniels@collabora.com>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 08/14] mfd: max77802: Add DT binding documentation
-References: <1403806546-31122-1-git-send-email-javier.martinez@collabora.co.uk> <1403806546-31122-9-git-send-email-javier.martinez@collabora.co.uk> <53AD25F6.6030007@suse.de>
-In-Reply-To: <53AD25F6.6030007@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 8bit
+To: John Stultz <john.stultz@linaro.org>
+CC: John Whitmore <arigead@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alessandro Zummo <a.zummo@towertech.it>
+Subject: Re: rtc/hctosys.c Problem during kernel boot
+References: <20140611230127.GA28066@griso.site>	<CANcMJZDqAmdFLYq2LW60zU_d05Pv8tcYE1Nb=ftZcj5UukxqaA@mail.gmail.com>	<53A583DC.504@ahsoftware.de> <CALAqxLUYbp9qXpFusw=Nteqht33Lz9ch5g6Ptv1cMoFEgC+M9Q@mail.gmail.com>
+In-Reply-To: <CALAqxLUYbp9qXpFusw=Nteqht33Lz9ch5g6Ptv1cMoFEgC+M9Q@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Andreas,
+Am 23.06.2014 23:36, schrieb John Stultz:
+> On Sat, Jun 21, 2014 at 6:08 AM, Alexander Holler <holler@ahsoftware.de> wrote:
+>> Am 12.06.2014 01:53, schrieb John Stultz:
+>>
+>>> You can read some of the previous discussion here:
+>>> https://lkml.org/lkml/2013/6/17/533
+>>>
+>>> I'd be very interested in patches to resolve this!
+>>
+>>
+>> And the silence as response to my repost of my already working patches just
+>> proved that isn't true.
+>
+> You put in your patches the following:
+> "Besides discussing possible *real* bugs, I don't care what any person
+>   (including maintainers) will request. I'm fine with these patches (I'm
+>   using them since a year) and I don't play remote keyboard or
+>   patch ping-pong. If someone want changes I suggest he gets responsible
+>   for them himself and just puts a patch on top of my patches. And in any
+>   case, feel free to completely ignore these patches."
+>
+> I've pointed out problems with your patchset earlier, and you refuse
+> to address them. That's totally your prerogative, and that's fine, but
+> I don't know how I should respond here.
 
-Thanks a lot for your feedback.
+I've written that because I will not add a totally unnecessary lock in a 
+code path which does set the system time. If multiple RTCs do race to 
+set the system time, the system was configured wrong and is already 
+untrustworthy and a lock inside the kernel won't help. Especially 
+because it will not remove the race, and just solve it somehow. And 
+that's happen without a lock (which might block or even dead lock if 
+done wrong) too.
 
-On 06/27/2014 10:06 AM, Andreas Färber wrote:
-> Am 26.06.2014 20:15, schrieb Javier Martinez Canillas:
->> Add Device Tree binding documentation for Maxim 77802 PMIC.
->> 
->> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
->> ---
->> 
->> Changes since v4: None
->> 
->> Changes since v3: None
->> 
->> Changes since v2:
->>  - Explain better the Dynamic Voltage Scaling (DVS) support in some Buck
->>    regulators and the max77802,pmic-buck-{dvs,selb}-gpios properties.
->>    Suggested by Mark Brown.
->> 
->>  Documentation/devicetree/bindings/mfd/max77802.txt | 97 ++++++++++++++++++++++
->>  1 file changed, 97 insertions(+)
->>  create mode 100644 Documentation/devicetree/bindings/mfd/max77802.txt
->> 
->> diff --git a/Documentation/devicetree/bindings/mfd/max77802.txt b/Documentation/devicetree/bindings/mfd/max77802.txt
->> new file mode 100644
->> index 0000000..f3b67c5
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/mfd/max77802.txt
->> @@ -0,0 +1,97 @@
->> +Maxim MAX77802 multi-function device
->> +
->> +MAX77802 is a Mulitifunction device with PMIC, RTC and Charger on chip. It is
-> 
-> "Multifunction"?
-> 
+So if you want a lock there, please add such a patch yourself and be 
+responsible for it. I will not do such.
 
-Yes, another typo. I'll fix it on the next series as well.
+> I agree that there is an issue here that your patches try to address,
+> which needs to be fixed, but I'm hoping John Whitmore might be able to
+> read the discussion and either rework your patches or write his own to
+> address the issue without the problems in your patch I pointed out.
+>
+> I've removed the rest of your anti-maintainer rant here, but I will
+> say that I do very much understand that the upstream kernel community
+> process can be frustrating at times. I have myself had to start over
+> many many times on patches when maintainers request, and sometimes my
+> patches don't ever make it past the bar for acceptance. So I very much
+> do see this from both sides, and despite my frustration, I appreciate
+> that folks are looking over my patches carefully for design and
+> maintenance issues, because without the high standards, the kernel
+> code would be in much worse shape.
 
->> +interfaced to host controller using i2c interface. PMIC, Charger and RTC
->> +submodules are addressed using same i2c slave address.
->> +
->> +Buck regulators 1, 2, 3, 4 and 6 include Dynamic Voltage Scaling (DVS) that
->> +allows each output voltage to change dynamically. Each Buck output voltage
->> +is selected using a set of external inputs: DVS1-3 and SELB1, 2, 3 and 6.
->> +
->> +There are 8 DVS registers that can be used to configure the output voltage
->> +for each Buck regulator and which one is active is controled by DVSx lines.
->> +
->> +SELBx lines are used to control if individual Buck lines are ON or OFF.
->> +
->> +This document describes the binding for mfd device and PMIC submodule.
->> +
->> +Binding for the built-in 32k clock generator block is defined separately
->> +in bindings/clk/maxim,max77802.txt file.
->> +
->> +Required properties:
->> +- compatible : Must be "maxim,max77802";
->> +- reg : Specifies the i2c slave address of PMIC block.
->> +- interrupts : This i2c device has an IRQ line connected to the main SoC.
->> +- interrupt-parent : The parent interrupt controller.
->> +
->> +Optional properties:
->> +- max77802,pmic-buck-default-dvs-idx: We'll always write this DVS index in the
->> +  PMIC for Bucks with DVS.
->> +  NOTE: at the moment these bindings don't include enough details for actual
->> +  GPIO-DVS--this just lets you choose which single slot to use.
->> +
->> +- max77802,pmic-buck-dvs-gpios: A GPIO array where each GPIO is connected to a
->> +  DVS line. We'll try to set these GPIOs to match pmic-buck-default-dvs-idx at
->> +  probe time if they are defined. If some or all of these GPIOs are not defined
->> +  it's assumed that the board has any missing GPIOs hardwired to match
->> +  pmic-buck-default-dvs-idx.
->> +
->> +- max77802,pmic-buck-selb-gpios: A GPIO array where each GPIO is connected to a
->> +  SELBx line. Should be five values: 1, 2, 3, 4, 6. It is strongly suggested to
->> +  include these GPIOs if there's any chance that changing DVS GPIOs one line at
->> +  a time might glitch your DVS values.
->> +
->> +Optional node:
->> +- regulators : The regulators of max77802 have to be instantiated
->> +  under subnode named "regulators" using the following format.
->> +
->> +	regulator_name {
-> 
-> The convention, I was told, would be regulator-name as node name.
-> 
+Unfortunately I really think you believe what you are writing.
 
-Ok, I'll change this to regulator-name. It is a symbolic name to refer to the
-regulator node name anyways since now that the regulator-compatible property is
-deprecated, the regulator node name is used for matching. So the list of valid
-regulator node names is properly defined below:
+But my experience is that even totally silly and very small bugfixes 
+like oneliners are discussed to death and do need years to end up in a 
+mainline kernel, if they end up there at all.
 
->> +
->> +  The regulator node name should be initialized with a string
->> +to get matched with their hardware counterparts as follow:
->> +
->> +	-LDOn 	:	for LDOs, where n can lie in range 1 to 35.
->> +			example: LDO1, LDO2, LDO35.
->> +	-BUCKn 	:	for BUCKs, where n can lie in range 1 to 10.
->> +			example: BUCK1, BUCK5, BUCK10.
->> +Example:
->> +
->> +	max77802@09 {
->> +		compatible = "maxim,max77802";
->> +		interrupt-parent = <&wakeup_eint>;
->> +		interrupts = <26 0>;
->> +		reg = <0x09>;
->> +		#address-cells = <1>;
->> +		#size-cells = <0>;
->> +
->> +		max77802,pmic-buck-default-dvs-idx = <1>;
->> +		max77802,pmic-buck-dvs-gpios = <&gpy7 6 0>,
->> +					       <&gpj4 2 0>,
->> +					       <&gpj4 3 0>;
->> +		max77802,pmic-buck-selb-gpios = <&gph0 2 0>,
->> +						<&gph0 3 0>,
->> +						<&gph0 4 0>,
->> +						<&gph0 5 0>,
->> +						<&gph0 6 0>;
->> +
->> +		regulators {
->> +			ldo11_reg: LDO11 {
->> +				regulator-compatible = "LDO11";
->> +				regulator-name = "vdd_ldo11";
->> +				regulator-min-microvolt = <1900000>;
->> +				regulator-max-microvolt = <1900000>;
->> +				regulator-always-on;
->> +			};
->> +
->> +			buck1_reg {
-> 
-> Missing ": BUCK1"
-> 
+And it doesn't help if maintainers do request silly things. My 
+experience here is that they always will request a change, even for 
+perfect patches, just to request something. If a patch contains a 
+variable named red, they would request to change it to green and if it 
+would have a name green, they would request to change it to red.
 
-Ups, since it was documentation and not the DTS I completely missed that. Thanks
-for pointing out!
+So I'm sorry, but in my humble opinion that isn't how a high standard 
+does look like. Many request from maintainer are just capriciousness or 
+despotism and often maintainers are totally wrong. And discussing with 
+them just leads to ignored patches/bugfixes.
 
->> +				regulator-compatible = "BUCK1";
->> +				regulator-name = "vdd_mif";
->> +				regulator-min-microvolt = <950000>;
->> +				regulator-max-microvolt = <1300000>;
->> +				regulator-always-on;
->> +				regulator-boot-on;
->> +			};
->> +	};
-> 
-> Regards,
-> Andreas
-> 
+Regards,
 
-Best regards,
-Javier
+Alexander Holler
+
