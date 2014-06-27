@@ -1,51 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753082AbaF0UxR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 16:53:17 -0400
-Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:59215 "EHLO
-	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751403AbaF0UxP (ORCPT
+	id S1754035AbaF0U4u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 16:56:50 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:43235 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753348AbaF0U4r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 16:53:15 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AkUHAArZrVNXQCoO/2dsb2JhbABbgw2rbwUBAQEBAQEFAW0BmQKBDRd1hDEvI1ZEN4hGAcRUF4VkiSEdhC0Fml2LP4g8ggCBRDs
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Hariprasad S <hariprasad@chelsio.com>,
-        netdev@vger.kernel.org
-Subject: [PATCH 1/1] drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c: remove unnecessary null test before debugfs_remove_recursive
-Date: Fri, 27 Jun 2014 22:51:52 +0200
-Message-Id: <1403902312-10930-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	Fri, 27 Jun 2014 16:56:47 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140627195559.GA31661@redhat.com>
+References: <CAGXu5j+J11zJnuFR8bYKAXizAHhCx4R+uJE_QH6zC3q2udkpaQ@mail.gmail.com>
+	<CALCETrVrs8sb19+UUqyFEpAFzTih5dkAwn-WpQjfgPcPJMpP5g@mail.gmail.com>
+	<20140625173245.GA17695@redhat.com>
+	<CALCETrUc65H+fn6dtMdYnB_xR39wcmgDdTbdR3fFRjyrndJhgA@mail.gmail.com>
+	<20140625175136.GA18185@redhat.com>
+	<CAGXu5jL17k6=GXju6x+eLU20FMwBHhnuRiHoQD1Bzj_EmpiKjg@mail.gmail.com>
+	<CALCETrVNwhWSPNiBiZmgP1nD9zLJPTk6cH0yo=85rbxTPTYFRg@mail.gmail.com>
+	<CAGXu5jLavA8FJD8m-1y4wO0uzh3qvvMmajAg0Lrr1Cn_Om3a3w@mail.gmail.com>
+	<20140627192753.GA30752@redhat.com>
+	<CALCETrVbJqfG6oBaZEjj7H3pPa1oVJx6QXAYc5zZ6o-niV=WKQ@mail.gmail.com>
+	<20140627195559.GA31661@redhat.com>
+Date: Fri, 27 Jun 2014 13:56:46 -0700
+X-Google-Sender-Auth: pUW8GcfQARe8nbSPsvc5-gYYfhQ
+Message-ID: <CAGXu5j+M+MHkxNMSaQ+RqYrty=1Fgur6_duSnL8DAZ_SazeJ7w@mail.gmail.com>
+Subject: Re: [PATCH v8 5/9] seccomp: split mode set routines
+From: Kees Cook <keescook@chromium.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, LKML <linux-kernel@vger.kernel.org>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix checkpatch warning:
-"WARNING: debugfs_remove_recursive(NULL) is safe this check is probably not required"
+On Fri, Jun 27, 2014 at 12:55 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 06/27, Andy Lutomirski wrote:
+>>
+>> On Fri, Jun 27, 2014 at 12:27 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+>> > On 06/27, Kees Cook wrote:
+>> >>
+>> >> It looks like SMP ARM issues dsb for rmb, which seems a bit expensive.
+>> >> http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0204g/CIHJFGFE.htm
+>> >>
+>> >> ...
+>> >>
+>> >> I really want to avoid adding anything to the secure_computing()
+>> >> execution path. :(
+>> >
+>> > I must have missed something but I do not understand your concerns.
+>> >
+>> > __secure_computing() is not trivial, and we are going to execute the
+>> > filters. Do you really think rmb() can add the noticeable difference?
+>> >
+>> > Not to mention that we can only get here if we take the slow syscall
+>> > enter path due to TIF_SECCOMP...
+>> >
+>>
+>> On my box, with my fancy multi-phase seccomp patches, the total
+>> seccomp overhead for a very short filter is about 13ns.  Adding a full
+>> barrier would add several ns, I think.
+>
+> I am just curious, does this 13ns overhead include the penalty from the
+> slow syscall enter path triggered by TIF_SECCOMP ?
+>
+>> Admittedly, this is x86, not ARM, so comparisons here are completely
+>> bogus.  And that read memory barrier doesn't even need an instruction
+>> on x86.  But still, let's try to keep this fast.
+>
+> Well, I am not going to insist...
+>
+> But imo it would be better to make it correct in a most simple way, then
+> we can optimize this code and see if there is a noticeable difference.
+>
+> Not only we can change the ordering, we can remove the BUG_ON's and just
+> accept the fact the __secure_computing() can race with sys_seccomp() from
+> another thread.
+>
+> If nothing else, it would be much simpler to discuss this patch if it comes
+> as a separate change.
 
-Cc: Hariprasad S <hariprasad@chelsio.com>
-Cc: netdev@vger.kernel.org
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Yeah, the way I want to go is to add the rmb() for now (it gets us
+"correctness"), and then later deal with any potential performance
+problems on ARM at a later time. (At present, I'm unable to perform
+any timings on ARM -- maybe next week.)
 
-diff --git a/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c b/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
-index a83271c..3781b9e 100644
---- a/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
-+++ b/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
-@@ -6366,8 +6366,7 @@ static void remove_one(struct pci_dev *pdev)
- 			if (adapter->port[i]->reg_state == NETREG_REGISTERED)
- 				unregister_netdev(adapter->port[i]);
- 
--		if (adapter->debugfs_root)
--			debugfs_remove_recursive(adapter->debugfs_root);
-+		debugfs_remove_recursive(adapter->debugfs_root);
- 
- 		/* If we allocated filters, free up state associated with any
- 		 * valid filters ...
+I will send the v9 series in a moment here...
+
+-Kees
+
 -- 
-1.8.4.5
-
+Kees Cook
+Chrome OS Security
