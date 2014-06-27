@@ -1,74 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753084AbaF0JIL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 05:08:11 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:58017 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752998AbaF0JIJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 05:08:09 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Hanjun Guo <hanjun.guo@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Catalin Marinas <catalin.marinas@arm.com>, linux-acpi@vger.kernel.org,
-        Mark Rutland <mark.rutland@arm.com>, lorenzo.pieralisi@arm.com,
-        rric@kernel.org, Al Stone <al.stone@linaro.org>,
-        linaro-acpi@lists.linaro.org, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Charles.Garcia-Tobin@arm.com
-Subject: Re: [PATCH v4 06/13] ARM64 / ACPI: Introduce early_param for "acpi"
-Date: Fri, 27 Jun 2014 11:07:48 +0200
-Message-ID: <23398804.v8nA0xfjOe@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1403840976-7456-7-git-send-email-hanjun.guo@linaro.org>
-References: <1403840976-7456-1-git-send-email-hanjun.guo@linaro.org> <1403840976-7456-7-git-send-email-hanjun.guo@linaro.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:czLn03MX/kafZgIweLEvsav//JOJXi/RWZ4uGYhWRs8
- jGiG82TDhrs+I0luZ1LmX0dv7cGxZyRZ5C4xYNAtzElAKXHmqH
- CDORZluNspkEoRoj+Hul96dVVHiE5io+BXHSpVFMbVObcgc14N
- 2yYF3VBP9PTrnut9E/Qik9O18adNtrBpu8T+NYFybdFFYJDdNQ
- FLdanrh5ixTHwpNBJxY9nn1a9qIB87j9CcvXSGz+ggSv0uzIjr
- iNdDxgefyPxIKxZvlJh0uI1plJV0lSw2jbW4xGOIWF9XmT5qLU
- PyKjIpccxwiVMxzYCDANco+6OEOisIdWnbFb2VjsBsTuPD4/+S
- SH1fYgonjlK2cnrDTBkk=
+	id S1753117AbaF0JIb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 05:08:31 -0400
+Received: from mga09.intel.com ([134.134.136.24]:51278 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752952AbaF0JI3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 05:08:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,559,1400050800"; 
+   d="scan'208";a="564385201"
+Message-ID: <1403860094.3954.6.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH] sysctl: Add a feature to drop caches selectively
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Matthias Schniedermeyer <ms@citd.de>
+Cc: =?ISO-8859-1?Q?Luk=E1=3F?= Czerner <lczerner@redhat.com>,
+        Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
+        Dave Chinner <david@fromorbit.com>,
+        Thomas Knauth <thomas.knauth@gmx.de>,
+        David Rientjes <rientjes@google.com>,
+        Maksym Planeta <mcsim.planeta@gmail.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 27 Jun 2014 12:08:14 +0300
+In-Reply-To: <20140627084139.GA29704@citd.de>
+References: <1403626213-7691-1-git-send-email-mcsim.planeta@gmail.com>
+	 <alpine.DEB.2.02.1406241458140.29176@chino.kir.corp.google.com>
+	 <1403677528.7903.103.camel@sauron.fi.intel.com>
+	 <CABhLV03_PNFiwsvt+yitcsKxz5TeVECCFavdNkbgQ+XzQqASaw@mail.gmail.com>
+	 <20140626010606.GT4453@dastard>
+	 <1403763199.20275.39.camel@sauron.fi.intel.com>
+	 <53ABF7C4.1000906@itwm.fraunhofer.de>
+	 <1403782263.20275.59.camel@sauron.fi.intel.com>
+	 <alpine.LFD.2.00.1406261349320.2172@localhost.localdomain>
+	 <20140627084139.GA29704@citd.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 27 June 2014 11:49:29 Hanjun Guo wrote:
-> +
-> +static int __init parse_acpi(char *arg)
-> +{
-> +       if (!arg)
-> +               return -EINVAL;
-> +
-> +       /* "acpi=off" disables both ACPI table parsing and interpreter */
-> +       if (strcmp(arg, "off") == 0) {
-> +               disable_acpi();
-> +       }
-> +       /* acpi=strict disables out-of-spec workarounds */
-> +       else if (strcmp(arg, "strict") == 0) {
-> +               acpi_strict = 1;
-> +       } else {
-> +               /* Core will printk when we return error */
-> +               return -EINVAL;
-> +       }
-> +
-> +       return 0;
-> +}
-> +early_param("acpi", parse_acpi);
+On Fri, 2014-06-27 at 10:41 +0200, Matthias Schniedermeyer wrote:
+> On 26.06.2014 13:57, Luká? Czerner wrote:
+> 
+> > > So if the authors want to sell this new interface (in whatever form) to
+> > > the kernel community, they should start with providing a solid use-case,
+> > > with some more details, explore alternatives and show how the
+> > > alternatives do not work for them.
+> > 
+> > Yes please, let's see some solid use-case for this.
+> 
+> Personally i would want it to verify files after copying them:
+> Especially while moving files:
+> - Copy a file
+> - <drop cache>
+> - Verify that it really is correct on stable storage
+> - Remove original file
 
-Can you explain in the changelog what happens for the acpi=off case? Does this
-mean we fall back to using data from the dtb instead, or will it just not work?
+To make 100% sure you'd not only need to drop VFS-level caches but also
+file-system-level caches. Indeed, file-systems have their own rather
+buffers for different indexing data-structures, etc. The unmount/mount
+sequence takes care of that.
 
-If I understand correctly, this option makes sense on PC systems that will
-still be able to boot using the legacy BIOS services and implicit assumptions
-about the hardware, but that never works on arm64.
+-- 
+Best Regards,
+Artem Bityutskiy
 
-	Arnd
