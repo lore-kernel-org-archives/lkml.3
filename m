@@ -1,124 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751528AbaF0QsW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 12:48:22 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:16650 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750971AbaF0QsV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 12:48:21 -0400
-Message-ID: <53ADA04B.3010707@oracle.com>
-Date: Fri, 27 Jun 2014 12:48:11 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1751613AbaF0QwK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 12:52:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34285 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750971AbaF0QwI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 12:52:08 -0400
+Date: Fri, 27 Jun 2014 18:52:04 +0200
+From: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, Michal Hocko <mhocko@suse.cz>,
+        Jan Kara <jack@suse.cz>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Dave Anderson <anderson@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>
+Subject: Re: [RFC][PATCH 2/5 v2] tracing: Create seq_buf layer in trace_seq
+Message-ID: <20140627165204.GJ23205@pathway.suse.cz>
+References: <20140626214901.596791200@goodmis.org>
+ <20140626220129.620409461@goodmis.org>
+ <20140627134538.GB23205@pathway.suse.cz>
+ <20140627101907.3b2ebe5d@gandalf.local.home>
+ <20140627151741.GI23205@pathway.suse.cz>
+ <20140627113909.4ea41040@gandalf.local.home>
 MIME-Version: 1.0
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, josh@joshtriplett.org
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: rcu: NULL ptr deref on boot
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140627113909.4ea41040@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+On Fri 2014-06-27 11:39:09, Steven Rostedt wrote:
+> On Fri, 27 Jun 2014 17:18:04 +0200
+> Petr Mládek <pmladek@suse.cz> wrote:
+> 
+> 
+> > > This patch uses seq_buf for the NMI code so it will fill to the end of
+> > > the buffer and just truncate what can't fit.
+> > 
+> > I think that NMI code could live with the trace_seq behavior. The
+> > lines are short. If we miss few characters it is not that big difference.
+> 
+> True, but I'm trying to keep trace_seq more tracing specific.
 
-I've noticed the following on boot with the latest -next kernel:
+It is true that most writing functions write as much as possible. On
+the other hand, I do not think that refusing to write, if there is not
+enough space, is specific to tracing. It might be useful also for others.
 
-[    0.000000] WARNING: CPU: 0 PID: 0 at arch/x86/kernel/cpu/common.c:1439 warn_pre_alternatives+0x1e/0x20()
-[    0.000000] You're using static_cpu_has before alternatives have run!
-[    0.000000] Modules linked in:
-[    0.000000] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.16.0-rc2-next-20140627-sasha-00023-g5d10814-dirty #734
-[    0.000000]  0000000000000009 ffffffff9d003c48 ffffffff9b525423 0000000000000002
-[    0.000000]  ffffffff9d003c98 ffffffff9d003c88 ffffffff98168aec ffffffff9d003d58
-[    0.000000]  0000000000000000 ffffffff9d003e78 0000000000000000 0000000000000002
-[    0.000000] Call Trace:
-[    0.000000] dump_stack (lib/dump_stack.c:52)
-[    0.000000] warn_slowpath_common (kernel/panic.c:431)
-[    0.000000] warn_slowpath_fmt (kernel/panic.c:446)
-[    0.000000] ? irq_return (arch/x86/kernel/entry_64.S:842)
-[    0.000000] warn_pre_alternatives (arch/x86/kernel/cpu/common.c:1440)
-[    0.000000] __do_page_fault (./arch/x86/include/asm/cpufeature.h:423 arch/x86/mm/fault.c:1022 arch/x86/mm/fault.c:1112)
-[    0.000000] ? trace_hardirqs_off_caller (kernel/locking/lockdep.c:2638 (discriminator 2))
-[    0.000000] ? trace_hardirqs_off (kernel/locking/lockdep.c:2645)
-[    0.000000] ? __slab_alloc (mm/slub.c:2364 (discriminator 1))
-[    0.000000] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
-[    0.000000] ? trace_hardirqs_off_caller (kernel/locking/lockdep.c:2638 (discriminator 2))
-[    0.000000] ? error_sti (arch/x86/kernel/entry_64.S:1419)
-[    0.000000] trace_do_page_fault (arch/x86/mm/fault.c:1313 include/linux/jump_label.h:115 include/linux/context_tracking_state.h:27 include/linux/context_tracking.h:45 arch/x86/mm/fault.c:1314)
-[    0.000000] do_async_page_fault (arch/x86/kernel/kvm.c:264)
-[    0.000000] async_page_fault (arch/x86/kernel/entry_64.S:1322)
-[    0.000000] ? tick_nohz_init (include/linux/bitmap.h:165 include/linux/cpumask.h:333 kernel/time/tick-sched.c:344 kernel/time/tick-sched.c:356)
-[    0.000000] ? tick_nohz_init (include/linux/bitmap.h:164 include/linux/cpumask.h:333 kernel/time/tick-sched.c:344 kernel/time/tick-sched.c:356)
-[    0.000000] start_kernel (init/main.c:581)
-[    0.000000] ? set_init_arg (init/main.c:281)
-[    0.000000] ? early_idt_handlers (arch/x86/kernel/head_64.S:340)
-[    0.000000] x86_64_start_reservations (arch/x86/kernel/head64.c:194)
-[    0.000000] x86_64_start_kernel (arch/x86/kernel/head64.c:183)
-[    0.000000] ---[ end trace 4d5ff9f2f68c4233 ]---
-[    0.000000] BUG: unable to handle kernel NULL pointer dereference at           (null)
-[    0.000000] IP: tick_nohz_init (include/linux/bitmap.h:165 include/linux/cpumask.h:333 kernel/time/tick-sched.c:344 kernel/time/tick-sched.c:356)
-[    0.000000] PGD 0
-[    0.000000] Oops: 0002 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[    0.000000] Modules linked in:
-[    0.000000] CPU: 0 PID: 0 Comm: swapper/0 Tainted: G        W      3.16.0-rc2-next-20140627-sasha-00023-g5d10814-dirty #734
-[    0.000000] task: ffffffff9d0354c0 ti: ffffffff9d000000 task.ti: ffffffff9d000000
-[    0.000000] RIP: tick_nohz_init (include/linux/bitmap.h:165 include/linux/cpumask.h:333 kernel/time/tick-sched.c:344 kernel/time/tick-sched.c:356)
-[    0.000000] RSP: 0000:ffffffff9d003f28  EFLAGS: 00010002
-[    0.000000] RAX: 0000000000000000 RBX: ffff88003684d480 RCX: 0000000000000008
-[    0.000000] RDX: 0000000000000014 RSI: ffff88003684d480 RDI: 0000000000000000
-[    0.000000] RBP: ffffffff9d003f38 R08: ffff88003684d480 R09: ffff88003684d480
-[    0.000000] R10: ffff88003684d480 R11: 0000000000000001 R12: ffffffff9e5fd020
-[    0.000000] R13: ffff88070282ca00 R14: ffffffff9e607ae0 R15: 00000000000146f0
-[    0.000000] FS:  0000000000000000(0000) GS:ffff880036e00000(0000) knlGS:0000000000000000
-[    0.000000] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[    0.000000] CR2: 0000000000000000 CR3: 000000001d02e000 CR4: 00000000000006b0
-[    0.000000] Stack:
-[    0.000000]  ffffffffffffffff ffffffff9e5fd020 ffffffff9d003f88 ffffffff9e4c9f09
-[    0.000000]  ffffffff9e4c98fd 00000000000146f0 ffffffff9d003f78 ffffffff9e607ae0
-[    0.000000]  0000000000000020 ffffffff9e4c9117 00000000ffffffff 0000ffffffff9e4c
-[    0.000000] Call Trace:
-[    0.000000] start_kernel (init/main.c:581)
-[    0.000000] ? set_init_arg (init/main.c:281)
-[    0.000000] ? early_idt_handlers (arch/x86/kernel/head_64.S:340)
-[    0.000000] x86_64_start_reservations (arch/x86/kernel/head64.c:194)
-[    0.000000] x86_64_start_kernel (arch/x86/kernel/head64.c:183)
-[ 0.000000] Code: e8 d0 84 66 fa 89 c7 48 89 de e8 b0 46 02 fd 48 63 0d 4f 91 dd ff 31 c0 48 8b 3d 5e 1f 1c 01 48 83 c1 3f 48 c1 f9 03 48 83 e1 f8 <f3> aa 48 8b 1d 49 1f 1c 01 e8 9c 84 66 fa 89 c7 e8 25 3c d1 f9
-All code
-========
-   0:	e8 d0 84 66 fa       	callq  0xfffffffffa6684d5
-   5:	89 c7                	mov    %eax,%edi
-   7:	48 89 de             	mov    %rbx,%rsi
-   a:	e8 b0 46 02 fd       	callq  0xfffffffffd0246bf
-   f:	48 63 0d 4f 91 dd ff 	movslq -0x226eb1(%rip),%rcx        # 0xffffffffffdd9165
-  16:	31 c0                	xor    %eax,%eax
-  18:	48 8b 3d 5e 1f 1c 01 	mov    0x11c1f5e(%rip),%rdi        # 0x11c1f7d
-  1f:	48 83 c1 3f          	add    $0x3f,%rcx
-  23:	48 c1 f9 03          	sar    $0x3,%rcx
-  27:	48 83 e1 f8          	and    $0xfffffffffffffff8,%rcx
-  2b:	f3 aa                	rep stos %al,%es:*(%rdi)		<-- trapping instruction
-  2d:	48 8b 1d 49 1f 1c 01 	mov    0x11c1f49(%rip),%rbx        # 0x11c1f7d
-  34:	e8 9c 84 66 fa       	callq  0xfffffffffa6684d5
-  39:	89 c7                	mov    %eax,%edi
-  3b:	e8 25 3c d1 f9       	callq  0xfffffffff9d13c65
-	...
+In the worst case, we could add a flag into the "struct seq_buf" that
+might define the behavior. Well, I am not sure if we want to add this
+complexity when there are no users. As I said, the backtraces might
+live with trace_seq behavior.
 
-Code starting with the faulting instruction
-===========================================
-   0:	f3 aa                	rep stos %al,%es:(%rdi)
-   2:	48 8b 1d 49 1f 1c 01 	mov    0x11c1f49(%rip),%rbx        # 0x11c1f52
-   9:	e8 9c 84 66 fa       	callq  0xfffffffffa6684aa
-   e:	89 c7                	mov    %eax,%edi
-  10:	e8 25 3c d1 f9       	callq  0xfffffffff9d13c3a
-	...
-[    0.000000] RIP tick_nohz_init (include/linux/bitmap.h:165 include/linux/cpumask.h:333 kernel/time/tick-sched.c:344 kernel/time/tick-sched.c:356)
-[    0.000000]  RSP <ffffffff9d003f28>
-[    0.000000] CR2: 0000000000000000
+>> 
+> > > trace_pipe depends on the trace_seq behavior.
+> > > 
+> > > > 
+> > > >    Another solution would be to live with incomplete lines in tracing.
+> > > >    I wonder if any of the functions tries to write the line again when the
+> > > >    write failed.
+> > > 
+> > > This may break trace_pipe. Although there looks to be redundant
+> > > behavior in that the pipe code also resets the seq.len on partial line,
+> > > so maybe it's not an issue.
+> > > 
+> > > > 
+> > > >    IMHO, the most important thing is that both functions return 0 on
+> > > >    failure.
+> > > 
+> > > Note, I'm not sure how tightly these two need to be. I'm actually
+> > > trying to get trace_seq to be specific to tracing and nothing more.
+> > > Have seq_buf be used for all other instances.
+> > 
+> > If the two layers make your life easier then they might make sense. I
+> > just saw many similarities and wanted to help. IMHO, if anyone breaks
+> > seq_buf, it will break trace_seq anyway. So, they are not really separated.
+> 
+> There's actually things I want to do with the seq_buf behavior that I
+> can't do with the trace_seq behavior. That's more about having a
+> dynamic way to create seq_buf buffers and resize them if need be.
+> Although, perhaps an all or nothing approach will help in that.
 
-Bisection pointed me to "rcu: Bind grace-period kthreads to non-NO_HZ_FULL CPUs".
+Note that we should not allocate in NMI context, especially when there
+is a softlock. So, we might need to define the behavior anyway.
 
 
-Thanks,
-Sasha
+> > 
+> > > 
+> > > > ad 4th:
+> > > > 
+> > > >    Both "full" and "overflow" flags seems to have the same meaning.
+> > > >    For example, trace_seq_printf() sets "full" on failure even
+> > > >    when s->seq.len != s->size.
+> > > 
+> > > The difference is that the overflow flag is just used for info letting
+> > > the user know that it did not fit. The full flag in trace_seq lets you
+> > > know that you can not add anything else, even though the new stuff may
+> > > fit.
+> > 
+> > I see. They have another meaning but they are set at the same time:
+> > 
+> > 	if (s->seq.overflow) {
+> > 		...
+> > 		s->full = 1;
+> > 		return 0;
+> > 	}
+> > 
+> > In fact, both names are slightly misleading. seq.overflow is set
+> > when the buffer is full even when all characters were written.
+> > s->full is set even when there is still some space :-)
+> 
+> I actually disagree. overflow means that you wrote more than what was
+> there. In this case, it was cropped.
+
+The problem is that we do not know that it was cropped.
+
+The "overflow" flag is set when (s->len > (s->size - 1)). In most
+cases it will be set when (s->len == s->size).
+
+For example, seq_buf_printf() calls vsnprintf(). It will never write
+over the buffer. We do not know if the message was cropped or if we
+were lucky and the message was exactly as long as the free space.
+
+
+> Full suggests that you can't add anymore because it wont allow you.
+> 
+> The difference is that you are looking at a implementation point of
+> view. I'm looking at a usage point of view. With trace_seq, there is no
+> space left, you can't add any more. seq_buf, you can add more but it
+> wont be saved because it was overflowed.
+
+I know that there is some difference but I am not sure if users are
+really interested into such details. In both cases, they are unable
+to write more data. From they point of view, the buffer is simply full.
+Honestly, I think that the two flags and the two point of view cause
+more confusion than win.
+
+Note that I do not want to change the meaning for trace_buf. I want to
+change the meaning for "seq_buf" that has no users yet.
+
+
+> What I should do is change overflow from being a flag to the number of
+> characters that it overflowed by. That would be useful information, and
+> would make more sense. It lets the user know what wasn't written.
+
+I am afraid that we do not have this information. See above for the
+example with vsnprintf().
+
+In each case, I do not want to block this patch. The generic "seq_buf"
+API looks reasonable. The tracing code is your area and it is your
+decision. You know much more about it than me and the extra complexity
+might be needed.
+
+
+Best Regards,
+Petr
