@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752958AbaF0HrB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 03:47:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49857 "EHLO mx2.suse.de"
+	id S1752965AbaF0Hs5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 03:48:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49897 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752862AbaF0HrA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 03:47:00 -0400
-Date: Fri, 27 Jun 2014 09:46:58 +0200
-From: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ring-buffer: Race when writing and swapping cpu buffer
- in parallel
-Message-ID: <20140627074658.GA23205@pathway.suse.cz>
-References: <1403788958-6751-1-git-send-email-pmladek@suse.cz>
- <20140626095831.667f834f@gandalf.local.home>
- <20140626205500.3f8e111c@gandalf.local.home>
+	id S1751836AbaF0Hs4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 03:48:56 -0400
+Message-ID: <53AD21E5.1030609@suse.de>
+Date: Fri, 27 Jun 2014 09:48:53 +0200
+From: =?ISO-8859-15?Q?Andreas_F=E4rber?= <afaerber@suse.de>
+Organization: SUSE LINUX Products GmbH
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140626205500.3f8e111c@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Lee Jones <lee.jones@linaro.org>
+CC: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
+        Daniel Stone <daniels@collabora.com>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 03/14] clk: max77686: Add DT include for MAX77686 PMIC
+ clock
+References: <1403806546-31122-1-git-send-email-javier.martinez@collabora.co.uk> <1403806546-31122-4-git-send-email-javier.martinez@collabora.co.uk>
+In-Reply-To: <1403806546-31122-4-git-send-email-javier.martinez@collabora.co.uk>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 2014-06-26 20:55:00, Steven Rostedt wrote:
-> On Thu, 26 Jun 2014 09:58:31 -0400
-> Steven Rostedt <rostedt@goodmis.org> wrote:
+Am 26.06.2014 20:15, schrieb Javier Martinez Canillas:
+> This patch adds a dt-binding include for Maxim 77686
+> PMIC clock IDs that can be to be shared between the
+
+"can be shared"?
+
+Regards,
+Andreas
+
+> clk-max77686 clock driver and DeviceTree source files.
 > 
-> > What we can do is force ring_buffer_swap_cpu() to only work for the CPU
-> > that it is on. As we have snapshot in per_cpu buffers, to make that
-> > work, we will need to change the per_cpu version of snapshot to do a
-> > smp_call_function_single() to the CPU that it wants to take a snapshot
-> > of, and run the swap there.
-> > 
-> > To force this, we can remove the cpu parameter from the
-> > ring_buffer_swap_cpu(). By doing this, we may be able to remove some of
-> > the CONFIG_RING_BUFFER_ALLOW_SWAP hacks too!
-> > 
-> > I'm not going to sacrifice the general performance of the ring buffer
-> > for a feature that is seldom (if ever) used.
+> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> ---
+> 
+> Changes since v4: None
+> 
+> Changes since v3: None
 
-Fair enough. I see the point.
-
-> Did you want to do the above, or do you want me to write something up?
-
-I could look at it the following week.
-
-When I think about it, the race is not that critical. In the worst
-case, it slightly modifies the swapped buffer but there should not
-be danger of any data corruption. Anyway, I will try to get rid of
-it the way you suggested. It might be more important when the
-ringbuffer has more users.
-
-Best Regards,
-Petr
+-- 
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
+GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
