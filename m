@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752411AbaF0SEw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 14:04:52 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:32984 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752335AbaF0SEt (ORCPT
+	id S1752595AbaF0SE6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 14:04:58 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:35241 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752343AbaF0SEy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 14:04:49 -0400
+	Fri, 27 Jun 2014 14:04:54 -0400
 From: mathieu.poirier@linaro.org
 To: linus.walleij@linaro.org, will.deacon@arm.com, linux@arm.linux.org.uk,
         daniel.thompson@linaro.org, robherring2@gmail.com
@@ -17,9 +17,9 @@ Cc: mathieu.poirier@linaro.org, arve@android.com, john.stultz@linaro.org,
         marcin.jabrzyk@gmail.com, r.sengupta@samsung.com,
         robbelibobban@gmail.com, Tony.Armitstead@arm.com, patches@linaro.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 6/9 v2] coresight-etm: add CoreSight ETM/PTM driver
-Date: Fri, 27 Jun 2014 12:04:18 -0600
-Message-Id: <1403892261-25026-7-git-send-email-mathieu.poirier@linaro.org>
+Subject: [PATCH 9/9 v2] ARM: removing support for etb/etm in "arch/arm/kernel/"
+Date: Fri, 27 Jun 2014 12:04:21 -0600
+Message-Id: <1403892261-25026-10-git-send-email-mathieu.poirier@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403892261-25026-1-git-send-email-mathieu.poirier@linaro.org>
 References: <1403892261-25026-1-git-send-email-mathieu.poirier@linaro.org>
@@ -27,2834 +27,980 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pratik Patel <pratikp@codeaurora.org>
+From: Mathieu Poirier <mathieu.poirier@linaro.org>
 
-This driver manages CoreSight ETM (Embedded Trace Macrocell) that
-supports processor tracing. Currently supported version are ARM
-ETMv3.3, v3.5 and PTM.
+Removing minimal support for etb/etm to favour an implentation
+that is more flexible, extensible and capable of handling more
+platforms.
 
-Signed-off-by: Pratik Patel <pratikp@codeaurora.org>
-Panchaxari Prasannamurthy <panchaxari.prasannamurthy@linaro.org>
+Also removing the only client of the old driver.  That code can
+easily be replaced by entries for etb/etm in the device tree.
+
 Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
 ---
- arch/arm/include/asm/hardware/cp14.h   |  540 ++++++++++++
- drivers/coresight/Kconfig              |   19 +
- drivers/coresight/Makefile             |    1 +
- drivers/coresight/coresight-etm-cp14.c |  506 +++++++++++
- drivers/coresight/coresight-etm.c      | 1507 ++++++++++++++++++++++++++++++++
- drivers/coresight/coresight-etm.h      |  192 ++++
- 6 files changed, 2765 insertions(+)
- create mode 100644 arch/arm/include/asm/hardware/cp14.h
- create mode 100644 drivers/coresight/coresight-etm-cp14.c
- create mode 100644 drivers/coresight/coresight-etm.c
- create mode 100644 drivers/coresight/coresight-etm.h
+ arch/arm/include/asm/hardware/coresight.h | 157 -------
+ arch/arm/kernel/Makefile                  |   1 -
+ arch/arm/kernel/etm.c                     | 654 ------------------------------
+ arch/arm/kernel/hw_breakpoint.c           |   4 +-
+ arch/arm/mach-omap2/Kconfig               |   8 -
+ arch/arm/mach-omap2/Makefile              |   1 -
+ arch/arm/mach-omap2/emu.c                 |  50 ---
+ 7 files changed, 2 insertions(+), 873 deletions(-)
+ delete mode 100644 arch/arm/include/asm/hardware/coresight.h
+ delete mode 100644 arch/arm/kernel/etm.c
+ delete mode 100644 arch/arm/mach-omap2/emu.c
 
-diff --git a/arch/arm/include/asm/hardware/cp14.h b/arch/arm/include/asm/hardware/cp14.h
-new file mode 100644
-index 0000000..2e7a299
---- /dev/null
-+++ b/arch/arm/include/asm/hardware/cp14.h
-@@ -0,0 +1,540 @@
-+/* Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#ifndef __ASM_HARDWARE_CP14_H
-+#define __ASM_HARDWARE_CP14_H
-+
-+#include <linux/types.h>
-+
-+/* Accessors for CP14 registers */
-+#define dbg_read(reg)			RCP14_##reg()
-+#define dbg_write(val, reg)		WCP14_##reg(val)
-+#define etm_read(reg)			RCP14_##reg()
-+#define etm_write(val, reg)		WCP14_##reg(val)
-+
-+/* MRC14 and MCR14 */
-+#define MRC14(op1, crn, crm, op2)					\
-+({									\
-+u32 val;								\
-+asm volatile("mrc p14, "#op1", %0, "#crn", "#crm", "#op2 : "=r" (val));	\
-+val;									\
-+})
-+
-+#define MCR14(val, op1, crn, crm, op2)					\
-+({									\
-+asm volatile("mcr p14, "#op1", %0, "#crn", "#crm", "#op2 : : "r" (val));\
-+})
-+
-+/* Debug Registers
-+ *
-+ * Available only in DBGv7
-+ * DBGECR, DBGDSCCR, DBGDSMCR, DBGDRCR
-+ *
-+ * Available only in DBGv7.1
-+ * DBGBXVRm, DBGOSDLR, DBGDEVID2, DBGDEVID1
-+ *
-+ * Read only
-+ * DBGDIDR, DBGDSCRint, DBGDTRRXint, DBGDRAR, DBGOSLSR, DBGOSSRR, DBGPRSR,
-+ * DBGPRSR, DBGDSAR, DBGAUTHSTATUS, DBGDEVID2, DBGDEVID1, DBGDEVID
-+ *
-+ * Write only
-+ * DBGDTRTXint, DBGOSLAR
-+ */
-+#define RCP14_DBGDIDR()			MRC14(0, c0, c0, 0)
-+#define RCP14_DBGDSCRint()		MRC14(0, c0, c1, 0)
-+#define RCP14_DBGDTRRXint()		MRC14(0, c0, c5, 0)
-+#define RCP14_DBGWFAR()			MRC14(0, c0, c6, 0)
-+#define RCP14_DBGVCR()			MRC14(0, c0, c7, 0)
-+#define RCP14_DBGECR()			MRC14(0, c0, c9, 0)
-+#define RCP14_DBGDSCCR()		MRC14(0, c0, c10, 0)
-+#define RCP14_DBGDSMCR()		MRC14(0, c0, c11, 0)
-+#define RCP14_DBGDTRRXext()		MRC14(0, c0, c0, 2)
-+#define RCP14_DBGDSCRext()		MRC14(0, c0, c2, 2)
-+#define RCP14_DBGDTRTXext()		MRC14(0, c0, c3, 2)
-+#define RCP14_DBGDRCR()			MRC14(0, c0, c4, 2)
-+#define RCP14_DBGBVR0()			MRC14(0, c0, c0, 4)
-+#define RCP14_DBGBVR1()			MRC14(0, c0, c1, 4)
-+#define RCP14_DBGBVR2()			MRC14(0, c0, c2, 4)
-+#define RCP14_DBGBVR3()			MRC14(0, c0, c3, 4)
-+#define RCP14_DBGBVR4()			MRC14(0, c0, c4, 4)
-+#define RCP14_DBGBVR5()			MRC14(0, c0, c5, 4)
-+#define RCP14_DBGBVR6()			MRC14(0, c0, c6, 4)
-+#define RCP14_DBGBVR7()			MRC14(0, c0, c7, 4)
-+#define RCP14_DBGBVR8()			MRC14(0, c0, c8, 4)
-+#define RCP14_DBGBVR9()			MRC14(0, c0, c9, 4)
-+#define RCP14_DBGBVR10()		MRC14(0, c0, c10, 4)
-+#define RCP14_DBGBVR11()		MRC14(0, c0, c11, 4)
-+#define RCP14_DBGBVR12()		MRC14(0, c0, c12, 4)
-+#define RCP14_DBGBVR13()		MRC14(0, c0, c13, 4)
-+#define RCP14_DBGBVR14()		MRC14(0, c0, c14, 4)
-+#define RCP14_DBGBVR15()		MRC14(0, c0, c15, 4)
-+#define RCP14_DBGBCR0()			MRC14(0, c0, c0, 5)
-+#define RCP14_DBGBCR1()			MRC14(0, c0, c1, 5)
-+#define RCP14_DBGBCR2()			MRC14(0, c0, c2, 5)
-+#define RCP14_DBGBCR3()			MRC14(0, c0, c3, 5)
-+#define RCP14_DBGBCR4()			MRC14(0, c0, c4, 5)
-+#define RCP14_DBGBCR5()			MRC14(0, c0, c5, 5)
-+#define RCP14_DBGBCR6()			MRC14(0, c0, c6, 5)
-+#define RCP14_DBGBCR7()			MRC14(0, c0, c7, 5)
-+#define RCP14_DBGBCR8()			MRC14(0, c0, c8, 5)
-+#define RCP14_DBGBCR9()			MRC14(0, c0, c9, 5)
-+#define RCP14_DBGBCR10()		MRC14(0, c0, c10, 5)
-+#define RCP14_DBGBCR11()		MRC14(0, c0, c11, 5)
-+#define RCP14_DBGBCR12()		MRC14(0, c0, c12, 5)
-+#define RCP14_DBGBCR13()		MRC14(0, c0, c13, 5)
-+#define RCP14_DBGBCR14()		MRC14(0, c0, c14, 5)
-+#define RCP14_DBGBCR15()		MRC14(0, c0, c15, 5)
-+#define RCP14_DBGWVR0()			MRC14(0, c0, c0, 6)
-+#define RCP14_DBGWVR1()			MRC14(0, c0, c1, 6)
-+#define RCP14_DBGWVR2()			MRC14(0, c0, c2, 6)
-+#define RCP14_DBGWVR3()			MRC14(0, c0, c3, 6)
-+#define RCP14_DBGWVR4()			MRC14(0, c0, c4, 6)
-+#define RCP14_DBGWVR5()			MRC14(0, c0, c5, 6)
-+#define RCP14_DBGWVR6()			MRC14(0, c0, c6, 6)
-+#define RCP14_DBGWVR7()			MRC14(0, c0, c7, 6)
-+#define RCP14_DBGWVR8()			MRC14(0, c0, c8, 6)
-+#define RCP14_DBGWVR9()			MRC14(0, c0, c9, 6)
-+#define RCP14_DBGWVR10()		MRC14(0, c0, c10, 6)
-+#define RCP14_DBGWVR11()		MRC14(0, c0, c11, 6)
-+#define RCP14_DBGWVR12()		MRC14(0, c0, c12, 6)
-+#define RCP14_DBGWVR13()		MRC14(0, c0, c13, 6)
-+#define RCP14_DBGWVR14()		MRC14(0, c0, c14, 6)
-+#define RCP14_DBGWVR15()		MRC14(0, c0, c15, 6)
-+#define RCP14_DBGWCR0()			MRC14(0, c0, c0, 7)
-+#define RCP14_DBGWCR1()			MRC14(0, c0, c1, 7)
-+#define RCP14_DBGWCR2()			MRC14(0, c0, c2, 7)
-+#define RCP14_DBGWCR3()			MRC14(0, c0, c3, 7)
-+#define RCP14_DBGWCR4()			MRC14(0, c0, c4, 7)
-+#define RCP14_DBGWCR5()			MRC14(0, c0, c5, 7)
-+#define RCP14_DBGWCR6()			MRC14(0, c0, c6, 7)
-+#define RCP14_DBGWCR7()			MRC14(0, c0, c7, 7)
-+#define RCP14_DBGWCR8()			MRC14(0, c0, c8, 7)
-+#define RCP14_DBGWCR9()			MRC14(0, c0, c9, 7)
-+#define RCP14_DBGWCR10()		MRC14(0, c0, c10, 7)
-+#define RCP14_DBGWCR11()		MRC14(0, c0, c11, 7)
-+#define RCP14_DBGWCR12()		MRC14(0, c0, c12, 7)
-+#define RCP14_DBGWCR13()		MRC14(0, c0, c13, 7)
-+#define RCP14_DBGWCR14()		MRC14(0, c0, c14, 7)
-+#define RCP14_DBGWCR15()		MRC14(0, c0, c15, 7)
-+#define RCP14_DBGDRAR()			MRC14(0, c1, c0, 0)
-+#define RCP14_DBGBXVR0()		MRC14(0, c1, c0, 1)
-+#define RCP14_DBGBXVR1()		MRC14(0, c1, c1, 1)
-+#define RCP14_DBGBXVR2()		MRC14(0, c1, c2, 1)
-+#define RCP14_DBGBXVR3()		MRC14(0, c1, c3, 1)
-+#define RCP14_DBGBXVR4()		MRC14(0, c1, c4, 1)
-+#define RCP14_DBGBXVR5()		MRC14(0, c1, c5, 1)
-+#define RCP14_DBGBXVR6()		MRC14(0, c1, c6, 1)
-+#define RCP14_DBGBXVR7()		MRC14(0, c1, c7, 1)
-+#define RCP14_DBGBXVR8()		MRC14(0, c1, c8, 1)
-+#define RCP14_DBGBXVR9()		MRC14(0, c1, c9, 1)
-+#define RCP14_DBGBXVR10()		MRC14(0, c1, c10, 1)
-+#define RCP14_DBGBXVR11()		MRC14(0, c1, c11, 1)
-+#define RCP14_DBGBXVR12()		MRC14(0, c1, c12, 1)
-+#define RCP14_DBGBXVR13()		MRC14(0, c1, c13, 1)
-+#define RCP14_DBGBXVR14()		MRC14(0, c1, c14, 1)
-+#define RCP14_DBGBXVR15()		MRC14(0, c1, c15, 1)
-+#define RCP14_DBGOSLSR()		MRC14(0, c1, c1, 4)
-+#define RCP14_DBGOSSRR()		MRC14(0, c1, c2, 4)
-+#define RCP14_DBGOSDLR()		MRC14(0, c1, c3, 4)
-+#define RCP14_DBGPRCR()			MRC14(0, c1, c4, 4)
-+#define RCP14_DBGPRSR()			MRC14(0, c1, c5, 4)
-+#define RCP14_DBGDSAR()			MRC14(0, c2, c0, 0)
-+#define RCP14_DBGITCTRL()		MRC14(0, c7, c0, 4)
-+#define RCP14_DBGCLAIMSET()		MRC14(0, c7, c8, 6)
-+#define RCP14_DBGCLAIMCLR()		MRC14(0, c7, c9, 6)
-+#define RCP14_DBGAUTHSTATUS()		MRC14(0, c7, c14, 6)
-+#define RCP14_DBGDEVID2()		MRC14(0, c7, c0, 7)
-+#define RCP14_DBGDEVID1()		MRC14(0, c7, c1, 7)
-+#define RCP14_DBGDEVID()		MRC14(0, c7, c2, 7)
-+
-+#define WCP14_DBGDTRTXint(val)		MCR14(val, 0, c0, c5, 0)
-+#define WCP14_DBGWFAR(val)		MCR14(val, 0, c0, c6, 0)
-+#define WCP14_DBGVCR(val)		MCR14(val, 0, c0, c7, 0)
-+#define WCP14_DBGECR(val)		MCR14(val, 0, c0, c9, 0)
-+#define WCP14_DBGDSCCR(val)		MCR14(val, 0, c0, c10, 0)
-+#define WCP14_DBGDSMCR(val)		MCR14(val, 0, c0, c11, 0)
-+#define WCP14_DBGDTRRXext(val)		MCR14(val, 0, c0, c0, 2)
-+#define WCP14_DBGDSCRext(val)		MCR14(val, 0, c0, c2, 2)
-+#define WCP14_DBGDTRTXext(val)		MCR14(val, 0, c0, c3, 2)
-+#define WCP14_DBGDRCR(val)		MCR14(val, 0, c0, c4, 2)
-+#define WCP14_DBGBVR0(val)		MCR14(val, 0, c0, c0, 4)
-+#define WCP14_DBGBVR1(val)		MCR14(val, 0, c0, c1, 4)
-+#define WCP14_DBGBVR2(val)		MCR14(val, 0, c0, c2, 4)
-+#define WCP14_DBGBVR3(val)		MCR14(val, 0, c0, c3, 4)
-+#define WCP14_DBGBVR4(val)		MCR14(val, 0, c0, c4, 4)
-+#define WCP14_DBGBVR5(val)		MCR14(val, 0, c0, c5, 4)
-+#define WCP14_DBGBVR6(val)		MCR14(val, 0, c0, c6, 4)
-+#define WCP14_DBGBVR7(val)		MCR14(val, 0, c0, c7, 4)
-+#define WCP14_DBGBVR8(val)		MCR14(val, 0, c0, c8, 4)
-+#define WCP14_DBGBVR9(val)		MCR14(val, 0, c0, c9, 4)
-+#define WCP14_DBGBVR10(val)		MCR14(val, 0, c0, c10, 4)
-+#define WCP14_DBGBVR11(val)		MCR14(val, 0, c0, c11, 4)
-+#define WCP14_DBGBVR12(val)		MCR14(val, 0, c0, c12, 4)
-+#define WCP14_DBGBVR13(val)		MCR14(val, 0, c0, c13, 4)
-+#define WCP14_DBGBVR14(val)		MCR14(val, 0, c0, c14, 4)
-+#define WCP14_DBGBVR15(val)		MCR14(val, 0, c0, c15, 4)
-+#define WCP14_DBGBCR0(val)		MCR14(val, 0, c0, c0, 5)
-+#define WCP14_DBGBCR1(val)		MCR14(val, 0, c0, c1, 5)
-+#define WCP14_DBGBCR2(val)		MCR14(val, 0, c0, c2, 5)
-+#define WCP14_DBGBCR3(val)		MCR14(val, 0, c0, c3, 5)
-+#define WCP14_DBGBCR4(val)		MCR14(val, 0, c0, c4, 5)
-+#define WCP14_DBGBCR5(val)		MCR14(val, 0, c0, c5, 5)
-+#define WCP14_DBGBCR6(val)		MCR14(val, 0, c0, c6, 5)
-+#define WCP14_DBGBCR7(val)		MCR14(val, 0, c0, c7, 5)
-+#define WCP14_DBGBCR8(val)		MCR14(val, 0, c0, c8, 5)
-+#define WCP14_DBGBCR9(val)		MCR14(val, 0, c0, c9, 5)
-+#define WCP14_DBGBCR10(val)		MCR14(val, 0, c0, c10, 5)
-+#define WCP14_DBGBCR11(val)		MCR14(val, 0, c0, c11, 5)
-+#define WCP14_DBGBCR12(val)		MCR14(val, 0, c0, c12, 5)
-+#define WCP14_DBGBCR13(val)		MCR14(val, 0, c0, c13, 5)
-+#define WCP14_DBGBCR14(val)		MCR14(val, 0, c0, c14, 5)
-+#define WCP14_DBGBCR15(val)		MCR14(val, 0, c0, c15, 5)
-+#define WCP14_DBGWVR0(val)		MCR14(val, 0, c0, c0, 6)
-+#define WCP14_DBGWVR1(val)		MCR14(val, 0, c0, c1, 6)
-+#define WCP14_DBGWVR2(val)		MCR14(val, 0, c0, c2, 6)
-+#define WCP14_DBGWVR3(val)		MCR14(val, 0, c0, c3, 6)
-+#define WCP14_DBGWVR4(val)		MCR14(val, 0, c0, c4, 6)
-+#define WCP14_DBGWVR5(val)		MCR14(val, 0, c0, c5, 6)
-+#define WCP14_DBGWVR6(val)		MCR14(val, 0, c0, c6, 6)
-+#define WCP14_DBGWVR7(val)		MCR14(val, 0, c0, c7, 6)
-+#define WCP14_DBGWVR8(val)		MCR14(val, 0, c0, c8, 6)
-+#define WCP14_DBGWVR9(val)		MCR14(val, 0, c0, c9, 6)
-+#define WCP14_DBGWVR10(val)		MCR14(val, 0, c0, c10, 6)
-+#define WCP14_DBGWVR11(val)		MCR14(val, 0, c0, c11, 6)
-+#define WCP14_DBGWVR12(val)		MCR14(val, 0, c0, c12, 6)
-+#define WCP14_DBGWVR13(val)		MCR14(val, 0, c0, c13, 6)
-+#define WCP14_DBGWVR14(val)		MCR14(val, 0, c0, c14, 6)
-+#define WCP14_DBGWVR15(val)		MCR14(val, 0, c0, c15, 6)
-+#define WCP14_DBGWCR0(val)		MCR14(val, 0, c0, c0, 7)
-+#define WCP14_DBGWCR1(val)		MCR14(val, 0, c0, c1, 7)
-+#define WCP14_DBGWCR2(val)		MCR14(val, 0, c0, c2, 7)
-+#define WCP14_DBGWCR3(val)		MCR14(val, 0, c0, c3, 7)
-+#define WCP14_DBGWCR4(val)		MCR14(val, 0, c0, c4, 7)
-+#define WCP14_DBGWCR5(val)		MCR14(val, 0, c0, c5, 7)
-+#define WCP14_DBGWCR6(val)		MCR14(val, 0, c0, c6, 7)
-+#define WCP14_DBGWCR7(val)		MCR14(val, 0, c0, c7, 7)
-+#define WCP14_DBGWCR8(val)		MCR14(val, 0, c0, c8, 7)
-+#define WCP14_DBGWCR9(val)		MCR14(val, 0, c0, c9, 7)
-+#define WCP14_DBGWCR10(val)		MCR14(val, 0, c0, c10, 7)
-+#define WCP14_DBGWCR11(val)		MCR14(val, 0, c0, c11, 7)
-+#define WCP14_DBGWCR12(val)		MCR14(val, 0, c0, c12, 7)
-+#define WCP14_DBGWCR13(val)		MCR14(val, 0, c0, c13, 7)
-+#define WCP14_DBGWCR14(val)		MCR14(val, 0, c0, c14, 7)
-+#define WCP14_DBGWCR15(val)		MCR14(val, 0, c0, c15, 7)
-+#define WCP14_DBGBXVR0(val)		MCR14(val, 0, c1, c0, 1)
-+#define WCP14_DBGBXVR1(val)		MCR14(val, 0, c1, c1, 1)
-+#define WCP14_DBGBXVR2(val)		MCR14(val, 0, c1, c2, 1)
-+#define WCP14_DBGBXVR3(val)		MCR14(val, 0, c1, c3, 1)
-+#define WCP14_DBGBXVR4(val)		MCR14(val, 0, c1, c4, 1)
-+#define WCP14_DBGBXVR5(val)		MCR14(val, 0, c1, c5, 1)
-+#define WCP14_DBGBXVR6(val)		MCR14(val, 0, c1, c6, 1)
-+#define WCP14_DBGBXVR7(val)		MCR14(val, 0, c1, c7, 1)
-+#define WCP14_DBGBXVR8(val)		MCR14(val, 0, c1, c8, 1)
-+#define WCP14_DBGBXVR9(val)		MCR14(val, 0, c1, c9, 1)
-+#define WCP14_DBGBXVR10(val)		MCR14(val, 0, c1, c10, 1)
-+#define WCP14_DBGBXVR11(val)		MCR14(val, 0, c1, c11, 1)
-+#define WCP14_DBGBXVR12(val)		MCR14(val, 0, c1, c12, 1)
-+#define WCP14_DBGBXVR13(val)		MCR14(val, 0, c1, c13, 1)
-+#define WCP14_DBGBXVR14(val)		MCR14(val, 0, c1, c14, 1)
-+#define WCP14_DBGBXVR15(val)		MCR14(val, 0, c1, c15, 1)
-+#define WCP14_DBGOSLAR(val)		MCR14(val, 0, c1, c0, 4)
-+#define WCP14_DBGOSSRR(val)		MCR14(val, 0, c1, c2, 4)
-+#define WCP14_DBGOSDLR(val)		MCR14(val, 0, c1, c3, 4)
-+#define WCP14_DBGPRCR(val)		MCR14(val, 0, c1, c4, 4)
-+#define WCP14_DBGITCTRL(val)		MCR14(val, 0, c7, c0, 4)
-+#define WCP14_DBGCLAIMSET(val)		MCR14(val, 0, c7, c8, 6)
-+#define WCP14_DBGCLAIMCLR(val)		MCR14(val, 0, c7, c9, 6)
-+
-+/* ETM Registers
-+ *
-+ * Available only in ETMv3.3, 3.4, 3.5
-+ * ETMASICCR, ETMTECR2, ETMFFRR, ETMVDEVR, ETMVDCR1, ETMVDCR2, ETMVDCR3,
-+ * ETMDCVRn, ETMDCMRn
-+ *
-+ * Available only in ETMv3.5 as read only
-+ * ETMIDR2
-+ *
-+ * Available only in ETMv3.5, PFTv1.0, 1.1
-+ * ETMTSEVR, ETMVMIDCVR, ETMPDCR
-+ *
-+ * Read only
-+ * ETMCCR, ETMSCR, ETMIDR, ETMCCER, ETMOSLSR
-+ * ETMLSR, ETMAUTHSTATUS, ETMDEVID, ETMDEVTYPE, ETMPIDR4, ETMPIDR5, ETMPIDR6,
-+ * ETMPIDR7, ETMPIDR0, ETMPIDR1, ETMPIDR2, ETMPIDR2, ETMPIDR3, ETMCIDR0,
-+ * ETMCIDR1, ETMCIDR2, ETMCIDR3
-+ *
-+ * Write only
-+ * ETMOSLAR, ETMLAR
-+ * Note: ETMCCER[11] controls WO nature of certain regs. Refer ETM arch spec.
-+ */
-+#define RCP14_ETMCR()			MRC14(1, c0, c0, 0)
-+#define RCP14_ETMCCR()			MRC14(1, c0, c1, 0)
-+#define RCP14_ETMTRIGGER()		MRC14(1, c0, c2, 0)
-+#define RCP14_ETMASICCR()		MRC14(1, c0, c3, 0)
-+#define RCP14_ETMSR()			MRC14(1, c0, c4, 0)
-+#define RCP14_ETMSCR()			MRC14(1, c0, c5, 0)
-+#define RCP14_ETMTSSCR()		MRC14(1, c0, c6, 0)
-+#define RCP14_ETMTECR2()		MRC14(1, c0, c7, 0)
-+#define RCP14_ETMTEEVR()		MRC14(1, c0, c8, 0)
-+#define RCP14_ETMTECR1()		MRC14(1, c0, c9, 0)
-+#define RCP14_ETMFFRR()			MRC14(1, c0, c10, 0)
-+#define RCP14_ETMFFLR()			MRC14(1, c0, c11, 0)
-+#define RCP14_ETMVDEVR()		MRC14(1, c0, c12, 0)
-+#define RCP14_ETMVDCR1()		MRC14(1, c0, c13, 0)
-+#define RCP14_ETMVDCR2()		MRC14(1, c0, c14, 0)
-+#define RCP14_ETMVDCR3()		MRC14(1, c0, c15, 0)
-+#define RCP14_ETMACVR0()		MRC14(1, c0, c0, 1)
-+#define RCP14_ETMACVR1()		MRC14(1, c0, c1, 1)
-+#define RCP14_ETMACVR2()		MRC14(1, c0, c2, 1)
-+#define RCP14_ETMACVR3()		MRC14(1, c0, c3, 1)
-+#define RCP14_ETMACVR4()		MRC14(1, c0, c4, 1)
-+#define RCP14_ETMACVR5()		MRC14(1, c0, c5, 1)
-+#define RCP14_ETMACVR6()		MRC14(1, c0, c6, 1)
-+#define RCP14_ETMACVR7()		MRC14(1, c0, c7, 1)
-+#define RCP14_ETMACVR8()		MRC14(1, c0, c8, 1)
-+#define RCP14_ETMACVR9()		MRC14(1, c0, c9, 1)
-+#define RCP14_ETMACVR10()		MRC14(1, c0, c10, 1)
-+#define RCP14_ETMACVR11()		MRC14(1, c0, c11, 1)
-+#define RCP14_ETMACVR12()		MRC14(1, c0, c12, 1)
-+#define RCP14_ETMACVR13()		MRC14(1, c0, c13, 1)
-+#define RCP14_ETMACVR14()		MRC14(1, c0, c14, 1)
-+#define RCP14_ETMACVR15()		MRC14(1, c0, c15, 1)
-+#define RCP14_ETMACTR0()		MRC14(1, c0, c0, 2)
-+#define RCP14_ETMACTR1()		MRC14(1, c0, c1, 2)
-+#define RCP14_ETMACTR2()		MRC14(1, c0, c2, 2)
-+#define RCP14_ETMACTR3()		MRC14(1, c0, c3, 2)
-+#define RCP14_ETMACTR4()		MRC14(1, c0, c4, 2)
-+#define RCP14_ETMACTR5()		MRC14(1, c0, c5, 2)
-+#define RCP14_ETMACTR6()		MRC14(1, c0, c6, 2)
-+#define RCP14_ETMACTR7()		MRC14(1, c0, c7, 2)
-+#define RCP14_ETMACTR8()		MRC14(1, c0, c8, 2)
-+#define RCP14_ETMACTR9()		MRC14(1, c0, c9, 2)
-+#define RCP14_ETMACTR10()		MRC14(1, c0, c10, 2)
-+#define RCP14_ETMACTR11()		MRC14(1, c0, c11, 2)
-+#define RCP14_ETMACTR12()		MRC14(1, c0, c12, 2)
-+#define RCP14_ETMACTR13()		MRC14(1, c0, c13, 2)
-+#define RCP14_ETMACTR14()		MRC14(1, c0, c14, 2)
-+#define RCP14_ETMACTR15()		MRC14(1, c0, c15, 2)
-+#define RCP14_ETMDCVR0()		MRC14(1, c0, c0, 3)
-+#define RCP14_ETMDCVR2()		MRC14(1, c0, c2, 3)
-+#define RCP14_ETMDCVR4()		MRC14(1, c0, c4, 3)
-+#define RCP14_ETMDCVR6()		MRC14(1, c0, c6, 3)
-+#define RCP14_ETMDCVR8()		MRC14(1, c0, c8, 3)
-+#define RCP14_ETMDCVR10()		MRC14(1, c0, c10, 3)
-+#define RCP14_ETMDCVR12()		MRC14(1, c0, c12, 3)
-+#define RCP14_ETMDCVR14()		MRC14(1, c0, c14, 3)
-+#define RCP14_ETMDCMR0()		MRC14(1, c0, c0, 4)
-+#define RCP14_ETMDCMR2()		MRC14(1, c0, c2, 4)
-+#define RCP14_ETMDCMR4()		MRC14(1, c0, c4, 4)
-+#define RCP14_ETMDCMR6()		MRC14(1, c0, c6, 4)
-+#define RCP14_ETMDCMR8()		MRC14(1, c0, c8, 4)
-+#define RCP14_ETMDCMR10()		MRC14(1, c0, c10, 4)
-+#define RCP14_ETMDCMR12()		MRC14(1, c0, c12, 4)
-+#define RCP14_ETMDCMR14()		MRC14(1, c0, c14, 4)
-+#define RCP14_ETMCNTRLDVR0()		MRC14(1, c0, c0, 5)
-+#define RCP14_ETMCNTRLDVR1()		MRC14(1, c0, c1, 5)
-+#define RCP14_ETMCNTRLDVR2()		MRC14(1, c0, c2, 5)
-+#define RCP14_ETMCNTRLDVR3()		MRC14(1, c0, c3, 5)
-+#define RCP14_ETMCNTENR0()		MRC14(1, c0, c4, 5)
-+#define RCP14_ETMCNTENR1()		MRC14(1, c0, c5, 5)
-+#define RCP14_ETMCNTENR2()		MRC14(1, c0, c6, 5)
-+#define RCP14_ETMCNTENR3()		MRC14(1, c0, c7, 5)
-+#define RCP14_ETMCNTRLDEVR0()		MRC14(1, c0, c8, 5)
-+#define RCP14_ETMCNTRLDEVR1()		MRC14(1, c0, c9, 5)
-+#define RCP14_ETMCNTRLDEVR2()		MRC14(1, c0, c10, 5)
-+#define RCP14_ETMCNTRLDEVR3()		MRC14(1, c0, c11, 5)
-+#define RCP14_ETMCNTVR0()		MRC14(1, c0, c12, 5)
-+#define RCP14_ETMCNTVR1()		MRC14(1, c0, c13, 5)
-+#define RCP14_ETMCNTVR2()		MRC14(1, c0, c14, 5)
-+#define RCP14_ETMCNTVR3()		MRC14(1, c0, c15, 5)
-+#define RCP14_ETMSQ12EVR()		MRC14(1, c0, c0, 6)
-+#define RCP14_ETMSQ21EVR()		MRC14(1, c0, c1, 6)
-+#define RCP14_ETMSQ23EVR()		MRC14(1, c0, c2, 6)
-+#define RCP14_ETMSQ31EVR()		MRC14(1, c0, c3, 6)
-+#define RCP14_ETMSQ32EVR()		MRC14(1, c0, c4, 6)
-+#define RCP14_ETMSQ13EVR()		MRC14(1, c0, c5, 6)
-+#define RCP14_ETMSQR()			MRC14(1, c0, c7, 6)
-+#define RCP14_ETMEXTOUTEVR0()		MRC14(1, c0, c8, 6)
-+#define RCP14_ETMEXTOUTEVR1()		MRC14(1, c0, c9, 6)
-+#define RCP14_ETMEXTOUTEVR2()		MRC14(1, c0, c10, 6)
-+#define RCP14_ETMEXTOUTEVR3()		MRC14(1, c0, c11, 6)
-+#define RCP14_ETMCIDCVR0()		MRC14(1, c0, c12, 6)
-+#define RCP14_ETMCIDCVR1()		MRC14(1, c0, c13, 6)
-+#define RCP14_ETMCIDCVR2()		MRC14(1, c0, c14, 6)
-+#define RCP14_ETMCIDCMR()		MRC14(1, c0, c15, 6)
-+#define RCP14_ETMIMPSPEC0()		MRC14(1, c0, c0, 7)
-+#define RCP14_ETMIMPSPEC1()		MRC14(1, c0, c1, 7)
-+#define RCP14_ETMIMPSPEC2()		MRC14(1, c0, c2, 7)
-+#define RCP14_ETMIMPSPEC3()		MRC14(1, c0, c3, 7)
-+#define RCP14_ETMIMPSPEC4()		MRC14(1, c0, c4, 7)
-+#define RCP14_ETMIMPSPEC5()		MRC14(1, c0, c5, 7)
-+#define RCP14_ETMIMPSPEC6()		MRC14(1, c0, c6, 7)
-+#define RCP14_ETMIMPSPEC7()		MRC14(1, c0, c7, 7)
-+#define RCP14_ETMSYNCFR()		MRC14(1, c0, c8, 7)
-+#define RCP14_ETMIDR()			MRC14(1, c0, c9, 7)
-+#define RCP14_ETMCCER()			MRC14(1, c0, c10, 7)
-+#define RCP14_ETMEXTINSELR()		MRC14(1, c0, c11, 7)
-+#define RCP14_ETMTESSEICR()		MRC14(1, c0, c12, 7)
-+#define RCP14_ETMEIBCR()		MRC14(1, c0, c13, 7)
-+#define RCP14_ETMTSEVR()		MRC14(1, c0, c14, 7)
-+#define RCP14_ETMAUXCR()		MRC14(1, c0, c15, 7)
-+#define RCP14_ETMTRACEIDR()		MRC14(1, c1, c0, 0)
-+#define RCP14_ETMIDR2()			MRC14(1, c1, c2, 0)
-+#define RCP14_ETMVMIDCVR()		MRC14(1, c1, c0, 1)
-+#define RCP14_ETMOSLSR()		MRC14(1, c1, c1, 4)
-+/* not available in PFTv1.1 */
-+#define RCP14_ETMOSSRR()		MRC14(1, c1, c2, 4)
-+#define RCP14_ETMPDCR()			MRC14(1, c1, c4, 4)
-+#define RCP14_ETMPDSR()			MRC14(1, c1, c5, 4)
-+#define RCP14_ETMITCTRL()		MRC14(1, c7, c0, 4)
-+#define RCP14_ETMCLAIMSET()		MRC14(1, c7, c8, 6)
-+#define RCP14_ETMCLAIMCLR()		MRC14(1, c7, c9, 6)
-+#define RCP14_ETMLSR()			MRC14(1, c7, c13, 6)
-+#define RCP14_ETMAUTHSTATUS()		MRC14(1, c7, c14, 6)
-+#define RCP14_ETMDEVID()		MRC14(1, c7, c2, 7)
-+#define RCP14_ETMDEVTYPE()		MRC14(1, c7, c3, 7)
-+#define RCP14_ETMPIDR4()		MRC14(1, c7, c4, 7)
-+#define RCP14_ETMPIDR5()		MRC14(1, c7, c5, 7)
-+#define RCP14_ETMPIDR6()		MRC14(1, c7, c6, 7)
-+#define RCP14_ETMPIDR7()		MRC14(1, c7, c7, 7)
-+#define RCP14_ETMPIDR0()		MRC14(1, c7, c8, 7)
-+#define RCP14_ETMPIDR1()		MRC14(1, c7, c9, 7)
-+#define RCP14_ETMPIDR2()		MRC14(1, c7, c10, 7)
-+#define RCP14_ETMPIDR3()		MRC14(1, c7, c11, 7)
-+#define RCP14_ETMCIDR0()		MRC14(1, c7, c12, 7)
-+#define RCP14_ETMCIDR1()		MRC14(1, c7, c13, 7)
-+#define RCP14_ETMCIDR2()		MRC14(1, c7, c14, 7)
-+#define RCP14_ETMCIDR3()		MRC14(1, c7, c15, 7)
-+
-+#define WCP14_ETMCR(val)		MCR14(val, 1, c0, c0, 0)
-+#define WCP14_ETMTRIGGER(val)		MCR14(val, 1, c0, c2, 0)
-+#define WCP14_ETMASICCR(val)		MCR14(val, 1, c0, c3, 0)
-+#define WCP14_ETMSR(val)		MCR14(val, 1, c0, c4, 0)
-+#define WCP14_ETMTSSCR(val)		MCR14(val, 1, c0, c6, 0)
-+#define WCP14_ETMTECR2(val)		MCR14(val, 1, c0, c7, 0)
-+#define WCP14_ETMTEEVR(val)		MCR14(val, 1, c0, c8, 0)
-+#define WCP14_ETMTECR1(val)		MCR14(val, 1, c0, c9, 0)
-+#define WCP14_ETMFFRR(val)		MCR14(val, 1, c0, c10, 0)
-+#define WCP14_ETMFFLR(val)		MCR14(val, 1, c0, c11, 0)
-+#define WCP14_ETMVDEVR(val)		MCR14(val, 1, c0, c12, 0)
-+#define WCP14_ETMVDCR1(val)		MCR14(val, 1, c0, c13, 0)
-+#define WCP14_ETMVDCR2(val)		MCR14(val, 1, c0, c14, 0)
-+#define WCP14_ETMVDCR3(val)		MCR14(val, 1, c0, c15, 0)
-+#define WCP14_ETMACVR0(val)		MCR14(val, 1, c0, c0, 1)
-+#define WCP14_ETMACVR1(val)		MCR14(val, 1, c0, c1, 1)
-+#define WCP14_ETMACVR2(val)		MCR14(val, 1, c0, c2, 1)
-+#define WCP14_ETMACVR3(val)		MCR14(val, 1, c0, c3, 1)
-+#define WCP14_ETMACVR4(val)		MCR14(val, 1, c0, c4, 1)
-+#define WCP14_ETMACVR5(val)		MCR14(val, 1, c0, c5, 1)
-+#define WCP14_ETMACVR6(val)		MCR14(val, 1, c0, c6, 1)
-+#define WCP14_ETMACVR7(val)		MCR14(val, 1, c0, c7, 1)
-+#define WCP14_ETMACVR8(val)		MCR14(val, 1, c0, c8, 1)
-+#define WCP14_ETMACVR9(val)		MCR14(val, 1, c0, c9, 1)
-+#define WCP14_ETMACVR10(val)		MCR14(val, 1, c0, c10, 1)
-+#define WCP14_ETMACVR11(val)		MCR14(val, 1, c0, c11, 1)
-+#define WCP14_ETMACVR12(val)		MCR14(val, 1, c0, c12, 1)
-+#define WCP14_ETMACVR13(val)		MCR14(val, 1, c0, c13, 1)
-+#define WCP14_ETMACVR14(val)		MCR14(val, 1, c0, c14, 1)
-+#define WCP14_ETMACVR15(val)		MCR14(val, 1, c0, c15, 1)
-+#define WCP14_ETMACTR0(val)		MCR14(val, 1, c0, c0, 2)
-+#define WCP14_ETMACTR1(val)		MCR14(val, 1, c0, c1, 2)
-+#define WCP14_ETMACTR2(val)		MCR14(val, 1, c0, c2, 2)
-+#define WCP14_ETMACTR3(val)		MCR14(val, 1, c0, c3, 2)
-+#define WCP14_ETMACTR4(val)		MCR14(val, 1, c0, c4, 2)
-+#define WCP14_ETMACTR5(val)		MCR14(val, 1, c0, c5, 2)
-+#define WCP14_ETMACTR6(val)		MCR14(val, 1, c0, c6, 2)
-+#define WCP14_ETMACTR7(val)		MCR14(val, 1, c0, c7, 2)
-+#define WCP14_ETMACTR8(val)		MCR14(val, 1, c0, c8, 2)
-+#define WCP14_ETMACTR9(val)		MCR14(val, 1, c0, c9, 2)
-+#define WCP14_ETMACTR10(val)		MCR14(val, 1, c0, c10, 2)
-+#define WCP14_ETMACTR11(val)		MCR14(val, 1, c0, c11, 2)
-+#define WCP14_ETMACTR12(val)		MCR14(val, 1, c0, c12, 2)
-+#define WCP14_ETMACTR13(val)		MCR14(val, 1, c0, c13, 2)
-+#define WCP14_ETMACTR14(val)		MCR14(val, 1, c0, c14, 2)
-+#define WCP14_ETMACTR15(val)		MCR14(val, 1, c0, c15, 2)
-+#define WCP14_ETMDCVR0(val)		MCR14(val, 1, c0, c0, 3)
-+#define WCP14_ETMDCVR2(val)		MCR14(val, 1, c0, c2, 3)
-+#define WCP14_ETMDCVR4(val)		MCR14(val, 1, c0, c4, 3)
-+#define WCP14_ETMDCVR6(val)		MCR14(val, 1, c0, c6, 3)
-+#define WCP14_ETMDCVR8(val)		MCR14(val, 1, c0, c8, 3)
-+#define WCP14_ETMDCVR10(val)		MCR14(val, 1, c0, c10, 3)
-+#define WCP14_ETMDCVR12(val)		MCR14(val, 1, c0, c12, 3)
-+#define WCP14_ETMDCVR14(val)		MCR14(val, 1, c0, c14, 3)
-+#define WCP14_ETMDCMR0(val)		MCR14(val, 1, c0, c0, 4)
-+#define WCP14_ETMDCMR2(val)		MCR14(val, 1, c0, c2, 4)
-+#define WCP14_ETMDCMR4(val)		MCR14(val, 1, c0, c4, 4)
-+#define WCP14_ETMDCMR6(val)		MCR14(val, 1, c0, c6, 4)
-+#define WCP14_ETMDCMR8(val)		MCR14(val, 1, c0, c8, 4)
-+#define WCP14_ETMDCMR10(val)		MCR14(val, 1, c0, c10, 4)
-+#define WCP14_ETMDCMR12(val)		MCR14(val, 1, c0, c12, 4)
-+#define WCP14_ETMDCMR14(val)		MCR14(val, 1, c0, c14, 4)
-+#define WCP14_ETMCNTRLDVR0(val)		MCR14(val, 1, c0, c0, 5)
-+#define WCP14_ETMCNTRLDVR1(val)		MCR14(val, 1, c0, c1, 5)
-+#define WCP14_ETMCNTRLDVR2(val)		MCR14(val, 1, c0, c2, 5)
-+#define WCP14_ETMCNTRLDVR3(val)		MCR14(val, 1, c0, c3, 5)
-+#define WCP14_ETMCNTENR0(val)		MCR14(val, 1, c0, c4, 5)
-+#define WCP14_ETMCNTENR1(val)		MCR14(val, 1, c0, c5, 5)
-+#define WCP14_ETMCNTENR2(val)		MCR14(val, 1, c0, c6, 5)
-+#define WCP14_ETMCNTENR3(val)		MCR14(val, 1, c0, c7, 5)
-+#define WCP14_ETMCNTRLDEVR0(val)	MCR14(val, 1, c0, c8, 5)
-+#define WCP14_ETMCNTRLDEVR1(val)	MCR14(val, 1, c0, c9, 5)
-+#define WCP14_ETMCNTRLDEVR2(val)	MCR14(val, 1, c0, c10, 5)
-+#define WCP14_ETMCNTRLDEVR3(val)	MCR14(val, 1, c0, c11, 5)
-+#define WCP14_ETMCNTVR0(val)		MCR14(val, 1, c0, c12, 5)
-+#define WCP14_ETMCNTVR1(val)		MCR14(val, 1, c0, c13, 5)
-+#define WCP14_ETMCNTVR2(val)		MCR14(val, 1, c0, c14, 5)
-+#define WCP14_ETMCNTVR3(val)		MCR14(val, 1, c0, c15, 5)
-+#define WCP14_ETMSQ12EVR(val)		MCR14(val, 1, c0, c0, 6)
-+#define WCP14_ETMSQ21EVR(val)		MCR14(val, 1, c0, c1, 6)
-+#define WCP14_ETMSQ23EVR(val)		MCR14(val, 1, c0, c2, 6)
-+#define WCP14_ETMSQ31EVR(val)		MCR14(val, 1, c0, c3, 6)
-+#define WCP14_ETMSQ32EVR(val)		MCR14(val, 1, c0, c4, 6)
-+#define WCP14_ETMSQ13EVR(val)		MCR14(val, 1, c0, c5, 6)
-+#define WCP14_ETMSQR(val)		MCR14(val, 1, c0, c7, 6)
-+#define WCP14_ETMEXTOUTEVR0(val)	MCR14(val, 1, c0, c8, 6)
-+#define WCP14_ETMEXTOUTEVR1(val)	MCR14(val, 1, c0, c9, 6)
-+#define WCP14_ETMEXTOUTEVR2(val)	MCR14(val, 1, c0, c10, 6)
-+#define WCP14_ETMEXTOUTEVR3(val)	MCR14(val, 1, c0, c11, 6)
-+#define WCP14_ETMCIDCVR0(val)		MCR14(val, 1, c0, c12, 6)
-+#define WCP14_ETMCIDCVR1(val)		MCR14(val, 1, c0, c13, 6)
-+#define WCP14_ETMCIDCVR2(val)		MCR14(val, 1, c0, c14, 6)
-+#define WCP14_ETMCIDCMR(val)		MCR14(val, 1, c0, c15, 6)
-+#define WCP14_ETMIMPSPEC0(val)		MCR14(val, 1, c0, c0, 7)
-+#define WCP14_ETMIMPSPEC1(val)		MCR14(val, 1, c0, c1, 7)
-+#define WCP14_ETMIMPSPEC2(val)		MCR14(val, 1, c0, c2, 7)
-+#define WCP14_ETMIMPSPEC3(val)		MCR14(val, 1, c0, c3, 7)
-+#define WCP14_ETMIMPSPEC4(val)		MCR14(val, 1, c0, c4, 7)
-+#define WCP14_ETMIMPSPEC5(val)		MCR14(val, 1, c0, c5, 7)
-+#define WCP14_ETMIMPSPEC6(val)		MCR14(val, 1, c0, c6, 7)
-+#define WCP14_ETMIMPSPEC7(val)		MCR14(val, 1, c0, c7, 7)
-+/* can be read only in ETMv3.4, ETMv3.5 */
-+#define WCP14_ETMSYNCFR(val)		MCR14(val, 1, c0, c8, 7)
-+#define WCP14_ETMEXTINSELR(val)		MCR14(val, 1, c0, c11, 7)
-+#define WCP14_ETMTESSEICR(val)		MCR14(val, 1, c0, c12, 7)
-+#define WCP14_ETMEIBCR(val)		MCR14(val, 1, c0, c13, 7)
-+#define WCP14_ETMTSEVR(val)		MCR14(val, 1, c0, c14, 7)
-+#define WCP14_ETMAUXCR(val)		MCR14(val, 1, c0, c15, 7)
-+#define WCP14_ETMTRACEIDR(val)		MCR14(val, 1, c1, c0, 0)
-+#define WCP14_ETMIDR2(val)		MCR14(val, 1, c1, c2, 0)
-+#define WCP14_ETMVMIDCVR(val)		MCR14(val, 1, c1, c0, 1)
-+#define WCP14_ETMOSLAR(val)		MCR14(val, 1, c1, c0, 4)
-+/* not available in PFTv1.1 */
-+#define WCP14_ETMOSSRR(val)		MCR14(val, 1, c1, c2, 4)
-+#define WCP14_ETMPDCR(val)		MCR14(val, 1, c1, c4, 4)
-+#define WCP14_ETMPDSR(val)		MCR14(val, 1, c1, c5, 4)
-+#define WCP14_ETMITCTRL(val)		MCR14(val, 1, c7, c0, 4)
-+#define WCP14_ETMCLAIMSET(val)		MCR14(val, 1, c7, c8, 6)
-+#define WCP14_ETMCLAIMCLR(val)		MCR14(val, 1, c7, c9, 6)
-+/* writes to this from CP14 interface are ignored */
-+#define WCP14_ETMLAR(val)		MCR14(val, 1, c7, c12, 6)
-+
-+#endif
-diff --git a/drivers/coresight/Kconfig b/drivers/coresight/Kconfig
-index 48a78bb..1ef994f 100644
---- a/drivers/coresight/Kconfig
-+++ b/drivers/coresight/Kconfig
-@@ -17,4 +17,23 @@ config CORESIGHT_LINKS_AND_SINKS
- 	  This enables support for CoreSight link and sink drivers that are
- 	  responsible for transporting and collecting the trace data
- 	  respectively.
-+
-+config CORESIGHT_SOURCE_ETM
-+	bool "CoreSight Embedded Trace Macrocell driver"
-+	select CORESIGHT_LINKS_AND_SINKS
-+	help
-+	  This driver provides support for processor ETM and PTM modules,
-+	  which allows tracing the instructions that a processor is executing
-+	  This is primarily useful for instruction level tracing.  Depending
-+	  the ETM version data tracing may also be available.
-+
-+config CORESIGHT_SOURCE_ETM_DEFAULT_ENABLE
-+	bool "Turn on CoreSight ETM tracing by default"
-+	depends on CORESIGHT_SOURCE_ETM
-+	help
-+	  Turns on CoreSight ETM tracing (processor tracing) by default.
-+	  Otherwise, tracing is disabled by default but can be enabled via
-+	  debugfs.
-+
-+	  If unsure, say 'N' here to avoid unwanted power consumption.
+diff --git a/arch/arm/include/asm/hardware/coresight.h b/arch/arm/include/asm/hardware/coresight.h
+deleted file mode 100644
+index ad774f3..0000000
+--- a/arch/arm/include/asm/hardware/coresight.h
++++ /dev/null
+@@ -1,157 +0,0 @@
+-/*
+- * linux/arch/arm/include/asm/hardware/coresight.h
+- *
+- * CoreSight components' registers
+- *
+- * Copyright (C) 2009 Nokia Corporation.
+- * Alexander Shishkin
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-
+-#ifndef __ASM_HARDWARE_CORESIGHT_H
+-#define __ASM_HARDWARE_CORESIGHT_H
+-
+-#define TRACER_ACCESSED_BIT	0
+-#define TRACER_RUNNING_BIT	1
+-#define TRACER_CYCLE_ACC_BIT	2
+-#define TRACER_ACCESSED		BIT(TRACER_ACCESSED_BIT)
+-#define TRACER_RUNNING		BIT(TRACER_RUNNING_BIT)
+-#define TRACER_CYCLE_ACC	BIT(TRACER_CYCLE_ACC_BIT)
+-
+-#define TRACER_TIMEOUT 10000
+-
+-#define etm_writel(t, v, x) \
+-	(writel_relaxed((v), (t)->etm_regs + (x)))
+-#define etm_readl(t, x) (readl_relaxed((t)->etm_regs + (x)))
+-
+-/* CoreSight Management Registers */
+-#define CSMR_LOCKACCESS 0xfb0
+-#define CSMR_LOCKSTATUS 0xfb4
+-#define CSMR_AUTHSTATUS 0xfb8
+-#define CSMR_DEVID	0xfc8
+-#define CSMR_DEVTYPE	0xfcc
+-/* CoreSight Component Registers */
+-#define CSCR_CLASS	0xff4
+-
+-#define CS_LAR_KEY	0xc5acce55
+-
+-/* ETM control register, "ETM Architecture", 3.3.1 */
+-#define ETMR_CTRL		0
+-#define ETMCTRL_POWERDOWN	1
+-#define ETMCTRL_PROGRAM		(1 << 10)
+-#define ETMCTRL_PORTSEL		(1 << 11)
+-#define ETMCTRL_DO_CONTEXTID	(3 << 14)
+-#define ETMCTRL_PORTMASK1	(7 << 4)
+-#define ETMCTRL_PORTMASK2	(1 << 21)
+-#define ETMCTRL_PORTMASK	(ETMCTRL_PORTMASK1 | ETMCTRL_PORTMASK2)
+-#define ETMCTRL_PORTSIZE(x) ((((x) & 7) << 4) | (!!((x) & 8)) << 21)
+-#define ETMCTRL_DO_CPRT		(1 << 1)
+-#define ETMCTRL_DATAMASK	(3 << 2)
+-#define ETMCTRL_DATA_DO_DATA	(1 << 2)
+-#define ETMCTRL_DATA_DO_ADDR	(1 << 3)
+-#define ETMCTRL_DATA_DO_BOTH	(ETMCTRL_DATA_DO_DATA | ETMCTRL_DATA_DO_ADDR)
+-#define ETMCTRL_BRANCH_OUTPUT	(1 << 8)
+-#define ETMCTRL_CYCLEACCURATE	(1 << 12)
+-
+-/* ETM configuration code register */
+-#define ETMR_CONFCODE		(0x04)
+-
+-/* ETM trace start/stop resource control register */
+-#define ETMR_TRACESSCTRL	(0x18)
+-
+-/* ETM trigger event register */
+-#define ETMR_TRIGEVT		(0x08)
+-
+-/* address access type register bits, "ETM architecture",
+- * table 3-27 */
+-/* - access type */
+-#define ETMAAT_IFETCH		0
+-#define ETMAAT_IEXEC		1
+-#define ETMAAT_IEXECPASS	2
+-#define ETMAAT_IEXECFAIL	3
+-#define ETMAAT_DLOADSTORE	4
+-#define ETMAAT_DLOAD		5
+-#define ETMAAT_DSTORE		6
+-/* - comparison access size */
+-#define ETMAAT_JAVA		(0 << 3)
+-#define ETMAAT_THUMB		(1 << 3)
+-#define ETMAAT_ARM		(3 << 3)
+-/* - data value comparison control */
+-#define ETMAAT_NOVALCMP		(0 << 5)
+-#define ETMAAT_VALMATCH		(1 << 5)
+-#define ETMAAT_VALNOMATCH	(3 << 5)
+-/* - exact match */
+-#define ETMAAT_EXACTMATCH	(1 << 7)
+-/* - context id comparator control */
+-#define ETMAAT_IGNCONTEXTID	(0 << 8)
+-#define ETMAAT_VALUE1		(1 << 8)
+-#define ETMAAT_VALUE2		(2 << 8)
+-#define ETMAAT_VALUE3		(3 << 8)
+-/* - security level control */
+-#define ETMAAT_IGNSECURITY	(0 << 10)
+-#define ETMAAT_NSONLY		(1 << 10)
+-#define ETMAAT_SONLY		(2 << 10)
+-
+-#define ETMR_COMP_VAL(x)	(0x40 + (x) * 4)
+-#define ETMR_COMP_ACC_TYPE(x)	(0x80 + (x) * 4)
+-
+-/* ETM status register, "ETM Architecture", 3.3.2 */
+-#define ETMR_STATUS		(0x10)
+-#define ETMST_OVERFLOW		BIT(0)
+-#define ETMST_PROGBIT		BIT(1)
+-#define ETMST_STARTSTOP		BIT(2)
+-#define ETMST_TRIGGER		BIT(3)
+-
+-#define etm_progbit(t)		(etm_readl((t), ETMR_STATUS) & ETMST_PROGBIT)
+-#define etm_started(t)		(etm_readl((t), ETMR_STATUS) & ETMST_STARTSTOP)
+-#define etm_triggered(t)	(etm_readl((t), ETMR_STATUS) & ETMST_TRIGGER)
+-
+-#define ETMR_TRACEENCTRL2	0x1c
+-#define ETMR_TRACEENCTRL	0x24
+-#define ETMTE_INCLEXCL		BIT(24)
+-#define ETMR_TRACEENEVT		0x20
+-#define ETMCTRL_OPTS		(ETMCTRL_DO_CPRT | \
+-				ETMCTRL_DATA_DO_ADDR | \
+-				ETMCTRL_BRANCH_OUTPUT | \
+-				ETMCTRL_DO_CONTEXTID)
+-
+-/* ETM management registers, "ETM Architecture", 3.5.24 */
+-#define ETMMR_OSLAR	0x300
+-#define ETMMR_OSLSR	0x304
+-#define ETMMR_OSSRR	0x308
+-#define ETMMR_PDSR	0x314
+-
+-/* ETB registers, "CoreSight Components TRM", 9.3 */
+-#define ETBR_DEPTH		0x04
+-#define ETBR_STATUS		0x0c
+-#define ETBR_READMEM		0x10
+-#define ETBR_READADDR		0x14
+-#define ETBR_WRITEADDR		0x18
+-#define ETBR_TRIGGERCOUNT	0x1c
+-#define ETBR_CTRL		0x20
+-#define ETBR_FORMATTERCTRL	0x304
+-#define ETBFF_ENFTC		1
+-#define ETBFF_ENFCONT		BIT(1)
+-#define ETBFF_FONFLIN		BIT(4)
+-#define ETBFF_MANUAL_FLUSH	BIT(6)
+-#define ETBFF_TRIGIN		BIT(8)
+-#define ETBFF_TRIGEVT		BIT(9)
+-#define ETBFF_TRIGFL		BIT(10)
+-
+-#define etb_writel(t, v, x) \
+-	(writel_relaxed((v), (t)->etb_regs + (x)))
+-#define etb_readl(t, x) (readl_relaxed((t)->etb_regs + (x)))
+-
+-#define etm_lock(t) do { etm_writel((t), 0, CSMR_LOCKACCESS); } while (0)
+-#define etm_unlock(t) \
+-	do { etm_writel((t), CS_LAR_KEY, CSMR_LOCKACCESS); } while (0)
+-
+-#define etb_lock(t) do { etb_writel((t), 0, CSMR_LOCKACCESS); } while (0)
+-#define etb_unlock(t) \
+-	do { etb_writel((t), CS_LAR_KEY, CSMR_LOCKACCESS); } while (0)
+-
+-#endif /* __ASM_HARDWARE_CORESIGHT_H */
+-
+diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
+index 040619c..c9a8411 100644
+--- a/arch/arm/kernel/Makefile
++++ b/arch/arm/kernel/Makefile
+@@ -30,7 +30,6 @@ else
+ obj-y		+= entry-armv.o
  endif
-diff --git a/drivers/coresight/Makefile b/drivers/coresight/Makefile
-index 1f66804..2b4f005 100644
---- a/drivers/coresight/Makefile
-+++ b/drivers/coresight/Makefile
-@@ -5,3 +5,4 @@ obj-$(CONFIG_CORESIGHT) += coresight.o
- obj-$(CONFIG_OF) += of_coresight.o
- obj-$(CONFIG_CORESIGHT_LINKS_AND_SINKS) += coresight-tmc.o coresight-tpiu.o \
- 					   coresight-etb.o coresight-funnel.o
-+obj-$(CONFIG_CORESIGHT_SOURCE_ETM) += coresight-etm.o coresight-etm-cp14.o
-diff --git a/drivers/coresight/coresight-etm-cp14.c b/drivers/coresight/coresight-etm-cp14.c
-new file mode 100644
-index 0000000..4173710
---- /dev/null
-+++ b/drivers/coresight/coresight-etm-cp14.c
-@@ -0,0 +1,506 @@
-+/* Copyright (c) 2012, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/types.h>
-+#include <linux/bug.h>
-+#include <asm/hardware/cp14.h>
-+
-+#include <coresight-etm.h>
-+
-+static unsigned int etm_read_reg(u32 reg)
-+{
-+	switch (reg) {
-+	case ETMCR:
-+		return etm_read(ETMCR);
-+	case ETMCCR:
-+		return etm_read(ETMCCR);
-+	case ETMTRIGGER:
-+		return etm_read(ETMTRIGGER);
-+	case ETMSR:
-+		return etm_read(ETMSR);
-+	case ETMSCR:
-+		return etm_read(ETMSCR);
-+	case ETMTSSCR:
-+		return etm_read(ETMTSSCR);
-+	case ETMTEEVR:
-+		return etm_read(ETMTEEVR);
-+	case ETMTECR1:
-+		return etm_read(ETMTECR1);
-+	case ETMFFLR:
-+		return etm_read(ETMFFLR);
-+	case ETMACVRn(0):
-+		return etm_read(ETMACVR0);
-+	case ETMACVRn(1):
-+		return etm_read(ETMACVR1);
-+	case ETMACVRn(2):
-+		return etm_read(ETMACVR2);
-+	case ETMACVRn(3):
-+		return etm_read(ETMACVR3);
-+	case ETMACVRn(4):
-+		return etm_read(ETMACVR4);
-+	case ETMACVRn(5):
-+		return etm_read(ETMACVR5);
-+	case ETMACVRn(6):
-+		return etm_read(ETMACVR6);
-+	case ETMACVRn(7):
-+		return etm_read(ETMACVR7);
-+	case ETMACVRn(8):
-+		return etm_read(ETMACVR8);
-+	case ETMACVRn(9):
-+		return etm_read(ETMACVR9);
-+	case ETMACVRn(10):
-+		return etm_read(ETMACVR10);
-+	case ETMACVRn(11):
-+		return etm_read(ETMACVR11);
-+	case ETMACVRn(12):
-+		return etm_read(ETMACVR12);
-+	case ETMACVRn(13):
-+		return etm_read(ETMACVR13);
-+	case ETMACVRn(14):
-+		return etm_read(ETMACVR14);
-+	case ETMACVRn(15):
-+		return etm_read(ETMACVR15);
-+	case ETMACTRn(0):
-+		return etm_read(ETMACTR0);
-+	case ETMACTRn(1):
-+		return etm_read(ETMACTR1);
-+	case ETMACTRn(2):
-+		return etm_read(ETMACTR2);
-+	case ETMACTRn(3):
-+		return etm_read(ETMACTR3);
-+	case ETMACTRn(4):
-+		return etm_read(ETMACTR4);
-+	case ETMACTRn(5):
-+		return etm_read(ETMACTR5);
-+	case ETMACTRn(6):
-+		return etm_read(ETMACTR6);
-+	case ETMACTRn(7):
-+		return etm_read(ETMACTR7);
-+	case ETMACTRn(8):
-+		return etm_read(ETMACTR8);
-+	case ETMACTRn(9):
-+		return etm_read(ETMACTR9);
-+	case ETMACTRn(10):
-+		return etm_read(ETMACTR10);
-+	case ETMACTRn(11):
-+		return etm_read(ETMACTR11);
-+	case ETMACTRn(12):
-+		return etm_read(ETMACTR12);
-+	case ETMACTRn(13):
-+		return etm_read(ETMACTR13);
-+	case ETMACTRn(14):
-+		return etm_read(ETMACTR14);
-+	case ETMACTRn(15):
-+		return etm_read(ETMACTR15);
-+	case ETMCNTRLDVRn(0):
-+		return etm_read(ETMCNTRLDVR0);
-+	case ETMCNTRLDVRn(1):
-+		return etm_read(ETMCNTRLDVR1);
-+	case ETMCNTRLDVRn(2):
-+		return etm_read(ETMCNTRLDVR2);
-+	case ETMCNTRLDVRn(3):
-+		return etm_read(ETMCNTRLDVR3);
-+	case ETMCNTENRn(0):
-+		return etm_read(ETMCNTENR0);
-+	case ETMCNTENRn(1):
-+		return etm_read(ETMCNTENR1);
-+	case ETMCNTENRn(2):
-+		return etm_read(ETMCNTENR2);
-+	case ETMCNTENRn(3):
-+		return etm_read(ETMCNTENR3);
-+	case ETMCNTRLDEVRn(0):
-+		return etm_read(ETMCNTRLDEVR0);
-+	case ETMCNTRLDEVRn(1):
-+		return etm_read(ETMCNTRLDEVR1);
-+	case ETMCNTRLDEVRn(2):
-+		return etm_read(ETMCNTRLDEVR2);
-+	case ETMCNTRLDEVRn(3):
-+		return etm_read(ETMCNTRLDEVR3);
-+	case ETMCNTVRn(0):
-+		return etm_read(ETMCNTVR0);
-+	case ETMCNTVRn(1):
-+		return etm_read(ETMCNTVR1);
-+	case ETMCNTVRn(2):
-+		return etm_read(ETMCNTVR2);
-+	case ETMCNTVRn(3):
-+		return etm_read(ETMCNTVR3);
-+	case ETMSQ12EVR:
-+		return etm_read(ETMSQ12EVR);
-+	case ETMSQ21EVR:
-+		return etm_read(ETMSQ21EVR);
-+	case ETMSQ23EVR:
-+		return etm_read(ETMSQ23EVR);
-+	case ETMSQ31EVR:
-+		return etm_read(ETMSQ31EVR);
-+	case ETMSQ32EVR:
-+		return etm_read(ETMSQ32EVR);
-+	case ETMSQ13EVR:
-+		return etm_read(ETMSQ13EVR);
-+	case ETMSQR:
-+		return etm_read(ETMSQR);
-+	case ETMEXTOUTEVRn(0):
-+		return etm_read(ETMEXTOUTEVR0);
-+	case ETMEXTOUTEVRn(1):
-+		return etm_read(ETMEXTOUTEVR1);
-+	case ETMEXTOUTEVRn(2):
-+		return etm_read(ETMEXTOUTEVR2);
-+	case ETMEXTOUTEVRn(3):
-+		return etm_read(ETMEXTOUTEVR3);
-+	case ETMCIDCVRn(0):
-+		return etm_read(ETMCIDCVR0);
-+	case ETMCIDCVRn(1):
-+		return etm_read(ETMCIDCVR1);
-+	case ETMCIDCVRn(2):
-+		return etm_read(ETMCIDCVR2);
-+	case ETMCIDCMR:
-+		return etm_read(ETMCIDCMR);
-+	case ETMIMPSPEC0:
-+		return etm_read(ETMIMPSPEC0);
-+	case ETMIMPSPEC1:
-+		return etm_read(ETMIMPSPEC1);
-+	case ETMIMPSPEC2:
-+		return etm_read(ETMIMPSPEC2);
-+	case ETMIMPSPEC3:
-+		return etm_read(ETMIMPSPEC3);
-+	case ETMIMPSPEC4:
-+		return etm_read(ETMIMPSPEC4);
-+	case ETMIMPSPEC5:
-+		return etm_read(ETMIMPSPEC5);
-+	case ETMIMPSPEC6:
-+		return etm_read(ETMIMPSPEC6);
-+	case ETMIMPSPEC7:
-+		return etm_read(ETMIMPSPEC7);
-+	case ETMSYNCFR:
-+		return etm_read(ETMSYNCFR);
-+	case ETMIDR:
-+		return etm_read(ETMIDR);
-+	case ETMCCER:
-+		return etm_read(ETMCCER);
-+	case ETMEXTINSELR:
-+		return etm_read(ETMEXTINSELR);
-+	case ETMTESSEICR:
-+		return etm_read(ETMTESSEICR);
-+	case ETMEIBCR:
-+		return etm_read(ETMEIBCR);
-+	case ETMTSEVR:
-+		return etm_read(ETMTSEVR);
-+	case ETMAUXCR:
-+		return etm_read(ETMAUXCR);
-+	case ETMTRACEIDR:
-+		return etm_read(ETMTRACEIDR);
-+	case ETMVMIDCVR:
-+		return etm_read(ETMVMIDCVR);
-+	case ETMOSLSR:
-+		return etm_read(ETMOSLSR);
-+	case ETMOSSRR:
-+		return etm_read(ETMOSSRR);
-+	case ETMPDCR:
-+		return etm_read(ETMPDCR);
-+	case ETMPDSR:
-+		return etm_read(ETMPDSR);
-+	default:
-+		WARN(1, "invalid CP14 access to ETM reg: %lx",
-+							(unsigned long)reg);
-+		return 0;
-+	}
-+}
-+
-+static void etm_write_reg(u32 val, u32 reg)
-+{
-+	switch (reg) {
-+	case ETMCR:
-+		etm_write(val, ETMCR);
-+		return;
-+	case ETMTRIGGER:
-+		etm_write(val, ETMTRIGGER);
-+		return;
-+	case ETMSR:
-+		etm_write(val, ETMSR);
-+		return;
-+	case ETMTSSCR:
-+		etm_write(val, ETMTSSCR);
-+		return;
-+	case ETMTEEVR:
-+		etm_write(val, ETMTEEVR);
-+		return;
-+	case ETMTECR1:
-+		etm_write(val, ETMTECR1);
-+		return;
-+	case ETMFFLR:
-+		etm_write(val, ETMFFLR);
-+		return;
-+	case ETMACVRn(0):
-+		etm_write(val, ETMACVR0);
-+		return;
-+	case ETMACVRn(1):
-+		etm_write(val, ETMACVR1);
-+		return;
-+	case ETMACVRn(2):
-+		etm_write(val, ETMACVR2);
-+		return;
-+	case ETMACVRn(3):
-+		etm_write(val, ETMACVR3);
-+		return;
-+	case ETMACVRn(4):
-+		etm_write(val, ETMACVR4);
-+		return;
-+	case ETMACVRn(5):
-+		etm_write(val, ETMACVR5);
-+		return;
-+	case ETMACVRn(6):
-+		etm_write(val, ETMACVR6);
-+		return;
-+	case ETMACVRn(7):
-+		etm_write(val, ETMACVR7);
-+		return;
-+	case ETMACVRn(8):
-+		etm_write(val, ETMACVR8);
-+		return;
-+	case ETMACVRn(9):
-+		etm_write(val, ETMACVR9);
-+		return;
-+	case ETMACVRn(10):
-+		etm_write(val, ETMACVR10);
-+		return;
-+	case ETMACVRn(11):
-+		etm_write(val, ETMACVR11);
-+		return;
-+	case ETMACVRn(12):
-+		etm_write(val, ETMACVR12);
-+		return;
-+	case ETMACVRn(13):
-+		etm_write(val, ETMACVR13);
-+		return;
-+	case ETMACVRn(14):
-+		etm_write(val, ETMACVR14);
-+		return;
-+	case ETMACVRn(15):
-+		etm_write(val, ETMACVR15);
-+		return;
-+	case ETMACTRn(0):
-+		etm_write(val, ETMACTR0);
-+		return;
-+	case ETMACTRn(1):
-+		etm_write(val, ETMACTR1);
-+		return;
-+	case ETMACTRn(2):
-+		etm_write(val, ETMACTR2);
-+		return;
-+	case ETMACTRn(3):
-+		etm_write(val, ETMACTR3);
-+		return;
-+	case ETMACTRn(4):
-+		etm_write(val, ETMACTR4);
-+		return;
-+	case ETMACTRn(5):
-+		etm_write(val, ETMACTR5);
-+		return;
-+	case ETMACTRn(6):
-+		etm_write(val, ETMACTR6);
-+		return;
-+	case ETMACTRn(7):
-+		etm_write(val, ETMACTR7);
-+		return;
-+	case ETMACTRn(8):
-+		etm_write(val, ETMACTR8);
-+		return;
-+	case ETMACTRn(9):
-+		etm_write(val, ETMACTR9);
-+		return;
-+	case ETMACTRn(10):
-+		etm_write(val, ETMACTR10);
-+		return;
-+	case ETMACTRn(11):
-+		etm_write(val, ETMACTR11);
-+		return;
-+	case ETMACTRn(12):
-+		etm_write(val, ETMACTR12);
-+		return;
-+	case ETMACTRn(13):
-+		etm_write(val, ETMACTR13);
-+		return;
-+	case ETMACTRn(14):
-+		etm_write(val, ETMACTR14);
-+		return;
-+	case ETMACTRn(15):
-+		etm_write(val, ETMACTR15);
-+		return;
-+	case ETMCNTRLDVRn(0):
-+		etm_write(val, ETMCNTRLDVR0);
-+		return;
-+	case ETMCNTRLDVRn(1):
-+		etm_write(val, ETMCNTRLDVR1);
-+		return;
-+	case ETMCNTRLDVRn(2):
-+		etm_write(val, ETMCNTRLDVR2);
-+		return;
-+	case ETMCNTRLDVRn(3):
-+		etm_write(val, ETMCNTRLDVR3);
-+		return;
-+	case ETMCNTENRn(0):
-+		etm_write(val, ETMCNTENR0);
-+		return;
-+	case ETMCNTENRn(1):
-+		etm_write(val, ETMCNTENR1);
-+		return;
-+	case ETMCNTENRn(2):
-+		etm_write(val, ETMCNTENR2);
-+		return;
-+	case ETMCNTENRn(3):
-+		etm_write(val, ETMCNTENR3);
-+		return;
-+	case ETMCNTRLDEVRn(0):
-+		etm_write(val, ETMCNTRLDEVR0);
-+		return;
-+	case ETMCNTRLDEVRn(1):
-+		etm_write(val, ETMCNTRLDEVR1);
-+		return;
-+	case ETMCNTRLDEVRn(2):
-+		etm_write(val, ETMCNTRLDEVR2);
-+		return;
-+	case ETMCNTRLDEVRn(3):
-+		etm_write(val, ETMCNTRLDEVR3);
-+		return;
-+	case ETMCNTVRn(0):
-+		etm_write(val, ETMCNTVR0);
-+		return;
-+	case ETMCNTVRn(1):
-+		etm_write(val, ETMCNTVR1);
-+		return;
-+	case ETMCNTVRn(2):
-+		etm_write(val, ETMCNTVR2);
-+		return;
-+	case ETMCNTVRn(3):
-+		etm_write(val, ETMCNTVR3);
-+		return;
-+	case ETMSQ12EVR:
-+		etm_write(val, ETMSQ12EVR);
-+		return;
-+	case ETMSQ21EVR:
-+		etm_write(val, ETMSQ21EVR);
-+		return;
-+	case ETMSQ23EVR:
-+		etm_write(val, ETMSQ23EVR);
-+		return;
-+	case ETMSQ31EVR:
-+		etm_write(val, ETMSQ31EVR);
-+		return;
-+	case ETMSQ32EVR:
-+		etm_write(val, ETMSQ32EVR);
-+		return;
-+	case ETMSQ13EVR:
-+		etm_write(val, ETMSQ13EVR);
-+		return;
-+	case ETMSQR:
-+		etm_write(val, ETMSQR);
-+		return;
-+	case ETMEXTOUTEVRn(0):
-+		etm_write(val, ETMEXTOUTEVR0);
-+		return;
-+	case ETMEXTOUTEVRn(1):
-+		etm_write(val, ETMEXTOUTEVR1);
-+		return;
-+	case ETMEXTOUTEVRn(2):
-+		etm_write(val, ETMEXTOUTEVR2);
-+		return;
-+	case ETMEXTOUTEVRn(3):
-+		etm_write(val, ETMEXTOUTEVR3);
-+		return;
-+	case ETMCIDCVRn(0):
-+		etm_write(val, ETMCIDCVR0);
-+		return;
-+	case ETMCIDCVRn(1):
-+		etm_write(val, ETMCIDCVR1);
-+		return;
-+	case ETMCIDCVRn(2):
-+		etm_write(val, ETMCIDCVR2);
-+		return;
-+	case ETMCIDCMR:
-+		etm_write(val, ETMCIDCMR);
-+		return;
-+	case ETMIMPSPEC0:
-+		etm_write(val, ETMIMPSPEC0);
-+		return;
-+	case ETMIMPSPEC1:
-+		etm_write(val, ETMIMPSPEC1);
-+		return;
-+	case ETMIMPSPEC2:
-+		etm_write(val, ETMIMPSPEC2);
-+		return;
-+	case ETMIMPSPEC3:
-+		etm_write(val, ETMIMPSPEC3);
-+		return;
-+	case ETMIMPSPEC4:
-+		etm_write(val, ETMIMPSPEC4);
-+		return;
-+	case ETMIMPSPEC5:
-+		etm_write(val, ETMIMPSPEC5);
-+		return;
-+	case ETMIMPSPEC6:
-+		etm_write(val, ETMIMPSPEC6);
-+		return;
-+	case ETMIMPSPEC7:
-+		etm_write(val, ETMIMPSPEC7);
-+		return;
-+	case ETMSYNCFR:
-+		etm_write(val, ETMSYNCFR);
-+		return;
-+	case ETMEXTINSELR:
-+		etm_write(val, ETMEXTINSELR);
-+		return;
-+	case ETMTESSEICR:
-+		etm_write(val, ETMTESSEICR);
-+		return;
-+	case ETMEIBCR:
-+		etm_write(val, ETMEIBCR);
-+		return;
-+	case ETMTSEVR:
-+		etm_write(val, ETMTSEVR);
-+		return;
-+	case ETMAUXCR:
-+		etm_write(val, ETMAUXCR);
-+		return;
-+	case ETMTRACEIDR:
-+		etm_write(val, ETMTRACEIDR);
-+		return;
-+	case ETMVMIDCVR:
-+		etm_write(val, ETMVMIDCVR);
-+		return;
-+	case ETMOSLAR:
-+		etm_write(val, ETMOSLAR);
-+		return;
-+	case ETMOSSRR:
-+		etm_write(val, ETMOSSRR);
-+		return;
-+	case ETMPDCR:
-+		etm_write(val, ETMPDCR);
-+		return;
-+	case ETMPDSR:
-+		etm_write(val, ETMPDSR);
-+		return;
-+	default:
-+		WARN(1, "invalid CP14 access to ETM reg: %lx",
-+							(unsigned long)reg);
-+		return;
-+	}
-+}
-+
-+unsigned int etm_readl_cp14(u32 off)
-+{
-+	return etm_read_reg(off);
-+}
-+
-+void etm_writel_cp14(u32 val, u32 off)
-+{
-+	etm_write_reg(val, off);
-+}
-diff --git a/drivers/coresight/coresight-etm.c b/drivers/coresight/coresight-etm.c
-new file mode 100644
-index 0000000..1c07293
---- /dev/null
-+++ b/drivers/coresight/coresight-etm.c
-@@ -0,0 +1,1507 @@
-+/* Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/types.h>
-+#include <linux/device.h>
-+#include <linux/io.h>
-+#include <linux/err.h>
-+#include <linux/fs.h>
-+#include <linux/slab.h>
-+#include <linux/delay.h>
-+#include <linux/smp.h>
-+#include <linux/sysfs.h>
-+#include <linux/stat.h>
-+#include <linux/clk.h>
-+#include <linux/cpu.h>
-+#include <linux/of.h>
-+#include <linux/of_coresight.h>
+ 
+-obj-$(CONFIG_OC_ETM)		+= etm.o
+ obj-$(CONFIG_CPU_IDLE)		+= cpuidle.o
+ obj-$(CONFIG_ISA_DMA_API)	+= dma.o
+ obj-$(CONFIG_FIQ)		+= fiq.o fiqasm.o
+diff --git a/arch/arm/kernel/etm.c b/arch/arm/kernel/etm.c
+deleted file mode 100644
+index 131a6ab..0000000
+--- a/arch/arm/kernel/etm.c
++++ /dev/null
+@@ -1,654 +0,0 @@
+-/*
+- * linux/arch/arm/kernel/etm.c
+- *
+- * Driver for ARM's Embedded Trace Macrocell and Embedded Trace Buffer.
+- *
+- * Copyright (C) 2009 Nokia Corporation.
+- * Alexander Shishkin
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-
+-#include <linux/kernel.h>
+-#include <linux/init.h>
+-#include <linux/types.h>
+-#include <linux/io.h>
+-#include <linux/sysrq.h>
+-#include <linux/device.h>
+-#include <linux/clk.h>
+-#include <linux/amba/bus.h>
+-#include <linux/fs.h>
+-#include <linux/uaccess.h>
+-#include <linux/miscdevice.h>
+-#include <linux/vmalloc.h>
+-#include <linux/mutex.h>
+-#include <linux/module.h>
+-#include <asm/hardware/coresight.h>
+-#include <asm/sections.h>
+-
+-MODULE_LICENSE("GPL");
+-MODULE_AUTHOR("Alexander Shishkin");
+-
+-/*
+- * ETM tracer state
+- */
+-struct tracectx {
+-	unsigned int	etb_bufsz;
+-	void __iomem	*etb_regs;
+-	void __iomem	*etm_regs;
+-	unsigned long	flags;
+-	int		ncmppairs;
+-	int		etm_portsz;
+-	struct device	*dev;
+-	struct clk	*emu_clk;
+-	struct mutex	mutex;
+-};
+-
+-static struct tracectx tracer;
+-
+-static inline bool trace_isrunning(struct tracectx *t)
+-{
+-	return !!(t->flags & TRACER_RUNNING);
+-}
+-
+-static int etm_setup_address_range(struct tracectx *t, int n,
+-		unsigned long start, unsigned long end, int exclude, int data)
+-{
+-	u32 flags = ETMAAT_ARM | ETMAAT_IGNCONTEXTID | ETMAAT_NSONLY | \
+-		    ETMAAT_NOVALCMP;
+-
+-	if (n < 1 || n > t->ncmppairs)
+-		return -EINVAL;
+-
+-	/* comparators and ranges are numbered starting with 1 as opposed
+-	 * to bits in a word */
+-	n--;
+-
+-	if (data)
+-		flags |= ETMAAT_DLOADSTORE;
+-	else
+-		flags |= ETMAAT_IEXEC;
+-
+-	/* first comparator for the range */
+-	etm_writel(t, flags, ETMR_COMP_ACC_TYPE(n * 2));
+-	etm_writel(t, start, ETMR_COMP_VAL(n * 2));
+-
+-	/* second comparator is right next to it */
+-	etm_writel(t, flags, ETMR_COMP_ACC_TYPE(n * 2 + 1));
+-	etm_writel(t, end, ETMR_COMP_VAL(n * 2 + 1));
+-
+-	flags = exclude ? ETMTE_INCLEXCL : 0;
+-	etm_writel(t, flags | (1 << n), ETMR_TRACEENCTRL);
+-
+-	return 0;
+-}
+-
+-static int trace_start(struct tracectx *t)
+-{
+-	u32 v;
+-	unsigned long timeout = TRACER_TIMEOUT;
+-
+-	etb_unlock(t);
+-
+-	etb_writel(t, 0, ETBR_FORMATTERCTRL);
+-	etb_writel(t, 1, ETBR_CTRL);
+-
+-	etb_lock(t);
+-
+-	/* configure etm */
+-	v = ETMCTRL_OPTS | ETMCTRL_PROGRAM | ETMCTRL_PORTSIZE(t->etm_portsz);
+-
+-	if (t->flags & TRACER_CYCLE_ACC)
+-		v |= ETMCTRL_CYCLEACCURATE;
+-
+-	etm_unlock(t);
+-
+-	etm_writel(t, v, ETMR_CTRL);
+-
+-	while (!(etm_readl(t, ETMR_CTRL) & ETMCTRL_PROGRAM) && --timeout)
+-		;
+-	if (!timeout) {
+-		dev_dbg(t->dev, "Waiting for progbit to assert timed out\n");
+-		etm_lock(t);
+-		return -EFAULT;
+-	}
+-
+-	etm_setup_address_range(t, 1, (unsigned long)_stext,
+-			(unsigned long)_etext, 0, 0);
+-	etm_writel(t, 0, ETMR_TRACEENCTRL2);
+-	etm_writel(t, 0, ETMR_TRACESSCTRL);
+-	etm_writel(t, 0x6f, ETMR_TRACEENEVT);
+-
+-	v &= ~ETMCTRL_PROGRAM;
+-	v |= ETMCTRL_PORTSEL;
+-
+-	etm_writel(t, v, ETMR_CTRL);
+-
+-	timeout = TRACER_TIMEOUT;
+-	while (etm_readl(t, ETMR_CTRL) & ETMCTRL_PROGRAM && --timeout)
+-		;
+-	if (!timeout) {
+-		dev_dbg(t->dev, "Waiting for progbit to deassert timed out\n");
+-		etm_lock(t);
+-		return -EFAULT;
+-	}
+-
+-	etm_lock(t);
+-
+-	t->flags |= TRACER_RUNNING;
+-
+-	return 0;
+-}
+-
+-static int trace_stop(struct tracectx *t)
+-{
+-	unsigned long timeout = TRACER_TIMEOUT;
+-
+-	etm_unlock(t);
+-
+-	etm_writel(t, 0x440, ETMR_CTRL);
+-	while (!(etm_readl(t, ETMR_CTRL) & ETMCTRL_PROGRAM) && --timeout)
+-		;
+-	if (!timeout) {
+-		dev_dbg(t->dev, "Waiting for progbit to assert timed out\n");
+-		etm_lock(t);
+-		return -EFAULT;
+-	}
+-
+-	etm_lock(t);
+-
+-	etb_unlock(t);
+-	etb_writel(t, ETBFF_MANUAL_FLUSH, ETBR_FORMATTERCTRL);
+-
+-	timeout = TRACER_TIMEOUT;
+-	while (etb_readl(t, ETBR_FORMATTERCTRL) &
+-			ETBFF_MANUAL_FLUSH && --timeout)
+-		;
+-	if (!timeout) {
+-		dev_dbg(t->dev, "Waiting for formatter flush to commence "
+-				"timed out\n");
+-		etb_lock(t);
+-		return -EFAULT;
+-	}
+-
+-	etb_writel(t, 0, ETBR_CTRL);
+-
+-	etb_lock(t);
+-
+-	t->flags &= ~TRACER_RUNNING;
+-
+-	return 0;
+-}
+-
+-static int etb_getdatalen(struct tracectx *t)
+-{
+-	u32 v;
+-	int rp, wp;
+-
+-	v = etb_readl(t, ETBR_STATUS);
+-
+-	if (v & 1)
+-		return t->etb_bufsz;
+-
+-	rp = etb_readl(t, ETBR_READADDR);
+-	wp = etb_readl(t, ETBR_WRITEADDR);
+-
+-	if (rp > wp) {
+-		etb_writel(t, 0, ETBR_READADDR);
+-		etb_writel(t, 0, ETBR_WRITEADDR);
+-
+-		return 0;
+-	}
+-
+-	return wp - rp;
+-}
+-
+-/* sysrq+v will always stop the running trace and leave it at that */
+-static void etm_dump(void)
+-{
+-	struct tracectx *t = &tracer;
+-	u32 first = 0;
+-	int length;
+-
+-	if (!t->etb_regs) {
+-		printk(KERN_INFO "No tracing hardware found\n");
+-		return;
+-	}
+-
+-	if (trace_isrunning(t))
+-		trace_stop(t);
+-
+-	etb_unlock(t);
+-
+-	length = etb_getdatalen(t);
+-
+-	if (length == t->etb_bufsz)
+-		first = etb_readl(t, ETBR_WRITEADDR);
+-
+-	etb_writel(t, first, ETBR_READADDR);
+-
+-	printk(KERN_INFO "Trace buffer contents length: %d\n", length);
+-	printk(KERN_INFO "--- ETB buffer begin ---\n");
+-	for (; length; length--)
+-		printk("%08x", cpu_to_be32(etb_readl(t, ETBR_READMEM)));
+-	printk(KERN_INFO "\n--- ETB buffer end ---\n");
+-
+-	/* deassert the overflow bit */
+-	etb_writel(t, 1, ETBR_CTRL);
+-	etb_writel(t, 0, ETBR_CTRL);
+-
+-	etb_writel(t, 0, ETBR_TRIGGERCOUNT);
+-	etb_writel(t, 0, ETBR_READADDR);
+-	etb_writel(t, 0, ETBR_WRITEADDR);
+-
+-	etb_lock(t);
+-}
+-
+-static void sysrq_etm_dump(int key)
+-{
+-	dev_dbg(tracer.dev, "Dumping ETB buffer\n");
+-	etm_dump();
+-}
+-
+-static struct sysrq_key_op sysrq_etm_op = {
+-	.handler = sysrq_etm_dump,
+-	.help_msg = "etm-buffer-dump(v)",
+-	.action_msg = "etm",
+-};
+-
+-static int etb_open(struct inode *inode, struct file *file)
+-{
+-	if (!tracer.etb_regs)
+-		return -ENODEV;
+-
+-	file->private_data = &tracer;
+-
+-	return nonseekable_open(inode, file);
+-}
+-
+-static ssize_t etb_read(struct file *file, char __user *data,
+-		size_t len, loff_t *ppos)
+-{
+-	int total, i;
+-	long length;
+-	struct tracectx *t = file->private_data;
+-	u32 first = 0;
+-	u32 *buf;
+-
+-	mutex_lock(&t->mutex);
+-
+-	if (trace_isrunning(t)) {
+-		length = 0;
+-		goto out;
+-	}
+-
+-	etb_unlock(t);
+-
+-	total = etb_getdatalen(t);
+-	if (total == t->etb_bufsz)
+-		first = etb_readl(t, ETBR_WRITEADDR);
+-
+-	etb_writel(t, first, ETBR_READADDR);
+-
+-	length = min(total * 4, (int)len);
+-	buf = vmalloc(length);
+-
+-	dev_dbg(t->dev, "ETB buffer length: %d\n", total);
+-	dev_dbg(t->dev, "ETB status reg: %x\n", etb_readl(t, ETBR_STATUS));
+-	for (i = 0; i < length / 4; i++)
+-		buf[i] = etb_readl(t, ETBR_READMEM);
+-
+-	/* the only way to deassert overflow bit in ETB status is this */
+-	etb_writel(t, 1, ETBR_CTRL);
+-	etb_writel(t, 0, ETBR_CTRL);
+-
+-	etb_writel(t, 0, ETBR_WRITEADDR);
+-	etb_writel(t, 0, ETBR_READADDR);
+-	etb_writel(t, 0, ETBR_TRIGGERCOUNT);
+-
+-	etb_lock(t);
+-
+-	length -= copy_to_user(data, buf, length);
+-	vfree(buf);
+-
+-out:
+-	mutex_unlock(&t->mutex);
+-
+-	return length;
+-}
+-
+-static int etb_release(struct inode *inode, struct file *file)
+-{
+-	/* there's nothing to do here, actually */
+-	return 0;
+-}
+-
+-static const struct file_operations etb_fops = {
+-	.owner = THIS_MODULE,
+-	.read = etb_read,
+-	.open = etb_open,
+-	.release = etb_release,
+-	.llseek = no_llseek,
+-};
+-
+-static struct miscdevice etb_miscdev = {
+-	.name = "tracebuf",
+-	.minor = 0,
+-	.fops = &etb_fops,
+-};
+-
+-static int etb_probe(struct amba_device *dev, const struct amba_id *id)
+-{
+-	struct tracectx *t = &tracer;
+-	int ret = 0;
+-
+-	ret = amba_request_regions(dev, NULL);
+-	if (ret)
+-		goto out;
+-
+-	t->etb_regs = ioremap_nocache(dev->res.start, resource_size(&dev->res));
+-	if (!t->etb_regs) {
+-		ret = -ENOMEM;
+-		goto out_release;
+-	}
+-
+-	amba_set_drvdata(dev, t);
+-
+-	etb_miscdev.parent = &dev->dev;
+-
+-	ret = misc_register(&etb_miscdev);
+-	if (ret)
+-		goto out_unmap;
+-
+-	t->emu_clk = clk_get(&dev->dev, "emu_src_ck");
+-	if (IS_ERR(t->emu_clk)) {
+-		dev_dbg(&dev->dev, "Failed to obtain emu_src_ck.\n");
+-		return -EFAULT;
+-	}
+-
+-	clk_enable(t->emu_clk);
+-
+-	etb_unlock(t);
+-	t->etb_bufsz = etb_readl(t, ETBR_DEPTH);
+-	dev_dbg(&dev->dev, "Size: %x\n", t->etb_bufsz);
+-
+-	/* make sure trace capture is disabled */
+-	etb_writel(t, 0, ETBR_CTRL);
+-	etb_writel(t, 0x1000, ETBR_FORMATTERCTRL);
+-	etb_lock(t);
+-
+-	dev_dbg(&dev->dev, "ETB AMBA driver initialized.\n");
+-
+-out:
+-	return ret;
+-
+-out_unmap:
+-	iounmap(t->etb_regs);
+-
+-out_release:
+-	amba_release_regions(dev);
+-
+-	return ret;
+-}
+-
+-static int etb_remove(struct amba_device *dev)
+-{
+-	struct tracectx *t = amba_get_drvdata(dev);
+-
+-	iounmap(t->etb_regs);
+-	t->etb_regs = NULL;
+-
+-	clk_disable(t->emu_clk);
+-	clk_put(t->emu_clk);
+-
+-	amba_release_regions(dev);
+-
+-	return 0;
+-}
+-
+-static struct amba_id etb_ids[] = {
+-	{
+-		.id	= 0x0003b907,
+-		.mask	= 0x0007ffff,
+-	},
+-	{ 0, 0 },
+-};
+-
+-static struct amba_driver etb_driver = {
+-	.drv		= {
+-		.name	= "etb",
+-		.owner	= THIS_MODULE,
+-	},
+-	.probe		= etb_probe,
+-	.remove		= etb_remove,
+-	.id_table	= etb_ids,
+-};
+-
+-/* use a sysfs file "trace_running" to start/stop tracing */
+-static ssize_t trace_running_show(struct kobject *kobj,
+-				  struct kobj_attribute *attr,
+-				  char *buf)
+-{
+-	return sprintf(buf, "%x\n", trace_isrunning(&tracer));
+-}
+-
+-static ssize_t trace_running_store(struct kobject *kobj,
+-				   struct kobj_attribute *attr,
+-				   const char *buf, size_t n)
+-{
+-	unsigned int value;
+-	int ret;
+-
+-	if (sscanf(buf, "%u", &value) != 1)
+-		return -EINVAL;
+-
+-	mutex_lock(&tracer.mutex);
+-	ret = value ? trace_start(&tracer) : trace_stop(&tracer);
+-	mutex_unlock(&tracer.mutex);
+-
+-	return ret ? : n;
+-}
+-
+-static struct kobj_attribute trace_running_attr =
+-	__ATTR(trace_running, 0644, trace_running_show, trace_running_store);
+-
+-static ssize_t trace_info_show(struct kobject *kobj,
+-				  struct kobj_attribute *attr,
+-				  char *buf)
+-{
+-	u32 etb_wa, etb_ra, etb_st, etb_fc, etm_ctrl, etm_st;
+-	int datalen;
+-
+-	etb_unlock(&tracer);
+-	datalen = etb_getdatalen(&tracer);
+-	etb_wa = etb_readl(&tracer, ETBR_WRITEADDR);
+-	etb_ra = etb_readl(&tracer, ETBR_READADDR);
+-	etb_st = etb_readl(&tracer, ETBR_STATUS);
+-	etb_fc = etb_readl(&tracer, ETBR_FORMATTERCTRL);
+-	etb_lock(&tracer);
+-
+-	etm_unlock(&tracer);
+-	etm_ctrl = etm_readl(&tracer, ETMR_CTRL);
+-	etm_st = etm_readl(&tracer, ETMR_STATUS);
+-	etm_lock(&tracer);
+-
+-	return sprintf(buf, "Trace buffer len: %d\nComparator pairs: %d\n"
+-			"ETBR_WRITEADDR:\t%08x\n"
+-			"ETBR_READADDR:\t%08x\n"
+-			"ETBR_STATUS:\t%08x\n"
+-			"ETBR_FORMATTERCTRL:\t%08x\n"
+-			"ETMR_CTRL:\t%08x\n"
+-			"ETMR_STATUS:\t%08x\n",
+-			datalen,
+-			tracer.ncmppairs,
+-			etb_wa,
+-			etb_ra,
+-			etb_st,
+-			etb_fc,
+-			etm_ctrl,
+-			etm_st
+-			);
+-}
+-
+-static struct kobj_attribute trace_info_attr =
+-	__ATTR(trace_info, 0444, trace_info_show, NULL);
+-
+-static ssize_t trace_mode_show(struct kobject *kobj,
+-				  struct kobj_attribute *attr,
+-				  char *buf)
+-{
+-	return sprintf(buf, "%d %d\n",
+-			!!(tracer.flags & TRACER_CYCLE_ACC),
+-			tracer.etm_portsz);
+-}
+-
+-static ssize_t trace_mode_store(struct kobject *kobj,
+-				   struct kobj_attribute *attr,
+-				   const char *buf, size_t n)
+-{
+-	unsigned int cycacc, portsz;
+-
+-	if (sscanf(buf, "%u %u", &cycacc, &portsz) != 2)
+-		return -EINVAL;
+-
+-	mutex_lock(&tracer.mutex);
+-	if (cycacc)
+-		tracer.flags |= TRACER_CYCLE_ACC;
+-	else
+-		tracer.flags &= ~TRACER_CYCLE_ACC;
+-
+-	tracer.etm_portsz = portsz & 0x0f;
+-	mutex_unlock(&tracer.mutex);
+-
+-	return n;
+-}
+-
+-static struct kobj_attribute trace_mode_attr =
+-	__ATTR(trace_mode, 0644, trace_mode_show, trace_mode_store);
+-
+-static int etm_probe(struct amba_device *dev, const struct amba_id *id)
+-{
+-	struct tracectx *t = &tracer;
+-	int ret = 0;
+-
+-	if (t->etm_regs) {
+-		dev_dbg(&dev->dev, "ETM already initialized\n");
+-		ret = -EBUSY;
+-		goto out;
+-	}
+-
+-	ret = amba_request_regions(dev, NULL);
+-	if (ret)
+-		goto out;
+-
+-	t->etm_regs = ioremap_nocache(dev->res.start, resource_size(&dev->res));
+-	if (!t->etm_regs) {
+-		ret = -ENOMEM;
+-		goto out_release;
+-	}
+-
+-	amba_set_drvdata(dev, t);
+-
+-	mutex_init(&t->mutex);
+-	t->dev = &dev->dev;
+-	t->flags = TRACER_CYCLE_ACC;
+-	t->etm_portsz = 1;
+-
+-	etm_unlock(t);
+-	(void)etm_readl(t, ETMMR_PDSR);
+-	/* dummy first read */
+-	(void)etm_readl(&tracer, ETMMR_OSSRR);
+-
+-	t->ncmppairs = etm_readl(t, ETMR_CONFCODE) & 0xf;
+-	etm_writel(t, 0x440, ETMR_CTRL);
+-	etm_lock(t);
+-
+-	ret = sysfs_create_file(&dev->dev.kobj,
+-			&trace_running_attr.attr);
+-	if (ret)
+-		goto out_unmap;
+-
+-	/* failing to create any of these two is not fatal */
+-	ret = sysfs_create_file(&dev->dev.kobj, &trace_info_attr.attr);
+-	if (ret)
+-		dev_dbg(&dev->dev, "Failed to create trace_info in sysfs\n");
+-
+-	ret = sysfs_create_file(&dev->dev.kobj, &trace_mode_attr.attr);
+-	if (ret)
+-		dev_dbg(&dev->dev, "Failed to create trace_mode in sysfs\n");
+-
+-	dev_dbg(t->dev, "ETM AMBA driver initialized.\n");
+-
+-out:
+-	return ret;
+-
+-out_unmap:
+-	iounmap(t->etm_regs);
+-
+-out_release:
+-	amba_release_regions(dev);
+-
+-	return ret;
+-}
+-
+-static int etm_remove(struct amba_device *dev)
+-{
+-	struct tracectx *t = amba_get_drvdata(dev);
+-
+-	iounmap(t->etm_regs);
+-	t->etm_regs = NULL;
+-
+-	amba_release_regions(dev);
+-
+-	sysfs_remove_file(&dev->dev.kobj, &trace_running_attr.attr);
+-	sysfs_remove_file(&dev->dev.kobj, &trace_info_attr.attr);
+-	sysfs_remove_file(&dev->dev.kobj, &trace_mode_attr.attr);
+-
+-	return 0;
+-}
+-
+-static struct amba_id etm_ids[] = {
+-	{
+-		.id	= 0x0003b921,
+-		.mask	= 0x0007ffff,
+-	},
+-	{ 0, 0 },
+-};
+-
+-static struct amba_driver etm_driver = {
+-	.drv		= {
+-		.name   = "etm",
+-		.owner  = THIS_MODULE,
+-	},
+-	.probe		= etm_probe,
+-	.remove		= etm_remove,
+-	.id_table	= etm_ids,
+-};
+-
+-static int __init etm_init(void)
+-{
+-	int retval;
+-
+-	retval = amba_driver_register(&etb_driver);
+-	if (retval) {
+-		printk(KERN_ERR "Failed to register etb\n");
+-		return retval;
+-	}
+-
+-	retval = amba_driver_register(&etm_driver);
+-	if (retval) {
+-		amba_driver_unregister(&etb_driver);
+-		printk(KERN_ERR "Failed to probe etm\n");
+-		return retval;
+-	}
+-
+-	/* not being able to install this handler is not fatal */
+-	(void)register_sysrq_key('v', &sysrq_etm_op);
+-
+-	return 0;
+-}
+-
+-device_initcall(etm_init);
+-
+diff --git a/arch/arm/kernel/hw_breakpoint.c b/arch/arm/kernel/hw_breakpoint.c
+index 4d963fb..f61a9d9 100644
+--- a/arch/arm/kernel/hw_breakpoint.c
++++ b/arch/arm/kernel/hw_breakpoint.c
+@@ -29,6 +29,7 @@
+ #include <linux/hw_breakpoint.h>
+ #include <linux/smp.h>
+ #include <linux/cpu_pm.h>
 +#include <linux/coresight.h>
-+#include <linux/amba/bus.h>
-+#include <linux/seq_file.h>
-+#include <asm/sections.h>
-+
-+#include "coresight-etm.h"
-+
-+#ifdef CONFIG_CORESIGHT_SOURCE_ETM_DEFAULT_ENABLE
-+static int boot_enable = 1;
-+#else
-+static int boot_enable;
-+#endif
-+module_param_named(
-+	boot_enable, boot_enable, int, S_IRUGO
-+);
-+
-+static int count; /* the number of ETM/PTM currently registered */
-+static struct etm_drvdata *etmdrvdata[NR_CPUS];
-+
-+static inline void etm_writel(struct etm_drvdata *drvdata,
-+			      u32 val, u32 off)
-+{
-+	if (drvdata->use_cp14)
-+		etm_writel_cp14(val, off);
-+	else
-+		cs_writel(drvdata->base, val, off);
-+}
-+
-+static inline unsigned int etm_readl(struct etm_drvdata *drvdata, u32 off)
-+{
-+	u32 val;
-+	if (drvdata->use_cp14)
-+		val = etm_readl_cp14(off);
-+	else
-+		val = cs_readl(drvdata->base, off);
-+	return val;
-+}
-+
-+/*
-+ * Memory mapped writes to clear os lock are not supported on some processors
-+ * and OS lock must be unlocked before any memory mapped access on such
-+ * processors, otherwise memory mapped reads/writes will be invalid.
-+ */
-+static void etm_os_unlock(void *info)
-+{
-+	struct etm_drvdata *drvdata = (struct etm_drvdata *)info;
-+	/* writing any value to ETMOSLAR unlocks the trace registers */
-+	etm_writel(drvdata, 0x0, ETMOSLAR);
-+	isb();
-+}
-+
-+static void etm_set_pwrdwn(struct etm_drvdata *drvdata)
-+{
-+	u32 etmcr;
-+
-+	/* Ensure pending cp14 accesses complete before setting pwrdwn */
-+	mb();
-+	isb();
-+	etmcr = etm_readl(drvdata, ETMCR);
-+	etmcr |= ETMCR_PWD_DWN;
-+	etm_writel(drvdata, etmcr, ETMCR);
-+}
-+
-+static void etm_clr_pwrdwn(struct etm_drvdata *drvdata)
-+{
-+	u32 etmcr;
-+
-+	etmcr = etm_readl(drvdata, ETMCR);
-+	etmcr &= ~ETMCR_PWD_DWN;
-+	etm_writel(drvdata, etmcr, ETMCR);
-+	/* Ensure pwrup completes before subsequent cp14 accesses */
-+	mb();
-+	isb();
-+}
-+
-+static void etm_set_pwrup(struct etm_drvdata *drvdata)
-+{
-+	u32 etmpdcr;
-+
-+	etmpdcr = cs_readl(drvdata->base, ETMPDCR);
-+	etmpdcr |= ETMPDCR_PWD_UP;
-+	cs_writel(drvdata->base, etmpdcr, ETMPDCR);
-+	/* Ensure pwrup completes before subsequent cp14 accesses */
-+	mb();
-+	isb();
-+}
-+
-+static void etm_clr_pwrup(struct etm_drvdata *drvdata)
-+{
-+	u32 etmpdcr;
-+
-+	/* Ensure pending cp14 accesses complete before clearing pwrup */
-+	mb();
-+	isb();
-+	etmpdcr = cs_readl(drvdata->base, ETMPDCR);
-+	etmpdcr &= ~ETMPDCR_PWD_UP;
-+	cs_writel(drvdata->base, etmpdcr, ETMPDCR);
-+}
-+
-+static void etm_set_prog(struct etm_drvdata *drvdata)
-+{
-+	u32 etmcr;
-+	int i;
-+
-+	etmcr = etm_readl(drvdata, ETMCR);
-+	etmcr |= ETMCR_ETM_PRG;
-+	etm_writel(drvdata, etmcr, ETMCR);
-+	/*
-+	 * Recommended by spec for cp14 accesses to ensure etmcr write is
-+	 * complete before polling etmsr
-+	 */
-+	isb();
-+	for (i = TIMEOUT_US;
-+	     BVAL(etm_readl(drvdata, ETMSR), ETMSR_PROG_BIT) != 1
-+	     && i > 0; i--)
-+		udelay(1);
-+
-+	WARN(i == 0, "timeout while setting prog bit, ETMSR: %#x\n",
-+	     etm_readl(drvdata, ETMSR));
-+}
-+
-+static void etm_clr_prog(struct etm_drvdata *drvdata)
-+{
-+	u32 etmcr;
-+	int i;
-+
-+	etmcr = etm_readl(drvdata, ETMCR);
-+	etmcr &= ~ETMCR_ETM_PRG;
-+	etm_writel(drvdata, etmcr, ETMCR);
-+	/*
-+	 * Recommended by spec for cp14 accesses to ensure etmcr write is
-+	 * complete before polling etmsr
-+	 */
-+	isb();
-+	for (i = TIMEOUT_US;
-+	     BVAL(etm_readl(drvdata, ETMSR), ETMSR_PROG_BIT) != 0
-+	     && i > 0; i--)
-+		udelay(1);
-+
-+	WARN(i == 0, "timeout while clearing prog bit, ETMSR: %#x\n",
-+	     etm_readl(drvdata, ETMSR));
-+}
-+
-+static void etm_set_default(struct etm_drvdata *drvdata)
-+{
-+	int i;
-+
-+	drvdata->trigger_event = ETM_DEFAULT_EVENT_VAL;
-+	drvdata->enable_event = ETM_HARD_WIRE_RES_A;
-+
-+	drvdata->seq_12_event = ETM_DEFAULT_EVENT_VAL;
-+	drvdata->seq_21_event = ETM_DEFAULT_EVENT_VAL;
-+	drvdata->seq_23_event = ETM_DEFAULT_EVENT_VAL;
-+	drvdata->seq_31_event = ETM_DEFAULT_EVENT_VAL;
-+	drvdata->seq_32_event = ETM_DEFAULT_EVENT_VAL;
-+	drvdata->seq_13_event = ETM_DEFAULT_EVENT_VAL;
-+	drvdata->timestamp_event = ETM_DEFAULT_EVENT_VAL;
-+
-+	for (i = 0; i < drvdata->nr_cntr; i++) {
-+		drvdata->cntr_rld_val[i] = 0x0;
-+		drvdata->cntr_event[i] = ETM_DEFAULT_EVENT_VAL;
-+		drvdata->cntr_rld_event[i] = ETM_DEFAULT_EVENT_VAL;
-+		drvdata->cntr_val[i] = 0x0;
-+	}
-+
-+	drvdata->seq_curr_state = 0x0;
-+	drvdata->ctxid_idx = 0x0;
-+	for (i = 0; i < drvdata->nr_ctxid_cmp; i++)
-+		drvdata->ctxid_val[i] = 0x0;
-+	drvdata->ctxid_mask = 0x0;
-+}
-+
-+static void etm_enable_hw(void *info)
-+{
-+	int i;
-+	u32 etmcr;
-+	struct etm_drvdata *drvdata = info;
-+
-+	CS_UNLOCK(drvdata->base);
-+
-+	/* turn engine on */
-+	etm_clr_pwrdwn(drvdata);
-+	/* apply power to trace registers */
-+	etm_set_pwrup(drvdata);
-+	/* make sure all registers are accessible */
-+	etm_os_unlock(drvdata);
-+
-+	etm_set_prog(drvdata);
-+
-+	etmcr = etm_readl(drvdata, ETMCR);
-+	etmcr &= (ETMCR_PWD_DWN | ETMCR_ETM_PRG);
-+	etmcr |= drvdata->port_size;
-+	etm_writel(drvdata, drvdata->ctrl | etmcr, ETMCR);
-+	etm_writel(drvdata, drvdata->trigger_event, ETMTRIGGER);
-+	etm_writel(drvdata, drvdata->startstop_ctrl, ETMTSSCR);
-+	etm_writel(drvdata, drvdata->enable_event, ETMTEEVR);
-+	etm_writel(drvdata, drvdata->enable_ctrl1, ETMTECR1);
-+	etm_writel(drvdata, drvdata->fifofull_level, ETMFFLR);
-+	for (i = 0; i < drvdata->nr_addr_cmp; i++) {
-+		etm_writel(drvdata, drvdata->addr_val[i], ETMACVRn(i));
-+		etm_writel(drvdata, drvdata->addr_acctype[i], ETMACTRn(i));
-+	}
-+	for (i = 0; i < drvdata->nr_cntr; i++) {
-+		etm_writel(drvdata, drvdata->cntr_rld_val[i], ETMCNTRLDVRn(i));
-+		etm_writel(drvdata, drvdata->cntr_event[i], ETMCNTENRn(i));
-+		etm_writel(drvdata, drvdata->cntr_rld_event[i],
-+			   ETMCNTRLDEVRn(i));
-+		etm_writel(drvdata, drvdata->cntr_val[i], ETMCNTVRn(i));
-+	}
-+	etm_writel(drvdata, drvdata->seq_12_event, ETMSQ12EVR);
-+	etm_writel(drvdata, drvdata->seq_21_event, ETMSQ21EVR);
-+	etm_writel(drvdata, drvdata->seq_23_event, ETMSQ23EVR);
-+	etm_writel(drvdata, drvdata->seq_31_event, ETMSQ31EVR);
-+	etm_writel(drvdata, drvdata->seq_32_event, ETMSQ32EVR);
-+	etm_writel(drvdata, drvdata->seq_13_event, ETMSQ13EVR);
-+	etm_writel(drvdata, drvdata->seq_curr_state, ETMSQR);
-+	for (i = 0; i < drvdata->nr_ext_out; i++)
-+		etm_writel(drvdata, ETM_DEFAULT_EVENT_VAL, ETMEXTOUTEVRn(i));
-+	for (i = 0; i < drvdata->nr_ctxid_cmp; i++)
-+		etm_writel(drvdata, drvdata->ctxid_val[i], ETMCIDCVRn(i));
-+	etm_writel(drvdata, drvdata->ctxid_mask, ETMCIDCMR);
-+	etm_writel(drvdata, drvdata->sync_freq, ETMSYNCFR);
-+	/* no external input selected */
-+	etm_writel(drvdata, 0x0, ETMEXTINSELR);
-+	etm_writel(drvdata, drvdata->timestamp_event, ETMTSEVR);
-+	/* no auxiliary control selected */
-+	etm_writel(drvdata, 0x0, ETMAUXCR);
-+	etm_writel(drvdata, drvdata->cpu + 1, ETMTRACEIDR);
-+	/* no VMID comparator value selected */
-+	etm_writel(drvdata, 0x0, ETMVMIDCVR);
-+
-+	/* ensures trace output is enabled from this ETM */
-+	etm_writel(drvdata, drvdata->ctrl | ETMCR_ETM_EN | etmcr, ETMCR);
-+
-+	etm_clr_prog(drvdata);
-+	CS_LOCK(drvdata->base);
-+
-+	dev_dbg(drvdata->dev, "cpu: %d enable smp call done\n", drvdata->cpu);
-+}
-+
-+static int etm_enable(struct coresight_device *csdev)
-+{
-+	struct etm_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
-+	int ret;
-+
-+	ret = clk_prepare_enable(drvdata->clk);
-+	if (ret)
-+		goto err_clk;
-+
-+	spin_lock(&drvdata->spinlock);
-+
-+	/*
-+	 * Executing etm_enable_hw on the cpu whose ETM is being enabled
-+	 * ensures that register writes occur when cpu is powered.
-+	 */
-+	ret = smp_call_function_single(drvdata->cpu, etm_enable_hw, drvdata, 1);
-+	if (ret)
-+		goto err;
-+	drvdata->enable = true;
-+	drvdata->sticky_enable = true;
-+
-+	spin_unlock(&drvdata->spinlock);
-+
-+	dev_info(drvdata->dev, "ETM tracing enabled\n");
-+	return 0;
-+err:
-+	spin_unlock(&drvdata->spinlock);
-+	clk_disable_unprepare(drvdata->clk);
-+err_clk:
-+	return ret;
-+}
-+
-+static void etm_disable_hw(void *info)
-+{
-+	struct etm_drvdata *drvdata = info;
-+
-+	CS_UNLOCK(drvdata->base);
-+	etm_set_prog(drvdata);
-+
-+	/* Program trace enable to low by using always false event */
-+	etm_writel(drvdata, ETM_HARD_WIRE_RES_A | ETM_EVENT_NOT_A, ETMTEEVR);
-+
-+	etm_set_pwrdwn(drvdata);
-+	CS_LOCK(drvdata->base);
-+
-+	dev_dbg(drvdata->dev, "cpu: %d disable smp call done\n", drvdata->cpu);
-+}
-+
-+static void etm_disable(struct coresight_device *csdev)
-+{
-+	struct etm_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
-+
-+	/*
-+	 * Taking hotplug lock here protects from clocks getting disabled
-+	 * with tracing being left on (crash scenario) if user disable occurs
-+	 * after cpu online mask indicates the cpu is offline but before the
-+	 * DYING hotplug callback is serviced by the ETM driver.
-+	 */
-+	get_online_cpus();
-+	spin_lock(&drvdata->spinlock);
-+
-+	/*
-+	 * Executing etm_disable_hw on the cpu whose ETM is being disabled
-+	 * ensures that register writes occur when cpu is powered.
-+	 */
-+	smp_call_function_single(drvdata->cpu, etm_disable_hw, drvdata, 1);
-+	drvdata->enable = false;
-+
-+	spin_unlock(&drvdata->spinlock);
-+	put_online_cpus();
-+
-+	clk_disable_unprepare(drvdata->clk);
-+
-+	dev_info(drvdata->dev, "ETM tracing disabled\n");
-+}
-+
-+static const struct coresight_ops_source etm_source_ops = {
-+	.enable		= etm_enable,
-+	.disable	= etm_disable,
-+};
-+
-+static const struct coresight_ops etm_cs_ops = {
-+	.source_ops	= &etm_source_ops,
-+};
-+
-+static ssize_t debugfs_nr_addr_cmp_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->nr_addr_cmp;
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_nr_addr_cmp, "nr_addr_cmp",
-+			S_IRUGO, debugfs_nr_addr_cmp_get,
-+			NULL, "%llu\n");
-+
-+static ssize_t debugfs_nr_cntr_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->nr_cntr;
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_nr_cntr, "nr_cntr",
-+			S_IRUGO, debugfs_nr_cntr_get,
-+			NULL, "%llu\n");
-+
-+static ssize_t debugfs_nr_ctxid_cmp_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->nr_ctxid_cmp;
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_nr_ctxid_cmp, "nr_ctxid_cmp",
-+			S_IRUGO, debugfs_nr_ctxid_cmp_get,
-+			NULL, "%llu\n");
-+
-+static ssize_t debugfs_reset_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->reset;
-+	return 0;
-+}
-+
-+/* Reset to trace everything i.e. exclude nothing. */
-+static ssize_t debugfs_reset_set(void *data, u64 val)
-+{
-+	int i;
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	if (val) {
-+		drvdata->mode = ETM_MODE_EXCLUDE;
-+		drvdata->ctrl = 0x0;
-+		drvdata->trigger_event = ETM_DEFAULT_EVENT_VAL;
-+		drvdata->startstop_ctrl = 0x0;
-+		drvdata->addr_idx = 0x0;
-+		for (i = 0; i < drvdata->nr_addr_cmp; i++) {
-+			drvdata->addr_val[i] = 0x0;
-+			drvdata->addr_acctype[i] = 0x0;
-+			drvdata->addr_type[i] = ETM_ADDR_TYPE_NONE;
-+		}
-+		drvdata->cntr_idx = 0x0;
-+
-+		etm_set_default(drvdata);
-+	}
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_reset, "reset",
-+			S_IRUGO | S_IWUSR, debugfs_reset_get,
-+			debugfs_reset_set, "%llu\n");
-+
-+static ssize_t debugfs_mode_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->mode;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_mode_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	drvdata->mode = val & ETM_MODE_ALL;
-+
-+	if (drvdata->mode & ETM_MODE_EXCLUDE)
-+		drvdata->enable_ctrl1 |= ETMTECR1_INC_EXC;
-+	else
-+		drvdata->enable_ctrl1 &= ~ETMTECR1_INC_EXC;
-+
-+	if (drvdata->mode & ETM_MODE_CYCACC)
-+		drvdata->ctrl |= ETMCR_CYC_ACC;
-+	else
-+		drvdata->ctrl &= ~ETMCR_CYC_ACC;
-+
-+	if (drvdata->mode & ETM_MODE_STALL)
-+		drvdata->ctrl |= ETMCR_STALL_MODE;
-+	else
-+		drvdata->ctrl &= ~ETMCR_STALL_MODE;
-+
-+	if (drvdata->mode & ETM_MODE_TIMESTAMP)
-+		drvdata->ctrl |= ETMCR_TIMESTAMP_EN;
-+	else
-+		drvdata->ctrl &= ~ETMCR_TIMESTAMP_EN;
-+
-+	if (drvdata->mode & ETM_MODE_CTXID)
-+		drvdata->ctrl |= ETMCR_CTXID_SIZE;
-+	else
-+		drvdata->ctrl &= ~ETMCR_CTXID_SIZE;
-+	spin_unlock(&drvdata->spinlock);
-+
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_mode, "mode",
-+			 S_IRUGO | S_IWUSR, debugfs_mode_get,
-+			 debugfs_mode_set, "%llu\n");
-+
-+static ssize_t debugfs_trigger_event_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->trigger_event;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_trigger_event_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	drvdata->trigger_event = val & ETM_EVENT_MASK;
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_trigger_event, "trigger_event",
-+			S_IRUGO | S_IWUSR, debugfs_trigger_event_get,
-+			debugfs_trigger_event_set, "%llu\n");
-+
-+static ssize_t debugfs_enable_event_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->enable_event;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_enable_event_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	drvdata->enable_event = val & ETM_EVENT_MASK;
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_enable_event, "enable_event",
-+			S_IRUGO | S_IWUSR, debugfs_enable_event_get,
-+			debugfs_enable_event_set, "%llu\n");
-+
-+static ssize_t debugfs_fifofull_level_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->fifofull_level;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_fifofull_level_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	drvdata->fifofull_level = val;
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_fifofull_level, "fifofull_level",
-+			S_IRUGO | S_IWUSR, debugfs_fifofull_level_get,
-+			debugfs_fifofull_level_set, "%llu\n");
-+
-+static ssize_t debugfs_addr_idx_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->addr_idx;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_addr_idx_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	if (val >= drvdata->nr_addr_cmp)
-+		return -EINVAL;
-+
-+	/*
-+	 * Use spinlock to ensure index doesn't change while it gets
-+	 * dereferenced multiple times within a spinlock block elsewhere.
-+	 */
-+	spin_lock(&drvdata->spinlock);
-+	drvdata->addr_idx = val;
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_addr_idx, "addr_idx",
-+			S_IRUGO | S_IWUSR, debugfs_addr_idx_get,
-+			debugfs_addr_idx_set, "%llu\n");
-+
-+static ssize_t debugfs_addr_single_get(void *data, u64 *val)
-+{
-+	u8 idx;
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	idx = drvdata->addr_idx;
-+	if (!(drvdata->addr_type[idx] == ETM_ADDR_TYPE_NONE ||
-+	      drvdata->addr_type[idx] == ETM_ADDR_TYPE_SINGLE)) {
-+		spin_unlock(&drvdata->spinlock);
-+		return -EINVAL;
-+	}
-+
-+	*val = drvdata->addr_val[idx];
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+
-+static ssize_t debugfs_addr_single_set(void *data, u64 val)
-+{
-+	u8 idx;
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	idx = drvdata->addr_idx;
-+	if (!(drvdata->addr_type[idx] == ETM_ADDR_TYPE_NONE ||
-+	      drvdata->addr_type[idx] == ETM_ADDR_TYPE_SINGLE)) {
-+		spin_unlock(&drvdata->spinlock);
-+		return -EINVAL;
-+	}
-+
-+	drvdata->addr_val[idx] = val;
-+	drvdata->addr_type[idx] = ETM_ADDR_TYPE_SINGLE;
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_addr_single, "addr_single",
-+			S_IRUGO | S_IWUSR, debugfs_addr_single_get,
-+			debugfs_addr_single_set, "%llu\n");
-+
-+
-+static ssize_t debugfs_get_addr_range(struct seq_file *f, void *ptr)
-+{
-+	u8 idx;
-+	unsigned long val1, val2;
-+	struct etm_drvdata *drvdata = f->private;
-+
-+	spin_lock(&drvdata->spinlock);
-+	idx = drvdata->addr_idx;
-+	if (idx % 2 != 0) {
-+		spin_unlock(&drvdata->spinlock);
-+		return -EINVAL;
-+	}
-+	if (!((drvdata->addr_type[idx] == ETM_ADDR_TYPE_NONE &&
-+	       drvdata->addr_type[idx + 1] == ETM_ADDR_TYPE_NONE) ||
-+	      (drvdata->addr_type[idx] == ETM_ADDR_TYPE_RANGE &&
-+	       drvdata->addr_type[idx + 1] == ETM_ADDR_TYPE_RANGE))) {
-+		spin_unlock(&drvdata->spinlock);
-+		return -EINVAL;
-+	}
-+
-+	val1 = drvdata->addr_val[idx];
-+	val2 = drvdata->addr_val[idx + 1];
-+	spin_unlock(&drvdata->spinlock);
-+	seq_printf(f, "%#lx %#lx\n", val1, val2);
-+
-+	return 0;
-+}
-+
-+static int debugfs_get_addr_range_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, debugfs_get_addr_range, inode->i_private);
-+}
-+
-+static ssize_t debugfs_set_addr_range(struct file *file,
-+					const char __user *user_buf,
-+					size_t count, loff_t *ppos)
-+{
-+	u8 idx;
-+	unsigned long val1, val2;
-+	struct etm_drvdata *drvdata = file->private_data;
-+
-+	if (sscanf(user_buf, "%lx %lx", &val1, &val2) != 2)
-+		return -EINVAL;
-+	/* Lower address comparator cannot have a higher address value */
-+	if (val1 > val2)
-+		return -EINVAL;
-+
-+	spin_lock(&drvdata->spinlock);
-+	idx = drvdata->addr_idx;
-+	if (idx % 2 != 0) {
-+		spin_unlock(&drvdata->spinlock);
-+		return -EINVAL;
-+	}
-+	if (!((drvdata->addr_type[idx] == ETM_ADDR_TYPE_NONE &&
-+	       drvdata->addr_type[idx + 1] == ETM_ADDR_TYPE_NONE) ||
-+	      (drvdata->addr_type[idx] == ETM_ADDR_TYPE_RANGE &&
-+	       drvdata->addr_type[idx + 1] == ETM_ADDR_TYPE_RANGE))) {
-+		spin_unlock(&drvdata->spinlock);
-+		return -EINVAL;
-+	}
-+
-+	drvdata->addr_val[idx] = val1;
-+	drvdata->addr_type[idx] = ETM_ADDR_TYPE_RANGE;
-+	drvdata->addr_val[idx + 1] = val2;
-+	drvdata->addr_type[idx + 1] = ETM_ADDR_TYPE_RANGE;
-+	drvdata->enable_ctrl1 |= (1 << (idx/2));
-+	spin_unlock(&drvdata->spinlock);
-+	return count;
-+}
-+
-+static const struct file_operations debugfs_addr_range_ops = {
-+	.open = debugfs_get_addr_range_open,
-+	.read = seq_read,
-+	.write = debugfs_set_addr_range,
-+};
-+
-+static const struct coresight_ops_entry debugfs_addr_range_entry = {
-+	.name = "addr_range",
-+	.mode =  S_IRUGO | S_IWUSR,
-+	.ops = &debugfs_addr_range_ops,
-+};
-+
-+static ssize_t debugfs_addr_start_get(void *data, u64 *val)
-+{
-+	u8 idx;
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	idx = drvdata->addr_idx;
-+	if (!(drvdata->addr_type[idx] == ETM_ADDR_TYPE_NONE ||
-+	      drvdata->addr_type[idx] == ETM_ADDR_TYPE_START)) {
-+		spin_unlock(&drvdata->spinlock);
-+		return -EINVAL;
-+	}
-+
-+	*val = drvdata->addr_val[idx];
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+
-+static ssize_t debugfs_addr_start_set(void *data, u64 val)
-+{
-+	u8 idx;
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	idx = drvdata->addr_idx;
-+	if (!(drvdata->addr_type[idx] == ETM_ADDR_TYPE_NONE ||
-+	      drvdata->addr_type[idx] == ETM_ADDR_TYPE_START)) {
-+		spin_unlock(&drvdata->spinlock);
-+		return -EINVAL;
-+	}
-+
-+	drvdata->addr_val[idx] = val;
-+	drvdata->addr_type[idx] = ETM_ADDR_TYPE_START;
-+	drvdata->startstop_ctrl |= (1 << idx);
-+	drvdata->enable_ctrl1 |= ETMTECR1_START_STOP;
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_addr_start, "addr_start",
-+			S_IRUGO | S_IWUSR, debugfs_addr_start_get,
-+			debugfs_addr_start_set, "%llu\n");
-+
-+static ssize_t debugfs_addr_stop_get(void *data, u64 *val)
-+{
-+	u8 idx;
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	idx = drvdata->addr_idx;
-+	if (!(drvdata->addr_type[idx] == ETM_ADDR_TYPE_NONE ||
-+	      drvdata->addr_type[idx] == ETM_ADDR_TYPE_STOP)) {
-+		spin_unlock(&drvdata->spinlock);
-+		return -EINVAL;
-+	}
-+
-+	*val = drvdata->addr_val[idx];
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+
-+static ssize_t debugfs_addr_stop_set(void *data, u64 val)
-+{
-+	u8 idx;
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	idx = drvdata->addr_idx;
-+	if (!(drvdata->addr_type[idx] == ETM_ADDR_TYPE_NONE ||
-+	      drvdata->addr_type[idx] == ETM_ADDR_TYPE_STOP)) {
-+		spin_unlock(&drvdata->spinlock);
-+		return -EINVAL;
-+	}
-+
-+	drvdata->addr_val[idx] = val;
-+	drvdata->addr_type[idx] = ETM_ADDR_TYPE_STOP;
-+	drvdata->startstop_ctrl |= (1 << (idx + 16));
-+	drvdata->enable_ctrl1 |= ETMTECR1_START_STOP;
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_addr_stop, "addr_stop",
-+			S_IRUGO | S_IWUSR, debugfs_addr_stop_get,
-+			debugfs_addr_stop_set, "%llu\n");
-+
-+static ssize_t debugfs_addr_acctype_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	*val = drvdata->addr_acctype[drvdata->addr_idx];
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+
-+static ssize_t debugfs_addr_acctype_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	drvdata->addr_acctype[drvdata->addr_idx] = val;
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_addr_acctype, "addr_acctype",
-+			S_IRUGO | S_IWUSR, debugfs_addr_acctype_get,
-+			debugfs_addr_acctype_set, "%llu\n");
-+
-+static ssize_t debugfs_cntr_idx_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata =  data;
-+
-+	*val = drvdata->cntr_idx;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_cntr_idx_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata =  data;
-+
-+	if (val >= drvdata->nr_cntr)
-+		return -EINVAL;
-+
-+	/*
-+	 * Use spinlock to ensure index doesn't change while it gets
-+	 * dereferenced multiple times within a spinlock block elsewhere.
-+	 */
-+	spin_lock(&drvdata->spinlock);
-+	drvdata->cntr_idx = val;
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_cntr_idx, "cntr_idx",
-+			 S_IRUGO | S_IWUSR, debugfs_cntr_idx_get,
-+			 debugfs_cntr_idx_set, "%llu\n");
-+
-+static ssize_t debugfs_cntr_rld_val_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	*val = drvdata->cntr_rld_val[drvdata->cntr_idx];
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+
-+static ssize_t debugfs_cntr_rld_val_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	drvdata->cntr_rld_val[drvdata->cntr_idx] = val;
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_cntr_rld_val, "cntr_rld_val",
-+			S_IRUGO | S_IWUSR, debugfs_cntr_rld_val_get,
-+			debugfs_cntr_rld_val_set, "%llu\n");
-+
-+static ssize_t debugfs_cntr_event_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	*val = drvdata->cntr_event[drvdata->cntr_idx];
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+
-+static ssize_t debugfs_cntr_event_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	drvdata->cntr_event[drvdata->cntr_idx] = val & ETM_EVENT_MASK;
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_cntr_event, "cntr_event",
-+			S_IRUGO | S_IWUSR, debugfs_cntr_event_get,
-+			debugfs_cntr_event_set, "%llu\n");
-+
-+static ssize_t debugfs_cntr_rld_event_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	*val = drvdata->cntr_rld_event[drvdata->cntr_idx];
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+
-+static ssize_t debugfs_cntr_rld_event_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	drvdata->cntr_rld_event[drvdata->cntr_idx] = val & ETM_EVENT_MASK;
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_cntr_rld_event, "cntr_rld_event",
-+			S_IRUGO | S_IWUSR, debugfs_cntr_rld_event_get,
-+			debugfs_cntr_rld_event_set, "%llu\n");
-+
-+static ssize_t debugfs_cntr_val_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	*val = drvdata->cntr_val[drvdata->cntr_idx];
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+
-+static ssize_t debugfs_cntr_val_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	drvdata->cntr_val[drvdata->cntr_idx] = val;
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_cntr_val, "cntr_val",
-+			S_IRUGO | S_IWUSR, debugfs_cntr_val_get,
-+			debugfs_cntr_val_set, "%llu\n");
-+
-+static ssize_t debugfs_12_event_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->seq_12_event;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_12_event_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	drvdata->seq_12_event = val & ETM_EVENT_MASK;
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_12_event, "seq_12_event",
-+			 S_IRUGO | S_IWUSR, debugfs_12_event_get,
-+			 debugfs_12_event_set, "%llu\n");
-+
-+static ssize_t debugfs_21_event_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->seq_21_event;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_21_event_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	drvdata->seq_21_event = val & ETM_EVENT_MASK;
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_21_event, "seq_21_event",
-+			 S_IRUGO | S_IWUSR, debugfs_21_event_get,
-+			 debugfs_21_event_set, "%llu\n");
-+
-+static ssize_t debugfs_23_event_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->seq_23_event;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_23_event_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	drvdata->seq_23_event = val & ETM_EVENT_MASK;
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_23_event, "seq_23_event",
-+			 S_IRUGO | S_IWUSR, debugfs_23_event_get,
-+			 debugfs_23_event_set, "%llu\n");
-+
-+static ssize_t debugfs_31_event_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->seq_31_event;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_31_event_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	drvdata->seq_31_event = val & ETM_EVENT_MASK;
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_31_event, "seq_31_event",
-+			S_IRUGO | S_IWUSR, debugfs_31_event_get,
-+			debugfs_31_event_set, "%llu\n");
-+
-+static ssize_t debugfs_32_event_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->seq_32_event;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_32_event_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	drvdata->seq_32_event = val & ETM_EVENT_MASK;
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_32_event, "seq_32_event",
-+			S_IRUGO | S_IWUSR, debugfs_32_event_get,
-+			debugfs_32_event_set, "%llu\n");
-+
-+static ssize_t debugfs_13_event_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->seq_13_event;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_13_event_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	drvdata->seq_13_event = val & ETM_EVENT_MASK;
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_13_event, "seq_13_event",
-+			S_IRUGO | S_IWUSR, debugfs_13_event_get,
-+			debugfs_13_event_set, "%llu\n");
-+
-+static ssize_t debugfs_seq_curr_state_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->seq_curr_state;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_seq_curr_state_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	if (val > ETM_SEQ_STATE_MAX_VAL)
-+		return -EINVAL;
-+
-+	drvdata->seq_curr_state = val;
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_seq_curr_state, "seq_curr_state",
-+			S_IRUGO | S_IWUSR, debugfs_seq_curr_state_get,
-+			debugfs_seq_curr_state_set, "%llu\n");
-+
-+static ssize_t debugfs_ctxid_idx_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->ctxid_idx;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_ctxid_idx_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	if (val >= drvdata->nr_ctxid_cmp)
-+		return -EINVAL;
-+
-+	/*
-+	 * Use spinlock to ensure index doesn't change while it gets
-+	 * dereferenced multiple times within a spinlock block elsewhere.
-+	 */
-+	spin_lock(&drvdata->spinlock);
-+	drvdata->ctxid_idx = val;
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_ctxid_idx, "ctxid_idx",
-+			S_IRUGO | S_IWUSR, debugfs_ctxid_idx_get,
-+			debugfs_ctxid_idx_set, "%llu\n");
-+
-+static ssize_t debugfs_ctxid_val_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	*val = drvdata->ctxid_val[drvdata->ctxid_idx];
-+	spin_unlock(&drvdata->spinlock);
-+
-+	return 0;
-+}
-+
-+static ssize_t debugfs_ctxid_val_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	drvdata->ctxid_val[drvdata->ctxid_idx] = val;
-+	spin_unlock(&drvdata->spinlock);
-+
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_ctxid_val, "ctxid_val",
-+			S_IRUGO | S_IWUSR, debugfs_ctxid_val_get,
-+			debugfs_ctxid_val_set, "%llu\n");
-+
-+static ssize_t debugfs_ctxid_mask_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->ctxid_mask;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_ctxid_mask_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	drvdata->ctxid_mask = val;
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_ctxid_mask, "ctxid_mask",
-+			S_IRUGO | S_IWUSR, debugfs_ctxid_mask_get,
-+			debugfs_ctxid_mask_set, "%llu\n");
-+
-+static ssize_t debugfs_sync_freq_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->sync_freq;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_sync_freq_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	drvdata->sync_freq = val & ETM_SYNC_MASK;
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_sync_freq, "sync_freq",
-+			S_IRUGO | S_IWUSR, debugfs_sync_freq_get,
-+			debugfs_sync_freq_set, "%llu\n");
-+
-+static ssize_t debugfs_timestamp_event_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->timestamp_event;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_timestamp_event_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	drvdata->timestamp_event = val & ETM_EVENT_MASK;
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_timestamp_event, "timestamp_event",
-+			S_IRUGO | S_IWUSR, debugfs_timestamp_event_get,
-+			debugfs_timestamp_event_set, "%llu\n");
-+
-+static ssize_t debugfs_status_get(struct seq_file *f, void *ptr)
-+{
-+	unsigned long flags;
-+	struct etm_drvdata *drvdata = f->private;
-+
-+	if (clk_prepare_enable(drvdata->clk))
-+		goto out;
-+
-+	spin_lock_irqsave(&drvdata->spinlock, flags);
-+
-+	CS_UNLOCK(drvdata->base);
-+	seq_printf(f,
-+		   "ETMCCR: 0x%08x\n"
-+		   "ETMCCER: 0x%08x\n"
-+		   "ETMSCR: 0x%08x\n"
-+		   "ETMIDR: 0x%08x\n"
-+		   "ETMCR: 0x%08x\n"
-+		   "Enable event: 0x%08x\n"
-+		   "Enable start/stop: 0x%08x\n"
-+		   "Enable control: CR1 0x%08x CR2 0x%08x\n",
-+		   etm_readl(drvdata, ETMCCR), etm_readl(drvdata, ETMCCER),
-+		   etm_readl(drvdata, ETMSCR), etm_readl(drvdata, ETMIDR),
-+		   etm_readl(drvdata, ETMCR), etm_readl(drvdata, ETMTEEVR),
-+		   etm_readl(drvdata, ETMTSSCR), etm_readl(drvdata, ETMTECR1),
-+		   etm_readl(drvdata, ETMTECR2));
-+	CS_LOCK(drvdata->base);
-+
-+	spin_unlock_irqrestore(&drvdata->spinlock, flags);
-+	clk_disable_unprepare(drvdata->clk);
-+out:
-+	return 0;
-+}
-+static int debugfs_status_show_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, debugfs_status_get, inode->i_private);
-+}
-+
-+static const struct file_operations debugfs_status_ops = {
-+	.open = debugfs_status_show_open,
-+	.read = seq_read,
-+	.llseek = seq_lseek,
-+	.release = single_release,
-+};
-+static const struct coresight_ops_entry debugfs_status_entry = {
-+	.name = "status",
-+	.mode =  S_IRUGO,
-+	.ops = &debugfs_status_ops,
-+};
-+
-+static const struct coresight_ops_entry *etm_attr_grps[] = {
-+	&debugfs_nr_addr_cmp_entry,
-+	&debugfs_nr_cntr_entry,
-+	&debugfs_nr_ctxid_cmp_entry,
-+	&debugfs_reset_entry,
-+	&debugfs_mode_entry,
-+	&debugfs_trigger_event_entry,
-+	&debugfs_enable_event_entry,
-+	&debugfs_fifofull_level_entry,
-+	&debugfs_addr_idx_entry,
-+	&debugfs_addr_single_entry,
-+	&debugfs_addr_range_entry,
-+	&debugfs_addr_start_entry,
-+	&debugfs_addr_stop_entry,
-+	&debugfs_addr_acctype_entry,
-+	&debugfs_cntr_idx_entry,
-+	&debugfs_cntr_rld_val_entry,
-+	&debugfs_cntr_event_entry,
-+	&debugfs_cntr_rld_event_entry,
-+	&debugfs_cntr_val_entry,
-+	&debugfs_12_event_entry,
-+	&debugfs_21_event_entry,
-+	&debugfs_23_event_entry,
-+	&debugfs_31_event_entry,
-+	&debugfs_32_event_entry,
-+	&debugfs_13_event_entry,
-+	&debugfs_seq_curr_state_entry,
-+	&debugfs_ctxid_idx_entry,
-+	&debugfs_ctxid_val_entry,
-+	&debugfs_ctxid_mask_entry,
-+	&debugfs_sync_freq_entry,
-+	&debugfs_timestamp_event_entry,
-+	&debugfs_status_entry,
-+	NULL,
-+};
-+
-+static int etm_cpu_callback(struct notifier_block *nfb, unsigned long action,
-+			    void *hcpu)
-+{
-+	unsigned int cpu = (unsigned long)hcpu;
-+
-+	if (!etmdrvdata[cpu])
-+		goto out;
-+
-+	switch (action & (~CPU_TASKS_FROZEN)) {
-+	case CPU_STARTING:
-+		spin_lock(&etmdrvdata[cpu]->spinlock);
-+		if (!etmdrvdata[cpu]->os_unlock) {
-+			etm_os_unlock(etmdrvdata[cpu]);
-+			etmdrvdata[cpu]->os_unlock = true;
-+		}
-+
-+		if (etmdrvdata[cpu]->enable)
-+			etm_enable_hw(etmdrvdata[cpu]);
-+		spin_unlock(&etmdrvdata[cpu]->spinlock);
-+		break;
-+
-+	case CPU_ONLINE:
-+		if (etmdrvdata[cpu]->boot_enable &&
-+		    !etmdrvdata[cpu]->sticky_enable)
-+			coresight_enable(etmdrvdata[cpu]->csdev);
-+		break;
-+
-+	case CPU_DYING:
-+		spin_lock(&etmdrvdata[cpu]->spinlock);
-+		if (etmdrvdata[cpu]->enable)
-+			etm_disable_hw(etmdrvdata[cpu]);
-+		spin_unlock(&etmdrvdata[cpu]->spinlock);
-+		break;
-+	}
-+out:
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block etm_cpu_notifier = {
-+	.notifier_call = etm_cpu_callback,
-+};
-+
-+static bool etm_arch_supported(u8 arch)
-+{
-+	switch (arch) {
-+	case ETM_ARCH_V3_3:
-+		break;
-+	case ETM_ARCH_V3_5:
-+		break;
-+	case PFT_ARCH_V1_1:
-+		break;
-+	default:
-+		return false;
-+	}
-+	return true;
-+}
-+
-+static void etm_init_arch_data(void *info)
-+{
-+	u32 etmidr;
-+	u32 etmccr;
-+	struct etm_drvdata *drvdata = info;
-+
-+	CS_UNLOCK(drvdata->base);
-+
-+	/* first dummy read */
-+	(void)etm_readl(drvdata, ETMPDSR);
-+	/* Provide power to ETM: ETMPDCR[3] == 1 */
-+	etm_set_pwrup(drvdata);
-+	/*
-+	 * Clear power down bit since when this bit is set writes to
-+	 * certain registers might be ignored.
-+	 */
-+	etm_clr_pwrdwn(drvdata);
-+	/*
-+	 * Set prog bit. It will be set from reset but this is included to
-+	 * ensure it is set
-+	 */
-+	etm_set_prog(drvdata);
-+
-+	/* Find all capabilities */
-+	etmidr = etm_readl(drvdata, ETMIDR);
-+	drvdata->arch = BMVAL(etmidr, 4, 11);
-+	drvdata->port_size = etm_readl(drvdata, ETMCR) & PORT_SIZE_MASK;
-+
-+	etmccr = etm_readl(drvdata, ETMCCR);
-+	drvdata->nr_addr_cmp = BMVAL(etmccr, 0, 3) * 2;
-+	drvdata->nr_cntr = BMVAL(etmccr, 13, 15);
-+	drvdata->nr_ext_inp = BMVAL(etmccr, 17, 19);
-+	drvdata->nr_ext_out = BMVAL(etmccr, 20, 22);
-+	drvdata->nr_ctxid_cmp = BMVAL(etmccr, 24, 25);
-+
-+	etm_set_pwrdwn(drvdata);
-+	etm_clr_pwrup(drvdata);
-+	CS_LOCK(drvdata->base);
-+}
-+
-+static void etm_init_default_data(struct etm_drvdata *drvdata)
-+{
-+	u32 flags = (1 << 0 | /* instruction execute*/
-+		     3 << 3 | /* ARM instruction */
-+		     0 << 5 | /* No data value comparison */
-+		     0 << 7 | /* No exact mach */
-+		     0 << 8 | /* Ignore context ID */
-+		     0 << 10); /* Security ignored */
-+
-+	drvdata->ctrl = (ETMCR_CYC_ACC | ETMCR_TIMESTAMP_EN);
-+	drvdata->enable_ctrl1 = ETMTECR1_ADDR_COMP_1;
-+	if (drvdata->nr_addr_cmp >= 2) {
-+		drvdata->addr_val[0] = (u32) _stext;
-+		drvdata->addr_val[1] = (u32) _etext;
-+		drvdata->addr_acctype[0] = flags;
-+		drvdata->addr_acctype[1] = flags;
-+		drvdata->addr_type[0] = ETM_ADDR_TYPE_RANGE;
-+		drvdata->addr_type[1] = ETM_ADDR_TYPE_RANGE;
-+	}
-+
-+	etm_set_default(drvdata);
-+}
-+
-+static int etm_probe(struct amba_device *adev, const struct amba_id *id)
-+{
-+	int ret;
-+	void __iomem *base;
-+	struct device *dev = &adev->dev;
-+	struct coresight_platform_data *pdata = NULL;
-+	struct etm_drvdata *drvdata;
-+	struct resource *res = &adev->res;
-+	struct coresight_desc *desc;
-+	struct device_node *np = adev->dev.of_node;
-+
-+	desc = devm_kzalloc(dev, sizeof(*desc), GFP_KERNEL);
-+	if (!desc)
-+		return -ENOMEM;
-+
-+	drvdata = devm_kzalloc(dev, sizeof(*drvdata), GFP_KERNEL);
-+	if (!drvdata)
-+		return -ENOMEM;
-+
-+	if (np) {
-+		pdata = of_get_coresight_platform_data(dev, np);
-+		if (IS_ERR(pdata))
-+			return PTR_ERR(pdata);
-+
-+		adev->dev.platform_data = pdata;
-+		drvdata->use_cp14 = of_property_read_bool(np, "arm,cp14");
-+	}
-+
-+	drvdata->dev = &adev->dev;
-+	dev_set_drvdata(dev, drvdata);
-+
-+	/* validity for the resource is already checked by the AMBA core */
-+	base = devm_ioremap_resource(dev, res);
-+	if (IS_ERR(base))
-+		return PTR_ERR(base);
-+
-+	drvdata->base = base;
-+
-+	spin_lock_init(&drvdata->spinlock);
-+
-+	drvdata->clk = adev->pclk;
-+	ret = clk_prepare_enable(drvdata->clk);
-+	if (ret)
-+		return ret;
-+
-+	drvdata->cpu = pdata ? pdata->cpu : 0;
-+
-+	get_online_cpus();
-+	etmdrvdata[drvdata->cpu] = drvdata;
-+
-+	if (!smp_call_function_single(drvdata->cpu, etm_os_unlock, drvdata, 1))
-+		drvdata->os_unlock = true;
-+
-+	if (smp_call_function_single(drvdata->cpu,
-+				     etm_init_arch_data,  drvdata, 1))
-+		dev_err(dev, "ETM arch init failed\n");
-+
-+	if (!count++)
-+		register_hotcpu_notifier(&etm_cpu_notifier);
-+
-+	put_online_cpus();
-+
-+	if (etm_arch_supported(drvdata->arch) == false) {
-+		ret = -EINVAL;
-+		goto err_arch_supported;
-+	}
-+	etm_init_default_data(drvdata);
-+
-+	clk_disable_unprepare(drvdata->clk);
-+
-+	desc->type = CORESIGHT_DEV_TYPE_SOURCE;
-+	desc->subtype.source_subtype = CORESIGHT_DEV_SUBTYPE_SOURCE_PROC;
-+	desc->ops = &etm_cs_ops;
-+	desc->pdata = pdata;
-+	desc->dev = dev;
-+	desc->debugfs_ops = etm_attr_grps;
-+	desc->owner = THIS_MODULE;
-+	drvdata->csdev = coresight_register(desc);
-+	if (IS_ERR(drvdata->csdev)) {
-+		ret = PTR_ERR(drvdata->csdev);
-+		goto err_arch_supported;
-+	}
-+
-+	dev_info(dev, "ETM initialized\n");
-+
-+	if (boot_enable) {
-+		coresight_enable(drvdata->csdev);
-+		drvdata->boot_enable = true;
-+	}
-+
-+	return 0;
-+
-+err_arch_supported:
-+	clk_disable_unprepare(drvdata->clk);
-+	if (--count == 0)
-+		unregister_hotcpu_notifier(&etm_cpu_notifier);
-+	return ret;
-+}
-+
-+static int etm_remove(struct amba_device *adev)
-+{
-+	struct etm_drvdata *drvdata = amba_get_drvdata(adev);
-+
-+	coresight_unregister(drvdata->csdev);
-+	if (--count == 0)
-+		unregister_hotcpu_notifier(&etm_cpu_notifier);
-+
-+	return 0;
-+}
-+
-+static struct amba_id etm_ids[] = {
-+	{	/* ETM 3.3 */
-+		.id	= 0x0003b921,
-+		.mask	= 0x0003ffff,
-+	},
-+	{	/* ETM 3.5 */
-+		.id	= 0x0003b956,
-+		.mask	= 0x0003ffff,
-+	},
-+	{	/* PTM */
-+		.id	= 0x0003b95f,
-+		.mask	= 0x0003ffff,
-+	},
-+	{ 0, 0},
-+};
-+
-+static struct amba_driver etm_driver = {
-+	.drv = {
-+		.name	= "coresight-etm",
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe		= etm_probe,
-+	.remove		= etm_remove,
-+	.id_table	= etm_ids,
-+};
-+
-+int __init etm_init(void)
-+{
-+	return amba_driver_register(&etm_driver);
-+}
-+module_init(etm_init);
-+
-+void __exit etm_exit(void)
-+{
-+	amba_driver_unregister(&etm_driver);
-+}
-+module_exit(etm_exit);
-+
-+MODULE_LICENSE("GPL v2");
-+MODULE_DESCRIPTION("CoreSight Program Flow Trace driver");
-diff --git a/drivers/coresight/coresight-etm.h b/drivers/coresight/coresight-etm.h
-new file mode 100644
-index 0000000..d02e8ad
---- /dev/null
-+++ b/drivers/coresight/coresight-etm.h
-@@ -0,0 +1,192 @@
-+/* Copyright (c) 2014-2015, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#ifndef _CORESIGHT_CORESIGHT_ETM_H
-+#define _CORESIGHT_CORESIGHT_ETM_H
-+
-+#include <linux/spinlock.h>
-+#include "coresight-priv.h"
-+
-+/*
-+ * Device registers:
-+ * 0x000 - 0x2FC: Trace         registers
-+ * 0x300 - 0x314: Management    registers
-+ * 0x318 - 0xEFC: Trace         registers
-+ *
-+ * Coresight registers
-+ * 0xF00 - 0xF9C: Management    registers
-+ * 0xFA0 - 0xFA4: Management    registers in PFTv1.0
-+ *                Trace         registers in PFTv1.1
-+ * 0xFA8 - 0xFFC: Management    registers
-+ */
-+
-+/* Trace registers (0x000-0x2FC) */
-+#define ETMCR			(0x000)
-+#define ETMCCR			(0x004)
-+#define ETMTRIGGER		(0x008)
-+#define ETMSR			(0x010)
-+#define ETMSCR			(0x014)
-+#define ETMTSSCR		(0x018)
-+#define ETMTECR2		(0x01c)
-+#define ETMTEEVR		(0x020)
-+#define ETMTECR1		(0x024)
-+#define ETMFFLR			(0x02C)
-+#define ETMACVRn(n)		(0x040 + (n * 4))
-+#define ETMACTRn(n)		(0x080 + (n * 4))
-+#define ETMCNTRLDVRn(n)		(0x140 + (n * 4))
-+#define ETMCNTENRn(n)		(0x150 + (n * 4))
-+#define ETMCNTRLDEVRn(n)	(0x160 + (n * 4))
-+#define ETMCNTVRn(n)		(0x170 + (n * 4))
-+#define ETMSQ12EVR		(0x180)
-+#define ETMSQ21EVR		(0x184)
-+#define ETMSQ23EVR		(0x188)
-+#define ETMSQ31EVR		(0x18C)
-+#define ETMSQ32EVR		(0x190)
-+#define ETMSQ13EVR		(0x194)
-+#define ETMSQR			(0x19C)
-+#define ETMEXTOUTEVRn(n)	(0x1A0 + (n * 4))
-+#define ETMCIDCVRn(n)		(0x1B0 + (n * 4))
-+#define ETMCIDCMR		(0x1BC)
-+#define ETMIMPSPEC0		(0x1C0)
-+#define ETMIMPSPEC1		(0x1C4)
-+#define ETMIMPSPEC2		(0x1C8)
-+#define ETMIMPSPEC3		(0x1CC)
-+#define ETMIMPSPEC4		(0x1D0)
-+#define ETMIMPSPEC5		(0x1D4)
-+#define ETMIMPSPEC6		(0x1D8)
-+#define ETMIMPSPEC7		(0x1DC)
-+#define ETMSYNCFR		(0x1E0)
-+#define ETMIDR			(0x1E4)
-+#define ETMCCER			(0x1E8)
-+#define ETMEXTINSELR		(0x1EC)
-+#define ETMTESSEICR		(0x1F0)
-+#define ETMEIBCR		(0x1F4)
-+#define ETMTSEVR		(0x1F8)
-+#define ETMAUXCR		(0x1FC)
-+#define ETMTRACEIDR		(0x200)
-+#define ETMVMIDCVR		(0x240)
-+/* Management registers (0x300-0x314) */
-+#define ETMOSLAR		(0x300)
-+#define ETMOSLSR		(0x304)
-+#define ETMOSSRR		(0x308)
-+#define ETMPDCR			(0x310)
-+#define ETMPDSR			(0x314)
-+#define ETM_MAX_ADDR_CMP	(16)
-+#define ETM_MAX_CNTR		(4)
-+#define ETM_MAX_CTXID_CMP	(3)
-+
-+/** register definition **/
-+/* ETMCR - 0x00 */
-+#define ETMCR_PWD_DWN		BIT(0)
-+#define ETMCR_STALL_MODE	BIT(7)
-+#define ETMCR_ETM_PRG		BIT(10)
-+#define ETMCR_ETM_EN		BIT(11)
-+#define ETMCR_CYC_ACC		BIT(12)
-+#define ETMCR_CTXID_SIZE	(BIT(14)|BIT(15))
-+#define ETMCR_TIMESTAMP_EN	BIT(28)
-+/* ETMPDCR - 0x310 */
-+#define ETMPDCR_PWD_UP		BIT(3)
-+/* ETMTECR1 - 0x024 */
-+#define ETMTECR1_ADDR_COMP_1	BIT(0)
-+#define ETMTECR1_INC_EXC	BIT(24)
-+#define ETMTECR1_START_STOP	BIT(25)
-+
-+#define ETM_MODE_EXCLUDE	BIT(0)
-+#define ETM_MODE_CYCACC		BIT(1)
-+#define ETM_MODE_STALL		BIT(2)
-+#define ETM_MODE_TIMESTAMP	BIT(3)
-+#define ETM_MODE_CTXID		BIT(4)
-+#define ETM_MODE_ALL		(0x1F)
-+
-+#define ETM_EVENT_MASK		(0x1FFFF)
-+#define ETM_SYNC_MASK		(0xFFF)
-+#define ETM_ALL_MASK		(0xFFFFFFFF)
-+
-+#define ETMSR_PROG_BIT		1
-+#define ETM_SEQ_STATE_MAX_VAL	(0x2)
-+#define PORT_SIZE_MASK		(BM(21, 21) | BM(4, 6))
-+
-+#define ETM_HARD_WIRE_RES_A	/* Hard wired, always true */	\
-+				((0x0F << 0)	|		\
-+				/* Resource index A */		\
-+				(0x06 << 4))
-+
-+#define ETM_ADD_COMP_0		/* single addr comparator 1 */	\
-+				((0x00 << 7)	|		\
-+				/* Resource index B */		\
-+				(0x00 << 11))
-+
-+#define ETM_EVENT_NOT_A		BIT(14) /* NOT(A) */
-+
-+#define ETM_DEFAULT_EVENT_VAL	(ETM_HARD_WIRE_RES_A	|	\
-+				 ETM_ADD_COMP_0		|	\
-+				 ETM_EVENT_NOT_A)
-+
-+
-+struct etm_drvdata {
-+	void __iomem			*base;
-+	struct device			*dev;
-+	struct coresight_device		*csdev;
-+	struct clk			*clk;
-+	spinlock_t			spinlock;
-+	int				cpu;
-+	int				port_size;
-+	u8				arch;
-+	bool				use_cp14;
-+	bool				enable;
-+	bool				sticky_enable;
-+	bool				boot_enable;
-+	bool				os_unlock;
-+	u8				nr_addr_cmp;
-+	u8				nr_cntr;
-+	u8				nr_ext_inp;
-+	u8				nr_ext_out;
-+	u8				nr_ctxid_cmp;
-+	u8				reset;
-+	u32				mode;
-+	u32				ctrl;
-+	u32				trigger_event;
-+	u32				startstop_ctrl;
-+	u32				enable_event;
-+	u32				enable_ctrl1;
-+	u32				fifofull_level;
-+	u8				addr_idx;
-+	u32				addr_val[ETM_MAX_ADDR_CMP];
-+	u32				addr_acctype[ETM_MAX_ADDR_CMP];
-+	u32				addr_type[ETM_MAX_ADDR_CMP];
-+	u8				cntr_idx;
-+	u32				cntr_rld_val[ETM_MAX_CNTR];
-+	u32				cntr_event[ETM_MAX_CNTR];
-+	u32				cntr_rld_event[ETM_MAX_CNTR];
-+	u32				cntr_val[ETM_MAX_CNTR];
-+	u32				seq_12_event;
-+	u32				seq_21_event;
-+	u32				seq_23_event;
-+	u32				seq_31_event;
-+	u32				seq_32_event;
-+	u32				seq_13_event;
-+	u32				seq_curr_state;
-+	u8				ctxid_idx;
-+	u32				ctxid_val[ETM_MAX_CTXID_CMP];
-+	u32				ctxid_mask;
-+	u32				sync_freq;
-+	u32				timestamp_event;
-+};
-+
-+enum etm_addr_type {
-+	ETM_ADDR_TYPE_NONE,
-+	ETM_ADDR_TYPE_SINGLE,
-+	ETM_ADDR_TYPE_RANGE,
-+	ETM_ADDR_TYPE_START,
-+	ETM_ADDR_TYPE_STOP,
-+};
-+#endif
+ 
+ #include <asm/cacheflush.h>
+ #include <asm/cputype.h>
+@@ -36,7 +37,6 @@
+ #include <asm/hw_breakpoint.h>
+ #include <asm/kdebug.h>
+ #include <asm/traps.h>
+-#include <asm/hardware/coresight.h>
+ 
+ /* Breakpoint currently in use for each BRP. */
+ static DEFINE_PER_CPU(struct perf_event *, bp_on_reg[ARM_MAX_BRP]);
+@@ -976,7 +976,7 @@ static void reset_ctrl_regs(void *unused)
+ 	 * Unconditionally clear the OS lock by writing a value
+ 	 * other than CS_LAR_KEY to the access register.
+ 	 */
+-	ARM_DBG_WRITE(c1, c0, 4, ~CS_LAR_KEY);
++	ARM_DBG_WRITE(c1, c0, 4, ~CORESIGHT_UNLOCK);
+ 	isb();
+ 
+ 	/*
+diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
+index cb31d43..fad0ce9 100644
+--- a/arch/arm/mach-omap2/Kconfig
++++ b/arch/arm/mach-omap2/Kconfig
+@@ -298,14 +298,6 @@ config MACH_TI8148EVM
+ 	depends on SOC_TI81XX
+ 	default y
+ 
+-config OMAP3_EMU
+-	bool "OMAP3 debugging peripherals"
+-	depends on ARCH_OMAP3
+-	select ARM_AMBA
+-	select OC_ETM
+-	help
+-	  Say Y here to enable debugging hardware of omap3
+-
+ config OMAP3_SDRC_AC_TIMING
+ 	bool "Enable SDRC AC timing register changes"
+ 	depends on ARCH_OMAP3
+diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-omap2/Makefile
+index 8421f38..b1bdd9a 100644
+--- a/arch/arm/mach-omap2/Makefile
++++ b/arch/arm/mach-omap2/Makefile
+@@ -224,7 +224,6 @@ obj-$(CONFIG_SOC_OMAP5)			+= omap_hwmod_54xx_data.o
+ obj-$(CONFIG_SOC_DRA7XX)		+= omap_hwmod_7xx_data.o
+ 
+ # EMU peripherals
+-obj-$(CONFIG_OMAP3_EMU)			+= emu.o
+ obj-$(CONFIG_HW_PERF_EVENTS)		+= pmu.o
+ 
+ iommu-$(CONFIG_OMAP_IOMMU)		:= omap-iommu.o
+diff --git a/arch/arm/mach-omap2/emu.c b/arch/arm/mach-omap2/emu.c
+deleted file mode 100644
+index cbeaca2..0000000
+--- a/arch/arm/mach-omap2/emu.c
++++ /dev/null
+@@ -1,50 +0,0 @@
+-/*
+- * emu.c
+- *
+- * ETM and ETB CoreSight components' resources as found in OMAP3xxx.
+- *
+- * Copyright (C) 2009 Nokia Corporation.
+- * Alexander Shishkin
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-
+-#include <linux/kernel.h>
+-#include <linux/init.h>
+-#include <linux/types.h>
+-#include <linux/module.h>
+-#include <linux/device.h>
+-#include <linux/amba/bus.h>
+-#include <linux/io.h>
+-#include <linux/clk.h>
+-#include <linux/err.h>
+-
+-#include "soc.h"
+-#include "iomap.h"
+-
+-MODULE_LICENSE("GPL");
+-MODULE_AUTHOR("Alexander Shishkin");
+-
+-/* Cortex CoreSight components within omap3xxx EMU */
+-#define ETM_BASE	(L4_EMU_34XX_PHYS + 0x10000)
+-#define DBG_BASE	(L4_EMU_34XX_PHYS + 0x11000)
+-#define ETB_BASE	(L4_EMU_34XX_PHYS + 0x1b000)
+-#define DAPCTL		(L4_EMU_34XX_PHYS + 0x1d000)
+-
+-static AMBA_APB_DEVICE(omap3_etb, "etb", 0x000bb907, ETB_BASE, { }, NULL);
+-static AMBA_APB_DEVICE(omap3_etm, "etm", 0x102bb921, ETM_BASE, { }, NULL);
+-
+-static int __init emu_init(void)
+-{
+-	if (!cpu_is_omap34xx())
+-		return -ENODEV;
+-
+-	amba_device_register(&omap3_etb_device, &iomem_resource);
+-	amba_device_register(&omap3_etm_device, &iomem_resource);
+-
+-	return 0;
+-}
+-
+-omap_subsys_initcall(emu_init);
 -- 
 1.9.1
 
