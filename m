@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753754AbaF0MCI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 08:02:08 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:51734 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752868AbaF0MCF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 08:02:05 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/OH5JnNUaAop3PMQ6+J1VONKGBTH4cJl4=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 1A7D659BA03
-Date: Fri, 27 Jun 2014 08:01:51 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Sricharan R <r.sricharan@ti.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, santosh.shilimkar@ti.com, nm@ti.com,
-        rnayak@ti.com, linux@arm.linux.org.uk, tglx@linutronix.de,
-        joe@perches.com
-Subject: Re: [PATCH V4 00/16] irqchip: crossbar: Driver fixes
-Message-ID: <20140627120151.GC23978@titan.lakedaemon.net>
-References: <1403766634-18543-1-git-send-email-r.sricharan@ti.com>
- <20140626074209.GE28884@atomide.com>
+	id S1753820AbaF0MCt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 08:02:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57303 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753601AbaF0MCs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 08:02:48 -0400
+Message-ID: <53AD5D27.2090505@redhat.com>
+Date: Fri, 27 Jun 2014 14:01:43 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140626074209.GE28884@atomide.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Borislav Petkov <bp@alien8.de>
+CC: lkml <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, x86-ml <x86@kernel.org>,
+        kvm@vger.kernel.org, =?UTF-8?B?SsO2cmcgUsO2ZGVs?= <joro@8bytes.org>
+Subject: Re: __schedule #DF splat
+References: <20140625153227.GA13845@pd.tnic> <20140625202650.GC13845@pd.tnic> <20140627101831.GB23153@pd.tnic> <53AD586A.40900@redhat.com> <20140627115545.GC23153@pd.tnic>
+In-Reply-To: <20140627115545.GC23153@pd.tnic>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 26, 2014 at 12:42:09AM -0700, Tony Lindgren wrote:
-> * Sricharan R <r.sricharan@ti.com> [140626 00:14]:
-> > This series does some cleanups, fixes for handling two interrupts
-> > getting mapped twice to same crossbar and provides support for
-> > hardwired IRQ and crossbar definitions.
-> > 
-> > On certain platforms such as DRA7, SPIs 0, 1, 2, 3, 5, 6, 10,
-> > 131, 132, 133 are direct wired to hardware blocks bypassing
-> > crossbar. This quirky implementation is *NOT* supposed to be the
-> > expectation of crossbar hardware usage. This series adds support
-> > to represent such hard-wired irqs through DT and avoid generic
-> > allocation/programming of crossbar in the driver.
-> > 
-> > This way of supporting hard-wired irqs was a result of
-> > the below discussions.
-> > http://www.spinics.net/lists/arm-kernel/msg329946.html
-> > 
-> > Based on 3.16 rc2 mainline.
-> 
-> Jason, once these patches look OK for merging, can you please
-> set them up into an immutable branch so I too can merge them in?
+Il 27/06/2014 13:55, Borislav Petkov ha scritto:
+> On Fri, Jun 27, 2014 at 01:41:30PM +0200, Paolo Bonzini wrote:
+>> Il 27/06/2014 12:18, Borislav Petkov ha scritto:
+>>> Joerg says I should bisect but I'm busy with other stuff. If people are
+>>> interested in chasing this further, I could free up some time to do
+>>> so...
+>>
+>> Please first try "-M pc-1.7" on the 2.0 QEMU.  If it fails, please do bisect
+>> it.  A QEMU bisection between one release only usually takes only half an
+>> hour or so for me.
+>>
+>> I use
+>>
+>> ../configure --target-list=x86_64-softmmu && make distclean &&
+>> ../configure --target-list=x86_64-softmmu &&
+>> make -j8 subdir-x86_64-softmmu
+>>
+>> Until it's below 50 commits.  After that point just "make -j8
+>> subdir-x86_64-softmmu" should do.  This ensures that build system changes do
+>> not bite you as you move back and forth in time.
+>
+> Ok, thanks for the help.
+>
+> However, as it always happens, right after sending the mail, I triggered
+> it with the qemu installed on the system too :-( I.e., qemu 1.7.1.
 
-Sure thing.
+:)
 
-thx,
+Can you try gathering a trace? (and since those things get huge, you can 
+send it to me offlist)  Also try without ept and see what happens.
 
-Jason.
+Also, perhaps you can bisect between Linus's tree and tip?
+
+And finally, what is the host kernel?
+
+Paolo
+
