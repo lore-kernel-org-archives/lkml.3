@@ -1,141 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754151AbaF0U5M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 16:57:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35343 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752936AbaF0U5K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 16:57:10 -0400
-Date: Fri, 27 Jun 2014 16:56:54 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: Mike Snitzer <snitzer@redhat.com>
-cc: Joe Thornber <thornber@redhat.com>,
-        device-mapper development <dm-devel@redhat.com>,
-        linux-kernel@vger.kernel.org, Minfei Huang <huangminfei@ucloud.cn>,
-        linux-raid@vger.kernel.org, agk@redhat.com
-Subject: Re: dm-io: Prevent the danging point of the sync io callback
- function
-In-Reply-To: <20140627192904.GA21254@redhat.com>
-Message-ID: <alpine.LRH.2.02.1406271654360.9941@file01.intranet.prod.int.rdu2.redhat.com>
-References: <1403841690-4401-1-git-send-email-huangminfei@ucloud.cn> <20140627151105.GA30592@debian> <alpine.LRH.2.02.1406271432430.18515@file01.intranet.prod.int.rdu2.redhat.com> <20140627192904.GA21254@redhat.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753432AbaF0U7r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 16:59:47 -0400
+Received: from mailrelay005.isp.belgacom.be ([195.238.6.171]:10142 "EHLO
+	mailrelay005.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751461AbaF0U7q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 16:59:46 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AkUHAGrarVNXQCoO/2dsb2JhbABbgw2rbwUBAQEBAQEFAW0BmQKBDRd1hGAjgRo3iEYBxFMXhWSJIR2ELQWaXYs/iDyCAIFEOy8
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org
+Subject: [PATCH 1/1] mm/hwpoison-inject.c: remove unnecessary null test before debugfs_remove_recursive
+Date: Fri, 27 Jun 2014 22:58:16 +0200
+Message-Id: <1403902696-12162-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Fix checkpatch warning:
+"WARNING: debugfs_remove_recursive(NULL) is safe this check is probably not required"
 
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-mm@kvack.org
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ mm/hwpoison-inject.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-On Fri, 27 Jun 2014, Mike Snitzer wrote:
+diff --git a/mm/hwpoison-inject.c b/mm/hwpoison-inject.c
+index 95487c7..329caf5 100644
+--- a/mm/hwpoison-inject.c
++++ b/mm/hwpoison-inject.c
+@@ -72,8 +72,7 @@ DEFINE_SIMPLE_ATTRIBUTE(unpoison_fops, NULL, hwpoison_unpoison, "%lli\n");
+ 
+ static void pfn_inject_exit(void)
+ {
+-	if (hwpoison_dir)
+-		debugfs_remove_recursive(hwpoison_dir);
++	debugfs_remove_recursive(hwpoison_dir);
+ }
+ 
+ static int pfn_inject_init(void)
+-- 
+1.8.4.5
 
-> On Fri, Jun 27 2014 at  2:44pm -0400,
-> Mikulas Patocka <mpatocka@redhat.com> wrote:
-> 
-> > 
-> > 
-> > On Fri, 27 Jun 2014, Joe Thornber wrote:
-> > 
-> > > On Fri, Jun 27, 2014 at 12:01:30PM +0800, Minfei Huang wrote:
-> > > > The io address in callback function will become the danging point,
-> > > > cause by the thread of sync io wakes up by other threads
-> > > > and return to relieve the io address,
-> > > 
-> > > Yes, well found.  I prefer the following fix however.
-> > > 
-> > > - Joe
-> > 
-> > It seems ok.
-> > 
-> > The patch is too big, I think the only change that needs to be done to fix 
-> > the bug is to replace "struct task_struct *sleeper;" with "struct 
-> > completion *completion;", replace "if (io->sleeper) 
-> > wake_up_process(io->sleeper);" with "if (io->completion) 
-> > complete(io->completion);" and declare the completion in sync_io() and 
-> > wait on it instead of "while (1)" loop there.
-> 
-> Here is the minimalist fix you suggested (I agree that splitting out a
-> minimalist fix is useful):
-
-Acked-by: Mikulas Patocka <mpatocka@redhat.com>
-
->  drivers/md/dm-io.c | 22 ++++++++--------------
->  1 file changed, 8 insertions(+), 14 deletions(-)
-> 
-> diff --git a/drivers/md/dm-io.c b/drivers/md/dm-io.c
-> index 2a20986..e60c2ea 100644
-> --- a/drivers/md/dm-io.c
-> +++ b/drivers/md/dm-io.c
-> @@ -10,6 +10,7 @@
->  #include <linux/device-mapper.h>
->  
->  #include <linux/bio.h>
-> +#include <linux/completion.h>
->  #include <linux/mempool.h>
->  #include <linux/module.h>
->  #include <linux/sched.h>
-> @@ -32,7 +33,7 @@ struct dm_io_client {
->  struct io {
->  	unsigned long error_bits;
->  	atomic_t count;
-> -	struct task_struct *sleeper;
-> +	struct completion *wait;
->  	struct dm_io_client *client;
->  	io_notify_fn callback;
->  	void *context;
-> @@ -121,8 +122,8 @@ static void dec_count(struct io *io, unsigned int region, int error)
->  			invalidate_kernel_vmap_range(io->vma_invalidate_address,
->  						     io->vma_invalidate_size);
->  
-> -		if (io->sleeper)
-> -			wake_up_process(io->sleeper);
-> +		if (io->wait)
-> +			complete(io->wait);
->  
->  		else {
->  			unsigned long r = io->error_bits;
-> @@ -385,6 +386,7 @@ static int sync_io(struct dm_io_client *client, unsigned int num_regions,
->  	 */
->  	volatile char io_[sizeof(struct io) + __alignof__(struct io) - 1];
->  	struct io *io = (struct io *)PTR_ALIGN(&io_, __alignof__(struct io));
-> +	DECLARE_COMPLETION_ONSTACK(wait);
->  
->  	if (num_regions > 1 && (rw & RW_MASK) != WRITE) {
->  		WARN_ON(1);
-> @@ -393,7 +395,7 @@ static int sync_io(struct dm_io_client *client, unsigned int num_regions,
->  
->  	io->error_bits = 0;
->  	atomic_set(&io->count, 1); /* see dispatch_io() */
-> -	io->sleeper = current;
-> +	io->wait = &wait;
->  	io->client = client;
->  
->  	io->vma_invalidate_address = dp->vma_invalidate_address;
-> @@ -401,15 +403,7 @@ static int sync_io(struct dm_io_client *client, unsigned int num_regions,
->  
->  	dispatch_io(rw, num_regions, where, dp, io, 1);
->  
-> -	while (1) {
-> -		set_current_state(TASK_UNINTERRUPTIBLE);
-> -
-> -		if (!atomic_read(&io->count))
-> -			break;
-> -
-> -		io_schedule();
-> -	}
-> -	set_current_state(TASK_RUNNING);
-> +	wait_for_completion_io(&wait);
->  
->  	if (error_bits)
->  		*error_bits = io->error_bits;
-> @@ -432,7 +426,7 @@ static int async_io(struct dm_io_client *client, unsigned int num_regions,
->  	io = mempool_alloc(client->pool, GFP_NOIO);
->  	io->error_bits = 0;
->  	atomic_set(&io->count, 1); /* see dispatch_io() */
-> -	io->sleeper = NULL;
-> +	io->wait = NULL;
->  	io->client = client;
->  	io->callback = fn;
->  	io->context = context;
-> 
