@@ -1,84 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753794AbaF0Oxy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 10:53:54 -0400
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:52039 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752740AbaF0Oxw (ORCPT
+	id S1753977AbaF0Oz1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 10:55:27 -0400
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:64557 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753634AbaF0OzZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 10:53:52 -0400
+	Fri, 27 Jun 2014 10:55:25 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140626090045.GB376@arm.com>
-References: <CAFrcx1n-cPXm=w+84gQiUjZoFKi7gYnvJ0BQ+8yXKS=k3nEt3g@mail.gmail.com>
-	<1403025065-18001-1-git-send-email-jean.pihet@linaro.org>
-	<20140618125355.GA2186@arm.com>
-	<CAFrcx1mA7kXiG9wMQqn=zYPYqrpGxDYWfoMP97RvkkrMTvNoRw@mail.gmail.com>
-	<20140625090110.GD6153@arm.com>
-	<CAFrcx1=gwRzU9heY8o9sphWUiga63NGdpN+cUh81Njr-X-OEGQ@mail.gmail.com>
-	<20140626090045.GB376@arm.com>
-Date: Fri, 27 Jun 2014 16:53:51 +0200
-Message-ID: <CAFrcx1=BGZ4fQugbh_PH-0-OXz_m4uYxUDF9Z9Wwqzp78yqScA@mail.gmail.com>
-Subject: Re: [PATCH] ARM: perf: allow tracing with kernel tracepoints events
-From: Jean Pihet <jean.pihet@linaro.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Sneha Priya <sneha.cse@hotmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20140627141451.GJ15296@arm.com>
+References: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com>
+ <20140405001953.GE15806@google.com> <20140407083120.GE17163@e106497-lin.cambridge.arm.com>
+ <5183143.FxBNM0xTAV@wuerfel> <CAErSpo4iEV6khP63ZTF+YUTKi9WLFXzMv13nxw15y3qDg15Ztg@mail.gmail.com>
+ <20140626085926.GB11244@arm.com> <CAL_JsqKCHf6VXR3FFcBSu1xuhP54dYsAJCZwT-X9p5iTZAOJfQ@mail.gmail.com>
+ <20140627141451.GJ15296@arm.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 27 Jun 2014 08:55:04 -0600
+Message-ID: <CAErSpo7nhqJGXcnY4FO=6CZtYdSY0qNUyRSP3nnxAUO5L6c+jA@mail.gmail.com>
+Subject: Re: [PATCH v7 1/6] pci: Introduce pci_register_io_range() helper function.
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Rob Herring <robherring2@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, linux-pci <linux-pci@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jon Masters <jonathan@jonmasters.org>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Michal Simek <monstr@monstr.eu>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Will,
+On Fri, Jun 27, 2014 at 8:14 AM, Catalin Marinas
+<catalin.marinas@arm.com> wrote:
+> ...
+> With Liviu's latest version (not posted) and with
+> of_create_pci_host_bridge() function moved to of_pci.c, I don't think
+> there is much new functionality added to drivers/pci/. What I think we
+> need is clarifying the domain_nr patch (and API change) and more users
+> of the new generic code. As you said, it doesn't need to be a separate
+> architecture but rather existing pci host drivers under drivers/pci. Of
+> course, other arch conversion should follow shortly as well but even
+> without an immediate conversion, I don't see too much additional
+> maintenance burden for the core PCIe code (and code sharing between new
+> PCIe host drivers is even more beneficial).
 
-On 26 June 2014 11:00, Will Deacon <will.deacon@arm.com> wrote:
-> On Wed, Jun 25, 2014 at 03:54:14PM +0100, Jean Pihet wrote:
->> Hi Will,
->
-> Hello,
->
->> On 25 June 2014 11:01, Will Deacon <will.deacon@arm.com> wrote:
->> > On Fri, Jun 20, 2014 at 09:10:35AM +0100, Jean Pihet wrote:
->> >> On 18 June 2014 14:53, Will Deacon <will.deacon@arm.com> wrote:
->> >> > On Tue, Jun 17, 2014 at 06:11:05PM +0100, Jean Pihet wrote:
->> >> >> Tested with perf record and tracepoints filtering (-e <tracepoint>), with
->> >> >> unwinding using fp (--call-graph fp) and dwarf info (--call-graph dwarf).
->> >> >
->> >> > Whilst the old ACPS unwinding only needs PC, FP and SP, is this definitely
->> >> > true for exidx and DWARF-based unwinding? Given that libunwind ends up
->> >> > running a state machine for the latter, can we guarantee that we won't hit
->> >> > instructions that require access to other general purpose registers?
->> >> Yes. dwarf unwinding does not need anything extra. Once seeded all the
->> >> rest is extracted from the dwarf trace info.
->> >
->> > Ok, but what if the LR isn't saved on the stack, for example? What if the
->> > code you're trying to unwind is hand-written assembly annotated with CFI
->> > directives?
->> Then in that case the unwinding is not possible unless the
->> hand-crafted asm is compatible with the requested unwinding method
->> (fp, dwarf etc.). Do you expect problems there, if so can you give
->> more details?
->
-> To use a readily available AArch64 example, take a look at
-> __kernel_gettimeofday in arch/arm64/kernel/vdso/gettimeofday.S
->
-> It starts by moving the link register into x2, so that it can later call
-> __do_get_tspec without clobbering it. Furthermore, it doesn't make use of
-> the stack at all.
->
-> How can you unwind that using your current code?
-That is interesting. In that case that particular function will not be
-seen in the call chain since lr, fp are the ones from the caller. I
-did not try on a real case, it would be nice to try it out, I can do
-that as soon as I am back on ARM64.
+Sorry, I haven't had time to follow this.  It sounds like there are
+several pieces we could get out of the way easily.  How about posting
+the actual patches again?  Maybe re-order them so the easy pieces are
+first so they can get applied even if there are issues with later
+ones?
 
-Note: I was debugging a deadlock in perf doing call chain unwinding
-and tracepoint triggering. A new patch set is on its way.
-
-Thx & regards,
-Jean
-
->
-> Will
+Bjorn
