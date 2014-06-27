@@ -1,224 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754179AbaF0OY6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 10:24:58 -0400
-Received: from www.linutronix.de ([62.245.132.108]:49809 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753435AbaF0OY4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 10:24:56 -0400
-Date: Fri, 27 Jun 2014 16:24:52 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Austin Schuh <austin@peloton-tech.com>
-cc: Richard Weinberger <richard.weinberger@gmail.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        rt-users <linux-rt-users@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: Filesystem lockup with CONFIG_PREEMPT_RT
-In-Reply-To: <CANGgnMa+qtgJ3wwg_h5Rynw5vEvZpQZ6PvaUfXNQ8+Y3Yu5U0g@mail.gmail.com>
-Message-ID: <alpine.DEB.2.10.1406271249510.5170@nanos>
-References: <CANGgnMbHckBQdKGN_N5Q6qEKc9n1CenxvMpeXog1NbSdL8UrTw@mail.gmail.com> <CANGgnMYDXerOUDOO9-RHMJKadKACA2KBGskZwoP-1ZwAhDEfVA@mail.gmail.com> <CAFLxGvxfBt7OvW=a2Kz08GLHSEiiOZsN-vB19CXnQiwqFxqMsA@mail.gmail.com> <CANGgnMYVoP-Z0Bv-VDEkJnvfa7Fi4-zY2F4A0PhMewGvwo3VVw@mail.gmail.com>
- <alpine.DEB.2.10.1406270027300.5170@nanos> <CANGgnMa+qtgJ3wwg_h5Rynw5vEvZpQZ6PvaUfXNQ8+Y3Yu5U0g@mail.gmail.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1753847AbaF0O1S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 10:27:18 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:53942 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753130AbaF0O1R convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 10:27:17 -0400
+Date: Fri, 27 Jun 2014 10:27:15 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Petr =?UTF-8?B?TWzDoWRlaw==?= <pmladek@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, Michal Hocko <mhocko@suse.cz>,
+        Jan Kara <jack@suse.cz>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Dave Anderson <anderson@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>
+Subject: Re: [RFC][PATCH 3/5 v2] seq_buf: Move the seq_buf code to lib/
+Message-ID: <20140627102715.1b670022@gandalf.local.home>
+In-Reply-To: <20140627134810.GC23205@pathway.suse.cz>
+References: <20140626214901.596791200@goodmis.org>
+	<20140626220130.068245931@goodmis.org>
+	<20140627134810.GC23205@pathway.suse.cz>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Jun 2014, Austin Schuh wrote:
-> If I'm reading the rt patch correctly, wq_worker_sleeping was moved
-> out of __schedule to sched_submit_work.  It looks like that changes
-> the conditions under which wq_worker_sleeping is called.  It used to
-> be called whenever a task was going to sleep (I think).  It looks like
-> it is called now if the task is going to sleep, and if the task isn't
-> blocked on a PI mutex (I think).
+On Fri, 27 Jun 2014 15:48:10 +0200
+Petr Mládek <pmladek@suse.cz> wrote:
+
+> On Thu 2014-06-26 17:49:04, Steven Rostedt wrote:
+> > From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> > 
+> > The seq_buf functions are rather useful outside of tracing. Instead
+> > of having it be dependent on CONFIG_TRACING, move the code into lib/
+> > and allow other users to have access to it even when tracing is not
+> > configured.
+> > 
+> > The seq_buf utility is similar to the seq_file utility, but instead of
+> > writing sending data back up to userland, it writes it into a buffer
+> > defined at seq_buf_init(). This allows us to send a descriptor around
+> > that writes printf() formatted strings into it that can be retrieved
+> > later.
+> > 
+> > It is currently used by the tracing facility for such things like trace
+> > events to convert its binary saved data in the ring buffer into an
+> > ASCII human readable context to be displayed in /sys/kernel/debug/trace.
+> > 
+> > It can also be used for doing NMI prints safely from NMI context into
+> > the seq_buf and retrieved later and dumped to printk() safely. Doing
+> > printk() from an NMI context is dangerous because an NMI can preempt
+> > a current printk() and deadlock on it.
+> > 
+> > Link: http://lkml.kernel.org/p/20140619213952.058255809@goodmis.org
+> > 
+> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> > ---
+> >  kernel/trace/seq_buf.c | 348 -------------------------------------------------
+> >  lib/Makefile           |   2 +-
+> >  lib/seq_buf.c          | 348 +++++++++++++++++++++++++++++++++++++++++++++++++
+> >  lib/trace_seq.c        | 303 ++++++++++++++++++++++++++++++++++++++++++
 > 
-> If I try the following experiment
+> I guess that lib/trace_seq.c was copied by mistake.
+
+Heh, that's what I get for using both quilt and git :-)
+
+To start with what I had before (and use my scripts for the Link tag),
+I pulled the old patch from my email and pulled it into a quilt queue.
+Did a "quilt push -f" and then started from there. I removed all the
+trace_seq.c updates but forgot that quilt push -f would create the file
+in lib/.
+
+When done with all my updates, I just did a git am of the patch in my
+quilt queue, which pulled in the old copy of trace_seq.c in lib/ :-p
+
+I'll remove it.
+
 > 
->  static inline void sched_submit_work(struct task_struct *tsk)
->  {
-> +   if (tsk->state && tsk->flags & PF_WQ_WORKER) {
-> +     wq_worker_sleeping(tsk);
-> +     return;
-> +   }
+> >  4 files changed, 652 insertions(+), 349 deletions(-)
+> >  delete mode 100644 kernel/trace/seq_buf.c
+> >  create mode 100644 lib/seq_buf.c
+> >  create mode 100644 lib/trace_seq.c
+> > 
+> > diff --git a/lib/Makefile b/lib/Makefile
+> > index ba967a19edba..6007194082c6 100644
+> > --- a/lib/Makefile
+> > +++ b/lib/Makefile
+> > @@ -13,7 +13,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
+> >  	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
+> >  	 proportions.o flex_proportions.o prio_heap.o ratelimit.o show_mem.o \
+> >  	 is_single_threaded.o plist.o decompress.o kobject_uevent.o \
+> > -	 earlycpio.o
+> > +	 earlycpio.o seq_buf.o
+> >  
+> >  obj-$(CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS) += usercopy.o
+> >  lib-$(CONFIG_MMU) += ioremap.o
 > 
-> and then remove the call later in the function, I am able to pass my test.
+> There is missing:
+
+Nope, it just was copied by mistake. It only added dead code, it didn't
+move it.
+
+-- Steve
+
 > 
-> Unfortunately, I then get a recursive pool spinlock BUG_ON after a
-> while (as I would expect), and it all blows up.
+> diff --git a/kernel/trace/Makefile b/kernel/trace/Makefile
+> index edc98c72a634..67d6369ddf83 100644
+> --- a/kernel/trace/Makefile
+> +++ b/kernel/trace/Makefile
+> @@ -29,7 +29,6 @@ obj-$(CONFIG_RING_BUFFER_BENCHMARK) += ring_buffer_benchmark.o
+>  obj-$(CONFIG_TRACING) += trace.o
+>  obj-$(CONFIG_TRACING) += trace_output.o
+>  obj-$(CONFIG_TRACING) += trace_seq.o
+> -obj-$(CONFIG_TRACING) += seq_buf.o
+>  obj-$(CONFIG_TRACING) += trace_stat.o
+>  obj-$(CONFIG_TRACING) += trace_printk.o
+>  obj-$(CONFIG_CONTEXT_SWITCH_TRACER) += trace_sched_switch.o
+> 
+> 
+> Best Regards,
+> Petr
 
-Well, that's why the check for !pi_blocked_on is there.
- 
-> I'm not sure where to go from there.  Any changes to the workpool to
-> try to fix that will be hard, or could affect latency significantly.
-
-Completely untested patch below.
-
-Thanks,
-
-	tglx
-
---------------------->
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 8749d20..621329a 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2651,9 +2651,8 @@ need_resched:
- 
- static inline void sched_submit_work(struct task_struct *tsk)
- {
--	if (!tsk->state || tsk_is_pi_blocked(tsk))
-+	if (!tsk->state)
- 		return;
--
- 	/*
- 	 * If a worker went to sleep, notify and ask workqueue whether
- 	 * it wants to wake up a task to maintain concurrency.
-@@ -2661,6 +2660,10 @@ static inline void sched_submit_work(struct task_struct *tsk)
- 	if (tsk->flags & PF_WQ_WORKER)
- 		wq_worker_sleeping(tsk);
- 
-+
-+	if (tsk_is_pi_blocked(tsk))
-+		return;
-+
- 	/*
- 	 * If we are going to sleep and we have plugged IO queued,
- 	 * make sure to submit it to avoid deadlocks.
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index be0ef50..0ca9d97 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -126,6 +126,8 @@ enum {
-  *    cpu or grabbing pool->lock is enough for read access.  If
-  *    POOL_DISASSOCIATED is set, it's identical to L.
-  *
-+ *    On RT we need the extra protection via rt_lock_idle_list()
-+ *
-  * MG: pool->manager_mutex and pool->lock protected.  Writes require both
-  *     locks.  Reads can happen under either lock.
-  *
-@@ -409,6 +411,31 @@ static void copy_workqueue_attrs(struct workqueue_attrs *to,
- 		if (({ assert_rcu_or_wq_mutex(wq); false; })) { }	\
- 		else
- 
-+#ifdef CONFIG_PREEMPT_RT_BASE
-+static inline void rt_lock_idle_list(struct worker_pool *pool)
-+{
-+	preempt_disable();
-+}
-+static inline void rt_unlock_idle_list(struct worker_pool *pool)
-+{
-+	preempt_enable();
-+}
-+static inline void sched_lock_idle_list(struct worker_pool *pool) { }
-+static inline void sched_unlock_idle_list(struct worker_pool *pool) { }
-+#else
-+static inline void rt_lock_idle_list(struct worker_pool *pool) { }
-+static inline void rt_unlock_idle_list(struct worker_pool *pool) { }
-+static inline void sched_lock_idle_list(struct worker_pool *pool)
-+{
-+	spin_lock_irq(&pool->lock);
-+}
-+static inline void sched_unlock_idle_list(struct worker_pool *pool)
-+{
-+	spin_unlock_irq(&pool->lock);
-+}
-+#endif
-+
-+
- #ifdef CONFIG_DEBUG_OBJECTS_WORK
- 
- static struct debug_obj_descr work_debug_descr;
-@@ -801,10 +828,16 @@ static struct worker *first_worker(struct worker_pool *pool)
-  */
- static void wake_up_worker(struct worker_pool *pool)
- {
--	struct worker *worker = first_worker(pool);
-+	struct worker *worker;
-+
-+	rt_lock_idle_list(pool);
-+
-+	worker = first_worker(pool);
- 
- 	if (likely(worker))
- 		wake_up_process(worker->task);
-+
-+	rt_unlock_idle_list(pool);
- }
- 
- /**
-@@ -832,7 +865,7 @@ void wq_worker_running(struct task_struct *task)
-  */
- void wq_worker_sleeping(struct task_struct *task)
- {
--	struct worker *next, *worker = kthread_data(task);
-+	struct worker *worker = kthread_data(task);
- 	struct worker_pool *pool;
- 
- 	/*
-@@ -849,25 +882,18 @@ void wq_worker_sleeping(struct task_struct *task)
- 		return;
- 
- 	worker->sleeping = 1;
--	spin_lock_irq(&pool->lock);
-+
- 	/*
- 	 * The counterpart of the following dec_and_test, implied mb,
- 	 * worklist not empty test sequence is in insert_work().
- 	 * Please read comment there.
--	 *
--	 * NOT_RUNNING is clear.  This means that we're bound to and
--	 * running on the local cpu w/ rq lock held and preemption
--	 * disabled, which in turn means that none else could be
--	 * manipulating idle_list, so dereferencing idle_list without pool
--	 * lock is safe.
- 	 */
- 	if (atomic_dec_and_test(&pool->nr_running) &&
- 	    !list_empty(&pool->worklist)) {
--		next = first_worker(pool);
--		if (next)
--			wake_up_process(next->task);
-+		sched_lock_idle_list(pool);
-+		wake_up_worker(pool);
-+		sched_unlock_idle_list(pool);
- 	}
--	spin_unlock_irq(&pool->lock);
- }
- 
- /**
-@@ -1571,7 +1597,9 @@ static void worker_enter_idle(struct worker *worker)
- 	worker->last_active = jiffies;
- 
- 	/* idle_list is LIFO */
-+	rt_lock_idle_list(pool);
- 	list_add(&worker->entry, &pool->idle_list);
-+	rt_unlock_idle_list(pool);
- 
- 	if (too_many_workers(pool) && !timer_pending(&pool->idle_timer))
- 		mod_timer(&pool->idle_timer, jiffies + IDLE_WORKER_TIMEOUT);
-@@ -1604,7 +1632,9 @@ static void worker_leave_idle(struct worker *worker)
- 		return;
- 	worker_clr_flags(worker, WORKER_IDLE);
- 	pool->nr_idle--;
-+	rt_lock_idle_list(pool);
- 	list_del_init(&worker->entry);
-+	rt_unlock_idle_list(pool);
- }
- 
- /**
-@@ -1849,7 +1879,9 @@ static void destroy_worker(struct worker *worker)
- 	 */
- 	get_task_struct(worker->task);
- 
-+	rt_lock_idle_list(pool);
- 	list_del_init(&worker->entry);
-+	rt_unlock_idle_list(pool);
- 	worker->flags |= WORKER_DIE;
- 
- 	idr_remove(&pool->worker_idr, worker->id);
