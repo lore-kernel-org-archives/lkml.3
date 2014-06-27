@@ -1,99 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754252AbaF0VWX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 17:22:23 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:49970 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751597AbaF0VWU (ORCPT
+	id S1754165AbaF0Vdg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 17:33:36 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:50777 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752851AbaF0Vde (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 17:22:20 -0400
+	Fri, 27 Jun 2014 17:33:34 -0400
+Message-ID: <53ADE328.1080005@wwwdotorg.org>
+Date: Fri, 27 Jun 2014 15:33:28 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <53AC61B9.5030408@wwwdotorg.org>
-References: <1403072180-4944-1-git-send-email-abrestic@chromium.org>
-	<1403072180-4944-5-git-send-email-abrestic@chromium.org>
-	<53AB493F.3030802@wwwdotorg.org>
-	<CAL1qeaHhoqEPu-j+drNiRMyeutz=qqZPxSP8H+v-sgjZSfS5tQ@mail.gmail.com>
-	<53AC61B9.5030408@wwwdotorg.org>
-Date: Fri, 27 Jun 2014 14:22:19 -0700
-X-Google-Sender-Auth: c68za3WcCHC2mL5VvVYNqv5vzdE
-Message-ID: <CAL1qeaFBM3VCwEUHQywoRAkreHT+j4BQf8NWWLpzw0D2heeBXA@mail.gmail.com>
-Subject: Re: [PATCH v1 4/9] pinctrl: tegra-xusb: Add USB PHY support
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+To: Thierry Reding <thierry.reding@gmail.com>, Hiroshi DOyu <hdoyu@nvidia.com>
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        Will Deacon <will.deacon@arm.com>, Joerg Roedel <joro@8bytes.org>,
+        Cho KyongHo <pullip.cho@samsung.com>,
+        Grant Grundler <grundler@chromium.org>,
+        Dave Martin <Dave.Martin@arm.com>, Marc Zyngier <marc.zyngier@arm.com>,
+        Olav Haugan <ohaugan@codeaurora.org>,
+        Paul Walmsley <pwalmsley@nvidia.com>,
+        Rhyland Klein <rklein@nvidia.com>, Allen Martin <AMartin@nvidia.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        linux-usb@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Kishon Vijay Abraham I <kishon@ti.com>, Arnd Bergmann <arnd@arndb.de>,
-        balbi@ti.com
-Content-Type: text/plain; charset=UTF-8
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC 04/10] memory: Add Tegra124 memory controller support
+References: <1403815790-8548-1-git-send-email-thierry.reding@gmail.com> <1403815790-8548-5-git-send-email-thierry.reding@gmail.com> <20140627124638.7ec150cca163c89727b8953f@nvidia.com> <20140627110811.GD2797@ulmo>
+In-Reply-To: <20140627110811.GD2797@ulmo>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="iRP0KUiPV5PFsE2Td3VmAJUehJcledoiQ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 26, 2014 at 11:08 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 06/25/2014 05:30 PM, Andrew Bresticker wrote:
->> On Wed, Jun 25, 2014 at 3:12 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
->>> On 06/18/2014 12:16 AM, Andrew Bresticker wrote:
->>>> In addition to the PCIe and SATA PHYs, the XUSB pad controller also
->>>> supports 3 UTMI, 2 HSIC, and 2 USB3 PHYs.  Each USB3 PHY uses a single
->>>> PCIe or SATA lane and is mapped to one of the three UTMI ports.
->>>>
->>>
->>>> diff --git a/drivers/pinctrl/pinctrl-tegra-xusb.c b/drivers/pinctrl/pinctrl-tegra-xusb.c
->>>
->>>> @@ -372,6 +720,193 @@ static int tegra_xusb_padctl_pinconf_group_set(struct pinctrl_dev *pinctrl,
->>>>                       padctl_writel(padctl, regval, lane->offset);
->>>>                       break;
->>>>
->>>> +             case TEGRA_XUSB_PADCTL_USB3_PORT_NUM:
->>>> +                     if (value >= TEGRA_XUSB_PADCTL_USB3_PORTS) {
->>>> +                             dev_err(padctl->dev, "Invalid USB3 port: %lu\n",
->>>> +                                     value);
->>>> +                             return -EINVAL;
->>>> +                     }
->>>> +                     if (!is_pcie_sata_lane(group)) {
->>>> +                             dev_err(padctl->dev,
->>>> +                                     "USB3 port not applicable for pin %d\n",
->>>> +                                     group);
->>>> +                             return -EINVAL;
->>>> +                     }
->>>> +                     padctl->usb3_ports[value].lane = group;
->>>> +                     break;
->>>
->>> It feels odd to use pinctrl for a SW-only purpose. In other words, that
->>> chunk of code isn't writing the pinconf data to HW, but rather some
->>> internal variable.
->>
->> Well the mapping of lanes to USB3 ports is a hardware property and we
->> do use it when programming the hardware later to choose which set of
->> lane registers to program given a USB3 port, but it's true that it's
->> not some value we program into HW directly.
->>
->>> Perhaps it would make more sense for the DT binding to represent this
->>> data directly in a custom property that's parsed at probe() time. That
->>> way, pinctrl only touches "real" HW stuff.
->>
->> I'm on the fence about this.  If you or others feel strongly about
->> this then I can make it a separate DT property and move it out of the
->> pinctrl properties.
->
-> I'd certainly prefer to use pinctrl bindings only for things that get
-> directly written into HW. Other configuration data should be easy to
-> retrieve directly from properties.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--iRP0KUiPV5PFsE2Td3VmAJUehJcledoiQ
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Ok, I'll make a separate DT property for the USB3 port <-> lane
-assignments then.
+On 06/27/2014 05:08 AM, Thierry Reding wrote:
+> On Fri, Jun 27, 2014 at 12:46:38PM +0300, Hiroshi DOyu wrote:
+>>
+>> Thierry Reding <thierry.reding@gmail.com> writes:
+>>
+>>> From: Thierry Reding <treding@nvidia.com>
+>>>
+>>> The memory controller on NVIDIA Tegra124 exposes various knobs that c=
+an
+>>> be used to tune the behaviour of the clients attached to it.
+>>>
+>>> Currently this driver sets up the latency allowance registers to the =
+HW
+>>> defaults. Eventually an API should be exported by this driver (via a
+>>> custom API or a generic subsystem) to allow clients to register laten=
+cy
+>>> requirements.
+>>>
+>>> This driver also registers an IOMMU (SMMU) that's implemented by the
+>>> memory controller.
+>>>
+>>> Signed-off-by: Thierry Reding <treding@nvidia.com>
+>>> ---
+>>>  drivers/memory/Kconfig                   |    9 +
+>>>  drivers/memory/Makefile                  |    1 +
+>>>  drivers/memory/tegra124-mc.c             | 1945 ++++++++++++++++++++=
+++++++++++
+>>>  include/dt-bindings/memory/tegra124-mc.h |   30 +
+>>>  4 files changed, 1985 insertions(+)
+>>>  create mode 100644 drivers/memory/tegra124-mc.c
+>>>  create mode 100644 include/dt-bindings/memory/tegra124-mc.h
+>>
+>> I prefer reusing the existing SMMU and having MC and SMMU separated
+>> since most of SMMU code are not different from functionality POV, and
+>> new MC features are quite independent of SMMU.
+>>
+>> If it's really convenient to combine MC and SMMU into one driver, we
+>> could move "drivers/iomm/tegra-smmu.c" here first, and add MC features=
+
+>> on the top of it.
+>=20
+> I'm not sure if we can do that, since the tegra-smmu driver is
+> technically used by Tegra30 and Tegra114. We've never really made use o=
+f
+> it, but there are device trees in mainline releases that contain the
+> separate SMMU node.
+
+The existing DT nodes do nothing more than instantiate the driver.
+However, IIUC nothing actually uses the driver for any purpose, so if we
+simply deleted those nodes or changed them incompatibly, there'd be no
+functional difference. Perhaps this is stretching DT ABIness very
+slightly, but I think it makes no practical difference.
+
+
+--iRP0KUiPV5PFsE2Td3VmAJUehJcledoiQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJTreMoAAoJEJuNpwkmVCGchyMP/RMvyiKBagbYiO7NxlbVm0El
+as1+Vf95u18zvTQkYpLCj4mwwAB0WQ1F4gQPrlk8DeLVVgiK0cg3FJfn29y2ufLK
+bjXWXO9Lq2UtL2MP3fZmttkYUi6SLTsP/NCQVLPPbheAQyJKGjSextI8/lKV8uq1
+kufVLFDd+qdYNdM/VJaso1Q6oUn5PB43sft57JudZovzLrAVFfm/6sQXwwTqYfFw
+W2CZ+zKBnt2L8L1KBaVvFvZGiizxejvfApgbUrfNhY/q8v0330fU8htg+9z1mgjY
+isfeEllFK0wV+Vmq/v2cFDMC3OhpLZp5nq5/fhCAJB2/HNXhP8mEypKeKQHeFvey
+TjciyQ3MFI9Rig41o/qKVt5w8Ih8WvY7NCm+6n/yukBfFn8k4cHLteBbrjU6+qhc
++lJ/tmkXgHqF+u+J3iJdmblOrjkLWhDTxQCRpj1M+5gxpdCIXdmMUGRY1TGiqzzm
+Wx/GHJ2EdujyWjmrYsO62WwQrRtb2nutytBHk7VCtghmEqWwUOx5fsc/hH4zDrwl
+oxQO9L5Knt7tpqoQOqXpYQpoxdcwfMmU6DGi0CVWMncISqAL9JZG+f/eY/wxrgpu
+L5QsAx5+19pEtuxeFvTelC9APzNz5ccOl0joRBvYybkqjstsmTd5GxAF4moO1NwQ
+2v8lj49ngpi/pssv2j2A
+=Ovyz
+-----END PGP SIGNATURE-----
+
+--iRP0KUiPV5PFsE2Td3VmAJUehJcledoiQ--
