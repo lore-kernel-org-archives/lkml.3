@@ -1,112 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753346AbaF0LPW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 07:15:22 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:49800 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752825AbaF0LPU (ORCPT
+	id S1753382AbaF0LRz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 07:17:55 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:27815 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752895AbaF0LRw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 07:15:20 -0400
-Date: Fri, 27 Jun 2014 13:15:16 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Will Deacon <will.deacon@arm.com>, Joerg Roedel <joro@8bytes.org>,
-        Cho KyongHo <pullip.cho@samsung.com>,
-        Grant Grundler <grundler@chromium.org>,
-        Dave Martin <Dave.Martin@arm.com>, Marc Zyngier <marc.zyngier@arm.com>,
-        Hiroshi Doyu <hdoyu@nvidia.com>, Olav Haugan <ohaugan@codeaurora.org>,
-        Paul Walmsley <pwalmsley@nvidia.com>,
-        Rhyland Klein <rklein@nvidia.com>, Allen Martin <amartin@nvidia.com>,
-        devicetree@vger.kernel.org, iommu@lists.linux-foundation.org,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC 04/10] memory: Add Tegra124 memory controller support
-Message-ID: <20140627111514.GE2797@ulmo>
-References: <1403815790-8548-1-git-send-email-thierry.reding@gmail.com>
- <1403815790-8548-5-git-send-email-thierry.reding@gmail.com>
- <9283417.yKmnrljUYI@wuerfel>
+	Fri, 27 Jun 2014 07:17:52 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+KnnEX7ECtf5tDjp9I5FYtwwdWD77oUaI=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 582D959B5E7
+Date: Fri, 27 Jun 2014 07:17:46 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Feng Kan <fkan@apm.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Marc Zyngier <marc.zyngier@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        patches <patches@apm.com>, Vinayak Kale <vkale@apm.com>
+Subject: Re: [PATCH V2 2/2] irqchip: gic: preserve gic V2 bypass bits in
+ cpu ctrl register
+Message-ID: <20140627111746.GV10202@titan.lakedaemon.net>
+References: <1403734041-5112-1-git-send-email-fkan@apm.com>
+ <1403734041-5112-3-git-send-email-fkan@apm.com>
+ <alpine.DEB.2.10.1406260302510.5170@nanos>
+ <CAL85gmAPXDTO2x4esYNq1ZHUAwuNTtMCNtc+ODwnrNPEaDH_1w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ytoMbUMiTKPMT3hY"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <9283417.yKmnrljUYI@wuerfel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAL85gmAPXDTO2x4esYNq1ZHUAwuNTtMCNtc+ODwnrNPEaDH_1w@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jun 26, 2014 at 09:48:25AM -0700, Feng Kan wrote:
+> On Wed, Jun 25, 2014 at 6:05 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > On Wed, 25 Jun 2014, Feng Kan wrote:
+> >
+> >> This change is made to preserve the GIC v2 bypass bits in the
+> >> GIC_CPU_CTRL register (also known as the GICC_CTLR register in spec).
+> >> This code will preserve all bits configured by the bootloader regarding
+> >> v2 bypass group bits. In the X-Gene platform, the bypass functionality
+> >> is not used and bypass bits should not be changed by the kernel gic
+> >> code as it could lead to incorrect behavior.
+> >>
+> >> Signed-off-by: Vinayak Kale <vkale@apm.com>
+> >> Signed-off-by: Feng Kan <fkan@apm.com>
+> >
+> > Who wrote the patch? According to the SOB chain it's Vinayak, but your
+> > patch is missing the:
+> 
+> I wrote the patch which was based on Vinayak's original change. I can
+> change it to
+> Reviewed-by. I was trying to give him credit.
+> 
 
---ytoMbUMiTKPMT3hY
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Then please leave the S-o-b's alone and append a note describing the
+changes you made to his original patch.
 
-On Fri, Jun 27, 2014 at 01:07:04PM +0200, Arnd Bergmann wrote:
-> On Thursday 26 June 2014 22:49:44 Thierry Reding wrote:
-> > +static const struct tegra_mc_client tegra124_mc_clients[] =3D {
-> > +       {
-> > +               .id =3D 0x01,
-> > +               .name =3D "display0a",
-> > +               .swgroup =3D TEGRA_SWGROUP_DC,
-> > +               .smmu =3D {
-> > +                       .reg =3D 0x228,
-> > +                       .bit =3D 1,
-> > +               },
-> > +               .latency =3D {
-> > +                       .reg =3D 0x2e8,
-> > +                       .shift =3D 0,
-> > +                       .mask =3D 0xff,
-> > +                       .def =3D 0xc2,
-> > +               },
-> > +       }, {
->=20
-> This is a rather long table that I assume would need to get duplicated
-> and modified for each specific SoC. Have you considered to put the inform=
-ation
-> into DT instead, as auxiliary data in the iommu specifier as provided by
-> the device?
+eg:
 
-Most of this data really is register information and I don't think that
-belongs in DT. Also since this is fixed for a given SoC and in no way
-configurable (well, with the exception of the .def field above) I don't
-see any point in parsing this from device tree.
+----->8-------------
+From: Vinayak Kale <vkale@apm.com>
 
-Also only the .smmu substruct is immediately relevant to the IOMMU part
-of the driver. The .swgroup field could possibly also be moved into that
-substructure since it is only relevant to the IOMMU.
+This change is made to preserve the GIC v2 bypass bits in the
+GIC_CPU_CTRL register (also known as the GICC_CTLR register in spec).
+This code will preserve all bits configured by the bootloader regarding
+v2 bypass group bits. In the X-Gene platform, the bypass functionality
+is not used and bypass bits should not be changed by the kernel gic
+code as it could lead to incorrect behavior.
 
-So essentially what this table does is map SWGROUPs (which are provided
-in the IOMMU specifier) to the clients and registers that the IOMMU
-programming needs. As an analogy it corresponds roughly to the pins and
-pingroups tables of pinctrl drivers. Those don't belong in device tree
-either.
+[Feng Kan: Rebased on magic number removal patch, added feature X, fixed
+bug Y.]
 
-Thierry
+Signed-off-by: Vinayak Kale <vkale@apm.com>
+Signed-off-by: Feng Kan <fkan@apm.com>
+----->8-------------
 
---ytoMbUMiTKPMT3hY
-Content-Type: application/pgp-signature
+'git am' will use the info from the last 'From:' as the author of the
+commit.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+It goes without saying (even though I'm mentioning it ;-) ) the S-o-b
+means a very specific thing.  It is *not* there to enhance credit.  It
+is there to indicate that the person referenced (yourself and Vinayak)
+have read, understood, and consent to the Developer's Certificate of
+Origin [1].  Nothing else.
 
-iQIcBAEBAgAGBQJTrVJCAAoJEN0jrNd/PrOhoJwP/3bcyKeMM9rOidAK/YuG2rkx
-wxOt4mD+g6YYYCAPjsijMjbzdA17V/PAnSEnLUFQdwnsqD88SCIt2gQsgDdhchN/
-KXuWatve2B08m+S0rnaJrTsImcC/uSnKTAgyvOP8brC8zkc+5N04FB+fTiVhz1YE
-XPjcib08jgdOsasFyhCRJDHukdDXDjrv8xBhpDBZwuSxVjKWzXJFQPW8Lca8/Qm6
-fPxYJftIlMEXq/1CuuG7vEka56bJX7jBJK6qQX2nRBM0jMx55N7z/5fdbFwN2rlU
-3dD1fGbcEjcgJiyMABtZJFPHoEtKkQ52S6vtJFMr6NrnaVnQr/Xlmp8j1iBxAE4h
-zVwi/v9zHj6371jBaU0YkGp20sSj3+o0mkqTbq4+oOK7q4bWa6Hg2nGIsrgHkZ0K
-boVNARzkU4p/iF3MWVSJ23oDSgTtH85hHRUFnzOQySMOb1/2Rd2RdRGhJE/Aypli
-pYzgKei3ESWERIf/EKphRTz33johFZGJW65UXOlh39C0Lwzn0ehPPiZvhorIn86E
-0kAB73a/Ar2JY7o6AIJnh46YcMJXUTaUJPf7qknfK7GH+YztcVU4yEbhDtvzWjr0
-vUf5XREWOb/0WcotPxCTbyslSwdK7AQdBvCIIdOUmoUkw+0owbOpJySgUub8kP6O
-lG+7+Jkzm1YqClKMUxvH
-=edre
------END PGP SIGNATURE-----
+The commit message tags have one purpose:  To accurately render
+information about a commit.  Who wrote it, who applied it, who reviewed
+it, who let it go by a different tree than the default for a subsystem,
+etc.
 
---ytoMbUMiTKPMT3hY--
+Attempts to (mis)use them as a corporate evaluation metric only leads to
+developers trying to game the system.  More importantly, it wastes
+maintainers time because now we have to question whether the appended
+tags are indeed factual. :(
+
+thx,
+
+Jason.
+
+[1] Documentation/SubmittingPatches, Section 12.
