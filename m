@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753914AbaF0N1M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 09:27:12 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:35034 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752717AbaF0N0k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753819AbaF0N0k (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 27 Jun 2014 09:26:40 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:34844 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752822AbaF0N0e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 09:26:34 -0400
 From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
 To: mturquette@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
         mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
@@ -15,9 +15,9 @@ Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         kernel@stlinux.com, Lee Jones <lee.jones@linaro.org>,
         Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Subject: [PATCH v2 01/14] clk: st: Update ST clock binding documentation
-Date: Fri, 27 Jun 2014 15:24:58 +0200
-Message-Id: <1403875511-7710-2-git-send-email-gabriel.fernandez@linaro.org>
+Subject: [PATCH v2 04/14] clk: st: Adds Flexgen clock binding
+Date: Fri, 27 Jun 2014 15:25:01 +0200
+Message-Id: <1403875511-7710-5-git-send-email-gabriel.fernandez@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403875511-7710-1-git-send-email-gabriel.fernandez@linaro.org>
 References: <1403875511-7710-1-git-send-email-gabriel.fernandez@linaro.org>
@@ -27,342 +27,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds new compatibilities to support STiH407 SoC.
+A Flexgen structure is composed by:
+- a clock cross bar (represented by a mux element)
+- a pre and final dividers (represented by a divider and gate elements)
 
 Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
 Acked-by: Peter Griffin <peter.griffin@linaro.org>
 ---
- .../bindings/clock/st/st,clkgen-divmux.txt         | 28 +++++------
- .../devicetree/bindings/clock/st/st,clkgen-mux.txt |  6 +--
- .../devicetree/bindings/clock/st/st,clkgen-pll.txt | 17 ++++---
- .../bindings/clock/st/st,clkgen-prediv.txt         |  8 ++--
- .../devicetree/bindings/clock/st/st,clkgen-vcc.txt | 34 ++++++++------
- .../devicetree/bindings/clock/st/st,clkgen.txt     | 54 +++++++++++++---------
- .../devicetree/bindings/clock/st/st,quadfs.txt     | 15 +++---
- 7 files changed, 94 insertions(+), 68 deletions(-)
+ .../devicetree/bindings/clock/st/st,clkgen.txt     |  5 +++
+ .../devicetree/bindings/clock/st/st,flexgen.txt    | 48 ++++++++++++++++++++++
+ 2 files changed, 53 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/clock/st/st,flexgen.txt
 
-diff --git a/Documentation/devicetree/bindings/clock/st/st,clkgen-divmux.txt b/Documentation/devicetree/bindings/clock/st/st,clkgen-divmux.txt
-index ae56315..6247652 100644
---- a/Documentation/devicetree/bindings/clock/st/st,clkgen-divmux.txt
-+++ b/Documentation/devicetree/bindings/clock/st/st,clkgen-divmux.txt
-@@ -24,26 +24,26 @@ Required properties:
- 
- Example:
- 
--	clockgenA@fd345000 {
-+	clockgen-a@fd345000 {
- 		reg = <0xfd345000 0xb50>;
- 
--		CLK_M_A1_DIV1: CLK_M_A1_DIV1 {
-+		clk_m_a1_div1: clk-m-a1-div1 {
- 			#clock-cells = <1>;
- 			compatible = "st,clkgena-divmux-c32-odf1",
- 				     "st,clkgena-divmux";
- 
--			clocks = <&CLK_M_A1_OSC_PREDIV>,
--				 <&CLK_M_A1_PLL0 1>, /* PLL0 PHI1 */
--				 <&CLK_M_A1_PLL1 1>; /* PLL1 PHI1 */
--
--			clock-output-names = "CLK_M_RX_ICN_TS",
--					     "CLK_M_RX_ICN_VDP_0",
--					     "", /* Unused */
--					     "CLK_M_PRV_T1_BUS",
--					     "CLK_M_ICN_REG_12",
--					     "CLK_M_ICN_REG_10",
--					     "", /* Unused */
--					     "CLK_M_ICN_ST231";
-+			clocks = <&clk_m_a1_osc_prediv>,
-+				 <&clk_m_a1_pll0 1>, /* PLL0 PHI1 */
-+				 <&clk_m_a1_pll1 1>; /* PLL1 PHI1 */
-+
-+			clock-output-names = "clk-m-rx-icn-ts",
-+					     "clk-m-rx-icn-vdp-0",
-+					     "", /* unused */
-+					     "clk-m-prv-t1-bus",
-+					     "clk-m-icn-reg-12",
-+					     "clk-m-icn-reg-10",
-+					     "", /* unused */
-+					     "clk-m-icn-st231";
- 		};
- 	};
- 
-diff --git a/Documentation/devicetree/bindings/clock/st/st,clkgen-mux.txt b/Documentation/devicetree/bindings/clock/st/st,clkgen-mux.txt
-index 943e080..f1fa91c 100644
---- a/Documentation/devicetree/bindings/clock/st/st,clkgen-mux.txt
-+++ b/Documentation/devicetree/bindings/clock/st/st,clkgen-mux.txt
-@@ -17,7 +17,7 @@ Required properties:
- 	"st,stih416-clkgenf-vcc-sd",	"st,clkgen-mux"
- 	"st,stih415-clkgen-a9-mux",	"st,clkgen-mux"
- 	"st,stih416-clkgen-a9-mux",	"st,clkgen-mux"
--
-+	"st,stih407-clkgen-a9-mux",	"st,clkgen-mux"
- 
- - #clock-cells : from common clock binding; shall be set to 0.
- 
-@@ -27,10 +27,10 @@ Required properties:
- 
- Example:
- 
--	CLK_M_HVA: CLK_M_HVA {
-+	clk_m_hva: clk-m-hva@fd690868 {
- 		#clock-cells = <0>;
- 		compatible = "st,stih416-clkgenf-vcc-hva", "st,clkgen-mux";
- 		reg = <0xfd690868 4>;
- 
--		clocks = <&CLOCKGEN_F 1>, <&CLK_M_A1_DIV0 3>;
-+		clocks = <&clockgen_f 1>, <&clk_m_a1_div0 3>;
- 	};
-diff --git a/Documentation/devicetree/bindings/clock/st/st,clkgen-pll.txt b/Documentation/devicetree/bindings/clock/st/st,clkgen-pll.txt
-index 81eb385..efb51cf 100644
---- a/Documentation/devicetree/bindings/clock/st/st,clkgen-pll.txt
-+++ b/Documentation/devicetree/bindings/clock/st/st,clkgen-pll.txt
-@@ -19,11 +19,14 @@ Required properties:
- 	"st,stih415-plls-c32-ddr",	"st,clkgen-plls-c32"
- 	"st,stih416-plls-c32-a9",	"st,clkgen-plls-c32"
- 	"st,stih416-plls-c32-ddr",	"st,clkgen-plls-c32"
-+	"st,stih407-plls-c32-a0",	"st,clkgen-plls-c32"
-+	"st,stih407-plls-c32-a9",	"st,clkgen-plls-c32"
-+	"st,stih407-plls-c32-c0_0",	"st,clkgen-plls-c32"
-+	"st,stih407-plls-c32-c0_1",	"st,clkgen-plls-c32"
- 
- 	"st,stih415-gpu-pll-c32",	"st,clkgengpu-pll-c32"
- 	"st,stih416-gpu-pll-c32",	"st,clkgengpu-pll-c32"
- 
--
- - #clock-cells : From common clock binding; shall be set to 1.
- 
- - clocks : From common clock binding
-@@ -32,17 +35,17 @@ Required properties:
- 
- Example:
- 
--	clockgenA@fee62000 {
-+	clockgen-a@fee62000 {
- 		reg = <0xfee62000 0xb48>;
- 
--		CLK_S_A0_PLL: CLK_S_A0_PLL {
-+		clk_s_a0_pll: clk-s-a0-pll {
- 			#clock-cells = <1>;
- 			compatible = "st,clkgena-plls-c65";
- 
--			clocks = <&CLK_SYSIN>;
-+			clocks = <&clk_sysin>;
- 
--			clock-output-names = "CLK_S_A0_PLL0_HS",
--					     "CLK_S_A0_PLL0_LS",
--					     "CLK_S_A0_PLL1";
-+			clock-output-names = "clk-s-a0-pll0-hs",
-+					     "clk-s-a0-pll0-ls",
-+					     "clk-s-a0-pll1";
- 		};
- 	};
-diff --git a/Documentation/devicetree/bindings/clock/st/st,clkgen-prediv.txt b/Documentation/devicetree/bindings/clock/st/st,clkgen-prediv.txt
-index 566c9d7..604766c 100644
---- a/Documentation/devicetree/bindings/clock/st/st,clkgen-prediv.txt
-+++ b/Documentation/devicetree/bindings/clock/st/st,clkgen-prediv.txt
-@@ -20,17 +20,17 @@ Required properties:
- 
- Example:
- 
--	clockgenA@fd345000 {
-+	clockgen-a@fd345000 {
- 		reg = <0xfd345000 0xb50>;
- 
--		CLK_M_A2_OSC_PREDIV: CLK_M_A2_OSC_PREDIV {
-+		clk_m_a2_osc_prediv: clk-m-a2-osc-prediv {
- 			#clock-cells = <0>;
- 			compatible = "st,clkgena-prediv-c32",
- 				     "st,clkgena-prediv";
- 
--			clocks = <&CLK_SYSIN>;
-+			clocks = <&clk_sysin>;
- 
--			clock-output-names = "CLK_M_A2_OSC_PREDIV";
-+			clock-output-names = "clk-m-a2-osc-prediv";
- 		};
- 	};
- 
-diff --git a/Documentation/devicetree/bindings/clock/st/st,clkgen-vcc.txt b/Documentation/devicetree/bindings/clock/st/st,clkgen-vcc.txt
-index 4e3ff28..109b3ed 100644
---- a/Documentation/devicetree/bindings/clock/st/st,clkgen-vcc.txt
-+++ b/Documentation/devicetree/bindings/clock/st/st,clkgen-vcc.txt
-@@ -32,22 +32,30 @@ Required properties:
- 
- Example:
- 
--	CLOCKGEN_C_VCC: CLOCKGEN_C_VCC {
-+	clockgen_c_vcc: clockgen-c-vcc@0xfe8308ac {
- 		#clock-cells = <1>;
- 		compatible = "st,stih416-clkgenc", "st,clkgen-vcc";
- 		reg = <0xfe8308ac 12>;
- 
--		clocks = <&CLK_S_VCC_HD>, <&CLOCKGEN_C 1>,
--			<&CLK_S_TMDS_FROMPHY>, <&CLOCKGEN_C 2>;
--
--		clock-output-names  =
--			"CLK_S_PIX_HDMI",  "CLK_S_PIX_DVO",
--			"CLK_S_OUT_DVO",   "CLK_S_PIX_HD",
--			"CLK_S_HDDAC",     "CLK_S_DENC",
--			"CLK_S_SDDAC",     "CLK_S_PIX_MAIN",
--			"CLK_S_PIX_AUX",   "CLK_S_STFE_FRC_0",
--			"CLK_S_REF_MCRU",  "CLK_S_SLAVE_MCRU",
--			"CLK_S_TMDS_HDMI", "CLK_S_HDMI_REJECT_PLL",
--			"CLK_S_THSENS";
-+		clocks = <&clk_s_vcc_hd>,
-+			 <&clockgen_c 1>,
-+			 <&clk_s_tmds_fromphy>,
-+			 <&clockgen_c 2>;
-+
-+		clock-output-names  = "clk-s-pix-hdmi",
-+				      "clk-s-pix-dvo",
-+				      "clk-s-out-dvo",
-+				      "clk-s-pix-hd",
-+				      "clk-s-hddac",
-+				      "clk-s-denc",
-+				      "clk-s-sddac",
-+				      "clk-s-pix-main",
-+				      "clk-s-pix-aux",
-+				      "clk-s-stfe-frc-0",
-+				      "clk-s-ref-mcru",
-+				      "clk-s-slave-mcru",
-+				      "clk-s-tmds-hdmi",
-+				      "clk-s-hdmi-reject-pll",
-+				      "clk-s-thsens";
- 	};
- 
 diff --git a/Documentation/devicetree/bindings/clock/st/st,clkgen.txt b/Documentation/devicetree/bindings/clock/st/st,clkgen.txt
-index 49ec5ae..427bad8 100644
+index 427bad8..78978f1 100644
 --- a/Documentation/devicetree/bindings/clock/st/st,clkgen.txt
 +++ b/Documentation/devicetree/bindings/clock/st/st,clkgen.txt
-@@ -24,60 +24,72 @@ address is common of all subnode.
- 		quadfs_node {
+@@ -32,6 +32,10 @@ address is common of all subnode.
+ 		vcc_node {
  			...
  		};
 +
-+		mux_node {
-+			...
-+		};
-+
-+		vcc_node {
++		flexgen_node {
 +			...
 +		};
  		...
  	};
  
- This binding uses the common clock binding[1].
--Each subnode should use the binding discribe in [2]..[4]
-+Each subnode should use the binding discribe in [2]..[7]
+@@ -45,6 +49,7 @@ Each subnode should use the binding discribe in [2]..[7]
+ [5] Documentation/devicetree/bindings/clock/st,clkgen-prediv.txt
+ [6] Documentation/devicetree/bindings/clock/st,vcc.txt
+ [7] Documentation/devicetree/bindings/clock/st,quadfs.txt
++[8] Documentation/devicetree/bindings/clock/st,flexgen.txt
  
- [1] Documentation/devicetree/bindings/clock/clock-bindings.txt
--[2] Documentation/devicetree/bindings/clock/st,quadfs.txt
--[3] Documentation/devicetree/bindings/clock/st,quadfs.txt
--[4] Documentation/devicetree/bindings/clock/st,quadfs.txt
-+[2] Documentation/devicetree/bindings/clock/st,clkgen-divmux.txt
-+[3] Documentation/devicetree/bindings/clock/st,clkgen-mux.txt
-+[4] Documentation/devicetree/bindings/clock/st,clkgen-pll.txt
-+[5] Documentation/devicetree/bindings/clock/st,clkgen-prediv.txt
-+[6] Documentation/devicetree/bindings/clock/st,vcc.txt
-+[7] Documentation/devicetree/bindings/clock/st,quadfs.txt
-+
  
  Required properties:
- - reg : A Base address and length of the register set.
- 
- Example:
- 
--	clockgenA@fee62000 {
-+	clockgen-a@fee62000 {
- 
- 		reg = <0xfee62000 0xb48>;
- 
--		CLK_S_A0_PLL: CLK_S_A0_PLL {
-+		clk_s_a0_pll: clk-s-a0-pll {
- 			#clock-cells = <1>;
- 			compatible = "st,clkgena-plls-c65";
- 
--			clocks = <&CLK_SYSIN>;
-+			clocks = <&clk-sysin>;
- 
--			clock-output-names = "CLK_S_A0_PLL0_HS",
--					     "CLK_S_A0_PLL0_LS",
--					     "CLK_S_A0_PLL1";
-+			clock-output-names = "clk-s-a0-pll0-hs",
-+					     "clk-s-a0-pll0-ls",
-+					     "clk-s-a0-pll1";
- 		};
- 
--		CLK_S_A0_OSC_PREDIV: CLK_S_A0_OSC_PREDIV {
-+		clk_s_a0_osc_prediv: clk-s-a0-osc-prediv {
- 			#clock-cells = <0>;
- 			compatible = "st,clkgena-prediv-c65",
- 				     "st,clkgena-prediv";
- 
--			clocks = <&CLK_SYSIN>;
-+			clocks = <&clk_sysin>;
- 
--			clock-output-names = "CLK_S_A0_OSC_PREDIV";
-+			clock-output-names = "clk-s-a0-osc-prediv";
- 		};
- 
--		CLK_S_A0_HS: CLK_S_A0_HS {
-+		clk_s_a0_hs: clk-s-a0-hs {
- 			#clock-cells = <1>;
- 			compatible = "st,clkgena-divmux-c65-hs",
- 				     "st,clkgena-divmux";
- 
--			clocks = <&CLK_S_A0_OSC_PREDIV>,
--				 <&CLK_S_A0_PLL 0>, /* PLL0 HS */
--				 <&CLK_S_A0_PLL 2>; /* PLL1 */
-+			clocks = <&clk-s_a0_osc_prediv>,
-+				 <&clk-s_a0_pll 0>, /* pll0 hs */
-+				 <&clk-s_a0_pll 2>; /* pll1 */
- 
--			clock-output-names = "CLK_S_FDMA_0",
--					     "CLK_S_FDMA_1",
--					     ""; /* CLK_S_JIT_SENSE */
--					     /* Fourth output unused */
-+			clock-output-names = "clk-s-fdma-0",
-+					     "clk-s-fdma-1",
-+					     ""; /* clk-s-jit-sense */
-+					     /* fourth output unused */
- 		};
- 	};
- 
-diff --git a/Documentation/devicetree/bindings/clock/st/st,quadfs.txt b/Documentation/devicetree/bindings/clock/st/st,quadfs.txt
-index ec86d62..cedeb9c 100644
---- a/Documentation/devicetree/bindings/clock/st/st,quadfs.txt
-+++ b/Documentation/devicetree/bindings/clock/st/st,quadfs.txt
-@@ -15,6 +15,9 @@ Required properties:
-   "st,stih416-quadfs432",	"st,quadfs"
-   "st,stih416-quadfs660-E",	"st,quadfs"
-   "st,stih416-quadfs660-F",	"st,quadfs"
-+  "st,stih407-quadfs660-C",	"st,quadfs"
-+  "st,stih407-quadfs660-D",	"st,quadfs"
+diff --git a/Documentation/devicetree/bindings/clock/st/st,flexgen.txt b/Documentation/devicetree/bindings/clock/st/st,flexgen.txt
+new file mode 100644
+index 0000000..f2d4333
+--- /dev/null
++++ b/Documentation/devicetree/bindings/clock/st/st,flexgen.txt
+@@ -0,0 +1,48 @@
++Binding for a type of flexgen structure found on certain
++STMicroelectronics consumer electronics SoC devices
 +
- 
- - #clock-cells : from common clock binding; shall be set to 1.
- 
-@@ -32,14 +35,14 @@ Required properties:
- 
- Example:
- 
--	CLOCKGEN_E: CLOCKGEN_E {
-+	clockgen_e: clockgen-e@fd3208bc {
-                 #clock-cells = <1>;
-                 compatible = "st,stih416-quadfs660-E", "st,quadfs";
-                 reg = <0xfd3208bc 0xB0>;
- 
--                clocks = <&CLK_SYSIN>;
--                clock-output-names = "CLK_M_PIX_MDTP_0",
--                                        "CLK_M_PIX_MDTP_1",
--                                        "CLK_M_PIX_MDTP_2",
--                                        "CLK_M_MPELPC";
-+                clocks = <&clk_sysin>;
-+                clock-output-names = "clk-m-pix-mdtp-0",
-+				     "clk-m-pix-mdtp-1",
-+				     "clk-m-pix-mdtp-2",
-+				     "clk-m-mpelpc";
-         };
++This structure includes:
++- a clock cross bar (represented by a mux element)
++- a pre and final dividers (represented by a divider and gate elements)
++
++This binding uses the common clock binding[1].
++
++[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
++
++Required properties:
++- compatible : shall be:
++  "st,flexgen"
++
++- #clock-cells : from common clock binding; shall be set to 1.
++
++- clocks : from common clock binding
++
++- clock-output-names : From common clock binding. The block has 4
++                       clock outputs but not all of them in a specific instance
++                       have to be used in the SoC. If a clock name is left as
++                       an empty string then no clock will be created for the
++                       output associated with that string index. If fewer than
++                       4 strings are provided then no clocks will be created
++                       for the remaining outputs.
++
++Example:
++
++	clockgen-d2@x9106000 {
++		compatible = "st,clkgen-c32";
++		reg = <0x9106000 0x1000>;
++
++		clk_s_d2_flexgen: clk-s-d2-flexgen {
++			compatible = "st,flexgen";
++
++			#clock-cells = <1>;
++			clocks = <&clk_s_d2_quadfs 0>,
++				 <&clk_s_d2_quadfs 1>,
++				 <&clk_s_d2_quadfs 2>,
++				 <&clk_s_d2_quadfs 3>;
++
++			clock-output-names = "clk-pix-main-disp",
++					     "clk-pix-pip",
++					     "clk-pix-gdp1",
++					     "clk-pix-gdp2";
++		};
++	};
 -- 
 1.9.1
 
