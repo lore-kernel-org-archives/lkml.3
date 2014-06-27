@@ -1,76 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752979AbaF0TL5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 15:11:57 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:56389 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751984AbaF0TL4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 15:11:56 -0400
-Message-ID: <1403896312.5830.77.camel@marge.simpson.net>
-Subject: Re: Filesystem lockup with CONFIG_PREEMPT_RT
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Austin Schuh <austin@peloton-tech.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        rt-users <linux-rt-users@vger.kernel.org>
-Date: Fri, 27 Jun 2014 21:11:52 +0200
-In-Reply-To: <20140627141903.16817c28@gandalf.local.home>
-References: <CANGgnMbHckBQdKGN_N5Q6qEKc9n1CenxvMpeXog1NbSdL8UrTw@mail.gmail.com>
-	 <CANGgnMYDXerOUDOO9-RHMJKadKACA2KBGskZwoP-1ZwAhDEfVA@mail.gmail.com>
-	 <CAFLxGvxfBt7OvW=a2Kz08GLHSEiiOZsN-vB19CXnQiwqFxqMsA@mail.gmail.com>
-	 <CANGgnMYVoP-Z0Bv-VDEkJnvfa7Fi4-zY2F4A0PhMewGvwo3VVw@mail.gmail.com>
-	 <alpine.DEB.2.10.1406270027300.5170@nanos>
-	 <CANGgnMa+qtgJ3wwg_h5Rynw5vEvZpQZ6PvaUfXNQ8+Y3Yu5U0g@mail.gmail.com>
-	 <1403873856.5827.56.camel@marge.simpson.net>
-	 <20140627100157.6b0143a5@gandalf.local.home>
-	 <1403890493.5830.33.camel@marge.simpson.net>
-	 <20140627135415.7246e87e@gandalf.local.home>
-	 <1403892474.5830.41.camel@marge.simpson.net>
-	 <20140627141903.16817c28@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753438AbaF0TOp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 15:14:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60996 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751823AbaF0TOn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 15:14:43 -0400
+From: Jarod Wilson <jarod@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jarod Wilson <jarod@redhat.com>, Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Stephan Mueller <stephan.mueller@atsec.com>,
+        linux-crypto@vger.kernel.org
+Subject: [PATCH] crypto/fips: only panic on bad/missing crypto mod signatures
+Date: Fri, 27 Jun 2014 15:12:54 -0400
+Message-Id: <1403896374-62781-1-git-send-email-jarod@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-06-27 at 14:19 -0400, Steven Rostedt wrote: 
-> On Fri, 27 Jun 2014 20:07:54 +0200
-> Mike Galbraith <umgwanakikbuti@gmail.com> wrote:
->  
-> > > Why do we need the wakeup? the owner of the lock should wake it up
-> > > shouldn't it?
-> > 
-> > True, but that can take ages.
-> 
-> Can it? If the workqueue is of some higher priority, it should boost
-> the process that owns the lock. Otherwise it just waits like anything
-> else does.
+Per further discussion with NIST, the requirements for FIPS state that
+we only need to panic the system on failed kernel module signature checks
+for crypto subsystem modules. This moves the fips-mode-only module
+signature check out of the generic module loading code, into the crypto
+subsystem, at points where we can catch both algorithm module loads and
+mode module loads. At the same time, make CONFIG_CRYPTO_FIPS dependent on
+CONFIG_MODULE_SIG, as this is entirely necessary for FIPS mode.
 
-No, not like everything else, preempt a lock holder.  IO that starts
-moving upon context switch in a stock kernel can rot for ages in rt when
-an IO packing task bumps into lock held by preempted task.  When there's
-a prio delta on a lock, sure, PI kicks in to help a high prio task.. but
-there is no PI help for high priority task waiting on IO stuck behind a
-low prio task plug.
+CC: Herbert Xu <herbert@gondor.apana.org.au>
+CC: "David S. Miller" <davem@davemloft.net>
+CC: Rusty Russell <rusty@rustcorp.com.au>
+CC: Stephan Mueller <stephan.mueller@atsec.com>
+CC: linux-crypto@vger.kernel.org
+Signed-off-by: Jarod Wilson <jarod@redhat.com>
+---
+ crypto/Kconfig  |  1 +
+ crypto/algapi.c | 13 +++++++++++++
+ kernel/module.c |  3 ---
+ 3 files changed, 14 insertions(+), 3 deletions(-)
 
-(you're taking workqueue, I'm talking IO, but the two meet in things
-like raid too. you can't prioritize workqueues, and PI doesn't really
-have a lot to do with the general issue of things happening or not
-happening at context switch time, and consequences thereof)
-
-> I much rather keep the paradigm of the mainline kernel than to add a
-> bunch of hacks that can cause more unforeseen side effects that may
-> cause other issues.
-
-The paradigm of mainline is to start IO on context switch, reason for
-that is IO deadlock prevention.  We need to follow paradigm somehow.
-That somehow really wants to be a tad prettier and more guaranteed than
-my somehow :)
-
--Mike
+diff --git a/crypto/Kconfig b/crypto/Kconfig
+index ce4012a..36402e5 100644
+--- a/crypto/Kconfig
++++ b/crypto/Kconfig
+@@ -24,6 +24,7 @@ comment "Crypto core or helper"
+ config CRYPTO_FIPS
+ 	bool "FIPS 200 compliance"
+ 	depends on CRYPTO_ANSI_CPRNG && !CRYPTO_MANAGER_DISABLE_TESTS
++	depends on MODULE_SIG
+ 	help
+ 	  This options enables the fips boot option which is
+ 	  required if you want to system to operate in a FIPS 200
+diff --git a/crypto/algapi.c b/crypto/algapi.c
+index 7a1ae87..7d228ff 100644
+--- a/crypto/algapi.c
++++ b/crypto/algapi.c
+@@ -43,6 +43,12 @@ static inline int crypto_set_driver_name(struct crypto_alg *alg)
+ 
+ static int crypto_check_alg(struct crypto_alg *alg)
+ {
++#ifdef CONFIG_CRYPTO_FIPS
++	if (fips_enabled && alg->cra_module && !alg->cra_module->sig_ok)
++		panic("Module %s signature verification failed in FIPS mode\n",
++		      alg->cra_module->name);
++#endif
++
+ 	if (alg->cra_alignmask & (alg->cra_alignmask + 1))
+ 		return -EINVAL;
+ 
+@@ -430,6 +436,12 @@ int crypto_register_template(struct crypto_template *tmpl)
+ 
+ 	down_write(&crypto_alg_sem);
+ 
++#ifdef CONFIG_CRYPTO_FIPS
++	if (fips_enabled && tmpl->module && !tmpl->module->sig_ok)
++		panic("Module %s signature verification failed in FIPS mode\n",
++		      tmpl->module->name);
++#endif
++
+ 	list_for_each_entry(q, &crypto_template_list, list) {
+ 		if (q == tmpl)
+ 			goto out;
+@@ -437,6 +449,7 @@ int crypto_register_template(struct crypto_template *tmpl)
+ 
+ 	list_add(&tmpl->list, &crypto_template_list);
+ 	crypto_notify(CRYPTO_MSG_TMPL_REGISTER, tmpl);
++
+ 	err = 0;
+ out:
+ 	up_write(&crypto_alg_sem);
+diff --git a/kernel/module.c b/kernel/module.c
+index 81e727c..ec801d5 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -2448,9 +2448,6 @@ static int module_sig_check(struct load_info *info)
+ 	}
+ 
+ 	/* Not having a signature is only an error if we're strict. */
+-	if (err < 0 && fips_enabled)
+-		panic("Module verification failed with error %d in FIPS mode\n",
+-		      err);
+ 	if (err == -ENOKEY && !sig_enforce)
+ 		err = 0;
+ 
+-- 
+1.8.3.1
 
