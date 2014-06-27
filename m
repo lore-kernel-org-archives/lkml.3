@@ -1,160 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752854AbaF0WP2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 18:15:28 -0400
-Received: from mx02.posteo.de ([89.146.194.165]:34559 "EHLO posteo.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752415AbaF0WP0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 18:15:26 -0400
-Message-ID: <53ADECDA.60600@posteo.de>
-Date: Sat, 28 Jun 2014 00:14:50 +0200
-From: Martin Kepplinger <martink@posteo.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Icedove/24.6.0
+	id S1752561AbaF0WXd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 18:23:33 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:58775 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750985AbaF0WXa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 18:23:30 -0400
+Message-ID: <53ADEEDF.7060902@codeaurora.org>
+Date: Fri, 27 Jun 2014 15:23:27 -0700
+From: Olav Haugan <ohaugan@codeaurora.org>
+Organization: Qualcomm Innovation Center, Inc.
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Zhang Rui <rui.zhang@intel.com>
-CC: "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "lenb@kernel.org" <lenb@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+To: Will Deacon <will.deacon@arm.com>
+CC: Mark Rutland <Mark.Rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-media@vger.kernel.org
-Subject: Re: [BUG] rc1 and rc2: Laptop unusable: on boot,screen black instead
- of native resolution
-References: <53A6E72A.9090000@posteo.de>		 <744357E9AAD1214791ACBA4B0B90926301379B97@SHSMSX101.ccr.corp.intel.com>		 <53A81BF7.3030207@posteo.de> <1403529246.4686.6.camel@rzhang1-toshiba>	 <53A83DC7.1010606@posteo.de> <1403882067.16305.124.camel@rzhang1-toshiba> <53ADB359.4010401@posteo.de> <53ADCB24.9030206@posteo.de>
-In-Reply-To: <53ADCB24.9030206@posteo.de>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Kumar Gala <galak@codeaurora.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Cho KyongHo <pullip.cho@samsung.com>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Hiroshi Doyu <hdoyu@nvidia.com>
+Subject: Re: [PATCH v2] devicetree: Add generic IOMMU device tree bindings
+References: <1400877218-4113-1-git-send-email-thierry.reding@gmail.com> <CAL_JsqKumG1PSFoVfeGpLLG+MjXFeF4aUjun=vv1BJpaxk0Byg@mail.gmail.com> <4545972.cM7IP1qTXQ@wuerfel> <53A4C0C9.2050908@codeaurora.org> <20140624091808.GC26013@arm.com> <53A9BC18.2090106@codeaurora.org> <20140624181150.GB4067@arm.com> <53A9EF3A.2070704@codeaurora.org> <20140625091858.GG6153@arm.com>
+In-Reply-To: <20140625091858.GG6153@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 2014-06-27 21:51, schrieb Martin Kepplinger:
-> Am 2014-06-27 20:09, schrieb Martin Kepplinger:
->> Am 2014-06-27 17:14, schrieb Zhang Rui:
->>> On Mon, 2014-06-23 at 16:46 +0200, Martin Kepplinger wrote:
->>>> Am 2014-06-23 15:14, schrieb Zhang Rui:
->>>>> On Mon, 2014-06-23 at 14:22 +0200, Martin Kepplinger wrote:
->>>>>> Am 2014-06-23 03:10, schrieb Zhang, Rui:
->>>>>>>
->>>>>>>
->>>>>>>> -----Original Message-----
->>>>>>>> From: Martin Kepplinger [mailto:martink@posteo.de]
->>>>>>>> Sent: Sunday, June 22, 2014 10:25 PM
->>>>>>>> To: Zhang, Rui
->>>>>>>> Cc: rjw@rjwysocki.net; lenb@kernel.org; linux-acpi@vger.kernel.org;
->>>>>>>> linux-kernel@vger.kernel.org
->>>>>>>> Subject: [BUG] rc1 and rc2: Laptop unusable: on boot,screen black
->>>>>>>> instead of native resolution
->>>>>>>> Importance: High
->>>>>>>>
->>>>>>>> Since 3.16-rc1 my laptop's just goes black while booting, instead of
->>>>>>>> switching to native screen resolution and showing me the starting
->>>>>>>> system there. It's an Acer TravelMate B113 with i915 driver and
->>>>>>>> acer_wmi. It stays black and is unusable.
->>>>>>>>
->>>>> This looks like a duplicate of
->>>>> https://bugzilla.kernel.org/show_bug.cgi?id=78601
+On 6/25/2014 2:18 AM, Will Deacon wrote:
+> On Tue, Jun 24, 2014 at 10:35:54PM +0100, Olav Haugan wrote:
+>> On 6/24/2014 11:11 AM, Will Deacon wrote:
+>>> On Tue, Jun 24, 2014 at 06:57:44PM +0100, Olav Haugan wrote:
+>>>> On 6/24/2014 2:18 AM, Will Deacon wrote:
+>>>>> On Sat, Jun 21, 2014 at 12:16:25AM +0100, Olav Haugan wrote:
+>>>>>> We have multiple-master SMMUs and each master emits a variable number of
+>>>>>> StreamIDs. However, we have to apply a mask (the ARM SMMU spec allows
+>>>>>> for this) to the StreamIDs due to limited number of StreamID 2 Context
+>>>>>> Bank entries in the SMMU. If my understanding is correct we would
+>>>>>> represent this in the DT like this:
+>>>>>>
+>>>>>> 	iommu {
+>>>>>> 		#address-cells = <2>;
+>>>>>> 		#size-cells = <0>;
+>>>>>> 	};
+>>>>>>
+>>>>>> 	master@a {
+>>>>>> 		...
+>>>>>> 		iommus = <&iommu StreamID0 MASK0>,
+>>>>>> 			 <&iommu StreamID1 MASK1>,
+>>>>>> 			 <&iommu StreamID2 MASK2>;
+>>>>>> 	};
 >>>>>
->>>>> thanks,
->>>>> rui
->>>> I'm not sure about that. I have no problem with v3.15 and the screen
->>>> goes black way before a display manager is started. It's right after the
->>>> kernel loaded and usually the screen is set to native resolution.
+>>>>> Stupid question, but why not simply describe the masked IDs? What use does
+>>>>> the `raw' ID have to Linux?
 >>>>
->>>> Bisect told me aaeb2554337217dfa4eac2fcc90da7be540b9a73 as the first bad
->>>> one. Although, checking that out and running it, works good. not sure if
->>>> that makes sense.
+>>>> We do describe the masked StreamID (SID) but we need to specify the mask
+>>>> that the SMMU should apply to the incoming SIDs, right?
 >>>>
->>> could you please check if the comment in
->>> https://bugzilla.kernel.org/show_bug.cgi?id=78601#c5 solves your problem
->>> or not?
+>>>> We have a bus master that emits 43 unique SIDs. However, we have only 40
+>>>> SMMU_SMRn registers in the SMMU. So we need to mask out some of the
+>>>> incoming SID bits so that the 43 SIDs can match one of 40 entries in the
+>>>> SMR.
 >>>
->>> thanks,
->>> rui
+>>> Hmm, so you're talking about stream matching, right? That doesn't belong in
+>>> the device-tree. I appreciate that the current driver does a terrible job at
+>>> allocating the SMRs (it's bloody difficult!), but we should try to improve
+>>> the dynamic behaviour instead of moving configuration of the SMMU out into
+>>> device-tree, where it's inflexible at best.
 >>
->> thanks for checking. This does not change anything though. I tested the
->> following on top of v3.16-rc2 and linus's tree as of today, almost -rc3.
->>
->> ---
->>  drivers/gpu/drm/i915/intel_fbdev.c |    1 -
->>  1 file changed, 1 deletion(-)
->>
->> diff --git a/drivers/gpu/drm/i915/intel_fbdev.c
->> b/drivers/gpu/drm/i915/intel_fbdev.c
->> index 088fe93..1e2f9ae 100644
->> --- a/drivers/gpu/drm/i915/intel_fbdev.c
->> +++ b/drivers/gpu/drm/i915/intel_fbdev.c
->> @@ -453,7 +453,6 @@ out:
->>  }
->>
->>  static struct drm_fb_helper_funcs intel_fb_helper_funcs = {
->> -       .initial_config = intel_fb_initial_config,
->>         .gamma_set = intel_crtc_fb_gamma_set,
->>         .gamma_get = intel_crtc_fb_gamma_get,
->>         .fb_probe = intelfb_create,
->>
+>> I am talking about SMMU_SMRn[MASK] register bits. This is not something
+>> that can be dynamically detected at run-time. It is configuration at the
+>> same level as the actual StreamIDs.
 > 
-> I also tested the following patch from
-> http://lists.freedesktop.org/archives/intel-gfx/2014-June/047981.html
-> now, with no results. No change in my case :(
+> Why can't it be dynamically detected? Whilst the StreamIDs are fixed in
+> hardware (from the SMMU architecture perspective), the SMRs are completely
+> programmable. Why doesn't something like Andreas's proposal work for you?
+> The idea there was to find the constant bits among the StreamIDs for a
+> master and create the mask accordingly.
 > 
-> diff --git a/drivers/gpu/drm/i915/intel_display.c
-> b/drivers/gpu/drm/i915/intel_display.c
-> index efd3cf5..5aee08e 100644
-> --- a/drivers/gpu/drm/i915/intel_display.c
-> +++ b/drivers/gpu/drm/i915/intel_display.c
-> @@ -11087,6 +11087,22 @@ const char *intel_output_name(int output)
->         return names[output];
->  }
-> 
-> +static bool intel_crt_present(struct drm_device *dev)
-> +{
-> +       struct drm_i915_private *dev_priv = dev->dev_private;
-> +
-> +       if (IS_ULT(dev))
-> +               return false;
-> +
-> +       if (IS_CHERRYVIEW(dev))
-> +               return false;
-> +
-> +       if (IS_VALLEYVIEW(dev) && !dev_priv->vbt.int_crt_support)
-> +               return false;
-> +
-> +       return true;
-> +}
-> +
->  static void intel_setup_outputs(struct drm_device *dev)
->  {
->         struct drm_i915_private *dev_priv = dev->dev_private;
-> @@ -11095,7 +11111,7 @@ static void intel_setup_outputs(struct
-> drm_device *dev)
-> 
->         intel_lvds_init(dev);
-> 
-> -       if (!IS_ULT(dev) && !IS_CHERRYVIEW(dev) &&
-> dev_priv->vbt.int_crt_support)
-> +       if (intel_crt_present(dev))
->                 intel_crt_init(dev);
-> 
->         if (HAS_DDI(dev)) {
-> 
-I'm on i686 and also the following from
-https://bugzilla.redhat.com/show_bug.cgi?id=1110968#c16 does not help :(
-this is bad.
+Lets say I have an IOMMU with 2 masters and 2 SMRn slots with the
+following stream IDs coming from the masters:
 
----
- arch/x86/kernel/signal.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
---- a/arch/x86/kernel/signal.c	
-+++ a/arch/x86/kernel/signal.c	
-@@ -363,7 +363,7 @@ static int __setup_rt_frame(int sig, struct ksignal
-*ksig,
+Master 1: 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28
+Master 2: 0x30
 
- 		/* Set up to return from userspace.  */
- 		restorer = current->mm->context.vdso +
--			selected_vdso32->sym___kernel_sigreturn;
-+			selected_vdso32->sym___kernel_rt_sigreturn;
- 		if (ksig->ka.sa.sa_flags & SA_RESTORER)
- 			restorer = ksig->ka.sa.sa_restorer;
- 		put_user_ex(restorer, &frame->pretcode);
+To make this work I would program SMR[0] with StreamID 0x20 and mask 0xF
+to ignore lower 4 bits. SMR[1] would just be StreamID 0x30 with mask 0x0.
+
+However, I could also have an IOMMU with 2 masters and 9 SMRn slots with
+the following stream IDs:
+
+Master 1: 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28
+Master 2: 0x29
+
+Here I would program all SMRn and leave the mask to be 0 for all SMRn's.
+So how do I detect when to apply a mask or not?
+
+I am not familiar with Andreas's proposal. Do you have a link?
+
+Thanks,
+
+Olav Haugan
+
 -- 
+The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
