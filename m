@@ -1,34 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752915AbaF0InZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 04:43:25 -0400
-Received: from forward-corp1f.mail.yandex.net ([95.108.130.40]:50277 "EHLO
-	forward-corp1f.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752779AbaF0InM (ORCPT
+	id S1752880AbaF0ItP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 04:49:15 -0400
+Received: from awesome.dsw2k3.info ([217.188.63.246]:33954 "EHLO
+	awesome.dsw2k3.info" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752462AbaF0ItM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 04:43:12 -0400
-X-Yandex-Uniq: 7dd882a4-4845-47d4-917a-d2040fa130a9
-Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
-Date: Fri, 27 Jun 2014 12:43:07 +0400
-From: Stanislav Fomichev <stfomichev@yandex-team.ru>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
-        dsahern@gmail.com, jolsa@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] perf trace: add pagefault statistics
-Message-ID: <20140627084307.GF21788@stfomichev-desktop.yandex.net>
-References: <1403799268-1367-1-git-send-email-stfomichev@yandex-team.ru>
- <1403799268-1367-5-git-send-email-stfomichev@yandex-team.ru>
- <20140626194115.GE18773@kernel.org>
+	Fri, 27 Jun 2014 04:49:12 -0400
+X-Greylist: delayed 445 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 Jun 2014 04:49:12 EDT
+Date: Fri, 27 Jun 2014 10:41:39 +0200
+From: Matthias Schniedermeyer <ms@citd.de>
+To: =?iso-8859-1?B?THVr4T8=?= Czerner <lczerner@redhat.com>
+Cc: Artem Bityutskiy <dedekind1@gmail.com>,
+        Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
+        Dave Chinner <david@fromorbit.com>,
+        Thomas Knauth <thomas.knauth@gmx.de>,
+        David Rientjes <rientjes@google.com>,
+        Maksym Planeta <mcsim.planeta@gmail.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sysctl: Add a feature to drop caches selectively
+Message-ID: <20140627084139.GA29704@citd.de>
+References: <1403626213-7691-1-git-send-email-mcsim.planeta@gmail.com>
+ <alpine.DEB.2.02.1406241458140.29176@chino.kir.corp.google.com>
+ <1403677528.7903.103.camel@sauron.fi.intel.com>
+ <CABhLV03_PNFiwsvt+yitcsKxz5TeVECCFavdNkbgQ+XzQqASaw@mail.gmail.com>
+ <20140626010606.GT4453@dastard>
+ <1403763199.20275.39.camel@sauron.fi.intel.com>
+ <53ABF7C4.1000906@itwm.fraunhofer.de>
+ <1403782263.20275.59.camel@sauron.fi.intel.com>
+ <alpine.LFD.2.00.1406261349320.2172@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20140626194115.GE18773@kernel.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <alpine.LFD.2.00.1406261349320.2172@localhost.localdomain>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Where is it?
->  usleep (19155), 151 events, 84.4%, 0:68 faults, 0.000 msec
-                                      ^^^^^^^^^^^
-				      maj:min
+On 26.06.2014 13:57, Luká? Czerner wrote:
+
+> > So if the authors want to sell this new interface (in whatever form) to
+> > the kernel community, they should start with providing a solid use-case,
+> > with some more details, explore alternatives and show how the
+> > alternatives do not work for them.
+> 
+> Yes please, let's see some solid use-case for this.
+
+Personally i would want it to verify files after copying them:
+Especially while moving files:
+- Copy a file
+- <drop cache>
+- Verify that it really is correct on stable storage
+- Remove original file
+
+Currently i choose either of the 3 ways:
+- drop_caches
+- umount/mount
+- Write more data than memory in machine (Which is only an 
+approximnation and you have to verify in the same order the files were 
+written, so it is likely that any cache was thrashed in the meantime)
+
+But having a way to selectivly "destory" the cache of a file would make 
+this task easier.
+
+
+
+
+-- 
+
+Matthias
