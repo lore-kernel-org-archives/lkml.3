@@ -1,57 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752864AbaF0S6e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 14:58:34 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:44674 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751273AbaF0S6d (ORCPT
+	id S1751840AbaF0TEb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 15:04:31 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:60602 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750862AbaF0TE1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 14:58:33 -0400
-Date: Fri, 27 Jun 2014 13:58:30 -0500
-From: Andy Gross <agross@codeaurora.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Mark Brown <broonie@kernel.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-spi@vger.kernel.org, Daniel Sneddon <dsneddon@codeaurora.org>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Sagar Dharia <sdharia@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] spi: qup: Add DMA capabilities
-Message-ID: <20140627185830.GB13621@qualcomm.com>
-References: <1403816781-31008-1-git-send-email-agross@codeaurora.org>
- <20140627105057.GF23300@sirena.org.uk>
- <20140627155422.GA13621@qualcomm.com>
- <20140627162411.GO32514@n2100.arm.linux.org.uk>
+	Fri, 27 Jun 2014 15:04:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140627162411.GO32514@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CALCETrWr+5n_w+q-fNc0G55eUteN57sm+7-bPCXKb7acmLu0Cg@mail.gmail.com>
+References: <1403642893-23107-1-git-send-email-keescook@chromium.org>
+	<1403642893-23107-6-git-send-email-keescook@chromium.org>
+	<20140625135121.GB7892@redhat.com>
+	<CAGXu5jJkFxh4K=40xuh6tu3kUf4oJM8Dry+4upBdRieW3FNLgw@mail.gmail.com>
+	<CALCETrUBNmLnpa+LM91om2RSpR6SjupP-EdefzhU1Me4nv3Dfw@mail.gmail.com>
+	<CAGXu5j+J11zJnuFR8bYKAXizAHhCx4R+uJE_QH6zC3q2udkpaQ@mail.gmail.com>
+	<CALCETrVrs8sb19+UUqyFEpAFzTih5dkAwn-WpQjfgPcPJMpP5g@mail.gmail.com>
+	<20140625173245.GA17695@redhat.com>
+	<CALCETrUc65H+fn6dtMdYnB_xR39wcmgDdTbdR3fFRjyrndJhgA@mail.gmail.com>
+	<20140625175136.GA18185@redhat.com>
+	<CAGXu5jL17k6=GXju6x+eLU20FMwBHhnuRiHoQD1Bzj_EmpiKjg@mail.gmail.com>
+	<CALCETrVNwhWSPNiBiZmgP1nD9zLJPTk6cH0yo=85rbxTPTYFRg@mail.gmail.com>
+	<CAGXu5jLavA8FJD8m-1y4wO0uzh3qvvMmajAg0Lrr1Cn_Om3a3w@mail.gmail.com>
+	<CALCETrUPxTxseJ=sOhD9CyJPtOqCR5sL8yx7KezLmLZcFSFNMA@mail.gmail.com>
+	<CAGXu5j+wPvAuo6pVc_XoJqv7CvW6yDf3YE6P7tFwtO9hfcUUsg@mail.gmail.com>
+	<CALCETrWr+5n_w+q-fNc0G55eUteN57sm+7-bPCXKb7acmLu0Cg@mail.gmail.com>
+Date: Fri, 27 Jun 2014 12:04:26 -0700
+X-Google-Sender-Auth: a01VumeYOucZw45g5SyIFCWC4v4
+Message-ID: <CAGXu5jL5rN6=2-SwHiiEVuGVain-T7Ucg2PsN7u08vQ5Rxz6Mg@mail.gmail.com>
+Subject: Re: [PATCH v8 5/9] seccomp: split mode set routines
+From: Kees Cook <keescook@chromium.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 27, 2014 at 05:24:11PM +0100, Russell King - ARM Linux wrote:
+On Fri, Jun 27, 2014 at 11:56 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Fri, Jun 27, 2014 at 11:52 AM, Kees Cook <keescook@chromium.org> wrote:
+>> On Fri, Jun 27, 2014 at 11:39 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>> On Fri, Jun 27, 2014 at 11:33 AM, Kees Cook <keescook@chromium.org> wrote:
+>>>> On Wed, Jun 25, 2014 at 11:07 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>>>> On Wed, Jun 25, 2014 at 11:00 AM, Kees Cook <keescook@chromium.org> wrote:
+>>>>>> On Wed, Jun 25, 2014 at 10:51 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>>>>>>> On 06/25, Andy Lutomirski wrote:
+>>>>>>>>
+>>>>>>>> On Wed, Jun 25, 2014 at 10:32 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>>>>>>>> > On 06/25, Andy Lutomirski wrote:
+>>>>>>>> >>
+>>>>>>>> >> Write the filter, then smp_mb (or maybe a weaker barrier is okay),
+>>>>>>>> >> then set the bit.
+>>>>>>>> >
+>>>>>>>> > Yes, exactly, this is what I meant. Plas rmb() in __secure_computing().
+>>>>>>>> >
+>>>>>>>> > But I still can't understand the rest of your discussion about the
+>>>>>>>> > ordering we need ;)
+>>>>>>>>
+>>>>>>>> Let me try again from scratch.
+>>>>>>>>
+>>>>>>>> Currently there are three relevant variables: TIF_SECCOMP,
+>>>>>>>> seccomp.mode, and seccomp.filter.  __secure_computing needs
+>>>>>>>> seccomp.mode and seccomp.filter to be in sync, and it wants (but
+>>>>>>>> doesn't really need) TIF_SECCOMP to be in sync as well.
+>>>>>>>>
+>>>>>>>> My suggestion is to rearrange it a bit.  Move mode into seccomp.filter
+>>>>>>>> (so that filter == NULL implies no seccomp) and don't check
+>>>>>>
+>>>>>> This would require that we reimplement mode 1 seccomp via mode 2
+>>>>>> filters. Which isn't too hard, but may add complexity.
+>>>>>>
+>>>>>>>> TIF_SECCOMP in secure_computing.  Then turning on seccomp is entirely
+>>>>>>>> atomic except for the fact that the seccomp hooks won't be called if
+>>>>>>>> filter != NULL but !TIF_SECCOMP.  This removes all ordering
+>>>>>>>> requirements.
+>>>>>>>
+>>>>>>> Ah, got it, thanks. Perhaps I missed somehing, but to me this looks like
+>>>>>>> unnecessary complication at first glance.
+>>>>>>>
+>>>>>>> We alredy have TIF_SECCOMP, we need it anyway, and we should only care
+>>>>>>> about the case when this bit is actually set, so that we can race with
+>>>>>>> the 1st call of __secure_computing().
+>>>>>>>
+>>>>>>> Otherwise we are fine: we can miss the new filter anyway, ->mode can't
+>>>>>>> be changed it is already nonzero.
+>>>>>>>
+>>>>>>>> Alternatively, __secure_computing could still BUG_ON(!seccomp.filter).
+>>>>>>>> In that case, filter needs to be set before TIF_SECCOMP is set, but
+>>>>>>>> that's straightforward.
+>>>>>>>
+>>>>>>> Yep. And this is how seccomp_assign_mode() already works? It is called
+>>>>>>> after we change ->filter chain, it changes ->mode before set(TIF_SECCOMP)
+>>>>>>> just it lacks a barrier.
+>>>>>>
+>>>>>> Right, I think the best solution is to add the barrier. I was
+>>>>>> concerned that adding the read barrier in secure_computing would have
+>>>>>> a performance impact, though.
+>>>>>>
+>>>>>
+>>>>> I can't speak for ARM, but I think that all of the read barriers are
+>>>>> essentially free on x86.  (smp_mb is a very different story, but that
+>>>>> shouldn't be needed here.)
+>>>>
+>>>> It looks like SMP ARM issues dsb for rmb, which seems a bit expensive.
+>>>> http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0204g/CIHJFGFE.html
+>>>>
+>>>> If I skip the rmb in the secure_computing call before checking mode,
+>>>> it sounds like I run the risk of racing an out-of-order TIF_SECCOMP vs
+>>>> mode and filter. This seems unlikely to me, given an addition of the
+>>>> smp_mb__before_atomic() during the seccomp_assign_mode()? I guess I
+>>>> don't have a sense of how aggressively ARM might do data caching in
+>>>> this area. Could the other thread actually see TIF_SECCOMP get set but
+>>>> still have an out of date copy of seccomp.mode?
+>>>>
+>>>> I really want to avoid adding anything to the secure_computing()
+>>>> execution path. :(
+>>>
+>>> Hence my suggestion to make the ordering not matter.  No ordering
+>>> requirement, no barriers.
+>>
+>> I may be misunderstanding something, but I think there's still an
+>> ordering problem. We'll have TIF_SECCOMP already, so if we enter
+>> secure_computing with a NULL filter, we'll kill the process.
+>>
+>> Merging .mode and .filter would remove one of the race failure paths:
+>> having TIF_SECCOMP and not having a mode set (leading to BUG). With
+>> the merge, we could still race and land in the same place as have
+>> TIF_SECCOMP and mode==2, but filter==NULL, leading to WARN and kill.
+>
+> You could just make secure_computing do nothing if filter == NULL.
+> It's probably faster to test that than TIF_SECCOMP anyway, since you
+> need to read the filter cacheline regardless, and testing a regular
+> variable for non-NULLness might be faster than an atomic bit test
+> operation.  (Or may not -- I don't know.)
 
-<snip>
+I am uncomfortable about making filter == NULL be a "fail open"
+condition if TIF_SECCOMP is set.
 
-> > > It would be better to use the core DMA mapping code rather than open
-> > > coding.  This code won't work for vmalloc()ed addresses, or physically
-> > > non-contiguous addresses unless there's an IOMMU fixing things up.
-> > 
-> > Ah, ok.  So I just need a to setup the scatter gather page list and then do a
-> > dma_map_sg.  I'll resend once I have this in place.
-> 
-> Note that DMA from vmalloc'd memory is non-coherent on some platforms,
-> even if you use the DMA API.
+>> I guess the question is how large is the race risk on ARM? Is it
+>> possible to have TIF_SECCOMP that far out of sync for the thread?
+>
+> Dunno.  I don't like leaving crashy known races around.
 
-Thankfully, that isn't the case on this platform.  As as the QUP controller is
-only on Qualcomm chipsets, we don't have to worry about it being used on other
-platforms.
+Yeah, me too. Hrmpf. I will do some rmb() timing tests...
 
+-Kees
 
 -- 
-sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Kees Cook
+Chrome OS Security
