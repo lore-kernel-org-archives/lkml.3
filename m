@@ -1,86 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753002AbaF0JTV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 05:19:21 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:37485 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751127AbaF0JTT (ORCPT
+	id S1753112AbaF0JUI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 05:20:08 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:56037 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750756AbaF0JUG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 05:19:19 -0400
-Date: Fri, 27 Jun 2014 11:19:17 +0200
-From: Michael Grzeschik <mgr@pengutronix.de>
-To: Michael Grzeschik <m.grzeschik@pengutronix.de>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        dwmw2@infradead.org, kernel@pengutronix.de
-Subject: Re: [PATCH 2/2] mxc_nand: use our own read_page function
-Message-ID: <20140627091917.GD20413@pengutronix.de>
-References: <1403815368-29469-1-git-send-email-m.grzeschik@pengutronix.de>
- <1403815368-29469-2-git-send-email-m.grzeschik@pengutronix.de>
+	Fri, 27 Jun 2014 05:20:06 -0400
+Message-ID: <53AD36E1.1010700@ti.com>
+Date: Fri, 27 Jun 2014 14:48:25 +0530
+From: Keerthy <a0393675@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403815368-29469-2-git-send-email-m.grzeschik@pengutronix.de>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 11:17:55 up 65 days,  2:49, 59 users,  load average: 0,20, 0,16,
- 0,15
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
-X-SA-Exim-Mail-From: mgr@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Nishanth Menon <nm@ti.com>
+CC: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Keerthy <j-keerthy@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <t-kristo@ti.com>
+Subject: Re: [PATCH] regulator: tps65917: Fix SMPS enable/disable/is_enable
+References: <1403807494-23907-1-git-send-email-nm@ti.com>
+In-Reply-To: <1403807494-23907-1-git-send-email-nm@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 26, 2014 at 10:42:48PM +0200, Michael Grzeschik wrote:
-> The current approach of the read_page function is to iterate over all
-> subpages and call the correct_data function. The correct_data function
-> currently does the same. It iterates over all subpages and checks for
-> correctable and uncorrectable data. This redundant call for each
-> subpage leads to miscalculations.
-> 
-> This patch changes the driver to use its own read_page function in which
-> we call the correct_data function only once per page. With that we do
-> the failure and correct statistics counting inside this function.
-> 
-> Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
+Hello Nishanth,
+
+On Friday 27 June 2014 12:01 AM, Nishanth Menon wrote:
+> We use regmap regulator ops to enable/disable and check if regulator
+> is enabled for various SMPS. However, these depend on valid
+> enable_reg, enable_mask and enable_value in regulator descriptor.
+>
+> So, similar to fix we did in commit 318dbb02b50c
+> ("regulator: palmas: Fix SMPS enable/disable/is_enabled"), populate the
+> same for TPS65917 SMPS registration. LDO definitions are already in place.
+>
+> Fixes: d6f83370ed97 ("regulator: palmas: Add tps65917 PMIC support")
+> Signed-off-by: Nishanth Menon <nm@ti.com>
 > ---
->  drivers/mtd/nand/mxc_nand.c | 73 ++++++++++++++++++++++++++++++++++++++++++---
->  1 file changed, 69 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/mtd/nand/mxc_nand.c b/drivers/mtd/nand/mxc_nand.c
-> index 7fd495e..09e3682 100644
-> --- a/drivers/mtd/nand/mxc_nand.c
-> +++ b/drivers/mtd/nand/mxc_nand.c
+>
+> Applies on:
+> 	git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git
+> branch: topic/palmas (4c0c9ca Merge remote-tracking branch 'regulator/fix/palmas' into regulator-palmas)
+>
+> Note: Ignored the minor style check from checkpatch --strict as fixing
+> it would create an 80 char warning
+>
+>   drivers/regulator/palmas-regulator.c |    8 ++++++++
+>   1 file changed, 8 insertions(+)
+>
+> diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
+> index 7c8b441..c7aa1b1 100644
+> --- a/drivers/regulator/palmas-regulator.c
+> +++ b/drivers/regulator/palmas-regulator.c
+> @@ -1333,6 +1333,14 @@ static int tps65917_smps_registration(struct palmas_pmic *pmic,
+>   		pmic->current_reg_mode[id] = reg &
+>   				PALMAS_SMPS12_CTRL_MODE_ACTIVE_MASK;
+>   
+> +		pmic->desc[id].enable_reg =
+> +				PALMAS_BASE_TO_REG(PALMAS_SMPS_BASE,
+> +					palmas_regs_info[id].ctrl_addr);
 
-[snip]
+This is wrong. Please change palmas_regs_info[id].ctrl_addr to
+ddata->palmas_regs_info[id].ctrl_addr. The palmas_regs_info
+should come from the driver data for specific instances as the regmap
+is different for the different PMICs we support.
 
-> @@ -673,15 +728,21 @@ static int mxc_nand_correct_data_v2_v3(struct mtd_info *mtd, u_char *dat,
->  	do {
->  		err = ecc_stat & ecc_bit_mask;
->  		if (err > err_limit) {
-> -			printk(KERN_WARNING "UnCorrectable RS-ECC Error\n");
-> -			return -1;
-> +			broken++;
->  		} else {
->  			ret += err;
->  		}
->  		ecc_stat >>= 4;
->  	} while (--no_subpages);
->  
-> -	pr_debug("%d Symbol Correctable RS-ECC Error\n", ret);
-> +	mtd->ecc_stats.corrected += ret;
-> +	if (ret)
-> +		printk("%d Symbol Correctable RS-ECC Error\n", ret);
+Once you make the above changes please feel free to add
+Tested-by: Keerthy <j-keerthy@ti.com>.
 
-This was ment to be pr_debug as before.
+> +		pmic->desc[id].enable_mask =
+> +				PALMAS_SMPS12_CTRL_MODE_ACTIVE_MASK;
+> +		/* set_mode overrides this value */
+> +		pmic->desc[id].enable_val = SMPS_CTRL_MODE_ON;
+> +
+>   		pmic->desc[id].type = REGULATOR_VOLTAGE;
+>   		pmic->desc[id].owner = THIS_MODULE;
+>   
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Regards,
+Keerthy
