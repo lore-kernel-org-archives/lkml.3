@@ -1,361 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751894AbaF0Smf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 14:42:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36223 "EHLO mx2.suse.de"
+	id S1752111AbaF0Sow (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 14:44:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39607 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750990AbaF0Smd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 14:42:33 -0400
-Date: Fri, 27 Jun 2014 19:42:27 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 3/5] mm: vmscan: Do not reclaim from lower zones if they
- are balanced
-Message-ID: <20140627184227.GL10819@suse.de>
-References: <1403856880-12597-1-git-send-email-mgorman@suse.de>
- <1403856880-12597-4-git-send-email-mgorman@suse.de>
- <20140627172657.GU7331@cmpxchg.org>
+	id S1751648AbaF0Sou (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 14:44:50 -0400
+Date: Fri, 27 Jun 2014 14:44:41 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Joe Thornber <thornber@redhat.com>
+cc: device-mapper development <dm-devel@redhat.com>, snitzer@redhat.com,
+        linux-kernel@vger.kernel.org, Minfei Huang <huangminfei@ucloud.cn>,
+        linux-raid@vger.kernel.org, agk@redhat.com
+Subject: Re: [dm-devel] [PATCH] dm-io: Prevent the danging point of the sync
+ io callback function
+In-Reply-To: <20140627151105.GA30592@debian>
+Message-ID: <alpine.LRH.2.02.1406271432430.18515@file01.intranet.prod.int.rdu2.redhat.com>
+References: <1403841690-4401-1-git-send-email-huangminfei@ucloud.cn> <20140627151105.GA30592@debian>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20140627172657.GU7331@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 27, 2014 at 01:26:57PM -0400, Johannes Weiner wrote:
-> On Fri, Jun 27, 2014 at 09:14:38AM +0100, Mel Gorman wrote:
-> > Historically kswapd scanned from DMA->Movable in the opposite direction
-> > to the page allocator to avoid allocating behind kswapd direction of
-> > progress. The fair zone allocation policy altered this in a non-obvious
-> > manner.
-> > 
-> > Traditionally, the page allocator prefers to use the highest eligible zone
-> > until the watermark is depleted, woke kswapd and moved onto the next zone.
+
+
+On Fri, 27 Jun 2014, Joe Thornber wrote:
+
+> On Fri, Jun 27, 2014 at 12:01:30PM +0800, Minfei Huang wrote:
+> > The io address in callback function will become the danging point,
+> > cause by the thread of sync io wakes up by other threads
+> > and return to relieve the io address,
 > 
-> That's not quite right, the page allocator tries all zones in the
-> zonelist, then wakes up kswapd, then tries again from the beginning.
+> Yes, well found.  I prefer the following fix however.
 > 
+> - Joe
 
-You're right of course, sorry about that. It still is the case that once
-kswapd is awake that it can reclaim from the lower zones for longer than
-the higher zones and this does not play well with the fair zone policy
-interleaving between them.
+It seems ok.
 
-> > kswapd scans zones in the opposite direction so the scanning lists on
-> > 64-bit look like this;
-> > 
-> > Page alloc		Kswapd
-> > ----------              ------
-> > Movable			DMA
-> > Normal			DMA32
-> > DMA32			Normal
-> > DMA			Movable
-> > 
-> > If kswapd scanned in the same direction as the page allocator then it is
-> > possible that kswapd would proportionally reclaim the lower zones that
-> > were never used as the page allocator was always allocating behind the
-> > reclaim. This would work as follows
-> > 
-> > 	pgalloc hits Normal low wmark
-> > 					kswapd reclaims Normal
-> > 					kswapd reclaims DMA32
-> > 	pgalloc hits Normal low wmark
-> > 					kswapd reclaims Normal
-> > 					kswapd reclaims DMA32
-> > 
-> > The introduction of the fair zone allocation policy fundamentally altered
-> > this problem by interleaving between zones until the low watermark is
-> > reached. There are at least two issues with this
-> > 
-> > o The page allocator can allocate behind kswapds progress (scans/reclaims
-> >   lower zone and fair zone allocation policy then uses those pages)
-> > o When the low watermark of the high zone is reached there may recently
-> >   allocated pages allocated from the lower zone but as kswapd scans
-> >   dma->highmem to the highest zone needing balancing it'll reclaim the
-> >   lower zone even if it was balanced.
-> > 
-> > Let N = high_wmark(Normal) + high_wmark(DMA32). Of the last N allocations,
-> > some percentage will be allocated from Normal and some from DMA32. The
-> > percentage depends on the ratio of the zone sizes and when their watermarks
-> > were hit. If Normal is unbalanced, DMA32 will be shrunk by kswapd. If DMA32
-> > is unbalanced only DMA32 will be shrunk. This leads to a difference of
-> > ages between DMA32 and Normal. Relatively young pages are then continually
-> > rotated and reclaimed from DMA32 due to the higher zone being unbalanced.
-> > Some of these pages may be recently read-ahead pages requiring that the page
-> > be re-read from disk and impacting overall performance.
-> > 
-> > The problem is fundamental to the fact we have per-zone LRU and allocation
-> > policies and ideally we would only have per-node allocation and LRU lists.
-> > This would avoid the need for the fair zone allocation policy but the
-> > low-memory-starvation issue would have to be addressed again from scratch.
-> > 
-> > This patch will only scan/reclaim from lower zones if they have not
-> > reached their watermark. This should not break the normal page aging
-> > as the proportional allocations due to the fair zone allocation policy
-> > should compensate.
+The patch is too big, I think the only change that needs to be done to fix 
+the bug is to replace "struct task_struct *sleeper;" with "struct 
+completion *completion;", replace "if (io->sleeper) 
+wake_up_process(io->sleeper);" with "if (io->completion) 
+complete(io->completion);" and declare the completion in sync_io() and 
+wait on it instead of "while (1)" loop there.
+
+I suggest - split it to two patches, a minimal patch that fixes the bug by 
+changing sleeper to completion and the second patch with remaining changes 
+- so that only the first patch can be backported to stable kernels.
+
+The smaller patch is less likely to produce conflicts (or bugs introduced 
+by incorrectly resolved conflicts) when being backported.
+
+Mikulas
+
+
+> Author: Joe Thornber <ejt@redhat.com>
+> Date:   Fri Jun 27 15:49:29 2014 +0100
 > 
-> That's already the case, kswapd_shrink_zone() checks whether the zone
-> is balanced before scanning in, so something in this analysis is off -
-> but I have to admit that I have trouble following it.
+>     [dm-io] Fix a race condition in the wake up code for sync_io
+>     
+>     There's a race condition between the atomic_dec_and_test(&io->count)
+>     in dec_count() and the waking of the sync_io() thread.  If the thread
+>     is spuriously woken immediately after the decrement it may exit,
+>     making the on the stack io struct invalid, yet the dec_count could
+>     still be using it.
+>     
+>     There are smaller fixes than the one here (eg, just take the io object
+>     off the stack).  But I feel this code could use a clean up.
+>     
+>     - simplify dec_count().
+>     
+>       - It always calls a callback fn now.
+>       - It always frees the io object back to the pool.
+>     
+>     - sync_io()
+>     
+>       - Take the io object off the stack and allocate it from the pool the
+>         same as async_io.
+>       - Use a completion object rather than an explicit io_schedule()
+>         loop.  The callback triggers the completion.
+>     
+>     Reported by: Minfei Huang
 > 
-> The only difference in the two checks is that the outer one you add
-> does not enforce the balance gap, which means that we stop reclaiming
-> zones a little earlier than before. 
-
-Not only is the balance gap a factor (which can be large) but the classzone
-reserves are also applied which will keep kswapd reclaiming longer.  Still,
-you're right. It's far more appropriate to push the checks down where the
-buffer head reserves are accounted for.
-
-I still think that ultimately we want to move the LRUs to a per-node
-basis. It should be possible to do this piecemeal and keep the free page
-lists on a per-zone basis and have direct reclaim skip through the LRU
-finding lowmem pages if that is required. It would be a fairly far-reaching
-change but overall the aging would make more sense and it would remove
-the fair zone allocation policy entirely. It'd hurt while reclaiming for
-lowmem on 32-bit with large highmem zones but I think that is far less a
-concern than it would have been 10 years ago.
-
-> I guess this is where the
-> throughput improvements come from, but there is a chance it will
-> regress latency for bursty allocations.
-
-Any suggestions on how to check that? I would expect that bursty
-allocations are falling into the slow path and potentially doing direct
-reclaim. That would make the effect difficult to measure.
-
-This is the version that is currently being tested
-
----8<---
-mm: vmscan: Do not reclaim from lower zones if they are balanced
-
-Historically kswapd scanned from DMA->Movable in the opposite direction
-to the page allocator to avoid allocating behind kswapd direction of
-progress. The fair zone allocation policy altered this in a non-obvious
-manner.
-
-Traditionally, the page allocator prefers to use the highest eligible
-zones in order until the low watermarks are reached and then wakes kswapd.
-Once kswapd is awake, it scans zones in the opposite direction so the
-scanning lists on 64-bit look like this;
-
-Page alloc		Kswapd
-----------              ------
-Movable			DMA
-Normal			DMA32
-DMA32			Normal
-DMA			Movable
-
-If kswapd scanned in the same direction as the page allocator then it is
-possible that kswapd would proportionally reclaim the lower zones that
-were never used as the page allocator was always allocating behind the
-reclaim. This would work as follows
-
-	pgalloc hits Normal low wmark
-					kswapd reclaims Normal
-					kswapd reclaims DMA32
-	pgalloc hits Normal low wmark
-					kswapd reclaims Normal
-					kswapd reclaims DMA32
-
-The introduction of the fair zone allocation policy fundamentally altered
-this problem by interleaving between zones until the low watermark is
-reached. There are at least two issues with this
-
-o The page allocator can allocate behind kswapds progress (scans/reclaims
-  lower zone and fair zone allocation policy then uses those pages)
-o When the low watermark of the high zone is reached there may recently
-  allocated pages allocated from the lower zone but as kswapd scans
-  dma->highmem to the highest zone needing balancing it'll reclaim the
-  lower zone even if it was balanced.
-
-Let N = high_wmark(Normal) + high_wmark(DMA32). Of the last N allocations,
-some percentage will be allocated from Normal and some from DMA32. The
-percentage depends on the ratio of the zone sizes and when their watermarks
-were hit. If Normal is unbalanced, DMA32 will be shrunk by kswapd. If DMA32
-is unbalanced only DMA32 will be shrunk. This leads to a difference of
-ages between DMA32 and Normal. Relatively young pages are then continually
-rotated and reclaimed from DMA32 due to the higher zone being unbalanced.
-Some of these pages may be recently read-ahead pages requiring that the page
-be re-read from disk and impacting overall performance.
-
-The problem is fundamental to the fact we have per-zone LRU and allocation
-policies and ideally we would only have per-node allocation and LRU lists.
-This would avoid the need for the fair zone allocation policy but the
-low-memory-starvation issue would have to be addressed again from scratch.
-
-kswapd shrinks equally from all zones up to the high watermark plus a
-balance gap and the lowmem reserves. This patch removes the additional
-reclaim from lower zones on the grounds that the fair zone allocation
-policy will typically be interleaving between the zones.  This should not
-break the normal page aging as the proportional allocations due to the
-fair zone allocation policy should compensate.
-
-tiobench was used to evaluate this because it includes a simple
-sequential reader which is the most obvious regression. It also has threaded
-readers that produce reasonably steady figures.
-
-                                      3.16.0-rc2            3.16.0-rc2                 3.0.0
-                                         vanilla           checklow-v4               vanilla
-TO-BE-UPDATED
-
-There are still regressions for higher number of threads but this is
-related to changes in the CFQ IO scheduler.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- include/linux/swap.h |  9 ---------
- mm/vmscan.c          | 46 ++++++++++++++++------------------------------
- 2 files changed, 16 insertions(+), 39 deletions(-)
-
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index 4bdbee8..1680307 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -165,15 +165,6 @@ enum {
- #define SWAP_CLUSTER_MAX 32UL
- #define COMPACT_CLUSTER_MAX SWAP_CLUSTER_MAX
- 
--/*
-- * Ratio between zone->managed_pages and the "gap" that above the per-zone
-- * "high_wmark". While balancing nodes, We allow kswapd to shrink zones that
-- * do not meet the (high_wmark + gap) watermark, even which already met the
-- * high_wmark, in order to provide better per-zone lru behavior. We are ok to
-- * spend not more than 1% of the memory for this zone balancing "gap".
-- */
--#define KSWAPD_ZONE_BALANCE_GAP_RATIO 100
--
- #define SWAP_MAP_MAX	0x3e	/* Max duplication count, in first swap_map */
- #define SWAP_MAP_BAD	0x3f	/* Note pageblock is bad, in first swap_map */
- #define SWAP_HAS_CACHE	0x40	/* Flag page is cached, in first swap_map */
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 0f16ffe..3e315c7 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2294,7 +2294,7 @@ static void shrink_zone(struct zone *zone, struct scan_control *sc)
- /* Returns true if compaction should go ahead for a high-order request */
- static inline bool compaction_ready(struct zone *zone, struct scan_control *sc)
- {
--	unsigned long balance_gap, watermark;
-+	unsigned long watermark;
- 	bool watermark_ok;
- 
- 	/* Do not consider compaction for orders reclaim is meant to satisfy */
-@@ -2307,9 +2307,7 @@ static inline bool compaction_ready(struct zone *zone, struct scan_control *sc)
- 	 * there is a buffer of free pages available to give compaction
- 	 * a reasonable chance of completing and allocating the page
- 	 */
--	balance_gap = min(low_wmark_pages(zone), DIV_ROUND_UP(
--			zone->managed_pages, KSWAPD_ZONE_BALANCE_GAP_RATIO));
--	watermark = high_wmark_pages(zone) + balance_gap + (2UL << sc->order);
-+	watermark = high_wmark_pages(zone) + (2UL << sc->order);
- 	watermark_ok = zone_watermark_ok_safe(zone, 0, watermark, 0, 0);
- 
- 	/*
-@@ -2816,11 +2814,9 @@ static void age_active_anon(struct zone *zone, struct scan_control *sc)
- 	} while (memcg);
- }
- 
--static bool zone_balanced(struct zone *zone, int order,
--			  unsigned long balance_gap, int classzone_idx)
-+static bool zone_balanced(struct zone *zone, int order)
- {
--	if (!zone_watermark_ok_safe(zone, order, high_wmark_pages(zone) +
--				    balance_gap, classzone_idx, 0))
-+	if (!zone_watermark_ok_safe(zone, order, high_wmark_pages(zone), 0, 0))
- 		return false;
- 
- 	if (IS_ENABLED(CONFIG_COMPACTION) && order &&
-@@ -2877,7 +2873,7 @@ static bool pgdat_balanced(pg_data_t *pgdat, int order, int classzone_idx)
- 			continue;
- 		}
- 
--		if (zone_balanced(zone, order, 0, i))
-+		if (zone_balanced(zone, order))
- 			balanced_pages += zone->managed_pages;
- 		else if (!order)
- 			return false;
-@@ -2934,7 +2930,6 @@ static bool kswapd_shrink_zone(struct zone *zone,
- 			       unsigned long *nr_attempted)
- {
- 	int testorder = sc->order;
--	unsigned long balance_gap;
- 	struct reclaim_state *reclaim_state = current->reclaim_state;
- 	struct shrink_control shrink = {
- 		.gfp_mask = sc->gfp_mask,
-@@ -2956,21 +2951,11 @@ static bool kswapd_shrink_zone(struct zone *zone,
- 		testorder = 0;
- 
- 	/*
--	 * We put equal pressure on every zone, unless one zone has way too
--	 * many pages free already. The "too many pages" is defined as the
--	 * high wmark plus a "gap" where the gap is either the low
--	 * watermark or 1% of the zone, whichever is smaller.
--	 */
--	balance_gap = min(low_wmark_pages(zone), DIV_ROUND_UP(
--			zone->managed_pages, KSWAPD_ZONE_BALANCE_GAP_RATIO));
--
--	/*
- 	 * If there is no low memory pressure or the zone is balanced then no
- 	 * reclaim is necessary
- 	 */
- 	lowmem_pressure = (buffer_heads_over_limit && is_highmem(zone));
--	if (!lowmem_pressure && zone_balanced(zone, testorder,
--						balance_gap, classzone_idx))
-+	if (!lowmem_pressure && zone_balanced(zone, testorder))
- 		return true;
- 
- 	shrink_zone(zone, sc);
-@@ -2993,7 +2978,7 @@ static bool kswapd_shrink_zone(struct zone *zone,
- 	 * waits.
- 	 */
- 	if (zone_reclaimable(zone) &&
--	    zone_balanced(zone, testorder, 0, classzone_idx)) {
-+	    zone_balanced(zone, testorder)) {
- 		zone_clear_flag(zone, ZONE_CONGESTED);
- 		zone_clear_flag(zone, ZONE_TAIL_LRU_DIRTY);
- 	}
-@@ -3079,7 +3064,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
- 				break;
- 			}
- 
--			if (!zone_balanced(zone, order, 0, 0)) {
-+			if (!zone_balanced(zone, order)) {
- 				end_zone = i;
- 				break;
- 			} else {
-@@ -3124,12 +3109,13 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
- 
- 		/*
- 		 * Now scan the zone in the dma->highmem direction, stopping
--		 * at the last zone which needs scanning.
--		 *
--		 * We do this because the page allocator works in the opposite
--		 * direction.  This prevents the page allocator from allocating
--		 * pages behind kswapd's direction of progress, which would
--		 * cause too much scanning of the lower zones.
-+		 * at the last zone which needs scanning. We do this because
-+		 * the page allocators prefers to work in the opposite
-+		 * direction and we want to avoid the page allocator reclaiming
-+		 * behind kswapd's direction of progress. Due to the fair zone
-+		 * allocation policy interleaving allocations between zones
-+		 * we no longer proportionally scan the lower zones if the
-+		 * watermarks are ok.
- 		 */
- 		for (i = 0; i <= end_zone; i++) {
- 			struct zone *zone = pgdat->node_zones + i;
-@@ -3397,7 +3383,7 @@ void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx)
- 	}
- 	if (!waitqueue_active(&pgdat->kswapd_wait))
- 		return;
--	if (zone_balanced(zone, order, 0, 0))
-+	if (zone_balanced(zone, order))
- 		return;
- 
- 	trace_mm_vmscan_wakeup_kswapd(pgdat->node_id, zone_idx(zone), order);
+> diff --git a/drivers/md/dm-io.c b/drivers/md/dm-io.c
+> index 3842ac7..a0982e81 100644
+> --- a/drivers/md/dm-io.c
+> +++ b/drivers/md/dm-io.c
+> @@ -10,6 +10,7 @@
+>  #include <linux/device-mapper.h>
+>  
+>  #include <linux/bio.h>
+> +#include <linux/completion.h>
+>  #include <linux/mempool.h>
+>  #include <linux/module.h>
+>  #include <linux/sched.h>
+> @@ -32,7 +33,6 @@ struct dm_io_client {
+>  struct io {
+>  	unsigned long error_bits;
+>  	atomic_t count;
+> -	struct task_struct *sleeper;
+>  	struct dm_io_client *client;
+>  	io_notify_fn callback;
+>  	void *context;
+> @@ -111,28 +111,27 @@ static void retrieve_io_and_region_from_bio(struct bio *bio, struct io **io,
+>   * We need an io object to keep track of the number of bios that
+>   * have been dispatched for a particular io.
+>   *---------------------------------------------------------------*/
+> -static void dec_count(struct io *io, unsigned int region, int error)
+> +static void complete_io(struct io *io)
+>  {
+> -	if (error)
+> -		set_bit(region, &io->error_bits);
+> +	unsigned long error_bits = io->error_bits;
+> +	io_notify_fn fn = io->callback;
+> +	void *context = io->context;
+>  
+> -	if (atomic_dec_and_test(&io->count)) {
+> -		if (io->vma_invalidate_size)
+> -			invalidate_kernel_vmap_range(io->vma_invalidate_address,
+> -						     io->vma_invalidate_size);
+> +	if (io->vma_invalidate_size)
+> +		invalidate_kernel_vmap_range(io->vma_invalidate_address,
+> +					     io->vma_invalidate_size);
+>  
+> -		if (io->sleeper)
+> -			wake_up_process(io->sleeper);
+> +	mempool_free(io, io->client->pool);
+> +	fn(error_bits, context);
+> +}
+>  
+> -		else {
+> -			unsigned long r = io->error_bits;
+> -			io_notify_fn fn = io->callback;
+> -			void *context = io->context;
+> +static void dec_count(struct io *io, unsigned int region, int error)
+> +{
+> +	if (error)
+> +		set_bit(region, &io->error_bits);
+>  
+> -			mempool_free(io, io->client->pool);
+> -			fn(r, context);
+> -		}
+> -	}
+> +	if (atomic_dec_and_test(&io->count))
+> +		complete_io(io);
+>  }
+>  
+>  static void endio(struct bio *bio, int error)
+> @@ -375,48 +374,49 @@ static void dispatch_io(int rw, unsigned int num_regions,
+>  	dec_count(io, 0, 0);
+>  }
+>  
+> +struct sync_io {
+> +	unsigned long error_bits;
+> +	struct completion complete;
+> +};
+> +
+> +static void sync_complete(unsigned long error, void *context)
+> +{
+> +	struct sync_io *sio = context;
+> +	sio->error_bits = error;
+> +	complete(&sio->complete);
+> +}
+> +
+>  static int sync_io(struct dm_io_client *client, unsigned int num_regions,
+>  		   struct dm_io_region *where, int rw, struct dpages *dp,
+>  		   unsigned long *error_bits)
+>  {
+> -	/*
+> -	 * gcc <= 4.3 can't do the alignment for stack variables, so we must
+> -	 * align it on our own.
+> -	 * volatile prevents the optimizer from removing or reusing
+> -	 * "io_" field from the stack frame (allowed in ANSI C).
+> -	 */
+> -	volatile char io_[sizeof(struct io) + __alignof__(struct io) - 1];
+> -	struct io *io = (struct io *)PTR_ALIGN(&io_, __alignof__(struct io));
+> +	struct io *io;
+> +	struct sync_io sio;
+>  
+>  	if (num_regions > 1 && (rw & RW_MASK) != WRITE) {
+>  		WARN_ON(1);
+>  		return -EIO;
+>  	}
+>  
+> +	init_completion(&sio.complete);
+> +
+> +	io = mempool_alloc(client->pool, GFP_NOIO);
+>  	io->error_bits = 0;
+>  	atomic_set(&io->count, 1); /* see dispatch_io() */
+> -	io->sleeper = current;
+> +	io->callback = sync_complete;
+> +	io->context = &sio;
+>  	io->client = client;
+>  
+>  	io->vma_invalidate_address = dp->vma_invalidate_address;
+>  	io->vma_invalidate_size = dp->vma_invalidate_size;
+>  
+>  	dispatch_io(rw, num_regions, where, dp, io, 1);
+> -
+> -	while (1) {
+> -		set_current_state(TASK_UNINTERRUPTIBLE);
+> -
+> -		if (!atomic_read(&io->count))
+> -			break;
+> -
+> -		io_schedule();
+> -	}
+> -	set_current_state(TASK_RUNNING);
+> +	wait_for_completion_io(&sio.complete);
+>  
+>  	if (error_bits)
+> -		*error_bits = io->error_bits;
+> +		*error_bits = sio.error_bits;
+>  
+> -	return io->error_bits ? -EIO : 0;
+> +	return sio.error_bits ? -EIO : 0;
+>  }
+>  
+>  static int async_io(struct dm_io_client *client, unsigned int num_regions,
+> @@ -434,7 +434,6 @@ static int async_io(struct dm_io_client *client, unsigned int num_regions,
+>  	io = mempool_alloc(client->pool, GFP_NOIO);
+>  	io->error_bits = 0;
+>  	atomic_set(&io->count, 1); /* see dispatch_io() */
+> -	io->sleeper = NULL;
+>  	io->client = client;
+>  	io->callback = fn;
+>  	io->context = context;
+> 
+> --
+> dm-devel mailing list
+> dm-devel@redhat.com
+> https://www.redhat.com/mailman/listinfo/dm-devel
+> 
