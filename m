@@ -1,90 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753397AbaF0KWR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 06:22:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45192 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752825AbaF0KWP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 06:22:15 -0400
-Message-ID: <53AD45CD.8060902@redhat.com>
-Date: Fri, 27 Jun 2014 12:22:05 +0200
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753306AbaF0KX4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 06:23:56 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:4502 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752869AbaF0KXy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 06:23:54 -0400
+X-IronPort-AV: E=Sophos;i="5.00,790,1396972800"; 
+   d="scan'208";a="32521742"
+Message-ID: <53AD4385.8080105@cn.fujitsu.com>
+Date: Fri, 27 Jun 2014 18:12:21 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, "Alexander E. Patrakov" <patrakov@gmail.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] zram: revalidate disk after capacity change
-References: <1403745385-18952-1-git-send-email-minchan@kernel.org>
-In-Reply-To: <1403745385-18952-1-git-send-email-minchan@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jens <axboe@kernel.dk>
+CC: <martin.petersen@oracle.com>, linux-kernel <linux-kernel@vger.kernel.org>,
+        Kent <kmo@daterainc.com>, Andrew Morton <akpm@linux-foundation.org>
+Subject: [RFC PATCH] bio-integrity: add "bip_max_vcnt" into struct bio_integrity_payload
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.100]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2014 03:16 AM, Minchan Kim wrote:
-> Alexander reported mkswap on /dev/zram0 is failed if other process
-> is opening the block device file.
-> 
-> Step is as follows,
-> 
-> 0. Reset the unused zram device.
-> 1. Use a program that opens /dev/zram0 with O_RDWR and sleeps
->    until killed.
-> 2. While that program sleeps, echo the correct value to
->    /sys/block/zram0/disksize.
-> 3. Verify (e.g. in /proc/partitions) that the disk size is applied
->    correctly. It is.
-> 4. While that program still sleeps, attempt to mkswap /dev/zram0.
->    This fails: mkswap: error: swap area needs to be at least 40 KiB
-> 
-> When I investigated, the size get by ioctl(fd, BLKGETSIZE64, xxx)
-> on mkswap to get a size of blockdev was zero although zram0 has
-> right size by 2.
-> 
-> The reason is zram didn't revalidate disk after changing capacity
-> so that size of blockdev's inode is not uptodate until all of file
-> is close.
+Commit "08778795"(block: Fix nr_vecs for inline integrity vectors) from
+Martin introduces the function bip_integrity_vecs(get the useful vectors)
+to fix the issue about nr_vecs for inline integrity vectors that reported
+by David Milburn.
+But it seems that bip_integrity_vecs() will return the wrong number if
+the bio is not based on any bio_set for some reason(bio->bi_pool == NULL),
+because in that case, the bip_inline_vecs[0] is malloced directly.
+So here we add the bip_max_vcnt to record the count of vector slots, and
+cleanup the function bip_integrity_vecs().
 
-Acked-by: Jerome Marchand <jmarchan@redhat.com>
+Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+---
+ block/bio-integrity.c |   12 +++---------
+ include/linux/bio.h   |    1 +
+ 2 files changed, 4 insertions(+), 9 deletions(-)
 
-> 
-> This patch should fix the BUG.
-> 
-> Cc: stable@vger.kernel.org
-> Reported-and-Tested-by: Alexander E. Patrakov <patrakov@gmail.com>
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  drivers/block/zram/zram_drv.c | 5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> index 48eccb3..089e72c 100644
-> --- a/drivers/block/zram/zram_drv.c
-> +++ b/drivers/block/zram/zram_drv.c
-> @@ -622,8 +622,10 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
->  	memset(&zram->stats, 0, sizeof(zram->stats));
->  
->  	zram->disksize = 0;
-> -	if (reset_capacity)
-> +	if (reset_capacity) {
->  		set_capacity(zram->disk, 0);
-> +		revalidate_disk(zram->disk);
-> +	}
->  	up_write(&zram->init_lock);
->  }
->  
-> @@ -664,6 +666,7 @@ static ssize_t disksize_store(struct device *dev,
->  	zram->comp = comp;
->  	zram->disksize = disksize;
->  	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
-> +	revalidate_disk(zram->disk);
->  	up_write(&zram->init_lock);
->  	return len;
->  
-> 
+diff --git a/block/bio-integrity.c b/block/bio-integrity.c
+index 9e24106..bc423f7b 100644
+--- a/block/bio-integrity.c
++++ b/block/bio-integrity.c
+@@ -70,8 +70,10 @@ struct bio_integrity_payload *bio_integrity_alloc(struct bio *bio,
+ 					  bs->bvec_integrity_pool);
+ 		if (!bip->bip_vec)
+ 			goto err;
++		bip->bip_max_vcnt = bvec_nr_vecs(idx);
+ 	} else {
+ 		bip->bip_vec = bip->bip_inline_vecs;
++		bip->bip_max_vcnt = inline_vecs;
+ 	}
+ 
+ 	bip->bip_slab = idx;
+@@ -114,14 +116,6 @@ void bio_integrity_free(struct bio *bio)
+ }
+ EXPORT_SYMBOL(bio_integrity_free);
+ 
+-static inline unsigned int bip_integrity_vecs(struct bio_integrity_payload *bip)
+-{
+-	if (bip->bip_slab == BIO_POOL_NONE)
+-		return BIP_INLINE_VECS;
+-
+-	return bvec_nr_vecs(bip->bip_slab);
+-}
+-
+ /**
+  * bio_integrity_add_page - Attach integrity metadata
+  * @bio:	bio to update
+@@ -137,7 +131,7 @@ int bio_integrity_add_page(struct bio *bio, struct page *page,
+ 	struct bio_integrity_payload *bip = bio->bi_integrity;
+ 	struct bio_vec *iv;
+ 
+-	if (bip->bip_vcnt >= bip_integrity_vecs(bip)) {
++	if (bip->bip_vcnt >= bip->bip_max_vcnt) {
+ 		printk(KERN_ERR "%s: bip_vec full\n", __func__);
+ 		return 0;
+ 	}
+diff --git a/include/linux/bio.h b/include/linux/bio.h
+index 5a64576..1946d72 100644
+--- a/include/linux/bio.h
++++ b/include/linux/bio.h
+@@ -299,6 +299,7 @@ struct bio_integrity_payload {
+ 
+ 	unsigned short		bip_slab;	/* slab the bip came from */
+ 	unsigned short		bip_vcnt;	/* # of integrity bio_vecs */
++	unsigned short		bip_max_vcnt;	/* integrity bio_vec slots */
+ 	unsigned		bip_owns_buf:1;	/* should free bip_buf */
+ 
+ 	struct work_struct	bip_work;	/* I/O completion */
+-- 
+1.7.7
 
