@@ -1,101 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753139AbaF0Hxl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 03:53:41 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:62437 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753113AbaF0Hxj (ORCPT
+	id S1752939AbaF0H4A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 03:56:00 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:33743 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751836AbaF0Hz6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 03:53:39 -0400
-From: Chen Yucong <slaoub@gmail.com>
-To: mgorman@suse.de
-Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Chen Yucong <slaoub@gmail.com>
-Subject: [PATCH] mm:vmscan: update the trace-vmscan-postprocess.pl for event vmscan/mm_vmscan_lru_isolate
-Date: Fri, 27 Jun 2014 15:53:26 +0800
-Message-Id: <1403855607-26857-1-git-send-email-slaoub@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 27 Jun 2014 03:55:58 -0400
+Message-ID: <53AD2387.5090704@collabora.co.uk>
+Date: Fri, 27 Jun 2014 09:55:51 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+MIME-Version: 1.0
+To: =?ISO-8859-15?Q?Andreas_F=E4rber?= <afaerber@suse.de>,
+        Lee Jones <lee.jones@linaro.org>
+CC: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
+        Daniel Stone <daniels@collabora.com>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 12/14] clk: max77802: Add DT binding documentation
+References: <1403806546-31122-1-git-send-email-javier.martinez@collabora.co.uk> <1403806546-31122-13-git-send-email-javier.martinez@collabora.co.uk> <53AD22D0.9000403@suse.de>
+In-Reply-To: <53AD22D0.9000403@suse.de>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When using *trace-vmscan-postprocess.pl* for checking the file/anon rate of scanning,
-we can find that it can not be performed. At the same time, the following message will
-be reported.
+Hello Andres,
 
-WARNING: Format not as expected for event vmscan/mm_vmscan_lru_isolate 'file' != 'contig_taken'
-Fewer fields than expected in format at ./trace-vmscan-postprocess.pl line 171, <FORMAT> line 76.
+Thanks a lot for your feedback.
 
-In trace-vmscan-postprocess.pl, (contig_taken, contig_dirty, and contig_failed) are be
-associated respectively to (nr_lumpy_taken, nr_lumpy_dirty, and nr_lumpy_failed) for lumpy
-reclaim. Via commit c53919adc045b(mm: vmscan: remove lumpy reclaim), lumpy reclaim had
-already been removed by Mel, but the update for trace-vmscan-postprocess.pl was missed.
+On 06/27/2014 09:52 AM, Andreas Färber wrote:
+> Am 26.06.2014 20:15, schrieb Javier Martinez Canillas:
+>> Add Device Tree binding documentation for the clocks
+>> outputs in the Maxim 77802 Power Management IC.
+>> 
+>> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+>> ---
+>> 
+>> Changes since v4: None
+>> 
+>> Changes since v3:
+>>  - Don't use the same clock driver name in clock-names since it's a consumer
+>>    concept and most probably will be different. Suggested by Doug Anderson.
+>> 
+>> Changes since v2:
+>>  - Split the DT binding documentation in a separate patch.
+>> 
+>>  .../devicetree/bindings/clock/maxim,max77802.txt   | 42 ++++++++++++++++++++++
+>>  1 file changed, 42 insertions(+)
+>>  create mode 100644 Documentation/devicetree/bindings/clock/maxim,max77802.txt
+>> 
+>> diff --git a/Documentation/devicetree/bindings/clock/maxim,max77802.txt b/Documentation/devicetree/bindings/clock/maxim,max77802.txt
+>> new file mode 100644
+>> index 0000000..26bc4f7
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/clock/maxim,max77802.txt
+>> @@ -0,0 +1,42 @@
+>> +Binding for Maxim MAX77802 32k clock generator block
+>> +
+>> +This is a part of device tree bindings of MAX77802 multi-function device.
+>> +More information can be found in bindings/mfd/max77802.txt file.
+>> +
+>> +The MAX77802 contains two 32.768khz clock outputs that can be controlled
+>> +(gated/ungated) over I2C.
+>> +
+>> +Following properties should be presend in main device node of the MFD chip.
+> 
+> "present"
+>
 
-Signed-off-by: Chen Yucong <slaoub@gmail.com>
----
- .../trace/postprocess/trace-vmscan-postprocess.pl        |   14 ++------------
- 1 file changed, 2 insertions(+), 12 deletions(-)
+Right, it's a typo. I'll wait for further feedback and will fix both issues you
+pointed out in the next version of the series.
 
-diff --git a/Documentation/trace/postprocess/trace-vmscan-postprocess.pl b/Documentation/trace/postprocess/trace-vmscan-postprocess.pl
-index 00e425f..78c9a7b 100644
---- a/Documentation/trace/postprocess/trace-vmscan-postprocess.pl
-+++ b/Documentation/trace/postprocess/trace-vmscan-postprocess.pl
-@@ -47,7 +47,6 @@ use constant HIGH_KSWAPD_REWAKEUP		=> 21;
- use constant HIGH_NR_SCANNED			=> 22;
- use constant HIGH_NR_TAKEN			=> 23;
- use constant HIGH_NR_RECLAIMED			=> 24;
--use constant HIGH_NR_CONTIG_DIRTY		=> 25;
- 
- my %perprocesspid;
- my %perprocess;
-@@ -105,7 +104,7 @@ my $regex_direct_end_default = 'nr_reclaimed=([0-9]*)';
- my $regex_kswapd_wake_default = 'nid=([0-9]*) order=([0-9]*)';
- my $regex_kswapd_sleep_default = 'nid=([0-9]*)';
- my $regex_wakeup_kswapd_default = 'nid=([0-9]*) zid=([0-9]*) order=([0-9]*)';
--my $regex_lru_isolate_default = 'isolate_mode=([0-9]*) order=([0-9]*) nr_requested=([0-9]*) nr_scanned=([0-9]*) nr_taken=([0-9]*) contig_taken=([0-9]*) contig_dirty=([0-9]*) contig_failed=([0-9]*)';
-+my $regex_lru_isolate_default = 'isolate_mode=([0-9]*) order=([0-9]*) nr_requested=([0-9]*) nr_scanned=([0-9]*) nr_taken=([0-9]*) file=([0-9]*)';
- my $regex_lru_shrink_inactive_default = 'nid=([0-9]*) zid=([0-9]*) nr_scanned=([0-9]*) nr_reclaimed=([0-9]*) priority=([0-9]*) flags=([A-Z_|]*)';
- my $regex_lru_shrink_active_default = 'lru=([A-Z_]*) nr_scanned=([0-9]*) nr_rotated=([0-9]*) priority=([0-9]*)';
- my $regex_writepage_default = 'page=([0-9a-f]*) pfn=([0-9]*) flags=([A-Z_|]*)';
-@@ -200,7 +199,7 @@ $regex_lru_isolate = generate_traceevent_regex(
- 			$regex_lru_isolate_default,
- 			"isolate_mode", "order",
- 			"nr_requested", "nr_scanned", "nr_taken",
--			"contig_taken", "contig_dirty", "contig_failed");
-+			"file");
- $regex_lru_shrink_inactive = generate_traceevent_regex(
- 			"vmscan/mm_vmscan_lru_shrink_inactive",
- 			$regex_lru_shrink_inactive_default,
-@@ -375,7 +374,6 @@ EVENT_PROCESS:
- 			}
- 			my $isolate_mode = $1;
- 			my $nr_scanned = $4;
--			my $nr_contig_dirty = $7;
- 
- 			# To closer match vmstat scanning statistics, only count isolate_both
- 			# and isolate_inactive as scanning. isolate_active is rotation
-@@ -385,7 +383,6 @@ EVENT_PROCESS:
- 			if ($isolate_mode != 2) {
- 				$perprocesspid{$process_pid}->{HIGH_NR_SCANNED} += $nr_scanned;
- 			}
--			$perprocesspid{$process_pid}->{HIGH_NR_CONTIG_DIRTY} += $nr_contig_dirty;
- 		} elsif ($tracepoint eq "mm_vmscan_lru_shrink_inactive") {
- 			$details = $6;
- 			if ($details !~ /$regex_lru_shrink_inactive/o) {
-@@ -539,13 +536,6 @@ sub dump_stats {
- 				}
- 			}
- 		}
--		if ($stats{$process_pid}->{HIGH_NR_CONTIG_DIRTY}) {
--			print "      ";
--			my $count = $stats{$process_pid}->{HIGH_NR_CONTIG_DIRTY};
--			if ($count != 0) {
--				print "contig-dirty=$count ";
--			}
--		}
- 
- 		print "\n";
- 	}
--- 
-1.7.10.4
+> Regards,
+> Andreas
+> 
+
+Best regards,
+Javier
 
