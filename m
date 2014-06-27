@@ -1,43 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753922AbaF0O6I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 10:58:08 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:63721 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752740AbaF0O6G (ORCPT
+	id S1753886AbaF0PA0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 11:00:26 -0400
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:47489 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753275AbaF0PAY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 10:58:06 -0400
-From: Jean Pihet <jean.pihet@linaro.org>
-To: Will Deacon <will.deacon@arm.com>, linux-arm-kernel@lists.infradead.org,
-        linaro-kernel@lists.linaro.org, Sneha Priya <sneha.cse@hotmail.com>,
-        linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Jean Pihet <jean.pihet@linaro.org>
-Subject: [PATCH 0/3] ARM: perf: allow tracing with kernel tracepoints events
-Date: Fri, 27 Jun 2014 16:57:44 +0200
-Message-Id: <1403881067-22690-1-git-send-email-jean.pihet@linaro.org>
-X-Mailer: git-send-email 1.9.3
+	Fri, 27 Jun 2014 11:00:24 -0400
+Date: Fri, 27 Jun 2014 11:00:21 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH 5/5] cgroup: fix a race between cgroup_mount() and
+ cgroup_kill_sb()
+Message-ID: <20140627150021.GA4044@htj.dyndns.org>
+References: <53994943.60703@huawei.com>
+ <539949A1.90301@huawei.com>
+ <20140620193521.GB28324@mtj.dyndns.org>
+ <53A8D2B8.4080107@huawei.com>
+ <20140624210119.GC14909@htj.dyndns.org>
+ <53AA2C4F.30808@huawei.com>
+ <20140625150053.GE26883@htj.dyndns.org>
+ <53AD1001.4090405@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53AD1001.4090405@huawei.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-- Robustify the user backtrace code, as done on other architectures.
-- Provide the symbols resolution when triggering from tracepoints.
+On Fri, Jun 27, 2014 at 02:32:33PM +0800, Li Zefan wrote:
+> > cgroup_mount()
+> > {
+> > 	mutex_lock();
+> > 	lookup_cgroup_root();
+> > 	if (root isn't killed yet)
+> > 		root->this_better_stay_alive++;
+> > 	mutex_unlock();
+> > 	kernfs_mount();
+> > }
+> > 
+> > cgroup_kill_sb()
+> > {
+> > 	mutex_lock();
+> > 	if (check whether root can be killed)
+> > 		percpu_ref_kill();
+> > 	mutex_unlock();
+> > 	if (the above condition was true)
+> > 		kernfs_kill_sb();
+> > }
+> > 
+> 
+> This looks nasty, and I don't think it's correct. If we skip the call
+> to kernfs_kill_sb(), kernfs_super_info won't be freed but super_block
+> will, so we will end up either leaking memory or accessing invalid
+> memory. There are other problems like returning with sb->s_umount still
+> held.
 
-Tested with perf record and tracepoints triggering (-e <tracepoint>), with
-unwinding using fp (--call-graph fp) and dwarf info (--call-graph dwarf).
+Yeah, right, the conditional shouldn't be on kernfs_kill_sb().  It
+should only be on percpu_ref_kill().  kernfs mount code will wait out
+the dead sb and create a new one; however, this is still not feasible
+because we don't have a place to dec ->this_better_stay_alive as
+there's no umount callback.  :(
 
-
-Jean Pihet (3):
-  ARM: perf: Check that current->mm is alive before getting user
-    callchain
-  ARM: perf: disable the pagefault handler when reading from user space
-  ARM: perf: allow tracing with kernel tracepoints events
-
- arch/arm/include/asm/perf_event.h | 19 +++++++++++++++++++
- arch/arm/kernel/perf_event.c      | 13 +++++++++++--
- 2 files changed, 30 insertions(+), 2 deletions(-)
+Thanks.
 
 -- 
-1.8.1.2
-
+tejun
