@@ -1,49 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751453AbaF0QZK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 12:25:10 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:33941 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751005AbaF0QZI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 12:25:08 -0400
-From: Rostislav Lisovy <lisovy@gmail.com>
-X-Google-Original-From: Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
-To: Johannes Berg <johannes@sipsolutions.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Michal Sojka <sojkam1@fel.cvut.cz>, s.sander@nordsys.de,
-        jan-niklas.meier@volkswagen.de,
-        Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
-Subject: [RFC] Try multiple bandwidths when checking usable channels.
-Date: Fri, 27 Jun 2014 18:24:53 +0200
-Message-Id: <1403886294-713-1-git-send-email-rostislav.lisovy@fel.cvut.cz>
-X-Mailer: git-send-email 2.0.0.rc4
+	id S1751670AbaF0Q1R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 12:27:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23601 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751308AbaF0Q1Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 12:27:16 -0400
+From: Jiri Olsa <jolsa@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@kernel.org>
+Subject: [PATCHv4 0/3] perf tools tui: Display columns headers
+Date: Fri, 27 Jun 2014 18:26:55 +0200
+Message-Id: <1403886418-5556-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The issue with the code in the reverted 8eca1fb692cc commit (and the
-previous unmodified implementation as well) was that we checked if a
-channel of some particular bandwidth (i.e. 5 or formerly 20 MHz) will
-be within some regulatory rule range -- if it was, we then blindly set
-IEEE80211_CHAN_NO_* flags according to the maximum bandwidth allowed,
-not according to the fact if such a channel would be within the
-regulatory rule range. Example demonstrating behaviour of the reverted
-patch: At first we checked if Channel 12 (BW set to 5 MHz) is usable
-in US -- it is. Then we continued setting flags -- because the maximum
-allowed bandwidth for the band 2402--2472 is 40 MHz, we allowed 20 MHz
-operation which is completely wrong since "2467 MHz" (Channel 12) +
-"10 MHz" (1/2 of the BW) is no more within the allowed 2402--2472.
+hi,
+adding the way to display columns headers in perf TUI on
+'H' press.
+
+v4 changes:
+  - split hist_browser__refresh_dimensions change into
+    separated patch, plus dimension update change (Arnaldo)
+
+v3 changes:
+  - changed report.show-headers to ui.show-headers
+    and fix default value setting for it (Namhyung)
+  - ommited v2 patch 1
+  - v2 patches 2 and 3 already in
+
+v2 changes:
+  - fixed resize/popup issues (Namhyung)
+  - display headers by default (Namhyung)
+  - add 'show-headers' config file option to setup
+    the headers displaying
+
+Also reachable in here:
+  git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
+  perf/core_headers
+
+thanks,
+jirka
 
 
-Rostislav Lisovy (1):
-  Try explicitly bandwidths 5--160 MHz when checking usable channels.
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+---
+Jiri Olsa (3):
+      perf tools tui: Remove width setting from hist_browser__refresh_dimensions
+      perf tools tui: Display columns header text on 'H' press
+      perf tools: Add ui.show-headers config file option
 
- include/net/cfg80211.h |   8 +-
- net/wireless/reg.c     | 202 +++++++++++++++++++++++++++++++------------------
- 2 files changed, 137 insertions(+), 73 deletions(-)
-
--- 
-2.0.0.rc4
-
+ tools/perf/ui/browsers/hists.c | 80 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/config.c       | 13 +++++++++++++
+ tools/perf/util/symbol.c       |  1 +
+ tools/perf/util/symbol.h       |  3 ++-
+ 4 files changed, 93 insertions(+), 4 deletions(-)
