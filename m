@@ -1,65 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752063AbaF0SdK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 14:33:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18492 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751264AbaF0SdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 14:33:08 -0400
-Date: Fri, 27 Jun 2014 19:01:43 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4] tracing/uprobes: Kill the bogus UPROBE_HANDLER_REMOVE
-	code in uprobe_dispatcher()
-Message-ID: <20140627170143.GA18329@redhat.com>
+	id S1752808AbaF0Sdw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 14:33:52 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:43006 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752678AbaF0Sdr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 14:33:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140627170116.GA18298@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CALCETrVNwhWSPNiBiZmgP1nD9zLJPTk6cH0yo=85rbxTPTYFRg@mail.gmail.com>
+References: <1403642893-23107-1-git-send-email-keescook@chromium.org>
+	<1403642893-23107-6-git-send-email-keescook@chromium.org>
+	<20140625135121.GB7892@redhat.com>
+	<CAGXu5jJkFxh4K=40xuh6tu3kUf4oJM8Dry+4upBdRieW3FNLgw@mail.gmail.com>
+	<CALCETrUBNmLnpa+LM91om2RSpR6SjupP-EdefzhU1Me4nv3Dfw@mail.gmail.com>
+	<CAGXu5j+J11zJnuFR8bYKAXizAHhCx4R+uJE_QH6zC3q2udkpaQ@mail.gmail.com>
+	<CALCETrVrs8sb19+UUqyFEpAFzTih5dkAwn-WpQjfgPcPJMpP5g@mail.gmail.com>
+	<20140625173245.GA17695@redhat.com>
+	<CALCETrUc65H+fn6dtMdYnB_xR39wcmgDdTbdR3fFRjyrndJhgA@mail.gmail.com>
+	<20140625175136.GA18185@redhat.com>
+	<CAGXu5jL17k6=GXju6x+eLU20FMwBHhnuRiHoQD1Bzj_EmpiKjg@mail.gmail.com>
+	<CALCETrVNwhWSPNiBiZmgP1nD9zLJPTk6cH0yo=85rbxTPTYFRg@mail.gmail.com>
+Date: Fri, 27 Jun 2014 11:33:46 -0700
+X-Google-Sender-Auth: HYWSaTLyoc0rJ57uwF2alcXXhkU
+Message-ID: <CAGXu5jLavA8FJD8m-1y4wO0uzh3qvvMmajAg0Lrr1Cn_Om3a3w@mail.gmail.com>
+Subject: Re: [PATCH v8 5/9] seccomp: split mode set routines
+From: Kees Cook <keescook@chromium.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I do not know why dd9fa555d7bb "tracing/uprobes: Move argument fetching
-to uprobe_dispatcher()" added the UPROBE_HANDLER_REMOVE, but it looks
-wrong.
+On Wed, Jun 25, 2014 at 11:07 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Wed, Jun 25, 2014 at 11:00 AM, Kees Cook <keescook@chromium.org> wrote:
+>> On Wed, Jun 25, 2014 at 10:51 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>>> On 06/25, Andy Lutomirski wrote:
+>>>>
+>>>> On Wed, Jun 25, 2014 at 10:32 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>>>> > On 06/25, Andy Lutomirski wrote:
+>>>> >>
+>>>> >> Write the filter, then smp_mb (or maybe a weaker barrier is okay),
+>>>> >> then set the bit.
+>>>> >
+>>>> > Yes, exactly, this is what I meant. Plas rmb() in __secure_computing().
+>>>> >
+>>>> > But I still can't understand the rest of your discussion about the
+>>>> > ordering we need ;)
+>>>>
+>>>> Let me try again from scratch.
+>>>>
+>>>> Currently there are three relevant variables: TIF_SECCOMP,
+>>>> seccomp.mode, and seccomp.filter.  __secure_computing needs
+>>>> seccomp.mode and seccomp.filter to be in sync, and it wants (but
+>>>> doesn't really need) TIF_SECCOMP to be in sync as well.
+>>>>
+>>>> My suggestion is to rearrange it a bit.  Move mode into seccomp.filter
+>>>> (so that filter == NULL implies no seccomp) and don't check
+>>
+>> This would require that we reimplement mode 1 seccomp via mode 2
+>> filters. Which isn't too hard, but may add complexity.
+>>
+>>>> TIF_SECCOMP in secure_computing.  Then turning on seccomp is entirely
+>>>> atomic except for the fact that the seccomp hooks won't be called if
+>>>> filter != NULL but !TIF_SECCOMP.  This removes all ordering
+>>>> requirements.
+>>>
+>>> Ah, got it, thanks. Perhaps I missed somehing, but to me this looks like
+>>> unnecessary complication at first glance.
+>>>
+>>> We alredy have TIF_SECCOMP, we need it anyway, and we should only care
+>>> about the case when this bit is actually set, so that we can race with
+>>> the 1st call of __secure_computing().
+>>>
+>>> Otherwise we are fine: we can miss the new filter anyway, ->mode can't
+>>> be changed it is already nonzero.
+>>>
+>>>> Alternatively, __secure_computing could still BUG_ON(!seccomp.filter).
+>>>> In that case, filter needs to be set before TIF_SECCOMP is set, but
+>>>> that's straightforward.
+>>>
+>>> Yep. And this is how seccomp_assign_mode() already works? It is called
+>>> after we change ->filter chain, it changes ->mode before set(TIF_SECCOMP)
+>>> just it lacks a barrier.
+>>
+>> Right, I think the best solution is to add the barrier. I was
+>> concerned that adding the read barrier in secure_computing would have
+>> a performance impact, though.
+>>
+>
+> I can't speak for ARM, but I think that all of the read barriers are
+> essentially free on x86.  (smp_mb is a very different story, but that
+> shouldn't be needed here.)
 
-OK, perhaps it makes sense to avoid store_trace_args() if the tracee is
-nacked by uprobe_perf_filter(). But then we should kill the same code
-in uprobe_perf_func() and unify the TRACE/PROFILE filtering (we need to
-do this anyway to mix perf/ftrace). Until then this code actually adds
-the pessimization because uprobe_perf_filter() will be called twice and
-return T in likely case.
+It looks like SMP ARM issues dsb for rmb, which seems a bit expensive.
+http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0204g/CIHJFGFE.html
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/trace/trace_uprobe.c |    6 ------
- 1 files changed, 0 insertions(+), 6 deletions(-)
+If I skip the rmb in the secure_computing call before checking mode,
+it sounds like I run the risk of racing an out-of-order TIF_SECCOMP vs
+mode and filter. This seems unlikely to me, given an addition of the
+smp_mb__before_atomic() during the seccomp_assign_mode()? I guess I
+don't have a sense of how aggressively ARM might do data caching in
+this area. Could the other thread actually see TIF_SECCOMP get set but
+still have an out of date copy of seccomp.mode?
 
-diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-index 08e7970..c4cf0ab 100644
---- a/kernel/trace/trace_uprobe.c
-+++ b/kernel/trace/trace_uprobe.c
-@@ -1208,12 +1208,6 @@ static int uprobe_dispatcher(struct uprobe_consumer *con, struct pt_regs *regs)
- 
- 	current->utask->vaddr = (unsigned long) &udd;
- 
--#ifdef CONFIG_PERF_EVENTS
--	if ((tu->tp.flags & TP_FLAG_TRACE) == 0 &&
--	    !uprobe_perf_filter(&tu->consumer, 0, current->mm))
--		return UPROBE_HANDLER_REMOVE;
--#endif
--
- 	if (WARN_ON_ONCE(!uprobe_cpu_buffer))
- 		return 0;
- 
+I really want to avoid adding anything to the secure_computing()
+execution path. :(
+
+-Kees
+
 -- 
-1.5.5.1
-
+Kees Cook
+Chrome OS Security
