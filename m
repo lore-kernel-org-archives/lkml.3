@@ -1,50 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752305AbaF0AzE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 20:55:04 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:19705 "EHLO
+	id S1752148AbaF0BGP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 21:06:15 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:10928 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751057AbaF0AzD (ORCPT
+	by vger.kernel.org with ESMTP id S1751139AbaF0BGN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 20:55:03 -0400
-Date: Thu, 26 Jun 2014 20:55:00 -0400
+	Thu, 26 Jun 2014 21:06:13 -0400
+Date: Thu, 26 Jun 2014 21:06:03 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
-To: Petr Mladek <pmladek@suse.cz>
-Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, Michal Hocko <mhocko@suse.cz>,
+        Jan Kara <jack@suse.cz>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Dave Anderson <anderson@redhat.com>, Petr Mladek <pmladek@suse.cz>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ring-buffer: Race when writing and swapping cpu buffer
- in parallel
-Message-ID: <20140626205500.3f8e111c@gandalf.local.home>
-In-Reply-To: <20140626095831.667f834f@gandalf.local.home>
-References: <1403788958-6751-1-git-send-email-pmladek@suse.cz>
-	<20140626095831.667f834f@gandalf.local.home>
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>,
+        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>
+Subject: Re: [RFC][PATCH 1/5 v2] tracing: Add trace_seq_buffer_ptr() helper
+ function
+Message-ID: <20140626210603.3f797c0c@gandalf.local.home>
+In-Reply-To: <20140626220129.452783019@goodmis.org>
+References: <20140626214901.596791200@goodmis.org>
+	<20140626220129.452783019@goodmis.org>
 X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
+X-RR-Connecting-IP: 107.14.168.142:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Jun 2014 09:58:31 -0400
-Steven Rostedt <rostedt@goodmis.org> wrote:
 
-> What we can do is force ring_buffer_swap_cpu() to only work for the CPU
-> that it is on. As we have snapshot in per_cpu buffers, to make that
-> work, we will need to change the per_cpu version of snapshot to do a
-> smp_call_function_single() to the CPU that it wants to take a snapshot
-> of, and run the swap there.
-> 
-> To force this, we can remove the cpu parameter from the
-> ring_buffer_swap_cpu(). By doing this, we may be able to remove some of
-> the CONFIG_RING_BUFFER_ALLOW_SWAP hacks too!
-> 
-> I'm not going to sacrifice the general performance of the ring buffer
-> for a feature that is seldom (if ever) used.
+As this patch is in my 3.17 queue and it touches the kvm and scsi
+tracepoint code, I figured I should at least do the courtesy of
+notifying the maintainers of those subsystems.
 
-Did you want to do the above, or do you want me to write something up?
+Do you have any issues with this going through my tree? If not, please
+give me an Acked-by.
+
+Thanks!
 
 -- Steve
+
+On Thu, 26 Jun 2014 17:49:02 -0400
+Steven Rostedt <rostedt@goodmis.org> wrote:
+
+> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> 
+> There's several locations in the kernel that open code the calculation
+> of the next location in the trace_seq buffer. This is usually done with
+> 
+>   p->buffer + p->len
+> 
+> Instead of having this open coded, supply a helper function in the
+> header to do it for them. This function is called trace_seq_buffer_ptr().
+> 
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  arch/x86/kvm/mmutrace.h     |  2 +-
+>  drivers/scsi/scsi_trace.c   | 16 ++++++++--------
+>  include/linux/trace_seq.h   | 15 +++++++++++++++
+>  kernel/trace/trace_output.c | 14 +++++++-------
+>  4 files changed, 31 insertions(+), 16 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/mmutrace.h b/arch/x86/kvm/mmutrace.h
+> index 9d2e0ffcb190..2e5652b62fd6 100644
+> --- a/arch/x86/kvm/mmutrace.h
+> +++ b/arch/x86/kvm/mmutrace.h
+> @@ -22,7 +22,7 @@
+>  	__entry->unsync = sp->unsync;
+>  
+>  #define KVM_MMU_PAGE_PRINTK() ({				        \
+> -	const char *ret = p->buffer + p->len;				\
+> +	const char *ret = trace_seq_buffer_ptr(p);			\
+>  	static const char *access_str[] = {			        \
+>  		"---", "--x", "w--", "w-x", "-u-", "-ux", "wu-", "wux"  \
+>  	};							        \
+> diff --git a/drivers/scsi/scsi_trace.c b/drivers/scsi/scsi_trace.c
+> index 2bea4f0b684a..503594e5f76d 100644
+> --- a/drivers/scsi/scsi_trace.c
+> +++ b/drivers/scsi/scsi_trace.c
+> @@ -28,7 +28,7 @@ scsi_trace_misc(struct trace_seq *, unsigned char *, int);
+>  static const char *
+>  scsi_trace_rw6(struct trace_seq *p, unsigned char *cdb, int len)
+>  {
+> -	const char *ret = p->buffer + p->len;
+> +	const char *ret = trace_seq_buffer_ptr(p);
+>  	sector_t lba = 0, txlen = 0;
+>  
+>  	lba |= ((cdb[1] & 0x1F) << 16);
+> @@ -46,7 +46,7 @@ scsi_trace_rw6(struct trace_seq *p, unsigned char *cdb, int len)
+>  static const char *
+>  scsi_trace_rw10(struct trace_seq *p, unsigned char *cdb, int len)
+>  {
+> -	const char *ret = p->buffer + p->len;
+> +	const char *ret = trace_seq_buffer_ptr(p);
+>  	sector_t lba = 0, txlen = 0;
+>  
+>  	lba |= (cdb[2] << 24);
+> @@ -71,7 +71,7 @@ scsi_trace_rw10(struct trace_seq *p, unsigned char *cdb, int len)
+>  static const char *
+>  scsi_trace_rw12(struct trace_seq *p, unsigned char *cdb, int len)
+>  {
+> -	const char *ret = p->buffer + p->len;
+> +	const char *ret = trace_seq_buffer_ptr(p);
+>  	sector_t lba = 0, txlen = 0;
+>  
+>  	lba |= (cdb[2] << 24);
+> @@ -94,7 +94,7 @@ scsi_trace_rw12(struct trace_seq *p, unsigned char *cdb, int len)
+>  static const char *
+>  scsi_trace_rw16(struct trace_seq *p, unsigned char *cdb, int len)
+>  {
+> -	const char *ret = p->buffer + p->len;
+> +	const char *ret = trace_seq_buffer_ptr(p);
+>  	sector_t lba = 0, txlen = 0;
+>  
+>  	lba |= ((u64)cdb[2] << 56);
+> @@ -125,7 +125,7 @@ scsi_trace_rw16(struct trace_seq *p, unsigned char *cdb, int len)
+>  static const char *
+>  scsi_trace_rw32(struct trace_seq *p, unsigned char *cdb, int len)
+>  {
+> -	const char *ret = p->buffer + p->len, *cmd;
+> +	const char *ret = trace_seq_buffer_ptr(p), *cmd;
+>  	sector_t lba = 0, txlen = 0;
+>  	u32 ei_lbrt = 0;
+>  
+> @@ -180,7 +180,7 @@ out:
+>  static const char *
+>  scsi_trace_unmap(struct trace_seq *p, unsigned char *cdb, int len)
+>  {
+> -	const char *ret = p->buffer + p->len;
+> +	const char *ret = trace_seq_buffer_ptr(p);
+>  	unsigned int regions = cdb[7] << 8 | cdb[8];
+>  
+>  	trace_seq_printf(p, "regions=%u", (regions - 8) / 16);
+> @@ -192,7 +192,7 @@ scsi_trace_unmap(struct trace_seq *p, unsigned char *cdb, int len)
+>  static const char *
+>  scsi_trace_service_action_in(struct trace_seq *p, unsigned char *cdb, int len)
+>  {
+> -	const char *ret = p->buffer + p->len, *cmd;
+> +	const char *ret = trace_seq_buffer_ptr(p), *cmd;
+>  	sector_t lba = 0;
+>  	u32 alloc_len = 0;
+>  
+> @@ -247,7 +247,7 @@ scsi_trace_varlen(struct trace_seq *p, unsigned char *cdb, int len)
+>  static const char *
+>  scsi_trace_misc(struct trace_seq *p, unsigned char *cdb, int len)
+>  {
+> -	const char *ret = p->buffer + p->len;
+> +	const char *ret = trace_seq_buffer_ptr(p);
+>  
+>  	trace_seq_printf(p, "-");
+>  	trace_seq_putc(p, 0);
+> diff --git a/include/linux/trace_seq.h b/include/linux/trace_seq.h
+> index dd85753e1bb0..ea6c9dea79e3 100644
+> --- a/include/linux/trace_seq.h
+> +++ b/include/linux/trace_seq.h
+> @@ -25,6 +25,21 @@ trace_seq_init(struct trace_seq *s)
+>  	s->full = 0;
+>  }
+>  
+> +/**
+> + * trace_seq_buffer_ptr - return pointer to next location in buffer
+> + * @s: trace sequence descriptor
+> + *
+> + * Returns the pointer to the buffer where the next write to
+> + * the buffer will happen. This is useful to save the location
+> + * that is about to be written to and then return the result
+> + * of that write.
+> + */
+> +static inline unsigned char *
+> +trace_seq_buffer_ptr(struct trace_seq *s)
+> +{
+> +	return s->buffer + s->len;
+> +}
+> +
+>  /*
+>   * Currently only defined when tracing is enabled.
+>   */
+> diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
+> index b8930f79a04b..c6977d5a9b12 100644
+> --- a/kernel/trace/trace_output.c
+> +++ b/kernel/trace/trace_output.c
+> @@ -75,7 +75,7 @@ ftrace_print_flags_seq(struct trace_seq *p, const char *delim,
+>  {
+>  	unsigned long mask;
+>  	const char *str;
+> -	const char *ret = p->buffer + p->len;
+> +	const char *ret = trace_seq_buffer_ptr(p);
+>  	int i, first = 1;
+>  
+>  	for (i = 0;  flag_array[i].name && flags; i++) {
+> @@ -111,7 +111,7 @@ ftrace_print_symbols_seq(struct trace_seq *p, unsigned long val,
+>  			 const struct trace_print_flags *symbol_array)
+>  {
+>  	int i;
+> -	const char *ret = p->buffer + p->len;
+> +	const char *ret = trace_seq_buffer_ptr(p);
+>  
+>  	for (i = 0;  symbol_array[i].name; i++) {
+>  
+> @@ -122,7 +122,7 @@ ftrace_print_symbols_seq(struct trace_seq *p, unsigned long val,
+>  		break;
+>  	}
+>  
+> -	if (ret == (const char *)(p->buffer + p->len))
+> +	if (ret == (const char *)(trace_seq_buffer_ptr(p)))
+>  		trace_seq_printf(p, "0x%lx", val);
+>  		
+>  	trace_seq_putc(p, 0);
+> @@ -137,7 +137,7 @@ ftrace_print_symbols_seq_u64(struct trace_seq *p, unsigned long long val,
+>  			 const struct trace_print_flags_u64 *symbol_array)
+>  {
+>  	int i;
+> -	const char *ret = p->buffer + p->len;
+> +	const char *ret = trace_seq_buffer_ptr(p);
+>  
+>  	for (i = 0;  symbol_array[i].name; i++) {
+>  
+> @@ -148,7 +148,7 @@ ftrace_print_symbols_seq_u64(struct trace_seq *p, unsigned long long val,
+>  		break;
+>  	}
+>  
+> -	if (ret == (const char *)(p->buffer + p->len))
+> +	if (ret == (const char *)(trace_seq_buffer_ptr(p)))
+>  		trace_seq_printf(p, "0x%llx", val);
+>  
+>  	trace_seq_putc(p, 0);
+> @@ -162,7 +162,7 @@ const char *
+>  ftrace_print_bitmask_seq(struct trace_seq *p, void *bitmask_ptr,
+>  			 unsigned int bitmask_size)
+>  {
+> -	const char *ret = p->buffer + p->len;
+> +	const char *ret = trace_seq_buffer_ptr(p);
+>  
+>  	trace_seq_bitmask(p, bitmask_ptr, bitmask_size * 8);
+>  	trace_seq_putc(p, 0);
+> @@ -175,7 +175,7 @@ const char *
+>  ftrace_print_hex_seq(struct trace_seq *p, const unsigned char *buf, int buf_len)
+>  {
+>  	int i;
+> -	const char *ret = p->buffer + p->len;
+> +	const char *ret = trace_seq_buffer_ptr(p);
+>  
+>  	for (i = 0; i < buf_len; i++)
+>  		trace_seq_printf(p, "%s%2.2x", i == 0 ? "" : " ", buf[i]);
+
