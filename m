@@ -1,51 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753810AbaF0OvI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 10:51:08 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:17720 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752845AbaF0OvG (ORCPT
+	id S1753948AbaF0Ovu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 10:51:50 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:35041 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753893AbaF0Ovt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 10:51:06 -0400
-Message-ID: <53AD84CE.20806@oracle.com>
-Date: Fri, 27 Jun 2014 10:50:54 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Fri, 27 Jun 2014 10:51:49 -0400
+Date: Fri, 27 Jun 2014 15:51:46 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>
+Cc: linux-efi@vger.kernel.org, Catalin Marinas <catalin.marinas@arm.com>,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL] EFI urgent fixes
+Message-ID: <20140627145146.GB7539@console-pimps.org>
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Vlastimil Babka <vbabka@suse.cz>, Konstantin Khlebnikov <koct9i@gmail.com>,
-        Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: mm: shm: hang in shmem_fallocate
-References: <52AE7B10.2080201@oracle.com> <52F6898A.50101@oracle.com> <alpine.LSU.2.11.1402081841160.26825@eggly.anvils> <52F82E62.2010709@oracle.com> <539A0FC8.8090504@oracle.com> <alpine.LSU.2.11.1406151921070.2850@eggly.anvils> <53A9A7D8.2020703@suse.cz> <alpine.LSU.2.11.1406251152450.1580@eggly.anvils> <53AC383F.3010007@oracle.com> <alpine.LSU.2.11.1406262236370.27670@eggly.anvils>
-In-Reply-To: <alpine.LSU.2.11.1406262236370.27670@eggly.anvils>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27/2014 01:59 AM, Hugh Dickins wrote:
->> > First, this:
->> > 
->> > [  681.267487] BUG: unable to handle kernel paging request at ffffea0003480048
->> > [  681.268621] IP: zap_pte_range (mm/memory.c:1132)
-> Weird, I don't think we've seen anything like that before, have we?
-> I'm pretty sure it's not a consequence of my "index = min(index, end)",
-> but what it portends I don't know.  Please confirm mm/memory.c:1132 -
-> that's the "if (PageAnon(page))" line, isn't it?  Which indeed matches
-> the code below.  So accessing page->mapping is causing an oops...
+Guys,
 
-Right, that's the correct line.
+Please pull the following EFI fixes. The fix from Catalin is the same as
+the one I sent a week ago and Andrzej's patch fixes an efi-pstore issue
+on 32-bit machines where efi-pstore variables don't appear in the
+filesystem and so can never be deleted, potentially leading to
+exhaustion of NVRAM space.
 
-At this point I'm pretty sure that it's somehow related to that one line
-patch since it reproduced fairly quickly after applying it, and when I
-removed it I didn't see it happening again during the overnight fuzzing.
+The following changes since commit 7171511eaec5bf23fb06078f59784a3a0626b38f:
 
+  Linux 3.16-rc1 (2014-06-15 17:45:28 -1000)
 
-Thanks,
-Sasha
+are available in the git repository at:
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-urgent
+
+for you to fetch changes up to 783ee43118dc773bc8b0342c5b230e017d5a04d0:
+
+  efi-pstore: Fix an overflow on 32-bit builds (2014-06-27 07:30:32 +0100)
+
+----------------------------------------------------------------
+ * Fix a few compiler warnings (one being a real bug) in the arm64 EFI
+   code that lots of people are running into and reporting - Catalin Marinas
+
+ * Use a cast to avoid a 32-bit overflow issue when generating pstore
+   filenames - Andrzej Zaborowski
+
+----------------------------------------------------------------
+Andrzej Zaborowski (1):
+      efi-pstore: Fix an overflow on 32-bit builds
+
+Catalin Marinas (1):
+      efi: Fix compiler warnings (unused, const, type)
+
+ drivers/firmware/efi/efi-pstore.c | 2 +-
+ drivers/firmware/efi/efi.c        | 6 +++---
+ drivers/firmware/efi/fdt.c        | 2 +-
+ 3 files changed, 5 insertions(+), 5 deletions(-)
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
