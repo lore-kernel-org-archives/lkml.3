@@ -1,244 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752440AbaF0Svg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 14:51:36 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:14146 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751447AbaF0Sve convert rfc822-to-8bit (ORCPT
+	id S1752672AbaF0Swf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 14:52:35 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:37146 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751843AbaF0Swc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 14:51:34 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 27 Jun 2014 11:45:18 -0700
-From: Ken Adams <KAdams@nvidia.com>
-To: Alex Courbot <acourbot@nvidia.com>, Ben Skeggs <bskeggs@redhat.com>
-CC: "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gnurou@gmail.com" <gnurou@gmail.com>
-Date: Fri, 27 Jun 2014 11:51:31 -0700
-Subject: Re: [PATCH v2] drm/gk20a: add BAR instance
-Thread-Topic: [PATCH v2] drm/gk20a: add BAR instance
-Thread-Index: Ac+SONCFrX90J/3HQGWcoLVKVTpSyg==
-Message-ID: <CFD332E4.8F1A4%kadams@nvidia.com>
-In-Reply-To: <1403869014-16209-1-git-send-email-acourbot@nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Microsoft-MacOutlook/14.3.6.130613
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 27 Jun 2014 14:52:32 -0400
 MIME-Version: 1.0
+In-Reply-To: <CALCETrUPxTxseJ=sOhD9CyJPtOqCR5sL8yx7KezLmLZcFSFNMA@mail.gmail.com>
+References: <1403642893-23107-1-git-send-email-keescook@chromium.org>
+	<1403642893-23107-6-git-send-email-keescook@chromium.org>
+	<20140625135121.GB7892@redhat.com>
+	<CAGXu5jJkFxh4K=40xuh6tu3kUf4oJM8Dry+4upBdRieW3FNLgw@mail.gmail.com>
+	<CALCETrUBNmLnpa+LM91om2RSpR6SjupP-EdefzhU1Me4nv3Dfw@mail.gmail.com>
+	<CAGXu5j+J11zJnuFR8bYKAXizAHhCx4R+uJE_QH6zC3q2udkpaQ@mail.gmail.com>
+	<CALCETrVrs8sb19+UUqyFEpAFzTih5dkAwn-WpQjfgPcPJMpP5g@mail.gmail.com>
+	<20140625173245.GA17695@redhat.com>
+	<CALCETrUc65H+fn6dtMdYnB_xR39wcmgDdTbdR3fFRjyrndJhgA@mail.gmail.com>
+	<20140625175136.GA18185@redhat.com>
+	<CAGXu5jL17k6=GXju6x+eLU20FMwBHhnuRiHoQD1Bzj_EmpiKjg@mail.gmail.com>
+	<CALCETrVNwhWSPNiBiZmgP1nD9zLJPTk6cH0yo=85rbxTPTYFRg@mail.gmail.com>
+	<CAGXu5jLavA8FJD8m-1y4wO0uzh3qvvMmajAg0Lrr1Cn_Om3a3w@mail.gmail.com>
+	<CALCETrUPxTxseJ=sOhD9CyJPtOqCR5sL8yx7KezLmLZcFSFNMA@mail.gmail.com>
+Date: Fri, 27 Jun 2014 11:52:31 -0700
+X-Google-Sender-Auth: Ojcsd_Q1B3VV3S_dr1lRPaqwQVA
+Message-ID: <CAGXu5j+wPvAuo6pVc_XoJqv7CvW6yDf3YE6P7tFwtO9hfcUUsg@mail.gmail.com>
+Subject: Re: [PATCH v8 5/9] seccomp: split mode set routines
+From: Kees Cook <keescook@chromium.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-quick note re: tegra and gpu bars...
-
-to this point we've explicitly avoided providing user-mode mappings due to
-power management issues, etc.
-looks to me like this would allow such mappings.  is that the case?  are
-there any paths which would require such mappings to function properly?
-
-thanks
----
-ken
-
-p.s.: hello :)
-
-On 6/27/14 7:36 AM, "Alex Courbot" <acourbot@nvidia.com> wrote:
-
->GK20A's BAR is functionally identical to NVC0's, but do not support
->being ioremapped write-combined. Create a BAR instance for GK20A that
->reflect that state.
+On Fri, Jun 27, 2014 at 11:39 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Fri, Jun 27, 2014 at 11:33 AM, Kees Cook <keescook@chromium.org> wrote:
+>> On Wed, Jun 25, 2014 at 11:07 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>> On Wed, Jun 25, 2014 at 11:00 AM, Kees Cook <keescook@chromium.org> wrote:
+>>>> On Wed, Jun 25, 2014 at 10:51 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>>>>> On 06/25, Andy Lutomirski wrote:
+>>>>>>
+>>>>>> On Wed, Jun 25, 2014 at 10:32 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>>>>>> > On 06/25, Andy Lutomirski wrote:
+>>>>>> >>
+>>>>>> >> Write the filter, then smp_mb (or maybe a weaker barrier is okay),
+>>>>>> >> then set the bit.
+>>>>>> >
+>>>>>> > Yes, exactly, this is what I meant. Plas rmb() in __secure_computing().
+>>>>>> >
+>>>>>> > But I still can't understand the rest of your discussion about the
+>>>>>> > ordering we need ;)
+>>>>>>
+>>>>>> Let me try again from scratch.
+>>>>>>
+>>>>>> Currently there are three relevant variables: TIF_SECCOMP,
+>>>>>> seccomp.mode, and seccomp.filter.  __secure_computing needs
+>>>>>> seccomp.mode and seccomp.filter to be in sync, and it wants (but
+>>>>>> doesn't really need) TIF_SECCOMP to be in sync as well.
+>>>>>>
+>>>>>> My suggestion is to rearrange it a bit.  Move mode into seccomp.filter
+>>>>>> (so that filter == NULL implies no seccomp) and don't check
+>>>>
+>>>> This would require that we reimplement mode 1 seccomp via mode 2
+>>>> filters. Which isn't too hard, but may add complexity.
+>>>>
+>>>>>> TIF_SECCOMP in secure_computing.  Then turning on seccomp is entirely
+>>>>>> atomic except for the fact that the seccomp hooks won't be called if
+>>>>>> filter != NULL but !TIF_SECCOMP.  This removes all ordering
+>>>>>> requirements.
+>>>>>
+>>>>> Ah, got it, thanks. Perhaps I missed somehing, but to me this looks like
+>>>>> unnecessary complication at first glance.
+>>>>>
+>>>>> We alredy have TIF_SECCOMP, we need it anyway, and we should only care
+>>>>> about the case when this bit is actually set, so that we can race with
+>>>>> the 1st call of __secure_computing().
+>>>>>
+>>>>> Otherwise we are fine: we can miss the new filter anyway, ->mode can't
+>>>>> be changed it is already nonzero.
+>>>>>
+>>>>>> Alternatively, __secure_computing could still BUG_ON(!seccomp.filter).
+>>>>>> In that case, filter needs to be set before TIF_SECCOMP is set, but
+>>>>>> that's straightforward.
+>>>>>
+>>>>> Yep. And this is how seccomp_assign_mode() already works? It is called
+>>>>> after we change ->filter chain, it changes ->mode before set(TIF_SECCOMP)
+>>>>> just it lacks a barrier.
+>>>>
+>>>> Right, I think the best solution is to add the barrier. I was
+>>>> concerned that adding the read barrier in secure_computing would have
+>>>> a performance impact, though.
+>>>>
+>>>
+>>> I can't speak for ARM, but I think that all of the read barriers are
+>>> essentially free on x86.  (smp_mb is a very different story, but that
+>>> shouldn't be needed here.)
+>>
+>> It looks like SMP ARM issues dsb for rmb, which seems a bit expensive.
+>> http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0204g/CIHJFGFE.html
+>>
+>> If I skip the rmb in the secure_computing call before checking mode,
+>> it sounds like I run the risk of racing an out-of-order TIF_SECCOMP vs
+>> mode and filter. This seems unlikely to me, given an addition of the
+>> smp_mb__before_atomic() during the seccomp_assign_mode()? I guess I
+>> don't have a sense of how aggressively ARM might do data caching in
+>> this area. Could the other thread actually see TIF_SECCOMP get set but
+>> still have an out of date copy of seccomp.mode?
+>>
+>> I really want to avoid adding anything to the secure_computing()
+>> execution path. :(
 >
->Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
->---
->Changes since v1:
->- Fix compilation warning due to missing cast
->
->Patch 1 of the series was ok and thus has not been resent.
->
-> drivers/gpu/drm/nouveau/Makefile                  |  1 +
-> drivers/gpu/drm/nouveau/core/engine/device/nve0.c |  2 +-
-> drivers/gpu/drm/nouveau/core/include/subdev/bar.h |  1 +
-> drivers/gpu/drm/nouveau/core/subdev/bar/gk20a.c   | 54
->+++++++++++++++++++++++
-> drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c    |  6 +--
-> drivers/gpu/drm/nouveau/core/subdev/bar/priv.h    |  6 +++
-> 6 files changed, 66 insertions(+), 4 deletions(-)
-> create mode 100644 drivers/gpu/drm/nouveau/core/subdev/bar/gk20a.c
->
->diff --git a/drivers/gpu/drm/nouveau/Makefile
->b/drivers/gpu/drm/nouveau/Makefile
->index 8b307e143632..11d9561d67c1 100644
->--- a/drivers/gpu/drm/nouveau/Makefile
->+++ b/drivers/gpu/drm/nouveau/Makefile
->@@ -26,6 +26,7 @@ nouveau-y += core/core/subdev.o
-> nouveau-y += core/subdev/bar/base.o
-> nouveau-y += core/subdev/bar/nv50.o
-> nouveau-y += core/subdev/bar/nvc0.o
->+nouveau-y += core/subdev/bar/gk20a.o
-> nouveau-y += core/subdev/bios/base.o
-> nouveau-y += core/subdev/bios/bit.o
-> nouveau-y += core/subdev/bios/boost.o
->diff --git a/drivers/gpu/drm/nouveau/core/engine/device/nve0.c
->b/drivers/gpu/drm/nouveau/core/engine/device/nve0.c
->index 2d1e97d4264f..a2b9ccc48f66 100644
->--- a/drivers/gpu/drm/nouveau/core/engine/device/nve0.c
->+++ b/drivers/gpu/drm/nouveau/core/engine/device/nve0.c
->@@ -165,7 +165,7 @@ nve0_identify(struct nouveau_device *device)
-> 		device->oclass[NVDEV_SUBDEV_IBUS   ] = &gk20a_ibus_oclass;
-> 		device->oclass[NVDEV_SUBDEV_INSTMEM] = nv50_instmem_oclass;
-> 		device->oclass[NVDEV_SUBDEV_VM     ] = &nvc0_vmmgr_oclass;
->-		device->oclass[NVDEV_SUBDEV_BAR    ] = &nvc0_bar_oclass;
->+		device->oclass[NVDEV_SUBDEV_BAR    ] = &gk20a_bar_oclass;
-> 		device->oclass[NVDEV_ENGINE_DMAOBJ ] = &nvd0_dmaeng_oclass;
-> 		device->oclass[NVDEV_ENGINE_FIFO   ] =  gk20a_fifo_oclass;
-> 		device->oclass[NVDEV_ENGINE_SW     ] =  nvc0_software_oclass;
->diff --git a/drivers/gpu/drm/nouveau/core/include/subdev/bar.h
->b/drivers/gpu/drm/nouveau/core/include/subdev/bar.h
->index 9002cbb6432b..be037fac534c 100644
->--- a/drivers/gpu/drm/nouveau/core/include/subdev/bar.h
->+++ b/drivers/gpu/drm/nouveau/core/include/subdev/bar.h
->@@ -33,5 +33,6 @@ nouveau_bar(void *obj)
-> 
-> extern struct nouveau_oclass nv50_bar_oclass;
-> extern struct nouveau_oclass nvc0_bar_oclass;
->+extern struct nouveau_oclass gk20a_bar_oclass;
-> 
-> #endif
->diff --git a/drivers/gpu/drm/nouveau/core/subdev/bar/gk20a.c
->b/drivers/gpu/drm/nouveau/core/subdev/bar/gk20a.c
->new file mode 100644
->index 000000000000..bf877af9d3bd
->--- /dev/null
->+++ b/drivers/gpu/drm/nouveau/core/subdev/bar/gk20a.c
->@@ -0,0 +1,54 @@
->+/*
->+ * Copyright (c) 2014, NVIDIA CORPORATION. All rights reserved.
->+ *
->+ * Permission is hereby granted, free of charge, to any person obtaining
->a
->+ * copy of this software and associated documentation files (the
->"Software"),
->+ * to deal in the Software without restriction, including without
->limitation
->+ * the rights to use, copy, modify, merge, publish, distribute,
->sublicense,
->+ * and/or sell copies of the Software, and to permit persons to whom the
->+ * Software is furnished to do so, subject to the following conditions:
->+ *
->+ * The above copyright notice and this permission notice shall be
->included in
->+ * all copies or substantial portions of the Software.
->+ *
->+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
->EXPRESS OR
->+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
->MERCHANTABILITY,
->+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT
->SHALL
->+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
->OTHER
->+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
->ARISING
->+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
->+ * DEALINGS IN THE SOFTWARE.
->+ */
->+
->+#include <subdev/bar.h>
->+
->+#include "priv.h"
->+
->+int
->+gk20a_bar_ctor(struct nouveau_object *parent, struct nouveau_object
->*engine,
->+	       struct nouveau_oclass *oclass, void *data, u32 size,
->+	       struct nouveau_object **pobject)
->+{
->+	struct nouveau_bar *bar;
->+	int ret;
->+
->+	ret = nvc0_bar_ctor(parent, engine, oclass, data, size, pobject);
->+	if (ret)
->+		return ret;
->+
->+	bar = (struct nouveau_bar *)*pobject;
->+	bar->iomap_uncached = true;
->+
->+	return 0;
->+}
->+
->+struct nouveau_oclass
->+gk20a_bar_oclass = {
->+	.handle = NV_SUBDEV(BAR, 0xea),
->+	.ofuncs = &(struct nouveau_ofuncs) {
->+		.ctor = gk20a_bar_ctor,
->+		.dtor = nvc0_bar_dtor,
->+		.init = nvc0_bar_init,
->+		.fini = _nouveau_bar_fini,
->+	},
->+};
->diff --git a/drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c
->b/drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c
->index ca8139b9ab27..0a44459844e3 100644
->--- a/drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c
->+++ b/drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c
->@@ -133,7 +133,7 @@ nvc0_bar_init_vm(struct nvc0_bar_priv *priv, struct
->nvc0_bar_priv_vm *bar_vm,
-> 	return 0;
-> }
-> 
->-static int
->+int
-> nvc0_bar_ctor(struct nouveau_object *parent, struct nouveau_object
->*engine,
-> 	      struct nouveau_oclass *oclass, void *data, u32 size,
-> 	      struct nouveau_object **pobject)
->@@ -169,7 +169,7 @@ nvc0_bar_ctor(struct nouveau_object *parent, struct
->nouveau_object *engine,
-> 	return 0;
-> }
-> 
->-static void
->+void
-> nvc0_bar_dtor(struct nouveau_object *object)
-> {
-> 	struct nvc0_bar_priv *priv = (void *)object;
->@@ -188,7 +188,7 @@ nvc0_bar_dtor(struct nouveau_object *object)
-> 	nouveau_bar_destroy(&priv->base);
-> }
-> 
->-static int
->+int
-> nvc0_bar_init(struct nouveau_object *object)
-> {
-> 	struct nvc0_bar_priv *priv = (void *)object;
->diff --git a/drivers/gpu/drm/nouveau/core/subdev/bar/priv.h
->b/drivers/gpu/drm/nouveau/core/subdev/bar/priv.h
->index ffad8f337ead..3ee8b1476d00 100644
->--- a/drivers/gpu/drm/nouveau/core/subdev/bar/priv.h
->+++ b/drivers/gpu/drm/nouveau/core/subdev/bar/priv.h
->@@ -23,4 +23,10 @@ int  nouveau_bar_alloc(struct nouveau_bar *, struct
->nouveau_object *,
-> 
-> void nv84_bar_flush(struct nouveau_bar *);
-> 
->+int nvc0_bar_ctor(struct nouveau_object *, struct nouveau_object *,
->+		  struct nouveau_oclass *, void *, u32,
->+		  struct nouveau_object **);
->+void nvc0_bar_dtor(struct nouveau_object *);
->+int nvc0_bar_init(struct nouveau_object *);
->+
-> #endif
->-- 
->2.0.0
->
->--
->To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Hence my suggestion to make the ordering not matter.  No ordering
+> requirement, no barriers.
 
+I may be misunderstanding something, but I think there's still an
+ordering problem. We'll have TIF_SECCOMP already, so if we enter
+secure_computing with a NULL filter, we'll kill the process.
+
+Merging .mode and .filter would remove one of the race failure paths:
+having TIF_SECCOMP and not having a mode set (leading to BUG). With
+the merge, we could still race and land in the same place as have
+TIF_SECCOMP and mode==2, but filter==NULL, leading to WARN and kill.
+
+I guess the question is how large is the race risk on ARM? Is it
+possible to have TIF_SECCOMP that far out of sync for the thread?
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
