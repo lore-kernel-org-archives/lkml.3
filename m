@@ -1,123 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751502AbaF0SBw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 14:01:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22590 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750990AbaF0SBv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 14:01:51 -0400
-Date: Fri, 27 Jun 2014 12:34:23 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: linux-kernel@vger.kernel.org, kexec@lists.infradead.org
-Cc: ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org, greg@kroah.com,
-        bp@alien8.de, dyoung@redhat.com, chaowang@redhat.com, bhe@redhat.com,
-        akpm@linux-foundation.org
-Subject: [PATCH 16/15] kexec: Fix freeing up for image loader data loading
-Message-ID: <20140627163423.GG13337@redhat.com>
-References: <1403814824-7587-1-git-send-email-vgoyal@redhat.com>
+	id S1751874AbaF0SE1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 14:04:27 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:51310 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751084AbaF0SEZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 14:04:25 -0400
+Date: Fri, 27 Jun 2014 11:03:02 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Sasha Levin <sasha.levin@oracle.com>
+cc: Hugh Dickins <hughd@google.com>, Vlastimil Babka <vbabka@suse.cz>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: mm: shm: hang in shmem_fallocate
+In-Reply-To: <53AD84CE.20806@oracle.com>
+Message-ID: <alpine.LSU.2.11.1406271043270.28744@eggly.anvils>
+References: <52AE7B10.2080201@oracle.com> <52F6898A.50101@oracle.com> <alpine.LSU.2.11.1402081841160.26825@eggly.anvils> <52F82E62.2010709@oracle.com> <539A0FC8.8090504@oracle.com> <alpine.LSU.2.11.1406151921070.2850@eggly.anvils> <53A9A7D8.2020703@suse.cz>
+ <alpine.LSU.2.11.1406251152450.1580@eggly.anvils> <53AC383F.3010007@oracle.com> <alpine.LSU.2.11.1406262236370.27670@eggly.anvils> <53AD84CE.20806@oracle.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403814824-7587-1-git-send-email-vgoyal@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 27 Jun 2014, Sasha Levin wrote:
+> On 06/27/2014 01:59 AM, Hugh Dickins wrote:
+> >> > First, this:
+> >> > 
+> >> > [  681.267487] BUG: unable to handle kernel paging request at ffffea0003480048
+> >> > [  681.268621] IP: zap_pte_range (mm/memory.c:1132)
+> > Weird, I don't think we've seen anything like that before, have we?
+> > I'm pretty sure it's not a consequence of my "index = min(index, end)",
+> > but what it portends I don't know.  Please confirm mm/memory.c:1132 -
+> > that's the "if (PageAnon(page))" line, isn't it?  Which indeed matches
+> > the code below.  So accessing page->mapping is causing an oops...
+> 
+> Right, that's the correct line.
+> 
+> At this point I'm pretty sure that it's somehow related to that one line
+> patch since it reproduced fairly quickly after applying it, and when I
+> removed it I didn't see it happening again during the overnight fuzzing.
 
-During testing I noticed a crash. Which in turn showed that there are
-problems with how I am freeing up image->image_loader_data.
+Oh, I assumed it was a one-off: you're saying that you saw it more than
+once with the min(index, end) patch in?  But not since removing it (did
+you replace that by the newer patch? or by the older? or by nothing?).
 
-In one case I am freeing up kimage->image_loader_data first and then
-calling up arch to free up which might have been contained in that
-structure. That's wrong.
+I want to exclaim "That makes no sense!", but bugs don't make sense
+anyway.  It's going to be a challenge to work out a connection though.
+I think I want to ask for more attempts to reproduce, with and without
+the min(index, end) patch (if you have enough time - there must be a
+limit to the amount of time you can give me on this).
 
-I have done little cleanup and this should fix the issues around
-freeing up of loader data.
+I rather hoped that the oops on PageAnon might shed light from another
+direction on the outstanding page_mapped bug: both seem like page table
+corruption of some kind (though I've not seen a plausible path to either).
 
-Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
----
- arch/x86/kernel/kexec-bzimage64.c  |    4 ++--
- arch/x86/kernel/machine_kexec_64.c |    2 +-
- include/linux/kexec.h              |    2 +-
- kernel/kexec.c                     |   11 ++++++++---
- 4 files changed, 12 insertions(+), 7 deletions(-)
+And regarding the page_mapped bug: we've heard nothing since Dave
+Hansen suggested a VM_BUG_ON_PAGE for that - has it gone away now?
 
-Index: linux-2.6/arch/x86/kernel/machine_kexec_64.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/machine_kexec_64.c	2014-06-27 09:55:41.824755401 -0400
-+++ linux-2.6/arch/x86/kernel/machine_kexec_64.c	2014-06-27 11:02:02.607548946 -0400
-@@ -369,7 +369,7 @@ int arch_kimage_file_post_load_cleanup(s
- 	if (!image->fops || !image->fops->cleanup)
- 		return 0;
- 
--	return image->fops->cleanup(image);
-+	return image->fops->cleanup(image->image_loader_data);
- }
- 
- /*
-Index: linux-2.6/include/linux/kexec.h
-===================================================================
---- linux-2.6.orig/include/linux/kexec.h	2014-06-27 09:55:41.695754029 -0400
-+++ linux-2.6/include/linux/kexec.h	2014-06-27 11:04:28.467151813 -0400
-@@ -190,7 +190,7 @@ typedef void *(kexec_load_t)(struct kima
- 			     unsigned long kernel_len, char *initrd,
- 			     unsigned long initrd_len, char *cmdline,
- 			     unsigned long cmdline_len);
--typedef int (kexec_cleanup_t)(struct kimage *image);
-+typedef int (kexec_cleanup_t)(void *loader_data);
- 
- struct kexec_file_ops {
- 	kexec_probe_t *probe;
-Index: linux-2.6/arch/x86/kernel/kexec-bzimage64.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/kexec-bzimage64.c	2014-06-27 09:55:41.872755912 -0400
-+++ linux-2.6/arch/x86/kernel/kexec-bzimage64.c	2014-06-27 11:05:42.151963710 -0400
-@@ -512,9 +512,9 @@ out_free_params:
- }
- 
- /* This cleanup function is called after various segments have been loaded */
--int bzImage64_cleanup(struct kimage *image)
-+int bzImage64_cleanup(void *loader_data)
- {
--	struct bzimage64_data *ldata = image->image_loader_data;
-+	struct bzimage64_data *ldata = loader_data;
- 
- 	if (!ldata)
- 		return 0;
-Index: linux-2.6/kernel/kexec.c
-===================================================================
---- linux-2.6.orig/kernel/kexec.c	2014-06-27 10:04:23.409024171 -0400
-+++ linux-2.6/kernel/kexec.c	2014-06-27 11:45:14.684874978 -0400
-@@ -459,6 +459,14 @@ static void kimage_file_post_load_cleanu
- 
- 	/* See if architecture has anything to cleanup post load */
- 	arch_kimage_file_post_load_cleanup(image);
-+
-+	/*
-+	 * Above call should have called into bootloader to free up
-+	 * any data stored in kimage->image_loader_data. It should
-+	 * be ok now to free it up.
-+	 */
-+	kfree(image->image_loader_data);
-+	image->image_loader_data = NULL;
- }
- 
- /*
-@@ -584,7 +592,6 @@ out_free_control_pages:
- 	kimage_free_page_list(&image->control_pages);
- out_free_post_load_bufs:
- 	kimage_file_post_load_cleanup(image);
--	kfree(image->image_loader_data);
- out_free_image:
- 	kfree(image);
- 	return ret;
-@@ -908,8 +915,6 @@ static void kimage_free(struct kimage *i
- 	/* Free the kexec control pages... */
- 	kimage_free_page_list(&image->control_pages);
- 
--	kfree(image->image_loader_data);
--
- 	/*
- 	 * Free up any temporary buffers allocated. This might hit if
- 	 * error occurred much later after buffer allocation.
+Thanks,
+Hugh
