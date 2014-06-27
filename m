@@ -1,76 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752688AbaF0QIr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 12:08:47 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33087 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751023AbaF0QIq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 12:08:46 -0400
-Date: Fri, 27 Jun 2014 17:07:25 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Beniamino Galvani <b.galvani@gmail.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Wenyou Yang <wenyou.yang@atmel.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Heiko Stuebner <heiko@sntech.de>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Message-ID: <20140627160725.GQ23300@sirena.org.uk>
-References: <1403451105-31929-1-git-send-email-b.galvani@gmail.com>
- <1403451105-31929-3-git-send-email-b.galvani@gmail.com>
+	id S1753367AbaF0QIw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 12:08:52 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:41076 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751023AbaF0QIt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 12:08:49 -0400
+Date: Fri, 27 Jun 2014 18:08:41 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, x86-ml <x86@kernel.org>,
+        Tony Luck <tony.luck@intel.com>, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] 2 RAS fixes for 3.17, refreshed
+Message-ID: <20140627160841.GH23153@pd.tnic>
+References: <20140622164603.GA3385@pd.tnic>
+ <20140624132439.GH4439@pd.tnic>
+ <20140624132701.GB28885@laptop.dumpdata.com>
+ <20140627150155.GG23153@pd.tnic>
+ <53AD89FB.7090609@oracle.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mOiujxrFkW1D5yf7"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1403451105-31929-3-git-send-email-b.galvani@gmail.com>
-X-Cookie: But it does move!
+In-Reply-To: <53AD89FB.7090609@oracle.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/5] regulator: act8865: set correct number of regulators
- in pdata
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jun 27, 2014 at 11:12:59AM -0400, Boris Ostrovsky wrote:
+> Yes, it fails because xen_late_init_mcelog() registers /dev/mcelog and (I
+> think) it happens before mcheck_init_device().
 
---mOiujxrFkW1D5yf7
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Yes, mcheck_init_device is device_initcall_sync() while
+xen_late_init_mcelog() is device_initcall().
 
-On Sun, Jun 22, 2014 at 05:31:42PM +0200, Beniamino Galvani wrote:
-> When platform data is populated from DT all the regulators are
-> instantiated and the value of num_regulators should be the number of
-> all available regulators rather than the number of matched ones.
+> In other words, misc_register() expected to fail in mcheck/mce.c on
+> (privileged?) PV guests (provided right CONFIG_XEN_* is set).
 
-Could you go into more detail on your logic on this one please?  The
-platform data (and DT configuration) for regulators should be completely
-optional.
+So
 
---mOiujxrFkW1D5yf7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+	cef12ee52b05 ("xen/mce: Add mcelog support for Xen platform")
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+made it this way so that xen's init routine runs first.
 
-iQIcBAEBAgAGBQJTrZa6AAoJELSic+t+oim9i8kP/jVroVZJmC/cmNj62Wcocffe
-E4fChDT1Km+gZ9Fk39AgU7SSImHxQhntsHc78WkBdyGKqCcwTQcRDbZBu5ull8XC
-drDd15JTRDIu/S6aH9u+gZKk9ZghE/No+06nlzDU9u2KW8E3k8Gbs4mYKXh8qQfe
-brQ8VCHulIj9bD4MpCW7Zh8oeP0kUtYOlT7G901Qb+RvqHxxVUG5SeSR8WBQld37
-tc2wD7Ddt1FsMkZuR2SgtpTZSn3xjSJOIT3rgxGZbwO0NEURTbpBrqfGpT6ExkYq
-4F+7uvwF6xM9wDC4eVXWJOvhGlbfuuGpf3W5w9mi5DtjtzLwsEvKDwnlU7asiUDo
-m7cDeEo1BwHfBLUZOOHEEUDAOZhEkhWsgtkKaCP2MnKSOuweAb0HaU3R2LaFTQE4
-nvt4aSR0ArxXfCaXqcczAzfOTfvEBg2MxYVgw3ITE1adIAuttBLr6JxzZLmgP9Ob
-O5jsqkunrqwyZyXfPpEUTueMs2yXdf9QI5wOvLKvhAXlYIk+sxueCSoqBfKQWaRO
-KUlLvDfzPRjVm6I1yHH7xnp8y/RwmWbeylVE40H/mXhPOkRkJjBsKovn4K5sGNC0
-QyOnJS1EvS5B9ZBV1tm9FFc4FEzlIZRGG9t59m54asEXJuBLwFKPdKySbLf6eQZd
-XdKiylvAMQRzG7lyGWZH
-=RkoU
------END PGP SIGNATURE-----
+So it is not the case that misc_register() fails often on xen but it is
+*supposed* to fail by design, when running in dom0. And *then* you need
+the notifier *not* unregistered on the error path so that the timers do
+get deleted properly.
 
---mOiujxrFkW1D5yf7--
+Ok, I see it now. Frankly, I'm not really sure I want to rush this in
+now because it might break something else, Who TF knows what.
+
+Right now my gut feeling tells me we should still queue it for 3.17 and
+have it run for a while in linux-next. We can backport it to stable
+later after some testing...
+
+Hmmm.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
