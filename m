@@ -1,59 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753011AbaF0IWk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 04:22:40 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:45617 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752462AbaF0IWi (ORCPT
+	id S1753164AbaF0IX3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 04:23:29 -0400
+Received: from smtp-out003.kontent.com ([81.88.40.217]:37326 "EHLO
+	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752851AbaF0IX1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 04:22:38 -0400
-From: John Sung <penmount.touch@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: penmount.touch@gmail.com
-Subject: [PATCH] HID: usbhid: quirk for PM1610 and PM1640 Touchscreen.
-Date: Fri, 27 Jun 2014 16:22:08 +0800
-Message-Id: <1403857328-38892-1-git-send-email-penmount.touch@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 27 Jun 2014 04:23:27 -0400
+Message-ID: <1403857405.16560.0.camel@linux-fkkt.site>
+Subject: Re: ext4: total breakdown on USB hdd, 3.0 kernel
+From: Oliver Neukum <oliver@neukum.org>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: tytso@mit.edu, kernel list <linux-kernel@vger.kernel.org>
+Date: Fri, 27 Jun 2014 10:23:25 +0200
+In-Reply-To: <20140626202021.GA8512@xo-6d-61-c0.localdomain>
+References: <20140626202021.GA8512@xo-6d-61-c0.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These device needs to be added to the quirks list with HID_QUIRK_NOGET,
-otherwise they will reset upon receiving the get input report requests.
+On Thu, 2014-06-26 at 22:20 +0200, Pavel Machek wrote:
+> Hi!
+> 
+> Ok, this ext4 filesystem does _not_ have easy life: it is in usb
+> envelope, I wanted
+> to use it as a root filesystem, and it is connected to OLPC-1.75,
+> running some kind
+> of linux-3.0 kernels.
+> 
+> So power disconnects are common, and even during regular reboot, I
+> hear disk doing
+> emergency parking.
+> 
+> I don't know how barriers work over USB...
 
-Signed-off-by: John Sung <penmount.touch@gmail.com>
----
- drivers/hid/hid-ids.h           |    2 ++
- drivers/hid/usbhid/hid-quirks.c |    2 ++
- 2 files changed, 4 insertions(+)
+Just like with other SCSI devices.
 
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index 7370ae3..37af778 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -715,6 +715,8 @@
- 
- #define USB_VENDOR_ID_PENMOUNT		0x14e1
- #define USB_DEVICE_ID_PENMOUNT_PCI	0x3500
-+#define USB_DEVICE_ID_PENMOUNT_1610	0x1610
-+#define USB_DEVICE_ID_PENMOUNT_1640	0x1640
- 
- #define USB_VENDOR_ID_PETALYNX		0x18b1
- #define USB_DEVICE_ID_PETALYNX_MAXTER_REMOTE	0x0037
-diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
-index 13ca192..587d3aa 100644
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -76,6 +76,8 @@ static const struct hid_blacklist {
- 	{ USB_VENDOR_ID_MSI, USB_DEVICE_ID_MSI_GT683R_LED_PANEL, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_NEXIO, USB_DEVICE_ID_NEXIO_MULTITOUCH_PTI0750, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_NOVATEK, USB_DEVICE_ID_NOVATEK_MOUSE, HID_QUIRK_NO_INIT_REPORTS },
-+	{ USB_VENDOR_ID_PENMOUNT, USB_DEVICE_ID_PENMOUNT_1610, HID_QUIRK_NOGET },
-+	{ USB_VENDOR_ID_PENMOUNT, USB_DEVICE_ID_PENMOUNT_1640, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN1, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN2, HID_QUIRK_NO_INIT_REPORTS },
--- 
-1.7.9.5
+	HTH
+		Oliver
+
 
