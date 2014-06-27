@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752164AbaF0RtP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 13:49:15 -0400
-Received: from smtprelay0114.hostedemail.com ([216.40.44.114]:50173 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751755AbaF0RtO (ORCPT
+	id S1752275AbaF0RuU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 13:50:20 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:40781 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751874AbaF0RuR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 13:49:14 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3653:3865:3866:3867:4605:5007:7652:8957:10004:10400:10848:11026:11658:11914:12043:12296:12517:12519:12555:12679:13069:13221:13229:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: bulb86_334a32146bc44
-X-Filterd-Recvd-Size: 2076
-Message-ID: <1403891351.9064.8.camel@joe-AO725>
-Subject: [PATCH] checkpatch: Allow multiple const * types
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andy Whitcroft <apw@canonical.com>,
-        Hartley Sweeten <HartleyS@visionengravers.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 27 Jun 2014 10:49:11 -0700
-In-Reply-To: <DC148C5AA1CEBA4E87973D432B1C2D8825ED00F7@P3PWEX4MB008.ex4.secureserver.net>
-References: <DC148C5AA1CEBA4E87973D432B1C2D8825ED00F7@P3PWEX4MB008.ex4.secureserver.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
+	Fri, 27 Jun 2014 13:50:17 -0400
+Message-ID: <1403891411.9446.17.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [PATCH v6 5/6] KEYS: validate certificate trust only with
+ builtin keys
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        keyrings <keyrings@linux-nfs.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Josh Boyer <jwboyer@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+Date: Fri, 27 Jun 2014 13:50:11 -0400
+In-Reply-To: <7729.1403877251@warthog.procyon.org.uk>
+References: <1403620852-16476-6-git-send-email-zohar@linux.vnet.ibm.com>
+	 <1403620852-16476-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <7729.1403877251@warthog.procyon.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14062717-1344-0000-0000-0000027861C4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-checkpatch's $Type variable does not match declarations
-of multiple const * types.
+On Fri, 2014-06-27 at 14:54 +0100, David Howells wrote: 
+> Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> 
+> > +static bool builtin_keys;
+> 
+> Could we call this something like "use_builtin_keys_only"?
+> 
+> Looks okay otherwise.
 
-This can produce false positives for things like:
+The current patches support either a single key or the builtin keys, not
+both.  In case this behavior changes, I'd prefer using
+'use_builtin_keys'.
 
-$ ./scripts/checkpatch.pl -f drivers/staging/comedi/comedidev.h
-WARNING: Missing a blank line after declarations
-#60: FILE: drivers/staging/comedi/comedidev.h:60:
-+       const struct comedi_lrange *range_table;
-+       const struct comedi_lrange *const *range_table_list;
+thanks,
 
-Fix the $Type variable to support matching multiple "* const" uses.
-
-Signed-off-by: Joe Perches <joe@perches.com>
-Reported-by: Hartley Sweeten <HartleyS@visionengravers.com>
----
- scripts/checkpatch.pl | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 6c7cbaf..f7ae70a 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -435,7 +435,7 @@ sub build_types {
- 		  }x;
- 	$Type	= qr{
- 			$NonptrType
--			(?:(?:\s|\*|\[\])+\s*const|(?:\s|\*|\[\])+|(?:\s*\[\s*\])+)?
-+			(?:(?:\s|\*|\[\])+\s*const|(?:\s|\*\s*(?:const\s*)?|\[\])+|(?:\s*\[\s*\])+)?
- 			(?:\s+$Inline|\s+$Modifier)*
- 		  }x;
- 	$Declare	= qr{(?:$Storage\s+(?:$Inline\s+)?)?$Type};
-
+Mimi
 
