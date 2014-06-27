@@ -1,162 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751840AbaF0TEb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 15:04:31 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:60602 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750862AbaF0TE1 (ORCPT
+	id S1752156AbaF0TIR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 15:08:17 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:42268 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750990AbaF0TIP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 15:04:27 -0400
+	Fri, 27 Jun 2014 15:08:15 -0400
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Subject: Re: [PATCH v2] Documentation: Rename hpfall.c => freefall.c, fixes for Dell
+Date: Fri, 27 Jun 2014 21:08:10 +0200
+User-Agent: KMail/1.13.7 (Linux/3.15.0-031500-generic; KDE/4.13.2; x86_64; ; )
+Cc: Randy Dunlap <rdunlap@infradead.org>, Pavel Machek <pavel@ucw.cz>,
+        Valdis Kletnieks <valdis.kletnieks@vt.edu>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
+        Sonal Santan <sonal.santan@gmail.com>
+References: <1399114077-19314-3-git-send-email-pali.rohar@gmail.com> <20140614085328.GC15326@Nokia-N900> <201406161355.03998@pali>
+In-Reply-To: <201406161355.03998@pali>
 MIME-Version: 1.0
-In-Reply-To: <CALCETrWr+5n_w+q-fNc0G55eUteN57sm+7-bPCXKb7acmLu0Cg@mail.gmail.com>
-References: <1403642893-23107-1-git-send-email-keescook@chromium.org>
-	<1403642893-23107-6-git-send-email-keescook@chromium.org>
-	<20140625135121.GB7892@redhat.com>
-	<CAGXu5jJkFxh4K=40xuh6tu3kUf4oJM8Dry+4upBdRieW3FNLgw@mail.gmail.com>
-	<CALCETrUBNmLnpa+LM91om2RSpR6SjupP-EdefzhU1Me4nv3Dfw@mail.gmail.com>
-	<CAGXu5j+J11zJnuFR8bYKAXizAHhCx4R+uJE_QH6zC3q2udkpaQ@mail.gmail.com>
-	<CALCETrVrs8sb19+UUqyFEpAFzTih5dkAwn-WpQjfgPcPJMpP5g@mail.gmail.com>
-	<20140625173245.GA17695@redhat.com>
-	<CALCETrUc65H+fn6dtMdYnB_xR39wcmgDdTbdR3fFRjyrndJhgA@mail.gmail.com>
-	<20140625175136.GA18185@redhat.com>
-	<CAGXu5jL17k6=GXju6x+eLU20FMwBHhnuRiHoQD1Bzj_EmpiKjg@mail.gmail.com>
-	<CALCETrVNwhWSPNiBiZmgP1nD9zLJPTk6cH0yo=85rbxTPTYFRg@mail.gmail.com>
-	<CAGXu5jLavA8FJD8m-1y4wO0uzh3qvvMmajAg0Lrr1Cn_Om3a3w@mail.gmail.com>
-	<CALCETrUPxTxseJ=sOhD9CyJPtOqCR5sL8yx7KezLmLZcFSFNMA@mail.gmail.com>
-	<CAGXu5j+wPvAuo6pVc_XoJqv7CvW6yDf3YE6P7tFwtO9hfcUUsg@mail.gmail.com>
-	<CALCETrWr+5n_w+q-fNc0G55eUteN57sm+7-bPCXKb7acmLu0Cg@mail.gmail.com>
-Date: Fri, 27 Jun 2014 12:04:26 -0700
-X-Google-Sender-Auth: a01VumeYOucZw45g5SyIFCWC4v4
-Message-ID: <CAGXu5jL5rN6=2-SwHiiEVuGVain-T7Ucg2PsN7u08vQ5Rxz6Mg@mail.gmail.com>
-Subject: Re: [PATCH v8 5/9] seccomp: split mode set routines
-From: Kees Cook <keescook@chromium.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>, Will Drewry <wad@chromium.org>,
-        Julien Tinnes <jln@chromium.org>, David Drysdale <drysdale@google.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed;
+  boundary="nextPart2965064.AjOTh0FVDk";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201406272108.10901@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 27, 2014 at 11:56 AM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Fri, Jun 27, 2014 at 11:52 AM, Kees Cook <keescook@chromium.org> wrote:
->> On Fri, Jun 27, 2014 at 11:39 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->>> On Fri, Jun 27, 2014 at 11:33 AM, Kees Cook <keescook@chromium.org> wrote:
->>>> On Wed, Jun 25, 2014 at 11:07 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->>>>> On Wed, Jun 25, 2014 at 11:00 AM, Kees Cook <keescook@chromium.org> wrote:
->>>>>> On Wed, Jun 25, 2014 at 10:51 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->>>>>>> On 06/25, Andy Lutomirski wrote:
->>>>>>>>
->>>>>>>> On Wed, Jun 25, 2014 at 10:32 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->>>>>>>> > On 06/25, Andy Lutomirski wrote:
->>>>>>>> >>
->>>>>>>> >> Write the filter, then smp_mb (or maybe a weaker barrier is okay),
->>>>>>>> >> then set the bit.
->>>>>>>> >
->>>>>>>> > Yes, exactly, this is what I meant. Plas rmb() in __secure_computing().
->>>>>>>> >
->>>>>>>> > But I still can't understand the rest of your discussion about the
->>>>>>>> > ordering we need ;)
->>>>>>>>
->>>>>>>> Let me try again from scratch.
->>>>>>>>
->>>>>>>> Currently there are three relevant variables: TIF_SECCOMP,
->>>>>>>> seccomp.mode, and seccomp.filter.  __secure_computing needs
->>>>>>>> seccomp.mode and seccomp.filter to be in sync, and it wants (but
->>>>>>>> doesn't really need) TIF_SECCOMP to be in sync as well.
->>>>>>>>
->>>>>>>> My suggestion is to rearrange it a bit.  Move mode into seccomp.filter
->>>>>>>> (so that filter == NULL implies no seccomp) and don't check
->>>>>>
->>>>>> This would require that we reimplement mode 1 seccomp via mode 2
->>>>>> filters. Which isn't too hard, but may add complexity.
->>>>>>
->>>>>>>> TIF_SECCOMP in secure_computing.  Then turning on seccomp is entirely
->>>>>>>> atomic except for the fact that the seccomp hooks won't be called if
->>>>>>>> filter != NULL but !TIF_SECCOMP.  This removes all ordering
->>>>>>>> requirements.
->>>>>>>
->>>>>>> Ah, got it, thanks. Perhaps I missed somehing, but to me this looks like
->>>>>>> unnecessary complication at first glance.
->>>>>>>
->>>>>>> We alredy have TIF_SECCOMP, we need it anyway, and we should only care
->>>>>>> about the case when this bit is actually set, so that we can race with
->>>>>>> the 1st call of __secure_computing().
->>>>>>>
->>>>>>> Otherwise we are fine: we can miss the new filter anyway, ->mode can't
->>>>>>> be changed it is already nonzero.
->>>>>>>
->>>>>>>> Alternatively, __secure_computing could still BUG_ON(!seccomp.filter).
->>>>>>>> In that case, filter needs to be set before TIF_SECCOMP is set, but
->>>>>>>> that's straightforward.
->>>>>>>
->>>>>>> Yep. And this is how seccomp_assign_mode() already works? It is called
->>>>>>> after we change ->filter chain, it changes ->mode before set(TIF_SECCOMP)
->>>>>>> just it lacks a barrier.
->>>>>>
->>>>>> Right, I think the best solution is to add the barrier. I was
->>>>>> concerned that adding the read barrier in secure_computing would have
->>>>>> a performance impact, though.
->>>>>>
->>>>>
->>>>> I can't speak for ARM, but I think that all of the read barriers are
->>>>> essentially free on x86.  (smp_mb is a very different story, but that
->>>>> shouldn't be needed here.)
->>>>
->>>> It looks like SMP ARM issues dsb for rmb, which seems a bit expensive.
->>>> http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0204g/CIHJFGFE.html
->>>>
->>>> If I skip the rmb in the secure_computing call before checking mode,
->>>> it sounds like I run the risk of racing an out-of-order TIF_SECCOMP vs
->>>> mode and filter. This seems unlikely to me, given an addition of the
->>>> smp_mb__before_atomic() during the seccomp_assign_mode()? I guess I
->>>> don't have a sense of how aggressively ARM might do data caching in
->>>> this area. Could the other thread actually see TIF_SECCOMP get set but
->>>> still have an out of date copy of seccomp.mode?
->>>>
->>>> I really want to avoid adding anything to the secure_computing()
->>>> execution path. :(
->>>
->>> Hence my suggestion to make the ordering not matter.  No ordering
->>> requirement, no barriers.
->>
->> I may be misunderstanding something, but I think there's still an
->> ordering problem. We'll have TIF_SECCOMP already, so if we enter
->> secure_computing with a NULL filter, we'll kill the process.
->>
->> Merging .mode and .filter would remove one of the race failure paths:
->> having TIF_SECCOMP and not having a mode set (leading to BUG). With
->> the merge, we could still race and land in the same place as have
->> TIF_SECCOMP and mode==2, but filter==NULL, leading to WARN and kill.
->
-> You could just make secure_computing do nothing if filter == NULL.
-> It's probably faster to test that than TIF_SECCOMP anyway, since you
-> need to read the filter cacheline regardless, and testing a regular
-> variable for non-NULLness might be faster than an atomic bit test
-> operation.  (Or may not -- I don't know.)
+--nextPart2965064.AjOTh0FVDk
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-I am uncomfortable about making filter == NULL be a "fail open"
-condition if TIF_SECCOMP is set.
+On Monday 16 June 2014 13:55:03 Pali Roh=C3=A1r wrote:
+> On Saturday 14 June 2014 10:53:29 Pavel Machek wrote:
+> > On Wed 2014-06-11 10:02:07, Pali Roh?r wrote:
+> > > Dell kernel driver dell-smo8800 provides same freefall
+> > > interface as hp_accel so program hpfall.c works also on
+> > > Dell laptops. So rename it to freefall.c.
+> > >=20
+> > > Dell driver does not provide hp::hddprotect led so make
+> > > sure that freefall.c works also if hp::hddprotect does
+> > > not exist in sysfs.
+> > >=20
+> > > Additionally write info to syslog.
+> > >=20
+> > > Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
+> > > Cc: Sonal Santan <sonal.santan@gmail.com>
+> > > ---
+> > > Changes since v1:
+> > > * Fixed warnings: Missing a blank line after declarations
+> > > ---
+> > >=20
+> > >  Documentation/laptops/00-INDEX   |    4 +-
+> > >  Documentation/laptops/freefall.c |  177
+> > >  ++++++++++++++++++++++++++++++++++++++
+> > >  Documentation/laptops/hpfall.c   |  146
+> > >  ------------------------------- 3 files changed, 179
+> > >  insertions(+), 148 deletions(-) create mode 100644
+> > >  Documentation/laptops/freefall.c delete mode 100644
+> > >  Documentation/laptops/hpfall.c
+> >=20
+> > Acked-by: Pavel Machek <pavel@ucw.cz>
+> >=20
+> > 						Pavel
+>=20
+> Randy, Matthew: PING
+>=20
+> first patch which implementing dell-smo8800.ko was merged, but
+> this patch which updating documentation and fall daemon *not*.
 
->> I guess the question is how large is the race risk on ARM? Is it
->> possible to have TIF_SECCOMP that far out of sync for the thread?
->
-> Dunno.  I don't like leaving crashy known races around.
+PING.
 
-Yeah, me too. Hrmpf. I will do some rmb() timing tests...
+What is with this patch? Why was still not set to Linus in doc or=20
+platform pull request?
 
--Kees
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
--- 
-Kees Cook
-Chrome OS Security
+--nextPart2965064.AjOTh0FVDk
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlOtwRoACgkQi/DJPQPkQ1JfHQCfV+6xMdSIWowN/KrOL3iNzgeH
+el8AnjK4loQXhwbbtcXCnQ6wCYBuUJal
+=bvc0
+-----END PGP SIGNATURE-----
+
+--nextPart2965064.AjOTh0FVDk--
