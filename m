@@ -1,139 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752589AbaF0Dgz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jun 2014 23:36:55 -0400
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:59746 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752450AbaF0Dgv (ORCPT
+	id S1752609AbaF0Dhb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jun 2014 23:37:31 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62409 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752391AbaF0Dh3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jun 2014 23:36:51 -0400
+	Thu, 26 Jun 2014 23:37:29 -0400
+Message-ID: <53ACE6EE.4050300@linaro.org>
+Date: Fri, 27 Jun 2014 11:37:18 +0800
+From: zhangfei <zhangfei.gao@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.10.1406212306540.5170@nanos>
-References: <1402302011-23642-1-git-send-email-jiang.liu@linux.intel.com>
-	<alpine.DEB.2.10.1406212306540.5170@nanos>
-Date: Thu, 26 Jun 2014 20:36:49 -0700
-X-Google-Sender-Auth: Wi3uJj77_K20RFbh4j7VdOkuEYc
-Message-ID: <CAE9FiQVUK_oCEfKhHiM496oc+U6UcM0afPdR_sjQcObMzBjW2A@mail.gmail.com>
-Subject: Re: [Patch V4 00/42] use irqdomain to dynamically allocate IRQ for IOAPIC
-From: Yinghai Lu <yinghai@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Grant Likely <grant.likely@linaro.org>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=089e0129478405ac1404fcc90532
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Kishon Vijay Abraham I <kishon@ti.com>, mark.rutland@arm.com,
+        haifeng.yan@linaro.org, jchxue@gmail.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Jiancheng Xue <xuejiancheng@huawei.com>
+Subject: Re: [PATCH v2 1/2] Documentation: Document Hisilicon hix5hd2 sata
+ PHY
+References: <1403687648-29082-1-git-send-email-zhangfei.gao@linaro.org> <20300092.1dHGFVKfHm@wuerfel> <53AC24C6.8000304@linaro.org> <4989178.vejv39dnj8@wuerfel>
+In-Reply-To: <4989178.vejv39dnj8@wuerfel>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---089e0129478405ac1404fcc90532
-Content-Type: text/plain; charset=UTF-8
 
-On Sat, Jun 21, 2014 at 2:08 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> Jiang,
->
-> On Mon, 9 Jun 2014, Jiang Liu wrote:
->
->> On x86 platforms, IRQ number are statically allocated to IOAPIC pins at boot.
->> There are two issues with this design. First it causes trouble to IOAPIC
->> hotplug because we need to allocate a block of IRQ numbers for each IOAPIC.
->> Second it may waste IRQ nubmers even if some IOAPIC pins are not used because
->> IRQ numbers are statically assigned.
+
+On 06/27/2014 04:53 AM, Arnd Bergmann wrote:
+> On Thursday 26 June 2014 21:48:54 zhangfei wrote:
+
+>>> Since you mention that this is a synopsys part, it may however be
+>>> good to also define a compatible string for the generic device,
+>>> to allow other SoCs to share this driver, and to make it easier
+>>> for people to find out that we already have one so they don't have
+>>> to write another driver for the same hardware.
 >>
->> This patchset tries to enable dynamic IRQ number allocation for IOAPIC
->> by adopting the irqdomain framework, it solves the two issues mentioned
->> above. It also simplifies the IOAPIC driver by consolidating ways to
->> program IOAPIC pins with the irqdomain map interface.
+>> http://www.synopsys.com/dw/ipdir.php?ds=dwc_sata_phy
+>> name can be: dwc_sata_phy
+>> However, not find register from the website, not sure whether the
+>> register are totally same, or there is some change.
+>> Other soc from hisilicon using the same ip can share this driver.
+>
+> I found a list of versions under "Downloads and Documentation", but
+> unfortunately the actual downloads are not accessible without a
+> customer account.
+>
+>>> Can you find out what the Synopsys/Designware product designation for
+>>> this PHY is? It would be good to rename the driver and binding
+>>> if possible. I would still recommend leaving the
+>>> "hisilicon,hix5hd2-sata-phy" string and the "hisilicon,peripheral-syscon"
+>>> property in place, since that indicates a minor variation of the
+>>> generic part.
 >>
->> We will enhance the IOAPIC driver core to support ACPI based IOAPIC hotplug
->> once the IOAPIC driver has been converted to irqdomain.
+>> "hisilicon,peripheral-syscon" is privide power supply, etc.
+>>
+>> Do you mean change the compatible to "hisilicon,dwc-sata-phy" or
+>> multiple compatible?
 >
-> I merged the whole lot. Thanks for doing this and reacting on all the
-> review comments. Very nice cleanup work!
+> Multiple compatible strings.
+>
+> "hisilicon,dwc-sata-phy" would be too generic anyway, it should include the
+> name of the chip that first implements this, or the exact version of the
+> IP block, preferably both.
+>
+> Ideally if you can find out the version that hisilicon uses, it could
+> look something like
+>
+> compatible = "hisilicon,hi15hd2-sata-phy", "snps,dwc-sata-phy-2.3a", ""snps,dwc-sata-phy";
+>
+> Note also the specific version of the hisilicon chip: you must not use
+> wildcards in compatible strings but should always use a real product number.
+> ("1" instead of "x"). If multiple chips are mutually compatible, they
+> can all use the number of the first one here.
 >
 
-I got following warning on RHEL 7.0 shutdown path.
+Sorry for the confusion.
 
-[58018.128900] ------------[ cut here ]------------
-[58018.134081] WARNING: CPU: 21 PID: 1 at fs/proc/generic.c:521
-remove_proc_entry+0x150/0x1a0()
-[58018.143596] remove_proc_entry: removing non-empty directory
-'irq/23', leaking at least 'ehci_hcd:usb2'
-[58018.154001] Modules linked in:
-[58018.157435] CPU: 21 PID: 1 Comm: systemd-shutdow Tainted: G
-W     3.16.0-rc2-yh-00420-g6d62036-dirty #36
-[58018.168716] Hardware name: Oracle Corporation ORACLE SERVER
-[58018.179703]  0000000000000009 ffff885e759bfb60 ffffffff81f76520
-ffff885e759bfba8
-[58018.188033]  ffff885e759bfb98 ffffffff8109d03d ffff88edf9fb9f00
-0000000000000002
-[58018.196358]  ffff885e759bfc6e ffff88f07b3f4330 ffff88edf9fb9fb9
-ffff885e759bfbf8
-[58018.204682] Call Trace:
-[58018.207432]  [<ffffffff81f76520>] dump_stack+0x45/0x56
-[58018.213186]  [<ffffffff8109d03d>] warn_slowpath_common+0x7d/0xa0
-[58018.219903]  [<ffffffff8109d0ac>] warn_slowpath_fmt+0x4c/0x50
-[58018.226336]  [<ffffffff8124b830>] remove_proc_entry+0x150/0x1a0
-[58018.232963]  [<ffffffff810fdb5f>] unregister_irq_proc+0xbf/0xd0
-[58018.239589]  [<ffffffff810f7b41>] free_desc+0x31/0xa0
-[58018.245240]  [<ffffffff810f7c1c>] irq_free_descs+0x6c/0x80
-[58018.251375]  [<ffffffff810fd2e3>] irq_dispose_mapping+0x53/0x60
-[58018.258011]  [<ffffffff81083d60>] mp_unmap_irq+0xa0/0xc0
-[58018.263960]  [<ffffffff8107ac8f>] acpi_unregister_gsi_ioapic+0x2f/0x40
-[58018.271263]  [<ffffffff8107ab17>] acpi_unregister_gsi+0x17/0x20
-[58018.277896]  [<ffffffff815a4562>] acpi_pci_irq_disable+0x5e/0x68
-[58018.284619]  [<ffffffff81e33680>] pcibios_disable_device+0x20/0x30
-[58018.291536]  [<ffffffff81557222>] do_pci_disable_device+0x52/0x60
-[58018.298350]  [<ffffffff815572c2>] pci_disable_device+0x92/0xb0
-[58018.304876]  [<ffffffff81c710bf>] usb_hcd_pci_shutdown+0x3f/0x50
-[58018.311593]  [<ffffffff81559666>] pci_device_shutdown+0x36/0x70
-[58018.318220]  [<ffffffff817a4875>] device_shutdown+0x135/0x190
-[58018.324651]  [<ffffffff810bd935>] kernel_power_off+0x35/0x80
-[58018.330980]  [<ffffffff810bdc33>] SyS_reboot+0x233/0x260
-[58018.336919]  [<ffffffff810de239>] ? cpuacct_account_field+0x99/0xb0
-[58018.343929]  [<ffffffff810de1a5>] ? cpuacct_account_field+0x5/0xb0
-[58018.350843]  [<ffffffff81f86327>] ? _raw_spin_unlock+0x27/0x30
-[58018.357378]  [<ffffffff810e3446>] ? trace_hardirqs_on_caller+0x16/0x260
-[58018.364774]  [<ffffffff810e369d>] ? trace_hardirqs_on+0xd/0x10
-[58018.371302]  [<ffffffff8105c83c>] ? syscall_trace_enter+0x17c/0x1c0
-[58018.378312]  [<ffffffff81f870aa>] tracesys+0xd4/0xd9
-[58018.383867] ---[ end trace fade991312a6a2d9 ]---
-[58018.389026]   free irq_desc for 23
+The phy is rather an analog controller, without standard register.
+Instead, the phy interface is just some pin / analog interface.
+The register is in fact hix5hd2 register, controls all the analog 
+output, including reset, power, speed, para tunning.
 
-Like to suggest attached patch that skip mp_unregister_gsi on shutdown path.
+Even the same phy is used in other soc, they can not share this driver, 
+since the connection must be different, as well as internal soc register 
+layout.
+Only if the same controller & phy are reused in other hisilicon soc, 
+this driver can be shared.
+
+Since what we control is hix5hd2 controller itself, so it may not 
+suitable to put snps here.
+
+
+And about hix5hd2 name: x is not wildcard.
+
+Currently hix5hd2 is series of hi3716c v200, hi3719c v100, hi3718c v100.
+They are same soc, except minus pin assembles different.
+
+However, not all hi37x is in this series, for example hi3716c v100 is a 
+different soc.
+
+In the future hi3719m, hi3718m may also plan to add to hix5hd2 series.
+The difference will be different cpu core number, different gpu core 
+number. Also use different ethernet controller.
+
+
+So we may still keep "hisilicon,hix5hd2-sata-phy" unchanged.
+What do you think?
 
 Thanks
 
-Yinghai
 
---089e0129478405ac1404fcc90532
-Content-Type: text/x-patch; charset=US-ASCII; name="free_irq_hcd_pci.patch"
-Content-Disposition: attachment; filename="free_irq_hcd_pci.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hwwy2h530
 
-LS0tCiBhcmNoL3g4Ni9rZXJuZWwvYWNwaS9ib290LmMgfCAgICA2ICsrKysrKwogMSBmaWxlIGNo
-YW5nZWQsIDYgaW5zZXJ0aW9ucygrKQoKSW5kZXg6IGxpbnV4LTIuNi9hcmNoL3g4Ni9rZXJuZWwv
-YWNwaS9ib290LmMKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvYXJjaC94ODYva2VybmVs
-L2FjcGkvYm9vdC5jCisrKyBsaW51eC0yLjYvYXJjaC94ODYva2VybmVsL2FjcGkvYm9vdC5jCkBA
-IC02NTksNiArNjU5LDEyIEBAIHN0YXRpYyBpbnQgYWNwaV9yZWdpc3Rlcl9nc2lfaW9hcGljKHN0
-cnUKIHN0YXRpYyB2b2lkIGFjcGlfdW5yZWdpc3Rlcl9nc2lfaW9hcGljKHUzMiBnc2kpCiB7CiAj
-aWZkZWYgQ09ORklHX1g4Nl9JT19BUElDCisJLyogc2hvdWxkIG5vdCB3b3JyeSBhYm91dCBzaHV0
-ZG93biBwYXRoICovCisJaWYgKHN5c3RlbV9zdGF0ZSA9PSBTWVNURU1fSEFMVCB8fAorCSAgICBz
-eXN0ZW1fc3RhdGUgPT0gU1lTVEVNX1BPV0VSX09GRiB8fAorCSAgICBzeXN0ZW1fc3RhdGUgPT0g
-U1lTVEVNX1JFU1RBUlQpCisJCXJldHVybjsKKwogCW1wX3VucmVnaXN0ZXJfZ3NpKGdzaSk7CiAj
-ZW5kaWYKIH0K
---089e0129478405ac1404fcc90532--
