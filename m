@@ -1,133 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754098AbaF0PjN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 11:39:13 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:25419 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753607AbaF0PjM convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 11:39:12 -0400
-Date: Fri, 27 Jun 2014 11:39:09 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Petr =?UTF-8?B?TWzDoWRlaw==?= <pmladek@suse.cz>
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, Michal Hocko <mhocko@suse.cz>,
-        Jan Kara <jack@suse.cz>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Dave Anderson <anderson@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>
-Subject: Re: [RFC][PATCH 2/5 v2] tracing: Create seq_buf layer in trace_seq
-Message-ID: <20140627113909.4ea41040@gandalf.local.home>
-In-Reply-To: <20140627151741.GI23205@pathway.suse.cz>
-References: <20140626214901.596791200@goodmis.org>
-	<20140626220129.620409461@goodmis.org>
-	<20140627134538.GB23205@pathway.suse.cz>
-	<20140627101907.3b2ebe5d@gandalf.local.home>
-	<20140627151741.GI23205@pathway.suse.cz>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1753939AbaF0Pnh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 11:43:37 -0400
+Received: from mail-by2lp0242.outbound.protection.outlook.com ([207.46.163.242]:46029
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753187AbaF0Pnf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 11:43:35 -0400
+X-WSS-ID: 0N7U3OI-07-W19-02
+X-M-MSG: 
+Message-ID: <53AD911C.6040301@amd.com>
+Date: Fri, 27 Jun 2014 10:43:24 -0500
+From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+To: Marc Zyngier <marc.zyngier@arm.com>
+CC: Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] arm/gic: Add supports for GICv2m MSI(-X)
+References: <1403569980-12913-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <1403569980-12913-3-git-send-email-suravee.suthikulpanit@amd.com>
+ <53A94A46.1010801@arm.com>
+In-Reply-To: <53A94A46.1010801@arm.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(24454002)(51704005)(377454003)(479174003)(199002)(189002)(164054003)(64126003)(76482001)(102836001)(105586002)(85306003)(33656002)(85852003)(79102001)(74502001)(31966008)(81342001)(54356999)(74662001)(81542001)(95666004)(87266999)(76176999)(50986999)(101416001)(44976005)(19580395003)(80316001)(50466002)(68736004)(65816999)(83322001)(77982001)(19580405001)(36756003)(106466001)(4396001)(21056001)(92726001)(84676001)(99396002)(92566001)(86362001)(64706001)(59896001)(83072002)(107046002)(87936001)(80022001)(65806001)(65956001)(97736001)(46102001)(47776003)(20776003)(23746002);DIR:OUT;SFP:;SCL:1;SRVR:BN3PR0201MB0916;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 0255DF69B9
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Jun 2014 17:18:04 +0200
-Petr Mládek <pmladek@suse.cz> wrote:
+Hi Marc,
 
+After looking at the GICv3 implementation and trying to understand how 
+you architect the driver, I have a couple questions below.
 
-> > This patch uses seq_buf for the NMI code so it will fill to the end of
-> > the buffer and just truncate what can't fit.
-> 
-> I think that NMI code could live with the trace_seq behavior. The
-> lines are short. If we miss few characters it is not that big difference.
+ > On 06/24/2014 04:52 AM, Marc Zyngier wrote:
+> Hi Suravee,
+>
+> On 24/06/14 01:33, suravee.suthikulpanit@amd.com wrote:
+>> +       pr_info("GICv2m: SPI range [%d:%d]\n",
+>> +               msi->spi_start, (msi->spi_start + msi->max_spi_cnt));
+>> +
+>> +       gic_arch_extn.irq_mask = gicv2m_mask_msi;
+>> +       gic_arch_extn.irq_unmask = gicv2m_unmask_msi;
+>
+> Right, I now see why you need to test on the MSI descriptor. Don't do
+> that. The gic_arch_extn crap should *never* *be* *used*.
 
-True, but I'm trying to keep trace_seq more tracing specific.
+Hm, sounds like this should be removed all together then? In that case, 
+this would require changes in the irq-gic.c to call these functions 
+directly.
 
-> 
-> > trace_pipe depends on the trace_seq behavior.
-> > 
-> > > 
-> > >    Another solution would be to live with incomplete lines in tracing.
-> > >    I wonder if any of the functions tries to write the line again when the
-> > >    write failed.
-> > 
-> > This may break trace_pipe. Although there looks to be redundant
-> > behavior in that the pipe code also resets the seq.len on partial line,
-> > so maybe it's not an issue.
-> > 
-> > > 
-> > >    IMHO, the most important thing is that both functions return 0 on
-> > >    failure.
-> > 
-> > Note, I'm not sure how tightly these two need to be. I'm actually
-> > trying to get trace_seq to be specific to tracing and nothing more.
-> > Have seq_buf be used for all other instances.
-> 
-> If the two layers make your life easier then they might make sense. I
-> just saw many similarities and wanted to help. IMHO, if anyone breaks
-> seq_buf, it will break trace_seq anyway. So, they are not really separated.
+>
+> What you want to do is do assign a different irq_chip to your MSI
+> interrupts. This will require a different integration with the main GIC
+> code though. For the GICv3 ITS, I do it when the interrupt gets mapped.
 
-There's actually things I want to do with the seq_buf behavior that I
-can't do with the trace_seq behavior. That's more about having a
-dynamic way to create seq_buf buffers and resize them if need be.
-Although, perhaps an all or nothing approach will help in that.
+Ah, that's what I was trying to avoid. Why should we need a whole 
+different irq_chip just to add the MSI register frame support on top of 
+the GICv2 which is already supported by the current irq-gic.c?
 
+>
+>> +       return 0;
+>> +}
+>> +EXPORT_SYMBOL(gicv2m_msi_init);
+>> +
+>> +
+>> +
+>> +/**
+>> + * Override arch_setup_msi_irq in drivers/pci/msi.c
+>> + * since we don't want to change the chip_data
+>> + */
+>> +int arch_setup_msi_irq(struct pci_dev *pdev, struct msi_desc *desc)
+>> +{
+>> +       struct msi_chip *chip = pdev->bus->msi;
+>> +
+>> +       if (!chip || !chip->setup_irq)
+>> +               return -EINVAL;
+>> +
+>> +       return chip->setup_irq(chip, pdev, desc);
+>> +}
+>> +
+>> +/**
+>> + * Override arch_teardown_msi_irq in drivers/pci/msi.c
+>> + */
+>> +void arch_teardown_msi_irq(unsigned int irq)
+>> +{
+>> +       struct msi_desc *desc;
+>> +       struct msi_chip *chip;
+>> +
+>> +       desc = irq_get_msi_desc(irq);
+>> +       if (!desc)
+>> +               return;a
+>> +
+>> +       chip = desc->dev->bus->msi;
+>> +       if (!chip)
+>> +               return;
+>> +
+>> +       chip->teardown_irq(chip, irq);
+>> +}
+>
+> Please don't overtide those. There shouldn't be any reason for a
+> *driver* to do so. Only architecture code should do it. And nothing in
+> your code requires it (at least once you've stopped playing with the
+> silly gic extension...).
 
-> 
-> > 
-> > > ad 4th:
-> > > 
-> > >    Both "full" and "overflow" flags seems to have the same meaning.
-> > >    For example, trace_seq_printf() sets "full" on failure even
-> > >    when s->seq.len != s->size.
-> > 
-> > The difference is that the overflow flag is just used for info letting
-> > the user know that it did not fit. The full flag in trace_seq lets you
-> > know that you can not add anything else, even though the new stuff may
-> > fit.
-> 
-> I see. They have another meaning but they are set at the same time:
-> 
-> 	if (s->seq.overflow) {
-> 		...
-> 		s->full = 1;
-> 		return 0;
-> 	}
-> 
-> In fact, both names are slightly misleading. seq.overflow is set
-> when the buffer is full even when all characters were written.
-> s->full is set even when there is still some space :-)
+The reason I need these because the __weak version of arch_setup_msi_irq 
+function in driver/pci/msi.c calls irq_set_chip_data and replace the 
+chip_data with msi_chip (originally was pointing to the gic_chip_data 
+structure). This ended up breaking the GIC.
 
-I actually disagree. overflow means that you wrote more than what was
-there. In this case, it was cropped.
+Looking at the GICv3 ITS implementation, this seems to also have similar 
+implementation. So, this was not an issue for you?
 
-Full suggests that you can't add anymore because it wont allow you.
+Thanks,
 
-The difference is that you are looking at a implementation point of
-view. I'm looking at a usage point of view. With trace_seq, there is no
-space left, you can't add any more. seq_buf, you can add more but it
-wont be saved because it was overflowed.
-
-What I should do is change overflow from being a flag to the number of
-characters that it overflowed by. That would be useful information, and
-would make more sense. It lets the user know what wasn't written.
-
--- Steve
-
-
-
-> 
-> I suggest to rename "overflow" to "full" and have it only in the
-> struct "seq_buf". Then it has the right meaning in "seq_buf" and is still
-> backward compatible with "trace_seq".
-> 
-> 
-> Best Regards,
-> Petr
-
+Suravee
