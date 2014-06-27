@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753601AbaF0MvI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 08:51:08 -0400
-Received: from mail.sth.sze.hu ([193.224.129.230]:55079 "EHLO mail.sth.sze.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750858AbaF0MvG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 08:51:06 -0400
-From: Andras@mail.sth.sze.hu, Kovacs@mail.sth.sze.hu
-To: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Andras Kovacs <andras@sth.sze.hu>
-Subject: [PATCH 1/1] Add support for Corsair usb dongle
-Date: Fri, 27 Jun 2014 14:50:11 +0200
-Message-Id: <1403873411-12889-1-git-send-email-andras@sth.sze.hu>
-X-Mailer: git-send-email 1.7.10.4
+	id S1753473AbaF0Mz3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 08:55:29 -0400
+Received: from 99-65-72-228.uvs.sntcca.sbcglobal.net ([99.65.72.228]:20892
+	"EHLO stargate.chelsio.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752604AbaF0Mz1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 08:55:27 -0400
+X-Greylist: delayed 2968 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 Jun 2014 08:55:27 EDT
+Date: Fri, 27 Jun 2014 17:39:11 +0530
+From: Hariprasad S <hariprasad@chelsio.com>
+To: <linux-firmware@kernel.org>
+CC: <ben@decadent.org.uk>, <dwmw2@infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: pull request: linux-firmware: update cxgb4 firmware
+Message-ID: <20140627120910.GA2406@hariprasad-pc>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [10.193.190.82]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andras Kovacs <andras@sth.sze.hu>
+Hi,
 
-Corsair USB Dongles are shipped with Corsair AXi series PSUs.
-These are cp210x serial usb devices, so make driver detect these.
-I have a program, that can get information from these PSUs.
+Can you please pull from the following URL?
+    git://git.chelsio.net/pub/git/linux-firmware.git for-upstream
 
-Tested with 2 different dongles shipped with Corsair AX860i and
-AX1200i units.
+The following changes since commit 7f388b4885cf64d6b7833612052d20d4197af96f:
+Ben Hutchings (1):
+    Move the s5p-mfc firmware out of its subdirectory
 
-Signed-off-by: Andras Kovacs <andras@sth.sze.hu>
----
- drivers/usb/serial/cp210x.c |    1 +
- 1 file changed, 1 insertion(+)
+are available in the git repository at:
 
-diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
-index 762e4a5..330df5c 100644
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -153,6 +153,7 @@ static const struct usb_device_id id_table[] = {
- 	{ USB_DEVICE(0x1843, 0x0200) }, /* Vaisala USB Instrument Cable */
- 	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
- 	{ USB_DEVICE(0x1ADB, 0x0001) }, /* Schweitzer Engineering C662 Cable */
-+	{ USB_DEVICE(0x1B1C, 0x1C00) }, /* Corsair USB Dongle */
- 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
- 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
- 	{ USB_DEVICE(0x1E29, 0x0501) }, /* Festo CMSP */
--- 
-1.7.10.4
+git://git.chelsio.net/pub/git/linux-firmware.git for-upstream
 
+Hariprasad Shenai (1):
+    cxgb4: Update firmware to revision 1.11.27.0
+
+    LICENCE.chelsio_firmware |    2 +-
+    WHENCE                   |    8 ++++----
+    cxgb4/t4fw-1.11.27.0.bin |  Bin 0 -> 512512 bytes
+    cxgb4/t4fw-1.9.23.0.bin  |  Bin 486912 -> 0 bytes
+    cxgb4/t4fw.bin           |    2 +-
+    cxgb4/t5fw-1.11.27.0.bin |  Bin 0 -> 513024 bytes
+    cxgb4/t5fw-1.9.23.0.bin  |  Bin 481280 -> 0 bytes
+    cxgb4/t5fw.bin           |    2 +-
+    8 files changed, 7 insertions(+), 7 deletions(-)
+    create mode 100644 cxgb4/t4fw-1.11.27.0.bin
+    delete mode 100644 cxgb4/t4fw-1.9.23.0.bin
+    create mode 100644 cxgb4/t5fw-1.11.27.0.bin
+    delete mode 100644 cxgb4/t5fw-1.9.23.0.bin
