@@ -1,170 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753304AbaF0Kgo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 06:36:44 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:33995 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752740AbaF0Kgn (ORCPT
+	id S1753307AbaF0Ki5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 06:38:57 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:42870 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750756AbaF0Kiz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 06:36:43 -0400
-Date: Fri, 27 Jun 2014 11:36:11 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Sudeep Holla <sudeep.holla@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 7/9] ARM64: kernel: add support for cpu cache information
-Message-ID: <20140627103611.GE7262@leverpostej>
-References: <1403717444-23559-1-git-send-email-sudeep.holla@arm.com>
- <1403717444-23559-8-git-send-email-sudeep.holla@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403717444-23559-8-git-send-email-sudeep.holla@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 27 Jun 2014 06:38:55 -0400
+From: Michael Grzeschik <m.grzeschik@pengutronix.de>
+To: linux-mtd@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, dwmw2@infradead.org, kernel@pengutronix.de
+Subject: [PATH v2] mxc_nand: use our own read_page function
+Date: Fri, 27 Jun 2014 12:38:44 +0200
+Message-Id: <1403865524-25061-1-git-send-email-m.grzeschik@pengutronix.de>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1403815368-29469-2-git-send-email-m.grzeschik@pengutronix.de>
+References: <1403815368-29469-2-git-send-email-m.grzeschik@pengutronix.de>
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:a236:9fff:fe00:814
+X-SA-Exim-Mail-From: mgr@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sudeep,
+The current approach of the read_page function is to iterate over all
+subpages and call the correct_data function. The correct_data function
+currently does the same. It iterates over all subpages and checks for
+correctable and uncorrectable data. This redundant call for each
+subpage leads to miscalculations.
 
-On Wed, Jun 25, 2014 at 06:30:42PM +0100, Sudeep Holla wrote:
-> From: Sudeep Holla <sudeep.holla@arm.com>
-> 
-> This patch adds support for cacheinfo on ARM64.
-> 
-> On ARMv8, the cache hierarchy can be identified through Cache Level ID
-> (CLIDR) register while the cache geometry is provided by Cache Size ID
-> (CCSIDR) register.
-> 
-> Since the architecture doesn't provide any way of detecting the cpus
-> sharing particular cache, device tree is used for the same purpose.
-> 
-> Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Will Deacon <will.deacon@arm.com>
-> Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-> Cc: linux-arm-kernel@lists.infradead.org
-> ---
->  arch/arm64/kernel/Makefile    |   3 +-
->  arch/arm64/kernel/cacheinfo.c | 135 ++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 137 insertions(+), 1 deletion(-)
->  create mode 100644 arch/arm64/kernel/cacheinfo.c
+This patch changes the driver to use its own read_page function in which
+we call the correct_data function only once per page. With that we do
+the failure and correct statistics counting inside this function.
 
-[...]
+Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
+---
+fixed printk to pr_debug
 
-> +static inline enum cache_type get_cache_type(int level)
-> +{
-> +	unsigned int clidr;
-> +
-> +	if (level > MAX_CACHE_LEVEL)
-> +		return CACHE_TYPE_NOCACHE;
-> +	asm volatile ("mrs     %0, clidr_el1" : "=r" (clidr));
+ drivers/mtd/nand/mxc_nand.c | 73 ++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 69 insertions(+), 4 deletions(-)
 
-Can't that allocate a w register?
+diff --git a/drivers/mtd/nand/mxc_nand.c b/drivers/mtd/nand/mxc_nand.c
+index a72d508..5f9e36d 100644
+--- a/drivers/mtd/nand/mxc_nand.c
++++ b/drivers/mtd/nand/mxc_nand.c
+@@ -141,6 +141,8 @@ struct mxc_nand_host;
+ 
+ struct mxc_nand_devtype_data {
+ 	void (*preset)(struct mtd_info *);
++	int (*read_page)(struct mtd_info *mtd, struct nand_chip *chip,
++			uint8_t *buf, int oob_required, int page);
+ 	void (*send_cmd)(struct mxc_nand_host *, uint16_t, int);
+ 	void (*send_addr)(struct mxc_nand_host *, uint16_t, int);
+ 	void (*send_page)(struct mtd_info *, unsigned int);
+@@ -649,6 +651,59 @@ static int mxc_nand_correct_data_v1(struct mtd_info *mtd, u_char *dat,
+ 	return 0;
+ }
+ 
++/**
++ * mxc_nand_read_page_hwecc_v2_v3 - [REPLACEABLE] hardware ECC based page read function
++ * @mtd: mtd info structure
++ * @chip: nand chip info structure
++ * @buf: buffer to store read data
++ * @oob_required: caller requires OOB data read to chip->oob_poi
++ * @page: page number to read
++ *
++ * Not for syndrome calculating ECC controllers which need a special oob layout.
++ */
++static int
++mxc_nand_read_page_hwecc_v2_v3(struct mtd_info *mtd,
++			       struct nand_chip *chip,
++			       uint8_t *buf, int oob_required, int page)
++{
++	int i, eccsize = chip->ecc.size;
++	struct nand_chip *nand_chip = mtd->priv;
++	struct mxc_nand_host *host = nand_chip->priv;
++	int eccbytes = chip->ecc.bytes;
++	int eccsteps = chip->ecc.steps;
++	uint8_t *p = buf;
++	uint8_t *ecc_calc = chip->buffers->ecccalc;
++	uint8_t *ecc_code = chip->buffers->ecccode;
++	uint32_t *eccpos = chip->ecc.layout->eccpos;
++	unsigned int max_bitflips = 0;
++	u32 ecc_stat, err;
++	int stat;
++
++	ecc_stat = host->devtype_data->get_ecc_status(host);
++	for (i = 0; eccsteps; eccsteps--, i += eccbytes, p += eccsize) {
++		err = ecc_stat & 0xf;
++		chip->ecc.hwctl(mtd, NAND_ECC_READ);
++		chip->read_buf(mtd, p, eccsize);
++		chip->ecc.calculate(mtd, p, &ecc_calc[i]);
++		ecc_stat >>= 4;
++
++	}
++	ecc_stat = host->devtype_data->get_ecc_status(host);
++	chip->read_buf(mtd, chip->oob_poi, mtd->oobsize);
++
++	for (i = 0; i < chip->ecc.total; i++)
++		ecc_code[i] = chip->oob_poi[eccpos[i]];
++
++	eccsteps = chip->ecc.steps;
++	p = buf;
++
++	stat = chip->ecc.correct(mtd, p, &ecc_code[i], &ecc_calc[i]);
++	max_bitflips = max_t(unsigned int, max_bitflips, stat);
++
++	return max_bitflips;
++}
++
++
+ static int mxc_nand_correct_data_v2_v3(struct mtd_info *mtd, u_char *dat,
+ 				 u_char *read_ecc, u_char *calc_ecc)
+ {
+@@ -656,7 +711,7 @@ static int mxc_nand_correct_data_v2_v3(struct mtd_info *mtd, u_char *dat,
+ 	struct mxc_nand_host *host = nand_chip->priv;
+ 	u32 ecc_stat, err;
+ 	int no_subpages = 1;
+-	int ret = 0;
++	int ret = 0, broken = 0;
+ 	u8 ecc_bit_mask, err_limit = 0x1;
+ 
+ 	ecc_bit_mask = 0xf;
+@@ -673,15 +728,21 @@ static int mxc_nand_correct_data_v2_v3(struct mtd_info *mtd, u_char *dat,
+ 	do {
+ 		err = ecc_stat & ecc_bit_mask;
+ 		if (err > err_limit) {
+-			printk(KERN_WARNING "UnCorrectable RS-ECC Error\n");
+-			return -1;
++			broken++;
+ 		} else {
+ 			ret += err;
+ 		}
+ 		ecc_stat >>= 4;
+ 	} while (--no_subpages);
+ 
+-	pr_debug("%d Symbol Correctable RS-ECC Error\n", ret);
++	mtd->ecc_stats.corrected += ret;
++	if (ret)
++		pr_debug("%d Symbol Correctable RS-ECC Error\n", ret);
++
++	mtd->ecc_stats.failed += broken;
++	if (broken)
++		printk(KERN_WARNING "%d Symbol UnCorrectable RS-ECC Error\n",
++			 broken);
+ 
+ 	return ret;
+ }
+@@ -1216,6 +1277,7 @@ static const struct mxc_nand_devtype_data imx27_nand_devtype_data = {
+ /* v21: i.MX25, i.MX35 */
+ static const struct mxc_nand_devtype_data imx25_nand_devtype_data = {
+ 	.preset = preset_v2,
++	.read_page = mxc_nand_read_page_hwecc_v2_v3,
+ 	.send_cmd = send_cmd_v1_v2,
+ 	.send_addr = send_addr_v1_v2,
+ 	.send_page = send_page_v2,
+@@ -1242,6 +1304,7 @@ static const struct mxc_nand_devtype_data imx25_nand_devtype_data = {
+ /* v3.2a: i.MX51 */
+ static const struct mxc_nand_devtype_data imx51_nand_devtype_data = {
+ 	.preset = preset_v3,
++	.read_page = mxc_nand_read_page_hwecc_v2_v3,
+ 	.send_cmd = send_cmd_v3,
+ 	.send_addr = send_addr_v3,
+ 	.send_page = send_page_v3,
+@@ -1269,6 +1332,7 @@ static const struct mxc_nand_devtype_data imx51_nand_devtype_data = {
+ /* v3.2b: i.MX53 */
+ static const struct mxc_nand_devtype_data imx53_nand_devtype_data = {
+ 	.preset = preset_v3,
++	.read_page = mxc_nand_read_page_hwecc_v2_v3,
+ 	.send_cmd = send_cmd_v3,
+ 	.send_addr = send_addr_v3,
+ 	.send_page = send_page_v3,
+@@ -1483,6 +1547,7 @@ static int mxcnd_probe(struct platform_device *pdev)
+ 	this->ecc.layout = host->devtype_data->ecclayout_512;
+ 
+ 	if (host->pdata.hw_ecc) {
++		this->ecc.read_page = host->devtype_data->read_page;
+ 		this->ecc.calculate = mxc_nand_calculate_ecc;
+ 		this->ecc.hwctl = mxc_nand_enable_hwecc;
+ 		this->ecc.correct = host->devtype_data->correct_data;
+-- 
+2.0.0
 
-You can make clidr a u64 to avoid that.
-
-> +	return CLIDR_CTYPE(clidr, level);
-> +}
-> +
-> +/*
-> + * NumSets, bits[27:13] - (Number of sets in cache) - 1
-> + * Associativity, bits[12:3] - (Associativity of cache) - 1
-> + * LineSize, bits[2:0] - (Log2(Number of words in cache line)) - 2
-> + */
-> +#define CCSIDR_WRITE_THROUGH	BIT(31)
-> +#define CCSIDR_WRITE_BACK	BIT(30)
-> +#define CCSIDR_READ_ALLOCATE	BIT(29)
-> +#define CCSIDR_WRITE_ALLOCATE	BIT(28)
-> +#define CCSIDR_LINESIZE_MASK	0x7
-> +#define CCSIDR_ASSOCIAT_SHIFT	3
-> +#define CCSIDR_ASSOCIAT_MASK	0x3FF
-
-ASSOCIAT doesn't quite roll off of the tongue...
-
-> +#define CCSIDR_NUMSETS_SHIFT	13
-> +#define CCSIDR_NUMSETS_MASK	0x7FF
-> +
-> +/*
-> + * Which cache CCSIDR represents depends on CSSELR value
-> + * Make sure no one else changes CSSELR during this
-> + * smp_call_function_single prevents preemption for us
-> + */
-> +static inline u32 get_ccsidr(u32 csselr)
-> +{
-> +	u32 ccsidr;
-> +
-> +	/* Put value into CSSELR */
-> +	asm volatile("msr csselr_el1, %x0" : : "r" (csselr));
-
-This looks a little dodgy. I think GCC can leave the upper 32 bits in a
-random state. Why not cast csselr to a u64 here?
-
-> +	isb();
-> +	/* Read result out of CCSIDR */
-> +	asm volatile("mrs %0, ccsidr_el1" : "=r" (ccsidr));
-> +
-> +	return ccsidr;
-
-Similarly it might make sense to make the temporary variable a u64.
-
-[...]
-
-> +int init_cache_level(unsigned int cpu)
-> +{
-> +	unsigned int ctype, level = 1, leaves = 0;
-> +	struct cpu_cacheinfo *this_cpu_ci = get_cpu_cacheinfo(cpu);
-> +
-> +	if (!this_cpu_ci)
-> +		return -EINVAL;
-> +
-> +	do {
-> +		ctype = get_cache_type(level);
-> +		if (ctype == CACHE_TYPE_NOCACHE)
-> +			break;
-> +		/* Separate instruction and data caches */
-> +		leaves += (ctype == CACHE_TYPE_SEPARATE) ? 2 : 1;
-> +	} while (++level <= MAX_CACHE_LEVEL);
-
-I think this would be clearer with:
-
-for (level = 1; level <= MAX_CACHE_LEVEL; level++)
-
-We do something like that in populate_cache_leaves below.
-
-> +
-> +	this_cpu_ci->num_levels = level - 1;
-> +	this_cpu_ci->num_leaves = leaves;
-> +	return 0;
-> +}
-> +
-> +int populate_cache_leaves(unsigned int cpu)
-> +{
-> +	unsigned int level, idx;
-> +	enum cache_type type;
-> +	struct cpu_cacheinfo *this_cpu_ci = get_cpu_cacheinfo(cpu);
-> +	struct cacheinfo *this_leaf = this_cpu_ci->info_list;
-> +
-> +	for (idx = 0, level = 1; level <= this_cpu_ci->num_levels &&
-> +	     idx < this_cpu_ci->num_leaves; idx++, level++) {
-> +		if (!this_leaf)
-> +			return -EINVAL;
-> +
-> +		type = get_cache_type(level);
-> +		if (type == CACHE_TYPE_SEPARATE) {
-> +			ci_leaf_init(this_leaf++, CACHE_TYPE_DATA, level);
-> +			ci_leaf_init(this_leaf++, CACHE_TYPE_INST, level);
-> +		} else {
-> +			ci_leaf_init(this_leaf++, type, level);
-> +		}
-> +	}
-> +	return 0;
-> +}
-
-Cheers,
-Mark.
