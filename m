@@ -1,174 +1,267 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753221AbaF0H7V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 03:59:21 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:49769
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753108AbaF0H7R (ORCPT
+	id S1753154AbaF0H6y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 03:58:54 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:59024 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753001AbaF0H6d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 03:59:17 -0400
-X-IronPort-AV: E=Sophos;i="5.01,559,1400018400"; 
-   d="scan'208";a="69156841"
-Date: Fri, 27 Jun 2014 09:59:13 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Joe Perches <joe@perches.com>
-cc: Himangi Saraogi <himangi774@gmail.com>,
-        Stefan Achatz <erazor_de@users.sourceforge.net>,
-        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] HID: roccat: Drop cast
-In-Reply-To: <1403848366.7977.92.camel@joe-AO725>
-Message-ID: <alpine.DEB.2.10.1406270956470.2594@hadrien>
-References: <20140626172852.GA2878@himangi-Dell>  <1403804286.7977.58.camel@joe-AO725>  <alpine.DEB.2.02.1406270729110.2016@localhost6.localdomain6> <1403848366.7977.92.camel@joe-AO725>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 27 Jun 2014 03:58:33 -0400
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Rabin Vincent <rabin.vincent@stericsson.com>,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Cc: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Subject: [RFC 5/5] clk: Add floor and ceiling constraints to clock rates
+Date: Fri, 27 Jun 2014 09:57:52 +0200
+Message-Id: <1403855872-14749-6-git-send-email-tomeu.vizoso@collabora.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1403855872-14749-1-git-send-email-tomeu.vizoso@collabora.com>
+References: <1403855872-14749-1-git-send-email-tomeu.vizoso@collabora.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Adds a way for clock consumers to set maximum and minimum rates. This can be
+used for thermal drivers to set ceiling rates, or by misc. drivers to set
+floor rates to assure a minimum performance level.
 
+Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+---
+ drivers/clk/clk.c           | 105 ++++++++++++++++++++++++++++++++++++++++++++
+ drivers/clk/clk.h           |   1 +
+ drivers/clk/clkdev.c        |   7 +--
+ include/linux/clk-private.h |   1 +
+ include/linux/clk.h         |  18 ++++++++
+ 5 files changed, 126 insertions(+), 6 deletions(-)
 
-On Thu, 26 Jun 2014, Joe Perches wrote:
-
-> On Fri, 2014-06-27 at 07:29 +0200, Julia Lawall wrote:
-> > On Thu, 26 Jun 2014, Joe Perches wrote:
-> > > The cast of a const void * to a void * was odd.
-> > >
-> > > Maybe a mechanism to verify appropriateness of
-> > > loss of constness for any pointer might be useful.
-> >
-> > I tried the following, but didn't find anything interesting:
-> >
-> > @disable drop_cast@
-> > type T;
-> > const T e;
-> > @@
-> >
-> > * (T)e
->
-> What code does this match?
-> Do you have an example match?
->
-> This doesn't find a cast of a void type like:
->
-> void func(const void * const p)
-> {
-> 	char *p2 = p;
->
-> 	p2[0] = 1;
-> }
-
-The results are below.  Except in the first case, none are pointer types.
-The first case looks very intentional, although if the intention is
-needed, perhaps the types should be listed differently.
-
-I was surprised not to get more results.  Maybe there is not enough type
-information.  I did use --all-includes but not --recursive-includes, ie
-only explicitly mentioned include files are taken into account.
-
-My rule doesn't consider implicit casts like in your example.  I can try
-that.
-
-julia
-
-
-diff -u -p /var/linuxes/linux-next/lib/devres.c /tmp/nothing/lib/devres.c
---- /var/linuxes/linux-next/lib/devres.c
-+++ /tmp/nothing/lib/devres.c
-@@ -296,7 +296,6 @@ void __iomem *pcim_iomap(struct pci_dev
-
- 	BUG_ON(bar >= PCIM_IOMAP_MAX);
-
--	tbl = (void __iomem **)pcim_iomap_table(pdev);
- 	if (!tbl || tbl[bar])	/* duplicate mappings not allowed */
- 		return NULL;
-
-@@ -319,7 +318,6 @@ void pcim_iounmap(struct pci_dev *pdev,
-
- 	pci_iounmap(pdev, addr);
-
--	tbl = (void __iomem **)pcim_iomap_table(pdev);
- 	BUG_ON(!tbl);
-
- 	for (i = 0; i < PCIM_IOMAP_MAX; i++)
-diff -u -p /var/linuxes/linux-next/drivers/video/fbdev/smscufx.c /tmp/nothing/drivers/video/fbdev/smscufx.c
---- /var/linuxes/linux-next/drivers/video/fbdev/smscufx.c
-+++ /tmp/nothing/drivers/video/fbdev/smscufx.c
-@@ -976,7 +976,6 @@ static void ufx_dpy_deferred_io(struct f
- 		const int width = dev->info->var.xres;
- 		const int y = (cur->index << PAGE_SHIFT) / (width * 2);
- 		int height = (PAGE_SIZE / (width * 2)) + 1;
--		height = min(height, (int)(dev->info->var.yres - y));
-
- 		BUG_ON(y >= dev->info->var.yres);
- 		BUG_ON((y + height) > dev->info->var.yres);
-diff -u -p /var/linuxes/linux-next/drivers/mtd/chips/jedec_probe.c /tmp/nothing/drivers/mtd/chips/jedec_probe.c
---- /var/linuxes/linux-next/drivers/mtd/chips/jedec_probe.c
-+++ /tmp/nothing/drivers/mtd/chips/jedec_probe.c
-@@ -2027,11 +2027,8 @@ static inline int jedec_match( uint32_t
- 		}
- 		break;
- 	case CFI_DEVICETYPE_X16:
--		mfr = (uint16_t)finfo->mfr_id;
--		id = (uint16_t)finfo->dev_id;
- 		break;
- 	case CFI_DEVICETYPE_X32:
--		mfr = (uint16_t)finfo->mfr_id;
- 		id = (uint32_t)finfo->dev_id;
- 		break;
- 	default:
-diff -u -p /var/linuxes/linux-next/drivers/net/wireless/libertas/defs.h /tmp/nothing/drivers/net/wireless/libertas/defs.h
---- /var/linuxes/linux-next/drivers/net/wireless/libertas/defs.h
-+++ /tmp/nothing/drivers/net/wireless/libertas/defs.h
-@@ -105,7 +105,6 @@ static inline void lbs_deb_hex(unsigned
- 					printk("\n");
- 				printk(DRV_NAME " %s: ", prompt);
- 			}
--			printk("%02x ", (u8) * buf);
- 			buf++;
- 		}
- 		printk("\n");
-diff -u -p /var/linuxes/linux-next/drivers/media/i2c/tvp5150.c /tmp/nothing/drivers/media/i2c/tvp5150.c
---- /var/linuxes/linux-next/drivers/media/i2c/tvp5150.c
-+++ /tmp/nothing/drivers/media/i2c/tvp5150.c
-@@ -95,7 +95,6 @@ static void dump_reg_range(struct v4l2_s
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 7fc1937..4d93066 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -23,6 +23,19 @@
+ 
+ #include "clk.h"
+ 
++enum constraint_type {
++	CONSTRAINT_FLOOR,
++	CONSTRAINT_CEILING,
++};
++
++struct rate_constraint {
++	struct hlist_node	node;
++	const char		*dev_id;
++	const char		*con_id;
++	enum constraint_type	type;
++	unsigned long		rate;
++};
++
+ static DEFINE_SPINLOCK(enable_lock);
+ static DEFINE_MUTEX(prepare_lock);
+ 
+@@ -1624,6 +1637,7 @@ static void clk_change_rate(struct clk_core *clk)
+ int __clk_set_rate_internal(struct clk_core *clk, unsigned long rate)
  {
- 	int i = 0;
-
--	while (init != (u8)(end + 1)) {
- 		if ((i % max_line) == 0) {
- 			if (i > 0)
- 				printk("\n");
-diff -u -p /var/linuxes/linux-next/net/netfilter/ipvs/ip_vs_sync.c /tmp/nothing/net/netfilter/ipvs/ip_vs_sync.c
---- /var/linuxes/linux-next/net/netfilter/ipvs/ip_vs_sync.c
-+++ /tmp/nothing/net/netfilter/ipvs/ip_vs_sync.c
-@@ -1543,7 +1543,6 @@ ip_vs_send_async(struct socket *sock, co
- 	iov.iov_base     = (void *)buffer;
- 	iov.iov_len      = length;
-
--	len = kernel_sendmsg(sock, &msg, &iov, 1, (size_t)(length));
-
- 	LeaveFunction(7);
- 	return len;
-@@ -1575,7 +1574,6 @@ ip_vs_receive(struct socket *sock, char
-
- 	/* Receive a packet */
- 	iov.iov_base     = buffer;
--	iov.iov_len      = (size_t)buflen;
-
- 	len = kernel_recvmsg(sock, &msg, &iov, 1, buflen, MSG_DONTWAIT);
-
-diff -u -p /var/linuxes/linux-next/net/ipv4/tcp_output.c /tmp/nothing/net/ipv4/tcp_output.c
---- /var/linuxes/linux-next/net/ipv4/tcp_output.c
-+++ /tmp/nothing/net/ipv4/tcp_output.c
-@@ -177,7 +177,6 @@ static void tcp_event_data_sent(struct t
- 	/* If it is a reply for ato after last received
- 	 * packet, enter pingpong mode.
- 	 */
--	if ((u32)(now - icsk->icsk_ack.lrcvtime) < icsk->icsk_ack.ato &&
- 	    (!dst || !dst_metric(dst, RTAX_QUICKACK)))
- 			icsk->icsk_ack.pingpong = 1;
+ 	struct clk_core *top, *fail_clk;
++	struct rate_constraint *constraint;
+ 	int ret = 0;
+ 
+ 	if (!clk)
+@@ -1632,6 +1646,17 @@ int __clk_set_rate_internal(struct clk_core *clk, unsigned long rate)
+ 	/* prevent racing with updates to the clock topology */
+ 	clk_prepare_lock();
+ 
++	hlist_for_each_entry(constraint, &clk->rate_constraints, node) {
++		switch(constraint->type) {
++		case CONSTRAINT_FLOOR:
++			rate = max(rate, constraint->rate);
++			break;
++		case CONSTRAINT_CEILING:
++			rate = min(rate, constraint->rate);
++			break;
++		}
++	}
++
+ 	/* bail early if nothing to do */
+ 	if (rate == __clk_get_rate_internal(clk))
+ 		goto out;
+@@ -1695,6 +1720,67 @@ int clk_set_rate(struct clk *clk_user, unsigned long rate)
  }
+ EXPORT_SYMBOL_GPL(clk_set_rate);
+ 
++static struct rate_constraint *__ensure_constraint(struct clk *clk_user,
++						   enum constraint_type type)
++{
++	struct clk_core *clk = clk_to_clk_core(clk_user);
++	struct rate_constraint *constraint = NULL;
++	bool found = false;
++
++	hlist_for_each_entry(constraint, &clk->rate_constraints, node) {
++		if (constraint->dev_id == clk_user->dev_id &&
++		    constraint->con_id == clk_user->con_id &&
++		    constraint->type == type)
++			found = true;
++	}
++
++	if (!found) {
++		constraint = kzalloc(sizeof(*constraint), GFP_KERNEL);
++		if (!constraint) {
++			pr_err("%s: could not allocate constraint\n", __func__);
++			return NULL;
++		}
++		hlist_add_head(&constraint->node, &clk->rate_constraints);
++	}
++
++	return constraint;
++}
++
++static int __clk_set_constraint(struct clk *clk_user, unsigned long rate,
++				enum constraint_type type)
++{
++	struct clk_core *clk = clk_to_clk_core(clk_user);
++	struct rate_constraint *constraint;
++	int ret;
++
++	clk_prepare_lock();
++
++	constraint = __ensure_constraint(clk_user, type);
++	if (!constraint)
++		return -ENOMEM;
++
++	constraint->rate = rate;
++
++	/* Update the rate so the new constraint is taken into account */
++	ret = __clk_set_rate_internal(clk, __clk_get_rate_internal(clk));
++
++	clk_prepare_unlock();
++
++	return ret;
++}
++
++int clk_set_floor_rate(struct clk *clk_user, unsigned long rate)
++{
++	return __clk_set_constraint(clk_user, rate, CONSTRAINT_FLOOR);
++}
++EXPORT_SYMBOL_GPL(clk_set_floor_rate);
++
++int clk_set_ceiling_rate(struct clk *clk_user, unsigned long rate)
++{
++	return __clk_set_constraint(clk_user, rate, CONSTRAINT_CEILING);
++}
++EXPORT_SYMBOL_GPL(clk_set_ceiling_rate);
++
+ struct clk_core *__clk_get_parent_internal(struct clk_core *clk)
+ {
+ 	struct clk_core *parent;
+@@ -2028,6 +2114,8 @@ int __clk_init(struct device *dev, struct clk_core *clk)
+ 			}
+ 	 }
+ 
++	INIT_HLIST_HEAD(&clk->rate_constraints);
++
+ 	/*
+ 	 * optional platform-specific magic
+ 	 *
+@@ -2458,6 +2546,23 @@ int clk_notifier_unregister(struct clk *clk_user, struct notifier_block *nb)
+ }
+ EXPORT_SYMBOL_GPL(clk_notifier_unregister);
+ 
++void __clk_free_clk(struct clk *clk_user)
++{
++	struct clk_core *clk = clk_to_clk_core(clk_user);
++	struct rate_constraint *constraint;
++	struct hlist_node *tmp;
++
++	hlist_for_each_entry_safe(constraint, tmp, &clk->rate_constraints, node) {
++		if (constraint->dev_id == clk_user->dev_id &&
++		    constraint->con_id == clk_user->con_id) {
++			hlist_del(&constraint->node);
++			kfree(constraint);
++		}
++	}
++
++	kfree(clk);
++}
++
+ #ifdef CONFIG_OF
+ /**
+  * struct of_clk_provider - Clock provider registration structure
+diff --git a/drivers/clk/clk.h b/drivers/clk/clk.h
+index 2f682bf..ea84797 100644
+--- a/drivers/clk/clk.h
++++ b/drivers/clk/clk.h
+@@ -18,4 +18,5 @@ void of_clk_unlock(void);
+ 
+ #if defined(CONFIG_COMMON_CLK)
+ struct clk_core *clk_to_clk_core(struct clk *clk);
++void __clk_free_clk(struct clk *clk_user);
+ #endif
+diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
+index bf1a2d7..88448b7 100644
+--- a/drivers/clk/clkdev.c
++++ b/drivers/clk/clkdev.c
+@@ -230,16 +230,11 @@ struct clk *clk_get(struct device *dev, const char *con_id)
+ }
+ EXPORT_SYMBOL(clk_get);
+ 
+-static void clk_free_clk(struct clk *clk)
+-{
+-	kfree(clk);
+-}
+-
+ void clk_put(struct clk *clk)
+ {
+ 	clk_core_t *core = clk_to_clk_core(clk);
+ 
+-	clk_free_clk(clk);
++	__clk_free_clk(clk);
+ 	__clk_put(core);
+ }
+ EXPORT_SYMBOL(clk_put);
+diff --git a/include/linux/clk-private.h b/include/linux/clk-private.h
+index 9657fc8..a8279e1 100644
+--- a/include/linux/clk-private.h
++++ b/include/linux/clk-private.h
+@@ -48,6 +48,7 @@ struct clk_core {
+ 	unsigned long		accuracy;
+ 	struct hlist_head	children;
+ 	struct hlist_node	child_node;
++	struct hlist_head	rate_constraints;
+ 	unsigned int		notifier_count;
+ #ifdef CONFIG_DEBUG_FS
+ 	struct dentry		*dentry;
+diff --git a/include/linux/clk.h b/include/linux/clk.h
+index b8938e4..d6234bd 100644
+--- a/include/linux/clk.h
++++ b/include/linux/clk.h
+@@ -274,6 +274,24 @@ long clk_round_rate(struct clk *clk, unsigned long rate);
+ int clk_set_rate(struct clk *clk, unsigned long rate);
+ 
+ /**
++ * clk_set_floor_rate - set a minimum clock rate for a clock source
++ * @clk: clock source
++ * @rate: desired minimum clock rate in Hz
++ *
++ * Returns success (0) or negative errno.
++ */
++int clk_set_floor_rate(struct clk *clk, unsigned long rate);
++
++/**
++ * clk_set_ceiling_rate - set a maximum clock rate for a clock source
++ * @clk: clock source
++ * @rate: desired maximum clock rate in Hz
++ *
++ * Returns success (0) or negative errno.
++ */
++int clk_set_ceiling_rate(struct clk *clk, unsigned long rate);
++
++/**
+  * clk_set_parent - set the parent clock source for this clock
+  * @clk: clock source
+  * @parent: parent clock source
+-- 
+1.9.3
 
