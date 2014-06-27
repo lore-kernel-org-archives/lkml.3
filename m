@@ -1,92 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753674AbaF0TPD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 15:15:03 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:28794 "EHLO
+	id S1753848AbaF0TRV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 15:17:21 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:34894 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751304AbaF0TPA (ORCPT
+	by vger.kernel.org with ESMTP id S1751570AbaF0TRU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 15:15:00 -0400
-Date: Fri, 27 Jun 2014 15:14:58 -0400
+	Fri, 27 Jun 2014 15:17:20 -0400
+Date: Fri, 27 Jun 2014 15:17:18 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
 Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH 1/2] trace-cmd: [BUGFIX] Initialize handle->options list
- in tracecmd_attach_cpu_data_fd()
-Message-ID: <20140627151458.27008111@gandalf.local.home>
-In-Reply-To: <20140624022343.14037.69077.stgit@yuno-kbuild.novalocal>
+Subject: Re: [PATCH 2/2] trace-cmd: [BUGFIX] Don't die if an instance does
+ not have 'current_tracer' file
+Message-ID: <20140627151718.22f22685@gandalf.local.home>
+In-Reply-To: <20140624022345.14037.44275.stgit@yuno-kbuild.novalocal>
 References: <20140624022340.14037.63549.stgit@yuno-kbuild.novalocal>
-	<20140624022343.14037.69077.stgit@yuno-kbuild.novalocal>
+	<20140624022345.14037.44275.stgit@yuno-kbuild.novalocal>
 X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
+X-RR-Connecting-IP: 107.14.168.118:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Jun 2014 02:23:43 +0000
+On Tue, 24 Jun 2014 02:23:45 +0000
 Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com> wrote:
 
-> This patch initializes handle->options list in tracecmd_attach_cpu_data_fd().
+> Current trace-cmd requires 'current_tracer' file for an instance, and if
+> the file is nothing, trace-cmd dies. However, current_tracer file was
+> introduced from 607e2ea167e patch in Linux kernel 3.14-rc3, so current
+> trace-cmd cannot use multiple buffers for old kernels.
 > 
-> When recorder sends trace data via network, server recording process is
-> killed by SIGSEGV from the patch 71484a0854f7. This is because add_options()
-> uses handle->options list from the patch, but tracecmd_attach_cpu_data_fd()
-> calling add_options() does not initialize the list in spite of allocation of
-> new handle. As the result, the server recording process will be killed because
-> handle->options is cleared to zero in tracecmd_attach_cpu_data_fd().
+> This patch avoids to die if current_tracer file is nothing in an instance
+> and the plugin name is "nop". This is because old kernels always trace
+> as nop mode in an instance.
 > 
 > <How to test>
-> 1. Execute network(listen) server
->  # trace-cmd listen -p 12345
+> 1) # ./trace-cmd record -B foo -e sched
 > 
-> 2. Execute network client
->  # trace-cmd record -e sched* -N <server IP>:12345
+> Before introducing this patch, following error message is output in an old
+> kernel:
 > 
-> 3. Stop the record on client
->  ^C
+>  trace-cmd: Permission denied
+>    writing to '/sys/kernel/debug/tracing/instances/foo/current_tracer'
 > 
->  Here, network server should output a line "CPUX data recorded at offset=XXXX",
->  but current network server aborts silently.
+> trace-cmd dies in disable_trace() calling set_plugin("nop").
+> After introducing this patch, trace-cmd works fine in both old kernels and
+> current kernel.
 > 
->  Moreover the client's per-cpu files are separated. (Normally those files
->  are merged into one trace file.)
+> 2) # ./trace-cmd record -B foo -e sched -p nop
 > 
-> 4. Confirm error on network server
->  #  dmesg | tail -1
-> [18551.537113] trace-cmd[23073]: segfault at ffffffffffffffe8 ip 0000000000432fd1 sp 00007fffffa4caa0 error 5 in trace-cmd[400000+47000]
+> It also works fine after introducing this patch in both old kernels and current
+> kernel.
 > 
->  After we would introduce this patch, the server will be fully able to output
->  the client's tracing data and we will not get this error.
+> 3) # ./trace-cmd record -B foo -e sched -p function
+> 
+> For old kernels, it dies because an user should not set plugin tracer.
+> For current kernel, it works fine.
+> 
+> Note that this patch was tested for kernel 3.11.9-200 and 3.15.0-rc2+.
 > 
 > Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
 > Cc: Steven Rostedt <rostedt@goodmis.org>
 
-Applied thanks! I also added a test to my trace-cmd test suite to check
-trace-cmd listen.
+Applied, thanks!
 
 -- Steve
-
-
-> ---
->  trace-output.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/trace-output.c b/trace-output.c
-> index ed81466..b033baa 100644
-> --- a/trace-output.c
-> +++ b/trace-output.c
-> @@ -1202,6 +1202,7 @@ int tracecmd_attach_cpu_data_fd(int fd, int cpus, char * const *cpu_data_files)
->  	handle->pevent = tracecmd_get_pevent(ihandle);
->  	pevent_ref(pevent);
->  	handle->page_size = tracecmd_page_size(ihandle);
-> +	list_head_init(&handle->options);
->  
->  	if (tracecmd_append_cpu_data(handle, cpus, cpu_data_files) >= 0)
->  		ret = 0;
-
