@@ -1,113 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754196AbaF0TRz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 15:17:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43856 "EHLO
+	id S1754224AbaF0TS3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 15:18:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43862 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752561AbaF0TRy (ORCPT
+	with ESMTP id S1751990AbaF0TS2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 15:17:54 -0400
-Date: Fri, 27 Jun 2014 12:17:52 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dan Streetman <ddstreet@ieee.org>
-Cc: Seth Jennings <sjennings@variantweb.net>, Minchan Kim <minchan@kernel.org>,
-        Weijie Yang <weijie.yang@samsung.com>, Nitin Gupta <ngupta@vflare.org>,
-        Bob Liu <bob.liu@oracle.com>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv4 3/6] mm/zpool: implement common zpool api to
- zbud/zsmalloc
-Message-Id: <20140627121752.21c559c3404d665adbaa5b23@linux-foundation.org>
-In-Reply-To: <CALZtONDab98oHJsPqHVMxS0aEfMBTYdJFx3p-ODr3Dke_x5m0g@mail.gmail.com>
-References: <1400958369-3588-1-git-send-email-ddstreet@ieee.org>
-	<1401747586-11861-1-git-send-email-ddstreet@ieee.org>
-	<1401747586-11861-4-git-send-email-ddstreet@ieee.org>
-	<20140623144614.d4549fa0aecb03b7b8044bc7@linux-foundation.org>
-	<CALZtONDKmM8nRv3tqZThc8mC3Dmrxqj7if5-yAeivnfCbfwENw@mail.gmail.com>
-	<20140624160857.ebb638c4c69c1d290f64d01f@linux-foundation.org>
-	<CALZtONDab98oHJsPqHVMxS0aEfMBTYdJFx3p-ODr3Dke_x5m0g@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 27 Jun 2014 15:18:28 -0400
+Date: Fri, 27 Jun 2014 12:22:38 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Allen Yu <alleny@nvidia.com>,
+        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Linux-pm mailing list <linux-pm@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] Add "rpm_not_supported" flag
+Message-ID: <20140627192238.GA7646@kroah.com>
+References: <3098868.U0NfB8kYvJ@vostro.rjw.lan>
+ <Pine.LNX.4.44L0.1406271417120.875-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1406271417120.875-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Jun 2014 13:11:15 -0400 Dan Streetman <ddstreet@ieee.org> wrote:
+On Fri, Jun 27, 2014 at 02:27:28PM -0400, Alan Stern wrote:
+> On Wed, 25 Jun 2014, Rafael J. Wysocki wrote:
+> 
+> > On Sunday, June 22, 2014 12:45:42 PM Alan Stern wrote:
+> > > On Sun, 22 Jun 2014, Rafael J. Wysocki wrote:
+> > > 
+> > > > > How would you treat them specially?  Add a "runtime_pm_not_supported" 
+> > > > > flag?
+> > > > 
+> > > > I thought about a "runtime PM has been enabled at least once" flag rather
+> > > > that would be set by pm_runtime_enable() every time it is called and never
+> > > > cleared.  That would allow the core to distinguish between "runtime PM
+> > > > disabled temporarily" and "runtime PM not used" which turn out to be
+> > > > sufficiently different cases.
+> > > 
+> > > Interesting idea, but it can't tell the difference between "runtime PM
+> > > not supported" and "runtime PM not enabled yet".  I think a simple "not
+> > > supported" flag will be more straightforward.
+> > 
+> > The question is who will set the "unsupported" flag (think devices without
+> > drivers etc.).  Or perhaps the idea is that it will be set to start with?
+> 
+> Drivers or subsystems will set the flag.  It should not be set for
+> devices without drivers or subsystems, because the flag means that the
+> hardware doesn't support runtime power management, and the kernel
+> wouldn't know this if there was no driver or subsystem.
+> 
+> The flag will not be set to start with.  The idea is that you set it 
+> when you know for certain that the device cannot be power-managed, but 
+> you still want the Runtime PM API to work with the device.  In 
+> particular, calls to pm_runtime_resume() will succeed.
+> 
+> > > > Yes.  The core definitely needs to be able to distinguish between the
+> > > > "runtime PM disabled temporarily" and "runtime PM not supported/not used"
+> > > > situations.
+> > > 
+> > > Let me work out a patch, and we'll see what you think.  For the time
+> > > being we can stick with our "runtime PM must be disabled (or in error)  
+> > > when the status is changed" approach.
+> > 
+> > OK
+> 
+> The patch is below.  I haven't tested it with anything meaningful, but 
+> it seems straightforward enough.
+> 
+> One side point: The patch changes the string displayed for the 
+> power/runtime_status attribute file when disable_depth > 0.  Instead of 
+> "unsupported", it will now say "disabled".  The attribute will contain 
+> "not supported" when the new flag is set.
+> 
+> Is this acceptable?
 
-> >> >> +struct zpool *zpool_create_pool(char *type, gfp_t flags,
-> >> >> +                     struct zpool_ops *ops)
-> >> >> +{
-> >> >> +     struct zpool_driver *driver;
-> >> >> +     struct zpool *zpool;
-> >> >> +
-> >> >> +     pr_info("creating pool type %s\n", type);
-> >> >> +
-> >> >> +     spin_lock(&drivers_lock);
-> >> >> +     driver = zpool_get_driver(type);
-> >> >> +     spin_unlock(&drivers_lock);
-> >> >
-> >> > Racy against unregister.  Can be solved with a standard get/put
-> >> > refcounting implementation.  Or perhaps a big fat mutex.
-> >
-> > Was there a decision here?
-> 
-> What I tried to do, with the final patch in the set, was use module
-> usage counting combined with function documentation - in
-> zpool_create_pool() the zpool_get_driver() does try_module_get()
-> before releasing the spinlock, so if the driver *only* calls
-> unregister from its module exit function, I think we should be good -
-> once zpool_create_pool() gets the driver module, the driver won't
-> enter its exit function and thus won't unregister; and if the driver
-> module has started its exit function, try_module_get() will return
-> failure and zpool_create_pool() will return failure.
-> 
-> Now, if we remove the restriction that the driver module can only
-> unregister from its module exit function, then we would need an
-> additional refcount (we could use module_refcount() but the module may
-> have refcounts unrelated to us) and unregister would need a return
-> value, to indicate failure.  I think the problem I had with that is,
-> in the driver module's exit function it can't abort if unregister
-> fails; but with the module refcounting, unregister shouldn't ever fail
-> in the driver's exit function...
-> 
-> So should I remove the unregister function doc asking to only call
-> unregister from the module exit function, and add a separate refcount
-> to the driver get/put functions?  I don't think we need to use a kref,
-> since we don't want to free the driver once kref == 0, we want to be
-> able to check in the unregister function if there are any refs, so
-> just an atomic_t should work.  And we would still need to keep the
-> module get/put, too, so it would be something like:
+Why change the "unsupported" string?  Can't we just leave that one
+alone?  I'd prefer to not break userspace tools...
 
-I'm not sure I understood all that.  But I don't want to understand it
-in this context!  Readers should be able to gather all this from
-looking at the code.
+thanks,
 
->   spin_lock(&drivers_lock);
-> ...
->   bool got = try_module_get(driver->owner);
->   if (got)
->     atomic_inc(driver->refs);
->   spin_unlock(&drivers_lock);
->   return got ? driver : NULL;
-> 
-> with the appropriate atomic_dec in zpool_put_driver(), and unregister
-> would change to:
-> 
-> int zpool_unregister_driver(struct zpool_driver *driver)
-> {
->   spin_lock(&drivers_lock);
->   if (atomic_read(driver->refs) > 0) {
->     spin_unlock(&drivers_lock);
->     return -EBUSY;
->   }
->   list_del(&driver->list);
->   spin_unlock(&drivers_lock);
->   return 0;
-> }
-
-It sounds like that will work.
+greg k-h
