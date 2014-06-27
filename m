@@ -1,65 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753948AbaF0Ovu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 10:51:50 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:35041 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753893AbaF0Ovt (ORCPT
+	id S1753794AbaF0Oxy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 10:53:54 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:52039 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752740AbaF0Oxw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 10:51:49 -0400
-Date: Fri, 27 Jun 2014 15:51:46 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>
-Cc: linux-efi@vger.kernel.org, Catalin Marinas <catalin.marinas@arm.com>,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] EFI urgent fixes
-Message-ID: <20140627145146.GB7539@console-pimps.org>
+	Fri, 27 Jun 2014 10:53:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140626090045.GB376@arm.com>
+References: <CAFrcx1n-cPXm=w+84gQiUjZoFKi7gYnvJ0BQ+8yXKS=k3nEt3g@mail.gmail.com>
+	<1403025065-18001-1-git-send-email-jean.pihet@linaro.org>
+	<20140618125355.GA2186@arm.com>
+	<CAFrcx1mA7kXiG9wMQqn=zYPYqrpGxDYWfoMP97RvkkrMTvNoRw@mail.gmail.com>
+	<20140625090110.GD6153@arm.com>
+	<CAFrcx1=gwRzU9heY8o9sphWUiga63NGdpN+cUh81Njr-X-OEGQ@mail.gmail.com>
+	<20140626090045.GB376@arm.com>
+Date: Fri, 27 Jun 2014 16:53:51 +0200
+Message-ID: <CAFrcx1=BGZ4fQugbh_PH-0-OXz_m4uYxUDF9Z9Wwqzp78yqScA@mail.gmail.com>
+Subject: Re: [PATCH] ARM: perf: allow tracing with kernel tracepoints events
+From: Jean Pihet <jean.pihet@linaro.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Sneha Priya <sneha.cse@hotmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Guys,
+Hi Will,
 
-Please pull the following EFI fixes. The fix from Catalin is the same as
-the one I sent a week ago and Andrzej's patch fixes an efi-pstore issue
-on 32-bit machines where efi-pstore variables don't appear in the
-filesystem and so can never be deleted, potentially leading to
-exhaustion of NVRAM space.
+On 26 June 2014 11:00, Will Deacon <will.deacon@arm.com> wrote:
+> On Wed, Jun 25, 2014 at 03:54:14PM +0100, Jean Pihet wrote:
+>> Hi Will,
+>
+> Hello,
+>
+>> On 25 June 2014 11:01, Will Deacon <will.deacon@arm.com> wrote:
+>> > On Fri, Jun 20, 2014 at 09:10:35AM +0100, Jean Pihet wrote:
+>> >> On 18 June 2014 14:53, Will Deacon <will.deacon@arm.com> wrote:
+>> >> > On Tue, Jun 17, 2014 at 06:11:05PM +0100, Jean Pihet wrote:
+>> >> >> Tested with perf record and tracepoints filtering (-e <tracepoint>), with
+>> >> >> unwinding using fp (--call-graph fp) and dwarf info (--call-graph dwarf).
+>> >> >
+>> >> > Whilst the old ACPS unwinding only needs PC, FP and SP, is this definitely
+>> >> > true for exidx and DWARF-based unwinding? Given that libunwind ends up
+>> >> > running a state machine for the latter, can we guarantee that we won't hit
+>> >> > instructions that require access to other general purpose registers?
+>> >> Yes. dwarf unwinding does not need anything extra. Once seeded all the
+>> >> rest is extracted from the dwarf trace info.
+>> >
+>> > Ok, but what if the LR isn't saved on the stack, for example? What if the
+>> > code you're trying to unwind is hand-written assembly annotated with CFI
+>> > directives?
+>> Then in that case the unwinding is not possible unless the
+>> hand-crafted asm is compatible with the requested unwinding method
+>> (fp, dwarf etc.). Do you expect problems there, if so can you give
+>> more details?
+>
+> To use a readily available AArch64 example, take a look at
+> __kernel_gettimeofday in arch/arm64/kernel/vdso/gettimeofday.S
+>
+> It starts by moving the link register into x2, so that it can later call
+> __do_get_tspec without clobbering it. Furthermore, it doesn't make use of
+> the stack at all.
+>
+> How can you unwind that using your current code?
+That is interesting. In that case that particular function will not be
+seen in the call chain since lr, fp are the ones from the caller. I
+did not try on a real case, it would be nice to try it out, I can do
+that as soon as I am back on ARM64.
 
-The following changes since commit 7171511eaec5bf23fb06078f59784a3a0626b38f:
+Note: I was debugging a deadlock in perf doing call chain unwinding
+and tracepoint triggering. A new patch set is on its way.
 
-  Linux 3.16-rc1 (2014-06-15 17:45:28 -1000)
+Thx & regards,
+Jean
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-urgent
-
-for you to fetch changes up to 783ee43118dc773bc8b0342c5b230e017d5a04d0:
-
-  efi-pstore: Fix an overflow on 32-bit builds (2014-06-27 07:30:32 +0100)
-
-----------------------------------------------------------------
- * Fix a few compiler warnings (one being a real bug) in the arm64 EFI
-   code that lots of people are running into and reporting - Catalin Marinas
-
- * Use a cast to avoid a 32-bit overflow issue when generating pstore
-   filenames - Andrzej Zaborowski
-
-----------------------------------------------------------------
-Andrzej Zaborowski (1):
-      efi-pstore: Fix an overflow on 32-bit builds
-
-Catalin Marinas (1):
-      efi: Fix compiler warnings (unused, const, type)
-
- drivers/firmware/efi/efi-pstore.c | 2 +-
- drivers/firmware/efi/efi.c        | 6 +++---
- drivers/firmware/efi/fdt.c        | 2 +-
- 3 files changed, 5 insertions(+), 5 deletions(-)
-
--- 
-Matt Fleming, Intel Open Source Technology Center
+>
+> Will
