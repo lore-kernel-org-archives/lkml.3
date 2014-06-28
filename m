@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756208AbaF1TOS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 15:14:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52927 "EHLO
+	id S1756313AbaF1TOo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 15:14:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52907 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754036AbaF1Rrw (ORCPT
+	with ESMTP id S1753694AbaF1Rrt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:47:52 -0400
+	Sat, 28 Jun 2014 13:47:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Bolle <pebolle@tiscali.nl>
-Subject: [PATCH 3.10 09/77] usb: gadget: rename CONFIG_USB_GADGET_PXA25X
-Date: Sat, 28 Jun 2014 10:46:02 -0700
-Message-Id: <20140628174522.125345030@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: [PATCH 3.10 06/77] applicom: dereferencing NULL on error path
+Date: Sat, 28 Jun 2014 10:45:59 -0700
+Message-Id: <20140628174521.995729448@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174521.691276402@linuxfoundation.org>
 References: <20140628174521.691276402@linuxfoundation.org>
@@ -28,34 +28,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Bolle <pebolle@tiscali.nl>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit d30f2065d6da377cc76771aca5a9850cfca8723b upstream.
+commit 8bab797c6e5724a43b7666ad70860712365cdb71 upstream.
 
-Commit 193ab2a60700 ("usb: gadget: allow multiple gadgets to be built")
-basically renamed the Kconfig symbol USB_GADGET_PXA25X to USB_PXA25X. It
-did not rename the related macros in use at that time. Commit
-c0a39151a405 ("ARM: pxa: fix inconsistent CONFIG_USB_PXA27X") did so for
-all but one macro. Rename that last macro too now.
+This is a static checker fix.  The "dev" variable is always NULL after
+the while statement so we would be dereferencing a NULL pointer here.
 
-Fixes: 193ab2a60700 ("usb: gadget: allow multiple gadgets to be built")
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Fixes: 819a3eba4233 ('[PATCH] applicom: fix error handling')
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/gadget/inode.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/char/applicom.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/usb/gadget/inode.c
-+++ b/drivers/usb/gadget/inode.c
-@@ -1509,7 +1509,7 @@ gadgetfs_setup (struct usb_gadget *gadge
- 		}
- 		break;
+--- a/drivers/char/applicom.c
++++ b/drivers/char/applicom.c
+@@ -345,7 +345,6 @@ out:
+ 			free_irq(apbs[i].irq, &dummy);
+ 		iounmap(apbs[i].RamIO);
+ 	}
+-	pci_disable_device(dev);
+ 	return ret;
+ }
  
--#ifndef	CONFIG_USB_GADGET_PXA25X
-+#ifndef	CONFIG_USB_PXA25X
- 	/* PXA automagically handles this request too */
- 	case USB_REQ_GET_CONFIGURATION:
- 		if (ctrl->bRequestType != 0x80)
 
 
