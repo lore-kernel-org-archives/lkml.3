@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755358AbaF1Rty (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:49:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53446 "EHLO
+	id S1755445AbaF1RuF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:50:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53486 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755273AbaF1Rtx (ORCPT
+	with ESMTP id S1755406AbaF1RuA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:49:53 -0400
+	Sat, 28 Jun 2014 13:50:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.14 044/110] USB: usb_wwan: fix urb leak at shutdown
-Date: Sat, 28 Jun 2014 10:46:41 -0700
-Message-Id: <20140628174547.769875963@linuxfoundation.org>
+        Chander Kashyap <k.chander@samsung.com>,
+        Inderpal Singh <inderpal.s@samsung.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>, Nishanth Menon <nm@ti.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.14 068/110] PM / OPP: fix incorrect OPP count handling in of_init_opp_table
+Date: Sat, 28 Jun 2014 10:47:05 -0700
+Message-Id: <20140628174549.619648051@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -28,93 +31,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Chander Kashyap <chander.kashyap@linaro.org>
 
-commit 79eed03e77d481b55d85d1cfe5a1636a0d3897fd upstream.
+commit 086abb58590a4df73e8a6ed71fd418826937cd46 upstream.
 
-The delayed-write queue was never emptied at shutdown (close), something
-which could lead to leaked urbs if the port is closed before being
-runtime resumed due to a write.
+In of_init_opp_table function, if a failure to add an OPP is
+detected, the count of OPPs, yet to be added is not updated.
+Fix this by decrementing this count on failure as well.
 
-When this happens the output buffer would not drain on close
-(closing_wait timeout), and after consecutive opens, writes could be
-corrupted with previously buffered data, transfered with reduced
-throughput or completely blocked.
-
-Note that unbusy_queued_urb() was simply moved out of CONFIG_PM.
-
-Fixes: 383cedc3bb43 ("USB: serial: full autosuspend support for the
-option driver")
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Chander Kashyap <k.chander@samsung.com>
+Signed-off-by: Inderpal Singh <inderpal.s@samsung.com>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Acked-by: Nishanth Menon <nm@ti.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/usb_wwan.c |   34 ++++++++++++++++++++++------------
- 1 file changed, 22 insertions(+), 12 deletions(-)
+ drivers/base/power/opp.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
---- a/drivers/usb/serial/usb_wwan.c
-+++ b/drivers/usb/serial/usb_wwan.c
-@@ -414,12 +414,26 @@ int usb_wwan_open(struct tty_struct *tty
- }
- EXPORT_SYMBOL(usb_wwan_open);
+--- a/drivers/base/power/opp.c
++++ b/drivers/base/power/opp.c
+@@ -735,11 +735,9 @@ int of_init_opp_table(struct device *dev
+ 		unsigned long freq = be32_to_cpup(val++) * 1000;
+ 		unsigned long volt = be32_to_cpup(val++);
  
-+static void unbusy_queued_urb(struct urb *urb,
-+					struct usb_wwan_port_private *portdata)
-+{
-+	int i;
-+
-+	for (i = 0; i < N_OUT_URB; i++) {
-+		if (urb == portdata->out_urbs[i]) {
-+			clear_bit(i, &portdata->out_busy);
-+			break;
-+		}
-+	}
-+}
-+
- void usb_wwan_close(struct usb_serial_port *port)
- {
- 	int i;
- 	struct usb_serial *serial = port->serial;
- 	struct usb_wwan_port_private *portdata;
- 	struct usb_wwan_intf_private *intfdata = port->serial->private;
-+	struct urb *urb;
- 
- 	portdata = usb_get_serial_port_data(port);
- 
-@@ -428,6 +442,14 @@ void usb_wwan_close(struct usb_serial_po
- 	portdata->opened = 0;
- 	spin_unlock_irq(&intfdata->susp_lock);
- 
-+	for (;;) {
-+		urb = usb_get_from_anchor(&portdata->delayed);
-+		if (!urb)
-+			break;
-+		unbusy_queued_urb(urb, portdata);
-+		usb_autopm_put_interface_async(serial->interface);
-+	}
-+
- 	for (i = 0; i < N_IN_URB; i++)
- 		usb_kill_urb(portdata->in_urbs[i]);
- 	for (i = 0; i < N_OUT_URB; i++)
-@@ -596,18 +618,6 @@ int usb_wwan_suspend(struct usb_serial *
- }
- EXPORT_SYMBOL(usb_wwan_suspend);
- 
--static void unbusy_queued_urb(struct urb *urb, struct usb_wwan_port_private *portdata)
--{
--	int i;
--
--	for (i = 0; i < N_OUT_URB; i++) {
--		if (urb == portdata->out_urbs[i]) {
--			clear_bit(i, &portdata->out_busy);
--			break;
+-		if (dev_pm_opp_add(dev, freq, volt)) {
++		if (dev_pm_opp_add(dev, freq, volt))
+ 			dev_warn(dev, "%s: Failed to add OPP %ld\n",
+ 				 __func__, freq);
+-			continue;
 -		}
--	}
--}
--
- static void play_delayed(struct usb_serial_port *port)
- {
- 	struct usb_wwan_intf_private *data;
+ 		nr -= 2;
+ 	}
+ 
 
 
