@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932592AbaF1SBS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:01:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54466 "EHLO
+	id S932611AbaF1SBh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:01:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54461 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756188AbaF1RxL (ORCPT
+	with ESMTP id S1756182AbaF1RxL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Jun 2014 13:53:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Liu Bo <bo.li.liu@oracle.com>, Chris Mason <clm@fb.com>
-Subject: [PATCH 3.15 122/139] Btrfs: mark mapping with error flag to report errors to userspace
-Date: Sat, 28 Jun 2014 10:48:03 -0700
-Message-Id: <20140628174610.976438530@linuxfoundation.org>
+        Chris Murphy <lists@colorremedies.com>, Liu Bo <bo.li.liu@oracle.com>,
+        Chris Mason <clm@fb.com>
+Subject: [PATCH 3.15 121/139] Btrfs: fix NULL pointer crash of deleting a seed device
+Date: Sat, 28 Jun 2014 10:48:02 -0700
+Message-Id: <20140628174610.932558673@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -30,32 +31,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Liu Bo <bo.li.liu@oracle.com>
 
-commit 5dca6eea91653e9949ce6eb9e9acab6277e2f2c4 upstream.
+commit 29cc83f69c8338ff8fd1383c9be263d4bdf52d73 upstream.
 
-According to commit 865ffef3797da2cac85b3354b5b6050dc9660978
-(fs: fix fsync() error reporting),
-it's not stable to just check error pages because pages can be
-truncated or invalidated, we should also mark mapping with error
-flag so that a later fsync can catch the error.
+Same as normal devices, seed devices should be initialized with
+fs_info->dev_root as well, otherwise we'll get a NULL pointer crash.
 
+Cc: Chris Murphy <lists@colorremedies.com>
+Reported-by: Chris Murphy <lists@colorremedies.com>
 Signed-off-by: Liu Bo <bo.li.liu@oracle.com>
 Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/extent_io.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/btrfs/volumes.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
---- a/fs/btrfs/extent_io.c
-+++ b/fs/btrfs/extent_io.c
-@@ -2368,6 +2368,8 @@ int end_extent_writepage(struct page *pa
- 	if (!uptodate) {
- 		ClearPageUptodate(page);
- 		SetPageError(page);
-+		ret = ret < 0 ? ret : -EIO;
-+		mapping_set_error(page->mapping, ret);
- 	}
- 	return 0;
+--- a/fs/btrfs/volumes.c
++++ b/fs/btrfs/volumes.c
+@@ -6080,10 +6080,14 @@ void btrfs_init_devices_late(struct btrf
+ 	struct btrfs_fs_devices *fs_devices = fs_info->fs_devices;
+ 	struct btrfs_device *device;
+ 
+-	mutex_lock(&fs_devices->device_list_mutex);
+-	list_for_each_entry(device, &fs_devices->devices, dev_list)
+-		device->dev_root = fs_info->dev_root;
+-	mutex_unlock(&fs_devices->device_list_mutex);
++	while (fs_devices) {
++		mutex_lock(&fs_devices->device_list_mutex);
++		list_for_each_entry(device, &fs_devices->devices, dev_list)
++			device->dev_root = fs_info->dev_root;
++		mutex_unlock(&fs_devices->device_list_mutex);
++
++		fs_devices = fs_devices->seed;
++	}
  }
+ 
+ static void __btrfs_reset_dev_stats(struct btrfs_device *dev)
 
 
