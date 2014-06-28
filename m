@@ -1,45 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752161AbaF1EvU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 00:51:20 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:51348 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751299AbaF1EvT (ORCPT
+	id S1751447AbaF1FzU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 01:55:20 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:48843 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751063AbaF1FzR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 00:51:19 -0400
-Message-ID: <1403931075.5930.4.camel@marge.simpson.net>
-Subject: Re: Filesystem lockup with CONFIG_PREEMPT_RT
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Austin Schuh <austin@peloton-tech.com>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        rt-users <linux-rt-users@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Date: Sat, 28 Jun 2014 06:51:15 +0200
-In-Reply-To: <alpine.DEB.2.10.1406271249510.5170@nanos>
-References: <CANGgnMbHckBQdKGN_N5Q6qEKc9n1CenxvMpeXog1NbSdL8UrTw@mail.gmail.com>
-	 <CANGgnMYDXerOUDOO9-RHMJKadKACA2KBGskZwoP-1ZwAhDEfVA@mail.gmail.com>
-	 <CAFLxGvxfBt7OvW=a2Kz08GLHSEiiOZsN-vB19CXnQiwqFxqMsA@mail.gmail.com>
-	 <CANGgnMYVoP-Z0Bv-VDEkJnvfa7Fi4-zY2F4A0PhMewGvwo3VVw@mail.gmail.com>
-	 <alpine.DEB.2.10.1406270027300.5170@nanos>
-	 <CANGgnMa+qtgJ3wwg_h5Rynw5vEvZpQZ6PvaUfXNQ8+Y3Yu5U0g@mail.gmail.com>
-	 <alpine.DEB.2.10.1406271249510.5170@nanos>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sat, 28 Jun 2014 01:55:17 -0400
+MIME-Version: 1.0
+In-Reply-To: <CALCETrV3WLBmHewCZgfhCkjODWfq_byRg6sF7HpqZ6n9BVMBVQ@mail.gmail.com>
+References: <1403913966-4927-1-git-send-email-ast@plumgrid.com>
+	<1403913966-4927-4-git-send-email-ast@plumgrid.com>
+	<CALCETrV3WLBmHewCZgfhCkjODWfq_byRg6sF7HpqZ6n9BVMBVQ@mail.gmail.com>
+Date: Fri, 27 Jun 2014 22:55:15 -0700
+Message-ID: <CAMEtUuzWs+MbSOGGD-Rc01DHKASa4GxbHdtCrSCLit4cUM35mA@mail.gmail.com>
+Subject: Re: [PATCH RFC net-next 03/14] bpf: introduce syscall(BPF, ...) and
+ BPF maps
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-06-27 at 16:24 +0200, Thomas Gleixner wrote:
+On Fri, Jun 27, 2014 at 5:16 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Fri, Jun 27, 2014 at 5:05 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+>> BPF syscall is a demux for different BPF releated commands.
+>>
+>> 'maps' is a generic storage of different types for sharing data between kernel
+>> and userspace.
+>>
+>> The maps can be created/deleted from user space via BPF syscall:
+>> - create a map with given id, type and attributes
+>>   map_id = bpf_map_create(int map_id, map_type, struct nlattr *attr, int len)
+>>   returns positive map id or negative error
+>>
+>> - delete map with given map id
+>>   err = bpf_map_delete(int map_id)
+>>   returns zero or negative error
+>
+> What's the scope of "id"?  How is it secured?
 
-> Completely untested patch below.
+the map and program id space is global and it's cap_sys_admin only.
+There is no pressing need to do it with per-user limits.
+So the whole thing is root only for now.
 
-It's no longer completely untested, killer_module is no longer a killer.
-I'll let box (lockdep etc is enabled) chew on it a while, no news is
-good news as usual.
-
--Mike
-
+Since I got your attention please review the most interesting
+verifier bits (patch 08/14) ;)
