@@ -1,49 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756953AbaF1Scu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:32:50 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:49278 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756624AbaF1Scs (ORCPT
+	id S1756976AbaF1SdH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:33:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53674 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755573AbaF1Rur (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 14:32:48 -0400
-X-IronPort-AV: E=Sophos;i="5.01,567,1400018400"; 
-   d="scan'208";a="82700347"
-Date: Sat, 28 Jun 2014 20:32:45 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: SF Markus Elfring <elfring@users.sourceforge.net>
-cc: Fabian Frederick <fabf@skynet.be>, Joe Perches <joe@perches.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Coccinelle <cocci@systeme.lip6.fr>
-Subject: Re: [Cocci] [PATCH V3] scripts/coccinelle/free: Delete NULL test
- before freeing functions?
-In-Reply-To: <53AE8613.8080600@users.sourceforge.net>
-Message-ID: <alpine.DEB.2.10.1406282030260.2538@hadrien>
-References: <1403945247-21549-1-git-send-email-fabf@skynet.be> <53AE8613.8080600@users.sourceforge.net>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Sat, 28 Jun 2014 13:50:47 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jeff Mahoney <jeffm@suse.com>, David Sterba <dsterba@suse.cz>,
+        Chris Mason <clm@fb.com>
+Subject: [PATCH 3.14 105/110] btrfs: allocate raid type kobjects dynamically
+Date: Sat, 28 Jun 2014 10:47:42 -0700
+Message-Id: <20140628174551.618560608@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.1
+In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
+References: <20140628174545.354748696@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.14-stable review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: Jeff Mahoney <jeffm@suse.com>
+
+commit c1895442be01c58449e3bf9272f22062a670e08f upstream.
+
+We are currently allocating space_info objects in an array when we
+allocate space_info. When a user does something like:
+
+# btrfs balance start -mconvert=raid1 -dconvert=raid1 /mnt
+# btrfs balance start -mconvert=single -dconvert=single /mnt -f
+# btrfs balance start -mconvert=raid1 -dconvert=raid1 /
+
+We can end up with memory corruption since the kobject hasn't
+been reinitialized properly and the name pointer was left set.
+
+The rationale behind allocating them statically was to avoid
+creating a separate kobject container that just contained the
+raid type. It used the index in the array to determine the index.
+
+Ultimately, though, this wastes more memory than it saves in all
+but the most complex scenarios and introduces kobject lifetime
+questions.
+
+This patch allocates the kobjects dynamically instead. Note that
+we also remove the kobject_get/put of the parent kobject since
+kobject_add and kobject_del do that internally.
+
+Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+Reported-by: David Sterba <dsterba@suse.cz>
+Signed-off-by: Chris Mason <clm@fb.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/btrfs/ctree.h       |    8 +++++++-
+ fs/btrfs/extent-tree.c |   39 ++++++++++++++++++++++++++-------------
+ fs/btrfs/sysfs.c       |    5 +++--
+ 3 files changed, 36 insertions(+), 16 deletions(-)
+
+--- a/fs/btrfs/ctree.h
++++ b/fs/btrfs/ctree.h
+@@ -1104,6 +1104,12 @@ struct btrfs_qgroup_limit_item {
+ 	__le64 rsv_excl;
+ } __attribute__ ((__packed__));
+ 
++/* For raid type sysfs entries */
++struct raid_kobject {
++	int raid_type;
++	struct kobject kobj;
++};
++
+ struct btrfs_space_info {
+ 	spinlock_t lock;
+ 
+@@ -1154,7 +1160,7 @@ struct btrfs_space_info {
+ 	wait_queue_head_t wait;
+ 
+ 	struct kobject kobj;
+-	struct kobject block_group_kobjs[BTRFS_NR_RAID_TYPES];
++	struct kobject *block_group_kobjs[BTRFS_NR_RAID_TYPES];
+ };
+ 
+ #define	BTRFS_BLOCK_RSV_GLOBAL		1
+--- a/fs/btrfs/extent-tree.c
++++ b/fs/btrfs/extent-tree.c
+@@ -3400,10 +3400,8 @@ static int update_space_info(struct btrf
+ 		return ret;
+ 	}
+ 
+-	for (i = 0; i < BTRFS_NR_RAID_TYPES; i++) {
++	for (i = 0; i < BTRFS_NR_RAID_TYPES; i++)
+ 		INIT_LIST_HEAD(&found->block_groups[i]);
+-		kobject_init(&found->block_group_kobjs[i], &btrfs_raid_ktype);
+-	}
+ 	init_rwsem(&found->groups_sem);
+ 	spin_lock_init(&found->lock);
+ 	found->flags = flags & BTRFS_BLOCK_GROUP_TYPE_MASK;
+@@ -8328,8 +8326,9 @@ int btrfs_free_block_groups(struct btrfs
+ 		list_del(&space_info->list);
+ 		for (i = 0; i < BTRFS_NR_RAID_TYPES; i++) {
+ 			struct kobject *kobj;
+-			kobj = &space_info->block_group_kobjs[i];
+-			if (kobj->parent) {
++			kobj = space_info->block_group_kobjs[i];
++			space_info->block_group_kobjs[i] = NULL;
++			if (kobj) {
+ 				kobject_del(kobj);
+ 				kobject_put(kobj);
+ 			}
+@@ -8353,17 +8352,26 @@ static void __link_block_group(struct bt
+ 	up_write(&space_info->groups_sem);
+ 
+ 	if (first) {
+-		struct kobject *kobj = &space_info->block_group_kobjs[index];
++		struct raid_kobject *rkobj;
+ 		int ret;
+ 
+-		kobject_get(&space_info->kobj); /* put in release */
+-		ret = kobject_add(kobj, &space_info->kobj, "%s",
+-				  get_raid_name(index));
++		rkobj = kzalloc(sizeof(*rkobj), GFP_NOFS);
++		if (!rkobj)
++			goto out_err;
++		rkobj->raid_type = index;
++		kobject_init(&rkobj->kobj, &btrfs_raid_ktype);
++		ret = kobject_add(&rkobj->kobj, &space_info->kobj,
++				  "%s", get_raid_name(index));
+ 		if (ret) {
+-			pr_warn("BTRFS: failed to add kobject for block cache. ignoring.\n");
+-			kobject_put(&space_info->kobj);
++			kobject_put(&rkobj->kobj);
++			goto out_err;
+ 		}
++		space_info->block_group_kobjs[index] = &rkobj->kobj;
+ 	}
++
++	return;
++out_err:
++	pr_warn("BTRFS: failed to add kobject for block cache. ignoring.\n");
+ }
+ 
+ static struct btrfs_block_group_cache *
+@@ -8698,6 +8706,7 @@ int btrfs_remove_block_group(struct btrf
+ 	struct btrfs_root *tree_root = root->fs_info->tree_root;
+ 	struct btrfs_key key;
+ 	struct inode *inode;
++	struct kobject *kobj = NULL;
+ 	int ret;
+ 	int index;
+ 	int factor;
+@@ -8797,11 +8806,15 @@ int btrfs_remove_block_group(struct btrf
+ 	 */
+ 	list_del_init(&block_group->list);
+ 	if (list_empty(&block_group->space_info->block_groups[index])) {
+-		kobject_del(&block_group->space_info->block_group_kobjs[index]);
+-		kobject_put(&block_group->space_info->block_group_kobjs[index]);
++		kobj = block_group->space_info->block_group_kobjs[index];
++		block_group->space_info->block_group_kobjs[index] = NULL;
+ 		clear_avail_alloc_bits(root->fs_info, block_group->flags);
+ 	}
+ 	up_write(&block_group->space_info->groups_sem);
++	if (kobj) {
++		kobject_del(kobj);
++		kobject_put(kobj);
++	}
+ 
+ 	if (block_group->cached == BTRFS_CACHE_STARTED)
+ 		wait_block_group_cache_done(block_group);
+--- a/fs/btrfs/sysfs.c
++++ b/fs/btrfs/sysfs.c
+@@ -253,6 +253,7 @@ static ssize_t global_rsv_reserved_show(
+ BTRFS_ATTR(global_rsv_reserved, 0444, global_rsv_reserved_show);
+ 
+ #define to_space_info(_kobj) container_of(_kobj, struct btrfs_space_info, kobj)
++#define to_raid_kobj(_kobj) container_of(_kobj, struct raid_kobject, kobj)
+ 
+ static ssize_t raid_bytes_show(struct kobject *kobj,
+ 			       struct kobj_attribute *attr, char *buf);
+@@ -265,7 +266,7 @@ static ssize_t raid_bytes_show(struct ko
+ {
+ 	struct btrfs_space_info *sinfo = to_space_info(kobj->parent);
+ 	struct btrfs_block_group_cache *block_group;
+-	int index = kobj - sinfo->block_group_kobjs;
++	int index = to_raid_kobj(kobj)->raid_type;
+ 	u64 val = 0;
+ 
+ 	down_read(&sinfo->groups_sem);
+@@ -287,7 +288,7 @@ static struct attribute *raid_attributes
+ 
+ static void release_raid_kobj(struct kobject *kobj)
+ {
+-	kobject_put(kobj->parent);
++	kfree(to_raid_kobj(kobj));
+ }
+ 
+ struct kobj_type btrfs_raid_ktype = {
 
 
-On Sat, 28 Jun 2014, SF Markus Elfring wrote:
-
->
-> > V3:
-> >    -Update print_main message.
->
-> Does the discussion topic need also an adjustment?
->
-> How do you think about my previous update suggestion "Deletion of
-> unnecessary checks before specific function calls"?
-> https://systeme.lip6.fr/pipermail/cocci/2014-March/000675.html
-> https://lkml.org/lkml/2014/3/5/344
-
-I would prefer to accept Fabian's semantic patch for the moment, as it
-considers a more restricted, well thought out, set of functions,
-
-julia
