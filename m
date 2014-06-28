@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932325AbaF1Sv1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:51:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53322 "EHLO
+	id S1756332AbaF1Svp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:51:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53319 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755136AbaF1RtW (ORCPT
+	with ESMTP id S1755123AbaF1RtW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Jun 2014 13:49:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [PATCH 3.14 035/110] s390/time: cast tv_nsec to u64 prior to shift in update_vsyscall
-Date: Sat, 28 Jun 2014 10:46:32 -0700
-Message-Id: <20140628174547.264772982@linuxfoundation.org>
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 034/110] idr: fix overflow bug during maximum ID calculation at maximum height
+Date: Sat, 28 Jun 2014 10:46:31 -0700
+Message-Id: <20140628174547.210444031@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -28,32 +30,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-commit b6f4296279ab3ada554d993d12844272fd86b36a upstream.
+commit 3afb69cb5572b3c8c898c00880803cf1a49852c4 upstream.
 
-Analog to git commit 28b92e09e25bdc0ae864b22eacf195a74f861389
-first cast tk->wall_to_monotonic.tv_nsec to u64 before doing
-the shift with tk->shift to avoid loosing relevant bits on a
-32-bit kernel.
+idr_replace() open-codes the logic to calculate the maximum valid ID
+given the height of the idr tree; unfortunately, the open-coded logic
+doesn't account for the fact that the top layer may have unused slots
+and over-shifts the limit to zero when the tree is at its maximum
+height.
 
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+The following test code shows it fails to replace the value for
+id=((1<<27)+42):
+
+  static void test5(void)
+  {
+        int id;
+        DEFINE_IDR(test_idr);
+  #define TEST5_START ((1<<27)+42) /* use the highest layer */
+
+        printk(KERN_INFO "Start test5\n");
+        id = idr_alloc(&test_idr, (void *)1, TEST5_START, 0, GFP_KERNEL);
+        BUG_ON(id != TEST5_START);
+        TEST_BUG_ON(idr_replace(&test_idr, (void *)2, TEST5_START) != (void *)1);
+        idr_destroy(&test_idr);
+        printk(KERN_INFO "End of test5\n");
+  }
+
+Fix the bug by using idr_max() which correctly takes into account the
+maximum allowed shift.
+
+sub_alloc() shares the same problem and may incorrectly fail with
+-EAGAIN; however, this bug doesn't affect correct operation because
+idr_get_empty_slot(), which already uses idr_max(), retries with the
+increased @id in such cases.
+
+[tj@kernel.org: Updated patch description.]
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/kernel/time.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ lib/idr.c |    8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
---- a/arch/s390/kernel/time.c
-+++ b/arch/s390/kernel/time.c
-@@ -226,7 +226,7 @@ void update_vsyscall(struct timekeeper *
- 	vdso_data->wtom_clock_sec =
- 		tk->xtime_sec + tk->wall_to_monotonic.tv_sec;
- 	vdso_data->wtom_clock_nsec = tk->xtime_nsec +
--		+ (tk->wall_to_monotonic.tv_nsec << tk->shift);
-+		+ ((u64) tk->wall_to_monotonic.tv_nsec << tk->shift);
- 	nsecps = (u64) NSEC_PER_SEC << tk->shift;
- 	while (vdso_data->wtom_clock_nsec >= nsecps) {
- 		vdso_data->wtom_clock_nsec -= nsecps;
+--- a/lib/idr.c
++++ b/lib/idr.c
+@@ -250,7 +250,7 @@ static int sub_alloc(struct idr *idp, in
+ 			id = (id | ((1 << (IDR_BITS * l)) - 1)) + 1;
+ 
+ 			/* if already at the top layer, we need to grow */
+-			if (id >= 1 << (idp->layers * IDR_BITS)) {
++			if (id > idr_max(idp->layers)) {
+ 				*starting_id = id;
+ 				return -EAGAIN;
+ 			}
+@@ -827,12 +827,10 @@ void *idr_replace(struct idr *idp, void
+ 	if (!p)
+ 		return ERR_PTR(-EINVAL);
+ 
+-	n = (p->layer+1) * IDR_BITS;
+-
+-	if (id >= (1 << n))
++	if (id > idr_max(p->layer + 1))
+ 		return ERR_PTR(-EINVAL);
+ 
+-	n -= IDR_BITS;
++	n = p->layer * IDR_BITS;
+ 	while ((n > 0) && p) {
+ 		p = p->ary[(id >> n) & IDR_MASK];
+ 		n -= IDR_BITS;
 
 
