@@ -1,158 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752890AbaF1P4n (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 11:56:43 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:51826 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751129AbaF1P4l (ORCPT
+	id S1752912AbaF1QAd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 12:00:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52259 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751290AbaF1QAc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 11:56:41 -0400
-From: Anil Belur <askb23@gmail.com>
-X-Google-Original-From: Anil Belur
-To: andreas.dilger@intel.com, oleg.drokin@intel.com, doug.s.oucharek@intel.com,
-        bergwolf@gmail.com, gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Anil Belur <askb23@gmail.com>
-Subject: [PATCH v2 1/1] staging: lustre: lnet: api-ni.c: fixed sparse warnings
-Date: Sat, 28 Jun 2014 21:26:16 +0530
-Message-Id: <1403970976-11869-1-git-send-email-askb23@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Sat, 28 Jun 2014 12:00:32 -0400
+Date: Sat, 28 Jun 2014 12:00:20 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Kiran Kankipati <kiran.kankipati@gmail.com>
+Cc: "Don A. Bailey" <donb@securitymouse.com>, linux-kernel@vger.kernel.org
+Subject: Re: Bug in Kernel's LZ4-HC in 64bit (kernel crypto library)
+Message-ID: <20140628160020.GA11019@kroah.com>
+References: <CALWnrFRO_trdJ7aL_vaWtFbdJgxRkt4+zROR_chQFNPz7v3BVQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CALWnrFRO_trdJ7aL_vaWtFbdJgxRkt4+zROR_chQFNPz7v3BVQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Anil Belur <askb23@gmail.com>
+On Sat, Jun 28, 2014 at 09:19:34PM +0530, Kiran Kankipati wrote:
+> Hi Something similar to that I got inconsistency issue in LZ4-HC in 64bit mode.
+> 
+> I posted today in kernel bugzee:  https://bugzilla.kernel.org/show_bug.cgi?id=79091
 
-- this fixes few sparse warnings for missing static in functions:
+I don't do bugzilla :)
 
-drivers/staging/lustre/lnet/lnet/api-ni.c:63:6: warning: symbol 'lnet_get_routes' was not declared. Should it be static?
-drivers/staging/lustre/lnet/lnet/api-ni.c:69:6: warning: symbol 'lnet_get_networks' was not declared. Should it be static?
-drivers/staging/lustre/lnet/lnet/api-ni.c:93:1: warning: symbol 'lnet_init_locks' was not declared. Should it be static?
-drivers/staging/lustre/lnet/lnet/api-ni.c:102:1: warning: symbol 'lnet_fini_locks' was not declared. Should it be static?
-drivers/staging/lustre/lnet/lnet/api-ni.c:180:6: warning: symbol 'lnet_assert_wire_constants' was not declared. Should it be static?
-drivers/staging/lustre/lnet/lnet/api-ni.c:273:7: warning: symbol 'lnet_find_lnd_by_type' was not declared. Should it be static?
-drivers/staging/lustre/lnet/lnet/api-ni.c:419:1: warning: symbol 'lnet_create_interface_cookie' was not declared. Should it be static?
-drivers/staging/lustre/lnet/lnet/api-ni.c:450:1: warning: symbol 'lnet_res_container_cleanup' was not declared. Should it be static?
-drivers/staging/lustre/lnet/lnet/api-ni.c:494:1: warning: symbol 'lnet_res_container_setup' was not declared. Should it be static?
-drivers/staging/lustre/lnet/lnet/api-ni.c:612:1: warning: symbol 'lnet_prepare' was not declared. Should it be static?
-drivers/staging/lustre/lnet/lnet/api-ni.c:917:1: warning: symbol 'lnet_shutdown_lndnis' was not declared. Should it be static?
-drivers/staging/lustre/lnet/lnet/api-ni.c:1034:1: warning: symbol 'lnet_startup_lndnis' was not declared. Should it be static?
+Let's drag this back to lkml as well...
 
-Signed-off-by: Anil Belur <askb23@gmail.com>
----
- drivers/staging/lustre/lnet/lnet/api-ni.c | 24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
+Ok, where do you see an overrun happening?  I know the lz4 code in the
+kernel is "old" compared to upstream.  I am working on updating it to
+the latest version, but that's not going to happen until 3.17.
 
-diff --git a/drivers/staging/lustre/lnet/lnet/api-ni.c b/drivers/staging/lustre/lnet/lnet/api-ni.c
-index 3f878de..cd6792e 100644
---- a/drivers/staging/lustre/lnet/lnet/api-ni.c
-+++ b/drivers/staging/lustre/lnet/lnet/api-ni.c
-@@ -60,13 +60,13 @@ static int rnet_htable_size = LNET_REMOTE_NETS_HASH_DEFAULT;
- module_param(rnet_htable_size, int, 0444);
- MODULE_PARM_DESC(rnet_htable_size, "size of remote network hash table");
- 
--char *
-+static char *
- lnet_get_routes(void)
- {
- 	return routes;
- }
- 
--char *
-+static char *
- lnet_get_networks(void)
- {
- 	char   *nets;
-@@ -89,7 +89,7 @@ lnet_get_networks(void)
- 	return "tcp";
- }
- 
--void
-+static void
- lnet_init_locks(void)
- {
- 	spin_lock_init(&the_lnet.ln_eq_wait_lock);
-@@ -98,7 +98,7 @@ lnet_init_locks(void)
- 	mutex_init(&the_lnet.ln_api_mutex);
- }
- 
--void
-+static void
- lnet_fini_locks(void)
- {
- }
-@@ -177,7 +177,7 @@ lnet_create_locks(void)
- 	return -ENOMEM;
- }
- 
--void lnet_assert_wire_constants (void)
-+static void lnet_assert_wire_constants (void)
- {
- 	/* Wire protocol assertions generated by 'wirecheck'
- 	 * running on Linux robert.bartonsoftware.com 2.6.8-1.521
-@@ -270,7 +270,7 @@ void lnet_assert_wire_constants (void)
- 	CLASSERT ((int)sizeof(((lnet_hdr_t *)0)->msg.hello.type) == 4);
- }
- 
--lnd_t *
-+static lnd_t *
- lnet_find_lnd_by_type (int type)
- {
- 	lnd_t	      *lnd;
-@@ -415,7 +415,7 @@ lnet_freelist_fini (lnet_freelist_t *fl)
- 
- #endif /* LNET_USE_LIB_FREELIST */
- 
--__u64
-+static __u64
- lnet_create_interface_cookie (void)
- {
- 	/* NB the interface cookie in wire handles guards against delayed
-@@ -446,7 +446,7 @@ lnet_res_type2str(int type)
- 	}
- }
- 
--void
-+static void
- lnet_res_container_cleanup(struct lnet_res_container *rec)
- {
- 	int	count = 0;
-@@ -490,7 +490,7 @@ lnet_res_container_cleanup(struct lnet_res_container *rec)
- 	rec->rec_type = 0; /* mark it as finalized */
- }
- 
--int
-+static int
- lnet_res_container_setup(struct lnet_res_container *rec,
- 			 int cpt, int type, int objnum, int objsz)
- {
-@@ -608,7 +608,7 @@ lnet_res_lh_initialize(struct lnet_res_container *rec, lnet_libhandle_t *lh)
- 
- int lnet_unprepare(void);
- 
--int
-+static int
- lnet_prepare(lnet_pid_t requested_pid)
- {
- 	/* Prepare to bring up the network */
-@@ -913,7 +913,7 @@ lnet_ni_tq_credits(lnet_ni_t *ni)
- 	return credits;
- }
- 
--void
-+static void
- lnet_shutdown_lndnis (void)
- {
- 	int		i;
-@@ -1030,7 +1030,7 @@ lnet_shutdown_lndnis (void)
- 	}
- }
- 
--int
-+static int
- lnet_startup_lndnis (void)
- {
- 	lnd_t			*lnd;
--- 
-1.9.1
+In the mean time, did you note the lz4 patch that was merged yesterday,
+it is commit id 4148c1f67abf823099b2d7db6851e4aea407f5ee in Linus's
+tree.  Does that solve the issue you are seeing?
 
+If not, do you have a data stream I can use to try to find and fix this?
+
+thanks,
+
+greg k-h
