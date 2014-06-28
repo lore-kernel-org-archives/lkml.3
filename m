@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753142AbaF1RrE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:47:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52700 "EHLO
+	id S1756963AbaF1T0j (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 15:26:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52715 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752049AbaF1Rq4 (ORCPT
+	with ESMTP id S1753062AbaF1RrD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:46:56 -0400
+	Sat, 28 Jun 2014 13:47:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: [PATCH 3.4 03/43] applicom: dereferencing NULL on error path
-Date: Sat, 28 Jun 2014 10:45:54 -0700
-Message-Id: <20140628174449.971103710@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.4 21/43] USB: usb_wwan: fix urb leak at shutdown
+Date: Sat, 28 Jun 2014 10:46:12 -0700
+Message-Id: <20140628174450.772382634@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174449.788784511@linuxfoundation.org>
 References: <20140628174449.788784511@linuxfoundation.org>
@@ -28,30 +28,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 8bab797c6e5724a43b7666ad70860712365cdb71 upstream.
+commit 79eed03e77d481b55d85d1cfe5a1636a0d3897fd upstream.
 
-This is a static checker fix.  The "dev" variable is always NULL after
-the while statement so we would be dereferencing a NULL pointer here.
+The delayed-write queue was never emptied at shutdown (close), something
+which could lead to leaked urbs if the port is closed before being
+runtime resumed due to a write.
 
-Fixes: 819a3eba4233 ('[PATCH] applicom: fix error handling')
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+When this happens the output buffer would not drain on close
+(closing_wait timeout), and after consecutive opens, writes could be
+corrupted with previously buffered data, transfered with reduced
+throughput or completely blocked.
+
+Note that unbusy_queued_urb() was simply moved out of CONFIG_PM.
+
+Fixes: 383cedc3bb43 ("USB: serial: full autosuspend support for the
+option driver")
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/applicom.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/usb/serial/usb_wwan.c |   34 ++++++++++++++++++++++------------
+ 1 file changed, 22 insertions(+), 12 deletions(-)
 
---- a/drivers/char/applicom.c
-+++ b/drivers/char/applicom.c
-@@ -345,7 +345,6 @@ out:
- 			free_irq(apbs[i].irq, &dummy);
- 		iounmap(apbs[i].RamIO);
- 	}
--	pci_disable_device(dev);
- 	return ret;
+--- a/drivers/usb/serial/usb_wwan.c
++++ b/drivers/usb/serial/usb_wwan.c
+@@ -434,12 +434,26 @@ int usb_wwan_open(struct tty_struct *tty
  }
+ EXPORT_SYMBOL(usb_wwan_open);
  
++static void unbusy_queued_urb(struct urb *urb,
++					struct usb_wwan_port_private *portdata)
++{
++	int i;
++
++	for (i = 0; i < N_OUT_URB; i++) {
++		if (urb == portdata->out_urbs[i]) {
++			clear_bit(i, &portdata->out_busy);
++			break;
++		}
++	}
++}
++
+ void usb_wwan_close(struct usb_serial_port *port)
+ {
+ 	int i;
+ 	struct usb_serial *serial = port->serial;
+ 	struct usb_wwan_port_private *portdata;
+ 	struct usb_wwan_intf_private *intfdata = port->serial->private;
++	struct urb *urb;
+ 
+ 	dbg("%s", __func__);
+ 	portdata = usb_get_serial_port_data(port);
+@@ -450,6 +464,14 @@ void usb_wwan_close(struct usb_serial_po
+ 		portdata->opened = 0;
+ 		spin_unlock_irq(&intfdata->susp_lock);
+ 
++		for (;;) {
++			urb = usb_get_from_anchor(&portdata->delayed);
++			if (!urb)
++				break;
++			unbusy_queued_urb(urb, portdata);
++			usb_autopm_put_interface_async(serial->interface);
++		}
++
+ 		for (i = 0; i < N_IN_URB; i++)
+ 			usb_kill_urb(portdata->in_urbs[i]);
+ 		for (i = 0; i < N_OUT_URB; i++)
+@@ -667,18 +689,6 @@ int usb_wwan_suspend(struct usb_serial *
+ }
+ EXPORT_SYMBOL(usb_wwan_suspend);
+ 
+-static void unbusy_queued_urb(struct urb *urb, struct usb_wwan_port_private *portdata)
+-{
+-	int i;
+-
+-	for (i = 0; i < N_OUT_URB; i++) {
+-		if (urb == portdata->out_urbs[i]) {
+-			clear_bit(i, &portdata->out_busy);
+-			break;
+-		}
+-	}
+-}
+-
+ static void play_delayed(struct usb_serial_port *port)
+ {
+ 	struct usb_wwan_intf_private *data;
 
 
