@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755078AbaF1RtQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:49:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53284 "EHLO
+	id S1755584AbaF1SxW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:53:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53295 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755053AbaF1RtO (ORCPT
+	with ESMTP id S1755059AbaF1RtP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:49:14 -0400
+	Sat, 28 Jun 2014 13:49:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Leandro Liptak <leandroliptak@gmail.com>
-Subject: [PATCH 3.14 019/110] USB: EHCI: avoid BIOS handover on the HASEE E200
-Date: Sat, 28 Jun 2014 10:46:16 -0700
-Message-Id: <20140628174546.391262724@linuxfoundation.org>
+        Simon Wood <simon@mungewell.org>, Kees Cook <keescook@chromium.org>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 3.14 029/110] HID: core: fix validation of report id 0
+Date: Sat, 28 Jun 2014 10:46:26 -0700
+Message-Id: <20140628174546.923110637@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -29,61 +30,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Kees Cook <keescook@chromium.org>
 
-commit b0a50e92bda3c4aeb8017d4e6c6e92146ebd5c9b upstream.
+commit 1b15d2e5b8077670b1e6a33250a0d9577efff4a5 upstream.
 
-Leandro Liptak reports that his HASEE E200 computer hangs when we ask
-the BIOS to hand over control of the EHCI host controller.  This
-definitely sounds like a bug in the BIOS, but at the moment there is
-no way to fix it.
+Some drivers use the first HID report in the list instead of using an
+index. In these cases, validation uses ID 0, which was supposed to mean
+"first known report". This fixes the problem, which was causing at least
+the lgff family of devices to stop working since hid_validate_values
+was being called with ID 0, but the devices used single numbered IDs
+for their reports:
 
-This patch works around the problem by avoiding the handoff whenever
-the motherboard and BIOS version match those of Leandro's computer.
+0x05, 0x01,         /*  Usage Page (Desktop),                   */
+0x09, 0x05,         /*  Usage (Gamepad),                        */
+0xA1, 0x01,         /*  Collection (Application),               */
+0xA1, 0x02,         /*      Collection (Logical),               */
+0x85, 0x01,         /*          Report ID (1),                  */
+...
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Leandro Liptak <leandroliptak@gmail.com>
-Tested-by: Leandro Liptak <leandroliptak@gmail.com>
+Reported-by: Simon Wood <simon@mungewell.org>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/pci-quirks.c |   19 ++++++++++++++++---
- 1 file changed, 16 insertions(+), 3 deletions(-)
+ drivers/hid/hid-core.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -656,6 +656,14 @@ static const struct dmi_system_id ehci_d
- 			DMI_MATCH(DMI_BIOS_VERSION, "Lucid-"),
- 		},
- 	},
-+	{
-+		/* HASEE E200 */
-+		.matches = {
-+			DMI_MATCH(DMI_BOARD_VENDOR, "HASEE"),
-+			DMI_MATCH(DMI_BOARD_NAME, "E210"),
-+			DMI_MATCH(DMI_BIOS_VERSION, "6.00"),
-+		},
-+	},
- 	{ }
- };
- 
-@@ -665,9 +673,14 @@ static void ehci_bios_handoff(struct pci
- {
- 	int try_handoff = 1, tried_handoff = 0;
- 
--	/* The Pegatron Lucid tablet sporadically waits for 98 seconds trying
--	 * the handoff on its unused controller.  Skip it. */
--	if (pdev->vendor == 0x8086 && pdev->device == 0x283a) {
-+	/*
-+	 * The Pegatron Lucid tablet sporadically waits for 98 seconds trying
-+	 * the handoff on its unused controller.  Skip it.
-+	 *
-+	 * The HASEE E200 hangs when the semaphore is set (bugzilla #77021).
-+	 */
-+	if (pdev->vendor == 0x8086 && (pdev->device == 0x283a ||
-+			pdev->device == 0x27cc)) {
- 		if (dmi_check_system(ehci_dmi_nohandoff_table))
- 			try_handoff = 0;
- 	}
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -842,7 +842,17 @@ struct hid_report *hid_validate_values(s
+ 	 * ->numbered being checked, which may not always be the case when
+ 	 * drivers go to access report values.
+ 	 */
+-	report = hid->report_enum[type].report_id_hash[id];
++	if (id == 0) {
++		/*
++		 * Validating on id 0 means we should examine the first
++		 * report in the list.
++		 */
++		report = list_entry(
++				hid->report_enum[type].report_list.next,
++				struct hid_report, list);
++	} else {
++		report = hid->report_enum[type].report_id_hash[id];
++	}
+ 	if (!report) {
+ 		hid_err(hid, "missing %s %u\n", hid_report_names[type], id);
+ 		return NULL;
 
 
