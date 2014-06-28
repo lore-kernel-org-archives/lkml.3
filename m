@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757767AbaF1TLj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 15:11:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52961 "EHLO
+	id S1754177AbaF1RsA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:48:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52943 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754207AbaF1RsB (ORCPT
+	with ESMTP id S1754126AbaF1Rr5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:48:01 -0400
+	Sat, 28 Jun 2014 13:47:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.10 31/77] USB: usb_wwan: fix potential NULL-deref at resume
-Date: Sat, 28 Jun 2014 10:46:24 -0700
-Message-Id: <20140628174523.149986287@linuxfoundation.org>
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Subject: [PATCH 3.10 26/77] matroxfb: perform a dummy read of M_STATUS
+Date: Sat, 28 Jun 2014 10:46:19 -0700
+Message-Id: <20140628174522.890921446@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174521.691276402@linuxfoundation.org>
 References: <20140628174521.691276402@linuxfoundation.org>
@@ -28,113 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 9096f1fbba916c2e052651e9de82fcfb98d4bea7 upstream.
+commit 972754cfaee94d6e25acf94a497bc0a864d91b7e upstream.
 
-The interrupt urb was submitted unconditionally at resume, something
-which could lead to a NULL-pointer dereference in the urb completion
-handler as resume may be called after the port and port data is gone.
+I had occasional screen corruption with the matrox framebuffer driver and
+I found out that the reason for the corruption is that the hardware
+blitter accesses the videoram while it is being written to.
 
-Fix this by making sure the interrupt urb is only submitted and active
-when the port is open.
+The matrox driver has a macro WaitTillIdle() that should wait until the
+blitter is idle, but it sometimes doesn't work. I added a dummy read
+mga_inl(M_STATUS) to WaitTillIdle() to fix the problem. The dummy read
+will flush the write buffer in the PCI chipset, and the next read of
+M_STATUS will return the hardware status.
 
-Fixes: 383cedc3bb43 ("USB: serial: full autosuspend support for the
-option driver")
+Since applying this patch, I had no screen corruption at all.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/usb_wwan.c |   43 ++++++++++++++++++------------------------
- 1 file changed, 19 insertions(+), 24 deletions(-)
+ drivers/video/matrox/matroxfb_base.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/usb_wwan.c
-+++ b/drivers/usb/serial/usb_wwan.c
-@@ -388,6 +388,14 @@ int usb_wwan_open(struct tty_struct *tty
- 	portdata = usb_get_serial_port_data(port);
- 	intfdata = serial->private;
+--- a/drivers/video/matrox/matroxfb_base.h
++++ b/drivers/video/matrox/matroxfb_base.h
+@@ -698,7 +698,7 @@ void matroxfb_unregister_driver(struct m
  
-+	if (port->interrupt_in_urb) {
-+		err = usb_submit_urb(port->interrupt_in_urb, GFP_KERNEL);
-+		if (err) {
-+			dev_dbg(&port->dev, "%s: submit int urb failed: %d\n",
-+				__func__, err);
-+		}
-+	}
-+
- 	/* Start reading from the IN endpoint */
- 	for (i = 0; i < N_IN_URB; i++) {
- 		urb = portdata->in_urbs[i];
-@@ -454,6 +462,7 @@ void usb_wwan_close(struct usb_serial_po
- 		usb_kill_urb(portdata->in_urbs[i]);
- 	for (i = 0; i < N_OUT_URB; i++)
- 		usb_kill_urb(portdata->out_urbs[i]);
-+	usb_kill_urb(port->interrupt_in_urb);
+ #define mga_fifo(n)	do {} while ((mga_inl(M_FIFOSTATUS) & 0xFF) < (n))
  
- 	/* balancing - important as an error cannot be handled*/
- 	usb_autopm_get_interface_no_resume(serial->interface);
-@@ -491,7 +500,6 @@ int usb_wwan_port_probe(struct usb_seria
- 	struct usb_wwan_port_private *portdata;
- 	struct urb *urb;
- 	u8 *buffer;
--	int err;
- 	int i;
+-#define WaitTillIdle()	do {} while (mga_inl(M_STATUS) & 0x10000)
++#define WaitTillIdle()	do { mga_inl(M_STATUS); do {} while (mga_inl(M_STATUS) & 0x10000); } while (0)
  
- 	if (!port->bulk_in_size || !port->bulk_out_size)
-@@ -531,13 +539,6 @@ int usb_wwan_port_probe(struct usb_seria
- 
- 	usb_set_serial_port_data(port, portdata);
- 
--	if (port->interrupt_in_urb) {
--		err = usb_submit_urb(port->interrupt_in_urb, GFP_KERNEL);
--		if (err)
--			dev_dbg(&port->dev, "%s: submit irq_in urb failed %d\n",
--				__func__, err);
--	}
--
- 	return 0;
- 
- bail_out_error2:
-@@ -655,22 +656,6 @@ int usb_wwan_resume(struct usb_serial *s
- 	struct urb *urb;
- 	int err = 0;
- 
--	/* get the interrupt URBs resubmitted unconditionally */
--	for (i = 0; i < serial->num_ports; i++) {
--		port = serial->port[i];
--		if (!port->interrupt_in_urb) {
--			dev_dbg(&port->dev, "%s: No interrupt URB for port\n", __func__);
--			continue;
--		}
--		err = usb_submit_urb(port->interrupt_in_urb, GFP_NOIO);
--		dev_dbg(&port->dev, "Submitted interrupt URB for port (result %d)\n", err);
--		if (err < 0) {
--			dev_err(&port->dev, "%s: Error %d for interrupt URB\n",
--				__func__, err);
--			goto err_out;
--		}
--	}
--
- 	spin_lock_irq(&intfdata->susp_lock);
- 	for (i = 0; i < serial->num_ports; i++) {
- 		/* walk all ports */
-@@ -681,6 +666,16 @@ int usb_wwan_resume(struct usb_serial *s
- 		if (!portdata || !portdata->opened)
- 			continue;
- 
-+		if (port->interrupt_in_urb) {
-+			err = usb_submit_urb(port->interrupt_in_urb,
-+					GFP_ATOMIC);
-+			if (err) {
-+				dev_err(&port->dev,
-+					"%s: submit int urb failed: %d\n",
-+					__func__, err);
-+			}
-+		}
-+
- 		for (j = 0; j < N_IN_URB; j++) {
- 			urb = portdata->in_urbs[j];
- 			err = usb_submit_urb(urb, GFP_ATOMIC);
+ /* code speedup */
+ #ifdef CONFIG_FB_MATROX_MILLENIUM
 
 
