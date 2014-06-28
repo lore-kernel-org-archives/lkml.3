@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757831AbaF1TMq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 15:12:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52951 "EHLO
+	id S1754081AbaF1Rrx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:47:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52911 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754136AbaF1Rr6 (ORCPT
+	with ESMTP id S1751995AbaF1Rrv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:47:58 -0400
+	Sat, 28 Jun 2014 13:47:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        xiao jin <jin.xiao@intel.com>, "Zhang, Qi1" <qi1.zhang@intel.com>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.10 28/77] USB: usb_wwan: fix race between write and resume
-Date: Sat, 28 Jun 2014 10:46:21 -0700
-Message-Id: <20140628174522.980240778@linuxfoundation.org>
+        Huang Rui <ray.huang@amd.com>
+Subject: [PATCH 3.10 07/77] usb: usbtest: fix unlink write error with pattern 1
+Date: Sat, 28 Jun 2014 10:46:00 -0700
+Message-Id: <20140628174522.036444996@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174521.691276402@linuxfoundation.org>
 References: <20140628174521.691276402@linuxfoundation.org>
@@ -30,65 +28,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: xiao jin <jin.xiao@intel.com>
+From: Huang Rui <ray.huang@amd.com>
 
-commit d9e93c08d8d985e5ef89436ebc9f4aad7e31559f upstream.
+commit e4d58f5dcb7d7be45df8def31881ebfae99c75da upstream.
 
-We find a race between write and resume. usb_wwan_resume run play_delayed()
-and spin_unlock, but intfdata->suspended still is not set to zero.
-At this time usb_wwan_write is called and anchor the urb to delay
-list. Then resume keep running but the delayed urb have no chance
-to be commit until next resume. If the time of next resume is far
-away, tty will be blocked in tty_wait_until_sent during time. The
-race also can lead to writes being reordered.
+TEST 12 and TEST 24 unlinks the URB write request for N times. When
+host and gadget both initialize pattern 1 (mod 63) data series to
+transfer, the gadget side will complain the wrong data which is not
+expected.  Because in host side, usbtest doesn't fill the data buffer
+as mod 63 and this patch fixed it.
 
-This patch put play_Delayed and intfdata->suspended together in the
-spinlock, it's to avoid the write race during resume.
+[20285.488974] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Not Ready
+[20285.489181] dwc3 dwc3.0.auto: ep1out-bulk: reason Transfer Not Active
+[20285.489423] dwc3 dwc3.0.auto: ep1out-bulk: req ffff8800aa6cb480 dma aeb50800 length 512 last
+[20285.489727] dwc3 dwc3.0.auto: ep1out-bulk: cmd 'Start Transfer' params 00000000 a9eaf000 00000000
+[20285.490055] dwc3 dwc3.0.auto: Command Complete --> 0
+[20285.490281] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Not Ready
+[20285.490492] dwc3 dwc3.0.auto: ep1out-bulk: reason Transfer Active
+[20285.490713] dwc3 dwc3.0.auto: ep1out-bulk: endpoint busy
+[20285.490909] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Complete
+[20285.491117] dwc3 dwc3.0.auto: request ffff8800aa6cb480 from ep1out-bulk completed 512/512 ===> 0
+[20285.491431] zero gadget: bad OUT byte, buf[1] = 0
+[20285.491605] dwc3 dwc3.0.auto: ep1out-bulk: cmd 'Set Stall' params 00000000 00000000 00000000
+[20285.491915] dwc3 dwc3.0.auto: Command Complete --> 0
+[20285.492099] dwc3 dwc3.0.auto: queing request ffff8800aa6cb480 to ep1out-bulk length 512
+[20285.492387] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Not Ready
+[20285.492595] dwc3 dwc3.0.auto: ep1out-bulk: reason Transfer Not Active
+[20285.492830] dwc3 dwc3.0.auto: ep1out-bulk: req ffff8800aa6cb480 dma aeb51000 length 512 last
+[20285.493135] dwc3 dwc3.0.auto: ep1out-bulk: cmd 'Start Transfer' params 00000000 a9eaf000 00000000
+[20285.493465] dwc3 dwc3.0.auto: Command Complete --> 0
 
-Fixes: 383cedc3bb43 ("USB: serial: full autosuspend support for the
-option driver")
-
-Signed-off-by: xiao jin <jin.xiao@intel.com>
-Signed-off-by: Zhang, Qi1 <qi1.zhang@intel.com>
-Reviewed-by: David Cohen <david.a.cohen@linux.intel.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Huang Rui <ray.huang@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/usb_wwan.c |    8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ drivers/usb/misc/usbtest.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/drivers/usb/serial/usb_wwan.c
-+++ b/drivers/usb/serial/usb_wwan.c
-@@ -664,17 +664,15 @@ int usb_wwan_resume(struct usb_serial *s
- 		}
+--- a/drivers/usb/misc/usbtest.c
++++ b/drivers/usb/misc/usbtest.c
+@@ -1149,6 +1149,11 @@ static int unlink1(struct usbtest_dev *d
+ 	urb->context = &completion;
+ 	urb->complete = unlink1_callback;
+ 
++	if (usb_pipeout(urb->pipe)) {
++		simple_fill_buf(urb);
++		urb->transfer_flags |= URB_ZERO_PACKET;
++	}
++
+ 	/* keep the endpoint busy.  there are lots of hc/hcd-internal
+ 	 * states, and testing should get to all of them over time.
+ 	 *
+@@ -1279,6 +1284,11 @@ static int unlink_queued(struct usbtest_
+ 				unlink_queued_callback, &ctx);
+ 		ctx.urbs[i]->transfer_dma = buf_dma;
+ 		ctx.urbs[i]->transfer_flags = URB_NO_TRANSFER_DMA_MAP;
++
++		if (usb_pipeout(ctx.urbs[i]->pipe)) {
++			simple_fill_buf(ctx.urbs[i]);
++			ctx.urbs[i]->transfer_flags |= URB_ZERO_PACKET;
++		}
  	}
  
-+	spin_lock_irq(&intfdata->susp_lock);
- 	for (i = 0; i < serial->num_ports; i++) {
- 		/* walk all ports */
- 		port = serial->port[i];
- 		portdata = usb_get_serial_port_data(port);
- 
- 		/* skip closed ports */
--		spin_lock_irq(&intfdata->susp_lock);
--		if (!portdata || !portdata->opened) {
--			spin_unlock_irq(&intfdata->susp_lock);
-+		if (!portdata || !portdata->opened)
- 			continue;
--		}
- 
- 		for (j = 0; j < N_IN_URB; j++) {
- 			urb = portdata->in_urbs[j];
-@@ -687,9 +685,7 @@ int usb_wwan_resume(struct usb_serial *s
- 			}
- 		}
- 		play_delayed(port);
--		spin_unlock_irq(&intfdata->susp_lock);
- 	}
--	spin_lock_irq(&intfdata->susp_lock);
- 	intfdata->suspended = 0;
- 	spin_unlock_irq(&intfdata->susp_lock);
- err_out:
+ 	/* Submit all the URBs and then unlink URBs num - 4 and num - 2. */
 
 
