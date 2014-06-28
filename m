@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756999AbaF1Sdf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:33:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53655 "EHLO
+	id S1757037AbaF1Sd4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:33:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53647 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755561AbaF1Ruo (ORCPT
+	with ESMTP id S1755551AbaF1Rum (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:50:44 -0400
+	Sat, 28 Jun 2014 13:50:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Konstantinos Skarlatos <k.skarlatos@gmail.com>,
-        Liu Bo <bo.li.liu@oracle.com>, Chris Mason <clm@fb.com>
-Subject: [PATCH 3.14 102/110] Btrfs: fix scrub_print_warning to handle skinny metadata extents
-Date: Sat, 28 Jun 2014 10:47:39 -0700
-Message-Id: <20140628174551.463024386@linuxfoundation.org>
+        Josef Bacik <jbacik@fb.com>, Chris Mason <clm@fb.com>
+Subject: [PATCH 3.14 100/110] Btrfs: dont check nodes for extent items
+Date: Sat, 28 Jun 2014 10:47:37 -0700
+Message-Id: <20140628174551.351303918@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -29,117 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Liu Bo <bo.li.liu@oracle.com>
+From: Josef Bacik <jbacik@fb.com>
 
-commit 6eda71d0c030af0fc2f68aaa676e6d445600855b upstream.
+commit 8a56457f5f8fa7c2698ffae8545214c5b96a2cb5 upstream.
 
-The skinny extents are intepreted incorrectly in scrub_print_warning(),
-and end up hitting the BUG() in btrfs_extent_inline_ref_size.
+The backref code was looking at nodes as well as leaves when we tried to
+populate extent item entries.  This is not good, and although we go away with it
+for the most part because we'd skip where disk_bytenr != random_memory,
+sometimes random_memory would match and suddenly boom.  This fixes that problem.
+Thanks,
 
-Reported-by: Konstantinos Skarlatos <k.skarlatos@gmail.com>
-Signed-off-by: Liu Bo <bo.li.liu@oracle.com>
+Signed-off-by: Josef Bacik <jbacik@fb.com>
 Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/backref.c |   30 +++++++++++++++++++-----------
- fs/btrfs/backref.h |    4 ++--
- fs/btrfs/scrub.c   |    5 +++--
- 3 files changed, 24 insertions(+), 15 deletions(-)
+ fs/btrfs/backref.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
 --- a/fs/btrfs/backref.c
 +++ b/fs/btrfs/backref.c
-@@ -1412,9 +1412,10 @@ int extent_from_logical(struct btrfs_fs_
-  * returns <0 on error
-  */
- static int __get_extent_inline_ref(unsigned long *ptr, struct extent_buffer *eb,
--				struct btrfs_extent_item *ei, u32 item_size,
--				struct btrfs_extent_inline_ref **out_eiref,
--				int *out_type)
-+				   struct btrfs_key *key,
-+				   struct btrfs_extent_item *ei, u32 item_size,
-+				   struct btrfs_extent_inline_ref **out_eiref,
-+				   int *out_type)
- {
- 	unsigned long end;
- 	u64 flags;
-@@ -1424,9 +1425,16 @@ static int __get_extent_inline_ref(unsig
- 		/* first call */
- 		flags = btrfs_extent_flags(eb, ei);
- 		if (flags & BTRFS_EXTENT_FLAG_TREE_BLOCK) {
--			info = (struct btrfs_tree_block_info *)(ei + 1);
--			*out_eiref =
--				(struct btrfs_extent_inline_ref *)(info + 1);
-+			if (key->type == BTRFS_METADATA_ITEM_KEY) {
-+				/* a skinny metadata extent */
-+				*out_eiref =
-+				     (struct btrfs_extent_inline_ref *)(ei + 1);
-+			} else {
-+				WARN_ON(key->type != BTRFS_EXTENT_ITEM_KEY);
-+				info = (struct btrfs_tree_block_info *)(ei + 1);
-+				*out_eiref =
-+				   (struct btrfs_extent_inline_ref *)(info + 1);
-+			}
- 		} else {
- 			*out_eiref = (struct btrfs_extent_inline_ref *)(ei + 1);
+@@ -972,11 +972,12 @@ again:
+ 				goto out;
  		}
-@@ -1436,7 +1444,7 @@ static int __get_extent_inline_ref(unsig
- 	}
- 
- 	end = (unsigned long)ei + item_size;
--	*out_eiref = (struct btrfs_extent_inline_ref *)*ptr;
-+	*out_eiref = (struct btrfs_extent_inline_ref *)(*ptr);
- 	*out_type = btrfs_extent_inline_ref_type(eb, *out_eiref);
- 
- 	*ptr += btrfs_extent_inline_ref_size(*out_type);
-@@ -1455,8 +1463,8 @@ static int __get_extent_inline_ref(unsig
-  * <0 on error.
-  */
- int tree_backref_for_extent(unsigned long *ptr, struct extent_buffer *eb,
--				struct btrfs_extent_item *ei, u32 item_size,
--				u64 *out_root, u8 *out_level)
-+			    struct btrfs_key *key, struct btrfs_extent_item *ei,
-+			    u32 item_size, u64 *out_root, u8 *out_level)
- {
- 	int ret;
- 	int type;
-@@ -1467,8 +1475,8 @@ int tree_backref_for_extent(unsigned lon
- 		return 1;
- 
- 	while (1) {
--		ret = __get_extent_inline_ref(ptr, eb, ei, item_size,
--						&eiref, &type);
-+		ret = __get_extent_inline_ref(ptr, eb, key, ei, item_size,
-+					      &eiref, &type);
- 		if (ret < 0)
- 			return ret;
- 
---- a/fs/btrfs/backref.h
-+++ b/fs/btrfs/backref.h
-@@ -40,8 +40,8 @@ int extent_from_logical(struct btrfs_fs_
- 			u64 *flags);
- 
- int tree_backref_for_extent(unsigned long *ptr, struct extent_buffer *eb,
--				struct btrfs_extent_item *ei, u32 item_size,
--				u64 *out_root, u8 *out_level);
-+			    struct btrfs_key *key, struct btrfs_extent_item *ei,
-+			    u32 item_size, u64 *out_root, u8 *out_level);
- 
- int iterate_extent_inodes(struct btrfs_fs_info *fs_info,
- 				u64 extent_item_objectid,
---- a/fs/btrfs/scrub.c
-+++ b/fs/btrfs/scrub.c
-@@ -577,8 +577,9 @@ static void scrub_print_warning(const ch
- 
- 	if (flags & BTRFS_EXTENT_FLAG_TREE_BLOCK) {
- 		do {
--			ret = tree_backref_for_extent(&ptr, eb, ei, item_size,
--							&ref_root, &ref_level);
-+			ret = tree_backref_for_extent(&ptr, eb, &found_key, ei,
-+						      item_size, &ref_root,
-+						      &ref_level);
- 			printk_in_rcu(KERN_WARNING
- 				"BTRFS: %s at logical %llu on dev %s, "
- 				"sector %llu: metadata %s (level %d) in tree "
+ 		if (ref->count && ref->parent) {
+-			if (extent_item_pos && !ref->inode_list) {
++			if (extent_item_pos && !ref->inode_list &&
++			    ref->level == 0) {
+ 				u32 bsz;
+ 				struct extent_buffer *eb;
+ 				bsz = btrfs_level_size(fs_info->extent_root,
+-							info_level);
++							ref->level);
+ 				eb = read_tree_block(fs_info->extent_root,
+ 							   ref->parent, bsz, 0);
+ 				if (!eb || !extent_buffer_uptodate(eb)) {
 
 
