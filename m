@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756891AbaF1Saj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:30:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53719 "EHLO
+	id S1755619AbaF1Ruw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:50:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53662 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755622AbaF1Rux (ORCPT
+	with ESMTP id S1752121AbaF1Rup (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:50:53 -0400
+	Sat, 28 Jun 2014 13:50:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Robert White <rwhite@pobox.com>,
-        Filipe David Borba Manana <fdmanana@gmail.com>,
-        Chris Mason <clm@fb.com>
-Subject: [PATCH 3.14 098/110] Btrfs: send, dont error in the presence of subvols/snapshots
-Date: Sat, 28 Jun 2014 10:47:35 -0700
-Message-Id: <20140628174551.257251119@linuxfoundation.org>
+        Jeff Mahoney <jeffm@suse.com>, Chris Mason <clm@fb.com>
+Subject: [PATCH 3.14 104/110] btrfs: fix lockdep warning with reclaim lock inversion
+Date: Sat, 28 Jun 2014 10:47:41 -0700
+Message-Id: <20140628174551.558185207@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -30,55 +28,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Filipe Manana <fdmanana@gmail.com>
+From: Jeff Mahoney <jeffm@suse.com>
 
-commit 1af56070e3ef9477dbc7eba3b9ad7446979c7974 upstream.
+commit ed55b6ac077fe7f9c6490ff55172c4b563562d7c upstream.
 
-If we are doing an incremental send and the base snapshot has a
-directory with name X that doesn't exist anymore in the second
-snapshot and a new subvolume/snapshot exists in the second snapshot
-that has the same name as the directory (name X), the incremental
-send would fail with -ENOENT error. This is because it attempts
-to lookup for an inode with a number matching the objectid of a
-root, which doesn't exist.
+When encountering memory pressure, testers have run into the following
+lockdep warning. It was caused by __link_block_group calling kobject_add
+with the groups_sem held. kobject_add calls kvasprintf with GFP_KERNEL,
+which gets us into reclaim context. The kobject doesn't actually need
+to be added under the lock -- it just needs to ensure that it's only
+added for the first block group to be linked.
 
-Steps to reproduce:
+=========================================================
+[ INFO: possible irq lock inversion dependency detected ]
+3.14.0-rc8-default #1 Not tainted
+---------------------------------------------------------
+kswapd0/169 just changed the state of lock:
+ (&delayed_node->mutex){+.+.-.}, at: [<ffffffffa018baea>] __btrfs_release_delayed_node+0x3a/0x200 [btrfs]
+but this lock took another, RECLAIM_FS-unsafe lock in the past:
+ (&found->groups_sem){+++++.}
 
-    mkfs.btrfs -f /dev/sdd
-    mount /dev/sdd /mnt
+and interrupts could create inverse lock ordering between them.
 
-    mkdir /mnt/testdir
-    btrfs subvolume snapshot -r /mnt /mnt/mysnap1
+other info that might help us debug this:
+ Possible interrupt unsafe locking scenario:
+       CPU0                    CPU1
+       ----                    ----
+  lock(&found->groups_sem);
+                               local_irq_disable();
+                               lock(&delayed_node->mutex);
+                               lock(&found->groups_sem);
+  <Interrupt>
+    lock(&delayed_node->mutex);
 
-    rmdir /mnt/testdir
-    btrfs subvolume create /mnt/testdir
-    btrfs subvolume snapshot -r /mnt /mnt/mysnap2
+ *** DEADLOCK ***
+2 locks held by kswapd0/169:
+ #0:  (shrinker_rwsem){++++..}, at: [<ffffffff81159e8a>] shrink_slab+0x3a/0x160
+ #1:  (&type->s_umount_key#27){++++..}, at: [<ffffffff811bac6f>] grab_super_passive+0x3f/0x90
 
-    btrfs send -p /mnt/mysnap1 /mnt/mysnap2 -f /tmp/send.data
-
-A test case for xfstests follows.
-
-Reported-by: Robert White <rwhite@pobox.com>
-Signed-off-by: Filipe David Borba Manana <fdmanana@gmail.com>
+Signed-off-by: Jeff Mahoney <jeffm@suse.com>
 Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/send.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ fs/btrfs/extent-tree.c |   10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
---- a/fs/btrfs/send.c
-+++ b/fs/btrfs/send.c
-@@ -1589,6 +1589,10 @@ static int lookup_dir_item_inode(struct
- 		goto out;
- 	}
- 	btrfs_dir_item_key_to_cpu(path->nodes[0], di, &key);
-+	if (key.type == BTRFS_ROOT_ITEM_KEY) {
-+		ret = -ENOENT;
-+		goto out;
-+	}
- 	*found_inode = key.objectid;
- 	*found_type = btrfs_dir_type(path->nodes[0], di);
+--- a/fs/btrfs/extent-tree.c
++++ b/fs/btrfs/extent-tree.c
+@@ -8344,9 +8344,15 @@ static void __link_block_group(struct bt
+ 			       struct btrfs_block_group_cache *cache)
+ {
+ 	int index = get_block_group_index(cache);
++	bool first = false;
  
+ 	down_write(&space_info->groups_sem);
+-	if (list_empty(&space_info->block_groups[index])) {
++	if (list_empty(&space_info->block_groups[index]))
++		first = true;
++	list_add_tail(&cache->list, &space_info->block_groups[index]);
++	up_write(&space_info->groups_sem);
++
++	if (first) {
+ 		struct kobject *kobj = &space_info->block_group_kobjs[index];
+ 		int ret;
+ 
+@@ -8358,8 +8364,6 @@ static void __link_block_group(struct bt
+ 			kobject_put(&space_info->kobj);
+ 		}
+ 	}
+-	list_add_tail(&cache->list, &space_info->block_groups[index]);
+-	up_write(&space_info->groups_sem);
+ }
+ 
+ static struct btrfs_block_group_cache *
 
 
