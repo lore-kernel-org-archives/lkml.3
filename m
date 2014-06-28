@@ -1,57 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756776AbaF1STh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:19:37 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:56699 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755606AbaF1STf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 14:19:35 -0400
-Date: Sat, 28 Jun 2014 20:19:31 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
+	id S1756798AbaF1SUh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:20:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54090 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753815AbaF1Rvb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Jun 2014 13:51:31 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Tony Luck <tony.luck@intel.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@suse.de>,
+        Chen Gong <gong.chen@linux.jf.intel.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Subject: Re: [PATCH 2/6] irq_work: Implement remote queueing
-Message-ID: <20140628181931.GB6357@pd.tnic>
-References: <20140625051721.GG3588@twins.programming.kicks-ass.net>
- <53AA6E11.1000404@linux.vnet.ibm.com>
- <20140625093657.GN19860@laptop.programming.kicks-ass.net>
- <20140625093944.GV16155@laptop.programming.kicks-ass.net>
- <53AA9B68.4050104@linux.vnet.ibm.com>
- <53AA9C43.3020903@linux.vnet.ibm.com>
- <20140625101915.GO19860@laptop.programming.kicks-ass.net>
- <53AAF779.8060006@wwwdotorg.org>
- <20140625163820.GC3935@laptop>
- <53AAFF74.8090308@linux.vnet.ibm.com>
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.15 028/139] mm/memory-failure.c: dont let collect_procs() skip over processes for MF_ACTION_REQUIRED
+Date: Sat, 28 Jun 2014 10:46:29 -0700
+Message-Id: <20140628174606.699964348@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.1
+In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
+References: <20140628174605.352098823@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <53AAFF74.8090308@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 10:27:24PM +0530, Srivatsa S. Bhat wrote:
-> > https://git.kernel.org/cgit/linux/kernel/git/peterz/queue.git/commit/?h=timers/nohz&id=921d8b81281ecdca686369f52165d04fa3505bd7
+3.15-stable review patch.  If anyone has any objections, please let me know.
 
-Just hit it here too. Cherry-picking it ontop of latest tip fixes the
-issue, thanks.
+------------------
 
-Tested-by: Borislav Petkov <bp@suse.de>
+From: Tony Luck <tony.luck@intel.com>
 
--- 
-Regards/Gruss,
-    Boris.
+commit 74614de17db6fb472370c426d4f934d8d616edf2 upstream.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+When Linux sees an "action optional" machine check (where h/w has reported
+an error that is not in the current execution path) we generally do not
+want to signal a process, since most processes do not have a SIGBUS
+handler - we'd just prematurely terminate the process for a problem that
+they might never actually see.
+
+task_early_kill() decides whether to consider a process - and it checks
+whether this specific process has been marked for early signals with
+"prctl", or if the system administrator has requested early signals for
+all processes using /proc/sys/vm/memory_failure_early_kill.
+
+But for MF_ACTION_REQUIRED case we must not defer.  The error is in the
+execution path of the current thread so we must send the SIGBUS
+immediatley.
+
+Fix by passing a flag argument through collect_procs*() to
+task_early_kill() so it knows whether we can defer or must take action.
+
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Borislav Petkov <bp@suse.de>
+Cc: Chen Gong <gong.chen@linux.jf.intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ mm/memory-failure.c |   21 ++++++++++++---------
+ 1 file changed, 12 insertions(+), 9 deletions(-)
+
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -380,10 +380,12 @@ static void kill_procs(struct list_head
+ 	}
+ }
+ 
+-static int task_early_kill(struct task_struct *tsk)
++static int task_early_kill(struct task_struct *tsk, int force_early)
+ {
+ 	if (!tsk->mm)
+ 		return 0;
++	if (force_early)
++		return 1;
+ 	if (tsk->flags & PF_MCE_PROCESS)
+ 		return !!(tsk->flags & PF_MCE_EARLY);
+ 	return sysctl_memory_failure_early_kill;
+@@ -393,7 +395,7 @@ static int task_early_kill(struct task_s
+  * Collect processes when the error hit an anonymous page.
+  */
+ static void collect_procs_anon(struct page *page, struct list_head *to_kill,
+-			      struct to_kill **tkc)
++			      struct to_kill **tkc, int force_early)
+ {
+ 	struct vm_area_struct *vma;
+ 	struct task_struct *tsk;
+@@ -409,7 +411,7 @@ static void collect_procs_anon(struct pa
+ 	for_each_process (tsk) {
+ 		struct anon_vma_chain *vmac;
+ 
+-		if (!task_early_kill(tsk))
++		if (!task_early_kill(tsk, force_early))
+ 			continue;
+ 		anon_vma_interval_tree_foreach(vmac, &av->rb_root,
+ 					       pgoff, pgoff) {
+@@ -428,7 +430,7 @@ static void collect_procs_anon(struct pa
+  * Collect processes when the error hit a file mapped page.
+  */
+ static void collect_procs_file(struct page *page, struct list_head *to_kill,
+-			      struct to_kill **tkc)
++			      struct to_kill **tkc, int force_early)
+ {
+ 	struct vm_area_struct *vma;
+ 	struct task_struct *tsk;
+@@ -439,7 +441,7 @@ static void collect_procs_file(struct pa
+ 	for_each_process(tsk) {
+ 		pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
+ 
+-		if (!task_early_kill(tsk))
++		if (!task_early_kill(tsk, force_early))
+ 			continue;
+ 
+ 		vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff,
+@@ -465,7 +467,8 @@ static void collect_procs_file(struct pa
+  * First preallocate one tokill structure outside the spin locks,
+  * so that we can kill at least one process reasonably reliable.
+  */
+-static void collect_procs(struct page *page, struct list_head *tokill)
++static void collect_procs(struct page *page, struct list_head *tokill,
++				int force_early)
+ {
+ 	struct to_kill *tk;
+ 
+@@ -476,9 +479,9 @@ static void collect_procs(struct page *p
+ 	if (!tk)
+ 		return;
+ 	if (PageAnon(page))
+-		collect_procs_anon(page, tokill, &tk);
++		collect_procs_anon(page, tokill, &tk, force_early);
+ 	else
+-		collect_procs_file(page, tokill, &tk);
++		collect_procs_file(page, tokill, &tk, force_early);
+ 	kfree(tk);
+ }
+ 
+@@ -963,7 +966,7 @@ static int hwpoison_user_mappings(struct
+ 	 * there's nothing that can be done.
+ 	 */
+ 	if (kill)
+-		collect_procs(ppage, &tokill);
++		collect_procs(ppage, &tokill, flags & MF_ACTION_REQUIRED);
+ 
+ 	ret = try_to_unmap(ppage, ttu);
+ 	if (ret != SWAP_SUCCESS)
+
+
