@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756125AbaF1SMM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:12:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54252 "EHLO
+	id S1756527AbaF1SMg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:12:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54250 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755978AbaF1RwK (ORCPT
+	with ESMTP id S1755968AbaF1RwK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Jun 2014 13:52:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Aleksander Morgado <aleksander@aleksander.es>
-Subject: [PATCH 3.15 059/139] usb: qcserial: add Netgear AirCard 341U
-Date: Sat, 28 Jun 2014 10:47:00 -0700
-Message-Id: <20140628174608.124366752@linuxfoundation.org>
+        Olivier Langlois <olivier@trillion01.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.15 074/139] media: uvcvideo: Fix clock param realtime setting
+Date: Sat, 28 Jun 2014 10:47:15 -0700
+Message-Id: <20140628174608.814763391@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -28,28 +30,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aleksander Morgado <aleksander@aleksander.es>
+From: Olivier Langlois <olivier@trillion01.com>
 
-commit ff1fcd50bc2459744e6f948310bc18eb7d6e8c72 upstream.
+commit 3b35fc81e7ec552147a4fd843d0da0bbbe4ef253 upstream.
 
-Signed-off-by: Aleksander Morgado <aleksander@aleksander.es>
+timestamps in v4l2 buffers returned to userspace are updated in
+uvc_video_clock_update() which uses timestamps fetched from
+uvc_video_clock_decode() by calling unconditionally ktime_get_ts().
+
+Hence setting the module clock param to realtime has no effect before
+this patch.
+
+This has been tested with ffmpeg:
+
+ffmpeg -y -f v4l2 -input_format yuyv422 -video_size 640x480 -framerate 30 -i /dev/video0 \
+ -f alsa -acodec pcm_s16le -ar 16000 -ac 1 -i default \
+ -c:v libx264 -preset ultrafast \
+ -c:a libfdk_aac \
+ out.mkv
+
+and inspecting the v4l2 input starting timestamp.
+
+Signed-off-by: Olivier Langlois <olivier@trillion01.com>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/qcserial.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/media/usb/uvc/uvc_video.c |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
---- a/drivers/usb/serial/qcserial.c
-+++ b/drivers/usb/serial/qcserial.c
-@@ -151,6 +151,9 @@ static const struct usb_device_id id_tab
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 0)},	/* Netgear AirCard 340U Device Management */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 2)},	/* Netgear AirCard 340U NMEA */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 3)},	/* Netgear AirCard 340U Modem */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9055, 0)},	/* Netgear AirCard 341U Device Management */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9055, 2)},	/* Netgear AirCard 341U NMEA */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9055, 3)},	/* Netgear AirCard 341U Modem */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 0)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card Device Management */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 2)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card NMEA */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 3)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card Modem */
+--- a/drivers/media/usb/uvc/uvc_video.c
++++ b/drivers/media/usb/uvc/uvc_video.c
+@@ -361,6 +361,14 @@ static int uvc_commit_video(struct uvc_s
+  * Clocks and timestamps
+  */
+ 
++static inline void uvc_video_get_ts(struct timespec *ts)
++{
++	if (uvc_clock_param == CLOCK_MONOTONIC)
++		ktime_get_ts(ts);
++	else
++		ktime_get_real_ts(ts);
++}
++
+ static void
+ uvc_video_clock_decode(struct uvc_streaming *stream, struct uvc_buffer *buf,
+ 		       const __u8 *data, int len)
+@@ -420,7 +428,7 @@ uvc_video_clock_decode(struct uvc_stream
+ 	stream->clock.last_sof = dev_sof;
+ 
+ 	host_sof = usb_get_current_frame_number(stream->dev->udev);
+-	ktime_get_ts(&ts);
++	uvc_video_get_ts(&ts);
+ 
+ 	/* The UVC specification allows device implementations that can't obtain
+ 	 * the USB frame number to keep their own frame counters as long as they
+@@ -1011,10 +1019,7 @@ static int uvc_video_decode_start(struct
+ 			return -ENODATA;
+ 		}
+ 
+-		if (uvc_clock_param == CLOCK_MONOTONIC)
+-			ktime_get_ts(&ts);
+-		else
+-			ktime_get_real_ts(&ts);
++		uvc_video_get_ts(&ts);
+ 
+ 		buf->buf.v4l2_buf.sequence = stream->sequence;
+ 		buf->buf.v4l2_buf.timestamp.tv_sec = ts.tv_sec;
 
 
