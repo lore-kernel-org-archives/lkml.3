@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755886AbaF1Rvs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:51:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54152 "EHLO
+	id S1756630AbaF1SQM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:16:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54165 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755855AbaF1Rvn (ORCPT
+	with ESMTP id S1755871AbaF1Rvr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:51:43 -0400
+	Sat, 28 Jun 2014 13:51:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.15 053/139] USB: usb_wwan: fix potential blocked I/O after resume
-Date: Sat, 28 Jun 2014 10:46:54 -0700
-Message-Id: <20140628174607.866264344@linuxfoundation.org>
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Axel Lin <axel.lin@ingics.com>, Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.15 041/139] regulator: s2mps11: Fix accidental enable of buck6 ramp delay
+Date: Sat, 28 Jun 2014 10:46:42 -0700
+Message-Id: <20140628174607.304277990@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -28,107 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-commit fb7ad4f93d9f0f7d49beda32f5e7becb94b29a4d upstream.
+commit b203e0dfe1a2b0ae5e2681e9285056e4ae8560af upstream.
 
-Keep trying to submit urbs rather than bail out on first read-urb
-submission error, which would also prevent I/O for any further ports
-from being resumed.
+S2MPS11 supports enabling/disabling ramp delay only for buck[2346].
+Other bucks have ramp delay enabled always.
 
-Instead keep an error count, for all types of failed submissions, and
-let USB core know that something went wrong.
+However the bit shift for enabling buck6 ramp delay in register is equal
+to 0. When ramp delay was set for the bucks unsupporting enable/disable
+(buck[15789] and buck10), the ramp delay for buck6 was also enabled.
 
-Also make sure to always clear the suspended flag. Currently a failed
-read-urb submission would prevent cached writes as well as any
-subsequent writes from being submitted until next suspend-resume cycle,
-something which may not even necessarily happen.
-
-Note that USB core currently only logs an error if an interface resume
-failed.
-
-Fixes: 383cedc3bb43 ("USB: serial: full autosuspend support for the
-option driver")
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Fixes: b96244fad953 ("regulator: s2mps11: Don't check enable_shift before setting enable ramp rate")
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Reviewed-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/usb_wwan.c |   25 +++++++++++++++++--------
- 1 file changed, 17 insertions(+), 8 deletions(-)
+ drivers/regulator/s2mps11.c |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
---- a/drivers/usb/serial/usb_wwan.c
-+++ b/drivers/usb/serial/usb_wwan.c
-@@ -619,12 +619,12 @@ int usb_wwan_suspend(struct usb_serial *
- }
- EXPORT_SYMBOL(usb_wwan_suspend);
+--- a/drivers/regulator/s2mps11.c
++++ b/drivers/regulator/s2mps11.c
+@@ -202,11 +202,16 @@ static int s2mps11_set_ramp_delay(struct
+ 	if (!ramp_enable)
+ 		goto ramp_disable;
  
--static void play_delayed(struct usb_serial_port *port)
-+static int play_delayed(struct usb_serial_port *port)
- {
- 	struct usb_wwan_intf_private *data;
- 	struct usb_wwan_port_private *portdata;
- 	struct urb *urb;
--	int err;
-+	int err = 0;
- 
- 	portdata = usb_get_serial_port_data(port);
- 	data = port->serial->private;
-@@ -641,6 +641,8 @@ static void play_delayed(struct usb_seri
- 			break;
- 		}
+-	ret = regmap_update_bits(rdev->regmap, S2MPS11_REG_RAMP,
+-				 1 << enable_shift, 1 << enable_shift);
+-	if (ret) {
+-		dev_err(&rdev->dev, "failed to enable ramp rate\n");
+-		return ret;
++	/* Ramp delay can be enabled/disabled only for buck[2346] */
++	if ((rdev_get_id(rdev) >= S2MPS11_BUCK2 &&
++			rdev_get_id(rdev) <= S2MPS11_BUCK4) ||
++			rdev_get_id(rdev) == S2MPS11_BUCK6)  {
++		ret = regmap_update_bits(rdev->regmap, S2MPS11_REG_RAMP,
++					 1 << enable_shift, 1 << enable_shift);
++		if (ret) {
++			dev_err(&rdev->dev, "failed to enable ramp rate\n");
++			return ret;
++		}
  	}
-+
-+	return err;
- }
  
- int usb_wwan_resume(struct usb_serial *serial)
-@@ -650,7 +652,8 @@ int usb_wwan_resume(struct usb_serial *s
- 	struct usb_wwan_intf_private *intfdata = serial->private;
- 	struct usb_wwan_port_private *portdata;
- 	struct urb *urb;
--	int err = 0;
-+	int err;
-+	int err_count = 0;
- 
- 	spin_lock_irq(&intfdata->susp_lock);
- 	for (i = 0; i < serial->num_ports; i++) {
-@@ -669,25 +672,31 @@ int usb_wwan_resume(struct usb_serial *s
- 				dev_err(&port->dev,
- 					"%s: submit int urb failed: %d\n",
- 					__func__, err);
-+				err_count++;
- 			}
- 		}
- 
-+		err = play_delayed(port);
-+		if (err)
-+			err_count++;
-+
- 		for (j = 0; j < N_IN_URB; j++) {
- 			urb = portdata->in_urbs[j];
- 			err = usb_submit_urb(urb, GFP_ATOMIC);
- 			if (err < 0) {
- 				dev_err(&port->dev, "%s: Error %d for bulk URB %d\n",
- 					__func__, err, i);
--				spin_unlock_irq(&intfdata->susp_lock);
--				goto err_out;
-+				err_count++;
- 			}
- 		}
--		play_delayed(port);
- 	}
- 	intfdata->suspended = 0;
- 	spin_unlock_irq(&intfdata->susp_lock);
--err_out:
--	return err;
-+
-+	if (err_count)
-+		return -EIO;
-+
-+	return 0;
- }
- EXPORT_SYMBOL(usb_wwan_resume);
- #endif
+ 	ramp_val = get_ramp_delay(ramp_delay);
 
 
