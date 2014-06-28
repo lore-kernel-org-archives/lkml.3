@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932318AbaF1TVh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 15:21:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52798 "EHLO
+	id S964834AbaF1TVz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 15:21:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52803 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753471AbaF1RrR (ORCPT
+	with ESMTP id S1753466AbaF1RrQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:47:17 -0400
+	Sat, 28 Jun 2014 13:47:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Mason <clm@fb.com>
-Subject: [PATCH 3.4 38/43] Btrfs: fix double free in find_lock_delalloc_range
-Date: Sat, 28 Jun 2014 10:46:29 -0700
-Message-Id: <20140628174451.530385547@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.4 09/43] USB: option: fix runtime PM handling
+Date: Sat, 28 Jun 2014 10:46:00 -0700
+Message-Id: <20140628174450.244909867@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174449.788784511@linuxfoundation.org>
 References: <20140628174449.788784511@linuxfoundation.org>
@@ -28,29 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Mason <clm@fb.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 7d78874273463a784759916fc3e0b4e2eb141c70 upstream.
+commit acf47d4f9c39b1cba467aa9442fc2efe0b1da741 upstream.
 
-We need to NULL the cached_state after freeing it, otherwise
-we might free it again if find_delalloc_range doesn't find anything.
+Fix potential I/O while runtime suspended due to missing PM operations
+in send_setup.
 
-Signed-off-by: Chris Mason <clm@fb.com>
+Fixes: 383cedc3bb43 ("USB: serial: full autosuspend support for the
+option driver")
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/extent_io.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/option.c |   15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
---- a/fs/btrfs/extent_io.c
-+++ b/fs/btrfs/extent_io.c
-@@ -1551,6 +1551,7 @@ again:
- 		 * shortening the size of the delalloc range we're searching
- 		 */
- 		free_extent_state(cached_state);
-+		cached_state = NULL;
- 		if (!loops) {
- 			unsigned long offset = (*start) & (PAGE_CACHE_SIZE - 1);
- 			max_bytes = PAGE_CACHE_SIZE - offset;
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -1930,6 +1930,7 @@ static int option_send_setup(struct usb_
+ 	struct usb_wwan_port_private *portdata;
+ 	int ifNum = serial->interface->cur_altsetting->desc.bInterfaceNumber;
+ 	int val = 0;
++	int res;
+ 	dbg("%s", __func__);
+ 
+ 	if (is_blacklisted(ifNum, OPTION_BLACKLIST_SENDSETUP,
+@@ -1945,9 +1946,17 @@ static int option_send_setup(struct usb_
+ 	if (portdata->rts_state)
+ 		val |= 0x02;
+ 
+-	return usb_control_msg(serial->dev,
+-		usb_rcvctrlpipe(serial->dev, 0),
+-		0x22, 0x21, val, ifNum, NULL, 0, USB_CTRL_SET_TIMEOUT);
++	res = usb_autopm_get_interface(serial->interface);
++	if (res)
++		return res;
++
++	res = usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
++				0x22, 0x21, val, ifNum, NULL,
++				0, USB_CTRL_SET_TIMEOUT);
++
++	usb_autopm_put_interface(serial->interface);
++
++	return res;
+ }
+ 
+ MODULE_AUTHOR(DRIVER_AUTHOR);
 
 
