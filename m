@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754769AbaF1Rsk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:48:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53121 "EHLO
+	id S1754808AbaF1Rsq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:48:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53124 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754735AbaF1Rsh (ORCPT
+	with ESMTP id S1753513AbaF1Rsm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:48:37 -0400
+	Sat, 28 Jun 2014 13:48:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Liu Bo <bo.li.liu@oracle.com>, Chris Mason <clm@fb.com>
-Subject: [PATCH 3.10 67/77] Btrfs: mark mapping with error flag to report errors to userspace
-Date: Sat, 28 Jun 2014 10:47:00 -0700
-Message-Id: <20140628174525.121978414@linuxfoundation.org>
+        Wang Shilong <wangsl.fnst@cn.fujitsu.com>, Chris Mason <clm@fb.com>
+Subject: [PATCH 3.10 68/77] Btrfs: set right total device count for seeding support
+Date: Sat, 28 Jun 2014 10:47:01 -0700
+Message-Id: <20140628174525.195577761@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174521.691276402@linuxfoundation.org>
 References: <20140628174521.691276402@linuxfoundation.org>
@@ -28,34 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Liu Bo <bo.li.liu@oracle.com>
+From: Wang Shilong <wangsl.fnst@cn.fujitsu.com>
 
-commit 5dca6eea91653e9949ce6eb9e9acab6277e2f2c4 upstream.
+commit 298658414a2f0bea1f05a81876a45c1cd96aa2e0 upstream.
 
-According to commit 865ffef3797da2cac85b3354b5b6050dc9660978
-(fs: fix fsync() error reporting),
-it's not stable to just check error pages because pages can be
-truncated or invalidated, we should also mark mapping with error
-flag so that a later fsync can catch the error.
+Seeding device support allows us to create a new filesystem
+based on existed filesystem.
 
-Signed-off-by: Liu Bo <bo.li.liu@oracle.com>
+However newly created filesystem's @total_devices should include seed
+devices. This patch fix the following problem:
+
+ # mkfs.btrfs -f /dev/sdb
+ # btrfstune -S 1 /dev/sdb
+ # mount /dev/sdb /mnt
+ # btrfs device add -f /dev/sdc /mnt --->fs_devices->total_devices = 1
+ # umount /mnt
+ # mount /dev/sdc /mnt               --->fs_devices->total_devices = 2
+
+This is because we record right @total_devices in superblock, but
+@fs_devices->total_devices is reset to be 0 in btrfs_prepare_sprout().
+
+Fix this problem by not resetting @fs_devices->total_devices.
+
+Signed-off-by: Wang Shilong <wangsl.fnst@cn.fujitsu.com>
 Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/extent_io.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/btrfs/volumes.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/fs/btrfs/extent_io.c
-+++ b/fs/btrfs/extent_io.c
-@@ -2371,6 +2371,8 @@ int end_extent_writepage(struct page *pa
- 	if (!uptodate) {
- 		ClearPageUptodate(page);
- 		SetPageError(page);
-+		ret = ret < 0 ? ret : -EIO;
-+		mapping_set_error(page->mapping, ret);
- 	}
- 	return 0;
- }
+--- a/fs/btrfs/volumes.c
++++ b/fs/btrfs/volumes.c
+@@ -1837,7 +1837,6 @@ static int btrfs_prepare_sprout(struct b
+ 	fs_devices->seeding = 0;
+ 	fs_devices->num_devices = 0;
+ 	fs_devices->open_devices = 0;
+-	fs_devices->total_devices = 0;
+ 	fs_devices->seed = seed_devices;
+ 
+ 	generate_random_uuid(fs_devices->fsid);
 
 
