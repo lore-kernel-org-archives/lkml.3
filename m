@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757387AbaF1S5o (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:57:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53216 "EHLO
+	id S1756967AbaF1S5n (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:57:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53220 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754927AbaF1Rs6 (ORCPT
+	with ESMTP id S1754931AbaF1Rs7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:48:58 -0400
+	Sat, 28 Jun 2014 13:48:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stefan Roese <sr@denx.de>, Johan Hovold <jhovold@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 001/110] Revert "net: eth: cpsw: Correctly attach to GPIO bitbang MDIO driver"
-Date: Sat, 28 Jun 2014 10:45:58 -0700
-Message-Id: <20140628174545.427380346@linuxfoundation.org>
+        Paul Bolle <pebolle@tiscali.nl>
+Subject: [PATCH 3.14 010/110] staging: tidspbridge: check for CONFIG_SND_OMAP_SOC_MCBSP
+Date: Sat, 28 Jun 2014 10:46:07 -0700
+Message-Id: <20140628174545.929560142@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -29,60 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Paul Bolle <pebolle@tiscali.nl>
 
-commit 59993f48b38fd46863b23bb1bb1dc3291e7278fb upstream.
+commit d3921a03a89acb1b9ca599590c0131c89f8737d8 upstream.
 
-This reverts commit f8d56d8f892be43a2404356073e16401eb5a42e6 ("net:
- eth: cpsw: Correctly attach to GPIO bitbang MDIO driver").
+Commit d0f47ff17f29 ("ASoC: OMAP: Build config cleanup for McBSP")
+removed the Kconfig symbol OMAP_MCBSP. It left two checks for
+CONFIG_OMAP_MCBSP untouched.
 
-Fix potential null-pointer dereference at probe if the mdio-gpio device
-has not been successfully probed yet.
+Convert these to checks for CONFIG_SND_OMAP_SOC_MCBSP. That must be
+correct, since that re-enables calls to functions that are all found in
+sound/soc/omap/mcbsp.c. And that file is built only if
+CONFIG_SND_OMAP_SOC_MCBSP is defined.
 
-The offending commit is plain wrong for a number of reasons. First of
-all it accesses internal driver data of an unrelated device. Neither
-does it check that the data is non-null (which it is in case the device
-has not been probed yet).
-
-Furthermore, the decision on whether to treat any driver data according
-to the mdio-gpio driver's internals is made based on the node name. But
-the name is not compared against "mdio" which is the normal name for the
-node, but rather against "gpio" which the node does not have to be named
-(and shouldn't be according to the binding documentation). [ If this
-hack is to be kept out-of-tree it should at least be matching against
-the compatible property. ]
-
-Cc: Stefan Roese <sr@denx.de>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Fixes: d0f47ff17f29 ("ASoC: OMAP: Build config cleanup for McBSP")
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/ti/cpsw.c |   14 ++------------
- 1 file changed, 2 insertions(+), 12 deletions(-)
+ drivers/staging/tidspbridge/core/dsp-clock.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/ethernet/ti/cpsw.c
-+++ b/drivers/net/ethernet/ti/cpsw.c
-@@ -1884,18 +1884,8 @@ static int cpsw_probe_dt(struct cpsw_pla
- 		mdio_node = of_find_node_by_phandle(be32_to_cpup(parp));
- 		phyid = be32_to_cpup(parp+1);
- 		mdio = of_find_device_by_node(mdio_node);
--
--		if (strncmp(mdio->name, "gpio", 4) == 0) {
--			/* GPIO bitbang MDIO driver attached */
--			struct mii_bus *bus = dev_get_drvdata(&mdio->dev);
--
--			snprintf(slave_data->phy_id, sizeof(slave_data->phy_id),
--				 PHY_ID_FMT, bus->id, phyid);
--		} else {
--			/* davinci MDIO driver attached */
--			snprintf(slave_data->phy_id, sizeof(slave_data->phy_id),
--				 PHY_ID_FMT, mdio->name, phyid);
--		}
-+		snprintf(slave_data->phy_id, sizeof(slave_data->phy_id),
-+			 PHY_ID_FMT, mdio->name, phyid);
- 
- 		mac_addr = of_get_mac_address(slave_node);
- 		if (mac_addr)
+--- a/drivers/staging/tidspbridge/core/dsp-clock.c
++++ b/drivers/staging/tidspbridge/core/dsp-clock.c
+@@ -226,7 +226,7 @@ int dsp_clk_enable(enum dsp_clk_id clk_i
+ 	case GPT_CLK:
+ 		status = omap_dm_timer_start(timer[clk_id - 1]);
+ 		break;
+-#ifdef CONFIG_OMAP_MCBSP
++#ifdef CONFIG_SND_OMAP_SOC_MCBSP
+ 	case MCBSP_CLK:
+ 		omap_mcbsp_request(MCBSP_ID(clk_id));
+ 		omap2_mcbsp_set_clks_src(MCBSP_ID(clk_id), MCBSP_CLKS_PAD_SRC);
+@@ -302,7 +302,7 @@ int dsp_clk_disable(enum dsp_clk_id clk_
+ 	case GPT_CLK:
+ 		status = omap_dm_timer_stop(timer[clk_id - 1]);
+ 		break;
+-#ifdef CONFIG_OMAP_MCBSP
++#ifdef CONFIG_SND_OMAP_SOC_MCBSP
+ 	case MCBSP_CLK:
+ 		omap2_mcbsp_set_clks_src(MCBSP_ID(clk_id), MCBSP_CLKS_PRCM_SRC);
+ 		omap_mcbsp_free(MCBSP_ID(clk_id));
 
 
