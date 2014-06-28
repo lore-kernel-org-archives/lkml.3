@@ -1,79 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751796AbaF1GnI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 02:43:08 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:63433 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751205AbaF1GnF (ORCPT
+	id S1751768AbaF1Gvn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 02:51:43 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:47965 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751110AbaF1Gvl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 02:43:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <CALCETrWy6=dzTycy-ckiMR92+nQeqAWp_Hw=hi__VSzVWZ43Ag@mail.gmail.com>
-References: <1403913966-4927-1-git-send-email-ast@plumgrid.com>
-	<1403913966-4927-4-git-send-email-ast@plumgrid.com>
-	<CALCETrV3WLBmHewCZgfhCkjODWfq_byRg6sF7HpqZ6n9BVMBVQ@mail.gmail.com>
-	<CAMEtUuzWs+MbSOGGD-Rc01DHKASa4GxbHdtCrSCLit4cUM35mA@mail.gmail.com>
-	<CALCETrWy6=dzTycy-ckiMR92+nQeqAWp_Hw=hi__VSzVWZ43Ag@mail.gmail.com>
-Date: Fri, 27 Jun 2014 23:43:03 -0700
-Message-ID: <CAMEtUuwRf--qyPu3rKB7-57KAu2NdsQdEpVRckqabmf61g+h-g@mail.gmail.com>
-Subject: Re: [PATCH RFC net-next 03/14] bpf: introduce syscall(BPF, ...) and
- BPF maps
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 28 Jun 2014 02:51:41 -0400
+Message-ID: <1403938299.24355.16.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH] target: fix deadlock on unload
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: linux-scsi@vger.kernel.org, target-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 27 Jun 2014 23:51:39 -0700
+In-Reply-To: <alpine.LRH.2.02.1406270816160.24505@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1406231329430.8277@file01.intranet.prod.int.rdu2.redhat.com>
+	 <1403842714.22367.8.camel@haakon3.risingtidesystems.com>
+	 <alpine.LRH.2.02.1406270816160.24505@file01.intranet.prod.int.rdu2.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 27, 2014 at 11:25 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Fri, Jun 27, 2014 at 10:55 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
->> On Fri, Jun 27, 2014 at 5:16 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>> On Fri, Jun 27, 2014 at 5:05 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
->>>> BPF syscall is a demux for different BPF releated commands.
->>>>
->>>> 'maps' is a generic storage of different types for sharing data between kernel
->>>> and userspace.
->>>>
->>>> The maps can be created/deleted from user space via BPF syscall:
->>>> - create a map with given id, type and attributes
->>>>   map_id = bpf_map_create(int map_id, map_type, struct nlattr *attr, int len)
->>>>   returns positive map id or negative error
->>>>
->>>> - delete map with given map id
->>>>   err = bpf_map_delete(int map_id)
->>>>   returns zero or negative error
->>>
->>> What's the scope of "id"?  How is it secured?
->>
->> the map and program id space is global and it's cap_sys_admin only.
->> There is no pressing need to do it with per-user limits.
->> So the whole thing is root only for now.
->>
->
-> Hmm.  This may be unpleasant if you ever want to support non-root or
-> namespaced operation.
+On Fri, 2014-06-27 at 08:35 -0400, Mikulas Patocka wrote:
+> 
+> On Thu, 26 Jun 2014, Nicholas A. Bellinger wrote:
+> 
+> > Hi Mikulas,
+> > 
+> > On Mon, 2014-06-23 at 13:42 -0400, Mikulas Patocka wrote:
+> > > target: fix deadlock on unload
+> > > 
+> > > On uniprocessor preemptible kernel, target core deadlocks on unload. The
+> > > following events happen:
+> > > * iscsit_del_np is called
+> > > * it calls send_sig(SIGINT, np->np_thread, 1);
+> > > * the scheduler switches to the np_thread
+> > > * the np_thread is woken up, it sees that kthread_should_stop() returns
+> > >   false, so it doesn't terminate
+> > > * the np_thread clears signals with flush_signals(current); and goes back
+> > >   to sleep in iscsit_accept_np
+> > > * the scheduler switches back to iscsit_del_np
+> > > * iscsit_del_np calls kthread_stop(np->np_thread);
+> > > * the np_thread is waiting in iscsit_accept_np and it doesn't respond to
+> > >   kthread_stop
+> > > 
+> > > The deadlock could be resolved if the administrator sends SIGINT signal to
+> > > the np_thread with killall -INT iscsi_np
+> > > 
+> > > The reproducible deadlock was introduced in commit
+> > > db6077fd0b7dd41dc6ff18329cec979379071f87, but the thread-stopping code was
+> > > racy even before.
+> > > 
+> > > This patch fixes the problem. Using kthread_should_stop to stop the
+> > > np_thread is unreliable, so we test np_thread_state instead. If
+> > > np_thread_state equals ISCSI_NP_THREAD_SHUTDOWN, the thread exits.
+> > > 
+> > > Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+> > > Cc: stable@vger.kernel.org
+> > > 
+> > 
+> > Apologies for the delayed response..
+> > 
+> > Applied to target-pending/master and including in the next -rc3 PULL
+> > request.
+> > 
+> > Also FYI, I've added '3.12+' to the stable tag to match how far back
+> > commit db6077fd0 has been included in stable.
+> > 
+> > Thanks,
+> > 
+> > --nab
+> 
+> Hi
+> 
+> I think db6077fd0 should be backported to stable kernels beginning with 
+> 3.10 (because they set np->np_thread = NULL in 
+> __iscsi_target_login_thread). The current 3.10-stable branch misses this 
+> patch.
+> 
+> 
+> This patch for unload deadlock should be backported to all stable kernels 
+> (because unload is racy there), but because of different code, we should 
+> make a different patch for old stable branches.
+> 
+> For example in 3.4.95, __iscsi_target_login_thread contains this code:
+>         spin_lock_bh(&np->np_thread_lock);
+>         if (np->np_thread_state == ISCSI_NP_THREAD_RESET) {
+>                 np->np_thread_state = ISCSI_NP_THREAD_ACTIVE;
+>                 complete(&np->np_restart_comp);
+>         } else {
+>                 np->np_thread_state = ISCSI_NP_THREAD_ACTIVE;
+>         }
+>         spin_unlock_bh(&np->np_thread_lock);
+> If the state is ISCSI_NP_THREAD_SHUTDOWN, the above piece of code will 
+> change it to ISCSI_NP_THREAD_ACTIVE and open the same kthread_should_stop 
+> race.
+> 
 
-I think it will be easy to extend it per namespace when we lift
-root-only restriction. It will be seamless without user api changes.
+Ok, dropping the 'v3.12+' stable tag from this patch, and will include
+it in a PATCH-v3.10.y series together with db6077fd0 once Greg-KH
+attempts to queue it up.
 
-> How hard would it be to give these things fds?
+As for v3.4.x, care to send along a separate patch with your Tested-by +
+Signed-off-by..?
 
-you mean programs/maps auto-terminate when creator process
-exits? I thought about it and it's appealing at first glance, but
-doesn't fit the model of existing tracepoint events which are global.
-The programs attached to events need to live without 'daemon'
-hanging around. Therefore I picked 'kernel module'- like method.
+Thanks for the extra stable info!
+
+--nab
+
