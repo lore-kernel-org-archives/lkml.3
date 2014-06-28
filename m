@@ -1,40 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754213AbaF1Cwb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 22:52:31 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:59955 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751273AbaF1Cwa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 22:52:30 -0400
-Message-ID: <53AE2DEA.2000002@gmail.com>
-Date: Fri, 27 Jun 2014 20:52:26 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1754250AbaF1DKv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 23:10:51 -0400
+Received: from smtp4-g21.free.fr ([212.27.42.4]:19167 "EHLO smtp4-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751835AbaF1DKu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 23:10:50 -0400
+Date: Sat, 28 Jun 2014 05:10:46 +0200
+From: Guillaume Morin <guillaume@morinfr.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Guillaume Morin <guillaume@morinfr.org>,
+        Jonathan Cameron <jic23@kernel.org>,
+        Sachin Kamat <sachin.kamat@linaro.org>, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/1] staging: iio: ad9850.c: fix checkpatch.pl error
+Message-ID: <20140628031045.GA13985@bender.morinfr.org>
+Mail-Followup-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Guillaume Morin <guillaume@morinfr.org>,
+	Jonathan Cameron <jic23@kernel.org>,
+	Sachin Kamat <sachin.kamat@linaro.org>, linux-iio@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <4d0e6b74dcc10ef5d60c9cab4f2df886782fb3c3.1403919775.git.guillaume@morinfr.org>
+ <20140628020935.GA14333@kroah.com>
+ <20140628023009.GA13273@bender.morinfr.org>
+ <20140628023718.GB3579@kroah.com>
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org
-CC: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 16/18] perf tools: Add debug prints for ordered events
- queue
-References: <1403103539-16807-1-git-send-email-jolsa@kernel.org> <1403103539-16807-17-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1403103539-16807-17-git-send-email-jolsa@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140628023718.GB3579@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/18/14, 8:58 AM, Jiri Olsa wrote:
-> Adding some prints for ordered events queue, to help
-> debug issues.
+On 27 Jun 22:37, Greg Kroah-Hartman wrote:
+> Put that below the --- line.
 
-went to enable this and it is really odd to have to edit a config file 
-to enable debugging. How about hooking it into verbose option? Maybe 
-like multiple levels of -v or -v <val> or -v queue.
+Will do.
 
-David
+> > > And what checkpatch error did you fix?  And are you sure it needs to be
+> > > fixed?
+> > 
+> > That's what I changed:
+> > 
+> > $ scripts/checkpatch.pl -f drivers/staging/iio/frequency/ad9850.c
+> > ERROR: Macros with complex values should be enclosed in parenthesis
+> 
+> Then why didn't you say that :)
+
+Well it was not totally clear to me if that was obvious or not.  Anyway,
+I'll mention it in the future.
+
+> 
+> > I assumed that if it was reported as an error, it needed to be fixed...
+> 
+> Use your judgement, checkpatch is a tool, it isn't always correct.
+
+Right, I guess it's borderline.  Should I resend the patch or just drop
+it?
+
+Guillaume.
+
+-- 
+Guillaume Morin <guillaume@morinfr.org>
