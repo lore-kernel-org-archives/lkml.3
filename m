@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932096AbaF1RuQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:50:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53501 "EHLO
+	id S1757063AbaF1Sk6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:40:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53560 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755428AbaF1RuE (ORCPT
+	with ESMTP id S932102AbaF1RuT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:50:04 -0400
+	Sat, 28 Jun 2014 13:50:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jukka Rissanen <jukka.rissanen@linux.intel.com>,
-        Marcel Holtmann <marcel@holtmann.org>
-Subject: [PATCH 3.14 070/110] Bluetooth: 6LoWPAN: Fix MAC address universal/local bit handling
-Date: Sat, 28 Jun 2014 10:47:07 -0700
-Message-Id: <20140628174549.727473866@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [PATCH 3.14 082/110] SCSI: Fix spurious request sense in error handling
+Date: Sat, 28 Jun 2014 10:47:19 -0700
+Message-Id: <20140628174550.380282576@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -29,164 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jukka Rissanen <jukka.rissanen@linux.intel.com>
+From: James Bottomley <JBottomley@Parallels.com>
 
-commit 62bbd5b35994eaf30519f126765d7f6af9cd3526 upstream.
+commit d555a2abf3481f81303d835046a5ec2c4fb3ca8e upstream.
 
-The universal/local bit handling was incorrectly done in the code.
+We unconditionally execute scsi_eh_get_sense() to make sure all failed
+commands that should have sense attached, do.  However, the routine forgets
+that some commands, because of the way they fail, will not have any sense code
+... we should not bother them with a REQUEST_SENSE command.  Fix this by
+testing to see if we actually got a CHECK_CONDITION return and skip asking for
+sense if we don't.
 
-So when setting EUI address from BD address we do this:
-- If BD address type is PUBLIC, then we clear the universal bit
-  in EUI address. If the address type is RANDOM, then the universal
-  bit is set (BT 6lowpan draft chapter 3.2.2)
-- After this we invert the universal/local bit according to RFC 2464
-
-When figuring out BD address we do the reverse:
-- Take EUI address from stateless IPv6 address, invert the
-  universal/local bit according to RFC 2464
-- If universal bit is 1 in this modified EUI address, then address
-  type is set to RANDOM, otherwise it is PUBLIC
-
-Note that 6lowpan_iphc.[ch] does the final toggling of U/L bit
-before sending or receiving the network packet.
-
-Signed-off-by: Jukka Rissanen <jukka.rissanen@linux.intel.com>
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+Tested-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/6lowpan.c |   65 +++++++++++++++++++++++++-----------------------
- 1 file changed, 35 insertions(+), 30 deletions(-)
+ drivers/scsi/scsi_error.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/net/bluetooth/6lowpan.c
-+++ b/net/bluetooth/6lowpan.c
-@@ -420,12 +420,18 @@ static int conn_send(struct l2cap_conn *
- 	return 0;
- }
- 
--static void get_dest_bdaddr(struct in6_addr *ip6_daddr,
--			    bdaddr_t *addr, u8 *addr_type)
-+static u8 get_addr_type_from_eui64(u8 byte)
- {
--	u8 *eui64;
-+	/* Is universal(0) or local(1) bit,  */
-+	if (byte & 0x02)
-+		return ADDR_LE_DEV_RANDOM;
- 
--	eui64 = ip6_daddr->s6_addr + 8;
-+	return ADDR_LE_DEV_PUBLIC;
-+}
+--- a/drivers/scsi/scsi_error.c
++++ b/drivers/scsi/scsi_error.c
+@@ -1157,6 +1157,15 @@ int scsi_eh_get_sense(struct list_head *
+ 					     __func__));
+ 			break;
+ 		}
++		if (status_byte(scmd->result) != CHECK_CONDITION)
++			/*
++			 * don't request sense if there's no check condition
++			 * status because the error we're processing isn't one
++			 * that has a sense code (and some devices get
++			 * confused by sense requests out of the blue)
++			 */
++			continue;
 +
-+static void copy_to_bdaddr(struct in6_addr *ip6_daddr, bdaddr_t *addr)
-+{
-+	u8 *eui64 = ip6_daddr->s6_addr + 8;
- 
- 	addr->b[0] = eui64[7];
- 	addr->b[1] = eui64[6];
-@@ -433,16 +439,19 @@ static void get_dest_bdaddr(struct in6_a
- 	addr->b[3] = eui64[2];
- 	addr->b[4] = eui64[1];
- 	addr->b[5] = eui64[0];
-+}
-+
-+static void convert_dest_bdaddr(struct in6_addr *ip6_daddr,
-+				bdaddr_t *addr, u8 *addr_type)
-+{
-+	copy_to_bdaddr(ip6_daddr, addr);
- 
--	addr->b[5] ^= 2;
-+	/* We need to toggle the U/L bit that we got from IPv6 address
-+	 * so that we get the proper address and type of the BD address.
-+	 */
-+	addr->b[5] ^= 0x02;
- 
--	/* Set universal/local bit to 0 */
--	if (addr->b[5] & 1) {
--		addr->b[5] &= ~1;
--		*addr_type = ADDR_LE_DEV_PUBLIC;
--	} else {
--		*addr_type = ADDR_LE_DEV_RANDOM;
--	}
-+	*addr_type = get_addr_type_from_eui64(addr->b[5]);
- }
- 
- static int header_create(struct sk_buff *skb, struct net_device *netdev,
-@@ -473,9 +482,11 @@ static int header_create(struct sk_buff
- 		/* Get destination BT device from skb.
- 		 * If there is no such peer then discard the packet.
- 		 */
--		get_dest_bdaddr(&hdr->daddr, &addr, &addr_type);
-+		convert_dest_bdaddr(&hdr->daddr, &addr, &addr_type);
- 
--		BT_DBG("dest addr %pMR type %d", &addr, addr_type);
-+		BT_DBG("dest addr %pMR type %s IP %pI6c", &addr,
-+		       addr_type == ADDR_LE_DEV_PUBLIC ? "PUBLIC" : "RANDOM",
-+		       &hdr->daddr);
- 
- 		read_lock_irqsave(&devices_lock, flags);
- 		peer = peer_lookup_ba(dev, &addr, addr_type);
-@@ -556,7 +567,7 @@ static netdev_tx_t bt_xmit(struct sk_buf
- 	} else {
- 		unsigned long flags;
- 
--		get_dest_bdaddr(&lowpan_cb(skb)->addr, &addr, &addr_type);
-+		convert_dest_bdaddr(&lowpan_cb(skb)->addr, &addr, &addr_type);
- 		eui64_addr = lowpan_cb(skb)->addr.s6_addr + 8;
- 		dev = lowpan_dev(netdev);
- 
-@@ -564,8 +575,10 @@ static netdev_tx_t bt_xmit(struct sk_buf
- 		peer = peer_lookup_ba(dev, &addr, addr_type);
- 		read_unlock_irqrestore(&devices_lock, flags);
- 
--		BT_DBG("xmit from %s to %pMR (%pI6c) peer %p", netdev->name,
--		       &addr, &lowpan_cb(skb)->addr, peer);
-+		BT_DBG("xmit %s to %pMR type %s IP %pI6c peer %p",
-+		       netdev->name, &addr,
-+		       addr_type == ADDR_LE_DEV_PUBLIC ? "PUBLIC" : "RANDOM",
-+		       &lowpan_cb(skb)->addr, peer);
- 
- 		if (peer && peer->conn)
- 			err = send_pkt(peer->conn, netdev->dev_addr,
-@@ -620,13 +633,13 @@ static void set_addr(u8 *eui, u8 *addr,
- 	eui[6] = addr[1];
- 	eui[7] = addr[0];
- 
--	eui[0] ^= 2;
--
--	/* Universal/local bit set, RFC 4291 */
-+	/* Universal/local bit set, BT 6lowpan draft ch. 3.2.1 */
- 	if (addr_type == ADDR_LE_DEV_PUBLIC)
--		eui[0] |= 1;
-+		eui[0] &= ~0x02;
- 	else
--		eui[0] &= ~1;
-+		eui[0] |= 0x02;
-+
-+	BT_DBG("type %d addr %*phC", addr_type, 8, eui);
- }
- 
- static void set_dev_addr(struct net_device *netdev, bdaddr_t *addr,
-@@ -634,7 +647,6 @@ static void set_dev_addr(struct net_devi
- {
- 	netdev->addr_assign_type = NET_ADDR_PERM;
- 	set_addr(netdev->dev_addr, addr->b, addr_type);
--	netdev->dev_addr[0] ^= 2;
- }
- 
- static void ifup(struct net_device *netdev)
-@@ -684,13 +696,6 @@ static int add_peer_conn(struct l2cap_co
- 
- 	memcpy(&peer->eui64_addr, (u8 *)&peer->peer_addr.s6_addr + 8,
- 	       EUI64_ADDR_LEN);
--	peer->eui64_addr[0] ^= 2; /* second bit-flip (Universe/Local)
--				   * is done according RFC2464
--				   */
--
--	raw_dump_inline(__func__, "peer IPv6 address",
--			(unsigned char *)&peer->peer_addr, 16);
--	raw_dump_inline(__func__, "peer EUI64 address", peer->eui64_addr, 8);
- 
- 	write_lock_irqsave(&devices_lock, flags);
- 	INIT_LIST_HEAD(&peer->list);
+ 		SCSI_LOG_ERROR_RECOVERY(2, scmd_printk(KERN_INFO, scmd,
+ 						  "%s: requesting sense\n",
+ 						  current->comm));
 
 
