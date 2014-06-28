@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964791AbaF1TVx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 15:21:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52806 "EHLO
+	id S1753464AbaF1RrQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:47:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52766 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753121AbaF1RrR (ORCPT
+	with ESMTP id S1753121AbaF1RrK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:47:17 -0400
+	Sat, 28 Jun 2014 13:47:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Enrico Etxe Arte <goitizena.generoa@gmail.com>,
-        Lv Zheng <lv.zheng@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.4 29/43] ACPI: Fix conflict between customized DSDT and DSDT local copy
-Date: Sat, 28 Jun 2014 10:46:20 -0700
-Message-Id: <20140628174451.131244730@linuxfoundation.org>
+        Dave Jones <davej@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.4 12/43] mm: fix sleeping function warning from __put_anon_vma
+Date: Sat, 28 Jun 2014 10:46:03 -0700
+Message-Id: <20140628174450.380646432@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174449.788784511@linuxfoundation.org>
 References: <20140628174449.788784511@linuxfoundation.org>
@@ -30,46 +31,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lv Zheng <lv.zheng@intel.com>
+From: Hugh Dickins <hughd@google.com>
 
-commit 73577d1df8e1f31f6b1a5eebcdbc334eb0330e47 upstream.
+commit 7f39dda9d86fb4f4f17af0de170decf125726f8c upstream.
 
-This patch fixes the following issue:
-If DSDT is customized, no local DSDT copy is needed.
+Trinity reports BUG:
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=69711
-Signed-off-by: Enrico Etxe Arte <goitizena.generoa@gmail.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-[rjw: Subject]
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+  sleeping function called from invalid context at kernel/locking/rwsem.c:47
+  in_atomic(): 0, irqs_disabled(): 0, pid: 5787, name: trinity-c27
+
+__might_sleep < down_write < __put_anon_vma < page_get_anon_vma <
+migrate_pages < compact_zone < compact_zone_order < try_to_compact_pages ..
+
+Right, since conversion to mutex then rwsem, we should not put_anon_vma()
+from inside an rcu_read_lock()ed section: fix the two places that did so.
+And add might_sleep() to anon_vma_free(), as suggested by Peter Zijlstra.
+
+Fixes: 88c22088bf23 ("mm: optimize page_lock_anon_vma() fast-path")
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/bus.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ mm/rmap.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/drivers/acpi/bus.c
-+++ b/drivers/acpi/bus.c
-@@ -57,6 +57,12 @@ EXPORT_SYMBOL(acpi_root_dir);
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -103,6 +103,7 @@ static inline void anon_vma_free(struct
+ 	 * LOCK should suffice since the actual taking of the lock must
+ 	 * happen _before_ what follows.
+ 	 */
++	might_sleep();
+ 	if (mutex_is_locked(&anon_vma->root->mutex)) {
+ 		anon_vma_lock(anon_vma);
+ 		anon_vma_unlock(anon_vma);
+@@ -476,8 +477,9 @@ struct anon_vma *page_get_anon_vma(struc
+ 	 * above cannot corrupt).
+ 	 */
+ 	if (!page_mapped(page)) {
++		rcu_read_unlock();
+ 		put_anon_vma(anon_vma);
+-		anon_vma = NULL;
++		return NULL;
+ 	}
+ out:
+ 	rcu_read_unlock();
+@@ -527,9 +529,9 @@ struct anon_vma *page_lock_anon_vma(stru
+ 	}
  
+ 	if (!page_mapped(page)) {
++		rcu_read_unlock();
+ 		put_anon_vma(anon_vma);
+-		anon_vma = NULL;
+-		goto out;
++		return NULL;
+ 	}
  
- #ifdef CONFIG_X86
-+#ifdef CONFIG_ACPI_CUSTOM_DSDT
-+static inline int set_copy_dsdt(const struct dmi_system_id *id)
-+{
-+	return 0;
-+}
-+#else
- static int set_copy_dsdt(const struct dmi_system_id *id)
- {
- 	printk(KERN_NOTICE "%s detected - "
-@@ -64,6 +70,7 @@ static int set_copy_dsdt(const struct dm
- 	acpi_gbl_copy_dsdt_locally = 1;
- 	return 0;
- }
-+#endif
- 
- static struct dmi_system_id dsdt_dmi_table[] __initdata = {
- 	/*
+ 	/* we pinned the anon_vma, its safe to sleep */
 
 
