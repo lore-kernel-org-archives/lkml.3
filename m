@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755771AbaF1SBy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:01:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54456 "EHLO
+	id S1756073AbaF1SCN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:02:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54452 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756176AbaF1RxK (ORCPT
+	with ESMTP id S1756172AbaF1RxK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Jun 2014 13:53:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin LaHaise <bcrl@kvack.org>, Mateusz Guzik <mguzik@redhat.com>,
-        Petr Matousek <pmatouse@redhat.com>,
-        Kent Overstreet <kmo@daterainc.com>, Jeff Moyer <jmoyer@redhat.com>
-Subject: [PATCH 3.15 112/139] aio: fix kernel memory disclosure in io_getevents() introduced in v3.10
-Date: Sat, 28 Jun 2014 10:47:53 -0700
-Message-Id: <20140628174610.525962991@linuxfoundation.org>
+        Thomas Glanzmann <thomas@glanzmann.de>,
+        Charalampos Pournaris <charpour@gmail.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.15 093/139] target: Use complete_all for se_cmd->t_transport_stop_comp
+Date: Sat, 28 Jun 2014 10:47:34 -0700
+Message-Id: <20140628174609.663613755@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -30,42 +30,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin LaHaise <bcrl@kvack.org>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit edfbbf388f293d70bf4b7c0bc38774d05e6f711a upstream.
+commit a95d6511303b848da45ee27b35018bb58087bdc6 upstream.
 
-A kernel memory disclosure was introduced in aio_read_events_ring() in v3.10
-by commit a31ad380bed817aa25f8830ad23e1a0480fef797.  The changes made to
-aio_read_events_ring() failed to correctly limit the index into
-ctx->ring_pages[], allowing an attacked to cause the subsequent kmap() of
-an arbitrary page with a copy_to_user() to copy the contents into userspace.
-This vulnerability has been assigned CVE-2014-0206.  Thanks to Mateusz and
-Petr for disclosing this issue.
+This patch fixes a bug where multiple waiters on ->t_transport_stop_comp
+occurs due to a concurrent ABORT_TASK and session reset both invoking
+transport_wait_for_tasks(), while waiting for the associated se_cmd
+descriptor backend processing to complete.
 
-This patch applies to v3.12+.  A separate backport is needed for 3.10/3.11.
+For this case, complete_all() should be invoked in order to wake up
+both waiters in core_tmr_abort_task() + transport_generic_free_cmd()
+process contexts.
 
-Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
-Cc: Mateusz Guzik <mguzik@redhat.com>
-Cc: Petr Matousek <pmatouse@redhat.com>
-Cc: Kent Overstreet <kmo@daterainc.com>
-Cc: Jeff Moyer <jmoyer@redhat.com>
+Cc: Thomas Glanzmann <thomas@glanzmann.de>
+Cc: Charalampos Pournaris <charpour@gmail.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/aio.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/target/target_core_transport.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -1063,6 +1063,9 @@ static long aio_read_events_ring(struct
- 	if (head == tail)
- 		goto out;
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -562,7 +562,7 @@ static int transport_cmd_check_stop(stru
  
-+	head %= ctx->nr_events;
-+	tail %= ctx->nr_events;
-+
- 	while (ret < nr) {
- 		long avail;
- 		struct io_event *ev;
+ 		spin_unlock_irqrestore(&cmd->t_state_lock, flags);
+ 
+-		complete(&cmd->t_transport_stop_comp);
++		complete_all(&cmd->t_transport_stop_comp);
+ 		return 1;
+ 	}
+ 
+@@ -687,7 +687,7 @@ void target_complete_cmd(struct se_cmd *
+ 	if (cmd->transport_state & CMD_T_ABORTED &&
+ 	    cmd->transport_state & CMD_T_STOP) {
+ 		spin_unlock_irqrestore(&cmd->t_state_lock, flags);
+-		complete(&cmd->t_transport_stop_comp);
++		complete_all(&cmd->t_transport_stop_comp);
+ 		return;
+ 	} else if (!success) {
+ 		INIT_WORK(&cmd->work, target_complete_failure_work);
+@@ -1761,7 +1761,7 @@ void target_execute_cmd(struct se_cmd *c
+ 			cmd->se_tfo->get_task_tag(cmd));
+ 
+ 		spin_unlock_irq(&cmd->t_state_lock);
+-		complete(&cmd->t_transport_stop_comp);
++		complete_all(&cmd->t_transport_stop_comp);
+ 		return;
+ 	}
+ 
 
 
