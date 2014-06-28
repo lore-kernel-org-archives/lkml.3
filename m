@@ -1,68 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932494AbaF1Sgj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:36:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53633 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755517AbaF1Rug (ORCPT
+	id S932524AbaF1Sgs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:36:48 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:60600 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755517AbaF1Sgo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:50:36 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sagi Grimberg <sagig@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.14 072/110] Target/iser: Bail from accept_np if np_thread is trying to close
-Date: Sat, 28 Jun 2014 10:47:09 -0700
-Message-Id: <20140628174549.817879738@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
-References: <20140628174545.354748696@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Sat, 28 Jun 2014 14:36:44 -0400
+Date: Sun, 29 Jun 2014 00:06:29 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Marek Lindner <mareklindner@neomailbox.ch>,
+        Simon Wunderlich <sw@simonwunderlich.de>,
+        Antonio Quartulli <antonio@meshcoding.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        b.a.t.m.a.n@lists.open-mesh.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH] batman-adv: Use kasprintf
+Message-ID: <20140628183628.GA9946@himangi-Dell>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+kasprintf combines kmalloc and sprintf, and takes care of the size
+calculation itself.
 
-------------------
+The semantic patch that makes this change is as follows:
 
-From: Sagi Grimberg <sagig@mellanox.com>
+// <smpl>
+@@
+expression a,flag;
+expression list args;
+statement S;
+@@
 
-commit e346ab343f4f58c12a96725c7b13df9cc2ad56f6 upstream.
+  a =
+-  \(kmalloc\|kzalloc\)(...,flag)
++  kasprintf(flag,args)
+  <... when != a
+  if (a == NULL || ...) S
+  ...>
+- sprintf(a,args);
+// </smpl>
 
-In case np_thread state is in RESET/SHUTDOWN/EXIT states,
-no point for isert to stall there as we may get a hang in
-case no one will wake it up later.
-
-Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
 ---
- drivers/infiniband/ulp/isert/ib_isert.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ net/batman-adv/sysfs.c | 24 ++++++++----------------
+ 1 file changed, 8 insertions(+), 16 deletions(-)
 
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -2725,9 +2725,14 @@ accept_wait:
- 		return -ENODEV;
+diff --git a/net/batman-adv/sysfs.c b/net/batman-adv/sysfs.c
+index fc47baa..f40cb04 100644
+--- a/net/batman-adv/sysfs.c
++++ b/net/batman-adv/sysfs.c
+@@ -900,32 +900,24 @@ int batadv_throw_uevent(struct batadv_priv *bat_priv, enum batadv_uev_type type,
  
- 	spin_lock_bh(&np->np_thread_lock);
--	if (np->np_thread_state == ISCSI_NP_THREAD_RESET) {
-+	if (np->np_thread_state >= ISCSI_NP_THREAD_RESET) {
- 		spin_unlock_bh(&np->np_thread_lock);
--		pr_debug("ISCSI_NP_THREAD_RESET for isert_accept_np\n");
-+		pr_debug("np_thread_state %d for isert_accept_np\n",
-+			 np->np_thread_state);
-+		/**
-+		 * No point in stalling here when np_thread
-+		 * is in state RESET/SHUTDOWN/EXIT - bail
-+		 **/
- 		return -ENODEV;
+ 	bat_kobj = &bat_priv->soft_iface->dev.kobj;
+ 
+-	uevent_env[0] = kmalloc(strlen(BATADV_UEV_TYPE_VAR) +
+-				strlen(batadv_uev_type_str[type]) + 1,
+-				GFP_ATOMIC);
++	uevent_env[0] = kasprintf(GFP_ATOMIC,
++				  "%s%s", BATADV_UEV_TYPE_VAR,
++				  batadv_uev_type_str[type]);
+ 	if (!uevent_env[0])
+ 		goto out;
+ 
+-	sprintf(uevent_env[0], "%s%s", BATADV_UEV_TYPE_VAR,
+-		batadv_uev_type_str[type]);
+-
+-	uevent_env[1] = kmalloc(strlen(BATADV_UEV_ACTION_VAR) +
+-				strlen(batadv_uev_action_str[action]) + 1,
+-				GFP_ATOMIC);
++	uevent_env[1] = kasprintf(GFP_ATOMIC,
++				  "%s%s", BATADV_UEV_ACTION_VAR,
++				  batadv_uev_action_str[action]);
+ 	if (!uevent_env[1])
+ 		goto out;
+ 
+-	sprintf(uevent_env[1], "%s%s", BATADV_UEV_ACTION_VAR,
+-		batadv_uev_action_str[action]);
+-
+ 	/* If the event is DEL, ignore the data field */
+ 	if (action != BATADV_UEV_DEL) {
+-		uevent_env[2] = kmalloc(strlen(BATADV_UEV_DATA_VAR) +
+-					strlen(data) + 1, GFP_ATOMIC);
++		uevent_env[2] = kasprintf(GFP_ATOMIC,
++					  "%s%s", BATADV_UEV_DATA_VAR, data);
+ 		if (!uevent_env[2])
+ 			goto out;
+-
+-		sprintf(uevent_env[2], "%s%s", BATADV_UEV_DATA_VAR, data);
  	}
- 	spin_unlock_bh(&np->np_thread_lock);
-
+ 
+ 	ret = kobject_uevent_env(bat_kobj, KOBJ_CHANGE, uevent_env);
+-- 
+1.9.1
 
