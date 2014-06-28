@@ -1,143 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753873AbaF1ULQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 16:11:16 -0400
-Received: from mail.eperm.de ([89.247.134.16]:43638 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753239AbaF1ULP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 16:11:15 -0400
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: kbuild test robot <fengguang.wu@intel.com>, kbuild@01.org,
-        Dan Carpenter <dan.carpenter@oracle.com>, linux-crypto@vger.kernel.org,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/4] DRBG: cleanup of preprocessor macros
-Date: Sat, 28 Jun 2014 22:00:07 +0200
-Message-ID: <1949550.LXKdkPOvgm@myon.chronox.de>
-User-Agent: KMail/4.12.5 (Linux/3.14.8-200.fc20.x86_64; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <4927386.WYHrRe3NJm@myon.chronox.de>
-References: <4927386.WYHrRe3NJm@myon.chronox.de>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1753941AbaF1ULm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 16:11:42 -0400
+Received: from smtprelay0249.hostedemail.com ([216.40.44.249]:39863 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751515AbaF1ULk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Jun 2014 16:11:40 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 48,2.914,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:418:541:599:966:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2110:2196:2198:2199:2200:2393:2559:2562:2689:2828:3138:3139:3140:3141:3142:3354:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4250:4321:4385:5007:6119:7652:7903:8603:10004:10400:10848:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12555:12663:12740:13071:13138:13141:13230:13231:21060:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF
+X-HE-Tag: slope03_2b5aedbfe6b63
+X-Filterd-Recvd-Size: 3845
+Message-ID: <1403986296.9064.45.camel@joe-AO725>
+Subject: Re: [PATCH] batman-adv: Use kasprintf
+From: Joe Perches <joe@perches.com>
+To: Antonio Quartulli <antonio@meshcoding.com>
+Cc: Himangi Saraogi <himangi774@gmail.com>,
+        Marek Lindner <mareklindner@neomailbox.ch>,
+        Simon Wunderlich <sw@simonwunderlich.de>,
+        "David S. Miller" <davem@davemloft.net>,
+        b.a.t.m.a.n@lists.open-mesh.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, julia.lawall@lip6.fr
+Date: Sat, 28 Jun 2014 13:11:36 -0700
+In-Reply-To: <53AF1C42.6000108@meshcoding.com>
+References: <20140628183628.GA9946@himangi-Dell>
+	 <1403982781.9064.33.camel@joe-AO725> <53AF1C42.6000108@meshcoding.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The structure used to construct the module description line was marked
-problematic by the sparse code analysis tool. The module line
-description now does not contain any ifdefs to prevent error reports
-from sparse.
+On Sat, 2014-06-28 at 21:49 +0200, Antonio Quartulli wrote:
+> Hi all,
+> 
+> On 28/06/14 21:13, Joe Perches wrote:
+> > diff --git a/net/batman-adv/sysfs.c b/net/batman-adv/sysfs.c
+[]
+> > @@ -896,7 +896,7 @@ int batadv_throw_uevent(struct batadv_priv *bat_priv, enum batadv_uev_type type,
+> >  {
+> >  	int ret = -ENOMEM;
+> >  	struct kobject *bat_kobj;
+> > -	char *uevent_env[4] = { NULL, NULL, NULL, NULL };
+> > +	char *uevent_env[3];
+> 
+> 
+> Joe, why are you shortening this? kobject_uevent_env() expect a
+> NULL-terminating array (that is the forth cell).
 
-The preprocessor warning declaration was reported by sparse. It is
-replaced in favor of an init function reporting the erroneous built of
-the DRBG.
+Hi Antonio, sorry, I didn't know about the last NULL
+being required.  It looked to me more like an
+oversight in the code instead of a required NULL.
 
-Lastly, a fix of the use use of CONFIG_CRYPTO_DRBG_HASH has been
-applied.
+> And how is this change reducing the code space?
 
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
-Signed-off-by: Stephan Mueller <smueller@chronox.de>
+Removing unnecessary initializations reduces
+object code size.
+
+> For what concerns the labels, we use this pattern mostly all over the
+> code: one single label/exit-point with the related NULL checks. Do you
+> think that we can improve something by changing this? (I am not talking
+> about the fastpath here).
+
+Not calling known unnecessary kfree calls helps a
+little.  Certainly, it'd be more valuable in any
+fast path area.
+
+Other than that, it was an unsigned suggestion
+not a formal patch submission.
+
+Ignore it or improve it as you see fit.
+
+cheers, Joe
+
+Maybe:
 ---
- crypto/drbg.c | 43 +++++++++++++++++++++++++++++++------------
- 1 file changed, 31 insertions(+), 12 deletions(-)
+ net/batman-adv/sysfs.c | 18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
 
-diff --git a/crypto/drbg.c b/crypto/drbg.c
-index 6679a26..03a230e 100644
---- a/crypto/drbg.c
-+++ b/crypto/drbg.c
-@@ -102,8 +102,13 @@
- #if !defined(CONFIG_CRYPTO_DRBG_HASH) && \
- 	!defined(CONFIG_CRYPTO_DRBG_HMAC) && \
- 	!defined(CONFIG_CRYPTO_DRBG_CTR)
--#warning "The DRBG code is useless without compiling at least one DRBG type"
--#endif
-+#define CRYPTO_DRBG_NONE_STRING "none "
-+static int __init drbg_init(void)
-+{
-+	pr_warn("DRBG: no DRBG core was compiled!\n");
-+	return -EFAULT;
-+}
-+#else
+diff --git a/net/batman-adv/sysfs.c b/net/batman-adv/sysfs.c
+index f40cb04..90c245e 100644
+--- a/net/batman-adv/sysfs.c
++++ b/net/batman-adv/sysfs.c
+@@ -896,7 +896,7 @@ int batadv_throw_uevent(struct batadv_priv *bat_priv, enum batadv_uev_type type,
+ {
+ 	int ret = -ENOMEM;
+ 	struct kobject *bat_kobj;
+-	char *uevent_env[4] = { NULL, NULL, NULL, NULL };
++	char *uevent_env[4];
  
- /***************************************************************
-  * Backend cipher definitions available to DRBG
-@@ -362,6 +367,7 @@ static inline void drbg_add_buf(unsigned char *dst, size_t dstlen,
-  ******************************************************************/
+ 	bat_kobj = &bat_priv->soft_iface->dev.kobj;
  
- #ifdef CONFIG_CRYPTO_DRBG_CTR
-+#define CRYPTO_DRBG_CTR_STRING "CTR "
- static int drbg_kcapi_sym(struct drbg_state *drbg, const unsigned char *key,
- 			  unsigned char *outval, const struct drbg_string *in);
- static int drbg_init_sym_kernel(struct drbg_state *drbg);
-@@ -715,6 +721,7 @@ static int drbg_fini_hash_kernel(struct drbg_state *drbg);
- #endif /* (CONFIG_CRYPTO_DRBG_HASH || CONFIG_CRYPTO_DRBG_HMAC) */
+@@ -910,22 +910,26 @@ int batadv_throw_uevent(struct batadv_priv *bat_priv, enum batadv_uev_type type,
+ 				  "%s%s", BATADV_UEV_ACTION_VAR,
+ 				  batadv_uev_action_str[action]);
+ 	if (!uevent_env[1])
+-		goto out;
++		goto out0;
  
- #ifdef CONFIG_CRYPTO_DRBG_HMAC
-+#define CRYPTO_DRBG_HMAC_STRING "HMAC "
- /* update function of HMAC DRBG as defined in 10.1.2.2 */
- static int drbg_hmac_update(struct drbg_state *drbg, struct list_head *seed,
- 			    int reseed)
-@@ -834,6 +841,7 @@ static struct drbg_state_ops drbg_hmac_ops = {
-  ******************************************************************/
+ 	/* If the event is DEL, ignore the data field */
+ 	if (action != BATADV_UEV_DEL) {
+ 		uevent_env[2] = kasprintf(GFP_ATOMIC,
+ 					  "%s%s", BATADV_UEV_DATA_VAR, data);
+ 		if (!uevent_env[2])
+-			goto out;
++			goto out1;
+ 	}
  
- #ifdef CONFIG_CRYPTO_DRBG_HASH
-+#define CRYPTO_DRBG_HASH_STRING "HASH "
- /*
-  * scratchpad usage: as drbg_hash_update and drbg_hash_df are used
-  * interlinked, the scratchpad is used as follows:
-@@ -1865,7 +1873,7 @@ static inline int __init drbg_healthcheck_sanity(void)
- 
- #ifdef CONFIG_CRYPTO_DRBG_CTR
- 	drbg_convert_tfm_core("drbg_nopr_ctr_aes128", &coreref, &pr);
--#elif CONFIG_CRYPTO_DRBG_HASH
-+#elif defined CONFIG_CRYPTO_DRBG_HASH
- 	drbg_convert_tfm_core("drbg_nopr_sha256", &coreref, &pr);
- #else
- 	drbg_convert_tfm_core("drbg_nopr_hmac_sha256", &coreref, &pr);
-@@ -2005,18 +2013,29 @@ void __exit drbg_exit(void)
- 	crypto_unregister_algs(drbg_algs, (ARRAY_SIZE(drbg_cores) * 2));
- }
- 
--module_init(drbg_init);
- module_exit(drbg_exit);
-+#endif /* !defined(CONFIG_CRYPTO_DRBG_HASH) && \
-+	  !defined(CONFIG_CRYPTO_DRBG_HMAC) && \
-+	  !defined(CONFIG_CRYPTO_DRBG_CTR) */
++	uevent_env[3] = NULL;
 +
-+module_init(drbg_init);
- MODULE_LICENSE("GPL");
- MODULE_AUTHOR("Stephan Mueller <smueller@chronox.de>");
--MODULE_DESCRIPTION("NIST SP800-90A Deterministic Random Bit Generator (DRBG) using following cores:"
--#ifdef CONFIG_CRYPTO_DRBG_HMAC
--"HMAC "
-+#ifndef CRYPTO_DRBG_NONE_STRING
-+#define CRYPTO_DRBG_NONE_STRING ""
- #endif
--#ifdef CONFIG_CRYPTO_DRBG_HASH
--"Hash "
-+#ifndef CRYPTO_DRBG_HASH_STRING
-+#define CRYPTO_DRBG_HASH_STRING ""
- #endif
--#ifdef CONFIG_CRYPTO_DRBG_CTR
--"CTR"
-+#ifndef CRYPTO_DRBG_HMAC_STRING
-+#define CRYPTO_DRBG_HMAC_STRING ""
-+#endif
-+#ifndef CRYPTO_DRBG_CTR_STRING
-+#define CRYPTO_DRBG_CTR_STRING ""
- #endif
--);
-+MODULE_DESCRIPTION("NIST SP800-90A Deterministic Random Bit Generator (DRBG) "
-+		   "using following cores: "
-+		   CRYPTO_DRBG_NONE_STRING
-+		   CRYPTO_DRBG_HMAC_STRING
-+		   CRYPTO_DRBG_HASH_STRING
-+		   CRYPTO_DRBG_CTR_STRING);
--- 
-1.9.3
+ 	ret = kobject_uevent_env(bat_kobj, KOBJ_CHANGE, uevent_env);
+-out:
+-	kfree(uevent_env[0]);
+-	kfree(uevent_env[1]);
+-	kfree(uevent_env[2]);
+ 
++	kfree(uevent_env[2]);
++out1:
++	kfree(uevent_env[1]);
++out0:
++	kfree(uevent_env[0]);
++out:
+ 	if (ret)
+ 		batadv_dbg(BATADV_DBG_BATMAN, bat_priv,
+ 			   "Impossible to send uevent for (%s,%s,%s) event (err: %d)\n",
 
 
