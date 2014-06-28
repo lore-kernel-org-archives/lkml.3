@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757192AbaF1Sqn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:46:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53421 "EHLO
+	id S1755293AbaF1Rtr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:49:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53411 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755300AbaF1Rts (ORCPT
+	with ESMTP id S1755121AbaF1Rto (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:49:48 -0400
+	Sat, 28 Jun 2014 13:49:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Xiaoguang Wang <wangxg.fnst@cn.fujitsu.com>, Jan Kara <jack@suse.cz>,
-        Theodore Tso <tytso@mit.edu>
-Subject: [PATCH 3.14 038/110] ext4: fix zeroing of page during writeback
-Date: Sat, 28 Jun 2014 10:46:35 -0700
-Message-Id: <20140628174547.435891352@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.14 050/110] USB: sierra: fix urb and memory leak on disconnect
+Date: Sat, 28 Jun 2014 10:46:47 -0700
+Message-Id: <20140628174548.572217040@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -29,70 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit eeece469dedadf3918bad50ad80f4616a0064e90 upstream.
+commit 014333f77c0b71123d6ef7d31a9724e0699c9548 upstream.
 
-Tail of a page straddling inode size must be zeroed when being written
-out due to POSIX requirement that modifications of mmaped page beyond
-inode size must not be written to the file. ext4_bio_write_page() did
-this only for blocks fully beyond inode size but didn't properly zero
-blocks partially beyond inode size. Fix this.
+The delayed-write queue was never emptied on disconnect, something which
+would lead to leaked urbs and transfer buffers if the device is
+disconnected before being runtime resumed due to a write.
 
-The problem has been uncovered by mmap_11-4 test in openposix test suite
-(part of LTP).
+Fixes: e6929a9020ac ("USB: support for autosuspend in sierra while
+online")
 
-Reported-by: Xiaoguang Wang <wangxg.fnst@cn.fujitsu.com>
-Fixes: 5a0dc7365c240
-Fixes: bd2d0210cf22f
-CC: stable@vger.kernel.org
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/page-io.c |   24 +++++++++++-------------
- 1 file changed, 11 insertions(+), 13 deletions(-)
+ drivers/usb/serial/sierra.c |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
---- a/fs/ext4/page-io.c
-+++ b/fs/ext4/page-io.c
-@@ -422,6 +422,17 @@ int ext4_bio_write_page(struct ext4_io_s
- 	ClearPageError(page);
+--- a/drivers/usb/serial/sierra.c
++++ b/drivers/usb/serial/sierra.c
+@@ -759,6 +759,7 @@ static void sierra_close(struct usb_seri
+ 	struct usb_serial *serial = port->serial;
+ 	struct sierra_port_private *portdata;
+ 	struct sierra_intf_private *intfdata = port->serial->private;
++	struct urb *urb;
  
- 	/*
-+	 * Comments copied from block_write_full_page_endio:
-+	 *
-+	 * The page straddles i_size.  It must be zeroed out on each and every
-+	 * writepage invocation because it may be mmapped.  "A file is mapped
-+	 * in multiples of the page size.  For a file that is not a multiple of
-+	 * the page size, the remaining memory is zeroed when mapped, and
-+	 * writes to that region are not written out to the file."
-+	 */
-+	if (len < PAGE_CACHE_SIZE)
-+		zero_user_segment(page, len, PAGE_CACHE_SIZE);
-+	/*
- 	 * In the first loop we prepare and mark buffers to submit. We have to
- 	 * mark all buffers in the page before submitting so that
- 	 * end_page_writeback() cannot be called from ext4_bio_end_io() when IO
-@@ -432,19 +443,6 @@ int ext4_bio_write_page(struct ext4_io_s
- 	do {
- 		block_start = bh_offset(bh);
- 		if (block_start >= len) {
--			/*
--			 * Comments copied from block_write_full_page_endio:
--			 *
--			 * The page straddles i_size.  It must be zeroed out on
--			 * each and every writepage invocation because it may
--			 * be mmapped.  "A file is mapped in multiples of the
--			 * page size.  For a file that is not a multiple of
--			 * the  page size, the remaining memory is zeroed when
--			 * mapped, and writes to that region are not written
--			 * out to the file."
--			 */
--			zero_user_segment(page, block_start,
--					  block_start + blocksize);
- 			clear_buffer_dirty(bh);
- 			set_buffer_uptodate(bh);
- 			continue;
+ 	portdata = usb_get_serial_port_data(port);
+ 
+@@ -780,6 +781,18 @@ static void sierra_close(struct usb_seri
+ 	portdata->opened = 0;
+ 	spin_unlock_irq(&intfdata->susp_lock);
+ 
++	for (;;) {
++		urb = usb_get_from_anchor(&portdata->delayed);
++		if (!urb)
++			break;
++		kfree(urb->transfer_buffer);
++		usb_free_urb(urb);
++		usb_autopm_put_interface_async(serial->interface);
++		spin_lock(&portdata->lock);
++		portdata->outstanding_urbs--;
++		spin_unlock(&portdata->lock);
++	}
++
+ 	sierra_stop_rx_urbs(port);
+ 	for (i = 0; i < portdata->num_in_urbs; i++) {
+ 		sierra_release_urb(portdata->in_urbs[i]);
 
 
