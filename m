@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756313AbaF1TOo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 15:14:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52907 "EHLO
+	id S1753982AbaF1Rrs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:47:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52891 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753694AbaF1Rrt (ORCPT
+	with ESMTP id S1753694AbaF1Rro (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:47:49 -0400
+	Sat, 28 Jun 2014 13:47:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: [PATCH 3.10 06/77] applicom: dereferencing NULL on error path
-Date: Sat, 28 Jun 2014 10:45:59 -0700
-Message-Id: <20140628174521.995729448@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.10 13/77] USB: option: fix runtime PM handling
+Date: Sat, 28 Jun 2014 10:46:06 -0700
+Message-Id: <20140628174522.307722348@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174521.691276402@linuxfoundation.org>
 References: <20140628174521.691276402@linuxfoundation.org>
@@ -28,30 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 8bab797c6e5724a43b7666ad70860712365cdb71 upstream.
+commit acf47d4f9c39b1cba467aa9442fc2efe0b1da741 upstream.
 
-This is a static checker fix.  The "dev" variable is always NULL after
-the while statement so we would be dereferencing a NULL pointer here.
+Fix potential I/O while runtime suspended due to missing PM operations
+in send_setup.
 
-Fixes: 819a3eba4233 ('[PATCH] applicom: fix error handling')
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Fixes: 383cedc3bb43 ("USB: serial: full autosuspend support for the
+option driver")
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/applicom.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/usb/serial/option.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
---- a/drivers/char/applicom.c
-+++ b/drivers/char/applicom.c
-@@ -345,7 +345,6 @@ out:
- 			free_irq(apbs[i].irq, &dummy);
- 		iounmap(apbs[i].RamIO);
- 	}
--	pci_disable_device(dev);
- 	return ret;
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -1925,6 +1925,7 @@ static int option_send_setup(struct usb_
+ 	struct option_private *priv = intfdata->private;
+ 	struct usb_wwan_port_private *portdata;
+ 	int val = 0;
++	int res;
+ 
+ 	portdata = usb_get_serial_port_data(port);
+ 
+@@ -1933,9 +1934,17 @@ static int option_send_setup(struct usb_
+ 	if (portdata->rts_state)
+ 		val |= 0x02;
+ 
+-	return usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
++	res = usb_autopm_get_interface(serial->interface);
++	if (res)
++		return res;
++
++	res = usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
+ 				0x22, 0x21, val, priv->bInterfaceNumber, NULL,
+ 				0, USB_CTRL_SET_TIMEOUT);
++
++	usb_autopm_put_interface(serial->interface);
++
++	return res;
  }
  
+ MODULE_AUTHOR(DRIVER_AUTHOR);
 
 
