@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757516AbaF1TD0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 15:03:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53109 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754717AbaF1Rsg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754712AbaF1Rsg (ORCPT <rfc822;w@1wt.eu>);
 	Sat, 28 Jun 2014 13:48:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53063 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754476AbaF1Rsa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Jun 2014 13:48:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tsutomu Itoh <t-itoh@jp.fujitsu.com>, Karel Zak <kzak@redhat.com>,
-        Qu Wenruo <quwenruo@cn.fujitsu.com>, Chris Mason <clm@fb.com>
-Subject: [PATCH 3.10 64/77] btrfs: Add ctime/mtime update for btrfs device add/remove.
-Date: Sat, 28 Jun 2014 10:46:57 -0700
-Message-Id: <20140628174524.947846052@linuxfoundation.org>
+        Aleksander Morgado <aleksander@aleksander.es>,
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.10 39/77] usb: qcserial: add additional Sierra Wireless QMI devices
+Date: Sat, 28 Jun 2014 10:46:32 -0700
+Message-Id: <20140628174523.566274449@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174521.691276402@linuxfoundation.org>
 References: <20140628174521.691276402@linuxfoundation.org>
@@ -29,76 +29,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Qu Wenruo <quwenruo@cn.fujitsu.com>
+From: Aleksander Morgado <aleksander@aleksander.es>
 
-commit 5a1972bd9fd4b2fb1bac8b7a0b636d633d8717e3 upstream.
+commit 0ce5fb58564fd85aa8fd2d24209900e2e845317b upstream.
 
-Btrfs will send uevent to udev inform the device change,
-but ctime/mtime for the block device inode is not udpated, which cause
-libblkid used by btrfs-progs unable to detect device change and use old
-cache, causing 'btrfs dev scan; btrfs dev rmove; btrfs dev scan' give an
-error message.
+A set of new VID/PIDs retrieved from the out-of-tree GobiNet/GobiSerial
+Sierra Wireless drivers.
 
-Reported-by: Tsutomu Itoh <t-itoh@jp.fujitsu.com>
-Cc: Karel Zak <kzak@redhat.com>
-Signed-off-by: Qu Wenruo <quwenruo@cn.fujitsu.com>
-Signed-off-by: Chris Mason <clm@fb.com>
+Signed-off-by: Aleksander Morgado <aleksander@aleksander.es>
+Link: http://marc.info/?l=linux-usb&m=140136310027293&w=2
+Cc: <stable@vger.kernel.org>	# backport in link above
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/volumes.c |   26 ++++++++++++++++++++++++--
- 1 file changed, 24 insertions(+), 2 deletions(-)
+ drivers/usb/serial/qcserial.c |   18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
---- a/fs/btrfs/volumes.c
-+++ b/fs/btrfs/volumes.c
-@@ -1384,6 +1384,22 @@ out:
- 	return ret;
- }
- 
-+/*
-+ * Function to update ctime/mtime for a given device path.
-+ * Mainly used for ctime/mtime based probe like libblkid.
-+ */
-+static void update_dev_time(char *path_name)
-+{
-+	struct file *filp;
-+
-+	filp = filp_open(path_name, O_RDWR, 0);
-+	if (!filp)
-+		return;
-+	file_update_time(filp);
-+	filp_close(filp, NULL);
-+	return;
-+}
-+
- static int btrfs_rm_dev_item(struct btrfs_root *root,
- 			     struct btrfs_device *device)
- {
-@@ -1642,10 +1658,14 @@ int btrfs_rm_device(struct btrfs_root *r
- 
- 	ret = 0;
- 
--	/* Notify udev that device has changed */
--	if (bdev)
-+	if (bdev) {
-+		/* Notify udev that device has changed */
- 		btrfs_kobject_uevent(bdev, KOBJ_CHANGE);
- 
-+		/* Update ctime/mtime for device path for libblkid */
-+		update_dev_time(device_path);
-+	}
-+
- error_brelse:
- 	brelse(bh);
- 	if (bdev)
-@@ -2089,6 +2109,8 @@ int btrfs_init_new_device(struct btrfs_r
- 		ret = btrfs_commit_transaction(trans, root);
- 	}
- 
-+	/* Update ctime/mtime for libblkid */
-+	update_dev_time(device_path);
- 	return ret;
- 
- error_trans:
+--- a/drivers/usb/serial/qcserial.c
++++ b/drivers/usb/serial/qcserial.c
+@@ -145,15 +145,33 @@ static const struct usb_device_id id_tab
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x901f, 0)},	/* Sierra Wireless EM7355 Device Management */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x901f, 2)},	/* Sierra Wireless EM7355 NMEA */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x901f, 3)},	/* Sierra Wireless EM7355 Modem */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9040, 0)},	/* Sierra Wireless Modem Device Management */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9040, 2)},	/* Sierra Wireless Modem NMEA */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9040, 3)},	/* Sierra Wireless Modem Modem */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9041, 0)},	/* Sierra Wireless MC7305/MC7355 Device Management */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9041, 2)},	/* Sierra Wireless MC7305/MC7355 NMEA */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9041, 3)},	/* Sierra Wireless MC7305/MC7355 Modem */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 0)},	/* Netgear AirCard 340U Device Management */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 2)},	/* Netgear AirCard 340U NMEA */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 3)},	/* Netgear AirCard 340U Modem */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9053, 0)},	/* Sierra Wireless Modem Device Management */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9053, 2)},	/* Sierra Wireless Modem NMEA */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9053, 3)},	/* Sierra Wireless Modem Modem */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9054, 0)},	/* Sierra Wireless Modem Device Management */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9054, 2)},	/* Sierra Wireless Modem NMEA */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9054, 3)},	/* Sierra Wireless Modem Modem */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9055, 0)},	/* Netgear AirCard 341U Device Management */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9055, 2)},	/* Netgear AirCard 341U NMEA */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9055, 3)},	/* Netgear AirCard 341U Modem */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9056, 0)},	/* Sierra Wireless Modem Device Management */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9056, 2)},	/* Sierra Wireless Modem NMEA */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9056, 3)},	/* Sierra Wireless Modem Modem */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9060, 0)},	/* Sierra Wireless Modem Device Management */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9060, 2)},	/* Sierra Wireless Modem NMEA */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9060, 3)},	/* Sierra Wireless Modem Modem */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9061, 0)},	/* Sierra Wireless Modem Device Management */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9061, 2)},	/* Sierra Wireless Modem NMEA */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9061, 3)},	/* Sierra Wireless Modem Modem */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 0)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card Device Management */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 2)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card NMEA */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 3)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card Modem */
 
 
