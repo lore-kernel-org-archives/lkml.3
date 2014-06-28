@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756773AbaF1Sje (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:39:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53578 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932101AbaF1RuW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932130AbaF1RuW (ORCPT <rfc822;w@1wt.eu>);
 	Sat, 28 Jun 2014 13:50:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53555 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932101AbaF1RuS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Jun 2014 13:50:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mike Frysinger <vapier@gentoo.org>, "H.J. Lu" <hjl.tools@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 3.14 086/110] x86, x32: Use compat shims for io_{setup,submit}
-Date: Sat, 28 Jun 2014 10:47:23 -0700
-Message-Id: <20140628174550.625669076@linuxfoundation.org>
+        Sagi Grimberg <sagig@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.14 073/110] Target/iser: Fix hangs in connection teardown
+Date: Sat, 28 Jun 2014 10:47:10 -0700
+Message-Id: <20140628174549.884565552@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -29,57 +29,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Frysinger <vapier@gentoo.org>
+From: Sagi Grimberg <sagig@mellanox.com>
 
-commit 7fd44dacdd803c0bbf38bf478d51d280902bb0f1 upstream.
+commit 9d49f5e284e700576f3b65f1e28dea8539da6661 upstream.
 
-The io_setup takes a pointer to a context id of type aio_context_t.
-This in turn is typed to a __kernel_ulong_t.  We could tweak the
-exported headers to define this as a 64bit quantity for specific
-ABIs, but since we already have a 32bit compat shim for the x86 ABI,
-let's just re-use that logic.  The libaio package is also written to
-expect this as a pointer type, so a compat shim would simplify that.
+In ungraceful teardowns isert close flows seem racy such that
+isert_wait_conn hangs as RDMA_CM_EVENT_DISCONNECTED never
+gets invoked (no one called rdma_disconnect).
 
-The io_submit func operates on an array of pointers to iocb structs.
-Padding out the array to be 64bit aligned is a huge pain, so convert
-it over to the existing compat shim too.
+Both graceful and ungraceful teardowns will have rx flush errors
+(isert posts a batch once connection is established). Once all
+flush errors are consumed we invoke isert_wait_conn and it will
+be responsible for calling rdma_disconnect. This way it can be
+sure that rdma_disconnect was called and it won't wait forever.
 
-We don't convert io_getevents to the compat func as its only purpose
-is to handle the timespec struct, and the x32 ABI uses 64bit times.
+This patch also removes the logout_posted indicator. either the
+logout completion was consumed and no problem decrementing the
+post_send_buf_count, or it was consumed as a flush error. no point
+of keeping it for isert_wait_conn as there is no danger that
+isert_conn will be accidentally removed while it is running.
 
-With this change, the libaio package can now pass its testsuite when
-built for the x32 ABI.
+(Drop unnecessary sleep_on_conn_wait_comp check in
+ isert_cq_rx_comp_err - nab)
 
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
-Link: http://lkml.kernel.org/r/1399250595-5005-1-git-send-email-vapier@gentoo.org
-Cc: H.J. Lu <hjl.tools@gmail.com>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/syscalls/syscall_64.tbl |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/infiniband/ulp/isert/ib_isert.c |   31 ++++++++++---------------------
+ drivers/infiniband/ulp/isert/ib_isert.h |    1 -
+ 2 files changed, 10 insertions(+), 22 deletions(-)
 
---- a/arch/x86/syscalls/syscall_64.tbl
-+++ b/arch/x86/syscalls/syscall_64.tbl
-@@ -212,10 +212,10 @@
- 203	common	sched_setaffinity	sys_sched_setaffinity
- 204	common	sched_getaffinity	sys_sched_getaffinity
- 205	64	set_thread_area
--206	common	io_setup		sys_io_setup
-+206	64	io_setup		sys_io_setup
- 207	common	io_destroy		sys_io_destroy
- 208	common	io_getevents		sys_io_getevents
--209	common	io_submit		sys_io_submit
-+209	64	io_submit		sys_io_submit
- 210	common	io_cancel		sys_io_cancel
- 211	64	get_thread_area
- 212	common	lookup_dcookie		sys_lookup_dcookie
-@@ -358,3 +358,5 @@
- 540	x32	process_vm_writev	compat_sys_process_vm_writev
- 541	x32	setsockopt		compat_sys_setsockopt
- 542	x32	getsockopt		compat_sys_getsockopt
-+543	x32	io_setup		compat_sys_io_setup
-+544	x32	io_submit		compat_sys_io_submit
+--- a/drivers/infiniband/ulp/isert/ib_isert.c
++++ b/drivers/infiniband/ulp/isert/ib_isert.c
+@@ -705,14 +705,10 @@ isert_disconnect_work(struct work_struct
+ 		isert_put_conn(isert_conn);
+ 		return;
+ 	}
+-	if (!isert_conn->logout_posted) {
+-		pr_debug("Calling rdma_disconnect for !logout_posted from"
+-			 " isert_disconnect_work\n");
+-		rdma_disconnect(isert_conn->conn_cm_id);
+-		mutex_unlock(&isert_conn->conn_mutex);
+-		iscsit_cause_connection_reinstatement(isert_conn->conn, 0);
+-		goto wake_up;
+-	}
++
++	/* Send DREQ/DREP towards our initiator */
++	rdma_disconnect(isert_conn->conn_cm_id);
++
+ 	mutex_unlock(&isert_conn->conn_mutex);
+ 
+ wake_up:
+@@ -1617,11 +1613,8 @@ isert_do_control_comp(struct work_struct
+ 		break;
+ 	case ISTATE_SEND_LOGOUTRSP:
+ 		pr_debug("Calling iscsit_logout_post_handler >>>>>>>>>>>>>>\n");
+-		/*
+-		 * Call atomic_dec(&isert_conn->post_send_buf_count)
+-		 * from isert_wait_conn()
+-		 */
+-		isert_conn->logout_posted = true;
++
++		atomic_dec(&isert_conn->post_send_buf_count);
+ 		iscsit_logout_post_handler(cmd, cmd->conn);
+ 		break;
+ 	case ISTATE_SEND_TEXTRSP:
+@@ -1791,6 +1784,8 @@ isert_cq_rx_comp_err(struct isert_conn *
+ 	isert_conn->state = ISER_CONN_DOWN;
+ 	mutex_unlock(&isert_conn->conn_mutex);
+ 
++	iscsit_cause_connection_reinstatement(isert_conn->conn, 0);
++
+ 	complete(&isert_conn->conn_wait_comp_err);
+ }
+ 
+@@ -2782,15 +2777,9 @@ static void isert_wait_conn(struct iscsi
+ 	struct isert_conn *isert_conn = conn->context;
+ 
+ 	pr_debug("isert_wait_conn: Starting \n");
+-	/*
+-	 * Decrement post_send_buf_count for special case when called
+-	 * from isert_do_control_comp() -> iscsit_logout_post_handler()
+-	 */
+-	mutex_lock(&isert_conn->conn_mutex);
+-	if (isert_conn->logout_posted)
+-		atomic_dec(&isert_conn->post_send_buf_count);
+ 
+-	if (isert_conn->conn_cm_id && isert_conn->state != ISER_CONN_DOWN) {
++	mutex_lock(&isert_conn->conn_mutex);
++	if (isert_conn->conn_cm_id) {
+ 		pr_debug("Calling rdma_disconnect from isert_wait_conn\n");
+ 		rdma_disconnect(isert_conn->conn_cm_id);
+ 	}
+--- a/drivers/infiniband/ulp/isert/ib_isert.h
++++ b/drivers/infiniband/ulp/isert/ib_isert.h
+@@ -93,7 +93,6 @@ struct isert_device;
+ 
+ struct isert_conn {
+ 	enum iser_conn_state	state;
+-	bool			logout_posted;
+ 	int			post_recv_buf_count;
+ 	atomic_t		post_send_buf_count;
+ 	u32			responder_resources;
 
 
