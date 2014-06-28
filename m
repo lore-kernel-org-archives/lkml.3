@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753227AbaF1RrG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:47:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52704 "EHLO
+	id S1756075AbaF1T0D (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 15:26:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52743 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752095AbaF1Rq6 (ORCPT
+	with ESMTP id S1753171AbaF1RrG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:46:58 -0400
+	Sat, 28 Jun 2014 13:47:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Huang Rui <ray.huang@amd.com>
-Subject: [PATCH 3.4 04/43] usb: usbtest: fix unlink write error with pattern 1
-Date: Sat, 28 Jun 2014 10:45:55 -0700
-Message-Id: <20140628174450.010856631@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.4 23/43] USB: usb_wwan: fix potential blocked I/O after resume
+Date: Sat, 28 Jun 2014 10:46:14 -0700
+Message-Id: <20140628174450.868682825@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174449.788784511@linuxfoundation.org>
 References: <20140628174449.788784511@linuxfoundation.org>
@@ -28,68 +28,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Huang Rui <ray.huang@amd.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit e4d58f5dcb7d7be45df8def31881ebfae99c75da upstream.
+commit fb7ad4f93d9f0f7d49beda32f5e7becb94b29a4d upstream.
 
-TEST 12 and TEST 24 unlinks the URB write request for N times. When
-host and gadget both initialize pattern 1 (mod 63) data series to
-transfer, the gadget side will complain the wrong data which is not
-expected.  Because in host side, usbtest doesn't fill the data buffer
-as mod 63 and this patch fixed it.
+Keep trying to submit urbs rather than bail out on first read-urb
+submission error, which would also prevent I/O for any further ports
+from being resumed.
 
-[20285.488974] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Not Ready
-[20285.489181] dwc3 dwc3.0.auto: ep1out-bulk: reason Transfer Not Active
-[20285.489423] dwc3 dwc3.0.auto: ep1out-bulk: req ffff8800aa6cb480 dma aeb50800 length 512 last
-[20285.489727] dwc3 dwc3.0.auto: ep1out-bulk: cmd 'Start Transfer' params 00000000 a9eaf000 00000000
-[20285.490055] dwc3 dwc3.0.auto: Command Complete --> 0
-[20285.490281] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Not Ready
-[20285.490492] dwc3 dwc3.0.auto: ep1out-bulk: reason Transfer Active
-[20285.490713] dwc3 dwc3.0.auto: ep1out-bulk: endpoint busy
-[20285.490909] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Complete
-[20285.491117] dwc3 dwc3.0.auto: request ffff8800aa6cb480 from ep1out-bulk completed 512/512 ===> 0
-[20285.491431] zero gadget: bad OUT byte, buf[1] = 0
-[20285.491605] dwc3 dwc3.0.auto: ep1out-bulk: cmd 'Set Stall' params 00000000 00000000 00000000
-[20285.491915] dwc3 dwc3.0.auto: Command Complete --> 0
-[20285.492099] dwc3 dwc3.0.auto: queing request ffff8800aa6cb480 to ep1out-bulk length 512
-[20285.492387] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Not Ready
-[20285.492595] dwc3 dwc3.0.auto: ep1out-bulk: reason Transfer Not Active
-[20285.492830] dwc3 dwc3.0.auto: ep1out-bulk: req ffff8800aa6cb480 dma aeb51000 length 512 last
-[20285.493135] dwc3 dwc3.0.auto: ep1out-bulk: cmd 'Start Transfer' params 00000000 a9eaf000 00000000
-[20285.493465] dwc3 dwc3.0.auto: Command Complete --> 0
+Instead keep an error count, for all types of failed submissions, and
+let USB core know that something went wrong.
 
-Signed-off-by: Huang Rui <ray.huang@amd.com>
+Also make sure to always clear the suspended flag. Currently a failed
+read-urb submission would prevent cached writes as well as any
+subsequent writes from being submitted until next suspend-resume cycle,
+something which may not even necessarily happen.
+
+Note that USB core currently only logs an error if an interface resume
+failed.
+
+Fixes: 383cedc3bb43 ("USB: serial: full autosuspend support for the
+option driver")
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/misc/usbtest.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/usb/serial/usb_wwan.c |   25 +++++++++++++++++--------
+ 1 file changed, 17 insertions(+), 8 deletions(-)
 
---- a/drivers/usb/misc/usbtest.c
-+++ b/drivers/usb/misc/usbtest.c
-@@ -1135,6 +1135,11 @@ static int unlink1(struct usbtest_dev *d
- 	urb->context = &completion;
- 	urb->complete = unlink1_callback;
+--- a/drivers/usb/serial/usb_wwan.c
++++ b/drivers/usb/serial/usb_wwan.c
+@@ -692,12 +692,12 @@ int usb_wwan_suspend(struct usb_serial *
+ }
+ EXPORT_SYMBOL(usb_wwan_suspend);
  
-+	if (usb_pipeout(urb->pipe)) {
-+		simple_fill_buf(urb);
-+		urb->transfer_flags |= URB_ZERO_PACKET;
-+	}
-+
- 	/* keep the endpoint busy.  there are lots of hc/hcd-internal
- 	 * states, and testing should get to all of them over time.
- 	 *
-@@ -1265,6 +1270,11 @@ static int unlink_queued(struct usbtest_
- 				unlink_queued_callback, &ctx);
- 		ctx.urbs[i]->transfer_dma = buf_dma;
- 		ctx.urbs[i]->transfer_flags = URB_NO_TRANSFER_DMA_MAP;
-+
-+		if (usb_pipeout(ctx.urbs[i]->pipe)) {
-+			simple_fill_buf(ctx.urbs[i]);
-+			ctx.urbs[i]->transfer_flags |= URB_ZERO_PACKET;
-+		}
+-static void play_delayed(struct usb_serial_port *port)
++static int play_delayed(struct usb_serial_port *port)
+ {
+ 	struct usb_wwan_intf_private *data;
+ 	struct usb_wwan_port_private *portdata;
+ 	struct urb *urb;
+-	int err;
++	int err = 0;
+ 
+ 	portdata = usb_get_serial_port_data(port);
+ 	data = port->serial->private;
+@@ -714,6 +714,8 @@ static void play_delayed(struct usb_seri
+ 			break;
+ 		}
  	}
++
++	return err;
+ }
  
- 	/* Submit all the URBs and then unlink URBs num - 4 and num - 2. */
+ int usb_wwan_resume(struct usb_serial *serial)
+@@ -723,7 +725,8 @@ int usb_wwan_resume(struct usb_serial *s
+ 	struct usb_wwan_intf_private *intfdata = serial->private;
+ 	struct usb_wwan_port_private *portdata;
+ 	struct urb *urb;
+-	int err = 0;
++	int err;
++	int err_count = 0;
+ 
+ 	dbg("%s entered", __func__);
+ 
+@@ -744,25 +747,31 @@ int usb_wwan_resume(struct usb_serial *s
+ 				dev_err(&port->dev,
+ 					"%s: submit int urb failed: %d\n",
+ 					__func__, err);
++				err_count++;
+ 			}
+ 		}
+ 
++		err = play_delayed(port);
++		if (err)
++			err_count++;
++
+ 		for (j = 0; j < N_IN_URB; j++) {
+ 			urb = portdata->in_urbs[j];
+ 			err = usb_submit_urb(urb, GFP_ATOMIC);
+ 			if (err < 0) {
+ 				err("%s: Error %d for bulk URB %d",
+ 				    __func__, err, i);
+-				spin_unlock_irq(&intfdata->susp_lock);
+-				goto err_out;
++				err_count++;
+ 			}
+ 		}
+-		play_delayed(port);
+ 	}
+ 	intfdata->suspended = 0;
+ 	spin_unlock_irq(&intfdata->susp_lock);
+-err_out:
+-	return err;
++
++	if (err_count)
++		return -EIO;
++
++	return 0;
+ }
+ EXPORT_SYMBOL(usb_wwan_resume);
+ #endif
 
 
