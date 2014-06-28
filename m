@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751974AbaF1Rqu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:46:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52689 "EHLO
+	id S1753521AbaF1RrS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:47:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52762 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751127AbaF1Rqs (ORCPT
+	with ESMTP id S1753323AbaF1RrK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:46:48 -0400
+	Sat, 28 Jun 2014 13:47:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Christopher R. Baker" <cbaker@rec.ri.cmu.edu>,
-        Stephane Grosjean <s.grosjean@peak-system.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [PATCH 3.4 01/43] can: peak_pci: prevent use after free at netdev removal
-Date: Sat, 28 Jun 2014 10:45:52 -0700
-Message-Id: <20140628174449.870397959@linuxfoundation.org>
+        Tony Luck <tony.luck@intel.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@suse.de>,
+        Chen Gong <gong.chen@linux.jf.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.4 11/43] mm/memory-failure.c: dont let collect_procs() skip over processes for MF_ACTION_REQUIRED
+Date: Sat, 28 Jun 2014 10:46:02 -0700
+Message-Id: <20140628174450.329096761@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174449.788784511@linuxfoundation.org>
 References: <20140628174449.788784511@linuxfoundation.org>
@@ -30,69 +33,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephane Grosjean <s.grosjean@peak-system.com>
+From: Tony Luck <tony.luck@intel.com>
 
-commit 0b5a958cf4df3a5cd578b861471e62138f55c85e upstream.
+commit 74614de17db6fb472370c426d4f934d8d616edf2 upstream.
 
-As remarked by Christopher R. Baker in his post at
+When Linux sees an "action optional" machine check (where h/w has reported
+an error that is not in the current execution path) we generally do not
+want to signal a process, since most processes do not have a SIGBUS
+handler - we'd just prematurely terminate the process for a problem that
+they might never actually see.
 
-http://marc.info/?l=linux-can&m=139707295706465&w=2
+task_early_kill() decides whether to consider a process - and it checks
+whether this specific process has been marked for early signals with
+"prctl", or if the system administrator has requested early signals for
+all processes using /proc/sys/vm/memory_failure_early_kill.
 
-there's a possibility for an use after free condition at device removal.
+But for MF_ACTION_REQUIRED case we must not defer.  The error is in the
+execution path of the current thread so we must send the SIGBUS
+immediatley.
 
-This simplified patch introduces an additional variable to prevent the issue.
-Thanks for catching this.
+Fix by passing a flag argument through collect_procs*() to
+task_early_kill() so it knows whether we can defer or must take action.
 
-Reported-by: Christopher R. Baker <cbaker@rec.ri.cmu.edu>
-Signed-off-by: Stephane Grosjean <s.grosjean@peak-system.com>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Borislav Petkov <bp@suse.de>
+Cc: Chen Gong <gong.chen@linux.jf.intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/can/sja1000/peak_pci.c |   14 +++++++++-----
- 1 file changed, 9 insertions(+), 5 deletions(-)
+ mm/memory-failure.c |   21 ++++++++++++---------
+ 1 file changed, 12 insertions(+), 9 deletions(-)
 
---- a/drivers/net/can/sja1000/peak_pci.c
-+++ b/drivers/net/can/sja1000/peak_pci.c
-@@ -547,7 +547,7 @@ static int __devinit peak_pci_probe(stru
- {
- 	struct sja1000_priv *priv;
- 	struct peak_pci_chan *chan;
--	struct net_device *dev;
-+	struct net_device *dev, *prev_dev;
- 	void __iomem *cfg_base, *reg_base;
- 	u16 sub_sys_id, icr;
- 	int i, err, channels;
-@@ -681,11 +681,13 @@ failure_remove_channels:
- 	writew(0x0, cfg_base + PITA_ICR + 2);
- 
- 	chan = NULL;
--	for (dev = pci_get_drvdata(pdev); dev; dev = chan->prev_dev) {
--		unregister_sja1000dev(dev);
--		free_sja1000dev(dev);
-+	for (dev = pci_get_drvdata(pdev); dev; dev = prev_dev) {
- 		priv = netdev_priv(dev);
- 		chan = priv->priv;
-+		prev_dev = chan->prev_dev;
-+
-+		unregister_sja1000dev(dev);
-+		free_sja1000dev(dev);
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -382,10 +382,12 @@ static void kill_procs(struct list_head
  	}
+ }
  
- 	/* free any PCIeC resources too */
-@@ -719,10 +721,12 @@ static void __devexit peak_pci_remove(st
+-static int task_early_kill(struct task_struct *tsk)
++static int task_early_kill(struct task_struct *tsk, int force_early)
+ {
+ 	if (!tsk->mm)
+ 		return 0;
++	if (force_early)
++		return 1;
+ 	if (tsk->flags & PF_MCE_PROCESS)
+ 		return !!(tsk->flags & PF_MCE_EARLY);
+ 	return sysctl_memory_failure_early_kill;
+@@ -395,7 +397,7 @@ static int task_early_kill(struct task_s
+  * Collect processes when the error hit an anonymous page.
+  */
+ static void collect_procs_anon(struct page *page, struct list_head *to_kill,
+-			      struct to_kill **tkc)
++			      struct to_kill **tkc, int force_early)
+ {
+ 	struct vm_area_struct *vma;
+ 	struct task_struct *tsk;
+@@ -409,7 +411,7 @@ static void collect_procs_anon(struct pa
+ 	for_each_process (tsk) {
+ 		struct anon_vma_chain *vmac;
  
- 	/* Loop over all registered devices */
- 	while (1) {
-+		struct net_device *prev_dev = chan->prev_dev;
-+
- 		dev_info(&pdev->dev, "removing device %s\n", dev->name);
- 		unregister_sja1000dev(dev);
- 		free_sja1000dev(dev);
--		dev = chan->prev_dev;
-+		dev = prev_dev;
+-		if (!task_early_kill(tsk))
++		if (!task_early_kill(tsk, force_early))
+ 			continue;
+ 		list_for_each_entry(vmac, &av->head, same_anon_vma) {
+ 			vma = vmac->vma;
+@@ -427,7 +429,7 @@ static void collect_procs_anon(struct pa
+  * Collect processes when the error hit a file mapped page.
+  */
+ static void collect_procs_file(struct page *page, struct list_head *to_kill,
+-			      struct to_kill **tkc)
++			      struct to_kill **tkc, int force_early)
+ {
+ 	struct vm_area_struct *vma;
+ 	struct task_struct *tsk;
+@@ -439,7 +441,7 @@ static void collect_procs_file(struct pa
+ 	for_each_process(tsk) {
+ 		pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
  
- 		if (!dev) {
- 			/* do that only for first channel */
+-		if (!task_early_kill(tsk))
++		if (!task_early_kill(tsk, force_early))
+ 			continue;
+ 
+ 		vma_prio_tree_foreach(vma, &iter, &mapping->i_mmap, pgoff,
+@@ -465,7 +467,8 @@ static void collect_procs_file(struct pa
+  * First preallocate one tokill structure outside the spin locks,
+  * so that we can kill at least one process reasonably reliable.
+  */
+-static void collect_procs(struct page *page, struct list_head *tokill)
++static void collect_procs(struct page *page, struct list_head *tokill,
++				int force_early)
+ {
+ 	struct to_kill *tk;
+ 
+@@ -476,9 +479,9 @@ static void collect_procs(struct page *p
+ 	if (!tk)
+ 		return;
+ 	if (PageAnon(page))
+-		collect_procs_anon(page, tokill, &tk);
++		collect_procs_anon(page, tokill, &tk, force_early);
+ 	else
+-		collect_procs_file(page, tokill, &tk);
++		collect_procs_file(page, tokill, &tk, force_early);
+ 	kfree(tk);
+ }
+ 
+@@ -948,7 +951,7 @@ static int hwpoison_user_mappings(struct
+ 	 * there's nothing that can be done.
+ 	 */
+ 	if (kill)
+-		collect_procs(ppage, &tokill);
++		collect_procs(ppage, &tokill, flags & MF_ACTION_REQUIRED);
+ 
+ 	if (hpage != ppage)
+ 		lock_page(ppage);
 
 
