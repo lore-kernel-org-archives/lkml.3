@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753982AbaF1Rrs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:47:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52891 "EHLO
+	id S1757250AbaF1TPH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 15:15:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52907 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753694AbaF1Rro (ORCPT
+	with ESMTP id S1753967AbaF1Rrs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:47:44 -0400
+	Sat, 28 Jun 2014 13:47:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.10 13/77] USB: option: fix runtime PM handling
-Date: Sat, 28 Jun 2014 10:46:06 -0700
-Message-Id: <20140628174522.307722348@linuxfoundation.org>
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Subject: [PATCH 3.10 04/77] extcon: max8997: Fix NULL pointer exception on missing pdata
+Date: Sat, 28 Jun 2014 10:45:57 -0700
+Message-Id: <20140628174521.910231353@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174521.691276402@linuxfoundation.org>
 References: <20140628174521.691276402@linuxfoundation.org>
@@ -28,51 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-commit acf47d4f9c39b1cba467aa9442fc2efe0b1da741 upstream.
+commit dfee4111febf3d9ef3a640b2cd6205c75f4e7e3d upstream.
 
-Fix potential I/O while runtime suspended due to missing PM operations
-in send_setup.
+Fix NULL pointer exception when platform data is not supplied. The
+driver dereferenced pdata pointer where it could be NULL.
 
-Fixes: 383cedc3bb43 ("USB: serial: full autosuspend support for the
-option driver")
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Fixes: 810d601f07c
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ drivers/extcon/extcon-max8997.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -1925,6 +1925,7 @@ static int option_send_setup(struct usb_
- 	struct option_private *priv = intfdata->private;
- 	struct usb_wwan_port_private *portdata;
- 	int val = 0;
-+	int res;
+--- a/drivers/extcon/extcon-max8997.c
++++ b/drivers/extcon/extcon-max8997.c
+@@ -712,7 +712,7 @@ static int max8997_muic_probe(struct pla
+ 		goto err_irq;
+ 	}
  
- 	portdata = usb_get_serial_port_data(port);
+-	if (pdata->muic_pdata) {
++	if (pdata && pdata->muic_pdata) {
+ 		struct max8997_muic_platform_data *muic_pdata
+ 			= pdata->muic_pdata;
  
-@@ -1933,9 +1934,17 @@ static int option_send_setup(struct usb_
- 	if (portdata->rts_state)
- 		val |= 0x02;
- 
--	return usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
-+	res = usb_autopm_get_interface(serial->interface);
-+	if (res)
-+		return res;
-+
-+	res = usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
- 				0x22, 0x21, val, priv->bInterfaceNumber, NULL,
- 				0, USB_CTRL_SET_TIMEOUT);
-+
-+	usb_autopm_put_interface(serial->interface);
-+
-+	return res;
- }
- 
- MODULE_AUTHOR(DRIVER_AUTHOR);
 
 
