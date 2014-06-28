@@ -1,50 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752337AbaF1QGR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 12:06:17 -0400
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:57970 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751129AbaF1QGQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 12:06:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAPDOMVjnROuS4D4E2B7=PxOZUB4YXHuFUKy5C9Y8Lm7gxN=N_Q@mail.gmail.com>
-References: <CAPDOMVg=L+spebzkckNpM0=9NY=meV=F_+ko+VJN_6M50NdNew@mail.gmail.com>
-	<CAPDOMVjnROuS4D4E2B7=PxOZUB4YXHuFUKy5C9Y8Lm7gxN=N_Q@mail.gmail.com>
-Date: Sat, 28 Jun 2014 12:06:15 -0400
-Message-ID: <CAPDOMVhDpgO4wz9=KKbwoC=6AaB-ZcG71aMFFQ0j+FpiM_o0_w@mail.gmail.com>
-Subject: Re: Cleanup of Kernel Bugzilla
-From: Nick Krause <xerofoify@gmail.com>
-To: stable@vger.kernel.org
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1751592AbaF1QRJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 12:17:09 -0400
+Received: from smtp6-g21.free.fr ([212.27.42.6]:25648 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751129AbaF1QRI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Jun 2014 12:17:08 -0400
+From: Guillaume Morin <guillaume@morinfr.org>
+To: Lidza Louina <lidza.louina@gmail.com>, Mark Hounschell <markh@compro.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Guillaume Morin <guillaume@morinfr.org>,
+        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] staging: dgnc_driver.c: code style fixes
+Date: Sat, 28 Jun 2014 18:16:40 +0200
+Message-Id: <20010f834ddc542235b3bcac65caed31c62f7cbb.1403935000.git.guillaume@morinfr.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Do all of you guys even care about cleaning up bugs? If
-you do it would be great if I get a reply to where I can get
-a up to date list of kernel bugs.
-Cheers Nick
+From: Guillaume Morin <guillaume@morinfr.org>
 
-On Fri, Jun 27, 2014 at 10:45 PM, Nick Krause <xerofoify@gmail.com> wrote:
-> Do any of you use the kernel Bugzilla? If you do I was wondering if we
-> can clean it up.
-> Otherwise I was wondering were  I can get an accurate list of open
-> bugs in the newest
-> kernels.
-> Cheers Nick
->
->
-> On Fri, Jun 27, 2014 at 2:11 PM, Nick Krause <xerofoify@gmail.com> wrote:
->> Hey fellow developers
->> I seem to be finding lots of bugs on the kernel  Bugzilla that are now
->> fixed , it would be great if the maintainers or bug reporters closed them.
->>  In addition most of them , seem to from the years 2011 -2013. I have
->> searched through assigned ,reopened ,need info and new bug states on
->> the kernel Bugzilla . The bugs are up to date on assigned but the other
->> open states for bugs  need to be cleaned up a lot. It would be great if
->> when you and the other maintainers  have time if the bugs that are
->> fixed will be closed from these years that are now resolved.
->> Cheers ,
->> Nick
+Simple code style fixes:
+ - "if(" -> "if ("
+ - "switch(" -> "switch ("
+ - move one open brace to the line of the declaration instead of
+   its own line
+ - remove trailing whitespace
+
+Signed-off-by: Guillaume Morin <guillaume@morinfr.org>
+---
+Changes since v1:
+ - added explicit description of the fixes
+
+ drivers/staging/dgnc/dgnc_driver.c |   11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/staging/dgnc/dgnc_driver.c b/drivers/staging/dgnc/dgnc_driver.c
+index d52a9e8..68460af 100644
+--- a/drivers/staging/dgnc/dgnc_driver.c
++++ b/drivers/staging/dgnc/dgnc_driver.c
+@@ -88,8 +88,7 @@ module_exit(dgnc_cleanup_module);
+ /*
+  * File operations permitted on Control/Management major.
+  */
+-static const struct file_operations dgnc_BoardFops =
+-{
++static const struct file_operations dgnc_BoardFops = {
+ 	.owner		=	THIS_MODULE,
+ 	.unlocked_ioctl =  	dgnc_mgmt_ioctl,
+ 	.open		=	dgnc_mgmt_open,
+@@ -407,7 +406,7 @@ static void dgnc_cleanup_board(struct dgnc_board *brd)
+ {
+ 	int i = 0;
+ 
+-	if(!brd || brd->magic != DGNC_BOARD_MAGIC)
++	if (!brd || brd->magic != DGNC_BOARD_MAGIC)
+ 		return;
+ 
+ 	switch (brd->device) {
+@@ -480,7 +479,7 @@ static int dgnc_found_board(struct pci_dev *pdev, int id)
+ 	/* get the board structure and prep it */
+ 	brd = dgnc_Board[dgnc_NumBoards] =
+ 		kzalloc(sizeof(*brd), GFP_KERNEL);
+-	if (!brd) 
++	if (!brd)
+ 		return -ENOMEM;
+ 
+ 	/* make a temporary message buffer for the boot messages */
+@@ -523,7 +522,7 @@ static int dgnc_found_board(struct pci_dev *pdev, int id)
+ 	brd->irq = pci_irq;
+ 
+ 
+-	switch(brd->device) {
++	switch (brd->device) {
+ 
+ 	case PCI_DEVICE_CLASSIC_4_DID:
+ 	case PCI_DEVICE_CLASSIC_8_DID:
+@@ -887,7 +886,7 @@ int dgnc_ms_sleep(ulong ms)
+  */
+ char *dgnc_ioctl_name(int cmd)
+ {
+-	switch(cmd) {
++	switch (cmd) {
+ 
+ 	case TCGETA:		return "TCGETA";
+ 	case TCGETS:		return "TCGETS";
+-- 
+1.7.10.4
+
