@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757443AbaF1S7K (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:59:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53194 "EHLO
+	id S1751611AbaF1Rsv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:48:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53149 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754805AbaF1Rsy (ORCPT
+	with ESMTP id S1754811AbaF1Rsq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:48:54 -0400
+	Sat, 28 Jun 2014 13:48:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
+To: linux-kernel@vger.kernel.org, target-devel <target-devel@vger.kernel.org>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roger Quadros <rogerq@ti.com>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.10 74/77] usb: usbtest: Add timetout to simple_io()
-Date: Sat, 28 Jun 2014 10:47:07 -0700
-Message-Id: <20140628174525.496682261@linuxfoundation.org>
+        Jorge Daniel Sequeira Matias <jdsm@tecnico.ulisboa.pt>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.10 56/77] [PATCH] target: Explicitly clear ramdisk_mcp backend pages
+Date: Sat, 28 Jun 2014 10:46:49 -0700
+Message-Id: <20140628174524.498679041@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174521.691276402@linuxfoundation.org>
 References: <20140628174521.691276402@linuxfoundation.org>
@@ -28,56 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roger Quadros <rogerq@ti.com>
 
-commit e5e4746510d140261918aecce2e5e3aa4456f7e9 upstream.
+[Note that a different patch to address the same issue went in during
+v3.15-rc1 (commit 4442dc8a), but includes a bunch of other changes that
+don't strictly apply to fixing the bug]
 
-Without a timetout some tests e.g. test_halt() can remain stuck forever.
+This patch changes rd_allocate_sgl_table() to explicitly clear
+ramdisk_mcp backend memory pages by passing __GFP_ZERO into
+alloc_pages().
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Reviewed-by: Felipe Balbi <balbi@ti.com>
+This addresses a potential security issue where reading from a
+ramdisk_mcp could return sensitive information, and follows what
+>= v3.15 does to explicitly clear ramdisk_mcp memory at backend
+device initialization time.
+
+Reported-by: Jorge Daniel Sequeira Matias <jdsm@tecnico.ulisboa.pt>
+Cc: Jorge Daniel Sequeira Matias <jdsm@tecnico.ulisboa.pt>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/misc/usbtest.c |   14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+ drivers/target/target_core_rd.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/misc/usbtest.c
-+++ b/drivers/usb/misc/usbtest.c
-@@ -10,6 +10,7 @@
- #include <linux/timer.h>
- #include <linux/usb.h>
+--- a/drivers/target/target_core_rd.c
++++ b/drivers/target/target_core_rd.c
+@@ -174,7 +174,7 @@ static int rd_build_device_space(struct
+ 						- 1;
  
-+#define SIMPLE_IO_TIMEOUT	10000	/* in milliseconds */
- 
- /*-------------------------------------------------------------------------*/
- 
-@@ -366,6 +367,7 @@ static int simple_io(
- 	int			max = urb->transfer_buffer_length;
- 	struct completion	completion;
- 	int			retval = 0;
-+	unsigned long		expire;
- 
- 	urb->context = &completion;
- 	while (retval == 0 && iterations-- > 0) {
-@@ -378,9 +380,15 @@ static int simple_io(
- 		if (retval != 0)
- 			break;
- 
--		/* NOTE:  no timeouts; can't be broken out of by interrupt */
--		wait_for_completion(&completion);
--		retval = urb->status;
-+		expire = msecs_to_jiffies(SIMPLE_IO_TIMEOUT);
-+		if (!wait_for_completion_timeout(&completion, expire)) {
-+			usb_kill_urb(urb);
-+			retval = (urb->status == -ENOENT ?
-+				  -ETIMEDOUT : urb->status);
-+		} else {
-+			retval = urb->status;
-+		}
-+
- 		urb->dev = udev;
- 		if (retval == 0 && usb_pipein(urb->pipe))
- 			retval = simple_check_buf(tdev, urb);
+ 		for (j = 0; j < sg_per_table; j++) {
+-			pg = alloc_pages(GFP_KERNEL, 0);
++			pg = alloc_pages(GFP_KERNEL | __GFP_ZERO, 0);
+ 			if (!pg) {
+ 				pr_err("Unable to allocate scatterlist"
+ 					" pages for struct rd_dev_sg_table\n");
 
 
