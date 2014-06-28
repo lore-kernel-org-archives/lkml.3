@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755997AbaF1RwN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:52:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54238 "EHLO
+	id S1756516AbaF1SLt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:11:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54255 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755961AbaF1RwG (ORCPT
+	with ESMTP id S1754308AbaF1RwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:52:06 -0400
+	Sat, 28 Jun 2014 13:52:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Brad Mouring <bmouring@ni.com>
-Subject: [PATCH 3.15 072/139] rtmutex: Handle deadlock detection smarter
-Date: Sat, 28 Jun 2014 10:47:13 -0700
-Message-Id: <20140628174608.726585218@linuxfoundation.org>
+        Aleksander Morgado <aleksander@aleksander.es>,
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.15 060/139] usb: qcserial: add additional Sierra Wireless QMI devices
+Date: Sat, 28 Jun 2014 10:47:01 -0700
+Message-Id: <20140628174608.172029845@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -30,135 +29,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Aleksander Morgado <aleksander@aleksander.es>
 
-commit 3d5c9340d1949733eb37616abd15db36aef9a57c upstream.
+commit 0ce5fb58564fd85aa8fd2d24209900e2e845317b upstream.
 
-Even in the case when deadlock detection is not requested by the
-caller, we can detect deadlocks. Right now the code stops the lock
-chain walk and keeps the waiter enqueued, even on itself. Silly not to
-yell when such a scenario is detected and to keep the waiter enqueued.
+A set of new VID/PIDs retrieved from the out-of-tree GobiNet/GobiSerial
+Sierra Wireless drivers.
 
-Return -EDEADLK unconditionally and handle it at the call sites.
-
-The futex calls return -EDEADLK. The non futex ones dequeue the
-waiter, throw a warning and put the task into a schedule loop.
-
-Tagged for stable as it makes the code more robust.
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Brad Mouring <bmouring@ni.com>
-Link: http://lkml.kernel.org/r/20140605152801.836501969@linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Aleksander Morgado <aleksander@aleksander.es>
+Link: http://marc.info/?l=linux-usb&m=140136310027293&w=2
+Cc: <stable@vger.kernel.org>	# backport in link above
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/locking/rtmutex-debug.h |    5 +++++
- kernel/locking/rtmutex.c       |   33 ++++++++++++++++++++++++++++-----
- kernel/locking/rtmutex.h       |    5 +++++
- 3 files changed, 38 insertions(+), 5 deletions(-)
+ drivers/usb/serial/qcserial.c |   18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
---- a/kernel/locking/rtmutex-debug.h
-+++ b/kernel/locking/rtmutex-debug.h
-@@ -31,3 +31,8 @@ static inline int debug_rt_mutex_detect_
- {
- 	return (waiter != NULL);
- }
-+
-+static inline void rt_mutex_print_deadlock(struct rt_mutex_waiter *w)
-+{
-+	debug_rt_mutex_print_deadlock(w);
-+}
---- a/kernel/locking/rtmutex.c
-+++ b/kernel/locking/rtmutex.c
-@@ -323,7 +323,7 @@ static int rt_mutex_adjust_prio_chain(st
- 		}
- 		put_task_struct(task);
- 
--		return deadlock_detect ? -EDEADLK : 0;
-+		return -EDEADLK;
- 	}
-  retry:
- 	/*
-@@ -398,7 +398,7 @@ static int rt_mutex_adjust_prio_chain(st
- 	if (lock == orig_lock || rt_mutex_owner(lock) == top_task) {
- 		debug_rt_mutex_deadlock(deadlock_detect, orig_waiter, lock);
- 		raw_spin_unlock(&lock->wait_lock);
--		ret = deadlock_detect ? -EDEADLK : 0;
-+		ret = -EDEADLK;
- 		goto out_unlock_pi;
- 	}
- 
-@@ -585,7 +585,7 @@ static int task_blocks_on_rt_mutex(struc
- 	 * which is wrong, as the other waiter is not in a deadlock
- 	 * situation.
- 	 */
--	if (detect_deadlock && owner == task)
-+	if (owner == task)
- 		return -EDEADLK;
- 
- 	raw_spin_lock_irqsave(&task->pi_lock, flags);
-@@ -810,6 +810,26 @@ __rt_mutex_slowlock(struct rt_mutex *loc
- 	return ret;
- }
- 
-+static void rt_mutex_handle_deadlock(int res, int detect_deadlock,
-+				     struct rt_mutex_waiter *w)
-+{
-+	/*
-+	 * If the result is not -EDEADLOCK or the caller requested
-+	 * deadlock detection, nothing to do here.
-+	 */
-+	if (res != -EDEADLOCK || detect_deadlock)
-+		return;
-+
-+	/*
-+	 * Yell lowdly and stop the task right here.
-+	 */
-+	rt_mutex_print_deadlock(w);
-+	while (1) {
-+		set_current_state(TASK_INTERRUPTIBLE);
-+		schedule();
-+	}
-+}
-+
- /*
-  * Slow path lock function:
-  */
-@@ -849,8 +869,10 @@ rt_mutex_slowlock(struct rt_mutex *lock,
- 
- 	set_current_state(TASK_RUNNING);
- 
--	if (unlikely(ret))
-+	if (unlikely(ret)) {
- 		remove_waiter(lock, &waiter);
-+		rt_mutex_handle_deadlock(ret, detect_deadlock, &waiter);
-+	}
- 
- 	/*
- 	 * try_to_take_rt_mutex() sets the waiter bit
-@@ -1159,7 +1181,8 @@ int rt_mutex_start_proxy_lock(struct rt_
- 		return 1;
- 	}
- 
--	ret = task_blocks_on_rt_mutex(lock, waiter, task, detect_deadlock);
-+	/* We enforce deadlock detection for futexes */
-+	ret = task_blocks_on_rt_mutex(lock, waiter, task, 1);
- 
- 	if (ret && !rt_mutex_owner(lock)) {
- 		/*
---- a/kernel/locking/rtmutex.h
-+++ b/kernel/locking/rtmutex.h
-@@ -24,3 +24,8 @@
- #define debug_rt_mutex_print_deadlock(w)		do { } while (0)
- #define debug_rt_mutex_detect_deadlock(w,d)		(d)
- #define debug_rt_mutex_reset_waiter(w)			do { } while (0)
-+
-+static inline void rt_mutex_print_deadlock(struct rt_mutex_waiter *w)
-+{
-+	WARN(1, "rtmutex deadlock detected\n");
-+}
+--- a/drivers/usb/serial/qcserial.c
++++ b/drivers/usb/serial/qcserial.c
+@@ -145,15 +145,33 @@ static const struct usb_device_id id_tab
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x901f, 0)},	/* Sierra Wireless EM7355 Device Management */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x901f, 2)},	/* Sierra Wireless EM7355 NMEA */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x901f, 3)},	/* Sierra Wireless EM7355 Modem */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9040, 0)},	/* Sierra Wireless Modem Device Management */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9040, 2)},	/* Sierra Wireless Modem NMEA */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9040, 3)},	/* Sierra Wireless Modem Modem */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9041, 0)},	/* Sierra Wireless MC7305/MC7355 Device Management */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9041, 2)},	/* Sierra Wireless MC7305/MC7355 NMEA */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9041, 3)},	/* Sierra Wireless MC7305/MC7355 Modem */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 0)},	/* Netgear AirCard 340U Device Management */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 2)},	/* Netgear AirCard 340U NMEA */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 3)},	/* Netgear AirCard 340U Modem */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9053, 0)},	/* Sierra Wireless Modem Device Management */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9053, 2)},	/* Sierra Wireless Modem NMEA */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9053, 3)},	/* Sierra Wireless Modem Modem */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9054, 0)},	/* Sierra Wireless Modem Device Management */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9054, 2)},	/* Sierra Wireless Modem NMEA */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9054, 3)},	/* Sierra Wireless Modem Modem */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9055, 0)},	/* Netgear AirCard 341U Device Management */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9055, 2)},	/* Netgear AirCard 341U NMEA */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9055, 3)},	/* Netgear AirCard 341U Modem */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9056, 0)},	/* Sierra Wireless Modem Device Management */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9056, 2)},	/* Sierra Wireless Modem NMEA */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9056, 3)},	/* Sierra Wireless Modem Modem */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9060, 0)},	/* Sierra Wireless Modem Device Management */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9060, 2)},	/* Sierra Wireless Modem NMEA */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9060, 3)},	/* Sierra Wireless Modem Modem */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9061, 0)},	/* Sierra Wireless Modem Device Management */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9061, 2)},	/* Sierra Wireless Modem NMEA */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9061, 3)},	/* Sierra Wireless Modem Modem */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 0)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card Device Management */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 2)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card NMEA */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 3)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card Modem */
 
 
