@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932209AbaF1TUR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 15:20:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52832 "EHLO
+	id S1753576AbaF1RrZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:47:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52816 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753587AbaF1Rr0 (ORCPT
+	with ESMTP id S1753323AbaF1RrX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:47:26 -0400
+	Sat, 28 Jun 2014 13:47:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 3.4 30/43] ARM: stacktrace: avoid listing stacktrace functions in stacktrace
-Date: Sat, 28 Jun 2014 10:46:21 -0700
-Message-Id: <20140628174451.175042319@linuxfoundation.org>
+        Liu Bo <bo.li.liu@oracle.com>, Chris Mason <clm@fb.com>
+Subject: [PATCH 3.4 40/43] Btrfs: use right type to get real comparison
+Date: Sat, 28 Jun 2014 10:46:31 -0700
+Message-Id: <20140628174451.615443790@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174449.788784511@linuxfoundation.org>
 References: <20140628174449.788784511@linuxfoundation.org>
@@ -28,90 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Liu Bo <bo.li.liu@oracle.com>
 
-commit 3683f44c42e991d313dc301504ee0fca1aeb8580 upstream.
+commit cd857dd6bc2ae9ecea14e75a34e8a8fdc158e307 upstream.
 
-While debugging the FEC ethernet driver using stacktrace, it was noticed
-that the stacktraces always begin as follows:
+We want to make sure the point is still within the extent item, not to verify
+the memory it's pointing to.
 
- [<c00117b4>] save_stack_trace_tsk+0x0/0x98
- [<c0011870>] save_stack_trace+0x24/0x28
- ...
-
-This is because the stack trace code includes the stack frames for itself.
-This is incorrect behaviour, and also leads to "skip" doing the wrong
-thing (which is the number of stack frames to avoid recording.)
-
-Perversely, it does the right thing when passed a non-current thread.  Fix
-this by ensuring that we have a known constant number of frames above the
-main stack trace function, and always skip these.
-
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Liu Bo <bo.li.liu@oracle.com>
+Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/kernel/stacktrace.c |   18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
+ fs/btrfs/backref.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/kernel/stacktrace.c
-+++ b/arch/arm/kernel/stacktrace.c
-@@ -83,13 +83,16 @@ static int save_trace(struct stackframe
- 	return trace->nr_entries >= trace->max_entries;
- }
- 
--void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
-+/* This must be noinline to so that our skip calculation works correctly */
-+static noinline void __save_stack_trace(struct task_struct *tsk,
-+	struct stack_trace *trace, unsigned int nosched)
- {
- 	struct stack_trace_data data;
- 	struct stackframe frame;
- 
- 	data.trace = trace;
- 	data.skip = trace->skip;
-+	data.no_sched_functions = nosched;
- 
- 	if (tsk != current) {
- #ifdef CONFIG_SMP
-@@ -102,7 +105,6 @@ void save_stack_trace_tsk(struct task_st
- 			trace->entries[trace->nr_entries++] = ULONG_MAX;
- 		return;
- #else
--		data.no_sched_functions = 1;
- 		frame.fp = thread_saved_fp(tsk);
- 		frame.sp = thread_saved_sp(tsk);
- 		frame.lr = 0;		/* recovered from the stack */
-@@ -111,11 +113,12 @@ void save_stack_trace_tsk(struct task_st
- 	} else {
- 		register unsigned long current_sp asm ("sp");
- 
--		data.no_sched_functions = 0;
-+		/* We don't want this function nor the caller */
-+		data.skip += 2;
- 		frame.fp = (unsigned long)__builtin_frame_address(0);
- 		frame.sp = current_sp;
- 		frame.lr = (unsigned long)__builtin_return_address(0);
--		frame.pc = (unsigned long)save_stack_trace_tsk;
-+		frame.pc = (unsigned long)__save_stack_trace;
+--- a/fs/btrfs/backref.c
++++ b/fs/btrfs/backref.c
+@@ -1033,7 +1033,7 @@ static int __get_extent_inline_ref(unsig
+ 			*out_eiref = (struct btrfs_extent_inline_ref *)(ei + 1);
+ 		}
+ 		*ptr = (unsigned long)*out_eiref;
+-		if ((void *)*ptr >= (void *)ei + item_size)
++		if ((unsigned long)(*ptr) >= (unsigned long)ei + item_size)
+ 			return -ENOENT;
  	}
  
- 	walk_stackframe(&frame, save_trace, &data);
-@@ -123,9 +126,14 @@ void save_stack_trace_tsk(struct task_st
- 		trace->entries[trace->nr_entries++] = ULONG_MAX;
- }
- 
-+void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
-+{
-+	__save_stack_trace(tsk, trace, 1);
-+}
-+
- void save_stack_trace(struct stack_trace *trace)
- {
--	save_stack_trace_tsk(current, trace);
-+	__save_stack_trace(current, trace, 0);
- }
- EXPORT_SYMBOL_GPL(save_stack_trace);
- #endif
 
 
