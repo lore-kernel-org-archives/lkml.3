@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757021AbaF1Sdz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:33:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53651 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751579AbaF1Rum (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755553AbaF1Rum (ORCPT <rfc822;w@1wt.eu>);
 	Sat, 28 Jun 2014 13:50:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53624 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751579AbaF1Ruf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Jun 2014 13:50:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Liu Bo <bo.li.liu@oracle.com>, Chris Mason <clm@fb.com>
-Subject: [PATCH 3.14 101/110] Btrfs: use right type to get real comparison
-Date: Sat, 28 Jun 2014 10:47:38 -0700
-Message-Id: <20140628174551.425334649@linuxfoundation.org>
+        Roland Dreier <roland@purestorage.com>,
+        Christophe Vu-Brugier <cvubrugier@yahoo.fr>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.14 080/110] target: Report correct response length for some commands
+Date: Sat, 28 Jun 2014 10:47:17 -0700
+Message-Id: <20140628174550.273120166@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -28,31 +30,145 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Liu Bo <bo.li.liu@oracle.com>
+From: Roland Dreier <roland@purestorage.com>
 
-commit cd857dd6bc2ae9ecea14e75a34e8a8fdc158e307 upstream.
+commit 2426bd456a61407388b6e61fc5f98dbcbebc50e2 upstream.
 
-We want to make sure the point is still within the extent item, not to verify
-the memory it's pointing to.
+When an initiator sends an allocation length bigger than what its
+command consumes, the target should only return the actual response data
+and set the residual length to the unused part of the allocation length.
 
-Signed-off-by: Liu Bo <bo.li.liu@oracle.com>
-Signed-off-by: Chris Mason <clm@fb.com>
+Add a helper function that command handlers (INQUIRY, READ CAPACITY,
+etc) can use to do this correctly, and use this code to get the correct
+residual for commands that don't use the full initiator allocation in the
+handlers for READ CAPACITY, READ CAPACITY(16), INQUIRY, MODE SENSE and
+REPORT LUNS.
+
+This addresses a handful of failures as reported by Christophe with
+the Windows Certification Kit:
+
+  http://permalink.gmane.org/gmane.linux.scsi.target.devel/6515
+
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Tested-by: Christophe Vu-Brugier <cvubrugier@yahoo.fr>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/backref.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/target/target_core_sbc.c       |    4 ++--
+ drivers/target/target_core_spc.c       |    9 ++++++---
+ drivers/target/target_core_transport.c |   17 +++++++++++++++++
+ include/target/target_core_backend.h   |    1 +
+ 4 files changed, 26 insertions(+), 5 deletions(-)
 
---- a/fs/btrfs/backref.c
-+++ b/fs/btrfs/backref.c
-@@ -1431,7 +1431,7 @@ static int __get_extent_inline_ref(unsig
- 			*out_eiref = (struct btrfs_extent_inline_ref *)(ei + 1);
- 		}
- 		*ptr = (unsigned long)*out_eiref;
--		if ((void *)*ptr >= (void *)ei + item_size)
-+		if ((unsigned long)(*ptr) >= (unsigned long)ei + item_size)
- 			return -ENOENT;
+--- a/drivers/target/target_core_sbc.c
++++ b/drivers/target/target_core_sbc.c
+@@ -81,7 +81,7 @@ sbc_emulate_readcapacity(struct se_cmd *
+ 		transport_kunmap_data_sg(cmd);
  	}
  
+-	target_complete_cmd(cmd, GOOD);
++	target_complete_cmd_with_length(cmd, GOOD, 8);
+ 	return 0;
+ }
+ 
+@@ -134,7 +134,7 @@ sbc_emulate_readcapacity_16(struct se_cm
+ 		transport_kunmap_data_sg(cmd);
+ 	}
+ 
+-	target_complete_cmd(cmd, GOOD);
++	target_complete_cmd_with_length(cmd, GOOD, 32);
+ 	return 0;
+ }
+ 
+--- a/drivers/target/target_core_spc.c
++++ b/drivers/target/target_core_spc.c
+@@ -714,6 +714,7 @@ spc_emulate_inquiry(struct se_cmd *cmd)
+ 	unsigned char *buf;
+ 	sense_reason_t ret;
+ 	int p;
++	int len = 0;
+ 
+ 	buf = kzalloc(SE_INQUIRY_BUF, GFP_KERNEL);
+ 	if (!buf) {
+@@ -735,6 +736,7 @@ spc_emulate_inquiry(struct se_cmd *cmd)
+ 		}
+ 
+ 		ret = spc_emulate_inquiry_std(cmd, buf);
++		len = buf[4] + 5;
+ 		goto out;
+ 	}
+ 
+@@ -742,6 +744,7 @@ spc_emulate_inquiry(struct se_cmd *cmd)
+ 		if (cdb[2] == evpd_handlers[p].page) {
+ 			buf[1] = cdb[2];
+ 			ret = evpd_handlers[p].emulate(cmd, buf);
++			len = get_unaligned_be16(&buf[2]) + 4;
+ 			goto out;
+ 		}
+ 	}
+@@ -758,7 +761,7 @@ out:
+ 	kfree(buf);
+ 
+ 	if (!ret)
+-		target_complete_cmd(cmd, GOOD);
++		target_complete_cmd_with_length(cmd, GOOD, len);
+ 	return ret;
+ }
+ 
+@@ -1089,7 +1092,7 @@ set_length:
+ 		transport_kunmap_data_sg(cmd);
+ 	}
+ 
+-	target_complete_cmd(cmd, GOOD);
++	target_complete_cmd_with_length(cmd, GOOD, length);
+ 	return 0;
+ }
+ 
+@@ -1266,7 +1269,7 @@ done:
+ 	buf[3] = (lun_count & 0xff);
+ 	transport_kunmap_data_sg(cmd);
+ 
+-	target_complete_cmd(cmd, GOOD);
++	target_complete_cmd_with_length(cmd, GOOD, 8 + lun_count * 8);
+ 	return 0;
+ }
+ EXPORT_SYMBOL(spc_emulate_report_luns);
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -692,6 +692,23 @@ void target_complete_cmd(struct se_cmd *
+ }
+ EXPORT_SYMBOL(target_complete_cmd);
+ 
++void target_complete_cmd_with_length(struct se_cmd *cmd, u8 scsi_status, int length)
++{
++	if (scsi_status == SAM_STAT_GOOD && length < cmd->data_length) {
++		if (cmd->se_cmd_flags & SCF_UNDERFLOW_BIT) {
++			cmd->residual_count += cmd->data_length - length;
++		} else {
++			cmd->se_cmd_flags |= SCF_UNDERFLOW_BIT;
++			cmd->residual_count = cmd->data_length - length;
++		}
++
++		cmd->data_length = length;
++	}
++
++	target_complete_cmd(cmd, scsi_status);
++}
++EXPORT_SYMBOL(target_complete_cmd_with_length);
++
+ static void target_add_to_state_list(struct se_cmd *cmd)
+ {
+ 	struct se_device *dev = cmd->se_dev;
+--- a/include/target/target_core_backend.h
++++ b/include/target/target_core_backend.h
+@@ -59,6 +59,7 @@ int	transport_subsystem_register(struct
+ void	transport_subsystem_release(struct se_subsystem_api *);
+ 
+ void	target_complete_cmd(struct se_cmd *, u8);
++void	target_complete_cmd_with_length(struct se_cmd *, u8, int);
+ 
+ sense_reason_t	spc_parse_cdb(struct se_cmd *cmd, unsigned int *size);
+ sense_reason_t	spc_emulate_report_luns(struct se_cmd *cmd);
 
 
