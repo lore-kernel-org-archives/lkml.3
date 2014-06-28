@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755445AbaF1RuF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:50:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53486 "EHLO
+	id S932169AbaF1RuZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:50:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53548 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755406AbaF1RuA (ORCPT
+	with ESMTP id S932099AbaF1RuR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:50:00 -0400
+	Sat, 28 Jun 2014 13:50:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chander Kashyap <k.chander@samsung.com>,
-        Inderpal Singh <inderpal.s@samsung.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>, Nishanth Menon <nm@ti.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.14 068/110] PM / OPP: fix incorrect OPP count handling in of_init_opp_table
-Date: Sat, 28 Jun 2014 10:47:05 -0700
-Message-Id: <20140628174549.619648051@linuxfoundation.org>
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH 3.14 062/110] rtmutex: Plug slow unlock race
+Date: Sat, 28 Jun 2014 10:46:59 -0700
+Message-Id: <20140628174549.296131444@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -31,39 +30,237 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chander Kashyap <chander.kashyap@linaro.org>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 086abb58590a4df73e8a6ed71fd418826937cd46 upstream.
+commit 27e35715df54cbc4f2d044f681802ae30479e7fb upstream.
 
-In of_init_opp_table function, if a failure to add an OPP is
-detected, the count of OPPs, yet to be added is not updated.
-Fix this by decrementing this count on failure as well.
+When the rtmutex fast path is enabled the slow unlock function can
+create the following situation:
 
-Signed-off-by: Chander Kashyap <k.chander@samsung.com>
-Signed-off-by: Inderpal Singh <inderpal.s@samsung.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-Acked-by: Nishanth Menon <nm@ti.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+spin_lock(foo->m->wait_lock);
+foo->m->owner = NULL;
+	    			rt_mutex_lock(foo->m); <-- fast path
+				free = atomic_dec_and_test(foo->refcnt);
+				rt_mutex_unlock(foo->m); <-- fast path
+				if (free)
+				   kfree(foo);
+
+spin_unlock(foo->m->wait_lock); <--- Use after free.
+
+Plug the race by changing the slow unlock to the following scheme:
+
+     while (!rt_mutex_has_waiters(m)) {
+     	    /* Clear the waiters bit in m->owner */
+	    clear_rt_mutex_waiters(m);
+      	    owner = rt_mutex_owner(m);
+      	    spin_unlock(m->wait_lock);
+      	    if (cmpxchg(m->owner, owner, 0) == owner)
+      	       return;
+      	    spin_lock(m->wait_lock);
+     }
+
+So in case of a new waiter incoming while the owner tries the slow
+path unlock we have two situations:
+
+ unlock(wait_lock);
+					lock(wait_lock);
+ cmpxchg(p, owner, 0) == owner
+ 	    	   			mark_rt_mutex_waiters(lock);
+	 				acquire(lock);
+
+Or:
+
+ unlock(wait_lock);
+					lock(wait_lock);
+	 				mark_rt_mutex_waiters(lock);
+ cmpxchg(p, owner, 0) != owner
+					enqueue_waiter();
+					unlock(wait_lock);
+ lock(wait_lock);
+ wakeup_next waiter();
+ unlock(wait_lock);
+					lock(wait_lock);
+					acquire(lock);
+
+If the fast path is disabled, then the simple
+
+   m->owner = NULL;
+   unlock(m->wait_lock);
+
+is sufficient as all access to m->owner is serialized via
+m->wait_lock;
+
+Also document and clarify the wakeup_next_waiter function as suggested
+by Oleg Nesterov.
+
+Reported-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20140611183852.937945560@linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/base/power/opp.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ kernel/locking/rtmutex.c |  115 ++++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 109 insertions(+), 6 deletions(-)
 
---- a/drivers/base/power/opp.c
-+++ b/drivers/base/power/opp.c
-@@ -735,11 +735,9 @@ int of_init_opp_table(struct device *dev
- 		unsigned long freq = be32_to_cpup(val++) * 1000;
- 		unsigned long volt = be32_to_cpup(val++);
+--- a/kernel/locking/rtmutex.c
++++ b/kernel/locking/rtmutex.c
+@@ -83,6 +83,47 @@ static inline void mark_rt_mutex_waiters
+ 		owner = *p;
+ 	} while (cmpxchg(p, owner, owner | RT_MUTEX_HAS_WAITERS) != owner);
+ }
++
++/*
++ * Safe fastpath aware unlock:
++ * 1) Clear the waiters bit
++ * 2) Drop lock->wait_lock
++ * 3) Try to unlock the lock with cmpxchg
++ */
++static inline bool unlock_rt_mutex_safe(struct rt_mutex *lock)
++	__releases(lock->wait_lock)
++{
++	struct task_struct *owner = rt_mutex_owner(lock);
++
++	clear_rt_mutex_waiters(lock);
++	raw_spin_unlock(&lock->wait_lock);
++	/*
++	 * If a new waiter comes in between the unlock and the cmpxchg
++	 * we have two situations:
++	 *
++	 * unlock(wait_lock);
++	 *					lock(wait_lock);
++	 * cmpxchg(p, owner, 0) == owner
++	 *					mark_rt_mutex_waiters(lock);
++	 *					acquire(lock);
++	 * or:
++	 *
++	 * unlock(wait_lock);
++	 *					lock(wait_lock);
++	 *					mark_rt_mutex_waiters(lock);
++	 *
++	 * cmpxchg(p, owner, 0) != owner
++	 *					enqueue_waiter();
++	 *					unlock(wait_lock);
++	 * lock(wait_lock);
++	 * wake waiter();
++	 * unlock(wait_lock);
++	 *					lock(wait_lock);
++	 *					acquire(lock);
++	 */
++	return rt_mutex_cmpxchg(lock, owner, NULL);
++}
++
+ #else
+ # define rt_mutex_cmpxchg(l,c,n)	(0)
+ static inline void mark_rt_mutex_waiters(struct rt_mutex *lock)
+@@ -90,6 +131,17 @@ static inline void mark_rt_mutex_waiters
+ 	lock->owner = (struct task_struct *)
+ 			((unsigned long)lock->owner | RT_MUTEX_HAS_WAITERS);
+ }
++
++/*
++ * Simple slow path only version: lock->owner is protected by lock->wait_lock.
++ */
++static inline bool unlock_rt_mutex_safe(struct rt_mutex *lock)
++	__releases(lock->wait_lock)
++{
++	lock->owner = NULL;
++	raw_spin_unlock(&lock->wait_lock);
++	return true;
++}
+ #endif
  
--		if (dev_pm_opp_add(dev, freq, volt)) {
-+		if (dev_pm_opp_add(dev, freq, volt))
- 			dev_warn(dev, "%s: Failed to add OPP %ld\n",
- 				 __func__, freq);
--			continue;
--		}
- 		nr -= 2;
+ static inline int
+@@ -638,7 +690,8 @@ static int task_blocks_on_rt_mutex(struc
+ /*
+  * Wake up the next waiter on the lock.
+  *
+- * Remove the top waiter from the current tasks waiter list and wake it up.
++ * Remove the top waiter from the current tasks pi waiter list and
++ * wake it up.
+  *
+  * Called with lock->wait_lock held.
+  */
+@@ -659,10 +712,23 @@ static void wakeup_next_waiter(struct rt
+ 	 */
+ 	rt_mutex_dequeue_pi(current, waiter);
+ 
+-	rt_mutex_set_owner(lock, NULL);
++	/*
++	 * As we are waking up the top waiter, and the waiter stays
++	 * queued on the lock until it gets the lock, this lock
++	 * obviously has waiters. Just set the bit here and this has
++	 * the added benefit of forcing all new tasks into the
++	 * slow path making sure no task of lower priority than
++	 * the top waiter can steal this lock.
++	 */
++	lock->owner = (void *) RT_MUTEX_HAS_WAITERS;
+ 
+ 	raw_spin_unlock_irqrestore(&current->pi_lock, flags);
+ 
++	/*
++	 * It's safe to dereference waiter as it cannot go away as
++	 * long as we hold lock->wait_lock. The waiter task needs to
++	 * acquire it in order to dequeue the waiter.
++	 */
+ 	wake_up_process(waiter->task);
+ }
+ 
+@@ -916,12 +982,49 @@ rt_mutex_slowunlock(struct rt_mutex *loc
+ 
+ 	rt_mutex_deadlock_account_unlock(current);
+ 
+-	if (!rt_mutex_has_waiters(lock)) {
+-		lock->owner = NULL;
+-		raw_spin_unlock(&lock->wait_lock);
+-		return;
++	/*
++	 * We must be careful here if the fast path is enabled. If we
++	 * have no waiters queued we cannot set owner to NULL here
++	 * because of:
++	 *
++	 * foo->lock->owner = NULL;
++	 *			rtmutex_lock(foo->lock);   <- fast path
++	 *			free = atomic_dec_and_test(foo->refcnt);
++	 *			rtmutex_unlock(foo->lock); <- fast path
++	 *			if (free)
++	 *				kfree(foo);
++	 * raw_spin_unlock(foo->lock->wait_lock);
++	 *
++	 * So for the fastpath enabled kernel:
++	 *
++	 * Nothing can set the waiters bit as long as we hold
++	 * lock->wait_lock. So we do the following sequence:
++	 *
++	 *	owner = rt_mutex_owner(lock);
++	 *	clear_rt_mutex_waiters(lock);
++	 *	raw_spin_unlock(&lock->wait_lock);
++	 *	if (cmpxchg(&lock->owner, owner, 0) == owner)
++	 *		return;
++	 *	goto retry;
++	 *
++	 * The fastpath disabled variant is simple as all access to
++	 * lock->owner is serialized by lock->wait_lock:
++	 *
++	 *	lock->owner = NULL;
++	 *	raw_spin_unlock(&lock->wait_lock);
++	 */
++	while (!rt_mutex_has_waiters(lock)) {
++		/* Drops lock->wait_lock ! */
++		if (unlock_rt_mutex_safe(lock) == true)
++			return;
++		/* Relock the rtmutex and try again */
++		raw_spin_lock(&lock->wait_lock);
  	}
  
++	/*
++	 * The wakeup next waiter path does not suffer from the above
++	 * race. See the comments there.
++	 */
+ 	wakeup_next_waiter(lock);
+ 
+ 	raw_spin_unlock(&lock->wait_lock);
 
 
