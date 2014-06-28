@@ -1,46 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754692AbaF1CDr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 22:03:47 -0400
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:43407 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753593AbaF1CDq (ORCPT
+	id S1754426AbaF1CF1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 22:05:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48114 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751835AbaF1CFZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 22:03:46 -0400
+	Fri, 27 Jun 2014 22:05:25 -0400
+Date: Fri, 27 Jun 2014 19:09:35 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guillaume Morin <guillaume@morinfr.org>
+Cc: Jonathan Cameron <jic23@kernel.org>,
+        Sachin Kamat <sachin.kamat@linaro.org>, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/1] staging: iio: ad9850.c: fix checkpatch.pl error
+Message-ID: <20140628020935.GA14333@kroah.com>
+References: <4d0e6b74dcc10ef5d60c9cab4f2df886782fb3c3.1403919775.git.guillaume@morinfr.org>
 MIME-Version: 1.0
-In-Reply-To: <20140624085418.GB2782@8bytes.org>
-References: <20140624085418.GB2782@8bytes.org>
-Date: Fri, 27 Jun 2014 19:03:45 -0700
-Message-ID: <CAADWXX_TzcJQ3K07MsK1Ua6QqmTwDiqUM7aZYnZXWj9t9A_OmQ@mail.gmail.com>
-Subject: Re: [git pull] IOMMU Fixes for Linux v3.16-rc2
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, iommu@lists.linux-foundation.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4d0e6b74dcc10ef5d60c9cab4f2df886782fb3c3.1403919775.git.guillaume@morinfr.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joerg,
- this email was in my spam-box. No real indication as to why, although
-the usual suspect is
+On Sat, Jun 28, 2014 at 03:46:56AM +0200, Guillaume Morin wrote:
+> v2: add missing Signed-off-by 
 
-   Received-SPF: none (google.com: joro@8bytes.org does not designate
-permitted sender hosts) client-ip=85.214.48.195;
+That doesn't go here.
 
-presumably together with some other trigger that makes gmail unhappy.
+And what checkpatch error did you fix?  And are you sure it needs to be
+fixed?
 
-Anyway, pulled,
-
-              Linus
-
-On Tue, Jun 24, 2014 at 1:54 AM, Joerg Roedel <joro@8bytes.org> wrote:
->
->   git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git tags/iommu-fixes-v3.16-rc1
->
-> IOMMU Fixes for Linux v3.16-rc1
->
->         * Fix VT-d regression with handling multiple RMRR entries per
->           device
->         * Fix a small race that was left in the mmu_notifier handling in
->           the AMD IOMMUv2 driver
+greg k-h
