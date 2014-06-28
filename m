@@ -1,71 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753014AbaF1PgO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 11:36:14 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:40219 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751482AbaF1PgN (ORCPT
+	id S1753271AbaF1Pgf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 11:36:35 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:54054 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753224AbaF1Pgd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 11:36:13 -0400
+	Sat, 28 Jun 2014 11:36:33 -0400
+Date: Sat, 28 Jun 2014 16:36:08 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Alex Elder <elder@linaro.org>
+Cc: gregkh@linuxfoundation.org, heikki.krogerus@linux.intel.com,
+        david.daney@cavium.com, loic.poulain@intel.com,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] serial: 8250_dw: support high baudrates if possible
+Message-ID: <20140628163608.0c5536a9@alan.etchedpixels.co.uk>
+In-Reply-To: <1403889920-1127-1-git-send-email-elder@linaro.org>
+References: <1403889920-1127-1-git-send-email-elder@linaro.org>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <20140628152104.GB29548@kroah.com>
-References: <1403913966-4927-1-git-send-email-ast@plumgrid.com>
- <1403913966-4927-8-git-send-email-ast@plumgrid.com> <CALCETrXDR1LVmbigTicBiddgvcucM1dGk1R7rxdJyBCvGEBQMw@mail.gmail.com>
- <CAMEtUuywNHVcZ__296NzXK7RPXUBOf7gNQY9JFx0a9PV0Se+wA@mail.gmail.com>
- <CALCETrXQ60J+UqafHRKPbgQ37zhstW+E8xAponWs7AQ-DCgaWA@mail.gmail.com>
- <CAMEtUuwmxgrGMigmh1vZ7qCh9qB9ph9uFbPmVmmbqZvC5N9WyA@mail.gmail.com> <20140628152104.GB29548@kroah.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Sat, 28 Jun 2014 08:35:51 -0700
-Message-ID: <CALCETrUs8mmVK70rwkQz=Dzu2ZjPYU_TMuydnXsJM8jAxTv0WQ@mail.gmail.com>
-Subject: Re: [PATCH RFC net-next 07/14] bpf: expand BPF syscall with program load/unload
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Alexei Starovoitov <ast@plumgrid.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 28, 2014 at 8:21 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Sat, Jun 28, 2014 at 12:26:14AM -0700, Alexei Starovoitov wrote:
->> On Fri, Jun 27, 2014 at 11:28 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> > On Fri, Jun 27, 2014 at 11:12 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
->> > If you want to add GPL-only functions in the future, that would be one
->> > thing.  But if someone writes a nice eBPF compiler, and someone else
->> > writes a little program that filters on network packets, I see no
->> > reason to claim that the little program is a derivative work of the
->> > kernel and therefore must be GPL.
->>
->> I think we have to draw a line somewhere. Say, tomorrow I want
->> to modify libpcap to emit eBPF based on existing tcpdump syntax.
->> Would it mean that tcpdump filter strings are GPLed? Definitely not,
->> since they existed before and can function without new libpcap.
->> But if I write a new packet filtering program in C, compile it
->> using LLVM->eBPF and call into in-kernel helper functions
->> (like bpf_map_lookup_elem()),  I think it's exactly the derivative work.
->> It's analogous to kernel modules. If module wants to call
->> export_symbol_gpl() functions, it needs to be GPLed. Here all helper
->> functions are GPL. So we just have a blank check for eBPF program.
->
-> I agree, these eBFP programs should be GPL-compatible licensed as well.
+On Fri, 27 Jun 2014 12:25:20 -0500
+> +		rate = 16 * max(115200U, (unsigned int)baud);
+> +
 
-I think I'd be happy with an export_symbol_gpl analogue.  I might
-argue that bpf_map_lookup_elem shouldn't be gpl-only, though.
-Something like "look up the uid that opened a port," on the other
-hand, maybe should be.
+This assumes an arbitarily configurable clock, which is not I think the
+usual case. 
+> +		/*
+> +		 * Request a different clock rate if necessary, and
+> +		 * record it if successful.
+> +		 */
+> +		if (rate != p->uartclk) {
+> +			BUG_ON(!data->clk);
+> +			if (!clk_set_rate(data->clk, (unsigned long)rate))
+> +				p->uartclk = rate;
+> +		}
 
---Andy
+
