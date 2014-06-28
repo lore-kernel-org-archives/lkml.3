@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752685AbaF1Lw1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 07:52:27 -0400
-Received: from mailrelay003.isp.belgacom.be ([195.238.6.53]:63137 "EHLO
-	mailrelay003.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751621AbaF1Lw0 (ORCPT
+	id S1752677AbaF1L4x (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 07:56:53 -0400
+Received: from [119.145.14.66] ([119.145.14.66]:60037 "EHLO
+	szxga03-in.huawei.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1751668AbaF1L4v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 07:52:26 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AkUHALerrlNbsk2v/2dsb2JhbABZgw2regUBAQEBAQEFAW0BmQKBBxd1hDEvI1ZEN4hGAcUZF4VkiSEdhC0Fml2LP4g8ggCBRDs
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Roland Dreier <roland@kernel.org>,
-        Sean Hefty <sean.hefty@intel.com>, linux-rdma@vger.kernel.org
-Subject: [PATCH 1/1] drivers/infiniband/ulp/ipoib/ipoib_fs.c: remove unnecessary null test before debugfs_remove
-Date: Sat, 28 Jun 2014 13:51:04 +0200
-Message-Id: <1403956264-2936-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	Sat, 28 Jun 2014 07:56:51 -0400
+Message-ID: <53AEAD59.5060701@huawei.com>
+Date: Sat, 28 Jun 2014 19:56:09 +0800
+From: Xie XiuQi <xiexiuqi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: "Luck, Tony" <tony.luck@intel.com>, Steven Rostedt <rostedt@goodmis.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Frederic Weisbecker" <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Mauro Chehab <m.chehab@samsung.com>
+Subject: Re: [PATCH] time: Provide full featured jiffies_to_nsecs() function
+References: <0286550@agluck-desk.sc.intel.com> <53795E3B.9000004@huawei.com> <3908561D78D1C84285E8C5FCA982C28F3280EB34@ORSMSX114.amr.corp.intel.com>
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F3280EB34@ORSMSX114.amr.corp.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.17.191]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020209.53AEAD62.004C,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2011-05-27 18:58:46
+X-Mirapoint-Loop-Id: 200fcdd03012f4597c87a9eaabf9ea11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix checkpatch warning:
-WARNING: debugfs_remove(NULL) is safe this check is probably not required
+On 2014/5/20 6:35, Luck, Tony wrote:
+>> Another problem, maybe we should use get_jiffies_64() instead of jiffies
+>> directly here OR we'll meet wraparound problems on 32bit system. But a
+>> same problem is that the jiffies_lock is not safe in NMI context...
+> 
+> To quote Winnie the Pooh - "Bother".
+> 
+> Can someone think of a clever way to get a sane 64 bit jiffie value on
+> 32-bit systems (even when we get an NMI in the middle of updating the
+> 64-bit jiffie)?
 
-Cc: Roland Dreier <roland@kernel.org>
-Cc: Sean Hefty <sean.hefty@intel.com>
-Cc: linux-rdma@vger.kernel.org
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- drivers/infiniband/ulp/ipoib/ipoib_fs.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+Hi Tony & Steven,
 
-diff --git a/drivers/infiniband/ulp/ipoib/ipoib_fs.c b/drivers/infiniband/ulp/ipoib/ipoib_fs.c
-index 5006185..6bd5740 100644
---- a/drivers/infiniband/ulp/ipoib/ipoib_fs.c
-+++ b/drivers/infiniband/ulp/ipoib/ipoib_fs.c
-@@ -281,10 +281,8 @@ void ipoib_delete_debug_files(struct net_device *dev)
- {
- 	struct ipoib_dev_priv *priv = netdev_priv(dev);
- 
--	if (priv->mcg_dentry)
--		debugfs_remove(priv->mcg_dentry);
--	if (priv->path_dentry)
--		debugfs_remove(priv->path_dentry);
-+	debugfs_remove(priv->mcg_dentry);
-+	debugfs_remove(priv->path_dentry);
- }
- 
- int ipoib_register_debugfs(void)
--- 
-1.8.4.5
+I've sent a patch to solve this problem, please help to review, thanks.
+
+	http://lkml.org/lkml/2014/6/28/41
+	tracing: fix uptime overflow problem
+
+Thanks,
+	XiuQi
 
