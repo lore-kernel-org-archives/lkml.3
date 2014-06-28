@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932473AbaF1SGz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:06:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54340 "EHLO
+	id S932373AbaF1Rwe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:52:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54313 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756029AbaF1Rwp (ORCPT
+	with ESMTP id S1756023AbaF1Rwb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:52:45 -0400
+	Sat, 28 Jun 2014 13:52:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chander Kashyap <k.chander@samsung.com>,
-        Inderpal Singh <inderpal.s@samsung.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>, Nishanth Menon <nm@ti.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.15 080/139] PM / OPP: fix incorrect OPP count handling in of_init_opp_table
-Date: Sat, 28 Jun 2014 10:47:21 -0700
-Message-Id: <20140628174609.073633411@linuxfoundation.org>
+        Sagi Grimberg <sagig@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.15 090/139] Target/iser: Wait for proper cleanup before unloading
+Date: Sat, 28 Jun 2014 10:47:31 -0700
+Message-Id: <20140628174609.531335330@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -31,39 +29,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chander Kashyap <chander.kashyap@linaro.org>
+From: Sagi Grimberg <sagig@mellanox.com>
 
-commit 086abb58590a4df73e8a6ed71fd418826937cd46 upstream.
+commit f5ebec9629cf78eeeea4b8258882a9f439ab2404 upstream.
 
-In of_init_opp_table function, if a failure to add an OPP is
-detected, the count of OPPs, yet to be added is not updated.
-Fix this by decrementing this count on failure as well.
+disconnected_handler works are scheduled on system_wq.
+When attempting to unload, first make sure all works
+have cleaned up.
 
-Signed-off-by: Chander Kashyap <k.chander@samsung.com>
-Signed-off-by: Inderpal Singh <inderpal.s@samsung.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-Acked-by: Nishanth Menon <nm@ti.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/base/power/opp.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/infiniband/ulp/isert/ib_isert.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/base/power/opp.c
-+++ b/drivers/base/power/opp.c
-@@ -734,11 +734,9 @@ int of_init_opp_table(struct device *dev
- 		unsigned long freq = be32_to_cpup(val++) * 1000;
- 		unsigned long volt = be32_to_cpup(val++);
+--- a/drivers/infiniband/ulp/isert/ib_isert.c
++++ b/drivers/infiniband/ulp/isert/ib_isert.c
+@@ -3289,6 +3289,7 @@ destroy_rx_wq:
  
--		if (dev_pm_opp_add(dev, freq, volt)) {
-+		if (dev_pm_opp_add(dev, freq, volt))
- 			dev_warn(dev, "%s: Failed to add OPP %ld\n",
- 				 __func__, freq);
--			continue;
--		}
- 		nr -= 2;
- 	}
- 
+ static void __exit isert_exit(void)
+ {
++	flush_scheduled_work();
+ 	destroy_workqueue(isert_comp_wq);
+ 	destroy_workqueue(isert_rx_wq);
+ 	iscsit_unregister_transport(&iser_target_transport);
 
 
