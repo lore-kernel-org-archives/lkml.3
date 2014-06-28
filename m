@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755805AbaF1RvW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:51:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53985 "EHLO
+	id S932235AbaF1SWm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:22:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54039 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755731AbaF1RvL (ORCPT
+	with ESMTP id S1755801AbaF1RvW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:51:11 -0400
+	Sat, 28 Jun 2014 13:51:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCH 3.15 006/139] extcon: max14577: Properly handle regmap_irq_get_virq error
-Date: Sat, 28 Jun 2014 10:46:07 -0700
-Message-Id: <20140628174605.643373758@linuxfoundation.org>
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [PATCH 3.15 035/139] arm64: ptrace: change fs when passing kernel pointer to regset code
+Date: Sat, 28 Jun 2014 10:46:36 -0700
+Message-Id: <20140628174607.027338147@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -29,31 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 369afd4ba22f5b8de0c9229b6e62b3f9e2207034 upstream.
+commit c168870704bcde6bb63d05f7882b620dd3985a46 upstream.
 
-The regmap_irq_get_virq may return 0 or -EINVAL on error. Fail the probe
-in both situations.
+Our compat PTRACE_POKEUSR implementation simply passes the user data to
+regset_copy_from_user after some simple range checking. Unfortunately,
+the data in question has already been copied to the kernel stack by this
+point, so the subsequent access_ok check fails and the ptrace request
+returns -EFAULT. This causes problems tracing fork() with older versions
+of strace.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+This patch briefly changes the fs to KERNEL_DS, so that the access_ok
+check passes even with a kernel address.
+
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/extcon/extcon-max14577.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm64/kernel/ptrace.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/extcon/extcon-max14577.c
-+++ b/drivers/extcon/extcon-max14577.c
-@@ -650,7 +650,7 @@ static int max14577_muic_probe(struct pl
- 		unsigned int virq = 0;
+--- a/arch/arm64/kernel/ptrace.c
++++ b/arch/arm64/kernel/ptrace.c
+@@ -821,6 +821,7 @@ static int compat_ptrace_write_user(stru
+ 				    compat_ulong_t val)
+ {
+ 	int ret;
++	mm_segment_t old_fs = get_fs();
  
- 		virq = regmap_irq_get_virq(max14577->irq_data, muic_irq->irq);
--		if (!virq)
-+		if (virq <= 0)
- 			return -EINVAL;
- 		muic_irq->virq = virq;
+ 	if (off & 3 || off >= COMPAT_USER_SZ)
+ 		return -EIO;
+@@ -828,10 +829,13 @@ static int compat_ptrace_write_user(stru
+ 	if (off >= sizeof(compat_elf_gregset_t))
+ 		return 0;
+ 
++	set_fs(KERNEL_DS);
+ 	ret = copy_regset_from_user(tsk, &user_aarch32_view,
+ 				    REGSET_COMPAT_GPR, off,
+ 				    sizeof(compat_ulong_t),
+ 				    &val);
++	set_fs(old_fs);
++
+ 	return ret;
+ }
  
 
 
