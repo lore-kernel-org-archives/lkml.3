@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752678AbaF1MLF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 08:11:05 -0400
-Received: from mail-qg0-f41.google.com ([209.85.192.41]:62009 "EHLO
-	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751710AbaF1MLD (ORCPT
+	id S1752785AbaF1MNT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 08:13:19 -0400
+Received: from mail-qg0-f49.google.com ([209.85.192.49]:42525 "EHLO
+	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752031AbaF1MNR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 08:11:03 -0400
-Date: Sat, 28 Jun 2014 08:10:59 -0400
+	Sat, 28 Jun 2014 08:13:17 -0400
+Date: Sat, 28 Jun 2014 08:13:14 -0400
 From: Tejun Heo <tj@kernel.org>
-To: cl@linux-foundation.org, kmo@daterainc.com
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET percpu/for-3.17] percpu: implement percpu_ref_reinit()
-Message-ID: <20140628121059.GC10829@htj.dyndns.org>
-References: <1403053685-28240-1-git-send-email-tj@kernel.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org, kmo@daterainc.com, nab@linux-iscsi.org
+Subject: Re: [PATCHSET block/for-next] blk-mq: update freezing
+Message-ID: <20140628121314.GD10829@htj.dyndns.org>
+References: <1403104872-22236-1-git-send-email-tj@kernel.org>
+ <53A1BC0E.8040704@kernel.dk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1403053685-28240-1-git-send-email-tj@kernel.org>
+In-Reply-To: <53A1BC0E.8040704@kernel.dk>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 17, 2014 at 09:07:59PM -0400, Tejun Heo wrote:
-> Hello,
+On Wed, Jun 18, 2014 at 09:19:26AM -0700, Jens Axboe wrote:
+> >  percpu/for-3.17 6fbc07bbe2b5 ("percpu: invoke __verify_pcpu_ptr() from the generic part of accessors and operations")
+> >+[1] [PATCHSET percpu/for-3.17] percpu: implement percpu_ref_reinit()
+> >
+> >and available in the following git branch.
+> >
+> >  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-mq-percpu_ref
+> >
+> >  block/blk-core.c       |   13 ++++---
+> >  block/blk-mq.c         |   90 ++++++++++++++++---------------------------------
+> >  block/blk-mq.h         |    2 -
+> >  block/blk-sysfs.c      |    2 -
+> >  include/linux/blkdev.h |    4 +-
+> >  5 files changed, 44 insertions(+), 67 deletions(-)
 > 
-> Currently, percpu_ref destruction - freeing the percpu counter -
-> happens when the percpu_ref is released.  This while a bit more
-> convenient restricts how percpu_ref can be used.  It can't be
-> initialized with static percpu area and it can't be reinitialized
-> without going through percpu allocation.
-> 
-> There are use cases which can take advantage of cycling percpu_ref
-> through init/release multiple times.  This patchset separates out
-> percpu_ref destruction into percpu_exit() which should be invoked
-> explicitly and introduces percpu_ref_reinit() which can be used to
-> recycle a released percpu_ref.
-> 
-> This patchset doesn't add any users.  Patchset to use this will soon
-> be posted.
-> 
-> This patchset contains the following six patches.
-> 
->  0001-percpu-refcount-aio-use-percpu_ref_cancel_init-in-io.patch
->  0002-percpu-refcount-one-bit-is-enough-for-REF_STATUS.patch
->  0003-percpu-refcount-add-helpers-for-percpu_count-accesse.patch
->  0004-percpu-refcount-use-unsigned-long-for-pcpu_count-poi.patch
->  0005-percpu-refcount-require-percpu_ref-to-be-exited-expl.patch
->  0006-percpu-refcount-implement-percpu_ref_reinit-and-perc.patch
+> Thanks Tejun, this looks pretty good. I was worried the tryget_live() would
+> be too expensive, but that looks not to be the case. I like the cleanups to
+> using a general mechanism. I'll run this through some functional and
+> performance testing.
 
-Applied to percpu/for-3.17.
+FYI, the percpu_ref changes needed by this patchset are applied to
+percpu/for-3.17 branch which is stable and can be pulled into the
+block tree.
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git for-3.17
 
 Thanks.
 
