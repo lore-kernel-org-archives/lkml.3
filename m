@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755927AbaF1Rvz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:51:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54175 "EHLO
+	id S1756020AbaF1Rw3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:52:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54289 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755885AbaF1Rvw (ORCPT
+	with ESMTP id S932318AbaF1RwV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:51:52 -0400
+	Sat, 28 Jun 2014 13:52:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Ashish Sangwan <a.sangwan@samsung.com>, "Theodore Tso" <tytso@mit.edu>,
-        Jan Kara <jack@suse.cz>
-Subject: [PATCH 3.15 043/139] ext4: fix data integrity sync in ordered mode
-Date: Sat, 28 Jun 2014 10:46:44 -0700
-Message-Id: <20140628174607.398029983@linuxfoundation.org>
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.15 076/139] media: saa7134: fix regression with tvtime
+Date: Sat, 28 Jun 2014 10:47:17 -0700
+Message-Id: <20140628174608.898848746@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -30,178 +29,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Namjae Jeon <namjae.jeon@samsung.com>
+From: Hans Verkuil <hans.verkuil@cisco.com>
 
-commit 1c8349a17137b93f0a83f276c764a6df1b9a116e upstream.
+commit 17e7f1b515803e1a79b246688aacbddd2e34165d upstream.
 
-When we perform a data integrity sync we tag all the dirty pages with
-PAGECACHE_TAG_TOWRITE at start of ext4_da_writepages.  Later we check
-for this tag in write_cache_pages_da and creates a struct
-mpage_da_data containing contiguously indexed pages tagged with this
-tag and sync these pages with a call to mpage_da_map_and_submit.  This
-process is done in while loop until all the PAGECACHE_TAG_TOWRITE
-pages are synced. We also do journal start and stop in each iteration.
-journal_stop could initiate journal commit which would call
-ext4_writepage which in turn will call ext4_bio_write_page even for
-delayed OR unwritten buffers. When ext4_bio_write_page is called for
-such buffers, even though it does not sync them but it clears the
-PAGECACHE_TAG_TOWRITE of the corresponding page and hence these pages
-are also not synced by the currently running data integrity sync. We
-will end up with dirty pages although sync is completed.
+This solves this bug:
 
-This could cause a potential data loss when the sync call is followed
-by a truncate_pagecache call, which is exactly the case in
-collapse_range.  (It will cause generic/127 failure in xfstests)
+https://bugzilla.kernel.org/show_bug.cgi?id=73361
 
-To avoid this issue, we can use set_page_writeback_keepwrite instead of
-set_page_writeback, which doesn't clear TOWRITE tag.
+The problem is that when you quit tvtime it calls STREAMOFF, but then it queues a
+bunch of buffers for no good reason before closing the file descriptor.
 
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reviewed-by: Jan Kara <jack@suse.cz>
+In the past closing the fd would free the vb queue since that was part of the file
+handle struct. Since that was moved to the global struct that no longer happened.
+
+This wouldn't be a problem, but the extra QBUF calls that tvtime does meant that
+the buffer list in videobuf (q->stream) contained buffers, so REQBUFS would fail
+with -EBUSY.
+
+The solution is to init the list head explicitly when releasing the file
+descriptor and to not free the video resource when calling streamoff.
+
+The real fix will hopefully go into kernel 3.16 when the vb2 conversion is
+merged. Basically the saa7134 driver with the old videobuf is so full of holes it
+ain't funny anymore, so consider this a band-aid for kernels 3.14 and 15.
+
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/ext4.h             |    3 ++-
- fs/ext4/inode.c            |    6 ++++--
- fs/ext4/page-io.c          |    8 ++++++--
- include/linux/page-flags.h |   12 +++++++++++-
- mm/page-writeback.c        |   11 ++++++-----
- 5 files changed, 29 insertions(+), 11 deletions(-)
+ drivers/media/pci/saa7134/saa7134-video.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -2771,7 +2771,8 @@ extern void ext4_io_submit(struct ext4_i
- extern int ext4_bio_write_page(struct ext4_io_submit *io,
- 			       struct page *page,
- 			       int len,
--			       struct writeback_control *wbc);
-+			       struct writeback_control *wbc,
-+			       bool keep_towrite);
- 
- /* mmp.c */
- extern int ext4_multi_mount_protect(struct super_block *, ext4_fsblk_t);
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -1846,6 +1846,7 @@ static int ext4_writepage(struct page *p
- 	struct buffer_head *page_bufs = NULL;
- 	struct inode *inode = page->mapping->host;
- 	struct ext4_io_submit io_submit;
-+	bool keep_towrite = false;
- 
- 	trace_ext4_writepage(page);
- 	size = i_size_read(inode);
-@@ -1876,6 +1877,7 @@ static int ext4_writepage(struct page *p
- 			unlock_page(page);
- 			return 0;
- 		}
-+		keep_towrite = true;
+--- a/drivers/media/pci/saa7134/saa7134-video.c
++++ b/drivers/media/pci/saa7134/saa7134-video.c
+@@ -1243,6 +1243,7 @@ static int video_release(struct file *fi
+ 		videobuf_streamoff(&dev->cap);
+ 		res_free(dev, fh, RESOURCE_VIDEO);
+ 		videobuf_mmap_free(&dev->cap);
++		INIT_LIST_HEAD(&dev->cap.stream);
+ 	}
+ 	if (dev->cap.read_buf) {
+ 		buffer_release(&dev->cap, dev->cap.read_buf);
+@@ -1254,6 +1255,7 @@ static int video_release(struct file *fi
+ 		videobuf_stop(&dev->vbi);
+ 		res_free(dev, fh, RESOURCE_VBI);
+ 		videobuf_mmap_free(&dev->vbi);
++		INIT_LIST_HEAD(&dev->vbi.stream);
  	}
  
- 	if (PageChecked(page) && ext4_should_journal_data(inode))
-@@ -1892,7 +1894,7 @@ static int ext4_writepage(struct page *p
- 		unlock_page(page);
- 		return -ENOMEM;
- 	}
--	ret = ext4_bio_write_page(&io_submit, page, len, wbc);
-+	ret = ext4_bio_write_page(&io_submit, page, len, wbc, keep_towrite);
- 	ext4_io_submit(&io_submit);
- 	/* Drop io_end reference we got from init */
- 	ext4_put_io_end_defer(io_submit.io_end);
-@@ -1911,7 +1913,7 @@ static int mpage_submit_page(struct mpag
- 	else
- 		len = PAGE_CACHE_SIZE;
- 	clear_page_dirty_for_io(page);
--	err = ext4_bio_write_page(&mpd->io_submit, page, len, mpd->wbc);
-+	err = ext4_bio_write_page(&mpd->io_submit, page, len, mpd->wbc, false);
- 	if (!err)
- 		mpd->wbc->nr_to_write--;
- 	mpd->first_page++;
---- a/fs/ext4/page-io.c
-+++ b/fs/ext4/page-io.c
-@@ -401,7 +401,8 @@ submit_and_retry:
- int ext4_bio_write_page(struct ext4_io_submit *io,
- 			struct page *page,
- 			int len,
--			struct writeback_control *wbc)
-+			struct writeback_control *wbc,
-+			bool keep_towrite)
+ 	/* ts-capture will not work in planar mode, so turn it off Hac: 04.05*/
+@@ -1987,17 +1989,12 @@ int saa7134_streamoff(struct file *file,
+ 					enum v4l2_buf_type type)
  {
- 	struct inode *inode = page->mapping->host;
- 	unsigned block_start, blocksize;
-@@ -414,7 +415,10 @@ int ext4_bio_write_page(struct ext4_io_s
- 	BUG_ON(!PageLocked(page));
- 	BUG_ON(PageWriteback(page));
+ 	struct saa7134_dev *dev = video_drvdata(file);
+-	int err;
+ 	int res = saa7134_resource(file);
  
--	set_page_writeback(page);
-+	if (keep_towrite)
-+		set_page_writeback_keepwrite(page);
-+	else
-+		set_page_writeback(page);
- 	ClearPageError(page);
+ 	if (res != RESOURCE_EMPRESS)
+ 		pm_qos_remove_request(&dev->qos_request);
  
- 	/*
---- a/include/linux/page-flags.h
-+++ b/include/linux/page-flags.h
-@@ -317,13 +317,23 @@ CLEARPAGEFLAG(Uptodate, uptodate)
- extern void cancel_dirty_page(struct page *page, unsigned int account_size);
- 
- int test_clear_page_writeback(struct page *page);
--int test_set_page_writeback(struct page *page);
-+int __test_set_page_writeback(struct page *page, bool keep_write);
-+
-+#define test_set_page_writeback(page)			\
-+	__test_set_page_writeback(page, false)
-+#define test_set_page_writeback_keepwrite(page)	\
-+	__test_set_page_writeback(page, true)
- 
- static inline void set_page_writeback(struct page *page)
- {
- 	test_set_page_writeback(page);
+-	err = videobuf_streamoff(saa7134_queue(file));
+-	if (err < 0)
+-		return err;
+-	res_free(dev, priv, res);
+-	return 0;
++	return videobuf_streamoff(saa7134_queue(file));
  }
+ EXPORT_SYMBOL_GPL(saa7134_streamoff);
  
-+static inline void set_page_writeback_keepwrite(struct page *page)
-+{
-+	test_set_page_writeback_keepwrite(page);
-+}
-+
- #ifdef CONFIG_PAGEFLAGS_EXTENDED
- /*
-  * System with lots of page flags available. This allows separate
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -2398,7 +2398,7 @@ int test_clear_page_writeback(struct pag
- 	return ret;
- }
- 
--int test_set_page_writeback(struct page *page)
-+int __test_set_page_writeback(struct page *page, bool keep_write)
- {
- 	struct address_space *mapping = page_mapping(page);
- 	int ret;
-@@ -2423,9 +2423,10 @@ int test_set_page_writeback(struct page
- 			radix_tree_tag_clear(&mapping->page_tree,
- 						page_index(page),
- 						PAGECACHE_TAG_DIRTY);
--		radix_tree_tag_clear(&mapping->page_tree,
--				     page_index(page),
--				     PAGECACHE_TAG_TOWRITE);
-+		if (!keep_write)
-+			radix_tree_tag_clear(&mapping->page_tree,
-+						page_index(page),
-+						PAGECACHE_TAG_TOWRITE);
- 		spin_unlock_irqrestore(&mapping->tree_lock, flags);
- 	} else {
- 		ret = TestSetPageWriteback(page);
-@@ -2436,7 +2437,7 @@ int test_set_page_writeback(struct page
- 	return ret;
- 
- }
--EXPORT_SYMBOL(test_set_page_writeback);
-+EXPORT_SYMBOL(__test_set_page_writeback);
- 
- /*
-  * Return true if any of the pages in the mapping are marked with the
 
 
