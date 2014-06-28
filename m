@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964866AbaF1R4U (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:56:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54548 "EHLO
+	id S932512AbaF1R4g (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:56:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54544 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756258AbaF1Rx2 (ORCPT
+	with ESMTP id S1756257AbaF1Rx2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Jun 2014 13:53:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -12,9 +12,9 @@ To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Johan Hedberg <johan.hedberg@intel.com>,
         Marcel Holtmann <marcel@holtmann.org>
-Subject: [PATCH 3.15 133/139] Bluetooth: Fix properly ignoring LTKs of unknown types
-Date: Sat, 28 Jun 2014 10:48:14 -0700
-Message-Id: <20140628174611.479533658@linuxfoundation.org>
+Subject: [PATCH 3.15 132/139] Bluetooth: Clearly distinguish mgmt LTK type from authenticated property
+Date: Sat, 28 Jun 2014 10:48:13 -0700
+Message-Id: <20140628174611.438549265@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -31,42 +31,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hedberg <johan.hedberg@intel.com>
 
-commit 61b433579b6ffecb1d3534fd482dcd48535277c8 upstream.
+commit d7b2545023ecfde94d3ea9c03c5480ac18da96c9 upstream.
 
-In case there are new LTK types in the future we shouldn't just blindly
-assume that != MGMT_LTK_UNAUTHENTICATED means that the key is
-authenticated. This patch adds explicit checks for each allowed key type
-in the form of a switch statement and skips any key which has an unknown
-value.
+On the mgmt level we have a key type parameter which currently accepts
+two possible values: 0x00 for unauthenticated and 0x01 for
+authenticated. However, in the internal struct smp_ltk representation we
+have an explicit "authenticated" boolean value.
+
+To make this distinction clear, add defines for the possible mgmt values
+and do conversion to and from the internal authenticated value.
 
 Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
 Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/mgmt.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ include/net/bluetooth/mgmt.h |    3 +++
+ net/bluetooth/mgmt.c         |   19 ++++++++++++++++---
+ 2 files changed, 19 insertions(+), 3 deletions(-)
 
+--- a/include/net/bluetooth/mgmt.h
++++ b/include/net/bluetooth/mgmt.h
+@@ -181,6 +181,9 @@ struct mgmt_cp_load_link_keys {
+ } __packed;
+ #define MGMT_LOAD_LINK_KEYS_SIZE	3
+ 
++#define MGMT_LTK_UNAUTHENTICATED	0x00
++#define MGMT_LTK_AUTHENTICATED		0x01
++
+ struct mgmt_ltk_info {
+ 	struct mgmt_addr_info addr;
+ 	__u8	type;
 --- a/net/bluetooth/mgmt.c
 +++ b/net/bluetooth/mgmt.c
-@@ -4542,10 +4542,16 @@ static int load_long_term_keys(struct so
+@@ -4530,7 +4530,7 @@ static int load_long_term_keys(struct so
+ 
+ 	for (i = 0; i < key_count; i++) {
+ 		struct mgmt_ltk_info *key = &cp->keys[i];
+-		u8 type, addr_type;
++		u8 type, addr_type, authenticated;
+ 
+ 		if (key->addr.type == BDADDR_LE_PUBLIC)
+ 			addr_type = ADDR_LE_DEV_PUBLIC;
+@@ -4542,8 +4542,13 @@ static int load_long_term_keys(struct so
  		else
  			type = HCI_SMP_LTK_SLAVE;
  
--		if (key->type == MGMT_LTK_UNAUTHENTICATED)
-+		switch (key->type) {
-+		case MGMT_LTK_UNAUTHENTICATED:
- 			authenticated = 0x00;
--		else
-+			break;
-+		case MGMT_LTK_AUTHENTICATED:
- 			authenticated = 0x01;
-+			break;
-+		default:
-+			continue;
-+		}
- 
++		if (key->type == MGMT_LTK_UNAUTHENTICATED)
++			authenticated = 0x00;
++		else
++			authenticated = 0x01;
++
  		hci_add_ltk(hdev, &key->addr.bdaddr, addr_type, type,
- 			    authenticated, key->val, key->enc_size, key->ediv,
+-			    key->type, key->val, key->enc_size, key->ediv,
++			    authenticated, key->val, key->enc_size, key->ediv,
+ 			    key->rand);
+ 	}
+ 
+@@ -5005,6 +5010,14 @@ void mgmt_new_link_key(struct hci_dev *h
+ 	mgmt_event(MGMT_EV_NEW_LINK_KEY, hdev, &ev, sizeof(ev), NULL);
+ }
+ 
++static u8 mgmt_ltk_type(struct smp_ltk *ltk)
++{
++	if (ltk->authenticated)
++		return MGMT_LTK_AUTHENTICATED;
++
++	return MGMT_LTK_UNAUTHENTICATED;
++}
++
+ void mgmt_new_ltk(struct hci_dev *hdev, struct smp_ltk *key, bool persistent)
+ {
+ 	struct mgmt_ev_new_long_term_key ev;
+@@ -5030,7 +5043,7 @@ void mgmt_new_ltk(struct hci_dev *hdev,
+ 
+ 	bacpy(&ev.key.addr.bdaddr, &key->bdaddr);
+ 	ev.key.addr.type = link_to_bdaddr(LE_LINK, key->bdaddr_type);
+-	ev.key.type = key->authenticated;
++	ev.key.type = mgmt_ltk_type(key);
+ 	ev.key.enc_size = key->enc_size;
+ 	ev.key.ediv = key->ediv;
+ 	ev.key.rand = key->rand;
 
 
