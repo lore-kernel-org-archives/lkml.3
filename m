@@ -1,217 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754233AbaF1AEo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 20:04:44 -0400
-Received: from mail-pa0-f73.google.com ([209.85.220.73]:65394 "EHLO
-	mail-pa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751745AbaF1AEm (ORCPT
+	id S1754478AbaF1AGV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 20:06:21 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:60320 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754425AbaF1AGS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 20:04:42 -0400
-From: Derek Basehore <dbasehore@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-pm@vger.kernel.org, Laxman Dewangan <ldewangan@nvidia.com>,
-        Ian Campbell <ian.campbell@citrix.com>, xen-devel@lists.xenproject.org,
-        Derek Basehore <dbasehore@chromium.org>
-Subject: [PATCH v1 1/2] genirq: Fix error path for resuming irqs
-Date: Fri, 27 Jun 2014 17:04:24 -0700
-Message-Id: <1403913865-31614-1-git-send-email-dbasehore@chromium.org>
-X-Mailer: git-send-email 2.0.0.526.g5318336
+	Fri, 27 Jun 2014 20:06:18 -0400
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH RFC net-next 00/14] BPF syscall, maps, verifier, samples
+Date: Fri, 27 Jun 2014 17:05:52 -0700
+Message-Id: <1403913966-4927-1-git-send-email-ast@plumgrid.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the case of a late abort to suspend/hibernate, irqs marked with
-IRQF_EARLY_RESUME will not be enabled. This is due to syscore_resume not getting
-called on these paths.
+Hi All,
 
-This can happen with a pm test for platform, a late wakeup irq, and other
-instances. This change removes the function from syscore and calls it explicitly
-in suspend, hibernate, etc.
+this patch set demonstrates the potential of eBPF.
 
-This regression was introduced in 9bab0b7f "genirq: Add IRQF_RESUME_EARLY"
+First patch "net: filter: split filter.c into two files" splits eBPF interpreter
+out of networking into kernel/bpf/. The goal for BPF subsystem is to be usable
+in NET-less configuration. Though the whole set is marked is RFC, the 1st patch
+is good to go. Similar version of the patch that was posted few weeks ago, but
+was deferred. I'm assuming due to lack of forward visibility. I hope that this
+patch set shows what eBPF is capable of and where it's heading.
 
-Signed-off-by: Derek Basehore <dbasehore@chromium.org>
----
- drivers/base/power/main.c |  5 ++++-
- drivers/xen/manage.c      |  5 ++++-
- include/linux/interrupt.h |  1 +
- include/linux/pm.h        |  2 +-
- kernel/irq/pm.c           | 17 +++--------------
- kernel/kexec.c            |  2 +-
- kernel/power/hibernate.c  |  6 +++---
- kernel/power/suspend.c    |  2 +-
- 8 files changed, 18 insertions(+), 22 deletions(-)
+Other patches expose eBPF instruction set to user space and introduce concepts
+of maps and programs accessible via syscall.
 
-diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
-index bf41296..a087473 100644
---- a/drivers/base/power/main.c
-+++ b/drivers/base/power/main.c
-@@ -712,8 +712,10 @@ static void dpm_resume_early(pm_message_t state)
-  * dpm_resume_start - Execute "noirq" and "early" device callbacks.
-  * @state: PM transition of the system being carried out.
-  */
--void dpm_resume_start(pm_message_t state)
-+void dpm_resume_start(pm_message_t state, bool enable_early_irqs)
- {
-+	if (enable_early_irqs)
-+		early_resume_device_irqs();
- 	dpm_resume_noirq(state);
- 	dpm_resume_early(state);
- }
-@@ -1132,6 +1134,7 @@ static int dpm_suspend_noirq(pm_message_t state)
- 	if (error) {
- 		suspend_stats.failed_suspend_noirq++;
- 		dpm_save_failed_step(SUSPEND_SUSPEND_NOIRQ);
-+		early_resume_device_irqs();
- 		dpm_resume_noirq(resume_event(state));
- 	} else {
- 		dpm_show_time(starttime, state, "noirq");
-diff --git a/drivers/xen/manage.c b/drivers/xen/manage.c
-index c3667b2..d387cdf 100644
---- a/drivers/xen/manage.c
-+++ b/drivers/xen/manage.c
-@@ -68,6 +68,7 @@ static int xen_suspend(void *data)
- 	err = syscore_suspend();
- 	if (err) {
- 		pr_err("%s: system core suspend failed: %d\n", __func__, err);
-+		early_resume_device_irqs();
- 		return err;
- 	}
- 
-@@ -92,6 +93,8 @@ static int xen_suspend(void *data)
- 		xen_timer_resume();
- 	}
- 
-+	early_resume_device_irqs();
-+
- 	syscore_resume();
- 
- 	return 0;
-@@ -137,7 +140,7 @@ static void do_suspend(void)
- 
- 	raw_notifier_call_chain(&xen_resume_notifier, 0, NULL);
- 
--	dpm_resume_start(si.cancelled ? PMSG_THAW : PMSG_RESTORE);
-+	dpm_resume_start(si.cancelled ? PMSG_THAW : PMSG_RESTORE, false);
- 
- 	if (err) {
- 		pr_err("failed to start xen_suspend: %d\n", err);
-diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-index 698ad05..7f390e3 100644
---- a/include/linux/interrupt.h
-+++ b/include/linux/interrupt.h
-@@ -193,6 +193,7 @@ extern void irq_wake_thread(unsigned int irq, void *dev_id);
- /* The following three functions are for the core kernel use only. */
- extern void suspend_device_irqs(void);
- extern void resume_device_irqs(void);
-+extern void early_resume_device_irqs(void);
- #ifdef CONFIG_PM_SLEEP
- extern int check_wakeup_irqs(void);
- #else
-diff --git a/include/linux/pm.h b/include/linux/pm.h
-index 72c0fe0..ae5b26a 100644
---- a/include/linux/pm.h
-+++ b/include/linux/pm.h
-@@ -677,7 +677,7 @@ struct dev_pm_domain {
- 
- #ifdef CONFIG_PM_SLEEP
- extern void device_pm_lock(void);
--extern void dpm_resume_start(pm_message_t state);
-+extern void dpm_resume_start(pm_message_t state, bool enable_early_irqs);
- extern void dpm_resume_end(pm_message_t state);
- extern void dpm_resume(pm_message_t state);
- extern void dpm_complete(pm_message_t state);
-diff --git a/kernel/irq/pm.c b/kernel/irq/pm.c
-index abcd6ca..b07dc9c 100644
---- a/kernel/irq/pm.c
-+++ b/kernel/irq/pm.c
-@@ -60,26 +60,15 @@ static void resume_irqs(bool want_early)
- }
- 
- /**
-- * irq_pm_syscore_ops - enable interrupt lines early
-+ * early_resume_device_irqs - enable interrupt lines early
-  *
-  * Enable all interrupt lines with %IRQF_EARLY_RESUME set.
-  */
--static void irq_pm_syscore_resume(void)
-+void early_resume_device_irqs(void)
- {
- 	resume_irqs(true);
- }
--
--static struct syscore_ops irq_pm_syscore_ops = {
--	.resume		= irq_pm_syscore_resume,
--};
--
--static int __init irq_pm_init_ops(void)
--{
--	register_syscore_ops(&irq_pm_syscore_ops);
--	return 0;
--}
--
--device_initcall(irq_pm_init_ops);
-+EXPORT_SYMBOL_GPL(early_resume_device_irqs);
- 
- /**
-  * resume_device_irqs - enable interrupt lines disabled by suspend_device_irqs()
-diff --git a/kernel/kexec.c b/kernel/kexec.c
-index 369f41a..272853b 100644
---- a/kernel/kexec.c
-+++ b/kernel/kexec.c
-@@ -1700,7 +1700,7 @@ int kernel_kexec(void)
- 		local_irq_enable();
-  Enable_cpus:
- 		enable_nonboot_cpus();
--		dpm_resume_start(PMSG_RESTORE);
-+		dpm_resume_start(PMSG_RESTORE, true);
-  Resume_devices:
- 		dpm_resume_end(PMSG_RESTORE);
-  Resume_console:
-diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-index fcc2611..1d6dd56 100644
---- a/kernel/power/hibernate.c
-+++ b/kernel/power/hibernate.c
-@@ -325,7 +325,7 @@ static int create_image(int platform_mode)
- 	platform_finish(platform_mode);
- 
- 	dpm_resume_start(in_suspend ?
--		(error ? PMSG_RECOVER : PMSG_THAW) : PMSG_RESTORE);
-+		(error ? PMSG_RECOVER : PMSG_THAW) : PMSG_RESTORE, true);
- 
- 	return error;
- }
-@@ -482,7 +482,7 @@ static int resume_target_kernel(bool platform_mode)
-  Cleanup:
- 	platform_restore_cleanup(platform_mode);
- 
--	dpm_resume_start(PMSG_RECOVER);
-+	dpm_resume_start(PMSG_RECOVER, true);
- 
- 	return error;
- }
-@@ -574,7 +574,7 @@ int hibernation_platform_enter(void)
-  Platform_finish:
- 	hibernation_ops->finish();
- 
--	dpm_resume_start(PMSG_RESTORE);
-+	dpm_resume_start(PMSG_RESTORE, true);
- 
-  Resume_devices:
- 	entering_platform_hibernation = false;
-diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
-index 4dd8822..3597c72 100644
---- a/kernel/power/suspend.c
-+++ b/kernel/power/suspend.c
-@@ -281,7 +281,7 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
- 	if (need_suspend_ops(state) && suspend_ops->wake)
- 		suspend_ops->wake();
- 
--	dpm_resume_start(PMSG_RESUME);
-+	dpm_resume_start(PMSG_RESUME, true);
- 
-  Platform_finish:
- 	if (need_suspend_ops(state) && suspend_ops->finish)
+'maps' is a generic storage of different types for sharing data between kernel
+and userspace. Maps are referrenced by global id. Root can create multiple
+maps of different types where key/value are opaque bytes of data. It's up to
+user space and eBPF program to decide what they store in the maps.
+
+eBPF programs are similar to kernel modules. They live in global space and
+have unique prog_id. Each program is a safe run-to-completion set of
+instructions. eBPF verifier statically determines that the program terminates
+and safe to execute. During verification the program takes a hold of maps
+that it intends to use, so selected maps cannot be removed until program is
+unloaded. The program can be attached to different events. These events can
+be packets, tracepoint events and other types in the future. New event triggers
+execution of the program which may store information about the event in the maps.
+Beyond storing data the programs may call into in-kernel helper functions
+which may, for example, dump stack, do trace_printk or other forms of live
+kernel debugging. Same program can be attached to multiple events. Different
+programs can access the same map:
+
+  tracepoint  tracepoint  tracepoint    sk_buff    sk_buff
+   event A     event B     event C      on eth0    on eth1
+    |             |          |            |          |
+    |             |          |            |          |
+    --> tracing <--      tracing       socket      socket
+         prog_1           prog_2       prog_3      prog_4
+         |  |               |            |
+      |---  -----|  |-------|           map_3
+    map_1       map_2
+
+User space (via syscall) and eBPF programs access maps concurrently.
+
+Last two patches are sample code. 1st demonstrates stateful packet inspection.
+It counts tcp and udp packets on eth0. Should be easy to see how this eBPF
+framework can be used for network analytics.
+2nd sample does simple 'drop monitor'. It attaches to kfree_skb tracepoint
+event and counts number of packet drops at particular $pc location.
+User space periodically summarizes what eBPF programs recorded.
+In these two samples the eBPF programs are tiny and written in 'assembler'
+with macroses. More complex programs can be written C (llvm backend is not
+part of this diff to reduce 'huge' perception).
+Since eBPF is fully JITed on x64, the cost of running eBPF program is very
+small even for high frequency events. Here are the numbers comparing
+flow_dissector in C vs eBPF:
+  x86_64 skb_flow_dissect() same skb (all cached)         -  42 nsec per call
+  x86_64 skb_flow_dissect() different skbs (cache misses) - 141 nsec per call
+eBPF+jit skb_flow_dissect() same skb (all cached)         -  51 nsec per call
+eBPF+jit skb_flow_dissect() different skbs (cache misses) - 135 nsec per call
+
+Detailed explanation on eBPF verifier and safety is in patch 08/14
+
+Thanks
+Alexei
+
+minor todo: rename 'struct sock_filter_int' into 'struct bpf_insn'. It's not
+part of this diff to reduce size.
+  
+------
+
+The following changes since commit c1c27fb9b3040a2559d4d3e1183afa8c106bc94a:
+
+  Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/jkirsher/net-next (2014-06-27 12:59:38 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/ast/bpf master
+
+for you to fetch changes up to 4c8da0f21220087e38894c69339cddc64c1220f9:
+
+  samples: bpf: example of tracing filters with eBPF (2014-06-27 15:22:07 -0700)
+
+----------------------------------------------------------------
+Alexei Starovoitov (14):
+      net: filter: split filter.c into two files
+      net: filter: split filter.h and expose eBPF to user space
+      bpf: introduce syscall(BPF, ...) and BPF maps
+      bpf: update MAINTAINERS entry
+      bpf: add lookup/update/delete/iterate methods to BPF maps
+      bpf: add hashtable type of BPF maps
+      bpf: expand BPF syscall with program load/unload
+      bpf: add eBPF verifier
+      bpf: allow eBPF programs to use maps
+      net: sock: allow eBPF programs to be attached to sockets
+      tracing: allow eBPF programs to be attached to events
+      samples: bpf: add mini eBPF library to manipulate maps and programs
+      samples: bpf: example of stateful socket filtering
+      samples: bpf: example of tracing filters with eBPF
+
+ Documentation/networking/filter.txt    |  302 +++++++
+ MAINTAINERS                            |    9 +
+ arch/alpha/include/uapi/asm/socket.h   |    2 +
+ arch/avr32/include/uapi/asm/socket.h   |    2 +
+ arch/cris/include/uapi/asm/socket.h    |    2 +
+ arch/frv/include/uapi/asm/socket.h     |    2 +
+ arch/ia64/include/uapi/asm/socket.h    |    2 +
+ arch/m32r/include/uapi/asm/socket.h    |    2 +
+ arch/mips/include/uapi/asm/socket.h    |    2 +
+ arch/mn10300/include/uapi/asm/socket.h |    2 +
+ arch/parisc/include/uapi/asm/socket.h  |    2 +
+ arch/powerpc/include/uapi/asm/socket.h |    2 +
+ arch/s390/include/uapi/asm/socket.h    |    2 +
+ arch/sparc/include/uapi/asm/socket.h   |    2 +
+ arch/x86/syscalls/syscall_64.tbl       |    1 +
+ arch/xtensa/include/uapi/asm/socket.h  |    2 +
+ include/linux/bpf.h                    |  135 +++
+ include/linux/filter.h                 |  304 +------
+ include/linux/ftrace_event.h           |    5 +
+ include/linux/syscalls.h               |    2 +
+ include/trace/bpf_trace.h              |   29 +
+ include/trace/ftrace.h                 |   10 +
+ include/uapi/asm-generic/socket.h      |    2 +
+ include/uapi/asm-generic/unistd.h      |    4 +-
+ include/uapi/linux/Kbuild              |    1 +
+ include/uapi/linux/bpf.h               |  403 +++++++++
+ kernel/Makefile                        |    1 +
+ kernel/bpf/Makefile                    |    1 +
+ kernel/bpf/core.c                      |  548 ++++++++++++
+ kernel/bpf/hashtab.c                   |  371 +++++++++
+ kernel/bpf/syscall.c                   |  778 +++++++++++++++++
+ kernel/bpf/verifier.c                  | 1431 ++++++++++++++++++++++++++++++++
+ kernel/sys_ni.c                        |    3 +
+ kernel/trace/Kconfig                   |    1 +
+ kernel/trace/Makefile                  |    1 +
+ kernel/trace/bpf_trace.c               |  217 +++++
+ kernel/trace/trace.h                   |    3 +
+ kernel/trace/trace_events.c            |    7 +
+ kernel/trace/trace_events_filter.c     |   72 +-
+ net/core/filter.c                      |  646 +++-----------
+ net/core/sock.c                        |   13 +
+ samples/bpf/.gitignore                 |    1 +
+ samples/bpf/Makefile                   |   15 +
+ samples/bpf/dropmon.c                  |  127 +++
+ samples/bpf/libbpf.c                   |  114 +++
+ samples/bpf/libbpf.h                   |   18 +
+ samples/bpf/sock_example.c             |  160 ++++
+ 47 files changed, 4941 insertions(+), 820 deletions(-)
+ create mode 100644 include/linux/bpf.h
+ create mode 100644 include/trace/bpf_trace.h
+ create mode 100644 include/uapi/linux/bpf.h
+ create mode 100644 kernel/bpf/Makefile
+ create mode 100644 kernel/bpf/core.c
+ create mode 100644 kernel/bpf/hashtab.c
+ create mode 100644 kernel/bpf/syscall.c
+ create mode 100644 kernel/bpf/verifier.c
+ create mode 100644 kernel/trace/bpf_trace.c
+ create mode 100644 samples/bpf/.gitignore
+ create mode 100644 samples/bpf/Makefile
+ create mode 100644 samples/bpf/dropmon.c
+ create mode 100644 samples/bpf/libbpf.c
+ create mode 100644 samples/bpf/libbpf.h
+ create mode 100644 samples/bpf/sock_example.c
+
 -- 
-2.0.0.526.g5318336
+1.7.9.5
 
