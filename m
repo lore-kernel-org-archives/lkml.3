@@ -1,45 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752391AbaF1IzP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 04:55:15 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51215 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751237AbaF1IzM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 04:55:12 -0400
-Message-ID: <53AE836E.7010303@kernel.org>
-Date: Sat, 28 Jun 2014 09:57:18 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752336AbaF1JA7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 05:00:59 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:46947 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751291AbaF1JA6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Jun 2014 05:00:58 -0400
 MIME-Version: 1.0
-To: Hartmut Knaack <knaack.h@gmx.de>, Philippe Reynes <tremyfr@yahoo.fr>,
-        linux-iio@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, armadeus-forum@lists.sourceforge.net,
-        lars@metafoo.de, devicetree@vger.kernel.org, pmeerw@pmeerw.net
-Subject: Re: [PATCH v7] iio: add support of the max1027
-References: <1402784830-5853-1-git-send-email-tremyfr@yahoo.fr> <53A7EE7F.1060803@gmx.de>
-In-Reply-To: <53A7EE7F.1060803@gmx.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140625132220.GA20837@nuc-i3427.alporthouse.com>
+References: <CAJ7vePCSE3eWTBpzBGY8-e3ZTB0iZARdfMmhRE6LQYaxcFkVqg@mail.gmail.com>
+ <20140625132220.GA20837@nuc-i3427.alporthouse.com>
+From: Tom Van Braeckel <tomvanbraeckel@gmail.com>
+Date: Sat, 28 Jun 2014 11:00:17 +0200
+Message-ID: <CAJ7vePDbFBzwMCwOiDaNsoF0jJGwu76KxB4xFgcec2xTJJ3HJw@mail.gmail.com>
+Subject: Re: drm/i915 KMS regression in Linux 3.16-rc2 (with git bisect result)
+To: Chris Wilson <chris@chris-wilson.co.uk>,
+        Tom Van Braeckel <tomvanbraeckel@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        David Airlie <airlied@linux.ie>, ville.syrjala@linux.intel.com,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/06/14 10:08, Hartmut Knaack wrote:
-> Philippe Reynes schrieb:
->> This driver add partial support of the
->> maxim 1027/1029/1031. Differential mode is not
->> supported.
->>
->> It was tested on armadeus apf27 board.
->>
->> Signed-off-by: Philippe Reynes <tremyfr@yahoo.fr>
-> Reviewed-by: Hartmut Knaack <knaack.h@gmx.de>
->> ---
-> Not sure if it's too late, already. Looks pretty good to me, no show-stoppers. Though 3 minor issues inline, comments welcome.
-As I hadn't gotten around to pushing this out to the
-actual togreg branch I've added the reviewed-by.
+>> There seems to be a regression in the upcoming Linux 3.16-rc2 release
+>> candidate that I bisected down to this first bad commit:
+>> [dbb42748ac4929987c1449ecb296b39ef8956b62] drm/i915: Move the C3 LP
+>> write bit setup to gen3_init_clock_gating() for KMS.
+>
+> Can you attach the dmesg with rc2 and dbb4274 reverted?
 
-Thanks Hartmut.
+Hmm, for some reason I started having a hard time reproducing the
+issue on commit dbb4274.
 
-J
+I still have it on the 3.16-rc2 though and I'm doing another bisect.
 
+The issue comes and goes during the bisect so let's see where it
+leads... perhaps it turns out to be some configuration setting.
