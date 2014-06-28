@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754122AbaF1Rry (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:47:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52923 "EHLO
+	id S1754402AbaF1RsK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:48:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52991 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754030AbaF1Rrv (ORCPT
+	with ESMTP id S1754234AbaF1RsI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:47:51 -0400
+	Sat, 28 Jun 2014 13:48:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>, Huang Rui <ray.huang@amd.com>
-Subject: [PATCH 3.10 08/77] USB: usbtest: add a timeout for scatter-gather tests
-Date: Sat, 28 Jun 2014 10:46:01 -0700
-Message-Id: <20140628174522.079264097@linuxfoundation.org>
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 22/77] idr: fix overflow bug during maximum ID calculation at maximum height
+Date: Sat, 28 Jun 2014 10:46:15 -0700
+Message-Id: <20140628174522.709861468@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174521.691276402@linuxfoundation.org>
 References: <20140628174521.691276402@linuxfoundation.org>
@@ -28,72 +30,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-commit 32b36eeae6a859670d2939a7d6136cb5e9ed64f8 upstream.
+commit 3afb69cb5572b3c8c898c00880803cf1a49852c4 upstream.
 
-In usbtest, tests 5 - 8 use the scatter-gather library in usbcore
-without any sort of timeout.  If there's a problem in the gadget or
-host controller being tested, the test can hang.
+idr_replace() open-codes the logic to calculate the maximum valid ID
+given the height of the idr tree; unfortunately, the open-coded logic
+doesn't account for the fact that the top layer may have unused slots
+and over-shifts the limit to zero when the tree is at its maximum
+height.
 
-This patch adds a 10-second timeout to the tests, so that they will
-fail gracefully with an ETIMEDOUT error instead of hanging.
+The following test code shows it fails to replace the value for
+id=((1<<27)+42):
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Huang Rui <ray.huang@amd.com>
-Tested-by: Huang Rui <ray.huang@amd.com>
+  static void test5(void)
+  {
+        int id;
+        DEFINE_IDR(test_idr);
+  #define TEST5_START ((1<<27)+42) /* use the highest layer */
+
+        printk(KERN_INFO "Start test5\n");
+        id = idr_alloc(&test_idr, (void *)1, TEST5_START, 0, GFP_KERNEL);
+        BUG_ON(id != TEST5_START);
+        TEST_BUG_ON(idr_replace(&test_idr, (void *)2, TEST5_START) != (void *)1);
+        idr_destroy(&test_idr);
+        printk(KERN_INFO "End of test5\n");
+  }
+
+Fix the bug by using idr_max() which correctly takes into account the
+maximum allowed shift.
+
+sub_alloc() shares the same problem and may incorrectly fail with
+-EAGAIN; however, this bug doesn't affect correct operation because
+idr_get_empty_slot(), which already uses idr_max(), retries with the
+increased @id in such cases.
+
+[tj@kernel.org: Updated patch description.]
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/misc/usbtest.c |   16 +++++++++++++++-
- 1 file changed, 15 insertions(+), 1 deletion(-)
+ lib/idr.c |    8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
---- a/drivers/usb/misc/usbtest.c
-+++ b/drivers/usb/misc/usbtest.c
-@@ -7,7 +7,7 @@
- #include <linux/moduleparam.h>
- #include <linux/scatterlist.h>
- #include <linux/mutex.h>
+--- a/lib/idr.c
++++ b/lib/idr.c
+@@ -250,7 +250,7 @@ static int sub_alloc(struct idr *idp, in
+ 			id = (id | ((1 << (IDR_BITS * l)) - 1)) + 1;
+ 
+ 			/* if already at the top layer, we need to grow */
+-			if (id >= 1 << (idp->layers * IDR_BITS)) {
++			if (id > idr_max(idp->layers)) {
+ 				*starting_id = id;
+ 				return -EAGAIN;
+ 			}
+@@ -829,12 +829,10 @@ void *idr_replace(struct idr *idp, void
+ 	if (!p)
+ 		return ERR_PTR(-EINVAL);
+ 
+-	n = (p->layer+1) * IDR_BITS;
 -
-+#include <linux/timer.h>
- #include <linux/usb.h>
+-	if (id >= (1 << n))
++	if (id > idr_max(p->layer + 1))
+ 		return ERR_PTR(-EINVAL);
  
- 
-@@ -476,6 +476,14 @@ alloc_sglist(int nents, int max, int var
- 	return sg;
- }
- 
-+static void sg_timeout(unsigned long _req)
-+{
-+	struct usb_sg_request	*req = (struct usb_sg_request *) _req;
-+
-+	req->status = -ETIMEDOUT;
-+	usb_sg_cancel(req);
-+}
-+
- static int perform_sglist(
- 	struct usbtest_dev	*tdev,
- 	unsigned		iterations,
-@@ -487,6 +495,9 @@ static int perform_sglist(
- {
- 	struct usb_device	*udev = testdev_to_usbdev(tdev);
- 	int			retval = 0;
-+	struct timer_list	sg_timer;
-+
-+	setup_timer_on_stack(&sg_timer, sg_timeout, (unsigned long) req);
- 
- 	while (retval == 0 && iterations-- > 0) {
- 		retval = usb_sg_init(req, udev, pipe,
-@@ -497,7 +508,10 @@ static int perform_sglist(
- 
- 		if (retval)
- 			break;
-+		mod_timer(&sg_timer, jiffies +
-+				msecs_to_jiffies(SIMPLE_IO_TIMEOUT));
- 		usb_sg_wait(req);
-+		del_timer_sync(&sg_timer);
- 		retval = req->status;
- 
- 		/* FIXME check resulting data pattern */
+-	n -= IDR_BITS;
++	n = p->layer * IDR_BITS;
+ 	while ((n > 0) && p) {
+ 		p = p->ary[(id >> n) & IDR_MASK];
+ 		n -= IDR_BITS;
 
 
