@@ -1,53 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751688AbaF1QgX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 12:36:23 -0400
-Received: from imap.thunk.org ([74.207.234.97]:34484 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751200AbaF1QgW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 12:36:22 -0400
-Date: Sat, 28 Jun 2014 12:36:18 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Nick Krause <xerofoify@gmail.com>
-Cc: stable@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Cleanup of Kernel Bugzilla
-Message-ID: <20140628163618.GC22215@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Nick Krause <xerofoify@gmail.com>, stable@vger.kernel.org,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <CAPDOMVg=L+spebzkckNpM0=9NY=meV=F_+ko+VJN_6M50NdNew@mail.gmail.com>
- <CAPDOMVjnROuS4D4E2B7=PxOZUB4YXHuFUKy5C9Y8Lm7gxN=N_Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPDOMVjnROuS4D4E2B7=PxOZUB4YXHuFUKy5C9Y8Lm7gxN=N_Q@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1752135AbaF1QyH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 12:54:07 -0400
+Received: from smtprelay0089.hostedemail.com ([216.40.44.89]:51380 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751490AbaF1QyG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Jun 2014 12:54:06 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:69:355:379:541:800:960:973:979:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3865:3868:3870:3871:4383:5007:7652:7809:7903:9592:10004:10400:10848:11232:11658:11914:12043:12517:12519:12555:13069:13072:13161:13229:13311:13357:13846:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: trees69_409b5e2da7d2a
+X-Filterd-Recvd-Size: 1806
+Message-ID: <1403974442.9064.25.camel@joe-AO725>
+Subject: [PATCH] MAINTAINERS: Remove two ancient EATA sections
+From: Joe Perches <joe@perches.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Sat, 28 Jun 2014 09:54:02 -0700
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 27, 2014 at 10:45:47PM -0400, Nick Krause wrote:
-> Do any of you use the kernel Bugzilla? If you do I was wondering if we
-> can clean it up.
-> Otherwise I was wondering were  I can get an accurate list of open
-> bugs in the newest
-> kernels.
+These haven't had a single ack by the listed maintainer
+in all git history and the email addresses don't work.
 
-Some subsystem maintainers use the kernel bugzilla.  Others do not.
-How they use it is also highly variable.  For example, bugs that are
-filed with the ext4 component cause mail to be sent to the linux-ext4
-mailing list, and replies automatically end up in the bugzilla log.
-We use the ext4 bugzilla as a record of the bug, and we'll have a
-pointer to the kernel bugzilla URL with the fix.  But we don't always
-close out the bug.  Sometimes a few kernel developers will do some
-cleanup, but it's not something that done regularly.
+And entry for Michael Neuffer is already in CREDITS.
 
-Also note that many bugs are never filed via the bugzilla, and are
-reported via the mailing list.  So if you want a full and complete
-list of open bugs --- sorry, there is no such thing.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ MAINTAINERS | 14 --------------
+ 1 file changed, 14 deletions(-)
 
-     	     	      	     	      	      - Ted
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 8ea4305..93aa52b 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -3189,26 +3189,12 @@ T:	git git://linuxtv.org/anttip/media_tree.git
+ S:	Maintained
+ F:	drivers/media/tuners/e4000*
+ 
+-EATA-DMA SCSI DRIVER
+-M:	Michael Neuffer <mike@i-Connect.Net>
+-L:	linux-eata@i-connect.net
+-L:	linux-scsi@vger.kernel.org
+-S:	Maintained
+-F:	drivers/scsi/eata*
+-
+ EATA ISA/EISA/PCI SCSI DRIVER
+ M:	Dario Ballabio <ballabio_dario@emc.com>
+ L:	linux-scsi@vger.kernel.org
+ S:	Maintained
+ F:	drivers/scsi/eata.c
+ 
+-EATA-PIO SCSI DRIVER
+-M:	Michael Neuffer <mike@i-Connect.Net>
+-L:	linux-eata@i-connect.net
+-L:	linux-scsi@vger.kernel.org
+-S:	Maintained
+-F:	drivers/scsi/eata_pio.*
+-
+ EC100 MEDIA DRIVER
+ M:	Antti Palosaari <crope@iki.fi>
+ L:	linux-media@vger.kernel.org
+
+
