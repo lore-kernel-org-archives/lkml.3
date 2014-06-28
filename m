@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756635AbaF1SQl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:16:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54161 "EHLO
+	id S1756667AbaF1SRN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:17:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54155 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753634AbaF1Rvq (ORCPT
+	with ESMTP id S1755867AbaF1Rvo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:51:46 -0400
+	Sat, 28 Jun 2014 13:51:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.15 056/139] USB: sierra: fix urb and memory leak in resume error path
-Date: Sat, 28 Jun 2014 10:46:57 -0700
-Message-Id: <20140628174607.997082359@linuxfoundation.org>
+Subject: [PATCH 3.15 054/139] USB: sierra: fix AA deadlock in open error path
+Date: Sat, 28 Jun 2014 10:46:55 -0700
+Message-Id: <20140628174607.910488882@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -30,47 +30,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit 7fdd26a01eb7b6cb6855ff8f69ef4a720720dfcb upstream.
+commit 353fe198602e8b4d1c7bdcceb8e60955087201b1 upstream.
 
-Neither the transfer buffer or the urb itself were released in the
-resume error path for delayed writes. Also on errors, the remainder of
-the queue was not even processed, which leads to further urb and buffer
-leaks.
+Fix AA deadlock in open error path that would call close() and try to
+grab the already held disc_mutex.
 
-The same error path also failed to balance the outstanding-urb counter,
-something which results in degraded throughput or completely blocked
-writes.
-
-Fix this by releasing urb and buffer and balancing counters on errors,
-and by always processing the whole queue even when submission of one urb
-fails.
-
-Fixes: e6929a9020ac ("USB: support for autosuspend in sierra while
-online")
+Fixes: b9a44bc19f48 ("sierra: driver urb handling improvements")
 
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/sierra.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/usb/serial/sierra.c |   21 +++++++++++++--------
+ 1 file changed, 13 insertions(+), 8 deletions(-)
 
 --- a/drivers/usb/serial/sierra.c
 +++ b/drivers/usb/serial/sierra.c
-@@ -1004,8 +1004,12 @@ static int sierra_resume(struct usb_seri
- 			if (err < 0) {
- 				intfdata->in_flight--;
- 				usb_unanchor_urb(urb);
--				usb_scuttle_anchored_urbs(&portdata->delayed);
--				break;
-+				kfree(urb->transfer_buffer);
-+				usb_free_urb(urb);
-+				spin_lock(&portdata->lock);
-+				portdata->outstanding_urbs--;
-+				spin_unlock(&portdata->lock);
-+				continue;
- 			}
- 		}
+@@ -816,14 +816,9 @@ static int sierra_open(struct tty_struct
+ 			usb_sndbulkpipe(serial->dev, endpoint) | USB_DIR_IN);
+ 
+ 	err = sierra_submit_rx_urbs(port, GFP_KERNEL);
+-	if (err) {
+-		/* get rid of everything as in close */
+-		sierra_close(port);
+-		/* restore balance for autopm */
+-		if (!serial->disconnected)
+-			usb_autopm_put_interface(serial->interface);
+-		return err;
+-	}
++	if (err)
++		goto err_submit;
++
+ 	sierra_send_setup(port);
+ 
+ 	serial->interface->needs_remote_wakeup = 1;
+@@ -833,6 +828,16 @@ static int sierra_open(struct tty_struct
+ 	usb_autopm_put_interface(serial->interface);
+ 
+ 	return 0;
++
++err_submit:
++	sierra_stop_rx_urbs(port);
++
++	for (i = 0; i < portdata->num_in_urbs; i++) {
++		sierra_release_urb(portdata->in_urbs[i]);
++		portdata->in_urbs[i] = NULL;
++	}
++
++	return err;
+ }
+ 
  
 
 
