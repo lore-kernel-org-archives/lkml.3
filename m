@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754177AbaF1RsA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:48:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52943 "EHLO
+	id S1757792AbaF1TL6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 15:11:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52958 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754126AbaF1Rr5 (ORCPT
+	with ESMTP id S1754182AbaF1RsA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:47:57 -0400
+	Sat, 28 Jun 2014 13:48:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Subject: [PATCH 3.10 26/77] matroxfb: perform a dummy read of M_STATUS
-Date: Sat, 28 Jun 2014 10:46:19 -0700
-Message-Id: <20140628174522.890921446@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.10 30/77] USB: usb_wwan: fix urb leak at shutdown
+Date: Sat, 28 Jun 2014 10:46:23 -0700
+Message-Id: <20140628174523.100681341@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174521.691276402@linuxfoundation.org>
 References: <20140628174521.691276402@linuxfoundation.org>
@@ -29,40 +28,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 972754cfaee94d6e25acf94a497bc0a864d91b7e upstream.
+commit 79eed03e77d481b55d85d1cfe5a1636a0d3897fd upstream.
 
-I had occasional screen corruption with the matrox framebuffer driver and
-I found out that the reason for the corruption is that the hardware
-blitter accesses the videoram while it is being written to.
+The delayed-write queue was never emptied at shutdown (close), something
+which could lead to leaked urbs if the port is closed before being
+runtime resumed due to a write.
 
-The matrox driver has a macro WaitTillIdle() that should wait until the
-blitter is idle, but it sometimes doesn't work. I added a dummy read
-mga_inl(M_STATUS) to WaitTillIdle() to fix the problem. The dummy read
-will flush the write buffer in the PCI chipset, and the next read of
-M_STATUS will return the hardware status.
+When this happens the output buffer would not drain on close
+(closing_wait timeout), and after consecutive opens, writes could be
+corrupted with previously buffered data, transfered with reduced
+throughput or completely blocked.
 
-Since applying this patch, I had no screen corruption at all.
+Note that unbusy_queued_urb() was simply moved out of CONFIG_PM.
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Fixes: 383cedc3bb43 ("USB: serial: full autosuspend support for the
+option driver")
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/video/matrox/matroxfb_base.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/usb_wwan.c |   34 ++++++++++++++++++++++------------
+ 1 file changed, 22 insertions(+), 12 deletions(-)
 
---- a/drivers/video/matrox/matroxfb_base.h
-+++ b/drivers/video/matrox/matroxfb_base.h
-@@ -698,7 +698,7 @@ void matroxfb_unregister_driver(struct m
+--- a/drivers/usb/serial/usb_wwan.c
++++ b/drivers/usb/serial/usb_wwan.c
+@@ -414,12 +414,26 @@ int usb_wwan_open(struct tty_struct *tty
+ }
+ EXPORT_SYMBOL(usb_wwan_open);
  
- #define mga_fifo(n)	do {} while ((mga_inl(M_FIFOSTATUS) & 0xFF) < (n))
++static void unbusy_queued_urb(struct urb *urb,
++					struct usb_wwan_port_private *portdata)
++{
++	int i;
++
++	for (i = 0; i < N_OUT_URB; i++) {
++		if (urb == portdata->out_urbs[i]) {
++			clear_bit(i, &portdata->out_busy);
++			break;
++		}
++	}
++}
++
+ void usb_wwan_close(struct usb_serial_port *port)
+ {
+ 	int i;
+ 	struct usb_serial *serial = port->serial;
+ 	struct usb_wwan_port_private *portdata;
+ 	struct usb_wwan_intf_private *intfdata = port->serial->private;
++	struct urb *urb;
  
--#define WaitTillIdle()	do {} while (mga_inl(M_STATUS) & 0x10000)
-+#define WaitTillIdle()	do { mga_inl(M_STATUS); do {} while (mga_inl(M_STATUS) & 0x10000); } while (0)
+ 	portdata = usb_get_serial_port_data(port);
  
- /* code speedup */
- #ifdef CONFIG_FB_MATROX_MILLENIUM
+@@ -428,6 +442,14 @@ void usb_wwan_close(struct usb_serial_po
+ 	portdata->opened = 0;
+ 	spin_unlock_irq(&intfdata->susp_lock);
+ 
++	for (;;) {
++		urb = usb_get_from_anchor(&portdata->delayed);
++		if (!urb)
++			break;
++		unbusy_queued_urb(urb, portdata);
++		usb_autopm_put_interface_async(serial->interface);
++	}
++
+ 	for (i = 0; i < N_IN_URB; i++)
+ 		usb_kill_urb(portdata->in_urbs[i]);
+ 	for (i = 0; i < N_OUT_URB; i++)
+@@ -600,18 +622,6 @@ int usb_wwan_suspend(struct usb_serial *
+ }
+ EXPORT_SYMBOL(usb_wwan_suspend);
+ 
+-static void unbusy_queued_urb(struct urb *urb, struct usb_wwan_port_private *portdata)
+-{
+-	int i;
+-
+-	for (i = 0; i < N_OUT_URB; i++) {
+-		if (urb == portdata->out_urbs[i]) {
+-			clear_bit(i, &portdata->out_busy);
+-			break;
+-		}
+-	}
+-}
+-
+ static void play_delayed(struct usb_serial_port *port)
+ {
+ 	struct usb_wwan_intf_private *data;
 
 
