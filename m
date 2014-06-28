@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756471AbaF1S0V (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:26:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53973 "EHLO
+	id S1756878AbaF1S1A (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:27:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53954 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755709AbaF1RvJ (ORCPT
+	with ESMTP id S1755685AbaF1RvG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:51:09 -0400
+	Sat, 28 Jun 2014 13:51:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.15 020/139] USB: option: fix runtime PM handling
-Date: Sat, 28 Jun 2014 10:46:21 -0700
-Message-Id: <20140628174606.329957176@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>, Huang Rui <ray.huang@amd.com>
+Subject: [PATCH 3.15 015/139] USB: usbtest: add a timeout for scatter-gather tests
+Date: Sat, 28 Jun 2014 10:46:16 -0700
+Message-Id: <20140628174606.063562573@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -28,51 +28,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit acf47d4f9c39b1cba467aa9442fc2efe0b1da741 upstream.
+commit 32b36eeae6a859670d2939a7d6136cb5e9ed64f8 upstream.
 
-Fix potential I/O while runtime suspended due to missing PM operations
-in send_setup.
+In usbtest, tests 5 - 8 use the scatter-gather library in usbcore
+without any sort of timeout.  If there's a problem in the gadget or
+host controller being tested, the test can hang.
 
-Fixes: 383cedc3bb43 ("USB: serial: full autosuspend support for the
-option driver")
+This patch adds a 10-second timeout to the tests, so that they will
+fail gracefully with an ETIMEDOUT error instead of hanging.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Huang Rui <ray.huang@amd.com>
+Tested-by: Huang Rui <ray.huang@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ drivers/usb/misc/usbtest.c |   16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -1925,6 +1925,7 @@ static int option_send_setup(struct usb_
- 	struct option_private *priv = intfdata->private;
- 	struct usb_wwan_port_private *portdata;
- 	int val = 0;
-+	int res;
+--- a/drivers/usb/misc/usbtest.c
++++ b/drivers/usb/misc/usbtest.c
+@@ -7,7 +7,7 @@
+ #include <linux/moduleparam.h>
+ #include <linux/scatterlist.h>
+ #include <linux/mutex.h>
+-
++#include <linux/timer.h>
+ #include <linux/usb.h>
  
- 	portdata = usb_get_serial_port_data(port);
- 
-@@ -1933,9 +1934,17 @@ static int option_send_setup(struct usb_
- 	if (portdata->rts_state)
- 		val |= 0x02;
- 
--	return usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
-+	res = usb_autopm_get_interface(serial->interface);
-+	if (res)
-+		return res;
-+
-+	res = usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
- 				0x22, 0x21, val, priv->bInterfaceNumber, NULL,
- 				0, USB_CTRL_SET_TIMEOUT);
-+
-+	usb_autopm_put_interface(serial->interface);
-+
-+	return res;
+ #define SIMPLE_IO_TIMEOUT	10000	/* in milliseconds */
+@@ -484,6 +484,14 @@ alloc_sglist(int nents, int max, int var
+ 	return sg;
  }
  
- MODULE_AUTHOR(DRIVER_AUTHOR);
++static void sg_timeout(unsigned long _req)
++{
++	struct usb_sg_request	*req = (struct usb_sg_request *) _req;
++
++	req->status = -ETIMEDOUT;
++	usb_sg_cancel(req);
++}
++
+ static int perform_sglist(
+ 	struct usbtest_dev	*tdev,
+ 	unsigned		iterations,
+@@ -495,6 +503,9 @@ static int perform_sglist(
+ {
+ 	struct usb_device	*udev = testdev_to_usbdev(tdev);
+ 	int			retval = 0;
++	struct timer_list	sg_timer;
++
++	setup_timer_on_stack(&sg_timer, sg_timeout, (unsigned long) req);
+ 
+ 	while (retval == 0 && iterations-- > 0) {
+ 		retval = usb_sg_init(req, udev, pipe,
+@@ -505,7 +516,10 @@ static int perform_sglist(
+ 
+ 		if (retval)
+ 			break;
++		mod_timer(&sg_timer, jiffies +
++				msecs_to_jiffies(SIMPLE_IO_TIMEOUT));
+ 		usb_sg_wait(req);
++		del_timer_sync(&sg_timer);
+ 		retval = req->status;
+ 
+ 		/* FIXME check resulting data pattern */
 
 
