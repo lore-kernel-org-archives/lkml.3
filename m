@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964816AbaF1S3C (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:29:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53762 "EHLO
+	id S1756564AbaF1S31 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:29:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53755 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755648AbaF1Ru4 (ORCPT
+	with ESMTP id S1755643AbaF1Ruz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:50:56 -0400
+	Sat, 28 Jun 2014 13:50:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrew Zaborowski <andrew.zaborowski@intel.com>,
-        David Rientjes <rientjes@google.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: [PATCH 3.14 110/110] efi-pstore: Fix an overflow on 32-bit builds
-Date: Sat, 28 Jun 2014 10:47:47 -0700
-Message-Id: <20140628174551.906046962@linuxfoundation.org>
+        Fathi Boudra <fathi.boudra@linaro.org>,
+        Ben Hutchings <ben@decadent.org.uk>, Michal Marek <mmarek@suse.cz>
+Subject: [PATCH 3.14 109/110] builddeb: use $OBJCOPY variable instead of objcopy
+Date: Sat, 28 Jun 2014 10:47:46 -0700
+Message-Id: <20140628174551.838219364@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -30,40 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrzej Zaborowski <andrew.zaborowski@intel.com>
+From: Fathi Boudra <fathi.boudra@linaro.org>
 
-commit 783ee43118dc773bc8b0342c5b230e017d5a04d0 upstream.
+commit 6b4a144a92ab81a1f45fb9b12aebaaaee0d08120 upstream.
 
-In generic_id the long int timestamp is multiplied by 100000 and needs
-an explicit cast to u64.
+In cross-build environment, we expect to use the cross-compiler objcopy
+instead of the host objcopy.
 
-Without that the id in the resulting pstore filename is wrong and
-userspace may have problems parsing it, but more importantly files in
-pstore can never be deleted and may fill the EFI flash (brick device?).
-This happens because when generic pstore code wants to delete a file,
-it passes the id to the EFI backend which reinterpretes it and a wrong
-variable name is attempted to be deleted.  There's no error message but
-after remounting pstore, deleted files would reappear.
+It fixes following build failures:
+objcopy --only-keep-debug lib/modules/3.14/kernel/net/ipv6/xfrm6_mode_tunnel.ko /srv/build/linux/debian/dbgtmp/usr/lib/debug/lib/modules/3.14/kernel/net/ipv6/xfrm6_mode_tunnel.ko
+objcopy: Unable to recognise the format of the input file `lib/modules/3.14/kernel/net/ipv6/xfrm6_mode_tunnel.ko'
 
-Signed-off-by: Andrew Zaborowski <andrew.zaborowski@intel.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Signed-off-by: Fathi Boudra <fathi.boudra@linaro.org>
+Fixes: 810e843746b7 ('deb-pkg: split debug symbols in their own package')
+Reviewed-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/firmware/efi/efi-pstore.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ scripts/package/builddeb |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/firmware/efi/efi-pstore.c
-+++ b/drivers/firmware/efi/efi-pstore.c
-@@ -40,7 +40,7 @@ struct pstore_read_data {
- static inline u64 generic_id(unsigned long timestamp,
- 			     unsigned int part, int count)
- {
--	return (timestamp * 100 + part) * 1000 + count;
-+	return ((u64) timestamp * 100 + part) * 1000 + count;
- }
- 
- static int efi_pstore_read_func(struct efivar_entry *entry, void *data)
+--- a/scripts/package/builddeb
++++ b/scripts/package/builddeb
+@@ -155,11 +155,11 @@ if grep -q '^CONFIG_MODULES=y' $KCONFIG_
+ 			for module in $(find lib/modules/ -name *.ko); do
+ 				mkdir -p $(dirname $dbg_dir/usr/lib/debug/$module)
+ 				# only keep debug symbols in the debug file
+-				objcopy --only-keep-debug $module $dbg_dir/usr/lib/debug/$module
++				$OBJCOPY --only-keep-debug $module $dbg_dir/usr/lib/debug/$module
+ 				# strip original module from debug symbols
+-				objcopy --strip-debug $module
++				$OBJCOPY --strip-debug $module
+ 				# then add a link to those
+-				objcopy --add-gnu-debuglink=$dbg_dir/usr/lib/debug/$module $module
++				$OBJCOPY --add-gnu-debuglink=$dbg_dir/usr/lib/debug/$module $module
+ 			done
+ 		)
+ 	fi
 
 
