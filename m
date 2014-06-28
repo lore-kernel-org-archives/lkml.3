@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753298AbaF1RrJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:47:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52718 "EHLO
+	id S1753359AbaF1RrK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:47:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52740 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752816AbaF1RrA (ORCPT
+	with ESMTP id S1753121AbaF1RrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:47:00 -0400
+	Sat, 28 Jun 2014 13:47:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Leandro Liptak <leandroliptak@gmail.com>
-Subject: [PATCH 3.4 08/43] USB: EHCI: avoid BIOS handover on the HASEE E200
-Date: Sat, 28 Jun 2014 10:45:59 -0700
-Message-Id: <20140628174450.193084615@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.4 22/43] USB: usb_wwan: fix potential NULL-deref at resume
+Date: Sat, 28 Jun 2014 10:46:13 -0700
+Message-Id: <20140628174450.821632561@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174449.788784511@linuxfoundation.org>
 References: <20140628174449.788784511@linuxfoundation.org>
@@ -29,61 +28,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit b0a50e92bda3c4aeb8017d4e6c6e92146ebd5c9b upstream.
+commit 9096f1fbba916c2e052651e9de82fcfb98d4bea7 upstream.
 
-Leandro Liptak reports that his HASEE E200 computer hangs when we ask
-the BIOS to hand over control of the EHCI host controller.  This
-definitely sounds like a bug in the BIOS, but at the moment there is
-no way to fix it.
+The interrupt urb was submitted unconditionally at resume, something
+which could lead to a NULL-pointer dereference in the urb completion
+handler as resume may be called after the port and port data is gone.
 
-This patch works around the problem by avoiding the handoff whenever
-the motherboard and BIOS version match those of Leandro's computer.
+Fix this by making sure the interrupt urb is only submitted and active
+when the port is open.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Leandro Liptak <leandroliptak@gmail.com>
-Tested-by: Leandro Liptak <leandroliptak@gmail.com>
+Fixes: 383cedc3bb43 ("USB: serial: full autosuspend support for the
+option driver")
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/pci-quirks.c |   19 ++++++++++++++++---
- 1 file changed, 16 insertions(+), 3 deletions(-)
+ drivers/usb/serial/usb_wwan.c |   42 ++++++++++++++++++++----------------------
+ 1 file changed, 20 insertions(+), 22 deletions(-)
 
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -555,6 +555,14 @@ static const struct dmi_system_id __devi
- 			DMI_MATCH(DMI_BIOS_VERSION, "Lucid-"),
- 		},
- 	},
-+	{
-+		/* HASEE E200 */
-+		.matches = {
-+			DMI_MATCH(DMI_BOARD_VENDOR, "HASEE"),
-+			DMI_MATCH(DMI_BOARD_NAME, "E210"),
-+			DMI_MATCH(DMI_BIOS_VERSION, "6.00"),
-+		},
-+	},
- 	{ }
- };
+--- a/drivers/usb/serial/usb_wwan.c
++++ b/drivers/usb/serial/usb_wwan.c
+@@ -408,6 +408,14 @@ int usb_wwan_open(struct tty_struct *tty
  
-@@ -564,9 +572,14 @@ static void __devinit ehci_bios_handoff(
+ 	dbg("%s", __func__);
+ 
++	if (port->interrupt_in_urb) {
++		err = usb_submit_urb(port->interrupt_in_urb, GFP_KERNEL);
++		if (err) {
++			dev_dbg(&port->dev, "%s: submit int urb failed: %d\n",
++				__func__, err);
++		}
++	}
++
+ 	/* Start reading from the IN endpoint */
+ 	for (i = 0; i < N_IN_URB; i++) {
+ 		urb = portdata->in_urbs[i];
+@@ -476,6 +484,7 @@ void usb_wwan_close(struct usb_serial_po
+ 			usb_kill_urb(portdata->in_urbs[i]);
+ 		for (i = 0; i < N_OUT_URB; i++)
+ 			usb_kill_urb(portdata->out_urbs[i]);
++		usb_kill_urb(port->interrupt_in_urb);
+ 		/* balancing - important as an error cannot be handled*/
+ 		usb_autopm_get_interface_no_resume(serial->interface);
+ 		serial->interface->needs_remote_wakeup = 0;
+@@ -551,7 +560,7 @@ static void usb_wwan_setup_urbs(struct u
+ 
+ int usb_wwan_startup(struct usb_serial *serial)
  {
- 	int try_handoff = 1, tried_handoff = 0;
+-	int i, j, err;
++	int i, j;
+ 	struct usb_serial_port *port;
+ 	struct usb_wwan_port_private *portdata;
+ 	u8 *buffer;
+@@ -584,12 +593,6 @@ int usb_wwan_startup(struct usb_serial *
+ 		}
  
--	/* The Pegatron Lucid tablet sporadically waits for 98 seconds trying
--	 * the handoff on its unused controller.  Skip it. */
--	if (pdev->vendor == 0x8086 && pdev->device == 0x283a) {
-+	/*
-+	 * The Pegatron Lucid tablet sporadically waits for 98 seconds trying
-+	 * the handoff on its unused controller.  Skip it.
-+	 *
-+	 * The HASEE E200 hangs when the semaphore is set (bugzilla #77021).
-+	 */
-+	if (pdev->vendor == 0x8086 && (pdev->device == 0x283a ||
-+			pdev->device == 0x27cc)) {
- 		if (dmi_check_system(ehci_dmi_nohandoff_table))
- 			try_handoff = 0;
+ 		usb_set_serial_port_data(port, portdata);
+-
+-		if (!port->interrupt_in_urb)
+-			continue;
+-		err = usb_submit_urb(port->interrupt_in_urb, GFP_KERNEL);
+-		if (err)
+-			dbg("%s: submit irq_in urb failed %d", __func__, err);
  	}
+ 	usb_wwan_setup_urbs(serial);
+ 	return 0;
+@@ -723,21 +726,6 @@ int usb_wwan_resume(struct usb_serial *s
+ 	int err = 0;
+ 
+ 	dbg("%s entered", __func__);
+-	/* get the interrupt URBs resubmitted unconditionally */
+-	for (i = 0; i < serial->num_ports; i++) {
+-		port = serial->port[i];
+-		if (!port->interrupt_in_urb) {
+-			dbg("%s: No interrupt URB for port %d", __func__, i);
+-			continue;
+-		}
+-		err = usb_submit_urb(port->interrupt_in_urb, GFP_NOIO);
+-		dbg("Submitted interrupt URB for port %d (result %d)", i, err);
+-		if (err < 0) {
+-			err("%s: Error %d for interrupt URB of port%d",
+-			    __func__, err, i);
+-			goto err_out;
+-		}
+-	}
+ 
+ 	spin_lock_irq(&intfdata->susp_lock);
+ 	for (i = 0; i < serial->num_ports; i++) {
+@@ -749,6 +737,16 @@ int usb_wwan_resume(struct usb_serial *s
+ 		if (!portdata || !portdata->opened)
+ 			continue;
+ 
++		if (port->interrupt_in_urb) {
++			err = usb_submit_urb(port->interrupt_in_urb,
++					GFP_ATOMIC);
++			if (err) {
++				dev_err(&port->dev,
++					"%s: submit int urb failed: %d\n",
++					__func__, err);
++			}
++		}
++
+ 		for (j = 0; j < N_IN_URB; j++) {
+ 			urb = portdata->in_urbs[j];
+ 			err = usb_submit_urb(urb, GFP_ATOMIC);
 
 
