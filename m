@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932434AbaF1SGG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:06:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54378 "EHLO
+	id S964794AbaF1SGb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:06:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54361 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756056AbaF1Rwy (ORCPT
+	with ESMTP id S1756052AbaF1Rwv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:52:54 -0400
+	Sat, 28 Jun 2014 13:52:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: [PATCH 3.15 103/139] arm64: uid16: fix __kernel_old_{gid,uid}_t definitions
-Date: Sat, 28 Jun 2014 10:47:44 -0700
-Message-Id: <20140628174610.122412440@linuxfoundation.org>
+        Johan Hedberg <johan.hedberg@intel.com>,
+        Marcel Holtmann <marcel@holtmann.org>
+Subject: [PATCH 3.15 084/139] Bluetooth: Fix authentication check for FIPS security level
+Date: Sat, 28 Jun 2014 10:47:25 -0700
+Message-Id: <20140628174609.267221542@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -29,51 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Johan Hedberg <johan.hedberg@intel.com>
 
-commit 34c65c43f1518bf85f93526ad373adc6a683b4c5 upstream.
+commit 7e3691e13ab51f3491e996e2edaf99b173621288 upstream.
 
-Whilst native arm64 applications don't have the 16-bit UID/GID syscalls
-wired up, compat tasks can still access them. The 16-bit wrappers for
-these syscalls use __kernel_old_uid_t and __kernel_old_gid_t, which must
-be 16-bit data types to maintain compatibility with the 16-bit UIDs used
-by compat applications.
+When checking whether we need to request authentication or not we should
+include HCI_SECURITY_FIPS to the levels that always need authentication.
+This patch fixes check for it in the hci_outgoing_auth_needed()
+function.
 
-This patch defines 16-bit __kernel_old_{gid,uid}_t types for arm64
-instead of using the 32-bit types provided by asm-generic.
-
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm64/include/asm/Kbuild             |    1 -
- arch/arm64/include/uapi/asm/posix_types.h |   10 ++++++++++
- 2 files changed, 10 insertions(+), 1 deletion(-)
+ net/bluetooth/hci_event.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/arm64/include/asm/Kbuild
-+++ b/arch/arm64/include/asm/Kbuild
-@@ -30,7 +30,6 @@ generic-y += msgbuf.h
- generic-y += mutex.h
- generic-y += pci.h
- generic-y += poll.h
--generic-y += posix_types.h
- generic-y += preempt.h
- generic-y += resource.h
- generic-y += rwsem.h
---- /dev/null
-+++ b/arch/arm64/include/uapi/asm/posix_types.h
-@@ -0,0 +1,10 @@
-+#ifndef __ASM_POSIX_TYPES_H
-+#define __ASM_POSIX_TYPES_H
-+
-+typedef unsigned short __kernel_old_uid_t;
-+typedef unsigned short __kernel_old_gid_t;
-+#define __kernel_old_uid_t __kernel_old_uid_t
-+
-+#include <asm-generic/posix_types.h>
-+
-+#endif /*  __ASM_POSIX_TYPES_H */
+--- a/net/bluetooth/hci_event.c
++++ b/net/bluetooth/hci_event.c
+@@ -1342,6 +1342,7 @@ static int hci_outgoing_auth_needed(stru
+ 	 * is requested.
+ 	 */
+ 	if (!hci_conn_ssp_enabled(conn) && !(conn->auth_type & 0x01) &&
++	    conn->pending_sec_level != BT_SECURITY_FIPS &&
+ 	    conn->pending_sec_level != BT_SECURITY_HIGH &&
+ 	    conn->pending_sec_level != BT_SECURITY_MEDIUM)
+ 		return 0;
 
 
