@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932111AbaF1TTf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 15:19:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52843 "EHLO
+	id S932209AbaF1TUR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 15:20:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52832 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753631AbaF1Rr2 (ORCPT
+	with ESMTP id S1753587AbaF1Rr0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:47:28 -0400
+	Sat, 28 Jun 2014 13:47:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mike Frysinger <vapier@gentoo.org>, "H.J. Lu" <hjl.tools@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 3.4 33/43] x86, x32: Use compat shims for io_{setup,submit}
-Date: Sat, 28 Jun 2014 10:46:24 -0700
-Message-Id: <20140628174451.303890124@linuxfoundation.org>
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 3.4 30/43] ARM: stacktrace: avoid listing stacktrace functions in stacktrace
+Date: Sat, 28 Jun 2014 10:46:21 -0700
+Message-Id: <20140628174451.175042319@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174449.788784511@linuxfoundation.org>
 References: <20140628174449.788784511@linuxfoundation.org>
@@ -29,57 +28,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Frysinger <vapier@gentoo.org>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 7fd44dacdd803c0bbf38bf478d51d280902bb0f1 upstream.
+commit 3683f44c42e991d313dc301504ee0fca1aeb8580 upstream.
 
-The io_setup takes a pointer to a context id of type aio_context_t.
-This in turn is typed to a __kernel_ulong_t.  We could tweak the
-exported headers to define this as a 64bit quantity for specific
-ABIs, but since we already have a 32bit compat shim for the x86 ABI,
-let's just re-use that logic.  The libaio package is also written to
-expect this as a pointer type, so a compat shim would simplify that.
+While debugging the FEC ethernet driver using stacktrace, it was noticed
+that the stacktraces always begin as follows:
 
-The io_submit func operates on an array of pointers to iocb structs.
-Padding out the array to be 64bit aligned is a huge pain, so convert
-it over to the existing compat shim too.
+ [<c00117b4>] save_stack_trace_tsk+0x0/0x98
+ [<c0011870>] save_stack_trace+0x24/0x28
+ ...
 
-We don't convert io_getevents to the compat func as its only purpose
-is to handle the timespec struct, and the x32 ABI uses 64bit times.
+This is because the stack trace code includes the stack frames for itself.
+This is incorrect behaviour, and also leads to "skip" doing the wrong
+thing (which is the number of stack frames to avoid recording.)
 
-With this change, the libaio package can now pass its testsuite when
-built for the x32 ABI.
+Perversely, it does the right thing when passed a non-current thread.  Fix
+this by ensuring that we have a known constant number of frames above the
+main stack trace function, and always skip these.
 
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
-Link: http://lkml.kernel.org/r/1399250595-5005-1-git-send-email-vapier@gentoo.org
-Cc: H.J. Lu <hjl.tools@gmail.com>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/syscalls/syscall_64.tbl |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ arch/arm/kernel/stacktrace.c |   18 +++++++++++++-----
+ 1 file changed, 13 insertions(+), 5 deletions(-)
 
---- a/arch/x86/syscalls/syscall_64.tbl
-+++ b/arch/x86/syscalls/syscall_64.tbl
-@@ -212,10 +212,10 @@
- 203	common	sched_setaffinity	sys_sched_setaffinity
- 204	common	sched_getaffinity	sys_sched_getaffinity
- 205	64	set_thread_area
--206	common	io_setup		sys_io_setup
-+206	64	io_setup		sys_io_setup
- 207	common	io_destroy		sys_io_destroy
- 208	common	io_getevents		sys_io_getevents
--209	common	io_submit		sys_io_submit
-+209	64	io_submit		sys_io_submit
- 210	common	io_cancel		sys_io_cancel
- 211	64	get_thread_area
- 212	common	lookup_dcookie		sys_lookup_dcookie
-@@ -353,3 +353,5 @@
- 540	x32	process_vm_writev	compat_sys_process_vm_writev
- 541	x32	setsockopt		compat_sys_setsockopt
- 542	x32	getsockopt		compat_sys_getsockopt
-+543	x32	io_setup		compat_sys_io_setup
-+544	x32	io_submit		compat_sys_io_submit
+--- a/arch/arm/kernel/stacktrace.c
++++ b/arch/arm/kernel/stacktrace.c
+@@ -83,13 +83,16 @@ static int save_trace(struct stackframe
+ 	return trace->nr_entries >= trace->max_entries;
+ }
+ 
+-void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
++/* This must be noinline to so that our skip calculation works correctly */
++static noinline void __save_stack_trace(struct task_struct *tsk,
++	struct stack_trace *trace, unsigned int nosched)
+ {
+ 	struct stack_trace_data data;
+ 	struct stackframe frame;
+ 
+ 	data.trace = trace;
+ 	data.skip = trace->skip;
++	data.no_sched_functions = nosched;
+ 
+ 	if (tsk != current) {
+ #ifdef CONFIG_SMP
+@@ -102,7 +105,6 @@ void save_stack_trace_tsk(struct task_st
+ 			trace->entries[trace->nr_entries++] = ULONG_MAX;
+ 		return;
+ #else
+-		data.no_sched_functions = 1;
+ 		frame.fp = thread_saved_fp(tsk);
+ 		frame.sp = thread_saved_sp(tsk);
+ 		frame.lr = 0;		/* recovered from the stack */
+@@ -111,11 +113,12 @@ void save_stack_trace_tsk(struct task_st
+ 	} else {
+ 		register unsigned long current_sp asm ("sp");
+ 
+-		data.no_sched_functions = 0;
++		/* We don't want this function nor the caller */
++		data.skip += 2;
+ 		frame.fp = (unsigned long)__builtin_frame_address(0);
+ 		frame.sp = current_sp;
+ 		frame.lr = (unsigned long)__builtin_return_address(0);
+-		frame.pc = (unsigned long)save_stack_trace_tsk;
++		frame.pc = (unsigned long)__save_stack_trace;
+ 	}
+ 
+ 	walk_stackframe(&frame, save_trace, &data);
+@@ -123,9 +126,14 @@ void save_stack_trace_tsk(struct task_st
+ 		trace->entries[trace->nr_entries++] = ULONG_MAX;
+ }
+ 
++void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
++{
++	__save_stack_trace(tsk, trace, 1);
++}
++
+ void save_stack_trace(struct stack_trace *trace)
+ {
+-	save_stack_trace_tsk(current, trace);
++	__save_stack_trace(current, trace, 0);
+ }
+ EXPORT_SYMBOL_GPL(save_stack_trace);
+ #endif
 
 
