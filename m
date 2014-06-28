@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756509AbaF1SLX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:11:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54275 "EHLO
+	id S1755997AbaF1RwN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:52:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54238 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932263AbaF1RwP (ORCPT
+	with ESMTP id S1755961AbaF1RwG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:52:15 -0400
+	Sat, 28 Jun 2014 13:52:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.15 064/139] media: exynos4-is: Free FIMC-IS CPU memory only when allocated
-Date: Sat, 28 Jun 2014 10:47:05 -0700
-Message-Id: <20140628174608.352464993@linuxfoundation.org>
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>, Brad Mouring <bmouring@ni.com>
+Subject: [PATCH 3.15 072/139] rtmutex: Handle deadlock detection smarter
+Date: Sat, 28 Jun 2014 10:47:13 -0700
+Message-Id: <20140628174608.726585218@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -30,35 +30,135 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 404a90abc60f60df2757cb272660e003d326881f upstream.
+commit 3d5c9340d1949733eb37616abd15db36aef9a57c upstream.
 
-Ensure dma_free_coherent() is not called with incorrect arguments
-and only when the memory was actually allocated. This will prevent
-possible crashes on error paths of the top level media device driver,
-when fimc-is device gets unregistered and its driver detached.
+Even in the case when deadlock detection is not requested by the
+caller, we can detect deadlocks. Right now the code stops the lock
+chain walk and keeps the waiter enqueued, even on itself. Silly not to
+yell when such a scenario is detected and to keep the waiter enqueued.
 
-Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Return -EDEADLK unconditionally and handle it at the call sites.
+
+The futex calls return -EDEADLK. The non futex ones dequeue the
+waiter, throw a warning and put the task into a schedule loop.
+
+Tagged for stable as it makes the code more robust.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Brad Mouring <bmouring@ni.com>
+Link: http://lkml.kernel.org/r/20140605152801.836501969@linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/platform/exynos4-is/fimc-is.c |    3 +++
- 1 file changed, 3 insertions(+)
+ kernel/locking/rtmutex-debug.h |    5 +++++
+ kernel/locking/rtmutex.c       |   33 ++++++++++++++++++++++++++++-----
+ kernel/locking/rtmutex.h       |    5 +++++
+ 3 files changed, 38 insertions(+), 5 deletions(-)
 
---- a/drivers/media/platform/exynos4-is/fimc-is.c
-+++ b/drivers/media/platform/exynos4-is/fimc-is.c
-@@ -367,6 +367,9 @@ static void fimc_is_free_cpu_memory(stru
+--- a/kernel/locking/rtmutex-debug.h
++++ b/kernel/locking/rtmutex-debug.h
+@@ -31,3 +31,8 @@ static inline int debug_rt_mutex_detect_
  {
- 	struct device *dev = &is->pdev->dev;
+ 	return (waiter != NULL);
+ }
++
++static inline void rt_mutex_print_deadlock(struct rt_mutex_waiter *w)
++{
++	debug_rt_mutex_print_deadlock(w);
++}
+--- a/kernel/locking/rtmutex.c
++++ b/kernel/locking/rtmutex.c
+@@ -323,7 +323,7 @@ static int rt_mutex_adjust_prio_chain(st
+ 		}
+ 		put_task_struct(task);
  
-+	if (is->memory.vaddr == NULL)
+-		return deadlock_detect ? -EDEADLK : 0;
++		return -EDEADLK;
+ 	}
+  retry:
+ 	/*
+@@ -398,7 +398,7 @@ static int rt_mutex_adjust_prio_chain(st
+ 	if (lock == orig_lock || rt_mutex_owner(lock) == top_task) {
+ 		debug_rt_mutex_deadlock(deadlock_detect, orig_waiter, lock);
+ 		raw_spin_unlock(&lock->wait_lock);
+-		ret = deadlock_detect ? -EDEADLK : 0;
++		ret = -EDEADLK;
+ 		goto out_unlock_pi;
+ 	}
+ 
+@@ -585,7 +585,7 @@ static int task_blocks_on_rt_mutex(struc
+ 	 * which is wrong, as the other waiter is not in a deadlock
+ 	 * situation.
+ 	 */
+-	if (detect_deadlock && owner == task)
++	if (owner == task)
+ 		return -EDEADLK;
+ 
+ 	raw_spin_lock_irqsave(&task->pi_lock, flags);
+@@ -810,6 +810,26 @@ __rt_mutex_slowlock(struct rt_mutex *loc
+ 	return ret;
+ }
+ 
++static void rt_mutex_handle_deadlock(int res, int detect_deadlock,
++				     struct rt_mutex_waiter *w)
++{
++	/*
++	 * If the result is not -EDEADLOCK or the caller requested
++	 * deadlock detection, nothing to do here.
++	 */
++	if (res != -EDEADLOCK || detect_deadlock)
 +		return;
 +
- 	dma_free_coherent(dev, is->memory.size, is->memory.vaddr,
- 			  is->memory.paddr);
- }
++	/*
++	 * Yell lowdly and stop the task right here.
++	 */
++	rt_mutex_print_deadlock(w);
++	while (1) {
++		set_current_state(TASK_INTERRUPTIBLE);
++		schedule();
++	}
++}
++
+ /*
+  * Slow path lock function:
+  */
+@@ -849,8 +869,10 @@ rt_mutex_slowlock(struct rt_mutex *lock,
+ 
+ 	set_current_state(TASK_RUNNING);
+ 
+-	if (unlikely(ret))
++	if (unlikely(ret)) {
+ 		remove_waiter(lock, &waiter);
++		rt_mutex_handle_deadlock(ret, detect_deadlock, &waiter);
++	}
+ 
+ 	/*
+ 	 * try_to_take_rt_mutex() sets the waiter bit
+@@ -1159,7 +1181,8 @@ int rt_mutex_start_proxy_lock(struct rt_
+ 		return 1;
+ 	}
+ 
+-	ret = task_blocks_on_rt_mutex(lock, waiter, task, detect_deadlock);
++	/* We enforce deadlock detection for futexes */
++	ret = task_blocks_on_rt_mutex(lock, waiter, task, 1);
+ 
+ 	if (ret && !rt_mutex_owner(lock)) {
+ 		/*
+--- a/kernel/locking/rtmutex.h
++++ b/kernel/locking/rtmutex.h
+@@ -24,3 +24,8 @@
+ #define debug_rt_mutex_print_deadlock(w)		do { } while (0)
+ #define debug_rt_mutex_detect_deadlock(w,d)		(d)
+ #define debug_rt_mutex_reset_waiter(w)			do { } while (0)
++
++static inline void rt_mutex_print_deadlock(struct rt_mutex_waiter *w)
++{
++	WARN(1, "rtmutex deadlock detected\n");
++}
 
 
