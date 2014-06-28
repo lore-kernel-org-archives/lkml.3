@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756252AbaF1Rz5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:55:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54536 "EHLO
+	id S964866AbaF1R4U (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:56:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54548 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932429AbaF1Rx3 (ORCPT
+	with ESMTP id S1756258AbaF1Rx2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:53:29 -0400
+	Sat, 28 Jun 2014 13:53:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Don A. Bailey" <donb@securitymouse.com>, Willy Tarreau <w@1wt.eu>
-Subject: [PATCH 3.15 134/139] lz4: fix another possible overrun
-Date: Sat, 28 Jun 2014 10:48:15 -0700
-Message-Id: <20140628174611.523744873@linuxfoundation.org>
+        Johan Hedberg <johan.hedberg@intel.com>,
+        Marcel Holtmann <marcel@holtmann.org>
+Subject: [PATCH 3.15 133/139] Bluetooth: Fix properly ignoring LTKs of unknown types
+Date: Sat, 28 Jun 2014 10:48:14 -0700
+Message-Id: <20140628174611.479533658@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -28,47 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+From: Johan Hedberg <johan.hedberg@intel.com>
 
-commit 4148c1f67abf823099b2d7db6851e4aea407f5ee upstream.
+commit 61b433579b6ffecb1d3534fd482dcd48535277c8 upstream.
 
-There is one other possible overrun in the lz4 code as implemented by
-Linux at this point in time (which differs from the upstream lz4
-codebase, but will get synced at in a future kernel release.)  As
-pointed out by Don, we also need to check the overflow in the data
-itself.
+In case there are new LTK types in the future we shouldn't just blindly
+assume that != MGMT_LTK_UNAUTHENTICATED means that the key is
+authenticated. This patch adds explicit checks for each allowed key type
+in the form of a switch statement and skips any key which has an unknown
+value.
 
-While we are at it, replace the odd error return value with just a
-"simple" -1 value as the return value is never used for anything other
-than a basic "did this work or not" check.
-
-Reported-by: "Don A. Bailey" <donb@securitymouse.com>
-Reported-by: Willy Tarreau <w@1wt.eu>
+Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- lib/lz4/lz4_decompress.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ net/bluetooth/mgmt.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/lib/lz4/lz4_decompress.c
-+++ b/lib/lz4/lz4_decompress.c
-@@ -108,6 +108,8 @@ static int lz4_uncompress(const char *so
- 		if (length == ML_MASK) {
- 			for (; *ip == 255; length += 255)
- 				ip++;
-+			if (unlikely(length > (size_t)(length + *ip)))
-+				goto _output_error;
- 			length += *ip++;
- 		}
+--- a/net/bluetooth/mgmt.c
++++ b/net/bluetooth/mgmt.c
+@@ -4542,10 +4542,16 @@ static int load_long_term_keys(struct so
+ 		else
+ 			type = HCI_SMP_LTK_SLAVE;
  
-@@ -157,7 +159,7 @@ static int lz4_uncompress(const char *so
+-		if (key->type == MGMT_LTK_UNAUTHENTICATED)
++		switch (key->type) {
++		case MGMT_LTK_UNAUTHENTICATED:
+ 			authenticated = 0x00;
+-		else
++			break;
++		case MGMT_LTK_AUTHENTICATED:
+ 			authenticated = 0x01;
++			break;
++		default:
++			continue;
++		}
  
- 	/* write overflow error detected */
- _output_error:
--	return (int) (-(((char *)ip) - source));
-+	return -1;
- }
- 
- static int lz4_uncompress_unknownoutputsize(const char *source, char *dest,
+ 		hci_add_ltk(hdev, &key->addr.bdaddr, addr_type, type,
+ 			    authenticated, key->val, key->enc_size, key->ediv,
 
 
