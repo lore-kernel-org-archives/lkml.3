@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757619AbaF1TIm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 15:08:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53017 "EHLO
+	id S1757639AbaF1TI4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 15:08:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53012 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754483AbaF1RsS (ORCPT
+	with ESMTP id S1754479AbaF1RsS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Jun 2014 13:48:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.10 35/77] USB: sierra: fix urb and memory leak in resume error path
-Date: Sat, 28 Jun 2014 10:46:28 -0700
-Message-Id: <20140628174523.340296260@linuxfoundation.org>
+        Tony Luck <tony.luck@intel.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@suse.de>,
+        Chen Gong <gong.chen@linux.jf.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 16/77] mm/memory-failure.c: dont let collect_procs() skip over processes for MF_ACTION_REQUIRED
+Date: Sat, 28 Jun 2014 10:46:09 -0700
+Message-Id: <20140628174522.439522658@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174521.691276402@linuxfoundation.org>
 References: <20140628174521.691276402@linuxfoundation.org>
@@ -28,49 +33,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Tony Luck <tony.luck@intel.com>
 
-commit 7fdd26a01eb7b6cb6855ff8f69ef4a720720dfcb upstream.
+commit 74614de17db6fb472370c426d4f934d8d616edf2 upstream.
 
-Neither the transfer buffer or the urb itself were released in the
-resume error path for delayed writes. Also on errors, the remainder of
-the queue was not even processed, which leads to further urb and buffer
-leaks.
+When Linux sees an "action optional" machine check (where h/w has reported
+an error that is not in the current execution path) we generally do not
+want to signal a process, since most processes do not have a SIGBUS
+handler - we'd just prematurely terminate the process for a problem that
+they might never actually see.
 
-The same error path also failed to balance the outstanding-urb counter,
-something which results in degraded throughput or completely blocked
-writes.
+task_early_kill() decides whether to consider a process - and it checks
+whether this specific process has been marked for early signals with
+"prctl", or if the system administrator has requested early signals for
+all processes using /proc/sys/vm/memory_failure_early_kill.
 
-Fix this by releasing urb and buffer and balancing counters on errors,
-and by always processing the whole queue even when submission of one urb
-fails.
+But for MF_ACTION_REQUIRED case we must not defer.  The error is in the
+execution path of the current thread so we must send the SIGBUS
+immediatley.
 
-Fixes: e6929a9020ac ("USB: support for autosuspend in sierra while
-online")
+Fix by passing a flag argument through collect_procs*() to
+task_early_kill() so it knows whether we can defer or must take action.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Borislav Petkov <bp@suse.de>
+Cc: Chen Gong <gong.chen@linux.jf.intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/sierra.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ mm/memory-failure.c |   21 ++++++++++++---------
+ 1 file changed, 12 insertions(+), 9 deletions(-)
 
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -1012,8 +1012,12 @@ static int sierra_resume(struct usb_seri
- 			if (err < 0) {
- 				intfdata->in_flight--;
- 				usb_unanchor_urb(urb);
--				usb_scuttle_anchored_urbs(&portdata->delayed);
--				break;
-+				kfree(urb->transfer_buffer);
-+				usb_free_urb(urb);
-+				spin_lock(&portdata->lock);
-+				portdata->outstanding_urbs--;
-+				spin_unlock(&portdata->lock);
-+				continue;
- 			}
- 		}
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -382,10 +382,12 @@ static void kill_procs(struct list_head
+ 	}
+ }
  
+-static int task_early_kill(struct task_struct *tsk)
++static int task_early_kill(struct task_struct *tsk, int force_early)
+ {
+ 	if (!tsk->mm)
+ 		return 0;
++	if (force_early)
++		return 1;
+ 	if (tsk->flags & PF_MCE_PROCESS)
+ 		return !!(tsk->flags & PF_MCE_EARLY);
+ 	return sysctl_memory_failure_early_kill;
+@@ -395,7 +397,7 @@ static int task_early_kill(struct task_s
+  * Collect processes when the error hit an anonymous page.
+  */
+ static void collect_procs_anon(struct page *page, struct list_head *to_kill,
+-			      struct to_kill **tkc)
++			      struct to_kill **tkc, int force_early)
+ {
+ 	struct vm_area_struct *vma;
+ 	struct task_struct *tsk;
+@@ -411,7 +413,7 @@ static void collect_procs_anon(struct pa
+ 	for_each_process (tsk) {
+ 		struct anon_vma_chain *vmac;
+ 
+-		if (!task_early_kill(tsk))
++		if (!task_early_kill(tsk, force_early))
+ 			continue;
+ 		anon_vma_interval_tree_foreach(vmac, &av->rb_root,
+ 					       pgoff, pgoff) {
+@@ -430,7 +432,7 @@ static void collect_procs_anon(struct pa
+  * Collect processes when the error hit a file mapped page.
+  */
+ static void collect_procs_file(struct page *page, struct list_head *to_kill,
+-			      struct to_kill **tkc)
++			      struct to_kill **tkc, int force_early)
+ {
+ 	struct vm_area_struct *vma;
+ 	struct task_struct *tsk;
+@@ -441,7 +443,7 @@ static void collect_procs_file(struct pa
+ 	for_each_process(tsk) {
+ 		pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
+ 
+-		if (!task_early_kill(tsk))
++		if (!task_early_kill(tsk, force_early))
+ 			continue;
+ 
+ 		vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff,
+@@ -467,7 +469,8 @@ static void collect_procs_file(struct pa
+  * First preallocate one tokill structure outside the spin locks,
+  * so that we can kill at least one process reasonably reliable.
+  */
+-static void collect_procs(struct page *page, struct list_head *tokill)
++static void collect_procs(struct page *page, struct list_head *tokill,
++				int force_early)
+ {
+ 	struct to_kill *tk;
+ 
+@@ -478,9 +481,9 @@ static void collect_procs(struct page *p
+ 	if (!tk)
+ 		return;
+ 	if (PageAnon(page))
+-		collect_procs_anon(page, tokill, &tk);
++		collect_procs_anon(page, tokill, &tk, force_early);
+ 	else
+-		collect_procs_file(page, tokill, &tk);
++		collect_procs_file(page, tokill, &tk, force_early);
+ 	kfree(tk);
+ }
+ 
+@@ -965,7 +968,7 @@ static int hwpoison_user_mappings(struct
+ 	 * there's nothing that can be done.
+ 	 */
+ 	if (kill)
+-		collect_procs(ppage, &tokill);
++		collect_procs(ppage, &tokill, flags & MF_ACTION_REQUIRED);
+ 
+ 	ret = try_to_unmap(ppage, ttu);
+ 	if (ret != SWAP_SUCCESS)
 
 
