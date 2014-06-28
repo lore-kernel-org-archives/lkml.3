@@ -1,129 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752628AbaF1LtN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 07:49:13 -0400
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:48202 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751545AbaF1LtL (ORCPT
+	id S1752685AbaF1Lw1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 07:52:27 -0400
+Received: from mailrelay003.isp.belgacom.be ([195.238.6.53]:63137 "EHLO
+	mailrelay003.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751621AbaF1Lw0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 07:49:11 -0400
-Date: Sat, 28 Jun 2014 07:49:07 -0400
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com
-Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org, hannes@cmpxchg.org,
-        mhocko@suse.cz, vgoyal@redhat.com, axboe@kernel.dk
-Subject: [PATCH v2 6/6] blkcg, memcg: make blkcg depend on memcg on the
- default hierarchy
-Message-ID: <20140628114907.GA10829@htj.dyndns.org>
-References: <1403917392-32555-1-git-send-email-tj@kernel.org>
- <1403917392-32555-7-git-send-email-tj@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403917392-32555-7-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sat, 28 Jun 2014 07:52:26 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AkUHALerrlNbsk2v/2dsb2JhbABZgw2regUBAQEBAQEFAW0BmQKBBxd1hDEvI1ZEN4hGAcUZF4VkiSEdhC0Fml2LP4g8ggCBRDs
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Roland Dreier <roland@kernel.org>,
+        Sean Hefty <sean.hefty@intel.com>, linux-rdma@vger.kernel.org
+Subject: [PATCH 1/1] drivers/infiniband/ulp/ipoib/ipoib_fs.c: remove unnecessary null test before debugfs_remove
+Date: Sat, 28 Jun 2014 13:51:04 +0200
+Message-Id: <1403956264-2936-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 8e67ad03ab03839456816e922c57a7ab3bcf5474 Mon Sep 17 00:00:00 2001
-From: Tejun Heo <tj@kernel.org>
-Date: Sat, 28 Jun 2014 07:47:57 -0400
+Fix checkpatch warning:
+WARNING: debugfs_remove(NULL) is safe this check is probably not required
 
-Currently, the blkio subsystem attributes all of writeback IOs to the
-root.  One of the issues is that there's no way to tell who originated
-a writeback IO from block layer.  Those IOs are usually issued
-asynchronously from a task which didn't have anything to do with
-actually generating the dirty pages.  The memory subsystem, when
-enabled, already keeps track of the ownership of each dirty page and
-it's desirable for blkio to piggyback instead of adding its own
-per-page tag.
-
-cgroup now has a mechanism to express such dependency -
-cgroup_subsys->depends_on.  This patch declares that blkcg depends on
-memcg so that memcg is enabled automatically on the default hierarchy
-when available.  Future changes will make blkcg map the memcg tag to
-find out the cgroup to blame for writeback IOs.
-
-As this means that a memcg may be made invisible, this patch also
-implements css_reset() for memcg which resets its basic
-configurations.  This implementation will probably need to be expanded
-to cover other states which are used in the default hierarchy.
-
-v2: blkcg's dependency on memcg is wrapped with CONFIG_MEMCG to avoid
-    build failure.  Reported by kbuild test robot.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Vivek Goyal <vgoyal@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Roland Dreier <roland@kernel.org>
+Cc: Sean Hefty <sean.hefty@intel.com>
+Cc: linux-rdma@vger.kernel.org
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- block/blk-cgroup.c |  8 ++++++++
- mm/memcontrol.c    | 24 ++++++++++++++++++++++++
- 2 files changed, 32 insertions(+)
+ drivers/infiniband/ulp/ipoib/ipoib_fs.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index 069bc20..63c3cd4 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -925,6 +925,14 @@ struct cgroup_subsys blkio_cgrp_subsys = {
- 	.css_free = blkcg_css_free,
- 	.can_attach = blkcg_can_attach,
- 	.base_cftypes = blkcg_files,
-+#ifdef CONFIG_MEMCG
-+	/*
-+	 * This ensures that, if available, memcg is automatically enabled
-+	 * together on the default hierarchy so that the owner cgroup can
-+	 * be retrieved from writeback pages.
-+	 */
-+	.depends_on = 1 << memory_cgrp_id,
-+#endif
- };
- EXPORT_SYMBOL_GPL(blkio_cgrp_subsys);
+diff --git a/drivers/infiniband/ulp/ipoib/ipoib_fs.c b/drivers/infiniband/ulp/ipoib/ipoib_fs.c
+index 5006185..6bd5740 100644
+--- a/drivers/infiniband/ulp/ipoib/ipoib_fs.c
++++ b/drivers/infiniband/ulp/ipoib/ipoib_fs.c
+@@ -281,10 +281,8 @@ void ipoib_delete_debug_files(struct net_device *dev)
+ {
+ 	struct ipoib_dev_priv *priv = netdev_priv(dev);
  
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index a2c7bcb..db536e9 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -6407,6 +6407,29 @@ static void mem_cgroup_css_free(struct cgroup_subsys_state *css)
- 	__mem_cgroup_free(memcg);
+-	if (priv->mcg_dentry)
+-		debugfs_remove(priv->mcg_dentry);
+-	if (priv->path_dentry)
+-		debugfs_remove(priv->path_dentry);
++	debugfs_remove(priv->mcg_dentry);
++	debugfs_remove(priv->path_dentry);
  }
  
-+/**
-+ * mem_cgroup_css_reset - reset the states of a mem_cgroup
-+ * @css: the target css
-+ *
-+ * Reset the states of the mem_cgroup associated with @css.  This is
-+ * invoked when the userland requests disabling on the default hierarchy
-+ * but the memcg is pinned through dependency.  The memcg should stop
-+ * applying policies and should revert to the vanilla state as it may be
-+ * made visible again.
-+ *
-+ * The current implementation only resets the essential configurations.
-+ * This needs to be expanded to cover all the visible parts.
-+ */
-+static void mem_cgroup_css_reset(struct cgroup_subsys_state *css)
-+{
-+	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
-+
-+	mem_cgroup_resize_limit(memcg, ULLONG_MAX);
-+	mem_cgroup_resize_memsw_limit(memcg, ULLONG_MAX);
-+	memcg_update_kmem_limit(memcg, ULLONG_MAX);
-+	res_counter_set_soft_limit(&memcg->res, ULLONG_MAX);
-+}
-+
- #ifdef CONFIG_MMU
- /* Handlers for move charge at task migration. */
- #define PRECHARGE_COUNT_AT_ONCE	256
-@@ -7019,6 +7042,7 @@ struct cgroup_subsys memory_cgrp_subsys = {
- 	.css_online = mem_cgroup_css_online,
- 	.css_offline = mem_cgroup_css_offline,
- 	.css_free = mem_cgroup_css_free,
-+	.css_reset = mem_cgroup_css_reset,
- 	.can_attach = mem_cgroup_can_attach,
- 	.cancel_attach = mem_cgroup_cancel_attach,
- 	.attach = mem_cgroup_move_task,
+ int ipoib_register_debugfs(void)
 -- 
-1.9.3
+1.8.4.5
 
