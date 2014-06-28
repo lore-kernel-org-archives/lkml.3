@@ -1,85 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753345AbaF1RJk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:09:40 -0400
-Received: from smtprelay0184.hostedemail.com ([216.40.44.184]:51209 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751165AbaF1RJj (ORCPT
+	id S1751730AbaF1RYN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:24:13 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:42466 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751309AbaF1RYM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:09:39 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:69:355:379:541:599:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3871:4321:5007:7652:9592:10004:10400:10848:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12555:12740:13069:13161:13229:13311:13357:13894:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: slip65_36d7b87b3de5e
-X-Filterd-Recvd-Size: 2514
-Message-ID: <1403975375.9064.29.camel@joe-AO725>
-Subject: Re: [PATCH linux-next] staging: emxx_udc: replace strict_strtol call
-From: Joe Perches <joe@perches.com>
-To: Vincent =?ISO-8859-1?Q?Stehl=E9?= <vincent.stehle@laposte.net>
-Cc: linux-next@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Magnus Damm <damm+renesas@opensource.se>
-Date: Sat, 28 Jun 2014 10:09:35 -0700
-In-Reply-To: <1403974823-23578-1-git-send-email-vincent.stehle@laposte.net>
-References: <1403974823-23578-1-git-send-email-vincent.stehle@laposte.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Sat, 28 Jun 2014 13:24:12 -0400
+Date: Sat, 28 Jun 2014 22:53:55 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH] clk: sunxi: fix devm_ioremap_resource error detection code
+Message-ID: <20140628172355.GA3387@himangi-Dell>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-06-28 at 19:00 +0200, Vincent Stehlé wrote:
-> Commit 582e9d37a9a3 'include/linux: remove strict_strto* definitions' has
-> obsoleted the strict_strtol function. Use kstrtol instead.
-[]
-> diff --git a/drivers/staging/emxx_udc/emxx_udc.c b/drivers/staging/emxx_udc/emxx_udc.c
-[]
-> @@ -3285,7 +3285,7 @@ static void __init nbu2ss_drv_set_ep_info(
->  
->  		tempbuf[0] = name[2];
->  		tempbuf[1] = '\0';
-> -		res = strict_strtol(tempbuf, 16, &num);
-> +		res = kstrtol(tempbuf, 16, &num);
+devm_ioremap_resource returns an ERR_PTR value, not NULL, on failure.
 
+A simplified version of the semantic match that finds this problem is as
+follows:
 
-The whole block if code is obtuse and should be simplified to:
+// <smpl>
+@@
+expression e,e1;
+statement S;
+@@
+
+*e = devm_ioremap_resource(...);
+if (!e1) S
+
+// </smpl>
+
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
 ---
- drivers/staging/emxx_udc/emxx_udc.c | 20 +++-----------------
- 1 file changed, 3 insertions(+), 17 deletions(-)
+ drivers/clk/sunxi/clk-sun6i-apb0-gates.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/emxx_udc/emxx_udc.c b/drivers/staging/emxx_udc/emxx_udc.c
-index c92ded8..f41831e 100644
---- a/drivers/staging/emxx_udc/emxx_udc.c
-+++ b/drivers/staging/emxx_udc/emxx_udc.c
-@@ -3276,24 +3276,10 @@ static void __init nbu2ss_drv_set_ep_info(
- 	ep->ep.name = name;
- 	ep->ep.ops = &nbu2ss_ep_ops;
+diff --git a/drivers/clk/sunxi/clk-sun6i-apb0-gates.c b/drivers/clk/sunxi/clk-sun6i-apb0-gates.c
+index 44cd27c..670f90d 100644
+--- a/drivers/clk/sunxi/clk-sun6i-apb0-gates.c
++++ b/drivers/clk/sunxi/clk-sun6i-apb0-gates.c
+@@ -29,7 +29,7 @@ static int sun6i_a31_apb0_gates_clk_probe(struct platform_device *pdev)
  
--	if (isdigit(name[2])) {
--
--		long	num;
--		int	res;
--		char	tempbuf[2];
--
--		tempbuf[0] = name[2];
--		tempbuf[1] = '\0';
--		res = strict_strtol(tempbuf, 16, &num);
--
--		if (num == 0)
--			ep->ep.maxpacket = EP0_PACKETSIZE;
--		else
--			ep->ep.maxpacket = EP_PACKETSIZE;
--
--	} else {
-+	if (name[2] == '0')
-+		ep->ep.maxpacket = EP0_PACKETSIZE;
-+	else
- 		ep->ep.maxpacket = EP_PACKETSIZE;
--	}
+ 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	reg = devm_ioremap_resource(&pdev->dev, r);
+-	if (!reg)
++	if (IS_ERR(reg))
+ 		return PTR_ERR(reg);
  
- 	list_add_tail(&ep->ep.ep_list, &udc->gadget.ep_list);
- 	INIT_LIST_HEAD(&ep->queue);
-
+ 	clk_parent = of_clk_get_parent_name(np, 0);
+-- 
+1.9.1
 
