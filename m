@@ -1,84 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754147AbaF0X6e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 19:58:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47002 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751824AbaF0X6d (ORCPT
+	id S1754354AbaF1AEu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 20:04:50 -0400
+Received: from mail-qc0-f201.google.com ([209.85.216.201]:58137 "EHLO
+	mail-qc0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754276AbaF1AEs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 19:58:33 -0400
-Date: Fri, 27 Jun 2014 16:59:14 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Luis R. Rodriguez" <mcgrof@suse.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, hpa@linux.intel.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Lunn <andrew@lunn.ch>, Stephen Warren <swarren@wwwdotorg.org>,
-        Michal Hocko <mhocko@suse.cz>, Petr Mladek <pmladek@suse.cz>,
-        Joe Perches <joe@perches.com>, Arun KS <arunks.linux@gmail.com>,
-        Kees Cook <keescook@chromium.org>, Davidlohr Bueso <davidlohr@hp.com>,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: Re: [PATCH v8 4/4] printk: allow increasing the ring buffer
- depending on the number of CPUs
-Message-Id: <20140627165914.c41788af.akpm@linux-foundation.org>
-In-Reply-To: <CAB=NE6W3HpEeKCPt+PRbUxavZY-MAv6E3J=zk9+uJwzUG=EoRg@mail.gmail.com>
-References: <1403124337-14886-1-git-send-email-mcgrof@do-not-panic.com>
-	<1403124337-14886-4-git-send-email-mcgrof@do-not-panic.com>
-	<20140623154134.43ac7ab63896cd9ebcba84b6@linux-foundation.org>
-	<20140624002050.GC27687@wotan.suse.de>
-	<20140623174533.88663e64.akpm@linux-foundation.org>
-	<20140624010554.GF27687@wotan.suse.de>
-	<20140626144117.3412feee6234786be098259d@linux-foundation.org>
-	<20140626231630.GI27687@wotan.suse.de>
-	<20140626162014.156f6741c7d9d3234879054f@linux-foundation.org>
-	<CAB=NE6W3HpEeKCPt+PRbUxavZY-MAv6E3J=zk9+uJwzUG=EoRg@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 27 Jun 2014 20:04:48 -0400
+From: Derek Basehore <dbasehore@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-pm@vger.kernel.org, Laxman Dewangan <ldewangan@nvidia.com>,
+        Ian Campbell <ian.campbell@citrix.com>, xen-devel@lists.xenproject.org,
+        Derek Basehore <dbasehore@chromium.org>
+Subject: [PATCH v1 2/2] Revert "irq: Enable all irqs unconditionally in irq_resume"
+Date: Fri, 27 Jun 2014 17:04:25 -0700
+Message-Id: <1403913865-31614-2-git-send-email-dbasehore@chromium.org>
+X-Mailer: git-send-email 2.0.0.526.g5318336
+In-Reply-To: <1403913865-31614-1-git-send-email-dbasehore@chromium.org>
+References: <1403913865-31614-1-git-send-email-dbasehore@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Jun 2014 16:32:15 -0700 "Luis R. Rodriguez" <mcgrof@suse.com> wrote:
+This reverts the fix to IRQF_EARLY_RESUME irqs staying disabled after a suspend
+failure. It incorrectly stated that Xen is the only platform that uses this
+feature. Some rtc drivers such as rtc-as3722.c use the feature and can have its
+irq permanently enabled with the change. The driver does disable/enable the irq
+for the rtc alarm, so it needs a different fix which is in "genirq: Fix error
+path for resuming irqs"
 
-> On Thu, Jun 26, 2014 at 4:20 PM, Andrew Morton
-> <akpm@linux-foundation.org> wrote:
-> > On Fri, 27 Jun 2014 01:16:30 +0200 "Luis R. Rodriguez" <mcgrof@suse.com> wrote:
-> >
-> >> > > Another note --  since this option depends on SMP and !BASE_SMALL technically
-> >> > > num_possible_cpus() won't ever return something smaller than or equal to 1
-> >> > > but because of the default values chosen the -1 on the compuation does affect
-> >> > > whether or not this will trigger on > 64 CPUs or >= 64 CPUs, keeping the
-> >> > > -1 means we require > 64 CPUs.
-> >> >
-> >> > hm, that sounds like more complexity.
-> >> >
-> >> > > This all can be changed however we like but the language and explained logic
-> >> > > would just need to be changed.
-> >> >
-> >> > Let's start out simple.  What's wrong with doing
-> >> >
-> >> >     log buf len = max(__LOG_BUF_LEN, nr_possible_cpus * per-cpu log buf len)
-> >>
-> >> Sure, you already took in the patch series though so how would you like to
-> >> handle a respin, you just drop the last patch and we respin it?
-> >
-> > A fresh patch would suit.  That's if you think it is a reasonable
-> > approach - you've thought about this stuff more than I have!
-> 
-> The way its implemented now makes more technical sense, in short it
-> assumes the first boot (and CPU) gets the full default kernel ring
-> buffer size, the extra size is for the gibberish that each extra CPU
-> is expected to spew out in the worst case. What you propose makes the
-> explanation simpler and easier to understand but sends the wrong
-> message about exactly how the growth of the kernel ring buffer is
-> expected scale with the addition of more CPUs.
+We should also keep correct enable/disable parity for irqs.
 
-OK, it's finally starting to sink in.  The model for the kernel-wide
-printk output is "a great pile of CPU-independent stuff plus a certain
-amount of per-cpu stuff".  And the code at present attempts to follow
-that model.  Yes?
+This reverts commit ac01810c9d2814238f08a227062e66a35a0e1ea2.
 
-I'm rather internet-challenged at present - please let me take another look at
-the patch on Monday.
+Signed-off-by: Derek Basehore <dbasehore@chromium.org>
+---
+ kernel/irq/pm.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/irq/pm.c b/kernel/irq/pm.c
+index b07dc9c..a5eaf1f 100644
+--- a/kernel/irq/pm.c
++++ b/kernel/irq/pm.c
+@@ -50,7 +50,7 @@ static void resume_irqs(bool want_early)
+ 		bool is_early = desc->action &&
+ 			desc->action->flags & IRQF_EARLY_RESUME;
+ 
+-		if (!is_early && want_early)
++		if (is_early != want_early)
+ 			continue;
+ 
+ 		raw_spin_lock_irqsave(&desc->lock, flags);
+-- 
+2.0.0.526.g5318336
 
