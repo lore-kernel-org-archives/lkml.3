@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932169AbaF1RuZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:50:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53548 "EHLO
+	id S1755513AbaF1Ruc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:50:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53585 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932099AbaF1RuR (ORCPT
+	with ESMTP id S932166AbaF1RuZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:50:17 -0400
+	Sat, 28 Jun 2014 13:50:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
+        Till Straumann <strauman@slac.stanford.edu>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 3.14 062/110] rtmutex: Plug slow unlock race
-Date: Sat, 28 Jun 2014 10:46:59 -0700
-Message-Id: <20140628174549.296131444@linuxfoundation.org>
+        Austin Schuh <austin@peloton-tech.com>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
+        Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org
+Subject: [PATCH 3.14 087/110] genirq: Sanitize spurious interrupt detection of threaded irqs
+Date: Sat, 28 Jun 2014 10:47:24 -0700
+Message-Id: <20140628174550.679120789@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -32,235 +36,214 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 27e35715df54cbc4f2d044f681802ae30479e7fb upstream.
+commit 1e77d0a1ed7417d2a5a52a7b8d32aea1833faa6c upstream.
 
-When the rtmutex fast path is enabled the slow unlock function can
-create the following situation:
+Till reported that the spurious interrupt detection of threaded
+interrupts is broken in two ways:
 
-spin_lock(foo->m->wait_lock);
-foo->m->owner = NULL;
-	    			rt_mutex_lock(foo->m); <-- fast path
-				free = atomic_dec_and_test(foo->refcnt);
-				rt_mutex_unlock(foo->m); <-- fast path
-				if (free)
-				   kfree(foo);
+- note_interrupt() is called for each action thread of a shared
+  interrupt line. That's wrong as we are only interested whether none
+  of the device drivers felt responsible for the interrupt, but by
+  calling multiple times for a single interrupt line we account
+  IRQ_NONE even if one of the drivers felt responsible.
 
-spin_unlock(foo->m->wait_lock); <--- Use after free.
+- note_interrupt() when called from the thread handler is not
+  serialized. That leaves the members of irq_desc which are used for
+  the spurious detection unprotected.
 
-Plug the race by changing the slow unlock to the following scheme:
+To solve this we need to defer the spurious detection of a threaded
+interrupt to the next hardware interrupt context where we have
+implicit serialization.
 
-     while (!rt_mutex_has_waiters(m)) {
-     	    /* Clear the waiters bit in m->owner */
-	    clear_rt_mutex_waiters(m);
-      	    owner = rt_mutex_owner(m);
-      	    spin_unlock(m->wait_lock);
-      	    if (cmpxchg(m->owner, owner, 0) == owner)
-      	       return;
-      	    spin_lock(m->wait_lock);
-     }
+If note_interrupt is called with action_ret == IRQ_WAKE_THREAD, we
+check whether the previous interrupt requested a deferred check. If
+not, we request a deferred check for the next hardware interrupt and
+return.
 
-So in case of a new waiter incoming while the owner tries the slow
-path unlock we have two situations:
+If set, we check whether one of the interrupt threads signaled
+success. Depending on this information we feed the result into the
+spurious detector.
 
- unlock(wait_lock);
-					lock(wait_lock);
- cmpxchg(p, owner, 0) == owner
- 	    	   			mark_rt_mutex_waiters(lock);
-	 				acquire(lock);
+If one primary handler of a shared interrupt returns IRQ_HANDLED we
+disable the deferred check of irq threads on the same line, as we have
+found at least one device driver who cared.
 
-Or:
-
- unlock(wait_lock);
-					lock(wait_lock);
-	 				mark_rt_mutex_waiters(lock);
- cmpxchg(p, owner, 0) != owner
-					enqueue_waiter();
-					unlock(wait_lock);
- lock(wait_lock);
- wakeup_next waiter();
- unlock(wait_lock);
-					lock(wait_lock);
-					acquire(lock);
-
-If the fast path is disabled, then the simple
-
-   m->owner = NULL;
-   unlock(m->wait_lock);
-
-is sufficient as all access to m->owner is serialized via
-m->wait_lock;
-
-Also document and clarify the wakeup_next_waiter function as suggested
-by Oleg Nesterov.
-
-Reported-by: Steven Rostedt <rostedt@goodmis.org>
+Reported-by: Till Straumann <strauman@slac.stanford.edu>
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20140611183852.937945560@linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Tested-by: Austin Schuh <austin@peloton-tech.com>
+Cc: Oliver Hartkopp <socketcan@hartkopp.net>
+Cc: Wolfgang Grandegger <wg@grandegger.com>
+Cc: Pavel Pisa <pisa@cmp.felk.cvut.cz>
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>
+Cc: linux-can@vger.kernel.org
+Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1303071450130.22263@ionos
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/locking/rtmutex.c |  115 ++++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 109 insertions(+), 6 deletions(-)
+ include/linux/irqdesc.h |    4 +
+ kernel/irq/manage.c     |    4 -
+ kernel/irq/spurious.c   |  106 ++++++++++++++++++++++++++++++++++++++++++++++--
+ 3 files changed, 108 insertions(+), 6 deletions(-)
 
---- a/kernel/locking/rtmutex.c
-+++ b/kernel/locking/rtmutex.c
-@@ -83,6 +83,47 @@ static inline void mark_rt_mutex_waiters
- 		owner = *p;
- 	} while (cmpxchg(p, owner, owner | RT_MUTEX_HAS_WAITERS) != owner);
- }
-+
-+/*
-+ * Safe fastpath aware unlock:
-+ * 1) Clear the waiters bit
-+ * 2) Drop lock->wait_lock
-+ * 3) Try to unlock the lock with cmpxchg
-+ */
-+static inline bool unlock_rt_mutex_safe(struct rt_mutex *lock)
-+	__releases(lock->wait_lock)
-+{
-+	struct task_struct *owner = rt_mutex_owner(lock);
-+
-+	clear_rt_mutex_waiters(lock);
-+	raw_spin_unlock(&lock->wait_lock);
-+	/*
-+	 * If a new waiter comes in between the unlock and the cmpxchg
-+	 * we have two situations:
-+	 *
-+	 * unlock(wait_lock);
-+	 *					lock(wait_lock);
-+	 * cmpxchg(p, owner, 0) == owner
-+	 *					mark_rt_mutex_waiters(lock);
-+	 *					acquire(lock);
-+	 * or:
-+	 *
-+	 * unlock(wait_lock);
-+	 *					lock(wait_lock);
-+	 *					mark_rt_mutex_waiters(lock);
-+	 *
-+	 * cmpxchg(p, owner, 0) != owner
-+	 *					enqueue_waiter();
-+	 *					unlock(wait_lock);
-+	 * lock(wait_lock);
-+	 * wake waiter();
-+	 * unlock(wait_lock);
-+	 *					lock(wait_lock);
-+	 *					acquire(lock);
-+	 */
-+	return rt_mutex_cmpxchg(lock, owner, NULL);
-+}
-+
- #else
- # define rt_mutex_cmpxchg(l,c,n)	(0)
- static inline void mark_rt_mutex_waiters(struct rt_mutex *lock)
-@@ -90,6 +131,17 @@ static inline void mark_rt_mutex_waiters
- 	lock->owner = (struct task_struct *)
- 			((unsigned long)lock->owner | RT_MUTEX_HAS_WAITERS);
- }
-+
-+/*
-+ * Simple slow path only version: lock->owner is protected by lock->wait_lock.
-+ */
-+static inline bool unlock_rt_mutex_safe(struct rt_mutex *lock)
-+	__releases(lock->wait_lock)
-+{
-+	lock->owner = NULL;
-+	raw_spin_unlock(&lock->wait_lock);
-+	return true;
-+}
- #endif
+--- a/include/linux/irqdesc.h
++++ b/include/linux/irqdesc.h
+@@ -27,6 +27,8 @@ struct irq_desc;
+  * @irq_count:		stats field to detect stalled irqs
+  * @last_unhandled:	aging timer for unhandled count
+  * @irqs_unhandled:	stats field for spurious unhandled interrupts
++ * @threads_handled:	stats field for deferred spurious detection of threaded handlers
++ * @threads_handled_last: comparator field for deferred spurious detection of theraded handlers
+  * @lock:		locking for SMP
+  * @affinity_hint:	hint to user space for preferred irq affinity
+  * @affinity_notify:	context for notification of affinity changes
+@@ -52,6 +54,8 @@ struct irq_desc {
+ 	unsigned int		irq_count;	/* For detecting broken IRQs */
+ 	unsigned long		last_unhandled;	/* Aging timer for unhandled count */
+ 	unsigned int		irqs_unhandled;
++	atomic_t		threads_handled;
++	int			threads_handled_last;
+ 	raw_spinlock_t		lock;
+ 	struct cpumask		*percpu_enabled;
+ #ifdef CONFIG_SMP
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -856,8 +856,8 @@ static int irq_thread(void *data)
+ 		irq_thread_check_affinity(desc, action);
  
- static inline int
-@@ -638,7 +690,8 @@ static int task_blocks_on_rt_mutex(struc
- /*
-  * Wake up the next waiter on the lock.
-  *
-- * Remove the top waiter from the current tasks waiter list and wake it up.
-+ * Remove the top waiter from the current tasks pi waiter list and
-+ * wake it up.
-  *
-  * Called with lock->wait_lock held.
-  */
-@@ -659,10 +712,23 @@ static void wakeup_next_waiter(struct rt
- 	 */
- 	rt_mutex_dequeue_pi(current, waiter);
+ 		action_ret = handler_fn(desc, action);
+-		if (!noirqdebug)
+-			note_interrupt(action->irq, desc, action_ret);
++		if (action_ret == IRQ_HANDLED)
++			atomic_inc(&desc->threads_handled);
  
--	rt_mutex_set_owner(lock, NULL);
-+	/*
-+	 * As we are waking up the top waiter, and the waiter stays
-+	 * queued on the lock until it gets the lock, this lock
-+	 * obviously has waiters. Just set the bit here and this has
-+	 * the added benefit of forcing all new tasks into the
-+	 * slow path making sure no task of lower priority than
-+	 * the top waiter can steal this lock.
-+	 */
-+	lock->owner = (void *) RT_MUTEX_HAS_WAITERS;
- 
- 	raw_spin_unlock_irqrestore(&current->pi_lock, flags);
- 
-+	/*
-+	 * It's safe to dereference waiter as it cannot go away as
-+	 * long as we hold lock->wait_lock. The waiter task needs to
-+	 * acquire it in order to dequeue the waiter.
-+	 */
- 	wake_up_process(waiter->task);
+ 		wake_threads_waitq(desc);
+ 	}
+--- a/kernel/irq/spurious.c
++++ b/kernel/irq/spurious.c
+@@ -270,6 +270,8 @@ try_misrouted_irq(unsigned int irq, stru
+ 	return action && (action->flags & IRQF_IRQPOLL);
  }
  
-@@ -916,12 +982,49 @@ rt_mutex_slowunlock(struct rt_mutex *loc
++#define SPURIOUS_DEFERRED	0x80000000
++
+ void note_interrupt(unsigned int irq, struct irq_desc *desc,
+ 		    irqreturn_t action_ret)
+ {
+@@ -277,15 +279,111 @@ void note_interrupt(unsigned int irq, st
+ 	    irq_settings_is_polled(desc))
+ 		return;
  
- 	rt_mutex_deadlock_account_unlock(current);
- 
--	if (!rt_mutex_has_waiters(lock)) {
--		lock->owner = NULL;
--		raw_spin_unlock(&lock->wait_lock);
+-	/* we get here again via the threaded handler */
+-	if (action_ret == IRQ_WAKE_THREAD)
 -		return;
-+	/*
-+	 * We must be careful here if the fast path is enabled. If we
-+	 * have no waiters queued we cannot set owner to NULL here
-+	 * because of:
-+	 *
-+	 * foo->lock->owner = NULL;
-+	 *			rtmutex_lock(foo->lock);   <- fast path
-+	 *			free = atomic_dec_and_test(foo->refcnt);
-+	 *			rtmutex_unlock(foo->lock); <- fast path
-+	 *			if (free)
-+	 *				kfree(foo);
-+	 * raw_spin_unlock(foo->lock->wait_lock);
-+	 *
-+	 * So for the fastpath enabled kernel:
-+	 *
-+	 * Nothing can set the waiters bit as long as we hold
-+	 * lock->wait_lock. So we do the following sequence:
-+	 *
-+	 *	owner = rt_mutex_owner(lock);
-+	 *	clear_rt_mutex_waiters(lock);
-+	 *	raw_spin_unlock(&lock->wait_lock);
-+	 *	if (cmpxchg(&lock->owner, owner, 0) == owner)
-+	 *		return;
-+	 *	goto retry;
-+	 *
-+	 * The fastpath disabled variant is simple as all access to
-+	 * lock->owner is serialized by lock->wait_lock:
-+	 *
-+	 *	lock->owner = NULL;
-+	 *	raw_spin_unlock(&lock->wait_lock);
-+	 */
-+	while (!rt_mutex_has_waiters(lock)) {
-+		/* Drops lock->wait_lock ! */
-+		if (unlock_rt_mutex_safe(lock) == true)
-+			return;
-+		/* Relock the rtmutex and try again */
-+		raw_spin_lock(&lock->wait_lock);
+-
+ 	if (bad_action_ret(action_ret)) {
+ 		report_bad_irq(irq, desc, action_ret);
+ 		return;
  	}
  
 +	/*
-+	 * The wakeup next waiter path does not suffer from the above
-+	 * race. See the comments there.
++	 * We cannot call note_interrupt from the threaded handler
++	 * because we need to look at the compound of all handlers
++	 * (primary and threaded). Aside of that in the threaded
++	 * shared case we have no serialization against an incoming
++	 * hardware interrupt while we are dealing with a threaded
++	 * result.
++	 *
++	 * So in case a thread is woken, we just note the fact and
++	 * defer the analysis to the next hardware interrupt.
++	 *
++	 * The threaded handlers store whether they sucessfully
++	 * handled an interrupt and we check whether that number
++	 * changed versus the last invocation.
++	 *
++	 * We could handle all interrupts with the delayed by one
++	 * mechanism, but for the non forced threaded case we'd just
++	 * add pointless overhead to the straight hardirq interrupts
++	 * for the sake of a few lines less code.
 +	 */
- 	wakeup_next_waiter(lock);
- 
- 	raw_spin_unlock(&lock->wait_lock);
++	if (action_ret & IRQ_WAKE_THREAD) {
++		/*
++		 * There is a thread woken. Check whether one of the
++		 * shared primary handlers returned IRQ_HANDLED. If
++		 * not we defer the spurious detection to the next
++		 * interrupt.
++		 */
++		if (action_ret == IRQ_WAKE_THREAD) {
++			int handled;
++			/*
++			 * We use bit 31 of thread_handled_last to
++			 * denote the deferred spurious detection
++			 * active. No locking necessary as
++			 * thread_handled_last is only accessed here
++			 * and we have the guarantee that hard
++			 * interrupts are not reentrant.
++			 */
++			if (!(desc->threads_handled_last & SPURIOUS_DEFERRED)) {
++				desc->threads_handled_last |= SPURIOUS_DEFERRED;
++				return;
++			}
++			/*
++			 * Check whether one of the threaded handlers
++			 * returned IRQ_HANDLED since the last
++			 * interrupt happened.
++			 *
++			 * For simplicity we just set bit 31, as it is
++			 * set in threads_handled_last as well. So we
++			 * avoid extra masking. And we really do not
++			 * care about the high bits of the handled
++			 * count. We just care about the count being
++			 * different than the one we saw before.
++			 */
++			handled = atomic_read(&desc->threads_handled);
++			handled |= SPURIOUS_DEFERRED;
++			if (handled != desc->threads_handled_last) {
++				action_ret = IRQ_HANDLED;
++				/*
++				 * Note: We keep the SPURIOUS_DEFERRED
++				 * bit set. We are handling the
++				 * previous invocation right now.
++				 * Keep it for the current one, so the
++				 * next hardware interrupt will
++				 * account for it.
++				 */
++				desc->threads_handled_last = handled;
++			} else {
++				/*
++				 * None of the threaded handlers felt
++				 * responsible for the last interrupt
++				 *
++				 * We keep the SPURIOUS_DEFERRED bit
++				 * set in threads_handled_last as we
++				 * need to account for the current
++				 * interrupt as well.
++				 */
++				action_ret = IRQ_NONE;
++			}
++		} else {
++			/*
++			 * One of the primary handlers returned
++			 * IRQ_HANDLED. So we don't care about the
++			 * threaded handlers on the same line. Clear
++			 * the deferred detection bit.
++			 *
++			 * In theory we could/should check whether the
++			 * deferred bit is set and take the result of
++			 * the previous run into account here as
++			 * well. But it's really not worth the
++			 * trouble. If every other interrupt is
++			 * handled we never trigger the spurious
++			 * detector. And if this is just the one out
++			 * of 100k unhandled ones which is handled
++			 * then we merily delay the spurious detection
++			 * by one hard interrupt. Not a real problem.
++			 */
++			desc->threads_handled_last &= ~SPURIOUS_DEFERRED;
++		}
++	}
++
+ 	if (unlikely(action_ret == IRQ_NONE)) {
+ 		/*
+ 		 * If we are seeing only the odd spurious IRQ caused by
 
 
