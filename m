@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757295AbaF1Szx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:55:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53260 "EHLO
+	id S1757379AbaF1S4s (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:56:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53223 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754978AbaF1RtE (ORCPT
+	with ESMTP id S1754936AbaF1Rs7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:49:04 -0400
+	Sat, 28 Jun 2014 13:48:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 004/110] net: cpsw: fix null dereference at probe
-Date: Sat, 28 Jun 2014 10:46:01 -0700
-Message-Id: <20140628174545.590416446@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: [PATCH 3.14 011/110] Staging: rtl8188eu: overflow in update_sta_support_rate()
+Date: Sat, 28 Jun 2014 10:46:08 -0700
+Message-Id: <20140628174545.977902953@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -29,33 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 6954cc1f238199e971ec905c5cc87120806ac981 upstream.
+commit 9dbd79aeb9842144d9a114a979a12c0949ee11eb upstream.
 
-Fix null-pointer dereference at probe when the mdio platform device is
-missing (e.g. when it has been disabled in DT).
+The ->SupportedRates[] array has NDIS_802_11_LENGTH_RATES_EX (16)
+elements.  Since "ie_len" comes from then network and can go up to 255
+then it means we should add a range check to prevent memory corruption.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Fixes: d6846af679e0 ('staging: r8188eu: Add files for new driver - part 7')
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/ti/cpsw.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/staging/rtl8188eu/core/rtw_wlan_util.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/ti/cpsw.c
-+++ b/drivers/net/ethernet/ti/cpsw.c
-@@ -1884,6 +1884,10 @@ static int cpsw_probe_dt(struct cpsw_pla
- 		mdio_node = of_find_node_by_phandle(be32_to_cpup(parp));
- 		phyid = be32_to_cpup(parp+1);
- 		mdio = of_find_device_by_node(mdio_node);
-+		if (!mdio) {
-+			pr_err("Missing mdio platform device\n");
-+			return -EINVAL;
-+		}
- 		snprintf(slave_data->phy_id, sizeof(slave_data->phy_id),
- 			 PHY_ID_FMT, mdio->name, phyid);
+--- a/drivers/staging/rtl8188eu/core/rtw_wlan_util.c
++++ b/drivers/staging/rtl8188eu/core/rtw_wlan_util.c
+@@ -1601,13 +1601,18 @@ int update_sta_support_rate(struct adapt
+ 	pIE = (struct ndis_802_11_var_ie *)rtw_get_ie(pvar_ie, _SUPPORTEDRATES_IE_, &ie_len, var_ie_len);
+ 	if (pIE == NULL)
+ 		return _FAIL;
++	if (ie_len > NDIS_802_11_LENGTH_RATES_EX)
++		return _FAIL;
  
+ 	memcpy(pmlmeinfo->FW_sta_info[cam_idx].SupportedRates, pIE->data, ie_len);
+ 	supportRateNum = ie_len;
+ 
+ 	pIE = (struct ndis_802_11_var_ie *)rtw_get_ie(pvar_ie, _EXT_SUPPORTEDRATES_IE_, &ie_len, var_ie_len);
+-	if (pIE)
++	if (pIE) {
++		if (supportRateNum + ie_len > NDIS_802_11_LENGTH_RATES_EX)
++			return _FAIL;
+ 		memcpy((pmlmeinfo->FW_sta_info[cam_idx].SupportedRates + supportRateNum), pIE->data, ie_len);
++	}
+ 
+ 	return _SUCCESS;
+ }
 
 
