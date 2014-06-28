@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964823AbaF1Rxi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:53:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54581 "EHLO
+	id S964839AbaF1RyH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:54:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54575 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964804AbaF1Rxe (ORCPT
+	with ESMTP id S964785AbaF1Rxc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:53:34 -0400
+	Sat, 28 Jun 2014 13:53:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Konstantinos Skarlatos <k.skarlatos@gmail.com>,
-        Liu Bo <bo.li.liu@oracle.com>, Chris Mason <clm@fb.com>
-Subject: [PATCH 3.15 130/139] Btrfs: fix scrub_print_warning to handle skinny metadata extents
-Date: Sat, 28 Jun 2014 10:48:11 -0700
-Message-Id: <20140628174611.341809410@linuxfoundation.org>
+        Andrew Zaborowski <andrew.zaborowski@intel.com>,
+        David Rientjes <rientjes@google.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: [PATCH 3.15 139/139] efi-pstore: Fix an overflow on 32-bit builds
+Date: Sat, 28 Jun 2014 10:48:20 -0700
+Message-Id: <20140628174611.746220930@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -29,117 +30,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Liu Bo <bo.li.liu@oracle.com>
+From: Andrzej Zaborowski <andrew.zaborowski@intel.com>
 
-commit 6eda71d0c030af0fc2f68aaa676e6d445600855b upstream.
+commit 783ee43118dc773bc8b0342c5b230e017d5a04d0 upstream.
 
-The skinny extents are intepreted incorrectly in scrub_print_warning(),
-and end up hitting the BUG() in btrfs_extent_inline_ref_size.
+In generic_id the long int timestamp is multiplied by 100000 and needs
+an explicit cast to u64.
 
-Reported-by: Konstantinos Skarlatos <k.skarlatos@gmail.com>
-Signed-off-by: Liu Bo <bo.li.liu@oracle.com>
-Signed-off-by: Chris Mason <clm@fb.com>
+Without that the id in the resulting pstore filename is wrong and
+userspace may have problems parsing it, but more importantly files in
+pstore can never be deleted and may fill the EFI flash (brick device?).
+This happens because when generic pstore code wants to delete a file,
+it passes the id to the EFI backend which reinterpretes it and a wrong
+variable name is attempted to be deleted.  There's no error message but
+after remounting pstore, deleted files would reappear.
+
+Signed-off-by: Andrew Zaborowski <andrew.zaborowski@intel.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/backref.c |   30 +++++++++++++++++++-----------
- fs/btrfs/backref.h |    4 ++--
- fs/btrfs/scrub.c   |    5 +++--
- 3 files changed, 24 insertions(+), 15 deletions(-)
+ drivers/firmware/efi/efi-pstore.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/btrfs/backref.c
-+++ b/fs/btrfs/backref.c
-@@ -1405,9 +1405,10 @@ int extent_from_logical(struct btrfs_fs_
-  * returns <0 on error
-  */
- static int __get_extent_inline_ref(unsigned long *ptr, struct extent_buffer *eb,
--				struct btrfs_extent_item *ei, u32 item_size,
--				struct btrfs_extent_inline_ref **out_eiref,
--				int *out_type)
-+				   struct btrfs_key *key,
-+				   struct btrfs_extent_item *ei, u32 item_size,
-+				   struct btrfs_extent_inline_ref **out_eiref,
-+				   int *out_type)
+--- a/drivers/firmware/efi/efi-pstore.c
++++ b/drivers/firmware/efi/efi-pstore.c
+@@ -40,7 +40,7 @@ struct pstore_read_data {
+ static inline u64 generic_id(unsigned long timestamp,
+ 			     unsigned int part, int count)
  {
- 	unsigned long end;
- 	u64 flags;
-@@ -1417,9 +1418,16 @@ static int __get_extent_inline_ref(unsig
- 		/* first call */
- 		flags = btrfs_extent_flags(eb, ei);
- 		if (flags & BTRFS_EXTENT_FLAG_TREE_BLOCK) {
--			info = (struct btrfs_tree_block_info *)(ei + 1);
--			*out_eiref =
--				(struct btrfs_extent_inline_ref *)(info + 1);
-+			if (key->type == BTRFS_METADATA_ITEM_KEY) {
-+				/* a skinny metadata extent */
-+				*out_eiref =
-+				     (struct btrfs_extent_inline_ref *)(ei + 1);
-+			} else {
-+				WARN_ON(key->type != BTRFS_EXTENT_ITEM_KEY);
-+				info = (struct btrfs_tree_block_info *)(ei + 1);
-+				*out_eiref =
-+				   (struct btrfs_extent_inline_ref *)(info + 1);
-+			}
- 		} else {
- 			*out_eiref = (struct btrfs_extent_inline_ref *)(ei + 1);
- 		}
-@@ -1429,7 +1437,7 @@ static int __get_extent_inline_ref(unsig
- 	}
+-	return (timestamp * 100 + part) * 1000 + count;
++	return ((u64) timestamp * 100 + part) * 1000 + count;
+ }
  
- 	end = (unsigned long)ei + item_size;
--	*out_eiref = (struct btrfs_extent_inline_ref *)*ptr;
-+	*out_eiref = (struct btrfs_extent_inline_ref *)(*ptr);
- 	*out_type = btrfs_extent_inline_ref_type(eb, *out_eiref);
- 
- 	*ptr += btrfs_extent_inline_ref_size(*out_type);
-@@ -1448,8 +1456,8 @@ static int __get_extent_inline_ref(unsig
-  * <0 on error.
-  */
- int tree_backref_for_extent(unsigned long *ptr, struct extent_buffer *eb,
--				struct btrfs_extent_item *ei, u32 item_size,
--				u64 *out_root, u8 *out_level)
-+			    struct btrfs_key *key, struct btrfs_extent_item *ei,
-+			    u32 item_size, u64 *out_root, u8 *out_level)
- {
- 	int ret;
- 	int type;
-@@ -1460,8 +1468,8 @@ int tree_backref_for_extent(unsigned lon
- 		return 1;
- 
- 	while (1) {
--		ret = __get_extent_inline_ref(ptr, eb, ei, item_size,
--						&eiref, &type);
-+		ret = __get_extent_inline_ref(ptr, eb, key, ei, item_size,
-+					      &eiref, &type);
- 		if (ret < 0)
- 			return ret;
- 
---- a/fs/btrfs/backref.h
-+++ b/fs/btrfs/backref.h
-@@ -40,8 +40,8 @@ int extent_from_logical(struct btrfs_fs_
- 			u64 *flags);
- 
- int tree_backref_for_extent(unsigned long *ptr, struct extent_buffer *eb,
--				struct btrfs_extent_item *ei, u32 item_size,
--				u64 *out_root, u8 *out_level);
-+			    struct btrfs_key *key, struct btrfs_extent_item *ei,
-+			    u32 item_size, u64 *out_root, u8 *out_level);
- 
- int iterate_extent_inodes(struct btrfs_fs_info *fs_info,
- 				u64 extent_item_objectid,
---- a/fs/btrfs/scrub.c
-+++ b/fs/btrfs/scrub.c
-@@ -588,8 +588,9 @@ static void scrub_print_warning(const ch
- 
- 	if (flags & BTRFS_EXTENT_FLAG_TREE_BLOCK) {
- 		do {
--			ret = tree_backref_for_extent(&ptr, eb, ei, item_size,
--							&ref_root, &ref_level);
-+			ret = tree_backref_for_extent(&ptr, eb, &found_key, ei,
-+						      item_size, &ref_root,
-+						      &ref_level);
- 			printk_in_rcu(KERN_WARNING
- 				"BTRFS: %s at logical %llu on dev %s, "
- 				"sector %llu: metadata %s (level %d) in tree "
+ static int efi_pstore_read_func(struct efivar_entry *entry, void *data)
 
 
