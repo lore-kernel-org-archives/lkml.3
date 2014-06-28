@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932149AbaF1RuX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:50:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53551 "EHLO
+	id S1756773AbaF1Sje (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:39:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53578 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932100AbaF1RuS (ORCPT
+	with ESMTP id S932101AbaF1RuW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:50:18 -0400
+	Sat, 28 Jun 2014 13:50:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Aleksander Morgado <aleksander@aleksander.es>,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.14 053/110] usb: qcserial: add additional Sierra Wireless QMI devices
-Date: Sat, 28 Jun 2014 10:46:50 -0700
-Message-Id: <20140628174548.780756722@linuxfoundation.org>
+        Mike Frysinger <vapier@gentoo.org>, "H.J. Lu" <hjl.tools@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH 3.14 086/110] x86, x32: Use compat shims for io_{setup,submit}
+Date: Sat, 28 Jun 2014 10:47:23 -0700
+Message-Id: <20140628174550.625669076@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -29,59 +29,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aleksander Morgado <aleksander@aleksander.es>
+From: Mike Frysinger <vapier@gentoo.org>
 
-commit 0ce5fb58564fd85aa8fd2d24209900e2e845317b upstream.
+commit 7fd44dacdd803c0bbf38bf478d51d280902bb0f1 upstream.
 
-A set of new VID/PIDs retrieved from the out-of-tree GobiNet/GobiSerial
-Sierra Wireless drivers.
+The io_setup takes a pointer to a context id of type aio_context_t.
+This in turn is typed to a __kernel_ulong_t.  We could tweak the
+exported headers to define this as a 64bit quantity for specific
+ABIs, but since we already have a 32bit compat shim for the x86 ABI,
+let's just re-use that logic.  The libaio package is also written to
+expect this as a pointer type, so a compat shim would simplify that.
 
-Signed-off-by: Aleksander Morgado <aleksander@aleksander.es>
-Link: http://marc.info/?l=linux-usb&m=140136310027293&w=2
-Cc: <stable@vger.kernel.org>	# backport in link above
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+The io_submit func operates on an array of pointers to iocb structs.
+Padding out the array to be 64bit aligned is a huge pain, so convert
+it over to the existing compat shim too.
+
+We don't convert io_getevents to the compat func as its only purpose
+is to handle the timespec struct, and the x32 ABI uses 64bit times.
+
+With this change, the libaio package can now pass its testsuite when
+built for the x32 ABI.
+
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+Link: http://lkml.kernel.org/r/1399250595-5005-1-git-send-email-vapier@gentoo.org
+Cc: H.J. Lu <hjl.tools@gmail.com>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/qcserial.c |   18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+ arch/x86/syscalls/syscall_64.tbl |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/qcserial.c
-+++ b/drivers/usb/serial/qcserial.c
-@@ -145,15 +145,33 @@ static const struct usb_device_id id_tab
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x901f, 0)},	/* Sierra Wireless EM7355 Device Management */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x901f, 2)},	/* Sierra Wireless EM7355 NMEA */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x901f, 3)},	/* Sierra Wireless EM7355 Modem */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9040, 0)},	/* Sierra Wireless Modem Device Management */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9040, 2)},	/* Sierra Wireless Modem NMEA */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9040, 3)},	/* Sierra Wireless Modem Modem */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9041, 0)},	/* Sierra Wireless MC7305/MC7355 Device Management */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9041, 2)},	/* Sierra Wireless MC7305/MC7355 NMEA */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9041, 3)},	/* Sierra Wireless MC7305/MC7355 Modem */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 0)},	/* Netgear AirCard 340U Device Management */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 2)},	/* Netgear AirCard 340U NMEA */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 3)},	/* Netgear AirCard 340U Modem */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9053, 0)},	/* Sierra Wireless Modem Device Management */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9053, 2)},	/* Sierra Wireless Modem NMEA */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9053, 3)},	/* Sierra Wireless Modem Modem */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9054, 0)},	/* Sierra Wireless Modem Device Management */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9054, 2)},	/* Sierra Wireless Modem NMEA */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9054, 3)},	/* Sierra Wireless Modem Modem */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9055, 0)},	/* Netgear AirCard 341U Device Management */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9055, 2)},	/* Netgear AirCard 341U NMEA */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9055, 3)},	/* Netgear AirCard 341U Modem */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9056, 0)},	/* Sierra Wireless Modem Device Management */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9056, 2)},	/* Sierra Wireless Modem NMEA */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9056, 3)},	/* Sierra Wireless Modem Modem */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9060, 0)},	/* Sierra Wireless Modem Device Management */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9060, 2)},	/* Sierra Wireless Modem NMEA */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9060, 3)},	/* Sierra Wireless Modem Modem */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9061, 0)},	/* Sierra Wireless Modem Device Management */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9061, 2)},	/* Sierra Wireless Modem NMEA */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9061, 3)},	/* Sierra Wireless Modem Modem */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 0)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card Device Management */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 2)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card NMEA */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 3)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card Modem */
+--- a/arch/x86/syscalls/syscall_64.tbl
++++ b/arch/x86/syscalls/syscall_64.tbl
+@@ -212,10 +212,10 @@
+ 203	common	sched_setaffinity	sys_sched_setaffinity
+ 204	common	sched_getaffinity	sys_sched_getaffinity
+ 205	64	set_thread_area
+-206	common	io_setup		sys_io_setup
++206	64	io_setup		sys_io_setup
+ 207	common	io_destroy		sys_io_destroy
+ 208	common	io_getevents		sys_io_getevents
+-209	common	io_submit		sys_io_submit
++209	64	io_submit		sys_io_submit
+ 210	common	io_cancel		sys_io_cancel
+ 211	64	get_thread_area
+ 212	common	lookup_dcookie		sys_lookup_dcookie
+@@ -358,3 +358,5 @@
+ 540	x32	process_vm_writev	compat_sys_process_vm_writev
+ 541	x32	setsockopt		compat_sys_setsockopt
+ 542	x32	getsockopt		compat_sys_getsockopt
++543	x32	io_setup		compat_sys_io_setup
++544	x32	io_submit		compat_sys_io_submit
 
 
