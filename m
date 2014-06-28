@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755726AbaF1RvK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:51:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53966 "EHLO
+	id S932204AbaF1Rv2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:51:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54046 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753383AbaF1RvI (ORCPT
+	with ESMTP id S932099AbaF1RvX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:51:08 -0400
+	Sat, 28 Jun 2014 13:51:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Bolle <pebolle@tiscali.nl>, Tony Lindgren <tony@atomide.com>
-Subject: [PATCH 3.15 018/139] ARM: OMAP: replace checks for CONFIG_USB_GADGET_OMAP
-Date: Sat, 28 Jun 2014 10:46:19 -0700
-Message-Id: <20140628174606.240669296@linuxfoundation.org>
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.15 037/139] idr: fix overflow bug during maximum ID calculation at maximum height
+Date: Sat, 28 Jun 2014 10:46:38 -0700
+Message-Id: <20140628174607.124550293@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -28,86 +30,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Bolle <pebolle@tiscali.nl>
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-commit 77c2f02edbeda9409a7cf3fd66233015820c213a upstream.
+commit 3afb69cb5572b3c8c898c00880803cf1a49852c4 upstream.
 
-Commit 193ab2a60700 ("usb: gadget: allow multiple gadgets to be built")
-apparently required that checks for CONFIG_USB_GADGET_OMAP would be
-replaced with checks for CONFIG_USB_OMAP. Do so now for the remaining
-checks for CONFIG_USB_GADGET_OMAP, even though these checks have
-basically been broken since v3.1.
+idr_replace() open-codes the logic to calculate the maximum valid ID
+given the height of the idr tree; unfortunately, the open-coded logic
+doesn't account for the fact that the top layer may have unused slots
+and over-shifts the limit to zero when the tree is at its maximum
+height.
 
-And, since we're touching this code, use the IS_ENABLED() macro, so
-things will now (hopefully) also work if USB_OMAP is modular.
+The following test code shows it fails to replace the value for
+id=((1<<27)+42):
 
-Fixes: 193ab2a60700 ("usb: gadget: allow multiple gadgets to be built")
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+  static void test5(void)
+  {
+        int id;
+        DEFINE_IDR(test_idr);
+  #define TEST5_START ((1<<27)+42) /* use the highest layer */
+
+        printk(KERN_INFO "Start test5\n");
+        id = idr_alloc(&test_idr, (void *)1, TEST5_START, 0, GFP_KERNEL);
+        BUG_ON(id != TEST5_START);
+        TEST_BUG_ON(idr_replace(&test_idr, (void *)2, TEST5_START) != (void *)1);
+        idr_destroy(&test_idr);
+        printk(KERN_INFO "End of test5\n");
+  }
+
+Fix the bug by using idr_max() which correctly takes into account the
+maximum allowed shift.
+
+sub_alloc() shares the same problem and may incorrectly fail with
+-EAGAIN; however, this bug doesn't affect correct operation because
+idr_get_empty_slot(), which already uses idr_max(), retries with the
+increased @id in such cases.
+
+[tj@kernel.org: Updated patch description.]
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-omap1/board-h2.c        |    2 +-
- arch/arm/mach-omap1/board-h3.c        |    2 +-
- arch/arm/mach-omap1/board-innovator.c |    2 +-
- arch/arm/mach-omap1/board-osk.c       |    2 +-
- drivers/usb/phy/phy-isp1301-omap.c    |    2 +-
- 5 files changed, 5 insertions(+), 5 deletions(-)
+ lib/idr.c |    8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
---- a/arch/arm/mach-omap1/board-h2.c
-+++ b/arch/arm/mach-omap1/board-h2.c
-@@ -346,7 +346,7 @@ static struct omap_usb_config h2_usb_con
- 	/* usb1 has a Mini-AB port and external isp1301 transceiver */
- 	.otg		= 2,
+--- a/lib/idr.c
++++ b/lib/idr.c
+@@ -249,7 +249,7 @@ static int sub_alloc(struct idr *idp, in
+ 			id = (id | ((1 << (IDR_BITS * l)) - 1)) + 1;
  
--#ifdef	CONFIG_USB_GADGET_OMAP
-+#if IS_ENABLED(CONFIG_USB_OMAP)
- 	.hmc_mode	= 19,	/* 0:host(off) 1:dev|otg 2:disabled */
- 	/* .hmc_mode	= 21,*/	/* 0:host(off) 1:dev(loopback) 2:host(loopback) */
- #elif	defined(CONFIG_USB_OHCI_HCD) || defined(CONFIG_USB_OHCI_HCD_MODULE)
---- a/arch/arm/mach-omap1/board-h3.c
-+++ b/arch/arm/mach-omap1/board-h3.c
-@@ -366,7 +366,7 @@ static struct omap_usb_config h3_usb_con
- 	/* usb1 has a Mini-AB port and external isp1301 transceiver */
- 	.otg	    = 2,
+ 			/* if already at the top layer, we need to grow */
+-			if (id >= 1 << (idp->layers * IDR_BITS)) {
++			if (id > idr_max(idp->layers)) {
+ 				*starting_id = id;
+ 				return -EAGAIN;
+ 			}
+@@ -811,12 +811,10 @@ void *idr_replace(struct idr *idp, void
+ 	if (!p)
+ 		return ERR_PTR(-EINVAL);
  
--#ifdef CONFIG_USB_GADGET_OMAP
-+#if IS_ENABLED(CONFIG_USB_OMAP)
- 	.hmc_mode       = 19,   /* 0:host(off) 1:dev|otg 2:disabled */
- #elif  defined(CONFIG_USB_OHCI_HCD) || defined(CONFIG_USB_OHCI_HCD_MODULE)
- 	/* NONSTANDARD CABLE NEEDED (B-to-Mini-B) */
---- a/arch/arm/mach-omap1/board-innovator.c
-+++ b/arch/arm/mach-omap1/board-innovator.c
-@@ -312,7 +312,7 @@ static struct omap_usb_config h2_usb_con
- 	/* usb1 has a Mini-AB port and external isp1301 transceiver */
- 	.otg		= 2,
+-	n = (p->layer+1) * IDR_BITS;
+-
+-	if (id >= (1 << n))
++	if (id > idr_max(p->layer + 1))
+ 		return ERR_PTR(-EINVAL);
  
--#ifdef	CONFIG_USB_GADGET_OMAP
-+#if IS_ENABLED(CONFIG_USB_OMAP)
- 	.hmc_mode	= 19,	/* 0:host(off) 1:dev|otg 2:disabled */
- 	/* .hmc_mode	= 21,*/	/* 0:host(off) 1:dev(loopback) 2:host(loopback) */
- #elif	defined(CONFIG_USB_OHCI_HCD) || defined(CONFIG_USB_OHCI_HCD_MODULE)
---- a/arch/arm/mach-omap1/board-osk.c
-+++ b/arch/arm/mach-omap1/board-osk.c
-@@ -283,7 +283,7 @@ static struct omap_usb_config osk_usb_co
- 	 * be used, with a NONSTANDARD gender-bending cable/dongle, as
- 	 * a peripheral.
- 	 */
--#ifdef	CONFIG_USB_GADGET_OMAP
-+#if IS_ENABLED(CONFIG_USB_OMAP)
- 	.register_dev	= 1,
- 	.hmc_mode	= 0,
- #else
---- a/drivers/usb/phy/phy-isp1301-omap.c
-+++ b/drivers/usb/phy/phy-isp1301-omap.c
-@@ -1295,7 +1295,7 @@ isp1301_set_host(struct usb_otg *otg, st
- 		return isp1301_otg_enable(isp);
- 	return 0;
- 
--#elif	!defined(CONFIG_USB_GADGET_OMAP)
-+#elif !IS_ENABLED(CONFIG_USB_OMAP)
- 	// FIXME update its refcount
- 	otg->host = host;
- 
+-	n -= IDR_BITS;
++	n = p->layer * IDR_BITS;
+ 	while ((n > 0) && p) {
+ 		p = p->ary[(id >> n) & IDR_MASK];
+ 		n -= IDR_BITS;
 
 
