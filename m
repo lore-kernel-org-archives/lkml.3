@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756564AbaF1S31 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:29:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53755 "EHLO
+	id S1755638AbaF1Ruy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:50:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53706 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755643AbaF1Ruz (ORCPT
+	with ESMTP id S1755600AbaF1Ruv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:50:55 -0400
+	Sat, 28 Jun 2014 13:50:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fathi Boudra <fathi.boudra@linaro.org>,
-        Ben Hutchings <ben@decadent.org.uk>, Michal Marek <mmarek@suse.cz>
-Subject: [PATCH 3.14 109/110] builddeb: use $OBJCOPY variable instead of objcopy
-Date: Sat, 28 Jun 2014 10:47:46 -0700
-Message-Id: <20140628174551.838219364@linuxfoundation.org>
+        Chris Murphy <lists@colorremedies.com>, Liu Bo <bo.li.liu@oracle.com>,
+        Chris Mason <clm@fb.com>
+Subject: [PATCH 3.14 095/110] Btrfs: fix NULL pointer crash of deleting a seed device
+Date: Sat, 28 Jun 2014 10:47:32 -0700
+Message-Id: <20140628174551.104913978@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -29,43 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fathi Boudra <fathi.boudra@linaro.org>
+From: Liu Bo <bo.li.liu@oracle.com>
 
-commit 6b4a144a92ab81a1f45fb9b12aebaaaee0d08120 upstream.
+commit 29cc83f69c8338ff8fd1383c9be263d4bdf52d73 upstream.
 
-In cross-build environment, we expect to use the cross-compiler objcopy
-instead of the host objcopy.
+Same as normal devices, seed devices should be initialized with
+fs_info->dev_root as well, otherwise we'll get a NULL pointer crash.
 
-It fixes following build failures:
-objcopy --only-keep-debug lib/modules/3.14/kernel/net/ipv6/xfrm6_mode_tunnel.ko /srv/build/linux/debian/dbgtmp/usr/lib/debug/lib/modules/3.14/kernel/net/ipv6/xfrm6_mode_tunnel.ko
-objcopy: Unable to recognise the format of the input file `lib/modules/3.14/kernel/net/ipv6/xfrm6_mode_tunnel.ko'
-
-Signed-off-by: Fathi Boudra <fathi.boudra@linaro.org>
-Fixes: 810e843746b7 ('deb-pkg: split debug symbols in their own package')
-Reviewed-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
+Cc: Chris Murphy <lists@colorremedies.com>
+Reported-by: Chris Murphy <lists@colorremedies.com>
+Signed-off-by: Liu Bo <bo.li.liu@oracle.com>
+Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- scripts/package/builddeb |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ fs/btrfs/volumes.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
---- a/scripts/package/builddeb
-+++ b/scripts/package/builddeb
-@@ -155,11 +155,11 @@ if grep -q '^CONFIG_MODULES=y' $KCONFIG_
- 			for module in $(find lib/modules/ -name *.ko); do
- 				mkdir -p $(dirname $dbg_dir/usr/lib/debug/$module)
- 				# only keep debug symbols in the debug file
--				objcopy --only-keep-debug $module $dbg_dir/usr/lib/debug/$module
-+				$OBJCOPY --only-keep-debug $module $dbg_dir/usr/lib/debug/$module
- 				# strip original module from debug symbols
--				objcopy --strip-debug $module
-+				$OBJCOPY --strip-debug $module
- 				# then add a link to those
--				objcopy --add-gnu-debuglink=$dbg_dir/usr/lib/debug/$module $module
-+				$OBJCOPY --add-gnu-debuglink=$dbg_dir/usr/lib/debug/$module $module
- 			done
- 		)
- 	fi
+--- a/fs/btrfs/volumes.c
++++ b/fs/btrfs/volumes.c
+@@ -6057,10 +6057,14 @@ void btrfs_init_devices_late(struct btrf
+ 	struct btrfs_fs_devices *fs_devices = fs_info->fs_devices;
+ 	struct btrfs_device *device;
+ 
+-	mutex_lock(&fs_devices->device_list_mutex);
+-	list_for_each_entry(device, &fs_devices->devices, dev_list)
+-		device->dev_root = fs_info->dev_root;
+-	mutex_unlock(&fs_devices->device_list_mutex);
++	while (fs_devices) {
++		mutex_lock(&fs_devices->device_list_mutex);
++		list_for_each_entry(device, &fs_devices->devices, dev_list)
++			device->dev_root = fs_info->dev_root;
++		mutex_unlock(&fs_devices->device_list_mutex);
++
++		fs_devices = fs_devices->seed;
++	}
+ }
+ 
+ static void __btrfs_reset_dev_stats(struct btrfs_device *dev)
 
 
