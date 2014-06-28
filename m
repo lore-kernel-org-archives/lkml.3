@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752919AbaF1NXZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 09:23:25 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:50249 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752515AbaF1NXY (ORCPT
+	id S1752810AbaF1N3Q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 09:29:16 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:44325 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751621AbaF1N3O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 09:23:24 -0400
-From: Markus Pargmann <mpa@pengutronix.de>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Markus Pargmann <mpa@pengutronix.de>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-Subject: [PATCH] regmap: Fix debugfs-file 'registers' mode
-Date: Sat, 28 Jun 2014 15:23:11 +0200
-Message-Id: <1403961791-15376-1-git-send-email-mpa@pengutronix.de>
-X-Mailer: git-send-email 2.0.0
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:a236:9fff:fe00:814
-X-SA-Exim-Mail-From: mpa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Sat, 28 Jun 2014 09:29:14 -0400
+Date: Sat, 28 Jun 2014 18:59:07 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Matthew Wilcox <matthew@wil.cx>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH] isym53c8xx_2/sym_malloc: Drop cast
+Message-ID: <20140628132907.GA4635@himangi-Dell>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The macro "REGMAP_ALLOW_WRITE_DEBUGFS" can be used to enable write
-support on the registers file in the debugfs. The mode of the file is
-fixed to 0400 so it is not possible to write the file ever.
+This patch does away with cast on void * and the if as it is unnecessary.
 
-This patch fixes the mode by setting it to the correct value depending
-on the macro.
+The following Coccinelle semantic patch was used for making the change:
 
-Cc: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
+@r@
+expression x;
+void* e;
+type T;
+identifier f;
+@@
+
+(
+  *((T *)e)
+|
+  ((T *)x)[...]
+|
+  ((T *)x)->f
+|
+- (T *)
+  e
+)
+
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
 ---
+To send to: Matthew Wilcox <matthew@wil.cx>,"James E.J. Bottomley" <JBottomley@parallels.com>,linux-scsi@vger.kernel.org,linux-kernel@vger.kernel.org
+ drivers/scsi/sym53c8xx_2/sym_malloc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Hi,
-
-as the kconfig option will probably not be merged, I extracted the mode fix of
-my previous patch.
-
-Regards,
-
-Markus
-
- drivers/base/regmap/regmap-debugfs.c | 9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/base/regmap/regmap-debugfs.c b/drivers/base/regmap/regmap-debugfs.c
-index 45d812c0ea77..f45a0a0e0371 100644
---- a/drivers/base/regmap/regmap-debugfs.c
-+++ b/drivers/base/regmap/regmap-debugfs.c
-@@ -512,7 +512,14 @@ void regmap_debugfs_init(struct regmap *map, const char *name)
- 			    map, &regmap_reg_ranges_fops);
- 
- 	if (map->max_register || regmap_readable(map, 0)) {
--		debugfs_create_file("registers", 0400, map->debugfs,
-+		unsigned int registers_mode;
-+
-+		if (IS_ENABLED(REGMAP_ALLOW_WRITE_DEBUGFS))
-+			registers_mode = 0600;
-+		else
-+			registers_mode = 0400;
-+
-+		debugfs_create_file("registers", registers_mode, map->debugfs,
- 				    map, &regmap_map_fops);
- 		debugfs_create_file("access", 0400, map->debugfs,
- 				    map, &regmap_access_fops);
+diff --git a/drivers/scsi/sym53c8xx_2/sym_malloc.c b/drivers/scsi/sym53c8xx_2/sym_malloc.c
+index 6f9af0d..1dde1e9 100644
+--- a/drivers/scsi/sym53c8xx_2/sym_malloc.c
++++ b/drivers/scsi/sym53c8xx_2/sym_malloc.c
+@@ -95,7 +95,7 @@ static void *___sym_malloc(m_pool_p mp, int size)
+ 		}
+ 	}
+ #ifdef DEBUG
+-	printf("___sym_malloc(%d) = %p\n", size, (void *) a);
++	printf("___sym_malloc(%d) = %p\n", size, a);
+ #endif
+ 	return a;
+ }
 -- 
-2.0.0
+1.9.1
 
