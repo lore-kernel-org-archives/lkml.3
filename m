@@ -1,54 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752270AbaF1Kno (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 06:43:44 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:50652 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751237AbaF1Knn (ORCPT
+	id S1752293AbaF1KzL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 06:55:11 -0400
+Received: from 78-32-181-23.static.enta.net ([78.32.181.23]:59267 "EHLO
+	mail.linicks.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750846AbaF1KzJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 06:43:43 -0400
-From: Xie XiuQi <xiexiuqi@huawei.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <rostedt@goodmis.org>, <mingo@redhat.com>, <tony.luck@intel.com>,
-        <fweisbec@gmail.com>, <m.chehab@samsung.com>
-Subject: [PATCH 2/2] tracing: update Documentation/trace/ftrace.txt for uptime
-Date: Sat, 28 Jun 2014 19:10:01 +0800
-Message-ID: <1403953801-19068-3-git-send-email-xiexiuqi@huawei.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1403953801-19068-1-git-send-email-xiexiuqi@huawei.com>
-References: <1403953801-19068-1-git-send-email-xiexiuqi@huawei.com>
+	Sat, 28 Jun 2014 06:55:09 -0400
+Message-ID: <53AE9F0B.1080207@linicks.net>
+Date: Sat, 28 Jun 2014 11:55:07 +0100
+From: Nick Warne <nick@linicks.net>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.175.100.166]
-X-CFilter-Loop: Reflected
+To: Borislav Petkov <bp@alien8.de>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: 3.15.2 build error on AMD64
+References: <53AE9058.50902@linicks.net> <20140628101240.GA6357@pd.tnic> <53AE9863.6050102@linicks.net>
+In-Reply-To: <53AE9863.6050102@linicks.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-update uptime description.
+On 28/06/14 11:26, Nick Warne wrote:
+>
+> On 28/06/14 11:12, Borislav Petkov wrote:
+>> On Sat, Jun 28, 2014 at 10:52:24AM +0100, Nick Warne wrote:
+>>> Hi Everybody,
+>>>
+>>> Today I was trying to build 3.15.2 on AMD64 from kernel 3.14.8 and get this:
+>>>
+>>>   CC      fs/mbcache.o
+>>> fs/mbcache.c: In function ‘__spin_lock_mb_cache_entry’:
+>>> fs/mbcache.c:134: error: SSE register return with SSE disabled
+>>> make[1]: *** [fs/mbcache.o] Error 1
+>>
+>> I can't trigger that here.
+>>
+>> Please send your .config. Also, before building, did you clean up your
+>> source tree properly by saving the .config somewhere else and doing
+>> "make mrproper"?
+>
+> Thanks for prompt reply.
+>
+> I always do a mrproper followed by grabbing current .config from /proc
+> and issuing make oldconfig.
+>
+> Attached is my config file.
+>
+> Also, for what it is worth:
+>
+> gcc version 4.8.2 (GCC)
 
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Xie XiuQi <xiexiuqi@huawei.com>
----
- Documentation/trace/ftrace.txt | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Whoops - that is WRONG (too many ssh terminals)
 
-diff --git a/Documentation/trace/ftrace.txt b/Documentation/trace/ftrace.txt
-index 2479b2a..7b2e906 100644
---- a/Documentation/trace/ftrace.txt
-+++ b/Documentation/trace/ftrace.txt
-@@ -331,8 +331,7 @@ of ftrace. Here is a list of some of the key files:
- 		   know exactly the order events occurred with respect to
- 		   each other on different CPUs.
- 
--	  uptime: This uses the jiffies counter and the time stamp
--	  	  is relative to the time since boot up.
-+	  uptime: This time stamp is relative to the time since boot up.
- 
- 	  perf: This makes ftrace use the same clock that perf uses.
- 	  	Eventually perf will be able to read ftrace buffers
+gcc version 4.2.4
+
+Nick
 -- 
-2.0.0
-
+"A bug in the code is worth two in the documentation."
+FSF Associate Member 5508
+http://linicks.net/
+http://pi.linicks.net/
