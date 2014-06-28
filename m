@@ -1,249 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756295AbaF1SEG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:04:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54406 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756113AbaF1RxA (ORCPT
+	id S1756319AbaF1SER (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:04:17 -0400
+Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.218]:21309 "EHLO
+	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756299AbaF1SEO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:53:00 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Till Straumann <strauman@slac.stanford.edu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Austin Schuh <austin@peloton-tech.com>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
-        Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org
-Subject: [PATCH 3.15 110/139] genirq: Sanitize spurious interrupt detection of threaded irqs
-Date: Sat, 28 Jun 2014 10:47:51 -0700
-Message-Id: <20140628174610.439852592@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
-References: <20140628174605.352098823@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Sat, 28 Jun 2014 14:04:14 -0400
+X-Greylist: delayed 375 seconds by postgrey-1.27 at vger.kernel.org; Sat, 28 Jun 2014 14:04:14 EDT
+X-RZG-AUTH: :JGIXVUS7cutRB/49FwqZ7WcKdUCnXG6JabOfSXKWrat5gtPvyo0=
+X-RZG-CLASS-ID: mo00
+Subject: Re: [PATCH] gpio_keys, twl4030-pwrbutton: stay awake for 1sec on resume
+Mime-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset=iso-8859-1
+From: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
+In-Reply-To: <20140628170820.GF23634@xo-6d-61-c0.localdomain>
+Date: Sat, 28 Jun 2014 19:57:53 +0200
+Cc: Lukas M?rdian <lukas@goldelico.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Marek Belisko <marek@goldelico.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <BD5D0538-BD03-4CD8-8E12-2344AD7ED669@goldelico.com>
+References: <1403906118-23517-1-git-send-email-lukas@goldelico.com> <20140628170820.GF23634@xo-6d-61-c0.localdomain>
+To: Pavel Machek <pavel@ucw.cz>
+X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.15-stable review patch.  If anyone has any objections, please let me know.
+Hi,
+Am 28.06.2014 um 19:08 schrieb Pavel Machek:
 
-------------------
+> Hi!
+> 
+>> This gives the userspace (Replicant) a chance to fully handle the
+>> pm_wakeup_event, before autosleep suspends the system alltogether
+>> again.
+>> 
+>> This fixes suspend/resume on the OpenPhoenux GTA04, in combination with
+>> the Replicant 4.2.2 userspace, which needs to execute this to stay
+>> awake: 'echo on > /sys/power/state'
+>> 
+>> Signed-off-by: Lukas Märdian <lukas@goldelico.com>
+>> Signed-off-by: H. Nikolaus Schaller <hns@goldelico.com>
+> 
+> I'm sorry, but we should not be doing this.
+> 
+> You basically put a delay in driver to work around userspace bug.
 
-From: Thomas Gleixner <tglx@linutronix.de>
+Do you think it is a user-space bug if the kernel goes to sleep again
+before giving user space any chance to react to an event?
 
-commit 1e77d0a1ed7417d2a5a52a7b8d32aea1833faa6c upstream.
+And the msec parameter is described as:
 
-Till reported that the spurious interrupt detection of threaded
-interrupts is broken in two ways:
+@msec: Anticipated event processing time (in milliseconds).
 
-- note_interrupt() is called for each action thread of a shared
-  interrupt line. That's wrong as we are only interested whether none
-  of the device drivers felt responsible for the interrupt, but by
-  calling multiple times for a single interrupt line we account
-  IRQ_NONE even if one of the drivers felt responsible.
+Isn't calling pm_wakeup_event() with a non-zero msec the standard
+method to handle this situation? And it is used in other drivers. E.g. in
+_mmc_detect_change() or hub_suspend().
 
-- note_interrupt() when called from the thread handler is not
-  serialized. That leaves the members of irq_desc which are used for
-  the spurious detection unprotected.
+And if I understand the code of __pm_wakeup_event() correctly it does
+*not* delay, but just modifies the wakeup_source timer to expire a little
+later. I.e. keep the system longer awake. So as long as the system is
+not suspended there is no difference to current driver.
 
-To solve this we need to defer the spurious detection of a threaded
-interrupt to the next hardware interrupt context where we have
-implicit serialization.
+> There must be better
+> solution....
 
-If note_interrupt is called with action_ret == IRQ_WAKE_THREAD, we
-check whether the previous interrupt requested a deferred check. If
-not, we request a deferred check for the next hardware interrupt and
-return.
+I am not sure how it could look like.
 
-If set, we check whether one of the interrupt threads signaled
-success. Depending on this information we feed the result into the
-spurious detector.
-
-If one primary handler of a shared interrupt returns IRQ_HANDLED we
-disable the deferred check of irq threads on the same line, as we have
-found at least one device driver who cared.
-
-Reported-by: Till Straumann <strauman@slac.stanford.edu>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Tested-by: Austin Schuh <austin@peloton-tech.com>
-Cc: Oliver Hartkopp <socketcan@hartkopp.net>
-Cc: Wolfgang Grandegger <wg@grandegger.com>
-Cc: Pavel Pisa <pisa@cmp.felk.cvut.cz>
-Cc: Marc Kleine-Budde <mkl@pengutronix.de>
-Cc: linux-can@vger.kernel.org
-Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1303071450130.22263@ionos
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- include/linux/irqdesc.h |    4 +
- kernel/irq/manage.c     |    4 -
- kernel/irq/spurious.c   |  106 ++++++++++++++++++++++++++++++++++++++++++++++--
- 3 files changed, 108 insertions(+), 6 deletions(-)
-
---- a/include/linux/irqdesc.h
-+++ b/include/linux/irqdesc.h
-@@ -27,6 +27,8 @@ struct irq_desc;
-  * @irq_count:		stats field to detect stalled irqs
-  * @last_unhandled:	aging timer for unhandled count
-  * @irqs_unhandled:	stats field for spurious unhandled interrupts
-+ * @threads_handled:	stats field for deferred spurious detection of threaded handlers
-+ * @threads_handled_last: comparator field for deferred spurious detection of theraded handlers
-  * @lock:		locking for SMP
-  * @affinity_hint:	hint to user space for preferred irq affinity
-  * @affinity_notify:	context for notification of affinity changes
-@@ -52,6 +54,8 @@ struct irq_desc {
- 	unsigned int		irq_count;	/* For detecting broken IRQs */
- 	unsigned long		last_unhandled;	/* Aging timer for unhandled count */
- 	unsigned int		irqs_unhandled;
-+	atomic_t		threads_handled;
-+	int			threads_handled_last;
- 	raw_spinlock_t		lock;
- 	struct cpumask		*percpu_enabled;
- #ifdef CONFIG_SMP
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -886,8 +886,8 @@ static int irq_thread(void *data)
- 		irq_thread_check_affinity(desc, action);
- 
- 		action_ret = handler_fn(desc, action);
--		if (!noirqdebug)
--			note_interrupt(action->irq, desc, action_ret);
-+		if (action_ret == IRQ_HANDLED)
-+			atomic_inc(&desc->threads_handled);
- 
- 		wake_threads_waitq(desc);
- 	}
---- a/kernel/irq/spurious.c
-+++ b/kernel/irq/spurious.c
-@@ -270,6 +270,8 @@ try_misrouted_irq(unsigned int irq, stru
- 	return action && (action->flags & IRQF_IRQPOLL);
- }
- 
-+#define SPURIOUS_DEFERRED	0x80000000
-+
- void note_interrupt(unsigned int irq, struct irq_desc *desc,
- 		    irqreturn_t action_ret)
- {
-@@ -277,15 +279,111 @@ void note_interrupt(unsigned int irq, st
- 	    irq_settings_is_polled(desc))
- 		return;
- 
--	/* we get here again via the threaded handler */
--	if (action_ret == IRQ_WAKE_THREAD)
--		return;
--
- 	if (bad_action_ret(action_ret)) {
- 		report_bad_irq(irq, desc, action_ret);
- 		return;
- 	}
- 
-+	/*
-+	 * We cannot call note_interrupt from the threaded handler
-+	 * because we need to look at the compound of all handlers
-+	 * (primary and threaded). Aside of that in the threaded
-+	 * shared case we have no serialization against an incoming
-+	 * hardware interrupt while we are dealing with a threaded
-+	 * result.
-+	 *
-+	 * So in case a thread is woken, we just note the fact and
-+	 * defer the analysis to the next hardware interrupt.
-+	 *
-+	 * The threaded handlers store whether they sucessfully
-+	 * handled an interrupt and we check whether that number
-+	 * changed versus the last invocation.
-+	 *
-+	 * We could handle all interrupts with the delayed by one
-+	 * mechanism, but for the non forced threaded case we'd just
-+	 * add pointless overhead to the straight hardirq interrupts
-+	 * for the sake of a few lines less code.
-+	 */
-+	if (action_ret & IRQ_WAKE_THREAD) {
-+		/*
-+		 * There is a thread woken. Check whether one of the
-+		 * shared primary handlers returned IRQ_HANDLED. If
-+		 * not we defer the spurious detection to the next
-+		 * interrupt.
-+		 */
-+		if (action_ret == IRQ_WAKE_THREAD) {
-+			int handled;
-+			/*
-+			 * We use bit 31 of thread_handled_last to
-+			 * denote the deferred spurious detection
-+			 * active. No locking necessary as
-+			 * thread_handled_last is only accessed here
-+			 * and we have the guarantee that hard
-+			 * interrupts are not reentrant.
-+			 */
-+			if (!(desc->threads_handled_last & SPURIOUS_DEFERRED)) {
-+				desc->threads_handled_last |= SPURIOUS_DEFERRED;
-+				return;
-+			}
-+			/*
-+			 * Check whether one of the threaded handlers
-+			 * returned IRQ_HANDLED since the last
-+			 * interrupt happened.
-+			 *
-+			 * For simplicity we just set bit 31, as it is
-+			 * set in threads_handled_last as well. So we
-+			 * avoid extra masking. And we really do not
-+			 * care about the high bits of the handled
-+			 * count. We just care about the count being
-+			 * different than the one we saw before.
-+			 */
-+			handled = atomic_read(&desc->threads_handled);
-+			handled |= SPURIOUS_DEFERRED;
-+			if (handled != desc->threads_handled_last) {
-+				action_ret = IRQ_HANDLED;
-+				/*
-+				 * Note: We keep the SPURIOUS_DEFERRED
-+				 * bit set. We are handling the
-+				 * previous invocation right now.
-+				 * Keep it for the current one, so the
-+				 * next hardware interrupt will
-+				 * account for it.
-+				 */
-+				desc->threads_handled_last = handled;
-+			} else {
-+				/*
-+				 * None of the threaded handlers felt
-+				 * responsible for the last interrupt
-+				 *
-+				 * We keep the SPURIOUS_DEFERRED bit
-+				 * set in threads_handled_last as we
-+				 * need to account for the current
-+				 * interrupt as well.
-+				 */
-+				action_ret = IRQ_NONE;
-+			}
-+		} else {
-+			/*
-+			 * One of the primary handlers returned
-+			 * IRQ_HANDLED. So we don't care about the
-+			 * threaded handlers on the same line. Clear
-+			 * the deferred detection bit.
-+			 *
-+			 * In theory we could/should check whether the
-+			 * deferred bit is set and take the result of
-+			 * the previous run into account here as
-+			 * well. But it's really not worth the
-+			 * trouble. If every other interrupt is
-+			 * handled we never trigger the spurious
-+			 * detector. And if this is just the one out
-+			 * of 100k unhandled ones which is handled
-+			 * then we merily delay the spurious detection
-+			 * by one hard interrupt. Not a real problem.
-+			 */
-+			desc->threads_handled_last &= ~SPURIOUS_DEFERRED;
-+		}
-+	}
-+
- 	if (unlikely(action_ret == IRQ_NONE)) {
- 		/*
- 		 * If we are seeing only the odd spurious IRQ caused by
-
-
+-- hns
