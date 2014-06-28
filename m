@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751529AbaF1F7p (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 01:59:45 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:42505 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750837AbaF1F7n (ORCPT
+	id S1751426AbaF1GMh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 02:12:37 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:59607 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750928AbaF1GMf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 01:59:43 -0400
+	Sat, 28 Jun 2014 02:12:35 -0400
 MIME-Version: 1.0
-In-Reply-To: <1403914688.9064.20.camel@joe-AO725>
+In-Reply-To: <CALCETrXDR1LVmbigTicBiddgvcucM1dGk1R7rxdJyBCvGEBQMw@mail.gmail.com>
 References: <1403913966-4927-1-git-send-email-ast@plumgrid.com>
-	<1403913966-4927-5-git-send-email-ast@plumgrid.com>
-	<1403914688.9064.20.camel@joe-AO725>
-Date: Fri, 27 Jun 2014 22:59:42 -0700
-Message-ID: <CAMEtUuyUYD-=ymo8HYCStUwnQbWB21qnste-xgS4+Q_+uEV9_g@mail.gmail.com>
-Subject: Re: [PATCH RFC net-next 04/14] bpf: update MAINTAINERS entry
+	<1403913966-4927-8-git-send-email-ast@plumgrid.com>
+	<CALCETrXDR1LVmbigTicBiddgvcucM1dGk1R7rxdJyBCvGEBQMw@mail.gmail.com>
+Date: Fri, 27 Jun 2014 23:12:33 -0700
+Message-ID: <CAMEtUuywNHVcZ__296NzXK7RPXUBOf7gNQY9JFx0a9PV0Se+wA@mail.gmail.com>
+Subject: Re: [PATCH RFC net-next 07/14] bpf: expand BPF syscall with program load/unload
 From: Alexei Starovoitov <ast@plumgrid.com>
-To: Joe Perches <joe@perches.com>
+To: Andy Lutomirski <luto@amacapital.net>
 Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Steven Rostedt <rostedt@goodmis.org>,
@@ -30,30 +30,42 @@ Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
         Kees Cook <keescook@chromium.org>,
         Linux API <linux-api@vger.kernel.org>,
         Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 27, 2014 at 5:18 PM, Joe Perches <joe@perches.com> wrote:
-> Add MAINTAINERS entry.
->
-> On Fri, 2014-06-27 at 17:05 -0700, Alexei Starovoitov wrote:
->> diff --git a/MAINTAINERS b/MAINTAINERS
-> []
->> @@ -1881,6 +1881,15 @@ S:     Supported
->>  F:   drivers/net/bonding/
->>  F:   include/uapi/linux/if_bonding.h
+On Fri, Jun 27, 2014 at 5:19 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Fri, Jun 27, 2014 at 5:05 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+>> eBPF programs are safe run-to-completion functions with load/unload
+>> methods from userspace similar to kernel modules.
 >>
->> +BPF
+>> User space API:
+>>
+>> - load eBPF program
+>>   prog_id = bpf_prog_load(int prog_id, bpf_prog_type, struct nlattr *prog, int len)
+>>
+>>   where 'prog' is a sequence of sections (currently TEXT and LICENSE)
+>>   TEXT - array of eBPF instructions
+>>   LICENSE - GPL compatible
+>> +
+>> +       err = -EINVAL;
+>> +       /* look for mandatory license string */
+>> +       if (!tb[BPF_PROG_LICENSE])
+>> +               goto free_attr;
+>> +
+>> +       /* eBPF programs must be GPL compatible */
+>> +       if (!license_is_gpl_compatible(nla_data(tb[BPF_PROG_LICENSE])))
+>> +               goto free_attr;
 >
-> While a lot of people know what BPF is, I think it'd
-> be better to have something like
->
-> BPF - SOCKET FILTER (Berkeley Packet Filter like)
+> Seriously?  My mind boggles.
 
-BPF is indeed succinct, but 'socket filter' suffix would be misleading,
-since it's way more than just socket filtering.
-May be: "BPF (Safe dynamic programs and tools)"
-since 'perf' will become 'stap/dtrace'-like based on this infra.
+Yes. Quite a bit of logic can fit into one eBPF program. I don't think it's wise
+to leave this door open for abuse. This check makes it clear that if you
+write a program in C, the source code must be available.
+If program is written in assembler than this check is nop anyway.
+
+btw this patch doesn't include debugfs access to all loaded eBPF programs.
+Similarly to kernel modules I'm planning to have a way to list all loaded
+programs with optional assembler dump of instructions.
