@@ -1,62 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753090AbaF1PcY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 11:32:24 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:42306 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752718AbaF1PcW (ORCPT
+	id S1753160AbaF1Pej (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 11:34:39 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:56133 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752678AbaF1Peh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 11:32:22 -0400
-Date: Sat, 28 Jun 2014 11:32:21 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Allen Yu <alleny@nvidia.com>,
-        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Linux-pm mailing list <linux-pm@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] Add "rpm_not_supported" flag
-In-Reply-To: <20140627205039.GA5552@kroah.com>
-Message-ID: <Pine.LNX.4.44L0.1406281131360.983-100000@netrider.rowland.org>
+	Sat, 28 Jun 2014 11:34:37 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <CAMEtUuwRf--qyPu3rKB7-57KAu2NdsQdEpVRckqabmf61g+h-g@mail.gmail.com>
+References: <1403913966-4927-1-git-send-email-ast@plumgrid.com>
+ <1403913966-4927-4-git-send-email-ast@plumgrid.com> <CALCETrV3WLBmHewCZgfhCkjODWfq_byRg6sF7HpqZ6n9BVMBVQ@mail.gmail.com>
+ <CAMEtUuzWs+MbSOGGD-Rc01DHKASa4GxbHdtCrSCLit4cUM35mA@mail.gmail.com>
+ <CALCETrWy6=dzTycy-ckiMR92+nQeqAWp_Hw=hi__VSzVWZ43Ag@mail.gmail.com> <CAMEtUuwRf--qyPu3rKB7-57KAu2NdsQdEpVRckqabmf61g+h-g@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Sat, 28 Jun 2014 08:34:15 -0700
+Message-ID: <CALCETrUoOTtQ1R1A8Ak35fxHxaFTPHWP6oZWnXDVLKa_ESziWw@mail.gmail.com>
+Subject: Re: [PATCH RFC net-next 03/14] bpf: introduce syscall(BPF, ...) and
+ BPF maps
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Jun 2014, Greg Kroah-Hartman wrote:
+On Fri, Jun 27, 2014 at 11:43 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+> On Fri, Jun 27, 2014 at 11:25 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> On Fri, Jun 27, 2014 at 10:55 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+>>> On Fri, Jun 27, 2014 at 5:16 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>>> On Fri, Jun 27, 2014 at 5:05 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+>>>>> BPF syscall is a demux for different BPF releated commands.
+>>>>>
+>>>>> 'maps' is a generic storage of different types for sharing data between kernel
+>>>>> and userspace.
+>>>>>
+>>>>> The maps can be created/deleted from user space via BPF syscall:
+>>>>> - create a map with given id, type and attributes
+>>>>>   map_id = bpf_map_create(int map_id, map_type, struct nlattr *attr, int len)
+>>>>>   returns positive map id or negative error
+>>>>>
+>>>>> - delete map with given map id
+>>>>>   err = bpf_map_delete(int map_id)
+>>>>>   returns zero or negative error
+>>>>
+>>>> What's the scope of "id"?  How is it secured?
+>>>
+>>> the map and program id space is global and it's cap_sys_admin only.
+>>> There is no pressing need to do it with per-user limits.
+>>> So the whole thing is root only for now.
+>>>
+>>
+>> Hmm.  This may be unpleasant if you ever want to support non-root or
+>> namespaced operation.
+>
+> I think it will be easy to extend it per namespace when we lift
+> root-only restriction. It will be seamless without user api changes.
+>
 
-> On Fri, Jun 27, 2014 at 04:11:35PM -0400, Alan Stern wrote:
-> > On Fri, 27 Jun 2014, Greg Kroah-Hartman wrote:
-> > 
-> > > > One side point: The patch changes the string displayed for the 
-> > > > power/runtime_status attribute file when disable_depth > 0.  Instead of 
-> > > > "unsupported", it will now say "disabled".  The attribute will contain 
-> > > > "not supported" when the new flag is set.
-> > > > 
-> > > > Is this acceptable?
-> > > 
-> > > Why change the "unsupported" string?  Can't we just leave that one
-> > > alone?  I'd prefer to not break userspace tools...
-> > 
-> > I changed it because it's wrong.  disable_depth > 0 means that runtime 
-> > PM has temporarily been disabled, or was never enabled in the first 
-> > place.  It doesn't mean that runtime PM is unsupported.
-> > 
-> > In fact, the word "unsupported" is ambiguous.  Does it mean unsupported 
-> > by the hardware or unsupported by the kernel?  The hardware can't 
-> > change, but the kernel can be altered by loading a module.
-> > 
-> > If that change is too intrusive, I can remove it from the patch.
-> 
-> Do you know of any tools that actually look at these files?
+It might be seamless, but I'm not sure it'll be very useful.  See below.
 
-I don't.  Of course, that doesn't mean much.
+>> How hard would it be to give these things fds?
+>
+> you mean programs/maps auto-terminate when creator process
+> exits? I thought about it and it's appealing at first glance, but
+> doesn't fit the model of existing tracepoint events which are global.
+> The programs attached to events need to live without 'daemon'
+> hanging around. Therefore I picked 'kernel module'- like method.
 
-> If there isn't any, then we can try to change it and see who screams :)
+Here are some things I'd like to be able to do:
 
-It'll be a learning experience...
+ - Load an eBPF program and use it as a seccomp filter.
 
-Alan Stern
+ - Create a read-only map and reference it from a seccomp filter.
 
+ - Create a data structure that a seccomp filter can write but that
+the filtered process can only read.
+
+ - Create a data structure that a seccomp filter can read but that
+some other trusted process can write.
+
+ - Create a network filter of some sort and give permission to
+manipulate a list of ports to an otherwise untrusted process.
+
+The first four of these shouldn't require privilege.
+
+All of this fits nicely into a model where all of the eBPF objects
+(filters and data structures) are represented by fds.  Read access to
+the fd lets you read (or execute eBPF programs).  Write access to the
+fd lets you write.  You can send them around naturally using
+SCM_RIGHTS, and you can create deprivileged versions by reopening the
+objects with less access.
+
+All of this *could* fit in using global ids, but we'd need to answer
+questions like "what namespace are they bound to" and "who has access
+to a given fd".  I'd want to see that these questions *have* good
+answers before committing to this type of model.  Keep in mind that,
+for seccomp in particular, granting access to a specific uid will be
+very limiting: part of the point of seccomp is to enable
+user-controlled finer-grained permissions than allowed by uids and
+gids.
+
+--Andy
