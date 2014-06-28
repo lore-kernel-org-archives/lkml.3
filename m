@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755336AbaF1Rtw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:49:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53434 "EHLO
+	id S1757173AbaF1SpE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:45:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53443 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755273AbaF1Rtu (ORCPT
+	with ESMTP id S1755330AbaF1Rtw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:49:50 -0400
+	Sat, 28 Jun 2014 13:49:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        xiao jin <jin.xiao@intel.com>, "Zhang, Qi1" <qi1.zhang@intel.com>,
-        David Cohen <david.a.cohen@linux.intel.com>,
         Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.14 041/110] USB: usb_wwan: fix urb leak in write error path
-Date: Sat, 28 Jun 2014 10:46:38 -0700
-Message-Id: <20140628174547.604045883@linuxfoundation.org>
+Subject: [PATCH 3.14 043/110] USB: usb_wwan: fix write and suspend race
+Date: Sat, 28 Jun 2014 10:46:40 -0700
+Message-Id: <20140628174547.713993946@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -30,48 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: xiao jin <jin.xiao@intel.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit db0904737947d509844e171c9863ecc5b4534005 upstream.
+commit 170fad9e22df0063eba0701adb966786d7a4ec5a upstream.
 
-When enable usb serial for modem data, sometimes the tty is blocked
-in tty_wait_until_sent because portdata->out_busy always is set and
-have no chance to be cleared.
+Fix race between write() and suspend() which could lead to writes being
+dropped (or I/O while suspended) if the device is runtime suspended
+while a write request is being processed.
 
-We find a bug in write error path. usb_wwan_write set portdata->out_busy
-firstly, then try autopm async with error. No out urb submit and no
-usb_wwan_outdat_callback to this write, portdata->out_busy can't be
-cleared.
-
-This patch clear portdata->out_busy if usb_wwan_write try autopm async
-with error.
+Specifically, suspend() releases the susp_lock after determining the
+device is idle but before setting the suspended flag, thus leaving a
+window where a concurrent write() can submit an urb.
 
 Fixes: 383cedc3bb43 ("USB: serial: full autosuspend support for the
 option driver")
 
-Signed-off-by: xiao jin <jin.xiao@intel.com>
-Signed-off-by: Zhang, Qi1 <qi1.zhang@intel.com>
-Reviewed-by: David Cohen <david.a.cohen@linux.intel.com>
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/usb_wwan.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/usb/serial/usb_wwan.c |   13 +++++--------
+ 1 file changed, 5 insertions(+), 8 deletions(-)
 
 --- a/drivers/usb/serial/usb_wwan.c
 +++ b/drivers/usb/serial/usb_wwan.c
-@@ -228,8 +228,10 @@ int usb_wwan_write(struct tty_struct *tt
- 			usb_pipeendpoint(this_urb->pipe), i);
+@@ -579,20 +579,17 @@ static void stop_read_write_urbs(struct
+ int usb_wwan_suspend(struct usb_serial *serial, pm_message_t message)
+ {
+ 	struct usb_wwan_intf_private *intfdata = serial->private;
+-	int b;
  
- 		err = usb_autopm_get_interface_async(port->serial->interface);
--		if (err < 0)
-+		if (err < 0) {
-+			clear_bit(i, &portdata->out_busy);
- 			break;
++	spin_lock_irq(&intfdata->susp_lock);
+ 	if (PMSG_IS_AUTO(message)) {
+-		spin_lock_irq(&intfdata->susp_lock);
+-		b = intfdata->in_flight;
+-		spin_unlock_irq(&intfdata->susp_lock);
+-
+-		if (b)
++		if (intfdata->in_flight) {
++			spin_unlock_irq(&intfdata->susp_lock);
+ 			return -EBUSY;
 +		}
+ 	}
+-
+-	spin_lock_irq(&intfdata->susp_lock);
+ 	intfdata->suspended = 1;
+ 	spin_unlock_irq(&intfdata->susp_lock);
++
+ 	stop_read_write_urbs(serial);
  
- 		/* send the data */
- 		memcpy(this_urb->transfer_buffer, buf, todo);
+ 	return 0;
 
 
