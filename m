@@ -1,96 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752959AbaF1WfG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 18:35:06 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48805 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751971AbaF1WfE (ORCPT
+	id S1751790AbaF1XSX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 19:18:23 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:33801 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750957AbaF1XSV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 18:35:04 -0400
-Message-ID: <1403994888.23472.116.camel@deadeye.wl.decadent.org.uk>
-Subject: [PATCH rt] Fix latency histogram after "hrtimer: Set expiry time
- before switch_hrtimer_base()"
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Carsten Emde <C.Emde@osadl.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Cc: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>, stable-rt@vger.kernel.org
-Date: Sat, 28 Jun 2014 23:34:48 +0100
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-Mn/v6VLcmwGfa1i9Iazs"
-X-Mailer: Evolution 3.12.2-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sat, 28 Jun 2014 19:18:21 -0400
+Date: Sun, 29 Jun 2014 00:18:18 +0100 (BST)
+From: "Maciej W. Rozycki" <macro@linux-mips.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+cc: Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Hanjun Guo <hanjun.guo@linaro.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Jason Low <jason.low2@hp.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Tony Luck <tony.luck@intel.com>, linux390@de.ibm.com,
+        linux-ia64@vger.kernel.org, linux-s390@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH] sched.h: Remove useless `const' from function return type
+Message-ID: <alpine.LFD.2.11.1406242149270.23403@eddie.linux-mips.org>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This fixes:
 
---=-Mn/v6VLcmwGfa1i9Iazs
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+cc1: warnings being treated as errors
+In file included from include/linux/ptrace.h:5,
+                 from arch/mips/kernel/cpu-probe.c:16:
+include/linux/sched.h:1002: warning: type qualifiers ignored on function return type
+make[2]: *** [arch/mips/kernel/cpu-probe.o] Error 1
 
-In an rt-kernel with CONFIG_MISSED_TIMER_OFFSETS_HIST enabled,
-__hrtimer_start_range_ns() now crashes, as new_base is not assigned
-before it is used.
+This is a regression introduced with commit 
+143e1e28cb40bed836b0a06567208bd7347c9672 [sched: Rework sched_domain 
+topology definition].  The warning itself is benign except in places like 
+the arch/mips subtree where we use `-Werror' to enforce good coding 
+practices.  Apparently the warning is GCC-version specific, some versions 
+produce it and some do not.
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Tested-by: Carsten Emde <C.Emde@osadl.org>
-Cc: stable-rt@vger.kernel.org
+Signed-off-by: Maciej W. Rozycki <macro@linux-mips.org>
 ---
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1106,6 +1106,11 @@ int __hrtimer_start_range_ns(struct hrti
- #endif
- 	}
-=20
-+	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
-+
-+	/* Switch the timer base, if necessary: */
-+	new_base =3D switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED)=
-;
-+
- #ifdef CONFIG_MISSED_TIMER_OFFSETS_HIST
- 	{
- 		ktime_t now =3D new_base->get_time();
-@@ -1117,11 +1122,6 @@ int __hrtimer_start_range_ns(struct hrti
- 	}
- #endif
-=20
--	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
--
--	/* Switch the timer base, if necessary: */
--	new_base =3D switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED)=
-;
--
- 	timer_stats_hrtimer_set_start_info(timer);
-=20
- 	leftmost =3D enqueue_hrtimer(timer, new_base);
+Vincent,
 
+ Did you mean:
 
---=-Mn/v6VLcmwGfa1i9Iazs
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+typedef int __attribute__((const)) (*sched_domain_flags_f)(void);
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+by any chance?
 
-iQIVAwUAU69DDee/yOyVhhEJAQreVw//ax/0bdMfIVtqFn8V8e0mcyz7HS8ngvKc
-/sw0ZipnNkUeOye0pY4OIJNdPls/9F54/bpdQF0fnitdS9KwizaUunC7K7D1hwtC
-hJH3rxGPvRhzt3Yfd0m0CcT9iVMBjjohQU4UbrNnaaxWBB2TPqaxIV9mVqvCtR6Z
-pBL/lXiHDtmffVNRdjRdySqhiZ5V28GW/Kx4/cshbPhodz6b8KojSmgcGHsjKkRW
-EttgPWA6pG8dBUbr0JNJDDX+ldnLWK1WO2d4fForeuLilYFa0dmhSAmPQIWBHkel
-wvwcJGmLMg/bM+Lzt5sLzxIQxteWvyZpiPS6xPTxl6ROG69IWfaRFF56Nsx25hs7
-6d/7p5ZIBf/cWfARbOq3BCiTaesevDsjOVc/yuj8yXBGMDxinKOYb/PVSMCqi8kE
-XBd96LZTACPRwz6Ez4jS2uIPBhDoMlxqPffG67zwaPchDpuhT0HojDShlEg0ieiW
-eJc8AAb5U73Zhg/90R1pl135E0C9e+U3OJgcYQ7sru/cEqGnPqphE/ESQrP9y9Ye
-nOKCTKTO/W1FX/Ck5n9E8SK6S2mezG8c/QwBfdTbmytu6i37Xs1VYOJqMk8mE5pV
-aJZsTP4HUYDHztEqRWvMPH6A8iiORG4BD4rgc1IiDnPvz6RrMv4UZxFWMfclIlzq
-6WDf6k/FqfQ=
-=cWwo
------END PGP SIGNATURE-----
+  Maciej
 
---=-Mn/v6VLcmwGfa1i9Iazs--
+linux-sched-domain-flags-type.patch
+Index: linux-20140623-swarm64/include/linux/sched.h
+===================================================================
+--- linux-20140623-swarm64.orig/include/linux/sched.h
++++ linux-20140623-swarm64/include/linux/sched.h
+@@ -999,7 +999,7 @@ void free_sched_domains(cpumask_var_t do
+ bool cpus_share_cache(int this_cpu, int that_cpu);
+ 
+ typedef const struct cpumask *(*sched_domain_mask_f)(int cpu);
+-typedef const int (*sched_domain_flags_f)(void);
++typedef int (*sched_domain_flags_f)(void);
+ 
+ #define SDTL_OVERLAP	0x01
+ 
