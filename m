@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754028AbaF1Rru (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:47:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52911 "EHLO
+	id S1754122AbaF1Rry (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:47:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52923 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753954AbaF1Rrs (ORCPT
+	with ESMTP id S1754030AbaF1Rrv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:47:48 -0400
+	Sat, 28 Jun 2014 13:47:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 03/77] net: cpsw: fix null dereference at probe
-Date: Sat, 28 Jun 2014 10:45:56 -0700
-Message-Id: <20140628174521.866286047@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>, Huang Rui <ray.huang@amd.com>
+Subject: [PATCH 3.10 08/77] USB: usbtest: add a timeout for scatter-gather tests
+Date: Sat, 28 Jun 2014 10:46:01 -0700
+Message-Id: <20140628174522.079264097@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174521.691276402@linuxfoundation.org>
 References: <20140628174521.691276402@linuxfoundation.org>
@@ -29,33 +28,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 6954cc1f238199e971ec905c5cc87120806ac981 upstream.
+commit 32b36eeae6a859670d2939a7d6136cb5e9ed64f8 upstream.
 
-Fix null-pointer dereference at probe when the mdio platform device is
-missing (e.g. when it has been disabled in DT).
+In usbtest, tests 5 - 8 use the scatter-gather library in usbcore
+without any sort of timeout.  If there's a problem in the gadget or
+host controller being tested, the test can hang.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This patch adds a 10-second timeout to the tests, so that they will
+fail gracefully with an ETIMEDOUT error instead of hanging.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Huang Rui <ray.huang@amd.com>
+Tested-by: Huang Rui <ray.huang@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/ti/cpsw.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/usb/misc/usbtest.c |   16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/ti/cpsw.c
-+++ b/drivers/net/ethernet/ti/cpsw.c
-@@ -1547,6 +1547,10 @@ static int cpsw_probe_dt(struct cpsw_pla
- 		mdio_node = of_find_node_by_phandle(be32_to_cpup(parp));
- 		phyid = be32_to_cpup(parp+1);
- 		mdio = of_find_device_by_node(mdio_node);
-+		if (!mdio) {
-+			pr_err("Missing mdio platform device\n");
-+			return -EINVAL;
-+		}
- 		snprintf(slave_data->phy_id, sizeof(slave_data->phy_id),
- 			 PHY_ID_FMT, mdio->name, phyid);
+--- a/drivers/usb/misc/usbtest.c
++++ b/drivers/usb/misc/usbtest.c
+@@ -7,7 +7,7 @@
+ #include <linux/moduleparam.h>
+ #include <linux/scatterlist.h>
+ #include <linux/mutex.h>
+-
++#include <linux/timer.h>
+ #include <linux/usb.h>
  
+ 
+@@ -476,6 +476,14 @@ alloc_sglist(int nents, int max, int var
+ 	return sg;
+ }
+ 
++static void sg_timeout(unsigned long _req)
++{
++	struct usb_sg_request	*req = (struct usb_sg_request *) _req;
++
++	req->status = -ETIMEDOUT;
++	usb_sg_cancel(req);
++}
++
+ static int perform_sglist(
+ 	struct usbtest_dev	*tdev,
+ 	unsigned		iterations,
+@@ -487,6 +495,9 @@ static int perform_sglist(
+ {
+ 	struct usb_device	*udev = testdev_to_usbdev(tdev);
+ 	int			retval = 0;
++	struct timer_list	sg_timer;
++
++	setup_timer_on_stack(&sg_timer, sg_timeout, (unsigned long) req);
+ 
+ 	while (retval == 0 && iterations-- > 0) {
+ 		retval = usb_sg_init(req, udev, pipe,
+@@ -497,7 +508,10 @@ static int perform_sglist(
+ 
+ 		if (retval)
+ 			break;
++		mod_timer(&sg_timer, jiffies +
++				msecs_to_jiffies(SIMPLE_IO_TIMEOUT));
+ 		usb_sg_wait(req);
++		del_timer_sync(&sg_timer);
+ 		retval = req->status;
+ 
+ 		/* FIXME check resulting data pattern */
 
 
