@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753416AbaF1RrO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:47:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52774 "EHLO
+	id S1756345AbaF1TXw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 15:23:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52778 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753364AbaF1RrL (ORCPT
+	with ESMTP id S1753371AbaF1RrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:47:11 -0400
+	Sat, 28 Jun 2014 13:47:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Simon Wood <simon@mungewell.org>, Kees Cook <keescook@chromium.org>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.4 13/43] HID: core: fix validation of report id 0
-Date: Sat, 28 Jun 2014 10:46:04 -0700
-Message-Id: <20140628174450.420386574@linuxfoundation.org>
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.4 14/43] mm: vmscan: clear kswapds special reclaim powers before exiting
+Date: Sat, 28 Jun 2014 10:46:05 -0700
+Message-Id: <20140628174450.462403282@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174449.788784511@linuxfoundation.org>
 References: <20140628174449.788784511@linuxfoundation.org>
@@ -30,54 +33,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Johannes Weiner <hannes@cmpxchg.org>
 
-commit 1b15d2e5b8077670b1e6a33250a0d9577efff4a5 upstream.
+commit 71abdc15adf8c702a1dd535f8e30df50758848d2 upstream.
 
-Some drivers use the first HID report in the list instead of using an
-index. In these cases, validation uses ID 0, which was supposed to mean
-"first known report". This fixes the problem, which was causing at least
-the lgff family of devices to stop working since hid_validate_values
-was being called with ID 0, but the devices used single numbered IDs
-for their reports:
+When kswapd exits, it can end up taking locks that were previously held
+by allocating tasks while they waited for reclaim.  Lockdep currently
+warns about this:
 
-0x05, 0x01,         /*  Usage Page (Desktop),                   */
-0x09, 0x05,         /*  Usage (Gamepad),                        */
-0xA1, 0x01,         /*  Collection (Application),               */
-0xA1, 0x02,         /*      Collection (Logical),               */
-0x85, 0x01,         /*          Report ID (1),                  */
-...
+On Wed, May 28, 2014 at 06:06:34PM +0800, Gu Zheng wrote:
+>  inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-R} usage.
+>  kswapd2/1151 [HC0[0]:SC0[0]:HE1:SE1] takes:
+>   (&sig->group_rwsem){+++++?}, at: exit_signals+0x24/0x130
+>  {RECLAIM_FS-ON-W} state was registered at:
+>     mark_held_locks+0xb9/0x140
+>     lockdep_trace_alloc+0x7a/0xe0
+>     kmem_cache_alloc_trace+0x37/0x240
+>     flex_array_alloc+0x99/0x1a0
+>     cgroup_attach_task+0x63/0x430
+>     attach_task_by_pid+0x210/0x280
+>     cgroup_procs_write+0x16/0x20
+>     cgroup_file_write+0x120/0x2c0
+>     vfs_write+0xc0/0x1f0
+>     SyS_write+0x4c/0xa0
+>     tracesys+0xdd/0xe2
+>  irq event stamp: 49
+>  hardirqs last  enabled at (49):  _raw_spin_unlock_irqrestore+0x36/0x70
+>  hardirqs last disabled at (48):  _raw_spin_lock_irqsave+0x2b/0xa0
+>  softirqs last  enabled at (0):  copy_process.part.24+0x627/0x15f0
+>  softirqs last disabled at (0):            (null)
+>
+>  other info that might help us debug this:
+>   Possible unsafe locking scenario:
+>
+>         CPU0
+>         ----
+>    lock(&sig->group_rwsem);
+>    <Interrupt>
+>      lock(&sig->group_rwsem);
+>
+>   *** DEADLOCK ***
+>
+>  no locks held by kswapd2/1151.
+>
+>  stack backtrace:
+>  CPU: 30 PID: 1151 Comm: kswapd2 Not tainted 3.10.39+ #4
+>  Call Trace:
+>    dump_stack+0x19/0x1b
+>    print_usage_bug+0x1f7/0x208
+>    mark_lock+0x21d/0x2a0
+>    __lock_acquire+0x52a/0xb60
+>    lock_acquire+0xa2/0x140
+>    down_read+0x51/0xa0
+>    exit_signals+0x24/0x130
+>    do_exit+0xb5/0xa50
+>    kthread+0xdb/0x100
+>    ret_from_fork+0x7c/0xb0
 
-Reported-by: Simon Wood <simon@mungewell.org>
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+This is because the kswapd thread is still marked as a reclaimer at the
+time of exit.  But because it is exiting, nobody is actually waiting on
+it to make reclaim progress anymore, and it's nothing but a regular
+thread at this point.  Be tidy and strip it of all its powers
+(PF_MEMALLOC, PF_SWAPWRITE, PF_KSWAPD, and the lockdep reclaim state)
+before returning from the thread function.
+
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Reported-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: Tang Chen <tangchen@cn.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-core.c |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ mm/vmscan.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -861,7 +861,17 @@ struct hid_report *hid_validate_values(s
- 	 * ->numbered being checked, which may not always be the case when
- 	 * drivers go to access report values.
- 	 */
--	report = hid->report_enum[type].report_id_hash[id];
-+	if (id == 0) {
-+		/*
-+		 * Validating on id 0 means we should examine the first
-+		 * report in the list.
-+		 */
-+		report = list_entry(
-+				hid->report_enum[type].report_list.next,
-+				struct hid_report, list);
-+	} else {
-+		report = hid->report_enum[type].report_id_hash[id];
-+	}
- 	if (!report) {
- 		hid_err(hid, "missing %s %u\n", hid_report_names[type], id);
- 		return NULL;
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -3138,7 +3138,10 @@ static int kswapd(void *p)
+ 		}
+ 	}
+ 
++	tsk->flags &= ~(PF_MEMALLOC | PF_SWAPWRITE | PF_KSWAPD);
+ 	current->reclaim_state = NULL;
++	lockdep_clear_current_reclaim_state();
++
+ 	return 0;
+ }
+ 
 
 
