@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932444AbaF1T2G (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 15:28:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52715 "EHLO
+	id S1755724AbaF1T23 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 15:28:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52712 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752559AbaF1Rq7 (ORCPT
+	with ESMTP id S1752325AbaF1Rq7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Jun 2014 13:46:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Stezenbach <js@sig21.net>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.4 07/43] usb: dwc3: gadget: clear stall when disabling endpoint
-Date: Sat, 28 Jun 2014 10:45:58 -0700
-Message-Id: <20140628174450.151537093@linuxfoundation.org>
+        Paul Bolle <pebolle@tiscali.nl>
+Subject: [PATCH 3.4 06/43] usb: gadget: rename CONFIG_USB_GADGET_PXA25X
+Date: Sat, 28 Jun 2014 10:45:57 -0700
+Message-Id: <20140628174450.102570413@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174449.788784511@linuxfoundation.org>
 References: <20140628174449.788784511@linuxfoundation.org>
@@ -28,35 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felipe Balbi <balbi@ti.com>
+From: Paul Bolle <pebolle@tiscali.nl>
 
-commit 687ef9817df7ed960d14575b9033dde3d04631fe upstream.
+commit d30f2065d6da377cc76771aca5a9850cfca8723b upstream.
 
-so it seems like DWC3 IP doesn't clear stalls
-automatically when we disable an endpoint, because
-of that, we _must_ make sure stalls are cleared
-before clearing the proper bit in DALEPENA register.
+Commit 193ab2a60700 ("usb: gadget: allow multiple gadgets to be built")
+basically renamed the Kconfig symbol USB_GADGET_PXA25X to USB_PXA25X. It
+did not rename the related macros in use at that time. Commit
+c0a39151a405 ("ARM: pxa: fix inconsistent CONFIG_USB_PXA27X") did so for
+all but one macro. Rename that last macro too now.
 
-Reported-by: Johannes Stezenbach <js@sig21.net>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Fixes: 193ab2a60700 ("usb: gadget: allow multiple gadgets to be built")
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/dwc3/gadget.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/usb/gadget/inode.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -531,6 +531,10 @@ static int __dwc3_gadget_ep_disable(stru
+--- a/drivers/usb/gadget/inode.c
++++ b/drivers/usb/gadget/inode.c
+@@ -1499,7 +1499,7 @@ gadgetfs_setup (struct usb_gadget *gadge
+ 		}
+ 		break;
  
- 	dwc3_remove_requests(dwc, dep);
- 
-+	/* make sure HW endpoint isn't stalled */
-+	if (dep->flags & DWC3_EP_STALL)
-+		__dwc3_gadget_ep_set_halt(dep, 0);
-+
- 	reg = dwc3_readl(dwc->regs, DWC3_DALEPENA);
- 	reg &= ~DWC3_DALEPENA_EP(dep->number);
- 	dwc3_writel(dwc->regs, DWC3_DALEPENA, reg);
+-#ifndef	CONFIG_USB_GADGET_PXA25X
++#ifndef	CONFIG_USB_PXA25X
+ 	/* PXA automagically handles this request too */
+ 	case USB_REQ_GET_CONFIGURATION:
+ 		if (ctrl->bRequestType != 0x80)
 
 
