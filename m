@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756221AbaF1Ski (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:40:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53565 "EHLO
+	id S932096AbaF1RuQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:50:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53501 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932112AbaF1RuU (ORCPT
+	with ESMTP id S1755428AbaF1RuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:50:20 -0400
+	Sat, 28 Jun 2014 13:50:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jason Cooper <jason@lakedaemon.net>, Kevin Hilman <khilman@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 3.14 083/110] ARM: mvebu: DT: fix OpenBlocks AX3-4 RAM size
-Date: Sat, 28 Jun 2014 10:47:20 -0700
-Message-Id: <20140628174550.438652274@linuxfoundation.org>
+        Jukka Rissanen <jukka.rissanen@linux.intel.com>,
+        Marcel Holtmann <marcel@holtmann.org>
+Subject: [PATCH 3.14 070/110] Bluetooth: 6LoWPAN: Fix MAC address universal/local bit handling
+Date: Sat, 28 Jun 2014 10:47:07 -0700
+Message-Id: <20140628174549.727473866@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -29,75 +29,164 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Cooper <jason@lakedaemon.net>
+From: Jukka Rissanen <jukka.rissanen@linux.intel.com>
 
-commit e47043aea3853a74a9aa5726a1faa916d7462ab7 upstream.
+commit 62bbd5b35994eaf30519f126765d7f6af9cd3526 upstream.
 
-The OpenBlocks AX3-4 has a non-DT bootloader.  It also comes with 1GB of
-soldered on RAM, and a DIMM slot for expansion.
+The universal/local bit handling was incorrectly done in the code.
 
-Unfortunately, atags_to_fdt() doesn't work in big-endian mode, so we see
-the following failure when attempting to boot a big-endian kernel:
+So when setting EUI address from BD address we do this:
+- If BD address type is PUBLIC, then we clear the universal bit
+  in EUI address. If the address type is RANDOM, then the universal
+  bit is set (BT 6lowpan draft chapter 3.2.2)
+- After this we invert the universal/local bit according to RFC 2464
 
-  686 slab pages
-  17 pages shared
-  0 pages swap cached
-  [ pid ]   uid  tgid total_vm      rss nr_ptes swapents oom_score_adj name
-  Kernel panic - not syncing: Out of memory and no killable processes...
+When figuring out BD address we do the reverse:
+- Take EUI address from stateless IPv6 address, invert the
+  universal/local bit according to RFC 2464
+- If universal bit is 1 in this modified EUI address, then address
+  type is set to RANDOM, otherwise it is PUBLIC
 
-  CPU: 1 PID: 351 Comm: kworker/u4:0 Not tainted 3.15.0-rc8-next-20140603 #1
-  [<c0215a54>] (unwind_backtrace) from [<c021160c>] (show_stack+0x10/0x14)
-  [<c021160c>] (show_stack) from [<c0802500>] (dump_stack+0x78/0x94)
-  [<c0802500>] (dump_stack) from [<c0800068>] (panic+0x90/0x21c)
-  [<c0800068>] (panic) from [<c02b5704>] (out_of_memory+0x320/0x340)
-  [<c02b5704>] (out_of_memory) from [<c02b93a0>] (__alloc_pages_nodemask+0x874/0x930)
-  [<c02b93a0>] (__alloc_pages_nodemask) from [<c02d446c>] (handle_mm_fault+0x744/0x96c)
-  [<c02d446c>] (handle_mm_fault) from [<c02cf250>] (__get_user_pages+0xd0/0x4c0)
-  [<c02cf250>] (__get_user_pages) from [<c02f3598>] (get_arg_page+0x54/0xbc)
-  [<c02f3598>] (get_arg_page) from [<c02f3878>] (copy_strings+0x278/0x29c)
-  [<c02f3878>] (copy_strings) from [<c02f38bc>] (copy_strings_kernel+0x20/0x28)
-  [<c02f38bc>] (copy_strings_kernel) from [<c02f4f1c>] (do_execve+0x3a8/0x4c8)
-  [<c02f4f1c>] (do_execve) from [<c025ac10>] (____call_usermodehelper+0x15c/0x194)
-  [<c025ac10>] (____call_usermodehelper) from [<c020e9b8>] (ret_from_fork+0x14/0x3c)
-  CPU0: stopping
-  CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.15.0-rc8-next-20140603 #1
-  [<c0215a54>] (unwind_backtrace) from [<c021160c>] (show_stack+0x10/0x14)
-  [<c021160c>] (show_stack) from [<c0802500>] (dump_stack+0x78/0x94)
-  [<c0802500>] (dump_stack) from [<c021429c>] (handle_IPI+0x138/0x174)
-  [<c021429c>] (handle_IPI) from [<c02087f0>] (armada_370_xp_handle_irq+0xb0/0xcc)
-  [<c02087f0>] (armada_370_xp_handle_irq) from [<c0212100>] (__irq_svc+0x40/0x50)
-  Exception stack(0xc0b6bf68 to 0xc0b6bfb0)
-  bf60:                   e9fad598 00000000 00f509a3 00000000 c0b6a000 c0b724c4
-  bf80: c0b72458 c0b6a000 00000000 00000000 c0b66da0 c0b6a000 00000000 c0b6bfb0
-  bfa0: c027bb94 c027bb24 60000313 ffffffff
-  [<c0212100>] (__irq_svc) from [<c027bb24>] (cpu_startup_entry+0x54/0x214)
-  [<c027bb24>] (cpu_startup_entry) from [<c0ac5b30>] (start_kernel+0x318/0x37c)
-  [<c0ac5b30>] (start_kernel) from [<00208078>] (0x208078)
-  ---[ end Kernel panic - not syncing: Out of memory and no killable processes...
+Note that 6lowpan_iphc.[ch] does the final toggling of U/L bit
+before sending or receiving the network packet.
 
-A similar failure will also occur if ARM_ATAG_DTB_COMPAT isn't selected.
-
-Fix this by setting a sane default (1 GB) in the dts file.
-
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
-Tested-by: Kevin Hilman <khilman@linaro.org>
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Jukka Rissanen <jukka.rissanen@linux.intel.com>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/bluetooth/6lowpan.c |   65 +++++++++++++++++++++++++-----------------------
+ 1 file changed, 35 insertions(+), 30 deletions(-)
 
---- a/arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts
-+++ b/arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts
-@@ -23,7 +23,7 @@
+--- a/net/bluetooth/6lowpan.c
++++ b/net/bluetooth/6lowpan.c
+@@ -420,12 +420,18 @@ static int conn_send(struct l2cap_conn *
+ 	return 0;
+ }
  
- 	memory {
- 		device_type = "memory";
--		reg = <0 0x00000000 0 0xC0000000>; /* 3 GB */
-+		reg = <0 0x00000000 0 0x40000000>; /* 1 GB soldered on */
- 	};
+-static void get_dest_bdaddr(struct in6_addr *ip6_daddr,
+-			    bdaddr_t *addr, u8 *addr_type)
++static u8 get_addr_type_from_eui64(u8 byte)
+ {
+-	u8 *eui64;
++	/* Is universal(0) or local(1) bit,  */
++	if (byte & 0x02)
++		return ADDR_LE_DEV_RANDOM;
  
- 	soc {
+-	eui64 = ip6_daddr->s6_addr + 8;
++	return ADDR_LE_DEV_PUBLIC;
++}
++
++static void copy_to_bdaddr(struct in6_addr *ip6_daddr, bdaddr_t *addr)
++{
++	u8 *eui64 = ip6_daddr->s6_addr + 8;
+ 
+ 	addr->b[0] = eui64[7];
+ 	addr->b[1] = eui64[6];
+@@ -433,16 +439,19 @@ static void get_dest_bdaddr(struct in6_a
+ 	addr->b[3] = eui64[2];
+ 	addr->b[4] = eui64[1];
+ 	addr->b[5] = eui64[0];
++}
++
++static void convert_dest_bdaddr(struct in6_addr *ip6_daddr,
++				bdaddr_t *addr, u8 *addr_type)
++{
++	copy_to_bdaddr(ip6_daddr, addr);
+ 
+-	addr->b[5] ^= 2;
++	/* We need to toggle the U/L bit that we got from IPv6 address
++	 * so that we get the proper address and type of the BD address.
++	 */
++	addr->b[5] ^= 0x02;
+ 
+-	/* Set universal/local bit to 0 */
+-	if (addr->b[5] & 1) {
+-		addr->b[5] &= ~1;
+-		*addr_type = ADDR_LE_DEV_PUBLIC;
+-	} else {
+-		*addr_type = ADDR_LE_DEV_RANDOM;
+-	}
++	*addr_type = get_addr_type_from_eui64(addr->b[5]);
+ }
+ 
+ static int header_create(struct sk_buff *skb, struct net_device *netdev,
+@@ -473,9 +482,11 @@ static int header_create(struct sk_buff
+ 		/* Get destination BT device from skb.
+ 		 * If there is no such peer then discard the packet.
+ 		 */
+-		get_dest_bdaddr(&hdr->daddr, &addr, &addr_type);
++		convert_dest_bdaddr(&hdr->daddr, &addr, &addr_type);
+ 
+-		BT_DBG("dest addr %pMR type %d", &addr, addr_type);
++		BT_DBG("dest addr %pMR type %s IP %pI6c", &addr,
++		       addr_type == ADDR_LE_DEV_PUBLIC ? "PUBLIC" : "RANDOM",
++		       &hdr->daddr);
+ 
+ 		read_lock_irqsave(&devices_lock, flags);
+ 		peer = peer_lookup_ba(dev, &addr, addr_type);
+@@ -556,7 +567,7 @@ static netdev_tx_t bt_xmit(struct sk_buf
+ 	} else {
+ 		unsigned long flags;
+ 
+-		get_dest_bdaddr(&lowpan_cb(skb)->addr, &addr, &addr_type);
++		convert_dest_bdaddr(&lowpan_cb(skb)->addr, &addr, &addr_type);
+ 		eui64_addr = lowpan_cb(skb)->addr.s6_addr + 8;
+ 		dev = lowpan_dev(netdev);
+ 
+@@ -564,8 +575,10 @@ static netdev_tx_t bt_xmit(struct sk_buf
+ 		peer = peer_lookup_ba(dev, &addr, addr_type);
+ 		read_unlock_irqrestore(&devices_lock, flags);
+ 
+-		BT_DBG("xmit from %s to %pMR (%pI6c) peer %p", netdev->name,
+-		       &addr, &lowpan_cb(skb)->addr, peer);
++		BT_DBG("xmit %s to %pMR type %s IP %pI6c peer %p",
++		       netdev->name, &addr,
++		       addr_type == ADDR_LE_DEV_PUBLIC ? "PUBLIC" : "RANDOM",
++		       &lowpan_cb(skb)->addr, peer);
+ 
+ 		if (peer && peer->conn)
+ 			err = send_pkt(peer->conn, netdev->dev_addr,
+@@ -620,13 +633,13 @@ static void set_addr(u8 *eui, u8 *addr,
+ 	eui[6] = addr[1];
+ 	eui[7] = addr[0];
+ 
+-	eui[0] ^= 2;
+-
+-	/* Universal/local bit set, RFC 4291 */
++	/* Universal/local bit set, BT 6lowpan draft ch. 3.2.1 */
+ 	if (addr_type == ADDR_LE_DEV_PUBLIC)
+-		eui[0] |= 1;
++		eui[0] &= ~0x02;
+ 	else
+-		eui[0] &= ~1;
++		eui[0] |= 0x02;
++
++	BT_DBG("type %d addr %*phC", addr_type, 8, eui);
+ }
+ 
+ static void set_dev_addr(struct net_device *netdev, bdaddr_t *addr,
+@@ -634,7 +647,6 @@ static void set_dev_addr(struct net_devi
+ {
+ 	netdev->addr_assign_type = NET_ADDR_PERM;
+ 	set_addr(netdev->dev_addr, addr->b, addr_type);
+-	netdev->dev_addr[0] ^= 2;
+ }
+ 
+ static void ifup(struct net_device *netdev)
+@@ -684,13 +696,6 @@ static int add_peer_conn(struct l2cap_co
+ 
+ 	memcpy(&peer->eui64_addr, (u8 *)&peer->peer_addr.s6_addr + 8,
+ 	       EUI64_ADDR_LEN);
+-	peer->eui64_addr[0] ^= 2; /* second bit-flip (Universe/Local)
+-				   * is done according RFC2464
+-				   */
+-
+-	raw_dump_inline(__func__, "peer IPv6 address",
+-			(unsigned char *)&peer->peer_addr, 16);
+-	raw_dump_inline(__func__, "peer EUI64 address", peer->eui64_addr, 8);
+ 
+ 	write_lock_irqsave(&devices_lock, flags);
+ 	INIT_LIST_HEAD(&peer->list);
 
 
