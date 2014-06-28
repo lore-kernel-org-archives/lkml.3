@@ -1,28 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755237AbaF1Rtg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:49:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53357 "EHLO
+	id S1755254AbaF1Rtl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:49:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53396 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755121AbaF1Rtd (ORCPT
+	with ESMTP id S1755121AbaF1Rti (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:49:33 -0400
+	Sat, 28 Jun 2014 13:49:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>, Vlastimil Babka <vbabka@suse.cz>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Jan Kara <jack@suse.cz>,
-        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
-        Dave Hansen <dave.hansen@intel.com>, Theodore Tso <tytso@mit.edu>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 024/110] mm: page_alloc: use word-based accesses for get/set pageblock bitmaps
-Date: Sat, 28 Jun 2014 10:46:21 -0700
-Message-Id: <20140628174546.648042709@linuxfoundation.org>
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Ashish Sangwan <a.sangwan@samsung.com>, "Theodore Tso" <tytso@mit.edu>,
+        Jan Kara <jack@suse.cz>
+Subject: [PATCH 3.14 037/110] ext4: fix data integrity sync in ordered mode
+Date: Sat, 28 Jun 2014 10:46:34 -0700
+Message-Id: <20140628174547.383587995@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -37,237 +30,178 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Namjae Jeon <namjae.jeon@samsung.com>
 
-commit e58469bafd0524e848c3733bc3918d854595e20f upstream.
+commit 1c8349a17137b93f0a83f276c764a6df1b9a116e upstream.
 
-The test_bit operations in get/set pageblock flags are expensive.  This
-patch reads the bitmap on a word basis and use shifts and masks to isolate
-the bits of interest.  Similarly masks are used to set a local copy of the
-bitmap and then use cmpxchg to update the bitmap if there have been no
-other changes made in parallel.
+When we perform a data integrity sync we tag all the dirty pages with
+PAGECACHE_TAG_TOWRITE at start of ext4_da_writepages.  Later we check
+for this tag in write_cache_pages_da and creates a struct
+mpage_da_data containing contiguously indexed pages tagged with this
+tag and sync these pages with a call to mpage_da_map_and_submit.  This
+process is done in while loop until all the PAGECACHE_TAG_TOWRITE
+pages are synced. We also do journal start and stop in each iteration.
+journal_stop could initiate journal commit which would call
+ext4_writepage which in turn will call ext4_bio_write_page even for
+delayed OR unwritten buffers. When ext4_bio_write_page is called for
+such buffers, even though it does not sync them but it clears the
+PAGECACHE_TAG_TOWRITE of the corresponding page and hence these pages
+are also not synced by the currently running data integrity sync. We
+will end up with dirty pages although sync is completed.
 
-In a test running dd onto tmpfs the overhead of the pageblock-related
-functions went from 1.27% in profiles to 0.5%.
+This could cause a potential data loss when the sync call is followed
+by a truncate_pagecache call, which is exactly the case in
+collapse_range.  (It will cause generic/127 failure in xfstests)
 
-In addition to the performance benefits, this patch closes races that are
-possible between:
+To avoid this issue, we can use set_page_writeback_keepwrite instead of
+set_page_writeback, which doesn't clear TOWRITE tag.
 
-a) get_ and set_pageblock_migratetype(), where get_pageblock_migratetype()
-   reads part of the bits before and other part of the bits after
-   set_pageblock_migratetype() has updated them.
-
-b) set_pageblock_migratetype() and set_pageblock_skip(), where the non-atomic
-   read-modify-update set bit operation in set_pageblock_skip() will cause
-   lost updates to some bits changed in the set_pageblock_migratetype().
-
-Joonsoo Kim first reported the case a) via code inspection.  Vlastimil
-Babka's testing with a debug patch showed that either a) or b) occurs
-roughly once per mmtests' stress-highalloc benchmark (although not
-necessarily in the same pageblock).  Furthermore during development of
-unrelated compaction patches, it was observed that frequent calls to
-{start,undo}_isolate_page_range() the race occurs several thousands of
-times and has resulted in NULL pointer dereferences in move_freepages()
-and free_one_page() in places where free_list[migratetype] is
-manipulated by e.g.  list_move().  Further debugging confirmed that
-migratetype had invalid value of 6, causing out of bounds access to the
-free_list array.
-
-That confirmed that the race exist, although it may be extremely rare,
-and currently only fatal where page isolation is performed due to
-memory hot remove.  Races on pageblocks being updated by
-set_pageblock_migratetype(), where both old and new migratetype are
-lower MIGRATE_RESERVE, currently cannot result in an invalid value
-being observed, although theoretically they may still lead to
-unexpected creation or destruction of MIGRATE_RESERVE pageblocks.
-Furthermore, things could get suddenly worse when memory isolation is
-used more, or when new migratetypes are added.
-
-After this patch, the race has no longer been observed in testing.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Vlastimil Babka <vbabka@suse.cz>
-Reported-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Reported-and-tested-by: Vlastimil Babka <vbabka@suse.cz>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Dave Hansen <dave.hansen@intel.com>
-Cc: Theodore Ts'o <tytso@mit.edu>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reviewed-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/mmzone.h          |    6 +++-
- include/linux/pageblock-flags.h |   37 +++++++++++++++++++++++-----
- mm/page_alloc.c                 |   52 ++++++++++++++++++++++++----------------
- 3 files changed, 68 insertions(+), 27 deletions(-)
+ fs/ext4/ext4.h             |    3 ++-
+ fs/ext4/inode.c            |    6 ++++--
+ fs/ext4/page-io.c          |    8 ++++++--
+ include/linux/page-flags.h |   12 +++++++++++-
+ mm/page-writeback.c        |   11 ++++++-----
+ 5 files changed, 29 insertions(+), 11 deletions(-)
 
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -75,9 +75,13 @@ enum {
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -2764,7 +2764,8 @@ extern void ext4_io_submit(struct ext4_i
+ extern int ext4_bio_write_page(struct ext4_io_submit *io,
+ 			       struct page *page,
+ 			       int len,
+-			       struct writeback_control *wbc);
++			       struct writeback_control *wbc,
++			       bool keep_towrite);
  
- extern int page_group_by_mobility_disabled;
+ /* mmp.c */
+ extern int ext4_multi_mount_protect(struct super_block *, ext4_fsblk_t);
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -1835,6 +1835,7 @@ static int ext4_writepage(struct page *p
+ 	struct buffer_head *page_bufs = NULL;
+ 	struct inode *inode = page->mapping->host;
+ 	struct ext4_io_submit io_submit;
++	bool keep_towrite = false;
  
-+#define NR_MIGRATETYPE_BITS (PB_migrate_end - PB_migrate + 1)
-+#define MIGRATETYPE_MASK ((1UL << NR_MIGRATETYPE_BITS) - 1)
-+
- static inline int get_pageblock_migratetype(struct page *page)
+ 	trace_ext4_writepage(page);
+ 	size = i_size_read(inode);
+@@ -1865,6 +1866,7 @@ static int ext4_writepage(struct page *p
+ 			unlock_page(page);
+ 			return 0;
+ 		}
++		keep_towrite = true;
+ 	}
+ 
+ 	if (PageChecked(page) && ext4_should_journal_data(inode))
+@@ -1881,7 +1883,7 @@ static int ext4_writepage(struct page *p
+ 		unlock_page(page);
+ 		return -ENOMEM;
+ 	}
+-	ret = ext4_bio_write_page(&io_submit, page, len, wbc);
++	ret = ext4_bio_write_page(&io_submit, page, len, wbc, keep_towrite);
+ 	ext4_io_submit(&io_submit);
+ 	/* Drop io_end reference we got from init */
+ 	ext4_put_io_end_defer(io_submit.io_end);
+@@ -1900,7 +1902,7 @@ static int mpage_submit_page(struct mpag
+ 	else
+ 		len = PAGE_CACHE_SIZE;
+ 	clear_page_dirty_for_io(page);
+-	err = ext4_bio_write_page(&mpd->io_submit, page, len, mpd->wbc);
++	err = ext4_bio_write_page(&mpd->io_submit, page, len, mpd->wbc, false);
+ 	if (!err)
+ 		mpd->wbc->nr_to_write--;
+ 	mpd->first_page++;
+--- a/fs/ext4/page-io.c
++++ b/fs/ext4/page-io.c
+@@ -401,7 +401,8 @@ submit_and_retry:
+ int ext4_bio_write_page(struct ext4_io_submit *io,
+ 			struct page *page,
+ 			int len,
+-			struct writeback_control *wbc)
++			struct writeback_control *wbc,
++			bool keep_towrite)
  {
--	return get_pageblock_flags_group(page, PB_migrate, PB_migrate_end);
-+	BUILD_BUG_ON(PB_migrate_end - PB_migrate != 2);
-+	return get_pageblock_flags_mask(page, PB_migrate_end, MIGRATETYPE_MASK);
+ 	struct inode *inode = page->mapping->host;
+ 	unsigned block_start, blocksize;
+@@ -414,7 +415,10 @@ int ext4_bio_write_page(struct ext4_io_s
+ 	BUG_ON(!PageLocked(page));
+ 	BUG_ON(PageWriteback(page));
+ 
+-	set_page_writeback(page);
++	if (keep_towrite)
++		set_page_writeback_keepwrite(page);
++	else
++		set_page_writeback(page);
+ 	ClearPageError(page);
+ 
+ 	/*
+--- a/include/linux/page-flags.h
++++ b/include/linux/page-flags.h
+@@ -317,13 +317,23 @@ CLEARPAGEFLAG(Uptodate, uptodate)
+ extern void cancel_dirty_page(struct page *page, unsigned int account_size);
+ 
+ int test_clear_page_writeback(struct page *page);
+-int test_set_page_writeback(struct page *page);
++int __test_set_page_writeback(struct page *page, bool keep_write);
++
++#define test_set_page_writeback(page)			\
++	__test_set_page_writeback(page, false)
++#define test_set_page_writeback_keepwrite(page)	\
++	__test_set_page_writeback(page, true)
+ 
+ static inline void set_page_writeback(struct page *page)
+ {
+ 	test_set_page_writeback(page);
  }
  
- struct free_area {
---- a/include/linux/pageblock-flags.h
-+++ b/include/linux/pageblock-flags.h
-@@ -30,9 +30,12 @@ enum pageblock_bits {
- 	PB_migrate,
- 	PB_migrate_end = PB_migrate + 3 - 1,
- 			/* 3 bits required for migrate types */
--#ifdef CONFIG_COMPACTION
- 	PB_migrate_skip,/* If set the block is skipped by compaction */
--#endif /* CONFIG_COMPACTION */
-+
-+	/*
-+	 * Assume the bits will always align on a word. If this assumption
-+	 * changes then get/set pageblock needs updating.
-+	 */
- 	NR_PAGEBLOCK_BITS
- };
- 
-@@ -62,11 +65,33 @@ extern int pageblock_order;
- /* Forward declaration */
- struct page;
- 
-+unsigned long get_pageblock_flags_mask(struct page *page,
-+				unsigned long end_bitidx,
-+				unsigned long mask);
-+void set_pageblock_flags_mask(struct page *page,
-+				unsigned long flags,
-+				unsigned long end_bitidx,
-+				unsigned long mask);
-+
- /* Declarations for getting and setting flags. See mm/page_alloc.c */
--unsigned long get_pageblock_flags_group(struct page *page,
--					int start_bitidx, int end_bitidx);
--void set_pageblock_flags_group(struct page *page, unsigned long flags,
--					int start_bitidx, int end_bitidx);
-+static inline unsigned long get_pageblock_flags_group(struct page *page,
-+					int start_bitidx, int end_bitidx)
++static inline void set_page_writeback_keepwrite(struct page *page)
 +{
-+	unsigned long nr_flag_bits = end_bitidx - start_bitidx + 1;
-+	unsigned long mask = (1 << nr_flag_bits) - 1;
-+
-+	return get_pageblock_flags_mask(page, end_bitidx, mask);
++	test_set_page_writeback_keepwrite(page);
 +}
 +
-+static inline void set_pageblock_flags_group(struct page *page,
-+					unsigned long flags,
-+					int start_bitidx, int end_bitidx)
-+{
-+	unsigned long nr_flag_bits = end_bitidx - start_bitidx + 1;
-+	unsigned long mask = (1 << nr_flag_bits) - 1;
-+
-+	set_pageblock_flags_mask(page, flags, end_bitidx, mask);
-+}
- 
- #ifdef CONFIG_COMPACTION
- #define get_pageblock_skip(page) \
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -6007,53 +6007,65 @@ static inline int pfn_to_bitidx(struct z
-  * @end_bitidx: The last bit of interest
-  * returns pageblock_bits flags
-  */
--unsigned long get_pageblock_flags_group(struct page *page,
--					int start_bitidx, int end_bitidx)
-+unsigned long get_pageblock_flags_mask(struct page *page,
-+					unsigned long end_bitidx,
-+					unsigned long mask)
- {
- 	struct zone *zone;
- 	unsigned long *bitmap;
--	unsigned long pfn, bitidx;
--	unsigned long flags = 0;
--	unsigned long value = 1;
-+	unsigned long pfn, bitidx, word_bitidx;
-+	unsigned long word;
- 
- 	zone = page_zone(page);
- 	pfn = page_to_pfn(page);
- 	bitmap = get_pageblock_bitmap(zone, pfn);
- 	bitidx = pfn_to_bitidx(zone, pfn);
-+	word_bitidx = bitidx / BITS_PER_LONG;
-+	bitidx &= (BITS_PER_LONG-1);
- 
--	for (; start_bitidx <= end_bitidx; start_bitidx++, value <<= 1)
--		if (test_bit(bitidx + start_bitidx, bitmap))
--			flags |= value;
--
--	return flags;
-+	word = bitmap[word_bitidx];
-+	bitidx += end_bitidx;
-+	return (word >> (BITS_PER_LONG - bitidx - 1)) & mask;
+ #ifdef CONFIG_PAGEFLAGS_EXTENDED
+ /*
+  * System with lots of page flags available. This allows separate
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -2398,7 +2398,7 @@ int test_clear_page_writeback(struct pag
+ 	return ret;
  }
  
- /**
-- * set_pageblock_flags_group - Set the requested group of flags for a pageblock_nr_pages block of pages
-+ * set_pageblock_flags_mask - Set the requested group of flags for a pageblock_nr_pages block of pages
-  * @page: The page within the block of interest
-  * @start_bitidx: The first bit of interest
-  * @end_bitidx: The last bit of interest
-  * @flags: The flags to set
-  */
--void set_pageblock_flags_group(struct page *page, unsigned long flags,
--					int start_bitidx, int end_bitidx)
-+void set_pageblock_flags_mask(struct page *page, unsigned long flags,
-+					unsigned long end_bitidx,
-+					unsigned long mask)
+-int test_set_page_writeback(struct page *page)
++int __test_set_page_writeback(struct page *page, bool keep_write)
  {
- 	struct zone *zone;
- 	unsigned long *bitmap;
--	unsigned long pfn, bitidx;
--	unsigned long value = 1;
-+	unsigned long pfn, bitidx, word_bitidx;
-+	unsigned long old_word, word;
-+
-+	BUILD_BUG_ON(NR_PAGEBLOCK_BITS != 4);
+ 	struct address_space *mapping = page_mapping(page);
+ 	int ret;
+@@ -2423,9 +2423,10 @@ int test_set_page_writeback(struct page
+ 			radix_tree_tag_clear(&mapping->page_tree,
+ 						page_index(page),
+ 						PAGECACHE_TAG_DIRTY);
+-		radix_tree_tag_clear(&mapping->page_tree,
+-				     page_index(page),
+-				     PAGECACHE_TAG_TOWRITE);
++		if (!keep_write)
++			radix_tree_tag_clear(&mapping->page_tree,
++						page_index(page),
++						PAGECACHE_TAG_TOWRITE);
+ 		spin_unlock_irqrestore(&mapping->tree_lock, flags);
+ 	} else {
+ 		ret = TestSetPageWriteback(page);
+@@ -2436,7 +2437,7 @@ int test_set_page_writeback(struct page
+ 	return ret;
  
- 	zone = page_zone(page);
- 	pfn = page_to_pfn(page);
- 	bitmap = get_pageblock_bitmap(zone, pfn);
- 	bitidx = pfn_to_bitidx(zone, pfn);
-+	word_bitidx = bitidx / BITS_PER_LONG;
-+	bitidx &= (BITS_PER_LONG-1);
-+
- 	VM_BUG_ON_PAGE(!zone_spans_pfn(zone, pfn), page);
- 
--	for (; start_bitidx <= end_bitidx; start_bitidx++, value <<= 1)
--		if (flags & value)
--			__set_bit(bitidx + start_bitidx, bitmap);
--		else
--			__clear_bit(bitidx + start_bitidx, bitmap);
-+	bitidx += end_bitidx;
-+	mask <<= (BITS_PER_LONG - bitidx - 1);
-+	flags <<= (BITS_PER_LONG - bitidx - 1);
-+
-+	word = ACCESS_ONCE(bitmap[word_bitidx]);
-+	for (;;) {
-+		old_word = cmpxchg(&bitmap[word_bitidx], word, (word & ~mask) | flags);
-+		if (word == old_word)
-+			break;
-+		word = old_word;
-+	}
  }
+-EXPORT_SYMBOL(test_set_page_writeback);
++EXPORT_SYMBOL(__test_set_page_writeback);
  
  /*
+  * Return true if any of the pages in the mapping are marked with the
 
 
