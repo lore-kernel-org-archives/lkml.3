@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756561AbaF1SNl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:13:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54209 "EHLO
+	id S1756350AbaF1SOS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:14:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54202 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755934AbaF1Rv5 (ORCPT
+	with ESMTP id S1755931AbaF1Rv4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:51:57 -0400
+	Sat, 28 Jun 2014 13:51:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Binderman <dcb314@hotmail.com>,
-        Bob Moore <robert.moore@intel.com>, Lv Zheng <lv.zheng@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.15 067/139] ACPICA: utstring: Check array index bound before use.
-Date: Sat, 28 Jun 2014 10:47:08 -0700
-Message-Id: <20140628174608.491091763@linuxfoundation.org>
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>
+Subject: [PATCH 3.15 039/139] s390/lowcore: reserve 96 bytes for IRB in lowcore
+Date: Sat, 28 Jun 2014 10:46:40 -0700
+Message-Id: <20140628174607.215371496@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -30,33 +32,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Binderman <dcb314@hotmail.com>
+From: Christian Borntraeger <borntraeger@de.ibm.com>
 
-commit 5d42b0fa25df7ef2f575107597c1aaebe2407d10 upstream.
+commit 993072ee67aa179c48c85eb19869804e68887d86 upstream.
 
-ACPICA BZ 1077. David Binderman.
+The IRB might be 96 bytes if the extended-I/O-measurement facility is
+used. This feature is currently not used by Linux, but struct irb
+already has the emw defined. So let's make the irb in lowcore match the
+size of the internal data structure to be future proof.
+We also have to add a pad, to correctly align the paste.
 
-References: https://bugs.acpica.org/show_bug.cgi?id=1077
-Signed-off-by: David Binderman <dcb314@hotmail.com>
-Signed-off-by: Bob Moore <robert.moore@intel.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+The bigger irb field also circumvents a bug in some QEMU versions that
+always write the emw field on test subchannel and therefore destroy the
+paste definitions of this CPU. Running under these QEMU version broke
+some timing functions in the VDSO and all users of these functions,
+e.g. some JREs.
+
+Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Sebastian Ott <sebott@linux.vnet.ibm.com>
+Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/acpica/utstring.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/s390/include/asm/lowcore.h |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/drivers/acpi/acpica/utstring.c
-+++ b/drivers/acpi/acpica/utstring.c
-@@ -353,7 +353,7 @@ void acpi_ut_print_string(char *string,
- 	}
+--- a/arch/s390/include/asm/lowcore.h
++++ b/arch/s390/include/asm/lowcore.h
+@@ -142,9 +142,9 @@ struct _lowcore {
+ 	__u8	pad_0x02fc[0x0300-0x02fc];	/* 0x02fc */
  
- 	acpi_os_printf("\"");
--	for (i = 0; string[i] && (i < max_length); i++) {
-+	for (i = 0; (i < max_length) && string[i]; i++) {
+ 	/* Interrupt response block */
+-	__u8	irb[64];			/* 0x0300 */
++	__u8	irb[96];			/* 0x0300 */
  
- 		/* Escape sequences */
+-	__u8	pad_0x0340[0x0e00-0x0340];	/* 0x0340 */
++	__u8	pad_0x0360[0x0e00-0x0360];	/* 0x0360 */
  
+ 	/*
+ 	 * 0xe00 contains the address of the IPL Parameter Information
+@@ -288,12 +288,13 @@ struct _lowcore {
+ 	__u8	pad_0x03a0[0x0400-0x03a0];	/* 0x03a0 */
+ 
+ 	/* Interrupt response block. */
+-	__u8	irb[64];			/* 0x0400 */
++	__u8	irb[96];			/* 0x0400 */
++	__u8	pad_0x0460[0x0480-0x0460];	/* 0x0460 */
+ 
+ 	/* Per cpu primary space access list */
+-	__u32	paste[16];			/* 0x0440 */
++	__u32	paste[16];			/* 0x0480 */
+ 
+-	__u8	pad_0x0480[0x0e00-0x0480];	/* 0x0480 */
++	__u8	pad_0x04c0[0x0e00-0x04c0];	/* 0x04c0 */
+ 
+ 	/*
+ 	 * 0xe00 contains the address of the IPL Parameter Information
 
 
