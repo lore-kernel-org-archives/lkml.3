@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756549AbaF1SNY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:13:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54213 "EHLO
+	id S1756578AbaF1SNm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:13:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54206 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755940AbaF1Rv6 (ORCPT
+	with ESMTP id S1755932AbaF1Rv5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:51:58 -0400
+	Sat, 28 Jun 2014 13:51:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Enrico Etxe Arte <goitizena.generoa@gmail.com>,
-        Lv Zheng <lv.zheng@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.15 068/139] ACPI: Fix conflict between customized DSDT and DSDT local copy
-Date: Sat, 28 Jun 2014 10:47:09 -0700
-Message-Id: <20140628174608.544805970@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.15 058/139] USB: sierra: fix remote wakeup
+Date: Sat, 28 Jun 2014 10:46:59 -0700
+Message-Id: <20140628174608.082541691@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -30,46 +28,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lv Zheng <lv.zheng@intel.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 73577d1df8e1f31f6b1a5eebcdbc334eb0330e47 upstream.
+commit 80cc0fcbdaeaf10d04ba27779a2d7ceb73d2717a upstream.
 
-This patch fixes the following issue:
-If DSDT is customized, no local DSDT copy is needed.
+Make sure that needs_remote_wake up is always set when there are open
+ports.
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=69711
-Signed-off-by: Enrico Etxe Arte <goitizena.generoa@gmail.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-[rjw: Subject]
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Currently close() would unconditionally set needs_remote_wakeup to 0
+even though there might still be open ports. This could lead to blocked
+input and possibly dropped data on devices that do not support remote
+wakeup (and which must therefore not be runtime suspended while open).
+
+Add an open_ports counter (protected by the susp_lock) and only clear
+needs_remote_wakeup when the last port is closed.
+
+Fixes: e6929a9020ac ("USB: support for autosuspend in sierra while
+online")
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/bus.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/usb/serial/sierra.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/acpi/bus.c
-+++ b/drivers/acpi/bus.c
-@@ -52,6 +52,12 @@ struct proc_dir_entry *acpi_root_dir;
- EXPORT_SYMBOL(acpi_root_dir);
+--- a/drivers/usb/serial/sierra.c
++++ b/drivers/usb/serial/sierra.c
+@@ -58,6 +58,7 @@ struct sierra_intf_private {
+ 	spinlock_t susp_lock;
+ 	unsigned int suspended:1;
+ 	int in_flight;
++	unsigned int open_ports;
+ };
  
- #ifdef CONFIG_X86
-+#ifdef CONFIG_ACPI_CUSTOM_DSDT
-+static inline int set_copy_dsdt(const struct dmi_system_id *id)
-+{
-+	return 0;
-+}
-+#else
- static int set_copy_dsdt(const struct dmi_system_id *id)
- {
- 	printk(KERN_NOTICE "%s detected - "
-@@ -59,6 +65,7 @@ static int set_copy_dsdt(const struct dm
- 	acpi_gbl_copy_dsdt_locally = 1;
- 	return 0;
- }
-+#endif
+ static int sierra_set_power_state(struct usb_device *udev, __u16 swiState)
+@@ -768,7 +769,6 @@ static void sierra_close(struct usb_seri
  
- static struct dmi_system_id dsdt_dmi_table[] __initdata = {
- 	/*
+ 	mutex_lock(&serial->disc_mutex);
+ 	if (!serial->disconnected) {
+-		serial->interface->needs_remote_wakeup = 0;
+ 		/* odd error handling due to pm counters */
+ 		if (!usb_autopm_get_interface(serial->interface))
+ 			sierra_send_setup(port);
+@@ -779,6 +779,8 @@ static void sierra_close(struct usb_seri
+ 	mutex_unlock(&serial->disc_mutex);
+ 	spin_lock_irq(&intfdata->susp_lock);
+ 	portdata->opened = 0;
++	if (--intfdata->open_ports == 0)
++		serial->interface->needs_remote_wakeup = 0;
+ 	spin_unlock_irq(&intfdata->susp_lock);
+ 
+ 	for (;;) {
+@@ -834,9 +836,10 @@ static int sierra_open(struct tty_struct
+ 
+ 	sierra_send_setup(port);
+ 
+-	serial->interface->needs_remote_wakeup = 1;
+ 	spin_lock_irq(&intfdata->susp_lock);
+ 	portdata->opened = 1;
++	if (++intfdata->open_ports == 1)
++		serial->interface->needs_remote_wakeup = 1;
+ 	spin_unlock_irq(&intfdata->susp_lock);
+ 	usb_autopm_put_interface(serial->interface);
+ 
 
 
