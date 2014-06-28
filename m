@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932147AbaF1TFC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 15:05:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53081 "EHLO
+	id S1756825AbaF1TFb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 15:05:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53078 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754662AbaF1Rsd (ORCPT
+	with ESMTP id S1754409AbaF1Rsc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:48:33 -0400
+	Sat, 28 Jun 2014 13:48:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Binderman <dcb314@hotmail.com>,
-        Bob Moore <robert.moore@intel.com>, Lv Zheng <lv.zheng@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.10 43/77] ACPICA: utstring: Check array index bound before use.
-Date: Sat, 28 Jun 2014 10:46:36 -0700
-Message-Id: <20140628174523.769131810@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>,
+        Sander Eikelenboom <linux@eikelenboom.it>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.10 42/77] media: stk1160: Avoid stack-allocated buffer for control URBs
+Date: Sat, 28 Jun 2014 10:46:35 -0700
+Message-Id: <20140628174523.720727311@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174521.691276402@linuxfoundation.org>
 References: <20140628174521.691276402@linuxfoundation.org>
@@ -30,33 +32,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Binderman <dcb314@hotmail.com>
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
 
-commit 5d42b0fa25df7ef2f575107597c1aaebe2407d10 upstream.
+commit 85ac1a1772bb41da895bad83a81f6a62c8f293f6 upstream.
 
-ACPICA BZ 1077. David Binderman.
+Currently stk1160_read_reg() uses a stack-allocated char to get the
+read control value. This is wrong because usb_control_msg() requires
+a kmalloc-ed buffer.
 
-References: https://bugs.acpica.org/show_bug.cgi?id=1077
-Signed-off-by: David Binderman <dcb314@hotmail.com>
-Signed-off-by: Bob Moore <robert.moore@intel.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+This commit fixes such issue by kmalloc'ating a 1-byte buffer to receive
+the read value.
+
+While here, let's remove the urb_buf array which was meant for a similar
+purpose, but never really used.
+
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Sander Eikelenboom <linux@eikelenboom.it>
+Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/acpica/utstring.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/media/usb/stk1160/stk1160-core.c |   10 +++++++++-
+ drivers/media/usb/stk1160/stk1160.h      |    1 -
+ 2 files changed, 9 insertions(+), 2 deletions(-)
 
---- a/drivers/acpi/acpica/utstring.c
-+++ b/drivers/acpi/acpica/utstring.c
-@@ -349,7 +349,7 @@ void acpi_ut_print_string(char *string,
+--- a/drivers/media/usb/stk1160/stk1160-core.c
++++ b/drivers/media/usb/stk1160/stk1160-core.c
+@@ -67,17 +67,25 @@ int stk1160_read_reg(struct stk1160 *dev
+ {
+ 	int ret;
+ 	int pipe = usb_rcvctrlpipe(dev->udev, 0);
++	u8 *buf;
+ 
+ 	*value = 0;
++
++	buf = kmalloc(sizeof(u8), GFP_KERNEL);
++	if (!buf)
++		return -ENOMEM;
+ 	ret = usb_control_msg(dev->udev, pipe, 0x00,
+ 			USB_DIR_IN | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
+-			0x00, reg, value, sizeof(u8), HZ);
++			0x00, reg, buf, sizeof(u8), HZ);
+ 	if (ret < 0) {
+ 		stk1160_err("read failed on reg 0x%x (%d)\n",
+ 			reg, ret);
++		kfree(buf);
+ 		return ret;
  	}
  
- 	acpi_os_printf("\"");
--	for (i = 0; string[i] && (i < max_length); i++) {
-+	for (i = 0; (i < max_length) && string[i]; i++) {
++	*value = *buf;
++	kfree(buf);
+ 	return 0;
+ }
  
- 		/* Escape sequences */
+--- a/drivers/media/usb/stk1160/stk1160.h
++++ b/drivers/media/usb/stk1160/stk1160.h
+@@ -143,7 +143,6 @@ struct stk1160 {
+ 	int num_alt;
  
+ 	struct stk1160_isoc_ctl isoc_ctl;
+-	char urb_buf[255];	 /* urb control msg buffer */
+ 
+ 	/* frame properties */
+ 	int width;		  /* current frame width */
 
 
