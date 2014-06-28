@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756350AbaF1SOS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:14:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54202 "EHLO
+	id S1756581AbaF1SOh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:14:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54193 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755931AbaF1Rv4 (ORCPT
+	with ESMTP id S1755924AbaF1Rvy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:51:56 -0400
+	Sat, 28 Jun 2014 13:51:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>
-Subject: [PATCH 3.15 039/139] s390/lowcore: reserve 96 bytes for IRB in lowcore
-Date: Sat, 28 Jun 2014 10:46:40 -0700
-Message-Id: <20140628174607.215371496@linuxfoundation.org>
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Subject: [PATCH 3.15 047/139] matroxfb: perform a dummy read of M_STATUS
+Date: Sat, 28 Jun 2014 10:46:48 -0700
+Message-Id: <20140628174607.589443515@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -32,63 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Borntraeger <borntraeger@de.ibm.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 993072ee67aa179c48c85eb19869804e68887d86 upstream.
+commit 972754cfaee94d6e25acf94a497bc0a864d91b7e upstream.
 
-The IRB might be 96 bytes if the extended-I/O-measurement facility is
-used. This feature is currently not used by Linux, but struct irb
-already has the emw defined. So let's make the irb in lowcore match the
-size of the internal data structure to be future proof.
-We also have to add a pad, to correctly align the paste.
+I had occasional screen corruption with the matrox framebuffer driver and
+I found out that the reason for the corruption is that the hardware
+blitter accesses the videoram while it is being written to.
 
-The bigger irb field also circumvents a bug in some QEMU versions that
-always write the emw field on test subchannel and therefore destroy the
-paste definitions of this CPU. Running under these QEMU version broke
-some timing functions in the VDSO and all users of these functions,
-e.g. some JREs.
+The matrox driver has a macro WaitTillIdle() that should wait until the
+blitter is idle, but it sometimes doesn't work. I added a dummy read
+mga_inl(M_STATUS) to WaitTillIdle() to fix the problem. The dummy read
+will flush the write buffer in the PCI chipset, and the next read of
+M_STATUS will return the hardware status.
 
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Sebastian Ott <sebott@linux.vnet.ibm.com>
-Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
+Since applying this patch, I had no screen corruption at all.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/include/asm/lowcore.h |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ drivers/video/fbdev/matrox/matroxfb_base.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/s390/include/asm/lowcore.h
-+++ b/arch/s390/include/asm/lowcore.h
-@@ -142,9 +142,9 @@ struct _lowcore {
- 	__u8	pad_0x02fc[0x0300-0x02fc];	/* 0x02fc */
+--- a/drivers/video/fbdev/matrox/matroxfb_base.h
++++ b/drivers/video/fbdev/matrox/matroxfb_base.h
+@@ -698,7 +698,7 @@ void matroxfb_unregister_driver(struct m
  
- 	/* Interrupt response block */
--	__u8	irb[64];			/* 0x0300 */
-+	__u8	irb[96];			/* 0x0300 */
+ #define mga_fifo(n)	do {} while ((mga_inl(M_FIFOSTATUS) & 0xFF) < (n))
  
--	__u8	pad_0x0340[0x0e00-0x0340];	/* 0x0340 */
-+	__u8	pad_0x0360[0x0e00-0x0360];	/* 0x0360 */
+-#define WaitTillIdle()	do {} while (mga_inl(M_STATUS) & 0x10000)
++#define WaitTillIdle()	do { mga_inl(M_STATUS); do {} while (mga_inl(M_STATUS) & 0x10000); } while (0)
  
- 	/*
- 	 * 0xe00 contains the address of the IPL Parameter Information
-@@ -288,12 +288,13 @@ struct _lowcore {
- 	__u8	pad_0x03a0[0x0400-0x03a0];	/* 0x03a0 */
- 
- 	/* Interrupt response block. */
--	__u8	irb[64];			/* 0x0400 */
-+	__u8	irb[96];			/* 0x0400 */
-+	__u8	pad_0x0460[0x0480-0x0460];	/* 0x0460 */
- 
- 	/* Per cpu primary space access list */
--	__u32	paste[16];			/* 0x0440 */
-+	__u32	paste[16];			/* 0x0480 */
- 
--	__u8	pad_0x0480[0x0e00-0x0480];	/* 0x0480 */
-+	__u8	pad_0x04c0[0x0e00-0x04c0];	/* 0x04c0 */
- 
- 	/*
- 	 * 0xe00 contains the address of the IPL Parameter Information
+ /* code speedup */
+ #ifdef CONFIG_FB_MATROX_MILLENIUM
 
 
