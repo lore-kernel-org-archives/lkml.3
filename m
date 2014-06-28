@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754344AbaF1RsI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:48:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52964 "EHLO
+	id S1754471AbaF1RsQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:48:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52996 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754234AbaF1RsC (ORCPT
+	with ESMTP id S1754409AbaF1RsO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:48:02 -0400
+	Sat, 28 Jun 2014 13:48:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.10 32/77] USB: usb_wwan: fix potential blocked I/O after resume
-Date: Sat, 28 Jun 2014 10:46:25 -0700
-Message-Id: <20140628174523.193952705@linuxfoundation.org>
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>
+Subject: [PATCH 3.10 23/77] s390/lowcore: reserve 96 bytes for IRB in lowcore
+Date: Sat, 28 Jun 2014 10:46:16 -0700
+Message-Id: <20140628174522.752351506@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174521.691276402@linuxfoundation.org>
 References: <20140628174521.691276402@linuxfoundation.org>
@@ -28,107 +32,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Christian Borntraeger <borntraeger@de.ibm.com>
 
-commit fb7ad4f93d9f0f7d49beda32f5e7becb94b29a4d upstream.
+commit 993072ee67aa179c48c85eb19869804e68887d86 upstream.
 
-Keep trying to submit urbs rather than bail out on first read-urb
-submission error, which would also prevent I/O for any further ports
-from being resumed.
+The IRB might be 96 bytes if the extended-I/O-measurement facility is
+used. This feature is currently not used by Linux, but struct irb
+already has the emw defined. So let's make the irb in lowcore match the
+size of the internal data structure to be future proof.
+We also have to add a pad, to correctly align the paste.
 
-Instead keep an error count, for all types of failed submissions, and
-let USB core know that something went wrong.
+The bigger irb field also circumvents a bug in some QEMU versions that
+always write the emw field on test subchannel and therefore destroy the
+paste definitions of this CPU. Running under these QEMU version broke
+some timing functions in the VDSO and all users of these functions,
+e.g. some JREs.
 
-Also make sure to always clear the suspended flag. Currently a failed
-read-urb submission would prevent cached writes as well as any
-subsequent writes from being submitted until next suspend-resume cycle,
-something which may not even necessarily happen.
-
-Note that USB core currently only logs an error if an interface resume
-failed.
-
-Fixes: 383cedc3bb43 ("USB: serial: full autosuspend support for the
-option driver")
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Sebastian Ott <sebott@linux.vnet.ibm.com>
+Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/usb_wwan.c |   25 +++++++++++++++++--------
- 1 file changed, 17 insertions(+), 8 deletions(-)
+ arch/s390/include/asm/lowcore.h |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/drivers/usb/serial/usb_wwan.c
-+++ b/drivers/usb/serial/usb_wwan.c
-@@ -623,12 +623,12 @@ int usb_wwan_suspend(struct usb_serial *
- }
- EXPORT_SYMBOL(usb_wwan_suspend);
+--- a/arch/s390/include/asm/lowcore.h
++++ b/arch/s390/include/asm/lowcore.h
+@@ -142,9 +142,9 @@ struct _lowcore {
+ 	__u8	pad_0x02fc[0x0300-0x02fc];	/* 0x02fc */
  
--static void play_delayed(struct usb_serial_port *port)
-+static int play_delayed(struct usb_serial_port *port)
- {
- 	struct usb_wwan_intf_private *data;
- 	struct usb_wwan_port_private *portdata;
- 	struct urb *urb;
--	int err;
-+	int err = 0;
+ 	/* Interrupt response block */
+-	__u8	irb[64];			/* 0x0300 */
++	__u8	irb[96];			/* 0x0300 */
  
- 	portdata = usb_get_serial_port_data(port);
- 	data = port->serial->private;
-@@ -645,6 +645,8 @@ static void play_delayed(struct usb_seri
- 			break;
- 		}
- 	}
-+
-+	return err;
- }
+-	__u8	pad_0x0340[0x0e00-0x0340];	/* 0x0340 */
++	__u8	pad_0x0360[0x0e00-0x0360];	/* 0x0360 */
  
- int usb_wwan_resume(struct usb_serial *serial)
-@@ -654,7 +656,8 @@ int usb_wwan_resume(struct usb_serial *s
- 	struct usb_wwan_intf_private *intfdata = serial->private;
- 	struct usb_wwan_port_private *portdata;
- 	struct urb *urb;
--	int err = 0;
-+	int err;
-+	int err_count = 0;
+ 	/*
+ 	 * 0xe00 contains the address of the IPL Parameter Information
+@@ -288,12 +288,13 @@ struct _lowcore {
+ 	__u8	pad_0x03a0[0x0400-0x03a0];	/* 0x03a0 */
  
- 	spin_lock_irq(&intfdata->susp_lock);
- 	for (i = 0; i < serial->num_ports; i++) {
-@@ -673,25 +676,31 @@ int usb_wwan_resume(struct usb_serial *s
- 				dev_err(&port->dev,
- 					"%s: submit int urb failed: %d\n",
- 					__func__, err);
-+				err_count++;
- 			}
- 		}
+ 	/* Interrupt response block. */
+-	__u8	irb[64];			/* 0x0400 */
++	__u8	irb[96];			/* 0x0400 */
++	__u8	pad_0x0460[0x0480-0x0460];	/* 0x0460 */
  
-+		err = play_delayed(port);
-+		if (err)
-+			err_count++;
-+
- 		for (j = 0; j < N_IN_URB; j++) {
- 			urb = portdata->in_urbs[j];
- 			err = usb_submit_urb(urb, GFP_ATOMIC);
- 			if (err < 0) {
- 				dev_err(&port->dev, "%s: Error %d for bulk URB %d\n",
- 					__func__, err, i);
--				spin_unlock_irq(&intfdata->susp_lock);
--				goto err_out;
-+				err_count++;
- 			}
- 		}
--		play_delayed(port);
- 	}
- 	intfdata->suspended = 0;
- 	spin_unlock_irq(&intfdata->susp_lock);
--err_out:
--	return err;
-+
-+	if (err_count)
-+		return -EIO;
-+
-+	return 0;
- }
- EXPORT_SYMBOL(usb_wwan_resume);
- #endif
+ 	/* Per cpu primary space access list */
+-	__u32	paste[16];			/* 0x0440 */
++	__u32	paste[16];			/* 0x0480 */
+ 
+-	__u8	pad_0x0480[0x0e00-0x0480];	/* 0x0480 */
++	__u8	pad_0x04c0[0x0e00-0x04c0];	/* 0x04c0 */
+ 
+ 	/*
+ 	 * 0xe00 contains the address of the IPL Parameter Information
 
 
