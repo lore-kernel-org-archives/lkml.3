@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752612AbaF1MUP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 08:20:15 -0400
-Received: from mailrelay003.isp.belgacom.be ([195.238.6.53]:3840 "EHLO
-	mailrelay003.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751545AbaF1MUN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 08:20:13 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AkUHANKxrlNbsk2v/2dsb2JhbABagw2regUBAQEBAQEFAW0BmQKBBxd1hDEvI4ECGDeILgMVAb42DYZSF4VkhnuCJh2ELQWYX4F+iz+CLIYQggCBRDs
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>,
-        Stanislav Yakovlev <stas.yakovlev@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org
-Subject: [PATCH 1/1] drivers/net/wireless/ipw2x00/libipw_module.c: remove unnecessary null test before kfree
-Date: Sat, 28 Jun 2014 14:18:52 +0200
-Message-Id: <1403957932-3709-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	id S1752733AbaF1MX1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 08:23:27 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:60726 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752031AbaF1MX0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Jun 2014 08:23:26 -0400
+Date: Sat, 28 Jun 2014 14:23:22 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Nick Warne <nick@linicks.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: 3.15.2 build error on AMD64
+Message-ID: <20140628122322.GC4373@pd.tnic>
+References: <53AE9058.50902@linicks.net>
+ <20140628101240.GA6357@pd.tnic>
+ <53AE9863.6050102@linicks.net>
+ <53AE9F0B.1080207@linicks.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <53AE9F0B.1080207@linicks.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix checkpatch warning:
-WARNING: kfree(NULL) is safe this check is probably not required
+On Sat, Jun 28, 2014 at 11:55:07AM +0100, Nick Warne wrote:
+> Whoops - that is WRONG (too many ssh terminals)
+> 
+> gcc version 4.2.4
 
-Cc: Stanislav Yakovlev <stas.yakovlev@gmail.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-wireless@vger.kernel.org
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- drivers/net/wireless/ipw2x00/libipw_module.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+That's some old compiler. Anyway, I can't trigger it here with gcc 4.6
+and 4.9.
 
-diff --git a/drivers/net/wireless/ipw2x00/libipw_module.c b/drivers/net/wireless/ipw2x00/libipw_module.c
-index 3adb240..5f31b72 100644
---- a/drivers/net/wireless/ipw2x00/libipw_module.c
-+++ b/drivers/net/wireless/ipw2x00/libipw_module.c
-@@ -100,8 +100,7 @@ static inline void libipw_networks_free(struct libipw_device *ieee)
- 	int i;
- 
- 	for (i = 0; i < MAX_NETWORK_COUNT; i++) {
--		if (ieee->networks[i]->ibss_dfs)
--			kfree(ieee->networks[i]->ibss_dfs);
-+		kfree(ieee->networks[i]->ibss_dfs);
- 		kfree(ieee->networks[i]);
- 	}
- }
+Can you do
+
+$ make clean
+$ make V=1 fs/mbcache.i >>w.log 2>&1
+$ make V=1 fs/mbcache.s >>w.log 2>&1
+
+and zip and send me fs/mbcache.i, fs/mbcache.s and w.log.
+
+Thanks.
+
 -- 
-1.8.4.5
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
