@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932178AbaF1Slx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:41:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53536 "EHLO
+	id S1755468AbaF1RuL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:50:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53517 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755446AbaF1RuM (ORCPT
+	with ESMTP id S1755446AbaF1RuH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:50:12 -0400
+	Sat, 28 Jun 2014 13:50:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Brad Mouring <bmouring@ni.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 3.14 060/110] rtmutex: Detect changes in the pi lock chain
-Date: Sat, 28 Jun 2014 10:46:57 -0700
-Message-Id: <20140628174549.172630670@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>,
+        Sander Eikelenboom <linux@eikelenboom.it>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.14 056/110] media: stk1160: Avoid stack-allocated buffer for control URBs
+Date: Sat, 28 Jun 2014 10:46:53 -0700
+Message-Id: <20140628174548.950277908@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -30,297 +32,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
 
-commit 82084984383babe728e6e3c9a8e5c46278091315 upstream.
+commit 85ac1a1772bb41da895bad83a81f6a62c8f293f6 upstream.
 
-When we walk the lock chain, we drop all locks after each step. So the
-lock chain can change under us before we reacquire the locks. That's
-harmless in principle as we just follow the wrong lock path. But it
-can lead to a false positive in the dead lock detection logic:
+Currently stk1160_read_reg() uses a stack-allocated char to get the
+read control value. This is wrong because usb_control_msg() requires
+a kmalloc-ed buffer.
 
-T0 holds L0
-T0 blocks on L1 held by T1
-T1 blocks on L2 held by T2
-T2 blocks on L3 held by T3
-T4 blocks on L4 held by T4
+This commit fixes such issue by kmalloc'ating a 1-byte buffer to receive
+the read value.
 
-Now we walk the chain
+While here, let's remove the urb_buf array which was meant for a similar
+purpose, but never really used.
 
-lock T1 -> lock L2 -> adjust L2 -> unlock T1 ->
-     lock T2 ->  adjust T2 ->  drop locks
-
-T2 times out and blocks on L0
-
-Now we continue:
-
-lock T2 -> lock L0 -> deadlock detected, but it's not a deadlock at all.
-
-Brad tried to work around that in the deadlock detection logic itself,
-but the more I looked at it the less I liked it, because it's crystal
-ball magic after the fact.
-
-We actually can detect a chain change very simple:
-
-lock T1 -> lock L2 -> adjust L2 -> unlock T1 -> lock T2 -> adjust T2 ->
-
-     next_lock = T2->pi_blocked_on->lock;
-
-drop locks
-
-T2 times out and blocks on L0
-
-Now we continue:
-
-lock T2 ->
-
-     if (next_lock != T2->pi_blocked_on->lock)
-     	   return;
-
-So if we detect that T2 is now blocked on a different lock we stop the
-chain walk. That's also correct in the following scenario:
-
-lock T1 -> lock L2 -> adjust L2 -> unlock T1 -> lock T2 -> adjust T2 ->
-
-     next_lock = T2->pi_blocked_on->lock;
-
-drop locks
-
-T3 times out and drops L3
-T2 acquires L3 and blocks on L4 now
-
-Now we continue:
-
-lock T2 ->
-
-     if (next_lock != T2->pi_blocked_on->lock)
-     	   return;
-
-We don't have to follow up the chain at that point, because T2
-propagated our priority up to T4 already.
-
-[ Folded a cleanup patch from peterz ]
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Reported-by: Brad Mouring <bmouring@ni.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20140605152801.930031935@linutronix.de
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Sander Eikelenboom <linux@eikelenboom.it>
+Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/locking/rtmutex.c |   95 +++++++++++++++++++++++++++++++++++------------
- 1 file changed, 71 insertions(+), 24 deletions(-)
+ drivers/media/usb/stk1160/stk1160-core.c |   10 +++++++++-
+ drivers/media/usb/stk1160/stk1160.h      |    1 -
+ 2 files changed, 9 insertions(+), 2 deletions(-)
 
---- a/kernel/locking/rtmutex.c
-+++ b/kernel/locking/rtmutex.c
-@@ -248,27 +248,36 @@ static void rt_mutex_adjust_prio(struct
-  */
- int max_lock_depth = 1024;
- 
-+static inline struct rt_mutex *task_blocked_on_lock(struct task_struct *p)
-+{
-+	return p->pi_blocked_on ? p->pi_blocked_on->lock : NULL;
-+}
-+
- /*
-  * Adjust the priority chain. Also used for deadlock detection.
-  * Decreases task's usage by one - may thus free the task.
-  *
-- * @task: the task owning the mutex (owner) for which a chain walk is probably
-- *	  needed
-+ * @task:	the task owning the mutex (owner) for which a chain walk is
-+ *		probably needed
-  * @deadlock_detect: do we have to carry out deadlock detection?
-- * @orig_lock: the mutex (can be NULL if we are walking the chain to recheck
-- * 	       things for a task that has just got its priority adjusted, and
-- *	       is waiting on a mutex)
-+ * @orig_lock:	the mutex (can be NULL if we are walking the chain to recheck
-+ *		things for a task that has just got its priority adjusted, and
-+ *		is waiting on a mutex)
-+ * @next_lock:	the mutex on which the owner of @orig_lock was blocked before
-+ *		we dropped its pi_lock. Is never dereferenced, only used for
-+ *		comparison to detect lock chain changes.
-  * @orig_waiter: rt_mutex_waiter struct for the task that has just donated
-- *		 its priority to the mutex owner (can be NULL in the case
-- *		 depicted above or if the top waiter is gone away and we are
-- *		 actually deboosting the owner)
-- * @top_task: the current top waiter
-+ *		its priority to the mutex owner (can be NULL in the case
-+ *		depicted above or if the top waiter is gone away and we are
-+ *		actually deboosting the owner)
-+ * @top_task:	the current top waiter
-  *
-  * Returns 0 or -EDEADLK.
-  */
- static int rt_mutex_adjust_prio_chain(struct task_struct *task,
- 				      int deadlock_detect,
- 				      struct rt_mutex *orig_lock,
-+				      struct rt_mutex *next_lock,
- 				      struct rt_mutex_waiter *orig_waiter,
- 				      struct task_struct *top_task)
+--- a/drivers/media/usb/stk1160/stk1160-core.c
++++ b/drivers/media/usb/stk1160/stk1160-core.c
+@@ -67,17 +67,25 @@ int stk1160_read_reg(struct stk1160 *dev
  {
-@@ -327,6 +336,18 @@ static int rt_mutex_adjust_prio_chain(st
- 		goto out_unlock_pi;
+ 	int ret;
+ 	int pipe = usb_rcvctrlpipe(dev->udev, 0);
++	u8 *buf;
  
- 	/*
-+	 * We dropped all locks after taking a refcount on @task, so
-+	 * the task might have moved on in the lock chain or even left
-+	 * the chain completely and blocks now on an unrelated lock or
-+	 * on @orig_lock.
-+	 *
-+	 * We stored the lock on which @task was blocked in @next_lock,
-+	 * so we can detect the chain change.
-+	 */
-+	if (next_lock != waiter->lock)
-+		goto out_unlock_pi;
+ 	*value = 0;
 +
-+	/*
- 	 * Drop out, when the task has no waiters. Note,
- 	 * top_waiter can be NULL, when we are in the deboosting
- 	 * mode!
-@@ -410,11 +431,26 @@ static int rt_mutex_adjust_prio_chain(st
- 		__rt_mutex_adjust_prio(task);
++	buf = kmalloc(sizeof(u8), GFP_KERNEL);
++	if (!buf)
++		return -ENOMEM;
+ 	ret = usb_control_msg(dev->udev, pipe, 0x00,
+ 			USB_DIR_IN | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
+-			0x00, reg, value, sizeof(u8), HZ);
++			0x00, reg, buf, sizeof(u8), HZ);
+ 	if (ret < 0) {
+ 		stk1160_err("read failed on reg 0x%x (%d)\n",
+ 			reg, ret);
++		kfree(buf);
+ 		return ret;
  	}
  
-+	/*
-+	 * Check whether the task which owns the current lock is pi
-+	 * blocked itself. If yes we store a pointer to the lock for
-+	 * the lock chain change detection above. After we dropped
-+	 * task->pi_lock next_lock cannot be dereferenced anymore.
-+	 */
-+	next_lock = task_blocked_on_lock(task);
-+
- 	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
- 
- 	top_waiter = rt_mutex_top_waiter(lock);
- 	raw_spin_unlock(&lock->wait_lock);
- 
-+	/*
-+	 * We reached the end of the lock chain. Stop right here. No
-+	 * point to go back just to figure that out.
-+	 */
-+	if (!next_lock)
-+		goto out_put_task;
-+
- 	if (!detect_deadlock && waiter != top_waiter)
- 		goto out_put_task;
- 
-@@ -524,8 +560,9 @@ static int task_blocks_on_rt_mutex(struc
- {
- 	struct task_struct *owner = rt_mutex_owner(lock);
- 	struct rt_mutex_waiter *top_waiter = waiter;
--	unsigned long flags;
-+	struct rt_mutex *next_lock;
- 	int chain_walk = 0, res;
-+	unsigned long flags;
- 
- 	/*
- 	 * Early deadlock detection. We really don't want the task to
-@@ -557,20 +594,28 @@ static int task_blocks_on_rt_mutex(struc
- 	if (!owner)
- 		return 0;
- 
-+	raw_spin_lock_irqsave(&owner->pi_lock, flags);
- 	if (waiter == rt_mutex_top_waiter(lock)) {
--		raw_spin_lock_irqsave(&owner->pi_lock, flags);
- 		rt_mutex_dequeue_pi(owner, top_waiter);
- 		rt_mutex_enqueue_pi(owner, waiter);
- 
- 		__rt_mutex_adjust_prio(owner);
- 		if (owner->pi_blocked_on)
- 			chain_walk = 1;
--		raw_spin_unlock_irqrestore(&owner->pi_lock, flags);
--	}
--	else if (debug_rt_mutex_detect_deadlock(waiter, detect_deadlock))
-+	} else if (debug_rt_mutex_detect_deadlock(waiter, detect_deadlock)) {
- 		chain_walk = 1;
-+	}
- 
--	if (!chain_walk)
-+	/* Store the lock on which owner is blocked or NULL */
-+	next_lock = task_blocked_on_lock(owner);
-+
-+	raw_spin_unlock_irqrestore(&owner->pi_lock, flags);
-+	/*
-+	 * Even if full deadlock detection is on, if the owner is not
-+	 * blocked itself, we can avoid finding this out in the chain
-+	 * walk.
-+	 */
-+	if (!chain_walk || !next_lock)
- 		return 0;
- 
- 	/*
-@@ -582,8 +627,8 @@ static int task_blocks_on_rt_mutex(struc
- 
- 	raw_spin_unlock(&lock->wait_lock);
- 
--	res = rt_mutex_adjust_prio_chain(owner, detect_deadlock, lock, waiter,
--					 task);
-+	res = rt_mutex_adjust_prio_chain(owner, detect_deadlock, lock,
-+					 next_lock, waiter, task);
- 
- 	raw_spin_lock(&lock->wait_lock);
- 
-@@ -632,8 +677,8 @@ static void remove_waiter(struct rt_mute
- {
- 	int first = (waiter == rt_mutex_top_waiter(lock));
- 	struct task_struct *owner = rt_mutex_owner(lock);
-+	struct rt_mutex *next_lock = NULL;
- 	unsigned long flags;
--	int chain_walk = 0;
- 
- 	raw_spin_lock_irqsave(&current->pi_lock, flags);
- 	rt_mutex_dequeue(lock, waiter);
-@@ -657,13 +702,13 @@ static void remove_waiter(struct rt_mute
- 		}
- 		__rt_mutex_adjust_prio(owner);
- 
--		if (owner->pi_blocked_on)
--			chain_walk = 1;
-+		/* Store the lock on which owner is blocked or NULL */
-+		next_lock = task_blocked_on_lock(owner);
- 
- 		raw_spin_unlock_irqrestore(&owner->pi_lock, flags);
- 	}
- 
--	if (!chain_walk)
-+	if (!next_lock)
- 		return;
- 
- 	/* gets dropped in rt_mutex_adjust_prio_chain()! */
-@@ -671,7 +716,7 @@ static void remove_waiter(struct rt_mute
- 
- 	raw_spin_unlock(&lock->wait_lock);
- 
--	rt_mutex_adjust_prio_chain(owner, 0, lock, NULL, current);
-+	rt_mutex_adjust_prio_chain(owner, 0, lock, next_lock, NULL, current);
- 
- 	raw_spin_lock(&lock->wait_lock);
- }
-@@ -684,6 +729,7 @@ static void remove_waiter(struct rt_mute
- void rt_mutex_adjust_pi(struct task_struct *task)
- {
- 	struct rt_mutex_waiter *waiter;
-+	struct rt_mutex *next_lock;
- 	unsigned long flags;
- 
- 	raw_spin_lock_irqsave(&task->pi_lock, flags);
-@@ -694,12 +740,13 @@ void rt_mutex_adjust_pi(struct task_stru
- 		raw_spin_unlock_irqrestore(&task->pi_lock, flags);
- 		return;
- 	}
--
-+	next_lock = waiter->lock;
- 	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
- 
- 	/* gets dropped in rt_mutex_adjust_prio_chain()! */
- 	get_task_struct(task);
--	rt_mutex_adjust_prio_chain(task, 0, NULL, NULL, task);
-+
-+	rt_mutex_adjust_prio_chain(task, 0, NULL, next_lock, NULL, task);
++	*value = *buf;
++	kfree(buf);
+ 	return 0;
  }
  
- /**
+--- a/drivers/media/usb/stk1160/stk1160.h
++++ b/drivers/media/usb/stk1160/stk1160.h
+@@ -143,7 +143,6 @@ struct stk1160 {
+ 	int num_alt;
+ 
+ 	struct stk1160_isoc_ctl isoc_ctl;
+-	char urb_buf[255];	 /* urb control msg buffer */
+ 
+ 	/* frame properties */
+ 	int width;		  /* current frame width */
 
 
