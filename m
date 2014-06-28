@@ -1,99 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753513AbaF1Tv3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 15:51:29 -0400
-Received: from s3.neomailbox.net ([178.209.62.157]:5139 "EHLO
-	s3.neomailbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751208AbaF1Tv1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 15:51:27 -0400
-Message-ID: <53AF1C42.6000108@meshcoding.com>
-Date: Sat, 28 Jun 2014 21:49:22 +0200
-From: Antonio Quartulli <antonio@meshcoding.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1754146AbaF1TxQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 15:53:16 -0400
+Received: from mail.kernel.org ([198.145.19.201]:42221 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752056AbaF1TxO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Jun 2014 15:53:14 -0400
+Message-ID: <53AF1D25.10406@kernel.org>
+Date: Sat, 28 Jun 2014 15:53:09 -0400
+From: Sasha Levin <sashal@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>, Himangi Saraogi <himangi774@gmail.com>
-CC: Marek Lindner <mareklindner@neomailbox.ch>,
-        Simon Wunderlich <sw@simonwunderlich.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        b.a.t.m.a.n@lists.open-mesh.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, julia.lawall@lip6.fr
-Subject: Re: [PATCH] batman-adv: Use kasprintf
-References: <20140628183628.GA9946@himangi-Dell> <1403982781.9064.33.camel@joe-AO725>
-In-Reply-To: <1403982781.9064.33.camel@joe-AO725>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha256;
- protocol="application/pgp-signature";
- boundary="vjD2Wg1Nt7dvMMQjnCQBjUvMB8hBJqLte"
+To: Nicholas Krause <xerofoify@gmail.com>, rth@twiddle.net
+CC: ink@jurassic.park.msu.ru, mattst88@gmail.com, linux-alpha@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] FIXME of file toploogy.h for alpha cpus
+References: <1403928469-9452-1-git-send-email-xerofoify@gmail.com>
+In-Reply-To: <1403928469-9452-1-git-send-email-xerofoify@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---vjD2Wg1Nt7dvMMQjnCQBjUvMB8hBJqLte
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On 06/28/2014 12:07 AM, Nicholas Krause wrote:
+> This patch fixs the FIXME message in the function *cpumask_of_node
+> for using this function multiple times and the issue with recaluting
+> the cpu node mask when reusing this function.
+> 
+> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+> ---
+>  arch/alpha/include/asm/topology.h | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/arch/alpha/include/asm/topology.h b/arch/alpha/include/asm/topology.h
+> index 9251e13..d301f66 100644
+> --- a/arch/alpha/include/asm/topology.h
+> +++ b/arch/alpha/include/asm/topology.h
+> @@ -31,6 +31,9 @@ static const struct cpumask *cpumask_of_node(int node)
+>  	if (node == -1)
+>  		return cpu_all_mask;
+>  
+> +	else if (node == &node_to_cpumask_map[node])
+> +		return &node_to_cpumask_map[node];
+> +
+>  	cpumask_clear(&node_to_cpumask_map[node]);
+>  
+>  	for_each_online_cpu(cpu) {
+> 
 
-Hi all,
-
-On 28/06/14 21:13, Joe Perches wrote:
-> diff --git a/net/batman-adv/sysfs.c b/net/batman-adv/sysfs.c
-> index f40cb04..d6fba94 100644
-> --- a/net/batman-adv/sysfs.c
-> +++ b/net/batman-adv/sysfs.c
-> @@ -896,7 +896,7 @@ int batadv_throw_uevent(struct batadv_priv *bat_pri=
-v, enum batadv_uev_type type,
->  {
->  	int ret =3D -ENOMEM;
->  	struct kobject *bat_kobj;
-> -	char *uevent_env[4] =3D { NULL, NULL, NULL, NULL };
-> +	char *uevent_env[3];
-
-
-Joe, why are you shortening this? kobject_uevent_env() expect a
-NULL-terminating array (that is the forth cell).
-
-=2E..
-
-> =20
->  	ret =3D kobject_uevent_env(bat_kobj, KOBJ_CHANGE, uevent_env);
-
-And how is this change reducing the code space?
-
-For what concerns the labels, we use this pattern mostly all over the
-code: one single label/exit-point with the related NULL checks. Do you
-think that we can improve something by changing this? (I am not talking
-about the fastpath here).
+Since this patch doesn't even compile, care to tell us how you tested it?
 
 
-Cheers,
-
---=20
-Antonio Quartulli
-
-
---vjD2Wg1Nt7dvMMQjnCQBjUvMB8hBJqLte
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBCAAGBQJTrxxKAAoJEJgn97Bh2u9eff8P+gI+QRwbn5OvK/Unq4MHfSM0
-CXGfUubGKCFufCl3JKsNIKkWDsxZelas1tbaVeCblxVCsdajf6tDQrYkFKlSfEYA
-puRcocmaawtwDiQdwYYkybXgmhwbkAhymcVz6YetsG5UXnJdMCCFKLgaV44F+k4f
-h/GS/j2lXU1IVs8PrnCmSutNZ9xhKB7DymAZnU7mpO9aa4XiEUqmKJ4ycajekwrk
-vWO2rRw78XT/2rMmc0Z6gNMKMFI9tz6f59bbge8q85TWlUwFEEduEPj8BrJ1qH2u
-5HmP+fqv5q8UY+1wRYQIIFyUPERHPcCuWPBM4ZhGr3rXSHIRJsdEpx7CuZJq0QM3
-FlYlUNTypBT1J8y/qzzZLsLz088BR4kxV6aLy09PCfl/ipxv3+PV3w/Gijm2YgvZ
-7tEX517WyRcQPEwSpMoX4guwqI5eNbSLvQmqjW+hxxDa1Yhz9QrJfk2NesGsS4lU
-N742tEnAIFk/oM2+YRQ3HWf/1I+oLR9w9hD+jZsNUjEjs9ACySfr2baTPdDyRx9w
-bqIS4RjYpBUnWMmnixXUi+WfN7uzS7c1aqCge5hW/pp2XuPS4vWcSj9Xt7F8E5I8
-0tkI0rCADyHukt3mHT5ONO4FpCbpZ29Vfye0XbX0OVBy5F2or40lhZaMLqgaLaB6
-ehRoQMYDnRAIQ0KaSwKY
-=g2EJ
------END PGP SIGNATURE-----
-
---vjD2Wg1Nt7dvMMQjnCQBjUvMB8hBJqLte--
+Thanks,
+Sasha
