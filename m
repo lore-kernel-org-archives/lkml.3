@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964858AbaF1Ry2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:54:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54571 "EHLO
+	id S932485AbaF1Ryu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:54:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54567 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964779AbaF1Rxc (ORCPT
+	with ESMTP id S932468AbaF1Rxb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:53:32 -0400
+	Sat, 28 Jun 2014 13:53:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fathi Boudra <fathi.boudra@linaro.org>,
-        Ben Hutchings <ben@decadent.org.uk>, Michal Marek <mmarek@suse.cz>
-Subject: [PATCH 3.15 138/139] builddeb: use $OBJCOPY variable instead of objcopy
-Date: Sat, 28 Jun 2014 10:48:19 -0700
-Message-Id: <20140628174611.696734944@linuxfoundation.org>
+        Theodore Tso <tytso@mit.edu>, Greg Price <price@mit.edu>
+Subject: [PATCH 3.15 137/139] random: fix nasty entropy accounting bug
+Date: Sat, 28 Jun 2014 10:48:18 -0700
+Message-Id: <20140628174611.657619772@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -29,43 +28,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fathi Boudra <fathi.boudra@linaro.org>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 6b4a144a92ab81a1f45fb9b12aebaaaee0d08120 upstream.
+commit e33ba5fa7afce1a9f159704121d4e4d110df8185 upstream.
 
-In cross-build environment, we expect to use the cross-compiler objcopy
-instead of the host objcopy.
+Commit 0fb7a01af5b0 "random: simplify accounting code", introduced in
+v3.15, has a very nasty accounting problem when the entropy pool has
+has fewer bytes of entropy than the number of requested reserved
+bytes.  In that case, "have_bytes - reserved" goes negative, and since
+size_t is unsigned, the expression:
 
-It fixes following build failures:
-objcopy --only-keep-debug lib/modules/3.14/kernel/net/ipv6/xfrm6_mode_tunnel.ko /srv/build/linux/debian/dbgtmp/usr/lib/debug/lib/modules/3.14/kernel/net/ipv6/xfrm6_mode_tunnel.ko
-objcopy: Unable to recognise the format of the input file `lib/modules/3.14/kernel/net/ipv6/xfrm6_mode_tunnel.ko'
+       ibytes = min_t(size_t, ibytes, have_bytes - reserved);
 
-Signed-off-by: Fathi Boudra <fathi.boudra@linaro.org>
-Fixes: 810e843746b7 ('deb-pkg: split debug symbols in their own package')
-Reviewed-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
+... does not do the right thing.  This is rather bad, because it
+defeats the catastrophic reseeding feature in the
+xfer_secondary_pool() path.
+
+It also can cause the "BUG: spinlock trylock failure on UP" for some
+kernel configurations when prandom_reseed() calls get_random_bytes()
+in the early init, since when the entropy count gets corrupted,
+credit_entropy_bits() erroneously believes that the nonblocking pool
+has been fully initialized (when in fact it is not), and so it calls
+prandom_reseed(true) recursively leading to the spinlock BUG.
+
+The logic is *not* the same it was originally, but in the cases where
+it matters, the behavior is the same, and the resulting code is
+hopefully easier to read and understand.
+
+Fixes: 0fb7a01af5b0 "random: simplify accounting code"
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Cc: Greg Price <price@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- scripts/package/builddeb |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/char/random.c |   17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
 
---- a/scripts/package/builddeb
-+++ b/scripts/package/builddeb
-@@ -155,11 +155,11 @@ if grep -q '^CONFIG_MODULES=y' $KCONFIG_
- 			for module in $(find lib/modules/ -name *.ko); do
- 				mkdir -p $(dirname $dbg_dir/usr/lib/debug/$module)
- 				# only keep debug symbols in the debug file
--				objcopy --only-keep-debug $module $dbg_dir/usr/lib/debug/$module
-+				$OBJCOPY --only-keep-debug $module $dbg_dir/usr/lib/debug/$module
- 				# strip original module from debug symbols
--				objcopy --strip-debug $module
-+				$OBJCOPY --strip-debug $module
- 				# then add a link to those
--				objcopy --add-gnu-debuglink=$dbg_dir/usr/lib/debug/$module $module
-+				$OBJCOPY --add-gnu-debuglink=$dbg_dir/usr/lib/debug/$module $module
- 			done
- 		)
- 	fi
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -979,7 +979,6 @@ static void push_to_pool(struct work_str
+ static size_t account(struct entropy_store *r, size_t nbytes, int min,
+ 		      int reserved)
+ {
+-	int have_bytes;
+ 	int entropy_count, orig;
+ 	size_t ibytes;
+ 
+@@ -988,17 +987,19 @@ static size_t account(struct entropy_sto
+ 	/* Can we pull enough? */
+ retry:
+ 	entropy_count = orig = ACCESS_ONCE(r->entropy_count);
+-	have_bytes = entropy_count >> (ENTROPY_SHIFT + 3);
+ 	ibytes = nbytes;
+ 	/* If limited, never pull more than available */
+-	if (r->limit)
+-		ibytes = min_t(size_t, ibytes, have_bytes - reserved);
++	if (r->limit) {
++		int have_bytes = entropy_count >> (ENTROPY_SHIFT + 3);
++
++		if ((have_bytes -= reserved) < 0)
++			have_bytes = 0;
++		ibytes = min_t(size_t, ibytes, have_bytes);
++	}
+ 	if (ibytes < min)
+ 		ibytes = 0;
+-	if (have_bytes >= ibytes + reserved)
+-		entropy_count -= ibytes << (ENTROPY_SHIFT + 3);
+-	else
+-		entropy_count = reserved << (ENTROPY_SHIFT + 3);
++	if ((entropy_count -= ibytes << (ENTROPY_SHIFT + 3)) < 0)
++		entropy_count = 0;
+ 
+ 	if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
+ 		goto retry;
 
 
