@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752884AbaF1PJd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 11:09:33 -0400
-Received: from mail-by2lp0243.outbound.protection.outlook.com ([207.46.163.243]:11001
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751215AbaF1PJb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 11:09:31 -0400
-Date: Sat, 28 Jun 2014 22:52:54 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: <rjw@rjwysocki.net>, <sboyd@codeaurora.org>,
-        <linaro-kernel@lists.linaro.org>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <arvind.chauhan@arm.com>,
-        <mturquette@linaro.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-arm-msm@vger.kernel.org>, <spk.linux@gmail.com>,
-        <thomas.ab@samsung.com>, <nm@ti.com>, <t.figa@samsung.com>
-Subject: Re: [PATCH 2/2] cpufreq: cpu0: Extend support beyond CPU0
-Message-ID: <20140628145253.GB7869@dragon>
-References: <cover.1403684824.git.viresh.kumar@linaro.org>
- <e9c0eef07745e561b9d12dcb50c3e2f7eb3e8880.1403684824.git.viresh.kumar@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <e9c0eef07745e561b9d12dcb50c3e2f7eb3e8880.1403684824.git.viresh.kumar@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Matching-Connectors: 130484407914903507;(91ab9b29-cfa4-454e-5278-08d120cd25b8);()
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(448002)(189002)(199002)(69224002)(24454002)(51704005)(6806004)(46406003)(19580405001)(68736004)(26826002)(79102001)(76482001)(74662001)(80022001)(23726002)(81542001)(19580395003)(83322001)(69596002)(50986999)(74502001)(107046002)(21056001)(81156004)(47776003)(106466001)(99396002)(20776003)(83072002)(85852003)(31966008)(54356999)(4396001)(44976005)(77982001)(64706001)(84676001)(46102001)(87936001)(50466002)(57986006)(95666004)(85306003)(104016002)(86362001)(92566001)(85326001)(33716001)(76176999)(92726001)(97736001)(102836001)(83506001)(33656002)(15975445006)(81342001)(97756001);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB372;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 0256C18696
-Authentication-Results: spf=permerror (sender IP is 192.88.158.2)
- smtp.mailfrom=shawn.guo@linaro.org; 
+	id S1752930AbaF1PN0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 11:13:26 -0400
+Received: from smtp6-g21.free.fr ([212.27.42.6]:51596 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751215AbaF1PNY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Jun 2014 11:13:24 -0400
+From: Guillaume Morin <guillaume@morinfr.org>
+To: gregkh@linuxfoundation.org, jic23@kernel.org
+Cc: Guillaume Morin <guillaume@morinfr.org>, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mwelling@ieee.org
+Subject: [PATCH v3 1/1] staging: iio: ad9850.c: code cleanup
+Date: Sat, 28 Jun 2014 17:13:19 +0200
+Message-Id: <936f1ac494ee8708e37a8cb16a70aa3f007e93cd.1403965958.git.guillaume@morinfr.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 02:12:29PM +0530, Viresh Kumar wrote:
-> cpufreq-cpu0 driver supports only platforms which have single clock line shared
-> among all CPUs.
-> 
-> We already have platforms where this limitation doesn't hold true.For example on
-> Qualcomm's KRAIT all CPUs have separate clock line and so have separate
-> policies.
-> 
-> Instead of adding another driver for this (Stephen just tried that:
-> https://lkml.org/lkml/2014/6/24/918), we must reuse cpufreq-cpu0 driver.
-> 
-> cpufreq-cpu0 must be updated to break the assumption on which it is based (all
-> cores sharing clock line) and this patch tries to do exactly that.
-> 
-> As we don't have standard DT bindings to mention CPUs sharing clock-line, i.e.
-> affected_cpus, this patch also have few limitations. Though easy to fix once we
-> have proper bindings.
-> 
-> Limitation: We only supports two types of platforms:
-> - All CPUs sharing same clock line, existing user platforms
-> - All CPUs have separate clock lines, KRAIT
-> 
-> And so platforms which have multiple clusters with multiple CPUs per cluster
-> aren't supported yet. We need proper bindings for that first.
-> 
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
->  .../devicetree/bindings/cpufreq/cpufreq-cpu0.txt   |   8 +-
->  drivers/cpufreq/Kconfig                            |   5 +-
->  drivers/cpufreq/cpufreq-cpu0.c                     | 280 +++++++++++++--------
->  3 files changed, 190 insertions(+), 103 deletions(-)
+checkpath.pl was complaining about value_mask:
+ERROR: Macros with complex values should be enclosed in parenthesis
 
-Hi Viresh,
+I fixed this by simply removing it since it's not used (as well as another macro).
+Got rid of the un-necessary error_ret label as well.  Both changes were suggested
+by Michael Welling.
 
-Thanks for all the effort on maintaining and improving cpufreq-cpu0
-driver.  Your patch rewrote the most part of the driver, so I'd like to
-hand over the driver to you.  Please add yourself as the primary person
-for MODULE_AUTHOR.
+Signed-off-by: Guillaume Morin <guillaume@morinfr.org>
+---
+Changes since v2:
+- Got rid of the macro altogether since it's unused
+- removed unused addr_shit
+- remove error_ret since it's not needed
 
-Shawn
+ drivers/staging/iio/frequency/ad9850.c |    6 ------
+ 1 file changed, 6 deletions(-)
+
+diff --git a/drivers/staging/iio/frequency/ad9850.c b/drivers/staging/iio/frequency/ad9850.c
+index af877ff..8727933 100644
+--- a/drivers/staging/iio/frequency/ad9850.c
++++ b/drivers/staging/iio/frequency/ad9850.c
+@@ -21,9 +21,6 @@
+ 
+ #define DRV_NAME "ad9850"
+ 
+-#define value_mask (u16)0xf000
+-#define addr_shift 12
+-
+ /* Register format: 4 bits addr + 12 bits value */
+ struct ad9850_config {
+ 	u8 control[5];
+@@ -50,9 +47,6 @@ static ssize_t ad9850_set_parameter(struct device *dev,
+ 	mutex_lock(&st->lock);
+ 
+ 	ret = spi_sync_transfer(st->sdev, &xfer, 1);
+-	if (ret)
+-		goto error_ret;
+-error_ret:
+ 	mutex_unlock(&st->lock);
+ 
+ 	return ret ? ret : len;
+-- 
+1.7.10.4
+
