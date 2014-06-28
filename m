@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932189AbaF1RvZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:51:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53996 "EHLO
+	id S1756827AbaF1SVx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:21:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54053 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755767AbaF1RvR (ORCPT
+	with ESMTP id S1755767AbaF1RvZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:51:17 -0400
+	Sat, 28 Jun 2014 13:51:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Simon Wood <simon@mungewell.org>, Kees Cook <keescook@chromium.org>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.15 032/139] HID: core: fix validation of report id 0
-Date: Sat, 28 Jun 2014 10:46:33 -0700
-Message-Id: <20140628174606.889262755@linuxfoundation.org>
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.15 024/139] mm: vmscan: do not throttle based on pfmemalloc reserves if node has no ZONE_NORMAL
+Date: Sat, 28 Jun 2014 10:46:25 -0700
+Message-Id: <20140628174606.514918279@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -30,54 +30,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Mel Gorman <mgorman@suse.de>
 
-commit 1b15d2e5b8077670b1e6a33250a0d9577efff4a5 upstream.
+commit 675becce15f320337499bc1a9356260409a5ba29 upstream.
 
-Some drivers use the first HID report in the list instead of using an
-index. In these cases, validation uses ID 0, which was supposed to mean
-"first known report". This fixes the problem, which was causing at least
-the lgff family of devices to stop working since hid_validate_values
-was being called with ID 0, but the devices used single numbered IDs
-for their reports:
+throttle_direct_reclaim() is meant to trigger during swap-over-network
+during which the min watermark is treated as a pfmemalloc reserve.  It
+throttes on the first node in the zonelist but this is flawed.
 
-0x05, 0x01,         /*  Usage Page (Desktop),                   */
-0x09, 0x05,         /*  Usage (Gamepad),                        */
-0xA1, 0x01,         /*  Collection (Application),               */
-0xA1, 0x02,         /*      Collection (Logical),               */
-0x85, 0x01,         /*          Report ID (1),                  */
-...
+The user-visible impact is that a process running on CPU whose local
+memory node has no ZONE_NORMAL will stall for prolonged periods of time,
+possibly indefintely.  This is due to throttle_direct_reclaim thinking the
+pfmemalloc reserves are depleted when in fact they don't exist on that
+node.
 
-Reported-by: Simon Wood <simon@mungewell.org>
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+On a NUMA machine running a 32-bit kernel (I know) allocation requests
+from CPUs on node 1 would detect no pfmemalloc reserves and the process
+gets throttled.  This patch adjusts throttling of direct reclaim to
+throttle based on the first node in the zonelist that has a usable
+ZONE_NORMAL or lower zone.
+
+[akpm@linux-foundation.org: coding-style fixes]
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-core.c |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ mm/vmscan.c |   43 +++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 37 insertions(+), 6 deletions(-)
 
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -842,7 +842,17 @@ struct hid_report *hid_validate_values(s
- 	 * ->numbered being checked, which may not always be the case when
- 	 * drivers go to access report values.
- 	 */
--	report = hid->report_enum[type].report_id_hash[id];
-+	if (id == 0) {
-+		/*
-+		 * Validating on id 0 means we should examine the first
-+		 * report in the list.
-+		 */
-+		report = list_entry(
-+				hid->report_enum[type].report_list.next,
-+				struct hid_report, list);
-+	} else {
-+		report = hid->report_enum[type].report_id_hash[id];
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2525,10 +2525,17 @@ static bool pfmemalloc_watermark_ok(pg_d
+ 
+ 	for (i = 0; i <= ZONE_NORMAL; i++) {
+ 		zone = &pgdat->node_zones[i];
++		if (!populated_zone(zone))
++			continue;
++
+ 		pfmemalloc_reserve += min_wmark_pages(zone);
+ 		free_pages += zone_page_state(zone, NR_FREE_PAGES);
+ 	}
+ 
++	/* If there are no reserves (unexpected config) then do not throttle */
++	if (!pfmemalloc_reserve)
++		return true;
++
+ 	wmark_ok = free_pages > pfmemalloc_reserve / 2;
+ 
+ 	/* kswapd must be awake if processes are being throttled */
+@@ -2553,9 +2560,9 @@ static bool pfmemalloc_watermark_ok(pg_d
+ static bool throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
+ 					nodemask_t *nodemask)
+ {
++	struct zoneref *z;
+ 	struct zone *zone;
+-	int high_zoneidx = gfp_zone(gfp_mask);
+-	pg_data_t *pgdat;
++	pg_data_t *pgdat = NULL;
+ 
+ 	/*
+ 	 * Kernel threads should not be throttled as they may be indirectly
+@@ -2574,10 +2581,34 @@ static bool throttle_direct_reclaim(gfp_
+ 	if (fatal_signal_pending(current))
+ 		goto out;
+ 
+-	/* Check if the pfmemalloc reserves are ok */
+-	first_zones_zonelist(zonelist, high_zoneidx, NULL, &zone);
+-	pgdat = zone->zone_pgdat;
+-	if (pfmemalloc_watermark_ok(pgdat))
++	/*
++	 * Check if the pfmemalloc reserves are ok by finding the first node
++	 * with a usable ZONE_NORMAL or lower zone. The expectation is that
++	 * GFP_KERNEL will be required for allocating network buffers when
++	 * swapping over the network so ZONE_HIGHMEM is unusable.
++	 *
++	 * Throttling is based on the first usable node and throttled processes
++	 * wait on a queue until kswapd makes progress and wakes them. There
++	 * is an affinity then between processes waking up and where reclaim
++	 * progress has been made assuming the process wakes on the same node.
++	 * More importantly, processes running on remote nodes will not compete
++	 * for remote pfmemalloc reserves and processes on different nodes
++	 * should make reasonable progress.
++	 */
++	for_each_zone_zonelist_nodemask(zone, z, zonelist,
++					gfp_mask, nodemask) {
++		if (zone_idx(zone) > ZONE_NORMAL)
++			continue;
++
++		/* Throttle based on the first usable node */
++		pgdat = zone->zone_pgdat;
++		if (pfmemalloc_watermark_ok(pgdat))
++			goto out;
++		break;
 +	}
- 	if (!report) {
- 		hid_err(hid, "missing %s %u\n", hid_report_names[type], id);
- 		return NULL;
++
++	/* If no zone was usable by the allocation flags then do not throttle */
++	if (!pgdat)
+ 		goto out;
+ 
+ 	/* Account for the throttling */
 
 
