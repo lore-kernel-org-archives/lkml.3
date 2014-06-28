@@ -1,77 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752149AbaF1Uui (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 16:50:38 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:38795 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751129AbaF1Uug (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 16:50:36 -0400
-Message-ID: <53AF2A83.8040003@ahsoftware.de>
-Date: Sat, 28 Jun 2014 22:50:11 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751763AbaF1VAh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 17:00:37 -0400
+Received: from mout.web.de ([212.227.15.4]:61097 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751243AbaF1VAg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Jun 2014 17:00:36 -0400
+Message-ID: <53AF2CE6.5020300@users.sourceforge.net>
+Date: Sat, 28 Jun 2014 23:00:22 +0200
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Marc Dietrich <marvin24@gmx.de>
-CC: John Stultz <john.stultz@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        John Whitmore <arigead@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>
-Subject: Re: [PATCH 0/2][RFC] Try to handle hctosys w/ rtc modules
-References: <1403890031-26419-1-git-send-email-john.stultz@linaro.org>	<53AE6C3C.5090308@ahsoftware.de>	<53AE6FA2.7000808@ahsoftware.de> <20140628205433.0ef4a8cf28a7fe4861a733dd@gmx.de>
-In-Reply-To: <20140628205433.0ef4a8cf28a7fe4861a733dd@gmx.de>
-Content-Type: text/plain; charset=US-ASCII; format=flowed
+To: Fabian Frederick <fabf@skynet.be>
+CC: linux-kernel@vger.kernel.org, Coccinelle <cocci@systeme.lip6.fr>,
+        Joe Perches <joe@perches.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH V3] scripts/coccinelle/free: Delete NULL test before freeing
+ functions?
+References: <1403945247-21549-1-git-send-email-fabf@skynet.be>	<53AE8613.8080600@users.sourceforge.net>	<20140628120052.0b8670723928a967808dd544@skynet.be>	<53AEA927.3010100@users.sourceforge.net> <20140628140157.98304218ad0919b1567cfee4@skynet.be>
+In-Reply-To: <20140628140157.98304218ad0919b1567cfee4@skynet.be>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:Qlpc0rZQZmMQ6tHTSpPIfSIa17OyiMfCfURKTeX7GVLMPBbUyQ1
+ 0/Wn2oXvhHc1VCxtt28uj2PUiKJtX1iVzw/8s6MDiCnfX7g4wyDJOGs8QfofYvENoDYuHkr
+ GxNrQjeIcsBVJjatNo2vybB0SOZuwn8cJLon8vkuOicbfomagfHFasjSlp6V34HcEF466Yo
+ AZzoXSAjXVm2YaFquE9JA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 28.06.2014 20:54, schrieb Marc Dietrich:
-> On Sat, 28 Jun 2014 09:32:50 +0200
-> Alexander Holler <holler@ahsoftware.de> wrote:
->
->> Am 28.06.2014 09:18, schrieb Alexander Holler:
->>> Am 27.06.2014 19:27, schrieb John Stultz:
->>>> Its been pointed out that the RTC hctosys functionality doesn't
->>>> work well with RTC modules, which may not be loaded until after
->>>> late_init().
->>>>
->>>> While there have been other attempts to sovle this, this patchset
->>>> is a very quick 10 minute effort to show how I'd try to resolve
->>>> this. There likely are still issues here, but I'd be happy to
->>>> make fixes and adjustments to ensure it works.
->>
->> How long you needed to getthe idea?
->>
->>>>
->>>> Feedback and comments always appreciated!
->>>
->>> And it still uses the non-deterministic and therefor almost unusable
->>> rtcN. Well done.
->>
->> Besides that the current hctosys-mechanism doesn't really work with
->> hot-plugable devices at all. Guess what N will be when you unplug and
->> plug in such a RTC again.
->
-> We have a patch in the kernel which binds the rtc number to the
-> hw device, so this even works for hotpluggable devices (at least on
-> systems supporting device-tree). Not sure what your needs are.
+> Sorry but I'm not working on coccinelle ; just did a small script for kernel tree.
 
-First, the number depends on the kernel-configuration and the order how 
-RTCs are detected and might even change between minor kernel versions. 
-Thus it's totally non-deterministic across different kernel builds.
+I would appreciate a more constructive feedback for my update suggestions around
+the topic "Deletion of unnecessary checks before specific function calls".
+- Did you look at the concrete patches?
+- How do you think about the general approach?
 
-Second, I wonder about which hotpluggable devices you are talking. Last 
-time I've dived into that part of the kernel was when I've written my 
-fully working patch set and at that time a usb-rtc (the only really 
-hotpluggable RTC I currently know about) did get a new N whenever it 
-appeared again (e.g. on suspend/resume). So with the proposed 
-non-working clone of my patch, the RTC would be gone after a resume.
+Examples:
+https://systeme.lip6.fr/pipermail/cocci/2014-March/000676.html
+http://marc.info/?l=kernel-janitors&m=139405971927100&w=2
 
-Anyway, sorry, I won't spend more time on discussing with kernel 
-maintainers. I don't receive any compensations to do so and therefor I 
-absolutely have no reason to accept all the pain and insults which are 
-happening when doing so. I've come to the conclusion that I should not 
-have posted patches at all (not just this one) and really regret that.
+https://systeme.lip6.fr/pipermail/cocci/2014-March/000677.html
+http://marc.info/?l=kernel-janitors&m=139405983727148&w=2
 
-Alexander Holler
+Regards,
+Markus
