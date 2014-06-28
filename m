@@ -1,27 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932243AbaF1Rvk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:51:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54126 "EHLO
+	id S1755864AbaF1Rvn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:51:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54146 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932220AbaF1Rvh (ORCPT
+	with ESMTP id S932220AbaF1Rvl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:51:37 -0400
+	Sat, 28 Jun 2014 13:51:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Michael Ellerman <mpe@ellerman.id.au>, Hugh Dickins <hughd@google.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tony Luck <tony.luck@intel.com>, Russell King <rmk@arm.linux.org.uk>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Ralf Baechle <ralf@linux-mips.org>, David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.15 022/139] hugetlb: restrict hugepage_migration_support() to x86_64
-Date: Sat, 28 Jun 2014 10:46:23 -0700
-Message-Id: <20140628174606.429246323@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.15 051/139] USB: usb_wwan: fix urb leak at shutdown
+Date: Sat, 28 Jun 2014 10:46:52 -0700
+Message-Id: <20140628174607.770165465@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -36,299 +28,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit c177c81e09e517bbf75b67762cdab1b83aba6976 upstream.
+commit 79eed03e77d481b55d85d1cfe5a1636a0d3897fd upstream.
 
-Currently hugepage migration is available for all archs which support
-pmd-level hugepage, but testing is done only for x86_64 and there're
-bugs for other archs.  So to avoid breaking such archs, this patch
-limits the availability strictly to x86_64 until developers of other
-archs get interested in enabling this feature.
+The delayed-write queue was never emptied at shutdown (close), something
+which could lead to leaked urbs if the port is closed before being
+runtime resumed due to a write.
 
-Simply disabling hugepage migration on non-x86_64 archs is not enough to
-fix the reported problem where sys_move_pages() hits the BUG_ON() in
-follow_page(FOLL_GET), so let's fix this by checking if hugepage
-migration is supported in vma_migratable().
+When this happens the output buffer would not drain on close
+(closing_wait timeout), and after consecutive opens, writes could be
+corrupted with previously buffered data, transfered with reduced
+throughput or completely blocked.
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Reported-by: Michael Ellerman <mpe@ellerman.id.au>
-Tested-by: Michael Ellerman <mpe@ellerman.id.au>
-Acked-by: Hugh Dickins <hughd@google.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Russell King <rmk@arm.linux.org.uk>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: James Hogan <james.hogan@imgtec.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: David Miller <davem@davemloft.net>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Note that unbusy_queued_urb() was simply moved out of CONFIG_PM.
+
+Fixes: 383cedc3bb43 ("USB: serial: full autosuspend support for the
+option driver")
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mm/hugetlbpage.c     |    5 -----
- arch/arm64/mm/hugetlbpage.c   |    5 -----
- arch/ia64/mm/hugetlbpage.c    |    5 -----
- arch/metag/mm/hugetlbpage.c   |    5 -----
- arch/mips/mm/hugetlbpage.c    |    5 -----
- arch/powerpc/mm/hugetlbpage.c |   10 ----------
- arch/s390/mm/hugetlbpage.c    |    5 -----
- arch/sh/mm/hugetlbpage.c      |    5 -----
- arch/sparc/mm/hugetlbpage.c   |    5 -----
- arch/tile/mm/hugetlbpage.c    |    5 -----
- arch/x86/Kconfig              |    4 ++++
- arch/x86/mm/hugetlbpage.c     |   10 ----------
- include/linux/hugetlb.h       |   13 +++++--------
- include/linux/mempolicy.h     |    6 ++++++
- mm/Kconfig                    |    3 +++
- 15 files changed, 18 insertions(+), 73 deletions(-)
+ drivers/usb/serial/usb_wwan.c |   34 ++++++++++++++++++++++------------
+ 1 file changed, 22 insertions(+), 12 deletions(-)
 
---- a/arch/arm/mm/hugetlbpage.c
-+++ b/arch/arm/mm/hugetlbpage.c
-@@ -56,8 +56,3 @@ int pmd_huge(pmd_t pmd)
- {
- 	return pmd_val(pmd) && !(pmd_val(pmd) & PMD_TABLE_BIT);
+--- a/drivers/usb/serial/usb_wwan.c
++++ b/drivers/usb/serial/usb_wwan.c
+@@ -414,12 +414,26 @@ int usb_wwan_open(struct tty_struct *tty
  }
--
--int pmd_huge_support(void)
--{
--	return 1;
--}
---- a/arch/arm64/mm/hugetlbpage.c
-+++ b/arch/arm64/mm/hugetlbpage.c
-@@ -58,11 +58,6 @@ int pud_huge(pud_t pud)
- #endif
- }
+ EXPORT_SYMBOL(usb_wwan_open);
  
--int pmd_huge_support(void)
--{
--	return 1;
--}
--
- static __init int setup_hugepagesz(char *opt)
- {
- 	unsigned long ps = memparse(opt, &opt);
---- a/arch/ia64/mm/hugetlbpage.c
-+++ b/arch/ia64/mm/hugetlbpage.c
-@@ -114,11 +114,6 @@ int pud_huge(pud_t pud)
- 	return 0;
- }
- 
--int pmd_huge_support(void)
--{
--	return 0;
--}
--
- struct page *
- follow_huge_pmd(struct mm_struct *mm, unsigned long address, pmd_t *pmd, int write)
- {
---- a/arch/metag/mm/hugetlbpage.c
-+++ b/arch/metag/mm/hugetlbpage.c
-@@ -110,11 +110,6 @@ int pud_huge(pud_t pud)
- 	return 0;
- }
- 
--int pmd_huge_support(void)
--{
--	return 1;
--}
--
- struct page *follow_huge_pmd(struct mm_struct *mm, unsigned long address,
- 			     pmd_t *pmd, int write)
- {
---- a/arch/mips/mm/hugetlbpage.c
-+++ b/arch/mips/mm/hugetlbpage.c
-@@ -84,11 +84,6 @@ int pud_huge(pud_t pud)
- 	return (pud_val(pud) & _PAGE_HUGE) != 0;
- }
- 
--int pmd_huge_support(void)
--{
--	return 1;
--}
--
- struct page *
- follow_huge_pmd(struct mm_struct *mm, unsigned long address,
- 		pmd_t *pmd, int write)
---- a/arch/powerpc/mm/hugetlbpage.c
-+++ b/arch/powerpc/mm/hugetlbpage.c
-@@ -86,11 +86,6 @@ int pgd_huge(pgd_t pgd)
- 	 */
- 	return ((pgd_val(pgd) & 0x3) != 0x0);
- }
--
--int pmd_huge_support(void)
--{
--	return 1;
--}
- #else
- int pmd_huge(pmd_t pmd)
- {
-@@ -106,11 +101,6 @@ int pgd_huge(pgd_t pgd)
- {
- 	return 0;
- }
--
--int pmd_huge_support(void)
--{
--	return 0;
--}
- #endif
- 
- pte_t *huge_pte_offset(struct mm_struct *mm, unsigned long addr)
---- a/arch/s390/mm/hugetlbpage.c
-+++ b/arch/s390/mm/hugetlbpage.c
-@@ -220,11 +220,6 @@ int pud_huge(pud_t pud)
- 	return 0;
- }
- 
--int pmd_huge_support(void)
--{
--	return 1;
--}
--
- struct page *follow_huge_pmd(struct mm_struct *mm, unsigned long address,
- 			     pmd_t *pmdp, int write)
- {
---- a/arch/sh/mm/hugetlbpage.c
-+++ b/arch/sh/mm/hugetlbpage.c
-@@ -83,11 +83,6 @@ int pud_huge(pud_t pud)
- 	return 0;
- }
- 
--int pmd_huge_support(void)
--{
--	return 0;
--}
--
- struct page *follow_huge_pmd(struct mm_struct *mm, unsigned long address,
- 			     pmd_t *pmd, int write)
- {
---- a/arch/sparc/mm/hugetlbpage.c
-+++ b/arch/sparc/mm/hugetlbpage.c
-@@ -231,11 +231,6 @@ int pud_huge(pud_t pud)
- 	return 0;
- }
- 
--int pmd_huge_support(void)
--{
--	return 0;
--}
--
- struct page *follow_huge_pmd(struct mm_struct *mm, unsigned long address,
- 			     pmd_t *pmd, int write)
- {
---- a/arch/tile/mm/hugetlbpage.c
-+++ b/arch/tile/mm/hugetlbpage.c
-@@ -166,11 +166,6 @@ int pud_huge(pud_t pud)
- 	return !!(pud_val(pud) & _PAGE_HUGE_PAGE);
- }
- 
--int pmd_huge_support(void)
--{
--	return 1;
--}
--
- struct page *follow_huge_pmd(struct mm_struct *mm, unsigned long address,
- 			     pmd_t *pmd, int write)
- {
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1871,6 +1871,10 @@ config ARCH_ENABLE_SPLIT_PMD_PTLOCK
- 	def_bool y
- 	depends on X86_64 || X86_PAE
- 
-+config ARCH_ENABLE_HUGEPAGE_MIGRATION
-+	def_bool y
-+	depends on X86_64 && HUGETLB_PAGE && MIGRATION
++static void unbusy_queued_urb(struct urb *urb,
++					struct usb_wwan_port_private *portdata)
++{
++	int i;
 +
- menu "Power management and ACPI options"
- 
- config ARCH_HIBERNATION_HEADER
---- a/arch/x86/mm/hugetlbpage.c
-+++ b/arch/x86/mm/hugetlbpage.c
-@@ -58,11 +58,6 @@ follow_huge_pmd(struct mm_struct *mm, un
++	for (i = 0; i < N_OUT_URB; i++) {
++		if (urb == portdata->out_urbs[i]) {
++			clear_bit(i, &portdata->out_busy);
++			break;
++		}
++	}
++}
++
+ void usb_wwan_close(struct usb_serial_port *port)
  {
- 	return NULL;
+ 	int i;
+ 	struct usb_serial *serial = port->serial;
+ 	struct usb_wwan_port_private *portdata;
+ 	struct usb_wwan_intf_private *intfdata = port->serial->private;
++	struct urb *urb;
+ 
+ 	portdata = usb_get_serial_port_data(port);
+ 
+@@ -428,6 +442,14 @@ void usb_wwan_close(struct usb_serial_po
+ 	portdata->opened = 0;
+ 	spin_unlock_irq(&intfdata->susp_lock);
+ 
++	for (;;) {
++		urb = usb_get_from_anchor(&portdata->delayed);
++		if (!urb)
++			break;
++		unbusy_queued_urb(urb, portdata);
++		usb_autopm_put_interface_async(serial->interface);
++	}
++
+ 	for (i = 0; i < N_IN_URB; i++)
+ 		usb_kill_urb(portdata->in_urbs[i]);
+ 	for (i = 0; i < N_OUT_URB; i++)
+@@ -596,18 +618,6 @@ int usb_wwan_suspend(struct usb_serial *
  }
--
--int pmd_huge_support(void)
+ EXPORT_SYMBOL(usb_wwan_suspend);
+ 
+-static void unbusy_queued_urb(struct urb *urb, struct usb_wwan_port_private *portdata)
 -{
--	return 0;
--}
- #else
- 
- struct page *
-@@ -80,11 +75,6 @@ int pud_huge(pud_t pud)
- {
- 	return !!(pud_val(pud) & _PAGE_PSE);
- }
+-	int i;
 -
--int pmd_huge_support(void)
--{
--	return 1;
+-	for (i = 0; i < N_OUT_URB; i++) {
+-		if (urb == portdata->out_urbs[i]) {
+-			clear_bit(i, &portdata->out_busy);
+-			break;
+-		}
+-	}
 -}
- #endif
- 
- #ifdef CONFIG_HUGETLB_PAGE
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -392,15 +392,13 @@ static inline pgoff_t basepage_index(str
- 
- extern void dissolve_free_huge_pages(unsigned long start_pfn,
- 				     unsigned long end_pfn);
--int pmd_huge_support(void);
--/*
-- * Currently hugepage migration is enabled only for pmd-based hugepage.
-- * This function will be updated when hugepage migration is more widely
-- * supported.
-- */
- static inline int hugepage_migration_support(struct hstate *h)
+-
+ static void play_delayed(struct usb_serial_port *port)
  {
--	return pmd_huge_support() && (huge_page_shift(h) == PMD_SHIFT);
-+#ifdef CONFIG_ARCH_ENABLE_HUGEPAGE_MIGRATION
-+	return huge_page_shift(h) == PMD_SHIFT;
-+#else
-+	return 0;
-+#endif
- }
- 
- static inline spinlock_t *huge_pte_lockptr(struct hstate *h,
-@@ -450,7 +448,6 @@ static inline pgoff_t basepage_index(str
- 	return page->index;
- }
- #define dissolve_free_huge_pages(s, e)	do {} while (0)
--#define pmd_huge_support()	0
- #define hugepage_migration_support(h)	0
- 
- static inline spinlock_t *huge_pte_lockptr(struct hstate *h,
---- a/include/linux/mempolicy.h
-+++ b/include/linux/mempolicy.h
-@@ -175,6 +175,12 @@ static inline int vma_migratable(struct
- {
- 	if (vma->vm_flags & (VM_IO | VM_PFNMAP))
- 		return 0;
-+
-+#ifndef CONFIG_ARCH_ENABLE_HUGEPAGE_MIGRATION
-+	if (vma->vm_flags & VM_HUGETLB)
-+		return 0;
-+#endif
-+
- 	/*
- 	 * Migration allocates pages in the highest zone. If we cannot
- 	 * do so then migration (at least from node to node) is not
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -264,6 +264,9 @@ config MIGRATION
- 	  pages as migration can relocate pages to satisfy a huge page
- 	  allocation instead of reclaiming.
- 
-+config ARCH_ENABLE_HUGEPAGE_MIGRATION
-+	boolean
-+
- config PHYS_ADDR_T_64BIT
- 	def_bool 64BIT || ARCH_PHYS_ADDR_T_64BIT
- 
+ 	struct usb_wwan_intf_private *data;
 
 
