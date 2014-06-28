@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756133AbaF1RxB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:53:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54386 "EHLO
+	id S1756168AbaF1RxH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:53:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54397 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754490AbaF1Rwz (ORCPT
+	with ESMTP id S1756092AbaF1Rw5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:52:55 -0400
+	Sat, 28 Jun 2014 13:52:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: [PATCH 3.15 105/139] arm64: mm: remove broken &= operator from pmd_mknotpresent
-Date: Sat, 28 Jun 2014 10:47:46 -0700
-Message-Id: <20140628174610.217634129@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org
+Subject: [PATCH 3.15 108/139] Revert "drm/radeon: use variable UVD clocks"
+Date: Sat, 28 Jun 2014 10:47:49 -0700
+Message-Id: <20140628174610.347226627@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -29,33 +27,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit e3a920afc3482e954834a4ed95908c4bc5e4c000 upstream.
+commit 0690a229c69f40a6c9c459ab455c85df49822525 upstream.
 
-This should be a plain old '&' and could easily lead to undefined
-behaviour if the target of a pmd_mknotpresent invocation was the same
-as the parameter.
+This caused reduced performance for some users with advanced post
+processing enabled.  We need a better method to pick the
+UVD state based on the amount of post processing required or tune
+the advanced post processing to fit within the lower power state
+envelope.
 
-Fixes: 9c7e535fcc17 (arm64: mm: Route pmd thp functions through pte equivalents)
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+This reverts commit 14a9579ddbf15dd1992a9481a4ec80b0b91656d5.
+
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm64/include/asm/pgtable.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/radeon_pm.c  |    3 +++
+ drivers/gpu/drm/radeon/radeon_uvd.c |    3 ++-
+ 2 files changed, 5 insertions(+), 1 deletion(-)
 
---- a/arch/arm64/include/asm/pgtable.h
-+++ b/arch/arm64/include/asm/pgtable.h
-@@ -253,7 +253,7 @@ static inline pmd_t pte_pmd(pte_t pte)
- #define pmd_mkwrite(pmd)	pte_pmd(pte_mkwrite(pmd_pte(pmd)))
- #define pmd_mkdirty(pmd)	pte_pmd(pte_mkdirty(pmd_pte(pmd)))
- #define pmd_mkyoung(pmd)	pte_pmd(pte_mkyoung(pmd_pte(pmd)))
--#define pmd_mknotpresent(pmd)	(__pmd(pmd_val(pmd) &= ~PMD_TYPE_MASK))
-+#define pmd_mknotpresent(pmd)	(__pmd(pmd_val(pmd) & ~PMD_TYPE_MASK))
+--- a/drivers/gpu/drm/radeon/radeon_pm.c
++++ b/drivers/gpu/drm/radeon/radeon_pm.c
+@@ -984,6 +984,8 @@ void radeon_dpm_enable_uvd(struct radeon
+ 		if (enable) {
+ 			mutex_lock(&rdev->pm.mutex);
+ 			rdev->pm.dpm.uvd_active = true;
++			/* disable this for now */
++#if 0
+ 			if ((rdev->pm.dpm.sd == 1) && (rdev->pm.dpm.hd == 0))
+ 				dpm_state = POWER_STATE_TYPE_INTERNAL_UVD_SD;
+ 			else if ((rdev->pm.dpm.sd == 2) && (rdev->pm.dpm.hd == 0))
+@@ -993,6 +995,7 @@ void radeon_dpm_enable_uvd(struct radeon
+ 			else if ((rdev->pm.dpm.sd == 0) && (rdev->pm.dpm.hd == 2))
+ 				dpm_state = POWER_STATE_TYPE_INTERNAL_UVD_HD2;
+ 			else
++#endif
+ 				dpm_state = POWER_STATE_TYPE_INTERNAL_UVD;
+ 			rdev->pm.dpm.state = dpm_state;
+ 			mutex_unlock(&rdev->pm.mutex);
+--- a/drivers/gpu/drm/radeon/radeon_uvd.c
++++ b/drivers/gpu/drm/radeon/radeon_uvd.c
+@@ -812,7 +812,8 @@ void radeon_uvd_note_usage(struct radeon
+ 		    (rdev->pm.dpm.hd != hd)) {
+ 			rdev->pm.dpm.sd = sd;
+ 			rdev->pm.dpm.hd = hd;
+-			streams_changed = true;
++			/* disable this for now */
++			/*streams_changed = true;*/
+ 		}
+ 	}
  
- #define __HAVE_ARCH_PMD_WRITE
- #define pmd_write(pmd)		pte_write(pmd_pte(pmd))
 
 
