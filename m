@@ -1,99 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932481AbaF1T2o (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 15:28:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52707 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751127AbaF1Rq6 (ORCPT
+	id S1753513AbaF1Tv3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 15:51:29 -0400
+Received: from s3.neomailbox.net ([178.209.62.157]:5139 "EHLO
+	s3.neomailbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751208AbaF1Tv1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:46:58 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>, Huang Rui <ray.huang@amd.com>
-Subject: [PATCH 3.4 05/43] USB: usbtest: add a timeout for scatter-gather tests
-Date: Sat, 28 Jun 2014 10:45:56 -0700
-Message-Id: <20140628174450.059030010@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <20140628174449.788784511@linuxfoundation.org>
-References: <20140628174449.788784511@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Sat, 28 Jun 2014 15:51:27 -0400
+Message-ID: <53AF1C42.6000108@meshcoding.com>
+Date: Sat, 28 Jun 2014 21:49:22 +0200
+From: Antonio Quartulli <antonio@meshcoding.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: Joe Perches <joe@perches.com>, Himangi Saraogi <himangi774@gmail.com>
+CC: Marek Lindner <mareklindner@neomailbox.ch>,
+        Simon Wunderlich <sw@simonwunderlich.de>,
+        "David S. Miller" <davem@davemloft.net>,
+        b.a.t.m.a.n@lists.open-mesh.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, julia.lawall@lip6.fr
+Subject: Re: [PATCH] batman-adv: Use kasprintf
+References: <20140628183628.GA9946@himangi-Dell> <1403982781.9064.33.camel@joe-AO725>
+In-Reply-To: <1403982781.9064.33.camel@joe-AO725>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ protocol="application/pgp-signature";
+ boundary="vjD2Wg1Nt7dvMMQjnCQBjUvMB8hBJqLte"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--vjD2Wg1Nt7dvMMQjnCQBjUvMB8hBJqLte
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+Hi all,
 
-From: Alan Stern <stern@rowland.harvard.edu>
-
-commit 32b36eeae6a859670d2939a7d6136cb5e9ed64f8 upstream.
-
-In usbtest, tests 5 - 8 use the scatter-gather library in usbcore
-without any sort of timeout.  If there's a problem in the gadget or
-host controller being tested, the test can hang.
-
-This patch adds a 10-second timeout to the tests, so that they will
-fail gracefully with an ETIMEDOUT error instead of hanging.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Huang Rui <ray.huang@amd.com>
-Tested-by: Huang Rui <ray.huang@amd.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/misc/usbtest.c |   16 +++++++++++++++-
- 1 file changed, 15 insertions(+), 1 deletion(-)
-
---- a/drivers/usb/misc/usbtest.c
-+++ b/drivers/usb/misc/usbtest.c
-@@ -7,7 +7,7 @@
- #include <linux/moduleparam.h>
- #include <linux/scatterlist.h>
- #include <linux/mutex.h>
--
-+#include <linux/timer.h>
- #include <linux/usb.h>
- 
- 
-@@ -462,6 +462,14 @@ alloc_sglist(int nents, int max, int var
- 	return sg;
- }
- 
-+static void sg_timeout(unsigned long _req)
-+{
-+	struct usb_sg_request	*req = (struct usb_sg_request *) _req;
-+
-+	req->status = -ETIMEDOUT;
-+	usb_sg_cancel(req);
-+}
-+
- static int perform_sglist(
- 	struct usbtest_dev	*tdev,
- 	unsigned		iterations,
-@@ -473,6 +481,9 @@ static int perform_sglist(
- {
- 	struct usb_device	*udev = testdev_to_usbdev(tdev);
- 	int			retval = 0;
-+	struct timer_list	sg_timer;
-+
-+	setup_timer_on_stack(&sg_timer, sg_timeout, (unsigned long) req);
- 
- 	while (retval == 0 && iterations-- > 0) {
- 		retval = usb_sg_init(req, udev, pipe,
-@@ -483,7 +494,10 @@ static int perform_sglist(
- 
- 		if (retval)
- 			break;
-+		mod_timer(&sg_timer, jiffies +
-+				msecs_to_jiffies(SIMPLE_IO_TIMEOUT));
- 		usb_sg_wait(req);
-+		del_timer_sync(&sg_timer);
- 		retval = req->status;
- 
- 		/* FIXME check resulting data pattern */
+On 28/06/14 21:13, Joe Perches wrote:
+> diff --git a/net/batman-adv/sysfs.c b/net/batman-adv/sysfs.c
+> index f40cb04..d6fba94 100644
+> --- a/net/batman-adv/sysfs.c
+> +++ b/net/batman-adv/sysfs.c
+> @@ -896,7 +896,7 @@ int batadv_throw_uevent(struct batadv_priv *bat_pri=
+v, enum batadv_uev_type type,
+>  {
+>  	int ret =3D -ENOMEM;
+>  	struct kobject *bat_kobj;
+> -	char *uevent_env[4] =3D { NULL, NULL, NULL, NULL };
+> +	char *uevent_env[3];
 
 
+Joe, why are you shortening this? kobject_uevent_env() expect a
+NULL-terminating array (that is the forth cell).
+
+=2E..
+
+> =20
+>  	ret =3D kobject_uevent_env(bat_kobj, KOBJ_CHANGE, uevent_env);
+
+And how is this change reducing the code space?
+
+For what concerns the labels, we use this pattern mostly all over the
+code: one single label/exit-point with the related NULL checks. Do you
+think that we can improve something by changing this? (I am not talking
+about the fastpath here).
+
+
+Cheers,
+
+--=20
+Antonio Quartulli
+
+
+--vjD2Wg1Nt7dvMMQjnCQBjUvMB8hBJqLte
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBCAAGBQJTrxxKAAoJEJgn97Bh2u9eff8P+gI+QRwbn5OvK/Unq4MHfSM0
+CXGfUubGKCFufCl3JKsNIKkWDsxZelas1tbaVeCblxVCsdajf6tDQrYkFKlSfEYA
+puRcocmaawtwDiQdwYYkybXgmhwbkAhymcVz6YetsG5UXnJdMCCFKLgaV44F+k4f
+h/GS/j2lXU1IVs8PrnCmSutNZ9xhKB7DymAZnU7mpO9aa4XiEUqmKJ4ycajekwrk
+vWO2rRw78XT/2rMmc0Z6gNMKMFI9tz6f59bbge8q85TWlUwFEEduEPj8BrJ1qH2u
+5HmP+fqv5q8UY+1wRYQIIFyUPERHPcCuWPBM4ZhGr3rXSHIRJsdEpx7CuZJq0QM3
+FlYlUNTypBT1J8y/qzzZLsLz088BR4kxV6aLy09PCfl/ipxv3+PV3w/Gijm2YgvZ
+7tEX517WyRcQPEwSpMoX4guwqI5eNbSLvQmqjW+hxxDa1Yhz9QrJfk2NesGsS4lU
+N742tEnAIFk/oM2+YRQ3HWf/1I+oLR9w9hD+jZsNUjEjs9ACySfr2baTPdDyRx9w
+bqIS4RjYpBUnWMmnixXUi+WfN7uzS7c1aqCge5hW/pp2XuPS4vWcSj9Xt7F8E5I8
+0tkI0rCADyHukt3mHT5ONO4FpCbpZ29Vfye0XbX0OVBy5F2or40lhZaMLqgaLaB6
+ehRoQMYDnRAIQ0KaSwKY
+=g2EJ
+-----END PGP SIGNATURE-----
+
+--vjD2Wg1Nt7dvMMQjnCQBjUvMB8hBJqLte--
