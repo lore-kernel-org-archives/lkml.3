@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754746AbaF1Rsi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:48:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53088 "EHLO
+	id S1756804AbaF1TCs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 15:02:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53118 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754684AbaF1Rse (ORCPT
+	with ESMTP id S1754727AbaF1Rsh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:48:34 -0400
+	Sat, 28 Jun 2014 13:48:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.10 34/77] USB: sierra: fix use after free at suspend/resume
-Date: Sat, 28 Jun 2014 10:46:27 -0700
-Message-Id: <20140628174523.293117161@linuxfoundation.org>
+        Wang Shilong <wangsl.fnst@cn.fujitsu.com>,
+        David Sterba <dsterba@suse.cz>, Chris Mason <clm@fb.com>
+Subject: [PATCH 3.10 66/77] Btrfs: make sure there are not any read requests before stopping workers
+Date: Sat, 28 Jun 2014 10:46:59 -0700
+Message-Id: <20140628174525.061575938@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174521.691276402@linuxfoundation.org>
 References: <20140628174521.691276402@linuxfoundation.org>
@@ -28,55 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Wang Shilong <wangsl.fnst@cn.fujitsu.com>
 
-commit 8452727de70f6ad850cd6d0aaa18b5d9050aa63b upstream.
+commit de348ee022175401e77d7662b7ca6e231a94e3fd upstream.
 
-Fix use after free or NULL-pointer dereference during suspend and
-resume.
+In close_ctree(), after we have stopped all workers,there maybe still
+some read requests(for example readahead) to submit and this *maybe* trigger
+an oops that user reported before:
 
-The port data may never have been allocated (port probe failed)
-or may already have been released by port_remove (e.g. driver is
-unloaded) when suspend and resume are called.
+kernel BUG at fs/btrfs/async-thread.c:619!
 
-Fixes: e6929a9020ac ("USB: support for autosuspend in sierra while
-online")
+By hacking codes, i can reproduce this problem with one cpu available.
+We fix this potential problem by invalidating all btree inode pages before
+stopping all workers.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Thanks to Miao for pointing out this problem.
+
+Signed-off-by: Wang Shilong <wangsl.fnst@cn.fujitsu.com>
+Reviewed-by: David Sterba <dsterba@suse.cz>
+Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/sierra.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ fs/btrfs/disk-io.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -941,6 +941,7 @@ static int sierra_port_remove(struct usb
- 	struct sierra_port_private *portdata;
+--- a/fs/btrfs/disk-io.c
++++ b/fs/btrfs/disk-io.c
+@@ -3518,6 +3518,11 @@ int close_ctree(struct btrfs_root *root)
  
- 	portdata = usb_get_serial_port_data(port);
-+	usb_set_serial_port_data(port, NULL);
- 	kfree(portdata);
+ 	btrfs_free_block_groups(fs_info);
  
- 	return 0;
-@@ -957,6 +958,8 @@ static void stop_read_write_urbs(struct
- 	for (i = 0; i < serial->num_ports; ++i) {
- 		port = serial->port[i];
- 		portdata = usb_get_serial_port_data(port);
-+		if (!portdata)
-+			continue;
- 		sierra_stop_rx_urbs(port);
- 		usb_kill_anchored_urbs(&portdata->active);
- 	}
-@@ -999,6 +1002,9 @@ static int sierra_resume(struct usb_seri
- 		port = serial->port[i];
- 		portdata = usb_get_serial_port_data(port);
++	/*
++	 * we must make sure there is not any read request to
++	 * submit after we stopping all workers.
++	 */
++	invalidate_inode_pages2(fs_info->btree_inode->i_mapping);
+ 	btrfs_stop_all_workers(fs_info);
  
-+		if (!portdata)
-+			continue;
-+
- 		while ((urb = usb_get_from_anchor(&portdata->delayed))) {
- 			usb_anchor_urb(urb, &portdata->active);
- 			intfdata->in_flight++;
+ 	del_fs_roots(fs_info);
 
 
