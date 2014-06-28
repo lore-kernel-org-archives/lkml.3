@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755254AbaF1Rtl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:49:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53396 "EHLO
+	id S1755276AbaF1Rtn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:49:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53402 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755121AbaF1Rti (ORCPT
+	with ESMTP id S1755121AbaF1Rtm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:49:38 -0400
+	Sat, 28 Jun 2014 13:49:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Ashish Sangwan <a.sangwan@samsung.com>, "Theodore Tso" <tytso@mit.edu>,
-        Jan Kara <jack@suse.cz>
-Subject: [PATCH 3.14 037/110] ext4: fix data integrity sync in ordered mode
-Date: Sat, 28 Jun 2014 10:46:34 -0700
-Message-Id: <20140628174547.383587995@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.14 047/110] USB: sierra: fix AA deadlock in open error path
+Date: Sat, 28 Jun 2014 10:46:44 -0700
+Message-Id: <20140628174548.098924850@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -30,178 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Namjae Jeon <namjae.jeon@samsung.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 1c8349a17137b93f0a83f276c764a6df1b9a116e upstream.
+commit 353fe198602e8b4d1c7bdcceb8e60955087201b1 upstream.
 
-When we perform a data integrity sync we tag all the dirty pages with
-PAGECACHE_TAG_TOWRITE at start of ext4_da_writepages.  Later we check
-for this tag in write_cache_pages_da and creates a struct
-mpage_da_data containing contiguously indexed pages tagged with this
-tag and sync these pages with a call to mpage_da_map_and_submit.  This
-process is done in while loop until all the PAGECACHE_TAG_TOWRITE
-pages are synced. We also do journal start and stop in each iteration.
-journal_stop could initiate journal commit which would call
-ext4_writepage which in turn will call ext4_bio_write_page even for
-delayed OR unwritten buffers. When ext4_bio_write_page is called for
-such buffers, even though it does not sync them but it clears the
-PAGECACHE_TAG_TOWRITE of the corresponding page and hence these pages
-are also not synced by the currently running data integrity sync. We
-will end up with dirty pages although sync is completed.
+Fix AA deadlock in open error path that would call close() and try to
+grab the already held disc_mutex.
 
-This could cause a potential data loss when the sync call is followed
-by a truncate_pagecache call, which is exactly the case in
-collapse_range.  (It will cause generic/127 failure in xfstests)
+Fixes: b9a44bc19f48 ("sierra: driver urb handling improvements")
 
-To avoid this issue, we can use set_page_writeback_keepwrite instead of
-set_page_writeback, which doesn't clear TOWRITE tag.
-
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reviewed-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/ext4.h             |    3 ++-
- fs/ext4/inode.c            |    6 ++++--
- fs/ext4/page-io.c          |    8 ++++++--
- include/linux/page-flags.h |   12 +++++++++++-
- mm/page-writeback.c        |   11 ++++++-----
- 5 files changed, 29 insertions(+), 11 deletions(-)
+ drivers/usb/serial/sierra.c |   21 +++++++++++++--------
+ 1 file changed, 13 insertions(+), 8 deletions(-)
 
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -2764,7 +2764,8 @@ extern void ext4_io_submit(struct ext4_i
- extern int ext4_bio_write_page(struct ext4_io_submit *io,
- 			       struct page *page,
- 			       int len,
--			       struct writeback_control *wbc);
-+			       struct writeback_control *wbc,
-+			       bool keep_towrite);
+--- a/drivers/usb/serial/sierra.c
++++ b/drivers/usb/serial/sierra.c
+@@ -816,14 +816,9 @@ static int sierra_open(struct tty_struct
+ 			usb_sndbulkpipe(serial->dev, endpoint) | USB_DIR_IN);
  
- /* mmp.c */
- extern int ext4_multi_mount_protect(struct super_block *, ext4_fsblk_t);
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -1835,6 +1835,7 @@ static int ext4_writepage(struct page *p
- 	struct buffer_head *page_bufs = NULL;
- 	struct inode *inode = page->mapping->host;
- 	struct ext4_io_submit io_submit;
-+	bool keep_towrite = false;
- 
- 	trace_ext4_writepage(page);
- 	size = i_size_read(inode);
-@@ -1865,6 +1866,7 @@ static int ext4_writepage(struct page *p
- 			unlock_page(page);
- 			return 0;
- 		}
-+		keep_towrite = true;
- 	}
- 
- 	if (PageChecked(page) && ext4_should_journal_data(inode))
-@@ -1881,7 +1883,7 @@ static int ext4_writepage(struct page *p
- 		unlock_page(page);
- 		return -ENOMEM;
- 	}
--	ret = ext4_bio_write_page(&io_submit, page, len, wbc);
-+	ret = ext4_bio_write_page(&io_submit, page, len, wbc, keep_towrite);
- 	ext4_io_submit(&io_submit);
- 	/* Drop io_end reference we got from init */
- 	ext4_put_io_end_defer(io_submit.io_end);
-@@ -1900,7 +1902,7 @@ static int mpage_submit_page(struct mpag
- 	else
- 		len = PAGE_CACHE_SIZE;
- 	clear_page_dirty_for_io(page);
--	err = ext4_bio_write_page(&mpd->io_submit, page, len, mpd->wbc);
-+	err = ext4_bio_write_page(&mpd->io_submit, page, len, mpd->wbc, false);
- 	if (!err)
- 		mpd->wbc->nr_to_write--;
- 	mpd->first_page++;
---- a/fs/ext4/page-io.c
-+++ b/fs/ext4/page-io.c
-@@ -401,7 +401,8 @@ submit_and_retry:
- int ext4_bio_write_page(struct ext4_io_submit *io,
- 			struct page *page,
- 			int len,
--			struct writeback_control *wbc)
-+			struct writeback_control *wbc,
-+			bool keep_towrite)
- {
- 	struct inode *inode = page->mapping->host;
- 	unsigned block_start, blocksize;
-@@ -414,7 +415,10 @@ int ext4_bio_write_page(struct ext4_io_s
- 	BUG_ON(!PageLocked(page));
- 	BUG_ON(PageWriteback(page));
- 
--	set_page_writeback(page);
-+	if (keep_towrite)
-+		set_page_writeback_keepwrite(page);
-+	else
-+		set_page_writeback(page);
- 	ClearPageError(page);
- 
- 	/*
---- a/include/linux/page-flags.h
-+++ b/include/linux/page-flags.h
-@@ -317,13 +317,23 @@ CLEARPAGEFLAG(Uptodate, uptodate)
- extern void cancel_dirty_page(struct page *page, unsigned int account_size);
- 
- int test_clear_page_writeback(struct page *page);
--int test_set_page_writeback(struct page *page);
-+int __test_set_page_writeback(struct page *page, bool keep_write);
+ 	err = sierra_submit_rx_urbs(port, GFP_KERNEL);
+-	if (err) {
+-		/* get rid of everything as in close */
+-		sierra_close(port);
+-		/* restore balance for autopm */
+-		if (!serial->disconnected)
+-			usb_autopm_put_interface(serial->interface);
+-		return err;
+-	}
++	if (err)
++		goto err_submit;
 +
-+#define test_set_page_writeback(page)			\
-+	__test_set_page_writeback(page, false)
-+#define test_set_page_writeback_keepwrite(page)	\
-+	__test_set_page_writeback(page, true)
+ 	sierra_send_setup(port);
  
- static inline void set_page_writeback(struct page *page)
- {
- 	test_set_page_writeback(page);
- }
+ 	serial->interface->needs_remote_wakeup = 1;
+@@ -833,6 +828,16 @@ static int sierra_open(struct tty_struct
+ 	usb_autopm_put_interface(serial->interface);
  
-+static inline void set_page_writeback_keepwrite(struct page *page)
-+{
-+	test_set_page_writeback_keepwrite(page);
-+}
+ 	return 0;
 +
- #ifdef CONFIG_PAGEFLAGS_EXTENDED
- /*
-  * System with lots of page flags available. This allows separate
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -2398,7 +2398,7 @@ int test_clear_page_writeback(struct pag
- 	return ret;
++err_submit:
++	sierra_stop_rx_urbs(port);
++
++	for (i = 0; i < portdata->num_in_urbs; i++) {
++		sierra_release_urb(portdata->in_urbs[i]);
++		portdata->in_urbs[i] = NULL;
++	}
++
++	return err;
  }
  
--int test_set_page_writeback(struct page *page)
-+int __test_set_page_writeback(struct page *page, bool keep_write)
- {
- 	struct address_space *mapping = page_mapping(page);
- 	int ret;
-@@ -2423,9 +2423,10 @@ int test_set_page_writeback(struct page
- 			radix_tree_tag_clear(&mapping->page_tree,
- 						page_index(page),
- 						PAGECACHE_TAG_DIRTY);
--		radix_tree_tag_clear(&mapping->page_tree,
--				     page_index(page),
--				     PAGECACHE_TAG_TOWRITE);
-+		if (!keep_write)
-+			radix_tree_tag_clear(&mapping->page_tree,
-+						page_index(page),
-+						PAGECACHE_TAG_TOWRITE);
- 		spin_unlock_irqrestore(&mapping->tree_lock, flags);
- 	} else {
- 		ret = TestSetPageWriteback(page);
-@@ -2436,7 +2437,7 @@ int test_set_page_writeback(struct page
- 	return ret;
  
- }
--EXPORT_SYMBOL(test_set_page_writeback);
-+EXPORT_SYMBOL(__test_set_page_writeback);
- 
- /*
-  * Return true if any of the pages in the mapping are marked with the
 
 
