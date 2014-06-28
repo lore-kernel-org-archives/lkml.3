@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932419AbaF1SY3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:24:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54003 "EHLO
+	id S932396AbaF1SY2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:24:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54007 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755754AbaF1RvP (ORCPT
+	with ESMTP id S1755764AbaF1RvP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Jun 2014 13:51:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: [PATCH 3.15 011/139] Staging: rtl8188eu: overflow in update_sta_support_rate()
-Date: Sat, 28 Jun 2014 10:46:12 -0700
-Message-Id: <20140628174605.877565091@linuxfoundation.org>
+        Kamlakant Patel <kamlakant.patel@broadcom.com>,
+        Mona Anonuevo <manonuevo@micron.com>, linux-mtd@lists.infradead.org,
+        Stephen Boyd <sboyd@codeaurora.org>
+Subject: [PATCH 3.15 012/139] staging/mt29f_spinand: Terminate of match table
+Date: Sat, 28 Jun 2014 10:46:13 -0700
+Message-Id: <20140628174605.931829574@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -28,43 +30,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Stephen Boyd <sboyd@codeaurora.org>
 
-commit 9dbd79aeb9842144d9a114a979a12c0949ee11eb upstream.
+commit ffd07de65ef5315053ea16356cd533b7f47c17e9 upstream.
 
-The ->SupportedRates[] array has NDIS_802_11_LENGTH_RATES_EX (16)
-elements.  Since "ie_len" comes from then network and can go up to 255
-then it means we should add a range check to prevent memory corruption.
+Failure to terminate this match table can lead to boot failures
+depending on where the compiler places the match table.
 
-Fixes: d6846af679e0 ('staging: r8188eu: Add files for new driver - part 7')
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Kamlakant Patel <kamlakant.patel@broadcom.com>
+Cc: Mona Anonuevo <manonuevo@micron.com>
+Cc: linux-mtd@lists.infradead.org
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/rtl8188eu/core/rtw_wlan_util.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/staging/mt29f_spinand/mt29f_spinand.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/staging/rtl8188eu/core/rtw_wlan_util.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_wlan_util.c
-@@ -1599,13 +1599,18 @@ int update_sta_support_rate(struct adapt
- 	pIE = (struct ndis_802_11_var_ie *)rtw_get_ie(pvar_ie, _SUPPORTEDRATES_IE_, &ie_len, var_ie_len);
- 	if (pIE == NULL)
- 		return _FAIL;
-+	if (ie_len > NDIS_802_11_LENGTH_RATES_EX)
-+		return _FAIL;
+--- a/drivers/staging/mt29f_spinand/mt29f_spinand.c
++++ b/drivers/staging/mt29f_spinand/mt29f_spinand.c
+@@ -924,6 +924,7 @@ static int spinand_remove(struct spi_dev
  
- 	memcpy(pmlmeinfo->FW_sta_info[cam_idx].SupportedRates, pIE->data, ie_len);
- 	supportRateNum = ie_len;
+ static const struct of_device_id spinand_dt[] = {
+ 	{ .compatible = "spinand,mt29f", },
++	{}
+ };
  
- 	pIE = (struct ndis_802_11_var_ie *)rtw_get_ie(pvar_ie, _EXT_SUPPORTEDRATES_IE_, &ie_len, var_ie_len);
--	if (pIE)
-+	if (pIE) {
-+		if (supportRateNum + ie_len > NDIS_802_11_LENGTH_RATES_EX)
-+			return _FAIL;
- 		memcpy((pmlmeinfo->FW_sta_info[cam_idx].SupportedRates + supportRateNum), pIE->data, ie_len);
-+	}
- 
- 	return _SUCCESS;
- }
+ /*
 
 
