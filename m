@@ -1,52 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752680AbaF1Mpy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 08:45:54 -0400
-Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:16120 "EHLO
-	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751621AbaF1Mpw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 08:45:52 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AkUHAJ24rlNbsk2v/2dsb2JhbABagw2regUBAQEBAQEFAW0BmQKBCBd1hDEvI4ECGC4JiC4DFQG+PQ2GUheFZIZ7giYdhC0FmF+Bfo1rhhCCAIFEOw
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org
-Subject: [PATCH 1/1] drivers/usb/serial/mos7840.c: remove unnecessary null test before kfree
-Date: Sat, 28 Jun 2014 14:44:09 +0200
-Message-Id: <1403959449-5986-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	id S1752694AbaF1Mwx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 08:52:53 -0400
+Received: from mga03.intel.com ([143.182.124.21]:52235 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751621AbaF1Mww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Jun 2014 08:52:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,567,1400050800"; 
+   d="scan'208";a="451100497"
+Date: Sat, 28 Jun 2014 08:52:50 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, linux-nvme@lists.infradead.org
+Subject: Re: [PATCH -next 04/26] block: Use dma_zalloc_coherent
+Message-ID: <20140628125250.GT12025@linux.intel.com>
+References: <cover.1402863904.git.joe@perches.com>
+ <ff8b612a77e9c4d5826df68b3e6fe27b800610e9.1402863905.git.joe@perches.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ff8b612a77e9c4d5826df68b3e6fe27b800610e9.1402863905.git.joe@perches.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Johan Hovold <jhovold@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-usb@vger.kernel.org
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- drivers/usb/serial/mos7840.c | 5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+On Sun, Jun 15, 2014 at 01:37:33PM -0700, Joe Perches wrote:
+> Use the zeroing function instead of dma_alloc_coherent & memset(,0,)
 
-diff --git a/drivers/usb/serial/mos7840.c b/drivers/usb/serial/mos7840.c
-index 393be56..3d88eef 100644
---- a/drivers/usb/serial/mos7840.c
-+++ b/drivers/usb/serial/mos7840.c
-@@ -1181,10 +1181,7 @@ static void mos7840_close(struct usb_serial_port *port)
- 	/* Freeing Write URBs */
- 	for (j = 0; j < NUM_URBS; ++j) {
- 		if (mos7840_port->write_urb_pool[j]) {
--			if (mos7840_port->write_urb_pool[j]->transfer_buffer)
--				kfree(mos7840_port->write_urb_pool[j]->
--				      transfer_buffer);
--
-+			kfree(mos7840_port->write_urb_pool[j]->transfer_buffer);
- 			usb_free_urb(mos7840_port->write_urb_pool[j]);
- 		}
- 	}
--- 
-1.8.4.5
-
+Applied
