@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754564AbaF1RsZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:48:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53025 "EHLO
+	id S1756446AbaF1THw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 15:07:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53034 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754502AbaF1RsU (ORCPT
+	with ESMTP id S1754524AbaF1RsX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:48:20 -0400
+	Sat, 28 Jun 2014 13:48:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Olivier Langlois <olivier@trillion01.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.10 45/77] media: uvcvideo: Fix clock param realtime setting
-Date: Sat, 28 Jun 2014 10:46:38 -0700
-Message-Id: <20140628174523.875022250@linuxfoundation.org>
+        Jianguo Wu <wujianguo@huawei.com>, Marc Zyngier <marc.zyngier@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 3.10 47/77] ARM: 8037/1: mm: support big-endian page tables
+Date: Sat, 28 Jun 2014 10:46:40 -0700
+Message-Id: <20140628174523.987302604@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174521.691276402@linuxfoundation.org>
 References: <20140628174521.691276402@linuxfoundation.org>
@@ -30,73 +30,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olivier Langlois <olivier@trillion01.com>
+From: Jianguo Wu <wujianguo@huawei.com>
 
-commit 3b35fc81e7ec552147a4fd843d0da0bbbe4ef253 upstream.
+commit 86f40622af7329375e38f282f6c0aab95f3e5f72 upstream.
 
-timestamps in v4l2 buffers returned to userspace are updated in
-uvc_video_clock_update() which uses timestamps fetched from
-uvc_video_clock_decode() by calling unconditionally ktime_get_ts().
+When enable LPAE and big-endian in a hisilicon board, while specify
+mem=384M mem=512M@7680M, will get bad page state:
 
-Hence setting the module clock param to realtime has no effect before
-this patch.
+Freeing unused kernel memory: 180K (c0466000 - c0493000)
+BUG: Bad page state in process init  pfn:fa442
+page:c7749840 count:0 mapcount:-1 mapping:  (null) index:0x0
+page flags: 0x40000400(reserved)
+Modules linked in:
+CPU: 0 PID: 1 Comm: init Not tainted 3.10.27+ #66
+[<c000f5f0>] (unwind_backtrace+0x0/0x11c) from [<c000cbc4>] (show_stack+0x10/0x14)
+[<c000cbc4>] (show_stack+0x10/0x14) from [<c009e448>] (bad_page+0xd4/0x104)
+[<c009e448>] (bad_page+0xd4/0x104) from [<c009e520>] (free_pages_prepare+0xa8/0x14c)
+[<c009e520>] (free_pages_prepare+0xa8/0x14c) from [<c009f8ec>] (free_hot_cold_page+0x18/0xf0)
+[<c009f8ec>] (free_hot_cold_page+0x18/0xf0) from [<c00b5444>] (handle_pte_fault+0xcf4/0xdc8)
+[<c00b5444>] (handle_pte_fault+0xcf4/0xdc8) from [<c00b6458>] (handle_mm_fault+0xf4/0x120)
+[<c00b6458>] (handle_mm_fault+0xf4/0x120) from [<c0013754>] (do_page_fault+0xfc/0x354)
+[<c0013754>] (do_page_fault+0xfc/0x354) from [<c0008400>] (do_DataAbort+0x2c/0x90)
+[<c0008400>] (do_DataAbort+0x2c/0x90) from [<c0008fb4>] (__dabt_usr+0x34/0x40)
 
-This has been tested with ffmpeg:
+The bad pfn:fa442 is not system memory(mem=384M mem=512M@7680M), after debugging,
+I find in page fault handler, will get wrong pfn from pte just after set pte,
+as follow:
+do_anonymous_page()
+{
+	...
+	set_pte_at(mm, address, page_table, entry);
 
-ffmpeg -y -f v4l2 -input_format yuyv422 -video_size 640x480 -framerate 30 -i /dev/video0 \
- -f alsa -acodec pcm_s16le -ar 16000 -ac 1 -i default \
- -c:v libx264 -preset ultrafast \
- -c:a libfdk_aac \
- out.mkv
+	//debug code
+	pfn = pte_pfn(entry);
+	pr_info("pfn:0x%lx, pte:0x%llxn", pfn, pte_val(entry));
 
-and inspecting the v4l2 input starting timestamp.
+	//read out the pte just set
+	new_pte = pte_offset_map(pmd, address);
+	new_pfn = pte_pfn(*new_pte);
+	pr_info("new pfn:0x%lx, new pte:0x%llxn", pfn, pte_val(entry));
+	...
+}
 
-Signed-off-by: Olivier Langlois <olivier@trillion01.com>
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+pfn:   0x1fa4f5,     pte:0xc00001fa4f575f
+new_pfn:0xfa4f5, new_pte:0xc00000fa4f5f5f	//new pfn/pte is wrong.
+
+The bug is happened in cpu_v7_set_pte_ext(ptep, pte):
+An LPAE PTE is a 64bit quantity, passed to cpu_v7_set_pte_ext in the r2 and r3 registers.
+On an LE kernel, r2 contains the LSB of the PTE, and r3 the MSB.
+On a BE kernel, the assignment is reversed.
+
+Unfortunately, the current code always assumes the LE case,
+leading to corruption of the PTE when clearing/setting bits.
+
+This patch fixes this issue much like it has been done already in the
+cpu_v7_switch_mm case.
+
+Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+Acked-by: Marc Zyngier <marc.zyngier@arm.com>
+Acked-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/usb/uvc/uvc_video.c |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ arch/arm/mm/proc-v7-3level.S |   18 +++++++++++++-----
+ 1 file changed, 13 insertions(+), 5 deletions(-)
 
---- a/drivers/media/usb/uvc/uvc_video.c
-+++ b/drivers/media/usb/uvc/uvc_video.c
-@@ -361,6 +361,14 @@ static int uvc_commit_video(struct uvc_s
-  * Clocks and timestamps
-  */
+--- a/arch/arm/mm/proc-v7-3level.S
++++ b/arch/arm/mm/proc-v7-3level.S
+@@ -56,6 +56,14 @@ ENTRY(cpu_v7_switch_mm)
+ 	mov	pc, lr
+ ENDPROC(cpu_v7_switch_mm)
  
-+static inline void uvc_video_get_ts(struct timespec *ts)
-+{
-+	if (uvc_clock_param == CLOCK_MONOTONIC)
-+		ktime_get_ts(ts);
-+	else
-+		ktime_get_real_ts(ts);
-+}
++#ifdef __ARMEB__
++#define rl r3
++#define rh r2
++#else
++#define rl r2
++#define rh r3
++#endif
 +
- static void
- uvc_video_clock_decode(struct uvc_streaming *stream, struct uvc_buffer *buf,
- 		       const __u8 *data, int len)
-@@ -420,7 +428,7 @@ uvc_video_clock_decode(struct uvc_stream
- 	stream->clock.last_sof = dev_sof;
- 
- 	host_sof = usb_get_current_frame_number(stream->dev->udev);
--	ktime_get_ts(&ts);
-+	uvc_video_get_ts(&ts);
- 
- 	/* The UVC specification allows device implementations that can't obtain
- 	 * the USB frame number to keep their own frame counters as long as they
-@@ -1010,10 +1018,7 @@ static int uvc_video_decode_start(struct
- 			return -ENODATA;
- 		}
- 
--		if (uvc_clock_param == CLOCK_MONOTONIC)
--			ktime_get_ts(&ts);
--		else
--			ktime_get_real_ts(&ts);
-+		uvc_video_get_ts(&ts);
- 
- 		buf->buf.v4l2_buf.sequence = stream->sequence;
- 		buf->buf.v4l2_buf.timestamp.tv_sec = ts.tv_sec;
+ /*
+  * cpu_v7_set_pte_ext(ptep, pte)
+  *
+@@ -65,13 +73,13 @@ ENDPROC(cpu_v7_switch_mm)
+  */
+ ENTRY(cpu_v7_set_pte_ext)
+ #ifdef CONFIG_MMU
+-	tst	r2, #L_PTE_VALID
++	tst	rl, #L_PTE_VALID
+ 	beq	1f
+-	tst	r3, #1 << (57 - 32)		@ L_PTE_NONE
+-	bicne	r2, #L_PTE_VALID
++	tst	rh, #1 << (57 - 32)		@ L_PTE_NONE
++	bicne	rl, #L_PTE_VALID
+ 	bne	1f
+-	tst	r3, #1 << (55 - 32)		@ L_PTE_DIRTY
+-	orreq	r2, #L_PTE_RDONLY
++	tst	rh, #1 << (55 - 32)		@ L_PTE_DIRTY
++	orreq	rl, #L_PTE_RDONLY
+ 1:	strd	r2, r3, [r0]
+ 	ALT_SMP(W(nop))
+ 	ALT_UP (mcr	p15, 0, r0, c7, c10, 1)		@ flush_pte
 
 
