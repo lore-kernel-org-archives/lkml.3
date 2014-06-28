@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756578AbaF1SNm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:13:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54206 "EHLO
+	id S1756561AbaF1SNl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:13:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54209 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755932AbaF1Rv5 (ORCPT
+	with ESMTP id S1755934AbaF1Rv5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Jun 2014 13:51:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.15 058/139] USB: sierra: fix remote wakeup
-Date: Sat, 28 Jun 2014 10:46:59 -0700
-Message-Id: <20140628174608.082541691@linuxfoundation.org>
+        David Binderman <dcb314@hotmail.com>,
+        Bob Moore <robert.moore@intel.com>, Lv Zheng <lv.zheng@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.15 067/139] ACPICA: utstring: Check array index bound before use.
+Date: Sat, 28 Jun 2014 10:47:08 -0700
+Message-Id: <20140628174608.491091763@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -28,69 +30,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: David Binderman <dcb314@hotmail.com>
 
-commit 80cc0fcbdaeaf10d04ba27779a2d7ceb73d2717a upstream.
+commit 5d42b0fa25df7ef2f575107597c1aaebe2407d10 upstream.
 
-Make sure that needs_remote_wake up is always set when there are open
-ports.
+ACPICA BZ 1077. David Binderman.
 
-Currently close() would unconditionally set needs_remote_wakeup to 0
-even though there might still be open ports. This could lead to blocked
-input and possibly dropped data on devices that do not support remote
-wakeup (and which must therefore not be runtime suspended while open).
-
-Add an open_ports counter (protected by the susp_lock) and only clear
-needs_remote_wakeup when the last port is closed.
-
-Fixes: e6929a9020ac ("USB: support for autosuspend in sierra while
-online")
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+References: https://bugs.acpica.org/show_bug.cgi?id=1077
+Signed-off-by: David Binderman <dcb314@hotmail.com>
+Signed-off-by: Bob Moore <robert.moore@intel.com>
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/sierra.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/acpi/acpica/utstring.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -58,6 +58,7 @@ struct sierra_intf_private {
- 	spinlock_t susp_lock;
- 	unsigned int suspended:1;
- 	int in_flight;
-+	unsigned int open_ports;
- };
+--- a/drivers/acpi/acpica/utstring.c
++++ b/drivers/acpi/acpica/utstring.c
+@@ -353,7 +353,7 @@ void acpi_ut_print_string(char *string,
+ 	}
  
- static int sierra_set_power_state(struct usb_device *udev, __u16 swiState)
-@@ -768,7 +769,6 @@ static void sierra_close(struct usb_seri
+ 	acpi_os_printf("\"");
+-	for (i = 0; string[i] && (i < max_length); i++) {
++	for (i = 0; (i < max_length) && string[i]; i++) {
  
- 	mutex_lock(&serial->disc_mutex);
- 	if (!serial->disconnected) {
--		serial->interface->needs_remote_wakeup = 0;
- 		/* odd error handling due to pm counters */
- 		if (!usb_autopm_get_interface(serial->interface))
- 			sierra_send_setup(port);
-@@ -779,6 +779,8 @@ static void sierra_close(struct usb_seri
- 	mutex_unlock(&serial->disc_mutex);
- 	spin_lock_irq(&intfdata->susp_lock);
- 	portdata->opened = 0;
-+	if (--intfdata->open_ports == 0)
-+		serial->interface->needs_remote_wakeup = 0;
- 	spin_unlock_irq(&intfdata->susp_lock);
- 
- 	for (;;) {
-@@ -834,9 +836,10 @@ static int sierra_open(struct tty_struct
- 
- 	sierra_send_setup(port);
- 
--	serial->interface->needs_remote_wakeup = 1;
- 	spin_lock_irq(&intfdata->susp_lock);
- 	portdata->opened = 1;
-+	if (++intfdata->open_ports == 1)
-+		serial->interface->needs_remote_wakeup = 1;
- 	spin_unlock_irq(&intfdata->susp_lock);
- 	usb_autopm_put_interface(serial->interface);
+ 		/* Escape sequences */
  
 
 
