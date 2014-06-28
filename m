@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756885AbaF1S37 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:29:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53729 "EHLO
+	id S1756891AbaF1Saj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:30:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53719 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755634AbaF1Ruy (ORCPT
+	with ESMTP id S1755622AbaF1Rux (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:50:54 -0400
+	Sat, 28 Jun 2014 13:50:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin LaHaise <bcrl@kvack.org>, Mateusz Guzik <mguzik@redhat.com>,
-        Petr Matousek <pmatouse@redhat.com>,
-        Kent Overstreet <kmo@daterainc.com>, Jeff Moyer <jmoyer@redhat.com>
-Subject: [PATCH 3.14 089/110] aio: fix kernel memory disclosure in io_getevents() introduced in v3.10
-Date: Sat, 28 Jun 2014 10:47:26 -0700
-Message-Id: <20140628174550.787475154@linuxfoundation.org>
+        Robert White <rwhite@pobox.com>,
+        Filipe David Borba Manana <fdmanana@gmail.com>,
+        Chris Mason <clm@fb.com>
+Subject: [PATCH 3.14 098/110] Btrfs: send, dont error in the presence of subvols/snapshots
+Date: Sat, 28 Jun 2014 10:47:35 -0700
+Message-Id: <20140628174551.257251119@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -30,42 +30,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin LaHaise <bcrl@kvack.org>
+From: Filipe Manana <fdmanana@gmail.com>
 
-commit edfbbf388f293d70bf4b7c0bc38774d05e6f711a upstream.
+commit 1af56070e3ef9477dbc7eba3b9ad7446979c7974 upstream.
 
-A kernel memory disclosure was introduced in aio_read_events_ring() in v3.10
-by commit a31ad380bed817aa25f8830ad23e1a0480fef797.  The changes made to
-aio_read_events_ring() failed to correctly limit the index into
-ctx->ring_pages[], allowing an attacked to cause the subsequent kmap() of
-an arbitrary page with a copy_to_user() to copy the contents into userspace.
-This vulnerability has been assigned CVE-2014-0206.  Thanks to Mateusz and
-Petr for disclosing this issue.
+If we are doing an incremental send and the base snapshot has a
+directory with name X that doesn't exist anymore in the second
+snapshot and a new subvolume/snapshot exists in the second snapshot
+that has the same name as the directory (name X), the incremental
+send would fail with -ENOENT error. This is because it attempts
+to lookup for an inode with a number matching the objectid of a
+root, which doesn't exist.
 
-This patch applies to v3.12+.  A separate backport is needed for 3.10/3.11.
+Steps to reproduce:
 
-Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
-Cc: Mateusz Guzik <mguzik@redhat.com>
-Cc: Petr Matousek <pmatouse@redhat.com>
-Cc: Kent Overstreet <kmo@daterainc.com>
-Cc: Jeff Moyer <jmoyer@redhat.com>
+    mkfs.btrfs -f /dev/sdd
+    mount /dev/sdd /mnt
+
+    mkdir /mnt/testdir
+    btrfs subvolume snapshot -r /mnt /mnt/mysnap1
+
+    rmdir /mnt/testdir
+    btrfs subvolume create /mnt/testdir
+    btrfs subvolume snapshot -r /mnt /mnt/mysnap2
+
+    btrfs send -p /mnt/mysnap1 /mnt/mysnap2 -f /tmp/send.data
+
+A test case for xfstests follows.
+
+Reported-by: Robert White <rwhite@pobox.com>
+Signed-off-by: Filipe David Borba Manana <fdmanana@gmail.com>
+Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/aio.c |    3 +++
- 1 file changed, 3 insertions(+)
+ fs/btrfs/send.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -1049,6 +1049,9 @@ static long aio_read_events_ring(struct
- 	if (head == tail)
+--- a/fs/btrfs/send.c
++++ b/fs/btrfs/send.c
+@@ -1589,6 +1589,10 @@ static int lookup_dir_item_inode(struct
  		goto out;
+ 	}
+ 	btrfs_dir_item_key_to_cpu(path->nodes[0], di, &key);
++	if (key.type == BTRFS_ROOT_ITEM_KEY) {
++		ret = -ENOENT;
++		goto out;
++	}
+ 	*found_inode = key.objectid;
+ 	*found_type = btrfs_dir_type(path->nodes[0], di);
  
-+	head %= ctx->nr_events;
-+	tail %= ctx->nr_events;
-+
- 	while (ret < nr) {
- 		long avail;
- 		struct io_event *ev;
 
 
