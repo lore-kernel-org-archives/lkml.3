@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751865AbaF1GVJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 02:21:09 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:40022 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751061AbaF1GVH (ORCPT
+	id S1752242AbaF1GVW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 02:21:22 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:37658 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751339AbaF1GVU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 02:21:07 -0400
+	Sat, 28 Jun 2014 02:21:20 -0400
 MIME-Version: 1.0
-In-Reply-To: <CALCETrWGUui53hpRYtA9zmLKLf-r-nC8urq_JgJoRnzRb1d_1w@mail.gmail.com>
-References: <1403913966-4927-1-git-send-email-ast@plumgrid.com>
-	<1403913966-4927-14-git-send-email-ast@plumgrid.com>
-	<CALCETrWGUui53hpRYtA9zmLKLf-r-nC8urq_JgJoRnzRb1d_1w@mail.gmail.com>
-Date: Fri, 27 Jun 2014 23:21:05 -0700
-Message-ID: <CAMEtUuyPF3KRLmJQ=_6nb4kBfc+nBdAyib_3VSgFZ8oSTgHXRg@mail.gmail.com>
-Subject: Re: [PATCH RFC net-next 13/14] samples: bpf: example of stateful
- socket filtering
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1403926333.5113.12.camel@marge.simpson.net>
+References: <CANGgnMbHckBQdKGN_N5Q6qEKc9n1CenxvMpeXog1NbSdL8UrTw@mail.gmail.com>
+ <CANGgnMYDXerOUDOO9-RHMJKadKACA2KBGskZwoP-1ZwAhDEfVA@mail.gmail.com>
+ <CAFLxGvxfBt7OvW=a2Kz08GLHSEiiOZsN-vB19CXnQiwqFxqMsA@mail.gmail.com>
+ <CANGgnMYVoP-Z0Bv-VDEkJnvfa7Fi4-zY2F4A0PhMewGvwo3VVw@mail.gmail.com>
+ <alpine.DEB.2.10.1406270027300.5170@nanos> <CANGgnMa+qtgJ3wwg_h5Rynw5vEvZpQZ6PvaUfXNQ8+Y3Yu5U0g@mail.gmail.com>
+ <1403873856.5827.56.camel@marge.simpson.net> <20140627100157.6b0143a5@gandalf.local.home>
+ <1403890493.5830.33.camel@marge.simpson.net> <20140627135415.7246e87e@gandalf.local.home>
+ <1403892474.5830.41.camel@marge.simpson.net> <20140627141903.16817c28@gandalf.local.home>
+ <CANGgnMZrx1s5AomG-L_F74215RE1uJOekTjYmLX0voG4NgakTg@mail.gmail.com> <1403926333.5113.12.camel@marge.simpson.net>
+From: Austin Schuh <austin@peloton-tech.com>
+Date: Fri, 27 Jun 2014 23:20:59 -0700
+Message-ID: <CANGgnMbJ9f4gSz0HbtnCLosYHKyfXwhMt-svUQbBe_d9bv2LGQ@mail.gmail.com>
+Subject: Re: Filesystem lockup with CONFIG_PREEMPT_RT
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Richard Weinberger <richard.weinberger@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        rt-users <linux-rt-users@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 27, 2014 at 5:21 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Fri, Jun 27, 2014 at 5:06 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
->> this socket filter example does:
->>
->> - creates a hashtable in kernel with key 4 bytes and value 8 bytes
->>
->> - populates map[6] = 0; map[17] = 0;  // 6 - tcp_proto, 17 - udp_proto
->>
->> - loads eBPF program:
->>   r0 = skb[14 + 9]; // load one byte of ip->proto
->>   *(u32*)(fp - 4) = r0;
->>   value = bpf_map_lookup_elem(map_id, fp - 4);
->>   if (value)
->>        (*(u64*)value) += 1;
+On Fri, Jun 27, 2014 at 8:32 PM, Mike Galbraith
+<umgwanakikbuti@gmail.com> wrote:
+> On Fri, 2014-06-27 at 18:18 -0700, Austin Schuh wrote:
 >
-> In the code below, this is XADD.  Is there anything that validates
-> that shared things like this can only be poked at by atomic
-> operations?
+>> It would be more context switches, but I wonder if we could kick the
+>> workqueue logic completely out of the scheduler into a thread.  Have
+>> the scheduler increment/decrement an atomic pool counter, and wake up
+>> the monitoring thread to spawn new threads when needed?  That would
+>> get rid of the recursive pool lock problem, and should reduce
+>> scheduler latency if we would need to spawn a new thread.
+>
+> I was wondering the same thing, and not only for workqueue, but also the
+> plug pulling.  It's kind of a wart to have that stuff sitting in the
+> hear of the scheduler in the first place, would be nice if it just went
+> away.  When a task can't help itself, you _could_ wake a proxy do that
+> for you.  Trouble is, I can imagine that being a heck of a lot of
+> context switches with some loads.. and who's gonna help the helper when
+> he blocks while trying to help?
+>
+> -Mike
 
-Correct. The asm code uses xadd to increment packet stats.
-It's up to the program itself to decide what it's doing.
-Some programs may prefer speed vs accuracy when counting
-and they will be using regular "ld, add, st", instead of xadd.
-Verifier checks that programs can only access a valid memory
-region. The program itself needs to do something sensible with it.
-Theoretically I can add a check to verifier that shared map elements
-are read-only and xadd-only, but that limits usability and unnecessary.
-We actually do have a use case when we do a regular add, since
-'lock add' is too costly at high event rates.
+For workqueues, as long as the helper doesn't block on a lock which
+requires the work queue to be freed up, it will eventually become
+unblocked and make progress.  The helper _should_ only need the pool
+lock, which will wake the helper back up when it is available again.
+Nothing should go to sleep in an un-recoverable way with the work pool
+lock held.
+
+To drop the extra context switch, you could have a minimum of 2 worker
+threads around at all times, and have the management thread start the
+work and delegate to the next management thread.  That thread would
+then wait for the first thread to block, spawn a new thread, and then
+start the next piece of work.  Definitely a bit more complicated.
+
+Austin
