@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755293AbaF1Rtr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:49:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53411 "EHLO
+	id S1757202AbaF1Sq7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:46:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53417 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755121AbaF1Rto (ORCPT
+	with ESMTP id S1753954AbaF1Rtr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:49:44 -0400
+	Sat, 28 Jun 2014 13:49:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.14 050/110] USB: sierra: fix urb and memory leak on disconnect
-Date: Sat, 28 Jun 2014 10:46:47 -0700
-Message-Id: <20140628174548.572217040@linuxfoundation.org>
+        Aleksander Morgado <aleksander@aleksander.es>
+Subject: [PATCH 3.14 052/110] usb: qcserial: add Netgear AirCard 341U
+Date: Sat, 28 Jun 2014 10:46:49 -0700
+Message-Id: <20140628174548.732267816@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -28,52 +28,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Aleksander Morgado <aleksander@aleksander.es>
 
-commit 014333f77c0b71123d6ef7d31a9724e0699c9548 upstream.
+commit ff1fcd50bc2459744e6f948310bc18eb7d6e8c72 upstream.
 
-The delayed-write queue was never emptied on disconnect, something which
-would lead to leaked urbs and transfer buffers if the device is
-disconnected before being runtime resumed due to a write.
-
-Fixes: e6929a9020ac ("USB: support for autosuspend in sierra while
-online")
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Aleksander Morgado <aleksander@aleksander.es>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/sierra.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ drivers/usb/serial/qcserial.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -759,6 +759,7 @@ static void sierra_close(struct usb_seri
- 	struct usb_serial *serial = port->serial;
- 	struct sierra_port_private *portdata;
- 	struct sierra_intf_private *intfdata = port->serial->private;
-+	struct urb *urb;
- 
- 	portdata = usb_get_serial_port_data(port);
- 
-@@ -780,6 +781,18 @@ static void sierra_close(struct usb_seri
- 	portdata->opened = 0;
- 	spin_unlock_irq(&intfdata->susp_lock);
- 
-+	for (;;) {
-+		urb = usb_get_from_anchor(&portdata->delayed);
-+		if (!urb)
-+			break;
-+		kfree(urb->transfer_buffer);
-+		usb_free_urb(urb);
-+		usb_autopm_put_interface_async(serial->interface);
-+		spin_lock(&portdata->lock);
-+		portdata->outstanding_urbs--;
-+		spin_unlock(&portdata->lock);
-+	}
-+
- 	sierra_stop_rx_urbs(port);
- 	for (i = 0; i < portdata->num_in_urbs; i++) {
- 		sierra_release_urb(portdata->in_urbs[i]);
+--- a/drivers/usb/serial/qcserial.c
++++ b/drivers/usb/serial/qcserial.c
+@@ -151,6 +151,9 @@ static const struct usb_device_id id_tab
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 0)},	/* Netgear AirCard 340U Device Management */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 2)},	/* Netgear AirCard 340U NMEA */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 3)},	/* Netgear AirCard 340U Modem */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9055, 0)},	/* Netgear AirCard 341U Device Management */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9055, 2)},	/* Netgear AirCard 341U NMEA */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9055, 3)},	/* Netgear AirCard 341U Modem */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 0)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card Device Management */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 2)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card NMEA */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 3)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card Modem */
 
 
