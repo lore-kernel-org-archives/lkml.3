@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755569AbaF1Ruo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:50:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53629 "EHLO
+	id S1755656AbaF1Ru4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:50:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53710 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752121AbaF1Ruf (ORCPT
+	with ESMTP id S1755606AbaF1Ruw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:50:35 -0400
+	Sat, 28 Jun 2014 13:50:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, target-devel <target-devel@vger.kernel.org>
+To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jorge Daniel Sequeira Matias <jdsm@tecnico.ulisboa.pt>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.14 081/110] [PATCH] target: Explicitly clear ramdisk_mcp backend pages
-Date: Sat, 28 Jun 2014 10:47:18 -0700
-Message-Id: <20140628174550.337037420@linuxfoundation.org>
+        Liu Bo <bo.li.liu@oracle.com>, Chris Mason <clm@fb.com>
+Subject: [PATCH 3.14 096/110] Btrfs: mark mapping with error flag to report errors to userspace
+Date: Sat, 28 Jun 2014 10:47:33 -0700
+Message-Id: <20140628174551.155363600@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -29,39 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Liu Bo <bo.li.liu@oracle.com>
 
-[Note that a different patch to address the same issue went in during
-v3.15-rc1 (commit 4442dc8a), but includes a bunch of other changes that
-don't strictly apply to fixing the bug]
+commit 5dca6eea91653e9949ce6eb9e9acab6277e2f2c4 upstream.
 
-This patch changes rd_allocate_sgl_table() to explicitly clear
-ramdisk_mcp backend memory pages by passing __GFP_ZERO into
-alloc_pages().
+According to commit 865ffef3797da2cac85b3354b5b6050dc9660978
+(fs: fix fsync() error reporting),
+it's not stable to just check error pages because pages can be
+truncated or invalidated, we should also mark mapping with error
+flag so that a later fsync can catch the error.
 
-This addresses a potential security issue where reading from a
-ramdisk_mcp could return sensitive information, and follows what
->= v3.15 does to explicitly clear ramdisk_mcp memory at backend
-device initialization time.
-
-Reported-by: Jorge Daniel Sequeira Matias <jdsm@tecnico.ulisboa.pt>
-Cc: Jorge Daniel Sequeira Matias <jdsm@tecnico.ulisboa.pt>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Liu Bo <bo.li.liu@oracle.com>
+Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_rd.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/btrfs/extent_io.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/target/target_core_rd.c
-+++ b/drivers/target/target_core_rd.c
-@@ -158,7 +158,7 @@ static int rd_allocate_sgl_table(struct
- 						- 1;
- 
- 		for (j = 0; j < sg_per_table; j++) {
--			pg = alloc_pages(GFP_KERNEL, 0);
-+			pg = alloc_pages(GFP_KERNEL | __GFP_ZERO, 0);
- 			if (!pg) {
- 				pr_err("Unable to allocate scatterlist"
- 					" pages for struct rd_dev_sg_table\n");
+--- a/fs/btrfs/extent_io.c
++++ b/fs/btrfs/extent_io.c
+@@ -2361,6 +2361,8 @@ int end_extent_writepage(struct page *pa
+ 	if (!uptodate) {
+ 		ClearPageUptodate(page);
+ 		SetPageError(page);
++		ret = ret < 0 ? ret : -EIO;
++		mapping_set_error(page->mapping, ret);
+ 	}
+ 	return 0;
+ }
 
 
