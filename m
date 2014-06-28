@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755842AbaF1Rvd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:51:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54072 "EHLO
+	id S932218AbaF1Rvg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:51:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54100 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753690AbaF1Rv3 (ORCPT
+	with ESMTP id S1753690AbaF1Rve (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:51:29 -0400
+	Sat, 28 Jun 2014 13:51:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>, Vlastimil Babka <vbabka@suse.cz>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Jan Kara <jack@suse.cz>,
-        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
-        Dave Hansen <dave.hansen@intel.com>, Theodore Tso <tytso@mit.edu>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Tony Luck <tony.luck@intel.com>, Kamil Iskra <iskra@mcs.anl.gov>,
+        Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@suse.de>,
+        Chen Gong <gong.chen@linux.jf.intel.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.15 026/139] mm: page_alloc: use word-based accesses for get/set pageblock bitmaps
-Date: Sat, 28 Jun 2014 10:46:27 -0700
-Message-Id: <20140628174606.603821950@linuxfoundation.org>
+Subject: [PATCH 3.15 029/139] mm/memory-failure.c: support use of a dedicated thread to handle SIGBUS(BUS_MCEERR_AO)
+Date: Sat, 28 Jun 2014 10:46:30 -0700
+Message-Id: <20140628174606.743781592@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -37,237 +33,162 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-commit e58469bafd0524e848c3733bc3918d854595e20f upstream.
+commit 3ba08129e38437561df44c36b7ea9081185d5333 upstream.
 
-The test_bit operations in get/set pageblock flags are expensive.  This
-patch reads the bitmap on a word basis and use shifts and masks to isolate
-the bits of interest.  Similarly masks are used to set a local copy of the
-bitmap and then use cmpxchg to update the bitmap if there have been no
-other changes made in parallel.
+Currently memory error handler handles action optional errors in the
+deferred manner by default.  And if a recovery aware application wants
+to handle it immediately, it can do it by setting PF_MCE_EARLY flag.
+However, such signal can be sent only to the main thread, so it's
+problematic if the application wants to have a dedicated thread to
+handler such signals.
 
-In a test running dd onto tmpfs the overhead of the pageblock-related
-functions went from 1.27% in profiles to 0.5%.
+So this patch adds dedicated thread support to memory error handler.  We
+have PF_MCE_EARLY flags for each thread separately, so with this patch
+AO signal is sent to the thread with PF_MCE_EARLY flag set, not the main
+thread.  If you want to implement a dedicated thread, you call prctl()
+to set PF_MCE_EARLY on the thread.
 
-In addition to the performance benefits, this patch closes races that are
-possible between:
+Memory error handler collects processes to be killed, so this patch lets
+it check PF_MCE_EARLY flag on each thread in the collecting routines.
 
-a) get_ and set_pageblock_migratetype(), where get_pageblock_migratetype()
-   reads part of the bits before and other part of the bits after
-   set_pageblock_migratetype() has updated them.
+No behavioral change for all non-early kill cases.
 
-b) set_pageblock_migratetype() and set_pageblock_skip(), where the non-atomic
-   read-modify-update set bit operation in set_pageblock_skip() will cause
-   lost updates to some bits changed in the set_pageblock_migratetype().
+Tony said:
 
-Joonsoo Kim first reported the case a) via code inspection.  Vlastimil
-Babka's testing with a debug patch showed that either a) or b) occurs
-roughly once per mmtests' stress-highalloc benchmark (although not
-necessarily in the same pageblock).  Furthermore during development of
-unrelated compaction patches, it was observed that frequent calls to
-{start,undo}_isolate_page_range() the race occurs several thousands of
-times and has resulted in NULL pointer dereferences in move_freepages()
-and free_one_page() in places where free_list[migratetype] is
-manipulated by e.g.  list_move().  Further debugging confirmed that
-migratetype had invalid value of 6, causing out of bounds access to the
-free_list array.
+: The old behavior was crazy - someone with a multithreaded process might
+: well expect that if they call prctl(PF_MCE_EARLY) in just one thread, then
+: that thread would see the SIGBUS with si_code = BUS_MCEERR_A0 - even if
+: that thread wasn't the main thread for the process.
 
-That confirmed that the race exist, although it may be extremely rare,
-and currently only fatal where page isolation is performed due to
-memory hot remove.  Races on pageblocks being updated by
-set_pageblock_migratetype(), where both old and new migratetype are
-lower MIGRATE_RESERVE, currently cannot result in an invalid value
-being observed, although theoretically they may still lead to
-unexpected creation or destruction of MIGRATE_RESERVE pageblocks.
-Furthermore, things could get suddenly worse when memory isolation is
-used more, or when new migratetypes are added.
-
-After this patch, the race has no longer been observed in testing.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Vlastimil Babka <vbabka@suse.cz>
-Reported-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Reported-and-tested-by: Vlastimil Babka <vbabka@suse.cz>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Dave Hansen <dave.hansen@intel.com>
-Cc: Theodore Ts'o <tytso@mit.edu>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
+[akpm@linux-foundation.org: coding-style fixes]
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Reviewed-by: Tony Luck <tony.luck@intel.com>
+Cc: Kamil Iskra <iskra@mcs.anl.gov>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Borislav Petkov <bp@suse.de>
+Cc: Chen Gong <gong.chen@linux.jf.intel.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/mmzone.h          |    6 +++-
- include/linux/pageblock-flags.h |   37 +++++++++++++++++++++++-----
- mm/page_alloc.c                 |   52 ++++++++++++++++++++++++----------------
- 3 files changed, 68 insertions(+), 27 deletions(-)
+ Documentation/vm/hwpoison.txt |    5 +++
+ mm/memory-failure.c           |   56 ++++++++++++++++++++++++++++++++----------
+ 2 files changed, 48 insertions(+), 13 deletions(-)
 
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -75,9 +75,13 @@ enum {
- 
- extern int page_group_by_mobility_disabled;
- 
-+#define NR_MIGRATETYPE_BITS (PB_migrate_end - PB_migrate + 1)
-+#define MIGRATETYPE_MASK ((1UL << NR_MIGRATETYPE_BITS) - 1)
+--- a/Documentation/vm/hwpoison.txt
++++ b/Documentation/vm/hwpoison.txt
+@@ -84,6 +84,11 @@ PR_MCE_KILL
+ 		PR_MCE_KILL_EARLY: Early kill
+ 		PR_MCE_KILL_LATE:  Late kill
+ 		PR_MCE_KILL_DEFAULT: Use system global default
++	Note that if you want to have a dedicated thread which handles
++	the SIGBUS(BUS_MCEERR_AO) on behalf of the process, you should
++	call prctl(PR_MCE_KILL_EARLY) on the designated thread. Otherwise,
++	the SIGBUS is sent to the main thread.
 +
- static inline int get_pageblock_migratetype(struct page *page)
- {
--	return get_pageblock_flags_group(page, PB_migrate, PB_migrate_end);
-+	BUILD_BUG_ON(PB_migrate_end - PB_migrate != 2);
-+	return get_pageblock_flags_mask(page, PB_migrate_end, MIGRATETYPE_MASK);
+ PR_MCE_KILL_GET
+ 	return current mode
+ 
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -380,15 +380,44 @@ static void kill_procs(struct list_head
+ 	}
  }
  
- struct free_area {
---- a/include/linux/pageblock-flags.h
-+++ b/include/linux/pageblock-flags.h
-@@ -30,9 +30,12 @@ enum pageblock_bits {
- 	PB_migrate,
- 	PB_migrate_end = PB_migrate + 3 - 1,
- 			/* 3 bits required for migrate types */
--#ifdef CONFIG_COMPACTION
- 	PB_migrate_skip,/* If set the block is skipped by compaction */
--#endif /* CONFIG_COMPACTION */
+-static int task_early_kill(struct task_struct *tsk, int force_early)
++/*
++ * Find a dedicated thread which is supposed to handle SIGBUS(BUS_MCEERR_AO)
++ * on behalf of the thread group. Return task_struct of the (first found)
++ * dedicated thread if found, and return NULL otherwise.
++ *
++ * We already hold read_lock(&tasklist_lock) in the caller, so we don't
++ * have to call rcu_read_lock/unlock() in this function.
++ */
++static struct task_struct *find_early_kill_thread(struct task_struct *tsk)
+ {
++	struct task_struct *t;
 +
-+	/*
-+	 * Assume the bits will always align on a word. If this assumption
-+	 * changes then get/set pageblock needs updating.
-+	 */
- 	NR_PAGEBLOCK_BITS
- };
- 
-@@ -62,11 +65,33 @@ extern int pageblock_order;
- /* Forward declaration */
- struct page;
- 
-+unsigned long get_pageblock_flags_mask(struct page *page,
-+				unsigned long end_bitidx,
-+				unsigned long mask);
-+void set_pageblock_flags_mask(struct page *page,
-+				unsigned long flags,
-+				unsigned long end_bitidx,
-+				unsigned long mask);
-+
- /* Declarations for getting and setting flags. See mm/page_alloc.c */
--unsigned long get_pageblock_flags_group(struct page *page,
--					int start_bitidx, int end_bitidx);
--void set_pageblock_flags_group(struct page *page, unsigned long flags,
--					int start_bitidx, int end_bitidx);
-+static inline unsigned long get_pageblock_flags_group(struct page *page,
-+					int start_bitidx, int end_bitidx)
-+{
-+	unsigned long nr_flag_bits = end_bitidx - start_bitidx + 1;
-+	unsigned long mask = (1 << nr_flag_bits) - 1;
-+
-+	return get_pageblock_flags_mask(page, end_bitidx, mask);
++	for_each_thread(tsk, t)
++		if ((t->flags & PF_MCE_PROCESS) && (t->flags & PF_MCE_EARLY))
++			return t;
++	return NULL;
 +}
 +
-+static inline void set_pageblock_flags_group(struct page *page,
-+					unsigned long flags,
-+					int start_bitidx, int end_bitidx)
++/*
++ * Determine whether a given process is "early kill" process which expects
++ * to be signaled when some page under the process is hwpoisoned.
++ * Return task_struct of the dedicated thread (main thread unless explicitly
++ * specified) if the process is "early kill," and otherwise returns NULL.
++ */
++static struct task_struct *task_early_kill(struct task_struct *tsk,
++					   int force_early)
 +{
-+	unsigned long nr_flag_bits = end_bitidx - start_bitidx + 1;
-+	unsigned long mask = (1 << nr_flag_bits) - 1;
-+
-+	set_pageblock_flags_mask(page, flags, end_bitidx, mask);
-+}
- 
- #ifdef CONFIG_COMPACTION
- #define get_pageblock_skip(page) \
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -6009,53 +6009,65 @@ static inline int pfn_to_bitidx(struct z
-  * @end_bitidx: The last bit of interest
-  * returns pageblock_bits flags
-  */
--unsigned long get_pageblock_flags_group(struct page *page,
--					int start_bitidx, int end_bitidx)
-+unsigned long get_pageblock_flags_mask(struct page *page,
-+					unsigned long end_bitidx,
-+					unsigned long mask)
- {
- 	struct zone *zone;
- 	unsigned long *bitmap;
--	unsigned long pfn, bitidx;
--	unsigned long flags = 0;
--	unsigned long value = 1;
-+	unsigned long pfn, bitidx, word_bitidx;
-+	unsigned long word;
- 
- 	zone = page_zone(page);
- 	pfn = page_to_pfn(page);
- 	bitmap = get_pageblock_bitmap(zone, pfn);
- 	bitidx = pfn_to_bitidx(zone, pfn);
-+	word_bitidx = bitidx / BITS_PER_LONG;
-+	bitidx &= (BITS_PER_LONG-1);
- 
--	for (; start_bitidx <= end_bitidx; start_bitidx++, value <<= 1)
--		if (test_bit(bitidx + start_bitidx, bitmap))
--			flags |= value;
--
--	return flags;
-+	word = bitmap[word_bitidx];
-+	bitidx += end_bitidx;
-+	return (word >> (BITS_PER_LONG - bitidx - 1)) & mask;
- }
- 
- /**
-- * set_pageblock_flags_group - Set the requested group of flags for a pageblock_nr_pages block of pages
-+ * set_pageblock_flags_mask - Set the requested group of flags for a pageblock_nr_pages block of pages
-  * @page: The page within the block of interest
-  * @start_bitidx: The first bit of interest
-  * @end_bitidx: The last bit of interest
-  * @flags: The flags to set
-  */
--void set_pageblock_flags_group(struct page *page, unsigned long flags,
--					int start_bitidx, int end_bitidx)
-+void set_pageblock_flags_mask(struct page *page, unsigned long flags,
-+					unsigned long end_bitidx,
-+					unsigned long mask)
- {
- 	struct zone *zone;
- 	unsigned long *bitmap;
--	unsigned long pfn, bitidx;
--	unsigned long value = 1;
-+	unsigned long pfn, bitidx, word_bitidx;
-+	unsigned long old_word, word;
-+
-+	BUILD_BUG_ON(NR_PAGEBLOCK_BITS != 4);
- 
- 	zone = page_zone(page);
- 	pfn = page_to_pfn(page);
- 	bitmap = get_pageblock_bitmap(zone, pfn);
- 	bitidx = pfn_to_bitidx(zone, pfn);
-+	word_bitidx = bitidx / BITS_PER_LONG;
-+	bitidx &= (BITS_PER_LONG-1);
-+
- 	VM_BUG_ON_PAGE(!zone_spans_pfn(zone, pfn), page);
- 
--	for (; start_bitidx <= end_bitidx; start_bitidx++, value <<= 1)
--		if (flags & value)
--			__set_bit(bitidx + start_bitidx, bitmap);
--		else
--			__clear_bit(bitidx + start_bitidx, bitmap);
-+	bitidx += end_bitidx;
-+	mask <<= (BITS_PER_LONG - bitidx - 1);
-+	flags <<= (BITS_PER_LONG - bitidx - 1);
-+
-+	word = ACCESS_ONCE(bitmap[word_bitidx]);
-+	for (;;) {
-+		old_word = cmpxchg(&bitmap[word_bitidx], word, (word & ~mask) | flags);
-+		if (word == old_word)
-+			break;
-+		word = old_word;
-+	}
++	struct task_struct *t;
+ 	if (!tsk->mm)
+-		return 0;
++		return NULL;
+ 	if (force_early)
+-		return 1;
+-	if (tsk->flags & PF_MCE_PROCESS)
+-		return !!(tsk->flags & PF_MCE_EARLY);
+-	return sysctl_memory_failure_early_kill;
++		return tsk;
++	t = find_early_kill_thread(tsk);
++	if (t)
++		return t;
++	if (sysctl_memory_failure_early_kill)
++		return tsk;
++	return NULL;
  }
  
  /*
+@@ -410,16 +439,17 @@ static void collect_procs_anon(struct pa
+ 	read_lock(&tasklist_lock);
+ 	for_each_process (tsk) {
+ 		struct anon_vma_chain *vmac;
++		struct task_struct *t = task_early_kill(tsk, force_early);
+ 
+-		if (!task_early_kill(tsk, force_early))
++		if (!t)
+ 			continue;
+ 		anon_vma_interval_tree_foreach(vmac, &av->rb_root,
+ 					       pgoff, pgoff) {
+ 			vma = vmac->vma;
+ 			if (!page_mapped_in_vma(page, vma))
+ 				continue;
+-			if (vma->vm_mm == tsk->mm)
+-				add_to_kill(tsk, page, vma, to_kill, tkc);
++			if (vma->vm_mm == t->mm)
++				add_to_kill(t, page, vma, to_kill, tkc);
+ 		}
+ 	}
+ 	read_unlock(&tasklist_lock);
+@@ -440,10 +470,10 @@ static void collect_procs_file(struct pa
+ 	read_lock(&tasklist_lock);
+ 	for_each_process(tsk) {
+ 		pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
++		struct task_struct *t = task_early_kill(tsk, force_early);
+ 
+-		if (!task_early_kill(tsk, force_early))
++		if (!t)
+ 			continue;
+-
+ 		vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff,
+ 				      pgoff) {
+ 			/*
+@@ -453,8 +483,8 @@ static void collect_procs_file(struct pa
+ 			 * Assume applications who requested early kill want
+ 			 * to be informed of all such data corruptions.
+ 			 */
+-			if (vma->vm_mm == tsk->mm)
+-				add_to_kill(tsk, page, vma, to_kill, tkc);
++			if (vma->vm_mm == t->mm)
++				add_to_kill(t, page, vma, to_kill, tkc);
+ 		}
+ 	}
+ 	read_unlock(&tasklist_lock);
 
 
