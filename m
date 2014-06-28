@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755208AbaF1Rtb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:49:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53342 "EHLO
+	id S1757252AbaF1Stq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:49:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53372 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755121AbaF1Rt1 (ORCPT
+	with ESMTP id S1755167AbaF1Rtd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:49:27 -0400
+	Sat, 28 Jun 2014 13:49:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Oleg Nesterov <oleg@redhat.com>, David Rientjes <rientjes@google.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Otto Bruggeman <otto.g.bruggeman@intel.com>,
+        Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@suse.de>,
+        Chen Gong <gong.chen@linux.jf.intel.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 022/110] kthread: fix return value of kthread_create() upon SIGKILL.
-Date: Sat, 28 Jun 2014 10:46:19 -0700
-Message-Id: <20140628174546.548375677@linuxfoundation.org>
+Subject: [PATCH 3.14 025/110] mm/memory-failure.c-failure: send right signal code to correct thread
+Date: Sat, 28 Jun 2014 10:46:22 -0700
+Message-Id: <20140628174546.700708435@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -31,45 +34,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+From: Tony Luck <tony.luck@intel.com>
 
-commit 8fe6929cfd43c44834858a53e129ffdc7c166298 upstream.
+commit a70ffcac741d31a406c1d2b832ae43d658e7e1cf upstream.
 
-Commit 786235eeba0e ("kthread: make kthread_create() killable") meant
-for allowing kthread_create() to abort as soon as killed by the
-OOM-killer.  But returning -ENOMEM is wrong if killed by SIGKILL from
-userspace.  Change kthread_create() to return -EINTR upon SIGKILL.
+When a thread in a multi-threaded application hits a machine check because
+of an uncorrectable error in memory - we want to send the SIGBUS with
+si.si_code = BUS_MCEERR_AR to that thread.  Currently we fail to do that
+if the active thread is not the primary thread in the process.
+collect_procs() just finds primary threads and this test:
 
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Acked-by: David Rientjes <rientjes@google.com>
+	if ((flags & MF_ACTION_REQUIRED) && t == current) {
+
+will see that the thread we found isn't the current thread and so send a
+si.si_code = BUS_MCEERR_AO to the primary (and nothing to the active
+thread at this time).
+
+We can fix this by checking whether "current" shares the same mm with the
+process that collect_procs() said owned the page.  If so, we send the
+SIGBUS to current (with code BUS_MCEERR_AR).
+
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Reported-by: Otto Bruggeman <otto.g.bruggeman@intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Borislav Petkov <bp@suse.de>
+Cc: Chen Gong <gong.chen@linux.jf.intel.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/kthread.c |    4 ++--
+ mm/memory-failure.c |    4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/kernel/kthread.c
-+++ b/kernel/kthread.c
-@@ -262,7 +262,7 @@ static void create_kthread(struct kthrea
-  * kthread_stop() has been called).  The return value should be zero
-  * or a negative error number; it will be passed to kthread_stop().
-  *
-- * Returns a task_struct or ERR_PTR(-ENOMEM).
-+ * Returns a task_struct or ERR_PTR(-ENOMEM) or ERR_PTR(-EINTR).
-  */
- struct task_struct *kthread_create_on_node(int (*threadfn)(void *data),
- 					   void *data, int node,
-@@ -298,7 +298,7 @@ struct task_struct *kthread_create_on_no
- 		 * that thread.
- 		 */
- 		if (xchg(&create->done, NULL))
--			return ERR_PTR(-ENOMEM);
-+			return ERR_PTR(-EINTR);
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -208,9 +208,9 @@ static int kill_proc(struct task_struct
+ #endif
+ 	si.si_addr_lsb = compound_order(compound_head(page)) + PAGE_SHIFT;
+ 
+-	if ((flags & MF_ACTION_REQUIRED) && t == current) {
++	if ((flags & MF_ACTION_REQUIRED) && t->mm == current->mm) {
+ 		si.si_code = BUS_MCEERR_AR;
+-		ret = force_sig_info(SIGBUS, &si, t);
++		ret = force_sig_info(SIGBUS, &si, current);
+ 	} else {
  		/*
- 		 * kthreadd (or new kernel thread) will call complete()
- 		 * shortly.
+ 		 * Don't use force here, it's convenient if the signal
 
 
