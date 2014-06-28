@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756949AbaF1SyD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:54:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53270 "EHLO
+	id S932362AbaF1Syp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:54:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53264 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755007AbaF1RtH (ORCPT
+	with ESMTP id S1754962AbaF1RtG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:49:07 -0400
+	Sat, 28 Jun 2014 13:49:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>,
         Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCH 3.14 008/110] extcon: max14577: Properly handle regmap_irq_get_virq error
-Date: Sat, 28 Jun 2014 10:46:05 -0700
-Message-Id: <20140628174545.811532837@linuxfoundation.org>
+Subject: [PATCH 3.14 006/110] extcon: max77693: Fix two NULL pointer exceptions on missing pdata
+Date: Sat, 28 Jun 2014 10:46:03 -0700
+Message-Id: <20140628174545.702591188@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -31,29 +31,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-commit 369afd4ba22f5b8de0c9229b6e62b3f9e2207034 upstream.
+commit d5653f2b7304f05eeb45d84f123cf02f840b8537 upstream.
 
-The regmap_irq_get_virq may return 0 or -EINVAL on error. Fail the probe
-in both situations.
+Fix NULL pointer exceptions when platform data is not supplied.
+
+Trace of one exception:
+Unable to handle kernel NULL pointer dereference at virtual address 00000008
+pgd = c0004000
+[00000008] *pgd=00000000
+Internal error: Oops: 5 [#1] PREEMPT SMP ARM
+Modules linked in:
+CPU: 2 PID: 1 Comm: swapper/0 Not tainted 3.14.0-12045-gead5dd4687a6-dirty #1628
+task: eea80000 ti: eea88000 task.ti: eea88000
+PC is at max77693_muic_probe+0x27c/0x528
+LR is at regmap_write+0x50/0x60
+pc : [<c041d1c8>]    lr : [<c02eba60>]    psr: 20000113
+sp : eea89e38  ip : 00000000  fp : c098a834
+r10: ee1a5a10  r9 : 00000005  r8 : c098a83c
+r7 : 0000000a  r6 : c098a774  r5 : 00000005  r4 : eeb006d0
+r3 : c0697bd8  r2 : 00000000  r1 : 00000001  r0 : 00000000
+Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+Control: 10c5387d  Table: 4000404a  DAC: 00000015
+Process swapper/0 (pid: 1, stack limit = 0xeea88240)
+Stack: (0xeea89e38 to 0xeea8a000)
+9e20:                                                       c08499fc eeb006d0
+9e40: 00000000 00000000 c0915f98 00000001 00000000 ee1a5a10 c098a730 c09a88b8
+9e60: 00000000 c098a730 c0915f98 00000000 00000000 c02d6aa0 c02d6a88 ee1a5a10
+9e80: c0a712c8 c02d54e4 00001204 c0628b00 ee1a5a10 c098a730 ee1a5a44 00000000
+9ea0: eea88000 c02d57b4 00000000 c098a730 c02d5728 c02d3a24 ee813e5c eeb9d534
+9ec0: c098a730 ee22f700 c097c720 c02d4b14 c08174ec c098a730 00000006 c098a730
+9ee0: 00000006 c092fd30 c09b8500 c02d5df8 00000000 c093cbb8 00000006 c0008928
+9f00: 000000c3 ef7fc785 00000000 ef7fc794 00000000 c08af968 00000072 eea89f30
+9f20: ef7fc85e c065f198 000000c3 c003e87c 00000003 00000000 c092fd3c 00000000
+9f40: c08af618 c0826d58 00000006 00000006 c0956f58 c093cbb8 00000006 c092fd30
+9f60: c09b8500 000000c3 c092fd3c c08e8510 00000000 c08e8bb0 00000006 00000006
+9f80: c08e8510 c0c0c0c0 00000000 c0628fac 00000000 00000000 00000000 00000000
+9fa0: 00000000 c0628fb4 00000000 c000f038 00000000 00000000 00000000 00000000
+9fc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+9fe0: 00000000 00000000 00000000 00000000 00000013 00000000 c0c0c0c0 c0c0c0c0
+[<c041d1c8>] (max77693_muic_probe) from [<c02d6aa0>] (platform_drv_probe+0x18/0x48)
+[<c02d6aa0>] (platform_drv_probe) from [<c02d54e4>] (driver_probe_device+0x140/0x384)
+[<c02d54e4>] (driver_probe_device) from [<c02d57b4>] (__driver_attach+0x8c/0x90)
+[<c02d57b4>] (__driver_attach) from [<c02d3a24>] (bus_for_each_dev+0x54/0x88)
+[<c02d3a24>] (bus_for_each_dev) from [<c02d4b14>] (bus_add_driver+0xe8/0x204)
+[<c02d4b14>] (bus_add_driver) from [<c02d5df8>] (driver_register+0x78/0xf4)
+[<c02d5df8>] (driver_register) from [<c0008928>] (do_one_initcall+0xc4/0x174)
+[<c0008928>] (do_one_initcall) from [<c08e8bb0>] (kernel_init_freeable+0xfc/0x1c8)
+[<c08e8bb0>] (kernel_init_freeable) from [<c0628fb4>] (kernel_init+0x8/0xec)
+[<c0628fb4>] (kernel_init) from [<c000f038>] (ret_from_fork+0x14/0x3c)
+Code: caffffe7 e59d200c e3550001 b3a05001 (e5923008)
+---[ end trace 85db969ce011bde7 ]---
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Fixes: 190d7cfc8632
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/extcon/extcon-max14577.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/extcon/extcon-max77693.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/extcon/extcon-max14577.c
-+++ b/drivers/extcon/extcon-max14577.c
-@@ -650,7 +650,7 @@ static int max14577_muic_probe(struct pl
- 		unsigned int virq = 0;
+--- a/drivers/extcon/extcon-max77693.c
++++ b/drivers/extcon/extcon-max77693.c
+@@ -1193,7 +1193,7 @@ static int max77693_muic_probe(struct pl
  
- 		virq = regmap_irq_get_virq(max14577->irq_data, muic_irq->irq);
--		if (!virq)
-+		if (virq <= 0)
- 			return -EINVAL;
- 		muic_irq->virq = virq;
+ 
+ 	/* Initialize MUIC register by using platform data or default data */
+-	if (pdata->muic_data) {
++	if (pdata && pdata->muic_data) {
+ 		init_data = pdata->muic_data->init_data;
+ 		num_init_data = pdata->muic_data->num_init_data;
+ 	} else {
+@@ -1226,7 +1226,7 @@ static int max77693_muic_probe(struct pl
+ 				= init_data[i].data;
+ 	}
+ 
+-	if (pdata->muic_data) {
++	if (pdata && pdata->muic_data) {
+ 		struct max77693_muic_platform_data *muic_pdata
+ 						   = pdata->muic_data;
  
 
 
