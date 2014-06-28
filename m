@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756073AbaF1SCN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:02:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54452 "EHLO
+	id S1756206AbaF1SCe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:02:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54431 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756172AbaF1RxK (ORCPT
+	with ESMTP id S1756156AbaF1RxG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:53:10 -0400
+	Sat, 28 Jun 2014 13:53:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Glanzmann <thomas@glanzmann.de>,
-        Charalampos Pournaris <charpour@gmail.com>,
+        Sagi Grimberg <sagig@mellanox.com>,
+        Mike Christie <michaelc@cs.wisc.edu>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.15 093/139] target: Use complete_all for se_cmd->t_transport_stop_comp
-Date: Sat, 28 Jun 2014 10:47:34 -0700
-Message-Id: <20140628174609.663613755@linuxfoundation.org>
+Subject: [PATCH 3.15 099/139] libiscsi, iser: Adjust data_length to include protection information
+Date: Sat, 28 Jun 2014 10:47:40 -0700
+Message-Id: <20140628174609.930049472@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -30,56 +30,170 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Sagi Grimberg <sagig@mellanox.com>
 
-commit a95d6511303b848da45ee27b35018bb58087bdc6 upstream.
+commit d77e65350f2d82dfa0557707d505711f5a43c8fd upstream.
 
-This patch fixes a bug where multiple waiters on ->t_transport_stop_comp
-occurs due to a concurrent ABORT_TASK and session reset both invoking
-transport_wait_for_tasks(), while waiting for the associated se_cmd
-descriptor backend processing to complete.
+In case protection information exists over the wire
+iscsi header data length is required to include it.
+Use protection information aware scsi helpers to set
+the correct transfer length.
 
-For this case, complete_all() should be invoked in order to wake up
-both waiters in core_tmr_abort_task() + transport_generic_free_cmd()
-process contexts.
+In order to avoid breakage, remove iser transfer length
+checks for each task as they are not always true and
+somewhat redundant anyway.
 
-Cc: Thomas Glanzmann <thomas@glanzmann.de>
-Cc: Charalampos Pournaris <charpour@gmail.com>
+Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
+Reviewed-by: Mike Christie <michaelc@cs.wisc.edu>
+Acked-by: Mike Christie <michaelc@cs.wisc.edu>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_transport.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/infiniband/ulp/iser/iser_initiator.c |   34 +++++++--------------------
+ drivers/scsi/libiscsi.c                      |   18 +++++++-------
+ 2 files changed, 19 insertions(+), 33 deletions(-)
 
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -562,7 +562,7 @@ static int transport_cmd_check_stop(stru
+--- a/drivers/infiniband/ulp/iser/iser_initiator.c
++++ b/drivers/infiniband/ulp/iser/iser_initiator.c
+@@ -41,11 +41,11 @@
+ #include "iscsi_iser.h"
  
- 		spin_unlock_irqrestore(&cmd->t_state_lock, flags);
+ /* Register user buffer memory and initialize passive rdma
+- *  dto descriptor. Total data size is stored in
+- *  iser_task->data[ISER_DIR_IN].data_len
++ *  dto descriptor. Data size is stored in
++ *  task->data[ISER_DIR_IN].data_len, Protection size
++ *  os stored in task->prot[ISER_DIR_IN].data_len
+  */
+-static int iser_prepare_read_cmd(struct iscsi_task *task,
+-				 unsigned int edtl)
++static int iser_prepare_read_cmd(struct iscsi_task *task)
  
--		complete(&cmd->t_transport_stop_comp);
-+		complete_all(&cmd->t_transport_stop_comp);
- 		return 1;
+ {
+ 	struct iscsi_iser_task *iser_task = task->dd_data;
+@@ -73,14 +73,6 @@ static int iser_prepare_read_cmd(struct
+ 			return err;
  	}
  
-@@ -687,7 +687,7 @@ void target_complete_cmd(struct se_cmd *
- 	if (cmd->transport_state & CMD_T_ABORTED &&
- 	    cmd->transport_state & CMD_T_STOP) {
- 		spin_unlock_irqrestore(&cmd->t_state_lock, flags);
--		complete(&cmd->t_transport_stop_comp);
-+		complete_all(&cmd->t_transport_stop_comp);
- 		return;
- 	} else if (!success) {
- 		INIT_WORK(&cmd->work, target_complete_failure_work);
-@@ -1761,7 +1761,7 @@ void target_execute_cmd(struct se_cmd *c
- 			cmd->se_tfo->get_task_tag(cmd));
+-	if (edtl > iser_task->data[ISER_DIR_IN].data_len) {
+-		iser_err("Total data length: %ld, less than EDTL: "
+-			 "%d, in READ cmd BHS itt: %d, conn: 0x%p\n",
+-			 iser_task->data[ISER_DIR_IN].data_len, edtl,
+-			 task->itt, iser_task->ib_conn);
+-		return -EINVAL;
+-	}
+-
+ 	err = device->iser_reg_rdma_mem(iser_task, ISER_DIR_IN);
+ 	if (err) {
+ 		iser_err("Failed to set up Data-IN RDMA\n");
+@@ -100,8 +92,9 @@ static int iser_prepare_read_cmd(struct
+ }
  
- 		spin_unlock_irq(&cmd->t_state_lock);
--		complete(&cmd->t_transport_stop_comp);
-+		complete_all(&cmd->t_transport_stop_comp);
- 		return;
+ /* Register user buffer memory and initialize passive rdma
+- *  dto descriptor. Total data size is stored in
+- *  task->data[ISER_DIR_OUT].data_len
++ *  dto descriptor. Data size is stored in
++ *  task->data[ISER_DIR_OUT].data_len, Protection size
++ *  is stored at task->prot[ISER_DIR_OUT].data_len
+  */
+ static int
+ iser_prepare_write_cmd(struct iscsi_task *task,
+@@ -135,14 +128,6 @@ iser_prepare_write_cmd(struct iscsi_task
+ 			return err;
  	}
  
+-	if (edtl > iser_task->data[ISER_DIR_OUT].data_len) {
+-		iser_err("Total data length: %ld, less than EDTL: %d, "
+-			 "in WRITE cmd BHS itt: %d, conn: 0x%p\n",
+-			 iser_task->data[ISER_DIR_OUT].data_len,
+-			 edtl, task->itt, task->conn);
+-		return -EINVAL;
+-	}
+-
+ 	err = device->iser_reg_rdma_mem(iser_task, ISER_DIR_OUT);
+ 	if (err != 0) {
+ 		iser_err("Failed to register write cmd RDMA mem\n");
+@@ -417,11 +402,12 @@ int iser_send_command(struct iscsi_conn
+ 	if (scsi_prot_sg_count(sc)) {
+ 		prot_buf->buf  = scsi_prot_sglist(sc);
+ 		prot_buf->size = scsi_prot_sg_count(sc);
+-		prot_buf->data_len = sc->prot_sdb->length;
++		prot_buf->data_len = data_buf->data_len >>
++				     ilog2(sc->device->sector_size) * 8;
+ 	}
+ 
+ 	if (hdr->flags & ISCSI_FLAG_CMD_READ) {
+-		err = iser_prepare_read_cmd(task, edtl);
++		err = iser_prepare_read_cmd(task);
+ 		if (err)
+ 			goto send_command_error;
+ 	}
+--- a/drivers/scsi/libiscsi.c
++++ b/drivers/scsi/libiscsi.c
+@@ -338,7 +338,7 @@ static int iscsi_prep_scsi_cmd_pdu(struc
+ 	struct iscsi_session *session = conn->session;
+ 	struct scsi_cmnd *sc = task->sc;
+ 	struct iscsi_scsi_req *hdr;
+-	unsigned hdrlength, cmd_len;
++	unsigned hdrlength, cmd_len, transfer_length;
+ 	itt_t itt;
+ 	int rc;
+ 
+@@ -391,11 +391,11 @@ static int iscsi_prep_scsi_cmd_pdu(struc
+ 	if (scsi_get_prot_op(sc) != SCSI_PROT_NORMAL)
+ 		task->protected = true;
+ 
++	transfer_length = scsi_transfer_length(sc);
++	hdr->data_length = cpu_to_be32(transfer_length);
+ 	if (sc->sc_data_direction == DMA_TO_DEVICE) {
+-		unsigned out_len = scsi_out(sc)->length;
+ 		struct iscsi_r2t_info *r2t = &task->unsol_r2t;
+ 
+-		hdr->data_length = cpu_to_be32(out_len);
+ 		hdr->flags |= ISCSI_FLAG_CMD_WRITE;
+ 		/*
+ 		 * Write counters:
+@@ -414,18 +414,19 @@ static int iscsi_prep_scsi_cmd_pdu(struc
+ 		memset(r2t, 0, sizeof(*r2t));
+ 
+ 		if (session->imm_data_en) {
+-			if (out_len >= session->first_burst)
++			if (transfer_length >= session->first_burst)
+ 				task->imm_count = min(session->first_burst,
+ 							conn->max_xmit_dlength);
+ 			else
+-				task->imm_count = min(out_len,
+-							conn->max_xmit_dlength);
++				task->imm_count = min(transfer_length,
++						      conn->max_xmit_dlength);
+ 			hton24(hdr->dlength, task->imm_count);
+ 		} else
+ 			zero_data(hdr->dlength);
+ 
+ 		if (!session->initial_r2t_en) {
+-			r2t->data_length = min(session->first_burst, out_len) -
++			r2t->data_length = min(session->first_burst,
++					       transfer_length) -
+ 					       task->imm_count;
+ 			r2t->data_offset = task->imm_count;
+ 			r2t->ttt = cpu_to_be32(ISCSI_RESERVED_TAG);
+@@ -438,7 +439,6 @@ static int iscsi_prep_scsi_cmd_pdu(struc
+ 	} else {
+ 		hdr->flags |= ISCSI_FLAG_CMD_FINAL;
+ 		zero_data(hdr->dlength);
+-		hdr->data_length = cpu_to_be32(scsi_in(sc)->length);
+ 
+ 		if (sc->sc_data_direction == DMA_FROM_DEVICE)
+ 			hdr->flags |= ISCSI_FLAG_CMD_READ;
+@@ -466,7 +466,7 @@ static int iscsi_prep_scsi_cmd_pdu(struc
+ 			  scsi_bidi_cmnd(sc) ? "bidirectional" :
+ 			  sc->sc_data_direction == DMA_TO_DEVICE ?
+ 			  "write" : "read", conn->id, sc, sc->cmnd[0],
+-			  task->itt, scsi_bufflen(sc),
++			  task->itt, transfer_length,
+ 			  scsi_bidi_cmnd(sc) ? scsi_in(sc)->length : 0,
+ 			  session->cmdsn,
+ 			  session->max_cmdsn - session->exp_cmdsn + 1);
 
 
