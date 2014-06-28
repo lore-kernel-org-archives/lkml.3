@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757885AbaF1TRU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 15:17:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52881 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753764AbaF1Rrg (ORCPT
+	id S1755921AbaF1TRS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 15:17:18 -0400
+Received: from mail-we0-f193.google.com ([74.125.82.193]:33032 "EHLO
+	mail-we0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751775AbaF1TRP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:47:36 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Stezenbach <js@sig21.net>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.10 10/77] usb: dwc3: gadget: clear stall when disabling endpoint
-Date: Sat, 28 Jun 2014 10:46:03 -0700
-Message-Id: <20140628174522.167325060@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <20140628174521.691276402@linuxfoundation.org>
-References: <20140628174521.691276402@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Sat, 28 Jun 2014 15:17:15 -0400
 MIME-Version: 1.0
+Reply-To: lady.mrs.rose.robert000222@gmail.com
+Date: Sat, 28 Jun 2014 19:17:13 +0000
+Message-ID: <CADZo23vuOupVbuRA0oxAE6iMVPmamK7DF0Cey3EACe_Hi+daog@mail.gmail.com>
+Subject: Urgent Please
+From: rose robert <mrsroserobert0022@gmail.com>
+To: undisclosed-recipients:;
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+-- 
+Urgent Please
 
-------------------
+My name is Mrs Rose Robert, I have been surffering from Ovarian cancer
+disease and the doctor says that i have just few days to leave.I am
+from Belgium, but based in Burkina Faso,Africa since ten years ago as
+a business woman dealing with cocoa exportation,now that i am about to
+end the race like this,without any family members and no child.I have
+$1 Million US DOLLARS in EcoBank here in Burkina Faso
 
-From: Felipe Balbi <balbi@ti.com>
+which i instructed the bank to give African union leaders to help sick
+people around Africa.But my mind is not at rest because of that i am
+writing thisletter now through the help of my Doctor beside me here in
+my hospital room. I also have $3.1 Million US Dollars in Bank Of
+Africa Burkina Faso,
 
-commit 687ef9817df7ed960d14575b9033dde3d04631fe upstream.
+which i want you to claim from the bank and use it to help less
+previledge people in your country,but you must assure me that you will
+take only 40% of the total money and give the rest 60% to the
+orphanage home in your country,
 
-so it seems like DWC3 IP doesn't clear stalls
-automatically when we disable an endpoint, because
-of that, we _must_ make sure stalls are cleared
-before clearing the proper bit in DALEPENA register.
+for my heart to rest.Upon the receipt of your email that you are
+willing and capable to execute my plan, i will instruct the bank
+management to make an immediate transfer into your account. forther
+more as soon as you receive the massge if you want to reply me i will
+want you to reply me  with your personal information and you will also
+send me a copy id to forward to them that you are the person I am
+willing my wealth;
 
-Reported-by: Johannes Stezenbach <js@sig21.net>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Sincerely,
 
----
- drivers/usb/dwc3/gadget.c |    4 ++++
- 1 file changed, 4 insertions(+)
-
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -604,6 +604,10 @@ static int __dwc3_gadget_ep_disable(stru
- 
- 	dwc3_remove_requests(dwc, dep);
- 
-+	/* make sure HW endpoint isn't stalled */
-+	if (dep->flags & DWC3_EP_STALL)
-+		__dwc3_gadget_ep_set_halt(dep, 0);
-+
- 	reg = dwc3_readl(dwc->regs, DWC3_DALEPENA);
- 	reg &= ~DWC3_DALEPENA_EP(dep->number);
- 	dwc3_writel(dwc->regs, DWC3_DALEPENA, reg);
-
-
+Mrs Rose Robert
