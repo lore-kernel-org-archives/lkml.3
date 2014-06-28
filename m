@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754776AbaF1AHA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 20:07:00 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:40406 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754722AbaF1AGw (ORCPT
+	id S1754728AbaF1AG6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 20:06:58 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:40324 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754727AbaF1AGz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 20:06:52 -0400
+	Fri, 27 Jun 2014 20:06:55 -0400
 From: Alexei Starovoitov <ast@plumgrid.com>
 To: "David S. Miller" <davem@davemloft.net>
 Cc: Ingo Molnar <mingo@kernel.org>,
@@ -21,9 +21,9 @@ Cc: Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RFC net-next 13/14] samples: bpf: example of stateful socket filtering
-Date: Fri, 27 Jun 2014 17:06:05 -0700
-Message-Id: <1403913966-4927-14-git-send-email-ast@plumgrid.com>
+Subject: [PATCH RFC net-next 14/14] samples: bpf: example of tracing filters with eBPF
+Date: Fri, 27 Jun 2014 17:06:06 -0700
+Message-Id: <1403913966-4927-15-git-send-email-ast@plumgrid.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1403913966-4927-1-git-send-email-ast@plumgrid.com>
 References: <1403913966-4927-1-git-send-email-ast@plumgrid.com>
@@ -31,82 +31,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-this socket filter example does:
-
-- creates a hashtable in kernel with key 4 bytes and value 8 bytes
-
-- populates map[6] = 0; map[17] = 0;  // 6 - tcp_proto, 17 - udp_proto
-
-- loads eBPF program:
-  r0 = skb[14 + 9]; // load one byte of ip->proto
-  *(u32*)(fp - 4) = r0;
-  value = bpf_map_lookup_elem(map_id, fp - 4);
-  if (value)
-       (*(u64*)value) += 1;
-
-- attaches this program to eth0 raw socket
-
-- every second user space reads map[6] and map[17] to see how many
-  TCP and UDP packets were seen on eth0
+simple packet drop monitor:
+- in-kernel eBPF program attaches to kfree_skb() event and records number
+  of packet drops at given location
+- userspace iterates over the map every second and prints stats
 
 Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
 ---
- samples/bpf/.gitignore     |    1 +
- samples/bpf/Makefile       |   13 ++++
- samples/bpf/sock_example.c |  160 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 174 insertions(+)
- create mode 100644 samples/bpf/.gitignore
- create mode 100644 samples/bpf/Makefile
- create mode 100644 samples/bpf/sock_example.c
+ samples/bpf/Makefile  |    4 +-
+ samples/bpf/dropmon.c |  127 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 130 insertions(+), 1 deletion(-)
+ create mode 100644 samples/bpf/dropmon.c
 
-diff --git a/samples/bpf/.gitignore b/samples/bpf/.gitignore
-new file mode 100644
-index 000000000000..5465c6e92a00
---- /dev/null
-+++ b/samples/bpf/.gitignore
-@@ -0,0 +1 @@
-+sock_example
 diff --git a/samples/bpf/Makefile b/samples/bpf/Makefile
-new file mode 100644
-index 000000000000..95c990151644
---- /dev/null
+index 95c990151644..8e3dfa0c25e4 100644
+--- a/samples/bpf/Makefile
 +++ b/samples/bpf/Makefile
-@@ -0,0 +1,13 @@
-+# kbuild trick to avoid linker error. Can be omitted if a module is built.
-+obj- := dummy.o
-+
-+# List of programs to build
-+hostprogs-y := sock_example
-+
-+sock_example-objs := sock_example.o libbpf.o
-+
-+# Tell kbuild to always build the programs
-+always := $(hostprogs-y)
-+
-+HOSTCFLAGS_libbpf.o += -I$(objtree)/usr/include
-+HOSTCFLAGS_sock_example.o += -I$(objtree)/usr/include
-diff --git a/samples/bpf/sock_example.c b/samples/bpf/sock_example.c
+@@ -2,12 +2,14 @@
+ obj- := dummy.o
+ 
+ # List of programs to build
+-hostprogs-y := sock_example
++hostprogs-y := sock_example dropmon
+ 
+ sock_example-objs := sock_example.o libbpf.o
++dropmon-objs := dropmon.o libbpf.o
+ 
+ # Tell kbuild to always build the programs
+ always := $(hostprogs-y)
+ 
+ HOSTCFLAGS_libbpf.o += -I$(objtree)/usr/include
+ HOSTCFLAGS_sock_example.o += -I$(objtree)/usr/include
++HOSTCFLAGS_dropmon.o += -I$(objtree)/usr/include
+diff --git a/samples/bpf/dropmon.c b/samples/bpf/dropmon.c
 new file mode 100644
-index 000000000000..5cf091571d4f
+index 000000000000..80d80066f518
 --- /dev/null
-+++ b/samples/bpf/sock_example.c
-@@ -0,0 +1,160 @@
-+/* eBPF example program:
-+ * - creates a hashtable in kernel with key 4 bytes and value 8 bytes
-+ *
-+ * - populates map[6] = 0; map[17] = 0;  // 6 - tcp_proto, 17 - udp_proto
-+ *
-+ * - loads eBPF program:
-+ *   r0 = skb[14 + 9]; // load one byte of ip->proto
-+ *   *(u32*)(fp - 4) = r0;
-+ *   value = bpf_map_lookup_elem(map_id, fp - 4);
-+ *   if (value)
-+ *        (*(u64*)value) += 1;
-+ *
-+ * - attaches this program to eth0 raw socket
-+ *
-+ * - every second user space reads map[6] and map[17] to see how many
-+ *   TCP and UDP packets were seen on eth0
++++ b/samples/bpf/dropmon.c
+@@ -0,0 +1,127 @@
++/* simple packet drop monitor:
++ * - in-kernel eBPF program attaches to kfree_skb() event and records number
++ *   of packet drops at given location
++ * - userspace iterates over the map every second and prints stats
 + */
 +#include <stdio.h>
 +#include <unistd.h>
@@ -125,130 +91,109 @@ index 000000000000..5cf091571d4f
 +#include <linux/filter.h>
 +#include <stdlib.h>
 +#include <arpa/inet.h>
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <fcntl.h>
 +#include "libbpf.h"
-+
-+static int open_raw_sock(const char *name)
-+{
-+	struct sockaddr_ll sll;
-+	struct packet_mreq mr;
-+	struct ifreq ifr;
-+	int sock;
-+
-+	sock = socket(PF_PACKET, SOCK_RAW | SOCK_NONBLOCK | SOCK_CLOEXEC, htons(ETH_P_ALL));
-+	if (sock < 0) {
-+		printf("cannot open socket!\n");
-+		return -1;
-+	}
-+
-+	memset(&ifr, 0, sizeof(ifr));
-+	strncpy((char *)ifr.ifr_name, name, IFNAMSIZ);
-+	if (ioctl(sock, SIOCGIFINDEX, &ifr) < 0) {
-+		printf("ioctl: %s\n", strerror(errno));
-+		close(sock);
-+		return -1;
-+	}
-+
-+	memset(&sll, 0, sizeof(sll));
-+	sll.sll_family = AF_PACKET;
-+	sll.sll_ifindex = ifr.ifr_ifindex;
-+	sll.sll_protocol = htons(ETH_P_ALL);
-+	if (bind(sock, (struct sockaddr *)&sll, sizeof(sll)) < 0) {
-+		printf("bind: %s\n", strerror(errno));
-+		close(sock);
-+		return -1;
-+	}
-+
-+	memset(&mr, 0, sizeof(mr));
-+	mr.mr_ifindex = ifr.ifr_ifindex;
-+	mr.mr_type = PACKET_MR_PROMISC;
-+	if (setsockopt(sock, SOL_PACKET, PACKET_ADD_MEMBERSHIP, &mr, sizeof(mr)) < 0) {
-+		printf("set_promisc: %s\n", strerror(errno));
-+		close(sock);
-+		return -1;
-+	}
-+	return sock;
-+}
 +
 +#define MAP_ID 1
 +
-+static int test_sock(void)
++#define TRACEPOINT "/sys/kernel/debug/tracing/events/skb/kfree_skb/"
++
++static void write_to_file(const char *file, const char *str)
 +{
++	int fd, err;
++
++	fd = open(file, O_WRONLY);
++	err = write(fd, str, strlen(str));
++	(void) err;
++	close(fd);
++}
++
++static int dropmon(void)
++{
++	/* the following eBPF program is equivalent to C:
++	 * void filter(struct bpf_context *ctx)
++	 * {
++	 *   long loc = ctx->arg2;
++	 *   long init_val = 1;
++	 *   void *value;
++	 *
++	 *   value = bpf_map_lookup_elem(MAP_ID, &loc);
++	 *   if (value) {
++	 *      (*(long *) value) += 1;
++	 *   } else {
++	 *      bpf_map_update_elem(MAP_ID, &loc, &init_val);
++	 *   }
++	 * }
++	 */
 +	static struct sock_filter_int prog[] = {
-+		BPF_ALU64_REG(BPF_MOV, BPF_REG_6, BPF_REG_1),
-+		BPF_LD_ABS(BPF_B, 14 + 9 /* R0 = ip->proto */),
-+		BPF_STX_MEM(BPF_W, BPF_REG_10, BPF_REG_0, -4), /* *(u32 *)(fp - 4) = r0 */
++		BPF_LDX_MEM(BPF_DW, BPF_REG_2, BPF_REG_1, 8), /* r2 = *(u64 *)(r1 + 8) */
++		BPF_STX_MEM(BPF_DW, BPF_REG_10, BPF_REG_2, -8), /* *(u64 *)(fp - 8) = r2 */
 +		BPF_ALU64_REG(BPF_MOV, BPF_REG_2, BPF_REG_10),
-+		BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -4), /* r2 = fp - 4 */
++		BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -8), /* r2 = fp - 8 */
 +		BPF_ALU64_IMM(BPF_MOV, BPF_REG_1, MAP_ID), /* r1 = MAP_ID */
 +		BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, 0, 0, BPF_FUNC_map_lookup_elem),
-+		BPF_JMP_IMM(BPF_JEQ, BPF_REG_0, 0, 2),
++		BPF_JMP_IMM(BPF_JEQ, BPF_REG_0, 0, 3),
 +		BPF_ALU64_IMM(BPF_MOV, BPF_REG_1, 1), /* r1 = 1 */
 +		BPF_RAW_INSN(BPF_STX | BPF_XADD | BPF_DW, BPF_REG_0, BPF_REG_1, 0, 0), /* xadd r0 += r1 */
-+		BPF_ALU64_IMM(BPF_MOV, BPF_REG_0, 0), /* r0 = 0 */
++		BPF_EXIT_INSN(),
++		BPF_ST_MEM(BPF_DW, BPF_REG_10, -16, 1), /* *(u64 *)(fp - 16) = 1 */
++		BPF_ALU64_REG(BPF_MOV, BPF_REG_3, BPF_REG_10),
++		BPF_ALU64_IMM(BPF_ADD, BPF_REG_3, -16), /* r3 = fp - 16 */
++		BPF_ALU64_REG(BPF_MOV, BPF_REG_2, BPF_REG_10),
++		BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -8), /* r2 = fp - 8 */
++		BPF_ALU64_IMM(BPF_MOV, BPF_REG_1, MAP_ID), /* r1 = MAP_ID */
++		BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, 0, 0, BPF_FUNC_map_update_elem),
 +		BPF_EXIT_INSN(),
 +	};
 +
-+	int sock = -1, prog_id = 1, i, key;
-+	long long value = 0, tcp_cnt, udp_cnt;
++	int prog_id = 1, i;
++	long long key, next_key, value = 0;
++	char fmt[32];
 +
-+	if (bpf_create_map(MAP_ID, sizeof(key), sizeof(value), 2) < 0) {
++	if (bpf_create_map(MAP_ID, sizeof(key), sizeof(value), 1024) < 0) {
 +		printf("failed to create map '%s'\n", strerror(errno));
-+		/* must have been left from previous aborted run, delete it */
 +		goto cleanup;
 +	}
 +
-+	key = 6; /* tcp */
-+	if (bpf_update_elem(MAP_ID, &key, &value) < 0) {
-+		printf("update err key=%d\n", key);
-+		goto cleanup;
-+	}
-+
-+	key = 17; /* udp */
-+	if (bpf_update_elem(MAP_ID, &key, &value) < 0) {
-+		printf("update err key=%d\n", key);
-+		goto cleanup;
-+	}
-+
-+	prog_id = bpf_prog_load(prog_id, BPF_PROG_TYPE_SOCKET_FILTER, prog, sizeof(prog), "GPL");
++	prog_id = bpf_prog_load(prog_id, BPF_PROG_TYPE_TRACING_FILTER, prog, sizeof(prog), "GPL");
 +	if (prog_id < 0) {
 +		printf("failed to load prog '%s'\n", strerror(errno));
-+		goto cleanup;
++		return -1;
 +	}
 +
-+	sock = open_raw_sock("eth0");
++	sprintf(fmt, "bpf_%d", prog_id);
 +
-+	if (setsockopt(sock, SOL_SOCKET, SO_ATTACH_FILTER_EBPF, &prog_id, sizeof(prog_id)) < 0) {
-+		printf("setsockopt %d\n", errno);
-+		goto cleanup;
-+	}
++	write_to_file(TRACEPOINT "filter", fmt);
++	write_to_file(TRACEPOINT "enable", "1");
 +
 +	for (i = 0; i < 10; i++) {
-+		key = 6;
-+		if (bpf_lookup_elem(MAP_ID, &key, &tcp_cnt) < 0) {
-+			printf("lookup err\n");
-+			break;
++		key = 0;
++		while (bpf_get_next_key(MAP_ID, &key, &next_key) == 0) {
++			bpf_lookup_elem(MAP_ID, &next_key, &value);
++			printf("location 0x%llx count %lld\n", next_key, value);
++			key = next_key;
 +		}
-+		key = 17;
-+		if (bpf_lookup_elem(MAP_ID, &key, &udp_cnt) < 0) {
-+			printf("lookup err\n");
-+			break;
-+		}
-+		printf("TCP %lld UDP %lld packets\n", tcp_cnt, udp_cnt);
++		if (key)
++			printf("\n");
 +		sleep(1);
 +	}
 +
 +cleanup:
-+	close(sock);
 +	bpf_prog_unload(prog_id);
 +
 +	bpf_delete_map(MAP_ID);
++
++	write_to_file(TRACEPOINT "enable", "0");
++	write_to_file(TRACEPOINT "filter", "0");
 +
 +	return 0;
 +}
 +
 +int main(void)
 +{
-+	test_sock();
++	dropmon();
 +	return 0;
 +}
 -- 
