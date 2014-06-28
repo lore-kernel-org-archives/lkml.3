@@ -1,57 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752021AbaF1HLX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 03:11:23 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:47760 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751001AbaF1HLW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 03:11:22 -0400
-Message-ID: <1403939478.5930.30.camel@marge.simpson.net>
-Subject: Re: Filesystem lockup with CONFIG_PREEMPT_RT
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Austin Schuh <austin@peloton-tech.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        rt-users <linux-rt-users@vger.kernel.org>
-Date: Sat, 28 Jun 2014 09:11:18 +0200
-In-Reply-To: <CANGgnMbJ9f4gSz0HbtnCLosYHKyfXwhMt-svUQbBe_d9bv2LGQ@mail.gmail.com>
-References: <CANGgnMbHckBQdKGN_N5Q6qEKc9n1CenxvMpeXog1NbSdL8UrTw@mail.gmail.com>
-	 <CANGgnMYDXerOUDOO9-RHMJKadKACA2KBGskZwoP-1ZwAhDEfVA@mail.gmail.com>
-	 <CAFLxGvxfBt7OvW=a2Kz08GLHSEiiOZsN-vB19CXnQiwqFxqMsA@mail.gmail.com>
-	 <CANGgnMYVoP-Z0Bv-VDEkJnvfa7Fi4-zY2F4A0PhMewGvwo3VVw@mail.gmail.com>
-	 <alpine.DEB.2.10.1406270027300.5170@nanos>
-	 <CANGgnMa+qtgJ3wwg_h5Rynw5vEvZpQZ6PvaUfXNQ8+Y3Yu5U0g@mail.gmail.com>
-	 <1403873856.5827.56.camel@marge.simpson.net>
-	 <20140627100157.6b0143a5@gandalf.local.home>
-	 <1403890493.5830.33.camel@marge.simpson.net>
-	 <20140627135415.7246e87e@gandalf.local.home>
-	 <1403892474.5830.41.camel@marge.simpson.net>
-	 <20140627141903.16817c28@gandalf.local.home>
-	 <CANGgnMZrx1s5AomG-L_F74215RE1uJOekTjYmLX0voG4NgakTg@mail.gmail.com>
-	 <1403926333.5113.12.camel@marge.simpson.net>
-	 <CANGgnMbJ9f4gSz0HbtnCLosYHKyfXwhMt-svUQbBe_d9bv2LGQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752034AbaF1HRu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 03:17:50 -0400
+Received: from mail-by2lp0236.outbound.protection.outlook.com ([207.46.163.236]:25842
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751035AbaF1HRt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Jun 2014 03:17:49 -0400
+X-Greylist: delayed 94068 seconds by postgrey-1.27 at vger.kernel.org; Sat, 28 Jun 2014 03:17:48 EDT
+Date: Sat, 28 Jun 2014 13:46:43 +0800
+From: Peter Chen <peter.chen@freescale.com>
+To: Michael Grzeschik <mgr@pengutronix.de>,
+        Punnaiah Choudary Kalluri 
+	<punnaiah.choudary.kalluri@xilinx.com>
+CC: <robh+dt@kernel.org>, <gregkh@linuxfoundation.org>, <galak@codeaurora.org>,
+        <rdunlap@infradead.org>, <michal.simek@xilinx.com>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>, <kpc528@gmail.com>,
+        <kalluripunnaiahchoudary@gmail.com>,
+        Punnaiah Choudary Kalluri <punnaia@xilinx.com>
+Subject: Re: [PATCH v2 2/2] usb: chipidea: Add support for zynq usb host
+ and device controller
+Message-ID: <20140628054641.GA14192@shlinux1.ap.freescale.net>
+References: <1403868233-5123-1-git-send-email-punnaia@xilinx.com>
+ <fa656d2d-a2a8-4b8d-a29b-e89e4bfced3e@BL2FFO11FD034.protection.gbl>
+ <20140627125515.GA6025@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140627125515.GA6025@pengutronix.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199002)(51704005)(24454002)(95666004)(104016002)(85306003)(33656002)(105606002)(106466001)(81156004)(102836001)(50466002)(23726002)(107046002)(46406003)(69596002)(26826002)(97736001)(68736004)(83072002)(77982001)(81542001)(15975445006)(83506001)(20776003)(47776003)(31966008)(97756001)(86362001)(50986999)(21056001)(81342001)(79102001)(85852003)(54356999)(76176999)(4396001)(15202345003)(84676001)(80022001)(99396002)(76482001)(92566001)(87936001)(46102001)(74502001)(74662001)(64706001)(83322001)(19580395003)(92726001)(44976005)(6806004);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR03MB086;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
+X-Forefront-PRVS: 0256C18696
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=Peter.Chen@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-06-27 at 23:20 -0700, Austin Schuh wrote:
+On Fri, Jun 27, 2014 at 02:55:15PM +0200, Michael Grzeschik wrote:
+> Hi,
+> 
+> On Fri, Jun 27, 2014 at 04:53:53PM +0530, Punnaiah Choudary Kalluri wrote:
+> > Zynq soc uses Chipidea/Synopsys usb IP core(CI13612). This patch adds
+> > necessary glue to allow the chipidea driver to work on zynq soc.
+> > 
+> 
+> Did you see the currently discussed patches for the generic chipidea
+> glue?
+> 
+> http://www.spinics.net/lists/linux-usb/msg109576.html
+> 
+> Try to improve that code instead writing another version
+> of this simple gluecode.
+> 
 
-> For workqueues, as long as the helper doesn't block on a lock which
-> requires the work queue to be freed up, it will eventually become
-> unblocked and make progress.  The helper _should_ only need the pool
-> lock, which will wake the helper back up when it is available again.
-> Nothing should go to sleep in an un-recoverable way with the work pool
-> lock held.
++1 if you think your version can be covered by generic one.
 
-Well, Thomas killed taking a lock from within the core of a lock, so
-that wart shrank back to microscopic.  Applying that same ointment to
-the plug puller gizmo and schedule_work() would be most excellent.
+-- 
 
--Mike
-
+Best Regards,
+Peter Chen
