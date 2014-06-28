@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964834AbaF1TVz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 15:21:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52803 "EHLO
+	id S964791AbaF1TVx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 15:21:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52806 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753466AbaF1RrQ (ORCPT
+	with ESMTP id S1753121AbaF1RrR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:47:16 -0400
+	Sat, 28 Jun 2014 13:47:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.4 09/43] USB: option: fix runtime PM handling
-Date: Sat, 28 Jun 2014 10:46:00 -0700
-Message-Id: <20140628174450.244909867@linuxfoundation.org>
+        Enrico Etxe Arte <goitizena.generoa@gmail.com>,
+        Lv Zheng <lv.zheng@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.4 29/43] ACPI: Fix conflict between customized DSDT and DSDT local copy
+Date: Sat, 28 Jun 2014 10:46:20 -0700
+Message-Id: <20140628174451.131244730@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174449.788784511@linuxfoundation.org>
 References: <20140628174449.788784511@linuxfoundation.org>
@@ -28,53 +30,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Lv Zheng <lv.zheng@intel.com>
 
-commit acf47d4f9c39b1cba467aa9442fc2efe0b1da741 upstream.
+commit 73577d1df8e1f31f6b1a5eebcdbc334eb0330e47 upstream.
 
-Fix potential I/O while runtime suspended due to missing PM operations
-in send_setup.
+This patch fixes the following issue:
+If DSDT is customized, no local DSDT copy is needed.
 
-Fixes: 383cedc3bb43 ("USB: serial: full autosuspend support for the
-option driver")
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+References: https://bugzilla.kernel.org/show_bug.cgi?id=69711
+Signed-off-by: Enrico Etxe Arte <goitizena.generoa@gmail.com>
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+[rjw: Subject]
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |   15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
+ drivers/acpi/bus.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -1930,6 +1930,7 @@ static int option_send_setup(struct usb_
- 	struct usb_wwan_port_private *portdata;
- 	int ifNum = serial->interface->cur_altsetting->desc.bInterfaceNumber;
- 	int val = 0;
-+	int res;
- 	dbg("%s", __func__);
+--- a/drivers/acpi/bus.c
++++ b/drivers/acpi/bus.c
+@@ -57,6 +57,12 @@ EXPORT_SYMBOL(acpi_root_dir);
  
- 	if (is_blacklisted(ifNum, OPTION_BLACKLIST_SENDSETUP,
-@@ -1945,9 +1946,17 @@ static int option_send_setup(struct usb_
- 	if (portdata->rts_state)
- 		val |= 0x02;
  
--	return usb_control_msg(serial->dev,
--		usb_rcvctrlpipe(serial->dev, 0),
--		0x22, 0x21, val, ifNum, NULL, 0, USB_CTRL_SET_TIMEOUT);
-+	res = usb_autopm_get_interface(serial->interface);
-+	if (res)
-+		return res;
-+
-+	res = usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
-+				0x22, 0x21, val, ifNum, NULL,
-+				0, USB_CTRL_SET_TIMEOUT);
-+
-+	usb_autopm_put_interface(serial->interface);
-+
-+	return res;
+ #ifdef CONFIG_X86
++#ifdef CONFIG_ACPI_CUSTOM_DSDT
++static inline int set_copy_dsdt(const struct dmi_system_id *id)
++{
++	return 0;
++}
++#else
+ static int set_copy_dsdt(const struct dmi_system_id *id)
+ {
+ 	printk(KERN_NOTICE "%s detected - "
+@@ -64,6 +70,7 @@ static int set_copy_dsdt(const struct dm
+ 	acpi_gbl_copy_dsdt_locally = 1;
+ 	return 0;
  }
++#endif
  
- MODULE_AUTHOR(DRIVER_AUTHOR);
+ static struct dmi_system_id dsdt_dmi_table[] __initdata = {
+ 	/*
 
 
