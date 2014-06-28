@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932081AbaF1RuO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:50:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53510 "EHLO
+	id S1757083AbaF1Slc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:41:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53544 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755406AbaF1RuG (ORCPT
+	with ESMTP id S932067AbaF1RuO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:50:06 -0400
+	Sat, 28 Jun 2014 13:50:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>, Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.14 055/110] media: ivtv: Fix Oops when no firmware is loaded
-Date: Sat, 28 Jun 2014 10:46:52 -0700
-Message-Id: <20140628174548.906490138@linuxfoundation.org>
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>, Brad Mouring <bmouring@ni.com>
+Subject: [PATCH 3.14 061/110] rtmutex: Handle deadlock detection smarter
+Date: Sat, 28 Jun 2014 10:46:58 -0700
+Message-Id: <20140628174549.234376008@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -29,61 +30,135 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit deb29e90221a6d4417aa67be971613c353180331 upstream.
+commit 3d5c9340d1949733eb37616abd15db36aef9a57c upstream.
 
-When ivtv PCM device is accessed at the state where no firmware is
-loaded, it oopses like:
+Even in the case when deadlock detection is not requested by the
+caller, we can detect deadlocks. Right now the code stops the lock
+chain walk and keeps the waiter enqueued, even on itself. Silly not to
+yell when such a scenario is detected and to keep the waiter enqueued.
 
-  BUG: unable to handle kernel NULL pointer dereference at 0000000000000050
-  IP: [<ffffffffa049a881>] try_mailbox.isra.0+0x11/0x50 [ivtv]
-  Call Trace:
-    [<ffffffffa049aa20>] ivtv_api_call+0x160/0x6b0 [ivtv]
-    [<ffffffffa049af86>] ivtv_api+0x16/0x40 [ivtv]
-    [<ffffffffa049b10c>] ivtv_vapi+0xac/0xc0 [ivtv]
-    [<ffffffffa049d40d>] ivtv_start_v4l2_encode_stream+0x19d/0x630 [ivtv]
-    [<ffffffffa0530653>] snd_ivtv_pcm_capture_open+0x173/0x1c0 [ivtv_alsa]
-    [<ffffffffa04526f1>] snd_pcm_open_substream+0x51/0x100 [snd_pcm]
-    [<ffffffffa0452853>] snd_pcm_open+0xb3/0x260 [snd_pcm]
-    [<ffffffffa0452a37>] snd_pcm_capture_open+0x37/0x50 [snd_pcm]
-    [<ffffffffa033f557>] snd_open+0xa7/0x1e0 [snd]
-    [<ffffffff8118a628>] chrdev_open+0x88/0x1d0
-    [<ffffffff811840be>] do_dentry_open+0x1de/0x270
-    [<ffffffff81193a73>] do_last+0x1c3/0xec0
-    [<ffffffff81194826>] path_openat+0xb6/0x670
-    [<ffffffff81195b65>] do_filp_open+0x35/0x80
-    [<ffffffff81185449>] do_sys_open+0x129/0x210
-    [<ffffffff815b782d>] system_call_fastpath+0x1a/0x1f
+Return -EDEADLK unconditionally and handle it at the call sites.
 
-This patch adds the check of firmware at PCM open callback like other
-open callbacks of this driver.
+The futex calls return -EDEADLK. The non futex ones dequeue the
+waiter, throw a warning and put the task into a schedule loop.
 
-Bugzilla: https://apibugzilla.novell.com/show_bug.cgi?id=875440
+Tagged for stable as it makes the code more robust.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Brad Mouring <bmouring@ni.com>
+Link: http://lkml.kernel.org/r/20140605152801.836501969@linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/pci/ivtv/ivtv-alsa-pcm.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ kernel/locking/rtmutex-debug.h |    5 +++++
+ kernel/locking/rtmutex.c       |   33 ++++++++++++++++++++++++++++-----
+ kernel/locking/rtmutex.h       |    5 +++++
+ 3 files changed, 38 insertions(+), 5 deletions(-)
 
---- a/drivers/media/pci/ivtv/ivtv-alsa-pcm.c
-+++ b/drivers/media/pci/ivtv/ivtv-alsa-pcm.c
-@@ -159,6 +159,12 @@ static int snd_ivtv_pcm_capture_open(str
- 
- 	/* Instruct the CX2341[56] to start sending packets */
- 	snd_ivtv_lock(itvsc);
+--- a/kernel/locking/rtmutex-debug.h
++++ b/kernel/locking/rtmutex-debug.h
+@@ -31,3 +31,8 @@ static inline int debug_rt_mutex_detect_
+ {
+ 	return (waiter != NULL);
+ }
 +
-+	if (ivtv_init_on_first_open(itv)) {
-+		snd_ivtv_unlock(itvsc);
-+		return -ENXIO;
++static inline void rt_mutex_print_deadlock(struct rt_mutex_waiter *w)
++{
++	debug_rt_mutex_print_deadlock(w);
++}
+--- a/kernel/locking/rtmutex.c
++++ b/kernel/locking/rtmutex.c
+@@ -311,7 +311,7 @@ static int rt_mutex_adjust_prio_chain(st
+ 		}
+ 		put_task_struct(task);
+ 
+-		return deadlock_detect ? -EDEADLK : 0;
++		return -EDEADLK;
+ 	}
+  retry:
+ 	/*
+@@ -386,7 +386,7 @@ static int rt_mutex_adjust_prio_chain(st
+ 	if (lock == orig_lock || rt_mutex_owner(lock) == top_task) {
+ 		debug_rt_mutex_deadlock(deadlock_detect, orig_waiter, lock);
+ 		raw_spin_unlock(&lock->wait_lock);
+-		ret = deadlock_detect ? -EDEADLK : 0;
++		ret = -EDEADLK;
+ 		goto out_unlock_pi;
+ 	}
+ 
+@@ -573,7 +573,7 @@ static int task_blocks_on_rt_mutex(struc
+ 	 * which is wrong, as the other waiter is not in a deadlock
+ 	 * situation.
+ 	 */
+-	if (detect_deadlock && owner == task)
++	if (owner == task)
+ 		return -EDEADLK;
+ 
+ 	raw_spin_lock_irqsave(&task->pi_lock, flags);
+@@ -798,6 +798,26 @@ __rt_mutex_slowlock(struct rt_mutex *loc
+ 	return ret;
+ }
+ 
++static void rt_mutex_handle_deadlock(int res, int detect_deadlock,
++				     struct rt_mutex_waiter *w)
++{
++	/*
++	 * If the result is not -EDEADLOCK or the caller requested
++	 * deadlock detection, nothing to do here.
++	 */
++	if (res != -EDEADLOCK || detect_deadlock)
++		return;
++
++	/*
++	 * Yell lowdly and stop the task right here.
++	 */
++	rt_mutex_print_deadlock(w);
++	while (1) {
++		set_current_state(TASK_INTERRUPTIBLE);
++		schedule();
 +	}
++}
 +
- 	s = &itv->streams[IVTV_ENC_STREAM_TYPE_PCM];
+ /*
+  * Slow path lock function:
+  */
+@@ -837,8 +857,10 @@ rt_mutex_slowlock(struct rt_mutex *lock,
  
- 	v4l2_fh_init(&item.fh, s->vdev);
+ 	set_current_state(TASK_RUNNING);
+ 
+-	if (unlikely(ret))
++	if (unlikely(ret)) {
+ 		remove_waiter(lock, &waiter);
++		rt_mutex_handle_deadlock(ret, detect_deadlock, &waiter);
++	}
+ 
+ 	/*
+ 	 * try_to_take_rt_mutex() sets the waiter bit
+@@ -1147,7 +1169,8 @@ int rt_mutex_start_proxy_lock(struct rt_
+ 		return 1;
+ 	}
+ 
+-	ret = task_blocks_on_rt_mutex(lock, waiter, task, detect_deadlock);
++	/* We enforce deadlock detection for futexes */
++	ret = task_blocks_on_rt_mutex(lock, waiter, task, 1);
+ 
+ 	if (ret && !rt_mutex_owner(lock)) {
+ 		/*
+--- a/kernel/locking/rtmutex.h
++++ b/kernel/locking/rtmutex.h
+@@ -24,3 +24,8 @@
+ #define debug_rt_mutex_print_deadlock(w)		do { } while (0)
+ #define debug_rt_mutex_detect_deadlock(w,d)		(d)
+ #define debug_rt_mutex_reset_waiter(w)			do { } while (0)
++
++static inline void rt_mutex_print_deadlock(struct rt_mutex_waiter *w)
++{
++	WARN(1, "rtmutex deadlock detected\n");
++}
 
 
