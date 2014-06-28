@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755141AbaF1RtX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:49:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53301 "EHLO
+	id S1755237AbaF1Rtg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:49:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53357 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755053AbaF1RtR (ORCPT
+	with ESMTP id S1755121AbaF1Rtd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:49:17 -0400
+	Sat, 28 Jun 2014 13:49:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Vlastimil Babka <vbabka@suse.cz>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Jan Kara <jack@suse.cz>,
+        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
+        Dave Hansen <dave.hansen@intel.com>, Theodore Tso <tytso@mit.edu>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 030/110] mm: vmscan: clear kswapds special reclaim powers before exiting
-Date: Sat, 28 Jun 2014 10:46:27 -0700
-Message-Id: <20140628174546.991465978@linuxfoundation.org>
+Subject: [PATCH 3.14 024/110] mm: page_alloc: use word-based accesses for get/set pageblock bitmaps
+Date: Sat, 28 Jun 2014 10:46:21 -0700
+Message-Id: <20140628174546.648042709@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -33,94 +37,237 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Weiner <hannes@cmpxchg.org>
+From: Mel Gorman <mgorman@suse.de>
 
-commit 71abdc15adf8c702a1dd535f8e30df50758848d2 upstream.
+commit e58469bafd0524e848c3733bc3918d854595e20f upstream.
 
-When kswapd exits, it can end up taking locks that were previously held
-by allocating tasks while they waited for reclaim.  Lockdep currently
-warns about this:
+The test_bit operations in get/set pageblock flags are expensive.  This
+patch reads the bitmap on a word basis and use shifts and masks to isolate
+the bits of interest.  Similarly masks are used to set a local copy of the
+bitmap and then use cmpxchg to update the bitmap if there have been no
+other changes made in parallel.
 
-On Wed, May 28, 2014 at 06:06:34PM +0800, Gu Zheng wrote:
->  inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-R} usage.
->  kswapd2/1151 [HC0[0]:SC0[0]:HE1:SE1] takes:
->   (&sig->group_rwsem){+++++?}, at: exit_signals+0x24/0x130
->  {RECLAIM_FS-ON-W} state was registered at:
->     mark_held_locks+0xb9/0x140
->     lockdep_trace_alloc+0x7a/0xe0
->     kmem_cache_alloc_trace+0x37/0x240
->     flex_array_alloc+0x99/0x1a0
->     cgroup_attach_task+0x63/0x430
->     attach_task_by_pid+0x210/0x280
->     cgroup_procs_write+0x16/0x20
->     cgroup_file_write+0x120/0x2c0
->     vfs_write+0xc0/0x1f0
->     SyS_write+0x4c/0xa0
->     tracesys+0xdd/0xe2
->  irq event stamp: 49
->  hardirqs last  enabled at (49):  _raw_spin_unlock_irqrestore+0x36/0x70
->  hardirqs last disabled at (48):  _raw_spin_lock_irqsave+0x2b/0xa0
->  softirqs last  enabled at (0):  copy_process.part.24+0x627/0x15f0
->  softirqs last disabled at (0):            (null)
->
->  other info that might help us debug this:
->   Possible unsafe locking scenario:
->
->         CPU0
->         ----
->    lock(&sig->group_rwsem);
->    <Interrupt>
->      lock(&sig->group_rwsem);
->
->   *** DEADLOCK ***
->
->  no locks held by kswapd2/1151.
->
->  stack backtrace:
->  CPU: 30 PID: 1151 Comm: kswapd2 Not tainted 3.10.39+ #4
->  Call Trace:
->    dump_stack+0x19/0x1b
->    print_usage_bug+0x1f7/0x208
->    mark_lock+0x21d/0x2a0
->    __lock_acquire+0x52a/0xb60
->    lock_acquire+0xa2/0x140
->    down_read+0x51/0xa0
->    exit_signals+0x24/0x130
->    do_exit+0xb5/0xa50
->    kthread+0xdb/0x100
->    ret_from_fork+0x7c/0xb0
+In a test running dd onto tmpfs the overhead of the pageblock-related
+functions went from 1.27% in profiles to 0.5%.
 
-This is because the kswapd thread is still marked as a reclaimer at the
-time of exit.  But because it is exiting, nobody is actually waiting on
-it to make reclaim progress anymore, and it's nothing but a regular
-thread at this point.  Be tidy and strip it of all its powers
-(PF_MEMALLOC, PF_SWAPWRITE, PF_KSWAPD, and the lockdep reclaim state)
-before returning from the thread function.
+In addition to the performance benefits, this patch closes races that are
+possible between:
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Reported-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>
+a) get_ and set_pageblock_migratetype(), where get_pageblock_migratetype()
+   reads part of the bits before and other part of the bits after
+   set_pageblock_migratetype() has updated them.
+
+b) set_pageblock_migratetype() and set_pageblock_skip(), where the non-atomic
+   read-modify-update set bit operation in set_pageblock_skip() will cause
+   lost updates to some bits changed in the set_pageblock_migratetype().
+
+Joonsoo Kim first reported the case a) via code inspection.  Vlastimil
+Babka's testing with a debug patch showed that either a) or b) occurs
+roughly once per mmtests' stress-highalloc benchmark (although not
+necessarily in the same pageblock).  Furthermore during development of
+unrelated compaction patches, it was observed that frequent calls to
+{start,undo}_isolate_page_range() the race occurs several thousands of
+times and has resulted in NULL pointer dereferences in move_freepages()
+and free_one_page() in places where free_list[migratetype] is
+manipulated by e.g.  list_move().  Further debugging confirmed that
+migratetype had invalid value of 6, causing out of bounds access to the
+free_list array.
+
+That confirmed that the race exist, although it may be extremely rare,
+and currently only fatal where page isolation is performed due to
+memory hot remove.  Races on pageblocks being updated by
+set_pageblock_migratetype(), where both old and new migratetype are
+lower MIGRATE_RESERVE, currently cannot result in an invalid value
+being observed, although theoretically they may still lead to
+unexpected creation or destruction of MIGRATE_RESERVE pageblocks.
+Furthermore, things could get suddenly worse when memory isolation is
+used more, or when new migratetypes are added.
+
+After this patch, the race has no longer been observed in testing.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Vlastimil Babka <vbabka@suse.cz>
+Reported-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Reported-and-tested-by: Vlastimil Babka <vbabka@suse.cz>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Jan Kara <jack@suse.cz>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Dave Hansen <dave.hansen@intel.com>
+Cc: Theodore Ts'o <tytso@mit.edu>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/vmscan.c |    3 +++
- 1 file changed, 3 insertions(+)
+ include/linux/mmzone.h          |    6 +++-
+ include/linux/pageblock-flags.h |   37 +++++++++++++++++++++++-----
+ mm/page_alloc.c                 |   52 ++++++++++++++++++++++++----------------
+ 3 files changed, 68 insertions(+), 27 deletions(-)
 
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -3316,7 +3316,10 @@ static int kswapd(void *p)
- 		}
- 	}
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -75,9 +75,13 @@ enum {
  
-+	tsk->flags &= ~(PF_MEMALLOC | PF_SWAPWRITE | PF_KSWAPD);
- 	current->reclaim_state = NULL;
-+	lockdep_clear_current_reclaim_state();
+ extern int page_group_by_mobility_disabled;
+ 
++#define NR_MIGRATETYPE_BITS (PB_migrate_end - PB_migrate + 1)
++#define MIGRATETYPE_MASK ((1UL << NR_MIGRATETYPE_BITS) - 1)
 +
- 	return 0;
+ static inline int get_pageblock_migratetype(struct page *page)
+ {
+-	return get_pageblock_flags_group(page, PB_migrate, PB_migrate_end);
++	BUILD_BUG_ON(PB_migrate_end - PB_migrate != 2);
++	return get_pageblock_flags_mask(page, PB_migrate_end, MIGRATETYPE_MASK);
  }
  
+ struct free_area {
+--- a/include/linux/pageblock-flags.h
++++ b/include/linux/pageblock-flags.h
+@@ -30,9 +30,12 @@ enum pageblock_bits {
+ 	PB_migrate,
+ 	PB_migrate_end = PB_migrate + 3 - 1,
+ 			/* 3 bits required for migrate types */
+-#ifdef CONFIG_COMPACTION
+ 	PB_migrate_skip,/* If set the block is skipped by compaction */
+-#endif /* CONFIG_COMPACTION */
++
++	/*
++	 * Assume the bits will always align on a word. If this assumption
++	 * changes then get/set pageblock needs updating.
++	 */
+ 	NR_PAGEBLOCK_BITS
+ };
+ 
+@@ -62,11 +65,33 @@ extern int pageblock_order;
+ /* Forward declaration */
+ struct page;
+ 
++unsigned long get_pageblock_flags_mask(struct page *page,
++				unsigned long end_bitidx,
++				unsigned long mask);
++void set_pageblock_flags_mask(struct page *page,
++				unsigned long flags,
++				unsigned long end_bitidx,
++				unsigned long mask);
++
+ /* Declarations for getting and setting flags. See mm/page_alloc.c */
+-unsigned long get_pageblock_flags_group(struct page *page,
+-					int start_bitidx, int end_bitidx);
+-void set_pageblock_flags_group(struct page *page, unsigned long flags,
+-					int start_bitidx, int end_bitidx);
++static inline unsigned long get_pageblock_flags_group(struct page *page,
++					int start_bitidx, int end_bitidx)
++{
++	unsigned long nr_flag_bits = end_bitidx - start_bitidx + 1;
++	unsigned long mask = (1 << nr_flag_bits) - 1;
++
++	return get_pageblock_flags_mask(page, end_bitidx, mask);
++}
++
++static inline void set_pageblock_flags_group(struct page *page,
++					unsigned long flags,
++					int start_bitidx, int end_bitidx)
++{
++	unsigned long nr_flag_bits = end_bitidx - start_bitidx + 1;
++	unsigned long mask = (1 << nr_flag_bits) - 1;
++
++	set_pageblock_flags_mask(page, flags, end_bitidx, mask);
++}
+ 
+ #ifdef CONFIG_COMPACTION
+ #define get_pageblock_skip(page) \
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -6007,53 +6007,65 @@ static inline int pfn_to_bitidx(struct z
+  * @end_bitidx: The last bit of interest
+  * returns pageblock_bits flags
+  */
+-unsigned long get_pageblock_flags_group(struct page *page,
+-					int start_bitidx, int end_bitidx)
++unsigned long get_pageblock_flags_mask(struct page *page,
++					unsigned long end_bitidx,
++					unsigned long mask)
+ {
+ 	struct zone *zone;
+ 	unsigned long *bitmap;
+-	unsigned long pfn, bitidx;
+-	unsigned long flags = 0;
+-	unsigned long value = 1;
++	unsigned long pfn, bitidx, word_bitidx;
++	unsigned long word;
+ 
+ 	zone = page_zone(page);
+ 	pfn = page_to_pfn(page);
+ 	bitmap = get_pageblock_bitmap(zone, pfn);
+ 	bitidx = pfn_to_bitidx(zone, pfn);
++	word_bitidx = bitidx / BITS_PER_LONG;
++	bitidx &= (BITS_PER_LONG-1);
+ 
+-	for (; start_bitidx <= end_bitidx; start_bitidx++, value <<= 1)
+-		if (test_bit(bitidx + start_bitidx, bitmap))
+-			flags |= value;
+-
+-	return flags;
++	word = bitmap[word_bitidx];
++	bitidx += end_bitidx;
++	return (word >> (BITS_PER_LONG - bitidx - 1)) & mask;
+ }
+ 
+ /**
+- * set_pageblock_flags_group - Set the requested group of flags for a pageblock_nr_pages block of pages
++ * set_pageblock_flags_mask - Set the requested group of flags for a pageblock_nr_pages block of pages
+  * @page: The page within the block of interest
+  * @start_bitidx: The first bit of interest
+  * @end_bitidx: The last bit of interest
+  * @flags: The flags to set
+  */
+-void set_pageblock_flags_group(struct page *page, unsigned long flags,
+-					int start_bitidx, int end_bitidx)
++void set_pageblock_flags_mask(struct page *page, unsigned long flags,
++					unsigned long end_bitidx,
++					unsigned long mask)
+ {
+ 	struct zone *zone;
+ 	unsigned long *bitmap;
+-	unsigned long pfn, bitidx;
+-	unsigned long value = 1;
++	unsigned long pfn, bitidx, word_bitidx;
++	unsigned long old_word, word;
++
++	BUILD_BUG_ON(NR_PAGEBLOCK_BITS != 4);
+ 
+ 	zone = page_zone(page);
+ 	pfn = page_to_pfn(page);
+ 	bitmap = get_pageblock_bitmap(zone, pfn);
+ 	bitidx = pfn_to_bitidx(zone, pfn);
++	word_bitidx = bitidx / BITS_PER_LONG;
++	bitidx &= (BITS_PER_LONG-1);
++
+ 	VM_BUG_ON_PAGE(!zone_spans_pfn(zone, pfn), page);
+ 
+-	for (; start_bitidx <= end_bitidx; start_bitidx++, value <<= 1)
+-		if (flags & value)
+-			__set_bit(bitidx + start_bitidx, bitmap);
+-		else
+-			__clear_bit(bitidx + start_bitidx, bitmap);
++	bitidx += end_bitidx;
++	mask <<= (BITS_PER_LONG - bitidx - 1);
++	flags <<= (BITS_PER_LONG - bitidx - 1);
++
++	word = ACCESS_ONCE(bitmap[word_bitidx]);
++	for (;;) {
++		old_word = cmpxchg(&bitmap[word_bitidx], word, (word & ~mask) | flags);
++		if (word == old_word)
++			break;
++		word = old_word;
++	}
+ }
+ 
+ /*
 
 
