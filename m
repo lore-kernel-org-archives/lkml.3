@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932453AbaF1RxT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:53:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54489 "EHLO
+	id S964830AbaF1R7h (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:59:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54501 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932428AbaF1RxQ (ORCPT
+	with ESMTP id S932433AbaF1RxS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:53:16 -0400
+	Sat, 28 Jun 2014 13:53:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Chris Mason <clm@fb.com>
-Subject: [PATCH 3.15 127/139] fs: btrfs: volumes.c: Fix for possible null pointer dereference
-Date: Sat, 28 Jun 2014 10:48:08 -0700
-Message-Id: <20140628174611.211178908@linuxfoundation.org>
+        Pavel Shilovsky <pshilovsky@samba.org>,
+        Shirish Pargaonkar <spargaonkar@suse.com>,
+        Steve French <smfrench@gmail.com>
+Subject: [PATCH 3.15 113/139] CIFS: Fix memory leaks in SMB2_open
+Date: Sat, 28 Jun 2014 10:47:54 -0700
+Message-Id: <20140628174610.566262414@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -29,38 +30,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+From: Pavel Shilovsky <pshilovsky@samba.org>
 
-commit 8321cf2596d283821acc466377c2b85bcd3422b7 upstream.
+commit 663a962151593c69374776e8651238d0da072459 upstream.
 
-There is otherwise a risk of a possible null pointer dereference.
-
-Was largely found by using a static code analysis program called cppcheck.
-
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Signed-off-by: Chris Mason <clm@fb.com>
+Signed-off-by: Pavel Shilovsky <pshilovsky@samba.org>
+Reviewed-by: Shirish Pargaonkar <spargaonkar@suse.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/volumes.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ fs/cifs/smb2pdu.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/fs/btrfs/volumes.c
-+++ b/fs/btrfs/volumes.c
-@@ -1690,11 +1690,12 @@ int btrfs_rm_device(struct btrfs_root *r
- 		struct btrfs_fs_devices *fs_devices;
- 		fs_devices = root->fs_info->fs_devices;
- 		while (fs_devices) {
--			if (fs_devices->seed == cur_devices)
-+			if (fs_devices->seed == cur_devices) {
-+				fs_devices->seed = cur_devices->seed;
- 				break;
-+			}
- 			fs_devices = fs_devices->seed;
+--- a/fs/cifs/smb2pdu.c
++++ b/fs/cifs/smb2pdu.c
+@@ -1089,6 +1089,7 @@ SMB2_open(const unsigned int xid, struct
+ 	int rc = 0;
+ 	unsigned int num_iovecs = 2;
+ 	__u32 file_attributes = 0;
++	char *dhc_buf = NULL, *lc_buf = NULL;
+ 
+ 	cifs_dbg(FYI, "create/open\n");
+ 
+@@ -1155,6 +1156,7 @@ SMB2_open(const unsigned int xid, struct
+ 			kfree(copy_path);
+ 			return rc;
  		}
--		fs_devices->seed = cur_devices->seed;
- 		cur_devices->seed = NULL;
- 		lock_chunks(root);
- 		__btrfs_close_devices(cur_devices);
++		lc_buf = iov[num_iovecs-1].iov_base;
+ 	}
+ 
+ 	if (*oplock == SMB2_OPLOCK_LEVEL_BATCH) {
+@@ -1169,9 +1171,10 @@ SMB2_open(const unsigned int xid, struct
+ 		if (rc) {
+ 			cifs_small_buf_release(req);
+ 			kfree(copy_path);
+-			kfree(iov[num_iovecs-1].iov_base);
++			kfree(lc_buf);
+ 			return rc;
+ 		}
++		dhc_buf = iov[num_iovecs-1].iov_base;
+ 	}
+ 
+ 	rc = SendReceive2(xid, ses, iov, num_iovecs, &resp_buftype, 0);
+@@ -1203,6 +1206,8 @@ SMB2_open(const unsigned int xid, struct
+ 		*oplock = rsp->OplockLevel;
+ creat_exit:
+ 	kfree(copy_path);
++	kfree(lc_buf);
++	kfree(dhc_buf);
+ 	free_rsp_buf(resp_buftype, rsp);
+ 	return rc;
+ }
 
 
