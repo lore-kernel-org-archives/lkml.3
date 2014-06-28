@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756044AbaF1Rwr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:52:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54330 "EHLO
+	id S1756068AbaF1Rww (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:52:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54353 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751464AbaF1Rwo (ORCPT
+	with ESMTP id S1751464AbaF1Rwt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:52:44 -0400
+	Sat, 28 Jun 2014 13:52:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jianguo Wu <wujianguo@huawei.com>, Marc Zyngier <marc.zyngier@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 3.15 078/139] ARM: 8037/1: mm: support big-endian page tables
-Date: Sat, 28 Jun 2014 10:47:19 -0700
-Message-Id: <20140628174608.984662232@linuxfoundation.org>
+        Jukka Rissanen <jukka.rissanen@linux.intel.com>,
+        Marcel Holtmann <marcel@holtmann.org>
+Subject: [PATCH 3.15 082/139] Bluetooth: 6LoWPAN: Fix MAC address universal/local bit handling
+Date: Sat, 28 Jun 2014 10:47:23 -0700
+Message-Id: <20140628174609.166552188@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -30,107 +29,164 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jianguo Wu <wujianguo@huawei.com>
+From: Jukka Rissanen <jukka.rissanen@linux.intel.com>
 
-commit 86f40622af7329375e38f282f6c0aab95f3e5f72 upstream.
+commit 62bbd5b35994eaf30519f126765d7f6af9cd3526 upstream.
 
-When enable LPAE and big-endian in a hisilicon board, while specify
-mem=384M mem=512M@7680M, will get bad page state:
+The universal/local bit handling was incorrectly done in the code.
 
-Freeing unused kernel memory: 180K (c0466000 - c0493000)
-BUG: Bad page state in process init  pfn:fa442
-page:c7749840 count:0 mapcount:-1 mapping:  (null) index:0x0
-page flags: 0x40000400(reserved)
-Modules linked in:
-CPU: 0 PID: 1 Comm: init Not tainted 3.10.27+ #66
-[<c000f5f0>] (unwind_backtrace+0x0/0x11c) from [<c000cbc4>] (show_stack+0x10/0x14)
-[<c000cbc4>] (show_stack+0x10/0x14) from [<c009e448>] (bad_page+0xd4/0x104)
-[<c009e448>] (bad_page+0xd4/0x104) from [<c009e520>] (free_pages_prepare+0xa8/0x14c)
-[<c009e520>] (free_pages_prepare+0xa8/0x14c) from [<c009f8ec>] (free_hot_cold_page+0x18/0xf0)
-[<c009f8ec>] (free_hot_cold_page+0x18/0xf0) from [<c00b5444>] (handle_pte_fault+0xcf4/0xdc8)
-[<c00b5444>] (handle_pte_fault+0xcf4/0xdc8) from [<c00b6458>] (handle_mm_fault+0xf4/0x120)
-[<c00b6458>] (handle_mm_fault+0xf4/0x120) from [<c0013754>] (do_page_fault+0xfc/0x354)
-[<c0013754>] (do_page_fault+0xfc/0x354) from [<c0008400>] (do_DataAbort+0x2c/0x90)
-[<c0008400>] (do_DataAbort+0x2c/0x90) from [<c0008fb4>] (__dabt_usr+0x34/0x40)
+So when setting EUI address from BD address we do this:
+- If BD address type is PUBLIC, then we clear the universal bit
+  in EUI address. If the address type is RANDOM, then the universal
+  bit is set (BT 6lowpan draft chapter 3.2.2)
+- After this we invert the universal/local bit according to RFC 2464
 
-The bad pfn:fa442 is not system memory(mem=384M mem=512M@7680M), after debugging,
-I find in page fault handler, will get wrong pfn from pte just after set pte,
-as follow:
-do_anonymous_page()
-{
-	...
-	set_pte_at(mm, address, page_table, entry);
+When figuring out BD address we do the reverse:
+- Take EUI address from stateless IPv6 address, invert the
+  universal/local bit according to RFC 2464
+- If universal bit is 1 in this modified EUI address, then address
+  type is set to RANDOM, otherwise it is PUBLIC
 
-	//debug code
-	pfn = pte_pfn(entry);
-	pr_info("pfn:0x%lx, pte:0x%llxn", pfn, pte_val(entry));
+Note that 6lowpan_iphc.[ch] does the final toggling of U/L bit
+before sending or receiving the network packet.
 
-	//read out the pte just set
-	new_pte = pte_offset_map(pmd, address);
-	new_pfn = pte_pfn(*new_pte);
-	pr_info("new pfn:0x%lx, new pte:0x%llxn", pfn, pte_val(entry));
-	...
-}
-
-pfn:   0x1fa4f5,     pte:0xc00001fa4f575f
-new_pfn:0xfa4f5, new_pte:0xc00000fa4f5f5f	//new pfn/pte is wrong.
-
-The bug is happened in cpu_v7_set_pte_ext(ptep, pte):
-An LPAE PTE is a 64bit quantity, passed to cpu_v7_set_pte_ext in the r2 and r3 registers.
-On an LE kernel, r2 contains the LSB of the PTE, and r3 the MSB.
-On a BE kernel, the assignment is reversed.
-
-Unfortunately, the current code always assumes the LE case,
-leading to corruption of the PTE when clearing/setting bits.
-
-This patch fixes this issue much like it has been done already in the
-cpu_v7_switch_mm case.
-
-Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
-Acked-by: Marc Zyngier <marc.zyngier@arm.com>
-Acked-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Jukka Rissanen <jukka.rissanen@linux.intel.com>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mm/proc-v7-3level.S |   18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
+ net/bluetooth/6lowpan.c |   65 +++++++++++++++++++++++++-----------------------
+ 1 file changed, 35 insertions(+), 30 deletions(-)
 
---- a/arch/arm/mm/proc-v7-3level.S
-+++ b/arch/arm/mm/proc-v7-3level.S
-@@ -64,6 +64,14 @@ ENTRY(cpu_v7_switch_mm)
- 	mov	pc, lr
- ENDPROC(cpu_v7_switch_mm)
+--- a/net/bluetooth/6lowpan.c
++++ b/net/bluetooth/6lowpan.c
+@@ -420,12 +420,18 @@ static int conn_send(struct l2cap_conn *
+ 	return 0;
+ }
  
-+#ifdef __ARMEB__
-+#define rl r3
-+#define rh r2
-+#else
-+#define rl r2
-+#define rh r3
-+#endif
+-static void get_dest_bdaddr(struct in6_addr *ip6_daddr,
+-			    bdaddr_t *addr, u8 *addr_type)
++static u8 get_addr_type_from_eui64(u8 byte)
+ {
+-	u8 *eui64;
++	/* Is universal(0) or local(1) bit,  */
++	if (byte & 0x02)
++		return ADDR_LE_DEV_RANDOM;
+ 
+-	eui64 = ip6_daddr->s6_addr + 8;
++	return ADDR_LE_DEV_PUBLIC;
++}
 +
- /*
-  * cpu_v7_set_pte_ext(ptep, pte)
-  *
-@@ -73,13 +81,13 @@ ENDPROC(cpu_v7_switch_mm)
-  */
- ENTRY(cpu_v7_set_pte_ext)
- #ifdef CONFIG_MMU
--	tst	r2, #L_PTE_VALID
-+	tst	rl, #L_PTE_VALID
- 	beq	1f
--	tst	r3, #1 << (57 - 32)		@ L_PTE_NONE
--	bicne	r2, #L_PTE_VALID
-+	tst	rh, #1 << (57 - 32)		@ L_PTE_NONE
-+	bicne	rl, #L_PTE_VALID
- 	bne	1f
--	tst	r3, #1 << (55 - 32)		@ L_PTE_DIRTY
--	orreq	r2, #L_PTE_RDONLY
-+	tst	rh, #1 << (55 - 32)		@ L_PTE_DIRTY
-+	orreq	rl, #L_PTE_RDONLY
- 1:	strd	r2, r3, [r0]
- 	ALT_SMP(W(nop))
- 	ALT_UP (mcr	p15, 0, r0, c7, c10, 1)		@ flush_pte
++static void copy_to_bdaddr(struct in6_addr *ip6_daddr, bdaddr_t *addr)
++{
++	u8 *eui64 = ip6_daddr->s6_addr + 8;
+ 
+ 	addr->b[0] = eui64[7];
+ 	addr->b[1] = eui64[6];
+@@ -433,16 +439,19 @@ static void get_dest_bdaddr(struct in6_a
+ 	addr->b[3] = eui64[2];
+ 	addr->b[4] = eui64[1];
+ 	addr->b[5] = eui64[0];
++}
++
++static void convert_dest_bdaddr(struct in6_addr *ip6_daddr,
++				bdaddr_t *addr, u8 *addr_type)
++{
++	copy_to_bdaddr(ip6_daddr, addr);
+ 
+-	addr->b[5] ^= 2;
++	/* We need to toggle the U/L bit that we got from IPv6 address
++	 * so that we get the proper address and type of the BD address.
++	 */
++	addr->b[5] ^= 0x02;
+ 
+-	/* Set universal/local bit to 0 */
+-	if (addr->b[5] & 1) {
+-		addr->b[5] &= ~1;
+-		*addr_type = ADDR_LE_DEV_PUBLIC;
+-	} else {
+-		*addr_type = ADDR_LE_DEV_RANDOM;
+-	}
++	*addr_type = get_addr_type_from_eui64(addr->b[5]);
+ }
+ 
+ static int header_create(struct sk_buff *skb, struct net_device *netdev,
+@@ -473,9 +482,11 @@ static int header_create(struct sk_buff
+ 		/* Get destination BT device from skb.
+ 		 * If there is no such peer then discard the packet.
+ 		 */
+-		get_dest_bdaddr(&hdr->daddr, &addr, &addr_type);
++		convert_dest_bdaddr(&hdr->daddr, &addr, &addr_type);
+ 
+-		BT_DBG("dest addr %pMR type %d", &addr, addr_type);
++		BT_DBG("dest addr %pMR type %s IP %pI6c", &addr,
++		       addr_type == ADDR_LE_DEV_PUBLIC ? "PUBLIC" : "RANDOM",
++		       &hdr->daddr);
+ 
+ 		read_lock_irqsave(&devices_lock, flags);
+ 		peer = peer_lookup_ba(dev, &addr, addr_type);
+@@ -556,7 +567,7 @@ static netdev_tx_t bt_xmit(struct sk_buf
+ 	} else {
+ 		unsigned long flags;
+ 
+-		get_dest_bdaddr(&lowpan_cb(skb)->addr, &addr, &addr_type);
++		convert_dest_bdaddr(&lowpan_cb(skb)->addr, &addr, &addr_type);
+ 		eui64_addr = lowpan_cb(skb)->addr.s6_addr + 8;
+ 		dev = lowpan_dev(netdev);
+ 
+@@ -564,8 +575,10 @@ static netdev_tx_t bt_xmit(struct sk_buf
+ 		peer = peer_lookup_ba(dev, &addr, addr_type);
+ 		read_unlock_irqrestore(&devices_lock, flags);
+ 
+-		BT_DBG("xmit from %s to %pMR (%pI6c) peer %p", netdev->name,
+-		       &addr, &lowpan_cb(skb)->addr, peer);
++		BT_DBG("xmit %s to %pMR type %s IP %pI6c peer %p",
++		       netdev->name, &addr,
++		       addr_type == ADDR_LE_DEV_PUBLIC ? "PUBLIC" : "RANDOM",
++		       &lowpan_cb(skb)->addr, peer);
+ 
+ 		if (peer && peer->conn)
+ 			err = send_pkt(peer->conn, netdev->dev_addr,
+@@ -620,13 +633,13 @@ static void set_addr(u8 *eui, u8 *addr,
+ 	eui[6] = addr[1];
+ 	eui[7] = addr[0];
+ 
+-	eui[0] ^= 2;
+-
+-	/* Universal/local bit set, RFC 4291 */
++	/* Universal/local bit set, BT 6lowpan draft ch. 3.2.1 */
+ 	if (addr_type == ADDR_LE_DEV_PUBLIC)
+-		eui[0] |= 1;
++		eui[0] &= ~0x02;
+ 	else
+-		eui[0] &= ~1;
++		eui[0] |= 0x02;
++
++	BT_DBG("type %d addr %*phC", addr_type, 8, eui);
+ }
+ 
+ static void set_dev_addr(struct net_device *netdev, bdaddr_t *addr,
+@@ -634,7 +647,6 @@ static void set_dev_addr(struct net_devi
+ {
+ 	netdev->addr_assign_type = NET_ADDR_PERM;
+ 	set_addr(netdev->dev_addr, addr->b, addr_type);
+-	netdev->dev_addr[0] ^= 2;
+ }
+ 
+ static void ifup(struct net_device *netdev)
+@@ -684,13 +696,6 @@ static int add_peer_conn(struct l2cap_co
+ 
+ 	memcpy(&peer->eui64_addr, (u8 *)&peer->peer_addr.s6_addr + 8,
+ 	       EUI64_ADDR_LEN);
+-	peer->eui64_addr[0] ^= 2; /* second bit-flip (Universe/Local)
+-				   * is done according RFC2464
+-				   */
+-
+-	raw_dump_inline(__func__, "peer IPv6 address",
+-			(unsigned char *)&peer->peer_addr, 16);
+-	raw_dump_inline(__func__, "peer EUI64 address", peer->eui64_addr, 8);
+ 
+ 	write_lock_irqsave(&devices_lock, flags);
+ 	INIT_LIST_HEAD(&peer->list);
 
 
