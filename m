@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757210AbaF1SsY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:48:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53399 "EHLO
+	id S1757221AbaF1Ssp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:48:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53391 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755245AbaF1Rtl (ORCPT
+	with ESMTP id S1755230AbaF1Rtg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:49:41 -0400
+	Sat, 28 Jun 2014 13:49:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.14 046/110] USB: usb_wwan: fix potential blocked I/O after resume
-Date: Sat, 28 Jun 2014 10:46:43 -0700
-Message-Id: <20140628174547.984551359@linuxfoundation.org>
+        Paul Bolle <pebolle@tiscali.nl>, Tony Lindgren <tony@atomide.com>
+Subject: [PATCH 3.14 018/110] ARM: OMAP: replace checks for CONFIG_USB_GADGET_OMAP
+Date: Sat, 28 Jun 2014 10:46:15 -0700
+Message-Id: <20140628174546.336708349@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -28,107 +28,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Paul Bolle <pebolle@tiscali.nl>
 
-commit fb7ad4f93d9f0f7d49beda32f5e7becb94b29a4d upstream.
+commit 77c2f02edbeda9409a7cf3fd66233015820c213a upstream.
 
-Keep trying to submit urbs rather than bail out on first read-urb
-submission error, which would also prevent I/O for any further ports
-from being resumed.
+Commit 193ab2a60700 ("usb: gadget: allow multiple gadgets to be built")
+apparently required that checks for CONFIG_USB_GADGET_OMAP would be
+replaced with checks for CONFIG_USB_OMAP. Do so now for the remaining
+checks for CONFIG_USB_GADGET_OMAP, even though these checks have
+basically been broken since v3.1.
 
-Instead keep an error count, for all types of failed submissions, and
-let USB core know that something went wrong.
+And, since we're touching this code, use the IS_ENABLED() macro, so
+things will now (hopefully) also work if USB_OMAP is modular.
 
-Also make sure to always clear the suspended flag. Currently a failed
-read-urb submission would prevent cached writes as well as any
-subsequent writes from being submitted until next suspend-resume cycle,
-something which may not even necessarily happen.
-
-Note that USB core currently only logs an error if an interface resume
-failed.
-
-Fixes: 383cedc3bb43 ("USB: serial: full autosuspend support for the
-option driver")
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Fixes: 193ab2a60700 ("usb: gadget: allow multiple gadgets to be built")
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/usb_wwan.c |   25 +++++++++++++++++--------
- 1 file changed, 17 insertions(+), 8 deletions(-)
+ arch/arm/mach-omap1/board-h2.c        |    2 +-
+ arch/arm/mach-omap1/board-h3.c        |    2 +-
+ arch/arm/mach-omap1/board-innovator.c |    2 +-
+ arch/arm/mach-omap1/board-osk.c       |    2 +-
+ drivers/usb/phy/phy-isp1301-omap.c    |    2 +-
+ 5 files changed, 5 insertions(+), 5 deletions(-)
 
---- a/drivers/usb/serial/usb_wwan.c
-+++ b/drivers/usb/serial/usb_wwan.c
-@@ -619,12 +619,12 @@ int usb_wwan_suspend(struct usb_serial *
- }
- EXPORT_SYMBOL(usb_wwan_suspend);
+--- a/arch/arm/mach-omap1/board-h2.c
++++ b/arch/arm/mach-omap1/board-h2.c
+@@ -343,7 +343,7 @@ static struct omap_usb_config h2_usb_con
+ 	/* usb1 has a Mini-AB port and external isp1301 transceiver */
+ 	.otg		= 2,
  
--static void play_delayed(struct usb_serial_port *port)
-+static int play_delayed(struct usb_serial_port *port)
- {
- 	struct usb_wwan_intf_private *data;
- 	struct usb_wwan_port_private *portdata;
- 	struct urb *urb;
--	int err;
-+	int err = 0;
+-#ifdef	CONFIG_USB_GADGET_OMAP
++#if IS_ENABLED(CONFIG_USB_OMAP)
+ 	.hmc_mode	= 19,	/* 0:host(off) 1:dev|otg 2:disabled */
+ 	/* .hmc_mode	= 21,*/	/* 0:host(off) 1:dev(loopback) 2:host(loopback) */
+ #elif	defined(CONFIG_USB_OHCI_HCD) || defined(CONFIG_USB_OHCI_HCD_MODULE)
+--- a/arch/arm/mach-omap1/board-h3.c
++++ b/arch/arm/mach-omap1/board-h3.c
+@@ -366,7 +366,7 @@ static struct omap_usb_config h3_usb_con
+ 	/* usb1 has a Mini-AB port and external isp1301 transceiver */
+ 	.otg	    = 2,
  
- 	portdata = usb_get_serial_port_data(port);
- 	data = port->serial->private;
-@@ -641,6 +641,8 @@ static void play_delayed(struct usb_seri
- 			break;
- 		}
- 	}
-+
-+	return err;
- }
+-#ifdef CONFIG_USB_GADGET_OMAP
++#if IS_ENABLED(CONFIG_USB_OMAP)
+ 	.hmc_mode       = 19,   /* 0:host(off) 1:dev|otg 2:disabled */
+ #elif  defined(CONFIG_USB_OHCI_HCD) || defined(CONFIG_USB_OHCI_HCD_MODULE)
+ 	/* NONSTANDARD CABLE NEEDED (B-to-Mini-B) */
+--- a/arch/arm/mach-omap1/board-innovator.c
++++ b/arch/arm/mach-omap1/board-innovator.c
+@@ -312,7 +312,7 @@ static struct omap_usb_config h2_usb_con
+ 	/* usb1 has a Mini-AB port and external isp1301 transceiver */
+ 	.otg		= 2,
  
- int usb_wwan_resume(struct usb_serial *serial)
-@@ -650,7 +652,8 @@ int usb_wwan_resume(struct usb_serial *s
- 	struct usb_wwan_intf_private *intfdata = serial->private;
- 	struct usb_wwan_port_private *portdata;
- 	struct urb *urb;
--	int err = 0;
-+	int err;
-+	int err_count = 0;
+-#ifdef	CONFIG_USB_GADGET_OMAP
++#if IS_ENABLED(CONFIG_USB_OMAP)
+ 	.hmc_mode	= 19,	/* 0:host(off) 1:dev|otg 2:disabled */
+ 	/* .hmc_mode	= 21,*/	/* 0:host(off) 1:dev(loopback) 2:host(loopback) */
+ #elif	defined(CONFIG_USB_OHCI_HCD) || defined(CONFIG_USB_OHCI_HCD_MODULE)
+--- a/arch/arm/mach-omap1/board-osk.c
++++ b/arch/arm/mach-omap1/board-osk.c
+@@ -280,7 +280,7 @@ static struct omap_usb_config osk_usb_co
+ 	 * be used, with a NONSTANDARD gender-bending cable/dongle, as
+ 	 * a peripheral.
+ 	 */
+-#ifdef	CONFIG_USB_GADGET_OMAP
++#if IS_ENABLED(CONFIG_USB_OMAP)
+ 	.register_dev	= 1,
+ 	.hmc_mode	= 0,
+ #else
+--- a/drivers/usb/phy/phy-isp1301-omap.c
++++ b/drivers/usb/phy/phy-isp1301-omap.c
+@@ -1295,7 +1295,7 @@ isp1301_set_host(struct usb_otg *otg, st
+ 		return isp1301_otg_enable(isp);
+ 	return 0;
  
- 	spin_lock_irq(&intfdata->susp_lock);
- 	for (i = 0; i < serial->num_ports; i++) {
-@@ -669,25 +672,31 @@ int usb_wwan_resume(struct usb_serial *s
- 				dev_err(&port->dev,
- 					"%s: submit int urb failed: %d\n",
- 					__func__, err);
-+				err_count++;
- 			}
- 		}
+-#elif	!defined(CONFIG_USB_GADGET_OMAP)
++#elif !IS_ENABLED(CONFIG_USB_OMAP)
+ 	// FIXME update its refcount
+ 	otg->host = host;
  
-+		err = play_delayed(port);
-+		if (err)
-+			err_count++;
-+
- 		for (j = 0; j < N_IN_URB; j++) {
- 			urb = portdata->in_urbs[j];
- 			err = usb_submit_urb(urb, GFP_ATOMIC);
- 			if (err < 0) {
- 				dev_err(&port->dev, "%s: Error %d for bulk URB %d\n",
- 					__func__, err, i);
--				spin_unlock_irq(&intfdata->susp_lock);
--				goto err_out;
-+				err_count++;
- 			}
- 		}
--		play_delayed(port);
- 	}
- 	intfdata->suspended = 0;
- 	spin_unlock_irq(&intfdata->susp_lock);
--err_out:
--	return err;
-+
-+	if (err_count)
-+		return -EIO;
-+
-+	return 0;
- }
- EXPORT_SYMBOL(usb_wwan_resume);
- #endif
 
 
