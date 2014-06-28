@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932512AbaF1R4g (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:56:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54544 "EHLO
+	id S964877AbaF1R4w (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:56:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54527 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756257AbaF1Rx2 (ORCPT
+	with ESMTP id S1756243AbaF1Rx0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:53:28 -0400
+	Sat, 28 Jun 2014 13:53:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hedberg <johan.hedberg@intel.com>,
-        Marcel Holtmann <marcel@holtmann.org>
-Subject: [PATCH 3.15 132/139] Bluetooth: Clearly distinguish mgmt LTK type from authenticated property
-Date: Sat, 28 Jun 2014 10:48:13 -0700
-Message-Id: <20140628174611.438549265@linuxfoundation.org>
+        Filipe David Borba Manana <fdmanana@gmail.com>,
+        Chris Mason <clm@fb.com>
+Subject: [PATCH 3.15 119/139] Btrfs: send, account for orphan directories when building path strings
+Date: Sat, 28 Jun 2014 10:48:00 -0700
+Message-Id: <20140628174610.843618382@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -29,88 +29,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hedberg <johan.hedberg@intel.com>
+From: Filipe Manana <fdmanana@gmail.com>
 
-commit d7b2545023ecfde94d3ea9c03c5480ac18da96c9 upstream.
+commit c992ec94f24c3e7135d6c23860615f269f0b1d87 upstream.
 
-On the mgmt level we have a key type parameter which currently accepts
-two possible values: 0x00 for unauthenticated and 0x01 for
-authenticated. However, in the internal struct smp_ltk representation we
-have an explicit "authenticated" boolean value.
+If we have directories with a pending move/rename operation, we must take into
+account any orphan directories that got created before executing the pending
+move/rename. Those orphan directories are directories with an inode number higher
+then the current send progress and that don't exist in the parent snapshot, they
+are created before current progress reaches their inode number, with a generated
+name of the form oN-M-I and at the root of the filesystem tree, and later when
+progress matches their inode number, moved/renamed to their final location.
 
-To make this distinction clear, add defines for the possible mgmt values
-and do conversion to and from the internal authenticated value.
+Reproducer:
 
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+          $ mkfs.btrfs -f /dev/sdd
+          $ mount /dev/sdd /mnt
+
+          $ mkdir -p /mnt/a/b/c/d
+          $ mkdir /mnt/a/b/e
+          $ mv /mnt/a/b/c /mnt/a/b/e/CC
+          $ mkdir /mnt/a/b/e/CC/d/f
+	  $ mkdir /mnt/a/g
+
+          $ btrfs subvolume snapshot -r /mnt /mnt/snap1
+          $ btrfs send /mnt/snap1 -f /tmp/base.send
+
+          $ mkdir /mnt/a/g/h
+	  $ mv /mnt/a/b/e /mnt/a/g/h/EE
+          $ mv /mnt/a/g/h/EE/CC/d /mnt/a/g/h/EE/DD
+
+          $ btrfs subvolume snapshot -r /mnt /mnt/snap2
+          $ btrfs send -p /mnt/snap1 /mnt/snap2 -f /tmp/incremental.send
+
+The second receive command failed with the following error:
+
+    ERROR: rename a/b/e/CC/d -> o264-7-0/EE/DD failed. No such file or directory
+
+A test case for xfstests follows soon.
+
+Signed-off-by: Filipe David Borba Manana <fdmanana@gmail.com>
+Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/net/bluetooth/mgmt.h |    3 +++
- net/bluetooth/mgmt.c         |   19 ++++++++++++++++---
- 2 files changed, 19 insertions(+), 3 deletions(-)
+ fs/btrfs/send.c |   33 +++++++++------------------------
+ 1 file changed, 9 insertions(+), 24 deletions(-)
 
---- a/include/net/bluetooth/mgmt.h
-+++ b/include/net/bluetooth/mgmt.h
-@@ -181,6 +181,9 @@ struct mgmt_cp_load_link_keys {
- } __packed;
- #define MGMT_LOAD_LINK_KEYS_SIZE	3
+--- a/fs/btrfs/send.c
++++ b/fs/btrfs/send.c
+@@ -3054,33 +3054,18 @@ static int apply_dir_move(struct send_ct
+ 	if (ret < 0)
+ 		goto out;
  
-+#define MGMT_LTK_UNAUTHENTICATED	0x00
-+#define MGMT_LTK_AUTHENTICATED		0x01
-+
- struct mgmt_ltk_info {
- 	struct mgmt_addr_info addr;
- 	__u8	type;
---- a/net/bluetooth/mgmt.c
-+++ b/net/bluetooth/mgmt.c
-@@ -4530,7 +4530,7 @@ static int load_long_term_keys(struct so
+-	if (parent_ino == sctx->cur_ino) {
+-		/* child only renamed, not moved */
+-		ASSERT(parent_gen == sctx->cur_inode_gen);
+-		ret = get_cur_path(sctx, sctx->cur_ino, sctx->cur_inode_gen,
+-				   from_path);
+-		if (ret < 0)
+-			goto out;
+-		ret = fs_path_add_path(from_path, name);
+-		if (ret < 0)
+-			goto out;
+-	} else {
+-		/* child moved and maybe renamed too */
+-		sctx->send_progress = pm->ino;
+-		ret = get_cur_path(sctx, pm->ino, pm->gen, from_path);
+-		if (ret < 0)
+-			goto out;
+-	}
++	ret = get_cur_path(sctx, parent_ino, parent_gen,
++			   from_path);
++	if (ret < 0)
++		goto out;
++	ret = fs_path_add_path(from_path, name);
++	if (ret < 0)
++		goto out;
  
- 	for (i = 0; i < key_count; i++) {
- 		struct mgmt_ltk_info *key = &cp->keys[i];
--		u8 type, addr_type;
-+		u8 type, addr_type, authenticated;
+-	fs_path_free(name);
++	fs_path_reset(name);
++	to_path = name;
+ 	name = NULL;
  
- 		if (key->addr.type == BDADDR_LE_PUBLIC)
- 			addr_type = ADDR_LE_DEV_PUBLIC;
-@@ -4542,8 +4542,13 @@ static int load_long_term_keys(struct so
- 		else
- 			type = HCI_SMP_LTK_SLAVE;
- 
-+		if (key->type == MGMT_LTK_UNAUTHENTICATED)
-+			authenticated = 0x00;
-+		else
-+			authenticated = 0x01;
-+
- 		hci_add_ltk(hdev, &key->addr.bdaddr, addr_type, type,
--			    key->type, key->val, key->enc_size, key->ediv,
-+			    authenticated, key->val, key->enc_size, key->ediv,
- 			    key->rand);
- 	}
- 
-@@ -5005,6 +5010,14 @@ void mgmt_new_link_key(struct hci_dev *h
- 	mgmt_event(MGMT_EV_NEW_LINK_KEY, hdev, &ev, sizeof(ev), NULL);
- }
- 
-+static u8 mgmt_ltk_type(struct smp_ltk *ltk)
-+{
-+	if (ltk->authenticated)
-+		return MGMT_LTK_AUTHENTICATED;
-+
-+	return MGMT_LTK_UNAUTHENTICATED;
-+}
-+
- void mgmt_new_ltk(struct hci_dev *hdev, struct smp_ltk *key, bool persistent)
- {
- 	struct mgmt_ev_new_long_term_key ev;
-@@ -5030,7 +5043,7 @@ void mgmt_new_ltk(struct hci_dev *hdev,
- 
- 	bacpy(&ev.key.addr.bdaddr, &key->bdaddr);
- 	ev.key.addr.type = link_to_bdaddr(LE_LINK, key->bdaddr_type);
--	ev.key.type = key->authenticated;
-+	ev.key.type = mgmt_ltk_type(key);
- 	ev.key.enc_size = key->enc_size;
- 	ev.key.ediv = key->ediv;
- 	ev.key.rand = key->rand;
+-	to_path = fs_path_alloc();
+-	if (!to_path) {
+-		ret = -ENOMEM;
+-		goto out;
+-	}
+-
+ 	sctx->send_progress = sctx->cur_ino + 1;
+ 	ret = get_cur_path(sctx, pm->ino, pm->gen, to_path);
+ 	if (ret < 0)
 
 
