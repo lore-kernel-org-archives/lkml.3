@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733AbaF1MX1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 08:23:27 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:60726 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752031AbaF1MX0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 08:23:26 -0400
-Date: Sat, 28 Jun 2014 14:23:22 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Nick Warne <nick@linicks.net>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: 3.15.2 build error on AMD64
-Message-ID: <20140628122322.GC4373@pd.tnic>
-References: <53AE9058.50902@linicks.net>
- <20140628101240.GA6357@pd.tnic>
- <53AE9863.6050102@linicks.net>
- <53AE9F0B.1080207@linicks.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <53AE9F0B.1080207@linicks.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752634AbaF1Mem (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 08:34:42 -0400
+Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:64638 "EHLO
+	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751545AbaF1Mel (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Jun 2014 08:34:41 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AkUHABu1rlNbsk2v/2dsb2JhbABagw2regUBAQEBAQEFAW0BmQKBCBd1hDEvI1ZEN4hGAcUaF4VkiFNOHYQtBZpdiz+IPIIAgUQ7
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Kevin Hilman <khilman@kernel.org>,
+        Nishanth Menon <nm@ti.com>, linux-pm@vger.kernel.org
+Subject: [PATCH 1/1] drivers/power/avs/smartreflex.c: remove unnecessary null test before debugfs_remove_recursive
+Date: Sat, 28 Jun 2014 14:33:19 +0200
+Message-Id: <1403958799-4692-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 28, 2014 at 11:55:07AM +0100, Nick Warne wrote:
-> Whoops - that is WRONG (too many ssh terminals)
-> 
-> gcc version 4.2.4
+Fix checkpatch warning:
+WARNING: debugfs_remove_recursive(NULL) is safe this check is probably not required
 
-That's some old compiler. Anyway, I can't trigger it here with gcc 4.6
-and 4.9.
+Cc: Kevin Hilman <khilman@kernel.org>
+Cc: Nishanth Menon <nm@ti.com>
+Cc: linux-pm@vger.kernel.org
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ drivers/power/avs/smartreflex.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-Can you do
-
-$ make clean
-$ make V=1 fs/mbcache.i >>w.log 2>&1
-$ make V=1 fs/mbcache.s >>w.log 2>&1
-
-and zip and send me fs/mbcache.i, fs/mbcache.s and w.log.
-
-Thanks.
-
+diff --git a/drivers/power/avs/smartreflex.c b/drivers/power/avs/smartreflex.c
+index db9973b..ecc5979 100644
+--- a/drivers/power/avs/smartreflex.c
++++ b/drivers/power/avs/smartreflex.c
+@@ -1001,8 +1001,7 @@ static int omap_sr_remove(struct platform_device *pdev)
+ 
+ 	if (sr_info->autocomp_active)
+ 		sr_stop_vddautocomp(sr_info);
+-	if (sr_info->dbg_dir)
+-		debugfs_remove_recursive(sr_info->dbg_dir);
++	debugfs_remove_recursive(sr_info->dbg_dir);
+ 
+ 	pm_runtime_disable(&pdev->dev);
+ 	list_del(&sr_info->node);
 -- 
-Regards/Gruss,
-    Boris.
+1.8.4.5
 
-Sent from a fat crate under my desk. Formatting is fine.
---
