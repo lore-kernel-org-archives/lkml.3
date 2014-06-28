@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756114AbaF1SZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:25:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53991 "EHLO
+	id S1756222AbaF1SZs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:25:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53987 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755743AbaF1RvN (ORCPT
+	with ESMTP id S1755734AbaF1RvM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:51:13 -0400
+	Sat, 28 Jun 2014 13:51:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Chivers <schivers@csc.com>
-Subject: [PATCH 3.15 008/139] printk/of_serial: fix serial console cessation part way through boot.
-Date: Sat, 28 Jun 2014 10:46:09 -0700
-Message-Id: <20140628174605.736260851@linuxfoundation.org>
+        Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        David Fries <david@fries.net>, Evgeniy Polyakov <zbr@ioremap.net>
+Subject: [PATCH 3.15 007/139] w1: do not unlock unheld list_mutex in __w1_remove_master_device()
+Date: Sat, 28 Jun 2014 10:46:08 -0700
+Message-Id: <20140628174605.699151559@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -28,85 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Chivers <schivers@csc.com>
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
 
-commit 7fa21dd8bd191564a195291161d6b43db5d9c350 upstream.
+commit a0f104644ec27ce5bbb36e950eb426dba9a3ad44 upstream.
 
-Commit 5f5c9ae56c38942623f69c3e6dc6ec78e4da2076
-"serial_core: Unregister console in uart_remove_one_port()"
-fixed a crash where a serial port was removed but
-not deregistered as a console.
+w1_process_callbacks() expects to be called with dev->list_mutex held,
+but it is the fact only in w1_process(). __w1_remove_master_device()
+calls w1_process_callbacks() after it releases list_mutex.
 
-There is a side effect of that commit for platforms having serial consoles
-and of_serial configured (CONFIG_SERIAL_OF_PLATFORM). The serial console
-is disabled midway through the boot process.
+The patch fixes __w1_remove_master_device() to acquire list_mutex
+for w1_process_callbacks().
 
-This cessation of the serial console affects PowerPC computers
-such as the MVME5100 and SAM440EP.
+Found by Linux Driver Verification project (linuxtesting.org).
 
-The sequence is:
-
-	bootconsole [udbg0] enabled
-	....
-	serial8250/16550 driver initialises and registers its UARTS,
-	one of these is the serial console.
-	console [ttyS0] enabled
-	....
-	of_serial probes "platform" devices, registering them as it goes.
-	One of these is the serial console.
-	console [ttyS0] disabled.
-
-The disabling of the serial console is due to:
-
-	a.  unregister_console in printk not clearing the
-	    CONS_ENABLED bit in the console flags,
-	    even though it has announced that the console is disabled; and
-
-	b.  of_platform_serial_probe in of_serial not setting the port type
-	    before it registers with serial8250_register_8250_port.
-
-This patch ensures that the serial console is re-enabled when of_serial
-registers a serial port that corresponds to the designated console.
-
-===
-The above failure was identified in Linux-3.15-rc2.
-
-Tested using MVME5100 and SAM440EP PowerPC computers with
-kernels built from Linux-3.15-rc5 and tty-next.
-
-The continued operation of the serial console is vital for computers
-such as the MVME5100 as that Single Board Computer does not
-have any grapical/display hardware.
-
-Signed-off-by: Stephen Chivers <schivers@csc.com>
-Tested-by: Stephen Chivers <schivers@csc.com>
-Acked-by: Geert Uytterhoeven <geert@linux-m68k.org> [unregister_console]
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Acked-by: David Fries <david@fries.net>
+Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/of_serial.c |    1 +
- kernel/printk/printk.c         |    1 +
- 2 files changed, 2 insertions(+)
+ drivers/w1/w1.c     |    2 ++
+ drivers/w1/w1_int.c |    4 ++++
+ 2 files changed, 6 insertions(+)
 
---- a/drivers/tty/serial/of_serial.c
-+++ b/drivers/tty/serial/of_serial.c
-@@ -173,6 +173,7 @@ static int of_platform_serial_probe(stru
- 	{
- 		struct uart_8250_port port8250;
- 		memset(&port8250, 0, sizeof(port8250));
-+		port.type = port_type;
- 		port8250.port = port;
+--- a/drivers/w1/w1.c
++++ b/drivers/w1/w1.c
+@@ -1078,6 +1078,8 @@ static void w1_search_process(struct w1_
+  * w1_process_callbacks() - execute each dev->async_list callback entry
+  * @dev: w1_master device
+  *
++ * The w1 master list_mutex must be held.
++ *
+  * Return: 1 if there were commands to executed 0 otherwise
+  */
+ int w1_process_callbacks(struct w1_master *dev)
+--- a/drivers/w1/w1_int.c
++++ b/drivers/w1/w1_int.c
+@@ -219,9 +219,13 @@ void __w1_remove_master_device(struct w1
  
- 		if (port.fifosize)
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -2413,6 +2413,7 @@ int unregister_console(struct console *c
- 	if (console_drivers != NULL && console->flags & CON_CONSDEV)
- 		console_drivers->flags |= CON_CONSDEV;
+ 		if (msleep_interruptible(1000))
+ 			flush_signals(current);
++		mutex_lock(&dev->list_mutex);
+ 		w1_process_callbacks(dev);
++		mutex_unlock(&dev->list_mutex);
+ 	}
++	mutex_lock(&dev->list_mutex);
+ 	w1_process_callbacks(dev);
++	mutex_unlock(&dev->list_mutex);
  
-+	console->flags &= ~CON_ENABLED;
- 	console_unlock();
- 	console_sysfs_notify();
- 	return res;
+ 	memset(&msg, 0, sizeof(msg));
+ 	msg.id.mst.id = dev->id;
 
 
