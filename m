@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754681AbaF1Rse (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:48:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53058 "EHLO
+	id S1754769AbaF1Rsk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:48:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53121 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754609AbaF1Rs2 (ORCPT
+	with ESMTP id S1754735AbaF1Rsh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:48:28 -0400
+	Sat, 28 Jun 2014 13:48:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.10 37/77] USB: sierra: fix remote wakeup
-Date: Sat, 28 Jun 2014 10:46:30 -0700
-Message-Id: <20140628174523.454588465@linuxfoundation.org>
+        Liu Bo <bo.li.liu@oracle.com>, Chris Mason <clm@fb.com>
+Subject: [PATCH 3.10 67/77] Btrfs: mark mapping with error flag to report errors to userspace
+Date: Sat, 28 Jun 2014 10:47:00 -0700
+Message-Id: <20140628174525.121978414@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174521.691276402@linuxfoundation.org>
 References: <20140628174521.691276402@linuxfoundation.org>
@@ -28,69 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Liu Bo <bo.li.liu@oracle.com>
 
-commit 80cc0fcbdaeaf10d04ba27779a2d7ceb73d2717a upstream.
+commit 5dca6eea91653e9949ce6eb9e9acab6277e2f2c4 upstream.
 
-Make sure that needs_remote_wake up is always set when there are open
-ports.
+According to commit 865ffef3797da2cac85b3354b5b6050dc9660978
+(fs: fix fsync() error reporting),
+it's not stable to just check error pages because pages can be
+truncated or invalidated, we should also mark mapping with error
+flag so that a later fsync can catch the error.
 
-Currently close() would unconditionally set needs_remote_wakeup to 0
-even though there might still be open ports. This could lead to blocked
-input and possibly dropped data on devices that do not support remote
-wakeup (and which must therefore not be runtime suspended while open).
-
-Add an open_ports counter (protected by the susp_lock) and only clear
-needs_remote_wakeup when the last port is closed.
-
-Fixes: e6929a9020ac ("USB: support for autosuspend in sierra while
-online")
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Liu Bo <bo.li.liu@oracle.com>
+Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/sierra.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ fs/btrfs/extent_io.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -58,6 +58,7 @@ struct sierra_intf_private {
- 	spinlock_t susp_lock;
- 	unsigned int suspended:1;
- 	int in_flight;
-+	unsigned int open_ports;
- };
- 
- static int sierra_set_power_state(struct usb_device *udev, __u16 swiState)
-@@ -776,7 +777,6 @@ static void sierra_close(struct usb_seri
- 
- 	mutex_lock(&serial->disc_mutex);
- 	if (!serial->disconnected) {
--		serial->interface->needs_remote_wakeup = 0;
- 		/* odd error handling due to pm counters */
- 		if (!usb_autopm_get_interface(serial->interface))
- 			sierra_send_setup(port);
-@@ -787,6 +787,8 @@ static void sierra_close(struct usb_seri
- 	mutex_unlock(&serial->disc_mutex);
- 	spin_lock_irq(&intfdata->susp_lock);
- 	portdata->opened = 0;
-+	if (--intfdata->open_ports == 0)
-+		serial->interface->needs_remote_wakeup = 0;
- 	spin_unlock_irq(&intfdata->susp_lock);
- 
- 	for (;;) {
-@@ -842,9 +844,10 @@ static int sierra_open(struct tty_struct
- 
- 	sierra_send_setup(port);
- 
--	serial->interface->needs_remote_wakeup = 1;
- 	spin_lock_irq(&intfdata->susp_lock);
- 	portdata->opened = 1;
-+	if (++intfdata->open_ports == 1)
-+		serial->interface->needs_remote_wakeup = 1;
- 	spin_unlock_irq(&intfdata->susp_lock);
- 	usb_autopm_put_interface(serial->interface);
- 
+--- a/fs/btrfs/extent_io.c
++++ b/fs/btrfs/extent_io.c
+@@ -2371,6 +2371,8 @@ int end_extent_writepage(struct page *pa
+ 	if (!uptodate) {
+ 		ClearPageUptodate(page);
+ 		SetPageError(page);
++		ret = ret < 0 ? ret : -EIO;
++		mapping_set_error(page->mapping, ret);
+ 	}
+ 	return 0;
+ }
 
 
