@@ -1,124 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755544AbaF1Rzl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:55:41 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:49446 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755093AbaF1Rzh (ORCPT
+	id S1756252AbaF1Rz5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:55:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54536 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932429AbaF1Rx3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:55:37 -0400
-X-IronPort-AV: E=Sophos;i="5.01,567,1400018400"; 
-   d="scan'208";a="82697726"
-Date: Sat, 28 Jun 2014 19:55:33 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Fabian Frederick <fabf@skynet.be>
-cc: linux-kernel@vger.kernel.org, Julia Lawall <Julia.Lawall@lip6.fr>,
-        Gilles Muller <Gilles.Muller@lip6.fr>, Joe Perches <joe@perches.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH V3] scripts/coccinelle/free: add NULL test before freeing
- functions
-In-Reply-To: <1403945247-21549-1-git-send-email-fabf@skynet.be>
-Message-ID: <alpine.DEB.2.10.1406281955050.2538@hadrien>
-References: <1403945247-21549-1-git-send-email-fabf@skynet.be>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Sat, 28 Jun 2014 13:53:29 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        "Don A. Bailey" <donb@securitymouse.com>, Willy Tarreau <w@1wt.eu>
+Subject: [PATCH 3.15 134/139] lz4: fix another possible overrun
+Date: Sat, 28 Jun 2014 10:48:15 -0700
+Message-Id: <20140628174611.523744873@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.1
+In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
+References: <20140628174605.352098823@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 28 Jun 2014, Fabian Frederick wrote:
+3.15-stable review patch.  If anyone has any objections, please let me know.
 
-> Warns or generates patch for NULL check before the following functions:
->
-> kfree
-> usb_free_urb
-> debugfs_remove
-> debugfs_remove_recursive
->
-> Cc: Julia Lawall <Julia.Lawall@lip6.fr>
-> Cc: Gilles Muller <Gilles.Muller@lip6.fr>
-> Cc: Joe Perches <joe@perches.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+------------------
 
-Acked-by: Julia Lawall <Julia.Lawall@lip6.fr>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-> ---
->
-> V3:
->    -Update print_main message.
->    -Add patch mode (suggested by Julia Lawall)
->
-> V2:
->    -Add 3 more functions to kfree (suggested by Joe Perches)
->    -Update warning message to involve code analysis (suggested by Julia Lawall)
->
->  scripts/coccinelle/free/ifnullfree.cocci | 53 ++++++++++++++++++++++++++++++++
->  1 file changed, 53 insertions(+)
->  create mode 100644 scripts/coccinelle/free/ifnullfree.cocci
->
-> diff --git a/scripts/coccinelle/free/ifnullfree.cocci b/scripts/coccinelle/free/ifnullfree.cocci
-> new file mode 100644
-> index 0000000..c826d98
-> --- /dev/null
-> +++ b/scripts/coccinelle/free/ifnullfree.cocci
-> @@ -0,0 +1,53 @@
-> +/// NULL check before some freeing functions is not needed.
-> +///
-> +/// Based on checkpatch warning
-> +/// "kfree(NULL) is safe this check is probably not required"
-> +/// and kfreeaddr.cocci by Julia Lawall.
-> +///
-> +/// Comments: -
-> +/// Options: --no-includes --include-headers
-> +
-> +virtual patch
-> +virtual org
-> +virtual report
-> +virtual context
-> +
-> +@r2 depends on patch@
-> +expression E;
-> +@@
-> +- if (E)
-> +(
-> +-	kfree(E);
-> ++ kfree(E);
-> +|
-> +-	debugfs_remove(E);
-> ++ debugfs_remove(E);
-> +|
-> +-	debugfs_remove_recursive(E);
-> ++ debugfs_remove_recursive(E);
-> +|
-> +-	usb_free_urb(E);
-> ++ usb_free_urb(E);
-> +)
-> +
-> +@r depends on context || report || org @
-> +expression E;
-> +position p;
-> +@@
-> +
-> +* if (E)
-> +*	\(kfree@p\|debugfs_remove@p\|debugfs_remove_recursive@p\|usb_free_urb\)(E);
-> +
-> +@script:python depends on org@
-> +p << r.p;
-> +@@
-> +
-> +cocci.print_main("NULL check before that freeing function is not needed", p)
-> +
-> +@script:python depends on report@
-> +p << r.p;
-> +@@
-> +
-> +msg = "WARNING: NULL check before freeing functions like kfree, debugfs_remove, debugfs_remove_recursive or usb_free_urb is not needed. Maybe consider reorganizing relevant code to avoid passing NULL values."
-> +coccilib.report.print_report(p[0], msg)
-> +
-> --
-> 1.8.4.5
->
->
+commit 4148c1f67abf823099b2d7db6851e4aea407f5ee upstream.
+
+There is one other possible overrun in the lz4 code as implemented by
+Linux at this point in time (which differs from the upstream lz4
+codebase, but will get synced at in a future kernel release.)  As
+pointed out by Don, we also need to check the overflow in the data
+itself.
+
+While we are at it, replace the odd error return value with just a
+"simple" -1 value as the return value is never used for anything other
+than a basic "did this work or not" check.
+
+Reported-by: "Don A. Bailey" <donb@securitymouse.com>
+Reported-by: Willy Tarreau <w@1wt.eu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ lib/lz4/lz4_decompress.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+--- a/lib/lz4/lz4_decompress.c
++++ b/lib/lz4/lz4_decompress.c
+@@ -108,6 +108,8 @@ static int lz4_uncompress(const char *so
+ 		if (length == ML_MASK) {
+ 			for (; *ip == 255; length += 255)
+ 				ip++;
++			if (unlikely(length > (size_t)(length + *ip)))
++				goto _output_error;
+ 			length += *ip++;
+ 		}
+ 
+@@ -157,7 +159,7 @@ static int lz4_uncompress(const char *so
+ 
+ 	/* write overflow error detected */
+ _output_error:
+-	return (int) (-(((char *)ip) - source));
++	return -1;
+ }
+ 
+ static int lz4_uncompress_unknownoutputsize(const char *source, char *dest,
+
+
