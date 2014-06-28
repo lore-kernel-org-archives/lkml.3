@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755100AbaF1RtT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:49:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53289 "EHLO
+	id S1755078AbaF1RtQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:49:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53284 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755055AbaF1RtO (ORCPT
+	with ESMTP id S1755053AbaF1RtO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Jun 2014 13:49:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Jones <davej@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 028/110] mm: fix sleeping function warning from __put_anon_vma
-Date: Sat, 28 Jun 2014 10:46:25 -0700
-Message-Id: <20140628174546.877443943@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>,
+        Leandro Liptak <leandroliptak@gmail.com>
+Subject: [PATCH 3.14 019/110] USB: EHCI: avoid BIOS handover on the HASEE E200
+Date: Sat, 28 Jun 2014 10:46:16 -0700
+Message-Id: <20140628174546.391262724@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -31,66 +29,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hugh Dickins <hughd@google.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 7f39dda9d86fb4f4f17af0de170decf125726f8c upstream.
+commit b0a50e92bda3c4aeb8017d4e6c6e92146ebd5c9b upstream.
 
-Trinity reports BUG:
+Leandro Liptak reports that his HASEE E200 computer hangs when we ask
+the BIOS to hand over control of the EHCI host controller.  This
+definitely sounds like a bug in the BIOS, but at the moment there is
+no way to fix it.
 
-  sleeping function called from invalid context at kernel/locking/rwsem.c:47
-  in_atomic(): 0, irqs_disabled(): 0, pid: 5787, name: trinity-c27
+This patch works around the problem by avoiding the handoff whenever
+the motherboard and BIOS version match those of Leandro's computer.
 
-__might_sleep < down_write < __put_anon_vma < page_get_anon_vma <
-migrate_pages < compact_zone < compact_zone_order < try_to_compact_pages ..
-
-Right, since conversion to mutex then rwsem, we should not put_anon_vma()
-from inside an rcu_read_lock()ed section: fix the two places that did so.
-And add might_sleep() to anon_vma_free(), as suggested by Peter Zijlstra.
-
-Fixes: 88c22088bf23 ("mm: optimize page_lock_anon_vma() fast-path")
-Reported-by: Dave Jones <davej@redhat.com>
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Leandro Liptak <leandroliptak@gmail.com>
+Tested-by: Leandro Liptak <leandroliptak@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/rmap.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/usb/host/pci-quirks.c |   19 ++++++++++++++++---
+ 1 file changed, 16 insertions(+), 3 deletions(-)
 
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -103,6 +103,7 @@ static inline void anon_vma_free(struct
- 	 * LOCK should suffice since the actual taking of the lock must
- 	 * happen _before_ what follows.
- 	 */
-+	might_sleep();
- 	if (rwsem_is_locked(&anon_vma->root->rwsem)) {
- 		anon_vma_lock_write(anon_vma);
- 		anon_vma_unlock_write(anon_vma);
-@@ -426,8 +427,9 @@ struct anon_vma *page_get_anon_vma(struc
- 	 * above cannot corrupt).
- 	 */
- 	if (!page_mapped(page)) {
-+		rcu_read_unlock();
- 		put_anon_vma(anon_vma);
--		anon_vma = NULL;
-+		return NULL;
- 	}
- out:
- 	rcu_read_unlock();
-@@ -477,9 +479,9 @@ struct anon_vma *page_lock_anon_vma_read
- 	}
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -656,6 +656,14 @@ static const struct dmi_system_id ehci_d
+ 			DMI_MATCH(DMI_BIOS_VERSION, "Lucid-"),
+ 		},
+ 	},
++	{
++		/* HASEE E200 */
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "HASEE"),
++			DMI_MATCH(DMI_BOARD_NAME, "E210"),
++			DMI_MATCH(DMI_BIOS_VERSION, "6.00"),
++		},
++	},
+ 	{ }
+ };
  
- 	if (!page_mapped(page)) {
-+		rcu_read_unlock();
- 		put_anon_vma(anon_vma);
--		anon_vma = NULL;
--		goto out;
-+		return NULL;
- 	}
+@@ -665,9 +673,14 @@ static void ehci_bios_handoff(struct pci
+ {
+ 	int try_handoff = 1, tried_handoff = 0;
  
- 	/* we pinned the anon_vma, its safe to sleep */
+-	/* The Pegatron Lucid tablet sporadically waits for 98 seconds trying
+-	 * the handoff on its unused controller.  Skip it. */
+-	if (pdev->vendor == 0x8086 && pdev->device == 0x283a) {
++	/*
++	 * The Pegatron Lucid tablet sporadically waits for 98 seconds trying
++	 * the handoff on its unused controller.  Skip it.
++	 *
++	 * The HASEE E200 hangs when the semaphore is set (bugzilla #77021).
++	 */
++	if (pdev->vendor == 0x8086 && (pdev->device == 0x283a ||
++			pdev->device == 0x27cc)) {
+ 		if (dmi_check_system(ehci_dmi_nohandoff_table))
+ 			try_handoff = 0;
+ 	}
 
 
