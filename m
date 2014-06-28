@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754402AbaF1RsK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:48:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52991 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754234AbaF1RsI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754344AbaF1RsI (ORCPT <rfc822;w@1wt.eu>);
 	Sat, 28 Jun 2014 13:48:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52964 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754234AbaF1RsC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Jun 2014 13:48:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 22/77] idr: fix overflow bug during maximum ID calculation at maximum height
-Date: Sat, 28 Jun 2014 10:46:15 -0700
-Message-Id: <20140628174522.709861468@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.10 32/77] USB: usb_wwan: fix potential blocked I/O after resume
+Date: Sat, 28 Jun 2014 10:46:25 -0700
+Message-Id: <20140628174523.193952705@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174521.691276402@linuxfoundation.org>
 References: <20140628174521.691276402@linuxfoundation.org>
@@ -30,77 +28,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 3afb69cb5572b3c8c898c00880803cf1a49852c4 upstream.
+commit fb7ad4f93d9f0f7d49beda32f5e7becb94b29a4d upstream.
 
-idr_replace() open-codes the logic to calculate the maximum valid ID
-given the height of the idr tree; unfortunately, the open-coded logic
-doesn't account for the fact that the top layer may have unused slots
-and over-shifts the limit to zero when the tree is at its maximum
-height.
+Keep trying to submit urbs rather than bail out on first read-urb
+submission error, which would also prevent I/O for any further ports
+from being resumed.
 
-The following test code shows it fails to replace the value for
-id=((1<<27)+42):
+Instead keep an error count, for all types of failed submissions, and
+let USB core know that something went wrong.
 
-  static void test5(void)
-  {
-        int id;
-        DEFINE_IDR(test_idr);
-  #define TEST5_START ((1<<27)+42) /* use the highest layer */
+Also make sure to always clear the suspended flag. Currently a failed
+read-urb submission would prevent cached writes as well as any
+subsequent writes from being submitted until next suspend-resume cycle,
+something which may not even necessarily happen.
 
-        printk(KERN_INFO "Start test5\n");
-        id = idr_alloc(&test_idr, (void *)1, TEST5_START, 0, GFP_KERNEL);
-        BUG_ON(id != TEST5_START);
-        TEST_BUG_ON(idr_replace(&test_idr, (void *)2, TEST5_START) != (void *)1);
-        idr_destroy(&test_idr);
-        printk(KERN_INFO "End of test5\n");
-  }
+Note that USB core currently only logs an error if an interface resume
+failed.
 
-Fix the bug by using idr_max() which correctly takes into account the
-maximum allowed shift.
+Fixes: 383cedc3bb43 ("USB: serial: full autosuspend support for the
+option driver")
 
-sub_alloc() shares the same problem and may incorrectly fail with
--EAGAIN; however, this bug doesn't affect correct operation because
-idr_get_empty_slot(), which already uses idr_max(), retries with the
-increased @id in such cases.
-
-[tj@kernel.org: Updated patch description.]
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Acked-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- lib/idr.c |    8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ drivers/usb/serial/usb_wwan.c |   25 +++++++++++++++++--------
+ 1 file changed, 17 insertions(+), 8 deletions(-)
 
---- a/lib/idr.c
-+++ b/lib/idr.c
-@@ -250,7 +250,7 @@ static int sub_alloc(struct idr *idp, in
- 			id = (id | ((1 << (IDR_BITS * l)) - 1)) + 1;
+--- a/drivers/usb/serial/usb_wwan.c
++++ b/drivers/usb/serial/usb_wwan.c
+@@ -623,12 +623,12 @@ int usb_wwan_suspend(struct usb_serial *
+ }
+ EXPORT_SYMBOL(usb_wwan_suspend);
  
- 			/* if already at the top layer, we need to grow */
--			if (id >= 1 << (idp->layers * IDR_BITS)) {
-+			if (id > idr_max(idp->layers)) {
- 				*starting_id = id;
- 				return -EAGAIN;
+-static void play_delayed(struct usb_serial_port *port)
++static int play_delayed(struct usb_serial_port *port)
+ {
+ 	struct usb_wwan_intf_private *data;
+ 	struct usb_wwan_port_private *portdata;
+ 	struct urb *urb;
+-	int err;
++	int err = 0;
+ 
+ 	portdata = usb_get_serial_port_data(port);
+ 	data = port->serial->private;
+@@ -645,6 +645,8 @@ static void play_delayed(struct usb_seri
+ 			break;
+ 		}
+ 	}
++
++	return err;
+ }
+ 
+ int usb_wwan_resume(struct usb_serial *serial)
+@@ -654,7 +656,8 @@ int usb_wwan_resume(struct usb_serial *s
+ 	struct usb_wwan_intf_private *intfdata = serial->private;
+ 	struct usb_wwan_port_private *portdata;
+ 	struct urb *urb;
+-	int err = 0;
++	int err;
++	int err_count = 0;
+ 
+ 	spin_lock_irq(&intfdata->susp_lock);
+ 	for (i = 0; i < serial->num_ports; i++) {
+@@ -673,25 +676,31 @@ int usb_wwan_resume(struct usb_serial *s
+ 				dev_err(&port->dev,
+ 					"%s: submit int urb failed: %d\n",
+ 					__func__, err);
++				err_count++;
  			}
-@@ -829,12 +829,10 @@ void *idr_replace(struct idr *idp, void
- 	if (!p)
- 		return ERR_PTR(-EINVAL);
+ 		}
  
--	n = (p->layer+1) * IDR_BITS;
--
--	if (id >= (1 << n))
-+	if (id > idr_max(p->layer + 1))
- 		return ERR_PTR(-EINVAL);
- 
--	n -= IDR_BITS;
-+	n = p->layer * IDR_BITS;
- 	while ((n > 0) && p) {
- 		p = p->ary[(id >> n) & IDR_MASK];
- 		n -= IDR_BITS;
++		err = play_delayed(port);
++		if (err)
++			err_count++;
++
+ 		for (j = 0; j < N_IN_URB; j++) {
+ 			urb = portdata->in_urbs[j];
+ 			err = usb_submit_urb(urb, GFP_ATOMIC);
+ 			if (err < 0) {
+ 				dev_err(&port->dev, "%s: Error %d for bulk URB %d\n",
+ 					__func__, err, i);
+-				spin_unlock_irq(&intfdata->susp_lock);
+-				goto err_out;
++				err_count++;
+ 			}
+ 		}
+-		play_delayed(port);
+ 	}
+ 	intfdata->suspended = 0;
+ 	spin_unlock_irq(&intfdata->susp_lock);
+-err_out:
+-	return err;
++
++	if (err_count)
++		return -EIO;
++
++	return 0;
+ }
+ EXPORT_SYMBOL(usb_wwan_resume);
+ #endif
 
 
