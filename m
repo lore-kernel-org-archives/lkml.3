@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755493AbaF1Rua (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:50:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53591 "EHLO
+	id S1756685AbaF1SiN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:38:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53605 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932099AbaF1Ru1 (ORCPT
+	with ESMTP id S1755485AbaF1Rua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:50:27 -0400
+	Sat, 28 Jun 2014 13:50:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin LaHaise <bcrl@kvack.org>, Kent Overstreet <kmo@daterainc.com>,
-        Mateusz Guzik <mguzik@redhat.com>, Petr Matousek <pmatouse@redhat.com>
-Subject: [PATCH 3.14 088/110] aio: fix aio request leak when events are reaped by userspace
-Date: Sat, 28 Jun 2014 10:47:25 -0700
-Message-Id: <20140628174550.735737255@linuxfoundation.org>
+        Thomas Glanzmann <thomas@glanzmann.de>,
+        Charalampos Pournaris <charpour@gmail.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.14 076/110] target: Set CMD_T_ACTIVE bit for Task Management Requests
+Date: Sat, 28 Jun 2014 10:47:13 -0700
+Message-Id: <20140628174550.048358600@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -29,45 +30,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin LaHaise <bcrl@kvack.org>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit f8567a3845ac05bb28f3c1b478ef752762bd39ef upstream.
+commit f15e9cd910c4d9da7de43f2181f362082fc45f0f upstream.
 
-The aio cleanups and optimizations by kmo that were merged into the 3.10
-tree added a regression for userspace event reaping.  Specifically, the
-reference counts are not decremented if the event is reaped in userspace,
-leading to the application being unable to submit further aio requests.
-This patch applies to 3.12+.  A separate backport is required for 3.10/3.11.
-This issue was uncovered as part of CVE-2014-0206.
+This patch fixes a bug where se_cmd descriptors associated with a
+Task Management Request (TMR) where not setting CMD_T_ACTIVE before
+being dispatched into target_tmr_work() process context.
 
-Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
-Cc: Kent Overstreet <kmo@daterainc.com>
-Cc: Mateusz Guzik <mguzik@redhat.com>
-Cc: Petr Matousek <pmatouse@redhat.com>
+This is required in order for transport_generic_free_cmd() ->
+transport_wait_for_tasks() to wait on se_cmd->t_transport_stop_comp
+if a session reset event occurs while an ABORT_TASK is outstanding
+waiting for another I/O to complete.
+
+Cc: Thomas Glanzmann <thomas@glanzmann.de>
+Cc: Charalampos Pournaris <charpour@gmail.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/aio.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/target/target_core_transport.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -1007,6 +1007,7 @@ void aio_complete(struct kiocb *iocb, lo
- 
- 	/* everything turned out well, dispose of the aiocb. */
- 	kiocb_free(iocb);
-+	put_reqs_available(ctx, 1);
- 
- 	/*
- 	 * We have to order our ring_info tail store above and test
-@@ -1086,8 +1087,6 @@ static long aio_read_events_ring(struct
- 	flush_dcache_page(ctx->ring_pages[0]);
- 
- 	pr_debug("%li  h%u t%u\n", ret, head, tail);
--
--	put_reqs_available(ctx, ret);
- out:
- 	mutex_unlock(&ctx->ring_lock);
- 
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -2868,6 +2868,12 @@ static void target_tmr_work(struct work_
+ int transport_generic_handle_tmr(
+ 	struct se_cmd *cmd)
+ {
++	unsigned long flags;
++
++	spin_lock_irqsave(&cmd->t_state_lock, flags);
++	cmd->transport_state |= CMD_T_ACTIVE;
++	spin_unlock_irqrestore(&cmd->t_state_lock, flags);
++
+ 	INIT_WORK(&cmd->work, target_tmr_work);
+ 	queue_work(cmd->se_dev->tmr_wq, &cmd->work);
+ 	return 0;
 
 
