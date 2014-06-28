@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752496AbaF1Wc5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 18:32:57 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:54252 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751579AbaF1Wc4 (ORCPT
+	id S1752745AbaF1Web (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 18:34:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55594 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751371AbaF1Wea (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 18:32:56 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53AF4295.3010408@roeck-us.net>
-Date: Sat, 28 Jun 2014 15:32:53 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Sat, 28 Jun 2014 18:34:30 -0400
+Date: Sat, 28 Jun 2014 15:34:17 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
+        shuah.kh@samsung.com, stable@vger.kernel.org
+Subject: Re: [PATCH 3.4 00/43] 3.4.96-stable review
+Message-ID: <20140628223417.GA31753@kroah.com>
+References: <20140628174449.788784511@linuxfoundation.org>
+ <53AF419A.20202@roeck-us.net>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 3.15 000/139] 3.15.3-stable review
-References: <20140628174605.352098823@linuxfoundation.org>
-In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53AF419A.20202@roeck-us.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2014 10:46 AM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.15.3 release.
-> There are 139 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Mon Jun 30 17:45:39 UTC 2014.
-> Anything received after that time might be too late.
->
+On Sat, Jun 28, 2014 at 03:28:42PM -0700, Guenter Roeck wrote:
+> On 06/28/2014 10:45 AM, Greg Kroah-Hartman wrote:
+> >This is the start of the stable review cycle for the 3.4.96 release.
+> >There are 43 patches in this series, all will be posted as a response
+> >to this one.  If anyone has any issues with these being applied, please
+> >let me know.
+> >
+> >Responses should be made by Mon Jun 30 17:44:34 UTC 2014.
+> >Anything received after that time might be too late.
+> >
+> 
+> Build results:
+> 	total: 137 pass: 111 skipped: 20 fail: 6
+> Failed builds:
+> 	alpha:allmodconfig
+> 	arm:spear6xx_defconfig
+> 	score:defconfig
+> 	sparc64:allmodconfig
+> 	unicore32:defconfig
+> 	xtensa:allmodconfig
+> 
+> Qemu tests all passed.
+> 
+> Results are as expected. Details are available at http://server.roeck-us.net:8010/builders.
 
-Build results:
-	total: 144 pass: 136 skipped: 5 fail: 3
-Failed builds:
-	powerpc:allmodconfig
-	powerpc:allmodconfig
-	unicore32:defconfig
+Thanks for testing and letting me know.
 
-Qemu tests all passed.
-
-Results are as expected. Details are available at http://server.roeck-us.net:8010/builders.
-
-Guenter
-
+greg k-h
