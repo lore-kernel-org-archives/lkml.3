@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757658AbaF1TJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 15:09:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53001 "EHLO
+	id S1757700AbaF1TJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 15:09:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52987 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754420AbaF1RsP (ORCPT
+	with ESMTP id S1754320AbaF1RsH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:48:15 -0400
+	Sat, 28 Jun 2014 13:48:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Xiaoguang Wang <wangxg.fnst@cn.fujitsu.com>, Jan Kara <jack@suse.cz>,
-        Theodore Tso <tytso@mit.edu>
-Subject: [PATCH 3.10 24/77] ext4: fix zeroing of page during writeback
-Date: Sat, 28 Jun 2014 10:46:17 -0700
-Message-Id: <20140628174522.796139456@linuxfoundation.org>
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [PATCH 3.10 21/77] arm64: ptrace: change fs when passing kernel pointer to regset code
+Date: Sat, 28 Jun 2014 10:46:14 -0700
+Message-Id: <20140628174522.665297914@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174521.691276402@linuxfoundation.org>
 References: <20140628174521.691276402@linuxfoundation.org>
@@ -29,70 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Will Deacon <will.deacon@arm.com>
 
-commit eeece469dedadf3918bad50ad80f4616a0064e90 upstream.
+commit c168870704bcde6bb63d05f7882b620dd3985a46 upstream.
 
-Tail of a page straddling inode size must be zeroed when being written
-out due to POSIX requirement that modifications of mmaped page beyond
-inode size must not be written to the file. ext4_bio_write_page() did
-this only for blocks fully beyond inode size but didn't properly zero
-blocks partially beyond inode size. Fix this.
+Our compat PTRACE_POKEUSR implementation simply passes the user data to
+regset_copy_from_user after some simple range checking. Unfortunately,
+the data in question has already been copied to the kernel stack by this
+point, so the subsequent access_ok check fails and the ptrace request
+returns -EFAULT. This causes problems tracing fork() with older versions
+of strace.
 
-The problem has been uncovered by mmap_11-4 test in openposix test suite
-(part of LTP).
+This patch briefly changes the fs to KERNEL_DS, so that the access_ok
+check passes even with a kernel address.
 
-Reported-by: Xiaoguang Wang <wangxg.fnst@cn.fujitsu.com>
-Fixes: 5a0dc7365c240
-Fixes: bd2d0210cf22f
-CC: stable@vger.kernel.org
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/page-io.c |   24 +++++++++++-------------
- 1 file changed, 11 insertions(+), 13 deletions(-)
+ arch/arm64/kernel/ptrace.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/fs/ext4/page-io.c
-+++ b/fs/ext4/page-io.c
-@@ -384,6 +384,17 @@ int ext4_bio_write_page(struct ext4_io_s
- 	ClearPageError(page);
+--- a/arch/arm64/kernel/ptrace.c
++++ b/arch/arm64/kernel/ptrace.c
+@@ -872,6 +872,7 @@ static int compat_ptrace_write_user(stru
+ 				    compat_ulong_t val)
+ {
+ 	int ret;
++	mm_segment_t old_fs = get_fs();
  
- 	/*
-+	 * Comments copied from block_write_full_page_endio:
-+	 *
-+	 * The page straddles i_size.  It must be zeroed out on each and every
-+	 * writepage invocation because it may be mmapped.  "A file is mapped
-+	 * in multiples of the page size.  For a file that is not a multiple of
-+	 * the page size, the remaining memory is zeroed when mapped, and
-+	 * writes to that region are not written out to the file."
-+	 */
-+	if (len < PAGE_CACHE_SIZE)
-+		zero_user_segment(page, len, PAGE_CACHE_SIZE);
-+	/*
- 	 * In the first loop we prepare and mark buffers to submit. We have to
- 	 * mark all buffers in the page before submitting so that
- 	 * end_page_writeback() cannot be called from ext4_bio_end_io() when IO
-@@ -394,19 +405,6 @@ int ext4_bio_write_page(struct ext4_io_s
- 	do {
- 		block_start = bh_offset(bh);
- 		if (block_start >= len) {
--			/*
--			 * Comments copied from block_write_full_page_endio:
--			 *
--			 * The page straddles i_size.  It must be zeroed out on
--			 * each and every writepage invocation because it may
--			 * be mmapped.  "A file is mapped in multiples of the
--			 * page size.  For a file that is not a multiple of
--			 * the  page size, the remaining memory is zeroed when
--			 * mapped, and writes to that region are not written
--			 * out to the file."
--			 */
--			zero_user_segment(page, block_start,
--					  block_start + blocksize);
- 			clear_buffer_dirty(bh);
- 			set_buffer_uptodate(bh);
- 			continue;
+ 	if (off & 3 || off >= COMPAT_USER_SZ)
+ 		return -EIO;
+@@ -879,10 +880,13 @@ static int compat_ptrace_write_user(stru
+ 	if (off >= sizeof(compat_elf_gregset_t))
+ 		return 0;
+ 
++	set_fs(KERNEL_DS);
+ 	ret = copy_regset_from_user(tsk, &user_aarch32_view,
+ 				    REGSET_COMPAT_GPR, off,
+ 				    sizeof(compat_ulong_t),
+ 				    &val);
++	set_fs(old_fs);
++
+ 	return ret;
+ }
+ 
 
 
