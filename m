@@ -1,145 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752195AbaF1Ut0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 16:49:26 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:38795 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751608AbaF1UtY (ORCPT
+	id S1752149AbaF1Uui (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 16:50:38 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:38795 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751129AbaF1Uug (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 16:49:24 -0400
+	Sat, 28 Jun 2014 16:50:36 -0400
+Message-ID: <53AF2A83.8040003@ahsoftware.de>
+Date: Sat, 28 Jun 2014 22:50:11 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <CALCETrUoOTtQ1R1A8Ak35fxHxaFTPHWP6oZWnXDVLKa_ESziWw@mail.gmail.com>
-References: <1403913966-4927-1-git-send-email-ast@plumgrid.com>
-	<1403913966-4927-4-git-send-email-ast@plumgrid.com>
-	<CALCETrV3WLBmHewCZgfhCkjODWfq_byRg6sF7HpqZ6n9BVMBVQ@mail.gmail.com>
-	<CAMEtUuzWs+MbSOGGD-Rc01DHKASa4GxbHdtCrSCLit4cUM35mA@mail.gmail.com>
-	<CALCETrWy6=dzTycy-ckiMR92+nQeqAWp_Hw=hi__VSzVWZ43Ag@mail.gmail.com>
-	<CAMEtUuwRf--qyPu3rKB7-57KAu2NdsQdEpVRckqabmf61g+h-g@mail.gmail.com>
-	<CALCETrUoOTtQ1R1A8Ak35fxHxaFTPHWP6oZWnXDVLKa_ESziWw@mail.gmail.com>
-Date: Sat, 28 Jun 2014 13:49:22 -0700
-Message-ID: <CAMEtUuzS=9Y_ZjigofvQ5d3=89RS=+d8-WGPk9VVSMc3qawWsw@mail.gmail.com>
-Subject: Re: [PATCH RFC net-next 03/14] bpf: introduce syscall(BPF, ...) and
- BPF maps
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Marc Dietrich <marvin24@gmx.de>
+CC: John Stultz <john.stultz@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        John Whitmore <arigead@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>
+Subject: Re: [PATCH 0/2][RFC] Try to handle hctosys w/ rtc modules
+References: <1403890031-26419-1-git-send-email-john.stultz@linaro.org>	<53AE6C3C.5090308@ahsoftware.de>	<53AE6FA2.7000808@ahsoftware.de> <20140628205433.0ef4a8cf28a7fe4861a733dd@gmx.de>
+In-Reply-To: <20140628205433.0ef4a8cf28a7fe4861a733dd@gmx.de>
+Content-Type: text/plain; charset=US-ASCII; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 28, 2014 at 8:34 AM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Fri, Jun 27, 2014 at 11:43 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
->> On Fri, Jun 27, 2014 at 11:25 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>> On Fri, Jun 27, 2014 at 10:55 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
->>>> On Fri, Jun 27, 2014 at 5:16 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>>>> On Fri, Jun 27, 2014 at 5:05 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
->>>>>> BPF syscall is a demux for different BPF releated commands.
->>>>>>
->>>>>> 'maps' is a generic storage of different types for sharing data between kernel
->>>>>> and userspace.
->>>>>>
->>>>>> The maps can be created/deleted from user space via BPF syscall:
->>>>>> - create a map with given id, type and attributes
->>>>>>   map_id = bpf_map_create(int map_id, map_type, struct nlattr *attr, int len)
->>>>>>   returns positive map id or negative error
->>>>>>
->>>>>> - delete map with given map id
->>>>>>   err = bpf_map_delete(int map_id)
->>>>>>   returns zero or negative error
->>>>>
->>>>> What's the scope of "id"?  How is it secured?
+Am 28.06.2014 20:54, schrieb Marc Dietrich:
+> On Sat, 28 Jun 2014 09:32:50 +0200
+> Alexander Holler <holler@ahsoftware.de> wrote:
+>
+>> Am 28.06.2014 09:18, schrieb Alexander Holler:
+>>> Am 27.06.2014 19:27, schrieb John Stultz:
+>>>> Its been pointed out that the RTC hctosys functionality doesn't
+>>>> work well with RTC modules, which may not be loaded until after
+>>>> late_init().
 >>>>
->>>> the map and program id space is global and it's cap_sys_admin only.
->>>> There is no pressing need to do it with per-user limits.
->>>> So the whole thing is root only for now.
+>>>> While there have been other attempts to sovle this, this patchset
+>>>> is a very quick 10 minute effort to show how I'd try to resolve
+>>>> this. There likely are still issues here, but I'd be happy to
+>>>> make fixes and adjustments to ensure it works.
+>>
+>> How long you needed to getthe idea?
+>>
 >>>>
+>>>> Feedback and comments always appreciated!
 >>>
->>> Hmm.  This may be unpleasant if you ever want to support non-root or
->>> namespaced operation.
+>>> And it still uses the non-deterministic and therefor almost unusable
+>>> rtcN. Well done.
 >>
->> I think it will be easy to extend it per namespace when we lift
->> root-only restriction. It will be seamless without user api changes.
->>
+>> Besides that the current hctosys-mechanism doesn't really work with
+>> hot-plugable devices at all. Guess what N will be when you unplug and
+>> plug in such a RTC again.
 >
-> It might be seamless, but I'm not sure it'll be very useful.  See below.
->
->>> How hard would it be to give these things fds?
->>
->> you mean programs/maps auto-terminate when creator process
->> exits? I thought about it and it's appealing at first glance, but
->> doesn't fit the model of existing tracepoint events which are global.
->> The programs attached to events need to live without 'daemon'
->> hanging around. Therefore I picked 'kernel module'- like method.
->
-> Here are some things I'd like to be able to do:
->
->  - Load an eBPF program and use it as a seccomp filter.
->
->  - Create a read-only map and reference it from a seccomp filter.
->
->  - Create a data structure that a seccomp filter can write but that
-> the filtered process can only read.
->
->  - Create a data structure that a seccomp filter can read but that
-> some other trusted process can write.
->
->  - Create a network filter of some sort and give permission to
-> manipulate a list of ports to an otherwise untrusted process.
->
-> The first four of these shouldn't require privilege.
->
-> All of this fits nicely into a model where all of the eBPF objects
-> (filters and data structures) are represented by fds.  Read access to
-> the fd lets you read (or execute eBPF programs).  Write access to the
-> fd lets you write.  You can send them around naturally using
-> SCM_RIGHTS, and you can create deprivileged versions by reopening the
-> objects with less access.
+> We have a patch in the kernel which binds the rtc number to the
+> hw device, so this even works for hotpluggable devices (at least on
+> systems supporting device-tree). Not sure what your needs are.
 
-Sorry I don't like 'fd' direction at all.
-1. it will make the whole thing very socket specific and 'net' dependent.
-but the goal here is to be able to use eBPF for tracing in embedded
-setups. So it's gotta be net independent.
-2. sockets are already overloaded with all sorts of stuff. Adding more
-types of sockets will complicate it a lot.
-3. and most important. read/write operations on sockets are not
-done every nanosecond, whereas lookup operations on bpf maps
-are done every dozen instructions, so we cannot have any overhead
-when accessing maps.
-In other words the verifier is done as static analyzer. I moved all
-the complexity to verify time, so at run-time the programs are as
-fast as possible. I'm strongly against run-time checks in critical path,
-since they kill performance and make the whole approach a lot less usable.
+First, the number depends on the kernel-configuration and the order how 
+RTCs are detected and might even change between minor kernel versions. 
+Thus it's totally non-deterministic across different kernel builds.
 
-What you want to achieve:
->  - Load an eBPF program and use it as a seccomp filter.
->  - Create a read-only map and reference it from a seccomp filter.
-is very doable in the existing framework.
-Note I didn't do seccomp+ebpf example, only because you and Kees
-and messing with this part of code a lot and I didn't want to conflict.
+Second, I wonder about which hotpluggable devices you are talking. Last 
+time I've dived into that part of the kernel was when I've written my 
+fully working patch set and at that time a usb-rtc (the only really 
+hotpluggable RTC I currently know about) did get a new N whenever it 
+appeared again (e.g. on suspend/resume). So with the proposed 
+non-working clone of my patch, the RTC would be gone after a resume.
 
-> All of this *could* fit in using global ids, but we'd need to answer
-> questions like "what namespace are they bound to" and "who has access
-> to a given fd".  I'd want to see that these questions *have* good
-> answers before committing to this type of model.  Keep in mind that,
-> for seccomp in particular, granting access to a specific uid will be
-> very limiting: part of the point of seccomp is to enable
-> user-controlled finer-grained permissions than allowed by uids and
-> gids.
+Anyway, sorry, I won't spend more time on discussing with kernel 
+maintainers. I don't receive any compensations to do so and therefor I 
+absolutely have no reason to accept all the pain and insults which are 
+happening when doing so. I've come to the conclusion that I should not 
+have posted patches at all (not just this one) and really regret that.
 
-filters(bpf programs) is a low level tool that shouldn't be aware
-of gid/uids at all. Just like classic bpf doesn't care, eBPF programs
-shouldn't care. Mixing concept of uids/fds into the program is wrong.
+Alexander Holler
