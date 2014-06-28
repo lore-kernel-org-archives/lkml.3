@@ -1,69 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752242AbaF1GVW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 02:21:22 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:37658 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751339AbaF1GVU (ORCPT
+	id S1751845AbaF1G0F (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 02:26:05 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:48527 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751061AbaF1G0D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 02:21:20 -0400
+	Sat, 28 Jun 2014 02:26:03 -0400
 MIME-Version: 1.0
-In-Reply-To: <1403926333.5113.12.camel@marge.simpson.net>
-References: <CANGgnMbHckBQdKGN_N5Q6qEKc9n1CenxvMpeXog1NbSdL8UrTw@mail.gmail.com>
- <CANGgnMYDXerOUDOO9-RHMJKadKACA2KBGskZwoP-1ZwAhDEfVA@mail.gmail.com>
- <CAFLxGvxfBt7OvW=a2Kz08GLHSEiiOZsN-vB19CXnQiwqFxqMsA@mail.gmail.com>
- <CANGgnMYVoP-Z0Bv-VDEkJnvfa7Fi4-zY2F4A0PhMewGvwo3VVw@mail.gmail.com>
- <alpine.DEB.2.10.1406270027300.5170@nanos> <CANGgnMa+qtgJ3wwg_h5Rynw5vEvZpQZ6PvaUfXNQ8+Y3Yu5U0g@mail.gmail.com>
- <1403873856.5827.56.camel@marge.simpson.net> <20140627100157.6b0143a5@gandalf.local.home>
- <1403890493.5830.33.camel@marge.simpson.net> <20140627135415.7246e87e@gandalf.local.home>
- <1403892474.5830.41.camel@marge.simpson.net> <20140627141903.16817c28@gandalf.local.home>
- <CANGgnMZrx1s5AomG-L_F74215RE1uJOekTjYmLX0voG4NgakTg@mail.gmail.com> <1403926333.5113.12.camel@marge.simpson.net>
-From: Austin Schuh <austin@peloton-tech.com>
-Date: Fri, 27 Jun 2014 23:20:59 -0700
-Message-ID: <CANGgnMbJ9f4gSz0HbtnCLosYHKyfXwhMt-svUQbBe_d9bv2LGQ@mail.gmail.com>
-Subject: Re: Filesystem lockup with CONFIG_PREEMPT_RT
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        rt-users <linux-rt-users@vger.kernel.org>
+In-Reply-To: <CAMEtUuzWs+MbSOGGD-Rc01DHKASa4GxbHdtCrSCLit4cUM35mA@mail.gmail.com>
+References: <1403913966-4927-1-git-send-email-ast@plumgrid.com>
+ <1403913966-4927-4-git-send-email-ast@plumgrid.com> <CALCETrV3WLBmHewCZgfhCkjODWfq_byRg6sF7HpqZ6n9BVMBVQ@mail.gmail.com>
+ <CAMEtUuzWs+MbSOGGD-Rc01DHKASa4GxbHdtCrSCLit4cUM35mA@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 27 Jun 2014 23:25:39 -0700
+Message-ID: <CALCETrWy6=dzTycy-ckiMR92+nQeqAWp_Hw=hi__VSzVWZ43Ag@mail.gmail.com>
+Subject: Re: [PATCH RFC net-next 03/14] bpf: introduce syscall(BPF, ...) and
+ BPF maps
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 27, 2014 at 8:32 PM, Mike Galbraith
-<umgwanakikbuti@gmail.com> wrote:
-> On Fri, 2014-06-27 at 18:18 -0700, Austin Schuh wrote:
+On Fri, Jun 27, 2014 at 10:55 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+> On Fri, Jun 27, 2014 at 5:16 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> On Fri, Jun 27, 2014 at 5:05 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+>>> BPF syscall is a demux for different BPF releated commands.
+>>>
+>>> 'maps' is a generic storage of different types for sharing data between kernel
+>>> and userspace.
+>>>
+>>> The maps can be created/deleted from user space via BPF syscall:
+>>> - create a map with given id, type and attributes
+>>>   map_id = bpf_map_create(int map_id, map_type, struct nlattr *attr, int len)
+>>>   returns positive map id or negative error
+>>>
+>>> - delete map with given map id
+>>>   err = bpf_map_delete(int map_id)
+>>>   returns zero or negative error
+>>
+>> What's the scope of "id"?  How is it secured?
 >
->> It would be more context switches, but I wonder if we could kick the
->> workqueue logic completely out of the scheduler into a thread.  Have
->> the scheduler increment/decrement an atomic pool counter, and wake up
->> the monitoring thread to spawn new threads when needed?  That would
->> get rid of the recursive pool lock problem, and should reduce
->> scheduler latency if we would need to spawn a new thread.
+> the map and program id space is global and it's cap_sys_admin only.
+> There is no pressing need to do it with per-user limits.
+> So the whole thing is root only for now.
 >
-> I was wondering the same thing, and not only for workqueue, but also the
-> plug pulling.  It's kind of a wart to have that stuff sitting in the
-> hear of the scheduler in the first place, would be nice if it just went
-> away.  When a task can't help itself, you _could_ wake a proxy do that
-> for you.  Trouble is, I can imagine that being a heck of a lot of
-> context switches with some loads.. and who's gonna help the helper when
-> he blocks while trying to help?
->
-> -Mike
 
-For workqueues, as long as the helper doesn't block on a lock which
-requires the work queue to be freed up, it will eventually become
-unblocked and make progress.  The helper _should_ only need the pool
-lock, which will wake the helper back up when it is available again.
-Nothing should go to sleep in an un-recoverable way with the work pool
-lock held.
+Hmm.  This may be unpleasant if you ever want to support non-root or
+namespaced operation.
 
-To drop the extra context switch, you could have a minimum of 2 worker
-threads around at all times, and have the management thread start the
-work and delegate to the next management thread.  That thread would
-then wait for the first thread to block, spawn a new thread, and then
-start the next piece of work.  Definitely a bit more complicated.
+How hard would it be to give these things fds?
 
-Austin
+> Since I got your attention please review the most interesting
+> verifier bits (patch 08/14) ;)
+
+Will do.  Or at least I'll try :)
+
+--Andy
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
