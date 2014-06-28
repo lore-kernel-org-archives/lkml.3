@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756222AbaF1SZs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:25:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53987 "EHLO
+	id S1756511AbaF1S0W (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:26:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53970 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755734AbaF1RvM (ORCPT
+	with ESMTP id S1755708AbaF1RvI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:51:12 -0400
+	Sat, 28 Jun 2014 13:51:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        David Fries <david@fries.net>, Evgeniy Polyakov <zbr@ioremap.net>
-Subject: [PATCH 3.15 007/139] w1: do not unlock unheld list_mutex in __w1_remove_master_device()
-Date: Sat, 28 Jun 2014 10:46:08 -0700
-Message-Id: <20140628174605.699151559@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>,
+        Leandro Liptak <leandroliptak@gmail.com>
+Subject: [PATCH 3.15 019/139] USB: EHCI: avoid BIOS handover on the HASEE E200
+Date: Sat, 28 Jun 2014 10:46:20 -0700
+Message-Id: <20140628174606.282799845@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -29,55 +29,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit a0f104644ec27ce5bbb36e950eb426dba9a3ad44 upstream.
+commit b0a50e92bda3c4aeb8017d4e6c6e92146ebd5c9b upstream.
 
-w1_process_callbacks() expects to be called with dev->list_mutex held,
-but it is the fact only in w1_process(). __w1_remove_master_device()
-calls w1_process_callbacks() after it releases list_mutex.
+Leandro Liptak reports that his HASEE E200 computer hangs when we ask
+the BIOS to hand over control of the EHCI host controller.  This
+definitely sounds like a bug in the BIOS, but at the moment there is
+no way to fix it.
 
-The patch fixes __w1_remove_master_device() to acquire list_mutex
-for w1_process_callbacks().
+This patch works around the problem by avoiding the handoff whenever
+the motherboard and BIOS version match those of Leandro's computer.
 
-Found by Linux Driver Verification project (linuxtesting.org).
-
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
-Acked-by: David Fries <david@fries.net>
-Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Leandro Liptak <leandroliptak@gmail.com>
+Tested-by: Leandro Liptak <leandroliptak@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/w1/w1.c     |    2 ++
- drivers/w1/w1_int.c |    4 ++++
- 2 files changed, 6 insertions(+)
+ drivers/usb/host/pci-quirks.c |   19 ++++++++++++++++---
+ 1 file changed, 16 insertions(+), 3 deletions(-)
 
---- a/drivers/w1/w1.c
-+++ b/drivers/w1/w1.c
-@@ -1078,6 +1078,8 @@ static void w1_search_process(struct w1_
-  * w1_process_callbacks() - execute each dev->async_list callback entry
-  * @dev: w1_master device
-  *
-+ * The w1 master list_mutex must be held.
-+ *
-  * Return: 1 if there were commands to executed 0 otherwise
-  */
- int w1_process_callbacks(struct w1_master *dev)
---- a/drivers/w1/w1_int.c
-+++ b/drivers/w1/w1_int.c
-@@ -219,9 +219,13 @@ void __w1_remove_master_device(struct w1
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -656,6 +656,14 @@ static const struct dmi_system_id ehci_d
+ 			DMI_MATCH(DMI_BIOS_VERSION, "Lucid-"),
+ 		},
+ 	},
++	{
++		/* HASEE E200 */
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "HASEE"),
++			DMI_MATCH(DMI_BOARD_NAME, "E210"),
++			DMI_MATCH(DMI_BIOS_VERSION, "6.00"),
++		},
++	},
+ 	{ }
+ };
  
- 		if (msleep_interruptible(1000))
- 			flush_signals(current);
-+		mutex_lock(&dev->list_mutex);
- 		w1_process_callbacks(dev);
-+		mutex_unlock(&dev->list_mutex);
+@@ -665,9 +673,14 @@ static void ehci_bios_handoff(struct pci
+ {
+ 	int try_handoff = 1, tried_handoff = 0;
+ 
+-	/* The Pegatron Lucid tablet sporadically waits for 98 seconds trying
+-	 * the handoff on its unused controller.  Skip it. */
+-	if (pdev->vendor == 0x8086 && pdev->device == 0x283a) {
++	/*
++	 * The Pegatron Lucid tablet sporadically waits for 98 seconds trying
++	 * the handoff on its unused controller.  Skip it.
++	 *
++	 * The HASEE E200 hangs when the semaphore is set (bugzilla #77021).
++	 */
++	if (pdev->vendor == 0x8086 && (pdev->device == 0x283a ||
++			pdev->device == 0x27cc)) {
+ 		if (dmi_check_system(ehci_dmi_nohandoff_table))
+ 			try_handoff = 0;
  	}
-+	mutex_lock(&dev->list_mutex);
- 	w1_process_callbacks(dev);
-+	mutex_unlock(&dev->list_mutex);
- 
- 	memset(&msg, 0, sizeof(msg));
- 	msg.id.mst.id = dev->id;
 
 
