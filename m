@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756168AbaF1RxH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:53:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54397 "EHLO
+	id S932409AbaF1RxO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:53:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54436 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756092AbaF1Rw5 (ORCPT
+	with ESMTP id S1756163AbaF1RxH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:52:57 -0400
+	Sat, 28 Jun 2014 13:53:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org
-Subject: [PATCH 3.15 108/139] Revert "drm/radeon: use variable UVD clocks"
-Date: Sat, 28 Jun 2014 10:47:49 -0700
-Message-Id: <20140628174610.347226627@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Sagi Grimberg <sagig@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.15 100/139] TARGET/sbc,loopback: Adjust command data length in case pi exists on the wire
+Date: Sat, 28 Jun 2014 10:47:41 -0700
+Message-Id: <20140628174609.976607067@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -27,55 +29,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Sagi Grimberg <sagig@mellanox.com>
 
-commit 0690a229c69f40a6c9c459ab455c85df49822525 upstream.
+commit e2a4f55c6498b59a17a85a1bb6db122a993ffe02 upstream.
 
-This caused reduced performance for some users with advanced post
-processing enabled.  We need a better method to pick the
-UVD state based on the amount of post processing required or tune
-the advanced post processing to fit within the lower power state
-envelope.
+In various areas of the code, it is assumed that
+se_cmd->data_length describes pure data. In case
+that protection information exists over the wire
+(protect bits is are on) the target core re-calculates
+the data length from the CDB and the backed device
+block size (instead of each transport peeking in the cdb).
 
-This reverts commit 14a9579ddbf15dd1992a9481a4ec80b0b91656d5.
+Modify loopback device to include protection information
+in the transferred data length (like other scsi transports).
 
+Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_pm.c  |    3 +++
- drivers/gpu/drm/radeon/radeon_uvd.c |    3 ++-
- 2 files changed, 5 insertions(+), 1 deletion(-)
+ drivers/target/loopback/tcm_loop.c |   15 ++++++++++++---
+ drivers/target/target_core_sbc.c   |   15 +++++++++++++--
+ 2 files changed, 25 insertions(+), 5 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_pm.c
-+++ b/drivers/gpu/drm/radeon/radeon_pm.c
-@@ -984,6 +984,8 @@ void radeon_dpm_enable_uvd(struct radeon
- 		if (enable) {
- 			mutex_lock(&rdev->pm.mutex);
- 			rdev->pm.dpm.uvd_active = true;
-+			/* disable this for now */
-+#if 0
- 			if ((rdev->pm.dpm.sd == 1) && (rdev->pm.dpm.hd == 0))
- 				dpm_state = POWER_STATE_TYPE_INTERNAL_UVD_SD;
- 			else if ((rdev->pm.dpm.sd == 2) && (rdev->pm.dpm.hd == 0))
-@@ -993,6 +995,7 @@ void radeon_dpm_enable_uvd(struct radeon
- 			else if ((rdev->pm.dpm.sd == 0) && (rdev->pm.dpm.hd == 2))
- 				dpm_state = POWER_STATE_TYPE_INTERNAL_UVD_HD2;
- 			else
-+#endif
- 				dpm_state = POWER_STATE_TYPE_INTERNAL_UVD;
- 			rdev->pm.dpm.state = dpm_state;
- 			mutex_unlock(&rdev->pm.mutex);
---- a/drivers/gpu/drm/radeon/radeon_uvd.c
-+++ b/drivers/gpu/drm/radeon/radeon_uvd.c
-@@ -812,7 +812,8 @@ void radeon_uvd_note_usage(struct radeon
- 		    (rdev->pm.dpm.hd != hd)) {
- 			rdev->pm.dpm.sd = sd;
- 			rdev->pm.dpm.hd = hd;
--			streams_changed = true;
-+			/* disable this for now */
-+			/*streams_changed = true;*/
- 		}
+--- a/drivers/target/loopback/tcm_loop.c
++++ b/drivers/target/loopback/tcm_loop.c
+@@ -179,7 +179,7 @@ static void tcm_loop_submission_work(str
+ 	struct tcm_loop_hba *tl_hba;
+ 	struct tcm_loop_tpg *tl_tpg;
+ 	struct scatterlist *sgl_bidi = NULL;
+-	u32 sgl_bidi_count = 0;
++	u32 sgl_bidi_count = 0, transfer_length;
+ 	int rc;
+ 
+ 	tl_hba = *(struct tcm_loop_hba **)shost_priv(sc->device->host);
+@@ -213,12 +213,21 @@ static void tcm_loop_submission_work(str
+ 
  	}
  
+-	if (!scsi_prot_sg_count(sc) && scsi_get_prot_op(sc) != SCSI_PROT_NORMAL)
++	transfer_length = scsi_transfer_length(sc);
++	if (!scsi_prot_sg_count(sc) &&
++	    scsi_get_prot_op(sc) != SCSI_PROT_NORMAL) {
+ 		se_cmd->prot_pto = true;
++		/*
++		 * loopback transport doesn't support
++		 * WRITE_GENERATE, READ_STRIP protection
++		 * information operations, go ahead unprotected.
++		 */
++		transfer_length = scsi_bufflen(sc);
++	}
+ 
+ 	rc = target_submit_cmd_map_sgls(se_cmd, tl_nexus->se_sess, sc->cmnd,
+ 			&tl_cmd->tl_sense_buf[0], tl_cmd->sc->device->lun,
+-			scsi_bufflen(sc), tcm_loop_sam_attr(sc),
++			transfer_length, tcm_loop_sam_attr(sc),
+ 			sc->sc_data_direction, 0,
+ 			scsi_sglist(sc), scsi_sg_count(sc),
+ 			sgl_bidi, sgl_bidi_count,
+--- a/drivers/target/target_core_sbc.c
++++ b/drivers/target/target_core_sbc.c
+@@ -665,8 +665,19 @@ sbc_check_prot(struct se_device *dev, st
+ 
+ 	cmd->prot_type = dev->dev_attrib.pi_prot_type;
+ 	cmd->prot_length = dev->prot_length * sectors;
+-	pr_debug("%s: prot_type=%d, prot_length=%d prot_op=%d prot_checks=%d\n",
+-		 __func__, cmd->prot_type, cmd->prot_length,
++
++	/**
++	 * In case protection information exists over the wire
++	 * we modify command data length to describe pure data.
++	 * The actual transfer length is data length + protection
++	 * length
++	 **/
++	if (protect)
++		cmd->data_length = sectors * dev->dev_attrib.block_size;
++
++	pr_debug("%s: prot_type=%d, data_length=%d, prot_length=%d "
++		 "prot_op=%d prot_checks=%d\n",
++		 __func__, cmd->prot_type, cmd->data_length, cmd->prot_length,
+ 		 cmd->prot_op, cmd->prot_checks);
+ 
+ 	return true;
 
 
