@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756834AbaF1SWW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:22:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54050 "EHLO
+	id S1755805AbaF1RvW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:51:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53985 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932176AbaF1RvY (ORCPT
+	with ESMTP id S1755731AbaF1RvL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:51:24 -0400
+	Sat, 28 Jun 2014 13:51:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [PATCH 3.15 038/139] s390/time: cast tv_nsec to u64 prior to shift in update_vsyscall
-Date: Sat, 28 Jun 2014 10:46:39 -0700
-Message-Id: <20140628174607.173721236@linuxfoundation.org>
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Subject: [PATCH 3.15 006/139] extcon: max14577: Properly handle regmap_irq_get_virq error
+Date: Sat, 28 Jun 2014 10:46:07 -0700
+Message-Id: <20140628174605.643373758@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -28,32 +29,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-commit b6f4296279ab3ada554d993d12844272fd86b36a upstream.
+commit 369afd4ba22f5b8de0c9229b6e62b3f9e2207034 upstream.
 
-Analog to git commit 28b92e09e25bdc0ae864b22eacf195a74f861389
-first cast tk->wall_to_monotonic.tv_nsec to u64 before doing
-the shift with tk->shift to avoid loosing relevant bits on a
-32-bit kernel.
+The regmap_irq_get_virq may return 0 or -EINVAL on error. Fail the probe
+in both situations.
 
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/kernel/time.c |    2 +-
+ drivers/extcon/extcon-max14577.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/s390/kernel/time.c
-+++ b/arch/s390/kernel/time.c
-@@ -226,7 +226,7 @@ void update_vsyscall(struct timekeeper *
- 	vdso_data->wtom_clock_sec =
- 		tk->xtime_sec + tk->wall_to_monotonic.tv_sec;
- 	vdso_data->wtom_clock_nsec = tk->xtime_nsec +
--		+ (tk->wall_to_monotonic.tv_nsec << tk->shift);
-+		+ ((u64) tk->wall_to_monotonic.tv_nsec << tk->shift);
- 	nsecps = (u64) NSEC_PER_SEC << tk->shift;
- 	while (vdso_data->wtom_clock_nsec >= nsecps) {
- 		vdso_data->wtom_clock_nsec -= nsecps;
+--- a/drivers/extcon/extcon-max14577.c
++++ b/drivers/extcon/extcon-max14577.c
+@@ -650,7 +650,7 @@ static int max14577_muic_probe(struct pl
+ 		unsigned int virq = 0;
+ 
+ 		virq = regmap_irq_get_virq(max14577->irq_data, muic_irq->irq);
+-		if (!virq)
++		if (virq <= 0)
+ 			return -EINVAL;
+ 		muic_irq->virq = virq;
+ 
 
 
