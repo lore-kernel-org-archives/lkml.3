@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757566AbaF1TFv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 15:05:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53072 "EHLO
+	id S1757568AbaF1TGP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 15:06:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53067 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754648AbaF1Rsb (ORCPT
+	with ESMTP id S1754624AbaF1Rsb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Jun 2014 13:48:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>, Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.10 41/77] media: ivtv: Fix Oops when no firmware is loaded
-Date: Sat, 28 Jun 2014 10:46:34 -0700
-Message-Id: <20140628174523.660752788@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.10 40/77] USB: serial: fix potential runtime pm imbalance at device remove
+Date: Sat, 28 Jun 2014 10:46:33 -0700
+Message-Id: <20140628174523.624033956@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174521.691276402@linuxfoundation.org>
 References: <20140628174521.691276402@linuxfoundation.org>
@@ -29,61 +28,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit deb29e90221a6d4417aa67be971613c353180331 upstream.
+commit c14829fad88dbeda57253590695b85ba51270621 upstream.
 
-When ivtv PCM device is accessed at the state where no firmware is
-loaded, it oopses like:
+Only call usb_autopm_put_interface() if the corresponding
+usb_autopm_get_interface() was successful.
 
-  BUG: unable to handle kernel NULL pointer dereference at 0000000000000050
-  IP: [<ffffffffa049a881>] try_mailbox.isra.0+0x11/0x50 [ivtv]
-  Call Trace:
-    [<ffffffffa049aa20>] ivtv_api_call+0x160/0x6b0 [ivtv]
-    [<ffffffffa049af86>] ivtv_api+0x16/0x40 [ivtv]
-    [<ffffffffa049b10c>] ivtv_vapi+0xac/0xc0 [ivtv]
-    [<ffffffffa049d40d>] ivtv_start_v4l2_encode_stream+0x19d/0x630 [ivtv]
-    [<ffffffffa0530653>] snd_ivtv_pcm_capture_open+0x173/0x1c0 [ivtv_alsa]
-    [<ffffffffa04526f1>] snd_pcm_open_substream+0x51/0x100 [snd_pcm]
-    [<ffffffffa0452853>] snd_pcm_open+0xb3/0x260 [snd_pcm]
-    [<ffffffffa0452a37>] snd_pcm_capture_open+0x37/0x50 [snd_pcm]
-    [<ffffffffa033f557>] snd_open+0xa7/0x1e0 [snd]
-    [<ffffffff8118a628>] chrdev_open+0x88/0x1d0
-    [<ffffffff811840be>] do_dentry_open+0x1de/0x270
-    [<ffffffff81193a73>] do_last+0x1c3/0xec0
-    [<ffffffff81194826>] path_openat+0xb6/0x670
-    [<ffffffff81195b65>] do_filp_open+0x35/0x80
-    [<ffffffff81185449>] do_sys_open+0x129/0x210
-    [<ffffffff815b782d>] system_call_fastpath+0x1a/0x1f
+This prevents a potential runtime PM counter imbalance should
+usb_autopm_get_interface() fail. Note that the USB PM usage counter is
+reset when the interface is unbound, but that the runtime PM counter may
+be left unbalanced.
 
-This patch adds the check of firmware at PCM open callback like other
-open callbacks of this driver.
+Also add comment on why we don't need to worry about racing
+resume/suspend on autopm_get failures.
 
-Bugzilla: https://apibugzilla.novell.com/show_bug.cgi?id=875440
+Fixes: d5fd650cfc7f ("usb: serial: prevent suspend/resume from racing
+against probe/remove")
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/pci/ivtv/ivtv-alsa-pcm.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/usb/serial/bus.c |   14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
 
---- a/drivers/media/pci/ivtv/ivtv-alsa-pcm.c
-+++ b/drivers/media/pci/ivtv/ivtv-alsa-pcm.c
-@@ -159,6 +159,12 @@ static int snd_ivtv_pcm_capture_open(str
+--- a/drivers/usb/serial/bus.c
++++ b/drivers/usb/serial/bus.c
+@@ -98,13 +98,19 @@ static int usb_serial_device_remove(stru
+ 	struct usb_serial_port *port;
+ 	int retval = 0;
+ 	int minor;
++	int autopm_err;
  
- 	/* Instruct the CX2341[56] to start sending packets */
- 	snd_ivtv_lock(itvsc);
-+
-+	if (ivtv_init_on_first_open(itv)) {
-+		snd_ivtv_unlock(itvsc);
-+		return -ENXIO;
-+	}
-+
- 	s = &itv->streams[IVTV_ENC_STREAM_TYPE_PCM];
+ 	port = to_usb_serial_port(dev);
+ 	if (!port)
+ 		return -ENODEV;
  
- 	v4l2_fh_init(&item.fh, s->vdev);
+-	/* make sure suspend/resume doesn't race against port_remove */
+-	usb_autopm_get_interface(port->serial->interface);
++	/*
++	 * Make sure suspend/resume doesn't race against port_remove.
++	 *
++	 * Note that no further runtime PM callbacks will be made if
++	 * autopm_get fails.
++	 */
++	autopm_err = usb_autopm_get_interface(port->serial->interface);
+ 
+ 	minor = port->number;
+ 	tty_unregister_device(usb_serial_tty_driver, minor);
+@@ -118,7 +124,9 @@ static int usb_serial_device_remove(stru
+ 	dev_info(dev, "%s converter now disconnected from ttyUSB%d\n",
+ 		 driver->description, minor);
+ 
+-	usb_autopm_put_interface(port->serial->interface);
++	if (!autopm_err)
++		usb_autopm_put_interface(port->serial->interface);
++
+ 	return retval;
+ }
+ 
 
 
