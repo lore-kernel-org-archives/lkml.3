@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766AbaF1MDR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 08:03:17 -0400
-Received: from mailrelay005.isp.belgacom.be ([195.238.6.171]:65038 "EHLO
-	mailrelay005.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751710AbaF1MDQ (ORCPT
+	id S1752678AbaF1MLF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 08:11:05 -0400
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:62009 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751710AbaF1MLD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 08:03:16 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnoPABKurlNbsk2v/2dsb2JhbABZgw1SgXeBAKg2AQEBAQEBBQFtAZh4BgICAYEGF3WEAwEBBAE6HCMFCwgDRjkeBhOIOgwBCMURF4VkhxiBJWQHhEMBBJpcAYFGkjWCAIFEOy8BAYEA
-Date: Sat, 28 Jun 2014 14:01:57 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: SF Markus Elfring <elfring@users.sourceforge.net>
-Cc: linux-kernel@vger.kernel.org, Coccinelle <cocci@systeme.lip6.fr>,
-        Joe Perches <joe@perches.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH V3] scripts/coccinelle/free: Delete NULL test before
- freeing functions?
-Message-Id: <20140628140157.98304218ad0919b1567cfee4@skynet.be>
-In-Reply-To: <53AEA927.3010100@users.sourceforge.net>
-References: <1403945247-21549-1-git-send-email-fabf@skynet.be>
-	<53AE8613.8080600@users.sourceforge.net>
-	<20140628120052.0b8670723928a967808dd544@skynet.be>
-	<53AEA927.3010100@users.sourceforge.net>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 28 Jun 2014 08:11:03 -0400
+Date: Sat, 28 Jun 2014 08:10:59 -0400
+From: Tejun Heo <tj@kernel.org>
+To: cl@linux-foundation.org, kmo@daterainc.com
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCHSET percpu/for-3.17] percpu: implement percpu_ref_reinit()
+Message-ID: <20140628121059.GC10829@htj.dyndns.org>
+References: <1403053685-28240-1-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403053685-28240-1-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 28 Jun 2014 13:38:15 +0200
-SF Markus Elfring <elfring@users.sourceforge.net> wrote:
-
+On Tue, Jun 17, 2014 at 09:07:59PM -0400, Tejun Heo wrote:
+> Hello,
 > 
-> >> How do you think about my previous update suggestion "Deletion of
-> >> unnecessary checks before specific function calls"?
-> >> https://systeme.lip6.fr/pipermail/cocci/2014-March/000675.html
-> >> https://lkml.org/lkml/2014/3/5/344
-> >     I didn't see you made the same kind of script.
+> Currently, percpu_ref destruction - freeing the percpu counter -
+> happens when the percpu_ref is released.  This while a bit more
+> convenient restricts how percpu_ref can be used.  It can't be
+> initialized with static percpu area and it can't be reinitialized
+> without going through percpu allocation.
 > 
-> Will my approach become a bit more complete in the near future?
-> http://article.gmane.org/gmane.comp.version-control.coccinelle/3512/
+> There are use cases which can take advantage of cycling percpu_ref
+> through init/release multiple times.  This patchset separates out
+> percpu_ref destruction into percpu_exit() which should be invoked
+> explicitly and introduces percpu_ref_reinit() which can be used to
+> recycle a released percpu_ref.
 > 
+> This patchset doesn't add any users.  Patchset to use this will soon
+> be posted.
+> 
+> This patchset contains the following six patches.
+> 
+>  0001-percpu-refcount-aio-use-percpu_ref_cancel_init-in-io.patch
+>  0002-percpu-refcount-one-bit-is-enough-for-REF_STATUS.patch
+>  0003-percpu-refcount-add-helpers-for-percpu_count-accesse.patch
+>  0004-percpu-refcount-use-unsigned-long-for-pcpu_count-poi.patch
+>  0005-percpu-refcount-require-percpu_ref-to-be-exited-expl.patch
+>  0006-percpu-refcount-implement-percpu_ref_reinit-and-perc.patch
 
-Sorry but I'm not working on coccinelle ; just did a small script for kernel tree. I guess you'll have an answer from coccinelle people.
+Applied to percpu/for-3.17.
 
-Regards,
-Fabian
+Thanks.
 
-> Regards,
-> Markus
+-- 
+tejun
