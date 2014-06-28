@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756029AbaF1TXP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 15:23:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52788 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753394AbaF1RrO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753416AbaF1RrO (ORCPT <rfc822;w@1wt.eu>);
 	Sat, 28 Jun 2014 13:47:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52774 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753364AbaF1RrL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Jun 2014 13:47:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>
-Subject: [PATCH 3.4 15/43] s390/lowcore: reserve 96 bytes for IRB in lowcore
-Date: Sat, 28 Jun 2014 10:46:06 -0700
-Message-Id: <20140628174450.504001718@linuxfoundation.org>
+        Simon Wood <simon@mungewell.org>, Kees Cook <keescook@chromium.org>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 3.4 13/43] HID: core: fix validation of report id 0
+Date: Sat, 28 Jun 2014 10:46:04 -0700
+Message-Id: <20140628174450.420386574@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174449.788784511@linuxfoundation.org>
 References: <20140628174449.788784511@linuxfoundation.org>
@@ -32,63 +30,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Borntraeger <borntraeger@de.ibm.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit 993072ee67aa179c48c85eb19869804e68887d86 upstream.
+commit 1b15d2e5b8077670b1e6a33250a0d9577efff4a5 upstream.
 
-The IRB might be 96 bytes if the extended-I/O-measurement facility is
-used. This feature is currently not used by Linux, but struct irb
-already has the emw defined. So let's make the irb in lowcore match the
-size of the internal data structure to be future proof.
-We also have to add a pad, to correctly align the paste.
+Some drivers use the first HID report in the list instead of using an
+index. In these cases, validation uses ID 0, which was supposed to mean
+"first known report". This fixes the problem, which was causing at least
+the lgff family of devices to stop working since hid_validate_values
+was being called with ID 0, but the devices used single numbered IDs
+for their reports:
 
-The bigger irb field also circumvents a bug in some QEMU versions that
-always write the emw field on test subchannel and therefore destroy the
-paste definitions of this CPU. Running under these QEMU version broke
-some timing functions in the VDSO and all users of these functions,
-e.g. some JREs.
+0x05, 0x01,         /*  Usage Page (Desktop),                   */
+0x09, 0x05,         /*  Usage (Gamepad),                        */
+0xA1, 0x01,         /*  Collection (Application),               */
+0xA1, 0x02,         /*      Collection (Logical),               */
+0x85, 0x01,         /*          Report ID (1),                  */
+...
 
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Sebastian Ott <sebott@linux.vnet.ibm.com>
-Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
+Reported-by: Simon Wood <simon@mungewell.org>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/include/asm/lowcore.h |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ drivers/hid/hid-core.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
---- a/arch/s390/include/asm/lowcore.h
-+++ b/arch/s390/include/asm/lowcore.h
-@@ -142,9 +142,9 @@ struct _lowcore {
- 	__u8	pad_0x02fc[0x0300-0x02fc];	/* 0x02fc */
- 
- 	/* Interrupt response block */
--	__u8	irb[64];			/* 0x0300 */
-+	__u8	irb[96];			/* 0x0300 */
- 
--	__u8	pad_0x0340[0x0e00-0x0340];	/* 0x0340 */
-+	__u8	pad_0x0360[0x0e00-0x0360];	/* 0x0360 */
- 
- 	/*
- 	 * 0xe00 contains the address of the IPL Parameter Information
-@@ -288,12 +288,13 @@ struct _lowcore {
- 	__u8	pad_0x03a0[0x0400-0x03a0];	/* 0x03a0 */
- 
- 	/* Interrupt response block. */
--	__u8	irb[64];			/* 0x0400 */
-+	__u8	irb[96];			/* 0x0400 */
-+	__u8	pad_0x0460[0x0480-0x0460];	/* 0x0460 */
- 
- 	/* Per cpu primary space access list */
--	__u32	paste[16];			/* 0x0440 */
-+	__u32	paste[16];			/* 0x0480 */
- 
--	__u8	pad_0x0480[0x0e00-0x0480];	/* 0x0480 */
-+	__u8	pad_0x04c0[0x0e00-0x04c0];	/* 0x04c0 */
- 
- 	/*
- 	 * 0xe00 contains the address of the IPL Parameter Information
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -861,7 +861,17 @@ struct hid_report *hid_validate_values(s
+ 	 * ->numbered being checked, which may not always be the case when
+ 	 * drivers go to access report values.
+ 	 */
+-	report = hid->report_enum[type].report_id_hash[id];
++	if (id == 0) {
++		/*
++		 * Validating on id 0 means we should examine the first
++		 * report in the list.
++		 */
++		report = list_entry(
++				hid->report_enum[type].report_list.next,
++				struct hid_report, list);
++	} else {
++		report = hid->report_enum[type].report_id_hash[id];
++	}
+ 	if (!report) {
+ 		hid_err(hid, "missing %s %u\n", hid_report_names[type], id);
+ 		return NULL;
 
 
