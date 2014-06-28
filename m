@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757181AbaF1SqD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:46:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53431 "EHLO
+	id S1756441AbaF1Sq2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:46:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53426 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755311AbaF1Rtu (ORCPT
+	with ESMTP id S1755302AbaF1Rtt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:49:50 -0400
+	Sat, 28 Jun 2014 13:49:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Subject: [PATCH 3.14 040/110] matroxfb: perform a dummy read of M_STATUS
-Date: Sat, 28 Jun 2014 10:46:37 -0700
-Message-Id: <20140628174547.554051497@linuxfoundation.org>
+        Maurizio Lombardi <mlombard@redhat.com>, Theodore Tso <tytso@mit.edu>
+Subject: [PATCH 3.14 039/110] ext4: fix wrong assert in ext4_mb_normalize_request()
+Date: Sat, 28 Jun 2014 10:46:36 -0700
+Message-Id: <20140628174547.494665704@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -29,40 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Maurizio Lombardi <mlombard@redhat.com>
 
-commit 972754cfaee94d6e25acf94a497bc0a864d91b7e upstream.
+commit b5b60778558cafad17bbcbf63e0310bd3c68eb17 upstream.
 
-I had occasional screen corruption with the matrox framebuffer driver and
-I found out that the reason for the corruption is that the hardware
-blitter accesses the videoram while it is being written to.
+The variable "size" is expressed as number of blocks and not as
+number of clusters, this could trigger a kernel panic when using
+ext4 with the size of a cluster different from the size of a block.
 
-The matrox driver has a macro WaitTillIdle() that should wait until the
-blitter is idle, but it sometimes doesn't work. I added a dummy read
-mga_inl(M_STATUS) to WaitTillIdle() to fix the problem. The dummy read
-will flush the write buffer in the PCI chipset, and the next read of
-M_STATUS will return the hardware status.
-
-Since applying this patch, I had no screen corruption at all.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Signed-off-by: Maurizio Lombardi <mlombard@redhat.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/video/matrox/matroxfb_base.h |    2 +-
+ fs/ext4/mballoc.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/video/matrox/matroxfb_base.h
-+++ b/drivers/video/matrox/matroxfb_base.h
-@@ -698,7 +698,7 @@ void matroxfb_unregister_driver(struct m
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -3135,7 +3135,7 @@ ext4_mb_normalize_request(struct ext4_al
+ 	}
+ 	BUG_ON(start + size <= ac->ac_o_ex.fe_logical &&
+ 			start > ac->ac_o_ex.fe_logical);
+-	BUG_ON(size <= 0 || size > EXT4_CLUSTERS_PER_GROUP(ac->ac_sb));
++	BUG_ON(size <= 0 || size > EXT4_BLOCKS_PER_GROUP(ac->ac_sb));
  
- #define mga_fifo(n)	do {} while ((mga_inl(M_FIFOSTATUS) & 0xFF) < (n))
+ 	/* now prepare goal request */
  
--#define WaitTillIdle()	do {} while (mga_inl(M_STATUS) & 0x10000)
-+#define WaitTillIdle()	do { mga_inl(M_STATUS); do {} while (mga_inl(M_STATUS) & 0x10000); } while (0)
- 
- /* code speedup */
- #ifdef CONFIG_FB_MATROX_MILLENIUM
 
 
