@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755665AbaF1TXN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 15:23:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52791 "EHLO
+	id S1756029AbaF1TXP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 15:23:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52788 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753413AbaF1RrO (ORCPT
+	with ESMTP id S1753394AbaF1RrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Jun 2014 13:47:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Maurizio Lombardi <mlombard@redhat.com>, Theodore Tso <tytso@mit.edu>
-Subject: [PATCH 3.4 16/43] ext4: fix wrong assert in ext4_mb_normalize_request()
-Date: Sat, 28 Jun 2014 10:46:07 -0700
-Message-Id: <20140628174450.546016622@linuxfoundation.org>
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>
+Subject: [PATCH 3.4 15/43] s390/lowcore: reserve 96 bytes for IRB in lowcore
+Date: Sat, 28 Jun 2014 10:46:06 -0700
+Message-Id: <20140628174450.504001718@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174449.788784511@linuxfoundation.org>
 References: <20140628174449.788784511@linuxfoundation.org>
@@ -28,32 +32,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maurizio Lombardi <mlombard@redhat.com>
+From: Christian Borntraeger <borntraeger@de.ibm.com>
 
-commit b5b60778558cafad17bbcbf63e0310bd3c68eb17 upstream.
+commit 993072ee67aa179c48c85eb19869804e68887d86 upstream.
 
-The variable "size" is expressed as number of blocks and not as
-number of clusters, this could trigger a kernel panic when using
-ext4 with the size of a cluster different from the size of a block.
+The IRB might be 96 bytes if the extended-I/O-measurement facility is
+used. This feature is currently not used by Linux, but struct irb
+already has the emw defined. So let's make the irb in lowcore match the
+size of the internal data structure to be future proof.
+We also have to add a pad, to correctly align the paste.
 
-Signed-off-by: Maurizio Lombardi <mlombard@redhat.com>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+The bigger irb field also circumvents a bug in some QEMU versions that
+always write the emw field on test subchannel and therefore destroy the
+paste definitions of this CPU. Running under these QEMU version broke
+some timing functions in the VDSO and all users of these functions,
+e.g. some JREs.
+
+Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Sebastian Ott <sebott@linux.vnet.ibm.com>
+Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/mballoc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/s390/include/asm/lowcore.h |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -3015,7 +3015,7 @@ ext4_mb_normalize_request(struct ext4_al
- 	}
- 	BUG_ON(start + size <= ac->ac_o_ex.fe_logical &&
- 			start > ac->ac_o_ex.fe_logical);
--	BUG_ON(size <= 0 || size > EXT4_CLUSTERS_PER_GROUP(ac->ac_sb));
-+	BUG_ON(size <= 0 || size > EXT4_BLOCKS_PER_GROUP(ac->ac_sb));
+--- a/arch/s390/include/asm/lowcore.h
++++ b/arch/s390/include/asm/lowcore.h
+@@ -142,9 +142,9 @@ struct _lowcore {
+ 	__u8	pad_0x02fc[0x0300-0x02fc];	/* 0x02fc */
  
- 	/* now prepare goal request */
+ 	/* Interrupt response block */
+-	__u8	irb[64];			/* 0x0300 */
++	__u8	irb[96];			/* 0x0300 */
  
+-	__u8	pad_0x0340[0x0e00-0x0340];	/* 0x0340 */
++	__u8	pad_0x0360[0x0e00-0x0360];	/* 0x0360 */
+ 
+ 	/*
+ 	 * 0xe00 contains the address of the IPL Parameter Information
+@@ -288,12 +288,13 @@ struct _lowcore {
+ 	__u8	pad_0x03a0[0x0400-0x03a0];	/* 0x03a0 */
+ 
+ 	/* Interrupt response block. */
+-	__u8	irb[64];			/* 0x0400 */
++	__u8	irb[96];			/* 0x0400 */
++	__u8	pad_0x0460[0x0480-0x0460];	/* 0x0460 */
+ 
+ 	/* Per cpu primary space access list */
+-	__u32	paste[16];			/* 0x0440 */
++	__u32	paste[16];			/* 0x0480 */
+ 
+-	__u8	pad_0x0480[0x0e00-0x0480];	/* 0x0480 */
++	__u8	pad_0x04c0[0x0e00-0x04c0];	/* 0x04c0 */
+ 
+ 	/*
+ 	 * 0xe00 contains the address of the IPL Parameter Information
 
 
