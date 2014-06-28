@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753687AbaF1Rra (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:47:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52840 "EHLO
+	id S1753813AbaF1Rrg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:47:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52857 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751432AbaF1Rr2 (ORCPT
+	with ESMTP id S1753690AbaF1Rrc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:47:28 -0400
+	Sat, 28 Jun 2014 13:47:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 3.4 32/43] x86-32, espfix: Remove filter for espfix32 due to race
-Date: Sat, 28 Jun 2014 10:46:23 -0700
-Message-Id: <20140628174451.259859251@linuxfoundation.org>
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.4 35/43] skbuff: add an api to orphan frags
+Date: Sat, 28 Jun 2014 10:46:26 -0700
+Message-Id: <20140628174451.386819756@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174449.788784511@linuxfoundation.org>
 References: <20140628174449.788784511@linuxfoundation.org>
@@ -28,37 +29,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: "Michael S. Tsirkin" <mst@redhat.com>
 
-commit 246f2d2ee1d715e1077fc47d61c394569c8ee692 upstream.
+commit a353e0ce0fd42d8859260666d1e9b10f2abd4698 upstream.
 
-It is not safe to use LAR to filter when to go down the espfix path,
-because the LDT is per-process (rather than per-thread) and another
-thread might change the descriptors behind our back.  Fortunately it
-is always *safe* (if a bit slow) to go down the espfix path, and a
-32-bit LDT stack segment is extremely rare.
+Many places do
+       if ((skb_shinfo(skb)->tx_flags & SKBTX_DEV_ZEROCOPY))
+		skb_copy_ubufs(skb, gfp_mask);
+to copy and invoke frag destructors if necessary.
+Add an inline helper for this.
 
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Link: http://lkml.kernel.org/r/1398816946-3351-1-git-send-email-hpa@linux.intel.com
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/entry_32.S |    5 -----
- 1 file changed, 5 deletions(-)
+ include/linux/skbuff.h |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -550,11 +550,6 @@ ENTRY(iret_exc)
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -1674,6 +1674,22 @@ static inline void skb_orphan(struct sk_
+ }
  
- 	CFI_RESTORE_STATE
- ldt_ss:
--	larl PT_OLDSS(%esp), %eax
--	jnz restore_nocheck
--	testl $0x00400000, %eax		# returning to 32bit stack?
--	jnz restore_nocheck		# allright, normal return
--
- #ifdef CONFIG_PARAVIRT
- 	/*
- 	 * The kernel can't run on a non-flat stack if paravirt mode
+ /**
++ *	skb_orphan_frags - orphan the frags contained in a buffer
++ *	@skb: buffer to orphan frags from
++ *	@gfp_mask: allocation mask for replacement pages
++ *
++ *	For each frag in the SKB which needs a destructor (i.e. has an
++ *	owner) create a copy of that frag and release the original
++ *	page by calling the destructor.
++ */
++static inline int skb_orphan_frags(struct sk_buff *skb, gfp_t gfp_mask)
++{
++	if (likely(!(skb_shinfo(skb)->tx_flags & SKBTX_DEV_ZEROCOPY)))
++		return 0;
++	return skb_copy_ubufs(skb, gfp_mask);
++}
++
++/**
+  *	__skb_queue_purge - empty a list
+  *	@list: list to empty
+  *
 
 
