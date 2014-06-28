@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757236AbaF1Stb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:49:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53377 "EHLO
+	id S1755208AbaF1Rtb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:49:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53342 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755213AbaF1Rtf (ORCPT
+	with ESMTP id S1755121AbaF1Rt1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:49:35 -0400
+	Sat, 28 Jun 2014 13:49:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tony Luck <tony.luck@intel.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@suse.de>,
-        Chen Gong <gong.chen@linux.jf.intel.com>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Oleg Nesterov <oleg@redhat.com>, David Rientjes <rientjes@google.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 026/110] mm/memory-failure.c: dont let collect_procs() skip over processes for MF_ACTION_REQUIRED
-Date: Sat, 28 Jun 2014 10:46:23 -0700
-Message-Id: <20140628174546.754470087@linuxfoundation.org>
+Subject: [PATCH 3.14 022/110] kthread: fix return value of kthread_create() upon SIGKILL.
+Date: Sat, 28 Jun 2014 10:46:19 -0700
+Message-Id: <20140628174546.548375677@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -33,123 +31,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tony Luck <tony.luck@intel.com>
+From: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
 
-commit 74614de17db6fb472370c426d4f934d8d616edf2 upstream.
+commit 8fe6929cfd43c44834858a53e129ffdc7c166298 upstream.
 
-When Linux sees an "action optional" machine check (where h/w has reported
-an error that is not in the current execution path) we generally do not
-want to signal a process, since most processes do not have a SIGBUS
-handler - we'd just prematurely terminate the process for a problem that
-they might never actually see.
+Commit 786235eeba0e ("kthread: make kthread_create() killable") meant
+for allowing kthread_create() to abort as soon as killed by the
+OOM-killer.  But returning -ENOMEM is wrong if killed by SIGKILL from
+userspace.  Change kthread_create() to return -EINTR upon SIGKILL.
 
-task_early_kill() decides whether to consider a process - and it checks
-whether this specific process has been marked for early signals with
-"prctl", or if the system administrator has requested early signals for
-all processes using /proc/sys/vm/memory_failure_early_kill.
-
-But for MF_ACTION_REQUIRED case we must not defer.  The error is in the
-execution path of the current thread so we must send the SIGBUS
-immediatley.
-
-Fix by passing a flag argument through collect_procs*() to
-task_early_kill() so it knows whether we can defer or must take action.
-
-Signed-off-by: Tony Luck <tony.luck@intel.com>
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: Chen Gong <gong.chen@linux.jf.intel.com>
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Acked-by: David Rientjes <rientjes@google.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/memory-failure.c |   21 ++++++++++++---------
- 1 file changed, 12 insertions(+), 9 deletions(-)
+ kernel/kthread.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -384,10 +384,12 @@ static void kill_procs(struct list_head
- 	}
- }
- 
--static int task_early_kill(struct task_struct *tsk)
-+static int task_early_kill(struct task_struct *tsk, int force_early)
- {
- 	if (!tsk->mm)
- 		return 0;
-+	if (force_early)
-+		return 1;
- 	if (tsk->flags & PF_MCE_PROCESS)
- 		return !!(tsk->flags & PF_MCE_EARLY);
- 	return sysctl_memory_failure_early_kill;
-@@ -397,7 +399,7 @@ static int task_early_kill(struct task_s
-  * Collect processes when the error hit an anonymous page.
+--- a/kernel/kthread.c
++++ b/kernel/kthread.c
+@@ -262,7 +262,7 @@ static void create_kthread(struct kthrea
+  * kthread_stop() has been called).  The return value should be zero
+  * or a negative error number; it will be passed to kthread_stop().
+  *
+- * Returns a task_struct or ERR_PTR(-ENOMEM).
++ * Returns a task_struct or ERR_PTR(-ENOMEM) or ERR_PTR(-EINTR).
   */
- static void collect_procs_anon(struct page *page, struct list_head *to_kill,
--			      struct to_kill **tkc)
-+			      struct to_kill **tkc, int force_early)
- {
- 	struct vm_area_struct *vma;
- 	struct task_struct *tsk;
-@@ -413,7 +415,7 @@ static void collect_procs_anon(struct pa
- 	for_each_process (tsk) {
- 		struct anon_vma_chain *vmac;
- 
--		if (!task_early_kill(tsk))
-+		if (!task_early_kill(tsk, force_early))
- 			continue;
- 		anon_vma_interval_tree_foreach(vmac, &av->rb_root,
- 					       pgoff, pgoff) {
-@@ -432,7 +434,7 @@ static void collect_procs_anon(struct pa
-  * Collect processes when the error hit a file mapped page.
-  */
- static void collect_procs_file(struct page *page, struct list_head *to_kill,
--			      struct to_kill **tkc)
-+			      struct to_kill **tkc, int force_early)
- {
- 	struct vm_area_struct *vma;
- 	struct task_struct *tsk;
-@@ -443,7 +445,7 @@ static void collect_procs_file(struct pa
- 	for_each_process(tsk) {
- 		pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
- 
--		if (!task_early_kill(tsk))
-+		if (!task_early_kill(tsk, force_early))
- 			continue;
- 
- 		vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff,
-@@ -469,7 +471,8 @@ static void collect_procs_file(struct pa
-  * First preallocate one tokill structure outside the spin locks,
-  * so that we can kill at least one process reasonably reliable.
-  */
--static void collect_procs(struct page *page, struct list_head *tokill)
-+static void collect_procs(struct page *page, struct list_head *tokill,
-+				int force_early)
- {
- 	struct to_kill *tk;
- 
-@@ -480,9 +483,9 @@ static void collect_procs(struct page *p
- 	if (!tk)
- 		return;
- 	if (PageAnon(page))
--		collect_procs_anon(page, tokill, &tk);
-+		collect_procs_anon(page, tokill, &tk, force_early);
- 	else
--		collect_procs_file(page, tokill, &tk);
-+		collect_procs_file(page, tokill, &tk, force_early);
- 	kfree(tk);
- }
- 
-@@ -967,7 +970,7 @@ static int hwpoison_user_mappings(struct
- 	 * there's nothing that can be done.
- 	 */
- 	if (kill)
--		collect_procs(ppage, &tokill);
-+		collect_procs(ppage, &tokill, flags & MF_ACTION_REQUIRED);
- 
- 	ret = try_to_unmap(ppage, ttu);
- 	if (ret != SWAP_SUCCESS)
+ struct task_struct *kthread_create_on_node(int (*threadfn)(void *data),
+ 					   void *data, int node,
+@@ -298,7 +298,7 @@ struct task_struct *kthread_create_on_no
+ 		 * that thread.
+ 		 */
+ 		if (xchg(&create->done, NULL))
+-			return ERR_PTR(-ENOMEM);
++			return ERR_PTR(-EINTR);
+ 		/*
+ 		 * kthreadd (or new kernel thread) will call complete()
+ 		 * shortly.
 
 
