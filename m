@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756615AbaF1SPm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:15:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54181 "EHLO
+	id S1755886AbaF1Rvs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:51:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54152 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755907AbaF1Rvx (ORCPT
+	with ESMTP id S1755855AbaF1Rvn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:51:53 -0400
+	Sat, 28 Jun 2014 13:51:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Xiaoguang Wang <wangxg.fnst@cn.fujitsu.com>, Jan Kara <jack@suse.cz>,
-        Theodore Tso <tytso@mit.edu>
-Subject: [PATCH 3.15 044/139] ext4: fix zeroing of page during writeback
-Date: Sat, 28 Jun 2014 10:46:45 -0700
-Message-Id: <20140628174607.440286617@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.15 053/139] USB: usb_wwan: fix potential blocked I/O after resume
+Date: Sat, 28 Jun 2014 10:46:54 -0700
+Message-Id: <20140628174607.866264344@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -29,70 +28,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit eeece469dedadf3918bad50ad80f4616a0064e90 upstream.
+commit fb7ad4f93d9f0f7d49beda32f5e7becb94b29a4d upstream.
 
-Tail of a page straddling inode size must be zeroed when being written
-out due to POSIX requirement that modifications of mmaped page beyond
-inode size must not be written to the file. ext4_bio_write_page() did
-this only for blocks fully beyond inode size but didn't properly zero
-blocks partially beyond inode size. Fix this.
+Keep trying to submit urbs rather than bail out on first read-urb
+submission error, which would also prevent I/O for any further ports
+from being resumed.
 
-The problem has been uncovered by mmap_11-4 test in openposix test suite
-(part of LTP).
+Instead keep an error count, for all types of failed submissions, and
+let USB core know that something went wrong.
 
-Reported-by: Xiaoguang Wang <wangxg.fnst@cn.fujitsu.com>
-Fixes: 5a0dc7365c240
-Fixes: bd2d0210cf22f
-CC: stable@vger.kernel.org
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Also make sure to always clear the suspended flag. Currently a failed
+read-urb submission would prevent cached writes as well as any
+subsequent writes from being submitted until next suspend-resume cycle,
+something which may not even necessarily happen.
+
+Note that USB core currently only logs an error if an interface resume
+failed.
+
+Fixes: 383cedc3bb43 ("USB: serial: full autosuspend support for the
+option driver")
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/page-io.c |   24 +++++++++++-------------
- 1 file changed, 11 insertions(+), 13 deletions(-)
+ drivers/usb/serial/usb_wwan.c |   25 +++++++++++++++++--------
+ 1 file changed, 17 insertions(+), 8 deletions(-)
 
---- a/fs/ext4/page-io.c
-+++ b/fs/ext4/page-io.c
-@@ -422,6 +422,17 @@ int ext4_bio_write_page(struct ext4_io_s
- 	ClearPageError(page);
+--- a/drivers/usb/serial/usb_wwan.c
++++ b/drivers/usb/serial/usb_wwan.c
+@@ -619,12 +619,12 @@ int usb_wwan_suspend(struct usb_serial *
+ }
+ EXPORT_SYMBOL(usb_wwan_suspend);
  
- 	/*
-+	 * Comments copied from block_write_full_page_endio:
-+	 *
-+	 * The page straddles i_size.  It must be zeroed out on each and every
-+	 * writepage invocation because it may be mmapped.  "A file is mapped
-+	 * in multiples of the page size.  For a file that is not a multiple of
-+	 * the page size, the remaining memory is zeroed when mapped, and
-+	 * writes to that region are not written out to the file."
-+	 */
-+	if (len < PAGE_CACHE_SIZE)
-+		zero_user_segment(page, len, PAGE_CACHE_SIZE);
-+	/*
- 	 * In the first loop we prepare and mark buffers to submit. We have to
- 	 * mark all buffers in the page before submitting so that
- 	 * end_page_writeback() cannot be called from ext4_bio_end_io() when IO
-@@ -432,19 +443,6 @@ int ext4_bio_write_page(struct ext4_io_s
- 	do {
- 		block_start = bh_offset(bh);
- 		if (block_start >= len) {
--			/*
--			 * Comments copied from block_write_full_page_endio:
--			 *
--			 * The page straddles i_size.  It must be zeroed out on
--			 * each and every writepage invocation because it may
--			 * be mmapped.  "A file is mapped in multiples of the
--			 * page size.  For a file that is not a multiple of
--			 * the  page size, the remaining memory is zeroed when
--			 * mapped, and writes to that region are not written
--			 * out to the file."
--			 */
--			zero_user_segment(page, block_start,
--					  block_start + blocksize);
- 			clear_buffer_dirty(bh);
- 			set_buffer_uptodate(bh);
- 			continue;
+-static void play_delayed(struct usb_serial_port *port)
++static int play_delayed(struct usb_serial_port *port)
+ {
+ 	struct usb_wwan_intf_private *data;
+ 	struct usb_wwan_port_private *portdata;
+ 	struct urb *urb;
+-	int err;
++	int err = 0;
+ 
+ 	portdata = usb_get_serial_port_data(port);
+ 	data = port->serial->private;
+@@ -641,6 +641,8 @@ static void play_delayed(struct usb_seri
+ 			break;
+ 		}
+ 	}
++
++	return err;
+ }
+ 
+ int usb_wwan_resume(struct usb_serial *serial)
+@@ -650,7 +652,8 @@ int usb_wwan_resume(struct usb_serial *s
+ 	struct usb_wwan_intf_private *intfdata = serial->private;
+ 	struct usb_wwan_port_private *portdata;
+ 	struct urb *urb;
+-	int err = 0;
++	int err;
++	int err_count = 0;
+ 
+ 	spin_lock_irq(&intfdata->susp_lock);
+ 	for (i = 0; i < serial->num_ports; i++) {
+@@ -669,25 +672,31 @@ int usb_wwan_resume(struct usb_serial *s
+ 				dev_err(&port->dev,
+ 					"%s: submit int urb failed: %d\n",
+ 					__func__, err);
++				err_count++;
+ 			}
+ 		}
+ 
++		err = play_delayed(port);
++		if (err)
++			err_count++;
++
+ 		for (j = 0; j < N_IN_URB; j++) {
+ 			urb = portdata->in_urbs[j];
+ 			err = usb_submit_urb(urb, GFP_ATOMIC);
+ 			if (err < 0) {
+ 				dev_err(&port->dev, "%s: Error %d for bulk URB %d\n",
+ 					__func__, err, i);
+-				spin_unlock_irq(&intfdata->susp_lock);
+-				goto err_out;
++				err_count++;
+ 			}
+ 		}
+-		play_delayed(port);
+ 	}
+ 	intfdata->suspended = 0;
+ 	spin_unlock_irq(&intfdata->susp_lock);
+-err_out:
+-	return err;
++
++	if (err_count)
++		return -EIO;
++
++	return 0;
+ }
+ EXPORT_SYMBOL(usb_wwan_resume);
+ #endif
 
 
