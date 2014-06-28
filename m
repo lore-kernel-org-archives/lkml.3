@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754950AbaF1RtA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:49:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53211 "EHLO
+	id S1755049AbaF1RtL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:49:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53223 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754923AbaF1Rs6 (ORCPT
+	with ESMTP id S1754928AbaF1RtA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:48:58 -0400
+	Sat, 28 Jun 2014 13:49:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Liu Bo <bo.li.liu@oracle.com>, Chris Mason <clm@fb.com>
-Subject: [PATCH 3.10 71/77] Btrfs: use right type to get real comparison
-Date: Sat, 28 Jun 2014 10:47:04 -0700
-Message-Id: <20140628174525.336983000@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: [PATCH 3.14 013/110] applicom: dereferencing NULL on error path
+Date: Sat, 28 Jun 2014 10:46:10 -0700
+Message-Id: <20140628174546.078977230@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
-In-Reply-To: <20140628174521.691276402@linuxfoundation.org>
-References: <20140628174521.691276402@linuxfoundation.org>
+In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
+References: <20140628174545.354748696@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,35 +24,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Liu Bo <bo.li.liu@oracle.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit cd857dd6bc2ae9ecea14e75a34e8a8fdc158e307 upstream.
+commit 8bab797c6e5724a43b7666ad70860712365cdb71 upstream.
 
-We want to make sure the point is still within the extent item, not to verify
-the memory it's pointing to.
+This is a static checker fix.  The "dev" variable is always NULL after
+the while statement so we would be dereferencing a NULL pointer here.
 
-Signed-off-by: Liu Bo <bo.li.liu@oracle.com>
-Signed-off-by: Chris Mason <clm@fb.com>
+Fixes: 819a3eba4233 ('[PATCH] applicom: fix error handling')
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/backref.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/char/applicom.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/fs/btrfs/backref.c
-+++ b/fs/btrfs/backref.c
-@@ -1366,7 +1366,7 @@ static int __get_extent_inline_ref(unsig
- 			*out_eiref = (struct btrfs_extent_inline_ref *)(ei + 1);
- 		}
- 		*ptr = (unsigned long)*out_eiref;
--		if ((void *)*ptr >= (void *)ei + item_size)
-+		if ((unsigned long)(*ptr) >= (unsigned long)ei + item_size)
- 			return -ENOENT;
+--- a/drivers/char/applicom.c
++++ b/drivers/char/applicom.c
+@@ -345,7 +345,6 @@ out:
+ 			free_irq(apbs[i].irq, &dummy);
+ 		iounmap(apbs[i].RamIO);
  	}
+-	pci_disable_device(dev);
+ 	return ret;
+ }
  
 
 
