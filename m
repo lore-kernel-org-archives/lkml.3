@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757158AbaF1Sok (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:44:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53449 "EHLO
+	id S1755336AbaF1Rtw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:49:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53434 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755350AbaF1Rty (ORCPT
+	with ESMTP id S1755273AbaF1Rtu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:49:54 -0400
+	Sat, 28 Jun 2014 13:49:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        xiao jin <jin.xiao@intel.com>, "Zhang, Qi1" <qi1.zhang@intel.com>,
+        David Cohen <david.a.cohen@linux.intel.com>,
         Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.14 045/110] USB: usb_wwan: fix potential NULL-deref at resume
-Date: Sat, 28 Jun 2014 10:46:42 -0700
-Message-Id: <20140628174547.846394128@linuxfoundation.org>
+Subject: [PATCH 3.14 041/110] USB: usb_wwan: fix urb leak in write error path
+Date: Sat, 28 Jun 2014 10:46:38 -0700
+Message-Id: <20140628174547.604045883@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -28,113 +30,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: xiao jin <jin.xiao@intel.com>
 
-commit 9096f1fbba916c2e052651e9de82fcfb98d4bea7 upstream.
+commit db0904737947d509844e171c9863ecc5b4534005 upstream.
 
-The interrupt urb was submitted unconditionally at resume, something
-which could lead to a NULL-pointer dereference in the urb completion
-handler as resume may be called after the port and port data is gone.
+When enable usb serial for modem data, sometimes the tty is blocked
+in tty_wait_until_sent because portdata->out_busy always is set and
+have no chance to be cleared.
 
-Fix this by making sure the interrupt urb is only submitted and active
-when the port is open.
+We find a bug in write error path. usb_wwan_write set portdata->out_busy
+firstly, then try autopm async with error. No out urb submit and no
+usb_wwan_outdat_callback to this write, portdata->out_busy can't be
+cleared.
+
+This patch clear portdata->out_busy if usb_wwan_write try autopm async
+with error.
 
 Fixes: 383cedc3bb43 ("USB: serial: full autosuspend support for the
 option driver")
 
+Signed-off-by: xiao jin <jin.xiao@intel.com>
+Signed-off-by: Zhang, Qi1 <qi1.zhang@intel.com>
+Reviewed-by: David Cohen <david.a.cohen@linux.intel.com>
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/usb_wwan.c |   43 ++++++++++++++++++------------------------
- 1 file changed, 19 insertions(+), 24 deletions(-)
+ drivers/usb/serial/usb_wwan.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
 --- a/drivers/usb/serial/usb_wwan.c
 +++ b/drivers/usb/serial/usb_wwan.c
-@@ -388,6 +388,14 @@ int usb_wwan_open(struct tty_struct *tty
- 	portdata = usb_get_serial_port_data(port);
- 	intfdata = serial->private;
+@@ -228,8 +228,10 @@ int usb_wwan_write(struct tty_struct *tt
+ 			usb_pipeendpoint(this_urb->pipe), i);
  
-+	if (port->interrupt_in_urb) {
-+		err = usb_submit_urb(port->interrupt_in_urb, GFP_KERNEL);
-+		if (err) {
-+			dev_dbg(&port->dev, "%s: submit int urb failed: %d\n",
-+				__func__, err);
+ 		err = usb_autopm_get_interface_async(port->serial->interface);
+-		if (err < 0)
++		if (err < 0) {
++			clear_bit(i, &portdata->out_busy);
+ 			break;
 +		}
-+	}
-+
- 	/* Start reading from the IN endpoint */
- 	for (i = 0; i < N_IN_URB; i++) {
- 		urb = portdata->in_urbs[i];
-@@ -454,6 +462,7 @@ void usb_wwan_close(struct usb_serial_po
- 		usb_kill_urb(portdata->in_urbs[i]);
- 	for (i = 0; i < N_OUT_URB; i++)
- 		usb_kill_urb(portdata->out_urbs[i]);
-+	usb_kill_urb(port->interrupt_in_urb);
  
- 	/* balancing - important as an error cannot be handled*/
- 	usb_autopm_get_interface_no_resume(serial->interface);
-@@ -487,7 +496,6 @@ int usb_wwan_port_probe(struct usb_seria
- 	struct usb_wwan_port_private *portdata;
- 	struct urb *urb;
- 	u8 *buffer;
--	int err;
- 	int i;
- 
- 	if (!port->bulk_in_size || !port->bulk_out_size)
-@@ -527,13 +535,6 @@ int usb_wwan_port_probe(struct usb_seria
- 
- 	usb_set_serial_port_data(port, portdata);
- 
--	if (port->interrupt_in_urb) {
--		err = usb_submit_urb(port->interrupt_in_urb, GFP_KERNEL);
--		if (err)
--			dev_dbg(&port->dev, "%s: submit irq_in urb failed %d\n",
--				__func__, err);
--	}
--
- 	return 0;
- 
- bail_out_error2:
-@@ -651,22 +652,6 @@ int usb_wwan_resume(struct usb_serial *s
- 	struct urb *urb;
- 	int err = 0;
- 
--	/* get the interrupt URBs resubmitted unconditionally */
--	for (i = 0; i < serial->num_ports; i++) {
--		port = serial->port[i];
--		if (!port->interrupt_in_urb) {
--			dev_dbg(&port->dev, "%s: No interrupt URB for port\n", __func__);
--			continue;
--		}
--		err = usb_submit_urb(port->interrupt_in_urb, GFP_NOIO);
--		dev_dbg(&port->dev, "Submitted interrupt URB for port (result %d)\n", err);
--		if (err < 0) {
--			dev_err(&port->dev, "%s: Error %d for interrupt URB\n",
--				__func__, err);
--			goto err_out;
--		}
--	}
--
- 	spin_lock_irq(&intfdata->susp_lock);
- 	for (i = 0; i < serial->num_ports; i++) {
- 		/* walk all ports */
-@@ -677,6 +662,16 @@ int usb_wwan_resume(struct usb_serial *s
- 		if (!portdata || !portdata->opened)
- 			continue;
- 
-+		if (port->interrupt_in_urb) {
-+			err = usb_submit_urb(port->interrupt_in_urb,
-+					GFP_ATOMIC);
-+			if (err) {
-+				dev_err(&port->dev,
-+					"%s: submit int urb failed: %d\n",
-+					__func__, err);
-+			}
-+		}
-+
- 		for (j = 0; j < N_IN_URB; j++) {
- 			urb = portdata->in_urbs[j];
- 			err = usb_submit_urb(urb, GFP_ATOMIC);
+ 		/* send the data */
+ 		memcpy(this_urb->transfer_buffer, buf, todo);
 
 
