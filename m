@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756625AbaF1S3m (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:29:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53745 "EHLO
+	id S1756885AbaF1S37 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:29:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53729 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755600AbaF1Ruz (ORCPT
+	with ESMTP id S1755634AbaF1Ruy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:50:55 -0400
+	Sat, 28 Jun 2014 13:50:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Sasha Levin <sasha.levin@oracle.com>, Jason Baron <jbaron@akamai.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 108/110] epoll: fix use-after-free in eventpoll_release_file
-Date: Sat, 28 Jun 2014 10:47:45 -0700
-Message-Id: <20140628174551.799683600@linuxfoundation.org>
+        Benjamin LaHaise <bcrl@kvack.org>, Mateusz Guzik <mguzik@redhat.com>,
+        Petr Matousek <pmatouse@redhat.com>,
+        Kent Overstreet <kmo@daterainc.com>, Jeff Moyer <jmoyer@redhat.com>
+Subject: [PATCH 3.14 089/110] aio: fix kernel memory disclosure in io_getevents() introduced in v3.10
+Date: Sat, 28 Jun 2014 10:47:26 -0700
+Message-Id: <20140628174550.787475154@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -31,52 +30,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konstantin Khlebnikov <koct9i@gmail.com>
+From: Benjamin LaHaise <bcrl@kvack.org>
 
-commit ebe06187bf2aec10d537ce4595e416035367d703 upstream.
+commit edfbbf388f293d70bf4b7c0bc38774d05e6f711a upstream.
 
-This fixes use-after-free of epi->fllink.next inside list loop macro.
-This loop actually releases elements in the body.  The list is
-rcu-protected but here we cannot hold rcu_read_lock because we need to
-lock mutex inside.
+A kernel memory disclosure was introduced in aio_read_events_ring() in v3.10
+by commit a31ad380bed817aa25f8830ad23e1a0480fef797.  The changes made to
+aio_read_events_ring() failed to correctly limit the index into
+ctx->ring_pages[], allowing an attacked to cause the subsequent kmap() of
+an arbitrary page with a copy_to_user() to copy the contents into userspace.
+This vulnerability has been assigned CVE-2014-0206.  Thanks to Mateusz and
+Petr for disclosing this issue.
 
-The obvious solution is to use list_for_each_entry_safe().  RCU-ness
-isn't essential because nobody can change this list under us, it's final
-fput for this file.
+This patch applies to v3.12+.  A separate backport is needed for 3.10/3.11.
 
-The bug was introduced by ae10b2b4eb01 ("epoll: optimize EPOLL_CTL_DEL
-using rcu")
-
-Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
-Reported-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>
-Cc: Jason Baron <jbaron@akamai.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
+Cc: Mateusz Guzik <mguzik@redhat.com>
+Cc: Petr Matousek <pmatouse@redhat.com>
+Cc: Kent Overstreet <kmo@daterainc.com>
+Cc: Jeff Moyer <jmoyer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/eventpoll.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/aio.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -910,7 +910,7 @@ static const struct file_operations even
- void eventpoll_release_file(struct file *file)
- {
- 	struct eventpoll *ep;
--	struct epitem *epi;
-+	struct epitem *epi, *next;
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -1049,6 +1049,9 @@ static long aio_read_events_ring(struct
+ 	if (head == tail)
+ 		goto out;
  
- 	/*
- 	 * We don't want to get "file->f_lock" because it is not
-@@ -926,7 +926,7 @@ void eventpoll_release_file(struct file
- 	 * Besides, ep_remove() acquires the lock, so we can't hold it here.
- 	 */
- 	mutex_lock(&epmutex);
--	list_for_each_entry_rcu(epi, &file->f_ep_links, fllink) {
-+	list_for_each_entry_safe(epi, next, &file->f_ep_links, fllink) {
- 		ep = epi->ep;
- 		mutex_lock_nested(&ep->mtx, 0);
- 		ep_remove(ep, epi);
++	head %= ctx->nr_events;
++	tail %= ctx->nr_events;
++
+ 	while (ret < nr) {
+ 		long avail;
+ 		struct io_event *ev;
 
 
