@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756326AbaF1Sry (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:47:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53405 "EHLO
+	id S1757210AbaF1SsY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:48:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53399 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755258AbaF1Rtn (ORCPT
+	with ESMTP id S1755245AbaF1Rtl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:49:43 -0400
+	Sat, 28 Jun 2014 13:49:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.14 048/110] USB: sierra: fix use after free at suspend/resume
-Date: Sat, 28 Jun 2014 10:46:45 -0700
-Message-Id: <20140628174548.164078639@linuxfoundation.org>
+Subject: [PATCH 3.14 046/110] USB: usb_wwan: fix potential blocked I/O after resume
+Date: Sat, 28 Jun 2014 10:46:43 -0700
+Message-Id: <20140628174547.984551359@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -30,53 +30,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit 8452727de70f6ad850cd6d0aaa18b5d9050aa63b upstream.
+commit fb7ad4f93d9f0f7d49beda32f5e7becb94b29a4d upstream.
 
-Fix use after free or NULL-pointer dereference during suspend and
-resume.
+Keep trying to submit urbs rather than bail out on first read-urb
+submission error, which would also prevent I/O for any further ports
+from being resumed.
 
-The port data may never have been allocated (port probe failed)
-or may already have been released by port_remove (e.g. driver is
-unloaded) when suspend and resume are called.
+Instead keep an error count, for all types of failed submissions, and
+let USB core know that something went wrong.
 
-Fixes: e6929a9020ac ("USB: support for autosuspend in sierra while
-online")
+Also make sure to always clear the suspended flag. Currently a failed
+read-urb submission would prevent cached writes as well as any
+subsequent writes from being submitted until next suspend-resume cycle,
+something which may not even necessarily happen.
+
+Note that USB core currently only logs an error if an interface resume
+failed.
+
+Fixes: 383cedc3bb43 ("USB: serial: full autosuspend support for the
+option driver")
 
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/sierra.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/usb/serial/usb_wwan.c |   25 +++++++++++++++++--------
+ 1 file changed, 17 insertions(+), 8 deletions(-)
 
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -933,6 +933,7 @@ static int sierra_port_remove(struct usb
- 	struct sierra_port_private *portdata;
+--- a/drivers/usb/serial/usb_wwan.c
++++ b/drivers/usb/serial/usb_wwan.c
+@@ -619,12 +619,12 @@ int usb_wwan_suspend(struct usb_serial *
+ }
+ EXPORT_SYMBOL(usb_wwan_suspend);
+ 
+-static void play_delayed(struct usb_serial_port *port)
++static int play_delayed(struct usb_serial_port *port)
+ {
+ 	struct usb_wwan_intf_private *data;
+ 	struct usb_wwan_port_private *portdata;
+ 	struct urb *urb;
+-	int err;
++	int err = 0;
  
  	portdata = usb_get_serial_port_data(port);
-+	usb_set_serial_port_data(port, NULL);
- 	kfree(portdata);
- 
- 	return 0;
-@@ -949,6 +950,8 @@ static void stop_read_write_urbs(struct
- 	for (i = 0; i < serial->num_ports; ++i) {
- 		port = serial->port[i];
- 		portdata = usb_get_serial_port_data(port);
-+		if (!portdata)
-+			continue;
- 		sierra_stop_rx_urbs(port);
- 		usb_kill_anchored_urbs(&portdata->active);
+ 	data = port->serial->private;
+@@ -641,6 +641,8 @@ static void play_delayed(struct usb_seri
+ 			break;
+ 		}
  	}
-@@ -991,6 +994,9 @@ static int sierra_resume(struct usb_seri
- 		port = serial->port[i];
- 		portdata = usb_get_serial_port_data(port);
- 
-+		if (!portdata)
-+			continue;
 +
- 		while ((urb = usb_get_from_anchor(&portdata->delayed))) {
- 			usb_anchor_urb(urb, &portdata->active);
- 			intfdata->in_flight++;
++	return err;
+ }
+ 
+ int usb_wwan_resume(struct usb_serial *serial)
+@@ -650,7 +652,8 @@ int usb_wwan_resume(struct usb_serial *s
+ 	struct usb_wwan_intf_private *intfdata = serial->private;
+ 	struct usb_wwan_port_private *portdata;
+ 	struct urb *urb;
+-	int err = 0;
++	int err;
++	int err_count = 0;
+ 
+ 	spin_lock_irq(&intfdata->susp_lock);
+ 	for (i = 0; i < serial->num_ports; i++) {
+@@ -669,25 +672,31 @@ int usb_wwan_resume(struct usb_serial *s
+ 				dev_err(&port->dev,
+ 					"%s: submit int urb failed: %d\n",
+ 					__func__, err);
++				err_count++;
+ 			}
+ 		}
+ 
++		err = play_delayed(port);
++		if (err)
++			err_count++;
++
+ 		for (j = 0; j < N_IN_URB; j++) {
+ 			urb = portdata->in_urbs[j];
+ 			err = usb_submit_urb(urb, GFP_ATOMIC);
+ 			if (err < 0) {
+ 				dev_err(&port->dev, "%s: Error %d for bulk URB %d\n",
+ 					__func__, err, i);
+-				spin_unlock_irq(&intfdata->susp_lock);
+-				goto err_out;
++				err_count++;
+ 			}
+ 		}
+-		play_delayed(port);
+ 	}
+ 	intfdata->suspended = 0;
+ 	spin_unlock_irq(&intfdata->susp_lock);
+-err_out:
+-	return err;
++
++	if (err_count)
++		return -EIO;
++
++	return 0;
+ }
+ EXPORT_SYMBOL(usb_wwan_resume);
+ #endif
 
 
