@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753223AbaF1Ngj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 09:36:39 -0400
-Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:45989 "EHLO
-	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752559AbaF1Ngh (ORCPT
+	id S1752786AbaF1Nt4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 09:49:56 -0400
+Received: from mailrelay010.isp.belgacom.be ([195.238.6.177]:42155 "EHLO
+	mailrelay010.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751710AbaF1Nty (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 09:36:37 -0400
+	Sat, 28 Jun 2014 09:49:54 -0400
 X-Belgacom-Dynamic: yes
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AkUHABPErlNbsk2v/2dsb2JhbABagw2regUBAQEBAQEFAW0BmQKBCBd1hDEvI4EaN4hGAcVSF4VkiSEdhC0Fml2LP4g8ggCBRDs
+X-IronPort-Anti-Spam-Result: AkUHAH/FrlNbsk2v/2dsb2JhbABagw2regUBAQEBAQEFAW0BmQKBCBd1hDEvI4EaN4hGAcVMF4VkiFNOHYQtBZpdiz+IPIIAgUQ7
 From: Fabian Frederick <fabf@skynet.be>
 To: linux-kernel@vger.kernel.org
-Cc: bonbons@linux-vserver.org, Fabian Frederick <fabf@skynet.be>,
-        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org
-Subject: [PATCH 1/1] drivers/hid/hid-picolcd_debugfs.c: remove unnecessary NULL test before debugfs_remove
-Date: Sat, 28 Jun 2014 15:35:03 +0200
-Message-Id: <1403962503-8507-1-git-send-email-fabf@skynet.be>
+Cc: Fabian Frederick <fabf@skynet.be>, Kevin Hilman <khilman@kernel.org>,
+        Nishanth Menon <nm@ti.com>, linux-pm@vger.kernel.org
+Subject: [PATCH V2] PM / AVS: SmartReflex: remove unnecessary NULL test before debugfs_remove_recursive
+Date: Sat, 28 Jun 2014 15:48:33 +0200
+Message-Id: <1403963313-8895-1-git-send-email-fabf@skynet.be>
 X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Fix checkpatch warning:
-WARNING: debugfs_remove(NULL) is safe this check is probably not required
+WARNING: debugfs_remove_recursive(NULL) is safe this check is probably not required
 
-Cc: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-input@vger.kernel.org
+Cc: Kevin Hilman <khilman@kernel.org>
+Cc: Nishanth Menon <nm@ti.com>
+Cc: linux-pm@vger.kernel.org
 Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- drivers/hid/hid-picolcd_debugfs.c | 9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/hid/hid-picolcd_debugfs.c b/drivers/hid/hid-picolcd_debugfs.c
-index 024cdf3..3c13af6 100644
---- a/drivers/hid/hid-picolcd_debugfs.c
-+++ b/drivers/hid/hid-picolcd_debugfs.c
-@@ -883,16 +883,13 @@ void picolcd_exit_devfs(struct picolcd_data *data)
+V2:
+	-Subject update (suggested by Nishanth Menon)
+	-Blank line before debugfs_remove not after
+
+ drivers/power/avs/smartreflex.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/drivers/power/avs/smartreflex.c b/drivers/power/avs/smartreflex.c
+index db9973b..ed67616 100644
+--- a/drivers/power/avs/smartreflex.c
++++ b/drivers/power/avs/smartreflex.c
+@@ -1001,9 +1001,8 @@ static int omap_sr_remove(struct platform_device *pdev)
  
- 	dent = data->debug_reset;
- 	data->debug_reset = NULL;
--	if (dent)
--		debugfs_remove(dent);
-+	debugfs_remove(dent);
- 	dent = data->debug_eeprom;
- 	data->debug_eeprom = NULL;
--	if (dent)
--		debugfs_remove(dent);
-+	debugfs_remove(dent);
- 	dent = data->debug_flash;
- 	data->debug_flash = NULL;
--	if (dent)
--		debugfs_remove(dent);
-+	debugfs_remove(dent);
- 	mutex_destroy(&data->mutex_flash);
- }
+ 	if (sr_info->autocomp_active)
+ 		sr_stop_vddautocomp(sr_info);
+-	if (sr_info->dbg_dir)
+-		debugfs_remove_recursive(sr_info->dbg_dir);
  
++	debugfs_remove_recursive(sr_info->dbg_dir);
+ 	pm_runtime_disable(&pdev->dev);
+ 	list_del(&sr_info->node);
+ 	return 0;
 -- 
 1.8.4.5
 
