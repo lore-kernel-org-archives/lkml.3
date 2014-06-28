@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756516AbaF1SLt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:11:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54255 "EHLO
+	id S1751634AbaF1RwL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:52:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54233 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754308AbaF1RwM (ORCPT
+	with ESMTP id S1755960AbaF1RwF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:52:12 -0400
+	Sat, 28 Jun 2014 13:52:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Aleksander Morgado <aleksander@aleksander.es>,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.15 060/139] usb: qcserial: add additional Sierra Wireless QMI devices
-Date: Sat, 28 Jun 2014 10:47:01 -0700
-Message-Id: <20140628174608.172029845@linuxfoundation.org>
+        Thomas Gleixner <tglx@linutronix.de>, Brad Mouring <bmouring@ni.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH 3.15 071/139] rtmutex: Detect changes in the pi lock chain
+Date: Sat, 28 Jun 2014 10:47:12 -0700
+Message-Id: <20140628174608.683248420@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -29,59 +30,297 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aleksander Morgado <aleksander@aleksander.es>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 0ce5fb58564fd85aa8fd2d24209900e2e845317b upstream.
+commit 82084984383babe728e6e3c9a8e5c46278091315 upstream.
 
-A set of new VID/PIDs retrieved from the out-of-tree GobiNet/GobiSerial
-Sierra Wireless drivers.
+When we walk the lock chain, we drop all locks after each step. So the
+lock chain can change under us before we reacquire the locks. That's
+harmless in principle as we just follow the wrong lock path. But it
+can lead to a false positive in the dead lock detection logic:
 
-Signed-off-by: Aleksander Morgado <aleksander@aleksander.es>
-Link: http://marc.info/?l=linux-usb&m=140136310027293&w=2
-Cc: <stable@vger.kernel.org>	# backport in link above
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+T0 holds L0
+T0 blocks on L1 held by T1
+T1 blocks on L2 held by T2
+T2 blocks on L3 held by T3
+T4 blocks on L4 held by T4
+
+Now we walk the chain
+
+lock T1 -> lock L2 -> adjust L2 -> unlock T1 ->
+     lock T2 ->  adjust T2 ->  drop locks
+
+T2 times out and blocks on L0
+
+Now we continue:
+
+lock T2 -> lock L0 -> deadlock detected, but it's not a deadlock at all.
+
+Brad tried to work around that in the deadlock detection logic itself,
+but the more I looked at it the less I liked it, because it's crystal
+ball magic after the fact.
+
+We actually can detect a chain change very simple:
+
+lock T1 -> lock L2 -> adjust L2 -> unlock T1 -> lock T2 -> adjust T2 ->
+
+     next_lock = T2->pi_blocked_on->lock;
+
+drop locks
+
+T2 times out and blocks on L0
+
+Now we continue:
+
+lock T2 ->
+
+     if (next_lock != T2->pi_blocked_on->lock)
+     	   return;
+
+So if we detect that T2 is now blocked on a different lock we stop the
+chain walk. That's also correct in the following scenario:
+
+lock T1 -> lock L2 -> adjust L2 -> unlock T1 -> lock T2 -> adjust T2 ->
+
+     next_lock = T2->pi_blocked_on->lock;
+
+drop locks
+
+T3 times out and drops L3
+T2 acquires L3 and blocks on L4 now
+
+Now we continue:
+
+lock T2 ->
+
+     if (next_lock != T2->pi_blocked_on->lock)
+     	   return;
+
+We don't have to follow up the chain at that point, because T2
+propagated our priority up to T4 already.
+
+[ Folded a cleanup patch from peterz ]
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reported-by: Brad Mouring <bmouring@ni.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20140605152801.930031935@linutronix.de
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/qcserial.c |   18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+ kernel/locking/rtmutex.c |   95 +++++++++++++++++++++++++++++++++++------------
+ 1 file changed, 71 insertions(+), 24 deletions(-)
 
---- a/drivers/usb/serial/qcserial.c
-+++ b/drivers/usb/serial/qcserial.c
-@@ -145,15 +145,33 @@ static const struct usb_device_id id_tab
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x901f, 0)},	/* Sierra Wireless EM7355 Device Management */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x901f, 2)},	/* Sierra Wireless EM7355 NMEA */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x901f, 3)},	/* Sierra Wireless EM7355 Modem */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9040, 0)},	/* Sierra Wireless Modem Device Management */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9040, 2)},	/* Sierra Wireless Modem NMEA */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9040, 3)},	/* Sierra Wireless Modem Modem */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9041, 0)},	/* Sierra Wireless MC7305/MC7355 Device Management */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9041, 2)},	/* Sierra Wireless MC7305/MC7355 NMEA */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9041, 3)},	/* Sierra Wireless MC7305/MC7355 Modem */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 0)},	/* Netgear AirCard 340U Device Management */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 2)},	/* Netgear AirCard 340U NMEA */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 3)},	/* Netgear AirCard 340U Modem */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9053, 0)},	/* Sierra Wireless Modem Device Management */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9053, 2)},	/* Sierra Wireless Modem NMEA */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9053, 3)},	/* Sierra Wireless Modem Modem */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9054, 0)},	/* Sierra Wireless Modem Device Management */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9054, 2)},	/* Sierra Wireless Modem NMEA */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9054, 3)},	/* Sierra Wireless Modem Modem */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9055, 0)},	/* Netgear AirCard 341U Device Management */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9055, 2)},	/* Netgear AirCard 341U NMEA */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9055, 3)},	/* Netgear AirCard 341U Modem */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9056, 0)},	/* Sierra Wireless Modem Device Management */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9056, 2)},	/* Sierra Wireless Modem NMEA */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9056, 3)},	/* Sierra Wireless Modem Modem */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9060, 0)},	/* Sierra Wireless Modem Device Management */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9060, 2)},	/* Sierra Wireless Modem NMEA */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9060, 3)},	/* Sierra Wireless Modem Modem */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9061, 0)},	/* Sierra Wireless Modem Device Management */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9061, 2)},	/* Sierra Wireless Modem NMEA */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9061, 3)},	/* Sierra Wireless Modem Modem */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 0)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card Device Management */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 2)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card NMEA */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 3)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card Modem */
+--- a/kernel/locking/rtmutex.c
++++ b/kernel/locking/rtmutex.c
+@@ -260,27 +260,36 @@ static void rt_mutex_adjust_prio(struct
+  */
+ int max_lock_depth = 1024;
+ 
++static inline struct rt_mutex *task_blocked_on_lock(struct task_struct *p)
++{
++	return p->pi_blocked_on ? p->pi_blocked_on->lock : NULL;
++}
++
+ /*
+  * Adjust the priority chain. Also used for deadlock detection.
+  * Decreases task's usage by one - may thus free the task.
+  *
+- * @task: the task owning the mutex (owner) for which a chain walk is probably
+- *	  needed
++ * @task:	the task owning the mutex (owner) for which a chain walk is
++ *		probably needed
+  * @deadlock_detect: do we have to carry out deadlock detection?
+- * @orig_lock: the mutex (can be NULL if we are walking the chain to recheck
+- * 	       things for a task that has just got its priority adjusted, and
+- *	       is waiting on a mutex)
++ * @orig_lock:	the mutex (can be NULL if we are walking the chain to recheck
++ *		things for a task that has just got its priority adjusted, and
++ *		is waiting on a mutex)
++ * @next_lock:	the mutex on which the owner of @orig_lock was blocked before
++ *		we dropped its pi_lock. Is never dereferenced, only used for
++ *		comparison to detect lock chain changes.
+  * @orig_waiter: rt_mutex_waiter struct for the task that has just donated
+- *		 its priority to the mutex owner (can be NULL in the case
+- *		 depicted above or if the top waiter is gone away and we are
+- *		 actually deboosting the owner)
+- * @top_task: the current top waiter
++ *		its priority to the mutex owner (can be NULL in the case
++ *		depicted above or if the top waiter is gone away and we are
++ *		actually deboosting the owner)
++ * @top_task:	the current top waiter
+  *
+  * Returns 0 or -EDEADLK.
+  */
+ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
+ 				      int deadlock_detect,
+ 				      struct rt_mutex *orig_lock,
++				      struct rt_mutex *next_lock,
+ 				      struct rt_mutex_waiter *orig_waiter,
+ 				      struct task_struct *top_task)
+ {
+@@ -339,6 +348,18 @@ static int rt_mutex_adjust_prio_chain(st
+ 		goto out_unlock_pi;
+ 
+ 	/*
++	 * We dropped all locks after taking a refcount on @task, so
++	 * the task might have moved on in the lock chain or even left
++	 * the chain completely and blocks now on an unrelated lock or
++	 * on @orig_lock.
++	 *
++	 * We stored the lock on which @task was blocked in @next_lock,
++	 * so we can detect the chain change.
++	 */
++	if (next_lock != waiter->lock)
++		goto out_unlock_pi;
++
++	/*
+ 	 * Drop out, when the task has no waiters. Note,
+ 	 * top_waiter can be NULL, when we are in the deboosting
+ 	 * mode!
+@@ -422,11 +443,26 @@ static int rt_mutex_adjust_prio_chain(st
+ 		__rt_mutex_adjust_prio(task);
+ 	}
+ 
++	/*
++	 * Check whether the task which owns the current lock is pi
++	 * blocked itself. If yes we store a pointer to the lock for
++	 * the lock chain change detection above. After we dropped
++	 * task->pi_lock next_lock cannot be dereferenced anymore.
++	 */
++	next_lock = task_blocked_on_lock(task);
++
+ 	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
+ 
+ 	top_waiter = rt_mutex_top_waiter(lock);
+ 	raw_spin_unlock(&lock->wait_lock);
+ 
++	/*
++	 * We reached the end of the lock chain. Stop right here. No
++	 * point to go back just to figure that out.
++	 */
++	if (!next_lock)
++		goto out_put_task;
++
+ 	if (!detect_deadlock && waiter != top_waiter)
+ 		goto out_put_task;
+ 
+@@ -536,8 +572,9 @@ static int task_blocks_on_rt_mutex(struc
+ {
+ 	struct task_struct *owner = rt_mutex_owner(lock);
+ 	struct rt_mutex_waiter *top_waiter = waiter;
+-	unsigned long flags;
++	struct rt_mutex *next_lock;
+ 	int chain_walk = 0, res;
++	unsigned long flags;
+ 
+ 	/*
+ 	 * Early deadlock detection. We really don't want the task to
+@@ -569,20 +606,28 @@ static int task_blocks_on_rt_mutex(struc
+ 	if (!owner)
+ 		return 0;
+ 
++	raw_spin_lock_irqsave(&owner->pi_lock, flags);
+ 	if (waiter == rt_mutex_top_waiter(lock)) {
+-		raw_spin_lock_irqsave(&owner->pi_lock, flags);
+ 		rt_mutex_dequeue_pi(owner, top_waiter);
+ 		rt_mutex_enqueue_pi(owner, waiter);
+ 
+ 		__rt_mutex_adjust_prio(owner);
+ 		if (owner->pi_blocked_on)
+ 			chain_walk = 1;
+-		raw_spin_unlock_irqrestore(&owner->pi_lock, flags);
+-	}
+-	else if (debug_rt_mutex_detect_deadlock(waiter, detect_deadlock))
++	} else if (debug_rt_mutex_detect_deadlock(waiter, detect_deadlock)) {
+ 		chain_walk = 1;
++	}
+ 
+-	if (!chain_walk)
++	/* Store the lock on which owner is blocked or NULL */
++	next_lock = task_blocked_on_lock(owner);
++
++	raw_spin_unlock_irqrestore(&owner->pi_lock, flags);
++	/*
++	 * Even if full deadlock detection is on, if the owner is not
++	 * blocked itself, we can avoid finding this out in the chain
++	 * walk.
++	 */
++	if (!chain_walk || !next_lock)
+ 		return 0;
+ 
+ 	/*
+@@ -594,8 +639,8 @@ static int task_blocks_on_rt_mutex(struc
+ 
+ 	raw_spin_unlock(&lock->wait_lock);
+ 
+-	res = rt_mutex_adjust_prio_chain(owner, detect_deadlock, lock, waiter,
+-					 task);
++	res = rt_mutex_adjust_prio_chain(owner, detect_deadlock, lock,
++					 next_lock, waiter, task);
+ 
+ 	raw_spin_lock(&lock->wait_lock);
+ 
+@@ -644,8 +689,8 @@ static void remove_waiter(struct rt_mute
+ {
+ 	int first = (waiter == rt_mutex_top_waiter(lock));
+ 	struct task_struct *owner = rt_mutex_owner(lock);
++	struct rt_mutex *next_lock = NULL;
+ 	unsigned long flags;
+-	int chain_walk = 0;
+ 
+ 	raw_spin_lock_irqsave(&current->pi_lock, flags);
+ 	rt_mutex_dequeue(lock, waiter);
+@@ -669,13 +714,13 @@ static void remove_waiter(struct rt_mute
+ 		}
+ 		__rt_mutex_adjust_prio(owner);
+ 
+-		if (owner->pi_blocked_on)
+-			chain_walk = 1;
++		/* Store the lock on which owner is blocked or NULL */
++		next_lock = task_blocked_on_lock(owner);
+ 
+ 		raw_spin_unlock_irqrestore(&owner->pi_lock, flags);
+ 	}
+ 
+-	if (!chain_walk)
++	if (!next_lock)
+ 		return;
+ 
+ 	/* gets dropped in rt_mutex_adjust_prio_chain()! */
+@@ -683,7 +728,7 @@ static void remove_waiter(struct rt_mute
+ 
+ 	raw_spin_unlock(&lock->wait_lock);
+ 
+-	rt_mutex_adjust_prio_chain(owner, 0, lock, NULL, current);
++	rt_mutex_adjust_prio_chain(owner, 0, lock, next_lock, NULL, current);
+ 
+ 	raw_spin_lock(&lock->wait_lock);
+ }
+@@ -696,6 +741,7 @@ static void remove_waiter(struct rt_mute
+ void rt_mutex_adjust_pi(struct task_struct *task)
+ {
+ 	struct rt_mutex_waiter *waiter;
++	struct rt_mutex *next_lock;
+ 	unsigned long flags;
+ 
+ 	raw_spin_lock_irqsave(&task->pi_lock, flags);
+@@ -706,12 +752,13 @@ void rt_mutex_adjust_pi(struct task_stru
+ 		raw_spin_unlock_irqrestore(&task->pi_lock, flags);
+ 		return;
+ 	}
+-
++	next_lock = waiter->lock;
+ 	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
+ 
+ 	/* gets dropped in rt_mutex_adjust_prio_chain()! */
+ 	get_task_struct(task);
+-	rt_mutex_adjust_prio_chain(task, 0, NULL, NULL, task);
++
++	rt_mutex_adjust_prio_chain(task, 0, NULL, next_lock, NULL, task);
+ }
+ 
+ /**
 
 
