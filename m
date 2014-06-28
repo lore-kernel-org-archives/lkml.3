@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932339AbaF1RwZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:52:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54296 "EHLO
+	id S1756437AbaF1SKD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:10:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54284 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932320AbaF1RwW (ORCPT
+	with ESMTP id S932311AbaF1RwU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:52:22 -0400
+	Sat, 28 Jun 2014 13:52:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hedberg <johan.hedberg@intel.com>,
-        Marcel Holtmann <marcel@holtmann.org>
-Subject: [PATCH 3.15 086/139] Bluetooth: Fix missing check for FIPS security level
-Date: Sat, 28 Jun 2014 10:47:27 -0700
-Message-Id: <20140628174609.361212277@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.15 057/139] USB: sierra: fix urb and memory leak on disconnect
+Date: Sat, 28 Jun 2014 10:46:58 -0700
+Message-Id: <20140628174608.041230200@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -29,34 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hedberg <johan.hedberg@intel.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit f3fb0b58c85666f73139963a7a04d7878f3d22c9 upstream.
+commit 014333f77c0b71123d6ef7d31a9724e0699c9548 upstream.
 
-When checking whether a legacy link key provides at least HIGH security
-level we also need to check for FIPS level which is one step above HIGH.
-This patch fixes a missing check in the hci_link_key_request_evt()
-function.
+The delayed-write queue was never emptied on disconnect, something which
+would lead to leaked urbs and transfer buffers if the device is
+disconnected before being runtime resumed due to a write.
 
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+Fixes: e6929a9020ac ("USB: support for autosuspend in sierra while
+online")
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/hci_event.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/serial/sierra.c |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
---- a/net/bluetooth/hci_event.c
-+++ b/net/bluetooth/hci_event.c
-@@ -2958,7 +2958,8 @@ static void hci_link_key_request_evt(str
- 		}
+--- a/drivers/usb/serial/sierra.c
++++ b/drivers/usb/serial/sierra.c
+@@ -759,6 +759,7 @@ static void sierra_close(struct usb_seri
+ 	struct usb_serial *serial = port->serial;
+ 	struct sierra_port_private *portdata;
+ 	struct sierra_intf_private *intfdata = port->serial->private;
++	struct urb *urb;
  
- 		if (key->type == HCI_LK_COMBINATION && key->pin_len < 16 &&
--		    conn->pending_sec_level == BT_SECURITY_HIGH) {
-+		    (conn->pending_sec_level == BT_SECURITY_HIGH ||
-+		     conn->pending_sec_level == BT_SECURITY_FIPS)) {
- 			BT_DBG("%s ignoring key unauthenticated for high security",
- 			       hdev->name);
- 			goto not_found;
+ 	portdata = usb_get_serial_port_data(port);
+ 
+@@ -780,6 +781,18 @@ static void sierra_close(struct usb_seri
+ 	portdata->opened = 0;
+ 	spin_unlock_irq(&intfdata->susp_lock);
+ 
++	for (;;) {
++		urb = usb_get_from_anchor(&portdata->delayed);
++		if (!urb)
++			break;
++		kfree(urb->transfer_buffer);
++		usb_free_urb(urb);
++		usb_autopm_put_interface_async(serial->interface);
++		spin_lock(&portdata->lock);
++		portdata->outstanding_urbs--;
++		spin_unlock(&portdata->lock);
++	}
++
+ 	sierra_stop_rx_urbs(port);
+ 	for (i = 0; i < portdata->num_in_urbs; i++) {
+ 		sierra_release_urb(portdata->in_urbs[i]);
 
 
