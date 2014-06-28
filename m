@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964782AbaF1Rxc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:53:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54533 "EHLO
+	id S964858AbaF1Ry2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:54:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54571 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756248AbaF1Rx0 (ORCPT
+	with ESMTP id S964779AbaF1Rxc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:53:26 -0400
+	Sat, 28 Jun 2014 13:53:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wang Shilong <wangsl.fnst@cn.fujitsu.com>,
-        David Sterba <dsterba@suse.cz>, Chris Mason <clm@fb.com>
-Subject: [PATCH 3.15 120/139] Btrfs: make sure there are not any read requests before stopping workers
-Date: Sat, 28 Jun 2014 10:48:01 -0700
-Message-Id: <20140628174610.889124138@linuxfoundation.org>
+        Fathi Boudra <fathi.boudra@linaro.org>,
+        Ben Hutchings <ben@decadent.org.uk>, Michal Marek <mmarek@suse.cz>
+Subject: [PATCH 3.15 138/139] builddeb: use $OBJCOPY variable instead of objcopy
+Date: Sat, 28 Jun 2014 10:48:19 -0700
+Message-Id: <20140628174611.696734944@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -29,44 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wang Shilong <wangsl.fnst@cn.fujitsu.com>
+From: Fathi Boudra <fathi.boudra@linaro.org>
 
-commit de348ee022175401e77d7662b7ca6e231a94e3fd upstream.
+commit 6b4a144a92ab81a1f45fb9b12aebaaaee0d08120 upstream.
 
-In close_ctree(), after we have stopped all workers,there maybe still
-some read requests(for example readahead) to submit and this *maybe* trigger
-an oops that user reported before:
+In cross-build environment, we expect to use the cross-compiler objcopy
+instead of the host objcopy.
 
-kernel BUG at fs/btrfs/async-thread.c:619!
+It fixes following build failures:
+objcopy --only-keep-debug lib/modules/3.14/kernel/net/ipv6/xfrm6_mode_tunnel.ko /srv/build/linux/debian/dbgtmp/usr/lib/debug/lib/modules/3.14/kernel/net/ipv6/xfrm6_mode_tunnel.ko
+objcopy: Unable to recognise the format of the input file `lib/modules/3.14/kernel/net/ipv6/xfrm6_mode_tunnel.ko'
 
-By hacking codes, i can reproduce this problem with one cpu available.
-We fix this potential problem by invalidating all btree inode pages before
-stopping all workers.
-
-Thanks to Miao for pointing out this problem.
-
-Signed-off-by: Wang Shilong <wangsl.fnst@cn.fujitsu.com>
-Reviewed-by: David Sterba <dsterba@suse.cz>
-Signed-off-by: Chris Mason <clm@fb.com>
+Signed-off-by: Fathi Boudra <fathi.boudra@linaro.org>
+Fixes: 810e843746b7 ('deb-pkg: split debug symbols in their own package')
+Reviewed-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/disk-io.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ scripts/package/builddeb |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/fs/btrfs/disk-io.c
-+++ b/fs/btrfs/disk-io.c
-@@ -3633,6 +3633,11 @@ int close_ctree(struct btrfs_root *root)
- 
- 	btrfs_free_block_groups(fs_info);
- 
-+	/*
-+	 * we must make sure there is not any read request to
-+	 * submit after we stopping all workers.
-+	 */
-+	invalidate_inode_pages2(fs_info->btree_inode->i_mapping);
- 	btrfs_stop_all_workers(fs_info);
- 
- 	free_root_pointers(fs_info, 1);
+--- a/scripts/package/builddeb
++++ b/scripts/package/builddeb
+@@ -155,11 +155,11 @@ if grep -q '^CONFIG_MODULES=y' $KCONFIG_
+ 			for module in $(find lib/modules/ -name *.ko); do
+ 				mkdir -p $(dirname $dbg_dir/usr/lib/debug/$module)
+ 				# only keep debug symbols in the debug file
+-				objcopy --only-keep-debug $module $dbg_dir/usr/lib/debug/$module
++				$OBJCOPY --only-keep-debug $module $dbg_dir/usr/lib/debug/$module
+ 				# strip original module from debug symbols
+-				objcopy --strip-debug $module
++				$OBJCOPY --strip-debug $module
+ 				# then add a link to those
+-				objcopy --add-gnu-debuglink=$dbg_dir/usr/lib/debug/$module $module
++				$OBJCOPY --add-gnu-debuglink=$dbg_dir/usr/lib/debug/$module $module
+ 			done
+ 		)
+ 	fi
 
 
