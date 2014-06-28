@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754232AbaF1RsC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:48:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52937 "EHLO
+	id S1757748AbaF1TLU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 15:11:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52973 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754125AbaF1Rr5 (ORCPT
+	with ESMTP id S1754243AbaF1RsE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:47:57 -0400
+	Sat, 28 Jun 2014 13:48:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Jones <davej@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 17/77] mm: fix sleeping function warning from __put_anon_vma
-Date: Sat, 28 Jun 2014 10:46:10 -0700
-Message-Id: <20140628174522.483274517@linuxfoundation.org>
+        Simon Wood <simon@mungewell.org>, Kees Cook <keescook@chromium.org>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 3.10 18/77] HID: core: fix validation of report id 0
+Date: Sat, 28 Jun 2014 10:46:11 -0700
+Message-Id: <20140628174522.527391342@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174521.691276402@linuxfoundation.org>
 References: <20140628174521.691276402@linuxfoundation.org>
@@ -31,66 +30,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hugh Dickins <hughd@google.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit 7f39dda9d86fb4f4f17af0de170decf125726f8c upstream.
+commit 1b15d2e5b8077670b1e6a33250a0d9577efff4a5 upstream.
 
-Trinity reports BUG:
+Some drivers use the first HID report in the list instead of using an
+index. In these cases, validation uses ID 0, which was supposed to mean
+"first known report". This fixes the problem, which was causing at least
+the lgff family of devices to stop working since hid_validate_values
+was being called with ID 0, but the devices used single numbered IDs
+for their reports:
 
-  sleeping function called from invalid context at kernel/locking/rwsem.c:47
-  in_atomic(): 0, irqs_disabled(): 0, pid: 5787, name: trinity-c27
+0x05, 0x01,         /*  Usage Page (Desktop),                   */
+0x09, 0x05,         /*  Usage (Gamepad),                        */
+0xA1, 0x01,         /*  Collection (Application),               */
+0xA1, 0x02,         /*      Collection (Logical),               */
+0x85, 0x01,         /*          Report ID (1),                  */
+...
 
-__might_sleep < down_write < __put_anon_vma < page_get_anon_vma <
-migrate_pages < compact_zone < compact_zone_order < try_to_compact_pages ..
-
-Right, since conversion to mutex then rwsem, we should not put_anon_vma()
-from inside an rcu_read_lock()ed section: fix the two places that did so.
-And add might_sleep() to anon_vma_free(), as suggested by Peter Zijlstra.
-
-Fixes: 88c22088bf23 ("mm: optimize page_lock_anon_vma() fast-path")
-Reported-by: Dave Jones <davej@redhat.com>
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Simon Wood <simon@mungewell.org>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/rmap.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/hid/hid-core.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -103,6 +103,7 @@ static inline void anon_vma_free(struct
- 	 * LOCK should suffice since the actual taking of the lock must
- 	 * happen _before_ what follows.
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -796,7 +796,17 @@ struct hid_report *hid_validate_values(s
+ 	 * ->numbered being checked, which may not always be the case when
+ 	 * drivers go to access report values.
  	 */
-+	might_sleep();
- 	if (rwsem_is_locked(&anon_vma->root->rwsem)) {
- 		anon_vma_lock_write(anon_vma);
- 		anon_vma_unlock_write(anon_vma);
-@@ -426,8 +427,9 @@ struct anon_vma *page_get_anon_vma(struc
- 	 * above cannot corrupt).
- 	 */
- 	if (!page_mapped(page)) {
-+		rcu_read_unlock();
- 		put_anon_vma(anon_vma);
--		anon_vma = NULL;
-+		return NULL;
- 	}
- out:
- 	rcu_read_unlock();
-@@ -477,9 +479,9 @@ struct anon_vma *page_lock_anon_vma_read
- 	}
- 
- 	if (!page_mapped(page)) {
-+		rcu_read_unlock();
- 		put_anon_vma(anon_vma);
--		anon_vma = NULL;
--		goto out;
-+		return NULL;
- 	}
- 
- 	/* we pinned the anon_vma, its safe to sleep */
+-	report = hid->report_enum[type].report_id_hash[id];
++	if (id == 0) {
++		/*
++		 * Validating on id 0 means we should examine the first
++		 * report in the list.
++		 */
++		report = list_entry(
++				hid->report_enum[type].report_list.next,
++				struct hid_report, list);
++	} else {
++		report = hid->report_enum[type].report_id_hash[id];
++	}
+ 	if (!report) {
+ 		hid_err(hid, "missing %s %u\n", hid_report_names[type], id);
+ 		return NULL;
 
 
