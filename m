@@ -1,69 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752804AbaF1PVS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 11:21:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52082 "EHLO
+	id S1752936AbaF1PX3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 11:23:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52093 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751058AbaF1PVR (ORCPT
+	with ESMTP id S1751058AbaF1PX2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 11:21:17 -0400
-Date: Sat, 28 Jun 2014 11:21:04 -0400
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC net-next 07/14] bpf: expand BPF syscall with program
- load/unload
-Message-ID: <20140628152104.GB29548@kroah.com>
-References: <1403913966-4927-1-git-send-email-ast@plumgrid.com>
- <1403913966-4927-8-git-send-email-ast@plumgrid.com>
- <CALCETrXDR1LVmbigTicBiddgvcucM1dGk1R7rxdJyBCvGEBQMw@mail.gmail.com>
- <CAMEtUuywNHVcZ__296NzXK7RPXUBOf7gNQY9JFx0a9PV0Se+wA@mail.gmail.com>
- <CALCETrXQ60J+UqafHRKPbgQ37zhstW+E8xAponWs7AQ-DCgaWA@mail.gmail.com>
- <CAMEtUuwmxgrGMigmh1vZ7qCh9qB9ph9uFbPmVmmbqZvC5N9WyA@mail.gmail.com>
+	Sat, 28 Jun 2014 11:23:28 -0400
+Date: Sat, 28 Jun 2014 11:23:16 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guillaume Morin <guillaume@morinfr.org>
+Cc: Lidza Louina <lidza.louina@gmail.com>, Mark Hounschell <markh@compro.net>,
+        devel@driverdev.osuosl.org, driverdev-devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: dgnc_driver.c: code style fixes
+Message-ID: <20140628152316.GC29548@kroah.com>
+References: <20010f834ddc542235b3bcac65caed31c62f7cbb.1403930174.git.guillaume@morinfr.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMEtUuwmxgrGMigmh1vZ7qCh9qB9ph9uFbPmVmmbqZvC5N9WyA@mail.gmail.com>
+In-Reply-To: <20010f834ddc542235b3bcac65caed31c62f7cbb.1403930174.git.guillaume@morinfr.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 28, 2014 at 12:26:14AM -0700, Alexei Starovoitov wrote:
-> On Fri, Jun 27, 2014 at 11:28 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> > On Fri, Jun 27, 2014 at 11:12 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
-> > If you want to add GPL-only functions in the future, that would be one
-> > thing.  But if someone writes a nice eBPF compiler, and someone else
-> > writes a little program that filters on network packets, I see no
-> > reason to claim that the little program is a derivative work of the
-> > kernel and therefore must be GPL.
+On Sat, Jun 28, 2014 at 06:48:48AM +0200, Guillaume Morin wrote:
+> From: Guillaume Morin <guillaume@morinfr.org>
 > 
-> I think we have to draw a line somewhere. Say, tomorrow I want
-> to modify libpcap to emit eBPF based on existing tcpdump syntax.
-> Would it mean that tcpdump filter strings are GPLed? Definitely not,
-> since they existed before and can function without new libpcap.
-> But if I write a new packet filtering program in C, compile it
-> using LLVM->eBPF and call into in-kernel helper functions
-> (like bpf_map_lookup_elem()),  I think it's exactly the derivative work.
-> It's analogous to kernel modules. If module wants to call
-> export_symbol_gpl() functions, it needs to be GPLed. Here all helper
-> functions are GPL. So we just have a blank check for eBPF program.
+> Simple code style fixes
 
-I agree, these eBFP programs should be GPL-compatible licensed as well.
+What exactly are those code style fixes?  Please be explicit.
 
 greg k-h
