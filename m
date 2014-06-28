@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756766AbaF1Siw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:38:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53596 "EHLO
+	id S932149AbaF1RuX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:50:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53551 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751580AbaF1Ru3 (ORCPT
+	with ESMTP id S932100AbaF1RuS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:50:29 -0400
+	Sat, 28 Jun 2014 13:50:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sagi Grimberg <sagig@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.14 074/110] Target/iser: Improve cm events handling
-Date: Sat, 28 Jun 2014 10:47:11 -0700
-Message-Id: <20140628174549.938429771@linuxfoundation.org>
+        Aleksander Morgado <aleksander@aleksander.es>,
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.14 053/110] usb: qcserial: add additional Sierra Wireless QMI devices
+Date: Sat, 28 Jun 2014 10:46:50 -0700
+Message-Id: <20140628174548.780756722@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -29,113 +29,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sagi Grimberg <sagig@mellanox.com>
+From: Aleksander Morgado <aleksander@aleksander.es>
 
-commit 88c4015fda6d014392f76d3b1688347950d7a12d upstream.
+commit 0ce5fb58564fd85aa8fd2d24209900e2e845317b upstream.
 
-There are 4 RDMA_CM events that all basically mean that
-the user should teardown the IB connection:
-- DISCONNECTED
-- ADDR_CHANGE
-- DEVICE_REMOVAL
-- TIMEWAIT_EXIT
+A set of new VID/PIDs retrieved from the out-of-tree GobiNet/GobiSerial
+Sierra Wireless drivers.
 
-Only in DISCONNECTED/ADDR_CHANGE it makes sense to
-call rdma_disconnect (send DREQ/DREP to our initiator).
-So we keep the same teardown handler for all of them
-but only indicate calling rdma_disconnect for the relevant
-events.
-
-This patch also removes redundant debug prints for each single
-event.
-
-v2 changes:
- - Call isert_disconnected_handler() for DEVICE_REMOVAL (Or + Sag)
-
-Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Aleksander Morgado <aleksander@aleksander.es>
+Link: http://marc.info/?l=linux-usb&m=140136310027293&w=2
+Cc: <stable@vger.kernel.org>	# backport in link above
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/isert/ib_isert.c |   26 ++++++++++++++------------
- drivers/infiniband/ulp/isert/ib_isert.h |    1 +
- 2 files changed, 15 insertions(+), 12 deletions(-)
+ drivers/usb/serial/qcserial.c |   18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -706,8 +706,10 @@ isert_disconnect_work(struct work_struct
- 		return;
- 	}
- 
--	/* Send DREQ/DREP towards our initiator */
--	rdma_disconnect(isert_conn->conn_cm_id);
-+	if (isert_conn->disconnect) {
-+		/* Send DREQ/DREP towards our initiator */
-+		rdma_disconnect(isert_conn->conn_cm_id);
-+	}
- 
- 	mutex_unlock(&isert_conn->conn_mutex);
- 
-@@ -717,10 +719,11 @@ wake_up:
- }
- 
- static void
--isert_disconnected_handler(struct rdma_cm_id *cma_id)
-+isert_disconnected_handler(struct rdma_cm_id *cma_id, bool disconnect)
- {
- 	struct isert_conn *isert_conn = (struct isert_conn *)cma_id->context;
- 
-+	isert_conn->disconnect = disconnect;
- 	INIT_WORK(&isert_conn->conn_logout_work, isert_disconnect_work);
- 	schedule_work(&isert_conn->conn_logout_work);
- }
-@@ -729,29 +732,28 @@ static int
- isert_cma_handler(struct rdma_cm_id *cma_id, struct rdma_cm_event *event)
- {
- 	int ret = 0;
-+	bool disconnect = false;
- 
- 	pr_debug("isert_cma_handler: event %d status %d conn %p id %p\n",
- 		 event->event, event->status, cma_id->context, cma_id);
- 
- 	switch (event->event) {
- 	case RDMA_CM_EVENT_CONNECT_REQUEST:
--		pr_debug("RDMA_CM_EVENT_CONNECT_REQUEST: >>>>>>>>>>>>>>>\n");
- 		ret = isert_connect_request(cma_id, event);
- 		break;
- 	case RDMA_CM_EVENT_ESTABLISHED:
--		pr_debug("RDMA_CM_EVENT_ESTABLISHED >>>>>>>>>>>>>>\n");
- 		isert_connected_handler(cma_id);
- 		break;
--	case RDMA_CM_EVENT_DISCONNECTED:
--		pr_debug("RDMA_CM_EVENT_DISCONNECTED: >>>>>>>>>>>>>>\n");
--		isert_disconnected_handler(cma_id);
--		break;
--	case RDMA_CM_EVENT_DEVICE_REMOVAL:
--	case RDMA_CM_EVENT_ADDR_CHANGE:
-+	case RDMA_CM_EVENT_ADDR_CHANGE:    /* FALLTHRU */
-+	case RDMA_CM_EVENT_DISCONNECTED:   /* FALLTHRU */
-+	case RDMA_CM_EVENT_DEVICE_REMOVAL: /* FALLTHRU */
-+		disconnect = true;
-+	case RDMA_CM_EVENT_TIMEWAIT_EXIT:  /* FALLTHRU */
-+		isert_disconnected_handler(cma_id, disconnect);
- 		break;
- 	case RDMA_CM_EVENT_CONNECT_ERROR:
- 	default:
--		pr_err("Unknown RDMA CMA event: %d\n", event->event);
-+		pr_err("Unhandled RDMA CMA event: %d\n", event->event);
- 		break;
- 	}
- 
---- a/drivers/infiniband/ulp/isert/ib_isert.h
-+++ b/drivers/infiniband/ulp/isert/ib_isert.h
-@@ -127,6 +127,7 @@ struct isert_conn {
- #define ISERT_COMP_BATCH_COUNT	8
- 	int			conn_comp_batch;
- 	struct llist_head	conn_comp_llist;
-+	bool                    disconnect;
- };
- 
- #define ISERT_MAX_CQ 64
+--- a/drivers/usb/serial/qcserial.c
++++ b/drivers/usb/serial/qcserial.c
+@@ -145,15 +145,33 @@ static const struct usb_device_id id_tab
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x901f, 0)},	/* Sierra Wireless EM7355 Device Management */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x901f, 2)},	/* Sierra Wireless EM7355 NMEA */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x901f, 3)},	/* Sierra Wireless EM7355 Modem */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9040, 0)},	/* Sierra Wireless Modem Device Management */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9040, 2)},	/* Sierra Wireless Modem NMEA */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9040, 3)},	/* Sierra Wireless Modem Modem */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9041, 0)},	/* Sierra Wireless MC7305/MC7355 Device Management */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9041, 2)},	/* Sierra Wireless MC7305/MC7355 NMEA */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9041, 3)},	/* Sierra Wireless MC7305/MC7355 Modem */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 0)},	/* Netgear AirCard 340U Device Management */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 2)},	/* Netgear AirCard 340U NMEA */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 3)},	/* Netgear AirCard 340U Modem */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9053, 0)},	/* Sierra Wireless Modem Device Management */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9053, 2)},	/* Sierra Wireless Modem NMEA */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9053, 3)},	/* Sierra Wireless Modem Modem */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9054, 0)},	/* Sierra Wireless Modem Device Management */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9054, 2)},	/* Sierra Wireless Modem NMEA */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9054, 3)},	/* Sierra Wireless Modem Modem */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9055, 0)},	/* Netgear AirCard 341U Device Management */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9055, 2)},	/* Netgear AirCard 341U NMEA */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9055, 3)},	/* Netgear AirCard 341U Modem */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9056, 0)},	/* Sierra Wireless Modem Device Management */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9056, 2)},	/* Sierra Wireless Modem NMEA */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9056, 3)},	/* Sierra Wireless Modem Modem */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9060, 0)},	/* Sierra Wireless Modem Device Management */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9060, 2)},	/* Sierra Wireless Modem NMEA */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9060, 3)},	/* Sierra Wireless Modem Modem */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9061, 0)},	/* Sierra Wireless Modem Device Management */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9061, 2)},	/* Sierra Wireless Modem NMEA */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9061, 3)},	/* Sierra Wireless Modem Modem */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 0)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card Device Management */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 2)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card NMEA */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 3)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card Modem */
 
 
