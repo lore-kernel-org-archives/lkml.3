@@ -1,103 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753043AbaF1Ner (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 09:34:47 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:34382 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752612AbaF1Nep (ORCPT
+	id S1753119AbaF1NfY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 09:35:24 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:47143 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752515AbaF1NfX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 09:34:45 -0400
-Date: Sat, 28 Jun 2014 14:19:32 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20140628131932.GU2520@sirena.org.uk>
+	Sat, 28 Jun 2014 09:35:23 -0400
+Date: Sat, 28 Jun 2014 19:05:17 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH] procfs: Drop cast
+Message-ID: <20140628133517.GA4786@himangi-Dell>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5FNPeqk0egs0iuvD"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Cookie: Your lucky color has faded.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 92.40.248.217
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [GIT PULL] SPI fixes for v3.16
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch does away with cast on void * and the if as it is unnecessary.
 
---5FNPeqk0egs0iuvD
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The following Coccinelle semantic patch was used for making the change:
 
-The following changes since commit a497c3ba1d97fc69c1e78e7b96435ba8c2cb42ee:
+@r@
+expression x;
+void* e;
+type T;
+identifier f;
+@@
 
-  Linux 3.16-rc2 (2014-06-21 19:02:54 -1000)
+(
+  *((T *)e)
+|
+  ((T *)x)[...]
+|
+  ((T *)x)->f
+|
+- (T *)
+  e
+)
 
-are available in the git repository at:
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+---
+ fs/proc/generic.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/spi.git tags/spi-v3=
-=2E16-rc2
+diff --git a/fs/proc/generic.c b/fs/proc/generic.c
+index b7f268e..f599d43 100644
+--- a/fs/proc/generic.c
++++ b/fs/proc/generic.c
+@@ -372,7 +372,7 @@ struct proc_dir_entry *proc_symlink(const char *name,
+ 	if (ent) {
+ 		ent->data = kmalloc((ent->size=strlen(dest))+1, GFP_KERNEL);
+ 		if (ent->data) {
+-			strcpy((char*)ent->data,dest);
++			strcpy(ent->data, dest);
+ 			if (proc_register(parent, ent) < 0) {
+ 				kfree(ent->data);
+ 				kfree(ent);
+-- 
+1.9.1
 
-for you to fetch changes up to 7216a4183947853f359b41ba1edb5db9b3091acc:
-
-  Merge remote-tracking branches 'spi/fix/pxa2xx', 'spi/fix/qup' and 'spi/f=
-ix/sh-sci' into spi-linus (2014-06-28 14:01:23 +0100)
-
-----------------------------------------------------------------
-
-spi: Fixes for v3.16
-
-A few driver specific fixes, the biggest one being a fix for the newly
-added Qualcomm SPI controller driver to make it not use its internal
-chip select due to hardware bugs, replacing it with GPIOs.
-
-----------------------------------------------------------------
-Andy Gross (2):
-      spi: qup: Fix order of spi_register_master
-      spi: qup: Remove chip select function
-
-Chew, Chiau Ee (1):
-      spi/pxa2xx: fix incorrect SW mode chipselect setting for BayTrail LPS=
-S SPI
-
-J=FCrg Billeter (1):
-      spi: sh-sci: fix use-after-free in sh_sci_spi_remove()
-
-Mark Brown (1):
-      Merge remote-tracking branches 'spi/fix/pxa2xx', 'spi/fix/qup' and 's=
-pi/fix/sh-sci' into spi-linus
-
- .../devicetree/bindings/spi/qcom,spi-qup.txt       |  6 +++
- drivers/spi/spi-pxa2xx.c                           |  8 +++-
- drivers/spi/spi-qup.c                              | 44 +++++++-----------=
-----
- drivers/spi/spi-sh-sci.c                           |  4 +-
- 4 files changed, 27 insertions(+), 35 deletions(-)
-
---5FNPeqk0egs0iuvD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTrsDhAAoJELSic+t+oim9sIEQAIV4ahU3nkNQTtdAZcBiAKHJ
-3KBNiw0fQew9ABJOML8N+P0ibS1JN+tarOoFvcdlzt0gWsb0JbdxoQqYt6rE0HOy
-CjSdWaPLdZI2XqtKAHMEE1/sSQPmlhWJO2QbG3nGzdgvaUm4phrPP9J6bmTLWm4v
-KY8xJ8HMgGN548NrpWFoem8dgq8KxUd808bl1UTIlscQ3kJceOoQsoYwDnCzMmrM
-RNOO8rqLkDRHLk451B548uZGtd1TtWI4VZxCVRdlO/9A+rjeb36MXUZisDPOXSwB
-4LXniXnK437QoFVbnbUY6PISMMpO1k9nD5/3lu7QMX/vjsRqLnVCyJ5VVcYGzXuQ
-6BRQ9qK0dJLnjTUwOYnOfvgzczeKVhTB48fuK+yM33b5BSdG0zMjS2UjzQTRpffk
-XFoBnLpUEuUgRJanRpVm6w7WVqJIk9ef/2d4FzBPJqQKL/XJOB+k7tsgsEej3zOf
-xm9h7veobl3CulccMScb2oaYHjoP0mj7DfOLMiBKURsTs/qMHgFfShIwDzpc0j41
-3jJj3z/jarelcEQp9sSH86G9UNUN9FWULh0vI6VWuE6LD1IIGfzeCWLtr3JGl/+s
-4qxmrp+bLtBdIfG99YRBP5KKjE1UsRmuopGGArzJnkVhnUIiTBH3xjFsHUpeXxTb
-Quk72yjT+WrbgrVG/cmq
-=Br6r
------END PGP SIGNATURE-----
-
---5FNPeqk0egs0iuvD--
