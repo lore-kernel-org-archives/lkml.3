@@ -1,90 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753745AbaF1UEX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 16:04:23 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:48850 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753634AbaF1UEM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 16:04:12 -0400
-Date: Sat, 28 Jun 2014 22:04:10 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
-Cc: Lukas M?rdian <lukas@goldelico.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Marek Belisko <marek@goldelico.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, stern@rowland.harvard.edu
-Subject: Re: [PATCH] gpio_keys, twl4030-pwrbutton: stay awake for 1sec on
- resume
-Message-ID: <20140628200410.GA7561@amd.pavel.ucw.cz>
-References: <1403906118-23517-1-git-send-email-lukas@goldelico.com>
- <20140628170820.GF23634@xo-6d-61-c0.localdomain>
- <BD5D0538-BD03-4CD8-8E12-2344AD7ED669@goldelico.com>
+	id S1753536AbaF1UIN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 16:08:13 -0400
+Received: from mail.eperm.de ([89.247.134.16]:50040 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753354AbaF1UIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Jun 2014 16:08:12 -0400
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: kbuild test robot <fengguang.wu@intel.com>, kbuild@01.org,
+        Dan Carpenter <dan.carpenter@oracle.com>, linux-crypto@vger.kernel.org,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 4/4] DRBG: Call CTR DRBG DF function only once
+Date: Sat, 28 Jun 2014 22:04:25 +0200
+Message-ID: <3742446.V1bYQC64FA@myon.chronox.de>
+User-Agent: KMail/4.12.5 (Linux/3.14.8-200.fc20.x86_64; KDE/4.12.5; x86_64; ; )
+In-Reply-To: <4927386.WYHrRe3NJm@myon.chronox.de>
+References: <4927386.WYHrRe3NJm@myon.chronox.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BD5D0538-BD03-4CD8-8E12-2344AD7ED669@goldelico.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+The CTR DRBG requires the update function to be called twice when
+generating a random number. In both cases, update function must process
+the additional information string by using the DF function. As the DF
+produces the same result in both cases, we can save one invocation of
+the DF function when the first DF function result is reused.
 
-> >> This gives the userspace (Replicant) a chance to fully handle the
-> >> pm_wakeup_event, before autosleep suspends the system alltogether
-> >> again.
-> >> 
-> >> This fixes suspend/resume on the OpenPhoenux GTA04, in combination with
-> >> the Replicant 4.2.2 userspace, which needs to execute this to stay
-> >> awake: 'echo on > /sys/power/state'
-> >> 
-> >> Signed-off-by: Lukas Märdian <lukas@goldelico.com>
-> >> Signed-off-by: H. Nikolaus Schaller <hns@goldelico.com>
-> > 
-> > I'm sorry, but we should not be doing this.
-> > 
-> > You basically put a delay in driver to work around userspace bug.
-> 
-> Do you think it is a user-space bug if the kernel goes to sleep again
-> before giving user space any chance to react to an event?
+The result of the DF function is stored in the scratchpad storage. The
+patch ensures that the scratchpad is not cleared when we want to reuse
+the DF result. For achieving this, the CTR DRBG update function must
+know by whom and in which scenario it is called. This information is
+provided with the reseed parameter to the update function.
 
-Well, who says 1000msec is enough? Some userspace may need
-more. ... for example on PC when you keyboard-handling deamon is
-swapped out.
+Signed-off-by: Stephan Mueller <smueller@chronox.de>
+---
+ crypto/drbg.c | 41 ++++++++++++++++++++++-------------------
+ 1 file changed, 22 insertions(+), 19 deletions(-)
 
-> And the msec parameter is described as:
-> 
-> @msec: Anticipated event processing time (in milliseconds).
-> 
-> Isn't calling pm_wakeup_event() with a non-zero msec the standard
-> method to handle this situation? And it is used in other drivers. E.g. in
-> _mmc_detect_change() or hub_suspend().
-
- * Notify the PM core of a wakeup event whose source is @ws that will
-   take                    
- * approximately @msec milliseconds to be processed by the kernel.  If
-   @ws is                 
- * not active, activate it.  If @msec is nonzero, set up the @ws'
-   timer to                    
- * execute pm_wakeup_timer_fn() in future.                                                    
-
-Will take @msec milliseconds to be processed by the _kernel_. Yes, USB
-probing takes a lot of time in kernel. But you are using this
-parameter to wait for userspace...
-
-> > There must be better
-> > solution....
->  
-> I am not sure how it could look like.
-
-Rafael, do you have any idea how this is supposed to work?
-
-Original patch is at https://lkml.org/lkml/2014/4/10/156 .
-									Pavel
-
+diff --git a/crypto/drbg.c b/crypto/drbg.c
+index 4593b3c..53ff20d 100644
+--- a/crypto/drbg.c
++++ b/crypto/drbg.c
+@@ -565,7 +565,21 @@ out:
+ 	return ret;
+ }
+ 
+-/* update function of CTR DRBG as defined in 10.2.1.2 */
++/*
++ * update function of CTR DRBG as defined in 10.2.1.2
++ *
++ * The reseed variable has an enhanced meaning compared to the update
++ * functions of the other DRBGs as follows:
++ * 0 => initial seed from initialization
++ * 1 => reseed via drbg_seed
++ * 2 => first invocation from drbg_ctr_update when addtl is present. In
++ *      this case, the df_data scratchpad is not deleted so that it is
++ *      available for another calls to prevent calling the DF function
++ *      again.
++ * 3 => second invocation from drbg_ctr_update. When the update function
++ *      was called with addtl, the df_data memory already contains the
++ *      DFed addtl information and we do not need to call DF again.
++ */
+ static int drbg_ctr_update(struct drbg_state *drbg, struct list_head *seed,
+ 			   int reseed)
+ {
+@@ -580,7 +594,8 @@ static int drbg_ctr_update(struct drbg_state *drbg, struct list_head *seed,
+ 	unsigned char prefix = DRBG_PREFIX1;
+ 
+ 	memset(temp, 0, drbg_statelen(drbg) + drbg_blocklen(drbg));
+-	memset(df_data, 0, drbg_statelen(drbg));
++	if (3 > reseed)
++		memset(df_data, 0, drbg_statelen(drbg));
+ 
+ 	/* 10.2.1.3.2 step 2 and 10.2.1.4.2 step 2 */
+ 	if (seed) {
+@@ -622,7 +637,8 @@ static int drbg_ctr_update(struct drbg_state *drbg, struct list_head *seed,
+ 
+ out:
+ 	memset(temp, 0, drbg_statelen(drbg) + drbg_blocklen(drbg));
+-	memset(df_data, 0, drbg_statelen(drbg));
++	if (2 != reseed)
++		memset(df_data, 0, drbg_statelen(drbg));
+ 	return ret;
+ }
+ 
+@@ -647,7 +663,7 @@ static int drbg_ctr_generate(struct drbg_state *drbg,
+ 		LIST_HEAD(addtllist);
+ 
+ 		list_add_tail(&addtl->list, &addtllist);
+-		ret = drbg_ctr_update(drbg, &addtllist, 1);
++		ret = drbg_ctr_update(drbg, &addtllist, 2);
+ 		if (ret)
+ 			return 0;
+ 	}
+@@ -678,21 +694,8 @@ static int drbg_ctr_generate(struct drbg_state *drbg,
+ 			drbg_add_buf(drbg->V, drbg_blocklen(drbg), &prefix, 1);
+ 	}
+ 
+-	/*
+-	 * 10.2.1.5.2 step 6
+-	 * The following call invokes the DF function again which could be
+-	 * optimized. In step 2, the "additional_input" after step 2 is the
+-	 * output of the DF function. If this result would be saved, the DF
+-	 * function would not need to be invoked again at this point.
+-	 */
+-	if (addtl && 0 < addtl->len) {
+-		LIST_HEAD(addtllist);
+-
+-		list_add_tail(&addtl->list, &addtllist);
+-		ret = drbg_ctr_update(drbg, &addtllist, 1);
+-	} else {
+-		ret = drbg_ctr_update(drbg, NULL, 1);
+-	}
++	/* 10.2.1.5.2 step 6 */
++	ret = drbg_ctr_update(drbg, NULL, 3);
+ 	if (ret)
+ 		len = ret;
+ 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.9.3
+
+
