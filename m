@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756976AbaF1SdH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:33:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53674 "EHLO
+	id S1756999AbaF1Sdf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:33:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53655 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755573AbaF1Rur (ORCPT
+	with ESMTP id S1755561AbaF1Ruo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:50:47 -0400
+	Sat, 28 Jun 2014 13:50:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jeff Mahoney <jeffm@suse.com>, David Sterba <dsterba@suse.cz>,
-        Chris Mason <clm@fb.com>
-Subject: [PATCH 3.14 105/110] btrfs: allocate raid type kobjects dynamically
-Date: Sat, 28 Jun 2014 10:47:42 -0700
-Message-Id: <20140628174551.618560608@linuxfoundation.org>
+        Konstantinos Skarlatos <k.skarlatos@gmail.com>,
+        Liu Bo <bo.li.liu@oracle.com>, Chris Mason <clm@fb.com>
+Subject: [PATCH 3.14 102/110] Btrfs: fix scrub_print_warning to handle skinny metadata extents
+Date: Sat, 28 Jun 2014 10:47:39 -0700
+Message-Id: <20140628174551.463024386@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -29,179 +29,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Mahoney <jeffm@suse.com>
+From: Liu Bo <bo.li.liu@oracle.com>
 
-commit c1895442be01c58449e3bf9272f22062a670e08f upstream.
+commit 6eda71d0c030af0fc2f68aaa676e6d445600855b upstream.
 
-We are currently allocating space_info objects in an array when we
-allocate space_info. When a user does something like:
+The skinny extents are intepreted incorrectly in scrub_print_warning(),
+and end up hitting the BUG() in btrfs_extent_inline_ref_size.
 
-# btrfs balance start -mconvert=raid1 -dconvert=raid1 /mnt
-# btrfs balance start -mconvert=single -dconvert=single /mnt -f
-# btrfs balance start -mconvert=raid1 -dconvert=raid1 /
-
-We can end up with memory corruption since the kobject hasn't
-been reinitialized properly and the name pointer was left set.
-
-The rationale behind allocating them statically was to avoid
-creating a separate kobject container that just contained the
-raid type. It used the index in the array to determine the index.
-
-Ultimately, though, this wastes more memory than it saves in all
-but the most complex scenarios and introduces kobject lifetime
-questions.
-
-This patch allocates the kobjects dynamically instead. Note that
-we also remove the kobject_get/put of the parent kobject since
-kobject_add and kobject_del do that internally.
-
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
-Reported-by: David Sterba <dsterba@suse.cz>
+Reported-by: Konstantinos Skarlatos <k.skarlatos@gmail.com>
+Signed-off-by: Liu Bo <bo.li.liu@oracle.com>
 Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/ctree.h       |    8 +++++++-
- fs/btrfs/extent-tree.c |   39 ++++++++++++++++++++++++++-------------
- fs/btrfs/sysfs.c       |    5 +++--
- 3 files changed, 36 insertions(+), 16 deletions(-)
+ fs/btrfs/backref.c |   30 +++++++++++++++++++-----------
+ fs/btrfs/backref.h |    4 ++--
+ fs/btrfs/scrub.c   |    5 +++--
+ 3 files changed, 24 insertions(+), 15 deletions(-)
 
---- a/fs/btrfs/ctree.h
-+++ b/fs/btrfs/ctree.h
-@@ -1104,6 +1104,12 @@ struct btrfs_qgroup_limit_item {
- 	__le64 rsv_excl;
- } __attribute__ ((__packed__));
- 
-+/* For raid type sysfs entries */
-+struct raid_kobject {
-+	int raid_type;
-+	struct kobject kobj;
-+};
-+
- struct btrfs_space_info {
- 	spinlock_t lock;
- 
-@@ -1154,7 +1160,7 @@ struct btrfs_space_info {
- 	wait_queue_head_t wait;
- 
- 	struct kobject kobj;
--	struct kobject block_group_kobjs[BTRFS_NR_RAID_TYPES];
-+	struct kobject *block_group_kobjs[BTRFS_NR_RAID_TYPES];
- };
- 
- #define	BTRFS_BLOCK_RSV_GLOBAL		1
---- a/fs/btrfs/extent-tree.c
-+++ b/fs/btrfs/extent-tree.c
-@@ -3400,10 +3400,8 @@ static int update_space_info(struct btrf
- 		return ret;
- 	}
- 
--	for (i = 0; i < BTRFS_NR_RAID_TYPES; i++) {
-+	for (i = 0; i < BTRFS_NR_RAID_TYPES; i++)
- 		INIT_LIST_HEAD(&found->block_groups[i]);
--		kobject_init(&found->block_group_kobjs[i], &btrfs_raid_ktype);
--	}
- 	init_rwsem(&found->groups_sem);
- 	spin_lock_init(&found->lock);
- 	found->flags = flags & BTRFS_BLOCK_GROUP_TYPE_MASK;
-@@ -8328,8 +8326,9 @@ int btrfs_free_block_groups(struct btrfs
- 		list_del(&space_info->list);
- 		for (i = 0; i < BTRFS_NR_RAID_TYPES; i++) {
- 			struct kobject *kobj;
--			kobj = &space_info->block_group_kobjs[i];
--			if (kobj->parent) {
-+			kobj = space_info->block_group_kobjs[i];
-+			space_info->block_group_kobjs[i] = NULL;
-+			if (kobj) {
- 				kobject_del(kobj);
- 				kobject_put(kobj);
- 			}
-@@ -8353,17 +8352,26 @@ static void __link_block_group(struct bt
- 	up_write(&space_info->groups_sem);
- 
- 	if (first) {
--		struct kobject *kobj = &space_info->block_group_kobjs[index];
-+		struct raid_kobject *rkobj;
- 		int ret;
- 
--		kobject_get(&space_info->kobj); /* put in release */
--		ret = kobject_add(kobj, &space_info->kobj, "%s",
--				  get_raid_name(index));
-+		rkobj = kzalloc(sizeof(*rkobj), GFP_NOFS);
-+		if (!rkobj)
-+			goto out_err;
-+		rkobj->raid_type = index;
-+		kobject_init(&rkobj->kobj, &btrfs_raid_ktype);
-+		ret = kobject_add(&rkobj->kobj, &space_info->kobj,
-+				  "%s", get_raid_name(index));
- 		if (ret) {
--			pr_warn("BTRFS: failed to add kobject for block cache. ignoring.\n");
--			kobject_put(&space_info->kobj);
-+			kobject_put(&rkobj->kobj);
-+			goto out_err;
+--- a/fs/btrfs/backref.c
++++ b/fs/btrfs/backref.c
+@@ -1412,9 +1412,10 @@ int extent_from_logical(struct btrfs_fs_
+  * returns <0 on error
+  */
+ static int __get_extent_inline_ref(unsigned long *ptr, struct extent_buffer *eb,
+-				struct btrfs_extent_item *ei, u32 item_size,
+-				struct btrfs_extent_inline_ref **out_eiref,
+-				int *out_type)
++				   struct btrfs_key *key,
++				   struct btrfs_extent_item *ei, u32 item_size,
++				   struct btrfs_extent_inline_ref **out_eiref,
++				   int *out_type)
+ {
+ 	unsigned long end;
+ 	u64 flags;
+@@ -1424,9 +1425,16 @@ static int __get_extent_inline_ref(unsig
+ 		/* first call */
+ 		flags = btrfs_extent_flags(eb, ei);
+ 		if (flags & BTRFS_EXTENT_FLAG_TREE_BLOCK) {
+-			info = (struct btrfs_tree_block_info *)(ei + 1);
+-			*out_eiref =
+-				(struct btrfs_extent_inline_ref *)(info + 1);
++			if (key->type == BTRFS_METADATA_ITEM_KEY) {
++				/* a skinny metadata extent */
++				*out_eiref =
++				     (struct btrfs_extent_inline_ref *)(ei + 1);
++			} else {
++				WARN_ON(key->type != BTRFS_EXTENT_ITEM_KEY);
++				info = (struct btrfs_tree_block_info *)(ei + 1);
++				*out_eiref =
++				   (struct btrfs_extent_inline_ref *)(info + 1);
++			}
+ 		} else {
+ 			*out_eiref = (struct btrfs_extent_inline_ref *)(ei + 1);
  		}
-+		space_info->block_group_kobjs[index] = &rkobj->kobj;
+@@ -1436,7 +1444,7 @@ static int __get_extent_inline_ref(unsig
  	}
-+
-+	return;
-+out_err:
-+	pr_warn("BTRFS: failed to add kobject for block cache. ignoring.\n");
- }
  
- static struct btrfs_block_group_cache *
-@@ -8698,6 +8706,7 @@ int btrfs_remove_block_group(struct btrf
- 	struct btrfs_root *tree_root = root->fs_info->tree_root;
- 	struct btrfs_key key;
- 	struct inode *inode;
-+	struct kobject *kobj = NULL;
+ 	end = (unsigned long)ei + item_size;
+-	*out_eiref = (struct btrfs_extent_inline_ref *)*ptr;
++	*out_eiref = (struct btrfs_extent_inline_ref *)(*ptr);
+ 	*out_type = btrfs_extent_inline_ref_type(eb, *out_eiref);
+ 
+ 	*ptr += btrfs_extent_inline_ref_size(*out_type);
+@@ -1455,8 +1463,8 @@ static int __get_extent_inline_ref(unsig
+  * <0 on error.
+  */
+ int tree_backref_for_extent(unsigned long *ptr, struct extent_buffer *eb,
+-				struct btrfs_extent_item *ei, u32 item_size,
+-				u64 *out_root, u8 *out_level)
++			    struct btrfs_key *key, struct btrfs_extent_item *ei,
++			    u32 item_size, u64 *out_root, u8 *out_level)
+ {
  	int ret;
- 	int index;
- 	int factor;
-@@ -8797,11 +8806,15 @@ int btrfs_remove_block_group(struct btrf
- 	 */
- 	list_del_init(&block_group->list);
- 	if (list_empty(&block_group->space_info->block_groups[index])) {
--		kobject_del(&block_group->space_info->block_group_kobjs[index]);
--		kobject_put(&block_group->space_info->block_group_kobjs[index]);
-+		kobj = block_group->space_info->block_group_kobjs[index];
-+		block_group->space_info->block_group_kobjs[index] = NULL;
- 		clear_avail_alloc_bits(root->fs_info, block_group->flags);
- 	}
- 	up_write(&block_group->space_info->groups_sem);
-+	if (kobj) {
-+		kobject_del(kobj);
-+		kobject_put(kobj);
-+	}
+ 	int type;
+@@ -1467,8 +1475,8 @@ int tree_backref_for_extent(unsigned lon
+ 		return 1;
  
- 	if (block_group->cached == BTRFS_CACHE_STARTED)
- 		wait_block_group_cache_done(block_group);
---- a/fs/btrfs/sysfs.c
-+++ b/fs/btrfs/sysfs.c
-@@ -253,6 +253,7 @@ static ssize_t global_rsv_reserved_show(
- BTRFS_ATTR(global_rsv_reserved, 0444, global_rsv_reserved_show);
+ 	while (1) {
+-		ret = __get_extent_inline_ref(ptr, eb, ei, item_size,
+-						&eiref, &type);
++		ret = __get_extent_inline_ref(ptr, eb, key, ei, item_size,
++					      &eiref, &type);
+ 		if (ret < 0)
+ 			return ret;
  
- #define to_space_info(_kobj) container_of(_kobj, struct btrfs_space_info, kobj)
-+#define to_raid_kobj(_kobj) container_of(_kobj, struct raid_kobject, kobj)
+--- a/fs/btrfs/backref.h
++++ b/fs/btrfs/backref.h
+@@ -40,8 +40,8 @@ int extent_from_logical(struct btrfs_fs_
+ 			u64 *flags);
  
- static ssize_t raid_bytes_show(struct kobject *kobj,
- 			       struct kobj_attribute *attr, char *buf);
-@@ -265,7 +266,7 @@ static ssize_t raid_bytes_show(struct ko
- {
- 	struct btrfs_space_info *sinfo = to_space_info(kobj->parent);
- 	struct btrfs_block_group_cache *block_group;
--	int index = kobj - sinfo->block_group_kobjs;
-+	int index = to_raid_kobj(kobj)->raid_type;
- 	u64 val = 0;
+ int tree_backref_for_extent(unsigned long *ptr, struct extent_buffer *eb,
+-				struct btrfs_extent_item *ei, u32 item_size,
+-				u64 *out_root, u8 *out_level);
++			    struct btrfs_key *key, struct btrfs_extent_item *ei,
++			    u32 item_size, u64 *out_root, u8 *out_level);
  
- 	down_read(&sinfo->groups_sem);
-@@ -287,7 +288,7 @@ static struct attribute *raid_attributes
+ int iterate_extent_inodes(struct btrfs_fs_info *fs_info,
+ 				u64 extent_item_objectid,
+--- a/fs/btrfs/scrub.c
++++ b/fs/btrfs/scrub.c
+@@ -577,8 +577,9 @@ static void scrub_print_warning(const ch
  
- static void release_raid_kobj(struct kobject *kobj)
- {
--	kobject_put(kobj->parent);
-+	kfree(to_raid_kobj(kobj));
- }
- 
- struct kobj_type btrfs_raid_ktype = {
+ 	if (flags & BTRFS_EXTENT_FLAG_TREE_BLOCK) {
+ 		do {
+-			ret = tree_backref_for_extent(&ptr, eb, ei, item_size,
+-							&ref_root, &ref_level);
++			ret = tree_backref_for_extent(&ptr, eb, &found_key, ei,
++						      item_size, &ref_root,
++						      &ref_level);
+ 			printk_in_rcu(KERN_WARNING
+ 				"BTRFS: %s at logical %llu on dev %s, "
+ 				"sector %llu: metadata %s (level %d) in tree "
 
 
