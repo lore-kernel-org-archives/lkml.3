@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755592AbaF1Rut (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:50:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53659 "EHLO
+	id S1756647AbaF1Sb3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:31:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53696 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755567AbaF1Ruo (ORCPT
+	with ESMTP id S1755596AbaF1Ruu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:50:44 -0400
+	Sat, 28 Jun 2014 13:50:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Mason <clm@fb.com>
-Subject: [PATCH 3.14 103/110] btrfs: fix use of uninit "ret" in end_extent_writepage()
-Date: Sat, 28 Jun 2014 10:47:40 -0700
-Message-Id: <20140628174551.510907658@linuxfoundation.org>
+        Wang Shilong <wangsl.fnst@cn.fujitsu.com>,
+        David Sterba <dsterba@suse.cz>, Chris Mason <clm@fb.com>
+Subject: [PATCH 3.14 094/110] Btrfs: make sure there are not any read requests before stopping workers
+Date: Sat, 28 Jun 2014 10:47:31 -0700
+Message-Id: <20140628174551.052604206@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -28,45 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Sandeen <sandeen@redhat.com>
+From: Wang Shilong <wangsl.fnst@cn.fujitsu.com>
 
-commit 3e2426bd0eb980648449e7a2f5a23e3cd3c7725c upstream.
+commit de348ee022175401e77d7662b7ca6e231a94e3fd upstream.
 
-If this condition in end_extent_writepage() is false:
+In close_ctree(), after we have stopped all workers,there maybe still
+some read requests(for example readahead) to submit and this *maybe* trigger
+an oops that user reported before:
 
-	if (tree->ops && tree->ops->writepage_end_io_hook)
+kernel BUG at fs/btrfs/async-thread.c:619!
 
-we will then test an uninitialized "ret" at:
+By hacking codes, i can reproduce this problem with one cpu available.
+We fix this potential problem by invalidating all btree inode pages before
+stopping all workers.
 
-	ret = ret < 0 ? ret : -EIO;
+Thanks to Miao for pointing out this problem.
 
-The test for ret is for the case where ->writepage_end_io_hook
-failed, and we'd choose that ret as the error; but if
-there is no ->writepage_end_io_hook, nothing sets ret.
-
-Initializing ret to 0 should be sufficient; if
-writepage_end_io_hook wasn't set, (!uptodate) means
-non-zero err was passed in, so we choose -EIO in that case.
-
-Signed-of-by: Eric Sandeen <sandeen@redhat.com>
-
+Signed-off-by: Wang Shilong <wangsl.fnst@cn.fujitsu.com>
+Reviewed-by: David Sterba <dsterba@suse.cz>
 Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/extent_io.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/btrfs/disk-io.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/fs/btrfs/extent_io.c
-+++ b/fs/btrfs/extent_io.c
-@@ -2347,7 +2347,7 @@ int end_extent_writepage(struct page *pa
- {
- 	int uptodate = (err == 0);
- 	struct extent_io_tree *tree;
--	int ret;
-+	int ret = 0;
+--- a/fs/btrfs/disk-io.c
++++ b/fs/btrfs/disk-io.c
+@@ -3598,6 +3598,11 @@ int close_ctree(struct btrfs_root *root)
  
- 	tree = &BTRFS_I(page->mapping->host)->io_tree;
+ 	btrfs_free_block_groups(fs_info);
  
++	/*
++	 * we must make sure there is not any read request to
++	 * submit after we stopping all workers.
++	 */
++	invalidate_inode_pages2(fs_info->btree_inode->i_mapping);
+ 	btrfs_stop_all_workers(fs_info);
+ 
+ 	free_root_pointers(fs_info, 1);
 
 
