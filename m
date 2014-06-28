@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754160AbaF1UOJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 16:14:09 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:17234 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753031AbaF1UOH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 16:14:07 -0400
-X-IronPort-AV: E=Sophos;i="5.01,567,1400018400"; 
-   d="scan'208";a="82706182"
-Date: Sat, 28 Jun 2014 22:14:03 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: Antonio Quartulli <antonio@meshcoding.com>
-cc: Joe Perches <joe@perches.com>, Himangi Saraogi <himangi774@gmail.com>,
-        Marek Lindner <mareklindner@neomailbox.ch>,
-        Simon Wunderlich <sw@simonwunderlich.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        b.a.t.m.a.n@lists.open-mesh.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, julia.lawall@lip6.fr
-Subject: Re: [PATCH] batman-adv: Use kasprintf
-In-Reply-To: <53AF1C42.6000108@meshcoding.com>
-Message-ID: <alpine.DEB.2.02.1406282212540.2022@localhost6.localdomain6>
-References: <20140628183628.GA9946@himangi-Dell> <1403982781.9064.33.camel@joe-AO725> <53AF1C42.6000108@meshcoding.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1754171AbaF1UPC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 16:15:02 -0400
+Received: from mail.eperm.de ([89.247.134.16]:49795 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752563AbaF1UPA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Jun 2014 16:15:00 -0400
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: kbuild test robot <fengguang.wu@intel.com>, kbuild@01.org,
+        Dan Carpenter <dan.carpenter@oracle.com>, linux-crypto@vger.kernel.org,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/4] DRBG: Fixes for sparse tool reports
+Date: Sat, 28 Jun 2014 21:57:49 +0200
+Message-ID: <4927386.WYHrRe3NJm@myon.chronox.de>
+User-Agent: KMail/4.12.5 (Linux/3.14.8-200.fc20.x86_64; KDE/4.12.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 28 Jun 2014, Antonio Quartulli wrote:
+Hi,
 
-> Hi all,
-> 
-> On 28/06/14 21:13, Joe Perches wrote:
-> > diff --git a/net/batman-adv/sysfs.c b/net/batman-adv/sysfs.c
-> > index f40cb04..d6fba94 100644
-> > --- a/net/batman-adv/sysfs.c
-> > +++ b/net/batman-adv/sysfs.c
-> > @@ -896,7 +896,7 @@ int batadv_throw_uevent(struct batadv_priv *bat_priv, enum batadv_uev_type type,
-> >  {
-> >  	int ret = -ENOMEM;
-> >  	struct kobject *bat_kobj;
-> > -	char *uevent_env[4] = { NULL, NULL, NULL, NULL };
-> > +	char *uevent_env[3];
-> 
-> 
-> Joe, why are you shortening this? kobject_uevent_env() expect a
-> NULL-terminating array (that is the forth cell).
-> 
-> ...
-> 
-> >  
-> >  	ret = kobject_uevent_env(bat_kobj, KOBJ_CHANGE, uevent_env);
-> 
-> And how is this change reducing the code space?
-> 
-> For what concerns the labels, we use this pattern mostly all over the
-> code: one single label/exit-point with the related NULL checks. Do you
-> think that we can improve something by changing this? (I am not talking
-> about the fastpath here).
+The following patches cover requested changes based on the sparse tool test
+run and suggestions by peer reviewers.
 
-Most of the kernel uses specific labels for each possible failure.
->From my selfish point of view, it makes the code easier to analyze and 
-understand, because what is done at the exit label is only what needs to 
-be done.
+In addition, a patch to make the CTR DRBG more efficient is added.
 
-julia
+Stephan Mueller (4):
+  DRBG: use of kernel linked list
+  DRBG: cleanup of preprocessor macros
+  DRBG: Fix format string for debugging statements
+  DRBG: Call CTR DRBG DF function only once
+
+ crypto/drbg.c         | 302 ++++++++++++++++++++++++++++----------------------
+ include/crypto/drbg.h |   7 +-
+ 2 files changed, 174 insertions(+), 135 deletions(-)
+
+-- 
+1.9.3
+
+
