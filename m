@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932246AbaF1TUy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 15:20:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52824 "EHLO
+	id S932269AbaF1TVR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 15:21:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52820 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753540AbaF1RrZ (ORCPT
+	with ESMTP id S1753530AbaF1RrY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:47:25 -0400
+	Sat, 28 Jun 2014 13:47:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roger Quadros <rogerq@ti.com>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.4 42/43] usb: usbtest: Add timetout to simple_io()
-Date: Sat, 28 Jun 2014 10:46:33 -0700
-Message-Id: <20140628174451.717863703@linuxfoundation.org>
+        Chris Mason <clm@fb.com>
+Subject: [PATCH 3.4 41/43] btrfs: fix use of uninit "ret" in end_extent_writepage()
+Date: Sat, 28 Jun 2014 10:46:32 -0700
+Message-Id: <20140628174451.667709832@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174449.788784511@linuxfoundation.org>
 References: <20140628174449.788784511@linuxfoundation.org>
@@ -28,56 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roger Quadros <rogerq@ti.com>
+From: Eric Sandeen <sandeen@redhat.com>
 
-commit e5e4746510d140261918aecce2e5e3aa4456f7e9 upstream.
+commit 3e2426bd0eb980648449e7a2f5a23e3cd3c7725c upstream.
 
-Without a timetout some tests e.g. test_halt() can remain stuck forever.
+If this condition in end_extent_writepage() is false:
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Reviewed-by: Felipe Balbi <balbi@ti.com>
+	if (tree->ops && tree->ops->writepage_end_io_hook)
+
+we will then test an uninitialized "ret" at:
+
+	ret = ret < 0 ? ret : -EIO;
+
+The test for ret is for the case where ->writepage_end_io_hook
+failed, and we'd choose that ret as the error; but if
+there is no ->writepage_end_io_hook, nothing sets ret.
+
+Initializing ret to 0 should be sufficient; if
+writepage_end_io_hook wasn't set, (!uptodate) means
+non-zero err was passed in, so we choose -EIO in that case.
+
+Signed-of-by: Eric Sandeen <sandeen@redhat.com>
+
+Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/misc/usbtest.c |   14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+ fs/btrfs/extent_io.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/misc/usbtest.c
-+++ b/drivers/usb/misc/usbtest.c
-@@ -10,6 +10,7 @@
- #include <linux/timer.h>
- #include <linux/usb.h>
+--- a/fs/btrfs/extent_io.c
++++ b/fs/btrfs/extent_io.c
+@@ -2245,7 +2245,7 @@ int end_extent_writepage(struct page *pa
+ {
+ 	int uptodate = (err == 0);
+ 	struct extent_io_tree *tree;
+-	int ret;
++	int ret = 0;
  
-+#define SIMPLE_IO_TIMEOUT	10000	/* in milliseconds */
+ 	tree = &BTRFS_I(page->mapping->host)->io_tree;
  
- /*-------------------------------------------------------------------------*/
- 
-@@ -355,6 +356,7 @@ static int simple_io(
- 	int			max = urb->transfer_buffer_length;
- 	struct completion	completion;
- 	int			retval = 0;
-+	unsigned long		expire;
- 
- 	urb->context = &completion;
- 	while (retval == 0 && iterations-- > 0) {
-@@ -367,9 +369,15 @@ static int simple_io(
- 		if (retval != 0)
- 			break;
- 
--		/* NOTE:  no timeouts; can't be broken out of by interrupt */
--		wait_for_completion(&completion);
--		retval = urb->status;
-+		expire = msecs_to_jiffies(SIMPLE_IO_TIMEOUT);
-+		if (!wait_for_completion_timeout(&completion, expire)) {
-+			usb_kill_urb(urb);
-+			retval = (urb->status == -ENOENT ?
-+				  -ETIMEDOUT : urb->status);
-+		} else {
-+			retval = urb->status;
-+		}
-+
- 		urb->dev = udev;
- 		if (retval == 0 && usb_pipein(urb->pipe))
- 			retval = simple_check_buf(tdev, urb);
 
 
