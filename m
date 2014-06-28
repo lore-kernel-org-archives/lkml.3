@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753464AbaF1RrQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:47:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52766 "EHLO
+	id S964854AbaF1TWc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 15:22:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52798 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753121AbaF1RrK (ORCPT
+	with ESMTP id S1753434AbaF1RrQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:47:10 -0400
+	Sat, 28 Jun 2014 13:47:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Jones <davej@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.4 12/43] mm: fix sleeping function warning from __put_anon_vma
-Date: Sat, 28 Jun 2014 10:46:03 -0700
-Message-Id: <20140628174450.380646432@linuxfoundation.org>
+        xiao jin <jin.xiao@intel.com>, "Zhang, Qi1" <qi1.zhang@intel.com>,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.4 18/43] USB: usb_wwan: fix urb leak in write error path
+Date: Sat, 28 Jun 2014 10:46:09 -0700
+Message-Id: <20140628174450.632002874@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174449.788784511@linuxfoundation.org>
 References: <20140628174449.788784511@linuxfoundation.org>
@@ -31,66 +30,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hugh Dickins <hughd@google.com>
+From: xiao jin <jin.xiao@intel.com>
 
-commit 7f39dda9d86fb4f4f17af0de170decf125726f8c upstream.
+commit db0904737947d509844e171c9863ecc5b4534005 upstream.
 
-Trinity reports BUG:
+When enable usb serial for modem data, sometimes the tty is blocked
+in tty_wait_until_sent because portdata->out_busy always is set and
+have no chance to be cleared.
 
-  sleeping function called from invalid context at kernel/locking/rwsem.c:47
-  in_atomic(): 0, irqs_disabled(): 0, pid: 5787, name: trinity-c27
+We find a bug in write error path. usb_wwan_write set portdata->out_busy
+firstly, then try autopm async with error. No out urb submit and no
+usb_wwan_outdat_callback to this write, portdata->out_busy can't be
+cleared.
 
-__might_sleep < down_write < __put_anon_vma < page_get_anon_vma <
-migrate_pages < compact_zone < compact_zone_order < try_to_compact_pages ..
+This patch clear portdata->out_busy if usb_wwan_write try autopm async
+with error.
 
-Right, since conversion to mutex then rwsem, we should not put_anon_vma()
-from inside an rcu_read_lock()ed section: fix the two places that did so.
-And add might_sleep() to anon_vma_free(), as suggested by Peter Zijlstra.
+Fixes: 383cedc3bb43 ("USB: serial: full autosuspend support for the
+option driver")
 
-Fixes: 88c22088bf23 ("mm: optimize page_lock_anon_vma() fast-path")
-Reported-by: Dave Jones <davej@redhat.com>
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: xiao jin <jin.xiao@intel.com>
+Signed-off-by: Zhang, Qi1 <qi1.zhang@intel.com>
+Reviewed-by: David Cohen <david.a.cohen@linux.intel.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/rmap.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/usb/serial/usb_wwan.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -103,6 +103,7 @@ static inline void anon_vma_free(struct
- 	 * LOCK should suffice since the actual taking of the lock must
- 	 * happen _before_ what follows.
- 	 */
-+	might_sleep();
- 	if (mutex_is_locked(&anon_vma->root->mutex)) {
- 		anon_vma_lock(anon_vma);
- 		anon_vma_unlock(anon_vma);
-@@ -476,8 +477,9 @@ struct anon_vma *page_get_anon_vma(struc
- 	 * above cannot corrupt).
- 	 */
- 	if (!page_mapped(page)) {
-+		rcu_read_unlock();
- 		put_anon_vma(anon_vma);
--		anon_vma = NULL;
-+		return NULL;
- 	}
- out:
- 	rcu_read_unlock();
-@@ -527,9 +529,9 @@ struct anon_vma *page_lock_anon_vma(stru
- 	}
+--- a/drivers/usb/serial/usb_wwan.c
++++ b/drivers/usb/serial/usb_wwan.c
+@@ -236,8 +236,10 @@ int usb_wwan_write(struct tty_struct *tt
+ 		    usb_pipeendpoint(this_urb->pipe), i);
  
- 	if (!page_mapped(page)) {
-+		rcu_read_unlock();
- 		put_anon_vma(anon_vma);
--		anon_vma = NULL;
--		goto out;
-+		return NULL;
- 	}
+ 		err = usb_autopm_get_interface_async(port->serial->interface);
+-		if (err < 0)
++		if (err < 0) {
++			clear_bit(i, &portdata->out_busy);
+ 			break;
++		}
  
- 	/* we pinned the anon_vma, its safe to sleep */
+ 		/* send the data */
+ 		memcpy(this_urb->transfer_buffer, buf, todo);
 
 
