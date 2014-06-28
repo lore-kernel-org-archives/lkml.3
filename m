@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757225AbaF1StA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:49:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53387 "EHLO
+	id S1757236AbaF1Stb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:49:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53377 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755221AbaF1Rtg (ORCPT
+	with ESMTP id S1755213AbaF1Rtf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:49:36 -0400
+	Sat, 28 Jun 2014 13:49:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Tony Luck <tony.luck@intel.com>,
         Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Tony Luck <tony.luck@intel.com>, Kamil Iskra <iskra@mcs.anl.gov>,
         Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@suse.de>,
         Chen Gong <gong.chen@linux.jf.intel.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 027/110] mm/memory-failure.c: support use of a dedicated thread to handle SIGBUS(BUS_MCEERR_AO)
-Date: Sat, 28 Jun 2014 10:46:24 -0700
-Message-Id: <20140628174546.818037717@linuxfoundation.org>
+Subject: [PATCH 3.14 026/110] mm/memory-failure.c: dont let collect_procs() skip over processes for MF_ACTION_REQUIRED
+Date: Sat, 28 Jun 2014 10:46:23 -0700
+Message-Id: <20140628174546.754470087@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -33,39 +33,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+From: Tony Luck <tony.luck@intel.com>
 
-commit 3ba08129e38437561df44c36b7ea9081185d5333 upstream.
+commit 74614de17db6fb472370c426d4f934d8d616edf2 upstream.
 
-Currently memory error handler handles action optional errors in the
-deferred manner by default.  And if a recovery aware application wants
-to handle it immediately, it can do it by setting PF_MCE_EARLY flag.
-However, such signal can be sent only to the main thread, so it's
-problematic if the application wants to have a dedicated thread to
-handler such signals.
+When Linux sees an "action optional" machine check (where h/w has reported
+an error that is not in the current execution path) we generally do not
+want to signal a process, since most processes do not have a SIGBUS
+handler - we'd just prematurely terminate the process for a problem that
+they might never actually see.
 
-So this patch adds dedicated thread support to memory error handler.  We
-have PF_MCE_EARLY flags for each thread separately, so with this patch
-AO signal is sent to the thread with PF_MCE_EARLY flag set, not the main
-thread.  If you want to implement a dedicated thread, you call prctl()
-to set PF_MCE_EARLY on the thread.
+task_early_kill() decides whether to consider a process - and it checks
+whether this specific process has been marked for early signals with
+"prctl", or if the system administrator has requested early signals for
+all processes using /proc/sys/vm/memory_failure_early_kill.
 
-Memory error handler collects processes to be killed, so this patch lets
-it check PF_MCE_EARLY flag on each thread in the collecting routines.
+But for MF_ACTION_REQUIRED case we must not defer.  The error is in the
+execution path of the current thread so we must send the SIGBUS
+immediatley.
 
-No behavioral change for all non-early kill cases.
+Fix by passing a flag argument through collect_procs*() to
+task_early_kill() so it knows whether we can defer or must take action.
 
-Tony said:
-
-: The old behavior was crazy - someone with a multithreaded process might
-: well expect that if they call prctl(PF_MCE_EARLY) in just one thread, then
-: that thread would see the SIGBUS with si_code = BUS_MCEERR_A0 - even if
-: that thread wasn't the main thread for the process.
-
-[akpm@linux-foundation.org: coding-style fixes]
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Reviewed-by: Tony Luck <tony.luck@intel.com>
-Cc: Kamil Iskra <iskra@mcs.anl.gov>
 Cc: Andi Kleen <andi@firstfloor.org>
 Cc: Borislav Petkov <bp@suse.de>
 Cc: Chen Gong <gong.chen@linux.jf.intel.com>
@@ -74,121 +65,91 @@ Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/vm/hwpoison.txt |    5 +++
- mm/memory-failure.c           |   56 ++++++++++++++++++++++++++++++++----------
- 2 files changed, 48 insertions(+), 13 deletions(-)
+ mm/memory-failure.c |   21 ++++++++++++---------
+ 1 file changed, 12 insertions(+), 9 deletions(-)
 
---- a/Documentation/vm/hwpoison.txt
-+++ b/Documentation/vm/hwpoison.txt
-@@ -84,6 +84,11 @@ PR_MCE_KILL
- 		PR_MCE_KILL_EARLY: Early kill
- 		PR_MCE_KILL_LATE:  Late kill
- 		PR_MCE_KILL_DEFAULT: Use system global default
-+	Note that if you want to have a dedicated thread which handles
-+	the SIGBUS(BUS_MCEERR_AO) on behalf of the process, you should
-+	call prctl(PR_MCE_KILL_EARLY) on the designated thread. Otherwise,
-+	the SIGBUS is sent to the main thread.
-+
- PR_MCE_KILL_GET
- 	return current mode
- 
 --- a/mm/memory-failure.c
 +++ b/mm/memory-failure.c
-@@ -384,15 +384,44 @@ static void kill_procs(struct list_head
+@@ -384,10 +384,12 @@ static void kill_procs(struct list_head
  	}
  }
  
--static int task_early_kill(struct task_struct *tsk, int force_early)
-+/*
-+ * Find a dedicated thread which is supposed to handle SIGBUS(BUS_MCEERR_AO)
-+ * on behalf of the thread group. Return task_struct of the (first found)
-+ * dedicated thread if found, and return NULL otherwise.
-+ *
-+ * We already hold read_lock(&tasklist_lock) in the caller, so we don't
-+ * have to call rcu_read_lock/unlock() in this function.
-+ */
-+static struct task_struct *find_early_kill_thread(struct task_struct *tsk)
+-static int task_early_kill(struct task_struct *tsk)
++static int task_early_kill(struct task_struct *tsk, int force_early)
  {
-+	struct task_struct *t;
-+
-+	for_each_thread(tsk, t)
-+		if ((t->flags & PF_MCE_PROCESS) && (t->flags & PF_MCE_EARLY))
-+			return t;
-+	return NULL;
-+}
-+
-+/*
-+ * Determine whether a given process is "early kill" process which expects
-+ * to be signaled when some page under the process is hwpoisoned.
-+ * Return task_struct of the dedicated thread (main thread unless explicitly
-+ * specified) if the process is "early kill," and otherwise returns NULL.
-+ */
-+static struct task_struct *task_early_kill(struct task_struct *tsk,
-+					   int force_early)
-+{
-+	struct task_struct *t;
  	if (!tsk->mm)
--		return 0;
-+		return NULL;
- 	if (force_early)
--		return 1;
--	if (tsk->flags & PF_MCE_PROCESS)
--		return !!(tsk->flags & PF_MCE_EARLY);
--	return sysctl_memory_failure_early_kill;
-+		return tsk;
-+	t = find_early_kill_thread(tsk);
-+	if (t)
-+		return t;
-+	if (sysctl_memory_failure_early_kill)
-+		return tsk;
-+	return NULL;
- }
- 
- /*
-@@ -414,16 +443,17 @@ static void collect_procs_anon(struct pa
- 	read_lock(&tasklist_lock);
+ 		return 0;
++	if (force_early)
++		return 1;
+ 	if (tsk->flags & PF_MCE_PROCESS)
+ 		return !!(tsk->flags & PF_MCE_EARLY);
+ 	return sysctl_memory_failure_early_kill;
+@@ -397,7 +399,7 @@ static int task_early_kill(struct task_s
+  * Collect processes when the error hit an anonymous page.
+  */
+ static void collect_procs_anon(struct page *page, struct list_head *to_kill,
+-			      struct to_kill **tkc)
++			      struct to_kill **tkc, int force_early)
+ {
+ 	struct vm_area_struct *vma;
+ 	struct task_struct *tsk;
+@@ -413,7 +415,7 @@ static void collect_procs_anon(struct pa
  	for_each_process (tsk) {
  		struct anon_vma_chain *vmac;
-+		struct task_struct *t = task_early_kill(tsk, force_early);
  
--		if (!task_early_kill(tsk, force_early))
-+		if (!t)
+-		if (!task_early_kill(tsk))
++		if (!task_early_kill(tsk, force_early))
  			continue;
  		anon_vma_interval_tree_foreach(vmac, &av->rb_root,
  					       pgoff, pgoff) {
- 			vma = vmac->vma;
- 			if (!page_mapped_in_vma(page, vma))
- 				continue;
--			if (vma->vm_mm == tsk->mm)
--				add_to_kill(tsk, page, vma, to_kill, tkc);
-+			if (vma->vm_mm == t->mm)
-+				add_to_kill(t, page, vma, to_kill, tkc);
- 		}
- 	}
- 	read_unlock(&tasklist_lock);
-@@ -444,10 +474,10 @@ static void collect_procs_file(struct pa
- 	read_lock(&tasklist_lock);
+@@ -432,7 +434,7 @@ static void collect_procs_anon(struct pa
+  * Collect processes when the error hit a file mapped page.
+  */
+ static void collect_procs_file(struct page *page, struct list_head *to_kill,
+-			      struct to_kill **tkc)
++			      struct to_kill **tkc, int force_early)
+ {
+ 	struct vm_area_struct *vma;
+ 	struct task_struct *tsk;
+@@ -443,7 +445,7 @@ static void collect_procs_file(struct pa
  	for_each_process(tsk) {
  		pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
-+		struct task_struct *t = task_early_kill(tsk, force_early);
  
--		if (!task_early_kill(tsk, force_early))
-+		if (!t)
+-		if (!task_early_kill(tsk))
++		if (!task_early_kill(tsk, force_early))
  			continue;
--
+ 
  		vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff,
- 				      pgoff) {
- 			/*
-@@ -457,8 +487,8 @@ static void collect_procs_file(struct pa
- 			 * Assume applications who requested early kill want
- 			 * to be informed of all such data corruptions.
- 			 */
--			if (vma->vm_mm == tsk->mm)
--				add_to_kill(tsk, page, vma, to_kill, tkc);
-+			if (vma->vm_mm == t->mm)
-+				add_to_kill(t, page, vma, to_kill, tkc);
- 		}
- 	}
- 	read_unlock(&tasklist_lock);
+@@ -469,7 +471,8 @@ static void collect_procs_file(struct pa
+  * First preallocate one tokill structure outside the spin locks,
+  * so that we can kill at least one process reasonably reliable.
+  */
+-static void collect_procs(struct page *page, struct list_head *tokill)
++static void collect_procs(struct page *page, struct list_head *tokill,
++				int force_early)
+ {
+ 	struct to_kill *tk;
+ 
+@@ -480,9 +483,9 @@ static void collect_procs(struct page *p
+ 	if (!tk)
+ 		return;
+ 	if (PageAnon(page))
+-		collect_procs_anon(page, tokill, &tk);
++		collect_procs_anon(page, tokill, &tk, force_early);
+ 	else
+-		collect_procs_file(page, tokill, &tk);
++		collect_procs_file(page, tokill, &tk, force_early);
+ 	kfree(tk);
+ }
+ 
+@@ -967,7 +970,7 @@ static int hwpoison_user_mappings(struct
+ 	 * there's nothing that can be done.
+ 	 */
+ 	if (kill)
+-		collect_procs(ppage, &tokill);
++		collect_procs(ppage, &tokill, flags & MF_ACTION_REQUIRED);
+ 
+ 	ret = try_to_unmap(ppage, ttu);
+ 	if (ret != SWAP_SUCCESS)
 
 
