@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756798AbaF1SUh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:20:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54090 "EHLO
+	id S1756816AbaF1SUy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:20:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54085 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753815AbaF1Rvb (ORCPT
+	with ESMTP id S1755029AbaF1Rva (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:51:31 -0400
+	Sat, 28 Jun 2014 13:51:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Tony Luck <tony.luck@intel.com>,
         Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Otto Bruggeman <otto.g.bruggeman@intel.com>,
         Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@suse.de>,
         Chen Gong <gong.chen@linux.jf.intel.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.15 028/139] mm/memory-failure.c: dont let collect_procs() skip over processes for MF_ACTION_REQUIRED
-Date: Sat, 28 Jun 2014 10:46:29 -0700
-Message-Id: <20140628174606.699964348@linuxfoundation.org>
+Subject: [PATCH 3.15 027/139] mm/memory-failure.c-failure: send right signal code to correct thread
+Date: Sat, 28 Jun 2014 10:46:28 -0700
+Message-Id: <20140628174606.649752335@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -35,28 +36,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Tony Luck <tony.luck@intel.com>
 
-commit 74614de17db6fb472370c426d4f934d8d616edf2 upstream.
+commit a70ffcac741d31a406c1d2b832ae43d658e7e1cf upstream.
 
-When Linux sees an "action optional" machine check (where h/w has reported
-an error that is not in the current execution path) we generally do not
-want to signal a process, since most processes do not have a SIGBUS
-handler - we'd just prematurely terminate the process for a problem that
-they might never actually see.
+When a thread in a multi-threaded application hits a machine check because
+of an uncorrectable error in memory - we want to send the SIGBUS with
+si.si_code = BUS_MCEERR_AR to that thread.  Currently we fail to do that
+if the active thread is not the primary thread in the process.
+collect_procs() just finds primary threads and this test:
 
-task_early_kill() decides whether to consider a process - and it checks
-whether this specific process has been marked for early signals with
-"prctl", or if the system administrator has requested early signals for
-all processes using /proc/sys/vm/memory_failure_early_kill.
+	if ((flags & MF_ACTION_REQUIRED) && t == current) {
 
-But for MF_ACTION_REQUIRED case we must not defer.  The error is in the
-execution path of the current thread so we must send the SIGBUS
-immediatley.
+will see that the thread we found isn't the current thread and so send a
+si.si_code = BUS_MCEERR_AO to the primary (and nothing to the active
+thread at this time).
 
-Fix by passing a flag argument through collect_procs*() to
-task_early_kill() so it knows whether we can defer or must take action.
+We can fix this by checking whether "current" shares the same mm with the
+process that collect_procs() said owned the page.  If so, we send the
+SIGBUS to current (with code BUS_MCEERR_AR).
 
 Signed-off-by: Tony Luck <tony.luck@intel.com>
 Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Reported-by: Otto Bruggeman <otto.g.bruggeman@intel.com>
 Cc: Andi Kleen <andi@firstfloor.org>
 Cc: Borislav Petkov <bp@suse.de>
 Cc: Chen Gong <gong.chen@linux.jf.intel.com>
@@ -65,91 +65,22 @@ Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/memory-failure.c |   21 ++++++++++++---------
- 1 file changed, 12 insertions(+), 9 deletions(-)
+ mm/memory-failure.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 --- a/mm/memory-failure.c
 +++ b/mm/memory-failure.c
-@@ -380,10 +380,12 @@ static void kill_procs(struct list_head
- 	}
- }
+@@ -204,9 +204,9 @@ static int kill_proc(struct task_struct
+ #endif
+ 	si.si_addr_lsb = compound_order(compound_head(page)) + PAGE_SHIFT;
  
--static int task_early_kill(struct task_struct *tsk)
-+static int task_early_kill(struct task_struct *tsk, int force_early)
- {
- 	if (!tsk->mm)
- 		return 0;
-+	if (force_early)
-+		return 1;
- 	if (tsk->flags & PF_MCE_PROCESS)
- 		return !!(tsk->flags & PF_MCE_EARLY);
- 	return sysctl_memory_failure_early_kill;
-@@ -393,7 +395,7 @@ static int task_early_kill(struct task_s
-  * Collect processes when the error hit an anonymous page.
-  */
- static void collect_procs_anon(struct page *page, struct list_head *to_kill,
--			      struct to_kill **tkc)
-+			      struct to_kill **tkc, int force_early)
- {
- 	struct vm_area_struct *vma;
- 	struct task_struct *tsk;
-@@ -409,7 +411,7 @@ static void collect_procs_anon(struct pa
- 	for_each_process (tsk) {
- 		struct anon_vma_chain *vmac;
- 
--		if (!task_early_kill(tsk))
-+		if (!task_early_kill(tsk, force_early))
- 			continue;
- 		anon_vma_interval_tree_foreach(vmac, &av->rb_root,
- 					       pgoff, pgoff) {
-@@ -428,7 +430,7 @@ static void collect_procs_anon(struct pa
-  * Collect processes when the error hit a file mapped page.
-  */
- static void collect_procs_file(struct page *page, struct list_head *to_kill,
--			      struct to_kill **tkc)
-+			      struct to_kill **tkc, int force_early)
- {
- 	struct vm_area_struct *vma;
- 	struct task_struct *tsk;
-@@ -439,7 +441,7 @@ static void collect_procs_file(struct pa
- 	for_each_process(tsk) {
- 		pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
- 
--		if (!task_early_kill(tsk))
-+		if (!task_early_kill(tsk, force_early))
- 			continue;
- 
- 		vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff,
-@@ -465,7 +467,8 @@ static void collect_procs_file(struct pa
-  * First preallocate one tokill structure outside the spin locks,
-  * so that we can kill at least one process reasonably reliable.
-  */
--static void collect_procs(struct page *page, struct list_head *tokill)
-+static void collect_procs(struct page *page, struct list_head *tokill,
-+				int force_early)
- {
- 	struct to_kill *tk;
- 
-@@ -476,9 +479,9 @@ static void collect_procs(struct page *p
- 	if (!tk)
- 		return;
- 	if (PageAnon(page))
--		collect_procs_anon(page, tokill, &tk);
-+		collect_procs_anon(page, tokill, &tk, force_early);
- 	else
--		collect_procs_file(page, tokill, &tk);
-+		collect_procs_file(page, tokill, &tk, force_early);
- 	kfree(tk);
- }
- 
-@@ -963,7 +966,7 @@ static int hwpoison_user_mappings(struct
- 	 * there's nothing that can be done.
- 	 */
- 	if (kill)
--		collect_procs(ppage, &tokill);
-+		collect_procs(ppage, &tokill, flags & MF_ACTION_REQUIRED);
- 
- 	ret = try_to_unmap(ppage, ttu);
- 	if (ret != SWAP_SUCCESS)
+-	if ((flags & MF_ACTION_REQUIRED) && t == current) {
++	if ((flags & MF_ACTION_REQUIRED) && t->mm == current->mm) {
+ 		si.si_code = BUS_MCEERR_AR;
+-		ret = force_sig_info(SIGBUS, &si, t);
++		ret = force_sig_info(SIGBUS, &si, current);
+ 	} else {
+ 		/*
+ 		 * Don't use force here, it's convenient if the signal
 
 
