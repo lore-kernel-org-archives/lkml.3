@@ -1,81 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754376AbaF1BSu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 21:18:50 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:39804 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753454AbaF1BSt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 21:18:49 -0400
+	id S1754533AbaF1BUN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 21:20:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41255 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754368AbaF1BUM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jun 2014 21:20:12 -0400
+Date: Sat, 28 Jun 2014 03:20:08 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, hpa@linux.intel.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Lunn <andrew@lunn.ch>, Stephen Warren <swarren@wwwdotorg.org>,
+        Michal Hocko <mhocko@suse.cz>, Petr Mladek <pmladek@suse.cz>,
+        Joe Perches <joe@perches.com>, Arun KS <arunks.linux@gmail.com>,
+        Kees Cook <keescook@chromium.org>, Davidlohr Bueso <davidlohr@hp.com>,
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [PATCH v8 4/4] printk: allow increasing the ring buffer
+	depending on the number of CPUs
+Message-ID: <20140628012007.GJ27687@wotan.suse.de>
+References: <1403124337-14886-4-git-send-email-mcgrof@do-not-panic.com> <20140623154134.43ac7ab63896cd9ebcba84b6@linux-foundation.org> <20140624002050.GC27687@wotan.suse.de> <20140623174533.88663e64.akpm@linux-foundation.org> <20140624010554.GF27687@wotan.suse.de> <20140626144117.3412feee6234786be098259d@linux-foundation.org> <20140626231630.GI27687@wotan.suse.de> <20140626162014.156f6741c7d9d3234879054f@linux-foundation.org> <CAB=NE6W3HpEeKCPt+PRbUxavZY-MAv6E3J=zk9+uJwzUG=EoRg@mail.gmail.com> <20140627165914.c41788af.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <20140627141903.16817c28@gandalf.local.home>
-References: <CANGgnMbHckBQdKGN_N5Q6qEKc9n1CenxvMpeXog1NbSdL8UrTw@mail.gmail.com>
- <CANGgnMYDXerOUDOO9-RHMJKadKACA2KBGskZwoP-1ZwAhDEfVA@mail.gmail.com>
- <CAFLxGvxfBt7OvW=a2Kz08GLHSEiiOZsN-vB19CXnQiwqFxqMsA@mail.gmail.com>
- <CANGgnMYVoP-Z0Bv-VDEkJnvfa7Fi4-zY2F4A0PhMewGvwo3VVw@mail.gmail.com>
- <alpine.DEB.2.10.1406270027300.5170@nanos> <CANGgnMa+qtgJ3wwg_h5Rynw5vEvZpQZ6PvaUfXNQ8+Y3Yu5U0g@mail.gmail.com>
- <1403873856.5827.56.camel@marge.simpson.net> <20140627100157.6b0143a5@gandalf.local.home>
- <1403890493.5830.33.camel@marge.simpson.net> <20140627135415.7246e87e@gandalf.local.home>
- <1403892474.5830.41.camel@marge.simpson.net> <20140627141903.16817c28@gandalf.local.home>
-From: Austin Schuh <austin@peloton-tech.com>
-Date: Fri, 27 Jun 2014 18:18:27 -0700
-Message-ID: <CANGgnMZrx1s5AomG-L_F74215RE1uJOekTjYmLX0voG4NgakTg@mail.gmail.com>
-Subject: Re: Filesystem lockup with CONFIG_PREEMPT_RT
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        rt-users <linux-rt-users@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140627165914.c41788af.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 27, 2014 at 11:19 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Fri, 27 Jun 2014 20:07:54 +0200
-> Mike Galbraith <umgwanakikbuti@gmail.com> wrote:
->
->> > Why do we need the wakeup? the owner of the lock should wake it up
->> > shouldn't it?
->>
->> True, but that can take ages.
->
-> Can it? If the workqueue is of some higher priority, it should boost
-> the process that owns the lock. Otherwise it just waits like anything
-> else does.
->
-> I much rather keep the paradigm of the mainline kernel than to add a
-> bunch of hacks that can cause more unforeseen side effects that may
-> cause other issues.
->
-> Remember, this would only be for spinlocks converted into a rtmutex,
-> not for normal mutex or other sleeps. In mainline, the wake up still
-> would not happen so why are we waking it up here?
->
-> This seems similar to the BKL crap we had to deal with as well. If we
-> were going to sleep because we were blocked on a spinlock converted
-> rtmutex we could not release and retake the BKL because we would end up
-> blocked on two locks. Instead, we made sure that the spinlock would not
-> release or take the BKL. It kept with the paradigm of mainline and
-> worked. Sucked, but it worked.
->
-> -- Steve
+On Fri, Jun 27, 2014 at 04:59:14PM -0700, Andrew Morton wrote:
+> On Thu, 26 Jun 2014 16:32:15 -0700 "Luis R. Rodriguez" <mcgrof@suse.com> wrote:
+> 
+> > On Thu, Jun 26, 2014 at 4:20 PM, Andrew Morton
+> > <akpm@linux-foundation.org> wrote:
+> > > On Fri, 27 Jun 2014 01:16:30 +0200 "Luis R. Rodriguez" <mcgrof@suse.com> wrote:
+> > >
+> > >> > > Another note --  since this option depends on SMP and !BASE_SMALL technically
+> > >> > > num_possible_cpus() won't ever return something smaller than or equal to 1
+> > >> > > but because of the default values chosen the -1 on the compuation does affect
+> > >> > > whether or not this will trigger on > 64 CPUs or >= 64 CPUs, keeping the
+> > >> > > -1 means we require > 64 CPUs.
+> > >> >
+> > >> > hm, that sounds like more complexity.
+> > >> >
+> > >> > > This all can be changed however we like but the language and explained logic
+> > >> > > would just need to be changed.
+> > >> >
+> > >> > Let's start out simple.  What's wrong with doing
+> > >> >
+> > >> >     log buf len = max(__LOG_BUF_LEN, nr_possible_cpus * per-cpu log buf len)
+> > >>
+> > >> Sure, you already took in the patch series though so how would you like to
+> > >> handle a respin, you just drop the last patch and we respin it?
+> > >
+> > > A fresh patch would suit.  That's if you think it is a reasonable
+> > > approach - you've thought about this stuff more than I have!
+> > 
+> > The way its implemented now makes more technical sense, in short it
+> > assumes the first boot (and CPU) gets the full default kernel ring
+> > buffer size, the extra size is for the gibberish that each extra CPU
+> > is expected to spew out in the worst case. What you propose makes the
+> > explanation simpler and easier to understand but sends the wrong
+> > message about exactly how the growth of the kernel ring buffer is
+> > expected scale with the addition of more CPUs.
+> 
+> OK, it's finally starting to sink in.  The model for the kernel-wide
+> printk output is "a great pile of CPU-independent stuff plus a certain
+> amount of per-cpu stuff".  And the code at present attempts to follow
+> that model.  Yes?
 
-Sounds like you are arguing that we should disable preemption (or
-whatever the right mechanism is) while holding the pool lock?
+Yup, exactly.
 
-Workqueues spin up more threads when work that they are executing
-blocks.  This is done through hooks in the scheduler.  This means that
-we have to acquire the pool lock when work blocks on a lock in order
-to see if there is more work and whether or not we need to spin up a
-new thread.
+> I'm rather internet-challenged at present - please let me take another look at
+> the patch on Monday.
 
-It would be more context switches, but I wonder if we could kick the
-workqueue logic completely out of the scheduler into a thread.  Have
-the scheduler increment/decrement an atomic pool counter, and wake up
-the monitoring thread to spawn new threads when needed?  That would
-get rid of the recursive pool lock problem, and should reduce
-scheduler latency if we would need to spawn a new thread.
+OK!
 
-Austin
+  Luis
