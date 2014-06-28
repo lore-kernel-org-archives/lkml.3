@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752745AbaF1PCY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 11:02:24 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:47015 "EHLO
+	id S1752912AbaF1PEG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 11:04:06 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:47030 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751160AbaF1PCW (ORCPT
+	with ESMTP id S1752733AbaF1PEE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 11:02:22 -0400
-Date: Sat, 28 Jun 2014 17:02:16 +0200
+	Sat, 28 Jun 2014 11:04:04 -0400
+Date: Sat, 28 Jun 2014 17:04:01 +0200
 From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 To: Gregory CLEMENT <gregory.clement@free-electrons.com>
 Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
@@ -19,12 +19,12 @@ Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
         Nadav Haklai <nadavh@marvell.com>,
         Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
         linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/5] ARM: smp_scu: Add the enable speculative linefills
- operation
-Message-ID: <20140628170216.0c1965cf@free-electrons.com>
-In-Reply-To: <1403822608-31158-3-git-send-email-gregory.clement@free-electrons.com>
+Subject: Re: [PATCH 4/5] ARM: mvebu: Enable SCU Speculative linefills to L2
+ for Armada 375/38x
+Message-ID: <20140628170401.758c9d63@free-electrons.com>
+In-Reply-To: <1403822608-31158-5-git-send-email-gregory.clement@free-electrons.com>
 References: <1403822608-31158-1-git-send-email-gregory.clement@free-electrons.com>
-	<1403822608-31158-3-git-send-email-gregory.clement@free-electrons.com>
+	<1403822608-31158-5-git-send-email-gregory.clement@free-electrons.com>
 Organization: Free Electrons
 X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
@@ -36,75 +36,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Dear Gregory CLEMENT,
 
-On Fri, 27 Jun 2014 00:43:25 +0200, Gregory CLEMENT wrote:
-> Quotin the ARM datasheet "When set, coherent linefill requests are
+On Fri, 27 Jun 2014 00:43:27 +0200, Gregory CLEMENT wrote:
 
-Quotin -> Quoting
+> diff --git a/arch/arm/mach-mvebu/board-v7.c b/arch/arm/mach-mvebu/board-v7.c
+> index 8bb742fdf5ca..a24ea105e709 100644
+> --- a/arch/arm/mach-mvebu/board-v7.c
+> +++ b/arch/arm/mach-mvebu/board-v7.c
+> @@ -45,6 +45,7 @@ static void __init mvebu_scu_enable(void)
+>  		of_find_compatible_node(NULL, NULL, "arm,cortex-a9-scu");
+>  	if (np) {
+>  		scu_base = of_iomap(np, 0);
+> +		scu_spec_linefills_enable(scu_base, true);
 
-> sent speculatively to the L2C-310 in parallel with the tag look-up. If
-> the tag look-up misses, the confirmed linefill is sent to the L2C-310
-> and gets RDATA earlier because the data request was already initiated
-> by the speculative request. "
-> 
-> Some SoC (such as the Armada 375/38x) can benefit of this feature. As
+I find it rather weird to have a function call <foo>_enable() take a
+boolean parameter to indicate whether <foo> should be enabled or
+disabled. You should choose between:
 
-benefit of -> benefit from.
+	scu_spec_linefills_ctrl(scu_base, true/false)
 
->  #if defined(CONFIG_SMP) && defined(CONFIG_HAVE_ARM_SCU)
-> diff --git a/arch/arm/kernel/smp_scu.c b/arch/arm/kernel/smp_scu.c
-> index cfea41b41ad0..3fd21a495028 100644
-> --- a/arch/arm/kernel/smp_scu.c
-> +++ b/arch/arm/kernel/smp_scu.c
-> @@ -18,6 +18,7 @@
->  
->  #define SCU_CTRL		0x00
->  #define SCU_CTRL_ENABLE		    BIT(1)
-> +#define SCU_CTRL_SPEC_LINEFILLS	    BIT(3)
->  #define SCU_CONFIG		0x04
->  #define SCU_CPU_STATUS		0x08
->  #define SCU_INVALIDATE		0x0c
-> @@ -88,3 +89,24 @@ int scu_power_mode(void __iomem *scu_base, unsigned int mode)
->  
->  	return 0;
->  }
-> +
-> +/*
-> + * When enabled, coherent linefill requests are sent speculatively to
-> + * the L2C-310 in parallel with the tag look-up
-> + *
-> + */
-> +void scu_spec_linefills_enable(void __iomem *scu_base, bool enable)
-> +{
-> +	u32 scu_ctrl;
-> +
-> +	scu_ctrl = readl_relaxed(scu_base + SCU_CTRL);
-> +	/* already enabled? */
+(or some better suffix than _ctrl), or:
 
-Comment not needed, since SCU_CTRL_ENABLE already documents what's
-happening. Or a more useful comment would be: "We cannot change the SCU
-configuration while it is enabled".
-
-> +	if (scu_ctrl & SCU_CTRL_ENABLE)
-> +		return;
-
-Return an error in this case maybe?
-
-> +	if (enable)
-> +		scu_ctrl |= SCU_CTRL_SPEC_LINEFILLS;
-> +	else
-> +		scu_ctrl &= ~SCU_CTRL_SPEC_LINEFILLS;
-> +
-> +	writel_relaxed(scu_ctrl, scu_base + SCU_CTRL);
-> +}
-
-Instead of having a separate function to do this (and the standby
-operation), what about doing that directly in scu_enable() ? Either
-unconditionally if that is fine for all SCU users, or through a flags
-argument?
+	scu_spec_linefills_enable(scu_base)
+	scu_spec_linefills_disable(scu_base)
 
 Best regards,
 
-Thomas Petazzoni
+Thomas
 -- 
 Thomas Petazzoni, CTO, Free Electrons
 Embedded Linux, Kernel and Android engineering
