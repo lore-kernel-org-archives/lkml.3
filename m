@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964854AbaF1TWc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 15:22:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52798 "EHLO
+	id S1755045AbaF1TWv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 15:22:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52795 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753434AbaF1RrQ (ORCPT
+	with ESMTP id S1753364AbaF1RrP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:47:16 -0400
+	Sat, 28 Jun 2014 13:47:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        xiao jin <jin.xiao@intel.com>, "Zhang, Qi1" <qi1.zhang@intel.com>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.4 18/43] USB: usb_wwan: fix urb leak in write error path
-Date: Sat, 28 Jun 2014 10:46:09 -0700
-Message-Id: <20140628174450.632002874@linuxfoundation.org>
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Subject: [PATCH 3.4 17/43] matroxfb: perform a dummy read of M_STATUS
+Date: Sat, 28 Jun 2014 10:46:08 -0700
+Message-Id: <20140628174450.589925222@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174449.788784511@linuxfoundation.org>
 References: <20140628174449.788784511@linuxfoundation.org>
@@ -30,48 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: xiao jin <jin.xiao@intel.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit db0904737947d509844e171c9863ecc5b4534005 upstream.
+commit 972754cfaee94d6e25acf94a497bc0a864d91b7e upstream.
 
-When enable usb serial for modem data, sometimes the tty is blocked
-in tty_wait_until_sent because portdata->out_busy always is set and
-have no chance to be cleared.
+I had occasional screen corruption with the matrox framebuffer driver and
+I found out that the reason for the corruption is that the hardware
+blitter accesses the videoram while it is being written to.
 
-We find a bug in write error path. usb_wwan_write set portdata->out_busy
-firstly, then try autopm async with error. No out urb submit and no
-usb_wwan_outdat_callback to this write, portdata->out_busy can't be
-cleared.
+The matrox driver has a macro WaitTillIdle() that should wait until the
+blitter is idle, but it sometimes doesn't work. I added a dummy read
+mga_inl(M_STATUS) to WaitTillIdle() to fix the problem. The dummy read
+will flush the write buffer in the PCI chipset, and the next read of
+M_STATUS will return the hardware status.
 
-This patch clear portdata->out_busy if usb_wwan_write try autopm async
-with error.
+Since applying this patch, I had no screen corruption at all.
 
-Fixes: 383cedc3bb43 ("USB: serial: full autosuspend support for the
-option driver")
-
-Signed-off-by: xiao jin <jin.xiao@intel.com>
-Signed-off-by: Zhang, Qi1 <qi1.zhang@intel.com>
-Reviewed-by: David Cohen <david.a.cohen@linux.intel.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/usb_wwan.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/video/matrox/matroxfb_base.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/usb_wwan.c
-+++ b/drivers/usb/serial/usb_wwan.c
-@@ -236,8 +236,10 @@ int usb_wwan_write(struct tty_struct *tt
- 		    usb_pipeendpoint(this_urb->pipe), i);
+--- a/drivers/video/matrox/matroxfb_base.h
++++ b/drivers/video/matrox/matroxfb_base.h
+@@ -698,7 +698,7 @@ void matroxfb_unregister_driver(struct m
  
- 		err = usb_autopm_get_interface_async(port->serial->interface);
--		if (err < 0)
-+		if (err < 0) {
-+			clear_bit(i, &portdata->out_busy);
- 			break;
-+		}
+ #define mga_fifo(n)	do {} while ((mga_inl(M_FIFOSTATUS) & 0xFF) < (n))
  
- 		/* send the data */
- 		memcpy(this_urb->transfer_buffer, buf, todo);
+-#define WaitTillIdle()	do {} while (mga_inl(M_STATUS) & 0x10000)
++#define WaitTillIdle()	do { mga_inl(M_STATUS); do {} while (mga_inl(M_STATUS) & 0x10000); } while (0)
+ 
+ /* code speedup */
+ #ifdef CONFIG_FB_MATROX_MILLENIUM
 
 
