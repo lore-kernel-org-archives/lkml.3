@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756511AbaF1S0W (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:26:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53970 "EHLO
+	id S1756471AbaF1S0V (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:26:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53973 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755708AbaF1RvI (ORCPT
+	with ESMTP id S1755709AbaF1RvJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:51:08 -0400
+	Sat, 28 Jun 2014 13:51:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Leandro Liptak <leandroliptak@gmail.com>
-Subject: [PATCH 3.15 019/139] USB: EHCI: avoid BIOS handover on the HASEE E200
-Date: Sat, 28 Jun 2014 10:46:20 -0700
-Message-Id: <20140628174606.282799845@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.15 020/139] USB: option: fix runtime PM handling
+Date: Sat, 28 Jun 2014 10:46:21 -0700
+Message-Id: <20140628174606.329957176@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -29,61 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit b0a50e92bda3c4aeb8017d4e6c6e92146ebd5c9b upstream.
+commit acf47d4f9c39b1cba467aa9442fc2efe0b1da741 upstream.
 
-Leandro Liptak reports that his HASEE E200 computer hangs when we ask
-the BIOS to hand over control of the EHCI host controller.  This
-definitely sounds like a bug in the BIOS, but at the moment there is
-no way to fix it.
+Fix potential I/O while runtime suspended due to missing PM operations
+in send_setup.
 
-This patch works around the problem by avoiding the handoff whenever
-the motherboard and BIOS version match those of Leandro's computer.
+Fixes: 383cedc3bb43 ("USB: serial: full autosuspend support for the
+option driver")
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Leandro Liptak <leandroliptak@gmail.com>
-Tested-by: Leandro Liptak <leandroliptak@gmail.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/pci-quirks.c |   19 ++++++++++++++++---
- 1 file changed, 16 insertions(+), 3 deletions(-)
+ drivers/usb/serial/option.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -656,6 +656,14 @@ static const struct dmi_system_id ehci_d
- 			DMI_MATCH(DMI_BIOS_VERSION, "Lucid-"),
- 		},
- 	},
-+	{
-+		/* HASEE E200 */
-+		.matches = {
-+			DMI_MATCH(DMI_BOARD_VENDOR, "HASEE"),
-+			DMI_MATCH(DMI_BOARD_NAME, "E210"),
-+			DMI_MATCH(DMI_BIOS_VERSION, "6.00"),
-+		},
-+	},
- 	{ }
- };
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -1925,6 +1925,7 @@ static int option_send_setup(struct usb_
+ 	struct option_private *priv = intfdata->private;
+ 	struct usb_wwan_port_private *portdata;
+ 	int val = 0;
++	int res;
  
-@@ -665,9 +673,14 @@ static void ehci_bios_handoff(struct pci
- {
- 	int try_handoff = 1, tried_handoff = 0;
+ 	portdata = usb_get_serial_port_data(port);
  
--	/* The Pegatron Lucid tablet sporadically waits for 98 seconds trying
--	 * the handoff on its unused controller.  Skip it. */
--	if (pdev->vendor == 0x8086 && pdev->device == 0x283a) {
-+	/*
-+	 * The Pegatron Lucid tablet sporadically waits for 98 seconds trying
-+	 * the handoff on its unused controller.  Skip it.
-+	 *
-+	 * The HASEE E200 hangs when the semaphore is set (bugzilla #77021).
-+	 */
-+	if (pdev->vendor == 0x8086 && (pdev->device == 0x283a ||
-+			pdev->device == 0x27cc)) {
- 		if (dmi_check_system(ehci_dmi_nohandoff_table))
- 			try_handoff = 0;
- 	}
+@@ -1933,9 +1934,17 @@ static int option_send_setup(struct usb_
+ 	if (portdata->rts_state)
+ 		val |= 0x02;
+ 
+-	return usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
++	res = usb_autopm_get_interface(serial->interface);
++	if (res)
++		return res;
++
++	res = usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
+ 				0x22, 0x21, val, priv->bInterfaceNumber, NULL,
+ 				0, USB_CTRL_SET_TIMEOUT);
++
++	usb_autopm_put_interface(serial->interface);
++
++	return res;
+ }
+ 
+ MODULE_AUTHOR(DRIVER_AUTHOR);
 
 
