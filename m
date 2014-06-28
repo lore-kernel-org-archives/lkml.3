@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756963AbaF1T0j (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 15:26:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52715 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753062AbaF1RrD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753064AbaF1RrD (ORCPT <rfc822;w@1wt.eu>);
 	Sat, 28 Jun 2014 13:47:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52698 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752032AbaF1Rq4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Jun 2014 13:46:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.4 21/43] USB: usb_wwan: fix urb leak at shutdown
-Date: Sat, 28 Jun 2014 10:46:12 -0700
-Message-Id: <20140628174450.772382634@linuxfoundation.org>
+        Paul Bolle <pebolle@tiscali.nl>
+Subject: [PATCH 3.4 02/43] staging: tidspbridge: check for CONFIG_SND_OMAP_SOC_MCBSP
+Date: Sat, 28 Jun 2014 10:45:53 -0700
+Message-Id: <20140628174449.919058388@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174449.788784511@linuxfoundation.org>
 References: <20140628174449.788784511@linuxfoundation.org>
@@ -28,93 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Paul Bolle <pebolle@tiscali.nl>
 
-commit 79eed03e77d481b55d85d1cfe5a1636a0d3897fd upstream.
+commit d3921a03a89acb1b9ca599590c0131c89f8737d8 upstream.
 
-The delayed-write queue was never emptied at shutdown (close), something
-which could lead to leaked urbs if the port is closed before being
-runtime resumed due to a write.
+Commit d0f47ff17f29 ("ASoC: OMAP: Build config cleanup for McBSP")
+removed the Kconfig symbol OMAP_MCBSP. It left two checks for
+CONFIG_OMAP_MCBSP untouched.
 
-When this happens the output buffer would not drain on close
-(closing_wait timeout), and after consecutive opens, writes could be
-corrupted with previously buffered data, transfered with reduced
-throughput or completely blocked.
+Convert these to checks for CONFIG_SND_OMAP_SOC_MCBSP. That must be
+correct, since that re-enables calls to functions that are all found in
+sound/soc/omap/mcbsp.c. And that file is built only if
+CONFIG_SND_OMAP_SOC_MCBSP is defined.
 
-Note that unbusy_queued_urb() was simply moved out of CONFIG_PM.
-
-Fixes: 383cedc3bb43 ("USB: serial: full autosuspend support for the
-option driver")
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Fixes: d0f47ff17f29 ("ASoC: OMAP: Build config cleanup for McBSP")
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/usb_wwan.c |   34 ++++++++++++++++++++++------------
- 1 file changed, 22 insertions(+), 12 deletions(-)
+ drivers/staging/tidspbridge/core/dsp-clock.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/usb_wwan.c
-+++ b/drivers/usb/serial/usb_wwan.c
-@@ -434,12 +434,26 @@ int usb_wwan_open(struct tty_struct *tty
- }
- EXPORT_SYMBOL(usb_wwan_open);
- 
-+static void unbusy_queued_urb(struct urb *urb,
-+					struct usb_wwan_port_private *portdata)
-+{
-+	int i;
-+
-+	for (i = 0; i < N_OUT_URB; i++) {
-+		if (urb == portdata->out_urbs[i]) {
-+			clear_bit(i, &portdata->out_busy);
-+			break;
-+		}
-+	}
-+}
-+
- void usb_wwan_close(struct usb_serial_port *port)
- {
- 	int i;
- 	struct usb_serial *serial = port->serial;
- 	struct usb_wwan_port_private *portdata;
- 	struct usb_wwan_intf_private *intfdata = port->serial->private;
-+	struct urb *urb;
- 
- 	dbg("%s", __func__);
- 	portdata = usb_get_serial_port_data(port);
-@@ -450,6 +464,14 @@ void usb_wwan_close(struct usb_serial_po
- 		portdata->opened = 0;
- 		spin_unlock_irq(&intfdata->susp_lock);
- 
-+		for (;;) {
-+			urb = usb_get_from_anchor(&portdata->delayed);
-+			if (!urb)
-+				break;
-+			unbusy_queued_urb(urb, portdata);
-+			usb_autopm_put_interface_async(serial->interface);
-+		}
-+
- 		for (i = 0; i < N_IN_URB; i++)
- 			usb_kill_urb(portdata->in_urbs[i]);
- 		for (i = 0; i < N_OUT_URB; i++)
-@@ -667,18 +689,6 @@ int usb_wwan_suspend(struct usb_serial *
- }
- EXPORT_SYMBOL(usb_wwan_suspend);
- 
--static void unbusy_queued_urb(struct urb *urb, struct usb_wwan_port_private *portdata)
--{
--	int i;
--
--	for (i = 0; i < N_OUT_URB; i++) {
--		if (urb == portdata->out_urbs[i]) {
--			clear_bit(i, &portdata->out_busy);
--			break;
--		}
--	}
--}
--
- static void play_delayed(struct usb_serial_port *port)
- {
- 	struct usb_wwan_intf_private *data;
+--- a/drivers/staging/tidspbridge/core/dsp-clock.c
++++ b/drivers/staging/tidspbridge/core/dsp-clock.c
+@@ -213,7 +213,7 @@ int dsp_clk_enable(enum dsp_clk_id clk_i
+ 	case GPT_CLK:
+ 		status = omap_dm_timer_start(timer[clk_id - 1]);
+ 		break;
+-#ifdef CONFIG_OMAP_MCBSP
++#ifdef CONFIG_SND_OMAP_SOC_MCBSP
+ 	case MCBSP_CLK:
+ 		omap_mcbsp_request(MCBSP_ID(clk_id));
+ 		omap2_mcbsp_set_clks_src(MCBSP_ID(clk_id), MCBSP_CLKS_PAD_SRC);
+@@ -289,7 +289,7 @@ int dsp_clk_disable(enum dsp_clk_id clk_
+ 	case GPT_CLK:
+ 		status = omap_dm_timer_stop(timer[clk_id - 1]);
+ 		break;
+-#ifdef CONFIG_OMAP_MCBSP
++#ifdef CONFIG_SND_OMAP_SOC_MCBSP
+ 	case MCBSP_CLK:
+ 		omap2_mcbsp_set_clks_src(MCBSP_ID(clk_id), MCBSP_CLKS_PRCM_SRC);
+ 		omap_mcbsp_free(MCBSP_ID(clk_id));
 
 
