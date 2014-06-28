@@ -1,19 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757275AbaF1T07 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 15:26:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52735 "EHLO
+	id S932402AbaF1T1g (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 15:27:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52715 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753048AbaF1RrC (ORCPT
+	with ESMTP id S1752950AbaF1RrB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:47:02 -0400
+	Sat, 28 Jun 2014 13:47:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.4 20/43] USB: usb_wwan: fix write and suspend race
-Date: Sat, 28 Jun 2014 10:46:11 -0700
-Message-Id: <20140628174450.721943031@linuxfoundation.org>
+        Tony Luck <tony.luck@intel.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Otto Bruggeman <otto.g.bruggeman@intel.com>,
+        Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@suse.de>,
+        Chen Gong <gong.chen@linux.jf.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.4 10/43] mm/memory-failure.c-failure: send right signal code to correct thread
+Date: Sat, 28 Jun 2014 10:46:01 -0700
+Message-Id: <20140628174450.286586639@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174449.788784511@linuxfoundation.org>
 References: <20140628174449.788784511@linuxfoundation.org>
@@ -28,57 +34,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Tony Luck <tony.luck@intel.com>
 
-commit 170fad9e22df0063eba0701adb966786d7a4ec5a upstream.
+commit a70ffcac741d31a406c1d2b832ae43d658e7e1cf upstream.
 
-Fix race between write() and suspend() which could lead to writes being
-dropped (or I/O while suspended) if the device is runtime suspended
-while a write request is being processed.
+When a thread in a multi-threaded application hits a machine check because
+of an uncorrectable error in memory - we want to send the SIGBUS with
+si.si_code = BUS_MCEERR_AR to that thread.  Currently we fail to do that
+if the active thread is not the primary thread in the process.
+collect_procs() just finds primary threads and this test:
 
-Specifically, suspend() releases the susp_lock after determining the
-device is idle but before setting the suspended flag, thus leaving a
-window where a concurrent write() can submit an urb.
+	if ((flags & MF_ACTION_REQUIRED) && t == current) {
 
-Fixes: 383cedc3bb43 ("USB: serial: full autosuspend support for the
-option driver")
+will see that the thread we found isn't the current thread and so send a
+si.si_code = BUS_MCEERR_AO to the primary (and nothing to the active
+thread at this time).
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+We can fix this by checking whether "current" shares the same mm with the
+process that collect_procs() said owned the page.  If so, we send the
+SIGBUS to current (with code BUS_MCEERR_AR).
+
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Reported-by: Otto Bruggeman <otto.g.bruggeman@intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Borislav Petkov <bp@suse.de>
+Cc: Chen Gong <gong.chen@linux.jf.intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/usb_wwan.c |   12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
+ mm/memory-failure.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/usb_wwan.c
-+++ b/drivers/usb/serial/usb_wwan.c
-@@ -647,22 +647,20 @@ EXPORT_SYMBOL(usb_wwan_release);
- int usb_wwan_suspend(struct usb_serial *serial, pm_message_t message)
- {
- 	struct usb_wwan_intf_private *intfdata = serial->private;
--	int b;
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -208,9 +208,9 @@ static int kill_proc(struct task_struct
+ #endif
+ 	si.si_addr_lsb = compound_trans_order(compound_head(page)) + PAGE_SHIFT;
  
- 	dbg("%s entered", __func__);
- 
-+	spin_lock_irq(&intfdata->susp_lock);
- 	if (PMSG_IS_AUTO(message)) {
--		spin_lock_irq(&intfdata->susp_lock);
--		b = intfdata->in_flight;
--		spin_unlock_irq(&intfdata->susp_lock);
--
--		if (b)
-+		if (intfdata->in_flight) {
-+			spin_unlock_irq(&intfdata->susp_lock);
- 			return -EBUSY;
-+		}
- 	}
- 
--	spin_lock_irq(&intfdata->susp_lock);
- 	intfdata->suspended = 1;
- 	spin_unlock_irq(&intfdata->susp_lock);
-+
- 	stop_read_write_urbs(serial);
- 
- 	return 0;
+-	if ((flags & MF_ACTION_REQUIRED) && t == current) {
++	if ((flags & MF_ACTION_REQUIRED) && t->mm == current->mm) {
+ 		si.si_code = BUS_MCEERR_AR;
+-		ret = force_sig_info(SIGBUS, &si, t);
++		ret = force_sig_info(SIGBUS, &si, current);
+ 	} else {
+ 		/*
+ 		 * Don't use force here, it's convenient if the signal
 
 
