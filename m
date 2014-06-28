@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964881AbaF1R60 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:58:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54510 "EHLO
+	id S932453AbaF1RxT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:53:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54489 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756206AbaF1RxV (ORCPT
+	with ESMTP id S932428AbaF1RxQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:53:21 -0400
+	Sat, 28 Jun 2014 13:53:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
         Chris Mason <clm@fb.com>
-Subject: [PATCH 3.15 115/139] Btrfs: fix double free in find_lock_delalloc_range
-Date: Sat, 28 Jun 2014 10:47:56 -0700
-Message-Id: <20140628174610.662550085@linuxfoundation.org>
+Subject: [PATCH 3.15 127/139] fs: btrfs: volumes.c: Fix for possible null pointer dereference
+Date: Sat, 28 Jun 2014 10:48:08 -0700
+Message-Id: <20140628174611.211178908@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -28,29 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Mason <clm@fb.com>
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 
-commit 7d78874273463a784759916fc3e0b4e2eb141c70 upstream.
+commit 8321cf2596d283821acc466377c2b85bcd3422b7 upstream.
 
-We need to NULL the cached_state after freeing it, otherwise
-we might free it again if find_delalloc_range doesn't find anything.
+There is otherwise a risk of a possible null pointer dereference.
 
+Was largely found by using a static code analysis program called cppcheck.
+
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/extent_io.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/btrfs/volumes.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/fs/btrfs/extent_io.c
-+++ b/fs/btrfs/extent_io.c
-@@ -1693,6 +1693,7 @@ again:
- 		 * shortening the size of the delalloc range we're searching
- 		 */
- 		free_extent_state(cached_state);
-+		cached_state = NULL;
- 		if (!loops) {
- 			max_bytes = PAGE_CACHE_SIZE;
- 			loops = 1;
+--- a/fs/btrfs/volumes.c
++++ b/fs/btrfs/volumes.c
+@@ -1690,11 +1690,12 @@ int btrfs_rm_device(struct btrfs_root *r
+ 		struct btrfs_fs_devices *fs_devices;
+ 		fs_devices = root->fs_info->fs_devices;
+ 		while (fs_devices) {
+-			if (fs_devices->seed == cur_devices)
++			if (fs_devices->seed == cur_devices) {
++				fs_devices->seed = cur_devices->seed;
+ 				break;
++			}
+ 			fs_devices = fs_devices->seed;
+ 		}
+-		fs_devices->seed = cur_devices->seed;
+ 		cur_devices->seed = NULL;
+ 		lock_chunks(root);
+ 		__btrfs_close_devices(cur_devices);
 
 
