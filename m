@@ -1,74 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754379AbaF1BDS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 21:03:18 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:64602 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753968AbaF1BDQ (ORCPT
+	id S1754475AbaF1BDX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 21:03:23 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:63075 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754387AbaF1BDU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 21:03:16 -0400
+	Fri, 27 Jun 2014 21:03:20 -0400
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org, hannes@cmpxchg.org,
-        mhocko@suse.cz, vgoyal@redhat.com, axboe@kernel.dk
-Subject: [PATCHSET cgroup/for-3.17] cgroup, blkcg, memcg: make blkcg depend on memcg on unified hierarchy
-Date: Fri, 27 Jun 2014 21:03:06 -0400
-Message-Id: <1403917392-32555-1-git-send-email-tj@kernel.org>
+        mhocko@suse.cz, vgoyal@redhat.com, axboe@kernel.dk,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3/6] cgroup: make interface files visible iff enabled on cgroup->subtree_control
+Date: Fri, 27 Jun 2014 21:03:09 -0400
+Message-Id: <1403917392-32555-4-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1403917392-32555-1-git-send-email-tj@kernel.org>
+References: <1403917392-32555-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, guys.
+cgroup is implementing support for subsystem dependency which would
+require a way to enable a subsystem even when it's not directly
+configured through "cgroup.subtree_control".
 
-Currently, the blkio subsystem attributes all of writeback IOs to the
-root.  One of the issues is that there's no way to tell who originated
-a writeback IO from block layer.  Those IOs are usually issued
-asynchronously from a task which didn't have anything to do with
-actually generating the dirty pages.  The memory subsystem, when
-enabled, already keeps track of the ownership of each dirty page and
-it's desirable for blkio to piggyback instead of adding its own
-per-page tag.
+The preceding patch distinguished cgroup->subtree_control and
+->child_subsys_mask where the former is the subsystems explicitly
+configured by the userland and the latter is all enabled subsystems
+currently is equal to the former but will include subsystems
+implicitly enabled through dependency.
 
-This can be achieved on the unified hierarchy without too much
-difficulty.  This patchset implements a dependency mechanism in the
-cgroup such that a subsystem can depends on other subsystems.  If
-available, the depended-upon subsystems are enabled together
-implicitly when the subsystem is turned on.  Implicitly enabled
-subsystems are invisible and the dependencies are transparent to
-userland.
+Subsystems which are enabled due to dependency shouldn't be visible to
+userland.  This patch updates cgroup_subtree_control_write() and
+create_css() such that interface files are not created for implicitly
+enabled subsytems.
 
-This patchset implements the dependency mechanism in cgroup core and
-make blkcg depend on memcg.  This doesn't actually solve the writeback
-problem yet but is an important step.
+* @visible paramter is added to create_css().  Interface files are
+  created only when true.
 
-This patchset contains the following six patches.
+* If an already implicitly enabled subsystem is turned on through
+  "cgroup.subtree_control", the existing css should be used.  css
+  draining is skipped.
 
- 0001-cgroup-reorganize-cgroup_subtree_control_write.patch
- 0002-cgroup-introduce-cgroup-subtree_control.patch
- 0003-cgroup-make-interface-files-visible-iff-enabled-on-c.patch
- 0004-cgroup-implement-cgroup_subsys-css_reset.patch
- 0005-cgroup-implement-cgroup_subsys-depends_on.patch
- 0006-blkcg-memcg-make-blkcg-depend-on-memcg-on-the-defaul.patch
+* cgroup_subtree_control_write() computes the new target
+  cgroup->child_subsys_mask and create/kill or show/hide csses
+  accordingly.
 
-0001-0005 gradually implement the dependency mechanism.
+As the two subsystem masks are still kept identical, this patch
+doesn't introduce any behavior changes.
 
-0006 makes blkcg depend on memcg.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ include/linux/cgroup.h |  2 ++
+ kernel/cgroup.c        | 78 +++++++++++++++++++++++++++++++++++++++++---------
+ 2 files changed, 66 insertions(+), 14 deletions(-)
 
-This patchset is on top of a497c3ba1d97 ("Linux 3.16-rc2") and
-available in the following git branch.
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 8d52c8e..5287f93 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -208,6 +208,8 @@ struct cgroup {
+ 	 * ->subtree_control is the one configured through
+ 	 * "cgroup.subtree_control" while ->child_subsys_mask is the
+ 	 * effective one which may have more subsystems enabled.
++	 * Controller knobs are made available iff it's enabled in
++	 * ->subtree_control.
+ 	 */
+ 	unsigned int subtree_control;
+ 	unsigned int child_subsys_mask;
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 14a9d88..331fa296 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -186,7 +186,8 @@ static void cgroup_put(struct cgroup *cgrp);
+ static int rebind_subsystems(struct cgroup_root *dst_root,
+ 			     unsigned int ss_mask);
+ static int cgroup_destroy_locked(struct cgroup *cgrp);
+-static int create_css(struct cgroup *cgrp, struct cgroup_subsys *ss);
++static int create_css(struct cgroup *cgrp, struct cgroup_subsys *ss,
++		      bool visible);
+ static void css_release(struct percpu_ref *ref);
+ static void kill_css(struct cgroup_subsys_state *css);
+ static int cgroup_addrm_files(struct cgroup *cgrp, struct cftype cfts[],
+@@ -2577,6 +2578,7 @@ static ssize_t cgroup_subtree_control_write(struct kernfs_open_file *of,
+ 					    loff_t off)
+ {
+ 	unsigned int enable = 0, disable = 0;
++	unsigned int css_enable, css_disable, old_ctrl, new_ctrl;
+ 	struct cgroup *cgrp, *child;
+ 	struct cgroup_subsys *ss;
+ 	char *tok;
+@@ -2630,6 +2632,13 @@ static ssize_t cgroup_subtree_control_write(struct kernfs_open_file *of,
+ 			}
+ 
+ 			/*
++			 * @ss is already enabled through dependency and
++			 * we'll just make it visible.  Skip draining.
++			 */
++			if (cgrp->child_subsys_mask & (1 << ssid))
++				continue;
++
++			/*
+ 			 * Because css offlining is asynchronous, userland
+ 			 * might try to re-enable the same controller while
+ 			 * the previous instance is still around.  In such
+@@ -2681,17 +2690,39 @@ static ssize_t cgroup_subtree_control_write(struct kernfs_open_file *of,
+ 		goto out_unlock;
+ 	}
+ 
++	/*
++	 * Update subsys masks and calculate what needs to be done.  More
++	 * subsystems than specified may need to be enabled or disabled
++	 * depending on subsystem dependencies.
++	 */
+ 	cgrp->subtree_control |= enable;
+ 	cgrp->subtree_control &= ~disable;
++
++	old_ctrl = cgrp->child_subsys_mask;
+ 	cgroup_refresh_child_subsys_mask(cgrp);
++	new_ctrl = cgrp->child_subsys_mask;
++
++	css_enable = ~old_ctrl & new_ctrl;
++	css_disable = old_ctrl & ~new_ctrl;
++	enable |= css_enable;
++	disable |= css_disable;
+ 
+-	/* create new csses */
++	/*
++	 * Create new csses or make the existing ones visible.  A css is
++	 * created invisible if it's being implicitly enabled through
++	 * dependency.  An invisible css is made visible when the userland
++	 * explicitly enables it.
++	 */
+ 	for_each_subsys(ss, ssid) {
+ 		if (!(enable & (1 << ssid)))
+ 			continue;
+ 
+ 		cgroup_for_each_live_child(child, cgrp) {
+-			ret = create_css(child, ss);
++			if (css_enable & (1 << ssid))
++				ret = create_css(child, ss,
++					cgrp->subtree_control & (1 << ssid));
++			else
++				ret = cgroup_populate_dir(child, 1 << ssid);
+ 			if (ret)
+ 				goto err_undo_css;
+ 		}
+@@ -2706,13 +2737,21 @@ static ssize_t cgroup_subtree_control_write(struct kernfs_open_file *of,
+ 	if (ret)
+ 		goto err_undo_css;
+ 
+-	/* all tasks are now migrated away from the old csses, kill them */
++	/*
++	 * All tasks are migrated out of disabled csses.  Kill or hide
++	 * them.  A css is hidden when the userland requests it to be
++	 * disabled while other subsystems are still depending on it.
++	 */
+ 	for_each_subsys(ss, ssid) {
+ 		if (!(disable & (1 << ssid)))
+ 			continue;
+ 
+-		cgroup_for_each_live_child(child, cgrp)
+-			kill_css(cgroup_css(child, ss));
++		cgroup_for_each_live_child(child, cgrp) {
++			if (css_disable & (1 << ssid))
++				kill_css(cgroup_css(child, ss));
++			else
++				cgroup_clear_dir(child, 1 << ssid);
++		}
+ 	}
+ 
+ 	kernfs_activate(cgrp->kn);
+@@ -2732,8 +2771,14 @@ err_undo_css:
+ 
+ 		cgroup_for_each_live_child(child, cgrp) {
+ 			struct cgroup_subsys_state *css = cgroup_css(child, ss);
+-			if (css)
++
++			if (!css)
++				continue;
++
++			if (css_enable & (1 << ssid))
+ 				kill_css(css);
++			else
++				cgroup_clear_dir(child, 1 << ssid);
+ 		}
+ 	}
+ 	goto out_unlock;
+@@ -4282,12 +4327,14 @@ static void offline_css(struct cgroup_subsys_state *css)
+  * create_css - create a cgroup_subsys_state
+  * @cgrp: the cgroup new css will be associated with
+  * @ss: the subsys of new css
++ * @visible: whether to create control knobs for the new css or not
+  *
+  * Create a new css associated with @cgrp - @ss pair.  On success, the new
+- * css is online and installed in @cgrp with all interface files created.
+- * Returns 0 on success, -errno on failure.
++ * css is online and installed in @cgrp with all interface files created if
++ * @visible.  Returns 0 on success, -errno on failure.
+  */
+-static int create_css(struct cgroup *cgrp, struct cgroup_subsys *ss)
++static int create_css(struct cgroup *cgrp, struct cgroup_subsys *ss,
++		      bool visible)
+ {
+ 	struct cgroup *parent = cgroup_parent(cgrp);
+ 	struct cgroup_subsys_state *parent_css = cgroup_css(parent, ss);
+@@ -4311,9 +4358,11 @@ static int create_css(struct cgroup *cgrp, struct cgroup_subsys *ss)
+ 		goto err_free_percpu_ref;
+ 	css->id = err;
+ 
+-	err = cgroup_populate_dir(cgrp, 1 << ss->id);
+-	if (err)
+-		goto err_free_id;
++	if (visible) {
++		err = cgroup_populate_dir(cgrp, 1 << ss->id);
++		if (err)
++			goto err_free_id;
++	}
+ 
+ 	/* @css is ready to be brought online now, make it visible */
+ 	list_add_tail_rcu(&css->sibling, &parent_css->children);
+@@ -4430,7 +4479,8 @@ static int cgroup_mkdir(struct kernfs_node *parent_kn, const char *name,
+ 	/* let's create and online css's */
+ 	for_each_subsys(ss, ssid) {
+ 		if (parent->child_subsys_mask & (1 << ssid)) {
+-			ret = create_css(cgrp, ss);
++			ret = create_css(cgrp, ss,
++					 parent->subtree_control & (1 << ssid));
+ 			if (ret)
+ 				goto out_destroy;
+ 		}
+-- 
+1.9.3
 
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-cgroup-dependency
-
-diffstat follows.  Thanks.
-
- Documentation/cgroups/cgroups.txt           |   14 +
- Documentation/cgroups/unified-hierarchy.txt |   23 ++-
- block/blk-cgroup.c                          |    7
- include/linux/cgroup.h                      |   20 ++
- kernel/cgroup.c                             |  201 ++++++++++++++++++++++------
- mm/memcontrol.c                             |   24 +++
- 6 files changed, 243 insertions(+), 46 deletions(-)
-
---
-tejun
