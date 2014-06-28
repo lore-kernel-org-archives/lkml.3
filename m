@@ -1,92 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751592AbaF1QRJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 12:17:09 -0400
-Received: from smtp6-g21.free.fr ([212.27.42.6]:25648 "EHLO smtp6-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751129AbaF1QRI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 12:17:08 -0400
-From: Guillaume Morin <guillaume@morinfr.org>
-To: Lidza Louina <lidza.louina@gmail.com>, Mark Hounschell <markh@compro.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Guillaume Morin <guillaume@morinfr.org>,
-        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] staging: dgnc_driver.c: code style fixes
-Date: Sat, 28 Jun 2014 18:16:40 +0200
-Message-Id: <20010f834ddc542235b3bcac65caed31c62f7cbb.1403935000.git.guillaume@morinfr.org>
-X-Mailer: git-send-email 1.7.10.4
+	id S1752460AbaF1QUW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 12:20:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52297 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751468AbaF1QUV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Jun 2014 12:20:21 -0400
+Date: Sat, 28 Jun 2014 12:20:09 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Kiran Kankipati <kiran.kankipati@gmail.com>
+Cc: "Don A. Bailey" <donb@securitymouse.com>, linux-kernel@vger.kernel.org
+Subject: Re: Bug in Kernel's LZ4-HC in 64bit (kernel crypto library)
+Message-ID: <20140628162009.GA13161@kroah.com>
+References: <CALWnrFRO_trdJ7aL_vaWtFbdJgxRkt4+zROR_chQFNPz7v3BVQ@mail.gmail.com>
+ <20140628160020.GA11019@kroah.com>
+ <CALWnrFRQ_VHzPtBe04n3xfeQu=kjw=TE+wotzyoTW5P6gdZ-zQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CALWnrFRQ_VHzPtBe04n3xfeQu=kjw=TE+wotzyoTW5P6gdZ-zQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Guillaume Morin <guillaume@morinfr.org>
+On Sat, Jun 28, 2014 at 09:39:12PM +0530, Kiran Kankipati wrote:
+> Wow I see. Thanks Greg. I seen the 3.15.2 change logs, found you are involved
+> in the LZO issue.
+> 
+> I read about this issue in some news too that they found 20yr old bug in it.
+> 
+> So thought reporting to you via email.
+> 
+> I don't do bugzilla :)
+> >> I see.
+> 
+> I am new to kernel foundation procedures. So sorry for bothering you.
+> 
+> --------
+> Ok, where do you see an overrun happening?  I know the lz4 code in the
+> kernel is "old" compared to upstream.  I am working on updating it to
+> the latest version, but that's not going to happen until 3.17.
+> 
+> >> Here is the place and APIs I am using in my TrafficSqueezer code:
+> 
+> 
+> void ts_comp(BYTE *flag, BYTE *pbuff, size_t *pbuff_len, BYTE *mid_buff, BYTE
+> *lz4hc_wrkmem)
+> {    size_t mid_buff_size = 0;
+> 
+>     if(lz4hc_compress( (const unsigned char *)pbuff, (*pbuff_len), (unsigned
+> char *)mid_buff, &mid_buff_size, (void *)lz4hc_wrkmem)<0) return;
+>        
+>     if(((mid_buff_size+TS_FLAG_SIZE) < (*pbuff_len)) && (mid_buff_size!=0))
+>     {    memcpy((BYTE *)pbuff, (BYTE *)mid_buff, mid_buff_size); (*pbuff_len)=
+> mid_buff_size;
+>         ts_set_pkt_tag(flag, TS_FLAG_COMP);
+>         #ifdef CONFIG_TRAFFICSQUEEZER_DEBUG
+>         printk("comp - prossd [LZ4-HC] [mid_buff_size: %zu]\n", mid_buff_size);
+>         #endif
+>     }
+> }
+> 
+> bool ts_decomp(BYTE *pbuff, size_t *pbuff_len, BYTE *mid_buff)
+> {  size_t mid_buff_size = TS_MAX_OPT_BUF_LEN;  //WARNING: DO NOT change this !!
+> 
+>     if(lz4_decompress_unknownoutputsize( (const unsigned char *)pbuff,
+> (*pbuff_len), (unsigned char *)mid_buff,  &mid_buff_size)<0) { return false; }
+>     if(mid_buff_size > TS_MAX_OPT_BUF_LEN) { return false; }
+>    
+>     memcpy((BYTE *)pbuff, (BYTE *)mid_buff, mid_buff_size); (*pbuff_len)=
+> mid_buff_size;
+> #ifdef CONFIG_TRAFFICSQUEEZER_DEBUG
+>     printk("decomp - prossd [LZ4-HC] [mid_buff_size: %zu]\n", mid_buff_size);
+> #endif  
+>     return true;
+> }
 
-Simple code style fixes:
- - "if(" -> "if ("
- - "switch(" -> "switch ("
- - move one open brace to the line of the declaration instead of
-   its own line
- - remove trailing whitespace
+I don't understand, are you having problems on the compress side, or the
+decompress side?  Where in the lz4 is a bug happening?
 
-Signed-off-by: Guillaume Morin <guillaume@morinfr.org>
----
-Changes since v1:
- - added explicit description of the fixes
+Do you have a data stream that I can use to run it through the lz4 code
+to see where the problem is in the compress/decompress code?
 
- drivers/staging/dgnc/dgnc_driver.c |   11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+> ------------
+> If this fix scheduled for 3.17, I am glad enough to wait till then. Since I
+> need this fix as a part of mainstream kernel release series :)
 
-diff --git a/drivers/staging/dgnc/dgnc_driver.c b/drivers/staging/dgnc/dgnc_driver.c
-index d52a9e8..68460af 100644
---- a/drivers/staging/dgnc/dgnc_driver.c
-+++ b/drivers/staging/dgnc/dgnc_driver.c
-@@ -88,8 +88,7 @@ module_exit(dgnc_cleanup_module);
- /*
-  * File operations permitted on Control/Management major.
-  */
--static const struct file_operations dgnc_BoardFops =
--{
-+static const struct file_operations dgnc_BoardFops = {
- 	.owner		=	THIS_MODULE,
- 	.unlocked_ioctl =  	dgnc_mgmt_ioctl,
- 	.open		=	dgnc_mgmt_open,
-@@ -407,7 +406,7 @@ static void dgnc_cleanup_board(struct dgnc_board *brd)
- {
- 	int i = 0;
- 
--	if(!brd || brd->magic != DGNC_BOARD_MAGIC)
-+	if (!brd || brd->magic != DGNC_BOARD_MAGIC)
- 		return;
- 
- 	switch (brd->device) {
-@@ -480,7 +479,7 @@ static int dgnc_found_board(struct pci_dev *pdev, int id)
- 	/* get the board structure and prep it */
- 	brd = dgnc_Board[dgnc_NumBoards] =
- 		kzalloc(sizeof(*brd), GFP_KERNEL);
--	if (!brd) 
-+	if (!brd)
- 		return -ENOMEM;
- 
- 	/* make a temporary message buffer for the boot messages */
-@@ -523,7 +522,7 @@ static int dgnc_found_board(struct pci_dev *pdev, int id)
- 	brd->irq = pci_irq;
- 
- 
--	switch(brd->device) {
-+	switch (brd->device) {
- 
- 	case PCI_DEVICE_CLASSIC_4_DID:
- 	case PCI_DEVICE_CLASSIC_8_DID:
-@@ -887,7 +886,7 @@ int dgnc_ms_sleep(ulong ms)
-  */
- char *dgnc_ioctl_name(int cmd)
- {
--	switch(cmd) {
-+	switch (cmd) {
- 
- 	case TCGETA:		return "TCGETA";
- 	case TCGETS:		return "TCGETS";
--- 
-1.7.10.4
+The fixes I've done will show up in 3.16-rc3 and in the next round of
+stable kernel updates that will come out Monday, so you can pick those
+releases up and test if you can't apply individual patches for a kernel
+tree.
 
+thanks,
+
+greg k-h
