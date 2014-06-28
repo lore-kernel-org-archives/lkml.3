@@ -1,106 +1,504 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756332AbaF1Svp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:51:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53319 "EHLO
+	id S1755116AbaF1RtV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:49:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53280 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755123AbaF1RtW (ORCPT
+	with ESMTP id S1755052AbaF1RtN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:49:22 -0400
+	Sat, 28 Jun 2014 13:49:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 034/110] idr: fix overflow bug during maximum ID calculation at maximum height
-Date: Sat, 28 Jun 2014 10:46:31 -0700
-Message-Id: <20140628174547.210444031@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: [PATCH 3.14 000/110] 3.14.10-stable review
+Date: Sat, 28 Jun 2014 10:45:57 -0700
+Message-Id: <20140628174545.354748696@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
-In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
-References: <20140628174545.354748696@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+This is the start of the stable review cycle for the 3.14.10 release.
+There are 110 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-------------------
+Responses should be made by Mon Jun 30 17:45:23 UTC 2014.
+Anything received after that time might be too late.
 
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.14.10-rc1.gz
+and the diffstat can be found below.
 
-commit 3afb69cb5572b3c8c898c00880803cf1a49852c4 upstream.
+thanks,
 
-idr_replace() open-codes the logic to calculate the maximum valid ID
-given the height of the idr tree; unfortunately, the open-coded logic
-doesn't account for the fact that the top layer may have unused slots
-and over-shifts the limit to zero when the tree is at its maximum
-height.
+greg k-h
 
-The following test code shows it fails to replace the value for
-id=((1<<27)+42):
+-------------
+Pseudo-Shortlog of commits:
 
-  static void test5(void)
-  {
-        int id;
-        DEFINE_IDR(test_idr);
-  #define TEST5_START ((1<<27)+42) /* use the highest layer */
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.14.10-rc1
 
-        printk(KERN_INFO "Start test5\n");
-        id = idr_alloc(&test_idr, (void *)1, TEST5_START, 0, GFP_KERNEL);
-        BUG_ON(id != TEST5_START);
-        TEST_BUG_ON(idr_replace(&test_idr, (void *)2, TEST5_START) != (void *)1);
-        idr_destroy(&test_idr);
-        printk(KERN_INFO "End of test5\n");
-  }
+Andrzej Zaborowski <andrew.zaborowski@intel.com>
+    efi-pstore: Fix an overflow on 32-bit builds
 
-Fix the bug by using idr_max() which correctly takes into account the
-maximum allowed shift.
+Fathi Boudra <fathi.boudra@linaro.org>
+    builddeb: use $OBJCOPY variable instead of objcopy
 
-sub_alloc() shares the same problem and may incorrectly fail with
--EAGAIN; however, this bug doesn't affect correct operation because
-idr_get_empty_slot(), which already uses idr_max(), retries with the
-increased @id in such cases.
+Konstantin Khlebnikov <koct9i@gmail.com>
+    epoll: fix use-after-free in eventpoll_release_file
 
-[tj@kernel.org: Updated patch description.]
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Acked-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Andy Lutomirski <luto@amacapital.net>
+    x86_32, entry: Do syscall exit work on badsys (CVE-2014-4508)
 
----
- lib/idr.c |    8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    lz4: fix another possible overrun
 
---- a/lib/idr.c
-+++ b/lib/idr.c
-@@ -250,7 +250,7 @@ static int sub_alloc(struct idr *idp, in
- 			id = (id | ((1 << (IDR_BITS * l)) - 1)) + 1;
- 
- 			/* if already at the top layer, we need to grow */
--			if (id >= 1 << (idp->layers * IDR_BITS)) {
-+			if (id > idr_max(idp->layers)) {
- 				*starting_id = id;
- 				return -EAGAIN;
- 			}
-@@ -827,12 +827,10 @@ void *idr_replace(struct idr *idp, void
- 	if (!p)
- 		return ERR_PTR(-EINVAL);
- 
--	n = (p->layer+1) * IDR_BITS;
--
--	if (id >= (1 << n))
-+	if (id > idr_max(p->layer + 1))
- 		return ERR_PTR(-EINVAL);
- 
--	n -= IDR_BITS;
-+	n = p->layer * IDR_BITS;
- 	while ((n > 0) && p) {
- 		p = p->ary[(id >> n) & IDR_MASK];
- 		n -= IDR_BITS;
+Jeff Mahoney <jeffm@suse.com>
+    btrfs: allocate raid type kobjects dynamically
+
+Jeff Mahoney <jeffm@suse.com>
+    btrfs: fix lockdep warning with reclaim lock inversion
+
+Eric Sandeen <sandeen@redhat.com>
+    btrfs: fix use of uninit "ret" in end_extent_writepage()
+
+Liu Bo <bo.li.liu@oracle.com>
+    Btrfs: fix scrub_print_warning to handle skinny metadata extents
+
+Liu Bo <bo.li.liu@oracle.com>
+    Btrfs: use right type to get real comparison
+
+Josef Bacik <jbacik@fb.com>
+    Btrfs: don't check nodes for extent items
+
+Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+    fs: btrfs: volumes.c: Fix for possible null pointer dereference
+
+Filipe Manana <fdmanana@gmail.com>
+    Btrfs: send, don't error in the presence of subvols/snapshots
+
+Wang Shilong <wangsl.fnst@cn.fujitsu.com>
+    Btrfs: set right total device count for seeding support
+
+Liu Bo <bo.li.liu@oracle.com>
+    Btrfs: mark mapping with error flag to report errors to userspace
+
+Liu Bo <bo.li.liu@oracle.com>
+    Btrfs: fix NULL pointer crash of deleting a seed device
+
+Wang Shilong <wangsl.fnst@cn.fujitsu.com>
+    Btrfs: make sure there are not any read requests before stopping workers
+
+Miao Xie <miaox@cn.fujitsu.com>
+    Btrfs: output warning instead of error when loading free space cache failed
+
+Qu Wenruo <quwenruo@cn.fujitsu.com>
+    btrfs: Add ctime/mtime update for btrfs device add/remove.
+
+Chris Mason <clm@fb.com>
+    Btrfs: fix double free in find_lock_delalloc_range
+
+Pavel Shilovsky <pshilovsky@samba.org>
+    CIFS: Fix memory leaks in SMB2_open
+
+Benjamin LaHaise <bcrl@kvack.org>
+    aio: fix kernel memory disclosure in io_getevents() introduced in v3.10
+
+Benjamin LaHaise <bcrl@kvack.org>
+    aio: fix aio request leak when events are reaped by userspace
+
+Thomas Gleixner <tglx@linutronix.de>
+    genirq: Sanitize spurious interrupt detection of threaded irqs
+
+Mike Frysinger <vapier@gentoo.org>
+    x86, x32: Use compat shims for io_{setup,submit}
+
+H. Peter Anvin <hpa@linux.intel.com>
+    x86-32, espfix: Remove filter for espfix32 due to race
+
+Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+    arm64/dma: Removing ARCH_HAS_DMA_GET_REQUIRED_MASK macro
+
+Jason Cooper <jason@lakedaemon.net>
+    ARM: mvebu: DT: fix OpenBlocks AX3-4 RAM size
+
+James Bottomley <JBottomley@Parallels.com>
+    SCSI: Fix spurious request sense in error handling
+
+Nicholas A. Bellinger <nab@linux-iscsi.org>
+    target: Explicitly clear ramdisk_mcp backend pages
+
+Roland Dreier <roland@purestorage.com>
+    target: Report correct response length for some commands
+
+Sagi Grimberg <sagig@mellanox.com>
+    Target/iscsi: Fix sendtargets response pdu for iser transport
+
+Nicholas Bellinger <nab@linux-iscsi.org>
+    iscsi-target: Fix ABORT_TASK + connection reset iscsi_queue_req memory leak
+
+Nicholas Bellinger <nab@linux-iscsi.org>
+    target: Use complete_all for se_cmd->t_transport_stop_comp
+
+Nicholas Bellinger <nab@linux-iscsi.org>
+    target: Set CMD_T_ACTIVE bit for Task Management Requests
+
+Sagi Grimberg <sagig@mellanox.com>
+    Target/iser: Wait for proper cleanup before unloading
+
+Sagi Grimberg <sagig@mellanox.com>
+    Target/iser: Improve cm events handling
+
+Sagi Grimberg <sagig@mellanox.com>
+    Target/iser: Fix hangs in connection teardown
+
+Sagi Grimberg <sagig@mellanox.com>
+    Target/iser: Bail from accept_np if np_thread is trying to close
+
+Jukka Taimisto <jtt@codenomicon.com>
+    Bluetooth: Fix L2CAP deadlock
+
+Jukka Rissanen <jukka.rissanen@linux.intel.com>
+    Bluetooth: 6LoWPAN: Fix MAC address universal/local bit handling
+
+Felipe Balbi <balbi@ti.com>
+    bluetooth: hci_ldisc: fix deadlock condition
+
+Chander Kashyap <chander.kashyap@linaro.org>
+    PM / OPP: fix incorrect OPP count handling in of_init_opp_table
+
+Jianguo Wu <wujianguo@huawei.com>
+    ARM: 8037/1: mm: support big-endian page tables
+
+Russell King <rmk+kernel@arm.linux.org.uk>
+    ARM: stacktrace: avoid listing stacktrace functions in stacktrace
+
+Hans Verkuil <hans.verkuil@cisco.com>
+    media: saa7134: fix regression with tvtime
+
+Pali Rohár <pali.rohar@gmail.com>
+    media: radio-bcm2048: fix wrong overflow check
+
+Olivier Langlois <olivier@trillion01.com>
+    media: uvcvideo: Fix clock param realtime setting
+
+Thomas Gleixner <tglx@linutronix.de>
+    rtmutex: Plug slow unlock race
+
+Thomas Gleixner <tglx@linutronix.de>
+    rtmutex: Handle deadlock detection smarter
+
+Thomas Gleixner <tglx@linutronix.de>
+    rtmutex: Detect changes in the pi lock chain
+
+Lv Zheng <lv.zheng@intel.com>
+    ACPI: Fix conflict between customized DSDT and DSDT local copy
+
+David Binderman <dcb314@hotmail.com>
+    ACPICA: utstring: Check array index bound before use.
+
+Bjørn Mork <bjorn@mork.no>
+    ACPI: add dynamic_debug support
+
+Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+    media: stk1160: Avoid stack-allocated buffer for control URBs
+
+Takashi Iwai <tiwai@suse.de>
+    media: ivtv: Fix Oops when no firmware is loaded
+
+Johan Hovold <jhovold@gmail.com>
+    USB: serial: fix potential runtime pm imbalance at device remove
+
+Aleksander Morgado <aleksander@aleksander.es>
+    usb: qcserial: add additional Sierra Wireless QMI devices
+
+Aleksander Morgado <aleksander@aleksander.es>
+    usb: qcserial: add Netgear AirCard 341U
+
+Johan Hovold <jhovold@gmail.com>
+    USB: sierra: fix remote wakeup
+
+Johan Hovold <jhovold@gmail.com>
+    USB: sierra: fix urb and memory leak on disconnect
+
+Johan Hovold <jhovold@gmail.com>
+    USB: sierra: fix urb and memory leak in resume error path
+
+Johan Hovold <jhovold@gmail.com>
+    USB: sierra: fix use after free at suspend/resume
+
+Johan Hovold <jhovold@gmail.com>
+    USB: sierra: fix AA deadlock in open error path
+
+Johan Hovold <jhovold@gmail.com>
+    USB: usb_wwan: fix potential blocked I/O after resume
+
+Johan Hovold <jhovold@gmail.com>
+    USB: usb_wwan: fix potential NULL-deref at resume
+
+Johan Hovold <jhovold@gmail.com>
+    USB: usb_wwan: fix urb leak at shutdown
+
+Johan Hovold <jhovold@gmail.com>
+    USB: usb_wwan: fix write and suspend race
+
+xiao jin <jin.xiao@intel.com>
+    USB: usb_wwan: fix race between write and resume
+
+xiao jin <jin.xiao@intel.com>
+    USB: usb_wwan: fix urb leak in write error path
+
+Mikulas Patocka <mpatocka@redhat.com>
+    matroxfb: perform a dummy read of M_STATUS
+
+Maurizio Lombardi <mlombard@redhat.com>
+    ext4: fix wrong assert in ext4_mb_normalize_request()
+
+Jan Kara <jack@suse.cz>
+    ext4: fix zeroing of page during writeback
+
+Namjae Jeon <namjae.jeon@samsung.com>
+    ext4: fix data integrity sync in ordered mode
+
+Christian Borntraeger <borntraeger@de.ibm.com>
+    s390/lowcore: reserve 96 bytes for IRB in lowcore
+
+Martin Schwidefsky <schwidefsky@de.ibm.com>
+    s390/time: cast tv_nsec to u64 prior to shift in update_vsyscall
+
+Lai Jiangshan <laijs@cn.fujitsu.com>
+    idr: fix overflow bug during maximum ID calculation at maximum height
+
+Victor Kamensky <victor.kamensky@linaro.org>
+    arm64: ptrace: fix empty registers set in prstatus of aarch32 process core
+
+Will Deacon <will.deacon@arm.com>
+    arm64: ptrace: change fs when passing kernel pointer to regset code
+
+Matthew Dempsky <mdempsky@chromium.org>
+    ptrace: fix fork event messages across pid namespaces
+
+Johannes Weiner <hannes@cmpxchg.org>
+    mm: vmscan: clear kswapd's special reclaim powers before exiting
+
+Kees Cook <keescook@chromium.org>
+    HID: core: fix validation of report id 0
+
+Hugh Dickins <hughd@google.com>
+    mm: fix sleeping function warning from __put_anon_vma
+
+Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+    mm/memory-failure.c: support use of a dedicated thread to handle SIGBUS(BUS_MCEERR_AO)
+
+Tony Luck <tony.luck@intel.com>
+    mm/memory-failure.c: don't let collect_procs() skip over processes for MF_ACTION_REQUIRED
+
+Tony Luck <tony.luck@intel.com>
+    mm/memory-failure.c-failure: send right signal code to correct thread
+
+Mel Gorman <mgorman@suse.de>
+    mm: page_alloc: use word-based accesses for get/set pageblock bitmaps
+
+Mel Gorman <mgorman@suse.de>
+    mm: vmscan: do not throttle based on pfmemalloc reserves if node has no ZONE_NORMAL
+
+Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+    kthread: fix return value of kthread_create() upon SIGKILL.
+
+Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+    hugetlb: restrict hugepage_migration_support() to x86_64
+
+Johan Hovold <jhovold@gmail.com>
+    USB: option: fix runtime PM handling
+
+Alan Stern <stern@rowland.harvard.edu>
+    USB: EHCI: avoid BIOS handover on the HASEE E200
+
+Paul Bolle <pebolle@tiscali.nl>
+    ARM: OMAP: replace checks for CONFIG_USB_GADGET_OMAP
+
+Felipe Balbi <balbi@ti.com>
+    usb: dwc3: gadget: clear stall when disabling endpoint
+
+Paul Bolle <pebolle@tiscali.nl>
+    usb: gadget: rename CONFIG_USB_GADGET_PXA25X
+
+Alan Stern <stern@rowland.harvard.edu>
+    USB: usbtest: add a timeout for scatter-gather tests
+
+Huang Rui <ray.huang@amd.com>
+    usb: usbtest: fix unlink write error with pattern 1
+
+Dan Carpenter <dan.carpenter@oracle.com>
+    applicom: dereferencing NULL on error path
+
+Stephen Boyd <sboyd@codeaurora.org>
+    staging/mt29f_spinand: Terminate of match table
+
+Dan Carpenter <dan.carpenter@oracle.com>
+    Staging: rtl8188eu: overflow in update_sta_support_rate()
+
+Paul Bolle <pebolle@tiscali.nl>
+    staging: tidspbridge: check for CONFIG_SND_OMAP_SOC_MCBSP
+
+Antoine Ténart <antoine.tenart@free-electrons.com>
+    phy: exynos-mipi-video: fix check on array index
+
+Krzysztof Kozlowski <k.kozlowski@samsung.com>
+    extcon: max14577: Properly handle regmap_irq_get_virq error
+
+Krzysztof Kozlowski <k.kozlowski@samsung.com>
+    extcon: max14577: Fix probe failure on successful work queue
+
+Krzysztof Kozlowski <k.kozlowski@samsung.com>
+    extcon: max77693: Fix two NULL pointer exceptions on missing pdata
+
+Krzysztof Kozlowski <k.kozlowski@samsung.com>
+    extcon: max8997: Fix NULL pointer exception on missing pdata
+
+Johan Hovold <jhovold@gmail.com>
+    net: cpsw: fix null dereference at probe
+
+Ursula Braun <ursula.braun@de.ibm.com>
+    af_iucv: wrong mapping of sent and confirmed skbs
+
+Stephane Grosjean <s.grosjean@peak-system.com>
+    can: peak_pci: prevent use after free at netdev removal
+
+Johan Hovold <jhovold@gmail.com>
+    Revert "net: eth: cpsw: Correctly attach to GPIO bitbang MDIO driver"
+
+
+-------------
+
+Diffstat:
+
+ Documentation/vm/hwpoison.txt                    |   5 +
+ Makefile                                         |   4 +-
+ arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts |   2 +-
+ arch/arm/kernel/stacktrace.c                     |  18 +-
+ arch/arm/mach-omap1/board-h2.c                   |   2 +-
+ arch/arm/mach-omap1/board-h3.c                   |   2 +-
+ arch/arm/mach-omap1/board-innovator.c            |   2 +-
+ arch/arm/mach-omap1/board-osk.c                  |   2 +-
+ arch/arm/mm/hugetlbpage.c                        |   5 -
+ arch/arm/mm/proc-v7-3level.S                     |  18 +-
+ arch/arm64/include/asm/dma-mapping.h             |   2 -
+ arch/arm64/kernel/ptrace.c                       |  32 ++-
+ arch/arm64/mm/hugetlbpage.c                      |   5 -
+ arch/ia64/mm/hugetlbpage.c                       |   5 -
+ arch/metag/mm/hugetlbpage.c                      |   5 -
+ arch/mips/mm/hugetlbpage.c                       |   5 -
+ arch/powerpc/mm/hugetlbpage.c                    |  10 -
+ arch/s390/include/asm/lowcore.h                  |  11 +-
+ arch/s390/kernel/time.c                          |   2 +-
+ arch/s390/mm/hugetlbpage.c                       |   5 -
+ arch/sh/mm/hugetlbpage.c                         |   5 -
+ arch/sparc/mm/hugetlbpage.c                      |   5 -
+ arch/tile/mm/hugetlbpage.c                       |   5 -
+ arch/x86/Kconfig                                 |   4 +
+ arch/x86/kernel/entry_32.S                       |  15 +-
+ arch/x86/mm/hugetlbpage.c                        |  10 -
+ arch/x86/syscalls/syscall_64.tbl                 |   6 +-
+ drivers/acpi/acpica/utstring.c                   |   2 +-
+ drivers/acpi/bus.c                               |   7 +
+ drivers/acpi/utils.c                             |  64 ++++--
+ drivers/base/power/opp.c                         |   4 +-
+ drivers/bluetooth/hci_ldisc.c                    |  24 ++-
+ drivers/bluetooth/hci_uart.h                     |   1 +
+ drivers/char/applicom.c                          |   1 -
+ drivers/extcon/extcon-max14577.c                 |   9 +-
+ drivers/extcon/extcon-max77693.c                 |   4 +-
+ drivers/extcon/extcon-max8997.c                  |   2 +-
+ drivers/firmware/efi/efi-pstore.c                |   2 +-
+ drivers/hid/hid-core.c                           |  12 +-
+ drivers/infiniband/ulp/isert/ib_isert.c          |  61 +++---
+ drivers/infiniband/ulp/isert/ib_isert.h          |   2 +-
+ drivers/media/pci/ivtv/ivtv-alsa-pcm.c           |   6 +
+ drivers/media/pci/saa7134/saa7134-video.c        |   9 +-
+ drivers/media/usb/stk1160/stk1160-core.c         |  10 +-
+ drivers/media/usb/stk1160/stk1160.h              |   1 -
+ drivers/media/usb/uvc/uvc_video.c                |  15 +-
+ drivers/net/can/sja1000/peak_pci.c               |  14 +-
+ drivers/net/ethernet/ti/cpsw.c                   |  16 +-
+ drivers/phy/phy-exynos-mipi-video.c              |   2 +-
+ drivers/scsi/scsi_error.c                        |   9 +
+ drivers/staging/media/bcm2048/radio-bcm2048.c    |   2 +-
+ drivers/staging/mt29f_spinand/mt29f_spinand.c    |   1 +
+ drivers/staging/rtl8188eu/core/rtw_wlan_util.c   |   7 +-
+ drivers/staging/tidspbridge/core/dsp-clock.c     |   4 +-
+ drivers/target/iscsi/iscsi_target.c              |  17 +-
+ drivers/target/target_core_rd.c                  |   2 +-
+ drivers/target/target_core_sbc.c                 |   4 +-
+ drivers/target/target_core_spc.c                 |   9 +-
+ drivers/target/target_core_transport.c           |  29 ++-
+ drivers/usb/dwc3/gadget.c                        |   4 +
+ drivers/usb/gadget/inode.c                       |   2 +-
+ drivers/usb/host/pci-quirks.c                    |  19 +-
+ drivers/usb/misc/usbtest.c                       |  26 ++-
+ drivers/usb/phy/phy-isp1301-omap.c               |   2 +-
+ drivers/usb/serial/bus.c                         |  14 +-
+ drivers/usb/serial/option.c                      |  11 +-
+ drivers/usb/serial/qcserial.c                    |  21 ++
+ drivers/usb/serial/sierra.c                      |  55 +++--
+ drivers/usb/serial/usb_wwan.c                    | 125 ++++++------
+ drivers/video/matrox/matroxfb_base.h             |   2 +-
+ fs/aio.c                                         |   6 +-
+ fs/btrfs/backref.c                               |  37 ++--
+ fs/btrfs/backref.h                               |   4 +-
+ fs/btrfs/ctree.h                                 |   8 +-
+ fs/btrfs/disk-io.c                               |   5 +
+ fs/btrfs/extent-tree.c                           |  49 +++--
+ fs/btrfs/extent_io.c                             |   5 +-
+ fs/btrfs/free-space-cache.c                      |   4 +-
+ fs/btrfs/scrub.c                                 |   5 +-
+ fs/btrfs/send.c                                  |   4 +
+ fs/btrfs/sysfs.c                                 |   5 +-
+ fs/btrfs/volumes.c                               |  44 +++-
+ fs/cifs/smb2pdu.c                                |   7 +-
+ fs/eventpoll.c                                   |   4 +-
+ fs/ext4/ext4.h                                   |   3 +-
+ fs/ext4/inode.c                                  |   6 +-
+ fs/ext4/mballoc.c                                |   2 +-
+ fs/ext4/page-io.c                                |  32 +--
+ include/linux/acpi.h                             |  22 +-
+ include/linux/hugetlb.h                          |  13 +-
+ include/linux/irqdesc.h                          |   4 +
+ include/linux/mempolicy.h                        |   6 +
+ include/linux/mmzone.h                           |   6 +-
+ include/linux/page-flags.h                       |  12 +-
+ include/linux/pageblock-flags.h                  |  37 +++-
+ include/linux/ptrace.h                           |  32 +++
+ include/target/iscsi/iscsi_transport.h           |   3 +-
+ include/target/target_core_backend.h             |   1 +
+ kernel/fork.c                                    |  10 +-
+ kernel/irq/manage.c                              |   4 +-
+ kernel/irq/spurious.c                            | 106 +++++++++-
+ kernel/kthread.c                                 |   4 +-
+ kernel/locking/rtmutex-debug.h                   |   5 +
+ kernel/locking/rtmutex.c                         | 243 +++++++++++++++++++----
+ kernel/locking/rtmutex.h                         |   5 +
+ lib/idr.c                                        |   8 +-
+ lib/lz4/lz4_decompress.c                         |   4 +-
+ mm/Kconfig                                       |   3 +
+ mm/memory-failure.c                              |  73 +++++--
+ mm/page-writeback.c                              |  11 +-
+ mm/page_alloc.c                                  |  52 +++--
+ mm/rmap.c                                        |   8 +-
+ mm/vmscan.c                                      |  46 ++++-
+ net/bluetooth/6lowpan.c                          |  65 +++---
+ net/bluetooth/l2cap_sock.c                       |   5 +-
+ net/iucv/af_iucv.c                               |   2 +-
+ scripts/package/builddeb                         |   6 +-
+ 117 files changed, 1313 insertions(+), 538 deletions(-)
 
 
