@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756068AbaF1Rww (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:52:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54353 "EHLO
+	id S1756133AbaF1RxB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:53:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54386 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751464AbaF1Rwt (ORCPT
+	with ESMTP id S1754490AbaF1Rwz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:52:49 -0400
+	Sat, 28 Jun 2014 13:52:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jukka Rissanen <jukka.rissanen@linux.intel.com>,
-        Marcel Holtmann <marcel@holtmann.org>
-Subject: [PATCH 3.15 082/139] Bluetooth: 6LoWPAN: Fix MAC address universal/local bit handling
-Date: Sat, 28 Jun 2014 10:47:23 -0700
-Message-Id: <20140628174609.166552188@linuxfoundation.org>
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [PATCH 3.15 105/139] arm64: mm: remove broken &= operator from pmd_mknotpresent
+Date: Sat, 28 Jun 2014 10:47:46 -0700
+Message-Id: <20140628174610.217634129@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -29,164 +29,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jukka Rissanen <jukka.rissanen@linux.intel.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 62bbd5b35994eaf30519f126765d7f6af9cd3526 upstream.
+commit e3a920afc3482e954834a4ed95908c4bc5e4c000 upstream.
 
-The universal/local bit handling was incorrectly done in the code.
+This should be a plain old '&' and could easily lead to undefined
+behaviour if the target of a pmd_mknotpresent invocation was the same
+as the parameter.
 
-So when setting EUI address from BD address we do this:
-- If BD address type is PUBLIC, then we clear the universal bit
-  in EUI address. If the address type is RANDOM, then the universal
-  bit is set (BT 6lowpan draft chapter 3.2.2)
-- After this we invert the universal/local bit according to RFC 2464
-
-When figuring out BD address we do the reverse:
-- Take EUI address from stateless IPv6 address, invert the
-  universal/local bit according to RFC 2464
-- If universal bit is 1 in this modified EUI address, then address
-  type is set to RANDOM, otherwise it is PUBLIC
-
-Note that 6lowpan_iphc.[ch] does the final toggling of U/L bit
-before sending or receiving the network packet.
-
-Signed-off-by: Jukka Rissanen <jukka.rissanen@linux.intel.com>
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+Fixes: 9c7e535fcc17 (arm64: mm: Route pmd thp functions through pte equivalents)
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/6lowpan.c |   65 +++++++++++++++++++++++++-----------------------
- 1 file changed, 35 insertions(+), 30 deletions(-)
+ arch/arm64/include/asm/pgtable.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/bluetooth/6lowpan.c
-+++ b/net/bluetooth/6lowpan.c
-@@ -420,12 +420,18 @@ static int conn_send(struct l2cap_conn *
- 	return 0;
- }
+--- a/arch/arm64/include/asm/pgtable.h
++++ b/arch/arm64/include/asm/pgtable.h
+@@ -253,7 +253,7 @@ static inline pmd_t pte_pmd(pte_t pte)
+ #define pmd_mkwrite(pmd)	pte_pmd(pte_mkwrite(pmd_pte(pmd)))
+ #define pmd_mkdirty(pmd)	pte_pmd(pte_mkdirty(pmd_pte(pmd)))
+ #define pmd_mkyoung(pmd)	pte_pmd(pte_mkyoung(pmd_pte(pmd)))
+-#define pmd_mknotpresent(pmd)	(__pmd(pmd_val(pmd) &= ~PMD_TYPE_MASK))
++#define pmd_mknotpresent(pmd)	(__pmd(pmd_val(pmd) & ~PMD_TYPE_MASK))
  
--static void get_dest_bdaddr(struct in6_addr *ip6_daddr,
--			    bdaddr_t *addr, u8 *addr_type)
-+static u8 get_addr_type_from_eui64(u8 byte)
- {
--	u8 *eui64;
-+	/* Is universal(0) or local(1) bit,  */
-+	if (byte & 0x02)
-+		return ADDR_LE_DEV_RANDOM;
- 
--	eui64 = ip6_daddr->s6_addr + 8;
-+	return ADDR_LE_DEV_PUBLIC;
-+}
-+
-+static void copy_to_bdaddr(struct in6_addr *ip6_daddr, bdaddr_t *addr)
-+{
-+	u8 *eui64 = ip6_daddr->s6_addr + 8;
- 
- 	addr->b[0] = eui64[7];
- 	addr->b[1] = eui64[6];
-@@ -433,16 +439,19 @@ static void get_dest_bdaddr(struct in6_a
- 	addr->b[3] = eui64[2];
- 	addr->b[4] = eui64[1];
- 	addr->b[5] = eui64[0];
-+}
-+
-+static void convert_dest_bdaddr(struct in6_addr *ip6_daddr,
-+				bdaddr_t *addr, u8 *addr_type)
-+{
-+	copy_to_bdaddr(ip6_daddr, addr);
- 
--	addr->b[5] ^= 2;
-+	/* We need to toggle the U/L bit that we got from IPv6 address
-+	 * so that we get the proper address and type of the BD address.
-+	 */
-+	addr->b[5] ^= 0x02;
- 
--	/* Set universal/local bit to 0 */
--	if (addr->b[5] & 1) {
--		addr->b[5] &= ~1;
--		*addr_type = ADDR_LE_DEV_PUBLIC;
--	} else {
--		*addr_type = ADDR_LE_DEV_RANDOM;
--	}
-+	*addr_type = get_addr_type_from_eui64(addr->b[5]);
- }
- 
- static int header_create(struct sk_buff *skb, struct net_device *netdev,
-@@ -473,9 +482,11 @@ static int header_create(struct sk_buff
- 		/* Get destination BT device from skb.
- 		 * If there is no such peer then discard the packet.
- 		 */
--		get_dest_bdaddr(&hdr->daddr, &addr, &addr_type);
-+		convert_dest_bdaddr(&hdr->daddr, &addr, &addr_type);
- 
--		BT_DBG("dest addr %pMR type %d", &addr, addr_type);
-+		BT_DBG("dest addr %pMR type %s IP %pI6c", &addr,
-+		       addr_type == ADDR_LE_DEV_PUBLIC ? "PUBLIC" : "RANDOM",
-+		       &hdr->daddr);
- 
- 		read_lock_irqsave(&devices_lock, flags);
- 		peer = peer_lookup_ba(dev, &addr, addr_type);
-@@ -556,7 +567,7 @@ static netdev_tx_t bt_xmit(struct sk_buf
- 	} else {
- 		unsigned long flags;
- 
--		get_dest_bdaddr(&lowpan_cb(skb)->addr, &addr, &addr_type);
-+		convert_dest_bdaddr(&lowpan_cb(skb)->addr, &addr, &addr_type);
- 		eui64_addr = lowpan_cb(skb)->addr.s6_addr + 8;
- 		dev = lowpan_dev(netdev);
- 
-@@ -564,8 +575,10 @@ static netdev_tx_t bt_xmit(struct sk_buf
- 		peer = peer_lookup_ba(dev, &addr, addr_type);
- 		read_unlock_irqrestore(&devices_lock, flags);
- 
--		BT_DBG("xmit from %s to %pMR (%pI6c) peer %p", netdev->name,
--		       &addr, &lowpan_cb(skb)->addr, peer);
-+		BT_DBG("xmit %s to %pMR type %s IP %pI6c peer %p",
-+		       netdev->name, &addr,
-+		       addr_type == ADDR_LE_DEV_PUBLIC ? "PUBLIC" : "RANDOM",
-+		       &lowpan_cb(skb)->addr, peer);
- 
- 		if (peer && peer->conn)
- 			err = send_pkt(peer->conn, netdev->dev_addr,
-@@ -620,13 +633,13 @@ static void set_addr(u8 *eui, u8 *addr,
- 	eui[6] = addr[1];
- 	eui[7] = addr[0];
- 
--	eui[0] ^= 2;
--
--	/* Universal/local bit set, RFC 4291 */
-+	/* Universal/local bit set, BT 6lowpan draft ch. 3.2.1 */
- 	if (addr_type == ADDR_LE_DEV_PUBLIC)
--		eui[0] |= 1;
-+		eui[0] &= ~0x02;
- 	else
--		eui[0] &= ~1;
-+		eui[0] |= 0x02;
-+
-+	BT_DBG("type %d addr %*phC", addr_type, 8, eui);
- }
- 
- static void set_dev_addr(struct net_device *netdev, bdaddr_t *addr,
-@@ -634,7 +647,6 @@ static void set_dev_addr(struct net_devi
- {
- 	netdev->addr_assign_type = NET_ADDR_PERM;
- 	set_addr(netdev->dev_addr, addr->b, addr_type);
--	netdev->dev_addr[0] ^= 2;
- }
- 
- static void ifup(struct net_device *netdev)
-@@ -684,13 +696,6 @@ static int add_peer_conn(struct l2cap_co
- 
- 	memcpy(&peer->eui64_addr, (u8 *)&peer->peer_addr.s6_addr + 8,
- 	       EUI64_ADDR_LEN);
--	peer->eui64_addr[0] ^= 2; /* second bit-flip (Universe/Local)
--				   * is done according RFC2464
--				   */
--
--	raw_dump_inline(__func__, "peer IPv6 address",
--			(unsigned char *)&peer->peer_addr, 16);
--	raw_dump_inline(__func__, "peer EUI64 address", peer->eui64_addr, 8);
- 
- 	write_lock_irqsave(&devices_lock, flags);
- 	INIT_LIST_HEAD(&peer->list);
+ #define __HAVE_ARCH_PMD_WRITE
+ #define pmd_write(pmd)		pte_write(pmd_pte(pmd))
 
 
