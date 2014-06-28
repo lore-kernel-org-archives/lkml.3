@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932329AbaF1SX1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:23:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54029 "EHLO
+	id S932348AbaF1SXv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:23:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54020 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755784AbaF1RvT (ORCPT
+	with ESMTP id S1755765AbaF1RvR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:51:19 -0400
+	Sat, 28 Jun 2014 13:51:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Oleg Nesterov <oleg@redhat.com>, David Rientjes <rientjes@google.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.15 033/139] mm: vmscan: clear kswapds special reclaim powers before exiting
-Date: Sat, 28 Jun 2014 10:46:34 -0700
-Message-Id: <20140628174606.933889554@linuxfoundation.org>
+Subject: [PATCH 3.15 023/139] kthread: fix return value of kthread_create() upon SIGKILL.
+Date: Sat, 28 Jun 2014 10:46:24 -0700
+Message-Id: <20140628174606.477982285@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -33,94 +31,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Weiner <hannes@cmpxchg.org>
+From: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
 
-commit 71abdc15adf8c702a1dd535f8e30df50758848d2 upstream.
+commit 8fe6929cfd43c44834858a53e129ffdc7c166298 upstream.
 
-When kswapd exits, it can end up taking locks that were previously held
-by allocating tasks while they waited for reclaim.  Lockdep currently
-warns about this:
+Commit 786235eeba0e ("kthread: make kthread_create() killable") meant
+for allowing kthread_create() to abort as soon as killed by the
+OOM-killer.  But returning -ENOMEM is wrong if killed by SIGKILL from
+userspace.  Change kthread_create() to return -EINTR upon SIGKILL.
 
-On Wed, May 28, 2014 at 06:06:34PM +0800, Gu Zheng wrote:
->  inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-R} usage.
->  kswapd2/1151 [HC0[0]:SC0[0]:HE1:SE1] takes:
->   (&sig->group_rwsem){+++++?}, at: exit_signals+0x24/0x130
->  {RECLAIM_FS-ON-W} state was registered at:
->     mark_held_locks+0xb9/0x140
->     lockdep_trace_alloc+0x7a/0xe0
->     kmem_cache_alloc_trace+0x37/0x240
->     flex_array_alloc+0x99/0x1a0
->     cgroup_attach_task+0x63/0x430
->     attach_task_by_pid+0x210/0x280
->     cgroup_procs_write+0x16/0x20
->     cgroup_file_write+0x120/0x2c0
->     vfs_write+0xc0/0x1f0
->     SyS_write+0x4c/0xa0
->     tracesys+0xdd/0xe2
->  irq event stamp: 49
->  hardirqs last  enabled at (49):  _raw_spin_unlock_irqrestore+0x36/0x70
->  hardirqs last disabled at (48):  _raw_spin_lock_irqsave+0x2b/0xa0
->  softirqs last  enabled at (0):  copy_process.part.24+0x627/0x15f0
->  softirqs last disabled at (0):            (null)
->
->  other info that might help us debug this:
->   Possible unsafe locking scenario:
->
->         CPU0
->         ----
->    lock(&sig->group_rwsem);
->    <Interrupt>
->      lock(&sig->group_rwsem);
->
->   *** DEADLOCK ***
->
->  no locks held by kswapd2/1151.
->
->  stack backtrace:
->  CPU: 30 PID: 1151 Comm: kswapd2 Not tainted 3.10.39+ #4
->  Call Trace:
->    dump_stack+0x19/0x1b
->    print_usage_bug+0x1f7/0x208
->    mark_lock+0x21d/0x2a0
->    __lock_acquire+0x52a/0xb60
->    lock_acquire+0xa2/0x140
->    down_read+0x51/0xa0
->    exit_signals+0x24/0x130
->    do_exit+0xb5/0xa50
->    kthread+0xdb/0x100
->    ret_from_fork+0x7c/0xb0
-
-This is because the kswapd thread is still marked as a reclaimer at the
-time of exit.  But because it is exiting, nobody is actually waiting on
-it to make reclaim progress anymore, and it's nothing but a regular
-thread at this point.  Be tidy and strip it of all its powers
-(PF_MEMALLOC, PF_SWAPWRITE, PF_KSWAPD, and the lockdep reclaim state)
-before returning from the thread function.
-
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Reported-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Acked-by: David Rientjes <rientjes@google.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/vmscan.c |    3 +++
- 1 file changed, 3 insertions(+)
+ kernel/kthread.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -3333,7 +3333,10 @@ static int kswapd(void *p)
- 		}
- 	}
- 
-+	tsk->flags &= ~(PF_MEMALLOC | PF_SWAPWRITE | PF_KSWAPD);
- 	current->reclaim_state = NULL;
-+	lockdep_clear_current_reclaim_state();
-+
- 	return 0;
- }
- 
+--- a/kernel/kthread.c
++++ b/kernel/kthread.c
+@@ -262,7 +262,7 @@ static void create_kthread(struct kthrea
+  * kthread_stop() has been called).  The return value should be zero
+  * or a negative error number; it will be passed to kthread_stop().
+  *
+- * Returns a task_struct or ERR_PTR(-ENOMEM).
++ * Returns a task_struct or ERR_PTR(-ENOMEM) or ERR_PTR(-EINTR).
+  */
+ struct task_struct *kthread_create_on_node(int (*threadfn)(void *data),
+ 					   void *data, int node,
+@@ -298,7 +298,7 @@ struct task_struct *kthread_create_on_no
+ 		 * that thread.
+ 		 */
+ 		if (xchg(&create->done, NULL))
+-			return ERR_PTR(-ENOMEM);
++			return ERR_PTR(-EINTR);
+ 		/*
+ 		 * kthreadd (or new kernel thread) will call complete()
+ 		 * shortly.
 
 
