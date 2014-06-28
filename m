@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757079AbaF1TIT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 15:08:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53020 "EHLO
+	id S1757619AbaF1TIm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 15:08:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53017 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754489AbaF1RsT (ORCPT
+	with ESMTP id S1754483AbaF1RsS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:48:19 -0400
+	Sat, 28 Jun 2014 13:48:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Enrico Etxe Arte <goitizena.generoa@gmail.com>,
-        Lv Zheng <lv.zheng@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.10 44/77] ACPI: Fix conflict between customized DSDT and DSDT local copy
-Date: Sat, 28 Jun 2014 10:46:37 -0700
-Message-Id: <20140628174523.831238501@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.10 35/77] USB: sierra: fix urb and memory leak in resume error path
+Date: Sat, 28 Jun 2014 10:46:28 -0700
+Message-Id: <20140628174523.340296260@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174521.691276402@linuxfoundation.org>
 References: <20140628174521.691276402@linuxfoundation.org>
@@ -30,46 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lv Zheng <lv.zheng@intel.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 73577d1df8e1f31f6b1a5eebcdbc334eb0330e47 upstream.
+commit 7fdd26a01eb7b6cb6855ff8f69ef4a720720dfcb upstream.
 
-This patch fixes the following issue:
-If DSDT is customized, no local DSDT copy is needed.
+Neither the transfer buffer or the urb itself were released in the
+resume error path for delayed writes. Also on errors, the remainder of
+the queue was not even processed, which leads to further urb and buffer
+leaks.
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=69711
-Signed-off-by: Enrico Etxe Arte <goitizena.generoa@gmail.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-[rjw: Subject]
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+The same error path also failed to balance the outstanding-urb counter,
+something which results in degraded throughput or completely blocked
+writes.
+
+Fix this by releasing urb and buffer and balancing counters on errors,
+and by always processing the whole queue even when submission of one urb
+fails.
+
+Fixes: e6929a9020ac ("USB: support for autosuspend in sierra while
+online")
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/bus.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/usb/serial/sierra.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/acpi/bus.c
-+++ b/drivers/acpi/bus.c
-@@ -57,6 +57,12 @@ EXPORT_SYMBOL(acpi_root_dir);
+--- a/drivers/usb/serial/sierra.c
++++ b/drivers/usb/serial/sierra.c
+@@ -1012,8 +1012,12 @@ static int sierra_resume(struct usb_seri
+ 			if (err < 0) {
+ 				intfdata->in_flight--;
+ 				usb_unanchor_urb(urb);
+-				usb_scuttle_anchored_urbs(&portdata->delayed);
+-				break;
++				kfree(urb->transfer_buffer);
++				usb_free_urb(urb);
++				spin_lock(&portdata->lock);
++				portdata->outstanding_urbs--;
++				spin_unlock(&portdata->lock);
++				continue;
+ 			}
+ 		}
  
- 
- #ifdef CONFIG_X86
-+#ifdef CONFIG_ACPI_CUSTOM_DSDT
-+static inline int set_copy_dsdt(const struct dmi_system_id *id)
-+{
-+	return 0;
-+}
-+#else
- static int set_copy_dsdt(const struct dmi_system_id *id)
- {
- 	printk(KERN_NOTICE "%s detected - "
-@@ -64,6 +70,7 @@ static int set_copy_dsdt(const struct dm
- 	acpi_gbl_copy_dsdt_locally = 1;
- 	return 0;
- }
-+#endif
- 
- static struct dmi_system_id dsdt_dmi_table[] __initdata = {
- 	/*
 
 
