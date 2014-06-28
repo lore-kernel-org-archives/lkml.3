@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755384AbaF1Rt5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:49:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53453 "EHLO
+	id S1757136AbaF1Snu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:43:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53473 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755273AbaF1Rtz (ORCPT
+	with ESMTP id S1755273AbaF1Rt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:49:55 -0400
+	Sat, 28 Jun 2014 13:49:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>
-Subject: [PATCH 3.14 036/110] s390/lowcore: reserve 96 bytes for IRB in lowcore
-Date: Sat, 28 Jun 2014 10:46:33 -0700
-Message-Id: <20140628174547.334469611@linuxfoundation.org>
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.14 065/110] media: saa7134: fix regression with tvtime
+Date: Sat, 28 Jun 2014 10:47:02 -0700
+Message-Id: <20140628174549.474027667@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -32,63 +29,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Borntraeger <borntraeger@de.ibm.com>
+From: Hans Verkuil <hans.verkuil@cisco.com>
 
-commit 993072ee67aa179c48c85eb19869804e68887d86 upstream.
+commit 17e7f1b515803e1a79b246688aacbddd2e34165d upstream.
 
-The IRB might be 96 bytes if the extended-I/O-measurement facility is
-used. This feature is currently not used by Linux, but struct irb
-already has the emw defined. So let's make the irb in lowcore match the
-size of the internal data structure to be future proof.
-We also have to add a pad, to correctly align the paste.
+This solves this bug:
 
-The bigger irb field also circumvents a bug in some QEMU versions that
-always write the emw field on test subchannel and therefore destroy the
-paste definitions of this CPU. Running under these QEMU version broke
-some timing functions in the VDSO and all users of these functions,
-e.g. some JREs.
+https://bugzilla.kernel.org/show_bug.cgi?id=73361
 
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Sebastian Ott <sebott@linux.vnet.ibm.com>
-Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
+The problem is that when you quit tvtime it calls STREAMOFF, but then it queues a
+bunch of buffers for no good reason before closing the file descriptor.
+
+In the past closing the fd would free the vb queue since that was part of the file
+handle struct. Since that was moved to the global struct that no longer happened.
+
+This wouldn't be a problem, but the extra QBUF calls that tvtime does meant that
+the buffer list in videobuf (q->stream) contained buffers, so REQBUFS would fail
+with -EBUSY.
+
+The solution is to init the list head explicitly when releasing the file
+descriptor and to not free the video resource when calling streamoff.
+
+The real fix will hopefully go into kernel 3.16 when the vb2 conversion is
+merged. Basically the saa7134 driver with the old videobuf is so full of holes it
+ain't funny anymore, so consider this a band-aid for kernels 3.14 and 15.
+
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/include/asm/lowcore.h |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ drivers/media/pci/saa7134/saa7134-video.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
---- a/arch/s390/include/asm/lowcore.h
-+++ b/arch/s390/include/asm/lowcore.h
-@@ -142,9 +142,9 @@ struct _lowcore {
- 	__u8	pad_0x02fc[0x0300-0x02fc];	/* 0x02fc */
+--- a/drivers/media/pci/saa7134/saa7134-video.c
++++ b/drivers/media/pci/saa7134/saa7134-video.c
+@@ -1243,6 +1243,7 @@ static int video_release(struct file *fi
+ 		videobuf_streamoff(&dev->cap);
+ 		res_free(dev, fh, RESOURCE_VIDEO);
+ 		videobuf_mmap_free(&dev->cap);
++		INIT_LIST_HEAD(&dev->cap.stream);
+ 	}
+ 	if (dev->cap.read_buf) {
+ 		buffer_release(&dev->cap, dev->cap.read_buf);
+@@ -1254,6 +1255,7 @@ static int video_release(struct file *fi
+ 		videobuf_stop(&dev->vbi);
+ 		res_free(dev, fh, RESOURCE_VBI);
+ 		videobuf_mmap_free(&dev->vbi);
++		INIT_LIST_HEAD(&dev->vbi.stream);
+ 	}
  
- 	/* Interrupt response block */
--	__u8	irb[64];			/* 0x0300 */
-+	__u8	irb[96];			/* 0x0300 */
+ 	/* ts-capture will not work in planar mode, so turn it off Hac: 04.05*/
+@@ -1987,17 +1989,12 @@ int saa7134_streamoff(struct file *file,
+ 					enum v4l2_buf_type type)
+ {
+ 	struct saa7134_dev *dev = video_drvdata(file);
+-	int err;
+ 	int res = saa7134_resource(file);
  
--	__u8	pad_0x0340[0x0e00-0x0340];	/* 0x0340 */
-+	__u8	pad_0x0360[0x0e00-0x0360];	/* 0x0360 */
+ 	if (res != RESOURCE_EMPRESS)
+ 		pm_qos_remove_request(&dev->qos_request);
  
- 	/*
- 	 * 0xe00 contains the address of the IPL Parameter Information
-@@ -288,12 +288,13 @@ struct _lowcore {
- 	__u8	pad_0x03a0[0x0400-0x03a0];	/* 0x03a0 */
+-	err = videobuf_streamoff(saa7134_queue(file));
+-	if (err < 0)
+-		return err;
+-	res_free(dev, priv, res);
+-	return 0;
++	return videobuf_streamoff(saa7134_queue(file));
+ }
+ EXPORT_SYMBOL_GPL(saa7134_streamoff);
  
- 	/* Interrupt response block. */
--	__u8	irb[64];			/* 0x0400 */
-+	__u8	irb[96];			/* 0x0400 */
-+	__u8	pad_0x0460[0x0480-0x0460];	/* 0x0460 */
- 
- 	/* Per cpu primary space access list */
--	__u32	paste[16];			/* 0x0440 */
-+	__u32	paste[16];			/* 0x0480 */
- 
--	__u8	pad_0x0480[0x0e00-0x0480];	/* 0x0480 */
-+	__u8	pad_0x04c0[0x0e00-0x04c0];	/* 0x04c0 */
- 
- 	/*
- 	 * 0xe00 contains the address of the IPL Parameter Information
 
 
