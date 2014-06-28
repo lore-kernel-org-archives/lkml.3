@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754545AbaF1AG2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jun 2014 20:06:28 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:35452 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754484AbaF1AGW (ORCPT
+	id S1754635AbaF1AGk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jun 2014 20:06:40 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:44639 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754567AbaF1AGf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jun 2014 20:06:22 -0400
+	Fri, 27 Jun 2014 20:06:35 -0400
 From: Alexei Starovoitov <ast@plumgrid.com>
 To: "David S. Miller" <davem@davemloft.net>
 Cc: Ingo Molnar <mingo@kernel.org>,
@@ -21,9 +21,9 @@ Cc: Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RFC net-next 01/14] net: filter: split filter.c into two files
-Date: Fri, 27 Jun 2014 17:05:53 -0700
-Message-Id: <1403913966-4927-2-git-send-email-ast@plumgrid.com>
+Subject: [PATCH RFC net-next 06/14] bpf: add hashtable type of BPF maps
+Date: Fri, 27 Jun 2014 17:05:58 -0700
+Message-Id: <1403913966-4927-7-git-send-email-ast@plumgrid.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1403913966-4927-1-git-send-email-ast@plumgrid.com>
 References: <1403913966-4927-1-git-send-email-ast@plumgrid.com>
@@ -31,1140 +31,413 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BPF is used in several kernel components. This split creates logical boundary
-between generic eBPF core and the rest
-
-kernel/bpf/core.c: eBPF interpreter
-
-net/core/filter.c: classic->eBPF converter, classic verifiers, socket filters
-
-This patch only moves functions.
+add new map type: BPF_MAP_TYPE_HASH
+and its simple (not auto resizeable) hash table implementation
 
 Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
 ---
- kernel/Makefile     |    1 +
- kernel/bpf/Makefile |    1 +
- kernel/bpf/core.c   |  545 +++++++++++++++++++++++++++++++++++++++++++++++++++
- net/core/filter.c   |  520 ------------------------------------------------
- 4 files changed, 547 insertions(+), 520 deletions(-)
- create mode 100644 kernel/bpf/Makefile
- create mode 100644 kernel/bpf/core.c
+ include/uapi/linux/bpf.h |    1 +
+ kernel/bpf/Makefile      |    2 +-
+ kernel/bpf/hashtab.c     |  371 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 373 insertions(+), 1 deletion(-)
+ create mode 100644 kernel/bpf/hashtab.c
 
-diff --git a/kernel/Makefile b/kernel/Makefile
-index f2a8b6246ce9..e7360b7c2c0e 100644
---- a/kernel/Makefile
-+++ b/kernel/Makefile
-@@ -87,6 +87,7 @@ obj-$(CONFIG_RING_BUFFER) += trace/
- obj-$(CONFIG_TRACEPOINTS) += trace/
- obj-$(CONFIG_IRQ_WORK) += irq_work.o
- obj-$(CONFIG_CPU_PM) += cpu_pm.o
-+obj-$(CONFIG_NET) += bpf/
+diff --git a/include/uapi/linux/bpf.h b/include/uapi/linux/bpf.h
+index faed2ce2d25a..1399ed1d5dad 100644
+--- a/include/uapi/linux/bpf.h
++++ b/include/uapi/linux/bpf.h
+@@ -354,6 +354,7 @@ enum bpf_map_attributes {
  
- obj-$(CONFIG_PERF_EVENTS) += events/
+ enum bpf_map_type {
+ 	BPF_MAP_TYPE_UNSPEC,
++	BPF_MAP_TYPE_HASH,
+ };
  
+ #endif /* _UAPI__LINUX_BPF_H__ */
 diff --git a/kernel/bpf/Makefile b/kernel/bpf/Makefile
-new file mode 100644
-index 000000000000..6a71145e2769
---- /dev/null
+index e9f7334ed07a..558e12712ebc 100644
+--- a/kernel/bpf/Makefile
 +++ b/kernel/bpf/Makefile
-@@ -0,0 +1 @@
-+obj-y := core.o
-diff --git a/kernel/bpf/core.c b/kernel/bpf/core.c
+@@ -1 +1 @@
+-obj-y := core.o syscall.o
++obj-y := core.o syscall.o hashtab.o
+diff --git a/kernel/bpf/hashtab.c b/kernel/bpf/hashtab.c
 new file mode 100644
-index 000000000000..dd9c29ff720e
+index 000000000000..6e481cacbba3
 --- /dev/null
-+++ b/kernel/bpf/core.c
-@@ -0,0 +1,545 @@
-+/*
-+ * Linux Socket Filter - Kernel level socket filtering
-+ *
-+ * Based on the design of the Berkeley Packet Filter. The new
-+ * internal format has been designed by PLUMgrid:
-+ *
-+ *	Copyright (c) 2011 - 2014 PLUMgrid, http://plumgrid.com
-+ *
-+ * Authors:
-+ *
-+ *	Jay Schulist <jschlst@samba.org>
-+ *	Alexei Starovoitov <ast@plumgrid.com>
-+ *	Daniel Borkmann <dborkman@redhat.com>
++++ b/kernel/bpf/hashtab.c
+@@ -0,0 +1,371 @@
++/* Copyright (c) 2011-2014 PLUMgrid, http://plumgrid.com
 + *
 + * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the License, or (at your option) any later version.
++ * modify it under the terms of version 2 of the GNU General Public
++ * License as published by the Free Software Foundation.
 + *
-+ * Andi Kleen - Fix a few bad bugs and races.
-+ * Kris Katterjohn - Added many additional checks in sk_chk_filter()
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++ * General Public License for more details.
 + */
-+#include <linux/filter.h>
-+#include <linux/skbuff.h>
-+#include <asm/unaligned.h>
++#include <linux/bpf.h>
++#include <net/netlink.h>
++#include <linux/jhash.h>
 +
-+/* Registers */
-+#define BPF_R0	regs[BPF_REG_0]
-+#define BPF_R1	regs[BPF_REG_1]
-+#define BPF_R2	regs[BPF_REG_2]
-+#define BPF_R3	regs[BPF_REG_3]
-+#define BPF_R4	regs[BPF_REG_4]
-+#define BPF_R5	regs[BPF_REG_5]
-+#define BPF_R6	regs[BPF_REG_6]
-+#define BPF_R7	regs[BPF_REG_7]
-+#define BPF_R8	regs[BPF_REG_8]
-+#define BPF_R9	regs[BPF_REG_9]
-+#define BPF_R10	regs[BPF_REG_10]
++struct bpf_htab {
++	struct bpf_map map;
++	struct hlist_head *buckets;
++	struct kmem_cache *elem_cache;
++	char *slab_name;
++	spinlock_t lock;
++	u32 count; /* number of elements in this hashtable */
++	u32 n_buckets; /* number of hash buckets */
++	u32 elem_size; /* size of each element in bytes */
++};
 +
-+/* Named registers */
-+#define DST	regs[insn->dst_reg]
-+#define SRC	regs[insn->src_reg]
-+#define FP	regs[BPF_REG_FP]
-+#define ARG1	regs[BPF_REG_ARG1]
-+#define CTX	regs[BPF_REG_CTX]
-+#define IMM	insn->imm
++/* each htab element is struct htab_elem + key + value */
++struct htab_elem {
++	struct hlist_node hash_node;
++	struct rcu_head rcu;
++	struct bpf_htab *htab;
++	u32 hash;
++	u32 pad;
++	char key[0];
++};
 +
-+/* No hurry in this branch
-+ *
-+ * Exported for the bpf jit load helper.
-+ */
-+void *bpf_internal_load_pointer_neg_helper(const struct sk_buff *skb, int k, unsigned int size)
++#define HASH_MAX_BUCKETS 1024
++#define BPF_MAP_MAX_KEY_SIZE 256
++static struct bpf_map *htab_map_alloc(struct nlattr *attr[BPF_MAP_ATTR_MAX + 1])
 +{
-+	u8 *ptr = NULL;
++	struct bpf_htab *htab;
++	int err, i;
 +
-+	if (k >= SKF_NET_OFF)
-+		ptr = skb_network_header(skb) + k - SKF_NET_OFF;
-+	else if (k >= SKF_LL_OFF)
-+		ptr = skb_mac_header(skb) + k - SKF_LL_OFF;
-+	if (ptr >= skb->head && ptr + size <= skb_tail_pointer(skb))
-+		return ptr;
++	htab = kmalloc(sizeof(*htab), GFP_USER);
++	if (!htab)
++		return ERR_PTR(-ENOMEM);
 +
++	/* look for mandatory map attributes */
++	err = -EINVAL;
++	if (!attr[BPF_MAP_KEY_SIZE])
++		goto free_htab;
++	htab->map.key_size = nla_get_u32(attr[BPF_MAP_KEY_SIZE]);
++
++	if (!attr[BPF_MAP_VALUE_SIZE])
++		goto free_htab;
++	htab->map.value_size = nla_get_u32(attr[BPF_MAP_VALUE_SIZE]);
++
++	if (!attr[BPF_MAP_MAX_ENTRIES])
++		goto free_htab;
++	htab->map.max_entries = nla_get_u32(attr[BPF_MAP_MAX_ENTRIES]);
++
++	htab->n_buckets = (htab->map.max_entries <= HASH_MAX_BUCKETS) ?
++			  htab->map.max_entries : HASH_MAX_BUCKETS;
++
++	/* hash table size must be power of 2 */
++	if ((htab->n_buckets & (htab->n_buckets - 1)) != 0)
++		goto free_htab;
++
++	err = -E2BIG;
++	if (htab->map.key_size > BPF_MAP_MAX_KEY_SIZE)
++		goto free_htab;
++
++	err = -ENOMEM;
++	htab->buckets = kmalloc(htab->n_buckets * sizeof(struct hlist_head),
++				GFP_USER);
++
++	if (!htab->buckets)
++		goto free_htab;
++
++	for (i = 0; i < htab->n_buckets; i++)
++		INIT_HLIST_HEAD(&htab->buckets[i]);
++
++	spin_lock_init(&htab->lock);
++	htab->count = 0;
++
++	htab->elem_size = sizeof(struct htab_elem) +
++			  round_up(htab->map.key_size, 8) +
++			  htab->map.value_size;
++
++	htab->slab_name = kasprintf(GFP_USER, "bpf_htab_%p", htab);
++	if (!htab->slab_name)
++		goto free_buckets;
++
++	htab->elem_cache = kmem_cache_create(htab->slab_name,
++					     htab->elem_size, 0, 0, NULL);
++	if (!htab->elem_cache)
++		goto free_slab_name;
++
++	return &htab->map;
++
++free_slab_name:
++	kfree(htab->slab_name);
++free_buckets:
++	kfree(htab->buckets);
++free_htab:
++	kfree(htab);
++	return ERR_PTR(err);
++}
++
++static inline u32 htab_map_hash(const void *key, u32 key_len)
++{
++	return jhash(key, key_len, 0);
++}
++
++static inline struct hlist_head *select_bucket(struct bpf_htab *htab, u32 hash)
++{
++	return &htab->buckets[hash & (htab->n_buckets - 1)];
++}
++
++static struct htab_elem *lookup_elem_raw(struct hlist_head *head, u32 hash,
++					 void *key, u32 key_size)
++{
++	struct htab_elem *l;
++
++	hlist_for_each_entry_rcu(l, head, hash_node) {
++		if (l->hash == hash && !memcmp(&l->key, key, key_size))
++			return l;
++	}
 +	return NULL;
 +}
 +
-+static inline void *load_pointer(const struct sk_buff *skb, int k,
-+				 unsigned int size, void *buffer)
++/* Must be called with rcu_read_lock. */
++static void *htab_map_lookup_elem(struct bpf_map *map, void *key)
 +{
-+	if (k >= 0)
-+		return skb_header_pointer(skb, k, size, buffer);
++	struct bpf_htab *htab = container_of(map, struct bpf_htab, map);
++	struct hlist_head *head;
++	struct htab_elem *l;
++	u32 hash, key_size;
 +
-+	return bpf_internal_load_pointer_neg_helper(skb, k, size);
++	WARN_ON_ONCE(!rcu_read_lock_held());
++
++	key_size = map->key_size;
++
++	hash = htab_map_hash(key, key_size);
++
++	head = select_bucket(htab, hash);
++
++	l = lookup_elem_raw(head, hash, key, key_size);
++
++	if (l)
++		return l->key + round_up(map->key_size, 8);
++	else
++		return NULL;
 +}
 +
-+/* Base function for offset calculation. Needs to go into .text section,
-+ * therefore keeping it non-static as well; will also be used by JITs
-+ * anyway later on, so do not let the compiler omit it.
-+ */
-+noinline u64 __bpf_call_base(u64 r1, u64 r2, u64 r3, u64 r4, u64 r5)
++/* Must be called with rcu_read_lock. */
++static int htab_map_get_next_key(struct bpf_map *map, void *key, void *next_key)
 +{
++	struct bpf_htab *htab = container_of(map, struct bpf_htab, map);
++	struct hlist_head *head;
++	struct htab_elem *l, *next_l;
++	u32 hash, key_size;
++	int i;
++
++	WARN_ON_ONCE(!rcu_read_lock_held());
++
++	key_size = map->key_size;
++
++	hash = htab_map_hash(key, key_size);
++
++	head = select_bucket(htab, hash);
++
++	/* lookup the key */
++	l = lookup_elem_raw(head, hash, key, key_size);
++
++	if (!l) {
++		i = 0;
++		goto find_first_elem;
++	}
++
++	/* key was found, get next key in the same bucket */
++	next_l = hlist_entry_safe(rcu_dereference_raw(hlist_next_rcu(&l->hash_node)),
++				  struct htab_elem, hash_node);
++
++	if (next_l) {
++		/* if next elem in this hash list is non-zero, just return it */
++		memcpy(next_key, next_l->key, key_size);
++		return 0;
++	} else {
++		/* no more elements in this hash list, go to the next bucket */
++		i = hash & (htab->n_buckets - 1);
++		i++;
++	}
++
++find_first_elem:
++	/* iterate over buckets */
++	for (; i < htab->n_buckets; i++) {
++		head = select_bucket(htab, i);
++
++		/* pick first element in the bucket */
++		next_l = hlist_entry_safe(rcu_dereference_raw(hlist_first_rcu(head)),
++					  struct htab_elem, hash_node);
++		if (next_l) {
++			/* if it's not empty, just return it */
++			memcpy(next_key, next_l->key, key_size);
++			return 0;
++		}
++	}
++
++	/* itereated over all buckets and all elements */
++	return -ENOENT;
++}
++
++static struct htab_elem *htab_alloc_elem(struct bpf_htab *htab)
++{
++	void *l;
++
++	l = kmem_cache_alloc(htab->elem_cache, GFP_ATOMIC);
++	if (!l)
++		return ERR_PTR(-ENOMEM);
++	return l;
++}
++
++static void free_htab_elem_rcu(struct rcu_head *rcu)
++{
++	struct htab_elem *l = container_of(rcu, struct htab_elem, rcu);
++
++	kmem_cache_free(l->htab->elem_cache, l);
++}
++
++static void release_htab_elem(struct bpf_htab *htab, struct htab_elem *l)
++{
++	l->htab = htab;
++	call_rcu(&l->rcu, free_htab_elem_rcu);
++}
++
++/* Must be called with rcu_read_lock. */
++static int htab_map_update_elem(struct bpf_map *map, void *key, void *value)
++{
++	struct bpf_htab *htab = container_of(map, struct bpf_htab, map);
++	struct htab_elem *l_new, *l_old;
++	struct hlist_head *head;
++	u32 key_size;
++
++	WARN_ON_ONCE(!rcu_read_lock_held());
++
++	l_new = htab_alloc_elem(htab);
++	if (IS_ERR(l_new))
++		return -ENOMEM;
++
++	key_size = map->key_size;
++
++	memcpy(l_new->key, key, key_size);
++	memcpy(l_new->key + round_up(key_size, 8), value, map->value_size);
++
++	l_new->hash = htab_map_hash(l_new->key, key_size);
++
++	head = select_bucket(htab, l_new->hash);
++
++	l_old = lookup_elem_raw(head, l_new->hash, key, key_size);
++
++	spin_lock_bh(&htab->lock);
++	if (!l_old && unlikely(htab->count >= map->max_entries)) {
++		/* if elem with this 'key' doesn't exist and we've reached
++		 * max_entries limit, fail insertion of new elem
++		 */
++		spin_unlock_bh(&htab->lock);
++		kmem_cache_free(htab->elem_cache, l_new);
++		return -EFBIG;
++	}
++
++	/* add new element to the head of the list, so that concurrent
++	 * search will find it before old elem
++	 */
++	hlist_add_head_rcu(&l_new->hash_node, head);
++	if (l_old) {
++		hlist_del_rcu(&l_old->hash_node);
++		release_htab_elem(htab, l_old);
++	} else {
++		htab->count++;
++	}
++	spin_unlock_bh(&htab->lock);
++
 +	return 0;
 +}
 +
-+/**
-+ *	__sk_run_filter - run a filter on a given context
-+ *	@ctx: buffer to run the filter on
-+ *	@insn: filter to apply
-+ *
-+ * Decode and apply filter instructions to the skb->data. Return length to
-+ * keep, 0 for none. @ctx is the data we are operating on, @insn is the
-+ * array of filter instructions.
-+ */
-+static unsigned int __sk_run_filter(void *ctx, const struct sock_filter_int *insn)
++/* Must be called with rcu_read_lock. */
++static int htab_map_delete_elem(struct bpf_map *map, void *key)
 +{
-+	u64 stack[MAX_BPF_STACK / sizeof(u64)];
-+	u64 regs[MAX_BPF_REG], tmp;
-+	static const void *jumptable[256] = {
-+		[0 ... 255] = &&default_label,
-+		/* Now overwrite non-defaults ... */
-+		/* 32 bit ALU operations */
-+		[BPF_ALU | BPF_ADD | BPF_X] = &&ALU_ADD_X,
-+		[BPF_ALU | BPF_ADD | BPF_K] = &&ALU_ADD_K,
-+		[BPF_ALU | BPF_SUB | BPF_X] = &&ALU_SUB_X,
-+		[BPF_ALU | BPF_SUB | BPF_K] = &&ALU_SUB_K,
-+		[BPF_ALU | BPF_AND | BPF_X] = &&ALU_AND_X,
-+		[BPF_ALU | BPF_AND | BPF_K] = &&ALU_AND_K,
-+		[BPF_ALU | BPF_OR | BPF_X]  = &&ALU_OR_X,
-+		[BPF_ALU | BPF_OR | BPF_K]  = &&ALU_OR_K,
-+		[BPF_ALU | BPF_LSH | BPF_X] = &&ALU_LSH_X,
-+		[BPF_ALU | BPF_LSH | BPF_K] = &&ALU_LSH_K,
-+		[BPF_ALU | BPF_RSH | BPF_X] = &&ALU_RSH_X,
-+		[BPF_ALU | BPF_RSH | BPF_K] = &&ALU_RSH_K,
-+		[BPF_ALU | BPF_XOR | BPF_X] = &&ALU_XOR_X,
-+		[BPF_ALU | BPF_XOR | BPF_K] = &&ALU_XOR_K,
-+		[BPF_ALU | BPF_MUL | BPF_X] = &&ALU_MUL_X,
-+		[BPF_ALU | BPF_MUL | BPF_K] = &&ALU_MUL_K,
-+		[BPF_ALU | BPF_MOV | BPF_X] = &&ALU_MOV_X,
-+		[BPF_ALU | BPF_MOV | BPF_K] = &&ALU_MOV_K,
-+		[BPF_ALU | BPF_DIV | BPF_X] = &&ALU_DIV_X,
-+		[BPF_ALU | BPF_DIV | BPF_K] = &&ALU_DIV_K,
-+		[BPF_ALU | BPF_MOD | BPF_X] = &&ALU_MOD_X,
-+		[BPF_ALU | BPF_MOD | BPF_K] = &&ALU_MOD_K,
-+		[BPF_ALU | BPF_NEG] = &&ALU_NEG,
-+		[BPF_ALU | BPF_END | BPF_TO_BE] = &&ALU_END_TO_BE,
-+		[BPF_ALU | BPF_END | BPF_TO_LE] = &&ALU_END_TO_LE,
-+		/* 64 bit ALU operations */
-+		[BPF_ALU64 | BPF_ADD | BPF_X] = &&ALU64_ADD_X,
-+		[BPF_ALU64 | BPF_ADD | BPF_K] = &&ALU64_ADD_K,
-+		[BPF_ALU64 | BPF_SUB | BPF_X] = &&ALU64_SUB_X,
-+		[BPF_ALU64 | BPF_SUB | BPF_K] = &&ALU64_SUB_K,
-+		[BPF_ALU64 | BPF_AND | BPF_X] = &&ALU64_AND_X,
-+		[BPF_ALU64 | BPF_AND | BPF_K] = &&ALU64_AND_K,
-+		[BPF_ALU64 | BPF_OR | BPF_X] = &&ALU64_OR_X,
-+		[BPF_ALU64 | BPF_OR | BPF_K] = &&ALU64_OR_K,
-+		[BPF_ALU64 | BPF_LSH | BPF_X] = &&ALU64_LSH_X,
-+		[BPF_ALU64 | BPF_LSH | BPF_K] = &&ALU64_LSH_K,
-+		[BPF_ALU64 | BPF_RSH | BPF_X] = &&ALU64_RSH_X,
-+		[BPF_ALU64 | BPF_RSH | BPF_K] = &&ALU64_RSH_K,
-+		[BPF_ALU64 | BPF_XOR | BPF_X] = &&ALU64_XOR_X,
-+		[BPF_ALU64 | BPF_XOR | BPF_K] = &&ALU64_XOR_K,
-+		[BPF_ALU64 | BPF_MUL | BPF_X] = &&ALU64_MUL_X,
-+		[BPF_ALU64 | BPF_MUL | BPF_K] = &&ALU64_MUL_K,
-+		[BPF_ALU64 | BPF_MOV | BPF_X] = &&ALU64_MOV_X,
-+		[BPF_ALU64 | BPF_MOV | BPF_K] = &&ALU64_MOV_K,
-+		[BPF_ALU64 | BPF_ARSH | BPF_X] = &&ALU64_ARSH_X,
-+		[BPF_ALU64 | BPF_ARSH | BPF_K] = &&ALU64_ARSH_K,
-+		[BPF_ALU64 | BPF_DIV | BPF_X] = &&ALU64_DIV_X,
-+		[BPF_ALU64 | BPF_DIV | BPF_K] = &&ALU64_DIV_K,
-+		[BPF_ALU64 | BPF_MOD | BPF_X] = &&ALU64_MOD_X,
-+		[BPF_ALU64 | BPF_MOD | BPF_K] = &&ALU64_MOD_K,
-+		[BPF_ALU64 | BPF_NEG] = &&ALU64_NEG,
-+		/* Call instruction */
-+		[BPF_JMP | BPF_CALL] = &&JMP_CALL,
-+		/* Jumps */
-+		[BPF_JMP | BPF_JA] = &&JMP_JA,
-+		[BPF_JMP | BPF_JEQ | BPF_X] = &&JMP_JEQ_X,
-+		[BPF_JMP | BPF_JEQ | BPF_K] = &&JMP_JEQ_K,
-+		[BPF_JMP | BPF_JNE | BPF_X] = &&JMP_JNE_X,
-+		[BPF_JMP | BPF_JNE | BPF_K] = &&JMP_JNE_K,
-+		[BPF_JMP | BPF_JGT | BPF_X] = &&JMP_JGT_X,
-+		[BPF_JMP | BPF_JGT | BPF_K] = &&JMP_JGT_K,
-+		[BPF_JMP | BPF_JGE | BPF_X] = &&JMP_JGE_X,
-+		[BPF_JMP | BPF_JGE | BPF_K] = &&JMP_JGE_K,
-+		[BPF_JMP | BPF_JSGT | BPF_X] = &&JMP_JSGT_X,
-+		[BPF_JMP | BPF_JSGT | BPF_K] = &&JMP_JSGT_K,
-+		[BPF_JMP | BPF_JSGE | BPF_X] = &&JMP_JSGE_X,
-+		[BPF_JMP | BPF_JSGE | BPF_K] = &&JMP_JSGE_K,
-+		[BPF_JMP | BPF_JSET | BPF_X] = &&JMP_JSET_X,
-+		[BPF_JMP | BPF_JSET | BPF_K] = &&JMP_JSET_K,
-+		/* Program return */
-+		[BPF_JMP | BPF_EXIT] = &&JMP_EXIT,
-+		/* Store instructions */
-+		[BPF_STX | BPF_MEM | BPF_B] = &&STX_MEM_B,
-+		[BPF_STX | BPF_MEM | BPF_H] = &&STX_MEM_H,
-+		[BPF_STX | BPF_MEM | BPF_W] = &&STX_MEM_W,
-+		[BPF_STX | BPF_MEM | BPF_DW] = &&STX_MEM_DW,
-+		[BPF_STX | BPF_XADD | BPF_W] = &&STX_XADD_W,
-+		[BPF_STX | BPF_XADD | BPF_DW] = &&STX_XADD_DW,
-+		[BPF_ST | BPF_MEM | BPF_B] = &&ST_MEM_B,
-+		[BPF_ST | BPF_MEM | BPF_H] = &&ST_MEM_H,
-+		[BPF_ST | BPF_MEM | BPF_W] = &&ST_MEM_W,
-+		[BPF_ST | BPF_MEM | BPF_DW] = &&ST_MEM_DW,
-+		/* Load instructions */
-+		[BPF_LDX | BPF_MEM | BPF_B] = &&LDX_MEM_B,
-+		[BPF_LDX | BPF_MEM | BPF_H] = &&LDX_MEM_H,
-+		[BPF_LDX | BPF_MEM | BPF_W] = &&LDX_MEM_W,
-+		[BPF_LDX | BPF_MEM | BPF_DW] = &&LDX_MEM_DW,
-+		[BPF_LD | BPF_ABS | BPF_W] = &&LD_ABS_W,
-+		[BPF_LD | BPF_ABS | BPF_H] = &&LD_ABS_H,
-+		[BPF_LD | BPF_ABS | BPF_B] = &&LD_ABS_B,
-+		[BPF_LD | BPF_IND | BPF_W] = &&LD_IND_W,
-+		[BPF_LD | BPF_IND | BPF_H] = &&LD_IND_H,
-+		[BPF_LD | BPF_IND | BPF_B] = &&LD_IND_B,
-+	};
-+	void *ptr;
-+	int off;
++	struct bpf_htab *htab = container_of(map, struct bpf_htab, map);
++	struct htab_elem *l;
++	struct hlist_head *head;
++	u32 hash, key_size;
 +
-+#define CONT	 ({ insn++; goto select_insn; })
-+#define CONT_JMP ({ insn++; goto select_insn; })
++	WARN_ON_ONCE(!rcu_read_lock_held());
 +
-+	FP = (u64) (unsigned long) &stack[ARRAY_SIZE(stack)];
-+	ARG1 = (u64) (unsigned long) ctx;
++	key_size = map->key_size;
 +
-+	/* Registers used in classic BPF programs need to be reset first. */
-+	regs[BPF_REG_A] = 0;
-+	regs[BPF_REG_X] = 0;
++	hash = htab_map_hash(key, key_size);
 +
-+select_insn:
-+	goto *jumptable[insn->code];
++	head = select_bucket(htab, hash);
 +
-+	/* ALU */
-+#define ALU(OPCODE, OP)			\
-+	ALU64_##OPCODE##_X:		\
-+		DST = DST OP SRC;	\
-+		CONT;			\
-+	ALU_##OPCODE##_X:		\
-+		DST = (u32) DST OP (u32) SRC;	\
-+		CONT;			\
-+	ALU64_##OPCODE##_K:		\
-+		DST = DST OP IMM;		\
-+		CONT;			\
-+	ALU_##OPCODE##_K:		\
-+		DST = (u32) DST OP (u32) IMM;	\
-+		CONT;
++	l = lookup_elem_raw(head, hash, key, key_size);
 +
-+	ALU(ADD,  +)
-+	ALU(SUB,  -)
-+	ALU(AND,  &)
-+	ALU(OR,   |)
-+	ALU(LSH, <<)
-+	ALU(RSH, >>)
-+	ALU(XOR,  ^)
-+	ALU(MUL,  *)
-+#undef ALU
-+	ALU_NEG:
-+		DST = (u32) -DST;
-+		CONT;
-+	ALU64_NEG:
-+		DST = -DST;
-+		CONT;
-+	ALU_MOV_X:
-+		DST = (u32) SRC;
-+		CONT;
-+	ALU_MOV_K:
-+		DST = (u32) IMM;
-+		CONT;
-+	ALU64_MOV_X:
-+		DST = SRC;
-+		CONT;
-+	ALU64_MOV_K:
-+		DST = IMM;
-+		CONT;
-+	ALU64_ARSH_X:
-+		(*(s64 *) &DST) >>= SRC;
-+		CONT;
-+	ALU64_ARSH_K:
-+		(*(s64 *) &DST) >>= IMM;
-+		CONT;
-+	ALU64_MOD_X:
-+		if (unlikely(SRC == 0))
-+			return 0;
-+		tmp = DST;
-+		DST = do_div(tmp, SRC);
-+		CONT;
-+	ALU_MOD_X:
-+		if (unlikely(SRC == 0))
-+			return 0;
-+		tmp = (u32) DST;
-+		DST = do_div(tmp, (u32) SRC);
-+		CONT;
-+	ALU64_MOD_K:
-+		tmp = DST;
-+		DST = do_div(tmp, IMM);
-+		CONT;
-+	ALU_MOD_K:
-+		tmp = (u32) DST;
-+		DST = do_div(tmp, (u32) IMM);
-+		CONT;
-+	ALU64_DIV_X:
-+		if (unlikely(SRC == 0))
-+			return 0;
-+		do_div(DST, SRC);
-+		CONT;
-+	ALU_DIV_X:
-+		if (unlikely(SRC == 0))
-+			return 0;
-+		tmp = (u32) DST;
-+		do_div(tmp, (u32) SRC);
-+		DST = (u32) tmp;
-+		CONT;
-+	ALU64_DIV_K:
-+		do_div(DST, IMM);
-+		CONT;
-+	ALU_DIV_K:
-+		tmp = (u32) DST;
-+		do_div(tmp, (u32) IMM);
-+		DST = (u32) tmp;
-+		CONT;
-+	ALU_END_TO_BE:
-+		switch (IMM) {
-+		case 16:
-+			DST = (__force u16) cpu_to_be16(DST);
-+			break;
-+		case 32:
-+			DST = (__force u32) cpu_to_be32(DST);
-+			break;
-+		case 64:
-+			DST = (__force u64) cpu_to_be64(DST);
-+			break;
-+		}
-+		CONT;
-+	ALU_END_TO_LE:
-+		switch (IMM) {
-+		case 16:
-+			DST = (__force u16) cpu_to_le16(DST);
-+			break;
-+		case 32:
-+			DST = (__force u32) cpu_to_le32(DST);
-+			break;
-+		case 64:
-+			DST = (__force u64) cpu_to_le64(DST);
-+			break;
-+		}
-+		CONT;
-+
-+	/* CALL */
-+	JMP_CALL:
-+		/* Function call scratches BPF_R1-BPF_R5 registers,
-+		 * preserves BPF_R6-BPF_R9, and stores return value
-+		 * into BPF_R0.
-+		 */
-+		BPF_R0 = (__bpf_call_base + insn->imm)(BPF_R1, BPF_R2, BPF_R3,
-+						       BPF_R4, BPF_R5);
-+		CONT;
-+
-+	/* JMP */
-+	JMP_JA:
-+		insn += insn->off;
-+		CONT;
-+	JMP_JEQ_X:
-+		if (DST == SRC) {
-+			insn += insn->off;
-+			CONT_JMP;
-+		}
-+		CONT;
-+	JMP_JEQ_K:
-+		if (DST == IMM) {
-+			insn += insn->off;
-+			CONT_JMP;
-+		}
-+		CONT;
-+	JMP_JNE_X:
-+		if (DST != SRC) {
-+			insn += insn->off;
-+			CONT_JMP;
-+		}
-+		CONT;
-+	JMP_JNE_K:
-+		if (DST != IMM) {
-+			insn += insn->off;
-+			CONT_JMP;
-+		}
-+		CONT;
-+	JMP_JGT_X:
-+		if (DST > SRC) {
-+			insn += insn->off;
-+			CONT_JMP;
-+		}
-+		CONT;
-+	JMP_JGT_K:
-+		if (DST > IMM) {
-+			insn += insn->off;
-+			CONT_JMP;
-+		}
-+		CONT;
-+	JMP_JGE_X:
-+		if (DST >= SRC) {
-+			insn += insn->off;
-+			CONT_JMP;
-+		}
-+		CONT;
-+	JMP_JGE_K:
-+		if (DST >= IMM) {
-+			insn += insn->off;
-+			CONT_JMP;
-+		}
-+		CONT;
-+	JMP_JSGT_X:
-+		if (((s64) DST) > ((s64) SRC)) {
-+			insn += insn->off;
-+			CONT_JMP;
-+		}
-+		CONT;
-+	JMP_JSGT_K:
-+		if (((s64) DST) > ((s64) IMM)) {
-+			insn += insn->off;
-+			CONT_JMP;
-+		}
-+		CONT;
-+	JMP_JSGE_X:
-+		if (((s64) DST) >= ((s64) SRC)) {
-+			insn += insn->off;
-+			CONT_JMP;
-+		}
-+		CONT;
-+	JMP_JSGE_K:
-+		if (((s64) DST) >= ((s64) IMM)) {
-+			insn += insn->off;
-+			CONT_JMP;
-+		}
-+		CONT;
-+	JMP_JSET_X:
-+		if (DST & SRC) {
-+			insn += insn->off;
-+			CONT_JMP;
-+		}
-+		CONT;
-+	JMP_JSET_K:
-+		if (DST & IMM) {
-+			insn += insn->off;
-+			CONT_JMP;
-+		}
-+		CONT;
-+	JMP_EXIT:
-+		return BPF_R0;
-+
-+	/* STX and ST and LDX*/
-+#define LDST(SIZEOP, SIZE)						\
-+	STX_MEM_##SIZEOP:						\
-+		*(SIZE *)(unsigned long) (DST + insn->off) = SRC;	\
-+		CONT;							\
-+	ST_MEM_##SIZEOP:						\
-+		*(SIZE *)(unsigned long) (DST + insn->off) = IMM;	\
-+		CONT;							\
-+	LDX_MEM_##SIZEOP:						\
-+		DST = *(SIZE *)(unsigned long) (SRC + insn->off);	\
-+		CONT;
-+
-+	LDST(B,   u8)
-+	LDST(H,  u16)
-+	LDST(W,  u32)
-+	LDST(DW, u64)
-+#undef LDST
-+	STX_XADD_W: /* lock xadd *(u32 *)(dst_reg + off16) += src_reg */
-+		atomic_add((u32) SRC, (atomic_t *)(unsigned long)
-+			   (DST + insn->off));
-+		CONT;
-+	STX_XADD_DW: /* lock xadd *(u64 *)(dst_reg + off16) += src_reg */
-+		atomic64_add((u64) SRC, (atomic64_t *)(unsigned long)
-+			     (DST + insn->off));
-+		CONT;
-+	LD_ABS_W: /* BPF_R0 = ntohl(*(u32 *) (skb->data + imm32)) */
-+		off = IMM;
-+load_word:
-+		/* BPF_LD + BPD_ABS and BPF_LD + BPF_IND insns are
-+		 * only appearing in the programs where ctx ==
-+		 * skb. All programs keep 'ctx' in regs[BPF_REG_CTX]
-+		 * == BPF_R6, sk_convert_filter() saves it in BPF_R6,
-+		 * internal BPF verifier will check that BPF_R6 ==
-+		 * ctx.
-+		 *
-+		 * BPF_ABS and BPF_IND are wrappers of function calls,
-+		 * so they scratch BPF_R1-BPF_R5 registers, preserve
-+		 * BPF_R6-BPF_R9, and store return value into BPF_R0.
-+		 *
-+		 * Implicit input:
-+		 *   ctx == skb == BPF_R6 == CTX
-+		 *
-+		 * Explicit input:
-+		 *   SRC == any register
-+		 *   IMM == 32-bit immediate
-+		 *
-+		 * Output:
-+		 *   BPF_R0 - 8/16/32-bit skb data converted to cpu endianness
-+		 */
-+
-+		ptr = load_pointer((struct sk_buff *) (unsigned long) CTX, off, 4, &tmp);
-+		if (likely(ptr != NULL)) {
-+			BPF_R0 = get_unaligned_be32(ptr);
-+			CONT;
-+		}
-+
++	if (l) {
++		spin_lock_bh(&htab->lock);
++		hlist_del_rcu(&l->hash_node);
++		htab->count--;
++		release_htab_elem(htab, l);
++		spin_unlock_bh(&htab->lock);
 +		return 0;
-+	LD_ABS_H: /* BPF_R0 = ntohs(*(u16 *) (skb->data + imm32)) */
-+		off = IMM;
-+load_half:
-+		ptr = load_pointer((struct sk_buff *) (unsigned long) CTX, off, 2, &tmp);
-+		if (likely(ptr != NULL)) {
-+			BPF_R0 = get_unaligned_be16(ptr);
-+			CONT;
-+		}
-+
-+		return 0;
-+	LD_ABS_B: /* BPF_R0 = *(u8 *) (skb->data + imm32) */
-+		off = IMM;
-+load_byte:
-+		ptr = load_pointer((struct sk_buff *) (unsigned long) CTX, off, 1, &tmp);
-+		if (likely(ptr != NULL)) {
-+			BPF_R0 = *(u8 *)ptr;
-+			CONT;
-+		}
-+
-+		return 0;
-+	LD_IND_W: /* BPF_R0 = ntohl(*(u32 *) (skb->data + src_reg + imm32)) */
-+		off = IMM + SRC;
-+		goto load_word;
-+	LD_IND_H: /* BPF_R0 = ntohs(*(u16 *) (skb->data + src_reg + imm32)) */
-+		off = IMM + SRC;
-+		goto load_half;
-+	LD_IND_B: /* BPF_R0 = *(u8 *) (skb->data + src_reg + imm32) */
-+		off = IMM + SRC;
-+		goto load_byte;
-+
-+	default_label:
-+		/* If we ever reach this, we have a bug somewhere. */
-+		WARN_RATELIMIT(1, "unknown opcode %02x\n", insn->code);
-+		return 0;
++	}
++	return -ESRCH;
 +}
 +
-+void __weak bpf_int_jit_compile(struct sk_filter *prog)
++static void delete_all_elements(struct bpf_htab *htab)
 +{
++	int i;
++
++	for (i = 0; i < htab->n_buckets; i++) {
++		struct hlist_head *head = select_bucket(htab, i);
++		struct hlist_node *n;
++		struct htab_elem *l;
++
++		hlist_for_each_entry_safe(l, n, head, hash_node) {
++			hlist_del_rcu(&l->hash_node);
++			htab->count--;
++			kmem_cache_free(htab->elem_cache, l);
++		}
++	}
 +}
 +
-+/**
-+ *	sk_filter_select_runtime - select execution runtime for BPF program
-+ *	@fp: sk_filter populated with internal BPF program
-+ *
-+ * try to JIT internal BPF program, if JIT is not available select interpreter
-+ * BPF program will be executed via SK_RUN_FILTER() macro
-+ */
-+void sk_filter_select_runtime(struct sk_filter *fp)
++/* called when map->refcnt goes to zero */
++static void htab_map_free(struct bpf_map *map)
 +{
-+	fp->bpf_func = (void *) __sk_run_filter;
++	struct bpf_htab *htab = container_of(map, struct bpf_htab, map);
 +
-+	/* Probe if internal BPF can be JITed */
-+	bpf_int_jit_compile(fp);
++	/* wait for all outstanding updates to complete */
++	synchronize_rcu();
++
++	/* kmem_cache_free all htab elements */
++	delete_all_elements(htab);
++
++	/* and destroy cache, which might sleep */
++	kmem_cache_destroy(htab->elem_cache);
++
++	kfree(htab->buckets);
++	kfree(htab->slab_name);
++	kfree(htab);
 +}
-+EXPORT_SYMBOL_GPL(sk_filter_select_runtime);
 +
-+/* free internal BPF program */
-+void sk_filter_free(struct sk_filter *fp)
++static struct bpf_map_ops htab_ops = {
++	.map_alloc = htab_map_alloc,
++	.map_free = htab_map_free,
++	.map_get_next_key = htab_map_get_next_key,
++	.map_lookup_elem = htab_map_lookup_elem,
++	.map_update_elem = htab_map_update_elem,
++	.map_delete_elem = htab_map_delete_elem,
++};
++
++static struct bpf_map_type_list tl = {
++	.ops = &htab_ops,
++	.type = BPF_MAP_TYPE_HASH,
++};
++
++static int __init register_htab_map(void)
 +{
-+	bpf_jit_free(fp);
++	bpf_register_map_type(&tl);
++	return 0;
 +}
-+EXPORT_SYMBOL_GPL(sk_filter_free);
-diff --git a/net/core/filter.c b/net/core/filter.c
-index 1dbf6462f766..79d8a1b1ad75 100644
---- a/net/core/filter.c
-+++ b/net/core/filter.c
-@@ -45,54 +45,6 @@
- #include <linux/seccomp.h>
- #include <linux/if_vlan.h>
- 
--/* Registers */
--#define BPF_R0	regs[BPF_REG_0]
--#define BPF_R1	regs[BPF_REG_1]
--#define BPF_R2	regs[BPF_REG_2]
--#define BPF_R3	regs[BPF_REG_3]
--#define BPF_R4	regs[BPF_REG_4]
--#define BPF_R5	regs[BPF_REG_5]
--#define BPF_R6	regs[BPF_REG_6]
--#define BPF_R7	regs[BPF_REG_7]
--#define BPF_R8	regs[BPF_REG_8]
--#define BPF_R9	regs[BPF_REG_9]
--#define BPF_R10	regs[BPF_REG_10]
--
--/* Named registers */
--#define DST	regs[insn->dst_reg]
--#define SRC	regs[insn->src_reg]
--#define FP	regs[BPF_REG_FP]
--#define ARG1	regs[BPF_REG_ARG1]
--#define CTX	regs[BPF_REG_CTX]
--#define IMM	insn->imm
--
--/* No hurry in this branch
-- *
-- * Exported for the bpf jit load helper.
-- */
--void *bpf_internal_load_pointer_neg_helper(const struct sk_buff *skb, int k, unsigned int size)
--{
--	u8 *ptr = NULL;
--
--	if (k >= SKF_NET_OFF)
--		ptr = skb_network_header(skb) + k - SKF_NET_OFF;
--	else if (k >= SKF_LL_OFF)
--		ptr = skb_mac_header(skb) + k - SKF_LL_OFF;
--	if (ptr >= skb->head && ptr + size <= skb_tail_pointer(skb))
--		return ptr;
--
--	return NULL;
--}
--
--static inline void *load_pointer(const struct sk_buff *skb, int k,
--				 unsigned int size, void *buffer)
--{
--	if (k >= 0)
--		return skb_header_pointer(skb, k, size, buffer);
--
--	return bpf_internal_load_pointer_neg_helper(skb, k, size);
--}
--
- /**
-  *	sk_filter - run a packet through a socket filter
-  *	@sk: sock associated with &sk_buff
-@@ -135,451 +87,6 @@ int sk_filter(struct sock *sk, struct sk_buff *skb)
- }
- EXPORT_SYMBOL(sk_filter);
- 
--/* Base function for offset calculation. Needs to go into .text section,
-- * therefore keeping it non-static as well; will also be used by JITs
-- * anyway later on, so do not let the compiler omit it.
-- */
--noinline u64 __bpf_call_base(u64 r1, u64 r2, u64 r3, u64 r4, u64 r5)
--{
--	return 0;
--}
--
--/**
-- *	__sk_run_filter - run a filter on a given context
-- *	@ctx: buffer to run the filter on
-- *	@insn: filter to apply
-- *
-- * Decode and apply filter instructions to the skb->data. Return length to
-- * keep, 0 for none. @ctx is the data we are operating on, @insn is the
-- * array of filter instructions.
-- */
--static unsigned int __sk_run_filter(void *ctx, const struct sock_filter_int *insn)
--{
--	u64 stack[MAX_BPF_STACK / sizeof(u64)];
--	u64 regs[MAX_BPF_REG], tmp;
--	static const void *jumptable[256] = {
--		[0 ... 255] = &&default_label,
--		/* Now overwrite non-defaults ... */
--		/* 32 bit ALU operations */
--		[BPF_ALU | BPF_ADD | BPF_X] = &&ALU_ADD_X,
--		[BPF_ALU | BPF_ADD | BPF_K] = &&ALU_ADD_K,
--		[BPF_ALU | BPF_SUB | BPF_X] = &&ALU_SUB_X,
--		[BPF_ALU | BPF_SUB | BPF_K] = &&ALU_SUB_K,
--		[BPF_ALU | BPF_AND | BPF_X] = &&ALU_AND_X,
--		[BPF_ALU | BPF_AND | BPF_K] = &&ALU_AND_K,
--		[BPF_ALU | BPF_OR | BPF_X]  = &&ALU_OR_X,
--		[BPF_ALU | BPF_OR | BPF_K]  = &&ALU_OR_K,
--		[BPF_ALU | BPF_LSH | BPF_X] = &&ALU_LSH_X,
--		[BPF_ALU | BPF_LSH | BPF_K] = &&ALU_LSH_K,
--		[BPF_ALU | BPF_RSH | BPF_X] = &&ALU_RSH_X,
--		[BPF_ALU | BPF_RSH | BPF_K] = &&ALU_RSH_K,
--		[BPF_ALU | BPF_XOR | BPF_X] = &&ALU_XOR_X,
--		[BPF_ALU | BPF_XOR | BPF_K] = &&ALU_XOR_K,
--		[BPF_ALU | BPF_MUL | BPF_X] = &&ALU_MUL_X,
--		[BPF_ALU | BPF_MUL | BPF_K] = &&ALU_MUL_K,
--		[BPF_ALU | BPF_MOV | BPF_X] = &&ALU_MOV_X,
--		[BPF_ALU | BPF_MOV | BPF_K] = &&ALU_MOV_K,
--		[BPF_ALU | BPF_DIV | BPF_X] = &&ALU_DIV_X,
--		[BPF_ALU | BPF_DIV | BPF_K] = &&ALU_DIV_K,
--		[BPF_ALU | BPF_MOD | BPF_X] = &&ALU_MOD_X,
--		[BPF_ALU | BPF_MOD | BPF_K] = &&ALU_MOD_K,
--		[BPF_ALU | BPF_NEG] = &&ALU_NEG,
--		[BPF_ALU | BPF_END | BPF_TO_BE] = &&ALU_END_TO_BE,
--		[BPF_ALU | BPF_END | BPF_TO_LE] = &&ALU_END_TO_LE,
--		/* 64 bit ALU operations */
--		[BPF_ALU64 | BPF_ADD | BPF_X] = &&ALU64_ADD_X,
--		[BPF_ALU64 | BPF_ADD | BPF_K] = &&ALU64_ADD_K,
--		[BPF_ALU64 | BPF_SUB | BPF_X] = &&ALU64_SUB_X,
--		[BPF_ALU64 | BPF_SUB | BPF_K] = &&ALU64_SUB_K,
--		[BPF_ALU64 | BPF_AND | BPF_X] = &&ALU64_AND_X,
--		[BPF_ALU64 | BPF_AND | BPF_K] = &&ALU64_AND_K,
--		[BPF_ALU64 | BPF_OR | BPF_X] = &&ALU64_OR_X,
--		[BPF_ALU64 | BPF_OR | BPF_K] = &&ALU64_OR_K,
--		[BPF_ALU64 | BPF_LSH | BPF_X] = &&ALU64_LSH_X,
--		[BPF_ALU64 | BPF_LSH | BPF_K] = &&ALU64_LSH_K,
--		[BPF_ALU64 | BPF_RSH | BPF_X] = &&ALU64_RSH_X,
--		[BPF_ALU64 | BPF_RSH | BPF_K] = &&ALU64_RSH_K,
--		[BPF_ALU64 | BPF_XOR | BPF_X] = &&ALU64_XOR_X,
--		[BPF_ALU64 | BPF_XOR | BPF_K] = &&ALU64_XOR_K,
--		[BPF_ALU64 | BPF_MUL | BPF_X] = &&ALU64_MUL_X,
--		[BPF_ALU64 | BPF_MUL | BPF_K] = &&ALU64_MUL_K,
--		[BPF_ALU64 | BPF_MOV | BPF_X] = &&ALU64_MOV_X,
--		[BPF_ALU64 | BPF_MOV | BPF_K] = &&ALU64_MOV_K,
--		[BPF_ALU64 | BPF_ARSH | BPF_X] = &&ALU64_ARSH_X,
--		[BPF_ALU64 | BPF_ARSH | BPF_K] = &&ALU64_ARSH_K,
--		[BPF_ALU64 | BPF_DIV | BPF_X] = &&ALU64_DIV_X,
--		[BPF_ALU64 | BPF_DIV | BPF_K] = &&ALU64_DIV_K,
--		[BPF_ALU64 | BPF_MOD | BPF_X] = &&ALU64_MOD_X,
--		[BPF_ALU64 | BPF_MOD | BPF_K] = &&ALU64_MOD_K,
--		[BPF_ALU64 | BPF_NEG] = &&ALU64_NEG,
--		/* Call instruction */
--		[BPF_JMP | BPF_CALL] = &&JMP_CALL,
--		/* Jumps */
--		[BPF_JMP | BPF_JA] = &&JMP_JA,
--		[BPF_JMP | BPF_JEQ | BPF_X] = &&JMP_JEQ_X,
--		[BPF_JMP | BPF_JEQ | BPF_K] = &&JMP_JEQ_K,
--		[BPF_JMP | BPF_JNE | BPF_X] = &&JMP_JNE_X,
--		[BPF_JMP | BPF_JNE | BPF_K] = &&JMP_JNE_K,
--		[BPF_JMP | BPF_JGT | BPF_X] = &&JMP_JGT_X,
--		[BPF_JMP | BPF_JGT | BPF_K] = &&JMP_JGT_K,
--		[BPF_JMP | BPF_JGE | BPF_X] = &&JMP_JGE_X,
--		[BPF_JMP | BPF_JGE | BPF_K] = &&JMP_JGE_K,
--		[BPF_JMP | BPF_JSGT | BPF_X] = &&JMP_JSGT_X,
--		[BPF_JMP | BPF_JSGT | BPF_K] = &&JMP_JSGT_K,
--		[BPF_JMP | BPF_JSGE | BPF_X] = &&JMP_JSGE_X,
--		[BPF_JMP | BPF_JSGE | BPF_K] = &&JMP_JSGE_K,
--		[BPF_JMP | BPF_JSET | BPF_X] = &&JMP_JSET_X,
--		[BPF_JMP | BPF_JSET | BPF_K] = &&JMP_JSET_K,
--		/* Program return */
--		[BPF_JMP | BPF_EXIT] = &&JMP_EXIT,
--		/* Store instructions */
--		[BPF_STX | BPF_MEM | BPF_B] = &&STX_MEM_B,
--		[BPF_STX | BPF_MEM | BPF_H] = &&STX_MEM_H,
--		[BPF_STX | BPF_MEM | BPF_W] = &&STX_MEM_W,
--		[BPF_STX | BPF_MEM | BPF_DW] = &&STX_MEM_DW,
--		[BPF_STX | BPF_XADD | BPF_W] = &&STX_XADD_W,
--		[BPF_STX | BPF_XADD | BPF_DW] = &&STX_XADD_DW,
--		[BPF_ST | BPF_MEM | BPF_B] = &&ST_MEM_B,
--		[BPF_ST | BPF_MEM | BPF_H] = &&ST_MEM_H,
--		[BPF_ST | BPF_MEM | BPF_W] = &&ST_MEM_W,
--		[BPF_ST | BPF_MEM | BPF_DW] = &&ST_MEM_DW,
--		/* Load instructions */
--		[BPF_LDX | BPF_MEM | BPF_B] = &&LDX_MEM_B,
--		[BPF_LDX | BPF_MEM | BPF_H] = &&LDX_MEM_H,
--		[BPF_LDX | BPF_MEM | BPF_W] = &&LDX_MEM_W,
--		[BPF_LDX | BPF_MEM | BPF_DW] = &&LDX_MEM_DW,
--		[BPF_LD | BPF_ABS | BPF_W] = &&LD_ABS_W,
--		[BPF_LD | BPF_ABS | BPF_H] = &&LD_ABS_H,
--		[BPF_LD | BPF_ABS | BPF_B] = &&LD_ABS_B,
--		[BPF_LD | BPF_IND | BPF_W] = &&LD_IND_W,
--		[BPF_LD | BPF_IND | BPF_H] = &&LD_IND_H,
--		[BPF_LD | BPF_IND | BPF_B] = &&LD_IND_B,
--	};
--	void *ptr;
--	int off;
--
--#define CONT	 ({ insn++; goto select_insn; })
--#define CONT_JMP ({ insn++; goto select_insn; })
--
--	FP = (u64) (unsigned long) &stack[ARRAY_SIZE(stack)];
--	ARG1 = (u64) (unsigned long) ctx;
--
--	/* Registers used in classic BPF programs need to be reset first. */
--	regs[BPF_REG_A] = 0;
--	regs[BPF_REG_X] = 0;
--
--select_insn:
--	goto *jumptable[insn->code];
--
--	/* ALU */
--#define ALU(OPCODE, OP)			\
--	ALU64_##OPCODE##_X:		\
--		DST = DST OP SRC;	\
--		CONT;			\
--	ALU_##OPCODE##_X:		\
--		DST = (u32) DST OP (u32) SRC;	\
--		CONT;			\
--	ALU64_##OPCODE##_K:		\
--		DST = DST OP IMM;		\
--		CONT;			\
--	ALU_##OPCODE##_K:		\
--		DST = (u32) DST OP (u32) IMM;	\
--		CONT;
--
--	ALU(ADD,  +)
--	ALU(SUB,  -)
--	ALU(AND,  &)
--	ALU(OR,   |)
--	ALU(LSH, <<)
--	ALU(RSH, >>)
--	ALU(XOR,  ^)
--	ALU(MUL,  *)
--#undef ALU
--	ALU_NEG:
--		DST = (u32) -DST;
--		CONT;
--	ALU64_NEG:
--		DST = -DST;
--		CONT;
--	ALU_MOV_X:
--		DST = (u32) SRC;
--		CONT;
--	ALU_MOV_K:
--		DST = (u32) IMM;
--		CONT;
--	ALU64_MOV_X:
--		DST = SRC;
--		CONT;
--	ALU64_MOV_K:
--		DST = IMM;
--		CONT;
--	ALU64_ARSH_X:
--		(*(s64 *) &DST) >>= SRC;
--		CONT;
--	ALU64_ARSH_K:
--		(*(s64 *) &DST) >>= IMM;
--		CONT;
--	ALU64_MOD_X:
--		if (unlikely(SRC == 0))
--			return 0;
--		tmp = DST;
--		DST = do_div(tmp, SRC);
--		CONT;
--	ALU_MOD_X:
--		if (unlikely(SRC == 0))
--			return 0;
--		tmp = (u32) DST;
--		DST = do_div(tmp, (u32) SRC);
--		CONT;
--	ALU64_MOD_K:
--		tmp = DST;
--		DST = do_div(tmp, IMM);
--		CONT;
--	ALU_MOD_K:
--		tmp = (u32) DST;
--		DST = do_div(tmp, (u32) IMM);
--		CONT;
--	ALU64_DIV_X:
--		if (unlikely(SRC == 0))
--			return 0;
--		do_div(DST, SRC);
--		CONT;
--	ALU_DIV_X:
--		if (unlikely(SRC == 0))
--			return 0;
--		tmp = (u32) DST;
--		do_div(tmp, (u32) SRC);
--		DST = (u32) tmp;
--		CONT;
--	ALU64_DIV_K:
--		do_div(DST, IMM);
--		CONT;
--	ALU_DIV_K:
--		tmp = (u32) DST;
--		do_div(tmp, (u32) IMM);
--		DST = (u32) tmp;
--		CONT;
--	ALU_END_TO_BE:
--		switch (IMM) {
--		case 16:
--			DST = (__force u16) cpu_to_be16(DST);
--			break;
--		case 32:
--			DST = (__force u32) cpu_to_be32(DST);
--			break;
--		case 64:
--			DST = (__force u64) cpu_to_be64(DST);
--			break;
--		}
--		CONT;
--	ALU_END_TO_LE:
--		switch (IMM) {
--		case 16:
--			DST = (__force u16) cpu_to_le16(DST);
--			break;
--		case 32:
--			DST = (__force u32) cpu_to_le32(DST);
--			break;
--		case 64:
--			DST = (__force u64) cpu_to_le64(DST);
--			break;
--		}
--		CONT;
--
--	/* CALL */
--	JMP_CALL:
--		/* Function call scratches BPF_R1-BPF_R5 registers,
--		 * preserves BPF_R6-BPF_R9, and stores return value
--		 * into BPF_R0.
--		 */
--		BPF_R0 = (__bpf_call_base + insn->imm)(BPF_R1, BPF_R2, BPF_R3,
--						       BPF_R4, BPF_R5);
--		CONT;
--
--	/* JMP */
--	JMP_JA:
--		insn += insn->off;
--		CONT;
--	JMP_JEQ_X:
--		if (DST == SRC) {
--			insn += insn->off;
--			CONT_JMP;
--		}
--		CONT;
--	JMP_JEQ_K:
--		if (DST == IMM) {
--			insn += insn->off;
--			CONT_JMP;
--		}
--		CONT;
--	JMP_JNE_X:
--		if (DST != SRC) {
--			insn += insn->off;
--			CONT_JMP;
--		}
--		CONT;
--	JMP_JNE_K:
--		if (DST != IMM) {
--			insn += insn->off;
--			CONT_JMP;
--		}
--		CONT;
--	JMP_JGT_X:
--		if (DST > SRC) {
--			insn += insn->off;
--			CONT_JMP;
--		}
--		CONT;
--	JMP_JGT_K:
--		if (DST > IMM) {
--			insn += insn->off;
--			CONT_JMP;
--		}
--		CONT;
--	JMP_JGE_X:
--		if (DST >= SRC) {
--			insn += insn->off;
--			CONT_JMP;
--		}
--		CONT;
--	JMP_JGE_K:
--		if (DST >= IMM) {
--			insn += insn->off;
--			CONT_JMP;
--		}
--		CONT;
--	JMP_JSGT_X:
--		if (((s64) DST) > ((s64) SRC)) {
--			insn += insn->off;
--			CONT_JMP;
--		}
--		CONT;
--	JMP_JSGT_K:
--		if (((s64) DST) > ((s64) IMM)) {
--			insn += insn->off;
--			CONT_JMP;
--		}
--		CONT;
--	JMP_JSGE_X:
--		if (((s64) DST) >= ((s64) SRC)) {
--			insn += insn->off;
--			CONT_JMP;
--		}
--		CONT;
--	JMP_JSGE_K:
--		if (((s64) DST) >= ((s64) IMM)) {
--			insn += insn->off;
--			CONT_JMP;
--		}
--		CONT;
--	JMP_JSET_X:
--		if (DST & SRC) {
--			insn += insn->off;
--			CONT_JMP;
--		}
--		CONT;
--	JMP_JSET_K:
--		if (DST & IMM) {
--			insn += insn->off;
--			CONT_JMP;
--		}
--		CONT;
--	JMP_EXIT:
--		return BPF_R0;
--
--	/* STX and ST and LDX*/
--#define LDST(SIZEOP, SIZE)						\
--	STX_MEM_##SIZEOP:						\
--		*(SIZE *)(unsigned long) (DST + insn->off) = SRC;	\
--		CONT;							\
--	ST_MEM_##SIZEOP:						\
--		*(SIZE *)(unsigned long) (DST + insn->off) = IMM;	\
--		CONT;							\
--	LDX_MEM_##SIZEOP:						\
--		DST = *(SIZE *)(unsigned long) (SRC + insn->off);	\
--		CONT;
--
--	LDST(B,   u8)
--	LDST(H,  u16)
--	LDST(W,  u32)
--	LDST(DW, u64)
--#undef LDST
--	STX_XADD_W: /* lock xadd *(u32 *)(dst_reg + off16) += src_reg */
--		atomic_add((u32) SRC, (atomic_t *)(unsigned long)
--			   (DST + insn->off));
--		CONT;
--	STX_XADD_DW: /* lock xadd *(u64 *)(dst_reg + off16) += src_reg */
--		atomic64_add((u64) SRC, (atomic64_t *)(unsigned long)
--			     (DST + insn->off));
--		CONT;
--	LD_ABS_W: /* BPF_R0 = ntohl(*(u32 *) (skb->data + imm32)) */
--		off = IMM;
--load_word:
--		/* BPF_LD + BPD_ABS and BPF_LD + BPF_IND insns are
--		 * only appearing in the programs where ctx ==
--		 * skb. All programs keep 'ctx' in regs[BPF_REG_CTX]
--		 * == BPF_R6, sk_convert_filter() saves it in BPF_R6,
--		 * internal BPF verifier will check that BPF_R6 ==
--		 * ctx.
--		 *
--		 * BPF_ABS and BPF_IND are wrappers of function calls,
--		 * so they scratch BPF_R1-BPF_R5 registers, preserve
--		 * BPF_R6-BPF_R9, and store return value into BPF_R0.
--		 *
--		 * Implicit input:
--		 *   ctx == skb == BPF_R6 == CTX
--		 *
--		 * Explicit input:
--		 *   SRC == any register
--		 *   IMM == 32-bit immediate
--		 *
--		 * Output:
--		 *   BPF_R0 - 8/16/32-bit skb data converted to cpu endianness
--		 */
--
--		ptr = load_pointer((struct sk_buff *) (unsigned long) CTX, off, 4, &tmp);
--		if (likely(ptr != NULL)) {
--			BPF_R0 = get_unaligned_be32(ptr);
--			CONT;
--		}
--
--		return 0;
--	LD_ABS_H: /* BPF_R0 = ntohs(*(u16 *) (skb->data + imm32)) */
--		off = IMM;
--load_half:
--		ptr = load_pointer((struct sk_buff *) (unsigned long) CTX, off, 2, &tmp);
--		if (likely(ptr != NULL)) {
--			BPF_R0 = get_unaligned_be16(ptr);
--			CONT;
--		}
--
--		return 0;
--	LD_ABS_B: /* BPF_R0 = *(u8 *) (skb->data + imm32) */
--		off = IMM;
--load_byte:
--		ptr = load_pointer((struct sk_buff *) (unsigned long) CTX, off, 1, &tmp);
--		if (likely(ptr != NULL)) {
--			BPF_R0 = *(u8 *)ptr;
--			CONT;
--		}
--
--		return 0;
--	LD_IND_W: /* BPF_R0 = ntohl(*(u32 *) (skb->data + src_reg + imm32)) */
--		off = IMM + SRC;
--		goto load_word;
--	LD_IND_H: /* BPF_R0 = ntohs(*(u16 *) (skb->data + src_reg + imm32)) */
--		off = IMM + SRC;
--		goto load_half;
--	LD_IND_B: /* BPF_R0 = *(u8 *) (skb->data + src_reg + imm32) */
--		off = IMM + SRC;
--		goto load_byte;
--
--	default_label:
--		/* If we ever reach this, we have a bug somewhere. */
--		WARN_RATELIMIT(1, "unknown opcode %02x\n", insn->code);
--		return 0;
--}
--
- /* Helper to find the offset of pkt_type in sk_buff structure. We want
-  * to make sure its still a 3bit field starting at a byte boundary;
-  * taken from arch/x86/net/bpf_jit_comp.c.
-@@ -1464,33 +971,6 @@ out_err:
- 	return ERR_PTR(err);
- }
- 
--void __weak bpf_int_jit_compile(struct sk_filter *prog)
--{
--}
--
--/**
-- *	sk_filter_select_runtime - select execution runtime for BPF program
-- *	@fp: sk_filter populated with internal BPF program
-- *
-- * try to JIT internal BPF program, if JIT is not available select interpreter
-- * BPF program will be executed via SK_RUN_FILTER() macro
-- */
--void sk_filter_select_runtime(struct sk_filter *fp)
--{
--	fp->bpf_func = (void *) __sk_run_filter;
--
--	/* Probe if internal BPF can be JITed */
--	bpf_int_jit_compile(fp);
--}
--EXPORT_SYMBOL_GPL(sk_filter_select_runtime);
--
--/* free internal BPF program */
--void sk_filter_free(struct sk_filter *fp)
--{
--	bpf_jit_free(fp);
--}
--EXPORT_SYMBOL_GPL(sk_filter_free);
--
- static struct sk_filter *__sk_prepare_filter(struct sk_filter *fp,
- 					     struct sock *sk)
- {
++late_initcall(register_htab_map);
 -- 
 1.7.9.5
 
