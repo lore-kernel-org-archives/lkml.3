@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752210AbaF1RAx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:00:53 -0400
-Received: from smtpfb1-g21.free.fr ([212.27.42.9]:59945 "EHLO
-	smtpfb1-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751240AbaF1RAv (ORCPT
+	id S1751617AbaF1RHK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:07:10 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:44424 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751200AbaF1RHI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:00:51 -0400
-From: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>
-To: linux-next@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Cc: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Magnus Damm <damm+renesas@opensource.se>
-Subject: [PATCH linux-next] staging: emxx_udc: replace strict_strtol call
-Date: Sat, 28 Jun 2014 19:00:23 +0200
-Message-Id: <1403974823-23578-1-git-send-email-vincent.stehle@laposte.net>
-X-Mailer: git-send-email 2.0.0
+	Sat, 28 Jun 2014 13:07:08 -0400
+Date: Sat, 28 Jun 2014 19:07:00 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
+        X86 ML <x86@kernel.org>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH] x86_64,entry: Fix RCX for traced syscalls
+Message-ID: <20140628170700.GA23634@xo-6d-61-c0.localdomain>
+References: <55466fbd36df1d011876135cf7ca5d40c05029c7.1403809591.git.luto@amacapital.net>
+ <20140626195629.GC5714@two.firstfloor.org>
+ <CALCETrVBKno2skh3zR=1GYuojwPhYPLD=1HFcLMXjStS+0SPJQ@mail.gmail.com>
+ <CALCETrWJD4kvoCxxb9y19uMakChmxamveKDceDOhyjYzFkJoUA@mail.gmail.com>
+ <7919ae8b-958b-4b12-a5f4-8be2c3df3824@email.android.com>
+ <CALCETrVkeTd4UJNm2ir3AMo1eLEr6CKK0Cf9_-NCO+DP+iTRxg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrVkeTd4UJNm2ir3AMo1eLEr6CKK0Cf9_-NCO+DP+iTRxg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 582e9d37a9a3 'include/linux: remove strict_strto* definitions' has
-obsoleted the strict_strtol function. Use kstrtol instead.
+On Thu 2014-06-26 13:47:32, Andy Lutomirski wrote:
+> On Thu, Jun 26, 2014 at 1:12 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> > The real question is if we care that sysret and iter don't match.  On 32 bits the situation is even more complex.
+> 
+> At least for 64 bits, iret vs sysret is purely a kernel implementation
+> detail (except where a tracer modifies things that are inaccessible to
+> sysret), so ISTM it's worth one instruction to make them match.
+> 
+> I noticed this thing while fiddling with moving some of the syscall
+> tracing logic to C.  This isn't a real problem, but it at least made
+> me scratch my head.
 
-This fixes the following compilation error:
+If possible, we'd like to trace programs without programs being noticed they are 
+being traced. See subterfugue utility, for example.
 
-  drivers/staging/emxx_udc/emxx_udc.c: In function ‘nbu2ss_drv_set_ep_info’:
-  drivers/staging/emxx_udc/emxx_udc.c:3287:3: error: implicit declaration of function ‘strict_strtol’ [-Werror=implicit-function-declaration]
-
-Signed-off-by: Vincent Stehlé <vincent.stehle@laposte.net>
-
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Magnus Damm <damm+renesas@opensource.se>
----
-
-Hi,
-
-This compilation error can be seen with e.g. linux next-20140627 and arm
-allmodconfig.
-
-Best regards,
-
-V.
-
- drivers/staging/emxx_udc/emxx_udc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/staging/emxx_udc/emxx_udc.c b/drivers/staging/emxx_udc/emxx_udc.c
-index ee0094d..b5c1511 100644
---- a/drivers/staging/emxx_udc/emxx_udc.c
-+++ b/drivers/staging/emxx_udc/emxx_udc.c
-@@ -3285,7 +3285,7 @@ static void __init nbu2ss_drv_set_ep_info(
- 
- 		tempbuf[0] = name[2];
- 		tempbuf[1] = '\0';
--		res = strict_strtol(tempbuf, 16, &num);
-+		res = kstrtol(tempbuf, 16, &num);
- 
- 		if (num == 0)
- 			ep->ep.maxpacket = EP0_PACKETSIZE;
+It is certainly worth one extra instruction.
+									Pavel
 -- 
-2.0.0
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
