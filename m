@@ -1,65 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932413AbaF1Syv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:54:51 -0400
-Received: from mout.gmx.net ([212.227.17.20]:60820 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932364AbaF1Sys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 14:54:48 -0400
-Date: Sat, 28 Jun 2014 20:54:33 +0200
-From: Marc Dietrich <marvin24@gmx.de>
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        John Whitmore <arigead@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>
-Subject: Re: [PATCH 0/2][RFC] Try to handle hctosys w/ rtc modules
-Message-Id: <20140628205433.0ef4a8cf28a7fe4861a733dd@gmx.de>
-In-Reply-To: <53AE6FA2.7000808@ahsoftware.de>
-References: <1403890031-26419-1-git-send-email-john.stultz@linaro.org>
-	<53AE6C3C.5090308@ahsoftware.de>
-	<53AE6FA2.7000808@ahsoftware.de>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; arm-unknown-linux-gnueabihf)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:Jp/Jv2rTR3qqfV20/egnlUJCTLYAaUfk/x6ieaHITu2WvTeyq5Z
- 3lfHZ7z1LzhLHIy89XMEBMqbQZfn22cta5Agi5AgiigCOfEWWw0Ac4pVJc9Y2NLYqpHzE8C
- XTt0r9epfUyv4qFjzGnmJ9tm9QtnOPa0n7oDc2aixdWW/WAE2hESOxTki+IoJZA8RL5Cj2e
- l/4pehc8U9VvR+0UyynXg==
+	id S1754996AbaF1RtF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:49:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53237 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754959AbaF1RtC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Jun 2014 13:49:02 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>, Huang Rui <ray.huang@amd.com>
+Subject: [PATCH 3.14 015/110] USB: usbtest: add a timeout for scatter-gather tests
+Date: Sat, 28 Jun 2014 10:46:12 -0700
+Message-Id: <20140628174546.178903228@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.1
+In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
+References: <20140628174545.354748696@linuxfoundation.org>
+User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 28 Jun 2014 09:32:50 +0200
-Alexander Holler <holler@ahsoftware.de> wrote:
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-> Am 28.06.2014 09:18, schrieb Alexander Holler:
-> > Am 27.06.2014 19:27, schrieb John Stultz:
-> >> Its been pointed out that the RTC hctosys functionality doesn't
-> >> work well with RTC modules, which may not be loaded until after
-> >> late_init().
-> >>
-> >> While there have been other attempts to sovle this, this patchset
-> >> is a very quick 10 minute effort to show how I'd try to resolve
-> >> this. There likely are still issues here, but I'd be happy to
-> >> make fixes and adjustments to ensure it works.
-> 
-> How long you needed to getthe idea?
-> 
-> >>
-> >> Feedback and comments always appreciated!
-> >
-> > And it still uses the non-deterministic and therefor almost unusable
-> > rtcN. Well done.
-> 
-> Besides that the current hctosys-mechanism doesn't really work with 
-> hot-plugable devices at all. Guess what N will be when you unplug and 
-> plug in such a RTC again.
+------------------
 
-We have a patch in the kernel which binds the rtc number to the
-hw device, so this even works for hotpluggable devices (at least on
-systems supporting device-tree). Not sure what your needs are.
+From: Alan Stern <stern@rowland.harvard.edu>
 
-Marc
+commit 32b36eeae6a859670d2939a7d6136cb5e9ed64f8 upstream.
+
+In usbtest, tests 5 - 8 use the scatter-gather library in usbcore
+without any sort of timeout.  If there's a problem in the gadget or
+host controller being tested, the test can hang.
+
+This patch adds a 10-second timeout to the tests, so that they will
+fail gracefully with an ETIMEDOUT error instead of hanging.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Huang Rui <ray.huang@amd.com>
+Tested-by: Huang Rui <ray.huang@amd.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/usb/misc/usbtest.c |   16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
+
+--- a/drivers/usb/misc/usbtest.c
++++ b/drivers/usb/misc/usbtest.c
+@@ -7,7 +7,7 @@
+ #include <linux/moduleparam.h>
+ #include <linux/scatterlist.h>
+ #include <linux/mutex.h>
+-
++#include <linux/timer.h>
+ #include <linux/usb.h>
+ 
+ #define SIMPLE_IO_TIMEOUT	10000	/* in milliseconds */
+@@ -484,6 +484,14 @@ alloc_sglist(int nents, int max, int var
+ 	return sg;
+ }
+ 
++static void sg_timeout(unsigned long _req)
++{
++	struct usb_sg_request	*req = (struct usb_sg_request *) _req;
++
++	req->status = -ETIMEDOUT;
++	usb_sg_cancel(req);
++}
++
+ static int perform_sglist(
+ 	struct usbtest_dev	*tdev,
+ 	unsigned		iterations,
+@@ -495,6 +503,9 @@ static int perform_sglist(
+ {
+ 	struct usb_device	*udev = testdev_to_usbdev(tdev);
+ 	int			retval = 0;
++	struct timer_list	sg_timer;
++
++	setup_timer_on_stack(&sg_timer, sg_timeout, (unsigned long) req);
+ 
+ 	while (retval == 0 && iterations-- > 0) {
+ 		retval = usb_sg_init(req, udev, pipe,
+@@ -505,7 +516,10 @@ static int perform_sglist(
+ 
+ 		if (retval)
+ 			break;
++		mod_timer(&sg_timer, jiffies +
++				msecs_to_jiffies(SIMPLE_IO_TIMEOUT));
+ 		usb_sg_wait(req);
++		del_timer_sync(&sg_timer);
+ 		retval = req->status;
+ 
+ 		/* FIXME check resulting data pattern */
+
 
