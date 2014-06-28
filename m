@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757568AbaF1TGP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 15:06:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53067 "EHLO
+	id S1757588AbaF1TGl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 15:06:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53055 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754624AbaF1Rsb (ORCPT
+	with ESMTP id S1754589AbaF1Rs1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:48:31 -0400
+	Sat, 28 Jun 2014 13:48:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.10 40/77] USB: serial: fix potential runtime pm imbalance at device remove
-Date: Sat, 28 Jun 2014 10:46:33 -0700
-Message-Id: <20140628174523.624033956@linuxfoundation.org>
+Subject: [PATCH 3.10 36/77] USB: sierra: fix urb and memory leak on disconnect
+Date: Sat, 28 Jun 2014 10:46:29 -0700
+Message-Id: <20140628174523.420564160@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174521.691276402@linuxfoundation.org>
 References: <20140628174521.691276402@linuxfoundation.org>
@@ -30,63 +30,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit c14829fad88dbeda57253590695b85ba51270621 upstream.
+commit 014333f77c0b71123d6ef7d31a9724e0699c9548 upstream.
 
-Only call usb_autopm_put_interface() if the corresponding
-usb_autopm_get_interface() was successful.
+The delayed-write queue was never emptied on disconnect, something which
+would lead to leaked urbs and transfer buffers if the device is
+disconnected before being runtime resumed due to a write.
 
-This prevents a potential runtime PM counter imbalance should
-usb_autopm_get_interface() fail. Note that the USB PM usage counter is
-reset when the interface is unbound, but that the runtime PM counter may
-be left unbalanced.
-
-Also add comment on why we don't need to worry about racing
-resume/suspend on autopm_get failures.
-
-Fixes: d5fd650cfc7f ("usb: serial: prevent suspend/resume from racing
-against probe/remove")
+Fixes: e6929a9020ac ("USB: support for autosuspend in sierra while
+online")
 
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/bus.c |   14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+ drivers/usb/serial/sierra.c |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
---- a/drivers/usb/serial/bus.c
-+++ b/drivers/usb/serial/bus.c
-@@ -98,13 +98,19 @@ static int usb_serial_device_remove(stru
- 	struct usb_serial_port *port;
- 	int retval = 0;
- 	int minor;
-+	int autopm_err;
+--- a/drivers/usb/serial/sierra.c
++++ b/drivers/usb/serial/sierra.c
+@@ -767,6 +767,7 @@ static void sierra_close(struct usb_seri
+ 	struct usb_serial *serial = port->serial;
+ 	struct sierra_port_private *portdata;
+ 	struct sierra_intf_private *intfdata = port->serial->private;
++	struct urb *urb;
  
- 	port = to_usb_serial_port(dev);
- 	if (!port)
- 		return -ENODEV;
+ 	portdata = usb_get_serial_port_data(port);
  
--	/* make sure suspend/resume doesn't race against port_remove */
--	usb_autopm_get_interface(port->serial->interface);
-+	/*
-+	 * Make sure suspend/resume doesn't race against port_remove.
-+	 *
-+	 * Note that no further runtime PM callbacks will be made if
-+	 * autopm_get fails.
-+	 */
-+	autopm_err = usb_autopm_get_interface(port->serial->interface);
+@@ -788,6 +789,18 @@ static void sierra_close(struct usb_seri
+ 	portdata->opened = 0;
+ 	spin_unlock_irq(&intfdata->susp_lock);
  
- 	minor = port->number;
- 	tty_unregister_device(usb_serial_tty_driver, minor);
-@@ -118,7 +124,9 @@ static int usb_serial_device_remove(stru
- 	dev_info(dev, "%s converter now disconnected from ttyUSB%d\n",
- 		 driver->description, minor);
- 
--	usb_autopm_put_interface(port->serial->interface);
-+	if (!autopm_err)
-+		usb_autopm_put_interface(port->serial->interface);
++	for (;;) {
++		urb = usb_get_from_anchor(&portdata->delayed);
++		if (!urb)
++			break;
++		kfree(urb->transfer_buffer);
++		usb_free_urb(urb);
++		usb_autopm_put_interface_async(serial->interface);
++		spin_lock(&portdata->lock);
++		portdata->outstanding_urbs--;
++		spin_unlock(&portdata->lock);
++	}
 +
- 	return retval;
- }
- 
+ 	sierra_stop_rx_urbs(port);
+ 	for (i = 0; i < portdata->num_in_urbs; i++) {
+ 		sierra_release_urb(portdata->in_urbs[i]);
 
 
