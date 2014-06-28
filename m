@@ -1,63 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752816AbaF1Pyn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 11:54:43 -0400
-Received: from smtp5-g21.free.fr ([212.27.42.5]:64488 "EHLO smtp5-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751532AbaF1Pym (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 11:54:42 -0400
-X-Greylist: delayed 52019 seconds by postgrey-1.27 at vger.kernel.org; Sat, 28 Jun 2014 11:54:42 EDT
-From: Guillaume Morin <guillaume@morinfr.org>
-To: gregkh@linuxfoundation.org, jic23@kernel.org
-Cc: Guillaume Morin <guillaume@morinfr.org>, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mwelling@ieee.org
-Subject: [PATCH v4 1/1] staging: iio: ad9850.c: code cleanup
-Date: Sat, 28 Jun 2014 17:54:39 +0200
-Message-Id: <936f1ac494ee8708e37a8cb16a70aa3f007e93cd.1403966025.git.guillaume@morinfr.org>
-X-Mailer: git-send-email 1.7.10.4
+	id S1752890AbaF1P4n (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 11:56:43 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:51826 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751129AbaF1P4l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Jun 2014 11:56:41 -0400
+From: Anil Belur <askb23@gmail.com>
+X-Google-Original-From: Anil Belur
+To: andreas.dilger@intel.com, oleg.drokin@intel.com, doug.s.oucharek@intel.com,
+        bergwolf@gmail.com, gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Anil Belur <askb23@gmail.com>
+Subject: [PATCH v2 1/1] staging: lustre: lnet: api-ni.c: fixed sparse warnings
+Date: Sat, 28 Jun 2014 21:26:16 +0530
+Message-Id: <1403970976-11869-1-git-send-email-askb23@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-checkpath.pl was complaining about value_mask:
-ERROR: Macros with complex values should be enclosed in parenthesis
+From: Anil Belur <askb23@gmail.com>
 
-I fixed this by simply removing it since it's not used (as well as another
-macro).  Got rid of the un-necessary error_ret label as well.
+- this fixes few sparse warnings for missing static in functions:
 
-Signed-off-by: Guillaume Morin <guillaume@morinfr.org>
-Reported-by: Michael Welling <mwelling@ieee.org>
+drivers/staging/lustre/lnet/lnet/api-ni.c:63:6: warning: symbol 'lnet_get_routes' was not declared. Should it be static?
+drivers/staging/lustre/lnet/lnet/api-ni.c:69:6: warning: symbol 'lnet_get_networks' was not declared. Should it be static?
+drivers/staging/lustre/lnet/lnet/api-ni.c:93:1: warning: symbol 'lnet_init_locks' was not declared. Should it be static?
+drivers/staging/lustre/lnet/lnet/api-ni.c:102:1: warning: symbol 'lnet_fini_locks' was not declared. Should it be static?
+drivers/staging/lustre/lnet/lnet/api-ni.c:180:6: warning: symbol 'lnet_assert_wire_constants' was not declared. Should it be static?
+drivers/staging/lustre/lnet/lnet/api-ni.c:273:7: warning: symbol 'lnet_find_lnd_by_type' was not declared. Should it be static?
+drivers/staging/lustre/lnet/lnet/api-ni.c:419:1: warning: symbol 'lnet_create_interface_cookie' was not declared. Should it be static?
+drivers/staging/lustre/lnet/lnet/api-ni.c:450:1: warning: symbol 'lnet_res_container_cleanup' was not declared. Should it be static?
+drivers/staging/lustre/lnet/lnet/api-ni.c:494:1: warning: symbol 'lnet_res_container_setup' was not declared. Should it be static?
+drivers/staging/lustre/lnet/lnet/api-ni.c:612:1: warning: symbol 'lnet_prepare' was not declared. Should it be static?
+drivers/staging/lustre/lnet/lnet/api-ni.c:917:1: warning: symbol 'lnet_shutdown_lndnis' was not declared. Should it be static?
+drivers/staging/lustre/lnet/lnet/api-ni.c:1034:1: warning: symbol 'lnet_startup_lndnis' was not declared. Should it be static?
+
+Signed-off-by: Anil Belur <askb23@gmail.com>
 ---
-Changes since v3:
-- Added Reported-by: Michael Welling <mwelling@ieee.org>
+ drivers/staging/lustre/lnet/lnet/api-ni.c | 24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
- drivers/staging/iio/frequency/ad9850.c |    6 ------
- 1 file changed, 6 deletions(-)
-
-diff --git a/drivers/staging/iio/frequency/ad9850.c b/drivers/staging/iio/frequency/ad9850.c
-index af877ff..8727933 100644
---- a/drivers/staging/iio/frequency/ad9850.c
-+++ b/drivers/staging/iio/frequency/ad9850.c
-@@ -21,9 +21,6 @@
+diff --git a/drivers/staging/lustre/lnet/lnet/api-ni.c b/drivers/staging/lustre/lnet/lnet/api-ni.c
+index 3f878de..cd6792e 100644
+--- a/drivers/staging/lustre/lnet/lnet/api-ni.c
++++ b/drivers/staging/lustre/lnet/lnet/api-ni.c
+@@ -60,13 +60,13 @@ static int rnet_htable_size = LNET_REMOTE_NETS_HASH_DEFAULT;
+ module_param(rnet_htable_size, int, 0444);
+ MODULE_PARM_DESC(rnet_htable_size, "size of remote network hash table");
  
- #define DRV_NAME "ad9850"
+-char *
++static char *
+ lnet_get_routes(void)
+ {
+ 	return routes;
+ }
  
--#define value_mask (u16)0xf000
--#define addr_shift 12
--
- /* Register format: 4 bits addr + 12 bits value */
- struct ad9850_config {
- 	u8 control[5];
-@@ -50,9 +47,6 @@ static ssize_t ad9850_set_parameter(struct device *dev,
- 	mutex_lock(&st->lock);
+-char *
++static char *
+ lnet_get_networks(void)
+ {
+ 	char   *nets;
+@@ -89,7 +89,7 @@ lnet_get_networks(void)
+ 	return "tcp";
+ }
  
- 	ret = spi_sync_transfer(st->sdev, &xfer, 1);
--	if (ret)
--		goto error_ret;
--error_ret:
- 	mutex_unlock(&st->lock);
+-void
++static void
+ lnet_init_locks(void)
+ {
+ 	spin_lock_init(&the_lnet.ln_eq_wait_lock);
+@@ -98,7 +98,7 @@ lnet_init_locks(void)
+ 	mutex_init(&the_lnet.ln_api_mutex);
+ }
  
- 	return ret ? ret : len;
+-void
++static void
+ lnet_fini_locks(void)
+ {
+ }
+@@ -177,7 +177,7 @@ lnet_create_locks(void)
+ 	return -ENOMEM;
+ }
+ 
+-void lnet_assert_wire_constants (void)
++static void lnet_assert_wire_constants (void)
+ {
+ 	/* Wire protocol assertions generated by 'wirecheck'
+ 	 * running on Linux robert.bartonsoftware.com 2.6.8-1.521
+@@ -270,7 +270,7 @@ void lnet_assert_wire_constants (void)
+ 	CLASSERT ((int)sizeof(((lnet_hdr_t *)0)->msg.hello.type) == 4);
+ }
+ 
+-lnd_t *
++static lnd_t *
+ lnet_find_lnd_by_type (int type)
+ {
+ 	lnd_t	      *lnd;
+@@ -415,7 +415,7 @@ lnet_freelist_fini (lnet_freelist_t *fl)
+ 
+ #endif /* LNET_USE_LIB_FREELIST */
+ 
+-__u64
++static __u64
+ lnet_create_interface_cookie (void)
+ {
+ 	/* NB the interface cookie in wire handles guards against delayed
+@@ -446,7 +446,7 @@ lnet_res_type2str(int type)
+ 	}
+ }
+ 
+-void
++static void
+ lnet_res_container_cleanup(struct lnet_res_container *rec)
+ {
+ 	int	count = 0;
+@@ -490,7 +490,7 @@ lnet_res_container_cleanup(struct lnet_res_container *rec)
+ 	rec->rec_type = 0; /* mark it as finalized */
+ }
+ 
+-int
++static int
+ lnet_res_container_setup(struct lnet_res_container *rec,
+ 			 int cpt, int type, int objnum, int objsz)
+ {
+@@ -608,7 +608,7 @@ lnet_res_lh_initialize(struct lnet_res_container *rec, lnet_libhandle_t *lh)
+ 
+ int lnet_unprepare(void);
+ 
+-int
++static int
+ lnet_prepare(lnet_pid_t requested_pid)
+ {
+ 	/* Prepare to bring up the network */
+@@ -913,7 +913,7 @@ lnet_ni_tq_credits(lnet_ni_t *ni)
+ 	return credits;
+ }
+ 
+-void
++static void
+ lnet_shutdown_lndnis (void)
+ {
+ 	int		i;
+@@ -1030,7 +1030,7 @@ lnet_shutdown_lndnis (void)
+ 	}
+ }
+ 
+-int
++static int
+ lnet_startup_lndnis (void)
+ {
+ 	lnd_t			*lnd;
 -- 
-1.7.10.4
+1.9.1
 
