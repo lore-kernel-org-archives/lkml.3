@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757104AbaF1TG6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 15:06:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53044 "EHLO
+	id S1754564AbaF1RsZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:48:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53025 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754502AbaF1Rs0 (ORCPT
+	with ESMTP id S1754502AbaF1RsU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:48:26 -0400
+	Sat, 28 Jun 2014 13:48:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sagi Grimberg <sagig@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.10 51/77] Target/iser: Fix hangs in connection teardown
-Date: Sat, 28 Jun 2014 10:46:44 -0700
-Message-Id: <20140628174524.196011072@linuxfoundation.org>
+        Olivier Langlois <olivier@trillion01.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.10 45/77] media: uvcvideo: Fix clock param realtime setting
+Date: Sat, 28 Jun 2014 10:46:38 -0700
+Message-Id: <20140628174523.875022250@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174521.691276402@linuxfoundation.org>
 References: <20140628174521.691276402@linuxfoundation.org>
@@ -29,109 +30,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sagi Grimberg <sagig@mellanox.com>
+From: Olivier Langlois <olivier@trillion01.com>
 
-commit 9d49f5e284e700576f3b65f1e28dea8539da6661 upstream.
+commit 3b35fc81e7ec552147a4fd843d0da0bbbe4ef253 upstream.
 
-In ungraceful teardowns isert close flows seem racy such that
-isert_wait_conn hangs as RDMA_CM_EVENT_DISCONNECTED never
-gets invoked (no one called rdma_disconnect).
+timestamps in v4l2 buffers returned to userspace are updated in
+uvc_video_clock_update() which uses timestamps fetched from
+uvc_video_clock_decode() by calling unconditionally ktime_get_ts().
 
-Both graceful and ungraceful teardowns will have rx flush errors
-(isert posts a batch once connection is established). Once all
-flush errors are consumed we invoke isert_wait_conn and it will
-be responsible for calling rdma_disconnect. This way it can be
-sure that rdma_disconnect was called and it won't wait forever.
+Hence setting the module clock param to realtime has no effect before
+this patch.
 
-This patch also removes the logout_posted indicator. either the
-logout completion was consumed and no problem decrementing the
-post_send_buf_count, or it was consumed as a flush error. no point
-of keeping it for isert_wait_conn as there is no danger that
-isert_conn will be accidentally removed while it is running.
+This has been tested with ffmpeg:
 
-(Drop unnecessary sleep_on_conn_wait_comp check in
- isert_cq_rx_comp_err - nab)
+ffmpeg -y -f v4l2 -input_format yuyv422 -video_size 640x480 -framerate 30 -i /dev/video0 \
+ -f alsa -acodec pcm_s16le -ar 16000 -ac 1 -i default \
+ -c:v libx264 -preset ultrafast \
+ -c:a libfdk_aac \
+ out.mkv
 
-Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+and inspecting the v4l2 input starting timestamp.
+
+Signed-off-by: Olivier Langlois <olivier@trillion01.com>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/isert/ib_isert.c |   31 ++++++++++---------------------
- drivers/infiniband/ulp/isert/ib_isert.h |    1 -
- 2 files changed, 10 insertions(+), 22 deletions(-)
+ drivers/media/usb/uvc/uvc_video.c |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -572,14 +572,10 @@ isert_disconnect_work(struct work_struct
- 		isert_put_conn(isert_conn);
- 		return;
- 	}
--	if (!isert_conn->logout_posted) {
--		pr_debug("Calling rdma_disconnect for !logout_posted from"
--			 " isert_disconnect_work\n");
--		rdma_disconnect(isert_conn->conn_cm_id);
--		mutex_unlock(&isert_conn->conn_mutex);
--		iscsit_cause_connection_reinstatement(isert_conn->conn, 0);
--		goto wake_up;
--	}
+--- a/drivers/media/usb/uvc/uvc_video.c
++++ b/drivers/media/usb/uvc/uvc_video.c
+@@ -361,6 +361,14 @@ static int uvc_commit_video(struct uvc_s
+  * Clocks and timestamps
+  */
+ 
++static inline void uvc_video_get_ts(struct timespec *ts)
++{
++	if (uvc_clock_param == CLOCK_MONOTONIC)
++		ktime_get_ts(ts);
++	else
++		ktime_get_real_ts(ts);
++}
 +
-+	/* Send DREQ/DREP towards our initiator */
-+	rdma_disconnect(isert_conn->conn_cm_id);
-+
- 	mutex_unlock(&isert_conn->conn_mutex);
+ static void
+ uvc_video_clock_decode(struct uvc_streaming *stream, struct uvc_buffer *buf,
+ 		       const __u8 *data, int len)
+@@ -420,7 +428,7 @@ uvc_video_clock_decode(struct uvc_stream
+ 	stream->clock.last_sof = dev_sof;
  
- wake_up:
-@@ -1371,11 +1367,8 @@ isert_do_control_comp(struct work_struct
- 		break;
- 	case ISTATE_SEND_LOGOUTRSP:
- 		pr_debug("Calling iscsit_logout_post_handler >>>>>>>>>>>>>>\n");
--		/*
--		 * Call atomic_dec(&isert_conn->post_send_buf_count)
--		 * from isert_wait_conn()
--		 */
--		isert_conn->logout_posted = true;
-+
-+		atomic_dec(&isert_conn->post_send_buf_count);
- 		iscsit_logout_post_handler(cmd, cmd->conn);
- 		break;
- 	default:
-@@ -1483,6 +1476,8 @@ isert_cq_rx_comp_err(struct isert_conn *
- 	isert_conn->state = ISER_CONN_DOWN;
- 	mutex_unlock(&isert_conn->conn_mutex);
+ 	host_sof = usb_get_current_frame_number(stream->dev->udev);
+-	ktime_get_ts(&ts);
++	uvc_video_get_ts(&ts);
  
-+	iscsit_cause_connection_reinstatement(isert_conn->conn, 0);
-+
- 	complete(&isert_conn->conn_wait_comp_err);
- }
+ 	/* The UVC specification allows device implementations that can't obtain
+ 	 * the USB frame number to keep their own frame counters as long as they
+@@ -1010,10 +1018,7 @@ static int uvc_video_decode_start(struct
+ 			return -ENODATA;
+ 		}
  
-@@ -2247,15 +2242,9 @@ static void isert_wait_conn(struct iscsi
- 	struct isert_conn *isert_conn = conn->context;
+-		if (uvc_clock_param == CLOCK_MONOTONIC)
+-			ktime_get_ts(&ts);
+-		else
+-			ktime_get_real_ts(&ts);
++		uvc_video_get_ts(&ts);
  
- 	pr_debug("isert_wait_conn: Starting \n");
--	/*
--	 * Decrement post_send_buf_count for special case when called
--	 * from isert_do_control_comp() -> iscsit_logout_post_handler()
--	 */
--	mutex_lock(&isert_conn->conn_mutex);
--	if (isert_conn->logout_posted)
--		atomic_dec(&isert_conn->post_send_buf_count);
- 
--	if (isert_conn->conn_cm_id && isert_conn->state != ISER_CONN_DOWN) {
-+	mutex_lock(&isert_conn->conn_mutex);
-+	if (isert_conn->conn_cm_id) {
- 		pr_debug("Calling rdma_disconnect from isert_wait_conn\n");
- 		rdma_disconnect(isert_conn->conn_cm_id);
- 	}
---- a/drivers/infiniband/ulp/isert/ib_isert.h
-+++ b/drivers/infiniband/ulp/isert/ib_isert.h
-@@ -78,7 +78,6 @@ struct isert_device;
- 
- struct isert_conn {
- 	enum iser_conn_state	state;
--	bool			logout_posted;
- 	int			post_recv_buf_count;
- 	atomic_t		post_send_buf_count;
- 	u32			responder_resources;
+ 		buf->buf.v4l2_buf.sequence = stream->sequence;
+ 		buf->buf.v4l2_buf.timestamp.tv_sec = ts.tv_sec;
 
 
