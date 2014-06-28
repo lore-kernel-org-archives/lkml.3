@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755762AbaF1RvP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:51:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53977 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753383AbaF1RvK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755726AbaF1RvK (ORCPT <rfc822;w@1wt.eu>);
 	Sat, 28 Jun 2014 13:51:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53966 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753383AbaF1RvI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Jun 2014 13:51:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.15 021/139] tools/vm/page-types.c: catch sigbus if raced with truncate
-Date: Sat, 28 Jun 2014 10:46:22 -0700
-Message-Id: <20140628174606.378478922@linuxfoundation.org>
+        Paul Bolle <pebolle@tiscali.nl>, Tony Lindgren <tony@atomide.com>
+Subject: [PATCH 3.15 018/139] ARM: OMAP: replace checks for CONFIG_USB_GADGET_OMAP
+Date: Sat, 28 Jun 2014 10:46:19 -0700
+Message-Id: <20140628174606.240669296@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -31,113 +28,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konstantin Khlebnikov <koct9i@gmail.com>
+From: Paul Bolle <pebolle@tiscali.nl>
 
-commit 1d46598b7903cd5ec83c49adbd741f43bb0ffcdc upstream.
+commit 77c2f02edbeda9409a7cf3fd66233015820c213a upstream.
 
-Recently added page-cache dumping is known to be a little bit racy.
-But after race with truncate it just dies due to unhandled SIGBUS
-when it tries to poke pages beyond the new end of file.
-This patch adds handler for SIGBUS which skips the rest of the file.
+Commit 193ab2a60700 ("usb: gadget: allow multiple gadgets to be built")
+apparently required that checks for CONFIG_USB_GADGET_OMAP would be
+replaced with checks for CONFIG_USB_OMAP. Do so now for the remaining
+checks for CONFIG_USB_GADGET_OMAP, even though these checks have
+basically been broken since v3.1.
 
-Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+And, since we're touching this code, use the IS_ENABLED() macro, so
+things will now (hopefully) also work if USB_OMAP is modular.
+
+Fixes: 193ab2a60700 ("usb: gadget: allow multiple gadgets to be built")
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- tools/vm/page-types.c |   35 ++++++++++++++++++++++++++++++++---
- 1 file changed, 32 insertions(+), 3 deletions(-)
+ arch/arm/mach-omap1/board-h2.c        |    2 +-
+ arch/arm/mach-omap1/board-h3.c        |    2 +-
+ arch/arm/mach-omap1/board-innovator.c |    2 +-
+ arch/arm/mach-omap1/board-osk.c       |    2 +-
+ drivers/usb/phy/phy-isp1301-omap.c    |    2 +-
+ 5 files changed, 5 insertions(+), 5 deletions(-)
 
---- a/tools/vm/page-types.c
-+++ b/tools/vm/page-types.c
-@@ -32,6 +32,8 @@
- #include <assert.h>
- #include <ftw.h>
- #include <time.h>
-+#include <setjmp.h>
-+#include <signal.h>
- #include <sys/types.h>
- #include <sys/errno.h>
- #include <sys/fcntl.h>
-@@ -824,21 +826,38 @@ static void show_file(const char *name,
- 			atime, now - st->st_atime);
- }
+--- a/arch/arm/mach-omap1/board-h2.c
++++ b/arch/arm/mach-omap1/board-h2.c
+@@ -346,7 +346,7 @@ static struct omap_usb_config h2_usb_con
+ 	/* usb1 has a Mini-AB port and external isp1301 transceiver */
+ 	.otg		= 2,
  
-+static sigjmp_buf sigbus_jmp;
-+
-+static void * volatile sigbus_addr;
-+
-+static void sigbus_handler(int sig, siginfo_t *info, void *ucontex)
-+{
-+	(void)sig;
-+	(void)ucontex;
-+	sigbus_addr = info ? info->si_addr : NULL;
-+	siglongjmp(sigbus_jmp, 1);
-+}
-+
-+static struct sigaction sigbus_action = {
-+	.sa_sigaction = sigbus_handler,
-+	.sa_flags = SA_SIGINFO,
-+};
-+
- static void walk_file(const char *name, const struct stat *st)
- {
- 	uint8_t vec[PAGEMAP_BATCH];
- 	uint64_t buf[PAGEMAP_BATCH], flags;
- 	unsigned long nr_pages, pfn, i;
-+	off_t off, end = st->st_size;
- 	int fd;
--	off_t off;
- 	ssize_t len;
- 	void *ptr;
- 	int first = 1;
+-#ifdef	CONFIG_USB_GADGET_OMAP
++#if IS_ENABLED(CONFIG_USB_OMAP)
+ 	.hmc_mode	= 19,	/* 0:host(off) 1:dev|otg 2:disabled */
+ 	/* .hmc_mode	= 21,*/	/* 0:host(off) 1:dev(loopback) 2:host(loopback) */
+ #elif	defined(CONFIG_USB_OHCI_HCD) || defined(CONFIG_USB_OHCI_HCD_MODULE)
+--- a/arch/arm/mach-omap1/board-h3.c
++++ b/arch/arm/mach-omap1/board-h3.c
+@@ -366,7 +366,7 @@ static struct omap_usb_config h3_usb_con
+ 	/* usb1 has a Mini-AB port and external isp1301 transceiver */
+ 	.otg	    = 2,
  
- 	fd = checked_open(name, O_RDONLY|O_NOATIME|O_NOFOLLOW);
+-#ifdef CONFIG_USB_GADGET_OMAP
++#if IS_ENABLED(CONFIG_USB_OMAP)
+ 	.hmc_mode       = 19,   /* 0:host(off) 1:dev|otg 2:disabled */
+ #elif  defined(CONFIG_USB_OHCI_HCD) || defined(CONFIG_USB_OHCI_HCD_MODULE)
+ 	/* NONSTANDARD CABLE NEEDED (B-to-Mini-B) */
+--- a/arch/arm/mach-omap1/board-innovator.c
++++ b/arch/arm/mach-omap1/board-innovator.c
+@@ -312,7 +312,7 @@ static struct omap_usb_config h2_usb_con
+ 	/* usb1 has a Mini-AB port and external isp1301 transceiver */
+ 	.otg		= 2,
  
--	for (off = 0; off < st->st_size; off += len) {
--		nr_pages = (st->st_size - off + page_size - 1) / page_size;
-+	for (off = 0; off < end; off += len) {
-+		nr_pages = (end - off + page_size - 1) / page_size;
- 		if (nr_pages > PAGEMAP_BATCH)
- 			nr_pages = PAGEMAP_BATCH;
- 		len = nr_pages * page_size;
-@@ -855,11 +874,19 @@ static void walk_file(const char *name,
- 		if (madvise(ptr, len, MADV_RANDOM))
- 			fatal("madvice failed: %s", name);
+-#ifdef	CONFIG_USB_GADGET_OMAP
++#if IS_ENABLED(CONFIG_USB_OMAP)
+ 	.hmc_mode	= 19,	/* 0:host(off) 1:dev|otg 2:disabled */
+ 	/* .hmc_mode	= 21,*/	/* 0:host(off) 1:dev(loopback) 2:host(loopback) */
+ #elif	defined(CONFIG_USB_OHCI_HCD) || defined(CONFIG_USB_OHCI_HCD_MODULE)
+--- a/arch/arm/mach-omap1/board-osk.c
++++ b/arch/arm/mach-omap1/board-osk.c
+@@ -283,7 +283,7 @@ static struct omap_usb_config osk_usb_co
+ 	 * be used, with a NONSTANDARD gender-bending cable/dongle, as
+ 	 * a peripheral.
+ 	 */
+-#ifdef	CONFIG_USB_GADGET_OMAP
++#if IS_ENABLED(CONFIG_USB_OMAP)
+ 	.register_dev	= 1,
+ 	.hmc_mode	= 0,
+ #else
+--- a/drivers/usb/phy/phy-isp1301-omap.c
++++ b/drivers/usb/phy/phy-isp1301-omap.c
+@@ -1295,7 +1295,7 @@ isp1301_set_host(struct usb_otg *otg, st
+ 		return isp1301_otg_enable(isp);
+ 	return 0;
  
-+		if (sigsetjmp(sigbus_jmp, 1)) {
-+			end = off + sigbus_addr ? sigbus_addr - ptr : 0;
-+			fprintf(stderr, "got sigbus at offset %lld: %s\n",
-+					(long long)end, name);
-+			goto got_sigbus;
-+		}
-+
- 		/* populate ptes */
- 		for (i = 0; i < nr_pages ; i++) {
- 			if (vec[i] & 1)
- 				(void)*(volatile int *)(ptr + i * page_size);
- 		}
-+got_sigbus:
+-#elif	!defined(CONFIG_USB_GADGET_OMAP)
++#elif !IS_ENABLED(CONFIG_USB_OMAP)
+ 	// FIXME update its refcount
+ 	otg->host = host;
  
- 		/* turn off harvesting reference bits */
- 		if (madvise(ptr, len, MADV_SEQUENTIAL))
-@@ -910,6 +937,7 @@ static void walk_page_cache(void)
- 
- 	kpageflags_fd = checked_open(PROC_KPAGEFLAGS, O_RDONLY);
- 	pagemap_fd = checked_open("/proc/self/pagemap", O_RDONLY);
-+	sigaction(SIGBUS, &sigbus_action, NULL);
- 
- 	if (stat(opt_file, &st))
- 		fatal("stat failed: %s\n", opt_file);
-@@ -925,6 +953,7 @@ static void walk_page_cache(void)
- 
- 	close(kpageflags_fd);
- 	close(pagemap_fd);
-+	signal(SIGBUS, SIG_DFL);
- }
- 
- static void parse_file(const char *name)
 
 
