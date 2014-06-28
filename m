@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751845AbaF1G0F (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 02:26:05 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:48527 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751061AbaF1G0D (ORCPT
+	id S1752094AbaF1G2Y (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 02:28:24 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:63673 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751503AbaF1G2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 02:26:03 -0400
+	Sat, 28 Jun 2014 02:28:23 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAMEtUuzWs+MbSOGGD-Rc01DHKASa4GxbHdtCrSCLit4cUM35mA@mail.gmail.com>
+In-Reply-To: <CAMEtUuywNHVcZ__296NzXK7RPXUBOf7gNQY9JFx0a9PV0Se+wA@mail.gmail.com>
 References: <1403913966-4927-1-git-send-email-ast@plumgrid.com>
- <1403913966-4927-4-git-send-email-ast@plumgrid.com> <CALCETrV3WLBmHewCZgfhCkjODWfq_byRg6sF7HpqZ6n9BVMBVQ@mail.gmail.com>
- <CAMEtUuzWs+MbSOGGD-Rc01DHKASa4GxbHdtCrSCLit4cUM35mA@mail.gmail.com>
+ <1403913966-4927-8-git-send-email-ast@plumgrid.com> <CALCETrXDR1LVmbigTicBiddgvcucM1dGk1R7rxdJyBCvGEBQMw@mail.gmail.com>
+ <CAMEtUuywNHVcZ__296NzXK7RPXUBOf7gNQY9JFx0a9PV0Se+wA@mail.gmail.com>
 From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 27 Jun 2014 23:25:39 -0700
-Message-ID: <CALCETrWy6=dzTycy-ckiMR92+nQeqAWp_Hw=hi__VSzVWZ43Ag@mail.gmail.com>
-Subject: Re: [PATCH RFC net-next 03/14] bpf: introduce syscall(BPF, ...) and
- BPF maps
+Date: Fri, 27 Jun 2014 23:28:01 -0700
+Message-ID: <CALCETrXQ60J+UqafHRKPbgQ37zhstW+E8xAponWs7AQ-DCgaWA@mail.gmail.com>
+Subject: Re: [PATCH RFC net-next 07/14] bpf: expand BPF syscall with program load/unload
 To: Alexei Starovoitov <ast@plumgrid.com>
 Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
@@ -37,42 +36,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 27, 2014 at 10:55 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
-> On Fri, Jun 27, 2014 at 5:16 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+On Fri, Jun 27, 2014 at 11:12 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+> On Fri, Jun 27, 2014 at 5:19 PM, Andy Lutomirski <luto@amacapital.net> wrote:
 >> On Fri, Jun 27, 2014 at 5:05 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
->>> BPF syscall is a demux for different BPF releated commands.
+>>> eBPF programs are safe run-to-completion functions with load/unload
+>>> methods from userspace similar to kernel modules.
 >>>
->>> 'maps' is a generic storage of different types for sharing data between kernel
->>> and userspace.
+>>> User space API:
 >>>
->>> The maps can be created/deleted from user space via BPF syscall:
->>> - create a map with given id, type and attributes
->>>   map_id = bpf_map_create(int map_id, map_type, struct nlattr *attr, int len)
->>>   returns positive map id or negative error
+>>> - load eBPF program
+>>>   prog_id = bpf_prog_load(int prog_id, bpf_prog_type, struct nlattr *prog, int len)
 >>>
->>> - delete map with given map id
->>>   err = bpf_map_delete(int map_id)
->>>   returns zero or negative error
+>>>   where 'prog' is a sequence of sections (currently TEXT and LICENSE)
+>>>   TEXT - array of eBPF instructions
+>>>   LICENSE - GPL compatible
+>>> +
+>>> +       err = -EINVAL;
+>>> +       /* look for mandatory license string */
+>>> +       if (!tb[BPF_PROG_LICENSE])
+>>> +               goto free_attr;
+>>> +
+>>> +       /* eBPF programs must be GPL compatible */
+>>> +       if (!license_is_gpl_compatible(nla_data(tb[BPF_PROG_LICENSE])))
+>>> +               goto free_attr;
 >>
->> What's the scope of "id"?  How is it secured?
+>> Seriously?  My mind boggles.
 >
-> the map and program id space is global and it's cap_sys_admin only.
-> There is no pressing need to do it with per-user limits.
-> So the whole thing is root only for now.
+> Yes. Quite a bit of logic can fit into one eBPF program. I don't think it's wise
+> to leave this door open for abuse. This check makes it clear that if you
+> write a program in C, the source code must be available.
+> If program is written in assembler than this check is nop anyway.
 >
 
-Hmm.  This may be unpleasant if you ever want to support non-root or
-namespaced operation.
+I can see this seriously annoying lots of users.  For example,
+Chromium might object.
 
-How hard would it be to give these things fds?
+If you want to add GPL-only functions in the future, that would be one
+thing.  But if someone writes a nice eBPF compiler, and someone else
+writes a little program that filters on network packets, I see no
+reason to claim that the little program is a derivative work of the
+kernel and therefore must be GPL.
 
-> Since I got your attention please review the most interesting
-> verifier bits (patch 08/14) ;)
+> btw this patch doesn't include debugfs access to all loaded eBPF programs.
+> Similarly to kernel modules I'm planning to have a way to list all loaded
+> programs with optional assembler dump of instructions.
 
-Will do.  Or at least I'll try :)
+Users can also dump running programs with ptrace.  That doesn't mean
+that all loaded programs need to be GPL.
 
 --Andy
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
