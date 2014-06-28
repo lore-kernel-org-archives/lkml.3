@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755638AbaF1Ruy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:50:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53706 "EHLO
+	id S1756625AbaF1S3m (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:29:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53745 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755600AbaF1Ruv (ORCPT
+	with ESMTP id S1755600AbaF1Ruz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:50:51 -0400
+	Sat, 28 Jun 2014 13:50:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Murphy <lists@colorremedies.com>, Liu Bo <bo.li.liu@oracle.com>,
-        Chris Mason <clm@fb.com>
-Subject: [PATCH 3.14 095/110] Btrfs: fix NULL pointer crash of deleting a seed device
-Date: Sat, 28 Jun 2014 10:47:32 -0700
-Message-Id: <20140628174551.104913978@linuxfoundation.org>
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Sasha Levin <sasha.levin@oracle.com>, Jason Baron <jbaron@akamai.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 108/110] epoll: fix use-after-free in eventpoll_release_file
+Date: Sat, 28 Jun 2014 10:47:45 -0700
+Message-Id: <20140628174551.799683600@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -29,43 +31,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Liu Bo <bo.li.liu@oracle.com>
+From: Konstantin Khlebnikov <koct9i@gmail.com>
 
-commit 29cc83f69c8338ff8fd1383c9be263d4bdf52d73 upstream.
+commit ebe06187bf2aec10d537ce4595e416035367d703 upstream.
 
-Same as normal devices, seed devices should be initialized with
-fs_info->dev_root as well, otherwise we'll get a NULL pointer crash.
+This fixes use-after-free of epi->fllink.next inside list loop macro.
+This loop actually releases elements in the body.  The list is
+rcu-protected but here we cannot hold rcu_read_lock because we need to
+lock mutex inside.
 
-Cc: Chris Murphy <lists@colorremedies.com>
-Reported-by: Chris Murphy <lists@colorremedies.com>
-Signed-off-by: Liu Bo <bo.li.liu@oracle.com>
-Signed-off-by: Chris Mason <clm@fb.com>
+The obvious solution is to use list_for_each_entry_safe().  RCU-ness
+isn't essential because nobody can change this list under us, it's final
+fput for this file.
+
+The bug was introduced by ae10b2b4eb01 ("epoll: optimize EPOLL_CTL_DEL
+using rcu")
+
+Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
+Reported-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Sasha Levin <sasha.levin@oracle.com>
+Cc: Jason Baron <jbaron@akamai.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/volumes.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ fs/eventpoll.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/btrfs/volumes.c
-+++ b/fs/btrfs/volumes.c
-@@ -6057,10 +6057,14 @@ void btrfs_init_devices_late(struct btrf
- 	struct btrfs_fs_devices *fs_devices = fs_info->fs_devices;
- 	struct btrfs_device *device;
+--- a/fs/eventpoll.c
++++ b/fs/eventpoll.c
+@@ -910,7 +910,7 @@ static const struct file_operations even
+ void eventpoll_release_file(struct file *file)
+ {
+ 	struct eventpoll *ep;
+-	struct epitem *epi;
++	struct epitem *epi, *next;
  
--	mutex_lock(&fs_devices->device_list_mutex);
--	list_for_each_entry(device, &fs_devices->devices, dev_list)
--		device->dev_root = fs_info->dev_root;
--	mutex_unlock(&fs_devices->device_list_mutex);
-+	while (fs_devices) {
-+		mutex_lock(&fs_devices->device_list_mutex);
-+		list_for_each_entry(device, &fs_devices->devices, dev_list)
-+			device->dev_root = fs_info->dev_root;
-+		mutex_unlock(&fs_devices->device_list_mutex);
-+
-+		fs_devices = fs_devices->seed;
-+	}
- }
- 
- static void __btrfs_reset_dev_stats(struct btrfs_device *dev)
+ 	/*
+ 	 * We don't want to get "file->f_lock" because it is not
+@@ -926,7 +926,7 @@ void eventpoll_release_file(struct file
+ 	 * Besides, ep_remove() acquires the lock, so we can't hold it here.
+ 	 */
+ 	mutex_lock(&epmutex);
+-	list_for_each_entry_rcu(epi, &file->f_ep_links, fllink) {
++	list_for_each_entry_safe(epi, next, &file->f_ep_links, fllink) {
+ 		ep = epi->ep;
+ 		mutex_lock_nested(&ep->mtx, 0);
+ 		ep_remove(ep, epi);
 
 
