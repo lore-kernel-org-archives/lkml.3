@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932535AbaF1Sht (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:37:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53610 "EHLO
+	id S1755493AbaF1Rua (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:50:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53591 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755496AbaF1Rub (ORCPT
+	with ESMTP id S932099AbaF1Ru1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:50:31 -0400
+	Sat, 28 Jun 2014 13:50:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Glanzmann <thomas@glanzmann.de>,
-        Charalampos Pournaris <charpour@gmail.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.14 077/110] target: Use complete_all for se_cmd->t_transport_stop_comp
-Date: Sat, 28 Jun 2014 10:47:14 -0700
-Message-Id: <20140628174550.100679000@linuxfoundation.org>
+        Benjamin LaHaise <bcrl@kvack.org>, Kent Overstreet <kmo@daterainc.com>,
+        Mateusz Guzik <mguzik@redhat.com>, Petr Matousek <pmatouse@redhat.com>
+Subject: [PATCH 3.14 088/110] aio: fix aio request leak when events are reaped by userspace
+Date: Sat, 28 Jun 2014 10:47:25 -0700
+Message-Id: <20140628174550.735737255@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -30,56 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Benjamin LaHaise <bcrl@kvack.org>
 
-commit a95d6511303b848da45ee27b35018bb58087bdc6 upstream.
+commit f8567a3845ac05bb28f3c1b478ef752762bd39ef upstream.
 
-This patch fixes a bug where multiple waiters on ->t_transport_stop_comp
-occurs due to a concurrent ABORT_TASK and session reset both invoking
-transport_wait_for_tasks(), while waiting for the associated se_cmd
-descriptor backend processing to complete.
+The aio cleanups and optimizations by kmo that were merged into the 3.10
+tree added a regression for userspace event reaping.  Specifically, the
+reference counts are not decremented if the event is reaped in userspace,
+leading to the application being unable to submit further aio requests.
+This patch applies to 3.12+.  A separate backport is required for 3.10/3.11.
+This issue was uncovered as part of CVE-2014-0206.
 
-For this case, complete_all() should be invoked in order to wake up
-both waiters in core_tmr_abort_task() + transport_generic_free_cmd()
-process contexts.
-
-Cc: Thomas Glanzmann <thomas@glanzmann.de>
-Cc: Charalampos Pournaris <charpour@gmail.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
+Cc: Kent Overstreet <kmo@daterainc.com>
+Cc: Mateusz Guzik <mguzik@redhat.com>
+Cc: Petr Matousek <pmatouse@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_transport.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ fs/aio.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -560,7 +560,7 @@ static int transport_cmd_check_stop(stru
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -1007,6 +1007,7 @@ void aio_complete(struct kiocb *iocb, lo
  
- 		spin_unlock_irqrestore(&cmd->t_state_lock, flags);
+ 	/* everything turned out well, dispose of the aiocb. */
+ 	kiocb_free(iocb);
++	put_reqs_available(ctx, 1);
  
--		complete(&cmd->t_transport_stop_comp);
-+		complete_all(&cmd->t_transport_stop_comp);
- 		return 1;
- 	}
+ 	/*
+ 	 * We have to order our ring_info tail store above and test
+@@ -1086,8 +1087,6 @@ static long aio_read_events_ring(struct
+ 	flush_dcache_page(ctx->ring_pages[0]);
  
-@@ -676,7 +676,7 @@ void target_complete_cmd(struct se_cmd *
- 	if (cmd->transport_state & CMD_T_ABORTED &&
- 	    cmd->transport_state & CMD_T_STOP) {
- 		spin_unlock_irqrestore(&cmd->t_state_lock, flags);
--		complete(&cmd->t_transport_stop_comp);
-+		complete_all(&cmd->t_transport_stop_comp);
- 		return;
- 	} else if (!success) {
- 		INIT_WORK(&cmd->work, target_complete_failure_work);
-@@ -1748,7 +1748,7 @@ void target_execute_cmd(struct se_cmd *c
- 			cmd->se_tfo->get_task_tag(cmd));
- 
- 		spin_unlock_irq(&cmd->t_state_lock);
--		complete(&cmd->t_transport_stop_comp);
-+		complete_all(&cmd->t_transport_stop_comp);
- 		return;
- 	}
+ 	pr_debug("%li  h%u t%u\n", ret, head, tail);
+-
+-	put_reqs_available(ctx, ret);
+ out:
+ 	mutex_unlock(&ctx->ring_lock);
  
 
 
