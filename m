@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756702AbaF1TZR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 15:25:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52749 "EHLO
+	id S1753227AbaF1RrG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:47:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52704 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751470AbaF1RrH (ORCPT
+	with ESMTP id S1752095AbaF1Rq6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:47:07 -0400
+	Sat, 28 Jun 2014 13:46:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.4 25/43] USB: sierra: fix use after free at suspend/resume
-Date: Sat, 28 Jun 2014 10:46:16 -0700
-Message-Id: <20140628174450.952441673@linuxfoundation.org>
+        Huang Rui <ray.huang@amd.com>
+Subject: [PATCH 3.4 04/43] usb: usbtest: fix unlink write error with pattern 1
+Date: Sat, 28 Jun 2014 10:45:55 -0700
+Message-Id: <20140628174450.010856631@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174449.788784511@linuxfoundation.org>
 References: <20140628174449.788784511@linuxfoundation.org>
@@ -28,55 +28,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Huang Rui <ray.huang@amd.com>
 
-commit 8452727de70f6ad850cd6d0aaa18b5d9050aa63b upstream.
+commit e4d58f5dcb7d7be45df8def31881ebfae99c75da upstream.
 
-Fix use after free or NULL-pointer dereference during suspend and
-resume.
+TEST 12 and TEST 24 unlinks the URB write request for N times. When
+host and gadget both initialize pattern 1 (mod 63) data series to
+transfer, the gadget side will complain the wrong data which is not
+expected.  Because in host side, usbtest doesn't fill the data buffer
+as mod 63 and this patch fixed it.
 
-The port data may never have been allocated (port probe failed)
-or may already have been released by port_remove (e.g. driver is
-unloaded) when suspend and resume are called.
+[20285.488974] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Not Ready
+[20285.489181] dwc3 dwc3.0.auto: ep1out-bulk: reason Transfer Not Active
+[20285.489423] dwc3 dwc3.0.auto: ep1out-bulk: req ffff8800aa6cb480 dma aeb50800 length 512 last
+[20285.489727] dwc3 dwc3.0.auto: ep1out-bulk: cmd 'Start Transfer' params 00000000 a9eaf000 00000000
+[20285.490055] dwc3 dwc3.0.auto: Command Complete --> 0
+[20285.490281] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Not Ready
+[20285.490492] dwc3 dwc3.0.auto: ep1out-bulk: reason Transfer Active
+[20285.490713] dwc3 dwc3.0.auto: ep1out-bulk: endpoint busy
+[20285.490909] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Complete
+[20285.491117] dwc3 dwc3.0.auto: request ffff8800aa6cb480 from ep1out-bulk completed 512/512 ===> 0
+[20285.491431] zero gadget: bad OUT byte, buf[1] = 0
+[20285.491605] dwc3 dwc3.0.auto: ep1out-bulk: cmd 'Set Stall' params 00000000 00000000 00000000
+[20285.491915] dwc3 dwc3.0.auto: Command Complete --> 0
+[20285.492099] dwc3 dwc3.0.auto: queing request ffff8800aa6cb480 to ep1out-bulk length 512
+[20285.492387] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Not Ready
+[20285.492595] dwc3 dwc3.0.auto: ep1out-bulk: reason Transfer Not Active
+[20285.492830] dwc3 dwc3.0.auto: ep1out-bulk: req ffff8800aa6cb480 dma aeb51000 length 512 last
+[20285.493135] dwc3 dwc3.0.auto: ep1out-bulk: cmd 'Start Transfer' params 00000000 a9eaf000 00000000
+[20285.493465] dwc3 dwc3.0.auto: Command Complete --> 0
 
-Fixes: e6929a9020ac ("USB: support for autosuspend in sierra while
-online")
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Huang Rui <ray.huang@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/sierra.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/usb/misc/usbtest.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -999,6 +999,7 @@ static void sierra_release(struct usb_se
- 		portdata = usb_get_serial_port_data(port);
- 		if (!portdata)
- 			continue;
-+		usb_set_serial_port_data(port, NULL);
- 		kfree(portdata);
- 	}
- 	kfree(serial->private);
-@@ -1015,6 +1016,8 @@ static void stop_read_write_urbs(struct
- 	for (i = 0; i < serial->num_ports; ++i) {
- 		port = serial->port[i];
- 		portdata = usb_get_serial_port_data(port);
-+		if (!portdata)
-+			continue;
- 		sierra_stop_rx_urbs(port);
- 		usb_kill_anchored_urbs(&portdata->active);
- 	}
-@@ -1057,6 +1060,9 @@ static int sierra_resume(struct usb_seri
- 		port = serial->port[i];
- 		portdata = usb_get_serial_port_data(port);
+--- a/drivers/usb/misc/usbtest.c
++++ b/drivers/usb/misc/usbtest.c
+@@ -1135,6 +1135,11 @@ static int unlink1(struct usbtest_dev *d
+ 	urb->context = &completion;
+ 	urb->complete = unlink1_callback;
  
-+		if (!portdata)
-+			continue;
++	if (usb_pipeout(urb->pipe)) {
++		simple_fill_buf(urb);
++		urb->transfer_flags |= URB_ZERO_PACKET;
++	}
 +
- 		while ((urb = usb_get_from_anchor(&portdata->delayed))) {
- 			usb_anchor_urb(urb, &portdata->active);
- 			intfdata->in_flight++;
+ 	/* keep the endpoint busy.  there are lots of hc/hcd-internal
+ 	 * states, and testing should get to all of them over time.
+ 	 *
+@@ -1265,6 +1270,11 @@ static int unlink_queued(struct usbtest_
+ 				unlink_queued_callback, &ctx);
+ 		ctx.urbs[i]->transfer_dma = buf_dma;
+ 		ctx.urbs[i]->transfer_flags = URB_NO_TRANSFER_DMA_MAP;
++
++		if (usb_pipeout(ctx.urbs[i]->pipe)) {
++			simple_fill_buf(ctx.urbs[i]);
++			ctx.urbs[i]->transfer_flags |= URB_ZERO_PACKET;
++		}
+ 	}
+ 
+ 	/* Submit all the URBs and then unlink URBs num - 4 and num - 2. */
 
 
