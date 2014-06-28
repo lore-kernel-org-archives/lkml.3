@@ -1,52 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753254AbaF1RIb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:08:31 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:44486 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753137AbaF1RI2 (ORCPT
+	id S1753345AbaF1RJk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:09:40 -0400
+Received: from smtprelay0184.hostedemail.com ([216.40.44.184]:51209 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751165AbaF1RJj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:08:28 -0400
-Date: Sat, 28 Jun 2014 19:08:21 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Lukas M?rdian <lukas@goldelico.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+	Sat, 28 Jun 2014 13:09:39 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:69:355:379:541:599:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3871:4321:5007:7652:9592:10004:10400:10848:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12555:12740:13069:13161:13229:13311:13357:13894:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: slip65_36d7b87b3de5e
+X-Filterd-Recvd-Size: 2514
+Message-ID: <1403975375.9064.29.camel@joe-AO725>
+Subject: Re: [PATCH linux-next] staging: emxx_udc: replace strict_strtol call
+From: Joe Perches <joe@perches.com>
+To: Vincent =?ISO-8859-1?Q?Stehl=E9?= <vincent.stehle@laposte.net>
+Cc: linux-next@vger.kernel.org, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org,
-        "H. Nikolaus Schaller" <hns@goldelico.com>
-Subject: Re: [PATCH] gpio_keys, twl4030-pwrbutton: stay awake for 1sec on
- resume
-Message-ID: <20140628170820.GF23634@xo-6d-61-c0.localdomain>
-References: <1403906118-23517-1-git-send-email-lukas@goldelico.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Magnus Damm <damm+renesas@opensource.se>
+Date: Sat, 28 Jun 2014 10:09:35 -0700
+In-Reply-To: <1403974823-23578-1-git-send-email-vincent.stehle@laposte.net>
+References: <1403974823-23578-1-git-send-email-vincent.stehle@laposte.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1403906118-23517-1-git-send-email-lukas@goldelico.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Sat, 2014-06-28 at 19:00 +0200, Vincent Stehlé wrote:
+> Commit 582e9d37a9a3 'include/linux: remove strict_strto* definitions' has
+> obsoleted the strict_strtol function. Use kstrtol instead.
+[]
+> diff --git a/drivers/staging/emxx_udc/emxx_udc.c b/drivers/staging/emxx_udc/emxx_udc.c
+[]
+> @@ -3285,7 +3285,7 @@ static void __init nbu2ss_drv_set_ep_info(
+>  
+>  		tempbuf[0] = name[2];
+>  		tempbuf[1] = '\0';
+> -		res = strict_strtol(tempbuf, 16, &num);
+> +		res = kstrtol(tempbuf, 16, &num);
 
-> This gives the userspace (Replicant) a chance to fully handle the
-> pm_wakeup_event, before autosleep suspends the system alltogether
-> again.
-> 
-> This fixes suspend/resume on the OpenPhoenux GTA04, in combination with
-> the Replicant 4.2.2 userspace, which needs to execute this to stay
-> awake: 'echo on > /sys/power/state'
-> 
-> Signed-off-by: Lukas Märdian <lukas@goldelico.com>
-> Signed-off-by: H. Nikolaus Schaller <hns@goldelico.com>
 
-I'm sorry, but we should not be doing this.
+The whole block if code is obtuse and should be simplified to:
+---
+ drivers/staging/emxx_udc/emxx_udc.c | 20 +++-----------------
+ 1 file changed, 3 insertions(+), 17 deletions(-)
 
-You basically put a delay in driver to work around userspace bug. There must be better
-solution....
+diff --git a/drivers/staging/emxx_udc/emxx_udc.c b/drivers/staging/emxx_udc/emxx_udc.c
+index c92ded8..f41831e 100644
+--- a/drivers/staging/emxx_udc/emxx_udc.c
++++ b/drivers/staging/emxx_udc/emxx_udc.c
+@@ -3276,24 +3276,10 @@ static void __init nbu2ss_drv_set_ep_info(
+ 	ep->ep.name = name;
+ 	ep->ep.ops = &nbu2ss_ep_ops;
+ 
+-	if (isdigit(name[2])) {
+-
+-		long	num;
+-		int	res;
+-		char	tempbuf[2];
+-
+-		tempbuf[0] = name[2];
+-		tempbuf[1] = '\0';
+-		res = strict_strtol(tempbuf, 16, &num);
+-
+-		if (num == 0)
+-			ep->ep.maxpacket = EP0_PACKETSIZE;
+-		else
+-			ep->ep.maxpacket = EP_PACKETSIZE;
+-
+-	} else {
++	if (name[2] == '0')
++		ep->ep.maxpacket = EP0_PACKETSIZE;
++	else
+ 		ep->ep.maxpacket = EP_PACKETSIZE;
+-	}
+ 
+ 	list_add_tail(&ep->ep.ep_list, &udc->gadget.ep_list);
+ 	INIT_LIST_HEAD(&ep->queue);
 
-										Pavel
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
