@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756827AbaF1SVx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:21:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54053 "EHLO
+	id S1756834AbaF1SWW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:22:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54050 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755767AbaF1RvZ (ORCPT
+	with ESMTP id S932176AbaF1RvY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:51:25 -0400
+	Sat, 28 Jun 2014 13:51:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.15 024/139] mm: vmscan: do not throttle based on pfmemalloc reserves if node has no ZONE_NORMAL
-Date: Sat, 28 Jun 2014 10:46:25 -0700
-Message-Id: <20140628174606.514918279@linuxfoundation.org>
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [PATCH 3.15 038/139] s390/time: cast tv_nsec to u64 prior to shift in update_vsyscall
+Date: Sat, 28 Jun 2014 10:46:39 -0700
+Message-Id: <20140628174607.173721236@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -30,106 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-commit 675becce15f320337499bc1a9356260409a5ba29 upstream.
+commit b6f4296279ab3ada554d993d12844272fd86b36a upstream.
 
-throttle_direct_reclaim() is meant to trigger during swap-over-network
-during which the min watermark is treated as a pfmemalloc reserve.  It
-throttes on the first node in the zonelist but this is flawed.
+Analog to git commit 28b92e09e25bdc0ae864b22eacf195a74f861389
+first cast tk->wall_to_monotonic.tv_nsec to u64 before doing
+the shift with tk->shift to avoid loosing relevant bits on a
+32-bit kernel.
 
-The user-visible impact is that a process running on CPU whose local
-memory node has no ZONE_NORMAL will stall for prolonged periods of time,
-possibly indefintely.  This is due to throttle_direct_reclaim thinking the
-pfmemalloc reserves are depleted when in fact they don't exist on that
-node.
-
-On a NUMA machine running a 32-bit kernel (I know) allocation requests
-from CPUs on node 1 would detect no pfmemalloc reserves and the process
-gets throttled.  This patch adjusts throttling of direct reclaim to
-throttle based on the first node in the zonelist that has a usable
-ZONE_NORMAL or lower zone.
-
-[akpm@linux-foundation.org: coding-style fixes]
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/vmscan.c |   43 +++++++++++++++++++++++++++++++++++++------
- 1 file changed, 37 insertions(+), 6 deletions(-)
+ arch/s390/kernel/time.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2525,10 +2525,17 @@ static bool pfmemalloc_watermark_ok(pg_d
- 
- 	for (i = 0; i <= ZONE_NORMAL; i++) {
- 		zone = &pgdat->node_zones[i];
-+		if (!populated_zone(zone))
-+			continue;
-+
- 		pfmemalloc_reserve += min_wmark_pages(zone);
- 		free_pages += zone_page_state(zone, NR_FREE_PAGES);
- 	}
- 
-+	/* If there are no reserves (unexpected config) then do not throttle */
-+	if (!pfmemalloc_reserve)
-+		return true;
-+
- 	wmark_ok = free_pages > pfmemalloc_reserve / 2;
- 
- 	/* kswapd must be awake if processes are being throttled */
-@@ -2553,9 +2560,9 @@ static bool pfmemalloc_watermark_ok(pg_d
- static bool throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
- 					nodemask_t *nodemask)
- {
-+	struct zoneref *z;
- 	struct zone *zone;
--	int high_zoneidx = gfp_zone(gfp_mask);
--	pg_data_t *pgdat;
-+	pg_data_t *pgdat = NULL;
- 
- 	/*
- 	 * Kernel threads should not be throttled as they may be indirectly
-@@ -2574,10 +2581,34 @@ static bool throttle_direct_reclaim(gfp_
- 	if (fatal_signal_pending(current))
- 		goto out;
- 
--	/* Check if the pfmemalloc reserves are ok */
--	first_zones_zonelist(zonelist, high_zoneidx, NULL, &zone);
--	pgdat = zone->zone_pgdat;
--	if (pfmemalloc_watermark_ok(pgdat))
-+	/*
-+	 * Check if the pfmemalloc reserves are ok by finding the first node
-+	 * with a usable ZONE_NORMAL or lower zone. The expectation is that
-+	 * GFP_KERNEL will be required for allocating network buffers when
-+	 * swapping over the network so ZONE_HIGHMEM is unusable.
-+	 *
-+	 * Throttling is based on the first usable node and throttled processes
-+	 * wait on a queue until kswapd makes progress and wakes them. There
-+	 * is an affinity then between processes waking up and where reclaim
-+	 * progress has been made assuming the process wakes on the same node.
-+	 * More importantly, processes running on remote nodes will not compete
-+	 * for remote pfmemalloc reserves and processes on different nodes
-+	 * should make reasonable progress.
-+	 */
-+	for_each_zone_zonelist_nodemask(zone, z, zonelist,
-+					gfp_mask, nodemask) {
-+		if (zone_idx(zone) > ZONE_NORMAL)
-+			continue;
-+
-+		/* Throttle based on the first usable node */
-+		pgdat = zone->zone_pgdat;
-+		if (pfmemalloc_watermark_ok(pgdat))
-+			goto out;
-+		break;
-+	}
-+
-+	/* If no zone was usable by the allocation flags then do not throttle */
-+	if (!pgdat)
- 		goto out;
- 
- 	/* Account for the throttling */
+--- a/arch/s390/kernel/time.c
++++ b/arch/s390/kernel/time.c
+@@ -226,7 +226,7 @@ void update_vsyscall(struct timekeeper *
+ 	vdso_data->wtom_clock_sec =
+ 		tk->xtime_sec + tk->wall_to_monotonic.tv_sec;
+ 	vdso_data->wtom_clock_nsec = tk->xtime_nsec +
+-		+ (tk->wall_to_monotonic.tv_nsec << tk->shift);
++		+ ((u64) tk->wall_to_monotonic.tv_nsec << tk->shift);
+ 	nsecps = (u64) NSEC_PER_SEC << tk->shift;
+ 	while (vdso_data->wtom_clock_nsec >= nsecps) {
+ 		vdso_data->wtom_clock_nsec -= nsecps;
 
 
