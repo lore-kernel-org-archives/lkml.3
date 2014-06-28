@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757139AbaF1SoR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:44:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53463 "EHLO
+	id S1757158AbaF1Sok (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:44:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53449 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755364AbaF1Rt4 (ORCPT
+	with ESMTP id S1755350AbaF1Rty (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:49:56 -0400
+	Sat, 28 Jun 2014 13:49:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Olivier Langlois <olivier@trillion01.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.14 063/110] media: uvcvideo: Fix clock param realtime setting
-Date: Sat, 28 Jun 2014 10:47:00 -0700
-Message-Id: <20140628174549.355203960@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.14 045/110] USB: usb_wwan: fix potential NULL-deref at resume
+Date: Sat, 28 Jun 2014 10:46:42 -0700
+Message-Id: <20140628174547.846394128@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174545.354748696@linuxfoundation.org>
 References: <20140628174545.354748696@linuxfoundation.org>
@@ -30,73 +28,113 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olivier Langlois <olivier@trillion01.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 3b35fc81e7ec552147a4fd843d0da0bbbe4ef253 upstream.
+commit 9096f1fbba916c2e052651e9de82fcfb98d4bea7 upstream.
 
-timestamps in v4l2 buffers returned to userspace are updated in
-uvc_video_clock_update() which uses timestamps fetched from
-uvc_video_clock_decode() by calling unconditionally ktime_get_ts().
+The interrupt urb was submitted unconditionally at resume, something
+which could lead to a NULL-pointer dereference in the urb completion
+handler as resume may be called after the port and port data is gone.
 
-Hence setting the module clock param to realtime has no effect before
-this patch.
+Fix this by making sure the interrupt urb is only submitted and active
+when the port is open.
 
-This has been tested with ffmpeg:
+Fixes: 383cedc3bb43 ("USB: serial: full autosuspend support for the
+option driver")
 
-ffmpeg -y -f v4l2 -input_format yuyv422 -video_size 640x480 -framerate 30 -i /dev/video0 \
- -f alsa -acodec pcm_s16le -ar 16000 -ac 1 -i default \
- -c:v libx264 -preset ultrafast \
- -c:a libfdk_aac \
- out.mkv
-
-and inspecting the v4l2 input starting timestamp.
-
-Signed-off-by: Olivier Langlois <olivier@trillion01.com>
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/usb/uvc/uvc_video.c |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ drivers/usb/serial/usb_wwan.c |   43 ++++++++++++++++++------------------------
+ 1 file changed, 19 insertions(+), 24 deletions(-)
 
---- a/drivers/media/usb/uvc/uvc_video.c
-+++ b/drivers/media/usb/uvc/uvc_video.c
-@@ -361,6 +361,14 @@ static int uvc_commit_video(struct uvc_s
-  * Clocks and timestamps
-  */
+--- a/drivers/usb/serial/usb_wwan.c
++++ b/drivers/usb/serial/usb_wwan.c
+@@ -388,6 +388,14 @@ int usb_wwan_open(struct tty_struct *tty
+ 	portdata = usb_get_serial_port_data(port);
+ 	intfdata = serial->private;
  
-+static inline void uvc_video_get_ts(struct timespec *ts)
-+{
-+	if (uvc_clock_param == CLOCK_MONOTONIC)
-+		ktime_get_ts(ts);
-+	else
-+		ktime_get_real_ts(ts);
-+}
++	if (port->interrupt_in_urb) {
++		err = usb_submit_urb(port->interrupt_in_urb, GFP_KERNEL);
++		if (err) {
++			dev_dbg(&port->dev, "%s: submit int urb failed: %d\n",
++				__func__, err);
++		}
++	}
 +
- static void
- uvc_video_clock_decode(struct uvc_streaming *stream, struct uvc_buffer *buf,
- 		       const __u8 *data, int len)
-@@ -420,7 +428,7 @@ uvc_video_clock_decode(struct uvc_stream
- 	stream->clock.last_sof = dev_sof;
+ 	/* Start reading from the IN endpoint */
+ 	for (i = 0; i < N_IN_URB; i++) {
+ 		urb = portdata->in_urbs[i];
+@@ -454,6 +462,7 @@ void usb_wwan_close(struct usb_serial_po
+ 		usb_kill_urb(portdata->in_urbs[i]);
+ 	for (i = 0; i < N_OUT_URB; i++)
+ 		usb_kill_urb(portdata->out_urbs[i]);
++	usb_kill_urb(port->interrupt_in_urb);
  
- 	host_sof = usb_get_current_frame_number(stream->dev->udev);
--	ktime_get_ts(&ts);
-+	uvc_video_get_ts(&ts);
+ 	/* balancing - important as an error cannot be handled*/
+ 	usb_autopm_get_interface_no_resume(serial->interface);
+@@ -487,7 +496,6 @@ int usb_wwan_port_probe(struct usb_seria
+ 	struct usb_wwan_port_private *portdata;
+ 	struct urb *urb;
+ 	u8 *buffer;
+-	int err;
+ 	int i;
  
- 	/* The UVC specification allows device implementations that can't obtain
- 	 * the USB frame number to keep their own frame counters as long as they
-@@ -1011,10 +1019,7 @@ static int uvc_video_decode_start(struct
- 			return -ENODATA;
- 		}
+ 	if (!port->bulk_in_size || !port->bulk_out_size)
+@@ -527,13 +535,6 @@ int usb_wwan_port_probe(struct usb_seria
  
--		if (uvc_clock_param == CLOCK_MONOTONIC)
--			ktime_get_ts(&ts);
--		else
--			ktime_get_real_ts(&ts);
-+		uvc_video_get_ts(&ts);
+ 	usb_set_serial_port_data(port, portdata);
  
- 		buf->buf.v4l2_buf.sequence = stream->sequence;
- 		buf->buf.v4l2_buf.timestamp.tv_sec = ts.tv_sec;
+-	if (port->interrupt_in_urb) {
+-		err = usb_submit_urb(port->interrupt_in_urb, GFP_KERNEL);
+-		if (err)
+-			dev_dbg(&port->dev, "%s: submit irq_in urb failed %d\n",
+-				__func__, err);
+-	}
+-
+ 	return 0;
+ 
+ bail_out_error2:
+@@ -651,22 +652,6 @@ int usb_wwan_resume(struct usb_serial *s
+ 	struct urb *urb;
+ 	int err = 0;
+ 
+-	/* get the interrupt URBs resubmitted unconditionally */
+-	for (i = 0; i < serial->num_ports; i++) {
+-		port = serial->port[i];
+-		if (!port->interrupt_in_urb) {
+-			dev_dbg(&port->dev, "%s: No interrupt URB for port\n", __func__);
+-			continue;
+-		}
+-		err = usb_submit_urb(port->interrupt_in_urb, GFP_NOIO);
+-		dev_dbg(&port->dev, "Submitted interrupt URB for port (result %d)\n", err);
+-		if (err < 0) {
+-			dev_err(&port->dev, "%s: Error %d for interrupt URB\n",
+-				__func__, err);
+-			goto err_out;
+-		}
+-	}
+-
+ 	spin_lock_irq(&intfdata->susp_lock);
+ 	for (i = 0; i < serial->num_ports; i++) {
+ 		/* walk all ports */
+@@ -677,6 +662,16 @@ int usb_wwan_resume(struct usb_serial *s
+ 		if (!portdata || !portdata->opened)
+ 			continue;
+ 
++		if (port->interrupt_in_urb) {
++			err = usb_submit_urb(port->interrupt_in_urb,
++					GFP_ATOMIC);
++			if (err) {
++				dev_err(&port->dev,
++					"%s: submit int urb failed: %d\n",
++					__func__, err);
++			}
++		}
++
+ 		for (j = 0; j < N_IN_URB; j++) {
+ 			urb = portdata->in_urbs[j];
+ 			err = usb_submit_urb(urb, GFP_ATOMIC);
 
 
