@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756667AbaF1SRN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 14:17:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54155 "EHLO
+	id S1756671AbaF1SRi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 14:17:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54149 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755867AbaF1Rvo (ORCPT
+	with ESMTP id S932245AbaF1Rvm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:51:44 -0400
+	Sat, 28 Jun 2014 13:51:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.15 054/139] USB: sierra: fix AA deadlock in open error path
-Date: Sat, 28 Jun 2014 10:46:55 -0700
-Message-Id: <20140628174607.910488882@linuxfoundation.org>
+Subject: [PATCH 3.15 052/139] USB: usb_wwan: fix potential NULL-deref at resume
+Date: Sat, 28 Jun 2014 10:46:53 -0700
+Message-Id: <20140628174607.820379210@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
 References: <20140628174605.352098823@linuxfoundation.org>
@@ -30,56 +30,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit 353fe198602e8b4d1c7bdcceb8e60955087201b1 upstream.
+commit 9096f1fbba916c2e052651e9de82fcfb98d4bea7 upstream.
 
-Fix AA deadlock in open error path that would call close() and try to
-grab the already held disc_mutex.
+The interrupt urb was submitted unconditionally at resume, something
+which could lead to a NULL-pointer dereference in the urb completion
+handler as resume may be called after the port and port data is gone.
 
-Fixes: b9a44bc19f48 ("sierra: driver urb handling improvements")
+Fix this by making sure the interrupt urb is only submitted and active
+when the port is open.
+
+Fixes: 383cedc3bb43 ("USB: serial: full autosuspend support for the
+option driver")
 
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/sierra.c |   21 +++++++++++++--------
- 1 file changed, 13 insertions(+), 8 deletions(-)
+ drivers/usb/serial/usb_wwan.c |   43 ++++++++++++++++++------------------------
+ 1 file changed, 19 insertions(+), 24 deletions(-)
 
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -816,14 +816,9 @@ static int sierra_open(struct tty_struct
- 			usb_sndbulkpipe(serial->dev, endpoint) | USB_DIR_IN);
+--- a/drivers/usb/serial/usb_wwan.c
++++ b/drivers/usb/serial/usb_wwan.c
+@@ -388,6 +388,14 @@ int usb_wwan_open(struct tty_struct *tty
+ 	portdata = usb_get_serial_port_data(port);
+ 	intfdata = serial->private;
  
- 	err = sierra_submit_rx_urbs(port, GFP_KERNEL);
--	if (err) {
--		/* get rid of everything as in close */
--		sierra_close(port);
--		/* restore balance for autopm */
--		if (!serial->disconnected)
--			usb_autopm_put_interface(serial->interface);
--		return err;
--	}
-+	if (err)
-+		goto err_submit;
-+
- 	sierra_send_setup(port);
- 
- 	serial->interface->needs_remote_wakeup = 1;
-@@ -833,6 +828,16 @@ static int sierra_open(struct tty_struct
- 	usb_autopm_put_interface(serial->interface);
- 
- 	return 0;
-+
-+err_submit:
-+	sierra_stop_rx_urbs(port);
-+
-+	for (i = 0; i < portdata->num_in_urbs; i++) {
-+		sierra_release_urb(portdata->in_urbs[i]);
-+		portdata->in_urbs[i] = NULL;
++	if (port->interrupt_in_urb) {
++		err = usb_submit_urb(port->interrupt_in_urb, GFP_KERNEL);
++		if (err) {
++			dev_dbg(&port->dev, "%s: submit int urb failed: %d\n",
++				__func__, err);
++		}
 +	}
 +
-+	return err;
- }
+ 	/* Start reading from the IN endpoint */
+ 	for (i = 0; i < N_IN_URB; i++) {
+ 		urb = portdata->in_urbs[i];
+@@ -454,6 +462,7 @@ void usb_wwan_close(struct usb_serial_po
+ 		usb_kill_urb(portdata->in_urbs[i]);
+ 	for (i = 0; i < N_OUT_URB; i++)
+ 		usb_kill_urb(portdata->out_urbs[i]);
++	usb_kill_urb(port->interrupt_in_urb);
  
+ 	/* balancing - important as an error cannot be handled*/
+ 	usb_autopm_get_interface_no_resume(serial->interface);
+@@ -487,7 +496,6 @@ int usb_wwan_port_probe(struct usb_seria
+ 	struct usb_wwan_port_private *portdata;
+ 	struct urb *urb;
+ 	u8 *buffer;
+-	int err;
+ 	int i;
  
+ 	if (!port->bulk_in_size || !port->bulk_out_size)
+@@ -527,13 +535,6 @@ int usb_wwan_port_probe(struct usb_seria
+ 
+ 	usb_set_serial_port_data(port, portdata);
+ 
+-	if (port->interrupt_in_urb) {
+-		err = usb_submit_urb(port->interrupt_in_urb, GFP_KERNEL);
+-		if (err)
+-			dev_dbg(&port->dev, "%s: submit irq_in urb failed %d\n",
+-				__func__, err);
+-	}
+-
+ 	return 0;
+ 
+ bail_out_error2:
+@@ -651,22 +652,6 @@ int usb_wwan_resume(struct usb_serial *s
+ 	struct urb *urb;
+ 	int err = 0;
+ 
+-	/* get the interrupt URBs resubmitted unconditionally */
+-	for (i = 0; i < serial->num_ports; i++) {
+-		port = serial->port[i];
+-		if (!port->interrupt_in_urb) {
+-			dev_dbg(&port->dev, "%s: No interrupt URB for port\n", __func__);
+-			continue;
+-		}
+-		err = usb_submit_urb(port->interrupt_in_urb, GFP_NOIO);
+-		dev_dbg(&port->dev, "Submitted interrupt URB for port (result %d)\n", err);
+-		if (err < 0) {
+-			dev_err(&port->dev, "%s: Error %d for interrupt URB\n",
+-				__func__, err);
+-			goto err_out;
+-		}
+-	}
+-
+ 	spin_lock_irq(&intfdata->susp_lock);
+ 	for (i = 0; i < serial->num_ports; i++) {
+ 		/* walk all ports */
+@@ -677,6 +662,16 @@ int usb_wwan_resume(struct usb_serial *s
+ 		if (!portdata || !portdata->opened)
+ 			continue;
+ 
++		if (port->interrupt_in_urb) {
++			err = usb_submit_urb(port->interrupt_in_urb,
++					GFP_ATOMIC);
++			if (err) {
++				dev_err(&port->dev,
++					"%s: submit int urb failed: %d\n",
++					__func__, err);
++			}
++		}
++
+ 		for (j = 0; j < N_IN_URB; j++) {
+ 			urb = portdata->in_urbs[j];
+ 			err = usb_submit_urb(urb, GFP_ATOMIC);
 
 
