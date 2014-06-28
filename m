@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932269AbaF1TVR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 15:21:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52820 "EHLO
+	id S932318AbaF1TVh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 15:21:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52798 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753530AbaF1RrY (ORCPT
+	with ESMTP id S1753471AbaF1RrR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:47:24 -0400
+	Sat, 28 Jun 2014 13:47:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Chris Mason <clm@fb.com>
-Subject: [PATCH 3.4 41/43] btrfs: fix use of uninit "ret" in end_extent_writepage()
-Date: Sat, 28 Jun 2014 10:46:32 -0700
-Message-Id: <20140628174451.667709832@linuxfoundation.org>
+Subject: [PATCH 3.4 38/43] Btrfs: fix double free in find_lock_delalloc_range
+Date: Sat, 28 Jun 2014 10:46:29 -0700
+Message-Id: <20140628174451.530385547@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140628174449.788784511@linuxfoundation.org>
 References: <20140628174449.788784511@linuxfoundation.org>
@@ -28,45 +28,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Sandeen <sandeen@redhat.com>
+From: Chris Mason <clm@fb.com>
 
-commit 3e2426bd0eb980648449e7a2f5a23e3cd3c7725c upstream.
+commit 7d78874273463a784759916fc3e0b4e2eb141c70 upstream.
 
-If this condition in end_extent_writepage() is false:
-
-	if (tree->ops && tree->ops->writepage_end_io_hook)
-
-we will then test an uninitialized "ret" at:
-
-	ret = ret < 0 ? ret : -EIO;
-
-The test for ret is for the case where ->writepage_end_io_hook
-failed, and we'd choose that ret as the error; but if
-there is no ->writepage_end_io_hook, nothing sets ret.
-
-Initializing ret to 0 should be sufficient; if
-writepage_end_io_hook wasn't set, (!uptodate) means
-non-zero err was passed in, so we choose -EIO in that case.
-
-Signed-of-by: Eric Sandeen <sandeen@redhat.com>
+We need to NULL the cached_state after freeing it, otherwise
+we might free it again if find_delalloc_range doesn't find anything.
 
 Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/extent_io.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/btrfs/extent_io.c |    1 +
+ 1 file changed, 1 insertion(+)
 
 --- a/fs/btrfs/extent_io.c
 +++ b/fs/btrfs/extent_io.c
-@@ -2245,7 +2245,7 @@ int end_extent_writepage(struct page *pa
- {
- 	int uptodate = (err == 0);
- 	struct extent_io_tree *tree;
--	int ret;
-+	int ret = 0;
- 
- 	tree = &BTRFS_I(page->mapping->host)->io_tree;
- 
+@@ -1551,6 +1551,7 @@ again:
+ 		 * shortening the size of the delalloc range we're searching
+ 		 */
+ 		free_extent_state(cached_state);
++		cached_state = NULL;
+ 		if (!loops) {
+ 			unsigned long offset = (*start) & (PAGE_CACHE_SIZE - 1);
+ 			max_bytes = PAGE_CACHE_SIZE - offset;
 
 
