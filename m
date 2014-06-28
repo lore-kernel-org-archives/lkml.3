@@ -1,73 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932465AbaF1Rxa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jun 2014 13:53:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54536 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756251AbaF1Rx1 (ORCPT
+	id S1755544AbaF1Rzl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jun 2014 13:55:41 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:49446 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755093AbaF1Rzh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jun 2014 13:53:27 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin LaHaise <bcrl@kvack.org>, Kent Overstreet <kmo@daterainc.com>,
-        Mateusz Guzik <mguzik@redhat.com>, Petr Matousek <pmatouse@redhat.com>
-Subject: [PATCH 3.15 111/139] aio: fix aio request leak when events are reaped by userspace
-Date: Sat, 28 Jun 2014 10:47:52 -0700
-Message-Id: <20140628174610.481727437@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <20140628174605.352098823@linuxfoundation.org>
-References: <20140628174605.352098823@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Sat, 28 Jun 2014 13:55:37 -0400
+X-IronPort-AV: E=Sophos;i="5.01,567,1400018400"; 
+   d="scan'208";a="82697726"
+Date: Sat, 28 Jun 2014 19:55:33 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Fabian Frederick <fabf@skynet.be>
+cc: linux-kernel@vger.kernel.org, Julia Lawall <Julia.Lawall@lip6.fr>,
+        Gilles Muller <Gilles.Muller@lip6.fr>, Joe Perches <joe@perches.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH V3] scripts/coccinelle/free: add NULL test before freeing
+ functions
+In-Reply-To: <1403945247-21549-1-git-send-email-fabf@skynet.be>
+Message-ID: <alpine.DEB.2.10.1406281955050.2538@hadrien>
+References: <1403945247-21549-1-git-send-email-fabf@skynet.be>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.15-stable review patch.  If anyone has any objections, please let me know.
+On Sat, 28 Jun 2014, Fabian Frederick wrote:
 
-------------------
+> Warns or generates patch for NULL check before the following functions:
+>
+> kfree
+> usb_free_urb
+> debugfs_remove
+> debugfs_remove_recursive
+>
+> Cc: Julia Lawall <Julia.Lawall@lip6.fr>
+> Cc: Gilles Muller <Gilles.Muller@lip6.fr>
+> Cc: Joe Perches <joe@perches.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
 
-From: Benjamin LaHaise <bcrl@kvack.org>
+Acked-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-commit f8567a3845ac05bb28f3c1b478ef752762bd39ef upstream.
-
-The aio cleanups and optimizations by kmo that were merged into the 3.10
-tree added a regression for userspace event reaping.  Specifically, the
-reference counts are not decremented if the event is reaped in userspace,
-leading to the application being unable to submit further aio requests.
-This patch applies to 3.12+.  A separate backport is required for 3.10/3.11.
-This issue was uncovered as part of CVE-2014-0206.
-
-Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
-Cc: Kent Overstreet <kmo@daterainc.com>
-Cc: Mateusz Guzik <mguzik@redhat.com>
-Cc: Petr Matousek <pmatouse@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/aio.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -1021,6 +1021,7 @@ void aio_complete(struct kiocb *iocb, lo
- 
- 	/* everything turned out well, dispose of the aiocb. */
- 	kiocb_free(iocb);
-+	put_reqs_available(ctx, 1);
- 
- 	/*
- 	 * We have to order our ring_info tail store above and test
-@@ -1100,8 +1101,6 @@ static long aio_read_events_ring(struct
- 	flush_dcache_page(ctx->ring_pages[0]);
- 
- 	pr_debug("%li  h%u t%u\n", ret, head, tail);
--
--	put_reqs_available(ctx, ret);
- out:
- 	mutex_unlock(&ctx->ring_lock);
- 
-
-
+> ---
+>
+> V3:
+>    -Update print_main message.
+>    -Add patch mode (suggested by Julia Lawall)
+>
+> V2:
+>    -Add 3 more functions to kfree (suggested by Joe Perches)
+>    -Update warning message to involve code analysis (suggested by Julia Lawall)
+>
+>  scripts/coccinelle/free/ifnullfree.cocci | 53 ++++++++++++++++++++++++++++++++
+>  1 file changed, 53 insertions(+)
+>  create mode 100644 scripts/coccinelle/free/ifnullfree.cocci
+>
+> diff --git a/scripts/coccinelle/free/ifnullfree.cocci b/scripts/coccinelle/free/ifnullfree.cocci
+> new file mode 100644
+> index 0000000..c826d98
+> --- /dev/null
+> +++ b/scripts/coccinelle/free/ifnullfree.cocci
+> @@ -0,0 +1,53 @@
+> +/// NULL check before some freeing functions is not needed.
+> +///
+> +/// Based on checkpatch warning
+> +/// "kfree(NULL) is safe this check is probably not required"
+> +/// and kfreeaddr.cocci by Julia Lawall.
+> +///
+> +/// Comments: -
+> +/// Options: --no-includes --include-headers
+> +
+> +virtual patch
+> +virtual org
+> +virtual report
+> +virtual context
+> +
+> +@r2 depends on patch@
+> +expression E;
+> +@@
+> +- if (E)
+> +(
+> +-	kfree(E);
+> ++ kfree(E);
+> +|
+> +-	debugfs_remove(E);
+> ++ debugfs_remove(E);
+> +|
+> +-	debugfs_remove_recursive(E);
+> ++ debugfs_remove_recursive(E);
+> +|
+> +-	usb_free_urb(E);
+> ++ usb_free_urb(E);
+> +)
+> +
+> +@r depends on context || report || org @
+> +expression E;
+> +position p;
+> +@@
+> +
+> +* if (E)
+> +*	\(kfree@p\|debugfs_remove@p\|debugfs_remove_recursive@p\|usb_free_urb\)(E);
+> +
+> +@script:python depends on org@
+> +p << r.p;
+> +@@
+> +
+> +cocci.print_main("NULL check before that freeing function is not needed", p)
+> +
+> +@script:python depends on report@
+> +p << r.p;
+> +@@
+> +
+> +msg = "WARNING: NULL check before freeing functions like kfree, debugfs_remove, debugfs_remove_recursive or usb_free_urb is not needed. Maybe consider reorganizing relevant code to avoid passing NULL values."
+> +coccilib.report.print_report(p[0], msg)
+> +
+> --
+> 1.8.4.5
+>
+>
