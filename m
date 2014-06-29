@@ -1,54 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753431AbaF2SZy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jun 2014 14:25:54 -0400
-Received: from smtprelay0127.hostedemail.com ([216.40.44.127]:37994 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753311AbaF2SZx (ORCPT
+	id S1753436AbaF2TBj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jun 2014 15:01:39 -0400
+Received: from mail-qg0-f45.google.com ([209.85.192.45]:50556 "EHLO
+	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750897AbaF2TBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jun 2014 14:25:53 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1568:1593:1594:1711:1714:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3868:3870:3871:3872:4321:5007:7652:7904:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: boat49_33131a9ed6a38
-X-Filterd-Recvd-Size: 1465
-Message-ID: <1404066349.9064.60.camel@joe-AO725>
-Subject: Re: [PATCH] HID: roccat: Drop cast
-From: Joe Perches <joe@perches.com>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: Himangi Saraogi <himangi774@gmail.com>,
-        Stefan Achatz <erazor_de@users.sourceforge.net>,
-        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Sun, 29 Jun 2014 11:25:49 -0700
-In-Reply-To: <alpine.DEB.2.02.1406291832430.2036@localhost6.localdomain6>
-References: <20140626172852.GA2878@himangi-Dell>
-	 <1403804286.7977.58.camel@joe-AO725>
-	 <alpine.DEB.2.02.1406270729110.2016@localhost6.localdomain6>
-	 <1403848366.7977.92.camel@joe-AO725>
-	 <alpine.DEB.2.02.1406291832430.2036@localhost6.localdomain6>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 29 Jun 2014 15:01:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <CANeU7Q=FUTd4XTrQeeFGaSqp7eriZS3egAOqDK--OC-kaWyZuw@mail.gmail.com>
+References: <1402996306-6811-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1402996306-6811-3-git-send-email-andriy.shevchenko@linux.intel.com>
+	<CANeU7QnLad1f4KkLpTGSWB8eD8_La-tACim6rR7DLQ=hggwhOQ@mail.gmail.com>
+	<CANeU7Q=FUTd4XTrQeeFGaSqp7eriZS3egAOqDK--OC-kaWyZuw@mail.gmail.com>
+Date: Sun, 29 Jun 2014 12:01:36 -0700
+X-Google-Sender-Auth: SBSIV9xi4V9S0mHluERHlnSGMXo
+Message-ID: <CANeU7QmOfn6z==ZgdEJeFm4Xg_BgYGqCQmH5fsVzK73VrSgYdA@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] lib.c: skip --param parameters
+From: Christopher Li <sparse@chrisli.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux-Sparse <linux-sparse@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-06-29 at 18:34 +0200, Julia Lawall wrote:
-> On Thu, 26 Jun 2014, Joe Perches wrote:
-> > void func(const void * const p)
-> > {
-> > 	char *p2 = p;
-> > 
-> > 	p2[0] = 1;
-> > }
-> 
-> Is this a real example?
+On Sun, Jun 29, 2014 at 12:19 AM, Christopher Li <sparse@chrisli.org> wrote:
+>
+> If no objections, I will push the change.
+>
 
-No, it's not.
+Change pushed.
 
-I think I've seen code in the kernel like
-	char *p2 = (void *)p;
-where p is const and p2 is dereferenced and set.
-
-
+Chris
