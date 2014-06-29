@@ -1,707 +1,616 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753639AbaF2WFJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jun 2014 18:05:09 -0400
-Received: from mail-ve0-f179.google.com ([209.85.128.179]:46548 "EHLO
-	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753376AbaF2WFE convert rfc822-to-8bit (ORCPT
+	id S1753661AbaF2WJl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jun 2014 18:09:41 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:6110 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753455AbaF2WJk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jun 2014 18:05:04 -0400
-MIME-Version: 1.0
-Date: Sun, 29 Jun 2014 15:05:02 -0700
-X-Google-Sender-Auth: dz7t8ZVhutSflQ5Mp-SLJLn-sWU
-Message-ID: <CA+55aFxEy9Ah3BHqeki0Bzy7vTYWR9VzYvOViSR14viD_HDj_Q@mail.gmail.com>
-Subject: Linux 3.16-rc3
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 29 Jun 2014 18:09:40 -0400
+Message-ID: <1404079773.2619.4.camel@buesod1.americas.hpqcorp.net>
+Subject: [PATCH v2] arch,locking: Ciao arch_mutex_cpu_relax()
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Sun, 29 Jun 2014 15:09:33 -0700
+In-Reply-To: <CA+55aFx3UQG42cYrUWrTDT9CnpnRwVta6C9N_0FH1wvyDMxPgw@mail.gmail.com>
+References: <1403288473.10903.2.camel@buesod1.americas.hpqcorp.net>
+	 <20140623065835.GF19860@laptop.programming.kicks-ass.net>
+	 <1403622415.15523.4.camel@buesod1.americas.hpqcorp.net>
+	 <20140625062510.GB4260@osiris>
+	 <CA+55aFx3UQG42cYrUWrTDT9CnpnRwVta6C9N_0FH1wvyDMxPgw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We're back on a Sunday release schedule, and things are looking
-reasonably normal.
+From: Davidlohr Bueso <davidlohr@hp.com>
 
-There's perhaps relatively less driver updates than usual, with most
-of them being pretty small, but that is probably just a timing thing
-(ie Greg didn't send his USB/staging changes this week, so driver
-changes are mostly gpu, networking and sound).
+The arch_mutex_cpu_relax() function, introduced by 34b133f, is
+hacky and ugly. It was added a few years ago to address the fact
+that common cpu_relax() calls include yielding on s390, and thus
+impact the optimistic spinning functionality of mutexes. Nowadays
+we use this function well beyond mutexes: rwsem, qrwlock, mcs and
+lockref. Since the macro that defines the call is in the mutex header,
+any users must include mutex.h and the naming is misleading as well.
 
-As a result misc architecture updates (mips, powerpc, x86, arm)
-dominate the diff, and there are various random other updates. We've
-got filesystem updates (aio, nfs and ocfs2), a small batch of mm fixes
-from Andrew, some networking stuff.etc.
+This patch (i) renames the call to cpu_relax_lowlatency  ("relax, but
+only if you can do it with very low latency") and (ii) defines it in
+each arch's asm/processor.h local header, just like for regular cpu_relax
+functions. On all archs, except s390, cpu_relax_lowlatency is simply cpu_relax,
+and thus we can take it out of mutex.h. While this can seem redundant,
+I believe it is a good choice as it allows us to move out arch specific
+logic from generic locking primitives and enables future(?) archs to
+transparently define it, similarly to System Z.
 
-The shortlog gives a feel for the changes. The most noticeable to
-actual users are probably the unbreaking of direct block device read
-accesses on 32-bit targets, and some x86 vdso regression fixes that
-caused problems. The rest probably didn't end up affecting very many
-people, but it's all proper fixes..
+Please note that these changes are only tested on x86-64.
 
-                     Linus
-
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
 ---
+Changes from v1: Rename arch_cpu_relax to cpu_relax_lowlatency,
+based on the purpose of the function, as suggested by Linus.
+
+ arch/alpha/include/asm/processor.h     | 1 +
+ arch/arc/include/asm/processor.h       | 2 ++
+ arch/arm/include/asm/processor.h       | 2 ++
+ arch/arm64/include/asm/processor.h     | 1 +
+ arch/avr32/include/asm/processor.h     | 1 +
+ arch/blackfin/include/asm/processor.h  | 2 +-
+ arch/c6x/include/asm/processor.h       | 1 +
+ arch/cris/include/asm/processor.h      | 1 +
+ arch/hexagon/include/asm/processor.h   | 1 +
+ arch/ia64/include/asm/processor.h      | 1 +
+ arch/m32r/include/asm/processor.h      | 1 +
+ arch/m68k/include/asm/processor.h      | 1 +
+ arch/metag/include/asm/processor.h     | 1 +
+ arch/mips/include/asm/processor.h      | 1 +
+ arch/mn10300/include/asm/processor.h   | 2 ++
+ arch/openrisc/include/asm/processor.h  | 1 +
+ arch/parisc/include/asm/processor.h    | 1 +
+ arch/powerpc/include/asm/processor.h   | 2 ++
+ arch/s390/include/asm/processor.h      | 2 +-
+ arch/score/include/asm/processor.h     | 1 +
+ arch/sh/include/asm/processor.h        | 1 +
+ arch/sparc/include/asm/processor_32.h  | 2 ++
+ arch/sparc/include/asm/processor_64.h  | 1 +
+ arch/tile/include/asm/processor.h      | 2 ++
+ arch/unicore32/include/asm/processor.h | 1 +
+ arch/x86/include/asm/processor.h       | 2 ++
+ arch/xtensa/include/asm/processor.h    | 1 +
+ include/linux/mutex.h                  | 4 ----
+ kernel/locking/mcs_spinlock.c          | 8 +++-----
+ kernel/locking/mcs_spinlock.h          | 4 ++--
+ kernel/locking/mutex.c                 | 4 ++--
+ kernel/locking/qrwlock.c               | 9 ++++-----
+ kernel/locking/rwsem-xadd.c            | 4 ++--
+ lib/lockref.c                          | 3 +--
+ 34 files changed, 48 insertions(+), 24 deletions(-)
+
+diff --git a/arch/alpha/include/asm/processor.h b/arch/alpha/include/asm/processor.h
+index 6cb7fe8..b4cf036 100644
+--- a/arch/alpha/include/asm/processor.h
++++ b/arch/alpha/include/asm/processor.h
+@@ -57,6 +57,7 @@ unsigned long get_wchan(struct task_struct *p);
+   ((tsk) == current ? rdusp() : task_thread_info(tsk)->pcb.usp)
+ 
+ #define cpu_relax()	barrier()
++#define cpu_relax_lowlatency() cpu_relax()
+ 
+ #define ARCH_HAS_PREFETCH
+ #define ARCH_HAS_PREFETCHW
+diff --git a/arch/arc/include/asm/processor.h b/arch/arc/include/asm/processor.h
+index d99f9b3..82588f3 100644
+--- a/arch/arc/include/asm/processor.h
++++ b/arch/arc/include/asm/processor.h
+@@ -62,6 +62,8 @@ unsigned long thread_saved_pc(struct task_struct *t);
+ #define cpu_relax()	do { } while (0)
+ #endif
+ 
++#define cpu_relax_lowlatency() cpu_relax()
++
+ #define copy_segments(tsk, mm)      do { } while (0)
+ #define release_segments(mm)        do { } while (0)
+ 
+diff --git a/arch/arm/include/asm/processor.h b/arch/arm/include/asm/processor.h
+index c3d5fc1..8a1e8e9 100644
+--- a/arch/arm/include/asm/processor.h
++++ b/arch/arm/include/asm/processor.h
+@@ -82,6 +82,8 @@ unsigned long get_wchan(struct task_struct *p);
+ #define cpu_relax()			barrier()
+ #endif
+ 
++#define cpu_relax_lowlatency()                cpu_relax()
++
+ #define task_pt_regs(p) \
+ 	((struct pt_regs *)(THREAD_START_SP + task_stack_page(p)) - 1)
+ 
+diff --git a/arch/arm64/include/asm/processor.h b/arch/arm64/include/asm/processor.h
+index 34de2a8..4610b0d 100644
+--- a/arch/arm64/include/asm/processor.h
++++ b/arch/arm64/include/asm/processor.h
+@@ -129,6 +129,7 @@ extern void release_thread(struct task_struct *);
+ unsigned long get_wchan(struct task_struct *p);
+ 
+ #define cpu_relax()			barrier()
++#define cpu_relax_lowlatency()                cpu_relax()
+ 
+ /* Thread switching */
+ extern struct task_struct *cpu_switch_to(struct task_struct *prev,
+diff --git a/arch/avr32/include/asm/processor.h b/arch/avr32/include/asm/processor.h
+index 972adcc..941593c 100644
+--- a/arch/avr32/include/asm/processor.h
++++ b/arch/avr32/include/asm/processor.h
+@@ -92,6 +92,7 @@ extern struct avr32_cpuinfo boot_cpu_data;
+ #define TASK_UNMAPPED_BASE	(PAGE_ALIGN(TASK_SIZE / 3))
+ 
+ #define cpu_relax()		barrier()
++#define cpu_relax_lowlatency()        cpu_relax()
+ #define cpu_sync_pipeline()	asm volatile("sub pc, -2" : : : "memory")
+ 
+ struct cpu_context {
+diff --git a/arch/blackfin/include/asm/processor.h b/arch/blackfin/include/asm/processor.h
+index d0e72e9..7acd466 100644
+--- a/arch/blackfin/include/asm/processor.h
++++ b/arch/blackfin/include/asm/processor.h
+@@ -99,7 +99,7 @@ unsigned long get_wchan(struct task_struct *p);
+ #define	KSTK_ESP(tsk)	((tsk) == current ? rdusp() : (tsk)->thread.usp)
+ 
+ #define cpu_relax()    	smp_mb()
+-
++#define cpu_relax_lowlatency() cpu_relax()
+ 
+ /* Get the Silicon Revision of the chip */
+ static inline uint32_t __pure bfin_revid(void)
+diff --git a/arch/c6x/include/asm/processor.h b/arch/c6x/include/asm/processor.h
+index b9eb3da..f2ef31b 100644
+--- a/arch/c6x/include/asm/processor.h
++++ b/arch/c6x/include/asm/processor.h
+@@ -121,6 +121,7 @@ extern unsigned long get_wchan(struct task_struct *p);
+ #define KSTK_ESP(task)	(task_pt_regs(task)->sp)
+ 
+ #define cpu_relax()		do { } while (0)
++#define cpu_relax_lowlatency()        cpu_relax()
+ 
+ extern const struct seq_operations cpuinfo_op;
+ 
+diff --git a/arch/cris/include/asm/processor.h b/arch/cris/include/asm/processor.h
+index 15b815d..862126b 100644
+--- a/arch/cris/include/asm/processor.h
++++ b/arch/cris/include/asm/processor.h
+@@ -63,6 +63,7 @@ static inline void release_thread(struct task_struct *dead_task)
+ #define init_stack      (init_thread_union.stack)
+ 
+ #define cpu_relax()     barrier()
++#define cpu_relax_lowlatency() cpu_relax()
+ 
+ void default_idle(void);
+ 
+diff --git a/arch/hexagon/include/asm/processor.h b/arch/hexagon/include/asm/processor.h
+index 45a8254..d850113 100644
+--- a/arch/hexagon/include/asm/processor.h
++++ b/arch/hexagon/include/asm/processor.h
+@@ -56,6 +56,7 @@ struct thread_struct {
+ }
+ 
+ #define cpu_relax() __vmyield()
++#define cpu_relax_lowlatency() cpu_relax()
+ 
+ /*
+  * Decides where the kernel will search for a free chunk of vm space during
+diff --git a/arch/ia64/include/asm/processor.h b/arch/ia64/include/asm/processor.h
+index efd1b92..c736713 100644
+--- a/arch/ia64/include/asm/processor.h
++++ b/arch/ia64/include/asm/processor.h
+@@ -548,6 +548,7 @@ ia64_eoi (void)
+ }
+ 
+ #define cpu_relax()	ia64_hint(ia64_hint_pause)
++#define cpu_relax_lowlatency() cpu_relax()
+ 
+ static inline int
+ ia64_get_irr(unsigned int vector)
+diff --git a/arch/m32r/include/asm/processor.h b/arch/m32r/include/asm/processor.h
+index 5767367..9f8fd9b 100644
+--- a/arch/m32r/include/asm/processor.h
++++ b/arch/m32r/include/asm/processor.h
+@@ -133,5 +133,6 @@ unsigned long get_wchan(struct task_struct *p);
+ #define KSTK_ESP(tsk)  ((tsk)->thread.sp)
+ 
+ #define cpu_relax()	barrier()
++#define cpu_relax_lowlatency() cpu_relax()
+ 
+ #endif /* _ASM_M32R_PROCESSOR_H */
+diff --git a/arch/m68k/include/asm/processor.h b/arch/m68k/include/asm/processor.h
+index b0768a6..20dda1d 100644
+--- a/arch/m68k/include/asm/processor.h
++++ b/arch/m68k/include/asm/processor.h
+@@ -176,5 +176,6 @@ unsigned long get_wchan(struct task_struct *p);
+ #define task_pt_regs(tsk)	((struct pt_regs *) ((tsk)->thread.esp0))
+ 
+ #define cpu_relax()	barrier()
++#define cpu_relax_lowlatency() cpu_relax()
+ 
+ #endif
+diff --git a/arch/metag/include/asm/processor.h b/arch/metag/include/asm/processor.h
+index a8a3747..881071c 100644
+--- a/arch/metag/include/asm/processor.h
++++ b/arch/metag/include/asm/processor.h
+@@ -155,6 +155,7 @@ unsigned long get_wchan(struct task_struct *p);
+ #define user_stack_pointer(regs)        ((regs)->ctx.AX[0].U0)
+ 
+ #define cpu_relax()     barrier()
++#define cpu_relax_lowlatency()  cpu_relax()
+ 
+ extern void setup_priv(void);
+ 
+diff --git a/arch/mips/include/asm/processor.h b/arch/mips/include/asm/processor.h
+index ad70cba..d5098bc 100644
+--- a/arch/mips/include/asm/processor.h
++++ b/arch/mips/include/asm/processor.h
+@@ -367,6 +367,7 @@ unsigned long get_wchan(struct task_struct *p);
+ #define KSTK_STATUS(tsk) (task_pt_regs(tsk)->cp0_status)
+ 
+ #define cpu_relax()	barrier()
++#define cpu_relax_lowlatency() cpu_relax()
+ 
+ /*
+  * Return_address is a replacement for __builtin_return_address(count)
+diff --git a/arch/mn10300/include/asm/processor.h b/arch/mn10300/include/asm/processor.h
+index 8b80b19..769d5ed 100644
+--- a/arch/mn10300/include/asm/processor.h
++++ b/arch/mn10300/include/asm/processor.h
+@@ -68,7 +68,9 @@ extern struct mn10300_cpuinfo cpu_data[];
+ extern void identify_cpu(struct mn10300_cpuinfo *);
+ extern void print_cpu_info(struct mn10300_cpuinfo *);
+ extern void dodgy_tsc(void);
++
+ #define cpu_relax() barrier()
++#define cpu_relax_lowlatency() cpu_relax()
+ 
+ /*
+  * User space process size: 1.75GB (default).
+diff --git a/arch/openrisc/include/asm/processor.h b/arch/openrisc/include/asm/processor.h
+index cab746f..4d235e3 100644
+--- a/arch/openrisc/include/asm/processor.h
++++ b/arch/openrisc/include/asm/processor.h
+@@ -101,6 +101,7 @@ extern unsigned long thread_saved_pc(struct task_struct *t);
+ #define init_stack      (init_thread_union.stack)
+ 
+ #define cpu_relax()     barrier()
++#define cpu_relax_lowlatency() cpu_relax()
+ 
+ #endif /* __ASSEMBLY__ */
+ #endif /* __ASM_OPENRISC_PROCESSOR_H */
+diff --git a/arch/parisc/include/asm/processor.h b/arch/parisc/include/asm/processor.h
+index d951c96..689a8ad 100644
+--- a/arch/parisc/include/asm/processor.h
++++ b/arch/parisc/include/asm/processor.h
+@@ -338,6 +338,7 @@ extern unsigned long get_wchan(struct task_struct *p);
+ #define KSTK_ESP(tsk)	((tsk)->thread.regs.gr[30])
+ 
+ #define cpu_relax()	barrier()
++#define cpu_relax_lowlatency() cpu_relax()
+ 
+ /* Used as a macro to identify the combined VIPT/PIPT cached
+  * CPUs which require a guarantee of coherency (no inequivalent
+diff --git a/arch/powerpc/include/asm/processor.h b/arch/powerpc/include/asm/processor.h
+index 6d59072..dda7ac4 100644
+--- a/arch/powerpc/include/asm/processor.h
++++ b/arch/powerpc/include/asm/processor.h
+@@ -400,6 +400,8 @@ static inline unsigned long __pack_fe01(unsigned int fpmode)
+ #define cpu_relax()	barrier()
+ #endif
+ 
++#define cpu_relax_lowlatency() cpu_relax()
++
+ /* Check that a certain kernel stack pointer is valid in task_struct p */
+ int validate_sp(unsigned long sp, struct task_struct *p,
+                        unsigned long nbytes);
+diff --git a/arch/s390/include/asm/processor.h b/arch/s390/include/asm/processor.h
+index 6f02d45..e568fc8 100644
+--- a/arch/s390/include/asm/processor.h
++++ b/arch/s390/include/asm/processor.h
+@@ -217,7 +217,7 @@ static inline void cpu_relax(void)
+ 	barrier();
+ }
+ 
+-#define arch_mutex_cpu_relax()  barrier()
++#define cpu_relax_lowlatency()  barrier()
+ 
+ static inline void psw_set_key(unsigned int key)
+ {
+diff --git a/arch/score/include/asm/processor.h b/arch/score/include/asm/processor.h
+index d9a922d..851f441 100644
+--- a/arch/score/include/asm/processor.h
++++ b/arch/score/include/asm/processor.h
+@@ -24,6 +24,7 @@ extern unsigned long get_wchan(struct task_struct *p);
+ #define current_text_addr() ({ __label__ _l; _l: &&_l; })
+ 
+ #define cpu_relax()		barrier()
++#define cpu_relax_lowlatency()        cpu_relax()
+ #define release_thread(thread)	do {} while (0)
+ 
+ /*
+diff --git a/arch/sh/include/asm/processor.h b/arch/sh/include/asm/processor.h
+index 5448f9b..1506897 100644
+--- a/arch/sh/include/asm/processor.h
++++ b/arch/sh/include/asm/processor.h
+@@ -97,6 +97,7 @@ extern struct sh_cpuinfo cpu_data[];
+ 
+ #define cpu_sleep()	__asm__ __volatile__ ("sleep" : : : "memory")
+ #define cpu_relax()	barrier()
++#define cpu_relax_lowlatency() cpu_relax()
+ 
+ void default_idle(void);
+ void stop_this_cpu(void *);
+diff --git a/arch/sparc/include/asm/processor_32.h b/arch/sparc/include/asm/processor_32.h
+index 2c7baa4..f873358 100644
+--- a/arch/sparc/include/asm/processor_32.h
++++ b/arch/sparc/include/asm/processor_32.h
+@@ -118,6 +118,8 @@ extern unsigned long get_wchan(struct task_struct *);
+ extern struct task_struct *last_task_used_math;
+ 
+ #define cpu_relax()	barrier()
++#define cpu_relax_lowlatency() cpu_relax()
++
+ extern void (*sparc_idle)(void);
+ 
+ #endif
+diff --git a/arch/sparc/include/asm/processor_64.h b/arch/sparc/include/asm/processor_64.h
+index 4c3f7f0..733544b 100644
+--- a/arch/sparc/include/asm/processor_64.h
++++ b/arch/sparc/include/asm/processor_64.h
+@@ -216,6 +216,7 @@ extern unsigned long get_wchan(struct task_struct *task);
+ 				     "nop\n\t"				\
+ 				     ".previous"			\
+ 				     ::: "memory")
++#define cpu_relax_lowlatency() cpu_relax()
+ 
+ /* Prefetch support.  This is tuned for UltraSPARC-III and later.
+  * UltraSPARC-I will treat these as nops, and UltraSPARC-II has
+diff --git a/arch/tile/include/asm/processor.h b/arch/tile/include/asm/processor.h
+index 4232363..dd4f9f1 100644
+--- a/arch/tile/include/asm/processor.h
++++ b/arch/tile/include/asm/processor.h
+@@ -266,6 +266,8 @@ static inline void cpu_relax(void)
+ 	barrier();
+ }
+ 
++#define cpu_relax_lowlatency() cpu_relax()
++
+ /* Info on this processor (see fs/proc/cpuinfo.c) */
+ struct seq_operations;
+ extern const struct seq_operations cpuinfo_op;
+diff --git a/arch/unicore32/include/asm/processor.h b/arch/unicore32/include/asm/processor.h
+index 4eaa421..8d21b7a 100644
+--- a/arch/unicore32/include/asm/processor.h
++++ b/arch/unicore32/include/asm/processor.h
+@@ -71,6 +71,7 @@ extern void release_thread(struct task_struct *);
+ unsigned long get_wchan(struct task_struct *p);
+ 
+ #define cpu_relax()			barrier()
++#define cpu_relax_lowlatency()                cpu_relax()
+ 
+ #define task_pt_regs(p) \
+ 	((struct pt_regs *)(THREAD_START_SP + task_stack_page(p)) - 1)
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index a4ea023..32cc237 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -696,6 +696,8 @@ static inline void cpu_relax(void)
+ 	rep_nop();
+ }
+ 
++#define cpu_relax_lowlatency() cpu_relax()
++
+ /* Stop speculative execution and prefetching of modified code. */
+ static inline void sync_core(void)
+ {
+diff --git a/arch/xtensa/include/asm/processor.h b/arch/xtensa/include/asm/processor.h
+index abb5970..b61bdf0 100644
+--- a/arch/xtensa/include/asm/processor.h
++++ b/arch/xtensa/include/asm/processor.h
+@@ -182,6 +182,7 @@ extern unsigned long get_wchan(struct task_struct *p);
+ #define KSTK_ESP(tsk)		(task_pt_regs(tsk)->areg[1])
+ 
+ #define cpu_relax()  barrier()
++#define cpu_relax_lowlatency() cpu_relax()
+ 
+ /* Special register access. */
+ 
+diff --git a/include/linux/mutex.h b/include/linux/mutex.h
+index 11692de..cf63ead 100644
+--- a/include/linux/mutex.h
++++ b/include/linux/mutex.h
+@@ -176,8 +176,4 @@ extern void mutex_unlock(struct mutex *lock);
+ 
+ extern int atomic_dec_and_mutex_lock(atomic_t *cnt, struct mutex *lock);
+ 
+-#ifndef arch_mutex_cpu_relax
+-# define arch_mutex_cpu_relax() cpu_relax()
+-#endif
+-
+ #endif /* __LINUX_MUTEX_H */
+diff --git a/kernel/locking/mcs_spinlock.c b/kernel/locking/mcs_spinlock.c
+index 838dc9e..b469bd3 100644
+--- a/kernel/locking/mcs_spinlock.c
++++ b/kernel/locking/mcs_spinlock.c
+@@ -1,6 +1,4 @@
+-
+ #include <linux/percpu.h>
+-#include <linux/mutex.h>
+ #include <linux/sched.h>
+ #include "mcs_spinlock.h"
+ 
+@@ -53,7 +51,7 @@ osq_wait_next(struct optimistic_spin_queue **lock,
+ 				break;
+ 		}
+ 
+-		arch_mutex_cpu_relax();
++		cpu_relax_lowlatency();
+ 	}
+ 
+ 	return next;
+@@ -89,7 +87,7 @@ bool osq_lock(struct optimistic_spin_queue **lock)
+ 		if (need_resched())
+ 			goto unqueue;
+ 
+-		arch_mutex_cpu_relax();
++		cpu_relax_lowlatency();
+ 	}
+ 	return true;
+ 
+@@ -115,7 +113,7 @@ unqueue:
+ 		if (smp_load_acquire(&node->locked))
+ 			return true;
+ 
+-		arch_mutex_cpu_relax();
++		cpu_relax_lowlatency();
+ 
+ 		/*
+ 		 * Or we race against a concurrent unqueue()'s step-B, in which
+diff --git a/kernel/locking/mcs_spinlock.h b/kernel/locking/mcs_spinlock.h
+index a2dbac4..856880e 100644
+--- a/kernel/locking/mcs_spinlock.h
++++ b/kernel/locking/mcs_spinlock.h
+@@ -27,7 +27,7 @@ struct mcs_spinlock {
+ #define arch_mcs_spin_lock_contended(l)					\
+ do {									\
+ 	while (!(smp_load_acquire(l)))					\
+-		arch_mutex_cpu_relax();					\
++		cpu_relax_lowlatency();					\
+ } while (0)
+ #endif
+ 
+@@ -104,7 +104,7 @@ void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
+ 			return;
+ 		/* Wait until the next pointer is set */
+ 		while (!(next = ACCESS_ONCE(node->next)))
+-			arch_mutex_cpu_relax();
++			cpu_relax_lowlatency();
+ 	}
+ 
+ 	/* Pass lock to next waiter. */
+diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
+index bc73d33..19ceb91 100644
+--- a/kernel/locking/mutex.c
++++ b/kernel/locking/mutex.c
+@@ -152,7 +152,7 @@ int mutex_spin_on_owner(struct mutex *lock, struct task_struct *owner)
+ 		if (need_resched())
+ 			break;
+ 
+-		arch_mutex_cpu_relax();
++		cpu_relax_lowlatency();
+ 	}
+ 	rcu_read_unlock();
+ 
+@@ -471,7 +471,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+ 		 * memory barriers as we'll eventually observe the right
+ 		 * values at the cost of a few extra spins.
+ 		 */
+-		arch_mutex_cpu_relax();
++		cpu_relax_lowlatency();
+ 	}
+ 	osq_unlock(&lock->osq);
+ slowpath:
+diff --git a/kernel/locking/qrwlock.c b/kernel/locking/qrwlock.c
+index fb5b8ac..f956ede 100644
+--- a/kernel/locking/qrwlock.c
++++ b/kernel/locking/qrwlock.c
+@@ -20,7 +20,6 @@
+ #include <linux/cpumask.h>
+ #include <linux/percpu.h>
+ #include <linux/hardirq.h>
+-#include <linux/mutex.h>
+ #include <asm/qrwlock.h>
+ 
+ /**
+@@ -35,7 +34,7 @@ static __always_inline void
+ rspin_until_writer_unlock(struct qrwlock *lock, u32 cnts)
+ {
+ 	while ((cnts & _QW_WMASK) == _QW_LOCKED) {
+-		arch_mutex_cpu_relax();
++		cpu_relax_lowlatency();
+ 		cnts = smp_load_acquire((u32 *)&lock->cnts);
+ 	}
+ }
+@@ -75,7 +74,7 @@ void queue_read_lock_slowpath(struct qrwlock *lock)
+ 	 * to make sure that the write lock isn't taken.
+ 	 */
+ 	while (atomic_read(&lock->cnts) & _QW_WMASK)
+-		arch_mutex_cpu_relax();
++		cpu_relax_lowlatency();
+ 
+ 	cnts = atomic_add_return(_QR_BIAS, &lock->cnts) - _QR_BIAS;
+ 	rspin_until_writer_unlock(lock, cnts);
+@@ -114,7 +113,7 @@ void queue_write_lock_slowpath(struct qrwlock *lock)
+ 				    cnts | _QW_WAITING) == cnts))
+ 			break;
+ 
+-		arch_mutex_cpu_relax();
++		cpu_relax_lowlatency();
+ 	}
+ 
+ 	/* When no more readers, set the locked flag */
+@@ -125,7 +124,7 @@ void queue_write_lock_slowpath(struct qrwlock *lock)
+ 				    _QW_LOCKED) == _QW_WAITING))
+ 			break;
+ 
+-		arch_mutex_cpu_relax();
++		cpu_relax_lowlatency();
+ 	}
+ unlock:
+ 	arch_spin_unlock(&lock->lock);
+diff --git a/kernel/locking/rwsem-xadd.c b/kernel/locking/rwsem-xadd.c
+index dacc321..f69ddb0 100644
+--- a/kernel/locking/rwsem-xadd.c
++++ b/kernel/locking/rwsem-xadd.c
+@@ -329,7 +329,7 @@ bool rwsem_spin_on_owner(struct rw_semaphore *sem, struct task_struct *owner)
+ 		if (need_resched())
+ 			break;
+ 
+-		arch_mutex_cpu_relax();
++		cpu_relax_lowlatency();
+ 	}
+ 	rcu_read_unlock();
+ 
+@@ -381,7 +381,7 @@ static bool rwsem_optimistic_spin(struct rw_semaphore *sem)
+ 		 * memory barriers as we'll eventually observe the right
+ 		 * values at the cost of a few extra spins.
+ 		 */
+-		arch_mutex_cpu_relax();
++		cpu_relax_lowlatency();
+ 	}
+ 	osq_unlock(&sem->osq);
+ done:
+diff --git a/lib/lockref.c b/lib/lockref.c
+index f07a40d..d2233de 100644
+--- a/lib/lockref.c
++++ b/lib/lockref.c
+@@ -1,6 +1,5 @@
+ #include <linux/export.h>
+ #include <linux/lockref.h>
+-#include <linux/mutex.h>
+ 
+ #if USE_CMPXCHG_LOCKREF
+ 
+@@ -29,7 +28,7 @@
+ 		if (likely(old.lock_count == prev.lock_count)) {		\
+ 			SUCCESS;						\
+ 		}								\
+-		arch_mutex_cpu_relax();						\
++		cpu_relax_lowlatency();						\
+ 	}									\
+ } while (0)
+ 
+-- 
+1.8.1.4
 
-Aaron Tomlin (2):
-      nmi: provide the option to issue an NMI back trace to every cpu
-but current
-      kernel/watchdog.c: print traces for all cpus on lockup detection
 
-Abhilash Kesavan (1):
-      ARM: EXYNOS: fix pm code to check for cortex A9 rather than the SoC
 
-Al Viro (1):
-      Fix 32-bit regression in block device read(2)
-
-Alex Smith (1):
-      recordmcount/MIPS: Fix possible incorrect mcount_loc table
-entries in modules
-
-Alexandre Belloni (5):
-      ARM: at91/dt: sam9x5: correct PLLA ICPLL and OUT values
-      ARM: at91/dt: sam9n12: correct PLLA ICPLL and OUT values
-      ARM: at91/dt: sam9261: correctly define mainck
-      ARM: at91/dt: define sam9261ek slow crystal frequency
-      ARM: at91/dt: sam9261: remove slow RC osc
-
-Andrea Adami (2):
-      ARM: 8084/1: sa1100: collie: revert back to cfi_probe
-      ARM: 8085/1: sa1100: collie: add top boot mtd partition
-
-Andrew Morton (1):
-      ia64: arch/ia64/include/uapi/asm/fcntl.h needs personality.h
-
-Andrzej Hajda (1):
-      drm/exynos: disable unused windows on apply
-
-Andrzej Zaborowski (1):
-      efi-pstore: Fix an overflow on 32-bit builds
-
-Andy Adamson (3):
-      NFS check the return of nfs4_negotiate_security in nfs4_submount
-      NFS Return -EPERM if no supported or matching SECINFO flavor
-      NFSv4: test SECINFO RPC_AUTH_GSS pseudoflavors for support
-
-Andy Gross (2):
-      spi: qup: Fix order of spi_register_master
-      spi: qup: Remove chip select function
-
-Andy Lutomirski (9):
-      x86/vdso: Discard the __bug_table section
-      x86/vdso2c: Use better macros for ELF bitness
-      x86/vdso: Improve the fake section headers
-      x86/vdso: Remove some redundant in-memory section headers
-      x86/vdso: Create .build-id links for unstripped vdso files
-      x86_32, entry: Do syscall exit work on badsys (CVE-2014-4508)
-      x86_32, signal: Fix vdso rt_sigreturn
-      x86/vdso: Move DISABLE_BRANCH_PROFILING into the vdso makefile
-      x86/vdso: Error out in vdso2c if DT_RELA is present
-
-Anton Kolesov (1):
-      ARC: Implement ptrace(PTRACE_GET_THREAD_AREA)
-
-Arnd Bergmann (3):
-      mfd: UCB1x00: Enable modular build
-      mfd: STw481x: Allow modular build
-      mfd: davinci: Voicecodec needs regmap_mmio
-
-Axel Lin (1):
-      hwmon: (w83l786ng) Report correct minimum fan speed
-
-Benjamin Herrenschmidt (1):
-      powerpc: Remove __arch_swab*
-
-Benjamin LaHaise (2):
-      aio: fix aio request leak when events are reaped by userspace
-      aio: fix kernel memory disclosure in io_getevents() introduced in v3.10
-
-Björn Baumbach (1):
-      fs/cifs: fix regression in cifs_create_mf_symlink()
-
-Bjørn Mork (1):
-      net: huawei_cdc_ncm: increase command buffer size
-
-Catalin Marinas (2):
-      efi: Fix compiler warnings (unused, const, type)
-      powerpc/kmemleak: Do not scan the DART table
-
-Chen Gang (1):
-      lib/Kconfig.debug: let FRAME_POINTER exclude SCORE, just like
-exclude most of other architectures
-
-Chew, Chiau Ee (1):
-      spi/pxa2xx: fix incorrect SW mode chipselect setting for BayTrail LPSS SPI
-
-Chin-Ran Lo (1):
-      mwifiex: fix tx_info/rx_info overlap with PCIe dma_mapping
-
-Chirantan Ekbote (1):
-      clocksource: exynos_mct: Don't reset the counter during boot and resume
-
-Chris Metcalf (1):
-      net: tile: fix unused variable warning
-
-Chris Wilson (2):
-      drm/i915: Only mark the ctx as initialised after a SET_CONTEXT operation
-      drm/i915: Hold the table lock whilst walking the file's idr and
-counting the objects in debugfs
-
-Christian Riesch (1):
-      ptp: In the testptp utility, use clock_adjtime from glibc when available
-
-Christoph Lameter (1):
-      MAINTAINERS: SLAB maintainer update
-
-Dan Carpenter (2):
-      drm/exynos: change zero to NULL for sparse
-      Documentation: add section about git to email-clients.txt
-
-Daniel Borkmann (3):
-      net: sctp: propagate sysctl errors from proc_do* properly
-      net: sctp: check proc_dointvec result in proc_sctp_do_auth
-      MIPS: BPF JIT: Fix build error.
-
-Daniel Mack (3):
-      net: phylib: add link_change_notify callback to phy device
-      net: phy: at803x: use #defines for supported PHY ids
-      net: phy: at803x: Add support for hardware reset
-
-Dave Jones (2):
-      tcp: remove unnecessary tcp_sk assignment.
-      hyperv: fix apparent cut-n-paste error in send path teardown
-
-David Henningsson (4):
-      ALSA: hda - Fix usage of "model" module parameter
-      ALSA: hda - Add pin quirk for Dell XPS 15
-      ALSA: hda - Make a SND_HDA_PIN_QUIRK macro
-      ALSA: hda - Make the pin quirk tables use the SND_HDA_PIN_QUIRK macro
-
-David Rientjes (2):
-      mm, hotplug: probe interface is available on several platforms
-      mm, pcp: allow restoring percpu_pagelist_fraction default
-
-David S. Miller (1):
-      Revert "net: return actual error on register_queue_kobjects"
-
-David Vrabel (2):
-      xen-netfront: fix oops when disconnected from backend
-      xen-netfront: recreate queues correctly when reconnecting
-
-Denis Carikli (1):
-      ARM: dts: imx51-eukrea-mbimxsd51-baseboard: unbreak esdhc.
-
-Don Zickus (1):
-      kernel/watchdog.c: remove preemption restrictions when
-restarting lockup detector
-
-Doug Anderson (1):
-      ARM: EXYNOS: Don't rely on firmware's secondary_cpu_start for mcpm
-
-Eric Dumazet (1):
-      ipv4: fix dst race in sk_dst_get()
-
-Ezequiel Garcia (2):
-      ARM: mvebu: enable Dove SoC in mvebu_v7_defconfig
-      ARM: mvebu: Fix broken SoC ID detection
-
-Fabian Frederick (1):
-      drm/msm: use PAGE_ALIGNED instead of IS_ALIGNED(PAGE_SIZE)
-
-Fabio Estevam (2):
-      ARM: 8068/1: scoop: Remove unused variable
-      ARM: imx_v6_v7_defconfig: Enable CONFIG_IMX_IPUV3_CORE
-
-Fengguang Wu (1):
-      net: phy: at803x: fix coccinelle warnings
-
-Florian Westphal (2):
-      netfilter: ctnetlink: fix refcnt leak in dying/unconfirmed list dumper
-      netfilter: nf_nat: fix oops on netns removal
-
-Fugang Duan (3):
-      ARM: imx6sl: add missing enet clock for imx6sl
-      ARM: dts: imx6sl: correct the fec ipg clock source
-      net: fec: Don't clear IPV6 header checksum field when IP
-accelerator enable
-
-Gavin Shan (1):
-      powerpc/kerenl: Enable EEH for IO accessors
-
-Graham Williams (1):
-      regulator: bcm590xx: fix vbus name
-
-Greg Kroah-Hartman (3):
-      lzo: properly check for overruns
-      lz4: ensure length does not wrap
-      lz4: fix another possible overrun
-
-Gregory CLEMENT (1):
-      ARM: mvebu: Fix the improper use of the compatible string
-armada38x using a wildcard
-
-Grygorii Strashko (1):
-      mfd: ab8500: Fix dt irq mapping
-
-Gu Zheng (1):
-      bio: remove unused macro bip_vec_idx()
-
-Hugh Dickins (5):
-      tmpfs: ZERO_RANGE and COLLAPSE_RANGE not currently supported
-      mm: thp: fix DEBUG_PAGEALLOC oops in copy_page_rep()
-      mm: let mm_find_pmd fix buggy race with THP fault
-      shmem: fix faulting into a hole while it's punched
-      mm: fix crashes from mbind() merging vmas
-
-Ilya Dryomov (1):
-      rbd: handle parent_overlap on writes correctly
-
-Imre Deak (1):
-      drm/i915: cache hw power well enabled state
-
-Inki Dae (1):
-      drm/exynos: hdmi: fix power order issue
-
-Jan Beulich (1):
-      swiotlb: don't assume PA 0 is invalid
-
-Jani Nikula (1):
-      drm/i915: default to having backlight if VBT not available
-
-Jean Delvare (3):
-      isdn: hisax: Merge Kconfig ifs
-      isdn: hisax: Drop duplicate Kconfig entry
-      ptp: ptp_pch depends on x86_32
-
-Jeff Layton (1):
-      cifs: revalidate mapping prior to satisfying read_iter request
-with cache=loose
-
-Jens Axboe (4):
-      Revert "block: add __init to blkcg_policy_register"
-      Revert "block: add __init to elv_register"
-      block: add support for limiting gaps in SG lists
-      blk-mq: blk_mq_start_hw_queue() should use blk_mq_run_hw_queue()
-
-Jiang Liu (1):
-      iommu/vt-d: fix bug in handling multiple RMRRs for the same PCI device
-
-Jie Liu (1):
-      net: return actual error on register_queue_kobjects
-
-Jiri Kosina (1):
-      floppy: format block0 read error message properly
-
-Joe Perches (1):
-      checkpatch: reduce false positives when checking void function
-return statements
-
-Joerg Roedel (1):
-      iommu/amd: Fix small race between invalidate_range_end/start
-
-Johan Hedberg (9):
-      Bluetooth: Fix incorrectly overriding conn->src_type
-      Bluetooth: Fix check for connection encryption
-      Bluetooth: Fix SSP acceptor just-works confirmation without MITM
-      Bluetooth: Add clarifying comment for conn->auth_type
-      Bluetooth: Fix setting correct authentication information for SMP STK
-      Bluetooth: Fix indicating discovery state when canceling inquiry
-      Bluetooth: Refactor discovery stopping into its own function
-      Bluetooth: Reuse hci_stop_discovery function when cleaning up HCI state
-      Bluetooth: Fix locking of hdev when calling into SMP code
-
-Joonsoo Kim (2):
-      slab: fix oops when reading /proc/slab_allocators
-      DMA, CMA: fix possible memory leak
-
-Josef Gajdusek (1):
-      hwmon: (emc1403) Fix missing 'select REGMAP_I2C' in Kconfig
-
-Jukka Taimisto (1):
-      Bluetooth: Fix deadlock in l2cap_conn_del()
-
-Julian Anastasov (1):
-      ipvs: stop tot_stats estimator only under CONFIG_SYSCTL
-
-Julien D'Ascenzio (1):
-      hwmon: (gpio-fan) Change name used in hwmon_device_register_with_groups
-
-Jürg Billeter (1):
-      spi: sh-sci: fix use-after-free in sh_sci_spi_remove()
-
-Keerthy (2):
-      regulator: tps65218: Add the missing of_node assignment in probe
-      regulator: tps65218: Correct the the config register for LDO1
-
-Kees Cook (1):
-      net: filter: fix upper BPF instruction limit
-
-Ken-ichirou MATSUZAWA (1):
-      netfilter: ctnetlink: add zone size to length
-
-Kumar Gala (1):
-      tty: serial: msm: Fix section mismatch warning
-
-Lars Ellenberg (1):
-      drbd: fix NULL pointer deref in blk_add_request_payload
-
-Laura Abbott (1):
-      ARM: 8086/1: Set memblock limit for nommu
-
-Laurent Dufour (1):
-      powerpc/module: Fix TOC symbol CRC
-
-Lee Jones (1):
-      ARM: stih41x: Rename stih416-b2020-revE.dts to stih416-b2020e.dts
-
-Leela Krishna Amudala (1):
-      ARM: EXYNOS: Use wfi macro in platform_do_lowpower
-
-Levente Kurusa (1):
-      TC: Handle device_register() errors.
-
-Li RongQing (2):
-      8021q: fix a potential memory leak
-      cxgb4: Not need to hold the adap_rcu_lock lock when read adap_rcu_list
-
-Linus Torvalds (1):
-      Linux 3.16-rc3
-
-Linus Walleij (1):
-      ARM: integrator: fix OF-related regression
-
-Marcin Kraglak (1):
-      Bluetooth: Allow change security level on ATT_CID in slave role
-
-Marek Vasut (2):
-      ARM: dts: mx5: Fix IPU port node placement
-      ARM: dts: mx5: Move the display out of soc {} node
-
-Markos Chandras (18):
-      MIPS: uasm: Add s3s1s2 instruction builder
-      MIPS: uasm: Add SLT uasm instruction
-      MIPS: mm: uasm: Fix lh micro-assembler instruction
-      MIPS: bpf: Use the LO register to get division's quotient
-      MIPS: bpf: Return error code if the offset is a negative number
-      MIPS: bpf: Use 'andi' instead of 'and' for the VLAN cases
-      MIPS: bpf: Add SEEN_SKB to flags when looking for the PKT_TYPE
-      MIPS: bpf: Fix branch conditional for BPF_J{GT/GE} cases
-      MIPS: bpf: Use correct mask for VLAN_TAG case
-      MIPS: bpf: Fix return values for VLAN_TAG_PRESENT case
-      MIPS: bpf: Use pr_debug instead of pr_warn for unhandled opcodes
-      MIPS: bpf: Fix is_range() semantics
-      MIPS: bpf: Drop update_on_xread and always initialize the X register
-      MIPS: BPF: Prevent kernel fall over for >=32bit shifts
-      MIPS: bpf: Fix PKT_TYPE case for big-endian cores
-      MIPS: BPF: Use 32 or 64-bit load instruction to load an address
-to register
-      MIPS: bpf: Fix stack space allocation for BPF memwords on MIPS64
-      MIPS: MSC: Prevent out-of-bounds writes to MIPS SC ioremap'd region
-
-Matwey V. Kornilov (1):
-      drm/msm: Replace type of paddr to uint32_t.
-
-Maxime Ripard (1):
-      net: allwinner: emac: Add missing free_irq
-
-Mengdong Lin (1):
-      ALSA: hda - restore BCLK M/N values when resuming HSW/BDW
-display controller
-
-Michael Braun (2):
-      rt2800usb:fix efuse detection
-      rt2800usb:fix hang during firmware load
-
-Michael Ellerman (9):
-      powerpc: Remove ancient DEBUG_SIG code
-      powerpc: Add ppc_global_function_entry()
-      powerpc/ftrace: Fix typo in mask of opcode
-      powerpc/ftrace: Fix inverted check of create_branch()
-      powerpc/ftrace: Fix nop of modules on 64bit LE (ABIv2)
-      powerpc/ftrace: Use pr_fmt() to namespace error messages
-      powerpc/kprobes: Fix jprobes on ABI v2 (LE)
-      selftests/powerpc: Use the test harness for the TM DSCR test
-      powerpc/powernv: Remove OPAL v1 takeover
-
-Michael S. Tsirkin (2):
-      vhost-scsi: don't open-code kvfree
-      iovec: move memcpy_from/toiovecend to lib/iovec.c
-
-Micky Ching (1):
-      drivers/memstick/host/rtsx_pci_ms.c: add cancel_work when remove driver
-
-Mikulas Patocka (1):
-      iscsi-target: fix iscsit_del_np deadlock on unload
-
-Mirko Lindner (1):
-      skge: Added FS A8NE-FM to the list of 32bit DMA boards
-
-Mugunthan V N (1):
-      drivers: net: cpsw: fix dual EMAC stall when connected to same switch
-
-Naoya Horiguchi (1):
-      hugetlb: fix copy_hugetlb_page_range() to handle
-migration/hwpoisoned entry
-
-Naveen Krishna Chatradhi (2):
-      devicetree: bindings: Document murata vendor prefix
-      hwmon: (ntc_thermistor) Use the manufacturer name properly
-
-Neal Cardwell (1):
-      tcp: fix tcp_match_skb_to_sack() for unaligned SACK at end of an skb
-
-Neil Horman (1):
-      vmxnet3: adjust ring sizes when interface is down
-
-Nicholas Bellinger (6):
-      iscsi-target: Convert chap_server_compute_md5 to use kstrtoul
-      iscsi-target; Enforce 1024 byte maximum for CHAP_C key value
-      target: Fix left-over se_lun->lun_sep pointer OOPs
-      iscsi-target: Explicily clear login response PDU in exception path
-      tcm_loop: Fix memory leak in tcm_loop_submission_work error path
-      iscsi-target: Avoid rejecting incorrect ITT for Data-Out
-
-Nicolas Ferre (1):
-      misc: atmel_pwm: fix Kconfig symbols
-
-Nicolas Pitre (1):
-      ARM: 8080/1: mcpm.h: remove unused variable declaration
-
-Nikolay Borisov (1):
-      ARM: 8069/1: Make thread_save_fp macro aware of THUMB2 mode
-
-Nishanth Menon (1):
-      regulator: palmas: Fix SMPS enable/disable/is_enabled
-
-Noam Camus (1):
-      ARC: [SMP] Fix IPI IRQ registration
-
-Oleg Nesterov (3):
-      tracing: Fix syscall_*regfunc() vs copy_process() race
-      tracing: Change syscall_*regfunc() to check PF_KTHREAD and use
-for_each_process_thread()
-      tracing: syscall_regfunc() should not skip kernel threads
-
-Ondrej Zary (1):
-      tulip: Poll link status more frequently for Comet chips
-
-Or Gerlitz (2):
-      bonding: Advertize vxlan offload features when supported
-      net/mlx4_core: Fix the error flow when probing with invalid VF
-configuration
-
-Pablo Neira Ayuso (9):
-      netfilter: ctnetlink: fix dumping of dying/unconfirmed conntracks
-      netfilter: nf_tables: use RCU-safe list insertion when replacing rules
-      netfilter: nf_tables: use u32 for chain use counter
-      netfilter: nf_tables: decrement chain use counter when replacing rules
-      netfilter: nf_tables: fix wrong type in transaction when replacing rules
-      netfilter: nft_compat: call {target, match}->destroy() to cleanup entry
-      netfilter: nf_tables: indicate family when dumping set elements
-      netfilter: nft_nat: don't dump port information if unset
-      MAINTAINERS: merge ebtables into netfilter entry
-
-Paul Bolle (1):
-      ARC: remove checks for CONFIG_ARC_MMU_V4
-
-Paul Burton (3):
-      MIPS: smp-cps: Convert smp_mb__after_atomic_dec()
-      MIPS: pm-cps: convert smp_mb__*()
-      Revert "MIPS: Save/restore MSA context around signals"
-
-Peter Griffin (2):
-      ARM: STi: DT: Properly define sti-ethclk & stmmaceth for stih415/6
-      drm/msm: storage class should be before const qualifier
-
-Petr Tesarik (1):
-      kexec: save PG_head_mask in VMCOREINFO
-
-Philipp Zabel (1):
-      ARM: dts: imx6qdl-gw5xxx: Fix Linear Technology vendor prefix
-
-Phoebe Buckheister (1):
-      at86rf230: fix irq setup
-
-Pierre Ossman (1):
-      ALSA: hda - hdmi: call overridden init on resume
-
-Prashant Sreedharan (2):
-      tg3: Clear NETIF_F_TSO6 flag before doing software GSO
-      tg3: Change nvram command timeout value to 50ms
-
-Rafał Miłecki (3):
-      b43: disable 5 GHz on G-PHY
-      b43: fix typo in Kconfig (make B43_BUSES_BCMA_AND_SSB the
-default for real)
-      b43: fix frequency reported on G-PHY with /new/ firmware
-
-Rahul Sharma (5):
-      drm/exynos: set power state variable after enabling clocks and power
-      drm/exynos: stop mixer before gating clocks during poweroff
-      drm/exynos: allow multiple layer updates per vsync for mixer
-      drm/exynos: soft reset mixer before reconfigure after power-on
-      drm/exynos: enable vsync interrupt while waiting for vblank
-
-Ralf Baechle (3):
-      MIPS: math-emu: Work around limitations of older GCC.
-      MIPS: math-emu: Reduce code duplication.
-      MIPS: Lasat: Fix build error if CRC32 is not enabled.
-
-Randy Dunlap (1):
-      MAINTAINERS: exceptions for Documentation maintainer
-
-Rasmus Villemoes (1):
-      powerpc/macintosh/smu.c: Fix closing brace followed by if
-
-Richard Retanubun (1):
-      of: mdio: fixup of_phy_register_fixed_link parsing of new bindings
-
-Rickard Strandqvist (2):
-      Documentation/accounting/getdelays.c: add missing null-terminate
-after strncpy call
-      powerpc/cell: cbe_thermal.c: Cleaning up a variable is of the wrong type
-
-Rodrigo Vivi (1):
-      drm/i915: BDW: Adding Reserved PCI IDs.
-
-Romain Francoise (1):
-      vhost-net: don't open-code kvfree
-
-Russell King (5):
-      ARM: dts: cubox-i: add support for PWM-driven front panel LED
-      ARM: dts: hummingboard/cubox-i: move usb otg configuration to
-platform level
-      ARM: l2c: fix dependencies on PL310 errata symbols
-      ARM: perf: fix compiler warning with gcc 4.6.4 (and tidy code)
-      ARM: arm925: ensure assembly sets up writethrough mapping
-
-Sachin Kamat (1):
-      drm/exynos: Fix de-registration ordering
-
-Sascha Hauer (1):
-      ARM: dts: imx51-babbage: Fix esdhc setup
-
-Scott Mayhew (1):
-      nfs: Fix cache_validity check in nfs_write_pageuptodate()
-
-Scott Wood (1):
-      powerpc: Don't skip ePAPR spin-table CPUs
-
-Sebastian Hesselbarth (1):
-      ARM: dts: kirkwood: fix phy-connection-type for Guruplug
-
-Shobhit Kumar (1):
-      drm/i915: vlv_prepare_pll is only needed in case of non DSI interfaces
-
-Srinivas Kandagatla (1):
-      ARM: multi_v7_defconfig: Add QCOM GSBI driver
-
-Srivatsa S. Bhat (1):
-      CPU hotplug, smp: flush any pending IPI callbacks before CPU offline
-
-Stanislaw Gruszka (2):
-      rt2x00: disable TKIP on USB
-      rt2x00: fix rfkill regression on rt2500pci
-
-Stephane Viau (2):
-      drm/msm/hdmi: set hdp clock rate before prepare_enable
-      drm/msm: fix IOMMU cleanup for -EPROBE_DEFER
-
-Stephen Warren (1):
-      regulator: palmas: fix typo in enable_reg calculation
-
-Steve French (1):
-      [CIFS] fix mount failure with broken pathnames when smb3 mount
-with mapchars option
-
-Steven Miao (1):
-      mm: nommu: per-thread vma cache fix
-
-Steven Rostedt (1):
-      tracing: Add __field_struct macro for TRACE_EVENT()
-
-Suresh Reddy (1):
-      be2net: fix qnq mode detection on VFs
-
-Takashi Iwai (2):
-      ALSA: hda - Adjust speaker HPF and add LED support for HP Spectre 13
-      ALSA: usb-audio: Fix races at disconnection and PCM closing
-
-Tariq Saeed (1):
-      ocfs2: fix deadlock when two nodes are converting same lock from
-PR to EX and idletimeout closes conn
-
-Tejun Heo (1):
-      blkcg: fix use-after-free in __blkg_release_rcu() by making
-blkcg_gq refcnt an atomic_t
-
-Thadeu Lima de Souza Cascardo (1):
-      cxgb4: use dev_port to identify ports
-
-Thomas Petazzoni (2):
-      ARM: mvebu: select ARM_CPU_SUSPEND for Marvell EBU v7 platforms
-      ARM: 8076/1: mm: add support for HW coherent systems in PL310 cache
-
-Tim Harvey (2):
-      ARM: dts: imx6: ventana: fix include typo
-      ARM: dts: imx6: ventana: correct gw52xx sgtl5000 clock source
-
-Tobias Klauser (3):
-      trivial: net: filter: Fix typo in comment
-      trivial: net: filter: Change kerneldoc parameter order
-      net: filter: Use kcalloc/kmalloc_array to allocate arrays
-
-Tom Herbert (1):
-      net: fix setting csum_start in skb_segment()
-
-Tomasz Figa (2):
-      ARM: dts: fix reg sizes of GIC for exynos4
-      drm/exynos: dpi: Fix NULL pointer dereference with legacy bindings
-
-Trond Myklebust (2):
-      NFS: Clear NFS_INO_REVAL_PAGECACHE when we update the file size
-      NFS: Don't mark the data cache as invalid if it has been flushed
-
-Tyler Hall (2):
-      slip: Fix deadlock in write_wakeup
-      slcan: Port write_wakeup deadlock fix from slip
-
-Vineet Gupta (4):
-      ARC: fix build warning in devtree
-      ARC: Fix build breakage for !CONFIG_ARC_DW2_UNWIND
-      ARC: optimize kernel bss clearing in early boot code
-      ARC: [SMP] Enable icache coherency
-
-Vinod Koul (1):
-      ALSA: compress: fix the struct alignment to 4 bytes
-
-Wei Liu (1):
-      xen-netback: bookkeep number of active queues in our own module
-
-Wengang Wang (1):
-      ocfs2: refcount: take rw_lock in ocfs2_reflink
-
-Will Deacon (1):
-      ARM: 8087/1: ptrace: reload syscall number after secure_computing() check
-
-Xue jiufei (3):
-      ocfs2: revert "ocfs2: fix NULL pointer dereference when dismount
-and ocfs2rec simultaneously"
-      ocfs2/dlm: fix misuse of list_move_tail() in dlm_run_purge_list()
-      ocfs2/dlm: do not purge lockres that is queued for assert master
-
-Yiwen Jiang (1):
-      ocfs2: fix a tiny race when running dirop_fileop_racer
-
-Zhaowei Yuan (1):
-      drm: fix NULL pointer access by wrong ioctl
-
-alex chen (1):
-      ocfs2: should add inode into orphan dir after updating entry in
-ocfs2_rename()
-
-jiangyiwen (2):
-      ocfs2: manually do the iput once ocfs2_add_entry failed in
-ocfs2_symlink and ocfs2_mknod
-      ocfs2: do not return DLM_MIGRATE_RESPONSE_MASTERY_REF to avoid
-endless,loop during umount
