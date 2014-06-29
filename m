@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752535AbaF2IgX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jun 2014 04:36:23 -0400
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:43110 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752331AbaF2IgV (ORCPT
+	id S1752586AbaF2Im4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jun 2014 04:42:56 -0400
+Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:46421 "EHLO
+	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752344AbaF2Imx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jun 2014 04:36:21 -0400
-Date: Sun, 29 Jun 2014 10:36:17 +0200
-From: Andreas Mohr <andi@lisas.de>
-To: Kirill Tkhai <tkhai@yandex.ru>
-Cc: Andreas Mohr <andi@lisas.de>, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, mingo@redhat.com
-Subject: Re: [PATCH] sched: Transform resched_task() into resched_curr()
-Message-ID: <20140629083617.GA27653@rhlx01.hs-esslingen.de>
-References: <20140629072059.GA18636@rhlx01.hs-esslingen.de>
- <53AFC6FD.5070508@yandex.ru>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53AFC6FD.5070508@yandex.ru>
-X-Priority: none
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sun, 29 Jun 2014 04:42:53 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApkIAOfQr1NbsmJR/2dsb2JhbABZgw2sLwsFAW4BkgaHQIEHF3WECwJTI4EJETeIRgHGBBeFZIkjHYQtBY96h3qCaos/iD6CAIFEOw
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Amit Shah <amit.shah@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        virtualization@lists.linux-foundation.org
+Subject: [PATCH 1/1] virtio: console: remove unnecessary null test before debugfs_remove_recursive
+Date: Sun, 29 Jun 2014 10:41:33 +0200
+Message-Id: <1404031293-5678-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Fix checkpatch warning:
+WARNING: debugfs_remove_recursive(NULL) is safe this check is probably not required
 
-On Sun, Jun 29, 2014 at 11:57:49AM +0400, Kirill Tkhai wrote:
-> resched_curr(rq) means "to reschedule current task of the rq". It does
-> not reschedule rq itself.
-> 
-> We already have resched_cpu(), which has cpu agrument, and it's not
-> a task. I think this is just a similar case and we won't have any
-> problems because of this.
-> 
-> We only can reschedule the current task, and the patch underlines that fact.
+Cc: Amit Shah <amit.shah@redhat.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: virtualization@lists.linux-foundation.org
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ drivers/char/virtio_console.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-OK. I was arguing almost purely mechanically, and from a mechanical POV
-I had some doubts.
+diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
+index 60aafb8..b585b47 100644
+--- a/drivers/char/virtio_console.c
++++ b/drivers/char/virtio_console.c
+@@ -2262,8 +2262,7 @@ static int __init init(void)
+ unregister:
+ 	unregister_virtio_driver(&virtio_console);
+ free:
+-	if (pdrvdata.debugfs_dir)
+-		debugfs_remove_recursive(pdrvdata.debugfs_dir);
++	debugfs_remove_recursive(pdrvdata.debugfs_dir);
+ 	class_destroy(pdrvdata.class);
+ 	return err;
+ }
+@@ -2276,8 +2275,7 @@ static void __exit fini(void)
+ 	unregister_virtio_driver(&virtio_rproc_serial);
+ 
+ 	class_destroy(pdrvdata.class);
+-	if (pdrvdata.debugfs_dir)
+-		debugfs_remove_recursive(pdrvdata.debugfs_dir);
++	debugfs_remove_recursive(pdrvdata.debugfs_dir);
+ }
+ module_init(init);
+ module_exit(fini);
+-- 
+1.8.4.5
 
-I just noticed that there is a part touching rq->idle,
-and ISTR that idle task handling is "special"
-(after all that's the power management side of things).
-Specifically, rq->curr and rq->idle are distinct rq members
-(since they are distinct tasks AFAIK!),
-so there might now be some issues with task state tracking here
-(unless this cleanup happens to unify handling here anyway).
-
-Thanks,
-
-Andreas Mohr
