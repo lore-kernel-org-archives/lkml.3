@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752466AbaF2H4D (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jun 2014 03:56:03 -0400
-Received: from smtp-out-099.synserver.de ([212.40.185.99]:1034 "EHLO
-	smtp-out-099.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751700AbaF2H4B (ORCPT
+	id S1752500AbaF2IDT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jun 2014 04:03:19 -0400
+Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:25686 "EHLO
+	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751733AbaF2IDO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jun 2014 03:56:01 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 10088
-Message-ID: <53AFC68C.5010105@metafoo.de>
-Date: Sun, 29 Jun 2014 09:55:56 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.6.0
-MIME-Version: 1.0
-To: Fabian Frederick <fabf@skynet.be>, linux-kernel@vger.kernel.org
-CC: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org
-Subject: Re: [PATCH 1/1] MIPS: jz4740: remove unnecessary null test before
- debugfs_remove
-References: <1404026663-3510-1-git-send-email-fabf@skynet.be>
-In-Reply-To: <1404026663-3510-1-git-send-email-fabf@skynet.be>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sun, 29 Jun 2014 04:03:14 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApkIAEvHr1NbsmJR/2dsb2JhbABZgw2sLwsFAW4BkgaHQIEHF3WECwIkLyOBCRE3iEYBxgMXhWSJIx2ELQWPeod6gmqLP4g+g0Q7
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Joerg Roedel <joro@8bytes.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        iommu@lists.linux-foundation.org, devicetree@vger.kernel.org
+Subject: [PATCH 1/1] iommu/fsl_pamu: Remove unnecessary null test before kfree
+Date: Sun, 29 Jun 2014 10:01:26 +0200
+Message-Id: <1404028886-5060-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/29/2014 09:24 AM, Fabian Frederick wrote:
-> Fix checkpatch warning:
-> WARNING: debugfs_remove(NULL) is safe this check is probably not required
->
-> Cc: Ralf Baechle <ralf@linux-mips.org>
-> Cc: linux-mips@linux-mips.org
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+Fix checkpatch warning:
+WARNING: kfree(NULL) is safe this check is probably not required
 
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: iommu@lists.linux-foundation.org
+Cc: devicetree@vger.kernel.org
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ drivers/iommu/fsl_pamu_domain.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-Thanks.
-
-> ---
->   arch/mips/jz4740/clock-debugfs.c | 3 +--
->   1 file changed, 1 insertion(+), 2 deletions(-)
->
-> diff --git a/arch/mips/jz4740/clock-debugfs.c b/arch/mips/jz4740/clock-debugfs.c
-> index a8acdef..325422d0 100644
-> --- a/arch/mips/jz4740/clock-debugfs.c
-> +++ b/arch/mips/jz4740/clock-debugfs.c
-> @@ -87,8 +87,7 @@ void jz4740_clock_debugfs_add_clk(struct clk *clk)
->   /* TODO: Locking */
->   void jz4740_clock_debugfs_update_parent(struct clk *clk)
->   {
-> -	if (clk->debugfs_parent_entry)
-> -		debugfs_remove(clk->debugfs_parent_entry);
-> +	debugfs_remove(clk->debugfs_parent_entry);
->
->   	if (clk->parent) {
->   		char parent_path[100];
->
+diff --git a/drivers/iommu/fsl_pamu_domain.c b/drivers/iommu/fsl_pamu_domain.c
+index 93072ba..0009dff 100644
+--- a/drivers/iommu/fsl_pamu_domain.c
++++ b/drivers/iommu/fsl_pamu_domain.c
+@@ -1118,8 +1118,7 @@ static int fsl_pamu_set_windows(struct iommu_domain *domain, u32 w_count)
+ 	ret = pamu_set_domain_geometry(dma_domain, &domain->geometry,
+ 				((w_count > 1) ? w_count : 0));
+ 	if (!ret) {
+-		if (dma_domain->win_arr)
+-			kfree(dma_domain->win_arr);
++		kfree(dma_domain->win_arr);
+ 		dma_domain->win_arr = kzalloc(sizeof(struct dma_window) *
+ 							  w_count, GFP_ATOMIC);
+ 		if (!dma_domain->win_arr) {
+-- 
+1.8.4.5
 
