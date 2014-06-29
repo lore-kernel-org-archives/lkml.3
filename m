@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753345AbaF2QeU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jun 2014 12:34:20 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:38253 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751558AbaF2QeS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jun 2014 12:34:18 -0400
-X-IronPort-AV: E=Sophos;i="5.01,571,1400018400"; 
-   d="scan'208";a="82791420"
-Date: Sun, 29 Jun 2014 18:34:14 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: Joe Perches <joe@perches.com>
-cc: Himangi Saraogi <himangi774@gmail.com>,
-        Stefan Achatz <erazor_de@users.sourceforge.net>,
-        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] HID: roccat: Drop cast
-In-Reply-To: <1403848366.7977.92.camel@joe-AO725>
-Message-ID: <alpine.DEB.2.02.1406291832430.2036@localhost6.localdomain6>
-References: <20140626172852.GA2878@himangi-Dell>  <1403804286.7977.58.camel@joe-AO725>  <alpine.DEB.2.02.1406270729110.2016@localhost6.localdomain6> <1403848366.7977.92.camel@joe-AO725>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753247AbaF2Qjw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jun 2014 12:39:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34877 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751558AbaF2Qjv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jun 2014 12:39:51 -0400
+Date: Sun, 29 Jun 2014 18:39:33 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 05/18] perf tools: Add ordered_events_(get|put) interface
+Message-ID: <20140629163933.GA1407@krava.redhat.com>
+References: <1403103539-16807-1-git-send-email-jolsa@kernel.org>
+ <1403103539-16807-6-git-send-email-jolsa@kernel.org>
+ <53ADF8FC.5030604@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53ADF8FC.5030604@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Thu, 26 Jun 2014, Joe Perches wrote:
-
-> On Fri, 2014-06-27 at 07:29 +0200, Julia Lawall wrote:
-> > On Thu, 26 Jun 2014, Joe Perches wrote:
-> > > The cast of a const void * to a void * was odd.
-> > > 
-> > > Maybe a mechanism to verify appropriateness of
-> > > loss of constness for any pointer might be useful.
-> > 
-> > I tried the following, but didn't find anything interesting:
-> > 
-> > @disable drop_cast@
-> > type T;
-> > const T e;
-> > @@
-> > 
-> > * (T)e
+On Fri, Jun 27, 2014 at 05:06:36PM -0600, David Ahern wrote:
+> On 6/18/14, 8:58 AM, Jiri Olsa wrote:
+> >
+> >+static struct ordered_event*
+> >+ordered_events_get(struct ordered_events_queue *q, u64 timestamp)
+> >+{
+> >+	struct ordered_event *new;
+> >+
+> >+	new = alloc_event(q);
+> >+	if (new) {
+> >+		new->timestamp = timestamp;
+> >+		queue_event(q, new);
+> >+	}
+> >+
+> >+	return new;
+> >+}
 > 
-> What code does this match?
-> Do you have an example match?
-> 
-> This doesn't find a cast of a void type like:
-> 
-> void func(const void * const p)
-> {
-> 	char *p2 = p;
-> 
-> 	p2[0] = 1;
-> }
+> The _get name does not really correlate with what is happening -- ie.,
+> allocate a new event and add it to the queue. There is no reference taken
+> either.
 
-Is this a real example?  Because gcc complains about this sort of problem.  
-I made a semantic patch that detects this, but since gcc does the same 
-thing, it doesn't seem very interesting.  Coccinelle gives a few false 
-positives due to lack of type information.
+ook.. so how about ordered_events_alloc ordered_events_free
 
-julia
+> 
+> >+
+> >+static void
+> >+ordered_event_put(struct ordered_events_queue *q, struct ordered_event *iter)
+> >+{
+> >+	list_del(&iter->list);
+> >+	list_add(&iter->list, &q->cache);
+> >+	q->nr_events--;
+> >+}
+> 
+> Similarly here with the _put. In this case the function is moving the event
+> from one list to another. And how about something else for the name besides
+> iter -- oe, or oevent?
+
+how about 'event' ?
+
+jirka
