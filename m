@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752439AbaF2HRm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jun 2014 03:17:42 -0400
-Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:37887 "EHLO
-	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752322AbaF2HRl (ORCPT
+	id S1752563AbaF2HSW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jun 2014 03:18:22 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:56251 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752487AbaF2HSV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jun 2014 03:17:41 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApcIAMe8r1NbsmJR/2dsb2JhbABagw2sLwsFAW4BmUaBBxd1hGAjgRo3iEYBxX8XhWSJIx2ELQWaXos/iD6CAIFEOw
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Ralf Baechle <ralf@linux-mips.org>,
-        linux-mips@linux-mips.org
-Subject: [PATCH 1/1] MIPS: Octeon: remove unnecessary null test before debugfs_remove_recursive
-Date: Sun, 29 Jun 2014 09:16:19 +0200
-Message-Id: <1404026179-2910-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	Sun, 29 Jun 2014 03:18:21 -0400
+Date: Sun, 29 Jun 2014 12:48:15 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH] pinctrl: berlin: fix return value for dev_get_regmap
+Message-ID: <20140629071815.GA16257@himangi-Dell>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix checkpatch warning:
-WARNING: debugfs_remove_recursive(NULL) is safe this check is probably not required
+The failure value of dev_get_regmap is NULL. Hence, the return value is
+changed to -ENODEV.
 
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-mips@linux-mips.org
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
+A simplified version of the semantic match that finds this problem is as
+follows:
+
+// <smpl>
+@@
+expression e1;
+@@
+
+* if (!e1)
+  return PTR_ERR(e1);
+
+// </smpl>
+
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
 ---
- arch/mips/cavium-octeon/oct_ilm.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/pinctrl/berlin/berlin.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/mips/cavium-octeon/oct_ilm.c b/arch/mips/cavium-octeon/oct_ilm.c
-index 71b213d..2d68a39 100644
---- a/arch/mips/cavium-octeon/oct_ilm.c
-+++ b/arch/mips/cavium-octeon/oct_ilm.c
-@@ -194,8 +194,7 @@ err_irq:
- static __exit void oct_ilm_module_exit(void)
- {
- 	disable_timer(TIMER_NUM);
--	if (dir)
--		debugfs_remove_recursive(dir);
-+	debugfs_remove_recursive(dir);
- 	free_irq(OCTEON_IRQ_TIMER0 + TIMER_NUM, 0);
- }
+diff --git a/drivers/pinctrl/berlin/berlin.c b/drivers/pinctrl/berlin/berlin.c
+index edf5d2f..86db223 100644
+--- a/drivers/pinctrl/berlin/berlin.c
++++ b/drivers/pinctrl/berlin/berlin.c
+@@ -320,7 +320,7 @@ int berlin_pinctrl_probe(struct platform_device *pdev,
  
+ 	regmap = dev_get_regmap(&pdev->dev, NULL);
+ 	if (!regmap)
+-		return PTR_ERR(regmap);
++		return -ENODEV;
+ 
+ 	pctrl = devm_kzalloc(dev, sizeof(*pctrl), GFP_KERNEL);
+ 	if (!pctrl)
 -- 
-1.8.4.5
+1.9.1
 
