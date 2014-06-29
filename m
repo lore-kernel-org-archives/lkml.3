@@ -1,53 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753505AbaF2UNO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jun 2014 16:13:14 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:44492 "EHLO mail.skyhub.de"
+	id S1753501AbaF2UYT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jun 2014 16:24:19 -0400
+Received: from mail.kernel.org ([198.145.19.201]:34492 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753384AbaF2UNM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jun 2014 16:13:12 -0400
-Date: Sun, 29 Jun 2014 22:13:08 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Jan-Simon =?utf-8?Q?M=C3=B6ller?= <dl9pf@gmx.de>
-Cc: pageexec@freemail.hu, Behan Webster <behanw@converseincode.com>,
-        Mark Charlebois <mcharleb@gmail.com>, Michal Marek <mmarek@suse.cz>,
-        linux-kbuild@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: 3d3d6b847420 ("kbuild: LLVMLinux: Adapt warnings for compilation
- with clang")
-Message-ID: <20140629201308.GC12943@pd.tnic>
-References: <20140616130751.GD8170@pd.tnic>
- <539F0D55.31207.1DF87EFF@pageexec.freemail.hu>
- <2065274.H8oo5iWEkB@aragorn.auenland.lan>
+	id S1753277AbaF2UYQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jun 2014 16:24:16 -0400
+Message-ID: <53B075EB.6020301@kernel.org>
+Date: Sun, 29 Jun 2014 16:24:11 -0400
+From: Sasha Levin <sashal@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <2065274.H8oo5iWEkB@aragorn.auenland.lan>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Nick Krause <xerofoify@gmail.com>
+CC: rth@twiddle.net, ink@jurassic.park.msu.ru,
+        Matt Turner <mattst88@gmail.com>, linux-alpha@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] FIXME of file toploogy.h for alpha cpus
+References: <1403928469-9452-1-git-send-email-xerofoify@gmail.com>	<53AF1D25.10406@kernel.org> <CAPDOMVgRDos+UQ_hxGSt3Gph-hqd=Vri4i=JXm9h-2ekmK6bvg@mail.gmail.com>
+In-Reply-To: <CAPDOMVgRDos+UQ_hxGSt3Gph-hqd=Vri4i=JXm9h-2ekmK6bvg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Mon, Jun 16, 2014 at 05:48:01PM +0200, Jan-Simon Möller wrote:
-> Ok, let's wrap this case with 
+On 06/28/2014 11:03 PM, Nick Krause wrote:
+> I thought I compiled tested it maybe not. I thought M= would work for
+> alpha directory but maybe I have to enable in on x86.
+> I don't known if there is a way to do this.
+> Cheers Nick
 > 
-> ifeq ($(COMPILER),clang)
-> ...
-> endif
-> 
-> And we'll update the stale entries.
-> 
-> Patch to follow after some testing.
+> On Sat, Jun 28, 2014 at 3:53 PM, Sasha Levin <sashal@kernel.org> wrote:
+>> On 06/28/2014 12:07 AM, Nicholas Krause wrote:
+>>> This patch fixs the FIXME message in the function *cpumask_of_node
+>>> for using this function multiple times and the issue with recaluting
+>>> the cpu node mask when reusing this function.
+>>>
+>>> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+>>> ---
+>>>  arch/alpha/include/asm/topology.h | 3 +++
+>>>  1 file changed, 3 insertions(+)
+>>>
+>>> diff --git a/arch/alpha/include/asm/topology.h b/arch/alpha/include/asm/topology.h
+>>> index 9251e13..d301f66 100644
+>>> --- a/arch/alpha/include/asm/topology.h
+>>> +++ b/arch/alpha/include/asm/topology.h
+>>> @@ -31,6 +31,9 @@ static const struct cpumask *cpumask_of_node(int node)
+>>>       if (node == -1)
+>>>               return cpu_all_mask;
+>>>
+>>> +     else if (node == &node_to_cpumask_map[node])
+>>> +             return &node_to_cpumask_map[node];
+>>> +
+>>>       cpumask_clear(&node_to_cpumask_map[node]);
+>>>
+>>>       for_each_online_cpu(cpu) {
+>>>
+>>
+>> Since this patch doesn't even compile, care to tell us how you tested it?
+>>
+>>
+>> Thanks,
+>> Sasha
 
-any progress with the testing or should we simply revert?
+Please stop top posting.
 
-Thanks.
+Your explanation is missing the part about actually making sure that your patch
+works is missing, how did you intend to make sure that your patch doesn't
+break things?
 
--- 
-Regards/Gruss,
-    Boris.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Thanks,
+Sasha
