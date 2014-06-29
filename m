@@ -1,67 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753516AbaF2UfI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jun 2014 16:35:08 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:33754 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751169AbaF2UfG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jun 2014 16:35:06 -0400
-Date: Sun, 29 Jun 2014 22:35:04 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] vt: disable console blanking by default
-Message-ID: <20140629203504.GA11829@amd.pavel.ucw.cz>
-References: <20140618092730.GD22226@mother.pipebreaker.pl>
- <20140622163728.GA4461@amd.pavel.ucw.cz>
- <20140625114109.GD18532@mother.pipebreaker.pl>
+	id S1753522AbaF2Umf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jun 2014 16:42:35 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:41549 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752875AbaF2Ume (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jun 2014 16:42:34 -0400
+Date: Sun, 29 Jun 2014 22:42:31 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Jeshwanth Kumar N K <jeshkumar555@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [BUG] User process tainting in linux-next tree
+Message-ID: <20140629204231.GD12943@pd.tnic>
+References: <CAC-LjFtjS5RS9=Lvb090-0aEnSdR1a28Scve2gvTR3yAZtt+9g@mail.gmail.com>
+ <20140629191254.GA13271@pd.tnic>
+ <CAC-LjFsF1qAVPKJeYmR0+6wTVmCwo2TkC8bia-KmxQ3wyUXYaw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140625114109.GD18532@mother.pipebreaker.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAC-LjFsF1qAVPKJeYmR0+6wTVmCwo2TkC8bia-KmxQ3wyUXYaw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2014-06-25 13:41:09, Tomasz Torcz wrote:
-> On Sun, Jun 22, 2014 at 06:37:29PM +0200, Pavel Machek wrote:
-> > On Wed 2014-06-18 11:27:31, Tomasz Torcz wrote:
-> > > 
-> > > >From ea7cf47e3230eda63aa6c46092719437f9bbae8e Mon Sep 17 00:00:00 2001
-> > > From: Tomasz Torcz <tomek@pipebreaker.pl>
-> > > Date: Wed, 18 Jun 2014 11:18:06 +0200
-> > > Subject: [PATCH] vt: disable console blanking by default
-> > > 
-> > >   Remove default 10 minute blank interval. Instead: never blank by
-> > >   default.
-> > >   "Screensaving" is no longer useful.  Today it only provides
-> > >   obstacle when interacting with text console, especially through
-> > >   remote lights-out management solutions.
-> > > 
-> > > Signed-off-by: Tomasz Torcz <tomek@pipebreaker.pl>
-> > 
-> > Dunno. You'll kill an LCD if you let same image there for too
-> > long. Make it 10hours?
-> 
->   There is no practical difference between 10 minutes and 10 hours.  Both
-> are more than none.  This means that If I need to access console, it
-> will probably be blanked.  For some servers, console access is needed
-> less than once per year, if ever.  But IF the console need to be accessed,
-> there's a strong reason to it (some kind of fault), and having to press
-> anything to unblank may be invasive.
-> 
->  I would prefer to fix the issue at the source, instead of sticking "consoleblank=0"
-> in grub2.cfg on houndreds of boxes.  BTW, kernel already contains "consoleblank=0" in 
-> arch/arc/boot/dts/nsimosci.dts and arch/arm/boot/dts/omap3-lilly-a83x.dtsi 
-> 
->   Is LCD damage for currently produced LCDs real issue, still?
+Hi,
 
-Probably yes. Plus, people are still running CRTs and blanked screen
-still eats significantly less power. So "consoleblank=0" seems right
-solution for you, and current default still sounds right.
-									Pavel
+first of all, please do not top-post. Here's why:
+
+A: Because it messes up the order in which people normally read text.
+Q: Why is top-posting such a bad thing?
+A: Top-posting.
+Q: What is the most annoying thing in e-mail?
+
+> Yes booted by increase the buffer length, but the ignore_loglevel is
+> running continously for 5 minutes.
+
+Huh, what? I can't parse that sentence above.
+
+ignore_loglevel is another kernel cmdline parameter:
+
+        ignore_loglevel [KNL]
+                        Ignore loglevel setting - this will print /all/
+                        kernel messages to the console. Useful for debugging.
+                        We also add it as printk module parameter, so users
+                        could change it dynamically, usually by
+                        /sys/module/printk/parameters/ignore_loglevel.
+
+
+> So I ignored that and ran with
+> log_buf_len=500M ( because 10M also filled) only.
+> 
+> When I copied the dmesg, the size was 76M, so I attached only first
+> 1500 lines. Please find in below link.
+> 
+> https://bugzilla.kernel.org/show_bug.cgi?id=79171
+
+Ok, that's better. The warnings start spewing pretty early with the one
+below. Let's CC linux-mm.
+
+[    1.062658] registered taskstats version 1
+[    1.063400] ------------[ cut here ]------------
+[    1.063455] WARNING: CPU: 0 PID: 55 at kernel/res_counter.c:28 res_counter_uncharge_until+0x84/0x110()
+[    1.063513] Modules linked in:
+[    1.063516] CPU: 0 PID: 55 Comm: modprobe Not tainted 3.16.0-rc1-next-20140620+ #4
+[    1.063518] Hardware name: Dell Inc. Studio 1555/0C234M, BIOS A11 03/29/2010
+[    1.063520]  00000000 00000000 d34d7de4 c1648de3 00000000 d34d7e14 c105b74e c1822e40
+[    1.063524]  00000000 00000037 c183384f 0000001c c10dab24 c10dab24 d3c048c8 ffffffff
+[    1.063529]  00000000 d34d7e24 c105b812 00000009 00000000 d34d7e58 c10dab24 00000282
+[    1.063534] Call Trace:
+[    1.063538]  [<c1648de3>] dump_stack+0x41/0x52
+[    1.063541]  [<c105b74e>] warn_slowpath_common+0x7e/0xa0
+[    1.063543]  [<c10dab24>] ? res_counter_uncharge_until+0x84/0x110
+[    1.063546]  [<c10dab24>] ? res_counter_uncharge_until+0x84/0x110
+[    1.063548]  [<c105b812>] warn_slowpath_null+0x22/0x30
+[    1.063551]  [<c10dab24>] res_counter_uncharge_until+0x84/0x110
+[    1.063553]  [<c10dabc1>] res_counter_uncharge+0x11/0x20
+[    1.063557]  [<c117e975>] mem_cgroup_uncharge_end+0x85/0xa0
+[    1.063560]  [<c113acb1>] release_pages+0x71/0x1c0
+[    1.063563]  [<c1164072>] free_pages_and_swap_cache+0x92/0xb0
+[    1.063567]  [<c1151b63>] tlb_flush_mmu_free+0x23/0x40
+[    1.063570]  [<c11523cd>] tlb_flush_mmu+0x1d/0x30
+[    1.063572]  [<c11523f1>] tlb_finish_mmu+0x11/0x40
+[    1.063575]  [<c11588c7>] unmap_region+0x97/0xc0
+[    1.063577]  [<c1158c22>] ? vma_rb_erase+0xe2/0x1b0
+[    1.063580]  [<c115a8e3>] do_munmap+0x1c3/0x2d0
+[    1.063582]  [<c115aa27>] vm_munmap+0x37/0x50
+[    1.063584]  [<c115b710>] SyS_munmap+0x20/0x30
+[    1.063588]  [<c1650318>] sysenter_do_call+0x12/0x28
+[    1.063590] ---[ end trace 812035dd9a004e6c ]---
+
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
