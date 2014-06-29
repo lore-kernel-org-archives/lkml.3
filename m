@@ -1,164 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752971AbaF2Ldx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jun 2014 07:33:53 -0400
-Received: from mout.web.de ([212.227.15.14]:53593 "EHLO mout.web.de"
+	id S1753169AbaF2Lfl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jun 2014 07:35:41 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53380 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751001AbaF2Ldw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jun 2014 07:33:52 -0400
-Message-ID: <53AFF992.5030403@web.de>
-Date: Sun, 29 Jun 2014 13:33:38 +0200
-From: Jan Kiszka <jan.kiszka@web.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1751423AbaF2Lfi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jun 2014 07:35:38 -0400
+Message-ID: <53AFFA86.6000403@kernel.org>
+Date: Sun, 29 Jun 2014 12:37:42 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Hui Wang <jason77.wang@gmail.com>, tiwai@suse.de,
-        alsa-devel@alsa-project.org
-CC: hui.wang@canonical.com, alex.hung@canonical.com, yk@canonical.com,
-        david.henningsson@canonical.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [V2 PATCH] ALSA: hda - Enable mute/mic-mute LEDs for more Thinkpads
- with Conexant codec
-References: <1385534846-20829-1-git-send-email-hui.wang@canonical.com>
-In-Reply-To: <1385534846-20829-1-git-send-email-hui.wang@canonical.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="q8vmVHoes7wLPVuAAe5uf02lp4XqxmLIq"
-X-Provags-ID: V03:K0:Cxjc82uxYnK7XSn0A2/EqWULYRvoQTRNka8plW4f3oHhscKcQCA
- cbvs9lZkcdVBKVEtnC4SFXz9UlZdhJih3Fq5s/B2pTZW2DNutsJGOqFQWdA15yPW3V3EpDP
- BZ4CQ3+wajfGvEtioHAdJ+oqaNeCOw9mrObRXideAdTkfatapBSqJzboDmVAy/TVjTGFGhx
- YVjW70w7GrxawKR6gI/AA==
+To: Chanwoo Choi <cw00.choi@samsung.com>, ch.naveen@samsung.com,
+        t.figa@samsung.com, kgene.kim@samsung.com
+CC: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rdunlap@infradead.org, sachin.kamat@linaro.org,
+        kyungmin.park@samsung.com, linux-iio@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCHv5 3/4] iio: devicetree: Add DT binding documentation for
+ Exynos3250 ADC
+References: <1403843406-28229-1-git-send-email-cw00.choi@samsung.com> <1403843406-28229-4-git-send-email-cw00.choi@samsung.com>
+In-Reply-To: <1403843406-28229-4-git-send-email-cw00.choi@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---q8vmVHoes7wLPVuAAe5uf02lp4XqxmLIq
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
-
-On 2013-11-27 07:47, Hui Wang wrote:
-> Most Thinkpad Edge series laptops use conexant codec, so far although
-> the codecs have different minor Vendor Id and minor Subsystem Id,
-> they all belong to the cxt5066 family, this change can make the
-> mute/mic-mute LEDs support more generic among cxt_5066 family.
->=20
-> This design refers to the similar solution for the realtek codec
-> ALC269 family in the patch_realtek.c.
->=20
-> Cc: Alex Hung <alex.hung@canonical.com>
-> Cc: David Henningsson <david.henningsson@canonical.com>
-> Signed-off-by: Hui Wang <hui.wang@canonical.com>
+On 27/06/14 05:30, Chanwoo Choi wrote:
+> This patch add DT binding documentation for Exynos3250 ADC IP. Exynos3250 has
+> special clock ('sclk_adc') for ADC which provide clock to internal ADC.
+>
+> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> Reviewed-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+One trivial inline.  As a fairly obvious extension of the existing bindings
+'probably' doesn't really need a dt maintainer ack (or the 3 weeks)
 > ---
->  sound/pci/hda/patch_conexant.c | 23 +++++++++++++++++++++++
->  1 file changed, 23 insertions(+)
->=20
-> diff --git a/sound/pci/hda/patch_conexant.c b/sound/pci/hda/patch_conex=
-ant.c
-> index c205bb1..1f2717f 100644
-> --- a/sound/pci/hda/patch_conexant.c
-> +++ b/sound/pci/hda/patch_conexant.c
-> @@ -3244,9 +3244,29 @@ enum {
->  #if IS_ENABLED(CONFIG_THINKPAD_ACPI)
-> =20
->  #include <linux/thinkpad_acpi.h>
-> +#include <acpi/acpi.h>
-> =20
->  static int (*led_set_func)(int, bool);
-> =20
-> +static acpi_status acpi_check_cb(acpi_handle handle, u32 lvl, void *co=
-ntext,
-> +				 void **rv)
-> +{
-> +	bool *found =3D context;
-> +	*found =3D true;
-> +	return AE_OK;
-> +}
+>   .../devicetree/bindings/arm/samsung/exynos-adc.txt | 26 ++++++++++++++++++++--
+>   1 file changed, 24 insertions(+), 2 deletions(-)
+>
+> diff --git a/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt b/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
+> index 5d49f2b..b87749a 100644
+> --- a/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
+> +++ b/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
+> @@ -14,14 +14,22 @@ Required properties:
+>   				for exynos4412/5250 controllers.
+>   			Must be "samsung,exynos-adc-v2" for
+>   				future controllers.
+> +			Must be "samsung,exynos3250-adc-v2" for
+> +				for controllers compatible with ADC of
+for for
+> +				Exynos3250.
+>   - reg:			Contains ADC register address range (base address and
+>   			length) and the address of the phy enable register.
+>   - interrupts: 		Contains the interrupt information for the timer. The
+>   			format is being dependent on which interrupt controller
+>   			the Samsung device uses.
+>   - #io-channel-cells = <1>; As ADC has multiple outputs
+> -- clocks		From common clock binding: handle to adc clock.
+> -- clock-names		From common clock binding: Shall be "adc".
+> +- clocks		From common clock bindings: handles to clocks specified
+> +			in "clock-names" property, in the same order.
+> +- clock-names		From common clock bindings: list of clock input names
+> +			used by ADC block:
+> +			- "adc" : ADC bus clock
+> +			- "sclk_adc" : ADC special clock (only for Exynos3250
+> +				       and compatible ADC block)
+>   - vdd-supply		VDD input supply.
+>
+>   Note: child nodes can be added for auto probing from device tree.
+> @@ -41,6 +49,20 @@ adc: adc@12D10000 {
+>   	vdd-supply = <&buck5_reg>;
+>   };
+>
+> +Example: adding device info in dtsi file for Exynos3250 with additional sclk
 > +
-> +static bool is_thinkpad(struct hda_codec *codec)
-> +{
-> +	bool found =3D false;
-> +	if (codec->subsystem_id >> 16 !=3D 0x17aa)
-> +		return false;
-> +	if (ACPI_SUCCESS(acpi_get_devices("LEN0068", acpi_check_cb, &found, N=
-ULL)) && found)
-> +		return true;
-> +	found =3D false;
-> +	return ACPI_SUCCESS(acpi_get_devices("IBM0068", acpi_check_cb, &found=
-, NULL)) && found;
-> +}
+> +adc: adc@126C0000 {
+> +	compatible = "samsung,exynos3250-adc-v2";
+> +	reg = <0x126C0000 0x100>, <0x10020718 0x4>;
+> +	interrupts = <0 137 0>;
+> +	#io-channel-cells = <1>;
+> +	io-channel-ranges;
 > +
->  static void update_tpacpi_mute_led(void *private_data, int enabled)
->  {
->  	struct hda_codec *codec =3D private_data;
-> @@ -3279,6 +3299,8 @@ static void cxt_fixup_thinkpad_acpi(struct hda_co=
-dec *codec,
->  	bool removefunc =3D false;
-> =20
->  	if (action =3D=3D HDA_FIXUP_ACT_PROBE) {
-> +		if (!is_thinkpad(codec))
-> +			return;
->  		if (!led_set_func)
->  			led_set_func =3D symbol_request(tpacpi_led_set);
->  		if (!led_set_func) {
-> @@ -3494,6 +3516,7 @@ static const struct snd_pci_quirk cxt5066_fixups[=
-] =3D {
->  	SND_PCI_QUIRK(0x17aa, 0x3975, "Lenovo U300s", CXT_FIXUP_STEREO_DMIC),=
+> +	clocks = <&cmu CLK_TSADC>, <&cmu CLK_SCLK_TSADC>;
+> +	clock-names = "adc", "sclk_adc";
+> +
+> +	vdd-supply = <&buck5_reg>;
+> +};
+>
+>   Example: Adding child nodes in dts file
+>
+>
 
->  	SND_PCI_QUIRK(0x17aa, 0x3977, "Lenovo IdeaPad U310", CXT_FIXUP_STEREO=
-_DMIC),
->  	SND_PCI_QUIRK(0x17aa, 0x397b, "Lenovo S205", CXT_FIXUP_STEREO_DMIC),
-> +	SND_PCI_QUIRK_VENDOR(0x17aa, "Thinkpad", CXT_FIXUP_THINKPAD_ACPI),
->  	SND_PCI_QUIRK(0x1c06, 0x2011, "Lemote A1004", CXT_PINCFG_LEMOTE_A1004=
-),
->  	SND_PCI_QUIRK(0x1c06, 0x2012, "Lemote A1205", CXT_PINCFG_LEMOTE_A1205=
-),
->  	{}
->=20
-
-Starting with this patch, my Lenovo Thinkpad X121e netbook (it's without
-any mute LEDs, BTW, there is only a power LED) considers the power
-button as hard reset. I have to exclude my machine from that ACPI fixup
-(this is on top of current Linus master):
-
-diff --git a/sound/pci/hda/thinkpad_helper.c b/sound/pci/hda/thinkpad_hel=
-per.c
-index 6ba0b55..7e1a179 100644
---- a/sound/pci/hda/thinkpad_helper.c
-+++ b/sound/pci/hda/thinkpad_helper.c
-@@ -21,7 +21,8 @@ static acpi_status acpi_check_cb(acpi_handle handle, u3=
-2 lvl, void *context,
- static bool is_thinkpad(struct hda_codec *codec)
- {
- 	bool found =3D false;
--	if (codec->subsystem_id >> 16 !=3D 0x17aa)
-+	if (codec->subsystem_id >> 16 !=3D 0x17aa ||
-+	    codec->subsystem_id =3D=3D 0x17aa21ec)
- 		return false;
- 	if (ACPI_SUCCESS(acpi_get_devices("LEN0068", acpi_check_cb, &found, NUL=
-L)) && found)
- 		return true;
-
-
-Is that the way to address it? Then I can send a proper patch. Any hints
-regarding the "why" will be incorporated into its description.
-
-Thanks,
-Jan
-
-
---q8vmVHoes7wLPVuAAe5uf02lp4XqxmLIq
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlOv+ZgACgkQitSsb3rl5xR5TwCfQU8n5BYp0T49g6reQKzKORbI
-VrkAoM70vChOimUjK8qpKpx+PLtbeS9b
-=G9pw
------END PGP SIGNATURE-----
-
---q8vmVHoes7wLPVuAAe5uf02lp4XqxmLIq--
