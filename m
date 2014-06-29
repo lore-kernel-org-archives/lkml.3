@@ -1,54 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752500AbaF2IDT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jun 2014 04:03:19 -0400
-Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:25686 "EHLO
-	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751733AbaF2IDO (ORCPT
+	id S1752619AbaF2ID6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jun 2014 04:03:58 -0400
+Received: from forward7.mail.yandex.net ([77.88.61.37]:58070 "EHLO
+	forward7.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751733AbaF2IDx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jun 2014 04:03:14 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApkIAEvHr1NbsmJR/2dsb2JhbABZgw2sLwsFAW4BkgaHQIEHF3WECwIkLyOBCRE3iEYBxgMXhWSJIx2ELQWPeod6gmqLP4g+g0Q7
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Joerg Roedel <joro@8bytes.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        iommu@lists.linux-foundation.org, devicetree@vger.kernel.org
-Subject: [PATCH 1/1] iommu/fsl_pamu: Remove unnecessary null test before kfree
-Date: Sun, 29 Jun 2014 10:01:26 +0200
-Message-Id: <1404028886-5060-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	Sun, 29 Jun 2014 04:03:53 -0400
+X-Greylist: delayed 360 seconds by postgrey-1.27 at vger.kernel.org; Sun, 29 Jun 2014 04:03:53 EDT
+X-Yandex-Uniq: 414d194f-6957-4af7-b325-2fc31fbd8e4f
+Authentication-Results: smtp7.mail.yandex.net; dkim=pass header.i=@yandex.ru
+Message-ID: <53AFC6FD.5070508@yandex.ru>
+Date: Sun, 29 Jun 2014 11:57:49 +0400
+From: Kirill Tkhai <tkhai@yandex.ru>
+Reply-To: tkhai@yandex.ru
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+MIME-Version: 1.0
+To: Andreas Mohr <andi@lisas.de>
+CC: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@redhat.com
+Subject: Re: [PATCH] sched: Transform resched_task() into resched_curr()
+References: <20140629072059.GA18636@rhlx01.hs-esslingen.de>
+In-Reply-To: <20140629072059.GA18636@rhlx01.hs-esslingen.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix checkpatch warning:
-WARNING: kfree(NULL) is safe this check is probably not required
+Hi, Andreas,
 
-Cc: Joerg Roedel <joro@8bytes.org>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: iommu@lists.linux-foundation.org
-Cc: devicetree@vger.kernel.org
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- drivers/iommu/fsl_pamu_domain.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+On 29.06.2014 11:20, Andreas Mohr wrote:
+> Hi,
+> 
+> I cannot speak too much about scheduler specifics, but from a structural POV
+> I'm unsure about such a change (into this direction).
+> 
+> We seem to be going from a nicely fine-grained function
+> (task-struct-specific, and thus operating on task scope alone,
+> except for interesting lockdep_assert_held() outer-env validation-only parts)
+> to one which has a *broader* scope (namely, wholly rq-parameterized),
+> thus now drawing the rq dependency into the equation:
+> this patch introduces access to rq->curr specifics *within
+> function implementation* (as the first measure within a function,
+> which in itself might be considered a smell),
+> and it needlessly widens the scope of concerns of this handler
+> by now enabling full access to any rq struct members there -
+> we'll then end up with the next guy introducing
+> some strange dependency on other rq parts within this handler
+> which that guy would not have been tempted to do in the first place
+> if it had remained strictly task-based......
+> 
+> I'd wager that the size benefit possibly dominantly stems from
+> getting rid of rq->curr indirection lookup at the many user call sites.
+> Thus it might be a good idea
+> to instead create a non-inlined resched_curr() wrapper
+> which merely forwards to resched_task(),
+> to have the currently strictly task-focussed (pun intended ;) approach
+> of resched_task() properly preserved.
+> 
+> Generally spoken, this incident and the "interesting" status quo
+> of very often doing an open-coded rq->curr lookup when calling resched_task()
+> could prompt a rethinking of relationship of task vs. rq,
+> since by clearing up (and focussing on) design intentions,
+> one could "automatically" end up
+> with more elegant and thus better function implementations.
 
-diff --git a/drivers/iommu/fsl_pamu_domain.c b/drivers/iommu/fsl_pamu_domain.c
-index 93072ba..0009dff 100644
---- a/drivers/iommu/fsl_pamu_domain.c
-+++ b/drivers/iommu/fsl_pamu_domain.c
-@@ -1118,8 +1118,7 @@ static int fsl_pamu_set_windows(struct iommu_domain *domain, u32 w_count)
- 	ret = pamu_set_domain_geometry(dma_domain, &domain->geometry,
- 				((w_count > 1) ? w_count : 0));
- 	if (!ret) {
--		if (dma_domain->win_arr)
--			kfree(dma_domain->win_arr);
-+		kfree(dma_domain->win_arr);
- 		dma_domain->win_arr = kzalloc(sizeof(struct dma_window) *
- 							  w_count, GFP_ATOMIC);
- 		if (!dma_domain->win_arr) {
--- 
-1.8.4.5
+resched_curr(rq) means "to reschedule current task of the rq". It does
+not reschedule rq itself.
 
+We already have resched_cpu(), which has cpu agrument, and it's not
+a task. I think this is just a similar case and we won't have any
+problems because of this.
+
+We only can reschedule the current task, and the patch underlines that fact.
+
+> 
+> 
+> Thank you for your activities in the scheduler area!
+> 
+> Andreas Mohr
+> 
+
+Thanks,
+Kirill
