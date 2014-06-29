@@ -1,44 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753047AbaF2LHK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jun 2014 07:07:10 -0400
-Received: from 81.95.159.82-static.reverse.softlayer.com ([81.95.159.82]:41247
-	"EHLO sayangmalaysia.org" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752939AbaF2LHI (ORCPT
+	id S1752993AbaF2LRX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jun 2014 07:17:23 -0400
+Received: from mail-bn1lp0140.outbound.protection.outlook.com ([207.46.163.140]:59355
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752600AbaF2LRW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jun 2014 07:07:08 -0400
-X-Greylist: delayed 4659 seconds by postgrey-1.27 at vger.kernel.org; Sun, 29 Jun 2014 07:07:08 EDT
-Date: Sun, 29 Jun 2014 04:20:43 -0500
-From: Sayang Malaysia <info@sayangmalaysia.org>
-To: sayangmalaysiaku@sayangmalaysia.org
-Subject: Belasungkawa Ustaz. Ana Menangis
-Message-ID: <20140629092043.GA8992@sayangmalaysia.org>
+	Sun, 29 Jun 2014 07:17:22 -0400
+From: Varun Sethi <Varun.Sethi@freescale.com>
+To: Fabian Frederick <fabf@skynet.be>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Grant Likely <grant.likely@linaro.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: RE: [PATCH 1/1] iommu/fsl_pamu: Remove unnecessary null test before
+ kfree
+Thread-Topic: [PATCH 1/1] iommu/fsl_pamu: Remove unnecessary null test before
+ kfree
+Thread-Index: AQHPk3CXIo3RIcTaikyf52TOCEiCnpuH8Cfw
+Date: Sun, 29 Jun 2014 11:17:19 +0000
+Message-ID: <751871ee83714b789251885d787ae09f@BL2PR03MB468.namprd03.prod.outlook.com>
+References: <1404028886-5060-1-git-send-email-fabf@skynet.be>
+In-Reply-To: <1404028886-5060-1-git-send-email-fabf@skynet.be>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.88.169.1]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:
+x-forefront-prvs: 025796F161
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(13464003)(199002)(189002)(51704005)(377454003)(95666004)(80022001)(66066001)(74662001)(81542001)(74502001)(85306003)(79102001)(77982001)(46102001)(76482001)(4396001)(76576001)(76176999)(54356999)(83322001)(19580405001)(19580395003)(64706001)(74316001)(106356001)(105586002)(107046002)(50986999)(99396002)(20776003)(106116001)(33646001)(86362001)(101416001)(81342001)(83072002)(85852003)(87936001)(2656002)(21056001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB468;H:BL2PR03MB468.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - sayangmalaysia.org
-X-AntiAbuse: Original Domain - sayangmalaysia.org
-X-AntiAbuse: Originator/Caller UID/GID - [501 500] / [47 12]
-X-AntiAbuse: Sender Address Domain - sayangmalaysia.org
-X-Get-Message-Sender-Via: sayangmalaysia.org: authenticated_id: sayangma/primary_hostname/system user
-X-Source: /usr/bin/mutt
-X-Source-Args: mutt demikeadilanku -s Islamic State of Iraq and The Levant 
-X-Source-Dir: sayangmalaysia.org:/server-blast
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Assalamualaikum w.b.t.
 
-AJK PAS Pusat, Datuk Abu Bakar Chik dan pembantunya, Hasmizi Hasan
-terlibat dalam kemalangan di KM 390 Lebuh raya Pantai Timur laluan
-Bukit Besi-Ajil jam 3.16 pagi tadi.
 
-Beliau meninggal dunia dalam perjalanan ke Hospital Hulu Terengganu
-sementara pembantunya cedera..............................
- 
-Selebihnya di  http://penyokongpas.wordpress.com
+> -----Original Message-----
+> From: iommu-bounces@lists.linux-foundation.org [mailto:iommu-
+> bounces@lists.linux-foundation.org] On Behalf Of Fabian Frederick
+> Sent: Sunday, June 29, 2014 1:31 PM
+> To: linux-kernel@vger.kernel.org
+> Cc: Fabian Frederick; Grant Likely; iommu@lists.linux-foundation.org;
+> devicetree@vger.kernel.org
+> Subject: [PATCH 1/1] iommu/fsl_pamu: Remove unnecessary null test before
+> kfree
+> 
+> Fix checkpatch warning:
+> WARNING: kfree(NULL) is safe this check is probably not required
+> 
+> Cc: Joerg Roedel <joro@8bytes.org>
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: iommu@lists.linux-foundation.org
+> Cc: devicetree@vger.kernel.org
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> ---
+>  drivers/iommu/fsl_pamu_domain.c | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+> 
+> diff --git a/drivers/iommu/fsl_pamu_domain.c
+> b/drivers/iommu/fsl_pamu_domain.c index 93072ba..0009dff 100644
+> --- a/drivers/iommu/fsl_pamu_domain.c
+> +++ b/drivers/iommu/fsl_pamu_domain.c
+> @@ -1118,8 +1118,7 @@ static int fsl_pamu_set_windows(struct iommu_domain
+> *domain, u32 w_count)
+>  	ret = pamu_set_domain_geometry(dma_domain, &domain->geometry,
+>  				((w_count > 1) ? w_count : 0));
+>  	if (!ret) {
+> -		if (dma_domain->win_arr)
+> -			kfree(dma_domain->win_arr);
+> +		kfree(dma_domain->win_arr);
+>  		dma_domain->win_arr = kzalloc(sizeof(struct dma_window) *
+>  							  w_count, GFP_ATOMIC);
+>  		if (!dma_domain->win_arr) {
 
-Penyokong Pas
+Acked-by: Varun Sethi <varun.sethi@freescale.com>
