@@ -1,111 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751510AbaF2FUz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jun 2014 01:20:55 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:62177 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750813AbaF2FUx (ORCPT
+	id S1751820AbaF2GOB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jun 2014 02:14:01 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:45207 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751203AbaF2GOA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jun 2014 01:20:53 -0400
-From: Anil Belur <askb23@gmail.com>
-X-Google-Original-From: Anil Belur
-To: m.chehab@samsung.com, crope@iki.fi, gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Anil Belur <askb23@gmail.com>
-Subject: [PATCH 1/1] staging: media: msi3101: sdr-msi3101.c - replace with time_before_eq()
-Date: Sun, 29 Jun 2014 10:50:16 +0530
-Message-Id: <1404019216-4726-1-git-send-email-askb23@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Sun, 29 Jun 2014 02:14:00 -0400
+From: Antonio Borneo <borneo.antonio@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        David Barksdale <dbarksdale@uplogix.com>
+Cc: linux-kernel@vger.kernel.org, Antonio Borneo <borneo.antonio@gmail.com>
+Subject: [PATCH] HID: cp2112: fix gpio value in gpio_direction_output
+Date: Sun, 29 Jun 2014 14:13:48 +0800
+Message-Id: <1404022428-2816-1-git-send-email-borneo.antonio@gmail.com>
+X-Mailer: git-send-email 2.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Anil Belur <askb23@gmail.com>
+CP2112 does not offer an atomic method to set both gpio
+direction and value.
+Also it does not permit to set gpio value before putting
+gpio in output. In fact, accordingly to Silicon Labs
+AN495, Rev. 0.2, cpt. 4.4, the HID report to set gpio
+values "does not affect any pins that are not configured
+as outputs".
 
-- this fix replaces jiffies interval comparision with safer function to
-  avoid any overflow and wrap around ?
+This is confirmed on evaluation board CP2112-EK.
+With current driver, after execute:
+	echo in > /sys/class/gpio/gpio248/direction
+	echo low > /sys/class/gpio/gpio248/direction
+gpio output is still high. Only after a following
+	echo low > /sys/class/gpio/gpio248/direction
+gpio output gets low.
 
-Signed-off-by: Anil Belur <askb23@gmail.com>
+Fix driver by changing order of operations; first set
+direction then set value.
+
+The drawback of this new sequence is that we can have
+a pulse on gpio pin when direction is changed from
+input to output-low, but this cannot be avoided on
+current CP2112.
+
+Signed-off-by: Antonio Borneo <borneo.antonio@gmail.com>
 ---
- drivers/staging/media/msi3101/sdr-msi3101.c | 16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+ drivers/hid/hid-cp2112.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/media/msi3101/sdr-msi3101.c b/drivers/staging/media/msi3101/sdr-msi3101.c
-index 08d0d09..b828857 100644
---- a/drivers/staging/media/msi3101/sdr-msi3101.c
-+++ b/drivers/staging/media/msi3101/sdr-msi3101.c
-@@ -180,6 +180,7 @@ static int msi3101_convert_stream_504(struct msi3101_state *s, u8 *dst,
- {
- 	int i, i_max, dst_len = 0;
- 	u32 sample_num[3];
-+	unsigned long expires;
+diff --git a/drivers/hid/hid-cp2112.c b/drivers/hid/hid-cp2112.c
+index 56be85a..3952d90 100644
+--- a/drivers/hid/hid-cp2112.c
++++ b/drivers/hid/hid-cp2112.c
+@@ -240,8 +240,6 @@ static int cp2112_gpio_direction_output(struct gpio_chip *chip,
+ 	u8 buf[5];
+ 	int ret;
  
- 	/* There could be 1-3 1024 bytes URB frames */
- 	i_max = src_len / 1024;
-@@ -208,7 +209,8 @@ static int msi3101_convert_stream_504(struct msi3101_state *s, u8 *dst,
+-	cp2112_gpio_set(chip, offset, value);
+-
+ 	ret = hid_hw_raw_request(hdev, CP2112_GPIO_CONFIG, buf,
+ 				       sizeof(buf), HID_FEATURE_REPORT,
+ 				       HID_REQ_GET_REPORT);
+@@ -260,6 +258,12 @@ static int cp2112_gpio_direction_output(struct gpio_chip *chip,
+ 		return ret;
  	}
  
- 	/* calculate samping rate and output it in 10 seconds intervals */
--	if ((s->jiffies_next + msecs_to_jiffies(10000)) <= jiffies) {
-+	expires = s->jiffies_next + msecs_to_jiffies(10000);
-+	if (time_before_eq(expires, jiffies)) {
- 		unsigned long jiffies_now = jiffies;
- 		unsigned long msecs = jiffies_to_msecs(jiffies_now) - jiffies_to_msecs(s->jiffies_next);
- 		unsigned int samples = sample_num[i_max - 1] - s->sample;
-@@ -332,6 +334,7 @@ static int msi3101_convert_stream_384(struct msi3101_state *s, u8 *dst,
- {
- 	int i, i_max, dst_len = 0;
- 	u32 sample_num[3];
-+	unsigned long expires;
++	/*
++	 * Set gpio value when output direction is already set,
++	 * as specified in AN495, Rev. 0.2, cpt. 4.4
++	 */
++	cp2112_gpio_set(chip, offset, value);
++
+ 	return 0;
+ }
  
- 	/* There could be 1-3 1024 bytes URB frames */
- 	i_max = src_len / 1024;
-@@ -360,7 +363,8 @@ static int msi3101_convert_stream_384(struct msi3101_state *s, u8 *dst,
- 	}
- 
- 	/* calculate samping rate and output it in 10 seconds intervals */
--	if ((s->jiffies_next + msecs_to_jiffies(10000)) <= jiffies) {
-+	expires = s->jiffies_next + msecs_to_jiffies(10000);
-+	if (time_before_eq(expires, jiffies)) {
- 		unsigned long jiffies_now = jiffies;
- 		unsigned long msecs = jiffies_to_msecs(jiffies_now) - jiffies_to_msecs(s->jiffies_next);
- 		unsigned int samples = sample_num[i_max - 1] - s->sample;
-@@ -397,6 +401,7 @@ static int msi3101_convert_stream_336(struct msi3101_state *s, u8 *dst,
- {
- 	int i, i_max, dst_len = 0;
- 	u32 sample_num[3];
-+	unsigned long expires;
- 
- 	/* There could be 1-3 1024 bytes URB frames */
- 	i_max = src_len / 1024;
-@@ -425,7 +430,8 @@ static int msi3101_convert_stream_336(struct msi3101_state *s, u8 *dst,
- 	}
- 
- 	/* calculate samping rate and output it in 10 seconds intervals */
--	if ((s->jiffies_next + msecs_to_jiffies(10000)) <= jiffies) {
-+	expires = s->jiffies_next + msecs_to_jiffies(10000);
-+	if (time_before_eq(expires, jiffies)) {
- 		unsigned long jiffies_now = jiffies;
- 		unsigned long msecs = jiffies_to_msecs(jiffies_now) - jiffies_to_msecs(s->jiffies_next);
- 		unsigned int samples = sample_num[i_max - 1] - s->sample;
-@@ -460,6 +466,7 @@ static int msi3101_convert_stream_252(struct msi3101_state *s, u8 *dst,
- {
- 	int i, i_max, dst_len = 0;
- 	u32 sample_num[3];
-+	unsigned long expires;
- 
- 	/* There could be 1-3 1024 bytes URB frames */
- 	i_max = src_len / 1024;
-@@ -488,7 +495,8 @@ static int msi3101_convert_stream_252(struct msi3101_state *s, u8 *dst,
- 	}
- 
- 	/* calculate samping rate and output it in 10 seconds intervals */
--	if ((s->jiffies_next + msecs_to_jiffies(10000)) <= jiffies) {
-+	expires = s->jiffies_next + msecs_to_jiffies(10000);
-+	if (time_before_eq(expires, jiffies)) {
- 		unsigned long jiffies_now = jiffies;
- 		unsigned long msecs = jiffies_to_msecs(jiffies_now) - jiffies_to_msecs(s->jiffies_next);
- 		unsigned int samples = sample_num[i_max - 1] - s->sample;
 -- 
-1.9.1
+2.0.1
 
