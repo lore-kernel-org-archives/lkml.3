@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752484AbaF2Gqe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jun 2014 02:46:34 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:49632 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752423AbaF2Gqc (ORCPT
+	id S1752303AbaF2HH1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jun 2014 03:07:27 -0400
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:50979 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751578AbaF2HH0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jun 2014 02:46:32 -0400
-Date: Sun, 29 Jun 2014 09:46:27 +0300
-From: Gleb Natapov <gleb@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, lkml <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, x86-ml <x86@kernel.org>,
-        kvm@vger.kernel.org, =?utf-8?B?SsO2cmcgUsO2ZGVs?= <joro@8bytes.org>
-Subject: Re: __schedule #DF splat
-Message-ID: <20140629064626.GD18167@minantech.com>
-References: <20140625153227.GA13845@pd.tnic>
- <20140625202650.GC13845@pd.tnic>
- <20140627101831.GB23153@pd.tnic>
- <53AD586A.40900@redhat.com>
- <20140627115545.GC23153@pd.tnic>
- <53AD5D27.2090505@redhat.com>
- <20140627121053.GD23153@pd.tnic>
- <20140628114431.GB4373@pd.tnic>
+	Sun, 29 Jun 2014 03:07:26 -0400
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: "Gideon D'souza" <gidisrael@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: How is an OS bound to the Linux kernel
+Date: Sun, 29 Jun 2014 09:07:20 +0200
+Message-ID: <1989531.qh1zHAaciq@merkaba>
+User-Agent: KMail/4.14 pre (Linux/3.16.0-rc2-tp520; KDE/4.13.1; x86_64; git-f170e55; 2014-06-25)
+In-Reply-To: <CAPNrq4xV+LiOhbMhBfHFuf68E1D7XCq87EJuTq0n88UMGdcg4g@mail.gmail.com>
+References: <CAPNrq4xV+LiOhbMhBfHFuf68E1D7XCq87EJuTq0n88UMGdcg4g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140628114431.GB4373@pd.tnic>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 28, 2014 at 01:44:31PM +0200, Borislav Petkov wrote:
->  qemu-system-x86-20240 [006] ...1  9406.484134: kvm_page_fault: address 7fffb62ba318 error_code 2
->  qemu-system-x86-20240 [006] ...1  9406.484136: kvm_inj_exception: #PF (0x2)a
-> 
-> kvm injects the #PF into the guest.
-> 
->  qemu-system-x86-20240 [006] d..2  9406.484136: kvm_entry: vcpu 1
->  qemu-system-x86-20240 [006] d..2  9406.484137: kvm_exit: reason PF excp rip 0xffffffff8161130f info 2 7fffb62ba318
->  qemu-system-x86-20240 [006] ...1  9406.484138: kvm_page_fault: address 7fffb62ba318 error_code 2
->  qemu-system-x86-20240 [006] ...1  9406.484141: kvm_inj_exception: #DF (0x0)
-> 
-> Second #PF at the same address and kvm injects the #DF.
-> 
-> BUT(!), why?
-> 
-> I probably am missing something but WTH are we pagefaulting at a
-> user address in context_switch() while doing a lockdep call, i.e.
-> spin_release? We're not touching any userspace gunk there AFAICT.
-> 
-> Is this an async pagefault or so which kvm is doing so that the guest
-> rip is actually pointing at the wrong place?
-> 
-There is nothing in the trace that point to async pagefault as far as I see.
+Am Sonntag, 29. Juni 2014, 11:54:32 schrieb Gideon D'souza:
+> hey guys,
 
-> Or something else I'm missing, most probably...
-> 
-Strange indeed. Can you also enable kvmmmu tracing? You can also instrument
-kvm_multiple_exception() to see which two exception are combined into #DF.
+Hi Gideon,
 
---
-			Gleb.
+> I generally manage to understand the various pieces of the linux
+> kernel and what their functions are.
+> 
+> However, one thing I don't fully understand is how is any OS, say
+> fedora (which is what I use) is bound to the kernel.
+> 
+> Lets say I want to just build a system on top of linux that boots and
+> keeps printing hello world to the screen. When the user presses a key
+> it exits.
+> 
+> How would I begin to do this? What should I read or look at?
+> 
+> I'm guessing it's a two part thing right, one I need to somehow tell
+> the kernel what to do after booting, and second I'll have to tell the
+> kernel what the screen is ? Where would I find more information about
+> this?
+> 
+> Note: I actually want to make the program I described so tips on how
+> to play with grub to get the whole thing to work would also be
+> helpful.
+
+Look for init= kernel parameter (there is a kernel-parameter documentation file 
+in kernel doc drawer).
+
+And I suggest looking through things like Linux From Scratch. I am not sure 
+how useful this is to your case.
+
+Ciao,
+-- 
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
