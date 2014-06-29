@@ -1,122 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849AbaF2Kci (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jun 2014 06:32:38 -0400
-Received: from mout.web.de ([212.227.17.11]:53970 "EHLO mout.web.de"
+	id S1752885AbaF2Kpv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jun 2014 06:45:51 -0400
+Received: from mout.web.de ([212.227.15.14]:64886 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752692AbaF2Kcg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jun 2014 06:32:36 -0400
-Message-ID: <53AFEB16.5040608@web.de>
-Date: Sun, 29 Jun 2014 12:31:50 +0200
-From: Jan Kiszka <jan.kiszka@web.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1752718AbaF2Kpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jun 2014 06:45:50 -0400
+Message-ID: <53AFEE55.7080906@users.sourceforge.net>
+Date: Sun, 29 Jun 2014 12:45:41 +0200
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@kernel.org>
-CC: Borislav Petkov <bp@alien8.de>, Paolo Bonzini <pbonzini@redhat.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, x86-ml <x86@kernel.org>,
-        kvm@vger.kernel.org,
-        =?ISO-8859-1?Q?J=F6rg_R=F6?= =?ISO-8859-1?Q?del?= 
-	<joro@8bytes.org>
-Subject: Re: __schedule #DF splat
-References: <20140625153227.GA13845@pd.tnic> <20140625202650.GC13845@pd.tnic> <20140627101831.GB23153@pd.tnic> <53AD586A.40900@redhat.com> <20140627115545.GC23153@pd.tnic> <53AD5D27.2090505@redhat.com> <20140627121053.GD23153@pd.tnic> <20140628114431.GB4373@pd.tnic> <20140629064626.GD18167@minantech.com> <53AFE2B3.5080300@web.de> <20140629102403.GE18167@minantech.com>
-In-Reply-To: <20140629102403.GE18167@minantech.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="VuMFLpfKmhqVFAP8Vep9B6kILAI6waV6D"
-X-Provags-ID: V03:K0:cCVkCVY8ZS28tKEYwG9Gg/nYPSJTEw8junmWmCxUOlTwL8XMd7y
- OrZqbaGM3dvlPjU0qcYbeIdtzdBZ719Dqa5LgTKZfLdBATaCYj0cOBbj0ZOXsqRk/eAx4Ig
- fM+p/Wym/3vk11+XsQLLg6v/fYic/MYCTPgiEqdJGVaggQqEEeZx0UgQTbwcBXmiEPTK8uZ
- wj08/4cKts8VspudmAB+A==
+To: Julia Lawall <julia.lawall@lip6.fr>
+CC: Coccinelle <cocci@systeme.lip6.fr>, linux-kernel@vger.kernel.org,
+        Fabian Frederick <fabf@skynet.be>
+Subject: Re: [Cocci] [PATCH V3] scripts/coccinelle/free: Delete NULL test
+ before freeing functions?
+References: <1403945247-21549-1-git-send-email-fabf@skynet.be> <53AE8613.8080600@users.sourceforge.net> <20140628120052.0b8670723928a967808dd544@skynet.be> <53AEA927.3010100@users.sourceforge.net> <20140628140157.98304218ad0919b1567cfee4@skynet.be> <53AF2CE6.5020300@users.sourceforge.net> <alpine.DEB.2.02.1406282326010.2022@localhost6.localdomain6>
+In-Reply-To: <alpine.DEB.2.02.1406282326010.2022@localhost6.localdomain6>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:LtTuMBEB3Z3/eVcj2JfTP1FMFKLcHIbhk60w527qNSeG1fPRkfu
+ m+DlOU+tGD5Uz28103YUa8C1QN+dUxSyXMV2ruH6SHjPUlN9XhhYTyJdnLf+WisYGl25YlZ
+ QILBq8kJMDiBj/q5AjhvpNNazBq1HFtV47YyRix8wPFk9N8Ii91Lzgzqzuob97JozdtpI/L
+ GRacX97QlH1ooIllddlFQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---VuMFLpfKmhqVFAP8Vep9B6kILAI6waV6D
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+>> https://systeme.lip6.fr/pipermail/cocci/2014-March/000676.html
+>> http://marc.info/?l=kernel-janitors&m=139405971927100&w=2
+> Regular expressions do not allow taking advantage of the optimizations 
+> provided by Coccinelle and are not easy for a reader to understand.
 
-On 2014-06-29 12:24, Gleb Natapov wrote:
-> On Sun, Jun 29, 2014 at 11:56:03AM +0200, Jan Kiszka wrote:
->> On 2014-06-29 08:46, Gleb Natapov wrote:
->>> On Sat, Jun 28, 2014 at 01:44:31PM +0200, Borislav Petkov wrote:
->>>>  qemu-system-x86-20240 [006] ...1  9406.484134: kvm_page_fault: addr=
-ess 7fffb62ba318 error_code 2
->>>>  qemu-system-x86-20240 [006] ...1  9406.484136: kvm_inj_exception: #=
-PF (0x2)a
->>>>
->>>> kvm injects the #PF into the guest.
->>>>
->>>>  qemu-system-x86-20240 [006] d..2  9406.484136: kvm_entry: vcpu 1
->>>>  qemu-system-x86-20240 [006] d..2  9406.484137: kvm_exit: reason PF =
-excp rip 0xffffffff8161130f info 2 7fffb62ba318
->>>>  qemu-system-x86-20240 [006] ...1  9406.484138: kvm_page_fault: addr=
-ess 7fffb62ba318 error_code 2
->>>>  qemu-system-x86-20240 [006] ...1  9406.484141: kvm_inj_exception: #=
-DF (0x0)
->>>>
->>>> Second #PF at the same address and kvm injects the #DF.
->>>>
->>>> BUT(!), why?
->>>>
->>>> I probably am missing something but WTH are we pagefaulting at a
->>>> user address in context_switch() while doing a lockdep call, i.e.
->>>> spin_release? We're not touching any userspace gunk there AFAICT.
->>>>
->>>> Is this an async pagefault or so which kvm is doing so that the gues=
-t
->>>> rip is actually pointing at the wrong place?
->>>>
->>> There is nothing in the trace that point to async pagefault as far as=
- I see.
->>>
->>>> Or something else I'm missing, most probably...
->>>>
->>> Strange indeed. Can you also enable kvmmmu tracing? You can also inst=
-rument
->>> kvm_multiple_exception() to see which two exception are combined into=
- #DF.
->>>
->>
->> FWIW, I'm seeing the same issue here (likely) on an E-450 APU. It
->> disappears with older KVM (didn't bisect yet, some 3.11 is fine) and
->> when patch-disabling the vmport in QEMU.
->>
->> Let me know if I can help with the analysis.
->>
-> Bisection would be great of course. Once thing that is special about
-> vmport that comes to mind is that it reads vcpu registers to userspace =
-and
-> write them back. IIRC "info registers" does the same. Can you see if th=
-e
-> problem is reproducible with disabled vmport, but doing "info registers=
-"
-> in qemu console? Although trace does not should any exists to userspace=
-
-> near the failure...
-
-Yes, info registers crashes the guest after a while as well (with
-different backtrace due to different context).
-
-Jan
+I find that the application of regexes is appropriate here.
+Would you like to optimise any implementation details from my general
+approach?
 
 
+>> https://systeme.lip6.fr/pipermail/cocci/2014-March/000677.html
+>> http://marc.info/?l=kernel-janitors&m=139405983727148&w=2
+> This is not safe due to the use of when any.  You have no guarantee that 
+> there is not a dereference of input in the matched region, or that the 
+> value of input is still the argument value at the point of the test.
 
---VuMFLpfKmhqVFAP8Vep9B6kILAI6waV6D
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Do you suggest to make the desired detection of input parameter
+validation a bit safer?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlOv6xYACgkQitSsb3rl5xRtygCbBqrueG9HDLZF0WrFgqogkiSW
-kBoAoKXnVd5uI/6y+MN2OfXf+or6WZYw
-=O35h
------END PGP SIGNATURE-----
-
---VuMFLpfKmhqVFAP8Vep9B6kILAI6waV6D--
+Regards,
+Markus
