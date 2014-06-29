@@ -1,127 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752396AbaF2Gnv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jun 2014 02:43:51 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:48111 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752318AbaF2Gnu (ORCPT
+	id S1752484AbaF2Gqe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jun 2014 02:46:34 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:49632 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752423AbaF2Gqc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jun 2014 02:43:50 -0400
-Date: Sun, 29 Jun 2014 12:13:43 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: julia.lawall@lip6.fr
-Subject: [PATCH] usb: host: ohci-tmio: Use managed interfaces for resource
- allocation
-Message-ID: <20140629064342.GA15330@himangi-Dell>
+	Sun, 29 Jun 2014 02:46:32 -0400
+Date: Sun, 29 Jun 2014 09:46:27 +0300
+From: Gleb Natapov <gleb@kernel.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, lkml <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, x86-ml <x86@kernel.org>,
+        kvm@vger.kernel.org, =?utf-8?B?SsO2cmcgUsO2ZGVs?= <joro@8bytes.org>
+Subject: Re: __schedule #DF splat
+Message-ID: <20140629064626.GD18167@minantech.com>
+References: <20140625153227.GA13845@pd.tnic>
+ <20140625202650.GC13845@pd.tnic>
+ <20140627101831.GB23153@pd.tnic>
+ <53AD586A.40900@redhat.com>
+ <20140627115545.GC23153@pd.tnic>
+ <53AD5D27.2090505@redhat.com>
+ <20140627121053.GD23153@pd.tnic>
+ <20140628114431.GB4373@pd.tnic>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140628114431.GB4373@pd.tnic>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves resources allocated using ioremap or
-dma_declare_coherent_memory to the corresponding managed interface. The
-function calls to free the allocated resources are removed in the probe
-and remove functions as they are no longer required. Also, some labels
-are done away with and a new label err added to make it less specific to
-the context.
+On Sat, Jun 28, 2014 at 01:44:31PM +0200, Borislav Petkov wrote:
+>  qemu-system-x86-20240 [006] ...1  9406.484134: kvm_page_fault: address 7fffb62ba318 error_code 2
+>  qemu-system-x86-20240 [006] ...1  9406.484136: kvm_inj_exception: #PF (0x2)a
+> 
+> kvm injects the #PF into the guest.
+> 
+>  qemu-system-x86-20240 [006] d..2  9406.484136: kvm_entry: vcpu 1
+>  qemu-system-x86-20240 [006] d..2  9406.484137: kvm_exit: reason PF excp rip 0xffffffff8161130f info 2 7fffb62ba318
+>  qemu-system-x86-20240 [006] ...1  9406.484138: kvm_page_fault: address 7fffb62ba318 error_code 2
+>  qemu-system-x86-20240 [006] ...1  9406.484141: kvm_inj_exception: #DF (0x0)
+> 
+> Second #PF at the same address and kvm injects the #DF.
+> 
+> BUT(!), why?
+> 
+> I probably am missing something but WTH are we pagefaulting at a
+> user address in context_switch() while doing a lockdep call, i.e.
+> spin_release? We're not touching any userspace gunk there AFAICT.
+> 
+> Is this an async pagefault or so which kvm is doing so that the guest
+> rip is actually pointing at the wrong place?
+> 
+There is nothing in the trace that point to async pagefault as far as I see.
 
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
----
- drivers/usb/host/ohci-tmio.c | 36 ++++++++++++------------------------
- 1 file changed, 12 insertions(+), 24 deletions(-)
+> Or something else I'm missing, most probably...
+> 
+Strange indeed. Can you also enable kvmmmu tracing? You can also instrument
+kvm_multiple_exception() to see which two exception are combined into #DF.
 
-diff --git a/drivers/usb/host/ohci-tmio.c b/drivers/usb/host/ohci-tmio.c
-index bb40958..1a6034f 100644
---- a/drivers/usb/host/ohci-tmio.c
-+++ b/drivers/usb/host/ohci-tmio.c
-@@ -203,10 +203,8 @@ static int ohci_hcd_tmio_drv_probe(struct platform_device *dev)
- 		return -EINVAL;
- 
- 	hcd = usb_create_hcd(&ohci_tmio_hc_driver, &dev->dev, dev_name(&dev->dev));
--	if (!hcd) {
--		ret = -ENOMEM;
--		goto err_usb_create_hcd;
--	}
-+	if (!hcd)
-+		return -ENOMEM;
- 
- 	hcd->rsrc_start = regs->start;
- 	hcd->rsrc_len = resource_size(regs);
-@@ -215,30 +213,31 @@ static int ohci_hcd_tmio_drv_probe(struct platform_device *dev)
- 
- 	spin_lock_init(&tmio->lock);
- 
--	tmio->ccr = ioremap(config->start, resource_size(config));
-+	tmio->ccr = devm_ioremap(&dev->dev, config->start,
-+				 resource_size(config));
- 	if (!tmio->ccr) {
- 		ret = -ENOMEM;
--		goto err_ioremap_ccr;
-+		goto err;
- 	}
- 
--	hcd->regs = ioremap(hcd->rsrc_start, hcd->rsrc_len);
-+	hcd->regs = devm_ioremap(&dev->dev, hcd->rsrc_start, hcd->rsrc_len);
- 	if (!hcd->regs) {
- 		ret = -ENOMEM;
--		goto err_ioremap_regs;
-+		goto err;
- 	}
- 
--	if (!dma_declare_coherent_memory(&dev->dev, sram->start,
-+	if (!dmam_declare_coherent_memory(&dev->dev, sram->start,
- 				sram->start,
- 				resource_size(sram),
- 				DMA_MEMORY_MAP | DMA_MEMORY_EXCLUSIVE)) {
- 		ret = -EBUSY;
--		goto err_dma_declare;
-+		goto err;
- 	}
- 
- 	if (cell->enable) {
- 		ret = cell->enable(dev);
- 		if (ret)
--			goto err_enable;
-+			goto err;
- 	}
- 
- 	tmio_start_hc(dev);
-@@ -259,16 +258,8 @@ err_add_hcd:
- 	tmio_stop_hc(dev);
- 	if (cell->disable)
- 		cell->disable(dev);
--err_enable:
--	dma_release_declared_memory(&dev->dev);
--err_dma_declare:
--	iounmap(hcd->regs);
--err_ioremap_regs:
--	iounmap(tmio->ccr);
--err_ioremap_ccr:
--	usb_put_hcd(hcd);
--err_usb_create_hcd:
--
-+err:
-+	usb_put_hcr(hcd);
- 	return ret;
- }
- 
-@@ -282,9 +273,6 @@ static int ohci_hcd_tmio_drv_remove(struct platform_device *dev)
- 	tmio_stop_hc(dev);
- 	if (cell->disable)
- 		cell->disable(dev);
--	dma_release_declared_memory(&dev->dev);
--	iounmap(hcd->regs);
--	iounmap(tmio->ccr);
- 	usb_put_hcd(hcd);
- 
- 	return 0;
--- 
-1.9.1
-
+--
+			Gleb.
