@@ -1,275 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753306AbaF2QcT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jun 2014 12:32:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52517 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753204AbaF2QcM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jun 2014 12:32:12 -0400
-Date: Sun, 29 Jun 2014 19:32:29 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-api@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Stefan Hajnoczi <stefanha@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: Re: [PATCH v3 2/2] block: virtio-blk: support multi virt queues per
- virtio-blk device
-Message-ID: <20140629163229.GB25431@redhat.com>
-References: <1403775708-22244-1-git-send-email-ming.lei@canonical.com>
- <1403775708-22244-3-git-send-email-ming.lei@canonical.com>
+	id S1753345AbaF2QeU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jun 2014 12:34:20 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:38253 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751558AbaF2QeS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jun 2014 12:34:18 -0400
+X-IronPort-AV: E=Sophos;i="5.01,571,1400018400"; 
+   d="scan'208";a="82791420"
+Date: Sun, 29 Jun 2014 18:34:14 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: Joe Perches <joe@perches.com>
+cc: Himangi Saraogi <himangi774@gmail.com>,
+        Stefan Achatz <erazor_de@users.sourceforge.net>,
+        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] HID: roccat: Drop cast
+In-Reply-To: <1403848366.7977.92.camel@joe-AO725>
+Message-ID: <alpine.DEB.2.02.1406291832430.2036@localhost6.localdomain6>
+References: <20140626172852.GA2878@himangi-Dell>  <1403804286.7977.58.camel@joe-AO725>  <alpine.DEB.2.02.1406270729110.2016@localhost6.localdomain6> <1403848366.7977.92.camel@joe-AO725>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403775708-22244-3-git-send-email-ming.lei@canonical.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 26, 2014 at 05:41:48PM +0800, Ming Lei wrote:
-> Firstly this patch supports more than one virtual queues for virtio-blk
-> device.
-> 
-> Secondly this patch maps the virtual queue to blk-mq's hardware queue.
-> 
-> With this approach, both scalability and performance can be improved.
-> 
-> Signed-off-by: Ming Lei <ming.lei@canonical.com>
 
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
 
-> ---
->  drivers/block/virtio_blk.c |  104 +++++++++++++++++++++++++++++++++++---------
->  1 file changed, 84 insertions(+), 20 deletions(-)
+On Thu, 26 Jun 2014, Joe Perches wrote:
+
+> On Fri, 2014-06-27 at 07:29 +0200, Julia Lawall wrote:
+> > On Thu, 26 Jun 2014, Joe Perches wrote:
+> > > The cast of a const void * to a void * was odd.
+> > > 
+> > > Maybe a mechanism to verify appropriateness of
+> > > loss of constness for any pointer might be useful.
+> > 
+> > I tried the following, but didn't find anything interesting:
+> > 
+> > @disable drop_cast@
+> > type T;
+> > const T e;
+> > @@
+> > 
+> > * (T)e
 > 
-> diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-> index f63d358..0a58140 100644
-> --- a/drivers/block/virtio_blk.c
-> +++ b/drivers/block/virtio_blk.c
-> @@ -15,17 +15,22 @@
->  #include <linux/numa.h>
->  
->  #define PART_BITS 4
-> +#define VQ_NAME_LEN 16
->  
->  static int major;
->  static DEFINE_IDA(vd_index_ida);
->  
->  static struct workqueue_struct *virtblk_wq;
->  
-> +struct virtio_blk_vq {
-> +	struct virtqueue *vq;
-> +	spinlock_t lock;
-> +	char name[VQ_NAME_LEN];
-> +} ____cacheline_aligned_in_smp;
-> +
->  struct virtio_blk
->  {
->  	struct virtio_device *vdev;
-> -	struct virtqueue *vq;
-> -	spinlock_t vq_lock;
->  
->  	/* The disk structure for the kernel. */
->  	struct gendisk *disk;
-> @@ -47,6 +52,10 @@ struct virtio_blk
->  
->  	/* Ida index - used to track minor number allocations. */
->  	int index;
-> +
-> +	/* num of vqs */
-> +	int num_vqs;
-> +	struct virtio_blk_vq *vqs;
->  };
->  
->  struct virtblk_req
-> @@ -133,14 +142,15 @@ static void virtblk_done(struct virtqueue *vq)
->  {
->  	struct virtio_blk *vblk = vq->vdev->priv;
->  	bool req_done = false;
-> +	int qid = vq->index;
->  	struct virtblk_req *vbr;
->  	unsigned long flags;
->  	unsigned int len;
->  
-> -	spin_lock_irqsave(&vblk->vq_lock, flags);
-> +	spin_lock_irqsave(&vblk->vqs[qid].lock, flags);
->  	do {
->  		virtqueue_disable_cb(vq);
-> -		while ((vbr = virtqueue_get_buf(vblk->vq, &len)) != NULL) {
-> +		while ((vbr = virtqueue_get_buf(vblk->vqs[qid].vq, &len)) != NULL) {
->  			blk_mq_complete_request(vbr->req);
->  			req_done = true;
->  		}
-> @@ -151,7 +161,7 @@ static void virtblk_done(struct virtqueue *vq)
->  	/* In case queue is stopped waiting for more buffers. */
->  	if (req_done)
->  		blk_mq_start_stopped_hw_queues(vblk->disk->queue, true);
-> -	spin_unlock_irqrestore(&vblk->vq_lock, flags);
-> +	spin_unlock_irqrestore(&vblk->vqs[qid].lock, flags);
->  }
->  
->  static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
-> @@ -160,6 +170,7 @@ static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
->  	struct virtblk_req *vbr = blk_mq_rq_to_pdu(req);
->  	unsigned long flags;
->  	unsigned int num;
-> +	int qid = hctx->queue_num;
->  	const bool last = (req->cmd_flags & REQ_END) != 0;
->  	int err;
->  	bool notify = false;
-> @@ -202,12 +213,12 @@ static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
->  			vbr->out_hdr.type |= VIRTIO_BLK_T_IN;
->  	}
->  
-> -	spin_lock_irqsave(&vblk->vq_lock, flags);
-> -	err = __virtblk_add_req(vblk->vq, vbr, vbr->sg, num);
-> +	spin_lock_irqsave(&vblk->vqs[qid].lock, flags);
-> +	err = __virtblk_add_req(vblk->vqs[qid].vq, vbr, vbr->sg, num);
->  	if (err) {
-> -		virtqueue_kick(vblk->vq);
-> +		virtqueue_kick(vblk->vqs[qid].vq);
->  		blk_mq_stop_hw_queue(hctx);
-> -		spin_unlock_irqrestore(&vblk->vq_lock, flags);
-> +		spin_unlock_irqrestore(&vblk->vqs[qid].lock, flags);
->  		/* Out of mem doesn't actually happen, since we fall back
->  		 * to direct descriptors */
->  		if (err == -ENOMEM || err == -ENOSPC)
-> @@ -215,12 +226,12 @@ static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
->  		return BLK_MQ_RQ_QUEUE_ERROR;
->  	}
->  
-> -	if (last && virtqueue_kick_prepare(vblk->vq))
-> +	if (last && virtqueue_kick_prepare(vblk->vqs[qid].vq))
->  		notify = true;
-> -	spin_unlock_irqrestore(&vblk->vq_lock, flags);
-> +	spin_unlock_irqrestore(&vblk->vqs[qid].lock, flags);
->  
->  	if (notify)
-> -		virtqueue_notify(vblk->vq);
-> +		virtqueue_notify(vblk->vqs[qid].vq);
->  	return BLK_MQ_RQ_QUEUE_OK;
->  }
->  
-> @@ -377,12 +388,64 @@ static void virtblk_config_changed(struct virtio_device *vdev)
->  static int init_vq(struct virtio_blk *vblk)
->  {
->  	int err = 0;
-> +	int i;
-> +	vq_callback_t **callbacks;
-> +	const char **names;
-> +	struct virtqueue **vqs;
-> +	unsigned short num_vqs;
-> +	struct virtio_device *vdev = vblk->vdev;
-> +
-> +	err = virtio_cread_feature(vdev, VIRTIO_BLK_F_MQ,
-> +				   struct virtio_blk_config, num_queues,
-> +				   &num_vqs);
-> +	if (err)
-> +		num_vqs = 1;
-> +
-> +	vblk->vqs = kmalloc(sizeof(*vblk->vqs) * num_vqs, GFP_KERNEL);
-> +	if (!vblk->vqs) {
-> +		err = -ENOMEM;
-> +		goto out;
-> +	}
-> +
-> +	names = kmalloc(sizeof(*names) * num_vqs, GFP_KERNEL);
-> +	if (!names)
-> +		goto err_names;
-> +
-> +	callbacks = kmalloc(sizeof(*callbacks) * num_vqs, GFP_KERNEL);
-> +	if (!callbacks)
-> +		goto err_callbacks;
-> +
-> +	vqs = kmalloc(sizeof(*vqs) * num_vqs, GFP_KERNEL);
-> +	if (!vqs)
-> +		goto err_vqs;
->  
-> -	/* We expect one virtqueue, for output. */
-> -	vblk->vq = virtio_find_single_vq(vblk->vdev, virtblk_done, "requests");
-> -	if (IS_ERR(vblk->vq))
-> -		err = PTR_ERR(vblk->vq);
-> +	for (i = 0; i < num_vqs; i++) {
-> +		callbacks[i] = virtblk_done;
-> +		snprintf(vblk->vqs[i].name, VQ_NAME_LEN, "req.%d", i);
-> +		names[i] = vblk->vqs[i].name;
-> +	}
-> +
-> +	/* Discover virtqueues and write information to configuration.  */
-> +	err = vdev->config->find_vqs(vdev, num_vqs, vqs, callbacks, names);
-> +	if (err)
-> +		goto err_find_vqs;
->  
-> +	for (i = 0; i < num_vqs; i++) {
-> +		spin_lock_init(&vblk->vqs[i].lock);
-> +		vblk->vqs[i].vq = vqs[i];
-> +	}
-> +	vblk->num_vqs = num_vqs;
-> +
-> + err_find_vqs:
-> +	kfree(vqs);
-> + err_vqs:
-> +	kfree(callbacks);
-> + err_callbacks:
-> +	kfree(names);
-> + err_names:
-> +	if (err)
-> +		kfree(vblk->vqs);
-> + out:
->  	return err;
->  }
->  
-> @@ -551,7 +614,6 @@ static int virtblk_probe(struct virtio_device *vdev)
->  	err = init_vq(vblk);
->  	if (err)
->  		goto out_free_vblk;
-> -	spin_lock_init(&vblk->vq_lock);
->  
->  	/* FIXME: How many partitions?  How long is a piece of string? */
->  	vblk->disk = alloc_disk(1 << PART_BITS);
-> @@ -562,7 +624,7 @@ static int virtblk_probe(struct virtio_device *vdev)
->  
->  	/* Default queue sizing is to fill the ring. */
->  	if (!virtblk_queue_depth) {
-> -		virtblk_queue_depth = vblk->vq->num_free;
-> +		virtblk_queue_depth = vblk->vqs[0].vq->num_free;
->  		/* ... but without indirect descs, we use 2 descs per req */
->  		if (!virtio_has_feature(vdev, VIRTIO_RING_F_INDIRECT_DESC))
->  			virtblk_queue_depth /= 2;
-> @@ -570,7 +632,6 @@ static int virtblk_probe(struct virtio_device *vdev)
->  
->  	memset(&vblk->tag_set, 0, sizeof(vblk->tag_set));
->  	vblk->tag_set.ops = &virtio_mq_ops;
-> -	vblk->tag_set.nr_hw_queues = 1;
->  	vblk->tag_set.queue_depth = virtblk_queue_depth;
->  	vblk->tag_set.numa_node = NUMA_NO_NODE;
->  	vblk->tag_set.flags = BLK_MQ_F_SHOULD_MERGE;
-> @@ -578,6 +639,7 @@ static int virtblk_probe(struct virtio_device *vdev)
->  		sizeof(struct virtblk_req) +
->  		sizeof(struct scatterlist) * sg_elems;
->  	vblk->tag_set.driver_data = vblk;
-> +	vblk->tag_set.nr_hw_queues = vblk->num_vqs;
->  
->  	err = blk_mq_alloc_tag_set(&vblk->tag_set);
->  	if (err)
-> @@ -727,6 +789,7 @@ static void virtblk_remove(struct virtio_device *vdev)
->  	refc = atomic_read(&disk_to_dev(vblk->disk)->kobj.kref.refcount);
->  	put_disk(vblk->disk);
->  	vdev->config->del_vqs(vdev);
-> +	kfree(vblk->vqs);
->  	kfree(vblk);
->  
->  	/* Only free device id if we don't have any users */
-> @@ -777,7 +840,8 @@ static const struct virtio_device_id id_table[] = {
->  static unsigned int features[] = {
->  	VIRTIO_BLK_F_SEG_MAX, VIRTIO_BLK_F_SIZE_MAX, VIRTIO_BLK_F_GEOMETRY,
->  	VIRTIO_BLK_F_RO, VIRTIO_BLK_F_BLK_SIZE, VIRTIO_BLK_F_SCSI,
-> -	VIRTIO_BLK_F_WCE, VIRTIO_BLK_F_TOPOLOGY, VIRTIO_BLK_F_CONFIG_WCE
-> +	VIRTIO_BLK_F_WCE, VIRTIO_BLK_F_TOPOLOGY, VIRTIO_BLK_F_CONFIG_WCE,
-> +	VIRTIO_BLK_F_MQ,
->  };
->  
->  static struct virtio_driver virtio_blk = {
-> -- 
-> 1.7.9.5
+> What code does this match?
+> Do you have an example match?
+> 
+> This doesn't find a cast of a void type like:
+> 
+> void func(const void * const p)
+> {
+> 	char *p2 = p;
+> 
+> 	p2[0] = 1;
+> }
+
+Is this a real example?  Because gcc complains about this sort of problem.  
+I made a semantic patch that detects this, but since gcc does the same 
+thing, it doesn't seem very interesting.  Coccinelle gives a few false 
+positives due to lack of type information.
+
+julia
