@@ -1,104 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705AbaF2J5s (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jun 2014 05:57:48 -0400
-Received: from mout.web.de ([212.227.15.4]:54286 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752485AbaF2J5q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jun 2014 05:57:46 -0400
-Message-ID: <53AFE2B3.5080300@web.de>
-Date: Sun, 29 Jun 2014 11:56:03 +0200
-From: Jan Kiszka <jan.kiszka@web.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@kernel.org>, Borislav Petkov <bp@alien8.de>
-CC: Paolo Bonzini <pbonzini@redhat.com>, lkml <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, x86-ml <x86@kernel.org>,
-        kvm@vger.kernel.org,
-        =?ISO-8859-1?Q?J=F6rg_R=F6?= =?ISO-8859-1?Q?del?= 
-	<joro@8bytes.org>
-Subject: Re: __schedule #DF splat
-References: <20140625153227.GA13845@pd.tnic> <20140625202650.GC13845@pd.tnic> <20140627101831.GB23153@pd.tnic> <53AD586A.40900@redhat.com> <20140627115545.GC23153@pd.tnic> <53AD5D27.2090505@redhat.com> <20140627121053.GD23153@pd.tnic> <20140628114431.GB4373@pd.tnic> <20140629064626.GD18167@minantech.com>
-In-Reply-To: <20140629064626.GD18167@minantech.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="QAlNSXRhDWBOxdsN6aCdxLJ5exSqeNqcc"
-X-Provags-ID: V03:K0:GP59Femaulm+48e+6swNQxrIPKL8VicQE4HgrdiEfdQtjSJWkzF
- gCQpKA3Zve5UvAe19XxllhVIHJ6Z7L87nKhxbp2CFQyobUQ+rCKQ6Jn47krIVtBZU8c795F
- yn3LQB7lwLxtlPGNcJV32Q9NcbHxFYmq1V9YoGGiQXG1ryaBnfjExRa0QszwPLXDS+gOgAU
- fvFajr5ARKdPklWLMm6MQ==
+	id S1752747AbaF2KBV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jun 2014 06:01:21 -0400
+Received: from 174.37.253.146-static.reverse.softlayer.com ([174.37.253.146]:38904
+	"EHLO primary.scalemp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752485AbaF2KBT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jun 2014 06:01:19 -0400
+From: Oren Twaig <oren@scalemp.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, David Rientjes <rientjes@google.com>,
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Andi Kleen <ak@linux.intel.com>,
+        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        Richard Weinberger <richard@nod.at>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Oren Twaig <oren@scalemp.com>
+Subject: [PATCH v2] x86, vsmp: Remove is_vsmp_box() from apic_is_clustered_box()
+Date: Sun, 29 Jun 2014 13:01:08 +0300
+Message-Id: <1404036068-11674-1-git-send-email-oren@scalemp.com>
+X-Mailer: git-send-email 1.7.9.5
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - primary.scalemp.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - scalemp.com
+X-Get-Message-Sender-Via: primary.scalemp.com: authenticated_id: oren@scalemp.com
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---QAlNSXRhDWBOxdsN6aCdxLJ5exSqeNqcc
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+When a vSMP Foundation box is detected, the function apic_cluster_num() counts
+the number of APIC clusters found. If more than one found, a multi board
+configuration is assumed, and TSC marked as unstable. This behavior is
+incorrect as vSMP Foundation may use processors from single node only, attached
+to memory of other nodes - and such node may have more than one APIC cluster
+(typically any recent intel box has more than single APIC_CLUSTERID(x)).
 
-On 2014-06-29 08:46, Gleb Natapov wrote:
-> On Sat, Jun 28, 2014 at 01:44:31PM +0200, Borislav Petkov wrote:
->>  qemu-system-x86-20240 [006] ...1  9406.484134: kvm_page_fault: addres=
-s 7fffb62ba318 error_code 2
->>  qemu-system-x86-20240 [006] ...1  9406.484136: kvm_inj_exception: #PF=
- (0x2)a
->>
->> kvm injects the #PF into the guest.
->>
->>  qemu-system-x86-20240 [006] d..2  9406.484136: kvm_entry: vcpu 1
->>  qemu-system-x86-20240 [006] d..2  9406.484137: kvm_exit: reason PF ex=
-cp rip 0xffffffff8161130f info 2 7fffb62ba318
->>  qemu-system-x86-20240 [006] ...1  9406.484138: kvm_page_fault: addres=
-s 7fffb62ba318 error_code 2
->>  qemu-system-x86-20240 [006] ...1  9406.484141: kvm_inj_exception: #DF=
- (0x0)
->>
->> Second #PF at the same address and kvm injects the #DF.
->>
->> BUT(!), why?
->>
->> I probably am missing something but WTH are we pagefaulting at a
->> user address in context_switch() while doing a lockdep call, i.e.
->> spin_release? We're not touching any userspace gunk there AFAICT.
->>
->> Is this an async pagefault or so which kvm is doing so that the guest
->> rip is actually pointing at the wrong place?
->>
-> There is nothing in the trace that point to async pagefault as far as I=
- see.
->=20
->> Or something else I'm missing, most probably...
->>
-> Strange indeed. Can you also enable kvmmmu tracing? You can also instru=
-ment
-> kvm_multiple_exception() to see which two exception are combined into #=
-DF.
->=20
+To fix this, we simply remove the code which detects a vSMP Foundation box and
+affects apic_is_clusted_box() return value. This can be done because later the
+kernel checks by itself if the TSC is stable using the
+check_tsc_sync_[source|target]() functions and marks TSC as unstable if needed.
 
-FWIW, I'm seeing the same issue here (likely) on an E-450 APU. It
-disappears with older KVM (didn't bisect yet, some 3.11 is fine) and
-when patch-disabling the vmport in QEMU.
-
-Let me know if I can help with the analysis.
-
-Jan
-
-
-
---QAlNSXRhDWBOxdsN6aCdxLJ5exSqeNqcc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlOv4rsACgkQitSsb3rl5xTV9QCfU62QxfAbivpi6MpMrwsvdoyX
-BYoAoIjqwFqgdjT0GRpjsAJMP7gSRrGk
-=2iA4
------END PGP SIGNATURE-----
-
---QAlNSXRhDWBOxdsN6aCdxLJ5exSqeNqcc--
+Acked-by: Shai Fultheim <shai@scalemp.com>
+Signed-off-by: Oren Twaig <oren@scalemp.com>
+---
+diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
+index 19b0eba..c100694 100644
+--- a/arch/x86/include/asm/apic.h
++++ b/arch/x86/include/asm/apic.h
+@@ -85,14 +85,6 @@ static inline bool apic_from_smp_config(void)
+ #include <asm/paravirt.h>
+ #endif
+ 
+-#ifdef CONFIG_X86_64
+-extern int is_vsmp_box(void);
+-#else
+-static inline int is_vsmp_box(void)
+-{
+-	return 0;
+-}
+-#endif
+ extern int setup_profiling_timer(unsigned int);
+ 
+ static inline void native_apic_mem_write(u32 reg, u32 v)
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index ad28db7..2b85bb9 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -2451,51 +2451,6 @@ static void apic_pm_activate(void) { }
+ 
+ #ifdef CONFIG_X86_64
+ 
+-static int apic_cluster_num(void)
+-{
+-	int i, clusters, zeros;
+-	unsigned id;
+-	u16 *bios_cpu_apicid;
+-	DECLARE_BITMAP(clustermap, NUM_APIC_CLUSTERS);
+-
+-	bios_cpu_apicid = early_per_cpu_ptr(x86_bios_cpu_apicid);
+-	bitmap_zero(clustermap, NUM_APIC_CLUSTERS);
+-
+-	for (i = 0; i < nr_cpu_ids; i++) {
+-		/* are we being called early in kernel startup? */
+-		if (bios_cpu_apicid) {
+-			id = bios_cpu_apicid[i];
+-		} else if (i < nr_cpu_ids) {
+-			if (cpu_present(i))
+-				id = per_cpu(x86_bios_cpu_apicid, i);
+-			else
+-				continue;
+-		} else
+-			break;
+-
+-		if (id != BAD_APICID)
+-			__set_bit(APIC_CLUSTERID(id), clustermap);
+-	}
+-
+-	/* Problem:  Partially populated chassis may not have CPUs in some of
+-	 * the APIC clusters they have been allocated.  Only present CPUs have
+-	 * x86_bios_cpu_apicid entries, thus causing zeroes in the bitmap.
+-	 * Since clusters are allocated sequentially, count zeros only if
+-	 * they are bounded by ones.
+-	 */
+-	clusters = 0;
+-	zeros = 0;
+-	for (i = 0; i < NUM_APIC_CLUSTERS; i++) {
+-		if (test_bit(i, clustermap)) {
+-			clusters += 1 + zeros;
+-			zeros = 0;
+-		} else
+-			++zeros;
+-	}
+-
+-	return clusters;
+-}
+-
+ static int multi_checked;
+ static int multi;
+ 
+@@ -2540,20 +2495,7 @@ static void dmi_check_multi(void)
+ int apic_is_clustered_box(void)
+ {
+ 	dmi_check_multi();
+-	if (multi)
+-		return 1;
+-
+-	if (!is_vsmp_box())
+-		return 0;
+-
+-	/*
+-	 * ScaleMP vSMPowered boxes have one cluster per board and TSCs are
+-	 * not guaranteed to be synced between boards
+-	 */
+-	if (apic_cluster_num() > 1)
+-		return 1;
+-
+-	return 0;
++	return multi;
+ }
+ #endif
+ 
