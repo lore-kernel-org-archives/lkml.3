@@ -1,84 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753074AbaF2KYQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jun 2014 06:24:16 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:45932 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752659AbaF2KYO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jun 2014 06:24:14 -0400
-Date: Sun, 29 Jun 2014 13:24:04 +0300
-From: Gleb Natapov <gleb@kernel.org>
-To: Jan Kiszka <jan.kiszka@web.de>
-Cc: Borislav Petkov <bp@alien8.de>, Paolo Bonzini <pbonzini@redhat.com>,
+	id S1752849AbaF2Kci (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jun 2014 06:32:38 -0400
+Received: from mout.web.de ([212.227.17.11]:53970 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752692AbaF2Kcg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jun 2014 06:32:36 -0400
+Message-ID: <53AFEB16.5040608@web.de>
+Date: Sun, 29 Jun 2014 12:31:50 +0200
+From: Jan Kiszka <jan.kiszka@web.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+MIME-Version: 1.0
+To: Gleb Natapov <gleb@kernel.org>
+CC: Borislav Petkov <bp@alien8.de>, Paolo Bonzini <pbonzini@redhat.com>,
         lkml <linux-kernel@vger.kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>, x86-ml <x86@kernel.org>,
-        kvm@vger.kernel.org, =?utf-8?B?SsO2cmcgUsO2ZGVs?= <joro@8bytes.org>
+        kvm@vger.kernel.org,
+        =?ISO-8859-1?Q?J=F6rg_R=F6?= =?ISO-8859-1?Q?del?= 
+	<joro@8bytes.org>
 Subject: Re: __schedule #DF splat
-Message-ID: <20140629102403.GE18167@minantech.com>
-References: <20140625153227.GA13845@pd.tnic>
- <20140625202650.GC13845@pd.tnic>
- <20140627101831.GB23153@pd.tnic>
- <53AD586A.40900@redhat.com>
- <20140627115545.GC23153@pd.tnic>
- <53AD5D27.2090505@redhat.com>
- <20140627121053.GD23153@pd.tnic>
- <20140628114431.GB4373@pd.tnic>
- <20140629064626.GD18167@minantech.com>
- <53AFE2B3.5080300@web.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53AFE2B3.5080300@web.de>
+References: <20140625153227.GA13845@pd.tnic> <20140625202650.GC13845@pd.tnic> <20140627101831.GB23153@pd.tnic> <53AD586A.40900@redhat.com> <20140627115545.GC23153@pd.tnic> <53AD5D27.2090505@redhat.com> <20140627121053.GD23153@pd.tnic> <20140628114431.GB4373@pd.tnic> <20140629064626.GD18167@minantech.com> <53AFE2B3.5080300@web.de> <20140629102403.GE18167@minantech.com>
+In-Reply-To: <20140629102403.GE18167@minantech.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="VuMFLpfKmhqVFAP8Vep9B6kILAI6waV6D"
+X-Provags-ID: V03:K0:cCVkCVY8ZS28tKEYwG9Gg/nYPSJTEw8junmWmCxUOlTwL8XMd7y
+ OrZqbaGM3dvlPjU0qcYbeIdtzdBZ719Dqa5LgTKZfLdBATaCYj0cOBbj0ZOXsqRk/eAx4Ig
+ fM+p/Wym/3vk11+XsQLLg6v/fYic/MYCTPgiEqdJGVaggQqEEeZx0UgQTbwcBXmiEPTK8uZ
+ wj08/4cKts8VspudmAB+A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 29, 2014 at 11:56:03AM +0200, Jan Kiszka wrote:
-> On 2014-06-29 08:46, Gleb Natapov wrote:
-> > On Sat, Jun 28, 2014 at 01:44:31PM +0200, Borislav Petkov wrote:
-> >>  qemu-system-x86-20240 [006] ...1  9406.484134: kvm_page_fault: address 7fffb62ba318 error_code 2
-> >>  qemu-system-x86-20240 [006] ...1  9406.484136: kvm_inj_exception: #PF (0x2)a
-> >>
-> >> kvm injects the #PF into the guest.
-> >>
-> >>  qemu-system-x86-20240 [006] d..2  9406.484136: kvm_entry: vcpu 1
-> >>  qemu-system-x86-20240 [006] d..2  9406.484137: kvm_exit: reason PF excp rip 0xffffffff8161130f info 2 7fffb62ba318
-> >>  qemu-system-x86-20240 [006] ...1  9406.484138: kvm_page_fault: address 7fffb62ba318 error_code 2
-> >>  qemu-system-x86-20240 [006] ...1  9406.484141: kvm_inj_exception: #DF (0x0)
-> >>
-> >> Second #PF at the same address and kvm injects the #DF.
-> >>
-> >> BUT(!), why?
-> >>
-> >> I probably am missing something but WTH are we pagefaulting at a
-> >> user address in context_switch() while doing a lockdep call, i.e.
-> >> spin_release? We're not touching any userspace gunk there AFAICT.
-> >>
-> >> Is this an async pagefault or so which kvm is doing so that the guest
-> >> rip is actually pointing at the wrong place?
-> >>
-> > There is nothing in the trace that point to async pagefault as far as I see.
-> > 
-> >> Or something else I'm missing, most probably...
-> >>
-> > Strange indeed. Can you also enable kvmmmu tracing? You can also instrument
-> > kvm_multiple_exception() to see which two exception are combined into #DF.
-> > 
-> 
-> FWIW, I'm seeing the same issue here (likely) on an E-450 APU. It
-> disappears with older KVM (didn't bisect yet, some 3.11 is fine) and
-> when patch-disabling the vmport in QEMU.
-> 
-> Let me know if I can help with the analysis.
->
-Bisection would be great of course. Once thing that is special about
-vmport that comes to mind is that it reads vcpu registers to userspace and
-write them back. IIRC "info registers" does the same. Can you see if the
-problem is reproducible with disabled vmport, but doing "info registers"
-in qemu console? Although trace does not should any exists to userspace
-near the failure...
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--VuMFLpfKmhqVFAP8Vep9B6kILAI6waV6D
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
---
-			Gleb.
+On 2014-06-29 12:24, Gleb Natapov wrote:
+> On Sun, Jun 29, 2014 at 11:56:03AM +0200, Jan Kiszka wrote:
+>> On 2014-06-29 08:46, Gleb Natapov wrote:
+>>> On Sat, Jun 28, 2014 at 01:44:31PM +0200, Borislav Petkov wrote:
+>>>>  qemu-system-x86-20240 [006] ...1  9406.484134: kvm_page_fault: addr=
+ess 7fffb62ba318 error_code 2
+>>>>  qemu-system-x86-20240 [006] ...1  9406.484136: kvm_inj_exception: #=
+PF (0x2)a
+>>>>
+>>>> kvm injects the #PF into the guest.
+>>>>
+>>>>  qemu-system-x86-20240 [006] d..2  9406.484136: kvm_entry: vcpu 1
+>>>>  qemu-system-x86-20240 [006] d..2  9406.484137: kvm_exit: reason PF =
+excp rip 0xffffffff8161130f info 2 7fffb62ba318
+>>>>  qemu-system-x86-20240 [006] ...1  9406.484138: kvm_page_fault: addr=
+ess 7fffb62ba318 error_code 2
+>>>>  qemu-system-x86-20240 [006] ...1  9406.484141: kvm_inj_exception: #=
+DF (0x0)
+>>>>
+>>>> Second #PF at the same address and kvm injects the #DF.
+>>>>
+>>>> BUT(!), why?
+>>>>
+>>>> I probably am missing something but WTH are we pagefaulting at a
+>>>> user address in context_switch() while doing a lockdep call, i.e.
+>>>> spin_release? We're not touching any userspace gunk there AFAICT.
+>>>>
+>>>> Is this an async pagefault or so which kvm is doing so that the gues=
+t
+>>>> rip is actually pointing at the wrong place?
+>>>>
+>>> There is nothing in the trace that point to async pagefault as far as=
+ I see.
+>>>
+>>>> Or something else I'm missing, most probably...
+>>>>
+>>> Strange indeed. Can you also enable kvmmmu tracing? You can also inst=
+rument
+>>> kvm_multiple_exception() to see which two exception are combined into=
+ #DF.
+>>>
+>>
+>> FWIW, I'm seeing the same issue here (likely) on an E-450 APU. It
+>> disappears with older KVM (didn't bisect yet, some 3.11 is fine) and
+>> when patch-disabling the vmport in QEMU.
+>>
+>> Let me know if I can help with the analysis.
+>>
+> Bisection would be great of course. Once thing that is special about
+> vmport that comes to mind is that it reads vcpu registers to userspace =
+and
+> write them back. IIRC "info registers" does the same. Can you see if th=
+e
+> problem is reproducible with disabled vmport, but doing "info registers=
+"
+> in qemu console? Although trace does not should any exists to userspace=
+
+> near the failure...
+
+Yes, info registers crashes the guest after a while as well (with
+different backtrace due to different context).
+
+Jan
+
+
+
+--VuMFLpfKmhqVFAP8Vep9B6kILAI6waV6D
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlOv6xYACgkQitSsb3rl5xRtygCbBqrueG9HDLZF0WrFgqogkiSW
+kBoAoKXnVd5uI/6y+MN2OfXf+or6WZYw
+=O35h
+-----END PGP SIGNATURE-----
+
+--VuMFLpfKmhqVFAP8Vep9B6kILAI6waV6D--
