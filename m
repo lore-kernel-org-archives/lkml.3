@@ -1,46 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753687AbaF2XQC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jun 2014 19:16:02 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:32542 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753466AbaF2XQA (ORCPT
+	id S1753708AbaF2X12 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jun 2014 19:27:28 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:43471 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753609AbaF2X10 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jun 2014 19:16:00 -0400
-To: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Cc: Jens <axboe@kernel.dk>, <martin.petersen@oracle.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, Kent <kmo@daterainc.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC PATCH] bio-integrity: add "bip_max_vcnt" into struct bio_integrity_payload
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle Corporation
-References: <53AD4385.8080105@cn.fujitsu.com>
-Date: Sun, 29 Jun 2014 19:15:49 -0400
-In-Reply-To: <53AD4385.8080105@cn.fujitsu.com> (Gu Zheng's message of "Fri, 27
-	Jun 2014 18:12:21 +0800")
-Message-ID: <yq1fvin9uje.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.130012 (Ma Gnus v0.12) Emacs/24.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Sun, 29 Jun 2014 19:27:26 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Wolfram Sang <wsa@the-dreams.de>, Grant Likely <grant.likely@linaro.org>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Rob Herring <robh+dt@kernel.org>, Jingoo Han <jg1.han@samsung.com>,
+        Leilei Shang <shangll@marvell.com>,
+        Peter Korsgaard <peter@korsgaard.com>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: [PATCH v2] i2c: busses: i2c-pxa.c:  Fix for possible null pointer dereferenc  
+Date: Mon, 30 Jun 2014 01:28:35 +0200
+Message-Id: <1404084516-901-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Gu" == Gu Zheng <guz.fnst@cn.fujitsu.com> writes:
+After discussion with especially Wolfram it was decided to convert the code to use the Managed Device Resource.
+I have now tried to create a patch with Devres, hope it is correct.
+But a code review is probably more relevant than usual.
+I also lack this kind of hardware so preferably should someone do a HW test.
 
-[Sorry about the delay. I'm on vacation right now.]
+Rickard Strandqvist (1):
+  i2c: busses: i2c-pxa.c:  Fix for possible null pointer dereferenc
 
-Gu> But it seems that bip_integrity_vecs() will return the wrong number
-Gu> if the bio is not based on any bio_set for some reason(bio->bi_pool
-Gu> == NULL), because in that case, the bip_inline_vecs[0] is malloced
-Gu> directly.  So here we add the bip_max_vcnt to record the count of
-Gu> vector slots, and cleanup the function bip_integrity_vecs().
-
-I'm in agreement with your fix.
-
-However, I'm still not sure what the use case is for bios without an
-associated bioset. I do not see any callers that pass in a NULL bioset.
+ drivers/i2c/busses/i2c-pxa.c |   37 ++++++++++++++++---------------------
+ 1 file changed, 16 insertions(+), 21 deletions(-)
 
 -- 
-Martin K. Petersen	Oracle Linux Engineering
+1.7.10.4
+
