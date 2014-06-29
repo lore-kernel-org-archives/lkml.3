@@ -1,142 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753292AbaF2PPt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jun 2014 11:15:49 -0400
-Received: from mga01.intel.com ([192.55.52.88]:2965 "EHLO mga01.intel.com"
+	id S1753232AbaF2PhX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jun 2014 11:37:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4803 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751281AbaF2PPs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jun 2014 11:15:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,570,1400050800"; 
-   d="scan'208";a="554915748"
-Date: Sun, 29 Jun 2014 23:15:44 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Dave Hansen <dave.hansen@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        lkp@01.org
-Subject: [rcu] 2d033d5c0d4: +225.2% iperf.tcp.sender.bps
-Message-ID: <20140629151544.GA11875@localhost>
+	id S1751197AbaF2PhW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jun 2014 11:37:22 -0400
+Date: Sun, 29 Jun 2014 17:37:12 +0200
+From: Mateusz Guzik <mguzik@redhat.com>
+To: Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: lib/argv_split.c : should argv be kfree'ed ?
+Message-ID: <20140629153711.GA16902@mguzik.redhat.com>
+References: <53AF3925.7070300@gmx.de>
+ <20140628220421.GA24883@mguzik.redhat.com>
+ <53B02551.9040907@gmx.de>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="y0ulUmNC+osPPQO6"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53B02551.9040907@gmx.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---y0ulUmNC+osPPQO6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-Hi Paul,
-
-FYI, we noticed the below changes on
-
-git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/next
-commit 2d033d5c0d424b7029abd0fc82e940ebc318fd89 ("rcu: Bind grace-period kthreads to non-NO_HZ_FULL CPUs")
-
-test case: bens/iperf/300s-tcp
-
-e17adc3f20bc9a1  2d033d5c0d424b7029abd0fc8  
----------------  -------------------------  
- 7.011e+09 ~ 1%    +225.2%   2.28e+10 ~ 2%  TOTAL iperf.tcp.sender.bps
- 7.011e+09 ~ 1%    +225.2%   2.28e+10 ~ 2%  TOTAL iperf.tcp.receiver.bps
-  15620691 ~ 1%    +224.3%   50663012 ~ 2%  TOTAL proc-vmstat.pgalloc_normal
-  62969722 ~ 1%    +224.3%  2.042e+08 ~ 2%  TOTAL proc-vmstat.pgfree
-  47347349 ~ 1%    +224.3%  1.535e+08 ~ 2%  TOTAL proc-vmstat.pgalloc_dma32
-   4996590 ~ 1%    +218.9%   15933563 ~ 3%  TOTAL softirqs.NET_RX
-   8084072 ~ 1%    +218.4%   25739055 ~ 2%  TOTAL proc-vmstat.numa_hit
-   8084072 ~ 1%    +218.4%   25739055 ~ 2%  TOTAL proc-vmstat.numa_local
-     28676 ~ 2%     -47.5%      15059 ~11%  TOTAL softirqs.RCU
-     99756 ~ 2%     +76.0%     175606 ~ 2%  TOTAL softirqs.SCHED
-       562 ~11%     +50.9%        848 ~17%  TOTAL slabinfo.proc_inode_cache.active_objs
-       620 ~ 8%     +38.7%        860 ~15%  TOTAL slabinfo.proc_inode_cache.num_objs
-    271905 ~ 4%     +17.4%     319216 ~ 0%  TOTAL softirqs.TIMER
-      1117 ~ 1%      -9.1%       1015 ~ 2%  TOTAL proc-vmstat.pgactivate
-      9049 ~11%     -94.6%        485 ~26%  TOTAL time.involuntary_context_switches
-     23233 ~ 1%     +72.1%      39979 ~ 2%  TOTAL vmstat.system.cs
-     13078 ~ 1%     +69.1%      22117 ~ 1%  TOTAL vmstat.system.in
-
-Legend:
-	~XX%    - stddev percent
-	[+-]XX% - change percent
+On Sun, Jun 29, 2014 at 04:40:17PM +0200, Toralf Förster wrote:
+> On 06/29/2014 12:04 AM, Mateusz Guzik wrote:
+> > On Sat, Jun 28, 2014 at 11:52:37PM +0200, Toralf Förster wrote:
+> >> /me wonders if this patch is needed here :
+> >>
+> >>
+> >> diff --git a/lib/argv_split.c b/lib/argv_split.c
+> >> index e927ed0..7de4cb4 100644
+> >> --- a/lib/argv_split.c
+> >> +++ b/lib/argv_split.c
+> >> @@ -85,6 +85,7 @@ char **argv_split(gfp_t gfp, const char *str, int *argcp)
+> >>                         *argv++ = argv_str;
+> >>                 }
+> >>         }
+> >> +       kfree (argv);
+> >>         *argv = NULL;
+> >>
+> >>         if (argcp)
+> >>
+> > 
+> > No, see argv_free.
+> > 
+> Ah, understood, it is in the responsibility of the caller to avoid the memleak.
+> BTW may I ask you about your opinion about this warning of cppcheck in lib/flex_array.c:
+> 
+>         for (part_nr = start_part; part_nr <= end_part; part_nr++) {<--- Memory leak: part
+>                 part = __fa_get_part(fa, part_nr, flags);
+>                 if (!part)
+>                         return -ENOMEM;
+>         }
+>         return 0;
+> 
 
 
-                                 iperf.tcp.sender.bps
+static struct flex_array_part *
+__fa_get_part(struct flex_array *fa, int part_nr, gfp_t flags)
+{
+        struct flex_array_part *part = fa->parts[part_nr];
+        if (!part) {
+                part = kmalloc(sizeof(struct flex_array_part), flags);
+                if (!part)
+                        return NULL;
+                if (!(flags & __GFP_ZERO))
+                        memset(part, FLEX_ARRAY_FREE,
+                                sizeof(struct flex_array_part));
+                fa->parts[part_nr] = part;
 
-  2.4e+10 ++----O-----O-----------O--------------O-----O--------O-----O-----+
-          |        O     O  O  O     O  O                    O           O  |
-  2.2e+10 O+ O                             O                       O        |
-    2e+10 ++                                  O                             |
-          |                                                                 |
-  1.8e+10 ++                                                                |
-  1.6e+10 ++                                        O     O                 |
-          |                                                                 |
-  1.4e+10 ++                                                                |
-  1.2e+10 ++                                                                |
-          |                                                                 |
-    1e+10 ++                                                                |
-    8e+09 ++                                                                |
-          *..*..*..*..*..*..*..*..*..*..*..*..*..*..*..*..*..*..*..*..*..*..*
-    6e+09 ++----------------------------------------------------------------+
-
-
-                                iperf.tcp.receiver.bps
-
-  2.4e+10 ++----O-----O-----------O--------------O-----O--------O-----O-----+
-          |        O     O  O  O     O  O                    O           O  |
-  2.2e+10 O+ O                             O                       O        |
-    2e+10 ++                                  O                             |
-          |                                                                 |
-  1.8e+10 ++                                                                |
-  1.6e+10 ++                                        O     O                 |
-          |                                                                 |
-  1.4e+10 ++                                                                |
-  1.2e+10 ++                                                                |
-          |                                                                 |
-    1e+10 ++                                                                |
-    8e+09 ++                                                                |
-          *..*..*..*..*..*..*..*..*..*..*..*..*..*..*..*..*..*..*..*..*..*..*
-    6e+09 ++----------------------------------------------------------------+
+		^^^^^^^^^^^^^^^^^^^^^^^^^^
+        }
+        return part;
+}
 
 
-                          time.involuntary_context_switches
+Allocated memory is not leaked. It is stored in 'fa' and is perfectly
+reachable afterwards.
 
-  14000 ++------------------------------------------------------------------+
-        |                                                                   |
-  12000 *+.        .*..  ..*..*..  .*..                                     |
-        |    .*..*.    *.        *.                                         |
-  10000 ++ *.                          *..*..  .*..*..*..  ..*..*..         *
-        |                                    *.          *.          .*.. ..|
-   8000 ++                                                         *.    *  |
-        |                                                                   |
-   6000 ++                                                                  |
-        |                                                                   |
-   4000 ++                                                                  |
-        |                                                                   |
-   2000 ++                                                                  |
-        |                                          O     O         O     O  |
-      0 O+-O--O--O--O--O---O--O--O--O--O--O--O--O-----O------O--O-----O-----+
+'part' in flex_array_prealloc is only used for error checking.
 
-
-	[*] bisect-good sample
-	[O] bisect-bad  sample
-
-
-Disclaimer:
-Results have been estimated based on internal Intel analysis and are provided
-for informational purposes only. Any difference in system hardware or software
-design or configuration may affect actual performance.
-
-Thanks,
-Fengguang
-
---y0ulUmNC+osPPQO6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename=reproduce
-
-./iperf3 -s
-./iperf3 -t 300 -f M -J -c 127.0.0.1
-
---y0ulUmNC+osPPQO6--
+-- 
+Mateusz Guzik
