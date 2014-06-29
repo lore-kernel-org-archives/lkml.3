@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752885AbaF2Kpv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jun 2014 06:45:51 -0400
-Received: from mout.web.de ([212.227.15.14]:64886 "EHLO mout.web.de"
+	id S1752932AbaF2KvL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jun 2014 06:51:11 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52481 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752718AbaF2Kpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jun 2014 06:45:50 -0400
-Message-ID: <53AFEE55.7080906@users.sourceforge.net>
-Date: Sun, 29 Jun 2014 12:45:41 +0200
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752809AbaF2KvJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jun 2014 06:51:09 -0400
+Message-ID: <53AFF01A.2010307@kernel.org>
+Date: Sun, 29 Jun 2014 11:53:14 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Julia Lawall <julia.lawall@lip6.fr>
-CC: Coccinelle <cocci@systeme.lip6.fr>, linux-kernel@vger.kernel.org,
-        Fabian Frederick <fabf@skynet.be>
-Subject: Re: [Cocci] [PATCH V3] scripts/coccinelle/free: Delete NULL test
- before freeing functions?
-References: <1403945247-21549-1-git-send-email-fabf@skynet.be> <53AE8613.8080600@users.sourceforge.net> <20140628120052.0b8670723928a967808dd544@skynet.be> <53AEA927.3010100@users.sourceforge.net> <20140628140157.98304218ad0919b1567cfee4@skynet.be> <53AF2CE6.5020300@users.sourceforge.net> <alpine.DEB.2.02.1406282326010.2022@localhost6.localdomain6>
-In-Reply-To: <alpine.DEB.2.02.1406282326010.2022@localhost6.localdomain6>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Greg KH <gregkh@linuxfoundation.org>,
+        Guillaume Morin <guillaume@morinfr.org>
+CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org, mwelling@ieee.org
+Subject: Re: [PATCH v4 1/1] staging: iio: ad9850.c: code cleanup
+References: <936f1ac494ee8708e37a8cb16a70aa3f007e93cd.1403966025.git.guillaume@morinfr.org> <20140628160316.GB11019@kroah.com>
+In-Reply-To: <20140628160316.GB11019@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:LtTuMBEB3Z3/eVcj2JfTP1FMFKLcHIbhk60w527qNSeG1fPRkfu
- m+DlOU+tGD5Uz28103YUa8C1QN+dUxSyXMV2ruH6SHjPUlN9XhhYTyJdnLf+WisYGl25YlZ
- QILBq8kJMDiBj/q5AjhvpNNazBq1HFtV47YyRix8wPFk9N8Ii91Lzgzqzuob97JozdtpI/L
- GRacX97QlH1ooIllddlFQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> https://systeme.lip6.fr/pipermail/cocci/2014-March/000676.html
->> http://marc.info/?l=kernel-janitors&m=139405971927100&w=2
-> Regular expressions do not allow taking advantage of the optimizations 
-> provided by Coccinelle and are not easy for a reader to understand.
+On 28/06/14 17:03, Greg KH wrote:
+> On Sat, Jun 28, 2014 at 05:54:39PM +0200, Guillaume Morin wrote:
+>> checkpath.pl was complaining about value_mask:
+>> ERROR: Macros with complex values should be enclosed in parenthesis
+>>
+>> I fixed this by simply removing it since it's not used (as well as another
+>> macro).  Got rid of the un-necessary error_ret label as well.
+>>
+>> Signed-off-by: Guillaume Morin <guillaume@morinfr.org>
+>> Reported-by: Michael Welling <mwelling@ieee.org>
 
-I find that the application of regexes is appropriate here.
-Would you like to optimise any implementation details from my general
-approach?
+>> ---
+>> Changes since v3:
+>> - Added Reported-by: Michael Welling <mwelling@ieee.org>
+>>
+>>   drivers/staging/iio/frequency/ad9850.c |    6 ------
+>>   1 file changed, 6 deletions(-)
+>
+> Very good, thanks for pushing through and doing this.
+>
+> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>
+Applied to the togreg branch of iio.git
 
-
->> https://systeme.lip6.fr/pipermail/cocci/2014-March/000677.html
->> http://marc.info/?l=kernel-janitors&m=139405983727148&w=2
-> This is not safe due to the use of when any.  You have no guarantee that 
-> there is not a dereference of input in the matched region, or that the 
-> value of input is still the argument value at the point of the test.
-
-Do you suggest to make the desired detection of input parameter
-validation a bit safer?
-
-Regards,
-Markus
+Thanks,
