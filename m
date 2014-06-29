@@ -1,50 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752932AbaF2KvL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jun 2014 06:51:11 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52481 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752809AbaF2KvJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jun 2014 06:51:09 -0400
-Message-ID: <53AFF01A.2010307@kernel.org>
-Date: Sun, 29 Jun 2014 11:53:14 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753007AbaF2Kxq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jun 2014 06:53:46 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:38358 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752817AbaF2Kxp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jun 2014 06:53:45 -0400
+Date: Sun, 29 Jun 2014 13:53:40 +0300
+From: Gleb Natapov <gleb@kernel.org>
+To: Jan Kiszka <jan.kiszka@web.de>
+Cc: Borislav Petkov <bp@alien8.de>, Paolo Bonzini <pbonzini@redhat.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, x86-ml <x86@kernel.org>,
+        kvm@vger.kernel.org, =?utf-8?B?SsO2cmcgUsO2ZGVs?= <joro@8bytes.org>
+Subject: Re: __schedule #DF splat
+Message-ID: <20140629105339.GF18167@minantech.com>
+References: <20140627101831.GB23153@pd.tnic>
+ <53AD586A.40900@redhat.com>
+ <20140627115545.GC23153@pd.tnic>
+ <53AD5D27.2090505@redhat.com>
+ <20140627121053.GD23153@pd.tnic>
+ <20140628114431.GB4373@pd.tnic>
+ <20140629064626.GD18167@minantech.com>
+ <53AFE2B3.5080300@web.de>
+ <20140629102403.GE18167@minantech.com>
+ <53AFEB16.5040608@web.de>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>,
-        Guillaume Morin <guillaume@morinfr.org>
-CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org, mwelling@ieee.org
-Subject: Re: [PATCH v4 1/1] staging: iio: ad9850.c: code cleanup
-References: <936f1ac494ee8708e37a8cb16a70aa3f007e93cd.1403966025.git.guillaume@morinfr.org> <20140628160316.GB11019@kroah.com>
-In-Reply-To: <20140628160316.GB11019@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53AFEB16.5040608@web.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/06/14 17:03, Greg KH wrote:
-> On Sat, Jun 28, 2014 at 05:54:39PM +0200, Guillaume Morin wrote:
->> checkpath.pl was complaining about value_mask:
->> ERROR: Macros with complex values should be enclosed in parenthesis
->>
->> I fixed this by simply removing it since it's not used (as well as another
->> macro).  Got rid of the un-necessary error_ret label as well.
->>
->> Signed-off-by: Guillaume Morin <guillaume@morinfr.org>
->> Reported-by: Michael Welling <mwelling@ieee.org>
+On Sun, Jun 29, 2014 at 12:31:50PM +0200, Jan Kiszka wrote:
+> On 2014-06-29 12:24, Gleb Natapov wrote:
+> > On Sun, Jun 29, 2014 at 11:56:03AM +0200, Jan Kiszka wrote:
+> >> On 2014-06-29 08:46, Gleb Natapov wrote:
+> >>> On Sat, Jun 28, 2014 at 01:44:31PM +0200, Borislav Petkov wrote:
+> >>>>  qemu-system-x86-20240 [006] ...1  9406.484134: kvm_page_fault: address 7fffb62ba318 error_code 2
+> >>>>  qemu-system-x86-20240 [006] ...1  9406.484136: kvm_inj_exception: #PF (0x2)a
+> >>>>
+> >>>> kvm injects the #PF into the guest.
+> >>>>
+> >>>>  qemu-system-x86-20240 [006] d..2  9406.484136: kvm_entry: vcpu 1
+> >>>>  qemu-system-x86-20240 [006] d..2  9406.484137: kvm_exit: reason PF excp rip 0xffffffff8161130f info 2 7fffb62ba318
+> >>>>  qemu-system-x86-20240 [006] ...1  9406.484138: kvm_page_fault: address 7fffb62ba318 error_code 2
+> >>>>  qemu-system-x86-20240 [006] ...1  9406.484141: kvm_inj_exception: #DF (0x0)
+> >>>>
+> >>>> Second #PF at the same address and kvm injects the #DF.
+> >>>>
+> >>>> BUT(!), why?
+> >>>>
+> >>>> I probably am missing something but WTH are we pagefaulting at a
+> >>>> user address in context_switch() while doing a lockdep call, i.e.
+> >>>> spin_release? We're not touching any userspace gunk there AFAICT.
+> >>>>
+> >>>> Is this an async pagefault or so which kvm is doing so that the guest
+> >>>> rip is actually pointing at the wrong place?
+> >>>>
+> >>> There is nothing in the trace that point to async pagefault as far as I see.
+> >>>
+> >>>> Or something else I'm missing, most probably...
+> >>>>
+> >>> Strange indeed. Can you also enable kvmmmu tracing? You can also instrument
+> >>> kvm_multiple_exception() to see which two exception are combined into #DF.
+> >>>
+> >>
+> >> FWIW, I'm seeing the same issue here (likely) on an E-450 APU. It
+> >> disappears with older KVM (didn't bisect yet, some 3.11 is fine) and
+> >> when patch-disabling the vmport in QEMU.
+> >>
+> >> Let me know if I can help with the analysis.
+> >>
+> > Bisection would be great of course. Once thing that is special about
+> > vmport that comes to mind is that it reads vcpu registers to userspace and
+> > write them back. IIRC "info registers" does the same. Can you see if the
+> > problem is reproducible with disabled vmport, but doing "info registers"
+> > in qemu console? Although trace does not should any exists to userspace
+> > near the failure...
+> 
+> Yes, info registers crashes the guest after a while as well (with
+> different backtrace due to different context).
+> 
+Oh crap. Bisection would be most helpful. Just to be absolutely sure
+that this is not QEMU problem: does exactly same QEMU version work with
+older kernels?
 
->> ---
->> Changes since v3:
->> - Added Reported-by: Michael Welling <mwelling@ieee.org>
->>
->>   drivers/staging/iio/frequency/ad9850.c |    6 ------
->>   1 file changed, 6 deletions(-)
->
-> Very good, thanks for pushing through and doing this.
->
-> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->
-Applied to the togreg branch of iio.git
-
-Thanks,
+--
+			Gleb.
