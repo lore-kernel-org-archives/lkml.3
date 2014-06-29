@@ -1,73 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752752AbaF2KHV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jun 2014 06:07:21 -0400
-Received: from 174.37.253.146-static.reverse.softlayer.com ([174.37.253.146]:38984
-	"EHLO primary.scalemp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752597AbaF2KHT (ORCPT
+	id S1752786AbaF2KNO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jun 2014 06:13:14 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:53262 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752653AbaF2KNM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jun 2014 06:07:19 -0400
-Message-ID: <53AFE551.3010406@scalemp.com>
-Date: Sun, 29 Jun 2014 13:07:13 +0300
-From: Oren Twaig <oren@scalemp.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, David Rientjes <rientjes@google.com>,
-        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Andi Kleen <ak@linux.intel.com>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        Richard Weinberger <richard@nod.at>
-CC: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Shai Fultheim <shai@scalemp.com>
-Subject: Re: [PATCH] x86, vsmp: Remove is_vsmp_box() from apic_is_clustered_box()
-References: <53A7BC92.3080307@scalemp.com> <53ACFB90.7030608@scalemp.com> <53AD0376.3040200@zytor.com>
-In-Reply-To: <53AD0376.3040200@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - primary.scalemp.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - scalemp.com
-X-Get-Message-Sender-Via: primary.scalemp.com: authenticated_id: oren+scalemp.com/only user confirmed/virtual account not confirmed
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Sun, 29 Jun 2014 06:13:12 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Randy Dunlap <rdunlap@infradead.org>, Jiri Kosina <trivial@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH -trivial] Documentation/kernel-parameters: Remove obsolete ip2=
+Date: Sun, 29 Jun 2014 12:13:05 +0200
+Message-Id: <1404036785-31297-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The handling of ip2= in drivers/char/ip2/ip2base.c was moved to
+drivers/char/ip2/ip2main.c in commit
+47babd4c6a16915aeb15d4216d91f03910572982 ("Char: merge ip2main and
+ip2base").
 
-There was actually a problem that the mailer which changed a '\t' to spaces.
-This is why it conflicted with the tip:x86/apic branch. Any how, I've also
-tested on the x86/apic branch and everything is ok.
+The ip2 driver was demoted to staging in commit
+4a6514e6d096716fb7bedf238efaaca877e2a7e8 ("tty: move obsolete and broken
+tty drivers to drivers/staging/tty/"), and finally deleted in commit
+51c9d654c2def97827395a7fbfd0c6f865c26544 ("Staging: delete tty drivers").
 
-Sent :
-"[PATCH v2] x86, vsmp: Remove is_vsmp_box() from apic_is_clustered_box()"
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ Documentation/kernel-parameters.txt | 4 ----
+ 1 file changed, 4 deletions(-)
 
-Sorry for any troubles.
-
-Thanks,
-Oren.
-
-On 06/27/2014 08:39 AM, H. Peter Anvin wrote:
-> On 06/26/2014 10:05 PM, Oren Twaig wrote:
->> ping
->
-> This patch conflicts with the changes on the tip:x86/apic branch.  Could
-> you please rebase the patch on top of that branch?
->
->     -hpa
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
-
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 884904975d0b..86fc5ea2e21a 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1416,10 +1416,6 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 	ip=		[IP_PNP]
+ 			See Documentation/filesystems/nfs/nfsroot.txt.
+ 
+-	ip2=		[HW] Set IO/IRQ pairs for up to 4 IntelliPort boards
+-			See comment before ip2_setup() in
+-			drivers/char/ip2/ip2base.c.
+-
+ 	irqfixup	[HW]
+ 			When an interrupt is not handled search all handlers
+ 			for it. Intended to get systems with badly broken
+-- 
+1.9.1
 
