@@ -1,87 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753232AbaF2PhX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jun 2014 11:37:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4803 "EHLO mx1.redhat.com"
+	id S1752975AbaF2QcE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jun 2014 12:32:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45922 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751197AbaF2PhW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jun 2014 11:37:22 -0400
-Date: Sun, 29 Jun 2014 17:37:12 +0200
-From: Mateusz Guzik <mguzik@redhat.com>
-To: Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: lib/argv_split.c : should argv be kfree'ed ?
-Message-ID: <20140629153711.GA16902@mguzik.redhat.com>
-References: <53AF3925.7070300@gmx.de>
- <20140628220421.GA24883@mguzik.redhat.com>
- <53B02551.9040907@gmx.de>
+	id S1751401AbaF2QcB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jun 2014 12:32:01 -0400
+Date: Sun, 29 Jun 2014 19:32:16 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-api@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Stefan Hajnoczi <stefanha@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: Re: [PATCH v3 1/2] include/uapi/linux/virtio_blk.h: introduce
+ feature of VIRTIO_BLK_F_MQ
+Message-ID: <20140629163216.GA25431@redhat.com>
+References: <1403775708-22244-1-git-send-email-ming.lei@canonical.com>
+ <1403775708-22244-2-git-send-email-ming.lei@canonical.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53B02551.9040907@gmx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1403775708-22244-2-git-send-email-ming.lei@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 29, 2014 at 04:40:17PM +0200, Toralf Förster wrote:
-> On 06/29/2014 12:04 AM, Mateusz Guzik wrote:
-> > On Sat, Jun 28, 2014 at 11:52:37PM +0200, Toralf Förster wrote:
-> >> /me wonders if this patch is needed here :
-> >>
-> >>
-> >> diff --git a/lib/argv_split.c b/lib/argv_split.c
-> >> index e927ed0..7de4cb4 100644
-> >> --- a/lib/argv_split.c
-> >> +++ b/lib/argv_split.c
-> >> @@ -85,6 +85,7 @@ char **argv_split(gfp_t gfp, const char *str, int *argcp)
-> >>                         *argv++ = argv_str;
-> >>                 }
-> >>         }
-> >> +       kfree (argv);
-> >>         *argv = NULL;
-> >>
-> >>         if (argcp)
-> >>
-> > 
-> > No, see argv_free.
-> > 
-> Ah, understood, it is in the responsibility of the caller to avoid the memleak.
-> BTW may I ask you about your opinion about this warning of cppcheck in lib/flex_array.c:
+On Thu, Jun 26, 2014 at 05:41:47PM +0800, Ming Lei wrote:
+> Current virtio-blk spec only supports one virtual queue for transfering
+> data between VM and host, and inside VM all kinds of operations on
+> the virtual queue needs to hold one lock, so cause below problems:
 > 
->         for (part_nr = start_part; part_nr <= end_part; part_nr++) {<--- Memory leak: part
->                 part = __fa_get_part(fa, part_nr, flags);
->                 if (!part)
->                         return -ENOMEM;
->         }
->         return 0;
+> 	- bad scalability
+> 	- bad throughput
 > 
+> This patch requests to introduce feature of VIRTIO_BLK_F_MQ
+> so that more than one virtual queues can be used to virtio-blk
+> device, then above problems can be solved or eased.
+> 
+> Signed-off-by: Ming Lei <ming.lei@canonical.com>
 
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
 
-static struct flex_array_part *
-__fa_get_part(struct flex_array *fa, int part_nr, gfp_t flags)
-{
-        struct flex_array_part *part = fa->parts[part_nr];
-        if (!part) {
-                part = kmalloc(sizeof(struct flex_array_part), flags);
-                if (!part)
-                        return NULL;
-                if (!(flags & __GFP_ZERO))
-                        memset(part, FLEX_ARRAY_FREE,
-                                sizeof(struct flex_array_part));
-                fa->parts[part_nr] = part;
-
-		^^^^^^^^^^^^^^^^^^^^^^^^^^
-        }
-        return part;
-}
-
-
-Allocated memory is not leaked. It is stored in 'fa' and is perfectly
-reachable afterwards.
-
-'part' in flex_array_prealloc is only used for error checking.
-
--- 
-Mateusz Guzik
+> ---
+>  include/uapi/linux/virtio_blk.h |    5 +++++
+>  1 file changed, 5 insertions(+)
+> 
+> diff --git a/include/uapi/linux/virtio_blk.h b/include/uapi/linux/virtio_blk.h
+> index 6d8e61c..9ad67b2 100644
+> --- a/include/uapi/linux/virtio_blk.h
+> +++ b/include/uapi/linux/virtio_blk.h
+> @@ -40,6 +40,7 @@
+>  #define VIRTIO_BLK_F_WCE	9	/* Writeback mode enabled after reset */
+>  #define VIRTIO_BLK_F_TOPOLOGY	10	/* Topology information is available */
+>  #define VIRTIO_BLK_F_CONFIG_WCE	11	/* Writeback mode available in config */
+> +#define VIRTIO_BLK_F_MQ		12	/* support more than one vq */
+>  
+>  #ifndef __KERNEL__
+>  /* Old (deprecated) name for VIRTIO_BLK_F_WCE. */
+> @@ -77,6 +78,10 @@ struct virtio_blk_config {
+>  
+>  	/* writeback mode (if VIRTIO_BLK_F_CONFIG_WCE) */
+>  	__u8 wce;
+> +	__u8 unused;
+> +
+> +	/* number of vqs, only available when VIRTIO_BLK_F_MQ is set */
+> +	__u16 num_queues;
+>  } __attribute__((packed));
+>  
+>  /*
+> -- 
+> 1.7.9.5
