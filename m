@@ -1,81 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682AbaF3GAy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 02:00:54 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:49519 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751030AbaF3GAx (ORCPT
+	id S1753161AbaF3GDd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 02:03:33 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:38029 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751802AbaF3GDc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 02:00:53 -0400
-Date: Mon, 30 Jun 2014 09:00:47 +0300
-From: Gleb Natapov <gleb@kernel.org>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, pbonzini@redhat.com,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, mgorman@suse.de,
-        yinghai@kernel.org, isimatu.yasuaki@jp.fujitsu.com,
-        guz.fnst@cn.fujitsu.com, laijs@cn.fujitsu.com, kvm@vger.kernel.org,
-        linux-mm@kvack.org, x86@kernel.org, linux-kernel@vger.kernel.org,
-        Avi Kivity <avi.kivity@gmail.com>
-Subject: Re: [RFC PATCH 1/1] Move two pinned pages to non-movable node in kvm.
-Message-ID: <20140630060047.GI18167@minantech.com>
-References: <20140618061230.GA10948@minantech.com>
- <53A136C4.5070206@cn.fujitsu.com>
- <20140619092031.GA429@minantech.com>
- <20140619190024.GA3887@amt.cnet>
- <20140620111509.GE20764@minantech.com>
- <20140620125326.GA22283@amt.cnet>
- <20140620142622.GA28698@minantech.com>
- <20140620203146.GA6580@amt.cnet>
- <20140620203903.GA7838@amt.cnet>
- <53B0C13C.20206@cn.fujitsu.com>
+	Mon, 30 Jun 2014 02:03:32 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] tracing/uprobes: Kill the bogus UPROBE_HANDLER_REMOVE code in uprobe_dispatcher()
+References: <20140627170116.GA18298@redhat.com>
+	<20140627170143.GA18329@redhat.com>
+Date: Mon, 30 Jun 2014 15:03:29 +0900
+In-Reply-To: <20140627170143.GA18329@redhat.com> (Oleg Nesterov's message of
+	"Fri, 27 Jun 2014 19:01:43 +0200")
+Message-ID: <87bntb53ym.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53B0C13C.20206@cn.fujitsu.com>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 30, 2014 at 09:45:32AM +0800, Tang Chen wrote:
-> On 06/21/2014 04:39 AM, Marcelo Tosatti wrote:
-> >On Fri, Jun 20, 2014 at 05:31:46PM -0300, Marcelo Tosatti wrote:
-> >>>IIRC your shadow page pinning patch series support flushing of ptes
-> >>>by mmu notifier by forcing MMU reload and, as a result, faulting in of
-> >>>pinned pages during next entry.  Your patch series does not pin pages
-> >>>by elevating their page count.
-> >>
-> >>No but PEBS series does and its required to stop swap-out
-> >>of the page.
-> >
-> >Well actually no because of mmu notifiers.
-> >
-> >Tang, can you implement mmu notifiers for the other breaker of
-> >mem hotplug ?
-> 
-> Hi Marcelo,
-> 
-> I made a patch to update ept and apic pages when finding them in the
-> next ept violation. And I also updated the APIC_ACCESS_ADDR phys_addr.
-> The pages can be migrated, but the guest crached.
-How does it crash?
+On Fri, 27 Jun 2014 19:01:43 +0200, Oleg Nesterov wrote:
+> I do not know why dd9fa555d7bb "tracing/uprobes: Move argument fetching
+> to uprobe_dispatcher()" added the UPROBE_HANDLER_REMOVE, but it looks
+> wrong.
+>
+> OK, perhaps it makes sense to avoid store_trace_args() if the tracee is
+> nacked by uprobe_perf_filter(). But then we should kill the same code
+> in uprobe_perf_func() and unify the TRACE/PROFILE filtering (we need to
+> do this anyway to mix perf/ftrace). Until then this code actually adds
+> the pessimization because uprobe_perf_filter() will be called twice and
+> return T in likely case.
 
-> 
-> How do I stop guest from access apic pages in mmu_notifier when the
-> page migration starts ?  Do I need to stop all the vcpus by set vcpu
-> state to KVM_MP_STATE_HALTED ?  If so, the vcpu will not able to go
-> to the next ept violation.
-When apic access page is unmapped from ept pages by mmu notifiers you
-need to set its value in VMCS to a physical address that will never be
-mapped into guest memory. Zero for instance. You can do it by introducing
-new KVM_REQ_ bit and set VMCS value during next vcpu's vmentry. On ept
-violation you need to update VMCS pointer to newly allocated physical
-address, you can use the same KVM_REQ_ mechanism again.
+Right, I wanted to avoid to call the store_trace_args() which might be
+costly if possible.  But it seems not necessary since it doesn't get
+called once handler returns UPROBE_HANDLER_REMOVE.  And we need to fix
+the filtering first..
 
-> 
-> So, may I write any specific value into APIC_ACCESS_ADDR to stop guest
-> from access to apic page ?
-> 
-Any phys address that will never be mapped into guest's memory should work.
+So I'm okay with removing this "pessimization". :)
 
---
-			Gleb.
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+
+Thanks,
+Namhyung
+
+
+>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  kernel/trace/trace_uprobe.c |    6 ------
+>  1 files changed, 0 insertions(+), 6 deletions(-)
+>
+> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+> index 08e7970..c4cf0ab 100644
+> --- a/kernel/trace/trace_uprobe.c
+> +++ b/kernel/trace/trace_uprobe.c
+> @@ -1208,12 +1208,6 @@ static int uprobe_dispatcher(struct uprobe_consumer *con, struct pt_regs *regs)
+>  
+>  	current->utask->vaddr = (unsigned long) &udd;
+>  
+> -#ifdef CONFIG_PERF_EVENTS
+> -	if ((tu->tp.flags & TP_FLAG_TRACE) == 0 &&
+> -	    !uprobe_perf_filter(&tu->consumer, 0, current->mm))
+> -		return UPROBE_HANDLER_REMOVE;
+> -#endif
+> -
+>  	if (WARN_ON_ONCE(!uprobe_cpu_buffer))
+>  		return 0;
