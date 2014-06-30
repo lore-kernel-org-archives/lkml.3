@@ -1,93 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755805AbaF3Qqd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 12:46:33 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:38757 "EHLO comal.ext.ti.com"
+	id S1755912AbaF3QsK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 12:48:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47431 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750952AbaF3Qqa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 12:46:30 -0400
-Date: Mon, 30 Jun 2014 11:45:43 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Felipe Balbi <balbi@ti.com>
-CC: Benoit Cousson <bcousson@baylibre.com>, <robh+dt@kernel.org>,
-        <galak@codeaurora.org>, Tony Lindgren <tony@atomide.com>,
-        <linux@arm.linux.org.uk>, Rajendra Nayak <rnayak@ti.com>,
-        Nishanth Menon <nm@ti.com>, <r.sricharan@ti.com>,
-        <devicetree@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v3 0/2] arm: dts: add support for am437x sk
-Message-ID: <20140630164543.GA31442@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1403547659-24558-1-git-send-email-balbi@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SUOF0GtieIMvvwua"
-Content-Disposition: inline
-In-Reply-To: <1403547659-24558-1-git-send-email-balbi@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753948AbaF3QsI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 12:48:08 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 1/4] mm: pagemap: Avoid unnecessary overhead when tracepoints are deactivated
+Date: Mon, 30 Jun 2014 17:48:00 +0100
+Message-Id: <1404146883-21414-2-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1404146883-21414-1-git-send-email-mgorman@suse.de>
+References: <1404146883-21414-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---SUOF0GtieIMvvwua
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The LRU insertion and activate tracepoints take PFN as a parameter forcing
+the overhead to the caller.  Move the overhead to the tracepoint fast-assign
+method to ensure the cost is only incurred when the tracepoint is active.
 
-Hi,
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ include/trace/events/pagemap.h | 16 +++++++---------
+ mm/swap.c                      |  4 ++--
+ 2 files changed, 9 insertions(+), 11 deletions(-)
 
-On Mon, Jun 23, 2014 at 01:20:57PM -0500, Felipe Balbi wrote:
-> Hi,
->=20
-> here's v3 of am437x sk support. Patches tested on top of next-20140617.
->=20
-> Note that this series was tested with the following extra patches:
->=20
-> http://marc.info/?l=3Dlinux-omap&m=3D140299431732700&w=3D2
-> http://marc.info/?l=3Dlinux-omap&m=3D140300146503126&w=3D2
-> http://marc.info/?l=3Dlinux-omap&m=3D140299231232123
-> http://marc.info/?l=3Dlinux-omap&m=3D140310472709968&w=3D2
-> http://marc.info/?l=3Dlinux-omap&m=3D140310471409959&w=3D2
->=20
-> A branch is also available with all these patches at [1].
->=20
-> [1] http://git.kernel.org/cgit/linux/kernel/git/balbi/usb.git/log/?h=3Dam=
-437x-starterkit
->=20
-> Felipe Balbi (2):
->   arm: dts: am4372: let boards access all nodes through phandles
->   arm: dts: add support for AM437x StarterKit
+diff --git a/include/trace/events/pagemap.h b/include/trace/events/pagemap.h
+index 1c9fabd..ce0803b 100644
+--- a/include/trace/events/pagemap.h
++++ b/include/trace/events/pagemap.h
+@@ -28,12 +28,10 @@ TRACE_EVENT(mm_lru_insertion,
+ 
+ 	TP_PROTO(
+ 		struct page *page,
+-		unsigned long pfn,
+-		int lru,
+-		unsigned long flags
++		int lru
+ 	),
+ 
+-	TP_ARGS(page, pfn, lru, flags),
++	TP_ARGS(page, lru),
+ 
+ 	TP_STRUCT__entry(
+ 		__field(struct page *,	page	)
+@@ -44,9 +42,9 @@ TRACE_EVENT(mm_lru_insertion,
+ 
+ 	TP_fast_assign(
+ 		__entry->page	= page;
+-		__entry->pfn	= pfn;
++		__entry->pfn	= page_to_pfn(page);
+ 		__entry->lru	= lru;
+-		__entry->flags	= flags;
++		__entry->flags	= trace_pagemap_flags(page);
+ 	),
+ 
+ 	/* Flag format is based on page-types.c formatting for pagemap */
+@@ -64,9 +62,9 @@ TRACE_EVENT(mm_lru_insertion,
+ 
+ TRACE_EVENT(mm_lru_activate,
+ 
+-	TP_PROTO(struct page *page, unsigned long pfn),
++	TP_PROTO(struct page *page),
+ 
+-	TP_ARGS(page, pfn),
++	TP_ARGS(page),
+ 
+ 	TP_STRUCT__entry(
+ 		__field(struct page *,	page	)
+@@ -75,7 +73,7 @@ TRACE_EVENT(mm_lru_activate,
+ 
+ 	TP_fast_assign(
+ 		__entry->page	= page;
+-		__entry->pfn	= pfn;
++		__entry->pfn	= page_to_pfn(page);
+ 	),
+ 
+ 	/* Flag format is based on page-types.c formatting for pagemap */
+diff --git a/mm/swap.c b/mm/swap.c
+index 9e8e347..d10be45 100644
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -501,7 +501,7 @@ static void __activate_page(struct page *page, struct lruvec *lruvec,
+ 		SetPageActive(page);
+ 		lru += LRU_ACTIVE;
+ 		add_page_to_lru_list(page, lruvec, lru);
+-		trace_mm_lru_activate(page, page_to_pfn(page));
++		trace_mm_lru_activate(page);
+ 
+ 		__count_vm_event(PGACTIVATE);
+ 		update_page_reclaim_stat(lruvec, file, 1);
+@@ -996,7 +996,7 @@ static void __pagevec_lru_add_fn(struct page *page, struct lruvec *lruvec,
+ 	SetPageLRU(page);
+ 	add_page_to_lru_list(page, lruvec, lru);
+ 	update_page_reclaim_stat(lruvec, file, active);
+-	trace_mm_lru_insertion(page, page_to_pfn(page), lru, trace_pagemap_flags(page));
++	trace_mm_lru_insertion(page, lru);
+ }
+ 
+ /*
+-- 
+1.8.4.5
 
-ping on this series, it has been tested by several folks and still no
-updates from anybody in the DT land.
-
---=20
-balbi
-
---SUOF0GtieIMvvwua
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTsZQ3AAoJEIaOsuA1yqRE3oQQAIJLCr/mtQmrjDhoYuRmzOJJ
-ndO3BscqveeEP2MGxNtsI6M+hSn90TlaM99pa8tS64XsxGdI/i3h/kPdSK7sN8K+
-nwKX727p/cgUwk9p+5z8kbM5WirzesepC5D/Zlg8KjnLAmxVpVKnvs9hkdUlFH/E
-oGTaDySIiX3iZixl4TfdVdXO4RUXbdTpW0waGRPPZrd/Z0xaYcQxW5U72/X1m9wO
-RZlou39FqBNFPQ7KNt52BfkasQkYVLh6LP0SL5rg0zPmXHHxa1amiygmYQDHV/Le
-TB+bjUJ1eFppsUfLYwQg3JFUOOFaB1KMuNrfcxbotG2XSwwQLLPsAUC0pPybot5V
-i7Ru7PXHs3KkPi+WmwAfhjiTpO4i3CSQoHCCfxdqtBKWBEUAX/UpFerhdcVdnsX/
-2uKzLYn4ImNi3KQfNI5lM/672E/B3PRcCzehbYR0BwEwltkqBagSPfTcFUT+SP/3
-xVTBs4Tar3Q+N1ZPZ0pZk2sLC61u5W5WhXRtdGi9k6fIOwR5ZogHd8McoDOnSUXq
-wXKgXvg2nq15WwBcTC5B2byuWwIsFjeE3hHTYV3066dTKXLJtf6j2KMO1XpDLGmg
-5ovL9nhg3z5FoLmlLCEaKwoM5Pw5Au4vDlO48V+uFp1WenpNz9CNpEu81OBNLRz5
-smAnqXY7GFYS8SamOhCN
-=Kkmj
------END PGP SIGNATURE-----
-
---SUOF0GtieIMvvwua--
