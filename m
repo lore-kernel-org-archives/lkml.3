@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754975AbaF3MBV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:01:21 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:52070 "EHLO
+	id S1755927AbaF3MBw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:01:52 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:52132 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753948AbaF3Lx0 (ORCPT
+	by vger.kernel.org with ESMTP id S1752917AbaF3Lx0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Jun 2014 07:53:26 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 099/181] extcon: max77693: Fix two NULL pointer exceptions on missing pdata
-Date: Mon, 30 Jun 2014 13:52:00 +0200
-Message-Id: <bcd7e0971231fc24f2d311e657390c07f4fe8baf.1404128998.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        Joel Becker <jlbec@evilplan.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 031/181] ocfs2: move dquot_initialize() in ocfs2_delete_inode() somewhat later
+Date: Mon, 30 Jun 2014 13:50:52 +0200
+Message-Id: <2eb0658fb6525f85a6386e1b7cc8bd7066ed1281.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -24,93 +26,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+From: Jan Kara <jack@suse.cz>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit d5653f2b7304f05eeb45d84f123cf02f840b8537 upstream.
+commit bd62ad7aebd8e8895bb7649ace948040332f27d3 upstream.
 
-Fix NULL pointer exceptions when platform data is not supplied.
+Move dquot_initalize() call in ocfs2_delete_inode() after the moment we
+verify inode is actually a sane one to delete.  We certainly don't want
+to initialize quota for system inodes etc.  This also avoids calling
+into quota code from downconvert thread.
 
-Trace of one exception:
-Unable to handle kernel NULL pointer dereference at virtual address 00000008
-pgd = c0004000
-[00000008] *pgd=00000000
-Internal error: Oops: 5 [#1] PREEMPT SMP ARM
-Modules linked in:
-CPU: 2 PID: 1 Comm: swapper/0 Not tainted 3.14.0-12045-gead5dd4687a6-dirty #1628
-task: eea80000 ti: eea88000 task.ti: eea88000
-PC is at max77693_muic_probe+0x27c/0x528
-LR is at regmap_write+0x50/0x60
-pc : [<c041d1c8>]    lr : [<c02eba60>]    psr: 20000113
-sp : eea89e38  ip : 00000000  fp : c098a834
-r10: ee1a5a10  r9 : 00000005  r8 : c098a83c
-r7 : 0000000a  r6 : c098a774  r5 : 00000005  r4 : eeb006d0
-r3 : c0697bd8  r2 : 00000000  r1 : 00000001  r0 : 00000000
-Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-Control: 10c5387d  Table: 4000404a  DAC: 00000015
-Process swapper/0 (pid: 1, stack limit = 0xeea88240)
-Stack: (0xeea89e38 to 0xeea8a000)
-9e20:                                                       c08499fc eeb006d0
-9e40: 00000000 00000000 c0915f98 00000001 00000000 ee1a5a10 c098a730 c09a88b8
-9e60: 00000000 c098a730 c0915f98 00000000 00000000 c02d6aa0 c02d6a88 ee1a5a10
-9e80: c0a712c8 c02d54e4 00001204 c0628b00 ee1a5a10 c098a730 ee1a5a44 00000000
-9ea0: eea88000 c02d57b4 00000000 c098a730 c02d5728 c02d3a24 ee813e5c eeb9d534
-9ec0: c098a730 ee22f700 c097c720 c02d4b14 c08174ec c098a730 00000006 c098a730
-9ee0: 00000006 c092fd30 c09b8500 c02d5df8 00000000 c093cbb8 00000006 c0008928
-9f00: 000000c3 ef7fc785 00000000 ef7fc794 00000000 c08af968 00000072 eea89f30
-9f20: ef7fc85e c065f198 000000c3 c003e87c 00000003 00000000 c092fd3c 00000000
-9f40: c08af618 c0826d58 00000006 00000006 c0956f58 c093cbb8 00000006 c092fd30
-9f60: c09b8500 000000c3 c092fd3c c08e8510 00000000 c08e8bb0 00000006 00000006
-9f80: c08e8510 c0c0c0c0 00000000 c0628fac 00000000 00000000 00000000 00000000
-9fa0: 00000000 c0628fb4 00000000 c000f038 00000000 00000000 00000000 00000000
-9fc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-9fe0: 00000000 00000000 00000000 00000000 00000013 00000000 c0c0c0c0 c0c0c0c0
-[<c041d1c8>] (max77693_muic_probe) from [<c02d6aa0>] (platform_drv_probe+0x18/0x48)
-[<c02d6aa0>] (platform_drv_probe) from [<c02d54e4>] (driver_probe_device+0x140/0x384)
-[<c02d54e4>] (driver_probe_device) from [<c02d57b4>] (__driver_attach+0x8c/0x90)
-[<c02d57b4>] (__driver_attach) from [<c02d3a24>] (bus_for_each_dev+0x54/0x88)
-[<c02d3a24>] (bus_for_each_dev) from [<c02d4b14>] (bus_add_driver+0xe8/0x204)
-[<c02d4b14>] (bus_add_driver) from [<c02d5df8>] (driver_register+0x78/0xf4)
-[<c02d5df8>] (driver_register) from [<c0008928>] (do_one_initcall+0xc4/0x174)
-[<c0008928>] (do_one_initcall) from [<c08e8bb0>] (kernel_init_freeable+0xfc/0x1c8)
-[<c08e8bb0>] (kernel_init_freeable) from [<c0628fb4>] (kernel_init+0x8/0xec)
-[<c0628fb4>] (kernel_init) from [<c000f038>] (ret_from_fork+0x14/0x3c)
-Code: caffffe7 e59d200c e3550001 b3a05001 (e5923008)
----[ end trace 85db969ce011bde7 ]---
+Add more details into the comment why bailing out from
+ocfs2_delete_inode() when we are in downconvert thread is OK.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Fixes: 190d7cfc8632
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Reviewed-by: Mark Fasheh <mfasheh@suse.de>
+Reviewed-by: Srinivas Eeda <srinivas.eeda@oracle.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/extcon/extcon-max77693.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/ocfs2/inode.c | 16 +++++++++-------
+ 1 file changed, 9 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
-index b56bdaa27d4b..9966fc0a527f 100644
---- a/drivers/extcon/extcon-max77693.c
-+++ b/drivers/extcon/extcon-max77693.c
-@@ -1180,7 +1180,7 @@ static int max77693_muic_probe(struct platform_device *pdev)
- 
- 
- 	/* Initialize MUIC register by using platform data or default data */
--	if (pdata->muic_data) {
-+	if (pdata && pdata->muic_data) {
- 		init_data = pdata->muic_data->init_data;
- 		num_init_data = pdata->muic_data->num_init_data;
- 	} else {
-@@ -1213,7 +1213,7 @@ static int max77693_muic_probe(struct platform_device *pdev)
- 				= init_data[i].data;
+diff --git a/fs/ocfs2/inode.c b/fs/ocfs2/inode.c
+index f87f9bd1edff..059fa362f4c0 100644
+--- a/fs/ocfs2/inode.c
++++ b/fs/ocfs2/inode.c
+@@ -814,11 +814,13 @@ static int ocfs2_inode_is_valid_to_delete(struct inode *inode)
+ 		goto bail;
  	}
  
--	if (pdata->muic_data) {
-+	if (pdata && pdata->muic_data) {
- 		struct max77693_muic_platform_data *muic_pdata = pdata->muic_data;
+-	/* If we're coming from downconvert_thread we can't go into our own
+-	 * voting [hello, deadlock city!], so unforuntately we just
+-	 * have to skip deleting this guy. That's OK though because
+-	 * the node who's doing the actual deleting should handle it
+-	 * anyway. */
++	/*
++	 * If we're coming from downconvert_thread we can't go into our own
++	 * voting [hello, deadlock city!] so we cannot delete the inode. But
++	 * since we dropped last inode ref when downconverting dentry lock,
++	 * we cannot have the file open and thus the node doing unlink will
++	 * take care of deleting the inode.
++	 */
+ 	if (current == osb->dc_task)
+ 		goto bail;
  
- 		/*
+@@ -970,8 +972,6 @@ static void ocfs2_delete_inode(struct inode *inode)
+ 	if (is_bad_inode(inode) || !OCFS2_I(inode)->ip_blkno)
+ 		goto bail;
+ 
+-	dquot_initialize(inode);
+-
+ 	if (!ocfs2_inode_is_valid_to_delete(inode)) {
+ 		/* It's probably not necessary to truncate_inode_pages
+ 		 * here but we do it for safety anyway (it will most
+@@ -980,6 +980,8 @@ static void ocfs2_delete_inode(struct inode *inode)
+ 		goto bail;
+ 	}
+ 
++	dquot_initialize(inode);
++
+ 	/* We want to block signals in delete_inode as the lock and
+ 	 * messaging paths may return us -ERESTARTSYS. Which would
+ 	 * cause us to exit early, resulting in inodes being orphaned
 -- 
 2.0.0
 
