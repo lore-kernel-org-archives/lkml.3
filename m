@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756136AbaF3Mmk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:42:40 -0400
+	id S1756174AbaF3MnC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:43:02 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:53045 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755065AbaF3MbO (ORCPT
+	by vger.kernel.org with ESMTP id S1755055AbaF3MbN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 08:31:14 -0400
+	Mon, 30 Jun 2014 08:31:13 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+Cc: linux-kernel@vger.kernel.org, Paul Bolle <pebolle@tiscali.nl>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 140/181] media: stk1160: Avoid stack-allocated buffer for control URBs
-Date: Mon, 30 Jun 2014 13:52:41 +0200
-Message-Id: <66d2fd610dac2c69c2128b2e10880652767c63bd.1404128998.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 105/181] usb: gadget: rename CONFIG_USB_GADGET_PXA25X
+Date: Mon, 30 Jun 2014 13:52:06 +0200
+Message-Id: <aad91de6926f762a55b74029c2bbf3144eae13b7.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -27,78 +23,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+From: Paul Bolle <pebolle@tiscali.nl>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 85ac1a1772bb41da895bad83a81f6a62c8f293f6 upstream.
+commit d30f2065d6da377cc76771aca5a9850cfca8723b upstream.
 
-Currently stk1160_read_reg() uses a stack-allocated char to get the
-read control value. This is wrong because usb_control_msg() requires
-a kmalloc-ed buffer.
+Commit 193ab2a60700 ("usb: gadget: allow multiple gadgets to be built")
+basically renamed the Kconfig symbol USB_GADGET_PXA25X to USB_PXA25X. It
+did not rename the related macros in use at that time. Commit
+c0a39151a405 ("ARM: pxa: fix inconsistent CONFIG_USB_PXA27X") did so for
+all but one macro. Rename that last macro too now.
 
-This commit fixes such issue by kmalloc'ating a 1-byte buffer to receive
-the read value.
-
-While here, let's remove the urb_buf array which was meant for a similar
-purpose, but never really used.
-
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Sander Eikelenboom <linux@eikelenboom.it>
-Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Fixes: 193ab2a60700 ("usb: gadget: allow multiple gadgets to be built")
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/media/usb/stk1160/stk1160-core.c | 10 +++++++++-
- drivers/media/usb/stk1160/stk1160.h      |  1 -
- 2 files changed, 9 insertions(+), 2 deletions(-)
+ drivers/usb/gadget/inode.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/media/usb/stk1160/stk1160-core.c b/drivers/media/usb/stk1160/stk1160-core.c
-index 34a26e0cfe77..03504dcf3c52 100644
---- a/drivers/media/usb/stk1160/stk1160-core.c
-+++ b/drivers/media/usb/stk1160/stk1160-core.c
-@@ -67,17 +67,25 @@ int stk1160_read_reg(struct stk1160 *dev, u16 reg, u8 *value)
- {
- 	int ret;
- 	int pipe = usb_rcvctrlpipe(dev->udev, 0);
-+	u8 *buf;
+diff --git a/drivers/usb/gadget/inode.c b/drivers/usb/gadget/inode.c
+index b94c049ab0d0..4ac9e9928d67 100644
+--- a/drivers/usb/gadget/inode.c
++++ b/drivers/usb/gadget/inode.c
+@@ -1504,7 +1504,7 @@ gadgetfs_setup (struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
+ 		}
+ 		break;
  
- 	*value = 0;
-+
-+	buf = kmalloc(sizeof(u8), GFP_KERNEL);
-+	if (!buf)
-+		return -ENOMEM;
- 	ret = usb_control_msg(dev->udev, pipe, 0x00,
- 			USB_DIR_IN | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
--			0x00, reg, value, sizeof(u8), HZ);
-+			0x00, reg, buf, sizeof(u8), HZ);
- 	if (ret < 0) {
- 		stk1160_err("read failed on reg 0x%x (%d)\n",
- 			reg, ret);
-+		kfree(buf);
- 		return ret;
- 	}
- 
-+	*value = *buf;
-+	kfree(buf);
- 	return 0;
- }
- 
-diff --git a/drivers/media/usb/stk1160/stk1160.h b/drivers/media/usb/stk1160/stk1160.h
-index 05b05b160e1e..abdea484c998 100644
---- a/drivers/media/usb/stk1160/stk1160.h
-+++ b/drivers/media/usb/stk1160/stk1160.h
-@@ -143,7 +143,6 @@ struct stk1160 {
- 	int num_alt;
- 
- 	struct stk1160_isoc_ctl isoc_ctl;
--	char urb_buf[255];	 /* urb control msg buffer */
- 
- 	/* frame properties */
- 	int width;		  /* current frame width */
+-#ifndef	CONFIG_USB_GADGET_PXA25X
++#ifndef	CONFIG_USB_PXA25X
+ 	/* PXA automagically handles this request too */
+ 	case USB_REQ_GET_CONFIGURATION:
+ 		if (ctrl->bRequestType != 0x80)
 -- 
 2.0.0
 
