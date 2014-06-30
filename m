@@ -1,81 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756780AbaF3S7s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 14:59:48 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:44085 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752197AbaF3S7p (ORCPT
+	id S1756855AbaF3TEj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 15:04:39 -0400
+Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:32068 "EHLO
+	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753333AbaF3TEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 14:59:45 -0400
-Date: Mon, 30 Jun 2014 20:59:43 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Suman Anna <s-anna@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>, Jassi Brar <jaswinder.singh@linaro.org>,
-        Dave Gerlach <d-gerlach@ti.com>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>
-Subject: Re: [PATCH 2/6] mailbox/omap: add support for parsing dt devices
-Message-ID: <20140630185942.GA5410@amd.pavel.ucw.cz>
-References: <1403660878-56350-1-git-send-email-s-anna@ti.com>
- <1403660878-56350-3-git-send-email-s-anna@ti.com>
- <20140628170709.GB23634@xo-6d-61-c0.localdomain>
- <53B18999.2020506@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53B18999.2020506@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 30 Jun 2014 15:04:38 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AhgJAHyzsVNbtAo1/2dsb2JhbABagw2sQQUBAQEBAQEFAW4BmUaBEhd1hGAjgRo3iEYByDYXhWSJIx2ELQWaXos/iD6DRDs
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: joe@perches.com, akpm@linux-foundation.org,
+        Fabian Frederick <fabf@skynet.be>
+Subject: [RFC 1/1] proc: constify seq_operations
+Date: Mon, 30 Jun 2014 21:03:17 +0200
+Message-Id: <1404154997-15490-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+proc_uid_seq_operations, proc_gid_seq_operations and proc_projid_seq_operations
+are only called in proc_id_map_open with seq_open as
+const struct seq_operations so we can constify the 3 structures and update
+proc_id_map_open prototype.
 
-> >> The non-DT support has to be maintained for now to not break
-> >> OMAP3 legacy boot, and the legacy-style code will be cleaned
-> >> up once OMAP3 is also converted to DT-boot only.
-> > 
-> >> @@ -587,24 +606,157 @@ static int omap_mbox_unregister(struct omap_mbox_device *mdev)
-> >>  	return 0;
-> >>  }
-> >>  
-> >> +static const struct omap_mbox_device_data omap2_data = {
-> >> +	.num_users	= 4,
-> >> +	.num_fifos	= 6,
-> >> +	.intr_type	= MBOX_INTR_CFG_TYPE1,
-> >> +};
-> >> +
-> >> +static const struct omap_mbox_device_data omap3_data = {
-> >> +	.num_users	= 2,
-> >> +	.num_fifos	= 2,
-> >> +	.intr_type	= MBOX_INTR_CFG_TYPE1,
-> >> +};
-> >> +
-> >> +static const struct omap_mbox_device_data am335x_data = {
-> >> +	.num_users	= 4,
-> >> +	.num_fifos	= 8,
-> >> +	.intr_type	= MBOX_INTR_CFG_TYPE2,
-> >> +};
-> > 
-> > So you use compatible strings to look up 3 integers. Would it be better to have
-> > num_users/num_fifos/intr_type directly in the device tree? That should be cleaner
-> > and more flexible...
-> > 
-> > If you do that, would it be possible to have share compatible string?
-> 
-> Yeah, I have actually encoded the .num_users and .num_fifos in DT in the
-> previous version [1] with shared compatible strings, but dropped those
-> properties in favour of adding minimal custom properties to DT based on
-> some offline IRC comments. I have no objections either way, but there is
-> really nothing to be gained from minimizing compatible strings.
+(
+If it's correct, do I have to send separate patches or different subject ?
 
-Actually, I'd guess best solution would be to do both: have it encoded
-in device tree _and_ have separate compatible string for each version
-(in case there are other differences). You'd still get rid of the
-table...
-									Pavel
+Thanks,
+Fabian
+
+)
+
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/proc/base.c                 | 2 +-
+ include/linux/user_namespace.h | 6 +++---
+ kernel/user_namespace.c        | 6 +++---
+ 3 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 2d696b0..79df9ff 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -2449,7 +2449,7 @@ static int proc_tgid_io_accounting(struct task_struct *task, char *buffer)
+ 
+ #ifdef CONFIG_USER_NS
+ static int proc_id_map_open(struct inode *inode, struct file *file,
+-	struct seq_operations *seq_ops)
++	const struct seq_operations *seq_ops)
+ {
+ 	struct user_namespace *ns = NULL;
+ 	struct task_struct *task;
+diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
+index 4836ba3..e953726 100644
+--- a/include/linux/user_namespace.h
++++ b/include/linux/user_namespace.h
+@@ -57,9 +57,9 @@ static inline void put_user_ns(struct user_namespace *ns)
+ }
+ 
+ struct seq_operations;
+-extern struct seq_operations proc_uid_seq_operations;
+-extern struct seq_operations proc_gid_seq_operations;
+-extern struct seq_operations proc_projid_seq_operations;
++extern const struct seq_operations proc_uid_seq_operations;
++extern const struct seq_operations proc_gid_seq_operations;
++extern const struct seq_operations proc_projid_seq_operations;
+ extern ssize_t proc_uid_map_write(struct file *, const char __user *, size_t, loff_t *);
+ extern ssize_t proc_gid_map_write(struct file *, const char __user *, size_t, loff_t *);
+ extern ssize_t proc_projid_map_write(struct file *, const char __user *, size_t, loff_t *);
+diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
+index fcc0256..aa312b0 100644
+--- a/kernel/user_namespace.c
++++ b/kernel/user_namespace.c
+@@ -526,21 +526,21 @@ static void m_stop(struct seq_file *seq, void *v)
+ 	return;
+ }
+ 
+-struct seq_operations proc_uid_seq_operations = {
++const struct seq_operations proc_uid_seq_operations = {
+ 	.start = uid_m_start,
+ 	.stop = m_stop,
+ 	.next = m_next,
+ 	.show = uid_m_show,
+ };
+ 
+-struct seq_operations proc_gid_seq_operations = {
++const struct seq_operations proc_gid_seq_operations = {
+ 	.start = gid_m_start,
+ 	.stop = m_stop,
+ 	.next = m_next,
+ 	.show = gid_m_show,
+ };
+ 
+-struct seq_operations proc_projid_seq_operations = {
++const struct seq_operations proc_projid_seq_operations = {
+ 	.start = projid_m_start,
+ 	.stop = m_stop,
+ 	.next = m_next,
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.8.4.5
+
