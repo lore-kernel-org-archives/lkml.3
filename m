@@ -1,42 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754082AbaF3P1J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 11:27:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7058 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751883AbaF3P1I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 11:27:08 -0400
-Message-ID: <53B1819B.40405@redhat.com>
-Date: Mon, 30 Jun 2014 17:26:19 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753045AbaF3PaY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 11:30:24 -0400
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:43041 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214AbaF3PaX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 11:30:23 -0400
+Date: Mon, 30 Jun 2014 11:30:16 -0400 (EDT)
+From: Bob Peterson <rpeterso@redhat.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Jiri Kosina <trivial@kernel.org>, cluster-devel@redhat.com,
+        linux-kernel@vger.kernel.org
+Message-ID: <1896340514.622143.1404142216566.JavaMail.zimbra@redhat.com>
+In-Reply-To: <1404037299-31570-4-git-send-email-geert@linux-m68k.org>
+References: <1404037299-31570-1-git-send-email-geert@linux-m68k.org> <1404037299-31570-4-git-send-email-geert@linux-m68k.org>
+Subject: Re: [Cluster-devel] [PATCH -trivial 4/4] GFS2: memcontrol: Spelling
+	s/invlidate/invalidate/
 MIME-Version: 1.0
-To: Jan Kiszka <jan.kiszka@web.de>
-CC: Gleb Natapov <gleb@kernel.org>, Borislav Petkov <bp@alien8.de>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, x86-ml <x86@kernel.org>,
-        kvm@vger.kernel.org,
-        =?windows-1252?Q?J=F6rg_?= =?windows-1252?Q?R=F6del?= 
-	<joro@8bytes.org>
-Subject: Re: [PATCH] KVM: SVM: Fix CPL export via SS.DPL
-References: <53AFE2B3.5080300@web.de> <20140629102403.GE18167@minantech.com> <53AFEB16.5040608@web.de> <20140629105339.GF18167@minantech.com> <53AFF192.7020801@web.de> <20140629115143.GA4362@pd.tnic> <53B0050B.90104@web.de> <20140629131443.GA5199@pd.tnic> <20140629134247.GG18167@minantech.com> <20140629140104.GB12528@pd.tnic> <20140629142722.GH18167@minantech.com> <53B02395.8030505@web.de> <53B027E0.7040003@web.de> <53B02CEB.7010607@web.de> <53B17BDD.5030301@redhat.com> <53B17C5D.5050407@web.de>
-In-Reply-To: <53B17C5D.5050407@web.de>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.82.12]
+X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF30 (Linux)/8.0.6_GA_5922)
+Thread-Topic: GFS2: memcontrol: Spelling s/invlidate/invalidate/
+Thread-Index: zGW1uJ41eba7s+Ez/k8t+R4k4EZrwg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 30/06/2014 17:03, Jan Kiszka ha scritto:
-> 15.5.1:
->
-> "When examining segment attributes after a #VMEXIT:
-> [...]
-> • Retrieve the CPL from the CPL field in the VMCB, not from any segment
-> DPL."
+----- Original Message -----
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> Cc: Steven Whitehouse <swhiteho@redhat.com>
+> Cc: cluster-devel@redhat.com
+> ---
+>  fs/gfs2/glops.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/gfs2/glops.c b/fs/gfs2/glops.c
+> index fc1100781bbc..2ffc67dce87f 100644
+> --- a/fs/gfs2/glops.c
+> +++ b/fs/gfs2/glops.c
+> @@ -234,8 +234,8 @@ static void inode_go_sync(struct gfs2_glock *gl)
+>   * inode_go_inval - prepare a inode glock to be released
+>   * @gl: the glock
+>   * @flags:
+> - *
+> - * Normally we invlidate everything, but if we are moving into
+> + *
+> + * Normally we invalidate everything, but if we are moving into
+>   * LM_ST_DEFERRED from LM_ST_SHARED or LM_ST_EXCLUSIVE then we
+>   * can keep hold of the metadata, since it won't have changed.
+>   *
+> --
+> 1.9.1
 
-It's only the fourth paragraph below the one I did read...
+Hi Geert,
 
-Paolo
+ACK,
+
+Steve is on holiday this week, but he will likely add it to the GFS2 nmw
+git repo when he returns.
+
+Regards,
+
+Bob Peterson
+Red Hat File Systems
