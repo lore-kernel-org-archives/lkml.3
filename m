@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932110AbaF3TLt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 15:11:49 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:42364 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756942AbaF3TLq (ORCPT
+	id S1756982AbaF3TRw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 15:17:52 -0400
+Received: from filtteri2.pp.htv.fi ([213.243.153.185]:58281 "EHLO
+	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754429AbaF3TRv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 15:11:46 -0400
-From: Guenter Roeck <linux@roeck-us.net>
-To: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: Wim Van Sebroeck <wim@iguana.be>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonas Jensen <jonas.jensen@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [RFC PATCH 0/6] kernel: Add support for restart notifier call chain
-Date: Mon, 30 Jun 2014 12:11:33 -0700
-Message-Id: <1404155499-21177-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
+	Mon, 30 Jun 2014 15:17:51 -0400
+Date: Mon, 30 Jun 2014 22:17:42 +0300
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: David Daney <ddaney.cavm@gmail.com>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: Re: [PATCH 0/3] MIPS: OCTEON: Minimal support for D-Link DSR-1000N
+Message-ID: <20140630191742.GA681@drone.musicnaut.iki.fi>
+References: <1403987650-6194-1-git-send-email-aaro.koskinen@iki.fi>
+ <53B19B0E.8000702@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53B19B0E.8000702@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Various drivers implement architecture and/or device specific means
-to restart (reset) the system. Various mechanisms have been implemented
-to support those schemes. The best known mechanism is arm_pm_restart,
-which is a function pointer to be set either from platform specific code
-or from drivers. Another mechanism is to use hardware watchdogs to issue
-a reset; this mechanism is used if there is no other method available
-to reset a board or system. Two examples are alim7101_wdt, which currently
-uses the reboot notifier to trigger a reset, and moxart_wdt, which registers
-the arm_pm_restart function.
+Hi,
 
-The existing mechanisms have a number of drawbacks. Typically only one scheme
-to restart the system is supported (at least if arm_pm_restart is used).
-At least in theory there can be mutliple means to restart the system, some of
-which may be less desirable (for example one mechanism may only reset the CPU,
-while another may reset the entire system). Using arm_pm_restart can also be
-racy if the function pointer is set from a driver, as the driver may be in
-the process of being unloaded when arm_pm_restart is called.
-Using the reboot notifier is always racy, as it is unknown if and when
-other functions using the reboot notifier have completed execution
-by the time the watchdog fires.
+On Mon, Jun 30, 2014 at 10:14:54AM -0700, David Daney wrote:
+> On 06/28/2014 01:34 PM, Aaro Koskinen wrote:
+> >The following patches add minimal support for D-Link DSR-1000N router.
+> 
+> Which OCTEON chip does this device contain?
 
-To solve the problem, introduce a system restart notifier. This notifier
-is expected to be called from the architecture specific machine_restart()
-function. Drivers providing system restart functionality (such as the watchdog
-drivers mentioned above) are expected to register with this notifier.
+[    0.000000] CPU0 revision is: 000d0601 (Cavium Octeon+)
 
-Patch 1 of this series implements the notifier function. Patches 2 and 3
-implement calling the notifier chain from arm and arm64 restart code.
-Patch 4 and 5 convert existing restart handlers in the watchdog subsystem
-to use the restart notifier. Patch 6 unexports arm_pm_restart to ensure
-that no one gets the idea to implement a restart handler as module.
+# cat /proc/cpuinfo
+system type             : CUST_DSR1000N (CN5010p1.1-500-SCP)
+machine                 : Unknown
+processor               : 0
+cpu model               : Cavium Octeon+ V0.1
+BogoMIPS                : 1000.00
+wait instruction        : yes
+microsecond timers      : yes
+tlb_entries             : 64
+extra interrupt vector  : yes
+hardware watchpoint     : yes, count: 2, address/irw mask: [0x0ffc, 0x0ffb]
+isa                     : mips1 mips2 mips3 mips4 mips5 mips64r2
+ASEs implemented        :
+shadow register sets    : 1
+kscratch registers      : 0
+core                    : 0
+VCED exceptions         : not available
+VCEI exceptions         : not available
+
+> Also what is the bootloader version on the board?
+
+D-Link DSR-1000N bootloader# version
+
+U-Boot 1.1.1 (Development build, svnversion: exported) (Build time: Mar 22 2010
+- 12:14:14)
+
+BTW, .notes segment from kernel needs to be removed for this bootloader
+with "strip -R .notes".
+
+A.
