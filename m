@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754042AbaF3G3B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 02:29:01 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:35340 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751807AbaF3G3A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 02:29:00 -0400
-Subject: [PATCH] powerpc/powernv: Check for IRQHAPPENED before sleeping
-To: benh@kernel.crashing.org, mikey@neuling.org, mpe@ellerman.id.au
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: shreyas@linux.vnet.ibm.com, svaidy@linux.vnet.ibm.com,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Date: Mon, 30 Jun 2014 11:54:05 +0530
-Message-ID: <20140630062404.29315.23382.stgit@preeti.in.ibm.com>
-User-Agent: StGit/0.16-38-g167d
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14063006-6688-0000-0000-000002F0369A
+	id S1754273AbaF3Gb2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 02:31:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16114 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751794AbaF3Gb0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 02:31:26 -0400
+From: Jason Wang <jasowang@redhat.com>
+To: kys@microsoft.com, haiyangz@microsoft.com, devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org
+Cc: Jason Wang <jasowang@redhat.com>
+Subject: [PATCH] hyperv: remove meaningless pr_err() in vmbus_recvpacket_raw()
+Date: Mon, 30 Jun 2014 14:14:48 +0800
+Message-Id: <1404108888-1329-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 8d6f7c5a: "powerpc/powernv: Make it possible to skip the IRQHAPPENED
-check in power7_nap()" added code that prevents even cores which enter sleep
-on idle, from checking for pending interrupts. Fix this.
+All its callers depends on the return value of -ENOBUFS to reallocate a
+bigger buffer and retry the receiving. So there's no need to call
+pr_err() here since it was not a real issue, otherwise syslog will be
+flooded by this false warning.
 
-Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: K. Y. Srinivasan <kys@microsoft.com>
+Cc: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
 ---
+ drivers/hv/channel.c |    6 +-----
+ 1 files changed, 1 insertions(+), 5 deletions(-)
 
- arch/powerpc/kernel/idle_power7.S |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/powerpc/kernel/idle_power7.S b/arch/powerpc/kernel/idle_power7.S
-index 2480256..5cf3d36 100644
---- a/arch/powerpc/kernel/idle_power7.S
-+++ b/arch/powerpc/kernel/idle_power7.S
-@@ -131,7 +131,7 @@ _GLOBAL(power7_nap)
+diff --git a/drivers/hv/channel.c b/drivers/hv/channel.c
+index 284cf66..531a593 100644
+--- a/drivers/hv/channel.c
++++ b/drivers/hv/channel.c
+@@ -808,12 +808,8 @@ int vmbus_recvpacket_raw(struct vmbus_channel *channel, void *buffer,
  
- _GLOBAL(power7_sleep)
- 	li	r3,1
--	li	r4,0
-+	li	r4,1
- 	b	power7_powersave_common
- 	/* No return */
+ 	*buffer_actual_len = packetlen;
  
+-	if (packetlen > bufferlen) {
+-		pr_err("Buffer too small - needed %d bytes but "
+-			"got space for only %d bytes\n",
+-			packetlen, bufferlen);
++	if (packetlen > bufferlen)
+ 		return -ENOBUFS;
+-	}
+ 
+ 	*requestid = desc.trans_id;
+ 
+-- 
+1.7.1
 
