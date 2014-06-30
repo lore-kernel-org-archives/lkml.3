@@ -1,153 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756921AbaF3Xmo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 19:42:44 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:65494 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752026AbaF3Xmm (ORCPT
+	id S1756799AbaF3XuQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 19:50:16 -0400
+Received: from mail-qc0-f201.google.com ([209.85.216.201]:42769 "EHLO
+	mail-qc0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751981AbaF3XuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 19:42:42 -0400
-Date: Mon, 30 Jun 2014 16:42:39 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Luiz Capitulino <lcapitulino@redhat.com>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        isimatu.yasuaki@jp.fujitsu.com, yinghai@kernel.org, riel@redhat.com,
-        andi@firstfloor.org, akpm@linux-foundation.org
-Subject: Re: [PATCH] x86: numa: setup_node_data(): drop dead code and rename
- function
-In-Reply-To: <20140619222019.3db6ad7e@redhat.com>
-Message-ID: <alpine.DEB.2.02.1406301639390.1327@chino.kir.corp.google.com>
-References: <20140619222019.3db6ad7e@redhat.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 30 Jun 2014 19:50:12 -0400
+From: David Decotigny <decot@googlers.com>
+To: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Eric Dumazet <edumazet@google.com>, Cong Wang <amwang@redhat.com>,
+        David Decotigny <decot@googlers.com>,
+        Antonio Quartulli <antonio@meshcoding.com>,
+        Jiri Pirko <jpirko@redhat.com>
+Subject: [PATCH net-next v1 1/2] netpoll: fix use after free
+Date: Mon, 30 Jun 2014 16:50:09 -0700
+Message-Id: <0f692012238337f2c40893319830ae042523ce18.1404172155.git.decot@googlers.com>
+X-Mailer: git-send-email 2.0.0.526.g5318336
+In-Reply-To: <cover.1404172155.git.decot@googlers.com>
+References: <cover.1404172155.git.decot@googlers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Jun 2014, Luiz Capitulino wrote:
+After a bonding master reclaims the netpoll info struct, slaves could
+still hold a pointer to the reclaimed data. This patch fixes it: as
+soon as netpoll_async_cleanup is called for a slave (eg. when
+un-enslaved), we make sure that this slave doesn't point to the data.
 
-> The setup_node_data() function allocates a pg_data_t object, inserts it
-> into the node_data[] array and initializes the following fields:
-> node_id, node_start_pfn and node_spanned_pages.
-> 
-> However, a few function calls later during the kernel boot,
-> free_area_init_node() re-initializes those fields, possibly with
-> different values. This means that the initialization done by
-> setup_node_data() is not used.
-> 
-> This causes a small glitch when running Linux as a hyperv numa guest:
-> 
-> [    0.000000] SRAT: PXM 0 -> APIC 0x00 -> Node 0
-> [    0.000000] SRAT: PXM 0 -> APIC 0x01 -> Node 0
-> [    0.000000] SRAT: PXM 1 -> APIC 0x02 -> Node 1
-> [    0.000000] SRAT: PXM 1 -> APIC 0x03 -> Node 1
-> [    0.000000] SRAT: Node 0 PXM 0 [mem 0x00000000-0x7fffffff]
-> [    0.000000] SRAT: Node 1 PXM 1 [mem 0x80200000-0xf7ffffff]
-> [    0.000000] SRAT: Node 1 PXM 1 [mem 0x100000000-0x1081fffff]
-> [    0.000000] NUMA: Node 1 [mem 0x80200000-0xf7ffffff] + [mem 0x100000000-0x1081fffff] -> [mem 0x80200000-0x1081fffff]
-> [    0.000000] Initmem setup node 0 [mem 0x00000000-0x7fffffff]
-> [    0.000000]   NODE_DATA [mem 0x7ffec000-0x7ffeffff]
-> [    0.000000] Initmem setup node 1 [mem 0x80800000-0x1081fffff]
-> [    0.000000]   NODE_DATA [mem 0x1081fa000-0x1081fdfff]
-> [    0.000000] crashkernel: memory value expected
-> [    0.000000]  [ffffea0000000000-ffffea0001ffffff] PMD -> [ffff88007de00000-ffff88007fdfffff] on node 0
-> [    0.000000]  [ffffea0002000000-ffffea00043fffff] PMD -> [ffff880105600000-ffff8801077fffff] on node 1
-> [    0.000000] Zone ranges:
-> [    0.000000]   DMA      [mem 0x00001000-0x00ffffff]
-> [    0.000000]   DMA32    [mem 0x01000000-0xffffffff]
-> [    0.000000]   Normal   [mem 0x100000000-0x1081fffff]
-> [    0.000000] Movable zone start for each node
-> [    0.000000] Early memory node ranges
-> [    0.000000]   node   0: [mem 0x00001000-0x0009efff]
-> [    0.000000]   node   0: [mem 0x00100000-0x7ffeffff]
-> [    0.000000]   node   1: [mem 0x80200000-0xf7ffffff]
-> [    0.000000]   node   1: [mem 0x100000000-0x1081fffff]
-> [    0.000000] On node 0 totalpages: 524174
-> [    0.000000]   DMA zone: 64 pages used for memmap
-> [    0.000000]   DMA zone: 21 pages reserved
-> [    0.000000]   DMA zone: 3998 pages, LIFO batch:0
-> [    0.000000]   DMA32 zone: 8128 pages used for memmap
-> [    0.000000]   DMA32 zone: 520176 pages, LIFO batch:31
-> [    0.000000] On node 1 totalpages: 524288
-> [    0.000000]   DMA32 zone: 7672 pages used for memmap
-> [    0.000000]   DMA32 zone: 491008 pages, LIFO batch:31
-> [    0.000000]   Normal zone: 520 pages used for memmap
-> [    0.000000]   Normal zone: 33280 pages, LIFO batch:7
-> 
-> In this dmesg, the SRAT table reports that the memory range for node 1
-> starts at 0x80200000. However, the line starting with "Initmem" reports
-> that node 1 memory range starts at 0x80800000. The "Initmem" line is
-> reported by setup_node_data() and is wrong, because the kernel ends up
-> using the range as reported in the SRAT table.
-> 
-> This commit drops all that dead code from setup_node_data(), renames it
-> to alloc_node_data() and adds a printk() to free_area_init_node() so
-> that we report a node's memory range accurately.
-> 
-> Here's the same dmesg section with this patch applied:
-> 
-> [    0.000000] SRAT: PXM 0 -> APIC 0x00 -> Node 0
-> [    0.000000] SRAT: PXM 0 -> APIC 0x01 -> Node 0
-> [    0.000000] SRAT: PXM 1 -> APIC 0x02 -> Node 1
-> [    0.000000] SRAT: PXM 1 -> APIC 0x03 -> Node 1
-> [    0.000000] SRAT: Node 0 PXM 0 [mem 0x00000000-0x7fffffff]
-> [    0.000000] SRAT: Node 1 PXM 1 [mem 0x80200000-0xf7ffffff]
-> [    0.000000] SRAT: Node 1 PXM 1 [mem 0x100000000-0x1081fffff]
-> [    0.000000] NUMA: Node 1 [mem 0x80200000-0xf7ffffff] + [mem 0x100000000-0x1081fffff] -> [mem 0x80200000-0x1081fffff]
-> [    0.000000] NODE_DATA(0) allocated [mem 0x7ffec000-0x7ffeffff]
-> [    0.000000] NODE_DATA(1) allocated [mem 0x1081fa000-0x1081fdfff]
-> [    0.000000] crashkernel: memory value expected
-> [    0.000000]  [ffffea0000000000-ffffea0001ffffff] PMD -> [ffff88007de00000-ffff88007fdfffff] on node 0
-> [    0.000000]  [ffffea0002000000-ffffea00043fffff] PMD -> [ffff880105600000-ffff8801077fffff] on node 1
-> [    0.000000] Zone ranges:
-> [    0.000000]   DMA      [mem 0x00001000-0x00ffffff]
-> [    0.000000]   DMA32    [mem 0x01000000-0xffffffff]
-> [    0.000000]   Normal   [mem 0x100000000-0x1081fffff]
-> [    0.000000] Movable zone start for each node
-> [    0.000000] Early memory node ranges
-> [    0.000000]   node   0: [mem 0x00001000-0x0009efff]
-> [    0.000000]   node   0: [mem 0x00100000-0x7ffeffff]
-> [    0.000000]   node   1: [mem 0x80200000-0xf7ffffff]
-> [    0.000000]   node   1: [mem 0x100000000-0x1081fffff]
-> [    0.000000] Node 0 memory range 0x00001000-0x7ffeffff
-> [    0.000000] On node 0 totalpages: 524174
-> [    0.000000]   DMA zone: 64 pages used for memmap
-> [    0.000000]   DMA zone: 21 pages reserved
-> [    0.000000]   DMA zone: 3998 pages, LIFO batch:0
-> [    0.000000]   DMA32 zone: 8128 pages used for memmap
-> [    0.000000]   DMA32 zone: 520176 pages, LIFO batch:31
-> [    0.000000] Node 1 memory range 0x80200000-0x1081fffff
-> [    0.000000] On node 1 totalpages: 524288
-> [    0.000000]   DMA32 zone: 7672 pages used for memmap
-> [    0.000000]   DMA32 zone: 491008 pages, LIFO batch:31
-> [    0.000000]   Normal zone: 520 pages used for memmap
-> [    0.000000]   Normal zone: 33280 pages, LIFO batch:7
-> 
-> This commit was tested on a two node bare-metal NUMA machine and Linux
-> as a numa guest on hyperv and qemu/kvm.
-> 
-> PS: The wrong memory range reported by setup_node_data() seems to be
->     harmless in the current kernel because it's just not used. However,
->     that bad range is used in kernel 2.6.32 to initialize the old boot
->     memory allocator, which causes a crash during boot.
-> 
-> Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
+The style of this patch is not nice, but it represents the simplest
+fix. The function is restructured by the next patch anyway ("netpoll:
+avoid reference leaks").
 
-With this patch, the dmesg changes break one of my scripts that we use to 
-determine the start and end address of a node (doubly bad because there's 
-no sysfs interface to determine this otherwise and we have to do this at 
-boot to acquire the system topology).
+Tested:
+  One way to reproduce the panic is with netconsole: with the script
+  below run in a loop without this patch. Same procedure with this
+  patch can run without panic.
+    CONFIG_NETCONSOLE=m
+    CONFIG_NETCONSOLE_DYNAMIC=y
+  Then run in a loop (dual port NIC makes it easier to crash):
+    ifconfig eth0 192.168.42.4 up
+    ifconfig eth1 192.168.56.4 up
+    sleep 10
+    modprobe -r netconsole
+    modprobe -r bonding
+    modprobe netconsole
+    modprobe bonding mode=4
+    echo +bond0 > /sys/class/net/bonding_masters
+    ifconfig bond0 192.168.56.3 up
+    mkdir /sys/kernel/config/netconsole/blah
+    echo 0 > /sys/kernel/config/netconsole/blah/enabled
+    echo bond0 > /sys/kernel/config/netconsole/blah/dev_name
+    echo 192.168.56.42 > /sys/kernel/config/netconsole/blah/remote_ip
+    echo 1 > /sys/kernel/config/netconsole/blah/enabled
+    # npinfo refcnt ->1
+    ifenslave bond0 eth1
+    # npinfo refcnt ->2
+    ifenslave bond0 eth0
+    # (this should be optional, preventing ndo_cleanup_nepoll below)
+    # npinfo refcnt ->3
+    sleep 3
+    ifenslave -d bond0 eth1
+    # npinfo refcnt ->2, eth1 keeps ptr to npinfo reclaimed later => garbage
+    sleep 1
+    echo -bond0 > /sys/class/net/bonding_masters
+    # netpoll_cleanup(bond0) + dec(refcnt)
+    # (should be optional: becomes -> 1 (aka. != 0)
+    #                      ==> do not call ndo_cleanup_nepoll)
+    # try to increase chance of writing garbage onto npinfo:
+    ls -lR / 2>&1 | tail -30
+    echo +bond0 > /sys/class/net/bonding_masters
+    ifconfig bond0 192.168.56.3 up
+    ifenslave bond0 eth1
+    # dev_open() called --> netpoll_rx_disable() + npinfo is garbage
+    #    -> down(&ni->dev_lock);
 
-Specifically, the removal of the
+Signed-off-by: David Decotigny <decot@googlers.com>
+---
+ net/core/netpoll.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-	"Initmem setup node X [mem 0xstart-0xend]"
+diff --git a/net/core/netpoll.c b/net/core/netpoll.c
+index e33937f..907fb5e 100644
+--- a/net/core/netpoll.c
++++ b/net/core/netpoll.c
+@@ -822,7 +822,8 @@ void __netpoll_cleanup(struct netpoll *np)
+ 
+ 		RCU_INIT_POINTER(np->dev->npinfo, NULL);
+ 		call_rcu_bh(&npinfo->rcu, rcu_cleanup_netpoll_info);
+-	}
++	} else
++		RCU_INIT_POINTER(np->dev->npinfo, NULL);
+ }
+ EXPORT_SYMBOL_GPL(__netpoll_cleanup);
+ 
+-- 
+2.0.0.526.g5318336
 
-lines that are replaced when each node is onlined to
-
-	"Node 0 memory range 0xstart-0xend"
-
-And if I just noticed this breakage when booting the latest -mm kernel, 
-I'm assuming I'm not the only person who is going to run into it.  Is it 
-possible to not change the dmesg output?
