@@ -1,60 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754882AbaF3Sjc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 14:39:32 -0400
-Received: from mail-by2lp0237.outbound.protection.outlook.com ([207.46.163.237]:36440
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752438AbaF3Sjb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 14:39:31 -0400
-Date: Mon, 30 Jun 2014 11:39:19 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: timers & suspend
+	id S1756725AbaF3SkV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 14:40:21 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:42995 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756226AbaF3SkU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 14:40:20 -0400
+Date: Mon, 30 Jun 2014 14:40:17 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Tony Luck <tony.luck@intel.com>
+Cc: <linux-kernel@vger.kernel.org>, <mingo@redhat.com>, <fweisbec@gmail.com>,
+        "<m.chehab@samsung.com> Xie XiuQi" <xiexiuqi@huawei.com>
+Subject: Re: [PATCH] tracing: Fix wraparound problems in "uptime" tracer
+Message-ID: <20140630144017.2abc48ba@gandalf.local.home>
+In-Reply-To: <f2aafdcb7166ea8e825d43d5eb835ccfea7db1b0.1404149831.git.tony.luck@intel.com>
+References: <20140630111040.58fe70de@gandalf.local.home>
+	<f2aafdcb7166ea8e825d43d5eb835ccfea7db1b0.1404149831.git.tony.luck@intel.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <f270ad9c-9906-445d-9e9a-4d3618787455@BY2FFO11FD039.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(164054003)(189002)(199002)(70736001)(53416004)(83322001)(4396001)(104016002)(21056001)(64706001)(106466001)(20776003)(77982001)(80022001)(46102001)(47776003)(76482001)(74502001)(44976005)(95666004)(81542001)(102836001)(6806004)(77096002)(81342001)(31696002)(74316001)(99396002)(85852003)(1496007)(87936001)(83506001)(23676002)(85182001)(92566001)(31966008)(74662001)(85306003)(92726001)(33646001)(54356999)(86362001)(79102001)(83072002)(50986999)(229853001)(107046002)(50466002)(107986001)(23106004);DIR:OUT;SFP:;SCL:1;SRVR:BY2FFO11HUB001;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
-X-OriginatorOrg: xilinx.onmicrosoft.com
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 0258E7CCD4
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=soren.brinkmann@xilinx.com; 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 30 Jun 2014 11:17:18 -0700
+Tony Luck <tony.luck@intel.com> wrote:
 
-I'm currently working on suspend for Zynq and try to track down some
-spurious wakes. It looks like the spurious wakes are caused by timers,
-hence I was wondering whether there are any special requirements for
-timer drivers when it comes to suspend support or if I just missed
-something.
+> There seem to be no non-racy solutions ... I've been wondering
+> about giving up on a generic jiffies_to_nsec() function because
+> people might use it in cases where the races might be likley to
+> bite them.  For my need, I think that "perfect is the enemy of good":
+> 
+> 1) The race window is only a few microseconds wide
+> 2) It only exists on 32-bit kernels - which are dying out on server
+>    systems because they can't handle the amounts of memory on modern
+>    machines.
+> 3) It opens every 49 days (on a HZ=1000 system)
+> 4) I'm logging error events that happen at a "per-month" frequency (or lower)
+> 5) If the race does happen - the visible result is that we have a
+>    bad time logged against an error event.
+> 
+> so what about this: ...
+> 
+> From: Tony Luck <tony.luck@intel.com>
+> 
+> The "uptime" tracer added in:
+>     commit 8aacf017b065a805d27467843490c976835eb4a5
+>     tracing: Add "uptime" trace clock that uses jiffies
+> has wraparound problems when the system has been up more
+> than 1 hour 11 minutes and 34 seconds. It converts jiffies
+> to nanoseconds using:
+> 	(u64)jiffies_to_usecs(jiffy) * 1000ULL
+> but since jiffies_to_usecs() only returns a 32-bit value, it
+> truncates at 2^32 microseconds.  An additional problem on 32-bit
+> systems is that the argument is "unsigned long", so fixing the
+> return value only helps until 2^32 jiffies (49.7 days on a HZ=1000
+> system).
+> 
+> We can't provide a full features jiffies_to_nsec() function in
+> any safe way (32-bit systems need locking to read the full 64-bit
+> jiffies value).  Just do the best we can here and recognise that
+> 32-bit systems may seem some timestamp anomolies if jiffies64
+> was in the middle of rolling over a 2^32 boundary.
+> 
+> Signed-off-by: Tony Luck <tony.luck@intel.com>
+> ---
+>  kernel/timeconst.bc        |  6 ++++++
+>  kernel/trace/trace_clock.c | 10 ++++++++--
+>  2 files changed, 14 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/timeconst.bc b/kernel/timeconst.bc
+> index 511bdf2cafda..a5fef7a7fb27 100644
+> --- a/kernel/timeconst.bc
+> +++ b/kernel/timeconst.bc
+> @@ -100,6 +100,12 @@ define timeconst(hz) {
+>  		print "#define USEC_TO_HZ_DEN\t\t", 1000000/cd, "\n"
+>  		print "\n"
+>  
+> +		obase=10
+> +		cd=gcd(hz,1000000000)
+> +		print "#define HZ_TO_NSEC_NUM\t\t", 1000000000/cd, "\n"
+> +		print "#define HZ_TO_NSEC_DEN\t\t", hz/cd, "\n"
+> +		print "\n"
+> +
+>  		print "#endif /* KERNEL_TIMECONST_H */\n"
+>  	}
+>  	halt
+> diff --git a/kernel/trace/trace_clock.c b/kernel/trace/trace_clock.c
+> index 26dc348332b7..dc5b11b9f8a4 100644
+> --- a/kernel/trace/trace_clock.c
+> +++ b/kernel/trace/trace_clock.c
+> @@ -59,13 +59,19 @@ u64 notrace trace_clock(void)
+>  
+>  /*
+>   * trace_jiffy_clock(): Simply use jiffies as a clock counter.
+> + * This usage of jiffies_64 isn't safe on 32-bit, but we may be
+> + * called from NMI context, and we have no safe way to get a timestamp.
+>   */
+>  u64 notrace trace_clock_jiffies(void)
+>  {
+> -	u64 jiffy = jiffies - INITIAL_JIFFIES;
+> +	u64 jiffy = jiffies_64 - INITIAL_JIFFIES;
+>  
+>  	/* Return nsecs */
+> -	return (u64)jiffies_to_usecs(jiffy) * 1000ULL;
+> +#if !(NSEC_PER_SEC % HZ)
+> +	return (NSEC_PER_SEC / HZ) * jiffy;
+> +#else
+> +	return (jiffy * HZ_TO_NSEC_NUM) / HZ_TO_NSEC_DEN;
 
-Zynq sets the 'IRQCHIP_MASK_ON_SUSPEND' flag, which should mask all
-interrupts but the wake source. Reading through kernel/irq/pm.c
-indicates, that timer interrupts get some special treatment though.
-Therefore I implemented some suspend/resume callbacks for the
-cadence_ttc which disable and clear the timer's interrupts when going
-into suspend. That seems to mitigate the issue quite a bit, but I still
-saw spurious wakes - just a lot less often.
-Digging a little deeper revealed, the spurious wakes are caused by the
-ARM's smp_twd timer now. Given that that driver is probably used by a few
-more ARM platforms, I get the feeling that I'm missing something.
+Wont this break on 32 bit systems. That is, you can't divide 64bit
+integers without using do_div().
 
-It's probably worth mentioning that the suspend state in Zynq does not
-power off the CPU cores. It just asserts the resets on secondary cores
-and the primary one waits in wfi.
+-- Steve
 
-	Thanks,
-	Sören
+> +#endif
+>  }
+>  
+>  /*
 
