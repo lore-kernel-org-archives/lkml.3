@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754455AbaF3V54 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 17:57:56 -0400
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:32862 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750836AbaF3V5z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 17:57:55 -0400
-Date: Mon, 30 Jun 2014 14:57:52 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Keith Busch <keith.busch@intel.com>
-cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        x86@kernel.org
-Subject: Re: [PATCH] x86: ioapic: Fix irq_free_descs count
-In-Reply-To: <1404142271-18311-1-git-send-email-keith.busch@intel.com>
-Message-ID: <alpine.DEB.2.02.1406301452060.13545@chino.kir.corp.google.com>
-References: <1404142271-18311-1-git-send-email-keith.busch@intel.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1754714AbaF3V7n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 17:59:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51968 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751124AbaF3V7m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 17:59:42 -0400
+Date: Mon, 30 Jun 2014 22:59:38 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] mm: replace init_page_accessed by __SetPageReferenced
+Message-ID: <20140630215938.GR10819@suse.de>
+References: <alpine.LSU.2.11.1406301405230.1096@eggly.anvils>
+ <alpine.LSU.2.11.1406301408310.1096@eggly.anvils>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.11.1406301408310.1096@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Jun 2014, Keith Busch wrote:
+On Mon, Jun 30, 2014 at 02:09:49PM -0700, Hugh Dickins wrote:
+> Do we really need an exported alias for __SetPageReferenced()?
+> Its callers better know what they're doing, in which case the page
+> would not be already marked referenced.  Kill init_page_accessed(),
+> just __SetPageReferenced() inline.
+> 
+> Signed-off-by: Hugh Dickins <hughd@google.com>
 
-> Signed-off-by: Keith Busch <keith.busch@intel.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: x86@kernel.org
+Ok, fair enough. The context it was written in was that callers should not
+need to know the internals of what mark_page_accessed does. Initially I
+thought there might be filesystem users that really should not know the
+internals but that is not necessary obviously. I still feel that
+init_page_accessed shows the intent more clearly and you're certainly
+right that the checking PageReferenced is redundant. I don't object to
+the patch but I don't think it's obviously better either other than it
+avoids the temptation of anyone using __SetPageReferenced incorrectly.
 
-Acked-by: David Rientjes <rientjes@google.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
 
-This is definitely a fix for "genirq: Provide generic hwirq allocation 
-facility", but the changelog doesn't describe what the problem is and the 
-title that this somehow fixes irq_free_descs() doesn't make any sense.
-
-It's the equivalent of just doing
-
--	irq_free_descs(from, cnt);
-+	irq_free_descs(from, i - from);
-
-I'd suggest the patch title be changed to
-
-	genirq: Fix memory leak when calling irq_free_hwirqs()
-
-and the changelog state
-
-irq_free_hwirqs() always calls irq_free_descs() with a cnt == 0 which 
-makes it a no-op since the interrupt count to free is decremented in 
-itself.
+-- 
+Mel Gorman
+SUSE Labs
