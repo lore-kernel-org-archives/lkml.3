@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755892AbaF3MiN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:38:13 -0400
+	id S1755920AbaF3Mih (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:38:37 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:53045 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964828AbaF3Mbg (ORCPT
+	by vger.kernel.org with ESMTP id S964795AbaF3Mbf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 08:31:36 -0400
+	Mon, 30 Jun 2014 08:31:35 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 137/181] USB: sierra: fix remote wakeup
-Date: Mon, 30 Jun 2014 13:52:38 +0200
-Message-Id: <21ea51b09f33ea8a04d43eb6094e2f14836c2d7b.1404128998.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Maurizio Lombardi <mlombard@redhat.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 125/181] ext4: fix wrong assert in ext4_mb_normalize_request()
+Date: Mon, 30 Jun 2014 13:52:26 +0200
+Message-Id: <b0337fd7c5e0d639a0c0d70cc0741c9d533723a1.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -23,74 +23,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Maurizio Lombardi <mlombard@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 80cc0fcbdaeaf10d04ba27779a2d7ceb73d2717a upstream.
+commit b5b60778558cafad17bbcbf63e0310bd3c68eb17 upstream.
 
-Make sure that needs_remote_wake up is always set when there are open
-ports.
+The variable "size" is expressed as number of blocks and not as
+number of clusters, this could trigger a kernel panic when using
+ext4 with the size of a cluster different from the size of a block.
 
-Currently close() would unconditionally set needs_remote_wakeup to 0
-even though there might still be open ports. This could lead to blocked
-input and possibly dropped data on devices that do not support remote
-wakeup (and which must therefore not be runtime suspended while open).
-
-Add an open_ports counter (protected by the susp_lock) and only clear
-needs_remote_wakeup when the last port is closed.
-
-Fixes: e6929a9020ac ("USB: support for autosuspend in sierra while
-online")
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Maurizio Lombardi <mlombard@redhat.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/usb/serial/sierra.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ fs/ext4/mballoc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/usb/serial/sierra.c b/drivers/usb/serial/sierra.c
-index 0988887e2059..d84a3f31ae2d 100644
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -58,6 +58,7 @@ struct sierra_intf_private {
- 	spinlock_t susp_lock;
- 	unsigned int suspended:1;
- 	int in_flight;
-+	unsigned int open_ports;
- };
+diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+index 04a5c7504be9..08ddfdac955c 100644
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -3135,7 +3135,7 @@ ext4_mb_normalize_request(struct ext4_allocation_context *ac,
+ 	}
+ 	BUG_ON(start + size <= ac->ac_o_ex.fe_logical &&
+ 			start > ac->ac_o_ex.fe_logical);
+-	BUG_ON(size <= 0 || size > EXT4_CLUSTERS_PER_GROUP(ac->ac_sb));
++	BUG_ON(size <= 0 || size > EXT4_BLOCKS_PER_GROUP(ac->ac_sb));
  
- static int sierra_set_power_state(struct usb_device *udev, __u16 swiState)
-@@ -776,7 +777,6 @@ static void sierra_close(struct usb_serial_port *port)
- 
- 	mutex_lock(&serial->disc_mutex);
- 	if (!serial->disconnected) {
--		serial->interface->needs_remote_wakeup = 0;
- 		/* odd error handling due to pm counters */
- 		if (!usb_autopm_get_interface(serial->interface))
- 			sierra_send_setup(port);
-@@ -787,6 +787,8 @@ static void sierra_close(struct usb_serial_port *port)
- 	mutex_unlock(&serial->disc_mutex);
- 	spin_lock_irq(&intfdata->susp_lock);
- 	portdata->opened = 0;
-+	if (--intfdata->open_ports == 0)
-+		serial->interface->needs_remote_wakeup = 0;
- 	spin_unlock_irq(&intfdata->susp_lock);
- 
- 	for (;;) {
-@@ -842,9 +844,10 @@ static int sierra_open(struct tty_struct *tty, struct usb_serial_port *port)
- 
- 	sierra_send_setup(port);
- 
--	serial->interface->needs_remote_wakeup = 1;
- 	spin_lock_irq(&intfdata->susp_lock);
- 	portdata->opened = 1;
-+	if (++intfdata->open_ports == 1)
-+		serial->interface->needs_remote_wakeup = 1;
- 	spin_unlock_irq(&intfdata->susp_lock);
- 	usb_autopm_put_interface(serial->interface);
+ 	/* now prepare goal request */
  
 -- 
 2.0.0
