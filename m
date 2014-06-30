@@ -1,142 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753242AbaF3PUG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 11:20:06 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:55949 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750868AbaF3PUE (ORCPT
+	id S1753986AbaF3PUl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 11:20:41 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:41233 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752344AbaF3PUj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 11:20:04 -0400
-Date: Mon, 30 Jun 2014 17:19:06 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Dan Williams <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>,
-        "andriy.shevchenko@intel.com" <andriy.shevchenko@intel.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "zhuzhenhua@allwinnertech.com" <zhuzhenhua@allwinnertech.com>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
-        "linux-sunxi@googlegroups.com" <linux-sunxi@googlegroups.com>,
-        "kevin.z.m.zh@gmail.com" <kevin.z.m.zh@gmail.com>,
-        "sunny@allwinnertech.com" <sunny@allwinnertech.com>,
-        "shuge@allwinnertech.com" <shuge@allwinnertech.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v10 2/2] dmaengine: sun6i: Add driver for the Allwinner
- A31 DMA controller
-Message-ID: <20140630151906.GG28647@lukather>
-References: <1404134454-25513-1-git-send-email-maxime.ripard@free-electrons.com>
- <1404134454-25513-3-git-send-email-maxime.ripard@free-electrons.com>
- <20140630142054.GA8756@leverpostej>
+	Mon, 30 Jun 2014 11:20:39 -0400
+Message-ID: <53B18053.2030805@kernel.dk>
+Date: Mon, 30 Jun 2014 09:20:51 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="UKNXkkdQCYZ6W5l3"
-Content-Disposition: inline
-In-Reply-To: <20140630142054.GA8756@leverpostej>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Christoph Hellwig <hch@lst.de>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: Bart Van Assche <bvanassche@fusionio.com>, Robert Elliott <Elliott@hp.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chris Mason <clm@fb.com>
+Subject: Re: scsi-mq V2
+References: <1403715121-1201-1-git-send-email-hch@lst.de> <53ABA6A4.8090400@kernel.dk>
+In-Reply-To: <53ABA6A4.8090400@kernel.dk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/25/2014 10:50 PM, Jens Axboe wrote:
+> On 2014-06-25 10:51, Christoph Hellwig wrote:
+>> This is the second post of the scsi-mq series.
+>>
+>> At this point the code is ready for merging and use by developers and
+>> early
+>> adopters.  The core blk-mq code isn't that suitable for slow devices
+>> yet, mostly due to the lack of an I/O scheduler, but Jens is working
+>> on it.
+>> Similarly there is no dm-multipath support for drivers using blk-mq yet,
+>> but I'm working on it.  It should also be noted that the code doesn't
+>> actually support multiple hardware queues or fine grained tuning of the
+>> blk-mq parameters yet.  All these could be added fairly easily as soon
+>> as low-level drivers want to make use of them.
+>>
+>> The amount of chances to the existing code are fairly small, and mostly
+>> speedups or cleanups that also apply to the old path as well.  Because
+>> of this I also haven't bothered to put it under a config option, just
+>> like the blk-mq core.
+>>
+>> The usage of blk-mq dramatically decreases CPU usage under all
+>> workloads going
+>> down from 100% CPU usage that the old setup can hit easily to usually
+>> less
+>> than 20% for maxing out storage subsystems with 512byte reads and writes,
+>> and it allows to easily archive millions of IOPS.  Bart and Robert have
+>> helped with some very detailed measurements that they might be able to
+>> send
+>> in reply to this, although these usually involve significantly
+>> reworked low
+>> level drivers to avoid other bottle necks.
+>>
+>> One major objection to previous iterations of this code was the simple
+>> replacement of the host_lock with atomic counters for the host and busy
+>> counters.  The host_lock avoidance on it's own already improves
+>> performance,
+>> and with the patch to avoid maintaining the per-target busy counter
+>> unless
+>> needed we now replace a lock round trip on the host_lock with just a
+>> single
+>> atomic increment in the submission path, and a single atomic decrement in
+>> completion path, which should provide benefits even for the oddest RISC
+>> architecture.  Longer term I'd still love to get rid of these entirely
+>> and use the counters in blk-mq, but due to the difference in how they
+>> are maintained this doesn't seem feasible as long as we still need to
+>> support the legacy request code path.
+>>
+>> Changes from V1:
+>>   - rebased on top of the core-for-3.17 branch, most notable the
+>>     scsi logging changes
+>>   - fixed handling of cmd_list to prevent crashes for some heavy
+>>     workloads
+>>   - fixed incorrect handling of !target->can_queue
+>>   - avoid scheduling a workqueue on I/O completions when no queues
+>>     are congested
+>>
+>> In addition to the patches in this thread there also is a git
+>> available at:
+>>
+>>     git://git.infradead.org/users/hch/scsi.git scsi-mq.2
+> 
+> You can add my acked/reviewed-by to the series.
 
---UKNXkkdQCYZ6W5l3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Ran stress testing from Friday to now, 65h of beating up on it and no
+problems observed. 47TB read and 20TB written for a total of 17.7
+billion of IOs issued and completed. Latencies look good. I officially
+declare this code for bug free.
 
-On Mon, Jun 30, 2014 at 03:20:54PM +0100, Mark Rutland wrote:
-> Hi Maxime,
->=20
-> On Mon, Jun 30, 2014 at 02:20:54PM +0100, Maxime Ripard wrote:
-> > The Allwinner A31 has a 16 channels DMA controller that it shares with =
-the
-> > newer A23. Although sharing some similarities with the DMA controller o=
-f the
-> > older Allwinner SoCs, it's significantly different, I don't expect it t=
-o be
-> > possible to share the driver for these two.
-> >
-> > The A31 Controller is able to memory-to-memory or memory-to-device tran=
-sfers on
-> > the 16 channels in parallel.
-> >
-> > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> > Acked-by: Arnd Bergmann <arnd@arndb.de>
-> > ---
-> >  drivers/dma/Kconfig     |    8 +
-> >  drivers/dma/Makefile    |    1 +
-> >  drivers/dma/sun6i-dma.c | 1058 +++++++++++++++++++++++++++++++++++++++=
-++++++++
-> >  3 files changed, 1067 insertions(+)
-> >  create mode 100644 drivers/dma/sun6i-dma.c
->=20
-> [...]
->=20
-> > +       sdc->clk =3D devm_clk_get(&pdev->dev, NULL);
-> > +       if (IS_ERR(sdc->clk)) {
-> > +               dev_err(&pdev->dev, "No clock specified\n");
-> > +               return PTR_ERR(sdc->clk);
-> > +       }
-> > +
-> > +       mux =3D clk_get(NULL, "ahb1_mux");
-> > +       if (IS_ERR(mux)) {
-> > +               dev_err(&pdev->dev, "Couldn't get AHB1 Mux\n");
-> > +               return PTR_ERR(mux);
-> > +       }
-> > +
-> > +       pll6 =3D clk_get(NULL, "pll6");
-> > +       if (IS_ERR(pll6)) {
-> > +               dev_err(&pdev->dev, "Couldn't get PLL6\n");
-> > +               clk_put(mux);
-> > +               return PTR_ERR(pll6);
-> > +       }
->=20
-> I'm slightly confused. The binding listed a single unnamed clock (the
-> AHB clock). What is going on here?
+Bug-free-by: Jens Axboe <axboe@fb.com>
 
-The device itself needs only a single clock to work...
+Now lets get this queued up for inclusion, pretty please.
 
->=20
-> > +       ret =3D clk_set_parent(mux, pll6);
-> > +       clk_put(pll6);
-> > +       clk_put(mux);
-> > +
-> > +       if (ret) {
-> > +               dev_err(&pdev->dev, "Couldn't reparent AHB1 on PLL6\n");
-> > +               return ret;
-> > +       }
->=20
-> Why do we need to reparent the mux?
+-- 
+Jens Axboe
 
-=2E.. but will function only if this clock is derived from PLL6.
-
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---UKNXkkdQCYZ6W5l3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTsX/qAAoJEBx+YmzsjxAgiBQP/i1Bt/MURmqOl/i99S0lQaKZ
-QaE/6JYnbTMeKhvCVGfiqa2ePedDoHT+W4v7dlPgZ1vytPDKfInOXuKceCD+cQ1b
-h3Zt5Cngp0ZqxHbFZIwYRv0inS5e6tRzCqpo3yv+VaOh8KHuIOOH7GhLsOPdgQ8o
-iTekM0HPZ4HH/m3XKMcNO7JXtKOgxbFzHqFpS9yQIgj931XkuPlJY8IKAaO/QiSG
-jLpeX6hmyPHWt6iCRny9sg7G80F0fLVmrdpQjDnhPFsXkH9iG4pfJuzyDl5kRhFJ
-mehxW4rEYvd3FzSUMyXj+eRDSECtVJxP9mLaOtkuqeVEGo9E/bl81ZZcFEQPbCbB
-paU+BMC06b4wrqU0lcjXAJir+Jvy/1819QJ8DVesx2a7kkqxlEeNUk2aQTCohHuI
-NzQCM6Ztfyiuj5va0juVrMMi3NH0YuyNRi60BfMMebRUCHv9OSZLokdFDozLgCDb
-A3oinkkznggdU3whKwrrKoCbmy+lWIJbJRMhCQ+SVpCg5yx+LVA1FhwwnqUGxUDG
-22iUhW1lLTq3Z84A/oTuu8ydOiwzeDSckgINVmP7tDClwVHVQzkbL2JVebC5TqLU
-7dtQtFsXznd3TXegqlyg33wl4q0YUxw4Ton/1YAyAaBKwo8tRG9Qv3tFPrJiRpeF
-LFztFuLbUmJXtm00avpR
-=/YaY
------END PGP SIGNATURE-----
-
---UKNXkkdQCYZ6W5l3--
