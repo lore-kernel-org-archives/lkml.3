@@ -1,54 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756871AbaF3SCe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 14:02:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5411 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756643AbaF3SCd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 14:02:33 -0400
-Message-ID: <53B1A62A.9070500@redhat.com>
-Date: Mon, 30 Jun 2014 20:02:18 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1756454AbaF3SGZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 14:06:25 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:37031 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754315AbaF3SGY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 14:06:24 -0400
 MIME-Version: 1.0
-To: Bandan Das <bsd@redhat.com>
-CC: Nadav Amit <nadav.amit@gmail.com>, Nadav Amit <namit@cs.technion.ac.il>,
-        gleb@kernel.org, tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] KVM: x86: Fix lapic.c debug prints
-References: <1404034131-2392-1-git-send-email-namit@cs.technion.ac.il>	<jpgr427kys6.fsf@redhat.com> <53B0B773.3030107@gmail.com>	<53B1541E.4080008@redhat.com> <jpgsimmuwij.fsf@nelium.bos.redhat.com>
-In-Reply-To: <jpgsimmuwij.fsf@nelium.bos.redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140630173944.GA1377@localhost>
+References: <53aeb8bc.DsBnC5jOuuC6IST2%fengguang.wu@intel.com>
+	<20140628140726.GD5691@localhost>
+	<CAGXu5j++FFJ2=2Q07kcY9_Fk2dnvA+BR8kKRCe27cgusbbpjrw@mail.gmail.com>
+	<20140630173944.GA1377@localhost>
+Date: Mon, 30 Jun 2014 11:06:23 -0700
+Message-ID: <CAGXu5j+2DqMGt6v=CNWfAruxFfOtTfvahhV0MYZtSB3Gyh+OkA@mail.gmail.com>
+Subject: Re: net/netfilter/xt_LOG.c:43: error: format not a string literal and
+ no format arguments
+From: Kees Cook <keescook@google.com>
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 30/06/2014 19:39, Bandan Das ha scritto:
-> Paolo Bonzini <pbonzini@redhat.com> writes:
->
->> Il 30/06/2014 03:03, Nadav Amit ha scritto:
->>>>>
->>>>>           sipi_vector = apic->sipi_vector;
->>>>> -        pr_debug("vcpu %d received sipi with vector # %x\n",
->>>>> +        apic_debug("vcpu %d received sipi with vector # %x\n",
->>>>
->>>> Why don't we just use pr_debug all throughout ?
->>>>
->>> I don't know. I just tried to make it consistent, since it really bugged
->>> me while I was debugging the local-apic.
->>> If you prefer the other way around (which does seem to be better), I can
->>> do the search-and-replace.
+On Mon, Jun 30, 2014 at 10:39 AM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
+> On Mon, Jun 30, 2014 at 10:05:01AM -0700, Kees Cook wrote:
+>> On Sat, Jun 28, 2014 at 7:07 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+>> > tree:   git://internal_merge_and_test_tree devel-ant-um-201406281943
+>> > head:   fbb9065499371b760e0543f2ff66fde4778b46ae
+>> > commit: 2af37708d3ce0ae78898051ea76bc7c5f683171c [30/31] Merge 'nftables/master' into devel-ant-um-201406281943
+>> > config: make ARCH=avr32 atngw100_defconfig
+>> >
+>> > All error/warnings:
+>> >
+>> >    net/netfilter/xt_LOG.c: In function 'log_tg':
+>> >>> net/netfilter/xt_LOG.c:43: error: format not a string literal and no format arguments
+>> >
+>> > vim +43 net/netfilter/xt_LOG.c
+>> >
+>> > 6939c33a Richard Weinberger 2012-02-10  27  #include <linux/netfilter/xt_LOG.h>
+>> > 6939c33a Richard Weinberger 2012-02-10  28  #include <linux/netfilter_ipv6/ip6_tables.h>
+>> > 6939c33a Richard Weinberger 2012-02-10  29  #include <net/netfilter/nf_log.h>
+>> > 6939c33a Richard Weinberger 2012-02-10  30
+>> > 6939c33a Richard Weinberger 2012-02-10  31  static unsigned int
+>> > 6939c33a Richard Weinberger 2012-02-10  32  log_tg(struct sk_buff *skb, const struct xt_action_param *par)
+>> > 6939c33a Richard Weinberger 2012-02-10  33  {
+>> > 6939c33a Richard Weinberger 2012-02-10  34      const struct xt_log_info *loginfo = par->targinfo;
+>> > 6939c33a Richard Weinberger 2012-02-10  35      struct nf_loginfo li;
+>> > 8cdb46da Hans Schillstrom   2013-05-15  36      struct net *net = dev_net(par->in ? par->in : par->out);
+>> > 6939c33a Richard Weinberger 2012-02-10  37
+>> > 6939c33a Richard Weinberger 2012-02-10  38      li.type = NF_LOG_TYPE_LOG;
+>> > 6939c33a Richard Weinberger 2012-02-10  39      li.u.log.level = loginfo->level;
+>> > 6939c33a Richard Weinberger 2012-02-10  40      li.u.log.logflags = loginfo->logflags;
+>> > 6939c33a Richard Weinberger 2012-02-10  41
+>> > fab4085f Pablo Neira Ayuso  2014-06-18  42      nf_log_packet(net, par->family, par->hooknum, skb, par->in, par->out,
+>> > fab4085f Pablo Neira Ayuso  2014-06-18 @43                    &li, loginfo->prefix);
 >>
->> vcpu number probably could be moved inside apic_debug, at which point
->> apic_debug becomes preferrable.
+>> This needs to be:
+>>
+>> nf_log_packet(net, par->family, par->hooknum, skb, par->in, par->out,
+>>                      &li, "%s", loginfo->prefix);
+>>
+>> Without this, any format strings contained by "prefix" can get
+>> processed and leak kernel contents.
 >
-> I am not sure, I think all that could be achieved with a file private
-> debug define can be done with pr_debug which is generic.
-> Nadav didn't introduce apic_debug to this file, so I am
-> fine either way.
+>
+> http://git.kernel.org/cgit/linux/kernel/git/pablo/nf-next.git/commit/?id=ca1aa54f272d47bec77baa292f803df7a81f966b
 
-I am applying the patch, anything else can be done on top.
+Ah-ha! Perfect, thanks! :)
 
-Paolo
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
