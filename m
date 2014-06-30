@@ -1,74 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755205AbaF3I4O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 04:56:14 -0400
-Received: from mail1.skidata.com ([91.230.2.99]:19171 "EHLO mail1.skidata.com"
+	id S1755180AbaF3I47 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 04:56:59 -0400
+Received: from mga11.intel.com ([192.55.52.93]:33602 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753136AbaF3I4N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 04:56:13 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqEEAP4ksVOsEApK/2dsb2JhbABahDnFWQGBI3WEAwEBBAEnEz8FCwsNCAwlD0gGDgWIOg3GXhePBweEQwEEml2HMJASgi4
-X-IPAS-Result: AqEEAP4ksVOsEApK/2dsb2JhbABahDnFWQGBI3WEAwEBBAEnEz8FCwsNCAwlD0gGDgWIOg3GXhePBweEQwEEml2HMJASgi4
-Date: Mon, 30 Jun 2014 10:56:09 +0200
-From: Richard Leitner <richard.leitner@skidata.com>
-To: David Laight <David.Laight@ACULAB.COM>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felipe Balbi <balbi@ti.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv2] usb: gadget: serial: replace hardcoded ttyGS with
- PREFIX
-Message-ID: <20140630105609.66d4be83@lxbuild.skidata.net>
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D1726930B@AcuExch.aculab.com>
-References: <20140627133721.10ca6cab@lxbuild.skidata.net>
-	<20140627174628.GA1449@kroah.com>
-	<20140630083205.596557f1@lxbuild.skidata.net>
-	<20140630103616.620a13a2@lxbuild.skidata.net>
-	<063D6719AE5E284EB5DD2968C1650D6D1726930B@AcuExch.aculab.com>
-Organization: SKIDATA AG
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	id S1754240AbaF3I46 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 04:56:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,573,1400050800"; 
+   d="scan'208";a="562903331"
+Message-ID: <1404118612.5102.4.camel@smile.fi.intel.com>
+Subject: Re: [PATCH v2 2/2] lib.c: skip --param parameters
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Christopher Li <sparse@chrisli.org>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux-Sparse <linux-sparse@vger.kernel.org>
+Date: Mon, 30 Jun 2014 11:56:52 +0300
+In-Reply-To: <CANeU7Qk6e-CAK_aRTzq=ev_esQ9uGsbc6ihH7m-0=ngoPotVzg@mail.gmail.com>
+References: <1402996306-6811-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <1402996306-6811-3-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <CANeU7QnLad1f4KkLpTGSWB8eD8_La-tACim6rR7DLQ=hggwhOQ@mail.gmail.com>
+	 <1404117165.5102.3.camel@smile.fi.intel.com>
+	 <CANeU7Qk6e-CAK_aRTzq=ev_esQ9uGsbc6ihH7m-0=ngoPotVzg@mail.gmail.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.16.60.30]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Mon, 30 Jun 2014 08:41:18 +0000
-David Laight <David.Laight@ACULAB.COM> wrote:
-
-> From: Of Richard Leitner
-> > Replaces all hardcoded ttyGS strings with the PREFIX macro.
-> > Due to the fact the strings are spread over different source files the
-> > PREFIX definition is moved to u_serial.h
+On Mon, 2014-06-30 at 01:51 -0700, Christopher Li wrote:
+> On Mon, Jun 30, 2014 at 1:32 AM, Andy Shevchenko
+> <andriy.shevchenko@linux.intel.com> wrote:
+> >
+> > Hmm... I'd just added test printf to the handle_param() and see if I
+> > print *next, it is either --param or --param=*. So, using return (next +
+> > 2) helps, otherwise we end up with the same situation as before patch.
 > 
-> Lots of changes like:
-> > -		DBG(cdev, "acm ttyGS%d completion, err %d\n",
-> > -				acm->port_num, req->status);
-> > +		DBG(cdev, "acm %s%d completion, err %d\n",
-> > +				PREFIX, acm->port_num, req->status);
+> The return value from handle_switch() is a bit tricky. It is actually points to
+> the current args which about to be expired.
 > 
-> I'm not sure this improves the code.
+> Take a look at this code which invoke the handle_switch().
+>     for (;;) {
+>         char *arg = *++args;      <---------------- notice the ++
+> before the fetch
+>         if (!arg)
+>             break;
+> 
+>         if (arg[0] == '-' && arg[1]) {
+>             args = handle_switch(arg+1, args); <-------- args return here.
+>             continue;
+>         }
+>         add_ptr_list_notag(filelist, arg);
+>     }
+> 
+> >
+> > What did I miss?
+> 
+> So the caller loop will perform 1 pointer advance before fetch.
+> Your code can advance 2 pointer, so that is  total 3 pointer advance.
 
-Maybe you're right, the readability of the code wouldn't be better afterwards,
-but as I already mentioned IMHO if there is such a macro it should be used everywhere or nowhere...
-
-> Do you see a need to ever change PREFIX?
-
-To be honest: I don't know who would ever need this (me probably not).
-
-So the other idea is to carve it out completely?
+Yeah, thanks for explanation. Just noticed this after send a message.
 
 > 
-> Even if it is a reasonable change, the name PREFIX is hopeless.
-> It would have to be something like ACM_TTYNAME_PREFIX.
-
-good point.
-
+> >
+> > Which was explicitly mentioned in the commit message.
 > 
-> 	David
+> Sorry about that, I jump to the code first. I later notice that  in
+> the commit message as well.
+> 
+> Any way, the change I push should fix all that.
 
-regards,
-richard
+Yup. Thank you.
+
+
+-- 
+Andy Shevchenko <andriy.shevchenko@intel.com>
+Intel Finland Oy
+
