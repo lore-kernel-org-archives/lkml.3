@@ -1,115 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754601AbaF3Wnc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 18:43:32 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:36052 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752158AbaF3Wn3 (ORCPT
+	id S1755487AbaF3WrQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 18:47:16 -0400
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:58764 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751745AbaF3WrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 18:43:29 -0400
-Message-ID: <53B1E80B.5040503@wwwdotorg.org>
-Date: Mon, 30 Jun 2014 16:43:23 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 30 Jun 2014 18:47:14 -0400
+Date: Mon, 30 Jun 2014 16:47:09 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Andreas Noever <andreas.noever@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH] PCI: Do not touch siblings in
+ pci_assign_unassigned_bridge_resources
+Message-ID: <20140630224709.GA22024@google.com>
+References: <1402346730-2508-1-git-send-email-andreas.noever@gmail.com>
+ <20140617221620.GC30559@google.com>
+ <CAE9FiQXD7hvt0cUYMzvq0r6CbZn=iJZc7BHRaF2nACbG7qwuBQ@mail.gmail.com>
+ <CAMxnaaWWuNeNbnUe++N=2bBfs5JyKiq7tHH+_kiQZyQ9aakEHg@mail.gmail.com>
+ <CAE9FiQVQ657vDOhdhBq5VC044qt6TUF7FKP_-qy+35g71e56Yg@mail.gmail.com>
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        Will Deacon <will.deacon@arm.com>, Joerg Roedel <joro@8bytes.org>,
-        Cho KyongHo <pullip.cho@samsung.com>,
-        Grant Grundler <grundler@chromium.org>,
-        Dave Martin <Dave.Martin@arm.com>, Marc Zyngier <marc.zyngier@arm.com>,
-        Hiroshi Doyu <hdoyu@nvidia.com>, Olav Haugan <ohaugan@codeaurora.org>,
-        Paul Walmsley <pwalmsley@nvidia.com>,
-        Rhyland Klein <rklein@nvidia.com>, Allen Martin <amartin@nvidia.com>,
-        devicetree@vger.kernel.org, iommu@lists.linux-foundation.org,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC 04/10] memory: Add Tegra124 memory controller support
-References: <1403815790-8548-1-git-send-email-thierry.reding@gmail.com> <1403815790-8548-5-git-send-email-thierry.reding@gmail.com>
-In-Reply-To: <1403815790-8548-5-git-send-email-thierry.reding@gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQVQ657vDOhdhBq5VC044qt6TUF7FKP_-qy+35g71e56Yg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2014 02:49 PM, Thierry Reding wrote:
-> From: Thierry Reding <treding@nvidia.com>
+On Wed, Jun 18, 2014 at 09:41:02PM -0700, Yinghai Lu wrote:
+> On Wed, Jun 18, 2014 at 3:40 PM, Andreas Noever
+> <andreas.noever@gmail.com> wrote:
+> > On Wed, Jun 18, 2014 at 1:39 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> > It seems to fix the testcase (no unwanted resources are released). But
+> > why do you reassign bus and not just skip the top level bridge? If one
+> > of the allocations below bridge failed then a resource of that device
+> > will be in fail_res and bridge->subordinate will get released anyways?
+> > Also by not removing fail_res from the list you trigger the code in
+> > the next loop for the top level bridge (in particular the res->flags =
+> > 0 line looks dangerous).
 > 
-> The memory controller on NVIDIA Tegra124 exposes various knobs that can
-> be used to tune the behaviour of the clients attached to it.
+> Should not be dangerous, just second try.
+
+I still don't understand this.  Why do we set "res->flags = 0"?  That
+clears out the resource type.  Where do we figure out the type of "res"
+again?
+
+> > Could you explain why this function attempts to assign resources two
+> > times? In which scenario will a second attempt be successful?
 > 
-> Currently this driver sets up the latency allowance registers to the HW
-> defaults. Eventually an API should be exported by this driver (via a
-> custom API or a generic subsystem) to allow clients to register latency
-> requirements.
+> For example, at first mmio is assigned (by firmware), but pref mmio fails,
+> then before second try,  mmio get cleared, then we could separate
+> mmio and mmio pref. So need to try again for pref mmio.
 > 
-> This driver also registers an IOMMU (SMMU) that's implemented by the
-> memory controller.
+> Also I missed one MEM_64 for hotplug path.
+> 
+> So we need two patches.
+> 
+> Thanks
+> 
+> Yinghai
 
-> diff --git a/drivers/memory/Kconfig b/drivers/memory/Kconfig
-
-> +config TEGRA124_MC
-> +	bool "Tegra124 Memory Controller driver"
-> +	depends on ARCH_TEGRA
-
-Does it make sense to default to y for system-level drivers like this?
-
-> diff --git a/drivers/memory/tegra124-mc.c b/drivers/memory/tegra124-mc.c
-
-As a general comment, I wonder why the Tegra124 code/data here is
-ifdef'd based on CONFIG_ARCH_TEGRA_124_SOC but the Tegra132 code isn't
-ifdef'd at all. I'd assert that the Tegra124 code is small enough it's
-hardly worth worrying about ifdefs.
-
-> +static inline void smmu_flush_ptc(struct tegra_smmu *smmu, struct page *page,
-> +				  unsigned long offset)
-> +{
-> +	phys_addr_t phys = page ? page_to_phys(page) : 0;
-> +	u32 value;
+> Subject: [PATCH] pci: Don't release sibiling bridge resources
+> 
+> On hotplug case, we should not touch sibling bridges that is out
+> side of the slots.
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> 
+> ---
+>  drivers/pci/setup-bus.c |   12 +++++++++---
+>  1 file changed, 9 insertions(+), 3 deletions(-)
+> 
+> Index: linux-2.6/drivers/pci/setup-bus.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/pci/setup-bus.c
+> +++ linux-2.6/drivers/pci/setup-bus.c
+> @@ -1676,10 +1676,16 @@ again:
+>  	 * Try to release leaf bridge's resources that doesn't fit resource of
+>  	 * child device under that bridge
+>  	 */
+> -	list_for_each_entry(fail_res, &fail_head, list)
+> -		pci_bus_release_bridge_resources(fail_res->dev->bus,
+> +	list_for_each_entry(fail_res, &fail_head, list) {
+> +		struct pci_bus *bus = fail_res->dev->bus;
 > +
-> +	if (page) {
-> +		offset &= ~(smmu->soc->atom_size - 1);
+> +		if (fail_res->dev == bridge)
+> +			bus = bridge->subordinate;
 > +
-> +#ifdef CONFIG_PHYS_ADDR_T_64BIT
-> +		value = (phys >> 32) & SMMU_PTC_FLUSH_HI_MASK;
-> +#else
-> +		value = 0;
-> +#endif
+> +		pci_bus_release_bridge_resources(bus,
+>  						 fail_res->flags & type_mask,
+>  						 whole_subtree);
+> +	}
+>  
+>  	/* restore size and flags */
+>  	list_for_each_entry(fail_res, &fail_head, list) {
 
-Shouldn't Tegra124 have CONFIG_PHYS_ADDR_T_64BIT defined, such that
-there's no need for this ifdef? Certainly Tegra124 {has,can have} RAM
-above 4GB physical, for some memory map layouts (i.e. non swiss cheese).
+> Subject: [PATCH] pci: Add back missing MEM_64 check for hotplug path
+> 
+> We miss that in
+> |  commit 5b28541552ef5eeffc41d6936105f38c2508e566
+> |    PCI: Restrict 64-bit prefetchable bridge windows to 64-bit resources
+> for pci hotplug path.
 
-(I assume most of this code matches the existing Tegra30 SMMU driver, so
-I didn't look at all of it that closely).
+This changelog is useless.  I don't have time to spend a few hours
+figuring out why we want this change.
 
-> +static int tegra_smmu_attach(struct iommu *iommu, struct device *dev)
-...
-> +#ifndef CONFIG_ARM64
-> +	return arm_iommu_attach_device(dev, group->mapping);
-> +#else
-> +	return 0;
-> +#endif
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> 
+> ---
+>  drivers/pci/setup-bus.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> Index: linux-2.6/drivers/pci/setup-bus.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/pci/setup-bus.c
+> +++ linux-2.6/drivers/pci/setup-bus.c
+> @@ -1652,7 +1652,7 @@ void pci_assign_unassigned_bridge_resour
+>  	struct pci_dev_resource *fail_res;
+>  	int retval;
+>  	unsigned long type_mask = IORESOURCE_IO | IORESOURCE_MEM |
+> -				  IORESOURCE_PREFETCH;
+> +				  IORESOURCE_PREFETCH | IORESOURCE_MEM_64;
+>  
+>  again:
+>  	__pci_bus_size_bridges(parent, &add_list);
 
-Hmm. Why must an SMMU driver for the exact same HW operate differently
-depending on the CPU that's attached to the SoC? Surely the requirements
-for how IOMMU drives should work should be the same for all architectures?
-
-> +static int tegra_mc_probe(struct platform_device *pdev)
-
-> +	err = devm_request_irq(&pdev->dev, mc->irq, tegra124_mc_irq,
-> +			       IRQF_SHARED, dev_name(&pdev->dev), mc);
-
-I don't see any code in tegra_mc_remove() that guarantees that the IRQ
-won't fire between tegra_mc_remove() returning, and the devm cleanup
-code running to unhook that IRQ handler.
-
-> diff --git a/include/dt-bindings/memory/tegra124-mc.h b/include/dt-bindings/memory/tegra124-mc.h
-
-This file is part of the DT binding, so should be added in the patch
-that adds the binding.
