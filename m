@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756158AbaF3Q4e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 12:56:34 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:42881 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753948AbaF3Q4d (ORCPT
+	id S1756602AbaF3Q5D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 12:57:03 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:52569 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756510AbaF3Q46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 12:56:33 -0400
-Date: Mon, 30 Jun 2014 22:26:26 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] tracing/uprobes: Revert "Support mix of ftrace and
- perf"
-Message-ID: <20140630165626.GA5619@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20140627170116.GA18298@redhat.com>
- <20140627170136.GA18319@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20140627170136.GA18319@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14063016-9574-0000-0000-00000E9E7B11
+	Mon, 30 Jun 2014 12:56:58 -0400
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+To: Mike Turquette <mturquette@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>, netdev@vger.kernel.org
+Subject: [PATCH 3/4] net: macb: Use clk_find_nearest_rate() API
+Date: Mon, 30 Jun 2014 09:56:35 -0700
+Message-Id: <1404147396-8041-4-git-send-email-soren.brinkmann@xilinx.com>
+X-Mailer: git-send-email 2.0.1.1.gfbfc394
+In-Reply-To: <1404147396-8041-1-git-send-email-soren.brinkmann@xilinx.com>
+References: <1404147396-8041-1-git-send-email-soren.brinkmann@xilinx.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2014-06-27 19:01:36]:
+The Ethernet clock has to match the specified frequencies as accurately
+as possible. clk_round_rate() does not specify how rounding is
+implemented. Hence use clk_find_nearest_rate().
 
-> This reverts commit 43fe98913c9f67e3b523615ee3316f9520a623e0.
-> 
-> This patch is very wrong. Firstly, this change leads to unbalanced
-> uprobe_unregister(). Just for example,
-> 
-> 	# perf probe -x /lib/libc.so.6 syscall
-> 	# echo 1 >> /sys/kernel/debug/tracing/events/probe_libc/enable
-> 	# perf record -e probe_libc:syscall whatever
-> 
-> after that uprobe is dead (unregistered) but the user of ftrace/perf
-> can't know this, and it looks as if nobody hits this probe.
-> 
-> This would be easy to fix, but there are other reasons why it is not
-> simple to mix ftrace and perf. If nothing else, they can't share the
-> same ->consumer.filter. This is fixable too, but probably we need to
-> fix the poorly designed uprobe_register() interface first. At least
-> "register" and "apply" should be clearly separated.
-> 
-> Cc: stable@vger.kernel.org # v3.14
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+---
 
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+ drivers/net/ethernet/cadence/macb.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
+index e9daa072ebb4..7b7f5eb1b341 100644
+--- a/drivers/net/ethernet/cadence/macb.c
++++ b/drivers/net/ethernet/cadence/macb.c
+@@ -223,7 +223,7 @@ static void macb_set_tx_clk(struct clk *clk, int speed, struct net_device *dev)
+ 		return;
+ 	}
+ 
+-	rate_rounded = clk_round_rate(clk, rate);
++	rate_rounded = clk_find_nearest_rate(clk, rate);
+ 	if (rate_rounded < 0)
+ 		return;
+ 
 -- 
-Thanks and Regards
-Srikar Dronamraju
+2.0.1.1.gfbfc394
 
