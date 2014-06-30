@@ -1,67 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756578AbaF3R6s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 13:58:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30365 "EHLO mx1.redhat.com"
+	id S1756816AbaF3SAI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 14:00:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7505 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755511AbaF3R6q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 13:58:46 -0400
-Date: Mon, 30 Jun 2014 19:58:28 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 07/18] perf tools: Limit ordered events queue size
-Message-ID: <20140630175828.GC1236@krava.redhat.com>
-References: <1403103539-16807-1-git-send-email-jolsa@kernel.org>
- <1403103539-16807-8-git-send-email-jolsa@kernel.org>
- <53ADFA13.50304@gmail.com>
+	id S1754520AbaF3SAG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 14:00:06 -0400
+Date: Mon, 30 Jun 2014 19:58:36 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] tracing/uprobes: Fix the usage of
+	uprobe_buffer_enable() in probe_event_enable()
+Message-ID: <20140630175836.GB21918@redhat.com>
+References: <20140627170116.GA18298@redhat.com> <20140627170146.GA18332@redhat.com> <20140630170409.GD5619@linux.vnet.ibm.com> <20140630132126.5479795e@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53ADFA13.50304@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140630132126.5479795e@gandalf.local.home>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 27, 2014 at 05:11:15PM -0600, David Ahern wrote:
-> On 6/18/14, 8:58 AM, Jiri Olsa wrote:
-> >@@ -520,7 +522,7 @@ static void queue_event(struct ordered_events_queue *q, struct ordered_event *ne
-> >  static struct ordered_event *alloc_event(struct ordered_events_queue *q)
-> >  {
-> >  	struct list_head *cache = &q->cache;
-> >-	struct ordered_event *new;
-> >+	struct ordered_event *new = NULL;
+On 06/30, Steven Rostedt wrote:
+>
+> On Mon, 30 Jun 2014 22:34:09 +0530
+> Srikar Dronamraju <srikar@linux.vnet.ibm.com> wrote:
+>
+> > > +	if (ret)
+> > > +		goto err_buffer;
+> > >
+> > > +	return 0;
+> > > +
+> > > + err_buffer:
+> > > +	uprobe_buffer_disable();
+> > > +
 > >
-> >  	if (!list_empty(cache)) {
-> >  		new = list_entry(cache->next, struct ordered_event, list);
-> >@@ -529,10 +531,14 @@ static struct ordered_event *alloc_event(struct ordered_events_queue *q)
-> >  		new = q->buffer + q->buffer_idx;
-> >  		if (++q->buffer_idx == MAX_SAMPLE_BUFFER)
-> >  			q->buffer = NULL;
-> >-	} else {
-> >-		q->buffer = malloc(MAX_SAMPLE_BUFFER * sizeof(*new));
-> >+	} else if (q->cur_alloc_size < q->max_alloc_size) {
-> >+		size_t size = MAX_SAMPLE_BUFFER * sizeof(*new);
-> >+
-> >+		q->buffer = malloc(size);
-> >  		if (!q->buffer)
-> >  			return NULL;
-> >+
-> >+		q->cur_alloc_size += size;
-> >  		list_add(&q->buffer->list, &q->to_free);
+> > How about avoiding err_buffer label?
+> > +	if (!ret)
+> > +		return 0;
 > >
-> 
-> When is cur_alloc_size decremented?
+> > +	uprobe_buffer_disable();
+> > +
+> >
+>
+> Oleg, you OK with this update?
+>
+> I can kill my tests and restart with this update. Or you can resend this
+> patch. Or we can just push it as is, and have this be a patch that
+> get's queued as a cleanup for 3.17?
 
-never, it get's incremented untiul we reach the limit,
-then it stays and the cache is used for new events..
-and it's all released at the end
+Well, if you too think that this change can make the code cleaner I should
+probably make it ;)
 
-jirka
+But, to me
+
+		err = init_1();
+		if (err)
+			goto err_1;
+
+		err = init_2();
+		if (err)
+			goto err_2;
+
+		return 0;
+
+	 err_2:
+		cleanup_2();
+	 err_1:
+		cleanup_1();
+
+looks better than
+
+		err = init_1();
+		if (err)
+			goto err_1;
+
+		err = init_2();
+		if (!err)
+			return 0;
+
+		cleanup_2();
+	 err_1:
+		cleanup_1();
+
+just because the 1st variant is more symmetrical. And in fact it is more
+flexible, we might add init_3/etc.
+
+But I won't insist, this is subjective. So please let me know if you still
+think it would be better to add this change, I'll send v2.
+
+Oleg.
+
