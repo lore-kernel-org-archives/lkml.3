@@ -1,63 +1,307 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526AbaF3O02 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 10:26:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26443 "EHLO mx1.redhat.com"
+	id S1753633AbaF3O2y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 10:28:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38148 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751214AbaF3O01 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 10:26:27 -0400
-From: Hans de Goede <hdegoede@redhat.com>
-To: Mark Brown <broonie@linaro.org>,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>
-Cc: Carlo Caione <carlo@caione.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-sunxi@googlegroups.com
-Subject: [PATCH resend v2 0/3]  mfd-core: Don't register supplies from add_device, add register_supply_aliases()
-Date: Mon, 30 Jun 2014 16:26:06 +0200
-Message-Id: <1404138369-23907-1-git-send-email-hdegoede@redhat.com>
+	id S1750831AbaF3O2x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 10:28:53 -0400
+Date: Mon, 30 Jun 2014 10:28:37 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: Re: [PATCH v3 02/13] pagewalk: improve vma handling
+Message-ID: <20140630142837.GA4319@nhori.bos.redhat.com>
+References: <1403295099-6407-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1403295099-6407-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20140630115311.GR19833@node.dhcp.inet.fi>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140630115311.GR19833@node.dhcp.inet.fi>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Mon, Jun 30, 2014 at 02:53:11PM +0300, Kirill A. Shutemov wrote:
+> On Fri, Jun 20, 2014 at 04:11:28PM -0400, Naoya Horiguchi wrote:
+> > Current implementation of page table walker has a fundamental problem
+> > in vma handling, which started when we tried to handle vma(VM_HUGETLB).
+> > Because it's done in pgd loop, considering vma boundary makes code
+> > complicated and bug-prone.
+> > 
+> > From the users viewpoint, some user checks some vma-related condition to
+> > determine whether the user really does page walk over the vma.
+> > 
+> > In order to solve these, this patch moves vma check outside pgd loop and
+> > introduce a new callback ->test_walk().
+> > 
+> > ChangeLog v3:
+> > - drop walk->skip control
+> > 
+> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> > ---
+> >  include/linux/mm.h |  15 +++-
+> >  mm/pagewalk.c      | 198 ++++++++++++++++++++++++++++++-----------------------
+> >  2 files changed, 126 insertions(+), 87 deletions(-)
+> > 
+> > diff --git v3.16-rc1.orig/include/linux/mm.h v3.16-rc1/include/linux/mm.h
+> > index c5cb6394e6cb..489a63a06a4a 100644
+> > --- v3.16-rc1.orig/include/linux/mm.h
+> > +++ v3.16-rc1/include/linux/mm.h
+> > @@ -1107,10 +1107,16 @@ void unmap_vmas(struct mmu_gather *tlb, struct vm_area_struct *start_vma,
+> >   * @pte_entry: if set, called for each non-empty PTE (4th-level) entry
+> >   * @pte_hole: if set, called for each hole at all levels
+> >   * @hugetlb_entry: if set, called for each hugetlb entry
+> > - *		   *Caution*: The caller must hold mmap_sem() if @hugetlb_entry
+> > - * 			      is used.
+> > + * @test_walk: caller specific callback function to determine whether
+> > + *             we walk over the current vma or not. A positive returned
+> > + *             value means "do page table walk over the current vma,"
+> > + *             and a negative one means "abort current page table walk
+> > + *             right now." 0 means "skip the current vma."
+> > + * @mm:        mm_struct representing the target process of page table walk
+> > + * @vma:       vma currently walked (NULL if walking outside vmas)
+> > + * @private:   private data for callbacks' usage
+> >   *
+> > - * (see walk_page_range for more details)
+> > + * (see the comment on walk_page_range() for more details)
+> >   */
+> >  struct mm_walk {
+> >  	int (*pmd_entry)(pmd_t *pmd, unsigned long addr,
+> > @@ -1122,7 +1128,10 @@ struct mm_walk {
+> >  	int (*hugetlb_entry)(pte_t *pte, unsigned long hmask,
+> >  			     unsigned long addr, unsigned long next,
+> >  			     struct mm_walk *walk);
+> > +	int (*test_walk)(unsigned long addr, unsigned long next,
+> > +			struct mm_walk *walk);
+> >  	struct mm_struct *mm;
+> > +	struct vm_area_struct *vma;
+> >  	void *private;
+> >  };
+> >  
+> > diff --git v3.16-rc1.orig/mm/pagewalk.c v3.16-rc1/mm/pagewalk.c
+> > index 335690650b12..86d811202374 100644
+> > --- v3.16-rc1.orig/mm/pagewalk.c
+> > +++ v3.16-rc1/mm/pagewalk.c
+> > @@ -59,7 +59,7 @@ static int walk_pmd_range(pud_t *pud, unsigned long addr, unsigned long end,
+> >  			continue;
+> >  
+> >  		split_huge_page_pmd_mm(walk->mm, addr, pmd);
+> > -		if (pmd_none_or_trans_huge_or_clear_bad(pmd))
+> > +		if (pmd_trans_unstable(pmd))
+> >  			goto again;
+> >  		err = walk_pte_range(pmd, addr, next, walk);
+> >  		if (err)
+> > @@ -95,6 +95,32 @@ static int walk_pud_range(pgd_t *pgd, unsigned long addr, unsigned long end,
+> >  	return err;
+> >  }
+> >  
+> > +static int walk_pgd_range(unsigned long addr, unsigned long end,
+> > +			  struct mm_walk *walk)
+> > +{
+> > +	pgd_t *pgd;
+> > +	unsigned long next;
+> > +	int err = 0;
+> > +
+> > +	pgd = pgd_offset(walk->mm, addr);
+> > +	do {
+> > +		next = pgd_addr_end(addr, end);
+> > +		if (pgd_none_or_clear_bad(pgd)) {
+> > +			if (walk->pte_hole)
+> > +				err = walk->pte_hole(addr, next, walk);
+> > +			if (err)
+> > +				break;
+> > +			continue;
+> > +		}
+> > +		if (walk->pmd_entry || walk->pte_entry)
+> > +			err = walk_pud_range(pgd, addr, next, walk);
+> > +		if (err)
+> > +			break;
+> > +	} while (pgd++, addr = next, addr != end);
+> > +
+> > +	return err;
+> > +}
+> > +
+> >  #ifdef CONFIG_HUGETLB_PAGE
+> >  static unsigned long hugetlb_entry_end(struct hstate *h, unsigned long addr,
+> >  				       unsigned long end)
+> > @@ -103,10 +129,10 @@ static unsigned long hugetlb_entry_end(struct hstate *h, unsigned long addr,
+> >  	return boundary < end ? boundary : end;
+> >  }
+> >  
+> > -static int walk_hugetlb_range(struct vm_area_struct *vma,
+> > -			      unsigned long addr, unsigned long end,
+> > +static int walk_hugetlb_range(unsigned long addr, unsigned long end,
+> >  			      struct mm_walk *walk)
+> >  {
+> > +	struct vm_area_struct *vma = walk->vma;
+> >  	struct hstate *h = hstate_vma(vma);
+> >  	unsigned long next;
+> >  	unsigned long hmask = huge_page_mask(h);
+> > @@ -119,15 +145,14 @@ static int walk_hugetlb_range(struct vm_area_struct *vma,
+> >  		if (pte && walk->hugetlb_entry)
+> >  			err = walk->hugetlb_entry(pte, hmask, addr, next, walk);
+> >  		if (err)
+> > -			return err;
+> > +			break;
+> >  	} while (addr = next, addr != end);
+> >  
+> >  	return 0;
+> 
+> I guess it should be 'return err;', right?
+> 
+> >  }
+> >  
+> >  #else /* CONFIG_HUGETLB_PAGE */
+> > -static int walk_hugetlb_range(struct vm_area_struct *vma,
+> > -			      unsigned long addr, unsigned long end,
+> > +static int walk_hugetlb_range(unsigned long addr, unsigned long end,
+> >  			      struct mm_walk *walk)
+> >  {
+> >  	return 0;
+> > @@ -135,109 +160,114 @@ static int walk_hugetlb_range(struct vm_area_struct *vma,
+> >  
+> >  #endif /* CONFIG_HUGETLB_PAGE */
+> >  
+> > +/*
+> > + * Decide whether we really walk over the current vma on [@start, @end)
+> > + * or skip it via the returned value. Return 0 if we do walk over the
+> > + * current vma, and return 1 if we skip the vma. Negative values means
+> > + * error, where we abort the current walk.
+> > + *
+> > + * Default check (only VM_PFNMAP check for now) is used when the caller
+> > + * doesn't define test_walk() callback.
+> > + */
+> > +static int walk_page_test(unsigned long start, unsigned long end,
+> > +			struct mm_walk *walk)
+> > +{
+> > +	struct vm_area_struct *vma = walk->vma;
+> > +
+> > +	if (walk->test_walk)
+> > +		return walk->test_walk(start, end, walk);
+> >  
+> > +	/*
+> > +	 * Do not walk over vma(VM_PFNMAP), because we have no valid struct
+> > +	 * page backing a VM_PFNMAP range. See also commit a9ff785e4437.
+> > +	 */
+> > +	if (vma->vm_flags & VM_PFNMAP)
+> > +		return 1;
+> > +	return 0;
+> > +}
+> > +
+> > +static int __walk_page_range(unsigned long start, unsigned long end,
+> > +			struct mm_walk *walk)
+> > +{
+> > +	int err = 0;
+> > +	struct vm_area_struct *vma = walk->vma;
+> > +
+> > +	if (vma && is_vm_hugetlb_page(vma)) {
+> > +		if (walk->hugetlb_entry)
+> > +			err = walk_hugetlb_range(start, end, walk);
+> > +	} else
+> > +		err = walk_pgd_range(start, end, walk);
+> > +
+> > +	return err;
+> > +}
+> >  
+> >  /**
+> > - * walk_page_range - walk a memory map's page tables with a callback
+> > - * @addr: starting address
+> > - * @end: ending address
+> > - * @walk: set of callbacks to invoke for each level of the tree
+> > - *
+> > - * Recursively walk the page table for the memory area in a VMA,
+> > - * calling supplied callbacks. Callbacks are called in-order (first
+> > - * PGD, first PUD, first PMD, first PTE, second PTE... second PMD,
+> > - * etc.). If lower-level callbacks are omitted, walking depth is reduced.
+> > + * walk_page_range - walk page table with caller specific callbacks
+> >   *
+> > - * Each callback receives an entry pointer and the start and end of the
+> > - * associated range, and a copy of the original mm_walk for access to
+> > - * the ->private or ->mm fields.
+> > + * Recursively walk the page table tree of the process represented by @walk->mm
+> > + * within the virtual address range [@start, @end). During walking, we can do
+> > + * some caller-specific works for each entry, by setting up pmd_entry(),
+> > + * pte_entry(), and/or hugetlb_entry(). If you don't set up for some of these
+> > + * callbacks, the associated entries/pages are just ignored.
+> > + * The return values of these callbacks are commonly defined like below:
+> > + *  - 0  : succeeded to handle the current entry, and if you don't reach the
+> > + *         end address yet, continue to walk.
+> > + *  - >0 : succeeded to handle the current entry, and return to the caller
+> > + *         with caller specific value.
+> > + *  - <0 : failed to handle the current entry, and return to the caller
+> > + *         with error code.
+> >   *
+> > - * Usually no locks are taken, but splitting transparent huge page may
+> > - * take page table lock. And the bottom level iterator will map PTE
+> > - * directories from highmem if necessary.
+> > + * Before starting to walk page table, some callers want to check whether
+> > + * they really want to walk over the current vma, typically by checking
+> > + * its vm_flags. walk_page_test() and @walk->test_walk() are used for this
+> > + * purpose.
+> >   *
+> > - * If any callback returns a non-zero value, the walk is aborted and
+> > - * the return value is propagated back to the caller. Otherwise 0 is returned.
+> > + * struct mm_walk keeps current values of some common data like vma and pmd,
+> > + * which are useful for the access from callbacks. If you want to pass some
+> > + * caller-specific data to callbacks, @walk->private should be helpful.
+> >   *
+> > - * walk->mm->mmap_sem must be held for at least read if walk->hugetlb_entry
+> > - * is !NULL.
+> > + * Locking:
+> > + *   Callers of walk_page_range() and walk_page_vma() should hold
+> > + *   @walk->mm->mmap_sem, because these function traverse vma list and/or
+> > + *   access to vma's data.
+> >   */
+> > -int walk_page_range(unsigned long addr, unsigned long end,
+> > +int walk_page_range(unsigned long start, unsigned long end,
+> >  		    struct mm_walk *walk)
+> >  {
+> > -	pgd_t *pgd;
+> > -	unsigned long next;
+> >  	int err = 0;
+> > +	unsigned long next;
+> >  
+> > -	if (addr >= end)
+> > -		return err;
+> > +	if (start >= end)
+> > +		return -EINVAL;
+> >  
+> >  	if (!walk->mm)
+> >  		return -EINVAL;
+> >  
+> >  	VM_BUG_ON(!rwsem_is_locked(&walk->mm->mmap_sem));
+> >  
+> > -	pgd = pgd_offset(walk->mm, addr);
+> >  	do {
+> > -		struct vm_area_struct *vma = NULL;
+> > +		struct vm_area_struct *vma;
+> >  
+> > -		next = pgd_addr_end(addr, end);
+> > +		vma = find_vma(walk->mm, start);
+> > +		if (!vma) { /* after the last vma */
+> > +			walk->vma = NULL;
+> > +			next = end;
+> > +		} else if (start < vma->vm_start) { /* outside the found vma */
+> > +			walk->vma = NULL;
+> > +			next = vma->vm_start;
+> 
+> Is there a reason why we shoul go for __walk_page_range() for these two
+> cases if walkj->pte_hole() is not defined?
 
-I already send this series before (in time for 3.16) and AFAIK we agreed
-on going with this series instead of the incomplete fix for the related oops
-which now has been merged as commit d137be00ee017bc40e6027cb66d667a2e0b450fd
+Oh, I see, we can omit it.
+I'll do it.
 
-I still believe that this series is the more correct fix, as platform
-devices must simply not be used at all before they have been added.
+> 
+> Otherwise, looks okay.
+> 
+> Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 
-This series changes the probe messages for the axp209 pmic regulators from:
+Thank you for your reviewing.
 
-[    1.386371] Adding alias for supply acin,(null) -> acin,0-0034
-[    1.392205] Adding alias for supply vin2,(null) -> vin2,0-0034
-[    1.398112] Adding alias for supply vin3,(null) -> vin3,0-0034
-[    1.403995] Adding alias for supply ldo24in,(null) -> ldo24in,0-0034
-[    1.410344] Adding alias for supply ldo3in,(null) -> ldo3in,0-0034
-[    1.416551] Adding alias for supply ldo5in,(null) -> ldo5in,0-0034
-
-To:
-
-[    1.410545] Adding alias for supply acin,axp20x-regulator -> acin,0-0034
-[    1.417288] Adding alias for supply vin2,axp20x-regulator -> vin2,0-0034
-[    1.424002] Adding alias for supply vin3,axp20x-regulator -> vin3,0-0034
-[    1.430695] Adding alias for supply ldo24in,axp20x-regulator -> ldo24in,0-003
-4
-[    1.437922] Adding alias for supply ldo3in,axp20x-regulator -> ldo3in,0-0034
-[    1.444973] Adding alias for supply ldo5in,axp20x-regulator -> ldo5in,0-0034
-
-Notice how all the "(null)" bits are gone.
-
-No need to rush this into 3.16, but I would still like to see this merged
-into 3.17 .
-
-Changes since v1:
--Rebased on top of 3.16-rc1 / commit d137be00ee017bc40e6027cb66d667a2e0b450fd
-
-Thanks & Regards,
-
-Hans
+Naoya
