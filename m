@@ -1,125 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754381AbaF3R1O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 13:27:14 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:40588 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751776AbaF3R1M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 13:27:12 -0400
-Message-ID: <53B19DE7.6080509@ti.com>
-Date: Mon, 30 Jun 2014 12:27:03 -0500
-From: Dan Murphy <dmurphy@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1754929AbaF3R2B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 13:28:01 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:33268 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754752AbaF3R16 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 13:27:58 -0400
+X-Auth-Info: w7zUiNjkHI09yRSn1+neSzpkq8zxskXFSKEVOgI9mZ4=
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: Nicholas Krause <xerofoify@gmail.com>
+Cc: geert@linux-m68k.org, linux-m68k@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fixes q40_irq_startup to return -ENXIO
+References: <1404097610-5739-1-git-send-email-xerofoify@gmail.com>
+X-Yow: Yow!!  It's LIBERACE and TUESDAY WELD!!  High on a HILL... driving a
+ LITTLE CAR...  I wanna be in that LITTLE CAR, too!!  I wanna drive off
+ with LIBBY and TUESDAY!
+Date: Mon, 30 Jun 2014 19:27:55 +0200
+In-Reply-To: <1404097610-5739-1-git-send-email-xerofoify@gmail.com> (Nicholas
+	Krause's message of "Sun, 29 Jun 2014 23:06:50 -0400")
+Message-ID: <871tu6ux2c.fsf@igel.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.92 (gnu/linux)
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: "linux-sound@vger.kernel.org" <linux-sound@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v2] ASoC: tas2552: Support TI TAS2552 Amplifier
-References: <1404148259-17305-1-git-send-email-dmurphy@ti.com> <20140630172115.GE28740@leverpostej>
-In-Reply-To: <20140630172115.GE28740@leverpostej>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Nicholas Krause <xerofoify@gmail.com> writes:
 
-On 06/30/2014 12:21 PM, Mark Rutland wrote:
-> Hi,
+> Fixes q40_irq_startup to return -ENXIO for cases 11-13 in the switch
+> statement of this function to handle these failure cases.
 >
-> On Mon, Jun 30, 2014 at 06:10:59PM +0100, Dan Murphy wrote:
->> Support the TI TAS2552 Class D amplifier.
->>
->> The TAS2552 is a high efficiency Class-D audio
->> power amplifier with advanced battery current
->> management and an integrated Class-G boost
->> The device constantly measures the
->> current and voltage across the load and provides a
->> digital stream of this information.
->>
->> Signed-off-by: Dan Murphy <dmurphy@ti.com>
->> ---
->>
->> v2 - Address RFC comments- Added regmap, and snd_soc calls
->> removed debug code, address checkpatch errors -https://patchwork.kernel.org/patch/4378281/
->>
->>  .../devicetree/bindings/sound/tas2552.txt          |   22 +
->>  include/sound/tas2552-plat.h                       |   25 ++
->>  sound/soc/codecs/Kconfig                           |    5 +
->>  sound/soc/codecs/Makefile                          |    2 +
->>  sound/soc/codecs/tas2552.c                         |  462 ++++++++++++++++++++
->>  sound/soc/codecs/tas2552.h                         |   75 ++++
->>  6 files changed, 591 insertions(+)
->>  create mode 100644 Documentation/devicetree/bindings/sound/tas2552.txt
->>  create mode 100644 include/sound/tas2552-plat.h
->>  create mode 100644 sound/soc/codecs/tas2552.c
->>  create mode 100644 sound/soc/codecs/tas2552.h
->>
->> diff --git a/Documentation/devicetree/bindings/sound/tas2552.txt b/Documentation/devicetree/bindings/sound/tas2552.txt
->> new file mode 100644
->> index 0000000..58e931b
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/sound/tas2552.txt
->> @@ -0,0 +1,22 @@
->> +Texas Instruments - tas2552 Codec module
->> +
->> +The tas2552 serial control bus communicates through I2C protocols
->> +
->> +Required properties:
->> +
->> +- compatible - "string" - One of:
->> +    "ti,tas2552" - TAS2552
-> Drop the "string". The compatible list is a standard property and its
-> type (string list) is well-known.
+> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+> ---
+>  arch/m68k/q40/q40ints.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 >
-> You could change "One of:" to "should contain:", which will look less
-> weird with a single entry.
->
->> +- reg - <int> -  I2C slave address
-> Similarly to "string" we can get rid of <int> here. i2c addresses are
-> well-known to be described in a single u32 cell.
->
->> +
->> +Optional properties:
->> +
->> +- power-gpio - gpio pin to enable/disable the device
-> The code below seems to look for "enable-gpio". Searching for
-> "power-gpio" only hits in the line above and the example below. I assume
-> the code is in error?
+> diff --git a/arch/m68k/q40/q40ints.c b/arch/m68k/q40/q40ints.c
+> index 513f9bb..9dfa1ea 100644
+> --- a/arch/m68k/q40/q40ints.c
+> +++ b/arch/m68k/q40/q40ints.c
+> @@ -49,7 +49,7 @@ static unsigned int q40_irq_startup(struct irq_data *data)
+>  	case 1: case 2: case 8: case 9:
+>  	case 11: case 12: case 13:
+>  		printk("%s: ISA IRQ %d not implemented by HW\n", __func__, irq);
+> -		/* FIXME return -ENXIO; */
+> +		return -ENXIO;
 
-No this was PEBKAC I did not update the documentation when I wrote the
-code.
+There must be more to it, given the FIXME.
 
->
->> +
->> +Example:
->> +
->> +tas2552: tas2552@41 {
->> +       compatible = "ti,tas2552";
->> +       reg = <0x41>;
->> +       power-gpio = <&gpio4 2 GPIO_ACTIVE_HIGH>;
->> +};
-> [...]
->
->> +       if (pdata) {
->> +               data->power_gpio = pdata->power_gpio;
->> +       } else if (np) {
->> +               data->power_gpio = of_get_named_gpio(np, "enable-gpio", 0);
-> Usually I see this logic the other way around, looking for DT data first
-> then falling back to platform data if no DT information was present.
->
-> Cheers,
-> Mark.
-
-Thanks for the review.  I will take these changes into v3 after a good code review soak time.
-
-Dan
+Andreas.
 
 -- 
-------------------
-Dan Murphy
-
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
