@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755332AbaF3KZX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 06:25:23 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:59047 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755067AbaF3KZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 06:25:22 -0400
-Message-ID: <53B13B0B.5030809@mev.co.uk>
-Date: Mon, 30 Jun 2014 11:25:15 +0100
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1755395AbaF3KZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 06:25:29 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:53067 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755127AbaF3KZ0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 06:25:26 -0400
+Date: Mon, 30 Jun 2014 12:20:14 +0200
+From: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: Varka Bhadram <varkabhadram@gmail.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>,
+        Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        sebastian.hesselbarth@gmail.com, tj@kernel.org,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-ide@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Subject: Re: [PATCH v6 1/7] phy: add a driver for the Berlin SATA PHY
+Message-ID: <20140630102014.GA5155@kwain>
+References: <1402914392-6028-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1402914392-6028-2-git-send-email-antoine.tenart@free-electrons.com>
+ <53A9685E.9090501@ti.com>
+ <53A96A1C.5030800@gmail.com>
 MIME-Version: 1.0
-To: Chase Southwood <chase.southwood@gmail.com>, <gregkh@linuxfoundation.org>
-CC: <hsweeten@visionengravers.com>, <devel@driverdev.osuosl.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] staging: comedi: addi_apci_1564: miscellaneous fixes
- and cleanups
-References: <1403930876-27678-1-git-send-email-chase.southwood@gmail.com>
-In-Reply-To: <1403930876-27678-1-git-send-email-chase.southwood@gmail.com>
-Content-Type: text/plain; charset="us-ascii"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ClientProxiedBy: MEVEXCHANGE.mev.local (10.0.0.4) To MEVEXCHANGE.mev.local
- (10.0.0.4)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53A96A1C.5030800@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-06-28 05:47, Chase Southwood wrote:
-> This patchset moves a misplaced include to the proper file, swaps out an overly
-> aggressive placement of apci1564_reset(), and cleans up apci1564_interrupt().
->
-> Chase Southwood (3):
->    staging: comedi: addi_apci_1564: move addi_watchdog.h include to
->      addi_apci_1564.c
->    staging: comedi: addi_apci_1564: fix use of apci1564_reset() to
->      disable DI interrupts
->    staging: comedi: addi_apci_1564: clean up apci1564_interrupt()
->
+Hello,
 
-It's okay, but I think you can simplify the interrupt handling a bit 
-more by not bothering to check for interrupts from unknown sources.   If 
-a source hasn't been enabled, it shouldn't generate interrupts, right? 
-Besides, since the does nothing to stop further interrupts from unknown 
-sources, it would just keep getting further interrupts repeatedly in 
-that case.
+On Tue, Jun 24, 2014 at 05:37:56PM +0530, Varka Bhadram wrote:
+> On 06/24/2014 05:30 PM, Kishon Vijay Abraham I wrote:
+> >On Monday 16 June 2014 03:56 PM, Antoine Ténart wrote:
+> >>+
+> >>+static struct phy *phy_berlin_sata_phy_xlate(struct device *dev,
+> >>+					     struct of_phandle_args *args)
+> 
+> Indent the function properly like this:
+> static struct phy *phy_berlin_sata_phy_xlate(struct device *dev,
+> 					     struct of_phandle_args *args)
+> 
+> check with checkpatch.pl script
 
-Then you can get rid of the ui_DO, ui_DI, ui_Timer, and counters[] 
-variables and just check the registers directly (e.g. replace 'if 
-(ui_Timer == 1)' with 'if (inl(devpriv->amcc_iobase + 
-APCI1564_TIMER_IRQ_REG) & 0x01)').
+Already fixed in v7.
 
-Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
+
+Antoine
 
 -- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
