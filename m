@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932211AbaF3Vx6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 17:53:58 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:38837 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932139AbaF3Vxw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932143AbaF3Vxw (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 30 Jun 2014 17:53:52 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:44769 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757243AbaF3Vxt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 17:53:49 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: x86@kernel.org, hpa@zytor.org
 Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v2 07/10] x86_64,vsyscall: Rewrite comment and clean up headers in vsyscall code
-Date: Mon, 30 Jun 2014 14:53:18 -0700
-Message-Id: <5848c7134cacc507bb84d6d222d0dbf45e91052f.1404164803.git.luto@amacapital.net>
+Subject: [PATCH v2 06/10] x86_64: Move getcpu code from vsyscall_64.c to vdso/vma.c
+Date: Mon, 30 Jun 2014 14:53:17 -0700
+Message-Id: <7104a2e08de8bddb52d4714fad63d8a7977ea7f2.1404164803.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <cover.1404164803.git.luto@amacapital.net>
 References: <cover.1404164803.git.luto@amacapital.net>
@@ -22,90 +22,171 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-vsyscall_64.c is just vsyscall emulation.  Tidy it up accordingly.
-
-If my comment editing offends anyone, let me know and I can fix it.
+This is pure cut-and-paste.  At this point, vsyscall_64.c contains
+only code needed for vsyscall emulation, but some of the comments
+and function names are still confused.
 
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- arch/x86/kernel/vsyscall_64.c | 51 +++++++++++++++----------------------------
- 1 file changed, 18 insertions(+), 33 deletions(-)
+ arch/x86/kernel/vsyscall_64.c | 57 ----------------------------------------
+ arch/x86/vdso/vma.c           | 61 +++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 61 insertions(+), 57 deletions(-)
 
 diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-index 5029be3..1ea34e7 100644
+index dd1b322..5029be3 100644
 --- a/arch/x86/kernel/vsyscall_64.c
 +++ b/arch/x86/kernel/vsyscall_64.c
-@@ -1,52 +1,37 @@
- /*
-- *  Copyright (C) 2001 Andrea Arcangeli <andrea@suse.de> SuSE
-- *  Copyright 2003 Andi Kleen, SuSE Labs.
-+ * Mostly copyright (c) 2012-2014 Andy Lutomirski <luto@amacapital.net>
-  *
-- *  [ NOTE: this mechanism is now deprecated in favor of the vDSO. ]
-+ * This file implements vsyscall emulation.  vsyscalls are a legacy ABI:
-+ * userspace can request certain kernel services by calling fixed
-+ * addresses.  This concept is problematic:
-  *
-- *  Thanks to hpa@transmeta.com for some useful hint.
-- *  Special thanks to Ingo Molnar for his early experience with
-- *  a different vsyscall implementation for Linux/IA32 and for the name.
-+ * - It interferes with ASLR.
-+ * - It's awkward to write code that lives in kernel addresses but is
-+ *   callable by userspace at fixed addresses.
-+ * - The whole concept is impossible for 32-bit compat userspace.
-+ * - UML cannot easily virtualize a vsyscall.
-  *
-- *  vsyscall 1 is located at -10Mbyte, vsyscall 2 is located
-- *  at virtual address -10Mbyte+1024bytes etc... There are at max 4
-- *  vsyscalls. One vsyscall can reserve more than 1 slot to avoid
-- *  jumping out of line if necessary. We cannot add more with this
-- *  mechanism because older kernels won't return -ENOSYS.
-+ * As of mid-2014, I believe that there is no new userspace code that
-+ * will use a vsyscall if the vDSO is present.  I hope that there will
-+ * soon be no new userspace code that will ever use a vsyscall.
-  *
-- *  Note: the concept clashes with user mode linux.  UML users should
-- *  use the vDSO.
-+ * The code in this file emulates vsyscalls when notified of a page
-+ * fault to a vsyscall address.
-+ *
-+ * The original version of this code is:
-+ * Copyright (C) 2001 Andrea Arcangeli <andrea@suse.de> SuSE
-+ * Copyright 2003 Andi Kleen, SuSE Labs.
-  */
+@@ -332,49 +332,6 @@ int in_gate_area_no_mm(unsigned long addr)
+ 	return vsyscall_mode != NONE && (addr & PAGE_MASK) == VSYSCALL_ADDR;
+ }
  
--#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
- 
--#include <linux/time.h>
--#include <linux/init.h>
- #include <linux/kernel.h>
- #include <linux/timer.h>
--#include <linux/seqlock.h>
--#include <linux/jiffies.h>
--#include <linux/sysctl.h>
--#include <linux/topology.h>
--#include <linux/timekeeper_internal.h>
--#include <linux/getcpu.h>
--#include <linux/cpu.h>
--#include <linux/smp.h>
--#include <linux/notifier.h>
- #include <linux/syscalls.h>
- #include <linux/ratelimit.h>
- 
+-/*
+- * Assume __initcall executes before all user space. Hopefully kmod
+- * doesn't violate that. We'll find out if it does.
+- */
+-static void vsyscall_set_cpu(int cpu)
+-{
+-	unsigned long d;
+-	unsigned long node = 0;
+-#ifdef CONFIG_NUMA
+-	node = cpu_to_node(cpu);
+-#endif
+-	if (cpu_has(&cpu_data(cpu), X86_FEATURE_RDTSCP))
+-		write_rdtscp_aux((node << 12) | cpu);
+-
+-	/*
+-	 * Store cpu number in limit so that it can be loaded quickly
+-	 * in user space in vgetcpu. (12 bits for the CPU and 8 bits for the node)
+-	 */
+-	d = 0x0f40000000000ULL;
+-	d |= cpu;
+-	d |= (node & 0xf) << 12;
+-	d |= (node >> 4) << 48;
+-
+-	write_gdt_entry(get_cpu_gdt_table(cpu), GDT_ENTRY_PER_CPU, &d, DESCTYPE_S);
+-}
+-
+-static void cpu_vsyscall_init(void *arg)
+-{
+-	/* preemption should be already off */
+-	vsyscall_set_cpu(raw_smp_processor_id());
+-}
+-
+-static int
+-cpu_vsyscall_notifier(struct notifier_block *n, unsigned long action, void *arg)
+-{
+-	long cpu = (long)arg;
+-
+-	if (action == CPU_ONLINE || action == CPU_ONLINE_FROZEN)
+-		smp_call_function_single(cpu, cpu_vsyscall_init, NULL, 1);
+-
+-	return NOTIFY_DONE;
+-}
+-
+ void __init map_vsyscall(void)
+ {
+ 	extern char __vsyscall_page;
+@@ -389,17 +346,3 @@ void __init map_vsyscall(void)
+ 	BUILD_BUG_ON((unsigned long)__fix_to_virt(VSYSCALL_PAGE) !=
+ 		     (unsigned long)VSYSCALL_ADDR);
+ }
+-
+-static int __init vsyscall_init(void)
+-{
+-	cpu_notifier_register_begin();
+-
+-	on_each_cpu(cpu_vsyscall_init, NULL, 1);
+-	/* notifier priority > KVM */
+-	__hotcpu_notifier(cpu_vsyscall_notifier, 30);
+-
+-	cpu_notifier_register_done();
+-
+-	return 0;
+-}
+-__initcall(vsyscall_init);
+diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
+index 67a8b6c..8973b4e 100644
+--- a/arch/x86/vdso/vma.c
++++ b/arch/x86/vdso/vma.c
+@@ -10,6 +10,7 @@
+ #include <linux/init.h>
+ #include <linux/random.h>
+ #include <linux/elf.h>
++#include <linux/cpu.h>
  #include <asm/vsyscall.h>
--#include <asm/pgtable.h>
--#include <asm/compat.h>
--#include <asm/page.h>
- #include <asm/unistd.h>
- #include <asm/fixmap.h>
--#include <asm/errno.h>
--#include <asm/io.h>
--#include <asm/segment.h>
--#include <asm/desc.h>
--#include <asm/topology.h>
- #include <asm/traps.h>
+ #include <asm/vgtod.h>
+ #include <asm/proto.h>
+@@ -17,6 +18,7 @@
+ #include <asm/page.h>
+ #include <asm/hpet.h>
+ #include <asm/vvar.h>
++#include <asm/desc.h>
  
- #define CREATE_TRACE_POINTS
+ #if defined(CONFIG_X86_64)
+ unsigned int __read_mostly vdso64_enabled = 1;
+@@ -233,3 +235,62 @@ static __init int vdso_setup(char *s)
+ }
+ __setup("vdso=", vdso_setup);
+ #endif
++
++#ifdef CONFIG_X86_64
++/*
++ * Assume __initcall executes before all user space. Hopefully kmod
++ * doesn't violate that. We'll find out if it does.
++ */
++static void vsyscall_set_cpu(int cpu)
++{
++	unsigned long d;
++	unsigned long node = 0;
++#ifdef CONFIG_NUMA
++	node = cpu_to_node(cpu);
++#endif
++	if (cpu_has(&cpu_data(cpu), X86_FEATURE_RDTSCP))
++		write_rdtscp_aux((node << 12) | cpu);
++
++	/*
++	 * Store cpu number in limit so that it can be loaded quickly
++	 * in user space in vgetcpu. (12 bits for the CPU and 8 bits for the node)
++	 */
++	d = 0x0f40000000000ULL;
++	d |= cpu;
++	d |= (node & 0xf) << 12;
++	d |= (node >> 4) << 48;
++
++	write_gdt_entry(get_cpu_gdt_table(cpu), GDT_ENTRY_PER_CPU, &d, DESCTYPE_S);
++}
++
++static void cpu_vsyscall_init(void *arg)
++{
++	/* preemption should be already off */
++	vsyscall_set_cpu(raw_smp_processor_id());
++}
++
++static int
++cpu_vsyscall_notifier(struct notifier_block *n, unsigned long action, void *arg)
++{
++	long cpu = (long)arg;
++
++	if (action == CPU_ONLINE || action == CPU_ONLINE_FROZEN)
++		smp_call_function_single(cpu, cpu_vsyscall_init, NULL, 1);
++
++	return NOTIFY_DONE;
++}
++
++static int __init vsyscall_init(void)
++{
++	cpu_notifier_register_begin();
++
++	on_each_cpu(cpu_vsyscall_init, NULL, 1);
++	/* notifier priority > KVM */
++	__hotcpu_notifier(cpu_vsyscall_notifier, 30);
++
++	cpu_notifier_register_done();
++
++	return 0;
++}
++__initcall(vsyscall_init);
++#endif
 -- 
 1.9.3
 
