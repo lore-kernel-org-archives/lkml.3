@@ -1,100 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754305AbaF3HR7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 03:17:59 -0400
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.147]:49345 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751894AbaF3HR5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 03:17:57 -0400
-X-Greylist: delayed 372 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Jun 2014 03:17:57 EDT
-X-Env-Sender: James.Ban.opensource@diasemi.com
-X-Msg-Ref: server-11.tower-179.messagelabs.com!1404112303!34275464!1
-X-Originating-IP: [82.210.246.133]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.3; banners=-,-,-
-X-VirusChecked: Checked
-Date: Mon, 30 Jun 2014 16:11:36 +0900
-From: <james.ban.opensource@diasemi.com>
-Message-ID: <201406300711.s5U7BaUl024301@krsrvapps-01.diasemi.com>
-Subject: RE: [PATCH V3] regulator: DA9211 : new regulator driver
-To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Support Opensource <support.opensource@diasemi.com>,
-        LKML <linux-kernel@vger.kernel.org>
-CC: David Dajun Chen <david.chen@diasemi.com>
+	id S1754493AbaF3HW6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 03:22:58 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754405AbaF3HW5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 03:22:57 -0400
+Message-ID: <53B11047.3000105@nod.at>
+Date: Mon, 30 Jun 2014 09:22:47 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: donb@securitymouse.com, markus@oberhumer.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: lzo1x_decompress_safe: Macro compares unsigned to 0  (NO_EFFECT)
+References: <53b0f0f715b96_146f12c1338333fa@209.249.196.67.mail>
+In-Reply-To: <53b0f0f715b96_146f12c1338333fa@209.249.196.67.mail>
+X-Enigmail-Version: 1.6
+X-Forwarded-Message-Id: <53b0f0f715b96_146f12c1338333fa@209.249.196.67.mail>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Mark Brown [mailto:broonie@kernel.org]
-> Sent: Saturday, June 28, 2014 12:01 AM
-> To: Opensource [James Seong-Won Ban]
-> Cc: Liam Girdwood; Support Opensource; LKML; David Dajun Chen
-> Subject: Re: [PATCH V3] regulator: DA9211 : new regulator driver
-> 
-> On Mon, Jun 02, 2014 at 08:17:03AM +0100, James Ban wrote:
-> 
-> > This is the driver for the Dialog DA9211 Multi-phase 12A DC-DC Buck
-> > Converter regulator. It communicates via an I2C bus to the device.
-> 
-> This *still* seems to have all the same problems with inconsistent handling of
-> the A and B register sets
-> 
-> > +	/* Make sure to exit from suspend mode on enable */
-> > +	if (regulator->reg_rselect == DA9211_RSEL_NO_GPIO) {
-> > +		ret = regmap_update_bits(chip->regmap, info->conf.reg,
-> > +					info->conf.sel_mask,
-> > +					DA9211_VBUCKA_SEL_A);
-> > +		if (ret < 0)
-> > +			return ret;
-> > +	}
-> 
-> Here it forces set A if and only if in no GPIO mode but...
-> 
-> > +static int da9211_regulator_set_suspend_voltage(struct regulator_dev *rdev,
-> > +						int uV)
-> > +{
-> > +	struct da9211_regulator *regulator = rdev_get_drvdata(rdev);
-> > +	struct da9211_regulator_info *info = regulator->info;
-> > +	struct da9211 *chip = regulator->da9211;
-> > +	int ret;
-> > +
-> > +	ret = regulator_map_voltage_linear(rdev, uV, uV);
-> > +	if (ret < 0)
-> > +		return ret;
-> > +
-> > +	return regmap_update_bits(chip->regmap, info->volt.reg_b,
-> > +				 info->volt.v_mask, ret);
-> > +}
-> 
-> ...this unconditionally uses set B and...
-> 
-> > +static int da9211_suspend_enable(struct regulator_dev *rdev) {
-> > +	struct da9211_regulator *regulator = rdev_get_drvdata(rdev);
-> > +	struct da9211_regulator_info *info = regulator->info;
-> > +	struct da9211 *chip = regulator->da9211;
-> > +
-> > +	/* Select register set B for voltage ramping. */
-> > +	if (regulator->reg_rselect == DA9211_RSEL_NO_GPIO)
-> > +		return regmap_update_bits(chip->regmap, info->conf.reg,
-> > +					info->conf.sel_mask,
-> > +					DA9211_VBUCKA_SEL_B);
-> > +	else
-> > +		return 0;
-> > +}
-> 
-> ...this uses B if not using a GPIO and otherwise reports success without actually
-> doing anything (which seems buggy).  These behaviours aren't compatible with
-> each other, set_suspend_voltage() will break if set B is selected by GPIO for
-> example.
-> 
-> Please either go through and try to make these things all consistent or
-> (probably better) strip out the suspend and probably GPIO handling for now, get
-> the bulk of the driver merged, and then come back and try to deal with those
-> tricky bits.
-Though the GPIO control and suspend was introduced for more usability of user,
-You seems to want more strict compatibility at any case.
-As your suggestion, I will strip out the suspend and GPIO handling.
+This was introduced by:
+commit 206a81c18401c0cde6e579164f752c4b147324ce
+Author: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date:   Fri Jun 20 22:00:53 2014 -0700
+
+    lzo: properly check for overruns
+
+Thanks,
+//richard
+
+-------- Original-Nachricht --------
+Betreff: New Defects reported by Coverity Scan for Linux
+Datum: Sun, 29 Jun 2014 22:09:11 -0700
+Von: scan-admin@coverity.com
+
+
+Hi,
+
+
+Please find the latest report on new defect(s) introduced to Linux found with Coverity Scan.
+
+Defect(s) Reported-by: Coverity Scan
+Showing 1 of 1 defect(s)
+
+
+** CID 1224102:  Macro compares unsigned to 0  (NO_EFFECT)
+/lib/lzo/lzo1x_decompress_safe.c: 225 in lzo1x_decompress_safe()
+
+
+________________________________________________________________________________________________________
+*** CID 1224102:  Macro compares unsigned to 0  (NO_EFFECT)
+/lib/lzo/lzo1x_decompress_safe.c: 225 in lzo1x_decompress_safe()
+219     			op += t;
+220     			ip += t;
+221     		} else
+222     #endif
+223     		{
+224     			NEED_IP(t, 3);
+>>>     CID 1224102:  Macro compares unsigned to 0  (NO_EFFECT)
+>>>     This greater-than-or-equal-to-zero comparison of an unsigned value is always true. "t + 0UL >= 0UL".
+225     			NEED_OP(t, 0);
+226     			while (t > 0) {
+227     				*op++ = *ip++;
+228     				t--;
+229     			}
+230     		}
+
+
+________________________________________________________________________________________________________
+To view the defects in Coverity Scan visit, http://scan.coverity.com/projects/128?tab=overview
+
+To unsubscribe from the email notification for new defects, http://scan5.coverity.com/cgi-bin/unsubscribe.py
+
+
+
+
+
