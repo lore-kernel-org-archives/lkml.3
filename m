@@ -1,55 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756501AbaF3ThV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 15:37:21 -0400
-Received: from zabrina.hetzner-de.towertech.it ([178.63.16.19]:39406 "EHLO
-	zabrina.hetzner-de.towertech.it" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754260AbaF3ThU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 15:37:20 -0400
-Date: Mon, 30 Jun 2014 21:37:16 +0200
-From: Alessandro Zummo <a.zummo@towertech.it>
-To: Marc Dietrich <marvin24@gmx.de>
-Cc: Alexander Holler <holler@ahsoftware.de>,
-        John Stultz <john.stultz@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        John Whitmore <arigead@gmail.com>
-Subject: Re: [PATCH 0/2][RFC] Try to handle hctosys w/ rtc modules
-Message-ID: <20140630213716.36dd4227@linux.lan.towertech.it>
-In-Reply-To: <20140628205433.0ef4a8cf28a7fe4861a733dd@gmx.de>
-References: <1403890031-26419-1-git-send-email-john.stultz@linaro.org>
-	<53AE6C3C.5090308@ahsoftware.de>
-	<53AE6FA2.7000808@ahsoftware.de>
-	<20140628205433.0ef4a8cf28a7fe4861a733dd@gmx.de>
-Organization: Tower Technologies
+	id S1756904AbaF3TjF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 15:39:05 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:45643 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750836AbaF3TjC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 15:39:02 -0400
+Date: Mon, 30 Jun 2014 14:38:47 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+CC: "balbi@ti.com" <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        Joe Perches <joe@perches.com>,
+        Amit Uttamchandani <auttamchandani@logicube.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH 00/10] net2280: Support for PLX USB338x and cleanout code
+Message-ID: <20140630193846.GC31442@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1400603412-19406-1-git-send-email-ricardo.ribalda@gmail.com>
+ <CAPybu_29FPnRyJSJvnX+mosto+CF944PpREROeP282uqYb-FNw@mail.gmail.com>
+ <CAPybu_3Mhho97gw+bN4ENnSGg37ajS7eEvNC3WbX+4PH6vUB5A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2R+TDOstMAPx/aG/"
+Content-Disposition: inline
+In-Reply-To: <CAPybu_3Mhho97gw+bN4ENnSGg37ajS7eEvNC3WbX+4PH6vUB5A@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 28 Jun 2014 20:54:33 +0200
-Marc Dietrich <marvin24@gmx.de> wrote:
+--2R+TDOstMAPx/aG/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > Besides that the current hctosys-mechanism doesn't really work with 
-> > hot-plugable devices at all. Guess what N will be when you unplug and 
-> > plug in such a RTC again.  
-> 
-> We have a patch in the kernel which binds the rtc number to the
-> hw device, so this even works for hotpluggable devices (at least on
-> systems supporting device-tree). Not sure what your needs are.
+On Mon, Jun 30, 2014 at 09:30:49PM +0200, Ricardo Ribalda Delgado wrote:
+> Hello Felipe
+>=20
+> Any comment on this patchset? Shall I resend it rebased on v3.16-rc2?
 
- I'm still not sure about how to solve this, maybe it would be better to
- identify the hctosys device that should be used at boot with 
- a different identifier than rtcX (and move the option to the kernel command line)
+they are all in my 'testing/next' branch. Should be available on 'next'
+next week if nothing wrong is found.
 
--- 
+cheers
 
- Best regards,
+--=20
+balbi
 
- Alessandro Zummo,
-  Tower Technologies - Torino, Italy
+--2R+TDOstMAPx/aG/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-  http://www.towertech.it
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
+iQIcBAEBAgAGBQJTsbzGAAoJEIaOsuA1yqREF6IP/A1YIX1rxvphwhVj87/NEKsA
+6JwkCnfCsL6o3GYb8MIfj/+MBcMZBMbazzQ+TJSB4JdO7Hz+yG5CesZHgYv8k8vD
+2wRetRZM25MdwJva477sTvN5KKQugZIjGCMIFlk54XV1VWwlI8YXeHEmpoyLR/fa
+OvvvnDBsxvqIcMrGjCFUDwA17xE+PxP20PATC/CvQSRLHdbgx1fgIMdOESaCLK5N
+KSN38qMaz4yWaGNqtZ1ADLUDJtmgeJbjtyez0HiRkyrg9Ok4rmS+2yH1zSt97+Sm
+tQhFYFl9e/gKtxYoZ08jRpzpPCW7PzqjgESCLBy7HrkfpkkTAhuMn7712WQ8JGrz
+3XdDMAm3HKmSIDpHDKGnwprzhxumwIjb4PAk2pzzcFZi+03XtLQE4qemct2xoV1g
+wPog+7qd7Gk915WHR6fQcH9EbgeREYjWBGWgdrK2PwgpegFnrCEbD/SDOGAeR8dc
+LClLLUK7i0INaO7AvVZmqddm10tF5N28ofkHSw7QUZIPrOGTVzq6qFPa5O4K5+LA
+9LO97qUwTLPjwkB7Kg9iPK1J7kEdhftQqaLnBhXVyGJik0ytC6cXB3zeOIELyngu
+/mQJ8iqG+IQvnUw1wQ11zTxgFLtcerUwBfVGPwKNBN5korxBN/PXAmsTc8xZEbTZ
+KXXeVavBy6zgoWJswJTe
+=bonm
+-----END PGP SIGNATURE-----
+
+--2R+TDOstMAPx/aG/--
