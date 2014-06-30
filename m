@@ -1,96 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755817AbaF3L61 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 07:58:27 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:52134 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754030AbaF3Lx0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 07:53:26 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        Joel Becker <jlbec@evilplan.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 032/181] quota: provide function to grab quota structure reference
-Date: Mon, 30 Jun 2014 13:50:53 +0200
-Message-Id: <b5258061a2a8f657aa5900dd3c1ded9e868e3544.1404128998.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
-References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
-In-Reply-To: <cover.1404128997.git.jslaby@suse.cz>
-References: <cover.1404128997.git.jslaby@suse.cz>
+	id S1755857AbaF3L6j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 07:58:39 -0400
+Received: from mta-out1.inet.fi ([62.71.2.199]:55640 "EHLO jenni2.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754630AbaF3L6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 07:58:35 -0400
+Date: Mon, 30 Jun 2014 14:58:26 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: Re: [PATCH v3 04/13] smaps: remove mem_size_stats->vma and use
+ walk_page_vma()
+Message-ID: <20140630115826.GT19833@node.dhcp.inet.fi>
+References: <1403295099-6407-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1403295099-6407-5-git-send-email-n-horiguchi@ah.jp.nec.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403295099-6407-5-git-send-email-n-horiguchi@ah.jp.nec.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Kara <jack@suse.cz>
+On Fri, Jun 20, 2014 at 04:11:30PM -0400, Naoya Horiguchi wrote:
+> pagewalk.c can handle vma in itself, so we don't have to pass vma via
+> walk->private. And show_smap() walks pages on vma basis, so using
+> walk_page_vma() is preferable.
+> 
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 
-===============
-
-commit 9f985cb6c45bc3f8b7e161c9658d409d051d576f upstream.
-
-Provide dqgrab() function to get quota structure reference when we are
-sure it already has at least one active reference.  Make use of this
-function inside quota code.
-
-Signed-off-by: Jan Kara <jack@suse.cz>
-Reviewed-by: Mark Fasheh <mfasheh@suse.de>
-Reviewed-by: Srinivas Eeda <srinivas.eeda@oracle.com>
-Cc: Joel Becker <jlbec@evilplan.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- fs/quota/dquot.c         | 4 ++--
- include/linux/quotaops.h | 8 ++++++++
- 2 files changed, 10 insertions(+), 2 deletions(-)
-
-diff --git a/fs/quota/dquot.c b/fs/quota/dquot.c
-index cfc8dcc16043..9cd5f63715c0 100644
---- a/fs/quota/dquot.c
-+++ b/fs/quota/dquot.c
-@@ -528,7 +528,7 @@ restart:
- 		if (atomic_read(&dquot->dq_count)) {
- 			DEFINE_WAIT(wait);
- 
--			atomic_inc(&dquot->dq_count);
-+			dqgrab(dquot);
- 			prepare_to_wait(&dquot->dq_wait_unused, &wait,
- 					TASK_UNINTERRUPTIBLE);
- 			spin_unlock(&dq_list_lock);
-@@ -632,7 +632,7 @@ int dquot_writeback_dquots(struct super_block *sb, int type)
- 			/* Now we have active dquot from which someone is
-  			 * holding reference so we can safely just increase
- 			 * use count */
--			atomic_inc(&dquot->dq_count);
-+			dqgrab(dquot);
- 			spin_unlock(&dq_list_lock);
- 			dqstats_inc(DQST_LOOKUPS);
- 			err = sb->dq_op->write_dquot(dquot);
-diff --git a/include/linux/quotaops.h b/include/linux/quotaops.h
-index 6965fe394c3b..1d3eee594cd6 100644
---- a/include/linux/quotaops.h
-+++ b/include/linux/quotaops.h
-@@ -46,6 +46,14 @@ void inode_reclaim_rsv_space(struct inode *inode, qsize_t number);
- void dquot_initialize(struct inode *inode);
- void dquot_drop(struct inode *inode);
- struct dquot *dqget(struct super_block *sb, struct kqid qid);
-+static inline struct dquot *dqgrab(struct dquot *dquot)
-+{
-+	/* Make sure someone else has active reference to dquot */
-+	WARN_ON_ONCE(!atomic_read(&dquot->dq_count));
-+	WARN_ON_ONCE(!test_bit(DQ_ACTIVE_B, &dquot->dq_flags));
-+	atomic_inc(&dquot->dq_count);
-+	return dquot;
-+}
- void dqput(struct dquot *dquot);
- int dquot_scan_active(struct super_block *sb,
- 		      int (*fn)(struct dquot *dquot, unsigned long priv),
 -- 
-2.0.0
-
+ Kirill A. Shutemov
