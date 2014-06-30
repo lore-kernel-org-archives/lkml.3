@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755408AbaF3MqF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:46:05 -0400
+	id S1756255AbaF3MqZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:46:25 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:53045 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754560AbaF3Ma4 (ORCPT
+	by vger.kernel.org with ESMTP id S1754662AbaF3Max (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 08:30:56 -0400
+	Mon, 30 Jun 2014 08:30:53 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Sagi Grimberg <sagig@mellanox.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 155/181] Target/iscsi: Fix sendtargets response pdu for iser transport
-Date: Mon, 30 Jun 2014 13:52:56 +0200
-Message-Id: <3b21f90b541c912075ab5d8fc939b013f404e42f.1404128998.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 150/181] Target/iser: Improve cm events handling
+Date: Mon, 30 Jun 2014 13:52:51 +0200
+Message-Id: <a5441ea3e39a00df2106d20193bfa829c6dbe99e.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -29,102 +29,115 @@ From: Sagi Grimberg <sagig@mellanox.com>
 
 ===============
 
-commit 22c7aaa57e80853b4904a46c18f97db0036a3b97 upstream.
+commit 88c4015fda6d014392f76d3b1688347950d7a12d upstream.
 
-In case the transport is iser we should not include the
-iscsi target info in the sendtargets text response pdu.
-This causes sendtargets response to include the target
-info twice.
+There are 4 RDMA_CM events that all basically mean that
+the user should teardown the IB connection:
+- DISCONNECTED
+- ADDR_CHANGE
+- DEVICE_REMOVAL
+- TIMEWAIT_EXIT
 
-Modify iscsit_build_sendtargets_response to filter
-transport types that don't match.
+Only in DISCONNECTED/ADDR_CHANGE it makes sense to
+call rdma_disconnect (send DREQ/DREP to our initiator).
+So we keep the same teardown handler for all of them
+but only indicate calling rdma_disconnect for the relevant
+events.
+
+This patch also removes redundant debug prints for each single
+event.
+
+v2 changes:
+ - Call isert_disconnected_handler() for DEVICE_REMOVAL (Or + Sag)
 
 Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
-Reported-by: Slava Shwartsman <valyushash@gmail.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/infiniband/ulp/isert/ib_isert.c |  2 +-
- drivers/target/iscsi/iscsi_target.c     | 14 ++++++++++----
- include/target/iscsi/iscsi_transport.h  |  3 ++-
- 3 files changed, 13 insertions(+), 6 deletions(-)
+ drivers/infiniband/ulp/isert/ib_isert.c | 26 ++++++++++++++------------
+ drivers/infiniband/ulp/isert/ib_isert.h |  1 +
+ 2 files changed, 15 insertions(+), 12 deletions(-)
 
 diff --git a/drivers/infiniband/ulp/isert/ib_isert.c b/drivers/infiniband/ulp/isert/ib_isert.c
-index 27925b7161ff..548d86847d18 100644
+index 9d3dec3a5235..d93b586dcd17 100644
 --- a/drivers/infiniband/ulp/isert/ib_isert.c
 +++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -1949,7 +1949,7 @@ isert_put_text_rsp(struct iscsi_cmd *cmd, struct iscsi_conn *conn)
- 	int rc;
+@@ -689,8 +689,10 @@ isert_disconnect_work(struct work_struct *work)
+ 		return;
+ 	}
  
- 	isert_create_send_desc(isert_conn, isert_cmd, &isert_cmd->tx_desc);
--	rc = iscsit_build_text_rsp(cmd, conn, hdr);
-+	rc = iscsit_build_text_rsp(cmd, conn, hdr, ISCSI_INFINIBAND);
- 	if (rc < 0)
- 		return rc;
+-	/* Send DREQ/DREP towards our initiator */
+-	rdma_disconnect(isert_conn->conn_cm_id);
++	if (isert_conn->disconnect) {
++		/* Send DREQ/DREP towards our initiator */
++		rdma_disconnect(isert_conn->conn_cm_id);
++	}
  
-diff --git a/drivers/target/iscsi/iscsi_target.c b/drivers/target/iscsi/iscsi_target.c
-index d5b07e179a38..f99162542df2 100644
---- a/drivers/target/iscsi/iscsi_target.c
-+++ b/drivers/target/iscsi/iscsi_target.c
-@@ -3378,7 +3378,9 @@ static bool iscsit_check_inaddr_any(struct iscsi_np *np)
+ 	mutex_unlock(&isert_conn->conn_mutex);
  
- #define SENDTARGETS_BUF_LIMIT 32768U
+@@ -700,10 +702,11 @@ wake_up:
+ }
  
--static int iscsit_build_sendtargets_response(struct iscsi_cmd *cmd)
-+static int
-+iscsit_build_sendtargets_response(struct iscsi_cmd *cmd,
-+				  enum iscsit_transport_type network_transport)
+ static void
+-isert_disconnected_handler(struct rdma_cm_id *cma_id)
++isert_disconnected_handler(struct rdma_cm_id *cma_id, bool disconnect)
  {
- 	char *payload = NULL;
- 	struct iscsi_conn *conn = cmd->conn;
-@@ -3450,6 +3452,9 @@ static int iscsit_build_sendtargets_response(struct iscsi_cmd *cmd)
- 				struct iscsi_np *np = tpg_np->tpg_np;
- 				bool inaddr_any = iscsit_check_inaddr_any(np);
+ 	struct isert_conn *isert_conn = (struct isert_conn *)cma_id->context;
  
-+				if (np->np_network_transport != network_transport)
-+					continue;
-+
- 				len = sprintf(buf, "TargetAddress="
- 					"%s:%hu,%hu",
- 					(inaddr_any == false) ?
-@@ -3487,11 +3492,12 @@ eob:
- 
- int
- iscsit_build_text_rsp(struct iscsi_cmd *cmd, struct iscsi_conn *conn,
--		      struct iscsi_text_rsp *hdr)
-+		      struct iscsi_text_rsp *hdr,
-+		      enum iscsit_transport_type network_transport)
++	isert_conn->disconnect = disconnect;
+ 	INIT_WORK(&isert_conn->conn_logout_work, isert_disconnect_work);
+ 	schedule_work(&isert_conn->conn_logout_work);
+ }
+@@ -712,29 +715,28 @@ static int
+ isert_cma_handler(struct rdma_cm_id *cma_id, struct rdma_cm_event *event)
  {
- 	int text_length, padding;
+ 	int ret = 0;
++	bool disconnect = false;
  
--	text_length = iscsit_build_sendtargets_response(cmd);
-+	text_length = iscsit_build_sendtargets_response(cmd, network_transport);
- 	if (text_length < 0)
- 		return text_length;
+ 	pr_debug("isert_cma_handler: event %d status %d conn %p id %p\n",
+ 		 event->event, event->status, cma_id->context, cma_id);
  
-@@ -3529,7 +3535,7 @@ static int iscsit_send_text_rsp(
- 	u32 tx_size = 0;
- 	int text_length, iov_count = 0, rc;
+ 	switch (event->event) {
+ 	case RDMA_CM_EVENT_CONNECT_REQUEST:
+-		pr_debug("RDMA_CM_EVENT_CONNECT_REQUEST: >>>>>>>>>>>>>>>\n");
+ 		ret = isert_connect_request(cma_id, event);
+ 		break;
+ 	case RDMA_CM_EVENT_ESTABLISHED:
+-		pr_debug("RDMA_CM_EVENT_ESTABLISHED >>>>>>>>>>>>>>\n");
+ 		isert_connected_handler(cma_id);
+ 		break;
+-	case RDMA_CM_EVENT_DISCONNECTED:
+-		pr_debug("RDMA_CM_EVENT_DISCONNECTED: >>>>>>>>>>>>>>\n");
+-		isert_disconnected_handler(cma_id);
+-		break;
+-	case RDMA_CM_EVENT_DEVICE_REMOVAL:
+-	case RDMA_CM_EVENT_ADDR_CHANGE:
++	case RDMA_CM_EVENT_ADDR_CHANGE:    /* FALLTHRU */
++	case RDMA_CM_EVENT_DISCONNECTED:   /* FALLTHRU */
++	case RDMA_CM_EVENT_DEVICE_REMOVAL: /* FALLTHRU */
++		disconnect = true;
++	case RDMA_CM_EVENT_TIMEWAIT_EXIT:  /* FALLTHRU */
++		isert_disconnected_handler(cma_id, disconnect);
+ 		break;
+ 	case RDMA_CM_EVENT_CONNECT_ERROR:
+ 	default:
+-		pr_err("Unknown RDMA CMA event: %d\n", event->event);
++		pr_err("Unhandled RDMA CMA event: %d\n", event->event);
+ 		break;
+ 	}
  
--	rc = iscsit_build_text_rsp(cmd, conn, hdr);
-+	rc = iscsit_build_text_rsp(cmd, conn, hdr, ISCSI_TCP);
- 	if (rc < 0)
- 		return rc;
+diff --git a/drivers/infiniband/ulp/isert/ib_isert.h b/drivers/infiniband/ulp/isert/ib_isert.h
+index f0ed44c89b71..90e6aa3c25d2 100644
+--- a/drivers/infiniband/ulp/isert/ib_isert.h
++++ b/drivers/infiniband/ulp/isert/ib_isert.h
+@@ -121,6 +121,7 @@ struct isert_conn {
+ 	int			conn_frwr_pool_size;
+ 	/* lock to protect frwr_pool */
+ 	spinlock_t		conn_lock;
++	bool                    disconnect;
+ };
  
-diff --git a/include/target/iscsi/iscsi_transport.h b/include/target/iscsi/iscsi_transport.h
-index 361bd0f04018..78edd7895c7f 100644
---- a/include/target/iscsi/iscsi_transport.h
-+++ b/include/target/iscsi/iscsi_transport.h
-@@ -68,7 +68,8 @@ extern void iscsit_build_nopin_rsp(struct iscsi_cmd *, struct iscsi_conn *,
- extern void iscsit_build_task_mgt_rsp(struct iscsi_cmd *, struct iscsi_conn *,
- 				struct iscsi_tm_rsp *);
- extern int iscsit_build_text_rsp(struct iscsi_cmd *, struct iscsi_conn *,
--				struct iscsi_text_rsp *);
-+				struct iscsi_text_rsp *,
-+				enum iscsit_transport_type);
- extern void iscsit_build_reject(struct iscsi_cmd *, struct iscsi_conn *,
- 				struct iscsi_reject *);
- extern int iscsit_build_logout_rsp(struct iscsi_cmd *, struct iscsi_conn *,
+ #define ISERT_MAX_CQ 64
 -- 
 2.0.0
 
