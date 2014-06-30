@@ -1,67 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753045AbaF3PaY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 11:30:24 -0400
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:43041 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751214AbaF3PaX (ORCPT
+	id S1753405AbaF3PcN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 11:32:13 -0400
+Received: from puma-aaisp.mxtelecom.com ([81.187.36.3]:54671 "EHLO
+	puma.mxtelecom.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750815AbaF3PcM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 11:30:23 -0400
-Date: Mon, 30 Jun 2014 11:30:16 -0400 (EDT)
-From: Bob Peterson <rpeterso@redhat.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Jiri Kosina <trivial@kernel.org>, cluster-devel@redhat.com,
-        linux-kernel@vger.kernel.org
-Message-ID: <1896340514.622143.1404142216566.JavaMail.zimbra@redhat.com>
-In-Reply-To: <1404037299-31570-4-git-send-email-geert@linux-m68k.org>
-References: <1404037299-31570-1-git-send-email-geert@linux-m68k.org> <1404037299-31570-4-git-send-email-geert@linux-m68k.org>
-Subject: Re: [Cluster-devel] [PATCH -trivial 4/4] GFS2: memcontrol: Spelling
-	s/invlidate/invalidate/
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.12]
-X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF30 (Linux)/8.0.6_GA_5922)
-Thread-Topic: GFS2: memcontrol: Spelling s/invlidate/invalidate/
-Thread-Index: zGW1uJ41eba7s+Ez/k8t+R4k4EZrwg==
+	Mon, 30 Jun 2014 11:32:12 -0400
+X-Greylist: delayed 955 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Jun 2014 11:32:11 EDT
+From: Edward Allcutt <edward.allcutt@openmarket.com>
+To: davem@davemloft.net, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Edward Allcutt <edward.allcutt@openmarket.com>
+Subject: [PATCH] ipv4: icmp: Fix pMTU handling for rare case
+Date: Mon, 30 Jun 2014 16:16:02 +0100
+Message-Id: <1404141362-21015-1-git-send-email-edward.allcutt@openmarket.com>
+X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> Cc: Steven Whitehouse <swhiteho@redhat.com>
-> Cc: cluster-devel@redhat.com
-> ---
->  fs/gfs2/glops.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/gfs2/glops.c b/fs/gfs2/glops.c
-> index fc1100781bbc..2ffc67dce87f 100644
-> --- a/fs/gfs2/glops.c
-> +++ b/fs/gfs2/glops.c
-> @@ -234,8 +234,8 @@ static void inode_go_sync(struct gfs2_glock *gl)
->   * inode_go_inval - prepare a inode glock to be released
->   * @gl: the glock
->   * @flags:
-> - *
-> - * Normally we invlidate everything, but if we are moving into
-> + *
-> + * Normally we invalidate everything, but if we are moving into
->   * LM_ST_DEFERRED from LM_ST_SHARED or LM_ST_EXCLUSIVE then we
->   * can keep hold of the metadata, since it won't have changed.
->   *
-> --
-> 1.9.1
+Some older router implementations still send Fragmentation Needed
+errors with the Next-Hop MTU field set to zero. This is explicitly
+described as an eventuality that hosts must deal with by the
+standard (RFC 1191) since older standards specified that those
+bits must be zero.
 
-Hi Geert,
+Linux had a generic (for all of IPv4) implementation of the algorithm
+described in the RFC for searching a list of MTU plateaus for a good
+value. Commit 46517008e116 ("ipv4: Kill ip_rt_frag_needed().")
+removed this as part of the changes to remove the routing cache.
+Subsequently any Fragmentation Needed packet with a zero Next-Hop
+MTU has been discarded without being passed to the per-protocol
+handlers or notifying userspace for raw sockets.
 
-ACK,
+When there is a router which does not implement RFC 1191 on an
+MTU limited path then this results in stalled connections since
+large packets are discarded and the local protocols are not
+notified so they never attempt to lower the pMTU.
 
-Steve is on holiday this week, but he will likely add it to the GFS2 nmw
-git repo when he returns.
+One example I have seen is an OpenBSD router terminating IPSec
+tunnels. It's worth pointing out that this case is distinct from
+the BSD 4.2 bug which incorrectly calculated the Next-Hop MTU
+since the commit in question dismissed that as a valid concern.
 
-Regards,
+All of the per-protocols handlers implement the simple approach from
+RFC 1191 of immediately falling back to the minimum value. Although
+this is sub-optimal it is vastly preferable to connections hanging
+indefinitely.
 
-Bob Peterson
-Red Hat File Systems
+Remove the Next-Hop MTU != 0 check and allow such packets
+to follow the normal path.
+
+Fixes: 46517008e116 ("ipv4: Kill ip_rt_frag_needed().")
+Signed-off-by: Edward Allcutt <edward.allcutt@openmarket.com>
+
+diff --git a/net/ipv4/icmp.c b/net/ipv4/icmp.c
+index 79c3d94..42b7bcf 100644
+--- a/net/ipv4/icmp.c
++++ b/net/ipv4/icmp.c
+@@ -739,8 +739,6 @@ static void icmp_unreach(struct sk_buff *skb)
+ 				/* fall through */
+ 			case 0:
+ 				info = ntohs(icmph->un.frag.mtu);
+-				if (!info)
+-					goto out;
+ 			}
+ 			break;
+ 		case ICMP_SR_FAILED:
+-- 
+2.0.0
+
