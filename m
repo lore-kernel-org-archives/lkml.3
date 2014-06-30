@@ -1,180 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752052AbaF3MXo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:23:44 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:51914 "EHLO
+	id S1754122AbaF3MXn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:23:43 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:51918 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751570AbaF3LxY (ORCPT
+	by vger.kernel.org with ESMTP id S1752136AbaF3LxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Jun 2014 07:53:24 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Michal Kubecek <mkubecek@suse.cz>,
+Cc: linux-kernel@vger.kernel.org, Benjamin Poirier <bpoirier@suse.de>,
+        Tom Herbert <therbert@google.com>,
         "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 018/181] xfrm: fix race between netns cleanup and state expire notification
-Date: Mon, 30 Jun 2014 13:50:39 +0200
-Message-Id: <3f8fd8ad48b66a4fc44f60cde0ea575155a45eff.1404128997.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 015/181] net: Do not enable tx-nocache-copy by default
+Date: Mon, 30 Jun 2014 13:50:36 +0200
+Message-Id: <9f6e089cb55bdc5a90fe6ec755a20941da9a0b3b.1404128997.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 In-Reply-To: <cover.1404128997.git.jslaby@suse.cz>
 References: <cover.1404128997.git.jslaby@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Kubecek <mkubecek@suse.cz>
+From: Benjamin Poirier <bpoirier@suse.de>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 21ee543edc0dea36ab58d24523fcd42b8a270df8 upstream.
+commit cdb3f4a31b64c3a1c6eef40bc01ebc9594c58a8c upstream.
 
-The xfrm_user module registers its pernet init/exit after xfrm
-itself so that its net exit function xfrm_user_net_exit() is
-executed before xfrm_net_exit() which calls xfrm_state_fini() to
-cleanup the SA's (xfrm states). This opens a window between
-zeroing net->xfrm.nlsk pointer and deleting all xfrm_state
-instances which may access it (via the timer). If an xfrm state
-expires in this window, xfrm_exp_state_notify() will pass null
-pointer as socket to nlmsg_multicast().
+There are many cases where this feature does not improve performance or even
+reduces it.
 
-As the notifications are called inside rcu_read_lock() block, it
-is sufficient to retrieve the nlsk socket with rcu_dereference()
-and check the it for null.
+For example, here are the results from tests that I've run using 3.12.6 on one
+Intel Xeon W3565 and one i7 920 connected by ixgbe adapters. The results are
+from the Xeon, but they're similar on the i7. All numbers report the
+mean±stddev over 10 runs of 10s.
 
-Signed-off-by: Michal Kubecek <mkubecek@suse.cz>
+1) latency tests similar to what is described in "c6e1a0d net: Allow no-cache
+copy from user on transmit"
+There is no statistically significant difference between tx-nocache-copy
+on/off.
+nic irqs spread out (one queue per cpu)
+
+200x netperf -r 1400,1
+tx-nocache-copy off
+        692000±1000 tps
+        50/90/95/99% latency (us): 275±2/643.8±0.4/799±1/2474.4±0.3
+tx-nocache-copy on
+        693000±1000 tps
+        50/90/95/99% latency (us): 274±1/644.1±0.7/800±2/2474.5±0.7
+
+200x netperf -r 14000,14000
+tx-nocache-copy off
+        86450±80 tps
+        50/90/95/99% latency (us): 334.37±0.02/838±1/2100±20/3990±40
+tx-nocache-copy on
+        86110±60 tps
+        50/90/95/99% latency (us): 334.28±0.01/837±2/2110±20/3990±20
+
+2) single stream throughput tests
+tx-nocache-copy leads to higher service demand
+
+                        throughput  cpu0        cpu1        demand
+                        (Gb/s)      (Gcycle)    (Gcycle)    (cycle/B)
+
+nic irqs and netperf on cpu0 (1x netperf -T0,0 -t omni -- -d send)
+
+tx-nocache-copy off     9402±5      9.4±0.2                 0.80±0.01
+tx-nocache-copy on      9403±3      9.85±0.04               0.838±0.004
+
+nic irqs on cpu0, netperf on cpu1 (1x netperf -T1,1 -t omni -- -d send)
+
+tx-nocache-copy off     9401±5      5.83±0.03   5.0±0.1     0.923±0.007
+tx-nocache-copy on      9404±2      5.74±0.03   5.523±0.009 0.958±0.002
+
+As a second example, here are some results from Eric Dumazet with latest
+net-next.
+tx-nocache-copy also leads to higher service demand
+
+(cpu is Intel(R) Xeon(R) CPU X5660  @ 2.80GHz)
+
+lpq83:~# ./ethtool -K eth0 tx-nocache-copy on
+lpq83:~# perf stat ./netperf -H lpq84 -c
+MIGRATED TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to lpq84.prod.google.com () port 0 AF_INET
+Recv   Send    Send                          Utilization       Service Demand
+Socket Socket  Message  Elapsed              Send     Recv     Send    Recv
+Size   Size    Size     Time     Throughput  local    remote   local   remote
+bytes  bytes   bytes    secs.    10^6bits/s  % S      % U      us/KB   us/KB
+
+ 87380  16384  16384    10.00      9407.44   2.50     -1.00    0.522   -1.000
+
+ Performance counter stats for './netperf -H lpq84 -c':
+
+       4282.648396 task-clock                #    0.423 CPUs utilized
+             9,348 context-switches          #    0.002 M/sec
+                88 CPU-migrations            #    0.021 K/sec
+               355 page-faults               #    0.083 K/sec
+    11,812,797,651 cycles                    #    2.758 GHz                     [82.79%]
+     9,020,522,817 stalled-cycles-frontend   #   76.36% frontend cycles idle    [82.54%]
+     4,579,889,681 stalled-cycles-backend    #   38.77% backend  cycles idle    [67.33%]
+     6,053,172,792 instructions              #    0.51  insns per cycle
+                                             #    1.49  stalled cycles per insn [83.64%]
+       597,275,583 branches                  #  139.464 M/sec                   [83.70%]
+         8,960,541 branch-misses             #    1.50% of all branches         [83.65%]
+
+      10.128990264 seconds time elapsed
+
+lpq83:~# ./ethtool -K eth0 tx-nocache-copy off
+lpq83:~# perf stat ./netperf -H lpq84 -c
+MIGRATED TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to lpq84.prod.google.com () port 0 AF_INET
+Recv   Send    Send                          Utilization       Service Demand
+Socket Socket  Message  Elapsed              Send     Recv     Send    Recv
+Size   Size    Size     Time     Throughput  local    remote   local   remote
+bytes  bytes   bytes    secs.    10^6bits/s  % S      % U      us/KB   us/KB
+
+ 87380  16384  16384    10.00      9412.45   2.15     -1.00    0.449   -1.000
+
+ Performance counter stats for './netperf -H lpq84 -c':
+
+       2847.375441 task-clock                #    0.281 CPUs utilized
+            11,632 context-switches          #    0.004 M/sec
+                49 CPU-migrations            #    0.017 K/sec
+               354 page-faults               #    0.124 K/sec
+     7,646,889,749 cycles                    #    2.686 GHz                     [83.34%]
+     6,115,050,032 stalled-cycles-frontend   #   79.97% frontend cycles idle    [83.31%]
+     1,726,460,071 stalled-cycles-backend    #   22.58% backend  cycles idle    [66.55%]
+     2,079,702,453 instructions              #    0.27  insns per cycle
+                                             #    2.94  stalled cycles per insn [83.22%]
+       363,773,213 branches                  #  127.757 M/sec                   [83.29%]
+         4,242,732 branch-misses             #    1.17% of all branches         [83.51%]
+
+      10.128449949 seconds time elapsed
+
+CC: Tom Herbert <therbert@google.com>
+Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- net/xfrm/xfrm_user.c | 36 +++++++++++++++++++++++++-----------
- 1 file changed, 25 insertions(+), 11 deletions(-)
+ net/core/dev.c | 5 -----
+ 1 file changed, 5 deletions(-)
 
-diff --git a/net/xfrm/xfrm_user.c b/net/xfrm/xfrm_user.c
-index 352dfa4c39ee..32a2dd39b785 100644
---- a/net/xfrm/xfrm_user.c
-+++ b/net/xfrm/xfrm_user.c
-@@ -930,6 +930,20 @@ static struct sk_buff *xfrm_state_netlink(struct sk_buff *in_skb,
- 	return skb;
- }
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 58990d60e65b..704c0c5bed1f 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -5636,13 +5636,8 @@ int register_netdevice(struct net_device *dev)
+ 	dev->features |= NETIF_F_SOFT_FEATURES;
+ 	dev->wanted_features = dev->features & dev->hw_features;
  
-+/* A wrapper for nlmsg_multicast() checking that nlsk is still available.
-+ * Must be called with RCU read lock.
-+ */
-+static inline int xfrm_nlmsg_multicast(struct net *net, struct sk_buff *skb,
-+				       u32 pid, unsigned int group)
-+{
-+	struct sock *nlsk = rcu_dereference(net->xfrm.nlsk);
-+
-+	if (nlsk)
-+		return nlmsg_multicast(nlsk, skb, pid, group, GFP_ATOMIC);
-+	else
-+		return -1;
-+}
-+
- static inline size_t xfrm_spdinfo_msgsize(void)
- {
- 	return NLMSG_ALIGN(4)
-@@ -2253,7 +2267,7 @@ static int xfrm_send_migrate(const struct xfrm_selector *sel, u8 dir, u8 type,
- 	if (build_migrate(skb, m, num_migrate, k, sel, dir, type) < 0)
- 		BUG();
- 
--	return nlmsg_multicast(net->xfrm.nlsk, skb, 0, XFRMNLGRP_MIGRATE, GFP_ATOMIC);
-+	return xfrm_nlmsg_multicast(net, skb, 0, XFRMNLGRP_MIGRATE);
- }
- #else
- static int xfrm_send_migrate(const struct xfrm_selector *sel, u8 dir, u8 type,
-@@ -2440,7 +2454,7 @@ static int xfrm_exp_state_notify(struct xfrm_state *x, const struct km_event *c)
- 		return -EMSGSIZE;
+-	/* Turn on no cache copy if HW is doing checksum */
+ 	if (!(dev->flags & IFF_LOOPBACK)) {
+ 		dev->hw_features |= NETIF_F_NOCACHE_COPY;
+-		if (dev->features & NETIF_F_ALL_CSUM) {
+-			dev->wanted_features |= NETIF_F_NOCACHE_COPY;
+-			dev->features |= NETIF_F_NOCACHE_COPY;
+-		}
  	}
  
--	return nlmsg_multicast(net->xfrm.nlsk, skb, 0, XFRMNLGRP_EXPIRE, GFP_ATOMIC);
-+	return xfrm_nlmsg_multicast(net, skb, 0, XFRMNLGRP_EXPIRE);
- }
- 
- static int xfrm_aevent_state_notify(struct xfrm_state *x, const struct km_event *c)
-@@ -2455,7 +2469,7 @@ static int xfrm_aevent_state_notify(struct xfrm_state *x, const struct km_event
- 	if (build_aevent(skb, x, c) < 0)
- 		BUG();
- 
--	return nlmsg_multicast(net->xfrm.nlsk, skb, 0, XFRMNLGRP_AEVENTS, GFP_ATOMIC);
-+	return xfrm_nlmsg_multicast(net, skb, 0, XFRMNLGRP_AEVENTS);
- }
- 
- static int xfrm_notify_sa_flush(const struct km_event *c)
-@@ -2481,7 +2495,7 @@ static int xfrm_notify_sa_flush(const struct km_event *c)
- 
- 	nlmsg_end(skb, nlh);
- 
--	return nlmsg_multicast(net->xfrm.nlsk, skb, 0, XFRMNLGRP_SA, GFP_ATOMIC);
-+	return xfrm_nlmsg_multicast(net, skb, 0, XFRMNLGRP_SA);
- }
- 
- static inline size_t xfrm_sa_len(struct xfrm_state *x)
-@@ -2568,7 +2582,7 @@ static int xfrm_notify_sa(struct xfrm_state *x, const struct km_event *c)
- 
- 	nlmsg_end(skb, nlh);
- 
--	return nlmsg_multicast(net->xfrm.nlsk, skb, 0, XFRMNLGRP_SA, GFP_ATOMIC);
-+	return xfrm_nlmsg_multicast(net, skb, 0, XFRMNLGRP_SA);
- 
- out_free_skb:
- 	kfree_skb(skb);
-@@ -2659,7 +2673,7 @@ static int xfrm_send_acquire(struct xfrm_state *x, struct xfrm_tmpl *xt,
- 	if (build_acquire(skb, x, xt, xp) < 0)
- 		BUG();
- 
--	return nlmsg_multicast(net->xfrm.nlsk, skb, 0, XFRMNLGRP_ACQUIRE, GFP_ATOMIC);
-+	return xfrm_nlmsg_multicast(net, skb, 0, XFRMNLGRP_ACQUIRE);
- }
- 
- /* User gives us xfrm_user_policy_info followed by an array of 0
-@@ -2773,7 +2787,7 @@ static int xfrm_exp_policy_notify(struct xfrm_policy *xp, int dir, const struct
- 	if (build_polexpire(skb, xp, dir, c) < 0)
- 		BUG();
- 
--	return nlmsg_multicast(net->xfrm.nlsk, skb, 0, XFRMNLGRP_EXPIRE, GFP_ATOMIC);
-+	return xfrm_nlmsg_multicast(net, skb, 0, XFRMNLGRP_EXPIRE);
- }
- 
- static int xfrm_notify_policy(struct xfrm_policy *xp, int dir, const struct km_event *c)
-@@ -2835,7 +2849,7 @@ static int xfrm_notify_policy(struct xfrm_policy *xp, int dir, const struct km_e
- 
- 	nlmsg_end(skb, nlh);
- 
--	return nlmsg_multicast(net->xfrm.nlsk, skb, 0, XFRMNLGRP_POLICY, GFP_ATOMIC);
-+	return xfrm_nlmsg_multicast(net, skb, 0, XFRMNLGRP_POLICY);
- 
- out_free_skb:
- 	kfree_skb(skb);
-@@ -2863,7 +2877,7 @@ static int xfrm_notify_policy_flush(const struct km_event *c)
- 
- 	nlmsg_end(skb, nlh);
- 
--	return nlmsg_multicast(net->xfrm.nlsk, skb, 0, XFRMNLGRP_POLICY, GFP_ATOMIC);
-+	return xfrm_nlmsg_multicast(net, skb, 0, XFRMNLGRP_POLICY);
- 
- out_free_skb:
- 	kfree_skb(skb);
-@@ -2932,7 +2946,7 @@ static int xfrm_send_report(struct net *net, u8 proto,
- 	if (build_report(skb, proto, sel, addr) < 0)
- 		BUG();
- 
--	return nlmsg_multicast(net->xfrm.nlsk, skb, 0, XFRMNLGRP_REPORT, GFP_ATOMIC);
-+	return xfrm_nlmsg_multicast(net, skb, 0, XFRMNLGRP_REPORT);
- }
- 
- static inline size_t xfrm_mapping_msgsize(void)
-@@ -2984,7 +2998,7 @@ static int xfrm_send_mapping(struct xfrm_state *x, xfrm_address_t *ipaddr,
- 	if (build_mapping(skb, x, ipaddr, sport) < 0)
- 		BUG();
- 
--	return nlmsg_multicast(net->xfrm.nlsk, skb, 0, XFRMNLGRP_MAPPING, GFP_ATOMIC);
-+	return xfrm_nlmsg_multicast(net, skb, 0, XFRMNLGRP_MAPPING);
- }
- 
- static struct xfrm_mgr netlink_mgr = {
+ 	/* Make NETIF_F_HIGHDMA inheritable to VLAN devices.
 -- 
 2.0.0
 
