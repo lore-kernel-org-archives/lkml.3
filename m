@@ -1,132 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754569AbaF3W2i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 18:28:38 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:52201 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751333AbaF3W2g (ORCPT
+	id S1753333AbaF3Wgm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 18:36:42 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:28227 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751277AbaF3Wgl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 18:28:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <1404124096-21445-17-git-send-email-drysdale@google.com>
-References: <1404124096-21445-1-git-send-email-drysdale@google.com> <1404124096-21445-17-git-send-email-drysdale@google.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 30 Jun 2014 15:28:14 -0700
-Message-ID: <CALCETrW94NY+SNGsW3PYsdHfwpykPYs55FFDztQ2MVwMLmwJ4Q@mail.gmail.com>
-Subject: Re: [PATCH 5/5] man-pages: cap_rights_get: retrieve Capsicum fd rights
-To: David Drysdale <drysdale@google.com>
-Cc: LSM List <linux-security-module@vger.kernel.org>,
+	Mon, 30 Jun 2014 18:36:41 -0400
+Date: Mon, 30 Jun 2014 18:36:39 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jason Baron <jbaron@akamai.com>
+Cc: "andi@firstfloor.org" <andi@firstfloor.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        Kees Cook <keescook@chromium.org>,
-        James Morris <james.l.morris@oracle.com>,
-        Linux API <linux-api@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "peterz@infradead.org" <peterz@infradead.org>
+Subject: Re: [PATCH 0/3] static keys: fix test/set races
+Message-ID: <20140630183639.0e6161ee@gandalf.local.home>
+In-Reply-To: <53B1DA16.5060208@akamai.com>
+References: <cover.1372457176.git.jbaron@akamai.com>
+	<20140623222802.4900881c@gandalf.local.home>
+	<53B1DA16.5060208@akamai.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 30, 2014 at 3:28 AM, David Drysdale <drysdale@google.com> wrote:
-> Signed-off-by: David Drysdale <drysdale@google.com>
-> ---
->  man2/cap_rights_get.2 | 126 ++++++++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 126 insertions(+)
->  create mode 100644 man2/cap_rights_get.2
->
-> diff --git a/man2/cap_rights_get.2 b/man2/cap_rights_get.2
-> new file mode 100644
-> index 000000000000..966c0ed7e336
-> --- /dev/null
-> +++ b/man2/cap_rights_get.2
-> @@ -0,0 +1,126 @@
-> +.\"
-> +.\" Copyright (c) 2008-2010 Robert N. M. Watson
-> +.\" Copyright (c) 2012-2013 The FreeBSD Foundation
-> +.\" Copyright (c) 2013-2014 Google, Inc.
-> +.\" All rights reserved.
-> +.\"
-> +.\" %%%LICENSE_START(BSD_2_CLAUSE)
-> +.\" Redistribution and use in source and binary forms, with or without
-> +.\" modification, are permitted provided that the following conditions
-> +.\" are met:
-> +.\" 1. Redistributions of source code must retain the above copyright
-> +.\"    notice, this list of conditions and the following disclaimer.
-> +.\" 2. Redistributions in binary form must reproduce the above copyright
-> +.\"    notice, this list of conditions and the following disclaimer in the
-> +.\"    documentation and/or other materials provided with the distribution.
-> +.\"
-> +.\" THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
-> +.\" ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-> +.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-> +.\" ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
-> +.\" FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-> +.\" DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
-> +.\" OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-> +.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-> +.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
-> +.\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-> +.\" SUCH DAMAGE.
-> +.\" %%%LICENSE_END
-> +.\"
-> +.TH CAP_RIGHTS_GET 2 2014-05-07 "Linux" "Linux Programmer's Manual"
-> +.SH NAME
-> +cap_rights_get \- retrieve Capsicum capability rights
-> +.SH SYNOPSIS
-> +.nf
-> +.B #include <sys/capsicum.h>
-> +.sp
-> +.BI "int cap_rights_get(int " fd ", struct cap_rights *" rights ,
-> +.BI "                   unsigned int *" fcntls ,
-> +.BI "                   int *" nioctls ", unsigned int *" ioctls );
-> +.SH DESCRIPTION
-> +Obtain the current Capsicum capability rights for a file descriptor.
-> +.PP
-> +The function will fill the
-> +.I rights
-> +argument (if non-NULL) with the primary capability rights of the
-> +.I fd
-> +descriptor.  The result can be examined with the
-> +.BR cap_rights_is_set (3)
-> +family of functions.  The complete list of primary rights can be found in the
-> +.BR rights (7)
-> +manual page.
-> +.PP
-> +If the
-> +.I fcntls
-> +argument is non-NULL, it will be filled in with a bitmask of allowed
-> +.BR fcntl (2)
-> +commands; see
-> +.BR cap_rights_limit (2)
-> +for values.  If the file descriptor does not have the
-> +.B CAP_FCNTL
-> +primary right, the returned
-> +.I fcntls
-> +value will be zero.
-> +.PP
-> +If the
-> +.I nioctls
-> +argument is non-NULL, it will be filled in with the number of allowed
-> +.BR ioctl (2)
-> +commands, or with the value CAP_IOCTLS_ALL to indicate that all
-> +.BR ioctl (2)
-> +commands are allowed.  If the file descriptor does not have the
-> +.B CAP_IOCTL
-> +primary right, the returned
-> +.I nioctls
-> +value will be zero.
-> +.PP
-> +The
-> +.I ioctls
-> +argument (if non-NULL) should point at memory that can hold up to
-> +.I nioctls
-> +values.
-> +The system call populates the provided buffer with up to
-> +.I nioctls
-> +elements, but always returns the total number of
+On Mon, 30 Jun 2014 17:43:50 -0400
+Jason Baron <jbaron@akamai.com> wrote:
 
-I assume you mean "up to the initial value of *nioctls elements" or
-something.  Can you clarify?
+> Hi Steve,
+> 
+> I took a closer look at this, and I'm thinking now that its simpler to
+> just take the &inode->i_mutex in sched_feat_write(), surrounding the
+> test/set jump_label call. It should be about 3 lines :)
 
---Andy
+Smaller patches are always nice.
+
+> 
+> I started re-working this with the patches in this series and it just
+> seemed like a lot of code for only 1 current use-case. (The udp case
+> doesn't appear to disable the branch and thus is not racy.)
+> 
+> So I've swung back to what Ingo originally said - I can test/post the
+> suggested 3-line patch, unless there are other thoughts...
+
+Well, the final decision lies with Peter and Ingo. I only noticed it
+while cleaning out my inbox and didn't want it to be forgotten.
+
+-- Steve
+
