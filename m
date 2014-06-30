@@ -1,332 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754284AbaF3GKg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 02:10:36 -0400
-Received: from mga01.intel.com ([192.55.52.88]:41097 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752921AbaF3GKf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 02:10:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,573,1400050800"; 
-   d="scan'208";a="555109713"
-Message-ID: <53B0FF59.8000600@linux.intel.com>
-Date: Mon, 30 Jun 2014 14:10:33 +0800
-From: "Li, Aubrey" <aubrey.li@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752976AbaF3GSv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 02:18:51 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:58642 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751030AbaF3GSu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 02:18:50 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] tracing/uprobes: Fix the usage of uprobe_buffer_enable() in probe_event_enable()
+References: <20140627170116.GA18298@redhat.com>
+	<20140627170146.GA18332@redhat.com>
+Date: Mon, 30 Jun 2014 15:18:47 +0900
+In-Reply-To: <20140627170146.GA18332@redhat.com> (Oleg Nesterov's message of
+	"Fri, 27 Jun 2014 19:01:46 +0200")
+Message-ID: <877g3y6htk.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@linux.intel.com>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        Adam Williamson <awilliam@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [Resend PATCH 3/3] x86/pmc_atom: expose PMC device state and platform
- sleep state
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the following interfaces to exposes PMC device state and sleep
-state residency via debugfs:
-	/sys/kernel/debugfs/pmc_atom/dev_state
-	/sys/kernel/debugfs/pmc_atom/sleep_state
+On Fri, 27 Jun 2014 19:01:46 +0200, Oleg Nesterov wrote:
+> The usage of uprobe_buffer_enable() added by dcad1a20 is very wrong,
+>
+> 1. uprobe_buffer_enable() and uprobe_buffer_disable() are not balanced,
+>    _enable() should be called only if !enabled.
+>
+> 2. If uprobe_buffer_enable() fails probe_event_enable() should clear
+>    tp.flags and free event_file_link.
+>
+> 3. If uprobe_register() fails it should do uprobe_buffer_disable().
+>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-Signed-off-by: Aubrey Li <aubrey.li@linux.intel.com>
-Signed-off-by: Kasagar, Srinidhi <srinidhi.kasagar@intel.com>
-Reviewed-by: Rudramuni, Vishwesh M <vishwesh.m.rudramuni@intel.com>
-Reviewed-by: Joe Perches <joe@perches.com>
----
- arch/x86/include/asm/pmc_atom.h |   55 ++++++++++++
- arch/x86/kernel/pmc_atom.c      |  175 +++++++++++++++++++++++++++++++++++++++
- 2 files changed, 230 insertions(+)
+Thanks for the fix.
 
-diff --git a/arch/x86/include/asm/pmc_atom.h b/arch/x86/include/asm/pmc_atom.h
-index 8e47e5d..fc7a17c 100644
---- a/arch/x86/include/asm/pmc_atom.h
-+++ b/arch/x86/include/asm/pmc_atom.h
-@@ -25,6 +25,10 @@
- #define	PMC_MMIO_REG_LEN	0x100
- #define	PMC_REG_BIT_WIDTH	32
- 
-+/* BIOS uses FUNC_DIS to disable specific function */
-+#define	PMC_FUNC_DIS		0x34
-+#define	PMC_FUNC_DIS_2		0x38
-+
- /* S0ix wake event control */
- #define	PMC_S0IX_WAKE_EN	0x3C
- 
-@@ -40,6 +44,57 @@
- 				BIT_ORED_DEDICATED_IRQ_GPSC | \
- 				BIT_SHARED_IRQ_GPSS)
- 
-+/* The timers acumulate time spent in sleep state */
-+#define	PMC_S0IR_TMR		0x80
-+#define	PMC_S0I1_TMR		0x84
-+#define	PMC_S0I2_TMR		0x88
-+#define	PMC_S0I3_TMR		0x8C
-+#define	PMC_S0_TMR		0x90
-+/* Sleep state counter is in units of of 32us */
-+#define	PMC_TMR_SHIFT		5
-+
-+/* These registers reflect D3 status of functions */
-+#define	PMC_D3_STS_0		0xA0
-+
-+#define	BIT_LPSS1_F0_DMA	BIT(0)
-+#define	BIT_LPSS1_F1_PWM1	BIT(1)
-+#define	BIT_LPSS1_F2_PWM2	BIT(2)
-+#define	BIT_LPSS1_F3_HSUART1	BIT(3)
-+#define	BIT_LPSS1_F4_HSUART2	BIT(4)
-+#define	BIT_LPSS1_F5_SPI	BIT(5)
-+#define	BIT_LPSS1_F6_XXX	BIT(6)
-+#define	BIT_LPSS1_F7_XXX	BIT(7)
-+#define	BIT_SCC_EMMC		BIT(8)
-+#define	BIT_SCC_SDIO		BIT(9)
-+#define	BIT_SCC_SDCARD		BIT(10)
-+#define	BIT_SCC_MIPI		BIT(11)
-+#define	BIT_HDA			BIT(12)
-+#define	BIT_LPE			BIT(13)
-+#define	BIT_OTG			BIT(14)
-+#define	BIT_USH			BIT(15)
-+#define	BIT_GBE			BIT(16)
-+#define	BIT_SATA		BIT(17)
-+#define	BIT_USB_EHCI		BIT(18)
-+#define	BIT_SEC			BIT(19)
-+#define	BIT_PCIE_PORT0		BIT(20)
-+#define	BIT_PCIE_PORT1		BIT(21)
-+#define	BIT_PCIE_PORT2		BIT(22)
-+#define	BIT_PCIE_PORT3		BIT(23)
-+#define	BIT_LPSS2_F0_DMA	BIT(24)
-+#define	BIT_LPSS2_F1_I2C1	BIT(25)
-+#define	BIT_LPSS2_F2_I2C2	BIT(26)
-+#define	BIT_LPSS2_F3_I2C3	BIT(27)
-+#define	BIT_LPSS2_F4_I2C4	BIT(28)
-+#define	BIT_LPSS2_F5_I2C5	BIT(29)
-+#define	BIT_LPSS2_F6_I2C6	BIT(30)
-+#define	BIT_LPSS2_F7_I2C7	BIT(31)
-+
-+#define	PMC_D3_STS_1		0xA4
-+#define	BIT_SMB			BIT(0)
-+#define	BIT_OTG_SS_PHY		BIT(1)
-+#define	BIT_USH_SS_PHY		BIT(2)
-+#define	BIT_DFX			BIT(3)
-+
- /* PMC I/O Registers */
- #define	ACPI_BASE_ADDR_OFFSET	0x40
- #define	ACPI_BASE_ADDR_MASK	0xFFFFFE00
-diff --git a/arch/x86/kernel/pmc_atom.c b/arch/x86/kernel/pmc_atom.c
-index d6cc0e9..0d92ef6 100644
---- a/arch/x86/kernel/pmc_atom.c
-+++ b/arch/x86/kernel/pmc_atom.c
-@@ -19,18 +19,69 @@
- #include <linux/init.h>
- #include <linux/pci.h>
- #include <linux/device.h>
-+#include <linux/debugfs.h>
-+#include <linux/seq_file.h>
- #include <linux/io.h>
- 
- #include <asm/pmc_atom.h>
- 
-+#define	DRIVER_NAME	KBUILD_MODNAME
-+
- struct pmc_dev {
- 	u32 base_addr;
- 	void __iomem *regmap;
-+#ifdef CONFIG_DEBUG_FS
-+	struct dentry *dbgfs_dir;
-+#endif /* CONFIG_DEBUG_FS */
- };
- 
- static struct pmc_dev pmc_device;
- static u32 acpi_base_addr;
- 
-+struct pmc_dev_map {
-+	const char *name;
-+	u32 bit_mask;
-+};
-+
-+static const struct pmc_dev_map dev_map[] = {
-+	{"0  - LPSS1_F0_DMA",		BIT_LPSS1_F0_DMA},
-+	{"1  - LPSS1_F1_PWM1",		BIT_LPSS1_F1_PWM1},
-+	{"2  - LPSS1_F2_PWM2",		BIT_LPSS1_F2_PWM2},
-+	{"3  - LPSS1_F3_HSUART1",	BIT_LPSS1_F3_HSUART1},
-+	{"4  - LPSS1_F4_HSUART2",	BIT_LPSS1_F4_HSUART2},
-+	{"5  - LPSS1_F5_SPI",		BIT_LPSS1_F5_SPI},
-+	{"6  - LPSS1_F6_Reserved",	BIT_LPSS1_F6_XXX},
-+	{"7  - LPSS1_F7_Reserved",	BIT_LPSS1_F7_XXX},
-+	{"8  - SCC_EMMC",		BIT_SCC_EMMC},
-+	{"9  - SCC_SDIO",		BIT_SCC_SDIO},
-+	{"10 - SCC_SDCARD",		BIT_SCC_SDCARD},
-+	{"11 - SCC_MIPI",		BIT_SCC_MIPI},
-+	{"12 - HDA",			BIT_HDA},
-+	{"13 - LPE",			BIT_LPE},
-+	{"14 - OTG",			BIT_OTG},
-+	{"15 - USH",			BIT_USH},
-+	{"16 - GBE",			BIT_GBE},
-+	{"17 - SATA",			BIT_SATA},
-+	{"18 - USB_EHCI",		BIT_USB_EHCI},
-+	{"19 - SEC",			BIT_SEC},
-+	{"20 - PCIE_PORT0",		BIT_PCIE_PORT0},
-+	{"21 - PCIE_PORT1",		BIT_PCIE_PORT1},
-+	{"22 - PCIE_PORT2",		BIT_PCIE_PORT2},
-+	{"23 - PCIE_PORT3",		BIT_PCIE_PORT3},
-+	{"24 - LPSS2_F0_DMA",		BIT_LPSS2_F0_DMA},
-+	{"25 - LPSS2_F1_I2C1",		BIT_LPSS2_F1_I2C1},
-+	{"26 - LPSS2_F2_I2C2",		BIT_LPSS2_F2_I2C2},
-+	{"27 - LPSS2_F3_I2C3",		BIT_LPSS2_F3_I2C3},
-+	{"28 - LPSS2_F3_I2C4",		BIT_LPSS2_F4_I2C4},
-+	{"29 - LPSS2_F5_I2C5",		BIT_LPSS2_F5_I2C5},
-+	{"30 - LPSS2_F6_I2C6",		BIT_LPSS2_F6_I2C6},
-+	{"31 - LPSS2_F7_I2C7",		BIT_LPSS2_F7_I2C7},
-+	{"32 - SMB",			BIT_SMB},
-+	{"33 - OTG_SS_PHY",		BIT_OTG_SS_PHY},
-+	{"34 - USH_SS_PHY",		BIT_USH_SS_PHY},
-+	{"35 - DFX",			BIT_DFX},
-+};
-+
- static inline u32 pmc_reg_read(struct pmc_dev *pmc, int reg_offset)
- {
- 	return readl(pmc->regmap + reg_offset);
-@@ -71,9 +122,125 @@ static void pmc_hw_reg_setup(struct pmc_dev *pmc)
- 	pmc_reg_write(pmc, PMC_S0IX_WAKE_EN, (u32)PMC_WAKE_EN_SETTING);
- }
- 
-+#ifdef CONFIG_DEBUG_FS
-+static int pmc_dev_state_show(struct seq_file *s, void *unused)
-+{
-+	struct pmc_dev *pmc = s->private;
-+	u32 func_dis, func_dis_2, func_dis_index;
-+	u32 d3_sts_0, d3_sts_1, d3_sts_index;
-+	int dev_num, dev_index, reg_index;
-+
-+	func_dis = pmc_reg_read(pmc, PMC_FUNC_DIS);
-+	func_dis_2 = pmc_reg_read(pmc, PMC_FUNC_DIS_2);
-+	d3_sts_0 = pmc_reg_read(pmc, PMC_D3_STS_0);
-+	d3_sts_1 = pmc_reg_read(pmc, PMC_D3_STS_1);
-+
-+	dev_num = ARRAY_SIZE(dev_map);
-+
-+	for (dev_index = 0; dev_index < dev_num; dev_index++) {
-+		reg_index = dev_index / PMC_REG_BIT_WIDTH;
-+		if (reg_index) {
-+			func_dis_index = func_dis_2;
-+			d3_sts_index = d3_sts_1;
-+		} else {
-+			func_dis_index = func_dis;
-+			d3_sts_index = d3_sts_0;
-+		}
-+
-+		seq_printf(s, "Dev: %-32s\tState: %s [%s]\n",
-+			dev_map[dev_index].name,
-+			dev_map[dev_index].bit_mask & func_dis_index ?
-+			"Disabled" : "Enabled ",
-+			dev_map[dev_index].bit_mask & d3_sts_index ?
-+			"D3" : "D0");
-+	}
-+	return 0;
-+}
-+
-+static int pmc_dev_state_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, pmc_dev_state_show, inode->i_private);
-+}
-+
-+static const struct file_operations pmc_dev_state_ops = {
-+	.open		= pmc_dev_state_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= single_release,
-+};
-+
-+static int pmc_sleep_tmr_show(struct seq_file *s, void *unused)
-+{
-+	struct pmc_dev *pmc = s->private;
-+	u64 s0ir_tmr, s0i1_tmr, s0i2_tmr, s0i3_tmr, s0_tmr;
-+
-+	s0ir_tmr = pmc_reg_read(pmc, PMC_S0IR_TMR) << PMC_TMR_SHIFT;
-+	s0i1_tmr = pmc_reg_read(pmc, PMC_S0I1_TMR) << PMC_TMR_SHIFT;
-+	s0i2_tmr = pmc_reg_read(pmc, PMC_S0I2_TMR) << PMC_TMR_SHIFT;
-+	s0i3_tmr = pmc_reg_read(pmc, PMC_S0I3_TMR) << PMC_TMR_SHIFT;
-+	s0_tmr = pmc_reg_read(pmc, PMC_S0_TMR) << PMC_TMR_SHIFT;
-+
-+	seq_printf(s, "S0IR Residency:\t%lldus\n", s0ir_tmr);
-+	seq_printf(s, "S0I1 Residency:\t%lldus\n", s0i1_tmr);
-+	seq_printf(s, "S0I2 Residency:\t%lldus\n", s0i2_tmr);
-+	seq_printf(s, "S0I3 Residency:\t%lldus\n", s0i3_tmr);
-+	seq_printf(s, "S0   Residency:\t%lldus\n", s0_tmr);
-+	return 0;
-+}
-+
-+static int pmc_sleep_tmr_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, pmc_sleep_tmr_show, inode->i_private);
-+}
-+
-+static const struct file_operations pmc_sleep_tmr_ops = {
-+	.open		= pmc_sleep_tmr_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= single_release,
-+};
-+
-+static void pmc_dbgfs_unregister(struct pmc_dev *pmc)
-+{
-+	if (!pmc->dbgfs_dir)
-+		return;
-+
-+	debugfs_remove_recursive(pmc->dbgfs_dir);
-+	pmc->dbgfs_dir = NULL;
-+}
-+
-+static int pmc_dbgfs_register(struct pmc_dev *pmc, struct pci_dev *pdev)
-+{
-+	struct dentry *dir, *f;
-+
-+	dir = debugfs_create_dir("pmc_atom", NULL);
-+	if (!dir)
-+		return -ENOMEM;
-+
-+	f = debugfs_create_file("dev_state", S_IFREG | S_IRUGO,
-+				dir, pmc, &pmc_dev_state_ops);
-+	if (!f) {
-+		dev_err(&pdev->dev, "dev_states register failed\n");
-+		goto err;
-+	}
-+	f = debugfs_create_file("sleep_state", S_IFREG | S_IRUGO,
-+				dir, pmc, &pmc_sleep_tmr_ops);
-+	if (!f) {
-+		dev_err(&pdev->dev, "sleep_state register failed\n");
-+		goto err;
-+	}
-+	pmc->dbgfs_dir = dir;
-+	return 0;
-+err:
-+	pmc_dbgfs_unregister(pmc);
-+	return -ENODEV;
-+}
-+#endif /* CONFIG_DEBUG_FS */
-+
- static int pmc_setup_dev(struct pci_dev *pdev)
- {
- 	struct pmc_dev *pmc = &pmc_device;
-+	int ret;
- 
- 	/* Obtain ACPI base address */
- 	pci_read_config_dword(pdev, ACPI_BASE_ADDR_OFFSET, &acpi_base_addr);
-@@ -94,6 +261,14 @@ static int pmc_setup_dev(struct pci_dev *pdev)
- 
- 	/* PMC hardware registers setup */
- 	pmc_hw_reg_setup(pmc);
-+
-+#ifdef CONFIG_DEBUG_FS
-+	ret = pmc_dbgfs_register(pmc, pdev);
-+	if (ret) {
-+		iounmap(pmc->regmap);
-+		return ret;
-+	}
-+#endif /* CONFIG_DEBUG_FS */
- 	return 0;
- }
- 
--- 
-1.7.10.4
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+
+
+> ---
+>  kernel/trace/trace_uprobe.c |   31 +++++++++++++++++++------------
+>  1 files changed, 19 insertions(+), 12 deletions(-)
+>
+> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+> index c4cf0ab..3c9b97e 100644
+> --- a/kernel/trace/trace_uprobe.c
+> +++ b/kernel/trace/trace_uprobe.c
+> @@ -911,26 +911,33 @@ probe_event_enable(struct trace_uprobe *tu, struct ftrace_event_file *file,
+>  		tu->tp.flags |= TP_FLAG_PROFILE;
+>  	}
+>  
+> -	ret = uprobe_buffer_enable();
+> -	if (ret < 0)
+> -		return ret;
+> -
+>  	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
+>  
+>  	if (enabled)
+>  		return 0;
+>  
+> +	ret = uprobe_buffer_enable();
+> +	if (ret)
+> +		goto err_flags;
+> +
+>  	tu->consumer.filter = filter;
+>  	ret = uprobe_register(tu->inode, tu->offset, &tu->consumer);
+> -	if (ret) {
+> -		if (file) {
+> -			list_del(&link->list);
+> -			kfree(link);
+> -			tu->tp.flags &= ~TP_FLAG_TRACE;
+> -		} else
+> -			tu->tp.flags &= ~TP_FLAG_PROFILE;
+> -	}
+> +	if (ret)
+> +		goto err_buffer;
+>  
+> +	return 0;
+> +
+> + err_buffer:
+> +	uprobe_buffer_disable();
+> +
+> + err_flags:
+> +	if (file) {
+> +		list_del(&link->list);
+> +		kfree(link);
+> +		tu->tp.flags &= ~TP_FLAG_TRACE;
+> +	} else {
+> +		tu->tp.flags &= ~TP_FLAG_PROFILE;
+> +	}
+>  	return ret;
+>  }
