@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753629AbaF3Lbl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 07:31:41 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:58168 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751974AbaF3Lbi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 07:31:38 -0400
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com, Arnd Bergmann <arnd@arndb.de>,
-        Paul Bolle <pebolle@tiscali.nl>, patches@linaro.org,
-        linaro-kernel@lists.linaro.org
-Subject: [PATCH v7 4/4] arm: Fix DEBUG_LL for multi-platform kernels (without PL01X)
-Date: Mon, 30 Jun 2014 12:30:55 +0100
-Message-Id: <1404127855-30459-5-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1404127855-30459-1-git-send-email-daniel.thompson@linaro.org>
-References: <1401206421-29832-1-git-send-email-daniel.thompson@linaro.org>
- <1404127855-30459-1-git-send-email-daniel.thompson@linaro.org>
+	id S1753824AbaF3LdY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 07:33:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41469 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751307AbaF3LdW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 07:33:22 -0400
+Date: Mon, 30 Jun 2014 13:33:19 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Johan Hovold <johan@kernel.org>
+cc: Bryan Wu <cooloney@gmail.com>,
+        Janne Kanniainen <janne.kanniainen@gmail.com>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        =?ISO-8859-15?Q?Bj=F8rn_Mork?= <bjorn@mork.no>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        linux-usb@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: [PATCH 2/2 v2] HID: leds: Use attribute-groups in MSI GT683R
+ driver
+In-Reply-To: <20140630104744.GB2486@localhost>
+Message-ID: <alpine.LNX.2.00.1406301330240.28307@pobox.suse.cz>
+References: <20140625115541.GA1409@localhost> <1403711966-13003-1-git-send-email-janne.kanniainen@gmail.com> <20140625174109.GE1409@localhost> <alpine.LNX.2.00.1406252107070.15939@pobox.suse.cz> <CAK5ve-JnqpogKaG1V=mfvKEHMPb8ma4Zeyz9rF4kT-W2Gj=p0A@mail.gmail.com>
+ <20140630104744.GB2486@localhost>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When building a multi_v7_defconfig kernel it is not possible to configure
-DEBUG_LL to use any serial device except a ARM Primecell PL01X, or more
-accurately and worse, it is possible to configure a different serial
-device but KConfig does not honour this request. In fact this also
-overrides the user selection for some of the single platform kernels, for
-example I don't think DEBUG_LL can be targetted at ICE or semihosted
-supervisor for ARCH_VERSATILE.
+On Mon, 30 Jun 2014, Johan Hovold wrote:
 
-This happens because DEBUG_UART_PL01X is automatically enabled by
-some architectures and this means user decisions made regarding
-the DEBUG_LL backend will be overriden. Problem is fixed by removing the
-automatic enabling of this option.
+> > I think the better place is HID/input tree, since this patch depends
+> > on the initial one which is not in my tree.
+> > I'm going to merge Johan's whole patchset and this patch probably
+> > depends Johan's work too.
+> 
+> Dmitry has ACKed the input-patch and Bryan has applied that one and the
+> leds-patches to his tree (of which the first one is a dependency of this
+> patch).
+> 
+> Jiri, are you saying that the gt683r-driver should go in through his
+> tree as well, that is all three patches including the first that you
+> have already applied? I just assumed your for-next branch was immutable,
+> but perhaps I was mistaken.
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
----
- arch/arm/Kconfig.debug | 7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+Well, for-next branch is a collection of all the topic branches I am 
+queuing for the following merge window.
 
-diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index 459c7f9..26536f7 100644
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@ -1032,12 +1032,7 @@ config DEBUG_LL_INCLUDE
- 
- # Compatibility options for PL01x
- config DEBUG_UART_PL01X
--	def_bool ARCH_EP93XX || \
--		ARCH_INTEGRATOR || \
--		ARCH_SPEAR3XX || \
--		ARCH_SPEAR6XX || \
--		ARCH_SPEAR13XX || \
--		ARCH_VERSATILE
-+	bool
- 
- # Compatibility options for 8250
- config DEBUG_UART_8250
+I am never really rebasing it, but I can definitely not include 
+'for-3.17/hid-gt683r' topic branch in the pile I will be sending to Linus 
+(all the scheduled branches are getting merged into 'for-linus' only when 
+merge window open). So the only potential conflict between hid.git and 
+Bryan's tree would be in linux-next (and probably there will be none, git 
+can handle duplicate patches nicely).
+
+So once Bryan confirms he's queued it (please preserve my Signoff from my 
+tree), then I will just not include for-3.17/hid-gt683r branch in pull 
+request to Linus and all is fine.
+
+Thanks,
+
 -- 
-1.9.3
-
+Jiri Kosina
+SUSE Labs
