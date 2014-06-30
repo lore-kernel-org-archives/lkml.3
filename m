@@ -1,104 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752976AbaF3GSv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 02:18:51 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:58642 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751030AbaF3GSu (ORCPT
+	id S1754137AbaF3GWk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 02:22:40 -0400
+Received: from mail6.autoliv.com ([195.33.130.243]:51199 "EHLO
+	mail6.autoliv.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751802AbaF3GWi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 02:18:50 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] tracing/uprobes: Fix the usage of uprobe_buffer_enable() in probe_event_enable()
-References: <20140627170116.GA18298@redhat.com>
-	<20140627170146.GA18332@redhat.com>
-Date: Mon, 30 Jun 2014 15:18:47 +0900
-In-Reply-To: <20140627170146.GA18332@redhat.com> (Oleg Nesterov's message of
-	"Fri, 27 Jun 2014 19:01:46 +0200")
-Message-ID: <877g3y6htk.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 30 Jun 2014 02:22:38 -0400
+From: Fredrik Noring <fredrik.noring@autoliv.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Mattis Lorentzon <Mattis.Lorentzon@autoliv.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: Oops: 17 SMP ARM (v3.16-rc2)
+Thread-Topic: Oops: 17 SMP ARM (v3.16-rc2)
+Thread-Index: Ac+QeuMIv4ry9FBDTNKHf1ccZ0ioqQAu3GGAAAUkuuD//+tKAIABUVuA//+RU9CAAMUXAP/72MIA
+Date: Mon, 30 Jun 2014 06:22:33 +0000
+Message-ID: <3FFB61A7A8473C49831AF20FA193534A43CB1887@ALVA-EXMB01.alv.autoliv.int>
+References: <C4A61A5CA4AD2246942F4BA6F20ACB804356534D@ALVA-EXMB04.alv.autoliv.int>
+ <20140626140115.GQ32514@n2100.arm.linux.org.uk>
+ <C4A61A5CA4AD2246942F4BA6F20ACB80435655E9@ALVA-EXMB04.alv.autoliv.int>
+ <20140626151424.GT32514@n2100.arm.linux.org.uk>
+ <20140627112151.GF32514@n2100.arm.linux.org.uk>
+ <3FFB61A7A8473C49831AF20FA193534A43CADFA7@ALVA-EXMB01.alv.autoliv.int>
+ <20140627163108.GP32514@n2100.arm.linux.org.uk>
+In-Reply-To: <20140627163108.GP32514@n2100.arm.linux.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.14.8.136]
+x-tm-as-product-ver: SMEX-10.2.0.2087-7.500.1017-20788.004
+x-tm-as-result: No--25.100700-8.000000-31
+x-tm-as-user-approved-sender: No
+x-tm-as-user-blocked-sender: No
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Jun 2014 19:01:46 +0200, Oleg Nesterov wrote:
-> The usage of uprobe_buffer_enable() added by dcad1a20 is very wrong,
->
-> 1. uprobe_buffer_enable() and uprobe_buffer_disable() are not balanced,
->    _enable() should be called only if !enabled.
->
-> 2. If uprobe_buffer_enable() fails probe_event_enable() should clear
->    tp.flags and free event_file_link.
->
-> 3. If uprobe_register() fails it should do uprobe_buffer_disable().
->
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Hi Russell,
 
-Thanks for the fix.
+> -----Original Message-----
+> It's not that serious... I know that the FEC ethernet driver is horrendously
+> racy (I have had a patch set for about the last six months which fixes some of
+> its problems) but as I've had a lot of patches to deal with, and it's been
+> pushed to the back of the queue...
+> 
+> The races don't lead to data corruption though, merely timeouts and some
+> lost packets.
 
-Acked-by: Namhyung Kim <namhyung@kernel.org>
+The serial port (uart1) and Ethernet are essentially the only things we use.
+No disks, no graphics, no USB, etc. If not the Ethernet driver, what else is
+likely to crash NFS so badly?
 
+Also, we are happy to change our config if that would simplify things:
 
-> ---
->  kernel/trace/trace_uprobe.c |   31 +++++++++++++++++++------------
->  1 files changed, 19 insertions(+), 12 deletions(-)
->
-> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-> index c4cf0ab..3c9b97e 100644
-> --- a/kernel/trace/trace_uprobe.c
-> +++ b/kernel/trace/trace_uprobe.c
-> @@ -911,26 +911,33 @@ probe_event_enable(struct trace_uprobe *tu, struct ftrace_event_file *file,
->  		tu->tp.flags |= TP_FLAG_PROFILE;
->  	}
->  
-> -	ret = uprobe_buffer_enable();
-> -	if (ret < 0)
-> -		return ret;
-> -
->  	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
->  
->  	if (enabled)
->  		return 0;
->  
-> +	ret = uprobe_buffer_enable();
-> +	if (ret)
-> +		goto err_flags;
-> +
->  	tu->consumer.filter = filter;
->  	ret = uprobe_register(tu->inode, tu->offset, &tu->consumer);
-> -	if (ret) {
-> -		if (file) {
-> -			list_del(&link->list);
-> -			kfree(link);
-> -			tu->tp.flags &= ~TP_FLAG_TRACE;
-> -		} else
-> -			tu->tp.flags &= ~TP_FLAG_PROFILE;
-> -	}
-> +	if (ret)
-> +		goto err_buffer;
->  
-> +	return 0;
-> +
-> + err_buffer:
-> +	uprobe_buffer_disable();
-> +
-> + err_flags:
-> +	if (file) {
-> +		list_del(&link->list);
-> +		kfree(link);
-> +		tu->tp.flags &= ~TP_FLAG_TRACE;
-> +	} else {
-> +		tu->tp.flags &= ~TP_FLAG_PROFILE;
-> +	}
->  	return ret;
->  }
+http://lkml.iu.edu/hypermail/linux/kernel/1406.3/01488/config.gz
+
+> Now because things have changed during the last merge window, I've got an
+> even bigger problem sorting through that patch set and getting it back into a
+> submittable state.  I've just sent out v2 for it onto the
+> netdev@vger.kernel.org mailing list.
+> 
+> The initial version (marked RFC) attracted very little interest from testers, or
+> acks.  I'd very much like to have some testing of it, so if you want to try it
+> out, I can provide you with a git URL, patches or a combined patch.
+
+Sure! A combined gzip patch attachment is fine. Git over HTTP probably works
+too.
+
+All the best,
+Fredrik
+
+***************************************************************
+Consider the environment before printing this message.
+
+To read Autoliv's Information and Confidentiality Notice, follow this link:
+http://www.autoliv.com/disclaimer.html
+***************************************************************
+
