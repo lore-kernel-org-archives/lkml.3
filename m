@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756982AbaF3TRw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 15:17:52 -0400
-Received: from filtteri2.pp.htv.fi ([213.243.153.185]:58281 "EHLO
-	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754429AbaF3TRv (ORCPT
+	id S1757006AbaF3TUz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 15:20:55 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:57440 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754425AbaF3TUx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 15:17:51 -0400
-Date: Mon, 30 Jun 2014 22:17:42 +0300
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: David Daney <ddaney.cavm@gmail.com>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: Re: [PATCH 0/3] MIPS: OCTEON: Minimal support for D-Link DSR-1000N
-Message-ID: <20140630191742.GA681@drone.musicnaut.iki.fi>
-References: <1403987650-6194-1-git-send-email-aaro.koskinen@iki.fi>
- <53B19B0E.8000702@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53B19B0E.8000702@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 30 Jun 2014 15:20:53 -0400
+Message-ID: <1404156048.5056.5.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [PATCH v6 3/6] KEYS: make partial key id matching as a
+ dedicated function
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        keyrings <keyrings@linux-nfs.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Josh Boyer <jwboyer@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+Date: Mon, 30 Jun 2014 15:20:48 -0400
+In-Reply-To: <53B162C2.3070800@samsung.com>
+References: <1403620852-16476-4-git-send-email-zohar@linux.vnet.ibm.com>
+	 <1403620852-16476-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <7564.1403876287@warthog.procyon.org.uk> <53B162C2.3070800@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14063019-7164-0000-0000-000002CFC991
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Mon, Jun 30, 2014 at 10:14:54AM -0700, David Daney wrote:
-> On 06/28/2014 01:34 PM, Aaro Koskinen wrote:
-> >The following patches add minimal support for D-Link DSR-1000N router.
+On Mon, 2014-06-30 at 16:14 +0300, Dmitry Kasatkin wrote: 
+> On 27/06/14 16:38, David Howells wrote:
+> > Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> >
+> >> +	if (strncmp(id, "id:", 3) == 0)
 > 
-> Which OCTEON chip does this device contain?
+> >> Use memcmp() here.
+> 
+> 'id' function parameter comes from "keys_ownerid" kernel parameter.
+> User can supply anything shorter than "id:".
+> Though comparing 3 bytes should not produce any memory access errors,
+> memcmp can access beyond the length of the string.
+> I think 'strcnmp' is more appropriate here...
+> 
+> 
+> >> -	kid += kidlen - idlen;
+> >> -	if (strcasecmp(id, kid) != 0)
+> >> -		return 0;
+> > This test is no longer applied in the "<subtype>:..." case.
+> 
+> I did not get fully what you comment here or ask to do..
+> But yes, with this patch, it is no longer the case.
 
-[    0.000000] CPU0 revision is: 000d0601 (Cavium Octeon+)
+Other than this comment, all of the other comments have been addressed.
+The updated patches are available from
+linux-integrity/next-trusted-keys.
 
-# cat /proc/cpuinfo
-system type             : CUST_DSR1000N (CN5010p1.1-500-SCP)
-machine                 : Unknown
-processor               : 0
-cpu model               : Cavium Octeon+ V0.1
-BogoMIPS                : 1000.00
-wait instruction        : yes
-microsecond timers      : yes
-tlb_entries             : 64
-extra interrupt vector  : yes
-hardware watchpoint     : yes, count: 2, address/irw mask: [0x0ffc, 0x0ffb]
-isa                     : mips1 mips2 mips3 mips4 mips5 mips64r2
-ASEs implemented        :
-shadow register sets    : 1
-kscratch registers      : 0
-core                    : 0
-VCED exceptions         : not available
-VCEI exceptions         : not available
+thanks,
 
-> Also what is the bootloader version on the board?
+Mimi
 
-D-Link DSR-1000N bootloader# version
-
-U-Boot 1.1.1 (Development build, svnversion: exported) (Build time: Mar 22 2010
-- 12:14:14)
-
-BTW, .notes segment from kernel needs to be removed for this bootloader
-with "strip -R .notes".
-
-A.
