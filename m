@@ -1,90 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756100AbaF3RQR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 13:16:17 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:38783 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753807AbaF3RQP (ORCPT
+	id S1754563AbaF3RVJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 13:21:09 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:45354 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751776AbaF3RVH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 13:16:15 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-3d-53b19b5d1746
-Message-id: <53B19B42.1040006@samsung.com>
-Date: Mon, 30 Jun 2014 19:15:46 +0200
-From: Tomasz Figa <t.figa@samsung.com>
-Organization: Samsung R&D Institute Poland
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.5.0
-MIME-version: 1.0
-To: Pankaj Dubey <pankaj.dubey@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: kgene.kim@samsung.com, linux@arm.linux.org.uk, vikas.sajjan@samsung.com,
-        joshi@samsung.com, naushad@samsung.com, thomas.ab@samsung.com,
-        chow.kim@samsung.com
-Subject: Re: [PATCH v5 5/5] ARM: EXYNOS: Move PMU specific definitions from
- common.h
-References: <1403705032-14835-1-git-send-email-pankaj.dubey@samsung.com>
- <1403705032-14835-6-git-send-email-pankaj.dubey@samsung.com>
-In-reply-to: <1403705032-14835-6-git-send-email-pankaj.dubey@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBLMWRmVeSWpSXmKPExsVy+t/xy7qxszcGG5y+qG6xbNJdNovvu76w
-	W/QuuMpmsenxNVaLy7vmsFnMOL+PyeL2ZV6LT0f/s1os2gpU0bGM0eLms+1MDtweLc09bB6b
-	l9R79G1ZxejxeZNcAEsUl01Kak5mWWqRvl0CV8ahUyeYC75wVTQe6GFqYHzA0cXIySEhYCLx
-	Z+ciNghbTOLCvfVANheHkMBSRomVZ7pZIJzPjBIPZq1mAqniFdCSePT0IiuIzSKgKtHx/ScL
-	iM0moCbxueER2CR+oJo1TdeB4hwcogIREo8vCEG0Ckr8mHwPbKaIwDRGiYuXbrODOMwCSxgl
-	9sw4xQhSJSwQJvG+9wg7xOZ2RolFC0+wgyQ4BTwlri5aBbaNWUBHYn/rNDYIW15i85q3zBMY
-	BWch2TILSdksJGULGJlXMYqmliYXFCel5xrqFSfmFpfmpesl5+duYoTExpcdjIuPWR1iFOBg
-	VOLhbVyxIViINbGsuDL3EKMEB7OSCO9Nn43BQrwpiZVVqUX58UWlOanFhxiZODilGhiNGxnO
-	q/ucNdunq2N7w830yLHkO29fatkcjgq32V46mXMlz3LemwErpPkZOVYumJvS5pi6Oi3wtTH3
-	/FtvmYwnFR44+79rH1PKPJUKwfW20s3L1q09eTKqa8JL/zcn3nWlxpziZzl/QVpnlf6O775H
-	dN5ejVjXpLtBXPKmwUm/1KZW03UFoiJKLMUZiYZazEXFiQCiAZ96awIAAA==
+	Mon, 30 Jun 2014 13:21:07 -0400
+Message-ID: <53B19C80.8060306@linaro.org>
+Date: Mon, 30 Jun 2014 18:21:04 +0100
+From: Graeme Gregory <graeme.gregory@linaro.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Catalin Marinas <catalin.marinas@arm.com>,
+        Hanjun Guo <hanjun.guo@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Bjorn Helgaas <bhelgaas@google.com>,
+        "rric@kernel.org" <rric@kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Al Stone <al.stone@linaro.org>,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Subject: Re: [PATCH v4 05/13] ARM64 / ACPI: Introduce arm-core.c and its related
+ head file
+References: <1403840976-7456-1-git-send-email-hanjun.guo@linaro.org> <1403840976-7456-6-git-send-email-hanjun.guo@linaro.org> <20140630162406.GR28951@arm.com>
+In-Reply-To: <20140630162406.GR28951@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pankaj,
 
-On 25.06.2014 16:03, Pankaj Dubey wrote:
-> This patch moves PMU specific definitions into a new file
-> as exynos-pmu.h.
-> This will help in reducing dependency of common.h in pmu.c.
-> 
-> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-> ---
->  arch/arm/mach-exynos/common.h     |   17 -----------------
->  arch/arm/mach-exynos/exynos-pmu.h |   31 +++++++++++++++++++++++++++++++
->  arch/arm/mach-exynos/pm.c         |    1 +
->  arch/arm/mach-exynos/pmu.c        |    2 +-
->  4 files changed, 33 insertions(+), 18 deletions(-)
->  create mode 100644 arch/arm/mach-exynos/exynos-pmu.h
-> 
-> diff --git a/arch/arm/mach-exynos/common.h b/arch/arm/mach-exynos/common.h
-> index 296c6e1..0326ca2 100644
-> --- a/arch/arm/mach-exynos/common.h
-> +++ b/arch/arm/mach-exynos/common.h
-> @@ -135,23 +135,6 @@ extern struct smp_operations exynos_smp_ops;
->  
->  extern void exynos_cpu_die(unsigned int cpu);
->  
-> -/* PMU(Power Management Unit) support */
-> -
-> -#define PMU_TABLE_END	(-1U)
-> -
-> -enum sys_powerdown {
-> -	SYS_AFTR,
-> -	SYS_LPA,
-> -	SYS_SLEEP,
-> -	NUM_SYS_POWERDOWN,
-> -};
-> -
-> -struct exynos_pmu_conf {
-> -	unsigned int offset;
-> -	unsigned int val[NUM_SYS_POWERDOWN];
-> -};
+On 30/06/2014 17:24, Catalin Marinas wrote:
+> On Fri, Jun 27, 2014 at 04:49:28AM +0100, Hanjun Guo wrote:
+>>   drivers/acpi/Makefile          |    2 +
+>>   drivers/acpi/plat/Makefile     |    1 +
+>>   drivers/acpi/plat/arm-core.c   |  110 ++++++++++++++++++++++++++++++++++++++++
+> Do you ever plan to add ACPI support for 32-bit ARM? If not, this part
+> could be placed under arch/arm64 (similar to x86).
+>
+Originally the plan was to support both platforms, but it seems people 
+have stopped talking to Linaro about 32bit support now so unless anyone 
+else has some actual info I guess it would be safe to move it into arm64.
 
-While at it, I'd say this struct could be moved to pmu.c, along with the
-PMU_TABLE_END macro as they are both private to this file.
+Graeme
 
-Best regards,
-Tomasz
