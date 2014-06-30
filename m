@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753475AbaF3MWW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:22:22 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:51932 "EHLO
+	id S1752052AbaF3MXo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:23:44 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:51914 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752939AbaF3LxZ (ORCPT
+	by vger.kernel.org with ESMTP id S1751570AbaF3LxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 07:53:25 -0400
+	Mon, 30 Jun 2014 07:53:24 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 065/181] USB: cdc-acm: fix runtime PM imbalance at shutdown
-Date: Mon, 30 Jun 2014 13:51:26 +0200
-Message-Id: <31f1aa154ff793028bc7dc57372c476cea061022.1404128998.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Michal Kubecek <mkubecek@suse.cz>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 018/181] xfrm: fix race between netns cleanup and state expire notification
+Date: Mon, 30 Jun 2014 13:50:39 +0200
+Message-Id: <3f8fd8ad48b66a4fc44f60cde0ea575155a45eff.1404128997.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -23,58 +23,158 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Michal Kubecek <mkubecek@suse.cz>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 5292afa657d0e790b7479ad8eef9450c1e040b3d upstream.
+commit 21ee543edc0dea36ab58d24523fcd42b8a270df8 upstream.
 
-Make sure only to decrement the PM counters if they were actually
-incremented.
+The xfrm_user module registers its pernet init/exit after xfrm
+itself so that its net exit function xfrm_user_net_exit() is
+executed before xfrm_net_exit() which calls xfrm_state_fini() to
+cleanup the SA's (xfrm states). This opens a window between
+zeroing net->xfrm.nlsk pointer and deleting all xfrm_state
+instances which may access it (via the timer). If an xfrm state
+expires in this window, xfrm_exp_state_notify() will pass null
+pointer as socket to nlmsg_multicast().
 
-Note that the USB PM counter, but not necessarily the driver core PM
-counter, is reset when the interface is unbound.
+As the notifications are called inside rcu_read_lock() block, it
+is sufficient to retrieve the nlsk socket with rcu_dereference()
+and check the it for null.
 
-Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
-that support remote wakeup")
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Michal Kubecek <mkubecek@suse.cz>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/usb/class/cdc-acm.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ net/xfrm/xfrm_user.c | 36 +++++++++++++++++++++++++-----------
+ 1 file changed, 25 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-index ebbe89f60f7b..669836ae53e0 100644
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -575,12 +575,13 @@ static void acm_port_shutdown(struct tty_port *port)
- 	struct urb *urb;
- 	struct acm_wb *wb;
- 	int i;
-+	int pm_err;
- 
- 	dev_dbg(&acm->control->dev, "%s\n", __func__);
- 
- 	mutex_lock(&acm->mutex);
- 	if (!acm->disconnected) {
--		usb_autopm_get_interface(acm->control);
-+		pm_err = usb_autopm_get_interface(acm->control);
- 		acm_set_control(acm, acm->ctrlout = 0);
- 
- 		for (;;) {
-@@ -598,7 +599,8 @@ static void acm_port_shutdown(struct tty_port *port)
- 		for (i = 0; i < acm->rx_buflimit; i++)
- 			usb_kill_urb(acm->read_urbs[i]);
- 		acm->control->needs_remote_wakeup = 0;
--		usb_autopm_put_interface(acm->control);
-+		if (!pm_err)
-+			usb_autopm_put_interface(acm->control);
- 	}
- 	mutex_unlock(&acm->mutex);
+diff --git a/net/xfrm/xfrm_user.c b/net/xfrm/xfrm_user.c
+index 352dfa4c39ee..32a2dd39b785 100644
+--- a/net/xfrm/xfrm_user.c
++++ b/net/xfrm/xfrm_user.c
+@@ -930,6 +930,20 @@ static struct sk_buff *xfrm_state_netlink(struct sk_buff *in_skb,
+ 	return skb;
  }
+ 
++/* A wrapper for nlmsg_multicast() checking that nlsk is still available.
++ * Must be called with RCU read lock.
++ */
++static inline int xfrm_nlmsg_multicast(struct net *net, struct sk_buff *skb,
++				       u32 pid, unsigned int group)
++{
++	struct sock *nlsk = rcu_dereference(net->xfrm.nlsk);
++
++	if (nlsk)
++		return nlmsg_multicast(nlsk, skb, pid, group, GFP_ATOMIC);
++	else
++		return -1;
++}
++
+ static inline size_t xfrm_spdinfo_msgsize(void)
+ {
+ 	return NLMSG_ALIGN(4)
+@@ -2253,7 +2267,7 @@ static int xfrm_send_migrate(const struct xfrm_selector *sel, u8 dir, u8 type,
+ 	if (build_migrate(skb, m, num_migrate, k, sel, dir, type) < 0)
+ 		BUG();
+ 
+-	return nlmsg_multicast(net->xfrm.nlsk, skb, 0, XFRMNLGRP_MIGRATE, GFP_ATOMIC);
++	return xfrm_nlmsg_multicast(net, skb, 0, XFRMNLGRP_MIGRATE);
+ }
+ #else
+ static int xfrm_send_migrate(const struct xfrm_selector *sel, u8 dir, u8 type,
+@@ -2440,7 +2454,7 @@ static int xfrm_exp_state_notify(struct xfrm_state *x, const struct km_event *c)
+ 		return -EMSGSIZE;
+ 	}
+ 
+-	return nlmsg_multicast(net->xfrm.nlsk, skb, 0, XFRMNLGRP_EXPIRE, GFP_ATOMIC);
++	return xfrm_nlmsg_multicast(net, skb, 0, XFRMNLGRP_EXPIRE);
+ }
+ 
+ static int xfrm_aevent_state_notify(struct xfrm_state *x, const struct km_event *c)
+@@ -2455,7 +2469,7 @@ static int xfrm_aevent_state_notify(struct xfrm_state *x, const struct km_event
+ 	if (build_aevent(skb, x, c) < 0)
+ 		BUG();
+ 
+-	return nlmsg_multicast(net->xfrm.nlsk, skb, 0, XFRMNLGRP_AEVENTS, GFP_ATOMIC);
++	return xfrm_nlmsg_multicast(net, skb, 0, XFRMNLGRP_AEVENTS);
+ }
+ 
+ static int xfrm_notify_sa_flush(const struct km_event *c)
+@@ -2481,7 +2495,7 @@ static int xfrm_notify_sa_flush(const struct km_event *c)
+ 
+ 	nlmsg_end(skb, nlh);
+ 
+-	return nlmsg_multicast(net->xfrm.nlsk, skb, 0, XFRMNLGRP_SA, GFP_ATOMIC);
++	return xfrm_nlmsg_multicast(net, skb, 0, XFRMNLGRP_SA);
+ }
+ 
+ static inline size_t xfrm_sa_len(struct xfrm_state *x)
+@@ -2568,7 +2582,7 @@ static int xfrm_notify_sa(struct xfrm_state *x, const struct km_event *c)
+ 
+ 	nlmsg_end(skb, nlh);
+ 
+-	return nlmsg_multicast(net->xfrm.nlsk, skb, 0, XFRMNLGRP_SA, GFP_ATOMIC);
++	return xfrm_nlmsg_multicast(net, skb, 0, XFRMNLGRP_SA);
+ 
+ out_free_skb:
+ 	kfree_skb(skb);
+@@ -2659,7 +2673,7 @@ static int xfrm_send_acquire(struct xfrm_state *x, struct xfrm_tmpl *xt,
+ 	if (build_acquire(skb, x, xt, xp) < 0)
+ 		BUG();
+ 
+-	return nlmsg_multicast(net->xfrm.nlsk, skb, 0, XFRMNLGRP_ACQUIRE, GFP_ATOMIC);
++	return xfrm_nlmsg_multicast(net, skb, 0, XFRMNLGRP_ACQUIRE);
+ }
+ 
+ /* User gives us xfrm_user_policy_info followed by an array of 0
+@@ -2773,7 +2787,7 @@ static int xfrm_exp_policy_notify(struct xfrm_policy *xp, int dir, const struct
+ 	if (build_polexpire(skb, xp, dir, c) < 0)
+ 		BUG();
+ 
+-	return nlmsg_multicast(net->xfrm.nlsk, skb, 0, XFRMNLGRP_EXPIRE, GFP_ATOMIC);
++	return xfrm_nlmsg_multicast(net, skb, 0, XFRMNLGRP_EXPIRE);
+ }
+ 
+ static int xfrm_notify_policy(struct xfrm_policy *xp, int dir, const struct km_event *c)
+@@ -2835,7 +2849,7 @@ static int xfrm_notify_policy(struct xfrm_policy *xp, int dir, const struct km_e
+ 
+ 	nlmsg_end(skb, nlh);
+ 
+-	return nlmsg_multicast(net->xfrm.nlsk, skb, 0, XFRMNLGRP_POLICY, GFP_ATOMIC);
++	return xfrm_nlmsg_multicast(net, skb, 0, XFRMNLGRP_POLICY);
+ 
+ out_free_skb:
+ 	kfree_skb(skb);
+@@ -2863,7 +2877,7 @@ static int xfrm_notify_policy_flush(const struct km_event *c)
+ 
+ 	nlmsg_end(skb, nlh);
+ 
+-	return nlmsg_multicast(net->xfrm.nlsk, skb, 0, XFRMNLGRP_POLICY, GFP_ATOMIC);
++	return xfrm_nlmsg_multicast(net, skb, 0, XFRMNLGRP_POLICY);
+ 
+ out_free_skb:
+ 	kfree_skb(skb);
+@@ -2932,7 +2946,7 @@ static int xfrm_send_report(struct net *net, u8 proto,
+ 	if (build_report(skb, proto, sel, addr) < 0)
+ 		BUG();
+ 
+-	return nlmsg_multicast(net->xfrm.nlsk, skb, 0, XFRMNLGRP_REPORT, GFP_ATOMIC);
++	return xfrm_nlmsg_multicast(net, skb, 0, XFRMNLGRP_REPORT);
+ }
+ 
+ static inline size_t xfrm_mapping_msgsize(void)
+@@ -2984,7 +2998,7 @@ static int xfrm_send_mapping(struct xfrm_state *x, xfrm_address_t *ipaddr,
+ 	if (build_mapping(skb, x, ipaddr, sport) < 0)
+ 		BUG();
+ 
+-	return nlmsg_multicast(net->xfrm.nlsk, skb, 0, XFRMNLGRP_MAPPING, GFP_ATOMIC);
++	return xfrm_nlmsg_multicast(net, skb, 0, XFRMNLGRP_MAPPING);
+ }
+ 
+ static struct xfrm_mgr netlink_mgr = {
 -- 
 2.0.0
 
