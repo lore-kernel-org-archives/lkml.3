@@ -1,87 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753176AbaF3MV3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:21:29 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:53987 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753086AbaF3MV2 (ORCPT
+	id S1755787AbaF3MTX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:19:23 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:51948 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753244AbaF3LxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 08:21:28 -0400
-Message-ID: <53B15645.9000200@free-electrons.com>
-Date: Mon, 30 Jun 2014 14:21:25 +0200
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-CC: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Sascha Hauer <kernel@pengutronix.de>, Lior Amsalem <alior@marvell.com>,
-        Tawfik Bayouk <tawfik@marvell.com>, linux-kernel@vger.kernel.org,
-        Nadav Haklai <nadavh@marvell.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/5] ARM: smp_scu: Add the enable speculative linefills
- operation
-References: <1403822608-31158-1-git-send-email-gregory.clement@free-electrons.com>	<1403822608-31158-3-git-send-email-gregory.clement@free-electrons.com> <20140628170216.0c1965cf@free-electrons.com>
-In-Reply-To: <20140628170216.0c1965cf@free-electrons.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 30 Jun 2014 07:53:25 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@redhat.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 009/181] nfsd4: fix FREE_STATEID lockowner leak
+Date: Mon, 30 Jun 2014 13:50:30 +0200
+Message-Id: <2eaaa8d28d3b2a17c02ff41ce526b16e65f9bce1.1404128997.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
+References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
+In-Reply-To: <cover.1404128997.git.jslaby@suse.cz>
+References: <cover.1404128997.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,>> + */
->> +void scu_spec_linefills_enable(void __iomem *scu_base, bool enable)
->> +{
->> +	u32 scu_ctrl;
->> +
->> +	scu_ctrl = readl_relaxed(scu_base + SCU_CTRL);
->> +	/* already enabled? */
-> 
-> Comment not needed, since SCU_CTRL_ENABLE already documents what's
-> happening. Or a more useful comment would be: "We cannot change the SCU
-> configuration while it is enabled".
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-Right, however I need to figure out if it is really the case. Because in
-ARM documentation about the SCU control register, I didn't find any mention
-of this restriction.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-> 
->> +	if (scu_ctrl & SCU_CTRL_ENABLE)
->> +		return;
-> 
-> Return an error in this case maybe?
+===============
 
-If it failed we just don't benefit of an optimization, it won't prevent the
-system working. And also, we can't do anything more if it failed. However
-it could be nice to let the calling function know that it failed.
+commit 48385408b45523d9a432c66292d47ef43efcbb94 upstream.
 
-> 
->> +	if (enable)
->> +		scu_ctrl |= SCU_CTRL_SPEC_LINEFILLS;
->> +	else
->> +		scu_ctrl &= ~SCU_CTRL_SPEC_LINEFILLS;
->> +
->> +	writel_relaxed(scu_ctrl, scu_base + SCU_CTRL);
->> +}
-> 
-> Instead of having a separate function to do this (and the standby
-> operation), what about doing that directly in scu_enable() ? Either
-> unconditionally if that is fine for all SCU users, or through a flags
-> argument?
+27b11428b7de ("nfsd4: remove lockowner when removing lock stateid")
+introduced a memory leak.
 
-OK using a flag argument makes sens indeed. About setting it unconditionally,
-I would prefer not taking the risk to break the other platforms.
+Cc: stable@vger.kernel.org
+Reported-by: Jeff Layton <jeff.layton@primarydata.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ fs/nfsd/nfs4state.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks,
-
-Gregory
-
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index ded7af3c45e1..5ae1dd340073 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -3705,7 +3705,7 @@ nfsd4_free_lock_stateid(struct nfs4_ol_stateid *stp)
+ 	 * correspondance, and we have to delete the lockowner when we
+ 	 * delete the lock stateid:
+ 	 */
+-	unhash_lockowner(lo);
++	release_lockowner(lo);
+ 	return nfs_ok;
+ }
+ 
 -- 
-Gregory Clement, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+2.0.0
+
