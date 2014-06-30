@@ -1,75 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753730AbaF3Op6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 10:45:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38788 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751403AbaF3Op4 (ORCPT
+	id S1754021AbaF3Oqa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 10:46:30 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:36298 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751264AbaF3Oq3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 10:45:56 -0400
-Date: Mon, 30 Jun 2014 07:45:43 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Richard Leitner <richard.leitner@skidata.com>
-Cc: David Laight <David.Laight@ACULAB.COM>, Felipe Balbi <balbi@ti.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv2] usb: gadget: serial: replace hardcoded ttyGS with
- PREFIX
-Message-ID: <20140630144543.GA23566@kroah.com>
-References: <20140627133721.10ca6cab@lxbuild.skidata.net>
- <20140627174628.GA1449@kroah.com>
- <20140630083205.596557f1@lxbuild.skidata.net>
- <20140630103616.620a13a2@lxbuild.skidata.net>
- <063D6719AE5E284EB5DD2968C1650D6D1726930B@AcuExch.aculab.com>
- <20140630105609.66d4be83@lxbuild.skidata.net>
- <063D6719AE5E284EB5DD2968C1650D6D1726935E@AcuExch.aculab.com>
- <20140630132327.39b9d4d2@lxbuild.skidata.net>
+	Mon, 30 Jun 2014 10:46:29 -0400
+Date: Mon, 30 Jun 2014 16:46:24 +0200
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com,
+        zheng.z.yan@intel.com
+Subject: [PATCH] perf/x86/uncore: fix SNB-EP/IVT Cbox filter mappings
+Message-ID: <20140630144624.GA2604@quad>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140630132327.39b9d4d2@lxbuild.skidata.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 30, 2014 at 01:23:27PM +0200, Richard Leitner wrote:
-> Hi,
-> 
-> On Mon, 30 Jun 2014 09:08:01 +0000
-> David Laight <David.Laight@ACULAB.COM> wrote:
-> 
-> > > > From: Of Richard Leitner
-> > > > > Replaces all hardcoded ttyGS strings with the PREFIX macro.
-> > > > > Due to the fact the strings are spread over different source files the
-> > > > > PREFIX definition is moved to u_serial.h
-> > > >
-> > > > Lots of changes like:
-> > > > > -		DBG(cdev, "acm ttyGS%d completion, err %d\n",
-> > > > > -				acm->port_num, req->status);
-> > > > > +		DBG(cdev, "acm %s%d completion, err %d\n",
-> > > > > +				PREFIX, acm->port_num, req->status);
-> > > >
-> > > > I'm not sure this improves the code.
-> > > 
-> > > Maybe you're right, the readability of the code wouldn't be better afterwards,
-> 
-> but as I already mentioned IMHO if there is such a macro it should be used everywhere or nowhere...
-> 	
-> > 
-> > Indeed it will make most attempts to grep for the error message fail.
-> 
-> So your thought is to carve it out completely?
-> 
-> Are there any other opinions/ideas on that?
 
-Use the "proper" debug macros that the kernel provides you (i.e.
-dev_dbg() and family) and then you don't need to put the string in there
-at all, the kernel will do it automatically for you, in the correct
-format, so that all userspace tools can properly track what is going on.
+This patch fixes the SNB-EP and IVT Cbox filter mapping
+table. The table controls which filters are supported by
+which events. There were several mistakes in those tables
+causing some filters to be ignored, such as NID on
+TOR_INSERTS.
 
-So please remove the horrid DBG() macro entirely.
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-thanks,
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index 65bbbea..ae6552a 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -550,16 +550,16 @@ static struct extra_reg snbep_uncore_cbox_extra_regs[] = {
+ 	SNBEP_CBO_EVENT_EXTRA_REG(0x4134, 0xffff, 0x6),
+ 	SNBEP_CBO_EVENT_EXTRA_REG(0x0135, 0xffff, 0x8),
+ 	SNBEP_CBO_EVENT_EXTRA_REG(0x0335, 0xffff, 0x8),
+-	SNBEP_CBO_EVENT_EXTRA_REG(0x4135, 0xffff, 0xc),
+-	SNBEP_CBO_EVENT_EXTRA_REG(0x4335, 0xffff, 0xc),
++	SNBEP_CBO_EVENT_EXTRA_REG(0x4135, 0xffff, 0xa),
++	SNBEP_CBO_EVENT_EXTRA_REG(0x4335, 0xffff, 0xa),
+ 	SNBEP_CBO_EVENT_EXTRA_REG(0x4435, 0xffff, 0x2),
+ 	SNBEP_CBO_EVENT_EXTRA_REG(0x4835, 0xffff, 0x2),
+ 	SNBEP_CBO_EVENT_EXTRA_REG(0x4a35, 0xffff, 0x2),
+ 	SNBEP_CBO_EVENT_EXTRA_REG(0x5035, 0xffff, 0x2),
+ 	SNBEP_CBO_EVENT_EXTRA_REG(0x0136, 0xffff, 0x8),
+ 	SNBEP_CBO_EVENT_EXTRA_REG(0x0336, 0xffff, 0x8),
+-	SNBEP_CBO_EVENT_EXTRA_REG(0x4136, 0xffff, 0xc),
+-	SNBEP_CBO_EVENT_EXTRA_REG(0x4336, 0xffff, 0xc),
++	SNBEP_CBO_EVENT_EXTRA_REG(0x4136, 0xffff, 0xa),
++	SNBEP_CBO_EVENT_EXTRA_REG(0x4336, 0xffff, 0xa),
+ 	SNBEP_CBO_EVENT_EXTRA_REG(0x4436, 0xffff, 0x2),
+ 	SNBEP_CBO_EVENT_EXTRA_REG(0x4836, 0xffff, 0x2),
+ 	SNBEP_CBO_EVENT_EXTRA_REG(0x4a36, 0xffff, 0x2),
+@@ -1222,6 +1222,7 @@ static struct extra_reg ivt_uncore_cbox_extra_regs[] = {
+ 	SNBEP_CBO_EVENT_EXTRA_REG(SNBEP_CBO_PMON_CTL_TID_EN,
+ 				  SNBEP_CBO_PMON_CTL_TID_EN, 0x1),
+ 	SNBEP_CBO_EVENT_EXTRA_REG(0x1031, 0x10ff, 0x2),
++
+ 	SNBEP_CBO_EVENT_EXTRA_REG(0x1134, 0xffff, 0x4),
+ 	SNBEP_CBO_EVENT_EXTRA_REG(0x4134, 0xffff, 0xc),
+ 	SNBEP_CBO_EVENT_EXTRA_REG(0x5134, 0xffff, 0xc),
+@@ -1245,7 +1246,7 @@ static struct extra_reg ivt_uncore_cbox_extra_regs[] = {
+ 	SNBEP_CBO_EVENT_EXTRA_REG(0x8335, 0xffff, 0x10),
+ 	SNBEP_CBO_EVENT_EXTRA_REG(0x0136, 0xffff, 0x10),
+ 	SNBEP_CBO_EVENT_EXTRA_REG(0x0336, 0xffff, 0x10),
+-	SNBEP_CBO_EVENT_EXTRA_REG(0x2336, 0xffff, 0x10),
++	SNBEP_CBO_EVENT_EXTRA_REG(0x2136, 0xffff, 0x10),
+ 	SNBEP_CBO_EVENT_EXTRA_REG(0x2336, 0xffff, 0x10),
+ 	SNBEP_CBO_EVENT_EXTRA_REG(0x4136, 0xffff, 0x18),
+ 	SNBEP_CBO_EVENT_EXTRA_REG(0x4336, 0xffff, 0x18),
+-- 
+1.8.3.2
 
-greg k-h
