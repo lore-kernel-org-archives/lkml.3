@@ -1,117 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756568AbaF3QIk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 12:08:40 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:64281 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756256AbaF3QHE (ORCPT
+	id S1756631AbaF3QJE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 12:09:04 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:36948 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755883AbaF3QG6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 12:07:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140630153503.GA10375@google.com>
-References: <1404124096-21445-1-git-send-email-drysdale@google.com>
- <1404124096-21445-16-git-send-email-drysdale@google.com> <CALCETrUi71FgVABRF4C+n_STc02j=GxRwBqDaoC+NLeAP9Ui3w@mail.gmail.com>
- <20140630153503.GA10375@google.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 30 Jun 2014 09:06:41 -0700
-Message-ID: <CALCETrWYQdAp1E-MNu59XS8DD0oO1dA8EvoqDrMaH2YLos8iSg@mail.gmail.com>
-Subject: Re: [PATCH 4/5] man-pages: cap_rights_limit.2: limit FD rights for Capsicum
-To: David Drysdale <drysdale@google.com>
-Cc: LSM List <linux-security-module@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        Kees Cook <keescook@chromium.org>,
-        James Morris <james.l.morris@oracle.com>,
-        Linux API <linux-api@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 30 Jun 2014 12:06:58 -0400
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
+        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org
+Cc: preeti@linux.vnet.ibm.com, Morten.Rasmussen@arm.com, efault@gmx.de,
+        nicolas.pitre@linaro.org, linaro-kernel@lists.linaro.org,
+        daniel.lezcano@linaro.org, dietmar.eggemann@arm.com,
+        Vincent Guittot <vincent.guittot@linaro.org>
+Subject: [PATCH v3 07/12] sched: test the cpu's capacity in wake affine
+Date: Mon, 30 Jun 2014 18:05:38 +0200
+Message-Id: <1404144343-18720-8-git-send-email-vincent.guittot@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1404144343-18720-1-git-send-email-vincent.guittot@linaro.org>
+References: <1404144343-18720-1-git-send-email-vincent.guittot@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 30, 2014 at 8:35 AM, David Drysdale <drysdale@google.com> wrote:
-> On Mon, Jun 30, 2014 at 07:53:57AM -0700, Andy Lutomirski wrote:
->> On Mon, Jun 30, 2014 at 3:28 AM, David Drysdale <drysdale@google.com> wrote:
->> > Signed-off-by: David Drysdale <drysdale@google.com>
->> > ---
->> >  man2/cap_rights_limit.2 | 171 ++++++++++++++++++++++++++++++++++++++++++++++++
->> >  1 file changed, 171 insertions(+)
->> >  create mode 100644 man2/cap_rights_limit.2
->> >
->> > diff --git a/man2/cap_rights_limit.2 b/man2/cap_rights_limit.2
->> > new file mode 100644
->> > index 000000000000..3484ee1076aa
->> > --- /dev/null
->> > +++ b/man2/cap_rights_limit.2
->> > @@ -0,0 +1,171 @@
->> > +.\"
->> > +.\" Copyright (c) 2008-2010 Robert N. M. Watson
->> > +.\" Copyright (c) 2012-2013 The FreeBSD Foundation
->> > +.\" Copyright (c) 2013-2014 Google, Inc.
->> > +.\" All rights reserved.
->> > +.\"
->> > +.\" %%%LICENSE_START(BSD_2_CLAUSE)
->> > +.\" Redistribution and use in source and binary forms, with or without
->> > +.\" modification, are permitted provided that the following conditions
->> > +.\" are met:
->> > +.\" 1. Redistributions of source code must retain the above copyright
->> > +.\"    notice, this list of conditions and the following disclaimer.
->> > +.\" 2. Redistributions in binary form must reproduce the above copyright
->> > +.\"    notice, this list of conditions and the following disclaimer in the
->> > +.\"    documentation and/or other materials provided with the distribution.
->> > +.\"
->> > +.\" THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
->> > +.\" ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
->> > +.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
->> > +.\" ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
->> > +.\" FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
->> > +.\" DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
->> > +.\" OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
->> > +.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
->> > +.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
->> > +.\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
->> > +.\" SUCH DAMAGE.
->> > +.\" %%%LICENSE_END
->> > +.\"
->> > +.TH CAP_RIGHTS_LIMIT 2 2014-05-07 "Linux" "Linux Programmer's Manual"
->> > +.SH NAME
->> > +cap_rights_limit \- limit Capsicum capability rights
->> > +.SH SYNOPSIS
->> > +.nf
->> > +.B #include <sys/capsicum.h>
->> > +.sp
->> > +.BI "int cap_rights_limit(int " fd ", const struct cap_rights *" rights ,
->> > +.BI "                     unsigned int " fcntls ,
->> > +.BI "                     int " nioctls ", unsigned int *" ioctls );
->>
->> Am I missing the docs for struct cap_rights somewhere?
->
-> There's a little bit of discussion in rights.7 (mail 3/5 of the
-> man-pages set), but there isn't a structure description.
->
-> I was trying to keep the structure opaque to userspace, which would
-> be expected to manipulate the rights with various utility functions
-> rather than directly.
->
-> But I now realize this leaves a gap -- the description of this syscall
-> doesn't include a full description of its ABI.
->
-> So I'll add in a description of the structure to this page -- basically:
->
->   struct cap_rights {
->         __u64   cr_rights[2];
->   };
->
-> with a slightly complicated scheme to encode rights into the bitmask
-> array.  (The encoding scheme is taken from the FreeBSD implementation,
-> which I've tried to stick to unless there's good reason to change.)
+Currently the task always wakes affine on this_cpu if the latter is idle.
+Before waking up the task on this_cpu, we check that this_cpu capacity is not
+significantly reduced because of RT tasks or irq activity.
 
-How does extensibility work?  For example, what happens when someone
-needs to add a new right for whatever reason and they fall off the end
-of the list?
+Use case where the number of irq and/or the time spent under irq is important
+will take benefit of this because the task that is woken up by irq or softirq
+will not use the same CPU than irq (and softirq) but a idle one which share
+its cache.
 
-Linux so-called capabilities have done this a few times, resulting in
-a giant mess.
+Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+---
+ kernel/sched/fair.c | 21 ++++++++++++---------
+ 1 file changed, 12 insertions(+), 9 deletions(-)
 
---Andy
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 7dff578..a23c938 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4240,6 +4240,7 @@ static int wake_wide(struct task_struct *p)
+ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+ {
+ 	s64 this_load, load;
++	s64 this_eff_load, prev_eff_load;
+ 	int idx, this_cpu, prev_cpu;
+ 	struct task_group *tg;
+ 	unsigned long weight;
+@@ -4283,21 +4284,23 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+ 	 * Otherwise check if either cpus are near enough in load to allow this
+ 	 * task to be woken on this_cpu.
+ 	 */
+-	if (this_load > 0) {
+-		s64 this_eff_load, prev_eff_load;
++	this_eff_load = 100;
++	this_eff_load *= capacity_of(prev_cpu);
++
++	prev_eff_load = 100 + (sd->imbalance_pct - 100) / 2;
++	prev_eff_load *= capacity_of(this_cpu);
+ 
+-		this_eff_load = 100;
+-		this_eff_load *= capacity_of(prev_cpu);
++	if (this_load > 0) {
+ 		this_eff_load *= this_load +
+ 			effective_load(tg, this_cpu, weight, weight);
+ 
+-		prev_eff_load = 100 + (sd->imbalance_pct - 100) / 2;
+-		prev_eff_load *= capacity_of(this_cpu);
+ 		prev_eff_load *= load + effective_load(tg, prev_cpu, 0, weight);
++	} else if (!(sd->flags & SD_SHARE_PKG_RESOURCES)) {
++		this_eff_load = 0;
++	}
++
++	balanced = this_eff_load <= prev_eff_load;
+ 
+-		balanced = this_eff_load <= prev_eff_load;
+-	} else
+-		balanced = true;
+ 	schedstat_inc(p, se.statistics.nr_wakeups_affine_attempts);
+ 
+ 	if (!balanced)
+-- 
+1.9.1
+
