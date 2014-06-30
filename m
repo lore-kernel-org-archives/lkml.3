@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755734AbaF3MHm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:07:42 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:52034 "EHLO
+	id S1756181AbaF3MIb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:08:31 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:52010 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753679AbaF3LxZ (ORCPT
+	by vger.kernel.org with ESMTP id S1753613AbaF3LxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Jun 2014 07:53:25 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
-        "J. Bruce Fields" <bfields@redhat.com>,
-        Steven Whitehouse <swhiteho@redhat.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 003/181] GFS2: revert "GFS2: d_splice_alias() can't return error"
-Date: Mon, 30 Jun 2014 13:50:24 +0200
-Message-Id: <22d3112ae7f819d3965ede21a79a5b5ad6ff33ed.1404128997.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Ben Hutchings <bhutchings@solarflare.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 016/181] net/compat: Fix minor information leak in siocdevprivate_ioctl()
+Date: Mon, 30 Jun 2014 13:50:37 +0200
+Message-Id: <e45145b6eb158405fe5cbbcce0a206d3b3090842.1404128997.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -24,56 +23,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "J. Bruce Fields" <bfields@fieldses.org>
+From: Ben Hutchings <bhutchings@solarflare.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit d57b9c9a999a8f4475fe73fba629c964245800ca upstream.
+commit 417c3522b3202dacce4873cfb0190459fbce95c5 upstream.
 
-0d0d110720d7960b77c03c9f2597faaff4b484ae asserts that "d_splice_alias()
-can't return error unless it was given an IS_ERR(inode)".
+We don't need to check that ifr_data itself is a valid user pointer,
+but we should check &ifr_data is.  Thankfully the copy of ifr_name is
+checked, so this can only leak a few bytes from immediately above the
+user address limit.
 
-That was true of the implementation of d_splice_alias, but this is
-really a problem with d_splice_alias: at a minimum it should be able to
-return -ELOOP in the case where inserting the given dentry would cause a
-directory loop.
-
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
-
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/gfs2/inode.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ net/socket.c | 7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/fs/gfs2/inode.c b/fs/gfs2/inode.c
-index 630db362a2d1..e803e3cafc53 100644
---- a/fs/gfs2/inode.c
-+++ b/fs/gfs2/inode.c
-@@ -583,6 +583,9 @@ static int gfs2_create_inode(struct inode *dir, struct dentry *dentry,
- 	error = PTR_ERR(inode);
- 	if (!IS_ERR(inode)) {
- 		d = d_splice_alias(inode, dentry);
-+		error = PTR_ERR(d);
-+		if (IS_ERR(d))
-+			goto fail_gunlock;
- 		error = 0;
- 		if (file) {
- 			if (S_ISREG(inode->i_mode)) {
-@@ -777,6 +780,11 @@ static struct dentry *__gfs2_lookup(struct inode *dir, struct dentry *dentry,
- 	}
+diff --git a/net/socket.c b/net/socket.c
+index dc57dae20a9a..c8ca896a9a5a 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -3023,19 +3023,16 @@ static int siocdevprivate_ioctl(struct net *net, unsigned int cmd,
+ 	if (copy_from_user(&tmp_buf[0], &(u_ifreq32->ifr_ifrn.ifrn_name[0]),
+ 			   IFNAMSIZ))
+ 		return -EFAULT;
+-	if (__get_user(data32, &u_ifreq32->ifr_ifru.ifru_data))
++	if (get_user(data32, &u_ifreq32->ifr_ifru.ifru_data))
+ 		return -EFAULT;
+ 	data64 = compat_ptr(data32);
  
- 	d = d_splice_alias(inode, dentry);
-+	if (IS_ERR(d)) {
-+		iput(inode);
-+		gfs2_glock_dq_uninit(&gh);
-+		return d;
-+	}
- 	if (file && S_ISREG(inode->i_mode))
- 		error = finish_open(file, dentry, gfs2_open_common, opened);
+ 	u_ifreq64 = compat_alloc_user_space(sizeof(*u_ifreq64));
  
+-	/* Don't check these user accesses, just let that get trapped
+-	 * in the ioctl handler instead.
+-	 */
+ 	if (copy_to_user(&u_ifreq64->ifr_ifrn.ifrn_name[0], &tmp_buf[0],
+ 			 IFNAMSIZ))
+ 		return -EFAULT;
+-	if (__put_user(data64, &u_ifreq64->ifr_ifru.ifru_data))
++	if (put_user(data64, &u_ifreq64->ifr_ifru.ifru_data))
+ 		return -EFAULT;
+ 
+ 	return dev_ioctl(net, cmd, u_ifreq64);
 -- 
 2.0.0
 
