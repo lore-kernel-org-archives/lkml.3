@@ -1,233 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755092AbaF3I6S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 04:58:18 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:56756 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752280AbaF3I6Q (ORCPT
+	id S1755008AbaF3I74 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 04:59:56 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:58896 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752202AbaF3I7y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 04:58:16 -0400
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        kgdb-bugreport@lists.sourceforge.net, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Colin Cross <ccross@android.com>, kernel-team@android.com,
-        Rob Herring <robherring2@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Nicolas Pitre <nico@linaro.org>
-Subject: [PATCH v7 1/4] arm: fiq: Add callbacks to manage FIQ routings
-Date: Mon, 30 Jun 2014 09:53:08 +0100
-Message-Id: <1404118391-3850-2-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1404118391-3850-1-git-send-email-daniel.thompson@linaro.org>
-References: <1403623097-1153-1-git-send-email-daniel.thompson@linaro.org>
- <1404118391-3850-1-git-send-email-daniel.thompson@linaro.org>
+	Mon, 30 Jun 2014 04:59:54 -0400
+From: Sachin Kamat <sachin.kamat@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-samsung-soc@vger.kernel.org, kishon@ti.com, dianders@chromium.org,
+        gautam.vivek@samsung.com, spk.linux@gmail.com
+Subject: [PATCH 1/2] phy: Kconfig: Re-organize Exynos USB 2.0 PHY configs
+Date: Mon, 30 Jun 2014 14:26:21 +0530
+Message-Id: <1404118582-21993-1-git-send-email-sachin.kamat@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently enable_fiq/disable_fiq use a simple offset to convert an IRQ
-virq into a FIQ virq. This is too inflexible for multi-platform kernels
-and makes runtime error checking impossible.
+Since the USB 2.0 PHYs are required only with EHCI/OHCI USB drivers,
+make it depend on them and default to ARCH_EXYNOS as they are meant
+for Exynos platforms. Also, make the sub-drivers silent options enabling
+them based on the SoC platforms that they are meant to work with. This
+will make life easier for end users who do not have any way knowing the
+dependencies.
 
-We solve this by introducing a flexible mapping that allows interrupt
-controllers that support FIQ to register those mappings. This, in turn,
-makes it much possible for drivers in DT kernels to install FIQ handlers
-without knowing anything about the interrupt controller.
-
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Acked-by: Nicolas Pitre <nico@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Fabio Estevam <festevam@gmail.com>
+Signed-off-by: Sachin Kamat <sachin.kamat@samsung.com>
 ---
- arch/arm/include/asm/fiq.h |   8 ++++
- arch/arm/kernel/fiq.c      | 103 ++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 109 insertions(+), 2 deletions(-)
+ drivers/phy/Kconfig |   35 +++++++++++------------------------
+ 1 file changed, 11 insertions(+), 24 deletions(-)
 
-diff --git a/arch/arm/include/asm/fiq.h b/arch/arm/include/asm/fiq.h
-index d493d0b..ed44528 100644
---- a/arch/arm/include/asm/fiq.h
-+++ b/arch/arm/include/asm/fiq.h
-@@ -16,8 +16,14 @@
- #ifndef __ASM_FIQ_H
- #define __ASM_FIQ_H
+diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+index 16a2f067c242..9aab5dfb0adf 100644
+--- a/drivers/phy/Kconfig
++++ b/drivers/phy/Kconfig
+@@ -122,43 +122,30 @@ config PHY_SUN4I_USB
  
-+#include <linux/irq.h>
- #include <asm/ptrace.h>
+ config PHY_SAMSUNG_USB2
+ 	tristate "Samsung USB 2.0 PHY driver"
++	depends on USB_EHCI_EXYNOS || USB_OHCI_EXYNOS
+ 	select GENERIC_PHY
+ 	select MFD_SYSCON
++	default ARCH_EXYNOS
+ 	help
+ 	  Enable this to support the Samsung USB 2.0 PHY driver for Samsung
+-	  SoCs. This driver provides the interface for USB 2.0 PHY. Support for
+-	  particular SoCs has to be enabled in addition to this driver. Number
+-	  and type of supported phys depends on the SoC.
++	  SoCs. This driver provides the interface for USB 2.0 PHY. Support
++	  for particular PHYs will be enabled based on the SoC type in addition
++	  to this driver.
  
-+struct fiq_chip {
-+	void (*fiq_enable)(struct irq_data *data);
-+	void (*fiq_disable)(struct irq_data *data);
-+};
-+
- struct fiq_handler {
- 	struct fiq_handler *next;
- 	/* Name
-@@ -38,6 +44,8 @@ extern void release_fiq(struct fiq_handler *f);
- extern void set_fiq_handler(void *start, unsigned int length);
- extern void enable_fiq(int fiq);
- extern void disable_fiq(int fiq);
-+extern bool has_fiq(int fiq);
-+extern void fiq_register_mapping(int irq, struct fiq_chip *chip);
+ config PHY_EXYNOS4210_USB2
+-	bool "Support for Exynos 4210"
++	bool
+ 	depends on PHY_SAMSUNG_USB2
+-	depends on CPU_EXYNOS4210
+-	help
+-	  Enable USB PHY support for Exynos 4210. This option requires that
+-	  Samsung USB 2.0 PHY driver is enabled and means that support for this
+-	  particular SoC is compiled in the driver. In case of Exynos 4210 four
+-	  phys are available - device, host, HSIC0 and HSIC1.
++	default CPU_EXYNOS4210
  
- /* helpers defined in fiqasm.S: */
- extern void __set_fiq_regs(unsigned long const *regs);
-diff --git a/arch/arm/kernel/fiq.c b/arch/arm/kernel/fiq.c
-index 918875d..5d831cf 100644
---- a/arch/arm/kernel/fiq.c
-+++ b/arch/arm/kernel/fiq.c
-@@ -40,6 +40,9 @@
- #include <linux/init.h>
- #include <linux/interrupt.h>
- #include <linux/seq_file.h>
-+#include <linux/irq.h>
-+#include <linux/radix-tree.h>
-+#include <linux/slab.h>
+ config PHY_EXYNOS4X12_USB2
+-	bool "Support for Exynos 4x12"
++	bool
+ 	depends on PHY_SAMSUNG_USB2
+-	depends on (SOC_EXYNOS4212 || SOC_EXYNOS4412)
+-	help
+-	  Enable USB PHY support for Exynos 4x12. This option requires that
+-	  Samsung USB 2.0 PHY driver is enabled and means that support for this
+-	  particular SoC is compiled in the driver. In case of Exynos 4x12 four
+-	  phys are available - device, host, HSIC0 and HSIC1.
++	default SOC_EXYNOS4212 || SOC_EXYNOS4412
  
- #include <asm/cacheflush.h>
- #include <asm/cp15.h>
-@@ -52,7 +55,15 @@
- 		(unsigned)&vector_fiq_offset;		\
- 	})
+ config PHY_EXYNOS5250_USB2
+-	bool "Support for Exynos 5250"
++	bool
+ 	depends on PHY_SAMSUNG_USB2
+-	depends on SOC_EXYNOS5250
+-	help
+-	  Enable USB PHY support for Exynos 5250. This option requires that
+-	  Samsung USB 2.0 PHY driver is enabled and means that support for this
+-	  particular SoC is compiled in the driver. In case of Exynos 5250 four
+-	  phys are available - device, host, HSIC0 and HSIC.
++	default SOC_EXYNOS5250 || SOC_EXYNOS5420
  
-+struct fiq_data {
-+	struct fiq_chip *fiq_chip;
-+	struct irq_data *irq_data;
-+};
-+
- static unsigned long no_fiq_insn;
-+static int fiq_start = -1;
-+static RADIX_TREE(fiq_data_tree, GFP_KERNEL);
-+static DEFINE_MUTEX(fiq_data_mutex);
- 
- /* Default reacquire function
-  * - we always relinquish FIQ control
-@@ -127,18 +138,65 @@ void release_fiq(struct fiq_handler *f)
- 	while (current_fiq->fiq_op(current_fiq->dev_id, 0));
- }
- 
--static int fiq_start;
-+static struct fiq_data *lookup_fiq_data(int fiq)
-+{
-+	struct fiq_data *data;
-+
-+	rcu_read_lock();
-+	data = radix_tree_lookup(&fiq_data_tree, fiq);
-+	rcu_read_unlock();
-+
-+	return data;
-+}
- 
- void enable_fiq(int fiq)
- {
-+	struct fiq_data *data = lookup_fiq_data(fiq);
-+
-+	if (data) {
-+		if (data->fiq_chip->fiq_enable)
-+			data->fiq_chip->fiq_enable(data->irq_data);
-+		enable_irq(fiq);
-+		return;
-+	}
-+
-+	if (WARN_ON(fiq_start == -1))
-+		return;
-+
- 	enable_irq(fiq + fiq_start);
- }
- 
- void disable_fiq(int fiq)
- {
-+	struct fiq_data *data = lookup_fiq_data(fiq);
-+
-+	if (data) {
-+		if (data->fiq_chip->fiq_disable)
-+			data->fiq_chip->fiq_disable(data->irq_data);
-+		disable_irq(fiq);
-+		return;
-+	}
-+
-+	if (WARN_ON(fiq_start == -1))
-+		return;
-+
- 	disable_irq(fiq + fiq_start);
- }
- 
-+bool has_fiq(int fiq)
-+{
-+	struct fiq_data *data = lookup_fiq_data(fiq);
-+
-+	if (data)
-+		return true;
-+
-+	if (fiq_start == -1)
-+		return false;
-+
-+	return fiq >= fiq_start;
-+}
-+EXPORT_SYMBOL(has_fiq);
-+
- EXPORT_SYMBOL(set_fiq_handler);
- EXPORT_SYMBOL(__set_fiq_regs);	/* defined in fiqasm.S */
- EXPORT_SYMBOL(__get_fiq_regs);	/* defined in fiqasm.S */
-@@ -147,9 +205,50 @@ EXPORT_SYMBOL(release_fiq);
- EXPORT_SYMBOL(enable_fiq);
- EXPORT_SYMBOL(disable_fiq);
- 
-+/*
-+ * Add a mapping from a Linux irq to the fiq data.
-+ */
-+void fiq_register_mapping(int irq, struct fiq_chip *chip)
-+{
-+	struct fiq_data *fiq_data = NULL;
-+	int res;
-+
-+	/* fiq_register_mapping can't be mixed with init_FIQ */
-+	BUG_ON(fiq_start != -1);
-+
-+	fiq_data = kmalloc(sizeof(*fiq_data), GFP_KERNEL);
-+	if (!fiq_data)
-+		goto err;
-+
-+	fiq_data->fiq_chip = chip;
-+	fiq_data->irq_data = irq_get_irq_data(irq);
-+	BUG_ON(!fiq_data->irq_data);
-+
-+	mutex_lock(&fiq_data_mutex);
-+	res = radix_tree_insert(&fiq_data_tree, irq, fiq_data);
-+	mutex_unlock(&fiq_data_mutex);
-+	if (res)
-+		goto err;
-+
-+	return;
-+
-+err:
-+	kfree(fiq_data);
-+	pr_err("fiq: Cannot register mapping %d\n", irq);
-+}
-+
-+/*
-+ * Set the offset between normal IRQs and their FIQ shadows.
-+ */
- void __init init_FIQ(int start)
- {
-+	fiq_start = start;
-+}
-+
-+static int __init init_default_fiq_handler(void)
-+{
- 	unsigned offset = FIQ_OFFSET;
- 	no_fiq_insn = *(unsigned long *)(0xffff0000 + offset);
--	fiq_start = start;
-+	return 0;
- }
-+pure_initcall(init_default_fiq_handler);
+ config PHY_EXYNOS5_USBDRD
+ 	tristate "Exynos5 SoC series USB DRD PHY driver"
 -- 
-1.9.3
+1.7.9.5
 
