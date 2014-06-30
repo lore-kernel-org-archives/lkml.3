@@ -1,72 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755018AbaF3Jef (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 05:34:35 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:42629 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753803AbaF3Jee (ORCPT
+	id S1755156AbaF3Je4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 05:34:56 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:51224 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754976AbaF3Jez (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 05:34:34 -0400
-Message-ID: <53B12F25.5060908@gmail.com>
-Date: Mon, 30 Jun 2014 11:34:29 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-To: Himangi Saraogi <himangi774@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
-CC: julia.lawall@lip6.fr
-Subject: Re: [PATCH] pinctrl: berlin: fix return value for dev_get_regmap
-References: <20140629071815.GA16257@himangi-Dell>
-In-Reply-To: <20140629071815.GA16257@himangi-Dell>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 30 Jun 2014 05:34:55 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: jkosina@suse.cz
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        jirislaby@gmail.com, Jiri Slaby <jslaby@suse.cz>,
+        srinivas pandruvada <srinivas.pandruvada@intel.com>
+Subject: [PATCH 1/1] hid: sensor-hub, fix potential memory leak
+Date: Mon, 30 Jun 2014 11:34:48 +0200
+Message-Id: <1404120888-10692-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/29/2014 09:18 AM, Himangi Saraogi wrote:
-> The failure value of dev_get_regmap is NULL. Hence, the return value is
-> changed to -ENODEV.
->
-> A simplified version of the semantic match that finds this problem is as
-> follows:
->
-> // <smpl>
-> @@
-> expression e1;
-> @@
->
-> * if (!e1)
->    return PTR_ERR(e1);
->
-> // </smpl>
->
-> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+hsdev is not freed in sensor_hub_probe when kasprintf inside the for
+loop fails. This is because hsdev is not set to platform_data yet (to
+be freed by the code in the err_no_mem label). So free the memory
+explicitly in the 'if' branch, as this is the only place where this is
+(and will) be needed.
 
-Himangi,
+Reported-by: coverity
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: srinivas pandruvada <srinivas.pandruvada@intel.com>
+Cc: Jiri Kosina <jkosina@suse.cz>
+---
+ drivers/hid/hid-sensor-hub.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-thanks for the fix, but we already have a similar patch [1] pending.
-
-Sebastian
-
-[1] http://www.spinics.net/lists/linux-kernel-janitors/msg19125.html
-
-> ---
->   drivers/pinctrl/berlin/berlin.c | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/pinctrl/berlin/berlin.c b/drivers/pinctrl/berlin/berlin.c
-> index edf5d2f..86db223 100644
-> --- a/drivers/pinctrl/berlin/berlin.c
-> +++ b/drivers/pinctrl/berlin/berlin.c
-> @@ -320,7 +320,7 @@ int berlin_pinctrl_probe(struct platform_device *pdev,
->
->   	regmap = dev_get_regmap(&pdev->dev, NULL);
->   	if (!regmap)
-> -		return PTR_ERR(regmap);
-> +		return -ENODEV;
->
->   	pctrl = devm_kzalloc(dev, sizeof(*pctrl), GFP_KERNEL);
->   	if (!pctrl)
->
+diff --git a/drivers/hid/hid-sensor-hub.c b/drivers/hid/hid-sensor-hub.c
+index a8d5c8faf8cf..584e17ce80e4 100644
+--- a/drivers/hid/hid-sensor-hub.c
++++ b/drivers/hid/hid-sensor-hub.c
+@@ -632,6 +632,7 @@ static int sensor_hub_probe(struct hid_device *hdev,
+ 			if (name == NULL) {
+ 				hid_err(hdev, "Failed MFD device name\n");
+ 					ret = -ENOMEM;
++					kfree(hsdev);
+ 					goto err_no_mem;
+ 			}
+ 			sd->hid_sensor_hub_client_devs[
+-- 
+2.0.0
 
