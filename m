@@ -1,100 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756164AbaF3QIY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 12:08:24 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:40964 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756568AbaF3QHE (ORCPT
+	id S1756568AbaF3QIk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 12:08:40 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:64281 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756256AbaF3QHE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Jun 2014 12:07:04 -0400
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org
-Cc: preeti@linux.vnet.ibm.com, Morten.Rasmussen@arm.com, efault@gmx.de,
-        nicolas.pitre@linaro.org, linaro-kernel@lists.linaro.org,
-        daniel.lezcano@linaro.org, dietmar.eggemann@arm.com,
-        Vincent Guittot <vincent.guittot@linaro.org>
-Subject: [PATCH v3 10/12] sched: get CPU's utilization statistic
-Date: Mon, 30 Jun 2014 18:05:41 +0200
-Message-Id: <1404144343-18720-11-git-send-email-vincent.guittot@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1404144343-18720-1-git-send-email-vincent.guittot@linaro.org>
-References: <1404144343-18720-1-git-send-email-vincent.guittot@linaro.org>
+MIME-Version: 1.0
+In-Reply-To: <20140630153503.GA10375@google.com>
+References: <1404124096-21445-1-git-send-email-drysdale@google.com>
+ <1404124096-21445-16-git-send-email-drysdale@google.com> <CALCETrUi71FgVABRF4C+n_STc02j=GxRwBqDaoC+NLeAP9Ui3w@mail.gmail.com>
+ <20140630153503.GA10375@google.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 30 Jun 2014 09:06:41 -0700
+Message-ID: <CALCETrWYQdAp1E-MNu59XS8DD0oO1dA8EvoqDrMaH2YLos8iSg@mail.gmail.com>
+Subject: Re: [PATCH 4/5] man-pages: cap_rights_limit.2: limit FD rights for Capsicum
+To: David Drysdale <drysdale@google.com>
+Cc: LSM List <linux-security-module@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        Kees Cook <keescook@chromium.org>,
+        James Morris <james.l.morris@oracle.com>,
+        Linux API <linux-api@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Monitor the utilization level of each group of each sched_domain level. The
-utilization is the amount of cpu_power that is currently used on a CPU or group
-of CPUs. We use the runnable_avg_sum and _period to evaluate this utilization
-level. In the special use case where the CPU is fully loaded by more than 1
-task, the activity level is set above the cpu_power in order to reflect the
-overload of the CPU
+On Mon, Jun 30, 2014 at 8:35 AM, David Drysdale <drysdale@google.com> wrote:
+> On Mon, Jun 30, 2014 at 07:53:57AM -0700, Andy Lutomirski wrote:
+>> On Mon, Jun 30, 2014 at 3:28 AM, David Drysdale <drysdale@google.com> wrote:
+>> > Signed-off-by: David Drysdale <drysdale@google.com>
+>> > ---
+>> >  man2/cap_rights_limit.2 | 171 ++++++++++++++++++++++++++++++++++++++++++++++++
+>> >  1 file changed, 171 insertions(+)
+>> >  create mode 100644 man2/cap_rights_limit.2
+>> >
+>> > diff --git a/man2/cap_rights_limit.2 b/man2/cap_rights_limit.2
+>> > new file mode 100644
+>> > index 000000000000..3484ee1076aa
+>> > --- /dev/null
+>> > +++ b/man2/cap_rights_limit.2
+>> > @@ -0,0 +1,171 @@
+>> > +.\"
+>> > +.\" Copyright (c) 2008-2010 Robert N. M. Watson
+>> > +.\" Copyright (c) 2012-2013 The FreeBSD Foundation
+>> > +.\" Copyright (c) 2013-2014 Google, Inc.
+>> > +.\" All rights reserved.
+>> > +.\"
+>> > +.\" %%%LICENSE_START(BSD_2_CLAUSE)
+>> > +.\" Redistribution and use in source and binary forms, with or without
+>> > +.\" modification, are permitted provided that the following conditions
+>> > +.\" are met:
+>> > +.\" 1. Redistributions of source code must retain the above copyright
+>> > +.\"    notice, this list of conditions and the following disclaimer.
+>> > +.\" 2. Redistributions in binary form must reproduce the above copyright
+>> > +.\"    notice, this list of conditions and the following disclaimer in the
+>> > +.\"    documentation and/or other materials provided with the distribution.
+>> > +.\"
+>> > +.\" THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+>> > +.\" ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+>> > +.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+>> > +.\" ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+>> > +.\" FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+>> > +.\" DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+>> > +.\" OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+>> > +.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+>> > +.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+>> > +.\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+>> > +.\" SUCH DAMAGE.
+>> > +.\" %%%LICENSE_END
+>> > +.\"
+>> > +.TH CAP_RIGHTS_LIMIT 2 2014-05-07 "Linux" "Linux Programmer's Manual"
+>> > +.SH NAME
+>> > +cap_rights_limit \- limit Capsicum capability rights
+>> > +.SH SYNOPSIS
+>> > +.nf
+>> > +.B #include <sys/capsicum.h>
+>> > +.sp
+>> > +.BI "int cap_rights_limit(int " fd ", const struct cap_rights *" rights ,
+>> > +.BI "                     unsigned int " fcntls ,
+>> > +.BI "                     int " nioctls ", unsigned int *" ioctls );
+>>
+>> Am I missing the docs for struct cap_rights somewhere?
+>
+> There's a little bit of discussion in rights.7 (mail 3/5 of the
+> man-pages set), but there isn't a structure description.
+>
+> I was trying to keep the structure opaque to userspace, which would
+> be expected to manipulate the rights with various utility functions
+> rather than directly.
+>
+> But I now realize this leaves a gap -- the description of this syscall
+> doesn't include a full description of its ABI.
+>
+> So I'll add in a description of the structure to this page -- basically:
+>
+>   struct cap_rights {
+>         __u64   cr_rights[2];
+>   };
+>
+> with a slightly complicated scheme to encode rights into the bitmask
+> array.  (The encoding scheme is taken from the FreeBSD implementation,
+> which I've tried to stick to unless there's good reason to change.)
 
-Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
----
- kernel/sched/fair.c | 20 +++++++++++++++++++-
- 1 file changed, 19 insertions(+), 1 deletion(-)
+How does extensibility work?  For example, what happens when someone
+needs to add a new right for whatever reason and they fall off the end
+of the list?
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index bdc5cb9..a6b4b25 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4047,6 +4047,11 @@ static unsigned long capacity_of(int cpu)
- 	return cpu_rq(cpu)->cpu_capacity;
- }
- 
-+static unsigned long capacity_orig_of(int cpu)
-+{
-+	return cpu_rq(cpu)->cpu_capacity_orig;
-+}
-+
- static unsigned long cpu_avg_load_per_task(int cpu)
- {
- 	struct rq *rq = cpu_rq(cpu);
-@@ -4437,6 +4442,18 @@ done:
- 	return target;
- }
- 
-+static int get_cpu_utilization(int cpu)
-+{
-+	struct rq *rq = cpu_rq(cpu);
-+	u32 sum = rq->avg.runnable_avg_sum;
-+	u32 period = rq->avg.runnable_avg_period;
-+
-+	if (sum >= period)
-+		return capacity_orig_of(cpu) + 1;
-+
-+	return (sum * capacity_orig_of(cpu)) / period;
-+}
-+
- /*
-  * select_task_rq_fair: Select target runqueue for the waking task in domains
-  * that have the 'sd_flag' flag set. In practice, this is SD_BALANCE_WAKE,
-@@ -5517,6 +5534,7 @@ struct sg_lb_stats {
- 	unsigned long sum_weighted_load; /* Weighted load of group's tasks */
- 	unsigned long load_per_task;
- 	unsigned long group_capacity;
-+	unsigned long group_utilization; /* Total utilization of the group */
- 	unsigned int sum_nr_running; /* Nr tasks running in the group */
- 	unsigned int group_capacity_factor;
- 	unsigned int idle_cpus;
-@@ -5876,6 +5894,7 @@ static inline void update_sg_lb_stats(struct lb_env *env,
- 			load = source_load(i, load_idx);
- 
- 		sgs->group_load += load;
-+		sgs->group_utilization += get_cpu_utilization(i);
- 		sgs->sum_nr_running += rq->cfs.h_nr_running;
- #ifdef CONFIG_NUMA_BALANCING
- 		sgs->nr_numa_running += rq->nr_numa_running;
-@@ -6043,7 +6062,6 @@ next_group:
- 		/* Now, start updating sd_lb_stats */
- 		sds->total_load += sgs->group_load;
- 		sds->total_capacity += sgs->group_capacity;
--
- 		sg = sg->next;
- 	} while (sg != env->sd->groups);
- 
--- 
-1.9.1
+Linux so-called capabilities have done this a few times, resulting in
+a giant mess.
 
+--Andy
