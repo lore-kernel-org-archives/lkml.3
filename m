@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756461AbaF3MsN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:48:13 -0400
+	id S1756526AbaF3Msh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:48:37 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:53045 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754211AbaF3Mak (ORCPT
+	by vger.kernel.org with ESMTP id S1753907AbaF3Maj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 08:30:40 -0400
+	Mon, 30 Jun 2014 08:30:39 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Kailang Yang <kailang@realtek.com>,
-        Takashi Iwai <tiwai@suse.de>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 075/181] ALSA: hda/realtek - Add support of ALC891 codec
-Date: Mon, 30 Jun 2014 13:51:36 +0200
-Message-Id: <1f55569fd4edd999a3388e04ed347256470ece4b.1404128998.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Liu Bo <bo.li.liu@oracle.com>,
+        Chris Mason <clm@fb.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 168/181] Btrfs: mark mapping with error flag to report errors to userspace
+Date: Mon, 30 Jun 2014 13:53:09 +0200
+Message-Id: <ee863114590f5931103d704563462b054f65e52f.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -23,35 +23,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kailang Yang <kailang@realtek.com>
+From: Liu Bo <bo.li.liu@oracle.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit b6c5fbad16aa5026f508093a8d651c25e1cb6179 upstream.
+commit 5dca6eea91653e9949ce6eb9e9acab6277e2f2c4 upstream.
 
-New codec support for ALC891.
+According to commit 865ffef3797da2cac85b3354b5b6050dc9660978
+(fs: fix fsync() error reporting),
+it's not stable to just check error pages because pages can be
+truncated or invalidated, we should also mark mapping with error
+flag so that a later fsync can catch the error.
 
-Signed-off-by: Kailang Yang <kailang@realtek.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Liu Bo <bo.li.liu@oracle.com>
+Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- sound/pci/hda/patch_realtek.c | 1 +
- 1 file changed, 1 insertion(+)
+ fs/btrfs/extent_io.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index 23971aa25fef..e19001f9203c 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -5134,6 +5134,7 @@ static const struct hda_codec_preset snd_hda_preset_realtek[] = {
- 	{ .id = 0x10ec0670, .name = "ALC670", .patch = patch_alc662 },
- 	{ .id = 0x10ec0671, .name = "ALC671", .patch = patch_alc662 },
- 	{ .id = 0x10ec0680, .name = "ALC680", .patch = patch_alc680 },
-+	{ .id = 0x10ec0867, .name = "ALC891", .patch = patch_alc882 },
- 	{ .id = 0x10ec0880, .name = "ALC880", .patch = patch_alc880 },
- 	{ .id = 0x10ec0882, .name = "ALC882", .patch = patch_alc882 },
- 	{ .id = 0x10ec0883, .name = "ALC883", .patch = patch_alc882 },
+diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
+index 0d611d1e2e34..a3dd2806d651 100644
+--- a/fs/btrfs/extent_io.c
++++ b/fs/btrfs/extent_io.c
+@@ -2326,6 +2326,8 @@ int end_extent_writepage(struct page *page, int err, u64 start, u64 end)
+ 	if (!uptodate) {
+ 		ClearPageUptodate(page);
+ 		SetPageError(page);
++		ret = ret < 0 ? ret : -EIO;
++		mapping_set_error(page->mapping, ret);
+ 	}
+ 	return 0;
+ }
 -- 
 2.0.0
 
