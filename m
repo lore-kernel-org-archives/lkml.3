@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756370AbaF3MMT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:12:19 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:51995 "EHLO
+	id S1756649AbaF3MOc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:14:32 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:51976 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753461AbaF3LxZ (ORCPT
+	by vger.kernel.org with ESMTP id S1753411AbaF3LxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Jun 2014 07:53:25 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Liam Girdwood <liam.r.girdwood@linux.intel.com>,
-        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
-        Mark Brown <broonie@linaro.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 067/181] ASoC: max98090: Fix reset at resume time
-Date: Mon, 30 Jun 2014 13:51:28 +0200
-Message-Id: <f533949021d85f3bba663901a66dc95720a500f7.1404128998.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Benjamin LaHaise <bcrl@kvack.org>,
+        Kent Overstreet <kmo@daterainc.com>, Mateusz Guzik <mguzik@redhat.com>,
+        Petr Matousek <pmatouse@redhat.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 054/181] aio: fix aio request leak when events are reaped by userspace
+Date: Mon, 30 Jun 2014 13:51:15 +0200
+Message-Id: <f6404be526b84d044dadecd171cc120d3d93bf50.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -25,48 +24,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Liam Girdwood <liam.r.girdwood@linux.intel.com>
+From: Benjamin LaHaise <bcrl@kvack.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 25b4ab430f8e166c9b63f4db28e7e812d5a59396 upstream.
+commit f8567a3845ac05bb28f3c1b478ef752762bd39ef upstream.
 
-Reset needs to wait 20ms before other codec IO is performed. This wait
-was not being performed. Fix this by making sure the reset register is not
-restored with the cache, but use the manual reset method in resume with
-the wait.
+The aio cleanups and optimizations by kmo that were merged into the 3.10
+tree added a regression for userspace event reaping.  Specifically, the
+reference counts are not decremented if the event is reaped in userspace,
+leading to the application being unable to submit further aio requests.
+This patch applies to 3.12+.  A separate backport is required for 3.10/3.11.
+This issue was uncovered as part of CVE-2014-0206.
 
-Signed-off-by: Liam Girdwood <liam.r.girdwood@linux.intel.com>
-Signed-off-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
+Cc: stable@vger.kernel.org
+Cc: Kent Overstreet <kmo@daterainc.com>
+Cc: Mateusz Guzik <mguzik@redhat.com>
+Cc: Petr Matousek <pmatouse@redhat.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- sound/soc/codecs/max98090.c | 3 +++
- 1 file changed, 3 insertions(+)
+ fs/aio.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/sound/soc/codecs/max98090.c b/sound/soc/codecs/max98090.c
-index 8bddf3f20a5e..9ad8f019adcd 100644
---- a/sound/soc/codecs/max98090.c
-+++ b/sound/soc/codecs/max98090.c
-@@ -255,6 +255,7 @@ static struct reg_default max98090_reg[] = {
- static bool max98090_volatile_register(struct device *dev, unsigned int reg)
- {
- 	switch (reg) {
-+	case M98090_REG_SOFTWARE_RESET:
- 	case M98090_REG_DEVICE_STATUS:
- 	case M98090_REG_JACK_STATUS:
- 	case M98090_REG_REVISION_ID:
-@@ -2360,6 +2361,8 @@ static int max98090_runtime_resume(struct device *dev)
+diff --git a/fs/aio.c b/fs/aio.c
+index 829bda2b26d7..e609e15f36b9 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -1021,6 +1021,7 @@ void aio_complete(struct kiocb *iocb, long res, long res2)
  
- 	regcache_cache_only(max98090->regmap, false);
+ 	/* everything turned out well, dispose of the aiocb. */
+ 	kiocb_free(iocb);
++	put_reqs_available(ctx, 1);
  
-+	max98090_reset(max98090);
-+
- 	regcache_sync(max98090->regmap);
+ 	/*
+ 	 * We have to order our ring_info tail store above and test
+@@ -1103,8 +1104,6 @@ static long aio_read_events_ring(struct kioctx *ctx,
+ 	flush_dcache_page(ctx->ring_pages[0]);
  
- 	return 0;
+ 	pr_debug("%li  h%u t%u\n", ret, head, tail);
+-
+-	put_reqs_available(ctx, ret);
+ out:
+ 	mutex_unlock(&ctx->ring_lock);
+ 
 -- 
 2.0.0
 
