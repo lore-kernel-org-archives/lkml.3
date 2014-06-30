@@ -1,117 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755015AbaF3Jaf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 05:30:35 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:62047 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751726AbaF3Jad (ORCPT
+	id S1755018AbaF3Jef (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 05:34:35 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:42629 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753803AbaF3Jee (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 05:30:33 -0400
-Date: Mon, 30 Jun 2014 10:30:28 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
-Cc: "mturquette@linaro.org" <mturquette@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kernel@stlinux.com" <kernel@stlinux.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
-        Olivier Bideau <olivier.bideau@st.com>
-Subject: Re: [PATCH v2 10/14] drivers: clk: st: STiH407: Support for
- clockgenC0
-Message-ID: <20140630093028.GS7262@leverpostej>
-References: <1403875511-7710-1-git-send-email-gabriel.fernandez@linaro.org>
- <1403875511-7710-11-git-send-email-gabriel.fernandez@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403875511-7710-11-git-send-email-gabriel.fernandez@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 30 Jun 2014 05:34:34 -0400
+Message-ID: <53B12F25.5060908@gmail.com>
+Date: Mon, 30 Jun 2014 11:34:29 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+To: Himangi Saraogi <himangi774@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
+CC: julia.lawall@lip6.fr
+Subject: Re: [PATCH] pinctrl: berlin: fix return value for dev_get_regmap
+References: <20140629071815.GA16257@himangi-Dell>
+In-Reply-To: <20140629071815.GA16257@himangi-Dell>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 27, 2014 at 02:25:07PM +0100, Gabriel FERNANDEZ wrote:
-> The patch added support for DT registration of ClockGenC0
-> It includes 2 c32 type PLL and a 660 Quadfs.
-> 
-> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
-> Signed-off-by: Olivier Bideau <olivier.bideau@st.com>
-> Acked-by: Peter Griffin <peter.griffin@linaro.org>
+On 06/29/2014 09:18 AM, Himangi Saraogi wrote:
+> The failure value of dev_get_regmap is NULL. Hence, the return value is
+> changed to -ENODEV.
+>
+> A simplified version of the semantic match that finds this problem is as
+> follows:
+>
+> // <smpl>
+> @@
+> expression e1;
+> @@
+>
+> * if (!e1)
+>    return PTR_ERR(e1);
+>
+> // </smpl>
+>
+> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+
+Himangi,
+
+thanks for the fix, but we already have a similar patch [1] pending.
+
+Sebastian
+
+[1] http://www.spinics.net/lists/linux-kernel-janitors/msg19125.html
+
 > ---
->  drivers/clk/st/clkgen-fsyn.c | 47 ++++++++++++++++++++++++++++++++++++++++++++
->  drivers/clk/st/clkgen-pll.c  | 32 ++++++++++++++++++++++++++++++
->  2 files changed, 79 insertions(+)
-> 
-> diff --git a/drivers/clk/st/clkgen-fsyn.c b/drivers/clk/st/clkgen-fsyn.c
-> index b2b73f4..0e0d5f9 100644
-> --- a/drivers/clk/st/clkgen-fsyn.c
-> +++ b/drivers/clk/st/clkgen-fsyn.c
-> @@ -255,6 +255,49 @@ static const struct clkgen_quadfs_data st_fs660c32_F_416 = {
->  	.get_rate	= clk_fs660c32_dig_get_rate,
->  };
->  
-> +static const struct clkgen_quadfs_data st_fs660c32_C_407 = {
-> +	.nrst_present = true,
-> +	.nrst	= { CLKGEN_FIELD(0x2f0, 0x1, 0),
-> +		    CLKGEN_FIELD(0x2f0, 0x1, 1),
-> +		    CLKGEN_FIELD(0x2f0, 0x1, 2),
-> +		    CLKGEN_FIELD(0x2f0, 0x1, 3) },
-> +	.npda	= CLKGEN_FIELD(0x2f0, 0x1, 12),
-> +	.nsb	= { CLKGEN_FIELD(0x2f0, 0x1, 8),
-> +		    CLKGEN_FIELD(0x2f0, 0x1, 9),
-> +		    CLKGEN_FIELD(0x2f0, 0x1, 10),
-> +		    CLKGEN_FIELD(0x2f0, 0x1, 11) },
-> +	.nsdiv_present = true,
-> +	.nsdiv	= { CLKGEN_FIELD(0x304, 0x1, 24),
-> +		    CLKGEN_FIELD(0x308, 0x1, 24),
-> +		    CLKGEN_FIELD(0x30c, 0x1, 24),
-> +		    CLKGEN_FIELD(0x310, 0x1, 24) },
-> +	.mdiv	= { CLKGEN_FIELD(0x304, 0x1f, 15),
-> +		    CLKGEN_FIELD(0x308, 0x1f, 15),
-> +		    CLKGEN_FIELD(0x30c, 0x1f, 15),
-> +		    CLKGEN_FIELD(0x310, 0x1f, 15) },
-> +	.en	= { CLKGEN_FIELD(0x2fc, 0x1, 0),
-> +		    CLKGEN_FIELD(0x2fc, 0x1, 1),
-> +		    CLKGEN_FIELD(0x2fc, 0x1, 2),
-> +		    CLKGEN_FIELD(0x2fc, 0x1, 3) },
-> +	.ndiv	= CLKGEN_FIELD(0x2f4, 0x7, 16),
-> +	.pe	= { CLKGEN_FIELD(0x304, 0x7fff, 0),
-> +		    CLKGEN_FIELD(0x308, 0x7fff, 0),
-> +		    CLKGEN_FIELD(0x30c, 0x7fff, 0),
-> +		    CLKGEN_FIELD(0x310, 0x7fff, 0) },
-> +	.sdiv	= { CLKGEN_FIELD(0x304, 0xf, 20),
-> +		    CLKGEN_FIELD(0x308, 0xf, 20),
-> +		    CLKGEN_FIELD(0x30c, 0xf, 20),
-> +		    CLKGEN_FIELD(0x310, 0xf, 20) },
-> +	.lockstatus_present = true,
-> +	.lock_status = CLKGEN_FIELD(0x2A0, 0x1, 24),
-> +	.powerup_polarity = 1,
-> +	.standby_polarity = 1,
-> +	.pll_ops	= &st_quadfs_pll_c32_ops,
-> +	.rtbl		= fs660c32_rtbl,
-> +	.rtbl_cnt	= ARRAY_SIZE(fs660c32_rtbl),
-> +	.get_rate	= clk_fs660c32_dig_get_rate,
-> +};
-> +
->  /**
->   * DOC: A Frequency Synthesizer that multiples its input clock by a fixed factor
->   *
-> @@ -938,6 +981,10 @@ static struct of_device_id quadfs_of_match[] = {
->  		.compatible = "st,stih416-quadfs660-F",
->  		.data = (void *)&st_fs660c32_F_416
->  	},
-> +	{
-> +		.compatible = "st,stih407-quadfs660-C",
-> +		.data = (void *)&st_fs660c32_C_407
+>   drivers/pinctrl/berlin/berlin.c | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/pinctrl/berlin/berlin.c b/drivers/pinctrl/berlin/berlin.c
+> index edf5d2f..86db223 100644
+> --- a/drivers/pinctrl/berlin/berlin.c
+> +++ b/drivers/pinctrl/berlin/berlin.c
+> @@ -320,7 +320,7 @@ int berlin_pinctrl_probe(struct platform_device *pdev,
+>
+>   	regmap = dev_get_regmap(&pdev->dev, NULL);
+>   	if (!regmap)
+> -		return PTR_ERR(regmap);
+> +		return -ENODEV;
+>
+>   	pctrl = devm_kzalloc(dev, sizeof(*pctrl), GFP_KERNEL);
+>   	if (!pctrl)
+>
 
-Surely a (void*) cast isn't necessary?
-
-Mark.
