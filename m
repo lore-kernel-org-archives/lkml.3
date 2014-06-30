@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754174AbaF3WYq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 18:24:46 -0400
-Received: from mga02.intel.com ([134.134.136.20]:28284 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751401AbaF3WYq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 18:24:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,577,1400050800"; 
-   d="scan'208";a="566275220"
-From: Keith Busch <keith.busch@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Keith Busch <keith.busch@intel.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH] genirq: Fix memory leak when calling irq_free_hwirqs()
-Date: Mon, 30 Jun 2014 16:24:44 -0600
-Message-Id: <1404167084-8070-1-git-send-email-keith.busch@intel.com>
-X-Mailer: git-send-email 1.7.1
+	id S1756246AbaF3WZI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 18:25:08 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:39691 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754620AbaF3WZG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 18:25:06 -0400
+Message-ID: <53B1E3BB.1030407@wwwdotorg.org>
+Date: Mon, 30 Jun 2014 16:24:59 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Thierry Reding <thierry.reding@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        Will Deacon <will.deacon@arm.com>, Joerg Roedel <joro@8bytes.org>
+CC: Cho KyongHo <pullip.cho@samsung.com>,
+        Grant Grundler <grundler@chromium.org>,
+        Dave Martin <Dave.Martin@arm.com>, Marc Zyngier <marc.zyngier@arm.com>,
+        Hiroshi Doyu <hdoyu@nvidia.com>, Olav Haugan <ohaugan@codeaurora.org>,
+        Paul Walmsley <pwalmsley@nvidia.com>,
+        Rhyland Klein <rklein@nvidia.com>, Allen Martin <amartin@nvidia.com>,
+        devicetree@vger.kernel.org, iommu@lists.linux-foundation.org,
+        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 02/10] devicetree: Add generic IOMMU device tree bindings
+References: <1403815790-8548-1-git-send-email-thierry.reding@gmail.com> <1403815790-8548-3-git-send-email-thierry.reding@gmail.com>
+In-Reply-To: <1403815790-8548-3-git-send-email-thierry.reding@gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-irq_free_hwirqs() always calls irq_free_descs() with a cnt == 0
-which makes it a no-op since the interrupt count to free is
-decremented in itself.
+On 06/26/2014 02:49 PM, Thierry Reding wrote:
+> From: Thierry Reding <treding@nvidia.com>
+> 
+> This commit introduces a generic device tree binding for IOMMU devices.
+> Only a very minimal subset is described here, but it is enough to cover
+> the requirements of both the Exynos System MMU and Tegra SMMU as
+> discussed here:
+> 
+>     https://lkml.org/lkml/2014/4/27/346
 
-Fixes: 7b6ef1262549f6afc5c881aaef80beb8fd15f908
+> diff --git a/Documentation/devicetree/bindings/iommu/iommu.txt b/Documentation/devicetree/bindings/iommu/iommu.txt
 
-Signed-off-by: Keith Busch <keith.busch@intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Acked-by: David Rientjes <rientjes@google.com>
----
- kernel/irq/irqdesc.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+> +When an "iommus" property is specified in a device tree node, the IOMMU will
+> +be used for address translation. If a "dma-ranges" property exists in the
+> +device's parent node it will be ignored. An exception to this rule is if the
+> +referenced IOMMU is disabled, in which case the "dma-ranges" property of the
+> +parent shall take effect.
 
-diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
-index 7339e42..1487a12 100644
---- a/kernel/irq/irqdesc.c
-+++ b/kernel/irq/irqdesc.c
-@@ -455,9 +455,9 @@ EXPORT_SYMBOL_GPL(irq_alloc_hwirqs);
-  */
- void irq_free_hwirqs(unsigned int from, int cnt)
- {
--	int i;
-+	int i, j;
- 
--	for (i = from; cnt > 0; i++, cnt--) {
-+	for (i = from, j = cnt; j > 0; i++, j--) {
- 		irq_set_status_flags(i, _IRQ_NOREQUEST | _IRQ_NOPROBE);
- 		arch_teardown_hwirq(i);
- 	}
--- 
-1.7.10.4
-
+I wonder how useful that paragraph is. The fact that someone disabled a
+particular IOMMU's node doesn't necessarily mean that the HW can
+actually do that; an IOMMU might always be active in HW and always
+translate accesses by some master. In that case, the fallback to
+dma-ranges wouldn't correlate with what the HW actually does. Perhaps
+all we need is to add a note to that effect here?
