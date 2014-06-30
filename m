@@ -1,198 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754255AbaF3PfK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 11:35:10 -0400
-Received: from mail-wi0-f202.google.com ([209.85.212.202]:33445 "EHLO
-	mail-wi0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752344AbaF3PfG (ORCPT
+	id S1753608AbaF3Phf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 11:37:35 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:36009
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751005AbaF3Phd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 11:35:06 -0400
-Date: Mon, 30 Jun 2014 16:35:03 +0100
-From: David Drysdale <drysdale@google.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: LSM List <linux-security-module@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Mon, 30 Jun 2014 11:37:33 -0400
+X-IronPort-AV: E=Sophos;i="5.01,575,1400018400"; 
+   d="scan'208";a="69603461"
+Date: Mon, 30 Jun 2014 17:37:29 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Alan Stern <stern@rowland.harvard.edu>
+cc: Himangi Saraogi <himangi774@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        Kees Cook <keescook@chromium.org>,
-        James Morris <james.l.morris@oracle.com>,
-        Linux API <linux-api@vger.kernel.org>
-Subject: Re: [PATCH 4/5] man-pages: cap_rights_limit.2: limit FD rights for
- Capsicum
-Message-ID: <20140630153503.GA10375@google.com>
-References: <1404124096-21445-1-git-send-email-drysdale@google.com>
- <1404124096-21445-16-git-send-email-drysdale@google.com>
- <CALCETrUi71FgVABRF4C+n_STc02j=GxRwBqDaoC+NLeAP9Ui3w@mail.gmail.com>
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb: host: ohci-tmio: Use managed interfaces for resource
+ allocation
+In-Reply-To: <Pine.LNX.4.44L0.1406301105530.1550-100000@iolanthe.rowland.org>
+Message-ID: <alpine.DEB.2.10.1406301737020.3511@hadrien>
+References: <Pine.LNX.4.44L0.1406301105530.1550-100000@iolanthe.rowland.org>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrUi71FgVABRF4C+n_STc02j=GxRwBqDaoC+NLeAP9Ui3w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 30, 2014 at 07:53:57AM -0700, Andy Lutomirski wrote:
-> On Mon, Jun 30, 2014 at 3:28 AM, David Drysdale <drysdale@google.com> wrote:
-> > Signed-off-by: David Drysdale <drysdale@google.com>
-> > ---
-> >  man2/cap_rights_limit.2 | 171 ++++++++++++++++++++++++++++++++++++++++++++++++
-> >  1 file changed, 171 insertions(+)
-> >  create mode 100644 man2/cap_rights_limit.2
+
+
+On Mon, 30 Jun 2014, Alan Stern wrote:
+
+> On Sun, 29 Jun 2014, Himangi Saraogi wrote:
+>
+> > This patch moves resources allocated using ioremap or
+> > dma_declare_coherent_memory to the corresponding managed interface. The
+> > function calls to free the allocated resources are removed in the probe
+> > and remove functions as they are no longer required. Also, some labels
+> > are done away with and a new label err added to make it less specific to
+> > the context.
 > >
-> > diff --git a/man2/cap_rights_limit.2 b/man2/cap_rights_limit.2
-> > new file mode 100644
-> > index 000000000000..3484ee1076aa
-> > --- /dev/null
-> > +++ b/man2/cap_rights_limit.2
-> > @@ -0,0 +1,171 @@
-> > +.\"
-> > +.\" Copyright (c) 2008-2010 Robert N. M. Watson
-> > +.\" Copyright (c) 2012-2013 The FreeBSD Foundation
-> > +.\" Copyright (c) 2013-2014 Google, Inc.
-> > +.\" All rights reserved.
-> > +.\"
-> > +.\" %%%LICENSE_START(BSD_2_CLAUSE)
-> > +.\" Redistribution and use in source and binary forms, with or without
-> > +.\" modification, are permitted provided that the following conditions
-> > +.\" are met:
-> > +.\" 1. Redistributions of source code must retain the above copyright
-> > +.\"    notice, this list of conditions and the following disclaimer.
-> > +.\" 2. Redistributions in binary form must reproduce the above copyright
-> > +.\"    notice, this list of conditions and the following disclaimer in the
-> > +.\"    documentation and/or other materials provided with the distribution.
-> > +.\"
-> > +.\" THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
-> > +.\" ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-> > +.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-> > +.\" ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
-> > +.\" FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-> > +.\" DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
-> > +.\" OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-> > +.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-> > +.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
-> > +.\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-> > +.\" SUCH DAMAGE.
-> > +.\" %%%LICENSE_END
-> > +.\"
-> > +.TH CAP_RIGHTS_LIMIT 2 2014-05-07 "Linux" "Linux Programmer's Manual"
-> > +.SH NAME
-> > +cap_rights_limit \- limit Capsicum capability rights
-> > +.SH SYNOPSIS
-> > +.nf
-> > +.B #include <sys/capsicum.h>
-> > +.sp
-> > +.BI "int cap_rights_limit(int " fd ", const struct cap_rights *" rights ,
-> > +.BI "                     unsigned int " fcntls ,
-> > +.BI "                     int " nioctls ", unsigned int *" ioctls );
-> 
-> Am I missing the docs for struct cap_rights somewhere?
+> > Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+> > Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+> > ---
+> >  drivers/usb/host/ohci-tmio.c | 36 ++++++++++++------------------------
+> >  1 file changed, 12 insertions(+), 24 deletions(-)
+> >
+> > diff --git a/drivers/usb/host/ohci-tmio.c b/drivers/usb/host/ohci-tmio.c
+> > index bb40958..1a6034f 100644
+> > --- a/drivers/usb/host/ohci-tmio.c
+> > +++ b/drivers/usb/host/ohci-tmio.c
+> > @@ -203,10 +203,8 @@ static int ohci_hcd_tmio_drv_probe(struct platform_device *dev)
+> >  		return -EINVAL;
+> >
+> >  	hcd = usb_create_hcd(&ohci_tmio_hc_driver, &dev->dev, dev_name(&dev->dev));
+> > -	if (!hcd) {
+> > -		ret = -ENOMEM;
+> > -		goto err_usb_create_hcd;
+> > -	}
+> > +	if (!hcd)
+> > +		return -ENOMEM;
+> >
+> >  	hcd->rsrc_start = regs->start;
+> >  	hcd->rsrc_len = resource_size(regs);
+> > @@ -215,30 +213,31 @@ static int ohci_hcd_tmio_drv_probe(struct platform_device *dev)
+> >
+> >  	spin_lock_init(&tmio->lock);
+> >
+> > -	tmio->ccr = ioremap(config->start, resource_size(config));
+> > +	tmio->ccr = devm_ioremap(&dev->dev, config->start,
+> > +				 resource_size(config));
+>
+> You should use devm_ioremap_resource() rather than devm_ioremap().
 
-There's a little bit of discussion in rights.7 (mail 3/5 of the
-man-pages set), but there isn't a structure description.
+Even if there was no request_mem_region in the original code?
 
-I was trying to keep the structure opaque to userspace, which would
-be expected to manipulate the rights with various utility functions
-rather than directly.
+julia
 
-But I now realize this leaves a gap -- the description of this syscall
-doesn't include a full description of its ABI.
-
-So I'll add in a description of the structure to this page -- basically:
-
-  struct cap_rights {
-  	__u64	cr_rights[2];
-  };
-
-with a slightly complicated scheme to encode rights into the bitmask
-array.  (The encoding scheme is taken from the FreeBSD implementation,
-which I've tried to stick to unless there's good reason to change.)
- 
-> > +.SH DESCRIPTION
-> > +When a file descriptor is created by a function such as
-> > +.BR accept (2),
-> > +.BR accept4 (2),
-> > +.BR creat (2),
-> > +.BR epoll_create (2),
-> > +.BR eventfd (2),
-> > +.BR mq_open (2),
-> > +.BR open (2),
-> > +.BR openat (2),
-> > +.BR pdfork (2),
-> > +.BR pipe (2),
-> > +.BR pipe2 (2),
-> > +.BR signalfd (2),
-> > +.BR socket (2),
-> > +.BR socketpair (2)
-> > +or
-> > +.BR timerfd_create (2),
-> > +it implicitly has all Capsicum capability rights.
-> > +Those rights can be reduced (but never expanded) by using the
-> > +.BR cap_rights_limit ()
-> > +system call.
-> > +Once Capsicum capability rights are reduced, operations on the file descriptor
-> > +.I fd
-> > +will be limited to those permitted by the remainder of the arguments.
-> > +.PP
-> > +The
-> > +.I rights
-> > +argument describes the primary rights for the file descriptor, and
-> > +should be prepared using
-> > +.BR cap_rights_init (3)
-> > +family of functions.  The complete list of primary rights can be found in the
-> > +.BR rights (7)
-> > +manual page.
-> > +.PP
-> > +If a file descriptor is granted the
-> > +.B CAP_FCNTL
-> > +primary capability right, the list of allowed
-> > +.BR fcntl (2)
-> > +commands can be selectively reduced (but never expanded) with the
-> > +.I fcntls
-> > +argument.  The following flags may be specified in the
-> > +.I fcntls
-> > +argument:
-> > +.TP
-> > +.B CAP_FCNTL_GETFL
-> > +Permit
-> > +.B F_GETFL
-> > +command.
-> > +.TP
-> > +.B CAP_FCNTL_SETFL
-> > +Permit
-> > +.B F_SETFL
-> > +command.
-> > +.TP
-> > +.B CAP_FCNTL_GETOWN
-> > +Permit
-> > +.B F_GETOWN
-> > +command.
-> > +.TP
-> > +.B CAP_FCNTL_SETOWN
-> > +Permit
-> > +.B F_SETOWN
-> > +command.
-> > +.PP
-> > +A value of
-> > +.B CAP_FCNTL_ALL
-> > +for the
-> > +.I fcntls
-> > +argument leaves the set of allowed
-> > +.BR fcntl (2)
-> > +commands unchanged.
-> 
-> What about the locking fcntl operations?  (Arguably the old crappy
-> POSIX lock operations should be flat-out disallowed on capability fds,
-> but I see nothing wrong with selectively allowing the new open file
-> description locks.)
-> 
-> --Andy
-
-The locking operations are policed against a separate CAP_FLOCK right,
-consistently with flock(2).  I'll try to improve the wording -- there
-are actually a few fcntl operations that are covered by different
-rights because they're analogous to other functionality (e.g.
-F_GETPIPE_SZ/F_SETPIPE_SZ needs CAP_GETSOCKOPT/CAP_SETSOCKOPT).
-
- 
+>
+> ...
+>
+> > @@ -259,16 +258,8 @@ err_add_hcd:
+> >  	tmio_stop_hc(dev);
+> >  	if (cell->disable)
+> >  		cell->disable(dev);
+> > -err_enable:
+> > -	dma_release_declared_memory(&dev->dev);
+> > -err_dma_declare:
+> > -	iounmap(hcd->regs);
+> > -err_ioremap_regs:
+> > -	iounmap(tmio->ccr);
+> > -err_ioremap_ccr:
+> > -	usb_put_hcd(hcd);
+> > -err_usb_create_hcd:
+> > -
+> > +err:
+> > +	usb_put_hcr(hcd);
+>
+> There is no function named "usb_put_hcr()".  Did you try to compile
+> this patch?
+>
+> Alan Stern
+>
+>
