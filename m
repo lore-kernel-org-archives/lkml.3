@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756762AbaF3MR3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:17:29 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:51984 "EHLO
+	id S1756739AbaF3MR2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:17:28 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:51982 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753321AbaF3LxZ (ORCPT
+	by vger.kernel.org with ESMTP id S1753314AbaF3LxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Jun 2014 07:53:25 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 059/181] USB: cdc-acm: fix write and resume race
-Date: Mon, 30 Jun 2014 13:51:20 +0200
-Message-Id: <cb7ae87692ed7a4696ff8857296a03a43852cca4.1404128998.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
+        Lee Jones <lee.jones@linaro.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 055/181] mfd: sm501: dbg_regs attribute must be read-only
+Date: Mon, 30 Jun 2014 13:51:16 +0200
+Message-Id: <46e47e76722c97c488f77ba3a2b2e77e371860d6.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -23,85 +23,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Guenter Roeck <linux@roeck-us.net>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit e144ed28bed10684f9aaec6325ed974d53f76110 upstream.
+commit 8a8320c2e78d1b619a8fa8eb5ae946b8691de604 upstream.
 
-Fix race between write() and resume() due to improper locking that could
-lead to writes being reordered.
+Fix:
 
-Resume must be done atomically and susp_count be protected by the
-write_lock in order to prevent racing with write(). This could otherwise
-lead to writes being reordered if write() grabs the write_lock after
-susp_count is decremented, but before the delayed urb is submitted.
+sm501 sm501: SM501 At b3e00000: Version 050100a0, 8 Mb, IRQ 100
+Attribute dbg_regs: write permission without 'store'
+------------[ cut here ]------------
+WARNING: at drivers/base/core.c:620
 
-Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
-that support remote wakeup")
+dbg_regs does not have a write function and must therefore be marked
+as read-only.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/usb/class/cdc-acm.c | 23 +++++++++--------------
- 1 file changed, 9 insertions(+), 14 deletions(-)
+ drivers/mfd/sm501.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-index 8bde4781d347..19263a3f3d0d 100644
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -1447,27 +1447,20 @@ static int acm_resume(struct usb_interface *intf)
- 	struct acm *acm = usb_get_intfdata(intf);
- 	struct acm_wb *wb;
- 	int rv = 0;
--	int cnt;
- 
- 	spin_lock_irq(&acm->read_lock);
--	acm->susp_count -= 1;
--	cnt = acm->susp_count;
--	spin_unlock_irq(&acm->read_lock);
-+	spin_lock(&acm->write_lock);
- 
--	if (cnt)
--		return 0;
-+	if (--acm->susp_count)
-+		goto out;
- 
- 	if (test_bit(ASYNCB_INITIALIZED, &acm->port.flags)) {
--		rv = usb_submit_urb(acm->ctrlurb, GFP_NOIO);
-+		rv = usb_submit_urb(acm->ctrlurb, GFP_ATOMIC);
- 
--		spin_lock_irq(&acm->write_lock);
- 		if (acm->delayed_wb) {
- 			wb = acm->delayed_wb;
- 			acm->delayed_wb = NULL;
--			spin_unlock_irq(&acm->write_lock);
- 			acm_start_wb(acm, wb);
--		} else {
--			spin_unlock_irq(&acm->write_lock);
- 		}
- 
- 		/*
-@@ -1475,12 +1468,14 @@ static int acm_resume(struct usb_interface *intf)
- 		 * do the write path at all cost
- 		 */
- 		if (rv < 0)
--			goto err_out;
-+			goto out;
- 
--		rv = acm_submit_read_urbs(acm, GFP_NOIO);
-+		rv = acm_submit_read_urbs(acm, GFP_ATOMIC);
- 	}
-+out:
-+	spin_unlock(&acm->write_lock);
-+	spin_unlock_irq(&acm->read_lock);
- 
--err_out:
- 	return rv;
+diff --git a/drivers/mfd/sm501.c b/drivers/mfd/sm501.c
+index 33f040c558d0..3799a3d64415 100644
+--- a/drivers/mfd/sm501.c
++++ b/drivers/mfd/sm501.c
+@@ -1232,7 +1232,7 @@ static ssize_t sm501_dbg_regs(struct device *dev,
  }
  
+ 
+-static DEVICE_ATTR(dbg_regs, 0666, sm501_dbg_regs, NULL);
++static DEVICE_ATTR(dbg_regs, 0444, sm501_dbg_regs, NULL);
+ 
+ /* sm501_init_reg
+  *
 -- 
 2.0.0
 
