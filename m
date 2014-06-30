@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755576AbaF3QWf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 12:22:35 -0400
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:38825 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754147AbaF3QWc (ORCPT
+	id S1755627AbaF3QXH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 12:23:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39433 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752007AbaF3QXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 12:22:32 -0400
+	Mon, 30 Jun 2014 12:23:06 -0400
+Date: Mon, 30 Jun 2014 09:22:50 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Rob Herring <robh@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+Subject: Re: [PATCH v2] platform_get_irq: Revert to platform_get_resource if
+ of_irq_get fails
+Message-ID: <20140630162250.GA24179@kroah.com>
+References: <1403045462-24204-1-git-send-email-linux@roeck-us.net>
+ <CAL_Jsq+Xi4UnFHouTqJQGyNVHpCcbNBRNgbQ3OY-+EsCDKFHLw@mail.gmail.com>
+ <20140630161835.GA14632@roeck-us.net>
 MIME-Version: 1.0
-In-Reply-To: <1404144980.6148.6.camel@hobbes>
-References: <1402592317-7043-1-git-send-email-jaswinder.singh@linaro.org>
-	<1404144980.6148.6.camel@hobbes>
-Date: Mon, 30 Jun 2014 21:52:27 +0530
-Message-ID: <CAJe_Zhdg8J_GhxJJvJTyGDK-bAmXwEXmWh6d0biisM4M8o3a4g@mail.gmail.com>
-Subject: Re: [PATCHv7 0/5] Common Mailbox Framework
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: Lubomir Rintel <lkundrak@v3.sk>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Matt Porter <mporter@linaro.org>, Patch Tracking <patches@linaro.org>,
-        Bjorn Andersson <bjorn@kryo.se>,
-        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Anna, Suman" <s-anna@ti.com>, Loic Pallardy <loic.pallardy@st.com>,
-        LeyFoon Tan <lftan.linux@gmail.com>,
-        Craig McGeachie <slapdau@yahoo.com.au>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>, pa@jasper.es
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140630161835.GA14632@roeck-us.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30 June 2014 21:46, Lubomir Rintel <lkundrak@v3.sk> wrote:
-> Hi Jassi,
->
-> On Thu, 2014-06-12 at 22:28 +0530, Jassi Brar wrote:
->> Hello,
->>   Here is the next revision of Mailbox framwork.
->
-> I'm wondering whether you keep a Git tree with the framework we could
-> keep the Raspberry Pi mailbox driver based on (bcm2835-mbox)?
->
-> Also, from look at the API it does not seem to me that it's possible to
-> synchronously (that is without a tx_done callback) collect a response
-> when a message is sent with tx_block enabled. Equivalent to this: [1]
->
-Thanks, good catch.
+On Mon, Jun 30, 2014 at 09:18:35AM -0700, Guenter Roeck wrote:
+> On Mon, Jun 23, 2014 at 10:48:33AM -0500, Rob Herring wrote:
+> > On Tue, Jun 17, 2014 at 5:51 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> > > Commits 9ec36ca (of/irq: do irq resolution in platform_get_irq)
+> > > and ad69674 (of/irq: do irq resolution in platform_get_irq_byname)
+> > > change the semantics of platform_get_irq and platform_get_irq_byname
+> > > to always rely on devicetree information if devicetree is enabled
+> > > and if a devicetree node is attached to the device. The functions
+> > > now return an error if the devicetree data does not include interrupt
+> > > information, even if the information is available as platform resource
+> > > data.
+> > >
+> > > This causes mfd client drivers to fail if the interrupt number is
+> > > passed via platform resources. Therefore, if of_irq_get fails, try
+> > > platform_get_resource as method of last resort. This restores the
+> > > original functionality for drivers depending on platform resources
+> > > to get irq information.
+> > >
+> > > Cc: Russell King <linux@arm.linux.org.uk>
+> > > Cc: Rob Herring <robh@kernel.org>
+> > > Cc: Tony Lindgren <tony@atomide.com>
+> > > Cc: Grant Likely <grant.likely@linaro.org>
+> > > Cc: Grygorii Strashko <grygorii.strashko@ti.com>
+> > > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> > 
+> > Acked-by: Rob Herring <robh@kernel.org>
+> > 
+> > Greg should take this for 3.16.
+> > 
+> Doesn't seem to go anywhere. Guess it's one more patch I'll have to carry
+> locally :-(. If anyone has a better idea how to fix the problem, please
+> let me know.
 
-Could you please give this a try...
+I can still queue this up, I was hoping that Grant would chime in...
 
-diff --git a/drivers/mailbox/mailbox.c b/drivers/mailbox/mailbox.c
-index afa63cd..4059602 100644
---- a/drivers/mailbox/mailbox.c
-+++ b/drivers/mailbox/mailbox.c
-@@ -101,10 +101,11 @@ static void tx_tick(struct mbox_chan *chan, int r)
-        _msg_submit(chan);
-
-        /* Notify the client */
-+       if (mssg && chan->cl->tx_done)
-+               chan->cl->tx_done(chan->cl, mssg, r);
-+
-        if (chan->cl->tx_block)
-                complete(&chan->tx_complete);
--       else if (mssg && chan->cl->tx_done)
--               chan->cl->tx_done(chan->cl, mssg, r);
- }
-
- static void poll_txdone(unsigned long data)
-
--jassi
+greg k-h
