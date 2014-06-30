@@ -1,57 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753022AbaF3Ok5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 10:40:57 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:63937 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751493AbaF3Okz (ORCPT
+	id S1753415AbaF3OlQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 10:41:16 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:40716 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753223AbaF3OlO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 10:40:55 -0400
-Message-ID: <53B176F1.5060308@gmail.com>
-Date: Mon, 30 Jun 2014 16:40:49 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-To: =?ISO-8859-1?Q?Antoine_T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-CC: tj@kernel.org, kishon@ti.com, thomas.petazzoni@free-electrons.com,
-        zmxu@marvell.com, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        alexandre.belloni@free-electrons.com, jszhang@marvell.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v7 1/7] phy: add a driver for the Berlin SATA PHY
-References: <1403530783-17180-1-git-send-email-antoine.tenart@free-electrons.com> <1403530783-17180-2-git-send-email-antoine.tenart@free-electrons.com> <53AB1CFD.4040500@cogentembedded.com> <20140630095940.GB10058@kwain>
-In-Reply-To: <20140630095940.GB10058@kwain>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+	Mon, 30 Jun 2014 10:41:14 -0400
+Date: Mon, 30 Jun 2014 10:41:13 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Chen, Alvin" <alvin.chen@intel.com>
+cc: Jingoo Han <jg1.han@samsung.com>, David Laight <David.Laight@ACULAB.COM>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Boon Leong Ong <boon.leong.ong@intel.com>
+Subject: Re: [PATCH v3] USB: ehci-pci: USB host controller support for Intel
+ Quark X1000
+In-Reply-To: <1404147960-17596-2-git-send-email-alvin.chen@intel.com>
+Message-ID: <Pine.LNX.4.44L0.1406301029190.1550-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/30/2014 11:59 AM, Antoine Ténart wrote:
-> On Wed, Jun 25, 2014 at 11:03:25PM +0400, Sergei Shtylyov wrote:
->> On 06/23/2014 05:39 PM, Antoine Ténart wrote:
->>> +	/* set the controller speed */
->>> +	writel(0x31, ctrl_reg + PORT_SCR_CTL);
->>
->>     Value undocumented? Or is this the SATA SControl register by chance?
->
-> Some magic is still there...
+On Mon, 30 Jun 2014, Chen, Alvin wrote:
 
-Antoine,
+> From: Bryan O'Donoghue <bryan.odonoghue@intel.com>
+> 
+> The EHCI packet buffer in/out threshold is programmable for Intel Quark X1000
+> USB host controller, and the default value is 0x20 dwords. The in/out threshold
+> can be programmed to 0x80 dwords (512 Bytes) to maximize the perfomrance,
+> but only when isochronous/interrupt transactions are not initiated by the USB
+> host controller. This patch is to reconfigure the packet buffer in/out
+> threshold as maximal as possible to maximize the performance, and 0x7F dwords
+> (508 Bytes) should be used because the USB host controller initiates
+> isochronous/interrupt transactions.
+> 
+> Signed-off-by: Bryan O'Donoghue <bryan.odonoghue@intel.com>
+> Signed-off-by: Alvin (Weike) Chen <alvin.chen@intel.com>
 
-I guess Sergei was referring to AHCI spec here. PORT_SCR bits are
-documented in AHCI spec as:
+This is getting a lot better.
 
-7:4 = 0x3 Limit speed negotiation to a rate not greater than Gen3
-           communication rate.
+> diff --git a/drivers/usb/host/ehci-pci.c b/drivers/usb/host/ehci-pci.c
+> index 3e86bf4..78f1622 100644
+> --- a/drivers/usb/host/ehci-pci.c
+> +++ b/drivers/usb/host/ehci-pci.c
+> @@ -35,11 +35,35 @@ static const char hcd_name[] = "ehci-pci";
+>  #define PCI_DEVICE_ID_INTEL_CE4100_USB	0x2e70
+>  
+>  /*-------------------------------------------------------------------------*/
+> +#define PCI_DEVICE_ID_INTEL_QUARK_X1000_SOC		0x0939
+> +static inline bool is_intel_quark_x1000(struct pci_dev *pdev)
+> +{
+> +	return pdev->vendor == PCI_VENDOR_ID_INTEL &&
+> +		pdev->device == PCI_DEVICE_ID_INTEL_QUARK_X1000_SOC;
+> +}
 
-3:0 = 0x1 Perform interface communication sequence [...]. This is
-           functionally equivalent to a hard reset [...].
+Whether to put this test directly into ehci_pci_reset() or leave it as
+a separate subroutine is up to you.  I don't care either way.
 
-So, the question is: Should we really need to reset controller in the
-PHY driver or is it already done in AHCI common code? At least we
-should change the comment to something like
-/* set Gen3 controller speed and perform hard reset */
+> +
+> +/*
+> +	* The offset of in/out threshold register is 0x84.
+> +	* And it is the register of 'hostpc'
+> +	* in memory-mapped EHCI controller.
+> +*/
 
-Sebastian
+0x84 is the same as offset of the hostpc register in the Intel
+Moorestown controller.  hostpc is not present in general EHCI 
+controllers.
+
+> +#define	intel_quark_x1000_insnreg01	hostpc
+> +
+> +/* The maximal ehci packet buffer size is 512 bytes */
+> +#define INTEL_QUARK_X1000_EHCI_MAX_PACKET_BUFFER_SIZE	512
+> +
+> +/* The threshold value set the register is in DWORD */
+> +#define INTEL_QUARK_X1000_EHCI_THRESHOLD(size)	((size)/4u)
+> +#define INTEL_QUARK_X1000_EHCI_THRESHOLD_OUT_SHIFT	16
+> +#define INTEL_QUARK_X1000_EHCI_THRESHOLD_IN_SHIFT	0
+> +
+>  /* called after powerup, by probe or system-pm "wakeup" */
+>  static int ehci_pci_reinit(struct ehci_hcd *ehci, struct pci_dev *pdev)
+>  {
+>  	int			retval;
+> +	u32			val;
+> +	u32			thr;
+>  
+>  	/* we expect static quirk code to handle the "extended capabilities"
+>  	 * (currently just BIOS handoff) allowed starting with EHCI 0.96
+> @@ -50,6 +74,22 @@ static int ehci_pci_reinit(struct ehci_hcd *ehci, struct pci_dev *pdev)
+>  	if (!retval)
+>  		ehci_dbg(ehci, "MWI active\n");
+>  
+> +	/* Reset the threshold limit */
+> +	if (is_intel_quark_x1000(pdev)) {
+> +		/*
+> +			* In order to support the isochronous/interrupt
+> +			* transactions, 508 bytes should be used as
+> +			* max threshold values to maximize the
+> +			* performance
+> +		*/
+> +		thr = INTEL_QUARK_X1000_EHCI_THRESHOLD(
+> +			INTEL_QUARK_X1000_EHCI_MAX_PACKET_BUFFER_SIZE - 4
+> +			);
+> +		val = thr<<INTEL_QUARK_X1000_EHCI_THRESHOLD_OUT_SHIFT |
+> +				thr<<INTEL_QUARK_X1000_EHCI_THRESHOLD_IN_SHIFT;
+> +		ehci_writel(ehci, val, ehci->regs->intel_quark_x1000_insnreg01);
+
+I saw what other people told you about the original patch version, and 
+I disagree with them.  It is not necessary to include a detailed 
+calculation like this, it only makes the code harder to read.  It will 
+be better to have a single #define with a comment explaining it, like 
+this:
+
+/* Maximum usable threshold value is 0x7f dwords for both IN and OUT */
+#define INTEL_QUARK_X1000_EHCI_MAX_THRESHOLD	0x007f007f
+
+Then here, just use INTEL_QUARK_X1000_EHCI_MAX_THRESHOLD instead of 
+val.  The comment can simply say:
+
+	/*
+	 * For the Intel QUARK X1000, raise the I/O threshold to the 
+	 * maximum usable value in order to improve performance.
+	 */
+
+Alan Stern
+
