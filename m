@@ -1,124 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753533AbaF3NuF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 09:50:05 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:38334 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751883AbaF3NuB (ORCPT
+	id S1753705AbaF3Nux (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 09:50:53 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:63848 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752423AbaF3Nuu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 09:50:01 -0400
-Message-ID: <53B16B05.20108@gmail.com>
-Date: Mon, 30 Jun 2014 09:49:57 -0400
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: "linux-mm@kvack.org" <linux-mm@kvack.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Dave Jones <davej@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: mm: derefing NULL vma->vm_mm when unmapping
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 30 Jun 2014 09:50:50 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-1f-53b16b384aa9
+Message-id: <53B16B1E.8090206@samsung.com>
+Date: Mon, 30 Jun 2014 15:50:22 +0200
+From: Tomasz Figa <t.figa@samsung.com>
+Organization: Samsung R&D Institute Poland
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.5.0
+MIME-version: 1.0
+To: linux-samsung-soc@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Mike Turquette <mturquette@linaro.org>
+Subject: Re: [PATCH 3/6] clk: samsung: exynos4: Remove SRC_MASK_ISP gates
+References: <1403618235-19353-1-git-send-email-t.figa@samsung.com>
+ <1403618235-19353-4-git-send-email-t.figa@samsung.com>
+In-reply-to: <1403618235-19353-4-git-send-email-t.figa@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGLMWRmVeSWpSXmKPExsVy+t/xq7oW2RuDDXZ9s7DoXXCVzWLT42us
+	Fpd3zWGzmHF+H5PF2iN32S2eTrjIZrFq1x9GB3aPnbPusnvcubaHzWPzknqPvi2rGD0+b5IL
+	YI3isklJzcksSy3St0vgyrjfc5i54DBLxYbHr1gaGG8xdzFycEgImEicvJbXxcgJZIpJXLi3
+	nq2LkYtDSGApo8Slm+3MIAkhgc+MEp+nKoDYvAJaEsvPdoDFWQRUJf4dvghmswmoSXxueMQG
+	YvMD1axpus4CMl9UIELi8QUhiFZBiR+T77GA2CJArZ/bFrCD2MwCrxglplyMArGFBTwlPs6f
+	zQaxtlpiw4k5YOM5BZwl3r5sZYOo15HY3zoNypaX2LzmLfMERsFZSFbMQlI2C0nZAkbmVYyi
+	qaXJBcVJ6bmGesWJucWleel6yfm5mxghYf9lB+PiY1aHGAU4GJV4eBtXbAgWYk0sK67MPcQo
+	wcGsJMJ702djsBBvSmJlVWpRfnxRaU5q8SFGJg5OqQZGo1MOUklcl+/sMhG4frIpe4o8Q4TJ
+	G24X7cxZn5mefYw2b/J79mMGp6iWQG1YGo/RcmaO/xkXT1op25vM+JK/q1mnYF5yyMp5Z5cq
+	zf0801P+hERF9O1L/3Mtjp8o6fvFnvLD0l85Xn2b5oWHbU/yFINdjXQK98wvOLGgUf/qXeUT
+	m6QK69yUWIozEg21mIuKEwGWq6DXWQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On 24.06.2014 15:57, Tomasz Figa wrote:
+> ISP special clocks have dedicated gating registers and so MUX SRC_MASK
+> register should not be used. This patch fixes the problem of
+> Exynos4x12-based boards freezing on system suspend, because those
+> mux outputs need not to be masked while suspending.
+> 
+> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+> Cc: Mike Turquette <mturquette@linaro.org>
+> ---
+>  drivers/clk/samsung/clk-exynos4.c | 16 ++++------------
+>  1 file changed, 4 insertions(+), 12 deletions(-)
 
-While fuzzing with trinity inside a KVM tools guest running the latest -next
-kernel I've stumbled on the following spew:
+Applied as a fix for 3.16.
 
-[  761.704089] BUG: unable to handle kernel NULL pointer dereference at           (null)
-[  761.704089] IP: mm_find_pmd (mm/rmap.c:570)
-[  761.704089] PGD 51223067 PUD 50a09067 PMD 0
-[  761.704089] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[  761.704089] Dumping ftrace buffer:
-[  761.704089]    (ftrace buffer empty)
-[  761.704089] Modules linked in:
-[  761.704089] CPU: 4 PID: 20723 Comm: trinity-c131 Tainted: G        W      3.16.0-rc3-next-20140630-sasha-00023-g44434d4-dirty #756
-[  761.704089] task: ffff88004e3c0000 ti: ffff88004e0b8000 task.ti: ffff88004e0b8000
-[  761.704089] RIP: mm_find_pmd (mm/rmap.c:570)
-[  761.704089] RSP: 0000:ffff88004e0bbaa8  EFLAGS: 00010246
-[  761.704089] RAX: 0000000000000000 RBX: 0000000000a65000 RCX: ffff88004e0bbb30
-[  761.704089] RDX: 0000000000000000 RSI: 0000000000a65000 RDI: ffff880000146000
-[  761.704089] RBP: ffff88004e0bbaa8 R08: 0000000000000000 R09: 0000000000000000
-[  761.704089] R10: ffff88004e3c0000 R11: 0000000000000000 R12: ffffea000d766e00
-[  761.704089] R13: ffff88004e0bbb30 R14: ffff880000146000 R15: 0000000000000000
-[  761.704089] FS:  00007f0293c61700(0000) GS:ffff880144e00000(0000) knlGS:0000000000000000
-[  761.704089] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  761.704089] CR2: 0000000000000000 CR3: 000000004e3be000 CR4: 00000000000006a0
-[  761.704089] Stack:
-[  761.704089]  ffff88004e0bbae8 ffffffff9c2d0815 800000035d9b8805 ffff880000146000
-[  761.704089]  ffffea000d766e00 ffff88000b4c4e58 ffff880034d7d200 0000000000000302
-[  761.704089]  ffff88004e0bbb68 ffffffff9c2d1491 ffff88004e0bbb28 ffffffff9f57c58a
-[  761.704089] Call Trace:
-[  761.704089] __page_check_address (mm/rmap.c:618)
-[  761.704089] try_to_unmap_one (mm/rmap.c:1133)
-[  761.704089] ? down_read (kernel/locking/rwsem.c:45 (discriminator 2))
-[  761.704089] ? page_lock_anon_vma_read (./arch/x86/include/asm/atomic.h:118 mm/rmap.c:491)
-[  761.704089] ? page_lock_anon_vma_read (mm/rmap.c:448)
-[  761.704089] rmap_walk (mm/rmap.c:1634 mm/rmap.c:1705)
-[  761.704089] try_to_unmap (mm/rmap.c:1527)
-[  761.704089] ? page_remove_rmap (mm/rmap.c:1124)
-[  761.704089] ? invalid_migration_vma (mm/rmap.c:1483)
-[  761.704089] ? try_to_unmap_one (mm/rmap.c:1391)
-[  761.704089] ? anon_vma_prepare (mm/rmap.c:448)
-[  761.704089] ? invalid_mkclean_vma (mm/rmap.c:1478)
-[  761.704089] ? page_get_anon_vma (mm/rmap.c:405)
-[  761.704089] migrate_pages (mm/migrate.c:912 mm/migrate.c:955 mm/migrate.c:1142)
-[  761.704089] ? perf_trace_mm_numa_migrate_ratelimit (mm/migrate.c:1590)
-[  761.704089] migrate_misplaced_page (mm/migrate.c:1750)
-[  761.704089] __handle_mm_fault (mm/memory.c:3162 mm/memory.c:3212 mm/memory.c:3322)
-[  761.704089] handle_mm_fault (include/linux/memcontrol.h:124 mm/memory.c:3348)
-[  761.704089] ? __do_page_fault (arch/x86/mm/fault.c:1163)
-[  761.704089] __do_page_fault (arch/x86/mm/fault.c:1230)
-[  761.704089] ? vtime_account_user (kernel/sched/cputime.c:687)
-[  761.704089] ? get_parent_ip (kernel/sched/core.c:2550)
-[  761.704089] ? context_tracking_user_exit (include/linux/vtime.h:89 include/linux/jump_label.h:115 include/trace/events/context_tracking.h:47 kernel/context_tracking.c:180)
-[  761.704089] ? preempt_count_sub (kernel/sched/core.c:2606)
-[  761.704089] ? context_tracking_user_exit (kernel/context_tracking.c:184)
-[  761.704089] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
-[  761.704089] ? trace_hardirqs_off_caller (kernel/locking/lockdep.c:2638 (discriminator 2))
-[  761.704089] trace_do_page_fault (arch/x86/mm/fault.c:1313 include/linux/jump_label.h:115 include/linux/context_tracking_state.h:27 include/linux/context_tracking.h:45 arch/x86/mm/fault.c:1314)
-[  761.704089] do_async_page_fault (arch/x86/kernel/kvm.c:264)
-[  761.704089] async_page_fault (arch/x86/kernel/entry_64.S:1322)
-[ 761.704089] Code: 00 48 8b 5d f0 4c 8b 65 f8 c9 c3 66 0f 1f 44 00 00 66 66 66 66 90 55 48 89 f2 48 8b 47 40 48 c1 ea 27 48 89 e5 81 e2 ff 01 00 00 <48> 8b 3c d0 40 f6 c7 01 75 0c 31 f6 e9 af 00 00 00 0f 1f 44 00
-All code
-========
-   0:	00 48 8b             	add    %cl,-0x75(%rax)
-   3:	5d                   	pop    %rbp
-   4:	f0 4c 8b 65 f8       	lock mov -0x8(%rbp),%r12
-   9:	c9                   	leaveq
-   a:	c3                   	retq
-   b:	66 0f 1f 44 00 00    	nopw   0x0(%rax,%rax,1)
-  11:	66 66 66 66 90       	data32 data32 data32 xchg %ax,%ax
-  16:	55                   	push   %rbp
-  17:	48 89 f2             	mov    %rsi,%rdx
-  1a:	48 8b 47 40          	mov    0x40(%rdi),%rax
-  1e:	48 c1 ea 27          	shr    $0x27,%rdx
-  22:	48 89 e5             	mov    %rsp,%rbp
-  25:	81 e2 ff 01 00 00    	and    $0x1ff,%edx
-  2b:*	48 8b 3c d0          	mov    (%rax,%rdx,8),%rdi		<-- trapping instruction
-  2f:	40 f6 c7 01          	test   $0x1,%dil
-  33:	75 0c                	jne    0x41
-  35:	31 f6                	xor    %esi,%esi
-  37:	e9 af 00 00 00       	jmpq   0xeb
-  3c:	0f 1f 44 00 00       	nopl   0x0(%rax,%rax,1)
-
-Code starting with the faulting instruction
-===========================================
-   0:	48 8b 3c d0          	mov    (%rax,%rdx,8),%rdi
-   4:	40 f6 c7 01          	test   $0x1,%dil
-   8:	75 0c                	jne    0x16
-   a:	31 f6                	xor    %esi,%esi
-   c:	e9 af 00 00 00       	jmpq   0xc0
-  11:	0f 1f 44 00 00       	nopl   0x0(%rax,%rax,1)
-[  761.704089] RIP mm_find_pmd (mm/rmap.c:570)
-[  761.704089]  RSP <ffff88004e0bbaa8>
-[  761.704089] CR2: 0000000000000000
-
-As I didn't see any code changes around that part I'm thinking that it's a locking
-issue that got messed up somewhere rather then a missing '!= NULL' check.
-
-
-Thanks,
-Sasha
+Best regards,
+Tomasz
