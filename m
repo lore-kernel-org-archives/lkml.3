@@ -1,86 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751248AbaF3Eub (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 00:50:31 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:48948 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750803AbaF3Eu3 (ORCPT
+	id S1751623AbaF3EzW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 00:55:22 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:39548 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751005AbaF3EzU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 00:50:29 -0400
+	Mon, 30 Jun 2014 00:55:20 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140628145253.GB7869@dragon>
-References: <cover.1403684824.git.viresh.kumar@linaro.org>
-	<e9c0eef07745e561b9d12dcb50c3e2f7eb3e8880.1403684824.git.viresh.kumar@linaro.org>
-	<20140628145253.GB7869@dragon>
-Date: Mon, 30 Jun 2014 10:20:29 +0530
-Message-ID: <CAKohpomX0Wk_aL117ZqXsC-jruHi8wOj=A4YqtNDcStJZ8iJOw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] cpufreq: cpu0: Extend support beyond CPU0
+In-Reply-To: <20140627210939.GB24604@oc3347516403.ibm.com>
+References: <20140627210939.GB24604@oc3347516403.ibm.com>
+Date: Mon, 30 Jun 2014 10:25:20 +0530
+Message-ID: <CAKohpo=qB3nB+ZNKE4Y94m6gPWZZ4YZEU_WOA=s5DB8apxUQGQ@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: make table sentinal macros unsigned to match use
 From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Shawn Guo <shawn.guo@linaro.org>
+To: Brian W Hart <hartb@linux.vnet.ibm.com>
 Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arvind Chauhan <arvind.chauhan@arm.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-arm-msm@vger.kernel.org, Sachin Kamat <spk.linux@gmail.com>,
-        Thomas P Abraham <thomas.ab@samsung.com>, Nishanth Menon <nm@ti.com>,
-        Tomasz Figa <t.figa@samsung.com>
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        SH-Linux <linux-sh@vger.kernel.org>,
+        Stratos Karafotis <stratosk@semaphore.gr>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28 June 2014 20:22, Shawn Guo <shawn.guo@linaro.org> wrote:
-> Thanks for all the effort on maintaining and improving cpufreq-cpu0
-> driver.
+On 28 June 2014 02:39, Brian W Hart <hartb@linux.vnet.ibm.com> wrote:
+> Commit 5eeaf1f18973 (cpufreq: Fix build error on some platforms that
+> use cpufreq_for_each_*) moved function cpufreq_next_valid() to a public
+> header.  Warnings are now generated when objects including that header
+> are built with -Wsign-compare (as an out-of-tree module might be):
+>
+> .../include/linux/cpufreq.h: In function ‘cpufreq_next_valid’:
+> .../include/linux/cpufreq.h:519:27: warning: comparison between signed
+> and unsigned integer expressions [-Wsign-compare]
+>   while ((*pos)->frequency != CPUFREQ_TABLE_END)
+>                            ^
+> .../include/linux/cpufreq.h:520:25: warning: comparison between signed
+> and unsigned integer expressions [-Wsign-compare]
+>    if ((*pos)->frequency != CPUFREQ_ENTRY_INVALID)
+>                          ^
+>
+> Constants CPUFREQ_ENTRY_INVALID and CPUFREQ_TABLE_END are signed, but
+> are used with unsigned member 'frequency' of cpufreq_frequency_table.
+> Update the macro definitions to be explicitly unsigned to match their
+> use.
+>
+> This also corrects potentially wrong behavior of clk_rate_table_iter()
+> if unsigned long is wider than usigned int.
+>
+> Signed-off-by: Brian W Hart <hartb@linux.vnet.ibm.com>
+> ---
+> These macros are fairly broadly used in the kernel so I was bit leery
+> of changing them, but after inspection I think it's fine.  I found 102
+> uses of the macros, of which:
+>
+> 99 are uses with cpufreq_frequency_table.frequency (95) or with local
+>    variables of the same type as frequency (4).  These should be just
+>    fine with this change--we're just making explicit a conversion that
+>    was previously implicit.
+>
+>  2 are uses with a local variable of different type (unsigned long) than
+>    'frequency' (in drivers/sh/clk/core.c).  One of these uses is safe;
+>    the other (in clk_rate_table_iter()) is broken if unsigned long
+>    is wider than unsigned int.  As a side-effect, this patch corrects
+>    the potential misbehavior there.
+>
+>  1 is a use in macro cpufreq_for_each_entry() with what _should_ be the
+>    frequency member of a cpufreq_frequency_table, provided the caller it
+>    well-behaved.  There are 18 callers of this macro; all are well-behaved.
+>    So these should also be safe.
 
-You're welcome..
+I would have moved some of it to logs, they look good.
 
-> Your patch rewrote the most part of the driver, so I'd like to
-> hand over the driver to you.  Please add yourself as the primary person
-> for MODULE_AUTHOR.
+>  include/linux/cpufreq.h |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+> index ec4112d..8f8ae95 100644
+> --- a/include/linux/cpufreq.h
+> +++ b/include/linux/cpufreq.h
+> @@ -482,8 +482,8 @@ extern struct cpufreq_governor cpufreq_gov_conservative;
+>   *********************************************************************/
+>
+>  /* Special Values of .frequency field */
+> -#define CPUFREQ_ENTRY_INVALID  ~0
+> -#define CPUFREQ_TABLE_END      ~1
+> +#define CPUFREQ_ENTRY_INVALID  ~0u
+> +#define CPUFREQ_TABLE_END      ~1u
+>  /* Special Values of .flags field */
+>  #define CPUFREQ_BOOST_FREQ     (1 << 0)
 
-I don't think a complete handover would be right, and so still keeping
-you as author :)
+Thanks.
 
-Author: Viresh Kumar <viresh.kumar@linaro.org>
-Date:   Mon Jun 30 10:15:22 2014 +0530
-
-    cpufreq: cpu0: Add Module Author
-
-    Two people are maintaining it now, Viresh and Shawn. Add Viresh's details in
-    MODULE_AUTHOR() and copyright section.
-
-    Suggested-by: Shawn Guo <shawn.guo@linaro.org>
-    Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/cpufreq-generic.c | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/drivers/cpufreq/cpufreq-generic.c
-b/drivers/cpufreq/cpufreq-generic.c
-index 4da3f2f..5656dd1 100644
---- a/drivers/cpufreq/cpufreq-generic.c
-+++ b/drivers/cpufreq/cpufreq-generic.c
-@@ -1,6 +1,9 @@
- /*
-  * Copyright (C) 2012 Freescale Semiconductor, Inc.
-  *
-+ * Copyright (C) 2014 Linaro.
-+ * Viresh Kumar <viresh.kumar@linaro.org>
-+ *
-  * The OPP code in function set_target() is reused from
-  * drivers/cpufreq/omap-cpufreq.c
-  *
-@@ -402,6 +405,7 @@ static struct platform_driver generic_cpufreq_platdrv = {
- };
- module_platform_driver(generic_cpufreq_platdrv);
-
-+MODULE_AUTHOR("Viresh Kumar <viresh.kumar@linaro.org>");
- MODULE_AUTHOR("Shawn Guo <shawn.guo@linaro.org>");
- MODULE_DESCRIPTION("Generic cpufreq driver");
- MODULE_LICENSE("GPL");
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
