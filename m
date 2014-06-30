@@ -1,99 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932198AbaF3Kkh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 06:40:37 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:59429 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753301AbaF3Kju (ORCPT
+	id S1755358AbaF3KrK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 06:47:10 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:31951 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752486AbaF3KrJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 06:39:50 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-Date: Mon, 30 Jun 2014 12:39:11 +0200
-From: Johan Hovold <johan@kernel.org>
-To: Janne Kanniainen <janne.kanniainen@gmail.com>
-Cc: johan@kernel.org, jkosina@suse.cz, greg@kroah.com, bjorn@mork.no,
-        cooloney@gmail.com, linux-kernel@vger.kernel.org,
-        linux-leds@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH 2/2 v3] HID: leds: move led_mode attribute to led-class
- devices in MSI GT683R driver
-Message-ID: <20140630103911.GA2486@localhost>
-References: <20140625174109.GE1409@localhost>
- <1403719989-19989-1-git-send-email-janne.kanniainen@gmail.com>
+	Mon, 30 Jun 2014 06:47:09 -0400
+Date: Mon, 30 Jun 2014 11:46:52 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Bjorn Helgaas <bhelgaas@google.com>,
+        "rric@kernel.org" <rric@kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Al Stone <al.stone@linaro.org>
+Subject: Re: [PATCH v4 13/13] ARM64 / ACPI: Enable ARM64 in Kconfig
+Message-ID: <20140630104652.GG28951@arm.com>
+References: <1403840976-7456-1-git-send-email-hanjun.guo@linaro.org>
+ <1403840976-7456-14-git-send-email-hanjun.guo@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1403719989-19989-1-git-send-email-janne.kanniainen@gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1403840976-7456-14-git-send-email-hanjun.guo@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 09:13:09PM +0300, Janne Kanniainen wrote:
-> Move led_mode attribute from HID device to led-class devices and rename it
-> msi_mode. This will also fix race condition by using attribute-groups.
-> 
-> Signed-off-by: Janne Kanniainen <janne.kanniainen@gmail.com>
-> ---
-> 
-> Changes in v3:
-> 	- Style fixes
-> 	- Rename sysfs-class-hid-driver-gt683r to sysfs-class-leds-driver-gt683r
-> 
->  .../ABI/testing/sysfs-class-hid-driver-gt683r      | 14 -----------
->  .../ABI/testing/sysfs-class-leds-driver-gt683r     | 16 +++++++++++++
->  drivers/hid/hid-gt683r.c                           | 28 ++++++++++++----------
->  3 files changed, 32 insertions(+), 26 deletions(-)
->  delete mode 100644 Documentation/ABI/testing/sysfs-class-hid-driver-gt683r
->  create mode 100644 Documentation/ABI/testing/sysfs-class-leds-driver-gt683r
-> 
-> diff --git a/Documentation/ABI/testing/sysfs-class-hid-driver-gt683r b/Documentation/ABI/testing/sysfs-class-hid-driver-gt683r
-> deleted file mode 100644
-> index 317e9d5..0000000
-> --- a/Documentation/ABI/testing/sysfs-class-hid-driver-gt683r
-> +++ /dev/null
-> @@ -1,14 +0,0 @@
-> -What:		/sys/class/hidraw/<hidraw>/device/leds_mode
-> -Date:		Jun 2014
-> -KernelVersion:	3.17
-> -Contact:	Janne Kanniainen <janne.kanniainen@gmail.com>
-> -Description:
-> -		Set the mode of LEDs
-> -
-> -		0 - normal
-> -		1 - audio
-> -		2 - breathing
-> -
-> -		Normal: LEDs are fully on when enabled
-> -		Audio:  LEDs brightness depends on sound level
-> -		Breathing: LEDs brightness varies at human breathing rate
-> \ No newline at end of file
-> diff --git a/Documentation/ABI/testing/sysfs-class-leds-driver-gt683r b/Documentation/ABI/testing/sysfs-class-leds-driver-gt683r
-> new file mode 100644
-> index 0000000..29769fb
-> --- /dev/null
-> +++ b/Documentation/ABI/testing/sysfs-class-leds-driver-gt683r
-> @@ -0,0 +1,16 @@
-> +What:		/sys/class/leds/<led>/msi_mode
+On Fri, Jun 27, 2014 at 04:49:36AM +0100, Hanjun Guo wrote:
+> diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+> index 7de5e3f..33d6dbb 100644
+> --- a/drivers/acpi/Kconfig
+> +++ b/drivers/acpi/Kconfig
+> @@ -8,10 +8,10 @@ config ACPI_SCAN_BIOS_NOT_EFI
+>  menuconfig ACPI
+>  	bool "ACPI (Advanced Configuration and Power Interface) Support"
+>  	depends on !IA64_HP_SIM
+> -	depends on IA64 || X86
+> +	depends on IA64 || X86 || ARM64
 
-The ABI-file name now sort of matches the attribute path and there are
-examples of attributes being documented in this particular way, but
-naming is far from consistent in Documentation/ABI.
+I still don't understand what the point of enabling ACPI for arm64
+during this series is. Do you get any working arm64 functionality
+(on hardware or model) without subsequent patches? If it's just for
+compilation reasons, the best we could do is depending on (ARM64 &&
+COMPILE_TEST) but even though I would not merge this patch until we have
+most of the arm64 required features in place (some of which are
+introduced by the upcoming ACPI version).
 
-Perhaps we should use the name field of the attribute group and kill two
-birds with one stone by making the sysfs file name match the attribute
-path, while also making it even more obvious that the mode attribute is a
-driver specific attribute (and not a common led class one) by placing it
-in a subdirectory.
+>  	depends on PCI
+>  	select PNP
+> -	default y
+> +	default y if !ARM64
 
-That is, if you set the .name field to "gt683r" (and rename the
-attribute and ABI-file again) then the file name and attribute path
-could match:
+For the benefit of single Image, I think you can default to y here.
 
-	Documentation/ABI/testing/sysfs-class-leds-gt683r
-
-	What:		/sys/class/leds/<led>/gt683r/mode
-
-Both patches look good otherwise.
-
-Johan
+-- 
+Catalin
