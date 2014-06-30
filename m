@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756339AbaF3Mrk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:47:40 -0400
+	id S1756404AbaF3Mrx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:47:53 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:53045 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754361AbaF3Mao (ORCPT
+	by vger.kernel.org with ESMTP id S1754358AbaF3Man (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 08:30:44 -0400
+	Mon, 30 Jun 2014 08:30:43 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Benjamin LaHaise <bcrl@kvack.org>,
-        Mateusz Guzik <mguzik@redhat.com>, Petr Matousek <pmatouse@redhat.com>,
-        Kent Overstreet <kmo@daterainc.com>, Jeff Moyer <jmoyer@redhat.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 161/181] aio: fix kernel memory disclosure in io_getevents() introduced in v3.10
-Date: Mon, 30 Jun 2014 13:53:02 +0200
-Message-Id: <d1360ea460be9cda7eafcfec67fd0b8f77dc191c.1404128998.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Pavel Shilovsky <pshilovsky@samba.org>,
+        Steve French <smfrench@gmail.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 162/181] CIFS: Fix memory leaks in SMB2_open
+Date: Mon, 30 Jun 2014 13:53:03 +0200
+Message-Id: <6d1aea575807f1ab9e63ecc4f1a5c5224ba4901a.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -25,48 +23,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benjamin LaHaise <bcrl@kvack.org>
+From: Pavel Shilovsky <pshilovsky@samba.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit edfbbf388f293d70bf4b7c0bc38774d05e6f711a upstream.
+commit 663a962151593c69374776e8651238d0da072459 upstream.
 
-A kernel memory disclosure was introduced in aio_read_events_ring() in v3.10
-by commit a31ad380bed817aa25f8830ad23e1a0480fef797.  The changes made to
-aio_read_events_ring() failed to correctly limit the index into
-ctx->ring_pages[], allowing an attacked to cause the subsequent kmap() of
-an arbitrary page with a copy_to_user() to copy the contents into userspace.
-This vulnerability has been assigned CVE-2014-0206.  Thanks to Mateusz and
-Petr for disclosing this issue.
-
-This patch applies to v3.12+.  A separate backport is needed for 3.10/3.11.
-
-Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
-Cc: Mateusz Guzik <mguzik@redhat.com>
-Cc: Petr Matousek <pmatouse@redhat.com>
-Cc: Kent Overstreet <kmo@daterainc.com>
-Cc: Jeff Moyer <jmoyer@redhat.com>
+Signed-off-by: Pavel Shilovsky <pshilovsky@samba.org>
+Reviewed-by: Shirish Pargaonkar <spargaonkar@suse.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/aio.c | 3 +++
- 1 file changed, 3 insertions(+)
+ fs/cifs/smb2pdu.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/fs/aio.c b/fs/aio.c
-index e609e15f36b9..0abde33de70e 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -1066,6 +1066,9 @@ static long aio_read_events_ring(struct kioctx *ctx,
- 	head %= ctx->nr_events;
- 	tail %= ctx->nr_events;
+diff --git a/fs/cifs/smb2pdu.c b/fs/cifs/smb2pdu.c
+index 5818d2ca66f1..829ad35f98d4 100644
+--- a/fs/cifs/smb2pdu.c
++++ b/fs/cifs/smb2pdu.c
+@@ -1085,6 +1085,7 @@ SMB2_open(const unsigned int xid, struct cifs_open_parms *oparms, __le16 *path,
+ 	int rc = 0;
+ 	unsigned int num_iovecs = 2;
+ 	__u32 file_attributes = 0;
++	char *dhc_buf = NULL, *lc_buf = NULL;
  
-+	head %= ctx->nr_events;
-+	tail %= ctx->nr_events;
-+
- 	while (ret < nr) {
- 		long avail;
- 		struct io_event *ev;
+ 	cifs_dbg(FYI, "create/open\n");
+ 
+@@ -1151,6 +1152,7 @@ SMB2_open(const unsigned int xid, struct cifs_open_parms *oparms, __le16 *path,
+ 			kfree(copy_path);
+ 			return rc;
+ 		}
++		lc_buf = iov[num_iovecs-1].iov_base;
+ 	}
+ 
+ 	if (*oplock == SMB2_OPLOCK_LEVEL_BATCH) {
+@@ -1165,9 +1167,10 @@ SMB2_open(const unsigned int xid, struct cifs_open_parms *oparms, __le16 *path,
+ 		if (rc) {
+ 			cifs_small_buf_release(req);
+ 			kfree(copy_path);
+-			kfree(iov[num_iovecs-1].iov_base);
++			kfree(lc_buf);
+ 			return rc;
+ 		}
++		dhc_buf = iov[num_iovecs-1].iov_base;
+ 	}
+ 
+ 	rc = SendReceive2(xid, ses, iov, num_iovecs, &resp_buftype, 0);
+@@ -1199,6 +1202,8 @@ SMB2_open(const unsigned int xid, struct cifs_open_parms *oparms, __le16 *path,
+ 		*oplock = rsp->OplockLevel;
+ creat_exit:
+ 	kfree(copy_path);
++	kfree(lc_buf);
++	kfree(dhc_buf);
+ 	free_rsp_buf(resp_buftype, rsp);
+ 	return rc;
+ }
 -- 
 2.0.0
 
