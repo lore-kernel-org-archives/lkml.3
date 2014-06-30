@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407AbaF3Q1e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 12:27:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39519 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752600AbaF3Q1d (ORCPT
+	id S1755478AbaF3Q2b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 12:28:31 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:20925 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754697AbaF3Q22 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 12:27:33 -0400
-Date: Mon, 30 Jun 2014 09:27:18 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Sudeep Dutt <sudeep.dutt@intel.com>
-Cc: Dan Williams <dan.j.williams@intel.com>,
-        Siva Yerramreddy <yshivakrishna@gmail.com>,
-        Ashutosh Dixit <ashutosh.dixit@intel.com>,
-        Nikhil Rao <nikhil.rao@intel.com>, linux-kernel@vger.kernel.org,
-        dmaengine@vger.kernel.org
-Subject: Re: [PATCH char-misc-next v2 0/8] Enable dma driver for MIC X100
- Coprocessors
-Message-ID: <20140630162718.GE24179@kroah.com>
-References: <cover.1401397315.git.sudeep.dutt@intel.com>
- <1402934289.16234.6.camel@rbtaylor-desk1.amr.corp.intel.com>
- <1404142433.27474.6.camel@rbtaylor-desk1.amr.corp.intel.com>
+	Mon, 30 Jun 2014 12:28:28 -0400
+Date: Mon, 30 Jun 2014 17:28:17 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Bjorn Helgaas <bhelgaas@google.com>,
+        "rric@kernel.org" <rric@kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>
+Subject: Re: [PATCH v4 07/13] ARM64 / ACPI: Introduce lowlevel suspend
+ function
+Message-ID: <20140630162817.GS28951@arm.com>
+References: <1403840976-7456-1-git-send-email-hanjun.guo@linaro.org>
+ <1403840976-7456-8-git-send-email-hanjun.guo@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1404142433.27474.6.camel@rbtaylor-desk1.amr.corp.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1403840976-7456-8-git-send-email-hanjun.guo@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 30, 2014 at 08:33:53AM -0700, Sudeep Dutt wrote:
-> On Mon, 2014-06-16 at 08:58 -0700, Sudeep Dutt wrote:
-> > On Thu, 2014-05-29 at 14:23 -0700, Sudeep Dutt wrote:
-> > > ChangeLog:
-> > > =========
-> > > v1 => v2:
-> > > a) MIC bus driver cleanups and device release callback fix in patch 2,
-> > >    as per feedback from Greg Kroah-Hartman.
-> > > 
-> > > v1: Initial post @ https://lkml.org/lkml/2014/5/27/819
-> > > 
-> > 
-> > Hi Greg/Dan,
-> > 
-> > We have addressed the feedback received so far. Please take a look at
-> > this patch series.
-> > 
+On Fri, Jun 27, 2014 at 04:49:30AM +0100, Hanjun Guo wrote:
+> From: Graeme Gregory <graeme.gregory@linaro.org>
 > 
-> Another gentle reminder to take a look at this patch series. Greg/Dan,
-> please let us know what we can do to speed things up here.
+> acpi_wakeup_address is used on x86 as the address bios jumps into
+> when machine wakes up from suspend. As arm64 does not have such a
+> bios this mechanism will be provided by other means. But the define
+> is still required inside the acpi core.
 
-Wait for me to get back from vacation next week :)
+Why not fix the place where it is used rather than defining a dummy
+pointer?
 
-greg k-h
+> Introduce a null stub for acpi_suspend_lowlevel as this is also
+> required by core. This will be filled in when standards are
+> defined for arm64 ACPI global power states.
+
+I assume acpi_suspend_lowlevel would be just a dummy definition but it
+will have some use when the standard allows.
+
+-- 
+Catalin
