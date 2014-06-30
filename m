@@ -1,79 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754838AbaF3Irc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 04:47:32 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:60440 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752527AbaF3Ira (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 04:47:30 -0400
-Message-ID: <53B12417.9060904@linux.vnet.ibm.com>
-Date: Mon, 30 Jun 2014 16:47:19 +0800
-From: Michael wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1754855AbaF3Isb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 04:48:31 -0400
+Received: from lnfm1.sai.msu.ru ([93.180.26.255]:56877 "EHLO lnfm1.sai.msu.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752429AbaF3Isa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 04:48:30 -0400
+Date: Mon, 30 Jun 2014 12:47:39 +0400 (MSK)
+From: "Matwey V. Kornilov" <matwey@sai.msu.ru>
+To: gregkh@linuxfoundation.org
+cc: linux-kernel@vger.kernel.org, linux-parport@lists.infradead.org,
+        hsommer@eso.org, matwey.kornilov@gmail.com
+Subject: [PATCH 0/2] parport: parport_pc: Introduce option to disable checking
+ for Intel bug
+Message-ID: <alpine.LRH.2.00.1406301241590.15067@lnfm1.sai.msu.ru>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Alex Shi <alex.shi@linaro.org>,
-        Paul Turner <pjt@google.com>, Mel Gorman <mgorman@suse.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sched: select 'idle' cfs_rq per task-group to prevent
- tg-internal imbalance
-References: <53A11A89.5000602@linux.vnet.ibm.com> <53B11387.9020001@linux.vnet.ibm.com> <1404115601.5132.156.camel@marge.simpson.net>
-In-Reply-To: <1404115601.5132.156.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14063008-1396-0000-0000-000005225889
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Mike :)
+From: "Matwey V. Kornilov" <matwey@sai.msu.ru>
+Date: Wed, 25 Jun 2014 00:53:54 +0400
+Subject: [PATCH 0/2] parport: parport_pc: Introduce option to disable checking for Intel bug
 
-On 06/30/2014 04:06 PM, Mike Galbraith wrote:
-> On Mon, 2014-06-30 at 15:36 +0800, Michael wang wrote: 
->> On 06/18/2014 12:50 PM, Michael wang wrote:
->>> By testing we found that after put benchmark (dbench) in to deep cpu-group,
->>> tasks (dbench routines) start to gathered on one CPU, which lead to that the
->>> benchmark could only get around 100% CPU whatever how big it's task-group's
->>> share is, here is the link of the way to reproduce the issue:
->>
->> Hi, Peter
->>
->> We thought that involved too much factors will make things too
->> complicated, we are trying to start over and get rid of the concepts of
->> 'deep-group' and 'GENTLE_FAIR_SLEEPERS' in the idea, wish this could
->> make things more easier...
-> 
-> While you're getting rid of the concept of 'GENTLE_FAIR_SLEEPERS', don't
-> forget to also get rid of the concept of 'over-scheduling' :)
+Hi,
 
-I'm new to this word... could you give more details on that?
+The following patch series is to deal with the issue on false-positives
+of Intel EPP bug check [1].
 
-> 
-> That gentle thing isn't perfect (is the enemy of good), but preemption
-> model being based upon sleep, while nice and simple, has the unfortunate
-> weakness that as contention increases, so does the quantity of sleep in
-> the system.  Would be nice to come up with an alternative preemption
-> model as dirt simple as this one, but lacking the inherent weakness.
+More than a decade ago, the check was introduced in order to prevent EPP
+operation on the some Intel LPT chipsets. The main issue to defence from
+was CPU hang at EPP operation on broken chipsets. It is mentioned that
+affected chipsets are Intel 82091. However, it is not known whether
+there are others.
 
-The preemtion based on vruntime sounds fair enough, but vruntime-bonus
-for wakee do need few more thinking... although I don't want to count
-the gentle-stuff in any more, but disable it do help dbench a lot...
+The check was implemented in a strange manner. Now, there is no explanations
+why. The check itself now leads to the false-positives, disabling EPP on
+many PC-s (Dell OptiPlex series for instance). The latter is an issue.
 
-Regards,
-Michael Wang
+Given that our knowledge of the initial problem is quite limited now,
+I introduce special option for parport_pc, allowing user to disable check.
+This won't introduce regressions.
 
-> 
-> -Mike
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+The patches organized as following:
+
+1. Introduce-intel_bug_present-function.
+
+The transparent refactoring of the check is performed.
+Make the check be immutable regarding to ECR register.
+
+2. Add force_epp module option for parport_pc.
+
+Additional option `force_epp` for parport_pc is introduced.
+
+
+The behaviour is the following:
+
+modprobe parport_pc             # check is enabled, given there is no defaults
+                                 # in /etc/modprobe.d/*
+modprobe parport_pc force_epp=0 # check is enabled
+modprobe parport_pc force_epp=1 # check is disabled
+
+
+[1] https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=630593
+
+Tested-by: Heiko Andreas Sommer <hsommer@eso.org>
+Signed-off-by: Matwey V. Kornilov <matwey@sai.msu.ru>
 
