@@ -1,81 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755203AbaF3J1h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 05:27:37 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:35361 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751726AbaF3J1g (ORCPT
+	id S1755250AbaF3J1r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 05:27:47 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61985 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751726AbaF3J1o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 05:27:36 -0400
-Message-ID: <1404120453.5132.194.camel@marge.simpson.net>
-Subject: Re: [PATCH] sched: select 'idle' cfs_rq per task-group to prevent
- tg-internal imbalance
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Michael wang <wangyun@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Alex Shi <alex.shi@linaro.org>,
-        Paul Turner <pjt@google.com>, Mel Gorman <mgorman@suse.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 30 Jun 2014 11:27:33 +0200
-In-Reply-To: <53B12417.9060904@linux.vnet.ibm.com>
-References: <53A11A89.5000602@linux.vnet.ibm.com>
-	 <53B11387.9020001@linux.vnet.ibm.com>
-	 <1404115601.5132.156.camel@marge.simpson.net>
-	 <53B12417.9060904@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 30 Jun 2014 05:27:44 -0400
+Date: Mon, 30 Jun 2014 10:26:58 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
+Cc: "mturquette@linaro.org" <mturquette@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "kernel@stlinux.com" <kernel@stlinux.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Subject: Re: [PATCH v2 04/14] clk: st: Adds Flexgen clock binding
+Message-ID: <20140630092658.GR7262@leverpostej>
+References: <1403875511-7710-1-git-send-email-gabriel.fernandez@linaro.org>
+ <1403875511-7710-5-git-send-email-gabriel.fernandez@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403875511-7710-5-git-send-email-gabriel.fernandez@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-06-30 at 16:47 +0800, Michael wang wrote: 
-> Hi, Mike :)
+On Fri, Jun 27, 2014 at 02:25:01PM +0100, Gabriel FERNANDEZ wrote:
+> A Flexgen structure is composed by:
+> - a clock cross bar (represented by a mux element)
+> - a pre and final dividers (represented by a divider and gate elements)
 > 
-> On 06/30/2014 04:06 PM, Mike Galbraith wrote:
-> > On Mon, 2014-06-30 at 15:36 +0800, Michael wang wrote: 
-> >> On 06/18/2014 12:50 PM, Michael wang wrote:
-> >>> By testing we found that after put benchmark (dbench) in to deep cpu-group,
-> >>> tasks (dbench routines) start to gathered on one CPU, which lead to that the
-> >>> benchmark could only get around 100% CPU whatever how big it's task-group's
-> >>> share is, here is the link of the way to reproduce the issue:
-> >>
-> >> Hi, Peter
-> >>
-> >> We thought that involved too much factors will make things too
-> >> complicated, we are trying to start over and get rid of the concepts of
-> >> 'deep-group' and 'GENTLE_FAIR_SLEEPERS' in the idea, wish this could
-> >> make things more easier...
-> > 
-> > While you're getting rid of the concept of 'GENTLE_FAIR_SLEEPERS', don't
-> > forget to also get rid of the concept of 'over-scheduling' :)
+> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+> Acked-by: Peter Griffin <peter.griffin@linaro.org>
+> ---
+>  .../devicetree/bindings/clock/st/st,clkgen.txt     |  5 +++
+>  .../devicetree/bindings/clock/st/st,flexgen.txt    | 48 ++++++++++++++++++++++
+>  2 files changed, 53 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/clock/st/st,flexgen.txt
 > 
-> I'm new to this word... could you give more details on that?
+> diff --git a/Documentation/devicetree/bindings/clock/st/st,clkgen.txt b/Documentation/devicetree/bindings/clock/st/st,clkgen.txt
+> index 427bad8..78978f1 100644
+> --- a/Documentation/devicetree/bindings/clock/st/st,clkgen.txt
+> +++ b/Documentation/devicetree/bindings/clock/st/st,clkgen.txt
+> @@ -32,6 +32,10 @@ address is common of all subnode.
+>  		vcc_node {
+>  			...
+>  		};
+> +
+> +		flexgen_node {
+> +			...
+> +		};
+>  		...
+>  	};
+>  
+> @@ -45,6 +49,7 @@ Each subnode should use the binding discribe in [2]..[7]
+>  [5] Documentation/devicetree/bindings/clock/st,clkgen-prediv.txt
+>  [6] Documentation/devicetree/bindings/clock/st,vcc.txt
+>  [7] Documentation/devicetree/bindings/clock/st,quadfs.txt
+> +[8] Documentation/devicetree/bindings/clock/st,flexgen.txt
+>  
+>  
+>  Required properties:
+> diff --git a/Documentation/devicetree/bindings/clock/st/st,flexgen.txt b/Documentation/devicetree/bindings/clock/st/st,flexgen.txt
+> new file mode 100644
+> index 0000000..f2d4333
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/clock/st/st,flexgen.txt
+> @@ -0,0 +1,48 @@
+> +Binding for a type of flexgen structure found on certain
+> +STMicroelectronics consumer electronics SoC devices
+> +
+> +This structure includes:
+> +- a clock cross bar (represented by a mux element)
+> +- a pre and final dividers (represented by a divider and gate elements)
+> +
+> +This binding uses the common clock binding[1].
+> +
+> +[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
+> +
+> +Required properties:
+> +- compatible : shall be:
+> +  "st,flexgen"
 
-Massive context switching.  When heavily overloaded, wakeup preemption
-tends to hurt.  Trouble being that when overloaded, that's when
-fast/light tasks also need to get in and back out quickly the most. 
+That looks very vague. Is this a sub-node of a larger block?
 
-> > That gentle thing isn't perfect (is the enemy of good), but preemption
-> > model being based upon sleep, while nice and simple, has the unfortunate
-> > weakness that as contention increases, so does the quantity of sleep in
-> > the system.  Would be nice to come up with an alternative preemption
-> > model as dirt simple as this one, but lacking the inherent weakness.
+Might there be a future flexgen revision that looks different?
+
+> +- #clock-cells : from common clock binding; shall be set to 1.
+
+what does the clock cell represent? Is it just a linear index from 0?
+
+> +- clocks : from common clock binding
+
+This is a completely useless description.
+
+Which clock inputs do you expect clocks for? How many? Are they named?
+
+> +
+> +- clock-output-names : From common clock binding. The block has 4
+> +                       clock outputs but not all of them in a specific instance
+> +                       have to be used in the SoC. If a clock name is left as
+> +                       an empty string then no clock will be created for the
+> +                       output associated with that string index. If fewer than
+> +                       4 strings are provided then no clocks will be created
+> +                       for the remaining outputs.
+
+That's a Linux-internal detail, surely?
+
+Why do we even do that?
+
+Mark.
+
+> +
+> +Example:
+> +
+> +	clockgen-d2@x9106000 {
+> +		compatible = "st,clkgen-c32";
+> +		reg = <0x9106000 0x1000>;
+> +
+> +		clk_s_d2_flexgen: clk-s-d2-flexgen {
+> +			compatible = "st,flexgen";
+> +
+> +			#clock-cells = <1>;
+> +			clocks = <&clk_s_d2_quadfs 0>,
+> +				 <&clk_s_d2_quadfs 1>,
+> +				 <&clk_s_d2_quadfs 2>,
+> +				 <&clk_s_d2_quadfs 3>;
+> +
+> +			clock-output-names = "clk-pix-main-disp",
+> +					     "clk-pix-pip",
+> +					     "clk-pix-gdp1",
+> +					     "clk-pix-gdp2";
+> +		};
+> +	};
+> -- 
+> 1.9.1
 > 
-> The preemtion based on vruntime sounds fair enough, but vruntime-bonus
-> for wakee do need few more thinking... although I don't want to count
-> the gentle-stuff in any more, but disable it do help dbench a lot...
-
-It's scaled, but that's not really enough.  Zillion tasks can sleep in
-parallel, and when they are doing that, sleep time becomes a rather
-meaningless preemption yardstick.  It's only meaningful when there is a
-significant delta between task behaviors.  When running a homogeneous
-load of sleepers, eg a zillion java threads all doing the same damn
-thing, you're better off turning wakeup preemption off, because trying
-to smooth out microscopic vruntime deltas via wakeup preemption then
-does nothing but trashes caches.
-
--Mike
-
+> 
