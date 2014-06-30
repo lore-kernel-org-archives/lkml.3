@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753528AbaF3N0D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 09:26:03 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:53575 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751609AbaF3N0A (ORCPT
+	id S1751777AbaF3N2s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 09:28:48 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:18304 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750771AbaF3N2q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 09:26:00 -0400
-From: Anil Belur <askb23@gmail.com>
-X-Google-Original-From: Anil Belur
-To: rusty@rustcorp.com.au, aybuke.147@gmail.com, kirk@reisers.ca,
-        gregkh@linuxfoundation.org
-Cc: speakup@braille.uwo.ca, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Anil Belur <askb23@gmail.com>
-Subject: [PATCH 1/1] staging: speakup: speakup_dectlk.c - use time_before_eq()
-Date: Mon, 30 Jun 2014 18:55:48 +0530
-Message-Id: <1404134748-25874-1-git-send-email-askb23@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Mon, 30 Jun 2014 09:28:46 -0400
+Date: Mon, 30 Jun 2014 09:28:44 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] tracing/uprobes fixes
+Message-ID: <20140630092844.7b83e8de@gandalf.local.home>
+In-Reply-To: <20140627170116.GA18298@redhat.com>
+References: <20140627170116.GA18298@redhat.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Anil Belur <askb23@gmail.com>
+On Fri, 27 Jun 2014 19:01:16 +0200
+Oleg Nesterov <oleg@redhat.com> wrote:
 
-- this replaces jiffies comparision with safer function using
-  time_after_eq()
+> Hello,
+> 
+> It took me several hours to realize that the strange bug I hit was
+> caused by the change I have nacked in the past ;)
+> 
+> But it appears that I should take the blame. I was cc'ed, but I missed
+> that email or forgot to reply, so another attempt to push this "trivial"
+> change was successful.
+> 
+> I think that 1/4 should go to stable. 2-4 are "while at it" fixes.
+> 
+> Oleg.
+> 
+>  kernel/events/uprobes.c     |    6 ++--
+>  kernel/trace/trace_uprobe.c |   46 +++++++++++++++++++++++++-----------------
+>  2 files changed, 30 insertions(+), 22 deletions(-)
 
-Signed-off-by: Anil Belur <askb23@gmail.com>
----
- drivers/staging/speakup/speakup_dectlk.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I pulled these into my urgent branch and I'm testing them now.
 
-diff --git a/drivers/staging/speakup/speakup_dectlk.c b/drivers/staging/speakup/speakup_dectlk.c
-index af84868..c07c967 100644
---- a/drivers/staging/speakup/speakup_dectlk.c
-+++ b/drivers/staging/speakup/speakup_dectlk.c
-@@ -267,7 +267,7 @@ static void do_catch_up(struct spk_synth *synth)
- 		else if (ch <= SPACE) {
- 			if (!in_escape && strchr(",.!?;:", last))
- 				spk_serial_out(PROCSPEECH);
--			if (jiffies >= jiff_max) {
-+			if (time_after_eq(jiffies, jiff_max)) {
- 				if (!in_escape)
- 					spk_serial_out(PROCSPEECH);
- 				spin_lock_irqsave(&speakup_info.spinlock,
--- 
-1.9.1
+Thanks Oleg!
 
+-- Steve
