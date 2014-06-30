@@ -1,87 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752438AbaF3U3A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 16:29:00 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:37268 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750714AbaF3U26 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 16:28:58 -0400
-Date: Mon, 30 Jun 2014 13:28:51 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Wim Van Sebroeck <wim@iguana.be>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Jonas Jensen <jonas.jensen@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/6] kernel: Add support for restart notifier call
- chain
-Message-ID: <20140630202851.GA12888@roeck-us.net>
-References: <1404155499-21177-1-git-send-email-linux@roeck-us.net>
- <20140630195946.GI32514@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140630195946.GI32514@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752865AbaF3Ubo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 16:31:44 -0400
+Received: from mga01.intel.com ([192.55.52.88]:59652 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750924AbaF3Ubn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 16:31:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,577,1400050800"; 
+   d="scan'208";a="555450270"
+Message-Id: <b29c17f74d39d1b9240385e7479f63f44c988b8b.1404160039.git.tony.luck@intel.com>
+In-Reply-To: <20140630144017.2abc48ba@gandalf.local.home>
+From: Tony Luck <tony.luck@intel.com>
+Subject: [PATCH-v2] tracing: Fix wraparound problems in "uptime" tracer
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: <linux-kernel@vger.kernel.org>, <mingo@redhat.com>, <tony.luck@intel.com>,
+        <fweisbec@gmail.com>,
+        "<m.chehab@samsung.com> Xie XiuQi" <xiexiuqi@huawei.com>
+Date: Mon, 30 Jun 2014 13:31:37 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 30, 2014 at 08:59:47PM +0100, Russell King - ARM Linux wrote:
-> On Mon, Jun 30, 2014 at 12:11:33PM -0700, Guenter Roeck wrote:
-> > Various drivers implement architecture and/or device specific means
-> > to restart (reset) the system. Various mechanisms have been implemented
-> > to support those schemes. The best known mechanism is arm_pm_restart,
-> > which is a function pointer to be set either from platform specific code
-> > or from drivers. Another mechanism is to use hardware watchdogs to issue
-> > a reset; this mechanism is used if there is no other method available
-> > to reset a board or system. Two examples are alim7101_wdt, which currently
-> > uses the reboot notifier to trigger a reset, and moxart_wdt, which registers
-> > the arm_pm_restart function.
-> > 
-> > The existing mechanisms have a number of drawbacks. Typically only one scheme
-> > to restart the system is supported (at least if arm_pm_restart is used).
-> > At least in theory there can be mutliple means to restart the system, some of
-> > which may be less desirable (for example one mechanism may only reset the CPU,
-> > while another may reset the entire system). Using arm_pm_restart can also be
-> > racy if the function pointer is set from a driver, as the driver may be in
-> > the process of being unloaded when arm_pm_restart is called.
-> > Using the reboot notifier is always racy, as it is unknown if and when
-> > other functions using the reboot notifier have completed execution
-> > by the time the watchdog fires.
-> > 
-> > To solve the problem, introduce a system restart notifier. This notifier
-> > is expected to be called from the architecture specific machine_restart()
-> > function. Drivers providing system restart functionality (such as the watchdog
-> > drivers mentioned above) are expected to register with this notifier.
-> > 
-> > Patch 1 of this series implements the notifier function. Patches 2 and 3
-> > implement calling the notifier chain from arm and arm64 restart code.
-> > Patch 4 and 5 convert existing restart handlers in the watchdog subsystem
-> > to use the restart notifier. Patch 6 unexports arm_pm_restart to ensure
-> > that no one gets the idea to implement a restart handler as module.
-> 
-> I think you need to restructure stuff somewhat, because I think
-> you've missed drivers/power/reset/ entirely, or at least you've
-> missed drivers/power/reset/restart-poweroff.c which calls
-> arm_pm_restart directly.  I'm not quite sure how we ended up with
-> that...
-> 
-Yes, guess I missed (and did not really expect) that arm_pm_restart
-is called from multiple places.
+The "uptime" tracer added in:
+    commit 8aacf017b065a805d27467843490c976835eb4a5
+    tracing: Add "uptime" trace clock that uses jiffies
+has wraparound problems when the system has been up more
+than 1 hour 11 minutes and 34 seconds. It converts jiffies
+to nanoseconds using:
+	(u64)jiffies_to_usecs(jiffy) * 1000ULL
+but since jiffies_to_usecs() only returns a 32-bit value, it
+truncates at 2^32 microseconds.  An additional problem on 32-bit
+systems is that the argument is "unsigned long", so fixing the
+return value only helps until 2^32 jiffies (49.7 days on a HZ=1000
+system).
 
-What is restart-poweroff supposed to do in the first place, and why
-doesn't it call machine_restart() ? If it is what I think it is, ie
-a fallback for pm_power_off, it could be made generic and does not
-really have to depend on ARM.
+We can't provide a full features jiffies_to_nsec() function in
+any safe way (32-bit systems need locking to read the full 64-bit
+jiffies value).  Just do the best we can here and recognise that
+32-bit systems may seem some timestamp anomolies if jiffies64
+was in the middle of rolling over a 2^32 boundary.
 
-Thanks,
-Guenter
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+---
+
+v1->v2: Use "do_div()" for 64-bit division
+
+ kernel/timeconst.bc        |  6 ++++++
+ kernel/trace/trace_clock.c | 12 ++++++++++--
+ 2 files changed, 16 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/timeconst.bc b/kernel/timeconst.bc
+index 511bdf2cafda..a5fef7a7fb27 100644
+--- a/kernel/timeconst.bc
++++ b/kernel/timeconst.bc
+@@ -100,6 +100,12 @@ define timeconst(hz) {
+ 		print "#define USEC_TO_HZ_DEN\t\t", 1000000/cd, "\n"
+ 		print "\n"
+ 
++		obase=10
++		cd=gcd(hz,1000000000)
++		print "#define HZ_TO_NSEC_NUM\t\t", 1000000000/cd, "\n"
++		print "#define HZ_TO_NSEC_DEN\t\t", hz/cd, "\n"
++		print "\n"
++
+ 		print "#endif /* KERNEL_TIMECONST_H */\n"
+ 	}
+ 	halt
+diff --git a/kernel/trace/trace_clock.c b/kernel/trace/trace_clock.c
+index 26dc348332b7..3fcf8f4807d5 100644
+--- a/kernel/trace/trace_clock.c
++++ b/kernel/trace/trace_clock.c
+@@ -59,13 +59,21 @@ u64 notrace trace_clock(void)
+ 
+ /*
+  * trace_jiffy_clock(): Simply use jiffies as a clock counter.
++ * This usage of jiffies_64 isn't safe on 32-bit, but we may be
++ * called from NMI context, and we have no safe way to get a timestamp.
+  */
+ u64 notrace trace_clock_jiffies(void)
+ {
+-	u64 jiffy = jiffies - INITIAL_JIFFIES;
++	u64 jiffy = jiffies_64 - INITIAL_JIFFIES;
+ 
+ 	/* Return nsecs */
+-	return (u64)jiffies_to_usecs(jiffy) * 1000ULL;
++#if !(NSEC_PER_SEC % HZ)
++	return (NSEC_PER_SEC / HZ) * jiffy;
++#else
++	jiffy *= HZ_TO_NSEC_NUM;
++	do_div(jiffy, HZ_TO_NSEC_DEN);
++	return jiffy;
++#endif
+ }
+ 
+ /*
+-- 
+1.8.4.1
+
