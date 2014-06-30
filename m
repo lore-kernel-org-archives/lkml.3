@@ -1,79 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756987AbaF3TN0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 15:13:26 -0400
-Received: from smtp2-g21.free.fr ([212.27.42.2]:5991 "EHLO smtp2-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756501AbaF3TNW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 15:13:22 -0400
-From: Yann Droneaud <ydroneaud@opteya.com>
-To: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kbuild@vger.kernel.org
-Cc: Yann Droneaud <ydroneaud@opteya.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Michal Marek <mmarek@suse.cz>, David Woodhouse <dwmw2@infradead.org>,
-        Rob Landley <rob@landley.net>, Sam Ravnborg <sam@ravnborg.org>
-Subject: [PATCH] Documentation/make/headers_install.txt: update documentation
-Date: Mon, 30 Jun 2014 21:11:19 +0200
-Message-Id: <1404155479-5638-1-git-send-email-ydroneaud@opteya.com>
-X-Mailer: git-send-email 1.9.3
+	id S932110AbaF3TLt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 15:11:49 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:42364 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756942AbaF3TLq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 15:11:46 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Wim Van Sebroeck <wim@iguana.be>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonas Jensen <jonas.jensen@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [RFC PATCH 0/6] kernel: Add support for restart notifier call chain
+Date: Mon, 30 Jun 2014 12:11:33 -0700
+Message-Id: <1404155499-21177-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Documentation in make/headers_install.txt is not
-up to date regarding:
-- way to list the various architectures;
-- path where the headers are installed.
+Various drivers implement architecture and/or device specific means
+to restart (reset) the system. Various mechanisms have been implemented
+to support those schemes. The best known mechanism is arm_pm_restart,
+which is a function pointer to be set either from platform specific code
+or from drivers. Another mechanism is to use hardware watchdogs to issue
+a reset; this mechanism is used if there is no other method available
+to reset a board or system. Two examples are alim7101_wdt, which currently
+uses the reboot notifier to trigger a reset, and moxart_wdt, which registers
+the arm_pm_restart function.
 
-This patch try to fix these issues.
+The existing mechanisms have a number of drawbacks. Typically only one scheme
+to restart the system is supported (at least if arm_pm_restart is used).
+At least in theory there can be mutliple means to restart the system, some of
+which may be less desirable (for example one mechanism may only reset the CPU,
+while another may reset the entire system). Using arm_pm_restart can also be
+racy if the function pointer is set from a driver, as the driver may be in
+the process of being unloaded when arm_pm_restart is called.
+Using the reboot notifier is always racy, as it is unknown if and when
+other functions using the reboot notifier have completed execution
+by the time the watchdog fires.
 
-Cc: Kirill A. Shutemov <kirill@shutemov.name>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Rob Landley <rob@landley.net>
-Cc: Sam Ravnborg <sam@ravnborg.org>
-Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
----
- Documentation/make/headers_install.txt | 15 ++++++++-------
- 1 file changed, 8 insertions(+), 7 deletions(-)
+To solve the problem, introduce a system restart notifier. This notifier
+is expected to be called from the architecture specific machine_restart()
+function. Drivers providing system restart functionality (such as the watchdog
+drivers mentioned above) are expected to register with this notifier.
 
-diff --git a/Documentation/make/headers_install.txt b/Documentation/make/headers_install.txt
-index 951eb9f1e040..8b6751f10dd3 100644
---- a/Documentation/make/headers_install.txt
-+++ b/Documentation/make/headers_install.txt
-@@ -24,23 +24,24 @@ The "make headers_install" command can be run in the top level directory of the
- kernel source code (or using a standard out-of-tree build).  It takes two
- optional arguments:
- 
--  make headers_install ARCH=i386 INSTALL_HDR_PATH=/usr/include
-+  make headers_install ARCH=i386 INSTALL_HDR_PATH=/usr
- 
- ARCH indicates which architecture to produce headers for, and defaults to the
--current architecture.  The linux/asm directory of the exported kernel headers
--is platform-specific, to see a complete list of supported architectures use
-+current architecture.  The asm/ directory of the exported kernel headers
-+is platform-specific, to see a list of supported architectures use
- the command:
- 
--  ls -d include/asm-* | sed 's/.*-//'
-+  /bin/ls -1 arch/*/include/asm/Kbuild | sed -e 's,^arch/,,' \
-+                                             -e 's,/include/asm/Kbuild$,,'
- 
--INSTALL_HDR_PATH indicates where to install the headers.  It defaults to
--"./usr/include".
-+INSTALL_HDR_PATH indicates where to create include/ directory to install the
-+headers. It defaults to "./usr/".
- 
- The command "make headers_install_all" exports headers for all architectures
- simultaneously.  (This is mostly of interest to distribution maintainers,
- who create an architecture-independent tarball from the resulting include
- directory.)  You also can use HDR_ARCH_LIST to specify list of architectures.
--Remember to provide the appropriate linux/asm directory via "mv" or "ln -s"
-+Remember to provide the appropriate asm/ directory via "mv" or "ln -s"
- before building a C library with headers exported this way.
- 
- The kernel header export infrastructure is maintained by David Woodhouse
--- 
-1.9.3
-
+Patch 1 of this series implements the notifier function. Patches 2 and 3
+implement calling the notifier chain from arm and arm64 restart code.
+Patch 4 and 5 convert existing restart handlers in the watchdog subsystem
+to use the restart notifier. Patch 6 unexports arm_pm_restart to ensure
+that no one gets the idea to implement a restart handler as module.
