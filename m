@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756588AbaF3QHG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 12:07:06 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:51953 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754530AbaF3QHB (ORCPT
+	id S1756612AbaF3QHK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 12:07:10 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:64719 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756200AbaF3QHA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 12:07:01 -0400
+	Mon, 30 Jun 2014 12:07:00 -0400
 From: Vincent Guittot <vincent.guittot@linaro.org>
 To: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
         linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org
@@ -14,9 +14,9 @@ Cc: preeti@linux.vnet.ibm.com, Morten.Rasmussen@arm.com, efault@gmx.de,
         nicolas.pitre@linaro.org, linaro-kernel@lists.linaro.org,
         daniel.lezcano@linaro.org, dietmar.eggemann@arm.com,
         Vincent Guittot <vincent.guittot@linaro.org>
-Subject: [PATCH v3 09/12] Revert "sched: Put rq's sched_avg under CONFIG_FAIR_GROUP_SCHED"
-Date: Mon, 30 Jun 2014 18:05:40 +0200
-Message-Id: <1404144343-18720-10-git-send-email-vincent.guittot@linaro.org>
+Subject: [PATCH v3 08/12] sched: move cfs task on a CPU with higher capacity
+Date: Mon, 30 Jun 2014 18:05:39 +0200
+Message-Id: <1404144343-18720-9-git-send-email-vincent.guittot@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404144343-18720-1-git-send-email-vincent.guittot@linaro.org>
 References: <1404144343-18720-1-git-send-email-vincent.guittot@linaro.org>
@@ -24,77 +24,151 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit f5f9739d7a0ccbdcf913a0b3604b134129d14f7e.
+If the CPU is used for handling lot of IRQs, trig a load balance to check if
+it's worth moving its tasks on another CPU that has more capacity.
 
-We are going to use runnable_avg_sum and runnable_avg_period in order to get
-the utilization of the CPU. This statistic includes all tasks that run the CPU
-and not only CFS tasks.
+As a sidenote, this will note generate more spurious ilb because we already
+trig an ilb if there is more than 1 busy cpu. If this cpu is the only one that
+has a task, we will trig the ilb once for migrating the task.
+
+The nohz_kick_needed function has been cleaned up a bit while adding the new
+test
 
 Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
 ---
- kernel/sched/fair.c  | 13 ++++++-------
- kernel/sched/sched.h |  4 ++--
- 2 files changed, 8 insertions(+), 9 deletions(-)
+ kernel/sched/fair.c | 58 +++++++++++++++++++++++++++++++++++++----------------
+ 1 file changed, 41 insertions(+), 17 deletions(-)
 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 742ad88..bdc5cb9 100644
+index a23c938..742ad88 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -2428,19 +2428,12 @@ static inline void __update_group_entity_contrib(struct sched_entity *se)
- 		se->avg.load_avg_contrib >>= NICE_0_SHIFT;
+@@ -5944,6 +5944,14 @@ static bool update_sd_pick_busiest(struct lb_env *env,
+ 			return true;
  	}
- }
--
--static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
--{
--	__update_entity_runnable_avg(rq_clock_task(rq), &rq->avg, runnable);
--	__update_tg_runnable_avg(&rq->avg, &rq->cfs);
--}
- #else /* CONFIG_FAIR_GROUP_SCHED */
- static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
- 						 int force_update) {}
- static inline void __update_tg_runnable_avg(struct sched_avg *sa,
- 						  struct cfs_rq *cfs_rq) {}
- static inline void __update_group_entity_contrib(struct sched_entity *se) {}
--static inline void update_rq_runnable_avg(struct rq *rq, int runnable) {}
- #endif /* CONFIG_FAIR_GROUP_SCHED */
  
- static inline void __update_task_entity_contrib(struct sched_entity *se)
-@@ -2539,6 +2532,12 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
- 	__update_cfs_rq_tg_load_contrib(cfs_rq, force_update);
++	/*
++	 * The group capacity is reduced probably because of activity from other
++	 * sched class or interrupts which use part of the available capacity
++	 */
++	if ((sg->sgc->capacity_orig * 100) > (sgs->group_capacity *
++				env->sd->imbalance_pct))
++		return true;
++
+ 	return false;
  }
  
-+static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
-+{
-+	__update_entity_runnable_avg(rq_clock_task(rq), &rq->avg, runnable);
-+	__update_tg_runnable_avg(&rq->avg, &rq->cfs);
-+}
+@@ -6421,13 +6429,24 @@ static int need_active_balance(struct lb_env *env)
+ 	struct sched_domain *sd = env->sd;
+ 
+ 	if (env->idle == CPU_NEWLY_IDLE) {
++		int src_cpu = env->src_cpu;
+ 
+ 		/*
+ 		 * ASYM_PACKING needs to force migrate tasks from busy but
+ 		 * higher numbered CPUs in order to pack all tasks in the
+ 		 * lowest numbered CPUs.
+ 		 */
+-		if ((sd->flags & SD_ASYM_PACKING) && env->src_cpu > env->dst_cpu)
++		if ((sd->flags & SD_ASYM_PACKING) && src_cpu > env->dst_cpu)
++			return 1;
 +
- /* Add the load generated by se into cfs_rq's child load-average */
- static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
- 						  struct sched_entity *se,
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 7b311de..fb53166 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -542,8 +542,6 @@ struct rq {
- #ifdef CONFIG_FAIR_GROUP_SCHED
- 	/* list of leaf cfs_rq on this cpu: */
- 	struct list_head leaf_cfs_rq_list;
++		/*
++		 * If the CPUs share their cache and the src_cpu's capacity is
++		 * reduced because of other sched_class or IRQs, we trig an
++		 * active balance to move the task
++		 */
++		if ((sd->flags & SD_SHARE_PKG_RESOURCES)
++		 && ((capacity_orig_of(src_cpu) * 100) > (capacity_of(src_cpu) *
++							sd->imbalance_pct)))
+ 			return 1;
+ 	}
+ 
+@@ -6529,6 +6548,8 @@ redo:
+ 
+ 	schedstat_add(sd, lb_imbalance[idle], env.imbalance);
+ 
++	env.src_cpu = busiest->cpu;
++
+ 	ld_moved = 0;
+ 	if (busiest->nr_running > 1) {
+ 		/*
+@@ -6538,7 +6559,6 @@ redo:
+ 		 * correctly treated as an imbalance.
+ 		 */
+ 		env.flags |= LBF_ALL_PINNED;
+-		env.src_cpu   = busiest->cpu;
+ 		env.src_rq    = busiest;
+ 		env.loop_max  = min(sysctl_sched_nr_migrate, busiest->nr_running);
+ 
+@@ -7233,9 +7253,10 @@ static inline int nohz_kick_needed(struct rq *rq)
+ 	struct sched_domain *sd;
+ 	struct sched_group_capacity *sgc;
+ 	int nr_busy, cpu = rq->cpu;
++	bool kick = false;
+ 
+ 	if (unlikely(rq->idle_balance))
+-		return 0;
++		return false;
+ 
+        /*
+ 	* We may be recently in ticked or tickless idle mode. At the first
+@@ -7249,38 +7270,41 @@ static inline int nohz_kick_needed(struct rq *rq)
+ 	 * balancing.
+ 	 */
+ 	if (likely(!atomic_read(&nohz.nr_cpus)))
+-		return 0;
++		return false;
+ 
+ 	if (time_before(now, nohz.next_balance))
+-		return 0;
++		return false;
+ 
+ 	if (rq->nr_running >= 2)
+-		goto need_kick;
++		return true;
+ 
+ 	rcu_read_lock();
+ 	sd = rcu_dereference(per_cpu(sd_busy, cpu));
 -
--	struct sched_avg avg;
- #endif /* CONFIG_FAIR_GROUP_SCHED */
+ 	if (sd) {
+ 		sgc = sd->groups->sgc;
+ 		nr_busy = atomic_read(&sgc->nr_busy_cpus);
  
- 	/*
-@@ -634,6 +632,8 @@ struct rq {
- #ifdef CONFIG_SMP
- 	struct llist_head wake_list;
- #endif
+-		if (nr_busy > 1)
+-			goto need_kick_unlock;
++		if (nr_busy > 1) {
++			kick = true;
++			goto unlock;
++		}
 +
-+	struct sched_avg avg;
- };
++		if ((rq->cfs.h_nr_running >= 1)
++		 && ((rq->cpu_capacity * sd->imbalance_pct) <
++					(rq->cpu_capacity_orig * 100))) {
++			kick = true;
++			goto unlock;
++		}
+ 	}
  
- static inline int cpu_of(struct rq *rq)
+ 	sd = rcu_dereference(per_cpu(sd_asym, cpu));
+-
+ 	if (sd && (cpumask_first_and(nohz.idle_cpus_mask,
+ 				  sched_domain_span(sd)) < cpu))
+-		goto need_kick_unlock;
++		kick = true;
+ 
++unlock:
+ 	rcu_read_unlock();
+-	return 0;
+-
+-need_kick_unlock:
+-	rcu_read_unlock();
+-need_kick:
+-	return 1;
++	return kick;
+ }
+ #else
+ static void nohz_idle_balance(struct rq *this_rq, enum cpu_idle_type idle) { }
 -- 
 1.9.1
 
