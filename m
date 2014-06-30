@@ -1,58 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755427AbaF3XEN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 19:04:13 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:57377 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751906AbaF3XEM (ORCPT
+	id S1755709AbaF3XGr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 19:06:47 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:61109 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751563AbaF3XGp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 19:04:12 -0400
-Date: Mon, 30 Jun 2014 16:04:08 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>
-cc: Stephane Eranian <eranian@google.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch] x86, perf: avoid spamming kernel log for bts buffer
- failure
-Message-ID: <alpine.DEB.2.02.1406301600460.26302@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 30 Jun 2014 19:06:45 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <CAKdAkRSaurygSeXdt09MpLGaXojJ1YW3SzTn1pBz2076hF514Q@mail.gmail.com>
+References: <1403716136-32694-1-git-send-email-johan@kernel.org>
+ <1403716136-32694-12-git-send-email-johan@kernel.org> <CAKdAkRSaurygSeXdt09MpLGaXojJ1YW3SzTn1pBz2076hF514Q@mail.gmail.com>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Mon, 30 Jun 2014 16:06:23 -0700
+Message-ID: <CAK5ve-+BhzZG01_zg=XJzkvrgcO0RzfYjEZ9dV7tJgGMROjBLg@mail.gmail.com>
+Subject: Re: [PATCH 11/13] input: lm8323: fix attribute-creation race
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Johan Hovold <johan@kernel.org>, Richard Purdie <rpurdie@rpsys.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        Janne Kanniainen <janne.kanniainen@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>,
+        =?UTF-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's unnecessary to excessively spam the kernel log anytime the BTS buffer 
-cannot be allocated, so make this allocation __GFP_NOWARN.
+On Fri, Jun 27, 2014 at 11:50 AM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> On Wed, Jun 25, 2014 at 10:08 AM, Johan Hovold <johan@kernel.org> wrote:
+>> Use the attribute groups of the led-class to create the time attribute
+>> during probe in order to avoid racing with userspace.
+>>
+>> Signed-off-by: Johan Hovold <johan@kernel.org>
+>
+> Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+>
 
-The user probably will want to at least find some artifact that the 
-allocation has failed in the past, probably due to fragmentation because 
-of its large size, when it's not allocated at bootstrap.  Thus, add a 
-WARN_ONCE() so something is left behind for them to understand why perf 
-commnads that require PEBS is not working properly.
+Good, I merged this patch with others into my for-next branch.
 
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- arch/x86/kernel/cpu/perf_event_intel_ds.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+-Bryan
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -311,9 +311,11 @@ static int alloc_bts_buffer(int cpu)
- 	if (!x86_pmu.bts)
- 		return 0;
- 
--	buffer = kzalloc_node(BTS_BUFFER_SIZE, GFP_KERNEL, node);
--	if (unlikely(!buffer))
-+	buffer = kzalloc_node(BTS_BUFFER_SIZE, GFP_KERNEL | __GFP_NOWARN, node);
-+	if (unlikely(!buffer)) {
-+		WARN_ONCE(1, "%s: BTS buffer allocation failure\n", __func__);
- 		return -ENOMEM;
-+	}
- 
- 	max = BTS_BUFFER_SIZE / BTS_RECORD_SIZE;
- 	thresh = max / 16;
+>> ---
+>>  drivers/input/keyboard/lm8323.c | 22 +++++++++-------------
+>>  1 file changed, 9 insertions(+), 13 deletions(-)
+>>
+>> diff --git a/drivers/input/keyboard/lm8323.c b/drivers/input/keyboard/lm8323.c
+>> index 0b42118cbf8f..cb32e2b506b7 100644
+>> --- a/drivers/input/keyboard/lm8323.c
+>> +++ b/drivers/input/keyboard/lm8323.c
+>> @@ -558,6 +558,12 @@ static ssize_t lm8323_pwm_store_time(struct device *dev,
+>>  }
+>>  static DEVICE_ATTR(time, 0644, lm8323_pwm_show_time, lm8323_pwm_store_time);
+>>
+>> +static struct attribute *lm8323_pwm_attrs[] = {
+>> +       &dev_attr_time.attr,
+>> +       NULL
+>> +};
+>> +ATTRIBUTE_GROUPS(lm8323_pwm);
+>> +
+>>  static int init_pwm(struct lm8323_chip *lm, int id, struct device *dev,
+>>                     const char *name)
+>>  {
+>> @@ -580,16 +586,11 @@ static int init_pwm(struct lm8323_chip *lm, int id, struct device *dev,
+>>         if (name) {
+>>                 pwm->cdev.name = name;
+>>                 pwm->cdev.brightness_set = lm8323_pwm_set_brightness;
+>> +               pwm->cdev.groups = lm8323_pwm_groups;
+>>                 if (led_classdev_register(dev, &pwm->cdev) < 0) {
+>>                         dev_err(dev, "couldn't register PWM %d\n", id);
+>>                         return -1;
+>>                 }
+>> -               if (device_create_file(pwm->cdev.dev,
+>> -                                       &dev_attr_time) < 0) {
+>> -                       dev_err(dev, "couldn't register time attribute\n");
+>> -                       led_classdev_unregister(&pwm->cdev);
+>> -                       return -1;
+>> -               }
+>>                 pwm->enabled = true;
+>>         }
+>>
+>> @@ -753,11 +754,8 @@ fail3:
+>>         device_remove_file(&client->dev, &dev_attr_disable_kp);
+>>  fail2:
+>>         while (--pwm >= 0)
+>> -               if (lm->pwm[pwm].enabled) {
+>> -                       device_remove_file(lm->pwm[pwm].cdev.dev,
+>> -                                          &dev_attr_time);
+>> +               if (lm->pwm[pwm].enabled)
+>>                         led_classdev_unregister(&lm->pwm[pwm].cdev);
+>> -               }
+>>  fail1:
+>>         input_free_device(idev);
+>>         kfree(lm);
+>> @@ -777,10 +775,8 @@ static int lm8323_remove(struct i2c_client *client)
+>>         device_remove_file(&lm->client->dev, &dev_attr_disable_kp);
+>>
+>>         for (i = 0; i < 3; i++)
+>> -               if (lm->pwm[i].enabled) {
+>> -                       device_remove_file(lm->pwm[i].cdev.dev, &dev_attr_time);
+>> +               if (lm->pwm[i].enabled)
+>>                         led_classdev_unregister(&lm->pwm[i].cdev);
+>> -               }
+>>
+>>         kfree(lm);
+>>
+>> --
+>> 1.8.5.5
+>>
+>
+> Thanks.
+>
+> --
+> Dmitry
