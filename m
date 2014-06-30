@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757170AbaF3Tx0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 15:53:26 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:48548 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756947AbaF3TxZ (ORCPT
+	id S1757096AbaF3Tzw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 15:55:52 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:47941 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751299AbaF3Tzv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 15:53:25 -0400
+	Mon, 30 Jun 2014 15:55:51 -0400
+Date: Mon, 30 Jun 2014 20:55:20 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Wim Van Sebroeck <wim@iguana.be>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Jonas Jensen <jonas.jensen@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 3/6] arm: Support restart through restart notifier
+	call chain
+Message-ID: <20140630195520.GH32514@n2100.arm.linux.org.uk>
+References: <1404155499-21177-1-git-send-email-linux@roeck-us.net> <1404155499-21177-4-git-send-email-linux@roeck-us.net>
 MIME-Version: 1.0
-In-Reply-To: <1404157796-13613-2-git-send-email-marek@goldelico.com>
-References: <1404157796-13613-1-git-send-email-marek@goldelico.com>
-	<1404157796-13613-2-git-send-email-marek@goldelico.com>
-Date: Mon, 30 Jun 2014 21:53:24 +0200
-Message-ID: <CAAfyv34tGM6ThBfk+0XcGD+4SKbN5w_AA9EUWMBXe7z7qhjSfw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] bq27000: report missing device better.
-From: Belisko Marek <marek.belisko@gmail.com>
-To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Sebastian Reichel <sre@kernel.org>
-Cc: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
-        Marek Belisko <marek@goldelico.com>, NeilBrown <neilb@suse.de>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404155499-21177-4-git-send-email-linux@roeck-us.net>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CCing lkml
-
-On Mon, Jun 30, 2014 at 9:49 PM, Marek Belisko <marek@goldelico.com> wrote:
-> One an hdq buss, a missing device reads as 0xff, not -1.
-> So do a translation to allow detecting of a missing bus.
->
-> Signed-off-by: NeilBrown <neilb@suse.de>
+On Mon, Jun 30, 2014 at 12:11:36PM -0700, Guenter Roeck wrote:
+> The kernel core now supports a notifier call chain for system
+> restart functions.
+> 
+> With this change, the arm_pm_restart callback is now optional,
+> so check if it is set before calling it.
+> 
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 > ---
->  drivers/power/bq27x00_battery.c | 3 +++
->  1 file changed, 3 insertions(+)
->
-> diff --git a/drivers/power/bq27x00_battery.c b/drivers/power/bq27x00_battery.c
-> index 27bac1d..aa80efc 100644
-> --- a/drivers/power/bq27x00_battery.c
-> +++ b/drivers/power/bq27x00_battery.c
-> @@ -420,6 +420,9 @@ static void bq27x00_update(struct bq27x00_device_info *di)
->         int flags_changed;
->
->         cache.flags = bq27x00_read(di, BQ27x00_REG_FLAGS, !is_bq27500);
-> +       if ((cache.flags & 0xff) == 0xff)
-> +               /* read error */
-> +               cache.flags = -1;
->         if (cache.flags >= 0) {
->                 if (!is_bq27500 && !is_bq27425
->                                 && (cache.flags & BQ27000_FLAG_CI)) {
-> --
-> 1.9.1
->
+>  arch/arm/kernel/process.c | 6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
+> index 81ef686..93765f2 100644
+> --- a/arch/arm/kernel/process.c
+> +++ b/arch/arm/kernel/process.c
+> @@ -32,6 +32,7 @@
+>  #include <linux/hw_breakpoint.h>
+>  #include <linux/leds.h>
+>  #include <linux/reboot.h>
+> +#include <linux/watchdog.h>
+>  
+>  #include <asm/cacheflush.h>
+>  #include <asm/idmap.h>
+> @@ -230,7 +231,10 @@ void machine_restart(char *cmd)
+>  	local_irq_disable();
+>  	smp_send_stop();
+>  
+> -	arm_pm_restart(reboot_mode, cmd);
+> +	if (arm_pm_restart)
+> +		arm_pm_restart(reboot_mode, cmd);
+> +
+> +	blocking_notifier_call_chain(&restart_notifier_list, reboot_mode, cmd);
 
-
+One or the other please, because there could (and I think there are)
+some implementations which tell stuff to power down, and then continue
+into the mdelay() below.  In such situations, we don't want to call
+the notifier.
 
 -- 
-as simple and primitive as possible
--------------------------------------------------
-Marek Belisko - OPEN-NANDRA
-Freelance Developer
-
-Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-Tel: +421 915 052 184
-skype: marekwhite
-twitter: #opennandra
-web: http://open-nandra.com
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
