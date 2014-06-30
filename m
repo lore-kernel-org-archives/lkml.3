@@ -1,81 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753934AbaF3BxW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jun 2014 21:53:22 -0400
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:49564 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753407AbaF3BxT (ORCPT
+	id S1753857AbaF3CEU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jun 2014 22:04:20 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55362 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753378AbaF3CET (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jun 2014 21:53:19 -0400
+	Sun, 29 Jun 2014 22:04:19 -0400
+Message-ID: <53B0C596.6090007@canonical.com>
+Date: Mon, 30 Jun 2014 10:04:06 +0800
+From: Hui Wang <hui.wang@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <53B075EB.6020301@kernel.org>
-References: <1403928469-9452-1-git-send-email-xerofoify@gmail.com>
-	<53AF1D25.10406@kernel.org>
-	<CAPDOMVgRDos+UQ_hxGSt3Gph-hqd=Vri4i=JXm9h-2ekmK6bvg@mail.gmail.com>
-	<53B075EB.6020301@kernel.org>
-Date: Sun, 29 Jun 2014 21:53:18 -0400
-Message-ID: <CAPDOMVjNqk5B0Aby8xnAtCYy0mkeXgQjwyhJCGsA5FhQhjR-LQ@mail.gmail.com>
-Subject: Re: [PATCH] FIXME of file toploogy.h for alpha cpus
-From: Nick Krause <xerofoify@gmail.com>
-To: Sasha Levin <sashal@kernel.org>
-Cc: rth@twiddle.net, ink@jurassic.park.msu.ru,
-        Matt Turner <mattst88@gmail.com>, linux-alpha@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Jan Kiszka <jan.kiszka@web.de>
+CC: Hui Wang <jason77.wang@gmail.com>, tiwai@suse.de,
+        alsa-devel@alsa-project.org, alex.hung@canonical.com, yk@canonical.com,
+        david.henningsson@canonical.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [V2 PATCH] ALSA: hda - Enable mute/mic-mute LEDs for more Thinkpads
+ with Conexant codec
+References: <1385534846-20829-1-git-send-email-hui.wang@canonical.com> <53AFF992.5030403@web.de>
+In-Reply-To: <53AFF992.5030403@web.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry Sasha ,
-I will rewrite and test this patch before I send it in.
-Cheers Nick
-
-On Sun, Jun 29, 2014 at 4:24 PM, Sasha Levin <sashal@kernel.org> wrote:
-> On 06/28/2014 11:03 PM, Nick Krause wrote:
->> I thought I compiled tested it maybe not. I thought M= would work for
->> alpha directory but maybe I have to enable in on x86.
->> I don't known if there is a way to do this.
->> Cheers Nick
+On 06/29/2014 07:33 PM, Jan Kiszka wrote:
+> On 2013-11-27 07:47, Hui Wang wrote:
+>> Most Thinkpad Edge series laptops use conexant codec, so far although
+>> the codecs have different minor Vendor Id and minor Subsystem Id,
+>> they all belong to the cxt5066 family, this change can make the
+>> mute/mic-mute LEDs support more generic among cxt_5066 family.
 >>
->> On Sat, Jun 28, 2014 at 3:53 PM, Sasha Levin <sashal@kernel.org> wrote:
->>> On 06/28/2014 12:07 AM, Nicholas Krause wrote:
->>>> This patch fixs the FIXME message in the function *cpumask_of_node
->>>> for using this function multiple times and the issue with recaluting
->>>> the cpu node mask when reusing this function.
->>>>
->>>> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
->>>> ---
->>>>  arch/alpha/include/asm/topology.h | 3 +++
->>>>  1 file changed, 3 insertions(+)
->>>>
->>>> diff --git a/arch/alpha/include/asm/topology.h b/arch/alpha/include/asm/topology.h
->>>> index 9251e13..d301f66 100644
->>>> --- a/arch/alpha/include/asm/topology.h
->>>> +++ b/arch/alpha/include/asm/topology.h
->>>> @@ -31,6 +31,9 @@ static const struct cpumask *cpumask_of_node(int node)
->>>>       if (node == -1)
->>>>               return cpu_all_mask;
->>>>
->>>> +     else if (node == &node_to_cpumask_map[node])
->>>> +             return &node_to_cpumask_map[node];
->>>> +
->>>>       cpumask_clear(&node_to_cpumask_map[node]);
->>>>
->>>>       for_each_online_cpu(cpu) {
->>>>
->>>
->>> Since this patch doesn't even compile, care to tell us how you tested it?
->>>
->>>
->>> Thanks,
->>> Sasha
+>> This design refers to the similar solution for the realtek codec
+>> ALC269 family in the patch_realtek.c.
+>>
+>> Cc: Alex Hung <alex.hung@canonical.com>
+>> Cc: David Henningsson <david.henningsson@canonical.com>
+>> Signed-off-by: Hui Wang <hui.wang@canonical.com>
+>> ---
+>>   sound/pci/hda/patch_conexant.c | 23 +++++++++++++++++++++++
+>>   1 file changed, 23 insertions(+)
+>>
+>> diff --git a/sound/pci/hda/patch_conexant.c b/sound/pci/hda/patch_conexant.c
+>> index c205bb1..1f2717f 100644
+>> --- a/sound/pci/hda/patch_conexant.c
+>> +++ b/sound/pci/hda/patch_conexant.c
+>> @@ -3244,9 +3244,29 @@ enum {
+>>   #if IS_ENABLED(CONFIG_THINKPAD_ACPI)
+>>   
+>>   #include <linux/thinkpad_acpi.h>
+>> +#include <acpi/acpi.h>
+>>   
+>>   static int (*led_set_func)(int, bool);
+>>   
+>> +static acpi_status acpi_check_cb(acpi_handle handle, u32 lvl, void *context,
+>> +				 void **rv)
+>> +{
+>> +	bool *found = context;
+>> +	*found = true;
+>> +	return AE_OK;
+>> +}
+>> +
+>> +static bool is_thinkpad(struct hda_codec *codec)
+>> +{
+>> +	bool found = false;
+>> +	if (codec->subsystem_id >> 16 != 0x17aa)
+>> +		return false;
+>> +	if (ACPI_SUCCESS(acpi_get_devices("LEN0068", acpi_check_cb, &found, NULL)) && found)
+>> +		return true;
+>> +	found = false;
+>> +	return ACPI_SUCCESS(acpi_get_devices("IBM0068", acpi_check_cb, &found, NULL)) && found;
+>> +}
+>> +
+>>   static void update_tpacpi_mute_led(void *private_data, int enabled)
+>>   {
+>>   	struct hda_codec *codec = private_data;
+>> @@ -3279,6 +3299,8 @@ static void cxt_fixup_thinkpad_acpi(struct hda_codec *codec,
+>>   	bool removefunc = false;
+>>   
+>>   	if (action == HDA_FIXUP_ACT_PROBE) {
+>> +		if (!is_thinkpad(codec))
+>> +			return;
+>>   		if (!led_set_func)
+>>   			led_set_func = symbol_request(tpacpi_led_set);
+>>   		if (!led_set_func) {
+>> @@ -3494,6 +3516,7 @@ static const struct snd_pci_quirk cxt5066_fixups[] = {
+>>   	SND_PCI_QUIRK(0x17aa, 0x3975, "Lenovo U300s", CXT_FIXUP_STEREO_DMIC),
+>>   	SND_PCI_QUIRK(0x17aa, 0x3977, "Lenovo IdeaPad U310", CXT_FIXUP_STEREO_DMIC),
+>>   	SND_PCI_QUIRK(0x17aa, 0x397b, "Lenovo S205", CXT_FIXUP_STEREO_DMIC),
+>> +	SND_PCI_QUIRK_VENDOR(0x17aa, "Thinkpad", CXT_FIXUP_THINKPAD_ACPI),
+>>   	SND_PCI_QUIRK(0x1c06, 0x2011, "Lemote A1004", CXT_PINCFG_LEMOTE_A1004),
+>>   	SND_PCI_QUIRK(0x1c06, 0x2012, "Lemote A1205", CXT_PINCFG_LEMOTE_A1205),
+>>   	{}
+>>
+> Starting with this patch, my Lenovo Thinkpad X121e netbook (it's without
+> any mute LEDs, BTW, there is only a power LED) considers the power
+> button as hard reset. I have to exclude my machine from that ACPI fixup
+> (this is on top of current Linus master):
+It seems more like a firmware issue, in the acpi code, the "SSMS" is for 
+mute led, and the "MMTS" is for micmute led, I don't know why your 
+machine can pass "SSMS" or "MMTS" scanning even without mute LEDs.
+
+
+
+> diff --git a/sound/pci/hda/thinkpad_helper.c b/sound/pci/hda/thinkpad_helper.c
+> index 6ba0b55..7e1a179 100644
+> --- a/sound/pci/hda/thinkpad_helper.c
+> +++ b/sound/pci/hda/thinkpad_helper.c
+> @@ -21,7 +21,8 @@ static acpi_status acpi_check_cb(acpi_handle handle, u32 lvl, void *context,
+>   static bool is_thinkpad(struct hda_codec *codec)
+>   {
+>   	bool found = false;
+> -	if (codec->subsystem_id >> 16 != 0x17aa)
+> +	if (codec->subsystem_id >> 16 != 0x17aa ||
+> +	    codec->subsystem_id == 0x17aa21ec)
+>   		return false;
+>   	if (ACPI_SUCCESS(acpi_get_devices("LEN0068", acpi_check_cb, &found, NULL)) && found)
+>   		return true;
 >
-> Please stop top posting.
 >
-> Your explanation is missing the part about actually making sure that your patch
-> works is missing, how did you intend to make sure that your patch doesn't
-> break things?
->
+> Is that the way to address it? Then I can send a proper patch. Any hints
+> regarding the "why" will be incorporated into its description.
 >
 > Thanks,
-> Sasha
+> Jan
+>
+
