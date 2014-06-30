@@ -1,125 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756725AbaF3SkV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 14:40:21 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:42995 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756226AbaF3SkU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 14:40:20 -0400
-Date: Mon, 30 Jun 2014 14:40:17 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Tony Luck <tony.luck@intel.com>
-Cc: <linux-kernel@vger.kernel.org>, <mingo@redhat.com>, <fweisbec@gmail.com>,
-        "<m.chehab@samsung.com> Xie XiuQi" <xiexiuqi@huawei.com>
-Subject: Re: [PATCH] tracing: Fix wraparound problems in "uptime" tracer
-Message-ID: <20140630144017.2abc48ba@gandalf.local.home>
-In-Reply-To: <f2aafdcb7166ea8e825d43d5eb835ccfea7db1b0.1404149831.git.tony.luck@intel.com>
-References: <20140630111040.58fe70de@gandalf.local.home>
-	<f2aafdcb7166ea8e825d43d5eb835ccfea7db1b0.1404149831.git.tony.luck@intel.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1756792AbaF3Skq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 14:40:46 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:43836 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754603AbaF3Sko (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 14:40:44 -0400
+From: Felipe Balbi <balbi@ti.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [GIT PULL] USB fixes for v3.16-rc4
+Date: Mon, 30 Jun 2014 13:40:35 -0500
+Message-ID: <1404153635-10868-1-git-send-email-balbi@ti.com>
+X-Mailer: git-send-email 2.0.0.390.gcb682f8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Jun 2014 11:17:18 -0700
-Tony Luck <tony.luck@intel.com> wrote:
+Hi Greg,
 
-> There seem to be no non-racy solutions ... I've been wondering
-> about giving up on a generic jiffies_to_nsec() function because
-> people might use it in cases where the races might be likley to
-> bite them.  For my need, I think that "perfect is the enemy of good":
-> 
-> 1) The race window is only a few microseconds wide
-> 2) It only exists on 32-bit kernels - which are dying out on server
->    systems because they can't handle the amounts of memory on modern
->    machines.
-> 3) It opens every 49 days (on a HZ=1000 system)
-> 4) I'm logging error events that happen at a "per-month" frequency (or lower)
-> 5) If the race does happen - the visible result is that we have a
->    bad time logged against an error event.
-> 
-> so what about this: ...
-> 
-> From: Tony Luck <tony.luck@intel.com>
-> 
-> The "uptime" tracer added in:
->     commit 8aacf017b065a805d27467843490c976835eb4a5
->     tracing: Add "uptime" trace clock that uses jiffies
-> has wraparound problems when the system has been up more
-> than 1 hour 11 minutes and 34 seconds. It converts jiffies
-> to nanoseconds using:
-> 	(u64)jiffies_to_usecs(jiffy) * 1000ULL
-> but since jiffies_to_usecs() only returns a 32-bit value, it
-> truncates at 2^32 microseconds.  An additional problem on 32-bit
-> systems is that the argument is "unsigned long", so fixing the
-> return value only helps until 2^32 jiffies (49.7 days on a HZ=1000
-> system).
-> 
-> We can't provide a full features jiffies_to_nsec() function in
-> any safe way (32-bit systems need locking to read the full 64-bit
-> jiffies value).  Just do the best we can here and recognise that
-> 32-bit systems may seem some timestamp anomolies if jiffies64
-> was in the middle of rolling over a 2^32 boundary.
-> 
-> Signed-off-by: Tony Luck <tony.luck@intel.com>
-> ---
->  kernel/timeconst.bc        |  6 ++++++
->  kernel/trace/trace_clock.c | 10 ++++++++--
->  2 files changed, 14 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/timeconst.bc b/kernel/timeconst.bc
-> index 511bdf2cafda..a5fef7a7fb27 100644
-> --- a/kernel/timeconst.bc
-> +++ b/kernel/timeconst.bc
-> @@ -100,6 +100,12 @@ define timeconst(hz) {
->  		print "#define USEC_TO_HZ_DEN\t\t", 1000000/cd, "\n"
->  		print "\n"
->  
-> +		obase=10
-> +		cd=gcd(hz,1000000000)
-> +		print "#define HZ_TO_NSEC_NUM\t\t", 1000000000/cd, "\n"
-> +		print "#define HZ_TO_NSEC_DEN\t\t", hz/cd, "\n"
-> +		print "\n"
-> +
->  		print "#endif /* KERNEL_TIMECONST_H */\n"
->  	}
->  	halt
-> diff --git a/kernel/trace/trace_clock.c b/kernel/trace/trace_clock.c
-> index 26dc348332b7..dc5b11b9f8a4 100644
-> --- a/kernel/trace/trace_clock.c
-> +++ b/kernel/trace/trace_clock.c
-> @@ -59,13 +59,19 @@ u64 notrace trace_clock(void)
->  
->  /*
->   * trace_jiffy_clock(): Simply use jiffies as a clock counter.
-> + * This usage of jiffies_64 isn't safe on 32-bit, but we may be
-> + * called from NMI context, and we have no safe way to get a timestamp.
->   */
->  u64 notrace trace_clock_jiffies(void)
->  {
-> -	u64 jiffy = jiffies - INITIAL_JIFFIES;
-> +	u64 jiffy = jiffies_64 - INITIAL_JIFFIES;
->  
->  	/* Return nsecs */
-> -	return (u64)jiffies_to_usecs(jiffy) * 1000ULL;
-> +#if !(NSEC_PER_SEC % HZ)
-> +	return (NSEC_PER_SEC / HZ) * jiffy;
-> +#else
-> +	return (jiffy * HZ_TO_NSEC_NUM) / HZ_TO_NSEC_DEN;
+Here's my second set of fixes. Note the revert of the patch Michal
+asked to revert.
 
-Wont this break on 32 bit systems. That is, you can't divide 64bit
-integers without using do_div().
+Please consider merging to your usb-linus branch. Let me know if you
+want any changes to this pull request.
 
--- Steve
+cheers
 
-> +#endif
->  }
->  
->  /*
 
+The following changes since commit 5d881802c407d83c169c875dad88fe2bba066c33:
+
+  usb: musb: core: Handle Babble condition only in HOST mode (2014-06-19 15:43:07 -0500)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git tags/fixes-for-v3.16-rc4
+
+for you to fetch changes up to 8035691365b80428c58908215d4408559afe7cb3:
+
+  usb: musb: dsps: fix the base address for accessing the mode register (2014-06-30 13:31:48 -0500)
+
+----------------------------------------------------------------
+usb: fixes for v3.16-rc4
+
+A few more fixes for this RC cycle. There's a revert of a previous patch
+which ended up being the wrong version, so we reverted that commit and
+applied a better fix.
+
+CPPI41 got a race condition fix which was found by Thomas Gleixner.
+
+The MSM PHY driver got a runtime pm usage fix so that it wouldn't
+kill the PHY while it was still being used.
+
+We also have a fix for a panic caused when removing musb_am335x driver.
+
+Other than that, a few other minor fixes.
+
+Signed-of-by: Felipe Balbi <balbi@ti.com>
+
+----------------------------------------------------------------
+Andreas Larsson (1):
+      usb: gadget: gr_udc: Fix check for invalid number of microframes
+
+Ezequiel Garcia (1):
+      usb: musb: Fix panic upon musb_am335x module removal
+
+Felipe Balbi (1):
+      Revert "tools: ffs-test: convert to new descriptor format fixing compilation error"
+
+Lothar Waßmann (1):
+      usb: musb: dsps: fix the base address for accessing the mode register
+
+Michal Nazarewicz (2):
+      usb: gadget: f_fs: resurect usb_functionfs_descs_head structure
+      tools: ffs-test: fix header values endianess
+
+Srinivas Kandagatla (1):
+      usb: phy: msm: Do not do runtime pm if the phy is not idle
+
+Thomas Gleixner (1):
+      usb: musb: Ensure that cppi41 timer gets armed on premature DMA TX irq
+
+ drivers/usb/gadget/gr_udc.c         |  5 +++--
+ drivers/usb/musb/musb_am335x.c      | 23 ++++++-----------------
+ drivers/usb/musb/musb_cppi41.c      |  2 +-
+ drivers/usb/musb/musb_dsps.c        |  9 ++++-----
+ drivers/usb/phy/phy-msm-usb.c       |  4 +++-
+ include/uapi/linux/usb/functionfs.h |  9 ++++++++-
+ tools/usb/Makefile                  |  6 +-----
+ tools/usb/ffs-test.c                | 24 ++++--------------------
+ 8 files changed, 30 insertions(+), 52 deletions(-)
