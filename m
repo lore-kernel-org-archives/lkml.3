@@ -1,48 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754816AbaF3WWp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 18:22:45 -0400
-Received: from mga03.intel.com ([143.182.124.21]:3186 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751671AbaF3WWn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 18:22:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,577,1400050800"; 
-   d="scan'208";a="451797094"
-Date: Mon, 30 Jun 2014 15:22:24 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: "HATAYAMA, Daisuke" <d.hatayama@jp.fujitsu.com>
-Cc: hpa@zytor.com, Don Zickus <dzickus@redhat.com>, matt@console-pimps.org,
-        peterz@infradead.org, acme@kernel.org, mingo@redhat.com,
-        paulus@samba.org, tglx@linutronix.de, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] perf/x86/intel: ignore CondChgd bit to avoid false
- NMI handling
-Message-ID: <20140630222224.GH19781@tassilo.jf.intel.com>
-References: <20140613084437.12424.62294.stgit@localhost6.localdomain6>
- <20140616153047.GJ177152@redhat.com>
- <53B12CB3.5050508@jp.fujitsu.com>
+	id S1755722AbaF3WXM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 18:23:12 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:57842 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754715AbaF3WXK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 18:23:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53B12CB3.5050508@jp.fujitsu.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1404124096-21445-13-git-send-email-drysdale@google.com>
+References: <1404124096-21445-1-git-send-email-drysdale@google.com> <1404124096-21445-13-git-send-email-drysdale@google.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 30 Jun 2014 15:22:48 -0700
+Message-ID: <CALCETrWDobS1q68fPN_bagvRyBq=jykrrMNYB2H=uSF5uZTmhw@mail.gmail.com>
+Subject: Re: [PATCH 1/5] man-pages: open.2: describe O_BENEATH_ONLY flag
+To: David Drysdale <drysdale@google.com>
+Cc: LSM List <linux-security-module@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        Kees Cook <keescook@chromium.org>,
+        James Morris <james.l.morris@oracle.com>,
+        Linux API <linux-api@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> I'm also interested in the behaviour of CondChgd bit on Ivy Bridge processors.
+On Mon, Jun 30, 2014 at 3:28 AM, David Drysdale <drysdale@google.com> wrote:
+> Signed-off-by: David Drysdale <drysdale@google.com>
+> ---
+>  man2/open.2 | 33 +++++++++++++++++++++++++++++++--
+>  1 file changed, 31 insertions(+), 2 deletions(-)
+>
+> diff --git a/man2/open.2 b/man2/open.2
+> index 3824ab5be1f0..ba0da01c1a4f 100644
+> --- a/man2/open.2
+> +++ b/man2/open.2
+> @@ -713,7 +713,7 @@ in a fully formed state (using
+>  as described above).
+>  .RE
+>  .IP
+> -.B O_TMPFILE
+> +.B O_TMPFILE " (since Linux 3.??)"
+>  requires support by the underlying filesystem;
+>  only a subset of Linux filesystems provide that support.
+>  In the initial implementation, support was provided in
+> @@ -723,6 +723,31 @@ XFS support was added
+>  .\" commit ab29743117f9f4c22ac44c13c1647fb24fb2bafe
+>  in Linux 3.15.
+>  .TP
+> +.B O_BENEATH_ONLY
+> +Ensure that the
+> +.I pathname
+> +is beneath the current working directory (for
+> +.BR open (2))
+> +or the
+> +.I dirfd
+> +(for
+> +.BR openat (2)).
+> +If the
+> +.I pathname
+> +is absolute or contains a path component of "..", the
+> +.BR open ()
+> +fails with the error
+> +.BR EACCES.
+> +This occurs even if ".." path component would not actually
+> +escape the original directory; for example, a
+> +.I pathname
+> +of "subdir/../filename" would be rejected.
+> +Path components that are symbolic links to absolute paths, or that are
+> +relative paths containing a ".." component, are cause the
 
-The intended meaning of CondChgd is that a hardware debugger has taken over the
-PMU. It shouldn't really be set in other circumstances.
+"are cause" is a typo.  Do you mean "will also cause"?
 
-I think right now for perf it would be best to just ignore it.
-
-In theory could stop using the PMU, but if some BIOS set it it would
-completely disable perf there. So better to just ignore it.
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only
+--Andy
