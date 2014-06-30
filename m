@@ -1,45 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752193AbaF3PZb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 11:25:31 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:37623 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750771AbaF3PZ3 (ORCPT
+	id S1753538AbaF3PZg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 11:25:36 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:63375 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752312AbaF3PZc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 11:25:29 -0400
-Date: Mon, 30 Jun 2014 08:25:24 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Bart Van Assche <bvanassche@fusionio.com>,
-        Robert Elliott <Elliott@hp.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Chris Mason <clm@fb.com>
-Subject: Re: scsi-mq V2
-Message-ID: <20140630152524.GA3709@infradead.org>
-References: <1403715121-1201-1-git-send-email-hch@lst.de>
- <53ABA6A4.8090400@kernel.dk>
- <53B18053.2030805@kernel.dk>
+	Mon, 30 Jun 2014 11:25:32 -0400
+Date: Mon, 30 Jun 2014 18:25:26 +0300
+From: Gleb Natapov <gleb@kernel.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Jan Kiszka <jan.kiszka@web.de>, Paolo Bonzini <pbonzini@redhat.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, x86-ml <x86@kernel.org>,
+        kvm@vger.kernel.org, =?utf-8?B?SsO2cmcgUsO2ZGVs?= <joro@8bytes.org>
+Subject: Re: [PATCH] KVM: SVM: Fix CPL export via SS.DPL
+Message-ID: <20140630152526.GA4399@minantech.com>
+References: <20140629131443.GA5199@pd.tnic>
+ <20140629134247.GG18167@minantech.com>
+ <20140629140104.GB12528@pd.tnic>
+ <20140629142722.GH18167@minantech.com>
+ <53B02395.8030505@web.de>
+ <53B027E0.7040003@web.de>
+ <53B02CEB.7010607@web.de>
+ <53B17BDD.5030301@redhat.com>
+ <53B17C5D.5050407@web.de>
+ <20140630151544.GF4766@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=cp1255
 Content-Disposition: inline
-In-Reply-To: <53B18053.2030805@kernel.dk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20140630151544.GF4766@pd.tnic>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 30, 2014 at 09:20:51AM -0600, Jens Axboe wrote:
-> Ran stress testing from Friday to now, 65h of beating up on it and no
-> problems observed. 47TB read and 20TB written for a total of 17.7
-> billion of IOs issued and completed. Latencies look good. I officially
-> declare this code for bug free.
+On Mon, Jun 30, 2014 at 05:15:44PM +0200, Borislav Petkov wrote:
+> On Mon, Jun 30, 2014 at 05:03:57PM +0200, Jan Kiszka wrote:
+> > 15.5.1:
+> > 
+> > "When examining segment attributes after a #VMEXIT:
+> > [...]
+> > • Retrieve the CPL from the CPL field in the VMCB, not from any segment
+> > DPL."
 > 
-> Bug-free-by: Jens Axboe <axboe@fb.com>
+> Heey, it is even documented! :-P
 > 
-> Now lets get this queued up for inclusion, pretty please.
+Yes, on SVM we should always respect this field. Unfortunately there
+is no such field in VMX, so we have to do DPL gymnastics there.
 
-I'm still looking for one (or better two) persons familar with the
-SCSI and/or block code to go over it and do a real detailed review.
-
+--
+			Gleb.
