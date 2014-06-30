@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755642AbaF3MFq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:05:46 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:52040 "EHLO
+	id S1755803AbaF3MFs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:05:48 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:52026 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753791AbaF3LxZ (ORCPT
+	by vger.kernel.org with ESMTP id S1753700AbaF3LxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Jun 2014 07:53:25 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Li Zhong <zhong@linux.vnet.ibm.com>,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 004/181] powerpc: Fix Oops in rtas_stop_self()
-Date: Mon, 30 Jun 2014 13:50:25 +0200
-Message-Id: <f116dbc9d877c8436f17fd3226c6d4695bbbb928.1404128997.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, "Geyslan G. Bem" <geyslan@gmail.com>,
+        Ben Myers <bpm@sgi.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 041/181] xfs: fix possible NULL dereference in xlog_verify_iclog
+Date: Mon, 30 Jun 2014 13:51:02 +0200
+Message-Id: <8ceeb85cd8b2aa2141c21dcc2b830cac14b8cfbe.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -25,53 +23,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Li Zhong <zhong@linux.vnet.ibm.com>
+From: "Geyslan G. Bem" <geyslan@gmail.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 4fb8d027dca0236c811272d342cf185569d91311 upstream.
+commit 643f7c4e5656bd18c769211f933190f7bb738245 upstream.
 
-commit 41dd03a9 may cause Oops in rtas_stop_self().
+In xlog_verify_iclog a debug check of the incore log buffers prints an
+error if icptr is null and then goes on to dereference the pointer
+regardless.  Convert this to an assert so that the intention is clear.
+This was reported by Coverty.
 
-The reason is that the rtas_args was moved into stack space. For a box
-with more that 4GB RAM, the stack could easily be outside 32bit range,
-but RTAS is 32bit.
+Signed-off-by: Ben Myers <bpm@sgi.com>
+Reviewed-by: Eric Sandeen <sandeen@redhat.com>
 
-So the patch moves rtas_args away from stack by adding static before
-it.
-
-Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Cc: stable@vger.kernel.org # 3.14+
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/powerpc/platforms/pseries/hotplug-cpu.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ fs/xfs/xfs_log.c | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
-diff --git a/arch/powerpc/platforms/pseries/hotplug-cpu.c b/arch/powerpc/platforms/pseries/hotplug-cpu.c
-index 0ea99e3d4815..2d6fe89ff89d 100644
---- a/arch/powerpc/platforms/pseries/hotplug-cpu.c
-+++ b/arch/powerpc/platforms/pseries/hotplug-cpu.c
-@@ -88,13 +88,14 @@ void set_default_offline_state(int cpu)
- 
- static void rtas_stop_self(void)
- {
--	struct rtas_args args = {
--		.token = cpu_to_be32(rtas_stop_self_token),
-+	static struct rtas_args args = {
- 		.nargs = 0,
- 		.nret = 1,
- 		.rets = &args.args[0],
- 	};
- 
-+	args.token = cpu_to_be32(rtas_stop_self_token);
+diff --git a/fs/xfs/xfs_log.c b/fs/xfs/xfs_log.c
+index 613ed9414e70..3c4ddc1c79a4 100644
+--- a/fs/xfs/xfs_log.c
++++ b/fs/xfs/xfs_log.c
+@@ -3712,11 +3712,9 @@ xlog_verify_iclog(
+ 	/* check validity of iclog pointers */
+ 	spin_lock(&log->l_icloglock);
+ 	icptr = log->l_iclog;
+-	for (i=0; i < log->l_iclog_bufs; i++) {
+-		if (icptr == NULL)
+-			xfs_emerg(log->l_mp, "%s: invalid ptr", __func__);
+-		icptr = icptr->ic_next;
+-	}
++	for (i = 0; i < log->l_iclog_bufs; i++, icptr = icptr->ic_next)
++		ASSERT(icptr);
 +
- 	local_irq_disable();
- 
- 	BUG_ON(rtas_stop_self_token == RTAS_UNKNOWN_SERVICE);
+ 	if (icptr != log->l_iclog)
+ 		xfs_emerg(log->l_mp, "%s: corrupt iclog ring", __func__);
+ 	spin_unlock(&log->l_icloglock);
 -- 
 2.0.0
 
