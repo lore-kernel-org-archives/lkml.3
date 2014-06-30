@@ -1,228 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753758AbaF3OlZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 10:41:25 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:43337 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753223AbaF3OlU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 10:41:20 -0400
-Date: Mon, 30 Jun 2014 15:41:14 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kishon@ti.com
-Cc: kernel@stlinux.com
-Subject: [PATCH v2 4/5] phy: miphy365x: Represent each PHY channel as a
- subnode
-Message-ID: <20140630144114.GB25926@lee--X1>
-References: <1404133317-25953-1-git-send-email-lee.jones@linaro.org>
- <1404133317-25953-5-git-send-email-lee.jones@linaro.org>
+	id S1753894AbaF3Olu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 10:41:50 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:40924 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752143AbaF3Ols (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 10:41:48 -0400
+Date: Mon, 30 Jun 2014 10:41:42 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 4/5] mm: page_alloc: Reduce cost of the fair zone
+ allocation policy
+Message-ID: <20140630144142.GA1369@cmpxchg.org>
+References: <1403856880-12597-1-git-send-email-mgorman@suse.de>
+ <1403856880-12597-5-git-send-email-mgorman@suse.de>
+ <20140627185700.GV7331@cmpxchg.org>
+ <20140627192537.GM10819@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1404133317-25953-5-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140627192537.GM10819@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-phy: miphy365x: Represent each PHY channel as a DT subnode
+On Fri, Jun 27, 2014 at 08:25:37PM +0100, Mel Gorman wrote:
+> On Fri, Jun 27, 2014 at 02:57:00PM -0400, Johannes Weiner wrote:
+> > On Fri, Jun 27, 2014 at 09:14:39AM +0100, Mel Gorman wrote:
+> > > And the number of pages allocated from each zone is comparable
+> > > 
+> > >                             3.16.0-rc2  3.16.0-rc2
+> > >                               checklow    fairzone
+> > > DMA allocs                           0           0
+> > > DMA32 allocs                   7374217     7920241
+> > > Normal allocs                999277551   996568115
+> > 
+> > Wow, the DMA32 zone gets less than 1% of the allocations.  What are
+> > the zone sizes in this machine?
+> > 
+> 
+>         managed  3976
+>         managed  755409
+>         managed  1281601
 
-This has the added advantages of being able to enable/disable each
-of the channels as simply as enabling/disabling the DT node.
+Something seems way off with this.  On my system here, the DMA32 zone
+makes up for 20% of managed pages and it gets roughly 20% of the page
+allocations, as I would expect.
 
-Suggested-by: Kishon Vijay Abraham I <kishon@ti.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Your DMA32 zone makes up for 37% of the managed pages and receives
+merely 0.7% of the page allocations.  Unless a large portion of that
+zone is somehow unreclaimable, fairness seems completely obliberated
+in both kernels.
 
-diff --git a/drivers/phy/phy-miphy365x.c b/drivers/phy/phy-miphy365x.c
-index 1109f42..2c4ea6e 100644
---- a/drivers/phy/phy-miphy365x.c
-+++ b/drivers/phy/phy-miphy365x.c
-@@ -17,6 +17,7 @@
- #include <linux/module.h>
- #include <linux/of.h>
- #include <linux/of_platform.h>
-+#include <linux/of_address.h>
- #include <linux/clk.h>
- #include <linux/phy/phy.h>
- #include <linux/delay.h>
-@@ -144,6 +145,7 @@ struct miphy365x {
- 	void __iomem *pcie;
- 	u8 type;
- 	u8 port;
-+	bool enabled;
- };
- 
- struct miphy365x_dev {
-@@ -468,7 +470,7 @@ static struct phy *miphy365x_xlate(struct device *dev,
- 	struct miphy365x_dev *state = dev_get_drvdata(dev);
- 	u8 port, type;
- 
--	if (args->count != 2) {
-+	if (args->args_count != 2) {
- 		dev_err(dev, "Invalid number of cells in 'phy' property\n");
- 		return ERR_PTR(-EINVAL);
- 	}
-@@ -484,6 +486,11 @@ static struct phy *miphy365x_xlate(struct device *dev,
- 	if (WARN_ON(port >= ARRAY_SIZE(ports)))
- 		return ERR_PTR(-EINVAL);
- 
-+	if (!state->phys[port].enabled) {
-+		dev_warn(dev, "PHY port %d is disabled\n", port);
-+		return ERR_PTR(-EINVAL);
-+	}
-+
- 	if (type == MIPHY_TYPE_SATA)
- 		state->phys[port].base = state->phys[port].sata;
- 	else if (type == MIPHY_TYPE_PCIE)
-@@ -503,38 +510,75 @@ static struct phy_ops miphy365x_ops = {
- 	.owner		= THIS_MODULE,
- };
- 
--static int miphy365x_get_base_addr(struct platform_device *pdev,
--				    struct miphy365x_phy *phy, u8 port)
-+static int miphy365x_get_base_addr_one(struct platform_device *pdev,
-+				       struct miphy365x *phy,
-+				       struct device_node *child,
-+				       int index)
- {
--	struct resource *res;
--	char type[6];
-+	void __iomem *base;
-+	const char *name;
-+	int ret;
- 
--	sprintf(type, "sata%d", port);
-+	base = of_iomap(child, index);
-+	if (!base) {
-+		dev_err(&pdev->dev, "Failed to map %s\n", child->full_name);
-+		return -EINVAL;
-+	}
- 
--	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, type);
--	if (!res)
--		return -ENODEV;
-+	ret = of_property_read_string_index(child, "reg-names", index, &name);
-+	if (ret) {
-+		dev_err(&pdev->dev,
-+			"%s: no reg-names property not found\n", child->name);
-+		return ret;
-+	}
- 
--	phy->sata = devm_ioremap(&pdev->dev, res->start, resource_size(res));
--	if (!phy->sata)
--		return -ENOMEM;
-+	if (!strncmp(name, "sata", 4))
-+		phy->sata = base;
-+	else if (!strncmp(name, "pcie", 4))
-+		phy->pcie = base;
-+	else {
-+		dev_err(&pdev->dev, "reg-names in %s not sata or pcie: %s",
-+			child->name, name);
-+		return -EINVAL;
-+	}
- 
--	sprintf(type, "pcie%d", port);
-+	return 0;
-+}
- 
--	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, type);
--	if (!res)
--		return -ENODEV;
-+static int miphy365x_get_base_addr(struct platform_device *pdev,
-+				   struct miphy365x *phy,
-+				   struct device_node *child)
-+{
-+	int index;
-+	int ret;
- 
--	phy->pcie = devm_ioremap(&pdev->dev, res->start, resource_size(res));
--	if (!phy->pcie)
--		return -ENOMEM;
-+	/* Each port handles SATA or PCIE. */
-+	for (index = 0; index < 2; index++) {
-+		ret = miphy365x_get_base_addr_one(pdev, phy,
-+						  child, index);
-+		if (ret)
-+			return ret;
-+	}
- 
- 	return 0;
- }
- 
--static int miphy365x_of_probe(struct device_node *np,
-+static int miphy365x_of_probe(struct platform_device *pdev,
- 			      struct miphy365x_dev *phy_dev)
- {
-+	struct device_node *np = pdev->dev.of_node;
-+	struct device_node *child;
-+	int child_count = 0;
-+
-+	for_each_child_of_node(np, child)
-+		child_count++;
-+
-+	if (child_count != ARRAY_SIZE(ports)) {
-+		dev_err(&pdev->dev, "%d ports supported, %d supplied\n",
-+			ARRAY_SIZE(ports), child_count);
-+		return -EINVAL;
-+	}
-+
- 	phy_dev->regmap = syscon_regmap_lookup_by_phandle(np, "st,syscfg");
- 	if (IS_ERR(phy_dev->regmap)) {
- 		dev_err(phy_dev->dev, "No syscfg phandle specified\n");
-@@ -556,11 +600,10 @@ static int miphy365x_of_probe(struct device_node *np,
- 
- static int miphy365x_probe(struct platform_device *pdev)
- {
--	struct device_node *np = pdev->dev.of_node;
-+	struct device_node *child, *np = pdev->dev.of_node;
- 	struct miphy365x_dev *phy_dev;
- 	struct device *dev = &pdev->dev;
- 	struct phy_provider *provider;
--	u8 port;
- 	int ret;
- 
- 	if (!np) {
-@@ -572,7 +615,7 @@ static int miphy365x_probe(struct platform_device *pdev)
- 	if (!phy_dev)
- 		return -ENOMEM;
- 
--	ret = miphy365x_of_probe(np, phy_dev);
-+	ret = miphy365x_of_probe(pdev, phy_dev);
- 	if (ret)
- 		return ret;
- 
-@@ -582,8 +625,9 @@ static int miphy365x_probe(struct platform_device *pdev)
- 
- 	mutex_init(&phy_dev->miphy_mutex);
- 
--	for (port = 0; port < ARRAY_SIZE(ports); port++) {
-+	for_each_child_of_node(np, child) {
- 		struct phy *phy;
-+		static int port = 0;
- 
- 		phy = devm_phy_create(dev, &miphy365x_ops, NULL);
- 		if (IS_ERR(phy)) {
-@@ -591,15 +635,17 @@ static int miphy365x_probe(struct platform_device *pdev)
- 			return PTR_ERR(phy);
- 		}
- 
--		phy_dev->phys[port].phy  = phy;
--		phy_dev->phys[port].port = port;
--
--		ret = miphy365x_get_base_addr(pdev,
--					&phy_dev->phys[port], port);
-+		ret = miphy365x_get_base_addr(pdev, &phy_dev->phys[port],
-+					      child);
- 		if (ret)
- 			return ret;
- 
-+		phy_dev->phys[port].phy  = phy;
-+		phy_dev->phys[port].port = port;
-+		phy_dev->phys[port].enabled = !!of_device_is_available(child);
-+
- 		phy_set_drvdata(phy, &phy_dev->phys[port]);
-+		port++;
- 	}
- 
- 	provider = devm_of_phy_provider_register(dev, miphy365x_xlate);
+Is that checklow's doing?
+
+> > > @@ -3287,10 +3287,18 @@ void show_free_areas(unsigned int filter)
+> > >  	show_swap_cache_info();
+> > >  }
+> > >  
+> > > -static void zoneref_set_zone(struct zone *zone, struct zoneref *zoneref)
+> > > +static int zoneref_set_zone(pg_data_t *pgdat, struct zone *zone,
+> > > +			struct zoneref *zoneref, struct zone *preferred_zone)
+> > >  {
+> > > +	int zone_type = zone_idx(zone);
+> > > +	bool fair_enabled = zone_local(zone, preferred_zone);
+> > > +	if (zone_type == 0 &&
+> > > +			zone->managed_pages < (pgdat->node_present_pages >> 4))
+> > > +		fair_enabled = false;
+> > 
+> > This needs a comment.
+> > 
+> 
+>         /*
+>          * Do not count the lowest zone as of relevance to the fair zone
+>          * allocation policy if it's a small percentage of the node
+>          */
+> 
+> However, as I write this I'll look at getting rid of this entirely. It
+> made some sense when fair_eligible was tracked on a per-zone basis but
+> it's more complex than necessary.
+>
+> > >  	zoneref->zone = zone;
+> > > -	zoneref->zone_idx = zone_idx(zone);
+> > > +	zoneref->zone_idx = zone_type;
+> > > +	return fair_enabled;
+> > >  }
+> > >  
+> > >  /*
+> > > @@ -3303,17 +3311,26 @@ static int build_zonelists_node(pg_data_t *pgdat, struct zonelist *zonelist,
+> > >  {
+> > >  	struct zone *zone;
+> > >  	enum zone_type zone_type = MAX_NR_ZONES;
+> > > +	struct zone *preferred_zone = NULL;
+> > > +	int nr_fair = 0;
+> > >  
+> > >  	do {
+> > >  		zone_type--;
+> > >  		zone = pgdat->node_zones + zone_type;
+> > >  		if (populated_zone(zone)) {
+> > > -			zoneref_set_zone(zone,
+> > > -				&zonelist->_zonerefs[nr_zones++]);
+> > > +			if (!preferred_zone)
+> > > +				preferred_zone = zone;
+> > > +
+> > > +			nr_fair += zoneref_set_zone(pgdat, zone,
+> > > +				&zonelist->_zonerefs[nr_zones++],
+> > > +				preferred_zone);
+> > 
+> > Passing preferred_zone to determine locality seems pointless when you
+> > walk the zones of a single node.
+> > 
+> 
+> True.
+> 
+> > And the return value of zoneref_set_zone() is fairly unexpected.
+> > 
+> 
+> How so?
+
+Given the name zoneref_set_zone(), I wouldn't expect any return value,
+or a success/failure type return value at best - certainly not whether
+the passed zone is eligible for the fairness policy.
+
+> > It's probably better to determine fair_enabled in the callsite, that
+> > would fix both problems, and write a separate helper that tests if a
+> > zone is eligible for fair treatment (type && managed_pages test).
+> > 
+> 
+> Are you thinking of putting that into the page allocator fast path? I'm
+> trying to take stuff out of there :/.
+
+Not at all, I was just suggesting to restructure the code for building
+the zonelists, and move the fairness stuff out of zoneref_set_zone().
+
+If you remove the small-zone exclusion as per above, this only leaves
+the locality check when building the zonelist in zone order and that
+can easily be checked inline in build_zonelists_in_zone_order().
+
+build_zonelists_node() can just count every populated zone in nr_fair.
