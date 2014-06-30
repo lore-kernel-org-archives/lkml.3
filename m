@@ -1,114 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753062AbaF3Ped (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 11:34:33 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:35568 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751015AbaF3Pec (ORCPT
+	id S1754255AbaF3PfK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 11:35:10 -0400
+Received: from mail-wi0-f202.google.com ([209.85.212.202]:33445 "EHLO
+	mail-wi0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752344AbaF3PfG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 11:34:32 -0400
-Date: Mon, 30 Jun 2014 16:33:05 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Dan Williams <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>,
-        "andriy.shevchenko@intel.com" <andriy.shevchenko@intel.com>,
-        Arnd Bergmann <arnd@arndb.de>,
+	Mon, 30 Jun 2014 11:35:06 -0400
+Date: Mon, 30 Jun 2014 16:35:03 +0100
+From: David Drysdale <drysdale@google.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: LSM List <linux-security-module@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "zhuzhenhua@allwinnertech.com" <zhuzhenhua@allwinnertech.com>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
-        "linux-sunxi@googlegroups.com" <linux-sunxi@googlegroups.com>,
-        "kevin.z.m.zh@gmail.com" <kevin.z.m.zh@gmail.com>,
-        "sunny@allwinnertech.com" <sunny@allwinnertech.com>,
-        "shuge@allwinnertech.com" <shuge@allwinnertech.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v10 2/2] dmaengine: sun6i: Add driver for the Allwinner
- A31 DMA controller
-Message-ID: <20140630153305.GA28740@leverpostej>
-References: <1404134454-25513-1-git-send-email-maxime.ripard@free-electrons.com>
- <1404134454-25513-3-git-send-email-maxime.ripard@free-electrons.com>
- <20140630142054.GA8756@leverpostej>
- <20140630151906.GG28647@lukather>
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        Kees Cook <keescook@chromium.org>,
+        James Morris <james.l.morris@oracle.com>,
+        Linux API <linux-api@vger.kernel.org>
+Subject: Re: [PATCH 4/5] man-pages: cap_rights_limit.2: limit FD rights for
+ Capsicum
+Message-ID: <20140630153503.GA10375@google.com>
+References: <1404124096-21445-1-git-send-email-drysdale@google.com>
+ <1404124096-21445-16-git-send-email-drysdale@google.com>
+ <CALCETrUi71FgVABRF4C+n_STc02j=GxRwBqDaoC+NLeAP9Ui3w@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140630151906.GG28647@lukather>
+In-Reply-To: <CALCETrUi71FgVABRF4C+n_STc02j=GxRwBqDaoC+NLeAP9Ui3w@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 30, 2014 at 04:19:06PM +0100, Maxime Ripard wrote:
-> On Mon, Jun 30, 2014 at 03:20:54PM +0100, Mark Rutland wrote:
-> > Hi Maxime,
-> > 
-> > On Mon, Jun 30, 2014 at 02:20:54PM +0100, Maxime Ripard wrote:
-> > > The Allwinner A31 has a 16 channels DMA controller that it shares with the
-> > > newer A23. Although sharing some similarities with the DMA controller of the
-> > > older Allwinner SoCs, it's significantly different, I don't expect it to be
-> > > possible to share the driver for these two.
-> > >
-> > > The A31 Controller is able to memory-to-memory or memory-to-device transfers on
-> > > the 16 channels in parallel.
-> > >
-> > > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> > > Acked-by: Arnd Bergmann <arnd@arndb.de>
-> > > ---
-> > >  drivers/dma/Kconfig     |    8 +
-> > >  drivers/dma/Makefile    |    1 +
-> > >  drivers/dma/sun6i-dma.c | 1058 +++++++++++++++++++++++++++++++++++++++++++++++
-> > >  3 files changed, 1067 insertions(+)
-> > >  create mode 100644 drivers/dma/sun6i-dma.c
-> > 
-> > [...]
-> > 
-> > > +       sdc->clk = devm_clk_get(&pdev->dev, NULL);
-> > > +       if (IS_ERR(sdc->clk)) {
-> > > +               dev_err(&pdev->dev, "No clock specified\n");
-> > > +               return PTR_ERR(sdc->clk);
-> > > +       }
-> > > +
-> > > +       mux = clk_get(NULL, "ahb1_mux");
-> > > +       if (IS_ERR(mux)) {
-> > > +               dev_err(&pdev->dev, "Couldn't get AHB1 Mux\n");
-> > > +               return PTR_ERR(mux);
-> > > +       }
-> > > +
-> > > +       pll6 = clk_get(NULL, "pll6");
-> > > +       if (IS_ERR(pll6)) {
-> > > +               dev_err(&pdev->dev, "Couldn't get PLL6\n");
-> > > +               clk_put(mux);
-> > > +               return PTR_ERR(pll6);
-> > > +       }
-> > 
-> > I'm slightly confused. The binding listed a single unnamed clock (the
-> > AHB clock). What is going on here?
+On Mon, Jun 30, 2014 at 07:53:57AM -0700, Andy Lutomirski wrote:
+> On Mon, Jun 30, 2014 at 3:28 AM, David Drysdale <drysdale@google.com> wrote:
+> > Signed-off-by: David Drysdale <drysdale@google.com>
+> > ---
+> >  man2/cap_rights_limit.2 | 171 ++++++++++++++++++++++++++++++++++++++++++++++++
+> >  1 file changed, 171 insertions(+)
+> >  create mode 100644 man2/cap_rights_limit.2
+> >
+> > diff --git a/man2/cap_rights_limit.2 b/man2/cap_rights_limit.2
+> > new file mode 100644
+> > index 000000000000..3484ee1076aa
+> > --- /dev/null
+> > +++ b/man2/cap_rights_limit.2
+> > @@ -0,0 +1,171 @@
+> > +.\"
+> > +.\" Copyright (c) 2008-2010 Robert N. M. Watson
+> > +.\" Copyright (c) 2012-2013 The FreeBSD Foundation
+> > +.\" Copyright (c) 2013-2014 Google, Inc.
+> > +.\" All rights reserved.
+> > +.\"
+> > +.\" %%%LICENSE_START(BSD_2_CLAUSE)
+> > +.\" Redistribution and use in source and binary forms, with or without
+> > +.\" modification, are permitted provided that the following conditions
+> > +.\" are met:
+> > +.\" 1. Redistributions of source code must retain the above copyright
+> > +.\"    notice, this list of conditions and the following disclaimer.
+> > +.\" 2. Redistributions in binary form must reproduce the above copyright
+> > +.\"    notice, this list of conditions and the following disclaimer in the
+> > +.\"    documentation and/or other materials provided with the distribution.
+> > +.\"
+> > +.\" THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+> > +.\" ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+> > +.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+> > +.\" ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+> > +.\" FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+> > +.\" DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+> > +.\" OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+> > +.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+> > +.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+> > +.\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+> > +.\" SUCH DAMAGE.
+> > +.\" %%%LICENSE_END
+> > +.\"
+> > +.TH CAP_RIGHTS_LIMIT 2 2014-05-07 "Linux" "Linux Programmer's Manual"
+> > +.SH NAME
+> > +cap_rights_limit \- limit Capsicum capability rights
+> > +.SH SYNOPSIS
+> > +.nf
+> > +.B #include <sys/capsicum.h>
+> > +.sp
+> > +.BI "int cap_rights_limit(int " fd ", const struct cap_rights *" rights ,
+> > +.BI "                     unsigned int " fcntls ,
+> > +.BI "                     int " nioctls ", unsigned int *" ioctls );
 > 
-> The device itself needs only a single clock to work...
+> Am I missing the docs for struct cap_rights somewhere?
+
+There's a little bit of discussion in rights.7 (mail 3/5 of the
+man-pages set), but there isn't a structure description.
+
+I was trying to keep the structure opaque to userspace, which would
+be expected to manipulate the rights with various utility functions
+rather than directly.
+
+But I now realize this leaves a gap -- the description of this syscall
+doesn't include a full description of its ABI.
+
+So I'll add in a description of the structure to this page -- basically:
+
+  struct cap_rights {
+  	__u64	cr_rights[2];
+  };
+
+with a slightly complicated scheme to encode rights into the bitmask
+array.  (The encoding scheme is taken from the FreeBSD implementation,
+which I've tried to stick to unless there's good reason to change.)
+ 
+> > +.SH DESCRIPTION
+> > +When a file descriptor is created by a function such as
+> > +.BR accept (2),
+> > +.BR accept4 (2),
+> > +.BR creat (2),
+> > +.BR epoll_create (2),
+> > +.BR eventfd (2),
+> > +.BR mq_open (2),
+> > +.BR open (2),
+> > +.BR openat (2),
+> > +.BR pdfork (2),
+> > +.BR pipe (2),
+> > +.BR pipe2 (2),
+> > +.BR signalfd (2),
+> > +.BR socket (2),
+> > +.BR socketpair (2)
+> > +or
+> > +.BR timerfd_create (2),
+> > +it implicitly has all Capsicum capability rights.
+> > +Those rights can be reduced (but never expanded) by using the
+> > +.BR cap_rights_limit ()
+> > +system call.
+> > +Once Capsicum capability rights are reduced, operations on the file descriptor
+> > +.I fd
+> > +will be limited to those permitted by the remainder of the arguments.
+> > +.PP
+> > +The
+> > +.I rights
+> > +argument describes the primary rights for the file descriptor, and
+> > +should be prepared using
+> > +.BR cap_rights_init (3)
+> > +family of functions.  The complete list of primary rights can be found in the
+> > +.BR rights (7)
+> > +manual page.
+> > +.PP
+> > +If a file descriptor is granted the
+> > +.B CAP_FCNTL
+> > +primary capability right, the list of allowed
+> > +.BR fcntl (2)
+> > +commands can be selectively reduced (but never expanded) with the
+> > +.I fcntls
+> > +argument.  The following flags may be specified in the
+> > +.I fcntls
+> > +argument:
+> > +.TP
+> > +.B CAP_FCNTL_GETFL
+> > +Permit
+> > +.B F_GETFL
+> > +command.
+> > +.TP
+> > +.B CAP_FCNTL_SETFL
+> > +Permit
+> > +.B F_SETFL
+> > +command.
+> > +.TP
+> > +.B CAP_FCNTL_GETOWN
+> > +Permit
+> > +.B F_GETOWN
+> > +command.
+> > +.TP
+> > +.B CAP_FCNTL_SETOWN
+> > +Permit
+> > +.B F_SETOWN
+> > +command.
+> > +.PP
+> > +A value of
+> > +.B CAP_FCNTL_ALL
+> > +for the
+> > +.I fcntls
+> > +argument leaves the set of allowed
+> > +.BR fcntl (2)
+> > +commands unchanged.
 > 
-> > 
-> > > +       ret = clk_set_parent(mux, pll6);
-> > > +       clk_put(pll6);
-> > > +       clk_put(mux);
-> > > +
-> > > +       if (ret) {
-> > > +               dev_err(&pdev->dev, "Couldn't reparent AHB1 on PLL6\n");
-> > > +               return ret;
-> > > +       }
-> > 
-> > Why do we need to reparent the mux?
+> What about the locking fcntl operations?  (Arguably the old crappy
+> POSIX lock operations should be flat-out disallowed on capability fds,
+> but I see nothing wrong with selectively allowing the new open file
+> description locks.)
 > 
-> ... but will function only if this clock is derived from PLL6.
+> --Andy
 
-Ok, but _why_ is that the case? Could we at least have a comment for
-that?
+The locking operations are policed against a separate CAP_FLOCK right,
+consistently with flock(2).  I'll try to improve the wording -- there
+are actually a few fcntl operations that are covered by different
+rights because they're analogous to other functionality (e.g.
+F_GETPIPE_SZ/F_SETPIPE_SZ needs CAP_GETSOCKOPT/CAP_SETSOCKOPT).
 
-Where does the driver get the named clocks from if they aren't provided
-on the device node? Is there a clock-ranges somewhere?
-
-It feels a little fragile to rely on the organisation of the clock tree
-and the naming thereof. If the IP block is ever reused on an SoC with a
-different clock tree layout then we have to handle things differently.
-
-Cheers,
-Mark.
+ 
