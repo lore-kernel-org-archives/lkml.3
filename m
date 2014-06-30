@@ -1,138 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756701AbaF3V3X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 17:29:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56280 "EHLO mx1.redhat.com"
+	id S1756540AbaF3V3W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 17:29:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38675 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754239AbaF3V0t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754260AbaF3V0t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Jun 2014 17:26:49 -0400
 From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
         Ping Cheng <pinglinux@gmail.com>, Jason Gerecke <killertofu@gmail.com>
 Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         linuxwacom-devel@lists.sourceforge.net
-Subject: [PATCH 06/15] Input - wacom: install LED/OLED sysfs files in the HID device instead of USB
-Date: Mon, 30 Jun 2014 17:26:17 -0400
-Message-Id: <1404163586-29582-7-git-send-email-benjamin.tissoires@redhat.com>
+Subject: [PATCH 07/15] Input - wacom: register the input devices on top of the HID one
+Date: Mon, 30 Jun 2014 17:26:18 -0400
+Message-Id: <1404163586-29582-8-git-send-email-benjamin.tissoires@redhat.com>
 In-Reply-To: <1404163586-29582-1-git-send-email-benjamin.tissoires@redhat.com>
 References: <1404163586-29582-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removes one more dependency over USB, but requires some changes in
-the user space to find the sysfs files correctly.
+Matches the current behavior of the HID subsystem and removes one more
+dependency over USB.
 
-This patch breaks the user space. However, the number of program
-accessing the LEDs is quite limited and we can easily patch them
-to handle the new HID behavior.
+The current user space clients which relies on this to fetch the
+LEDs path need an update. However, we already break them in the
+kernel v3.11 for the Bluetooth Wacom devices. They are going to be fixed
+soon.
 
 Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 ---
- drivers/input/tablet/wacom_sys.c | 22 +++++++++++-----------
- 1 file changed, 11 insertions(+), 11 deletions(-)
+ drivers/input/tablet/wacom.h     |  1 -
+ drivers/input/tablet/wacom_sys.c | 15 ++++++++-------
+ 2 files changed, 8 insertions(+), 8 deletions(-)
 
+diff --git a/drivers/input/tablet/wacom.h b/drivers/input/tablet/wacom.h
+index a931221..a678f82 100644
+--- a/drivers/input/tablet/wacom.h
++++ b/drivers/input/tablet/wacom.h
+@@ -112,7 +112,6 @@ struct wacom {
+ 	struct hid_device *hdev;
+ 	struct mutex lock;
+ 	struct work_struct work;
+-	char phys[32];
+ 	struct wacom_led {
+ 		u8 select[2]; /* status led selector (0..3) */
+ 		u8 llv;       /* status led brightness no button (1..127) */
 diff --git a/drivers/input/tablet/wacom_sys.c b/drivers/input/tablet/wacom_sys.c
-index 3f1cee6..6f4bf6d 100644
+index 6f4bf6d..0d0397d 100644
 --- a/drivers/input/tablet/wacom_sys.c
 +++ b/drivers/input/tablet/wacom_sys.c
-@@ -675,7 +675,7 @@ out:
- static ssize_t wacom_led_select_store(struct device *dev, int set_id,
- 				      const char *buf, size_t count)
+@@ -992,8 +992,7 @@ static void wacom_destroy_battery(struct wacom *wacom)
+ static struct input_dev *wacom_allocate_input(struct wacom *wacom)
  {
--	struct hid_device *hdev = dev_get_drvdata(dev);
-+	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
- 	struct wacom *wacom = hid_get_drvdata(hdev);
- 	unsigned int id;
- 	int err;
-@@ -703,7 +703,7 @@ static ssize_t wacom_led##SET_ID##_select_store(struct device *dev,	\
- static ssize_t wacom_led##SET_ID##_select_show(struct device *dev,	\
- 	struct device_attribute *attr, char *buf)			\
- {									\
--	struct hid_device *hdev = dev_get_drvdata(dev);			\
-+	struct hid_device *hdev = container_of(dev, struct hid_device, dev);\
- 	struct wacom *wacom = hid_get_drvdata(hdev);			\
- 	return snprintf(buf, 2, "%d\n", wacom->led.select[SET_ID]);	\
- }									\
-@@ -738,7 +738,7 @@ static ssize_t wacom_luminance_store(struct wacom *wacom, u8 *dest,
- static ssize_t wacom_##name##_luminance_store(struct device *dev,	\
- 	struct device_attribute *attr, const char *buf, size_t count)	\
- {									\
--	struct hid_device *hdev = dev_get_drvdata(dev);			\
-+	struct hid_device *hdev = container_of(dev, struct hid_device, dev);\
- 	struct wacom *wacom = hid_get_drvdata(hdev);			\
- 									\
- 	return wacom_luminance_store(wacom, &wacom->led.field,		\
-@@ -754,7 +754,7 @@ DEVICE_LUMINANCE_ATTR(buttons, img_lum);
- static ssize_t wacom_button_image_store(struct device *dev, int button_id,
- 					const char *buf, size_t count)
- {
--	struct hid_device *hdev = dev_get_drvdata(dev);
-+	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
- 	struct wacom *wacom = hid_get_drvdata(hdev);
- 	int err;
+ 	struct input_dev *input_dev;
+-	struct usb_interface *intf = wacom->intf;
+-	struct usb_device *dev = interface_to_usbdev(intf);
++	struct hid_device *hdev = wacom->hdev;
+ 	struct wacom_wac *wacom_wac = &(wacom->wacom_wac);
  
-@@ -845,7 +845,7 @@ static int wacom_initialize_leds(struct wacom *wacom)
- 		wacom->led.llv = 10;
- 		wacom->led.hlv = 20;
- 		wacom->led.img_lum = 10;
--		error = sysfs_create_group(&wacom->intf->dev.kobj,
-+		error = sysfs_create_group(&wacom->hdev->dev.kobj,
- 					   &intuos4_led_attr_group);
- 		break;
+ 	input_dev = input_allocate_device();
+@@ -1001,11 +1000,15 @@ static struct input_dev *wacom_allocate_input(struct wacom *wacom)
+ 		return NULL;
  
-@@ -857,7 +857,7 @@ static int wacom_initialize_leds(struct wacom *wacom)
- 		wacom->led.hlv = 0;
- 		wacom->led.img_lum = 0;
+ 	input_dev->name = wacom_wac->name;
+-	input_dev->phys = wacom->phys;
+-	input_dev->dev.parent = &intf->dev;
++	input_dev->phys = hdev->phys;
++	input_dev->dev.parent = &hdev->dev;
+ 	input_dev->open = wacom_open;
+ 	input_dev->close = wacom_close;
+-	usb_to_input_id(dev, &input_dev->id);
++	input_dev->uniq = hdev->uniq;
++	input_dev->id.bustype = hdev->bus;
++	input_dev->id.vendor  = hdev->vendor;
++	input_dev->id.product = hdev->product;
++	input_dev->id.version = hdev->version;
+ 	input_set_drvdata(input_dev, wacom);
  
--		error = sysfs_create_group(&wacom->intf->dev.kobj,
-+		error = sysfs_create_group(&wacom->hdev->dev.kobj,
- 					   &cintiq_led_attr_group);
- 		break;
+ 	return input_dev;
+@@ -1269,8 +1272,6 @@ static int wacom_probe(struct hid_device *hdev,
+ 	wacom->intf = intf;
+ 	mutex_init(&wacom->lock);
+ 	INIT_WORK(&wacom->work, wacom_wireless_work);
+-	usb_make_path(dev, wacom->phys, sizeof(wacom->phys));
+-	strlcat(wacom->phys, "/input0", sizeof(wacom->phys));
  
-@@ -874,7 +874,7 @@ static int wacom_initialize_leds(struct wacom *wacom)
- 			wacom->led.hlv = 0;
- 			wacom->led.img_lum = 0;
- 
--			error = sysfs_create_group(&wacom->intf->dev.kobj,
-+			error = sysfs_create_group(&wacom->hdev->dev.kobj,
- 						  &intuos5_led_attr_group);
- 		} else
- 			return 0;
-@@ -885,7 +885,7 @@ static int wacom_initialize_leds(struct wacom *wacom)
- 	}
- 
- 	if (error) {
--		dev_err(&wacom->intf->dev,
-+		hid_err(wacom->hdev,
- 			"cannot create sysfs group err: %d\n", error);
- 		return error;
- 	}
-@@ -906,13 +906,13 @@ static void wacom_destroy_leds(struct wacom *wacom)
- 	case INTUOS4S:
- 	case INTUOS4:
- 	case INTUOS4L:
--		sysfs_remove_group(&wacom->intf->dev.kobj,
-+		sysfs_remove_group(&wacom->hdev->dev.kobj,
- 				   &intuos4_led_attr_group);
- 		break;
- 
- 	case WACOM_24HD:
- 	case WACOM_21UX2:
--		sysfs_remove_group(&wacom->intf->dev.kobj,
-+		sysfs_remove_group(&wacom->hdev->dev.kobj,
- 				   &cintiq_led_attr_group);
- 		break;
- 
-@@ -923,7 +923,7 @@ static void wacom_destroy_leds(struct wacom *wacom)
- 	case INTUOSPM:
- 	case INTUOSPL:
- 		if (wacom->wacom_wac.features.device_type == BTN_TOOL_PEN)
--			sysfs_remove_group(&wacom->intf->dev.kobj,
-+			sysfs_remove_group(&wacom->hdev->dev.kobj,
- 					   &intuos5_led_attr_group);
- 		break;
- 	}
+ 	/* set the default size in case we do not get them from hid */
+ 	wacom_set_default_phy(features);
 -- 
 2.0.0
 
