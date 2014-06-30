@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756626AbaF3Q5Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 12:57:24 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:50308 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756569AbaF3Q5B (ORCPT
+	id S1756663AbaF3Q51 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 12:57:27 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:56696 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756603AbaF3Q5Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 12:57:01 -0400
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Mike Turquette <mturquette@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org
-Subject: [PATCH 4/4] ARM: zynq: dt: Use properly rounded frequencies in OPPs
-Date: Mon, 30 Jun 2014 09:56:36 -0700
-Message-Id: <1404147396-8041-5-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 2.0.1.1.gfbfc394
-In-Reply-To: <1404147396-8041-1-git-send-email-soren.brinkmann@xilinx.com>
-References: <1404147396-8041-1-git-send-email-soren.brinkmann@xilinx.com>
+	Mon, 30 Jun 2014 12:57:25 -0400
+Date: Mon, 30 Jun 2014 22:27:18 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] uprobes: Change unregister/apply to WARN() if
+ uprobe/consumer is gone
+Message-ID: <20140630165718.GB5619@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20140627170116.GA18298@redhat.com>
+ <20140627170140.GA18322@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20140627170140.GA18322@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14063016-2674-0000-0000-000000A3C86C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Due to the clk_find_nearest_rate() API, OPPs can be specified
-using proper rounding, now.
+* Oleg Nesterov <oleg@redhat.com> [2014-06-27 19:01:40]:
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
----
+> Add WARN_ON's into uprobe_unregister() and uprobe_apply() to ensure
+> that nobody tries to play with the dead uprobe/consumer. This helps
+> to catch the bugs like the one fixed by the previous patch.
+> 
+> In the longer term we should fix this poorly designed interface.
+> uprobe_register() should return "struct uprobe *" which should be
+> passed to apply/unregister. Plus other semantic changes, see the
+> changelog in commit 41ccba029e94.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
----
- arch/arm/boot/dts/zynq-7000.dtsi | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
-index 760bbc463c5b..b8e39ed5b132 100644
---- a/arch/arm/boot/dts/zynq-7000.dtsi
-+++ b/arch/arm/boot/dts/zynq-7000.dtsi
-@@ -29,8 +29,8 @@
- 			operating-points = <
- 				/* kHz    uV */
- 				666667  1000000
--				333334  1000000
--				222223  1000000
-+				333333  1000000
-+				222222  1000000
- 			>;
- 		};
- 
 -- 
-2.0.1.1.gfbfc394
+Thanks and Regards
+Srikar Dronamraju
 
