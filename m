@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756006AbaF3MDd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:03:33 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:52053 "EHLO
+	id S1755982AbaF3MDc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:03:32 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:52049 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753816AbaF3LxZ (ORCPT
+	by vger.kernel.org with ESMTP id S1753806AbaF3LxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Jun 2014 07:53:25 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        linaro-kernel@lists.linaro.org, fweisbec@gmail.com,
-        Arvind.Chauhan@arm.com, linaro-networking@linaro.org,
-        Thomas Gleixner <tglx@linutronix.de>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 006/181] tick-sched: Check tick_nohz_enabled in tick_nohz_switch_to_nohz()
-Date: Mon, 30 Jun 2014 13:50:27 +0200
-Message-Id: <e54e6e8ec33fa40e0f4eac6efa7ad2eddfaab05c.1404128997.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        Aleksander Morgado <aleksander@aleksander.es>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 092/181] usb: qcserial: add Netgear AirCard 341U
+Date: Mon, 30 Jun 2014 13:51:53 +0200
+Message-Id: <4939bb50094d62f4e9ecdcbdd7530c5e073ac7c4.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -25,47 +25,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Viresh Kumar <viresh.kumar@linaro.org>
+From: Aleksander Morgado <aleksander@aleksander.es>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 27630532ef5ead28b98cfe28d8f95222ef91c2b7 upstream.
+commit ff1fcd50bc2459744e6f948310bc18eb7d6e8c72 upstream.
 
-Since commit d689fe222 (NOHZ: Check for nohz active instead of nohz
-enabled) the tick_nohz_switch_to_nohz() function returns because it
-checks for the tick_nohz_active flag. This can't be set, because the
-function itself sets it.
-
-Undo the change in tick_nohz_switch_to_nohz().
-
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linaro-kernel@lists.linaro.org
-Cc: fweisbec@gmail.com
-Cc: Arvind.Chauhan@arm.com
-Cc: linaro-networking@linaro.org
-Cc: <stable@vger.kernel.org> # 3.13+
-Link: http://lkml.kernel.org/r/40939c05f2d65d781b92b20302b02243d0654224.1397537987.git.viresh.kumar@linaro.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Aleksander Morgado <aleksander@aleksander.es>
+Cc: stable <stable@vger.kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- kernel/time/tick-sched.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/qcserial.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index ea20f7d1ac2c..29b063b32ff0 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -970,7 +970,7 @@ static void tick_nohz_switch_to_nohz(void)
- 	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
- 	ktime_t next;
- 
--	if (!tick_nohz_active)
-+	if (!tick_nohz_enabled)
- 		return;
- 
- 	local_irq_disable();
+diff --git a/drivers/usb/serial/qcserial.c b/drivers/usb/serial/qcserial.c
+index 91e7bb515398..2029f8f7f53f 100644
+--- a/drivers/usb/serial/qcserial.c
++++ b/drivers/usb/serial/qcserial.c
+@@ -144,6 +144,7 @@ static const struct usb_device_id id_table[] = {
+ 	{DEVICE_SWI(0x1199, 0x901f)},	/* Sierra Wireless EM7355 */
+ 	{DEVICE_SWI(0x1199, 0x9041)},	/* Sierra Wireless MC7305/MC7355 */
+ 	{DEVICE_SWI(0x1199, 0x9051)},	/* Netgear AirCard 340U */
++	{DEVICE_SWI(0x1199, 0x9055)},	/* Netgear AirCard 341U */
+ 	{DEVICE_SWI(0x413c, 0x81a2)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card */
+ 	{DEVICE_SWI(0x413c, 0x81a3)},	/* Dell Wireless 5570 HSPA+ (42Mbps) Mobile Broadband Card */
+ 	{DEVICE_SWI(0x413c, 0x81a4)},	/* Dell Wireless 5570e HSPA+ (42Mbps) Mobile Broadband Card */
 -- 
 2.0.0
 
